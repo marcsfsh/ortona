@@ -5515,6 +5515,12 @@ function p4Roller(x, y, sd) {
   return f;
 }
 
+/* the Schuerzen: where the rail sits and how far down the plates hang. The plates
+   are about a metre tall, hung from a rail on stanchions that stand up off the
+   guard, and they cover the hull side from partway up down to the road wheel
+   centres. Hung low and short they cover nothing and read as a valance. */
+var P4S = { zTop: 14.6, zBot: 3.6 };
+
 var P4H = {
   fenderHalf: 16.85,   /* 2.88 m over the track guards */
   supHalf: 13.8,       /* 2.36 m: the superstructure, a good step inboard of them */
@@ -5676,11 +5682,14 @@ function pzivHull(body, cap, sideC) {
   /* the Schuerzen rail and its stand-off brackets, which stayed on the tank whether
      or not the plates were hung from them */
   [-1, 1].forEach(function (s2) {
-    var ry = s2 * (H.fenderHalf + .05);
-    f = f.concat(place(tubeSmooth(-30.0, 24.0, 0, 0, .38, 6, C.steel, C.bare), 0, 0, ry, H.zTub - .9));
-    for (i = 0; i < 5; i++) {
-      f = f.concat(box(-26.0 + i * 12.0, s2 * (H.fenderHalf - .2), H.zTub - 1.5, 1.1, 1.6, 1.4, C.steel, C.bare, C.steel, 0));
-      f = f.concat(box(-26.0 + i * 12.0, s2 * (H.fenderHalf - .8), H.zTub - 3.4, 1.1, 1.0, 2.2, C.steel, C.bare, C.steel, 0));
+    f = f.concat(place(tubeSmooth(-31.5, 29.5, 0, 0, .4, 6, C.steel, C.bare), 0, 0, s2 * (H.fenderHalf + 1.0), P4S.zTop));
+    for (i = 0; i < 6; i++) {
+      var bx = -29.0 + i * 11.8;
+      /* the stanchion off the guard, and the arm that carries the rail outboard */
+      f = f.concat(box(bx, s2 * (H.fenderHalf - .5), H.zTub, .9, 1.2, P4S.zTop - H.zTub, C.steel, C.bare, C.steel, 0));
+      f = f.concat(box(bx, s2 * (H.fenderHalf + .3), P4S.zTop - .5, .9, 2.4, .8, C.steel, C.bare, C.steel, 0));
+      f = f.concat(place(pitch(box(0, 0, 0, 4.4, .8, .6, C.steel, C.bare, C.steel, 0), -s2 * 0, 0, 0),
+                         s2 * 1.0, bx, s2 * (H.fenderHalf - .2), H.zTub + 1.4));
     }
   });
   /* the two-metre rod aerial in its trough on the right rear of the superstructure */
@@ -5824,13 +5833,16 @@ function pzivCupolaMG() {
 function pzivSkirts(body) {
   var C = PZ, H = P4H, f = [], i, s2;
   for (s2 = -1; s2 <= 1; s2 += 2) {
-    var sy = s2 * (H.fenderHalf + .7);
-    /* five plates hung on the rail the hull already carries, the second from the
-       back missing where one has been torn off */
+    var sy = s2 * (H.fenderHalf + 1.35);
     for (i = 0; i < 5; i++) {
-      if (i === 3) continue;
-      f = f.concat(box(21.0 - i * 11.2, sy, 4.8, 10.6, .45, 6.6, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
-      f = f.concat(box(21.0 - i * 11.2, sy, 11.2, 10.6, .45, .35, C.steel, C.bare, C.steel, 0));
+      var px = 23.3 - i * 12.2, yaw = i === 0 ? -s2 * .16 : (i === 4 ? s2 * .16 : 0);
+      var pl = box(0, 0, P4S.zBot, 11.7, .45, P4S.zTop - P4S.zBot, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0);
+      f = f.concat(place(pl, yaw, px, sy, 0));
+      /* the folded lip along the top edge, and the two hooks it hangs by */
+      f = f.concat(place(box(0, 0, P4S.zTop, 11.7, .95, .45, C.steel, C.bare, C.steel, 0), yaw, px, sy - s2 * .25, 0));
+      [-1, 1].forEach(function (h) {
+        f = f.concat(box(px + h * 4.0, s2 * (H.fenderHalf + .95), P4S.zTop, .9, 1.6, 1.0, C.steel, C.bare, C.steel, 0));
+      });
     }
   }
   return f;
@@ -5840,15 +5852,34 @@ function pzivSkirts(body) {
    open at the front where the mantlet swings */
 function pzivTurretSkirts(body, sideC) {
   var C = PZ, f = [], i, s2;
-  for (s2 = -1; s2 <= 1; s2 += 2) {
-    var sy = s2 * 12.6;
-    f = f.concat(place(tubeSmooth(-15.5, 8.0, 0, 0, .34, 6, C.steel, C.bare), 0, 0, sy, 6.6));
-    for (i = 0; i < 3; i++)
-      f = f.concat(box(6.0 - i * 7.6, sy, 1.2, 7.2, .4, 5.3, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
-    f = f.concat(box(-14.0, sy - s2 * 1.0, 1.2, 3.0, .4, 5.3, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
+  /* the plan, walked from the right front tip round the back to the left: the front
+     stays open for the mantlet and the tips sweep in toward the turret face */
+  var plan = [[12.6, -9.0], [9.2, -14.6], [-13.8, -14.6], [-17.4, -11.2],
+              [-17.4, 11.2], [-13.8, 14.6], [9.2, 14.6], [12.6, 9.0]];
+  var z0 = .4, z1 = 8.4;
+  for (i = 0; i < plan.length - 1; i++) {
+    var a = plan[i], b = plan[i + 1];
+    var dx = b[0] - a[0], dy = b[1] - a[1], dl = Math.hypot(dx, dy);
+    var ang = Math.atan2(dy, dx), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+    f = f.concat(place(box(0, 0, z0, dl, .42, z1 - z0, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0), ang, mx, my, 0));
+    /* the rail along the top and the angle along the foot */
+    f = f.concat(place(tubeSmooth(-dl / 2, dl / 2, 0, 0, .34, 6, C.steel, C.bare), ang, mx, my, z1));
+    f = f.concat(place(box(0, 0, z0 - .3, dl, .8, .35, C.steel, C.bare, C.steel, 0), ang, mx, my, 0));
   }
-  f = f.concat(box(-16.4, 0, 1.2, .4, 24.0, 5.3, PZ4.skirt, PZ4.skirtLit, sideC, 0));
-  f = f.concat(place(tubeSmooth(-12.2, 12.2, 0, 0, .34, 6, C.steel, C.bare), Math.PI / 2, -16.0, 0, 6.6));
+  /* the hinged door in each side, on its two hinges, aligned with the turret hatch */
+  for (s2 = -1; s2 <= 1; s2 += 2) {
+    var sy = s2 * 14.6;
+    [1.4, -6.2].forEach(function (hx) {
+      f = f.concat(box(hx, sy - s2 * .45, z0 + .4, .5, .6, z1 - z0 - .8, C.steel, C.bare, C.steel, 0));
+    });
+    [2.2, -5.4].forEach(function (hz) {
+      f = f.concat(box(-2.4, sy + s2 * .5, hz, .9, .8, 1.1, C.steel, C.bare, C.steel, 0));
+    });
+    /* the arms that carry the frame off the turret wall */
+    [6.0, -4.0, -13.0].forEach(function (ax) {
+      f = f.concat(box(ax, s2 * 13.0, z1 - 1.2, 1.0, 3.6, .8, C.steel, C.bare, C.steel, 0));
+    });
+  }
   return f;
 }
 
