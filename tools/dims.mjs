@@ -70,9 +70,10 @@ const measured = await page.evaluate(probe => {
   const out = {};
   Object.keys(window.VMODEL).forEach(function (k) {
     const V = window.VMODEL[k], tx = V.turX || 0;
-    let hx0 = 1e9, hx1 = -1e9, hy = 0;
+    let hx0 = 1e9, hx1 = -1e9, hy = 0, hz = 0;
     V.hull.forEach(f => f.v.forEach(p => {
       hx0 = Math.min(hx0, p[0]); hx1 = Math.max(hx1, p[0]); hy = Math.max(hy, Math.abs(p[1]));
+      hz = Math.max(hz, p[2]);
     }));
 
     /* Slice the hull at a height and take the widest armour there. Faces are skipped
@@ -114,7 +115,8 @@ const measured = await page.evaluate(probe => {
     /* Ground clearance comes from the model's own declared belly height. No geometric
        filter reliably separates the hull floor from the track running under it: on
        every one of these the track's inboard edge lies inside the hull's own width. */
-    out[k] = { len: hx1 - hx0, gun: Math.max(hx1, tx + tx1) - hx0, wid: hy * 2, hgt: V.mountZ + tz,
+    out[k] = { len: hx1 - hx0, gun: Math.max(hx1, tx + tx1) - hx0, wid: hy * 2,
+               hgt: Math.max(hz, V.mountZ + tz),
                body: pr.bodyZ ? widthAt(pr.bodyZ, 1.0) : null,
                roof: pr.roofZ ? widthAt(pr.roofZ, 0.45) : null,
                clear: V.belly === undefined ? null : V.belly };
