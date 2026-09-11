@@ -1,0 +1,289 @@
+# Ortona
+
+A single-file, real-time tactical battle game set in Ortona, December 1943:
+1st Canadian Infantry Division against 1. Fallschirmjäger-Division. Custom
+WebGL2 renderer, no engine, no dependencies, no build step.
+
+**The whole game is `ortona.html`.** Roughly 7,800 lines: CSS in one `<style>`,
+markup, then all the JavaScript in one `<script>`. Open the file in a browser
+and it runs.
+
+---
+
+## Hard rules
+
+1. **One file, no build.** Never add a bundler, a framework, a package import,
+   a CDN `<script>`, a web font, or a second source file the game loads at
+   runtime. `ortona.html` must keep working from a bare `file://` URL with the
+   network off. Everything in `tools/` and `package.json` is development
+   scaffolding; the game never references it.
+2. **It has to run on an iPhone 14 Pro Max.** It currently does. Every change
+   gets checked at phone size before it is called done (see Verifying below).
+3. **Match the surrounding style.** The game is deliberate ES5: `var`, function
+   declarations, no arrow functions, no `let`/`const`, no template literals, no
+   classes, no `async`. Two-space indent, semicolons, single-quoted strings.
+   Comments are lowercase prose that explain intent, often as
+   `/* ---- section name ---- */` banners. Do not modernise code you are
+   passing through.
+4. **Do not reformat.** No whole-file prettier runs, no reindenting, no
+   re-wrapping. A diff should only show what actually changed.
+5. **Assets are procedural.** Models are built from boxes, cylinders, lathes
+   and prisms in code. Textures are painted into a canvas atlas at boot. There
+   are no image, audio or model files, and there must not be.
+
+---
+
+## Verifying
+
+The game renders through WebGL2, so a change to geometry, shading, terrain or
+layout cannot be reviewed by reading the diff. Look at it.
+
+Headless Chromium with software WebGL (SwiftShader) is installed and wired up.
+
+```sh
+npm install                  # once; Chromium is already on disk
+
+npm run verify               # lint + smoke test, the gate before calling work done
+node tools/shoot.mjs --list  # what can be photographed
+node tools/shoot.mjs         # the default scene set, desktop
+```
+
+A `SessionStart` hook (`.claude/hooks/session-start.sh`) runs `npm install` and
+confirms Chromium is present, so a fresh session is ready without being asked.
+
+### `tools/lint.mjs` - the rules, mechanically
+
+Checks what a screenshot cannot: that the script still parses, that the file is
+still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
+`import` or remote URL), that the code is still ES5 (no arrow functions,
+`let`/`const`, template literals, classes, spread, optional chaining), that
+indentation is spaces with no trailing whitespace, and that the file stays
+under 900 kB. Takes under a second. Exits non-zero on any violation.
+
+```sh
+node tools/lint.mjs
+```
+
+### `tools/check.mjs` - the runtime gate
+
+Boots the game, deploys, simulates a battle, and asserts: WebGL comes up,
+shadows are on, nothing throws, the economy and victory points move, both
+sides survive, the HUD stays inside the viewport, touch targets are at least
+44px, the tactical map opens, and the map editor loads. Exits non-zero on any
+failure.
+
+```sh
+node tools/check.mjs                  # desktop + phone, 180s of battle
+node tools/check.mjs --device=phone   # one device
+node tools/check.mjs --sim=1200       # long battle, watches for late throws
+node tools/check.mjs --shots          # also leave PNGs in shots/check/
+```
+
+Run this before calling any change done. It takes about 20 seconds per device.
+`npm run verify` runs the linter and this together.
+
+### `tools/shoot.mjs` - looking at it
+
+Writes PNGs to `shots/<device>/`. Read them back with the Read tool and judge
+the result; that is the point of the tool.
+
+```sh
+node tools/shoot.mjs start battle hud closeup terrain editor   # the defaults
+node tools/shoot.mjs battle --sim=120        # let the fight develop first
+node tools/shoot.mjs hud --device=phone      # mobile layout
+node tools/shoot.mjs armour                  # every vehicle, one photo each
+node tools/shoot.mjs infantry --turn         # every squad, four angles each
+node tools/shoot.mjs buildings
+node tools/shoot.mjs lineup                  # whole roster in a row, per side
+node tools/shoot.mjs free --cam=1400,950,600,1.57,0.8 --bare --sim=60
+```
+
+Scenes: `start` `battle` `hud` `closeup` `terrain` `editor` `over`
+`infantry` `armour` `models` `lineup` `buildings` `free`.
+
+Devices: `desktop` (1600x900) `laptop` (1280x800) `wide` (1920x1080)
+`phone` (iPhone 14 Pro Max, dpr 3) `phonefast` (same box at dpr 1, ~9x fewer
+pixels, for layout-only checks) `phoneland` `phonemin` (375x667) `tablet`.
+
+Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
+`--bare` (hide all 2D UI, leaving only the 3D) `--turn` (four yaw angles)
+`--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
+`--settle=<frames>` `--cam=x,y,dist,yaw,pitch`.
+
+**Workflow for a visual change:** shoot the relevant scene, edit, shoot again
+with `--tag=after`, and compare the two PNGs side by side.
+
+### `tools/harness.mjs` - the library
+
+Both CLIs sit on this. Import it for anything the scenes do not cover.
+
+```js
+import { launch, openGame, deploy, fastForward, frames, camera, pose, flatSpot,
+         chrome, setFog, reveal, drawable, unlockCamera, lookAt, shoot, turntable,
+         state, catalog } from './tools/harness.mjs';
+```
+
+Four pieces are worth knowing about because they are not obvious:
+
+- **`fastForward(page, seconds)`** advances the simulation without drawing.
+  SwiftShader needs about a second per frame, so waiting in real time for a
+  battle to develop is hopeless. Instead it calls the game's own `frame()` with
+  a virtual clock while `render()` and `requestAnimationFrame()` are stubbed
+  out, then restores them and repairs `last` and `perf`. It reaches roughly
+  400x realtime. Because it drives the real `frame()` rather than a copy of it,
+  it does not rot when the loop changes.
+- **`setFog(page, false)`** pushes the fog texture immediately rather than waiting
+  for `render()` to refresh it, which it only does every third frame. Without
+  that, a screenshot taken two frames after clearing the fog still shows the old
+  fog and the map looks black.
+- **`reveal(page)`** forces `vUs`/`vGer` true on every unit and building.
+  `render()` only draws what the player's side can see, so a posed model with
+  no friendly units nearby is invisible. Every gallery scene calls it. A
+  gallery shot that comes back empty is almost always this. `drawable(page)`
+  reports `{units, blds, total}` that `render()` would actually draw, which is
+  the quick way to tell a bad model from an invisible one.
+- **`frames(page, n)`** waits for n real animation frames. A screenshot
+  captures whatever the compositor last painted, so every camera or state
+  change needs at least one frame before the picture reflects it. `shoot()`
+  does this for you through its `settle` option.
+
+`unlockCamera()` relaxes `CAMLIM` so model shots can get closer and lower than
+a player ever can. Never use it for a capture meant to represent what a player
+actually sees.
+
+Nothing in `tools/` is injected into `ortona.html` on disk. Every hook is
+installed at runtime through `page.evaluate`, so the shipped file stays free of
+test-only code. Keep it that way.
+
+---
+
+## Architecture
+
+The `<script>` declares its own section order at the top: util, data, world,
+pathing, units, combat, economy, ai, input, render, hud, loop. Section banners
+(`/* ---- name ---- */`) mark the boundaries. Search for a function name rather
+than trusting a line number.
+
+**State.** One global `G` holds everything mutable: `units`, `blds`, `shots`,
+`fx`, `wrecks`, `corpses`, `sectors`, `res`, `sel`, `sites`, `mapData`. There
+is no state container and no immutability; systems mutate `G` directly.
+
+**World.** 2800 x 1900 units. `makeSectors` / `buildMap` / `makeTerrain` build
+it from `G.mapData`, which is plain JSON the map editor also reads and writes
+(`defaultMapData()` is the shipped Ortona map). A separate 4-unit heightfield
+(`makeHeight`, `groundZ`, `groundNormal`) carries elevation, with trenches and
+craters cut in by `carve`.
+
+**Movement.** A 40-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
+A* in `findPath`. Squads are several models moving in formation around one unit
+position; `updateModels` animates the individual soldiers.
+
+**Combat.** `computeVisibility` fills `vUs`/`vGer` and drives both fog of war
+and target acquisition. `COVER` entries are graded open / light / medium /
+heavy / dug-in; linear cover (walls, trenches) only protects across its face,
+which is what `coverValue` computes from the firing angle. `chooseCover` and
+`coverSlots` are why soldiers tuck themselves against walls.
+
+**Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
+geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
+sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
+static world is merged into a handful of big buffers by `buildScene`; units and
+vehicles are per-model draws. Fog of war and battle damage are textures the
+ground shader multiplies in. A second 2D canvas (`#ov`) carries everything flat:
+selection rings, health bars, unit labels, the minimap.
+
+**Models.** `soldierModel` and `proneModel` build infantry from limb segments,
+helmets and weapons. Vehicles get individual builders (`shermanHull`,
+`ktTurret`, `pzivSkirts`, and so on) assembled in `buildVehicleModels`. Every
+face carries a material index into the atlas. If a model looks wrong, the fix
+is in one of these builders, not in a mesh file.
+
+**Loop.** A single `frame(now)` in the last section steps every system with one
+`dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
+and no separate update thread.
+
+**Map editor.** A second mode living under `ED`, sharing the renderer. Opens
+from the title screen, edits `G.mapData`, saves to `localStorage`, imports and
+exports JSON.
+
+---
+
+## Mobile
+
+`MOB` is decided once at load from `matchMedia('(pointer: coarse)')` or a
+viewport under 820px, and switches to a compact HUD: a condensed resource
+strip, a bottom command bar, right-edge tool buttons, a corner minimap.
+
+What to watch when touching layout or input:
+
+- The CSS uses `100dvh` and `env(safe-area-inset-*)`. Do not swap those for
+  `100vh` or fixed padding; the notch and home indicator need them.
+- Touch handling lives in the `touch` object and its listeners: tap to select,
+  long press for orders, two-finger pinch to zoom, drag to pan. Canvas elements
+  set `touch-action: none` on purpose.
+- Keep tappable controls at 44px or larger. `tools/check.mjs` asserts this.
+- `body` is `overflow: hidden` with `overscroll-behavior: none`. The page must
+  never scroll, in either direction. The check asserts this too.
+- Particle effects are trimmed on mobile (`if (MOB && G.fx) G.fx.length = 0`),
+  and `frame()` halves the draw rate if it measures a struggling device. Do not
+  remove those paths without a reason.
+
+---
+
+## Performance
+
+The budget is a phone GPU at 60fps. The renderer is built around keeping draw
+calls low: static geometry merged into few buffers, one shared atlas, billboards
+for particles. Before adding anything that draws per-frame, check whether it can
+be baked into `buildScene` instead.
+
+`dpr` is clamped to 2. The shadow map is 2048px. `FOGDIV` and the decal canvas
+resolution are deliberate trade-offs.
+
+Note: frame times reported by `tools/check.mjs` come from SwiftShader, a
+software rasteriser with no GPU behind it. They are useful for spotting a
+change that makes rendering dramatically more expensive, and useless as an
+absolute FPS figure.
+
+---
+
+## Repo layout
+
+```
+ortona.html                    the game, and the only thing that ships
+CLAUDE.md                      this file
+package.json                   dev dependencies and script aliases
+tools/harness.mjs              Playwright library: boot, drive, pose, photograph
+tools/check.mjs                smoke test, exits non-zero on failure
+tools/shoot.mjs                scene-based screenshot CLI
+tools/lint.mjs                 one-file / ES5 / hygiene rules
+.claude/hooks/session-start.sh installs dev dependencies on session start
+shots/                         screenshot output, gitignored
+```
+
+---
+
+## Gotchas
+
+- `G.side` is the human player's side. `render()` and the minimap filter on it,
+  so anything staged for a screenshot needs `reveal()` or it will not draw.
+- `computeVisibility()` recomputes `vUs`/`vGer` from scratch on every tick, so
+  setting them by hand only holds while the simulation is paused. That is why
+  `reveal()` pauses. A staged model that renders for one frame and then vanishes
+  is this.
+- `render()` early-returns unless `GLOK && SCENE.ready`. After `startGame()`,
+  wait for `SCENE.ready` before expecting a picture.
+- `frame()` writes the module-level `last` and samples into `perf`. Anything
+  that drives `frame()` with a clock of its own has to put both back, or the
+  next real frame computes a nonsense `dt` and the renderer permanently halves
+  its draw rate.
+- Camera limits (`CAMLIM`) clamp distance to 220-2600 and pitch to 0.42-1.35.
+  A request outside that range is silently clamped, not honoured.
+- Terrain, scene buffers and the atlas are rebuilt only by `startGame()` and
+  the editor's rebuild. Editing `G.mapData` alone changes nothing on screen.
+- `updateFog()` and the decal upload happen inside `render()`, not every frame.
+  Changing `fog` or painting a decal does not show up until a later frame.
+- The audio context needs a user gesture in a real browser. `auInit` swallows
+  the failure and sets `AU.on = false`, so silence is not necessarily a bug.
+- Terrain noise is seeded (`_s = 20240606`), so the map is identical every run.
+  Combat uses `Math.random()` and is not reproducible.
