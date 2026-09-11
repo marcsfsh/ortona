@@ -37,7 +37,7 @@ const REAL = {
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
-  ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
+  ger_sd222:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
                body: 1.16, roof: 1.09, clear: 0.25 }
   /* Two heights are published for the 222 and both are right: 1.70 m to the turret rim,
      2.00 m with the anti-grenade screens raised. The rim is the one that can be checked,
@@ -57,7 +57,7 @@ const PROBE = {
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
   ger_p4:    { bodyZ: 16.0, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true },
-  ger_puma:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0 }   /* clear of the rear tyre and the wing tools */
+  ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0 }   /* clear of the rear tyre and the wing tools */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
