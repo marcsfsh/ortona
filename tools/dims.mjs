@@ -37,7 +37,10 @@ const REAL = {
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
-  ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 2.00 }
+  ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 2.00,
+               body: 1.01, roof: 1.05 }   /* the two ends of the diamond section: the floor
+               plate and the roof deck. On this one the knuckle and the mudguard line are the
+               same measurement as the width over all, so the section is checked at its ends */
 };
 
 /* Where to slice each hull, in model units: the sponson lip and the roof plate.
@@ -50,7 +53,8 @@ const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
-  ger_p4:    { bodyZ: 16.0, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true }
+  ger_p4:    { bodyZ: 16.0, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true },
+  ger_puma:  { bodyZ: 3.4, roofZ: 14.7, xLo: -6.0, xHi: 6.0 }   /* lofted: real vertices sit at each ring */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
@@ -105,7 +109,7 @@ const measured = await page.evaluate(probe => {
     /* Ground clearance comes from the model's own declared belly height. No geometric
        filter reliably separates the hull floor from the track running under it: on
        every one of these the track's inboard edge lies inside the hull's own width. */
-    out[k] = { len: hx1 - hx0, gun: (tx + tx1) - hx0, wid: hy * 2, hgt: V.mountZ + tz,
+    out[k] = { len: hx1 - hx0, gun: Math.max(hx1, tx + tx1) - hx0, wid: hy * 2, hgt: V.mountZ + tz,
                body: pr.bodyZ ? widthAt(pr.bodyZ, 1.0) : null,
                roof: pr.roofZ ? widthAt(pr.roofZ, 0.45) : null,
                clear: V.belly === undefined ? null : V.belly };
