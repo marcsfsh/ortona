@@ -102,6 +102,7 @@ Scenes: `start` `battle` `hud` `closeup` `terrain` `editor` `over`
 `infantry` `armour` `models` `lineup` `buildings` `free`.
 
 Devices: `desktop` (1600x900) `laptop` (1280x800) `wide` (1920x1080)
+`veh` (900x620, for the tight edit-render-look loop on a model)
 `phone` (iPhone 14 Pro Max, dpr 3) `phonefast` (same box at dpr 1, ~9x fewer
 pixels, for layout-only checks) `phoneland` `phonemin` (375x667) `tablet`.
 

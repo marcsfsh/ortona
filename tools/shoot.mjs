@@ -190,6 +190,48 @@ const SCENES = {
     }
   },
 
+  vehicle: {
+    help: 'Reference sheet for one vehicle: front, front 3/4, side, rear 3/4, rear, top. Use --only=<key>.',
+    async run(page) {
+      await deploy(page, { side: SIDE, diff: DIFF });
+      await setFog(page, false);
+      await chrome(page, false);
+      await unlockCamera(page, 30, 0.02);
+      const spot = await flatSpot(page, 150);
+      const cat = await catalog(page);
+      const only = args.only ? String(args.only).split(',') : cat.units.filter(u => u.cat === 'veh').map(u => u.key);
+
+      /* The camera stays put and the vehicle turns under it. The sun is fixed in
+       * world space, so orbiting the camera would light a different face in every
+       * frame and make the sheet useless for comparing shapes. This yaw puts the
+       * sun over the camera's shoulder, which is where it flatters armour plate. */
+      const CAM_YAW = Math.atan2(0.52, 0.40);
+      const VIEWS = [
+        ['front',   0,              0.34],
+        ['front34', 0.70,           0.38],
+        ['side',    Math.PI / 2,    0.20],
+        ['rear34',  Math.PI - 0.70, 0.38],
+        ['rear',    Math.PI,        0.34],
+        ['top',     Math.PI / 2,    1.30]
+      ];
+      for (const key of only) {
+        const u = cat.units.find(q => q.key === key);
+        if (!u) { console.error(`  unknown unit "${key}"`); continue; }
+        await pose(page, [{ key, x: 0, y: 0 }], spot);
+        const dist = Number(args.dist) || (u.cat === 'veh' ? 104 : 68);
+        for (const [name, turn, pitch] of VIEWS) {
+          await page.evaluate(a => {
+            const v = window.G.units[0];
+            v.facing = a.face; v.turret = a.face; v.recoil = 0; v.moving = false;
+          }, { face: CAM_YAW + turn });
+          await camera(page, { x: spot.x, y: spot.y, dist, yaw: CAM_YAW, pitch });
+          if ((await drawable(page)).units === 0) console.error(`  WARNING: ${key} is not in the draw list`);
+          await shoot(page, out(`veh-${key}-${name}`), { settle: SETTLE });
+        }
+      }
+    }
+  },
+
   /* ---- free camera: the escape hatch for anything the scenes above miss ---- */
 
   free: {
@@ -218,8 +260,10 @@ async function gallery(page, label, filter) {
   await unlockCamera(page, 40, 0.12);
   const spot = await flatSpot(page, 150);
   const cat = await catalog(page);
-  const keys = cat.units.filter(filter).map(u => u.key);
-  console.log(`  staging ${keys.length} models at (${spot.x}, ${spot.y}), height spread ${spot.dev.toFixed(1)}`);
+  const only = args.only ? String(args.only).split(',') : null;
+  const keys = cat.units.filter(filter).map(u => u.key).filter(k => !only || only.includes(k));
+  if (!keys.length) { console.error(`  no units match --only=${args.only}`); return; }
+  console.log(`  staging ${keys.length} model(s) at (${spot.x}, ${spot.y}), height spread ${spot.dev.toFixed(1)}`);
 
   for (const key of keys) {
     const unit = cat.units.find(u => u.key === key);
@@ -247,6 +291,7 @@ if (args.list || args.help) {
   console.log('\nflags: --device= --sim=<game seconds> --side=us|ger --diff=0|1|2 --bare --turn');
   console.log('       --settle=<frames> --tag=<suffix> --cam=x,y,dist,yaw,pitch --nofog --name=');
   console.log('       --dist=<units> --pitch=<radians>   (override gallery framing)');
+  console.log('       --only=<key[,key]>                 (restrict a gallery to named units)');
   process.exit(0);
 }
 

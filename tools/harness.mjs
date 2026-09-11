@@ -37,6 +37,9 @@ const CHROME_ARGS = [
 export const DEVICES = {
   desktop:  { name: 'desktop',  viewport: { width: 1600, height: 900 }, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   laptop:   { name: 'laptop',   viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
+  /* Half the pixels of `laptop`, for the tight edit-render-look loop on a model.
+   * Enough to judge a shape; use `laptop` or better for the shot you keep. */
+  veh:      { name: 'veh',      viewport: { width: 900, height: 620 }, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   wide:     { name: 'wide',     viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1, isMobile: false, hasTouch: false },
   phone:    { name: 'phone',    ...devices['iPhone 14 Pro Max'] },
   /* Same 430x932 CSS box, but at dpr 1. Renders ~9x fewer pixels than dpr 3,

@@ -70,13 +70,29 @@ lines.forEach((line, i) => {
 /* ---- 3. still the same dialect ----------------------------------------- */
 
 /* Checked only inside the script block, and only on code: a comment or a string
- * mentioning "class" or "=>" is not a dialect violation. */
+ * mentioning "class" or "=>" is not a dialect violation. Block comments here run to
+ * dozens of lines, so comment state has to carry between lines -- stripping only
+ * same-line /* ... *\/ pairs flags ordinary English prose as code. */
+let inBlock = false;
 function stripNoise(line) {
-  return line
-    .replace(/\/\*.*?\*\//g, ' ')
-    .replace(/\/\/.*$/, ' ')
+  let out = '', i = 0;
+  while (i < line.length) {
+    if (inBlock) {
+      const end = line.indexOf('*/', i);
+      if (end < 0) { i = line.length; break; }
+      inBlock = false; i = end + 2; out += ' ';
+      continue;
+    }
+    const two = line.slice(i, i + 2);
+    if (two === '/*') { inBlock = true; i += 2; continue; }
+    if (two === '//') break;
+    out += line[i]; i++;
+  }
+  /* string literals next, so a quoted "class" or "=>" is data, not dialect */
+  return out
     .replace(/'(?:[^'\\]|\\.)*'/g, "''")
-    .replace(/"(?:[^"\\]|\\.)*"/g, '""');
+    .replace(/"(?:[^"\\]|\\.)*"/g, '""')
+    .replace(/\/(?:[^/\\\n[]|\\.|\[(?:[^\]\\]|\\.)*\])+\/[gimsuy]*/g, '//');
 }
 
 const DIALECT = [

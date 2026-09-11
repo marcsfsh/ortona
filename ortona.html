@@ -4229,6 +4229,219 @@ function farmModel(w, d) {
    Sherman V (M4A4) and Universal Carrier for the Canadians; a Panzer IV H and compact
    four-wheeled Sd.Kfz. 222 for the defenders. Stowage, running gear, open fighting
    compartments and German Dunkelgelb paint are modelled instead of generic faction cars. */
+/* ================================================================ armour detail kit
+   Parts every vehicle needs, built once so the whole fleet is consistent. The belt
+   is the important one: given the pulleys, it walks the real external tangents and
+   wrap arcs, so a track hugs its wheels instead of being drawn by hand per tank. */
+
+/* loft() and prism() wind their polygons by construction rather than by geometry, so
+   a hand-built outline can come out inside-out. Settle it from the shape itself. */
+function faceOut(faces, cx, cy, cz) {
+  return faces.map(function (f) {
+    var n = faceNormal(f.v[0], f.v[1], f.v[2]), gx = 0, gy = 0, gz = 0, i;
+    for (i = 0; i < f.v.length; i++) { gx += f.v[i][0]; gy += f.v[i][1]; gz += f.v[i][2]; }
+    gx /= f.v.length; gy /= f.v.length; gz /= f.v.length;
+    if ((gx - cx) * n.x + (gy - cy) * n.y + (gz - cz) * n.z < 0)
+      return { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
+    return f;
+  });
+}
+
+/* Strip the interpolated normals off a loft so it shades as welded plate, not as a
+   casting. Flat is the default for armour; smooth is the exception. */
+function welded(faces) {
+  return faces.map(function (f) { return { v: f.v, c: f.c }; });
+}
+
+/* The belt problem. Pulleys are given as {x, z, r} in clockwise order around the
+   loop; for each neighbouring pair we take the external tangent that keeps the belt
+   outside both, then wrap the arc between the tangent points. Returns a closed
+   polyline of [x, z] in the vehicle's side plane. */
+function beltPath(circles) {
+  var n = circles.length, tang = [], out = [], i, k;
+  for (i = 0; i < n; i++) {
+    var A = circles[i], B = circles[(i + 1) % n];
+    var dx = B.x - A.x, dz = B.z - A.z, d = Math.hypot(dx, dz) || 1;
+    var a = Math.atan2(dz, dx) + Math.acos(clamp((A.r - B.r) / d, -1, 1));
+    tang.push(a);
+  }
+  for (i = 0; i < n; i++) {
+    var C = circles[i], a0 = tang[(i - 1 + n) % n], a1 = tang[i];
+    while (a1 > a0) a1 -= TAU;                       /* the wrap runs clockwise */
+    var steps = Math.max(1, Math.ceil((a0 - a1) / .22));
+    for (k = 0; k <= steps; k++) {
+      var aa = a0 + (a1 - a0) * (k / steps);
+      out.push([C.x + Math.cos(aa) * C.r, C.z + Math.sin(aa) * C.r]);
+    }
+  }
+  return out;
+}
+
+/* Walk a closed path at a fixed pitch so every link is the same length however the
+   path bends. Returns {x, z, a} for each link centre. */
+function beltSamples(path, pitch) {
+  var seg = [], total = 0, i;
+  for (i = 0; i < path.length; i++) {
+    var p = path[i], q = path[(i + 1) % path.length];
+    var l = Math.hypot(q[0] - p[0], q[1] - p[1]);
+    if (l < 1e-4) continue;
+    seg.push({ p: p, q: q, l: l, s: total, a: Math.atan2(q[1] - p[1], q[0] - p[0]) });
+    total += l;
+  }
+  var count = Math.max(8, Math.round(total / pitch)), out = [], j = 0;
+  for (i = 0; i < count; i++) {
+    var s = (i + .5) * (total / count);
+    while (j < seg.length - 1 && s > seg[j].s + seg[j].l) j++;
+    var g = seg[j], t = clamp((s - g.s) / g.l, 0, 1);
+    out.push({ x: lerp(g.p[0], g.q[0], t), z: lerp(g.p[1], g.q[1], t), a: g.a, len: total / count });
+  }
+  return out;
+}
+
+/* A whole track: pulleys in, links out, laid on the belt path at y.
+   o = { w, thick, col, lit, guide, guideCol, cleat } */
+function trackBelt(y, circles, o) {
+  var f = [], s = beltSamples(beltPath(circles), o.pitch || 1.6), i;
+  var W = o.w, T = o.thick, half = T / 2;
+  for (i = 0; i < s.length; i++) {
+    var k = s[i], link = box(0, 0, -half, k.len * 1.02, W, T, (i % 2) ? o.col : o.lit, o.col, o.col, 0);
+    /* end connectors: the pin housings that stand proud of both track edges */
+    link = link.concat(box(0, -W / 2 - .26, -half - .05, k.len * .56, .5, T + .1, o.steel, o.steel, o.steel, 0));
+    link = link.concat(box(0,  W / 2 + .26, -half - .05, k.len * .56, .5, T + .1, o.steel, o.steel, o.steel, 0));
+    /* the centre guide horn. With the pulleys walked clockwise the link's local +z
+       is the face away from the wheels, so the horn hangs below the belt line. */
+    if (o.guide) link = link.concat(box(0, 0, -half - o.guide, k.len * .5, o.guideW || 1.0, o.guide, o.guideCol || o.steel, o.guideCol || o.steel, o.guideCol || o.steel, 0));
+    /* a grouser cleat on the outer face, every other link, for the steel-chevron look */
+    if (o.cleat && (i % 2) === 0) link = link.concat(box(0, 0, half, k.len * .34, W * .8, o.cleat, o.col, o.lit, o.col, 0));
+    f = f.concat(place(pitch(link, k.a, 0, 0), 0, k.x, y, k.z));
+  }
+  return f;
+}
+
+/* A short cylinder lying along y: the shape of nearly every bolt head, rivet and
+   stub on a tank, so both bolt helpers are built from it. */
+function stud(x, y, z, r, depth, col) {
+  return place(tubeSmooth(-depth / 2, depth / 2, 0, 0, r, 5, col, lit(col, 1.18)), Math.PI / 2, x, y, z);
+}
+
+/* A ring of bolt heads on a wheel or hatch face. */
+function boltRing(cx, cy, cz, r, n, head, depth, col, phase) {
+  var f = [], i;
+  for (i = 0; i < n; i++) {
+    var a = (i / n) * TAU + (phase || 0);
+    f = f.concat(stud(cx + Math.cos(a) * r, cy, cz + Math.sin(a) * r, head, depth, col));
+  }
+  return f;
+}
+
+/* A row of bolt heads down a side plate, running fore and aft. */
+function boltRow(x0, x1, y, z, n, head, depth, col) {
+  var f = [], i;
+  for (i = 0; i < n; i++) f = f.concat(stud(n === 1 ? x0 : lerp(x0, x1, i / (n - 1)), y, z, head, depth, col));
+  return f;
+}
+
+/* A grab iron: the U-shaped handle welded all over a tank's plates. `ax` is 'x' for
+   one running fore and aft, 'y' for one running across. */
+function grabIron(x, y, z, len, rise, col, ax) {
+  var r = .24, f = [], h = len / 2;
+  if (ax === 'y') {
+    f = f.concat(cyl(x, y - h, z, r, r, rise, 6, col, col, 0, true));
+    f = f.concat(cyl(x, y + h, z, r, r, rise, 6, col, col, 0, true));
+    f = f.concat(place(tubeSmooth(-h, h, 0, 0, r, 6, col, col), Math.PI / 2, x, y, z + rise));
+  } else {
+    f = f.concat(cyl(x - h, y, z, r, r, rise, 6, col, col, 0, true));
+    f = f.concat(cyl(x + h, y, z, r, r, rise, 6, col, col, 0, true));
+    f = f.concat(tubeSmooth(x - h, x + h, y, z + rise, r, 6, col, col));
+  }
+  return f;
+}
+
+/* The M6 periscope in its armoured hood: a small sloped box with a dark glass face. */
+function periscope(x, y, z, yaw, col, glass) {
+  var f = box(0, 0, 0, 2.5, 3.4, 1.5, col, lit(col, 1.1), lit(col, .9));
+  f = f.concat(box(1.15, 0, .35, .5, 2.4, .85, glass || '#1a1d18', '#23261f', '#23261f', 0));
+  return place(f, yaw || 0, x, y, z);
+}
+
+/* A headlight with the brush guard bent over it, as fitted to the front plates. */
+function headLamp(x, y, z, col, lens) {
+  var f = place(tubeSmooth(0, 2.0, 0, 0, 1.35, 10, col, lit(col, .85)), 0, x, y, z);
+  f = f.concat(place(tubeSmooth(2.0, 2.35, 0, 0, 1.15, 10, lens || '#cfcdb6', lens || '#cfcdb6'), 0, x, y, z));
+  /* three bars of the guard, bent round the front of the glass */
+  var i;
+  for (i = -1; i <= 1; i++) {
+    f = f.concat(box(x + 2.55, y + i * .9, z - 1.55, .22, .22, 3.1, col, col, col, 0));
+  }
+  f = f.concat(box(x + 1.3, y, z + 1.55, 2.7, 2.4, .22, col, col, col, 0));
+  f = f.concat(box(x + 1.3, y, z - 1.72, 2.7, 2.4, .22, col, col, col, 0));
+  return f;
+}
+
+/* A towing shackle: the lug welded to the plate and the shackle hanging off it. */
+function towLug(x, y, z, col, steel) {
+  var f = box(x, y, z, 2.2, 2.6, 3.0, col, lit(col, 1.1), lit(col, .9));
+  f = f.concat(place(tubeSmooth(-.5, .5, 0, 0, 1.15, 8, steel, steel), Math.PI / 2, x + 1.6, y, z + 1.5));
+  f = f.concat(place(tubeSmooth(-.5, .5, 0, 0, .72, 8, '#20231b', '#20231b'), Math.PI / 2, x + 1.72, y, z + 1.5));
+  return f;
+}
+
+/* A rounded-rectangle plan outline, for hatch covers and any plate that is square
+   with the corners taken off. Feed it to prism(). */
+function roundRectPlan(cx, cy, hx, hy, r, seg) {
+  var pts = [], i, k, n = Math.max(2, seg || 3);
+  var corners = [[hx - r, hy - r, 0], [-(hx - r), hy - r, Math.PI / 2],
+                 [-(hx - r), -(hy - r), Math.PI], [hx - r, -(hy - r), Math.PI * 1.5]];
+  for (i = 0; i < 4; i++) {
+    for (k = 0; k <= n; k++) {
+      var a = corners[i][2] + (k / n) * (Math.PI / 2);
+      pts.push([cx + corners[i][0] + Math.cos(a) * r, cy + corners[i][1] + Math.sin(a) * r]);
+    }
+  }
+  return pts;
+}
+
+/* A rounded-rectangle outline in the y-z plane at x, for lofting cast mantlets. */
+function roundRectRing(x, cy, cz, hy, hz, r, n) {
+  var pts = [], i, seg = Math.max(2, n || 3);
+  var corners = [[hy - r, hz - r, 0], [-(hy - r), hz - r, Math.PI / 2],
+                 [-(hy - r), -(hz - r), Math.PI], [hy - r, -(hz - r), Math.PI * 1.5]];
+  for (i = 0; i < 4; i++) {
+    var c = corners[i];
+    for (var k = 0; k <= seg; k++) {
+      var a = c[2] + (k / seg) * (Math.PI / 2);
+      pts.push([x, cy + c[0] + Math.cos(a) * r, cz + c[1] + Math.sin(a) * r]);
+    }
+  }
+  return pts;
+}
+
+/* Extrude a side-view outline of [x, z] points along y: hull tubs, mudguards and
+   any plate whose shape is a profile rather than a plan. */
+function extrudeY(profile, y0, y1, col, cap, side) {
+  var f = [], i, n = profile.length, L = [], R = [];
+  for (i = 0; i < n; i++) {
+    var p = profile[i], q = profile[(i + 1) % n];
+    f.push({ v: [[p[0], y0, p[1]], [q[0], y0, q[1]], [q[0], y1, q[1]], [p[0], y1, p[1]]], c: side || col });
+    L.push([p[0], y0, p[1]]); R.push([p[0], y1, p[1]]);
+  }
+  f.push({ v: L, c: col });
+  f.push({ v: R, c: cap || col });
+  var cx = 0, cz = 0;
+  for (i = 0; i < n; i++) { cx += profile[i][0]; cz += profile[i][1]; }
+  return faceOut(f, cx / n, (y0 + y1) / 2, cz / n);
+}
+
+/* A louvred engine-deck panel: the frame and the slats over it. */
+function louvrePanel(cx, cy, cz, l, w, slats, col, steel) {
+  var f = box(cx, cy, cz, l, w, .7, col, lit(col, 1.08), lit(col, .9)), i;
+  for (i = 0; i < slats; i++) {
+    var x = cx - l / 2 + (l / slats) * (i + .5);
+    f = f.concat(place(pitch(box(0, 0, 0, 1.15, w - 1.6, .45, steel, lit(steel, 1.3), steel, 0), .5, 0, 0), 0, x, cy, cz + .7));
+  }
+  return f;
+}
+
 var OD = { track: '#1c1e15', trackLit: '#2e3226', rubber: '#141610', steel: '#33362a' };
 var VMODEL = {}, TEAMMODEL = {}, ATMODEL = {};
 
@@ -4607,191 +4820,386 @@ function shermanTurret(body, cap) {
    inward-sloping sponsons, a long welded turret with the radio bustle, the Continental
    radial standing tall under the rear deck, two VVSS bogies a side with the trailing
    idler on the ground, and rubber-block T16 track. */
-var STUART = SHERMAN;   /* same paint, same rubber, same steel */
+/* ================================================================ Stuart V (M3A3)
+   The armoured brigade's reconnaissance tank: short, tall and narrow, on two volute
+   bogies a side with the trailing idler down on the ground where it carries its
+   share of the weight. The A3 is the welded hull -- sponsons carried out over the
+   tracks and one long shallow glacis with the drivers' hatches let into it, not a
+   vertical front plate. The turret is the M5A1's: a rounded welded face, walls that
+   lean in hard, and a radio bustle drawn out over the engine deck.
+   Laid out at 11.7 units to the metre, the scale the rest of the fleet uses:
+   5.03 m hull, 2.51 m wide, 2.57 m to the turret roof. */
+var STU = {
+  od: '#5b6243', odLit: '#6b7350', odDark: '#4a5037', odDust: '#77805c',
+  rubber: '#1c1d19', tyre: '#2a2b26', steel: '#3a3d34', bare: '#6d6e62',
+  track: '#4b4a42', trackLit: '#5d5c54',
+  tarp: '#8d7c54', bedroll: '#7a6a48', jerry: '#4f5643'
+};
+var STUG = {
+  R: 3.0,          /* road wheel radius, 20 in wheels */
+  T: 0.92,         /* track link thickness */
+  TW: 3.5,         /* track width, 295 mm */
+  LP: 1.62,        /* link pitch, 140 mm */
+  TY: 12.15,       /* track centreline out from the hull centreline */
+  xSprk: 21.0, zSprk: 8.4, rSprk: 4.0,
+  xBogA: 8.2, xBogB: -5.4, bogSpan: 3.6,
+  xIdl: -23.8,
+  zRoll: 9.9, rRoll: 1.45
+};
+STUG.zWheel = STUG.R + STUG.T;                   /* so the link's outer face meets the ground */
+STUG.beltR = STUG.R + STUG.T / 2;
 
+/* the pulleys, clockwise round the loop: sprocket, the two return rollers going aft,
+   the trailing idler, then the four road wheels coming forward again */
+function stuartPulleys() {
+  var g = STUG, w = [];
+  w.push({ x: g.xSprk, z: g.zSprk, r: g.rSprk + g.T / 2 });
+  w.push({ x: g.xBogA + g.bogSpan, z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xBogA - g.bogSpan, z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xBogB + g.bogSpan, z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xBogB - g.bogSpan, z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xIdl,  z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xBogB, z: g.zRoll, r: g.rRoll + g.T / 2 });
+  w.push({ x: g.xBogA, z: g.zRoll, r: g.rRoll + g.T / 2 });
+  return w;
+}
+
+/* T16 rubber-block track: a flat shoe, pin housings proud of both edges, and the
+   centre guide horn on the inboard face. */
 function stuartTrack(y) {
-  var f = [], C = STUART;
-  var W = 3.5, L = 1.7, T = 1.15;
-  var frontX = 18.5, rearX = -18.5, rS = 2.8, rI = 2.9, zS = 5.0, zI = 2.9, zLow = .55, zHigh = 8.6;
-  var pts = [], i, n;
-  n = 20; for (i = 0; i <= n; i++) pts.push({ x: lerp(rearX + 1, frontX - 1, i / n), z: zLow });
-  n = 8; for (i = 1; i <= n; i++) { var a = -Math.PI / 2 + (i / n) * Math.PI; pts.push({ x: frontX + Math.cos(a) * rS, z: zS + Math.sin(a) * rS * 1.1 }); }
-  n = 18; for (i = 1; i <= n; i++) { var t = i / n; pts.push({ x: lerp(frontX - 1, rearX + 2, t), z: zHigh - Math.abs(Math.sin(t * Math.PI * 2)) * .45 }); }
-  /* the trailing idler sits low, so the track comes down steeply at the back */
-  n = 7; for (i = 1; i < n; i++) { var a2 = Math.PI / 2 + (i / n) * Math.PI; pts.push({ x: rearX + Math.cos(a2) * rI, z: zI + Math.sin(a2) * rI }); }
-  for (i = 0; i < pts.length; i++) {
-    var p = pts[i], q = pts[(i + 1) % pts.length];
-    var ang = Math.atan2(q.z - p.z, q.x - p.x), len = Math.hypot(q.x - p.x, q.z - p.z);
-    if (len < .3) continue;
-    var shade = (i % 2) ? C.track : C.trackLit;
-    var link = box(0, 0, -T / 2, Math.min(len - .06, L), W, T, shade, shade, C.track);
-    link = link.concat(box(0, -W / 2 - .3, -T / 2 - .12, Math.min(len, L) * .55, .6, T + .25, C.steel, C.bare));
-    link = link.concat(box(0,  W / 2 + .3, -T / 2 - .12, Math.min(len, L) * .55, .6, T + .25, C.steel, C.bare));
-    if (i % 2 === 0) link = link.concat(box(0, 0, T / 2, 1.0, 1.2, .9, C.steel, C.bare));
-    f = f.concat(place(pitch(link, -ang, 0, 0), 0, (p.x + q.x) / 2, y, (p.z + q.z) / 2));
+  var C = STU, g = STUG;
+  return trackBelt(y, stuartPulleys(), {
+    w: g.TW, thick: g.T, pitch: g.LP,
+    col: C.track, lit: C.trackLit, steel: C.steel,
+    guide: .85, guideW: .95, guideCol: C.steel
+  });
+}
+
+/* a road wheel: dished steel disc, solid rubber tyre, hub cap and its bolt circle */
+function stuartRoadWheel(x, y, sd) {
+  var C = STU, r = STUG.R, hw = 1.62;
+  var prof = [[0, -hw], [.85, -hw], [.85, -.62], [1.55, -.92], [2.20, -1.36], [2.34, -hw],
+              [r, -hw], [r, hw], [2.34, hw], [2.20, 1.36], [1.55, .92], [.85, .62], [.85, hw], [0, hw]];
+  var cols = [C.odLit, C.od, C.odDark, C.odDark, C.od, C.tyre, C.rubber, C.tyre, C.od, C.odDark, C.odDark, C.od, C.odLit];
+  var f = lathe(x, y, STUG.zWheel, prof, 16, cols, true);
+  f = f.concat(boltRing(x, y + sd * hw, STUG.zWheel, 1.45, 6, .3, .5, C.steel));
+  f = f.concat(stud(x, y + sd * (hw + .2), STUG.zWheel, .78, .6, C.bare));
+  return f;
+}
+
+/* the VVSS bogie: a cast bracket on the hull side, the volute spring can standing in
+   it, the two swinging arms, and the return roller on its post above */
+function stuartBogie(cx, y, sd) {
+  var C = STU, g = STUG, f = [], out = sd, s = g.bogSpan;
+  /* the bracket bolted to the sponson side */
+  f = f.concat(box(cx, y - out * 1.5, 5.2, 9.6, 2.4, 5.6, C.od, C.odLit, C.odDark));
+  f = f.concat(boltRow(cx - 3.4, cx + 3.4, y - out * 2.8, 7.6, 5, .32, .5, C.steel));
+  /* the volute spring can, its cap, and the trunnion the arms swing on */
+  f = f.concat(cyl(cx, y - out * 1.3, 6.2, 2.05, 2.05, 4.6, 10, C.odDark, C.od, 0, true));
+  var rib;
+  for (rib = 0; rib < 4; rib++)
+    f = f.concat(cyl(cx, y - out * 1.3, 6.6 + rib * 1.0, 2.28, 2.28, .34, 10, C.steel, C.steel, 0, true));
+  f = f.concat(cyl(cx, y - out * 1.3, 10.8, 2.35, 2.35, .8, 10, C.od, C.odLit, 0, true));
+  /* the two arms out to the wheels */
+  f = f.concat(place(pitch(box(-s / 2, 0, 0, s + 1.6, 2.0, 2.1, C.odDark, C.od), .30, 0, 0), 0, cx - s / 2 + .3, y - out * 1.0, 5.4));
+  f = f.concat(place(pitch(box( s / 2, 0, 0, s + 1.6, 2.0, 2.1, C.odDark, C.od), -.30, 0, 0), 0, cx + s / 2 - .3, y - out * 1.0, 5.4));
+  f = f.concat(stuartRoadWheel(cx - s, y, sd));
+  f = f.concat(stuartRoadWheel(cx + s, y, sd));
+  /* the return roller, on its stub post off the top of the bracket */
+  f = f.concat(box(cx, y - out * 1.4, 8.6, 2.0, 1.8, 2.0, C.odDark, C.od));
+  f = f.concat(lathe(cx, y, g.zRoll, [[0, -1.25], [.8, -1.25], [.8, -.5], [g.rRoll, -.95], [g.rRoll, .95], [.8, .5], [.8, 1.25], [0, 1.25]],
+                     12, [C.odLit, C.od, C.rubber, C.rubber, C.od, C.odLit, C.odLit], true));
+  return f;
+}
+
+/* the front drive sprocket: a dished hub, the twin tooth rings and the final drive
+   housing behind it */
+function stuartSprocket(y, sd) {
+  var C = STU, g = STUG, f = [], r = g.rSprk, t;
+  var prof = [[0, -1.75], [1.1, -1.75], [1.1, -.85], [2.1, -1.25], [3.05, -1.7], [3.05, -1.75],
+              [3.05, 1.75], [3.05, 1.7], [2.1, 1.25], [1.1, .85], [1.1, 1.75], [0, 1.75]];
+  var cols = [C.odLit, C.od, C.odDark, C.odDark, C.steel, C.bare, C.steel, C.odDark, C.odDark, C.od, C.odLit];
+  f = f.concat(lathe(g.xSprk, y, g.zSprk, prof, 16, cols, true));
+  f = f.concat(boltRing(g.xSprk, y + sd * 1.8, g.zSprk, 1.7, 8, .32, .5, C.steel));
+  /* twelve teeth, one ring against each track edge, with the gap the guide horn rides */
+  for (t = 0; t < 12; t++) {
+    var a = (t / 12) * TAU;
+    var tx = g.xSprk + Math.cos(a) * (r - .45), tz = g.zSprk + Math.sin(a) * (r - .45);
+    f = f.concat(place(pitch(box(0, 0, 0, 1.5, 1.15, 1.5, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y - 1.15, tz));
+    f = f.concat(place(pitch(box(0, 0, 0, 1.5, 1.15, 1.5, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y + 1.15, tz));
   }
   return f;
 }
-function stuartRoadWheel() {
-  var C = STUART, r = 2.95;
-  var prof = [[0, -1.7], [1.0, -1.7], [1.0, -.9], [1.5, -1.2], [2.2, -1.4], [r, -1.4],
-              [r, 1.4], [2.2, 1.4], [1.5, 1.2], [1.0, .9], [1.0, 1.7], [0, 1.7]];
-  var cols = [C.odLit, C.od, C.odDark, C.od, C.bare, C.tyre, C.bare, C.od, C.odDark, C.od, C.odLit];
-  return lathe(0, 0, 0, prof, 14, cols, true);
-}
-function stuartBogie(x, y, side) {
-  var C = STUART, f = [], out = side;
-  function at(faces, dx, dy, dz) {
-    return faces.map(function (q) { return { v: q.v.map(function (p) { return [p[0] + dx, p[1] + dy, p[2] + dz]; }), c: q.c, n: q.n }; });
-  }
-  f = f.concat(box(x, y - out * 1.0, 3.2, 8.4, 2.8, 5.4, C.od, C.odLit, C.odDark));
-  f = f.concat(box(x, y - out * .5, 8.4, 4.0, 2.4, 3.0, C.odDark, C.od));
-  f = f.concat(at(pitch(box(-1.6, 0, 0, 4.4, 2.0, 2.2, C.odDark, C.od), .55, 0, 0), x - 1.8, y - out * .5, 3.4));
-  f = f.concat(at(pitch(box(1.6, 0, 0, 4.4, 2.0, 2.2, C.odDark, C.od), -.55, 0, 0), x + 1.8, y - out * .5, 3.4));
-  f = f.concat(at(stuartRoadWheel(), x - 3.5, y, 2.95));
-  f = f.concat(at(stuartRoadWheel(), x + 3.5, y, 2.95));
-  /* the return roller stands on a short post on the bracket */
-  f = f.concat(box(x + 1.5, y - out * 1.2, 8.4, 1.6, 1.6, 2.2, C.odDark, C.od));
-  f = f.concat(at(tubeSmooth(-.9, .9, 0, 0, 1.4, 10, C.rubber, C.tyre), x + 1.5, y, 10.2));
+
+/* the trailing idler, down on the ground on its adjuster arm */
+function stuartIdler(y, sd) {
+  var C = STU, g = STUG, hw = 1.55;
+  var prof = [[0, -hw], [.8, -hw], [.8, -.6], [1.5, -.95], [2.25, -1.35], [2.4, -hw],
+              [g.R, -hw], [g.R, hw], [2.4, hw], [2.25, 1.35], [1.5, .95], [.8, .6], [.8, hw], [0, hw]];
+  var cols = [C.odLit, C.od, C.odDark, C.odDark, C.od, C.tyre, C.rubber, C.tyre, C.od, C.odDark, C.odDark, C.od, C.odLit];
+  var f = lathe(g.xIdl, y, g.zWheel, prof, 16, cols, true);
+  f = f.concat(boltRing(g.xIdl, y + sd * hw, g.zWheel, 1.35, 6, .28, .5, C.steel));
+  /* the arm back from the rear bogie bracket, and the screw adjuster on it */
+  f = f.concat(place(pitch(box(0, 0, 0, 11.5, 2.1, 2.3, C.odDark, C.od), -.16, 0, 0), 0, (g.xIdl + g.xBogB) / 2 - 1, y - sd * 1.3, 5.2));
+  f = f.concat(place(tubeSmooth(-2.6, 2.6, 0, 0, .55, 8, C.steel, C.bare), 0, g.xIdl + 5.5, y - sd * 2.4, 6.6));
   return f;
 }
-function stuartSprocket(x, y) {
-  var C = STUART, f = [];
-  var prof = [[0, -1.6], [1.0, -1.6], [1.0, -.8], [1.9, -1.2], [2.5, -1.6], [3.0, -1.6],
-              [3.0, 1.6], [2.5, 1.6], [1.9, 1.2], [1.0, .8], [1.0, 1.6], [0, 1.6]];
-  f = f.concat(lathe(x, y, 5.0, prof, 14, [C.odLit, C.od, C.odDark, C.od, C.bare, C.steel, C.bare, C.od, C.odDark, C.od, C.odLit], true));
-  for (var t = 0; t < 14; t++) { var a = t / 14 * TAU; f = f.concat(box(x + Math.cos(a) * 3.25, y, 5.0 + Math.sin(a) * 3.25, .7, 3.0, .7, C.bare, C.bare)); }
-  return f;
+
+/* the welded hull. Named corners first, then the plates between them, so the glacis
+   angle and the sponson slope are stated once and every fitting hangs off them. */
+var STUH = {
+  halfW: 14.7, lowW: 10.2, roofW: 12.0,
+  zBelly: 4.9, zSpon: 12.3, zRoof: 19.6,
+  xNose: 29.0, xTail: -28.6, xGlacis: 11.5
+};
+/* the glacis runs from the nose lip up to the roof: 22.6 degrees, the A3's long
+   shallow front. Everything bolted to it is placed through these two. */
+STUH.slope = (STUH.zRoof - STUH.zSpon) / (STUH.xNose - STUH.xGlacis);
+STUH.glacisAng = -Math.atan(STUH.slope);
+function glacisZ(x) { return STUH.zSpon + (STUH.xNose - x) * STUH.slope; }
+/* lay a part flat and this drops it onto the glacis at x, y, standing `up` proud */
+function onGlacis(faces, x, y, up) {
+  return place(pitch(faces, STUH.glacisAng, 0, 0), 0, x, y, glacisZ(x) + (up || 0));
 }
-function stuartIdler(x, y) {
-  var C = STUART;
-  var prof = [[0, -1.7], [.8, -1.7], [.8, -.9], [1.5, -1.3], [2.2, -1.7], [2.95, -1.7],
-              [2.95, 1.7], [2.2, 1.7], [1.5, 1.3], [.8, .9], [.8, 1.7], [0, 1.7]];
-  return lathe(x, y, 2.95, prof, 12, [C.odLit, C.od, C.odDark, C.od, C.bare, C.tyre, C.bare, C.od, C.odDark, C.od, C.odLit], true);
-}
+
 function stuartHull(body, cap, sideC) {
-  var C = STUART, f = [];
-  var W = 29.5, halfW = W / 2, trackY = halfW - 1.9, lowerHalf = 10.6;
+  var C = STU, g = STUG, H = STUH, f = [], sd;
 
-  for (var sd = -1; sd <= 1; sd += 2) {
-    var y = sd * trackY;
+  /* ---- running gear, both sides ---- */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y = sd * g.TY;
     f = f.concat(stuartTrack(y));
-    f = f.concat(stuartBogie(-9, y, sd));
-    f = f.concat(stuartBogie(9, y, sd));
-    f = f.concat(stuartSprocket(18.5, y));
-    f = f.concat(stuartIdler(-18.5, y));
-    /* the trailing idler arm and the final drive housing */
-    f = f.concat(place(pitch(box(-2.5, 0, 0, 6, 1.8, 2.0, C.odDark, C.od), .5, 0, 0), 0, -15.5, y - sd * 1.6, 5.6));
-    f = f.concat(box(16.2, y - sd * 2.0, 5.0, 4.2, 1.4, 4.6, C.odDark, C.od));
+    f = f.concat(stuartBogie(g.xBogA, y, sd));
+    f = f.concat(stuartBogie(g.xBogB, y, sd));
+    f = f.concat(stuartSprocket(y, sd));
+    f = f.concat(stuartIdler(y, sd));
+    /* the hub the sprocket turns on, seen between the two rings of teeth */
+    f = f.concat(place(tubeSmooth(-1.0, 1.0, 0, 0, 2.6, 12, C.odDark, C.od), Math.PI / 2, g.xSprk, y, g.zSprk));
   }
 
-  /* lower hull between the tracks, the sponson floors, then the welded upper hull
-     with its sloped sides: the A3's sponsons lean inward toward the roof */
-  f = f.concat(box(-2, 0, 4, 52, lowerHalf * 2, 8, C.odDark, C.od, C.odDark));
-  f = f.concat(box(-2, 0, 11.4, 52, W - 1.2, 1.2, C.odDark, C.od, C.odDark));
-  var zRoof = 18.4, zFloor = 11.4;
-  var xNose = 24.0, xGlacisTop = 14.5, xRear = -27.5;
-  var topHalf = halfW - 3.2;                                  /* the roof is narrower than the floor */
-  f = f.concat([
-    { v: [[xNose, -halfW, zFloor], [xNose, halfW, zFloor], [xGlacisTop, topHalf, zRoof], [xGlacisTop, -topHalf, zRoof]], c: C.odLit },
-    { v: [[xGlacisTop, topHalf, zRoof], [xNose, halfW, zFloor], [xRear, halfW, zFloor], [xRear, topHalf, zRoof]], c: sideC },
-    { v: [[xRear, -topHalf, zRoof], [xRear, -halfW, zFloor], [xNose, -halfW, zFloor], [xGlacisTop, -topHalf, zRoof]], c: sideC },
-    { v: [[xGlacisTop, -topHalf, zRoof], [xGlacisTop, topHalf, zRoof], [xRear, topHalf, zRoof], [xRear, -topHalf, zRoof]], c: cap },
-    { v: [[xRear, topHalf, zRoof], [xRear, halfW, zFloor], [xRear, -halfW, zFloor], [xRear, -topHalf, zRoof]], c: C.odDark },
-    { v: [[xNose, halfW, zFloor], [xNose, -halfW, zFloor], [xRear, -halfW, zFloor], [xRear, halfW, zFloor]], c: C.odDark }
-  ]);
-  /* the cast nose under the glacis, smaller than the Sherman's */
-  (function () {
-    var n = 8, r = 4.2, cx = 22.5, cz = 8.0, hw = lowerHalf;
-    for (var i = 0; i < n; i++) {
-      var a0 = -Math.PI / 2 + (i / n) * Math.PI, a1 = -Math.PI / 2 + ((i + 1) / n) * Math.PI;
-      var p0 = [cx + Math.cos(a0) * r, -hw, cz + Math.sin(a0) * r], p1 = [cx + Math.cos(a1) * r, -hw, cz + Math.sin(a1) * r];
-      var p2 = [cx + Math.cos(a1) * r, hw, cz + Math.sin(a1) * r], p3 = [cx + Math.cos(a0) * r, hw, cz + Math.sin(a0) * r];
-      var n0 = [Math.cos(a0), 0, Math.sin(a0)], n1 = [Math.cos(a1), 0, Math.sin(a1)];
-      f.push({ v: [p0, p3, p2, p1], c: C.od, n: [n0, n0, n1, n1] });
-    }
-    var capL = [], capR = [];
-    for (var k = 0; k <= n; k++) { var a = -Math.PI / 2 + (k / n) * Math.PI; capL.unshift([cx + Math.cos(a) * r, -hw, cz + Math.sin(a) * r]); capR.push([cx + Math.cos(a) * r, hw, cz + Math.sin(a) * r]); }
-    f.push({ v: capL, c: C.odDark }); f.push({ v: capR, c: C.odDark });
-  })();
-  /* driver's and hull gunner's hatches set into the glacis, each with a periscope */
-  [-1, 1].forEach(function (sd) {
-    var hy = sd * 6.2;
-    f = f.concat(wedge(16.5, 22.0, hy - 3.6, hy + 3.6, 15.6, 18.6, 17.0, C.od, cap, sideC));
-    f = f.concat(box(18.4, hy, 18.6, 2.6, 2.6, 1.1, C.odDark, C.steel));
+  /* ---- the tub between the tracks: belly, sloped nose and tail ---- */
+  f = f.concat(extrudeY([[25.4, H.zSpon], [27.4, 10.6], [27.9, 8.4], [26.8, 6.4], [24.4, H.zBelly],
+                         [-24.0, H.zBelly], [-27.4, 6.2], [-28.6, 9.8], [-26.0, H.zSpon]],
+                        -H.lowW, H.lowW, C.odDark, C.od, C.odDark));
+  /* the two final drive housings, the round bulges either side of the Stuart's nose */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(place(tubeSmooth(0, 3.4, 0, 0, 3.9, 14, C.od, C.odLit), 0, 24.6, s2 * 7.6, 8.6));
+    f = f.concat(boltRing(24.6 + 3.4, s2 * 7.6, 8.6, 3.0, 10, .3, .5, C.steel));
   });
-  /* hull machine gun ball mount on the right, headlights with guards, siren */
-  f = f.concat(lathe(21.0, 7.0, 13.8, [[0, -1], [2.2, -1], [2.2, 1], [0, 1]], 10, C.odDark, true));
-  f = f.concat(tubeSmooth(22.0, 25.5, 7.0, 14.1, .5, 8, C.steel, C.steel));
-  [-1, 1].forEach(function (sd) {
-    var hx = 16.5, hy = sd * 10.6;
-    f = f.concat(tubeSmooth(hx, hx + 2.2, hy, 19.5, 1.1, 10, C.od, '#c9c7b0'));
-    f = f.concat(box(hx + 2.0, hy, 18.2, .5, 3.2, 2.8, C.steel, C.bare));
+
+  /* ---- the welded upper hull ---- */
+  var A = [H.xNose, 6.8, H.zSpon], B = [24.2, H.halfW, H.zSpon],
+      Cc = [-23.6, H.halfW, H.zSpon], D = [H.xTail, 8.6, H.zSpon],
+      E = [H.xGlacis, 5.6, H.zRoof], F = [7.2, H.roofW, H.zRoof],
+      G = [-21.8, H.roofW, H.zRoof], Hh = [-24.6, 7.4, H.zRoof];
+  function m(p) { return [p[0], -p[1], p[2]]; }
+  var shell = [
+    /* the glacis: one plate, nose lip to roof */
+    { v: [m(A), A, E, m(E)], c: C.odLit },
+    /* the chamfer where the glacis rolls into each sponson side */
+    { v: [A, B, F, E], c: body },
+    { v: [m(E), m(F), m(B), m(A)], c: body },
+    /* the long sponson sides, leaning in toward the roof */
+    { v: [B, Cc, G, F], c: sideC },
+    { v: [m(F), m(G), m(Cc), m(B)], c: sideC },
+    /* the tail chamfers and the rear plate */
+    { v: [Cc, D, Hh, G], c: sideC },
+    { v: [m(G), m(Hh), m(D), m(Cc)], c: sideC },
+    { v: [D, m(D), m(Hh), Hh], c: C.odDark },
+    /* the roof */
+    { v: [E, F, G, Hh, m(Hh), m(G), m(F), m(E)], c: cap },
+    /* the sponson floors, seen from below */
+    { v: [A, B, Cc, D, m(D), m(Cc), m(B), m(A)], c: C.odDark }
+  ];
+  f = f.concat(faceOut(shell, -2, 0, 15.5));
+
+  /* weld beads down the seams that define the shape: the glacis edges, the roof line
+     and the sponson lip. Thin, but they catch the sun and read as a welded hull. */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(place(tubeSmooth(0, 17.8, 0, 0, .28, 5, C.odLit, C.odLit), 0, H.xGlacis, s2 * 5.6, H.zRoof - .15));
+    f = f.concat(onGlacis(box(0, 0, -.12, 19.5, .42, .18, C.odLit, C.odLit, C.odLit, 0), 20.0, s2 * 9.4, 0));
+    /* along the top of the sponson side, and again where it meets the roof */
+    f = f.concat(place(tubeSmooth(-22.6, 23.0, 0, 0, .3, 5, C.odLit, C.odLit), 0, 0, s2 * (H.halfW - .18), H.zSpon + .5));
+    f = f.concat(place(tubeSmooth(-21.6, 6.8, 0, 0, .26, 5, C.odLit, C.odLit), 0, 0, s2 * (H.roofW - .2), H.zRoof - .35));
   });
-  f = f.concat(cyl(15.5, -12.2, 18.4, 1.2, 1.2, 2.0, 10, C.odDark, C.steel, 0, true));
-  /* towing eyes on the nose, lifting eyes on the roof corners */
-  f = f.concat(box(24.5, -8.0, 6.5, 1.8, 1.8, 2.2, C.steel, C.bare));
-  f = f.concat(box(24.5,  8.0, 6.5, 1.8, 1.8, 2.2, C.steel, C.bare));
-  [[13, -9], [13, 9], [-24.5, -9], [-24.5, 9]].forEach(function (p) { f = f.concat(box(p[0], p[1], zRoof, 1.4, 2.6, 2.0, C.odDark, C.od)); });
-  /* the rear deck: the radial's round air intake grille and the two fuel fillers */
-  f = f.concat(cyl(-17, 0, zRoof, 6.4, 6.4, 1.0, 16, C.odDark, C.steel, 0, true));
-  f = f.concat(cyl(-17, 0, zRoof + 1.0, 5.6, 5.6, .4, 16, C.steel, '#2a2d24', 0, true));
-  f = f.concat(cyl(-9, -8.5, zRoof, 1.6, 1.6, .9, 10, C.odDark, C.od, 0, true));
-  f = f.concat(cyl(-9,  8.5, zRoof, 1.6, 1.6, .9, 10, C.odDark, C.od, 0, true));
-  /* exhausts: two pipes out of the rear plate into a muffler laid across it */
-  f = f.concat(tubeSmooth(-30.0, -28.0, -5, 13.5, 1.0, 8, C.steel, '#26251f'));
-  f = f.concat(tubeSmooth(-30.0, -28.0,  5, 13.5, 1.0, 8, C.steel, '#26251f'));
-  f = f.concat(place(tubeSmooth(-7, 7, 0, 0, 1.4, 10, C.steel, C.bare), Math.PI / 2, -29.3, 0, 16.2));
-  /* British fit: a stowage bin across the rear, a tarp roll and a jerrican */
-  f = f.concat(box(-28.5, 0, 8.5, 3.0, 20, 5.5, C.odDark, C.od, C.odDark));
-  f = f.concat(rollX(14, 2.6, C.tarp, lit(C.tarp, 1.15), -20, -4, zRoof));
-  f = f.concat(box(-22.5, 8.5, zRoof, 4, 4.6, 5.0, C.jerry, lit(C.jerry, 1.15)));
-  /* tools clipped to the sponson, the British side bins on the sponsons, a bedroll */
-  f = f.concat(box(-4, -halfW + 1.8, zFloor + 1.2, 16, .9, 1.4, '#5a4630', '#6b5438'));
-  f = f.concat(box(4,  halfW - 1.8, zFloor + 1.2, 12, .9, 1.4, '#5a4630', '#6b5438'));
-  f = f.concat(box(-14, -halfW + 1.4, zFloor + 1.2, 12, 2.4, 5, C.odDark, C.od, C.odDark));
-  f = f.concat(box(-14,  halfW - 1.4, zFloor + 1.2, 12, 2.4, 5, C.odDark, C.od, C.odDark));
-  f = f.concat(rollX(10, 2.2, C.bedroll, lit(C.bedroll, 1.15), -2, -9, zRoof));
+
+  /* ---- what is bolted to the glacis ---- */
+  /* the two drivers' hatches, standing proud with their periscope hoods behind */
+  [-1, 1].forEach(function (s2) {
+    var hy = s2 * 5.4;
+    f = f.concat(onGlacis(box(0, 0, -.1, 7.4, 6.8, .52, C.od, C.odLit, C.odDark), 18.6, hy, 0));
+    f = f.concat(onGlacis(box(0, 0, .42, 6.2, 5.6, .16, C.odLit, C.odLit, C.odLit, 0), 18.6, hy, 0));
+    f = f.concat(onGlacis(grabIron(0, 0, .58, 2.6, .5, C.steel, 'y'), 16.2, hy, 0));
+    /* the periscope in the hatch, and the hinge blocks at the forward edge */
+    f = f.concat(onGlacis(periscope(0, 0, .5, 0, C.odDark), 20.3, hy, 0));
+    f = f.concat(onGlacis(box(0, 0, -.1, 1.2, 1.3, .7, C.steel, C.bare, C.steel, 0), 15.1, hy - 2.2, 0));
+    f = f.concat(onGlacis(box(0, 0, -.1, 1.2, 1.3, .7, C.steel, C.bare, C.steel, 0), 15.1, hy + 2.2, 0));
+  });
+  /* the bow gunner's ball mount, low and right of the driver */
+  f = f.concat(onGlacis(lathe(0, 0, -.3, [[0, 0], [2.4, 0], [2.8, 1.0], [2.4, 1.9], [0, 1.9]], 12, C.odDark, true), 23.8, -5.0, 0));
+  f = f.concat(place(pitch(tubeSmooth(0, 3.0, 0, 0, .4, 8, C.steel, '#1b1d17'), .20, 0, 0), 0, 25.0, -5.0, glacisZ(23.8) + 1.1));
+  /* headlamps in their guards on the front corners, and the convoy siren */
+  f = f.concat(onGlacis(headLamp(0, 0, 0, C.odDark, '#cfcdb6'), 24.4, 10.2, .6));
+  f = f.concat(onGlacis(headLamp(0, 0, 0, C.odDark, '#cfcdb6'), 24.4, -10.2, .6));
+  f = f.concat(onGlacis(cyl(0, 0, 0, 1.25, 1.25, 1.9, 10, C.odDark, C.steel, 0, true), 14.6, -9.4, 0));
+  /* a short run of spare track links stowed flat against the glacis lip */
+  var sl;
+  for (sl = 0; sl < 3; sl++)
+    f = f.concat(onGlacis(box(0, 0, -.05, 1.5, 3.6, .45, C.track, C.trackLit, C.track, 0), 26.0 - sl * 1.62, 9.6, 0));
+
+  /* ---- the nose below the glacis ---- */
+  f = f.concat(towLug(26.6, 5.6, 5.4, C.od, C.steel));
+  f = f.concat(towLug(26.6, -5.6, 5.4, C.od, C.steel));
+
+  /* ---- engine deck, rear plate and exhausts ---- */
+  f = f.concat(louvrePanel(-12.4, 0, H.zRoof, 10.0, 16.0, 6, C.odDark, C.steel));
+  f = f.concat(box(-19.4, 0, H.zRoof, 3.0, 14.0, .7, C.od, C.odLit, C.odDark));
+  f = f.concat(boltRow(-18.6, -7.4, 8.6, H.zRoof + .35, 6, .3, .5, C.steel));
+  f = f.concat(boltRow(-18.6, -7.4, -8.6, H.zRoof + .35, 6, .3, .5, C.steel));
+  f = f.concat(cyl(-6.2, 7.4, H.zRoof, 1.5, 1.5, .8, 10, C.odDark, C.od, 0, true));
+  f = f.concat(cyl(-6.2, -7.4, H.zRoof, 1.5, 1.5, .8, 10, C.odDark, C.od, 0, true));
+  /* twin exhausts through the rear plate into one muffler laid across it */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(place(tubeSmooth(0, 3.0, 0, 0, 1.0, 8, C.steel, '#26251f'), 0, H.xTail - 3.0, s2 * 5.2, 14.6));
+  });
+  f = f.concat(place(tubeSmooth(-5.8, 5.8, 0, 0, 1.25, 10, C.steel, C.bare), Math.PI / 2, H.xTail - 1.5, 0, 16.4));
+  f = f.concat(place(pitch(tubeSmooth(0, 3.0, 0, 0, .62, 8, C.steel, '#1b1d17'), .45, 0, 0), 0, H.xTail - 2.2, 0, 16.9));
+  /* the brackets holding the silencer off the plate */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(box(H.xTail - .7, s2 * 3.4, 15.0, 1.6, 1.0, 2.6, C.odDark, C.od, C.odDark, 0));
+  });
+  /* the stowage box across the tail and the rear light */
+  f = f.concat(box(H.xTail - 1.4, 0, 6.6, 2.8, 14.5, 4.4, C.odDark, C.od, C.odDark));
+  f = f.concat(box(H.xTail - .2, 7.0, 12.4, .7, 1.9, 1.7, C.steel, '#8a3730', C.steel, 0));
+  /* the armoured covers over the cooling outlets, one either side of the rear plate */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(place(tubeSmooth(0, .9, 0, 0, 2.5, 12, C.odDark, C.od), 0, H.xTail - .9, s2 * 5.2, 14.6));
+    f = f.concat(boltRing(H.xTail - .9, s2 * 5.2, 14.6, 2.0, 8, .26, .4, C.steel));
+  });
+
+  /* ---- stowage on the sponsons and the deck ---- */
+  [-1, 1].forEach(function (s2) {
+    var by = s2 * (H.halfW - 2.0);
+    f = f.concat(box(-13.6, by, H.zSpon + 1.1, 13.0, 3.4, 5.2, C.odDark, C.od, C.odDark));
+    f = f.concat(box(-13.6, by + s2 * 1.75, H.zSpon + 3.3, 11.4, .5, .45, C.steel, C.bare, C.steel, 0));
+    f = f.concat(boltRow(-18.4, -8.8, by + s2 * 1.8, H.zSpon + 1.7, 4, .28, .4, C.steel));
+  });
+  [-1, 1].forEach(function (s2) {
+    var ty = s2 * (H.halfW - 1.1);
+    /* the shovel: haft along the plate, blade at the forward end */
+    f = f.concat(box(1.0, ty, H.zSpon + 4.4, 10.4, .8, .8, '#5a4630', '#6b5438', '#4e402c', 0));
+    f = f.concat(box(7.2, ty, H.zSpon + 4.2, 3.4, .5, 2.4, C.steel, C.bare, C.steel, 0));
+    /* the pick, laid the other way up under it */
+    f = f.concat(box(-1.4, ty, H.zSpon + 1.9, 9.0, .7, .7, '#5a4630', '#6b5438', '#4e402c', 0));
+    f = f.concat(box(-5.4, ty, H.zSpon + 1.6, .9, .6, 2.6, C.steel, C.bare, C.steel, 0));
+    /* the clips holding them */
+    f = f.concat(box(4.4, ty - s2 * .5, H.zSpon + 1.4, 1.0, 1.2, 4.2, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(-3.0, ty - s2 * .5, H.zSpon + 1.4, 1.0, 1.2, 4.2, C.odDark, C.od, C.odDark, 0));
+  });
+  f = f.concat(rollX(9.5, 1.9, C.bedroll, lit(C.bedroll, 1.15), -20.0, -6.6, H.zRoof + .6));
+  f = f.concat(box(-19.6, 6.6, H.zRoof + .7, 2.1, 4.0, 5.5, C.jerry, lit(C.jerry, 1.15)));
+  f = f.concat(box(-17.0, 6.6, H.zRoof + .7, 2.1, 4.0, 5.5, C.jerry, lit(C.jerry, 1.15)));
+  /* lifting eyes at the four roof corners */
+  [[9.5, -5.0], [9.5, 5.0], [-24.0, -5.0], [-24.0, 5.0]].forEach(function (p) {
+    f = f.concat(box(p[0], p[1], H.zRoof, 1.3, 2.4, 1.7, C.odDark, C.od, C.odDark, 0));
+  });
   return f;
 }
-function stuartTurret(body, cap) {
-  var C = STUART, f = [];
-  /* welded, six-sided at the front, sloped sides, drawn out into the long radio bustle */
-  function ring(z, scale) {
-    var s2 = scale || 1;
-    return [[10.5, -5.5, z], [10.5, 5.5, z], [6.5, 9.4, z], [-4, 9.4, z], [-15.5, 8.4, z], [-15.5, -8.4, z], [-4, -9.4, z], [6.5, -9.4, z]]
-      .map(function (p) { return [p[0] * s2, p[1] * s2, p[2]]; });
+
+/* One plan outline of the M5A1 turret at a given height: a rounded welded face, sides
+   that run back to the widest point, then the radio bustle with its corners eased.
+   kx and ky pull the outline in as it rises, which is the whole of the turret's
+   silhouette -- the walls lean in hard and the bustle roof is smaller than its base. */
+function stuartTurretRing(z, kx, ky) {
+  var pts = [], i, N = 8;
+  var fx = 3.4, fr = 6.2, hw = 7.6;
+  for (i = 0; i <= N; i++) {
+    var a = -Math.PI / 2 + (i / N) * Math.PI;
+    pts.push([fx + Math.cos(a) * fr, Math.sin(a) * hw]);
   }
-  var rings = [ring(0, .93), ring(1.2, 1), ring(7.8, .97), ring(9.2, .9)];
-  /* flat-shaded: it is a welded turret, not a casting */
-  var wall = loft(rings, [C.odDark, body, C.odLit]).map(function (q) { return { v: q.v, c: q.c }; });
-  f = f.concat(wall);
-  f.push({ v: rings[3].slice(), c: cap });
-  f.push({ v: rings[0].slice().reverse(), c: C.odDark });
-  /* the M44 mount: a rounded gun shield in the face, the 37 mm M6 and the coaxial */
-  f = f.concat(box(10.0, 0, 1.6, 2.4, 7.6, 6.0, body, C.odLit, body));
-  f = f.concat(tubeSmooth(8.8, 11.2, -3.8, 4.6, 3.0, 10, body, C.odLit));
-  f = f.concat(tubeSmooth(8.8, 11.2,  3.8, 4.6, 3.0, 10, body, C.odLit));
-  f = f.concat(tubeSmooth(11.2, 29.5, 0, 4.6, .8, 12, C.steel, C.steel));
-  f = f.concat(tubeSmooth(29.5, 30.1, 0, 4.6, .95, 12, C.bare, '#1a1b16'));
-  f = f.concat(tubeSmooth(11.0, 15.5, -4.0, 5.2, .45, 8, C.steel, C.steel));
-  /* two roof hatches side by side over the bustle, periscopes, the ventilator, aerial */
-  var zr = 9.2;
-  f = f.concat(box(-7.5, -4.4, zr, 6.4, 6.6, .8, C.od, cap));
-  f = f.concat(box(-7.5,  4.4, zr, 6.4, 6.6, .8, C.od, cap));
-  f = f.concat(box(-4.0, -4.4, zr + .8, .5, 6.8, .8, C.steel, C.bare));
-  f = f.concat(box(-4.0,  4.4, zr + .8, .5, 6.8, .8, C.steel, C.bare));
-  f = f.concat(box(2.5, -4.2, zr, 2.0, 2.4, 1.6, C.odDark, C.steel));
-  f = f.concat(box(2.5,  4.2, zr, 2.0, 2.4, 1.6, C.odDark, C.steel));
-  f = f.concat(box(-2.0, 0, zr, 2.0, 2.4, 1.6, C.odDark, C.steel));
-  f = f.concat(cyl(4.5, 0, zr, 1.5, 1.5, 1.0, 10, C.odDark, C.od, 0, true));
-  f = f.concat(cyl(-13.5, 5.0, zr, 1.2, 1.2, 1.6, 8, C.odDark, C.od, 0, true));
-  f = f.concat(cyl(-13.5, 5.0, zr + 1.6, .26, .26, 26, 4, C.steel, C.steel));
-  /* lifting rings and a spotlight on the front-left corner */
-  [[6, -7.5], [6, 7.5], [-14.5, 0]].forEach(function (p) { f = f.concat(box(p[0], p[1], zr - .3, 1.2, 1.2, 1.8, C.odDark, C.od)); });
-  f = f.concat(cyl(7.0, -7.0, zr, 1.4, 1.4, 1.2, 10, C.odDark, '#c9c7b0', 0, true));
+  pts.push([-1.0, 7.9]);
+  pts.push([-8.0, 7.2]);
+  pts.push([-9.6, 5.6]);
+  pts.push([-13.4, 4.9]);
+  pts.push([-13.4, -4.9]);
+  pts.push([-9.6, -5.6]);
+  pts.push([-8.0, -7.2]);
+  pts.push([-1.0, -7.9]);
+  return pts.map(function (p) { return [p[0] * kx, p[1] * ky, z]; });
+}
+
+function stuartTurret(body, cap) {
+  var C = STU, f = [], zr = 10.4, i;
+
+  /* the walls: a vertical band at the ring, then the lean inward to the roof */
+  var rings = [stuartTurretRing(-.5, 1.0, 1.0), stuartTurretRing(1.6, 1.0, 1.0),
+               stuartTurretRing(zr, .95, .815)];
+  f = f.concat(welded(faceOut(loft(rings, [C.odDark, body]), -2, 0, zr / 2)));
+  f = f.concat(faceOut([{ v: rings[2].slice(), c: cap }], -2, 0, zr / 2 - 3));
+  f = f.concat(faceOut([{ v: rings[0].slice(), c: C.odDark }], -2, 0, zr / 2 + 3));
+  /* the turret ring below the wall, and the splash ring welded round its foot */
+  f = f.concat(cyl(0, 0, -2.2, 7.1, 7.1, 2.0, 20, C.odDark, C.odDark, 0, true));
+  f = f.concat(welded(faceOut(loft([stuartTurretRing(-.5, 1.03, 1.03), stuartTurretRing(.35, 1.0, 1.0)], C.odDark), -2, 0, 4)));
+
+  /* ---- the M44 mount: a cast shield bulging out of the turret face, the 37 mm M6
+     through its centre and the coaxial .30 beside it ---- */
+  var mant = loft([roundRectRing(5.0, 0, 4.8, 4.3, 3.0, 1.5, 4),
+                   roundRectRing(7.6, 0, 4.8, 4.8, 3.5, 1.8, 4),
+                   roundRectRing(9.8, 0, 4.8, 4.5, 3.2, 1.7, 4),
+                   roundRectRing(10.9, 0, 4.8, 3.4, 2.2, 1.2, 4)], [C.odDark, body, C.odLit]);
+  f = f.concat(faceOut(mant, 2, 0, 4.8));
+  f = f.concat(faceOut([{ v: roundRectRing(10.9, 0, 4.8, 3.4, 2.2, 1.2, 4), c: body }], 2, 0, 4.8));
+  /* the trunnion caps the shield swings on */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(stud(6.2, s2 * 5.0, 4.8, 1.0, .9, C.odDark));
+  });
+  /* the gun: a slim 37 mm tube, its collar at the shield and a muzzle band */
+  f = f.concat(place(tubeSmooth(0, 1.5, 0, 0, .98, 10, C.odDark, C.steel), 0, 10.6, 0, 4.8));
+  f = f.concat(place(tubeSmooth(0, 10.5, 0, 0, .58, 10, C.steel, C.steel), 0, 12.1, 0, 4.8));
+  f = f.concat(place(tubeSmooth(0, .85, 0, 0, .7, 10, C.bare, '#17190f'), 0, 22.6, 0, 4.8));
+  /* the coaxial Browning, offset to the gunner's side */
+  f = f.concat(place(tubeSmooth(0, .9, 0, 0, .72, 8, C.odDark, C.steel), 0, 10.3, -2.6, 4.4));
+  f = f.concat(place(tubeSmooth(0, 3.0, 0, 0, .33, 8, C.steel, '#17190f'), 0, 11.2, -2.6, 4.4));
+  /* the direct sight port, square and dark, on the other side of the gun */
+  f = f.concat(box(10.6, 2.3, 4.3, .5, 1.5, 1.1, C.odDark, '#191c16', '#191c16', 0));
+
+  /* ---- the roof ---- */
+  /* two hatches side by side, each a shallow dish with a grab iron and a periscope */
+  [-1, 1].forEach(function (s2) {
+    var hy = s2 * 3.5;
+    f = f.concat(prism(roundRectPlan(-2.6, hy, 3.5, 3.0, 1.1, 3), zr - .05, zr + .25, C.od, cap, C.odDark));
+    f = f.concat(prism(roundRectPlan(-2.6, hy, 2.8, 2.4, .9, 3), zr + .25, zr + .41, C.odLit, C.odLit, C.odLit));
+    f = f.concat(grabIron(-2.6, hy, zr + .41, 2.4, .45, C.steel, 'y'));
+    f = f.concat(box(-5.9, hy, zr - .05, 1.3, 1.9, .55, C.steel, C.bare, C.steel, 0));
+    f = f.concat(periscope(1.4, hy, zr, 0, C.odDark));
+  });
+  /* the ventilator dome between them, forward of the hatches */
+  f = f.concat(cyl(4.4, 0, zr - .05, 1.7, 1.7, .8, 12, C.odDark, C.od, 0, true));
+  f = f.concat(cyl(4.4, 0, zr + .75, 1.3, 1.3, .3, 12, C.steel, C.steel, 0, true));
+  /* the aerial base on the bustle, and the whip out of it */
+  f = f.concat(cyl(-10.4, 4.2, zr, 1.15, 1.15, 1.5, 8, C.odDark, C.od, 0, true));
+  f = f.concat(place(tubeSmooth(0, 26.0, 0, 0, .22, 4, C.steel, C.steel), 0, 0, 0, 0).map(function (q) {
+    return { v: q.v.map(function (p) { return [-10.4 + p[2] * .10, 4.2, zr + 1.5 + p[0]]; }), c: q.c };
+  }));
+  /* pistol port on the left wall, lifting eyes, and a stowed tarp on the bustle */
+  f = f.concat(stud(-5.6, 6.9, 5.4, 1.25, .7, C.odDark));
+  [[5.4, -5.4], [5.4, 5.4], [-11.8, 0]].forEach(function (p) {
+    f = f.concat(box(p[0], p[1], zr - .25, 1.0, 1.7, .95, C.odDark, C.od, C.odDark, 0));
+  });
+  f = f.concat(place(rollX(6.4, 1.25, C.tarp, lit(C.tarp, 1.12), 0, 0, 0), Math.PI / 2, -11.6, -1.2, zr + .2));
   return f;
 }
+
+/* the .30 Browning on its AA pintle at the back of the turret roof */
+function stuartThirty() {
+  var C = STU, f = [];
+  f = f.concat(cyl(-9.0, -4.6, 10.4, .8, .8, 2.6, 8, C.odDark, C.od, 0, true));
+  f = f.concat(box(-8.2, -4.6, 13.0, 5.0, 1.5, 1.5, C.steel, C.bare, C.steel, 0));
+  f = f.concat(place(tubeSmooth(0, 7.0, 0, 0, .42, 8, C.steel, '#17190f'), 0, -6.0, -4.6, 13.9));
+  f = f.concat(box(-9.6, -4.6, 14.5, 2.6, 1.3, 1.2, C.odDark, C.steel, C.steel, 0));
+  return f;
+}
+
 /* ================================================================ shared running gear */
 /* a track loop from a spec: link by link around sprocket, top run and idler */
 function trackLoop(y, sp, C) {
@@ -4852,13 +5260,6 @@ function shermanFifty() {
   return f;
 }
 /* the .30 cal on the Stuart's roof, on a pintle by the commander's hatch */
-function stuartThirty() {
-  var C = STUART, f = [], zr = 9.2;
-  f = f.concat(cyl(-4, -7.5, zr, .6, .6, 3.4, 6, C.steel, C.bare, 0, true));
-  f = f.concat(place(pitch(box(3.5, 0, 0, 8, 1.2, 1.5, C.steel, C.bare), -.2, 0, 0), .2, -4, -7.5, zr + 3.6));
-  f = f.concat(place(pitch(tubeSmooth(0, 5.5, 0, 0, .4, 8, C.steel, C.steel), -.2, 0, 0), .2, -4 + 7.5 * Math.cos(.2), -7.5 + 7.5 * Math.sin(.2), zr + 3.6 + 7.5 * .2));
-  return f;
-}
 /* an MG34 on the Tiger II's cupola ring */
 function ktCupolaMG() {
   var C = KT, f = [], zr = 13.6;
@@ -5712,7 +6113,7 @@ function buildVehicleModels() {
   var us = '#586247', usC = '#798366', usS = '#424a35';
   var gr = '#88784e', grC = '#a18f61', grS = '#675d40';
   VMODEL.us_stuart = { hull: stuartHull(us, usC, usS), tur: stuartTurret(us, usC),
-                       bar: 30, big: 0, scale: 1, mountZ: 18.4, gunZ: 4.6, mg: stuartThirty() };
+                       bar: 23, big: 0, scale: 1, mountZ: 19.6, gunZ: 4.8, turX: 2.5, mg: stuartThirty() };
   VMODEL.us_sher  = { hull: shermanHull(us, usC, usS), tur: shermanTurret(us, usC),
                       bar: 43, big: 1, scale: 1, mountZ: 23.4, gunZ: 5.6, mg: shermanFifty() };
   VMODEL.ger_kt   = { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark),
