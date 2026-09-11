@@ -55,7 +55,12 @@ const REAL = {
    the side. Without it a Panzer IV measures 2.88 m across the body, because the
    slice runs through the spare road wheels racked on its guard. `straddle` lets a
    face that crosses the slice plane contribute its widest point, which is what a
-   plain box side needs: its only vertices are at the top and bottom of the plate. */
+   plain box side needs: its only vertices are at the top and bottom of the plate.
+
+   `topZ` and `hullZ` are the height cap: a face reaching above the cap is dropped
+   whole from the height measurement. Two metres of rod aerial is not part of any
+   published height, and half the fleet mounts its aerial on the hull rather than on
+   the turret, so the cap has to be available on both. */
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
@@ -63,8 +68,11 @@ const PROBE = {
   ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
                tools or fender bolts hung on the outside */
-  ger_p4:    { bodyZ: 16.0, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true },
-  ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0 }   /* clear of the rear tyre and the wing tools */
+  ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
+               clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
+               rod aerial standing off the right rear of the superstructure */
+  ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0, hullZ: 20 }   /* clear of the rear
+               tyre and the wing tools; hullZ drops the rod aerial on the right of the bonnet */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
@@ -76,16 +84,21 @@ const measured = await page.evaluate(probe => {
   const out = {};
   Object.keys(window.VMODEL).forEach(function (k) {
     const V = window.VMODEL[k], tx = V.turX || 0;
+    const pr0 = probe[k] || {};
+    const hullCap = pr0.hullZ === undefined ? 1e9 : pr0.hullZ;
     let hx0 = 1e9, hx1 = -1e9, hy = 0, hz = 0;
-    V.hull.forEach(f => f.v.forEach(p => {
-      hx0 = Math.min(hx0, p[0]); hx1 = Math.max(hx1, p[0]); hy = Math.max(hy, Math.abs(p[1]));
-      hz = Math.max(hz, p[2]);
-    }));
+    V.hull.forEach(function (f) {
+      const tall = f.v.some(p => p[2] > hullCap);
+      f.v.forEach(p => {
+        hx0 = Math.min(hx0, p[0]); hx1 = Math.max(hx1, p[0]); hy = Math.max(hy, Math.abs(p[1]));
+        if (!tall) hz = Math.max(hz, p[2]);
+      });
+    });
 
     /* Slice the hull at a height and take the widest armour there. Faces are skipped
        when they sit outside the track line, which is where the stowage and the track
        itself live, so the number is the body rather than what is strapped to it. */
-    const pr = probe[k] || {};
+    const pr = pr0;
     function widthAt(z, band) {
       let w = 0;
       const xLo = pr.xLo === undefined ? -1e9 : pr.xLo, xHi = pr.xHi === undefined ? 1e9 : pr.xHi;
