@@ -6014,9 +6014,11 @@ function ucIdler(y, sd) {
 
 /* the plan outline of the nose at a height: it narrows to a blunt chamfered tip */
 function ucNosePlan(k) {
-  var g = UCG, h = g.half * (.86 + .14 * k);
-  return [[g.xNose - (1 - k) * 2.2, -h * .56], [g.xNose - (1 - k) * 2.2, h * .56],
-          [g.xNose - 5.4, h * .90], [g.xFront, h], [g.xFront, -h], [g.xNose - 5.4, -h * .90]];
+  var g = UCG, t = .78 + .22 * k, tx = g.xNose - (1 - k) * 2.0;
+  /* full hull width where it leaves the front plate, drawing in fast so the track
+     and the sprocket run outside it rather than inside a solid wedge */
+  return [[tx, -6.0 * t], [tx, 6.0 * t], [14.2, 8.2 * t],
+          [g.xFront, g.half * t], [g.xFront, -g.half * t], [14.2, -8.2 * t]];
 }
 
 function carrierHull(body, cap, sideC) {
@@ -6047,6 +6049,11 @@ function carrierHull(body, cap, sideC) {
     f = f.concat(box(xb, s2 * (g.half - .3), g.zSide, lb, 1.1, .45, body, cap, sideC, 0));
   });
   f = f.concat(box(g.xTail + .55, 0, g.zSide, 1.1, g.half * 2, .45, body, cap, sideC, 0));
+  /* the rear lower corners, cut back the way the hull plate is */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(place(pitch(box(0, 0, 0, 4.4, 2.6, 1.0, C.odDark, C.od, C.odDark, 0), -.72, 0, 0),
+                       0, g.xTail + 1.4, s2 * (g.half - 1.2), g.zFloor + 1.4));
+  });
   /* the rivet lines down the seams, which is most of what this vehicle looks like */
   [-1, 1].forEach(function (s2) {
     f = f.concat(boltRow(g.xTail + 1.6, g.xFront - 1.6, s2 * (g.half + .02), g.zSide - 1.3, 16, .3, .22, C.odDark));
