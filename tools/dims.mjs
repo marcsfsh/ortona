@@ -36,6 +36,11 @@ const REAL = {
   ger_tig:   { name: 'Tiger I Ausf. E',     len: 6.316, gun: 8.45,   wid: 3.56,  hgt: 3.00,
                body: 2.97, bodyZ: 1.55, roof: 2.97, clear: 0.47 },   /* body and roof are the same
                number: the Tiger's hull sides are one vertical plate from the sponson to the roof */
+  ger_h251:  { name: 'Sd.Kfz. 251 Ausf. D', len: 5.80,  gun: 5.80,   wid: 2.10,  hgt: 1.75,
+               clear: 0.32 },   /* the MG shield stands above the 1.75 m top of the compartment, so
+               PROBE.topZ holds the mount out of the height the way it does on the 222. No body or
+               deck width is published: the sides lean inboard the whole way up, so there is no one
+               station worth checking and the envelope is the check. */
   ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
@@ -68,6 +73,9 @@ const PROBE = {
   ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
                tools or fender bolts hung on the outside */
+  ger_h251:  { topZ: 0.4, hullZ: 21.0 },   /* the shield mount, the rear pintle MG and the aerial
+               socket all stand above the 1.75 m top of the compartment, and none of them is part
+               of a published height */
   ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
                clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
                rod aerial standing off the right rear of the superstructure */
