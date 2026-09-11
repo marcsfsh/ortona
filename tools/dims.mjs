@@ -34,17 +34,23 @@ const REAL = {
   ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.27,
                body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },
   ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
-               body: 2.88, bodyZ: 1.10, roof: 2.88, clear: 0.40 },
+               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
+               well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
   ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 2.00 }
 };
 
-/* where to slice each hull, in model units: the sponson lip and the roof plate */
+/* Where to slice each hull, in model units: the sponson lip and the roof plate.
+   xLo/xHi narrow the slice to a station along the hull where nothing is strapped to
+   the side. Without it a Panzer IV measures 2.88 m across the body, because the
+   slice runs through the spare road wheels racked on its guard. `straddle` lets a
+   face that crosses the slice plane contribute its widest point, which is what a
+   plain box side needs: its only vertices are at the top and bottom of the plate. */
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
-  ger_p4:    { bodyZ: 13.3, roofZ: 19.3 }
+  ger_p4:    { bodyZ: 17.0, roofZ: 19.6, xLo: -8.0, xHi: -2.0, straddle: true }
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
@@ -67,11 +73,23 @@ const measured = await page.evaluate(probe => {
     const pr = probe[k] || {};
     function widthAt(z, band) {
       let w = 0;
+      const xLo = pr.xLo === undefined ? -1e9 : pr.xLo, xHi = pr.xHi === undefined ? 1e9 : pr.xHi;
       V.hull.forEach(function (f) {
-        let lo = 1e9, hi = -1e9;
-        f.v.forEach(p => { lo = Math.min(lo, p[2]); hi = Math.max(hi, p[2]); });
+        let lo = 1e9, hi = -1e9, x0 = 1e9, x1 = -1e9;
+        f.v.forEach(p => {
+          lo = Math.min(lo, p[2]); hi = Math.max(hi, p[2]);
+          x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]);
+        });
         if (hi < z - band || lo > z + band) return;
-        f.v.forEach(p => { if (Math.abs(p[2] - z) <= band) w = Math.max(w, Math.abs(p[1])); });
+        /* The station is matched by overlap, not per vertex: the side of a long box
+           has vertices only at its ends, so a per-vertex test throws away the very
+           plate the slice is meant to measure. */
+        if (x1 < xLo || x0 > xHi) return;
+        /* And a plain box side has vertices only at its top and bottom, so a slice
+           through the middle of one finds nothing unless a face that crosses the
+           plane may contribute its widest point. */
+        const straddles = pr.straddle && lo < z && hi > z;
+        f.v.forEach(p => { if (straddles || Math.abs(p[2] - z) <= band) w = Math.max(w, Math.abs(p[1])); });
       });
       return w * 2;
     }

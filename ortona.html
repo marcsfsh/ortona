@@ -5517,13 +5517,14 @@ function p4Roller(x, y, sd) {
 
 var P4H = {
   fenderHalf: 16.85,   /* 2.88 m over the track guards */
-  supHalf: 16.4,       /* the superstructure, just inboard of the guards */
+  supHalf: 13.8,       /* 2.36 m: the superstructure, a good step inboard of them */
+  guardX: 32.5,        /* the guards run past the hull fore and aft */
   tubHalf: 11.5,       /* the hull tub between the tracks */
   zBelly: 4.7,         /* 400 mm ground clearance */
   zTub: 11.7,          /* 1.00 m: the top of the tub, the brow, and the fender line */
   zRoof: 20.1,         /* 1.72 m: the superstructure roof, and the turret ring */
   zDeck: 18.5,         /* 1.58 m: the engine deck, a step below the roof */
-  xNose: 34.2, xDriver: 21.0, xBulk: -15.7, xTail: -33.0
+  xNose: 32.0, xDriver: 20.0, xBulk: -15.7, xTail: -30.8
 };
 
 function pzivHull(body, cap, sideC) {
@@ -5544,8 +5545,8 @@ function pzivHull(body, cap, sideC) {
 
   /* ---- the hull tub: a low box between the tracks, its nose plate vertical and its
      tail plate raked forward under the engine deck ---- */
-  f = f.concat(extrudeY([[33.2, H.zTub], [H.xNose, 8.4], [33.4, H.zBelly],
-                         [-30.2, H.zBelly], [H.xTail, 6.8], [H.xTail, H.zTub]],
+  f = f.concat(extrudeY([[28.9, H.zTub], [H.xNose, 8.6], [H.xNose, 5.6], [30.6, H.zBelly],
+                         [-28.2, H.zBelly], [H.xTail, 6.8], [H.xTail, H.zTub]],
                         -H.tubHalf, H.tubHalf, C.dark, body, sideC));
   /* towing eyes on the nose plate, and the two hull lifting eyes */
   [-5.6, 5.6].forEach(function (ty) {
@@ -5555,16 +5556,21 @@ function pzivHull(body, cap, sideC) {
 
   /* ---- the track guards: flat plates the whole length, outboard of the
      superstructure, with the mudguard flaps hinged down at both ends ---- */
+  var gw = H.fenderHalf - H.tubHalf;
   [-1, 1].forEach(function (s2) {
-    var fy = s2 * (H.tubHalf + (H.fenderHalf - H.tubHalf) / 2);
-    f = f.concat(box(.9, fy, H.zTub, 64.6, H.fenderHalf - H.tubHalf, .55, body, cap, C.dark, 0));
+    var fy = s2 * (H.tubHalf + gw / 2), gl = H.guardX * 2 - 4.0;
+    f = f.concat(box(0, fy, H.zTub, gl, gw, .55, body, cap, C.dark, 0));
     /* the lip turned down along the outer edge */
-    f = f.concat(box(.9, s2 * (H.fenderHalf - .15), H.zTub - .8, 64.6, .3, .9, C.dark, body, C.dark, 0));
+    f = f.concat(box(0, s2 * (H.fenderHalf - .15), H.zTub - .85, gl, .3, .95, C.dark, body, C.dark, 0));
     /* the flaps, hinged down clear of the sprocket and the idler */
-    f = f.concat(place(pitch(box(0, 0, 0, 3.2, H.fenderHalf - H.tubHalf, .5, C.dark, body, C.dark, 0), -.78, 0, 0),
-                       0, 34.2, fy, H.zTub));
-    f = f.concat(place(pitch(box(0, 0, 0, 3.0, H.fenderHalf - H.tubHalf, .5, C.dark, body, C.dark, 0), .78, 0, 0),
-                       0, -32.6, fy, H.zTub));
+    f = f.concat(place(pitch(box(0, 0, 0, 4.4, gw, .5, C.dark, body, C.dark, 0), -.62, 0, 0),
+                       0, gl / 2 + 1.8, fy, H.zTub));
+    f = f.concat(place(pitch(box(0, 0, 0, 4.0, gw, .5, C.dark, body, C.dark, 0), .62, 0, 0),
+                       0, -gl / 2 - 1.6, fy, H.zTub));
+    /* the brackets that carry the guard out past the hull side */
+    [24.0, 8.0, -8.0, -24.0].forEach(function (bx) {
+      f = f.concat(box(bx, s2 * (H.tubHalf + gw * .6), H.zTub - .9, 1.6, gw * .8, .9, C.dark, body, C.dark, 0));
+    });
   });
 
   /* ---- the superstructure: a separate box standing on the tub and the guards, its
@@ -5581,9 +5587,12 @@ function pzivHull(body, cap, sideC) {
 
   /* ---- the driver's plate: the Fahrersehklappe visor on his side, the Kugelblende
      ball mount for the hull MG on the other, and the two vision flaps above ---- */
-  f = f.concat(box(H.xDriver + .5, 6.4, 14.6, 1.0, 6.8, 3.2, C.dark, C.body, C.dark, 0));
-  f = f.concat(box(H.xDriver + 1.0, 6.4, 15.4, .5, 5.2, 1.2, '#191c16', '#23261f', '#23261f', 0));
-  f = f.concat(boltRow(H.xDriver + 1.0, H.xDriver + 1.0, 6.4, 18.0, 1, .3, .5, C.bare));
+  f = f.concat(box(H.xDriver + .6, 6.6, 14.4, 1.2, 8.8, 4.2, C.dark, C.body, C.dark, .22));
+  f = f.concat(box(H.xDriver + 1.2, 6.6, 15.6, .5, 6.8, 1.5, '#191c16', '#23261f', '#23261f', 0));
+  f = f.concat(box(H.xDriver + 1.1, 6.6, 17.4, .4, 8.0, .7, C.steel, C.bare, C.steel, 0));
+  [-1, 1].forEach(function (s3) {
+    f = f.concat(studX(H.xDriver + 1.3, 6.6 + s3 * 3.6, 16.4, .45, .35, C.bare));
+  });
   f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, 2.9, 14, C.dark, C.body), 0, H.xDriver, -6.6, 15.0));
   f = f.concat(place(tubeSmooth(0, .9, 0, 0, 2.0, 14, C.body, C.lit), 0, H.xDriver + 1.6, -6.6, 15.0));
   f = f.concat(place(pitch(tubeSmooth(0, 3.6, 0, 0, .42, 8, C.steel, '#1b1d17'), .05, 0, 0), 0, H.xDriver + 2.4, -6.6, 15.0));
@@ -5595,20 +5604,22 @@ function pzivHull(body, cap, sideC) {
   /* the two raised transmission access hatches on the brow, which nothing else on
      this map has and which a Panzer IV is never photographed without */
   [-1, 1].forEach(function (s2) {
-    f = f.concat(box(26.6, s2 * 7.4, H.zTub, 10.4, 9.6, .7, body, cap, C.dark, .18));
-    f = f.concat(box(26.6, s2 * 7.4, H.zTub + .7, 9.0, 8.2, .35, C.dark, cap, C.dark, 0));
-    f = f.concat(boltRow(22.2, 31.0, s2 * 11.6, H.zTub + .7, 5, .24, .3, C.bare));
-    f = f.concat(boltRow(22.2, 31.0, s2 * 3.2, H.zTub + .7, 5, .24, .3, C.bare));
-    f = f.concat(grabIron(26.6, s2 * 7.4, H.zTub + 1.05, 2.6, .45, C.steel, 'y'));
+    f = f.concat(box(24.8, s2 * 6.4, H.zTub, 7.8, 8.6, .7, body, cap, C.dark, .18));
+    f = f.concat(box(24.8, s2 * 6.4, H.zTub + .7, 6.6, 7.4, .35, C.dark, cap, C.dark, 0));
+    f = f.concat(boltRow(21.6, 28.0, s2 * 10.1, H.zTub + .7, 4, .24, .3, C.bare));
+    f = f.concat(boltRow(21.6, 28.0, s2 * 2.7, H.zTub + .7, 4, .24, .3, C.bare));
+    f = f.concat(grabIron(24.8, s2 * 6.4, H.zTub + 1.05, 2.4, .45, C.steel, 'y'));
   });
 
   /* ---- the brow: spare track links laid across it, which is where a Panzer IV
      carried them, and the two spare road wheels on the near side ---- */
-  for (i = 0; i < 7; i++)
-    f = f.concat(box(H.xNose + .35, -7.2 + i * 2.4, 5.8 + i * .06, .9, 2.2, 3.6, C.track, C.trackLit, C.track, 0));
+  f = f.concat(box(H.xDriver + .9, 0, H.zTub + .5, .5, 21.0, .5, C.steel, C.bare, C.steel, 0));
+  for (i = 0; i < 13; i++)
+    f = f.concat(box(H.xDriver + 1.1, -9.6 + i * 1.6, H.zTub + .8, 1.5, 1.3, 3.4, C.track, C.trackLit, C.track, 0));
+  f = f.concat(box(H.xDriver + .9, 0, H.zTub + 4.2, .5, 21.0, .5, C.steel, C.bare, C.steel, 0));
+  /* two spare road wheels standing on edge on the left guard against the body side */
   for (i = 0; i < 2; i++)
-    f = f.concat(place(roll(p4RoadWheel(0, 0, 1), Math.PI / 2, 0, 0), 0,
-                       23.4, 13.9 + g.zWheel, H.zTub + 1.3 + i * 2.2));
+    f = f.concat(place(p4RoadWheel(0, 0, 1), 0, 9.0 + i * 6.0, H.supHalf + 1.5, H.zTub + .3));
 
   /* ---- the engine deck: two access hatches, the radiator intakes either side, and
      the inertia starter cover at the tail ---- */
@@ -5648,17 +5659,20 @@ function pzivHull(body, cap, sideC) {
 
   /* ---- what a Panzer IV carried on its guards: the jack and its block, the axe and
      the shovel, the tow cable in a loop, the fire extinguisher and the Notek ---- */
-  var gy = 13.4;
-  f = f.concat(box(-20.0, gy, H.zDeck + .45, 12.0, 2.0, 1.5, C.steel, C.bare, C.steel, 0));      /* the jack */
-  f = f.concat(box(-28.2, gy, H.zDeck + .45, 4.2, 2.4, 1.9, C.wood, lit(C.wood, 1.2), C.wood, 0)); /* its block */
-  f = f.concat(box(-16.2, -gy, H.zDeck + .45, 9.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));  /* the shovel */
-  f = f.concat(box(-21.6, -gy, H.zDeck + .45, 2.4, .7, 1.8, C.steel, C.bare, C.steel, 0));
-  f = f.concat(box(-26.0, -gy, H.zDeck + .45, 7.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));  /* the axe */
-  f = f.concat(box(-29.6, -gy, H.zDeck + .45, 2.0, .8, 1.9, C.steel, C.bare, C.steel, 0));
-  f = f.concat(cyl(-14.2, -gy, H.zDeck + .45, .9, .9, 2.5, 8, '#6e3029', '#7d3c33', 0, true));     /* the extinguisher */
+  var gy = (H.supHalf + H.fenderHalf) / 2, gz = H.zTub + .55;
+  f = f.concat(box(-9.0, gy, gz, 13.0, 2.2, 1.6, C.steel, C.bare, C.steel, 0));                    /* the jack */
+  f = f.concat(box(-18.6, gy, gz, 4.4, 2.6, 2.0, C.wood, lit(C.wood, 1.2), C.wood, 0));            /* its block */
+  f = f.concat(box(-25.0, gy, gz, 6.6, 2.6, 2.2, C.dark, C.body, C.dark, .2));                     /* the spares bin */
+  f = f.concat(box(2.0, -gy, gz, 9.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));               /* the shovel */
+  f = f.concat(box(-3.4, -gy, gz, 2.4, .7, 1.8, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(-9.8, -gy, gz, 7.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));              /* the axe */
+  f = f.concat(box(-13.4, -gy, gz, 2.0, .8, 1.9, C.steel, C.bare, C.steel, 0));
+  f = f.concat(cyl(11.0, -gy, gz, .9, .9, 2.5, 8, '#6e3029', '#7d3c33', 0, true));                 /* the extinguisher */
+  /* the gun cleaning rod in its tube, lying the length of the right-hand guard */
+  f = f.concat(place(tubeSmooth(-27.4, -16.4, 0, 0, 1.15, 10, C.dark, C.body), 0, 0, -gy, gz + 1.1));
   /* the tow cable coiled on the forward guards, ahead of the superstructure */
   for (i = 0; i < 2; i++)
-    f = f.concat(place(tubeSmooth(-2.2, 2.2, 0, 0, .42, 6, C.steel, C.steel), 0, 29.6, (i ? 1 : -1) * 14.2, H.zTub + 1.0));
+    f = f.concat(place(tubeSmooth(-3.0, 3.0, 0, 0, .42, 6, C.steel, C.steel), 0, 26.0, (i ? 1 : -1) * gy, gz + .45));
   /* the Schuerzen rail and its stand-off brackets, which stayed on the tank whether
      or not the plates were hung from them */
   [-1, 1].forEach(function (s2) {
@@ -5670,15 +5684,15 @@ function pzivHull(body, cap, sideC) {
     }
   });
   /* the two-metre rod aerial in its trough on the right rear of the superstructure */
-  f = f.concat(box(H.xBulk + 2.6, -14.4, H.zTub + .55, 3.0, 2.2, 1.6, C.dark, C.body, C.dark, 0));
+  f = f.concat(box(H.xBulk + 1.0, -gy, gz, 3.2, 2.2, 1.6, C.dark, C.body, C.dark, 0));
   f = f.concat(place(pitch(tubeSmooth(0, 22.0, 0, 0, .22, 5, C.dark, C.dark), 1.30, 0, 0),
-                     0, H.xBulk + 2.6, -14.4, H.zTub + 2.1));
+                     0, H.xBulk + 1.0, -gy, gz + 1.55));
   /* the Notek convoy light on the left guard, ahead of the superstructure */
-  f = f.concat(box(29.0, gy, H.zTub + .55, 1.2, 1.2, 2.4, C.dark, C.body, C.dark, 0));
-  f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, 1.35, 10, C.dark, '#cfcdb6'), 0, 29.0, gy, H.zTub + 3.6));
+  f = f.concat(box(30.6, gy, gz, 1.2, 1.2, 2.4, C.dark, C.body, C.dark, 0));
+  f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, 1.35, 10, C.dark, '#cfcdb6'), 0, 30.6, gy, gz + 3.05));
   /* jerricans and a tarp on the engine deck */
-  f = f.concat(box(-18.6, 3.6, H.zDeck + .5, 4.6, 2.0, 3.4, C.jerry, lit(C.jerry, 1.15)));
-  f = f.concat(place(rollX(7.0, 1.7, C.tarp, lit(C.tarp, 1.12), 0, 0, 0), 0, -25.0, 3.4, H.zDeck + .5));
+  f = f.concat(box(-19.4, 3.2, H.zDeck + .5, 4.6, 2.0, 3.4, C.jerry, lit(C.jerry, 1.15)));
+  f = f.concat(place(rollX(7.0, 1.7, C.tarp, lit(C.tarp, 1.12), 0, 0, 0), 0, -25.4, 3.0, H.zDeck + .5));
   return f;
 }
 
