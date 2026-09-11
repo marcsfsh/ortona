@@ -44,12 +44,39 @@ Headless Chromium with software WebGL (SwiftShader) is installed and wired up.
 npm install                  # once; Chromium is already on disk
 
 npm run verify               # lint + smoke test, the gate before calling work done
+node tools/dims.mjs          # proportion against published dimensions
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
 
 A `SessionStart` hook (`.claude/hooks/session-start.sh`) runs `npm install` and
 confirms Chromium is present, so a fresh session is ready without being asked.
+
+### `tools/dims.mjs` - proportion, mechanically
+
+Measures every vehicle against its published dimensions and prints model versus
+real in metres with the error. Proportion is the one thing about a model that is
+a fact rather than a judgement, so it gets checked rather than eyeballed.
+
+```sh
+node tools/dims.mjs              # every vehicle
+node tools/dims.mjs ger_kt       # one
+node tools/dims.mjs --tol=3      # tighten the tolerance to 3 per cent
+```
+
+It reports two tables. **Envelope** is hull length, length with the gun forward,
+width over the tracks and height. **Internals** is the superstructure width at
+the sponson, the hull roof width, and the ground clearance.
+
+Internals matter as much as the envelope, and that is the whole reason the tool
+exists: a Tiger II whose bounding box was right to one per cent still looked
+wrong because the hull was a tenth too narrow for the tracks it stood on. The
+eye reads the body against the track, not against a tape measure. Check both.
+
+Ground clearance is read from a `belly` field on the model rather than measured,
+because no geometric filter reliably separates a hull floor from the track
+running under it: on every one of these the track's inboard edge lies inside the
+hull's own width. Declare it when you add a vehicle.
 
 ### `tools/lint.mjs` - the rules, mechanically
 
@@ -280,6 +307,18 @@ shots/                         screenshot output, gitignored
   its draw rate.
 - Camera limits (`CAMLIM`) clamp distance to 220-2600 and pitch to 0.42-1.35.
   A request outside that range is silently clamped, not honoured.
+- `lathe()` revolves about the **y** axis, so it builds a wheel whose axle points
+  across the tank. It is the wrong tool for anything that stands out of a plate
+  facing fore or aft: a ball mount built with it faces out of the side of the
+  hull. Build those along z and let the plate's transform turn it, or use
+  `tubeSmooth`. Three separate bow machine guns had this bug.
+- `boltRing()` lays its studs out in the **x-z** plane, which is right for a road
+  wheel and wrong for a plate facing forward: use `boltRingX()` there. Getting it
+  wrong throws the ring of bolts out past the nose armour, where it quietly adds
+  a quarter of a metre to the vehicle's measured length.
+- `var` hoists. A hull constant referenced above its own `var` line is
+  `undefined`, every vertex built from it is `NaN`, and the part vanishes without
+  an error. `tools/dims.mjs` reports NaN when this happens.
 - Terrain, scene buffers and the atlas are rebuilt only by `startGame()` and
   the editor's rebuild. Editing `G.mapData` alone changes nothing on screen.
 - `updateFog()` and the decal upload happen inside `render()`, not every frame.
