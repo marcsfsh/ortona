@@ -37,10 +37,13 @@ const REAL = {
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
-  ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 2.00,
-               body: 1.47, roof: 1.12, clear: 0.24 }   /* body: the knuckle, where the car is
-               widest across the armour. The mudguards carry it out to 1.95 m from there, and
-               the gap between the two is half of what makes this thing look like itself */
+  ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
+               body: 1.16, roof: 1.09, clear: 0.25 }
+  /* Two heights are published for the 222 and both are right: 1.70 m to the turret rim,
+     2.00 m with the anti-grenade screens raised. The rim is the one that can be checked,
+     so PROBE.topZ holds the screens out of the measurement. `body` is the floor plate and
+     `roof` the deck: the crease where the armour is widest is under the fender wing at
+     every station along the car, so it cannot be sliced without slicing the wing too. */
 };
 
 /* Where to slice each hull, in model units: the sponson lip and the roof plate.
@@ -54,7 +57,7 @@ const PROBE = {
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
   ger_p4:    { bodyZ: 16.0, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true },
-  ger_puma:  { bodyZ: 6.6, roofZ: 14.4, xLo: 6.5, xHi: 10.5 }   /* between the spare wheel and the front tyre */   /* lofted: real vertices sit at each ring */
+  ger_puma:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0 }   /* clear of the rear tyre and the wing tools */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
@@ -99,8 +102,9 @@ const measured = await page.evaluate(probe => {
     }
     /* the aerial whip is two and a half metres of wire and is not part of the height */
     let tz = 0, tx1 = -1e9;
+    const hCap = pr.topZ === undefined ? 20 : pr.topZ;
     V.tur.forEach(function (f) {
-      const tall = f.v.some(p => p[2] > 20);
+      const tall = f.v.some(p => p[2] > hCap);
       f.v.forEach(function (p) {
         if (!tall) tz = Math.max(tz, p[2]);
         tx1 = Math.max(tx1, p[0]);
