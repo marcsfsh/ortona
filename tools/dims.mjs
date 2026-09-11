@@ -44,7 +44,7 @@ const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
-  ger_p4:    { bodyZ: 13.0, roofZ: 18.2 }
+  ger_p4:    { bodyZ: 13.3, roofZ: 19.3 }
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 

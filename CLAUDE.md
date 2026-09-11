@@ -319,6 +319,12 @@ shots/                         screenshot output, gitignored
 - `var` hoists. A hull constant referenced above its own `var` line is
   `undefined`, every vertex built from it is `NaN`, and the part vanishes without
   an error. `tools/dims.mjs` reports NaN when this happens.
+- `box()` shades its bevel strips with `lit()` derivatives of the face colours, and
+  a derived value is a colour in its own right. `registerMaterials()` maps colours
+  to atlas materials, and a colour it does not know falls back to the untextured
+  `generic` tile, so a vehicle whose paint comes from a camouflage tile comes out
+  hemmed with a bright flat pinstripe along every edge it has. `tagEdges()` exists
+  to register those derivatives; call it alongside `tag()` for any new palette.
 - Terrain, scene buffers and the atlas are rebuilt only by `startGame()` and
   the editor's rebuild. Editing `G.mapData` alone changes nothing on screen.
 - `updateFog()` and the decal upload happen inside `render()`, not every frame.

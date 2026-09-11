@@ -255,6 +255,9 @@ export async function installHooks(page) {
         /* Freeze them: no wandering off, no seeking cover mid-photograph. */
         u.order = null; u.path = null; u.dest = null;
         if (u.setup !== undefined) u.setup = 0;     /* weapon teams: deployed, not packing up */
+        /* Field upgrades change the silhouette -- a Panzer IV wears or drops its
+         * Schuerzen -- so a reference sheet has to be able to ask for them. */
+        (s.up || []).forEach(function (k) { u.up[k] = true; });
         out.push({ id: u.id, key: s.key, x: u.x, y: u.y });
       });
       computeVisibility();

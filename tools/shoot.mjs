@@ -6,6 +6,7 @@
  *   node tools/shoot.mjs start hud --device=phone
  *   node tools/shoot.mjs armour --turn         every vehicle, four angles each
  *   node tools/shoot.mjs free --cam=1400,950,700,1.57,0.9 --sim=30 --bare
+ *   node tools/shoot.mjs vehicle --only=ger_p4 --up=skirts   with its field upgrades on
  *
  * Output lands in shots/<device>/. Read the PNGs back to judge the visuals.
  */
@@ -24,6 +25,8 @@ const DIFF = args.diff === undefined ? 1 : Number(args.diff);
 const BARE = !!args.bare;               /* hide the flat UI, keep only the 3D */
 const TURN = !!args.turn;               /* four angles instead of one */
 const SETTLE = args.settle === undefined ? 2 : Number(args.settle);
+/* field upgrades to fit before photographing, e.g. --up=skirts,mg */
+const UP = args.up ? String(args.up).split(',') : [];
 const TAG = args.tag ? `-${args.tag}` : '';
 
 const out = (name) => path.join(SHOTS, DEVICE, `${name}${TAG}.png`);
@@ -191,7 +194,7 @@ const SCENES = {
   },
 
   vehicle: {
-    help: 'Reference sheet for one vehicle: front, front 3/4, side, rear 3/4, rear, top. Use --only=<key>.',
+    help: 'Reference sheet for one vehicle: front, front 3/4, side, rear 3/4, rear, top. Use --only=<key>, --up=<upgrades>.',
     async run(page) {
       await deploy(page, { side: SIDE, diff: DIFF });
       await setFog(page, false);
@@ -217,7 +220,7 @@ const SCENES = {
       for (const key of only) {
         const u = cat.units.find(q => q.key === key);
         if (!u) { console.error(`  unknown unit "${key}"`); continue; }
-        await pose(page, [{ key, x: 0, y: 0 }], spot);
+        await pose(page, [{ key, x: 0, y: 0, up: UP }], spot);
         /* frame to the subject: a Tiger II is half again the length of a Stuart */
         const e = await modelExtent(page, key);
         const dist = Number(args.dist) || (e ? Math.max(70, e.len * 1.38) : 104);
