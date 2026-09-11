@@ -38,12 +38,13 @@ const REAL = {
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
   ger_sd222:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
-               body: 1.16, roof: 1.09, clear: 0.25 }
+               clear: 0.25 }
   /* Two heights are published for the 222 and both are right: 1.70 m to the turret rim,
      2.00 m with the anti-grenade screens raised. The rim is the one that can be checked,
-     so PROBE.topZ holds the screens out of the measurement. `body` is the floor plate and
-     `roof` the deck: the crease where the armour is widest is under the fender wing at
-     every station along the car, so it cannot be sliced without slicing the wing too. */
+     so PROBE.topZ holds the screens out of the measurement. No body or deck width is
+     given for it anywhere I can find, and a target invented from the model it is meant
+     to be checking is worth nothing, so this one is checked on its envelope and its
+     published 254 mm of clearance alone. */
 };
 
 /* Where to slice each hull, in model units: the sponson lip and the roof plate.
@@ -140,7 +141,7 @@ for (const k of keys) {
   for (const dim of ['len', 'gun', 'wid', 'hgt']) cell(row, dim, m[dim] / SCALE, r[dim]);
   for (const dim of ['body', 'roof', 'clear']) cell(inner, dim, m[dim] === null ? null : m[dim] / SCALE, r[dim]);
   envelope.push(row);
-  if (r.body) internals.push(inner);
+  if (r.body || r.clear !== undefined) internals.push(inner);
 }
 
 console.log(`\nmodel / published, in metres, at ${SCALE} units per metre`);

@@ -5986,25 +5986,30 @@ var SD2 = {
   fendHalf: 11.4      /* 1.95 m over the fenders */
 };
 
-/* The stations the body is welded up from, bow to tail. Few and far apart on
-   purpose: each band between two of them is one plate, and a plate is what this
-   car is made of.
+/* The stations the body is welded up from, bow to tail.
+   FEW, AND FAR APART, ON PURPOSE. Each band between two stations is one plate,
+   and the crease between two bands only reads if their angles differ sharply.
+   Sweeping the car through a smooth run of stations gives a boat hull: every
+   panel sits two degrees off its neighbour, no join reads, and the whole thing
+   comes out as one lump whatever the numbers say. The short band between the
+   third and second stations is the driver's plate, and the section is a hard V:
+   a narrow floor, plates leaning out about twenty-five degrees to the crease,
+   then plates leaning back in about thirty-five to a small deck.
    [x, half-width at the floor, half-width at the crease, crease height,
        half-width at the deck, deck height] */
 var SD2_ST = [
-  [ 26.4, 0.9, 1.3,  6.4, 0.8,  7.8],
-  [ 21.0, 3.8, 5.0,  8.4, 3.2, 10.8],
-  [ 15.5, 5.8, 7.4,  9.8, 5.0, 12.6],
-  [  4.0, 6.8, 8.0, 11.9, 6.4, 14.8],
-  [ -8.0, 6.8, 8.0, 11.7, 6.4, 14.7],
-  [-19.0, 5.6, 7.0, 10.2, 5.2, 13.4],
-  [-27.0, 1.8, 2.4,  7.6, 1.6, 10.6]
+  [ 26.0, 0.6, 0.9,  9.2, 0.5, 10.4],
+  [ 16.0, 4.2, 7.2, 10.6, 3.4, 11.4],
+  [ 12.6, 5.0, 8.0, 11.2, 5.6, 14.8],
+  [-13.0, 5.0, 8.0, 11.2, 6.0, 14.8],
+  [-20.0, 4.0, 6.6, 10.4, 4.8, 13.2],
+  [-25.4, 1.0, 1.8,  9.2, 0.8, 11.0]
 ];
 
 /* the fender line, as the folds it actually has: [x, z] at each crease in it */
 var SD2_FEND = [
-  [ 28.1,  6.8], [ 24.2, 10.8], [ 16.4, 11.4], [  6.0, 12.8],
-  [ -6.0, 12.8], [-16.4, 11.4], [-23.8, 10.6], [-28.1,  6.8]
+  [ 28.1,  7.0], [ 24.0, 11.2], [ 16.4, 11.8], [  6.0, 13.0],
+  [ -6.0, 13.0], [-16.4, 11.8], [-23.6, 11.0], [-28.1,  7.0]
 ];
 
 function sd222St(i) {
