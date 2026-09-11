@@ -4324,6 +4324,21 @@ function stud(x, y, z, r, depth, col) {
   return place(tubeSmooth(-depth / 2, depth / 2, 0, 0, r, 5, col, lit(col, 1.18)), Math.PI / 2, x, y, z);
 }
 
+/* The same lying along x, for bolts on a plate that faces fore or aft. */
+function studX(x, y, z, r, depth, col) {
+  return tubeSmooth(x, x + depth, y, z, r, 5, col, lit(col, 1.18));
+}
+
+/* A ring of bolt heads standing out of a plate that faces fore or aft. */
+function boltRingX(x, cy, cz, r, n, head, depth, col) {
+  var f = [], i;
+  for (i = 0; i < n; i++) {
+    var a = (i / n) * TAU;
+    f = f.concat(studX(x, cy + Math.cos(a) * r, cz + Math.sin(a) * r, head, depth, col));
+  }
+  return f;
+}
+
 /* A ring of bolt heads on a wheel or hatch face. */
 function boltRing(cx, cy, cz, r, n, head, depth, col, phase) {
   var f = [], i;
@@ -4338,6 +4353,18 @@ function boltRing(cx, cy, cz, r, n, head, depth, col, phase) {
 function boltRow(x0, x1, y, z, n, head, depth, col) {
   var f = [], i;
   for (i = 0; i < n; i++) f = f.concat(stud(n === 1 ? x0 : lerp(x0, x1, i / (n - 1)), y, z, head, depth, col));
+  return f;
+}
+
+/* A spare track link as carried on a hull or turret side: the shoe standing on edge,
+   its guide horn and the end connectors. A rack of these reads as track; the same
+   rack drawn as plain boxes reads as black panels bolted to the armour. */
+function spareLink(w, len, thick, col, lit2, steel) {
+  var f = box(0, 0, -w / 2, len, thick, w, col, lit2, col, 0);
+  /* the guide horn on the inboard face, and the pin housings top and bottom */
+  f = f.concat(box(0, -thick * .5 - .45, -w * .12, len * .42, .9, w * .24, steel, lit(steel, 1.2), steel, 0));
+  f = f.concat(box(0, .1, w / 2 - .5, len * .62, thick + .5, .55, steel, lit(steel, 1.15), steel, 0));
+  f = f.concat(box(0, .1, -w / 2 - .05, len * .62, thick + .5, .55, steel, lit(steel, 1.15), steel, 0));
   return f;
 }
 
@@ -5762,53 +5789,111 @@ var KT = { body: '#8f8f8f', lit: '#9d9d9d', dark: '#7c7c7c',                    
            steel: '#34382f', bare: '#6d6e62', rubber: '#1c1d19', tyre: '#2a2b26', track: '#4a4842', trackLit: '#5b5952',
            dg: '#9c8b5c', dgD: '#7d6f4a', wood: '#5a4630', jerry: '#8a7a4e', tarp: '#7f7150' };
 
-function ktRoadWheel() {
-  /* an 800 mm steel-rimmed wheel: a flat dished disc with sixteen bolt heads round the
-     rim and a domed hub, the rubber cushion hidden inside the rim */
-  var C = KT, r = 4.7;
-  var prof = [[0, -1.6], [1.5, -1.6], [1.5, -.8], [2.6, -1.1], [3.7, -1.3], [4.35, -1.5], [r, -1.5],
-              [r, 1.5], [4.35, 1.5], [3.7, 1.3], [2.6, 1.1], [1.5, .8], [1.5, 1.6], [0, 1.6]];
+/* the Tiger II's running gear. Nine 800 mm steel-tyred wheels a side, overlapping in
+   two rows, and no return rollers at all: the top run of the track rides on the tops
+   of the road wheels, which is why a Königstiger's upper track line sags onto the
+   suspension instead of running straight from sprocket to idler. */
+var KTG = {
+  R: 4.68,          /* 800 mm road wheel */
+  T: 1.30,          /* Gg24/800/300 link */
+  TW: 9.36,         /* 800 mm combat track */
+  LP: 3.50,         /* 300 mm pitch */
+  xSprk: 30.0, zSprk: 10.0, rSprk: 4.45,
+  xIdl: -30.0, zIdl: 9.0, rIdl: 4.20,
+  w0: 26.0, wStep: 6.5, wN: 9,
+  innerY: 3.6       /* how far the inner row of wheels sits inboard of the outer */
+};
+KTG.zWheel = KTG.R + KTG.T;
+KTG.beltR = KTG.R + KTG.T / 2;
+function ktWheelX(i) { return KTG.w0 - i * KTG.wStep; }
+
+/* The road wheels appear twice in the loop, once for the run under them and once for
+   the run over them. beltPath walks consecutive pairs rather than assuming a convex
+   hull, so listing a pulley twice is exactly how a track that rides on its own road
+   wheels is described. */
+function ktPulleys() {
+  var g = KTG, w = [], i;
+  w.push({ x: g.xSprk, z: g.zSprk, r: g.rSprk + g.T / 2 });
+  for (i = 0; i < g.wN; i++) w.push({ x: ktWheelX(i), z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xIdl, z: g.zIdl, r: g.rIdl + g.T / 2 });
+  for (i = g.wN - 1; i >= 0; i--) w.push({ x: ktWheelX(i), z: g.zWheel, r: g.beltR });
+  return w;
+}
+
+function ktTrack(y) {
+  var C = KT, g = KTG;
+  return trackBelt(y, ktPulleys(), {
+    w: g.TW, thick: g.T, pitch: g.LP,
+    col: C.track, lit: C.trackLit, steel: C.steel,
+    guide: 1.5, guideW: 1.7, guideCol: C.steel, cleat: .45
+  });
+}
+
+/* an 800 mm steel-tyred wheel: a flat dished disc, the rubber cushioning buried inside
+   the rim, twenty bolts round the face and a domed hub cap */
+function ktRoadWheel(x, y, sd) {
+  var C = KT, r = KTG.R, hw = 1.55, f;
+  var prof = [[0, -hw], [1.5, -hw], [1.5, -.75], [2.8, -1.05], [3.9, -1.25], [4.30, -1.45], [r, -1.45],
+              [r, 1.45], [4.30, 1.45], [3.9, 1.25], [2.8, 1.05], [1.5, .75], [1.5, hw], [0, hw]];
   var cols = [C.dg, C.dgD, C.dg, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dg, C.dgD, C.dg];
-  var f = lathe(0, 0, 0, prof, 18, cols, true);
-  for (var b = 0; b < 16; b++) { var a = b / 16 * TAU; f = f.concat(box(Math.cos(a) * 3.85, 1.55, Math.sin(a) * 3.85, .45, .3, .45, C.bare, C.bare)); }
+  f = lathe(x, y, KTG.zWheel, prof, 18, cols, true);
+  f = f.concat(boltRing(x, y + sd * hw, KTG.zWheel, 3.85, 10, .38, .5, C.bare));
+  f = f.concat(stud(x, y + sd * (hw + .25), KTG.zWheel, 1.25, .8, C.dgD));
   return f;
 }
-function ktSprocket() {
-  var C = KT, f = [];
-  var prof = [[0, -2.4], [1.8, -2.4], [1.8, -1.2], [3.2, -1.6], [4.0, -2.4], [4.6, -2.4], [4.6, 2.4], [4.0, 2.4], [3.2, 1.6], [1.8, 1.2], [1.8, 2.4], [0, 2.4]];
-  f = f.concat(lathe(0, 0, 0, prof, 18, [C.dg, C.dgD, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dgD, C.dg], true));
-  for (var t = 0; t < 18; t++) { var a = t / 18 * TAU; f = f.concat(box(Math.cos(a) * 5.0, 0, Math.sin(a) * 5.0, 1.0, 4.4, 1.0, C.bare, C.bare)); }
-  for (var bh = 0; bh < 9; bh++) { var ba = bh / 9 * TAU; f = f.concat(box(Math.cos(ba) * 2.5, -2.5, Math.sin(ba) * 2.5, .5, .3, .5, C.bare, C.bare)); }
+
+/* the drive sprocket: smaller than the road wheels on a Tiger II, with eighteen teeth
+   in two rings and the hub bolted through nine studs */
+function ktSprocket(y, sd) {
+  var C = KT, g = KTG, f = [], t, r = g.rSprk;
+  var prof = [[0, -2.3], [1.8, -2.3], [1.8, -1.1], [3.0, -1.5], [3.6, -2.2], [3.6, -2.3],
+              [3.6, 2.3], [3.6, 2.2], [3.0, 1.5], [1.8, 1.1], [1.8, 2.3], [0, 2.3]];
+  f = f.concat(lathe(g.xSprk, y, g.zSprk, prof, 18, [C.dg, C.dgD, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dgD, C.dg], true));
+  f = f.concat(boltRing(g.xSprk, y + sd * 2.35, g.zSprk, 2.4, 9, .4, .5, C.bare));
+  for (t = 0; t < 18; t++) {
+    var a = (t / 18) * TAU;
+    var tx = g.xSprk + Math.cos(a) * (r - .55), tz = g.zSprk + Math.sin(a) * (r - .55);
+    f = f.concat(place(pitch(box(0, 0, 0, 1.5, 1.9, 1.6, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y - 2.4, tz));
+    f = f.concat(place(pitch(box(0, 0, 0, 1.5, 1.9, 1.6, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y + 2.4, tz));
+  }
   return f;
 }
-function ktIdler() {
-  var C = KT;
-  var prof = [[0, -2.2], [1.6, -2.2], [1.6, -1.1], [2.8, -1.5], [3.6, -2.2], [4.1, -2.2], [4.1, 2.2], [3.6, 2.2], [2.8, 1.5], [1.6, 1.1], [1.6, 2.2], [0, 2.2]];
-  return lathe(0, 0, 0, prof, 16, [C.dg, C.dgD, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dgD, C.dg], true);
+
+/* the rear idler on its crank adjuster */
+function ktIdler(y, sd) {
+  var C = KT, g = KTG, r = g.rIdl, hw = 2.1, f;
+  var prof = [[0, -hw], [1.6, -hw], [1.6, -1.0], [2.8, -1.4], [3.6, -1.9], [3.8, -hw],
+              [r, -hw], [r, hw], [3.8, hw], [3.6, 1.9], [2.8, 1.4], [1.6, 1.0], [1.6, hw], [0, hw]];
+  var cols = [C.dg, C.dgD, C.dg, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dg, C.dgD, C.dg];
+  f = lathe(g.xIdl, y, g.zIdl, prof, 18, cols, true);
+  f = f.concat(boltRing(g.xIdl, y + sd * hw, g.zIdl, 2.2, 8, .36, .5, C.bare));
+  return f;
 }
+
 function ktHull(body, cap, sideC) {
   var C = KT, f = [];
   var W = 44.2, halfW = W / 2;                    /* 3.755 m over the tracks */
   var trackW = 9.4, trackY = halfW - trackW / 2;  /* 800 mm tracks, outermost */
   var lowerHalf = 12.6;                            /* the hull between the tracks */
   var spon = 19.2;                                 /* 3.27 m upper hull: sponsons over the inner part of the track */
-  var spec = { w: trackW, pitch: 1.8, thick: 1.4, frontX: 30, rearX: -30, rFront: 5.0, rRear: 4.3,
-               zFront: 5.6, zRear: 5.0, zLow: .7, zHigh: 10.6, sags: 5, sag: .45, steel: 1 };
   for (var sd = -1; sd <= 1; sd += 2) {
     var y = sd * trackY;
-    f = f.concat(trackLoop(y, spec, C));
-    /* nine road wheels: outer row of five, inner row of four, overlapping */
-    for (var w = 0; w < 9; w++) {
-      var wx = -26 + w * 6.5, inner = (w % 2) === 1;
-      var wy = y + (inner ? -sd * 3.4 : sd * 0.2);
-      f = f.concat(at(ktRoadWheel(), wx, wy, 4.7));
-      /* the torsion-bar swing arm back to the hull */
-      f = f.concat(at(pitch(box(-2.2, 0, 0, 4.4, 1.6, 1.6, C.dgD, C.dg), .25, 0, 0), wx + 2.2, wy - sd * 1.2, 4.7));
+    f = f.concat(ktTrack(y));
+    /* nine wheels in two overlapping rows filling the width of the track, each on its
+       own torsion-bar arm. The outer row is what you see; the inner row shows through
+       the gaps, which is the whole look of a Tiger II's suspension. */
+    for (var w = 0; w < KTG.wN; w++) {
+      var wx = ktWheelX(w), wy = y + sd * ((w % 2) ? -1.9 : 2.6);
+      f = f.concat(ktRoadWheel(wx, wy, sd));
+      f = f.concat(place(pitch(box(0, 0, 0, 6.4, 2.0, 2.0, C.dgD, C.dg), (w % 2) ? .22 : -.22, 0, 0),
+                         0, wx + ((w % 2) ? 3.0 : -3.0), y - sd * 5.6, KTG.zWheel));
     }
-    f = f.concat(at(ktSprocket(), 30, y - sd * .6, 5.6));
-    f = f.concat(at(ktIdler(), -30, y - sd * .6, 5.0));
-    f = f.concat(box(27, y - sd * 3.0, 5.6, 6, 2.0, 6, C.dgD, C.dg));                          /* final drive housing */
-    f = f.concat(box(-27.5, y - sd * 3.0, 5.0, 5, 2.0, 5, C.dgD, C.dg));                        /* idler adjuster */
+    f = f.concat(ktSprocket(y, sd));
+    f = f.concat(ktIdler(y, sd));
+    /* the final drive housing at the nose and the idler crank at the tail */
+    f = f.concat(place(tubeSmooth(0, 3.4, 0, 0, 5.0, 14, C.dgD, C.dg), Math.PI / 2, KTG.xSprk, y - sd * 5.0, KTG.zSprk));
+    f = f.concat(boltRing(KTG.xSprk, y - sd * 8.4, KTG.zSprk, 4.0, 10, .4, .5, C.bare));
+    f = f.concat(place(tubeSmooth(0, 3.0, 0, 0, 3.4, 12, C.dgD, C.dg), Math.PI / 2, KTG.xIdl, y - sd * 4.6, KTG.zIdl));
   }
   /* ---- the lower hull between the tracks ---- */
   f = f.concat(box(0, 0, 3.5, 74, lowerHalf * 2, 8.5, body, cap, sideC));
@@ -5851,37 +5936,55 @@ function ktHull(body, cap, sideC) {
   /* the tail joins */
   f = f.concat(place(tubeSmooth(-sideTop, sideTop, 0, 0, .45, 6, C.dark, C.dark), Math.PI / 2, xRear, 0, zRoof));
   f = f.concat(place(tubeSmooth(-spon, spon, 0, 0, .45, 6, C.dark, C.dark), Math.PI / 2, xRear, 0, zSponFloor));
-  /* ---- glacis fittings: the driver's periscope on the left, the Kugelblende MG ball on
-     the right, the two round crew hatches, and spare track links across the front ---- */
-  f = f.concat(box(xGlacisTop + 2.5, -7.5, zRoof - .2, 3.2, 3.6, 1.6, C.dgD, C.steel));
-  f = f.concat(box(xGlacisTop + 4.6, -7.5, zRoof - 1.0, .8, 5.4, .8, C.dgD, C.dg));            /* its rain gutter */
+  /* ---- glacis fittings. The plate runs from the nose lip up to the roof at 50 degrees
+     from the vertical; slope and onKtGlacis put everything on it from that one fact. ---- */
+  var kSlope = (zRoof - zNose) / (xNose - xGlacisTop);
+  function ktGlacisZ(gx) { return zNose + (xNose - gx) * kSlope; }
+  function onKtGlacis(faces, gx, gy, up) {
+    return place(pitch(faces, -Math.atan(kSlope), 0, 0), 0, gx, gy, ktGlacisZ(gx) + (up || 0));
+  }
+  f = f.concat(onKtGlacis(periscope(0, 0, 0, 0, C.dgD), xGlacisTop + 2.6, 7.5, 0));
+  f = f.concat(onKtGlacis(box(0, 0, -.1, 1.0, 6.0, .7, C.dgD, C.dg, C.dgD, 0), xGlacisTop + .6, 7.5, 0));
   /* cable brackets and spare-track hooks bolted across the glacis */
-  [-13, -4, 5, 14].forEach(function (by) {
-    var t = clamp((by + 16) / 32, 0, 1), bx = lerp(xNose - 4, xGlacisTop + 3, t);
-    f = f.concat(box(bx, by, zNose + (zRoof - zNose) * t + 1.0, 1.6, 2.6, 1.4, C.dgD, C.dg));
+  [-15.5, 15.5].forEach(function (by) {
+    var bk;
+    for (bk = 0; bk < 3; bk++)
+      f = f.concat(onKtGlacis(box(0, 0, -.1, 1.8, 2.8, 1.5, C.dgD, C.dg, C.dgD, 0), xNose - 4.0 - bk * 4.4, by, 0));
   });
-  f = f.concat(lathe(xNose - 4.5, 8.5, 16.0, [[0, -1.6], [3.4, -1.6], [3.4, 1.6], [0, 1.6]], 12, C.dgD, true));
-  f = f.concat(tubeSmooth(xNose - 3, xNose + 2.5, 8.5, 16.6, .55, 8, C.steel, C.steel));
+  f = f.concat(onKtGlacis(cyl(0, 0, -.5, 4.0, 4.0, 1.7, 16, C.dgD, C.dg, 0, true), xNose - 5.0, -8.5, 0));
+  f = f.concat(onKtGlacis(cyl(0, 0, 1.2, 2.9, 2.9, 1.1, 16, C.dg, C.lit, 0, true), xNose - 5.0, -8.5, 0));
+  f = f.concat(place(pitch(tubeSmooth(0, 5.0, 0, 0, .6, 8, C.steel, '#1b1d17'), .30, 0, 0), 0, xNose - 3.4, -8.5, ktGlacisZ(xNose - 5.0) + 2.6));
   [-8.5, 8.5].forEach(function (hy) {
     f = f.concat(cyl(xGlacisTop - 5, hy, zRoof, 4.6, 4.6, .8, 16, C.dg, C.dg, 0, true));
     f = f.concat(cyl(xGlacisTop - 5, hy, zRoof + .8, 4.1, 4.1, .5, 16, C.dgD, C.dg, 0, true));
     f = f.concat(box(xGlacisTop - 5, hy, zRoof + 1.3, .6, 8.4, .5, C.steel, C.bare));
   });
-  for (var st = 0; st < 3; st++) f = f.concat(box(xNose - 9 - st * 1.2, 1 + st * 2.6, zNose + 5.5 + st * 2.4, 1.9, 9.4, 1.4, C.track, C.trackLit));
+  for (var st = 0; st < 4; st++)
+    f = f.concat(onKtGlacis(place(spareLink(9.4, 3.5, 1.3, C.track, C.trackLit, C.steel), Math.PI / 2, 0, 0, 1.2),
+                            xNose - 6.5 - st * 3.6, 8.0, 0));
   /* ---- the engine deck: the central engine hatch, a large round fan cover either side
      with its grille, the sloped tail with two armoured exhaust shrouds, jack, crank ---- */
   f = f.concat(box(-14, 0, zRoof, 20, 13, 1.0, C.dgD, C.dg));
   f = f.concat(box(-14, 0, zRoof + 1.0, 18, 11, .5, C.dg, cap));
   [-11.5, 11.5].forEach(function (fy) {
-    f = f.concat(cyl(-14, fy, zRoof, 5.2, 5.2, 1.4, 18, C.dgD, C.dg, 0, true));
-    f = f.concat(cyl(-14, fy, zRoof + 1.4, 4.6, 4.6, .5, 18, C.steel, '#2a2d24', 0, true));
-    for (var g = -3; g <= 3; g++) f = f.concat(box(-14 + g * 1.3, fy, zRoof + 1.9, .6, 8.8, .3, C.bare, C.bare));
-    f = f.concat(box(-26, fy, zRoof, 6, 9, .8, C.dgD, C.dg));                                     /* the rear radiator grilles */
-    for (var g2 = 0; g2 < 5; g2++) f = f.concat(box(-28 + g2 * 1.1, fy, zRoof + .8, .5, 8.6, .3, C.bare, C.bare));
+    /* the fan cover: a low armoured ring with the mesh set flush inside it */
+    f = f.concat(cyl(-14, fy, zRoof, 5.4, 5.4, .7, 18, C.dgD, C.dg, 0, true));
+    f = f.concat(cyl(-14, fy, zRoof + .35, 4.6, 4.6, .3, 18, C.bare, C.bare, 0, true));
+    for (var g = -3; g <= 3; g++) f = f.concat(box(-14 + g * 1.4, fy, zRoof + .62, .8, 8.2, .16, C.steel, C.steel, C.steel, 0));
+    /* the rear radiator openings, mesh flush in the deck */
+    f = f.concat(box(-26.5, fy, zRoof, 6.6, 9.6, .55, C.dgD, C.dg, C.dgD));
+    f = f.concat(box(-26.5, fy, zRoof + .28, 5.6, 8.6, .25, C.bare, C.bare, C.bare, 0));
+    for (var g2 = -2; g2 <= 2; g2++) f = f.concat(box(-26.5 + g2 * 1.15, fy, zRoof + .5, .6, 8.4, .15, C.steel, C.steel, C.steel, 0));
   });
   [-6.5, 6.5].forEach(function (ey) {
     f = f.concat(box(xRear - 1.4, ey, 9, 2.4, 4.4, 10, C.dgD, C.dg, C.dgD));                        /* exhaust shrouds */
     f = f.concat(cyl(xRear - 1.4, ey, 19, 1.4, 1.4, 1.6, 10, '#26251f', '#1a1b16', 0, true));    /* the pipe tops */
+  });
+  /* the two big round access hatches in the rear plate, outboard of the exhausts */
+  [-13.5, 13.5].forEach(function (hy) {
+    f = f.concat(place(tubeSmooth(0, 1.0, 0, 0, 4.4, 16, C.dgD, C.dg), 0, xRear - 1.0, hy, 14.5));
+    f = f.concat(boltRingX(xRear - 1.6, hy, 14.5, 3.6, 10, .36, .6, C.bare));
+    f = f.concat(box(xRear - 1.7, hy, 14.1, .7, 2.4, .8, C.steel, C.bare, C.steel, 0));
   });
   f = f.concat(box(xRear - 1.5, 0, 7, 2.2, 8, 3, C.steel, C.bare));                                 /* the jack */
   f = f.concat(tubeSmooth(xRear - 1.8, xRear - .5, -11, 18, .6, 6, C.steel, C.bare));               /* starter crank */
@@ -5897,7 +6000,7 @@ function ktHull(body, cap, sideC) {
     f = f.concat(tubeSmooth(-30, 12, sy, 19.6, .7, 6, C.steel, C.bare));                              /* the cleaning-rod tube */
   });
   /* fire extinguisher, headlight with its cable, the Bosch horn */
-  f = f.concat(cyl(-8, -sideTop + 2, zRoof, 1.2, 1.2, 3.2, 8, '#8a2a24', '#9a3a30', 0, true));
+  f = f.concat(cyl(-8, -sideTop + 2, zRoof, 1.15, 1.15, 3.0, 8, '#6e3029', '#7d3c33', 0, true));
   f = f.concat(tubeSmooth(xGlacisTop - 1, xGlacisTop + 1.6, -13, zRoof + 1.2, 1.4, 10, C.dg, C.dgD));
   return f;
 }
@@ -5970,11 +6073,11 @@ function ktTurret(body, cap, sideC) {
   /* ---- spare track links on brackets down both sides, four a side ---- */
   [-1, 1].forEach(function (sd) {
     for (var t = 0; t < 4; t++) {
-      var tx = -3 - t * 6.4, ty = sd * (11.8 - lean * (H * .45) / H + 1.2);
+      var tx = -2 - t * 5.0, ty = sd * (11.8 - lean * (H * .45) / H + 1.2);
       var sideY = sd * (11.8 - (H * .45) * Math.tan(21 * Math.PI / 180));
-      f = f.concat(place(roll(box(0, 0, 0, 5.8, 1.5, 9.4, C.track, C.trackLit, C.track), sd * -.37, 0, 0), 0, tx, sideY + sd * 1.0, H * .45 - 4.7));
-      f = f.concat(box(tx - 3.1, sideY + sd * .9, H * .45, .7, 2.0, 1.0, C.steel, C.bare));
-      f = f.concat(box(tx + 3.1, sideY + sd * .9, H * .45, .7, 2.0, 1.0, C.steel, C.bare));
+      f = f.concat(place(roll(spareLink(9.4, 4.2, 1.3, C.track, C.trackLit, C.steel), sd * -.37, 0, 0), 0, tx, sideY + sd * 1.4, H * .45));
+      f = f.concat(box(tx - 2.4, sideY + sd * .9, H * .45 - 4.6, .7, 2.0, 1.0, C.steel, C.bare, C.steel, 0));
+      f = f.concat(box(tx + 2.4, sideY + sd * .9, H * .45 + 3.6, .7, 2.0, 1.0, C.steel, C.bare, C.steel, 0));
     }
   });
   /* lifting eyes and the aerial base on the bustle */

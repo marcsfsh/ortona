@@ -12,7 +12,7 @@
 
 import { launch, openGame, deploy, openEditor, fastForward, frames, camera, chrome,
          setFog, pose, flatSpot, state, catalog, shoot, turntable, lookAt, pause,
-         reveal, drawable, unlockCamera, parseArgs, deviceNames, SHOTS, ROOT } from './harness.mjs';
+         reveal, drawable, unlockCamera, modelExtent, parseArgs, deviceNames, SHOTS, ROOT } from './harness.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
 
@@ -218,7 +218,9 @@ const SCENES = {
         const u = cat.units.find(q => q.key === key);
         if (!u) { console.error(`  unknown unit "${key}"`); continue; }
         await pose(page, [{ key, x: 0, y: 0 }], spot);
-        const dist = Number(args.dist) || (u.cat === 'veh' ? 104 : 68);
+        /* frame to the subject: a Tiger II is half again the length of a Stuart */
+        const e = await modelExtent(page, key);
+        const dist = Number(args.dist) || (e ? Math.max(70, e.len * 1.38) : 104);
         for (const [name, turn, pitch] of VIEWS) {
           await page.evaluate(a => {
             const v = window.G.units[0];

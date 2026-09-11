@@ -332,6 +332,26 @@ export async function installHooks(page) {
       };
     };
 
+    /* How big a vehicle actually is, so a shot can be framed to the subject. A Tiger II
+     * is half again the length of a Stuart; one fixed camera distance cannot serve both. */
+    O.extent = function (key) {
+      const V = window.VMODEL[key];
+      if (!V) return null;
+      let x0 = 1e9, x1 = -1e9, y1 = 0, z1 = 0;
+      function scan(faces, dx) {
+        faces.forEach(function (f) {
+          f.v.forEach(function (p) {
+            x0 = Math.min(x0, p[0] + dx); x1 = Math.max(x1, p[0] + dx);
+            y1 = Math.max(y1, Math.abs(p[1])); z1 = Math.max(z1, p[2]);
+          });
+        });
+      }
+      scan(V.hull, 0);
+      /* the aerial whip is 2.5 m of wire and would dominate the framing */
+      scan(V.tur.filter(function (f) { return f.v.every(function (p) { return p[2] < 20; }); }), V.turX || 0);
+      return { len: x1 - x0, halfW: y1, top: z1 + V.mountZ };
+    };
+
     O.catalog = function () {
       return {
         units: Object.keys(UNITS).map(k => ({ key: k, side: UNITS[k].side, cat: UNITS[k].cat,
@@ -381,6 +401,8 @@ export async function drawable(page) { return page.evaluate(() => window.__o.dra
 export async function flatSpot(page, clear) { return page.evaluate(c => window.__o.flatSpot(c), clear); }
 export async function state(page) { return page.evaluate(() => window.__o.state()); }
 export async function catalog(page) { return page.evaluate(() => window.__o.catalog()); }
+/** Bounding extent of a vehicle's built model, in world units, for framing a shot. */
+export async function modelExtent(page, key) { return page.evaluate(k => window.__o.extent(k), key); }
 export async function pause(page, on = true) { await page.evaluate(v => { window.G.paused = v; }, on); }
 
 /** Centre the camera on a unit picked by key (or the first of a side). */
