@@ -5914,7 +5914,7 @@ var UCG = {
   rWheel: 2.6, rIdler: 3.0, rSprk: 3.5, rRoll: 1.4,
   zFloor: 5.2,                   /* the belly, clear of the track top */
   zSide: 15.4,                   /* the top edge of the side plates */
-  zNoseTip: 4.2,                 /* where the nose finishes, just above the track */
+  zNoseTip: 4.6,                 /* where the nose finishes, just above the track */
   xFront: 7.0                    /* the front plate, where the nose starts down */
 };
 UCG.zWheel = UCG.rWheel + .55;
@@ -5924,7 +5924,7 @@ UCG.zWheel = UCG.rWheel + .55;
 function ucPulleys() {
   var g = UCG;
   return [
-    { x: 16.0, z: 9.8, r: g.rSprk + .25 },
+    { x: 17.6, z: 8.6, r: g.rSprk + .25 },
     { x: 12.2, z: g.zWheel, r: g.rWheel + .25 },
     { x: 6.0, z: g.zWheel, r: g.rWheel + .25 },
     { x: -1.6, z: g.zWheel, r: g.rWheel + .25 },
@@ -5980,7 +5980,7 @@ function ucBogie(cx, y, sd) {
 
 /* the drive sprocket: a plate wheel with five big lightening holes and a toothed rim */
 function ucSprocket(y, sd) {
-  var C = UC, g = UCG, f = [], i, r = g.rSprk, ax = 16.0, az = 9.8;
+  var C = UC, g = UCG, f = [], i, r = g.rSprk, ax = 17.6, az = 8.6;
   f = f.concat(lathe(ax, y, az, [[0, -1.0], [r - .5, -1.0], [r - .5, 1.0], [0, 1.0]], 14,
                      [C.odDark, C.od, C.odDark], true));
   /* the five holes, cut as dark wells rather than removed */
@@ -6014,11 +6014,9 @@ function ucIdler(y, sd) {
 
 /* the plan outline of the nose at a height: it narrows to a blunt chamfered tip */
 function ucNosePlan(k) {
-  var g = UCG, t = .78 + .22 * k, tx = g.xNose - (1 - k) * 2.0;
-  /* full hull width where it leaves the front plate, drawing in fast so the track
-     and the sprocket run outside it rather than inside a solid wedge */
-  return [[tx, -6.0 * t], [tx, 6.0 * t], [14.2, 8.2 * t],
-          [g.xFront, g.half * t], [g.xFront, -g.half * t], [14.2, -8.2 * t]];
+  var g = UCG, h = g.half * k;
+  return [[g.xNose - (1 - k) * 3.0, -h * .42], [g.xNose - (1 - k) * 3.0, h * .42],
+          [g.xNose - 4.6, h * .86], [g.xFront, h], [g.xFront, -h], [g.xNose - 4.6, -h * .86]];
 }
 
 function carrierHull(body, cap, sideC) {
@@ -6065,18 +6063,18 @@ function carrierHull(body, cap, sideC) {
 
   /* ---- the nose: the long sloped plate down to a blunt tip, and the lower plate
      that closes it off underneath ---- */
-  var n0 = ucNosePlan(1.0), n1 = ucNosePlan(.80), j;
+  var n0 = ucNosePlan(1.0), n1 = ucNosePlan(.62), j;
   for (i = 0; i < n0.length; i++) {
     var a = n0[i], b = n0[(i + 1) % n0.length], a1 = n1[i], b1 = n1[(i + 1) % n1.length];
     if (a[0] === g.xFront && b[0] === g.xFront) continue;      /* the open back of the wedge */
-    f = f.concat(faceOut([{ v: [[a[0], a[1], g.zFloor + 9.0], [b[0], b[1], g.zFloor + 9.0],
+    f = f.concat(faceOut([{ v: [[a[0], a[1], g.zFloor + 7.4], [b[0], b[1], g.zFloor + 7.4],
                                 [b1[0], b1[1], g.zNoseTip], [a1[0], a1[1], g.zNoseTip]], c: body }],
                          2.0, 0, 10.0));
   }
   f = f.concat(faceOut([{ v: n1.map(function (p) { return [p[0], p[1], g.zNoseTip]; }), c: C.odDark }], 2.0, 0, 30.0));
-  f = f.concat(faceOut([{ v: n0.map(function (p) { return [p[0], p[1], g.zFloor + 9.0]; }), c: cap }], 2.0, 0, -20.0));
+  f = f.concat(faceOut([{ v: n0.map(function (p) { return [p[0], p[1], g.zFloor + 7.4]; }), c: cap }], 2.0, 0, -20.0));
   /* the rivets round the nose plate and the towing eyes at its tip */
-  f = f.concat(boltRow(g.xFront + 1.4, g.xNose - 3.4, 0, g.zFloor + 9.0, 8, .32, .24, C.odDark));
+  f = f.concat(boltRow(g.xFront + 1.4, g.xNose - 3.4, 0, g.zFloor + 7.4, 8, .32, .24, C.odDark));
   [-1, 1].forEach(function (s2) {
     f = f.concat(box(g.xNose - 1.2, s2 * 3.0, g.zNoseTip + .4, 2.2, 1.2, 1.6, C.odDark, C.od, C.odDark, 0));
     f = f.concat(boltRow(g.xFront + 1.0, g.xNose - 4.0, s2 * (g.half - 1.4), g.zNoseTip + 3.6, 6, .3, .22, C.odDark));
