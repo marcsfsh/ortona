@@ -5411,7 +5411,7 @@ var P4G = {
   xSprk: 27.5, zSprk: 7.4, rSprk: 3.50,
   xIdl: -28.0, zIdl: 6.9, rIdl: 3.25,
   bog: [17.7, 5.9, -5.9, -17.7], bogSpan: 2.7,
-  roll: [19.0, 8.5, -2.0, -12.5], zRoll: 9.0, rRoll: 1.46
+  roll: [19.0, 8.5, -2.0, -12.5], zRoll: 9.8, rRoll: 1.46
 };
 P4G.zWheel = P4G.R + P4G.T;
 P4G.beltR = P4G.R + P4G.T / 2;
@@ -5521,9 +5521,9 @@ var P4H = {
   guardX: 32.5,        /* the guards run past the hull fore and aft */
   tubHalf: 11.5,       /* the hull tub between the tracks */
   zBelly: 4.7,         /* 400 mm ground clearance */
-  zTub: 11.7,          /* 1.00 m: the top of the tub, the brow, and the fender line */
-  zRoof: 20.1,         /* 1.72 m: the superstructure roof, and the turret ring */
-  zDeck: 18.5,         /* 1.58 m: the engine deck, a step below the roof */
+  zTub: 12.5,          /* 1.07 m: the top of the tub, the brow, and the fender line */
+  zRoof: 18.9,         /* 1.62 m: the superstructure roof, and the turret ring */
+  zDeck: 17.5,         /* 1.50 m: the engine deck, a step below the roof */
   xNose: 32.0, xDriver: 20.0, xBulk: -15.7, xTail: -30.8
 };
 
@@ -5700,7 +5700,7 @@ function pzivHull(body, cap, sideC) {
    plate, cheeks angling out to the widest point a third of the way back, then sides
    running aft to a wide flat rear that carries the bin. kx and ky draw it in as it
    rises, because the walls lean inward about eight degrees. */
-function pzivTurretRing(z, kx, ky) {
+function pzivTurretRing(z, kx, ky, cut) {
   var pts = [
     [11.4, -7.4], [11.4, 7.4],          /* the front plate, 1.26 m across */
     [6.4, 10.4], [0.4, 11.1],           /* the cheeks opening out to the widest point */
@@ -5709,14 +5709,21 @@ function pzivTurretRing(z, kx, ky) {
     [-9.4, -10.5],
     [0.4, -11.1], [6.4, -10.4]
   ];
-  return pts.map(function (p) { return [p[0] * kx, p[1] * ky, z]; });
+  /* `cut` draws the forward half of the ring in, most at the front plate and nothing
+     by the widest point. Applied to the base ring alone it builds the angled plate
+     across each front lower corner: from ahead it is a triangular facet running up
+     and out from the turret ring, and no Panzer IV turret is without it. */
+  return pts.map(function (p) {
+    var t = cut ? Math.max(0, (p[0] - 0.4) / 11.0) * cut : 0;
+    return [p[0] * kx, (p[1] - (p[1] > 0 ? t : -t)) * ky, z];
+  });
 }
 
 function pzivTurret(body, cap, sideC) {
-  var C = PZ, f = [], H = 8.7, i;   /* 0.74 m of turret between the ring and the roof */
+  var C = PZ, f = [], H = 7.8, i;   /* 0.67 m of turret between the ring and the roof */
 
   /* the walls, and the ring skirt below them that drops into the superstructure */
-  var rings = [pzivTurretRing(0, 1.0, 1.0), pzivTurretRing(1.3, 1.0, 1.0), pzivTurretRing(H, .97, .93)];
+  var rings = [pzivTurretRing(0, 1.0, 1.0, 2.6), pzivTurretRing(3.4, 1.0, 1.0, 0), pzivTurretRing(H, .97, .94, 0)];
   f = f.concat(welded(faceOut(loft(rings, [C.dark, body]), -2, 0, H / 2)));
   f = f.concat(faceOut([{ v: rings[2].slice(), c: cap }], -2, 0, H / 2 - 4));
   f = f.concat(faceOut([{ v: rings[0].slice(), c: C.dark }], -2, 0, H / 2 + 4));
@@ -5758,27 +5765,27 @@ function pzivTurret(body, cap, sideC) {
      The forward leaf carries a vision block, the rear one a pistol port ---- */
   [-1, 1].forEach(function (s2) {
     var wy = s2 * 10.4;
-    f = f.concat(place(roll(box(-2.2, 0, 0, 5.6, .55, 6.2, C.body, C.lit, C.dark, 0), s2 * -.14, 0, 0), 0, -2.2, wy, 1.5));
-    f = f.concat(place(roll(box(3.4, 0, 0, 5.0, .55, 6.2, C.body, C.lit, C.dark, 0), s2 * -.14, 0, 0), 0, 3.4, wy, 1.5));
-    f = f.concat(box(3.4, wy + s2 * .4, 5.4, 1.8, .5, 1.1, '#191c16', '#23261f', '#23261f', 0));
-    f = f.concat(stud(-3.6, wy + s2 * .5, 3.4, .95, .5, C.dark));
+    f = f.concat(place(roll(box(-2.2, 0, 0, 5.6, .55, 5.6, C.body, C.lit, C.dark, 0), s2 * -.14, 0, 0), 0, -2.2, wy, 1.2));
+    f = f.concat(place(roll(box(3.4, 0, 0, 5.0, .55, 5.6, C.body, C.lit, C.dark, 0), s2 * -.14, 0, 0), 0, 3.4, wy, 1.2));
+    f = f.concat(box(3.4, wy + s2 * .4, 4.8, 1.8, .5, 1.1, '#191c16', '#23261f', '#23261f', 0));
+    f = f.concat(stud(-3.6, wy + s2 * .5, 3.0, .95, .5, C.dark));
     /* the hinges and the grab handle on each leaf */
-    [1.0, 5.4].forEach(function (hz) {
+    [.8, 4.8].forEach(function (hz) {
       f = f.concat(box(.7, wy + s2 * .35, hz, .8, .7, 1.1, C.steel, C.bare, C.steel, 0));
       f = f.concat(box(-4.9, wy + s2 * .35, hz, .8, .7, 1.1, C.steel, C.bare, C.steel, 0));
     });
-    f = f.concat(grabIron(-2.0, wy + s2 * .9, 3.2, 2.2, .5, C.steel, 'x'));
+    f = f.concat(grabIron(-2.0, wy + s2 * .9, 2.9, 2.2, .5, C.steel, 'x'));
   });
 
   /* ---- the roof: the drum cupola at the back, the ventilator, the signal port ---- */
   var zr = H;
-  f = f.concat(cyl(-9.6, 0, zr, 3.5, 3.5, 1.9, 16, C.body, C.dark, 0, true));
+  f = f.concat(cyl(-9.6, 0, zr, 3.5, 3.5, 3.0, 16, C.body, C.dark, 0, true));
   for (i = 0; i < 5; i++) {
     var va = -Math.PI / 2 + (i / 4) * Math.PI + Math.PI;
-    f = f.concat(box(-9.6 + Math.cos(va) * 3.3, Math.sin(va) * 3.3, zr + .9, 1.1, 1.5, 1.2, C.steel, '#1a1b16', '#1a1b16', 0));
+    f = f.concat(box(-9.6 + Math.cos(va) * 3.3, Math.sin(va) * 3.3, zr + 1.1, 1.1, 1.5, 1.5, C.steel, '#1a1b16', '#1a1b16', 0));
   }
-  f = f.concat(cyl(-9.6, 0, zr + 1.9, 3.8, 3.8, .4, 16, C.dark, C.body, 0, true));
-  f = f.concat(cyl(-9.6, 0, zr + 2.3, 3.0, 3.0, .3, 16, C.body, cap, 0, true));
+  f = f.concat(cyl(-9.6, 0, zr + 3.0, 3.85, 3.85, .45, 16, C.dark, C.body, 0, true));
+  f = f.concat(cyl(-9.6, 0, zr + 3.45, 3.1, 3.1, .45, 16, C.body, cap, 0, true));
   f = f.concat(cyl(1.0, -4.4, zr, 1.5, 1.5, .9, 12, C.dark, C.body, 0, true));
   f = f.concat(cyl(1.0, -4.4, zr + .9, 1.15, 1.15, .3, 12, C.steel, C.steel, 0, true));
   f = f.concat(cyl(-2.0, 4.6, zr, 1.2, 1.2, .5, 10, C.dark, C.body, 0, true));
@@ -5787,26 +5794,26 @@ function pzivTurret(body, cap, sideC) {
   });
 
   /* ---- the Rommelkiste: the full-width stowage bin bolted across the rear plate ---- */
-  f = f.concat(box(-17.4, 0, 1.6, 5.8, 17.4, 6.6, C.dark, body, C.dark));
-  f = f.concat(box(-17.4, 0, 8.2, 6.2, 17.8, .5, body, cap, C.dark, 0));
+  f = f.concat(box(-17.4, 0, 1.3, 5.8, 17.4, 5.9, C.dark, body, C.dark));
+  f = f.concat(box(-17.4, 0, 7.2, 6.2, 17.8, .5, body, cap, C.dark, 0));
   [-1, 1].forEach(function (s2) {
-    f = f.concat(box(-20.3, s2 * 5.6, 3.4, .4, 1.4, 3.6, C.bare, C.steel, C.bare, 0));    /* the latches */
-    f = f.concat(box(-14.7, s2 * 7.6, 2.8, 2.6, 1.1, 1.4, C.dark, C.body, C.dark, 0));    /* the brackets */
+    f = f.concat(box(-20.3, s2 * 5.6, 2.9, .4, 1.4, 3.4, C.bare, C.steel, C.bare, 0));    /* the latches */
+    f = f.concat(box(-14.7, s2 * 7.6, 2.5, 2.6, 1.1, 1.4, C.dark, C.body, C.dark, 0));    /* the brackets */
   });
   /* the pistol port in the rear plate, above the bin */
-  f = f.concat(place(tubeSmooth(-.8, 0, 0, 0, 1.15, 10, C.dark, C.body), 0, -13.6, 0, 7.4));
+  f = f.concat(place(tubeSmooth(-.8, 0, 0, 0, 1.15, 10, C.dark, C.body), 0, -13.6, 0, 6.6));
   return f;
 }
 
 /* the MG34 on the cupola ring, mounted as the roof-MG upgrade */
 function pzivCupolaMG() {
-  var C = PZ, f = [], zr = 8.7;
-  f = f.concat(cyl(-9.6, 0, zr + 2.3, 4.1, 4.1, .4, 16, C.steel, C.bare, 0, true));
-  f = f.concat(cyl(-6.2, -1.4, zr + 2.7, .5, .5, 2.4, 6, C.steel, C.bare, 0, true));
-  f = f.concat(place(pitch(box(3.6, 0, 0, 8.4, 1.1, 1.5, C.steel, C.bare), -.22, 0, 0), -.35, -6.2, -1.4, zr + 5.1));
+  var C = PZ, f = [], zr = 7.8;
+  f = f.concat(cyl(-9.6, 0, zr + 3.45, 4.15, 4.15, .4, 16, C.steel, C.bare, 0, true));
+  f = f.concat(cyl(-6.2, -1.4, zr + 3.85, .5, .5, 2.4, 6, C.steel, C.bare, 0, true));
+  f = f.concat(place(pitch(box(3.6, 0, 0, 8.4, 1.1, 1.5, C.steel, C.bare), -.22, 0, 0), -.35, -6.2, -1.4, zr + 6.25));
   f = f.concat(place(pitch(tubeSmooth(0, 4.4, 0, 0, .4, 8, C.steel, C.steel), -.22, 0, 0), -.35,
-                     -6.2 + 7.6 * Math.cos(-.35), -1.4 + 7.6 * Math.sin(-.35), zr + 5.1 + 7.6 * .22));
-  f = f.concat(box(-7.6, -.6, zr + 5.5, 2.2, 1.6, 1.8, C.dark, '#3d4133', C.dark, 0));
+                     -6.2 + 7.6 * Math.cos(-.35), -1.4 + 7.6 * Math.sin(-.35), zr + 6.25 + 7.6 * .22));
+  f = f.concat(box(-7.6, -.6, zr + 6.65, 2.2, 1.6, 1.8, C.dark, '#3d4133', C.dark, 0));
   return f;
 }
 
@@ -5835,13 +5842,13 @@ function pzivTurretSkirts(body, sideC) {
   var C = PZ, f = [], i, s2;
   for (s2 = -1; s2 <= 1; s2 += 2) {
     var sy = s2 * 12.6;
-    f = f.concat(place(tubeSmooth(-15.5, 8.0, 0, 0, .34, 6, C.steel, C.bare), 0, 0, sy, 7.4));
+    f = f.concat(place(tubeSmooth(-15.5, 8.0, 0, 0, .34, 6, C.steel, C.bare), 0, 0, sy, 6.6));
     for (i = 0; i < 3; i++)
-      f = f.concat(box(6.0 - i * 7.6, sy, 1.3, 7.2, .4, 6.0, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
-    f = f.concat(box(-14.0, sy - s2 * 1.0, 1.3, 3.0, .4, 6.0, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
+      f = f.concat(box(6.0 - i * 7.6, sy, 1.2, 7.2, .4, 5.3, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
+    f = f.concat(box(-14.0, sy - s2 * 1.0, 1.2, 3.0, .4, 5.3, PZ4.skirt, PZ4.skirtLit, PZ4.dark, 0));
   }
-  f = f.concat(box(-16.4, 0, 1.3, .4, 24.0, 6.0, PZ4.skirt, PZ4.skirtLit, sideC, 0));
-  f = f.concat(place(tubeSmooth(-12.2, 12.2, 0, 0, .34, 6, C.steel, C.bare), Math.PI / 2, -16.0, 0, 7.4));
+  f = f.concat(box(-16.4, 0, 1.2, .4, 24.0, 5.3, PZ4.skirt, PZ4.skirtLit, sideC, 0));
+  f = f.concat(place(tubeSmooth(-12.2, 12.2, 0, 0, .34, 6, C.steel, C.bare), Math.PI / 2, -16.0, 0, 6.6));
   return f;
 }
 
