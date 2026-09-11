@@ -38,9 +38,9 @@ const REAL = {
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
   ger_puma:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 2.00,
-               body: 1.01, roof: 1.05 }   /* the two ends of the diamond section: the floor
-               plate and the roof deck. On this one the knuckle and the mudguard line are the
-               same measurement as the width over all, so the section is checked at its ends */
+               body: 1.47, roof: 1.12, clear: 0.24 }   /* body: the knuckle, where the car is
+               widest across the armour. The mudguards carry it out to 1.95 m from there, and
+               the gap between the two is half of what makes this thing look like itself */
 };
 
 /* Where to slice each hull, in model units: the sponson lip and the roof plate.
@@ -54,7 +54,7 @@ const PROBE = {
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
   ger_p4:    { bodyZ: 16.0, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true },
-  ger_puma:  { bodyZ: 3.4, roofZ: 14.7, xLo: -6.0, xHi: 6.0 }   /* lofted: real vertices sit at each ring */
+  ger_puma:  { bodyZ: 6.6, roofZ: 14.4, xLo: 6.5, xHi: 10.5 }   /* between the spare wheel and the front tyre */   /* lofted: real vertices sit at each ring */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
