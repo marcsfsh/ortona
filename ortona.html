@@ -619,6 +619,14 @@ var UNITS = {
     at: { range: 250, dmg: 70, rof: 5.4, acc: .58, pen: 150, aoe: 22, shell: 1 },
     desc: 'Veterans carrying Stens, grenades and a PIAT. Built for close work through breached walls; expensive to replace.'
   },
+  us_fg: {
+    side: 'us', name: 'Foot Guards Section', short: 'GUARDS', cat: 'inf', hk: 'N',
+    models: 6, hpPer: 96, speed: 66, sight: 320, pop: 11, cost: { mp: 400, fu: 15 }, time: 30,
+    req: 'us_bar',
+    w: { range: 240, dmg: 17.5, rof: 0.42, acc: .65, sup: .021, pen: 18 },
+    at: { range: 175, dmg: 58, rof: 3.8, acc: .60, sup: .02, pen: 96, aoe: 12, shell: 1 },
+    desc: 'Two Brens, a belt-fed .30, a marksman and two Stens, and the Sten men put the Stens down and pick up bazookas the moment anything tracked comes round the corner. It will take a street off a Fallschirmjaeger group and strip a half-track or an armoured car, and against a Panzer the bazookas are a nuisance rather than an answer.'
+  },
   us_at: {
     side: 'us', name: 'Ordnance QF 6-Pounder', short: '6-PDR', cat: 'team', hk: 'T',
     models: 4, hpPer: 60, speed: 40, sight: 360, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
@@ -626,9 +634,16 @@ var UNITS = {
     w: { range: 440, dmg: 118, rof: 4.0, acc: .74, sup: .02, pen: 265, aoe: 30, shell: 1 },
     desc: 'Kills tanks and nothing else. Slow to move and helpless if infantry get on top of it.'
   },
+  us_t8: {
+    side: 'us', name: '105 mm Gun T8', short: 'T8 105', cat: 'team', hk: 'K',
+    models: 5, hpPer: 66, speed: 0, sight: 470, pop: 12, cost: { mp: 400, fu: 40 }, time: 38,
+    req: 'us_mot', setup: 2.6, arc: Math.PI, towable: 1, closeWeak: 2.4, blastRes: .72,
+    w: { range: 540, dmg: 172, rof: 5.4, acc: .78, sup: .05, pen: 300, aoe: 46, shell: 1 },
+    desc: 'A 105 on a split trail, sited rather than driven: it has no engine and a half-track or a tank has to bring it up and hitch it again to take it away. It sees further than anything else on the field and it reaches most of the way across a street from cover, but it only shoots through the half-circle it is laid on. Right-click to lay it. Anything that gets in among the crew kills them.'
+  },
   us_m3: {
     side: 'us', name: 'M3A1 Half-Track', short: 'M3', cat: 'veh', hk: 'H',
-    upgrades: ['quad50', 'how75', 'aid'],
+    upgrades: ['quad50', 'how75', 'aid'], tows: 1,
     hp: 360, armor: 40, speed: 112, sight: 320, pop: 10, cost: { mp: 240, fu: 30 }, time: 22,
     req: 'us_mot',
     w: { range: 280, dmg: 13, rof: .22, acc: .58, sup: .05, pen: 26, aoe: 0 },
@@ -642,27 +657,27 @@ var UNITS = {
   us_m8: {
     side: 'us', name: 'Universal Carrier', short: 'UC', cat: 'veh', hk: 'V', upgrades: ['thirty'],
     hp: 400, armor: 45, speed: 120, sight: 340, pop: 8, cost: { mp: 220, fu: 30 }, time: 22,
-    req: 'us_mot', caps: 1, carries: 1,
+    req: 'us_mot', caps: 1, carries: 1, tows: 1,
     w: { range: 285, dmg: 16, rof: 0.45, acc: .62, sup: .022, pen: 72, aoe: 14 },
     wUp: { thirty: { range: 300, dmg: 9, rof: .20, acc: .58, sup: .055, supCap: .92, pen: 8, aoe: 0 } },
     desc: 'Small, fast tracked carrier with a Bren gun. It sees further than a section on foot and there are men in it, so it takes and holds ground the way they do. It will carry a rifle section forward, and the Bren can be swapped for a belt-fed .30. Anti-tank fire opens it like a tin.'
   },
   us_stuart: {
-    side: 'us', name: 'Stuart V (M3A3)', short: 'STU V', cat: 'veh', hk: 'T', upgrades: ['mg'],
+    side: 'us', name: 'Stuart V (M3A3)', short: 'STU V', cat: 'veh', hk: 'T', upgrades: ['mg'], tows: 1,
     hp: 480, armor: 62, speed: 132, sight: 350, pop: 9, cost: { mp: 260, fu: 45 }, time: 26,
     req: 'us_mot',
     w: { range: 300, dmg: 34, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
     desc: 'The armoured brigade\'s recce tank. Fast, a 37 mm that handles infantry and armoured cars, thin plate that a Panzer IV goes straight through.'
   },
   us_ach: {
-    side: 'us', name: '17pdr SP Achilles', short: 'ACHILLES', cat: 'veh', hk: 'A', upgrades: ['mg', 'coax'],
+    side: 'us', name: '17pdr SP Achilles', short: 'ACHILLES', cat: 'veh', hk: 'A', upgrades: ['mg', 'coax'], tows: 1,
     hp: 620, armor: 84, speed: 96, sight: 380, pop: 16, cost: { mp: 430, fu: 130 }, time: 44,
     req: 'us_mot',
     w: { range: 465, dmg: 145, rof: 1.6, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1 },
     desc: 'An M10 with a 17-pounder in it. Nothing on the field survives being hit by one and it reloads twice in the time a Panzer IV takes once, but it fires solid shot from an open turret behind a quarter of the plate a Sherman has: it kills armour and it cannot touch infantry. Keep it back, keep it hull down, and keep men around it.'
   },
   us_sher: {
-    side: 'us', name: 'Sherman V (M4A4)', short: 'SHR V', cat: 'veh', hk: 'F', upgrades: ['mg'],
+    side: 'us', name: 'Sherman V (M4A4)', short: 'SHR V', cat: 'veh', hk: 'F', upgrades: ['mg'], tows: 1,
     hp: 760, armor: 118, speed: 80, sight: 330, pop: 14, cost: { mp: 340, fu: 90 }, time: 34,
     req: 'us_mot',
     w: { range: 380, dmg: 140, rof: 3.3, acc: .70, sup: .05, pen: 210, aoe: 58, shell: 1 },
@@ -755,10 +770,10 @@ var BUILDINGS = {
   us_hq:  { side: 'us', name: 'Canadian Field Headquarters', short: 'FIELD HQ', w: 132, h: 104, hp: 3000, hq: 1,
             makes: ['us_eng', 'us_rifle'] },
   us_bar: { side: 'us', name: 'Infantry Company Post', short: 'COMPANY POST', w: 112, h: 92, hp: 1500, hk: '1',
-            cost: { mp: 200 }, time: 26, makes: ['us_mg', 'us_ab'],
+            cost: { mp: 200 }, time: 26, makes: ['us_mg', 'us_ab', 'us_fg'],
             desc: 'Unlocks the Vickers team and mousehole assault section.' },
   us_mot: { side: 'us', name: 'Armour Support Point', short: 'ARMOUR POINT', w: 134, h: 104, hp: 1700, hk: '2',
-            cost: { mp: 240, fu: 25 }, time: 32, makes: ['us_at', 'us_m8', 'us_m3', 'us_stuart', 'us_sher'],
+            cost: { mp: 240, fu: 25 }, time: 32, makes: ['us_at', 'us_t8', 'us_m8', 'us_m3', 'us_stuart', 'us_sher', 'us_ach'],
             desc: 'Unlocks the 6-pounder, Universal Carrier and Sherman V.' },
   ger_hq:  { side: 'ger', name: 'Fallschirmjäger Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['ger_pio', 'ger_gren'] },
@@ -1468,16 +1483,41 @@ function updateBuilding(b, dt) {
   var key = b.queue[0], d = UNITS[key];
   if (b.qt >= d.time) {
     b.queue.shift(); b.qt = 0;
-    var sp = nearestFree(b.x + (b.side === 'us' ? b.def.w / 2 + 42 : -b.def.w / 2 - 42), b.y + rnd(-30, 30));
+    var sp = d.speed > 0 ? nearestFree(b.x + (b.side === 'us' ? b.def.w / 2 + 42 : -b.def.w / 2 - 42), b.y + rnd(-30, 30))
+                         : nearestFree(b.rally.x + rnd(-24, 24), b.rally.y + rnd(-24, 24));
     var u = spawnUnit(b.side, key, sp.x, sp.y, b.side === 'us' ? 0 : Math.PI);
-    orderMove(u, b.rally.x + rnd(-24, 24), b.rally.y + rnd(-24, 24));
+    if (d.speed > 0) orderMove(u, b.rally.x + rnd(-24, 24), b.rally.y + rnd(-24, 24));
     if (b.side === G.side) sfx('spawn');
   }
 }
 
 /* ---------------------------------------------------------------- orders */
-function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; }
+function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; }
 
+/* A gun with no engine goes where a half-track or a tank drags it. Hitched, it rides a
+   trail's length behind the tow and cannot fire; unhitched, it has to set up again. */
+function canHitch(v, g) {
+  return v && g && v.cat === 'veh' && v.def.tows && !v.tow && !v.dead &&
+         g.def.towable && g.side === v.side && !g.towedBy && !g.dead;
+}
+function hitchGun(v, g) {
+  if (!canHitch(v, g)) return;
+  v.tow = g; g.towedBy = v;
+  clearOrder(g); g.target = null; g.forced = null;
+  if (v.side === G.side) toast(g.def.short + ' hitched');
+}
+function unhitchGun(v) {
+  var g = v.tow, i;
+  if (!g) return;
+  v.tow = null; g.towedBy = null;
+  var a = v.facing + Math.PI, sp = nearestFree(v.x + Math.cos(a) * 52, v.y + Math.sin(a) * 52);
+  g.x = sp.x; g.y = sp.y;
+  for (i = 0; i < g.models.length; i++) {
+    g.models[i].x = g.x + g.models[i].ox; g.models[i].y = g.y + g.models[i].oy; g.models[i].f = g.facing;
+  }
+  g.setup = g.def.setup || 0;
+  if (v.side === G.side) toast(g.def.short + ' unhitched');
+}
 /* A carrier takes one section aboard. The men stay in G.units, so the population, the
    selection and the reinforcement all still know about them; inside is the one flag
    every other system checks, and while it is set they are not in the world: nothing
@@ -1525,7 +1565,7 @@ function orderStop(u) {
   clearOrder(u); u.order = 'hold';
 }
 function orderRetreat(u) {
-  var hq = hqOf(u.side); if (!hq || u.cat === 'veh') return;
+  var hq = hqOf(u.side); if (!hq || u.cat === 'veh' || !u.def.speed) return;   /* a gun with no engine stays where it is put */
   clearOrder(u);
   u.retreat = 1; u.order = 'retreat';
   u.dest = { x: hq.x, y: hq.y + hq.def.h / 2 + 60 };
@@ -1844,6 +1884,7 @@ function acquire(u) {
     var d = dist(u, e);
     if (d > maxR) continue;
     if (u.def.atOnly && e.cat !== 'veh') continue;
+    if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, e))) > u.def.arc / 2) continue;
     if (!visibleTo(u.side, e)) continue;
     if (!clearLine(u.x, u.y, e.x, e.y)) continue;
     var sc = -d;
@@ -1937,6 +1978,7 @@ function fireAt(u, t, dt) {
   if (u[cdKey] > 0) return;
   var d = dist(u, t);
   if (d > w.range) return;
+  if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0) return;
   if (u.retreat) return;
   if (u.moving && (u.cat === 'team' || w.shell)) return;
@@ -1986,7 +2028,8 @@ function fireAt(u, t, dt) {
     for (var q = 0; q < Math.min(shots, 6); q++)
       G.shots.push({ kind: 'tracer', x: from.x + rnd(-9, 9), y: from.y + rnd(-9, 9),
                      tx: t.x + rnd(-14, 14), ty: t.y + rnd(-14, 14), t: 0, dur: .075, side: u.side });
-    if (hits > 0) damage(t, w.dmg * hits, u);
+    var close = (t.def && t.def.closeWeak && u.cat !== 'veh' && d < 170) ? t.def.closeWeak : 1;
+    if (hits > 0) damage(t, w.dmg * hits * close, u);
     sfx(w.rof < .2 ? 'mg' : 'rifle', u.x, u.y);
     if (hits) spawnFx('hit', t.x + rnd(-14, 14), t.y + rnd(-14, 14));
   }
@@ -2010,7 +2053,7 @@ function explode(x, y, radius, dmg, owner, except) {
         var mo = e.models[m];
         if (!mo.alive) continue;
         var md = Math.hypot(mo.x - x, mo.y - y);
-        if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85, owner);
+        if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85 * (e.def.blastRes || 1), owner);
       }
       e.sup = clamp(e.sup + .45 * f, 0, 1.35);
     }
@@ -2243,6 +2286,30 @@ function updateUnit(u, dt) {
     for (var bm = 0; bm < u.models.length; bm++) if (u.models[bm].alive) u.models[bm].hp *= .45;
     u.sup = 1.1;
   }
+  /* on the hook: dragged along behind whatever is towing it, laid where the tow points */
+  if (u.towedBy) {
+    var tw = u.towedBy;
+    if (tw.dead || tw.tow !== u) { u.towedBy = null; tw.tow = null; u.setup = u.def.setup || 0; }
+    else {
+      var ta = tw.facing + Math.PI;
+      u.x = tw.x + Math.cos(ta) * 46; u.y = tw.y + Math.sin(ta) * 46;
+      u.facing = tw.facing; u.target = null; u.setup = u.def.setup || 0;
+      for (var tm = 0; tm < u.models.length; tm++) {
+        u.models[tm].x = u.x + u.models[tm].ox * .5; u.models[tm].y = u.y + u.models[tm].oy * .5;
+        u.models[tm].f = u.facing;
+      }
+      return;
+    }
+  }
+  /* driving to a gun to pick it up */
+  if (u.order === 'hitch' && u.hitchT) {
+    if (u.hitchT.dead || u.hitchT.towedBy) clearOrder(u);
+    else if (dist(u, u.hitchT) < 58) { hitchGun(u, u.hitchT); clearOrder(u); }
+    else if (!u.path || !u.dest || dsq(u.dest.x, u.dest.y, u.hitchT.x, u.hitchT.y) > 3600) {
+      u.dest = { x: u.hitchT.x, y: u.hitchT.y };
+      u.path = findPath(u.x, u.y, u.hitchT.x, u.hitchT.y); u.pi = 0;
+    }
+  }
   /* walking to a carrier to get in it */
   if (u.order === 'board' && u.boardT) {
     if (u.boardT.dead || (u.boardT.cargo && u.boardT.cargo !== u)) clearOrder(u);
@@ -2354,7 +2421,7 @@ function updateUnit(u, dt) {
   if (u.cat === 'veh' && !u.retreat) fireSecondary(u, dt);
   if (u.target && !u.target.dead) {
     if (!u.moving || u.cat === 'veh') fireAt(u, u.target, dt);
-    if (!u.moving && u.cat !== 'veh') u.facing = angTo(u, u.target);
+    if (!u.moving && u.cat !== 'veh' && !u.def.arc) u.facing = angTo(u, u.target);
     if (u.cat === 'veh') u.want = angTo(u, u.target);
   } else if (u.cat === 'veh') {
     u.want = u.facing;
@@ -4708,7 +4775,7 @@ function louvrePanel(cx, cy, cz, l, w, slats, col, steel) {
 }
 
 var OD = { track: '#1c1e15', trackLit: '#2e3226', rubber: '#141610', steel: '#33362a' };
-var VMODEL = {}, TEAMMODEL = {}, ATMODEL = {};
+var VMODEL = {}, TEAMMODEL = {}, ATMODEL = {}, GUNMODEL = {};
 
 function bogie(x, y, z, r) {
   return wheelY(x, y, z + r, r, 4.8);
@@ -8714,6 +8781,55 @@ function sixPounderModel() {
   return f;
 }
 
+/* The 105 mm Gun T8: a long piece on a split trail, sited rather than driven. Half again
+   the 6-pounder in every direction, a double-baffle brake on the muzzle, a shield a man
+   can stand behind, and a lunette on the trails for the tow to hook to. */
+function gunT8Model() {
+  var C = GUN, f = [], t;
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(at(lathe(0, 0, 0, [[0, -2.0], [1.8, -2.0], [1.8, -1.1], [3.4, -1.6], [4.6, -2.0], [6.0, -2.0],
+                                    [6.0, 2.0], [4.6, 2.0], [3.4, 1.6], [1.8, 1.1], [1.8, 2.0], [0, 2.0]], 16,
+                          [C.odL, C.od, C.dgD, C.od, '#2a2b26', C.rubber, '#2a2b26', C.od, C.dgD, C.od, C.odL], true),
+                  0, sd * 15, 6.0));
+    for (t = 0; t < 18; t++) {
+      var ta = t / 18 * TAU;
+      f = f.concat(box(Math.cos(ta) * 5.9, sd * 15, 6.0 + Math.sin(ta) * 5.9, .6, 3.6, .6, '#2a2b26', C.rubber));
+    }
+  });
+  f = f.concat(box(0, 0, 4.6, 6, 28, 2.6, C.od, C.odL, lit(C.od, .9)));
+  /* the split trails and their spades, and the lunette the tow hooks on to */
+  [-1, 1].forEach(function (sd) {
+    var trail = box(-16, 0, 0, 32, 2.6, 4.0, C.od, C.odL, lit(C.od, .9))
+      .concat(box(-31.5, 0, -1.6, 3.2, 6.0, 6.4, C.steel, C.steelL));
+    f = f.concat(place(trail, sd * .5, 0, 0, 3.8));
+  });
+  f = f.concat(place(tubeSmooth(-3.0, 0, 0, 0, 1.5, 10, C.steel, C.steelL), 0, -30.0, 0, 5.4));
+  /* saddle, cradle and the two handwheels the layer works */
+  f = f.concat(box(0, 0, 7.2, 10, 11, 5.0, C.od, C.odL, lit(C.od, .9)));
+  f = f.concat(box(4, 0, 12.2, 18, 6.4, 5.0, C.od, C.odL, lit(C.od, .9)));
+  f = f.concat(cyl(-5.5, 7.0, 10.4, 2.0, 2.0, .6, 12, C.steel, C.steelL, 0, true));
+  f = f.concat(cyl(-5.5, -7.0, 10.4, 2.0, 2.0, .6, 12, C.steel, C.steelL, 0, true));
+  /* the shield, in two plates with the upper one folded back */
+  f = f.concat(place(pitch(box(0, 0, 0, 1.2, 30, 19, C.od, C.odL, lit(C.od, .9)), .16, 0, 0), 0, 8.0, 0, 5.0));
+  f = f.concat(place(pitch(box(0, 0, 0, 1.2, 25, 8.0, C.od, C.odL, lit(C.od, .9)), .16, 0, 0), 0, 8.0, 0, 23.8));
+  f = f.concat(box(7.6, -5.6, 17.0, 1.6, 3.4, 2.4, '#14150f', '#14150f'));
+  /* breech, recuperator, the tube, and the brake on the end of it */
+  f = f.concat(box(-3.2, 0, 12.4, 6.4, 7.0, 7.0, C.steel, C.steelL, C.steel));
+  f = f.concat(tubeSmooth(0, 11, 0, 18.4, 1.4, 10, C.steel, C.steelL));
+  f = f.concat(tubeSmooth(0, 14, 0, 15.0, 2.0, 14, C.steel, C.steel));
+  f = f.concat(tubeSmooth(14, 40, 0, 15.0, 1.45, 14, C.steel, C.steel));
+  f = f.concat(box(42.4, 0, 13.0, 4.4, 4.0, 4.0, C.steel, C.steelL, C.steel, .3));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(place(tubeSmooth(-.4, .4, 0, 0, 1.2, 10, '#15170f', '#15170f'), Math.PI / 2, 42.4, sd * 2.0, 15.0));
+  });
+  f = f.concat(tubeSmooth(44.6, 45.4, 0, 15.0, 1.75, 12, '#4a4e43', '#1a1b16'));
+  /* the layer's seat and the rounds stacked against the trail */
+  f = f.concat(box(-8, -9, 7.4, 5, 5, 1.4, C.steel, C.steelL));
+  f = f.concat(box(-13, 11.0, 0, 9, 4.2, 5.5, C.od, C.odL, lit(C.od, .9)));
+  f = f.concat(box(-13, 11.0, 5.5, 9, 4.2, 5.5, C.od, C.odL, lit(C.od, .9)));
+  return f;
+}
+
 /* the 7.5 cm Pak 40: a long L/46 with a double-baffle brake, the recoil cylinders
    above the breech, the double spaced shield, split trails with spades and the towing
    lunette, and the big pneumatic wheels */
@@ -8829,6 +8945,7 @@ function buildVehicleModels() {
   TEAMMODEL.ger = scaleFaces(mg42TeamModel(), .72);
   ATMODEL.us = { mesh: scaleFaces(sixPounderModel(), .61), bar: 31 * .61, z: 12.2 * .61 };
   ATMODEL.ger = { mesh: scaleFaces(pak40Model(), .58), bar: 43 * .58, z: 13.8 * .58 };
+  GUNMODEL.us_t8 = { mesh: scaleFaces(gunT8Model(), .92), bar: 45 * .92, z: 15.0 * .92 };
 }
 
 /* dirVec is still used by a few HUD helpers */
@@ -8946,6 +9063,31 @@ function weaponModel(k, type) {
     f = f.concat(box(-1.6, 0, -1.5, 1.0, .6, 1.4, '#3b3226', '#4a4030'));
     f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 6.8, -.6, -2.4));
     f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 6.8, .6, -2.4));
+  } else if (type === 'm1919') {                          /* Browning M1919A6: 1.35 m, belt fed */
+    f = f.concat(box(-4.4, 0, -.5, 3.6, 1.0, 1.8, wd, lit(wd, 1.15), lit(wd, .9)));            /* shoulder stock */
+    f = f.concat(box(0, 0, -.2, 5.8, 1.15, 1.5, st, lit(st, 1.2)));                            /* receiver */
+    f = f.concat(box(1.0, 1.7, -1.0, 2.6, 2.2, 2.4, k.canvas, lit(k.canvas, 1.1)));            /* the belt bag on the feed side */
+    f = f.concat(tubeSmooth(2.9, 9.0, 0, .1, .42, 8, st, st));                                 /* barrel jacket */
+    for (var jj = 0; jj < 4; jj++)
+      f = f.concat(tubeSmooth(3.4 + jj * 1.2, 3.7 + jj * 1.2, 0, .1, .5, 8, '#20221a', '#20221a'));
+    f = f.concat(tubeSmooth(9.0, 10.4, 0, .1, .3, 8, st, st));
+    f = f.concat(box(-1.5, 0, -1.5, 1.0, .6, 1.3, wd, lit(wd, 1.1)));                          /* pistol grip */
+    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 7.2, -.7, -2.3));
+    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 7.2, .7, -2.3));
+  } else if (type === 'zook') {                           /* M1A1 bazooka: 1.37 m of stovepipe */
+    f = f.concat(tubeSmooth(-5.5, 8.4, 0, 0, .7, 10, st, st));
+    f = f.concat(tubeSmooth(8.4, 9.6, 0, 0, .88, 10, st, st));                                 /* the muzzle ring */
+    f = f.concat(tubeSmooth(-6.2, -5.5, 0, 0, .88, 10, st, st));                               /* and the breech one */
+    f = f.concat(box(-5.2, 0, -1.7, 2.6, 1.0, 1.6, wd, lit(wd, 1.1)));                         /* shoulder rest */
+    f = f.concat(box(-1.2, 0, -1.8, 1.0, .6, 1.6, wd, lit(wd, 1.1)));                          /* the two grips */
+    f = f.concat(box(-3.6, 0, -1.6, 1.0, .6, 1.4, wd, lit(wd, 1.1)));
+    f = f.concat(box(1.6, .95, .75, 3.4, .5, .6, st, lit(st, 1.2)));                           /* the sight rail */
+  } else if (type === 'leescope') {                       /* No.4 Mk I (T), with the No.32 on it */
+    f = f.concat(weaponModel(k, 'lee'));
+    f = f.concat(tubeSmooth(-.8, 4.4, 0, 1.55, .42, 8, st, lit(st, 1.2)));                     /* the telescope */
+    f = f.concat(box(-.4, 0, .6, .6, .5, .95, st, lit(st, 1.2)));                              /* its two mounts */
+    f = f.concat(box(2.8, 0, .6, .6, .5, .95, st, lit(st, 1.2)));
+    f = f.concat(box(-4.4, 0, -1.2, 2.6, .95, .8, wd, lit(wd, 1.15)));                         /* the cheek piece */
   } else if (type === 'piat') {                           /* PIAT: 0.99 m */
     f = f.concat(tubeSmooth(-4, 5, 0, 0, .8, 10, st, st));
     f = f.concat(tubeSmooth(5, 7.5, 0, 0, 1.1, 10, st, st));                                  /* the trough at the front */
@@ -8968,7 +9110,11 @@ var SOLDIER_VARIANTS = {
   fj_mg42:{ side:'ger', weapon:'mg42' }, fj_schreck:{ side:'ger', weapon:'schreck', assault:1 },
   /* crew carry their rifles slung or stowed. A driver has both hands on the tiller and a
      loader has both on a round, so these two go into a vehicle without a weapon in them. */
-  can_crew:{ side:'us', weapon:'none' }, fj_crew:{ side:'ger', weapon:'none' }
+  can_crew:{ side:'us', weapon:'none' }, fj_crew:{ side:'ger', weapon:'none' },
+  /* the Foot Guards: the belt-fed .30, the marksman's scoped Lee, and the two Sten men
+     who swap to bazookas the moment the thing they are shooting at has tracks */
+  can_thirty:{ side:'us', weapon:'m1919' }, can_scope:{ side:'us', weapon:'leescope' },
+  can_zook:{ side:'us', weapon:'zook', assault:1 }
 };
 /* One crewman, standing where he stands and sunk to the depth his feet are really at.
    Nothing is cut away for him: the hull plate or the turret wall in front of him does
@@ -8978,6 +9124,12 @@ function crewman(side, yaw, x, y, z) {
 }
 function variantForModel(u, i) {
   if (u.side === 'us') {
+    if (u.key === 'us_fg') {
+      if (i === 0) return 'can_thirty';
+      if (i < 3) return 'can_bren';
+      if (i === 3) return 'can_scope';
+      return (u.target && u.target.cat === 'veh') ? 'can_zook' : 'can_sten';
+    }
     if (u.key === 'us_rifle') return i === 0 ? 'can_bren' : i === 1 ? 'can_sten' : 'can_rifle';
     if (u.key === 'us_ab') return i === 0 ? 'can_piat' : i < 3 ? 'can_sten' : 'can_rifle';
     if (u.key === 'us_eng') return i === 0 ? 'can_sten' : 'can_rifle';
@@ -9049,7 +9201,8 @@ function soldierModel(variant, phase) {
   /* ---- arms: the weapon carried at the port across the chest, right hand on the grip
      by the hip, left hand forward on the fore-end. Each arm is shoulder, elbow, hand,
      built between points so the pose is exactly what is written here ---- */
-  var heavy = V.weapon === 'piat' || V.weapon === 'schreck' || V.weapon === 'bren' || V.weapon === 'mg42';
+  var heavy = V.weapon === 'piat' || V.weapon === 'schreck' || V.weapon === 'bren' || V.weapon === 'mg42' ||
+              V.weapon === 'm1919' || V.weapon === 'zook';
   var swing = sw * .35;
   var rShoulder = [.2, 2.9, 17.6 + bob], lShoulder = [.2, -2.9, 17.6 + bob];
   var rElbow = [-.6 + swing, 3.5, 14.3 + bob], rHand = [1.9 + swing, .9, 13.9 + bob];
@@ -9101,7 +9254,13 @@ function proneModel(variant) {
 }
 
 var WALKF = 9, STRIDE_LEN = 16;      /* one full stride cycle in world units */
-var MODELS = { sol: {}, solA: {}, prone: {}, proneA: {}, veh: {}, team: {}, at: {}, bld: {}, bldA: {}, tree: [], bush: [] };
+var MODELS = { sol: {}, solA: {}, prone: {}, proneA: {}, veh: {}, team: {}, at: {}, gun: {}, bld: {}, bldA: {}, tree: [], bush: [] };
+/* the mesh a weapon team stands round: its own piece if it has one, otherwise the
+   side's anti-tank gun or its medium machine gun */
+function teamMesh(u) {
+  if (MODELS.gun[u.key]) return MODELS.gun[u.key];
+  return u.def.atOnly ? MODELS.at[u.side] : MODELS.team[u.side];
+}
 function buildModels() {
   if (!GLOK) return;
   buildVehicleModels();
@@ -9131,6 +9290,7 @@ function buildModels() {
   });
   MODELS.team.us = facesToBuffer(TEAMMODEL.us); MODELS.team.ger = facesToBuffer(TEAMMODEL.ger);
   MODELS.at.us = facesToBuffer(ATMODEL.us.mesh); MODELS.at.ger = facesToBuffer(ATMODEL.ger.mesh);
+  Object.keys(GUNMODEL).forEach(function (k) { MODELS.gun[k] = facesToBuffer(GUNMODEL[k].mesh); });
   Object.keys(BUILDINGS).forEach(function (k) {
     var bf = buildingModel(BUILDINGS[k], k);
     MODELS.bld[k] = facesToBuffer(bf.filter(function (q) { return !q.alpha; }));
@@ -9366,7 +9526,7 @@ function castUnit(u) {
     }
     if (u.cat === 'team' && aliveModels(u) > 0) {
       var a = u.models.find(function (mm) { return mm.alive; });
-      drawDepthGeom(u.def.atOnly ? MODELS.at[u.side] : MODELS.team[u.side], m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1));
+      drawDepthGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1));
     }
   }
 }
@@ -9405,8 +9565,7 @@ function drawUnits3D(v, list) {
       }
       if (u.cat === 'team' && aliveModels(u) > 0) {
         var a = u.models.find(function (mm) { return mm.alive; });
-        if (u.def.atOnly) drawGeom(MODELS.at[u.side], m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1), false, tint);
-        else drawGeom(MODELS.team[u.side], m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1), false, tint);
+        drawGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1), false, tint);
       }
     }
   }
@@ -9575,10 +9734,11 @@ function drawUnitOverlay(u, p) {
     }
     if (u.cat === 'team' && u.fireT > 0) {
       var a0 = u.models.find(function (mm) { return mm.alive; });
+      var gm = GUNMODEL[u.key];
       if (a0) {
-        var tp = w2s(a0.x + Math.cos(u.facing) * (u.def.atOnly ? 44 : 26), a0.y + Math.sin(u.facing) * (u.def.atOnly ? 44 : 26),
-                     groundZ(a0.x, a0.y) + (u.def.atOnly ? 13 : 12));
-        if (!tp.behind) muzzle(tp.x, tp.y, (u.def.atOnly ? 14 : 8) * z);
+        var reach = gm ? gm.bar : (u.def.atOnly ? 44 : 26), lift = gm ? gm.z : (u.def.atOnly ? 13 : 12);
+        var tp = w2s(a0.x + Math.cos(u.facing) * reach, a0.y + Math.sin(u.facing) * reach, groundZ(a0.x, a0.y) + lift);
+        if (!tp.behind) muzzle(tp.x, tp.y, (gm ? 18 : u.def.atOnly ? 14 : 8) * z);
       }
     }
   }
@@ -9892,6 +10052,7 @@ function issueOrder(wx, wy, forceAttack) {
   var friendlyBld = eb && eb.side === G.side ? eb : null;
   var repairTarget = friendlyVeh || (friendlyBld && (friendlyBld.hp < friendlyBld.maxhp || friendlyBld.built < 1) ? friendlyBld : null);
   var lift = friendlyVeh && friendlyVeh.def.carries && !friendlyVeh.cargo ? friendlyVeh : null;
+  var hook = unitsAt(wx, wy, 20).filter(function (u) { return u.side === G.side && u.def.towable && !u.towedBy; })[0];
   var n = mine.length, cols = Math.ceil(Math.sqrt(n));
   mine.forEach(function (u, i) {
     if (lift && canBoard(u, lift)) {
@@ -9899,6 +10060,21 @@ function issueOrder(wx, wy, forceAttack) {
       u.order = 'board'; u.boardT = lift;
       u.dest = { x: lift.x, y: lift.y };
       u.path = findPath(u.x, u.y, lift.x, lift.y); u.pi = 0;
+      return;
+    }
+    if (hook && canHitch(u, hook)) {
+      clearOrder(u);
+      u.order = 'hitch'; u.hitchT = hook;
+      u.dest = { x: hook.x, y: hook.y };
+      u.path = findPath(u.x, u.y, hook.x, hook.y); u.pi = 0;
+      return;
+    }
+    /* a gun on a fixed mount is laid rather than driven: the click is a bearing */
+    if (u.def.arc && !u.towedBy) {
+      clearOrder(u);
+      u.facing = Math.atan2(wy - u.y, wx - u.x);
+      for (var li = 0; li < u.models.length; li++) u.models[li].f = u.facing;
+      u.setup = Math.max(u.setup, (u.def.setup || 0) * .5);
       return;
     }
     if (u.def.builder && repairTarget) {
@@ -10319,6 +10495,9 @@ function buildCmds() {
     var loaded = units.filter(function (u) { return u.cat === 'veh' && u.cargo; });
     if (loaded.length) addCmd('Unload', 'dismount', 'E', true,
       function () { loaded.forEach(unloadVehicle); sfx('click'); syncHud(); });
+    var hooked = units.filter(function (u) { return u.cat === 'veh' && u.tow; });
+    if (hooked.length) addCmd('Unhitch', 'drop the gun', 'G', true,
+      function () { hooked.forEach(unhitchGun); sfx('click'); syncHud(); });
     /* field upgrades for the selected vehicles that can take them and have not */
     Object.keys(UPGRADES).forEach(function (uk) {
       var U = UPGRADES[uk];
