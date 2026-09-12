@@ -300,9 +300,35 @@ different thing to the motor pool, the population cap and the capture allocation
 produces, buys field upgrades, builds, scores every sector into an objective list with a
 weight of sections each is worth, deals the sections that can actually capture out to
 those objectives nearest-first, and then issues one order per unit by job: `take`,
-`screen`, `support`, `defend` or `mend`. `DIFF[].skill` gates the tactics rather than
-the arithmetic: 0 keeps green simple, 1 adds houses, upgrades and repair, 2 adds the
+`raze`, `screen`, `support`, `defend` or `mend`. `DIFF[].skill` gates the tactics rather
+than the arithmetic: 0 keeps green simple, 1 adds houses, upgrades and repair, 2 adds the
 flanking approach.
+
+Two things about it are counter-intuitive enough to be worth knowing before touching it.
+
+**The shopping list is a ratchet.** `LADDER` is climbed against `madeOf` -- what the side
+has ever ordered -- and not against what is alive, because a live count walks backwards
+under fire: every armoured car that burned reopened the first line of the list, so a side
+actually being fought bought twenty-two of them over twenty minutes and never saved the
+fuel a tank costs. Losses are replaced in a second pass over the same list ordered by
+`vehWorth`, dearest first, so the empty Tiger slot outranks a third medium and nothing
+cheap is bought with fuel a heavier empty slot is waiting on.
+
+**It attacks in waves.** A defended objective is not taken by sections arriving one at a
+time, which is exactly what dealing them out nearest-first produces. So the units sent at
+it gather at a forming-up point short of it (`aiFirePost` for a sector, `aiFormPost` for
+a building, which steps back along the line to its own base because the enemy's bearing
+is undefined when you are standing on his headquarters) and go in together, armour
+included; `DIFF[].wave` is how many it gathers, `form` how long it will wait for them and
+`press` how long the wave runs before the next one forms. Green gathers six and waits a
+hundred seconds, which is what makes it a defensive game rather than a stream of targets.
+In annihilation the wave objective is a building rather than a sector: a third of the
+sections (one to three) are posted on ground to keep the money coming in, everything else
+is in the wave, the gun teams set up at the forming-up point rather than short of the
+building they would otherwise walk to alone, and the wave will not go in under half
+strength, because a building does not fall to one section. While a wave is pressing, its
+units ignore targets they have no fire line to: an attack order only closes to weapon
+range, so a section that stops for something behind a wall stops for good.
 
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
