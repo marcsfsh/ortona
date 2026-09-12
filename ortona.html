@@ -3523,10 +3523,15 @@ var DIFF = [
      a minute and a half before the next one forms. That is what makes green a defensive
      game -- a line that is dug in has time to bury its dead, mend its armour and be
      ready for the next one, and what arrives is a body of men with the tanks in it
-     rather than a section every twenty seconds. */
+     rather than a section every twenty seconds.
+
+     Your own side of it: everything you build comes out three times as fast, and in
+     annihilation the opposition does nothing at all for the first three and a half
+     minutes (`grace`), which is long enough to get a base up and a line dug before the
+     first one arrives. */
   { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 6, mech: 2, skill: 0, push: 420, aim: .34, tough: .5,
-    startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9,
-    youPop: 350, foePop: 175, wave: 6, form: 105, press: 95 },
+    startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 3,
+    youPop: 350, foePop: 175, wave: 6, form: 105, press: 95, grace: 210 },
   { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 5, skill: 1, push: 0,  aim: 1,   tough: 1,
     startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1,
     wave: 3, form: 32, press: 75 },
@@ -3676,6 +3681,13 @@ function aiPickTarget(u, reach) {
 }
 /* ---- the brain ---------------------------------------------------------------- */
 function aiTick(dt) {
+  /* The head start. On green, annihilation is meant to be a defensive game you set up
+     for rather than a race, so the opposition does nothing whatever for the first three
+     and a half minutes: no production, no building, no orders, nobody moves. What it
+     earns in that time it keeps, so it wakes up with something in the bank rather than
+     three and a half minutes behind for the rest of the battle. Only in annihilation:
+     on points a side that stands still for three minutes has already lost. */
+  if (G.win === 'anni' && DIFF[G.diff] && DIFF[G.diff].grace && G.t < DIFF[G.diff].grace) return;
   AI.t -= dt;
   if (AI.t > 0) return;
   AI.t = DIFF[G.diff].tick;
@@ -13245,8 +13257,12 @@ function startGame(side, diff, mode) {
   auInit();
   computeVisibility();
   syncHud();
-  toast(G.win === 'anni' ? 'Level every building in the enemy base'
-                         : 'Take the three victory sectors and hold them');
+  /* and say so when the opposition is standing still, because a head start nobody is
+     told about is just an enemy that looks broken for three minutes */
+  var gr = G.win === 'anni' && dd.grace ? ' - they will not move for ' +
+           Math.round(dd.grace / 60 * 2) / 2 + ' minutes' : '';
+  toast((G.win === 'anni' ? 'Level every building in the enemy base'
+                          : 'Take the three victory sectors and hold them') + gr);
 }
 
 /* ---------------------------------------------------------------- loop */
