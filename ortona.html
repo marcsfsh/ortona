@@ -1363,7 +1363,7 @@ function medicNear(u) {
   for (var i = 0; i < G.units.length; i++) {
     var v = G.units[i];
     if (v.dead || v.side !== u.side || v.cat !== 'veh') continue;
-    if (!v.up || !v.up.krank || v.calm < MEDIC_CALM) continue;
+    if (!v.up || !(v.up.krank || v.up.aid) || v.calm < MEDIC_CALM) continue;
     if (dsq(u.x, u.y, v.x, v.y) < MEDIC_R * MEDIC_R) return true;
   }
   return false;
@@ -4096,12 +4096,15 @@ function lathe(cx, cy, cz, profile, n, col, smooth) {
   }
   return f;
 }
-/* Lathe a wheel that is not symmetric about its own centre plane. The profile is
-   written outboard-positive; mirroring it for the other side of the vehicle would
-   reverse the winding, so the profile and its colours are reversed along with it. */
+/* Lathe a wheel that is not symmetric about its own centre plane. The profile is written
+   outboard-positive, and lathe reads the surface normal off the direction of travel: a
+   profile has to start on the negative-y face and come back along the positive one or
+   the wheel is built inside out, dark on both faces and flat where it should be round.
+   Mirroring the profile for the left of the vehicle satisfies that on its own; for the
+   right the profile and its colours are reversed instead. */
 function latheSide(cx, cy, cz, profile, n, col, sd) {
   var p = profile, c = col;
-  if (sd < 0) { p = profile.slice().reverse(); c = col.slice().reverse(); }
+  if (sd > 0) { p = profile.slice().reverse(); c = col.slice().reverse(); }
   p = p.map(function (q) { return [q[0], sd * q[1]]; });
   return lathe(cx, cy, cz, p, n, c, true);
 }
@@ -7017,12 +7020,14 @@ function m3Track(y) {
 }
 
 function m3RoadWheel(x, y, sd) {
-  var C = SHERMAN, r = M3G.R, f;
-  var prof = [[0, .55], [.7, .55], [.9, .3], [1.7, .22], [r, .18],
-              [r, -.72], [1.7, -.72], [.9, -.72], [0, -.72]];
-  var cols = [C.od, C.odDark, C.od, C.rubber, C.rubber, C.odDark, C.odDark, C.odDark];
-  f = latheSide(x, y, M3G.zWheel, prof, 12, cols, sd);
-  f = f.concat(stud(x, y + sd * .6, M3G.zWheel, .4, .3, C.odDark));
+  var C = SHERMAN, r = M3G.R, z = M3G.zWheel, f;
+  var prof = [[0, 1.05], [.62, 1.05], [.88, .74], [1.48, .68], [1.66, 1.00], [r, .92],
+              [r, -.92], [1.66, -1.00], [1.48, -.70], [.88, -.76], [0, -1.05]];
+  var cols = [C.od, C.odDark, C.od, C.odDark, C.tyre, C.rubber, C.tyre,
+              C.odDark, C.od, C.odDark];
+  f = latheSide(x, y, z, prof, 14, cols, sd);
+  f = f.concat(boltRing(x, y + sd * 1.08, z, .82, 5, .20, .22, C.odDark));
+  f = f.concat(stud(x, y + sd * 1.2, z, .42, .3, C.bare));
   return f;
 }
 
@@ -7061,20 +7066,35 @@ function m3Idler(y, sd) {
   return f;
 }
 
-/* the 8.25-20 front wheel on its beam axle and leaf spring */
+/* The 8.25-20 combat tyre on its beam axle and leaf spring. Three things make a truck
+   wheel read as one: the pressed steel disc filling the inner half of it, the bulge of
+   the sidewall standing out past the rim flange, and the square lugs round the crown.
+   Without them it is a black disc with a bolt circle sunk in a hole. */
 function m3FrontWheel(sd) {
-  var C = SHERMAN, g = M3G, y = sd * g.wFront, f, i;
-  var prof = [[0, 1.15], [1.1, 1.15], [1.5, .75], [2.9, .55], [3.5, 1.2],
-              [g.rFront, 1.2], [g.rFront, -1.2], [3.5, -1.2], [2.9, -.55], [1.5, -.75], [0, -1.15]];
-  var cols = [C.od, C.odDark, C.od, C.odDark, C.tyre, C.rubber, C.tyre, C.odDark, C.od, C.odDark];
-  f = latheSide(g.xFront, y, g.rFront, prof, 16, cols, sd);
-  for (i = 0; i < 6; i++) {
-    var a = (i / 6) * TAU + .5;
-    f = f.concat(stud(g.xFront + Math.cos(a) * 1.95, y + sd * 1.05, g.rFront + Math.sin(a) * 1.95, .32, .3, C.odDark));
+  var C = SHERMAN, g = M3G, y = sd * g.wFront, r = g.rFront, z = g.rFront, f, i, a;
+  var prof = [[0, 1.45], [1.05, 1.45], [1.05, 1.12], [2.60, 1.06], [3.05, 1.28],
+              [3.60, 1.56], [4.55, 1.50], [5.15, 1.20], [r, .98],
+              [r, -.98], [5.15, -1.20], [4.55, -1.50], [3.60, -1.56], [3.05, -1.34],
+              [2.60, -1.12], [0, -1.12]];
+  var cols = [C.bare, C.odDark, C.od, C.odDark, C.tyre, C.tyre, C.tyre, C.tyre,
+              C.rubber, C.tyre, C.tyre, C.tyre, C.tyre, C.odDark, C.odDark];
+  f = latheSide(g.xFront, y, z, prof, 18, cols, sd);
+  /* the tread blocks, each turned to sit square on the crown */
+  for (i = 0; i < 18; i++) {
+    a = (i / 18) * TAU;
+    f = f.concat(place(pitch(box(0, 0, -.36, .82, 2.30, .72, C.tyre, C.rubber, C.tyre, 0), a, 0, 0), 0,
+                       g.xFront + Math.cos(a) * (r - .14), y, z + Math.sin(a) * (r - .14)));
   }
-  f = f.concat(stud(g.xFront, y + sd * 1.3, g.rFront, .85, .5, C.odDark));
+  /* the disc: its bolt circle, the pressed hand holes and the hub cap */
+  f = f.concat(boltRing(g.xFront, y + sd * 1.26, z, 1.35, 6, .26, .28, C.odDark));
+  for (i = 0; i < 5; i++) {
+    a = (i / 5) * TAU + .6;
+    f = f.concat(stud(g.xFront + Math.cos(a) * 2.20, y + sd * 1.04, z + Math.sin(a) * 2.20, .58, .26, '#2d3128'));
+  }
+  f = f.concat(stud(g.xFront, y + sd * 1.62, z, .82, .5, C.bare));
+  /* the leaf spring, inboard of the wheel where it belongs rather than across its face */
   f = f.concat(place(pitch(box(0, 0, 0, 13.0, 1.8, .9, C.odDark, C.od, C.odDark, 0), .06, 0, 0),
-                     0, g.xFront - 4.0, y - sd * 1.4, g.rFront + 1.8));
+                     0, g.xFront - 4.0, y - sd * 3.6, z + 1.6));
   return f;
 }
 
@@ -7175,11 +7195,22 @@ function m3Hull(body, cap, sideC) {
     { v: [[H.xNose, bh, 11.6], [H.xNose, bh, zb - .6], [H.xBody, bh, zb], [H.xBody, bh, 11.6]], c: sideC },
     { v: [[H.xNose, -bh, zb - .6], [H.xNose, -bh, 11.6], [H.xBody, -bh, 11.6], [H.xBody, -bh, zb]], c: sideC }
   ]));
-  /* the radiator: five armoured louvre slats in a raised frame */
-  f = f.concat(box(H.xNose + .35, 0, 11.9, .7, 12.4, 6.6, C.odDark, C.od, C.odDark, 0));
+  /* The armoured radiator, raked. Its top rail stands in line with the front of the hood
+     and its foot is pushed out ahead of that, so the louvred face leans out over the
+     bumper instead of standing up flat, which is the shape of the nose head on. */
+  var rkA = .30, rkX = 28.0, rkZ = 12.45;
+  function onRad(faces, sy, up, out) {
+    return place(pitch(faces, rkA, 0, 0), 0,
+                 rkX + out * Math.cos(rkA) - up * Math.sin(rkA), sy,
+                 rkZ + out * Math.sin(rkA) + up * Math.cos(rkA));
+  }
+  f = f.concat(onRad(box(0, 0, -2.9, .8, 12.4, 5.8, C.odDark, C.od, C.odDark, 0), 0, 0, 0));
   for (i = 0; i < 5; i++)
-    f = f.concat(place(pitch(box(0, 0, 0, 1.5, 11.0, .45, C.odDark, C.od, C.odDark, 0), -.5, 0, 0), 0, H.xNose + .95, 0, 12.6 + i * 1.25));
-  f = f.concat(box(H.xNose + .9, 0, 18.2, .8, 12.8, .7, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(onRad(pitch(box(0, 0, -.22, 1.3, 11.2, .45, C.odDark, C.od, C.odDark, 0), -.55, 0, 0), 0, -1.9 + i * 1.05, .42));
+  f = f.concat(onRad(box(0, 0, -.35, 1.1, 12.8, .7, C.odDark, C.od, C.odDark, 0), 0, 3.05, .15));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(onRad(box(0, 0, -2.7, 1.0, .9, 5.4, C.odDark, C.od, C.odDark, 0), s * 5.9, 0, .26));
+  });
   /* the louvre slots down each side of the bonnet, and the hinge line along the top */
   [-1, 1].forEach(function (s) {
     for (i = 0; i < 7; i++)
@@ -7200,7 +7231,7 @@ function m3Hull(body, cap, sideC) {
     f = f.concat(box(H.xBump, s * 9.2, 8.2, 1.4, 2.2, 1.4, C.steel, C.bare, C.steel, 0));
   });
   f = f.concat(box(H.xBump - .5, 0, 7.6, 1.6, 25.0, 2.6, C.odDark, C.od, C.odDark, 0));            /* the channel bumper */
-  f = f.concat(box(H.xBump - 1.4, 0, 9.0, 1.2, 8.0, 2.6, '#cfccbe', '#dcd9cb', '#cfccbe', 0));     /* its number plate */
+  f = f.concat(box(H.xBump + .5, 0, 8.2, .6, 8.0, 1.6, '#cfccbe', '#dcd9cb', '#cfccbe', 0));       /* its number plate */
   /* the unditching roller on its two sprung arms */
   [-1, 1].forEach(function (s) {
     f = f.concat(place(pitch(box(0, 0, 0, 6.4, 1.4, 1.4, C.odDark, C.od, C.odDark, 0), -.20, 0, 0), 0, H.xBump + 1.6, s * 6.0, 7.6));
@@ -7275,25 +7306,30 @@ function m3MountQuad(body, cap) {
   var C = SHERMAN, f = [], i;
   f = f.concat(cyl(0, 0, -6.0, 5.6, 5.6, 1.2, 16, C.odDark, C.od, 0, true));                   /* the turret ring */
   f = f.concat(cyl(0, 0, -4.8, 2.6, 2.6, 3.6, 12, C.steel, C.bare, 0, true));
-  /* the tub: shield plate round the front and both sides of the gunner */
-  var tub = roundRectPlan(-1.6, 0, 5.2, 6.6, 2.0, 3);
-  f = f.concat(prism(tub, -1.2, 4.0, C.odDark, body, body).filter(function (q, k) { return k < tub.length; }));
-  f = f.concat(place(pitch(box(0, 0, -2.4, .7, 8.6, 5.0, C.odDark, body, C.odDark, .2), -.10, 0, 0), 0, 4.0, 0, 2.6));
-  /* the two ammunition chests, one each side, which are half the shape of the thing */
+  /* The tub the gunner sits in. It stops at his waist and no higher: the guns are carried
+     on arms outside it, and a wall any taller stands in front of the lower pair. */
+  var tub = roundRectPlan(-1.6, 0, 5.2, 6.2, 2.0, 3);
+  f = f.concat(prism(tub, -1.2, 1.4, C.odDark, body, body).filter(function (q, k) { return k < tub.length; }));
+  f = f.concat(box(-1.6, 0, 1.4, 10.4, 12.4, .4, C.odDark, C.od, C.odDark, 0));
+  /* the gunner's shield, no wider than the gap between the two pairs */
+  f = f.concat(place(pitch(box(0, 0, -2.0, .7, 6.8, 4.0, C.odDark, body, C.odDark, .2), -.10, 0, 0), 0, 4.2, 0, 3.6));
+  /* the two ammunition chests, outboard of the guns, which are half the shape of it */
   [-1, 1].forEach(function (s) {
-    f = f.concat(box(-.6, s * 7.6, .2, 8.0, 3.6, 5.4, C.od, C.odLit, C.odDark, .18));
-    f = f.concat(box(-.6, s * 9.5, 4.4, 6.4, .5, .6, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(-1.0, s * 8.4, 1.2, 8.0, 3.4, 5.2, C.od, C.odLit, C.odDark, .18));
+    f = f.concat(box(-1.0, s * 10.2, 5.2, 6.4, .5, .6, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(1.8, s * 6.7, 3.0, 1.1, .9, 2.8, C.steel, C.bare, C.steel, 0));
   });
   /* the cradle and the four guns: a pair each side, one above the other */
-  f = f.concat(box(1.2, 0, 2.4, 5.4, 8.4, 2.4, C.odDark, C.od, C.odDark, 0));
+  f = f.concat(place(tubeSmooth(-4.9, 4.9, 0, 0, .85, 10, C.odDark, C.od), Math.PI / 2, .4, 0, 4.5));
   for (i = 0; i < 4; i++) {
-    var gy = (i < 2 ? -1 : 1) * 3.0, gz = 2.0 + (i % 2) * 3.0;
+    var gy = (i < 2 ? -1 : 1) * 4.5, gz = 2.4 + (i % 2) * 4.2;
+    f = f.concat(box(-.2, gy, gz - .9, 2.0, 2.2, 1.8, C.odDark, C.od, C.odDark, 0));
     f = f.concat(box(1.0, gy, gz - 1.0, 5.6, 1.5, 2.0, C.steel, C.bare, C.steel, 0));
     f = f.concat(place(tubeSmooth(0, 10.4, 0, 0, .5, 8, C.steel, C.bare), 0, 3.8, gy, gz));
     f = f.concat(place(tubeSmooth(10.4, 11.8, 0, 0, .7, 8, C.steel, '#17190f'), 0, 3.8, gy, gz));
   }
-  f = f.concat(box(-3.4, 0, 1.4, 2.6, 5.0, 2.2, C.steel, C.bare, C.steel, 0));                 /* the elevating gear */
-  f = f.concat(box(-4.2, 2.4, 3.6, 1.2, 1.0, 1.2, C.odDark, '#191c16', '#191c16', 0));         /* the reflector sight */
+  f = f.concat(box(-3.4, 0, 1.8, 2.6, 5.0, 2.2, C.steel, C.bare, C.steel, 0));                 /* the elevating gear */
+  f = f.concat(box(-4.2, 2.4, 4.2, 1.2, 1.0, 1.2, C.odDark, '#191c16', '#191c16', 0));         /* the reflector sight */
   return f;
 }
 
@@ -8378,7 +8414,7 @@ function buildVehicleModels() {
                                how75: m3MountHow(SHERMAN.od, SHERMAN.odLit),
                                aid: m3MountAid(SHERMAN.od, SHERMAN.odLit) },
                       addUp: { aid: m3AidMarks() },
-                      barUp: { quad50: { bar: 15, gunZ: 6.0, turX: -13.0, turY: 0, mountZ: 23.4 },
+                      barUp: { quad50: { bar: 15, gunZ: 4.5, turX: -13.0, turY: 0, mountZ: 21.2 },
                                how75: { bar: 32, gunZ: 3.4, turX: 5.0, turY: 0, mountZ: 18.6 },
                                aid: { bar: 2, gunZ: 2.0 } } };
   VMODEL.us_m8    = { hull: carrierHull(UC.od, UC.odLit, UC.odDark), tur: carrierMount(UC.od, UC.odLit),
