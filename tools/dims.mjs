@@ -31,6 +31,12 @@ const REAL = {
                body: 2.51, bodyZ: 1.10, roof: 2.05, clear: 0.42 },
   us_sher:   { name: 'Sherman V (M4A4)',    len: 6.06,  gun: 6.06,   wid: 2.62,  hgt: 2.97,
                body: 2.62, bodyZ: 1.20, roof: 2.62, clear: 0.43 },
+  us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
+               body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
+               widest point is not its tracks: the sponsons stand eight inches proud of them each
+               side, so body is checked at the deck to confirm the flare is carrying the width.
+               7.85 m over the gun is off the La Roche car, scaled on its bogie centres; the 7.5 m
+               in most tables is the 3-inch M10 with a bit added for the 17-pounder. */
   ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.27,
                body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },
   ger_tig:   { name: 'Tiger I Ausf. E',     len: 6.316, gun: 8.45,   wid: 3.56,  hgt: 3.00,
@@ -73,6 +79,8 @@ const REAL = {
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
+  us_ach:    { bodyZ: 22.0 },   /* a hand's breadth under the deck, above the tools and the
+               jerricans and below the lifting eyes, where the side plate is bare */
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
   ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,

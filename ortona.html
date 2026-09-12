@@ -633,6 +633,13 @@ var UNITS = {
     w: { range: 300, dmg: 34, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
     desc: 'The armoured brigade\'s recce tank. Fast, a 37 mm that handles infantry and armoured cars, thin plate that a Panzer IV goes straight through.'
   },
+  us_ach: {
+    side: 'us', name: '17pdr SP Achilles', short: 'ACHILLES', cat: 'veh', hk: 'A', upgrades: ['mg'],
+    hp: 620, armor: 84, speed: 96, sight: 380, pop: 16, cost: { mp: 430, fu: 130 }, time: 44,
+    req: 'us_mot',
+    w: { range: 465, dmg: 145, rof: 1.6, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1 },
+    desc: 'An M10 with a 17-pounder in it. Nothing on the field survives being hit by one and it reloads twice in the time a Panzer IV takes once, but it fires solid shot from an open turret behind a quarter of the plate a Sherman has: it kills armour and it cannot touch infantry. Keep it back, keep it hull down, and keep men around it.'
+  },
   us_sher: {
     side: 'us', name: 'Sherman V (M4A4)', short: 'SHR V', cat: 'veh', hk: 'F', upgrades: ['mg'],
     hp: 760, armor: 118, speed: 80, sight: 330, pop: 14, cost: { mp: 340, fu: 90 }, time: 34,
@@ -5074,6 +5081,259 @@ function shermanFifty() {
   return f;
 }
 
+/* ================================================================ 17pdr SP Achilles
+   An M10 with the gun changed. The chassis underneath is the Sherman's -- the same VVSS
+   bogies, the same track, the same final drives -- carrying a welded upper hull whose
+   sides lean out to a deck that overhangs the track eight inches a side, and an open
+   turret with a counterweight slung off the back of it to balance a gun the mount was
+   never drawn for. The 17-pounder is the whole point of it: a long thin tube with a
+   two-chamber muzzle brake, hanging the best part of two metres past the nose.
+   Laid out at 11.7 units to the metre: 5.97 m hull, 7.85 m with the gun out front,
+   3.05 m over the sponsons, 2.57 m to the turret rim. */
+var M10H = {
+  halfW: 17.85,      /* the deck edge, ten feet over the sponsons */
+  chine: 14.6,       /* the fold the sloped side stands on */
+  lowW: 10.2,        /* the tub between the tracks */
+  glacisHalf: 12.2,  /* the hull at the foot of the glacis, where the nose casting starts */
+  zBelly: 5.05, zSpon: 13.8, zDeck: 22.9,
+  xNose: 35.2, xTail: -34.6, xRearFoot: -30.6,
+  xGlacisFoot: 33.0, zGlacisFoot: 12.6, xGlacisTop: 16.4
+};
+/* the glacis, stated once. Everything bolted to the front goes through these, so the
+   hatches and the lifting eyes cannot drift off the plate. */
+M10H.glacisSlope = (M10H.zDeck - M10H.zGlacisFoot) / (M10H.xGlacisFoot - M10H.xGlacisTop);
+M10H.glacisAng = -Math.atan(M10H.glacisSlope);
+function m10GlacisZ(x) { return M10H.zGlacisFoot + (M10H.xGlacisFoot - x) * M10H.glacisSlope; }
+function onM10Glacis(faces, x, y, up) {
+  return place(pitch(faces, M10H.glacisAng, 0, 0), 0, x, y, m10GlacisZ(x) + (up || 0));
+}
+
+/* The one-piece cast nose. A Sherman carries three bolted plates and a ring of flanges
+   across the front; an M10 has a single rounded casting swept forward over the final
+   drives, and head on that is the quickest way to tell the two apart. Three bands, each
+   reaching less far forward than the one inboard of it, round the prow in plan. */
+function m10Nose(body, cap) {
+  var C = SHERMAN, H = M10H, f = [];
+  function prof(reach, shed) {
+    return [[H.xGlacisFoot, H.zGlacisFoot], [reach - 1.0, 11.4 - shed * .5], [reach, 8.9],
+            [reach - 1.5, 6.3], [reach - 3.2, H.zBelly], [24.0, H.zBelly], [24.0, H.zGlacisFoot]];
+  }
+  var bands = [[0, 4.4, 0], [4.4, 7.4, .45], [7.4, 9.9, 1.35], [9.9, H.glacisHalf, 2.9]];
+  bands.forEach(function (b) {
+    var p = prof(H.xNose - b[2], b[2]);
+    f = f.concat(extrudeY(p, b[0], b[1], C.od, C.odLit, C.odLit));
+    if (b[0] > 0) f = f.concat(extrudeY(p, -b[1], -b[0], C.od, C.odLit, C.odLit));
+    else f = f.concat(extrudeY(p, -b[1], 0, C.od, C.odLit, C.odLit));
+  });
+  [-1, 1].forEach(function (s) { f = f.concat(towLug(31.6, s * 7.2, 5.9, C.od, C.steel)); });
+  return f;
+}
+
+function m10Hull(body, cap, sideC) {
+  var C = SHERMAN, g = SHG, H = M10H, f = [], sd, i;
+
+  /* ---- running gear: the Sherman's, unchanged, because it is the Sherman's ---- */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y = sd * g.TY;
+    f = f.concat(shermanTrack(y));
+    for (i = 0; i < 3; i++) f = f.concat(shermanBogie(g.bog[i], y, sd));
+    f = f.concat(shermanSprocket(y, sd));
+    f = f.concat(shermanIdler(y, sd));
+    f = f.concat(place(tubeSmooth(0, 3.0, 0, 0, 4.0, 14, C.od, C.odLit), Math.PI / 2, g.xSprk, y - sd * 4.6, g.zSprk));
+    f = f.concat(boltRing(g.xSprk, y - sd * 4.6, g.zSprk, 3.2, 10, .34, .5, C.steel));
+  }
+
+  /* ---- the tub between the tracks, and the nose casting on the front of it ---- */
+  f = f.concat(extrudeY([[30.0, H.zSpon], [30.0, H.zBelly], [-30.0, H.zBelly],
+                         [-33.2, 7.4], [-34.6, 10.6], [-32.0, H.zSpon]],
+                        -H.lowW, H.lowW, C.odDark, C.od, C.odDark));
+  f = f.concat(m10Nose(body, cap));
+
+  /* ---- the upper hull: sides leaning out twenty degrees from the chine to the deck, a
+     shallow glacis with a triangular cheek each side of it, and a rear plate raked the
+     other way so the engine deck stands out over it ---- */
+  var hw = H.halfW, ch = H.chine, zS = H.zSpon, zD = H.zDeck, gh = H.glacisHalf;
+  var xGF = H.xGlacisFoot, zGF = H.zGlacisFoot, xGT = H.xGlacisTop, xT = H.xTail, xRF = H.xRearFoot;
+  var shell = [
+    { v: [[xGF, -gh, zGF], [xGF, gh, zGF], [xGT, hw, zD], [xGT, -hw, zD]], c: C.odLit },
+    { v: [[xGF, gh, zGF], [xGT, ch, zS], [xGT, hw, zD]], c: body },
+    { v: [[xGF, -gh, zGF], [xGT, -hw, zD], [xGT, -ch, zS]], c: body },
+    { v: [[xGT, ch, zS], [xRF, ch, zS], [xT, hw, zD], [xGT, hw, zD]], c: sideC },
+    { v: [[xGT, -hw, zD], [xT, -hw, zD], [xRF, -ch, zS], [xGT, -ch, zS]], c: sideC },
+    { v: [[xGT, -hw, zD], [xGT, hw, zD], [xT, hw, zD], [xT, -hw, zD]], c: cap },
+    { v: [[xT, hw, zD], [xRF, ch, zS], [xRF, -ch, zS], [xT, -hw, zD]], c: C.odDark },
+    { v: [[xGT, ch, zS], [xGT, -ch, zS], [xRF, -ch, zS], [xRF, ch, zS]], c: C.odDark },
+    { v: [[xGF, gh, zGF], [xGF, -gh, zGF], [xGT, -ch, zS], [xGT, ch, zS]], c: C.odDark }
+  ];
+  f = f.concat(welded(faceOut(shell, 0, 0, 17.0)));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(place(tubeSmooth(xT + .4, xGT, 0, 0, .34, 5, C.odLit, C.odLit), 0, 0, s * (hw - .3), zD - .4));
+  });
+
+  /* ---- the glacis furniture: the two hinged crew hatches with their periscopes, the
+     lamps, the lifting eyes and the tow cable lying across the plate ---- */
+  [-1, 1].forEach(function (s) {
+    var hy = s * 6.8;
+    f = f.concat(onM10Glacis(prism(roundRectPlan(0, 0, 4.6, 3.9, 1.2, 3), 0, 1.1, C.od, cap, C.odDark), 25.6, hy, 0));
+    f = f.concat(onM10Glacis(boltRow(-3.8, 3.8, 0, 1.1, 6, .26, .3, C.steel), 25.6, hy, 0));
+    f = f.concat(onM10Glacis(periscope(0, 0, 1.1, 0, C.odDark), 27.4, hy, 0));
+    f = f.concat(onM10Glacis(grabIron(0, 0, 1.2, 2.4, .5, C.steel, 'y'), 22.6, hy, 0));
+    f = f.concat(onM10Glacis(headLamp(0, 0, 0, C.odDark, '#cfcdb6'), 29.4, s * 10.4, .6));
+    f = f.concat(onM10Glacis(box(0, 0, -.2, 1.6, 3.0, 1.8, C.odDark, C.od, C.odDark, 0), 19.4, s * 14.4, 0));
+    f = f.concat(onM10Glacis(box(0, 0, -.2, 1.6, 3.0, 1.8, C.odDark, C.od, C.odDark, 0), 30.6, s * 8.0, 0));
+  });
+  f = f.concat(onM10Glacis(cyl(0, 0, 0, 1.3, 1.3, 1.9, 10, C.odDark, C.steel, 0, true), 21.4, -11.4, 0));
+  f = f.concat(onM10Glacis(place(tubeSmooth(-7.0, 7.0, 0, 0, .38, 6, C.steel, C.bare), 0, 0, 0, .4), 25.0, 14.6, 0));
+  f = f.concat(onM10Glacis(place(tubeSmooth(-7.0, 7.0, 0, 0, .38, 6, C.steel, C.bare), 0, 0, 0, .4), 25.0, 13.2, 0));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(onM10Glacis(box(0, 0, 0, 1.0, 3.6, .6, C.steel, C.bare, C.steel, 0), 25.0 + s * 6.4, 13.9, .3));
+  });
+
+  /* ---- the engine deck: the big access hatch, the grille over the radiators, the
+     ventilator, and the two air cleaners standing on the tail ---- */
+  f = f.concat(prism(roundRectPlan(-15.0, 0, 7.8, 8.4, 1.8, 3), zD, zD + .8, C.od, cap, C.odDark));
+  f = f.concat(boltRow(-21.4, -8.6, 0, zD + .8, 7, .3, .4, C.steel));
+  f = f.concat(grabIron(-15.0, 0, zD + .8, 3.4, .7, C.steel, 'y'));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(louvrePanel(-15.0, s * 12.4, zD, 14.0, 6.6, 7, C.odDark, C.steel));
+    f = f.concat(box(4.0, s * 13.4, zD, 8.0, 4.4, .5, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(grabIron(2.0, s * 13.4, zD + .5, 2.6, .6, C.steel, 'x'));
+  });
+  f = f.concat(louvrePanel(-30.4, 0, zD, 5.0, 22.0, 4, C.odDark, C.steel));
+  f = f.concat(cyl(-5.6, 0, zD, 2.4, 2.4, 1.1, 12, C.odDark, C.od, 0, true));
+  f = f.concat(box(-24.6, 0, zD, 3.0, 15.0, .5, C.odDark, C.od, C.odDark, 0));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(cyl(-33.0, s * 11.4, zD, 2.6, 2.6, 4.6, 12, C.odDark, C.od, 0, true));
+    f = f.concat(cyl(-33.0, s * 11.4, zD + 4.6, 2.8, 2.8, .6, 12, C.od, C.odLit, 0, true));
+    f = f.concat(box(13.6, s * 15.6, zD, 1.6, 3.0, 1.8, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(-31.6, s * 15.6, zD, 1.6, 3.0, 1.8, C.odDark, C.od, C.odDark, 0));
+  });
+  /* the twin exhausts under their deflector across the rear plate */
+  f = f.concat(box(xT + 1.0, 0, 15.2, 2.0, 16.0, 5.0, C.odDark, C.od, C.odDark));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(place(tubeSmooth(0, 1.4, 0, 0, 1.1, 8, C.steel, '#26251f'), 0, xT + .2, s * 4.4, 15.4));
+  });
+
+  /* ---- what hangs on the outside: the sand shields, the pioneer tools along the
+     sponson, jerricans aft and a tarp on the deck ---- */
+  [-1, 1].forEach(function (s) {
+    var sy = s * (hw - 1.1);
+    f = f.concat(box(-8.0, s * (ch + 1.0), zS - 2.6, 40.0, .7, 2.6, sideC, C.odDark, C.odDark, 0));
+    f = f.concat(box(-19.0, sy, zD - 3.4, 10.0, .9, .9, '#5a4630', '#6b5438', '#4e402c', 0));
+    f = f.concat(box(-24.4, sy, zD - 3.8, 3.4, .6, 2.4, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(-27.0, s * 12.8, zD, 2.2, 4.2, 5.6, C.jerry, lit(C.jerry, 1.15)));
+    f = f.concat(box(-24.6, s * 12.8, zD, 2.2, 4.2, 5.6, C.jerry, lit(C.jerry, 1.15)));
+  });
+  f = f.concat(place(rollX(11.0, 2.4, C.tarp, lit(C.tarp, 1.12), 0, 0, 0), 0, -13.0, 9.0, zD + .6));
+  f = f.concat(rollX(9.0, 2.0, C.bedroll, lit(C.bedroll, 1.15), -13.0, -9.4, zD + .6));
+  return f;
+}
+
+/* One plan outline of the turret at a given height. It is a welded pentagon: a short
+   front plate between two cheeks angled hard back, sides that splay out to the widest
+   point behind the trunnions, and a broad squared rear for the counterweight to bolt
+   to. Every wall leans outward as it rises, which is what ky is for, and the whole
+   outline walks aft as it rises, which is what dx is for: that one shift is what makes
+   the front slope back and the rear overhang. */
+function m10TurretRing(z, ky, dx, inset) {
+  var half = [[12.8, 0.0], [9.8, 5.4], [4.2, 9.4], [-2.2, 10.6], [-6.6, 10.2], [-8.8, 6.8], [-9.6, 0.0]];
+  var pts = [], i, ins = inset || 0;
+  /* the inset walks each corner in toward the middle of the plan, which for a shape
+     this convex is near enough a normal offset and gives the wall an even thickness
+     all the way round instead of a front plate a foot thick and a rear one paper */
+  function pt(k, sgn) {
+    var x = half[k][0], y = half[k][1] * ky, l = Math.hypot(x - 1.1, y) || 1;
+    return [x + dx - ((x - 1.1) / l) * ins, sgn * (y - (y / l) * ins), z];
+  }
+  for (i = 0; i < half.length; i++) pts.push(pt(i, -1));
+  for (i = half.length - 2; i >= 1; i--) pts.push(pt(i, 1));
+  return pts;
+}
+
+function m10Turret(body, cap) {
+  var C = SHERMAN, f = [], zr = 7.2, i;
+  f = f.concat(welded(faceOut(loft([m10TurretRing(0, 1.0, 0, 0), m10TurretRing(3.6, 1.12, -.75, 0),
+                                    m10TurretRing(zr, 1.24, -1.5, 0)], [body]), -1, 0, zr / 2)));
+  /* the inside of the walls, seen over the rim because the thing has no roof */
+  f = f.concat(welded(loft([m10TurretRing(1.0, 1.0, 0, 1.1), m10TurretRing(zr, 1.24, -1.5, 1.1)], [C.odDark])
+    .map(function (q) { return { v: q.v.slice().reverse(), c: q.c }; })));
+  var top = m10TurretRing(zr, 1.24, -1.5, 0), tin = m10TurretRing(zr, 1.24, -1.5, 1.1), rim = [];
+  for (i = 0; i < top.length; i++)
+    rim.push({ v: [top[i], top[(i + 1) % top.length], tin[(i + 1) % tin.length], tin[i]], c: cap });
+  f = f.concat(faceOut(rim, 0, 0, -60));
+  f = f.concat(prism(m10TurretRing(0, 1.0, 0, 1.1).map(function (p) { return [p[0], p[1]]; }),
+                     .6, 1.0, C.odDark, C.steel, C.odDark));
+  f = f.concat(cyl(0, 0, -2.4, 10.3, 10.3, 2.4, 24, C.odDark, C.odDark, 0, true));
+  /* what an open turret shows anyone above it: the ready rounds racked round the walls,
+     the gunner's and loader's seats, and the traverse handwheel */
+  for (i = 0; i < 5; i++) {
+    f = f.concat(cyl(-2.0 - i * 1.7, 8.2 + i * .12, 1.0, .85, .85, 3.4, 8, '#6a6a4a', '#8a8a62', 0, true));
+    f = f.concat(cyl(-2.0 - i * 1.7, -8.2 - i * .12, 1.0, .85, .85, 3.4, 8, '#6a6a4a', '#8a8a62', 0, true));
+  }
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(2.4, s * 4.6, 1.0, 3.0, 3.2, 2.2, C.odDark, '#3a3a2e', C.odDark, 0));
+    f = f.concat(box(1.2, s * 4.6, 3.2, .7, 3.2, 3.0, C.odDark, '#3a3a2e', C.odDark, 0));
+  });
+  f = f.concat(place(tubeSmooth(-.4, .4, 0, 0, 1.5, 10, C.steel, C.bare), Math.PI / 2, 5.6, 4.0, 2.6));
+
+  /* the counterweight bolted across the back. Without it a 17-pounder puts the mount so
+     far out of balance that the traverse gear will not hold the turret on a slope. */
+  f = f.concat(extrudeY([[-7.8, zr + .4], [-14.0, zr - .9], [-12.6, 1.8], [-7.8, 1.2]],
+                        -7.4, 7.4, body, cap, C.odDark));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(boltRow(-12.4, -8.8, s * 6.8, 3.4, 4, .3, .4, C.steel));
+    f = f.concat(box(8.2, s * 6.0, zr - 1.0, 1.4, 2.4, 1.6, C.odDark, C.od, C.odDark, 0));
+    for (i = 0; i < 5; i++) f = f.concat(grabIron(2.0 - i * 3.0, s * 11.4, 2.2, 1.4, .5, C.steel, 'x'));
+  });
+  return f;
+}
+
+/* The gun. A 17-pounder is a long thin tube with a step in it a third of the way out and
+   a two-chamber brake on the end, and beside a 75 mm it looks like a rifle barrel on a
+   shotgun. The mantlet behind it is the M10's, cut about to take it. */
+function m10Gun(body, cap) {
+  var C = SHERMAN, f = [], zg = 4.4;
+  f = f.concat(loft([roundRectRing(8.2, 0, zg, 5.0, 3.2, 1.4, 4),
+                     roundRectRing(11.6, 0, zg, 5.4, 3.5, 1.6, 4),
+                     roundRectRing(13.8, 0, zg, 4.4, 2.9, 1.3, 4)], [C.odDark, body, body]));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(place(tubeSmooth(-1.3, 1.3, 0, 0, 2.2, 12, C.odDark, C.od), Math.PI / 2, 9.4, s * 5.4, zg));
+  });
+  /* the breech ring and the guard hooped over it, back inside the turret */
+  f = f.concat(box(2.6, 0, zg - 2.4, 8.0, 4.6, 4.8, C.steel, C.bare, C.steel, .2));
+  f = f.concat(box(-1.8, 0, zg - 1.9, 1.4, 3.6, 3.8, '#2b2d24', '#3a3d31', '#2b2d24', 0));
+  f = f.concat(place(pitch(box(0, 0, -2.8, .6, 7.0, 5.6, C.steel, C.steel, C.steel, 0), 0, 0, 0), 0, -3.2, 0, zg));
+  /* the recuperator over the tube, then the tube, stepped down where the jacket ends */
+  f = f.concat(place(tubeSmooth(11.0, 21.0, 0, 0, 1.1, 10, C.odDark, C.od), 0, 0, 0, zg + 2.1));
+  f = f.concat(place(tubeSmooth(13.0, 19.0, 0, 0, 1.45, 12, C.odDark, C.od), 0, 0, 0, zg));
+  f = f.concat(place(tubeSmooth(19.0, 34.0, 0, 0, 1.06, 14, C.steel, C.bare), 0, 0, 0, zg));
+  f = f.concat(place(tubeSmooth(34.0, 34.8, 0, 0, 1.18, 14, C.odDark, C.od), 0, 0, 0, zg));
+  f = f.concat(place(tubeSmooth(34.8, 50.4, 0, 0, .88, 14, C.steel, C.bare), 0, 0, 0, zg));
+  /* the muzzle brake: a bolted collar, the chamber with a port blown through each side
+     of it, then the ring on the end. It is the part of an Achilles nobody mistakes. */
+  f = f.concat(place(tubeSmooth(50.4, 51.3, 0, 0, 1.45, 12, C.steel, C.bare), 0, 0, 0, zg));
+  f = f.concat(box(52.9, 0, zg - 1.5, 3.6, 3.0, 3.0, C.steel, C.bare, C.steel, .2));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(place(tubeSmooth(-.3, .3, 0, 0, .95, 10, '#15170f', '#15170f'), Math.PI / 2, 52.9, s * 1.5, zg));
+    f = f.concat(studX(51.4, s * 1.4, zg + 1.2, .2, .3, C.bare));
+    f = f.concat(studX(51.4, s * 1.4, zg - 1.2, .2, .3, C.bare));
+  });
+  f = f.concat(place(tubeSmooth(54.7, 55.3, 0, 0, 1.5, 12, C.steel, C.bare), 0, 0, 0, zg));
+  f = f.concat(place(tubeSmooth(55.0, 55.4, 0, 0, .7, 10, '#15170f', '#15170f'), 0, 0, 0, zg));
+  return f;
+}
+
+/* the .50 on its pintle at the back of the turret, which is all the crew have against
+   anything close enough for the gun to be no use */
+function m10Fifty() {
+  var C = SHERMAN, f = [], zr = 7.2;
+  f = f.concat(box(-6.6, 8.4, zr - .6, 1.4, 1.4, 3.0, C.odDark, C.od, C.odDark, 0));
+  f = f.concat(box(-5.8, 8.4, zr + 2.4, 5.4, 1.6, 1.6, C.steel, C.bare, C.steel, 0));
+  f = f.concat(place(tubeSmooth(0, 7.6, 0, 0, .5, 8, C.steel, '#17190f'), 0, -3.8, 8.4, zr + 3.2));
+  f = f.concat(box(-8.0, 8.4, zr + 3.6, 2.6, 1.4, 1.3, C.odDark, C.steel, C.steel, 0));
+  return f;
+}
+
 /* ================================================================ Stuart V (M3A3)
    The armoured brigade's reconnaissance tank: short, tall and narrow, on two volute
    bogies a side with the trailing idler down on the ground where it carries its
@@ -8395,6 +8655,9 @@ function buildVehicleModels() {
                        bar: 23, big: 0, scale: 1, mountZ: 19.6, gunZ: 4.8, turX: 2.5, mg: stuartThirty() };
   VMODEL.us_sher  = { hull: shermanHull(us, usC, usS), tur: shermanTurret(us, usC), belly: SHH.zBelly,
                       bar: 32, big: 1, scale: 1, mountZ: 21.6, gunZ: 4.8, turX: 4.0, mg: shermanFifty() };
+  VMODEL.us_ach   = { hull: m10Hull(us, usC, usS), tur: mesh(m10Turret(us, usC), m10Gun(us, usC)),
+                      belly: M10H.zBelly, bar: 55, big: 1, scale: 1, mountZ: M10H.zDeck,
+                      gunZ: 4.4, turX: 2.0, mg: m10Fifty() };
   VMODEL.ger_kt   = { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
                       bar: 73, big: 1, heavy: 1, scale: 1, mountZ: 21.8, gunZ: 6.8, turX: 4, mg: ktCupolaMG() };
   VMODEL.ger_h251 = { hull: h251Hull(PZ.body, PZ.lit, PZ.dark), tur: h251MountMG(PZ.body, PZ.lit), belly: H251.zBelly,
