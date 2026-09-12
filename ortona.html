@@ -1072,7 +1072,8 @@ function buildMap(data) {
         addCover(e.x + e.w / 2 + 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', 0, 150);
         break;
       case 'farm':
-        G.props.push({ x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'farm', z: 0 });
+        var fm = { x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'farm', z: 0 };
+        G.props.push(fm); G.blocks.push(fm);
         addCover(e.x - e.w / 2 - 18, e.y + e.h / 2 + 14, 36, 3, 'rubble'); addCover(e.x + e.w / 2 + 18, e.y + e.h / 2 + 14, 36, 3, 'rubble');
         break;
       case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2); break;
@@ -1289,6 +1290,7 @@ function coverAt(x, y, fromAng) {
 /* the cover a squad is actually enjoying, averaged over the men still standing */
 function coverOf(u, fromAng) {
   if (u.cat === 'veh') return 0;
+  if (u.gar) return 4;                               /* two feet of rubble stone all round */
   var n = 0, sum = 0;
   for (var i = 0; i < u.models.length; i++) {
     if (!u.models[i].alive) continue;
@@ -1537,7 +1539,71 @@ function updateBuilding(b, dt) {
 }
 
 /* ---------------------------------------------------------------- orders */
-function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; }
+function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; }
+
+/* Holding a house. A ruin with two feet of rubble stone round it is the best cover on
+   this map and the whole battle for Ortona was fought for one building at a time, so a
+   section can be put inside one: right-click the building with them selected and they
+   walk to it and man the openings. Men on the wall line stand on the footprint, which is
+   solid on the movement grid, so they stop pathing entirely while they are in there and
+   their line of sight is taken as read. One section to a building. */
+function blockAt(x, y) {
+  for (var i = 0; i < G.blocks.length; i++) {
+    var b = G.blocks[i];
+    if (Math.abs(x - b.x) < b.w / 2 + 10 && Math.abs(y - b.y) < b.h / 2 + 10) return b;
+  }
+  return null;
+}
+function canGarrison(u, bk) {
+  return u && bk && (u.cat === 'inf' || u.cat === 'team') && !u.gar && !u.retreat &&
+         !u.inside && !bk.gar && bk.w > 60 && bk.h > 60;
+}
+/* where the men stand: spread along the inside of the four walls, facing out */
+function garrisonSlots(bk, count) {
+  var out = [], hw = bk.w / 2 - 10, hh = bk.h / 2 - 10, i;
+  var edges = [[0, hh, 1, 0, Math.PI / 2], [0, -hh, 1, 0, -Math.PI / 2],
+               [hw, 0, 0, 1, 0], [-hw, 0, 0, 1, Math.PI]];
+  var per = Math.max(1, Math.ceil(count / 4));
+  for (i = 0; i < count; i++) {
+    var e = edges[i % 4], j = Math.floor(i / 4);
+    var span = e[2] ? hw : hh, off = per < 2 ? 0 : (((j + .5) / per) - .5) * 1.7 * span;
+    out.push({ x: bk.x + e[0] + e[2] * off, y: bk.y + e[1] + e[3] * off, f: e[4] });
+  }
+  return out;
+}
+function enterBuilding(u, bk) {
+  if (!canGarrison(u, bk)) return;
+  clearOrder(u);
+  u.gar = bk; bk.gar = u;
+  var slots = garrisonSlots(bk, u.models.length), i;
+  for (i = 0; i < u.models.length; i++) {
+    u.models[i].x = slots[i].x; u.models[i].y = slots[i].y; u.models[i].f = slots[i].f;
+    u.models[i].prone = false;
+  }
+  u.x = bk.x; u.y = bk.y; u.moving = false; u.path = null;
+  if (u.setup !== undefined) u.setup = 0;
+  if (u.side === G.side) toast(u.def.short + ' holding the building');
+}
+function leaveBuilding(u) {
+  var bk = u.gar, i;
+  if (!bk) return;
+  bk.gar = null; u.gar = null;
+  var sp = nearestFree(bk.x, bk.y + bk.h / 2 + 34);
+  u.x = sp.x; u.y = sp.y;
+  for (i = 0; i < u.models.length; i++) {
+    u.models[i].x = u.x + u.models[i].ox; u.models[i].y = u.y + u.models[i].oy;
+  }
+  clearOrder(u);
+  if (u.side === G.side) toast(u.def.short + ' out of the building');
+}
+/* A man at a window stands on the wall line and the wall is solid on the movement grid,
+   so a straight sight test from his own cell fails before it starts. A garrison shoots
+   out of its building and is shot at through the holes in it: the test is only for what
+   stands between the two of them. */
+function fireLine(u, t) {
+  if (u.gar || t.gar) return true;
+  return clearLine(u.x, u.y, t.x, t.y);
+}
 
 /* A gun with no engine goes where a half-track or a tank drags it. Hitched, it rides a
    trail's length behind the tow and cannot fire; unhitched, it has to set up again. */
@@ -1593,6 +1659,7 @@ function unloadVehicle(v) {
 }
 function orderMove(u, x, y, attackMove) {
   if (u.retreat) return;
+  if (u.gar) leaveBuilding(u);
   clearOrder(u);
   u.order = attackMove ? 'attackmove' : 'move';
   u.dest = { x: x, y: y };
@@ -1611,6 +1678,7 @@ function orderStop(u) {
 }
 function orderRetreat(u) {
   var hq = hqOf(u.side); if (!hq || u.cat === 'veh' || !u.def.speed) return;   /* a gun with no engine stays where it is put */
+  if (u.gar) leaveBuilding(u);
   clearOrder(u);
   u.retreat = 1; u.order = 'retreat';
   u.dest = { x: hq.x, y: hq.y + hq.def.h / 2 + 60 };
@@ -1658,7 +1726,7 @@ function moveUnit(u, dt) {
   var px = 0, py = 0;
   for (var i = 0; i < G.units.length; i++) {
     var o = G.units[i];
-    if (o === u || o.dead || o.inside) continue;
+    if (o === u || o.dead || o.inside || o.gar) continue;
     var od = dsq(u.x, u.y, o.x, o.y), rr = unitRadius(u) + unitRadius(o);
     if (od < rr * rr && od > 1) {
       var dd = Math.sqrt(od);
@@ -1931,7 +1999,7 @@ function acquire(u) {
     if (u.def.atOnly && e.cat !== 'veh') continue;
     if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, e))) > u.def.arc / 2) continue;
     if (!visibleTo(u.side, e)) continue;
-    if (!clearLine(u.x, u.y, e.x, e.y)) continue;
+    if (!fireLine(u, e)) continue;
     var sc = -d;
     if (e.cat === 'veh' && (u.def.at || u.def.atOnly || mainW(u).pen > 60)) sc += 900;
     if (e.cat === 'veh' && !(u.def.at || u.def.atOnly) && mainW(u).pen < 40) sc -= 700;
@@ -2002,7 +2070,7 @@ function fireOneSecondary(u, key, dt) {
   }
   if (!best || !clearLine(u.x, u.y, best.x, best.y)) { u.cdSec[key] = .3; return; }
   u.cdSec[key] = w.rof * rnd(.9, 1.1);
-  var cov = coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
+  var cov = best.gar ? 4 : coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
   best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1), 0,
                    w.supCap === undefined ? 1.35 : Math.max(best.sup, w.supCap));
   var acc = w.acc * COVER[cov].acc * (u.moving ? .6 : 1);
@@ -2028,14 +2096,14 @@ function fireAt(u, t, dt) {
   if (u.retreat) return;
   if (u.moving && (u.cat === 'team' || w.shell)) return;
   /* hedges do not block fire, stone walls and structures do */
-  if (!clearLine(u.x, u.y, t.x, t.y)) return;
+  if (!fireLine(u, t)) return;
   var shots = u.cat === 'veh' ? 1 : (w.shell ? 1 : aliveModels(u));
   if (!shots) return;
   u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * rnd(.9, 1.12);
   u.fireT = .12;
   if (u.cat !== 'veh') { var k = 0; for (var i = 0; i < u.models.length; i++) if (u.models[i].alive && k++ < shots) u.models[i].fire = .1; }
 
-  var cov = t.cat === 'veh' ? 0 : coverAt(t.x, t.y, Math.atan2(t.y - u.y, t.x - u.x));
+  var cov = t.cat === 'veh' ? 0 : (t.gar ? 4 : coverAt(t.x, t.y, Math.atan2(t.y - u.y, t.x - u.x)));
   var acc = w.acc * COVER[cov].acc;
   acc *= (t.moving && t.cat !== 'veh') ? .86 : 1;
   acc *= (u.sup > .55 ? .5 : 1) * (u.sup > 1 ? .5 : 1);
@@ -2148,6 +2216,9 @@ function damageModel(u, m, amt, src) {
 function killUnit(u, src) {
   if (u.dead) return;
   u.dead = true;
+  if (u.gar) { u.gar.gar = null; u.gar = null; }              /* the house is free again */
+  if (u.towedBy) { u.towedBy.tow = null; u.towedBy = null; }
+  if (u.tow) { u.tow.towedBy = null; u.tow = null; }
   if (u.cat === 'veh') {
     G.wrecks.push({ x: u.x, y: u.y, a: u.facing, turret: u.turret,
                     w: u.def.hp > 500 ? 82 : 55, h: u.def.hp > 500 ? 38 : 28,
@@ -2330,6 +2401,29 @@ function updateUnit(u, dt) {
     unloadVehicle(car);
     for (var bm = 0; bm < u.models.length; bm++) if (u.models[bm].alive) u.models[bm].hp *= .45;
     u.sup = 1.1;
+  }
+  /* holding a house: pinned to the openings, not walking anywhere, still shooting */
+  if (u.gar) {
+    if (u.gar.gar !== u) u.gar = null;
+    else {
+      u.moving = false; u.path = null; u.x = u.gar.x; u.y = u.gar.y;
+      var gs = garrisonSlots(u.gar, u.models.length);
+      for (var gi = 0; gi < u.models.length; gi++) {
+        u.models[gi].x = gs[gi].x; u.models[gi].y = gs[gi].y;
+        u.models[gi].prone = false;
+        if (!u.target) u.models[gi].f = gs[gi].f;
+        else u.models[gi].f = Math.atan2(u.target.y - u.models[gi].y, u.target.x - u.models[gi].x);
+      }
+    }
+  }
+  /* walking to a house to get into it */
+  if (u.order === 'enter' && u.enterT) {
+    if (u.enterT.gar) clearOrder(u);
+    else if (dist(u, u.enterT) < Math.max(u.enterT.w, u.enterT.h) * .58 + 26) { enterBuilding(u, u.enterT); return; }
+    else if (!u.path) {
+      var ep = nearestFree(u.enterT.x, u.enterT.y + u.enterT.h / 2 + 30);
+      u.dest = ep; u.path = findPath(u.x, u.y, ep.x, ep.y); u.pi = 0;
+    }
   }
   /* on the hook: dragged along behind whatever is towing it, laid where the tow points */
   if (u.towedBy) {
@@ -10252,6 +10346,7 @@ function issueOrder(wx, wy, forceAttack) {
   var repairTarget = friendlyVeh || (friendlyBld && (friendlyBld.hp < friendlyBld.maxhp || friendlyBld.built < 1) ? friendlyBld : null);
   var lift = friendlyVeh && friendlyVeh.def.carries && !friendlyVeh.cargo ? friendlyVeh : null;
   var hook = unitsAt(wx, wy, 20).filter(function (u) { return u.side === G.side && u.def.towable && !u.towedBy; })[0];
+  var house = enemies.length ? null : blockAt(wx, wy);
   var n = mine.length, cols = Math.ceil(Math.sqrt(n));
   mine.forEach(function (u, i) {
     if (lift && canBoard(u, lift)) {
@@ -10259,6 +10354,13 @@ function issueOrder(wx, wy, forceAttack) {
       u.order = 'board'; u.boardT = lift;
       u.dest = { x: lift.x, y: lift.y };
       u.path = findPath(u.x, u.y, lift.x, lift.y); u.pi = 0;
+      return;
+    }
+    if (house && canGarrison(u, house)) {
+      clearOrder(u);
+      u.order = 'enter'; u.enterT = house;
+      var hp2 = nearestFree(house.x, house.y + house.h / 2 + 30);
+      u.dest = hp2; u.path = findPath(u.x, u.y, hp2.x, hp2.y); u.pi = 0;
       return;
     }
     if (hook && canHitch(u, hook)) {
@@ -10694,6 +10796,9 @@ function buildCmds() {
     var loaded = units.filter(function (u) { return u.cat === 'veh' && u.cargo; });
     if (loaded.length) addCmd('Unload', 'dismount', 'E', true,
       function () { loaded.forEach(unloadVehicle); sfx('click'); syncHud(); });
+    var held = units.filter(function (u) { return u.gar; });
+    if (held.length) addCmd('Leave building', 'back outside', 'B', true,
+      function () { held.forEach(leaveBuilding); sfx('click'); syncHud(); });
     var hooked = units.filter(function (u) { return u.cat === 'veh' && u.tow; });
     if (hooked.length) addCmd('Unhitch', 'drop the gun', 'G', true,
       function () { hooked.forEach(unhitchGun); sfx('click'); syncHud(); });
