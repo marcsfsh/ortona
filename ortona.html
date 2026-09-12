@@ -3387,7 +3387,9 @@ function updateUnit(u, dt) {
 }
 
 /* ---------------------------------------------------------------- ai */
-var AI = { side: 'ger', t: 0, plan: 0, wave: 0, lastPush: 0 };
+/* The opposition's own state. Everything in it is a number or a sector id: a plan that
+   held a reference to a unit or a sector would go on pointing at it after it was dead. */
+var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99 };
 var DIFF = [
   /* Green: money is barely a constraint. You earn triple, start with enough to fill the
      queue immediately, and the opposition runs a quarter economy, thinks every four
@@ -3399,77 +3401,218 @@ var DIFF = [
      its company post and its armour point, still sets up a machine gun, and still brings
      armour out -- earlier than the harder settings do, because on a quarter economy a
      late tech gate means the vehicle never arrives at all. */
-  { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 4, mech: 3, push: 420, aim: .34, tough: .5,
+  { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 4, mech: 3, skill: 0, push: 420, aim: .34, tough: .5,
     startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9 },
-  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 99, push: 0,  aim: 1,   tough: 1,
+  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 99, skill: 1, push: 0,  aim: 1,   tough: 1,
     startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1 },
   /* Veteran: on a map this defensive an economic edge alone barely registers, so the
      opposition also shoots straighter, takes more killing, techs earlier and opens with
      a larger force while your own victory points drain faster. */
-  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 99, push: 0, aim: 1.04, tough: 1.07,
+  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 99, skill: 2, push: 0, aim: 1.04, tough: 1.07,
     startMp: 420, startFu: 20, vp: 1.07, tech: 1.12, youAim: 1, youTough: 1, extra: 0, build: 1 }
 ];
-function aiInit(side) { AI.side = side; AI.t = 0; AI.wave = 0; }
+function aiInit(side) {
+  AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
+  AI.mood = 'push'; AI.upT = -99; AI.bagT = -99;
+}
 function aiOwn(pred) {
   var out = [];
   for (var i = 0; i < G.units.length; i++) { var u = G.units[i]; if (!u.dead && u.side === AI.side && (!pred || pred(u))) out.push(u); }
   return out;
 }
+/* ---- what an army is worth, and where the weight of it is -------------------- */
+/* A section at half strength is half an army, so everything below weighs units by what
+   is left of them rather than counting heads. This is the number the AI uses to decide
+   whether it is winning, whether a wave is worth committing, and how much to leave
+   behind to hold ground. */
+function aiValue(u) {
+  var v = (u.def.cost.mp || 0) + (u.def.cost.fu || 0) * 2.4;
+  return v * (u.cat === 'veh' ? clamp(u.hp / u.maxhp, 0, 1) : aliveModels(u) / u.def.models);
+}
+function aiStrength(side) {
+  var s = 0;
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (!u.dead && u.side === side && !u.def.builder) s += aiValue(u);
+  }
+  return s;
+}
+/* how much enemy is within reach of a point: the AI's whole read on where the fight is */
+function aiThreat(side, x, y, r) {
+  var s = 0;
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.side === side || u.inside || u.retreat) continue;
+    if (dsq(u.x, u.y, x, y) < r * r) s += aiValue(u);
+  }
+  return s;
+}
+/* the bearing the enemy will come from, which on this map is simply where he lives */
+function aiFoeDir(side, x, y) {
+  var h = hqOf(foe(side));
+  return h ? Math.atan2(h.y - y, h.x - x) : (side === 'us' ? 0 : Math.PI);
+}
+/* An empty house near a point, big enough to put a section in. Ortona was fought one
+   building at a time and the game models it: men in a house are in the heaviest cover
+   there is, they still hold the ground they stand on, and the old brain never used a
+   single one of them. */
+function aiHouse(u, x, y, r) {
+  var best = null, bd = r * r;
+  for (var i = 0; i < G.blocks.length; i++) {
+    var b = G.blocks[i];
+    if (!canGarrison(u, b)) continue;
+    var d = dsq(x, y, b.x, b.y);
+    if (d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
+/* A firing position for a support weapon: back from the objective on its own side of it,
+   in whatever cover lies within a short walk. A machine gun belongs where it can see the
+   ground the enemy has to cross, not standing on the flag. */
+function aiFirePost(side, x, y, back) {
+  var a = aiFoeDir(side, x, y);
+  var px = clamp(x - Math.cos(a) * back, 60, WORLD.w - 60);
+  var py = clamp(y - Math.sin(a) * back, 60, WORLD.h - 60);
+  var near = coversNear(px, py, 100), best = null, bs = -1e9;
+  for (var i = 0; i < near.length; i++) {
+    var c = near[i];
+    if (c.type < 2 || c.hp <= 0 || c.kind === 'ditch') continue;
+    var sc = c.type * 30 - Math.hypot(c.x - px, c.y - py) * .35;
+    if (sc > bs) { bs = sc; best = c; }
+  }
+  return nearestFree(best ? best.x : px, best ? best.y : py);
+}
+/* What is worth shooting at from here.
+   The old loop forced every section onto whatever enemy was nearest. acquire() honours a
+   forced target whatever it is, so that order actively made the AI's gunnery worse: a
+   rifle section would plink at a Tiger's front plate while the Fallschirmjaeger beside it
+   shot the section to pieces. This picks what the weapon in hand can actually open, and
+   prefers what someone else is already firing at, because two sections on one target end
+   a fight and one section on each of two targets does not. */
+var _aiEng = {};
+function aiPickTarget(u, reach) {
+  var best = null, bs = -1e9;
+  for (var i = 0; i < G.units.length; i++) {
+    var e = G.units[i];
+    if (e.dead || e.side === u.side || e.inside) continue;
+    var d = dist(u, e);
+    if (d > reach) continue;
+    var w = weaponFor(u, e), sc;
+    if (e.cat === 'veh') {
+      var pc = penChance(penAt(w, d), armourAt(e, u.x, u.y));
+      if (pc < .10) continue;                          /* it will not go through: leave it */
+      sc = 820 * pc;
+    } else {
+      sc = 300;
+      if (e.gar) sc -= 110;                            /* men in a house cost a lot to shift */
+      if (w.aoe) sc += 90;                             /* a shell is worth spending on men */
+      if (u.def.atOnly) continue;                      /* an anti-tank gun waits for armour */
+    }
+    sc -= d * .45;
+    if (_aiEng[e.id]) sc += 150;                       /* finish what the others started */
+    if (e.target && !e.target.dead && e.target.side === u.side) sc += 110;
+    if (e.cat !== 'veh' && hpFrac(e) < .5) sc += 90;
+    if (e.sup > 1) sc -= 80;                           /* pinned men are no longer the danger */
+    if (sc > bs) { bs = sc; best = e; }
+  }
+  return best;
+}
+/* ---- the brain ---------------------------------------------------------------- */
 function aiTick(dt) {
   AI.t -= dt;
   if (AI.t > 0) return;
   AI.t = DIFF[G.diff].tick;
-  var side = AI.side, hq = hqOf(side);
+  var side = AI.side, hq = hqOf(side), i, j, u, s;
   /* In annihilation the headquarters is only the first building to fall, and an army
      that stops taking orders the moment it goes would leave the rest of the base to be
      knocked down unopposed. Whatever is still standing becomes the base it works from;
      production dries up on its own, since a company post turns out no engineers. */
   if (!hq) {
-    for (var hb = 0; hb < G.blds.length; hb++)
-      if (G.blds[hb].side === side && !G.blds[hb].dead) { hq = G.blds[hb]; break; }
+    for (i = 0; i < G.blds.length; i++)
+      if (G.blds[i].side === side && !G.blds[i].dead) { hq = G.blds[i]; break; }
   }
   if (!hq) return;
+  var D = DIFF[G.diff], skill = D.skill === undefined ? 1 : D.skill;
   var K = side === 'us'
     ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
     : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
 
-  var engs = aiOwn(function (u) { return u.def.builder; });
-  var inf = aiOwn(function (u) { return u.cat !== 'veh' && !u.def.builder; });
-  var vehs = aiOwn(function (u) { return u.cat === 'veh'; });
+  /* ---- what it has.
+     Five lists, because the same unit is a different thing to each part of the brain.
+     The motor pool counts every vehicle. The population caps count every man, teams
+     included, which is what they have always counted. Only men and a carrier full of
+     them can take ground, so those are the ones dealt out to the objectives; the rest
+     of the armour screens for them. */
+  var mine = aiOwn(null);
+  var engs = [], men = [], rifles = [], teams = [], vehs = [], screens = [], takers = [], fighters = [];
+  for (i = 0; i < mine.length; i++) {
+    u = mine[i];
+    if (u.def.builder) { engs.push(u); continue; }
+    if (u.cat === 'veh') {
+      vehs.push(u);
+      if (u.def.caps) takers.push(u); else screens.push(u);
+    } else {
+      men.push(u);
+      if (u.cat === 'team') teams.push(u);
+      else { rifles.push(u); takers.push(u); }
+    }
+    fighters.push(u);
+  }
   var pop = popOf(side);
-  var enemyVeh = 0;
-  G.units.forEach(function (u) { if (!u.dead && u.side !== side && u.cat === 'veh') enemyVeh++; });
+  var enemyVeh = 0, foeAt = 0;
+  for (i = 0; i < G.units.length; i++) {
+    u = G.units[i];
+    if (u.dead || u.side === side) continue;
+    if (u.cat === 'veh') enemyVeh++;
+    if (u.def.at || u.def.atOnly) foeAt++;
+  }
+  _aiEng = {};
+  for (i = 0; i < mine.length; i++) {
+    u = mine[i];
+    if (u.target && !u.target.dead) _aiEng[u.target.id] = (_aiEng[u.target.id] || 0) + 1;
+  }
 
   /* ---- production */
   var b1 = null, b2 = null;
-  G.blds.forEach(function (b) { if (b.side === side) { if (b.key === K.b1) b1 = b; if (b.key === K.b2) b2 = b; } });
+  for (i = 0; i < G.blds.length; i++) {
+    var bb = G.blds[i];
+    if (bb.side !== side) continue;
+    if (bb.key === K.b1) b1 = bb;
+    if (bb.key === K.b2) b2 = bb;
+  }
   var infRoom = b2 && b2.built >= 1 ? POPCAP - 36 : POPCAP - 20;
   var q = hq.queue.length;
   if (engs.length < 1 && q < 2) queueUnit(hq, K.eng);
-  else if (inf.length < 2 && q < 2) queueUnit(hq, K.inf);
-  else if (q < 1 && pop < infRoom && inf.length < DIFF[G.diff].army &&
-           (inf.length < 2 + DIFF[G.diff].inf || !b1 || G.res[side].mp > 480)) queueUnit(hq, K.inf);
+  else if (men.length < 2 && q < 2) queueUnit(hq, K.inf);
+  else if (q < 1 && pop < infRoom && men.length < D.army &&
+           (men.length < 2 + D.inf || !b1 || G.res[side].mp > 480)) queueUnit(hq, K.inf);
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && pop < infRoom + 6) {
-    var mgs = aiOwn(function (u) { return u.key === K.mg; }).length;
-    if (mgs < DIFF[G.diff].mg) queueUnit(b1, K.mg);
+    var mgs = aiOwn(function (v) { return v.key === K.mg; }).length;
+    if (mgs < D.mg) queueUnit(b1, K.mg);
     /* The company post used to sit outside the army cap, so an easy opponent held to
        four sections by the headquarters quietly raised a dozen more out of the post.
        The cap now holds everywhere, which leaves the easy settings spending what they
        have on one of each arm rather than on a crowd of riflemen. */
-    else if (inf.length < DIFF[G.diff].army) {
+    else if (men.length < D.army) {
       if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58)) queueUnit(b1, K.elite);
-      else if (side !== G.side && DIFF[G.diff].tech > 1.2) queueUnit(hq, K.inf);
       else queueUnit(hq, K.inf);
     }
   }
   if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < POPCAP - 14) {
-    var ats = aiOwn(function (u) { return u.key === K.at; }).length;
-    var tech = DIFF[G.diff].tech, want = [];
-    if (enemyVeh > ats) want.push(K.at);
+    var ats = aiOwn(function (v) { return v.key === K.at; }).length;
+    var tech = D.tech, want = [];
+    /* An anti-tank gun is worth having before the tank arrives rather than after: it
+       crawls into position at a walking pace and it is the only thing in the list that
+       answers armour outright. So the second the other side opens a motor pool, one is
+       ordered -- the old brain waited until his armour was in the street, by which time
+       the gun had a two-minute walk ahead of it. */
+    var foeB2 = side === 'us' ? 'ger_dep' : 'us_mot';
+    if (enemyVeh > ats || (enemyVeh && ats < 2) ||
+        (!ats && (hasBuilding(foeSide, foeB2) || G.t > 360))) want.push(K.at);
     /* Armour is capped the same way the infantry is. Without it the easy settings turn
        the manpower the army cap freed up into a column of tanks, which is a harder
        fight than the crowd of riflemen it replaced. */
-    if (vehs.length < DIFF[G.diff].mech) {
+    if (vehs.length < D.mech) {
       if (G.t > Math.max(0, (1 - tech) * 620)) want.push(K.tank);
       if (!vehs.length && G.t > Math.max(0, (1 - tech) * 420)) want.unshift(K.lt);
       else if (K.heavy && G.t > 600 && countOf(side, K.heavy) < 1 && G.res[side].fu > 260) want.push(K.heavy);
@@ -3478,10 +3621,35 @@ function aiTick(dt) {
     /* try each in turn: a first choice it cannot afford must not stall the whole queue */
     for (var wi = 0; wi < want.length; wi++) if (queueUnit(b2, want[wi])) break;
   }
+
+  /* ---- field upgrades. A roof gun makes a tank a different animal in a street and
+     skirts are the difference between a Panzer IV that survives a bazooka and one that
+     does not. The player has always been able to buy these; the opposition never did,
+     and half of what a vehicle can do is an upgrade. */
+  if (skill >= 1 && G.t - AI.upT > 9 && vehs.length) {
+    AI.upT = G.t;
+    var order = ['mg', 'skirts', 'kwk', 'drill', 'quad50', 'thirty', 'coax', 'how75', 'pak36'];
+    var bought = false;
+    for (i = 0; i < order.length && !bought; i++) {
+      var uk = order[i], U = UPGRADES[uk];
+      if (uk === 'skirts' && !foeAt) continue;          /* nothing to skirt against yet */
+      for (j = 0; j < vehs.length && !bought; j++) {
+        u = vehs[j];
+        if ((u.def.upgrades || []).indexOf(uk) < 0) continue;
+        if (u.up && u.up[uk]) continue;
+        if (hasExclusive(u, U.excl)) continue;
+        /* never buy a plate with the manpower the next section was going to cost */
+        if (!canAfford(side, U.cost) || G.res[side].mp - (U.cost.mp || 0) < 150) continue;
+        pay(side, U.cost); u.up[uk] = true; bought = true;
+      }
+    }
+  }
+
   /* ---- construction */
   var siteBase = { x: hq.x + (side === 'us' ? 190 : -190), y: hq.y };
   if (engs.length) {
-    var freeEng = engs.filter(function (e) { return !e.building; });
+    var freeEng = [];
+    for (i = 0; i < engs.length; i++) if (!engs[i].building) freeEng.push(engs[i]);
     var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
     if (stall && freeEng.length) {
       resumeBuild(freeEng[0], stall);
@@ -3491,92 +3659,278 @@ function aiTick(dt) {
       placeStructure(side, K.b2, siteBase.x, siteBase.y + 150, [freeEng[0]]);
     }
   }
+
+  /* ---- the objectives.
+     This is a game about holding sectors, and one main effort loses the map: an army
+     sent at a single point leaves five others standing empty behind it while the
+     victory points run down. So the ground is worked down a list, and the weight goes
+     where the ground is actually contested -- a sector nobody is fighting over is worth
+     one section walking onto it, a sector being fought over is worth three. That is the
+     concentration the old brain never had: it capped every sector at two or three and
+     then let vehicles fill the places, so the sections that could actually capture
+     arrived one at a time behind armour that cannot capture at all. */
+  var foeSide = foe(side);
+  var myStr = aiStrength(side), foeStr = aiStrength(foeSide);
+  var ratio = myStr / Math.max(150, foeStr);
+  /* An army that is losing the arithmetic stops buying ground at any price and holds
+     what it has, which on this map means houses and the sectors behind its own line. */
+  AI.mood = (skill < 1 || G.t < 100 || ratio > .95) ? 'push' : ratio > .62 ? 'hold' : 'dig';
+  var objs = [];
+  for (i = 0; i < G.sectors.length; i++) {
+    s = G.sectors[i];
+    var th = aiThreat(side, s.x, s.y, 400);
+    var held = s.owner === side;
+    var quiet = held && !s.contest && th < 50;
+    /* A victory sector left standing empty is taken back by the first section that walks
+       onto it and the points go with it, so those keep a sentry -- one section, and only
+       one already near enough to be it. The economy sectors do not: a section standing
+       on a quiet manpower point is a section missing from the fight, and posting one on
+       each of them cost more ground than it saved. */
+    if (quiet && s.type !== 'vp') continue;
+    /* Losing the arithmetic changes what is worth wanting. An army that is behind and
+       still marching at the far end of the map is how a bad position becomes a rout, so
+       it shortens its reach and holds what it can reach: on this ground that means the
+       houses behind its own line. */
+    if (!held) {
+      var far = dist(s, hq);
+      if (AI.mood === 'dig' && (far > 760 || th > 140)) continue;
+      if (AI.mood === 'hold' && far > 1350 && th > 90) continue;
+    }
+    var cap = quiet ? 1 : held ? (th > 40 ? 2 : 1) : (s.contest || th > 40) ? 3 : 1;
+    if (s.type === 'vp' && !quiet) cap++;
+    var maxD = quiet ? 460 : 4000;
+    /* The victory sectors are the game: a side can hold twice the ground and still lose
+       on points, which is exactly what this brain did until the three in the middle were
+       priced at what they are actually worth rather than at what they cost to walk to. */
+    var sc = (s.type === 'vp' ? 430 : s.type === 'fuel' ? 260 : 150) - dist(s, hq) * .14 -
+             th * .10 + (s.contest ? 80 : 0) + (s.owner === foeSide ? 40 : 0) +
+             (held ? 60 : 0);                                     /* what it has, it keeps */
+    if (quiet) sc -= 150;                                           /* a sentry, not a push */
+    objs.push({ s: s, sc: sc, cap: cap, th: th, maxD: maxD * maxD });
+  }
+  objs.sort(function (a, b) { return b.sc - a.sc; });
+
+  /* the point of contact, kept for half a minute so support weapons are not marched up
+     and down the map every time the list reorders */
+  var hotO = null;
+  for (i = 0; i < objs.length; i++) if (!hotO || objs[i].th > hotO.th) hotO = objs[i];
+  if (!hotO && objs.length) hotO = objs[0];
+  var keep = G.secById[AI.main];
+  if (!keep || G.t - AI.mainT > 30 || (keep.owner === side && !keep.contest)) {
+    if (hotO) { AI.main = hotO.s.id; AI.mainT = G.t; keep = hotO.s; }
+  }
+  /* in annihilation the ground wins nothing, so the main effort is a building */
+  var razeT = G.win === 'anni' ? nearestEnemyBuilding(hq) : null;
+  var mainX = razeT ? razeT.x : keep ? keep.x : hq.x + (side === 'us' ? 500 : -500);
+  var mainY = razeT ? razeT.y : keep ? keep.y : hq.y;
+
+  /* ---- who goes where.
+     Only men can take ground -- a vehicle standing in a sector does not capture it, and
+     a carrier full of men is the one exception -- so the sections are dealt out to the
+     objectives nearest them first and the armour is dealt separately. Dealing them out
+     nearest-first is what keeps the answer stable from tick to tick: the list is scored
+     again every time, but a section is still the nearest thing to the objective it was
+     given, so it is given it again. The orders below only reissue when the destination
+     has really moved, because a section handed a fresh order every four seconds walks in
+     circles, and a weapon team handed one never finishes setting up. */
+  var picked = {};
+  for (i = 0; i < objs.length; i++) {
+    var o = objs[i];
+    for (var n = 0; n < o.cap; n++) {
+      var take = null, td = 1e9;
+      for (j = 0; j < takers.length; j++) {
+        u = takers[j];
+        if (picked[u.id] || u.retreat) continue;
+        var d2 = dsq(u.x, u.y, o.s.x, o.s.y);
+        if (d2 > o.maxD) continue;
+        if (d2 < td) { td = d2; take = u; }
+      }
+      if (!take) break;
+      picked[take.id] = 1;
+      take.job = 'take'; take.jobSec = o.s.id; take.jobT = G.t;
+    }
+  }
+  for (j = 0; j < takers.length; j++) {
+    u = takers[j];
+    if (picked[u.id] || u.retreat) continue;
+    u.job = 'take'; u.jobSec = objs.length ? objs[0].s.id : null;    /* spare weight forward */
+  }
+  for (j = 0; j < teams.length; j++) teams[j].job = 'support';
+  for (j = 0; j < screens.length; j++) if (screens[j].job !== 'mend') screens[j].job = 'screen';
+
   /* ---- orders */
-  var targets = G.sectors.slice().sort(function (a, b) {
-    var va = (a.type === 'vp' ? 260 : a.type === 'fuel' ? 200 : 130) - dist(a, hq) * .16;
-    var vb = (b.type === 'vp' ? 260 : b.type === 'fuel' ? 200 : 130) - dist(b, hq) * .16;
-    if (a.owner === side && a.conn) va -= 200;
-    if (b.owner === side && b.conn) vb -= 200;
-    return vb - va;
-  });
-  var assigned = {};
-  var open = 0;
-  G.sectors.forEach(function (s) { if (s.owner !== side) open++; });
-  var fighters = inf.concat(vehs);
-  fighters.forEach(function (u) {
-    if (u.dead) return;
-    /* pull back badly hurt squads */
-    if (u.cat !== 'veh' && (aliveModels(u) <= 1 || hpFrac(u) < .3 || (u.sup > 1 && hpFrac(u) < .62)) && !u.retreat && dist(u, hq) > 300) { orderRetreat(u); return; }
-    if (u.retreat) return;
-    /* engage anything close */
-    var near = null, nd = 1e9;
-    for (var i = 0; i < G.units.length; i++) {
-      var e = G.units[i];
-      if (e.dead || e.side === side) continue;
-      var d = dist(u, e);
-      if (d < nd) { nd = d; near = e; }
-    }
-    var leash = DIFF[G.diff].push;
-    if (leash && G.t < 240 && dist(u, hq) > 620 + G.t) {
-      orderMove(u, hq.x + (side === 'us' ? 380 : -380) + rnd(-120, 120), hq.y + rnd(-220, 220), true);
-      return;
-    }
-    /* Only break off for an enemy that is genuinely on top of you. A wide engagement
-       radius turns the whole army into a reactive mob: whoever pushes first pins the
-       other side in its own half, and the objectives go uncontested. A squad already
-       most of the way to its objective keeps going and fights when it arrives. */
-    var onTask = u.dest && dist(u, u.dest) > 190;
-    var reach = u.def.atOnly ? 460 : (onTask ? 190 : 330);
-    if (near && nd < reach) {
-      if (u.order !== 'attack' || u.forced !== near) orderAttack(u, near);
-      return;
-    }
-    if (u.def.atOnly || u.key === K.mg) {
-      /* support weapons hold the nearest owned front sector */
-      var hold = null, hbest = 1e9;
-      G.sectors.forEach(function (s) {
-        if (s.owner !== side) return;
-        var d2v = dist(s, hq);
-        if (d2v > 200 && d2v < hbest) { hbest = d2v; hold = s; }
-      });
-      var spot = hold || G.secById[G.hqLink[side][0]];
-      if (!u.dest || dist(u, spot) > 260) orderMove(u, spot.x + rnd(-90, 90), spot.y + rnd(-90, 90), true);
-      return;
-    }
-    /* In annihilation the ground is not the objective and holding it wins nothing:
-       left to take sectors the army ends up standing on ground it already owns while
-       the enemy base is never touched. Every second section goes at whatever of it is
-       nearest and standing, and once there is no ground left to take they all do. The
-       rest keep working the sectors, which is what pays for them. */
-    if (G.win === 'anni' && (u.id % 2 === 0 || !open)) {
-      var raze = nearestEnemyBuilding(u);
-      if (raze) {
-        if (u.order !== 'attack' || u.forced !== raze) orderAttack(u, raze);
-        return;
+  var garCount = 0;
+  for (i = 0; i < fighters.length; i++) if (fighters[i].gar) garCount++;
+  for (i = 0; i < fighters.length; i++) {
+    u = fighters[i];
+    if (u.dead) continue;
+    /* hurt sections go home. A vehicle has an engine and an engineer waiting, so it goes
+       home to be mended rather than dying where it stands for nothing. */
+    if (u.cat !== 'veh') {
+      if ((aliveModels(u) <= 1 || hpFrac(u) < .3 || (u.sup > 1 && hpFrac(u) < .62)) &&
+          !u.retreat && dist(u, hq) > 300) { orderRetreat(u); continue; }
+      if (u.retreat) continue;
+    } else if (skill >= 1) {
+      if (u.job !== 'mend' && u.hp < u.maxhp * .40 && engs.length) { u.job = 'mend'; u.jobT = G.t; }
+      if (u.job === 'mend') {
+        if (u.hp > u.maxhp * .88 || !engs.length) { u.job = 'screen'; u.jobT = G.t; }
+        else {
+          var mend = null, md = 1e9;
+          for (j = 0; j < engs.length; j++) { var ed = dist(u, engs[j]); if (ed < md) { md = ed; mend = engs[j]; } }
+          var mx = mend && dist(mend, hq) < 900 ? mend.x : hq.x;
+          var my = mend && dist(mend, hq) < 900 ? mend.y : hq.y;
+          if (Math.hypot(u.x - mx, u.y - my) > 110 &&
+              (!u.dest || Math.hypot(u.dest.x - mx, u.dest.y - my) > 160)) orderMove(u, mx, my, false);
+          continue;
+        }
       }
     }
-    /* otherwise take ground */
-    for (var t = 0; t < targets.length; t++) {
-      var s2 = targets[t];
-      var cap = s2.type === 'vp' ? 3 : 2;
-      if ((assigned[s2.id] || 0) >= cap) continue;
-      if (s2.owner === side && s2.conn && Math.random() < .8) continue;
-      assigned[s2.id] = (assigned[s2.id] || 0) + 1;
-      if (!u.dest || dist(u.dest, s2) > 240 || (!u.path && u.order !== 'attackmove'))
-        orderMove(u, s2.x + rnd(-110, 110), s2.y + rnd(-110, 110), true);
-      return;
+
+    /* Green keeps its army near its own line for the first few minutes, which is what
+       makes it a forgiving setting rather than a rush. */
+    if (D.push && G.t < 240 && dist(u, hq) > 620 + G.t) {
+      if (!u.dest || dist(u, u.dest) < 140)
+        orderMove(u, hq.x + (side === 'us' ? 380 : -380) + rnd(-120, 120), hq.y + rnd(-220, 220), true);
+      continue;
     }
-  });
-  /* idle engineers help capture and repair */
-  engs.forEach(function (e) {
-    if (e.building || e.repairing) return;
-    var hurt = null;
-    G.units.forEach(function (v) { if (!v.dead && v.side === side && v.cat === 'veh' && v.hp < v.maxhp * .7 && dist(v, e) < 700) hurt = v; });
-    if (hurt) { clearOrder(e); e.order = 'repair'; e.repairing = hurt; e.dest = { x: hurt.x, y: hurt.y }; e.path = findPath(e.x, e.y, hurt.x, hurt.y); e.pi = 0; return; }
-    var own = G.sectors.filter(function (s) { return s.owner !== side; })
-      .sort(function (a, b) { return dist(a, hq) - dist(b, hq); })[0];
-    if (own && (!e.dest || dist(e, e.dest) < 80)) orderMove(e, own.x + rnd(-70, 70), own.y + rnd(-70, 70), true);
-  });
+
+    /* The reflex, kept but sharpened: anything close enough to matter gets engaged, and
+       what gets engaged is something this weapon can actually hurt. A section already
+       most of the way to its objective keeps going and fights when it arrives.
+       A team that is forced onto something out of range walks to meet it, and a gun on a
+       tripod arrives too late and dies in the open, so a team only engages what is
+       already comfortably inside its own reach. */
+    var w0 = mainW(u);
+    var onTask = u.dest && dist(u, u.dest) > 190;
+    var reach = u.cat === 'team' ? w0.range * .86 : (onTask ? 210 : Math.max(300, w0.range * .95));
+    var hit = aiPickTarget(u, reach);
+    if (hit) {
+      if (u.order !== 'attack' || u.forced !== hit) orderAttack(u, hit);
+      continue;
+    }
+
+    /* Men in a house stay in it while there is anything to hold. Once the fight has
+       moved on they come out and follow it. */
+    if (u.gar) {
+      var sec0 = G.secById[u.jobSec];
+      var stay = aiThreat(side, u.x, u.y, 420) > 30 ||
+                 (sec0 && dsq(sec0.x, sec0.y, u.x, u.y) < sec0.r * sec0.r);
+      if (stay) continue;
+      leaveBuilding(u);
+    }
+
+    if (u.job === 'support') {
+      /* A machine gun belongs where it can see the ground the enemy has to cross, which
+         is short of the objective on its own side of it and behind something. An
+         anti-tank gun belongs on the line the armour will come up, and it waits there. */
+      if (u.aimX === undefined || dsq(u.aimX, u.aimY, mainX, mainY) > 220 * 220 || G.t - u.jobT > 45) {
+        var post = aiFirePost(side, mainX, mainY, u.def.atOnly ? 210 : 150);
+        u.aimX = mainX; u.aimY = mainY; u.jobX = post.x; u.jobY = post.y; u.jobT = G.t;
+      }
+      if (Math.hypot(u.x - u.jobX, u.y - u.jobY) > 90 &&
+          (!u.dest || Math.hypot(u.dest.x - u.jobX, u.dest.y - u.jobY) > 120)) {
+        /* a team in a house covering the objective is better than a team beside it */
+        var th2 = skill >= 1 ? aiHouse(u, u.jobX, u.jobY, 140) : null;
+        if (th2 && garCount < 3) { clearOrder(u); u.order = 'enter'; u.enterT = th2; garCount++; }
+        else orderMove(u, u.jobX, u.jobY, true);
+      }
+      continue;
+    }
+
+    if (u.job === 'screen' || (u.cat === 'veh' && !u.def.caps)) {
+      /* Armour cannot take ground, so it covers the approach to the fight at a stand-off
+         rather than parking on the flag waiting to be bazookaed. */
+      if (razeT) { if (u.order !== 'attack' || u.forced !== razeT) orderAttack(u, razeT); continue; }
+      var sa = aiFoeDir(side, mainX, mainY), so = Math.min(170, w0.range * .45);
+      var vx = clamp(mainX + Math.cos(sa) * so, 60, WORLD.w - 60);
+      var vy = clamp(mainY + Math.sin(sa) * so, 60, WORLD.h - 60);
+      if (Math.hypot(u.x - vx, u.y - vy) > 170 &&
+          (!u.dest || Math.hypot(u.dest.x - vx, u.dest.y - vy) > 200)) orderMove(u, vx, vy, true);
+      continue;
+    }
+
+    /* ---- infantry: take the ground it was given */
+    if (razeT) { if (u.order !== 'attack' || u.forced !== razeT) orderAttack(u, razeT); continue; }
+    var sec = G.secById[u.jobSec];
+    if (!sec) continue;
+    /* One section puts itself in a house on the objective: inside it holds the sector
+       just as well as standing on it, it is in the heaviest cover in the game, and this
+       is a map where every street was taken a building at a time. */
+    if (skill >= 1 && u.cat !== 'veh' && garCount < 4 && dsq(u.x, u.y, sec.x, sec.y) < 420 * 420) {
+      var ah = aiHouse(u, sec.x, sec.y, sec.r * .8);
+      if (ah) { clearOrder(u); u.order = 'enter'; u.enterT = ah; garCount++; continue; }
+    }
+    /* A defended objective is come at from the quiet side rather than walked into. The
+       flag is nearly two hundred units across, so there is room to stand on it out of
+       the enemy's best arc, and the approach still ends inside the circle that captures
+       it. Veteran only: reading the ground and refusing the obvious approach is what a
+       good player does, and green has no business doing it. */
+    var aimX = sec.x, aimY = sec.y;
+    if (skill >= 2) {
+      var ex = 0, ey = 0, ew = 0;
+      for (j = 0; j < G.units.length; j++) {
+        var e2 = G.units[j];
+        if (e2.dead || e2.side === side || e2.inside) continue;
+        if (dsq(e2.x, e2.y, sec.x, sec.y) > 400 * 400) continue;
+        var wv = aiValue(e2); ex += e2.x * wv; ey += e2.y * wv; ew += wv;
+      }
+      if (ew > 90) {
+        var ea = Math.atan2(ey / ew - sec.y, ex / ew - sec.x), off = sec.r * .72;
+        aimX = clamp(sec.x - Math.cos(ea) * off, 40, WORLD.w - 40);
+        aimY = clamp(sec.y - Math.sin(ea) * off, 40, WORLD.h - 40);
+      }
+    }
+    if (Math.hypot(u.x - aimX, u.y - aimY) > sec.r * .5 &&
+        (!u.dest || dsq(u.dest.x, u.dest.y, aimX, aimY) > 210 * 210 ||
+         (!u.path && u.order !== 'attackmove'))) {
+      orderMove(u, clamp(aimX + rnd(-50, 50), 20, WORLD.w - 20),
+                   clamp(aimY + rnd(-50, 50), 20, WORLD.h - 20), true);
+    }
+  }
+
+  /* ---- engineers: build, mend, and stay out of the fight.
+     The old brain sent an idle engineer at the nearest sector the enemy owned, which is
+     how the only builder on the side ended up dead in the enemy's half with the base
+     half finished. */
+  for (i = 0; i < engs.length; i++) {
+    var e = engs[i];
+    if (e.building || e.repairing || e.retreat) continue;
+    var job = null, jd = 1e9;
+    for (j = 0; j < G.units.length; j++) {
+      u = G.units[j];
+      if (u.dead || u.side !== side || u.cat !== 'veh' || u.hp >= u.maxhp * .9) continue;
+      var vd = dist(u, e);
+      if (vd < 800 && vd < jd) { jd = vd; job = u; }
+    }
+    if (!job) for (j = 0; j < G.blds.length; j++) {
+      var bd2 = G.blds[j];
+      if (bd2.side !== side || bd2.dead || bd2.hp >= bd2.maxhp) continue;
+      var bdd = dist(bd2, e);
+      if (bdd < 700 && bdd < jd) { jd = bdd; job = bd2; }
+    }
+    if (job) {
+      clearOrder(e); e.order = 'repair'; e.repairing = job;
+      e.dest = { x: job.x, y: job.y }; e.path = findPath(e.x, e.y, job.x, job.y); e.pi = 0;
+      continue;
+    }
+    /* sandbags across the approach to the ground it holds, while it has the manpower */
+    if (skill >= 2 && G.res[side].mp > 420 && G.t - AI.bagT > 40 && hotSec) {
+      var bp = aiFirePost(side, defX, defY, 90);
+      if (dist(e, { x: bp.x, y: bp.y }) < 260) { placeSandbag(side, bp.x, bp.y, [e]); AI.bagT = G.t; continue; }
+    }
+    /* otherwise it keeps near the base, where it can take a sector nobody is fighting
+       over and be on hand for the next building */
+    var quiet = null, qd = 1e9;
+    for (j = 0; j < G.sectors.length; j++) {
+      s = G.sectors[j];
+      if (s.owner === side) continue;
+      var sd = dist(s, hq);
+      if (sd < 520 && aiThreat(side, s.x, s.y, 300) < 40 && sd < qd) { qd = sd; quiet = s; }
+    }
+    var ex = quiet ? quiet.x : hq.x + (side === 'us' ? 150 : -150), ey = quiet ? quiet.y : hq.y + 90;
+    if (Math.hypot(e.x - ex, e.y - ey) > 120 && (!e.dest || Math.hypot(e.dest.x - ex, e.dest.y - ey) > 150))
+      orderMove(e, ex + rnd(-40, 40), ey + rnd(-40, 40), true);
+  }
 }
 
 /* ---------------------------------------------------------------- audio */

@@ -46,6 +46,7 @@ npm install                  # once; Chromium is already on disk
 npm run verify               # lint + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
+node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
@@ -107,6 +108,41 @@ Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 reinforcement left out, so it cannot drift away from the game. A third entry on a
 card row fits field upgrades before the fight, because half of what a vehicle can
 do is an upgrade.
+
+### `tools/skirmish.mjs` - tactics, mechanically
+
+Puts an AI on both sides of the shipped map and lets them fight. One side runs the
+`aiTick` in the working file; the other runs the one out of a git revision, extracted
+and injected at runtime. Sides alternate between matches.
+
+```sh
+node tools/skirmish.mjs                  # four mirror pairs against the last commit
+node tools/skirmish.mjs --self           # the working AI on both sides (calibration)
+node tools/skirmish.mjs --base=HEAD~3    # fight an older revision
+node tools/skirmish.mjs --n=6 --t=420    # more pairs, longer matches
+node tools/skirmish.mjs --diff=2         # at veteran settings
+```
+
+An AI cannot be reviewed by reading it, for the same reason a model cannot: whether one
+set of decisions beats another is a question about a whole battle, and the only honest
+way to read a change is to fight the old version.
+
+Two things about the numbers are worth knowing before trusting them. **Ortona is not a
+symmetric map** and the two rosters are not the same army: with the same brain on both
+sides the Canadians take thirteen points of ground to the Germans' four. That is why a
+run is made of mirror pairs, each match played twice with the brains swapped, and why
+`--self` is the calibration. And **a battle here compounds** -- whoever wins the first
+serious clash tends to walk the rest of the map -- so a single match is nearly a coin
+toss weighted by a small edge. The score is averaged over the whole match rather than
+read off the final whistle, and even so a six-pair run moves by a couple of hundred
+points between runs. Read the shape of the table, not the last digit.
+
+The columns after the score are the tactical picture, and they are what a change to
+tactics actually moves: ground held, army left alive, how concentrated the sections are,
+how much of the infantry is behind something, how many sections are holding houses, how
+far it has pushed, how many different targets the sections that are firing have picked,
+and how much money it is sitting on. A win rate says which brain is better; those say
+why.
 
 ### `tools/lint.mjs` - the rules, mechanically
 
@@ -256,6 +292,18 @@ helmets and weapons. Vehicles get individual builders (`shermanHull`,
 face carries a material index into the atlas. If a model looks wrong, the fix
 is in one of these builders, not in a mesh file.
 
+**AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
+plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
+what it pointed at. Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
+`u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
+different thing to the motor pool, the population cap and the capture allocation),
+produces, buys field upgrades, builds, scores every sector into an objective list with a
+weight of sections each is worth, deals the sections that can actually capture out to
+those objectives nearest-first, and then issues one order per unit by job: `take`,
+`screen`, `support`, `defend` or `mend`. `DIFF[].skill` gates the tactics rather than
+the arithmetic: 0 keeps green simple, 1 adds houses, upgrades and repair, 2 adds the
+flanking approach.
+
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
 and no separate update thread.
@@ -314,6 +362,7 @@ package.json                   dev dependencies and script aliases
 tools/harness.mjs              Playwright library: boot, drive, pose, photograph
 tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
+tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
 .claude/hooks/session-start.sh installs dev dependencies on session start
