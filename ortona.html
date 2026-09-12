@@ -5229,21 +5229,21 @@ function m10Hull(body, cap, sideC) {
   return f;
 }
 
-/* One plan outline of the turret at a given height. It is a welded pentagon: a short
-   front plate between two cheeks angled hard back, sides that splay out to the widest
-   point behind the trunnions, and a broad squared rear for the counterweight to bolt
-   to. Every wall leans outward as it rises, which is what ky is for, and the whole
-   outline walks aft as it rises, which is what dx is for: that one shift is what makes
-   the front slope back and the rear overhang. */
-function m10TurretRing(z, ky, dx, inset) {
-  var half = [[12.8, 0.0], [9.8, 5.4], [4.2, 9.4], [-2.2, 10.6], [-6.6, 10.2], [-8.8, 6.8], [-9.6, 0.0]];
-  var pts = [], i, ins = inset || 0;
-  /* the inset walks each corner in toward the middle of the plan, which for a shape
-     this convex is near enough a normal offset and gives the wall an even thickness
-     all the way round instead of a front plate a foot thick and a rear one paper */
+/* One plan outline of the turret at a given height. Four plates and the corners that
+   join them: a front with a blunt vee in it, a long side each way, a chamfer off each
+   rear corner, and one flat plate across the back. kx and ky shrink the outline as it
+   rises, because the walls are sloped the way armour is sloped -- the top edge stands
+   inboard of the foot, never outboard of it -- and kx shrinks the harder of the two
+   because the front and rear plates lie back further than the sides do. The inset walks
+   every corner in toward the middle of the plan, which on a shape this convex is near
+   enough a normal offset, and gives the wall the same thickness all the way round. */
+function m10TurretRing(z, kx, ky, inset) {
+  var half = [[13.2, 0.0], [10.0, 6.8], [-6.8, 11.6], [-12.0, 5.0], [-12.0, 0.0]];
+  var pts = [], i, ins = inset || 0, cx = .6;
   function pt(k, sgn) {
-    var x = half[k][0], y = half[k][1] * ky, l = Math.hypot(x - 1.1, y) || 1;
-    return [x + dx - ((x - 1.1) / l) * ins, sgn * (y - (y / l) * ins), z];
+    var x = half[k][0], y = half[k][1], l = Math.hypot(x - cx, y) || 1;
+    x -= ((x - cx) / l) * ins; y -= (y / l) * ins;
+    return [cx + (x - cx) * kx, sgn * y * ky, z];
   }
   for (i = 0; i < half.length; i++) pts.push(pt(i, -1));
   for (i = half.length - 2; i >= 1; i--) pts.push(pt(i, 1));
@@ -5252,17 +5252,17 @@ function m10TurretRing(z, ky, dx, inset) {
 
 function m10Turret(body, cap) {
   var C = SHERMAN, f = [], zr = 7.2, i;
-  f = f.concat(welded(faceOut(loft([m10TurretRing(0, 1.0, 0, 0), m10TurretRing(3.6, 1.12, -.75, 0),
-                                    m10TurretRing(zr, 1.24, -1.5, 0)], [body]), -1, 0, zr / 2)));
+  f = f.concat(welded(faceOut(loft([m10TurretRing(0, 1.0, 1.0, 0), m10TurretRing(3.6, .89, .93, 0),
+                                    m10TurretRing(zr, .78, .86, 0)], [body]), -1, 0, zr / 2)));
   /* the inside of the walls, seen over the rim because the thing has no roof */
-  f = f.concat(welded(loft([m10TurretRing(1.0, 1.0, 0, 1.1), m10TurretRing(zr, 1.24, -1.5, 1.1)], [C.odDark])
+  f = f.concat(welded(loft([m10TurretRing(.9, 1.0, 1.0, .9), m10TurretRing(zr, .78, .86, .9)], [C.odDark])
     .map(function (q) { return { v: q.v.slice().reverse(), c: q.c }; })));
-  var top = m10TurretRing(zr, 1.24, -1.5, 0), tin = m10TurretRing(zr, 1.24, -1.5, 1.1), rim = [];
+  var top = m10TurretRing(zr, .78, .86, 0), tin = m10TurretRing(zr, .78, .86, .9), rim = [];
   for (i = 0; i < top.length; i++)
     rim.push({ v: [top[i], top[(i + 1) % top.length], tin[(i + 1) % tin.length], tin[i]], c: cap });
   f = f.concat(faceOut(rim, 0, 0, -60));
-  f = f.concat(prism(m10TurretRing(0, 1.0, 0, 1.1).map(function (p) { return [p[0], p[1]]; }),
-                     .6, 1.0, C.odDark, C.steel, C.odDark));
+  f = f.concat(prism(m10TurretRing(0, 1.0, 1.0, .9).map(function (p) { return [p[0], p[1]]; }),
+                     .3, .7, C.odDark, C.steel, C.odDark));
   f = f.concat(cyl(0, 0, -2.4, 10.3, 10.3, 2.4, 24, C.odDark, C.odDark, 0, true));
   /* what an open turret shows anyone above it: the ready rounds racked round the walls,
      the gunner's and loader's seats, and the traverse handwheel */
@@ -5278,13 +5278,21 @@ function m10Turret(body, cap) {
 
   /* the counterweight bolted across the back. Without it a 17-pounder puts the mount so
      far out of balance that the traverse gear will not hold the turret on a slope. */
-  f = f.concat(extrudeY([[-7.8, zr + .4], [-14.0, zr - .9], [-12.6, 1.8], [-7.8, 1.2]],
-                        -7.4, 7.4, body, cap, C.odDark));
+  f = f.concat(extrudeY([[-9.2, zr + .4], [-13.6, zr - .7], [-12.8, 3.0], [-10.6, 3.6]],
+                        -7.0, 7.0, body, cap, C.odDark));
   [-1, 1].forEach(function (s) {
-    f = f.concat(boltRow(-12.4, -8.8, s * 6.8, 3.4, 4, .3, .4, C.steel));
-    f = f.concat(box(8.2, s * 6.0, zr - 1.0, 1.4, 2.4, 1.6, C.odDark, C.od, C.odDark, 0));
-    for (i = 0; i < 5; i++) f = f.concat(grabIron(2.0 - i * 3.0, s * 11.4, 2.2, 1.4, .5, C.steel, 'x'));
+    f = f.concat(boltRow(-12.6, -10.2, s * 6.4, 4.6, 3, .3, .4, C.steel));
+    f = f.concat(box(7.0, s * 5.4, zr - 1.2, 1.4, 2.4, 1.6, C.odDark, C.od, C.odDark, 0));
+    for (i = 0; i < 4; i++) f = f.concat(grabIron(1.0 - i * 3.2, s * 10.3, 2.4, 1.4, .5, C.steel, 'x'));
   });
+  /* The crew. An open turret with nobody in it reads as an empty tub, and on an M10
+     three of the five men stand in this one: gunner and loader either side of the
+     breech and the commander behind them, head and shoulders out over the rim. They
+     are set low enough that the deck cuts them off at the waist, which is where the
+     fighting compartment floor is. */
+  f = f.concat(place(soldierModel('can_sten', -1), -.22, 2.8, 5.2, -9.4));
+  f = f.concat(place(soldierModel('can_rifle', -1), .26, .8, -5.4, -9.4));
+  f = f.concat(place(soldierModel('can_sten', -1), .08, -6.2, 2.0, -9.9));
   return f;
 }
 

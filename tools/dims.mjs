@@ -79,8 +79,11 @@ const REAL = {
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
-  us_ach:    { bodyZ: 22.0 },   /* a hand's breadth under the deck, above the tools and the
-               jerricans and below the lifting eyes, where the side plate is bare */
+  us_ach:    { bodyZ: 22.0, topZ: 8.0 },   /* bodyZ is a hand's breadth under the deck, above the
+               tools and the jerricans and below the lifting eyes, where the side plate is bare.
+               topZ keeps the turret crew out of the height: three of them stand in an open turret
+               with their heads over the rim, and a man is no more part of a vehicle's height than
+               an aerial is */
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
   ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
