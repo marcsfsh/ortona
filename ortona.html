@@ -6955,12 +6955,12 @@ var H251 = {
   T: 0.95,          /* the 280 mm track link */
   TW: 3.28,         /* 280 mm track */
   LP: 1.64,         /* 140 mm pitch */
-  xSprk: 13.6, zSprk: 5.3, rSprk: 3.45,
-  xIdl: -22.6, zIdl: 4.3, rIdl: 2.90,
-  w0: 7.4, wStep: 5.05, wN: 6,
-  trackY: 9.4,
+  xSprk: 14.2, zSprk: 4.9, rSprk: 3.30,
+  xIdl: -18.3, zIdl: 4.4, rIdl: 2.80,
+  w0: 7.9, wStep: 4.34, wN: 6,
+  trackY: 10.2,
   zBelly: 3.75,     /* 320 mm ground clearance */
-  xFront: 27.2, rFront: 4.90, wFront: 10.3,   /* the steered front wheel */
+  xFront: 29.3, rFront: 4.90, wFront: 10.3,   /* the steered front wheel */
   rowOut: 0.95, rowIn: -0.95
 };
 H251.zWheel = H251.R + H251.T;
@@ -7051,39 +7051,52 @@ function h251FrontWheel(sd) {
   return f;
 }
 
-/* The body, as a table of stations. Each row is x, the half-width down at the bin
-   line, the half-width up at the top edge, and how high the top edge is there. The
-   two half-widths are what lean every side plate inboard; the changing top edge is
-   the bonnet falling away to the prow and the driver's plate standing back up. */
+/* The body, as a table of stations measured off an orthographic four-view and a CAD
+   walkaround. Each row is x, then a half-width and a height for each of THREE rings:
+   the guard line at the bottom, the chine part way up, and the top rim.
+
+   The chine is the thing that makes a 251 a 251. The side is not one panel: it folds
+   along a horizontal line at two fifths of its height, the plate below leaning out and
+   down to the guard, the plate above leaning in to the rim. Every photograph shows that
+   fold catching the light differently from the plates either side of it.
+
+   The front is three things, not one. A hood lies nearly level over the engine between
+   two raised fillets; behind it the driver's plate stands up and leans back thirty
+   degrees with the two vision hatches in it; and only then does the crew compartment
+   start. The bonnet does NOT slope down to the prow in one long ramp. */
 var H251H = {
-  zBelly: 3.75, zFend: 9.9, zTop: 20.5, zFloor: 11.6,
-  xNose: 34.0, xTail: -33.9, tubHalf: 7.6, plate: .75
+  zBelly: 3.75, zFend: 9.9, zHood: 15.2, zTop: 20.5, zFloor: 11.8,
+  half: 10.12,      /* 1.73 m across the chine, the widest part of the body */
+  fend: 12.29,      /* 2.10 m over the track guards */
+  xHood: 14.6, xScreen: 11.5, plate: .7
 };
 var H251_ST = [
-  /*   x     yBin   yTop   zTop */
-  [ 32.4,   3.4,   2.4,  12.6],   /* the prow */
-  [ 28.8,   7.2,   5.4,  13.5],
-  [ 24.2,  10.6,   8.2,  14.5],
-  [ 18.0,  12.3,   9.6,  15.6],   /* the back of the bonnet */
-  [ 15.4,  12.3,   9.6,  20.5],   /* the driver's plate, leaning back 31 degrees */
-  [  8.0,  12.3,   9.6,  20.5],
-  [-14.0,  12.3,   9.6,  20.5],
-  [-22.0,  11.6,   9.0,  20.2],
-  [-28.5,   9.0,   7.0,  19.4],
-  [-32.8,   6.6,   5.2,  18.6]    /* the rear doors */
+  /*   x    halfBot  zBot  halfChine zChine  halfTop  zTop */
+  [ 34.0,   3.90, 12.00,   3.30, 13.00,   2.60, 14.00],   /* the prow: a blunt front face */
+  [ 31.0,   6.90, 11.30,   6.10, 13.00,   5.20, 14.60],
+  [ 27.0,   9.10, 10.55,   8.50, 13.00,   7.80, 15.00],
+  [ 22.0,  10.12,  9.90,  10.12, 13.00,   9.60, 15.20],   /* the hood, level over the engine */
+  [ 14.6,  10.12,  9.90,  10.12, 13.00,   9.60, 15.20],   /* the hood's rear edge */
+  [ 11.5,   8.90,  9.90,  10.12, 15.00,   8.60, 20.50],   /* the top of the driver's plate */
+  [ -8.0,   8.90,  9.90,  10.12, 15.00,   8.60, 20.50],
+  [-24.0,   8.90,  9.90,  10.12, 15.00,   8.60, 20.50],
+  [-30.2,   8.90,  7.80,  10.12, 15.00,   8.60, 20.50],   /* the rear corner */
+  [-34.9,   8.36, 15.30,   8.36, 15.30,   8.36, 15.30]    /* the rear plates pinch to a point */
 ];
-var H251_DECK = 4;                /* stations up to here are bonnet, not open compartment */
+var H251_DECK = 5;                  /* stations up to here carry the hood and the driver's plate */
 
-function h251Ring(top, inset) {
-  var pts = [], i, st;
-  for (i = 0; i < H251_ST.length; i++) {           /* down the right side, prow to tail */
-    st = H251_ST[i];
-    pts.push([st[0], -Math.max(.4, (top ? st[2] : st[1]) - inset), top ? st[3] : H251H.zFend]);
+/* level 0 = the guard line, 1 = the chine, 2 = the top rim */
+function h251Ring(level, inset) {
+  var pts = [], i;
+  function pt(i, sgn) {
+    var st = H251_ST[i], h = Math.max(.35, st[1 + level * 2] - inset), x = st[0], z = st[2 + level * 2];
+    if (inset && level === 0) z += .5;
+    /* where the plates fold to a line the inner shell has to fold in front of the outer */
+    if (inset && st[2] === st[6]) x += (st[0] < 0 ? inset * 2.4 : -inset * 2.4);
+    return [x, sgn * h, z];
   }
-  for (i = H251_ST.length - 1; i >= 0; i--) {      /* and back up the left */
-    st = H251_ST[i];
-    pts.push([st[0], Math.max(.4, (top ? st[2] : st[1]) - inset), top ? st[3] : H251H.zFend]);
-  }
+  for (i = 0; i < H251_ST.length; i++) pts.push(pt(i, -1));
+  for (i = H251_ST.length - 1; i >= 0; i--) pts.push(pt(i, 1));
   return pts;
 }
 
@@ -7096,116 +7109,124 @@ function h251Hull(body, cap, sideC) {
     for (i = 0; i < g.wN; i++) {
       var wx = h251WheelX(i), wy = y + sd * ((i % 2) ? g.rowIn : g.rowOut);
       f = f.concat(h251RoadWheel(wx, wy, sd));
-      f = f.concat(place(pitch(box(0, 0, 0, 4.0, 1.0, 1.0, C.dark, C.body), (i % 2) ? .22 : -.22, 0, 0),
-                         0, wx + ((i % 2) ? 1.8 : -1.8), y - sd * 2.4, g.zWheel));
+      f = f.concat(place(pitch(box(0, 0, 0, 3.6, 1.0, 1.0, C.dark, C.body), (i % 2) ? .22 : -.22, 0, 0),
+                         0, wx + ((i % 2) ? 1.6 : -1.6), y - sd * 2.4, g.zWheel));
     }
     f = f.concat(h251Sprocket(y, sd));
     f = f.concat(h251Idler(y, sd));
     f = f.concat(h251FrontWheel(sd));
-    f = f.concat(place(tubeSmooth(0, 3.2, 0, 0, .7, 8, C.dark, C.dark), Math.PI / 2, g.xFront, y - sd * 3.2, g.rFront));
-    /* the final drive housing behind the sprocket */
-    f = f.concat(place(tubeSmooth(0, 2.4, 0, 0, 2.1, 12, C.body, C.dark), Math.PI / 2, g.xSprk, y - sd * 3.2, g.zSprk));
+    f = f.concat(place(tubeSmooth(0, 3.0, 0, 0, .7, 8, C.dark, C.dark), Math.PI / 2, g.xFront, y - sd * 3.0, g.rFront));
+    f = f.concat(place(tubeSmooth(0, 2.2, 0, 0, 2.0, 12, C.body, C.dark), Math.PI / 2, g.xSprk, y - sd * 2.8, g.zSprk));
   }
-  /* the chassis rail between the tracks, and the belly */
-  f = f.concat(box(-4.0, 0, H.zBelly, 44.0, H.tubHalf * 2, H.zFend - H.zBelly, C.dark, C.dark, C.dark));
-  f = f.concat(box(22.0, 0, H.zBelly + 1.4, 18.0, 5.6, 2.6, C.dark, C.dark, C.dark));          /* the front chassis rails */
-  f = f.concat(box(g.xFront, 0, g.rFront - .9, 2.6, g.wFront * 2 - 3.4, 1.8, C.dark, C.dark, C.dark, 0));   /* the front axle beam */
-  /* ---- the body: one lofted shell, outside and inside, with the rim between ---- */
-  var o0 = h251Ring(0, 0), o1 = h251Ring(1, 0);
-  var i0 = h251Ring(0, H.plate), i1 = h251Ring(1, H.plate);
-  f = f.concat(welded(loft([o0, o1], [body])));
-  f = f.concat(welded(loft([i0, i1], [sideC])).map(function (q) {
+  /* the chassis under the body, and the front axle beam */
+  f = f.concat(box(-2.0, 0, H.zBelly, 46.0, 13.6, H.zFend - H.zBelly + .4, C.dark, C.dark, C.dark));
+  f = f.concat(box(24.0, 0, H.zBelly + 1.6, 16.0, 7.0, 3.0, C.dark, C.dark, C.dark));
+  f = f.concat(box(g.xFront, 0, g.rFront - .9, 2.6, g.wFront * 2 - 3.4, 1.8, C.dark, C.dark, C.dark, 0));
+  /* ---- the body: a shell lofted through all three rings, outside and inside, with the
+     rim closing the top of it. Two bands rather than one is what puts the chine in. ---- */
+  var o0 = h251Ring(0, 0), o1 = h251Ring(1, 0), o2 = h251Ring(2, 0);
+  var n0 = h251Ring(0, H.plate), n1 = h251Ring(1, H.plate), n2 = h251Ring(2, H.plate);
+  f = f.concat(welded(loft([o0, o1, o2], [body])));
+  f = f.concat(welded(loft([n0, n1, n2], [sideC])).map(function (q) {
     return { v: q.v.slice().reverse(), c: q.c };
   }));
-  for (i = 0; i < o1.length; i++) {
-    var a1 = o1[i], b1 = o1[(i + 1) % o1.length], c1 = i1[(i + 1) % i1.length], d1 = i1[i];
-    f.push({ v: [a1, b1, c1, d1], c: cap });
-  }
-  f = faceOut(f.slice(f.length - o1.length), 0, 0, -40).concat(f.slice(0, f.length - o1.length));
-  /* the compartment floor, and a bench down each side of it */
+  var rim = [];
+  for (i = 0; i < o2.length; i++)
+    rim.push({ v: [o2[i], o2[(i + 1) % o2.length], n2[(i + 1) % n2.length], n2[i]], c: cap });
+  f = f.concat(faceOut(rim, 0, 0, -60));
+  /* the floor of the compartment, and a bench down each side of it */
   var fl = [];
-  for (i = 0; i < H251_ST.length; i++) { st = H251_ST[i]; if (st[0] < 9.0) fl.push([st[0], -(st[1] - H.plate)]); }
-  for (i = H251_ST.length - 1; i >= 0; i--) { st = H251_ST[i]; if (st[0] < 9.0) fl.push([st[0], st[1] - H.plate]); }
+  for (i = 0; i < H251_ST.length; i++) { st = H251_ST[i]; if (st[0] < 12.0) fl.push([st[0], -(st[3] - H.plate)]); }
+  for (i = H251_ST.length - 1; i >= 0; i--) { st = H251_ST[i]; if (st[0] < 12.0) fl.push([st[0], st[3] - H.plate]); }
   f = f.concat(prism(fl, H.zFloor - .5, H.zFloor, C.dark, '#3c3a2e', C.dark));
   [-1, 1].forEach(function (s) {
-    f = f.concat(place(pitch(box(0, 0, 0, 34.0, 4.2, .7, '#6b5a3c', '#7d6a48', '#6b5a3c', 0), 0, 0, 0),
-                       0, -9.0, s * 7.2, H.zFloor + 3.4));
-    f = f.concat(box(-9.0, s * 9.4, H.zFloor, 34.0, .8, 3.4, C.dark, C.dark, C.dark, 0));
+    f = f.concat(box(-9.0, s * 6.2, H.zFloor + 3.2, 36.0, 4.0, .7, '#6b5a3c', '#7d6a48', '#6b5a3c', 0));
+    f = f.concat(box(-9.0, s * 8.0, H.zFloor, 36.0, .8, 3.2, C.dark, C.dark, C.dark, 0));
   });
-  /* ---- the bonnet: the deck over the engine, in three falling steps ---- */
+  /* ---- the hood over the engine, and the driver's plate standing up behind it ---- */
   for (i = 0; i < H251_DECK; i++) {
     var s0 = H251_ST[i], s1 = H251_ST[i + 1];
-    f.push({ v: [[s0[0], s0[2], s0[3]], [s0[0], -s0[2], s0[3]], [s1[0], -s1[2], s1[3]], [s1[0], s1[2], s1[3]]], c: cap });
+    f.push({ v: [[s0[0], s0[5], s0[6]], [s0[0], -s0[5], s0[6]], [s1[0], -s1[5], s1[6]], [s1[0], s1[5], s1[6]]], c: cap });
+    f.push({ v: [[s0[0], -s0[1], s0[2]], [s0[0], s0[1], s0[2]], [s1[0], s1[1], s1[2]], [s1[0], -s1[1], s1[2]]], c: C.dark });
   }
-  /* The lower nose. The prow armour does not stop at the bin line: it carries on down
-     to within a hand's breadth of the front axle, narrowing as it goes, and that deep
-     wedge is most of what makes a 251's front read as a 251's front. */
-  var nz = [5.8, 5.4, 6.6, H.zFend], nk = .62, nf = [];
-  for (i = 0; i < H251_DECK - 1; i++) {
-    var a0 = H251_ST[i], a1 = H251_ST[i + 1];
-    var w0 = a0[1], w1 = a1[1], v0 = w0 * nk, v1 = w1 * nk;
-    nf.push({ v: [[a0[0], -w0, H.zFend], [a1[0], -w1, H.zFend], [a1[0], -v1, nz[i + 1]], [a0[0], -v0, nz[i]]], c: body });
-    nf.push({ v: [[a0[0], w0, H.zFend], [a1[0], w1, H.zFend], [a1[0], v1, nz[i + 1]], [a0[0], v0, nz[i]]], c: body });
-    nf.push({ v: [[a0[0], -v0, nz[i]], [a1[0], -v1, nz[i + 1]], [a1[0], v1, nz[i + 1]], [a0[0], v0, nz[i]]], c: sideC });
+  /* the hood proper: a panel let into the deck between two raised fillets, with the two
+     filler caps and the lifting handles on it */
+  f = f.concat(box(22.4, 0, H.zHood - .35, 15.4, 13.4, .4, C.body, cap, C.dark, 0));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(22.4, s * 8.0, H.zHood - .1, 16.2, 2.4, 1.1, C.dark, C.body, C.dark, 0));   /* the fillet */
+    f = f.concat(cyl(26.0, s * 3.6, H.zHood, 1.15, 1.15, .35, 10, C.dark, C.body, 0, true));
+    f = f.concat(box(16.6, s * 4.6, H.zHood, 1.0, 2.6, .4, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(29.4, s * 4.6, H.zHood, 1.0, 2.6, .4, C.steel, C.bare, C.steel, 0));
+  });
+  f = f.concat(box(15.0, 0, H.zHood - .1, .9, 13.6, .8, C.dark, C.body, C.dark, 0));              /* the scuttle lip */
+  /* the driver's plate: it leans back thirty degrees and carries the two vision hatches,
+     and it is the only thing standing between the hood and the open compartment */
+  var dpA = Math.atan2(H.xHood - H.xScreen, H.zTop - H.zHood);      /* off vertical */
+  function onScreen(faces, sy, up, out) {
+    return place(pitch(faces, -(Math.PI / 2 - dpA), 0, 0), 0,
+                 (H.xHood + H.xScreen) / 2 + out * Math.cos(dpA) - up * Math.sin(dpA), sy,
+                 (H.zHood + H.zTop) / 2 + out * Math.sin(dpA) + up * Math.cos(dpA));
   }
-  nf.push({ v: [[H251_ST[0][0], -H251_ST[0][1], H.zFend], [H251_ST[0][0], H251_ST[0][1], H.zFend],
-                [H251_ST[0][0], H251_ST[0][1] * nk, nz[0]], [H251_ST[0][0], -H251_ST[0][1] * nk, nz[0]]], c: C.lit });
-  f = f.concat(welded(faceOut(nf, 26.0, 0, 9.0)));
-  /* the two engine access hatches, and the ventilator between them */
   [-1, 1].forEach(function (s) {
-    f = f.concat(place(pitch(box(0, 0, 0, 8.4, 5.2, .45, C.body, cap, C.dark, 0), -.16, 0, 0), 0, 25.4, s * 4.2, 14.6));
-    f = f.concat(place(pitch(box(0, 0, 0, .5, 2.4, .5, C.steel, C.bare, C.steel, 0), -.16, 0, 0), 0, 21.8, s * 4.2, 15.0));
+    f = f.concat(onScreen(box(0, 0, -.2, 3.0, 5.8, .4, C.dark, C.dark, C.dark, .12), s * 4.4, .2, .2));
+    f = f.concat(onScreen(box(0, 0, -.2, 1.1, 4.8, .4, '#15170f', '#1f2119', '#1f2119', 0), s * 4.4, -.3, .55));
+    f = f.concat(onScreen(box(0, 0, 0, .5, 1.4, .5, C.steel, C.bare, C.steel, 0), s * 4.4, 2.3, .6));
   });
-  /* the driver's roof, and the two vision hatches standing in the plate below it */
-  f.push({ v: [[15.4, 9.6, 20.5], [15.4, -9.6, 20.5], [8.0, -9.6, 20.5], [8.0, 9.6, 20.5]], c: cap });
-  var dp = Math.atan2(18.0 - 15.4, 20.5 - 15.6);                       /* the driver's plate lean */
+  f = f.concat(onScreen(box(0, 0, 0, .7, 18.4, .7, C.dark, C.body, C.dark, 0), 0, -2.9, .35));
+  /* ---- the track guards, the front wings and the lamps standing on them ---- */
   [-1, 1].forEach(function (s) {
-    var hx = 16.6 + s * 0, hy = s * 4.6;
-    f = f.concat(place(pitch(box(0, 0, 0, 2.4, 5.8, .45, C.dark, C.dark, C.dark, .15), -(Math.PI / 2 - dp), 0, 0), 0, hx, hy, 18.2));
-    f = f.concat(place(pitch(box(0, 0, 0, .8, 4.8, .4, '#15170f', '#1f2119', '#1f2119', 0), -(Math.PI / 2 - dp), 0, 0), 0, hx + .5, hy, 17.7));
+    var gy = (H.half + H.fend) / 2, gw = H.fend - H.half;
+    f = f.concat(box(-4.0, s * gy, H.zFend - .55, 46.0, gw, .55, C.dark, cap, C.dark, 0));
+    f = f.concat(box(-4.0, s * (H.fend - .25), H.zFend - 1.9, 46.0, .5, 1.45, C.dark, C.body, C.dark, 0));
+    f = f.concat(boltRow(-25.0, 16.0, s * (H.half + .2), H.zFend + .1, 10, .26, .28, C.bare));
+    /* the guard runs on forward over the front wheel, climbing as it goes, and the wing
+       it becomes carries the headlamp */
+    f = f.concat(place(pitch(box(0, 0, 0, 16.4, gw, .55, C.dark, cap, C.dark, 0), .16, 0, 0), 0, 27.4, s * gy, 10.6));
+    f = f.concat(place(pitch(box(0, 0, 0, 16.4, .5, 1.6, C.dark, C.body, C.dark, 0), .16, 0, 0), 0, 27.4, s * (H.fend - .25), 9.6));
+    f = f.concat(headLamp(31.4, s * 10.4, 12.6, C.dark, '#cfcdb6'));
   });
-  /* ---- the prow: the towing hooks, the lamps on the wings, the horn ---- */
-  f = f.concat(box(32.5, 0, 10.5, 1.5, 8.6, 1.2, C.dark, C.body, C.dark, 0));
+  /* the prow fittings: the bumper bar, the towing shackles, the Notek on the left wing */
+  f = f.concat(box(34.4, 0, 10.6, 1.2, 8.0, 1.1, C.dark, C.body, C.dark, 0));
   [-1, 1].forEach(function (s) {
-    f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, .8, 8, C.steel, C.bare), 0, 32.4, s * 3.0, 10.2));
-    /* the wings over the front wheels, with a lamp standing on each */
-    f = f.concat(box(27.2, s * 10.6, 12.0, 9.6, 3.6, .55, C.dark, cap, C.dark, 0));
-    f = f.concat(box(27.2, s * 12.2, 10.9, 9.6, .5, 1.7, C.dark, C.body, C.dark, 0));            /* its outer lip */
-    f = f.concat(box(31.6, s * 10.6, 12.0, 1.2, 3.6, 1.2, C.dark, C.body, C.dark, 0));
-    f = f.concat(place(pitch(box(0, 0, 0, 5.4, .7, .7, C.dark, C.body, C.dark, 0), -.75, 0, 0), 0, 24.6, s * 11.4, 10.6));
-    f = f.concat(headLamp(29.2, s * 10.6, 13.4, C.dark, '#cfcdb6'));
+    f = f.concat(place(tubeSmooth(0, 1.4, 0, 0, .75, 8, C.steel, C.bare), 0, 33.8, s * 2.8, 10.4));
   });
-  f = f.concat(cyl(30.0, 0, 12.2, 1.0, 1.0, 1.2, 10, C.dark, C.body, 0, true));                 /* the Notek */
-  f = f.concat(box(23.0, 0, 14.0, 1.6, 1.6, 1.2, C.dark, C.body, C.dark, 0));
-  /* ---- the sides: the three pressed stowage bins, the vision flap, the tools ---- */
+  f = f.concat(cyl(32.6, 8.6, 12.9, .9, .9, 1.1, 10, C.dark, C.body, 0, true));
+  /* ---- the sides: three stowage bins standing off the plate over the guard ---- */
   [-1, 1].forEach(function (s) {
-    var by = s * 11.55;
-    [3.0, -8.0, -19.0].forEach(function (bx) {
-      f = f.concat(box(bx, by, 10.6, 9.6, 1.0, 4.6, C.dark, C.body, C.body, 0));
-      f = f.concat(box(bx, by + s * .35, 12.4, 2.0, .5, .8, C.steel, C.bare, C.steel, 0));
+    [-4.0, -12.4, -20.8].forEach(function (bx) {
+      f = f.concat(box(bx, s * (H.half + .45), 10.0, 7.8, .9, 4.3, C.body, C.dark, C.dark, 0));
+      f = f.concat(box(bx, s * (H.half + .95), 11.6, 2.2, .4, .6, C.steel, C.bare, C.steel, 0));
+      f = f.concat(boltRow(bx - 3.4, bx + 3.4, s * (H.half + .2), 14.6, 4, .22, .24, C.bare));
     });
-    f = f.concat(box(11.4, s * 11.3, 16.6, 3.2, .8, 1.8, C.dark, C.body, C.dark, 0));           /* the driver's vision flap */
-    f = f.concat(box(11.4, s * 11.7, 17.0, 2.2, .4, .5, '#15170f', '#1f2119', '#1f2119', 0));
-    /* a rack of tools along the bin tops, and the grab irons */
-    f = f.concat(box(-2.0, by, 15.2, 11.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));
-    f = f.concat(box(-13.0, by, 15.2, 5.6, .8, .8, C.steel, C.bare, C.steel, 0));
-    f = f.concat(grabIron(-26.0, s * 10.4, 17.6, 3.0, 1.0, C.dark, 'x'));
+    /* the vision flap beside the driver, the tools along the bin tops, the grab irons */
+    f = f.concat(box(8.6, s * (H.half + .3), 16.8, 3.0, .8, 1.7, C.dark, C.body, C.dark, 0));
+    f = f.concat(box(8.6, s * (H.half + .75), 17.2, 2.0, .4, .45, '#15170f', '#1f2119', '#1f2119', 0));
+    f = f.concat(box(1.6, s * (H.half + 1.1), H.zFend, 12.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));
+    f = f.concat(box(-9.0, s * (H.half + 1.1), H.zFend, 6.0, .8, .8, C.steel, C.bare, C.steel, 0));
+    f = f.concat(grabIron(-27.0, s * (H.half - .9), H.zTop, 3.0, 1.0, C.dark, 'x'));
+    f = f.concat(boltRow(-30.0, 20.0, s * (H.half + .2), 19.6, 12, .24, .26, C.bare));
   });
-  /* ---- the tail: two doors, their hinges and handles, the tow hook ---- */
-  f = f.concat(box(-33.3, 0, 12.4, 1.2, 9.0, 6.2, C.dark, C.body, C.dark));
+  /* ---- the tail: two doors in the rear plates, hinges, handles and the tow gear ---- */
+  var ra = 0.837;                                  /* the upper rear plate's rake */
+  function onTail(faces, ty, along, out) {
+    return place(pitch(faces, ra, 0, 0), 0,
+                 -32.55 - along * Math.cos(ra) - out * Math.sin(ra), ty,
+                 17.90 - along * Math.sin(ra) + out * Math.cos(ra));
+  }
   [-1, 1].forEach(function (s) {
-    f = f.concat(box(-33.2, s * 2.4, 12.4, .6, 4.4, 6.0, C.body, C.body, C.dark, .18));
-    f = f.concat(box(-33.7, s * .7, 15.0, .5, .7, 1.6, C.steel, C.bare, C.steel, 0));
-    f = f.concat(box(-33.6, s * 4.6, 13.4, .5, .6, 1.2, C.steel, C.bare, C.steel, 0));
-    f = f.concat(box(-33.6, s * 4.6, 16.4, .5, .6, 1.2, C.steel, C.bare, C.steel, 0));
+    f = f.concat(onTail(box(0, 0, -.25, 6.4, 4.0, .5, C.body, C.body, C.dark, .16), s * 2.2, 0, .35));
+    f = f.concat(onTail(box(0, 0, 0, .6, .7, 1.4, C.steel, C.bare, C.steel, 0), s * .55, 0, .9));
+    f = f.concat(onTail(box(0, 0, 0, .6, .7, 1.1, C.steel, C.bare, C.steel, 0), s * 4.3, 2.4, .8));
+    f = f.concat(onTail(box(0, 0, 0, .6, .7, 1.1, C.steel, C.bare, C.steel, 0), s * 4.3, -2.4, .8));
+    f = f.concat(box(-31.4, s * 6.0, 8.2, 2.2, 2.2, 2.0, C.dark, C.body, C.dark, 0));
+    f = f.concat(place(tubeSmooth(-.5, .5, 0, 0, 1.0, 8, C.steel, C.steel), Math.PI / 2, -32.3, s * 6.0, 8.8));
   });
-  f = f.concat(box(-33.5, 0, 10.2, 1.4, 3.0, 1.6, C.dark, C.body, C.dark, 0));                  /* the towing eye */
-  f = f.concat(place(tubeSmooth(-.5, .5, 0, 0, 1.0, 8, C.steel, C.steel), Math.PI / 2, -33.8, 0, 11.0));
-  /* the aerial socket on the left of the compartment, and the rear MG pintle mount */
-  f = f.concat(cyl(-24.0, 8.4, 20.5, .9, .9, 1.2, 8, C.dark, C.body, 0, true));
-  f = f.concat(cyl(-27.0, -5.0, 20.5, 1.3, 1.3, 1.6, 10, C.dark, C.body, 0, true));
-  f = f.concat(place(pitch(box(2.2, 0, 0, 4.4, .7, .7, C.steel, C.bare), -.2, 0, 0), 2.2, -27.0, -5.0, 22.4));
-  f = f.concat(place(tubeSmooth(0, 4.2, 0, 0, .34, 6, C.steel, '#17190f'), 2.2, -25.6, -3.4, 22.8));
+  f = f.concat(box(-30.6, 0, 7.2, 3.0, 6.0, 1.6, C.dark, C.body, C.dark, 0));
+  /* the aerial socket on the left of the compartment, and the rear MG on its pintle */
+  f = f.concat(cyl(-20.0, 8.6, H.zTop, .9, .9, 1.2, 8, C.dark, C.body, 0, true));
+  f = f.concat(cyl(-26.0, -4.6, H.zTop, 1.3, 1.3, 1.6, 10, C.dark, C.body, 0, true));
+  f = f.concat(place(pitch(box(2.2, 0, 0, 4.4, .7, .7, C.steel, C.bare), -.2, 0, 0), 2.3, -26.0, -4.6, H.zTop + 1.9));
+  f = f.concat(place(tubeSmooth(0, 4.2, 0, 0, .34, 6, C.steel, '#17190f'), 2.3, -24.6, -3.0, H.zTop + 2.3));
   return f;
 }
 
