@@ -308,6 +308,16 @@ flanking approach.
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
 and no separate update thread.
 
+**Field works.** `WORKS` is what a section of engineers can put up during a battle:
+sandbag wall, weapon pit, wire. Placement is `placeWork`, which pegs a site out on a
+bearing; `finishWork` turns a finished site into a `G.works` entry, a piece of cover laid
+on that bearing, and for wire a mark on a grid that holds infantry up. The scene buffer
+is built once before the first shot and cannot take anything raised after it, so each
+work builds its own little buffer in world coordinates (`workFaces`, `conformFaces`) and
+is drawn per piece. The player aims one by pressing where it goes and dragging toward the
+enemy; the bearing matters because `coverValue` strips two grades off fire that comes in
+along the line of a parapet rather than across it.
+
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens
 from the title screen, edits `G.mapData`, saves to `localStorage`, imports and
 exports JSON.

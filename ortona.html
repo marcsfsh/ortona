@@ -787,7 +787,26 @@ var BUILDINGS = {
              cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_p4', 'ger_tig', 'ger_kt'],
              desc: 'Unlocks the Pak 40, Sd.Kfz. 222 and Panzer IV.' }
 };
-var SANDBAG_COST = 25;
+/* ---- field works.
+   What a section of engineers can put up in a few minutes, as against a building, which
+   takes half an hour and a lorry. Every one of them is laid on a bearing, because a
+   parapet only covers the men behind it: the cover system already reads the angle a
+   round comes in at against the line of the works and strips two grades off anything
+   taken from the flank, so a sandbag wall faced the wrong way is worth nothing. That is
+   the whole reason these are aimed rather than dropped. */
+var WORKS = {
+  bags: { name: 'Sandbag wall', short: 'SANDBAGS', hk: '3', cost: { mp: 25 }, time: 7,
+          w: 96, h: 26, len: 96, line: 1,
+          cover: { r: 46, type: 3, kind: 'bags', hp: 120, faced: 1 },
+          desc: 'Four courses of filled bags on a bearing. Heavy cover to anything in front of it and nothing at all from the flank.' },
+  pit:  { name: 'Weapon pit', short: 'WEAPON PIT', hk: '4', cost: { mp: 45 }, time: 12,
+          w: 64, h: 64, len: 64,
+          cover: { r: 30, type: 3, kind: 'pit', hp: 150 },
+          desc: 'A horseshoe of bags with the open end to the rear. Dug-in cover from every side, and a gun team in one stands to fire instead of lying down.' },
+  wire: { name: 'Wire entanglement', short: 'WIRE', hk: '5', cost: { mp: 30 }, time: 9,
+          w: 124, h: 34, len: 124, line: 1, slow: 1,
+          desc: 'Concertina on screw pickets with an apron either side. No cover: it holds infantry in the open where the machine guns can see them, and tracks go over it.' }
+};
 
 /* ---------------------------------------------------------------- state */
 var G = {
@@ -796,7 +815,7 @@ var G = {
   inc: { us: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 } },
   pop: { us: 0, ger: 0 },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], covers: [], sectors: [],
-  sites: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
+  sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
 };
@@ -1608,6 +1627,7 @@ function cidx(cx, cy) { return cy * GW + cx; }
    now refuses ground too steep to climb, and reading fire off it meant a squad could
    not shoot across a gully it was standing on the lip of. */
 var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH), road = new Uint8Array(GW * GH);
+var wireg = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -1663,6 +1683,21 @@ function rebuildGrid() {
     for (var i = 0; i < rd.length - 1; i++) markSeg(road, rd[i].x, rd[i].y, rd[i + 1].x, rd[i + 1].y);
   });
   G.paved.forEach(function (p) { markRect(road, p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0); });
+  /* Wire holds men up in the open rather than stopping them: it is laid to make them
+     stand still somewhere a machine gun is already looking. Tracks go straight over. */
+  wireg.fill(0);
+  G.works.forEach(function (wk) {
+    var W = WORKS[wk.kind];
+    if (!W || !W.slow) return;
+    var wa = wk.a + workTurn(wk.kind);
+    var hx = Math.cos(wa) * W.len / 2, hy = Math.sin(wa) * W.len / 2;
+    markSeg(wireg, wk.x - hx, wk.y - hy, wk.x + hx, wk.y + hy);
+  });
+}
+function inWire(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return wireg[cidx(cx, cy)] === 1;
 }
 function onRoad(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
@@ -2138,6 +2173,7 @@ function moveUnit(u, dt) {
     var grip = u.cat !== 'veh' ? .55 : wheeled ? 1.5 : 1.0;
     sp *= clamp(1 - rise * grip * (rise > 0 ? 1 : .35), .35, 1.12);
     if (u.cat === 'veh') sp *= onRoad(u.x, u.y) ? 1.22 : .94;
+    else if (inWire(u.x, u.y)) sp *= .40;                /* caught in the apron */
   }
   if (d < (u.pi === u.path.length - 1 ? 14 : 26)) {
     u.pi++;
@@ -3114,7 +3150,7 @@ function siteClear(x, y, w, h) {
    never open. Any builder can pick up any of his own side's unfinished work. */
 function resumeBuild(u, b) {
   clearOrder(u);
-  u.order = b.def ? 'build' : 'sandbag';
+  u.order = b.def ? 'build' : 'work';
   u.building = b;
   var sp = b.def ? nearestFree(b.x + rnd(-b.def.w * .3, b.def.w * .3), b.y + b.def.h / 2 + 34)
                  : nearestFree(b.x + rnd(-26, 26), b.y + rnd(-26, 26));
@@ -3146,22 +3182,66 @@ function jobInReach(u) {
   }
   return best;
 }
-function placeSandbag(side, x, y, engineers) {
-  if (G.res[side].mp < SANDBAG_COST) { if (side === G.side) toast('Not enough manpower'); return; }
-  G.res[side].mp -= SANDBAG_COST;
-  var site = { x: x, y: y, side: side, prog: 0, time: 7 };
+/* A work's stored bearing is the direction it faces, which is the direction the enemy is
+   expected from. A wall and a run of wire lie across that bearing, so their models and
+   their cover line are turned a quarter turn from it; a pit faces along it, with its open
+   end to the rear. Keeping one meaning for the angle is what lets the player aim all
+   three the same way: press where it goes and drag toward the enemy. */
+function workTurn(kind) { return WORKS[kind] && WORKS[kind].line ? Math.PI / 2 : 0; }
+function workRoom(x, y, W) {
+  if (x < 40 || y < 40 || x > WORLD.w - 40 || y > WORLD.h - 40) return false;
+  if (!walkable(x, y)) return false;
+  /* The work follows the ground it is built on, so this only has to stop one being
+     draped down the face of the sea cliff or across a shell hole. */
+  var rr = Math.max(W.w, W.h) / 2, lo = 1e9, hi = -1e9;
+  for (var a = 0; a < 8; a++) {
+    var gz = groundZ(x + Math.cos(a / 8 * TAU) * rr * .8, y + Math.sin(a / 8 * TAU) * rr * .8);
+    if (gz < lo) lo = gz;
+    if (gz > hi) hi = gz;
+  }
+  if (hi - lo > 26) return false;
+  var i;
+  for (i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (Math.abs(b.x - x) < (b.def.w + W.w) / 2 && Math.abs(b.y - y) < (b.def.h + W.h) / 2) return false;
+  }
+  for (i = 0; i < G.works.length; i++) if (dsq(G.works[i].x, G.works[i].y, x, y) < 44 * 44) return false;
+  for (i = 0; i < G.sites.length; i++) if (dsq(G.sites[i].x, G.sites[i].y, x, y) < 44 * 44) return false;
+  return true;
+}
+function placeWork(side, kind, x, y, ang, engineers) {
+  var W = WORKS[kind];
+  if (!W) return null;
+  if (!canAfford(side, W.cost)) { if (side === G.side) toast('Not enough manpower'); return null; }
+  if (!workRoom(x, y, W)) { if (side === G.side) toast('The ground will not take it there'); return null; }
+  pay(side, W.cost);
+  var site = { x: x, y: y, a: ang || 0, kind: kind, side: side, prog: 0, time: W.time,
+               buf: GLOK ? facesToBuffer(workFaces(kind, x, y, ang || 0)) : null };
   G.sites.push(site);
   (engineers || []).forEach(function (e) { resumeBuild(e, site); });
+  return site;
 }
 function updateSites(dt) {
   for (var i = G.sites.length - 1; i >= 0; i--) {
     var s = G.sites[i];
-    if (s.prog >= 1) {
-      for (var a = -1; a <= 1; a++) addCover(s.x + a * 30, s.y + (a % 2) * 8, 30, 2, 'bags');
-
-      G.sites.splice(i, 1);
-    }
+    if (s.prog >= 1) { finishWork(s); G.sites.splice(i, 1); }
   }
+}
+/* A finished work is a thing on the ground: a model to draw, a piece of cover laid on
+   the bearing it was built on, and for wire a mark on the grid that holds men up in it.
+   Before this the only thing a built work left behind was three round patches of cover
+   with no bearing and no geometry at all, so it protected a man from every direction
+   equally and could not be seen. */
+function finishWork(s) {
+  var W = WORKS[s.kind];
+  if (!W) return;
+  G.works.push({ kind: s.kind, x: s.x, y: s.y, a: s.a || 0, side: s.side, buf: s.buf });
+  if (W.cover) {
+    var c = W.cover;
+    addCover(s.x, s.y, c.r, c.type, c.kind, c.faced ? s.a + workTurn(s.kind) : null, c.hp);
+  }
+  if (W.slow) rebuildGrid();
+  if (s.side === G.side) { toast(W.name + ' up'); sfx('click'); }
 }
 
 /* how close a builder has to stand to work on something */
@@ -3276,7 +3356,7 @@ function updateUnit(u, dt) {
   /* engineers: construction, sandbags, repair */
   if (u.def.builder && !u.building && !u.repairing && !u.order && !u.retreat && !u.gar && !u.inside) {
     var idleJob = jobInReach(u);
-    if (idleJob) { u.order = idleJob.def ? 'build' : 'sandbag'; u.building = idleJob; }
+    if (idleJob) { u.order = idleJob.def ? 'build' : 'work'; u.building = idleJob; }
   }
   if (u.def.builder && u.building) {
     var b = u.building;
@@ -3357,7 +3437,7 @@ function updateUnit(u, dt) {
     if (dist(u, u.dest) > 40) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y); u.pi = 0; }
   }
   /* engineers walk to the job itself, not to a spot that may sit outside working range */
-  if ((u.order === 'build' || u.order === 'sandbag' || u.order === 'repair') && !u.path) {
+  if ((u.order === 'build' || u.order === 'work' || u.order === 'repair') && !u.path) {
     var job = u.building || u.repairing;
     if (job) {
       var reach = workReach(job);
@@ -3389,7 +3469,7 @@ function updateUnit(u, dt) {
 /* ---------------------------------------------------------------- ai */
 /* The opposition's own state. Everything in it is a number or a sector id: a plan that
    held a reference to a unit or a sector would go on pointing at it after it was dead. */
-var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99 };
+var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0 };
 var DIFF = [
   /* Green: money is barely a constraint. You earn triple, start with enough to fill the
      queue immediately, and the opposition runs a quarter economy, thinks every four
@@ -3413,7 +3493,7 @@ var DIFF = [
 ];
 function aiInit(side) {
   AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
-  AI.mood = 'push'; AI.upT = -99; AI.bagT = -99;
+  AI.mood = 'push'; AI.upT = -99; AI.bagT = -99; AI.bagN = 0;
 }
 function aiOwn(pred) {
   var out = [];
@@ -3913,10 +3993,30 @@ function aiTick(dt) {
       e.dest = { x: job.x, y: job.y }; e.path = findPath(e.x, e.y, job.x, job.y); e.pi = 0;
       continue;
     }
-    /* sandbags across the approach to the ground it holds, while it has the manpower */
-    if (skill >= 2 && G.res[side].mp > 420 && G.t - AI.bagT > 40 && hotSec) {
-      var bp = aiFirePost(side, defX, defY, 90);
-      if (dist(e, { x: bp.x, y: bp.y }) < 260) { placeSandbag(side, bp.x, bp.y, [e]); AI.bagT = G.t; continue; }
+    /* Works on the ground it holds. A pit for the gun teams first, since that is what a
+       weapon pit is for, then parapet for the sections, and wire out in front of the
+       position to hold anyone crossing it where the machine guns can see them. It digs
+       on the front sector it owns, or on whatever is being come for, and it walks to the
+       job rather than only building what happens to be under its feet. */
+    var mine2 = 0;
+    for (j = 0; j < G.works.length; j++) if (G.works[j].side === side) mine2++;
+    if (skill >= 1 && mine2 < 9 && G.res[side].mp > 230 &&
+        G.t - AI.bagT > (skill >= 2 ? 28 : 52)) {
+      var front = null, fdist = -1, foeHq = hqOf(foeSide);
+      for (j = 0; j < G.sectors.length; j++) {
+        s = G.sectors[j];
+        if (s.owner !== side) continue;
+        var fdd = foeHq ? dist(s, foeHq) : dist(s, hq);
+        if (fdist < 0 || fdd < fdist) { fdist = fdd; front = s; }
+      }
+      var digAt = hotO ? hotO.s : front;
+      if (digAt && dist(e, digAt) < 1000) {
+        var wk = AI.bagN % 3 === 0 ? 'pit' : AI.bagN % 3 === 1 ? 'bags' : 'wire';
+        var bp = aiFirePost(side, digAt.x, digAt.y, wk === 'wire' ? -95 : 100);
+        if (placeWork(side, wk, bp.x, bp.y, aiFoeDir(side, bp.x, bp.y), [e])) {
+          AI.bagT = G.t; AI.bagN = (AI.bagN || 0) + 1; continue;
+        }
+      }
     }
     /* otherwise it keeps near the base, where it can take a sector nobody is fighting
        over and be on hand for the next building */
@@ -4728,27 +4828,11 @@ function sceneProps() {
   var TIMBER = '#5e4a2f', TIMBER_L = '#75603f', TIMBER_D = '#4a3924', BAG = '#6f6444', BAG_L = '#85795a', BAG_D = '#5f5539';
   /* one filled sandbag, 6 x 3 x 1.5 units, pillowed by a deep chamfer, each a little
      different in colour, size and set so a wall never reads as brickwork */
-  function sandbag(seedv) {
-    var sv = seedv === undefined ? srand() : seedv;
-    var l = 5.6 + sv * .8, w = 2.8 + ((sv * 7) % 1) * .5, h = 1.45 + ((sv * 13) % 1) * .3;
-    var col = sv < .33 ? BAG : sv < .66 ? BAG_D : '#7a6e4b';
-    var bag = box(0, 0, 0, l, w, h, col, lit(col, 1.12), lit(col, .9), .62);
-    /* a bag always sits on something: drop the faces that look down */
-    bag = bag.filter(function (q) { return faceNormal(q.v[0], q.v[1], q.v[2]).z > -.3; });
-    return place(roll(bag, (sv - .5) * .16, 0, 0), (sv - .5) * .22, 0, 0, 0);
-  }
-  /* a run of sandbags laid header-stretcher along a line, n courses high */
+  /* the bag and the run of bags are module-level now, so that what the engineers build
+     in the field is the same object as what the map is painted with */
+  function sandbag(seedv) { return sandbagOne(seedv === undefined ? srand() : seedv); }
   function sandbagWall(faces, x0, y0, ang, len, courses) {
-    var out2 = [];
-    for (var c = 0; c < courses; c++) {
-      var header = c % 2 === 1, pitch2 = header ? 3.2 : 6.2, off = header ? 1.6 : 0;
-      for (var d = off; d < len; d += pitch2) {
-        var sv = srand();
-        var bag = header ? place(sandbag(sv), Math.PI / 2, 0, 0, 0) : sandbag(sv);
-        out2 = out2.concat(place(bag, ang, x0 + Math.cos(ang) * d, y0 + Math.sin(ang) * d, c * 1.4 + (sv - .5) * .1));
-      }
-    }
-    return out2;
+    return sandbagRun(x0, y0, ang, len, courses, srand);
   }
 
   function put(faces, x, y, yaw, sc) {
@@ -11234,6 +11318,135 @@ function camoNet(x, y, w, d, z, col) {
   f.push({ v: quad, c: col, m: matIndex('net'), alpha: 1, n: [[0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]] });
   return f;
 }
+/* ---- sandbags, and the works built out of them.
+   One bag and a run of bags laid header-and-stretcher along a line. Both the map's own
+   parapets and anything a section of engineers puts up in the field are built from these
+   two, so a built wall is the same object as a painted one. The caller passes in its own
+   source of randomness: the map uses the seeded sequence that makes every run of the map
+   identical, and a model built once at boot must not touch that sequence or it would
+   move every bag and every shell hole on the map. */
+var BAGS3 = ['#6f6444', '#5f5539', '#7a6e4b'];
+function sandbagOne(sv) {
+  var l = 5.6 + sv * .8, w = 2.8 + ((sv * 7) % 1) * .5, h = 1.45 + ((sv * 13) % 1) * .3;
+  var col = sv < .33 ? BAGS3[0] : sv < .66 ? BAGS3[1] : BAGS3[2];
+  var bag = box(0, 0, 0, l, w, h, col, lit(col, 1.12), lit(col, .9), .62);
+  /* a bag always sits on something: drop the faces that look down */
+  bag = bag.filter(function (q) { return faceNormal(q.v[0], q.v[1], q.v[2]).z > -.3; });
+  return place(roll(bag, (sv - .5) * .16, 0, 0), (sv - .5) * .22, 0, 0, 0);
+}
+function sandbagRun(x0, y0, ang, len, courses, rnd) {
+  var out = [];
+  for (var c = 0; c < courses; c++) {
+    var header = c % 2 === 1, step = header ? 3.2 : 6.2, off = header ? 1.6 : 0;
+    for (var d = off; d < len; d += step) {
+      var sv = rnd();
+      var bag = header ? place(sandbagOne(sv), Math.PI / 2, 0, 0, 0) : sandbagOne(sv);
+      out = out.concat(place(bag, ang, x0 + Math.cos(ang) * d, y0 + Math.sin(ang) * d, c * 1.4 + (sv - .5) * .1));
+    }
+  }
+  return out;
+}
+/* A field work, built in world coordinates where it stands and then dropped onto the
+   ground face by face. Works are rare -- a handful in a battle -- so each one gets its
+   own little buffer rather than being merged into the scene, which is built once before
+   the first shot and cannot take anything raised after it. Building them in place is
+   also what lets them follow the ground: a single rigid model laid flat leaves one end
+   of a wall buried and the other in the air, and a good deal of this map rolls. */
+function conformFaces(faces) {
+  return faces.map(function (q) {
+    var cx = 0, cy = 0, i;
+    for (i = 0; i < q.v.length; i++) { cx += q.v[i][0]; cy += q.v[i][1]; }
+    cx /= q.v.length; cy /= q.v.length;
+    var gz = groundZ(cx, cy);
+    return { v: q.v.map(function (pp) { return [pp[0], pp[1], pp[2] + gz]; }),
+             c: q.c, n: q.n, m: q.m, alpha: q.alpha };
+  });
+}
+function workFaces(kind, x, y, a) {
+  /* its own little sequence: the map's seeded one builds the map, and drawing on it here
+     would move every bag and every shell hole on it */
+  var seed = .3719 + (x % 7) * .031 + (y % 11) * .017;
+  function rnd() { seed = (seed * 97.13 + .4517) % 1; return seed; }
+  var W = WORKS[kind], f = [], i, c, ring, ea;
+  var wa = a + workTurn(kind);                       /* the line the work lies along */
+  var ca = Math.cos(wa), sa = Math.sin(wa);
+  var bx = -Math.cos(a), by = -Math.sin(a);          /* rearward: the side the men are on */
+  if (kind === 'bags') {
+    var L = W.len, x0 = x - ca * L / 2, y0 = y - sa * L / 2;
+    f = sandbagRun(x0, y0, wa, L, 4, rnd);
+    /* a short return at each end, turned back toward the men, so it reads as a position
+       rather than a fence */
+    for (i = -1; i <= 1; i += 2) {
+      f = f.concat(sandbagRun(x + ca * i * (L / 2 - 2) + bx * 2, y + sa * i * (L / 2 - 2) + by * 2,
+                              Math.atan2(by, bx), 12, 3, rnd));
+    }
+    /* a box of ammunition behind the parapet */
+    f = f.concat(place(box(0, 0, .6, 8, 5, 4, '#4d5340', '#5d6450', '#41473a'), wa + .3,
+                       x - ca * 14 + bx * 12, y - sa * 14 + by * 12, 0));
+    return conformFaces(f);
+  }
+  if (kind === 'pit') {
+    /* a horseshoe two bags thick, six courses at the front falling toward the open rear,
+       each course laid round the arc; the opening faces away from the bearing */
+    var pitR = 24;
+    for (c = 0; c < 6; c++) {
+      for (ring = 0; ring < 2; ring++) {
+        var rad = pitR + ring * 3.0, header = (c + ring) % 2 === 1;
+        var stepA = (header ? 3.3 : 6.3) / rad, offA = header ? stepA * .5 : 0;
+        var arcHalf = Math.PI * (.78 - c * .06);
+        for (ea = -arcHalf + offA; ea < arcHalf; ea += stepA) {
+          var sv2 = rnd(), bag2 = header ? place(sandbagOne(sv2), Math.PI / 2, 0, 0, 0) : sandbagOne(sv2);
+          var wq = a + ea;
+          f = f.concat(place(place(bag2, 0, 0, 0, c * 1.4), wq + Math.PI / 2,
+                             x + Math.cos(wq) * rad, y + Math.sin(wq) * rad, 0));
+        }
+      }
+    }
+    /* the returns closing each end, and the ammunition inside */
+    for (i = -1; i <= 1; i += 2) {
+      var ea3 = a + i * Math.PI * .78;
+      for (c = 0; c < 3; c++) for (ring = 0; ring < 2; ring++) {
+        var sv3 = rnd();
+        f = f.concat(place(place(sandbagOne(sv3), 0, 0, 0, c * 1.4), ea3,
+                           x + Math.cos(ea3) * (pitR - 2 - ring * 6.2),
+                           y + Math.sin(ea3) * (pitR - 2 - ring * 6.2), 0));
+      }
+    }
+    f = f.concat(place(box(0, 0, .6, 8, 5, 4, '#4d5340', '#5d6450', '#41473a'), a + .3,
+                       x + bx * 9, y + by * 9, 0));
+    return conformFaces(f);
+  }
+  /* wire: screw pickets with a concertina coil strung between them and a low apron
+     strand either side to catch the feet */
+  var L2 = W.len, px0 = x - ca * L2 / 2, py0 = y - sa * L2 / 2;
+  var n = Math.max(2, Math.round(L2 / 46));
+  for (i = 0; i <= n; i++) {
+    var pd = L2 * (i / n);
+    var qx = px0 + ca * pd, qy = py0 + sa * pd;
+    f = f.concat(place(cyl(0, 0, 0, 1.0, 1.0, 24, 5, '#4b4434', '#635944'), wa, qx, qy, 0));
+    f = f.concat(place(box(0, 0, 21, 3.5, .8, .8, '#4b4434', '#635944'), wa, qx, qy, 0));
+  }
+  var R = 9, turns = L2 / 6, segs = Math.round(turns * 8), coil = [];
+  for (i = 0; i < segs; i++) {
+    var t0 = i / segs, t1 = (i + 1) / segs;
+    var a0 = t0 * turns * TAU, a1 = t1 * turns * TAU;
+    var p0 = [t0 * L2, Math.cos(a0) * R, 10 + Math.sin(a0) * R];
+    var p1 = [t1 * L2, Math.cos(a1) * R, 10 + Math.sin(a1) * R];
+    var mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2, mz = (p0[2] + p1[2]) / 2;
+    var dl = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]);
+    var yawS = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
+    var pitS = -Math.atan2(p1[2] - p0[2], Math.hypot(p1[0] - p0[0], p1[1] - p0[1]));
+    coil = coil.concat(place(pitch(box(0, 0, -.28, dl + .3, .55, .55, '#3f3b30', '#57513f'), pitS, 0, 0), yawS, mx, my, mz));
+    if (i % 2 === 0) coil = coil.concat(place(box(0, 0, -.6, .5, .5, 1.6, '#57513f', '#6a6350'), yawS, mx, my, mz));
+  }
+  f = f.concat(place(coil, wa, px0, py0, 0));
+  for (i = -1; i <= 1; i += 2) {
+    f = f.concat(place(box(L2 / 2, i * 14, 3.5, L2, .5, .5, '#3f3b30', '#57513f'), wa, px0, py0, 0));
+    for (var pg = 12; pg < L2; pg += 40)
+      f = f.concat(place(box(pg, i * 14, 0, .8, .8, 6, '#4b4434', '#635944'), wa, px0, py0, 0));
+  }
+  return conformFaces(f);
+}
 function buildingModel(d, key) {
   var us = key.indexOf('us_') === 0, side = us ? 'us' : 'ger';
   var flag = us ? FACTION.us.color : FACTION.ger.color;
@@ -11572,6 +11785,24 @@ function drawBuildings3D() {
     _blobs.push({ x: b.x, y: b.y, r: b.def.w * .62, a: .4 });
   });
 }
+/* Field works are drawn per piece rather than merged into the scene buffer, because the
+   scene is built once at the start of a battle and these go up during it. A site under
+   construction rises out of the ground as the engineers work, which is the only way the
+   player can see that anything is happening. */
+function drawWorks3D() {
+  var i, w;
+  /* The geometry is already in world coordinates, so the matrix is a plain translation:
+     a site under construction is sunk into the ground and rises out of it as the men
+     work, which is the only way the player can see that anything is happening. */
+  for (i = 0; i < G.works.length; i++) {
+    w = G.works[i];
+    if (w.buf) drawGeom(w.buf, m4model(0, 0, 0, 0, 1), false, null);
+  }
+  for (i = 0; i < G.sites.length; i++) {
+    w = G.sites[i];
+    if (w.buf) drawGeom(w.buf, m4model(0, 0, -(1 - w.prog) * 13, 0, 1), false, [.88, .88, .84]);
+  }
+}
 function drawWrecks3D() {
   G.wrecks.forEach(function (w) {
     var B = MODELS.veh[w.key]; if (!B) return;
@@ -11760,6 +11991,7 @@ function render() {
       if (b.built < 1) mm[10] = .15 + .85 * b.built;
       drawDepthGeom(B, mm);
     });
+    G.works.forEach(function (w) { if (w.buf) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
     list.forEach(function (u) { castUnit(u); });
     gl.cullFace(gl.BACK);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -11813,6 +12045,7 @@ function render() {
     drawGeom(MODELS.flag[s.owner || 'none'], m4model(s.x, s.y, groundZ(s.x, s.y), G.t * .3 + s.x * .01, 1), false);
   });
   drawBuildings3D();
+  drawWorks3D();
   drawUnits3D(v, list);
   drawWrecks3D();
   drawParticles3D();
@@ -11884,13 +12117,33 @@ function render() {
   G.sectors.forEach(drawSectorFlag);
   /* placement ghost */
   if (G.place) {
-    var m = s2w(mouse.x, mouse.y);
-    var d3 = G.place.key === 'sandbag' ? { w: 92, h: 32 } : BUILDINGS[G.place.key];
-    var ok = G.place.key === 'sandbag' ? true : siteClear(m.x, m.y, d3.w, d3.h);
-    var cc = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) { return w2s(m.x + q[0] * d3.w / 2, m.y + q[1] * d3.h / 2); });
+    var pl = G.place, W3 = pl.work ? WORKS[pl.work] : null;
+    var m = pl.aim ? { x: pl.ax, y: pl.ay } : s2w(mouse.x, mouse.y);
+    var d3 = W3 || BUILDINGS[pl.key];
+    var ok = W3 ? workRoom(m.x, m.y, W3) : siteClear(m.x, m.y, d3.w, d3.h);
+    var pa = W3 ? placeAngle(m.x, m.y) + workTurn(pl.work) : 0;
+    var ca = Math.cos(pa), sa = Math.sin(pa);
+    var cc = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) {
+      var lx = q[0] * d3.w / 2, ly = q[1] * d3.h / 2;
+      return w2s(m.x + lx * ca - ly * sa, m.y + lx * sa + ly * ca);
+    });
     ctx.fillStyle = ok ? 'rgba(139,179,86,.3)' : 'rgba(201,92,78,.3)';
     ctx.beginPath(); cc.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = ok ? '#9ecb62' : '#c95c4e'; ctx.lineWidth = 2; ctx.setLineDash([8, 6]); ctx.stroke(); ctx.setLineDash([]);
+    if (W3) {
+      /* which way it faces, drawn as an arrow out of the front of it, because a parapet
+         laid the wrong way round is worth nothing and the player cannot see the cover
+         arithmetic */
+      var fa = placeAngle(m.x, m.y), reach = 30 + d3.h / 2;
+      var p0 = w2s(m.x, m.y), p1 = w2s(m.x + Math.cos(fa) * reach, m.y + Math.sin(fa) * reach);
+      ctx.strokeStyle = ok ? '#e8e2cc' : '#c95c4e'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
+      var ha = Math.atan2(p1.y - p0.y, p1.x - p0.x);
+      ctx.beginPath(); ctx.moveTo(p1.x, p1.y);
+      ctx.lineTo(p1.x - Math.cos(ha - .4) * 12, p1.y - Math.sin(ha - .4) * 12);
+      ctx.lineTo(p1.x - Math.cos(ha + .4) * 12, p1.y - Math.sin(ha + .4) * 12);
+      ctx.closePath(); ctx.fillStyle = ok ? '#e8e2cc' : '#c95c4e'; ctx.fill();
+    }
   }
   if (drag.on && drag.moved) {
     var bx0 = Math.min(drag.x0, mouse.x), by0 = Math.min(drag.y0, mouse.y);
@@ -12095,7 +12348,12 @@ cv.addEventListener('mousedown', function (e) {
   }
   if (!G.running) return;
   if (e.button === 0) {
-    if (G.place) { doPlace(); return; }
+    if (G.place) {
+      /* the press fixes where it goes; the drag that follows aims it */
+      var pw = s2w(mouse.x, mouse.y);
+      G.place.ax = pw.x; G.place.ay = pw.y; G.place.aim = true;
+      return;
+    }
     if (G.mode === 'attack') { var w0 = s2w(mouse.x, mouse.y); issueOrder(w0.x, w0.y, true); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
     drag.on = true; drag.x0 = mouse.x; drag.y0 = mouse.y; drag.moved = false;
   } else if (e.button === 1) { e.preventDefault(); drag.pan = { x: mouse.x, y: mouse.y, rotate: !e.shiftKey }; }
@@ -12103,6 +12361,7 @@ cv.addEventListener('mousedown', function (e) {
 window.addEventListener('mouseup', function (e) {
   if (ED.on) { drag.pan = null; edUp(); return; }
   if (e.button === 1) { drag.pan = null; return; }
+  if (e.button === 0 && G.place && G.place.aim) { doPlace(); return; }
   if (e.button !== 0 || !drag.on) return;
   drag.on = false;
   var add = e.shiftKey;
@@ -12183,6 +12442,11 @@ cv.addEventListener('touchstart', function (e) {
   touch.x = p.x; touch.y = p.y; touch.sx = p.x; touch.sy = p.y;
   mouse.x = p.x; mouse.y = p.y;
   touch.t0 = performance.now(); touch.moved = false; touch.two = false; touch.box = false;
+  if (G.place) {
+    var tw2 = s2w(p.x, p.y);
+    G.place.ax = tw2.x; G.place.ay = tw2.y; G.place.aim = true;
+    return;                                   /* no marquee timer while placing */
+  }
   /* hold still for a moment to start a marquee */
   touch.timer = setTimeout(function () {
     if (touch.moved) return;
@@ -12236,6 +12500,8 @@ cv.addEventListener('touchmove', function (e) {
     else if (p.y > VIEW.h - m - (el('bar').offsetHeight || 0)) { panCam(0, -9); drag.y0 -= 9; }
     return;
   }
+  /* a finger dragged while a work is being placed is aiming it, not panning the map */
+  if (G.place && G.place.aim) { mouse.x = p.x; mouse.y = p.y; touch.x = p.x; touch.y = p.y; return; }
   if (touch.moved) panCam(dx, dy);
   touch.x = p.x; touch.y = p.y; mouse.x = p.x; mouse.y = p.y;
 }, { passive: false });
@@ -12247,6 +12513,7 @@ cv.addEventListener('touchend', function (e) {
   if (e.touches.length) return;
   var wasBox = touch.box, wasTwo = touch.two, moved = touch.moved;
   touch.pinch = 0; touch.box = false; touch.two = false;
+  if (G.place && G.place.aim) { doPlace(); buzz(12); return; }
 
   if (wasBox) {
     drag.on = false; drag.moved = false;
@@ -12258,7 +12525,6 @@ cv.addEventListener('touchend', function (e) {
   if (moved || wasTwo) return;
 
   var w = s2w(touch.sx, touch.sy);
-  if (G.place) { doPlace(); buzz(12); return; }
   if (G.mode === 'attack') {
     issueOrder(w.x, w.y, true); G.mode = null; syncHud(); buzz(16); return;
   }
@@ -12312,6 +12578,18 @@ window.addEventListener('keydown', function (e) {
     return;
   }
   if (k === 'escape') { G.place = null; G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
+  /* turn a work by fifteen degrees, for the one time in ten the default bearing is wrong
+     and the ground will not let you drag the way you want to aim */
+  if (G.place && G.place.work && (k === ',' || k === '.')) {
+    var base = G.place.manual;
+    if (base === undefined) {
+      var mw = G.place.aim ? { x: G.place.ax, y: G.place.ay } : s2w(mouse.x, mouse.y);
+      base = placeAngle(mw.x, mw.y);
+    }
+    G.place.manual = base + (k === ',' ? -1 : 1) * Math.PI / 12;
+    G.place.aim = false;
+    return;
+  }
   if (k === 'q') { if (selectedUnits().length) { G.mode = 'attack'; cv.style.cursor = 'cell'; syncHud(); } return; }
   if (k === 'x') { selectedUnits().forEach(orderStop); syncHud(); return; }
   if (k === 'r') { selectedUnits().forEach(function (u) { if (u.side === G.side) orderRetreat(u); }); syncHud(); return; }
@@ -12430,6 +12708,8 @@ function cmdGlyph(label) {
   if (/Stop/i.test(label)) return '■';
   if (/Retreat/i.test(label)) return '⇙';
   if (/Sandbag/i.test(label)) return '▰';
+  if (/Pit/i.test(label)) return '⊔';
+  if (/Wire/i.test(label)) return '≋';
   if (/HQ|POST|SUPPORT/i.test(label)) return '⌂';
   if (/Sherman|Panzer/i.test(label)) return '▬';
   if (/Carrier|222/i.test(label)) return '◇';
@@ -12513,10 +12793,17 @@ function buildCmds() {
           return !siteOf(G.side, key) && canAfford(G.side, d.cost);
         };
       });
-      addCmd('Sandbags', SANDBAG_COST + '', '3', G.res[G.side].mp >= SANDBAG_COST,
-        function () { G.place = { key: 'sandbag', engs: engs }; toast('Click to place cover'); syncHud(); },
-        G.place && G.place.key === 'sandbag');
-      cmdList[cmdList.length - 1].can = function () { return G.res[G.side].mp >= SANDBAG_COST; };
+      Object.keys(WORKS).forEach(function (wk) {
+        var W = WORKS[wk];
+        addCmd(W.short, (W.cost.mp || 0) + '', W.hk, canAfford(G.side, W.cost),
+          function () {
+            G.place = { work: wk, engs: engs };
+            toast('Place the ' + W.name.toLowerCase() + ': drag to aim it');
+            syncHud();
+          },
+          G.place && G.place.work === wk);
+        cmdList[cmdList.length - 1].can = function () { return canAfford(G.side, W.cost); };
+      });
     }
   } else {
     var hq = hqOf(G.side);
@@ -12555,11 +12842,25 @@ function syncQueue() {
     host.appendChild(q);
   });
 }
+/* Press where the work goes and drag toward the enemy to aim it. A plain click faces it
+   at the enemy's headquarters, which is right nine times in ten, and the comma and full
+   stop keys turn it by fifteen degrees for the tenth. */
+function placeAngle(px, py) {
+  var p = G.place;
+  if (!p) return 0;
+  if (p.aim) {
+    var m = s2w(mouse.x, mouse.y), dx = m.x - p.ax, dy = m.y - p.ay;
+    if (Math.hypot(dx, dy) > 26) return Math.atan2(dy, dx);
+  }
+  if (p.manual !== undefined) return p.manual;
+  var h = hqOf(foe(G.side));
+  return h ? Math.atan2(h.y - py, h.x - px) : 0;
+}
 function doPlace() {
-  var w = s2w(mouse.x, mouse.y);
   var p = G.place;
   if (!p) return;
-  if (p.key === 'sandbag') placeSandbag(G.side, w.x, w.y, p.engs);
+  var w = p.aim ? { x: p.ax, y: p.ay } : s2w(mouse.x, mouse.y);
+  if (p.work) placeWork(G.side, p.work, w.x, w.y, placeAngle(w.x, w.y), p.engs);
   else placeStructure(G.side, p.key, w.x, w.y, p.engs);
   G.place = null; syncHud();
 }
@@ -12603,7 +12904,7 @@ function startGame(side, diff, mode) {
   G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.sel = [];
-  G.sites = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
+  G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
   var dd = DIFF[diff];
   G.res = { us: { mp: 420, fu: 20, vp: VP_START }, ger: { mp: 420, fu: 20, vp: VP_START } };
   G.res[side].mp = dd.startMp; G.res[side].fu = dd.startFu;
@@ -12812,7 +13113,7 @@ var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1 };
 function edOpen(data) {
   ED.on = true; ED.data = data || edLoadLocal() || defaultMapData();
   ED.undo = []; ED.sel = null; ED.line = null; ED.tool = 'select'; ED.asset = null;
-  G.mapData = ED.data; G.side = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = [];
+  G.mapData = ED.data; G.side = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
   G.wrecks = []; G.corpses = []; G.fx = []; G.shots = [];
   fog = false;
   edRebuildNow();
