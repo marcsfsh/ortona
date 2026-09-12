@@ -88,7 +88,9 @@ const PROBE = {
   ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
                tools or fender bolts hung on the outside */
-  us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true },   /* the .50 stands
+  us_m8:     { topZ: 4.0, hullZ: 18.4 },   /* an open vehicle is measured to its plate, not to
+               the top of the man standing in it */
+  us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
                above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */
   ger_h251:  { topZ: 0.4, hullZ: 21.0, bodyZ: 15.0, xLo: -28.0, xHi: -25.0, straddle: true },   /* the slice
                is taken aft of the last bin and forward of the rear chamfer, where the side plate is bare */   /* the shield mount, the rear pintle MG and the aerial
