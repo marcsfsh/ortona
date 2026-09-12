@@ -1510,8 +1510,8 @@ function unhitchGun(v) {
   var g = v.tow, i;
   if (!g) return;
   v.tow = null; g.towedBy = null;
-  var a = v.facing + Math.PI, sp = nearestFree(v.x + Math.cos(a) * 52, v.y + Math.sin(a) * 52);
-  g.x = sp.x; g.y = sp.y;
+  var a = v.facing + Math.PI, sp = nearestFree(v.x + Math.cos(a) * 70, v.y + Math.sin(a) * 70);
+  g.x = sp.x; g.y = sp.y; g.facing = v.facing;
   for (i = 0; i < g.models.length; i++) {
     g.models[i].x = g.x + g.models[i].ox; g.models[i].y = g.y + g.models[i].oy; g.models[i].f = g.facing;
   }
@@ -2291,11 +2291,16 @@ function updateUnit(u, dt) {
     var tw = u.towedBy;
     if (tw.dead || tw.tow !== u) { u.towedBy = null; tw.tow = null; u.setup = u.def.setup || 0; }
     else {
+      /* hitched by the trails, so it rides muzzle to the rear and clear of the tow */
+      /* hitched by the trails, so it rides muzzle to the rear and a trail's length
+         clear of the tow. The mesh is drawn at the first man, so he stands on the gun
+         and the rest of the crew close up round him rather than trailing across it. */
       var ta = tw.facing + Math.PI;
-      u.x = tw.x + Math.cos(ta) * 46; u.y = tw.y + Math.sin(ta) * 46;
-      u.facing = tw.facing; u.target = null; u.setup = u.def.setup || 0;
+      u.x = tw.x + Math.cos(ta) * 80; u.y = tw.y + Math.sin(ta) * 80;
+      u.facing = ta; u.target = null; u.setup = u.def.setup || 0;
       for (var tm = 0; tm < u.models.length; tm++) {
-        u.models[tm].x = u.x + u.models[tm].ox * .5; u.models[tm].y = u.y + u.models[tm].oy * .5;
+        u.models[tm].x = u.x + (tm ? u.models[tm].ox * .3 : 0);
+        u.models[tm].y = u.y + (tm ? u.models[tm].oy * .3 : 0);
         u.models[tm].f = u.facing;
       }
       return;
