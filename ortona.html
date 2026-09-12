@@ -997,10 +997,13 @@ function defaultMapData() {
     both({ t: 'grass', x: srange(60, WORLD.w / 2), y: srange(260, WORLD.h - 60), r: srange(60, 150), tone: srange(.35, .9), a: srange(0, TAU) }, mirror);
   }
   /* paving */
-  E.push({ t: 'paved', x: 800, y: 600, w: 1200, h: 700, kind: 'street' });
+  /* Only the squares are flagged. The blanket of paving that used to cover the whole
+     quarter is what made a street indistinguishable from the ground beside it. */
   E.push({ t: 'paved', x: 1266, y: 826, w: 268, h: 248, kind: 'piazza' });
-  E.push({ t: 'paved', x: 1266, y: 340, w: 268, h: 270, kind: 'street' });
-  E.push({ t: 'paved', x: 1266, y: 1290, w: 268, h: 320, kind: 'street' });
+  E.push({ t: 'paved', x: 1290, y: 356, w: 220, h: 224, kind: 'street' });
+  E.push({ t: 'paved', x: 1290, y: 1306, w: 220, h: 268, kind: 'street' });
+  E.push({ t: 'paved', x: 906, y: 872, w: 152, h: 156, kind: 'street' });
+  E.push({ t: 'paved', x: 1626, y: 872, w: 152, h: 156, kind: 'street' });
   /* sectors and headquarters */
   var secs = [
     ['A', 540, 400, 'fuel', 'us', 'Moro Approach', ['C', 'D']], ['B', 540, 1500, 'mp', 'us', 'Cemetery Road', ['C', 'F']],
@@ -3539,7 +3542,10 @@ function sceneProps() {
   /* pavements: a raised kerbed sidewalk round each town block, 12 units wide */
   G.blocks.forEach(function (bk) {
     if (bk.style === 'church') return;
-    var pw = 12, kerb = '#8e8770', flag = '#a29b83';
+    /* Narrower and dirtier than they were. A pavement twelve units wide in the palest
+       stone on the map turned every frontage into a white ribbon and swallowed the
+       street between them. */
+    var pw = 8.5, kerb = '#7c7562', flag = '#8b846f';
     [[bk.x, bk.y + bk.h / 2 + pw / 2 + 1, bk.w + 2 * pw + 2, pw], [bk.x, bk.y - bk.h / 2 - pw / 2 - 1, bk.w + 2 * pw + 2, pw],
      [bk.x + bk.w / 2 + pw / 2 + 1, bk.y, pw, bk.h + 2], [bk.x - bk.w / 2 - pw / 2 - 1, bk.y, pw, bk.h + 2]].forEach(function (sw) {
       put(box(0, 0, 0, sw[2], sw[3], 1.6, flag, lit(flag, 1.06), kerb, .3), sw[0], sw[1], 0);
@@ -4136,154 +4142,225 @@ function paintGround(t, DET) {
   t.restore();
 
   /* ---- paving: the town streets and the piazza ---- */
+  /* ---- The town floor. Ortona's streets are setts and its squares are flagged, and
+     between the two there is no paving at all: yards, courtyards and the ground the
+     houses stand on, which after a month of shelling is crushed stone and brick dust
+     over whatever was underneath. Painting the whole quarter as one flagstone field is
+     what made every street read as the same pale grey as every other surface here. ---- */
+  t.save();
+  var TOWN = { x: 786, y: 586, w: 1228, h: 728 };
+  var dg0 = t.createLinearGradient(TOWN.x, TOWN.y, TOWN.x + TOWN.w, TOWN.y + TOWN.h);
+  dg0.addColorStop(0, 'rgba(134,124,102,.40)');
+  dg0.addColorStop(.5, 'rgba(118,109,89,.46)');
+  dg0.addColorStop(1, 'rgba(134,124,102,.40)');
+  t.fillStyle = dg0; t.fillRect(TOWN.x, TOWN.y, TOWN.w, TOWN.h);
+  for (var du = 0; du < many(150); du++) {
+    var dx0 = TOWN.x + srange(0, TOWN.w), dy0 = TOWN.y + srange(0, TOWN.h), dr0 = srange(24, 96);
+    var dgg = t.createRadialGradient(dx0, dy0, 0, dx0, dy0, dr0);
+    var pale = srand();
+    dgg.addColorStop(0, pale < .34 ? 'rgba(188,178,152,.26)' : pale < .68 ? 'rgba(96,86,66,.2)' : 'rgba(150,112,86,.14)');
+    dgg.addColorStop(1, 'rgba(0,0,0,0)');
+    t.fillStyle = dgg; t.beginPath(); t.arc(dx0, dy0, dr0, 0, TAU); t.fill();
+  }
+  /* the broken stone in it, coarse enough to see from a normal camera height */
+  for (var cs = 0; cs < many(900); cs++) {
+    var sx0 = TOWN.x + srange(0, TOWN.w), sy0 = TOWN.y + srange(0, TOWN.h), ss0 = srange(1.4, 4.6);
+    var kind = srand();
+    t.fillStyle = kind < .18 ? 'rgba(132,74,52,.5)' : kind < .6 ? 'rgba(196,186,160,.42)' : 'rgba(92,84,64,.36)';
+    t.fillRect(sx0, sy0, ss0, ss0 * srange(.5, .9));
+  }
+  t.restore();
+
+  /* ---- the squares: flagstone, laid in courses, with the flags that have been lifted
+     out of it showing the bedding sand underneath ---- */
   G.paved.forEach(function (pv) {
     var piazza = pv.kind === 'piazza';
-    t.fillStyle = piazza ? '#a29b83' : '#8e8770';
+    t.fillStyle = piazza ? '#8d8571' : '#847c69';
     t.fillRect(pv.x, pv.y, pv.w, pv.h);
-    /* flags, each its own stone with its own tone, in staggered courses */
-    var cell = piazza ? 22 : 14, cellH = cell * .7;
+    var cell = piazza ? 26 : 17, cellH = cell * .68;
     for (var fy = pv.y, row = 0; fy < pv.y + pv.h; fy += cellH, row++) {
       var stag = (row % 2) * cell * .5;
       for (var fx = pv.x - stag; fx < pv.x + pv.w; fx += cell) {
-        var tn = .5 + (noise2(Math.floor(fx), Math.floor(fy), 62) - .5) * .2;
-        var gv = Math.round((piazza ? 150 : 132) * tn + 40);
-        t.fillStyle = 'rgb(' + (gv + 8) + ',' + gv + ',' + (gv - 14) + ')';
-        t.fillRect(Math.max(fx, pv.x) + .5, fy + .5, Math.min(cell, pv.x + pv.w - fx) - 1, Math.min(cellH, pv.y + pv.h - fy) - 1);
+        var tn = .5 + (noise2(Math.floor(fx), Math.floor(fy), 62) - .5) * .5;
+        var gv = Math.round((piazza ? 128 : 116) * tn + 52);
+        t.fillStyle = 'rgb(' + (gv + 9) + ',' + (gv + 2) + ',' + (gv - 14) + ')';
+        t.fillRect(Math.max(fx, pv.x) + .6, fy + .6, Math.min(cell, pv.x + pv.w - fx) - 1.4, Math.min(cellH, pv.y + pv.h - fy) - 1.4);
       }
     }
-    /* worn patches */
-    for (var wp = 0; wp < (piazza ? 8 : 40); wp++) {
+    /* flags lifted out by the shelling: the bedding sand, and the edge of the hole */
+    var gone = Math.round(pv.w * pv.h / 3400);
+    for (var q = 0; q < gone; q++) {
+      var bx = pv.x + srange(0, pv.w), by = pv.y + srange(0, pv.h), bw = srange(10, 34);
+      t.fillStyle = 'rgba(118,104,80,' + (.4 + srand() * .34).toFixed(2) + ')';
+      t.beginPath(); t.ellipse(bx, by, bw, bw * srange(.5, .85), srange(0, TAU), 0, TAU); t.fill();
+      t.fillStyle = 'rgba(58,50,38,.26)';
+      t.beginPath(); t.ellipse(bx, by, bw * .5, bw * .36, srange(0, TAU), 0, TAU); t.fill();
+    }
+    /* traffic wear: the diagonals people and vehicles have taken across it */
+    for (var wp = 0; wp < (piazza ? 10 : 22); wp++) {
       var wx = pv.x + srange(0, pv.w), wyv = pv.y + srange(0, pv.h);
       var wg = t.createRadialGradient(wx, wyv, 0, wx, wyv, srange(30, 90));
-      wg.addColorStop(0, srand() < .5 ? 'rgba(60,54,42,.16)' : 'rgba(190,182,160,.14)');
+      wg.addColorStop(0, srand() < .5 ? 'rgba(54,48,36,.2)' : 'rgba(196,188,166,.18)');
       wg.addColorStop(1, 'rgba(0,0,0,0)');
       t.fillStyle = wg; t.beginPath(); t.arc(wx, wyv, 90, 0, TAU); t.fill();
     }
   });
 
-  /* ---- broken flags. A month of shelling lifts stones out of a pavement, so a share
-     of them are gone and the bedding sand shows through where they were ---- */
-  G.paved.forEach(function (pv) {
-    var gone = Math.round(pv.w * pv.h / 5200);
-    for (var q = 0; q < gone; q++) {
-      var bx = pv.x + srange(0, pv.w), by = pv.y + srange(0, pv.h), bw = srange(14, 40);
-      t.fillStyle = 'rgba(122,110,88,' + (.3 + srand() * .3).toFixed(2) + ')';
-      t.beginPath(); t.ellipse(bx, by, bw, bw * srange(.5, .85), srange(0, TAU), 0, TAU); t.fill();
-      t.fillStyle = 'rgba(64,58,44,.22)';
-      t.beginPath(); t.ellipse(bx, by, bw * .55, bw * .4, srange(0, TAU), 0, TAU); t.fill();
-    }
-  });
-
-  /* ---- roads. In the town: setts, small square stones laid in courses across the
-     carriageway, a drainage channel down each side against the kerb, a crown of
-     lighter wear down the middle. Outside: rolled dirt with twin ruts and a grass
-     crown. Painted stone by stone; the earlier dashed line read as railway sleepers. ---- */
+  /* ---- Roads. A street is not one colour: it is a kerb, a channel against it, a
+     cambered carriageway of setts, and a verge of whatever has come down on to it. That
+     structure is the whole reason a street reads as a street from above, and without it
+     the carriageway was a slightly darker smear on a grey plain. Outside the town the
+     same road is rolled dirt between two verges with a pair of ruts worn into it. ---- */
   G.roads.forEach(function (r) {
     var W = r.width || 48;
     var town = r[0].x > 760 && r[0].x < 2040 && r[0].y > 560 && r[0].y < 1340;
-    function run(width, style) {
+    function run(width, style, alpha) {
+      t.globalAlpha = alpha === undefined ? 1 : alpha;
       t.lineCap = 'butt'; t.lineJoin = 'round';
       t.strokeStyle = style; t.lineWidth = width;
       t.beginPath(); t.moveTo(r[0].x, r[0].y);
       for (var i = 1; i < r.length; i++) t.lineTo(r[i].x, r[i].y);
       t.stroke();
+      t.globalAlpha = 1;
     }
-    if (town) {
-      /* the bed, then the setts laid segment by segment across the width */
-      run(W, '#726c5c');
-      for (var i = 0; i < r.length - 1; i++) {
-        var a = r[i], b = r[i + 1], len = Math.hypot(b.x - a.x, b.y - a.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
-        t.save(); t.translate(a.x, a.y); t.rotate(ang);
-        var sett = 5.2, half = W / 2 - 4;
-        for (var d = 0; d < len; d += sett) {
-          var course = Math.floor(d / sett), off = (course % 2) * sett * .5;
-          for (var q = -half + off; q < half; q += sett) {
-            var tone = .5 + (noise2(Math.floor(a.x + d), Math.floor(a.y + q), 61) - .5) * .28;
-            /* the crown is worn paler, the channels by the kerb darker and wet */
-            var crown = 1 - Math.abs(q) / half; tone += crown * .06;
-            if (Math.abs(q) > half - 6) tone -= .12;
-            var g2 = Math.round(112 * tone + 40), r2 = g2 + 6, b2 = g2 - 8;
-            t.fillStyle = 'rgb(' + r2 + ',' + g2 + ',' + b2 + ')';
-            t.fillRect(d + .4, q + .4, sett - .8, sett - .8);
-          }
-        }
-        /* the drainage channels */
-        t.fillStyle = 'rgba(40,36,30,.35)';
-        t.fillRect(0, -half - 1, len, 3); t.fillRect(0, half - 2, len, 3);
-        t.restore();
-      }
-      /* joints as a faint overall darkening so the stones read as set in mortar */
-      run(W - 8, 'rgba(50,46,38,.08)');
-    } else {
-      run(W + 10, '#5f5844'); run(W, '#7b7460'); run(W - 8, '#8a836d');
-      /* twin ruts and a faint grass crown */
-      t.globalAlpha = .3;
-      for (var side = -1; side <= 1; side += 2) {
-        t.strokeStyle = '#4c4432'; t.lineWidth = 5;
+    /* an offset line along the road, which is how the kerbs, channels and ruts are laid */
+    function rail(off, width, style, alpha) {
+      t.globalAlpha = alpha === undefined ? 1 : alpha;
+      t.lineCap = 'round'; t.lineJoin = 'round';
+      t.strokeStyle = style; t.lineWidth = width;
+      for (var sd = -1; sd <= 1; sd += 2) {
         t.beginPath();
-        for (var i2 = 0; i2 < r.length; i2++) {
-          var p0 = r[Math.max(0, i2 - 1)], p1 = r[i2];
-          var ang2 = Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
-          var ox2 = Math.cos(ang2) * W * .2 * side, oy2 = Math.sin(ang2) * W * .2 * side;
-          if (i2 === 0) t.moveTo(p1.x + ox2, p1.y + oy2); else t.lineTo(p1.x + ox2, p1.y + oy2);
+        for (var i = 0; i < r.length; i++) {
+          var p0 = r[Math.max(0, i - 1)], p1 = r[Math.min(r.length - 1, i + 1)];
+          var an = Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
+          var px = r[i].x + Math.cos(an) * off * sd, py = r[i].y + Math.sin(an) * off * sd;
+          if (!i) t.moveTo(px, py); else t.lineTo(px, py);
         }
         t.stroke();
       }
-      t.globalAlpha = .18; run(6, '#6e7a48'); t.globalAlpha = 1;
+      t.globalAlpha = 1;
+    }
+    if (town) {
+      run(W + 15, '#645c4a');                                     /* the verge, swept and broken */
+      run(W + 6, '#c3ba a1'.replace(' ', ''));                    /* the kerb, the palest thing on a street */
+      run(W - 1, '#4a4437');                                      /* the bed under the setts */
+      /* the setts, laid course by course across the carriageway */
+      for (var i = 0; i < r.length - 1; i++) {
+        var a = r[i], b = r[i + 1], len = Math.hypot(b.x - a.x, b.y - a.y), ang = Math.atan2(b.y - a.y, b.x - a.x);
+        t.save(); t.translate(a.x, a.y); t.rotate(ang);
+        var sett = 5.4, half = W / 2 - 3;
+        for (var dd = 0; dd < len; dd += sett) {
+          var course = Math.floor(dd / sett), off2 = (course % 2) * sett * .5;
+          for (var q2 = -half + off2; q2 < half; q2 += sett) {
+            var nz = noise2(Math.floor(a.x + dd), Math.floor(a.y + q2), 61);
+            if (nz > .965) continue;                              /* a sett lifted out of the course */
+            var tone = .5 + (nz - .5) * .8;
+            var crown = 1 - Math.abs(q2) / half;
+            tone += crown * crown * .2 - .06;                     /* the camber, worn pale down the middle */
+            if (Math.abs(q2) > half - 5) tone -= .24;             /* and dark where it meets the channel */
+            var g2 = Math.round(92 * tone + 28), r2 = g2 + 9, b2 = g2 - 12;
+            t.fillStyle = 'rgb(' + r2 + ',' + g2 + ',' + b2 + ')';
+            t.fillRect(dd + .5, q2 + .5, sett - 1, sett - 1);
+          }
+        }
+        t.restore();
+      }
+      rail(W / 2 - 2.5, 5, 'rgba(28,24,17,.72)');                 /* the channel against each kerb */
+      rail(W * .19, 8, 'rgba(46,39,27,.34)');                     /* what the tracked traffic has worn */
+      run(W - 12, 'rgba(214,206,182,.13)');                       /* dust lying along the crown */
+      /* rubble that has come off the fronts and rolled into the carriageway */
+      for (var rb2 = 0; rb2 < Math.round(r.length * 9); rb2++) {
+        var seg = Math.min(r.length - 2, Math.floor(srand() * (r.length - 1)));
+        var f2 = srand(), ax = lerp(r[seg].x, r[seg + 1].x, f2), ay = lerp(r[seg].y, r[seg + 1].y, f2);
+        var aa = Math.atan2(r[seg + 1].y - r[seg].y, r[seg + 1].x - r[seg].x) + Math.PI / 2;
+        var lat = (srand() < .5 ? -1 : 1) * srange(W * .22, W * .52);
+        var rx = ax + Math.cos(aa) * lat, ry = ay + Math.sin(aa) * lat, rs = srange(1.8, 5.4);
+        t.fillStyle = srand() < .24 ? 'rgba(128,72,50,.6)' : 'rgba(198,188,162,.55)';
+        t.fillRect(rx, ry, rs, rs * srange(.55, .95));
+      }
+    } else {
+      run(W + 20, '#4f4a37', .72);                                /* the verge, darker and greener */
+      run(W + 7, '#6a6046');
+      run(W, '#9d9377');                                          /* rolled dirt, lighter than the field */
+      /* the metalling: broken stone rolled into the surface, which is what stops a dirt
+         road reading as a flat pale ribbon at any distance you actually play at */
+      for (var i3 = 0; i3 < r.length - 1; i3++) {
+        var a3 = r[i3], b3 = r[i3 + 1];
+        var l3 = Math.hypot(b3.x - a3.x, b3.y - a3.y), g3 = Math.atan2(b3.y - a3.y, b3.x - a3.x);
+        t.save(); t.translate(a3.x, a3.y); t.rotate(g3);
+        var half3 = W / 2 - 2;
+        for (var d3 = 0; d3 < l3; d3 += 3.2) {
+          for (var q3 = -half3; q3 < half3; q3 += 3.2) {
+            var nz3 = noise2(Math.floor(a3.x + d3), Math.floor(a3.y + q3), 64);
+            if (nz3 < .52) continue;
+            var sh = Math.round(150 + (nz3 - .52) * 190), rt = 1 - Math.abs(q3) / half3;
+            sh = Math.round(sh * (.82 + rt * .2));
+            t.fillStyle = 'rgba(' + (sh + 10) + ',' + sh + ',' + (sh - 18) + ',.5)';
+            t.fillRect(d3, q3, 2.2, 2.2);
+          }
+          /* two ruts worn to the subsoil, wandering a little as a cart track does */
+          for (var sd3 = -1; sd3 <= 1; sd3 += 2) {
+            var ry3 = sd3 * W * (.22 + (noise2(Math.floor(a3.x + d3), sd3, 65) - .5) * .06);
+            t.fillStyle = 'rgba(58,48,32,.5)';
+            t.fillRect(d3, ry3 - 3.4, 3.4, 6.8);
+            t.fillStyle = 'rgba(32,26,17,.42)';
+            t.fillRect(d3, ry3 - 1.2, 3.4, 2.4);
+          }
+        }
+        t.restore();
+      }
+      run(7, 'rgba(104,118,66,.34)');                             /* the grass crown between the ruts */
+      /* loose stone along the edges, and the puddles standing in the ruts */
+      for (var st2 = 0; st2 < Math.round(r.length * 7); st2++) {
+        var sg = Math.min(r.length - 2, Math.floor(srand() * (r.length - 1)));
+        var sf = srand(), sxx = lerp(r[sg].x, r[sg + 1].x, sf), syy = lerp(r[sg].y, r[sg + 1].y, sf);
+        var sa = Math.atan2(r[sg + 1].y - r[sg].y, r[sg + 1].x - r[sg].x) + Math.PI / 2;
+        var sl = (srand() < .5 ? -1 : 1) * srange(W * .36, W * .56);
+        t.fillStyle = 'rgba(176,166,140,.5)';
+        t.fillRect(sxx + Math.cos(sa) * sl, syy + Math.sin(sa) * sl, srange(1.4, 3.6), srange(1.2, 2.8));
+        if (srand() < .22) {
+          var pl = (srand() < .5 ? -1 : 1) * W * .24;
+          t.fillStyle = 'rgba(74,78,70,.45)';
+          t.beginPath();
+          t.ellipse(sxx + Math.cos(sa) * pl, syy + Math.sin(sa) * pl, srange(4, 11), srange(2, 4.5), sa, 0, TAU);
+          t.fill();
+        }
+      }
     }
   });
-  /* ---- What a month of it leaves on the stones. Mortar dust and broken tile sweep off
-     the fronts into a drift along every frontage; a crater burns a ring round itself and
-     throws its spoil over whatever it lands on; and the traffic that is left wears two
-     ruts down the middle of every carriageway. All of it painted, none of it geometry,
-     because none of it is anything a man can stand behind. ---- */
+
+  /* ---- What a month of it leaves on the stones: mortar dust and broken tile swept off
+     the fronts into a drift along every frontage, and the ring a crater burns round
+     itself with its spoil thrown over whatever it landed on ---- */
   t.save();
   G.blocks.forEach(function (bk) {
     if (bk.style === 'church') return;
-    var half = 26, seedB = Math.floor(bk.x + bk.y);
-    [[bk.x, bk.y + bk.h / 2 + half * .6, bk.w + 40, half], [bk.x, bk.y - bk.h / 2 - half * .6, bk.w + 40, half],
-     [bk.x + bk.w / 2 + half * .6, bk.y, half, bk.h + 40], [bk.x - bk.w / 2 - half * .6, bk.y, half, bk.h + 40]].forEach(function (dr, di) {
+    var half = 24, seedB = Math.floor(bk.x + bk.y);
+    [[bk.x, bk.y + bk.h / 2 + half * .6, bk.w + 36, half], [bk.x, bk.y - bk.h / 2 - half * .6, bk.w + 36, half],
+     [bk.x + bk.w / 2 + half * .6, bk.y, half, bk.h + 36], [bk.x - bk.w / 2 - half * .6, bk.y, half, bk.h + 36]].forEach(function (dr, di) {
       var dg = t.createLinearGradient(dr[0] - dr[2] / 2, dr[1] - dr[3] / 2, dr[0] + dr[2] / 2, dr[1] + dr[3] / 2);
-      dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(.5, 'rgba(188,178,152,.30)'); dg.addColorStop(1, 'rgba(0,0,0,0)');
+      dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(.5, 'rgba(192,182,156,.34)'); dg.addColorStop(1, 'rgba(0,0,0,0)');
       t.fillStyle = dg;
       t.fillRect(dr[0] - dr[2] / 2, dr[1] - dr[3] / 2, dr[2], dr[3]);
-      /* lumps in the drift: broken tile and plaster */
-      for (var q = 0; q < 18; q++) {
+      for (var q = 0; q < 22; q++) {
         var lx = dr[0] + (noise2(q, di, seedB) - .5) * dr[2], ly = dr[1] + (noise2(q, di + 7, seedB) - .5) * dr[3];
-        var ls = 1.6 + noise2(q, di + 13, seedB) * 3.4;
-        t.fillStyle = noise2(q, di + 19, seedB) > .68 ? 'rgba(126,74,53,.52)' : 'rgba(206,196,170,.46)';
+        var ls = 1.6 + noise2(q, di + 13, seedB) * 3.6;
+        t.fillStyle = noise2(q, di + 19, seedB) > .68 ? 'rgba(126,74,53,.58)' : 'rgba(210,200,174,.5)';
         t.fillRect(lx, ly, ls, ls * .7);
       }
     });
   });
   G.craters.forEach(function (cr) {
-    var cg = t.createRadialGradient(cr.x, cr.y, cr.r * .25, cr.x, cr.y, cr.r * 2.1);
-    cg.addColorStop(0, 'rgba(34,28,20,.38)'); cg.addColorStop(.45, 'rgba(58,48,34,.26)'); cg.addColorStop(1, 'rgba(0,0,0,0)');
-    t.fillStyle = cg; t.beginPath(); t.arc(cr.x, cr.y, cr.r * 2.1, 0, TAU); t.fill();
-    /* the spoil thrown out of it, streaked away from the hole */
-    for (var q = 0; q < 22; q++) {
-      var sa = noise2(q, 3, Math.floor(cr.x)) * TAU, sd = cr.r * (1.0 + noise2(q, 5, Math.floor(cr.y)) * 1.1);
-      t.globalAlpha = .16 + noise2(q, 7, Math.floor(cr.x + cr.y)) * .2;
-      t.fillStyle = '#6e6248';
+    var cg = t.createRadialGradient(cr.x, cr.y, cr.r * .2, cr.x, cr.y, cr.r * 2.2);
+    cg.addColorStop(0, 'rgba(42,34,24,.26)'); cg.addColorStop(.35, 'rgba(68,58,42,.16)'); cg.addColorStop(1, 'rgba(0,0,0,0)');
+    t.fillStyle = cg; t.beginPath(); t.arc(cr.x, cr.y, cr.r * 2.2, 0, TAU); t.fill();
+    for (var q = 0; q < 20; q++) {
+      var sa = noise2(q, 3, Math.floor(cr.x)) * TAU, sd = cr.r * (1.05 + noise2(q, 5, Math.floor(cr.y)) * 1.0);
+      t.globalAlpha = .14 + noise2(q, 7, Math.floor(cr.x + cr.y)) * .18;
+      t.fillStyle = '#75684c';
       t.beginPath();
-      t.ellipse(cr.x + Math.cos(sa) * sd, cr.y + Math.sin(sa) * sd, cr.r * .3, cr.r * .12, sa, 0, TAU);
+      t.ellipse(cr.x + Math.cos(sa) * sd, cr.y + Math.sin(sa) * sd, cr.r * .32, cr.r * .13, sa, 0, TAU);
       t.fill();
-    }
-    t.globalAlpha = 1;
-  });
-  G.roads.forEach(function (r) {
-    var W = r.width || 48;
-    t.lineCap = 'round'; t.lineJoin = 'round';
-    for (var sd = -1; sd <= 1; sd += 2) {
-      t.globalAlpha = .22; t.strokeStyle = '#463d2c'; t.lineWidth = 7;
-      t.beginPath();
-      for (var i2 = 0; i2 < r.length; i2++) {
-        var p0 = r[Math.max(0, i2 - 1)], p1 = r[i2];
-        var an = Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
-        var ox = Math.cos(an) * W * .17 * sd, oy = Math.sin(an) * W * .17 * sd;
-        if (i2 === 0) t.moveTo(p1.x + ox, p1.y + oy); else t.lineTo(p1.x + ox, p1.y + oy);
-      }
-      t.stroke();
     }
     t.globalAlpha = 1;
   });
