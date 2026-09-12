@@ -7262,13 +7262,6 @@ function m3Hull(body, cap, sideC) {
     f = f.concat(onScreen(box(0, 0, -.25, .5, 1.4, .5, C.steel, C.bare, C.steel, 0), s * 6.0, 2.9, .8));
   });
   f = f.concat(onScreen(box(0, 0, -.4, .9, 24.8, .8, C.odDark, C.od, C.odDark, 0), 0, 3.5, .4));
-  /* the M49 ring mount over the co-driver: the rail, its three legs and the skate */
-  f = f.concat(cyl(2.0, -6.0, 24.9, 5.4, 5.4, 1.0, 20, C.odDark, C.od, 0, true));
-  f = f.concat(cyl(2.0, -6.0, 24.9, 4.7, 4.7, 1.05, 20, C.odDark, C.od, 0, true));
-  [0, 2.1, 4.2].forEach(function (a) {
-    var aa = a + .6;
-    f = f.concat(box(2.0 + Math.cos(aa) * 5.0, -6.0 + Math.sin(aa) * 5.0, H.zRail, 1.2, 1.2, 2.2, C.odDark, C.od, C.odDark, 0));
-  });
   return f;
 }
 
@@ -7291,6 +7284,13 @@ function m3Fifty(x, y, z, col) {
    what it fights with until somebody bolts something heavier into the back of it */
 function m3MountMG(body, cap) {
   var C = SHERMAN, f = [];
+  /* the M49 ring itself, which the field conversions took out along with the gun */
+  f = f.concat(cyl(0, 0, -1.0, 5.4, 5.4, 1.0, 20, C.odDark, C.od, 0, true));
+  f = f.concat(cyl(0, 0, -1.0, 4.7, 4.7, 1.05, 20, C.odDark, C.od, 0, true));
+  [0, 2.1, 4.2].forEach(function (a) {
+    var aa = a + .6;
+    f = f.concat(box(Math.cos(aa) * 5.0, Math.sin(aa) * 5.0, -3.9, 1.2, 1.2, 2.2, C.odDark, C.od, C.odDark, 0));
+  });
   f = f.concat(cyl(0, 0, -.5, 1.5, 1.5, 2.0, 10, C.odDark, C.od, 0, true));                    /* the skate */
   f = f.concat(box(-1.2, 0, 1.5, 3.2, 3.6, 1.6, C.odDark, C.od, C.odDark, 0));
   f = f.concat(box(-.4, 0, 2.6, 4.0, 2.0, 1.4, C.steel, C.bare, C.steel, 0));                  /* the cradle */
