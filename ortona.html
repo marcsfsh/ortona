@@ -793,7 +793,7 @@ var G = {
   inc: { us: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 } },
   pop: { us: 0, ger: 0 },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], covers: [], sectors: [],
-  sites: [], props: [], trees: [], roads: [], puddles: [], ambientSmoke: [], roadDebris: [],
+  sites: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
 };
@@ -894,18 +894,21 @@ function defaultMapData() {
   E.push({ t: 'road', width: 44, pts: [{ x: 1400, y: 1290 }, { x: 1500, y: 1360 }, { x: 1500, y: 1560 }, { x: 1400, y: 1600 }] });
   /* the town */
   var townRows = [{ y: 670, h: 120 }, { y: 950, h: 120 }, { y: 1230, h: 120 }], townCols = [860, 1130, 1400, 1670, 1940];
+  var FOOT = [];
+  function house(e) { E.push(e); FOOT.push({ x: e.x, y: e.y, w: e.w, h: e.h }); }
   townRows.forEach(function (r, ri) {
     townCols.forEach(function (cx, ci) {
       if (ri === 1 && ci === 2) return;
-      E.push({ t: 'house', x: cx, y: r.y, w: ci === 2 ? 128 : 120, h: r.h, tall: ri === 1 ? 1 : 0,
-               style: ri === 1 && ci !== 2 ? 'civic' : 'row', s: srand(), damage: srand(), roof: srand() < .48 ? 1 : 0 });
+      house({ t: 'house', x: cx, y: r.y, w: ci === 2 ? 128 : 120, h: r.h, tall: ri === 1 ? 1 : 0,
+              style: ri === 1 && ci !== 2 ? 'civic' : 'row', s: srand(), damage: srand(), roof: srand() < .48 ? 1 : 0 });
     });
   });
-  E.push({ t: 'house', x: 1400, y: 440, w: 176, h: 120, tall: 1, style: 'church', s: srand(), damage: 0, roof: 1 });
-  E.push({ t: 'house', x: 1400, y: 1480, w: 168, h: 120, tall: 1, style: 'civic', s: srand(), damage: 0, roof: 1 });
+  house({ t: 'house', x: 1400, y: 440, w: 176, h: 120, tall: 1, style: 'church', s: srand(), damage: 0, roof: 1 });
+  house({ t: 'house', x: 1400, y: 1480, w: 168, h: 120, tall: 1, style: 'civic', s: srand(), damage: 0, roof: 1 });
   /* farms and garden walls */
   [{ x: 560, y: 560, w: 118, h: 88 }, { x: 560, y: 1340, w: 118, h: 88 }, { x: 300, y: 950, w: 96, h: 96 }].forEach(function (f) {
     both({ t: 'farm', x: f.x, y: f.y, w: f.w, h: f.h }, mirror);
+    FOOT.push({ x: f.x, y: f.y, w: f.w, h: f.h }); FOOT.push({ x: mirX(f.x), y: f.y, w: f.w, h: f.h });
   });
   [[790, 800, 900, 800], [790, 1100, 900, 1100], [880, 480, 1120, 480], [880, 1420, 1120, 1420]].forEach(function (r) {
     both({ t: 'wall', x1: r[0], y1: r[1], x2: r[2], y2: r[3] }, mirror);
@@ -923,13 +926,51 @@ function defaultMapData() {
   });
   [[620, 340, 620, 820], [620, 1080, 620, 1600]].forEach(function (r) { both({ t: 'wire', x1: r[0], y1: r[1], x2: r[2], y2: r[3] }, mirror); });
   /* craters, rubble, strongpoints, roadblocks, carts */
-  for (var i = 0; i < 37; i++) {
-    var cx, cy, tries = 0;
-    do {
-      if (srand() < .62) { cx = srange(760, WORLD.w / 2); cy = srange(300, WORLD.h - 300); }
-      else { cx = srange(240, WORLD.w / 2); cy = srange(280, WORLD.h - 260); }
-    } while (cx > 780 && cy > 580 && cy < 1320 && ++tries < 20);
-    both({ t: 'crater', x: cx, y: cy, r: srange(36, 64) }, mirror);
+  /* Shell holes. Artillery does not fall evenly: it is walked along a street or put
+     down as a stonk on one block, so these go in groups round a handful of aiming
+     points -- the crossroads, the piazza approaches, the ground short of the church,
+     and the open country the attack has to cross -- with a thin scatter over the rest.
+     The town used to be kept clear of craters altogether, which for Ortona at the end
+     of December 1943 is the one place on the map it makes no sense to leave whole.
+     Nothing lands on a wall: a bowl cut under a house leaves it standing on air. */
+  function offWalls(x, y, r) {
+    for (var q = 0; q < FOOT.length; q++) {
+      var ft = FOOT[q];
+      if (Math.abs(x - ft.x) < ft.w / 2 + r * .8 && Math.abs(y - ft.y) < ft.h / 2 + r * .8) return false;
+    }
+    return true;
+  }
+  /* x, y, how many, how far they spread, and how big. Out in the country a stonk leaves
+     bowls a tank has to drive round; in the streets they are mortar and small shell, few
+     and shallow, because a carriageway cratered end to end is a street nothing can fight
+     down and that is worse than no craters at all. */
+  var STONK = [
+    [995, 950, 2, 90, 15, 27], [995, 812, 2, 70, 14, 24], [1266, 950, 3, 105, 16, 30],
+    [1266, 1088, 2, 82, 14, 26], [1266, 560, 3, 100, 18, 33], [1266, 340, 3, 110, 22, 42],
+    [1266, 1290, 3, 100, 18, 33], [1130, 810, 2, 78, 14, 25], [860, 1090, 2, 80, 14, 26],
+    [700, 950, 5, 150, 30, 58], [560, 560, 4, 160, 28, 56], [560, 1340, 4, 160, 28, 56],
+    [330, 950, 3, 170, 26, 52], [790, 610, 3, 120, 24, 46], [790, 1290, 3, 120, 24, 46]
+  ];
+  STONK.forEach(function (st) {
+    for (var q = 0; q < st[2]; q++) {
+      var px, py, pr, ok = false, tr = 0;
+      while (!ok && tr++ < 24) {
+        var ang = srange(0, TAU), rad = st[3] * Math.sqrt(srand());
+        px = clamp(st[0] + Math.cos(ang) * rad, 120, WORLD.w - 120);
+        py = clamp(st[1] + Math.sin(ang) * rad, 180, WORLD.h - 180);
+        pr = srange(st[4], st[5]);
+        ok = offWalls(px, py, pr);
+      }
+      if (ok) both({ t: 'crater', x: px, y: py, r: pr }, mirror);
+    }
+  });
+  for (var i = 0; i < 11; i++) {
+    var cx, cy, cr, done = false, tries = 0;
+    while (!done && tries++ < 20) {
+      cx = srange(200, 780); cy = srange(260, WORLD.h - 240); cr = srange(28, 58);
+      done = offWalls(cx, cy, cr);
+    }
+    if (done) both({ t: 'crater', x: cx, y: cy, r: cr }, mirror);
   }
   for (var rb = 0; rb < 22; rb++) {
     var rx = srange(940, WORLD.w / 2 - 20), ry = srange(560, WORLD.h - 560), rr2 = srange(34, 52), rs2 = srange(20, 30), rsd2 = srand();
@@ -991,7 +1032,7 @@ function buildMap(data) {
   G.covers = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = [];
-  G.blocks = []; G.craterFx = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
+  G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
   _s = 4242;
@@ -1037,7 +1078,11 @@ function buildMap(data) {
       case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2); break;
       case 'trench': trenchRun(e.pts, e.side || 'us', e.face); break;
       case 'wire': G.wire.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2 }); break;
-      case 'crater': addCover(e.x, e.y, e.r, 1, 'crater'); carve(e.x, e.y, e.x, e.y, e.r * .72, -14, { w: e.r * .5, h: 5 }, 'bowl'); break;
+      case 'crater':
+        addCover(e.x, e.y, e.r, 1, 'crater');
+        G.craters.push({ x: e.x, y: e.y, r: e.r });
+        carve(e.x, e.y, e.x, e.y, e.r * .78, -(2.6 + e.r * .15), { w: e.r * .55, h: 2 + e.r * .055 }, 'bowl');
+        break;
       case 'rubble': addCover(e.x, e.y, e.r, 2, 'rubble', null, 80); break;
       case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
       case 'emplace':
@@ -3390,7 +3435,7 @@ function sceneProps() {
         var bc = p.x - p.w / 2 + bayW * (bh + .5);
         var wound = (p.damage * 9.7 + bh * .317) % 1;
         var hh = (p.tall || p.style === 'civic' ? 84 : 66) + ((bh % 3) - 1) * 6;
-        put(houseModel(bayW - 2, p.h - 2, hh, (p.s * 3 + bh * .41) % 1, p.roof || wound < .38, wound > .58), bc, p.y, 0);
+        put(houseModel(bayW - 2, p.h - 2, hh, (p.s * 3 + bh * .41) % 1, false, wound > .45), bc, p.y, 0);
       }
     } else if (p.kind === 'farm') put(farmModel(p.w, p.h), p.x, p.y, 0);
   });
@@ -4022,6 +4067,19 @@ function paintGround(t, DET) {
     }
   });
 
+  /* ---- broken flags. A month of shelling lifts stones out of a pavement, so a share
+     of them are gone and the bedding sand shows through where they were ---- */
+  G.paved.forEach(function (pv) {
+    var gone = Math.round(pv.w * pv.h / 5200);
+    for (var q = 0; q < gone; q++) {
+      var bx = pv.x + srange(0, pv.w), by = pv.y + srange(0, pv.h), bw = srange(14, 40);
+      t.fillStyle = 'rgba(122,110,88,' + (.3 + srand() * .3).toFixed(2) + ')';
+      t.beginPath(); t.ellipse(bx, by, bw, bw * srange(.5, .85), srange(0, TAU), 0, TAU); t.fill();
+      t.fillStyle = 'rgba(64,58,44,.22)';
+      t.beginPath(); t.ellipse(bx, by, bw * .55, bw * .4, srange(0, TAU), 0, TAU); t.fill();
+    }
+  });
+
   /* ---- roads. In the town: setts, small square stones laid in courses across the
      carriageway, a drainage channel down each side against the kerb, a crown of
      lighter wear down the middle. Outside: rolled dirt with twin ruts and a grass
@@ -4080,6 +4138,63 @@ function paintGround(t, DET) {
       t.globalAlpha = .18; run(6, '#6e7a48'); t.globalAlpha = 1;
     }
   });
+  /* ---- What a month of it leaves on the stones. Mortar dust and broken tile sweep off
+     the fronts into a drift along every frontage; a crater burns a ring round itself and
+     throws its spoil over whatever it lands on; and the traffic that is left wears two
+     ruts down the middle of every carriageway. All of it painted, none of it geometry,
+     because none of it is anything a man can stand behind. ---- */
+  t.save();
+  G.blocks.forEach(function (bk) {
+    if (bk.style === 'church') return;
+    var half = 26, seedB = Math.floor(bk.x + bk.y);
+    [[bk.x, bk.y + bk.h / 2 + half * .6, bk.w + 40, half], [bk.x, bk.y - bk.h / 2 - half * .6, bk.w + 40, half],
+     [bk.x + bk.w / 2 + half * .6, bk.y, half, bk.h + 40], [bk.x - bk.w / 2 - half * .6, bk.y, half, bk.h + 40]].forEach(function (dr, di) {
+      var dg = t.createLinearGradient(dr[0] - dr[2] / 2, dr[1] - dr[3] / 2, dr[0] + dr[2] / 2, dr[1] + dr[3] / 2);
+      dg.addColorStop(0, 'rgba(0,0,0,0)'); dg.addColorStop(.5, 'rgba(188,178,152,.30)'); dg.addColorStop(1, 'rgba(0,0,0,0)');
+      t.fillStyle = dg;
+      t.fillRect(dr[0] - dr[2] / 2, dr[1] - dr[3] / 2, dr[2], dr[3]);
+      /* lumps in the drift: broken tile and plaster */
+      for (var q = 0; q < 18; q++) {
+        var lx = dr[0] + (noise2(q, di, seedB) - .5) * dr[2], ly = dr[1] + (noise2(q, di + 7, seedB) - .5) * dr[3];
+        var ls = 1.6 + noise2(q, di + 13, seedB) * 3.4;
+        t.fillStyle = noise2(q, di + 19, seedB) > .68 ? 'rgba(126,74,53,.52)' : 'rgba(206,196,170,.46)';
+        t.fillRect(lx, ly, ls, ls * .7);
+      }
+    });
+  });
+  G.craters.forEach(function (cr) {
+    var cg = t.createRadialGradient(cr.x, cr.y, cr.r * .25, cr.x, cr.y, cr.r * 2.1);
+    cg.addColorStop(0, 'rgba(34,28,20,.38)'); cg.addColorStop(.45, 'rgba(58,48,34,.26)'); cg.addColorStop(1, 'rgba(0,0,0,0)');
+    t.fillStyle = cg; t.beginPath(); t.arc(cr.x, cr.y, cr.r * 2.1, 0, TAU); t.fill();
+    /* the spoil thrown out of it, streaked away from the hole */
+    for (var q = 0; q < 22; q++) {
+      var sa = noise2(q, 3, Math.floor(cr.x)) * TAU, sd = cr.r * (1.0 + noise2(q, 5, Math.floor(cr.y)) * 1.1);
+      t.globalAlpha = .16 + noise2(q, 7, Math.floor(cr.x + cr.y)) * .2;
+      t.fillStyle = '#6e6248';
+      t.beginPath();
+      t.ellipse(cr.x + Math.cos(sa) * sd, cr.y + Math.sin(sa) * sd, cr.r * .3, cr.r * .12, sa, 0, TAU);
+      t.fill();
+    }
+    t.globalAlpha = 1;
+  });
+  G.roads.forEach(function (r) {
+    var W = r.width || 48;
+    t.lineCap = 'round'; t.lineJoin = 'round';
+    for (var sd = -1; sd <= 1; sd += 2) {
+      t.globalAlpha = .22; t.strokeStyle = '#463d2c'; t.lineWidth = 7;
+      t.beginPath();
+      for (var i2 = 0; i2 < r.length; i2++) {
+        var p0 = r[Math.max(0, i2 - 1)], p1 = r[i2];
+        var an = Math.atan2(p1.y - p0.y, p1.x - p0.x) + Math.PI / 2;
+        var ox = Math.cos(an) * W * .17 * sd, oy = Math.sin(an) * W * .17 * sd;
+        if (i2 === 0) t.moveTo(p1.x + ox, p1.y + oy); else t.lineTo(p1.x + ox, p1.y + oy);
+      }
+      t.stroke();
+    }
+    t.globalAlpha = 1;
+  });
+  t.restore();
+
   /* ---- the trenches, painted to the carved profile: spoil to 33 either side, bare
      earth walls from 10 to 19, a dark floor with duckboards inside 10 ---- */
   G.trenches.forEach(function (h) {
@@ -4406,102 +4521,144 @@ function windowBox(x, y, z, w, h, depth, side) {
 }
 /* one Italian row house: plastered masonry, tall shuttered windows, tiled roof or a
    shelled-out top, all built about its own centre so it can be placed and turned */
+/* One wall of a ruin, as courses of masonry with the runs between the holes emitted as
+   boxes. That costs a handful of boxes per course rather than a grid of them, and the
+   ends of the runs are what make the edge ragged. Holes are given in wall coordinates:
+   u along the wall from its centre, z up from the plinth. A hole whose top runs to the
+   sky is a collapse, and it is what leaves a gable end standing over nothing. */
+function wallCourses(len, thick, top, holes, seed, col, cap, sideC) {
+  var f = [], CH = 7.0, z, ci = 0, k;
+  for (z = 0; z < top - .4; z += CH, ci++) {
+    var z1 = Math.min(top, z + CH), cuts = [];
+    for (k = 0; k < holes.length; k++) {
+      var hl = holes[k];
+      if (z1 <= hl.z0 || z >= hl.z1) continue;
+      var wob = (noise2(ci, k, seed * 97 + 3) - .5) * (hl.rag || 0);
+      cuts.push([hl.u - hl.hw - wob, hl.u + hl.hw + wob * .7]);
+    }
+    cuts.sort(function (a, b) { return a[0] - b[0]; });
+    var u0 = -len / 2;
+    for (k = 0; k <= cuts.length; k++) {
+      var u1 = k < cuts.length ? Math.max(u0, Math.min(len / 2, cuts[k][0])) : len / 2;
+      if (u1 - u0 > 1.2) f = f.concat(box((u0 + u1) / 2, 0, z, u1 - u0, thick, z1 - z, col, cap, sideC, 0));
+      if (k < cuts.length) u0 = Math.max(u0, cuts[k][1]);
+    }
+  }
+  return f;
+}
+
+/* A house in Ortona at the end of December 1943. Every one of them is a ruin, because
+   the town was fought through room by room with demolition charges and what was left
+   standing at the end was standing with its front off. So the shell is no longer a box
+   with windows drawn on it: each wall is built up in courses round its openings, its
+   shell holes and the collapse that has taken its head off, the floors show through the
+   gaps, and what came down is piled against the foot of it. */
 function houseModel(w, d, h, seed, roofed, damaged) {
   var stone = STONE[Math.floor(clamp(seed, 0, .999) * STONE.length)];
   var plaster = PLASTER[Math.floor(((seed * 7.3) % 1) * PLASTER.length)];
   var shutter = SHUTTER[Math.floor(((seed * 3.7) % 1) * SHUTTER.length)];
-  var cap = lit(stone, 1.15), f = [];
-  /* the shell: plaster over rubble stone, the plinth and string courses in stone */
-  f = f.concat(box(0, 0, 0, w, d, h, plaster, cap, lit(plaster, .94)));
-  f = f.concat(box(0, 0, 0, w + 2, d + 2, 6, stone, lit(stone, 1.1)));
-  var floors = h > 60 ? 2 : 1;
-  for (var sc = 1; sc <= floors; sc++) f = f.concat(box(0, 0, h * sc / (floors + .35), w + 1.6, d + 1.6, 1.8, stone, lit(stone, 1.2)));
-  /* the cornice under the eaves */
-  f = f.concat(box(0, 0, h - 2.6, w + 3.2, d + 3.2, 2.6, lit(stone, 1.05), cap));
-  /* windows on the street face and the end wall: tall, with stone sills and reveals,
-     louvred shutters on most, one or two blown open */
-  var bays = Math.max(2, Math.round(w / 24));
-  for (var fl = 0; fl < floors; fl++) {
-    var wz = 13 + fl * (h - 26) / Math.max(1, floors - 1) * .92;
-    for (var b = 0; b < bays; b++) {
-      var wx = -w / 2 + w * (b + .5) / bays;
-      f = f.concat(windowBox(wx, d / 2, wz, 8.5, 15, 3, 'y'));
-      f = f.concat(box(wx, d / 2 + .9, wz - 1.4, 11, 1.8, 1.4, stone, lit(stone, 1.2)));              /* the sill */
-      var open = ((b + fl + Math.floor(seed * 9)) % 3) === 0;
-      if (!open) {
-        f = f.concat(box(wx - 6.2, d / 2 + .7, wz + .5, 3.4, .8, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));
-        f = f.concat(box(wx + 6.2, d / 2 + .7, wz + .5, 3.4, .8, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));
-        for (var lv = 1; lv < 14; lv += 2) { f = f.concat(box(wx - 6.2, d / 2 + 1.15, wz + .5 + lv, 3.0, .2, .5, lit(shutter, .8), lit(shutter, .8))); f = f.concat(box(wx + 6.2, d / 2 + 1.15, wz + .5 + lv, 3.0, .2, .5, lit(shutter, .8), lit(shutter, .8))); }
-      } else {
-        f = f.concat(box(wx - 4.6, d / 2 + .7, wz + .5, .8, 3.4, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));   /* thrown back */
-      }
-      /* a balcony on the first floor of every other house: a stone slab on corbels with
-         an iron rail */
-      if (fl === 1 && b === Math.floor(bays / 2) && (Math.floor(seed * 13) % 2) === 0) {
-        f = f.concat(box(wx, d / 2 + 3.2, wz - 2.2, 16, 6.4, 1.6, stone, lit(stone, 1.15)));
-        f = f.concat(box(wx - 5, d / 2 + 1.6, wz - 4.2, 1.6, 3.2, 2, stone, lit(stone, 1.1)));
-        f = f.concat(box(wx + 5, d / 2 + 1.6, wz - 4.2, 1.6, 3.2, 2, stone, lit(stone, 1.1)));
-        for (var rp = -7; rp <= 7; rp += 2) f = f.concat(box(wx + rp, d / 2 + 6.0, wz - .6, .35, .35, 7.5, '#2b2d26', '#3a3d34'));
-        f = f.concat(box(wx, d / 2 + 6.0, wz + 6.9, 16, .5, .5, '#2b2d26', '#3a3d34'));
-        f = f.concat(box(wx, d / 2 + 6.0, wz - .6, 16, .5, .5, '#2b2d26', '#3a3d34'));
+  var cap = lit(stone, 1.15), f = [], i, k, T = 4.5;
+  /* how far gone it is. Nothing on this map is under half. */
+  var wreck = clamp(.5 + ((seed * 5.7) % 1) * .4 + (damaged ? .08 : 0), .5, .96);
+  var floors = h > 60 ? 2 : 1, flz = h * .46;
+
+  function holesFor(len, fs, street) {
+    var hs = [], bays = Math.max(2, Math.round(len / 26)), b, fl, u;
+    for (fl = 0; fl < floors; fl++) {
+      var wz = 13 + fl * (h - 30) * .55;
+      for (b = 0; b < bays; b++) {
+        u = -len / 2 + len * (b + .5) / bays;
+        hs.push({ u: u, hw: 4.6, z0: wz, z1: wz + 15, rag: 1.1, win: 1, fl: fl, wz: wz });
       }
     }
-    /* the back and both end walls carry windows too, with their shutters */
-    for (var b3 = 0; b3 < bays; b3++) {
-      var wx3 = -w / 2 + w * (b3 + .5) / bays;
-      f = f.concat(windowBox(wx3, -d / 2, wz, 8.5, 15, 3, 'y'));
-      f = f.concat(box(wx3, -d / 2 - .9, wz - 1.4, 11, 1.8, 1.4, stone, lit(stone, 1.2)));
-      if (((b3 + fl + Math.floor(seed * 5)) % 3) !== 0) {
-        f = f.concat(box(wx3 - 6.2, -d / 2 - .7, wz + .5, 3.4, .8, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));
-        f = f.concat(box(wx3 + 6.2, -d / 2 - .7, wz + .5, 3.4, .8, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));
-      }
+    if (street) hs.push({ u: -len * .3, hw: 5.8, z0: 0, z1: 21, rag: .7, door: 1 });
+    /* one or two shells through the face */
+    var nsh = noise2(fs, 1, 7) < wreck - .3 ? 2 : 1;
+    for (k = 0; k < nsh; k++) {
+      var z0 = 8 + noise2(fs, k + 4, 17) * h * .45;
+      hs.push({ u: (noise2(fs, k + 2, 11) - .5) * len * .78,
+                hw: 5 + noise2(fs, k + 3, 13) * 8,
+                z0: z0, z1: z0 + 11 + noise2(fs, k + 5, 19) * 18, rag: 3.4 });
     }
-    var baysD = Math.max(1, Math.round(d / 30));
-    for (var b2 = 0; b2 < baysD; b2++) {
-      var wy = -d / 2 + d * (b2 + .5) / baysD;
-      [1, -1].forEach(function (xs) {
-        f = f.concat(windowBox(xs * w / 2, wy, wz, 8.5, 15, 3, 'x'));
-        f = f.concat(box(xs * (w / 2 + .9), wy, wz - 1.4, 1.8, 11, 1.4, stone, lit(stone, 1.2)));
-        if (((b2 + fl + Math.floor(seed * 7) + (xs > 0 ? 0 : 1)) % 3) !== 0) {
-          f = f.concat(box(xs * (w / 2 + .7), wy - 6.2, wz + .5, .8, 3.4, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));
-          f = f.concat(box(xs * (w / 2 + .7), wy + 6.2, wz + .5, .8, 3.4, 14, shutter, lit(shutter, 1.1), lit(shutter, .9)));
-        }
-      });
+    /* and the collapse that opens the top of it to the sky */
+    var cn = 1 + (noise2(fs, 6, 23) < wreck - .42 ? 1 : 0);
+    for (k = 0; k < cn; k++) {
+      hs.push({ u: (noise2(fs, k + 7, 29) - .5) * len * 1.1,
+                hw: len * (.13 + noise2(fs, k + 8, 31) * .3),
+                z0: h * (.52 + noise2(fs, k + 9, 37) * .5 * (1.35 - wreck)),
+                z1: 999, rag: 4.4 });
     }
+    return hs;
   }
-  /* the doorway: a round arch in dressed stone, the door dark inside it */
-  var dx = -w * .3;
-  f = f.concat(box(dx, d / 2, 0, 11, 3, 20, '#15170f', '#15170f'));
-  f = f.concat(place(tubeSmooth(-2, 2, 0, 0, 5.5, 12, '#15170f', '#15170f'), Math.PI / 2, dx, d / 2 + .5, 20));
-  f = f.concat(place(tubeSmooth(-1.6, 1.6, 0, 0, 7.0, 12, stone, lit(stone, 1.2)), Math.PI / 2, dx, d / 2 + 1.2, 20));
-  f = f.concat(box(dx - 7.2, d / 2 + 1.2, 0, 3.2, 1.6, 20, stone, lit(stone, 1.2)));                   /* jambs */
-  f = f.concat(box(dx + 7.2, d / 2 + 1.2, 0, 3.2, 1.6, 20, stone, lit(stone, 1.2)));
-  f = f.concat(box(dx, d / 2 + 1.5, 0, 12, 1.2, 1.4, stone, lit(stone, 1.2)));                          /* the step */
-  /* a downpipe at the corner, a shop sign bracket, a wire to the lamp */
-  f = f.concat(cyl(w / 2 - 2.5, d / 2 + .9, 2, .7, .7, h - 6, 6, lit(stone, .7), lit(stone, .8), 0, true));
-  f = f.concat(box(w / 2 - 2.5, d / 2 + 1.2, h - 5, 1.2, 1.2, 1.2, lit(stone, .7), lit(stone, .8)));
-  if (roofed && !damaged) {
-    f = f.concat(tileRoof(0, 0, h, w, d, 14 + d * .12, TILE[Math.floor(clamp(seed, 0, .999) * TILE.length)]));
-    f = f.concat(box(w * .3, -d * .2, h + 6, 7, 7, 16, stone, lit(stone, 1.1)));
-    f = f.concat(box(w * .3, -d * .2, h + 22, 8.5, 8.5, 1.5, lit(stone, .85), lit(stone, .9)));            /* chimney cap */
-  } else {
-    /* the top is gone: a ragged parapet of stumps, a black floor void, fallen joists,
-       a surviving gable end, roof tiles spilled over the edge */
-    f = f.concat(box(0, 0, h - 1, w - 6, d - 6, 1.5, '#24231d', '#2b2a24'));
-    var stumps = Math.max(3, Math.round(w / 12));
-    for (var st = 0; st < stumps; st++) {
-      var sx = -w / 2 + w * (st + .5) / stumps, sh = 4 + ((seed * 31 + st * 7) % 1) * 16;
-      f = f.concat(box(sx, -d / 2 + 2, h, w / stumps - 1, 4, sh, plaster, cap, lit(plaster, .9)));
-      f = f.concat(box(sx, d / 2 - 2, h, w / stumps - 1, 4, sh * .7, plaster, cap, lit(plaster, .9)));
+
+  /* ---- the four walls, and the openings that survive dressed in stone ---- */
+  var faces = [[w, 0, d / 2 - T / 2, 0, 1], [w, 0, -(d / 2 - T / 2), Math.PI, 0],
+               [d, w / 2 - T / 2, 0, Math.PI / 2, 0], [d, -(w / 2 - T / 2), 0, -Math.PI / 2, 0]];
+  faces.forEach(function (fc, fi) {
+    var len = fc[0], hs = holesFor(len, seed * 31 + fi * 13.7, fc[4]);
+    f = f.concat(place(wallCourses(len, T, h, hs, seed + fi, plaster, cap, lit(plaster, .93)), fc[3], fc[1], fc[2], 0));
+    /* sills, lintels and the odd shutter still on its hinges, on the openings that are
+       still openings rather than part of a larger hole */
+    hs.forEach(function (hl, hi) {
+      if (!hl.win) return;
+      if (noise2(hi, fi, seed * 53 + 1) < wreck * .55) return;          /* swallowed by the damage */
+      var loc = [];
+      loc = loc.concat(box(hl.u, T / 2 + .5, hl.wz - 1.6, 11, 2.2, 1.6, stone, lit(stone, 1.2)));
+      loc = loc.concat(box(hl.u, T / 2 + .3, hl.wz + 15, 12, 1.8, 2.0, stone, lit(stone, 1.15)));
+      if (noise2(hi, fi + 9, seed * 71 + 5) > .62) {
+        var sx = noise2(hi, fi + 3, seed * 17) > .5 ? -6.2 : 6.2;
+        loc = loc.concat(box(hl.u + sx, T / 2 + .9, hl.wz + .5, 3.4, .8, 13, shutter, lit(shutter, 1.1), lit(shutter, .9)));
+      }
+      f = f.concat(place(loc, fc[3], fc[1], fc[2], 0));
+    });
+  });
+  /* the plinth, which survives everything, and what is left of the string course */
+  f = f.concat(box(0, 0, 0, w + 2, d + 2, 5, stone, lit(stone, 1.1)));
+  for (i = 0; i < 4; i++) {
+    var cu = (noise2(i, 1, seed * 11) - .5) * w * .8, cl = w * (.12 + noise2(i, 2, seed * 13) * .2);
+    f = f.concat(box(cu, d / 2 + .8, flz - 2, cl, 1.6, 1.8, stone, lit(stone, 1.2)));
+    f = f.concat(box(-cu, -(d / 2 + .8), flz - 2, cl, 1.6, 1.8, stone, lit(stone, 1.2)));
+  }
+  /* ---- inside: the first floor, half of it down, on joists that end in the open ---- */
+  if (floors > 1) {
+    var bays2 = 5;
+    for (i = 0; i < bays2; i++) {
+      var bx = -w / 2 + w * (i + .5) / bays2, keep = noise2(i, 4, seed * 29) > wreck - .28;
+      if (keep) f = f.concat(box(bx, 0, flz, w / bays2 - 1, d - T * 2, 2.2, '#3a352a', '#4a4436', '#332f26'));
+      else for (k = 0; k < 3; k++)
+        f = f.concat(place(pitch(box(0, 0, 0, d * (.3 + (k % 2) * .28), 2.4, 2.4, '#4a3824', '#5a4530'), .22 + k * .13, 0, 0),
+                           Math.PI / 2 + (k - 1) * .25, bx, (k - 1) * d * .22, flz - 1 - k * 1.4));
     }
-    f = f.concat(box(-w / 2 + 2, 0, h, 4, d - 4, 9 + seed * 8, plaster, cap, lit(plaster, .9)));
-    for (var jm = -1; jm <= 1; jm++)
-      f = f.concat(place(pitch(box(0, 0, 0, d * .8, 2.6, 2.6, '#4a3824', '#5a4530'), .35, 0, 0),
-                         Math.PI / 2, jm * w * .28, 0, h - 4));
-    for (var tl2 = 0; tl2 < 8; tl2++)
-      f = f.concat(place(box(0, 0, 0, 3.4, 2.2, .5, '#7d4a35', '#8f5740'), (tl2 * 1.3) % TAU, -w / 2 + ((seed * 17 + tl2 * 5.3) % 1) * w, d / 2 + 4 + (tl2 % 3) * 2, 0));
-    for (var rb = 0; rb < 5; rb++)
-      f = f.concat(box(-w / 2 + w * ((seed * 13 + rb * 5) % 1), d / 2 + 6 + rb * 2, 0, 6 + rb, 5, 4 + (rb % 3), stone, lit(stone, 1.15)));
+    /* a partition wall standing on its own */
+    f = f.concat(box(w * .12, 0, flz + 2, 2.6, d * .55, h * .3 * (1.2 - wreck) + 6, plaster, cap, lit(plaster, .9)));
+  }
+  f = f.concat(box(0, 0, 5, w - T * 2, d - T * 2, 1.4, '#2f2b22', '#3a362c'));       /* the ground floor, in shadow */
+  /* ---- what came down: rubble banked against the foot of the street face and inside,
+     roof tiles spilled with it, and a few charred rafters ---- */
+  var piles = 5 + Math.round(wreck * 5);
+  for (i = 0; i < piles; i++) {
+    var pa = noise2(i, 5, seed * 37) * TAU, pr = .5 + noise2(i, 6, seed * 41) * .5;
+    var px = Math.cos(pa) * (w / 2 + 4) * pr * 1.5, py = Math.sin(pa) * (d / 2 + 4) * pr * 1.5;
+    var ps = 7 + noise2(i, 7, seed * 43) * 13;
+    f = f.concat(box(px, py, 0, ps, ps * .8, 3 + noise2(i, 8, seed * 47) * 7, stone, lit(stone, 1.14), lit(stone, .9), .6));
+    f = f.concat(box(px + 3, py - 2, 0, ps * .5, ps * .5, 2 + noise2(i, 9, seed * 51) * 4, lit(stone, .92), cap));
+  }
+  for (i = 0; i < 10; i++) {
+    var ta = noise2(i, 10, seed * 59) * TAU, td = (w + d) * .22;
+    f = f.concat(place(box(0, 0, 0, 3.6, 2.4, .5, '#7d4a35', '#8f5740'), ta,
+                       Math.cos(ta) * td + (noise2(i, 11, seed * 61) - .5) * w,
+                       d / 2 + 5 + noise2(i, 12, seed * 67) * 14, 1.2));
+  }
+  for (i = 0; i < 3; i++)
+    f = f.concat(place(pitch(box(0, 0, 0, 16 + i * 5, 2.2, 2.2, '#3a2c1c', '#4a3a26'), .08 + i * .09, 0, 0),
+                       noise2(i, 13, seed * 71) * TAU,
+                       (noise2(i, 14, seed * 73) - .5) * w, d / 2 + 8 + i * 4, 1.2));
+  /* a downpipe hanging off the corner, and the wire to the street lamp */
+  f = f.concat(cyl(w / 2 - 2.5, d / 2 + .9, 2, .7, .7, h * .55, 6, lit(stone, .7), lit(stone, .8), 0, true));
+  /* the least wrecked keep a fragment of roof over one end */
+  if (wreck < .62) {
+    f = f.concat(tileRoof(w * .26, 0, h - 3, w * .42, d * .8, 10 + d * .08,
+                          TILE[Math.floor(clamp(seed, 0, .999) * TILE.length)]));
   }
   return f;
 }
