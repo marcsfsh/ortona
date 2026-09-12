@@ -45,6 +45,7 @@ npm install                  # once; Chromium is already on disk
 
 npm run verify               # lint + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
+node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
@@ -77,6 +78,35 @@ Ground clearance is read from a `belly` field on the model rather than measured,
 because no geometric filter reliably separates a hull floor from the track
 running under it: on every one of these the track's inboard edge lies inside the
 hull's own width. Declare it when you add a vehicle.
+
+### `tools/duel.mjs` - balance, mechanically
+
+Stages matchups on clean flat ground and fights them, then prints how often each
+side won, how long it took and what the winner had left.
+
+```sh
+node tools/duel.mjs                      # the standard card
+node tools/duel.mjs --n=24               # more repeats, tighter numbers
+node tools/duel.mjs us_rifle ger_gren    # one matchup
+node tools/duel.mjs --d=200              # at a chosen opening range
+node tools/duel.mjs --cover=3            # with both sides in heavy cover
+```
+
+Stats on paper do not tell you who wins. Damage per volley interacts with how
+many men are left to fire it, suppression feeds back into accuracy and rate of
+fire, penetration interacts with facing and range, and the whole thing compounds:
+a side that gets a little ahead gets further ahead. A vehicle duel amplifies a
+ten per cent edge into an eighty per cent win rate, because the loser starts
+collecting track and gun hits. So a stat change has to be fought rather than
+reasoned about, and `us_eng vs ger_pio` is on the card as the calibration row:
+those two are identical, so anything other than about fifty per cent means the
+tool has developed a bias and not the roster.
+
+Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
+`computeVisibility` exactly as the frame loop does, with the economy, the AI and
+reinforcement left out, so it cannot drift away from the game. A third entry on a
+card row fits field upgrades before the fight, because half of what a vehicle can
+do is an upgrade.
 
 ### `tools/lint.mjs` - the rules, mechanically
 
@@ -283,6 +313,7 @@ CLAUDE.md                      this file
 package.json                   dev dependencies and script aliases
 tools/harness.mjs              Playwright library: boot, drive, pose, photograph
 tools/check.mjs                smoke test, exits non-zero on failure
+tools/duel.mjs                 balance card: staged matchups, win rates
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
 .claude/hooks/session-start.sh installs dev dependencies on session start

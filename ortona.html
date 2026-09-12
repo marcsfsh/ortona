@@ -540,8 +540,8 @@ var POPCAP = 200;
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
   skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates on the hull and turret: hollow-charge rounds burst on the plate before the armour.' },
-  mg: { name: 'Mount roof MG', short: 'ROOF MG', hk: 'I', cost: { mp: 45 }, desc: 'A machine gun on the cupola or pintle, worked by the commander against infantry.' },
-  kwk: { name: 'Fit the 2 cm KwK 30', short: '2 CM KwK', hk: 'O', cost: { mp: 70, fu: 20 }, desc: 'Swaps the machine gun turret for the larger one with a 2 cm KwK 30 L/55 and a coaxial MG34. It will hurt armour now, and it can still see.' },
+  mg: { name: 'Mount roof MG', short: 'ROOF MG', hk: 'I', cost: { mp: 60 }, desc: 'A machine gun on the cupola or pintle, worked by the commander against infantry.' },
+  kwk: { name: 'Fit the 2 cm KwK 30', short: '2 CM KwK', hk: 'O', cost: { mp: 85, fu: 25 }, desc: 'Swaps the machine gun turret for the larger one with a 2 cm KwK 30 L/55 and a coaxial MG34. It will hurt armour now, and it can still see.' },
   /* the three 251 conversions are one choice, taken once and not taken back */
   pak36: { name: 'Convert to Sd.Kfz. 251/10', short: '3.7 CM PAK', hk: 'O', excl: '251', cost: { mp: 90, fu: 25 },
            desc: 'A 3.7 cm PaK 36 behind a gun shield on the compartment front. It will open a carrier or a Stuart from the flank and it is close to useless against men in cover. Fitted once; the conversion cannot be undone.' },
@@ -552,7 +552,7 @@ var UPGRADES = {
   /* the three half-track conversions, the same one-way choice the 251 gets */
   quad50: { name: 'Convert to M16 MGMC', short: 'QUAD .50', hk: 'U', excl: 'm3', cost: { mp: 120, fu: 30 },
             desc: 'The Maxson turret: four .50 Brownings on one powered mount. It scythes infantry and it will strip a light vehicle, and it will not get through tank plate. Fitted once; the conversion cannot be undone.' },
-  how75: { name: 'Convert to 75 mm GMC', short: '75 MM GMC', hk: 'O', excl: 'm3', cost: { mp: 95, fu: 25 },
+  how75: { name: 'Convert to 75 mm GMC', short: '75 MM GMC', hk: 'O', excl: 'm3', cost: { mp: 110, fu: 30 },
            desc: 'A 75 mm M1897 and its carriage bolted into the front of the body behind a shield. It will open a Panzer IV from the flank and it is close to useless against men in cover. Fitted once; the conversion cannot be undone.' },
   coax: { name: 'Fit a coaxial .30', short: 'COAX .30', hk: 'X', cost: { mp: 55 },
           desc: 'A Browning through the mantlet beside the seventeen-pounder, laid by the gunner on the same handwheels. It puts a section flat in whatever cover they are in and it will not hold them there: they can still crawl, and they will.' },
@@ -593,45 +593,45 @@ var UNITS = {
   /* ------------------------------- 1st Canadian Division */
   us_eng: {
     side: 'us', name: 'Engineer Section', short: 'RCE', cat: 'inf', hk: 'E',
-    models: 3, hpPer: 72, speed: 68, sight: 250, pop: 5, cost: { mp: 170, fu: 0 }, time: 14,
+    models: 3, hpPer: 76, speed: 68, sight: 250, pop: 5, cost: { mp: 170, fu: 0 }, time: 14,
     builder: true,
-    w: { range: 165, dmg: 8, rof: 0.72, acc: .55, sup: .010, pen: 12 },
+    w: { range: 165, dmg: 9, rof: 0.78, acc: .55, sup: .010, pen: 12 },
     desc: 'Royal Canadian Engineers with Lee-Enfields, a Sten and demolition satchels. Builds cover, repairs armour and captures ground.'
   },
   us_rifle: {
     side: 'us', name: 'Rifle Section', short: 'RIF', cat: 'inf', hk: 'R',
-    models: 5, hpPer: 80, speed: 64, sight: 300, pop: 7, cost: { mp: 240 }, time: 20,
-    w: { range: 245, dmg: 9.5, rof: 0.80, acc: .61, sup: .012, pen: 14 },
+    models: 5, hpPer: 82, speed: 64, sight: 300, pop: 7, cost: { mp: 240 }, time: 20,
+    w: { range: 258, dmg: 9.8, rof: 0.80, acc: .61, sup: .013, pen: 14 },
     desc: 'A representative rifle group with No. 4 Lee-Enfields, a Sten and a Bren gun. Steady line infantry for street fighting.'
   },
   us_mg: {
     side: 'us', name: 'Vickers MMG Team', short: 'VICK', cat: 'team', hk: 'G',
     models: 3, hpPer: 58, speed: 48, sight: 340, pop: 6, cost: { mp: 270 }, time: 22,
     req: 'us_bar', setup: 1.3,
-    w: { range: 340, dmg: 8.0, rof: 0.14, acc: .46, sup: .062, pen: 10 },
+    w: { range: 340, dmg: 8.0, rof: 0.14, acc: .46, sup: .058, pen: 10 },
     desc: 'A water-cooled .303 Vickers on its tripod. Sustained, accurate fire, but it must set up after moving.'
   },
   us_ab: {
     side: 'us', name: 'Mousehole Assault Section', short: 'ASLT', cat: 'inf', hk: 'B',
     models: 4, hpPer: 94, speed: 71, sight: 310, pop: 9, cost: { mp: 340, fu: 20 }, time: 26,
     req: 'us_bar',
-    w: { range: 215, dmg: 15.4, rof: 0.46, acc: .61, sup: .014, pen: 16 },
-    at: { range: 250, dmg: 70, rof: 5.4, acc: .58, pen: 150, aoe: 22, shell: 1 },
+    w: { range: 215, dmg: 13.8, rof: 0.46, acc: .61, sup: .014, pen: 16 },
+    at: { range: 250, dmg: 86, rof: 4.6, acc: .58, pen: 150, aoe: 22, shell: 1 },
     desc: 'Veterans carrying Stens, grenades and a PIAT. Built for close work through breached walls; expensive to replace.'
   },
   us_fg: {
     side: 'us', name: 'Foot Guards Section', short: 'GUARDS', cat: 'inf', hk: 'N',
-    models: 6, hpPer: 96, speed: 66, sight: 320, pop: 11, cost: { mp: 400, fu: 15 }, time: 30,
+    models: 6, hpPer: 68, speed: 66, sight: 320, pop: 12, cost: { mp: 430, fu: 15 }, time: 30,
     req: 'us_bar',
-    w: { range: 240, dmg: 17.5, rof: 0.42, acc: .65, sup: .021, pen: 18 },
+    w: { range: 240, dmg: 9.2, rof: 0.48, acc: .63, sup: .021, pen: 18 },
     at: { range: 175, dmg: 58, rof: 3.8, acc: .60, sup: .02, pen: 96, aoe: 12, shell: 1 },
     desc: 'Two Brens, a belt-fed .30, a marksman and two Stens, and the Sten men put the Stens down and pick up bazookas the moment anything tracked comes round the corner. It will take a street off a Fallschirmjaeger group and strip a half-track or an armoured car, and against a Panzer the bazookas are a nuisance rather than an answer.'
   },
   us_at: {
     side: 'us', name: 'Ordnance QF 6-Pounder', short: '6-PDR', cat: 'team', hk: 'T',
-    models: 4, hpPer: 60, speed: 40, sight: 360, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
-    req: 'us_mot', setup: 1.6, atOnly: true,
-    w: { range: 440, dmg: 118, rof: 4.0, acc: .74, sup: .02, pen: 265, aoe: 30, shell: 1 },
+    models: 4, hpPer: 70, speed: 40, sight: 360, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
+    req: 'us_mot', setup: 1.6, atOnly: true, blastRes: .58, closeWeak: 2.2,
+    w: { range: 440, dmg: 92, rof: 3.8, acc: .74, sup: .02, pen: 265, aoe: 30, shell: 1 },
     desc: 'Kills tanks and nothing else. Slow to move and helpless if infantry get on top of it.'
   },
   us_t8: {
@@ -646,7 +646,7 @@ var UNITS = {
     upgrades: ['quad50', 'how75', 'aid'], tows: 1,
     hp: 360, armor: 40, speed: 112, sight: 320, pop: 10, cost: { mp: 240, fu: 30 }, time: 22,
     req: 'us_mot',
-    w: { range: 280, dmg: 13, rof: .22, acc: .58, sup: .05, pen: 26, aoe: 0 },
+    w: { range: 280, dmg: 14, rof: .22, acc: .58, sup: .05, pen: 30, aoe: 0 },
     wUp: {
       quad50: { range: 300, dmg: 17, rof: .26, acc: .62, sup: .095, pen: 38, aoe: 14 },
       how75: { range: 380, dmg: 96, rof: 3.4, acc: .68, sup: .04, pen: 150, aoe: 30, shell: 1 },
@@ -658,7 +658,7 @@ var UNITS = {
     side: 'us', name: 'Universal Carrier', short: 'UC', cat: 'veh', hk: 'V', upgrades: ['thirty'],
     hp: 400, armor: 45, speed: 120, sight: 340, pop: 8, cost: { mp: 220, fu: 30 }, time: 22,
     req: 'us_mot', caps: 1, carries: 1, tows: 1,
-    w: { range: 285, dmg: 16, rof: 0.45, acc: .62, sup: .022, pen: 72, aoe: 14 },
+    w: { range: 285, dmg: 12, rof: 0.48, acc: .62, sup: .022, pen: 52, aoe: 14 },
     wUp: { thirty: { range: 300, dmg: 9, rof: .20, acc: .58, sup: .055, supCap: .92, pen: 8, aoe: 0 } },
     desc: 'Small, fast tracked carrier with a Bren gun. It sees further than a section on foot and there are men in it, so it takes and holds ground the way they do. It will carry a rifle section forward, and the Bren can be swapped for a belt-fed .30. Anti-tank fire opens it like a tin.'
   },
@@ -666,21 +666,21 @@ var UNITS = {
     side: 'us', name: 'Stuart V (M3A3)', short: 'STU V', cat: 'veh', hk: 'T', upgrades: ['mg'], tows: 1,
     hp: 480, armor: 62, speed: 132, sight: 350, pop: 9, cost: { mp: 260, fu: 45 }, time: 26,
     req: 'us_mot',
-    w: { range: 300, dmg: 34, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
+    w: { range: 300, dmg: 46, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
     desc: 'The armoured brigade\'s recce tank. Fast, a 37 mm that handles infantry and armoured cars, thin plate that a Panzer IV goes straight through.'
   },
   us_ach: {
     side: 'us', name: '17pdr SP Achilles', short: 'ACHILLES', cat: 'veh', hk: 'A', upgrades: ['mg', 'coax'], tows: 1,
-    hp: 620, armor: 84, speed: 96, sight: 380, pop: 16, cost: { mp: 430, fu: 130 }, time: 44,
+    hp: 560, armor: 84, speed: 96, sight: 380, pop: 16, cost: { mp: 450, fu: 140 }, time: 46,
     req: 'us_mot',
-    w: { range: 465, dmg: 145, rof: 1.6, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1 },
-    desc: 'An M10 with a 17-pounder in it. Nothing on the field survives being hit by one and it reloads twice in the time a Panzer IV takes once, but it fires solid shot from an open turret behind a quarter of the plate a Sherman has: it kills armour and it cannot touch infantry. Keep it back, keep it hull down, and keep men around it.'
+    w: { range: 465, dmg: 138, rof: 2.3, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1 },
+    desc: 'An M10 with a 17-pounder in it. It goes through anything on the field from any angle, and it gets away three rounds in the time a Panzer IV takes two, but it fires solid shot from an open turret behind a quarter of the plate a Sherman has: it kills armour and it cannot touch infantry. Keep it back, keep it hull down, and keep men around it.'
   },
   us_sher: {
     side: 'us', name: 'Sherman V (M4A4)', short: 'SHR V', cat: 'veh', hk: 'F', upgrades: ['mg'], tows: 1,
     hp: 760, armor: 118, speed: 80, sight: 330, pop: 14, cost: { mp: 340, fu: 90 }, time: 34,
     req: 'us_mot',
-    w: { range: 380, dmg: 140, rof: 3.3, acc: .70, sup: .05, pen: 210, aoe: 58, shell: 1 },
+    w: { range: 380, dmg: 140, rof: 3.3, acc: .70, sup: .05, pen: 210, aoe: 46, shell: 1 },
     desc: 'Long-hulled Sherman V of the Three Rivers Regiment, with the M4A4 engine deck, VVSS bogies and 75 mm gun used in Italy.'
   },
   /* ------------------------------- 1. Fallschirmjäger-Division */
@@ -694,38 +694,38 @@ var UNITS = {
   ger_gren: {
     side: 'ger', name: 'Fallschirmjäger Gruppe', short: 'FJ', cat: 'inf', hk: 'R',
     models: 4, hpPer: 97, speed: 62, sight: 320, pop: 7, cost: { mp: 250 }, time: 20,
-    w: { range: 285, dmg: 14.0, rof: 0.95, acc: .605, sup: .013, pen: 14 },
+    w: { range: 285, dmg: 13.7, rof: 0.95, acc: .605, sup: .013, pen: 14 },
     desc: 'Veteran paratroopers with Kar98k rifles and an MP40. Fewer men than a Canadian section, but longer effective reach.'
   },
   ger_mg42: {
     side: 'ger', name: 'MG42 Team', short: 'MG42', cat: 'team', hk: 'G',
-    models: 3, hpPer: 58, speed: 46, sight: 350, pop: 6, cost: { mp: 250 }, time: 22,
+    models: 3, hpPer: 60, speed: 46, sight: 350, pop: 6, cost: { mp: 250 }, time: 22,
     req: 'ger_qtr', setup: 1.3,
-    w: { range: 355, dmg: 4.2, rof: 0.10, acc: .37, sup: .066, pen: 10 },
+    w: { range: 355, dmg: 5.0, rof: 0.10, acc: .38, sup: .068, pen: 10 },
     desc: 'The best suppression in the game. Set it behind cover facing open ground and infantry stop moving.'
   },
   ger_pgren: {
     side: 'ger', name: 'Fallschirmjäger Assault Group', short: 'STOSS', cat: 'inf', hk: 'B',
-    models: 4, hpPer: 88, speed: 69, sight: 310, pop: 9, cost: { mp: 330, fu: 20 }, time: 26,
+    models: 4, hpPer: 93, speed: 69, sight: 310, pop: 9, cost: { mp: 330, fu: 20 }, time: 26,
     req: 'ger_qtr',
     w: { range: 215, dmg: 14.6, rof: 0.48, acc: .58, sup: .014, pen: 16 },
-    at: { range: 250, dmg: 82, rof: 5.2, acc: .58, pen: 175, aoe: 22, shell: 1 },
+    at: { range: 250, dmg: 92, rof: 4.6, acc: .58, pen: 175, aoe: 22, shell: 1 },
     desc: 'Close-assault paratroopers with MP40s, grenades and a Panzerschreck. Dangerous to armour inside the town.'
   },
   ger_pak: {
     side: 'ger', name: '7.5 cm Pak 40', short: 'PAK 40', cat: 'team', hk: 'T',
-    models: 4, hpPer: 60, speed: 38, sight: 380, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
-    req: 'ger_dep', setup: 1.6, atOnly: true,
-    w: { range: 460, dmg: 128, rof: 4.1, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1 },
+    models: 4, hpPer: 70, speed: 38, sight: 380, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
+    req: 'ger_dep', setup: 1.6, atOnly: true, blastRes: .58, closeWeak: 2.2,
+    w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1 },
     desc: 'Longest reach on the field. Even a Sherman cannot afford to take two clean hits from it.'
   },
   ger_sd222: {
     side: 'ger', name: 'Sd.Kfz. 222', short: '222', cat: 'veh', hk: 'V', upgrades: ['kwk'],
     hp: 400, armor: 52, speed: 124, sight: 320, pop: 8, cost: { mp: 190, fu: 15 }, time: 20,
     req: 'ger_dep',
-    w: { range: 250, dmg: 7, rof: .16, acc: .55, sup: .055, pen: 8, aoe: 0 },
+    w: { range: 250, dmg: 9, rof: .16, acc: .55, sup: .055, pen: 30, aoe: 0 },
     wUp: { kwk: { range: 300, dmg: 18, rof: 0.50, acc: .62, sup: .022, pen: 96, aoe: 14 } },
-    desc: 'Four-wheeled reconnaissance car, fast and far-seeing, lightly protected. It comes with the machine gun turret; the 2 cm KwK 30 is a field upgrade.'
+    desc: 'Four-wheeled reconnaissance car, fast and far-seeing, lightly protected. The machine gun turret it arrives with will strip an open-topped carrier and nothing heavier; the 2 cm KwK 30 is a field upgrade, and with it the car will trade with a Stuart.'
   },
   /* Retired. No Tiger II ever reached Italy, let alone Ortona, so it is withdrawn from
      the roster: retired keeps it out of the build menu and out of the AI's hands while
@@ -741,7 +741,7 @@ var UNITS = {
     side: 'ger', name: 'Panzer IV Ausf. H', short: 'PZ IV', cat: 'veh', hk: 'F', upgrades: ['skirts', 'mg'],
     hp: 700, armor: 132, speed: 76, sight: 340, pop: 14, cost: { mp: 345, fu: 90 }, time: 34,
     req: 'ger_dep',
-    w: { range: 400, dmg: 155, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 58, shell: 1 },
+    w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1 },
     desc: 'Better gun than a Sherman and thicker plate. Slower, and it hates being flanked.'
   },
   ger_h251: {
@@ -749,9 +749,9 @@ var UNITS = {
     upgrades: ['pak36', 'drill', 'krank'],
     hp: 340, armor: 44, speed: 108, sight: 315, pop: 10, cost: { mp: 230, fu: 30 }, time: 22,
     req: 'ger_dep',
-    w: { range: 260, dmg: 8, rof: .15, acc: .56, sup: .06, pen: 9, aoe: 0 },
+    w: { range: 260, dmg: 11, rof: .15, acc: .56, sup: .06, pen: 28, aoe: 0 },
     wUp: {
-      pak36: { range: 340, dmg: 34, rof: 1.9, acc: .66, sup: .02, pen: 118, aoe: 10 },
+      pak36: { range: 340, dmg: 48, rof: 1.9, acc: .66, sup: .02, pen: 118, aoe: 10 },
       drill: { range: 300, dmg: 15, rof: .30, acc: .63, sup: .085, pen: 42, aoe: 16 },
       krank: { range: 200, dmg: 4, rof: .22, acc: .48, sup: .04, pen: 6, aoe: 0 }
     },
@@ -761,7 +761,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger I Ausf. E', short: 'TIGER I', cat: 'veh', hk: 'K', upgrades: ['mg'],
     hp: 1150, armor: 245, speed: 72, sight: 355, pop: 20, cost: { mp: 700, fu: 165 }, time: 76,
     req: 'ger_dep', limit: 1,
-    w: { range: 480, dmg: 122, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 34, shell: 1 },
+    w: { range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1 },
     desc: 'Fifty-seven tonnes, a hundred millimetres of flat plate all round the front, and an 8.8 cm KwK 36 that opens a Sherman at any range it can see. One per army. It is slow, it drinks fuel, and the streets here are narrow enough to trap it.'
   }
 };
@@ -2222,8 +2222,9 @@ function updateModels(u, dt) {
 /* ---------------------------------------------------------------- combat */
 function penChance(pen, armor) {
   if (armor <= 0) return 1;
-  if (pen < 30) return armor > 60 ? .015 : .12;
-  return clamp(pen / (armor * 1.3), .04, 1);
+  var r = pen / (armor * 1.3);
+  if (r < .34) return clamp(r * r * r * 8.65, .004, 1);
+  return clamp(r, 0, 1);
 }
 /* Which plate the round arrives at. A vehicle's listed armour is what it carries at the
    front; the sides are a little over half of that and the back plate barely a third, and
