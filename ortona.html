@@ -540,6 +540,15 @@ function srange(a, b) { return a + srand() * (b - a); }
 /* ---------------------------------------------------------------- data */
 var WORLD = { w: 2800, h: 1900 };
 var POPCAP = 200;
+/* The cap is per side, because the easy setting is not an even fight and should not
+   pretend to be: on green the player fields nearly twice what the opposition can, which
+   is a cushion that shows up in the one place a player actually reads it. Everywhere
+   else both sides get the same two hundred. */
+function popCap(side) {
+  var D = DIFF[G.diff];
+  if (!D) return POPCAP;
+  return side === G.side ? (D.youPop || POPCAP) : (D.foePop || POPCAP);
+}
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
   skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates on the hull and turret: hollow-charge rounds burst on the plate before the armour.' },
@@ -1957,7 +1966,7 @@ function queueUnit(b, key) {
   if (b.side === G.side && DIFF[G.diff].you > 2 && b.queue.length > 3) return false;
   if (d.req && !hasBuilding(b.side, d.req)) return false;
   if (!canAfford(b.side, d.cost)) { if (b.side === G.side) toast('Not enough ' + (G.res[b.side].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); return false; }
-  if (popOf(b.side) + d.pop > POPCAP) { if (b.side === G.side) toast('Population cap reached'); return false; }
+  if (popOf(b.side) + d.pop > popCap(b.side)) { if (b.side === G.side) toast('Population cap reached'); return false; }
   if (d.limit && countOf(b.side, key) >= d.limit) { if (b.side === G.side) toast('Only ' + d.limit + ' ' + d.name + ' may be fielded'); return false; }
   pay(b.side, d.cost); b.queue.push(key);
   return true;
@@ -3483,7 +3492,8 @@ var DIFF = [
      armour out -- earlier than the harder settings do, because on a quarter economy a
      late tech gate means the vehicle never arrives at all. */
   { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 6, mech: 2, skill: 0, push: 420, aim: .34, tough: .5,
-    startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9 },
+    startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9,
+    youPop: 350, foePop: 175 },
   { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 5, skill: 1, push: 0,  aim: 1,   tough: 1,
     startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1 },
   /* Veteran: on a map this defensive an economic edge alone barely registers, so the
@@ -3667,8 +3677,9 @@ function aiTick(dt) {
      and then had no room left for a tank, so it sat on twenty-four thousand marks with
      two Panzer IVs on the field. Once there is an armour point, room is kept back for
      what it is going to put in it. */
-  var infRoom = b2 && b2.built >= 1 && G.res[side].fu > 70 ? POPCAP - 78
-             : b2 && b2.built >= 1 ? POPCAP - 34 : POPCAP - 20;
+  var cap = popCap(side);
+  var infRoom = b2 && b2.built >= 1 && G.res[side].fu > 70 ? cap - 78
+             : b2 && b2.built >= 1 ? cap - 34 : cap - 20;
   /* A side sitting on a surplus it has no permission to spend is a side that has stopped
      playing: an easy opponent banked ten thousand marks over twenty minutes because its
      own caps would not let it buy anything with them. The caps hold while it is poor,
@@ -3692,7 +3703,7 @@ function aiTick(dt) {
       else queueUnit(hq, K.inf);
     }
   }
-  if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < POPCAP - 14) {
+  if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < cap - 14) {
     var ats = countOf(side, K.at);
     /* The shopping list, worked down in order, with a cap on each and an hour of the
        battle before the heavy end of it opens.
@@ -12956,7 +12967,7 @@ function updateTop(dt) {
   el('fuv').textContent = Math.floor(r.fu);
   el('mpi').textContent = '+' + inc.mp.toFixed(1);
   el('fui').textContent = '+' + inc.fu.toFixed(2);
-  el('popv').textContent = G.pop[G.side] + '/' + POPCAP;
+  el('popv').textContent = G.pop[G.side] + '/' + popCap(G.side);
   if (G.win === 'anni') {
     /* nothing runs down in annihilation, so the strip counts what is still standing */
     var nu = countBuildings('us'), ng = countBuildings('ger');
