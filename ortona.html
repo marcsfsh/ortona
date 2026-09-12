@@ -1438,21 +1438,43 @@ function makeFields() {
 }
 
 
-function coverAt(x, y, fromAng) {
+/* How tall a thing is, which decides what a man does with himself behind it and has
+   nothing to do with how much protection it is worth. A trench has been dug for him to
+   stand up in, so he stands up in it and looks over the parapet. A sandbag wall comes to
+   his waist, so he gets down behind it and comes up to shoot over it. A house wall is
+   taller than he is, so he stands against it. A crater lip or a ditch is barely a
+   thickness of earth, so he lies behind it. Reading the posture off the protection tier
+   instead put men flat on their faces the instant they stepped into a trench, which is
+   the one piece of cover on the map built so they would not have to. */
+var STAND_FLAT = 1, STAND_LOW = 2, STAND_DUG = 3, STAND_TALL = 4;
+var COVER_STANCE = { trench: STAND_DUG, pit: STAND_DUG, bags: STAND_LOW, lowwall: STAND_LOW,
+                     rubble: STAND_LOW, cart: STAND_LOW, hedge: STAND_LOW, wall: STAND_TALL,
+                     tree: STAND_TALL, crater: STAND_FLAT, ditch: STAND_FLAT };
+var _cvTier = 0;
+/* the patch a man at this point is actually getting his cover from, with the tier it is
+   worth against the given bearing left in _cvTier */
+function coverPatchAt(x, y, fromAng) {
+  _cvTier = 0;
   var cx = (x / COVG) | 0, cy = (y / COVG) | 0;
-  if (cx < 0 || cy < 0 || cx >= CGW || cy >= CGH) return 0;
+  if (cx < 0 || cy < 0 || cx >= CGW || cy >= CGH) return null;
   var list = G.coverIdx && G.coverIdx[cy * CGW + cx];
-  if (!list) return 0;
-  var best = 0;
+  if (!list) return null;
+  var best = 0, bc = null;
   for (var i = 0; i < list.length; i++) {
     var c = list[i];
     if (c.hp <= 0 || c.type <= best) continue;
     if (dsq(x, y, c.x, c.y) < c.r * c.r) {
       var v = coverValue(c, fromAng);
-      if (v > best) { best = v; if (best === 4) return 4; }
+      if (v > best) { best = v; bc = c; if (best === 4) break; }
     }
   }
-  return best;
+  _cvTier = best;
+  return bc;
+}
+function coverAt(x, y, fromAng) { coverPatchAt(x, y, fromAng); return _cvTier; }
+function coverStanceAt(x, y) {
+  var c = coverPatchAt(x, y);
+  return c ? (COVER_STANCE[c.kind] || STAND_LOW) : 0;
 }
 /* the cover a squad is actually enjoying, averaged over the men still standing */
 function coverOf(u, fromAng) {
@@ -2245,7 +2267,6 @@ function updateModels(u, dt) {
   /* in contact and standing still means the weapon is up, whether or not this tick
      happens to be one he squeezes off a round on */
   var engaged = !!(u.target && !u.target.dead && !u.moving && !u.retreat && u.setup <= 0);
-  var cover = u.gar ? 4 : (halted ? coverAt(u.x, u.y) : 0);
   if (halted) {
     /* choose the piece once, and again only if the threat has swung round or someone
        has fallen; the slots are then fixed, so nobody shuffles on the spot */
@@ -2289,15 +2310,17 @@ function updateModels(u, dt) {
     else m.f += Math.atan2(Math.sin(want - m.f), Math.cos(want - m.f)) * clamp(dt * 9, 0, 1);
     /* What he is doing with himself. In order of how little choice he has about it:
        pinned men are flat and crawl if they move at all, men under fire go down, men on
-       their feet walk, men in contact have the weapon up, and men halted behind
-       something get down behind it rather than standing over it. */
+       their feet walk, and men halted take whatever posture the thing they are behind
+       actually calls for. */
+    var st = halted && !u.gar ? coverStanceAt(m.x, m.y) : 0;
     if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
     else if (u.sup > .55 && !u.moving) m.pose = POSE_PRONE;
     else if (u.moving) m.pose = POSE_WALK;
     else if (u.gar) m.pose = POSE_FIRE;                    /* at a window, weapon up */
-    else if (engaged) m.pose = cover >= 2 ? POSE_CFIRE : POSE_FIRE;
-    else if (cover >= 3) m.pose = POSE_PRONE;              /* dug in, and nothing to shoot */
-    else if (cover >= 1) m.pose = POSE_CROUCH;
+    else if (st === STAND_FLAT) m.pose = POSE_PRONE;       /* a crater lip, a ditch */
+    else if (st === STAND_LOW) m.pose = engaged ? POSE_CFIRE : POSE_CROUCH;
+    else if (engaged) m.pose = POSE_FIRE;                  /* in a trench, or against a wall */
+    else if (st === STAND_DUG || st === STAND_TALL) m.pose = POSE_STAND;
     else m.pose = POSE_STAND;
     m.prone = m.pose === POSE_PRONE || m.pose === POSE_CRAWL;
     if (m.fire > 0) {
@@ -2479,6 +2502,17 @@ function acquire(u) {
 /* Which field upgrade is currently changing a vehicle's weapon and its mount. Only
    upgrades that swap the gun appear in turUp; the ones that bolt something on -- the
    roof MG, the Schuerzen -- are drawn on top of whatever is already there. */
+/* Whether the crew have their hatches shut. A commander rides with his head out because
+   he cannot see anything otherwise, and he drops inside and pulls the lid down the moment
+   anything is shooting: it is the first thing that happens to a tank that is being
+   engaged and the last thing to be undone once it is quiet again. */
+function buttonedUp(u) {
+  if (u.dead) return true;
+  if (u.calm < 6) return true;                       /* something has hit it lately */
+  if (u.target && !u.target.dead) return true;       /* it is in a fight */
+  if (u.sup > .2 || u.shaken > 0) return true;
+  return false;
+}
 function mountUp(u) {
   var M = VMODEL[u.key], i, keys;
   if (!u.up || !M || !M.turUp) return null;
@@ -2779,6 +2813,14 @@ function killUnit(u, src) {
                     t: 0, side: u.side, key: u.key });
     explode(u.x, u.y, 58, 44, null);
     for (var s2 = 0; s2 < 6; s2++) spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
+    /* Some of the crew get out and some of them do not. Two men down beside a burning
+       hull is what the loss of a tank looks like from outside it, and a wreck that
+       appeared with nobody near it read as a prop being swapped for another prop. */
+    for (var cw2 = 0; cw2 < 2; cw2++) {
+      var ca = rnd(0, TAU), cd = 22 + Math.random() * 26;
+      G.corpses.push({ x: u.x + Math.cos(ca) * cd, y: u.y + Math.sin(ca) * cd,
+                       a: ca, t: 0, side: u.side });
+    }
     if (src && src.vet !== undefined) { src.kills += 4; src.vet = src.kills >= 16 ? 3 : src.kills >= 9 ? 2 : src.kills >= 4 ? 1 : 0; }
   }
   var i = G.sel.indexOf(u); if (i >= 0) G.sel.splice(i, 1);
@@ -3045,7 +3087,24 @@ function updateUnit(u, dt) {
   u.calm += dt;
   if (u.fireT > 0) u.fireT -= dt;
   if (u.setup > 0 && !u.moving) u.setup -= dt;
-  if (u.cat === 'veh' && u.hp < u.maxhp * .3 && Math.random() < dt * 2) spawnFx('smoke', u.x + rnd(-10, 10), u.y + rnd(-10, 10));
+  if (u.cat === 'veh') {
+    /* Smoke in proportion to the state of it: a wisp off a scorched deck, a steady
+       plume once it is badly hurt, and flame licking out of the engine louvres at the
+       point where the crew are thinking about getting out. */
+    var hf2 = u.hp / u.maxhp;
+    if (hf2 < .62 && Math.random() < dt * (hf2 < .3 ? 3.4 : 1.1))
+      spawnFx('smoke', u.x + rnd(-10, 10), u.y + rnd(-10, 10), 0, groundZ(u.x, u.y) + 16);
+    if (hf2 < .22 && Math.random() < dt * 5)
+      spawnFx('flash', u.x - Math.cos(u.facing) * 14 + rnd(-4, 4), u.y - Math.sin(u.facing) * 14 + rnd(-4, 4),
+              6 + Math.random() * 5, groundZ(u.x, u.y) + 14);
+    /* a wrecked gun streams from the mantlet, and a shed track throws dust */
+    if (u.gunDmg > 0 && Math.random() < dt * 2.2) {
+      var gmz = gunMuzzle(u);
+      spawnFx('smoke', u.x + Math.cos(u.turret) * 16, u.y + Math.sin(u.turret) * 16, 0, gmz.z + 4);
+    }
+    if (u.immob > 0 && Math.random() < dt * 3)
+      spawnFx('dust', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
+  }
 
   /* engineers: construction, sandbags, repair */
   if (u.def.builder && u.building) {
@@ -3395,6 +3454,24 @@ function m4lookAt(ex, ey, ez, tx, ty, tz) {
 function m4model(x, y, z, yaw, sc) {
   var c = Math.cos(yaw || 0), s2 = Math.sin(yaw || 0), k = sc || 1, m = new Float32Array(16);
   m[0] = c * k; m[1] = s2 * k; m[4] = -s2 * k; m[5] = c * k; m[10] = k;
+  m[12] = x; m[13] = y; m[14] = z; m[15] = 1;
+  return m;
+}
+/* The same, with the hull leaned over. A vehicle sitting on a shed track lists toward
+   the side it lost, and one braking hard goes down on its nose: both are the shape of
+   the thing rather than a light on top of it, and neither was expressible while the
+   only rotation a model could carry was its heading. `lean` is about the model's own
+   fore-and-aft axis, `nose` about the axis across it. */
+function m4lean(x, y, z, yaw, sc, lean, nose) {
+  var c = Math.cos(yaw || 0), s2 = Math.sin(yaw || 0), k = sc || 1;
+  var cl = Math.cos(lean || 0), sl = Math.sin(lean || 0);
+  var cn = Math.cos(nose || 0), sn = Math.sin(nose || 0);
+  /* body axes, tilted: x along the hull, y across it, z out of the roof */
+  var ax = [cn, 0, sn], ay = [sl * sn, cl, -sl * cn], az = [-cl * sn, sl, cl * cn];
+  var m = new Float32Array(16);
+  m[0] = (c * ax[0] - s2 * ax[1]) * k; m[1] = (s2 * ax[0] + c * ax[1]) * k; m[2] = ax[2] * k;
+  m[4] = (c * ay[0] - s2 * ay[1]) * k; m[5] = (s2 * ay[0] + c * ay[1]) * k; m[6] = ay[2] * k;
+  m[8] = (c * az[0] - s2 * az[1]) * k; m[9] = (s2 * az[0] + c * az[1]) * k; m[10] = az[2] * k;
   m[12] = x; m[13] = y; m[14] = z; m[15] = 1;
   return m;
 }
@@ -6308,12 +6385,25 @@ function shermanTurret(body, cap) {
      and the No. 19 set aerial on the bustle ---- */
   f = f.concat(cyl(-4.2, -5.2, zr - .1, 4.7, 4.7, 1.2, 18, C.odDark, cap, 0, true));
   f = f.concat(cyl(-4.2, -5.2, zr + 1.1, 4.0, 4.0, .45, 18, C.od, cap, 0, true));
-  /* the two D-lids, shut, with the hinge line between them */
+  /* The two D-lids, built twice over: lying shut on the ring as they always were, and
+     standing open on their hinges with the commander up between them. Only one of the
+     two gets drawn, so the ring itself is left bare here. */
+  var shutL = [], openL = [];
   [-1, 1].forEach(function (s2) {
-    f = f.concat(prism(roundRectPlan(-4.2 + s2 * 2.0, -5.2, 1.9, 3.9, 1.3, 3), zr + 1.55, zr + 2.05, C.od, cap, C.odDark));
-    f = f.concat(grabIron(-4.2 + s2 * 2.6, -5.2, zr + 2.05, 2.6, .5, C.steel, 'y'));
+    var lid = prism(roundRectPlan(-4.2 + s2 * 2.0, -5.2, 1.9, 3.9, 1.3, 3), zr + 1.55, zr + 2.05, C.od, cap, C.odDark)
+      .concat(grabIron(-4.2 + s2 * 2.6, -5.2, zr + 2.05, 2.6, .5, C.steel, 'y'));
+    shutL = shutL.concat(lid);
+    /* swung up about the hinge line that runs fore and aft between them */
+    openL = openL.concat(roll(lid.map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0], p[1] + 5.2, p[2] - zr - 1.55]; }), c: q.c, n: q.n };
+    }), s2 * (Math.PI / 2 - .2), 0, 0).map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0], p[1] - 5.2, p[2] + zr + 1.55]; }), c: q.c, n: q.n };
+    }));
   });
-  f = f.concat(box(-4.2, -5.2, zr + 1.55, .55, 8.0, .55, C.steel, C.bare, C.steel, 0));
+  shutL = shutL.concat(box(-4.2, -5.2, zr + 1.55, .55, 8.0, .55, C.steel, C.bare, C.steel, 0));
+  openL = openL.concat(box(-4.2, -5.2, zr + 1.55, .55, 8.0, .55, C.steel, C.bare, C.steel, 0))
+               .concat(commander('us', -4.2, -5.2, zr + 1.4));
+  HATCHES.us_sher = { shut: shutL, open: openL };
   f = f.concat(periscope(-1.0, -1.0, zr - .1, 0, C.odDark));
   f = f.concat(periscope(5.0, -5.2, zr - .1, 0, C.odDark));
   f = f.concat(periscope(4.2, 5.8, zr - .1, 0, C.odDark));
@@ -6979,12 +7069,26 @@ function stuartTurret(body, cap) {
   /* two hatches side by side, each a shallow dish with a grab iron and a periscope */
   [-1, 1].forEach(function (s2) {
     var hy = s2 * 3.5;
-    f = f.concat(prism(roundRectPlan(-2.6, hy, 3.5, 3.0, 1.1, 3), zr - .05, zr + .25, C.od, cap, C.odDark));
-    f = f.concat(prism(roundRectPlan(-2.6, hy, 2.8, 2.4, .9, 3), zr + .25, zr + .41, C.odLit, C.odLit, C.odLit));
-    f = f.concat(grabIron(-2.6, hy, zr + .41, 2.4, .45, C.steel, 'y'));
+    /* the commander's is the left one, and it is drawn separately so it can be open */
+    if (s2 > 0) {
+      f = f.concat(prism(roundRectPlan(-2.6, hy, 3.5, 3.0, 1.1, 3), zr - .05, zr + .25, C.od, cap, C.odDark));
+      f = f.concat(prism(roundRectPlan(-2.6, hy, 2.8, 2.4, .9, 3), zr + .25, zr + .41, C.odLit, C.odLit, C.odLit));
+      f = f.concat(grabIron(-2.6, hy, zr + .41, 2.4, .45, C.steel, 'y'));
+    }
     f = f.concat(box(-5.9, hy, zr - .05, 1.3, 1.9, .55, C.steel, C.bare, C.steel, 0));
     f = f.concat(periscope(1.4, hy, zr, 0, C.odDark));
   });
+  var stL = prism(roundRectPlan(-2.6, -3.5, 3.5, 3.0, 1.1, 3), zr - .05, zr + .25, C.od, cap, C.odDark)
+    .concat(prism(roundRectPlan(-2.6, -3.5, 2.8, 2.4, .9, 3), zr + .25, zr + .41, C.odLit, C.odLit, C.odLit))
+    .concat(grabIron(-2.6, -3.5, zr + .41, 2.4, .45, C.steel, 'y'));
+  HATCHES.us_stuart = {
+    shut: stL,
+    open: roll(stL.map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0], p[1] + 6.4, p[2] - zr]; }), c: q.c, n: q.n };
+    }), -(Math.PI / 2 - .2), 0, 0).map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0], p[1] - 6.4, p[2] + zr]; }), c: q.c, n: q.n };
+    }).concat(commander('us', -2.6, -3.5, zr + .1))
+  };
   /* the ventilator dome between them, forward of the hatches */
   f = f.concat(cyl(4.4, 0, zr - .05, 1.7, 1.7, .8, 12, C.odDark, C.od, 0, true));
   f = f.concat(cyl(4.4, 0, zr + .75, 1.3, 1.3, .3, 12, C.steel, C.steel, 0, true));
@@ -7056,6 +7160,31 @@ var PZ = { body: '#9c8b5c', lit: '#b09f6c', dark: '#7d6f4a', olive: '#5f6842', o
   rubber: '#1c1d19', tyre: '#2a2b26', steel: '#3a3d34', track: '#4a4842', trackLit: '#5b5952', bare: '#6d6e62',
   tarp: '#7f7150', jerry: '#8a7a4e', wood: '#5a4630' };
 
+/* ---- Hatches. A tank commander rides with his head out of the cupola because buttoned
+   up he can see almost nothing, and he drops in and pulls the lid down the moment
+   anything is shooting at him. Both states have to exist as geometry, so the lid comes
+   out of the roof it was baked into and is built twice: lying shut on its ring, and
+   standing open on its hinge with a man in the ring behind it.
+   `cx, cy` is the centre of the ring, `zl` the face the lid lies on, `r` its radius,
+   `ha` the bearing of its hinge. ---- */
+var HATCHES = {};
+/* the man himself, sunk into the ring so what shows over the rim is a head, shoulders
+   and a helmet, which is all that ever shows of a tank commander */
+function commander(side, cx, cy, zl) {
+  return place(soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1), 0, cx, cy, zl - 13.4);
+}
+function hatchShut(cx, cy, zl, r, col, cap) {
+  return cyl(cx, cy, zl, r, r, .5, 18, col, cap, 0, true)
+    .concat(cyl(cx, cy, zl + .5, r * .78, r * .78, .4, 18, cap, cap, 0, true))
+    .concat(box(cx, cy, zl + .9, .5, r * 1.6, .5, '#8d9088', '#b4b7ae'));
+}
+/* the same lid stood up on its hinge at the back of the ring, leaning out a little, with
+   the commander in the ring behind it */
+function hatchOpen(cx, cy, zl, r, ha, col, cap, side) {
+  var leaf = pitch(cyl(0, 0, 0, r, r, .5, 18, col, cap, 0, true), Math.PI / 2 - .22, 0, 0);
+  return place(leaf, ha, cx + Math.cos(ha) * (r - .6), cy + Math.sin(ha) * (r - .6), zl + .3)
+    .concat(commander(side, cx, cy, zl));
+}
 /* an MG34 on the Tiger II's cupola ring */
 function ktCupolaMG() {
   var C = KT, f = [], zr = 13.6;
@@ -8515,9 +8644,8 @@ function ktTurret(body, cap, sideC) {
   var zr = H;
   f = f.concat(cyl(-16, -5.2, zr, 4.4, 4.4, 2.2, 18, C.dg, C.dg, 0, true));
   for (var v = 0; v < 7; v++) { var va = v / 7 * TAU + .45; f = f.concat(box(-16 + Math.cos(va) * 4.2, -5.2 + Math.sin(va) * 4.2, zr + .6, 1.1, 1.6, 1.3, C.steel, '#1a1b16')); }
-  f = f.concat(cyl(-16, -5.2, zr + 2.2, 4.7, 4.7, .5, 18, C.dgD, C.dg, 0, true));
-  f = f.concat(cyl(-16, -5.2, zr + 2.7, 3.7, 3.7, .4, 18, C.dg, C.dg, 0, true));
-  f = f.concat(box(-16, -5.2, zr + 3.1, .5, 7.6, .5, C.steel, C.bare));
+  HATCHES.ger_p4 = { shut: hatchShut(-16, -5.2, zr + 2.2, 4.7, C.dgD, C.dg),
+                     open: hatchOpen(-16, -5.2, zr + 2.2, 4.7, Math.PI, C.dgD, C.dg, 'ger') };
   f = f.concat(cyl(-9, 4.6, zr, 3.4, 3.4, .7, 16, C.dgD, C.dg, 0, true));                       /* loader's hatch */
   f = f.concat(box(-9, 4.6, zr + .7, .5, 7.0, .5, C.steel, C.bare));
   f = f.concat(cyl(-20, 3.2, zr, 1.3, 1.3, 1.6, 10, C.dgD, C.dg, 0, true));                       /* Nahverteidigungswaffe */
@@ -9757,8 +9885,8 @@ function tigerTurret(body, cap, sideC) {
     var va = i / 6 * TAU + .5;
     f = f.concat(box(-7.4 + Math.cos(va) * 4.4, 6.6 + Math.sin(va) * 4.4, H + .95, 1.1, 1.6, .95, C.steel, '#1a1b16'));
   }
-  f = f.concat(cyl(-7.4, 6.6, H + 1.65, 4.8, 4.8, .4, 18, C.dgD, C.dg, 0, true));
-  f = f.concat(cyl(-7.4, 6.6, H + 2.05, 3.7, 3.7, .35, 18, C.dg, C.dg, 0, true));
+  HATCHES.ger_tig = { shut: hatchShut(-7.4, 6.6, H + 1.65, 4.8, C.dgD, C.dg),
+                      open: hatchOpen(-7.4, 6.6, H + 1.65, 4.8, Math.PI, C.dgD, C.dg, 'ger') };
   f = f.concat(cyl(-4.0, -6.8, H, 3.5, 3.5, .65, 16, C.dgD, C.dg, 0, true));                           /* the loader's hatch */
   f = f.concat(box(-4.0, -6.8, H + .65, .5, 6.8, .5, C.steel, C.bare));
   f = f.concat(cyl(-11.2, -3.4, H, 1.3, 1.3, 1.5, 10, C.dgD, C.dg, 0, true));                          /* Nahverteidigungswaffe */
@@ -10481,7 +10609,9 @@ function buildModels() {
     var V = VMODEL[k];
     var M = { hull: facesToBuffer(V.hull), tur: facesToBuffer(V.tur),
               mg: V.mg ? facesToBuffer(V.mg) : null, skirts: V.skirts ? facesToBuffer(V.skirts) : null,
-              turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, mgUp: {} };
+              turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, mgUp: {},
+              hatch: HATCHES[k] ? facesToBuffer(HATCHES[k].shut) : null,
+              cmdr: HATCHES[k] ? facesToBuffer(HATCHES[k].open) : null };
     if (V.turUp) Object.keys(V.turUp).forEach(function (uk) { M.turUp[uk] = facesToBuffer(V.turUp[uk]); });
     if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
     if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
@@ -10802,16 +10932,35 @@ function drawUnits3D(v, list) {
       var gz = groundZ(u.x, u.y);
       var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2);
       var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * 1.35 * sway : 0;
-      drawGeom(B.hull, m4model(u.x, u.y, gz + bounce, u.facing, 1), false, tint);
+      /* What has been done to it, written on it. Plate that has been hit blackens, a
+         vehicle on a shed track lists toward the side it lost and sits down on it, and
+         one under way squats on its springs as it picks up and drops onto its nose as it
+         stops. Before this a tank at a tenth of its health looked exactly like one
+         fresh off the transporter. */
+      var hpf = clamp(u.hp / u.maxhp, 0, 1), soot = 1 - (1 - hpf) * (1 - hpf) * .5;
+      var vt = [dim * soot, dim * soot * .985, dim * soot * .96];
+      var lean = u.immob > 0 ? -.085 * clamp(u.immob / 3, .35, 1) : 0;
+      var nose = clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
+      u.lastSp = u.sp || 0;
+      var sink = u.immob > 0 ? -1.6 : 0;
+      var hmat = m4lean(u.x, u.y, gz + bounce + sink, u.facing, 1, lean, nose);
+      drawGeom(B.hull, hmat, false, vt);
       var mp1 = mountPose(u, M), rec = recoilAt(u.recoil) * (M.big ? 9 : 6), mx = u.x, my = u.y;
       mx += Math.cos(u.facing) * mp1.x - Math.sin(u.facing) * mp1.y;
       my += Math.sin(u.facing) * mp1.x + Math.cos(u.facing) * mp1.y;
-      var tmat = m4model(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec, gz + bounce + mp1.z, u.turret, 1);
+      var tmat = m4lean(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec,
+                        gz + bounce + sink + mp1.z, u.turret, 1, lean, nose);
       var cuk = mountUp(u);
-      drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, tint);
-      if (cuk && B.addUp[cuk]) drawGeom(B.addUp[cuk], m4model(u.x, u.y, gz + bounce, u.facing, 1), false, tint);
-      secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawGeom(sb, tmat, false, tint); });
-      if (u.up && u.up.skirts) { if (B.skirts) drawGeom(B.skirts, m4model(u.x, u.y, gz + bounce, u.facing, 1), false, tint); if (B.turSkirts) drawGeom(B.turSkirts, tmat, false, tint); }
+      drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
+      if (cuk && B.addUp[cuk]) drawGeom(B.addUp[cuk], hmat, false, vt);
+      secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawGeom(sb, tmat, false, vt); });
+      if (u.up && u.up.skirts) { if (B.skirts) drawGeom(B.skirts, hmat, false, vt); if (B.turSkirts) drawGeom(B.turSkirts, tmat, false, vt); }
+      /* the hatch, shut or with the commander up in it */
+      if (B.hatch || B.cmdr) {
+        var open = !buttonedUp(u);
+        if (open && B.cmdr) drawGeom(B.cmdr, tmat, false, vt);
+        else if (B.hatch) drawGeom(B.hatch, tmat, false, vt);
+      }
       _blobs.push({ x: u.x, y: u.y, r: M.big ? 40 : 30, a: .45 });
     } else {
       for (var k = 0; k < u.models.length; k++) {
@@ -10885,7 +11034,7 @@ function drawParticles3D() {
     }
   });
   G.fx.forEach(function (f) {
-    var k = f.t / f.dur, z = groundZ(f.x, f.y);
+    var k = f.t / f.dur, z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
     if (f.kind === 'smoke') billboard(f.x + Math.cos(f.a) * k * 12, f.y, z + 12 + k * 46, 8 + k * 22, 8 + k * 22, .34, .34, .31, (1 - k) * .34);
     else if (f.kind === 'dust') billboard(f.x + Math.cos(f.a) * k * 8, f.y, z + 4 + k * 9, 4 + k * 11, 4 + k * 11, .55, .49, .36, (1 - k) * .3);
     else if (f.kind === 'exhaust') billboard(f.x + Math.cos(f.a) * k * 7, f.y, z + 8 + k * 24, 4 + k * 13, 4 + k * 13, .29, .28, .25, (1 - k) * .22);
@@ -10896,7 +11045,7 @@ function drawParticles3D() {
   /* fire is additive */
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
   G.fx.forEach(function (f) {
-    var k = f.t / f.dur, z = groundZ(f.x, f.y);
+    var k = f.t / f.dur, z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
     if (f.kind === 'boom' && k < .55) {
       var s = f.r * (.5 + k * .9), a = 1 - k * 1.8;
       billboard(f.x, f.y, z + 8, s, s, 1, .78, .36, a * .9);
