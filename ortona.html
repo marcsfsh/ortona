@@ -1128,6 +1128,17 @@ function groundZ(x, y) {
   var a1 = h[hidx(i, j + 1)], b1 = h[hidx(i + 1, j + 1)];
   return (a0 + (b0 - a0) * tx) * (1 - ty) + (a1 + (b1 - a1) * tx) * ty;
 }
+/* The ground as it was before a spade touched it. Anything that belongs to the geology
+   rather than to the battle has to be placed off this: read the worked surface instead
+   and every trench lip and crater rim counts as a cliff. */
+function naturalZ(x, y) {
+  var hm = G.hmap0; if (!hm) return 0;
+  var fx = clamp(x / HG, 0, HW - 1.001), fy = clamp(y / HG, 0, HH - 1.001);
+  var i = fx | 0, j = fy | 0, tx = fx - i, ty = fy - j;
+  var a0 = hm[hidx(i, j)], b0 = hm[hidx(i + 1, j)];
+  var a1 = hm[hidx(i, j + 1)], b1 = hm[hidx(i + 1, j + 1)];
+  return (a0 + (b0 - a0) * tx) * (1 - ty) + (a1 + (b1 - a1) * tx) * ty;
+}
 /* the surface normal, used for lighting the mesh */
 function groundNormal(x, y) {
   var e = HG * .8;
@@ -1137,33 +1148,164 @@ function groundNormal(x, y) {
   return { x: -dx / l, y: -dy / l, z: 1 / l };
 }
 
+/* ---- the shape of the ground ----
+   Ortona stands on a limestone shelf between the Adriatic and the Moro, and the ground
+   is most of the reason the battle went the way it did. Reading inland from the water:
+   the sea, a beach, a cliff with its own talus at the foot, the shelf the town is built
+   on, and beyond that ground cut about by the valloni -- the dry gullies running down to
+   the coast that every attack on this place had to get across. The flanks climb away in
+   olive terraces, which on this coast are cut into the hillside and revetted in stone.
+
+   It is built in four passes, in this order: the landform, stated analytically off the
+   distance to the midline so the two halves of the map match exactly; fractal relief,
+   its domain warped so it does not read as plain noise laid over a ramp; the gullies,
+   cut as V-profiles along their own courses; and the terraces, which are a staircase
+   quantisation of whatever the first three passes left. Each pass is masked off the
+   town, because the town has to stay a place two sections can fight over. */
+var VALLONI = [
+  /* course, then how deep and how wide it runs. These drain north to the sea and are
+     kept clear of the town, the two headquarters and the ground between the trenches. */
+  { pts: [[120, 1560], [168, 1200], [150, 860], [196, 520], [250, 250]], d: 54, w: 80 },
+  { pts: [[640, 1760], [604, 1500], [660, 1300]], d: 34, w: 54 },
+  { pts: [[1000, 1830], [1080, 1660], [1180, 1560]], d: 26, w: 50 },
+  { pts: [[2680, 1560], [2632, 1200], [2650, 860], [2604, 520], [2550, 250]], d: 54, w: 80 },
+  { pts: [[2160, 1760], [2196, 1500], [2140, 1300]], d: 34, w: 54 },
+  { pts: [[1800, 1830], [1720, 1660], [1620, 1560]], d: 26, w: 50 }
+];
+function hnoise(x, y, s) {
+  var ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
+  fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+  var a00 = noise2(ix, iy, s), a10 = noise2(ix + 1, iy, s);
+  var a01 = noise2(ix, iy + 1, s), a11 = noise2(ix + 1, iy + 1, s);
+  return (a00 * (1 - fx) + a10 * fx) * (1 - fy) + (a01 * (1 - fx) + a11 * fx) * fy;
+}
+function hfbm(x, y, s, oct) {
+  var v = 0, a = .5, f = 1, sum = 0;
+  for (var o = 0; o < oct; o++) { v += a * hnoise(x * f, y * f, s + o * 13); sum += a; a *= .5; f *= 2.03; }
+  return v / sum;
+}
+/* ridged noise: the absolute value folded over, which makes crests rather than lumps
+   and is what gives a hillside its spurs instead of a field of moguls */
+function hridge(x, y, s, oct) {
+  var v = 0, a = .5, f = 1, sum = 0;
+  for (var o = 0; o < oct; o++) {
+    var n = Math.abs(hnoise(x * f, y * f, s + o * 29) - .5) * 2;
+    v += a * (1 - n); sum += a; a *= .52; f *= 2.07;
+  }
+  return v / sum;
+}
 function makeHeight() {
-  var h = new Float32Array(HW * HH);
-  /* Ortona stands on a shelf above the Adriatic. Reading from the sea inland: the
-     water, a cliff, the town plateau with a rise under the old quarter, dead ground
-     where the two lines face each other, and terraced olive slopes climbing away on
-     both flanks. Built from the distance to the midline so the halves match exactly. */
-  for (var j = 0; j < HH; j++) {
-    for (var i = 0; i < HW; i++) {
+  var h = new Float32Array(HW * HH), i, j, k;
+  var MX = WORLD.w / 2, MY = WORLD.h / 2;
+  /* the town and the ground the two sides face each other across stay quiet */
+  function calm(x, y) {
+    var ax = Math.abs(x - MX) / 760, ay = Math.abs(y - MY) / 470;
+    return clamp(1.3 - Math.max(ax, ay) * 1.3, 0, 1);
+  }
+  /* distance to a vallone's course, and the fraction along it, for the V cut */
+  function gully(x, y) {
+    var best = 0;
+    for (var g = 0; g < VALLONI.length; g++) {
+      var v = VALLONI[g], pts = v.pts, dmin = 1e9;
+      for (var p = 0; p < pts.length - 1; p++) {
+        var d = distToSeg(x, y, pts[p][0], pts[p][1], pts[p + 1][0], pts[p + 1][1]);
+        if (d < dmin) dmin = d;
+      }
+      if (dmin > v.w) continue;
+      /* a floor with a rounded bottom and walls that stand up: a vallone is a ravine
+         cut into the shelf, not a dip in it, so the profile is square in the shoulder
+         and only eases over the last of its width */
+      var t = dmin / v.w, cut = v.d * (1 - t * t * t) * (1 - t * .18);
+      if (cut > best) best = cut;
+    }
+    return best;
+  }
+  for (j = 0; j < HH; j++) {
+    for (i = 0; i < HW; i++) {
       var x = i * HG, y = j * HG;
-      var dx = Math.abs(x - WORLD.w / 2), dy = y - WORLD.h / 2;
-      var shore = coastY(x), z;
-      if (y < shore - 30) {
-        z = -60;                                                /* the sea */
+      var dx = Math.abs(x - MX), dy = y - MY;
+      var shore = coastY(x), z, q = calm(x, y);
+
+      /* ---- 1. the landform ---- */
+      /* the cliff line is not a ruled edge: the sea has cut re-entrants into the soft
+         beds and left the hard ones standing as headlands, so where the face begins,
+         how far back it leans and how high it stands all wander along the coast */
+      var cwob = (hfbm(x / 210, 0, 61, 2) - .5) * 30 + Math.sin(x / 103) * 5;
+      if (y < shore - 8) {
+        z = -62 - 5 * hfbm(x / 260, y / 260, 71, 3);            /* the sea bed, not a plate */
       } else {
-        var up = clamp((y - shore + 30) / 110, 0, 1);
-        z = -60 + up * up * 68;
+        /* measured from the water's edge, so the shingle is above the waterline and the
+           face starts where the shingle ends rather than somewhere out in the sea */
+        var up = (y - shore + 8);
+        var foot = 22 + cwob * .5;                               /* the toe of the cliff */
+        var run = 94 + cwob * .8, rise = 112 + (hfbm(x / 230, 0, 67, 2) - .5) * 34;
+        var face = clamp((up - foot) / run, 0, 1);
+        var shelf = clamp((up - foot - run - 20) / 250, 0, 1);
+        z = -62 + clamp(up / foot, 0, 1) * 7;                    /* shingle, just clear of the sea */
+        /* The face. Ortona stands on a bluff rather than a beach: it is steepest through
+           the middle of its height and eases at both ends, into the talus at the foot and
+           into the weathered lip at the top, which is what soft limestone cut by the sea
+           weathers to. */
+        z += lerp(face, face * face * (3 - 2 * face), .55) * rise;
+        /* Bedding. The rock lies in beds a couple of metres thick and the sea takes them
+           one at a time, so the face goes back in ledges rather than standing as one
+           plane: the height is quantised to the bed, with the riser put back between. */
+        var onface = face > .02 && face < .98 ? 1 : 0;
+        if (onface) {
+          var BED = 22, bq = Math.floor(z / BED), bf = z / BED - bq;
+          z = lerp(z, (bq + .08 + clamp((bf - .56) / .3, 0, 1) * .88) * BED, .82);
+        }
+        /* run-off has found the weak beds and cut chimneys down the face */
+        z -= clamp((hridge(x / 62, 0, 59, 2) - .56) / .44, 0, 1) * 24 * Math.sin(Math.PI * face);
+        z += shelf * 15;                                         /* and the shelf rising inland */
+        /* the spur the old town sits on */
         z += 26 * Math.exp(-(dx * dx) / (2 * 520 * 520)) * Math.exp(-(dy * dy) / (2 * 640 * 640));
+        /* the dead ground between the two lines */
         z -= 16 * Math.exp(-Math.pow(dx - 640, 2) / (2 * 190 * 190));
+        /* the flanks, climbing away */
         var flank = clamp((dx - 900) / 520, 0, 1);
-        z += flank * 56 + (flank > 0 ? Math.round(flank * 5) * 4 : 0);
-        z -= 9 * clamp((y - 1700) / 120, 0, 1);
-        z += 5 * Math.sin(dx / 210) * Math.cos(dy / 260);
+        z += flank * flank * (3 - 2 * flank) * 62;
+        z -= 9 * clamp((y - 1700) / 120, 0, 1);                  /* falling away to the Moro */
+
+        /* ---- 2. relief. The sample point is pushed about by a slower noise field
+           first, so what comes out has grain and direction rather than reading as a
+           blanket of fbm thrown over a ramp. ---- */
+        var wx = x + (hfbm(x / 420, y / 420, 83, 2) - .5) * 200;
+        var wy = y + (hfbm(x / 380, y / 380, 97, 2) - .5) * 200;
+        var rough = clamp(.35 + flank * .9 + clamp((y - 1400) / 400, 0, 1) * .5, 0, 1.35) * (1 - q * .86);
+        rough *= 1 - onface * .7;                                /* the ledges would be lost under it */
+        z += (hfbm(wx / 300, wy / 300, 11, 4) - .5) * 46 * rough;       /* the roll of the ground */
+        z += (hridge(wx / 150, wy / 150, 23, 3) - .45) * 26 * rough;    /* spurs and the draws between them */
+        z += (hfbm(x / 42, y / 42, 37, 3) - .5) * 7 * (1 - q * .7);     /* the surface itself, never flat */
+        /* rills: fine erosion channels down whatever is steep */
+        var rill = hridge(x / 26, y / 70, 53, 2);
+        z -= rill * rill * 3.4 * rough;
+
+        /* ---- 3. the valloni ---- */
+        z -= gully(x, y) * (1 - q * .55);
+
+        /* ---- 4. terraces. Olive terraces on this coast are cut into the slope and
+           held up by a dry stone riser, so the tread is level and the riser is not:
+           quantise the height and put back a little of what was rounded off. ---- */
+        var terr = clamp((dx - 980) / 420, 0, 1) * (1 - q);
+        if (terr > .02 && y > shore + 120) {
+          var STEP = 9.5, tz = Math.floor(z / STEP) * STEP + STEP * .5;
+          var frac = z / STEP - Math.floor(z / STEP);
+          var riser = clamp((frac - .82) / .18, 0, 1);            /* the face of the wall */
+          z = lerp(z, tz + riser * STEP * .92, terr * .8);
+        }
       }
       h[hidx(i, j)] = z;
     }
   }
-  G.hmap0 = h; G.hmap = new Float32Array(h);
+  /* one pass of smoothing so the mesh has no single-cell spikes to catch the light */
+  var sm = new Float32Array(h.length);
+  for (j = 0; j < HH; j++) for (i = 0; i < HW; i++) {
+    var i0 = Math.max(0, i - 1), i1 = Math.min(HW - 1, i + 1);
+    var j0 = Math.max(0, j - 1), j1 = Math.min(HH - 1, j + 1);
+    sm[hidx(i, j)] = (h[hidx(i0, j)] + h[hidx(i1, j)] + h[hidx(i, j0)] + h[hidx(i, j1)] + h[hidx(i, j)] * 2) / 6;
+  }
+  G.hmap0 = sm; G.hmap = new Float32Array(sm);
   G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
 }
 /* Earthworks are kept as two layers over the natural ground: the deepest cut at each
@@ -1324,10 +1466,16 @@ function rebuildGrid() {
   grid.fill(0);
   for (var cy = 0; cy < GH; cy++) { grid[cidx(0, cy)] = 1; grid[cidx(GW - 1, cy)] = 1; }
   for (var cx = 0; cx < GW; cx++) { grid[cidx(cx, 0)] = 1; grid[cidx(cx, GH - 1)] = 1; }
-  /* keep men and armour out of the Adriatic and off the wave-cut shore */
+  /* Keep men and armour out of the Adriatic, and off anything too steep to climb. The
+     gradient is read over half a cell, which is coarse enough that a trench wall or a
+     terrace riser still lets a section through and steep enough that nobody walks down
+     the face of the sea cliff to get to the water. */
   for (var gy = 0; gy < GH; gy++) for (var gx = 0; gx < GW; gx++) {
     var wx = gx * CELL + CELL / 2, wy = gy * CELL + CELL / 2;
-    if (wy < coastY(wx) + 24) grid[cidx(gx, gy)] = 1;
+    if (wy < coastY(wx) + 24) { grid[cidx(gx, gy)] = 1; continue; }
+    var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
+    var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
+    if (Math.hypot(sgx, sgy) > 1) grid[cidx(gx, gy)] = 1;
   }
   G.props.forEach(function (p) { if (p.solid) blockRect(p.x, p.y, p.w, p.h, 6); });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
@@ -3154,7 +3302,9 @@ function registerMaterials() {
   if (typeof SHUTTER !== 'undefined') tag(SHUTTER, 'wood');
   if (typeof TILE !== 'undefined') tag(TILE.concat(['#7d4a35', '#8f5740', '#7a4634', '#8a5236', '#6e4030']), 'tile');
   tag(['#a19680', '#b8ad95', '#8f836a', '#a89b80', '#8b8067', '#a2977c', '#7d7460', '#c9bd9f', '#d7ccae', '#655c40'], 'stone');
-  tag(['#6a6a60', '#8a8a7e', '#7a7a6e', '#74746a'], 'concrete'); tag(['#8e8770', '#a29b83'], 'stone');
+  tag(['#6a6a60', '#8a8a7e', '#7a7a6e', '#74746a'], 'concrete'); tag(['#8e8770', '#a29b83', '#7c7562', '#8b846f'], 'stone');
+  tag(['#948c78', '#7a7362', '#a9a189'], 'stone');
+  tagEdges(['#948c78', '#7a7362', '#a9a189'], 'stone');
   tag(['#3f3b30', '#57513f', '#6a6350', '#3a3d34', '#4a4d42', '#55584c', '#2b2e23', '#44483a', '#1a1b16', '#26251f', '#35392f', '#3d4133', '#33362a', '#2a2d24', '#20231a', '#2e3226', '#c9c7b0'], 'steel');
   tag(['#4d5340', '#5d6450', '#41473a', '#4f5643', '#8a7a4e'], 'paint');
   tag(['#cfccbe', '#dcd9cb', '#8e2f26', '#a03a30', '#6b5a3c', '#7d6a48', '#3c3a2e'], 'paint');
@@ -3433,6 +3583,19 @@ function buildTerrain() {
     for (var k = 0; k <= n; k++) markCircle(lerp(t.x1, t.x2, k / n), lerp(t.y1, t.y2, k / n), 34);
   });
   G.covers.forEach(function (c) { if (c.kind === 'crater') markCircle(c.x, c.y, c.r * 1.3 + 8); });
+  /* and wherever the rock itself stands up. A bedding ledge or a terrace riser is a
+     couple of cells wide, and at eight units across the mesh rounds it off into the
+     slope it was cut from. Phones keep the coarse mesh: the cost is triangles, and
+     they have none to spare. */
+  if (!MOB) {
+    for (var fj = 0; fj < rows; fj++) for (var fi = 0; fi < cols; fi++) {
+      if (fine[fj * cols + fi]) continue;
+      var fx = fi * TG + TG / 2, fy = fj * TG + TG / 2;
+      var fgx = (groundZ(fx + TG, fy) - groundZ(fx - TG, fy)) / (2 * TG);
+      var fgy = (groundZ(fx, fy + TG) - groundZ(fx, fy - TG)) / (2 * TG);
+      if (Math.hypot(fgx, fgy) > .9) fine[fj * cols + fi] = 1;
+    }
+  }
   var lastCol = [], lastVal = [];
   function vert(x, y, zOverride) {
     var z = zOverride === undefined ? groundZ(x, y) : zOverride, n = groundNormal(x, y);
@@ -3538,6 +3701,87 @@ function sceneProps() {
   });
   G.trees.forEach(function (tr) {
     put(tr.cypress ? cypressModel(tr.r) : tr.scrub ? bushModel(tr.r, tr.s) : treeModel(tr.r, tr.s), tr.x, tr.y, tr.s * TAU);
+  });
+  /* ---- Outcrop. Where the shelf breaks through its own soil the bedrock stands out of
+     the slope in slabs, and what it sheds collects at the foot. Placed off the
+     heightfield's own gradient rather than scattered, so a rock is always on a face and
+     never sitting in the middle of a field. ---- */
+  var OG = 34, ROCK = '#948c78', ROCKD = '#7a7362', ROCKL = '#a9a189';
+  for (var oy = 140; oy < WORLD.h - 60; oy += OG) {
+    for (var ox = 46; ox < WORLD.w - 46; ox += OG) {
+      var oz = naturalZ(ox, oy);
+      if (oz < -34 || oy < coastY(ox) + 160) continue;          /* the sea cliff is its own thing */
+      var ogx = (naturalZ(ox + 9, oy) - naturalZ(ox - 9, oy)) / 18;
+      var ogy = (naturalZ(ox, oy + 9) - naturalZ(ox, oy - 9)) / 18;
+      var osl = Math.hypot(ogx, ogy);
+      if (osl < .66 || osl > 1.0 || noise2(ox, oy, 131) > .34) continue;
+      var oa = Math.atan2(ogy, ogx) + Math.PI / 2;          /* lying along the contour */
+      var nsl = 1 + (noise2(ox, oy, 133) > .68 ? 1 : 0);
+      for (var sb = 0; sb < nsl; sb++) {
+        var jx2 = ox + (noise2(ox + sb, oy, 135) - .5) * OG * .95;
+        var jy2 = oy + (noise2(ox, oy + sb, 137) - .5) * OG * .95;
+        /* Wide, low and mostly buried. A slab that sits on the surface is a crate; one
+           that has two thirds of itself in the hill is an outcrop, and the ledge it makes
+           is the only part that should be showing. */
+        var lw = 10 + noise2(ox + sb * 5, oy, 139) * 16, lh = 5 + noise2(ox, oy + sb * 5, 141) * 9;
+        var lt = 3.5 + noise2(ox + sb, oy + sb, 143) * 6;
+        /* A slab is set at the ground under its own centre, so on ground that is not
+           flat under it one end lifts clear and it reads as a dropped paving stone. Sink
+           it by whatever the ground falls away across its length, and what shows is a
+           ledge rather than a slab lying on the grass. */
+        var caF = Math.cos(oa + Math.PI), saF = Math.sin(oa + Math.PI), zcF = groundZ(jx2, jy2);
+        var sink = Math.max(0, zcF - groundZ(jx2 + caF * lw / 2, jy2 + saF * lw / 2),
+                               zcF - groundZ(jx2 - caF * lw / 2, jy2 - saF * lw / 2)) + lt * .12;
+        /* The bed dips with the hill, and it dips across the slab rather than along it:
+           the slab lies on the contour, so the axis that has to follow the fall of the
+           ground is the short one. Tilting the long axis instead stands one end of every
+           rock on the map up in the air. */
+        var tilt = -Math.atan(osl) * (.8 + noise2(ox, oy + sb, 157) * .3);
+        /* built with its long axis across the slab's own x, so the axis that tilts is the
+           short one: the bed dips down the fall of the hill and lies level along the
+           contour. Tilted the other way about, one end of every rock on the map stands
+           up in the air. */
+        var bed = pitch(box(0, 0, -lt * .78 - sink, lh, lw, lt, ROCK, ROCKL, ROCKD, .7), tilt, 0, 0);
+        /* a second, smaller bed stepped up off the first: bedrock comes in courses */
+        if (noise2(ox + sb, oy, 159) > .55)
+          bed = bed.concat(place(pitch(box(lh * .2, 0, -lt * .34 - sink, lh * .6, lw * .62, lt * .7, ROCKL, ROCKL, ROCKD, .6), tilt, 0, 0),
+                                 .38 + noise2(ox, oy + sb, 169) * .5, 0, 0, 0));
+        put(bed, jx2, jy2, oa + Math.PI / 2 + (noise2(ox, oy + sb * 3, 145) - .5) * .8);
+      }
+      /* the talus it has dropped, a little way downhill of it */
+      var dxr = -ogx / (osl || 1), dyr = -ogy / (osl || 1);
+      for (var bl = 0; bl < 3; bl++) {
+        var bd = OG * (.4 + noise2(ox + bl, oy, 147) * 1.3);
+        var bx2 = ox + dxr * bd + (noise2(ox + bl * 7, oy, 151) - .5) * 20;
+        var by2 = oy + dyr * bd + (noise2(ox, oy + bl * 7, 153) - .5) * 20;
+        /* a block only comes to rest where the ground can hold it. Downhill of a sea
+           cliff that point is still on the face, and a boulder dropped there reads as
+           masonry stuck to a wall. */
+        var bsl = Math.hypot((naturalZ(bx2 + 6, by2) - naturalZ(bx2 - 6, by2)) / 12,
+                             (naturalZ(bx2, by2 + 6) - naturalZ(bx2, by2 - 6)) / 12);
+        if (bsl > .8) continue;
+        var bs = 1.2 + noise2(ox, oy + bl, 149) * 2.6;
+        put(box(0, 0, -bs * .55, bs * 2.4, bs * 1.8, bs, ROCKD, ROCK, ROCKD, .5),
+            bx2, by2, noise2(ox + bl, oy, 155) * TAU);
+      }
+    }
+  }
+  /* Boulders in the stream beds. What comes down a vallone in a winter storm is rounded
+     by the time it stops, so these are squat and tumbled rather than bedded like the
+     outcrop above them. */
+  VALLONI.forEach(function (vl, vi) {
+    for (var sg = 0; sg < vl.pts.length - 1; sg++) {
+      var ax = vl.pts[sg][0], ay = vl.pts[sg][1], bx = vl.pts[sg + 1][0], by = vl.pts[sg + 1][1];
+      var sl2 = Math.hypot(bx - ax, by - ay), nx2 = -(by - ay) / sl2, ny2 = (bx - ax) / sl2;
+      for (var sp2 = 0; sp2 < sl2; sp2 += 26) {
+        if (noise2(Math.floor(ax + sp2), sg * 17 + vi, 161) < .42) continue;
+        var u2 = sp2 / sl2, bxx = lerp(ax, bx, u2), byy = lerp(ay, by, u2);
+        var off = (noise2(Math.floor(bxx), Math.floor(byy), 163) - .5) * vl.w * .8;
+        var rs = 2.2 + noise2(Math.floor(bxx), Math.floor(byy), 165) * 4.4;
+        put(box(0, 0, -rs * .5, rs * 2.2, rs * 1.7, rs, ROCK, ROCKL, ROCKD, .85),
+            bxx + nx2 * off, byy + ny2 * off, noise2(Math.floor(byy), Math.floor(bxx), 167) * TAU);
+      }
+    }
   });
   /* pavements: a raised kerbed sidewalk round each town block, 12 units wide */
   G.blocks.forEach(function (bk) {
@@ -3812,6 +4056,9 @@ function buildGrass() {
   _s = 90210;
   function blocked(x, y) {
     if (y < coastY(x) + 60 || y > railY(x) - 30) return true;
+    /* nothing takes root on bare rock, and a tuft on a cliff face reads as a mistake */
+    if (Math.hypot((groundZ(x + 6, y) - groundZ(x - 6, y)) / 12,
+                   (groundZ(x, y + 6) - groundZ(x, y - 6)) / 12) > .7) return true;
     for (var i = 0; i < G.paved.length; i++) { var p = G.paved[i]; if (x > p.x - 10 && x < p.x + p.w + 10 && y > p.y - 10 && y < p.y + p.h + 10) return true; }
     for (var r = 0; r < G.roads.length; r++) { var rd = G.roads[r]; for (var k = 0; k < rd.length - 1; k++) if (distToSeg(x, y, rd[k].x, rd[k].y, rd[k + 1].x, rd[k + 1].y) < (rd.width || 48) * .6) return true; }
     for (var t = 0; t < G.trenches.length; t++) { var tr = G.trenches[t]; if (distToSeg(x, y, tr.x1, tr.y1, tr.x2, tr.y2) < 40) return true; }
@@ -4067,6 +4314,78 @@ function paintGround(t, DET) {
   });
   t.globalAlpha = 1;
 
+  /* ---- The ground by what it is made of. A slope on a limestone shelf carries no soil:
+     it carries whatever the rain has not taken off it. So the surface is sampled for its
+     gradient and painted in three materials -- soil on anything gentle, broken stone and
+     scree on the shoulders, bare bedded rock on the faces -- and the scree is banked at
+     the foot of whatever is above it. Slope is the one thing that turns relief into
+     geology; without it a hillside is a dune. ---- */
+  var SL = 6, SH = SL * 1.35;
+  for (var sy = 0; sy < WORLD.h; sy += SL) {
+    for (var sx = 0; sx < WORLD.w; sx += SL) {
+      if (sy < coastY(sx)) continue;                           /* the sea is painted on its own */
+      var z0 = groundZ(sx, sy);
+      var gx = (groundZ(sx + SL, sy) - groundZ(sx - SL, sy)) / (2 * SL);
+      var gy = (groundZ(sx, sy + SL) - groundZ(sx, sy - SL)) / (2 * SL);
+      var sl = Math.hypot(gx, gy);
+      var jx = sx + (noise2(sx, sy, 91) - .5) * SL, jy = sy + (noise2(sx, sy, 93) - .5) * SL;
+      var n1 = noise2(Math.floor(sx / 7), Math.floor(sy / 7), 95);
+      /* Whether the ground is hollow or standing proud decides what is lying on it.
+         A hollow keeps the fines that wash into it and runs to a damp red clay with
+         scrub in it; a shoulder loses them and is left thin and pale over the rock.
+         That one difference is most of what gives a limestone country its colour, and
+         it applies to flat ground as much as to a slope. */
+      var conc = z0 - (groundZ(sx - 26, sy) + groundZ(sx + 26, sy) +
+                       groundZ(sx, sy - 26) + groundZ(sx, sy + 26)) / 4;
+      if (conc < -2.5) {
+        var cw = clamp((-conc - 2.5) / 15, 0, 1);
+        t.fillStyle = 'rgba(112,84,54,' + (cw * .46).toFixed(3) + ')';
+        t.fillRect(jx, jy, SH, SH);
+        if (noise2(sx, sy, 109) > .9 - cw * .22) {
+          t.fillStyle = 'rgba(78,90,52,.5)'; t.fillRect(jx + 1, jy + 1, SL * .6, SL * .5);
+        }
+      } else if (conc > 2.5) {
+        t.fillStyle = 'rgba(206,198,172,' + (clamp((conc - 2.5) / 13, 0, 1) * .3).toFixed(3) + ')';
+        t.fillRect(jx, jy, SH, SH);
+      }
+      if (sl < .19) continue;                                  /* gentle enough to hold soil */
+      if (sl > .62) {
+        /* bedrock: pale limestone in beds, the bedding picked out along the contour */
+        var rl = Math.round(138 + n1 * 52 + clamp((sl - 1) * 40, 0, 32)), band = (Math.floor(z0 / 5.5) % 2) ? -16 : 6;
+        rl = clamp(rl + band, 86, 212);
+        t.fillStyle = 'rgb(' + (rl + 15) + ',' + (rl + 6) + ',' + (rl - 20) + ')';
+        t.fillRect(jx, jy, SH, SH);
+        if (n1 > .82) {                                        /* a joint opened in the face */
+          t.fillStyle = 'rgba(46,42,34,.42)';
+          t.fillRect(jx + SL * .3, jy, SL * .28, SH);
+        }
+      } else if (sl > .36) {
+        /* scree: loose stone off the face above, coarse and pale */
+        var gl = Math.round(124 + n1 * 54);
+        t.fillStyle = 'rgba(' + (gl + 16) + ',' + (gl + 5) + ',' + (gl - 22) + ',.72)';
+        t.fillRect(jx, jy, SH, SH);
+        for (var sc = 0; sc < 2; sc++) {
+          var cx2 = jx + noise2(sx + sc, sy, 97) * SL, cy2 = jy + noise2(sx, sy + sc, 99) * SL;
+          t.fillStyle = noise2(sx + sc * 3, sy, 101) > .5 ? 'rgba(214,206,182,.6)' : 'rgba(92,84,66,.45)';
+          t.fillRect(cx2, cy2, 1.6, 1.3);
+        }
+      } else {
+        /* the shoulder: soil thinning, stone showing through it */
+        t.fillStyle = 'rgba(158,148,122,' + (.16 + (sl - .19) * 1.5).toFixed(2) + ')';
+        t.fillRect(jx, jy, SH, SH);
+        if (n1 > .9) { t.fillStyle = 'rgba(198,190,166,.5)'; t.fillRect(jx + 1, jy + 1, 2.4, 1.8); }
+      }
+      /* everything steep is darker on the side away from the sun and paler toward it,
+         which the mesh lighting does too but not at this grain */
+      if (sl > .3) {
+        var shade = clamp((gx * .55 + gy * .38) * .9, -.3, .3);
+        t.fillStyle = shade > 0 ? 'rgba(255,250,232,' + (shade * .5).toFixed(3) + ')'
+                                : 'rgba(28,24,16,' + (-shade * .55).toFixed(3) + ')';
+        t.fillRect(jx, jy, SH, SH);
+      }
+    }
+  }
+
   /* ---- the Adriatic: deep water, swell lines, a foam edge and the cliff face ---- */
   t.save();
   t.beginPath(); t.moveTo(0, 0); t.lineTo(WORLD.w, 0);
@@ -4086,20 +4405,63 @@ function paintGround(t, DET) {
     t.stroke();
   }
   t.restore();
-  /* the foam line and the pale limestone cliff below the shelf */
+  /* The shore, read off the ground rather than drawn as bands at a fixed offset: the
+     cliff line wanders, so a stripe ruled along the coast would run across the face in
+     one place and across the shelf in the next. Height above the water gives the
+     shingle; the fall of the ground gives the face, and the face is streaked down its
+     own fall line, because what weathers a soft limestone cliff is the water coming
+     off the top of it. */
   t.save();
   t.beginPath();
   G.coastline.forEach(function (p, n) { if (!n) t.moveTo(p.x, p.y); else t.lineTo(p.x, p.y); });
   t.strokeStyle = '#d8dccd'; t.lineWidth = 4; t.globalAlpha = .55; t.stroke();
-  t.strokeStyle = '#a9a48c'; t.lineWidth = 26; t.globalAlpha = .9;
-  t.beginPath();
-  G.coastline.forEach(function (p, n) { if (!n) t.moveTo(p.x, p.y + 14); else t.lineTo(p.x, p.y + 14); });
-  t.stroke();
-  t.strokeStyle = '#8d876f'; t.lineWidth = 22;
-  t.beginPath();
-  G.coastline.forEach(function (p, n) { if (!n) t.moveTo(p.x, p.y + 36); else t.lineTo(p.x, p.y + 36); });
-  t.stroke();
   t.restore();
+  for (var shx = 0; shx < WORLD.w; shx += 2) {
+    var rib = noise2(Math.floor(shx / 6), 0, 107), shy0 = coastY(shx);
+    for (var shy = shy0; shy < shy0 + 220; shy += 2) {
+      var shz = groundZ(shx, shy);
+      if (shz > 46) break;                                     /* up over the lip onto the shelf */
+      if (shz + 62 < 8) {
+        /* shingle: limestone off the face above, rounded and sorted by the sea */
+        var pg = Math.round(148 + noise2(shx, shy, 103) * 64);
+        t.fillStyle = 'rgb(' + pg + ',' + (pg - 4) + ',' + (pg - 18) + ')';
+        t.fillRect(shx, shy, 2.6, 2.6);
+        if (noise2(shx, shy, 105) > .86) {
+          t.fillStyle = 'rgba(74,68,54,.5)'; t.fillRect(shx + .6, shy + .6, 1.6, 1.4);
+        }
+      } else if ((groundZ(shx, shy + 4) - groundZ(shx, shy - 4)) / 8 > .5) {
+        if (rib > .74) { t.fillStyle = 'rgba(58,52,40,.30)'; t.fillRect(shx, shy, 2.2, 2.6); }
+        else if (rib < .2) { t.fillStyle = 'rgba(228,220,194,.24)'; t.fillRect(shx, shy, 2.2, 2.6); }
+      }
+    }
+  }
+
+  /* ---- The floor of a vallone. Nothing runs in one in December but the rain, and what
+     it leaves behind is a braided bed of limestone gravel with a damp thread wandering
+     down the middle of it, widening where the fall eases. ---- */
+  VALLONI.forEach(function (vl, vi) {
+    var pts = vl.pts, sp;
+    for (var sg = 0; sg < pts.length - 1; sg++) {
+      var ax = pts[sg][0], ay = pts[sg][1], bx = pts[sg + 1][0], by = pts[sg + 1][1];
+      var seglen = Math.hypot(bx - ax, by - ay), nx = -(by - ay) / seglen, ny = (bx - ax) / seglen;
+      for (sp = 0; sp <= seglen; sp += 3) {
+        var u = sp / seglen, px = lerp(ax, bx, u), py = lerp(ay, by, u);
+        /* the bed wanders inside the floor rather than running dead straight down it */
+        var wob = (noise2(Math.floor(px / 9), Math.floor(py / 9), 111 + vi) - .5) * vl.w * .5;
+        var half = vl.w * (.16 + noise2(Math.floor(px / 23), Math.floor(py / 23), 113) * .14);
+        for (var q2 = -half; q2 <= half; q2 += 2.4) {
+          var gx2 = px + nx * (wob + q2), gy2 = py + ny * (wob + q2);
+          var tt = Math.abs(q2) / half;
+          var gv = Math.round(126 + noise2(gx2, gy2, 115) * 66 - (1 - tt) * 26);
+          t.fillStyle = 'rgba(' + (gv + 12) + ',' + (gv + 3) + ',' + (gv - 18) + ',' + (.78 - tt * .5).toFixed(2) + ')';
+          t.fillRect(gx2, gy2, 3, 3);
+          if (noise2(gx2, gy2, 117) > .9) {                     /* a cobble in the bed */
+            t.fillStyle = 'rgba(206,198,172,.8)'; t.fillRect(gx2, gy2, 2.2, 1.8);
+          }
+        }
+      }
+    }
+  });
 
   /* ---- olive terraces: dry-stone retaining walls with vine rows between ---- */
   G.terraces.forEach(function (tw) {
