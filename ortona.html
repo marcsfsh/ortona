@@ -146,8 +146,8 @@ button:focus-visible,.card:focus-visible{outline:2px solid var(--ink);outline-of
 .side h3{font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:5px}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-.pill{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
-.pill.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.pill,.mode{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+.pill.on,.mode.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
 .go{border:1px solid var(--ink);background:var(--ink);color:#12150e;padding:13px 46px;
   font-size:17px;letter-spacing:2px;font-weight:500}
 .go:hover{background:#fff;border-color:#fff}
@@ -209,7 +209,7 @@ body.mob .title{letter-spacing:1px}
 body.mob .screen{gap:16px;justify-content:flex-start}
 body.mob .keys{font-size:11.5px;line-height:1.7}
 body.mob .go{width:100%;max-width:340px;padding:15px 0}
-body.mob .pill{padding:10px 16px}
+body.mob .pill,body.mob .mode{padding:10px 16px}
 body.mob .side{flex:1 1 100%;min-width:0}
 
 /* landscape phones give the map back its width */
@@ -318,7 +318,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
 .side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
-.pill{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}
+.pill,.mode{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
 
@@ -471,7 +471,7 @@ body.mob #mini{width:104px;height:72px}
     <div class="briefgrid">
       <div class="brief"><b>URBAN GROUND</b><span>Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.</span></div>
       <div class="brief"><b>ENFILADE</b><span>Linear cover protects across its face. Fire down its length strips two grades of protection.</span></div>
-      <div class="brief"><b>OBJECTIVE</b><span>Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.</span></div>
+      <div class="brief"><b>OBJECTIVE</b><span id="objtext">Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.</span></div>
     </div>
   </div>
   <div class="sides">
@@ -489,6 +489,9 @@ body.mob #mini{width:104px;height:72px}
     <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
     <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
     <button class="pill" data-diff="2" title="Hard" aria-pressed="false">VETERAN</button>
+    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">VICTORY</span>
+    <button class="mode on" data-mode="vp" title="Hold the victory sectors until the enemy runs out" aria-pressed="true">SECTORS</button>
+    <button class="mode" data-mode="anni" title="Level every building in the enemy base" aria-pressed="false">ANNIHILATION</button>
 
     <button class="edb" id="openeditor" title="Design your own map">MAP EDITOR</button><button class="edb hidden" id="playcustom" title="Play the map saved on this device">PLAY CUSTOM MAP</button>
   </div>
@@ -788,7 +791,7 @@ var SANDBAG_COST = 25;
 
 /* ---------------------------------------------------------------- state */
 var G = {
-  t: 0, running: false, paused: false, over: null, side: 'us', diff: 1,
+  t: 0, running: false, paused: false, over: null, side: 'us', diff: 1, win: 'vp',
   res: { us: { mp: 400, fu: 20, vp: VP_START }, ger: { mp: 400, fu: 20, vp: VP_START } },
   inc: { us: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 } },
   pop: { us: 0, ger: 0 },
@@ -1702,6 +1705,15 @@ function traceClear(x0, y0, z0, x1, y1, z1, blk) {
    wall he is behind is solid on both grids and would otherwise blind and silence him,
    so the line starts at the face of the building he is shooting out of. */
 function outPoint(u, tx, ty) {
+  /* A building is looked at and shot at on the face turned toward you. Every cell of its
+     own footprint blocks a trace, so a line drawn to the point in the middle of one is
+     stopped by the building itself: a section ordered onto a headquarters would walk up
+     to its range ring and stand there, unable to see it or fire at it, for the rest of
+     the game. */
+  if (u.built !== undefined && u.def) {
+    var ab = Math.atan2(ty - u.y, tx - u.x), ob = Math.max(u.def.w, u.def.h) * .5 + 10;
+    return { x: u.x + Math.cos(ab) * ob, y: u.y + Math.sin(ab) * ob };
+  }
   if (!u.gar) return { x: u.x, y: u.y };
   var a = Math.atan2(ty - u.y, tx - u.x), o = Math.max(u.gar.w, u.gar.h) * .5 + 14;
   return { x: u.x + Math.cos(a) * o, y: u.y + Math.sin(a) * o };
@@ -1862,8 +1874,12 @@ function unitRadius(u) {
 /* ---------------------------------------------------------------- buildings */
 function spawnBuilding(side, key, x, y, done) {
   var d = BUILDINGS[key];
+  /* In annihilation the buildings are the objective rather than a hidden instant-loss
+     line, so they are built to be fought over: a base that comes down in two minutes to
+     the first section that walks up to it is not a siege. */
+  var mh = Math.round(d.hp * (G.win === 'anni' ? 1.8 : 1));
   var b = { id: G.uid++, side: side, key: key, def: d, x: x, y: y,
-            hp: done ? d.hp : d.hp * .18, maxhp: d.hp, built: done ? 1 : 0,
+            hp: done ? mh : mh * .18, maxhp: mh, built: done ? 1 : 0,
             queue: [], qt: 0, rally: { x: x + (side === 'us' ? 120 : -120), y: y + 90 },
             dead: false, hitT: 0 };
   G.blds.push(b); rebuildGrid();
@@ -1872,6 +1888,16 @@ function spawnBuilding(side, key, x, y, done) {
 function hqOf(side) {
   for (var i = 0; i < G.blds.length; i++) if (G.blds[i].side === side && G.blds[i].def.hq) return G.blds[i];
   return null;
+}
+function nearestEnemyBuilding(u) {
+  var best = null, bd = 1e9;
+  for (var i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (b.dead || b.side === u.side) continue;
+    var d = dist(u, b);
+    if (d < bd) { bd = d; best = b; }
+  }
+  return best;
 }
 function hasBuilding(side, key) {
   for (var i = 0; i < G.blds.length; i++)
@@ -1892,6 +1918,7 @@ function popOf(side) {
 function queueUnit(b, key) {
   var d = UNITS[key];
   if (d.retired) return false;
+  if (b.def.makes.indexOf(key) < 0) return false;
   if (b.side === G.side && DIFF[G.diff].you > 2 && b.queue.length > 3) return false;
   if (d.req && !hasBuilding(b.side, d.req)) return false;
   if (!canAfford(b.side, d.cost)) { if (b.side === G.side) toast('Not enough ' + (G.res[b.side].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); return false; }
@@ -1995,7 +2022,7 @@ function fireLine(u, t) {
 function sightLine(e, t) {
   var b = outPoint(t, e.x, e.y);
   return traceClear(e.x, e.y, e.z, b.x, b.y,
-                    groundZ(b.x, b.y) + (t.cat === 'veh' ? 20 : t.gar ? 30 : 12), sblk);
+                    groundZ(b.x, b.y) + (t.built !== undefined ? 34 : t.cat === 'veh' ? 20 : t.gar ? 30 : 12), sblk);
 }
 
 /* A gun with no engine goes where a half-track or a tank drags it. Hitched, it rides a
@@ -2901,7 +2928,9 @@ function killBuilding(b) {
   explode(b.x, b.y, 90, 30, null);
   var i = G.blds.indexOf(b); if (i >= 0) G.blds.splice(i, 1);
   rebuildGrid();
-  if (b.def.hq) endGame(foe(b.side), 'headquarters destroyed');
+  /* In annihilation the headquarters is one building among several: losing it is not
+     the end, and a side with a company post still standing fights on. */
+  if (b.def.hq && G.win !== 'anni') endGame(foe(b.side), 'headquarters destroyed');
 }
 
 /* ---------------------------------------------------------------- effects */
@@ -3009,14 +3038,29 @@ function tickEconomy(dt) {
     G.inc[side].mp = mp * mult; G.inc[side].fu = fu * mult;
     G.res[side].mp += mp * mult * dt;
     G.res[side].fu += fu * mult * dt;
-    if (vps) {
+    if (vps && G.win !== 'anni') {
       var rate = .8 * (foe(side) === G.side ? DIFF[G.diff].vp : 1);
       G.res[foe(side)].vp = Math.max(0, G.res[foe(side)].vp - vps * rate * dt);
     }
   });
   G.pop.us = popOf('us'); G.pop.ger = popOf('ger');
+  if (G.win === 'anni') {
+    /* Annihilation. The sectors still pay for the army and still show who holds what;
+       what they no longer do is decide the game. A side is finished when it has no
+       buildings left standing, which means the headquarters and anything it put up.
+       A side that has been levelled cannot build another one, so there is no way back
+       and no need to wait out a clock. */
+    if (!countBuildings('us')) endGame('ger', 'base annihilated');
+    else if (!countBuildings('ger')) endGame('us', 'base annihilated');
+    return;
+  }
   if (G.res.us.vp <= 0) endGame('ger', 'victory points exhausted');
   else if (G.res.ger.vp <= 0) endGame('us', 'victory points exhausted');
+}
+function countBuildings(side) {
+  var n = 0;
+  for (var i = 0; i < G.blds.length; i++) if (!G.blds[i].dead && G.blds[i].side === side) n++;
+  return n;
 }
 
 /* ---------------------------------------------------------------- construction sites */
@@ -3026,11 +3070,29 @@ function placeStructure(side, key, x, y, engineers) {
   if (!siteClear(x, y, d.w, d.h)) { if (side === G.side) toast('No room there'); return null; }
   pay(side, d.cost);
   var b = spawnBuilding(side, key, x, y, false);
-  (engineers || []).forEach(function (e) {
-    clearOrder(e); e.order = 'build'; e.building = b;
-    var sp = nearestFree(x + rnd(-d.w * .3, d.w * .3), y + d.h / 2 + 34);
-    e.dest = sp; e.path = findPath(e.x, e.y, sp.x, sp.y); e.pi = 0;
-  });
+  /* The footprint goes solid on the movement grid the moment the site is pegged out,
+     so anything standing inside it is left with nowhere legal to be: it fails every
+     walkability test, repaths, and sits there for the rest of the game. Everyone in
+     the way is turned out of it, along the line they were already standing on so they
+     leave by the nearest side. */
+  for (var qi = 0; qi < G.units.length; qi++) {
+    var uu = G.units[qi];
+    if (uu.dead || uu.inside || uu.gar) continue;
+    if (Math.abs(uu.x - x) > d.w / 2 + 16 || Math.abs(uu.y - y) > d.h / 2 + 16) continue;
+    var ax = uu.x - x, ay = uu.y - y, al = Math.hypot(ax, ay) || 1;
+    var push = Math.max(d.w, d.h) / 2 + 40;
+    var spot = nearestFree(clamp(x + ax / al * push, 30, WORLD.w - 30),
+                           clamp(y + ay / al * push, 30, WORLD.h - 30));
+    var mvx = spot.x - uu.x, mvy = spot.y - uu.y;
+    uu.x = spot.x; uu.y = spot.y;
+    uu.path = null; uu.pi = 0;
+    if (uu.models) for (var mi2 = 0; mi2 < uu.models.length; mi2++) {
+      uu.models[mi2].x += mvx; uu.models[mi2].y += mvy;
+    }
+    uu.coverSlots = null; uu.coverPiece = null;
+    if (uu.tow) { uu.tow.x += mvx; uu.tow.y += mvy; }
+  }
+  (engineers || []).forEach(function (e) { resumeBuild(e, b); });
   return b;
 }
 function siteClear(x, y, w, h) {
@@ -3045,16 +3107,51 @@ function siteClear(x, y, w, h) {
   }
   return true;
 }
+/* Work that has been pegged out but not finished is the commonest way for a base to
+   stall. The section that started it gets moved off, shot off the job or killed, and
+   nothing puts anyone back on: the shell counts as a building the side already has, so
+   the button that raised it greys out and the AI queues out of a barracks that will
+   never open. Any builder can pick up any of his own side's unfinished work. */
+function resumeBuild(u, b) {
+  clearOrder(u);
+  u.order = b.def ? 'build' : 'sandbag';
+  u.building = b;
+  var sp = b.def ? nearestFree(b.x + rnd(-b.def.w * .3, b.def.w * .3), b.y + b.def.h / 2 + 34)
+                 : nearestFree(b.x + rnd(-26, 26), b.y + rnd(-26, 26));
+  u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y); u.pi = 0;
+}
+function siteOf(side, key) {
+  for (var i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (b.side === side && !b.dead && b.key === key) return b;
+  }
+  return null;
+}
+/* the nearest unfinished job of his own side that he could already reach out and touch.
+   Kept to arm's length on purpose: a man standing on top of work he is not doing is
+   never what the player meant, whereas one parked two streets away probably is. */
+function jobInReach(u) {
+  var best = null, bd = 1e9;
+  for (var i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (b.side !== u.side || b.dead || b.built >= 1) continue;
+    var d = dist(u, b);
+    if (d < workReach(b) + 40 && d < bd) { bd = d; best = b; }
+  }
+  for (var j = 0; j < G.sites.length; j++) {
+    var s = G.sites[j];
+    if (s.side !== u.side || s.prog >= 1) continue;
+    var d2 = dist(u, s);
+    if (d2 < workReach(s) + 40 && d2 < bd) { bd = d2; best = s; }
+  }
+  return best;
+}
 function placeSandbag(side, x, y, engineers) {
   if (G.res[side].mp < SANDBAG_COST) { if (side === G.side) toast('Not enough manpower'); return; }
   G.res[side].mp -= SANDBAG_COST;
   var site = { x: x, y: y, side: side, prog: 0, time: 7 };
   G.sites.push(site);
-  (engineers || []).forEach(function (e) {
-    clearOrder(e); e.order = 'sandbag'; e.building = site;
-    var sp = nearestFree(x + rnd(-26, 26), y + rnd(-26, 26));
-    e.dest = sp; e.path = findPath(e.x, e.y, sp.x, sp.y); e.pi = 0;
-  });
+  (engineers || []).forEach(function (e) { resumeBuild(e, site); });
 }
 function updateSites(dt) {
   for (var i = G.sites.length - 1; i >= 0; i--) {
@@ -3177,6 +3274,10 @@ function updateUnit(u, dt) {
   }
 
   /* engineers: construction, sandbags, repair */
+  if (u.def.builder && !u.building && !u.repairing && !u.order && !u.retreat && !u.gar && !u.inside) {
+    var idleJob = jobInReach(u);
+    if (idleJob) { u.order = idleJob.def ? 'build' : 'sandbag'; u.building = idleJob; }
+  }
   if (u.def.builder && u.building) {
     var b = u.building;
     var near = dist(u, b) < workReach(b);
@@ -3292,14 +3393,20 @@ var DIFF = [
      queue immediately, and the opposition runs a quarter economy, thinks every four
      seconds, fields four squads, holds near its own line for seven minutes, shoots badly
      and folds fast. Losing here takes real effort. */
-  { you: 3.2, foe: .28, tick: 3.8, inf: 1, mg: 0, army: 4, push: 420, aim: .34, tough: .5,
-    startMp: 1600, startFu: 240, vp: .24, tech: .28, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9 },
-  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, push: 0,  aim: 1,   tough: 1,
+  /* It runs a weak economy, thinks slowly, shoots badly and folds fast, but it is still
+     an army: an easy opponent that fields nothing but riflemen teaches the player
+     nothing about the game, and half the roster never gets used. So green still puts up
+     its company post and its armour point, still sets up a machine gun, and still brings
+     armour out -- earlier than the harder settings do, because on a quarter economy a
+     late tech gate means the vehicle never arrives at all. */
+  { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 4, mech: 3, push: 420, aim: .34, tough: .5,
+    startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9 },
+  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 99, push: 0,  aim: 1,   tough: 1,
     startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1 },
   /* Veteran: on a map this defensive an economic edge alone barely registers, so the
      opposition also shoots straighter, takes more killing, techs earlier and opens with
      a larger force while your own victory points drain faster. */
-  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, push: 0, aim: 1.04, tough: 1.07,
+  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 99, push: 0, aim: 1.04, tough: 1.07,
     startMp: 420, startFu: 20, vp: 1.07, tech: 1.12, youAim: 1, youTough: 1, extra: 0, build: 1 }
 ];
 function aiInit(side) { AI.side = side; AI.t = 0; AI.wave = 0; }
@@ -3313,6 +3420,14 @@ function aiTick(dt) {
   if (AI.t > 0) return;
   AI.t = DIFF[G.diff].tick;
   var side = AI.side, hq = hqOf(side);
+  /* In annihilation the headquarters is only the first building to fall, and an army
+     that stops taking orders the moment it goes would leave the rest of the base to be
+     knocked down unopposed. Whatever is still standing becomes the base it works from;
+     production dries up on its own, since a company post turns out no engineers. */
+  if (!hq) {
+    for (var hb = 0; hb < G.blds.length; hb++)
+      if (G.blds[hb].side === side && !G.blds[hb].dead) { hq = G.blds[hb]; break; }
+  }
   if (!hq) return;
   var K = side === 'us'
     ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
@@ -3337,18 +3452,29 @@ function aiTick(dt) {
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && pop < infRoom + 6) {
     var mgs = aiOwn(function (u) { return u.key === K.mg; }).length;
     if (mgs < DIFF[G.diff].mg) queueUnit(b1, K.mg);
-    else if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58)) queueUnit(b1, K.elite);
-    else if (side !== G.side && DIFF[G.diff].tech > 1.2) queueUnit(hq, K.inf);
-    else queueUnit(hq, K.inf);
+    /* The company post used to sit outside the army cap, so an easy opponent held to
+       four sections by the headquarters quietly raised a dozen more out of the post.
+       The cap now holds everywhere, which leaves the easy settings spending what they
+       have on one of each arm rather than on a crowd of riflemen. */
+    else if (inf.length < DIFF[G.diff].army) {
+      if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58)) queueUnit(b1, K.elite);
+      else if (side !== G.side && DIFF[G.diff].tech > 1.2) queueUnit(hq, K.inf);
+      else queueUnit(hq, K.inf);
+    }
   }
   if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < POPCAP - 14) {
     var ats = aiOwn(function (u) { return u.key === K.at; }).length;
     var tech = DIFF[G.diff].tech, want = [];
     if (enemyVeh > ats) want.push(K.at);
-    if (G.t > Math.max(0, (1 - tech) * 620)) want.push(K.tank);
-    if (!vehs.length && G.t > Math.max(0, (1 - tech) * 420)) want.unshift(K.lt);
-    else if (K.heavy && G.t > 600 && countOf(side, K.heavy) < 1 && G.res[side].fu > 260) want.push(K.heavy);
-    else if (vehs.length < 3 && G.t > 240) want.push(K.lt2 || K.lt);
+    /* Armour is capped the same way the infantry is. Without it the easy settings turn
+       the manpower the army cap freed up into a column of tanks, which is a harder
+       fight than the crowd of riflemen it replaced. */
+    if (vehs.length < DIFF[G.diff].mech) {
+      if (G.t > Math.max(0, (1 - tech) * 620)) want.push(K.tank);
+      if (!vehs.length && G.t > Math.max(0, (1 - tech) * 420)) want.unshift(K.lt);
+      else if (K.heavy && G.t > 600 && countOf(side, K.heavy) < 1 && G.res[side].fu > 260) want.push(K.heavy);
+      else if (vehs.length < 3 && G.t > 240) want.push(K.lt2 || K.lt);
+    }
     /* try each in turn: a first choice it cannot afford must not stall the whole queue */
     for (var wi = 0; wi < want.length; wi++) if (queueUnit(b2, want[wi])) break;
   }
@@ -3356,7 +3482,10 @@ function aiTick(dt) {
   var siteBase = { x: hq.x + (side === 'us' ? 190 : -190), y: hq.y };
   if (engs.length) {
     var freeEng = engs.filter(function (e) { return !e.building; });
-    if (!b1 && G.res[side].mp >= 200 && freeEng.length) {
+    var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
+    if (stall && freeEng.length) {
+      resumeBuild(freeEng[0], stall);
+    } else if (!b1 && G.res[side].mp >= 200 && freeEng.length) {
       placeStructure(side, K.b1, siteBase.x, siteBase.y - 150, [freeEng[0]]);
     } else if (b1 && b1.built >= 1 && !b2 && G.res[side].mp >= 240 && G.res[side].fu >= 25 && freeEng.length) {
       placeStructure(side, K.b2, siteBase.x, siteBase.y + 150, [freeEng[0]]);
@@ -3371,6 +3500,8 @@ function aiTick(dt) {
     return vb - va;
   });
   var assigned = {};
+  var open = 0;
+  G.sectors.forEach(function (s) { if (s.owner !== side) open++; });
   var fighters = inf.concat(vehs);
   fighters.forEach(function (u) {
     if (u.dead) return;
@@ -3411,6 +3542,18 @@ function aiTick(dt) {
       var spot = hold || G.secById[G.hqLink[side][0]];
       if (!u.dest || dist(u, spot) > 260) orderMove(u, spot.x + rnd(-90, 90), spot.y + rnd(-90, 90), true);
       return;
+    }
+    /* In annihilation the ground is not the objective and holding it wins nothing:
+       left to take sectors the army ends up standing on ground it already owns while
+       the enemy base is never touched. Every second section goes at whatever of it is
+       nearest and standing, and once there is no ground left to take they all do. The
+       rest keep working the sectors, which is what pays for them. */
+    if (G.win === 'anni' && (u.id % 2 === 0 || !open)) {
+      var raze = nearestEnemyBuilding(u);
+      if (raze) {
+        if (u.order !== 'attack' || u.forced !== raze) orderAttack(u, raze);
+        return;
+      }
     }
     /* otherwise take ground */
     for (var t = 0; t < targets.length; t++) {
@@ -6471,9 +6614,9 @@ function shermanTurret(body, cap) {
     }));
   });
   shutL = shutL.concat(box(-4.2, -5.2, zr + 1.55, .55, 8.0, .55, C.steel, C.bare, C.steel, 0));
-  openL = openL.concat(box(-4.2, -5.2, zr + 1.55, .55, 8.0, .55, C.steel, C.bare, C.steel, 0))
-               .concat(commander('us', -4.2, -5.2, zr + 1.4));
-  HATCHES.us_sher = { shut: shutL, open: openL };
+  openL = openL.concat(box(-4.2, -5.2, zr + 1.55, .55, 8.0, .55, C.steel, C.bare, C.steel, 0));
+  HATCHES.us_sher = { shut: shutL, leaf: openL,
+                      open: openL.concat(commander('us', -4.2, -5.2, zr + 1.4)) };
   f = f.concat(periscope(-1.0, -1.0, zr - .1, 0, C.odDark));
   f = f.concat(periscope(5.0, -5.2, zr - .1, 0, C.odDark));
   f = f.concat(periscope(4.2, 5.8, zr - .1, 0, C.odDark));
@@ -7151,14 +7294,13 @@ function stuartTurret(body, cap) {
   var stL = prism(roundRectPlan(-2.6, -3.5, 3.5, 3.0, 1.1, 3), zr - .05, zr + .25, C.od, cap, C.odDark)
     .concat(prism(roundRectPlan(-2.6, -3.5, 2.8, 2.4, .9, 3), zr + .25, zr + .41, C.odLit, C.odLit, C.odLit))
     .concat(grabIron(-2.6, -3.5, zr + .41, 2.4, .45, C.steel, 'y'));
-  HATCHES.us_stuart = {
-    shut: stL,
-    open: roll(stL.map(function (q) {
-      return { v: q.v.map(function (p) { return [p[0], p[1] + 6.4, p[2] - zr]; }), c: q.c, n: q.n };
-    }), -(Math.PI / 2 - .2), 0, 0).map(function (q) {
-      return { v: q.v.map(function (p) { return [p[0], p[1] - 6.4, p[2] + zr]; }), c: q.c, n: q.n };
-    }).concat(commander('us', -2.6, -3.5, zr + .1))
-  };
+  var stLeaf = roll(stL.map(function (q) {
+    return { v: q.v.map(function (p) { return [p[0], p[1] + 6.4, p[2] - zr]; }), c: q.c, n: q.n };
+  }), -(Math.PI / 2 - .2), 0, 0).map(function (q) {
+    return { v: q.v.map(function (p) { return [p[0], p[1] - 6.4, p[2] + zr]; }), c: q.c, n: q.n };
+  });
+  HATCHES.us_stuart = { shut: stL, leaf: stLeaf,
+                        open: stLeaf.concat(commander('us', -2.6, -3.5, zr + .1)) };
   /* the ventilator dome between them, forward of the hatches */
   f = f.concat(cyl(4.4, 0, zr - .05, 1.7, 1.7, .8, 12, C.odDark, C.od, 0, true));
   f = f.concat(cyl(4.4, 0, zr + .75, 1.3, 1.3, .3, 12, C.steel, C.steel, 0, true));
@@ -7248,12 +7390,13 @@ function hatchShut(cx, cy, zl, r, col, cap) {
     .concat(cyl(cx, cy, zl + .5, r * .78, r * .78, .4, 18, cap, cap, 0, true))
     .concat(box(cx, cy, zl + .9, .5, r * 1.6, .5, '#8d9088', '#b4b7ae'));
 }
-/* the same lid stood up on its hinge at the back of the ring, leaning out a little, with
-   the commander in the ring behind it */
-function hatchOpen(cx, cy, zl, r, ha, col, cap, side) {
+/* The same lid stood up on its hinge at the back of the ring, leaning out a little. The
+   man is kept separate from it: a tank that has been given the roof gun already has its
+   commander standing at the pintle inside that mesh, and drawing one here as well put
+   two men in the same hatch. */
+function hatchLeaf(cx, cy, zl, r, ha, col, cap) {
   var leaf = pitch(cyl(0, 0, 0, r, r, .5, 18, col, cap, 0, true), Math.PI / 2 - .22, 0, 0);
-  return place(leaf, ha, cx + Math.cos(ha) * (r - .6), cy + Math.sin(ha) * (r - .6), zl + .3)
-    .concat(commander(side, cx, cy, zl));
+  return place(leaf, ha, cx + Math.cos(ha) * (r - .6), cy + Math.sin(ha) * (r - .6), zl + .3);
 }
 /* an MG34 on the Tiger II's cupola ring */
 function ktCupolaMG() {
@@ -8714,8 +8857,9 @@ function ktTurret(body, cap, sideC) {
   var zr = H;
   f = f.concat(cyl(-16, -5.2, zr, 4.4, 4.4, 2.2, 18, C.dg, C.dg, 0, true));
   for (var v = 0; v < 7; v++) { var va = v / 7 * TAU + .45; f = f.concat(box(-16 + Math.cos(va) * 4.2, -5.2 + Math.sin(va) * 4.2, zr + .6, 1.1, 1.6, 1.3, C.steel, '#1a1b16')); }
-  HATCHES.ger_p4 = { shut: hatchShut(-16, -5.2, zr + 2.2, 4.7, C.dgD, C.dg),
-                     open: hatchOpen(-16, -5.2, zr + 2.2, 4.7, Math.PI, C.dgD, C.dg, 'ger') };
+  var p4Leaf = hatchLeaf(-16, -5.2, zr + 2.2, 4.7, Math.PI, C.dgD, C.dg);
+  HATCHES.ger_p4 = { shut: hatchShut(-16, -5.2, zr + 2.2, 4.7, C.dgD, C.dg), leaf: p4Leaf,
+                     open: p4Leaf.concat(commander('ger', -16, -5.2, zr + 2.2)) };
   f = f.concat(cyl(-9, 4.6, zr, 3.4, 3.4, .7, 16, C.dgD, C.dg, 0, true));                       /* loader's hatch */
   f = f.concat(box(-9, 4.6, zr + .7, .5, 7.0, .5, C.steel, C.bare));
   f = f.concat(cyl(-20, 3.2, zr, 1.3, 1.3, 1.6, 10, C.dgD, C.dg, 0, true));                       /* Nahverteidigungswaffe */
@@ -9955,8 +10099,9 @@ function tigerTurret(body, cap, sideC) {
     var va = i / 6 * TAU + .5;
     f = f.concat(box(-7.4 + Math.cos(va) * 4.4, 6.6 + Math.sin(va) * 4.4, H + .95, 1.1, 1.6, .95, C.steel, '#1a1b16'));
   }
-  HATCHES.ger_tig = { shut: hatchShut(-7.4, 6.6, H + 1.65, 4.8, C.dgD, C.dg),
-                      open: hatchOpen(-7.4, 6.6, H + 1.65, 4.8, Math.PI, C.dgD, C.dg, 'ger') };
+  var tgLeaf = hatchLeaf(-7.4, 6.6, H + 1.65, 4.8, Math.PI, C.dgD, C.dg);
+  HATCHES.ger_tig = { shut: hatchShut(-7.4, 6.6, H + 1.65, 4.8, C.dgD, C.dg), leaf: tgLeaf,
+                      open: tgLeaf.concat(commander('ger', -7.4, 6.6, H + 1.65)) };
   f = f.concat(cyl(-4.0, -6.8, H, 3.5, 3.5, .65, 16, C.dgD, C.dg, 0, true));                           /* the loader's hatch */
   f = f.concat(box(-4.0, -6.8, H + .65, .5, 6.8, .5, C.steel, C.bare));
   f = f.concat(cyl(-11.2, -3.4, H, 1.3, 1.3, 1.5, 10, C.dgD, C.dg, 0, true));                          /* Nahverteidigungswaffe */
@@ -10681,7 +10826,8 @@ function buildModels() {
               mg: V.mg ? facesToBuffer(V.mg) : null, skirts: V.skirts ? facesToBuffer(V.skirts) : null,
               turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, mgUp: {},
               hatch: HATCHES[k] ? facesToBuffer(HATCHES[k].shut) : null,
-              cmdr: HATCHES[k] ? facesToBuffer(HATCHES[k].open) : null };
+              cmdr: HATCHES[k] ? facesToBuffer(HATCHES[k].open) : null,
+              leaf: HATCHES[k] ? facesToBuffer(HATCHES[k].leaf) : null };
     if (V.turUp) Object.keys(V.turUp).forEach(function (uk) { M.turUp[uk] = facesToBuffer(V.turUp[uk]); });
     if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
     if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
@@ -11027,8 +11173,12 @@ function drawUnits3D(v, list) {
       if (u.up && u.up.skirts) { if (B.skirts) drawGeom(B.skirts, hmat, false, vt); if (B.turSkirts) drawGeom(B.turSkirts, tmat, false, vt); }
       /* the hatch, shut or with the commander up in it */
       if (B.hatch || B.cmdr) {
-        var open = !buttonedUp(u);
-        if (open && B.cmdr) drawGeom(B.cmdr, tmat, false, vt);
+        /* The roof gun comes with the man who works it, standing in that very hatch, so
+           a tank carrying one keeps the lid up whatever else is happening: shutting it
+           under him put a closed hatch through his boots. Without the gun it is the
+           commander up there, and he drops inside the moment the tank is shot at. */
+        if (u.up && u.up.mg && B.mg) drawGeom(B.leaf, tmat, false, vt);
+        else if (!buttonedUp(u)) drawGeom(B.cmdr, tmat, false, vt);
         else if (B.hatch) drawGeom(B.hatch, tmat, false, vt);
       }
       _blobs.push({ x: u.x, y: u.y, r: M.big ? 40 : 30, a: .45 });
@@ -11991,13 +12141,22 @@ function buildCmds() {
       Object.keys(BUILDINGS).forEach(function (key) {
         var d = BUILDINGS[key];
         if (d.side !== G.side || d.hq) return;
-        var exists = G.blds.some(function (bb) { return bb.side === G.side && bb.key === key; });
+        var site = siteOf(G.side, key);
+        /* Once the site is pegged out the button has nothing left to place, so it turns
+           into the way back onto the job: it is already paid for, and without this the
+           only control the player has over an abandoned shell is greyed out. */
+        if (site && site.built < 1) {
+          addCmd(d.short, 'resume ' + Math.round(site.built * 100) + '%', d.hk, true,
+            function () { engs.forEach(function (e) { resumeBuild(e, site); }); toast('Back on the ' + d.name); sfx('click'); syncHud(); });
+          cmdList[cmdList.length - 1].can = function () { return true; };
+          return;
+        }
         addCmd(d.short, (d.cost.mp || 0) + (d.cost.fu ? ' <em>' + d.cost.fu + 'f</em>' : ''), d.hk,
-          !exists && canAfford(G.side, d.cost),
+          !site && canAfford(G.side, d.cost),
           function () { G.place = { key: key, engs: engs }; toast('Click to place the ' + d.name); syncHud(); },
           G.place && G.place.key === key);
         cmdList[cmdList.length - 1].can = function () {
-          return !G.blds.some(function (bb) { return bb.side === G.side && bb.key === key; }) && canAfford(G.side, d.cost);
+          return !siteOf(G.side, key) && canAfford(G.side, d.cost);
         };
       });
       addCmd('Sandbags', SANDBAG_COST + '', '3', G.res[G.side].mp >= SANDBAG_COST,
@@ -12061,9 +12220,16 @@ function updateTop(dt) {
   el('mpi').textContent = '+' + inc.mp.toFixed(1);
   el('fui').textContent = '+' + inc.fu.toFixed(2);
   el('popv').textContent = G.pop[G.side] + '/' + POPCAP;
-  el('vpus').textContent = Math.ceil(G.res.us.vp);
-  el('vpger').textContent = Math.ceil(G.res.ger.vp);
-  el('vpfill').style.width = (G.res.us.vp / (G.res.us.vp + G.res.ger.vp) * 100).toFixed(1) + '%';
+  if (G.win === 'anni') {
+    /* nothing runs down in annihilation, so the strip counts what is still standing */
+    var nu = countBuildings('us'), ng = countBuildings('ger');
+    el('vpus').textContent = nu; el('vpger').textContent = ng;
+    el('vpfill').style.width = (nu / Math.max(1, nu + ng) * 100).toFixed(1) + '%';
+  } else {
+    el('vpus').textContent = Math.ceil(G.res.us.vp);
+    el('vpger').textContent = Math.ceil(G.res.ger.vp);
+    el('vpfill').style.width = (G.res.us.vp / (G.res.us.vp + G.res.ger.vp) * 100).toFixed(1) + '%';
+  }
   el('clock').textContent = fmtTime(G.t);
   syncQueue();
   if (G.sel.some(function (s) { return s.dead; })) syncHud();
@@ -12079,8 +12245,9 @@ function endGame(winner, why) {
   el('overtext').textContent = FACTION[winner].name + ' wins after ' + fmtTime(G.t) + ' - ' + why + '.';
   el('over').classList.remove('hidden');
 }
-function startGame(side, diff) {
-  G.side = side; G.diff = diff; G.over = null; G.t = 0;
+function startGame(side, diff, mode) {
+  G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
+  el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.sel = [];
   G.sites = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
   var dd = DIFF[diff];
@@ -12132,7 +12299,8 @@ function startGame(side, diff) {
   auInit();
   computeVisibility();
   syncHud();
-  toast('Take the three victory sectors and hold them');
+  toast(G.win === 'anni' ? 'Level every building in the enemy base'
+                         : 'Take the three victory sectors and hold them');
 }
 
 /* ---------------------------------------------------------------- loop */
@@ -12175,7 +12343,7 @@ function frame(now) {
 }
 
 /* ---------------------------------------------------------------- boot */
-var chosenSide = 'us', chosenDiff = 1;
+var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp';
 document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
     document.querySelectorAll('.side').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
@@ -12190,7 +12358,17 @@ document.querySelectorAll('.pill').forEach(function (btn) {
     btn.setAttribute('aria-pressed', 'true');
   };
 });
-el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff); };
+document.querySelectorAll('.mode').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('.mode').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
+    btn.classList.add('on'); chosenMode = btn.dataset.mode;
+    btn.setAttribute('aria-pressed', 'true');
+    el('objtext').textContent = chosenMode === 'anni'
+      ? 'Destroy every building in the enemy base. Victory points do not run down.'
+      : 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.';
+  };
+});
+el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.side); if (!hq) return;
   select([hq], false); focusSelection();
@@ -12608,7 +12786,7 @@ function edTestPlay() {
   ED.on = false; el('editor').classList.add('hidden');
   fog = true;
   G.mapData = ED.data;
-  startGame(chosenSide, chosenDiff);
+  startGame(chosenSide, chosenDiff, chosenMode);
 }
 /* wiring */
 (function () {
@@ -12625,7 +12803,7 @@ function edTestPlay() {
   el('edblank').addEventListener('click', edBlank);
   el('edexit').addEventListener('click', edClose);
   el('openeditor').addEventListener('click', function () { edOpen(null); });
-  el('playcustom').addEventListener('click', function () { var d = edLoadLocal(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff); } });
+  el('playcustom').addEventListener('click', function () { var d = edLoadLocal(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode); } });
   edRefreshStart();
 })();
 
