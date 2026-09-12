@@ -1466,6 +1466,27 @@ function coverOf(u, fromAng) {
   return n ? Math.round(sum / n) : 0;
 }
 /* shelling chews works apart, so a position has to be re-dug or abandoned */
+/* Every patch whose circle comes within `reach` of a point, each one once. */
+var _nstamp = 0;
+function coversNear(x, y, reach) {
+  var out = [];
+  if (!G.coverIdx) return out;
+  _nstamp++;
+  var pad = reach + 60;
+  var i0 = Math.max(0, ((x - pad) / COVG) | 0), i1 = Math.min(CGW - 1, ((x + pad) / COVG) | 0);
+  var j0 = Math.max(0, ((y - pad) / COVG) | 0), j1 = Math.min(CGH - 1, ((y + pad) / COVG) | 0);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var list = G.coverIdx[j * CGW + i];
+    if (!list) continue;
+    for (var k = 0; k < list.length; k++) {
+      var c = list[k];
+      if (c.ns === _nstamp) continue;
+      c.ns = _nstamp;
+      out.push(c);
+    }
+  }
+  return out;
+}
 var _cstamp = 0;
 function damageCover(x, y, radius, amount) {
   if (!G.coverIdx) return;
@@ -1497,7 +1518,7 @@ function cidx(cx, cy) { return cy * GW + cx; }
    behind it are hidden rather than safe. Keeping them apart matters: the movement grid
    now refuses ground too steep to climb, and reading fire off it meant a squad could
    not shoot across a gully it was standing on the lip of. */
-var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH);
+var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH), road = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -1545,6 +1566,19 @@ function rebuildGrid() {
   });
   /* a hedge hides a section and does not save it */
   G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2); });
+  /* And the metalling. A street is the reason a town like this is fought street by
+     street: it is the only ground a lorry or a tank can make time on, and the map has
+     had a road network painted on it that meant nothing to anything driving over it. */
+  road.fill(0);
+  G.roads.forEach(function (rd) {
+    for (var i = 0; i < rd.length - 1; i++) markSeg(road, rd[i].x, rd[i].y, rd[i + 1].x, rd[i + 1].y);
+  });
+  G.paved.forEach(function (p) { markRect(road, p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0); });
+}
+function onRoad(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return road[cidx(cx, cy)] === 1;
 }
 /* Walk a line and ask whether anything stands in it. Two things can: something solid on
    the blocker grid, and the ground itself, which is why a crest gives dead ground behind
@@ -1964,7 +1998,11 @@ function moveUnit(u, dt) {
   var wantX = null, wantY = null;
   if (u.path && u.pi < u.path.length) { wantX = u.path[u.pi].x; wantY = u.path[u.pi].y; }
   u.moving = false;
-  if (wantX === null) { u.vx *= .82; u.vy *= .82; return; }
+  if (wantX === null) {
+    u.vx *= .82; u.vy *= .82;
+    if (u.cat === 'veh') u.sp = Math.max(0, (u.sp || 0) - 260 * dt);
+    return;
+  }
 
   var sp = u.speed;
   if (u.immob > 0) { u.vx *= .8; u.vy *= .8; return; }   /* a broken track goes nowhere */
@@ -1974,6 +2012,20 @@ function moveUnit(u, dt) {
   if (u.setup > 0 && u.def.setup) u.setup = 0;
 
   var dx = wantX - u.x, dy = wantY - u.y, d = Math.hypot(dx, dy);
+  /* The ground decides how fast anything crosses it. Climbing costs, dropping gives a
+     little back, and the metalled streets are the only place a vehicle makes its paper
+     speed: half the point of a town fight is who holds the roads. Tracks care less
+     about the slope than wheels do and none of it applies to a man on foot, who is
+     slowed by a bank rather than stopped by it. */
+  if (d > 1) {
+    var ahead = 26 / d;
+    var gz0 = groundZ(u.x, u.y), gz1 = groundZ(u.x + dx * ahead, u.y + dy * ahead);
+    var rise = (gz1 - gz0) / Math.min(26, d);
+    var wheeled = u.cat === 'veh' && (u.key === 'ger_sd222' || u.key === 'us_m3' || u.key === 'ger_h251');
+    var grip = u.cat !== 'veh' ? .55 : wheeled ? 1.5 : 1.0;
+    sp *= clamp(1 - rise * grip * (rise > 0 ? 1 : .35), .35, 1.12);
+    if (u.cat === 'veh') sp *= onRoad(u.x, u.y) ? 1.22 : .94;
+  }
   if (d < (u.pi === u.path.length - 1 ? 14 : 26)) {
     u.pi++;
     if (u.pi >= u.path.length) {
@@ -1987,13 +2039,26 @@ function moveUnit(u, dt) {
   if (sp <= 0) return;
   var tx = dx / d, ty = dy / d;
 
-  /* vehicles turn before they drive */
+  var rev = 0;
   if (u.cat === 'veh') {
+    /* A driver asked to go a short way behind him backs up rather than turning the
+       whole vehicle round in a street the width of the vehicle. */
     var want = Math.atan2(ty, tx), df = angDiff(u.facing, want);
+    if (Math.abs(df) > 2.1 && d < 150) {
+      rev = 1;
+      df = angDiff(u.facing, want + Math.PI);
+      sp *= .55;                                         /* and he does it slowly */
+    }
     u.facing += clamp(df, -2.6 * dt, 2.6 * dt);
     if (Math.abs(df) > 1.0) sp *= .25; else if (Math.abs(df) > .5) sp *= .6;
+    /* Weight. Nothing on tracks steps off at speed or stops on the spot, and a tank
+       that did read as a model being slid across a table. */
+    var accel = (u.def.hp > 1000 ? 70 : u.def.hp > 500 ? 110 : 180) * dt;
+    u.sp = (u.sp || 0) + clamp(sp - u.sp, -accel * 2.2, accel);
+    sp = Math.max(0, u.sp);
   } else {
-    u.facing = Math.atan2(ty, tx);
+    /* a man turns onto a new bearing rather than pivoting on the spot */
+    u.facing += clamp(angDiff(u.facing, Math.atan2(ty, tx)), -6.5 * dt, 6.5 * dt);
   }
 
   /* separation from neighbours so squads do not stack into one dot */
@@ -2008,6 +2073,7 @@ function moveUnit(u, dt) {
     }
   }
   var mx = tx + px * .9, my = ty + py * .9, ml = Math.hypot(mx, my) || 1;
+  if (rev) { mx = tx; my = ty; ml = 1; }                 /* backing up, no jostling */
   var nx = u.x + mx / ml * sp * dt, ny = u.y + my / ml * sp * dt;
   if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
   else if (walkable(nx, u.y)) u.x = nx;
@@ -2048,8 +2114,11 @@ function chooseCover(u, threatAng) {
      the men from the enemy's bearing to be worth taking at all. */
   var best = null, bs = 0, need = aliveModels(u);
   var ox = u.x, oy = u.y;
-  for (var i = 0; i < G.covers.length; i++) {
-    var c = G.covers[i];
+  /* only the patches near enough to walk to, which is what the index is for: this runs
+     for every halted section on the map and used to read the whole list */
+  var near = coversNear(ox, oy, 70);
+  for (var i = 0; i < near.length; i++) {
+    var c = near[i];
     if (c.type < 1 || c.hp <= 0 || c.kind === 'ditch') continue;
     var d, cap, ax, ay;
     if (c.axis !== null) {
@@ -2165,14 +2234,18 @@ function updateModels(u, dt) {
       var diff = Math.atan2(Math.sin(u.want - u.turret), Math.cos(u.want - u.turret));
       u.turret += clamp(diff, -rate, rate);
     }
-    u.recoil = Math.max(0, (u.recoil || 0) - dt * 5.5);
+    u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
     /* the hull rocks a little as it drives */
-    u.roll = u.moving ? (u.roll || 0) + dt * 7 : 0;
+    u.roll = u.moving ? (u.roll || 0) + dt * 7 * clamp((u.sp || 0) / Math.max(1, u.def.speed), .3, 1.2) : 0;
     return;
   }
   var cs = Math.cos(u.facing), sn = Math.sin(u.facing);
   var prone = u.sup > 1.0;
   var halted = !u.moving && !u.retreat;
+  /* in contact and standing still means the weapon is up, whether or not this tick
+     happens to be one he squeezes off a round on */
+  var engaged = !!(u.target && !u.target.dead && !u.moving && !u.retreat && u.setup <= 0);
+  var cover = u.gar ? 4 : (halted ? coverAt(u.x, u.y) : 0);
   if (halted) {
     /* choose the piece once, and again only if the threat has swung round or someone
        has fallen; the slots are then fixed, so nobody shuffles on the spot */
@@ -2214,8 +2287,31 @@ function updateModels(u, dt) {
              : (moved > .35 ? Math.atan2(m.y - py0, m.x - px0) : u.facing);
     if (m.f === undefined) m.f = want;
     else m.f += Math.atan2(Math.sin(want - m.f), Math.cos(want - m.f)) * clamp(dt * 9, 0, 1);
-    m.prone = prone || (u.sup > .55 && !u.moving);
-    if (m.fire > 0) m.fire -= dt;
+    /* What he is doing with himself. In order of how little choice he has about it:
+       pinned men are flat and crawl if they move at all, men under fire go down, men on
+       their feet walk, men in contact have the weapon up, and men halted behind
+       something get down behind it rather than standing over it. */
+    if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
+    else if (u.sup > .55 && !u.moving) m.pose = POSE_PRONE;
+    else if (u.moving) m.pose = POSE_WALK;
+    else if (u.gar) m.pose = POSE_FIRE;                    /* at a window, weapon up */
+    else if (engaged) m.pose = cover >= 2 ? POSE_CFIRE : POSE_FIRE;
+    else if (cover >= 3) m.pose = POSE_PRONE;              /* dug in, and nothing to shoot */
+    else if (cover >= 1) m.pose = POSE_CROUCH;
+    else m.pose = POSE_STAND;
+    m.prone = m.pose === POSE_PRONE || m.pose === POSE_CRAWL;
+    if (m.fire > 0) {
+      m.fire -= dt;
+      if (!m.flashed) {
+        m.flashed = 1;
+        if (onScreen(m.x, m.y)) {
+          var mz = muzzlePoint(m);
+          spawnFx('flash', mz.x, mz.y, 7.5, mz.z);
+        }
+      }
+    } else m.flashed = 0;
+    /* the individual rifles of a section do not all go off on the same instant */
+    if (m.fireQ > 0) { m.fireQ -= dt; if (m.fireQ <= 0) { m.fire = .085; m.fireQ = 0; } }
   }
 }
 
@@ -2230,6 +2326,14 @@ function penChance(pen, armor) {
    front; the sides are a little over half of that and the back plate barely a third, and
    that difference is the whole reason to work round a Tiger instead of trading with it.
    A vehicle with its engine off and its crew out of it is not presenting anything. */
+/* The displacement of a gun from the phase left on its recoil. It is thrown back in the
+   first instant and eased forward over the rest of it, which is what a hydraulic buffer
+   does and what the eye expects to see. */
+function recoilAt(ph) {
+  if (!ph) return 0;
+  var back = 1 - ph;                                    /* 0 at the shot, 1 when recovered */
+  return back < .18 ? back / .18 : Math.pow(1 - (back - .18) / .82, 1.6);
+}
 function armourAt(t, fromX, fromY) {
   if (!t.armor) return 0;
   var rel = Math.abs(angDiff(t.facing, Math.atan2(fromY - t.y, fromX - t.x)));
@@ -2433,6 +2537,8 @@ function fireOneSecondary(u, key, dt) {
     var tx0 = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
     var ty0 = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
     G.shots.push({ kind: 'tracer', x: tx0 - Math.cos(u.turret) * 8, y: ty0 - Math.sin(u.turret) * 8, tx: best.x + rnd(-8, 8), ty: best.y + rnd(-8, 8), t: 0, dur: .14 });
+    spawnFx('flash', tx0 + Math.cos(u.turret) * 14, ty0 + Math.sin(u.turret) * 14, 6,
+            groundZ(u.x, u.y) + (mo.z || 0) + 6);
     if (Math.random() < .4) sfx('mg');
   }
   if (Math.random() < acc) damage(best, w.dmg * rnd(.85, 1.15), u);
@@ -2479,6 +2585,8 @@ function fireAt(u, t, dt) {
     var off = Math.abs(angDiff(u.turret, angTo(u, t)));
     if (off > (u.moving ? .16 : .09)) return;
   }
+  /* and a crewed gun has to be laid on the same way round */
+  if (u.cat === 'team' && !u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > .11) return;
   /* hedges do not block fire, stone walls and structures do */
   if (!fireLine(u, t)) return;
   var shots = u.cat === 'veh' ? 1 : (w.shell ? 1 : aliveModels(u));
@@ -2486,7 +2594,19 @@ function fireAt(u, t, dt) {
   u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * (u.gunDmg > 0 ? 1.8 : 1) *
              (u.moving && u.cat === 'veh' ? 1.35 : 1) * rnd(.9, 1.12);
   u.fireT = .12;
-  if (u.cat !== 'veh') { var k = 0; for (var i = 0; i < u.models.length; i++) if (u.models[i].alive && k++ < shots) u.models[i].fire = .1; }
+  /* A section's volley is a ripple down the line, not a salvo: the rounds all count at
+     once, and only the flashes are spread out over the fraction of a second the men
+     actually take. A rifle group going off as one instant of light read as a firing
+     squad. */
+  if (u.cat !== 'veh') {
+    var k = 0;
+    for (var i = 0; i < u.models.length; i++) {
+      var mm2 = u.models[i];
+      if (!mm2.alive || k >= shots) continue;
+      if (k === 0) { mm2.fire = .085; mm2.flashed = 0; } else mm2.fireQ = k * (w.rof < .25 ? .035 : .07) * rnd(.6, 1.4);
+      k++;
+    }
+  }
 
   var cov = t.cat === 'veh' ? 0 : (t.gar ? 4 : coverAt(t.x, t.y, Math.atan2(t.y - u.y, t.x - u.x)));
   var acc = w.acc * COVER[cov].acc;
@@ -2528,7 +2648,24 @@ function fireAt(u, t, dt) {
   if (w.shell) {
     if (u.cat === 'veh') {
       u.recoil = 1;
-      if (onScreen(u.x, u.y)) spawnFx('brass', u.x - Math.cos(u.turret) * 8, u.y - Math.sin(u.turret) * 8);
+      if (onScreen(u.x, u.y)) {
+        var gm = gunMuzzle(u);
+        spawnFx('flash', gm.x, gm.y, 16 + w.pen * .022, gm.z);
+        spawnFx('gunsmoke', gm.x, gm.y, 10, gm.z);
+        spawnFx('brass', u.x - Math.cos(u.turret) * 8, u.y - Math.sin(u.turret) * 8);
+      }
+    } else if (u.cat === 'team') {
+      u.recoil = 1;
+      if (onScreen(u.x, u.y)) {
+        var tm2 = u.models.find(function (q) { return q.alive; });
+        if (tm2) {
+          var gm2 = GUNMODEL[u.key];
+          var reach = gm2 ? gm2.bar : (u.def.atOnly ? 44 : 26), lift = gm2 ? gm2.z : 13;
+          var bx = tm2.x + Math.cos(u.facing) * reach, by = tm2.y + Math.sin(u.facing) * reach;
+          spawnFx('flash', bx, by, gm2 ? 20 : 15, groundZ(tm2.x, tm2.y) + lift);
+          spawnFx('gunsmoke', bx, by, 11, groundZ(tm2.x, tm2.y) + lift);
+        }
+      }
     }
     /* A shell that misses goes somewhere, and where it goes matters when it has a
        bursting radius: it used to land within eight units of the target whether it hit
@@ -2656,11 +2793,29 @@ function killBuilding(b) {
 }
 
 /* ---------------------------------------------------------------- effects */
-var FXDUR = { boom: .72, hit: .3, spark: .26, smoke: 2.6, dust: .8, exhaust: 1.3, brass: .9 };
-function spawnFx(kind, x, y, r) {
+var FXDUR = { boom: .72, hit: .3, spark: .26, smoke: 2.6, dust: .8, exhaust: 1.3, brass: .9,
+              flash: .07, gunsmoke: 1.5 };
+/* z is where the effect actually is rather than where the ground under it is: a muzzle
+   flash belongs at the muzzle, and the barrel smoke that follows it drifts from there. */
+function spawnFx(kind, x, y, r, z) {
   if (G.fx.length > (MOB ? 130 : 260)) return;
-  G.fx.push({ kind: kind, x: x, y: y, r: r || 0, t: 0,
+  G.fx.push({ kind: kind, x: x, y: y, r: r || 0, t: 0, z: z,
               dur: FXDUR[kind] || .25, a: rnd(TAU) });
+}
+/* Where a man's muzzle is, which depends on what he is doing with himself. */
+function muzzlePoint(m) {
+  var reach = m.pose === POSE_PRONE || m.pose === POSE_CRAWL ? 15 : m.pose === POSE_CROUCH || m.pose === POSE_CFIRE ? 11 : 13;
+  var hz = m.pose === POSE_PRONE || m.pose === POSE_CRAWL ? 3.4 : m.pose === POSE_CROUCH || m.pose === POSE_CFIRE ? 12.4 : 16.4;
+  return { x: m.x + Math.cos(m.f) * reach, y: m.y + Math.sin(m.f) * reach, z: groundZ(m.x, m.y) + hz };
+}
+/* Where a vehicle's is. The mount sits off the hull centre and the barrel reaches out
+   from the mount on the turret's own bearing. */
+function gunMuzzle(u) {
+  var M = VMODEL[u.key] || {}, mo = mountPose(u, M), gz = groundZ(u.x, u.y);
+  var mx = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
+  var my = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
+  return { x: mx + Math.cos(u.turret) * (mo.bar + 6), y: my + Math.sin(u.turret) * (mo.bar + 6),
+           z: gz + (mo.z || 0) + (mo.gunZ || 0) };
 }
 function onScreen(x, y) { return inView(view(), x, y, 80); }
 function updateShots(dt) {
@@ -2885,6 +3040,7 @@ function updateUnit(u, dt) {
   if (u.immob > 0) u.immob -= dt;
   if (u.gunDmg > 0) u.gunDmg -= dt;
   if (u.shaken > 0) u.shaken -= dt;
+  if (u.cat === 'team') u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
   if (u.hitT > 0) u.hitT -= dt;
   u.calm += dt;
   if (u.fireT > 0) u.fireT -= dt;
@@ -2986,7 +3142,13 @@ function updateUnit(u, dt) {
   if (u.cat === 'veh' && !u.retreat) fireSecondary(u, dt);
   if (u.target && !u.target.dead) {
     if (!u.moving || u.cat === 'veh') fireAt(u, u.target, dt);
-    if (!u.moving && u.cat !== 'veh' && !u.def.arc) u.facing = angTo(u, u.target);
+    /* A section turns to face what it is shooting at; a gun on a split trail has to be
+       heaved round on its trail and takes its time about it, which is the whole reason
+       a flanking move works against one. */
+    if (!u.moving && u.cat !== 'veh' && !u.def.arc) {
+      if (u.cat === 'team') u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -.85 * dt, .85 * dt);
+      else u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -7 * dt, 7 * dt);
+    }
     if (u.cat === 'veh') u.want = angTo(u, u.target);
   } else if (u.cat === 'veh') {
     u.want = u.facing;
@@ -10113,15 +10275,27 @@ function variantForModel(u, i) {
   return i === 0 && u.key === 'ger_mg42' ? 'fj_mg42' : 'fj_rifle';
 }
 /* one soldier, posed. phase runs 0..1 over a stride; -1 means standing still */
-function soldierModel(variant, phase) {
+/* A man in one of four postures. `pose` is what he is doing with himself rather than
+   where he is: standing or walking, down on his haunches behind something, or with the
+   weapon into his shoulder. A section that stands bolt upright behind a wall and never
+   raises a rifle reads as a row of tin soldiers however good the model is, and the
+   posture is most of what tells the player what the squad is doing. */
+function soldierModel(variant, phase, pose) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side];
   var f = [], coat = side === 'ger' ? '#8a8460' : k.coat;
+  var firing = pose === 'fire' || pose === 'crouchfire';
+  var crouch = pose === 'crouch' || pose === 'crouchfire';
   var ph = phase < 0 ? 0 : phase;
   var sw = phase < 0 ? 0 : Math.sin(ph * TAU), sw2 = phase < 0 ? 0 : Math.sin(ph * TAU + Math.PI);
   var bob = phase < 0 ? 0 : Math.abs(Math.cos(ph * TAU)) * .5;
   /* the knee bends the shin back (a negative pitch here), most when the leg is
      swinging forward; at rest the knees carry a slight flex and the stance is open */
   var kneeF = phase < 0 ? -.12 : -(.18 + Math.max(0, sw) * 1.05), kneeB = phase < 0 ? -.12 : -(.18 + Math.max(0, sw2) * 1.05);
+  /* Down on his haunches the thigh comes forward and the shin folds back under it, so
+     the hip has to come down to where the two of them actually leave it or the man
+     floats. Everything above the hip drops with it. */
+  var hipZ = crouch ? 7.5 : 10.6, drop = hipZ - 10.6;
+  if (crouch) { kneeF = -1.66; kneeB = -1.78; }
 
   /* ---- legs: thigh and shin as separate segments with a knee, gaiters and boots ---- */
   function leg(swing, knee, y) {
@@ -10131,13 +10305,15 @@ function soldierModel(variant, phase) {
     else shin = shin.concat(box(0, 0, -5.0, 1.8, 1.8, 2.4, k.boot, lit(k.boot, 1.15)));                    /* jump boots */
     var boot = box(.7, 0, -5.9, 3.2, 1.45, 1.1, k.boot, lit(k.boot, 1.2), lit(k.boot, .9), .3);
     var lower = place(pitch(shin.concat(boot), knee, 0, 0), 0, 0, 0, -5.3);
-    return place(pitch(thigh.concat(lower), swing, 0, 0), 0, 0, y, 10.6 + bob);
+    return place(pitch(thigh.concat(lower), swing, 0, 0), 0, 0, y, hipZ + bob);
   }
   var stanceF = phase < 0 ? .16 : 0, stanceB = phase < 0 ? -.10 : 0;
+  if (crouch) { stanceF = .80; stanceB = .88; }
+  else if (firing) { stanceF = .34; stanceB = -.26; }     /* one foot forward, braced */
   f = f.concat(leg(sw * .6 + stanceF, kneeF, -1.15));
   f = f.concat(leg(sw2 * .6 + stanceB, kneeB, 1.15));
 
-  var lean = phase < 0 ? .05 : .11, bodyStart = f.length;
+  var lean = crouch ? .21 : firing ? .17 : phase < 0 ? .05 : .11, bodyStart = f.length;
   /* ---- torso: the battledress blouse, tapered, with the waist band and collar ---- */
   f = f.concat(box(0, 0, 10.4 + bob, 2.9, 4.6, 3.2, k.trous, k.trous, lit(k.trous, .9), .7));               /* hips */
   f = f.concat(box(0, 0, 13.4 + bob, 3.0, 5.0, 4.4, coat, lit(coat, 1.05), k.coatD, .8));                  /* chest */
@@ -10175,11 +10351,20 @@ function soldierModel(variant, phase) {
      built between points so the pose is exactly what is written here ---- */
   var heavy = V.weapon === 'piat' || V.weapon === 'schreck' || V.weapon === 'bren' || V.weapon === 'mg42' ||
               V.weapon === 'm1919' || V.weapon === 'zook';
-  var swing = sw * .35;
+  var swing = firing ? 0 : sw * .35;
   var rShoulder = [.2, 2.9, 17.6 + bob], lShoulder = [.2, -2.9, 17.6 + bob];
   var rElbow = [-.6 + swing, 3.5, 14.3 + bob], rHand = [1.9 + swing, .9, 13.9 + bob];
   var lElbow = [2.0, -3.6, 14.8 + bob], lHand = [5.6, -1.4, 15.7 + bob];
   if (heavy) { rHand = [1.2 + swing, 1.4, 14.4 + bob]; lHand = [5.0, -1.2, 16.4 + bob]; lElbow = [2.2, -3.8, 15.4 + bob]; }
+  if (firing) {
+    /* The butt into the right shoulder, the right elbow out, the left hand forward under
+       the fore-end, and the whole weapon lying along the line the eye is looking down.
+       It is not quite along the body: the sights come back over the right shoulder, so
+       the muzzle sits a little inboard of the butt. */
+    rElbow = [-.9, 4.4, 14.8 + bob]; rHand = [1.3, 2.1, 16.2 + bob];
+    lElbow = [3.0, -1.9, 15.0 + bob]; lHand = [6.2, .9, 16.5 + bob];
+    if (heavy) { rHand = [.9, 2.3, 16.0 + bob]; lHand = [5.8, 1.0, 16.8 + bob]; lElbow = [2.9, -1.6, 15.4 + bob]; }
+  }
   [[rShoulder, rElbow, rHand], [lShoulder, lElbow, lHand]].forEach(function (A) {
     f = f.concat(limb(A[0], A[1], 1.35, coat, lit(coat, 1.05), k.coatD, .4));
     f = f.concat(limb(A[1], A[2], 1.2, coat, lit(coat, 1.05), k.coatD, .36));
@@ -10196,26 +10381,42 @@ function soldierModel(variant, phase) {
   var gx = rHand[0], gy = rHand[1], gz = rHand[2], fx = lHand[0], fy = lHand[1], fz = lHand[2];
   var wdx = fx - gx, wdy = fy - gy, wdz = fz - gz, wdxy = Math.hypot(wdx, wdy);
   f = f.concat(place(pitch(w, Math.atan2(wdz, wdxy), 0, 0), Math.atan2(wdy, wdx), gx + 1.0, gy, gz + .6));
-  /* lean the whole upper body forward about the hips */
+  /* lean the whole upper body forward about the hips, and take it down with them */
   var upper = pitch(f.slice(bodyStart), lean, 0, 10.4 + bob);
+  /* not `at`, which does not carry a face's material or its alpha flag through, and the
+     scrim over the helmet is both */
+  if (drop) upper = upper.map(function (q) {
+    return { v: q.v.map(function (p) { return [p[0], p[1], p[2] + drop]; }),
+             c: q.c, n: q.n, m: q.m, alpha: q.alpha };
+  });
   f = f.slice(0, bodyStart).concat(upper);
   return f;
 }
-/* the same man flat on the ground, weapon forward */
-function proneModel(variant) {
+/* The same man flat on the ground, weapon forward. `phase` puts him through a crawl:
+   pinned men were moving across the ground in a fixed pose, which reads as a body being
+   dragged rather than a man pulling himself along on his elbows. */
+function proneModel(variant, phase) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side], coat = k.coat;
-  var f = [];
+  var f = [], cw = phase ? Math.sin(phase * TAU) : 0;
   f = f.concat(box(-2.5, 0, .6, 6.5, 4.8, 2.6, coat, lit(coat, 1.05), k.coatD));                             /* torso */
   f = f.concat(box(-7.0, 0, .5, 3.6, 4.4, 2.2, k.trous, k.trous, lit(k.trous, .9)));                        /* hips */
-  [[-1.4, .35], [1.4, -.35]].forEach(function (p) {
-    f = f.concat(place(box(-2.3, 0, 0, 4.6, 1.8, 1.7, k.trous, k.trous, lit(k.trous, .9)), p[1], -8.6, p[0], .6));
-    f = f.concat(place(box(-2.1, 0, 0, 4.2, 1.6, 1.5, k.trous, k.trous, lit(k.trous, .9)), p[1] * 1.6, -12.8, p[0] * 1.6, .6));
-    f = f.concat(place(box(-.8, 0, 0, 1.6, 1.4, 2.8, k.boot, lit(k.boot, 1.15)), p[1] * 1.6, -16.6, p[0] * 2.0, .3));
+  /* The legs, and on a crawl beat one swings wide while the other draws in. The three
+     segments of a leg are placed at fixed points here rather than hung off each other,
+     so a beat may only swing them together: moving one of the three on its own takes
+     the leg apart. */
+  [[-1.4, .35, 1], [1.4, -.35, -1]].forEach(function (p) {
+    var kick = cw * p[2], yw = p[1] + kick * .42, yy = p[0] + kick * 1.4;
+    f = f.concat(place(box(-2.3, 0, 0, 4.6, 1.8, 1.7, k.trous, k.trous, lit(k.trous, .9)), yw, -8.6, yy, .6));
+    f = f.concat(place(box(-2.1, 0, 0, 4.2, 1.6, 1.5, k.trous, k.trous, lit(k.trous, .9)), yw * 1.6, -12.8, yy * 1.6, .6));
+    f = f.concat(place(box(-.8, 0, 0, 1.6, 1.4, 2.8, k.boot, lit(k.boot, 1.15)), yw * 1.6, -16.6, yy * 2.0, .3));
   });
   f = f.concat(box(-3.2, 0, 3.2, 3.2, 3.6, 2.4, side === 'us' ? k.pack : k.webD, lit(side === 'us' ? k.pack : k.webD, 1.1)));   /* pack */
-  [[-1, -3.0], [1, 3.0]].forEach(function (p) {
-    f = f.concat(place(box(1.8, 0, 0, 3.6, 1.25, 1.25, coat, lit(coat, 1.05), k.coatD), p[0] * .5, 0.6, p[1], 1.6));
-    f = f.concat(place(box(1.5, 0, 0, 3.0, 1.1, 1.1, coat, lit(coat, 1.05), k.coatD), -p[0] * .5, 3.4, p[1] * .55, 2.2));
+  /* the arms, reaching alternately: on a beat one goes out ahead and takes his weight,
+     and both halves of it go forward together for the same reason as the legs */
+  [[-1, -3.0, -1], [1, 3.0, 1]].forEach(function (p) {
+    var reach = cw * p[2] * 1.6;
+    f = f.concat(place(box(1.8, 0, 0, 3.6, 1.25, 1.25, coat, lit(coat, 1.05), k.coatD), p[0] * .5, 0.6 + reach, p[1], 1.6));
+    f = f.concat(place(box(1.5, 0, 0, 3.0, 1.1, 1.1, coat, lit(coat, 1.05), k.coatD), -p[0] * .5, 3.4 + reach, p[1] * .55, 2.2));
   });
   var headF = headModel(k, 2.9).map(function (q) { return { v: q.v.map(function (p) { return [p[0] + 1.8 + (p[2] - 2.9) * .6, p[1], p[2] - (p[0]) * .5 + .6]; }), c: q.c, n: q.n }; });
   f = f.concat(headF);
@@ -10226,7 +10427,14 @@ function proneModel(variant) {
 }
 
 var WALKF = 9, STRIDE_LEN = 16;      /* one full stride cycle in world units */
-var MODELS = { sol: {}, solA: {}, prone: {}, proneA: {}, veh: {}, team: {}, at: {}, gun: {}, bld: {}, bldA: {}, tree: [], bush: [] };
+var CRAWLF = 3, CRAWL_LEN = 11;      /* and one crawl beat, which covers less ground */
+/* Every posture a man can be in, baked once per variant. POSE_* are what updateModels
+   writes into a model and what the draw path reads back. */
+var POSE_STAND = 0, POSE_WALK = 1, POSE_CROUCH = 2, POSE_FIRE = 3, POSE_CFIRE = 4,
+    POSE_PRONE = 5, POSE_CRAWL = 6;
+var MODELS = { sol: {}, solA: {}, prone: {}, proneA: {}, crouch: {}, crouchA: {},
+               fire: {}, fireA: {}, cfire: {}, cfireA: {}, crawl: {}, crawlA: {},
+               veh: {}, team: {}, at: {}, gun: {}, bld: {}, bldA: {}, tree: [], bush: [] };
 /* the mesh a weapon team stands round: its own piece if it has one, otherwise the
    side's anti-tank gun or its medium machine gun */
 function teamMesh(u) {
@@ -10236,7 +10444,17 @@ function teamMesh(u) {
 function buildModels() {
   if (!GLOK) return;
   buildVehicleModels();
-  MODELS.sol = {}; MODELS.solA = {}; MODELS.prone = {}; MODELS.proneA = {}; MODELS.veh = {}; MODELS.team = {}; MODELS.at = {}; MODELS.bld = {}; MODELS.bldA = {};
+  MODELS.sol = {}; MODELS.solA = {}; MODELS.prone = {}; MODELS.proneA = {};
+  MODELS.crouch = {}; MODELS.crouchA = {}; MODELS.fire = {}; MODELS.fireA = {};
+  MODELS.cfire = {}; MODELS.cfireA = {}; MODELS.crawl = {}; MODELS.crawlA = {};
+  MODELS.veh = {}; MODELS.team = {}; MODELS.at = {}; MODELS.bld = {}; MODELS.bldA = {};
+  /* split a face list into its opaque and its alpha-tested halves, which is what the
+     draw path wants and what every pose below is stored as */
+  function bake(faces, solid, alpha, key) {
+    solid[key] = facesToBuffer(faces.filter(function (q) { return !q.alpha; }));
+    var al = faces.filter(function (q) { return q.alpha; });
+    alpha[key] = al.length ? facesToBuffer(al) : null;
+  }
   Object.keys(SOLDIER_VARIANTS).forEach(function (variant) {
     MODELS.sol[variant] = []; MODELS.solA[variant] = [];
     for (var fr = 0; fr < WALKF; fr++) {
@@ -10245,10 +10463,19 @@ function buildModels() {
       var sa = sf.filter(function (q) { return q.alpha; });
       MODELS.solA[variant].push(sa.length ? facesToBuffer(sa) : null);
     }
-    var pf = proneModel(variant);
-    MODELS.prone[variant] = facesToBuffer(pf.filter(function (q) { return !q.alpha; }));
-    var pa = pf.filter(function (q) { return q.alpha; });
-    MODELS.proneA[variant] = pa.length ? facesToBuffer(pa) : null;
+    bake(proneModel(variant), MODELS.prone, MODELS.proneA, variant);
+    /* vehicle crew stand where they stand: they never crouch, fire or crawl */
+    if (SOLDIER_VARIANTS[variant].weapon === 'none') return;
+    bake(soldierModel(variant, -1, 'crouch'), MODELS.crouch, MODELS.crouchA, variant);
+    bake(soldierModel(variant, -1, 'fire'), MODELS.fire, MODELS.fireA, variant);
+    bake(soldierModel(variant, -1, 'crouchfire'), MODELS.cfire, MODELS.cfireA, variant);
+    MODELS.crawl[variant] = []; MODELS.crawlA[variant] = [];
+    for (var cf = 0; cf < CRAWLF; cf++) {
+      var cm = proneModel(variant, (cf + .5) / CRAWLF);
+      MODELS.crawl[variant].push(facesToBuffer(cm.filter(function (q) { return !q.alpha; })));
+      var ca = cm.filter(function (q) { return q.alpha; });
+      MODELS.crawlA[variant].push(ca.length ? facesToBuffer(ca) : null);
+    }
   });
   Object.keys(VMODEL).forEach(function (k) {
     var V = VMODEL[k];
@@ -10511,6 +10738,32 @@ function groundRing(x, y, r, col, width, dash) {
   if (dash) ctx.setLineDash([]);
 }
 
+/* Which pair of buffers a man is drawn from. Both the shadow pass and the colour pass
+   ask here, so they cannot disagree about his posture, and a variant with no pose baked
+   for it (a vehicle crewman) falls back to standing. */
+function poseBuffers(u, m, variant) {
+  var fr;
+  switch (m.pose) {
+    case POSE_CRAWL:
+      if (!MODELS.crawl[variant]) break;
+      fr = Math.floor(m.gait / (CRAWL_LEN / CRAWLF)) % CRAWLF;
+      return [MODELS.crawl[variant][fr], MODELS.crawlA[variant][fr]];
+    case POSE_PRONE: return [MODELS.prone[variant], MODELS.proneA[variant]];
+    case POSE_CROUCH:
+      if (MODELS.crouch[variant]) return [MODELS.crouch[variant], MODELS.crouchA[variant]];
+      break;
+    case POSE_FIRE:
+      if (MODELS.fire[variant]) return [MODELS.fire[variant], MODELS.fireA[variant]];
+      break;
+    case POSE_CFIRE:
+      if (MODELS.cfire[variant]) return [MODELS.cfire[variant], MODELS.cfireA[variant]];
+      break;
+    case POSE_WALK:
+      fr = 1 + (Math.floor(m.gait / (STRIDE_LEN / (WALKF - 1))) % (WALKF - 1));
+      return [MODELS.sol[variant][fr], MODELS.solA[variant][fr]];
+  }
+  return [MODELS.sol[variant][0], MODELS.solA[variant][0]];
+}
 function castUnit(u) {
   if (u.cat === 'veh') {
     var M = VMODEL[u.key], B = MODELS.veh[u.key]; if (!B) return;
@@ -10528,9 +10781,8 @@ function castUnit(u) {
   } else {
     for (var k = 0; k < u.models.length; k++) {
       var m = u.models[k]; if (!m.alive) continue;
-      var variant = variantForModel(u, k), buf;
-      if (m.prone) buf = MODELS.prone[variant];
-      else { var fr = m.walk > .01 ? 1 + (Math.floor(m.gait / (STRIDE_LEN / (WALKF - 1))) % (WALKF - 1)) : 0; buf = MODELS.sol[variant][fr]; }
+      var variant = variantForModel(u, k);
+      var buf = poseBuffers(u, m, variant)[0];
       if (buf) drawDepthGeom(buf, m4model(m.x, m.y, groundZ(m.x, m.y), m.f, 1));
     }
     if (u.cat === 'team' && aliveModels(u) > 0) {
@@ -10547,9 +10799,11 @@ function drawUnits3D(v, list) {
     var tint = [dim, dim, dim];
     if (u.cat === 'veh') {
       var M = VMODEL[u.key], B = MODELS.veh[u.key]; if (!B) continue;
-      var gz = groundZ(u.x, u.y), bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * 1.2 : 0;
+      var gz = groundZ(u.x, u.y);
+      var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2);
+      var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * 1.35 * sway : 0;
       drawGeom(B.hull, m4model(u.x, u.y, gz + bounce, u.facing, 1), false, tint);
-      var mp1 = mountPose(u, M), rec = (u.recoil || 0) * 6, mx = u.x, my = u.y;
+      var mp1 = mountPose(u, M), rec = recoilAt(u.recoil) * (M.big ? 9 : 6), mx = u.x, my = u.y;
       mx += Math.cos(u.facing) * mp1.x - Math.sin(u.facing) * mp1.y;
       my += Math.sin(u.facing) * mp1.x + Math.cos(u.facing) * mp1.y;
       var tmat = m4model(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec, gz + bounce + mp1.z, u.turret, 1);
@@ -10564,9 +10818,7 @@ function drawUnits3D(v, list) {
         m = u.models[k]; if (!m.alive) continue;
         var variant = variantForModel(u, k);
         var gzm = groundZ(m.x, m.y);
-        var buf, bufA;
-        if (m.prone) { buf = MODELS.prone[variant]; bufA = MODELS.proneA[variant]; }
-        else { fr = m.walk > .01 ? 1 + (Math.floor(m.gait / (STRIDE_LEN / (WALKF - 1))) % (WALKF - 1)) : 0; buf = MODELS.sol[variant][fr]; bufA = MODELS.solA[variant][fr]; }
+        var pb = poseBuffers(u, m, variant), buf = pb[0], bufA = pb[1];
         var mmat = m4model(m.x, m.y, gzm, m.f, 1);
         if (buf) drawGeom(buf, mmat, false, tint);
         if (bufA) { gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE); drawGeom(bufA, mmat, false, tint); gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0); }
@@ -10574,7 +10826,9 @@ function drawUnits3D(v, list) {
       }
       if (u.cat === 'team' && aliveModels(u) > 0) {
         var a = u.models.find(function (mm) { return mm.alive; });
-        drawGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1), false, tint);
+        var trec = recoilAt(u.recoil) * 7;
+        drawGeom(teamMesh(u), m4model(a.x - Math.cos(u.facing) * trec, a.y - Math.sin(u.facing) * trec,
+                                      groundZ(a.x, a.y), u.facing, 1), false, tint);
       }
     }
   }
@@ -10636,6 +10890,8 @@ function drawParticles3D() {
     else if (f.kind === 'dust') billboard(f.x + Math.cos(f.a) * k * 8, f.y, z + 4 + k * 9, 4 + k * 11, 4 + k * 11, .55, .49, .36, (1 - k) * .3);
     else if (f.kind === 'exhaust') billboard(f.x + Math.cos(f.a) * k * 7, f.y, z + 8 + k * 24, 4 + k * 13, 4 + k * 13, .29, .28, .25, (1 - k) * .22);
     else if (f.kind === 'boom') billboard(f.x, f.y, z + 10 + k * 34, f.r * (.55 + k * 1.1), f.r * (.55 + k * 1.1), .24, .22, .18, (1 - k) * .82);
+    else if (f.kind === 'gunsmoke') billboard(f.x + Math.cos(f.a) * k * 16, f.y + Math.sin(f.a) * k * 9, (f.z || z) + k * 20,
+                                             f.r * (.5 + k * 2.2), f.r * (.5 + k * 2.2), .42, .41, .38, (1 - k) * (1 - k) * .4);
   });
   /* fire is additive */
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
@@ -10645,6 +10901,11 @@ function drawParticles3D() {
       var s = f.r * (.5 + k * .9), a = 1 - k * 1.8;
       billboard(f.x, f.y, z + 8, s, s, 1, .78, .36, a * .9);
       billboard(f.x, f.y, z + 8, s * .45, s * .45, 1, .98, .9, a);
+    } else if (f.kind === 'flash') {
+      /* short, bright, and gone: the flash is what tells the player who is firing */
+      var fs = f.r * (1.15 - k * .5), fa = (1 - k) * (1 - k);
+      billboard(f.x, f.y, f.z === undefined ? z + 12 : f.z, fs, fs, 1, .82, .42, fa * .95);
+      billboard(f.x, f.y, f.z === undefined ? z + 12 : f.z, fs * .42, fs * .42, 1, .99, .88, fa);
     }
   });
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
@@ -10674,13 +10935,6 @@ function drawSectorFlag(s) {
   if (s.contest) { ctx.fillStyle = '#d8a334'; ctx.fillText('CONTESTED', 0, 38 * z); }
   else if (s.owner && !s.conn) { ctx.fillStyle = '#c95c4e'; ctx.fillText('CUT OFF', 0, 38 * z); }
   ctx.restore();
-}
-function muzzle(px, py, size) {
-  ctx.globalCompositeOperation = 'lighter';
-  var g = ctx.createRadialGradient(px, py, 0, px, py, size * 1.5);
-  g.addColorStop(0, 'rgba(255,248,214,.95)'); g.addColorStop(.32, 'rgba(255,186,74,.6)'); g.addColorStop(1, 'rgba(255,120,20,0)');
-  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, size * 1.5, 0, TAU); ctx.fill();
-  ctx.globalCompositeOperation = 'source-over';
 }
 function drawUnitOverlay(u, p) {
   var selected = G.sel.indexOf(u) >= 0;
@@ -10732,30 +10986,6 @@ function drawUnitOverlay(u, p) {
     ctx.fillStyle = '#d8a334';
     for (var v = 0; v < u.vet; v++) {
       ctx.beginPath(); ctx.moveTo(ix + 21 + v * 5, ty - 6); ctx.lineTo(ix + 24 + v * 5, ty - 1); ctx.lineTo(ix + 21 + v * 5, ty - 1); ctx.closePath(); ctx.fill();
-    }
-  }
-  /* muzzle flashes at the weapon */
-  if (u.cat === 'veh' && u.fireT > 0) {
-    var M = VMODEL[u.key], gz = groundZ(u.x, u.y), mo = mountPose(u, M);
-    var tx0 = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
-    var ty0 = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
-    var mp = w2s(tx0 + Math.cos(u.turret) * (mo.bar + 6), ty0 + Math.sin(u.turret) * (mo.bar + 6), gz + mo.z + mo.gunZ);
-    if (!mp.behind) muzzle(mp.x, mp.y, (M.big ? 18 : 11) * z);
-  } else if (u.cat !== 'veh') {
-    for (var k = 0; k < u.models.length; k++) {
-      var m = u.models[k];
-      if (!m.alive || !(m.fire > 0)) continue;
-      var fp = w2s(m.x + Math.cos(m.f) * 12, m.y + Math.sin(m.f) * 12, groundZ(m.x, m.y) + (m.prone ? 4 : 12));
-      if (!fp.behind) muzzle(fp.x, fp.y, 5 * z);
-    }
-    if (u.cat === 'team' && u.fireT > 0) {
-      var a0 = u.models.find(function (mm) { return mm.alive; });
-      var gm = GUNMODEL[u.key];
-      if (a0) {
-        var reach = gm ? gm.bar : (u.def.atOnly ? 44 : 26), lift = gm ? gm.z : (u.def.atOnly ? 13 : 12);
-        var tp = w2s(a0.x + Math.cos(u.facing) * reach, a0.y + Math.sin(u.facing) * reach, groundZ(a0.x, a0.y) + lift);
-        if (!tp.behind) muzzle(tp.x, tp.y, (gm ? 18 : u.def.atOnly ? 14 : 8) * z);
-      }
     }
   }
 }
