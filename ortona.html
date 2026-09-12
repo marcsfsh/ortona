@@ -3469,7 +3469,8 @@ function updateUnit(u, dt) {
 /* ---------------------------------------------------------------- ai */
 /* The opposition's own state. Everything in it is a number or a sector id: a plan that
    held a reference to a unit or a sector would go on pointing at it after it was dead. */
-var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0 };
+var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
+           asSec: null, asT: -99, asForm: -99, asPick: -99 };
 var DIFF = [
   /* Green: money is barely a constraint. You earn triple, start with enough to fill the
      queue immediately, and the opposition runs a quarter economy, thinks every four
@@ -3481,19 +3482,20 @@ var DIFF = [
      its company post and its armour point, still sets up a machine gun, and still brings
      armour out -- earlier than the harder settings do, because on a quarter economy a
      late tech gate means the vehicle never arrives at all. */
-  { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 4, mech: 3, skill: 0, push: 420, aim: .34, tough: .5,
+  { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 6, mech: 2, skill: 0, push: 420, aim: .34, tough: .5,
     startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 1.9 },
-  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 99, skill: 1, push: 0,  aim: 1,   tough: 1,
+  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 5, skill: 1, push: 0,  aim: 1,   tough: 1,
     startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1 },
   /* Veteran: on a map this defensive an economic edge alone barely registers, so the
      opposition also shoots straighter, takes more killing, techs earlier and opens with
      a larger force while your own victory points drain faster. */
-  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 99, skill: 2, push: 0, aim: 1.04, tough: 1.07,
+  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 6, skill: 2, push: 0, aim: 1.04, tough: 1.07,
     startMp: 420, startFu: 20, vp: 1.07, tech: 1.12, youAim: 1, youTough: 1, extra: 0, build: 1 }
 ];
 function aiInit(side) {
   AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
   AI.mood = 'push'; AI.upT = -99; AI.bagT = -99; AI.bagN = 0;
+  AI.asSec = null; AI.asT = -99; AI.asForm = -99; AI.asPick = -99;
 }
 function aiOwn(pred) {
   var out = [];
@@ -3660,11 +3662,23 @@ function aiTick(dt) {
     if (bb.key === K.b1) b1 = bb;
     if (bb.key === K.b2) b2 = bb;
   }
-  var infRoom = b2 && b2.built >= 1 ? POPCAP - 36 : POPCAP - 20;
+  /* Population is the other thing it can run out of, and infantry is cheap enough to
+     spend all of it: at regular it filled the cap with sections by the seventh minute
+     and then had no room left for a tank, so it sat on twenty-four thousand marks with
+     two Panzer IVs on the field. Once there is an armour point, room is kept back for
+     what it is going to put in it. */
+  var infRoom = b2 && b2.built >= 1 && G.res[side].fu > 70 ? POPCAP - 78
+             : b2 && b2.built >= 1 ? POPCAP - 34 : POPCAP - 20;
+  /* A side sitting on a surplus it has no permission to spend is a side that has stopped
+     playing: an easy opponent banked ten thousand marks over twenty minutes because its
+     own caps would not let it buy anything with them. The caps hold while it is poor,
+     which is what keeps the early game gentle, and lift once it is rich. */
+  var rich = G.res[side].mp > 1500;
+  var armyCap = D.army + (rich ? 2 : 0);
   var q = hq.queue.length;
   if (engs.length < 1 && q < 2) queueUnit(hq, K.eng);
   else if (men.length < 2 && q < 2) queueUnit(hq, K.inf);
-  else if (q < 1 && pop < infRoom && men.length < D.army &&
+  else if (q < 1 && pop < infRoom && men.length < armyCap &&
            (men.length < 2 + D.inf || !b1 || G.res[side].mp > 480)) queueUnit(hq, K.inf);
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && pop < infRoom + 6) {
     var mgs = aiOwn(function (v) { return v.key === K.mg; }).length;
@@ -3673,40 +3687,56 @@ function aiTick(dt) {
        four sections by the headquarters quietly raised a dozen more out of the post.
        The cap now holds everywhere, which leaves the easy settings spending what they
        have on one of each arm rather than on a crowd of riflemen. */
-    else if (men.length < D.army) {
+    else if (men.length < armyCap) {
       if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58)) queueUnit(b1, K.elite);
       else queueUnit(hq, K.inf);
     }
   }
   if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < POPCAP - 14) {
-    var ats = aiOwn(function (v) { return v.key === K.at; }).length;
-    var tech = D.tech, want = [];
-    /* An anti-tank gun is worth having before the tank arrives rather than after: it
-       crawls into position at a walking pace and it is the only thing in the list that
-       answers armour outright. So the second the other side opens a motor pool, one is
-       ordered -- the old brain waited until his armour was in the street, by which time
-       the gun had a two-minute walk ahead of it. */
-    var foeB2 = side === 'us' ? 'ger_dep' : 'us_mot';
-    if (enemyVeh > ats || (enemyVeh && ats < 2) ||
-        (!ats && (hasBuilding(foeSide, foeB2) || G.t > 360))) want.push(K.at);
-    /* Armour is capped the same way the infantry is. Without it the easy settings turn
-       the manpower the army cap freed up into a column of tanks, which is a harder
-       fight than the crowd of riflemen it replaced. */
-    if (vehs.length < D.mech) {
-      if (G.t > Math.max(0, (1 - tech) * 620)) want.push(K.tank);
-      if (!vehs.length && G.t > Math.max(0, (1 - tech) * 420)) want.unshift(K.lt);
-      else if (K.heavy && G.t > 600 && countOf(side, K.heavy) < 1 && G.res[side].fu > 260) want.push(K.heavy);
-      else if (vehs.length < 3 && G.t > 240) want.push(K.lt2 || K.lt);
+    var ats = countOf(side, K.at);
+    /* The shopping list, worked down in order, with a cap on each and an hour of the
+       battle before the heavy end of it opens.
+
+       What was here counted vehicles and stopped at three. Since the cheap ones came
+       first, the whole allowance went on an armoured car and a pair of half-tracks and
+       it never reached a tank at all: on green it fielded two 222s and a carrier for
+       twenty minutes while sitting on seven thousand marks it could not spend. Worse,
+       every half-track it bought spent the fuel the tank needed, so the ninety it wanted
+       for a Panzer IV never accumulated and the Tiger's gate -- two hundred and sixty in
+       the bank -- was unreachable by construction. It now climbs the list, and when the
+       next thing on it is armour it cannot quite afford, it waits rather than spending
+       the difference on something cheaper. */
+    var meds = D.mech + (rich ? 1 : 0);
+    /* The heavy sits in the middle of the list rather than at the end of it, with the
+       rest of the mediums behind it. Put it last and the mediums eat the population it
+       needs before it is ever reached, which is the same trap as spending the fuel: at
+       regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
+       could not have fitted a Tiger if it had wanted one. */
+    var LADDER = side === 'us'
+      ? [['us_m8', 1, 40], ['us_at', 2, 130], ['us_m3', 1, 210], ['us_stuart', 1, 270],
+         ['us_sher', 2, 310], ['us_ach', 1, 580], ['us_sher', meds, 650]]
+      : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210],
+         ['ger_p4', 2, 260], ['ger_tig', 1, 620], ['ger_p4', meds, 690]];
+    var gate = 2 - D.tech, li, lk, ld;
+    /* armour in the street jumps the queue: the gun that answers it is the one thing in
+       the list that cannot be improvised, and it walks to its position at a crawl */
+    if (enemyVeh > ats && ats < 2 && queueUnit(b2, K.at)) li = LADDER.length;
+    else for (li = 0; li < LADDER.length; li++) {
+      lk = LADDER[li][0]; ld = UNITS[lk];
+      if (G.t < LADDER[li][2] * gate || countOf(side, lk) >= LADDER[li][1]) continue;
+      if (queueUnit(b2, lk)) break;
+      /* it cannot pay for that yet. If it is most of the way there it stops here and
+         saves, which is the whole reason a tank ever arrives. */
+      if ((ld.cost.fu || 0) >= 60 && G.res[side].fu > (ld.cost.fu || 0) * .4 &&
+          G.res[side].mp > (ld.cost.mp || 0) * .4) break;
     }
-    /* try each in turn: a first choice it cannot afford must not stall the whole queue */
-    for (var wi = 0; wi < want.length; wi++) if (queueUnit(b2, want[wi])) break;
   }
 
   /* ---- field upgrades. A roof gun makes a tank a different animal in a street and
      skirts are the difference between a Panzer IV that survives a bazooka and one that
      does not. The player has always been able to buy these; the opposition never did,
      and half of what a vehicle can do is an upgrade. */
-  if (skill >= 1 && G.t - AI.upT > 9 && vehs.length) {
+  if (G.t - AI.upT > 9 && vehs.length) {
     AI.upT = G.t;
     var order = ['mg', 'skirts', 'kwk', 'drill', 'quad50', 'thirty', 'coax', 'how75', 'pak36'];
     var bought = false;
@@ -3838,6 +3868,46 @@ function aiTick(dt) {
   for (j = 0; j < teams.length; j++) teams[j].job = 'support';
   for (j = 0; j < screens.length; j++) if (screens[j].job !== 'mend') screens[j].job = 'screen';
 
+  /* ---- the assault.
+     A defended objective is not taken by sections arriving at it one at a time, and one
+     at a time is exactly what dealing them out nearest-first produces: whoever is closest
+     walks in alone and is shot, then the next one does the same. So the sections sent at
+     a defended point gather short of it first, on their own side of it and behind
+     something, and go in together. They do not wait for ever -- a section already on the
+     objective counts as ready, and a wave that has been forming for the best part of a
+     minute goes anyway -- and once it has gone they are given a minute and a quarter
+     before they are formed up again. */
+  var asSec = null, fupX = 0, fupY = 0;
+  /* The objective list reorders as the fighting moves, and an assault that picks a new
+     objective every few seconds never gets to start: it was re-forming eight times a
+     minute and going in twice. So once one is chosen it is held until it is taken or a
+     minute has passed. */
+  var asHeld = G.secById[AI.asSec];
+  if (asHeld && G.t - AI.asPick < 60 && asHeld.owner !== side) asSec = asHeld;
+  for (i = 0; i < objs.length && !asSec; i++) {
+    var o3 = objs[i];
+    if (o3.cap >= 3 && (o3.s.owner === foeSide || o3.s.contest || o3.th > 60)) {
+      asSec = o3.s; AI.asPick = G.t;
+    }
+  }
+  if (!asSec) { AI.asSec = null; AI.asT = -99; }
+  else {
+    if (AI.asSec !== asSec.id) { AI.asSec = asSec.id; AI.asT = -99; AI.asForm = G.t; }
+    var fup = aiFirePost(side, asSec.x, asSec.y, 300);
+    fupX = fup.x; fupY = fup.y;
+    if (AI.asT < 0) {
+      var ready = 0, sent = 0;
+      for (j = 0; j < takers.length; j++) {
+        u = takers[j];
+        if (u.jobSec !== asSec.id || u.retreat) continue;
+        sent++;
+        if (dsq(u.x, u.y, fupX, fupY) < 240 * 240 ||
+            dsq(u.x, u.y, asSec.x, asSec.y) < 380 * 380) ready++;
+      }
+      if (sent && (ready >= Math.min(3, sent) || G.t - AI.asForm > 32)) AI.asT = G.t;
+    } else if (G.t - AI.asT > 75) { AI.asT = -99; AI.asForm = G.t; }
+  }
+
   /* ---- orders */
   var garCount = 0;
   for (i = 0; i < fighters.length; i++) if (fighters[i].gar) garCount++;
@@ -3933,6 +4003,18 @@ function aiTick(dt) {
     if (razeT) { if (u.order !== 'attack' || u.forced !== razeT) orderAttack(u, razeT); continue; }
     var sec = G.secById[u.jobSec];
     if (!sec) continue;
+    /* Forming up: the sections still coming up wait for each other rather than walking in
+       one at a time. Anyone already at the objective keeps fighting -- an assault that
+       marches its own men back off the ground they are standing on is worse than no
+       assault at all, and that is exactly what this did until the distance test went in:
+       ground held fell from nine points to six. */
+    if (AI.asSec && u.jobSec === AI.asSec && AI.asT < 0 &&
+        dsq(u.x, u.y, sec.x, sec.y) > 380 * 380) {
+      if (Math.hypot(u.x - fupX, u.y - fupY) > 110 &&
+          (!u.dest || Math.hypot(u.dest.x - fupX, u.dest.y - fupY) > 150))
+        orderMove(u, fupX + rnd(-55, 55), fupY + rnd(-55, 55), true);
+      continue;
+    }
     /* One section puts itself in a house on the objective: inside it holds the sector
        just as well as standing on it, it is in the heaviest cover in the game, and this
        is a map where every street was taken a building at a time. */
