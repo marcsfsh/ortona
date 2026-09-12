@@ -839,12 +839,30 @@ var COVER = [
   { name: 'heavy',   acc: .39, sup: .37, tag: 'HEAVY COVER', col: '#8bb356' },
   { name: 'dug in',  acc: .24, sup: .22, tag: 'DUG IN', col: '#6fc4d8' }
 ];
+/* There are a couple of thousand patches of cover on this map, and every shot fired --
+   and now every question about whether a man can be picked out of the ground -- asks
+   which of them he is in. Scanning the whole list for that was affordable when only the
+   firing code asked; it is not now. Each patch is filed under every cell its circle
+   reaches, so the question costs one cell lookup. */
+var COVG = 80, CGW = Math.ceil(WORLD.w / COVG), CGH = Math.ceil(WORLD.h / COVG);
+function indexCover(c) {
+  if (!G.coverIdx) return;
+  var i0 = Math.max(0, ((c.x - c.r) / COVG) | 0), i1 = Math.min(CGW - 1, ((c.x + c.r) / COVG) | 0);
+  var j0 = Math.max(0, ((c.y - c.r) / COVG) | 0), j1 = Math.min(CGH - 1, ((c.y + c.r) / COVG) | 0);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var n = j * CGW + i;
+    if (!G.coverIdx[n]) G.coverIdx[n] = [];
+    G.coverIdx[n].push(c);
+  }
+}
 /* A patch with an axis protects across that axis. Fire arriving along it enfilades the
    position and strips two tiers, which is exactly why real trenches zigzag. */
 function addCover(x, y, r, type, kind, axis, hp) {
-  G.covers.push({ x: x, y: y, r: r, type: type, kind: kind || 'rubble',
-                  axis: axis === undefined ? null : axis, hp: hp === undefined ? 100 : hp,
-                  maxhp: hp === undefined ? 100 : hp });
+  var c = { x: x, y: y, r: r, type: type, kind: kind || 'rubble',
+            axis: axis === undefined ? null : axis, hp: hp === undefined ? 100 : hp,
+            maxhp: hp === undefined ? 100 : hp };
+  G.covers.push(c);
+  indexCover(c);
 }
 /* how much a patch is worth against fire coming from a particular bearing */
 function coverValue(c, fromAng) {
@@ -1032,7 +1050,7 @@ function buildMap(data) {
       else G.hmap0[k] += hb.d * w;
     }
   });
-  G.covers = []; G.props = []; G.roads = []; G.trees = [];
+  G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = [];
   G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
@@ -1421,9 +1439,13 @@ function makeFields() {
 
 
 function coverAt(x, y, fromAng) {
+  var cx = (x / COVG) | 0, cy = (y / COVG) | 0;
+  if (cx < 0 || cy < 0 || cx >= CGW || cy >= CGH) return 0;
+  var list = G.coverIdx && G.coverIdx[cy * CGW + cx];
+  if (!list) return 0;
   var best = 0;
-  for (var i = 0; i < G.covers.length; i++) {
-    var c = G.covers[i];
+  for (var i = 0; i < list.length; i++) {
+    var c = list[i];
     if (c.hp <= 0 || c.type <= best) continue;
     if (dsq(x, y, c.x, c.y) < c.r * c.r) {
       var v = coverValue(c, fromAng);
@@ -1444,11 +1466,23 @@ function coverOf(u, fromAng) {
   return n ? Math.round(sum / n) : 0;
 }
 /* shelling chews works apart, so a position has to be re-dug or abandoned */
+var _cstamp = 0;
 function damageCover(x, y, radius, amount) {
-  for (var i = 0; i < G.covers.length; i++) {
-    var c = G.covers[i];
-    if (c.hp <= 0 || !c.maxhp) continue;
-    if (dsq(x, y, c.x, c.y) < (radius + c.r) * (radius + c.r)) c.hp = Math.max(0, c.hp - amount);
+  if (!G.coverIdx) return;
+  _cstamp++;
+  var reach = radius + 60;
+  var i0 = Math.max(0, ((x - reach) / COVG) | 0), i1 = Math.min(CGW - 1, ((x + reach) / COVG) | 0);
+  var j0 = Math.max(0, ((y - reach) / COVG) | 0), j1 = Math.min(CGH - 1, ((y + reach) / COVG) | 0);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var list = G.coverIdx[j * CGW + i];
+    if (!list) continue;
+    for (var k = 0; k < list.length; k++) {
+      var c = list[k];
+      if (c.st === _cstamp) continue;
+      c.st = _cstamp;
+      if (c.hp <= 0 || !c.maxhp) continue;
+      if (dsq(x, y, c.x, c.y) < (radius + c.r) * (radius + c.r)) c.hp = Math.max(0, c.hp - amount);
+    }
   }
 }
 
@@ -1456,11 +1490,29 @@ function damageCover(x, y, radius, amount) {
 var CELL = 40, GW = Math.ceil(WORLD.w / CELL), GH = Math.ceil(WORLD.h / CELL);
 var grid = new Uint8Array(GW * GH);
 function cidx(cx, cy) { return cy * GW + cx; }
-function blockRect(x, y, w, h, pad) {
+/* Three different questions get asked of the same ground, and they have three different
+   answers. `grid` is what stops a boot or a track. `sblk` is what stops a man seeing:
+   a house, a wall, a thick hedge. `fblk` is what stops a bullet, which is the houses and
+   the walls but not the hedge -- a Bren fires straight through a hedge and the men
+   behind it are hidden rather than safe. Keeping them apart matters: the movement grid
+   now refuses ground too steep to climb, and reading fire off it meant a squad could
+   not shoot across a gully it was standing on the lip of. */
+var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH);
+function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
   for (var cy = Math.max(0, y0); cy <= Math.min(GH - 1, y1); cy++)
-    for (var cx = Math.max(0, x0); cx <= Math.min(GW - 1, x1); cx++) grid[cidx(cx, cy)] = 1;
+    for (var cx = Math.max(0, x0); cx <= Math.min(GW - 1, x1); cx++) arr[cidx(cx, cy)] = 1;
+}
+function markSeg(arr, x1, y1, x2, y2) {
+  var n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / (CELL * .5)));
+  for (var i = 0; i <= n; i++) {
+    var cx = ((lerp(x1, x2, i / n)) / CELL) | 0, cy = ((lerp(y1, y2, i / n)) / CELL) | 0;
+    if (cx >= 0 && cy >= 0 && cx < GW && cy < GH) arr[cidx(cx, cy)] = 1;
+  }
+}
+function blockRect(x, y, w, h, pad) {
+  markRect(grid, x, y, w, h, pad);
 }
 function rebuildGrid() {
   grid.fill(0);
@@ -1479,6 +1531,66 @@ function rebuildGrid() {
   }
   G.props.forEach(function (p) { if (p.solid) blockRect(p.x, p.y, p.w, p.h, 6); });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
+  /* the same world read for sight and for fire */
+  sblk.fill(0); fblk.fill(0);
+  G.props.forEach(function (p) {
+    if (!p.solid || p.kind === 'sea') return;
+    markRect(sblk, p.x, p.y, p.w, p.h, 0); markRect(fblk, p.x, p.y, p.w, p.h, 0);
+  });
+  G.blds.forEach(function (b) {
+    markRect(sblk, b.x, b.y, b.def.w, b.def.h, 0); markRect(fblk, b.x, b.y, b.def.w, b.def.h, 0);
+  });
+  G.walls.forEach(function (w) {
+    markSeg(sblk, w.x1, w.y1, w.x2, w.y2); markSeg(fblk, w.x1, w.y1, w.x2, w.y2);
+  });
+  /* a hedge hides a section and does not save it */
+  G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2); });
+}
+/* Walk a line and ask whether anything stands in it. Two things can: something solid on
+   the blocker grid, and the ground itself, which is why a crest gives dead ground behind
+   it. The ends are skipped, because the parapet a man is standing behind is a foot from
+   his face and would otherwise blind him. */
+function traceClear(x0, y0, z0, x1, y1, z1, blk) {
+  var dx = x1 - x0, dy = y1 - y0, d = Math.hypot(dx, dy);
+  if (d < 30) return true;
+  var steps = Math.min(40, Math.max(3, Math.ceil(d / 22)));
+  /* The cell a man is standing in is often the cell of the wall he is standing behind,
+     and the lip of his own trench is a foot from his face. Neither should blind him, so
+     the two end cells are exempt and the height test skips the ground at both ends. */
+  var ca = ((x0 / CELL) | 0) + ((y0 / CELL) | 0) * GW;
+  var cb = ((x1 / CELL) | 0) + ((y1 / CELL) | 0) * GW;
+  var skip = Math.min(.3, 30 / d);
+  for (var i = 1; i < steps; i++) {
+    var t = i / steps;
+    var px = x0 + dx * t, py = y0 + dy * t;
+    if (blk) {
+      var cx = (px / CELL) | 0, cy = (py / CELL) | 0;
+      if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+      var n = cidx(cx, cy);
+      if (blk[n] && n !== ca && n !== cb) return false;
+    }
+    if (t < skip || t > 1 - skip) continue;
+    /* A metre of tolerance. Without it the ordinary hummocking of the ground blocks
+       every sight line on the map, because the chord between two men standing on it
+       passes below bumps a man plainly sees over. What is left blocking is what should:
+       the wall of a vallone, the lip of the shelf, the crest of the spur. */
+    if (groundZ(px, py) > z0 + (z1 - z0) * t + 12) return false;
+  }
+  return true;
+}
+/* Where a shot leaves from, or an eye looks from, when the man is inside a house: the
+   wall he is behind is solid on both grids and would otherwise blind and silence him,
+   so the line starts at the face of the building he is shooting out of. */
+function outPoint(u, tx, ty) {
+  if (!u.gar) return { x: u.x, y: u.y };
+  var a = Math.atan2(ty - u.y, tx - u.x), o = Math.max(u.gar.w, u.gar.h) * .5 + 14;
+  return { x: u.x + Math.cos(a) * o, y: u.y + Math.sin(a) * o };
+}
+/* how high off the ground the eye or the muzzle sits */
+function eyeZ(u) {
+  if (u.cat === 'veh') return 26;
+  if (u.gar) return 34;                              /* a first-floor window */
+  return u.sup > 1 ? 6 : 17;                         /* standing, or flat behind something */
 }
 function walkable(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
@@ -1576,7 +1688,8 @@ function spawnUnit(side, key, x, y, facing) {
     order: null, path: null, pi: 0, dest: null, target: null, forced: null,
     cd: rnd(0, .4), atcd: rnd(0, 2), sup: 0, setup: d.setup ? d.setup : 0,
     moving: false, dead: false, vet: 0, kills: 0, retreat: 0, reinf: 0,
-    building: null, repairing: null, hitT: 0, fireT: 0, seen: false, aim: 0, calm: 99
+    building: null, repairing: null, hitT: 0, fireT: 0, seen: false, aim: 0, calm: 99,
+    lay: 0, immob: 0, gunDmg: 0, shaken: 0, seenUs: -1, seenGer: -1
   };
   if (d.cat === 'veh') {
     u.hp = d.hp; u.maxhp = d.hp; u.armor = d.armor; u.turret = u.facing; u.up = {}; u.cdSec = {};
@@ -1747,13 +1860,22 @@ function leaveBuilding(u) {
   clearOrder(u);
   if (u.side === G.side) toast(u.def.short + ' out of the building');
 }
-/* A man at a window stands on the wall line and the wall is solid on the movement grid,
-   so a straight sight test from his own cell fails before it starts. A garrison shoots
-   out of its building and is shot at through the holes in it: the test is only for what
-   stands between the two of them. */
+/* A man at a window stands on the wall line and the wall is solid on every grid, so a
+   straight test from his own cell fails before it starts. A garrison shoots out of its
+   building and is shot at through the holes in it: the test is only for what stands
+   between the two of them, and it is read off the fire grid rather than the movement
+   grid, because a bank too steep to walk up is no obstacle at all to a bullet. */
 function fireLine(u, t) {
-  if (u.gar || t.gar) return true;
-  return clearLine(u.x, u.y, t.x, t.y);
+  var a = outPoint(u, t.x, t.y), b = outPoint(t, u.x, u.y);
+  return traceClear(a.x, a.y, groundZ(a.x, a.y) + eyeZ(u),
+                    b.x, b.y, groundZ(b.x, b.y) + (t.cat === 'veh' ? 18 : 10), fblk);
+}
+/* the same question for the eye rather than the muzzle: hedges count, and a vehicle
+   shows more of itself than a man lying in a ditch */
+function sightLine(e, t) {
+  var b = outPoint(t, e.x, e.y);
+  return traceClear(e.x, e.y, e.z, b.x, b.y,
+                    groundZ(b.x, b.y) + (t.cat === 'veh' ? 20 : t.gar ? 30 : 12), sblk);
 }
 
 /* A gun with no engine goes where a half-track or a tank drags it. Hitched, it rides a
@@ -1845,6 +1967,7 @@ function moveUnit(u, dt) {
   if (wantX === null) { u.vx *= .82; u.vy *= .82; return; }
 
   var sp = u.speed;
+  if (u.immob > 0) { u.vx *= .8; u.vy *= .8; return; }   /* a broken track goes nowhere */
   if (u.sup > 1.0) sp = 0;
   else if (u.sup > .55) sp *= .5;
   if (u.retreat) sp = u.def.speed * 1.5;
@@ -2038,7 +2161,7 @@ function updateModels(u, dt) {
     if (u.want !== undefined) {
       /* powered traverse: the Tiger II took a slow twenty seconds round, a Sherman
          about fifteen, an armoured car's hand-cranked ring is quicker for its weight */
-      var rate = (u.def.hp > 1200 ? .55 : u.def.hp > 500 ? .9 : 1.6) * dt;
+      var rate = (u.def.hp > 1200 ? .55 : u.def.hp > 500 ? .9 : 1.6) * (u.shaken > 0 ? .6 : 1) * dt;
       var diff = Math.atan2(Math.sin(u.want - u.turret), Math.cos(u.want - u.turret));
       u.turret += clamp(diff, -rate, rate);
     }
@@ -2100,41 +2223,103 @@ function updateModels(u, dt) {
 function penChance(pen, armor) {
   if (armor <= 0) return 1;
   if (pen < 30) return armor > 60 ? .015 : .12;
-  return clamp(pen / (armor * 1.3), .1, 1);
+  return clamp(pen / (armor * 1.3), .04, 1);
+}
+/* Which plate the round arrives at. A vehicle's listed armour is what it carries at the
+   front; the sides are a little over half of that and the back plate barely a third, and
+   that difference is the whole reason to work round a Tiger instead of trading with it.
+   A vehicle with its engine off and its crew out of it is not presenting anything. */
+function armourAt(t, fromX, fromY) {
+  if (!t.armor) return 0;
+  var rel = Math.abs(angDiff(t.facing, Math.atan2(fromY - t.y, fromX - t.x)));
+  var a = rel < .70 ? t.armor : rel < 2.27 ? t.armor * .56 : t.armor * .36;
+  if (t.up && t.up.skirts && rel >= .70 && rel < 2.27) a *= 1.12;
+  return a;
+}
+/* What a gun will still go through at range. Every one of these loses velocity down the
+   flight, so the figure quoted is what it does close in and not what it does at the far
+   end of its own reach. */
+function penAt(w, d) {
+  return w.pen * clamp(1 - (d / Math.max(1, w.range)) * .30, .70, 1);
 }
 var _eyes = { us: [], ger: [] };
-var _expT = 0;
-function computeVisibility() {
+var _expT = 0, _visT = 0;
+/* How easy a thing is to pick out. A vehicle is a large loud object and is spotted at
+   something over its nominal range; a section lying still in a ditch is not, and the
+   same section with its Brens going is spotted from much further off than either. This
+   is what makes an ambush an ambush: without it every unit on the map is a sensor with
+   the same reach and there is nothing to be gained by keeping still. */
+function exposure(e) {
+  if (e.cat === 'veh') return e.moving ? 1.2 : 1.05;
+  var cv = e.gar ? 4 : coverAt(e.x, e.y);
+  var x = [1, .93, .84, .72, .6][cv];
+  if (!e.moving) x *= .88;
+  if (e.fireT > 0 || e.sup > .3) x *= 1.3;           /* muzzle flash, and men who have been found */
+  return clamp(x, .45, 1.4);
+}
+function computeVisibility(dt) {
+  /* Vision does not need to be recomputed sixty times a second, and the sight lines
+     below cost real work, so it runs at a tenth of that and holds between. */
+  if (dt) {
+    _visT -= dt;
+    if (_visT > 0) return;
+  }
+  _visT = .1;
   _eyes.us.length = 0; _eyes.ger.length = 0;
-  for (var i = 0; i < G.units.length; i++) {
+  var i, j, k;
+  for (i = 0; i < G.units.length; i++) {
     var u = G.units[i];
-    if (!u.dead && !u.inside) _eyes[u.side].push({ x: u.x, y: u.y, r2: u.sight * u.sight });
+    if (u.dead || u.inside) continue;
+    /* a man on the shelf looks down into ground a man in the vallone cannot see out of,
+       so height is worth a little reach as well as the dead ground it denies him */
+    var uz = groundZ(u.x, u.y);
+    var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1);
+    _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz });
   }
-  for (var j = 0; j < G.blds.length; j++) {
+  for (j = 0; j < G.blds.length; j++) {
     var b = G.blds[j];
-    if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, r2: 400 * 400 });
+    if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, z: groundZ(b.x, b.y) + 40, r: 400, ez: 0 });
   }
-  function seen(list, e) {
-    for (var k = 0; k < list.length; k++) if (dsq(list[k].x, list[k].y, e.x, e.y) < list[k].r2) return true;
+  function seen(list, e, ex) {
+    for (k = 0; k < list.length; k++) {
+      var ey = list[k], d2 = dsq(ey.x, ey.y, e.x, e.y);
+      /* height gives a little reach; the crest test below takes away far more */
+      var rr = ey.r * ex * (1 + clamp((ey.z - groundZ(e.x, e.y)) / 900, -.12, .18));
+      if (d2 > rr * rr) continue;
+      if (d2 < 110 * 110) return true;               /* at this range he is simply there */
+      if (sightLine(ey, e)) return true;
+    }
     return false;
   }
   for (var a = 0; a < G.units.length; a++) {
     var uu = G.units[a];
-    uu.vUs = uu.side === 'us' || seen(_eyes.us, uu);
-    uu.vGer = uu.side === 'ger' || seen(_eyes.ger, uu);
+    if (uu.dead) continue;
+    var ex2 = uu.inside ? 0 : exposure(uu);
+    if (!uu.inside && seen(_eyes.us, uu, ex2)) uu.seenUs = G.t + .9;
+    if (!uu.inside && seen(_eyes.ger, uu, ex2)) uu.seenGer = G.t + .9;
+    /* Sight is not lost the instant a man steps behind a wall: what the other side has
+       is a last known position, and it is worth about a second. */
+    uu.vUs = uu.side === 'us' || G.t < (uu.seenUs || -1);
+    uu.vGer = uu.side === 'ger' || G.t < (uu.seenGer || -1);
   }
-  _expT = (_expT + 1) % 5;
+  _expT = (_expT + 1) % 3;
   if (!_expT && G.side) {
     var mine = _eyes[G.side];
-    for (var m2 = 0; m2 < mine.length; m2++) markExplored(mine[m2].x, mine[m2].y, Math.sqrt(mine[m2].r2));
+    for (var m2 = 0; m2 < mine.length; m2++) markExplored(mine[m2].x, mine[m2].y, mine[m2].r);
   }
   for (var c = 0; c < G.blds.length; c++) {
     var bb = G.blds[c];
-    bb.vUs = bb.side === 'us' || seen(_eyes.us, bb);
-    bb.vGer = bb.side === 'ger' || seen(_eyes.ger, bb);
+    bb.vUs = bb.side === 'us' || seen(_eyes.us, bb, 1.25);
+    bb.vGer = bb.side === 'ger' || seen(_eyes.ger, bb, 1.25);
   }
 }
 function visibleTo(side, e) { return side === 'us' ? !!e.vUs : !!e.vGer; }
+/* What a gunner picks. The old score was distance and a couple of flat bonuses, which
+   meant a rifle section would happily plink at a Tiger while the section beside it shot
+   them to pieces, and meant every unit swapped target the instant something closer
+   appeared. This weighs what the weapon in hand can actually do to each candidate,
+   prefers whatever is already shooting at us, and gives the target already being
+   engaged enough of an edge that a gunner sees a job through. */
 function acquire(u) {
   if (u.forced && !u.forced.dead) {
     var wr = weaponFor(u, u.forced);
@@ -2142,6 +2327,7 @@ function acquire(u) {
   }
   var best = null, bestScore = -1e9;
   var maxR = Math.max(mainW(u).range, u.def.at ? u.def.at.range : 0);
+  var antiTank = !!(u.def.at || u.def.atOnly) || mainW(u).pen > 60;
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e.side === u.side || e.inside) continue;
@@ -2151,11 +2337,24 @@ function acquire(u) {
     if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, e))) > u.def.arc / 2) continue;
     if (!visibleTo(u.side, e)) continue;
     if (!fireLine(u, e)) continue;
-    var sc = -d;
-    if (e.cat === 'veh' && (u.def.at || u.def.atOnly || mainW(u).pen > 60)) sc += 900;
-    if (e.cat === 'veh' && !(u.def.at || u.def.atOnly) && mainW(u).pen < 40) sc -= 700;
+    var w = weaponFor(u, e);
+    /* what this weapon would do to this target, per round */
+    var worth;
+    if (e.cat === 'veh') {
+      var pc = penChance(penAt(w, d), armourAt(e, u.x, u.y));
+      worth = antiTank ? 900 * pc : 60 * pc;
+      if (pc < .12) worth -= 500;                        /* it will not go through: look elsewhere */
+    } else {
+      worth = 260 - 200 * (COVER[e.gar ? 4 : coverOf(e, angTo(e, u))].acc < .5 ? 1 : 0);
+      if (w.shell && w.aoe) worth += 90;                 /* a shell is worth spending on men */
+      if (antiTank && !u.def.at) worth -= 60;            /* the AT gunner would rather wait */
+    }
+    var sc = worth - d * .75;
     if (u.forced === e) sc += 1500;
-    if (e.target === u) sc += 120;
+    if (e.target === u) sc += 180;                       /* the one shooting back */
+    if (u.target === e) sc += 190;                       /* see the job through */
+    if (e.cat !== 'veh' && hpFrac(e) < .5) sc += 70;     /* finish what is already hurt */
+    if (e.sup > 1) sc -= 90;                             /* pinned men are no longer the danger */
     if (sc > bestScore) { bestScore = sc; best = e; }
   }
   if (!best && !u.def.atOnly) {
@@ -2165,6 +2364,9 @@ function acquire(u) {
       if (dist(u, b) < u.def.w.range && (u.forced === b || u.order === 'attack')) { best = b; break; }
     }
   }
+  /* laying a gun on a new bearing takes a moment, and that moment is what an ambush
+     is made of */
+  if (best && best !== u.target) u.lay = u.cat === 'veh' ? .5 : u.cat === 'team' ? .7 : .35;
   return best;
 }
 /* the weapon a vehicle is carrying, which for the 222 depends on which turret it
@@ -2217,9 +2419,9 @@ function fireOneSecondary(u, key, dt) {
     var e = G.units[i];
     if (e.dead || e.side === u.side || e.cat === 'veh' || e.inside || !visibleTo(u.side, e)) continue;
     var d2 = dsq(u.x, u.y, e.x, e.y);
-    if (d2 < bd) { bd = d2; best = e; }
+    if (d2 < bd && fireLine(u, e)) { bd = d2; best = e; }
   }
-  if (!best || !clearLine(u.x, u.y, best.x, best.y)) { u.cdSec[key] = .3; return; }
+  if (!best) { u.cdSec[key] = .3; return; }
   u.cdSec[key] = w.rof * rnd(.9, 1.1);
   var cov = best.gar ? 4 : coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
   best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1), 0,
@@ -2234,6 +2436,26 @@ function fireOneSecondary(u, key, dt) {
   }
   if (Math.random() < acc) damage(best, w.dmg * rnd(.85, 1.15), u);
 }
+/* What a round that goes through actually does, beyond the hole it makes. Most hits on
+   a tank do not brew it up: they break a track, wreck the gun, or simply frighten the
+   crew badly enough that the next few rounds go wide. A Sherman sitting immobilised
+   with a live gun is a different tactical problem from a dead one, and this is what
+   makes flanking pay twice. */
+function vehCrit(t, w, src) {
+  if (t.dead || t.cat !== 'veh') return;
+  var r = Math.random(), heavy = w.pen > 120;
+  if (r < (heavy ? .13 : .07)) {
+    t.immob = Math.max(t.immob || 0, 5 + Math.random() * 4);
+    t.path = null;
+    spawnFx('spark', t.x + rnd(-18, 18), t.y + rnd(-18, 18));
+    if (t.side === G.side) toast(t.def.short + ' track hit');
+  } else if (r < (heavy ? .22 : .13)) {
+    t.gunDmg = Math.max(t.gunDmg || 0, 7 + Math.random() * 5);
+    if (t.side === G.side) toast(t.def.short + ' gun damaged');
+  } else if (r < (heavy ? .40 : .28)) {
+    t.shaken = Math.max(t.shaken || 0, 3 + Math.random() * 2);
+  }
+}
 function fireAt(u, t, dt) {
   var w = weaponFor(u, t);
   var isAt = (w === u.def.at);
@@ -2245,12 +2467,23 @@ function fireAt(u, t, dt) {
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0) return;
   if (u.retreat) return;
-  if (u.moving && (u.cat === 'team' || w.shell)) return;
+  if (u.lay > 0) return;                                 /* still laying on */
+  /* a tripod has to be down, and a man with a launcher on his shoulder has to stop;
+     a tank fires on the move and pays for it in accuracy below */
+  if (u.moving && (u.cat === 'team' || (w.shell && u.cat !== 'veh'))) return;
+  /* A turret has to come round before the gun will bear. Until it does the gunner has
+     nothing to shoot at, which is why catching a heavy tank side-on is worth doing and
+     why its twenty seconds of traverse is a real number rather than decoration. */
+  if (u.cat === 'veh' && !u.def.arc) {
+    var off = Math.abs(angDiff(u.turret, angTo(u, t)));
+    if (off > (u.moving ? .16 : .09)) return;
+  }
   /* hedges do not block fire, stone walls and structures do */
   if (!fireLine(u, t)) return;
   var shots = u.cat === 'veh' ? 1 : (w.shell ? 1 : aliveModels(u));
   if (!shots) return;
-  u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * rnd(.9, 1.12);
+  u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * (u.gunDmg > 0 ? 1.8 : 1) *
+             (u.moving && u.cat === 'veh' ? 1.35 : 1) * rnd(.9, 1.12);
   u.fireT = .12;
   if (u.cat !== 'veh') { var k = 0; for (var i = 0; i < u.models.length; i++) if (u.models[i].alive && k++ < shots) u.models[i].fire = .1; }
 
@@ -2261,30 +2494,46 @@ function fireAt(u, t, dt) {
   acc *= (1 + u.vet * .07);
   acc *= u.side === G.side ? DIFF[G.diff].youAim : DIFF[G.diff].aim;
   acc *= clamp(1.30 - (d / w.range) * .62, .48, 1.30);
+  /* a vehicle is a far larger mark than a man, and a moving one is a far worse gun
+     platform than a halted one */
+  if (t.cat === 'veh') acc *= t.moving ? 1.1 : 1.25;
+  if (u.moving && u.cat === 'veh') acc *= .45;
+  if (u.gunDmg > 0) acc *= .78;
+  if (u.shaken > 0) acc *= .65;
   if (t.built !== undefined) acc = 1;
 
-  /* suppression lands whether or not rounds connect */
+  /* Suppression lands whether or not rounds connect, and it is what fire is mostly for.
+     Men who have done this before keep their heads under it rather longer. */
   if (t.cat && t.cat !== 'veh' && w.sup) {
-    t.sup = clamp(t.sup + w.sup * shots * COVER[cov].sup * (t.cat === 'team' ? .5 : 1), 0,
+    t.sup = clamp(t.sup + w.sup * shots * COVER[cov].sup * (t.cat === 'team' ? .5 : 1) /
+                  (1 + t.vet * .18), 0,
                   w.supCap === undefined ? 1.35 : Math.max(t.sup, w.supCap));
   }
 
-  var pen = w.pen;
+  var pen = penAt(w, d);
   if (t.up && t.up.skirts && u.cat !== 'veh' && !u.def.atOnly && w.pen > 40) pen *= .62;     /* hollow charge on a skirt plate */
-  var pc = penChance(pen, t.armor || 0);
-  var hits = 0;
+  var pc = penChance(pen, t.cat === 'veh' ? armourAt(t, u.x, u.y) : (t.armor || 0));
+  var hits = 0, bounced = 0;
   for (var s = 0; s < shots; s++) {
     if (Math.random() > acc) continue;
-    if (t.cat === 'veh' && Math.random() > pc) { spawnFx('spark', t.x + rnd(-12, 12), t.y + rnd(-12, 12)); continue; }
+    if (t.cat === 'veh' && Math.random() > pc) { bounced++; spawnFx('spark', t.x + rnd(-12, 12), t.y + rnd(-12, 12)); continue; }
     hits++;
   }
+  /* a round that stops on the plate still rings the hull; the crew flinch and the
+     gunner loses his lay */
+  if (bounced && t.cat === 'veh' && w.shell) { t.shaken = Math.max(t.shaken || 0, 1.6); t.hitT = .2; }
+  if (hits && t.cat === 'veh' && w.shell) vehCrit(t, w, u);
   var from = u.cat === 'veh' ? { x: u.x + Math.cos(u.turret) * 26, y: u.y + Math.sin(u.turret) * 26 } : { x: u.x, y: u.y };
   if (w.shell) {
     if (u.cat === 'veh') {
       u.recoil = 1;
       if (onScreen(u.x, u.y)) spawnFx('brass', u.x - Math.cos(u.turret) * 8, u.y - Math.sin(u.turret) * 8);
     }
-    G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: t.x + rnd(-8, 8), ty: t.y + rnd(-8, 8),
+    /* A shell that misses goes somewhere, and where it goes matters when it has a
+       bursting radius: it used to land within eight units of the target whether it hit
+       or not, so every miss still splashed. A miss now opens out with range. */
+    var sp2 = hits > 0 ? 7 : 16 + d * .07;
+    G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: t.x + rnd(-sp2, sp2), ty: t.y + rnd(-sp2, sp2),
                    sx: from.x, sy: from.y, t: 0, dur: Math.max(.14, d / 900), w: w, hit: hits > 0,
                    side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t });
     sfx(u.cat === 'veh' || u.cat === 'team' ? 'cannon' : 'rocket', u.x, u.y);
@@ -2313,13 +2562,18 @@ function explode(x, y, radius, dmg, owner, except) {
     var f = clamp(1 - d / (radius + 26), .15, 1);
     if (e.cat === 'veh') { if (owner && owner.side !== e.side) damage(e, dmg * f * .35, owner); }
     else {
+      /* A hole in the ground is worth more against a shell than against a bullet: this
+         is the whole reason men dig, and on a map fought over by artillery it should be
+         the strongest thing cover does. */
+      var bcov = e.gar ? 4 : coverAt(e.x, e.y);
+      var shield = [1, .86, .72, .56, .4][bcov];
       for (var m = 0; m < e.models.length; m++) {
         var mo = e.models[m];
         if (!mo.alive) continue;
         var md = Math.hypot(mo.x - x, mo.y - y);
-        if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85 * (e.def.blastRes || 1), owner);
+        if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85 * shield * (e.def.blastRes || 1), owner);
       }
-      e.sup = clamp(e.sup + .45 * f, 0, 1.35);
+      e.sup = clamp(e.sup + .45 * f * COVER[bcov].sup / (1 + e.vet * .18), 0, 1.35);
     }
   }
   for (var c = 0; c < G.covers.length; c++) {
@@ -2341,6 +2595,17 @@ function damage(t, amt, src) {
   if (t.retreat) amt *= .45;
   if (t.sup > 1.0) amt *= .78;
   t.hitT = .12; t.calm = 0;
+  /* Being shot at by something you have not found is worse than being shot at by
+     something you have. Men who cannot see where it is coming from go to ground and
+     turn toward it, which is what makes a position that opens up first worth having
+     and what gives the side being ambushed a moment of nothing but casualties. */
+  if (src && src.side !== t.side && t.cat !== 'veh' && !t.gar) {
+    if (!visibleTo(t.side, src)) {
+      t.sup = clamp(t.sup + .10, 0, 1.35);
+      if (!t.target && !t.moving) t.facing = angTo(t, src);
+    }
+    t.threatX = src.x; t.threatY = src.y;
+  }
   if (t.cat === 'veh') {
     t.hp -= amt;
     if (t.hp <= 0) killUnit(t, src);
@@ -2615,6 +2880,10 @@ function updateUnit(u, dt) {
     }
   }
   u.sup = clamp(u.sup - dt * (u.moving ? .13 : .2), 0, 1.35);
+  if (u.lay > 0) u.lay -= dt;
+  if (u.immob > 0) u.immob -= dt;
+  if (u.gunDmg > 0) u.gunDmg -= dt;
+  if (u.shaken > 0) u.shaken -= dt;
   if (u.hitT > 0) u.hitT -= dt;
   u.calm += dt;
   if (u.fireT > 0) u.fireT -= dt;
@@ -10206,15 +10475,22 @@ function groundBlob(x, y, r, a) {
 }
 function unitTop(u) { return u.cat === 'veh' ? (u.def.hp > 1200 ? 44 : u.def.hp > 500 ? 40 : 28) : 26; }
 /* the bearing of the nearest enemy, from the squad's own position */
+/* Which way the men should be facing when they go to ground. The nearest enemy they
+   can see, and failing that the last place fire came from: a section shot at out of a
+   house it has not found still knows roughly where the house is, and putting its back
+   to the wrong wall is what the old version had it do. */
 function nearestThreat(u) {
   var best = null, bd = 700 * 700;
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e.side === u.side) continue;
+    if (!visibleTo(u.side, e)) continue;
     var d = dsq(u.x, u.y, e.x, e.y);
     if (d < bd) { bd = d; best = e; }
   }
-  return best ? Math.atan2(u.y - best.y, u.x - best.x) : null;
+  if (best) return Math.atan2(u.y - best.y, u.x - best.x);
+  if (u.threatX !== undefined) return Math.atan2(u.y - u.threatY, u.x - u.threatX);
+  return null;
 }
 function drawBar(x, y, w, frac, col) {
   ctx.fillStyle = 'rgba(6,8,4,.85)'; ctx.fillRect(x - 1, y - 1, w + 2, 6);
@@ -10435,13 +10711,20 @@ function drawUnitOverlay(u, p) {
       ctx.fillRect(ix + cw / 2 + 3 + pz * 4 * z, ty - 28 * z, 3 * z, 9 * z);
     }
   }
-  if (u.sup > .55 || u.retreat) {
-    var lbl = u.retreat ? 'RETREATING' : u.sup > 1 ? 'PINNED' : 'SUPPRESSED';
+  /* a tank sitting on a broken track with a live gun is a different problem from a
+     dead one, and the player cannot act on it unless it says so */
+  var lbl = null, lcol = '#d8a334';
+  if (u.retreat) { lbl = 'RETREATING'; lcol = '#e6e0c8'; }
+  else if (u.immob > 0) { lbl = 'IMMOBILISED'; lcol = '#c95c4e'; }
+  else if (u.gunDmg > 0) { lbl = 'GUN DAMAGED'; lcol = '#c95c4e'; }
+  else if (u.sup > 1) { lbl = 'PINNED'; lcol = '#c95c4e'; }
+  else if (u.sup > .55) lbl = 'SUPPRESSED';
+  if (lbl) {
     ctx.font = '600 ' + (11 * z) + 'px ' + FONT; ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(6,8,4,.72)';
     var tw = ctx.measureText(lbl).width + 8;
     ctx.fillRect(ix - tw / 2, p.y + 5, tw, 14 * z);
-    ctx.fillStyle = u.retreat ? '#e6e0c8' : u.sup > 1 ? '#c95c4e' : '#d8a334';
+    ctx.fillStyle = lcol;
     ctx.fillText(lbl, ix, p.y + 16 * z);
   }
   if (u.vet > 0) {
@@ -11418,7 +11701,7 @@ function frame(now) {
   AU.budget = 7;
   if (G.running && !G.paused) {
     G.t += dt;
-    computeVisibility();
+    computeVisibility(dt);
     for (var i = 0; i < G.units.length; i++) updateUnit(G.units[i], dt);
     for (var j = 0; j < G.blds.length; j++) updateBuilding(G.blds[j], dt);
     updateShots(dt);
