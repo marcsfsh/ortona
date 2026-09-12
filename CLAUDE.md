@@ -47,6 +47,7 @@ npm run verify               # lint + smoke test, the gate before calling work d
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
+node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
@@ -108,6 +109,37 @@ Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 reinforcement left out, so it cannot drift away from the game. A third entry on a
 card row fits field upgrades before the fight, because half of what a vehicle can
 do is an upgrade.
+
+### `tools/audio.mjs` - sound, mechanically
+
+Every noise the game makes is synthesised at runtime, so a change to the sound can no
+more be reviewed by reading the diff than a change to a model can. This renders the
+game's own `sfx()` through an `OfflineAudioContext`, writes WAVs to `shots/audio/`, and
+prints what a sound actually is.
+
+```sh
+node tools/audio.mjs                 every sound, a montage, and a firefight
+node tools/audio.mjs rifle mg        two of them
+node tools/audio.mjs --tag=before    keep a set to compare against
+```
+
+Nothing is reimplemented: the page's own `auAttach()` builds the graph on the offline
+context and the page's own `sfx()` fills it, so what lands on disk is what a player
+hears, sample for sample.
+
+Two columns matter more than the rest. **Crest** is peak over rms: a crack is a high
+number and a hiss is a low one. And the **first 50ms** band split is where the character
+of a report lives, because a whole-buffer spectrum is dominated by whatever rings longest,
+which is always the bottom end. Measuring band *power* out of a transform rather than the
+magnitude at a few single frequencies is not a detail: the cheap way compares a sine,
+whose energy sits in one bin, against noise, which is spread over thousands, and reports
+any sound with a thump in it as ninety-nine per cent bass with no crack at all.
+
+The firefight is the one to listen to. A company a side is put down two hundred units
+apart in the middle of the town and left to it, every sound the game really plays is
+written down with where it happened, and the busiest twenty seconds are handed back to
+one offline context -- one room, one compressor, one set of rate limits -- so what comes
+out is a mix rather than a row of samples laid side by side.
 
 ### `tools/skirmish.mjs` - tactics, mechanically
 
@@ -330,6 +362,16 @@ strength, because a building does not fall to one section. While a wave is press
 units ignore targets they have no fire line to: an attack order only closes to weapon
 range, so a section that stops for something behind a wall stops for good.
 
+**Audio.** Synthesised, like everything else: `auAttach` builds one bus on a context --
+a procedural room (a convolver over a generated impulse), a band limit at 6kHz, a little
+saturation and a compressor -- and `sfx` builds each sound out of layers on top of it
+(`auHiss` for noise, `auTone` for pitch). A report is a crack, a body and a thump, in
+that order of arrival, and each layer is jittered so no two shots are the same. `sfx`
+also pans and attenuates from where the sound happened relative to the view, and `AUGAP`
+limits how close together two of the same sound may be, because massed fire stacked
+without one turns into a rattle. `auInit` makes the real context; `tools/audio.mjs` hands
+`auAttach` an offline one.
+
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
 and no separate update thread.
@@ -399,6 +441,7 @@ tools/harness.mjs              Playwright library: boot, drive, pose, photograph
 tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
+tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
 .claude/hooks/session-start.sh installs dev dependencies on session start

@@ -4335,45 +4335,212 @@ function aiTick(dt) {
   }
 }
 
-/* ---------------------------------------------------------------- audio */
-var AU = { ctx: null, on: true, budget: 0, noise: null };
+/* ---------------------------------------------------------------- audio
+   All of it is synthesised, at boot and at the moment of firing: there are no sound
+   files, for the same reason there are no image files.
+
+   What was here was one burst of band-passed white noise per event, sent straight to the
+   speakers. That is the sound of rain on a window rather than a rifle -- a shot came out
+   thirty decibels down with two per cent of its energy below two hundred and fifty hertz
+   and nothing in it but hiss, and massed fire was a rattle of identical ticks.
+
+   A report is three things arriving at once: a crack off the muzzle, a body with the
+   shape of the barrel in it, and a thump you feel rather than hear. In a town there is a
+   fourth, which is the street throwing the whole thing back at you a few hundredths of a
+   second later. So every sound here is built in layers, every layer is jittered so that
+   no two shots are the same, and all of it goes through one bus -- a room, a band limit
+   at five kilohertz, a little saturation and a compressor to hold a firefight together.
+   The band limit and the saturation are the lo-fi, and they are the same decision as the
+   sixteen-tile atlas and the boxes the tanks are built out of. */
+var AU = { ctx: null, on: true, budget: 0, noise: null, rumb: null, dry: null, send: null, last: {} };
+/* how close together two of the same sound may be. Two rifles inside a fiftieth of a
+   second are one rifle as far as the ear is concerned, and stacking them is half of why
+   massed fire sounded like a rattle rather than like weight of fire. */
+var AUGAP = { rifle: .045, mg: .036, cannon: .06, rocket: .06, boom: .05 };
+/* a street: two walls close enough to hear and a dark tail off everything else. The taps
+   are a couple of milliseconds apart between the ears, which is what stops it sounding
+   like a plate and starts it sounding like somewhere. */
+function auRoom(c) {
+  /* a shorter street on a telephone: the convolution is the one part of this that runs
+     every frame whether or not anything is firing */
+  var sr = c.sampleRate, len = Math.floor(sr * (MOB ? .42 : .62)), b = c.createBuffer(2, len, sr), ch, i;
+  for (ch = 0; ch < 2; ch++) {
+    var d = b.getChannelData(ch);
+    for (i = 0; i < len; i++) {
+      var e = Math.pow(1 - i / len, 3.1);
+      d[i] = (Math.random() * 2 - 1) * e * .5;
+    }
+    d[Math.floor(sr * (ch ? .0232 : .0171))] += ch ? -.62 : .62;
+    d[Math.floor(sr * (ch ? .0467 : .0391))] += ch ? .38 : -.38;
+    d[Math.floor(sr * (ch ? .0779 : .0844))] += ch ? -.21 : .21;
+  }
+  return b;
+}
+/* two seconds of noise to draw layers out of: white for the crack, and a brown one that
+   is most of the weight in an explosion. Low-passing white noise does not make weight,
+   it makes quieter hiss, which is what the old boom was. */
+function auNoiseBuf(c, brown) {
+  var len = Math.floor(c.sampleRate * 1.4), b = c.createBuffer(1, len, c.sampleRate);
+  var d = b.getChannelData(0), v = 0, i;
+  for (i = 0; i < len; i++) {
+    var w = Math.random() * 2 - 1;
+    if (brown) { v = (v + w * .05) * .9915; d[i] = clamp(v * 11, -1, 1); }
+    else d[i] = w;
+  }
+  return b;
+}
+function auCurve() {
+  var n = 1024, k = new Float32Array(n), i;
+  for (i = 0; i < n; i++) { var x = i / (n - 1) * 2 - 1; k[i] = Math.tanh(x * 1.45) * .92; }
+  return k;
+}
+/* The whole graph, built on whatever context it is handed. auInit makes the real one;
+   tools/audio.mjs hands it an OfflineAudioContext and renders the result to disk, which
+   is the only way to look at a sound the way shoot.mjs looks at a model. */
+function auAttach(c) {
+  AU.ctx = c; AU.last = {};
+  AU.noise = auNoiseBuf(c, false);
+  AU.rumb = auNoiseBuf(c, true);
+  var band = c.createBiquadFilter(); band.type = 'lowpass'; band.frequency.value = 6000; band.Q.value = .7;
+  var sub = c.createBiquadFilter(); sub.type = 'highpass'; sub.frequency.value = 38;
+  var sat = c.createWaveShaper(); sat.curve = auCurve(); sat.oversample = '2x';
+  var comp = c.createDynamicsCompressor();
+  comp.threshold.value = -15; comp.knee.value = 16; comp.ratio.value = 3.6;
+  comp.attack.value = .006; comp.release.value = .22;
+  var master = c.createGain(); master.gain.value = .64;
+  AU.dry = c.createGain(); AU.dry.gain.value = 1;
+  AU.send = c.createGain(); AU.send.gain.value = 1;
+  var verb = c.createConvolver(); verb.normalize = true; verb.buffer = auRoom(c);
+  var wetTone = c.createBiquadFilter(); wetTone.type = 'lowpass'; wetTone.frequency.value = 2900;
+  var wet = c.createGain(); wet.gain.value = .8;
+  AU.send.connect(verb); verb.connect(wetTone); wetTone.connect(wet); wet.connect(band);
+  AU.dry.connect(band);
+  band.connect(sub); sub.connect(sat); sat.connect(comp); comp.connect(master);
+  master.connect(c.destination);
+}
 function auInit() {
   if (AU.ctx) return;
-  try { AU.ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AU.on = false; return; }
-  var len = AU.ctx.sampleRate * 1.2, buf = AU.ctx.createBuffer(1, len, AU.ctx.sampleRate), d = buf.getChannelData(0);
-  for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-  AU.noise = buf;
+  var c;
+  try { c = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AU.on = false; return; }
+  auAttach(c);
+}
+/* one layer of noise: a window out of the buffer, a filter, an envelope. The envelope
+   opens over a millisecond or two rather than instantly, because a step is a click and a
+   click is what every one of these used to start with. */
+function auHiss(t, dest, buf, type, f0, f1, q, vol, dur, at) {
+  var c = AU.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain();
+  src.buffer = buf; src.loop = true; src.loopEnd = buf.duration;
+  src.playbackRate.value = rnd(.92, 1.08);
+  f.type = type; f.frequency.setValueAtTime(f0, t + at); f.Q.value = q;
+  if (f1 && f1 !== f0) f.frequency.exponentialRampToValueAtTime(f1, t + at + dur);
+  g.gain.setValueAtTime(.0001, t + at);
+  g.gain.linearRampToValueAtTime(vol, t + at + Math.min(.004, dur * .12));
+  g.gain.exponentialRampToValueAtTime(.0004, t + at + dur);
+  src.connect(f); f.connect(g); g.connect(dest);
+  /* start somewhere else in the buffer every time: the same two hundred milliseconds of
+     noise on every shot is a texture the ear learns in about four seconds */
+  src.start(t + at, Math.random() * (buf.duration - dur - .05));
+  src.stop(t + at + dur + .03);
+}
+/* and one layer of pitch, which is the thump: a sine falling away under everything else */
+function auTone(t, dest, type, f0, f1, vol, dur, at) {
+  var c = AU.ctx, o = c.createOscillator(), g = c.createGain();
+  o.type = type;
+  o.frequency.setValueAtTime(f0, t + at);
+  o.frequency.exponentialRampToValueAtTime(Math.max(18, f1), t + at + dur);
+  g.gain.setValueAtTime(.0001, t + at);
+  g.gain.linearRampToValueAtTime(vol, t + at + Math.min(.006, dur * .1));
+  g.gain.exponentialRampToValueAtTime(.0004, t + at + dur);
+  o.connect(g); g.connect(dest);
+  o.start(t + at); o.stop(t + at + dur + .03);
 }
 function sfx(kind, x, y) {
   if (!AU.on || !AU.ctx || AU.budget <= 0) return;
+  var c = AU.ctx, t = c.currentTime;
+  var gap = AUGAP[kind];
+  if (gap && AU.last[kind] !== undefined && t - AU.last[kind] < gap) return;
+  /* Where it is, in the ear as well as on the screen. The old one played everything dead
+     centre at the same level wherever on the map it happened, so a fight at the far edge
+     of the view was as loud as the one under the cursor. */
+  var pan = 0, att = 1, air = 6000;
   if (x !== undefined) {
     var v = view();
     if (x < v.x - 200 || x > v.x + v.w + 200 || y < v.y - 200 || y > v.y + v.h + 200) return;
+    var cx = v.x + v.w * .5, cy = v.y + v.h * .5, half = Math.max(v.w, v.h) * .5 || 1;
+    pan = clamp((x - cx) / (v.w * .5 || 1), -1, 1) * .72;
+    var dn = clamp(Math.hypot(x - cx, y - cy) / half, 0, 1.4);
+    att = clamp(1.04 - dn * .5, .3, 1);
+    air = 6000 - dn * 3400;                      /* distance takes the top off a report */
   }
   AU.budget--;
-  var c = AU.ctx, t = c.currentTime, g = c.createGain(), out = c.createGain();
-  var src = c.createBufferSource(); src.buffer = AU.noise; src.loop = true;
-  var f = c.createBiquadFilter();
-  var vol = .09, dur = .08;
-  if (kind === 'rifle') { f.type = 'bandpass'; f.frequency.value = 1500; f.Q.value = .8; vol = .07; dur = .09; }
-  else if (kind === 'mg') { f.type = 'bandpass'; f.frequency.value = 900; f.Q.value = 1.2; vol = .05; dur = .05; }
-  else if (kind === 'cannon') { f.type = 'lowpass'; f.frequency.value = 420; vol = .16; dur = .3; }
-  else if (kind === 'rocket') { f.type = 'lowpass'; f.frequency.value = 800; vol = .1; dur = .22; }
-  else if (kind === 'boom') { f.type = 'lowpass'; f.frequency.value = 260; vol = .2; dur = .55; }
-  else if (kind === 'cap') { f.type = 'bandpass'; f.frequency.value = 2200; vol = .05; dur = .16; }
-  else if (kind === 'spawn') { f.type = 'bandpass'; f.frequency.value = 700; vol = .04; dur = .12; }
-  else if (kind === 'click') { f.type = 'highpass'; f.frequency.value = 2600; vol = .03; dur = .04; }
-  g.gain.setValueAtTime(vol, t);
-  g.gain.exponentialRampToValueAtTime(.0008, t + dur);
-  src.connect(f); f.connect(g); g.connect(out); out.connect(c.destination);
-  out.gain.value = 1;
-  src.start(t); src.stop(t + dur + .02);
-  if (kind === 'cannon' || kind === 'boom') {
-    var o = c.createOscillator(), og = c.createGain();
-    o.type = 'sine'; o.frequency.setValueAtTime(kind === 'boom' ? 90 : 130, t);
-    o.frequency.exponentialRampToValueAtTime(38, t + dur);
-    og.gain.setValueAtTime(.22, t); og.gain.exponentialRampToValueAtTime(.001, t + dur);
-    o.connect(og); og.connect(c.destination); o.start(t); o.stop(t + dur + .02);
+  if (gap) AU.last[kind] = t;
+  var out = c.createGain(), lp = c.createBiquadFilter(), snd = c.createGain();
+  lp.type = 'lowpass'; lp.frequency.value = air; lp.Q.value = .5;
+  out.gain.value = att;
+  out.connect(lp);
+  if (c.createStereoPanner) { var pn = c.createStereoPanner(); pn.pan.value = pan; lp.connect(pn); pn.connect(AU.dry); }
+  else lp.connect(AU.dry);
+  out.connect(snd); snd.connect(AU.send);
+  var j = rnd(.88, 1.14);                       /* no two of anything are the same */
+
+  if (kind === 'rifle') {
+    /* Lee-Enfield and Kar98k: a hard crack, a short barrel-shaped body under it, and a
+       thump. The tail off the buildings is most of what makes it sound like Ortona. */
+    snd.gain.value = .38;
+    auHiss(t, out, AU.noise, 'highpass', 1900 * j, 0, .5, .85, .055, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1250 * j, 680 * j, 1.0, .6, .11, .001);
+    auTone(t, out, 'triangle', 165 * j, 56, .3, .1, 0);
+  } else if (kind === 'mg') {
+    /* MG42 and Bren: the same shape, shorter and drier, because at twelve hundred rounds
+       a minute anything with a tail on it turns to porridge */
+    snd.gain.value = .24;
+    auHiss(t, out, AU.noise, 'highpass', 2300 * j, 0, .6, .72, .03, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1000 * j, 560 * j, 1.2, .5, .065, .001);
+    auTone(t, out, 'triangle', 135 * j, 60, .2, .055, 0);
+  } else if (kind === 'cannon') {
+    /* a 75 from a tank: the crack is nearly all of what you hear at the gun and the rest
+       of it arrives as weight */
+    snd.gain.value = .72;
+    auHiss(t, out, AU.noise, 'highpass', 1500 * j, 600, .6, 1, .2, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1300 * j, 500, 1, .6, .3, .004);
+    auHiss(t, out, AU.rumb, 'lowpass', 900, 190, .8, .8, .55, 0);
+    auTone(t, out, 'sine', 128 * j, 33, .7, .5, 0);
+    auTone(t, out, 'triangle', 62 * j, 28, .4, .4, .012);
+  } else if (kind === 'rocket') {
+    /* Panzerschreck and bazooka: not a bang but a shove, with the back-blast behind it */
+    snd.gain.value = .62;
+    auHiss(t, out, AU.noise, 'bandpass', 500 * j, 2600, 1.0, .75, .3, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 700, 240, .8, .45, .36, 0);
+    auTone(t, out, 'sine', 104 * j, 42, .38, .3, .01);
+  } else if (kind === 'boom') {
+    /* a shell landing. Most of it is under a hundred hertz, some of it is the crack of
+       the burst, and the rest is the street coming down for the best part of a second. */
+    snd.gain.value = 1;
+    auHiss(t, out, AU.noise, 'highpass', 1100 * j, 400, .6, .85, .18, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 620, 120, .9, 1, .95, 0);
+    auTone(t, out, 'sine', 88 * j, 26, .8, .8, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 2400 * j, 900, 1.1, .38, .55, .06);
+  } else if (kind === 'cap') {
+    /* ground taken. A pair of notes rather than a hiss, because it is the one sound in
+       the game that is telling you something rather than depicting something. */
+    snd.gain.value = .4;
+    auTone(t, out, 'triangle', 392, 392, .34, .2, 0);
+    auTone(t, out, 'triangle', 587, 587, .3, .34, .1);
+    auTone(t, out, 'sine', 196, 196, .22, .4, 0);
+  } else if (kind === 'spawn') {
+    /* a section falling in: boots and a tailboard, kept quiet */
+    snd.gain.value = .26;
+    auTone(t, out, 'sine', 190, 96, .22, .14, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1600 * j, 800, .9, .34, .12, .004);
+    auHiss(t, out, AU.noise, 'highpass', 2600, 0, .6, .16, .05, .05);
+  } else if (kind === 'click') {
+    /* the interface. A tick with a little wood in it, not a needle. */
+    snd.gain.value = .14;
+    auHiss(t, out, AU.noise, 'bandpass', 2400, 1400, 1.6, .16, .035, 0);
+    auTone(t, out, 'triangle', 740, 620, .16, .045, 0);
+  } else {
+    snd.gain.value = .3;
+    auHiss(t, out, AU.noise, 'bandpass', 1200, 700, 1, .3, .1, 0);
   }
 }
 
