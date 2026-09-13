@@ -1419,17 +1419,21 @@ function defaultMapData() {
   /* ---- sectors and headquarters ------------------------------------------------------------
      Named for what is actually there. The three on the spine are the victory ground: the
      cathedral quarter, the piazza and the station yard, and they are worth taking in that
-     order from either end. */
+     order from either end. The flags mirror about the midline exactly: the first draft
+     had Via Cavour a hundred units nearer its headquarters than Porta Caldari was to
+     the other, and the same brain on both sides took the German third flag twenty
+     seconds sooner every game, which on ground that pays by the second was the whole
+     battle by the fifth minute. */
   var secs = [
     ['A', 500, 420, 'fuel', 'us', 'Coast Road', ['C', 'D']],
     ['B', 500, 1480, 'mp', 'us', 'Moro Approach', ['C', 'F']],
     ['C', 1000, 980, 'mp', null, 'Porta Caldari', ['A', 'B', 'E']],
-    ['D', 1410, 606, 'vp', null, 'San Tommaso', ['A', 'E', 'H']],
-    ['E', 1410, 980, 'vp', null, 'Piazza Municipale', ['C', 'D', 'F', 'G']],
+    ['D', 1400, 606, 'vp', null, 'San Tommaso', ['A', 'E', 'H']],
+    ['E', 1400, 980, 'vp', null, 'Piazza Municipale', ['C', 'D', 'F', 'G']],
     ['F', 1400, 1330, 'vp', null, 'Station Yard', ['B', 'E', 'I']],
-    ['G', 1900, 944, 'mp', null, 'Via Cavour', ['E', 'H', 'I']],
-    ['H', 2400, 420, 'fuel', 'ger', 'Castello', ['D', 'G']],
-    ['I', 2400, 1480, 'mp', 'ger', 'Santa Caterina', ['F', 'G']]];
+    ['G', 1800, 980, 'mp', null, 'Via Cavour', ['E', 'H', 'I']],
+    ['H', 2300, 420, 'fuel', 'ger', 'Castello', ['D', 'G']],
+    ['I', 2300, 1480, 'mp', 'ger', 'Santa Caterina', ['F', 'G']]];
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
   E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
@@ -3909,7 +3913,8 @@ function updateUnit(u, dt) {
    held a reference to a unit or a sector would go on pointing at it after it was dead. */
 var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
            asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0,
-           contacts: null, owned: null, ctSec: null, ctT: -99, hot: null };
+           contacts: null, owned: null, ctSec: null, ctT: -99, hot: null, momSec: null, momT: -99,
+           flkX: 0, flkY: 0, flkT: -99 };
 var DIFF = [
   /* Green: money is barely a constraint. You earn triple, start with enough to fill the
      queue immediately, and the opposition runs a quarter economy, thinks every four
@@ -3950,7 +3955,8 @@ function aiInit(side) {
   AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
   AI.mood = 'push'; AI.upT = -99; AI.bagT = -99; AI.bagN = 0;
   AI.asSec = null; AI.asKey = null; AI.asT = -99; AI.asForm = -99; AI.asPick = -99; AI.woke = 0; AI.wantMp = 0;
-  AI.contacts = null; AI.owned = null; AI.ctSec = null; AI.ctT = -99; AI.hot = null;
+  AI.contacts = null; AI.owned = null; AI.ctSec = null; AI.ctT = -99; AI.hot = null; AI.momSec = null; AI.momT = -99;
+  AI.flkX = 0; AI.flkY = 0; AI.flkT = -99;
 }
 function aiOwn(pred) {
   var out = [];
@@ -4067,6 +4073,33 @@ function aiFormPost(side, x, y, back) {
   }
   return nearestFree(best ? best.x : px, best ? best.y : py);
 }
+/* Something to get behind within a dash: the nearest piece of real cover that faces the
+   fire. chooseCover does this job for a halted section within a few paces of where it
+   stands; this is the same question asked over a longer run, for a section that is
+   about to be pinned where it is and has to be somewhere else first. For a wall it is
+   the nearest point of the wall and the side of it away from the fire, and a wall that
+   lies along the line of fire is no wall at all. */
+function aiDuck(u, ang) {
+  var near = coversNear(u.x, u.y, 130), best = null, bs = -1e9, bx = 0, by = 0;
+  for (var i = 0; i < near.length; i++) {
+    var c = near[i];
+    if (c.type < 2 || c.hp <= 0 || c.kind === 'ditch') continue;
+    var px = c.x, py = c.y, eff = c.type;
+    if (c.axis !== null) {
+      var ax = Math.cos(c.axis) * c.r, ay = Math.sin(c.axis) * c.r;
+      var t = clamp(((u.x - (c.x - ax)) * ax + (u.y - (c.y - ay)) * ay) / Math.max(1, 2 * (ax * ax + ay * ay)), 0, 1);
+      px = c.x - ax + 2 * ax * t - Math.cos(ang) * 10;
+      py = c.y - ay + 2 * ay * t - Math.sin(ang) * 10;
+      if (c.kind !== 'trench') eff = c.type * (1 - Math.abs(Math.cos(ang - c.axis)) * .75);
+    }
+    if (eff < 1.8) continue;
+    var d = Math.hypot(px - u.x, py - u.y);
+    if (d < 6 || d > 130) continue;
+    var sc = eff * 30 - d * .5;
+    if (sc > bs) { bs = sc; best = c; bx = px; by = py; }
+  }
+  return best ? nearestFree(bx, by) : null;
+}
 /* What is worth shooting at from here.
    The old loop forced every section onto whatever enemy was nearest. acquire() honours a
    forced target whatever it is, so that order actively made the AI's gunnery worse: a
@@ -4075,6 +4108,63 @@ function aiFormPost(side, x, y, back) {
    prefers what someone else is already firing at, because two sections on one target end
    a fight and one section on each of two targets does not. */
 var _aiEng = {};
+/* The enemy's order of battle by role: what has to be answered. Armour by weight --
+   light is anything a section's own anti-tank weapon goes through, heavy is anything a
+   medium's gun does not -- and separately what carries a gun that kills armour, because
+   an open-topped tank destroyer is light to hit and heavy to be hit by. Read off every
+   enemy unit alive: the staff work is allowed the map. */
+function aiIntel(side) {
+  var o = { inf: 0, mg: 0, at: 0, lt: 0, med: 0, heavy: 0, veh: 0, gun: 0, gar: 0, value: 0, n: 0 };
+  for (var i = 0; i < G.units.length; i++) {
+    var e = G.units[i];
+    if (e.dead || e.side === side || e.def.builder) continue;
+    o.value += aiValue(e); o.n++;
+    if (e.cat === 'veh') {
+      o.veh++;
+      if (e.def.armor >= 200) o.heavy++; else if (e.def.armor >= 100) o.med++; else o.lt++;
+      if (mainW(e).pen >= 200) o.gun++;
+    } else if (e.def.atOnly) { o.at++; o.gun++; }
+    else if (e.cat === 'team') o.mg++;
+    else { o.inf++; if (e.gar) o.gar++; }
+  }
+  return o;
+}
+/* The shopping list, cut against the enemy. The base order is the side's own -- a car to
+   see with, a gun to hold with, a carrier, then the armour by weight -- and every tick it
+   is re-cut against what has actually been fielded on the other side, because a list that
+   ignores the enemy buys armoured cars into a line of six-pounders and anti-tank guns
+   against an army with no tanks in it.
+
+     - two or more anti-tank guns and no armour to answer: the light armour goes to the
+       back of the list. A car or a carrier driving at a Pak is a car or a carrier lost.
+     - heavy armour on the field: whatever the side has that kills it comes to the front,
+       and the mediums that cannot go behind it. A Panzer IV against a Tiger is a Panzer
+       IV that has to be flanked to matter, so it is bought after the thing that need not.
+     - no armour at all and plenty of infantry: the anti-tank gun goes to the back. Nothing
+       for it to shoot, and its manpower is a machine gun that would have.
+     - armour with nothing of ours to answer it: the gun comes forward and the count on it
+       goes up, which is the one case the old list already knew about. */
+function aiCutLadder(side, base, IN, own) {
+  var lt = side === 'us' ? { us_m8: 1, us_stuart: 1, us_m3: 1 } : { ger_sd222: 1, ger_h251: 1 };
+  var killers = side === 'us' ? { us_ach: 1, us_at: 1 } : { ger_stug: 1, ger_tig: 1, ger_pak: 1 };
+  var meds = side === 'us' ? { us_sher: 1 } : { ger_p4: 1 };
+  var atKey = side === 'us' ? 'us_at' : 'ger_pak';
+  var front = [], mid = [], back = [], i, e, k;
+  for (i = 0; i < base.length; i++) {
+    e = base[i]; k = e[0];
+    var noArmourToAnswer = IN.veh === 0 && IN.inf >= 4;
+    var pakLine = IN.at >= 2 && IN.veh === 0;
+    var heavies = IN.heavy > 0;
+    var ownAt = own.at + own.gunVeh;
+    if (k === atKey && noArmourToAnswer) { back.push(e); continue; }
+    if (k === atKey && IN.veh > ownAt) { front.push([k, Math.max(e[1], Math.min(3, IN.veh)), e[2]]); continue; }
+    if (lt[k] && pakLine) { back.push(e); continue; }
+    if (heavies && killers[k]) { front.push(e); continue; }
+    if (heavies && meds[k]) { back.push(e); continue; }
+    mid.push(e);
+  }
+  return front.concat(mid, back);
+}
 /* Can a weapon sited here see that? The same trace the guns use, asked of a post rather
    than of a unit, so a support weapon can be sited on whether it will have a shot rather
    than on how close it is to the fighting. */
@@ -4136,6 +4226,9 @@ function aiPickTarget(u, reach) {
       if (u.def.atOnly) continue;                      /* an anti-tank gun waits for armour */
     }
     sc -= d * .45;
+    /* a weapon team is the most valuable thing on the field for what it costs to kill:
+       two men on a gun that is stopping a whole section, and it cannot run */
+    if (e.cat === 'team') sc += 130;
     if (_aiEng[e.id]) sc += 150;                       /* finish what the others started */
     if (e.target && !e.target.dead && e.target.side === u.side) sc += 110;
     if (e.cat !== 'veh' && hpFrac(e) < .5) sc += 90;
@@ -4210,12 +4303,18 @@ function aiTick(dt) {
     fighters.push(u);
   }
   var pop = popOf(side);
-  var enemyVeh = 0, foeAt = 0;
+  var IN = aiIntel(side), enemyVeh = IN.veh, foeAt = IN.at;
   for (i = 0; i < G.units.length; i++) {
     u = G.units[i];
     if (u.dead || u.side === side) continue;
-    if (u.cat === 'veh') enemyVeh++;
-    if (u.def.at || u.def.atOnly) foeAt++;
+    if (u.def.at) foeAt++;
+  }
+  /* and what of its own answers armour, so the list knows whether the gun is still wanted */
+  var own = { at: 0, gunVeh: 0 };
+  for (i = 0; i < mine.length; i++) {
+    u = mine[i];
+    if (u.def.atOnly) own.at++;
+    else if (u.cat === 'veh' && mainW(u).pen >= 200) own.gunVeh++;
   }
   _aiEng = {};
   for (i = 0; i < mine.length; i++) {
@@ -4255,11 +4354,11 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = side === 'us'
+  var LADDER = aiCutLadder(side, side === 'us'
     ? [['us_m8', 1, 40], ['us_at', 2, 130], ['us_m3', 1, 210], ['us_stuart', 1, 270],
        ['us_sher', 2, 310], ['us_ach', 1, 580], ['us_sher', meds, 650]]
     : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210], ['ger_stug', 1, 235],
-       ['ger_p4', 2, 260], ['ger_tig', 1, 620], ['ger_p4', meds, 690]];
+       ['ger_p4', 2, 260], ['ger_tig', 1, 620], ['ger_p4', meds, 690]], IN, own);
   var gate = 2 - D.tech, li, ent, lk, ld;
   /* Population is the other thing it can run out of, and infantry is cheap enough to
      spend all of it: at regular it filled the cap with sections by the seventh minute
@@ -4292,6 +4391,19 @@ function aiTick(dt) {
      population cap sat two thirds empty. The population cap is the real ceiling and it
      should be the one that binds. */
   var armyCap = G.res[side].mp > 2400 ? 99 : D.army + (rich ? 2 : 0);
+  /* The opening. Ground taken in the first three minutes is ground held for the rest of
+     the battle at no cost, because nobody is there to contest it, and the old brain spent
+     those minutes building its company post while its two sections stood at the flag. On
+     regular and veteran the army cap is lifted for the first three minutes so that
+     sections are raised as fast as the headquarters can turn them out, and the objective
+     list below sends every one of them at the nearest empty sector. The armour comes
+     afterwards, on the money the ground is by then paying. */
+  var opening = skill >= 1 && G.t < 180;
+  if (opening) armyCap = Math.max(armyCap, D.inf + 4);
+  /* and what the infantry is for changes with what it is facing: an enemy that is all
+     infantry is answered with machine guns, one that sits in houses with assault groups */
+  var mgCap = D.mg + (IN.inf >= 5 && IN.veh === 0 ? 1 : 0) + (rich ? 1 : 0);
+  var wantElite = IN.gar >= 1 || IN.mg >= 2;
   /* And what it is saving up for, in marks and in fuel.
 
      The population reserve above was only half of the problem. Sections are bought before
@@ -4334,14 +4446,16 @@ function aiTick(dt) {
   spare = Math.max(0, G.res[side].mp - wantMp); spareFu = Math.max(0, G.res[side].fu - wantFu);
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(side) < infRoom) {
     var mgs = aiOwn(function (v) { return v.key === K.mg; }).length;
-    if (mgs < D.mg && spare >= (UNITS[K.mg].cost.mp || 0)) queueUnit(b1, K.mg);
+    if (mgs < mgCap && spare >= (UNITS[K.mg].cost.mp || 0)) queueUnit(b1, K.mg);
     /* The company post used to sit outside the army cap, so an easy opponent held to
        four sections by the headquarters quietly raised a dozen more out of the post.
        The cap now holds everywhere, which leaves the easy settings spending what they
        have on one of each arm rather than on a crowd of riflemen. */
     else if (men.length < armyCap) {
       var el = UNITS[K.elite];
-      if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58) &&
+      /* the assault group is the answer to men in a house and to a machine gun line, so
+         when the enemy has either it is bought on a lower fuel floor than usual */
+      if (G.res[side].fu > (wantElite ? 40 : b2 ? (b2.built >= 1 ? 120 : 999) : 58) &&
           spare >= (el.cost.mp || 0) && spareFu >= (el.cost.fu || 0)) queueUnit(b1, K.elite);
       else if (q < 1 && spare >= (UNITS[K.inf].cost.mp || 0)) queueUnit(hq, K.inf);
     }
@@ -4429,6 +4543,23 @@ function aiTick(dt) {
   /* An army that is losing the arithmetic stops buying ground at any price and holds
      what it has, which on this map means houses and the sectors behind its own line. */
   AI.mood = (skill < 1 || G.t < 100 || ratio > .95) ? 'push' : ratio > .62 ? 'hold' : 'dig';
+  /* The score is part of the arithmetic. On points a side is losing when its pool is
+     draining faster than the other's, whatever the army count says, and the old brain
+     never looked: it would sit on a comfortable strength ratio in 'hold' while the
+     victory points ran out under it. Behind on points it pushes whatever the ratio says,
+     because a side that is behind and holding is a side that has already lost; well
+     ahead, it holds what it has and lets the clock do the rest. The opening always
+     pushes: there is nothing to hold yet. */
+  var vpLead = G.win === 'vp' ? (G.res[side].vp || 0) - (G.res[foeSide].vp || 0) : 0;
+  if (G.win === 'vp' && skill >= 1) {
+    if (vpLead < -60 && AI.mood !== 'dig') AI.mood = 'push';
+    else if (vpLead > 140 && AI.mood === 'push' && G.t > 240 && ratio < 1.3) AI.mood = 'hold';
+  }
+  if (opening) AI.mood = 'push';
+  /* Momentum. A capture is the moment the enemy is most disorganised, and the brain used
+     to spend it re-forming for a minute and a quarter. For thirty seconds after taking a
+     sector the next one along the same axis is worth more and the wave re-forms at once. */
+  var momentum = AI.momT && G.t - AI.momT < 30 ? G.secById[AI.momSec] : null;
   /* ---- the counter-attack.
      Ground is cheapest to take back in the half minute after it is lost, before whoever
      took it has dug in, brought up his support or been reinforced. The old brain had no
@@ -4484,6 +4615,21 @@ function aiTick(dt) {
              : s.type === 'vp' ? 430 : s.type === 'fuel' ? 260 : 150) - dist(s, hq) * .14 -
              th * .10 + (s.contest ? 80 : 0) + (s.owner === foeSide ? 40 : 0) +
              (held ? 60 : 0);                                     /* what it has, it keeps */
+    /* Where the enemy is thin. Two sectors of the same worth are not the same objective
+       if one has a company on it and the other a section, and the old scoring only
+       docked a tenth of the threat: it walked at the strong one because it was nearer.
+       An enemy-held sector held by less than a section's worth is the place to go. */
+    if (s.owner === foeSide && skill >= 1) sc += th < 120 ? 110 : th < 300 ? 40 : -60;
+    /* A contiguous front. A sector next to one already held can be supported from it and
+       is not a salient waiting to be cut off; a sector two away is. */
+    if (!held && s.nb) for (j = 0; j < s.nb.length; j++) {
+      var nbs = G.secById[s.nb[j]];
+      if (nbs && nbs.owner === side) { sc += 50; break; }
+    }
+    /* behind on points, the victory sectors are the only thing that changes the score */
+    if (vpLead < -60 && s.type === 'vp' && !held) sc += 120;
+    /* and the sector the last capture was pointing at */
+    if (momentum && s.nb && s.nb.indexOf(momentum.id) >= 0 && !held) sc += 140;
     if (quiet) sc -= 150;                                           /* a sentry, not a push */
     /* and what has just been taken off us goes to the top of the list, with the weight
        to do something about it, for as long as the clock runs */
@@ -4565,6 +4711,7 @@ function aiTick(dt) {
      minute goes anyway -- and once it has gone they are given a minute and a quarter
      before they are formed up again. */
   var asSec = null, asKey = null, asX = 0, asY = 0, asId = null, fupX = 0, fupY = 0;
+  var flank = false, flkX = 0, flkY = 0;
   if (razeT) {
     /* in annihilation the objective is a building, and a building does not move */
     asKey = 'b' + razeT.id; asX = razeT.x; asY = razeT.y; AI.asSec = null;
@@ -4586,7 +4733,7 @@ function aiTick(dt) {
   }
   if (!asKey) { AI.asKey = null; AI.asT = -99; }
   else {
-    if (AI.asKey !== asKey) { AI.asKey = asKey; AI.asT = -99; AI.asForm = G.t; }
+    if (AI.asKey !== asKey) { AI.asKey = asKey; AI.asT = -99; AI.asForm = G.t; AI.flkT = -99; }
     /* Far enough back that the wave is not already in contact while it is still
        gathering. A fixed distance will not do it: a building in the enemy's own base has
        his whole line in front of it, and six hundred short of the building was still
@@ -4602,14 +4749,56 @@ function aiTick(dt) {
       if (!fup) fup = aiFormPost(side, asX, asY, 1340);
     } else fup = aiFirePost(side, asX, asY, 300);
     fupX = fup.x; fupY = fup.y;
+    /* The pincer. A wave that all comes up the one axis is a wave the defender has every
+       gun laid on, and on this map the axis is nearly always a street with a machine gun
+       at the end of it. So at veteran a third of the sections go round: they gather at a
+       second post square off the line of approach, on whichever side of the objective is
+       quieter, and go in from there when the rest go in from the front. The post is dug
+       once per wave and held for the life of it, because a section re-dealt to the other
+       flank every tick walks up and down behind the objective and never arrives. It is
+       only dug for a defended objective -- there is nothing to pincer on an empty flag,
+       and the section is worth more with the main body -- and only where the ground on
+       that side is actually quiet, because a hook that walks into a second position is
+       two assaults where there was one. */
+    if (skill >= 2 && AI.asT < 0 && AI.flkT < 0 && aiThreat(side, asX, asY, 380) > 60) {
+      var axa = Math.atan2(asY - fupY, asX - fupX), flTh = 1e9, fl = null;
+      for (var fs = -1; fs <= 1; fs += 2) {
+        var fa = axa + fs * Math.PI / 2;
+        var fp3 = nearestFree(clamp(asX + Math.cos(fa) * 380, 60, WORLD.w - 60),
+                              clamp(asY + Math.sin(fa) * 380, 60, WORLD.h - 60));
+        var fth = aiThreat(side, fp3.x, fp3.y, 300);
+        if (fth < flTh) { flTh = fth; fl = fp3; }
+      }
+      if (fl && flTh < 90) { AI.flkX = fl.x; AI.flkY = fl.y; AI.flkT = G.t; }
+    }
+    flank = AI.flkT >= 0; flkX = AI.flkX; flkY = AI.flkY;
     if (AI.asT < 0) {
-      var ready = 0, sent = 0;
+      var ready = 0, sent = 0, wavers = [], secs = [];
       for (j = 0; j < fighters.length; j++) {
         u = fighters[j];
+        u.flank = 0;
         if (!aiInWave(u, asId, razeT)) continue;
-        sent++;
+        sent++; wavers.push(u);
+        if (u.cat !== 'veh') secs.push(u);
+      }
+      /* Who goes round: the third of the sections nearest the flank post, which keeps the
+         deal stable once they have started walking to it, and never fewer than three in
+         the wave, because a hook of one section is a section on its own. The armour goes
+         with the hook when the enemy has guns that kill armour: a tank that comes at a
+         gun line from the side comes at it where the gun is not pointing. With nothing
+         on the field that can open it, it stays with the main body, where the infantry
+         it is there to support is. */
+      if (flank && secs.length >= 3) {
+        var nfl = Math.max(1, Math.floor(secs.length / 3));
+        secs.sort(function (a, b) { return dsq(a.x, a.y, flkX, flkY) - dsq(b.x, b.y, flkX, flkY); });
+        for (j = 0; j < nfl; j++) secs[j].flank = 1;
+        if (IN.gun > 0) for (j = 0; j < wavers.length; j++) if (wavers[j].cat === 'veh') wavers[j].flank = 1;
+      }
+      for (j = 0; j < wavers.length; j++) {
+        u = wavers[j];
         if (dsq(u.x, u.y, fupX, fupY) < 240 * 240 ||
-            dsq(u.x, u.y, asX, asY) < 380 * 380) ready++;
+            dsq(u.x, u.y, asX, asY) < 380 * 380 ||
+            (u.flank && dsq(u.x, u.y, flkX, flkY) < 240 * 240)) ready++;
       }
       /* The wait is there to stop a wave stalling for ever on a section that is pinned
          somewhere else. It is not permission to attack with nobody: a wave that runs out
@@ -4643,7 +4832,14 @@ function aiTick(dt) {
       if (sent && ready >= half && laidOn &&
           (ready >= Math.min(D.wave || 3, sent) ||
            G.t - AI.asForm > (D.form || 32))) AI.asT = G.t;
-    } else if (G.t - AI.asT > (D.press || 75)) { AI.asT = -99; AI.asForm = G.t; }
+    } else if (G.t - AI.asT > (D.press || 75) || (asSec && asSec.owner === side)) {
+      /* the objective is taken, or the press has run its course. A capture is followed
+         up: the next wave forms immediately, and the sector just taken is remembered so
+         the one beyond it scores higher for the next half minute. */
+      if (asSec && asSec.owner === side) { AI.momSec = asSec.id; AI.momT = G.t; AI.asForm = G.t - (D.form || 32) * .6; }
+      else AI.asForm = G.t;
+      AI.asT = -99; AI.flkT = -99;                       /* the next wave reads the ground again */
+    }
   }
   var forming = asKey && AI.asT < 0, pressing = asKey && AI.asT >= 0;
   /* What the wave is shooting at. Ten sections firing at ten different windows suppress
@@ -4697,6 +4893,97 @@ function aiTick(dt) {
           if (Math.hypot(u.x - mx, u.y - my) > 110 &&
               (!u.dest || Math.hypot(u.dest.x - mx, u.dest.y - my) > 160)) orderMove(u, mx, my, false);
           continue;
+        }
+      }
+    }
+
+    /* ---- the fight in front of it. Everything from here to the plan is a decision the
+       section leader or the tank commander makes on his own, from what he can see, and
+       none of it waits on the plan: a plan that puts a tank on the right flag with its
+       side to a gun has still lost the tank. Green has none of it, because a green
+       opponent that ducks and backs off is one that does not lose men, and losing men
+       is what green is for. */
+    if (skill >= 1 && u.cat === 'veh' && u.job !== 'mend' && !(u.immob > 0)) {
+      /* Armour on its own backs away from infantry. A section with a launcher in it
+         inside two hundred of a tank with nobody on foot beside it is a dead tank,
+         whatever the tank does to the section, so it opens the range, firing as it
+         goes, and lets its own infantry catch up. Rate limited, because a tank that
+         reverses every tick from infantry that keep coming reverses into its own base. */
+      var nearInf = null, nid = 190 * 190, escort = false;
+      for (j = 0; j < G.units.length; j++) {
+        var ni = G.units[j];
+        if (ni.dead || ni.inside || ni.cat !== 'inf' || ni.retreat) continue;
+        var nd = dsq(ni.x, ni.y, u.x, u.y);
+        if (ni.side === side) { if (nd < 130 * 130) escort = true; }
+        else if (ni.def.at && !ni.gar && nd < nid) { nid = nd; nearInf = ni; }
+      }
+      if (nearInf && !escort && G.t - (u.backT || -99) > 9) {
+        u.backT = G.t;
+        var ba = angTo(nearInf, u);
+        var bp2 = nearestFree(clamp(u.x + Math.cos(ba) * 200, 60, WORLD.w - 60),
+                              clamp(u.y + Math.sin(ba) * 200, 60, WORLD.h - 60));
+        orderMove(u, bp2.x, bp2.y, true); continue;
+      }
+      if (u.backT && G.t - u.backT < 6 && u.order === 'attackmove') continue;
+      /* And it fights with its front to the gun. Side armour is a little over half the
+         plate on the front and the rear a third of it, so a halted tank that has been
+         caught side-on to something that can open it turns to face it, by driving at it
+         a short way: there is no pivot in place, and a move short enough to be one is
+         taken by the driver as an instruction to reverse. Only for a gun that can
+         actually go through it, and only from beyond the reach of a man with a
+         launcher, since the answer to him is the rule above and not a charge. */
+      if (!u.moving && G.t - (u.faceT || -99) > 8) {
+        var gun = null, gsc = 0;
+        for (j = 0; j < G.units.length; j++) {
+          var ge = G.units[j];
+          if (ge.dead || ge.inside || ge.side === side || !visibleTo(side, ge)) continue;
+          if (!(ge.cat === 'veh' || ge.def.atOnly)) continue;
+          var gd = dist(ge, u);
+          if (gd < 200 || gd > 540) continue;
+          if (penChance(penAt(mainW(ge), gd), armourAt(u, ge.x, ge.y)) < .15) continue;
+          var off2 = Math.abs(angDiff(u.facing, angTo(u, ge)));
+          if (off2 < 1.0) continue;
+          var gs2 = off2 * 100 - gd * .2;
+          if (gs2 > gsc) { gsc = gs2; gun = ge; }
+        }
+        if (gun) {
+          u.faceT = G.t;
+          var fa3 = angTo(u, gun);
+          var fp4 = nearestFree(clamp(u.x + Math.cos(fa3) * 165, 60, WORLD.w - 60),
+                                clamp(u.y + Math.sin(fa3) * 165, 60, WORLD.h - 60));
+          orderMove(u, fp4.x, fp4.y, true); continue;
+        }
+      }
+      if (u.faceT && G.t - u.faceT < 5 && u.order === 'attackmove') continue;
+    }
+    if (skill >= 1 && u.cat === 'inf' && !u.gar && !u.inside) {
+      /* Under fire in the open. A section being suppressed where it stands has a few
+         seconds before it is pinned, and a pinned section cannot move at all: it is
+         shot to pieces where it lies. So a section that is losing a firefight in the
+         open goes to ground now -- into an empty house if there is one at hand, behind
+         the nearest thing within a short dash that faces the fire if not, and if there
+         is nothing, back the way it came far enough to be out of the worst of it. A
+         section in a wave that is pressing has no back to go to: it ducks or it keeps
+         going. The threshold is low on purpose: suppression climbs from nothing to
+         pinned in a few seconds of machine gun fire and decays at a fifth a second, so a
+         rule that waited for the men to be half suppressed found them either pinned
+         already or recovered, and never fired at all. A pinned section is given the
+         order too; it goes the moment it can move. */
+      if (u.duckT && G.t - u.duckT < 9 && (u.order === 'move' || u.order === 'enter')) continue;
+      if (u.sup > .4 && G.t - (u.duckT || -99) > 14) {
+        var thA = u.threatX !== undefined ? Math.atan2(u.threatY - u.y, u.threatX - u.x)
+                : u.target && !u.target.dead ? angTo(u, u.target) : aiFoeDir(side, u.x, u.y);
+        if (coverOf(u, thA) < 2) {
+          u.duckT = G.t;
+          var dh = garCount < 5 ? aiHouse(u, u.x, u.y, 120) : null;
+          if (dh) { clearOrder(u); u.order = 'enter'; u.enterT = dh; garCount++; continue; }
+          var dk = aiDuck(u, thA);
+          if (dk) { orderMove(u, dk.x, dk.y, false); continue; }
+          if (!(pressing && aiInWave(u, asId, razeT))) {
+            var bx = clamp(u.x - Math.cos(thA) * 150, 40, WORLD.w - 40);
+            var by = clamp(u.y - Math.sin(thA) * 150, 40, WORLD.h - 40);
+            orderMove(u, bx, by, false); continue;
+          }
         }
       }
     }
@@ -4785,14 +5072,24 @@ function aiTick(dt) {
          would have kept the bazookas off it, which is how a side loses a Tiger to two
          men in a doorway. */
       if (forming && aiInWave(u, asId, razeT) && dsq(u.x, u.y, asX, asY) > 420 * 420) {
-        if (Math.hypot(u.x - fupX, u.y - fupY) > 130 &&
-            (!u.dest || Math.hypot(u.dest.x - fupX, u.dest.y - fupY) > 180))
-          orderMove(u, fupX + rnd(-70, 70), fupY + rnd(-70, 70), true);
+        var gx = u.flank && flank ? flkX : fupX, gy = u.flank && flank ? flkY : fupY;
+        if (Math.hypot(u.x - gx, u.y - gy) > 130 &&
+            (!u.dest || Math.hypot(u.dest.x - gx, u.dest.y - gy) > 180))
+          orderMove(u, gx + rnd(-70, 70), gy + rnd(-70, 70), true);
         continue;
       }
       /* Armour cannot take ground, so it covers the approach to the fight at a stand-off
          rather than parking on the flag waiting to be bazookaed. */
       if (razeT) { if (u.order !== 'attack' || u.forced !== razeT) orderAttack(u, razeT); continue; }
+      /* the hook's armour comes at the objective from the hook's side of it */
+      if (pressing && u.flank && flank && aiInWave(u, asId, razeT)) {
+        var ha = Math.atan2(flkY - asY, flkX - asX), hd2 = Math.min(200, w0.range * .5);
+        var hx = clamp(asX + Math.cos(ha) * hd2, 60, WORLD.w - 60);
+        var hy = clamp(asY + Math.sin(ha) * hd2, 60, WORLD.h - 60);
+        if (Math.hypot(u.x - hx, u.y - hy) > 150 &&
+            (!u.dest || Math.hypot(u.dest.x - hx, u.dest.y - hy) > 200)) orderMove(u, hx, hy, true);
+        continue;
+      }
       var sa = aiFoeDir(side, mainX, mainY), so = Math.min(170, w0.range * .45);
       var vx = clamp(mainX + Math.cos(sa) * so, 60, WORLD.w - 60);
       var vy = clamp(mainY + Math.sin(sa) * so, 60, WORLD.h - 60);
@@ -4808,9 +5105,10 @@ function aiTick(dt) {
        than no assault at all, and that is exactly what this did until the distance test
        went in: ground held fell from nine points to six. */
     if (forming && aiInWave(u, asId, razeT) && dsq(u.x, u.y, asX, asY) > 380 * 380) {
-      if (Math.hypot(u.x - fupX, u.y - fupY) > 110 &&
-          (!u.dest || Math.hypot(u.dest.x - fupX, u.dest.y - fupY) > 150))
-        orderMove(u, fupX + rnd(-55, 55), fupY + rnd(-55, 55), true);
+      var gx2 = u.flank && flank ? flkX : fupX, gy2 = u.flank && flank ? flkY : fupY;
+      if (Math.hypot(u.x - gx2, u.y - gy2) > 110 &&
+          (!u.dest || Math.hypot(u.dest.x - gx2, u.dest.y - gy2) > 150))
+        orderMove(u, gx2 + rnd(-55, 55), gy2 + rnd(-55, 55), true);
       continue;
     }
     if (razeT && u.job === 'raze') {
@@ -4829,13 +5127,52 @@ function aiTick(dt) {
       var ah = aiHouse(u, sec.x, sec.y, sec.r * .8);
       if (ah) { clearOrder(u); u.order = 'enter'; u.enterT = ah; garCount++; continue; }
     }
+    /* Odds. A section on its own does not walk into a position held by twice its
+       weight. Nearest-first dealing sends one section at a time at whatever is closest,
+       and one section at a time is what a defended flag eats. So outside a wave a
+       section whose objective is held by more than double what it is bringing goes to
+       the fire post short of it instead -- the same point a wave against that flag would
+       form on, three hundred back in cover -- fights from there, and looks again in
+       twenty seconds: by then the objective has either been dealt to a wave, which finds
+       the section already on its forming-up point and counts it ready, or the rest of
+       the men sent at it have come up. It does not stop where it stands, because where
+       it stands is usually the middle of a street: the first version froze in place and
+       the army's reach fell by a third. What it is bringing counts the men already on
+       the objective and the men moving with it, so a section arriving behind two others
+       walks on. */
+    if (skill >= 1 && !u.gar && !(asKey && aiInWave(u, asId, razeT)) && dsq(u.x, u.y, sec.x, sec.y) > 300 * 300) {
+      if (u.holdT && G.t - u.holdT < 20) continue;
+      var foeW = aiThreat(side, sec.x, sec.y, 330);
+      if (foeW > 200) {
+        var ownW = aiValue(u);
+        for (j = 0; j < fighters.length; j++) {
+          var fr = fighters[j];
+          if (fr === u || fr.dead || fr.retreat || fr.cat === 'team') continue;
+          if (dsq(fr.x, fr.y, sec.x, sec.y) < 330 * 330 || dsq(fr.x, fr.y, u.x, u.y) < 220 * 220) ownW += aiValue(fr);
+        }
+        if (foeW > 2 * ownW) {
+          u.holdT = G.t;
+          var hp2 = aiFirePost(side, sec.x, sec.y, 300);
+          if (Math.hypot(u.x - hp2.x, u.y - hp2.y) > 120) orderMove(u, hp2.x + rnd(-40, 40), hp2.y + rnd(-40, 40), true);
+          else if (u.order !== 'hold') orderStop(u);
+          continue;
+        }
+      }
+    }
     /* A defended objective is come at from the quiet side rather than walked into. The
        flag is nearly two hundred units across, so there is room to stand on it out of
        the enemy's best arc, and the approach still ends inside the circle that captures
        it. Veteran only: reading the ground and refusing the obvious approach is what a
        good player does, and green has no business doing it. */
     var aimX = sec.x, aimY = sec.y;
-    if (skill >= 2) {
+    if (skill >= 2 && pressing && u.flank && flank && aiInWave(u, asId, razeT)) {
+      /* the hook ends on the flag on its own side of it, inside the circle that takes it,
+         so the two halves of the wave arrive from two bearings and the defender has to
+         choose which one to face */
+      var fa2 = Math.atan2(flkY - sec.y, flkX - sec.x);
+      aimX = clamp(sec.x + Math.cos(fa2) * sec.r * .6, 40, WORLD.w - 40);
+      aimY = clamp(sec.y + Math.sin(fa2) * sec.r * .6, 40, WORLD.h - 40);
+    } else if (skill >= 2) {
       var ex = 0, ey = 0, ew = 0;
       for (j = 0; j < G.units.length; j++) {
         var e2 = G.units[j];

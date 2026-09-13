@@ -393,8 +393,17 @@ produces, buys field upgrades, builds, scores every sector into an objective lis
 weight of sections each is worth, deals the sections that can actually capture out to
 those objectives nearest-first, and then issues one order per unit by job: `take`,
 `raze`, `screen`, `support`, `defend` or `mend`. `DIFF[].skill` gates the tactics rather
-than the arithmetic: 0 keeps green simple, 1 adds houses, upgrades and repair, 2 adds the
-flanking approach.
+than the arithmetic: 0 keeps green simple, 1 adds houses, upgrades, repair and the per-unit
+reflexes below, 2 adds the quiet-side approach and the pincer.
+
+`tools/skirmish.mjs --self` is the calibration for all of it, and the sectors now mirror about
+the midline exactly because of it: the first draft of the town had Via Cavour a hundred units
+nearer its headquarters than Porta Caldari was to the other, and with the same brain on both
+sides the German side took its third flag twenty seconds sooner every game, which on ground that
+pays by the second was the whole battle by the fifth minute. A probe that drives the working
+brain on both sides and counts how often each rule fires is the way to check a new rule is
+reached at all before asking whether it helps: the first version of the duck rule parsed, passed
+the gate and never once fired.
 
 **The staff work is allowed the map; the guns are not.** `acquire` checks `vUs`/`vGer` and nothing
 shoots what it cannot see, but `aiThreat` reads every enemy in the radius whether it has been seen
@@ -427,7 +436,72 @@ shooting at it to join the concentration is a section standing in the open. Skil
 lost, before whoever took it has dug in or been reinforced. The brain had no memory of ownership,
 so a sector that had just fallen was indistinguishable from one that had been enemy-held all
 battle. `AI.ctSec`/`AI.ctT` remember it for thirty-six seconds, during which it ignores the mood's
-reach limits, is worth three hundred more than anything else and is dealt three sections.
+reach limits, is worth three hundred more than anything else and is dealt three sections. The
+same idea runs the other way: a sector it has just taken (`AI.momSec`/`AI.momT`) makes the one
+beyond it worth more for half a minute, and the next wave forms at once rather than after the
+full form timer, so a break-in is followed up while the defence is still moving.
+
+**It reads the score.** `vpLead` is its victory points against the enemy's. Behind on points it
+will not sit in `dig` or `hold`, whatever the strength ratio says, because a side that is losing
+on points and holds its ground loses on points; a side comfortably ahead that is also stronger
+stops spending waves and holds what pays. A thin sector -- enemy held with less than a section's
+worth on it -- scores higher, and so does one that would join up what it holds, because ground
+only pays while it is connected to the headquarters.
+
+**It shops against what it can see.** `aiIntel` counts the enemy by kind (infantry, machine guns,
+anti-tank guns, light, medium and heavy armour, men in houses) and `aiCutLadder` re-cuts the
+shopping list against it every tick: two Paks and no armour to answer them puts the light armour
+to the back, heavy armour on the field pulls whatever kills it to the front and the mediums that
+cannot behind it, an enemy with no armour at all puts the anti-tank gun to the back, and armour
+with nothing of ours to answer it brings the gun forward and raises the count on it. The base
+order and the ratchet are unchanged; only the cut moves. The infantry follows the same logic in
+two numbers: `mgCap` goes up one against an all-infantry enemy and `wantElite` drops the fuel
+floor on assault groups when the enemy is sitting in houses or behind two or more machine guns.
+On regular and veteran the first three minutes are an opening (`opening`): the army cap is
+lifted so sections are raised as fast as the headquarters turns them out and every one of them
+goes at the nearest empty flag, because ground taken before anyone is there to contest it is
+held for the rest of the battle at no cost.
+
+**The pincer.** At veteran, a wave against a defended objective splits: `AI.flkX/flkY` is a
+second forming-up post square off the line of approach, three hundred and eighty out, on
+whichever side of the objective `aiThreat` says is quieter, and a third of the sections (never
+fewer than three in the wave, so a hook is never one section on its own) are marked `u.flank`
+and gather there instead. The armour goes with the hook when `IN.gun` says the enemy has
+something that kills armour, because a tank that comes at a gun line from the side comes at it
+where the gun is not pointing; otherwise it stays with the main body. The post is dug once per
+wave and held for the life of it -- re-dealt every tick, the hook walked up and down behind the
+objective and never arrived -- and it is only dug where the far side is actually quiet, because a
+hook that walks into a second position is two assaults where there was one. When the wave goes
+in, the hook ends on the flag on its own side of it, inside the circle that takes it, so the
+defender has two bearings to face.
+
+**The section leader's reflexes.** Four decisions are made per unit, before the plan and from
+what the unit can see, at skill 1 and up (`skill >= 1`; green stands in the street and loses men,
+which is what green is for):
+
+- *Under fire in the open* a section goes to ground: into an empty house within a hundred and
+  twenty (`aiHouse`), behind the nearest real cover within a dash that faces the fire (`aiDuck`,
+  which for a wall is the nearest point of the wall and the side away from the fire), or, outside
+  a wave, back a hundred and fifty the way it came. The threshold is `u.sup > .4` and low on
+  purpose: suppression climbs from nothing to pinned in a few seconds of machine gun fire and
+  decays at a fifth a second, so a rule that waited for half suppression found the men already
+  pinned or already recovered and fired perhaps once a battle. It still fires rarely, and the
+  histogram says why: this combat model shoots sections down to the retreat rule faster than
+  it suppresses them, so most of the time a section under fire is retreating, not ducking.
+- *The odds*: a section outside a wave whose objective is held by more than twice what it is
+  bringing (itself, the men already on the flag, the men moving with it) stops short in cover
+  and looks again in twenty seconds (`u.holdT`). By then it has been dealt to a wave or the rest
+  have come up. Nearest-first dealing sends sections one at a time and one at a time is what a
+  defended flag eats.
+- *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
+  airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
+  when no friendly section is within a hundred and thirty, opening the range two hundred and
+  firing as it goes (`u.backT`, nine seconds between).
+- *It fights with its front to the gun*: a halted tank caught more than a radian off its facing
+  from a visible gun that can open it, between two hundred and five hundred and forty out, drives
+  at it a hundred and sixty-five to turn (`u.faceT`, eight seconds between). There is no pivot in
+  place, and a move short of a hundred and fifty behind the vehicle is taken by the driver as an
+  instruction to reverse, which would present the rear plate instead.
 
 Two things about it are counter-intuitive enough to be worth knowing before touching it.
 
