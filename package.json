@@ -8,7 +8,8 @@
     "lint": "node tools/lint.mjs",
     "check": "node tools/check.mjs",
     "shoot": "node tools/shoot.mjs",
-    "verify": "node tools/lint.mjs && node tools/check.mjs"
+    "verify": "node tools/lint.mjs && node tools/mapcheck.mjs && node tools/check.mjs",
+    "mapcheck": "node tools/mapcheck.mjs"
   },
   "devDependencies": {
     "playwright": "^1.56.1"
