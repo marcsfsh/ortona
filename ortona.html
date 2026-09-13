@@ -551,7 +551,7 @@ function popCap(side) {
 }
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
-  skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates on the hull and turret: hollow-charge rounds burst on the plate before the armour.' },
+  skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates along the hull sides, and round the turret where there is one: hollow-charge rounds burst on the plate before the armour.' },
   mg: { name: 'Mount roof MG', short: 'ROOF MG', hk: 'I', cost: { mp: 60 }, desc: 'A machine gun on the cupola or pintle, worked by the commander against infantry.' },
   kwk: { name: 'Fit the 2 cm KwK 30', short: '2 CM KwK', hk: 'O', cost: { mp: 85, fu: 25 }, desc: 'Swaps the machine gun turret for the larger one with a 2 cm KwK 30 L/55 and a coaxial MG34. It will hurt armour now, and it can still see.' },
   /* the three 251 conversions are one choice, taken once and not taken back */
@@ -566,6 +566,11 @@ var UPGRADES = {
             desc: 'The Maxson turret: four .50 Brownings on one powered mount. It scythes infantry and it will strip a light vehicle, and it will not get through tank plate. Fitted once; the conversion cannot be undone.' },
   how75: { name: 'Convert to 75 mm GMC', short: '75 MM GMC', hk: 'O', excl: 'm3', cost: { mp: 110, fu: 30 },
            desc: 'A 75 mm M1897 and its carriage bolted into the front of the body behind a shield. It will open a Panzer IV from the flank and it is close to useless against men in cover. Fitted once; the conversion cannot be undone.' },
+  /* the Sturmgeschütz's three, one of which is a pair of guns bought together */
+  scope: { name: 'Raise the scissors periscope', short: 'SF 14 Z', hk: 'O', cost: { mp: 65 },
+           desc: 'The Scherenfernrohr 14 Z stood up through the commander\'s cupola: he sees over a wall and a street further, and the gunner lays on what he calls. Sight and reach both grow.' },
+  mgs: { name: 'Fit the machine guns', short: 'TWO MG34', hk: 'I', cost: { mp: 95 },
+         desc: 'An MG34 behind the folding shield ahead of the loader\'s hatch, and a second through the mantlet beside the gun, laid by the gunner: a hole Krupp did not cut until the summer of 1944, and the workshop cuts it here. Two guns against anything on foot.' },
   coax: { name: 'Fit a coaxial .30', short: 'COAX .30', hk: 'X', cost: { mp: 55 },
           desc: 'A Browning through the mantlet beside the seventeen-pounder, laid by the gunner on the same handwheels. It puts a section flat in whatever cover they are in and it will not hold them there: they can still crawl, and they will.' },
   thirty: { name: 'Swap the Bren for a .30', short: '.30 CAL', hk: 'O', cost: { mp: 70 },
@@ -581,7 +586,10 @@ var UPGRADES = {
 var SECW = {
   mg:   { us:  { range: 220, dmg: 8.5, rof: .18, acc: .5, sup: .06, pen: 6, aoe: 0 },
           ger: { range: 220, dmg: 4.5, rof: .11, acc: .5, sup: .07, pen: 6, aoe: 0 } },
-  coax: { us:  { range: 265, dmg: 6.5, rof: .16, acc: .48, sup: .055, supCap: .92, pen: 6, aoe: 0 } }
+  coax: { us:  { range: 265, dmg: 6.5, rof: .16, acc: .48, sup: .055, supCap: .92, pen: 6, aoe: 0 } },
+  /* the Sturmgeschütz pair: a roof gun and a coaxial on one purchase, so one entry
+     firing at nearly twice the rate of one MG34 */
+  mgs:  { ger: { range: 235, dmg: 4.5, rof: .065, acc: .5, sup: .075, pen: 6, aoe: 0 } }
 };
 function secondaryKeys(u) {
   var keys = Object.keys(SECW), out = [], i;
@@ -756,6 +764,14 @@ var UNITS = {
     w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1 },
     desc: 'Better gun than a Sherman and thicker plate. Slower, and it hates being flanked.'
   },
+  ger_stug: {
+    side: 'ger', name: 'Sturmgeschütz IV', short: 'STUG IV', cat: 'veh', hk: 'S', upgrades: ['scope', 'mgs', 'skirts'],
+    hp: 640, armor: 134, speed: 78, sight: 330, pop: 12, cost: { mp: 300, fu: 75 }, time: 30,
+    req: 'ger_dep', arc: .35,
+    w: { range: 400, dmg: 152, rof: 3.5, acc: .72, sup: .05, pen: 228, aoe: 46, shell: 1 },
+    wUp: { scope: { range: 450, dmg: 152, rof: 3.5, acc: .75, sup: .05, pen: 228, aoe: 46, shell: 1 } },
+    desc: 'A month early for Ortona. The Panzer IV chassis under the StuG III fighting compartment: the same L/48 gun as the Panzer IV, half a metre lower and a seventh cheaper, and no turret. It fires ten degrees either side of where it points and turns the whole vehicle for anything else, so it is a gun to hold a street with, not to chase down one. Three fittings in the field: the scissors periscope, the two machine guns, and Schürzen.'
+  },
   ger_h251: {
     side: 'ger', name: 'Sd.Kfz. 251 Ausf. D', short: '251', cat: 'veh', hk: 'H',
     upgrades: ['pak36', 'drill', 'krank'],
@@ -793,8 +809,8 @@ var BUILDINGS = {
              cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_pgren'],
              desc: 'Unlocks the MG42 team and assault group.' },
   ger_dep: { side: 'ger', name: 'Armoured Support Point', short: 'PANZER SUPPORT', w: 134, h: 104, hp: 1700, hk: '2',
-             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_p4', 'ger_tig', 'ger_kt'],
-             desc: 'Unlocks the Pak 40, Sd.Kfz. 222 and Panzer IV.' }
+             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_kt'],
+             desc: 'Unlocks the Pak 40, Sd.Kfz. 222, StuG IV and Panzer IV.' }
 };
 /* ---- field works.
    What a section of engineers can put up in a few minutes, as against a building, which
@@ -2439,9 +2455,11 @@ function updateModels(u, dt) {
     if (u.want !== undefined) {
       /* powered traverse: the Tiger II took a slow twenty seconds round, a Sherman
          about fifteen, an armoured car's hand-cranked ring is quicker for its weight */
-      var rate = (u.def.hp > 1200 ? .55 : u.def.hp > 500 ? .9 : 1.6) * (u.shaken > 0 ? .6 : 1) * dt;
+      var rate = (u.def.arc ? 1.6 : u.def.hp > 1200 ? .55 : u.def.hp > 500 ? .9 : 1.6) * (u.shaken > 0 ? .6 : 1) * dt;
       var diff = Math.atan2(Math.sin(u.want - u.turret), Math.cos(u.want - u.turret));
       u.turret += clamp(diff, -rate, rate);
+      /* and a casemate gun traverses in its frame and no further */
+      if (u.def.arc) u.turret = u.facing + clamp(angDiff(u.facing, u.turret), -u.def.arc / 2, u.def.arc / 2);
     }
     u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
     /* the hull rocks a little as it drives */
@@ -2588,7 +2606,7 @@ function computeVisibility(dt) {
     /* a man on the shelf looks down into ground a man in the vallone cannot see out of,
        so height is worth a little reach as well as the dead ground it denies him */
     var uz = groundZ(u.x, u.y);
-    var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1);
+    var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1);
     _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz });
   }
   for (j = 0; j < G.blds.length; j++) {
@@ -2649,7 +2667,11 @@ function acquire(u) {
     var d = dist(u, e);
     if (d > maxR) continue;
     if (u.def.atOnly && e.cat !== 'veh') continue;
-    if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, e))) > u.def.arc / 2) continue;
+    /* A gun on a trail cannot pick what is outside its arc. An assault gun can, because
+       it has tracks to turn on: it would rather shoot what is in front of it now, but
+       it will bring the hull round for something worth the wait. */
+    var offArc = u.def.arc && Math.abs(angDiff(u.facing, angTo(u, e))) > u.def.arc / 2;
+    if (offArc && u.cat !== 'veh') continue;
     if (!visibleTo(u.side, e)) continue;
     if (!fireLine(u, e)) continue;
     var w = weaponFor(u, e);
@@ -2665,6 +2687,7 @@ function acquire(u) {
       if (antiTank && !u.def.at) worth -= 60;            /* the AT gunner would rather wait */
     }
     var sc = worth - d * .75;
+    if (offArc) sc -= 170;
     if (u.forced === e) sc += 1500;
     if (e.target === u) sc += 180;                       /* the one shooting back */
     if (u.target === e) sc += 190;                       /* see the job through */
@@ -2717,7 +2740,11 @@ function hasExclusive(u, group) {
 }
 function mainW(u) {
   var k = mountUp(u);
-  return (k && u.def.wUp && u.def.wUp[k]) ? u.def.wUp[k] : u.def.w;
+  if (k && u.def.wUp && u.def.wUp[k]) return u.def.wUp[k];
+  /* a fitting that does not swap the gun can still change what the gun is worth: the
+     scissors periscope reaches a street further with the same tube */
+  if (u.up && u.def.wUp) for (k in u.def.wUp) if (u.up[k] && u.def.wUp[k]) return u.def.wUp[k];
+  return u.def.w;
 }
 /* Where a vehicle's mount stands and how far its muzzle reaches. An upgrade that swaps
    the gun usually moves it as well: a quad fifty goes in the middle of a half-track's
@@ -2802,7 +2829,7 @@ function fireAt(u, t, dt) {
   /* A turret has to come round before the gun will bear. Until it does the gunner has
      nothing to shoot at, which is why catching a heavy tank side-on is worth doing and
      why its twenty seconds of traverse is a real number rather than decoration. */
-  if (u.cat === 'veh' && !u.def.arc) {
+  if (u.cat === 'veh') {
     var off = Math.abs(angDiff(u.turret, angTo(u, t)));
     if (off > (u.moving ? .16 : .09)) return;
   }
@@ -3521,6 +3548,12 @@ function updateUnit(u, dt) {
       if (u.cat === 'team') u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -.85 * dt, .85 * dt);
       else u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -7 * dt, 7 * dt);
     }
+    /* an assault gun has no turret: it pivots on its tracks to bring the target inside
+       the few degrees either side of the barrel the gun itself can traverse */
+    else if (!u.moving && u.cat === 'veh' && u.def.arc && !(u.immob > 0)) {
+      var pv = .95 * (u.shaken > 0 ? .6 : 1) * dt;
+      u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -pv, pv);
+    }
     if (u.cat === 'veh') u.want = angTo(u, u.target);
   } else if (u.cat === 'veh') {
     u.want = u.facing;
@@ -3820,7 +3853,7 @@ function aiTick(dt) {
   var LADDER = side === 'us'
     ? [['us_m8', 1, 40], ['us_at', 2, 130], ['us_m3', 1, 210], ['us_stuart', 1, 270],
        ['us_sher', 2, 310], ['us_ach', 1, 580], ['us_sher', meds, 650]]
-    : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210],
+    : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210], ['ger_stug', 1, 235],
        ['ger_p4', 2, 260], ['ger_tig', 1, 620], ['ger_p4', meds, 690]];
   var gate = 2 - D.tech, li, ent, lk, ld;
   /* Population is the other thing it can run out of, and infantry is cheap enough to
@@ -3941,7 +3974,7 @@ function aiTick(dt) {
      and half of what a vehicle can do is an upgrade. */
   if (G.t - AI.upT > 9 && vehs.length) {
     AI.upT = G.t;
-    var order = ['mg', 'skirts', 'kwk', 'drill', 'quad50', 'thirty', 'coax', 'how75', 'pak36'];
+    var order = ['mg', 'mgs', 'skirts', 'scope', 'kwk', 'drill', 'quad50', 'thirty', 'coax', 'how75', 'pak36'];
     var bought = false;
     for (i = 0; i < order.length && !bought; i++) {
       var uk = order[i], U = UPGRADES[uk];
@@ -4993,8 +5026,12 @@ function registerMaterials() {
     tag([SHERMAN.jerry, SHERMAN.spare], 'paint');
   }
   if (typeof PZ4 !== 'undefined') {
-    tag([PZ4.body, PZ4.lit, PZ4.dark, PZ4.skirt, PZ4.skirtLit], 'p4camo');
-    tagEdges([PZ4.body, PZ4.lit, PZ4.dark, PZ4.skirt, PZ4.skirtLit], 'p4camo');
+    tag([PZ4.body, PZ4.lit, PZ4.dark], 'p4camo');
+    tagEdges([PZ4.body, PZ4.lit, PZ4.dark], 'p4camo');
+    /* the plates were five millimetres of painted sheet hung on hooks: no Zimmerit was ever
+       applied to a Schürze, so they take the plain paint rather than the combed tile */
+    tag([PZ4.skirt, PZ4.skirtLit], 'paint');
+    tagEdges([PZ4.skirt, PZ4.skirtLit], 'paint');
   }
   if (typeof KT !== 'undefined') {
     tag([KT.body, KT.lit, KT.dark], 'ktcamo'); tagEdges([KT.body, KT.lit, KT.dark], 'ktcamo');
@@ -8416,7 +8453,7 @@ function ktCupolaMG() {
    Laid out at 8.5 cm to the unit from the published figures: 5.92 m hull, 7.02 m with
    the gun forward, 2.88 m over the track guards, 2.68 m to the top of the cupola. */
 var PZ4 = { body: '#7e7e7e', lit: '#8a8a8a', dark: '#6c6c6c',   /* neutral: the camo tile supplies the colour */
-            skirt: '#7a7a7a', skirtLit: '#868686' };
+            skirt: '#9a8a58', skirtLit: '#aa9a66' };   /* dunkelgelb: the skirts are plain paint */
 var P4G = {
   R: 2.75,          /* 470 mm road wheel */
   T: 0.62,          /* Kgs 61/400/120 link: 400 mm wide and thin */
@@ -8548,7 +8585,15 @@ var P4H = {
   xNose: 32.0, xDriver: 20.0, xBulk: -15.7, xTail: -30.8
 };
 
-function pzivHull(body, cap, sideC) {
+function pzivHull(body, cap, sideC) { return p4Chassis(body, cap, sideC, false); }
+/* The Panzer IV chassis, which two vehicles here stand on. `stug` leaves off what only
+   a Panzer IV carries -- the fighting-compartment box, the driver's plate and the roof
+   hatches, the spare wheels, and the tools on the stretch of guard that a Sturmgeschütz
+   casemate overhangs -- and keeps the running gear, the tub, the glacis with its two
+   transmission hatches, the engine deck, the tail and the Schürzen rails, which are the
+   same on both because they were the same on both. With the flag off the face list is
+   the Panzer IV's, in the same order, so nothing about it moves. */
+function p4Chassis(body, cap, sideC, stug) {
   var C = PZ, g = P4G, H = P4H, f = [], sd, i;
 
   /* ---- running gear ---- */
@@ -8596,18 +8641,19 @@ function pzivHull(body, cap, sideC) {
 
   /* ---- the superstructure: a separate box standing on the tub and the guards, its
      front plate vertical and set well back from the nose ---- */
-  f = f.concat(box((H.xDriver + H.xBulk) / 2, 0, H.zTub, H.xDriver - H.xBulk, H.supHalf * 2, H.zRoof - H.zTub, body, cap, sideC));
+  if (!stug) f = f.concat(box((H.xDriver + H.xBulk) / 2, 0, H.zTub, H.xDriver - H.xBulk, H.supHalf * 2, H.zRoof - H.zTub, body, cap, sideC));
   /* ---- the engine deck behind it, a step lower ---- */
   f = f.concat(box((H.xBulk + H.xTail) / 2, 0, H.zTub, H.xBulk - H.xTail, H.supHalf * 2, H.zDeck - H.zTub, body, cap, sideC));
   /* the weld seams that show where the three boxes meet */
   [-1, 1].forEach(function (s2) {
-    f = f.concat(place(tubeSmooth(H.xTail, H.xDriver, 0, 0, .26, 5, C.lit, C.lit), 0, 0, s2 * (H.supHalf - .15), H.zTub + .4));
-    f = f.concat(place(tubeSmooth(H.xBulk, H.xDriver, 0, 0, .24, 5, C.lit, C.lit), 0, 0, s2 * (H.supHalf - .15), H.zRoof - .3));
+    f = f.concat(place(tubeSmooth(H.xTail, stug ? H.xBulk : H.xDriver, 0, 0, .26, 5, C.lit, C.lit), 0, 0, s2 * (H.supHalf - .15), H.zTub + .4));
+    if (!stug) f = f.concat(place(tubeSmooth(H.xBulk, H.xDriver, 0, 0, .24, 5, C.lit, C.lit), 0, 0, s2 * (H.supHalf - .15), H.zRoof - .3));
   });
   f = f.concat(place(tubeSmooth(-H.supHalf, H.supHalf, 0, 0, .26, 5, C.lit, C.lit), Math.PI / 2, H.xBulk, 0, H.zDeck));
 
   /* ---- the driver's plate: the Fahrersehklappe visor on his side, the Kugelblende
      ball mount for the hull MG on the other, and the two vision flaps above ---- */
+  if (!stug) {
   f = f.concat(box(H.xDriver + .6, 6.6, 14.4, 1.2, 8.8, 4.2, C.dark, C.body, C.dark, .22));
   f = f.concat(box(H.xDriver + 1.2, 6.6, 15.6, .5, 6.8, 1.5, '#191c16', '#23261f', '#23261f', 0));
   f = f.concat(box(H.xDriver + 1.1, 6.6, 17.4, .4, 8.0, .7, C.steel, C.bare, C.steel, 0));
@@ -8622,6 +8668,7 @@ function pzivHull(body, cap, sideC) {
     f = f.concat(prism(roundRectPlan(17.2, s2 * 7.4, 3.2, 3.2, 1.1, 3), H.zRoof, H.zRoof + .45, C.body, cap, C.dark));
     f = f.concat(grabIron(17.2, s2 * 7.4, H.zRoof + .45, 2.4, .45, C.steel, 'y'));
   });
+  }
   /* the two raised transmission access hatches on the brow, which nothing else on
      this map has and which a Panzer IV is never photographed without */
   [-1, 1].forEach(function (s2) {
@@ -8634,12 +8681,15 @@ function pzivHull(body, cap, sideC) {
 
   /* ---- the brow: spare track links laid across it, which is where a Panzer IV
      carried them, and the two spare road wheels on the near side ---- */
-  f = f.concat(box(H.xDriver + .9, 0, H.zTub + .5, .5, 21.0, .5, C.steel, C.bare, C.steel, 0));
-  for (i = 0; i < 13; i++)
-    f = f.concat(box(H.xDriver + 1.1, -9.6 + i * 1.6, H.zTub + .8, 1.5, 1.3, 3.4, C.track, C.trackLit, C.track, 0));
-  f = f.concat(box(H.xDriver + .9, 0, H.zTub + 4.2, .5, 21.0, .5, C.steel, C.bare, C.steel, 0));
+  /* on the Sturmgeschütz the driver's box stands on the left of the brow, so the rack
+     stops short of it and the links ride to the right of the box, as they did */
+  var ry0 = stug ? -2.6 : -9.6, rn = stug ? 8 : 13, rc = stug ? 3.0 : 0, rl = stug ? 13.4 : 21.0;
+  f = f.concat(box(H.xDriver + .9, rc, H.zTub + .5, .5, rl, .5, C.steel, C.bare, C.steel, 0));
+  for (i = 0; i < rn; i++)
+    f = f.concat(box(H.xDriver + 1.1, ry0 + i * 1.6, H.zTub + .8, 1.5, 1.3, 3.4, C.track, C.trackLit, C.track, 0));
+  f = f.concat(box(H.xDriver + .9, rc, H.zTub + 4.2, .5, rl, .5, C.steel, C.bare, C.steel, 0));
   /* two spare road wheels standing on edge on the left guard against the body side */
-  for (i = 0; i < 2; i++)
+  if (!stug) for (i = 0; i < 2; i++)
     f = f.concat(place(p4RoadWheel(0, 0, 1), 0, 9.0 + i * 6.0, H.supHalf + 1.5, H.zTub + .3));
 
   /* ---- the engine deck: two access hatches, the radiator intakes either side, and
@@ -8681,14 +8731,20 @@ function pzivHull(body, cap, sideC) {
   /* ---- what a Panzer IV carried on its guards: the jack and its block, the axe and
      the shovel, the tow cable in a loop, the fire extinguisher and the Notek ---- */
   var gy = (H.supHalf + H.fenderHalf) / 2, gz = H.zTub + .55;
+  /* the casemate stands out over the guards from the bulkhead to the brow, so on the
+     Sturmgeschütz the jack, the shovel, the axe and the extinguisher are under armour */
+  if (!stug) {
   f = f.concat(box(-9.0, gy, gz, 13.0, 2.2, 1.6, C.steel, C.bare, C.steel, 0));                    /* the jack */
   f = f.concat(box(-18.6, gy, gz, 4.4, 2.6, 2.0, C.wood, lit(C.wood, 1.2), C.wood, 0));            /* its block */
+  }
   f = f.concat(box(-25.0, gy, gz, 6.6, 2.6, 2.2, C.dark, C.body, C.dark, .2));                     /* the spares bin */
+  if (!stug) {
   f = f.concat(box(2.0, -gy, gz, 9.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));               /* the shovel */
   f = f.concat(box(-3.4, -gy, gz, 2.4, .7, 1.8, C.steel, C.bare, C.steel, 0));
   f = f.concat(box(-9.8, -gy, gz, 7.0, .9, .9, C.wood, lit(C.wood, 1.2), C.wood, 0));              /* the axe */
   f = f.concat(box(-13.4, -gy, gz, 2.0, .8, 1.9, C.steel, C.bare, C.steel, 0));
   f = f.concat(cyl(11.0, -gy, gz, .9, .9, 2.5, 8, '#6e3029', '#7d3c33', 0, true));                 /* the extinguisher */
+  }
   /* the gun cleaning rod in its tube, lying the length of the right-hand guard */
   f = f.concat(place(tubeSmooth(-27.4, -16.4, 0, 0, 1.15, 10, C.dark, C.body), 0, 0, -gy, gz + 1.1));
   /* the tow cable coiled on the forward guards, ahead of the superstructure */
@@ -8696,10 +8752,17 @@ function pzivHull(body, cap, sideC) {
     f = f.concat(place(tubeSmooth(-3.0, 3.0, 0, 0, .42, 6, C.steel, C.steel), 0, 26.0, (i ? 1 : -1) * gy, gz + .45));
   /* the Schuerzen rail and its stand-off brackets, which stayed on the tank whether
      or not the plates were hung from them */
+  /* the casemate stands out to the rail line, so on the Sturmgeschütz the rail runs
+     a hand outside the wall and the stanchions under it are short brackets off the plate */
+  var ry = stug ? STG.half + .45 : H.fenderHalf + .35;
   [-1, 1].forEach(function (s2) {
-    f = f.concat(place(tubeSmooth(-31.5, 29.5, 0, 0, .38, 6, C.steel, C.bare), 0, 0, s2 * (H.fenderHalf + .35), P4S.zTop));
+    f = f.concat(place(tubeSmooth(-31.5, 29.5, 0, 0, .38, 6, C.steel, C.bare), 0, 0, s2 * ry, P4S.zTop));
     for (i = 0; i < 6; i++) {
       var bx = -29.0 + i * 11.8;
+      if (stug && bx > STG.xBack && bx < STG.xCheek) {
+        f = f.concat(box(bx, s2 * (STG.half + .25), P4S.zTop - .5, .9, .7, .8, C.steel, C.bare, C.steel, 0));
+        continue;
+      }
       /* the stanchion off the guard, and the short arm that carries the rail out */
       f = f.concat(box(bx, s2 * (H.fenderHalf - .55), H.zTub, .9, 1.2, P4S.zTop - H.zTub, C.steel, C.bare, C.steel, 0));
       f = f.concat(box(bx, s2 * (H.fenderHalf + .05), P4S.zTop - .5, .9, 1.4, .8, C.steel, C.bare, C.steel, 0));
@@ -8707,13 +8770,17 @@ function pzivHull(body, cap, sideC) {
                          0, bx, s2 * (H.fenderHalf - .55), H.zTub + 1.2));
     }
   });
-  /* the two-metre rod aerial in its trough on the right rear of the superstructure */
+  /* the two-metre rod aerial in its trough on the right rear of the superstructure;
+     the Sturmgeschütz carries its own, on the casemate */
+  if (!stug) {
   f = f.concat(box(H.xBulk + 1.0, -gy, gz, 3.2, 2.2, 1.6, C.dark, C.body, C.dark, 0));
   f = f.concat(place(pitch(tubeSmooth(0, 22.0, 0, 0, .22, 5, C.dark, C.dark), 1.30, 0, 0),
                      0, H.xBulk + 1.0, -gy, gz + 1.55));
+  }
   /* the Notek convoy light on the left guard, ahead of the superstructure */
-  f = f.concat(box(30.6, gy, gz, 1.2, 1.2, 2.4, C.dark, C.body, C.dark, 0));
-  f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, 1.35, 10, C.dark, '#cfcdb6'), 0, 30.6, gy, gz + 3.05));
+  var ny = stug ? -gy : gy;                      /* the Sturmgeschütz carries it by the driver */
+  f = f.concat(box(30.6, ny, gz, 1.2, 1.2, 2.4, C.dark, C.body, C.dark, 0));
+  f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, 1.35, 10, C.dark, '#cfcdb6'), 0, 30.6, ny, gz + 3.05));
   /* jerricans and a tarp on the engine deck */
   f = f.concat(box(-19.4, 3.2, H.zDeck + .5, 4.6, 2.0, 3.4, C.jerry, lit(C.jerry, 1.15)));
   f = f.concat(place(rollX(7.0, 1.7, C.tarp, lit(C.tarp, 1.12), 0, 0, 0), 0, -25.4, 3.0, H.zDeck + .5));
@@ -8810,6 +8877,11 @@ function pzivTurret(body, cap, sideC) {
   }
   f = f.concat(cyl(-9.6, 0, zr + 3.0, 3.85, 3.85, .45, 16, C.dark, C.body, 0, true));
   f = f.concat(cyl(-9.6, 0, zr + 3.45, 3.1, 3.1, .45, 16, C.body, cap, 0, true));
+  /* the cupola hatch, which until now was the Tiger II's, stored under this key by
+     mistake and drawn six units behind the cupola and four above it */
+  var p4Leaf = hatchLeaf(-9.6, 0, zr + 3.9, 2.9, Math.PI, C.dark, C.body);
+  HATCHES.ger_p4 = { shut: hatchShut(-9.6, 0, zr + 3.9, 2.9, C.dark, C.body), leaf: p4Leaf,
+                     open: p4Leaf.concat(commander('ger', -9.6, 0, zr + 3.9)) };
   f = f.concat(cyl(1.0, -4.4, zr, 1.5, 1.5, .9, 12, C.dark, C.body, 0, true));
   f = f.concat(cyl(1.0, -4.4, zr + .9, 1.15, 1.15, .3, 12, C.steel, C.steel, 0, true));
   f = f.concat(cyl(-2.0, 4.6, zr, 1.2, 1.2, .5, 10, C.dark, C.body, 0, true));
@@ -8896,6 +8968,204 @@ function pzivTurretSkirts(body, sideC) {
       f = f.concat(box(ax, s2 * 13.0, z1 - 1.2, 1.0, 3.6, .8, C.steel, C.bare, C.steel, 0));
     });
   }
+  return f;
+}
+
+/* ================================================================ Sturmgeschütz IV
+   Sd.Kfz. 167. The Panzer IV chassis with the Sturmgeschütz III Ausf. G fighting
+   compartment set down on it, which Krupp began delivering in December 1943, the month
+   this map is set in. The first thirty left Magdeburg that month and none reached Italy
+   before the new year; the Sturmgeschütz actually at Ortona was the III, and this one
+   stands in for it. The whole identification is in what that marriage did:
+
+     - no turret. A low, flat-roofed casemate the full width of the vehicle, its sides
+       vertical and standing out over the track guards, the front corners cut back in
+       two angled cheeks either side of the mantlet
+     - the driver's box. The StuG III compartment was built for a shorter hull, so on
+       the Panzer IV chassis the driver sits ahead of it in a separate armoured box on
+       the left front, with two periscopes in its roof. Nothing else on any front has
+       that, and it is the one thing that tells a StuG IV from a StuG III at a glance
+     - the 7.5 cm StuK 40 L/48 in the box mantlet, which the IV kept to the end of
+       production while the III went over to the Saukopf, a little right of centre, the
+       gunner's sight hood in the roof on the left of it
+     - the commander's cupola at the left rear of the roof, the loader's two-leaf hatch
+       on the right with the folding MG shield ahead of it. (Left and right are the
+       vehicle's, as seen on screen, which is model -y and +y: the world is drawn
+       left-handed, so a fitting at +y comes out on the vehicle's right.)
+     - eight small road wheels in four pairs, four return rollers, the spoked sprocket,
+       the open idler and the big silencer across the tail: Panzer IV, unmistakably
+     - Zimmerit from the first vehicle, and the Schürzen rails
+
+   Laid out at 8.5 cm to the unit from the published figures: 5.93 m hull, 6.70 m over
+   the gun, 2.95 m over the casemate, 2.20 m to the top of the cupola. */
+var STG = {
+  xFront: 15.0,     /* the casemate front plate, well back from the nose */
+  xBack: -15.7,     /* it stands on the engine bulkhead */
+  half: 17.25,      /* 2.95 m: the casemate carries the full width of the vehicle */
+  zRoof: 23.2,      /* 1.98 m: the roof plate */
+  zGun: 19.6,       /* the gun axis, 1.68 m up */
+  yGun: 1.3,        /* offset a little to the right, as it was: on screen +y is the vehicle's right */
+  cheek: 8.8,       /* the front plate runs this far either side before the corners cut back */
+  xCheek: 12.0,     /* where the cheeks meet the side walls */
+  cup: { x: -3.0, y: -9.2, r: 3.6, h: 2.5 },         /* the commander's cupola, left rear */
+  drv: { x0: 14.6, x1: 21.8, y0: -12.9, y1: -4.6, zTop: 21.4 }   /* the driver's box, left front */
+};
+function stugHull(body, cap, sideC) {
+  var C = PZ, H = P4H, S = STG, f = p4Chassis(body, cap, sideC, true), i, s2;
+
+  /* ---- the casemate: one prism the full width, its front corners cut back ---- */
+  var plan = [[S.xFront, S.cheek], [S.xCheek, S.half], [S.xBack, S.half],
+              [S.xBack, -S.half], [S.xCheek, -S.half], [S.xFront, -S.cheek]];
+  f = f.concat(prism(plan, H.zTub, S.zRoof, body, cap, sideC));
+  /* the weld seams along the roof edge and down the cheeks */
+  for (i = 0; i < plan.length; i++) {
+    var p0 = plan[i], p1 = plan[(i + 1) % plan.length];
+    if (i === plan.length - 1) continue;                       /* not across the front plate */
+    var dl = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
+    f = f.concat(place(tubeSmooth(0, dl, 0, 0, .26, 5, C.lit, C.lit), ang, p0[0], p0[1], S.zRoof - .25));
+  }
+  /* the front plate above the mantlet is stepped: the roof edge is a separate strip
+     leaning back, which is how the G front reads under a hard light */
+  f = f.concat(place(pitch(box(0, 0, 0, 1.6, S.cheek * 2 - .6, 1.1, body, cap, sideC, 0), -.55, 0, 0), 0, S.xFront - .4, 0, S.zRoof - .8));
+
+  /* ---- the driver's box on the left front, ahead of the casemate ---- */
+  var D = S.drv;
+  f = f.concat(box((D.x0 + D.x1) / 2, (D.y0 + D.y1) / 2, H.zTub, D.x1 - D.x0, D.y1 - D.y0, D.zTop - H.zTub, body, cap, sideC, .25));
+  /* its roof: the hatch, and the two periscope hoods looking forward */
+  f = f.concat(prism(roundRectPlan(D.x0 + 2.8, (D.y0 + D.y1) / 2, 2.4, 2.8, .9, 3), D.zTop, D.zTop + .45, C.body, cap, C.dark));
+  f = f.concat(grabIron(D.x0 + 2.8, (D.y0 + D.y1) / 2, D.zTop + .45, 2.2, .45, C.steel, 'y'));
+  [-1.9, 1.9].forEach(function (py) {
+    f = f.concat(box(D.x1 - 1.6, (D.y0 + D.y1) / 2 + py, D.zTop, 2.2, 1.7, 1.3, C.dark, C.body, C.dark, .2));
+    f = f.concat(box(D.x1 - .7, (D.y0 + D.y1) / 2 + py, D.zTop + .35, .3, 1.2, .6, '#191c16', '#23261f', '#23261f', 0));
+  });
+  /* the weld where the box meets the casemate front */
+  f = f.concat(cyl(S.xFront + .2, D.y1 + .3, H.zTub + .5, .24, .24, D.zTop - .8 - H.zTub, 5, C.lit, C.lit, 0, true));
+
+  /* ---- the front plate: the gunner's sight hood, the bolted plate the mantlet
+     swings in, and the spare links the crews hung across the glacis ---- */
+  f = f.concat(box(S.xFront - 1.6, S.yGun - 5.4, S.zRoof, 2.6, 2.4, 1.5, C.dark, C.body, C.dark, .2));       /* Sfl.ZF hood, on the gunner's side */
+  f = f.concat(box(S.xFront - .5, S.yGun - 5.4, S.zRoof + .45, .5, 1.4, .6, '#191c16', '#23261f', '#23261f', 0));
+  f = f.concat(box(S.xFront + .25, S.yGun, S.zGun - 4.7, .5, 10.4, 9.4, C.dark, C.body, C.dark, .3));          /* the mantlet frame */
+  [[-4.5, -3.9], [4.5, -3.9], [-4.5, 3.9], [4.5, 3.9]].forEach(function (b) {
+    f = f.concat(studX(S.xFront + .5, S.yGun + b[0], S.zGun + b[1], .42, .4, C.bare));
+  });
+
+  /* ---- the roof: cupola left rear with its periscopes, the loader's two-leaf hatch
+     on the right, the MG shield folded flat ahead of it, the ventilator, the lifting
+     eyes at the corners and the aerial base at the right rear ---- */
+  var cu = S.cup, zr = S.zRoof;
+  f = f.concat(cyl(cu.x, cu.y, zr, cu.r, cu.r, cu.h, 16, C.body, C.dark, 0, true));
+  for (i = 0; i < 7; i++) {
+    var va = i / 7 * TAU + .3;
+    f = f.concat(box(cu.x + Math.cos(va) * (cu.r - .2), cu.y + Math.sin(va) * (cu.r - .2), zr + .9, 1.1, 1.4, 1.2, C.steel, '#1a1b16', '#1a1b16', 0));
+  }
+  f = f.concat(cyl(cu.x, cu.y, zr + cu.h, cu.r + .3, cu.r + .3, .4, 16, C.dark, C.body, 0, true));
+  var stLeaf = hatchLeaf(cu.x, cu.y, zr + cu.h + .4, cu.r - .5, Math.PI, C.dark, C.body);
+  HATCHES.ger_stug = { shut: hatchShut(cu.x, cu.y, zr + cu.h + .4, cu.r - .5, C.dark, C.body), leaf: stLeaf,
+                       open: stLeaf.concat(commander('ger', cu.x, cu.y, zr + cu.h + .4)) };
+  /* the loader's hatch: two leaves, the forward one hinged at its front edge and the
+     rear at its rear, a grab iron on each */
+  [-1, 1].forEach(function (hs) {
+    f = f.concat(box(1.0 + hs * 2.05, 8.2, zr, 3.8, 5.4, .45, C.body, cap, C.dark, 0));
+    f = f.concat(grabIron(1.0 + hs * 2.05, 8.2, zr + .45, 2.0, .4, C.steel, 'y'));
+  });
+  /* the MG shield lying folded on the roof ahead of the hatch, on its hinge */
+  f = f.concat(box(6.2, 8.2, zr, 5.2, 7.4, .5, C.dark, C.body, C.dark, 0));
+  f = f.concat(place(tubeSmooth(-3.9, 3.9, 0, 0, .3, 6, C.steel, C.bare), Math.PI / 2, 3.7, 8.2, zr + .55));
+  f = f.concat(cyl(-8.6, 0.5, zr, 2.0, 2.0, 1.1, 12, C.dark, C.body, 0, true));                     /* the ventilator */
+  f = f.concat(cyl(-8.6, 0.5, zr + 1.1, 1.5, 1.5, .3, 12, C.steel, C.steel, 0, true));
+  [[S.xCheek - 1.5, 15.2], [S.xCheek - 1.5, -15.2], [S.xBack + 1.8, 15.2], [S.xBack + 1.8, -15.2]].forEach(function (e) {
+    f = f.concat(box(e[0], e[1], zr - .2, 1.6, 1.6, 2.0, C.dark, C.body, C.dark, 0));
+  });
+  /* the aerial: base at the right rear of the casemate, rod raked back */
+  f = f.concat(cyl(S.xBack + 2.6, 14.0, zr, 1.1, 1.1, 1.6, 8, C.dark, C.body, 0, true));
+  f = f.concat(place(pitch(tubeSmooth(0, 22.0, 0, 0, .22, 5, C.dark, C.dark), 1.30, 0, 0), 0, S.xBack + 2.6, 14.0, zr + 1.6));
+
+  /* ---- the side walls: a rack of spare links on the right, the grab irons, and the
+     tow cable looped along the left ---- */
+  /* four links, each 400 mm tall and a hand's breadth along, standing on edge in a row
+     with the guide horns to the plate; drawn any bigger they read as black panels */
+  for (i = 0; i < 4; i++)
+    f = f.concat(place(spareLink(4.68, 1.5, .8, C.track, C.trackLit, C.steel), 0, -1.0 - i * 2.1, S.half + .05, zr - 4.2));
+  f = f.concat(box(-4.2, S.half + .2, zr - 6.7, 9.8, .4, .5, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(-4.2, S.half + .2, zr - 1.7, 9.8, .4, .5, C.steel, C.bare, C.steel, 0));
+  f = f.concat(place(tubeSmooth(-12.0, 9.0, 0, 0, .36, 6, C.steel, C.steel), 0, 0, -S.half - .2, zr - 4.6));
+  [-11.0, -1.0, 8.0].forEach(function (cx2) {
+    f = f.concat(box(cx2, -S.half - .1, zr - 5.2, 1.0, .5, 1.4, C.steel, C.bare, C.steel, 0));
+  });
+  /* ---- the rear plate: the two stowage bins the crews welded on, and the jack
+     moved back here off the guard ---- */
+  [-1, 1].forEach(function (s3) {
+    f = f.concat(box(S.xBack - 1.6, s3 * 9.6, zr - 7.6, 3.2, 8.8, 5.2, C.dark, body, C.dark, .2));
+    f = f.concat(box(S.xBack - 3.4, s3 * 9.6, zr - 5.4, .4, 1.4, 2.6, C.bare, C.steel, C.bare, 0));
+    f = f.concat(grabIron(S.xBack - .4, s3 * 15.2, zr - 3.6, 2.4, .45, C.steel, 'y'));
+  });
+  f = f.concat(box(S.xBack - 2.0, 0, zr - 5.8, 2.2, 13.0, 1.6, C.steel, C.bare, C.steel, 0));
+  return f;
+}
+/* The gun, which is the whole of what moves: the early Kastenblende box mantlet with the
+   StuK 40 L/48 through it, the collar, the tube and the double-baffle brake. It sits in
+   the frame on the casemate front and traverses ten degrees either way; the hull turns
+   for the rest, which is the other half of what a Sturmgeschütz is. */
+function stugGun(body, cap) {
+  var C = PZ, f = [];
+  f = f.concat(box(.3, 0, -3.9, 4.6, 8.6, 7.8, body, cap, C.dark, .45));
+  [[-3.3, -2.9], [3.3, -2.9], [-3.3, 2.9], [3.3, 2.9]].forEach(function (b) {
+    f = f.concat(studX(2.6, b[0], b[1], .36, .4, C.bare));
+  });
+  /* the recoil-guard bulge on the top of the mantlet, over the cradle */
+  f = f.concat(place(tubeSmooth(-1.6, 2.4, 0, 0, 1.6, 10, body, cap), 0, 0, 0, 3.2));
+  f = f.concat(place(tubeSmooth(0, 2.2, 0, 0, 1.35, 14, C.dark, C.steel), 0, 2.6, 0, 0));
+  f = f.concat(boltRingX(2.7, 0, 0, 1.9, 8, .2, .28, C.bare));
+  f = f.concat(place(tubeSmooth(0, 21.4, 0, 0, .82, 14, C.steel, C.steel), 0, 4.8, 0, 0));
+  f = f.concat(place(tubeSmooth(0, 3.6, 0, 0, 1.18, 14, '#2b2e23', '#44483a'), 0, 26.2, 0, 0));
+  [27.0, 28.9].forEach(function (bx) {
+    f = f.concat(place(tubeSmooth(0, .55, 0, 0, 1.5, 14, '#2b2e23', '#4a4e3e'), 0, bx, 0, 0));
+  });
+  f = f.concat(place(tubeSmooth(0, .9, 0, 0, 1.18, 14, '#2b2e23', '#44483a'), 0, 29.8, 0, 0));
+  f = f.concat(place(tubeSmooth(0, .35, 0, 0, .88, 12, C.bare, '#141610'), 0, 30.7, 0, 0));
+  return f;
+}
+/* the coaxial MG34 through the mantlet beside the gun, laid on the same handwheels. No
+   StuG IV had one until the summer of 1944; it is a field fitting here, and the text on
+   the button says so. */
+function stugCoax() {
+  var C = PZ, f = [];
+  f = f.concat(place(tubeSmooth(0, 1.2, 0, 0, .78, 10, C.dark, '#17190f'), 0, 2.4, 3.6, .7));
+  f = f.concat(place(tubeSmooth(0, 3.4, 0, 0, .3, 8, C.steel, '#17190f'), 0, 3.4, 3.6, .7));
+  return f;
+}
+/* the MG34 behind its shield, stood up ahead of the loader's hatch, and the loader
+   working it with the hatch open behind him */
+function stugRoofMG() {
+  var C = PZ, f = [], zr = STG.zRoof;
+  f = f.concat(place(pitch(box(0, 0, 0, .5, 7.4, 5.6, C.dark, C.body, C.dark, 0), -.18, 0, 0), 0, 8.4, 8.2, zr + .4));
+  f = f.concat(box(8.4, 8.2, zr + 5.9, .9, 4.0, .9, C.dark, C.body, C.dark, 0));
+  f = f.concat(cyl(5.6, 8.2, zr + .5, .5, .5, 3.2, 6, C.steel, C.bare, 0, true));
+  f = f.concat(place(pitch(box(3.6, 0, 0, 8.4, 1.1, 1.5, C.steel, C.bare), -.12, 0, 0), 0, 5.6, 8.2, zr + 4.0));
+  f = f.concat(place(pitch(tubeSmooth(0, 4.4, 0, 0, .4, 8, C.steel, C.steel), -.12, 0, 0), 0, 13.2, 8.2, zr + 4.9));
+  f = f.concat(box(3.8, 8.2, zr + 4.3, 2.2, 1.6, 1.8, C.dark, '#3d4133', C.dark, 0));
+  /* the loader up through his hatch, its two leaves standing open fore and aft of him */
+  [-1, 1].forEach(function (hs) {
+    f = f.concat(box(1.0 + hs * 4.1, 8.2, zr + .45, .45, 5.4, 3.8, C.dark, C.body, C.dark, 0));
+  });
+  f = f.concat(crewman('ger', 0, 1.0, 8.2, zr - 11.6));
+  return f;
+}
+/* the Scherenfernrohr 14 Z: the scissors periscope stood up through the cupola, its two
+   arms opened out, the eyepiece housing between them at the rim */
+function stugScope() {
+  /* on its bracket at the front of the ring and above the man, where he can put his
+     eyes to it: drawn on the ring centre it stood in his chest with the arms through
+     his helmet */
+  var C = PZ, f = [], cu = STG.cup, zt = STG.zRoof + cu.h + .4, sx = cu.x + 2.6;
+  f = f.concat(box(sx, cu.y, zt, .9, 1.4, 2.6, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(sx, cu.y, zt + 2.4, 2.2, 3.0, 1.8, C.dark, C.body, C.dark, .2));
+  [-1, 1].forEach(function (s3) {
+    var arm = cyl(0, 0, 0, .42, .42, 5.6, 6, C.dark, C.steel, 0, true);
+    f = f.concat(place(roll(arm, s3 * .42, 0, 0), 0, sx, cu.y + s3 * .6, zt + 4.0));
+    f = f.concat(box(sx, cu.y + s3 * 2.85, zt + 8.8, 1.3, 1.4, 1.6, C.dark, '#17190f', C.dark, 0));
+  });
   return f;
 }
 
@@ -9841,9 +10111,9 @@ function ktTurret(body, cap, sideC) {
   var zr = H;
   f = f.concat(cyl(-16, -5.2, zr, 4.4, 4.4, 2.2, 18, C.dg, C.dg, 0, true));
   for (var v = 0; v < 7; v++) { var va = v / 7 * TAU + .45; f = f.concat(box(-16 + Math.cos(va) * 4.2, -5.2 + Math.sin(va) * 4.2, zr + .6, 1.1, 1.6, 1.3, C.steel, '#1a1b16')); }
-  var p4Leaf = hatchLeaf(-16, -5.2, zr + 2.2, 4.7, Math.PI, C.dgD, C.dg);
-  HATCHES.ger_p4 = { shut: hatchShut(-16, -5.2, zr + 2.2, 4.7, C.dgD, C.dg), leaf: p4Leaf,
-                     open: p4Leaf.concat(commander('ger', -16, -5.2, zr + 2.2)) };
+  var ktLeaf = hatchLeaf(-16, -5.2, zr + 2.2, 4.7, Math.PI, C.dgD, C.dg);
+  HATCHES.ger_kt = { shut: hatchShut(-16, -5.2, zr + 2.2, 4.7, C.dgD, C.dg), leaf: ktLeaf,
+                     open: ktLeaf.concat(commander('ger', -16, -5.2, zr + 2.2)) };
   f = f.concat(cyl(-9, 4.6, zr, 3.4, 3.4, .7, 16, C.dgD, C.dg, 0, true));                       /* loader's hatch */
   f = f.concat(box(-9, 4.6, zr + .7, .5, 7.0, .5, C.steel, C.bare));
   f = f.concat(cyl(-20, 3.2, zr, 1.3, 1.3, 1.6, 10, C.dgD, C.dg, 0, true));                       /* Nahverteidigungswaffe */
@@ -11383,6 +11653,11 @@ function buildVehicleModels() {
                       bar: 61, big: 1, heavy: 1, scale: 1, mountZ: TIGH.zRoof, gunZ: 9.2 * .46, turX: 1.0, mg: tigCupolaMG() };
   VMODEL.ger_p4   = { hull: pzivHull(PZ4.body, PZ4.lit, PZ4.dark), tur: pzivTurret(PZ4.body, PZ4.lit, PZ4.dark), belly: P4H.zBelly,
                       bar: 43, big: 1, scale: 1, mountZ: P4H.zRoof, gunZ: 3.0, turX: 4.3, mg: pzivCupolaMG(), skirts: pzivSkirts(PZ4.body), turSkirts: pzivTurretSkirts(PZ4.body, PZ4.dark) };
+  /* fixed: the gun is the only thing that turns, so the hatches and the roof fittings
+     are drawn with the hull rather than with the mount */
+  VMODEL.ger_stug = { hull: stugHull(PZ4.body, PZ4.lit, PZ4.dark), tur: stugGun(PZ4.body, PZ4.lit), belly: P4H.zBelly,
+                      bar: 30.9, big: 1, fixed: 1, scale: 1, mountZ: STG.zGun, gunZ: 0, turX: STG.xFront, turY: STG.yGun,
+                      skirts: pzivSkirts(PZ4.body), mgUp: { mgs: stugCoax() }, addUp: { mgs: stugRoofMG(), scope: stugScope() } };
   VMODEL.us_m3    = { hull: m3Hull(SHERMAN.od, SHERMAN.odLit, SHERMAN.odDark),
                       tur: m3MountMG(SHERMAN.od, SHERMAN.odLit), belly: M3G.zBelly,
                       bar: 11, big: 0, scale: 1, mountZ: 25.9, gunZ: 3.0, turX: 2.0, turY: -6.0,
@@ -12232,9 +12507,9 @@ function castUnit(u) {
     mx += Math.cos(u.facing) * mp0.x - Math.sin(u.facing) * mp0.y;
     my += Math.sin(u.facing) * mp0.x + Math.cos(u.facing) * mp0.y;
     var tm2 = m4model(mx, my, gz + mp0.z, u.turret, 1);
-    var duk = mountUp(u);
+    var duk = mountUp(u), dk;
     drawDepthGeom(duk && B.turUp[duk] ? B.turUp[duk] : B.tur, tm2);
-    if (duk && B.addUp[duk]) drawDepthGeom(B.addUp[duk], m4model(u.x, u.y, gz, u.facing, 1));
+    if (u.up) for (dk in u.up) if (u.up[dk] && B.addUp[dk]) drawDepthGeom(B.addUp[dk], m4model(u.x, u.y, gz, u.facing, 1));
     secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawDepthGeom(sb, tm2); });
     if (u.up && u.up.skirts) { if (B.skirts) drawDepthGeom(B.skirts, m4model(u.x, u.y, gz, u.facing, 1)); if (B.turSkirts) drawDepthGeom(B.turSkirts, tm2); }
   } else {
@@ -12279,20 +12554,25 @@ function drawUnits3D(v, list) {
       my += Math.sin(u.facing) * mp1.x + Math.cos(u.facing) * mp1.y;
       var tmat = m4lean(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec,
                         gz + bounce + sink + mp1.z, u.turret, 1, lean, nose);
-      var cuk = mountUp(u);
+      var cuk = mountUp(u), ak;
       drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
-      if (cuk && B.addUp[cuk]) drawGeom(B.addUp[cuk], hmat, false, vt);
+      /* anything bolted to the hull by a fitting: the medic's marks, an MG shield, a
+         periscope. Drawn with the hull, whatever the mount is doing. */
+      if (u.up) for (ak in u.up) if (u.up[ak] && B.addUp[ak]) drawGeom(B.addUp[ak], hmat, false, vt);
       secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawGeom(sb, tmat, false, vt); });
       if (u.up && u.up.skirts) { if (B.skirts) drawGeom(B.skirts, hmat, false, vt); if (B.turSkirts) drawGeom(B.turSkirts, tmat, false, vt); }
-      /* the hatch, shut or with the commander up in it */
+      /* the hatch, shut or with the commander up in it. On a turret it turns with the
+         turret; on a casemate it is part of the roof and stays with the hull. */
       if (B.hatch || B.cmdr) {
+        var hm = M.fixed ? hmat : tmat;
         /* The roof gun comes with the man who works it, standing in that very hatch, so
            a tank carrying one keeps the lid up whatever else is happening: shutting it
            under him put a closed hatch through his boots. Without the gun it is the
            commander up there, and he drops inside the moment the tank is shot at. */
-        if (u.up && u.up.mg && B.mg) drawGeom(B.leaf, tmat, false, vt);
-        else if (!buttonedUp(u)) drawGeom(B.cmdr, tmat, false, vt);
-        else if (B.hatch) drawGeom(B.hatch, tmat, false, vt);
+        var roofGun = u.up && u.up.mg && B.mg;
+        if (roofGun) drawGeom(B.leaf, hm, false, vt);
+        else if (!buttonedUp(u)) drawGeom(B.cmdr, hm, false, vt);
+        else if (B.hatch) drawGeom(B.hatch, hm, false, vt);
       }
       _blobs.push({ x: u.x, y: u.y, r: M.big ? 40 : 30, a: .45 });
     } else {
@@ -12354,8 +12634,14 @@ function drawWrecks3D() {
     var B = MODELS.veh[w.key]; if (!B) return;
     var t = [.28, .27, .24];
     drawGeom(B.hull, m4model(w.x, w.y, groundZ(w.x, w.y), w.a, 1), false, t);
-    var M = VMODEL[w.key];
-    drawGeom(B.tur, m4model(w.x + 3, w.y - 2, groundZ(w.x, w.y) + M.mountZ - 3, (w.turret || w.a) + .5, 1), false, t);
+    var M = VMODEL[w.key], wz = groundZ(w.x, w.y);
+    /* a turret is thrown half off its ring; a casemate gun cannot leave its frame, so it
+       stays in the mantlet and droops */
+    if (M.fixed) {
+      var tx = w.x + Math.cos(w.a) * (M.turX || 0) - Math.sin(w.a) * (M.turY || 0);
+      var ty = w.y + Math.sin(w.a) * (M.turX || 0) + Math.cos(w.a) * (M.turY || 0);
+      drawGeom(B.tur, m4model(tx, ty, wz + M.mountZ - 1, w.turret || w.a, 1), false, t);
+    } else drawGeom(B.tur, m4model(w.x + 3, w.y - 2, wz + M.mountZ - 3, (w.turret || w.a) + .5, 1), false, t);
   });
   G.corpses.forEach(function (c) {
     var variant = c.side === 'us' ? 'can_rifle' : 'fj_rifle', buf = MODELS.prone[variant]; if (!buf) return;
@@ -12846,7 +13132,8 @@ function issueOrder(wx, wy, forceAttack) {
       return;
     }
     /* a gun on a fixed mount is laid rather than driven: the click is a bearing */
-    if (u.def.arc && !u.towedBy) {
+    /* a gun on a trail is laid by a click; a casemate vehicle has an arc too, and tracks */
+    if (u.def.arc && u.cat !== 'veh' && !u.towedBy) {
       clearOrder(u);
       u.facing = Math.atan2(wy - u.y, wx - u.x);
       for (var li = 0; li < u.models.length; li++) u.models[li].f = u.facing;
@@ -13257,7 +13544,7 @@ function cmdGlyph(label) {
   if (/Pit/i.test(label)) return '⊔';
   if (/Wire/i.test(label)) return '≋';
   if (/HQ|POST|SUPPORT/i.test(label)) return '⌂';
-  if (/Sherman|Panzer/i.test(label)) return '▬';
+  if (/Sherman|Panzer|Sturmgesch/i.test(label)) return '▬';
   if (/Carrier|222/i.test(label)) return '◇';
   if (/Vickers|MG42|6-Pounder|Pak/i.test(label)) return '⊢';
   if (/Engineer|Pionier|RCE/i.test(label)) return '⚒';

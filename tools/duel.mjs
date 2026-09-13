@@ -58,6 +58,9 @@ const CARD = [
   ['ger_pgren', 'us_sher'],
   ['us_t8', 'ger_p4'],
   ['ger_tig', 'us_at'],
+  ['us_sher', 'ger_stug'],
+  ['us_at', 'ger_stug'],
+  ['us_ab', 'ger_stug'],
   /* and the field upgrades */
   ['ger_sd222', 'us_m8', { a: ['kwk'] }],
   ['ger_sd222', 'us_stuart', { a: ['kwk'] }],
@@ -68,7 +71,8 @@ const CARD = [
   ['ger_h251', 'us_stuart', { a: ['pak36'] }],
   ['us_m8', 'ger_gren', { a: ['thirty'] }],
   ['ger_p4', 'us_ab', { a: ['skirts'] }],
-  ['us_sher', 'ger_p4', { a: ['mg'], b: ['mg', 'skirts'] }]
+  ['us_sher', 'ger_p4', { a: ['mg'], b: ['mg', 'skirts'] }],
+  ['us_sher', 'ger_stug', { b: ['scope', 'mgs', 'skirts'] }]
 ];
 
 const browser = await launch();

@@ -51,6 +51,11 @@ const REAL = {
   ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
+  ger_stug:  { name: 'StuG IV (Sd.Kfz. 167)', len: 5.93, gun: 6.70,   wid: 2.95,  hgt: 2.20,
+               body: 2.95, bodyZ: 1.55, roof: 2.95, clear: 0.40 },   /* the casemate is the width of the
+               vehicle: the StuG III compartment stood out over the Panzer IV's guards, so body and roof
+               are the same number and both are the published 2.95. 5.93 m is the Panzer IV hull; the
+               6.70 m over the gun is what every table gives for the StuG IV */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
   us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
                body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
@@ -99,6 +104,9 @@ const PROBE = {
   ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
                clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
                rod aerial standing off the right rear of the superstructure */
+  ger_stug:  { bodyZ: 18.0, roofZ: 22.6, xLo: -14.0, xHi: -9.0, straddle: true, hullZ: 27 },   /* the slice
+               is taken through the casemate wall aft of the spare-link rack and forward of the rear
+               bins, where the plate is bare; hullZ drops the rod aerial on the right rear */
   ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0, hullZ: 20 }   /* clear of the rear
                tyre and the wing tools; hullZ drops the rod aerial on the right of the bonnet */
 };

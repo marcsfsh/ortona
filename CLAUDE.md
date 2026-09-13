@@ -322,7 +322,19 @@ selection rings, health bars, unit labels, the minimap.
 helmets and weapons. Vehicles get individual builders (`shermanHull`,
 `ktTurret`, `pzivSkirts`, and so on) assembled in `buildVehicleModels`. Every
 face carries a material index into the atlas. If a model looks wrong, the fix
-is in one of these builders, not in a mesh file.
+is in one of these builders, not in a mesh file. Two vehicles share a chassis:
+`p4Chassis(body, cap, sideC, stug)` is the Panzer IV's running gear, tub, glacis,
+deck and tail, and `stugHull` builds the Sturmgeschütz IV casemate on it with the
+flag set, which leaves off the fighting-compartment box, the driver's plate and the
+guard stowage the casemate overhangs. With the flag off the face list is the Panzer
+IV's in the same order.
+
+A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
+outside the arc (at a penalty) so the hull has something to turn toward, the halted
+hull pivots at about a radian a second to bring it inside, `u.turret` is clamped to
+the arc in `updateModels`, and `fireAt` refuses until it is inside. `VMODEL.fixed`
+draws the hatches with the hull rather than the mount, and `addUp` meshes are drawn
+for every fitted upgrade key, not only the one that swaps the gun.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -486,6 +498,13 @@ shots/                         screenshot output, gitignored
   its draw rate.
 - Camera limits (`CAMLIM`) clamp distance to 220-2600 and pitch to 0.42-1.35.
   A request outside that range is silently clamped, not honoured.
+- **On screen, model +y is the vehicle's right.** The world is drawn left-handed, so
+  a fitting placed at +y comes out on the right-hand side of the vehicle as the
+  player sees it. Verified head-on with the Panzer IV: its driver's visor is at
+  +6.6 and appears on the vehicle's right, which is the wrong side for a Panzer IV.
+  The Tiger II and the StuG IV were laid out with this in mind (left-hand fittings
+  at -y); the Panzer IV, and possibly others, were laid out as if +y were left and
+  are mirrored. Check the screen, not the axis, before calling a side correct.
 - `lathe()` revolves about the **y** axis, so it builds a wheel whose axle points
   across the tank. It is the wrong tool for anything that stands out of a plate
   facing fore or aft: a ball mount built with it faces out of the side of the
