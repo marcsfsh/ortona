@@ -757,6 +757,17 @@ var UNITS = {
     w: { range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1 },
     desc: 'The heaviest tank of the war: 70 tonnes, a glacis nothing on this map can pierce, and an 8.8 cm L/71 that kills a Sherman at any range it can see. One per army. Slow, and it drinks fuel.'
   },
+  /* Asked for, and built. Two Maus were finished and neither fought, so this is the
+     one vehicle on the roster with no claim on Ortona at all; it is a toy, it is
+     priced like one, and only the player may have it -- it is off the AI's shopping
+     list, because a brain saving two thousand marks for it buys nothing else. */
+  ger_maus: {
+    side: 'ger', name: 'Panzerkampfwagen VIII Maus', short: 'MAUS', cat: 'veh', hk: 'M', upgrades: ['mg'],
+    hp: 2600, armor: 500, speed: 30, sight: 380, pop: 44, cost: { mp: 2200, fu: 700 }, time: 210,
+    req: 'ger_dep', limit: 1,
+    w: { range: 600, dmg: 210, rof: 9.5, acc: .78, sup: .28, pen: 460, aoe: 56, shell: 1 },
+    desc: 'A hundred and eighty-eight tonnes, and never a shot fired in anger by either of the two that were built. The 12.8 cm KwK 44 kills anything on the map at any range it can see, the plate is thicker than a Tiger II carries at the front and nearly as thick at the back, and it moves at a walking pace: eleven kilometres an hour on a good surface, and it cannot cross a bridge. One per army, and it costs what a company costs.'
+  },
   ger_p4: {
     side: 'ger', name: 'Panzer IV Ausf. H', short: 'PZ IV', cat: 'veh', hk: 'F', upgrades: ['skirts', 'mg'],
     hp: 700, armor: 132, speed: 76, sight: 340, pop: 14, cost: { mp: 345, fu: 90 }, time: 34,
@@ -809,7 +820,7 @@ var BUILDINGS = {
              cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_pgren'],
              desc: 'Unlocks the MG42 team and assault group.' },
   ger_dep: { side: 'ger', name: 'Armoured Support Point', short: 'PANZER SUPPORT', w: 134, h: 104, hp: 1700, hk: '2',
-             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_kt'],
+             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
              desc: 'Unlocks the Pak 40, Sd.Kfz. 222, StuG IV and Panzer IV.' }
 };
 /* ---- field works.
@@ -10173,6 +10184,272 @@ function ktTurret(body, cap, sideC) {
   f = f.concat(cyl(-23, 0, zr + 1.8, .3, .3, 30, 4, C.steel, C.steel));
   return f;
 }
+/* ====================================================== Panzerkampfwagen VIII Maus
+   Two were built, neither fought, and the survivor is a hull with the other one's
+   turret on it outside Moscow. It is here because it was asked for, and the button
+   says so.
+
+   188 tonnes, and every line of it follows from the weight:
+
+     - two 1.1 m tracks eat two thirds of the 3.71 m width, so the crew live above
+       them rather than between them. The fighting compartment is a slab standing on
+       the track frames, and the side of the vehicle is one flat plate ten metres long
+       with the running gear shut away behind it.
+     - the turret sits right at the back with the engine ahead of it, which is why a
+       seven-metre gun clears the nose by a hand's breadth: the Maus is barely longer
+       over its gun than over its hull, and nothing else on this map can say that.
+     - two guns in one mantlet, a 12.8 cm KwK 44 L/55 with a 7.5 cm KwK 44 L/36.5
+       beside it, and no muzzle brake on either.
+
+   Laid out at 8.5 cm to the unit from the published figures: 10.09 m of hull, 10.2 m
+   over the gun, 3.71 m wide, 3.63 m to the top of the cupola, 500 mm of clearance. */
+var MSG = {
+  R: 3.2,           /* 550 mm road wheels, twenty-four a side in six bogies */
+  T: 1.15,
+  TW: 12.87,        /* 1.10 m of track: half again what a Tiger II stands on */
+  LP: 3.2,
+  TY: 14.6,         /* the two of them all but fill the width, and sit a whisker inboard
+                       of the side plate: flush, the track's outer edge fights the plate
+                       for the same pixels and the sprocket shows through it as a ring */
+  xSprk: -49.0, zSprk: 7.6, rSprk: 5.8,   /* driven from the tail: the engine turns a
+                                             generator and the generator turns two motors */
+  xIdl: 49.0, zIdl: 7.2, rIdl: 5.4,
+  w0: 41.5, wStep: 7.55, wN: 12,
+  zBelly: 5.85      /* 500 mm */
+};
+MSG.zWheel = MSG.R + MSG.T;
+MSG.beltR = MSG.R + MSG.T / 2;
+function mausWheelX(i) { return MSG.w0 - i * MSG.wStep; }
+
+function mausPulleys() {
+  var g = MSG, w = [], i;
+  w.push({ x: g.xIdl, z: g.zIdl, r: g.rIdl + g.T / 2 });
+  for (i = 0; i < g.wN; i++) w.push({ x: mausWheelX(i), z: g.zWheel, r: g.beltR });
+  w.push({ x: g.xSprk, z: g.zSprk, r: g.rSprk + g.T / 2 });
+  for (i = g.wN - 1; i >= 0; i--) w.push({ x: mausWheelX(i), z: g.zWheel, r: g.beltR });
+  return w;
+}
+function mausTrack(y) {
+  var C = KT, g = MSG;
+  return trackBelt(y, mausPulleys(), {
+    w: g.TW, thick: g.T, pitch: g.LP,
+    col: C.track, lit: C.trackLit, steel: C.steel,
+    guide: 1.5, guideW: 2.0, guideCol: C.steel, cleat: .55
+  });
+}
+/* one of the twenty-four: a plain disc on its bogie arm. Built small and cheap because
+   the skirt hides all but the bottom of it, and built at all because a shed track has
+   to have something behind it. */
+function mausRoadWheel(x, y) {
+  var C = KT, r = MSG.R, hw = 1.45;
+  var prof = [[0, -hw], [1.1, -hw], [1.1, -.7], [2.4, -1.0], [r, -1.15],
+              [r, 1.15], [2.4, 1.0], [1.1, .7], [1.1, hw], [0, hw]];
+  var cols = [C.dg, C.dgD, C.dg, C.bare, C.steel, C.bare, C.dg, C.dgD, C.dg];
+  return lathe(x, y, MSG.zWheel, prof, 10, cols, true);
+}
+/* sprocket and idler on the one pattern: a dished disc with a ring of teeth round it,
+   which at this size is everything that reads */
+function mausPulley(x, z, r, y, sd, teeth) {
+  var C = KT, hw = 2.9, f, t;
+  var prof = [[0, -hw], [1.8, -hw], [1.8, -1.1], [3.2, -1.5], [r - .6, -2.0], [r, -2.1],
+              [r, 2.1], [r - .6, 2.0], [3.2, 1.5], [1.8, 1.1], [1.8, hw], [0, hw]];
+  var cols = [C.dg, C.dgD, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dgD, C.dg];
+  f = lathe(x, y, z, prof, 16, cols, true);
+  f = f.concat(boltRing(x, y + sd * hw, z, r * .45, 10, .38, .5, C.bare));
+  for (t = 0; t < teeth; t++) {
+    var a = (t / teeth) * TAU;
+    f = f.concat(place(pitch(box(0, 0, 0, 1.5, 2.4, 1.7, C.bare, C.steel, C.steel, 0), a, 0, 0),
+                       0, x + Math.cos(a) * (r - .3), y, z + Math.sin(a) * (r - .3)));
+  }
+  return f;
+}
+
+var MSH = {
+  halfW: 21.7,      /* 3.71 m over the tracks, and the tracks are most of it */
+  lowHalf: 8.83,    /* 1.51 m: all the hull there is between them */
+  topHalf: 20.3,    /* the sides take in a little on the last half metre to the roof */
+  zBelly: 5.85,
+  zSkirt: 3.4,      /* the side plate hangs to here, just clear of the bottom run */
+  zSpon: 14.6,      /* 1.25 m: the top of the track frames, and the floor the crew stand on */
+  zRoof: 28.0,      /* 2.39 m: the hull roof, and the turret ring */
+  xNose: 59.0, xTail: -59.0, xGlacis: 39.0, xLowFoot: 51.0, xTailFoot: -54.0,
+  turX: -24.0       /* the ring, two metres behind centre */
+};
+
+function mausHull(body, cap, sideC) {
+  var C = KT, H = MSH, g = MSG, f = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y = sd * g.TY;
+    f = f.concat(mausTrack(y));
+    for (i = 0; i < g.wN; i++) f = f.concat(mausRoadWheel(mausWheelX(i), y));
+    f = f.concat(mausPulley(g.xSprk, g.zSprk, g.rSprk, y, sd, 18));
+    f = f.concat(mausPulley(g.xIdl, g.zIdl, g.rIdl, y, sd, 16));
+  }
+  /* the tub between the tracks: driver and radio operator forward, engine behind them */
+  f = f.concat(box(-2, 0, H.zBelly, 106, H.lowHalf * 2, H.zSpon - H.zBelly, body, cap, sideC));
+  var hw = H.halfW, th = H.topHalf, lh = H.lowHalf;
+  var zK = H.zSkirt, zS = H.zSpon, zR = H.zRoof, zB = H.zBelly;
+  var xN = H.xNose, xT = H.xTail, xG = H.xGlacis, xLF = H.xLowFoot, xTF = H.xTailFoot;
+  f = f.concat([
+    /* the glacis, 200 mm and full width */
+    { v: [[xN, -hw, zS], [xN, hw, zS], [xG, th, zR], [xG, -th, zR]], c: C.lit },
+    /* the lower front plate: full width and down to the skirt line, because the front
+       of a track frame on this thing is armour and not a hole */
+    { v: [[xN, hw, zS], [xN, -hw, zS], [xLF, -hw, zK], [xLF, hw, zK]], c: sideC },
+    { v: [[xLF, hw, zK], [xLF, -hw, zK], [xTF, -hw, zK], [xTF, hw, zK]], c: C.dark },
+    /* the sides: one flat plate over the whole of the running gear, then the last
+       half metre leaning in to the roof */
+    { v: [[xT, hw, zS], [xN, hw, zS], [xN, hw, zK], [xT, hw, zK]], c: sideC },
+    { v: [[xT, -hw, zK], [xN, -hw, zK], [xN, -hw, zS], [xT, -hw, zS]], c: sideC },
+    { v: [[xT, th, zR], [xG, th, zR], [xN, hw, zS], [xT, hw, zS]], c: sideC },
+    { v: [[xT, -hw, zS], [xN, -hw, zS], [xG, -th, zR], [xT, -th, zR]], c: sideC },
+    /* the roof */
+    { v: [[xG, -th, zR], [xG, th, zR], [xT, th, zR], [xT, -th, zR]], c: cap },
+    /* the tail plate, full width and down to the same line */
+    { v: [[xT, th, zR], [xT, hw, zK], [xT, -hw, zK], [xT, -th, zR]], c: C.dark },
+    { v: [[xTF, hw, zK], [xTF, -hw, zK], [xT, -hw, zK], [xT, hw, zK]], c: C.dark },
+    /* the floors of the track frames, seen only from underneath */
+    { v: [[xN, hw, zS], [xN, lh, zS], [xT, lh, zS], [xT, hw, zS]], c: C.dark },
+    { v: [[xN, -lh, zS], [xN, -hw, zS], [xT, -hw, zS], [xT, -lh, zS]], c: C.dark }
+  ]);
+  /* weld beads along every plate join */
+  f = f.concat(place(tubeSmooth(-hw, hw, 0, 0, .6, 8, C.dark, C.dark), Math.PI / 2, xN, 0, zS));
+  [-1, 1].forEach(function (s2) {
+    var y0 = s2 * (hw - .45), y1 = s2 * (th - .45);
+    var dx = xG - xN, dz = zR - zS, len = Math.hypot(dx, dz, y1 - y0);
+    f = f.concat(place(pitch(tubeSmooth(0, len, 0, 0, .55, 6, C.dark, C.dark),
+                             Math.atan2(dz, Math.hypot(dx, y1 - y0)), 0, 0),
+                       Math.atan2(y1 - y0, dx), xN, y0, zS));
+    f = f.concat(place(tubeSmooth(xT, xG, 0, 0, .5, 6, C.dark, C.dark), 0, 0, s2 * th, zR));
+    f = f.concat(place(tubeSmooth(xT, xN, 0, 0, .5, 6, C.dark, C.dark), 0, 0, s2 * (hw - .35), zS));
+    /* the access panels down the side plate, and the bolt line above them */
+    for (i = 0; i < 4; i++)
+      f = f.concat(box(30 - i * 22, s2 * (hw + .06), zK + 3.0, 7.6, .24, 5.2, C.dark, body, C.dark, .3));
+    f = f.concat(place(tubeSmooth(xT + 4, xN - 4, 0, 0, .3, 5, C.dark, C.dark), 0, 0, s2 * (hw - .25), zS - 3.6));
+  });
+  /* ---- the glacis: driver's and radio operator's periscopes, towing shackles, and
+     the spare links every crew hung across the front ---- */
+  var kSlope = (zR - zS) / (xN - xG);
+  function onGlacis(faces, gx, gy, up) {
+    return place(pitch(faces, -Math.atan(kSlope), 0, 0), 0, gx, gy, zS + (xN - gx) * kSlope + (up || 0));
+  }
+  [-8.0, 8.0].forEach(function (py) { f = f.concat(onGlacis(periscope(0, 0, 0, 0, C.dgD), xG + 2.4, py, 0)); });
+  [-14.0, 14.0].forEach(function (ty) {
+    f = f.concat(box(xN - 1.2, ty, zS - 3.2, 3.0, 3.0, 3.2, C.dark, body, C.dark, 0));
+    f = f.concat(place(tubeSmooth(-.5, .5, 0, 0, 1.1, 8, C.steel, C.bare), Math.PI / 2, xN - 1.1, ty, zS - 1.6));
+  });
+  /* ---- the deck between the glacis and the ring: the two crew hatches forward, the
+     engine hatch and its two radiator grilles behind them ---- */
+  [-8.5, 8.5].forEach(function (hy) {
+    f = f.concat(cyl(xG - 5.0, hy, zR, 4.4, 4.4, .8, 16, C.dg, C.dg, 0, true));
+    f = f.concat(cyl(xG - 5.0, hy, zR + .8, 3.9, 3.9, .5, 16, C.dgD, C.dg, 0, true));
+    f = f.concat(box(xG - 5.0, hy, zR + 1.3, .6, 8.0, .5, C.steel, C.bare));
+  });
+  f = f.concat(box(20, 0, zR, 16, 14, 1.0, C.dgD, C.dg));
+  f = f.concat(box(20, 0, zR + 1.0, 14, 12, .5, C.dg, cap));
+  [-13.5, 13.5].forEach(function (fy) {
+    f = f.concat(cyl(20, fy, zR, 5.2, 5.2, .7, 18, C.dgD, C.dg, 0, true));
+    f = f.concat(cyl(20, fy, zR + .35, 4.5, 4.5, .3, 18, C.bare, C.bare, 0, true));
+    for (var gr = -3; gr <= 3; gr++)
+      f = f.concat(box(20 + gr * 1.4, fy, zR + .62, .8, 8.0, .16, C.steel, C.steel, C.steel, 0));
+  });
+  /* the ring the turret stands on */
+  f = f.concat(cyl(H.turX, 0, zR - .5, 17.6, 17.6, .8, 24, C.dark, C.dgD, 0, true));
+  /* ---- the deck behind the turret: the two armoured exhaust stacks and the stowage
+     the crews strapped over them ---- */
+  [-10.0, 10.0].forEach(function (ey) {
+    f = f.concat(cyl(xT + 7.0, ey, zR, 2.6, 2.6, 4.2, 12, C.dark, C.dgD, 0, true));
+    f = f.concat(cyl(xT + 7.0, ey, zR + 4.2, 3.0, 3.0, .7, 12, C.steel, C.bare, 0, true));
+  });
+  f = f.concat(box(xT + 4.0, 0, zR, 7.0, 9.0, 3.0, C.dgD, C.dg, C.dgD, .3));
+  [-1, 1].forEach(function (s3) {
+    f = f.concat(grabIron(xT + 2.0, s3 * 15.0, zR, 4.0, .5, C.steel, 'y'));
+    f = f.concat(box(xT + 1.6, s3 * 12.0, zR - 5.0, 2.6, 3.0, 3.0, C.dark, body, C.dark, 0));
+  });
+  return f;
+}
+
+/* the turret: 3.4 m of box with a rounded front, and it is the only part of the
+   vehicle that is not a slab. The front plate is 220 mm, the sides lean in, and the
+   two guns come through one casting with the big one on the centreline. */
+function mausTurret(body, cap, sideC) {
+  var C = KT, f = [], i, v;
+  var H = 12.6, gz = 6.0;
+  var floor = [[20.0, 5.6], [18.6, 11.8], [15.2, 16.4], [9.0, 19.4], [-13.0, 19.4], [-19.6, 15.6],
+               [-19.6, -15.6], [-13.0, -19.4], [9.0, -19.4], [15.2, -16.4], [18.6, -11.8], [20.0, -5.6]];
+  var roofP = floor.map(function (p) { return [p[0] * (p[0] > 0 ? .90 : .95), p[1] * .87]; });
+  var fr = floor.map(function (p) { return [p[0], p[1], 0]; });
+  var rr = roofP.map(function (p) { return [p[0], p[1], H]; });
+  f = f.concat(loft([fr, rr], [body]).map(function (q) { return { v: q.v, c: q.c }; }));
+  f.push({ v: rr.slice(), c: cap });
+  f.push({ v: fr.slice().reverse(), c: C.dark });
+  /* the weld bead round the roof join */
+  for (i = 0; i < rr.length; i++) {
+    var p0 = rr[i], p1 = rr[(i + 1) % rr.length], dl = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+    if (dl < 1) continue;
+    f = f.concat(place(tubeSmooth(0, dl, 0, 0, .45, 6, C.dark, C.dark),
+                       Math.atan2(p1[1] - p0[1], p1[0] - p0[0]), p0[0], p0[1], p0[2]));
+  }
+  /* ---- the mantlet: one casting 250 mm thick carrying both guns ---- */
+  f = f.concat(box(18.4, .8, gz - 5.8, 5.6, 23.0, 11.6, C.dark, body, C.dark, 1.0));
+  [[-4.4, -4.6], [4.4, -4.6], [-4.4, 4.6], [4.4, 4.6]].forEach(function (b) {
+    f = f.concat(studX(21.3, b[0] + .8, gz + b[1], .5, .45, C.bare));
+  });
+  f = f.concat(place(tubeSmooth(0, 3.4, 0, 0, 3.1, 16, C.dark, C.dark), 0, 20.6, 0, gz));
+  f = f.concat(place(tubeSmooth(0, 2.6, 0, 0, 1.8, 12, C.dark, C.dark), 0, 20.6, 9.4, gz - .8));
+  /* ---- the 12.8 cm KwK 44 L/55: five metres of tube beyond the mantlet, stepped at
+     the collar, and no muzzle brake, which is how it is told from everything else
+     with a big gun ---- */
+  f = f.concat(tubeSmooth(22.0, 52.0, 0, gz, 2.05, 16, C.steel, C.steel));
+  f = f.concat(tubeSmooth(52.0, 83.2, 0, gz, 1.75, 16, C.steel, C.steel));
+  f = f.concat(tubeSmooth(83.2, 84.0, 0, gz, 1.95, 16, C.bare, C.bare));
+  /* the 7.5 cm KwK 44 L/36.5 alongside it, and the MG34 the other side */
+  f = f.concat(tubeSmooth(22.0, 44.8, 9.4, gz - .8, 1.2, 12, C.steel, C.steel));
+  f = f.concat(tubeSmooth(44.8, 45.4, 9.4, gz - .8, 1.4, 12, C.bare, C.bare));
+  f = f.concat(tubeSmooth(21.0, 27.0, -7.2, gz + 1.4, .5, 8, C.steel, C.steel));
+  /* ---- the roof: cupola at the left rear, ventilator, periscopes, lifting eyes,
+     and the aerial on the bustle ---- */
+  var zr = H;
+  f = f.concat(cyl(-11.0, -9.2, zr, 4.4, 4.4, 1.8, 18, C.dg, C.dg, 0, true));
+  for (v = 0; v < 6; v++) {
+    var va = v / 6 * TAU + .4;
+    f = f.concat(box(-11.0 + Math.cos(va) * 4.2, -9.2 + Math.sin(va) * 4.2, zr + .5, 1.1, 1.6, 1.3, C.steel, '#1a1b16'));
+  }
+  var mLeaf = hatchLeaf(-11.0, -9.2, zr + 1.8, 4.6, Math.PI, C.dgD, C.dg);
+  HATCHES.ger_maus = { shut: hatchShut(-11.0, -9.2, zr + 1.8, 4.6, C.dgD, C.dg), leaf: mLeaf,
+                       open: mLeaf.concat(commander('ger', -11.0, -9.2, zr + 1.8)) };
+  f = f.concat(cyl(-11.0, 9.2, zr, 3.8, 3.8, .7, 16, C.dgD, C.dg, 0, true));           /* the loaders' hatch */
+  f = f.concat(box(-11.0, 9.2, zr + .7, .5, 7.6, .5, C.steel, C.bare));
+  f = f.concat(cyl(2.0, 0, zr, 1.9, 1.9, 1.0, 12, C.dgD, C.dg, 0, true));              /* ventilator */
+  f = f.concat(box(8.0, -6.0, zr, 2.4, 2.8, 1.6, C.dgD, C.steel));                     /* gunner's periscope */
+  f = f.concat(box(4.0, 7.4, zr, 2.4, 2.8, 1.6, C.dgD, C.steel));                      /* loader's periscope */
+  [[12.0, -13.0], [12.0, 13.0], [-16.0, -11.0], [-16.0, 11.0]].forEach(function (p) {
+    f = f.concat(box(p[0], p[1], zr - .2, 1.8, 1.8, 2.2, C.dgD, C.dg));
+  });
+  f = f.concat(cyl(-17.5, 0, zr, 1.3, 1.3, 1.8, 8, C.dgD, C.dg, 0, true));
+  f = f.concat(cyl(-17.5, 0, zr + 1.8, .3, .3, 30, 4, C.steel, C.steel));
+  /* the rear plate: the round hatch the gun came out through, and a stowage bin */
+  f = f.concat(box(-19.9, 0, gz - 4.4, .8, 15.0, 8.8, C.dgD, C.dg, C.dgD, .4));
+  f = f.concat(box(-21.6, 0, zr - 4.6, 2.6, 12.0, 4.0, C.dark, body, C.dark, .3));
+  return f;
+}
+
+/* the MG34 the commander works off the cupola ring, with him up behind it. Laid out on
+   the Tiger II's pattern because it is the same ring and the same drill, but on this
+   cupola: the Tiger's is four units further forward and a unit higher, and borrowing it
+   leaves the gun standing in the air beside the hatch. */
+function mausCupolaMG() {
+  var C = KT, f = [], zr = 12.6, cx = -11.0, cy = -9.2;
+  f = f.concat(cyl(cx, cy, zr + 2.3, 5.0, 5.0, .5, 18, C.steel, C.bare, 0, true));
+  f = f.concat(cyl(cx + 4, cy + 3.7, zr + 2.8, .5, .5, 3.2, 6, C.steel, C.bare, 0, true));
+  f = f.concat(place(pitch(box(4.5, 0, 0, 10, 1.1, 1.6, C.steel, C.bare), -.25, 0, 0), -.4, cx + 4, cy + 3.7, zr + 6.0));
+  f = f.concat(place(pitch(tubeSmooth(0, 5, 0, 0, .45, 8, C.steel, C.steel), -.25, 0, 0), -.4,
+                     cx + 4 + 9 * Math.cos(-.4), cy + 3.7 + 9 * Math.sin(-.4), zr + 6.0 + 9 * .247));
+  f = f.concat(box(cx + 2.5, cy + 5.4, zr + 6.4, 2.4, 1.8, 2.0, C.steel, '#3d4133'));
+  f = f.concat(crewman('ger', -.36, cx + .6, cy + .6, zr - 4.0));
+  return f;
+}
+
 /* ================================================= M3A1 Half-Track Personnel Carrier
    The White half-track. A truck at the front and a tracked bogie at the back, with a
    quarter of an inch of armour wrapped round both, and it carries a section of ten.
@@ -11675,6 +11952,9 @@ function buildVehicleModels() {
                       gunZ: 4.4, turX: 2.0, mg: m10Fifty(), mgUp: { coax: m10Coax() } };
   VMODEL.ger_kt   = { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
                       bar: 73, big: 1, heavy: 1, scale: 1, mountZ: 21.8, gunZ: 6.8, turX: 4, mg: ktCupolaMG() };
+  VMODEL.ger_maus = { hull: mausHull(KT.body, KT.lit, KT.dark), tur: mausTurret(KT.body, KT.lit, KT.dark),
+                      belly: MSG.zBelly, bar: 84, big: 1, heavy: 1, scale: 1,
+                      mountZ: MSH.zRoof, gunZ: 6.0, turX: MSH.turX, mg: mausCupolaMG() };
   VMODEL.ger_h251 = { hull: h251Hull(PZ.body, PZ.lit, PZ.dark), tur: h251MountMG(PZ.body, PZ.lit), belly: H251.zBelly,
                       bar: 6, big: 0, scale: 1, mountZ: H251H.zTop, gunZ: 2.3, turX: 6.0,
                       turUp: { pak36: h251MountPak(PZ.body, PZ.lit), drill: h251MountDrill(PZ.body, PZ.lit),

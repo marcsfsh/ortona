@@ -338,6 +338,12 @@ straddles every station between its ends, and `widthAt` gives a straddling face 
 point, so any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_stug.roofZ`
 sits exactly on the roof for that reason.
 
+The Maus is the one vehicle on the roster with no claim on Ortona at all. It is built
+because it was asked for, it is priced like a toy (2200 marks and 700 of fuel, 44 of a
+175 population cap, one per army), and it is deliberately **off the AI's shopping
+ladder**: a brain saving that much buys nothing else for four minutes, which is the
+starvation the money reserve exists to prevent. Only the player may have one.
+
 A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
 outside the arc (at a penalty) so the hull has something to turn toward, the halted
 hull pivots at about a radian a second to bring it inside, `u.turret` is clamped to

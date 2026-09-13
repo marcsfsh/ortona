@@ -61,6 +61,10 @@ const CARD = [
   ['us_sher', 'ger_stug'],
   ['us_at', 'ger_stug'],
   ['us_ab', 'ger_stug'],
+  /* the Maus against everything that might be asked to stop one */
+  ['us_ach', 'ger_maus'],
+  ['us_sher', 'ger_maus'],
+  ['us_at', 'ger_maus'],
   /* and the field upgrades */
   ['ger_sd222', 'us_m8', { a: ['kwk'] }],
   ['ger_sd222', 'us_stuart', { a: ['kwk'] }],

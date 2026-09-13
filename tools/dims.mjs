@@ -48,6 +48,12 @@ const REAL = {
                a box on tracks rather than a Hanomag. 5.98 m is the Ausf. D; the 5.80 m in most
                tables is the Ausf. A to C. */
                clear: 0.32 },
+  ger_maus:  { name: 'Panzer VIII Maus',    len: 10.09, gun: 10.20,  wid: 3.71,  hgt: 3.63,
+               body: 3.71, bodyZ: 1.71, roof: 3.47, clear: 0.50 },   /* body: the hull is full width
+               above the tracks, which is the whole shape of the thing -- the crew sit over the running
+               gear because two 1.1 m tracks leave only 1.51 m between them. roof is that 3.71 taken in
+               by the small lean on the last half metre, and is derived rather than published. 10.2 m
+               over the gun against 10.09 m of hull: the muzzle clears the nose by 110 mm */
   ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
@@ -104,6 +110,9 @@ const PROBE = {
                is taken aft of the last bin and forward of the rear chamfer, where the side plate is bare */   /* the shield mount, the rear pintle MG and the aerial
                socket all stand above the 1.75 m top of the compartment, and none of them is part
                of a published height */
+  ger_maus:  { bodyZ: 20.0, roofZ: 28.0, xLo: -20.0, xHi: 20.0, straddle: true },   /* roofZ sits on the
+               roof plate itself: the leaning side straddles every station below it and would report the
+               full width of the base */
   ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
                clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
                rod aerial standing off the right rear of the superstructure */
