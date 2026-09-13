@@ -329,6 +329,15 @@ flag set, which leaves off the fighting-compartment box, the driver's plate and 
 guard stowage the casemate overhangs. With the flag off the face list is the Panzer
 IV's in the same order.
 
+The StuG's compartment is a `frustum` and not a `prism`: the Ausf. G superstructure the StuG IV
+inherited stands out over the track guards at the bottom and slants inboard about eleven
+degrees on its way up, so the roof comes out a third of a metre narrower than the base. That
+slant is the single thing that most says StuG from the angle a player actually looks from,
+and it is why the compartment stopped reading as a box. It also breaks `dims`: a slanted wall
+straddles every station between its ends, and `widthAt` gives a straddling face its widest
+point, so any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_stug.roofZ`
+sits exactly on the roof for that reason.
+
 A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
 outside the arc (at a penalty) so the hull has something to turn toward, the halted
 hull pivots at about a radian a second to bring it inside, `u.turret` is clamped to
