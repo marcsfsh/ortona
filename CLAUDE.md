@@ -43,7 +43,7 @@ Headless Chromium with software WebGL (SwiftShader) is installed and wired up.
 ```sh
 npm install                  # once; Chromium is already on disk
 
-npm run verify               # lint + smoke test, the gate before calling work done
+npm run verify               # lint + map check + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
@@ -175,6 +175,27 @@ how much of the infantry is behind something, how many sections are holding hous
 far it has pushed, how many different targets the sections that are firing have picked,
 and how much money it is sitting on. A win rate says which brain is better; those say
 why.
+
+### `tools/mapcheck.mjs` - the map, mechanically
+
+A hand-placed map is a few hundred coordinates and the eye will not hold them. Craters
+swallow trenches, wire runs through a bowl it should stop at, a house stands on an olive
+tree, a lane is drawn as a nice curve straight through a block, and two buildings leave a
+slot between them too narrow to walk down and too wide to read as a party wall. None of
+it shows in a screenshot taken from the angle you happened to choose, and all of it shows
+the moment a section has to walk through it. The first hand-placed draft had a hundred
+and sixty-four conflicts in it and looked fine.
+
+```sh
+node tools/mapcheck.mjs        # every rule
+node tools/mapcheck.mjs --v    # list every conflict rather than the first few
+```
+
+The rules are things that cannot be true of real ground: a crater does not sit on a
+trench, wire is not laid across a bowl or a parapet, nothing stands inside a building, a
+street does not run through one, and two buildings either share a wall or leave room to
+walk between them. Plus two about streets -- nothing thread-width, and nothing that runs
+the length of the map without a junction. It is in `npm run verify`.
 
 ### `tools/lint.mjs` - the rules, mechanically
 
@@ -362,6 +383,39 @@ those objectives nearest-first, and then issues one order per unit by job: `take
 `raze`, `screen`, `support`, `defend` or `mend`. `DIFF[].skill` gates the tactics rather
 than the arithmetic: 0 keeps green simple, 1 adds houses, upgrades and repair, 2 adds the
 flanking approach.
+
+**The staff work is allowed the map; the guns are not.** `acquire` checks `vUs`/`vGer` and nothing
+shoots what it cannot see, but `aiThreat` reads every enemy in the radius whether it has been seen
+or not. That is deliberate and it was measured twice: visible-units-only, and then a decaying
+memory of contacts, both made a worse opponent by about a hundred and seventy points a side over
+six mirror pairs. Threat is what sizes the effort put against a sector, so ground nobody has eyes
+on reads as quiet, is capped at one section and never has a wave formed against it -- the army
+stops attacking because it cannot see who it is attacking. If this is revisited, the thing to fix
+first is that an unscouted sector reads as undefended rather than as unknown.
+
+**It lays its fire support on before it goes in.** `aiOverwatch` sites a weapon by asking whether
+the objective can actually be seen from the post, which `aiFirePost` never did: it took the
+heaviest cover near a point stepped back from the objective, and on a town map that is a machine
+gun sited behind the very block it is meant to be firing past -- it sets up, reports itself in
+position, and fires nothing all battle. A wave will not step off until at least one support weapon
+is set up, inside its own range and with a line to the objective (`aiSetUp`), bounded by the same
+form timer so a gun that cannot find a post does not stop the battle. Anti-tank guns are sited
+differently again: four hundred back rather than a hundred and fifty, on the longest sight line
+onto the ground armour has to come up, because a Pak walked forward with the infantry is dead
+before a tank arrives.
+
+**A wave shoots at one thing.** Ten sections firing at ten different windows suppress nobody, and
+suppression is most of what a wave is for. While a wave presses, `AI.hot` is its target and
+anything in the wave that can reach it and see it takes it -- but only when that gunner has
+nothing of its own in hand, or when the target is armour. Taking it unconditionally drove the
+firing spread down to 0.14 and the men out of cover, because a section that drops the thing
+shooting at it to join the concentration is a section standing in the open. Skill 1 and up.
+
+**Ground changing hands is an event.** It is cheapest to take back in the half minute after it is
+lost, before whoever took it has dug in or been reinforced. The brain had no memory of ownership,
+so a sector that had just fallen was indistinguishable from one that had been enemy-held all
+battle. `AI.ctSec`/`AI.ctT` remember it for thirty-six seconds, during which it ignores the mood's
+reach limits, is worth three hundred more than anything else and is dealt three sections.
 
 Two things about it are counter-intuitive enough to be worth knowing before touching it.
 

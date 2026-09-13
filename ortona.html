@@ -3908,7 +3908,8 @@ function updateUnit(u, dt) {
 /* The opposition's own state. Everything in it is a number or a sector id: a plan that
    held a reference to a unit or a sector would go on pointing at it after it was dead. */
 var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
-           asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0 };
+           asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0,
+           contacts: null, owned: null, ctSec: null, ctT: -99, hot: null };
 var DIFF = [
   /* Green: money is barely a constraint. You earn triple, start with enough to fill the
      queue immediately, and the opposition runs a quarter economy, thinks every four
@@ -3949,6 +3950,7 @@ function aiInit(side) {
   AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
   AI.mood = 'push'; AI.upT = -99; AI.bagT = -99; AI.bagN = 0;
   AI.asSec = null; AI.asKey = null; AI.asT = -99; AI.asForm = -99; AI.asPick = -99; AI.woke = 0; AI.wantMp = 0;
+  AI.contacts = null; AI.owned = null; AI.ctSec = null; AI.ctT = -99; AI.hot = null;
 }
 function aiOwn(pred) {
   var out = [];
@@ -3991,11 +3993,21 @@ function aiStrength(side) {
    the difference shows: it walks into things, feels for the line, and reacts to what it
    meets rather than to what is there. That is what an army without eyes does. */
 function aiKnows(side, e) { return !e.dead && !e.inside && e.side !== side && visibleTo(side, e); }
+/* Threat is read off every enemy in the radius, seen or not. Two attempts were made to
+   make this honest -- visible units only, then a decaying memory of contacts -- and both
+   made a measurably worse opponent for the same reason: threat is what sizes the effort
+   put against a sector, so ground nobody currently has eyes on scores as quiet, gets
+   capped at one section, and never has a wave formed against it. The army stopped
+   attacking because it could not see who it was attacking, and lost by a hundred and
+   seventy points a side over six mirror pairs. The guns remain honest -- acquire() checks
+   vUs/vGer and nothing shoots what it cannot see -- but the staff work is allowed the map.
+   If this is revisited, the thing to fix first is that an unscouted sector reads as
+   undefended rather than as unknown. */
 function aiThreat(side, x, y, r) {
   var s = 0;
   for (var i = 0; i < G.units.length; i++) {
     var u = G.units[i];
-    if (!aiKnows(side, u) || u.retreat) continue;
+    if (u.dead || u.side === side || u.inside || u.retreat) continue;
     if (dsq(u.x, u.y, x, y) < r * r) s += aiValue(u);
   }
   return s;
@@ -4063,11 +4075,53 @@ function aiFormPost(side, x, y, back) {
    prefers what someone else is already firing at, because two sections on one target end
    a fight and one section on each of two targets does not. */
 var _aiEng = {};
+/* Can a weapon sited here see that? The same trace the guns use, asked of a post rather
+   than of a unit, so a support weapon can be sited on whether it will have a shot rather
+   than on how close it is to the fighting. */
+function aiSightsOn(x, y, tx, ty) {
+  return traceClear(x, y, groundZ(x, y) + 10, tx, ty, groundZ(tx, ty) + 12, fblk);
+}
+/* A post that can see the ground the wave has to cross. aiFirePost takes the heaviest
+   cover within a hundred units of a point stepped back from the objective and never asks
+   whether the objective can be seen from it, which on a town map is a machine gun sited
+   behind the very block it is meant to be firing past: the gun sets up, reports itself in
+   position, and never fires a round all battle. This samples an arc on its own side of
+   the objective at three ranges and takes the best post that has cover AND a line to the
+   ground in question. A post with no line is not a post. */
+function aiOverwatch(side, tx, ty, back, reach) {
+  var a0 = aiFoeDir(side, tx, ty) + Math.PI, best = null, bs = -1e9, ri, k, c;
+  for (ri = 0; ri < 3; ri++) {
+    var rad = back * (1 - ri * .24);
+    for (k = -3; k <= 3; k++) {
+      var a = a0 + k * .30;
+      var px = clamp(tx + Math.cos(a) * rad, 70, WORLD.w - 70);
+      var py = clamp(ty + Math.sin(a) * rad, 70, WORLD.h - 70);
+      if (!walkable(px, py)) continue;
+      if (reach && Math.hypot(px - tx, py - ty) > reach) continue;
+      if (!aiSightsOn(px, py, tx, ty)) continue;
+      var near = coversNear(px, py, 90), bestC = 0;
+      for (c = 0; c < near.length; c++)
+        if (near[c].hp > 0 && near[c].kind !== 'ditch' && near[c].type > bestC) bestC = near[c].type;
+      var sc = bestC * 46 - Math.abs(k) * 14 - ri * 20;
+      if (sc > bs) { bs = sc; best = { x: px, y: py }; }
+    }
+  }
+  return best ? nearestFree(best.x, best.y) : null;
+}
+/* Is this weapon in position and able to do its job? Used to decide whether a wave has
+   its fire support before it goes rather than after. */
+function aiSetUp(u, tx, ty) {
+  if (u.jobX === undefined) return false;
+  if (Math.hypot(u.x - u.jobX, u.y - u.jobY) > 70) return false;
+  var w = mainW(u);
+  if (Math.hypot(u.x - tx, u.y - ty) > w.range * 1.05) return false;
+  return aiSightsOn(u.x, u.y, tx, ty);
+}
 function aiPickTarget(u, reach) {
   var best = null, bs = -1e9;
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
-    if (!aiKnows(u.side, e)) continue;
+    if (e.dead || e.side === u.side || e.inside) continue;
     var d = dist(u, e);
     if (d > reach) continue;
     var w = weaponFor(u, e), sc;
@@ -4375,12 +4429,29 @@ function aiTick(dt) {
   /* An army that is losing the arithmetic stops buying ground at any price and holds
      what it has, which on this map means houses and the sectors behind its own line. */
   AI.mood = (skill < 1 || G.t < 100 || ratio > .95) ? 'push' : ratio > .62 ? 'hold' : 'dig';
+  /* ---- the counter-attack.
+     Ground is cheapest to take back in the half minute after it is lost, before whoever
+     took it has dug in, brought up his support or been reinforced. The old brain had no
+     memory of ownership at all, so a sector that had just fallen was indistinguishable
+     from one that had been enemy-held all battle: it went into the list, was scored on
+     distance like everything else, and was usually bottom of it. Losing one is now an
+     event with a clock on it. */
+  if (!AI.owned) AI.owned = {};
+  for (i = 0; i < G.sectors.length; i++) {
+    s = G.sectors[i];
+    if (AI.owned[s.id] === side && s.owner !== side) { AI.ctSec = s.id; AI.ctT = G.t; }
+    AI.owned[s.id] = s.owner;
+  }
+  var ctSec = AI.ctSec && G.t - AI.ctT < 36 ? G.secById[AI.ctSec] : null;
+  if (ctSec && ctSec.owner === side) { ctSec = null; AI.ctSec = null; }
+
   var objs = [];
   for (i = 0; i < G.sectors.length; i++) {
     s = G.sectors[i];
     var th = aiThreat(side, s.x, s.y, 400);
     var held = s.owner === side;
     var quiet = held && !s.contest && th < 50;
+    var counter = ctSec && s.id === ctSec.id;
     /* A victory sector left standing empty is taken back by the first section that walks
        onto it and the points go with it, so those keep a sentry -- one section, and only
        one already near enough to be it. The economy sectors do not: a section standing
@@ -4391,7 +4462,7 @@ function aiTick(dt) {
        still marching at the far end of the map is how a bad position becomes a rout, so
        it shortens its reach and holds what it can reach: on this ground that means the
        houses behind its own line. */
-    if (!held) {
+    if (!held && !counter) {
       var far = dist(s, hq);
       if (AI.mood === 'dig' && (far > 760 || th > 140)) continue;
       if (AI.mood === 'hold' && far > 1350 && th > 90) continue;
@@ -4414,6 +4485,9 @@ function aiTick(dt) {
              th * .10 + (s.contest ? 80 : 0) + (s.owner === foeSide ? 40 : 0) +
              (held ? 60 : 0);                                     /* what it has, it keeps */
     if (quiet) sc -= 150;                                           /* a sentry, not a push */
+    /* and what has just been taken off us goes to the top of the list, with the weight
+       to do something about it, for as long as the clock runs */
+    if (counter) { sc += 300; cap = Math.max(cap, 3); maxD = 4000; }
     objs.push({ s: s, sc: sc, cap: cap, th: th, maxD: maxD * maxD });
   }
   objs.sort(function (a, b) { return b.sc - a.sc; });
@@ -4544,6 +4618,20 @@ function aiTick(dt) {
          settle for, because two sections walking at a dug-in line is how an army is fed
          into one a section at a time and never gets a wave together again -- half of what
          it actually has, so that an army of two is not a wave that never goes at all. */
+      /* Fire support first. An assault that steps off before the machine guns are laid
+         on the objective is an assault that crosses the open under no covering fire at
+         all, which is the difference between a wave that arrives and a wave that is
+         found in the street afterwards. If the side has support weapons, at least one of
+         them must be set up, inside its own range and able to see the objective -- and
+         the wait for it is bounded by the same form timer as everything else, because a
+         gun that cannot find a post must not stop the battle. */
+      var supUp = 0, supHave = 0;
+      for (j = 0; j < teams.length; j++) {
+        if (teams[j].retreat || teams[j].def.atOnly) continue;
+        supHave++;
+        if (aiSetUp(teams[j], asX, asY)) supUp++;
+      }
+      var laidOn = !supHave || supUp > 0 || G.t - AI.asForm > (D.form || 32) * .45;
       var half = Math.max(2, Math.ceil((D.wave || 3) / 2));
       /* A sector falls to whoever is standing on it, so there a lone section still goes:
          holding it back waits for a wave that will never be gathered and gives away
@@ -4552,11 +4640,31 @@ function aiTick(dt) {
          the forming-up point until there is a wave to go in with. Without that it fed the
          line one assault group every two minutes for twenty minutes. */
       if (!razeT) half = Math.min(half, sent);
-      if (sent && ready >= half && (ready >= Math.min(D.wave || 3, sent) ||
-                                    G.t - AI.asForm > (D.form || 32))) AI.asT = G.t;
+      if (sent && ready >= half && laidOn &&
+          (ready >= Math.min(D.wave || 3, sent) ||
+           G.t - AI.asForm > (D.form || 32))) AI.asT = G.t;
     } else if (G.t - AI.asT > (D.press || 75)) { AI.asT = -99; AI.asForm = G.t; }
   }
   var forming = asKey && AI.asT < 0, pressing = asKey && AI.asT >= 0;
+  /* What the wave is shooting at. Ten sections firing at ten different windows suppress
+     nobody, and suppression is most of what a wave is for: the men who are meant to be
+     crossing the last hundred units are crossing it under the fire of whatever is still
+     free to shoot at them. So while a wave is pressing it is given one target, and
+     anything in the wave that can reach it and see it takes it. Skill gates it, because
+     concentrating fire is a thing a good player does and green has no business doing. */
+  AI.hot = null;
+  if (pressing && skill >= 1) {
+    var hs = -1e9;
+    for (i = 0; i < G.units.length; i++) {
+      var eh = G.units[i];
+      if (!aiKnows(side, eh)) continue;
+      var hd = Math.hypot(eh.x - asX, eh.y - asY);
+      if (hd > 460) continue;
+      var hsc = (eh.cat === 'veh' ? 260 : 170) - hd * .28 +
+                (hpFrac(eh) < .6 ? 70 : 0) + (eh.gar ? -60 : 0) - (eh.sup > 1 ? 110 : 0);
+      if (hsc > hs) { hs = hsc; AI.hot = eh; }
+    }
+  }
   /* Where the support weapons belong: covering the ground the assault has to cross. In
      annihilation the objective is a building inside the enemy's own position, and a
      machine gun posted a hundred and fifty short of that is a machine gun walking into
@@ -4620,6 +4728,14 @@ function aiTick(dt) {
        only checked during the press: outside one, stopping to fight is the right answer
        and the trace is not worth paying for. */
     if (hit && pressing && aiInWave(u, asId, razeT) && !fireLine(u, hit)) hit = null;
+    /* the wave's target beats a nearer one of its own, as long as this weapon can reach
+       it and see it: the point of concentrating is that it is not each gunner's choice */
+    if (pressing && AI.hot && !AI.hot.dead && aiInWave(u, asId, razeT) && !u.def.atOnly &&
+        (!hit || AI.hot.cat === 'veh')) {
+      var hw = weaponFor(u, AI.hot);
+      if (dist(u, AI.hot) <= hw.range && fireLine(u, AI.hot) &&
+          !(AI.hot.cat === 'veh' && penChance(penAt(hw, dist(u, AI.hot)), armourAt(AI.hot, u.x, u.y)) < .10)) hit = AI.hot;
+    }
     if (hit) {
       if (u.order !== 'attack' || u.forced !== hit) orderAttack(u, hit);
       continue;
@@ -4640,7 +4756,17 @@ function aiTick(dt) {
          is short of the objective on its own side of it and behind something. An
          anti-tank gun belongs on the line the armour will come up, and it waits there. */
       if (u.aimX === undefined || dsq(u.aimX, u.aimY, supX, supY) > 220 * 220 || G.t - u.jobT > 45) {
-        var post = aiFirePost(side, supX, supY, u.def.atOnly ? 210 : 150);
+        /* An anti-tank gun is not a machine gun. It wants the longest sight line it can
+           get onto the ground armour has to come up, from well back and in cover, and
+           then it wants to be left alone: a Pak walked up to a hundred and fifty short of
+           the objective with the infantry is a Pak that is dead before a tank arrives.
+           The overwatch post asks whether the objective can actually be seen from there,
+           which is the question that was never asked; aiFirePost is the fallback for when
+           nothing on the arc has a line, because a gun in the wrong place still beats a
+           gun standing in the open where it was built. */
+        var back = u.def.atOnly ? 420 : 170;
+        var post = aiOverwatch(side, supX, supY, back, mainW(u).range * .92) ||
+                   aiFirePost(side, supX, supY, u.def.atOnly ? 260 : 150);
         u.aimX = supX; u.aimY = supY; u.jobX = post.x; u.jobY = post.y; u.jobT = G.t;
       }
       if (Math.hypot(u.x - u.jobX, u.y - u.jobY) > 90 &&
@@ -4713,7 +4839,7 @@ function aiTick(dt) {
       var ex = 0, ey = 0, ew = 0;
       for (j = 0; j < G.units.length; j++) {
         var e2 = G.units[j];
-        if (!aiKnows(side, e2)) continue;
+        if (e2.dead || e2.side === side || e2.inside) continue;
         if (dsq(e2.x, e2.y, sec.x, sec.y) > 400 * 400) continue;
         var wv = aiValue(e2); ex += e2.x * wv; ey += e2.y * wv; ew += wv;
       }
