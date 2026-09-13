@@ -403,7 +403,12 @@ open with nowhere to go.
 and target acquisition. `COVER` entries are graded open / light / medium /
 heavy / dug-in; linear cover (walls, trenches) only protects across its face,
 which is what `coverValue` computes from the firing angle. `chooseCover` and
-`coverSlots` are why soldiers tuck themselves against walls.
+`coverSlots` are why soldiers tuck themselves against walls. A burnt-out vehicle
+is cover too (`kind: 'wreck'`, heavy for a tank and medium for a car, added by
+`killUnit` where it died), because thirty tons of plate in the middle of a street
+is the best thing in it to get behind. On desktop the grade of cover under the
+pointer is shown beside it while infantry is selected, so the player can see what
+a move order would land in before giving it.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a

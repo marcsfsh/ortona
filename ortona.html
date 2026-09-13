@@ -1908,7 +1908,7 @@ function makeFields() {
 var STAND_FLAT = 1, STAND_LOW = 2, STAND_DUG = 3, STAND_TALL = 4;
 var COVER_STANCE = { trench: STAND_DUG, pit: STAND_DUG, bags: STAND_LOW, lowwall: STAND_LOW,
                      rubble: STAND_LOW, cart: STAND_LOW, hedge: STAND_LOW, wall: STAND_TALL,
-                     tree: STAND_TALL, crater: STAND_FLAT, ditch: STAND_FLAT };
+                     tree: STAND_TALL, crater: STAND_FLAT, ditch: STAND_FLAT, wreck: STAND_LOW };
 var _cvTier = 0;
 /* the patch a man at this point is actually getting his cover from, with the tier it is
    worth against the given bearing left in _cvTier */
@@ -3497,6 +3497,9 @@ function killUnit(u, src) {
     G.wrecks.push({ x: u.x, y: u.y, a: u.facing, turret: u.turret,
                     w: u.def.hp > 500 ? 82 : 55, h: u.def.hp > 500 ? 38 : 28,
                     t: 0, side: u.side, key: u.key });
+    /* and the hull stays where it burned, thirty tons of plate in the middle of the
+       street: heavy cover for a tank, medium for a car, and it does not get shelled away */
+    addCover(u.x, u.y, u.def.hp > 500 ? 34 : 26, u.def.hp > 500 ? 3 : 2, 'wreck', null, 900);
     explode(u.x, u.y, 58, 44, null);
     for (var s2 = 0; s2 < 6; s2++) spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
     /* Some of the crew get out and some of them do not. Two men down beside a burning
@@ -14220,6 +14223,22 @@ function render() {
   list.forEach(function (u) { drawUnitOverlay(u, w2s(u.x, u.y)); });
   G.blds.forEach(function (b) { if (b.side === G.side || visibleTo(G.side, b)) drawBuildingOverlay(b); });
   G.sectors.forEach(drawSectorFlag);
+  /* what the ground under the cursor is worth, before the order is given: the grade
+     of cover a section would take at the point, shown beside the pointer while
+     infantry is selected. Desktop only; there is no pointer to hover on a phone. */
+  if (!MOB && !G.place && mouse.inside && !ED.on) {
+    var hov = selectedUnits(), hovFoot = false;
+    for (var hv = 0; hv < hov.length; hv++) if (hov[hv].side === G.side && hov[hv].cat !== 'veh') { hovFoot = true; break; }
+    if (hovFoot) {
+      var hm = s2w(mouse.x, mouse.y), hc = coverAt(hm.x, hm.y), HC = COVER[hc];
+      if (hc > 0) {
+        ctx.font = '600 10px ' + FONT; ctx.textAlign = 'left';
+        var hw = ctx.measureText(HC.tag).width + 10;
+        ctx.fillStyle = 'rgba(6,8,4,.72)'; ctx.fillRect(mouse.x + 14, mouse.y + 12, hw, 14);
+        ctx.fillStyle = HC.col; ctx.fillText(HC.tag, mouse.x + 19, mouse.y + 23);
+      }
+    }
+  }
   /* placement ghost */
   if (G.place) {
     var pl = G.place, W3 = pl.work ? WORKS[pl.work] : null;
