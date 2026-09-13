@@ -159,7 +159,19 @@ An AI cannot be reviewed by reading it, for the same reason a model cannot: whet
 set of decisions beats another is a question about a whole battle, and the only honest
 way to read a change is to fight the old version.
 
-Two things about the numbers are worth knowing before trusting them. **Ortona is not a
+**Read the pair difference and nothing else.** Within a pair the same ground is played twice
+with the brains swapped, so the sum of the working brain's score in the two halves is what it
+beat the baseline by with the map cancelled out. That number comes with the standard error of
+it and a sentence saying whether it clears twice that; when it does not, the tool says how many
+pairs it would take. The per-side table underneath averages the two halves separately, which
+throws the pairing away and is a point estimate with no error bar on it -- and that is how
+three runs of the same code came back -140, +287 and -573 and the middle one was read as an
+improvement. A single pair swings by most of a thousand points on this map, so a hundred-point
+change needs something like a hundred pairs to see, and the honest answer to most tactical
+tweaks is that the tool cannot resolve them. Judge those on whether they are right, not on
+whether the table moved.
+
+Two more things about the numbers are worth knowing before trusting them. **Ortona is not a
 symmetric map** and the two rosters are not the same army: with the same brain on both
 sides the Canadians take thirteen points of ground to the Germans' four. That is why a
 run is made of mirror pairs, each match played twice with the brains swapped, and why
