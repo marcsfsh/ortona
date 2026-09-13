@@ -999,6 +999,21 @@ function defaultMapData() {
   function wall(x1, y1, x2, y2) { E.push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2 }); }
   function crater(x, y, r) { E.push({ t: 'crater', x: x, y: y, r: r }); }
   function rubble(x, y, r, s) { E.push({ t: 'rubble', x: x, y: y, r: r }); E.push({ t: 'debris', x: x, y: y, r: r * .62, s: s }); }
+  /* A block that was brought down. The footprint is rubble and nothing stands on it: it
+     is cover a man can fight from and ground a tank can still cross, which is what makes
+     a razed frontage a different tactical problem from a standing one. The heaps are
+     laid on the diagonals of the footprint rather than in a row, because a terrace that
+     collapses falls into its own street frontage and leaves the party walls as spines. */
+  function razed(x0, y0, x1, y1, seed) {
+    var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, hw = (x1 - x0) / 2, hh = (y1 - y0) / 2;
+    var big = Math.min(hw, hh) * .82;
+    rubble(cx, cy, big, seed);
+    rubble(cx - hw * .58, cy - hh * .42, big * .74, (seed + .31) % 1);
+    rubble(cx + hw * .61, cy + hh * .38, big * .78, (seed + .57) % 1);
+    rubble(cx - hw * .54, cy + hh * .46, big * .66, (seed + .73) % 1);
+    rubble(cx + hw * .57, cy - hh * .44, big * .70, (seed + .19) % 1);
+    E.push({ t: 'wall', x1: x0 + hw * .2, y1: cy, x2: x1 - hw * .2, y2: cy });
+  }
   function tree(x, y, r, s, lean) { E.push({ t: 'tree', x: x, y: y, r: r, s: s, lean: lean || 0 }); }
   function cypress(x, y) { E.push({ t: 'tree', x: x, y: y, r: 9, s: .9, lean: 0, cypress: 1 }); }
   function scrub(x, y, r, s) { E.push({ t: 'scrub', x: x, y: y, r: r, s: s }); }
@@ -1027,150 +1042,137 @@ function defaultMapData() {
   HB.push({ x: 2480, y: 1180, r: 150, d: -10 });
 
   /* ---- the streets ------------------------------------------------------------------
-     Ortona is not a grid and never was. It is a town on a promontory and the streets run
-     with the shape of the ground: a spine down the length of it, lanes either side of the
-     spine following the fall of the bluff, and cross streets cut between them wherever
-     the slope allowed.
+     Wide, and few. Ortona is a town that has been fought through for a week: whole
+     frontages are down and what were alleys are now gaps between heaps. What the ground
+     needs is room to work in -- a section needs somewhere to go that is not the middle
+     of a street, and a Sherman needs a turning circle -- so the streets below are broad,
+     the blocks are small, and the space between them is open ground rather than another
+     lane. Three cross streets and two vicoli is the whole of it; everything else you
+     cross is a yard, a garden or a flattened block.
 
-     The horizontal streets run in the corridors the blocks leave between their ranks, so
-     each is stated once and the blocks define it. The cross streets jog: the gap between
-     two blocks in one rank is not above the gap in the next, so a street crossing the
-     town steps sideways two or three times on its way. That is the single thing that
-     stops a street plan reading as a grid, and it is what the real one does. */
-  /* the Corso: the spine, in three named lengths with a junction at each break */
-  road(62, [[40, 1042], [220, 1036], [400, 1028], [560, 1018], [700, 1008], [830, 996]]);
-  road(56, [[830, 996], [930, 992], [1030, 988], [1120, 986], [1190, 984]]);
-  road(56, [[1600, 984], [1720, 980], [1840, 972], [1960, 960], [2080, 946], [2140, 936]]);
-  road(62, [[2140, 936], [2300, 918], [2460, 902], [2620, 890], [2780, 884]]);
-  /* Corso Matteotti, the upper lane, and Via della Liberta, the lower */
-  road(40, [[836, 990], [844, 900], [850, 800], [856, 700], [862, 650]]);
-  road(40, [[862, 650], [1040, 648], [1240, 647], [1440, 646], [1640, 647], [1840, 649], [2000, 652]]);
-  road(40, [[2000, 652], [2060, 720], [2100, 800], [2130, 880], [2146, 934]]);
-  road(40, [[838, 1004], [846, 1100], [852, 1200], [858, 1300], [864, 1340]]);
-  road(40, [[864, 1340], [1040, 1341], [1240, 1342], [1440, 1342], [1640, 1341], [1840, 1340], [2000, 1338]]);
-  road(40, [[2000, 1338], [2060, 1260], [2100, 1160], [2130, 1050], [2146, 950]]);
-  /* the back lane inside the old town, between the two ranks under the coast road */
-  road(30, [[880, 482], [1040, 480], [1200, 478], [1360, 478], [1420, 478]]);
-  road(30, [[1700, 480], [1800, 482], [1880, 483], [1940, 484]]);
-  /* the coast road along the top of the bluff and the cemetery road along the south */
-  road(46, [[40, 336], [250, 326], [460, 316], [660, 308], [820, 302]]);
-  road(46, [[820, 302], [1000, 298], [1180, 296], [1360, 296], [1540, 298], [1700, 302]]);
-  road(46, [[1700, 302], [1900, 316], [2100, 338], [2320, 364], [2540, 388], [2780, 410]]);
-  road(46, [[40, 1628], [250, 1632], [460, 1636], [660, 1638], [820, 1640]]);
-  road(46, [[820, 1640], [1010, 1642], [1200, 1644], [1390, 1644], [1580, 1642], [1740, 1640]]);
-  road(46, [[1740, 1640], [1940, 1636], [2140, 1632], [2360, 1628], [2580, 1624], [2780, 1622]]);
-  /* ---- the cross streets, each jogging where the blocks behind it do not line up ----- */
-  /* the first, from the sea wall down to the cemetery road */
-  road(30, [[1139, 300], [1139, 420], [1155, 470], [1155, 610]]);
-  road(34, [[1190, 648], [1190, 800], [1167, 900], [1167, 982]]);
-  road(34, [[1184, 986], [1184, 1200], [1175, 1300], [1175, 1340]]);
-  road(30, [[1171, 1342], [1171, 1520], [1147, 1600], [1147, 1640]]);
-  /* the second, which carries the harbour road down off the bluff at its north end */
-  road(38, [[1390, 200], [1394, 260], [1395, 330], [1395, 430], [1419, 470], [1419, 610]]);
-  road(38, [[1442, 648], [1442, 800], [1430, 900], [1430, 982]]);
-  road(38, [[1450, 986], [1450, 1200], [1442, 1300], [1442, 1340]]);
-  road(40, [[1438, 1342], [1438, 1500], [1420, 1600], [1424, 1700], [1428, 1780]]);
-  /* the third, the one that doubles back twice */
-  road(28, [[1702, 306], [1702, 420], [1683, 470], [1683, 610]]);
-  road(28, [[1646, 648], [1646, 780], [1694, 880], [1694, 982]]);
-  road(26, [[1629, 988], [1629, 1180], [1664, 1290], [1664, 1340]]);
-  road(28, [[1714, 1342], [1714, 1500], [1684, 1600], [1684, 1640]]);
-  /* the fourth, at the castle end, which stops at the lower lane */
-  road(26, [[1976, 322], [1976, 430], [1922, 470], [1922, 610]]);
-  road(30, [[1902, 648], [1902, 780], [1936, 880], [1936, 976]]);
-  road(26, [[1892, 992], [1892, 1200], [1902, 1300], [1902, 1338]]);
-  /* two vicoli that go nowhere, which is what a medieval quarter is full of */
-  road(24, [[1214, 650], [1214, 700], [1210, 726]]);
-  road(24, [[1560, 990], [1560, 1032], [1556, 1052]]);
+     The horizontal streets run in the corridors the blocks leave. The cross streets jog
+     where the blocks either side of them do not line up. */
+  road(70, [[40, 1042], [220, 1036], [400, 1028], [560, 1018], [700, 1008], [830, 996]]);
+  road(64, [[830, 996], [930, 992], [1030, 988], [1120, 986], [1190, 984]]);
+  road(64, [[1600, 984], [1720, 980], [1840, 972], [1960, 960], [2080, 946], [2140, 936]]);
+  road(70, [[2140, 936], [2300, 918], [2460, 902], [2620, 890], [2780, 884]]);
+  /* Corso Matteotti above the spine and Via della Liberta below it */
+  road(52, [[836, 990], [844, 900], [850, 800], [856, 700], [862, 648]]);
+  road(52, [[862, 648], [1040, 646], [1240, 645], [1440, 644], [1640, 645], [1840, 647], [2000, 650]]);
+  road(52, [[2000, 650], [2060, 720], [2100, 800], [2130, 880], [2146, 934]]);
+  road(52, [[838, 1004], [846, 1100], [852, 1200], [858, 1300], [864, 1344]]);
+  road(52, [[864, 1344], [1040, 1345], [1240, 1346], [1440, 1346], [1640, 1345], [1840, 1344], [2000, 1342]]);
+  road(52, [[2000, 1342], [2060, 1260], [2100, 1160], [2130, 1050], [2146, 950]]);
+  /* the coast road along the bluff and the cemetery road along the south */
+  road(50, [[40, 336], [250, 326], [460, 316], [660, 308], [820, 302]]);
+  road(50, [[820, 302], [1000, 298], [1180, 296], [1360, 296], [1540, 298], [1700, 302]]);
+  road(50, [[1700, 302], [1900, 316], [2100, 338], [2320, 364], [2540, 388], [2780, 410]]);
+  road(50, [[40, 1628], [250, 1632], [460, 1636], [660, 1638], [820, 1642]]);
+  road(50, [[820, 1642], [1010, 1644], [1200, 1646], [1390, 1646], [1580, 1644], [1740, 1642]]);
+  road(50, [[1740, 1642], [1940, 1638], [2140, 1634], [2360, 1630], [2580, 1626], [2780, 1624]]);
+  /* the three cross streets, each jogging where the blocks do not line up */
+  road(48, [[1232, 300], [1232, 430], [1258, 490], [1258, 606]]);
+  road(52, [[1232, 650], [1232, 790], [1260, 880], [1260, 980]]);
+  road(52, [[1206, 990], [1206, 1180], [1180, 1280], [1180, 1342]]);
+  road(48, [[1196, 1348], [1196, 1500], [1170, 1590], [1170, 1640]]);
+  /* the second carries the harbour road down off the bluff at its north end */
+  road(50, [[1382, 200], [1386, 260], [1390, 330], [1390, 430], [1412, 490], [1412, 606]]);
+  road(52, [[1438, 650], [1438, 800], [1456, 890], [1456, 980]]);
+  road(52, [[1470, 990], [1470, 1180], [1494, 1280], [1494, 1342]]);
+  road(52, [[1500, 1348], [1500, 1500], [1478, 1600], [1482, 1700], [1486, 1780]]);
+  /* the third, at the castle end */
+  road(48, [[1866, 312], [1866, 430], [1844, 490], [1844, 606]]);
+  road(50, [[1812, 650], [1812, 790], [1876, 880], [1876, 978]]);
+  road(48, [[1818, 992], [1818, 1180], [1796, 1280], [1796, 1342]]);
+  /* two vicoli that stop at a wall, which is what the quarter was full of */
+  road(30, [[1050, 650], [1050, 706], [1046, 732]]);
+  road(30, [[1660, 990], [1660, 1046], [1656, 1074]]);
   /* the two headquarters and their approaches */
-  road(44, [[250, 950], [330, 972], [430, 992], [520, 1004]]);
-  road(40, [[330, 972], [330, 800], [330, 600], [330, 430], [330, 330]]);
-  road(40, [[330, 972], [330, 1140], [330, 1320], [330, 1500], [330, 1630]]);
-  road(44, [[2550, 950], [2470, 934], [2370, 922], [2280, 914]]);
-  road(40, [[2470, 934], [2470, 760], [2470, 580], [2470, 440], [2470, 392]]);
-  road(40, [[2470, 934], [2470, 1100], [2470, 1280], [2470, 1460], [2470, 1624]]);
-  road(34, [[2440, 500], [2460, 440], [2480, 392]]);
+  road(48, [[250, 950], [330, 972], [430, 992], [520, 1004]]);
+  road(44, [[330, 972], [330, 800], [330, 600], [330, 430], [330, 330]]);
+  road(44, [[330, 972], [330, 1140], [330, 1320], [330, 1500], [330, 1632]]);
+  road(48, [[2550, 950], [2470, 934], [2370, 922], [2280, 914]]);
+  road(44, [[2470, 934], [2470, 760], [2470, 580], [2470, 440], [2470, 392]]);
+  road(44, [[2470, 934], [2470, 1100], [2470, 1280], [2470, 1460], [2470, 1626]]);
+  road(36, [[2440, 500], [2460, 440], [2480, 392]]);
 
   /* ---- the blocks --------------------------------------------------------------------
-     Each block is one terrace of buildings sharing walls, laid along the street it faces.
-     What makes it a town rather than an estate is that nothing in a row matches:
-     frontages run from a three-metre cottage to a fifteen-metre palazzo, depths from six
-     metres to ten, and the setbacks step the front line in and out along the street. The
-     back of a block is therefore ragged and the courtyards inside it are whatever shape
-     the buildings left.
+     A week of street fighting does not leave a town looking like a town. Roughly a third
+     of what stood here is standing now: what is left is islands -- one house, or a pair
+     sharing a wall -- with open ground, a yard or a heap where the rest of the frontage
+     used to be. Nothing is repeated: every building carries its own frontage, depth,
+     setback, storey height and state of repair, so there is a three-storey palazzo on
+     one corner of a block and a one-bay cottage with no roof on the other.
 
-     Blocks are chained rather than placed: terrace() returns the east end of the row it
-     laid and the next starts a stated street-width from it, so a gap between blocks
-     cannot drift into a slot too narrow to walk down. The cross streets are then run
-     through those gaps -- and because the gaps in one rank do not line up with the gaps
-     in the next, every one of them jogs on its way across the block, which is what the
-     real street plan does and what a grid never does. */
+     `razed()` lays a block that was brought down. The footprint is rubble and nothing
+     stands: it is cover a man can fight from, it is not cover a tank cannot drive over,
+     and it is the difference between a street plan and a battlefield. */
   var x;
 
-  /* the old town hard under the coast road: the densest and oldest part of Ortona, and
-     the part that had been under shellfire longest */
-  x = terrace(864, 336, 1, [[62, 104, .17, .61, 0], [44, 86, .58, .74, 16], [96, 112, .83, .38, 4],
-                            [38, 78, .29, .88, 24]]);
-  x = terrace(x + 46, 330, 1, [[54, 92, .22, .52, 10], [86, 116, .71, .29, 0], [40, 74, .05, .67, 20]]);
-  /* the basilica stands clear on its own ground with the forecourt in front of it: the
-     only open space in the north of the town, and the only ground up there worth a gun */
+  /* the old town under the coast road. The seaward frontage took the naval gunfire and
+     most of it is down. */
+  x = terrace(880, 340, 1, [[96, 122, .17, .44, 0, { tall: 1 }]]);
+  razed(1010, 336, 1180, 448, .21);
+  x = terrace(1272, 332, 1, [[64, 92, .58, .72, 0], [48, 76, .83, .38, 18, { roof: 0 }]]);
   house(1560, 440, 240, 170, .5, 0, { tall: 1, style: 'church' });
-  x = terrace(1724, 334, 1, [[110, 114, .36, .18, 0], [48, 88, .79, .56, 14], [66, 102, .13, .71, 4]]);
-  x = terrace(x + 40, 340, 1, [[52, 96, .41, .27, 0], [44, 80, .88, .58, 12]]);
-  /* and the rank below it facing Corso Matteotti */
-  x = terrace(864, 616, -1, [[52, 90, .74, .36, 6], [76, 104, .19, .62, 0], [40, 72, .55, .81, 18],
-                             [88, 100, .37, .24, 4]]);
-  x = terrace(x + 46, 612, -1, [[46, 84, .63, .47, 12], [104, 100, .28, .19, 0], [42, 76, .91, .68, 16]]);
-  /* the Palazzo Farnese under the basilica */
-  house(1560, 604, 200, 84, .28, .22, { tall: 1, style: 'civic' });
-  x = terrace(1716, 610, -1, [[60, 94, .31, .42, 8], [82, 104, .76, .17, 0], [44, 78, .09, .66, 20]]);
-  x = terrace(x + 44, 608, -1, [[56, 90, .66, .38, 0], [48, 82, .24, .59, 10]]);
+  x = terrace(1740, 338, 1, [[110, 116, .36, .21, 0, { style: 'civic' }]]);
+  razed(1900, 340, 2060, 442, .64);
+  /* and the rank facing Corso Matteotti */
+  x = terrace(880, 600, -1, [[72, 100, .74, .36, 0], [56, 84, .19, .81, 14, { roof: 0 }]]);
+  razed(1080, 500, 1220, 600, .47);
+  x = terrace(1300, 596, -1, [[88, 108, .45, .62, 0, { roof: 0 }]]);
+  house(1560, 610, 200, 88, .28, .22, { tall: 1, style: 'civic' });
+  x = terrace(1720, 602, -1, [[64, 96, .31, .49, 0]]);
+  x = terrace(1900, 592, -1, [[52, 80, .66, .77, 0, { roof: 0 }]]);
 
-  /* the Matteotti blocks, between the upper lane and the Corso: the ground the Edmontons
-     fought up a building at a time, and the block that had to be mouseholed end to end */
-  x = terrace(876, 700, 1, [[72, 88, .21, .34, 0], [56, 76, .64, .57, 14], [104, 92, .38, .19, 4],
-                            [46, 70, .87, .71, 20]]);
-  x = terrace(x + 48, 692, 1, [[88, 90, .15, .46, 0], [50, 74, .59, .28, 16], [62, 82, .93, .63, 6]]);
-  x = terrace(x + 40, 684, 1, [[96, 92, .42, .25, 0], [58, 78, .07, .68, 12]]);
-  x = terrace(x + 52, 678, 1, [[70, 86, .77, .51, 4], [48, 72, .34, .22, 18], [82, 90, .61, .39, 0]]);
-  x = terrace(x + 44, 690, 1, [[54, 78, .18, .64, 10], [44, 68, .81, .48, 16]]);
-  /* the rank facing the Corso and the piazza, which is where the shops were */
-  x = terrace(876, 936, -1, [[84, 84, .47, .72, 0], [60, 74, .11, .38, 12], [72, 80, .68, .55, 4],
-                             [40, 62, .35, .89, 22]]);
-  x = terrace(x + 46, 930, -1, [[98, 84, .24, .61, 0], [46, 66, .79, .34, 18], [68, 76, .52, .47, 6]]);
-  x = terrace(x + 40, 924, -1, [[58, 72, .16, .58, 10], [106, 84, .63, .26, 0], [50, 66, .88, .69, 14]]);
-  x = terrace(x + 44, 918, -1, [[74, 78, .39, .44, 0], [54, 68, .05, .71, 12], [62, 72, .71, .33, 6]]);
-  x = terrace(x + 44, 922, -1, [[58, 74, .26, .52, 0], [44, 64, .83, .37, 10]]);
+  /* the Matteotti blocks. The Edmontons came up this ground a building at a time and
+     there are not many buildings left on it. */
+  x = terrace(880, 702, 1, [[120, 98, .21, .34, 0, { tall: 1 }]]);
+  razed(1040, 700, 1190, 800, .58);
+  x = terrace(1300, 696, 1, [[72, 88, .38, .55, 0], [52, 72, .87, .29, 16]]);
+  x = terrace(1520, 690, 1, [[96, 94, .42, .18, 0, { style: 'civic' }]]);
+  razed(1660, 688, 1800, 786, .33);
+  razed(1960, 692, 2090, 780, .76);
+  x = terrace(1880, 694, 1, [[64, 84, .61, .66, 0, { roof: 0 }]]);
+  /* the rank facing the Corso and the piazza: the shops, and the fire */
+  x = terrace(880, 930, -1, [[88, 82, .47, .72, 0], [60, 70, .11, .38, 12, { roof: 0 }]]);
+  x = terrace(1080, 926, -1, [[104, 86, .24, .61, 0, { tall: 1 }]]);
+  razed(1290, 840, 1420, 924, .79);
+  x = terrace(1500, 920, -1, [[76, 78, .63, .26, 0]]);
+  x = terrace(1700, 916, -1, [[92, 84, .39, .44, 0], [56, 68, .05, .71, 14]]);
+  x = terrace(1960, 918, -1, [[68, 74, .71, .33, 0, { roof: 0 }]]);
 
-  /* the Liberta blocks, south of the Corso */
-  x = terrace(880, 1032, 1, [[76, 92, .26, .41, 0], [48, 74, .69, .67, 16], [92, 96, .33, .24, 4],
-                             [54, 78, .81, .52, 10]]);
-  x = terrace(x + 44, 1040, 1, [[62, 82, .18, .58, 8], [110, 96, .57, .31, 0], [44, 68, .92, .74, 20]]);
-  x = terrace(x + 40, 1048, 1, [[84, 90, .45, .36, 0], [50, 72, .09, .63, 14]]);
-  x = terrace(x + 42, 1046, 1, [[68, 86, .73, .47, 6], [56, 76, .28, .22, 16], [88, 92, .61, .55, 0]]);
-  x = terrace(x + 44, 1034, 1, [[72, 84, .37, .51, 0], [58, 78, .79, .34, 10]]);
+  /* the Liberta blocks, south of the spine */
+  x = terrace(880, 1052, 1, [[84, 92, .26, .41, 0]]);
+  razed(1010, 1050, 1160, 1150, .67);
+  x = terrace(1250, 1046, 1, [[116, 100, .33, .24, 0, { tall: 1 }]]);
+  x = terrace(1520, 1050, 1, [[72, 84, .73, .47, 0], [48, 70, .28, .62, 16, { roof: 0 }]]);
+  razed(1680, 1048, 1820, 1146, .51);
+  x = terrace(1890, 1042, 1, [[88, 90, .37, .29, 0]]);
   /* the rank facing Via della Liberta, with the school in the middle of it */
-  x = terrace(884, 1292, -1, [[66, 86, .54, .29, 0], [90, 96, .12, .48, 6], [42, 66, .77, .71, 20],
-                              [58, 78, .41, .37, 12]]);
-  x = terrace(x + 46, 1310, -1, [[104, 96, .31, .22, 0], [48, 70, .68, .59, 16], [64, 80, .95, .44, 8]]);
-  x = terrace(x + 40, 1318, -1, [[180, 88, .2, .15, 0, { tall: 1, style: 'civic' }]]);
-  x = terrace(x + 44, 1316, -1, [[56, 76, .49, .62, 10], [86, 92, .16, .35, 0], [44, 68, .73, .53, 18]]);
-  x = terrace(x + 44, 1300, -1, [[70, 84, .38, .47, 0], [52, 72, .84, .26, 14]]);
+  x = terrace(900, 1300, -1, [[76, 88, .54, .29, 0], [52, 72, .77, .66, 14, { roof: 0 }]]);
+  razed(1120, 1206, 1260, 1298, .18);
+  x = terrace(1330, 1304, -1, [[96, 92, .31, .48, 0]]);
+  x = terrace(1560, 1300, -1, [[180, 88, .2, .15, 0, { tall: 1, style: 'civic' }]]);
+  x = terrace(1830, 1296, -1, [[68, 80, .84, .57, 0, { roof: 0 }]]);
 
-  /* the station quarter: newer, poorer, laid out looser, and half of it without a roof */
-  x = terrace(900, 1382, 1, [[96, 80, .21, .56, 0, { roof: 0 }], [62, 70, .64, .32, 14], [78, 76, .47, .18, 6]]);
-  x = terrace(x + 54, 1378, 1, [[84, 78, .36, .43, 0], [56, 66, .72, .27, 16, { roof: 0 }], [68, 72, .14, .68, 8]]);
-  x = terrace(x + 48, 1372, 1, [[74, 76, .58, .35, 0], [92, 82, .29, .61, 10], [50, 62, .81, .24, 20, { roof: 0 }]]);
-  x = terrace(x + 56, 1362, 1, [[66, 72, .44, .29, 0], [58, 66, .92, .57, 12]]);
-  x = terrace(904, 1606, -1, [[88, 76, .19, .63, 0, { roof: 0 }], [54, 64, .53, .26, 14], [70, 72, .87, .41, 6]]);
-  x = terrace(x + 46, 1610, -1, [[76, 74, .27, .38, 0], [60, 66, .61, .55, 12, { roof: 0 }], [84, 78, .43, .22, 4]]);
-  x = terrace(x + 44, 1612, -1, [[82, 78, .35, .49, 0], [56, 64, .18, .64, 16], [74, 72, .66, .31, 6]]);
-  x = terrace(x + 44, 1608, -1, [[72, 72, .66, .47, 0], [50, 62, .35, .29, 14, { roof: 0 }]]);
+  /* the station quarter: what is left of it. Newer, poorer, and the demolitions here
+     were ours rather than theirs. */
+  x = terrace(900, 1392, 1, [[96, 82, .21, .56, 0, { roof: 0 }]]);
+  razed(1040, 1390, 1180, 1478, .43);
+  x = terrace(1260, 1386, 1, [[84, 78, .36, .32, 0], [56, 66, .72, .68, 14]]);
+  razed(1560, 1384, 1700, 1470, .29);
+  x = terrace(1780, 1378, 1, [[74, 76, .58, .35, 0]]);
+  x = terrace(904, 1602, -1, [[88, 78, .19, .63, 0]]);
+  x = terrace(1076, 1604, -1, [[76, 74, .27, .38, 0, { roof: 0 }]]);
+  razed(1300, 1520, 1440, 1600, .61);
+  x = terrace(1560, 1606, -1, [[82, 78, .43, .22, 0]]);
+  x = terrace(1800, 1600, -1, [[72, 72, .66, .47, 0, { roof: 0 }]]);
 
   /* ---- Castello Aragonese --------------------------------------------------------------
-     Built out of what the map has: a curtain wall round a courtyard, a tower at each
-     corner and the keep across the back. It stands on its own rock at the point with the
-     sea behind it, and it is the last thing on the map that can be held. */
+     A curtain wall round a courtyard, a tower at each corner and the keep across the
+     back. It stands on its own rock at the point with the sea behind it, and it is the
+     last thing on the map that can be held. */
   wall(2300, 196, 2620, 196);
   wall(2620, 196, 2620, 320);
   wall(2620, 320, 2300, 320);
@@ -1247,9 +1249,9 @@ function defaultMapData() {
   crater(1000, 988, 16); crater(1720, 978, 15); crater(1900, 960, 14);
   crater(1100, 648, 15); crater(1380, 646, 14); crater(1900, 650, 13);
   crater(1100, 1341, 15); crater(1500, 1342, 14); crater(1900, 1339, 13);
-  crater(1000, 480, 14); crater(1800, 483, 13);
+  crater(1060, 478, 14); crater(1800, 483, 13);
   crater(1155, 540, 13); crater(1419, 540, 12); crater(1683, 540, 13);
-  crater(1332, 984, 14); crater(1694, 900, 12);
+  crater(1332, 984, 14); crater(1650, 984, 14);
   crater(1175, 1320, 13); crater(1664, 1320, 12);
   crater(1000, 298, 18); crater(1500, 298, 16);
   crater(1100, 1643, 18); crater(1600, 1642, 16);
