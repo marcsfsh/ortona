@@ -128,6 +128,17 @@ for (let i = 0; i < blocks.length; i++) {
   }
 }
 
+/* ---- 4b. a street does not run through a building ----------------------- */
+for (const r of roads) {
+  const half = (r.width || 48) / 2;
+  for (const b of blocks) {
+    const bx = box(b, -Math.min(10, half * .4));     /* the kerb may touch the wall; the carriageway may not */
+    let hit = false;
+    for (const [x1, y1, x2, y2] of segs(r.pts)) if (segHitsBox(bx, x1, y1, x2, y2)) { hit = true; break; }
+    if (hit) bad('street/house', `the street from (${r.pts[0].x}, ${r.pts[0].y}) runs through the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`);
+  }
+}
+
 /* ---- 5. streets ---------------------------------------------------------- */
 for (const r of roads) {
   if (r.width < 24) bad('street/narrow', `a street of width ${r.width} at (${r.pts[0].x}, ${r.pts[0].y})`);
