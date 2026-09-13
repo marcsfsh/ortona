@@ -2000,7 +2000,7 @@ function cidx(cx, cy) { return cy * GW + cx; }
    now refuses ground too steep to climb, and reading fire off it meant a squad could
    not shoot across a gully it was standing on the lip of. */
 var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH), road = new Uint8Array(GW * GH);
-var wireg = new Uint8Array(GW * GH);
+var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -2017,7 +2017,13 @@ function markSeg(arr, x1, y1, x2, y2) {
 function blockRect(x, y, w, h, pad) {
   markRect(grid, x, y, w, h, pad);
 }
+/* Every path carries the stamp of the grid it was found on. The grid changes during a
+   battle -- a company post goes up, a wall comes down -- and a path found before that
+   is a line through the new building, which is where retreating sections were found
+   standing for the rest of the game, sliding along its wall by a hair a frame. */
+var gridStamp = 0;
 function rebuildGrid() {
+  gridStamp++;
   grid.fill(0);
   for (var cy = 0; cy < GH; cy++) { grid[cidx(0, cy)] = 1; grid[cidx(GW - 1, cy)] = 1; }
   for (var cx = 0; cx < GW; cx++) { grid[cidx(cx, 0)] = 1; grid[cidx(cx, GH - 1)] = 1; }
@@ -2030,7 +2036,11 @@ function rebuildGrid() {
     if (wy < coastY(wx) + 24) { grid[cidx(gx, gy)] = 1; continue; }
     var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
     var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
-    if (Math.hypot(sgx, sgy) > 1) grid[cidx(gx, gy)] = 1;
+    var sg = Math.hypot(sgx, sgy);
+    if (sg > 1) grid[cidx(gx, gy)] = 1;
+    /* and what is merely hard going: a bank a section walks up slowly and a lorry would
+       rather go round, kept for the path cost below */
+    steep[cidx(gx, gy)] = sg > .45 ? 1 : 0;
   }
   G.props.forEach(function (p) { if (p.solid) blockRect(p.x, p.y, p.w, p.h, 6); });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
@@ -2147,24 +2157,63 @@ function nearestFree(x, y) {
   }
   return { x: x, y: y };
 }
-/* line of sight on the block grid, used to smooth paths */
+/* Line of sight on the block grid, used to smooth paths. Sampled every nine units, not
+   eighteen: a line that clips the corner of a blocked cell for less than a sample step
+   was passed as clear, the section walked into the corner, could not slide either way
+   round it, asked for a new path from where it stood, was handed the same line, and
+   stood there for the rest of the battle asking again every frame. */
 function clearLine(x0, y0, x1, y1) {
-  var d = Math.hypot(x1 - x0, y1 - y0), steps = Math.ceil(d / 18);
+  var d = Math.hypot(x1 - x0, y1 - y0), steps = Math.ceil(d / 9);
   for (var i = 1; i < steps; i++) {
     var t = i / steps;
     if (!walkable(lerp(x0, x1, t), lerp(y0, y1, t))) return false;
   }
   return true;
 }
+/* What a cell costs to cross, for who is crossing it. The grid says only whether a
+   thing can go there; this says whether it would want to. A vehicle makes its speed on
+   the metalled streets and a good deal less off them, so a tank sent across the town
+   used to cut straight over the rubble and the gardens at two thirds pace while the
+   Corso ran fifty units to its left. Wheels mind a bank more than tracks do. Men mind
+   wire, which holds them up in the open where a machine gun is already looking, and a
+   bank a little. Nobody is asked to pay for anything below one, so the straight-line
+   heuristic stays honest.
+     kind: -1 nobody in particular, 0 men on foot, 1 tracks, 2 wheels */
+function cellCost(ci, kind) {
+  if (kind < 0) return 1;
+  if (kind === 0) return wireg[ci] ? 2.6 : steep[ci] ? 1.25 : 1;
+  var c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
+  if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
+  return c;
+}
+function pathKind(u) {
+  if (!u) return -1;
+  if (u.cat !== 'veh') return 0;
+  return (u.key === 'ger_sd222' || u.key === 'us_m3' || u.key === 'ger_h251') ? 2 : 1;
+}
+/* the cost of walking a straight line, sampled the way clearLine samples it, so a
+   shortcut can be priced against the path it would replace */
+function lineCost(x0, y0, x1, y1, kind) {
+  var d = Math.hypot(x1 - x0, y1 - y0), steps = Math.max(1, Math.ceil(d / 18)), sum = 0;
+  for (var i = 0; i < steps; i++) {
+    var t = (i + .5) / steps, x = lerp(x0, x1, t), y = lerp(y0, y1, t);
+    sum += cellCost(cidx((x / CELL) | 0, (y / CELL) | 0), kind) * d / steps;
+  }
+  return sum;
+}
 var _open = new Int32Array(GW * GH), _g = new Float32Array(GW * GH),
     _f = new Float32Array(GW * GH), _from = new Int32Array(GW * GH), _state = new Uint8Array(GW * GH);
 var _stamp = new Int32Array(GW * GH), _run = 0;
-function findPath(sx, sy, tx, ty) {
+function findPath(sx, sy, tx, ty, u) {
+  if (u) u.pathStamp = gridStamp;
   var goal = nearestFree(tx, ty); tx = goal.x; ty = goal.y;
   var s0 = nearestFree(sx, sy);
   var scx = (s0.x / CELL) | 0, scy = (s0.y / CELL) | 0, tcx = (tx / CELL) | 0, tcy = (ty / CELL) | 0;
   var start = cidx(scx, scy), end = cidx(tcx, tcy);
-  if (start === end || clearLine(sx, sy, tx, ty)) return [{ x: tx, y: ty }];
+  var kind = pathKind(u);
+  /* a straight line is only the answer when nothing along it costs more than the ground
+     either side: a vehicle with a street to use is asked to find it */
+  if (start === end || (clearLine(sx, sy, tx, ty) && (kind < 1 || Math.hypot(tx - sx, ty - sy) < 160))) return [{ x: tx, y: ty }];
   _run++;
   var heap = [start], n = 1;
   _g[start] = 0; _f[start] = Math.hypot(tcx - scx, tcy - scy);
@@ -2196,7 +2245,7 @@ function findPath(sx, sy, tx, ty) {
       if (dx && dy && (grid[cidx(cx + dx, cy)] || grid[cidx(cx, cy + dy)])) continue;
       if (_stamp[ni] !== _run) { _stamp[ni] = _run; _g[ni] = 1e9; _state[ni] = 0; _from[ni] = -1; }
       if (_state[ni] === 2) continue;
-      var ng = _g[cur] + (dx && dy ? 1.414 : 1);
+      var ng = _g[cur] + (dx && dy ? 1.414 : 1) * cellCost(ni, kind);
       if (ng < _g[ni]) {
         _g[ni] = ng; _from[ni] = cur;
         _f[ni] = ng + Math.hypot(tcx - nx2, tcy - ny2) * 1.05;
@@ -2208,11 +2257,17 @@ function findPath(sx, sy, tx, ty) {
   var raw = [], node = end;
   while (node !== -1) { raw.push({ x: (node % GW) * CELL + CELL / 2, y: ((node / GW) | 0) * CELL + CELL / 2 }); node = _from[node]; }
   raw.reverse(); raw[raw.length - 1] = { x: tx, y: ty };
-  /* smooth: keep a waypoint only when the line to the next one is blocked */
+  /* smooth: keep a waypoint only when the line to the next one is blocked, or when it
+     would cost more than the way round -- the bends a street takes are the whole point
+     of following it, and a smoother that only asked whether the shortcut was clear cut
+     every one of them off across the gardens */
+  var rawC = [0];
+  for (var rc = 1; rc < raw.length; rc++) rawC[rc] = rawC[rc - 1] + lineCost(raw[rc - 1].x, raw[rc - 1].y, raw[rc].x, raw[rc].y, kind);
   var out = [], i2 = 0;
   while (i2 < raw.length - 1) {
     var j = raw.length - 1;
-    while (j > i2 + 1 && !clearLine(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y)) j--;
+    while (j > i2 + 1 && !(clearLine(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y) &&
+           (kind < 0 || lineCost(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y, kind) <= (rawC[j] - rawC[i2]) * 1.03 + 8))) j--;
     out.push(raw[j]); i2 = j;
   }
   return out.length ? out : [{ x: tx, y: ty }];
@@ -2229,7 +2284,7 @@ function spawnUnit(side, key, x, y, facing) {
     cd: rnd(0, .4), atcd: rnd(0, 2), sup: 0, setup: d.setup ? d.setup : 0,
     moving: false, dead: false, vet: 0, kills: 0, retreat: 0, reinf: 0,
     building: null, repairing: null, hitT: 0, fireT: 0, seen: false, aim: 0, calm: 99,
-    lay: 0, immob: 0, gunDmg: 0, shaken: 0, seenUs: -1, seenGer: -1, sp: 0
+    lay: 0, immob: 0, gunDmg: 0, shaken: 0, seenUs: -1, seenGer: -1, sp: 0, stance: ''
   };
   if (d.cat === 'veh') {
     u.hp = d.hp; u.maxhp = d.hp; u.armor = d.armor; u.turret = u.facing; u.up = {}; u.cdSec = {};
@@ -2535,7 +2590,7 @@ function orderMove(u, x, y, attackMove) {
   clearOrder(u);
   u.order = attackMove ? 'attackmove' : 'move';
   u.dest = { x: x, y: y };
-  u.path = findPath(u.x, u.y, x, y); u.pi = 0;
+  u.path = findPath(u.x, u.y, x, y, u); u.pi = 0;
   if (u.def.setup) u.setup = u.def.setup;
 }
 function orderAttack(u, t) {
@@ -2548,19 +2603,41 @@ function orderStop(u) {
   if (u.retreat) return;
   clearOrder(u); u.order = 'hold';
 }
+/* Stances. A section has three ways of carrying itself and the player picks one; it
+   holds until it is changed. 'ground' is men who go flat the moment they halt: harder to
+   see, harder to hit -- lying in the open counts as light cover -- slower on the trigger
+   and shorter-sighted, and the thing to do under fire with nothing to get behind.
+   'double' is men running: half again as fast, and a running man in the open is the
+   easiest thing on the field to see and to pin, so what is gained on the way across is
+   paid for if the crossing is under fire. Neither means anything to a vehicle, and
+   neither is worth anything in a trench, where the ground has already done the work. */
+function setStance(list, st) {
+  for (var i = 0; i < list.length; i++) {
+    var u = list[i];
+    if (u.cat === 'veh' || u.side !== G.side) continue;
+    u.stance = st; u.stanceT = 0;
+  }
+}
 function orderRetreat(u) {
   var hq = hqOf(u.side); if (!hq || u.cat === 'veh' || !u.def.speed) return;   /* a gun with no engine stays where it is put */
   if (u.gar) leaveBuilding(u);
   clearOrder(u);
   u.retreat = 1; u.order = 'retreat';
-  u.dest = { x: hq.x, y: hq.y + hq.def.h / 2 + 60 };
-  u.path = findPath(u.x, u.y, u.dest.x, u.dest.y); u.pi = 0;
+  /* not all to the one spot: a dozen sections sent to the same point behind the
+     headquarters arrive into each other and the last ones stand in the crush for good */
+  u.dest = { x: hq.x + rnd(-70, 70), y: hq.y + hq.def.h / 2 + 60 + rnd(-10, 70) };
+  u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0;
   u.sup = Math.max(u.sup, .35);
 }
 
 /* ---------------------------------------------------------------- movement */
 function moveUnit(u, dt) {
   var wantX = null, wantY = null;
+  /* the ground has changed since this path was found: find it again from here */
+  if (u.path && u.pi < u.path.length && u.pathStamp !== gridStamp) {
+    var pend = u.path[u.path.length - 1];
+    u.path = findPath(u.x, u.y, pend.x, pend.y, u); u.pi = 0;
+  }
   if (u.path && u.pi < u.path.length) { wantX = u.path[u.pi].x; wantY = u.path[u.pi].y; }
   u.moving = false;
   if (wantX === null) {
@@ -2574,6 +2651,7 @@ function moveUnit(u, dt) {
   if (u.sup > 1.0) sp = 0;
   else if (u.sup > .55) sp *= .5;
   if (u.retreat) sp = u.def.speed * 1.5;
+  else if (u.stance === 'double' && u.cat !== 'veh') sp *= 1.4;
   if (u.setup > 0 && u.def.setup) u.setup = 0;
 
   var dx = wantX - u.x, dy = wantY - u.y, d = Math.hypot(dx, dy);
@@ -2646,11 +2724,39 @@ function moveUnit(u, dt) {
   }
   var mx = tx + px * .9, my = ty + py * .9, ml = Math.hypot(mx, my) || 1;
   if (rev) { mx = tx; my = ty; ml = 1; }                 /* backing up, no jostling */
-  var nx = u.x + mx / ml * sp * dt, ny = u.y + my / ml * sp * dt;
+  var nx = u.x + mx / ml * sp * dt, ny = u.y + my / ml * sp * dt, ox = u.x, oy = u.y;
   if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
   else if (walkable(nx, u.y)) u.x = nx;
   else if (walkable(u.x, ny)) u.y = ny;
-  else { u.path = findPath(u.x, u.y, wantX, wantY); u.pi = 0; }
+  else {
+    /* Neither straight on nor along either axis: a corner, or a doorway full of the
+       section in front. Before asking for a new path, which from here is usually the
+       same path, try the step swung off the line a little, then a lot, the way a man
+       shoulders round an obstacle rather than standing at it. */
+    var sa0 = Math.atan2(my, mx), stepped = false;
+    for (var sw = 1; sw <= 3 && !stepped; sw++) {
+      for (var sd = -1; sd <= 1 && !stepped; sd += 2) {
+        var swa = sa0 + sd * sw * .6, swx = u.x + Math.cos(swa) * sp * dt, swy = u.y + Math.sin(swa) * sp * dt;
+        if (walkable(swx, swy)) { u.x = swx; u.y = swy; stepped = true; }
+      }
+    }
+    if (!stepped) { u.path = findPath(u.x, u.y, wantX, wantY, u); u.pi = 0; }
+  }
+  /* A slide along a wall that goes nowhere is a wall, not a way round. The slide above
+     counts as a step even when it moves the unit a hair, so a section walking square
+     into a building it was not told about stood at it for good. Half a second of no
+     progress and it asks for a new path to the end of the old one. */
+  if (Math.hypot(u.x - ox, u.y - oy) < sp * dt * .3) {
+    u.blockT = (u.blockT || 0) + dt;
+    if (u.blockT > .6 && u.path) {
+      u.blockT = 0;
+      var pend2 = u.path[u.path.length - 1];
+      /* a retreat that has got within a few paces of home and is held up by the crowd
+         already there is home */
+      if (u.retreat && dsq(u.x, u.y, pend2.x, pend2.y) < 90 * 90) { u.path = null; finishRetreat(u); return; }
+      u.path = findPath(u.x, u.y, pend2.x, pend2.y, u); u.pi = 0;
+    }
+  } else u.blockT = 0;
   u.x = clamp(u.x, 24, WORLD.w - 24); u.y = clamp(u.y, 24, WORLD.h - 24);
   u.moving = true;
   if (u.cat === 'veh') {
@@ -2823,6 +2929,7 @@ function updateModels(u, dt) {
     /* choose the piece once, and again only if the threat has swung round or someone
        has fallen; the slots are then fixed, so nobody shuffles on the spot */
     var threatAng = nearestThreat(u), aliveNow = aliveModels(u);
+    u.threatAng = threatAng;
     /* re-pick only when something real changes: a first halt, a casualty, or the enemy
        moving right round the piece. Never because the men themselves have shifted. */
     var stale = !u.coverSlots || u.coverN !== aliveNow ||
@@ -2841,15 +2948,27 @@ function updateModels(u, dt) {
     if (u.coverSlots && u.coverSlots[i]) {
       /* a slot further than a short walk from where the man stands is not taken */
       if (dsq(m.x, m.y, u.coverSlots[i].x, u.coverSlots[i].y) < 140 * 140) { tx = u.coverSlots[i].x; ty = u.coverSlots[i].y; }
+    } else if (!u.gar && !walkable(tx, ty)) {
+      /* A place in the formation that is inside a wall is not a place. The section's
+         own position keeps to the grid, but its men stood a formation's width either
+         side of it and the formation did not, so a section walking down a lane had its
+         flank files walking through the houses. The man closes on the centre instead,
+         by half if that is clear and all the way if not, which is what a file is. */
+      var kx = u.x + (tx - u.x) * .5, ky = u.y + (ty - u.y) * .5;
+      if (walkable(kx, ky)) { tx = kx; ty = ky; } else { tx = u.x; ty = u.y; }
     }
     var px0 = m.x, py0 = m.y;
     /* close the gap at walking pace: a man never slides across the ground */
     var gap = Math.hypot(tx - m.x, ty - m.y);
-    if (gap > .5) {
+    if (gap > .5 && !u.gar) {
       var stepMax = (u.speed * (u.moving ? 1.25 : 1.0)) * dt;
       if (u.sup > 1.0 && !u.moving) stepMax *= .35;                   /* pinned men crawl */
       var stp = Math.min(gap, stepMax);
-      m.x += (tx - m.x) / gap * stp; m.y += (ty - m.y) / gap * stp;
+      var nmx = m.x + (tx - m.x) / gap * stp, nmy = m.y + (ty - m.y) / gap * stp;
+      /* and he walks round what he cannot walk through, the way the section does */
+      if (walkable(nmx, nmy)) { m.x = nmx; m.y = nmy; }
+      else if (walkable(nmx, m.y)) m.x = nmx;
+      else if (walkable(m.x, nmy)) m.y = nmy;
     }
     /* stride advances with ground covered, so the feet never skate */
     var moved = Math.hypot(m.x - px0, m.y - py0);
@@ -2867,6 +2986,7 @@ function updateModels(u, dt) {
     var st = halted && !u.gar ? coverStanceAt(m.x, m.y) : 0;
     if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
     else if (u.sup > .55 && !u.moving) m.pose = POSE_PRONE;
+    else if (u.stance === 'ground' && halted && !u.gar && st !== STAND_DUG) m.pose = POSE_PRONE;
     else if (u.moving) m.pose = POSE_WALK;
     else if (u.gar) m.pose = POSE_FIRE;                    /* at a window, weapon up */
     else if (st === STAND_FLAT) m.pose = POSE_PRONE;       /* a crater lip, a ditch */
@@ -2934,6 +3054,8 @@ function exposure(e) {
   var cv = e.gar ? 4 : coverAt(e.x, e.y);
   var x = [1, .93, .84, .72, .6][cv];
   if (!e.moving) x *= .88;
+  if (!e.moving && e.stance === 'ground') x *= .78;    /* flat on the ground */
+  if (e.moving && e.stance === 'double') x *= 1.15;    /* running, upright, in a hurry */
   if (e.fireT > 0 || e.sup > .3) x *= 1.3;           /* muzzle flash, and men who have been found */
   return clamp(x, .45, 1.4);
 }
@@ -2953,7 +3075,8 @@ function computeVisibility(dt) {
     /* a man on the shelf looks down into ground a man in the vallone cannot see out of,
        so height is worth a little reach as well as the dead ground it denies him */
     var uz = groundZ(u.x, u.y);
-    var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1);
+    var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
+            (u.stance === 'ground' && !u.moving ? .85 : 1);
     _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz });
   }
   for (j = 0; j < G.blds.length; j++) {
@@ -3124,7 +3247,7 @@ function fireOneSecondary(u, key, dt) {
   if (!best) { u.cdSec[key] = .3; return; }
   u.cdSec[key] = w.rof * rnd(.9, 1.1);
   var cov = best.gar ? 4 : coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
-  best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1), 0,
+  best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1) * (best.moving && best.stance === 'double' ? 1.4 : 1), 0,
                    w.supCap === undefined ? 1.35 : Math.max(best.sup, w.supCap));
   var acc = w.acc * COVER[cov].acc * (u.moving ? .6 : 1);
   if (onScreen(u.x, u.y)) {
@@ -3187,7 +3310,7 @@ function fireAt(u, t, dt) {
   var shots = u.cat === 'veh' ? 1 : (w.shell ? 1 : aliveModels(u));
   if (!shots) return;
   u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * (u.gunDmg > 0 ? 1.8 : 1) *
-             (u.moving && u.cat === 'veh' ? 1.35 : 1) * rnd(.9, 1.12);
+             (u.moving && u.cat === 'veh' ? 1.35 : 1) * (u.stance === 'ground' && !u.moving ? 1.25 : 1) * rnd(.9, 1.12);
   u.fireT = .12;
   /* A section's volley is a ripple down the line, not a salvo: the rounds all count at
      once, and only the flashes are spread out over the fraction of a second the men
@@ -3204,8 +3327,10 @@ function fireAt(u, t, dt) {
   }
 
   var cov = t.cat === 'veh' ? 0 : (t.gar ? 4 : coverAt(t.x, t.y, Math.atan2(t.y - u.y, t.x - u.x)));
+  if (cov < 1 && t.cat !== 'veh' && t.stance === 'ground' && !t.moving) cov = 1;
   var acc = w.acc * COVER[cov].acc;
   acc *= (t.moving && t.cat !== 'veh') ? .86 : 1;
+  acc *= (t.moving && t.stance === 'double') ? 1.18 : 1;
   acc *= (u.sup > .55 ? .5 : 1) * (u.sup > 1 ? .5 : 1);
   acc *= (1 + u.vet * .07);
   acc *= u.side === G.side ? DIFF[G.diff].youAim : DIFF[G.diff].aim;
@@ -3221,7 +3346,7 @@ function fireAt(u, t, dt) {
   /* Suppression lands whether or not rounds connect, and it is what fire is mostly for.
      Men who have done this before keep their heads under it rather longer. */
   if (t.cat && t.cat !== 'veh' && w.sup) {
-    t.sup = clamp(t.sup + w.sup * shots * COVER[cov].sup * (t.cat === 'team' ? .5 : 1) /
+    t.sup = clamp(t.sup + w.sup * shots * COVER[cov].sup * (t.cat === 'team' ? .5 : 1) * (t.moving && t.stance === 'double' ? 1.4 : 1) /
                   (1 + t.vet * .18), 0,
                   w.supCap === undefined ? 1.35 : Math.max(t.sup, w.supCap));
   }
@@ -3582,7 +3707,7 @@ function resumeBuild(u, b) {
   u.building = b;
   var sp = b.def ? nearestFree(b.x + rnd(-b.def.w * .3, b.def.w * .3), b.y + b.def.h / 2 + 34)
                  : nearestFree(b.x + rnd(-26, 26), b.y + rnd(-26, 26));
-  u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y); u.pi = 0;
+  u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y, u); u.pi = 0;
 }
 function siteOf(side, key) {
   for (var i = 0; i < G.blds.length; i++) {
@@ -3711,7 +3836,7 @@ function updateUnit(u, dt) {
     else if (dist(u, u.enterT) < Math.max(u.enterT.w, u.enterT.h) * .58 + 26) { enterBuilding(u, u.enterT); return; }
     else if (!u.path) {
       var ep = nearestFree(u.enterT.x, u.enterT.y + u.enterT.h / 2 + 30);
-      u.dest = ep; u.path = findPath(u.x, u.y, ep.x, ep.y); u.pi = 0;
+      u.dest = ep; u.path = findPath(u.x, u.y, ep.x, ep.y, u); u.pi = 0;
     }
   }
   /* on the hook: dragged along behind whatever is towing it, laid where the tow points */
@@ -3740,7 +3865,7 @@ function updateUnit(u, dt) {
     else if (dist(u, u.hitchT) < 58) { hitchGun(u, u.hitchT); clearOrder(u); }
     else if (!u.path || !u.dest || dsq(u.dest.x, u.dest.y, u.hitchT.x, u.hitchT.y) > 3600) {
       u.dest = { x: u.hitchT.x, y: u.hitchT.y };
-      u.path = findPath(u.x, u.y, u.hitchT.x, u.hitchT.y); u.pi = 0;
+      u.path = findPath(u.x, u.y, u.hitchT.x, u.hitchT.y, u); u.pi = 0;
     }
   }
   /* walking to a carrier to get in it */
@@ -3749,7 +3874,7 @@ function updateUnit(u, dt) {
     else if (dist(u, u.boardT) < 50) { boardVehicle(u, u.boardT); return; }
     else if (!u.path || !u.dest || dsq(u.dest.x, u.dest.y, u.boardT.x, u.boardT.y) > 3600) {
       u.dest = { x: u.boardT.x, y: u.boardT.y };
-      u.path = findPath(u.x, u.y, u.boardT.x, u.boardT.y); u.pi = 0;
+      u.path = findPath(u.x, u.y, u.boardT.x, u.boardT.y, u); u.pi = 0;
     }
   }
   u.sup = clamp(u.sup - dt * (u.moving ? .13 : .2), 0, 1.35);
@@ -3864,13 +3989,13 @@ function updateUnit(u, dt) {
   if (u.order === 'attack' && u.forced && !u.forced.dead) {
     var w = weaponFor(u, u.forced), dd = dist(u, u.forced);
     if (dd > w.range * .92) {
-      if (!u.path) { u.path = findPath(u.x, u.y, u.forced.x, u.forced.y); u.pi = 0; }
+      if (!u.path) { u.path = findPath(u.x, u.y, u.forced.x, u.forced.y, u); u.pi = 0; }
     } else u.path = null;
   }
   /* attack-move: stop while an enemy is in reach */
   if (u.order === 'attackmove' && u.target && dist(u, u.target) < weaponFor(u, u.target).range * .95) u.path = null;
   else if (u.order === 'attackmove' && u.dest && !u.path && (!u.target || dist(u, u.target) > weaponFor(u, u.target).range)) {
-    if (dist(u, u.dest) > 40) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y); u.pi = 0; }
+    if (dist(u, u.dest) > 40) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
   }
   /* engineers walk to the job itself, not to a spot that may sit outside working range */
   if ((u.order === 'build' || u.order === 'work' || u.order === 'repair') && !u.path) {
@@ -3879,9 +4004,9 @@ function updateUnit(u, dt) {
       var reach = workReach(job);
       if (dist(u, job) > reach - 8) {
         var sp3 = nearestFree(job.x + rnd(-18, 18), job.y + (job.def ? job.def.h / 2 + 30 : 26));
-        u.dest = sp3; u.path = findPath(u.x, u.y, sp3.x, sp3.y); u.pi = 0;
+        u.dest = sp3; u.path = findPath(u.x, u.y, sp3.x, sp3.y, u); u.pi = 0;
       }
-    } else if (u.dest && dist(u, u.dest) > 60) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y); u.pi = 0; }
+    } else if (u.dest && dist(u, u.dest) > 60) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
   }
 
   moveUnit(u, dt);
@@ -3901,9 +4026,25 @@ function updateUnit(u, dt) {
       var pv = .95 * (u.shaken > 0 ? .6 : 1) * dt;
       u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -pv, pv);
     }
+    /* A tank with a turret brings its hull round as well, slowly, once it has stopped.
+       The turret carries the gun; the hull carries the armour, and the front plate is
+       nearly twice the side and three times the rear. A crew that has halted to fight
+       something does not sit with its flank to it, and a tank that did was a tank the
+       player lost to a gun it was already shooting at. */
+    else if (!u.moving && u.cat === 'veh' && !u.def.arc && !(u.immob > 0) && (u.sp || 0) < 2) {
+      var pv2 = .5 * (u.shaken > 0 ? .6 : 1) * dt;
+      u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -pv2, pv2);
+    }
     if (u.cat === 'veh') u.want = angTo(u, u.target);
   } else if (u.cat === 'veh') {
     u.want = u.facing;
+  } else if (!u.moving && !u.retreat && !u.gar && !u.def.arc && u.threatAng !== undefined && u.threatAng !== null) {
+    /* Nothing to shoot at, but something known to be out there: a halted section turns
+       to face it rather than standing the way it happened to arrive, and a machine gun
+       is laid on that bearing before it is needed rather than heaved round after the
+       first burst comes in. The bearing is the one the cover was chosen against. */
+    var fw = u.threatAng + Math.PI, fr2 = (u.cat === 'team' ? .85 : 4) * dt;
+    u.facing += clamp(angDiff(u.facing, fw), -fr2, fr2);
   }
   updateModels(u, dt);
 }
@@ -4832,7 +4973,7 @@ function aiTick(dt) {
       if (sent && ready >= half && laidOn &&
           (ready >= Math.min(D.wave || 3, sent) ||
            G.t - AI.asForm > (D.form || 32))) AI.asT = G.t;
-    } else if (G.t - AI.asT > (D.press || 75) || (asSec && asSec.owner === side)) {
+    } else if (G.t - AI.asT > (D.press || 75) || (asSec && asSec.owner === side && !asSec.contest)) {
       /* the objective is taken, or the press has run its course. A capture is followed
          up: the next wave forms immediately, and the sector just taken is remembered so
          the one beyond it scores higher for the next half minute. */
@@ -4956,6 +5097,18 @@ function aiTick(dt) {
       }
       if (u.faceT && G.t - u.faceT < 5 && u.order === 'attackmove') continue;
     }
+    /* The stance is the brain's to set, every tick, from what the section is doing: men
+       who have been told to go to ground stay down for a while, men crossing quiet
+       ground to a forming-up point or an objective run for it, and the rest walk. */
+    if (skill >= 1 && u.cat !== 'veh') {
+      var want2 = '';
+      if (u.stance === 'ground' && u.stanceT && G.t - u.stanceT < 25) want2 = 'ground';
+      else if (!u.target && u.sup < .4 && asKey && aiInWave(u, asId, razeT) && (pressing || forming)) {
+        var gox = pressing ? asX : (u.flank && flank ? flkX : fupX), goy = pressing ? asY : (u.flank && flank ? flkY : fupY);
+        if (dsq(u.x, u.y, gox, goy) > 260 * 260 && aiThreat(side, u.x, u.y, 300) < 40) want2 = 'double';
+      }
+      u.stance = want2;
+    }
     if (skill >= 1 && u.cat === 'inf' && !u.gar && !u.inside) {
       /* Under fire in the open. A section being suppressed where it stands has a few
          seconds before it is pinned, and a pinned section cannot move at all: it is
@@ -4984,6 +5137,9 @@ function aiTick(dt) {
             var by = clamp(u.y - Math.sin(thA) * 150, 40, WORLD.h - 40);
             orderMove(u, bx, by, false); continue;
           }
+          /* nothing to get behind and nowhere to go: down where it stands, and it fights
+             from there */
+          u.stance = 'ground'; u.stanceT = G.t;
         }
       }
     }
@@ -5216,7 +5372,7 @@ function aiTick(dt) {
     }
     if (job) {
       clearOrder(e); e.order = 'repair'; e.repairing = job;
-      e.dest = { x: job.x, y: job.y }; e.path = findPath(e.x, e.y, job.x, job.y); e.pi = 0;
+      e.dest = { x: job.x, y: job.y }; e.path = findPath(e.x, e.y, job.x, job.y, e); e.pi = 0;
       continue;
     }
     /* Works on the ground it holds. A pit for the gun teams first, since that is what a
@@ -13875,6 +14031,8 @@ function drawUnitOverlay(u, p) {
   else if (u.gunDmg > 0) { lbl = 'GUN DAMAGED'; lcol = '#c95c4e'; }
   else if (u.sup > 1) { lbl = 'PINNED'; lcol = '#c95c4e'; }
   else if (u.sup > .55) lbl = 'SUPPRESSED';
+  else if (u.stance === 'ground' && !u.moving && u.cat !== 'veh' && !u.gar) { lbl = 'DOWN'; lcol = '#9fb08a'; }
+  else if (u.stance === 'double' && u.moving) { lbl = 'DOUBLE TIME'; lcol = '#9fb08a'; }
   if (lbl) {
     ctx.font = '600 ' + (11 * z) + 'px ' + FONT; ctx.textAlign = 'center';
     ctx.fillStyle = 'rgba(6,8,4,.72)';
@@ -14229,21 +14387,21 @@ function issueOrder(wx, wy, forceAttack) {
       clearOrder(u);
       u.order = 'board'; u.boardT = lift;
       u.dest = { x: lift.x, y: lift.y };
-      u.path = findPath(u.x, u.y, lift.x, lift.y); u.pi = 0;
+      u.path = findPath(u.x, u.y, lift.x, lift.y, u); u.pi = 0;
       return;
     }
     if (house && canGarrison(u, house)) {
       clearOrder(u);
       u.order = 'enter'; u.enterT = house;
       var hp2 = nearestFree(house.x, house.y + house.h / 2 + 30);
-      u.dest = hp2; u.path = findPath(u.x, u.y, hp2.x, hp2.y); u.pi = 0;
+      u.dest = hp2; u.path = findPath(u.x, u.y, hp2.x, hp2.y, u); u.pi = 0;
       return;
     }
     if (hook && canHitch(u, hook)) {
       clearOrder(u);
       u.order = 'hitch'; u.hitchT = hook;
       u.dest = { x: hook.x, y: hook.y };
-      u.path = findPath(u.x, u.y, hook.x, hook.y); u.pi = 0;
+      u.path = findPath(u.x, u.y, hook.x, hook.y, u); u.pi = 0;
       return;
     }
     /* a gun on a fixed mount is laid rather than driven: the click is a bearing */
@@ -14260,7 +14418,7 @@ function issueOrder(wx, wy, forceAttack) {
       if (repairTarget.built !== undefined && repairTarget.built < 1) { u.order = 'build'; u.building = repairTarget; }
       else { u.order = 'repair'; u.repairing = repairTarget; }
       u.dest = { x: repairTarget.x, y: repairTarget.y };
-      u.path = findPath(u.x, u.y, repairTarget.x, repairTarget.y); u.pi = 0;
+      u.path = findPath(u.x, u.y, repairTarget.x, repairTarget.y, u); u.pi = 0;
       return;
     }
     var ox = ((i % cols) - (cols - 1) / 2) * 44, oy = (Math.floor(i / cols) - (cols - 1) / 2) * 44;
@@ -14655,6 +14813,8 @@ function cmdGlyph(label) {
   if (/Move/i.test(label)) return '↗';
   if (/Stop/i.test(label)) return '■';
   if (/Retreat/i.test(label)) return '⇙';
+  if (/ground/i.test(label)) return '▂';
+  if (/Double/i.test(label)) return '»';
   if (/Sandbag/i.test(label)) return '▰';
   if (/Pit/i.test(label)) return '⊔';
   if (/Wire/i.test(label)) return '≋';
@@ -14697,6 +14857,15 @@ function buildCmds() {
     addCmd('Stop', '', 'X', true, function () { units.forEach(orderStop); syncHud(); });
     addCmd('Retreat', 'to HQ', 'R', units.some(function (u) { return u.cat !== 'veh'; }),
       function () { units.forEach(orderRetreat); syncHud(); });
+    var foot = units.filter(function (u) { return u.cat !== 'veh'; });
+    if (foot.length) {
+      var allDown = foot.every(function (u) { return u.stance === 'ground'; });
+      var allRun = foot.every(function (u) { return u.stance === 'double'; });
+      addCmd('Go to ground', 'prone, hard to hit', 'Z', true,
+        function () { setStance(foot, allDown ? '' : 'ground'); sfx('click'); syncHud(); }, allDown);
+      addCmd('Double time', 'run, easy to pin', 'C', true,
+        function () { setStance(foot, allRun ? '' : 'double'); sfx('click'); syncHud(); }, allRun);
+    }
     var loaded = units.filter(function (u) { return u.cat === 'veh' && u.cargo; });
     if (loaded.length) addCmd('Unload', 'dismount', 'E', true,
       function () { loaded.forEach(unloadVehicle); sfx('click'); syncHud(); });

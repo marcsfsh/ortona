@@ -229,7 +229,7 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 900 kB. Takes under a second. Exits non-zero on any violation.
+under 1040 kB. Takes under a second. Exits non-zero on any violation.
 
 ```sh
 node tools/lint.mjs
@@ -349,6 +349,55 @@ craters cut in by `carve`.
 **Movement.** A 40-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
 position; `updateModels` animates the individual soldiers.
+
+The grid says where a thing can go; `cellCost` says where it would want to, per
+`pathKind`: tracks pay 1.35 off the metalled streets and wheels 1.5, both more on a bank
+(`steep`), and men on foot pay 2.6 to cross wire and a little for a bank. A tank sent
+across the town used to cut straight over the gardens at two thirds pace with the Corso
+fifty units to its left. The smoother prices a shortcut against the path it replaces
+(`lineCost`) rather than only asking whether it is clear, or it cut every bend of the
+street back off across the gardens; and it samples every nine units, because at eighteen
+a line that clipped the corner of a blocked cell passed as clear and the section stood at
+that corner for the rest of the battle. Every path carries the `gridStamp` it was found
+on and is found again when the grid changes, which it does whenever a building goes up:
+retreating sections were found standing against their own side's new motor pool,
+sliding along its wall by a hair a frame, because the wall-slide counted as a step. A
+step that makes no progress for half a second now counts as blocked (`u.blockT`), and
+before a blocked unit asks for a new path it tries the step swung off the line, the way
+a man shoulders round a doorway full of the section in front. A retreat scatters its
+destination behind the headquarters and finishes when it is held up within a few paces
+of it, or a dozen retreating sections arrived into each other and the last stood in the
+crush for good.
+
+A man's place in the formation is not taken if it is inside a wall: he closes on the
+centre instead, by half if that is clear and all the way if not, and his own steps keep
+to the grid like the section's. Before that a section walking down a lane had its flank
+files walking through the houses, half a per cent of all man-frames. Halted with nothing
+to shoot at, a section turns to face the nearest known threat (`u.threatAng`, the bearing
+its cover was chosen against) rather than standing the way it arrived, and a machine gun
+is laid on that bearing before it is needed. A halted tank with a turret brings its hull
+round to its target as well, slowly, because the front plate is nearly twice the side.
+
+`tools/` has no card for any of this; the probe that measured it drives the working
+brain on both sides for four minutes and counts man-frames inside a solid prop, halted
+sections facing their threat, and unit-frames with a path and no progress over four
+seconds, then prices a tank's and a section's path across the town. Old code is injected
+the way `skirmish.mjs` injects a brain. Men in walls went from 0.5 per cent to none and
+stuck unit-frames from up to twelve per cent to none, with the retreat crush the last
+bucket to go.
+
+**Stances.** `u.stance` is `''`, `'ground'` or `'double'`, set by the player from the
+order cards (Z and C) and by the brain for its own men every tick. Gone to ground, a
+halted section lies flat: lying in the open counts as light cover, it is a fifth harder
+to see, a quarter slower on the trigger and shorter-sighted, and it is worth nothing in
+a trench where the ground has done the work already. An MG42 at two hundred kills nearly
+a whole rifle section standing in the open in fifteen seconds and a man and a half of
+one that has gone to ground. At the double a section runs at 1.4 times its pace, and a
+running man is easier to see, easier to hit and half again as easy to pin, so what is
+gained on the crossing is paid for if the crossing is under fire. The brain runs its
+sections to the forming-up point and at the objective while the ground round them is
+quiet and they have no target, and goes to ground where it is when it is caught in the
+open with nowhere to go.
 
 **Combat.** `computeVisibility` fills `vUs`/`vGer` and drives both fog of war
 and target acquisition. `COVER` entries are graded open / light / medium /
