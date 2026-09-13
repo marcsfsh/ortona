@@ -346,6 +346,20 @@ fuel a tank costs. Losses are replaced in a second pass over the same list order
 `vehWorth`, dearest first, so the empty Tiger slot outranks a third medium and nothing
 cheap is bought with fuel a heavier empty slot is waiting on.
 
+**The infantry is bought out of what is left.** Sections are queued before vehicles in the
+same tick, and on green's quarter economy they took every mark as it arrived: a Panzer IV
+was refused thirty-two times in one annihilation game, every refusal for manpower, while
+five assault groups at three hundred and thirty marks went out of the door. `aiWants()`
+returns what the list still wants, in the order it will be bought, and the head of it is
+reserved in marks and fuel (`wantMp`/`wantFu`) before a single section is queued; `spare`
+is what the infantry may spend, and it is read again between the two purchases a tick can
+make. The escapes matter as much as the rule: nothing is held back below three sections,
+or for something there is no population for, or for something whose fuel is not within a
+minute of arriving. A floor under AI *reinforcement* was tried on the same reasoning and
+reverted -- it cost four hundred points against the previous brain over four mirror pairs,
+with a third less army and forty per cent less ground. A side that cannot refill its
+sections loses them outright, and a tank does not hold a street on its own.
+
 **It attacks in waves.** A defended objective is not taken by sections arriving one at a
 time, which is exactly what dealing them out nearest-first produces. So the units sent at
 it gather at a forming-up point short of it (`aiFirePost` for a sector, `aiFormPost` for
@@ -354,6 +368,12 @@ is undefined when you are standing on his headquarters) and go in together, armo
 included; `DIFF[].wave` is how many it gathers, `form` how long it will wait for them and
 `press` how long the wave runs before the next one forms. Green gathers six and waits a
 hundred seconds, which is what makes it a defensive game rather than a stream of targets.
+In annihilation the head start (`DIFF[].grace`, green only) freezes the opposition
+completely for three and a half minutes, but ends early if anything of its is shot or
+anything hostile comes within nine hundred units of its headquarters -- the time is for
+the player to dig a line, not for a free run at a base that is standing still. Below three
+sectors the assault share is suspended and the whole army takes ground first, because an
+army with no ground has no money and cannot replace the assault it just spent.
 In annihilation the wave objective is a building rather than a sector: a third of the
 sections (one to three) are posted on ground to keep the money coming in, everything else
 is in the wave, the gun teams set up at the forming-up point rather than short of the

@@ -1992,6 +1992,25 @@ function vehWorth(key) {
   var c = UNITS[key].cost;
   return (c.mp || 0) + (c.fu || 0) * 3;
 }
+/* What the shopping list still wants, in the order it will really be bought: the rungs it
+   has never ordered, in list order, and then the holes in what it has, dearest first. One
+   list, used twice -- the vehicle branch buys down it, and the money it is saving for is
+   the head of it. Two separate loops had drifted apart once already. */
+function aiWants(side, ladder, gate) {
+  var out = [], i, e;
+  for (i = 0; i < ladder.length; i++) {
+    e = ladder[i];
+    if (G.t < e[2] * gate || madeOf(side, e[0]) >= e[1]) continue;
+    out.push(e);
+  }
+  var rep = ladder.slice().sort(function (x, y) { return vehWorth(y[0]) - vehWorth(x[0]); });
+  for (i = 0; i < rep.length; i++) {
+    e = rep[i];
+    if (G.t < e[2] * gate || countOf(side, e[0]) >= e[1]) continue;
+    out.push(e);
+  }
+  return out;
+}
 /* an armour purchase most of the way paid for is worth waiting for: spending the
    difference on something cheaper is how a side that wanted a tank ends up with a yard
    of armoured cars and no fuel. */
@@ -3439,6 +3458,14 @@ function updateUnit(u, dt) {
       if (atBase) {
         u.reinf += dt;
         var costPer = Math.round((u.def.cost.mp || 0) * .22 / u.def.models * 4);
+        /* Reinforcement is the other big spender -- fifty-five marks a man every three
+           seconds, inside updateUnit, every frame, ahead of the brain, which on a quarter
+           economy is more than the whole income. It was tried with a floor under it, so
+           that topping a section up could not take the marks the shopping list was
+           standing in line for. It cost more than it bought: four mirror pairs against the
+           brain in the last commit went from level to four hundred points behind, with a
+           third less army and forty per cent less ground. A side that cannot refill its
+           sections loses them outright, and a tank does not hold a street on its own. */
         if (u.reinf > 3.0 && G.res[u.side].mp >= costPer) {
           u.reinf = 0; G.res[u.side].mp -= costPer;
           for (var m = 0; m < u.models.length; m++) if (!u.models[m].alive) {
@@ -3505,7 +3532,7 @@ function updateUnit(u, dt) {
 /* The opposition's own state. Everything in it is a number or a sector id: a plan that
    held a reference to a unit or a sector would go on pointing at it after it was dead. */
 var AI = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
-           asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99 };
+           asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0 };
 var DIFF = [
   /* Green: money is barely a constraint. You earn triple, start with enough to fill the
      queue immediately, and the opposition runs a quarter economy, thinks every four
@@ -3545,7 +3572,7 @@ var DIFF = [
 function aiInit(side) {
   AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
   AI.mood = 'push'; AI.upT = -99; AI.bagT = -99; AI.bagN = 0;
-  AI.asSec = null; AI.asKey = null; AI.asT = -99; AI.asForm = -99; AI.asPick = -99;
+  AI.asSec = null; AI.asKey = null; AI.asT = -99; AI.asForm = -99; AI.asPick = -99; AI.woke = 0; AI.wantMp = 0;
 }
 function aiOwn(pred) {
   var out = [];
@@ -3687,7 +3714,24 @@ function aiTick(dt) {
      earns in that time it keeps, so it wakes up with something in the bank rather than
      three and a half minutes behind for the rest of the battle. Only in annihilation:
      on points a side that stands still for three minutes has already lost. */
-  if (G.win === 'anni' && DIFF[G.diff] && DIFF[G.diff].grace && G.t < DIFF[G.diff].grace) return;
+  if (G.win === 'anni' && DIFF[G.diff] && DIFF[G.diff].grace && G.t < DIFF[G.diff].grace && !AI.woke) {
+    /* The head start is for digging a line, not for a free run at a base that is standing
+       still: against a player who spends it attacking instead of building, the opposition
+       was wiped out at five minutes with twelve hundred marks in the bank and nothing
+       bought, which is also why no armour was ever seen. Anything shot, or anything
+       hostile inside the base, wakes it. */
+    var gh = hqOf(AI.side), poked = false, gi;
+    for (gi = 0; gi < G.blds.length && !poked; gi++)
+      if (G.blds[gi].side === AI.side && G.blds[gi].hp < G.blds[gi].maxhp) poked = true;
+    for (gi = 0; gi < G.units.length && !poked; gi++) {
+      var gu = G.units[gi];
+      if (gu.dead) continue;
+      if (gu.side === AI.side) { if (hpFrac(gu) < .999) poked = true; }
+      else if (gh && dsq(gu.x, gu.y, gh.x, gh.y) < 920 * 920) poked = true;
+    }
+    if (!poked) return;
+    AI.woke = 1;
+  }
   AI.t -= dt;
   if (AI.t > 0) return;
   AI.t = DIFF[G.diff].tick;
@@ -3810,6 +3854,32 @@ function aiTick(dt) {
      population cap sat two thirds empty. The population cap is the real ceiling and it
      should be the one that binds. */
   var armyCap = G.res[side].mp > 2400 ? 99 : D.army + (rich ? 2 : 0);
+  /* And what it is saving up for, in marks and in fuel.
+
+     The population reserve above was only half of the problem. Sections are bought before
+     vehicles in this same tick, and on a quarter economy they take every mark as it
+     arrives, so the armour branch reached an empty till and stayed there: in a green
+     annihilation game a Panzer IV was refused thirty-two times, every single refusal for
+     manpower, while five assault groups at three hundred and thirty marks went out of the
+     door in the same twenty minutes. worthSaving() could not help -- it lives inside the
+     vehicle branch, and by the time it runs the money has gone. So the head of the list is
+     paid for first and the infantry is raised out of what is left.
+
+     Two things stop that starving the army instead. It never holds money back when there
+     are fewer than three sections left standing, and it never holds it for something whose
+     fuel is not in sight, because a tank it cannot move is not worth going without men
+     for. */
+  var wants = b2 && b2.built >= 1 ? aiWants(side, LADDER, gate) : [];
+  var wantMp = 0, wantFu = 0;
+  if (wants.length) {
+    var w0 = UNITS[wants[0][0]];
+    wantMp = w0.cost.mp || 0; wantFu = w0.cost.fu || 0;
+    if (men.length < 3 || popOf(side) + w0.pop > popCap(side) ||
+        G.res[side].fu + (G.inc[side].fu || 0) * 60 < wantFu) { wantMp = 0; wantFu = 0; }
+  }
+  /* what a section may spend without eating into it */
+  AI.wantMp = wantMp;
+  var spare = Math.max(0, G.res[side].mp - wantMp), spareFu = Math.max(0, G.res[side].fu - wantFu);
   var q = hq.queue.length;
   if (engs.length < 1 && q < 2) queueUnit(hq, K.eng);
   else if (men.length < 2 && q < 2) queueUnit(hq, K.inf);
@@ -3818,48 +3888,46 @@ function aiTick(dt) {
      second one is bought with room that the first one has already spent. Fifteen points
      of overshoot is a Tiger that does not fit. */
   else if (q < 1 && popOf(side) < infRoom && men.length < armyCap &&
+           spare >= (UNITS[K.inf].cost.mp || 0) &&
            (men.length < 2 + D.inf || !b1 || G.res[side].mp > 480)) queueUnit(hq, K.inf);
+  /* read the money again, for the same reason the population is read again: the
+     headquarters may already have spent some of it three lines ago, and against a stale
+     figure the company post raises a second section out of the reserve */
+  spare = Math.max(0, G.res[side].mp - wantMp); spareFu = Math.max(0, G.res[side].fu - wantFu);
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(side) < infRoom) {
     var mgs = aiOwn(function (v) { return v.key === K.mg; }).length;
-    if (mgs < D.mg) queueUnit(b1, K.mg);
+    if (mgs < D.mg && spare >= (UNITS[K.mg].cost.mp || 0)) queueUnit(b1, K.mg);
     /* The company post used to sit outside the army cap, so an easy opponent held to
        four sections by the headquarters quietly raised a dozen more out of the post.
        The cap now holds everywhere, which leaves the easy settings spending what they
        have on one of each arm rather than on a crowd of riflemen. */
     else if (men.length < armyCap) {
-      if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58)) queueUnit(b1, K.elite);
-      else queueUnit(hq, K.inf);
+      var el = UNITS[K.elite];
+      if (G.res[side].fu > (b2 ? (b2.built >= 1 ? 120 : 999) : 58) &&
+          spare >= (el.cost.mp || 0) && spareFu >= (el.cost.fu || 0)) queueUnit(b1, K.elite);
+      else if (q < 1 && spare >= (UNITS[K.inf].cost.mp || 0)) queueUnit(hq, K.inf);
     }
   }
   if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < cap - 14) {
     var ats = countOf(side, K.at);
-    var done = false, save = false;
-    /* armour in the street jumps the queue: the gun that answers it is the one thing in
-       the list that cannot be improvised, and it walks to its position at a crawl */
-    if (enemyVeh > ats && ats < 2 && queueUnit(b2, K.at)) done = true;
-    /* Climbing it. Each rung is counted against what the side has ever ordered, not
-       against what is alive, because attrition walks a live count backwards: every 222
-       that burned reopened the first line of the list. A side actually being fought put
-       twenty-two armoured cars and ten carriers into the street over twenty minutes on
-       green, never saved the ninety fuel a Panzer IV costs, and ended sitting on nine
-       hundred marks with one tank built and no Tiger. */
-    for (li = 0; li < LADDER.length && !done && !save; li++) {
-      ent = LADDER[li]; lk = ent[0]; ld = UNITS[lk];
-      if (G.t < ent[2] * gate || madeOf(side, lk) >= ent[1]) continue;
-      if (queueUnit(b2, lk)) done = true;
-      /* it cannot pay for that yet. If it is most of the way there it stops here and
-         saves, which is the whole reason a tank ever arrives. */
-      else if (worthSaving(side, ld)) save = true;
-    }
-    /* Replacing what it has lost, dearest first, so a burnt-out Panzer IV is answered by
-       another one rather than by the cheapest thing on the list, and the empty Tiger slot
-       outranks a third medium. Nothing cheap is bought with fuel a heavier empty slot is
-       waiting on, or the tank never comes back. */
-    var rep = LADDER.slice().sort(function (x, y) { return vehWorth(y[0]) - vehWorth(x[0]); });
-    var keepFu = 0;
-    for (li = 0; li < rep.length && !done && !save; li++) {
-      ent = rep[li]; lk = ent[0]; ld = UNITS[lk];
-      if (G.t < ent[2] * gate || countOf(side, lk) >= ent[1]) continue;
+    var done = false, save = false, keepFu = 0;
+    /* Armour in the street jumps the queue: the gun that answers it is the one thing in
+       the list that cannot be improvised, and it walks to its position at a crawl. With
+       nothing at all to answer armour it jumps regardless; with one gun already up it
+       waits its turn like everything else, because at three hundred marks against a tank's
+       three hundred and forty-five it was quietly taking the tank's ticks. */
+    if (enemyVeh > ats && (ats < 1 || spare >= (UNITS[K.at].cost.mp || 0)) && ats < 2 &&
+        queueUnit(b2, K.at)) done = true;
+    /* Then straight down the want list: the rungs it has never ordered, in order, and then
+       the holes in what it has, dearest first, so a burnt-out Panzer IV is answered by
+       another one rather than by the cheapest thing on the list. Each rung is counted
+       against what the side has ever ordered rather than against what is alive, because a
+       live count walks backwards under fire: every armoured car that burned used to reopen
+       the first line of the list. Nothing cheap is bought with fuel a heavier empty slot is
+       waiting on, and when it is most of the way to an armour purchase it stops and saves
+       rather than spending the difference, which is the whole reason a tank ever arrives. */
+    for (li = 0; li < wants.length && !done && !save; li++) {
+      ent = wants[li]; lk = ent[0]; ld = UNITS[lk];
       var fuel = ld.cost.fu || 0;
       if (keepFu && fuel && G.res[side].fu < keepFu + fuel + 20) continue;
       if (queueUnit(b2, lk)) done = true;
@@ -3884,7 +3952,7 @@ function aiTick(dt) {
         if (u.up && u.up[uk]) continue;
         if (hasExclusive(u, U.excl)) continue;
         /* never buy a plate with the manpower the next section was going to cost */
-        if (!canAfford(side, U.cost) || G.res[side].mp - (U.cost.mp || 0) < 150) continue;
+        if (!canAfford(side, U.cost) || G.res[side].mp - (U.cost.mp || 0) < 150 + wantMp) continue;
         pay(side, U.cost); u.up[uk] = true; bought = true;
       }
     }
@@ -3915,6 +3983,9 @@ function aiTick(dt) {
      then let vehicles fill the places, so the sections that could actually capture
      arrived one at a time behind armour that cannot capture at all. */
   var foeSide = foe(side);
+  var myGround = 0;
+  for (i = 0; i < G.sectors.length; i++)
+    if (G.sectors[i].owner === side && G.sectors[i].conn) myGround++;
   var myStr = aiStrength(side), foeStr = aiStrength(foeSide);
   var ratio = myStr / Math.max(150, foeStr);
   /* An army that is losing the arithmetic stops buying ground at any price and holds
@@ -3994,8 +4065,14 @@ function aiTick(dt) {
        three at the most, and never none -- a flat three posted the whole of a small army
        and left one man to go at the base with, and a share that rounded down to nothing
        left an army that captured no ground at all, ran on the base income alone and
-       never grew past five men in twenty minutes. */
-    if (razeT && ++sentry > Math.max(1, Math.min(3, Math.round(takers.length / 3)))) break;
+       never grew past five men in twenty minutes.
+
+       Below three sectors that share is suspended and the whole army takes ground first.
+       An army with no ground has no money, and an assault it cannot pay to replace is one
+       assault: on green it held nothing, earned two marks a second, and was refused a
+       Panzer IV for manpower every time it asked. */
+    if (razeT && myGround >= 3 &&
+        ++sentry > Math.max(1, Math.min(3, Math.round(takers.length / 3)))) break;
     for (var n = 0; n < o.cap; n++) {
       var take = null, td = 1e9;
       for (j = 0; j < takers.length; j++) {
