@@ -171,15 +171,28 @@ change needs something like a hundred pairs to see, and the honest answer to mos
 tweaks is that the tool cannot resolve them. Judge those on whether they are right, not on
 whether the table moved.
 
-Two more things about the numbers are worth knowing before trusting them. **Ortona is not a
-symmetric map** and the two rosters are not the same army: with the same brain on both
-sides the Canadians take thirteen points of ground to the Germans' four. That is why a
-run is made of mirror pairs, each match played twice with the brains swapped, and why
-`--self` is the calibration. And **a battle here compounds** -- whoever wins the first
-serious clash tends to walk the rest of the map -- so a single match is nearly a coin
-toss weighted by a small edge. The score is averaged over the whole match rather than
-read off the final whistle, and even so a six-pair run moves by a couple of hundred
-points between runs. Read the shape of the table, not the last digit.
+Two more things about the numbers are worth knowing before trusting them. **The two rosters
+are not the same army**, and the town is hand-placed rather than mirrored, so even with the
+flags now symmetric about the midline a side can have the better of the ground: `--self` is
+the calibration and it currently lands within the noise of even. That is why a run is made
+of mirror pairs, each match played twice with the brains swapped. And **a battle here
+compounds** -- whoever wins the first serious clash tends to walk the rest of the map -- so a
+single match is nearly a coin toss weighted by a small edge. With an AI on both sides a match
+is over in four to six minutes: the loser of the first clash is down to three flags by the
+third minute and its victory points are gone by the fifth, at 0.8 a second per victory flag
+the other side holds, so a 600-second match is nearly always cut short and the score carries
+the 300-point finish. The score is averaged over the marks a match actually ran rather than
+read off the final whistle, and even so a six-pair run moves by a couple of hundred points
+between runs. Read the shape of the table, not the last digit.
+
+A cheaper cross-check than the full card is a kill-switch A/B: extract the working `aiTick`,
+disable one rule by text replacement, inject it against the last commit, and run six pairs.
+Twelve matches give a standard error of about a hundred and ten points a match, which is
+enough to see a rule that breaks the brain and not enough to rank two that both work. The
+reflexes, the goal changes and the production changes were each tried alone that way and each
+landed at parity (+22, +28 and +57 a match), and the full set over twenty-four matches landed
+at +22 with a standard error of 81: the pass is neither better nor worse than the brain before
+it by anything the tool can see, and every rule in it stands on whether it is right.
 
 The columns after the score are the tactical picture, and they are what a change to
 tactics actually moves: ground held, army left alive, how concentrated the sections are,
@@ -489,9 +502,12 @@ which is what green is for):
   histogram says why: this combat model shoots sections down to the retreat rule faster than
   it suppresses them, so most of the time a section under fire is retreating, not ducking.
 - *The odds*: a section outside a wave whose objective is held by more than twice what it is
-  bringing (itself, the men already on the flag, the men moving with it) stops short in cover
-  and looks again in twenty seconds (`u.holdT`). By then it has been dealt to a wave or the rest
-  have come up. Nearest-first dealing sends sections one at a time and one at a time is what a
+  bringing (itself, the men already on the flag, the men moving with it) goes to the fire post
+  three hundred short of the flag instead, the same point a wave against it would form on, and
+  looks again in twenty seconds (`u.holdT`). By then it has been dealt to a wave, which finds it
+  already on the forming-up point, or the rest have come up. It does not stop where it stands:
+  the first version froze in place, usually in the middle of a street, and the army's reach fell
+  by a third. Nearest-first dealing sends sections one at a time and one at a time is what a
   defended flag eats.
 - *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
   airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
