@@ -6034,7 +6034,7 @@ var FSH = [
   /* inside a hull the sun never reaches: light comes down through the hatch, so a face
      that looks up is lit and a face that looks down is not, and the shadow map, which
      cannot see in here, is ignored */
-  '  if (uInside > 0.0) c = base * (0.36 + 0.24 * max(0.0, n.z)) * uInside + vec3(1.0, 0.96, 0.88) * specP * 0.4;',
+  '  if (uInside > 0.0) c = base * (0.66 + 0.36 * (n.z * 0.5 + 0.5)) * uInside + vec3(1.0, 0.96, 0.88) * specP * 0.35;',
   '  if (uUseTex > 0.5 && vWpos.z < -40.0) {',
   '    float sw = sin(vWpos.x * 0.05 + uSeaT * 1.6) * sin(vWpos.y * 0.09 - uSeaT * 1.1);',
   '    c += vec3(0.06, 0.08, 0.08) * sw;',
@@ -6241,6 +6241,14 @@ function registerMaterials() {
     tag([SHERMAN.track, SHERMAN.trackLit], 'track');
     tag([SHERMAN.tarp, SHERMAN.bedroll], 'canvas');
     tag([SHERMAN.jerry, SHERMAN.spare], 'paint');
+  }
+  if (typeof INC !== 'undefined') {
+    tag([INC.white, INC.whiteD, INC.whiteL, INC.od, INC.odD, INC.radio, INC.radioL], 'paint');
+    tagEdges([INC.white, INC.whiteD, INC.whiteL, INC.od, INC.odD, INC.radio, INC.radioL], 'paint');
+    tag([INC.steel, INC.steelL, INC.dark, INC.black, INC.brass, INC.copper, INC.gun, INC.gunL], 'steel');
+    tagEdges([INC.steel, INC.steelL, INC.dark, INC.brass, INC.gun, INC.gunL], 'steel');
+    tag([INC.leather], 'leather'); tagEdges([INC.leather], 'leather');
+    tag([INC.canvas], 'canvas'); tagEdges([INC.canvas], 'canvas');
   }
   if (typeof PZ4 !== 'undefined') {
     tag([PZ4.body, PZ4.lit, PZ4.dark], 'p4camo');
@@ -7346,8 +7354,8 @@ function povZoom(f) { POV.zoom = clamp(POV.zoom * f, 1, 3); }
 /* the field of view is set by the narrower screen axis so a portrait phone still sees
    sixty degrees across, and a pinch narrows it like binoculars */
 function povFov() {
-  var aspect = VIEW.w / VIEW.h;
-  return clamp(2 * Math.atan(Math.tan(.56) / aspect), 1.08, 1.6) / POV.zoom;
+  var aspect = VIEW.w / VIEW.h, hi = povClosed() && !POV.hatch ? 1.3 : 1.6;
+  return clamp(2 * Math.atan(Math.tan(.56) / aspect), 1.08, hi) / POV.zoom;
 }
 function povSkyPitch() {
   var hy = clamp(-Math.tan(POV.pitch) / Math.tan(povFov() / 2), -1, 1);
@@ -7370,8 +7378,9 @@ function povCamera() {
 /* the frame round the view: a vignette, a reticle, whose eyes these are and how to leave */
 function drawPovFrame() {
   var W = VIEW.w, H = VIEW.h, u = POV.u;
-  var g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .36, W / 2, H / 2, Math.max(W, H) * .72);
-  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.62)');
+  var inRoom = povClosed() && !POV.hatch;
+  var g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * (inRoom ? .5 : .36), W / 2, H / 2, Math.max(W, H) * (inRoom ? .85 : .72));
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, inRoom ? 'rgba(0,0,0,.34)' : 'rgba(0,0,0,.62)');
   ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = 'rgba(230,224,200,.55)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(W / 2 - 14, H / 2); ctx.lineTo(W / 2 - 4, H / 2); ctx.moveTo(W / 2 + 4, H / 2); ctx.lineTo(W / 2 + 14, H / 2);
@@ -7385,7 +7394,8 @@ function drawPovFrame() {
   ctx.fillText((host.def ? host.def.name : 'Unit') + (POV.zoom > 1.05 ? '  ·  x' + POV.zoom.toFixed(1) : ''), W / 2, y - 18);
   ctx.fillStyle = '#b9b3a0'; ctx.font = '11px system-ui, sans-serif';
   var hatchHint = povClosed() ? (POV.hatch ? 'SHUT to button up  ·  ' : 'OPEN to look out  ·  ') : '';
-  ctx.fillText(MOB ? 'Drag to look  ·  pinch to zoom  ·  ' + hatchHint + 'tap the camera to return' : 'Drag to look  ·  wheel to zoom  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
+  ctx.fillText(MOB ? (hatchHint ? 'Drag to look  ·  ' + hatchHint + 'tap the camera to return' : 'Drag to look  ·  pinch to zoom  ·  tap the camera to return')
+                   : 'Drag to look  ·  wheel to zoom  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
   ctx.shadowBlur = 0; ctx.textAlign = 'left';
 }
 /* world point (on the ground unless z given) to overlay pixels; null if behind the camera */
@@ -8431,6 +8441,14 @@ function faceOut(faces, cx, cy, cz) {
     if ((gx - cx) * n.x + (gy - cy) * n.y + (gz - cz) * n.z < 0)
       return { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
     return f;
+  });
+}
+/* faceOut's opposite. A room is looked at from the middle of itself, so its walls
+   have to be turned toward that point rather than away from it. Back faces are culled,
+   which is why an interior wall built the usual way round is simply not there. */
+function faceIn(faces, cx, cy, cz) {
+  return faceOut(faces, cx, cy, cz).map(function (f) {
+    return { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
   });
 }
 
@@ -13426,6 +13444,7 @@ function bboxOf(faces, keep) {
   return any ? b : null;
 }
 function insideOf(k, V) {
+  if (VIN[k]) return VIN[k](V);          /* a room somebody laid out beats a room read off a shell */
   var ger = k.indexOf('ger_') === 0, hatch = HATCHES[k];
   var PAINT = ger ? '#c8c1a0' : '#d3d1c3', PAINT_D = ger ? '#b0a888' : '#bbb9ab', STEEL = '#4a4d48', STEEL_L = '#63665f';
   var FLOOR = '#3b3e39', LEATHER = '#6b5237', BRASS = '#b8a052', RADIO = '#2f3330', RADIO_L = '#4d524d';
@@ -13632,6 +13651,227 @@ function insideOf(k, V) {
   I.faces = f;
   return I;
 }
+/* ---- interiors drawn rather than measured ------------------------------------------
+   insideOf() reads a room off the shell. That is the right answer for a vehicle nobody
+   has sat in yet and the wrong one for a vehicle that matters, because the only room it
+   can make is the shape of the outside, and the outside of a turret is a thing you
+   cannot see out of: a ring of slits round the head reads as a fence, and a commander
+   behind a fence is no use to anybody.
+
+   An authored interior is laid out around the eye instead. It is allowed to lie about
+   the geometry -- the wall stops below the sightline, the roof hangs above it, the
+   basket is wider than the hull -- because the shell's back faces are culled and it is
+   therefore not there at all from in here. What the commander can see is exactly what
+   the room leaves open, which makes the view a thing to design rather than a thing to
+   measure, and that is the whole reason these exist.
+
+   A builder returns three pieces of geometry. `faces` is the room, drawn on the mount
+   or on the hull. `lid` is drawn on the same frame and only with the hatch shut,
+   because the shut lid the game draws outside has no underside and you would otherwise
+   look up through it at the sky. `hood` is drawn at the eye and turns with the head: it
+   is the commander's rotating periscope, and it is why buttoned up he has a window
+   wherever he looks instead of a post. ---- */
+var VIN = {};
+/* white lead over cast steel, which is what the inside of a Sherman was */
+var INC = {
+  white: '#cbc8b8', whiteD: '#adaa9a', whiteL: '#dedbcb',
+  steel: '#4b4e46', steelL: '#696c63', dark: '#2b2d26', black: '#16170f',
+  od: '#5b6243', odD: '#4a5037', brass: '#ab9048', copper: '#8b6b3d', gun: '#3b3e37', gunL: '#585c53',
+  leather: '#64523b', canvas: '#7e7459', radio: '#34382f', radioL: '#575c52'
+};
+
+/* the plan of a closed outline, sampled as n rays out of a point inside it. A roof has
+   to run from the hatch ring out to the walls and the two have no vertices in common,
+   so both get read at the same bearings and the quads between them close. */
+function radialPlan(plan, cx, cy, n) {
+  var out = [], i, k;
+  for (i = 0; i < n; i++) {
+    var ang = i * TAU / n, dx = Math.cos(ang), dy = Math.sin(ang), best = 0;
+    for (k = 0; k < plan.length; k++) {
+      var p = plan[k], q = plan[(k + 1) % plan.length];
+      var ex = q[0] - p[0], ey = q[1] - p[1], den = dx * ey - dy * ex;
+      if (Math.abs(den) < 1e-9) continue;
+      var t = ((p[0] - cx) * ey - (p[1] - cy) * ex) / den;
+      var s = ((p[0] - cx) * dy - (p[1] - cy) * dx) / den;
+      if (t > best && s >= 0 && s <= 1) best = t;
+    }
+    out.push([cx + dx * best, cy + dy * best]);
+  }
+  return out;
+}
+/* a wall between two plans of the same length: the face the room sees, the face the
+   shell sees, and the band along the top the eye looks over */
+function ringWall(inner, outer, z0, z1, col, colOut, colTop) {
+  var f = [], g = [], t = [], n = inner.length, i, zm = (z0 + z1) / 2;
+  for (i = 0; i < n; i++) {
+    var a = inner[i], b = inner[(i + 1) % n], c = outer[(i + 1) % n], d = outer[i];
+    f.push({ v: [[a[0], a[1], z0], [a[0], a[1], z1], [b[0], b[1], z1], [b[0], b[1], z0]], c: col });
+    g.push({ v: [[d[0], d[1], z0], [d[0], d[1], z1], [c[0], c[1], z1], [c[0], c[1], z0]], c: colOut });
+    t.push({ v: [[a[0], a[1], z1], [d[0], d[1], z1], [c[0], c[1], z1], [b[0], b[1], z1]], c: colTop });
+  }
+  return faceIn(f, 0, 0, zm).concat(faceOut(g, 0, 0, zm)).concat(faceOut(t, 0, 0, z1 - 40));
+}
+/* a flat ring between two plans: a deck seen from above, or a ceiling seen from below */
+function ringDeck(inner, outer, z, col, up) {
+  var f = [], n = inner.length, i;
+  for (i = 0; i < n; i++) {
+    var a = inner[i], b = inner[(i + 1) % n], c = outer[(i + 1) % n], d = outer[i];
+    f.push({ v: [[a[0], a[1], z], [d[0], d[1], z], [c[0], c[1], z], [b[0], b[1], z]], c: col });
+  }
+  return faceOut(f, 0, 0, z + (up ? -40 : 40));
+}
+/* the inside of a tube: a cylinder's sides, turned to face its own axis */
+function inTube(cx, cy, cz, r, h, n, col) {
+  return faceIn(cyl(cx, cy, cz, r, r, h, n, col, col, 0, true).slice(0, n), cx, cy, cz + h / 2);
+}
+/* a handwheel: the axle lies across the vehicle, so the disc is rolled onto its edge */
+function inWheel(x, y, z, r, col, hub) {
+  var w = cyl(0, 0, -.32, r, r, .64, 12, col, lit(col, 1.18), 0, true);
+  w = w.concat(cyl(0, 0, -1.1, .42, .42, 2.2, 6, hub, hub, 0, true));
+  return place(roll(w, Math.PI / 2, 0, 0), 0, x, y, z);
+}
+/* a round of ammunition standing on its base, brass case and olive nose */
+function inRound(x, y, z, h) {
+  return cyl(x, y, z, .92, .92, h, 8, INC.brass, lit(INC.brass, 1.25), 0, true)
+    .concat(cyl(x, y, z + h, .72, .72, 2.2, 8, INC.odD, INC.od, 0, true));
+}
+
+/* ---- the Sherman V, from the commander's seat --------------------------------------
+   He sits at the back right of the turret with the gunner in front of him and the
+   loader across the breech. The wall stops at his chest and the roof hangs over his
+   head, so there is a band of daylight all the way round at eye level: that band is
+   the reason to draw this by hand, and it is what the derived cupola could never be.
+   Shut the lid and the eye drops to the seat; the periscope hood in front of his face
+   turns with him, so the band is always framed and never blocked. ---- */
+VIN.us_sher = function (V) {
+  var C = INC, f = [], lid = [], hood = [], crew = [], i, ang;
+  var zr = 10.4;                          /* the roof, where shermanTurret put it */
+  var hx = -4.2, hy = -5.2, hr = 4.05;    /* and the commander's hatch */
+  var ring = -2.4, flr = -8.6;            /* the turret ring, the basket floor under it */
+  var sill = 2.9, roof = 10.2, lip = .7;  /* the wall stops, the roof hangs, the band is between */
+  var eye = 8.0, gz = 4.8, S = -1;        /* his eye, the gun's axis, the side the gunner is on */
+  var gy = S * 4.0, ly = -S * 5.8;        /* the gunner's station, and the loader's */
+  function ringPlan(kr) { return shermanTurretRing(0, kr).map(function (p) { return [p[0], p[1]]; }); }
+  var inner = ringPlan(.862), outer = ringPlan(.932), lipIn = ringPlan(.900);
+
+  /* ---- the shell of the room ---- */
+  f = f.concat(cyl(0, 0, flr - 1.0, 9.1, 9.1, 1.0, 20, C.steel, C.steelL, 0, true));    /* the basket floor */
+  f = f.concat(inTube(0, 0, flr, 9.1, ring - flr, 20, C.steelL));                       /* and the cage round it */
+  for (i = 0; i < 20; i++) {                                                            /* its uprights */
+    ang = i * TAU / 20;
+    f = f.concat(place(box(8.5, 0, flr, 1.0, .7, ring - flr, C.steel, C.steel, C.steel, 0), ang, 0, 0, 0));
+  }
+  var bas = [], deckOut = radialPlan(inner, 0, 0, 24);
+  for (i = 0; i < 24; i++) { ang = i * TAU / 24; bas.push([Math.cos(ang) * 9.1, Math.sin(ang) * 9.1]); }
+  f = f.concat(ringDeck(bas, deckOut, ring, C.steel, 1));                               /* the floor round the ring */
+  f = f.concat(ringWall(inner, outer, ring, sill, C.white, C.whiteD, C.whiteD));        /* the wall he looks over */
+  f = f.concat(ringWall(lipIn, outer, roof - lip, roof, C.whiteD, C.whiteD, C.whiteL)); /* the lip the roof hangs on */
+  var hoop = [], rimc = radialPlan(lipIn, hx, hy, 24);
+  for (i = 0; i < 24; i++) { ang = i * TAU / 24; hoop.push([hx + Math.cos(ang) * hr, hy + Math.sin(ang) * hr]); }
+  f = f.concat(ringDeck(hoop, rimc, roof, C.white, 0));                                 /* the roof over his head */
+  f = f.concat(inTube(hx, hy, roof, hr, zr + 1.5 - roof, 18, C.white));                 /* the hatch collar */
+  /* the ribs a cast turret has on the inside, and the lifting eyes bolted through it */
+  for (i = 0; i < inner.length; i++) {
+    var p = inner[i], r0 = Math.hypot(p[0], p[1]) || 1;
+    f = f.concat(place(box(r0 - .5, 0, ring + .4, 1.0, 1.1, .9, C.whiteL, C.whiteL, C.whiteD, 0),
+                       Math.atan2(p[1], p[0]), 0, 0, 0));
+  }
+
+  /* ---- the lid, which the shell outside has no underside for ---- */
+  lid = lid.concat(cyl(hx, hy, zr + 1.15, hr + .45, hr + .45, .55, 18, C.white, C.whiteD, 0, true));
+  lid = lid.concat(box(hx, hy, zr + .95, .6, hr * 2 + .6, .45, C.steel, C.steelL, C.steel, 0));
+  lid = lid.concat(box(hx + 2.4, hy, zr + .55, 2.4, .5, .5, C.steel, C.steelL));         /* the latch handle */
+  lid = lid.concat(box(hx - 1.6, hy, zr + .55, 1.2, 1.9, .6, C.dark, C.steelL, C.dark, 0));
+
+  /* ---- the 75 mm M3: the breech, the guard the loader keeps clear of, and the wheels
+     the gunner lays it with ---- */
+  f = f.concat(box(8.6, 0, gz - 2.6, 2.0, 5.0, 5.2, C.whiteD, C.white, C.whiteD, .5));   /* the mount, behind the mantlet */
+  [-1, 1].forEach(function (s) { f = f.concat(inWheel(8.0, s * 3.2, gz, 1.5, C.gunL, C.gun)); });  /* the trunnions */
+  f = f.concat(box(3.2, 0, gz - 2.6, 7.4, 4.8, 5.2, C.gun, C.gunL, C.gun, .5));          /* the breech ring */
+  f = f.concat(box(-1.2, 0, gz - 2.0, 2.6, 3.8, 3.8, C.gunL, C.dark, C.gunL, .3));       /* the block, dropped */
+  f = f.concat(box(-4.3, 0, gz - 3.4, 3.2, 4.8, 1.0, C.dark, C.gun, C.dark, .2));        /* the case deflector */
+  f = f.concat(box(-2.8, 0, gz - 8.8, 5.2, 5.8, 4.6, C.canvas, lit(C.canvas, 1.12), lit(C.canvas, .88), .9));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(-.6, s * 3.6, gz + 2.3, 11.4, .45, .45, C.gun, C.gunL));
+    f = f.concat(box(-.6, s * 3.6, gz - 4.6, 11.4, .45, .45, C.gun, C.gunL));
+    f = f.concat(box(-6.2, s * 3.6, gz - 4.6, .45, .45, 7.5, C.gun, C.gunL));
+    f = f.concat(box(5.0, s * 3.6, gz - 4.6, .45, .45, 7.5, C.gun, C.gunL));
+  });
+  f = f.concat(box(-6.2, 0, gz + 2.3, .45, 7.8, .45, C.gun, C.gunL));
+  f = f.concat(box(-6.2, 0, gz - 4.6, .45, 7.8, .45, C.gun, C.gunL));
+
+  /* ---- the gunner: his sight, his wheels, his seat and the coaxial beside the gun ---- */
+  f = f.concat(box(2.4, S * 3.1, gz - .8, 8.4, 2.0, 2.0, C.gun, C.gunL, C.gun, .25));     /* the coaxial .30 */
+  f = f.concat(box(-1.6, S * 3.1, gz - 2.8, 2.8, 2.2, 2.0, C.od, C.odD, C.od, .2));       /* its belt box */
+  f = f.concat(box(5.4, gy + S * .8, gz - 1.0, 6.8, 1.8, 1.8, C.steel, C.steelL, C.steel, .3));  /* the telescope, on the gun's axis */
+  f = f.concat(box(1.8, gy, gz - 1.3, 1.8, 2.4, 2.4, C.dark, C.black, C.dark, .3));        /* and its eyepiece */
+  [[-1.0, -1.0], [5.0, -5.2], [4.2, 5.8]].forEach(function (q) {                          /* the periscope housings */
+    f = f.concat(box(q[0], q[1], roof - 1.8, 2.6, 3.4, 1.8, C.steel, C.steelL, C.steel, .25));
+    f = f.concat(box(q[0] + 1.1, q[1], roof - 1.5, .5, 2.2, 1.1, C.black, C.black, C.black, 0));
+  });
+  f = f.concat(cyl(-8.6, 4.6, roof - 1.5, 1.9, 1.9, 1.5, 12, C.steel, C.steelL, 0, true));  /* the ventilator */
+  /* the ribs the roof plate is welded to, and the bosses the lifting eyes bolt through.
+     Two feet over his head a bare plate is a bare plate and reads as nothing at all. */
+  [-5.4, 5.4].forEach(function (ry) { f = f.concat(box(-2.0, ry, roof - .75, 20.0, 1.3, .75, C.whiteL, C.white, C.whiteD, .15)); });
+  f = f.concat(box(-9.6, 0, roof - .75, 1.3, 13.0, .75, C.whiteL, C.white, C.whiteD, .15));
+  f = f.concat(box(6.2, 0, roof - .75, 1.3, 13.0, .75, C.whiteL, C.white, C.whiteD, .15));
+  [[5.6, -9.4], [5.6, 9.4], [-13.0, 0]].forEach(function (q) {
+    f = f.concat(box(q[0], q[1], roof - 1.1, 2.4, 3.4, 1.1, C.whiteD, C.white, C.whiteD, .2));
+  });
+  f = f.concat(box(2.0, 2.0, roof - 2.4, 2.2, 2.2, 2.4, C.gun, C.gunL, C.gun, .3));         /* the bomb thrower */
+  f = f.concat(box(1.4, gy - S * 1.5, gz - 6.8, 4.0, 3.2, 3.4, C.steel, C.steelL, C.steel, .3)); /* the elevating gear */
+  f = f.concat(inWheel(1.2, gy - S * 3.5, gz - 5.2, 2.5, C.dark, C.steelL));              /* elevation */
+  f = f.concat(inWheel(-2.2, gy - S * 3.5, gz - 7.6, 2.1, C.dark, C.steelL));             /* traverse */
+  f = f.concat(box(-.4, gy, gz - 12.0, 4.6, 4.8, 1.2, C.leather, lit(C.leather, 1.15), lit(C.leather, .85), .4));
+  f = f.concat(cyl(-.4, gy, flr, .8, .8, gz - 12.0 - flr, 8, C.steel, C.steel, 0, true));
+
+  /* ---- the loader: the ready rounds standing in the bustle, and his tools ---- */
+  for (i = 0; i < 8; i++) f = f.concat(inRound(-10.6 + (i % 4) * 2.4, ly + (i < 4 ? -1.3 : 1.3), ring, 6.2));
+  f = f.concat(box(-8.0, ly, ring, .8, 6.4, 7.2, C.od, C.odD, C.od, .2));
+  f = f.concat(box(-12.8, ly, ring, .8, 6.4, 7.2, C.od, C.odD, C.od, .2));
+  f = f.concat(box(-2.0, ly + S * .6, ring, 5.0, 4.4, 1.1, C.leather, lit(C.leather, 1.12), lit(C.leather, .86), .35));
+  f = f.concat(box(3.4, ly, gz - 3.2, 3.4, 3.0, 3.0, C.od, C.odD, C.od, .25));            /* a .30 box on the wall */
+  f = f.concat(box(6.0, ly - S * .8, sill - 2.4, 2.6, 1.6, 2.4, '#8e2f26', '#a03a30', '#8e2f26', .3)); /* the extinguisher */
+
+  /* ---- the bustle behind him: the No. 19 set, and his own seat under the hatch ---- */
+  f = f.concat(box(-11.4, 0, ring + 1.0, 3.6, 8.4, 4.6, C.radio, C.radioL, C.radio, .3));
+  f = f.concat(box(-11.4, 0, ring + 5.8, 3.6, 8.4, 3.4, C.radio, C.radioL, C.radio, .3));
+  [-2.6, 0, 2.6].forEach(function (yy) {
+    f = f.concat(place(roll(cyl(0, 0, -.35, 1.0, 1.0, .7, 10, C.steelL, C.dark, 0, true), Math.PI / 2, 0, 0),
+                       0, -9.6, yy, ring + 3.2));
+  });
+  f = f.concat(box(hx - 1.4, hy, ring + 4.4, 3.8, 4.2, 1.1, C.leather, lit(C.leather, 1.15), lit(C.leather, .85), .4));
+  f = f.concat(cyl(hx - 1.4, hy, ring, .9, .9, 4.4, 8, C.steel, C.steel, 0, true));
+  f = f.concat(box(hx - 3.6, hy, ring + 5.4, .9, 4.2, 3.4, C.leather, lit(C.leather, 1.1), lit(C.leather, .86), .3));
+  f = f.concat(box(hx + 3.6, hy, roof - 1.5, .6, 3.4, .6, C.steel, C.steelL, C.steel, 0));
+
+  /* ---- the hood: his periscope, drawn at the eye and turned by his own head, so the
+     band is framed wherever he looks and nothing ever stands in the middle of it ---- */
+  var wy = 3.4, wz0 = -2.0, wz1 = 2.0, hd0 = 4.0, hdL = 1.3;
+  [-1, 1].forEach(function (s) {                                          /* the two posts */
+    hood = hood.concat(box(hd0 + hdL / 2, s * (wy + .45), wz0 - .9, hdL, .9, wz1 - wz0 + 1.8, C.steel, C.steelL, C.steel, .18));
+  });
+  hood = hood.concat(box(hd0 + hdL / 2, 0, wz1, hdL, wy * 2 + 1.8, .9, C.steel, C.steelL, C.steel, .18));        /* the brow */
+  hood = hood.concat(box(hd0 + hdL / 2, 0, wz0 - .7, hdL, wy * 2 + 1.8, .7, C.steel, C.dark, C.steel, .16));    /* and the sill */
+  hood = hood.concat(box(hd0 + hdL / 2, 0, wz1 + .9, hdL + .5, wy * 2 + 2.4, 1.6, C.white, C.whiteL, C.whiteD, .3));  /* the head above it */
+  hood = hood.concat(box(2.5, 0, wz1 - .35, .55, wy * 2 - .4, .55, C.black, C.black, C.black, .12));   /* the rubber brow pad */
+  hood = hood.concat(box(2.5, 0, wz0 - .2, .55, wy * 2 - .4, .5, C.black, C.black, C.black, .12));
+
+  f = f.concat(cyl(-1.0, -S * 4.4, flr, 2.4, 2.4, 4.4, 10, C.gun, C.gunL, 0, true));     /* the traverse motor */
+  f = f.concat(box(2.6, -S * 4.4, flr, 3.6, 3.0, 2.2, C.gunL, C.steelL, C.gunL, .3));
+  [[-3.4, 2.2], [-4.9, -1.6], [1.0, 3.6]].forEach(function (q) {                          /* empty cases, rolled where they fell */
+    f = f.concat(place(roll(cyl(0, 0, -3.1, .88, .88, 6.2, 8, C.brass, C.copper, 0, true), Math.PI / 2, 0, 0),
+                       q[1] * .7, q[0], q[1], flr + .9));
+  });
+  crew.push({ x: -.4, y: gy, z: gz - 12.0, yaw: 0 });
+  crew.push({ x: -2.0, y: ly + S * .6, z: ring + .4, yaw: S * Math.PI / 2 });
+  return { frame: 'tur', closed: true, hide: 'tur', crew: crew, faces: f, lid: lid, hood: hood,
+           cup: { x: hx, y: hy, z: zr + 1.5, r: hr },
+           eyeUp: { x: hx, y: hy, z: zr + 5.6 },
+           eyeIn: { x: hx + .6, y: hy + .3, z: eye },
+           hole: { x: hx, y: hy, z: zr + .25, r: hr - .15 },
+           dbg: { sill: sill, roof: roof, eye: eye } };
+};
 function buildVehicleModels() {
   var us = '#586247', usC = '#798366', usS = '#424a35';
   var gr = '#88784e', grC = '#a18f61', grS = '#675d40';
@@ -14097,7 +14337,10 @@ function buildModels() {
     if (V.turUp) Object.keys(V.turUp).forEach(function (uk) { M.turUp[uk] = facesToBuffer(V.turUp[uk]); });
     if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
     if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
-    V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces); V.inside.faces = null;
+    V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces);
+    M.inlid = V.inside.lid ? facesToBuffer(V.inside.lid) : null;
+    M.hood = V.inside.hood ? facesToBuffer(V.inside.hood) : null;
+    V.inside.faces = V.inside.lid = V.inside.hood = null;
     MODELS.veh[k] = M;
   });
   MODELS.team.us = facesToBuffer(TEAMMODEL.us); MODELS.team.ger = facesToBuffer(TEAMMODEL.ger);
@@ -14606,13 +14849,21 @@ function drawHole(u, mat) {
 function drawInterior(u) {
   var M = VMODEL[u.key], B = MODELS.veh[u.key], I = M && M.inside; if (!B || !B.inside || !I) return;
   var fr = vehFrames(u), m = I.frame === 'hull' ? fr.hmat : fr.tmat;
-  gl.uniform1f(PROG.u.uInside, POV.hatch || !I.closed ? 1.0 : .78);
+  gl.uniform1f(PROG.u.uInside, POV.hatch || !I.closed ? 1.0 : .88);
   drawGeom(B.inside, m, false);
+  if (!POV.hatch && B.inlid) drawGeom(B.inlid, m, false);   /* the shut lid has no underside outside */
   /* the crew at their stations, crouched on their seats */
   var variant = u.side === 'ger' ? 'fj_crew' : 'can_crew', buf = MODELS.crouch[variant], yaw0 = I.frame === 'hull' ? u.facing : u.turret;
   if (buf) for (var i = 0; i < I.crew.length; i++) {
     var c = I.crew[i], w = m4apply(m, c.x, c.y, c.z);
     drawGeom(buf, m4model(w.x, w.y, w.z, yaw0 + c.yaw, 1), false);
+  }
+  /* his periscope, at the eye and turned by his own head: buttoned up the view is
+     framed wherever he looks rather than blocked by whatever post he has ended up behind */
+  if (!POV.hatch && B.hood) {
+    var pe = povEye();
+    gl.uniform1f(PROG.u.uInside, 1.0);
+    drawGeom(B.hood, m4model(pe.x, pe.y, pe.z, POV.yaw, 1), false);
   }
   gl.uniform1f(PROG.u.uInside, 0);
 }
@@ -14632,10 +14883,12 @@ function drawUnits3D(v, list) {
       var hpf = clamp(u.hp / u.maxhp, 0, 1), soot = 1 - (1 - hpf) * (1 - hpf) * .5;
       var vt = [dim * soot, dim * soot * .985, dim * soot * .96];
       var fr = vehFrames(u), hmat = fr.hmat, tmat = fr.tmat;
-      drawGeom(B.hull, hmat, false, vt);
+      var povHost0 = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
+      if (!(u === povHost0 && !POV.hatch && M.inside && M.inside.hide === 'hull')) drawGeom(B.hull, hmat, false, vt);
       var cuk = mountUp(u), ak, povHost = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
-      drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
-      if (u === povHost) drawHole(u, M.fixed ? hmat : tmat);
+      var shut = u === povHost && !POV.hatch && M.inside && M.inside.hide;
+      if (shut !== 'tur') drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
+      if (u === povHost && POV.hatch) drawHole(u, M.fixed ? hmat : tmat);
       /* anything bolted to the hull by a fitting: the medic's marks, an MG shield, a
          periscope. Drawn with the hull, whatever the mount is doing. */
       if (u.up) for (ak in u.up) if (u.up[ak] && B.addUp[ak]) drawGeom(B.addUp[ak], hmat, false, vt);

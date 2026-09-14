@@ -128,12 +128,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
 /* The ceiling is a budget rather than a technical limit: the file is text over the wire
    and gzips to roughly a fifth of this, so the number that matters on a phone is parse
    time and not transfer. It was 900 while the roster was the only thing growing; it is
-   1040 now that the map is hand-placed entity by entity, which is the one part of the
-   game where more bytes on disk are more thought rather than more code. Raise it
+   1040 once the map was hand-placed entity by entity, which is the one part of the
+   game where more bytes on disk are more thought rather than more code. It is 1180 now
+   that vehicles carry an interior somebody sat down and laid out: a room is a few
+   hundred boxes and there is a tank's worth of them still to draw. Raise it
    deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1040) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1040 kB so it stays quick to load on a phone`);
+if (kb > 1180) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1180 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

@@ -115,19 +115,23 @@ const SCENES = {
       await page.evaluate(() => { window.POV.yaw = window.POV.u.facing || 0; window.POV.zoom = 2.5; });
       await shoot(page, out('pov-zoom'), { settle: SETTLE });
       await page.evaluate(() => window.povOff());
-      /* and a tank: the commander up in his cupola, then buttoned up behind the slits,
-         then looking down into the turret at his crew */
+      /* and a tank: the commander up out of his hatch, then down on his seat behind the
+         periscope, then looking round the turret he is sitting in */
       await page.evaluate(() => {
         const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
-        const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
-        const u = window.spawnUnit(window.G.side, key, (hq ? hq.x : 300) + 120, (hq ? hq.y : 950) + 40, 0);
+        const u = window.spawnUnit(window.G.side, key, window.WORLD.w / 2 - 220, window.WORLD.h / 2, 0);
         window.G.units.push(u); window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
       });
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });
-      await page.evaluate(() => { window.povHatch(false); window.POV.pitch = 0; });
-      await shoot(page, out('pov-tank-shut'), { settle: SETTLE });
-      await page.evaluate(() => { window.povHatch(true); window.POV.pitch = -1.3; });
-      await shoot(page, out('pov-tank-inside'), { settle: SETTLE });
+      for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
+                                                ['turret', false, .7, -.75], ['crew', false, .35, -.95],
+                                                ['inside', true, 0, -1.3]]) {
+        await page.evaluate(([h, t, p]) => {
+          window.povHatch(h);
+          window.POV.yaw = (window.POV.u.inside || window.POV.u).turret + t; window.POV.pitch = p;
+        }, [hatch, turn, pitch]);
+        await shoot(page, out('pov-tank-' + name), { settle: SETTLE });
+      }
       await page.evaluate(() => window.povOff());
     }
   },
