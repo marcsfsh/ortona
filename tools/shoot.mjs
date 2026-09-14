@@ -119,7 +119,12 @@ const SCENES = {
          periscope, then looking round the turret he is sitting in */
       await page.evaluate(() => {
         const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
-        const u = window.spawnUnit(window.G.side, key, window.WORLD.w / 2 - 220, window.WORLD.h / 2, 0);
+        /* with its own side, or the whole town is unexplored and the view is a black wall */
+        const own = window.G.units.filter(q => q.side === window.G.side && !q.dead && q.cat !== 'veh');
+        own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
+        const at = own.length ? window.nearestFree(own[0].x - 70, own[0].y + 40)
+                              : { x: window.WORLD.w / 2 - 220, y: window.WORLD.h / 2 };
+        const u = window.spawnUnit(window.G.side, key, at.x, at.y, 0);
         window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
       });
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });

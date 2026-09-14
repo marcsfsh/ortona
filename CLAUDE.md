@@ -728,6 +728,16 @@ of him wherever he looks and no post ever stands in the middle of it. And `povFo
 to 1.3 buttoned, or a portrait phone gets ninety degrees of vertical and the world becomes
 a letterbox between floor and ceiling.
 
+**The hatch has to open the way a hatch opens.** The Sherman's two D-doors were laid out
+fore and aft but hinged about the fore-and-aft centreline, so each swung up about its own
+middle: half of every door went under the roof and both stood vertically through the
+middle of the hatch. From outside, at the distance anyone had looked at it, that reads as
+an open hatch. From the commander's own eye it is a slab of olive paint filling a third
+of the screen, and it is what made the first head-out screenshots unreadable. The seam now
+runs fore and aft, each door hinges on its own outer edge and opens to 1.9 radians, and
+the nearest lid vertex is 5.7 units from the eye rather than nearly nothing. Every other
+vehicle's lid is a single leaf and clears the eye by 3.3 to 4.8.
+
 `vehFrames` is the one place the hull and mount matrices are made, so the draw and the eye
 agree to the frame. `uInside` lights the room flat, a little dim, and ignores the shadow
 map, which cannot see in there. `drawHole` draws a disc the size of the hatch into the
@@ -981,6 +991,11 @@ shots/                         screenshot output, gitignored
   the failure and sets `AU.on = false`, so silence is not necessarily a bug.
 - Terrain noise is seeded (`_s = 20240606`), so the map is identical every run.
   Combat uses `Math.random()` and is not reproducible.
+- **A part that is right from outside can be ruinous from inside it.** The periscope puts
+  the eye a couple of units from geometry nobody had ever looked at closely, and the first
+  thing it found was the Sherman's open hatch hinged about the wrong line: correct enough
+  in a gallery shot, a wall of paint from the commander's seat. When a model gains a
+  first-person eye, photograph it from that eye before trusting the gallery.
 - `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
   into `G.units` as well has it in the list twice, and a unit in the list twice is
   updated twice a frame: it drives at double speed and its gun fires at twice its rate of
