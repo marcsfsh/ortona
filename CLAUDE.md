@@ -689,6 +689,32 @@ fades. It closes on the button, on V or Escape, and on its own when the unit die
 `check.mjs` opens it, turns it and closes it on both devices; `tools/shoot.mjs pov` is the
 look at it.
 
+In a vehicle the eye is the commander's, in his cupola, and the vehicle has an inside.
+The shell of every vehicle is a set of faces pointing out, so from inside it is invisible,
+and `insideOf` builds each one an inside at boot (`MODELS.veh[k].inside`, `VMODEL[k].inside`)
+sized off the shell itself rather than a table: the hatch's footprint (`HATCHES[k].shut`) says
+where the commander's head is, `roofOf` finds the roof as the top edge of the tall upright
+faces, `planOf` reads the shell's plan at two heights along its length with `halfWidthAt`,
+which cuts each face by the plane rather than looking for vertices, because a leaning wall
+has none between its foot and its top and would otherwise come out through the shell. From
+the plans `room` builds the walls in two tiers, the floor, and a roof with the cupola's hole;
+`cupola` puts a ring and eight pillars round the eye with the vision slits between them;
+then the breech and its recoil guard, the gunner's sight and wheels, seats, a ready rack, the
+wireless in the bustle, and the gunner and loader crouched at their stations (`I.crew`, drawn
+from `MODELS.crouch`). A casemate (StuG) gets the same room in the hull's frame; an
+open-topped turret (Achilles, 222) the well and a rim to stand over; a half-track or a
+carrier the crew well with its benches. `vehFrames` is the one place the hull and mount
+matrices are made, so the draw and the eye agree to the frame. `drawInterior` draws it only
+in the periscope, after the units, with `uInside` on: a light that comes down through the
+hatch and ignores the shadow map, which cannot see in there. The shell's roof is one plate
+with no hole under the hatch, so `drawHole` draws a disc the size of the hatch into the
+depth buffer alone, pushed to the far plane, before the lid goes down: the inside is seen
+through it and nowhere else. OPEN and SHUT (`povHatch`, `tHatch`) put the head up out of the
+lid or down behind the slits, starting as the crew would have it (`buttonedUp`); the pitch
+runs to -1.35 in a vehicle so the commander can look down into his turret. `check.mjs`
+spawns a tank and asserts the eye drops when the lid shuts; the `pov` scene photographs
+the cupola up, shut and looking in.
+
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
 title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
 change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the

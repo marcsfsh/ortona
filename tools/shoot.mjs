@@ -115,6 +115,20 @@ const SCENES = {
       await page.evaluate(() => { window.POV.yaw = window.POV.u.facing || 0; window.POV.zoom = 2.5; });
       await shoot(page, out('pov-zoom'), { settle: SETTLE });
       await page.evaluate(() => window.povOff());
+      /* and a tank: the commander up in his cupola, then buttoned up behind the slits,
+         then looking down into the turret at his crew */
+      await page.evaluate(() => {
+        const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
+        const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
+        const u = window.spawnUnit(window.G.side, key, (hq ? hq.x : 300) + 120, (hq ? hq.y : 950) + 40, 0);
+        window.G.units.push(u); window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
+      });
+      await shoot(page, out('pov-tank-up'), { settle: SETTLE });
+      await page.evaluate(() => { window.povHatch(false); window.POV.pitch = 0; });
+      await shoot(page, out('pov-tank-shut'), { settle: SETTLE });
+      await page.evaluate(() => { window.povHatch(true); window.POV.pitch = -1.3; });
+      await shoot(page, out('pov-tank-inside'), { settle: SETTLE });
+      await page.evaluate(() => window.povOff());
     }
   },
 

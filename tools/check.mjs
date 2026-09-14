@@ -146,6 +146,26 @@ for (const device of TARGETS) {
   const povOff = await page.evaluate(() => { document.getElementById('tPov').click(); return !window.POV.on && !document.getElementById('tPov').classList.contains('on'); });
   ok('periscope looks from the unit, turns with a drag, and closes', pov.ok && pov.on && pov.near && pov.turned && pov.btn && povOff, `eye ${pov.height} above the ground`);
 
+  /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
+  const tank = await page.evaluate(() => {
+    const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
+    const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
+    const u = window.spawnUnit(window.G.side, key, (hq ? hq.x : 300) + 90, (hq ? hq.y : 950) + 60, 0);
+    window.G.units.push(u); window.select([u], false);
+    document.getElementById('tPov').click();
+    const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
+    const out = { key, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
+    window.povHatch(true); window.updateCamera(); const up = window.MAT.eye.z;
+    window.povHatch(false); window.updateCamera(); const down = window.MAT.eye.z;
+    out.dropped = +(up - down).toFixed(1); out.above = +(down - window.groundZ(window.MAT.eye.x, window.MAT.eye.y)).toFixed(1);
+    return out;
+  });
+  await frames(page, 2);
+  await page.evaluate(() => { window.povHatch(true); });
+  await frames(page, 2);
+  const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden'); });
+  ok('periscope sits in the tank commander\'s cupola, lid up or shut', tank.closed && tank.hatchShown && tank.pieces > 100 && tank.dropped > 3 && tank.above > 20 && tankOff, `${tank.key}: ${tank.pieces} inside triangles, the eye drops ${tank.dropped} when the lid shuts`);
+
   /* --- the minimap and the tactical map --- */
   await page.click('#tMap');
   await frames(page, 1);

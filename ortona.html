@@ -536,6 +536,7 @@ body.mob #mini{width:104px;height:72px}
   <button class="tool" id="tClear" title="Clear selection and cancel order (Esc)">×<br>CLEAR</button>
   <button class="tool" id="tMap" title="Expand tactical map">▦<br>MAP</button>
   <button class="tool" id="tPov" title="Look from the selected unit (V)">◉<br>LOOK</button>
+  <button class="tool hidden" id="tHatch" title="Open or shut the commander's hatch">▲<br>OPEN</button>
   <button class="tool" id="tPause" title="Pause battle (P)">Ⅱ</button>
 </div>
 
@@ -5972,7 +5973,7 @@ var FSH = [
   'varying vec4 vSunPos; varying float vDist;',
   'uniform sampler2D uAlbedo; uniform sampler2D uFog; uniform sampler2D uDecal; uniform sampler2D uShadow; uniform sampler2D uAtlas;',
   'uniform float uUseTex; uniform vec2 uWorldSize; uniform vec3 uFogCol; uniform vec2 uFogRange;',
-  'uniform float uSeaT; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest;',
+  'uniform float uSeaT; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest; uniform float uInside;',
   'uniform float uAtlasCols; uniform float uAtlasRows;',
   /* one tile of the atlas, repeating, sampled from the vertex uv */
   'vec4 tile(float m, vec2 uv) {',
@@ -6030,6 +6031,10 @@ var FSH = [
   '  float specP = pow(max(0.0, dot(n, H)), vSpec.y) * vSpec.x * lit;',
   '  float fres = pow(1.0 - max(0.0, dot(n, V)), 4.0) * 0.06;',
   '  vec3 c = base * (sky + sun) + vec3(1.0, 0.96, 0.88) * specP + vec3(0.7, 0.8, 0.95) * fres * hemi;',
+  /* inside a hull the sun never reaches: light comes down through the hatch, so a face
+     that looks up is lit and a face that looks down is not, and the shadow map, which
+     cannot see in here, is ignored */
+  '  if (uInside > 0.0) c = base * (0.36 + 0.24 * max(0.0, n.z)) * uInside + vec3(1.0, 0.96, 0.88) * specP * 0.4;',
   '  if (uUseTex > 0.5 && vWpos.z < -40.0) {',
   '    float sw = sin(vWpos.x * 0.05 + uSeaT * 1.6) * sin(vWpos.y * 0.09 - uSeaT * 1.1);',
   '    c += vec3(0.06, 0.08, 0.08) * sw;',
@@ -7281,21 +7286,43 @@ function updateCamera() {
    it, because one man facing a wall is no reason to look at the wall. The renderer
    draws only what the side can see, so what the periscope shows is honest. For now it
    is a view and nothing more: taps give no orders in it. */
-var POV = { on: false, u: null, yaw: 0, pitch: 0, zoom: 1, drag: null, pinch: 0 };
+var POV = { on: false, u: null, yaw: 0, pitch: 0, zoom: 1, drag: null, pinch: 0, hatch: true };
 function povEye() {
-  var u = POV.u, host = u.inside || u, x = host.x, y = host.y, h = host.cat === 'veh' ? 26 : 15.5;
-  if (host.cat !== 'veh' && host.models) for (var i = 0; i < host.models.length; i++) if (host.models[i].alive) { x = host.models[i].x; y = host.models[i].y; break; }
-  return { x: x, y: y, z: groundZ(x, y) + h };
+  var u = POV.u, host = u.inside || u, x = host.x, y = host.y;
+  if (host.cat === 'veh') {
+    /* the commander's head: in his cupola with the lid shut, or up out of it */
+    var I = VMODEL[host.key] && VMODEL[host.key].inside;
+    if (I) {
+      var fr = vehFrames(host), m = I.frame === 'hull' ? fr.hmat : fr.tmat, e = POV.hatch ? I.eyeUp : I.eyeIn;
+      var w = m4apply(m, e.x, e.y, e.z);
+      return { x: w.x, y: w.y, z: w.z };
+    }
+    return { x: x, y: y, z: groundZ(x, y) + 26 };
+  }
+  if (host.models) for (var i = 0; i < host.models.length; i++) if (host.models[i].alive) { x = host.models[i].x; y = host.models[i].y; break; }
+  return { x: x, y: y, z: groundZ(x, y) + 15.5 };
+}
+function povHost() { return POV.u ? (POV.u.inside || POV.u) : null; }
+function povClosed() { var h = povHost(); return !!(h && h.cat === 'veh' && VMODEL[h.key].inside && VMODEL[h.key].inside.closed); }
+function povHatch(up) {
+  POV.hatch = !!up;
+  var b = el('tHatch'); if (b) { b.classList.toggle('on', !POV.hatch); b.innerHTML = POV.hatch ? '&#9698;<br>SHUT' : '&#9650;<br>OPEN'; }
 }
 function povOn(u) {
   if (!u || u.dead || !u.cat) return false;
-  POV.on = true; POV.u = u; POV.yaw = u.facing || 0; POV.pitch = 0; POV.zoom = 1; POV.drag = null; POV.pinch = 0;
+  POV.on = true; POV.u = u; POV.pitch = 0; POV.zoom = 1; POV.drag = null; POV.pinch = 0;
+  var host = u.inside || u;
+  POV.yaw = host.cat === 'veh' && host.turret !== undefined ? host.turret : (host.facing || 0);
+  /* in a tank the lid starts as the crew would have it: up when it is quiet, shut under fire */
+  povHatch(host.cat !== 'veh' || !povClosed() || !buttonedUp(host));
   var b = el('tPov'); if (b) b.classList.add('on');
+  var hb = el('tHatch'); if (hb) hb.classList.toggle('hidden', !povClosed());
   return true;
 }
 function povOff() {
   POV.on = false; POV.u = null; POV.drag = null; POV.pinch = 0;
   var b = el('tPov'); if (b) b.classList.remove('on');
+  var hb = el('tHatch'); if (hb) hb.classList.add('hidden');
 }
 function povToggle() {
   if (POV.on) { povOff(); return; }
@@ -7312,7 +7339,8 @@ function povTurnSign() {
 /* a drag turns the view the way the finger goes: left to look left, up to look up */
 function povLook(dxPix, dyPix) {
   POV.yaw += povTurnSign() * dxPix * .0045 / POV.zoom;
-  POV.pitch = clamp(POV.pitch - dyPix * .0035 / POV.zoom, -.75, .6);
+  /* a man can look at his boots; a commander can look down into his turret */
+  POV.pitch = clamp(POV.pitch - dyPix * .0035 / POV.zoom, povHost() && povHost().cat === 'veh' ? -1.35 : -.75, .6);
 }
 function povZoom(f) { POV.zoom = clamp(POV.zoom * f, 1, 3); }
 /* the field of view is set by the narrower screen axis so a portrait phone still sees
@@ -7330,7 +7358,8 @@ function povCamera() {
   var fx = Math.cos(POV.yaw) * cp, fy = Math.sin(POV.yaw) * cp, fz = sp;
   MAT.eye.x = e.x; MAT.eye.y = e.y; MAT.eye.z = e.z;
   MAT.view = m4lookAt(e.x, e.y, e.z, e.x + fx, e.y + fy, e.z + fz);
-  MAT.proj = m4perspective(povFov(), VIEW.w / VIEW.h, 4, 7000);
+  /* in a cupola the slits are a hand's breadth from the eye, so the near plane comes in */
+  MAT.proj = m4perspective(povFov(), VIEW.w / VIEW.h, povHost() && povHost().cat === 'veh' ? .9 : 4, 7000);
   MAT.vp = m4mul(MAT.proj, MAT.view);
   MAT.fwd = { x: fx, y: fy, z: fz };
   MAT.right = { x: -fy, y: fx, z: 0 };
@@ -7352,9 +7381,11 @@ function drawPovFrame() {
   var mr = el('mini').getBoundingClientRect(); if (mr.width && mr.top < y + 8 && mr.top > H * .45) y = mr.top - 14;
   ctx.textAlign = 'center'; ctx.fillStyle = '#e6e0c8'; ctx.font = (MOB ? '13px ' : '13px ') + 'system-ui, sans-serif';
   ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
-  ctx.fillText((u.def ? u.def.name : 'Unit') + (POV.zoom > 1.05 ? '  ·  x' + POV.zoom.toFixed(1) : ''), W / 2, y - 18);
+  var host = u.inside || u;
+  ctx.fillText((host.def ? host.def.name : 'Unit') + (POV.zoom > 1.05 ? '  ·  x' + POV.zoom.toFixed(1) : ''), W / 2, y - 18);
   ctx.fillStyle = '#b9b3a0'; ctx.font = '11px system-ui, sans-serif';
-  ctx.fillText(MOB ? 'Drag to look  ·  pinch to zoom  ·  tap the camera to return' : 'Drag to look  ·  wheel to zoom  ·  V or Esc to return', W / 2, y);
+  var hatchHint = povClosed() ? (POV.hatch ? 'SHUT to button up  ·  ' : 'OPEN to look out  ·  ') : '';
+  ctx.fillText(MOB ? 'Drag to look  ·  pinch to zoom  ·  ' + hatchHint + 'tap the camera to return' : 'Drag to look  ·  wheel to zoom  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
   ctx.shadowBlur = 0; ctx.textAlign = 'left';
 }
 /* world point (on the ground unless z given) to overlay pixels; null if behind the camera */
@@ -13371,6 +13402,236 @@ function wheeledHull(len, wid, axles, body, cap, sideC, turretless) {
 function scaleFaces(faces, k) {
   return faces.map(function (f) { return { v: f.v.map(function (p) { return [p[0] * k, p[1] * k, p[2] * k]; }), c: f.c, n: f.n, m: f.m, alpha: f.alpha }; });
 }
+/* ---- the inside of a vehicle, for the periscope ----
+   The exterior is a shell whose faces point out, so from inside it is invisible, and the
+   inside is built as its own set of pieces whose faces point in: a ring of wall panels
+   round the turret basket, a floor, a roof with the cupola's hole in it, the cupola's
+   vision slits at the commander's eye, the breech and its recoil guard, the gunner's
+   sight and wheels, the ready rack, the wireless in the bustle, and seats. It is sized
+   off the meshes themselves rather than a table: the hatch's footprint says where the
+   commander's head is, the turret's width says how big the basket is, so a vehicle
+   added later gets an inside for nothing. Open-topped vehicles get the well they fight
+   from and a rim to look over. */
+function bboxOf(faces, keep) {
+  var b = { x0: 1e9, y0: 1e9, z0: 1e9, x1: -1e9, y1: -1e9, z1: -1e9 }, any = false;
+  for (var i = 0; i < faces.length; i++) {
+    var f = faces[i]; if (keep && !keep(f)) continue;
+    for (var k = 0; k < f.v.length; k++) {
+      var p = f.v[k]; any = true;
+      if (p[0] < b.x0) b.x0 = p[0]; if (p[0] > b.x1) b.x1 = p[0];
+      if (p[1] < b.y0) b.y0 = p[1]; if (p[1] > b.y1) b.y1 = p[1];
+      if (p[2] < b.z0) b.z0 = p[2]; if (p[2] > b.z1) b.z1 = p[2];
+    }
+  }
+  return any ? b : null;
+}
+function insideOf(k, V) {
+  var ger = k.indexOf('ger_') === 0, hatch = HATCHES[k];
+  var PAINT = ger ? '#c8c1a0' : '#d3d1c3', PAINT_D = ger ? '#b0a888' : '#bbb9ab', STEEL = '#4a4d48', STEEL_L = '#63665f';
+  var FLOOR = '#3b3e39', LEATHER = '#6b5237', BRASS = '#b8a052', RADIO = '#2f3330', RADIO_L = '#4d524d';
+  var f = [], crew = [], I = { frame: 'tur', closed: !!hatch, crew: crew };
+  var gunnerSide = ger ? -1 : 1;                    /* +y is the vehicle's right on the screen */
+  /* how wide the shell is at a height, between two stations along it: the widest point
+     of any face there, edges crossing the height counted where they cross it, so a
+     leaning wall is read at the height asked for and not at its foot */
+  function halfWidthAt(faces, z, xa, xb, keep) {
+    var w = 0;
+    for (var i = 0; i < faces.length; i++) {
+      var q = faces[i]; if (keep && !keep(q)) continue;
+      /* the cut of this face by the plane: the points where its edges cross it, or its
+         vertices that lie on it; the cut is straight, so a window's widest point is at
+         one of the window's ends */
+      var pts = [], j;
+      for (j = 0; j < q.v.length; j++) {
+        var p = q.v[j], r = q.v[(j + 1) % q.v.length];
+        if (Math.abs(p[2] - z) < .6) pts.push([p[0], p[1]]);
+        if ((p[2] - z) * (r[2] - z) < 0) { var t = (z - p[2]) / (r[2] - p[2]); pts.push([p[0] + (r[0] - p[0]) * t, p[1] + (r[1] - p[1]) * t]); }
+      }
+      if (!pts.length) continue;
+      pts.sort(function (a, b) { return a[0] - b[0]; });
+      var s0 = pts[0], s1 = pts[pts.length - 1];
+      if (s1[0] - s0[0] < 1e-3) { if (s0[0] >= xa && s0[0] <= xb) for (j = 0; j < pts.length; j++) if (Math.abs(pts[j][1]) > w) w = Math.abs(pts[j][1]); continue; }
+      var ca = Math.max(xa, s0[0]), cb = Math.min(xb, s1[0]);
+      if (ca > cb) continue;
+      var ya = s0[1] + (s1[1] - s0[1]) * (ca - s0[0]) / (s1[0] - s0[0]), yb = s0[1] + (s1[1] - s0[1]) * (cb - s0[0]) / (s1[0] - s0[0]);
+      if (Math.abs(ya) > w) w = Math.abs(ya); if (Math.abs(yb) > w) w = Math.abs(yb);
+    }
+    return w;
+  }
+  /* the plan of the shell at a height, as stations three units apart */
+  function planOf(faces, z, x0, x1, keep, inset) {
+    var out = [];
+    for (var x = x0 + 1.5; x < x1; x += 3) {
+      var w = halfWidthAt(faces, z, x - 1.5, x + 1.5, keep) - inset;
+      if (w > 2.5) out.push({ x: x, w: w });
+    }
+    return out;
+  }
+  /* a room from two plans: walls in two tiers (the shell may lean), a floor, and a roof
+     with the cupola's hole in it when there is a roof */
+  function room(planHi, planLo, zFloor, zMid, zRoof, cup) {
+    var i, p, x0 = planHi.length ? planHi[0].x - 1.5 : 0, x1 = planHi.length ? planHi[planHi.length - 1].x + 1.5 : 0;
+    function tier(plan, z0, z1) {
+      if (z1 - z0 < .3) return;
+      for (var t = 0; t < plan.length; t++) {
+        var st = plan[t];
+        f = f.concat(box(st.x, st.w + .8, z0, 3.05, 1.6, z1 - z0, PAINT_D, PAINT_D, PAINT, 0));
+        f = f.concat(box(st.x, -st.w - .8, z0, 3.05, 1.6, z1 - z0, PAINT_D, PAINT_D, PAINT, 0));
+      }
+      if (plan.length) {
+        var a = plan[0], b = plan[plan.length - 1];
+        f = f.concat(box(a.x - 1.5 - .8, 0, z0, 1.6, a.w * 2 + 3.2, z1 - z0, PAINT, PAINT_D, PAINT_D, 0));
+        f = f.concat(box(b.x + 1.5 + .8, 0, z0, 1.6, b.w * 2 + 3.2, z1 - z0, PAINT, PAINT_D, PAINT_D, 0));
+      }
+    }
+    tier(planLo, zFloor, zMid);
+    tier(planHi, zMid, zRoof === null ? zMid : zRoof);
+    for (i = 0; i < planLo.length; i++) { p = planLo[i]; f = f.concat(box(p.x, 0, zFloor - 1, 3.05, p.w * 2 + 1.6, 1, FLOOR, FLOOR, FLOOR, 0)); }
+    if (zRoof !== null) for (i = 0; i < planHi.length; i++) {
+      p = planHi[i];
+      if (cup && p.x + 1.5 > cup.x - cup.r && p.x - 1.5 < cup.x + cup.r) {
+        var yr = cup.y + cup.r, yl = cup.y - cup.r;
+        if (p.w - yr > .2) f = f.concat(box(p.x, (yr + p.w) / 2, zRoof, 3.05, p.w - yr, 1.2, PAINT_D, PAINT, PAINT_D, 0));
+        if (yl + p.w > .2) f = f.concat(box(p.x, (yl - p.w) / 2, zRoof, 3.05, yl + p.w, 1.2, PAINT_D, PAINT, PAINT_D, 0));
+      } else f = f.concat(box(p.x, 0, zRoof, 3.05, p.w * 2 + 1.6, 1.2, PAINT_D, PAINT, PAINT_D, 0));
+    }
+    return { x0: x0, x1: x1 };
+  }
+  function wallRing(cx, cy, R, z0, z1, num, col, colD, th) {
+    if (z1 - z0 < .3) return;
+    var t = th || 1.6;
+    for (var i = 0; i < num; i++) {
+      var a = i * TAU / num, w = TAU * R / num * 1.06;
+      f = f.concat(place(box(R + t / 2, 0, z0, t, w, z1 - z0, col, colD, colD, 0), a, cx, cy, 0));
+    }
+  }
+  /* the cupola: a solid ring from the roof to the eye, then the pillars with the vision
+     slits between them; the lid the game already draws sits above */
+  function cupola(cup, roofZ) {
+    var cr = cup.r - 1.1, b0 = Math.max(cup.z - 2.7, roofZ), b1 = Math.min(b0 + 2.5, cup.z - .15);
+    if (b1 - b0 < 1.2) { b0 = cup.z - 1.4; b1 = cup.z - .15; }
+    wallRing(cup.x, cup.y, cr, roofZ, b0, 8, PAINT, PAINT_D, 1.0);
+    for (var pi = 0; pi < 8; pi++) {
+      var pa = pi * TAU / 8 + TAU / 16, pw = TAU * cr / 8 * .42;
+      f = f.concat(place(box(cr + .5, 0, b0, 1.0, pw, b1 - b0, STEEL, STEEL_L, STEEL, 0), pa, cup.x, cup.y, 0));
+    }
+    return (b0 + b1) / 2;
+  }
+  function breech(x, y, z) {
+    f = f.concat(box(x - 3, y, z - 2.4, 10, 5.2, 4.8, STEEL, STEEL_L, STEEL, .5));       /* the breech ring and block */
+    f = f.concat(box(x - 8.6, y, z - 1.6, 2.2, 3.6, 3.2, STEEL_L, STEEL_L, STEEL, .3));  /* the block itself */
+    f = f.concat(box(x - 5, y - 3.4, z - 3.0, 9, .5, .5, STEEL_L, STEEL_L));             /* the recoil guard */
+    f = f.concat(box(x - 5, y + 3.4, z - 3.0, 9, .5, .5, STEEL_L, STEEL_L));
+    f = f.concat(box(x - 9.4, y, z - 3.0, .5, 7.3, .5, STEEL_L, STEEL_L));
+    f = f.concat(box(x + 1, y + gunnerSide * 5.0, z + .8, 7, 1.3, 1.3, STEEL, STEEL_L, STEEL, .3)); /* the gunner's sight */
+    f = f.concat(cyl(x - 1, y + gunnerSide * 7.2, z - 3.5, 2.4, 2.4, .6, 12, STEEL_L, STEEL, 0, true));     /* handwheels */
+    f = f.concat(cyl(x + 2.5, y + gunnerSide * 7.2, z - 5.5, 2.0, 2.0, .6, 12, STEEL_L, STEEL, 0, true));
+  }
+  function rack(x, y, z, num) {
+    for (var i = 0; i < num; i++) f = f.concat(cyl(x + i * 1.7, y, z, .65, .65, 6.5, 8, BRASS, lit(BRASS, 1.2), 0, true));
+    f = f.concat(box(x + (num - 1) * .85, y, z + 2.5, num * 1.7 + 1, 2.4, .5, STEEL, STEEL_L, STEEL, 0));
+  }
+  function seat(x, y, z) { f = f.concat(box(x, y, z, 4.2, 4.6, 1.3, LEATHER, lit(LEATHER, 1.15), lit(LEATHER, .85), .4)); f = f.concat(cyl(x, y, z - 4, .6, .6, 4, 6, STEEL, STEEL)); }
+  function radio(x, y, z, yaw) { f = f.concat(place(box(0, 0, 0, 3.2, 7.5, 4.6, RADIO, RADIO_L, RADIO, .2).concat(box(1.7, 0, 1.2, .4, 5.5, 2.2, RADIO_L, '#7c8a86', RADIO_L, 0)), yaw, x, y, z)); }
+  /* where a compartment's roof is: the top edge of its walls. The walls are the tall,
+     wide, upright faces; a periscope guard is upright but short, a cupola is upright but
+     stands inside its own footprint, a hatch lid lies flat. */
+  function roofOf(faces, keep, cup) {
+    var z = -1e9;
+    for (var i = 0; i < faces.length; i++) {
+      var q = faces[i]; if (q.v.length < 3 || (keep && !keep(q))) continue;
+      var nn = faceNormal(q.v[0], q.v[1], q.v[2]); if (Math.abs(nn.z) > .35) continue;
+      var lo = 1e9, hi = -1e9, x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9, j;
+      for (j = 0; j < q.v.length; j++) { var p = q.v[j]; if (p[2] < lo) lo = p[2]; if (p[2] > hi) hi = p[2]; if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+      if (hi - lo < 4 || Math.max(x1 - x0, y1 - y0) < 3) continue;
+      if (cup && Math.hypot((x0 + x1) / 2 - cup.x, (y0 + y1) / 2 - cup.y) < cup.r + 1.5) continue;
+      if (hi > z) z = hi;
+    }
+    return z;
+  }
+  function bodyFace(q) { for (var i = 0; i < q.v.length; i++) if (q.v[i][0] > 12) return false; return true; }
+  var tb = bboxOf(V.tur, bodyFace) || bboxOf(V.tur), hb = bboxOf(V.hull);
+  var gunZ = V.gunZ || 0, gunY = V.turY || 0, isWell = V.bar < 20 && !hatch && !V.scout;
+  var cb, cup, roofExt, slab, floor, planHi, planLo, rm, cr;
+  if (hatch && !V.fixed) {
+    /* a closed turret: the room under the roof, read off the shell, the cupola over it */
+    cb = bboxOf(hatch.shut); cup = { x: (cb.x0 + cb.x1) / 2, y: (cb.y0 + cb.y1) / 2, z: cb.z0, r: Math.max(2.4, (cb.x1 - cb.x0) / 2) };
+    roofExt = roofOf(V.tur, bodyFace, cup); if (roofExt < cup.z - 8 || roofExt > cup.z) roofExt = cup.z - 2.6;
+    slab = roofExt - 1.4; floor = -9;
+    /* each tier is read where it meets the shell highest up, because a shell that leans
+       in is narrowest there and a wall read lower down would come out through it */
+    planHi = planOf(V.tur, roofExt - 1.2, tb.x0, Math.min(tb.x1, 12), bodyFace, 1.6);
+    planLo = planOf(V.tur, Math.max(1.0, roofExt - 6.5), tb.x0, Math.min(tb.x1, 12), bodyFace, 1.6);
+    if (!planLo.length) planLo = planHi;
+    rm = room(planHi, planLo, floor, Math.max(floor + 2, roofExt - 6), slab, cup);
+    I.cup = cup; I.eyeUp = { x: cup.x, y: cup.y, z: cup.z + 5.4 }; I.hole = { x: cup.x, y: cup.y, z: roofExt + .35, r: cup.r - .3 };
+    I.eyeIn = { x: cup.x, y: cup.y, z: cupola(cup, slab + 1.2) };
+    I.dbg = { roofExt: roofExt, stations: planHi.length, wHi: planHi.length ? +planHi[Math.floor(planHi.length / 2)].w.toFixed(1) : 0, wLo: planLo.length ? +planLo[Math.floor(planLo.length / 2)].w.toFixed(1) : 0, x0: rm.x0, x1: rm.x1 };
+    breech(2, gunY, gunZ);
+    seat(cup.x, cup.y, floor + 5.5);
+    seat(-2, gunY + gunnerSide * 6.5, floor + 4.5);
+    rack(Math.max(rm.x0 + 2, cup.x - 6), -gunnerSide * 6.5, floor, 5);
+    radio(rm.x0 + 2.4, 0, slab - 7.5, 0);
+    crew.push({ x: -2, y: gunY + gunnerSide * 6.5, z: floor, yaw: 0 });                        /* the gunner, at his sight */
+    crew.push({ x: -4, y: gunY - gunnerSide * 6.5, z: floor, yaw: gunnerSide * Math.PI / 2 });  /* the loader, facing the breech */
+  } else if (hatch && V.fixed) {
+    /* a casemate: the same room read off the hull's upper works, all in the hull's frame */
+    I.frame = 'hull';
+    cb = bboxOf(hatch.shut); cup = { x: (cb.x0 + cb.x1) / 2, y: (cb.y0 + cb.y1) / 2, z: cb.z0, r: Math.max(2.4, (cb.x1 - cb.x0) / 2) };
+    var high = function (q) { for (var i = 0; i < q.v.length; i++) if (q.v[i][2] < cup.z - 12) return false; return true; };
+    var hb2 = bboxOf(V.hull, high) || hb;
+    roofExt = roofOf(V.hull, high, cup); if (roofExt < cup.z - 8 || roofExt > cup.z) roofExt = cup.z - 2.6;
+    slab = roofExt - 1.4; floor = roofExt - 19;
+    planHi = planOf(V.hull, roofExt - 1.2, Math.max(hb2.x0, cup.x - 14), Math.min(hb2.x1, cup.x + 17), high, 1.6);
+    planLo = planOf(V.hull, roofExt - 6.5, Math.max(hb2.x0, cup.x - 14), Math.min(hb2.x1, cup.x + 17), high, 1.6);
+    if (!planLo.length) planLo = planHi;
+    rm = room(planHi, planLo, floor, roofExt - 6, slab, cup);
+    I.cup = cup; I.eyeUp = { x: cup.x, y: cup.y, z: cup.z + 5.4 }; I.hole = { x: cup.x, y: cup.y, z: roofExt + .35, r: cup.r - .3 };
+    I.eyeIn = { x: cup.x, y: cup.y, z: cupola(cup, slab + 1.2) };
+    I.dbg = { roofExt: roofExt, stations: planHi.length, x0: rm.x0, x1: rm.x1 };
+    breech(V.turX + 2, gunY, V.mountZ + gunZ);
+    seat(cup.x, cup.y, floor + 5.5);
+    seat(V.turX - 2, gunY + gunnerSide * 6.5, floor + 4.5);
+    rack(rm.x0 + 2, -gunnerSide * 6.5, floor, 6);
+    radio(rm.x0 + 2.4, 0, slab - 7.5, 0);
+    crew.push({ x: V.turX - 2, y: gunY + gunnerSide * 6.5, z: floor, yaw: 0 });
+    crew.push({ x: V.turX - 4, y: gunY - gunnerSide * 6.5, z: floor, yaw: gunnerSide * Math.PI / 2 });
+  } else if (!isWell) {
+    /* an open-topped turret: the well and a rim to look over, the commander standing */
+    var rim = roofOf(V.tur, bodyFace, null); if (rim < 2 || rim > tb.z1) rim = tb.z1;
+    floor = -8;
+    planHi = planOf(V.tur, rim - 1.2, tb.x0, Math.min(tb.x1, 12), bodyFace, 1.6);
+    planLo = planOf(V.tur, Math.max(1.0, rim - 6.5), tb.x0, Math.min(tb.x1, 12), bodyFace, 1.6);
+    if (!planLo.length) planLo = planHi;
+    rm = room(planHi, planLo, floor, Math.max(floor + 2, rim - 6), null, null);
+    var ex = Math.max(rm.x0 + 3, (rm.x0 + rm.x1) / 2 - 3);
+    I.eyeIn = I.eyeUp = { x: ex, y: 0, z: rim + 5.4 };
+    I.dbg = { rim: rim, stations: planHi.length, x0: rm.x0, x1: rm.x1 };
+    if (V.bar >= 20) { breech(2, gunY, gunZ); seat(-2, gunY + gunnerSide * 6, floor + 4.5); crew.push({ x: -2, y: gunY + gunnerSide * 6, z: floor, yaw: 0 }); rack(rm.x0 + 2, -gunnerSide * 6, floor, 4); }
+    seat(ex, 0, floor + 5.5);
+  } else {
+    /* the well of a half-track or a carrier: the sides read off the hull, the floor, the
+       bench seats and the men on them, the commander standing behind the mount */
+    I.frame = 'hull';
+    var rim4 = V.mountZ, xr = V.turX + 3, xf = V.turX - 26;
+    floor = rim4 - 8.5;
+    planHi = planOf(V.hull, rim4 - 1.5, xf, xr, null, 1.6);
+    planLo = planOf(V.hull, rim4 - 4.5, xf, xr, null, 1.6);
+    if (!planHi.length) planHi = [{ x: (xf + xr) / 2, w: 8 }];
+    if (!planLo.length) planLo = planHi;
+    rm = room(planHi, planLo, floor, rim4 - 4, null, null);
+    I.eyeIn = I.eyeUp = { x: V.turX - 9, y: 0, z: rim4 + 5.4 };
+    I.dbg = { rim: rim4, stations: planHi.length, x0: rm.x0, x1: rm.x1 };
+    var bw = planHi[Math.floor(planHi.length / 2)].w;
+    f = f.concat(box((xf + xr) / 2, -bw + 2.2, floor + 3.5, xr - xf - 4, 4.2, 1.2, LEATHER, lit(LEATHER, 1.15), lit(LEATHER, .85), .3));
+    f = f.concat(box((xf + xr) / 2, bw - 2.2, floor + 3.5, xr - xf - 4, 4.2, 1.2, LEATHER, lit(LEATHER, 1.15), lit(LEATHER, .85), .3));
+    radio(xf + 3, 0, floor + 2, 0);
+    crew.push({ x: V.turX - 14, y: -bw + 3.5, z: floor, yaw: Math.PI / 2 });
+    crew.push({ x: V.turX - 20, y: bw - 3.5, z: floor, yaw: -Math.PI / 2 });
+  }
+  I.faces = f;
+  return I;
+}
 function buildVehicleModels() {
   var us = '#586247', usC = '#798366', usS = '#424a35';
   var gr = '#88784e', grC = '#a18f61', grS = '#675d40';
@@ -13836,6 +14097,7 @@ function buildModels() {
     if (V.turUp) Object.keys(V.turUp).forEach(function (uk) { M.turUp[uk] = facesToBuffer(V.turUp[uk]); });
     if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
     if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
+    V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces); V.inside.faces = null;
     MODELS.veh[k] = M;
   });
   MODELS.team.us = facesToBuffer(TEAMMODEL.us); MODELS.team.ger = facesToBuffer(TEAMMODEL.ger);
@@ -13850,6 +14112,7 @@ function buildModels() {
     var af = bf.filter(function (q) { return q.alpha; });
     MODELS.bldA[k] = af.length ? facesToBuffer(af) : null;
   });
+  MODELS.disc = facesToBuffer([{ v: (function () { var v = []; for (var i = 0; i < 24; i++) v.push([Math.cos(i / 24 * TAU), Math.sin(i / 24 * TAU), 0]); return v; })(), c: '#000000' }]);
   MODELS.flag = { us: facesToBuffer(flagModel(FACTION.us.color)), ger: facesToBuffer(flagModel(FACTION.ger.color)),
                   none: facesToBuffer(flagModel('#b9bda0')) };
 }
@@ -14308,6 +14571,51 @@ function castUnit(u) {
     }
   }
 }
+/* the hull and the mount as they stand this frame: the same matrices for the draw and
+   for the eye in the periscope, so the commander's head is where his hatch is */
+function vehFrames(u) {
+  if (u._matT === G.t && u._mats) return u._mats;
+  var M = VMODEL[u.key], gz = groundZ(u.x, u.y);
+  var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2);
+  var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * 1.35 * sway : 0;
+  var lean = u.immob > 0 ? -.085 * clamp(u.immob / 3, .35, 1) : 0;
+  var nose = clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
+  u.lastSp = u.sp || 0;
+  var sink = u.immob > 0 ? -1.6 : 0;
+  var hmat = m4lean(u.x, u.y, gz + bounce + sink, u.facing, 1, lean, nose);
+  var mp1 = mountPose(u, M), rec = recoilAt(u.recoil) * (M.big ? 9 : 6), mx = u.x, my = u.y;
+  mx += Math.cos(u.facing) * mp1.x - Math.sin(u.facing) * mp1.y;
+  my += Math.sin(u.facing) * mp1.x + Math.cos(u.facing) * mp1.y;
+  var tmat = m4lean(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec,
+                    gz + bounce + sink + mp1.z, u.turret, 1, lean, nose);
+  u._mats = { hmat: hmat, tmat: tmat, mp: mp1 }; u._matT = G.t;
+  return u._mats;
+}
+/* The shell's roof is one plate with no hole under the hatch, because nothing ever
+   looked through it. In the periscope something does: a disc the size of the hatch is
+   drawn in the depth buffer alone, pushed to the far plane, so the inside can be seen
+   through it and nowhere else. It goes down before the lid, so the lid keeps its depth. */
+function drawHole(u, mat) {
+  var I = VMODEL[u.key].inside; if (!I || !I.hole || !MODELS.disc) return;
+  gl.colorMask(false, false, false, false); gl.depthFunc(gl.ALWAYS); gl.depthRange(1, 1);
+  drawGeom(MODELS.disc, m4mul(mat, m4model(I.hole.x, I.hole.y, I.hole.z, 0, I.hole.r)), false);
+  gl.depthRange(0, 1); gl.depthFunc(gl.LESS); gl.colorMask(true, true, true, true);
+}
+/* ---- the inside of the vehicle the periscope is in. Drawn only then, in the same frame
+   as its mount or its hull, and lit by the hatch rather than the sun. ---- */
+function drawInterior(u) {
+  var M = VMODEL[u.key], B = MODELS.veh[u.key], I = M && M.inside; if (!B || !B.inside || !I) return;
+  var fr = vehFrames(u), m = I.frame === 'hull' ? fr.hmat : fr.tmat;
+  gl.uniform1f(PROG.u.uInside, POV.hatch || !I.closed ? 1.0 : .78);
+  drawGeom(B.inside, m, false);
+  /* the crew at their stations, crouched on their seats */
+  var variant = u.side === 'ger' ? 'fj_crew' : 'can_crew', buf = MODELS.crouch[variant], yaw0 = I.frame === 'hull' ? u.facing : u.turret;
+  if (buf) for (var i = 0; i < I.crew.length; i++) {
+    var c = I.crew[i], w = m4apply(m, c.x, c.y, c.z);
+    drawGeom(buf, m4model(w.x, w.y, w.z, yaw0 + c.yaw, 1), false);
+  }
+  gl.uniform1f(PROG.u.uInside, 0);
+}
 function drawUnits3D(v, list) {
   var fr, m;
   for (var i = 0; i < list.length; i++) {
@@ -14316,9 +14624,6 @@ function drawUnits3D(v, list) {
     var tint = [dim, dim, dim];
     if (u.cat === 'veh') {
       var M = VMODEL[u.key], B = MODELS.veh[u.key]; if (!B) continue;
-      var gz = groundZ(u.x, u.y);
-      var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2);
-      var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * 1.35 * sway : 0;
       /* What has been done to it, written on it. Plate that has been hit blackens, a
          vehicle on a shed track lists toward the side it lost and sits down on it, and
          one under way squats on its springs as it picks up and drops onto its nose as it
@@ -14326,23 +14631,16 @@ function drawUnits3D(v, list) {
          fresh off the transporter. */
       var hpf = clamp(u.hp / u.maxhp, 0, 1), soot = 1 - (1 - hpf) * (1 - hpf) * .5;
       var vt = [dim * soot, dim * soot * .985, dim * soot * .96];
-      var lean = u.immob > 0 ? -.085 * clamp(u.immob / 3, .35, 1) : 0;
-      var nose = clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
-      u.lastSp = u.sp || 0;
-      var sink = u.immob > 0 ? -1.6 : 0;
-      var hmat = m4lean(u.x, u.y, gz + bounce + sink, u.facing, 1, lean, nose);
+      var fr = vehFrames(u), hmat = fr.hmat, tmat = fr.tmat;
       drawGeom(B.hull, hmat, false, vt);
-      var mp1 = mountPose(u, M), rec = recoilAt(u.recoil) * (M.big ? 9 : 6), mx = u.x, my = u.y;
-      mx += Math.cos(u.facing) * mp1.x - Math.sin(u.facing) * mp1.y;
-      my += Math.sin(u.facing) * mp1.x + Math.cos(u.facing) * mp1.y;
-      var tmat = m4lean(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec,
-                        gz + bounce + sink + mp1.z, u.turret, 1, lean, nose);
-      var cuk = mountUp(u), ak;
+      var cuk = mountUp(u), ak, povHost = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
       drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
+      if (u === povHost) drawHole(u, M.fixed ? hmat : tmat);
       /* anything bolted to the hull by a fitting: the medic's marks, an MG shield, a
          periscope. Drawn with the hull, whatever the mount is doing. */
       if (u.up) for (ak in u.up) if (u.up[ak] && B.addUp[ak]) drawGeom(B.addUp[ak], hmat, false, vt);
-      secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawGeom(sb, tmat, false, vt); });
+      /* the roof gun comes with the man who works it, and in the periscope that man is the player */
+      secondaryKeys(u).forEach(function (sk) { if (u === povHost && sk === 'mg') return; var sb = secBuffer(B, sk); if (sb) drawGeom(sb, tmat, false, vt); });
       if (u.up && u.up.skirts) { if (B.skirts) drawGeom(B.skirts, hmat, false, vt); if (B.turSkirts) drawGeom(B.turSkirts, tmat, false, vt); }
       /* the hatch, shut or with the commander up in it. On a turret it turns with the
          turret; on a casemate it is part of the roof and stays with the hull. */
@@ -14353,7 +14651,10 @@ function drawUnits3D(v, list) {
            under him put a closed hatch through his boots. Without the gun it is the
            commander up there, and he drops inside the moment the tank is shot at. */
         var roofGun = u.up && u.up.mg && B.mg;
-        if (roofGun) drawGeom(B.leaf, hm, false, vt);
+        /* in the periscope the commander is the player, so only the lid is drawn, up or
+           shut as he has it */
+        if (u === povHost) { gl.uniform1f(PROG.u.uInside, POV.hatch ? 1.0 : .78); if (POV.hatch) { if (B.leaf) drawGeom(B.leaf, hm, false, vt); } else if (B.hatch) drawGeom(B.hatch, hm, false, vt); gl.uniform1f(PROG.u.uInside, 0); }
+        else if (roofGun) drawGeom(B.leaf, hm, false, vt);
         else if (!buttonedUp(u)) drawGeom(B.cmdr, hm, false, vt);
         else if (B.hatch) drawGeom(B.hatch, hm, false, vt);
       }
@@ -14644,6 +14945,7 @@ function render() {
   }
   gl.uniform3f(PROG.u.uSun, SUN.x, SUN.y, SUN.z);
   gl.uniform1f(PROG.u.uAmb, .46);
+  gl.uniform1f(PROG.u.uInside, 0);
   gl.uniform2f(PROG.u.uWorldSize, WORLD.w, WORLD.h);
   gl.uniform3f(PROG.u.uFogCol, .58, .60, .58);
   if (POV.on) gl.uniform2f(PROG.u.uFogRange, 220, 1500);   /* at helmet height the far town fades into the haze */
@@ -14670,6 +14972,7 @@ function render() {
   drawBuildings3D();
   drawWorks3D();
   drawUnits3D(v, list);
+  if (POV.on && POV.u && (POV.u.inside || POV.u).cat === 'veh') drawInterior(POV.u.inside || POV.u);
   drawWrecks3D();
   drawParticles3D();
 
@@ -15770,6 +16073,7 @@ el('tClear').onclick = function () { G.place = null; G.mode = null; select([], f
 el('mini').addEventListener('dblclick', function () { el('mini').classList.toggle('big'); });
 el('tMap').onclick = function () { el('mini').classList.toggle('big'); };
 el('tPov').onclick = povToggle;
+el('tHatch').onclick = function () { if (POV.on) povHatch(!POV.hatch); };
 el('tPause').onclick = function () {
   G.paused = !G.paused;
   el('pausenote').classList.toggle('hidden', !G.paused);
