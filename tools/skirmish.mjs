@@ -77,9 +77,14 @@ async function install(page, baseSrc) {
        afterwards because everything outside this function assumes it. */
     function snap() { const o = {}; for (const k in AI) if (k !== 'side') o[k] = AI[k]; return o; }
     function load(s) { if (s) for (const k in s) AI[k] = s[k]; }
+    /* Which side thinks first alternates. Running one of them first every tick gives it
+       the newer picture and the first orders, every tick, for the whole battle -- a
+       systematic edge sitting underneath every comparison the tool makes. */
+    SK.turn = 0;
     window.aiTick = function (dt) {
       const game = AI.side, keep = snap();
-      ['us', 'ger'].forEach(function (side) {
+      const order = (SK.turn++ & 1) ? ['ger', 'us'] : ['us', 'ger'];
+      order.forEach(function (side) {
         const impl = SK.sides[side] === 'base' && base ? base : real;
         load(SK.st[side]); AI.side = side;
         impl(dt);
@@ -224,14 +229,35 @@ const bySide = {};
   const theirs = matches.filter(m => m.side !== side);
   bySide[side] = { neu: mine, base: theirs.map(m => ({ A: m.B, B: m.A, score: -m.score, t: m.t, over: m.over })) };
 });
+/* The pair difference is the statistic, and it is the only one worth reading. Within a
+   pair the same ground is played twice with the brains swapped, so the sum of the working
+   brain's score in the two halves is what it beat the baseline by with the map cancelled
+   out. The table below averages the two halves separately, which throws the pairing away
+   and reports a point estimate with no error bar -- which is how three runs of the same
+   code came back -140, +287 and -573 and the middle one was read as an improvement.
+
+   So: the mean pair difference, the standard error of it, and a sentence saying whether
+   the result clears the noise. A battle on this map compounds -- whoever wins the first
+   serious clash walks the rest of it -- so a single pair swings by most of a thousand
+   points and small differences need a great many pairs to see. When a run cannot resolve
+   what it was asked to resolve, it says so and says how many pairs would. */
 let won = 0, pairs = 0;
+const diffs = [];
 for (let i = 0; i < N; i++) {
   const a = matches.filter(m => m.pair === i);
   if (a.length < 2) continue;
   pairs++;
   const sum = a[0].score + a[1].score;
+  diffs.push(sum);
   if (sum > 0) won++; else if (sum === 0) won += .5;
 }
+const dMean = diffs.length ? diffs.reduce((s, v) => s + v, 0) / diffs.length : 0;
+const dVar = diffs.length > 1
+  ? diffs.reduce((s, v) => s + (v - dMean) * (v - dMean), 0) / (diffs.length - 1) : 0;
+const dSd = Math.sqrt(dVar), dSe = diffs.length ? dSd / Math.sqrt(diffs.length) : 0;
+const clears = diffs.length > 1 && Math.abs(dMean) > 2 * dSe;
+const needed = (diffs.length > 1 && dMean !== 0)
+  ? Math.ceil(Math.pow(2 * dSd / Math.abs(dMean), 2)) : 0;
 
 if (args.json) {
   console.log(JSON.stringify({ base: baseLabel, pairs: N, secs: SECS, diff: DIFF, won: won, of: pairs,
@@ -260,6 +286,13 @@ if (args.json) {
                   lp(Math.round(mean(s, r => r.mp)), 7));
     });
   });
+  console.log('');
+  console.log(`  pair difference  ${dMean >= 0 ? '+' : ''}${Math.round(dMean)}` +
+              `  (standard error ${Math.round(dSe)} over ${diffs.length} pair${diffs.length === 1 ? '' : 's'};` +
+              ` a pair swings by ${Math.round(dSd)})`);
+  if (!diffs.length) console.log('  nothing to compare.');
+  else if (clears) console.log(`  the working brain is ${dMean > 0 ? 'ahead' : 'behind'} by ${Math.abs(Math.round(dMean))}: that clears twice the standard error.`);
+  else console.log(`  inside the noise: not a result. ${needed && needed < 400 ? 'It would take about ' + needed + ' pairs to see a difference this size.' : 'The difference is too small to see at any sensible number of pairs.'}`);
   console.log(`\n  working AI ahead in ${won} of ${pairs} same-side comparisons` +
               (SELF ? '  (a self match should land near half: the rest is noise, and worth knowing)' : ''));
   console.log('  score is victory point lead plus fourteen per point of ground held, and 300 for ending it.');

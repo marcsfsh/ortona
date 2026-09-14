@@ -43,7 +43,7 @@ Headless Chromium with software WebGL (SwiftShader) is installed and wired up.
 ```sh
 npm install                  # once; Chromium is already on disk
 
-npm run verify               # lint + smoke test, the gate before calling work done
+npm run verify               # lint + map check + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
@@ -159,15 +159,40 @@ An AI cannot be reviewed by reading it, for the same reason a model cannot: whet
 set of decisions beats another is a question about a whole battle, and the only honest
 way to read a change is to fight the old version.
 
-Two things about the numbers are worth knowing before trusting them. **Ortona is not a
-symmetric map** and the two rosters are not the same army: with the same brain on both
-sides the Canadians take thirteen points of ground to the Germans' four. That is why a
-run is made of mirror pairs, each match played twice with the brains swapped, and why
-`--self` is the calibration. And **a battle here compounds** -- whoever wins the first
-serious clash tends to walk the rest of the map -- so a single match is nearly a coin
-toss weighted by a small edge. The score is averaged over the whole match rather than
-read off the final whistle, and even so a six-pair run moves by a couple of hundred
-points between runs. Read the shape of the table, not the last digit.
+**Read the pair difference and nothing else.** Within a pair the same ground is played twice
+with the brains swapped, so the sum of the working brain's score in the two halves is what it
+beat the baseline by with the map cancelled out. That number comes with the standard error of
+it and a sentence saying whether it clears twice that; when it does not, the tool says how many
+pairs it would take. The per-side table underneath averages the two halves separately, which
+throws the pairing away and is a point estimate with no error bar on it -- and that is how
+three runs of the same code came back -140, +287 and -573 and the middle one was read as an
+improvement. A single pair swings by most of a thousand points on this map, so a hundred-point
+change needs something like a hundred pairs to see, and the honest answer to most tactical
+tweaks is that the tool cannot resolve them. Judge those on whether they are right, not on
+whether the table moved.
+
+Two more things about the numbers are worth knowing before trusting them. **The two rosters
+are not the same army**, and the town is hand-placed rather than mirrored, so even with the
+flags now symmetric about the midline a side can have the better of the ground: `--self` is
+the calibration and it currently lands within the noise of even. That is why a run is made
+of mirror pairs, each match played twice with the brains swapped. And **a battle here
+compounds** -- whoever wins the first serious clash tends to walk the rest of the map -- so a
+single match is nearly a coin toss weighted by a small edge. With an AI on both sides a match
+is over in four to six minutes: the loser of the first clash is down to three flags by the
+third minute and its victory points are gone by the fifth, at 0.8 a second per victory flag
+the other side holds, so a 600-second match is nearly always cut short and the score carries
+the 300-point finish. The score is averaged over the marks a match actually ran rather than
+read off the final whistle, and even so a six-pair run moves by a couple of hundred points
+between runs. Read the shape of the table, not the last digit.
+
+A cheaper cross-check than the full card is a kill-switch A/B: extract the working `aiTick`,
+disable one rule by text replacement, inject it against the last commit, and run six pairs.
+Twelve matches give a standard error of about a hundred and ten points a match, which is
+enough to see a rule that breaks the brain and not enough to rank two that both work. The
+reflexes, the goal changes and the production changes were each tried alone that way and each
+landed at parity (+22, +28 and +57 a match), and the full set over twenty-four matches landed
+at +22 with a standard error of 81: the pass is neither better nor worse than the brain before
+it by anything the tool can see, and every rule in it stands on whether it is right.
 
 The columns after the score are the tactical picture, and they are what a change to
 tactics actually moves: ground held, army left alive, how concentrated the sections are,
@@ -176,6 +201,27 @@ far it has pushed, how many different targets the sections that are firing have 
 and how much money it is sitting on. A win rate says which brain is better; those say
 why.
 
+### `tools/mapcheck.mjs` - the map, mechanically
+
+A hand-placed map is a few hundred coordinates and the eye will not hold them. Craters
+swallow trenches, wire runs through a bowl it should stop at, a house stands on an olive
+tree, a lane is drawn as a nice curve straight through a block, and two buildings leave a
+slot between them too narrow to walk down and too wide to read as a party wall. None of
+it shows in a screenshot taken from the angle you happened to choose, and all of it shows
+the moment a section has to walk through it. The first hand-placed draft had a hundred
+and sixty-four conflicts in it and looked fine.
+
+```sh
+node tools/mapcheck.mjs        # every rule
+node tools/mapcheck.mjs --v    # list every conflict rather than the first few
+```
+
+The rules are things that cannot be true of real ground: a crater does not sit on a
+trench, wire is not laid across a bowl or a parapet, nothing stands inside a building, a
+street does not run through one, and two buildings either share a wall or leave room to
+walk between them. Plus two about streets -- nothing thread-width, and nothing that runs
+the length of the map without a junction. It is in `npm run verify`.
+
 ### `tools/lint.mjs` - the rules, mechanically
 
 Checks what a screenshot cannot: that the script still parses, that the file is
@@ -183,7 +229,7 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 900 kB. Takes under a second. Exits non-zero on any violation.
+under 1040 kB. Takes under a second. Exits non-zero on any violation.
 
 ```sh
 node tools/lint.mjs
@@ -194,7 +240,8 @@ node tools/lint.mjs
 Boots the game, deploys, simulates a battle, and asserts: WebGL comes up,
 shadows are on, nothing throws, the economy and victory points move, both
 sides survive, the HUD stays inside the viewport, touch targets are at least
-44px, the tactical map opens, and the map editor loads. Exits non-zero on any
+44px, the tactical map opens, and the map editor loads, opens every category's
+tray, keeps its controls at 44px and throws nothing. Exits non-zero on any
 failure.
 
 ```sh
@@ -304,17 +351,71 @@ craters cut in by `carve`.
 A* in `findPath`. Squads are several models moving in formation around one unit
 position; `updateModels` animates the individual soldiers.
 
+The grid says where a thing can go; `cellCost` says where it would want to, per
+`pathKind`: tracks pay 1.35 off the metalled streets and wheels 1.5, both more on a bank
+(`steep`), and men on foot pay 2.6 to cross wire and a little for a bank. A tank sent
+across the town used to cut straight over the gardens at two thirds pace with the Corso
+fifty units to its left. The smoother prices a shortcut against the path it replaces
+(`lineCost`) rather than only asking whether it is clear, or it cut every bend of the
+street back off across the gardens; and it samples every nine units, because at eighteen
+a line that clipped the corner of a blocked cell passed as clear and the section stood at
+that corner for the rest of the battle. Every path carries the `gridStamp` it was found
+on and is found again when the grid changes, which it does whenever a building goes up:
+retreating sections were found standing against their own side's new motor pool,
+sliding along its wall by a hair a frame, because the wall-slide counted as a step. A
+step that makes no progress for half a second now counts as blocked (`u.blockT`), and
+before a blocked unit asks for a new path it tries the step swung off the line, the way
+a man shoulders round a doorway full of the section in front. A retreat scatters its
+destination behind the headquarters and finishes when it is held up within a few paces
+of it, or a dozen retreating sections arrived into each other and the last stood in the
+crush for good.
+
+A man's place in the formation is not taken if it is inside a wall: he closes on the
+centre instead, by half if that is clear and all the way if not, and his own steps keep
+to the grid like the section's. Before that a section walking down a lane had its flank
+files walking through the houses, half a per cent of all man-frames. Halted with nothing
+to shoot at, a section turns to face the nearest known threat (`u.threatAng`, the bearing
+its cover was chosen against) rather than standing the way it arrived, and a machine gun
+is laid on that bearing before it is needed. A halted tank with a turret brings its hull
+round to its target as well, slowly, because the front plate is nearly twice the side.
+
+`tools/` has no card for any of this; the probe that measured it drives the working
+brain on both sides for four minutes and counts man-frames inside a solid prop, halted
+sections facing their threat, and unit-frames with a path and no progress over four
+seconds, then prices a tank's and a section's path across the town. Old code is injected
+the way `skirmish.mjs` injects a brain. Men in walls went from 0.5 per cent to none and
+stuck unit-frames from up to twelve per cent to none, with the retreat crush the last
+bucket to go.
+
+**Stances.** `u.stance` is `''`, `'ground'` or `'double'`, set by the player from the
+order cards (Z and C) and by the brain for its own men every tick. Gone to ground, a
+halted section lies flat: lying in the open counts as light cover, it is a fifth harder
+to see, a quarter slower on the trigger and shorter-sighted, and it is worth nothing in
+a trench where the ground has done the work already. An MG42 at two hundred kills nearly
+a whole rifle section standing in the open in fifteen seconds and a man and a half of
+one that has gone to ground. At the double a section runs at 1.4 times its pace, and a
+running man is easier to see, easier to hit and half again as easy to pin, so what is
+gained on the crossing is paid for if the crossing is under fire. The brain runs its
+sections to the forming-up point and at the objective while the ground round them is
+quiet and they have no target, and goes to ground where it is when it is caught in the
+open with nowhere to go.
+
 **Combat.** `computeVisibility` fills `vUs`/`vGer` and drives both fog of war
 and target acquisition. `COVER` entries are graded open / light / medium /
 heavy / dug-in; linear cover (walls, trenches) only protects across its face,
 which is what `coverValue` computes from the firing angle. `chooseCover` and
-`coverSlots` are why soldiers tuck themselves against walls.
+`coverSlots` are why soldiers tuck themselves against walls. A burnt-out vehicle
+is cover too (`kind: 'wreck'`, heavy for a tank and medium for a car, added by
+`killUnit` where it died), because thirty tons of plate in the middle of a street
+is the best thing in it to get behind. On desktop the grade of cover under the
+pointer is shown beside it while infantry is selected, so the player can see what
+a move order would land in before giving it.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
-static world is merged into a handful of big buffers by `buildScene`; units and
-vehicles are per-model draws. Fog of war and battle damage are textures the
+static world is merged into tiled buffers by `buildScene` (a grid of prop tiles and
+ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
 ground shader multiplies in. A second 2D canvas (`#ov`) carries everything flat:
 selection rings, health bars, unit labels, the minimap.
 
@@ -360,8 +461,118 @@ produces, buys field upgrades, builds, scores every sector into an objective lis
 weight of sections each is worth, deals the sections that can actually capture out to
 those objectives nearest-first, and then issues one order per unit by job: `take`,
 `raze`, `screen`, `support`, `defend` or `mend`. `DIFF[].skill` gates the tactics rather
-than the arithmetic: 0 keeps green simple, 1 adds houses, upgrades and repair, 2 adds the
-flanking approach.
+than the arithmetic: 0 keeps green simple, 1 adds houses, upgrades, repair and the per-unit
+reflexes below, 2 adds the quiet-side approach and the pincer.
+
+`tools/skirmish.mjs --self` is the calibration for all of it, and the sectors now mirror about
+the midline exactly because of it: the first draft of the town had Via Cavour a hundred units
+nearer its headquarters than Porta Caldari was to the other, and with the same brain on both
+sides the German side took its third flag twenty seconds sooner every game, which on ground that
+pays by the second was the whole battle by the fifth minute. A probe that drives the working
+brain on both sides and counts how often each rule fires is the way to check a new rule is
+reached at all before asking whether it helps: the first version of the duck rule parsed, passed
+the gate and never once fired.
+
+**The staff work is allowed the map; the guns are not.** `acquire` checks `vUs`/`vGer` and nothing
+shoots what it cannot see, but `aiThreat` reads every enemy in the radius whether it has been seen
+or not. That is deliberate and it was measured twice: visible-units-only, and then a decaying
+memory of contacts, both made a worse opponent by about a hundred and seventy points a side over
+six mirror pairs. Threat is what sizes the effort put against a sector, so ground nobody has eyes
+on reads as quiet, is capped at one section and never has a wave formed against it -- the army
+stops attacking because it cannot see who it is attacking. If this is revisited, the thing to fix
+first is that an unscouted sector reads as undefended rather than as unknown.
+
+**It lays its fire support on before it goes in.** `aiOverwatch` sites a weapon by asking whether
+the objective can actually be seen from the post, which `aiFirePost` never did: it took the
+heaviest cover near a point stepped back from the objective, and on a town map that is a machine
+gun sited behind the very block it is meant to be firing past -- it sets up, reports itself in
+position, and fires nothing all battle. A wave will not step off until at least one support weapon
+is set up, inside its own range and with a line to the objective (`aiSetUp`), bounded by the same
+form timer so a gun that cannot find a post does not stop the battle. Anti-tank guns are sited
+differently again: four hundred back rather than a hundred and fifty, on the longest sight line
+onto the ground armour has to come up, because a Pak walked forward with the infantry is dead
+before a tank arrives.
+
+**A wave shoots at one thing.** Ten sections firing at ten different windows suppress nobody, and
+suppression is most of what a wave is for. While a wave presses, `AI.hot` is its target and
+anything in the wave that can reach it and see it takes it -- but only when that gunner has
+nothing of its own in hand, or when the target is armour. Taking it unconditionally drove the
+firing spread down to 0.14 and the men out of cover, because a section that drops the thing
+shooting at it to join the concentration is a section standing in the open. Skill 1 and up.
+
+**Ground changing hands is an event.** It is cheapest to take back in the half minute after it is
+lost, before whoever took it has dug in or been reinforced. The brain had no memory of ownership,
+so a sector that had just fallen was indistinguishable from one that had been enemy-held all
+battle. `AI.ctSec`/`AI.ctT` remember it for thirty-six seconds, during which it ignores the mood's
+reach limits, is worth three hundred more than anything else and is dealt three sections. The
+same idea runs the other way: a sector it has just taken (`AI.momSec`/`AI.momT`) makes the one
+beyond it worth more for half a minute, and the next wave forms at once rather than after the
+full form timer, so a break-in is followed up while the defence is still moving.
+
+**It reads the score.** `vpLead` is its victory points against the enemy's. Behind on points it
+will not sit in `dig` or `hold`, whatever the strength ratio says, because a side that is losing
+on points and holds its ground loses on points; a side comfortably ahead that is also stronger
+stops spending waves and holds what pays. A thin sector -- enemy held with less than a section's
+worth on it -- scores higher, and so does one that would join up what it holds, because ground
+only pays while it is connected to the headquarters.
+
+**It shops against what it can see.** `aiIntel` counts the enemy by kind (infantry, machine guns,
+anti-tank guns, light, medium and heavy armour, men in houses) and `aiCutLadder` re-cuts the
+shopping list against it every tick: two Paks and no armour to answer them puts the light armour
+to the back, heavy armour on the field pulls whatever kills it to the front and the mediums that
+cannot behind it, an enemy with no armour at all puts the anti-tank gun to the back, and armour
+with nothing of ours to answer it brings the gun forward and raises the count on it. The base
+order and the ratchet are unchanged; only the cut moves. The infantry follows the same logic in
+two numbers: `mgCap` goes up one against an all-infantry enemy and `wantElite` drops the fuel
+floor on assault groups when the enemy is sitting in houses or behind two or more machine guns.
+On regular and veteran the first three minutes are an opening (`opening`): the army cap is
+lifted so sections are raised as fast as the headquarters turns them out and every one of them
+goes at the nearest empty flag, because ground taken before anyone is there to contest it is
+held for the rest of the battle at no cost.
+
+**The pincer.** At veteran, a wave against a defended objective splits: `AI.flkX/flkY` is a
+second forming-up post square off the line of approach, three hundred and eighty out, on
+whichever side of the objective `aiThreat` says is quieter, and a third of the sections (never
+fewer than three in the wave, so a hook is never one section on its own) are marked `u.flank`
+and gather there instead. The armour goes with the hook when `IN.gun` says the enemy has
+something that kills armour, because a tank that comes at a gun line from the side comes at it
+where the gun is not pointing; otherwise it stays with the main body. The post is dug once per
+wave and held for the life of it -- re-dealt every tick, the hook walked up and down behind the
+objective and never arrived -- and it is only dug where the far side is actually quiet, because a
+hook that walks into a second position is two assaults where there was one. When the wave goes
+in, the hook ends on the flag on its own side of it, inside the circle that takes it, so the
+defender has two bearings to face.
+
+**The section leader's reflexes.** Four decisions are made per unit, before the plan and from
+what the unit can see, at skill 1 and up (`skill >= 1`; green stands in the street and loses men,
+which is what green is for):
+
+- *Under fire in the open* a section goes to ground: into an empty house within a hundred and
+  twenty (`aiHouse`), behind the nearest real cover within a dash that faces the fire (`aiDuck`,
+  which for a wall is the nearest point of the wall and the side away from the fire), or, outside
+  a wave, back a hundred and fifty the way it came. The threshold is `u.sup > .4` and low on
+  purpose: suppression climbs from nothing to pinned in a few seconds of machine gun fire and
+  decays at a fifth a second, so a rule that waited for half suppression found the men already
+  pinned or already recovered and fired perhaps once a battle. It still fires rarely, and the
+  histogram says why: this combat model shoots sections down to the retreat rule faster than
+  it suppresses them, so most of the time a section under fire is retreating, not ducking.
+- *The odds*: a section outside a wave whose objective is held by more than twice what it is
+  bringing (itself, the men already on the flag, the men moving with it) goes to the fire post
+  three hundred short of the flag instead, the same point a wave against it would form on, and
+  looks again in twenty seconds (`u.holdT`). By then it has been dealt to a wave, which finds it
+  already on the forming-up point, or the rest have come up. It does not stop where it stands:
+  the first version froze in place, usually in the middle of a street, and the army's reach fell
+  by a third. Nearest-first dealing sends sections one at a time and one at a time is what a
+  defended flag eats.
+- *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
+  airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
+  when no friendly section is within a hundred and thirty, opening the range two hundred and
+  firing as it goes (`u.backT`, nine seconds between).
+- *It fights with its front to the gun*: a halted tank caught more than a radian off its facing
+  from a visible gun that can open it, between two hundred and five hundred and forty out, drives
+  at it a hundred and sixty-five to turn (`u.faceT`, eight seconds between). There is no pivot in
+  place, and a move short of a hundred and fifty behind the vehicle is taken by the driver as an
+  instruction to reverse, which would present the rear plate instead.
 
 Two things about it are counter-intuitive enough to be worth knowing before touching it.
 
@@ -433,9 +644,122 @@ is drawn per piece. The player aims one by pressing where it goes and dragging t
 enemy; the bearing matters because `coverValue` strips two grades off fire that comes in
 along the line of a parapet rather than across it.
 
-**Map editor.** A second mode living under `ED`, sharing the renderer. Opens
-from the title screen, edits `G.mapData`, saves to `localStorage`, imports and
-exports JSON.
+**The eighty-eight.** `UNITS.ger_flak88` is the one unit that is never queued: it arrives
+through `WORKS.flak`, a field work the Pioneers build (hotkey 6, 420 marks and 50 fuel,
+forty seconds), and `finishWork` spawns the gun inside the ring of bags facing the way the
+work was aimed, with the crew laid out where a crew stands (`lay` in `finishWork`). It has
+no speed, so `orderRetreat` refuses it, a right-click lays it rather than moving it (the
+`!u.def.speed` clause beside `def.arc` in `issueOrder`), `canGarrison` refuses it, and its
+crew are the only ones that do not walk to cover: the ring is the cover. The mesh is in
+two pieces, `flak36Base` (the cruciform, laid once on `u.baseA`) and `flak36Model` (the
+gun, drawn on `u.facing`), because a Flak 36 traverses on its platform and the platform
+does not turn; `MODELS.gunBase` carries the second buffer and both draw passes and the
+muzzle flash anchor a fixed mount at `u.x/u.y` rather than at the first crewman. Two
+rounds: `def.w` is AP and `def.wUp.he` is HE, `u.up.he` picks, `setRound` costs most of a
+reload to change, and because `mainW` hands back whichever is up, range, target choice,
+the shot and the AI's reading of it all follow the switch with nothing else to tell. The
+cards are J and L; the brain's crews pick AP while armour is in reach and HE otherwise.
+The Canadians have no equivalent, on purpose. `placeWork` now checks a unit-work's
+`limit` (two) and the population cap, which no wall of bags ever needed, and `popOf`
+counts a pegged-out gun's men while the ring is still being built. The brain chooses
+the round at the top of its per-unit loop, before the retreat rule and the target
+reflex can end the tick, because a gun in contact is the one that needs asking; every
+count of anti-tank guns reads `def.w`, the AP round, whatever is up. A knocked-out gun
+stays in its ring as a `gunwreck` work with medium cover. The brain digs
+one once the enemy has brought two vehicles or anything medium, out of money the shopping
+list is not waiting on, on the overwatch post the Pak uses. Fought in the open without its
+ring it takes a Sherman eight times in eight at nineteen seconds and an Achilles or a
+Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone gun with
+elite infantry inside two hundred of it is a dead gun, which is what the men in front of
+it are for.
+
+**Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
+title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
+change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the
+desktop gets the same layout: a dock of categories along the bottom (`ED_CATS`), a tray of
+tools above it, a sheet of options that folds up over that (`edProps`: sliders and
+segmented choices, never a dropdown), a menu behind the top-left button, a little map top
+right that jumps the camera (`edMinimap`), and a panel that takes the screen for lists
+(load, check, test, new, help). Every control is 44px or more and `check.mjs` asserts it,
+sliders included. The first open shows the help (`edPanelHelp`, `ED_HELPED`).
+
+The rule of the hand is the same with a mouse and a thumb: a drag on the ground pans, a
+tap does the tool's one thing, and a press held still picks something up. Only the tools
+that draw (lines, boxes, brushes) take the drag itself, and with those two fingers still
+pan and zoom. The first version placed on any drag with a tool up and grabbed whatever
+was under a finger in select, so in a town it could not be panned at all, and that is
+what the first rating was for. The touch handlers ask `edTouchStart` (does this press
+start a drawing drag, or a pan), `edHold` after 380ms still (pick up: carry a ghost of
+the tool's thing seventy pixels above the fingertip, move what is selected, or box on the
+ground), and finish with `edTap` or `edUp`; a second finger aborts whatever the first was
+doing (`edAbortDrag`) and pinches. With a mouse `ED.press` decides tap from drag at six
+pixels, and a drag in select moves what it lands on, because a pointer is precise enough
+for that and a thumb is not. A tool's `kind` decides the rest: `place` and `stamp` on a
+tap, `line` in one stroke simplified to its corners (`edSimplify`, Douglas-Peucker at
+fourteen units) or point by point with a DONE pill, `rect` a box, `height`, `scatter` and
+`erase` brushes with a radius in the sheet, `stampline` and `stamprect` several things in
+one gesture (`edStampPoint`, `edStampLine`, `edStampRect`, each taking a random source so
+the generator can seed them): a terrace with its own frontages, depths and setbacks, a
+razed block, a courtyard, a farm compound, a gun position with its bags and wire, a
+trench with wire in front of it, an olive grove, a crater field. Select picks the
+smallest thing under the tap (`edPick`) and offers duplicate, copy across the midline and
+delete. Undo and redo are whole-map snapshots (`edSnapshot`, sixty deep). Mirror is on by
+default and every `edPush` mirrors what it adds, flags and headquarters swapping side.
+
+**An edit rebuilds the least it can**, because the first draft rebuilt the whole scene on
+every tap and on a phone that was a pause of seconds between two houses. The props are
+built in tiles (`PT_W` by `PT_H`, `tileOf`, `sceneProps(tile)`, `buildTile`), a static
+tile 0 for what the ground itself grows (outcrop, boulders, pavements, flag poles) and a
+grid for everything placed, each piece seeded from its own position (`seedAt`) so a tile
+comes out the same alone as with the rest; the ground mesh is in the same tiles
+(`buildTerrain(only)`) and the ground paint repaints and uploads a clipped patch
+(`buildAlbedo(rect)`), which matches because the paint is deterministic. `edMark` marks
+the tiles a thing's footprint touches with a margin for what hangs off it, and sets
+`ED.needGround` when its type cuts or paints the ground (`ED_GROUND`), `ED.needGrass` for
+grass, and `ED.padT` for a house, whose flattened pad is caught up in the ground mesh a
+few seconds later when the hand is still. Undo and redo diff the two versions thing by
+thing (`edDiffMark`) so an undo costs what the edit cost. In the game the tiles are
+frustum-culled (`tileInView`), so it draws fewer triangles than the single buffer did.
+`makeHeight` keeps its natural heightfield (`makeHeight._base`) because it is the same
+every time and took most of a second to make. The vertex stream of a tile is moved off
+the heap into `Float32Array` chunks as it grows, because two million numbers in one plain
+array set off collector pauses of seconds. What is left per tile is about a tenth of a
+second of geometry on this container's CPU, and one thing `check.mjs` cannot see past:
+under SwiftShader every third consecutive `bufferData` of a tile blocks for over a second
+whatever the strategy (fresh buffer, reused buffer, `bufferSubData` in pieces), which is
+the command buffer waiting on a software GPU process and not the code; a real GPU takes
+the upload in milliseconds, so the rebuild time the gate prints is not a phone's.
+
+NEW MAP is a generator (`edGenerate`, `ED_TEMPLATES`, `edPanelNew`): a seed and three
+sliders, town, damage and works. It lays out the west half and the midline, a grid of
+streets a little off true with a terrace along every frontage no deeper than the block
+allows, a piazza north of the crossroads, farms by the outer flags, groves, field walls
+and scrub outside, then razes blocks and pocks the fields by the damage slider and digs a
+trench line, gun positions and a roadblock in whatever field there is between the
+headquarters and the town by the works slider, mirrors the west, and runs `edTidy`, which
+takes out anything the check would name. Every draw comes from the seed, so a number is
+a map. `check.mjs` generates every template at three seeds and asserts the check comes
+back clean. The CHECK panel can also copy one half over the other (`edMirrorAll`).
+
+Keeping maps: a draft is written to `localStorage` a couple of seconds after every change
+(`ED_DRAFT`) and is what the editor reopens; named maps live together under `ED_SLOTS`
+with a load list, and the last map saved or tested (`ED_LAST`) is what the title
+screen's PLAY CUSTOM MAP starts. A map goes out as a file (`edExport`), through the
+phone's share sheet where there is one (`edShareFile`, the Web Share API with a JSON file,
+falling back to the download) or as text on the clipboard (`edShareText`, with a
+select-all fallback where the clipboard is refused) and comes in as a file or pasted text
+(`edTakeText`). TEST asks for a side, an opposition and
+a victory rule and deploys on the map; the game-over screen then has a way back
+(`#overedit`, `ED.fromEditor`).
+
+CHECK runs the rules of `tools/mapcheck.mjs` on the device (`edCheck`: craters on
+trenches, wire through craters and trenches, anything inside a building, buildings that
+overlap or leave a slot too narrow to walk, streets through buildings, streets too narrow
+or too long, plus what a game needs: both headquarters, a victory flag, three flags),
+each with a GO that flies the camera to it, and a balance table (`edBalance`): buildings,
+cover, craters, trees, trenches and wire on each half, and every flag's distance from
+each headquarters, with anything lopsided marked. The shipped map comes back clean from
+both, which is the calibration.
 
 ---
 
