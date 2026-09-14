@@ -414,8 +414,8 @@ a move order would land in before giving it.
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
-static world is merged into a handful of big buffers by `buildScene`; units and
-vehicles are per-model draws. Fog of war and battle damage are textures the
+static world is merged into tiled buffers by `buildScene` (a grid of prop tiles and
+ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
 ground shader multiplies in. A second 2D canvas (`#ov`) carries everything flat:
 selection rings, health bars, unit labels, the minimap.
 
@@ -677,34 +677,78 @@ it are for.
 title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
 change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the
 desktop gets the same layout: a dock of categories along the bottom (`ED_CATS`), a tray of
-tools above it, a sheet of options that slides up over that (`edProps`: sliders and
-segmented choices, never a dropdown), a menu behind the top-left button, and a panel that
-takes the screen for lists (load, check, test). Every control is 44px or more and
-`check.mjs` asserts it.
+tools above it, a sheet of options that folds up over that (`edProps`: sliders and
+segmented choices, never a dropdown), a menu behind the top-left button, a little map top
+right that jumps the camera (`edMinimap`), and a panel that takes the screen for lists
+(load, check, test, new, help). Every control is 44px or more and `check.mjs` asserts it,
+sliders included. The first open shows the help (`edPanelHelp`, `ED_HELPED`).
 
-How the hand works it (`edDown`/`edMove`/`edUp`, which the game's pointer and touch
-handlers hand screen coordinates too): a tool's `kind` decides. `place` puts a thing down
-on a tap, and a press that moves carries a ghost of it seventy pixels above the fingertip
-(`ED.touching`) so it can be watched going down; `line` takes one stroke, simplified to
-its corners (`edSimplify`, Douglas-Peucker at fourteen units), or taps point by point
-with a DONE pill; `rect` drags a box; `height`, `scatter` and `erase` are brushes with a
-radius in the sheet, and scatter puts one thing down every `step` units of travel with a
-size drawn from `rr`; `stamp`, `stampline` and `stamprect` put down several things in one
-gesture (`edStampPoint`, `edStampLine`, `edStampRect`): a terrace laid along a stroke
-with its own frontages, depths and setbacks, a razed block, a courtyard, a farm compound,
-a gun position with its bags and wire, a trench with wire in front of it, an olive grove,
-a crater field. Select picks the smallest thing under the tap (`edPick`), drags the
-selection as a group, boxes several with shift-drag or, on a phone, a press held still
-(`edMarquee`), and offers duplicate, copy across the midline and delete. Undo and redo
-are whole-map snapshots (`edSnapshot`, sixty deep). Mirror is on by default and every
-`edPush` mirrors what it adds, flags and headquarters swapping side.
+The rule of the hand is the same with a mouse and a thumb: a drag on the ground pans, a
+tap does the tool's one thing, and a press held still picks something up. Only the tools
+that draw (lines, boxes, brushes) take the drag itself, and with those two fingers still
+pan and zoom. The first version placed on any drag with a tool up and grabbed whatever
+was under a finger in select, so in a town it could not be panned at all, and that is
+what the first rating was for. The touch handlers ask `edTouchStart` (does this press
+start a drawing drag, or a pan), `edHold` after 380ms still (pick up: carry a ghost of
+the tool's thing seventy pixels above the fingertip, move what is selected, or box on the
+ground), and finish with `edTap` or `edUp`; a second finger aborts whatever the first was
+doing (`edAbortDrag`) and pinches. With a mouse `ED.press` decides tap from drag at six
+pixels, and a drag in select moves what it lands on, because a pointer is precise enough
+for that and a thumb is not. A tool's `kind` decides the rest: `place` and `stamp` on a
+tap, `line` in one stroke simplified to its corners (`edSimplify`, Douglas-Peucker at
+fourteen units) or point by point with a DONE pill, `rect` a box, `height`, `scatter` and
+`erase` brushes with a radius in the sheet, `stampline` and `stamprect` several things in
+one gesture (`edStampPoint`, `edStampLine`, `edStampRect`, each taking a random source so
+the generator can seed them): a terrace with its own frontages, depths and setbacks, a
+razed block, a courtyard, a farm compound, a gun position with its bags and wire, a
+trench with wire in front of it, an olive grove, a crater field. Select picks the
+smallest thing under the tap (`edPick`) and offers duplicate, copy across the midline and
+delete. Undo and redo are whole-map snapshots (`edSnapshot`, sixty deep). Mirror is on by
+default and every `edPush` mirrors what it adds, flags and headquarters swapping side.
+
+**An edit rebuilds the least it can**, because the first draft rebuilt the whole scene on
+every tap and on a phone that was a pause of seconds between two houses. The props are
+built in tiles (`PT_W` by `PT_H`, `tileOf`, `sceneProps(tile)`, `buildTile`), a static
+tile 0 for what the ground itself grows (outcrop, boulders, pavements, flag poles) and a
+grid for everything placed, each piece seeded from its own position (`seedAt`) so a tile
+comes out the same alone as with the rest; the ground mesh is in the same tiles
+(`buildTerrain(only)`) and the ground paint repaints and uploads a clipped patch
+(`buildAlbedo(rect)`), which matches because the paint is deterministic. `edMark` marks
+the tiles a thing's footprint touches with a margin for what hangs off it, and sets
+`ED.needGround` when its type cuts or paints the ground (`ED_GROUND`), `ED.needGrass` for
+grass, and `ED.padT` for a house, whose flattened pad is caught up in the ground mesh a
+few seconds later when the hand is still. Undo and redo diff the two versions thing by
+thing (`edDiffMark`) so an undo costs what the edit cost. In the game the tiles are
+frustum-culled (`tileInView`), so it draws fewer triangles than the single buffer did.
+`makeHeight` keeps its natural heightfield (`makeHeight._base`) because it is the same
+every time and took most of a second to make. The vertex stream of a tile is moved off
+the heap into `Float32Array` chunks as it grows, because two million numbers in one plain
+array set off collector pauses of seconds. What is left per tile is about a tenth of a
+second of geometry on this container's CPU, and one thing `check.mjs` cannot see past:
+under SwiftShader every third consecutive `bufferData` of a tile blocks for over a second
+whatever the strategy (fresh buffer, reused buffer, `bufferSubData` in pieces), which is
+the command buffer waiting on a software GPU process and not the code; a real GPU takes
+the upload in milliseconds, so the rebuild time the gate prints is not a phone's.
+
+NEW MAP is a generator (`edGenerate`, `ED_TEMPLATES`, `edPanelNew`): a seed and three
+sliders, town, damage and works. It lays out the west half and the midline, a grid of
+streets a little off true with a terrace along every frontage no deeper than the block
+allows, a piazza north of the crossroads, farms by the outer flags, groves, field walls
+and scrub outside, then razes blocks and pocks the fields by the damage slider and digs a
+trench line, gun positions and a roadblock in whatever field there is between the
+headquarters and the town by the works slider, mirrors the west, and runs `edTidy`, which
+takes out anything the check would name. Every draw comes from the seed, so a number is
+a map. `check.mjs` generates every template at three seeds and asserts the check comes
+back clean. The CHECK panel can also copy one half over the other (`edMirrorAll`).
 
 Keeping maps: a draft is written to `localStorage` a couple of seconds after every change
 (`ED_DRAFT`) and is what the editor reopens; named maps live together under `ED_SLOTS`
 with a load list, and the last map saved or tested (`ED_LAST`) is what the title
-screen's PLAY CUSTOM MAP starts. A map goes out as a file (`edExport`) or as text on the
-clipboard (`edShareText`, with a select-all fallback where the clipboard is refused) and
-comes in as a file or pasted text (`edTakeText`). TEST asks for a side, an opposition and
+screen's PLAY CUSTOM MAP starts. A map goes out as a file (`edExport`), through the
+phone's share sheet where there is one (`edShareFile`, the Web Share API with a JSON file,
+falling back to the download) or as text on the clipboard (`edShareText`, with a
+select-all fallback where the clipboard is refused) and comes in as a file or pasted text
+(`edTakeText`). TEST asks for a side, an opposition and
 a victory rule and deploys on the map; the game-over screen then has a way back
 (`#overedit`, `ED.fromEditor`).
 

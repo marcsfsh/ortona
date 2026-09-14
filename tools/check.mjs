@@ -146,6 +146,9 @@ for (const device of TARGETS) {
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
   const ed = await page.evaluate(() => {
+    /* the first run opens the help; a thumb closes it */
+    const helped = window.ED.panel;
+    window.edPanelClose();
     const cats = document.querySelectorAll('#eddock .edtab').length;
     let tools = 0;
     window.ED_CATS.forEach(c => { tools += c.tools.length; });
@@ -158,11 +161,36 @@ for (const device of TARGETS) {
     document.querySelectorAll('#edtop .edb, #eddock .edtab, #edtray .edtool, #edpill .edb').forEach(b => {
       const r = b.getBoundingClientRect(); if (!r.width) return; checked++; if (r.width < 44 || r.height < 44) small++;
     });
-    return { on: window.ED.on, cats, tools, opened, small, checked };
+    /* the NEW MAP panel's controls too, sliders included */
+    window.edPanelNew();
+    document.querySelectorAll('#edpanel .edb, #edpanel input').forEach(b => {
+      const r = b.getBoundingClientRect(); if (!r.width) return; checked++; if (r.width < 44 || r.height < 44) small++;
+    });
+    window.edPanelClose();
+    /* the generator: every template, a few seeds, and the check comes back clean */
+    let gen = 0, dirty = 0, houses = 0;
+    window.ED_TEMPLATES.forEach(t => {
+      if (t.town === undefined) return;
+      for (let seed = 1; seed <= 3; seed++) {
+        const d = window.edGenerate({ name: t.name, seed: seed * 4243, town: t.town, damage: t.damage, works: t.works });
+        const keep = window.ED.data; window.ED.data = d; const probs = window.edCheck().length; window.ED.data = keep;
+        gen++; if (probs) dirty++; houses += d.entities.filter(e => e.t === 'house').length;
+      }
+    });
+    /* an edit rebuilds tiles, not the scene: a house marks a few tiles and no ground */
+    window.ED.tiles = {}; window.ED.needGround = false;
+    window.edAdd(window.edNewEntity({ t: 'house', def: { w: 110, h: 100, tall: 0, style: 'row' } }, 700, 700));
+    const tiles = Object.keys(window.ED.tiles).length, ground = window.ED.needGround;
+    const t0 = performance.now(); window.edRebuildNow(); const rebuildMs = Math.round(performance.now() - t0);
+    window.edUndo(); window.edRebuildNow();
+    return { on: window.ED.on, cats, tools, opened, small, checked, helped, gen, dirty, houses, tiles, ground, rebuildMs, nTiles: window.PT_N };
   });
   ok('map editor opens', ed.on, `${ed.cats} categories, ${ed.tools} tools`);
+  ok('editor shows its help on first run', ed.helped === 'HOW THE EDITOR WORKS');
   ok('every editor category opens its tray', ed.opened === ed.cats, `${ed.opened}/${ed.cats}`);
   ok('editor controls are at least 44px', ed.small === 0, `${ed.checked} controls checked, ${ed.small} small`);
+  ok('generated maps come back clean from the check', ed.gen > 0 && ed.dirty === 0, `${ed.gen} maps, ${ed.dirty} with problems, ${Math.round(ed.houses / ed.gen)} houses each`);
+  ok('a placed house rebuilds a few tiles and no ground', ed.tiles > 0 && ed.tiles <= 8 && !ed.ground, `${ed.tiles} of ${ed.nTiles} tiles, ${ed.rebuildMs} ms under SwiftShader`);
   ok('map editor throws nothing', log.errors.length === edErrorsBefore);
 
   if (KEEP) {

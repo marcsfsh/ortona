@@ -388,10 +388,20 @@ body.mob #edtest{padding:0 10px}
   border-top:1px solid #3c4430;padding:6px 12px 10px;pointer-events:auto;font:12px/1.5 var(--cond);color:#c8c3af}
 #edsheet.hidden{display:none}
 #edsheet.up{bottom:calc(132px + var(--safeB))}
-#edsheet .edgrab{width:44px;height:4px;border-radius:2px;background:#3c4430;margin:2px auto 8px}
-#edsheet .edrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;min-height:32px}
-#edsheet .edrow label{flex:0 0 auto;color:#9fb08a;letter-spacing:1px;font-size:10.5px;text-transform:uppercase}
-#edsheet input[type=range]{flex:1;min-width:0;height:32px;accent-color:#7a9a5a}
+#edsheet .edgrab{display:block;width:100%;min-height:44px;background:transparent;border:none;color:#9fb08a;font:11px/1.2 var(--cond);letter-spacing:1px;cursor:pointer;padding:4px 0 2px;pointer-events:auto}
+#edsheet .edgrab .bar{display:block;width:44px;height:4px;border-radius:2px;background:#4b5744;margin:0 auto 6px}
+#edsheet .edgrab .edsum{display:block;text-transform:uppercase}
+#edsheet.folded #edprops{display:none}
+#edsheet.folded{padding-bottom:4px}
+#edsheet .edrow,#edpanelbody .edrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;min-height:32px}
+#edsheet .edrow label,#edpanelbody .edrow label{flex:0 0 auto;color:#9fb08a;letter-spacing:1px;font-size:10.5px;text-transform:uppercase;min-width:52px}
+#edsheet input[type=range],#edpanelbody input[type=range]{flex:1;min-width:0;height:44px;accent-color:#7a9a5a}
+#edpanelbody .edrow span{min-width:28px;text-align:right;color:#e6e0c8;font-size:12px}
+#edpanelbody .edrow input[type=text]{flex:1;width:auto;min-width:0}
+#edpanelbody .edrow .edb{min-height:44px;padding:0 10px}
+#edpanelbody .edseg{display:flex;gap:4px;flex-wrap:wrap}
+#edpanelbody .edseg .edb{flex:1 1 auto;min-height:44px;padding:0 6px}
+#edpanelbody .edtxt{color:#c8c3af;font-size:13px;line-height:1.45;margin-bottom:6px}
 #edsheet select,#edsheet input[type=text]{background:#151a12;color:#e6e0c8;border:1px solid #3c4430;font:13px var(--cond);padding:6px 8px;min-height:36px;flex:1;min-width:0}
 #edsheet .edseg{display:flex;gap:4px;flex:1}
 #edsheet .edseg .edb{flex:1;padding:0 4px;min-height:36px}
@@ -421,11 +431,18 @@ body.mob #edpanel{top:calc(54px + var(--safeT))}
   border:1px solid #3c4430;border-left:none;padding:8px;pointer-events:auto;z-index:2}
 body.mob #edmenus{top:calc(54px + var(--safeT))}
 #edmenus.hidden{display:none}
+body:not(.mob) #edmenus{width:440px;display:grid;grid-template-columns:1fr 1fr;column-gap:6px;align-content:start}
+body:not(.mob) #edmenus .edh{grid-column:1 / -1}
+body:not(.mob) #edmenus.hidden{display:none}
 #edmenus .edh{color:#8f9a78;letter-spacing:1.6px;font-size:10px;margin:8px 0 2px}
 #edhint{position:absolute;left:8px;right:8px;bottom:calc(70px + var(--safeB));pointer-events:none;color:#c8c3af;font:12px/1.4 var(--cond);text-shadow:0 1px 2px #000;text-align:center}
 #edpill{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(150px + var(--safeB));display:flex;gap:6px;pointer-events:auto;z-index:1}
 #edpill.hidden{display:none}
 #edpill .edb{min-height:44px;font-size:12px}
+#edmini{position:absolute;right:8px;top:60px;width:140px;height:95px;border:1px solid #3c4430;background:#0b0d07;pointer-events:auto;opacity:.92}
+body.mob #edmini{top:calc(60px + var(--safeT));width:118px;height:80px}
+#edmini canvas{width:100%;height:100%;display:block}
+#editor.panel #edmini{display:none}
 #start .row .edb{margin-left:8px}
 
 /* ---------- HUD corrections, applied last ---------- */
@@ -477,6 +494,7 @@ body.mob #mini{width:104px;height:72px}
     <button class="edb wide" id="edmortona">RELOAD ORTONA</button>
     <div class="edh">FILES</div>
     <button class="edb wide" id="edmexport">EXPORT FILE</button>
+    <button class="edb wide" id="edmsharefile">SHARE…</button>
     <button class="edb wide" id="edmimport">IMPORT FILE</button>
     <button class="edb wide" id="edmshare">COPY AS TEXT</button>
     <button class="edb wide" id="edmpaste">PASTE TEXT…</button>
@@ -485,14 +503,16 @@ body.mob #mini{width:104px;height:72px}
     <button class="edb wide" id="edmsnap">SNAP: OFF</button>
     <button class="edb wide" id="edmfit">FIT THE MAP</button>
     <button class="edb wide" id="edmbalance">CHECK AND BALANCE</button>
+    <button class="edb wide" id="edmhelp">HELP</button>
     <button class="edb wide warn" id="edmexit">EXIT EDITOR</button>
   </div>
   <div id="edpanel" class="hidden"><div class="edph"><span id="edpaneltitle"></span><button class="edb ico" id="edpanelclose" aria-label="Close">✕</button></div><div id="edpanelbody"></div></div>
-  <div id="edsheet" class="hidden"><div class="edgrab"></div><div id="edprops"></div></div>
+  <div id="edsheet" class="hidden"><button class="edgrab" id="edgrab" aria-label="Show or hide the options"><span class="bar"></span><span class="edsum" id="edsum"></span></button><div id="edprops"></div></div>
   <div id="edpill" class="hidden"><button class="edb" id="edpillok">✓ DONE</button><button class="edb warn" id="edpillx">✕ CANCEL</button></div>
   <div id="edtray" class="hidden"></div>
   <div id="eddock"></div>
   <div id="edhint"></div>
+  <div id="edmini"><canvas id="edminicv" aria-label="Map overview"></canvas></div>
   <input type="file" id="edfile" accept=".json,application/json" class="hidden">
 </div>
 
@@ -1719,6 +1739,14 @@ function hridge(x, y, s, oct) {
   return v / sum;
 }
 function makeHeight() {
+  /* the noise under everything never changes for a given world, and it is two thirds
+     of a second of arithmetic: the editor rebuilds the ground after every stroke and
+     was paying for it every time */
+  if (makeHeight._base) {
+    G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
+    G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+    return;
+  }
   var h = new Float32Array(HW * HH), i, j, k;
   var MX = WORLD.w / 2, MY = WORLD.h / 2;
   /* the town and the ground the two sides face each other across stay quiet */
@@ -1883,6 +1911,7 @@ function makeHeight() {
     var j0 = Math.max(0, j - 1), j1 = Math.min(HH - 1, j + 1);
     sm[hidx(i, j)] = (h[hidx(i0, j)] + h[hidx(i1, j)] + h[hidx(i, j0)] + h[hidx(i, j1)] + h[hidx(i, j)] * 2) / 6;
   }
+  makeHeight._base = new Float32Array(sm);
   G.hmap0 = sm; G.hmap = new Float32Array(sm);
   G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
 }
@@ -6446,9 +6475,9 @@ function facesToArray(faces, out) {
     /* triplanar: project along the face's dominant axis */
     var ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
     for (var k = 1; k < v.length - 1; k++) {
-      var idx = [0, k, k + 1];
       for (var q = 0; q < 3; q++) {
-        var p = v[idx[q]], nn = f.n ? f.n[idx[q]] : null, u, w;
+        var vi = q === 0 ? 0 : q === 1 ? k : k + 1;
+        var p = v[vi], nn = f.n ? f.n[vi] : null, u, w;
         if (az >= ax && az >= ay) { u = p[0]; w = p[1]; } else if (ax >= ay) { u = p[1]; w = p[2]; } else { u = p[0]; w = p[2]; }
         out.push(p[0], p[1], p[2], nn ? nn[0] : n.x, nn ? nn[1] : n.y, nn ? nn[2] : n.z, c[0], c[1], c[2], u * sc, w * sc, mi);
       }
@@ -6460,10 +6489,18 @@ var STRIDE = 48;
 function makeBuffer(arr) {
   var b = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, b);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(arr), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, arr instanceof Float32Array ? arr : new Float32Array(arr), gl.STATIC_DRAW);
   return { vbo: b, n: arr.length / 12 };
 }
 function facesToBuffer(faces) { return makeBuffer(facesToArray(faces)); }
+function freeBuffer(b) { if (b && b.vbo) gl.deleteBuffer(b.vbo); }
+/* one tile of props, freeing what it replaces so the editor does not fill the card */
+function buildTile(ti) {
+  var pf = sceneProps(ti), old = SCENE.tiles[ti];
+  if (old) { freeBuffer(old.props); freeBuffer(old.leaves); }
+  SCENE.tiles[ti] = { props: makeBuffer(pf.opaque), leaves: makeBuffer(pf.alpha) };
+}
+function buildTiles() { for (var ti = 0; ti < PT_N; ti++) buildTile(ti); }
 function bindGeom(buf) {
   gl.bindBuffer(gl.ARRAY_BUFFER, buf.vbo);
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE, 0);
@@ -6494,14 +6531,30 @@ function makeTexture(w, h, linear) {
   return t;   /* left bound on unit 6; callers upload, then restore unit 0 */
 }
 var TEX = { albedo: null, fog: null, decal: null };
-var SCENE = { terrain: null, props: null, grass: null, leaves: null, ready: false };
+var SCENE = { ground: [], tiles: [], grass: null, ready: false };
+/* ---- the props are built in tiles, a static one for what the ground itself grows
+   (outcrop, boulders, pavements, flag poles) and a grid of twelve for everything placed,
+   each keyed by where a thing stands. The editor rebuilds only the tiles an edit
+   touched, which is a twelfth of the work; the game builds them all once. Every piece
+   is seeded from its own position so a tile comes out the same whether it is built
+   alone or with the rest. ---- */
+var PT_W = 6, PT_H = 4, PT_N = 1 + PT_W * PT_H;
+function tileOf(x, y) {
+  var i = Math.min(PT_W - 1, Math.max(0, Math.floor(x / (WORLD.w / PT_W))));
+  var j = Math.min(PT_H - 1, Math.max(0, Math.floor(y / (WORLD.h / PT_H))));
+  return 1 + j * PT_W + i;
+}
+function seedAt(x, y, k) { _s = ((Math.floor(x) * 2654435 + Math.floor(y) * 40503 + (k || 0) * 977 + 4242) >>> 0) || 1; }
 
 /* ---- the terrain heightfield ---- */
 var TG = 8;
 /* The mesh is 8 units across the open ground and 4 wherever the ground has been dug:
    near a trench, a shell hole or a road edge. Fine cells that border coarse ones have
    their shared-edge midpoints pinned to the coarse edge, so there are no cracks. */
-function buildTerrain() {
+/* the ground mesh, in the same tiles as the props; only the tiles named in `only` are
+   rebuilt when it is given, which is how the editor cuts a crater without meshing the
+   whole map again */
+function buildTerrain(only) {
   var cols = Math.floor(WORLD.w / TG), rows = Math.floor(WORLD.h / TG);
   var arr = [];
   /* which coarse cells need refining */
@@ -6542,8 +6595,13 @@ function buildTerrain() {
     vert(x0, y0, z00); vert(x1, y0, z10); vert(x0, y1, z01);
     vert(x1, y0, z10); vert(x1, y1, z11); vert(x0, y1, z01);
   }
-  for (var j = 0; j < rows; j++) {
-    for (var i = 0; i < cols; i++) {
+  for (var ti = 1; ti < PT_N; ti++) {
+    if (only && !only[ti]) continue;
+    var tci = (ti - 1) % PT_W, tcj = Math.floor((ti - 1) / PT_W);
+    var ci0 = Math.floor(tci * cols / PT_W), ci1 = Math.floor((tci + 1) * cols / PT_W);
+    var cj0 = Math.floor(tcj * rows / PT_H), cj1 = Math.floor((tcj + 1) * rows / PT_H);
+    arr = [];
+    for (var j = cj0; j < cj1; j++) for (var i = ci0; i < ci1; i++) {
       var x0 = i * TG, y0 = j * TG, x1 = Math.min(WORLD.w, x0 + TG), y1 = Math.min(WORLD.h, y0 + TG);
       if (!fine[j * cols + i]) { quad(x0, y0, x1, y1); continue; }
       var xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
@@ -6559,29 +6617,69 @@ function buildTerrain() {
       quad(x0, ym, xm, y1, zW, zC, z01, zS);
       quad(xm, ym, x1, y1, zC, zE, zS, z11);
     }
+    freeBuffer(SCENE.ground[ti]); SCENE.ground[ti] = makeBuffer(arr);
   }
-  SCENE.terrain = makeBuffer(arr);
+}
+/* the ground bounds of a tile, for culling */
+function tileBox(ti) {
+  var i = (ti - 1) % PT_W, j = Math.floor((ti - 1) / PT_W), tw = WORLD.w / PT_W, th = WORLD.h / PT_H;
+  return { x0: i * tw, y0: j * th, x1: (i + 1) * tw, y1: (j + 1) * th };
+}
+function tileInView(v, ti, pad) {
+  if (ti === 0) return true;
+  var b = tileBox(ti);
+  return b.x1 > v.x - pad && b.x0 < v.x + v.w + pad && b.y1 > v.y - pad && b.y0 < v.y + v.h + pad;
 }
 /* the painted ground: reuse the flat painter, then hand the canvas to the GPU */
-function buildAlbedo() {
-  var scale = 1;
-  var c = document.createElement('canvas');
-  c.width = Math.round(WORLD.w * scale); c.height = Math.round(WORLD.h * scale);
+/* the ground paint. Given a rect and a painting already up, it repaints only that
+   patch (clipped, so the paint comes out the same) and uploads only that patch: the
+   paint is deterministic, so a patch matches what was around it. */
+function buildAlbedo(rect) {
+  var patch = rect && mbase && TEX.albedo;
+  var c = patch ? mbase : document.createElement('canvas');
+  if (!patch) { c.width = WORLD.w; c.height = WORLD.h; }
   var t = c.getContext('2d');
-  t.scale(scale, scale);
+  var x0 = 0, y0 = 0, x1 = c.width, y1 = c.height;
+  if (patch) {
+    x0 = clamp(Math.floor(rect.x0), 0, c.width); y0 = clamp(Math.floor(rect.y0), 0, c.height);
+    x1 = clamp(Math.ceil(rect.x1), 0, c.width); y1 = clamp(Math.ceil(rect.y1), 0, c.height);
+    if (x1 <= x0 || y1 <= y0) return;
+    t.save(); t.beginPath(); t.rect(x0, y0, x1 - x0, y1 - y0); t.clip();
+  }
   _s = 777001;
   paintGround(t, MOB ? .55 : 1);
-  TEX.albedo = makeTexture(c.width, c.height, true);
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, c);
+  if (patch) {
+    t.restore();
+    var sc = document.createElement('canvas'); sc.width = x1 - x0; sc.height = y1 - y0;
+    sc.getContext('2d').drawImage(c, x0, y0, sc.width, sc.height, 0, 0, sc.width, sc.height);
+    gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, TEX.albedo);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, x0, y0, gl.RGB, gl.UNSIGNED_BYTE, sc);
+  } else {
+    if (TEX.albedo) gl.deleteTexture(TEX.albedo);
+    TEX.albedo = makeTexture(c.width, c.height, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, c);
+    /* the minimap wants the same picture */
+    mbase = c;
+  }
   gl.activeTexture(gl.TEXTURE0);
-  /* the minimap wants the same picture */
-  mbase = c;
 }
 
 /* ---- every fixed thing on the map, merged into one buffer ---- */
-function sceneProps() {
-  var out = [], outA = [];
+function sceneProps(tile) {
+  var out = [], outA = [], outC = [], outAC = [], tiled = tile > 0, onlyStatic = tile === 0;
+  function mine(x, y) { return !onlyStatic && (!tiled || tileOf(x, y) === tile); }
+  /* the vertex stream is moved off the heap in chunks as it grows. Two million numbers
+     in one plain array is fifteen megabytes the collector has to walk, and the
+     allocation that finally converted it set off a pause of seconds in the editor. */
+  function flush(arr, chunks) { chunks.push(new Float32Array(arr)); arr.length = 0; }
+  function joined(arr, chunks) {
+    if (arr.length) flush(arr, chunks);
+    var n = 0, i; for (i = 0; i < chunks.length; i++) n += chunks[i].length;
+    var f = new Float32Array(n), at = 0;
+    for (i = 0; i < chunks.length; i++) { f.set(chunks[i], at); at += chunks[i].length; }
+    return f;
+  }
   var TIMBER = '#5e4a2f', TIMBER_L = '#75603f', TIMBER_D = '#4a3924', BAG = '#6f6444', BAG_L = '#85795a', BAG_D = '#5f5539';
   /* one filled sandbag, 6 x 3 x 1.5 units, pillowed by a deep chamfer, each a little
      different in colour, size and set so a wall never reads as brickwork */
@@ -6593,18 +6691,25 @@ function sceneProps() {
   }
 
   function put(faces, x, y, yaw, sc) {
-    var z = groundZ(x, y), placed = place(faces, yaw || 0, 0, 0, 0);
-    if (sc && sc !== 1) placed = placed.map(function (f) {
-      return { v: f.v.map(function (p) { return [p[0] * sc, p[1] * sc, p[2] * sc]; }), c: f.c, n: f.n, m: f.m, alpha: f.alpha };
-    });
-    placed = placed.map(function (f) {
-      return { v: f.v.map(function (p) { return [p[0] + x, p[1] + y, p[2] + z]; }), c: f.c, n: f.n, m: f.m, alpha: f.alpha };
-    });
-    facesToArray(placed.filter(function (f) { return !f.alpha; }), out);
-    facesToArray(placed.filter(function (f) { return f.alpha; }), outA);
+    /* one pass over the vertices: scale, then set down at x, y on the ground. Two
+       passes made twice the garbage, and the collector's pauses were most of what a
+       tile cost the editor. */
+    var z = groundZ(x, y), placed = place(faces, yaw || 0, 0, 0, 0), k = sc && sc !== 1 ? sc : 1, solid = [], clear = [];
+    for (var i = 0; i < placed.length; i++) {
+      var f = placed[i], v = f.v, nv = new Array(v.length);
+      for (var j = 0; j < v.length; j++) { var p = v[j]; nv[j] = [p[0] * k + x, p[1] * k + y, p[2] * k + z]; }
+      var g = { v: nv, c: f.c, n: f.n, m: f.m, alpha: f.alpha };
+      if (f.alpha) clear.push(g); else solid.push(g);
+    }
+    facesToArray(solid, out);
+    if (clear.length) facesToArray(clear, outA);
+    if (out.length > 240000) flush(out, outC);
+    if (outA.length > 240000) flush(outA, outAC);
   }
   _s = 4242;
   G.props.forEach(function (p) {
+    if (!mine(p.x, p.y)) return;
+    seedAt(p.x, p.y, 1);
     if (p.kind === 'ruin') {
       if (p.style === 'church') { put(churchModel(p.w, p.h), p.x, p.y, 0); return; }
       var bays = Math.max(1, Math.round(p.w / 70)), bayW = p.w / bays;
@@ -6617,8 +6722,11 @@ function sceneProps() {
     } else if (p.kind === 'farm') put(farmModel(p.w, p.h), p.x, p.y, 0);
   });
   G.trees.forEach(function (tr) {
+    if (!mine(tr.x, tr.y)) return;
+    seedAt(tr.x, tr.y, 2);
     put(tr.cypress ? cypressModel(tr.r) : tr.scrub ? bushModel(tr.r, tr.s) : treeModel(tr.r, tr.s), tr.x, tr.y, tr.s * TAU);
   });
+  if (!tiled) {
   /* ---- Outcrop. Where the shelf breaks through its own soil the bedrock stands out of
      the slope in slabs, and what it sheds collects at the foot. Placed off the
      heightfield's own gradient rather than scattered, so a rock is always on a face and
@@ -6700,8 +6808,9 @@ function sceneProps() {
       }
     }
   });
+  }
   /* pavements: a raised kerbed sidewalk round each town block, 12 units wide */
-  G.blocks.forEach(function (bk) {
+  if (!tiled) G.blocks.forEach(function (bk) {
     if (bk.style === 'church') return;
     /* Narrower and dirtier than they were. A pavement twelve units wide in the palest
        stone on the map turned every frontage into a white ribbon and swallowed the
@@ -6714,6 +6823,8 @@ function sceneProps() {
   });
   /* garden walls */
   G.walls.forEach(function (wl) {
+    if (!mine((wl.x1 + wl.x2) / 2, (wl.y1 + wl.y2) / 2)) return;
+    seedAt(wl.x1, wl.y1, 4);
     var len = Math.hypot(wl.x2 - wl.x1, wl.y2 - wl.y1), a = Math.atan2(wl.y2 - wl.y1, wl.x2 - wl.x1);
     var n = Math.max(2, Math.round(len / 34));
     for (var i = 0; i < n; i++) {
@@ -6729,6 +6840,8 @@ function sceneProps() {
     var tl = Math.hypot(tr.x2 - tr.x1, tr.y2 - tr.y1), ta = Math.atan2(tr.y2 - tr.y1, tr.x2 - tr.x1);
     var nx = Math.cos(ta + Math.PI / 2), ny = Math.sin(ta + Math.PI / 2);
     var cx = (tr.x1 + tr.x2) / 2, cy = (tr.y1 + tr.y2) / 2;
+    if (!mine(cx, cy)) return;
+    seedAt(cx, cy, 3);
     /* +1 is the side the normal (nx, ny) points to */
     var toward = tr.face || 1;
     /* the legs zigzag, so each leg keeps clear of its neighbours' cuts at the ends */
@@ -6809,6 +6922,8 @@ function sceneProps() {
   /* wire: screw pickets with a concertina coil strung between them, each coil a helix
      of short segments, plus a low apron strand either side to catch the feet */
   G.wire.forEach(function (wr) {
+    if (!mine((wr.x1 + wr.x2) / 2, (wr.y1 + wr.y2) / 2)) return;
+    seedAt(wr.x1, wr.y1, 5);
     var wl2 = Math.hypot(wr.x2 - wr.x1, wr.y2 - wr.y1), wa = Math.atan2(wr.y2 - wr.y1, wr.x2 - wr.x1);
     var wn = Math.max(2, Math.round(wl2 / 46));
     for (var k = 0; k <= wn; k++) {
@@ -6851,6 +6966,8 @@ function sceneProps() {
     return f;
   }
   G.covers.forEach(function (c) {
+    if (!mine(c.x, c.y)) return;
+    seedAt(c.x, c.y, 6);
     if (c.kind === 'rubble') {
       for (var k2 = 0; k2 < 4; k2++) {
         var sl = slab(srange(14, 28), srange(8, 18), srange(5, 8), srand());
@@ -6875,6 +6992,8 @@ function sceneProps() {
     }
   });
   G.stacks.forEach(function (st) {
+    if (!mine(st.x, st.y)) return;
+    seedAt(st.x, st.y, 7);
     if (st.kind === 'debris') {
       /* a house's worth of debris: slabs, tiles, a beam or two, a door */
       for (var d = 0; d < 3; d++) {
@@ -6918,6 +7037,7 @@ function sceneProps() {
     }
   });
   G.carts.forEach(function (ct) {
+    if (!mine(ct.x, ct.y)) return;
     var f = box(0, 0, 9, 44, 20, 9, '#5a4a32', '#6e5c40', '#4c3f2b')
       .concat(box(0, 0, 18, 44, 4, 10, '#4c3e2a', '#5f4e36'))
       .concat(box(0, -11, 3, 14, 3, 14, '#40341f', '#4e4128'))
@@ -6926,6 +7046,7 @@ function sceneProps() {
     put(f, ct.x, ct.y, ct.a);
   });
   G.poles.forEach(function (pl) {
+    if (!mine(pl.x, pl.y)) return;
     var f = cyl(0, 0, 0, 3, 3, 84, 6, '#4d4130', '#6b5c44');
     f = f.concat(pitch(box(9, 0, 82, 18, 2.4, 2.4, '#3a3226', '#4a4030'), pl.broken ? -.9 : -.15, 0, 82));
     put(f, pl.x, pl.y, 0);
@@ -6933,6 +7054,8 @@ function sceneProps() {
   /* ---- roadblocks at the four street mouths into the town: a demolished house's
      rubble bulldozed across the road with concrete tetrahedra in front ---- */
   G.roadDebris.forEach(function (rbo) {
+    if (!mine(rbo.x, rbo.y)) return;
+    seedAt(rbo.x, rbo.y, 8);
     var rb = [rbo.x, rbo.y, rbo.a], ax = rb[2];
     for (var i = -2; i <= 2; i++) {
       var ox = Math.cos(ax + Math.PI / 2) * i * 14, oy = Math.sin(ax + Math.PI / 2) * i * 14;
@@ -6951,10 +7074,10 @@ function sceneProps() {
     }
   });
   /* game buildings are dynamic; sector flag poles are static */
-  G.sectors.forEach(function (sc) {
+  if (!tiled) G.sectors.forEach(function (sc) {
     put(cyl(0, 0, 0, 1.8, 1.8, 46, 6, '#2a2418', '#4a4030'), sc.x, sc.y, 0);
   });
-  return { opaque: out, alpha: outA };
+  return { opaque: joined(out, outC), alpha: joined(outA, outAC) };
 }
 function cypressModel(r) {
   var f = cyl(0, 0, 0, r * .18, r * .18, r * 1.2, 6, '#4a3f2e', '#5a4e3a');
@@ -7010,9 +7133,7 @@ function buildScene() {
   if (!GLOK) return;
   buildTerrain();
   buildAlbedo();
-  var propFaces = sceneProps();
-  SCENE.props = makeBuffer(propFaces.opaque);
-  SCENE.leaves = makeBuffer(propFaces.alpha);
+  buildTiles();
   buildGrass();
   /* fog and decal layers */
   if (!fog) fogBuf.fill(255);
@@ -14390,8 +14511,8 @@ function render() {
     gl.uniformMatrix4fv(DEPTHP.u.uMVP, false, SHADOW.vp);
     gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3); gl.disableVertexAttribArray(4);
     /* front faces cast; the terrain is included so trench walls shade their floors */
-    drawDepthGeom(SCENE.terrain, null);
-    drawDepthGeom(SCENE.props, null);
+    for (var gti = 1; gti < PT_N; gti++) if (SCENE.ground[gti]) drawDepthGeom(SCENE.ground[gti], null);
+    for (var sti = 0; sti < SCENE.tiles.length; sti++) if (SCENE.tiles[sti].props.n) drawDepthGeom(SCENE.tiles[sti].props, null);
     G.blds.forEach(function (b) {
       var B = MODELS.bld[b.key]; if (!B) return;
       var mm = m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
@@ -14440,14 +14561,14 @@ function render() {
   gl.activeTexture(gl.TEXTURE1); gl.bindTexture(gl.TEXTURE_2D, TEX.fog); gl.uniform1i(PROG.u.uFog, 1);
   gl.activeTexture(gl.TEXTURE2); gl.bindTexture(gl.TEXTURE_2D, TEX.decal); gl.uniform1i(PROG.u.uDecal, 2);
 
-  drawGeom(SCENE.terrain, null, true);
-  drawGeom(SCENE.props, null, false);
-  if (SCENE.grass || SCENE.leaves) {
-    gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE);
-    if (SCENE.grass) drawGeom(SCENE.grass, null, false);
-    if (SCENE.leaves) drawGeom(SCENE.leaves, null, false);
-    gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0);
-  }
+  /* tiles out of the view are skipped; a prop can hang a way past its tile's edge, so
+     the margin is generous */
+  for (var gti2 = 1; gti2 < PT_N; gti2++) if (SCENE.ground[gti2] && tileInView(v, gti2, 60)) drawGeom(SCENE.ground[gti2], null, true);
+  for (var pti = 0; pti < SCENE.tiles.length; pti++) if (SCENE.tiles[pti].props.n && tileInView(v, pti, 260)) drawGeom(SCENE.tiles[pti].props, null, false);
+  gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE);
+  if (SCENE.grass) drawGeom(SCENE.grass, null, false);
+  for (var lti = 0; lti < SCENE.tiles.length; lti++) if (SCENE.tiles[lti].leaves.n && tileInView(v, lti, 260)) drawGeom(SCENE.tiles[lti].leaves, null, false);
+  gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0);
   G.sectors.forEach(function (s) {
     drawGeom(MODELS.flag[s.owner || 'none'], m4model(s.x, s.y, groundZ(s.x, s.y), G.t * .3 + s.x * .01, 1), false);
   });
@@ -14767,6 +14888,7 @@ cv.addEventListener('mousedown', function (e) {
     if (e.button === 1) { e.preventDefault(); drag.pan = { x: mouse.x, y: mouse.y, rotate: !e.shiftKey }; return; }
     var ew = s2w(mouse.x, mouse.y);
     if (e.button === 2) { edDown(ew.x, ew.y, mouse.x, mouse.y, true); return; }
+    ED.press = { x: mouse.x, y: mouse.y };
     if (!edDown(ew.x, ew.y, mouse.x, mouse.y, false)) drag.pan = { x: mouse.x, y: mouse.y, rotate: false };
     return;
   }
@@ -14783,7 +14905,11 @@ cv.addEventListener('mousedown', function (e) {
   } else if (e.button === 1) { e.preventDefault(); drag.pan = { x: mouse.x, y: mouse.y, rotate: !e.shiftKey }; }
 });
 window.addEventListener('mouseup', function (e) {
-  if (ED.on) { drag.pan = null; edUp(); return; }
+  if (ED.on) {
+    drag.pan = null; edUp();
+    if (ED.press && Math.hypot(mouse.x - ED.press.x, mouse.y - ED.press.y) < 6 && e.button === 0) edTap(mouse.x, mouse.y);
+    ED.press = null; return;
+  }
   if (e.button === 1) { drag.pan = null; return; }
   if (e.button === 0 && G.place && G.place.aim) { doPlace(); return; }
   if (e.button !== 0 || !drag.on) return;
@@ -14843,18 +14969,22 @@ function tPos(t) { var r = cv.getBoundingClientRect(); return { x: t.clientX - r
 cv.addEventListener('touchstart', function (e) {
   if (ED.on) {
     e.preventDefault(); clearTimeout(touch.timer);
-    if (e.touches.length >= 2) { var ta = tPos(e.touches[0]), tb = tPos(e.touches[1]); touch.pinch = Math.hypot(ta.x - tb.x, ta.y - tb.y); touch.ang = Math.atan2(tb.y - ta.y, tb.x - ta.x); touch.cx = (ta.x + tb.x) / 2; touch.cy = (ta.y + tb.y) / 2; touch.two = true; touch.edPan = false; return; }
+    if (e.touches.length >= 2) {
+      var ta = tPos(e.touches[0]), tb = tPos(e.touches[1]); touch.pinch = Math.hypot(ta.x - tb.x, ta.y - tb.y); touch.ang = Math.atan2(tb.y - ta.y, tb.x - ta.x); touch.cx = (ta.x + tb.x) / 2; touch.cy = (ta.y + tb.y) / 2; touch.two = true;
+      /* a second finger means the camera, whatever the first was doing */
+      edAbortDrag(); touch.mode = 'pinch'; return;
+    }
     var tp = tPos(e.touches[0]); mouse.x = tp.x; mouse.y = tp.y; touch.x0 = tp.x; touch.y0 = tp.y; touch.moved = false; touch.two = false;
-    var tw = s2w(tp.x, tp.y);
-    ED.touching = true;
-    touch.edPan = !edDown(tw.x, tw.y, tp.x, tp.y, false);
     touch.lastX = tp.x; touch.lastY = tp.y;
-    /* a press held still on empty ground starts a box, the way it does in the battle */
-    if (touch.edPan && ED.cat === 'select') {
+    ED.touching = true;
+    touch.mode = edTouchStart(tp.x, tp.y);
+    /* a press held still picks something up: a thing to carry, a thing to move, or a
+       box on empty ground */
+    if (touch.mode === 'pan') {
       touch.timer = setTimeout(function () {
-        if (Math.hypot(mouse.x - touch.x0, mouse.y - touch.y0) > 8) return;
-        var mw = s2w(touch.x0, touch.y0); touch.edPan = false; edMarquee(mw.x, mw.y); buzz(14);
-      }, 320);
+        if (touch.moved || touch.mode !== 'pan') return;
+        if (edHold(touch.x0, touch.y0)) { touch.mode = 'draw'; buzz(14); }
+      }, 380);
     }
     return;
   }
@@ -14898,8 +15028,9 @@ cv.addEventListener('touchmove', function (e) {
       touch.ang = ang2; panCam(cx2 - touch.cx, cy2 - touch.cy); touch.cx = cx2; touch.cy = cy2; touch.pinch = d2; return;
     }
     var tp2 = tPos(e.touches[0]); mouse.x = tp2.x; mouse.y = tp2.y;
-    if (touch.edPan) panCam(tp2.x - touch.lastX, tp2.y - touch.lastY);
-    else { var tw2 = s2w(tp2.x, tp2.y); edMove(tw2.x, tw2.y, tp2.x, tp2.y); }
+    if (!touch.moved && Math.hypot(tp2.x - touch.x0, tp2.y - touch.y0) > 9) { touch.moved = true; if (touch.mode === 'pan') clearTimeout(touch.timer); }
+    if (touch.mode === 'pan') { if (touch.moved) panCam(tp2.x - touch.lastX, tp2.y - touch.lastY); }
+    else if (touch.mode === 'draw') { var tw2 = s2w(tp2.x, tp2.y); edMove(tw2.x, tw2.y, tp2.x, tp2.y); }
     touch.lastX = tp2.x; touch.lastY = tp2.y;
     return;
   }
@@ -14939,7 +15070,15 @@ cv.addEventListener('touchmove', function (e) {
 }, { passive: false });
 
 cv.addEventListener('touchend', function (e) {
-  if (ED.on) { if (!e.touches.length) { clearTimeout(touch.timer); touch.pinch = 0; touch.two = false; edUp(); ED.touching = false; } return; }
+  if (ED.on) {
+    if (!e.touches.length) {
+      clearTimeout(touch.timer); touch.pinch = 0; touch.two = false;
+      if (touch.mode === 'pan' && !touch.moved) edTap(touch.x0, touch.y0);
+      else if (touch.mode === 'draw') edUp();
+      ED.touching = false; touch.mode = null;
+    }
+    return;
+  }
   if (!G.running) return;
   clearTimeout(touch.timer);
   if (e.touches.length) return;
@@ -15542,7 +15681,7 @@ document.addEventListener('visibilitychange', function () {
 var ED = { on: false, data: null, sel: [], tool: null, cat: 'select', mirror: true, snap: 0, grid: false,
            undo: [], redo: [], line: null, drag: null, hover: null, dirty: 0, rebuildT: 0, saveT: 0,
            name: 'Ortona', touching: false, fromEditor: false, brush: { r: 90, d: 6 }, marq: null, faceFlag: undefined,
-           menu: false, panel: null };
+           menu: false, panel: null, tiles: {}, rect: null, padTiles: {}, padRect: null, needGround: false, needGrass: false, padT: 0, scope: 'full' };
 /* the tools, by category. kind is how the hand works it: place (tap, or press and
    carry), line (one stroke, or point by point), rect (drag a box), height and scatter
    and erase (brushes), stamp (a tap, a stroke or a box that puts down several things) */
@@ -15612,12 +15751,14 @@ function edOpen(data) {
   G.mapData = ED.data; G.side = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
   G.wrecks = []; G.corpses = []; G.fx = []; G.shots = [];
   fog = false;
+  ED.scope = 'full'; ED.tiles = {}; ED.rect = null; ED.padTiles = {}; ED.padRect = null; ED.padT = 0;
   edRebuildNow();
-  edFit();
+  edFit(); updateCamera();                     /* the first tick reads the camera basis before the first frame draws it */
   el('start').classList.add('hidden'); el('editor').classList.remove('hidden');
   el('top').classList.add('hidden'); el('bar').classList.add('hidden'); el('tools').classList.add('hidden');
   G.running = false; G.over = 'editor';
   edBuildDock(); edOpenCat('select'); edMenu(false); edPanelClose(); edProps(); edHint(); edTitle();
+  if (!edStore(ED_HELPED)) edPanelHelp();
 }
 function edClose() {
   edAutosave();
@@ -15629,26 +15770,93 @@ function edRefreshStart() {
   var has = !!(edLoadLocal() || edLoadDraft());
   el('playcustom').classList.toggle('hidden', !has);
 }
+/* what cuts or paints the ground itself, and so needs the heightfield mesh and the
+   ground paint done again; everything else is a prop in a tile */
+var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1 };
+/* An edit rebuilds the least it can: the map's lists and the walk grid always (a
+   tenth of a second), the ground mesh and paint only when something cut or painted
+   it, the grass only when grass changed, and of the prop tiles only the ones the
+   edit touched plus the static one, which is cheap. The first draft rebuilt the whole
+   scene on every tap, which on a phone was a pause of seconds between every two
+   houses. A house flattens a pad under itself, and that is caught up in the ground
+   mesh a few seconds later when the hand is still (ED.padT), so a row of houses goes
+   down at the speed of the thumb. */
 function edRebuildNow() {
   if (!MODELS.flag) buildModels();
+  var first = !SCENE.ready, full = ED.scope === 'full' || first;
   makeSectors(); makeTerrain(); rebuildGrid();
-  initDecals(); initExplored();
-  buildScene();
+  if (first) { initDecals(); initExplored(); buildScene(); }
+  else {
+    if (full) { initDecals(); initExplored(); buildTerrain(); buildAlbedo(); buildGrass(); buildTiles(); ED.padT = 0; ED.padTiles = {}; ED.padRect = null; }
+    else {
+      if (ED.needGround) { buildTerrain(ED.tiles); buildAlbedo(ED.rect); }
+      if (ED.needGrass) buildGrass();
+      ED.tiles[0] = 1; for (var k in ED.tiles) buildTile(+k);
+    }
+  }
+  ED.tiles = {}; ED.rect = null; ED.needGround = false; ED.needGrass = false;
   SCENE.ready = true;
-  ED.dirty = 0;
+  ED.dirty = 0; ED.scope = 'props';
+}
+/* the footprint of a thing, for finding the tiles it stands in */
+function edBBox(e) {
+  var b;
+  if (e.pts) { b = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 }; e.pts.forEach(function (p) { b.x0 = Math.min(b.x0, p.x); b.y0 = Math.min(b.y0, p.y); b.x1 = Math.max(b.x1, p.x); b.y1 = Math.max(b.y1, p.y); }); var pw = (e.width || 48) / 2 + 20; b.x0 -= pw; b.y0 -= pw; b.x1 += pw; b.y1 += pw; }
+  else if (e.x1 !== undefined) b = { x0: Math.min(e.x1, e.x2) - 20, y0: Math.min(e.y1, e.y2) - 20, x1: Math.max(e.x1, e.x2) + 20, y1: Math.max(e.y1, e.y2) + 20 };
+  else if (e.t === 'paved') b = { x0: e.x, y0: e.y, x1: e.x + e.w, y1: e.y + e.h };
+  else if (e.w) b = { x0: e.x - e.w / 2, y0: e.y - e.h / 2, x1: e.x + e.w / 2, y1: e.y + e.h / 2 };
+  else { var r = e.r || 30; b = { x0: e.x - r, y0: e.y - r, x1: e.x + r, y1: e.y + r }; }
+  return b;
+}
+function edMarkRect(x0, y0, x1, y1, pad) {
+  var tw = WORLD.w / PT_W, th = WORLD.h / PT_H, set = pad ? ED.padTiles : ED.tiles;
+  var i0 = clamp(Math.floor(x0 / tw), 0, PT_W - 1), i1 = clamp(Math.floor(x1 / tw), 0, PT_W - 1);
+  var j0 = clamp(Math.floor(y0 / th), 0, PT_H - 1), j1 = clamp(Math.floor(y1 / th), 0, PT_H - 1);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) set[1 + j * PT_W + i] = 1;
+  var r = pad ? ED.padRect : ED.rect;
+  if (!r) r = { x0: x0, y0: y0, x1: x1, y1: y1 };
+  else { r.x0 = Math.min(r.x0, x0); r.y0 = Math.min(r.y0, y0); r.x1 = Math.max(r.x1, x1); r.y1 = Math.max(r.y1, y1); }
+  if (pad) ED.padRect = r; else ED.rect = r;
+}
+/* what a thing's change touches: its tiles with a margin for what hangs off it (a
+   farm's rubble, a debris heap's spread), the ground if it cuts or paints it */
+function edMark(e) {
+  if (!e) return;
+  var b = edBBox(e), m = 90;
+  edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m);
+  if (ED_GROUND[e.t]) ED.needGround = true;
+  if (e.t === 'grass') ED.needGrass = true;
+  if (e.t === 'sector' || e.t === 'hq') ED.scope = 'full';
+  if (e.t === 'house' || e.t === 'farm') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
+}
+/* what changed between two versions of the map, marked thing by thing: an undo costs
+   what the edit it undoes cost, rather than the whole scene */
+function edDiffMark(before, after) {
+  var was = {}, is = {};
+  before.entities.forEach(function (e) { was[JSON.stringify(e)] = e; });
+  after.entities.forEach(function (e) { var k = JSON.stringify(e); is[k] = 1; if (!was[k]) edMark(e); });
+  Object.keys(was).forEach(function (k) { if (!is[k]) edMark(was[k]); });
+  var hw = {}, hi = {};
+  (before.height || []).forEach(function (h) { hw[JSON.stringify(h)] = h; });
+  (after.height || []).forEach(function (h) { var k = JSON.stringify(h); hi[k] = 1; if (!hw[k]) { edMarkRect(h.x - h.r - 90, h.y - h.r - 90, h.x + h.r + 90, h.y + h.r + 90); ED.needGround = true; } });
+  Object.keys(hw).forEach(function (k) { if (!hi[k]) { var h = hw[k]; edMarkRect(h.x - h.r - 90, h.y - h.r - 90, h.x + h.r + 90, h.y + h.r + 90); ED.needGround = true; } });
 }
 function edFit() { CAM.tx = WORLD.w / 2; CAM.ty = WORLD.h / 2; CAM.dist = MOB ? 2600 : 1900; CAM.pitch = 1.15; CAM.yaw = Math.PI / 2; clampCam(); }
 function edTitle() { el('edname').textContent = ED.name + (ED.dirty ? ' •' : ''); }
 /* every change: a rebuild soon, and a draft written soon after */
-function edTouch() { ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5; edHint(); }
+function edTouch(list) {
+  if (!list) ED.scope = 'full';
+  else { if (!(list instanceof Array)) list = [list]; list.forEach(edMark); }
+  ED.dirty = 1; ED.rebuildT = .3; ED.saveT = 2.5; edHint();
+}
 function edSnapshot() { ED.undo.push(JSON.stringify(ED.data)); if (ED.undo.length > 60) ED.undo.shift(); ED.redo = []; }
 function edUndo() {
   if (!ED.undo.length) return;
-  ED.redo.push(JSON.stringify(ED.data)); ED.data = JSON.parse(ED.undo.pop()); G.mapData = ED.data; ED.sel = []; edTouch(); edProps();
+  var was = ED.data; ED.redo.push(JSON.stringify(was)); ED.data = JSON.parse(ED.undo.pop()); G.mapData = ED.data; ED.sel = []; edDiffMark(was, ED.data); edTouch([]); edProps();
 }
 function edRedo() {
   if (!ED.redo.length) return;
-  ED.undo.push(JSON.stringify(ED.data)); ED.data = JSON.parse(ED.redo.pop()); G.mapData = ED.data; ED.sel = []; edTouch(); edProps();
+  var was = ED.data; ED.undo.push(JSON.stringify(was)); ED.data = JSON.parse(ED.redo.pop()); G.mapData = ED.data; ED.sel = []; edDiffMark(was, ED.data); edTouch([]); edProps();
 }
 function edSnap(v) { return ED.snap ? Math.round(v / ED.snap) * ED.snap : v; }
 
@@ -15676,17 +15884,17 @@ function edAnchorX(e) { return e.x !== undefined ? (e.t === 'paved' ? e.x + e.w 
 function edPush(e) {
   if (e.t === 'sector' && !e.id) { e.id = edNextSectorId(); e.label = e.label || (e.type.toUpperCase() + ' ' + e.id); }
   if (e.t === 'hq') ED.data.entities = ED.data.entities.filter(function (q) { return !(q.t === 'hq' && q.side === e.side); });
-  ED.data.entities.push(e);
-  if (ED.mirror && e.t !== 'hq' && Math.abs(edAnchorX(e) - WORLD.w / 2) > 6) ED.data.entities.push(edMirrorOf(e));
+  ED.data.entities.push(e); edMark(e);
+  if (ED.mirror && e.t !== 'hq' && Math.abs(edAnchorX(e) - WORLD.w / 2) > 6) { var m = edMirrorOf(e); ED.data.entities.push(m); edMark(m); }
 }
-function edAdd(e) { edSnapshot(); edPush(e); edTouch(); }
-function edAddMany(list) { if (!list.length) return; edSnapshot(); for (var i = 0; i < list.length; i++) edPush(list[i]); edTouch(); }
+function edAdd(e) { edSnapshot(); edPush(e); edTouch(e); }
+function edAddMany(list) { if (!list.length) return; edSnapshot(); for (var i = 0; i < list.length; i++) edPush(list[i]); edTouch(list); }
 function edDeleteSel() {
   if (!ED.sel.length) return;
   edSnapshot();
   var gone = ED.sel;
   ED.data.entities = ED.data.entities.filter(function (q) { return gone.indexOf(q) < 0; });
-  ED.sel = []; edTouch(); edProps();
+  ED.sel = []; edTouch(gone); edProps();
 }
 /* the entity nearest a ground point, by a distance that fits its shape */
 function edPick(wx, wy) {
@@ -15746,7 +15954,7 @@ function edOpenCat(id) {
   edProps(); edHint();
 }
 function edSetTool(t) {
-  ED.tool = t; ED.line = null; ED.marq = null;
+  ED.tool = t; ED.line = null; ED.marq = null; ED.sheetFold = undefined;
   document.querySelectorAll('#edtray .edtool').forEach(function (b) { b.classList.toggle('on', !!t && b.getAttribute('data-tool') === t.id); });
   if (t && t.kind === 'height') ED.brush.mode = t.mode;
   edPill(); edProps(); edHint();
@@ -15754,15 +15962,15 @@ function edSetTool(t) {
 function edPill() { el('edpill').classList.toggle('hidden', !(ED.line && ED.line.length)); }
 function edHint() {
   var h = '', t = ED.tool;
-  if (ED.cat === 'select') h = ED.sel.length ? (ED.sel.length === 1 ? 'Drag to move. Options in the sheet.' : ED.sel.length + ' selected: drag to move them together.') : (MOB ? 'Tap a thing to select it. Hold still, then drag, to box several. Drag ground to pan, pinch to zoom.' : 'Click a thing to select it. Shift-drag to box several. Drag ground to pan, wheel to zoom.');
+  if (ED.cat === 'select') h = ED.sel.length ? (ED.sel.length === 1 ? (MOB ? 'Drag it to move it. Options below.' : 'Drag to move. Options below.') : ED.sel.length + ' selected: drag one to move them together.') : (MOB ? 'Tap a thing to select it. Hold on ground to box several. Drag to pan, pinch to zoom.' : 'Click a thing to select it. Shift-drag to box several. Drag ground to pan, wheel to zoom.');
   else if (!t) h = 'Pick a tool.';
-  else if (t.kind === 'height') h = 'Drag on the ground to ' + t.mode + ' it.';
-  else if (t.kind === 'scatter') h = 'Drag to scatter ' + t.name.replace(' brush', '').toLowerCase() + ' along the stroke.';
-  else if (t.kind === 'erase') h = 'Drag over things to remove them.';
-  else if (t.kind === 'line') h = ED.line && ED.line.length ? 'Tap the next point, or DONE.' : 'Draw it in one stroke, or tap point by point and press DONE.';
-  else if (t.kind === 'rect' || t.kind === 'stamprect') h = 'Drag a box.';
-  else if (t.kind === 'stampline') h = 'Drag a stroke along the street.';
-  else h = (MOB ? 'Tap to place. Press and drag to carry it into place.' : 'Click to place. Drag to carry it into place.') + (ED.mirror ? ' Mirrored.' : '');
+  else if (t.kind === 'height') h = 'Drag on the ground to ' + t.mode + ' it.' + (MOB ? ' Two fingers pan.' : '');
+  else if (t.kind === 'scatter') h = 'Drag to scatter ' + t.name.replace(' brush', '').toLowerCase() + ' along the stroke.' + (MOB ? ' Two fingers pan.' : '');
+  else if (t.kind === 'erase') h = 'Drag over things to remove them.' + (MOB ? ' Two fingers pan.' : '');
+  else if (t.kind === 'line') h = ED.line && ED.line.length ? 'Tap the next point, or DONE.' : 'Draw it in one stroke, or tap point by point and press DONE.' + (MOB ? ' Two fingers pan.' : '');
+  else if (t.kind === 'rect' || t.kind === 'stamprect') h = 'Drag a box.' + (MOB ? ' Two fingers pan.' : '');
+  else if (t.kind === 'stampline') h = 'Drag a stroke along the street.' + (MOB ? ' Two fingers pan.' : '');
+  else h = (MOB ? 'Tap to place. Hold, then drag, to carry it into place. Drag to pan.' : 'Click to place. Drag to pan.') + (ED.mirror ? ' Mirrored.' : '');
   if (ED.dirty) h += '  · rebuilding…';
   el('edhint').textContent = h;
   edLayout();
@@ -15822,6 +16030,11 @@ function edProps() {
   p.innerHTML = html;
   sheet.classList.toggle('hidden', !html);
   sheet.classList.toggle('up', !el('edtray').classList.contains('hidden'));
+  /* tool options start folded to a line, so the map keeps the screen; a selection
+     opens the sheet, because the sheet is what a selection is for */
+  var folded = !ED.sel.length && ED.sheetFold !== false;
+  sheet.classList.toggle('folded', folded);
+  el('edsum').textContent = html ? (folded ? 'OPTIONS  ▲' : 'HIDE  ▼') : '';
   edLayout();
   function bind(id, fn) { var q = el(id); if (q) q.addEventListener('input', function (ev) { var lab = el(id + 'v'); if (lab) lab.textContent = ev.target.value; fn(ev); }); }
   function segs(id, fn) {
@@ -15842,19 +16055,19 @@ function edProps() {
   }
   if (ED.sel.length) {
     var e2 = ED.sel[0];
-    bind('edsr', function (ev) { edSnapshot(); e2.r = +ev.target.value; edTouch(); });
-    bind('edsa', function (ev) { edSnapshot(); e2.a = +ev.target.value * Math.PI / 180; edTouch(); });
-    bind('edsw', function (ev) { edSnapshot(); e2.w = +ev.target.value; edTouch(); });
-    bind('edsh', function (ev) { edSnapshot(); e2.h = +ev.target.value; edTouch(); });
-    bind('edswd', function (ev) { edSnapshot(); e2.width = +ev.target.value; edTouch(); });
-    bind('edsdmg', function (ev) { edSnapshot(); e2.damage = +ev.target.value / 100; edTouch(); });
+    bind('edsr', function (ev) { edSnapshot(); e2.r = +ev.target.value; edTouch(e2); });
+    bind('edsa', function (ev) { edSnapshot(); e2.a = +ev.target.value * Math.PI / 180; edTouch(e2); });
+    bind('edsw', function (ev) { edSnapshot(); e2.w = +ev.target.value; edTouch(e2); });
+    bind('edsh', function (ev) { edSnapshot(); e2.h = +ev.target.value; edTouch(e2); });
+    bind('edswd', function (ev) { edSnapshot(); e2.width = +ev.target.value; edTouch(e2); });
+    bind('edsdmg', function (ev) { edSnapshot(); e2.damage = +ev.target.value / 100; edTouch(e2); });
     bind('edslabel', function (ev) { e2.label = ev.target.value; });
-    segs('edsroof', function (v) { edSnapshot(); e2.roof = +v; edTouch(); });
-    segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(); });
-    segs('edstype', function (v) { edSnapshot(); e2.type = v; edTouch(); });
-    segs('edsown', function (v) { edSnapshot(); e2.owner = v || null; edTouch(); });
-    segs('edsface', function (v) { edSnapshot(); if (v) e2.face = v; else delete e2.face; edTouch(); });
-    segs('edsside', function (v) { edSnapshot(); e2.side = v; edTouch(); });
+    segs('edsroof', function (v) { edSnapshot(); e2.roof = +v; edTouch(e2); });
+    segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(e2); });
+    segs('edstype', function (v) { edSnapshot(); e2.type = v; edTouch(e2); });
+    segs('edsown', function (v) { edSnapshot(); e2.owner = v || null; edTouch(e2); });
+    segs('edsface', function (v) { edSnapshot(); if (v) e2.face = v; else delete e2.face; edTouch(e2); });
+    segs('edsside', function (v) { edSnapshot(); e2.side = v; edTouch(e2); });
     var del = el('eddel'); if (del) del.addEventListener('click', edDeleteSel);
     var dup = el('eddup'); if (dup) dup.addEventListener('click', edDuplicate);
     var mir = el('edmir'); if (mir) mir.addEventListener('click', edCopyAcross);
@@ -15876,14 +16089,14 @@ function edDuplicate() {
     if (c.t === 'sector') { c.id = edNextSectorId(); }
     ED.data.entities.push(c); made.push(c);
   });
-  ED.sel = made; edTouch(); edProps();
+  ED.sel = made; edTouch(made); edProps();
 }
 function edCopyAcross() {
   if (!ED.sel.length) return;
   edSnapshot();
   var made = [];
   ED.sel.forEach(function (e) { if (e.t === 'hq') return; var m = edMirrorOf(e); ED.data.entities.push(m); made.push(m); });
-  ED.sel = made; edTouch(); edProps();
+  ED.sel = made; edTouch(made); edProps();
 }
 /* ---- making things ---- */
 function edNewEntity(t, wx, wy) {
@@ -15919,6 +16132,7 @@ function edLineEntity(t, pts) {
   for (var i = 0; i < pts.length - 1; i++) out.push({ t: t.t, x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y });
   return out;
 }
+function edAbortDrag() { ED.drag = null; ED.marq = null; ED.hover = null; }
 function edFinishLine() {
   var t = ED.tool;
   if (!ED.line || ED.line.length < 2 || !t) { ED.line = null; edPill(); edHint(); return; }
@@ -15928,8 +16142,8 @@ function edFinishLine() {
   edHint();
 }
 /* stamps: several things in one gesture */
-function edStampPoint(kind, x, y) {
-  var out = [], s = Math.random();
+function edStampPoint(kind, x, y, rng) {
+  var R = rng || Math.random, out = [], s = R();
   if (kind === 'court') {
     /* three houses round a yard open to the south, a wall closing the fourth side */
     out.push({ t: 'house', x: x - 62, y: y - 40, w: 100, h: 88, s: s, damage: .3, roof: 1, tall: 0, style: 'row' });
@@ -15956,8 +16170,9 @@ function edStampPoint(kind, x, y) {
   }
   return out;
 }
-function edStampRect(kind, x0, y0, x1, y1) {
-  var out = [], seed = Math.random(), w = x1 - x0, h = y1 - y0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+function edStampRect(kind, x0, y0, x1, y1, rng) {
+  var R = rng || Math.random, out = [], seed = R(), w = x1 - x0, h = y1 - y0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  function q(a, b) { return a + R() * (b - a); }
   function rub(x, y, r, s) { out.push({ t: 'rubble', x: x, y: y, r: r }); out.push({ t: 'debris', x: x, y: y, r: r * .62, s: s }); }
   if (kind === 'razed') {
     var hw = w / 2, hh = h / 2, big = Math.min(hw, hh) * .82;
@@ -15970,20 +16185,21 @@ function edStampRect(kind, x0, y0, x1, y1) {
   } else if (kind === 'grove') {
     /* rows sixty apart with the trees staggered, and a little scrub between */
     for (var gy = y0 + 30; gy < y1; gy += 58) for (var gx = x0 + 30 + ((gy / 58) | 0) % 2 * 28; gx < x1; gx += 62) {
-      out.push({ t: 'tree', x: gx + rnd(-8, 8), y: gy + rnd(-6, 6), r: 13 + rnd(0, 5), s: Math.random(), lean: rnd(-.2, .2) });
-      if (Math.random() < .3) out.push({ t: 'scrub', x: gx + 30, y: gy + 28, r: 10 + rnd(0, 4), s: Math.random() });
+      out.push({ t: 'tree', x: gx + q(-8, 8), y: gy + q(-6, 6), r: 13 + q(0, 5), s: R(), lean: q(-.2, .2) });
+      if (R() < .3) out.push({ t: 'scrub', x: gx + 30, y: gy + 28, r: 10 + q(0, 4), s: R() });
     }
   } else if (kind === 'craters') {
     var n = Math.max(3, Math.round(w * h / 26000));
     for (var i = 0; i < n; i++) {
-      var r = 26 + rnd(0, 34);
-      out.push({ t: 'crater', x: x0 + r + rnd(0, Math.max(1, w - 2 * r)), y: y0 + r + rnd(0, Math.max(1, h - 2 * r)), r: r });
+      var r = 26 + q(0, 34);
+      out.push({ t: 'crater', x: x0 + r + q(0, Math.max(1, w - 2 * r)), y: y0 + r + q(0, Math.max(1, h - 2 * r)), r: r });
     }
   }
   return out;
 }
-function edStampLine(kind, pts) {
-  var out = [], a = pts[0], b = pts[pts.length - 1];
+function edStampLine(kind, pts, rng) {
+  var R = rng || Math.random, out = [], a = pts[0], b = pts[pts.length - 1];
+  function q(lo, hi) { return lo + R() * (hi - lo); }
   if (kind === 'terrace') {
     /* houses are square to the map, so the stroke is read along its longer axis; the
        row stands on the side of the line the hand drifted toward, and each house has
@@ -15994,8 +16210,8 @@ function edStampLine(kind, pts) {
     var line = horiz ? a.y : a.x, dir = horiz ? (b.y >= a.y ? 1 : -1) : (b.x >= a.x ? 1 : -1);
     var at = from;
     while (at < to - 40) {
-      var fw = Math.min(to - at, 64 + rnd(0, 56)), dp = 64 + rnd(0, 56), set = rnd(0, 14), tall = Math.random() < .25 ? 1 : 0;
-      var e = { t: 'house', w: horiz ? fw : dp, h: horiz ? dp : fw, s: Math.random(), damage: Math.random() * .8, roof: Math.random() < .5 ? 1 : 0, tall: tall, style: tall ? 'civic' : 'row' };
+      var fw = Math.min(to - at, 64 + q(0, 56)), dp = 64 + q(0, 56), set = q(0, 14), tall = R() < .25 ? 1 : 0;
+      var e = { t: 'house', w: horiz ? fw : dp, h: horiz ? dp : fw, s: R(), damage: R() * .8, roof: R() < .5 ? 1 : 0, tall: tall, style: tall ? 'civic' : 'row' };
       if (horiz) { e.x = at + fw / 2; e.y = line + dir * (set + dp / 2); } else { e.y = at + fw / 2; e.x = line + dir * (set + dp / 2); }
       out.push(e); at += fw + 4;
     }
@@ -16018,6 +16234,8 @@ function edBrushAt(wx, wy) {
     ED.data.height.push(stroke);
     if (ED.mirror) { var m = JSON.parse(JSON.stringify(stroke)); m.x = WORLD.w - m.x; ED.data.height.push(m); }
     d.last = { x: wx, y: wy }; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5;
+    edMarkRect(wx - b.r - 90, wy - b.r - 90, wx + b.r + 90, wy + b.r + 90); if (ED.mirror) edMarkRect(WORLD.w - wx - b.r - 90, wy - b.r - 90, WORLD.w - wx + b.r + 90, wy + b.r + 90);
+    ED.needGround = true;
   } else if (t.kind === 'scatter') {
     if (d.last && Math.hypot(d.last.x - wx, d.last.y - wy) < t.step) return;
     if (!d.snapped) { edSnapshot(); d.snapped = true; }
@@ -16035,14 +16253,24 @@ function edBrushAt(wx, wy) {
       if (!near && ED.mirror) near = Math.hypot(ex - mx2, ey - wy) < r2;
       return !near;
     });
-    if (keep.length !== before) { if (!d.snapped) { edSnapshot(); d.snapped = true; } ED.data.entities = keep; ED.sel = []; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5; }
+    if (keep.length !== before) {
+      if (!d.snapped) { edSnapshot(); d.snapped = true; }
+      ED.data.entities.forEach(function (e) { if (keep.indexOf(e) < 0) edMark(e); });
+      ED.data.entities = keep; ED.sel = []; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5;
+    }
   }
 }
 
 /* ---- the hand ----
    pointer events from the game's handlers land here when the editor is on. Returns
    true when the editor took the press, false to let the camera pan. */
-function edDown(wx, wy, sx, sy, right) {
+/* The rule of the hand, the same with a mouse and a thumb: a drag on the ground pans,
+   a tap does the tool's one thing, and a press held still picks something up. Only
+   the tools that draw (lines, boxes, brushes) take the drag itself, and with those two
+   fingers still pan and zoom. Placing a thing is a tap; carrying it into place is a
+   hold. The first version placed on any drag with a tool up and grabbed whatever was
+   under a finger in select, so in a town it could not be panned at all. */
+function edDown(wx, wy, sx, sy, right, touch) {
   wx = edSnap(wx); wy = edSnap(wy);
   if (ED.menu) { edMenu(false); return true; }
   if (right) { if (ED.line) edFinishLine(); else { ED.sel = []; edProps(); } edHint(); return true; }
@@ -16051,21 +16279,59 @@ function edDown(wx, wy, sx, sy, right) {
     if (t.kind === 'height' || t.kind === 'scatter' || t.kind === 'erase') { ED.drag = { kind: 'brush', snapped: false, last: null }; edBrushAt(wx, wy); return true; }
     if (t.kind === 'line' || t.kind === 'stampline') { ED.drag = { kind: 'line', pts: [{ x: wx, y: wy }], sx: sx, sy: sy, moved: false }; return true; }
     if (t.kind === 'rect' || t.kind === 'stamprect') { ED.drag = { kind: 'rect', x0: wx, y0: wy, x1: wx, y1: wy }; return true; }
-    ED.drag = { kind: 'ghost', x: wx, y: wy, sx: sx, sy: sy, moved: false };
     ED.hover = { x: wx, y: wy };
-    return true;
+    return false;                                    /* a tap places; a drag pans */
   }
   /* select */
   if (keys['shift'] && !MOB) { ED.marq = { x0: wx, y0: wy, x1: wx, y1: wy }; ED.drag = { kind: 'marq' }; return true; }
   var hit = edPick(wx, wy);
-  if (hit) {
+  if (hit && (!touch || ED.sel.indexOf(hit) >= 0)) {
+    /* with a mouse a drag moves what it lands on; with a thumb only what is already
+       selected moves, so a drag across a crowded street still pans */
     if (ED.sel.indexOf(hit) < 0) ED.sel = keys['shift'] ? ED.sel.concat([hit]) : [hit];
     edProps(); edHint();
     ED.drag = { kind: 'move', x0: wx, y0: wy, base: ED.sel.map(function (e) { return JSON.stringify(e); }), snapped: false };
     return true;
   }
-  if (ED.sel.length) { ED.sel = []; edProps(); edHint(); }
   return false;   /* let the camera pan */
+}
+/* a tap: the tool's one thing */
+function edTap(sx, sy) {
+  var w = s2w(sx, sy), wx = edSnap(w.x), wy = edSnap(w.y), t = ED.tool;
+  if (ED.menu) { edMenu(false); return; }
+  if (ED.cat === 'select' || !t) {
+    var hit = edPick(wx, wy);
+    ED.sel = hit ? (keys['shift'] && ED.sel.indexOf(hit) < 0 ? ED.sel.concat([hit]) : [hit]) : [];
+    edProps(); edHint(); return;
+  }
+  if (t.kind === 'place') { edAdd(edNewEntity(t, wx, wy)); return; }
+  if (t.kind === 'stamp') { edAddMany(edStampPoint(t.stamp, wx, wy)); return; }
+  if (t.kind === 'line' || t.kind === 'stampline') { ED.line = ED.line || []; ED.line.push({ x: wx, y: wy }); edPill(); edHint(); return; }
+  if (t.kind === 'height' || t.kind === 'scatter' || t.kind === 'erase') { ED.drag = { kind: 'brush', snapped: false, last: null }; edBrushAt(wx, wy); edUp(); }
+}
+/* a press held still: pick the thing up */
+function edHold(sx, sy) {
+  var w = s2w(sx, sy), wx = edSnap(w.x), wy = edSnap(w.y), t = ED.tool;
+  if (ED.cat !== 'select' && t && (t.kind === 'place' || t.kind === 'stamp')) {
+    ED.drag = { kind: 'ghost', x: wx, y: wy, sx: sx, sy: sy, moved: true, lifted: true };
+    ED.hover = { x: wx, y: wy }; edHint(); return true;
+  }
+  if (ED.cat === 'select') {
+    var hit = edPick(wx, wy);
+    if (hit) {
+      if (ED.sel.indexOf(hit) < 0) ED.sel = [hit];
+      edProps(); edHint();
+      ED.drag = { kind: 'move', x0: wx, y0: wy, base: ED.sel.map(function (e) { return JSON.stringify(e); }), snapped: false };
+    } else edMarquee(wx, wy);
+    return true;
+  }
+  return false;
+}
+/* the touch handlers ask these three: what a press starts, what a held press does,
+   and they finish with edTap or edUp */
+function edTouchStart(sx, sy) {
+  var w = s2w(sx, sy);
+  return edDown(w.x, w.y, sx, sy, false, true) ? 'draw' : 'pan';
 }
 /* a press held still on the ground starts a box, the way it does in the battle */
 function edMarquee(wx, wy) { ED.marq = { x0: wx, y0: wy, x1: wx, y1: wy }; ED.drag = { kind: 'marq' }; }
@@ -16077,14 +16343,11 @@ function edMove(wx, wy, sx, sy) {
   if (d.kind === 'rect') { d.x1 = wx; d.y1 = wy; return; }
   if (d.kind === 'marq') { ED.marq.x1 = wx; ED.marq.y1 = wy; return; }
   if (d.kind === 'ghost') {
-    if (!d.moved && sx !== undefined && Math.hypot(sx - d.sx, sy - d.sy) > 8) d.moved = true;
-    if (d.moved) {
-      /* on a phone the thing is carried a thumb's height above the fingertip, so it
-         can be seen going down */
-      var lift = ED.touching && sx !== undefined ? s2w(sx, sy - 70) : null;
-      d.x = lift ? edSnap(lift.x) : wx; d.y = lift ? edSnap(lift.y) : wy;
-      ED.hover = { x: d.x, y: d.y };
-    }
+    /* on a phone the thing is carried a thumb's height above the fingertip, so it can
+       be seen going down */
+    var lift = ED.touching && sx !== undefined ? s2w(sx, sy - 70) : null;
+    d.x = lift ? edSnap(lift.x) : wx; d.y = lift ? edSnap(lift.y) : wy;
+    ED.hover = { x: d.x, y: d.y };
     return;
   }
   if (d.kind === 'line') {
@@ -16094,7 +16357,7 @@ function edMove(wx, wy, sx, sy) {
   }
   if (d.kind === 'move') {
     var dx = wx - d.x0, dy = wy - d.y0;
-    if (!d.snapped) { edSnapshot(); d.snapped = true; }
+    if (!d.snapped) { edSnapshot(); d.snapped = true; ED.sel.forEach(edMark); }
     for (var i = 0; i < ED.sel.length; i++) edMoveEntity(ED.sel[i], JSON.parse(d.base[i]), dx, dy);
   }
 }
@@ -16126,12 +16389,14 @@ function edUp() {
       ED.sel = ED.data.entities.filter(function (e) { return edInRect(e, x0, y0, x1, y1); });
       edProps(); edHint();
     }
-  } else if (d.kind === 'move' && d.snapped) edTouch();
-  else if (d.kind === 'brush' && d.snapped) edTouch();
+  } else if (d.kind === 'move' && d.snapped) edTouch(ED.sel);
+  else if (d.kind === 'brush' && d.snapped) edTouch([]);
 }
 function edTick(dt) {
   if (ED.dirty && ED.rebuildT > 0) { ED.rebuildT -= dt; if (ED.rebuildT <= 0) { edRebuildNow(); edHint(); edTitle(); } }
+  else if (ED.padT > 0 && !ED.drag) { ED.padT -= dt; if (ED.padT <= 0) { buildTerrain(ED.padTiles); buildAlbedo(ED.padRect); ED.padTiles = {}; ED.padRect = null; } }
   if (ED.saveT > 0) { ED.saveT -= dt; if (ED.saveT <= 0) edAutosave(); }
+  ED.miniT = (ED.miniT || 0) - dt; if (ED.miniT <= 0) { ED.miniT = .25; edMinimap(); }
 }
 /* ---- the overlay: outlines, handles, the ghost, the brush, the box, the grid ---- */
 function edPoly(pts, close) {
@@ -16214,6 +16479,33 @@ function edFacingTicks(pts, flag, col) {
   }
 }
 
+/* the overview in the corner: the painted ground, the buildings, the flags, and where
+   the camera is looking; a tap on it flies there */
+function edMinimap() {
+  var c = el('edminicv'); if (!c || !ED.on || !MAT.up) return;
+  var W = c.clientWidth, H = c.clientHeight; if (!W || !H) return;
+  if (c.width !== Math.round(W * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+  var x = c.getContext('2d'); x.setTransform(dpr, 0, 0, dpr, 0, 0);
+  var sx = W / WORLD.w, sy = H / WORLD.h;
+  x.fillStyle = '#0b0d07'; x.fillRect(0, 0, W, H);
+  if (typeof mbase !== 'undefined' && mbase) { x.globalAlpha = .8; x.drawImage(mbase, 0, 0, W, H); x.globalAlpha = 1; }
+  ED.data.entities.forEach(function (e) {
+    if (e.t === 'house' || e.t === 'farm') { x.fillStyle = e.t === 'farm' ? '#8a7a55' : '#b9ab88'; x.fillRect(e.x * sx - e.w * sx / 2, e.y * sy - e.h * sy / 2, Math.max(1.5, e.w * sx), Math.max(1.5, e.h * sy)); }
+    else if (e.t === 'sector') { x.strokeStyle = e.owner ? FACTION[e.owner].color : '#8ec8ff'; x.lineWidth = 1; x.beginPath(); x.arc(e.x * sx, e.y * sy, 195 * sx, 0, TAU); x.stroke(); }
+    else if (e.t === 'hq') { x.fillStyle = FACTION[e.side].color; x.fillRect(e.x * sx - 3, e.y * sy - 2.5, 6, 5); }
+  });
+  var v = view();
+  x.strokeStyle = '#ffd76a'; x.lineWidth = 1.2; x.beginPath();
+  v.corners.forEach(function (q, i) { if (i) x.lineTo(q.x * sx, q.y * sy); else x.moveTo(q.x * sx, q.y * sy); });
+  x.closePath(); x.stroke();
+}
+function edMiniJump(ev) {
+  var c = el('edminicv'), r = c.getBoundingClientRect();
+  var p = ev.touches ? ev.touches[0] : ev;
+  CAM.tx = clamp((p.clientX - r.left) / r.width * WORLD.w, 0, WORLD.w); CAM.ty = clamp((p.clientY - r.top) / r.height * WORLD.h, 0, WORLD.h);
+  clampCam(); ev.preventDefault();
+}
+
 /* ---- keeping maps ----
    The draft is written a couple of seconds after every change, so nothing is lost to
    a closed tab. Named maps live in one store, as many as the device will hold. The
@@ -16263,6 +16555,276 @@ function edBlankMap(name) {
     { t: 'sector', id: 'B', x: 1400, y: 950, type: 'vp', owner: null, label: 'Centre' },
     { t: 'sector', id: 'C', x: 2260, y: 950, type: 'mp', owner: 'ger', label: 'East' },
     { t: 'hq', side: 'us', x: 250, y: 950 }, { t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 }], height: [] };
+}
+
+/* ---- the generator: a whole map from a seed and three sliders ----
+   The west half and the midline are laid out, then the west is mirrored, so what
+   comes out is fair by construction. A town is a grid of streets a little off true
+   with terraces along every frontage, a piazza where the flags meet, and farms, groves
+   and field walls outside it; the damage slider razes blocks, shells what stands and
+   pocks the fields; the works slider digs the trench lines and gun positions in front
+   of each headquarters. Every random draw comes from the seed, so a map can be had
+   again from its number. */
+function edGenerate(o) {
+  var seed = (o.seed | 0) || 1, town = clamp(o.town, 0, 1), dmg = clamp(o.damage, 0, 1), works = clamp(o.works, 0, 1);
+  var st = (seed * 2654435761 + 12345) >>> 0;
+  function R() { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; }
+  function rr(a, b) { return a + R() * (b - a); }
+  function chance(p) { return R() < p; }
+  var E = [], MX = WORLD.w / 2, MY = 950;
+  var TW = 640 + town * 1500, TH = 520 + town * 900, x0 = MX - TW / 2, y0 = MY - TH / 2, y1 = MY + TH / 2;
+  function road(pts, w) { E.push({ t: 'road', width: w || 52, pts: pts }); }
+  function P(x, y) { return { x: x, y: y }; }
+  /* a terrace along one frontage of a block, no deeper than the block allows: each
+     house its own frontage, depth and setback, the last one cut to fit */
+  function row(from, to, line, dir, horiz, maxD) {
+    var out = [], at = from;
+    while (at < to - 44) {
+      var fw = Math.min(to - at, 64 + rr(0, 56)), dp = Math.min(maxD, 64 + rr(0, 56)), set = rr(0, Math.min(10, maxD - dp)), tall = chance(.25) ? 1 : 0;
+      var e = { t: 'house', w: horiz ? fw : dp, h: horiz ? dp : fw, s: R(), tall: tall, style: tall ? 'civic' : 'row' };
+      if (horiz) { e.x = at + fw / 2; e.y = line + dir * (set + dp / 2); } else { e.y = at + fw / 2; e.x = line + dir * (set + dp / 2); }
+      out.push(e); at += fw + 4;
+    }
+    return out;
+  }
+  /* the streets: a grid over the town, each a little off true, the main street
+     running out to the headquarters */
+  var xs = [], ys = [MY], k;
+  for (k = 1; MX - 340 * k > x0 + 140; k++) xs.unshift(MX - 340 * k + rr(-22, 22));
+  for (k = 1; MY - 330 * k > y0 + 90; k++) { ys.unshift(MY - 330 * k + rr(-18, 18)); ys.push(MY + 330 * k + rr(-18, 18)); }
+  road([P(300, MY), P(x0 - 40, MY), P(MX, MY)], 60);
+  ys.forEach(function (y) { if (y !== MY) road([P(x0 - 30, y), P(MX, y)], 52); });
+  xs.concat([MX]).forEach(function (x) { road([P(x, y0 - 30), P(x, y1 + 30)], x === MX ? 56 : 48); });
+  /* the blocks between the streets: built, razed, a garden, or the piazza */
+  var cols = [x0].concat(xs).concat([MX]), rows = [y0].concat(ys).concat([y1]);
+  var razedAt = [];
+  for (var ci = 0; ci < cols.length - 1; ci++) for (var rj = 0; rj < rows.length - 1; rj++) {
+    var ix0 = cols[ci] + (ci ? 38 : 12), ix1 = cols[ci + 1] - 38, iy0 = rows[rj] + (rj ? 38 : 12), iy1 = rows[rj + 1] - (rj < rows.length - 2 ? 38 : 12);
+    var iw = ix1 - ix0, ih = iy1 - iy0, cx = (ix0 + ix1) / 2, cy = (iy0 + iy1) / 2;
+    if (iw < 90 || ih < 90) continue;
+    /* the piazza: the block north of the crossroads, and its mirror, one square across
+       the midline; the outermost blocks of a big town are the thinnest */
+    if (ci === cols.length - 2 && rows[rj + 1] === MY) { E.push({ t: 'paved', x: ix0 - 20, y: iy0 - 20, w: iw + 40, h: ih + 40, kind: 'piazza' }); E.push({ t: 'pole', x: cx - iw * .3, y: cy - ih * .3, broken: chance(dmg) ? 1 : 0 }); continue; }
+    var edge = (cols.length > 3 && ci === 0) || (rows.length > 4 && (rj === 0 || rj === rows.length - 2));
+    if (!chance((.55 + town * .45) * (edge ? .6 : 1))) {
+      /* a garden, or a field left open */
+      if (chance(.6)) {
+        E.push({ t: 'wall', x1: ix0, y1: iy0, x2: ix1, y2: iy0 });
+        E.push({ t: 'wall', x1: ix0, y1: iy0, x2: ix0, y2: Math.min(iy1, iy0 + ih * .6) });
+        for (var g = 0; g < 2 + Math.round(iw * ih / 30000); g++) E.push({ t: 'tree', x: rr(ix0 + 30, ix1 - 30), y: rr(iy0 + 30, iy1 - 30), r: 12 + rr(0, 6), s: R(), lean: rr(-.2, .2) });
+        for (var g2 = 0; g2 < 3; g2++) E.push({ t: 'scrub', x: rr(ix0 + 16, ix1 - 16), y: rr(iy0 + 16, iy1 - 16), r: 9 + rr(0, 6), s: R() });
+      }
+      continue;
+    }
+    if (chance(dmg * .55)) {
+      E = E.concat(edStampRect('razed', ix0 + 10, iy0 + 10, ix1 - 10, iy1 - 10, R));
+      razedAt.push({ x: cx, y: cy });
+      if (chance(.7)) E.push({ t: 'smoke', x: cx + rr(-30, 30), y: cy + rr(-30, 30) });
+      continue;
+    }
+    var two = ih >= 176, maxD = two ? Math.min(134, (ih - 44) / 2) : Math.min(134, ih);
+    var made = row(ix0, ix1, iy0, 1, true, maxD);
+    if (two) made = made.concat(row(ix0, ix1, iy1, -1, true, maxD));
+    if (ih - 2 * maxD - 88 > 130 && iw > 300) made = made.concat(row(iy0 + maxD + 44, iy1 - maxD - 44, ix0, 1, false, Math.min(134, iw / 2 - 40))).concat(row(iy0 + maxD + 44, iy1 - maxD - 44, ix1, -1, false, Math.min(134, iw / 2 - 40)));
+    made.forEach(function (h) {
+      if (chance(dmg * .3)) { var r = Math.min(h.w, h.h) * .46; E.push({ t: 'rubble', x: h.x, y: h.y, r: r }); E.push({ t: 'debris', x: h.x, y: h.y, r: r * .6, s: R() }); return; }
+      h.damage = Math.min(1, rr(0, .25) + dmg * rr(.2, .8)); h.roof = chance(1 - dmg * .9) ? 1 : 0;
+      E.push(h);
+    });
+    if (ih > 320 && iw > 240) { if (chance(.5)) E.push({ t: 'tree', x: cx, y: cy, r: 13 + rr(0, 5), s: R(), lean: 0 }); else E.push({ t: 'cart', x: cx, y: cy, a: rr(0, TAU) }); }
+    if (chance(.35)) E.push({ t: 'pole', x: ix0 - 14, y: iy0 - 14, broken: chance(dmg * .6) ? 1 : 0 });
+  }
+  /* the country: farms by the outer flags, groves, field walls, scrub, a lane */
+  var farmY = [440, 1460];
+  farmY.forEach(function (fy, i) {
+    if (x0 > 820) {
+      E = E.concat(edStampPoint('compound', 640, fy, R));
+      road([P(x0 - 30, ys[i ? ys.length - 1 : 0]), P(760, fy + (i ? -130 : 130)), P(330, MY + (i ? 160 : -160))], 36);
+    }
+    E = E.concat(edStampRect('grove', 330 + rr(0, 60), fy + (i ? -240 : 120), 560 + rr(0, 60), fy + (i ? -80 : 280), R));
+  });
+  for (var wl = 0; wl < 3 + Math.round(R() * 3); wl++) {
+    var wx = rr(340, Math.max(360, x0 - 120)), wy = rr(330, 1620), wlen = rr(120, 260), horiz = chance(.5);
+    E.push({ t: 'wall', x1: wx, y1: wy, x2: horiz ? wx + wlen : wx, y2: horiz ? wy : wy + wlen });
+  }
+  for (var sc2 = 0; sc2 < 14; sc2++) E.push({ t: 'scrub', x: rr(320, Math.max(340, x0 - 40)), y: rr(300, 1650), r: 9 + rr(0, 7), s: R() });
+  for (var tl = 0; tl < 6; tl++) E.push({ t: 'tree', x: rr(330, Math.max(350, x0 - 60)), y: rr(300, 1650), r: 12 + rr(0, 6), s: R(), lean: rr(-.2, .2) });
+  if (y0 > 420) E = E.concat(edStampRect('grove', x0 + rr(0, 200), 300, x0 + rr(300, 500), y0 - 80, R));
+  if (y1 < 1480) E = E.concat(edStampRect('grove', x0 + rr(0, 200), y1 + 80, x0 + rr(300, 500), 1640, R));
+  /* the damage in the fields and the streets */
+  for (var cr = 0; cr < Math.round(dmg * 26); cr++) E.push({ t: 'crater', x: rr(340, MX - 30), y: rr(300, 1650), r: 26 + rr(0, 34) });
+  razedAt.forEach(function (rz) { if (chance(.6)) E.push({ t: 'rubble', x: rz.x + rr(-60, 60), y: rz.y + (chance(.5) ? -1 : 1) * rr(120, 170), r: 24 + rr(0, 16) }); });
+  /* the works in front of the headquarters, in whatever field there is between it and
+     the town: a trench line with its wire, guns behind it, a block at the street mouth */
+  var field = x0 - 330;
+  if (works > .15 && field > 300) {
+    var tx = 330 + field * .45 + rr(-20, 20);
+    E = E.concat(edStampLine('trenchwire', [P(tx - 20, MY - 270), P(tx + 30, MY - 95), P(tx, MY + 95), P(tx + 40, MY + 270)], R));
+    if (works > .45 && field > 520) E = E.concat(edStampPoint('gunpos', tx + 170, MY - 150, R));
+    if (works > .7 && field > 520) E = E.concat(edStampPoint('gunpos', tx + 170, MY + 150, R));
+  }
+  if (works > .6 && x0 > 420) { E.push({ t: 'roadblock', x: x0 - 60, y: MY, a: 0 }); E.push({ t: 'bags', x: x0 - 90, y: MY - 70, r: 30, a: 0 }); E.push({ t: 'bags', x: x0 - 90, y: MY + 70, r: 30, a: 0 }); }
+  if (works > .85) { E.push({ t: 'bags', x: x0 + 20, y: y0 - 70, r: 30, a: 0 }); E.push({ t: 'bags', x: x0 + 20, y: y1 + 70, r: 30, a: 0 }); }
+  if (works > .3 && field <= 300) { E.push({ t: 'bags', x: 420, y: MY - 90, r: 30, a: 0 }); E.push({ t: 'bags', x: 420, y: MY + 90, r: 30, a: 0 }); }
+  /* the flags and the headquarters */
+  var dy = clamp(TH * .42, 260, 400);
+  E.push({ t: 'sector', id: 'A', x: 600, y: 640, type: 'mp', owner: 'us', label: 'West farm N' });
+  E.push({ t: 'sector', id: 'B', x: 600, y: 1260, type: 'fuel', owner: 'us', label: 'West farm S' });
+  E.push({ t: 'sector', id: 'C', x: MX - Math.max(360, TW * .34), y: MY, type: 'vp', owner: null, label: 'West end' });
+  E.push({ t: 'sector', id: 'D', x: MX, y: MY - dy, type: 'vp', owner: null, label: 'North square' });
+  E.push({ t: 'sector', id: 'E', x: MX, y: MY, type: 'vp', owner: null, label: 'Piazza' });
+  E.push({ t: 'sector', id: 'F', x: MX, y: MY + dy, type: 'vp', owner: null, label: 'South square' });
+  E.push({ t: 'hq', side: 'us', x: 250, y: MY }); E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: MY });
+  var data = { name: o.name || 'New map', version: 1, entities: E, height: [], seed: seed };
+  /* the mirror */
+  var keep = ED.data; ED.data = data;
+  E.slice().forEach(function (e) {
+    if (e.t === 'hq' || Math.abs(edAnchorX(e) - MX) <= 6) return;
+    var m = edMirrorOf(e);
+    if (m.t === 'sector') m.label = (e.label || '').replace('West', 'East');
+    E.push(m);
+  });
+  edTidy(E);
+  ED.data = keep;
+  return data;
+}
+/* what the generator may have left standing in something else: the check's own rules,
+   applied by taking the offender out */
+function edTidy(E) {
+  var houses = E.filter(function (e) { return (e.t === 'house' || e.t === 'farm') && e.w; });
+  var trenches = E.filter(function (e) { return e.t === 'trench' && e.pts; }), roads = E.filter(function (e) { return e.t === 'road' && e.pts; });
+  var paved = E.filter(function (e) { return e.t === 'paved'; });
+  function onPaving(x, y) { for (var i = 0; i < paved.length; i++) { var p = paved[i]; if (x > p.x - 20 && x < p.x + p.w + 20 && y > p.y - 20 && y < p.y + p.h + 20) return true; } return false; }
+  function inHouse(x, y, pad) { for (var i = 0; i < houses.length; i++) { var b = houses[i]; if (Math.abs(x - b.x) < b.w / 2 + pad && Math.abs(y - b.y) < b.h / 2 + pad) return true; } return false; }
+  function nearLines(list, x, y, d) { for (var i = 0; i < list.length; i++) { var p = list[i].pts; for (var k = 0; k < p.length - 1; k++) if (distToSeg(x, y, p[k].x, p[k].y, p[k + 1].x, p[k + 1].y) < d) return true; } return false; }
+  function segInHouse(x1, y1, x2, y2, pad) { for (var i = 0; i <= 16; i++) { var t = i / 16; if (inHouse(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, pad)) return true; } return false; }
+  /* houses that overlap or leave a slot: the later one goes */
+  var drop = [];
+  for (var i = 0; i < houses.length; i++) for (var j = i + 1; j < houses.length; j++) {
+    var a = houses[i], b = houses[j];
+    if (drop.indexOf(a) >= 0 || drop.indexOf(b) >= 0) continue;
+    var gx = Math.abs(a.x - b.x) - (a.w + b.w) / 2, gy = Math.abs(a.y - b.y) - (a.h + b.h) / 2;
+    if (gx < -4 && gy < -4) { drop.push(b); continue; }
+    var gap = gx >= -4 && gy < 0 ? gx : gy >= -4 && gx < 0 ? gy : null;
+    if (gap !== null && gap > 7 && gap < 34) drop.push(b);
+  }
+  houses = houses.filter(function (h) { return drop.indexOf(h) < 0; });
+  /* a street through a house takes the house */
+  houses.forEach(function (h) {
+    for (var r = 0; r < roads.length && drop.indexOf(h) < 0; r++) {
+      var p = roads[r].pts, pad = -Math.min(10, (roads[r].width || 48) * .2);
+      for (var k = 0; k < p.length - 1; k++) { var hit = false; for (var t = 0; t <= 16 && !hit; t++) { var u = t / 16, x = p[k].x + (p[k + 1].x - p[k].x) * u, y = p[k].y + (p[k + 1].y - p[k].y) * u; if (Math.abs(x - h.x) < h.w / 2 + pad && Math.abs(y - h.y) < h.h / 2 + pad) hit = true; } if (hit) { drop.push(h); break; } }
+    }
+  });
+  houses = houses.filter(function (h) { return drop.indexOf(h) < 0; });
+  var out = E.filter(function (e) {
+    if (drop.indexOf(e) >= 0) return false;
+    if (e.t === 'crater') return !inHouse(e.x, e.y, e.r * .7) && !nearLines(trenches, e.x, e.y, e.r + 18) && !onPaving(e.x, e.y);
+    if (e.t === 'trench') { for (var q = 0; q < e.pts.length - 1; q++) if (segInHouse(e.pts[q].x, e.pts[q].y, e.pts[q + 1].x, e.pts[q + 1].y, 12)) return false; return true; }
+    if (e.t === 'tree' || e.t === 'scrub' || e.t === 'pole' || e.t === 'cart' || e.t === 'bags' || e.t === 'emplace' || e.t === 'debris' || e.t === 'rubble') return !inHouse(e.x, e.y, 10);
+    if (e.t === 'wire') return !segInHouse(e.x1, e.y1, e.x2, e.y2, 10) && !nearLines(trenches, (e.x1 + e.x2) / 2, (e.y1 + e.y2) / 2, 16);
+    if (e.t === 'wall') return !segInHouse(e.x1, e.y1, e.x2, e.y2, 4);
+    return true;
+  });
+  E.length = 0; Array.prototype.push.apply(E, out);
+  /* wire over a crater: the crater goes */
+  var wires = E.filter(function (e) { return e.t === 'wire'; });
+  for (var c = E.length - 1; c >= 0; c--) { var e2 = E[c]; if (e2.t !== 'crater') continue; for (var w = 0; w < wires.length; w++) if (distToSeg(e2.x, e2.y, wires[w].x1, wires[w].y1, wires[w].x2, wires[w].y2) < e2.r + 12) { E.splice(c, 1); break; } }
+}
+/* the presets the NEW MAP panel offers: what each slider is set to */
+var ED_TEMPLATES = [
+  { id: 'country', name: 'COUNTRY', town: .1, damage: .15, works: .5 },
+  { id: 'village', name: 'VILLAGE', town: .42, damage: .35, works: .55 },
+  { id: 'town', name: 'TOWN', town: .8, damage: .45, works: .5 },
+  { id: 'ruins', name: 'RUINS', town: .85, damage: .95, works: .7 },
+  { id: 'blank', name: 'BLANK' }, { id: 'ortona', name: 'ORTONA' }];
+function edPanelNew() {
+  var html = '<div class="edh">NAME</div><input type="text" id="edpname" value="New map" maxlength="40">' +
+    '<div class="edh">START FROM</div><div class="edseg" id="edntpl">';
+  ED_TEMPLATES.forEach(function (t, i) { html += '<button class="edb' + (i === 1 ? ' on' : '') + '" data-v="' + t.id + '">' + t.name + '</button>'; });
+  html += '</div><div id="ednsl">' +
+    '<div class="edrow"><label>Town</label><input type="range" id="edntown" min="0" max="100" step="5" value="42"><span id="edntownv">42</span></div>' +
+    '<div class="edrow"><label>Damage</label><input type="range" id="edndmg" min="0" max="100" step="5" value="35"><span id="edndmgv">35</span></div>' +
+    '<div class="edrow"><label>Works</label><input type="range" id="ednworks" min="0" max="100" step="5" value="55"><span id="ednworksv">55</span></div>' +
+    '<div class="edrow"><label>Seed</label><input type="text" id="ednseed" inputmode="numeric" value="' + (1 + Math.floor(Math.random() * 99999)) + '"><button class="edb" id="ednshuffle">NEW SEED</button></div>' +
+    '<div class="edh">THE SAME SEED AND SLIDERS GIVE THE SAME MAP, SO A NUMBER IS A MAP YOU CAN SHARE. THE MAP IS MIRRORED, SO IT IS FAIR AS IT COMES.</div></div>' +
+    '<div class="edbtns" style="display:flex;gap:6px;margin-top:12px"><button class="edb" id="edpok" style="flex:1;min-height:52px;font-size:14px">CREATE THE MAP</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:52px">CANCEL</button></div>';
+  edPanel('NEW MAP', html);
+  var tpl = 'village';
+  function show() { el('ednsl').style.display = tpl === 'blank' || tpl === 'ortona' ? 'none' : ''; }
+  el('edntpl').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      el('edntpl').querySelectorAll('button').forEach(function (o) { o.classList.remove('on'); }); b.classList.add('on'); tpl = b.getAttribute('data-v');
+      var t = ED_TEMPLATES.filter(function (q) { return q.id === tpl; })[0];
+      if (t && t.town !== undefined) { el('edntown').value = Math.round(t.town * 100); el('edndmg').value = Math.round(t.damage * 100); el('ednworks').value = Math.round(t.works * 100); }
+      ['edntown', 'edndmg', 'ednworks'].forEach(function (id) { el(id + 'v').textContent = el(id).value; });
+      if (tpl === 'ortona') el('edpname').value = 'Ortona'; else if (el('edpname').value === 'Ortona') el('edpname').value = 'New map';
+      show();
+    });
+  });
+  ['edntown', 'edndmg', 'ednworks'].forEach(function (id) { el(id).addEventListener('input', function () { el(id + 'v').textContent = el(id).value; }); });
+  el('ednshuffle').addEventListener('click', function () { el('ednseed').value = 1 + Math.floor(Math.random() * 99999); });
+  el('edpcancel').addEventListener('click', edPanelClose);
+  el('edpok').addEventListener('click', function () {
+    var name = el('edpname').value.trim() || 'New map', data;
+    if (tpl === 'blank') data = edBlankMap(name);
+    else if (tpl === 'ortona') { data = defaultMapData(); name = 'Ortona'; }
+    else data = edGenerate({ name: name, seed: parseInt(el('ednseed').value, 10) || 1, town: el('edntown').value / 100, damage: el('edndmg').value / 100, works: el('ednworks').value / 100 });
+    edSnapshot(); ED.data = data; ED.name = name; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); edFit();
+    toast(tpl === 'blank' ? 'A blank map: three flags and two headquarters' : tpl === 'ortona' ? 'Ortona, as shipped' : 'Made from seed ' + data.seed + '. Not what you wanted? NEW MAP again.');
+  });
+  show();
+}
+/* one half copied over the other, everything but the headquarters */
+function edMirrorAll(fromWest) {
+  edSnapshot();
+  var MX = WORLD.w / 2;
+  var keep = ED.data.entities.filter(function (e) { var x = edAnchorX(e); return e.t === 'hq' || Math.abs(x - MX) <= 6 || (fromWest ? x < MX : x > MX); });
+  var src = keep.filter(function (e) { var x = edAnchorX(e); return e.t !== 'hq' && Math.abs(x - MX) > 6; });
+  ED.data.entities = keep;
+  src.forEach(function (e) { var m = edMirrorOf(e); if (m.t === 'sector') m.label = (e.label || '').replace(fromWest ? 'West' : 'East', fromWest ? 'East' : 'West'); ED.data.entities.push(m); });
+  ED.sel = []; edTouch(); edProps();
+  toast((fromWest ? 'West' : 'East') + ' half copied across');
+}
+/* the file through the share sheet where there is one (a phone), else as a download */
+function edShareFile() {
+  ED.data.name = ED.name;
+  var text = JSON.stringify(ED.data), fname = ED.name.replace(/\W+/g, '_') + '.json';
+  if (navigator.share && window.File) {
+    try {
+      var f = new File([text], fname, { type: 'application/json' });
+      if (!navigator.canShare || navigator.canShare({ files: [f] })) { navigator.share({ files: [f], title: ED.name }).then(null, function () {}); return; }
+    } catch (e) {}
+  }
+  edExport();
+}
+var ED_HELPED = 'ortona.edhelp';
+function edPanelHelp() {
+  var h = MOB ? [
+    ['MOVING ABOUT', 'Drag the ground to pan and pinch to zoom. Two fingers always pan and zoom, whatever tool is up. The little map top right jumps anywhere.'],
+    ['PLACING', 'Pick a category from the dock and a tool from the tray. Tap to put the thing down. Hold, then drag, to carry it into place and watch it go down.'],
+    ['DRAWING', 'Streets, trenches, wire and walls take one stroke, or tap point by point and press DONE. Boxes and stamps (a terrace, a razed block, a crater field, a grove) are one drag.'],
+    ['BRUSHES', 'Raise, lower and flatten the ground, scatter grass, scrub, craters or rubble, or erase, by dragging.'],
+    ['SELECTING', 'In SELECT, tap a thing to pick it. Hold it, then drag, to move it. Hold on the ground and drag to box several. The sheet below shows what can be changed: size, turn, damage, the flag\'s type and owner. Duplicate, copy across, delete.'],
+    ['MIRROR', 'With ⇔ on, every placement is copied to the other side, flags swapping owner, so the map is fair as you build it. Turn it off for the middle ground.'],
+    ['CHECK', 'In the menu, CHECK AND BALANCE lists what cannot be true of real ground (a crater on a trench, a tree in a house, a slot too narrow to walk) with a GO to each, and weighs the two halves. It can also copy one half over the other.'],
+    ['KEEPING MAPS', 'A draft is kept on this device as you work. SAVE keeps a named copy here; EXPORT and SHARE send the file anywhere; IMPORT and PASTE bring one back. NEW MAP makes one from a seed.'],
+    ['TESTING', 'TEST plays the map with the side, the opposition and the victory rule you pick. The end screen brings you back here.']] : [
+    ['MOVING ABOUT', 'Drag the ground to pan, wheel to zoom, middle-drag or Z and C to turn. The little map top right jumps anywhere.'],
+    ['PLACING', 'Pick a category from the dock and a tool from the tray. Click to put the thing down. Drag to pan; the ghost follows the pointer.'],
+    ['DRAWING', 'Streets, trenches, wire and walls take one stroke, or click point by point and press DONE (Enter). Boxes and stamps are one drag.'],
+    ['BRUSHES', 'Raise, lower and flatten the ground, scatter grass, scrub, craters or rubble, or erase, by dragging.'],
+    ['SELECTING', 'In SELECT, click a thing to pick it, drag it to move it, shift-drag a box round several. Delete removes, Escape clears. The sheet shows what can be changed.'],
+    ['MIRROR', 'With MIRROR on (M), every placement is copied to the other side, flags swapping owner. G shows the grid; SNAP in the menu rounds positions.'],
+    ['CHECK', 'CHECK lists what cannot be true of real ground with a GO to each, weighs the two halves, and can copy one half over the other.'],
+    ['KEEPING MAPS', 'A draft is kept in this browser as you work. SAVE keeps a named copy; EXPORT writes a file; IMPORT and PASTE bring one back. NEW MAP makes one from a seed. Z and Y undo and redo.'],
+    ['TESTING', 'TEST plays the map with the side, the opposition and the victory rule you pick. The end screen brings you back here.']];
+  var html = '';
+  h.forEach(function (r) { html += '<div class="edh">' + r[0] + '</div><div class="edtxt">' + r[1] + '</div>'; });
+  html += '<button class="edb wide" id="edhelpok" style="margin-top:14px;min-height:52px;text-align:center;font-size:14px">GOT IT</button>';
+  edPanel('HOW THE EDITOR WORKS', html);
+  el('edhelpok').addEventListener('click', edPanelClose);
+  edStore(ED_HELPED, '1');
 }
 
 /* ---- the menu and the panel ---- */
@@ -16414,8 +16976,11 @@ function edPanelCheck() {
   bal.us.flags.forEach(function (f) { byId[f.id] = { f: f, us: f.d }; });
   bal.ger.flags.forEach(function (f) { byId[f.id] = byId[f.id] || { f: f }; byId[f.id].ger = f.d; });
   Object.keys(byId).sort().forEach(function (id) { var q = byId[id]; html += '<tr><td>' + id + ' ' + (q.f.type === 'vp' ? 'victory' : q.f.type) + '</td><td>' + (q.us === undefined ? '-' : q.us) + '</td><td>' + (q.ger === undefined ? '-' : q.ger) + '</td></tr>'; });
-  html += '</table><div class="edh">A FAIR MAP GIVES BOTH SIDES THE SAME DISTANCES TO THE SAME KINDS OF FLAG. MIRROR IS THE QUICK WAY THERE.</div>';
+  html += '</table><div class="edh">A FAIR MAP GIVES BOTH SIDES THE SAME DISTANCES TO THE SAME KINDS OF FLAG. MIRROR IS THE QUICK WAY THERE.</div>' +
+          '<div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edmirwe" style="flex:1;min-height:44px">COPY WEST OVER EAST</button><button class="edb" id="edmirew" style="flex:1;min-height:44px">COPY EAST OVER WEST</button></div>';
   edPanel('CHECK', html);
+  el('edmirwe').addEventListener('click', function () { edMirrorAll(true); edPanelClose(); });
+  el('edmirew').addEventListener('click', function () { edMirrorAll(false); edPanelClose(); });
   document.querySelectorAll('#edpanelbody [data-go]').forEach(function (b) {
     b.addEventListener('click', function () { var p = probs[+b.getAttribute('data-go')]; CAM.tx = p.x; CAM.ty = p.y; CAM.dist = Math.min(CAM.dist, 700); clampCam(); edPanelClose(); });
   });
@@ -16431,12 +16996,19 @@ function edPanelCheck() {
   el('edcheck').addEventListener('click', function () { if (ED.panel === 'CHECK') edPanelClose(); else edPanelCheck(); });
   el('edtest').addEventListener('click', function () { if (ED.panel === 'TEST THE MAP') edPanelClose(); else edPanelTest(); });
   el('edpanelclose').addEventListener('click', edPanelClose);
+  el('edgrab').addEventListener('click', function () { var sh = el('edsheet'); var fold = !sh.classList.contains('folded'); sh.classList.toggle('folded', fold); ED.sheetFold = fold; el('edsum').textContent = fold ? 'OPTIONS  ▲' : 'HIDE  ▼'; edLayout(); });
+  el('edminicv').addEventListener('click', edMiniJump);
+  el('edminicv').addEventListener('touchstart', edMiniJump, { passive: false });
+  el('edminicv').addEventListener('touchmove', edMiniJump, { passive: false });
   el('edpillok').addEventListener('click', edFinishLine);
   el('edpillx').addEventListener('click', function () { ED.line = null; edPill(); edHint(); });
   el('edmsave').addEventListener('click', function () { if (ED.name && ED.name !== 'Ortona') edSaveSlot(ED.name); else edPanelName('SAVE THE MAP', 'NAME', ED.name === 'Ortona' ? 'My Ortona' : ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); edMenu(false); });
   el('edmsaveas').addEventListener('click', function () { edPanelName('SAVE AS', 'NAME', ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); });
   el('edmload').addEventListener('click', edPanelLoad);
-  el('edmnew').addEventListener('click', function () { edPanelName('NEW MAP', 'NAME', 'New map', function (v) { edSnapshot(); ED.data = edBlankMap(v); ED.name = v; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); }); });
+  el('edmnew').addEventListener('click', edPanelNew);
+  el('edmhelp').addEventListener('click', edPanelHelp);
+  el('edmsharefile').addEventListener('click', function () { edShareFile(); edMenu(false); });
+  if (!navigator.share) el('edmsharefile').classList.add('hidden');
   el('edmortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false); });
   el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });
   el('edmimport').addEventListener('click', function () { el('edfile').click(); edMenu(false); });
