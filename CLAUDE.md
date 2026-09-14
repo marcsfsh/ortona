@@ -240,7 +240,8 @@ node tools/lint.mjs
 Boots the game, deploys, simulates a battle, and asserts: WebGL comes up,
 shadows are on, nothing throws, the economy and victory points move, both
 sides survive, the HUD stays inside the viewport, touch targets are at least
-44px, the tactical map opens, and the map editor loads. Exits non-zero on any
+44px, the tactical map opens, and the map editor loads, opens every category's
+tray, keeps its controls at 44px and throws nothing. Exits non-zero on any
 failure.
 
 ```sh
@@ -672,9 +673,49 @@ Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone g
 elite infantry inside two hundred of it is a dead gun, which is what the men in front of
 it are for.
 
-**Map editor.** A second mode living under `ED`, sharing the renderer. Opens
-from the title screen, edits `G.mapData`, saves to `localStorage`, imports and
-exports JSON.
+**Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
+title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
+change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the
+desktop gets the same layout: a dock of categories along the bottom (`ED_CATS`), a tray of
+tools above it, a sheet of options that slides up over that (`edProps`: sliders and
+segmented choices, never a dropdown), a menu behind the top-left button, and a panel that
+takes the screen for lists (load, check, test). Every control is 44px or more and
+`check.mjs` asserts it.
+
+How the hand works it (`edDown`/`edMove`/`edUp`, which the game's pointer and touch
+handlers hand screen coordinates too): a tool's `kind` decides. `place` puts a thing down
+on a tap, and a press that moves carries a ghost of it seventy pixels above the fingertip
+(`ED.touching`) so it can be watched going down; `line` takes one stroke, simplified to
+its corners (`edSimplify`, Douglas-Peucker at fourteen units), or taps point by point
+with a DONE pill; `rect` drags a box; `height`, `scatter` and `erase` are brushes with a
+radius in the sheet, and scatter puts one thing down every `step` units of travel with a
+size drawn from `rr`; `stamp`, `stampline` and `stamprect` put down several things in one
+gesture (`edStampPoint`, `edStampLine`, `edStampRect`): a terrace laid along a stroke
+with its own frontages, depths and setbacks, a razed block, a courtyard, a farm compound,
+a gun position with its bags and wire, a trench with wire in front of it, an olive grove,
+a crater field. Select picks the smallest thing under the tap (`edPick`), drags the
+selection as a group, boxes several with shift-drag or, on a phone, a press held still
+(`edMarquee`), and offers duplicate, copy across the midline and delete. Undo and redo
+are whole-map snapshots (`edSnapshot`, sixty deep). Mirror is on by default and every
+`edPush` mirrors what it adds, flags and headquarters swapping side.
+
+Keeping maps: a draft is written to `localStorage` a couple of seconds after every change
+(`ED_DRAFT`) and is what the editor reopens; named maps live together under `ED_SLOTS`
+with a load list, and the last map saved or tested (`ED_LAST`) is what the title
+screen's PLAY CUSTOM MAP starts. A map goes out as a file (`edExport`) or as text on the
+clipboard (`edShareText`, with a select-all fallback where the clipboard is refused) and
+comes in as a file or pasted text (`edTakeText`). TEST asks for a side, an opposition and
+a victory rule and deploys on the map; the game-over screen then has a way back
+(`#overedit`, `ED.fromEditor`).
+
+CHECK runs the rules of `tools/mapcheck.mjs` on the device (`edCheck`: craters on
+trenches, wire through craters and trenches, anything inside a building, buildings that
+overlap or leave a slot too narrow to walk, streets through buildings, streets too narrow
+or too long, plus what a game needs: both headquarters, a victory flag, three flags),
+each with a GO that flies the camera to it, and a balance table (`edBalance`): buildings,
+cover, craters, trees, trenches and wire on each half, and every flag's distance from
+each headquarters, with anything lopsided marked. The shipped map comes back clean from
+both, which is the calibration.
 
 ---
 

@@ -145,8 +145,24 @@ for (const device of TARGETS) {
   await page.click('#openeditor');
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
-  const ed = await page.evaluate(() => ({ on: window.ED.on, assets: document.querySelectorAll('#edpal .edasset, #edpal button').length }));
-  ok('map editor opens', ed.on, `${ed.assets} palette entries`);
+  const ed = await page.evaluate(() => {
+    const cats = document.querySelectorAll('#eddock .edtab').length;
+    let tools = 0;
+    window.ED_CATS.forEach(c => { tools += c.tools.length; });
+    /* every category opens and every tool takes: the tray is rebuilt for each */
+    let opened = 0;
+    window.ED_CATS.forEach(c => { window.edOpenCat(c.id); if (document.querySelectorAll('#edtray .edtool').length === c.tools.length) opened++; });
+    window.edOpenCat('select');
+    /* and the controls a thumb has to hit are big enough */
+    let small = 0, checked = 0;
+    document.querySelectorAll('#edtop .edb, #eddock .edtab, #edtray .edtool, #edpill .edb').forEach(b => {
+      const r = b.getBoundingClientRect(); if (!r.width) return; checked++; if (r.width < 44 || r.height < 44) small++;
+    });
+    return { on: window.ED.on, cats, tools, opened, small, checked };
+  });
+  ok('map editor opens', ed.on, `${ed.cats} categories, ${ed.tools} tools`);
+  ok('every editor category opens its tray', ed.opened === ed.cats, `${ed.opened}/${ed.cats}`);
+  ok('editor controls are at least 44px', ed.small === 0, `${ed.checked} controls checked, ${ed.small} small`);
   ok('map editor throws nothing', log.errors.length === edErrorsBefore);
 
   if (KEEP) {

@@ -350,26 +350,82 @@ body.mob .briefgrid{grid-template-columns:1fr;max-width:390px}.brief{min-height:
 }
 
 /* ---------- map editor ---------- */
-#editor{position:absolute;inset:0;z-index:16;pointer-events:none}
+#editor{position:absolute;inset:0;z-index:16;pointer-events:none;font-family:var(--cond)}
 #editor.hidden{display:none}
-#edtop{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:12px;padding:0 10px;
-  background:linear-gradient(#0a0c08f4,#0a0c08d0);border-bottom:1px solid #3c4430;pointer-events:auto;overflow-x:auto;white-space:nowrap}
-body.mob #edtop{top:var(--safeT);padding-top:2px}
-.edgrp{display:flex;gap:4px;align-items:center}
-.edb{background:#1b2117;border:1px solid #3c4430;color:#c8c3af;font:600 10.5px/1 var(--cond);letter-spacing:1px;padding:8px 10px;cursor:pointer;border-radius:2px}
+#editor .edb{pointer-events:auto}
+#edtop{position:absolute;left:0;right:0;top:0;height:54px;display:flex;align-items:center;gap:6px;padding:0 8px;
+  background:linear-gradient(180deg,rgba(8,10,7,.96),rgba(8,10,7,.82));border-bottom:1px solid #3c4430;pointer-events:auto}
+body.mob #edtop{top:0;padding-top:var(--safeT);height:calc(54px + var(--safeT))}
+.edb{background:#1b2117;border:1px solid #3c4430;color:#c8c3af;font:600 11px/1 var(--cond);letter-spacing:1px;padding:0 12px;
+  min-height:44px;cursor:pointer;border-radius:3px;white-space:nowrap}
 .edb:hover{background:#26301f}.edb.on{background:#3f5230;color:#e6e0c8;border-color:#7a9a5a}
 .edb.warn{border-color:#7a3a34;color:#e0a89a}.edb.tog.on{background:#2f3f2a}
-#edside{position:absolute;left:0;top:44px;bottom:0;width:190px;background:#0a0c08e6;border-right:1px solid #3c4430;pointer-events:auto;overflow-y:auto;padding:8px}
-body.mob #edside{top:calc(44px + var(--safeT));width:150px}
-#edpal .cat{font:600 9.5px/1 var(--cond);letter-spacing:1.6px;color:#8f9a78;margin:10px 0 5px}
-#edpal .asset{display:block;width:100%;text-align:left;background:#151a12;border:1px solid #2b3325;color:#c8c3af;font:12px/1.2 var(--cond);padding:6px 8px;margin:2px 0;cursor:pointer;border-radius:2px}
-#edpal .asset:hover{background:#1f271a}#edpal .asset.on{background:#3f5230;color:#e6e0c8;border-color:#7a9a5a}
-#edprops{margin-top:12px;border-top:1px solid #2b3325;padding-top:8px;font:12px/1.5 var(--cond);color:#c8c3af}
-#edprops label{display:flex;justify-content:space-between;align-items:center;gap:6px;margin:4px 0}
-#edprops input[type=range]{width:90px}#edprops select,#edprops input[type=text]{background:#151a12;color:#e6e0c8;border:1px solid #3c4430;font:12px var(--cond);padding:2px 4px;width:96px}
-#edprops .edb{width:100%;margin-top:6px}
-#edhint{position:absolute;left:200px;bottom:10px;right:10px;pointer-events:none;color:#c8c3af;font:12px/1.4 var(--cond);text-shadow:0 1px 2px #000}
-body.mob #edhint{left:158px;bottom:calc(10px + var(--safeB))}
+.edb.ico{font-size:17px;padding:0 10px;min-width:44px}
+.edb.edname{flex:1;min-width:44px;overflow:hidden;text-overflow:ellipsis;text-align:left;font-size:13px;letter-spacing:.5px;color:#e6e0c8;background:transparent;border-color:transparent}
+/* a phone's top bar has room for glyphs, not words: the check lives in the menu there */
+body.mob #edcheck{display:none}
+body.mob #edmirror{font-size:0;min-width:44px;padding:0 10px}
+body.mob #edmirror::before{content:"⇔";font-size:18px}
+body.mob #edtest{padding:0 10px}
+.edb.wide{display:block;width:100%;margin:5px 0;text-align:left;min-height:44px;font-size:12px}
+.edb.disabled{opacity:.4;pointer-events:none}
+#eddock{position:absolute;left:0;right:0;bottom:0;display:flex;gap:4px;padding:6px 8px calc(6px + var(--safeB));
+  background:rgba(8,10,7,.94);border-top:1px solid #3c4430;pointer-events:auto;overflow-x:auto;scrollbar-width:none}
+#eddock::-webkit-scrollbar{display:none}
+#eddock .edtab{flex:1 0 auto;min-width:64px;min-height:50px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:#151a12;border:1px solid #2b3325;color:#c8c3af;font:600 9.5px/1 var(--cond);letter-spacing:1px;border-radius:3px;cursor:pointer;pointer-events:auto}
+#eddock .edtab .g{font-size:17px;line-height:1}
+#eddock .edtab.on{background:#3f5230;color:#e6e0c8;border-color:#7a9a5a}
+#edtray{position:absolute;left:0;right:0;bottom:calc(63px + var(--safeB));display:flex;gap:5px;padding:6px 8px;
+  background:rgba(12,15,10,.94);border-top:1px solid #2b3325;pointer-events:auto;overflow-x:auto;scrollbar-width:none}
+#edtray::-webkit-scrollbar{display:none}
+#edtray.hidden{display:none}
+#edtray .edtool{flex:0 0 auto;width:78px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  background:#151a12;border:1px solid #2b3325;color:#c8c3af;font:11px/1.1 var(--cond);border-radius:3px;cursor:pointer;text-align:center;padding:4px 3px;pointer-events:auto}
+#edtray .edtool .g{font-size:16px;line-height:1;color:#9fb08a}
+#edtray .edtool.on{background:#3f5230;color:#e6e0c8;border-color:#7a9a5a}
+#edsheet{position:absolute;left:0;right:0;bottom:calc(63px + var(--safeB));max-height:44vh;overflow-y:auto;background:rgba(10,12,8,.96);
+  border-top:1px solid #3c4430;padding:6px 12px 10px;pointer-events:auto;font:12px/1.5 var(--cond);color:#c8c3af}
+#edsheet.hidden{display:none}
+#edsheet.up{bottom:calc(132px + var(--safeB))}
+#edsheet .edgrab{width:44px;height:4px;border-radius:2px;background:#3c4430;margin:2px auto 8px}
+#edsheet .edrow{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:6px 0;min-height:32px}
+#edsheet .edrow label{flex:0 0 auto;color:#9fb08a;letter-spacing:1px;font-size:10.5px;text-transform:uppercase}
+#edsheet input[type=range]{flex:1;min-width:0;height:32px;accent-color:#7a9a5a}
+#edsheet select,#edsheet input[type=text]{background:#151a12;color:#e6e0c8;border:1px solid #3c4430;font:13px var(--cond);padding:6px 8px;min-height:36px;flex:1;min-width:0}
+#edsheet .edseg{display:flex;gap:4px;flex:1}
+#edsheet .edseg .edb{flex:1;padding:0 4px;min-height:36px}
+#edsheet .edbtns{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+#edsheet .edbtns .edb{flex:1 1 auto;min-height:44px}
+#edsheet .edtitle{color:#e6e0c8;font-size:13px;letter-spacing:1px;margin-bottom:2px}
+#edpanel{position:absolute;left:0;right:0;top:54px;bottom:calc(63px + var(--safeB));background:rgba(8,10,7,.97);pointer-events:auto;
+  display:flex;flex-direction:column;font:12px/1.5 var(--cond);color:#c8c3af}
+body.mob #edpanel{top:calc(54px + var(--safeT))}
+#edpanel.hidden{display:none}
+#editor.panel #edsheet,#editor.panel #edtray,#editor.panel #edhint,#editor.panel #edpill{display:none}
+#edpanel .edph{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid #3c4430;color:#e6e0c8;font-size:13px;letter-spacing:1.5px}
+#edpanelbody{flex:1;overflow-y:auto;padding:8px 12px calc(8px + var(--safeB))}
+#edpanelbody .edli{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #1f2419;min-height:44px}
+#edpanelbody .edli .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#edpanelbody .edli .t small{display:block;color:#8f9a78;font-size:10.5px}
+#edpanelbody .edli .edb{min-height:40px}
+#edpanelbody .edh{color:#8f9a78;letter-spacing:1.6px;font-size:10px;margin:12px 0 4px}
+#edpanelbody .edwarn{color:#e0a89a}
+#edpanelbody .edok{color:#9ecb62}
+#edpanelbody table{border-collapse:collapse;width:100%;font-size:12px}
+#edpanelbody td,#edpanelbody th{padding:4px 6px;border-bottom:1px solid #1f2419;text-align:right}
+#edpanelbody th:first-child,#edpanelbody td:first-child{text-align:left}
+#edpanelbody textarea{width:100%;height:120px;background:#151a12;color:#e6e0c8;border:1px solid #3c4430;font:11px var(--mono);padding:6px}
+#edpanelbody input[type=text]{width:100%;background:#151a12;color:#e6e0c8;border:1px solid #3c4430;font:14px var(--cond);padding:8px;min-height:44px}
+#edmenus{position:absolute;left:0;top:54px;width:230px;max-height:calc(100% - 54px - 70px);overflow-y:auto;background:rgba(8,10,7,.97);
+  border:1px solid #3c4430;border-left:none;padding:8px;pointer-events:auto;z-index:2}
+body.mob #edmenus{top:calc(54px + var(--safeT))}
+#edmenus.hidden{display:none}
+#edmenus .edh{color:#8f9a78;letter-spacing:1.6px;font-size:10px;margin:8px 0 2px}
+#edhint{position:absolute;left:8px;right:8px;bottom:calc(70px + var(--safeB));pointer-events:none;color:#c8c3af;font:12px/1.4 var(--cond);text-shadow:0 1px 2px #000;text-align:center}
+#edpill{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(150px + var(--safeB));display:flex;gap:6px;pointer-events:auto;z-index:1}
+#edpill.hidden{display:none}
+#edpill .edb{min-height:44px;font-size:12px}
 #start .row .edb{margin-left:8px}
 
 /* ---------- HUD corrections, applied last ---------- */
@@ -404,32 +460,40 @@ body.mob #mini{width:104px;height:72px}
 <div id="glerr" class="hidden"></div>
 <div id="editor" class="hidden">
   <div id="edtop">
-    <div class="edgrp">
-      <button class="edb on" data-tool="select" title="Select, move, delete">SELECT</button>
-      <button class="edb" data-tool="place" title="Place the chosen asset">PLACE</button>
-      <button class="edb" data-tool="height" title="Raise, lower or flatten the ground">HEIGHT</button>
-    </div>
-    <div class="edgrp">
-      <button class="edb tog on" id="edmirror" title="Mirror every placement to the other side">MIRROR</button>
-      <button class="edb tog" id="edsnap" title="Snap to a 10-unit grid">SNAP</button>
-      <button class="edb" id="edundo" title="Undo (Z)">UNDO</button>
-    </div>
-    <div class="edgrp">
-      <button class="edb" id="edtest" title="Play the map as it is">TEST</button>
-      <button class="edb" id="edsave" title="Save on this device">SAVE</button>
-      <button class="edb" id="edexport" title="Download as a file">EXPORT</button>
-      <button class="edb" id="edimport" title="Load from a file">IMPORT</button>
-      <button class="edb" id="edreset" title="Back to the default Ortona map">RESET</button>
-      <button class="edb" id="edblank" title="Empty ground">BLANK</button>
-      <button class="edb warn" id="edexit">EXIT</button>
-    </div>
-    <input type="file" id="edfile" accept=".json,application/json" class="hidden">
+    <button class="edb ico" id="edmenu" title="Map menu" aria-label="Map menu">☰</button>
+    <button class="edb edname" id="edname" title="Rename the map">Ortona</button>
+    <button class="edb ico" id="edundo" title="Undo (Z)" aria-label="Undo">↶</button>
+    <button class="edb ico" id="edredo" title="Redo (Y)" aria-label="Redo">↷</button>
+    <button class="edb tog on" id="edmirror" title="Mirror every placement to the other side (M)">MIRROR</button>
+    <button class="edb" id="edcheck" title="Check the map for conflicts and balance">CHECK</button>
+    <button class="edb" id="edtest" title="Play the map as it is">TEST</button>
   </div>
-  <div id="edside">
-    <div id="edpal"></div>
-    <div id="edprops"></div>
+  <div id="edmenus" class="hidden">
+    <div class="edh">THIS MAP</div>
+    <button class="edb wide" id="edmsave">SAVE</button>
+    <button class="edb wide" id="edmsaveas">SAVE AS…</button>
+    <button class="edb wide" id="edmload">LOAD…</button>
+    <button class="edb wide" id="edmnew">NEW MAP…</button>
+    <button class="edb wide" id="edmortona">RELOAD ORTONA</button>
+    <div class="edh">FILES</div>
+    <button class="edb wide" id="edmexport">EXPORT FILE</button>
+    <button class="edb wide" id="edmimport">IMPORT FILE</button>
+    <button class="edb wide" id="edmshare">COPY AS TEXT</button>
+    <button class="edb wide" id="edmpaste">PASTE TEXT…</button>
+    <div class="edh">VIEW</div>
+    <button class="edb wide" id="edmgrid">GRID: OFF</button>
+    <button class="edb wide" id="edmsnap">SNAP: OFF</button>
+    <button class="edb wide" id="edmfit">FIT THE MAP</button>
+    <button class="edb wide" id="edmbalance">CHECK AND BALANCE</button>
+    <button class="edb wide warn" id="edmexit">EXIT EDITOR</button>
   </div>
+  <div id="edpanel" class="hidden"><div class="edph"><span id="edpaneltitle"></span><button class="edb ico" id="edpanelclose" aria-label="Close">✕</button></div><div id="edpanelbody"></div></div>
+  <div id="edsheet" class="hidden"><div class="edgrab"></div><div id="edprops"></div></div>
+  <div id="edpill" class="hidden"><button class="edb" id="edpillok">✓ DONE</button><button class="edb warn" id="edpillx">✕ CANCEL</button></div>
+  <div id="edtray" class="hidden"></div>
+  <div id="eddock"></div>
   <div id="edhint"></div>
+  <input type="file" id="edfile" accept=".json,application/json" class="hidden">
 </div>
 
 
@@ -516,6 +580,7 @@ body.mob #mini{width:104px;height:72px}
     <div class="sub" id="overtext"></div>
   </div>
   <button class="go" id="again">FIGHT AGAIN</button>
+  <button class="go hidden" id="overedit">BACK TO EDITOR</button>
 </div>
 
 <script>
@@ -14683,7 +14748,7 @@ function issueOrder(wx, wy, forceAttack) {
 cv.addEventListener('mousemove', function (e) {
   var r = cv.getBoundingClientRect();
   mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.inside = true;
-  if (ED.on && !drag.pan) { var ew = s2w(mouse.x, mouse.y); edMove(ew.x, ew.y); }
+  if (ED.on && !drag.pan) { var ew = s2w(mouse.x, mouse.y); edMove(ew.x, ew.y, mouse.x, mouse.y); }
   if (drag.on && (Math.abs(mouse.x - drag.x0) > 5 || Math.abs(mouse.y - drag.y0) > 5)) drag.moved = true;
   if (drag.pan) {
     if (drag.pan.rotate) {
@@ -14781,8 +14846,16 @@ cv.addEventListener('touchstart', function (e) {
     if (e.touches.length >= 2) { var ta = tPos(e.touches[0]), tb = tPos(e.touches[1]); touch.pinch = Math.hypot(ta.x - tb.x, ta.y - tb.y); touch.ang = Math.atan2(tb.y - ta.y, tb.x - ta.x); touch.cx = (ta.x + tb.x) / 2; touch.cy = (ta.y + tb.y) / 2; touch.two = true; touch.edPan = false; return; }
     var tp = tPos(e.touches[0]); mouse.x = tp.x; mouse.y = tp.y; touch.x0 = tp.x; touch.y0 = tp.y; touch.moved = false; touch.two = false;
     var tw = s2w(tp.x, tp.y);
+    ED.touching = true;
     touch.edPan = !edDown(tw.x, tw.y, tp.x, tp.y, false);
     touch.lastX = tp.x; touch.lastY = tp.y;
+    /* a press held still on empty ground starts a box, the way it does in the battle */
+    if (touch.edPan && ED.cat === 'select') {
+      touch.timer = setTimeout(function () {
+        if (Math.hypot(mouse.x - touch.x0, mouse.y - touch.y0) > 8) return;
+        var mw = s2w(touch.x0, touch.y0); touch.edPan = false; edMarquee(mw.x, mw.y); buzz(14);
+      }, 320);
+    }
     return;
   }
   if (!G.running) return;
@@ -14826,7 +14899,7 @@ cv.addEventListener('touchmove', function (e) {
     }
     var tp2 = tPos(e.touches[0]); mouse.x = tp2.x; mouse.y = tp2.y;
     if (touch.edPan) panCam(tp2.x - touch.lastX, tp2.y - touch.lastY);
-    else { var tw2 = s2w(tp2.x, tp2.y); edMove(tw2.x, tw2.y); }
+    else { var tw2 = s2w(tp2.x, tp2.y); edMove(tw2.x, tw2.y, tp2.x, tp2.y); }
     touch.lastX = tp2.x; touch.lastY = tp2.y;
     return;
   }
@@ -14866,7 +14939,7 @@ cv.addEventListener('touchmove', function (e) {
 }, { passive: false });
 
 cv.addEventListener('touchend', function (e) {
-  if (ED.on) { if (!e.touches.length) { touch.pinch = 0; touch.two = false; edUp(); } return; }
+  if (ED.on) { if (!e.touches.length) { clearTimeout(touch.timer); touch.pinch = 0; touch.two = false; edUp(); ED.touching = false; } return; }
   if (!G.running) return;
   clearTimeout(touch.timer);
   if (e.touches.length) return;
@@ -14923,10 +14996,12 @@ window.addEventListener('keydown', function (e) {
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) return;
     keys[k] = true;
     if (k === 'z') { edUndo(); e.preventDefault(); }
-    else if (k === 'delete' || k === 'backspace') { edDelete(ED.sel); e.preventDefault(); }
-    else if (k === 'escape') { if (ED.line) { ED.line = null; edHint(); } else { ED.sel = null; edProps(); edSetTool('select'); } }
+    else if (k === 'y') { edRedo(); e.preventDefault(); }
+    else if (k === 'delete' || k === 'backspace') { edDeleteSel(); e.preventDefault(); }
+    else if (k === 'escape') { if (ED.panel) edPanelClose(); else if (ED.menu) edMenu(false); else if (ED.line) { ED.line = null; edPill(); edHint(); } else { ED.sel = []; edProps(); edOpenCat('select'); } }
     else if (k === 'enter') { if (ED.line) edFinishLine(); }
     else if (k === 'm') { ED.mirror = !ED.mirror; el('edmirror').classList.toggle('on', ED.mirror); edHint(); }
+    else if (k === 'g') { ED.grid = !ED.grid; }
     return;
   }
   if (!G.running) return;
@@ -15431,7 +15506,7 @@ if (MOB) {
     '<b>drag</b> to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist two fingers</b> to rotate &nbsp; <b>press and hold</b> then drag to box-select<br>' +
     'Commands run along the bottom. The minimap sits above them.';
 }
-el('again').onclick = function () { el('over').classList.add('hidden'); el('start').classList.remove('hidden'); G.running = false; };
+el('again').onclick = function () { el('over').classList.add('hidden'); el('overedit').classList.add('hidden'); ED.fromEditor = false; el('start').classList.remove('hidden'); G.running = false; };
 window.addEventListener('resize', function () {
   var m = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth < 820;
   if (m !== MOB) { MOB = m; document.body.classList.toggle('mob', MOB); el('tools').classList.toggle('hidden', !G.running); }
@@ -15453,70 +15528,105 @@ document.addEventListener('visibilitychange', function () {
   last = performance.now();
 });
 /* ================================================================ the map editor
-   Edits the same data the game builds from. Every asset on the default map is in the
-   palette. Placements can mirror to the far side of the map, so a fair map is one tap
-   per feature. The scene rebuilds a moment after each change. */
-var ED = { on: false, tool: 'select', asset: null, data: null, sel: null, mirror: true, snap: false, faceFlag: undefined,
-           undo: [], line: null, drag: null, brush: { r: 90, d: 6, mode: 'raise' }, dirty: 0, rebuildT: 0, hover: null };
-var ED_ASSETS = [
-  ['TOWN', [
-    ['house', 'House row', { w: 120, h: 120, tall: 0, style: 'row' }],
-    ['house', 'Tall house row', { w: 120, h: 120, tall: 1, style: 'civic' }],
-    ['house', 'Church', { w: 176, h: 120, tall: 1, style: 'church', roof: 1 }],
-    ['farm', 'Farmhouse', { w: 118, h: 88 }],
-    ['paved', 'Paving (drag)', { kind: 'street' }],
-    ['paved', 'Piazza flags (drag)', { kind: 'piazza' }],
-    ['road', 'Road (line)', { width: 52 }],
-    ['pole', 'Lamp post', {}]]],
-  ['DEFENCES', [
-    ['trench', 'Trench (line)', {}],
-    ['wire', 'Barbed wire (line)', {}],
-    ['bags', 'Sandbag wall', { r: 30 }],
-    ['emplace', 'Weapon pit', { r: 22 }],
-    ['roadblock', 'Roadblock', {}],
-    ['wall', 'Garden wall (line)', {}]]],
-  ['DAMAGE', [
-    ['crater', 'Shell crater', { r: 48 }],
-    ['rubble', 'Rubble', { r: 44 }],
-    ['debris', 'Debris heap', { r: 26 }],
-    ['cart', 'Burnt cart', {}],
-    ['smoke', 'Smoke column', {}]]],
-  ['NATURE', [
-    ['tree', 'Olive tree', { r: 15 }],
-    ['tree', 'Cypress', { r: 9, cypress: 1 }],
-    ['scrub', 'Scrub', { r: 12 }],
-    ['grass', 'Grass patch', { r: 100, tone: .7 }]]],
-  ['GAME', [
-    ['sector', 'Sector: victory', { type: 'vp' }],
-    ['sector', 'Sector: manpower', { type: 'mp' }],
-    ['sector', 'Sector: fuel', { type: 'fuel' }],
-    ['hq', 'Canadian HQ', { side: 'us' }],
-    ['hq', 'German HQ', { side: 'ger' }]]]
+   Edits the same data the game builds from, and it is built for a thumb first: a dock
+   of categories along the bottom, a tray of tools above it, a sheet of options that
+   slides up over that, and one hand on the ground. A tap places; a press-and-drag
+   carries a ghost of the thing above the fingertip so it can be put down exactly; a
+   line is drawn in one stroke or tapped out point by point; brushes scatter craters
+   and scrub along a drag; stamps put down a whole terrace, a razed block, a gun
+   position or a grove in one gesture. Everything mirrors to the far side of the map
+   unless told not to, the map checks itself for things that cannot be true of real
+   ground, saves itself as it goes, keeps as many named maps as the device will hold,
+   and comes and goes as a file or as text. The scene rebuilds a moment after each
+   change. */
+var ED = { on: false, data: null, sel: [], tool: null, cat: 'select', mirror: true, snap: 0, grid: false,
+           undo: [], redo: [], line: null, drag: null, hover: null, dirty: 0, rebuildT: 0, saveT: 0,
+           name: 'Ortona', touching: false, fromEditor: false, brush: { r: 90, d: 6 }, marq: null, faceFlag: undefined,
+           menu: false, panel: null };
+/* the tools, by category. kind is how the hand works it: place (tap, or press and
+   carry), line (one stroke, or point by point), rect (drag a box), height and scatter
+   and erase (brushes), stamp (a tap, a stroke or a box that puts down several things) */
+var ED_CATS = [
+  { id: 'select', name: 'SELECT', glyph: '⌖', tools: [] },
+  { id: 'ground', name: 'GROUND', glyph: '▲', tools: [
+    { id: 'raise', name: 'Raise', glyph: '▲', kind: 'height', mode: 'raise' },
+    { id: 'lower', name: 'Lower', glyph: '▼', kind: 'height', mode: 'lower' },
+    { id: 'flat', name: 'Flatten', glyph: '▬', kind: 'height', mode: 'flat' },
+    { id: 'grassb', name: 'Grass brush', glyph: '⁂', kind: 'scatter', t: 'grass', rr: [50, 110], step: 70, def: { tone: .7 } },
+    { id: 'scrubb', name: 'Scrub brush', glyph: '⁘', kind: 'scatter', t: 'scrub', rr: [9, 15], step: 34, def: {} },
+    { id: 'paved', name: 'Paving (box)', glyph: '▦', kind: 'rect', t: 'paved', def: { kind: 'street' } },
+    { id: 'piazza', name: 'Piazza flags (box)', glyph: '▩', kind: 'rect', t: 'paved', def: { kind: 'piazza' } }] },
+  { id: 'town', name: 'TOWN', glyph: '⌂', tools: [
+    { id: 'house', name: 'House', glyph: '⌂', kind: 'place', t: 'house', def: { w: 110, h: 100, tall: 0, style: 'row' } },
+    { id: 'tall', name: 'Tall house', glyph: '⌂', kind: 'place', t: 'house', def: { w: 120, h: 110, tall: 1, style: 'civic' } },
+    { id: 'church', name: 'Church', glyph: '✝', kind: 'place', t: 'house', def: { w: 176, h: 120, tall: 1, style: 'church', roof: 1 } },
+    { id: 'farm', name: 'Farmhouse', glyph: '⌂', kind: 'place', t: 'farm', def: { w: 118, h: 88 } },
+    { id: 'terrace', name: 'Terrace (stroke)', glyph: '⌂⌂', kind: 'stampline', stamp: 'terrace' },
+    { id: 'razed', name: 'Razed block (box)', glyph: '▒', kind: 'stamprect', stamp: 'razed' },
+    { id: 'court', name: 'Courtyard', glyph: '▣', kind: 'stamp', stamp: 'court' },
+    { id: 'compound', name: 'Farm compound', glyph: '⌂+', kind: 'stamp', stamp: 'compound' },
+    { id: 'road', name: 'Street (draw)', glyph: '⟋', kind: 'line', t: 'road', def: { width: 52 } },
+    { id: 'pole', name: 'Lamp post', glyph: '¦', kind: 'place', t: 'pole', def: {} }] },
+  { id: 'defence', name: 'DEFENCE', glyph: '⊔', tools: [
+    { id: 'trench', name: 'Trench (draw)', glyph: '⌇', kind: 'line', t: 'trench', def: {} },
+    { id: 'trenchwire', name: 'Trench + wire (stroke)', glyph: '⌇≋', kind: 'stampline', stamp: 'trenchwire' },
+    { id: 'wire', name: 'Wire (draw)', glyph: '≋', kind: 'line', t: 'wire', def: {} },
+    { id: 'wall', name: 'Wall (draw)', glyph: '▬', kind: 'line', t: 'wall', def: {} },
+    { id: 'bags', name: 'Sandbags', glyph: '▰', kind: 'place', t: 'bags', def: { r: 30 } },
+    { id: 'pit', name: 'Weapon pit', glyph: '⊔', kind: 'place', t: 'emplace', def: { r: 22 } },
+    { id: 'gunpos', name: 'Gun position', glyph: '⊥', kind: 'stamp', stamp: 'gunpos' },
+    { id: 'roadblock', name: 'Roadblock', glyph: '▮', kind: 'place', t: 'roadblock', def: {} }] },
+  { id: 'damage', name: 'DAMAGE', glyph: '✷', tools: [
+    { id: 'crater', name: 'Crater', glyph: '◯', kind: 'place', t: 'crater', def: { r: 48 } },
+    { id: 'craterb', name: 'Crater brush', glyph: '◌', kind: 'scatter', t: 'crater', rr: [28, 60], step: 90, def: {} },
+    { id: 'craterf', name: 'Crater field (box)', glyph: '◌◌', kind: 'stamprect', stamp: 'craters' },
+    { id: 'rubble', name: 'Rubble', glyph: '▒', kind: 'place', t: 'rubble', def: { r: 44 } },
+    { id: 'rubbleb', name: 'Rubble brush', glyph: '▒▒', kind: 'scatter', t: 'rubble', rr: [24, 50], step: 60, def: {} },
+    { id: 'debris', name: 'Debris', glyph: '▪', kind: 'place', t: 'debris', def: { r: 26 } },
+    { id: 'cart', name: 'Burnt cart', glyph: '▭', kind: 'place', t: 'cart', def: {} },
+    { id: 'smoke', name: 'Smoke', glyph: '≈', kind: 'place', t: 'smoke', def: {} }] },
+  { id: 'nature', name: 'NATURE', glyph: '♣', tools: [
+    { id: 'olive', name: 'Olive tree', glyph: '♣', kind: 'place', t: 'tree', def: { r: 15 } },
+    { id: 'cypress', name: 'Cypress', glyph: '♠', kind: 'place', t: 'tree', def: { r: 9, cypress: 1 } },
+    { id: 'grove', name: 'Olive grove (box)', glyph: '♣♣', kind: 'stamprect', stamp: 'grove' },
+    { id: 'scrub', name: 'Scrub', glyph: '⁘', kind: 'place', t: 'scrub', def: { r: 12 } },
+    { id: 'grass', name: 'Grass patch', glyph: '⁂', kind: 'place', t: 'grass', def: { r: 100, tone: .7 } }] },
+  { id: 'game', name: 'FLAGS', glyph: '⚑', tools: [
+    { id: 'vp', name: 'Victory flag', glyph: '⚑', kind: 'place', t: 'sector', def: { type: 'vp' } },
+    { id: 'mp', name: 'Manpower flag', glyph: '⚐', kind: 'place', t: 'sector', def: { type: 'mp' } },
+    { id: 'fuel', name: 'Fuel flag', glyph: '⚐', kind: 'place', t: 'sector', def: { type: 'fuel' } },
+    { id: 'hqus', name: 'Canadian HQ', glyph: '⌂', kind: 'place', t: 'hq', def: { side: 'us' } },
+    { id: 'hqger', name: 'German HQ', glyph: '⌂', kind: 'place', t: 'hq', def: { side: 'ger' } }] },
+  { id: 'erase', name: 'ERASE', glyph: '⌫', tools: [
+    { id: 'eraser', name: 'Eraser brush', glyph: '⌫', kind: 'erase' }] }
 ];
-var ED_LINE = { trench: 1, road: 1, wire: 1, wall: 1 };
-var ED_RECT = { paved: 1 };
 var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1 };
+var ED_DRAFT = 'ortona.draft', ED_LAST = 'ortona.map', ED_SLOTS = 'ortona.maps';
 
+/* ---- opening and closing ---- */
 function edOpen(data) {
-  ED.on = true; ED.data = data || edLoadLocal() || defaultMapData();
-  ED.undo = []; ED.sel = null; ED.line = null; ED.tool = 'select'; ED.asset = null;
+  ED.on = true;
+  ED.data = data || edLoadDraft() || edLoadLocal() || defaultMapData();
+  ED.name = ED.data.name || 'Ortona';
+  ED.undo = []; ED.redo = []; ED.sel = []; ED.line = null; ED.drag = null; ED.marq = null; ED.tool = null; ED.cat = 'select';
   G.mapData = ED.data; G.side = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
   G.wrecks = []; G.corpses = []; G.fx = []; G.shots = [];
   fog = false;
   edRebuildNow();
-  CAM.tx = WORLD.w / 2; CAM.ty = WORLD.h / 2; CAM.dist = 1800; CAM.pitch = 1.1; CAM.yaw = Math.PI / 2;
+  edFit();
   el('start').classList.add('hidden'); el('editor').classList.remove('hidden');
   el('top').classList.add('hidden'); el('bar').classList.add('hidden'); el('tools').classList.add('hidden');
   G.running = false; G.over = 'editor';
-  edBuildPalette(); edSetTool('select'); edHint();
+  edBuildDock(); edOpenCat('select'); edMenu(false); edPanelClose(); edProps(); edHint(); edTitle();
 }
 function edClose() {
+  edAutosave();
   ED.on = false; G.over = null; G.running = false;
   el('editor').classList.add('hidden'); el('start').classList.remove('hidden');
   edRefreshStart();
 }
 function edRefreshStart() {
-  var has = !!edLoadLocal();
+  var has = !!(edLoadLocal() || edLoadDraft());
   el('playcustom').classList.toggle('hidden', !has);
 }
 function edRebuildNow() {
@@ -15527,10 +15637,22 @@ function edRebuildNow() {
   SCENE.ready = true;
   ED.dirty = 0;
 }
-function edTouch() { ED.dirty = 1; ED.rebuildT = .35; }
-function edSnapshot() { ED.undo.push(JSON.stringify(ED.data)); if (ED.undo.length > 40) ED.undo.shift(); }
-function edUndo() { if (!ED.undo.length) return; ED.data = JSON.parse(ED.undo.pop()); G.mapData = ED.data; ED.sel = null; edTouch(); edHint(); }
-function edSnap(v) { return ED.snap ? Math.round(v / 10) * 10 : v; }
+function edFit() { CAM.tx = WORLD.w / 2; CAM.ty = WORLD.h / 2; CAM.dist = MOB ? 2600 : 1900; CAM.pitch = 1.15; CAM.yaw = Math.PI / 2; clampCam(); }
+function edTitle() { el('edname').textContent = ED.name + (ED.dirty ? ' •' : ''); }
+/* every change: a rebuild soon, and a draft written soon after */
+function edTouch() { ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5; edHint(); }
+function edSnapshot() { ED.undo.push(JSON.stringify(ED.data)); if (ED.undo.length > 60) ED.undo.shift(); ED.redo = []; }
+function edUndo() {
+  if (!ED.undo.length) return;
+  ED.redo.push(JSON.stringify(ED.data)); ED.data = JSON.parse(ED.undo.pop()); G.mapData = ED.data; ED.sel = []; edTouch(); edProps();
+}
+function edRedo() {
+  if (!ED.redo.length) return;
+  ED.undo.push(JSON.stringify(ED.data)); ED.data = JSON.parse(ED.redo.pop()); G.mapData = ED.data; ED.sel = []; edTouch(); edProps();
+}
+function edSnap(v) { return ED.snap ? Math.round(v / ED.snap) * ED.snap : v; }
+
+/* ---- the data ---- */
 function edMirrorOf(e) {
   var m = JSON.parse(JSON.stringify(e));
   if (m.x !== undefined) m.x = WORLD.w - m.x;
@@ -15549,30 +15671,29 @@ function edNextSectorId() {
   for (var c = 65; c < 91; c++) if (!used[String.fromCharCode(c)]) return String.fromCharCode(c);
   return 'Z' + Math.floor(Math.random() * 1000);
 }
-function edAdd(e) {
-  edSnapshot();
+function edAnchorX(e) { return e.x !== undefined ? (e.t === 'paved' ? e.x + e.w / 2 : e.x) : e.pts ? e.pts[0].x : e.x1; }
+/* one thing, or its mirror too; the snapshot is the caller's */
+function edPush(e) {
   if (e.t === 'sector' && !e.id) { e.id = edNextSectorId(); e.label = e.label || (e.type.toUpperCase() + ' ' + e.id); }
   if (e.t === 'hq') ED.data.entities = ED.data.entities.filter(function (q) { return !(q.t === 'hq' && q.side === e.side); });
   ED.data.entities.push(e);
-  if (ED.mirror && e.t !== 'hq' && Math.abs((e.x !== undefined ? e.x : e.pts ? e.pts[0].x : e.x1) - WORLD.w / 2) > 6) {
-    var m = edMirrorOf(e);
-    if (m.t === 'hq') ED.data.entities = ED.data.entities.filter(function (q) { return !(q.t === 'hq' && q.side === m.side); });
-    ED.data.entities.push(m);
-  }
-  edTouch();
+  if (ED.mirror && e.t !== 'hq' && Math.abs(edAnchorX(e) - WORLD.w / 2) > 6) ED.data.entities.push(edMirrorOf(e));
 }
-function edDelete(e) {
-  if (!e) return;
+function edAdd(e) { edSnapshot(); edPush(e); edTouch(); }
+function edAddMany(list) { if (!list.length) return; edSnapshot(); for (var i = 0; i < list.length; i++) edPush(list[i]); edTouch(); }
+function edDeleteSel() {
+  if (!ED.sel.length) return;
   edSnapshot();
-  ED.data.entities = ED.data.entities.filter(function (q) { return q !== e; });
-  ED.sel = null; edTouch(); edProps();
+  var gone = ED.sel;
+  ED.data.entities = ED.data.entities.filter(function (q) { return gone.indexOf(q) < 0; });
+  ED.sel = []; edTouch(); edProps();
 }
 /* the entity nearest a ground point, by a distance that fits its shape */
 function edPick(wx, wy) {
   /* a small thing inside a big thing's footprint must still be selectable, so among
      everything that contains the point the smallest footprint wins; only when nothing
      contains it does the nearest edge decide */
-  var inside = null, insideArea = 1e18, near = null, nd = 42;
+  var inside = null, insideArea = 1e18, near = null, nd = MOB ? 54 : 42;
   ED.data.entities.forEach(function (e) {
     var d, area;
     if (e.pts) { d = 1e9; for (var i = 0; i < e.pts.length - 1; i++) d = Math.min(d, distToSeg(wx, wy, e.pts[i].x, e.pts[i].y, e.pts[i + 1].x, e.pts[i + 1].y)); d -= 10; area = 200; }
@@ -15585,201 +15706,492 @@ function edPick(wx, wy) {
   });
   return inside || near;
 }
-function edSetTool(t) {
-  ED.tool = t; ED.line = null;
-  document.querySelectorAll('#edtop [data-tool]').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-tool') === t); });
-  if (t !== 'place') { ED.asset = null; document.querySelectorAll('#edpal .asset').forEach(function (b) { b.classList.remove('on'); }); }
-  edProps(); edHint();
+function edInRect(e, x0, y0, x1, y1) {
+  var x = edAnchorX(e), y = e.y !== undefined ? (e.t === 'paved' ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
+  return x >= x0 && x <= x1 && y >= y0 && y <= y1;
 }
-function edBuildPalette() {
-  var pal = el('edpal'); pal.innerHTML = '';
-  ED_ASSETS.forEach(function (cat) {
-    var h = document.createElement('div'); h.className = 'cat'; h.textContent = cat[0]; pal.appendChild(h);
-    cat[1].forEach(function (a) {
-      var b = document.createElement('button'); b.className = 'asset'; b.textContent = a[1];
-      b.addEventListener('click', function () {
-        ED.asset = { t: a[0], name: a[1], def: a[2] }; ED.tool = 'place'; ED.line = null;
-        document.querySelectorAll('#edtop [data-tool]').forEach(function (q) { q.classList.toggle('on', q.getAttribute('data-tool') === 'place'); });
-        document.querySelectorAll('#edpal .asset').forEach(function (q) { q.classList.remove('on'); }); b.classList.add('on');
-        edProps(); edHint();
-      });
-      pal.appendChild(b);
-    });
+function edMoveEntity(e, base, dx, dy) {
+  if (base.x !== undefined) { e.x = base.x + dx; e.y = base.y + dy; }
+  if (base.x1 !== undefined) { e.x1 = base.x1 + dx; e.y1 = base.y1 + dy; e.x2 = base.x2 + dx; e.y2 = base.y2 + dy; }
+  if (base.pts) e.pts = base.pts.map(function (p) { return { x: p.x + dx, y: p.y + dy }; });
+}
+
+/* ---- the dock, the tray, the sheet ---- */
+function edCatById(id) { for (var i = 0; i < ED_CATS.length; i++) if (ED_CATS[i].id === id) return ED_CATS[i]; return null; }
+function edBuildDock() {
+  var dock = el('eddock'); dock.innerHTML = '';
+  ED_CATS.forEach(function (c) {
+    var b = document.createElement('button'); b.className = 'edtab'; b.setAttribute('data-cat', c.id);
+    b.innerHTML = '<span class="g" aria-hidden="true">' + c.glyph + '</span><span>' + c.name + '</span>';
+    b.addEventListener('click', function () { edOpenCat(c.id); });
+    dock.appendChild(b);
   });
 }
+function edOpenCat(id) {
+  var c = edCatById(id); if (!c) return;
+  ED.cat = id; ED.line = null; ED.marq = null;
+  document.querySelectorAll('#eddock .edtab').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-cat') === id); });
+  var tray = el('edtray'); tray.innerHTML = '';
+  if (!c.tools.length) { ED.tool = null; tray.classList.add('hidden'); }
+  else {
+    tray.classList.remove('hidden');
+    c.tools.forEach(function (t) {
+      var b = document.createElement('button'); b.className = 'edtool'; b.setAttribute('data-tool', t.id);
+      b.innerHTML = '<span class="g" aria-hidden="true">' + t.glyph + '</span><span>' + t.name + '</span>';
+      b.addEventListener('click', function () { edSetTool(t); });
+      tray.appendChild(b);
+    });
+    edSetTool(c.tools[0]);
+  }
+  edProps(); edHint();
+}
+function edSetTool(t) {
+  ED.tool = t; ED.line = null; ED.marq = null;
+  document.querySelectorAll('#edtray .edtool').forEach(function (b) { b.classList.toggle('on', !!t && b.getAttribute('data-tool') === t.id); });
+  if (t && t.kind === 'height') ED.brush.mode = t.mode;
+  edPill(); edProps(); edHint();
+}
+function edPill() { el('edpill').classList.toggle('hidden', !(ED.line && ED.line.length)); }
 function edHint() {
-  var h = '';
-  if (ED.tool === 'select') h = ED.sel ? 'Drag to move · DELETE removes · rotate and size in the panel' : 'Tap a thing to select it. Drag empty ground to pan, pinch or wheel to zoom.';
-  else if (ED.tool === 'height') h = 'Drag on the ground to ' + ED.brush.mode + '. Radius and strength in the panel.';
-  else if (ED.asset) h = ED_LINE[ED.asset.t] ? 'Tap point by point along the line, then FINISH in the panel (or double-tap).' : ED_RECT[ED.asset.t] ? 'Drag a rectangle.' : 'Tap to place ' + ED.asset.name + (ED.mirror ? ' (mirrored)' : '') + '.';
-  else h = 'Pick an asset from the panel.';
+  var h = '', t = ED.tool;
+  if (ED.cat === 'select') h = ED.sel.length ? (ED.sel.length === 1 ? 'Drag to move. Options in the sheet.' : ED.sel.length + ' selected: drag to move them together.') : (MOB ? 'Tap a thing to select it. Hold still, then drag, to box several. Drag ground to pan, pinch to zoom.' : 'Click a thing to select it. Shift-drag to box several. Drag ground to pan, wheel to zoom.');
+  else if (!t) h = 'Pick a tool.';
+  else if (t.kind === 'height') h = 'Drag on the ground to ' + t.mode + ' it.';
+  else if (t.kind === 'scatter') h = 'Drag to scatter ' + t.name.replace(' brush', '').toLowerCase() + ' along the stroke.';
+  else if (t.kind === 'erase') h = 'Drag over things to remove them.';
+  else if (t.kind === 'line') h = ED.line && ED.line.length ? 'Tap the next point, or DONE.' : 'Draw it in one stroke, or tap point by point and press DONE.';
+  else if (t.kind === 'rect' || t.kind === 'stamprect') h = 'Drag a box.';
+  else if (t.kind === 'stampline') h = 'Drag a stroke along the street.';
+  else h = (MOB ? 'Tap to place. Press and drag to carry it into place.' : 'Click to place. Drag to carry it into place.') + (ED.mirror ? ' Mirrored.' : '');
   if (ED.dirty) h += '  · rebuilding…';
   el('edhint').textContent = h;
+  edLayout();
+}
+/* the hint and the DONE pill float above whichever of the sheet, the tray and the dock
+   is uppermost, so nothing is ever read through a slider */
+function edLayout() {
+  var top = window.innerHeight, ids = ['edsheet', 'edtray', 'eddock'];
+  for (var i = 0; i < ids.length; i++) {
+    var q = el(ids[i]); if (q.classList.contains('hidden')) continue;
+    var r = q.getBoundingClientRect(); if (r.height && r.top < top) top = r.top;
+  }
+  var b = Math.max(0, window.innerHeight - top) + 8;
+  el('edhint').style.bottom = b + 'px';
+  el('edpill').style.bottom = (b + 34) + 'px';
 }
 function edProps() {
-  var p = el('edprops'), html = '';
-  function slider(label, id, v, lo, hi, step) { return '<label>' + label + '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '" value="' + v + '"></label>'; }
-  if (ED.tool === 'height') {
-    html += '<label>Mode<select id="edhmode"><option value="raise"' + (ED.brush.mode === 'raise' ? ' selected' : '') + '>Raise</option><option value="lower"' + (ED.brush.mode === 'lower' ? ' selected' : '') + '>Lower</option><option value="flat"' + (ED.brush.mode === 'flat' ? ' selected' : '') + '>Flatten</option></select></label>';
+  var p = el('edprops'), sheet = el('edsheet'), html = '', t = ED.tool;
+  function row(label, inner) { return '<div class="edrow"><label>' + label + '</label>' + inner + '</div>'; }
+  function slider(label, id, v, lo, hi, step) { return row(label, '<input type="range" id="' + id + '" min="' + lo + '" max="' + hi + '" step="' + step + '" value="' + v + '"><span id="' + id + 'v">' + v + '</span>'); }
+  function seg(id, opts, cur) {
+    var s = '<div class="edseg" id="' + id + '">';
+    opts.forEach(function (o) { s += '<button class="edb' + (o[0] === cur ? ' on' : '') + '" data-v="' + o[0] + '">' + o[1] + '</button>'; });
+    return s + '</div>';
+  }
+  if (ED.cat === 'select' && ED.sel.length === 1) {
+    var e = ED.sel[0];
+    html += '<div class="edtitle">' + edKindName(e) + '</div>';
+    if (e.r !== undefined) html += slider('Size', 'edsr', e.r, 6, Math.max(60, Math.round(e.r * 2.2)), 1);
+    if (e.a !== undefined || ED_ROT[e.t]) html += slider('Turn', 'edsa', ((e.a || 0) * 180 / Math.PI) | 0, 0, 359, 5);
+    if (e.w !== undefined && e.t !== 'paved') html += slider('Width', 'edsw', e.w, 60, 300, 2) + slider('Depth', 'edsh', e.h, 60, 240, 2);
+    if (e.t === 'road') html += slider('Street width', 'edswd', e.width || 48, 24, 90, 2);
+    if (e.t === 'house') html += row('Roof', seg('edsroof', [[1, 'INTACT'], [0, 'SHELLED']], e.roof ? 1 : 0)) + row('Height', seg('edstall', [[0, 'LOW'], [1, 'TALL']], e.tall ? 1 : 0)) +
+      slider('Damage', 'edsdmg', Math.round((e.damage || 0) * 100), 0, 100, 5);
+    if (e.t === 'sector') html += row('Type', seg('edstype', [['vp', 'VICTORY'], ['mp', 'MANPOWER'], ['fuel', 'FUEL']], e.type)) +
+      row('Owner', seg('edsown', [['', 'NEUTRAL'], ['us', 'CANADIAN'], ['ger', 'GERMAN']], e.owner || '')) +
+      row('Name', '<input type="text" id="edslabel" value="' + (e.label || '').replace(/"/g, '') + '">');
+    if (e.t === 'trench') html += row('Fires', seg('edsface', [['', 'TO CENTRE'], ['L', 'LEFT'], ['R', 'RIGHT']], e.face || '')) +
+      row('Side', seg('edsside', [['us', 'CANADIAN'], ['ger', 'GERMAN']], e.side));
+    html += '<div class="edbtns"><button class="edb" id="eddup">DUPLICATE</button><button class="edb" id="edmir">COPY ACROSS</button><button class="edb warn" id="eddel">DELETE</button></div>';
+  } else if (ED.cat === 'select' && ED.sel.length > 1) {
+    html += '<div class="edtitle">' + ED.sel.length + ' things selected</div>';
+    html += '<div class="edbtns"><button class="edb" id="eddup">DUPLICATE</button><button class="edb" id="edmir">COPY ACROSS</button><button class="edb warn" id="eddel">DELETE</button></div>';
+  } else if (t && (t.kind === 'height')) {
     html += slider('Radius', 'edhr', ED.brush.r, 30, 300, 5) + slider('Strength', 'edhd', ED.brush.d, 1, 20, 1);
-  } else if (ED.tool === 'place' && ED.asset) {
-    var d = ED.asset.def;
-    if (d.r !== undefined) html += slider('Size', 'edar', d.r, Math.max(6, d.r * .4), d.r * 2.2, 1);
-    if (d.w !== undefined && !ED_RECT[ED.asset.t]) html += slider('Width', 'edaw', d.w, 60, 260, 2) + slider('Depth', 'edah', d.h, 60, 200, 2);
-    if (d.width !== undefined) html += slider('Road width', 'edawd', d.width, 30, 90, 2);
-    if (ED.asset.t === 'sector') html += '<label>Owner<select id="edaown"><option value="">Neutral</option><option value="us">Canadian</option><option value="ger">German</option></select></label>';
-    if (ED.asset.t === 'trench') html += '<button class="edb" id="edflip">FLIP FACING (' + (ED.faceFlag || 'auto') + ')</button>';
-    if (ED_LINE[ED.asset.t]) html += '<button class="edb" id="edfinish">FINISH LINE</button><button class="edb" id="edcancel">CANCEL</button>';
-  } else if (ED.tool === 'select' && ED.sel) {
-    var e = ED.sel;
-    html += '<div style="color:#e6e0c8;margin-bottom:4px">' + e.t + (e.id ? ' ' + e.id : '') + '</div>';
-    if (e.r !== undefined) html += slider('Size', 'edsr', e.r, 6, Math.max(60, e.r * 2.2), 1);
-    if (e.a !== undefined || ED_ROT[e.t]) html += slider('Rotation', 'edsa', ((e.a || 0) * 180 / Math.PI) | 0, 0, 359, 5);
-    if (e.w !== undefined && e.t !== 'paved') html += slider('Width', 'edsw', e.w, 60, 260, 2) + slider('Depth', 'edsh', e.h, 60, 200, 2);
-    if (e.t === 'house') html += '<label>Roof<select id="edsroof"><option value="1"' + (e.roof ? ' selected' : '') + '>Intact</option><option value="0"' + (!e.roof ? ' selected' : '') + '>Shelled</option></select></label>';
-    if (e.t === 'sector') html += '<label>Type<select id="edstype"><option value="vp"' + (e.type === 'vp' ? ' selected' : '') + '>Victory</option><option value="mp"' + (e.type === 'mp' ? ' selected' : '') + '>Manpower</option><option value="fuel"' + (e.type === 'fuel' ? ' selected' : '') + '>Fuel</option></select></label>' +
-      '<label>Owner<select id="edsown"><option value=""' + (!e.owner ? ' selected' : '') + '>Neutral</option><option value="us"' + (e.owner === 'us' ? ' selected' : '') + '>Canadian</option><option value="ger"' + (e.owner === 'ger' ? ' selected' : '') + '>German</option></select></label>' +
-      '<label>Name<input type="text" id="edslabel" value="' + (e.label || '').replace(/"/g, '') + '"></label>';
-    if (e.t === 'trench') html += '<button class="edb" id="edsflip">FLIP FACING (' + (e.face || 'auto') + ')</button>';
-    if (e.t === 'trench') html += '<label>Side<select id="edsside"><option value="us"' + (e.side === 'us' ? ' selected' : '') + '>Canadian</option><option value="ger"' + (e.side === 'ger' ? ' selected' : '') + '>German</option></select></label>';
-    html += '<button class="edb warn" id="eddel">DELETE</button>';
-  } else if (ED.tool === 'select') {
-    html += '<div style="color:#8f9a78">' + ED.data.entities.length + ' things on the map.</div>';
+  } else if (t && (t.kind === 'scatter' || t.kind === 'erase')) {
+    html += slider('Brush', 'edbr', ED.brush.r, 30, 300, 5);
+  } else if (t && t.def) {
+    var d = t.def;
+    if (d.r !== undefined) html += slider('Size', 'edar', d.r, Math.max(6, Math.round(d.r * .4)), Math.round(d.r * 2.2), 1);
+    if (d.w !== undefined && t.kind !== 'rect') html += slider('Width', 'edaw', d.w, 60, 300, 2) + slider('Depth', 'edah', d.h, 60, 240, 2);
+    if (d.width !== undefined) html += slider('Street width', 'edawd', d.width, 24, 90, 2);
+    if (t.t === 'house') html += row('Roof', seg('edaroof', [[-1, 'RANDOM'], [1, 'INTACT'], [0, 'SHELLED']], d.roof === undefined ? -1 : d.roof));
+    if (t.t === 'sector') html += row('Owner', seg('edaown', [['', 'NEUTRAL'], ['us', 'CANADIAN'], ['ger', 'GERMAN']], d.owner || ''));
+    if (t.t === 'trench') html += row('Fires', seg('edaface', [['', 'TO CENTRE'], ['L', 'LEFT'], ['R', 'RIGHT']], ED.faceFlag || ''));
   }
   p.innerHTML = html;
-  function bind(id, fn) { var q = el(id); if (q) q.addEventListener('input', fn); }
-  bind('edhmode', function (ev) { ED.brush.mode = ev.target.value; edHint(); });
+  sheet.classList.toggle('hidden', !html);
+  sheet.classList.toggle('up', !el('edtray').classList.contains('hidden'));
+  edLayout();
+  function bind(id, fn) { var q = el(id); if (q) q.addEventListener('input', function (ev) { var lab = el(id + 'v'); if (lab) lab.textContent = ev.target.value; fn(ev); }); }
+  function segs(id, fn) {
+    var q = el(id); if (!q) return;
+    q.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { q.querySelectorAll('button').forEach(function (o) { o.classList.remove('on'); }); b.classList.add('on'); fn(b.getAttribute('data-v')); }); });
+  }
   bind('edhr', function (ev) { ED.brush.r = +ev.target.value; });
   bind('edhd', function (ev) { ED.brush.d = +ev.target.value; });
-  bind('edar', function (ev) { ED.asset.def.r = +ev.target.value; });
-  bind('edaw', function (ev) { ED.asset.def.w = +ev.target.value; });
-  bind('edah', function (ev) { ED.asset.def.h = +ev.target.value; });
-  bind('edawd', function (ev) { ED.asset.def.width = +ev.target.value; });
-  bind('edaown', function (ev) { ED.asset.def.owner = ev.target.value || null; });
-  var fin = el('edfinish'); if (fin) fin.addEventListener('click', edFinishLine);
-  var flp = el('edflip'); if (flp) flp.addEventListener('click', function () { ED.faceFlag = ED.faceFlag === undefined ? 'L' : ED.faceFlag === 'L' ? 'R' : undefined; edProps(); });
-  var can = el('edcancel'); if (can) can.addEventListener('click', function () { ED.line = null; edHint(); });
-  if (ED.sel) {
-    var e2 = ED.sel;
+  bind('edbr', function (ev) { ED.brush.r = +ev.target.value; });
+  if (t && t.def) {
+    bind('edar', function (ev) { t.def.r = +ev.target.value; });
+    bind('edaw', function (ev) { t.def.w = +ev.target.value; });
+    bind('edah', function (ev) { t.def.h = +ev.target.value; });
+    bind('edawd', function (ev) { t.def.width = +ev.target.value; });
+    segs('edaroof', function (v) { if (+v < 0) delete t.def.roof; else t.def.roof = +v; });
+    segs('edaown', function (v) { t.def.owner = v || null; });
+    segs('edaface', function (v) { ED.faceFlag = v || undefined; });
+  }
+  if (ED.sel.length) {
+    var e2 = ED.sel[0];
     bind('edsr', function (ev) { edSnapshot(); e2.r = +ev.target.value; edTouch(); });
     bind('edsa', function (ev) { edSnapshot(); e2.a = +ev.target.value * Math.PI / 180; edTouch(); });
     bind('edsw', function (ev) { edSnapshot(); e2.w = +ev.target.value; edTouch(); });
     bind('edsh', function (ev) { edSnapshot(); e2.h = +ev.target.value; edTouch(); });
-    bind('edsroof', function (ev) { edSnapshot(); e2.roof = +ev.target.value; edTouch(); });
-    bind('edstype', function (ev) { edSnapshot(); e2.type = ev.target.value; edTouch(); });
-    bind('edsown', function (ev) { edSnapshot(); e2.owner = ev.target.value || null; edTouch(); });
+    bind('edswd', function (ev) { edSnapshot(); e2.width = +ev.target.value; edTouch(); });
+    bind('edsdmg', function (ev) { edSnapshot(); e2.damage = +ev.target.value / 100; edTouch(); });
     bind('edslabel', function (ev) { e2.label = ev.target.value; });
-    bind('edsside', function (ev) { edSnapshot(); e2.side = ev.target.value; edTouch(); });
-    var del = el('eddel'); if (del) del.addEventListener('click', function () { edDelete(ED.sel); });
-    var sfl = el('edsflip'); if (sfl) sfl.addEventListener('click', function () { edSnapshot(); e2.face = e2.face === undefined ? 'L' : e2.face === 'L' ? 'R' : undefined; edTouch(); edProps(); });
+    segs('edsroof', function (v) { edSnapshot(); e2.roof = +v; edTouch(); });
+    segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(); });
+    segs('edstype', function (v) { edSnapshot(); e2.type = v; edTouch(); });
+    segs('edsown', function (v) { edSnapshot(); e2.owner = v || null; edTouch(); });
+    segs('edsface', function (v) { edSnapshot(); if (v) e2.face = v; else delete e2.face; edTouch(); });
+    segs('edsside', function (v) { edSnapshot(); e2.side = v; edTouch(); });
+    var del = el('eddel'); if (del) del.addEventListener('click', edDeleteSel);
+    var dup = el('eddup'); if (dup) dup.addEventListener('click', edDuplicate);
+    var mir = el('edmir'); if (mir) mir.addEventListener('click', edCopyAcross);
   }
+}
+function edKindName(e) {
+  var names = { house: 'House', farm: 'Farmhouse', road: 'Street', paved: 'Paving', pole: 'Lamp post', trench: 'Trench', wire: 'Wire', bags: 'Sandbags',
+                emplace: 'Weapon pit', roadblock: 'Roadblock', wall: 'Wall', crater: 'Crater', rubble: 'Rubble', debris: 'Debris', cart: 'Cart',
+                smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters' };
+  return (names[e.t] || e.t) + (e.id ? ' ' + e.id : '') + (e.t === 'hq' ? (e.side === 'us' ? ' (Canadian)' : ' (German)') : '');
+}
+function edDuplicate() {
+  if (!ED.sel.length) return;
+  edSnapshot();
+  var made = [];
+  ED.sel.forEach(function (e) {
+    if (e.t === 'hq') return;
+    var c = JSON.parse(JSON.stringify(e)); edMoveEntity(c, e, 40, 40);
+    if (c.t === 'sector') { c.id = edNextSectorId(); }
+    ED.data.entities.push(c); made.push(c);
+  });
+  ED.sel = made; edTouch(); edProps();
+}
+function edCopyAcross() {
+  if (!ED.sel.length) return;
+  edSnapshot();
+  var made = [];
+  ED.sel.forEach(function (e) { if (e.t === 'hq') return; var m = edMirrorOf(e); ED.data.entities.push(m); made.push(m); });
+  ED.sel = made; edTouch(); edProps();
+}
+/* ---- making things ---- */
+function edNewEntity(t, wx, wy) {
+  var d = t.def || {}, e = { t: t.t, x: wx, y: wy };
+  Object.keys(d).forEach(function (k) { e[k] = d[k]; });
+  if (t.t === 'house') { e.s = Math.random(); e.damage = Math.random() * .8; if (e.roof === undefined) e.roof = Math.random() < .5 ? 1 : 0; }
+  if (t.t === 'tree' || t.t === 'scrub') { e.s = Math.random(); e.lean = (Math.random() - .5) * .4; }
+  if (t.t === 'debris' || t.t === 'emplace' || t.t === 'grass') e.s = Math.random();
+  if (t.t === 'grass' || t.t === 'cart') e.a = Math.random() * TAU;
+  if (t.t === 'roadblock') e.a = 0;
+  if (t.t === 'pole') e.broken = Math.random() < .3 ? 1 : 0;
+  if (t.t === 'sector') e.owner = d.owner || null;
+  return e;
+}
+/* a stroke of the hand becomes a handful of points: the corners that matter and no more */
+function edSimplify(pts, eps) {
+  if (pts.length < 3) return pts.slice();
+  var far = 0, fi = 0, a = pts[0], b = pts[pts.length - 1];
+  for (var i = 1; i < pts.length - 1; i++) {
+    var d = distToSeg(pts[i].x, pts[i].y, a.x, a.y, b.x, b.y);
+    if (d > far) { far = d; fi = i; }
+  }
+  if (far <= eps) return [a, b];
+  var left = edSimplify(pts.slice(0, fi + 1), eps), right = edSimplify(pts.slice(fi), eps);
+  return left.slice(0, -1).concat(right);
+}
+function edLineEntity(t, pts) {
+  var e = { t: t.t };
+  if (t.t === 'trench') { e.pts = pts; e.side = pts[0].x < WORLD.w / 2 ? 'us' : 'ger'; if (ED.faceFlag) e.face = ED.faceFlag; return [e]; }
+  if (t.t === 'road') { e.pts = pts; e.width = t.def.width; return [e]; }
+  /* walls and wire are straight pieces: a bent line becomes several */
+  var out = [];
+  for (var i = 0; i < pts.length - 1; i++) out.push({ t: t.t, x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y });
+  return out;
 }
 function edFinishLine() {
-  if (!ED.line || ED.line.length < 2) { ED.line = null; edHint(); return; }
-  var a = ED.asset, e = { t: a.t };
-  if (a.t === 'trench') { e.pts = ED.line.slice(); e.side = ED.line[0].x < WORLD.w / 2 ? 'us' : 'ger'; if (ED.faceFlag) e.face = ED.faceFlag; }
-  else if (a.t === 'road') { e.pts = ED.line.slice(); e.width = a.def.width; }
-  else { e.x1 = ED.line[0].x; e.y1 = ED.line[0].y; e.x2 = ED.line[ED.line.length - 1].x; e.y2 = ED.line[ED.line.length - 1].y;
-    /* long lines become several straight ones */
-    if (ED.line.length > 2) { edSnapshot(); for (var i = 0; i < ED.line.length - 1; i++) ED.data.entities.push({ t: a.t, x1: ED.line[i].x, y1: ED.line[i].y, x2: ED.line[i + 1].x, y2: ED.line[i + 1].y }); if (ED.mirror) for (var k = 0; k < ED.line.length - 1; k++) ED.data.entities.push(edMirrorOf({ t: a.t, x1: ED.line[k].x, y1: ED.line[k].y, x2: ED.line[k + 1].x, y2: ED.line[k + 1].y })); ED.line = null; edTouch(); edHint(); return; } }
-  edAdd(e); ED.line = null; edHint();
+  var t = ED.tool;
+  if (!ED.line || ED.line.length < 2 || !t) { ED.line = null; edPill(); edHint(); return; }
+  var pts = ED.line.slice(); ED.line = null; edPill();
+  if (t.kind === 'stampline') edAddMany(edStampLine(t.stamp, pts));
+  else edAddMany(edLineEntity(t, pts));
+  edHint();
 }
-/* pointer events from the game's handlers land here when the editor is on */
+/* stamps: several things in one gesture */
+function edStampPoint(kind, x, y) {
+  var out = [], s = Math.random();
+  if (kind === 'court') {
+    /* three houses round a yard open to the south, a wall closing the fourth side */
+    out.push({ t: 'house', x: x - 62, y: y - 40, w: 100, h: 88, s: s, damage: .3, roof: 1, tall: 0, style: 'row' });
+    out.push({ t: 'house', x: x + 60, y: y - 44, w: 96, h: 96, s: (s + .3) % 1, damage: .5, roof: 0, tall: 1, style: 'civic' });
+    out.push({ t: 'house', x: x - 70, y: y + 70, w: 84, h: 72, s: (s + .6) % 1, damage: .2, roof: 1, tall: 0, style: 'row' });
+    out.push({ t: 'wall', x1: x - 28, y1: y + 106, x2: x + 108, y2: y + 106 });
+    out.push({ t: 'wall', x1: x + 108, y1: y + 4, x2: x + 108, y2: y + 106 });
+    out.push({ t: 'debris', x: x + 20, y: y + 30, r: 22, s: s });
+  } else if (kind === 'compound') {
+    out.push({ t: 'farm', x: x, y: y - 10, w: 118, h: 88 });
+    out.push({ t: 'wall', x1: x - 110, y1: y - 90, x2: x + 110, y2: y - 90 });
+    out.push({ t: 'wall', x1: x - 110, y1: y - 90, x2: x - 110, y2: y + 90 });
+    out.push({ t: 'wall', x1: x + 110, y1: y - 90, x2: x + 110, y2: y + 90 });
+    out.push({ t: 'tree', x: x - 70, y: y + 60, r: 15, s: s, lean: .1 });
+    out.push({ t: 'tree', x: x + 76, y: y + 50, r: 14, s: (s + .4) % 1, lean: -.15 });
+    out.push({ t: 'cart', x: x + 40, y: y + 66, a: .6 });
+  } else if (kind === 'gunpos') {
+    /* a pit for the gun, bags either side, and wire out in front toward the centre */
+    var a = x < WORLD.w / 2 ? 0 : Math.PI, ca = Math.cos(a), sa = Math.sin(a);
+    out.push({ t: 'emplace', x: x, y: y, r: 22, s: s, a: a });
+    out.push({ t: 'bags', x: x - sa * 46 + ca * 8, y: y + ca * 46 + sa * 8, r: 30, a: a });
+    out.push({ t: 'bags', x: x + sa * 46 + ca * 8, y: y - ca * 46 + sa * 8, r: 30, a: a });
+    out.push({ t: 'wire', x1: x + ca * 120 - sa * 90, y1: y + sa * 120 + ca * 90, x2: x + ca * 120 + sa * 90, y2: y + sa * 120 - ca * 90 });
+  }
+  return out;
+}
+function edStampRect(kind, x0, y0, x1, y1) {
+  var out = [], seed = Math.random(), w = x1 - x0, h = y1 - y0, cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+  function rub(x, y, r, s) { out.push({ t: 'rubble', x: x, y: y, r: r }); out.push({ t: 'debris', x: x, y: y, r: r * .62, s: s }); }
+  if (kind === 'razed') {
+    var hw = w / 2, hh = h / 2, big = Math.min(hw, hh) * .82;
+    rub(cx, cy, big, seed);
+    rub(cx - hw * .58, cy - hh * .42, big * .74, (seed + .31) % 1);
+    rub(cx + hw * .61, cy + hh * .38, big * .78, (seed + .57) % 1);
+    rub(cx - hw * .54, cy + hh * .46, big * .66, (seed + .73) % 1);
+    rub(cx + hw * .57, cy - hh * .44, big * .70, (seed + .19) % 1);
+    out.push({ t: 'wall', x1: x0 + hw * .2, y1: cy, x2: x1 - hw * .2, y2: cy });
+  } else if (kind === 'grove') {
+    /* rows sixty apart with the trees staggered, and a little scrub between */
+    for (var gy = y0 + 30; gy < y1; gy += 58) for (var gx = x0 + 30 + ((gy / 58) | 0) % 2 * 28; gx < x1; gx += 62) {
+      out.push({ t: 'tree', x: gx + rnd(-8, 8), y: gy + rnd(-6, 6), r: 13 + rnd(0, 5), s: Math.random(), lean: rnd(-.2, .2) });
+      if (Math.random() < .3) out.push({ t: 'scrub', x: gx + 30, y: gy + 28, r: 10 + rnd(0, 4), s: Math.random() });
+    }
+  } else if (kind === 'craters') {
+    var n = Math.max(3, Math.round(w * h / 26000));
+    for (var i = 0; i < n; i++) {
+      var r = 26 + rnd(0, 34);
+      out.push({ t: 'crater', x: x0 + r + rnd(0, Math.max(1, w - 2 * r)), y: y0 + r + rnd(0, Math.max(1, h - 2 * r)), r: r });
+    }
+  }
+  return out;
+}
+function edStampLine(kind, pts) {
+  var out = [], a = pts[0], b = pts[pts.length - 1];
+  if (kind === 'terrace') {
+    /* houses are square to the map, so the stroke is read along its longer axis; the
+       row stands on the side of the line the hand drifted toward, and each house has
+       its own frontage, depth and setback, which is what keeps a block from reading as
+       a grid */
+    var horiz = Math.abs(b.x - a.x) >= Math.abs(b.y - a.y);
+    var from = horiz ? Math.min(a.x, b.x) : Math.min(a.y, b.y), to = horiz ? Math.max(a.x, b.x) : Math.max(a.y, b.y);
+    var line = horiz ? a.y : a.x, dir = horiz ? (b.y >= a.y ? 1 : -1) : (b.x >= a.x ? 1 : -1);
+    var at = from;
+    while (at < to - 40) {
+      var fw = Math.min(to - at, 64 + rnd(0, 56)), dp = 64 + rnd(0, 56), set = rnd(0, 14), tall = Math.random() < .25 ? 1 : 0;
+      var e = { t: 'house', w: horiz ? fw : dp, h: horiz ? dp : fw, s: Math.random(), damage: Math.random() * .8, roof: Math.random() < .5 ? 1 : 0, tall: tall, style: tall ? 'civic' : 'row' };
+      if (horiz) { e.x = at + fw / 2; e.y = line + dir * (set + dp / 2); } else { e.y = at + fw / 2; e.x = line + dir * (set + dp / 2); }
+      out.push(e); at += fw + 4;
+    }
+  } else if (kind === 'trenchwire') {
+    var side = a.x < WORLD.w / 2 ? 'us' : 'ger', toward = side === 'us' ? 1 : -1;
+    out.push({ t: 'trench', pts: pts.slice(), side: side });
+    for (var i = 0; i < pts.length - 1; i++) out.push({ t: 'wire', x1: pts[i].x + toward * 90, y1: pts[i].y, x2: pts[i + 1].x + toward * 90, y2: pts[i + 1].y });
+  }
+  return out;
+}
+/* brushes: height, scatter, erase */
+function edBrushAt(wx, wy) {
+  var t = ED.tool, d = ED.drag;
+  if (t.kind === 'height') {
+    var b = ED.brush;
+    var stroke = { x: wx, y: wy, r: b.r, d: t.mode === 'raise' ? b.d : t.mode === 'lower' ? -b.d : 0, mode: t.mode === 'flat' ? 'flat' : 'add' };
+    if (t.mode === 'flat') stroke.z = d.z === undefined ? (d.z = groundZ(wx, wy)) : d.z;
+    if (d.last && Math.hypot(d.last.x - wx, d.last.y - wy) < b.r * .3) return;
+    if (!d.snapped) { edSnapshot(); d.snapped = true; }
+    ED.data.height.push(stroke);
+    if (ED.mirror) { var m = JSON.parse(JSON.stringify(stroke)); m.x = WORLD.w - m.x; ED.data.height.push(m); }
+    d.last = { x: wx, y: wy }; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5;
+  } else if (t.kind === 'scatter') {
+    if (d.last && Math.hypot(d.last.x - wx, d.last.y - wy) < t.step) return;
+    if (!d.snapped) { edSnapshot(); d.snapped = true; }
+    var r = t.rr[0] + rnd(0, t.rr[1] - t.rr[0]), jx = rnd(-t.step * .35, t.step * .35), jy = rnd(-t.step * .35, t.step * .35);
+    var e = edNewEntity({ t: t.t, def: t.def }, wx + jx, wy + jy); e.r = r;
+    edPush(e); d.last = { x: wx, y: wy }; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5;
+  } else if (t.kind === 'erase') {
+    var r2 = ED.brush.r, before = ED.data.entities.length, mx2 = WORLD.w - wx;
+    var keep = ED.data.entities.filter(function (e) {
+      if (e.t === 'hq') return true;
+      var ex = edAnchorX(e), ey = e.y !== undefined ? (e.t === 'paved' ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
+      var near = Math.hypot(ex - wx, ey - wy) < r2;
+      if (e.pts) { for (var i = 0; i < e.pts.length - 1 && !near; i++) if (distToSeg(wx, wy, e.pts[i].x, e.pts[i].y, e.pts[i + 1].x, e.pts[i + 1].y) < r2) near = true; }
+      else if (e.x1 !== undefined) near = distToSeg(wx, wy, e.x1, e.y1, e.x2, e.y2) < r2;
+      if (!near && ED.mirror) near = Math.hypot(ex - mx2, ey - wy) < r2;
+      return !near;
+    });
+    if (keep.length !== before) { if (!d.snapped) { edSnapshot(); d.snapped = true; } ED.data.entities = keep; ED.sel = []; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5; }
+  }
+}
+
+/* ---- the hand ----
+   pointer events from the game's handlers land here when the editor is on. Returns
+   true when the editor took the press, false to let the camera pan. */
 function edDown(wx, wy, sx, sy, right) {
   wx = edSnap(wx); wy = edSnap(wy);
-  if (right) { if (ED.line) edFinishLine(); else { ED.sel = null; edProps(); } edHint(); return true; }
-  if (ED.tool === 'height') { ED.drag = { kind: 'brush' }; edBrush(wx, wy); return true; }
-  if (ED.tool === 'place' && ED.asset) {
-    var a = ED.asset, d = a.def;
-    if (ED_LINE[a.t]) { ED.line = ED.line || []; ED.line.push({ x: wx, y: wy }); edHint(); return true; }
-    if (ED_RECT[a.t]) { ED.drag = { kind: 'rect', x0: wx, y0: wy, x1: wx, y1: wy }; return true; }
-    var e = { t: a.t, x: wx, y: wy };
-    Object.keys(d).forEach(function (k) { e[k] = d[k]; });
-    if (a.t === 'house') { e.s = Math.random(); e.damage = Math.random(); if (e.roof === undefined) e.roof = Math.random() < .5 ? 1 : 0; }
-    if (a.t === 'tree' || a.t === 'scrub') { e.s = Math.random(); e.lean = (Math.random() - .5) * .4; }
-    if (a.t === 'debris' || a.t === 'emplace' || a.t === 'grass') e.s = Math.random();
-    if (a.t === 'grass') e.a = Math.random() * TAU;
-    if (a.t === 'cart') e.a = Math.random() * TAU;
-    if (a.t === 'roadblock') e.a = 0;
-    if (a.t === 'pole') e.broken = Math.random() < .3 ? 1 : 0;
-    if (a.t === 'sector') e.owner = d.owner || null;
-    edAdd(e); return true;
+  if (ED.menu) { edMenu(false); return true; }
+  if (right) { if (ED.line) edFinishLine(); else { ED.sel = []; edProps(); } edHint(); return true; }
+  var t = ED.tool;
+  if (ED.cat !== 'select' && t) {
+    if (t.kind === 'height' || t.kind === 'scatter' || t.kind === 'erase') { ED.drag = { kind: 'brush', snapped: false, last: null }; edBrushAt(wx, wy); return true; }
+    if (t.kind === 'line' || t.kind === 'stampline') { ED.drag = { kind: 'line', pts: [{ x: wx, y: wy }], sx: sx, sy: sy, moved: false }; return true; }
+    if (t.kind === 'rect' || t.kind === 'stamprect') { ED.drag = { kind: 'rect', x0: wx, y0: wy, x1: wx, y1: wy }; return true; }
+    ED.drag = { kind: 'ghost', x: wx, y: wy, sx: sx, sy: sy, moved: false };
+    ED.hover = { x: wx, y: wy };
+    return true;
   }
   /* select */
+  if (keys['shift'] && !MOB) { ED.marq = { x0: wx, y0: wy, x1: wx, y1: wy }; ED.drag = { kind: 'marq' }; return true; }
   var hit = edPick(wx, wy);
-  ED.sel = hit; edProps(); edHint();
-  if (hit) { ED.drag = { kind: 'move', e: hit, x0: wx, y0: wy, snap: JSON.stringify(hit), snapped: false }; return true; }
+  if (hit) {
+    if (ED.sel.indexOf(hit) < 0) ED.sel = keys['shift'] ? ED.sel.concat([hit]) : [hit];
+    edProps(); edHint();
+    ED.drag = { kind: 'move', x0: wx, y0: wy, base: ED.sel.map(function (e) { return JSON.stringify(e); }), snapped: false };
+    return true;
+  }
+  if (ED.sel.length) { ED.sel = []; edProps(); edHint(); }
   return false;   /* let the camera pan */
 }
-function edMove(wx, wy) {
+/* a press held still on the ground starts a box, the way it does in the battle */
+function edMarquee(wx, wy) { ED.marq = { x0: wx, y0: wy, x1: wx, y1: wy }; ED.drag = { kind: 'marq' }; }
+function edMove(wx, wy, sx, sy) {
   wx = edSnap(wx); wy = edSnap(wy);
   ED.hover = { x: wx, y: wy };
-  if (!ED.drag) return;
-  if (ED.drag.kind === 'brush') { edBrush(wx, wy); return; }
-  if (ED.drag.kind === 'rect') { ED.drag.x1 = wx; ED.drag.y1 = wy; return; }
-  if (ED.drag.kind === 'move') {
-    var e = ED.drag.e, dx = wx - ED.drag.x0, dy = wy - ED.drag.y0;
-    if (!ED.drag.snapped) { edSnapshot(); ED.drag.snapped = true; }
-    var base = JSON.parse(ED.drag.snap);
-    if (base.x !== undefined) { e.x = base.x + dx; e.y = base.y + dy; }
-    if (base.x1 !== undefined) { e.x1 = base.x1 + dx; e.y1 = base.y1 + dy; e.x2 = base.x2 + dx; e.y2 = base.y2 + dy; }
-    if (base.pts) e.pts = base.pts.map(function (p) { return { x: p.x + dx, y: p.y + dy }; });
+  var d = ED.drag; if (!d) return;
+  if (d.kind === 'brush') { edBrushAt(wx, wy); return; }
+  if (d.kind === 'rect') { d.x1 = wx; d.y1 = wy; return; }
+  if (d.kind === 'marq') { ED.marq.x1 = wx; ED.marq.y1 = wy; return; }
+  if (d.kind === 'ghost') {
+    if (!d.moved && sx !== undefined && Math.hypot(sx - d.sx, sy - d.sy) > 8) d.moved = true;
+    if (d.moved) {
+      /* on a phone the thing is carried a thumb's height above the fingertip, so it
+         can be seen going down */
+      var lift = ED.touching && sx !== undefined ? s2w(sx, sy - 70) : null;
+      d.x = lift ? edSnap(lift.x) : wx; d.y = lift ? edSnap(lift.y) : wy;
+      ED.hover = { x: d.x, y: d.y };
+    }
+    return;
+  }
+  if (d.kind === 'line') {
+    if (!d.moved && sx !== undefined && Math.hypot(sx - d.sx, sy - d.sy) > 10) d.moved = true;
+    if (d.moved) { var lp = d.pts[d.pts.length - 1]; if (Math.hypot(lp.x - wx, lp.y - wy) > 14) d.pts.push({ x: wx, y: wy }); }
+    return;
+  }
+  if (d.kind === 'move') {
+    var dx = wx - d.x0, dy = wy - d.y0;
+    if (!d.snapped) { edSnapshot(); d.snapped = true; }
+    for (var i = 0; i < ED.sel.length; i++) edMoveEntity(ED.sel[i], JSON.parse(d.base[i]), dx, dy);
   }
 }
 function edUp() {
-  if (!ED.drag) return;
-  var d = ED.drag; ED.drag = null;
+  var d = ED.drag; if (!d) return;
+  ED.drag = null;
+  var t = ED.tool;
   if (d.kind === 'rect') {
     var x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1), w = Math.abs(d.x1 - d.x0), h = Math.abs(d.y1 - d.y0);
-    if (w > 12 && h > 12) edAdd({ t: 'paved', x: x, y: y, w: w, h: h, kind: ED.asset.def.kind });
+    if (w > 12 && h > 12) {
+      if (t.kind === 'stamprect') edAddMany(edStampRect(t.stamp, x, y, x + w, y + h));
+      else edAdd({ t: t.t, x: x, y: y, w: w, h: h, kind: t.def.kind });
+    }
+  } else if (d.kind === 'ghost') {
+    if (t.kind === 'stamp') edAddMany(edStampPoint(t.stamp, d.x, d.y));
+    else edAdd(edNewEntity(t, d.x, d.y));
+    ED.hover = null;
+  } else if (d.kind === 'line') {
+    if (d.moved) {
+      /* one stroke is one line, finished on the lift; a tap adds a point instead */
+      var pts = edSimplify(d.pts, 14);
+      if (pts.length >= 2) { ED.line = null; if (t.kind === 'stampline') edAddMany(edStampLine(t.stamp, pts)); else edAddMany(edLineEntity(t, pts)); }
+    } else { ED.line = ED.line || []; ED.line.push(d.pts[0]); }
+    edPill(); edHint();
+  } else if (d.kind === 'marq') {
+    var m = ED.marq; ED.marq = null;
+    if (m) {
+      var x0 = Math.min(m.x0, m.x1), y0 = Math.min(m.y0, m.y1), x1 = Math.max(m.x0, m.x1), y1 = Math.max(m.y0, m.y1);
+      ED.sel = ED.data.entities.filter(function (e) { return edInRect(e, x0, y0, x1, y1); });
+      edProps(); edHint();
+    }
   } else if (d.kind === 'move' && d.snapped) edTouch();
-  else if (d.kind === 'brush') edTouch();
-}
-function edBrush(wx, wy) {
-  var b = ED.brush;
-  var stroke = { x: wx, y: wy, r: b.r, d: b.mode === 'raise' ? b.d : b.mode === 'lower' ? -b.d : 0, mode: b.mode === 'flat' ? 'flat' : 'add' };
-  if (b.mode === 'flat') stroke.z = groundZ(wx, wy);
-  var last = ED.data.height[ED.data.height.length - 1];
-  if (last && Math.hypot(last.x - wx, last.y - wy) < b.r * .3) return;
-  if (!ED.drag.snapped) { edSnapshot(); ED.drag.snapped = true; }
-  ED.data.height.push(stroke);
-  if (ED.mirror) { var m = JSON.parse(JSON.stringify(stroke)); m.x = WORLD.w - m.x; ED.data.height.push(m); }
+  else if (d.kind === 'brush' && d.snapped) edTouch();
 }
 function edTick(dt) {
-  if (ED.dirty && ED.rebuildT > 0) { ED.rebuildT -= dt; if (ED.rebuildT <= 0) { edRebuildNow(); edHint(); } }
+  if (ED.dirty && ED.rebuildT > 0) { ED.rebuildT -= dt; if (ED.rebuildT <= 0) { edRebuildNow(); edHint(); edTitle(); } }
+  if (ED.saveT > 0) { ED.saveT -= dt; if (ED.saveT <= 0) edAutosave(); }
 }
-/* the editor's overlay: handles, the line being drawn, the ghost, the brush */
+/* ---- the overlay: outlines, handles, the ghost, the brush, the box, the grid ---- */
+function edPoly(pts, close) {
+  ctx.beginPath();
+  for (var i = 0; i < pts.length; i++) { var q = w2s(pts[i][0], pts[i][1]); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }
+  if (close) ctx.closePath();
+  ctx.stroke();
+}
+function edRectPts(x, y, w, h) { return [[x - w / 2, y - h / 2], [x + w / 2, y - h / 2], [x + w / 2, y + h / 2], [x - w / 2, y + h / 2]]; }
 function edOverlay() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (ED.grid) {
+    ctx.strokeStyle = 'rgba(200,220,180,.13)'; ctx.lineWidth = 1;
+    for (var gx = 0; gx <= WORLD.w; gx += 100) edPoly([[gx, 0], [gx, WORLD.h]]);
+    for (var gy = 0; gy <= WORLD.h; gy += 100) edPoly([[0, gy], [WORLD.w, gy]]);
+    ctx.strokeStyle = 'rgba(255,215,106,.35)'; edPoly([[WORLD.w / 2, 0], [WORLD.w / 2, WORLD.h]]);
+  }
   ctx.lineWidth = 1.5;
+  /* every outline at once is a haze of rings over the town, so from a distance only the
+     flags, the headquarters and the selection are drawn, and the rest come in as the
+     camera comes down */
+  var far = CAM.dist > 1300, faint = 'rgba(200,220,180,' + clamp((1300 - CAM.dist) / 700, .15, .45).toFixed(2) + ')';
   ED.data.entities.forEach(function (e) {
-    var selected = e === ED.sel;
-    ctx.strokeStyle = selected ? '#ffd76a' : e.t === 'sector' ? '#8ec8ff' : e.t === 'hq' ? '#ff9a6a' : 'rgba(200,220,180,.55)';
-    if (e.pts) { ctx.beginPath(); e.pts.forEach(function (p, i) { var q = w2s(p.x, p.y); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.stroke();
-      e.pts.forEach(function (p) { var q = w2s(p.x, p.y); ctx.beginPath(); ctx.arc(q.x, q.y, 3, 0, TAU); ctx.stroke(); });
-      if (e.t === 'trench') edFacingTicks(e.pts, e.face, selected ? '#ffd76a' : '#ff9a6a'); }
-    else if (e.x1 !== undefined) { var a = w2s(e.x1, e.y1), b = w2s(e.x2, e.y2); ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke(); }
-    else if (e.t === 'paved') { var c = [[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]].map(function (q) { return w2s(q[0], q[1]); }); ctx.beginPath(); c.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.stroke(); }
-    else if (e.w) { var c2 = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) { return w2s(e.x + q[0] * e.w / 2, e.y + q[1] * e.h / 2); }); ctx.beginPath(); c2.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.stroke(); }
-    else { groundRing(e.x, e.y, e.r || 16, ctx.strokeStyle, selected ? 2.2 : 1.2); if (e.t === 'sector' || e.t === 'hq') { var p2 = w2s(e.x, e.y); ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px ' + FONT; ctx.textAlign = 'center'; ctx.fillText(e.t === 'hq' ? (e.side === 'us' ? 'CAN HQ' : 'GER HQ') : (e.id + ' ' + (e.label || '')), p2.x, p2.y - 10); } }
+    var selected = ED.sel.indexOf(e) >= 0;
+    if (far && !selected && e.t !== 'sector' && e.t !== 'hq') return;
+    ctx.strokeStyle = selected ? '#ffd76a' : e.t === 'sector' ? '#8ec8ff' : e.t === 'hq' ? '#ff9a6a' : faint;
+    ctx.lineWidth = selected ? 2.4 : 1.2;
+    if (e.pts) { edPoly(e.pts.map(function (p) { return [p.x, p.y]; }), false); if (e.t === 'trench') edFacingTicks(e.pts, e.face, selected ? '#ffd76a' : '#ff9a6a'); }
+    else if (e.x1 !== undefined) edPoly([[e.x1, e.y1], [e.x2, e.y2]], false);
+    else if (e.t === 'paved') edPoly([[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]], true);
+    else if (e.w) edPoly(edRectPts(e.x, e.y, e.w, e.h), true);
+    else {
+      groundRing(e.x, e.y, e.r || 16, ctx.strokeStyle, selected ? 2.2 : 1.2);
+      if (e.t === 'sector' || e.t === 'hq') { var p2 = w2s(e.x, e.y); ctx.fillStyle = ctx.strokeStyle; ctx.font = '600 11px ' + FONT; ctx.textAlign = 'center'; ctx.fillText(e.t === 'hq' ? (e.side === 'us' ? 'CAN HQ' : 'GER HQ') : (e.id + ' ' + (e.label || '')), p2.x, p2.y - 10); }
+    }
   });
+  var t = ED.tool, d = ED.drag;
+  /* the line being tapped out, and the stroke being drawn */
   if (ED.line && ED.line.length) {
     ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
-    ctx.beginPath(); ED.line.forEach(function (p, i) { var q = w2s(p.x, p.y); if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); });
-    if (ED.hover) { var hq = w2s(ED.hover.x, ED.hover.y); ctx.lineTo(hq.x, hq.y); }
-    ctx.stroke(); ctx.setLineDash([]);
-    if (ED.asset && ED.asset.t === 'trench') edFacingTicks(ED.line.concat(ED.hover ? [ED.hover] : []), ED.faceFlag, '#ff9a6a');
+    var lp = ED.line.map(function (p) { return [p.x, p.y]; }); if (ED.hover && !d) lp.push([ED.hover.x, ED.hover.y]);
+    edPoly(lp, false); ctx.setLineDash([]);
+    if (t && t.t === 'trench') edFacingTicks(ED.line.concat(ED.hover ? [ED.hover] : []), ED.faceFlag, '#ff9a6a');
   }
-  if (ED.drag && ED.drag.kind === 'rect') {
-    var d = ED.drag, rc = [[d.x0, d.y0], [d.x1, d.y0], [d.x1, d.y1], [d.x0, d.y1]].map(function (q) { return w2s(q[0], q[1]); });
-    ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 2; ctx.beginPath(); rc.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.stroke();
-  }
-  if (ED.hover && ED.tool === 'height') groundRing(ED.hover.x, ED.hover.y, ED.brush.r, ED.brush.mode === 'lower' ? '#ff9a6a' : '#9ecb62', 2);
-  if (ED.hover && ED.tool === 'place' && ED.asset && !ED_LINE[ED.asset.t] && !ED_RECT[ED.asset.t]) {
-    var a2 = ED.asset.def;
-    if (a2.w) { var g2 = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) { return w2s(ED.hover.x + q[0] * a2.w / 2, ED.hover.y + q[1] * a2.h / 2); }); ctx.strokeStyle = '#9ecb62'; ctx.lineWidth = 2; ctx.beginPath(); g2.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.stroke(); }
-    else groundRing(ED.hover.x, ED.hover.y, a2.r || 16, '#9ecb62', 2);
-    if (ED.mirror) { var mx = WORLD.w - ED.hover.x; if (a2.w) { var g3 = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) { return w2s(mx + q[0] * a2.w / 2, ED.hover.y + q[1] * a2.h / 2); }); ctx.strokeStyle = 'rgba(158,203,98,.45)'; ctx.beginPath(); g3.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); }); ctx.closePath(); ctx.stroke(); } else groundRing(mx, ED.hover.y, a2.r || 16, 'rgba(158,203,98,.45)', 1.5); }
+  if (d && d.kind === 'line' && d.moved) { ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 2; edPoly(d.pts.map(function (p) { return [p.x, p.y]; }), false); }
+  if (d && d.kind === 'rect') { ctx.strokeStyle = '#ffd76a'; ctx.lineWidth = 2; edPoly([[d.x0, d.y0], [d.x1, d.y0], [d.x1, d.y1], [d.x0, d.y1]], true); }
+  if (ED.marq) { ctx.strokeStyle = '#9ecb62'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]); edPoly([[ED.marq.x0, ED.marq.y0], [ED.marq.x1, ED.marq.y0], [ED.marq.x1, ED.marq.y1], [ED.marq.x0, ED.marq.y1]], true); ctx.setLineDash([]); }
+  /* brushes */
+  if (ED.hover && t && (t.kind === 'height' || t.kind === 'scatter' || t.kind === 'erase'))
+    groundRing(ED.hover.x, ED.hover.y, ED.brush.r, t.kind === 'erase' ? '#e0a89a' : t.kind === 'height' && t.mode === 'lower' ? '#ff9a6a' : '#9ecb62', 2);
+  /* the ghost: what a tap would put down, and where its mirror would go */
+  if (ED.hover && t && (t.kind === 'place' || t.kind === 'stamp') && (!MOB || d)) {
+    var gd = t.def || {}, hx = ED.hover.x, hy = ED.hover.y;
+    ctx.strokeStyle = '#9ecb62'; ctx.lineWidth = 2;
+    if (gd.w) edPoly(edRectPts(hx, hy, gd.w, gd.h), true); else groundRing(hx, hy, gd.r || (t.kind === 'stamp' ? 90 : 16), '#9ecb62', 2);
+    if (d && d.kind === 'ghost') { var gp = w2s(hx, hy); ctx.beginPath(); ctx.moveTo(gp.x - 12, gp.y); ctx.lineTo(gp.x + 12, gp.y); ctx.moveTo(gp.x, gp.y - 12); ctx.lineTo(gp.x, gp.y + 12); ctx.stroke(); }
+    if (ED.mirror && t.t !== 'hq') {
+      var mx = WORLD.w - hx; ctx.strokeStyle = 'rgba(158,203,98,.45)';
+      if (gd.w) edPoly(edRectPts(mx, hy, gd.w, gd.h), true); else groundRing(mx, hy, gd.r || (t.kind === 'stamp' ? 90 : 16), 'rgba(158,203,98,.45)', 1.5);
+    }
   }
 }
 /* the side a trench fires toward: short ticks along each leg, and a label */
@@ -15801,51 +16213,244 @@ function edFacingTicks(pts, flag, col) {
     ctx.fillText('FIRES THIS WAY  ' + (flag ? '(' + (flag === 'L' ? 'left' : 'right') + ')' : '(toward centre)'), q.x, q.y - 14);
   }
 }
-/* save, load, files */
-function edSaveLocal() { try { localStorage.setItem('ortona.map', JSON.stringify(ED.data)); toast('Map saved on this device'); } catch (e) { toast('Could not save here; use EXPORT'); } }
-function edLoadLocal() { try { var t = localStorage.getItem('ortona.map'); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+
+/* ---- keeping maps ----
+   The draft is written a couple of seconds after every change, so nothing is lost to
+   a closed tab. Named maps live in one store, as many as the device will hold. The
+   last map saved or played is what the title screen's PLAY CUSTOM MAP starts. */
+function edStore(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); return true; } catch (e) { return v === undefined ? null : false; } }
+function edLoadDraft() { try { var t = edStore(ED_DRAFT); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+function edLoadLocal() { try { var t = edStore(ED_LAST); return t ? JSON.parse(t) : null; } catch (e) { return null; } }
+function edAutosave() { ED.saveT = 0; if (!ED.data) return; ED.data.name = ED.name; edStore(ED_DRAFT, JSON.stringify(ED.data)); }
+function edSlots() { try { var t = edStore(ED_SLOTS); return t ? JSON.parse(t) : {}; } catch (e) { return {}; } }
+function edSaveSlot(name) {
+  ED.name = name || ED.name; ED.data.name = ED.name;
+  var slots = edSlots(); slots[ED.name] = { t: Date.now(), n: ED.data.entities.length, data: ED.data };
+  var text = JSON.stringify(ED.data);
+  if (edStore(ED_SLOTS, JSON.stringify(slots)) && edStore(ED_LAST, text)) { edAutosave(); toast('Saved: ' + ED.name); }
+  else toast('No room to save here: export it as a file instead');
+  edTitle(); edRefreshStart();
+}
+function edLoadSlot(name) {
+  var s = edSlots()[name]; if (!s) return;
+  edSnapshot(); ED.data = JSON.parse(JSON.stringify(s.data)); ED.data.height = ED.data.height || []; ED.name = name; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); toast('Loaded: ' + name);
+}
+function edDeleteSlot(name) { var slots = edSlots(); delete slots[name]; edStore(ED_SLOTS, JSON.stringify(slots)); edPanelLoad(); }
 function edExport() {
+  ED.data.name = ED.name;
   var blob = new Blob([JSON.stringify(ED.data)], { type: 'application/json' }), url = URL.createObjectURL(blob);
-  var a = document.createElement('a'); a.href = url; a.download = (ED.data.name || 'map').replace(/\W+/g, '_') + '.json'; document.body.appendChild(a); a.click();
+  var a = document.createElement('a'); a.href = url; a.download = ED.name.replace(/\W+/g, '_') + '.json'; document.body.appendChild(a); a.click();
   setTimeout(function () { document.body.removeChild(a); URL.revokeObjectURL(url); }, 800);
 }
-function edImportFile(file) {
-  var rd = new FileReader();
-  rd.onload = function () { try { var d = JSON.parse(rd.result); if (!d.entities) throw 0; edSnapshot(); ED.data = d; ED.data.height = ED.data.height || []; G.mapData = d; ED.sel = null; edTouch(); toast('Map loaded'); } catch (e) { toast('That is not a map file'); } };
-  rd.readAsText(file);
+function edTakeText(text) {
+  try {
+    var d = JSON.parse(text); if (!d.entities) throw 0;
+    edSnapshot(); ED.data = d; ED.data.height = ED.data.height || []; ED.name = d.name || 'Imported map'; G.mapData = d; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); toast('Map loaded');
+    return true;
+  } catch (e) { toast('That is not a map'); return false; }
 }
-function edBlank() {
-  edSnapshot();
-  ED.data = { name: 'New map', version: 1, entities: [
+function edImportFile(file) { var rd = new FileReader(); rd.onload = function () { edTakeText(rd.result); }; rd.readAsText(file); }
+function edShareText() {
+  ED.data.name = ED.name;
+  var text = JSON.stringify(ED.data);
+  function fallback() { edPanel('COPY AS TEXT', '<div class="edh">SELECT ALL AND COPY</div><textarea id="edsharetxt" readonly>' + text.replace(/</g, '&lt;') + '</textarea>'); var ta = el('edsharetxt'); if (ta) { ta.focus(); ta.select(); } }
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(function () { toast('Map copied as text'); }, fallback);
+  else fallback();
+}
+function edBlankMap(name) {
+  return { name: name || 'New map', version: 1, entities: [
     { t: 'sector', id: 'A', x: 540, y: 950, type: 'mp', owner: 'us', label: 'West' },
     { t: 'sector', id: 'B', x: 1400, y: 950, type: 'vp', owner: null, label: 'Centre' },
     { t: 'sector', id: 'C', x: 2260, y: 950, type: 'mp', owner: 'ger', label: 'East' },
     { t: 'hq', side: 'us', x: 250, y: 950 }, { t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 }], height: [] };
-  G.mapData = ED.data; ED.sel = null; edTouch();
 }
-function edTestPlay() {
-  edSaveLocal();
-  ED.on = false; el('editor').classList.add('hidden');
+
+/* ---- the menu and the panel ---- */
+function edMenu(on) { ED.menu = on === undefined ? !ED.menu : on; el('edmenus').classList.toggle('hidden', !ED.menu); if (ED.menu) { el('edmgrid').textContent = 'GRID: ' + (ED.grid ? 'ON' : 'OFF'); el('edmsnap').textContent = 'SNAP: ' + (ED.snap ? ED.snap + ' UNITS' : 'OFF'); } }
+function edPanel(title, html) { ED.panel = title; el('edpaneltitle').textContent = title; el('edpanelbody').innerHTML = html; el('edpanel').classList.remove('hidden'); el('editor').classList.add('panel'); edMenu(false); }
+function edPanelClose() { ED.panel = null; el('edpanel').classList.add('hidden'); el('editor').classList.remove('panel'); edLayout(); }
+function edPanelLoad() {
+  var slots = edSlots(), names = Object.keys(slots).sort(function (a, b) { return slots[b].t - slots[a].t; }), html = '';
+  if (!names.length) html = '<div class="edh">NOTHING SAVED ON THIS DEVICE YET</div>';
+  names.forEach(function (n) {
+    var s = slots[n], when = new Date(s.t);
+    html += '<div class="edli"><div class="t">' + n.replace(/</g, '&lt;') + '<small>' + s.n + ' things · ' + when.toLocaleDateString() + ' ' + when.toLocaleTimeString().slice(0, 5) + '</small></div>' +
+            '<button class="edb" data-load="' + encodeURIComponent(n) + '">LOAD</button><button class="edb warn" data-kill="' + encodeURIComponent(n) + '">✕</button></div>';
+  });
+  html += '<div class="edh">THE SHIPPED MAP</div><div class="edli"><div class="t">Ortona<small>the map the game ships with</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
+  edPanel('LOAD A MAP', html);
+  document.querySelectorAll('#edpanelbody [data-load]').forEach(function (b) { b.addEventListener('click', function () { edLoadSlot(decodeURIComponent(b.getAttribute('data-load'))); }); });
+  document.querySelectorAll('#edpanelbody [data-kill]').forEach(function (b) { b.addEventListener('click', function () { edDeleteSlot(decodeURIComponent(b.getAttribute('data-kill'))); }); });
+  el('edloadortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); });
+}
+function edPanelName(title, label, value, onok) {
+  edPanel(title, '<div class="edh">' + label + '</div><input type="text" id="edpname" value="' + value.replace(/"/g, '') + '" maxlength="40"><div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edpok" style="flex:1;min-height:44px">OK</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:44px">CANCEL</button></div>');
+  var inp = el('edpname'); inp.focus(); inp.select();
+  el('edpok').addEventListener('click', function () { var v = inp.value.trim(); if (v) onok(v); });
+  inp.addEventListener('keydown', function (ev) { if (ev.key === 'Enter') { var v = inp.value.trim(); if (v) onok(v); } });
+  el('edpcancel').addEventListener('click', edPanelClose);
+}
+function edPanelPaste() {
+  edPanel('PASTE A MAP', '<div class="edh">PASTE THE MAP TEXT HERE</div><textarea id="edpastetxt"></textarea><div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edpok" style="flex:1;min-height:44px">LOAD IT</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:44px">CANCEL</button></div>');
+  el('edpok').addEventListener('click', function () { edTakeText(el('edpastetxt').value); });
+  el('edpcancel').addEventListener('click', edPanelClose);
+}
+function edPanelTest() {
+  var html = '<div class="edh">PLAY AS</div><div class="edseg" id="edtside" style="display:flex;gap:6px"><button class="edb on" data-v="us" style="flex:1;min-height:44px">CANADIAN</button><button class="edb" data-v="ger" style="flex:1;min-height:44px">GERMAN</button></div>' +
+             '<div class="edh">OPPOSITION</div><div class="edseg" id="edtdiff" style="display:flex;gap:6px"><button class="edb" data-v="0" style="flex:1;min-height:44px">GREEN</button><button class="edb on" data-v="1" style="flex:1;min-height:44px">REGULAR</button><button class="edb" data-v="2" style="flex:1;min-height:44px">VETERAN</button></div>' +
+             '<div class="edh">VICTORY</div><div class="edseg" id="edtmode" style="display:flex;gap:6px"><button class="edb on" data-v="vp" style="flex:1;min-height:44px">SECTORS</button><button class="edb" data-v="anni" style="flex:1;min-height:44px">ANNIHILATION</button></div>' +
+             '<button class="edb wide" id="edtgo" style="margin-top:14px;text-align:center;font-size:14px;min-height:52px">DEPLOY ON THIS MAP</button>';
+  edPanel('TEST THE MAP', html);
+  var pick = { us: 'us', diff: 1, mode: 'vp' };
+  ['edtside', 'edtdiff', 'edtmode'].forEach(function (id) {
+    var q = el(id); q.querySelectorAll('button').forEach(function (b) { b.addEventListener('click', function () { q.querySelectorAll('button').forEach(function (o) { o.classList.remove('on'); }); b.classList.add('on'); var v = b.getAttribute('data-v'); if (id === 'edtside') pick.us = v; else if (id === 'edtdiff') pick.diff = +v; else pick.mode = v; }); });
+  });
+  el('edtgo').addEventListener('click', function () { edTestPlay(pick.us, pick.diff, pick.mode); });
+}
+function edTestPlay(side, diff, mode) {
+  edAutosave(); ED.data.name = ED.name; edStore(ED_LAST, JSON.stringify(ED.data));
+  ED.on = false; ED.fromEditor = true; el('editor').classList.add('hidden'); edPanelClose();
   fog = true;
   G.mapData = ED.data;
-  startGame(chosenSide, chosenDiff, chosenMode);
+  startGame(side || 'us', diff === undefined ? 1 : diff, mode || 'vp');
+  el('overedit').classList.remove('hidden');
 }
-/* wiring */
+
+/* ---- the check: what cannot be true of real ground, and whether the map is fair ----
+   The same rules as tools/mapcheck.mjs, run on the device, each with a place to jump to. */
+function edCheck() {
+  var E = ED.data.entities, out = [];
+  var blocks = E.filter(function (e) { return (e.t === 'house' || e.t === 'farm') && e.w; });
+  var craters = E.filter(function (e) { return e.t === 'crater'; }), trenches = E.filter(function (e) { return e.t === 'trench' && e.pts; });
+  var wires = E.filter(function (e) { return e.t === 'wire'; }), trees = E.filter(function (e) { return e.t === 'tree'; }), roads = E.filter(function (e) { return e.t === 'road' && e.pts; });
+  function bad(rule, x, y, msg) { out.push({ rule: rule, x: x, y: y, msg: msg }); }
+  function segsOf(pts) { var s = []; for (var i = 0; i < pts.length - 1; i++) s.push([pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y]); return s; }
+  function bx(b, pad) { return { x0: b.x - b.w / 2 - pad, x1: b.x + b.w / 2 + pad, y0: b.y - b.h / 2 - pad, y1: b.y + b.h / 2 + pad }; }
+  function inBox(q, x, y) { return x > q.x0 && x < q.x1 && y > q.y0 && y < q.y1; }
+  function segHitsBox(q, x1, y1, x2, y2) {
+    if (inBox(q, x1, y1) || inBox(q, x2, y2)) return true;
+    var n = 24; for (var i = 0; i <= n; i++) { var t = i / n; if (inBox(q, x1 + (x2 - x1) * t, y1 + (y2 - y1) * t)) return true; }
+    return false;
+  }
+  var i, j, k, c, tr, w, b, sg;
+  for (i = 0; i < craters.length; i++) { c = craters[i]; for (j = 0; j < trenches.length; j++) { tr = trenches[j]; sg = segsOf(tr.pts); for (k = 0; k < sg.length; k++) if (distToSeg(c.x, c.y, sg[k][0], sg[k][1], sg[k][2], sg[k][3]) < c.r + 16) { bad('crater on trench', c.x, c.y, 'a crater sits on a trench'); break; } } }
+  for (i = 0; i < wires.length; i++) {
+    w = wires[i];
+    for (j = 0; j < craters.length; j++) { c = craters[j]; if (distToSeg(c.x, c.y, w.x1, w.y1, w.x2, w.y2) < c.r + 12) bad('wire through crater', c.x, c.y, 'wire runs through a crater'); }
+    for (j = 0; j < trenches.length; j++) { sg = segsOf(trenches[j].pts); for (k = 0; k < sg.length; k++) { var hit = false; for (var s2 = 0; s2 <= 24 && !hit; s2++) { var t2 = s2 / 24; if (distToSeg(w.x1 + (w.x2 - w.x1) * t2, w.y1 + (w.y2 - w.y1) * t2, sg[k][0], sg[k][1], sg[k][2], sg[k][3]) < 22) hit = true; } if (hit) { bad('wire across trench', (w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2, 'wire crosses a trench'); break; } } }
+  }
+  for (i = 0; i < blocks.length; i++) {
+    b = blocks[i]; var q = bx(b, 10);
+    for (j = 0; j < trees.length; j++) if (inBox(q, trees[j].x, trees[j].y)) bad('tree in house', trees[j].x, trees[j].y, 'a tree stands inside a building');
+    for (j = 0; j < craters.length; j++) { c = craters[j]; if (inBox(q, c.x, c.y) || (Math.abs(c.x - b.x) < b.w / 2 + c.r * .7 && Math.abs(c.y - b.y) < b.h / 2 + c.r * .7)) bad('crater under house', c.x, c.y, 'a crater undercuts a building'); }
+    for (j = 0; j < trenches.length; j++) { sg = segsOf(trenches[j].pts); for (k = 0; k < sg.length; k++) if (segHitsBox(q, sg[k][0], sg[k][1], sg[k][2], sg[k][3])) { bad('trench through house', b.x, b.y, 'a trench runs through a building'); break; } }
+    for (j = 0; j < wires.length; j++) { w = wires[j]; if (segHitsBox(q, w.x1, w.y1, w.x2, w.y2)) bad('wire through house', b.x, b.y, 'wire runs through a building'); }
+  }
+  for (i = 0; i < blocks.length; i++) for (j = i + 1; j < blocks.length; j++) {
+    var a = blocks[i]; b = blocks[j];
+    var gx = Math.abs(a.x - b.x) - (a.w + b.w) / 2, gy = Math.abs(a.y - b.y) - (a.h + b.h) / 2;
+    if (gx < -4 && gy < -4) { bad('houses overlap', (a.x + b.x) / 2, (a.y + b.y) / 2, 'two buildings overlap'); continue; }
+    var gap = gx >= -4 && gy < 0 ? gx : gy >= -4 && gx < 0 ? gy : null;
+    if (gap !== null && gap > 7 && gap < 34) bad('slot between houses', (a.x + b.x) / 2, (a.y + b.y) / 2, Math.round(gap) + ' units between buildings: too wide for a party wall, too narrow to walk');
+  }
+  for (i = 0; i < roads.length; i++) {
+    var r = roads[i], half = (r.width || 48) / 2, run = 0;
+    sg = segsOf(r.pts);
+    for (j = 0; j < blocks.length; j++) { var qb = bx(blocks[j], -Math.min(10, half * .4)); for (k = 0; k < sg.length; k++) if (segHitsBox(qb, sg[k][0], sg[k][1], sg[k][2], sg[k][3])) { bad('street through house', blocks[j].x, blocks[j].y, 'a street runs through a building'); break; } }
+    if ((r.width || 48) < 24) bad('narrow street', r.pts[0].x, r.pts[0].y, 'a street narrower than a lane');
+    for (k = 0; k < sg.length; k++) run += Math.hypot(sg[k][2] - sg[k][0], sg[k][3] - sg[k][1]);
+    if (run > 1500) bad('long street', r.pts[0].x, r.pts[0].y, 'a street runs ' + Math.round(run) + ' unbroken: break it with a junction');
+  }
+  /* and what a game needs */
+  var hqs = { us: 0, ger: 0 }, secs = E.filter(function (e) { return e.t === 'sector'; }), vps = 0;
+  E.forEach(function (e) { if (e.t === 'hq') hqs[e.side]++; });
+  if (!hqs.us) bad('no Canadian HQ', WORLD.w * .1, WORLD.h / 2, 'the map has no Canadian headquarters');
+  if (!hqs.ger) bad('no German HQ', WORLD.w * .9, WORLD.h / 2, 'the map has no German headquarters');
+  secs.forEach(function (s) { if (s.type === 'vp') vps++; });
+  if (!vps) bad('no victory flags', WORLD.w / 2, WORLD.h / 2, 'a map on points needs at least one victory flag');
+  if (secs.length < 3) bad('few flags', WORLD.w / 2, WORLD.h / 2, 'fewer than three flags: nothing to fight over');
+  return out;
+}
+/* what each side is given: its flags by distance from its headquarters, the ground and
+   the cover on its half, so a map can be read for fairness before it is fought */
+function edBalance() {
+  var E = ED.data.entities, hq = { us: null, ger: null };
+  E.forEach(function (e) { if (e.t === 'hq') hq[e.side] = e; });
+  function half(side) { return function (e) { var x = edAnchorX(e); return side === 'us' ? x < WORLD.w / 2 : x > WORLD.w / 2; }; }
+  var out = {};
+  ['us', 'ger'].forEach(function (side) {
+    var h = hq[side], mine = E.filter(half(side)), o = { houses: 0, cover: 0, craters: 0, trees: 0, trenches: 0, wire: 0, flags: [] };
+    mine.forEach(function (e) {
+      if (e.t === 'house' || e.t === 'farm') o.houses++;
+      if (e.t === 'rubble' || e.t === 'bags' || e.t === 'emplace' || e.t === 'wall' || e.t === 'debris' || e.t === 'cart') o.cover++;
+      if (e.t === 'crater') o.craters++;
+      if (e.t === 'tree' || e.t === 'scrub') o.trees++;
+      if (e.t === 'trench') o.trenches++;
+      if (e.t === 'wire') o.wire++;
+    });
+    E.forEach(function (e) { if (e.t === 'sector' && h) o.flags.push({ id: e.id, type: e.type, d: Math.round(Math.hypot(e.x - h.x, e.y - h.y)), owner: e.owner }); });
+    o.flags.sort(function (a, b) { return a.d - b.d; });
+    o.hq = !!h;
+    out[side] = o;
+  });
+  return out;
+}
+function edPanelCheck() {
+  var probs = edCheck(), html = '';
+  if (!probs.length) html += '<div class="edok">Clean: nothing on the map stands in anything else, and the game has what it needs.</div>';
+  else {
+    html += '<div class="edwarn">' + probs.length + ' thing' + (probs.length > 1 ? 's' : '') + ' to look at. Tap one to go there.</div>';
+    probs.slice(0, 60).forEach(function (p, i) { html += '<div class="edli"><div class="t">' + p.rule.toUpperCase() + '<small>' + p.msg + '</small></div><button class="edb" data-go="' + i + '">GO</button></div>'; });
+    if (probs.length > 60) html += '<div class="edh">AND ' + (probs.length - 60) + ' MORE</div>';
+  }
+  var bal = edBalance();
+  html += '<div class="edh">BALANCE</div><table><tr><th></th><th>Canadian</th><th>German</th></tr>';
+  [['houses', 'Buildings on its half'], ['cover', 'Pieces of cover'], ['craters', 'Craters'], ['trees', 'Trees and scrub'], ['trenches', 'Trench lines'], ['wire', 'Wire']].forEach(function (r) {
+    var a = bal.us[r[0]], b = bal.ger[r[0]], off = Math.abs(a - b) > Math.max(2, (a + b) * .25);
+    html += '<tr><td>' + r[1] + '</td><td' + (off ? ' class="edwarn"' : '') + '>' + a + '</td><td' + (off ? ' class="edwarn"' : '') + '>' + b + '</td></tr>';
+  });
+  html += '</table><div class="edh">FLAGS BY DISTANCE FROM EACH HEADQUARTERS</div><table><tr><th>Flag</th><th>from Canadian HQ</th><th>from German HQ</th></tr>';
+  var byId = {};
+  bal.us.flags.forEach(function (f) { byId[f.id] = { f: f, us: f.d }; });
+  bal.ger.flags.forEach(function (f) { byId[f.id] = byId[f.id] || { f: f }; byId[f.id].ger = f.d; });
+  Object.keys(byId).sort().forEach(function (id) { var q = byId[id]; html += '<tr><td>' + id + ' ' + (q.f.type === 'vp' ? 'victory' : q.f.type) + '</td><td>' + (q.us === undefined ? '-' : q.us) + '</td><td>' + (q.ger === undefined ? '-' : q.ger) + '</td></tr>'; });
+  html += '</table><div class="edh">A FAIR MAP GIVES BOTH SIDES THE SAME DISTANCES TO THE SAME KINDS OF FLAG. MIRROR IS THE QUICK WAY THERE.</div>';
+  edPanel('CHECK', html);
+  document.querySelectorAll('#edpanelbody [data-go]').forEach(function (b) {
+    b.addEventListener('click', function () { var p = probs[+b.getAttribute('data-go')]; CAM.tx = p.x; CAM.ty = p.y; CAM.dist = Math.min(CAM.dist, 700); clampCam(); edPanelClose(); });
+  });
+}
+
+/* ---- wiring ---- */
 (function () {
-  document.querySelectorAll('#edtop [data-tool]').forEach(function (b) { b.addEventListener('click', function () { edSetTool(b.getAttribute('data-tool')); }); });
-  el('edmirror').addEventListener('click', function () { ED.mirror = !ED.mirror; el('edmirror').classList.toggle('on', ED.mirror); edHint(); });
-  el('edsnap').addEventListener('click', function () { ED.snap = !ED.snap; el('edsnap').classList.toggle('on', ED.snap); });
+  el('edmenu').addEventListener('click', function () { edMenu(); });
+  el('edname').addEventListener('click', function () { edPanelName('RENAME THE MAP', 'NAME', ED.name, function (v) { ED.name = v; ED.data.name = v; edTitle(); edAutosave(); edPanelClose(); }); });
   el('edundo').addEventListener('click', edUndo);
-  el('edtest').addEventListener('click', edTestPlay);
-  el('edsave').addEventListener('click', edSaveLocal);
-  el('edexport').addEventListener('click', edExport);
-  el('edimport').addEventListener('click', function () { el('edfile').click(); });
+  el('edredo').addEventListener('click', edRedo);
+  el('edmirror').addEventListener('click', function () { ED.mirror = !ED.mirror; el('edmirror').classList.toggle('on', ED.mirror); edHint(); });
+  el('edcheck').addEventListener('click', function () { if (ED.panel === 'CHECK') edPanelClose(); else edPanelCheck(); });
+  el('edtest').addEventListener('click', function () { if (ED.panel === 'TEST THE MAP') edPanelClose(); else edPanelTest(); });
+  el('edpanelclose').addEventListener('click', edPanelClose);
+  el('edpillok').addEventListener('click', edFinishLine);
+  el('edpillx').addEventListener('click', function () { ED.line = null; edPill(); edHint(); });
+  el('edmsave').addEventListener('click', function () { if (ED.name && ED.name !== 'Ortona') edSaveSlot(ED.name); else edPanelName('SAVE THE MAP', 'NAME', ED.name === 'Ortona' ? 'My Ortona' : ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); edMenu(false); });
+  el('edmsaveas').addEventListener('click', function () { edPanelName('SAVE AS', 'NAME', ED.name, function (v) { edSaveSlot(v); edPanelClose(); }); });
+  el('edmload').addEventListener('click', edPanelLoad);
+  el('edmnew').addEventListener('click', function () { edPanelName('NEW MAP', 'NAME', 'New map', function (v) { edSnapshot(); ED.data = edBlankMap(v); ED.name = v; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); }); });
+  el('edmortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false); });
+  el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });
+  el('edmimport').addEventListener('click', function () { el('edfile').click(); edMenu(false); });
   el('edfile').addEventListener('change', function (ev) { if (ev.target.files[0]) edImportFile(ev.target.files[0]); ev.target.value = ''; });
-  el('edreset').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); G.mapData = ED.data; ED.sel = null; edTouch(); });
-  el('edblank').addEventListener('click', edBlank);
-  el('edexit').addEventListener('click', edClose);
+  el('edmshare').addEventListener('click', function () { edShareText(); edMenu(false); });
+  el('edmpaste').addEventListener('click', edPanelPaste);
+  el('edmgrid').addEventListener('click', function () { ED.grid = !ED.grid; edMenu(true); });
+  el('edmsnap').addEventListener('click', function () { ED.snap = ED.snap === 0 ? 10 : ED.snap === 10 ? 20 : ED.snap === 20 ? 40 : 0; edMenu(true); });
+  el('edmfit').addEventListener('click', function () { edFit(); edMenu(false); });
+  el('edmbalance').addEventListener('click', edPanelCheck);
+  el('edmexit').addEventListener('click', function () { edMenu(false); edClose(); });
+  el('overedit').addEventListener('click', function () { el('over').classList.add('hidden'); el('overedit').classList.add('hidden'); ED.fromEditor = false; G.running = false; edOpen(ED.data); });
   el('openeditor').addEventListener('click', function () { edOpen(null); });
-  el('playcustom').addEventListener('click', function () { var d = edLoadLocal(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode); } });
+  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode); } });
   edRefreshStart();
 })();
 
