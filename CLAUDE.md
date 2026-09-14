@@ -659,7 +659,12 @@ reload to change, and because `mainW` hands back whichever is up, range, target 
 the shot and the AI's reading of it all follow the switch with nothing else to tell. The
 cards are J and L; the brain's crews pick AP while armour is in reach and HE otherwise.
 The Canadians have no equivalent, on purpose. `placeWork` now checks a unit-work's
-`limit` (two) and the population cap, which no wall of bags ever needed. The brain digs
+`limit` (two) and the population cap, which no wall of bags ever needed, and `popOf`
+counts a pegged-out gun's men while the ring is still being built. The brain chooses
+the round at the top of its per-unit loop, before the retreat rule and the target
+reflex can end the tick, because a gun in contact is the one that needs asking; every
+count of anti-tank guns reads `def.w`, the AP round, whatever is up. A knocked-out gun
+stays in its ring as a `gunwreck` work with medium cover. The brain digs
 one once the enemy has brought two vehicles or anything medium, out of money the shopping
 list is not waiting on, on the overwatch post the Pak uses. Fought in the open without its
 ring it takes a Sherman eight times in eight at nineteen seconds and an Achilles or a
