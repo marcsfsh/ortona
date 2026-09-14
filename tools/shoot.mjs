@@ -95,6 +95,29 @@ const SCENES = {
     }
   },
 
+  pov: {
+    help: 'The periscope: a first-person look from a section, ahead and to either side.',
+    async run(page) {
+      await deploy(page, { side: SIDE, diff: DIFF });
+      if (SIM) await fastForward(page, SIM);
+      if (args.nofog) await setFog(page, false);
+      if (BARE) await chrome(page, false);
+      await page.evaluate(() => {
+        const own = window.G.units.filter(u => u.side === window.G.side && !u.dead && u.cat !== 'veh');
+        own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
+        window.select([own[0]], false); window.povOn(own[0]);
+      });
+      await shoot(page, out('pov-ahead'), { settle: SETTLE });
+      for (const [name, turn] of [['left', -Math.PI / 2], ['right', Math.PI / 2]]) {
+        await page.evaluate(t => { window.POV.yaw = (window.POV.u.facing || 0) + t; }, turn);
+        await shoot(page, out('pov-' + name), { settle: SETTLE });
+      }
+      await page.evaluate(() => { window.POV.yaw = window.POV.u.facing || 0; window.POV.zoom = 2.5; });
+      await shoot(page, out('pov-zoom'), { settle: SETTLE });
+      await page.evaluate(() => window.povOff());
+    }
+  },
+
   terrain: {
     help: 'Wide shots of the town, the coast and the rail line: read the ground and the light.',
     async run(page) {

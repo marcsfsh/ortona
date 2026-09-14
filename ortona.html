@@ -535,6 +535,7 @@ body.mob #mini{width:104px;height:72px}
   <button class="tool" id="tIdle" title="Select next idle unit (Tab)">◎<br>IDLE</button>
   <button class="tool" id="tClear" title="Clear selection and cancel order (Esc)">×<br>CLEAR</button>
   <button class="tool" id="tMap" title="Expand tactical map">▦<br>MAP</button>
+  <button class="tool" id="tPov" title="Look from the selected unit (V)">◉<br>LOOK</button>
   <button class="tool" id="tPause" title="Pause battle (P)">Ⅱ</button>
 </div>
 
@@ -5776,7 +5777,15 @@ function sfx(kind, x, y) {
      centre at the same level wherever on the map it happened, so a fight at the far edge
      of the view was as loud as the one under the cursor. */
   var pan = 0, att = 1, air = 6000;
-  if (x !== undefined) {
+  if (x !== undefined && POV.on) {
+    /* in the periscope a sound sits where it is round the head, and fades with the range */
+    var pe = povEye(), pdx = x - pe.x, pdy = y - pe.y, pd = Math.hypot(pdx, pdy);
+    if (pd > 1500) return;
+    var rel = Math.atan2(pdy, pdx) - POV.yaw;
+    pan = Math.sin(rel) * povTurnSign() * .8;
+    att = clamp(1.05 - pd / 1500, .25, 1);
+    air = 6000 - clamp(pd / 1400, 0, 1) * 3400;
+  } else if (x !== undefined) {
     var v = view();
     if (x < v.x - 200 || x > v.x + v.w + 200 || y < v.y - 200 || y > v.y + v.h + 200) return;
     var cx = v.x + v.w * .5, cy = v.y + v.h * .5, half = Math.max(v.w, v.h) * .5 || 1;
@@ -7244,6 +7253,7 @@ function clampCam() {
   CAM.ty = clamp(CAM.ty, 60, WORLD.h - 60);
 }
 function updateCamera() {
+  if (POV.on && POV.u && !POV.u.dead) { povCamera(); return; }
   clampCam();
   var tz = groundZ(CAM.tx, CAM.ty);
   var cp = Math.cos(CAM.pitch), sp = Math.sin(CAM.pitch);
@@ -7262,6 +7272,90 @@ function updateCamera() {
   var rl = Math.hypot(MAT.right.x, MAT.right.y) || 1; MAT.right.x /= rl; MAT.right.y /= rl;
   var F = MAT.fwd, R = MAT.right;
   MAT.up = { x: F.y * R.z - F.z * R.y, y: F.z * R.x - F.x * R.z, z: F.x * R.y - F.y * R.x };
+}
+
+/* ---- the periscope: a first-person look from a unit, at helmet height ----
+   Line of sight is what the game is about and the one thing the overhead view is bad at
+   showing, so a tap on the camera button puts the eye where the section leader's is.
+   The eye rides with him; the direction starts along the unit's facing and a drag turns
+   it, because one man facing a wall is no reason to look at the wall. The renderer
+   draws only what the side can see, so what the periscope shows is honest. For now it
+   is a view and nothing more: taps give no orders in it. */
+var POV = { on: false, u: null, yaw: 0, pitch: 0, zoom: 1, drag: null, pinch: 0 };
+function povEye() {
+  var u = POV.u, host = u.inside || u, x = host.x, y = host.y, h = host.cat === 'veh' ? 26 : 15.5;
+  if (host.cat !== 'veh' && host.models) for (var i = 0; i < host.models.length; i++) if (host.models[i].alive) { x = host.models[i].x; y = host.models[i].y; break; }
+  return { x: x, y: y, z: groundZ(x, y) + h };
+}
+function povOn(u) {
+  if (!u || u.dead || !u.cat) return false;
+  POV.on = true; POV.u = u; POV.yaw = u.facing || 0; POV.pitch = 0; POV.zoom = 1; POV.drag = null; POV.pinch = 0;
+  var b = el('tPov'); if (b) b.classList.add('on');
+  return true;
+}
+function povOff() {
+  POV.on = false; POV.u = null; POV.drag = null; POV.pinch = 0;
+  var b = el('tPov'); if (b) b.classList.remove('on');
+}
+function povToggle() {
+  if (POV.on) { povOff(); return; }
+  var u = selectedUnits()[0];
+  if (!u) { toast('Select a unit to look from'); return; }
+  povOn(u);
+}
+/* which way a positive yaw turns on the screen, read off the camera basis rather than
+   assumed, because the world is left-handed and the sign is easy to get wrong */
+function povTurnSign() {
+  var fx = Math.cos(POV.yaw), fy = Math.sin(POV.yaw);
+  return (-fy * MAT.right.x + fx * MAT.right.y) >= 0 ? 1 : -1;
+}
+/* a drag turns the view the way the finger goes: left to look left, up to look up */
+function povLook(dxPix, dyPix) {
+  POV.yaw += povTurnSign() * dxPix * .0045 / POV.zoom;
+  POV.pitch = clamp(POV.pitch - dyPix * .0035 / POV.zoom, -.75, .6);
+}
+function povZoom(f) { POV.zoom = clamp(POV.zoom * f, 1, 3); }
+/* the field of view is set by the narrower screen axis so a portrait phone still sees
+   sixty degrees across, and a pinch narrows it like binoculars */
+function povFov() {
+  var aspect = VIEW.w / VIEW.h;
+  return clamp(2 * Math.atan(Math.tan(.56) / aspect), 1.08, 1.6) / POV.zoom;
+}
+function povSkyPitch() {
+  var hy = clamp(-Math.tan(POV.pitch) / Math.tan(povFov() / 2), -1, 1);
+  return -(1 + hy) / .6;
+}
+function povCamera() {
+  var e = povEye(), cp = Math.cos(POV.pitch), sp = Math.sin(POV.pitch);
+  var fx = Math.cos(POV.yaw) * cp, fy = Math.sin(POV.yaw) * cp, fz = sp;
+  MAT.eye.x = e.x; MAT.eye.y = e.y; MAT.eye.z = e.z;
+  MAT.view = m4lookAt(e.x, e.y, e.z, e.x + fx, e.y + fy, e.z + fz);
+  MAT.proj = m4perspective(povFov(), VIEW.w / VIEW.h, 4, 7000);
+  MAT.vp = m4mul(MAT.proj, MAT.view);
+  MAT.fwd = { x: fx, y: fy, z: fz };
+  MAT.right = { x: -fy, y: fx, z: 0 };
+  var rl = Math.hypot(MAT.right.x, MAT.right.y) || 1; MAT.right.x /= rl; MAT.right.y /= rl;
+  var F = MAT.fwd, R = MAT.right;
+  MAT.up = { x: F.y * R.z - F.z * R.y, y: F.z * R.x - F.x * R.z, z: F.x * R.y - F.y * R.x };
+}
+/* the frame round the view: a vignette, a reticle, whose eyes these are and how to leave */
+function drawPovFrame() {
+  var W = VIEW.w, H = VIEW.h, u = POV.u;
+  var g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .36, W / 2, H / 2, Math.max(W, H) * .72);
+  g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, 'rgba(0,0,0,.62)');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = 'rgba(230,224,200,.55)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(W / 2 - 14, H / 2); ctx.lineTo(W / 2 - 4, H / 2); ctx.moveTo(W / 2 + 4, H / 2); ctx.lineTo(W / 2 + 14, H / 2);
+  ctx.moveTo(W / 2, H / 2 - 14); ctx.lineTo(W / 2, H / 2 - 4); ctx.moveTo(W / 2, H / 2 + 4); ctx.lineTo(W / 2, H / 2 + 14); ctx.stroke();
+  var barH = el('bar').offsetHeight || 0, y = H - barH - (MOB ? 26 : 30);
+  /* on a phone the little map sits in the corner of the view; the caption keeps clear of it */
+  var mr = el('mini').getBoundingClientRect(); if (mr.width && mr.top < y + 8 && mr.top > H * .45) y = mr.top - 14;
+  ctx.textAlign = 'center'; ctx.fillStyle = '#e6e0c8'; ctx.font = (MOB ? '13px ' : '13px ') + 'system-ui, sans-serif';
+  ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+  ctx.fillText((u.def ? u.def.name : 'Unit') + (POV.zoom > 1.05 ? '  ·  x' + POV.zoom.toFixed(1) : ''), W / 2, y - 18);
+  ctx.fillStyle = '#b9b3a0'; ctx.font = '11px system-ui, sans-serif';
+  ctx.fillText(MOB ? 'Drag to look  ·  pinch to zoom  ·  tap the camera to return' : 'Drag to look  ·  wheel to zoom  ·  V or Esc to return', W / 2, y);
+  ctx.shadowBlur = 0; ctx.textAlign = 'left';
 }
 /* world point (on the ground unless z given) to overlay pixels; null if behind the camera */
 function w2s(x, y, z) {
@@ -14529,7 +14623,7 @@ function render() {
   /* ---- the 3D pass: sky, then the world ---- */
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.useProgram(SKY.p);
-  gl.uniform1f(SKY.u.uPitch, CAM.pitch - .9);
+  gl.uniform1f(SKY.u.uPitch, POV.on ? povSkyPitch() : CAM.pitch - .9);
   gl.uniform3f(SKY.u.uFogCol, .58, .60, .58);
   gl.bindBuffer(gl.ARRAY_BUFFER, QUAD);
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
@@ -14552,7 +14646,8 @@ function render() {
   gl.uniform1f(PROG.u.uAmb, .46);
   gl.uniform2f(PROG.u.uWorldSize, WORLD.w, WORLD.h);
   gl.uniform3f(PROG.u.uFogCol, .58, .60, .58);
-  gl.uniform2f(PROG.u.uFogRange, CAM.dist * 1.1, CAM.dist * 1.1 + 2600);
+  if (POV.on) gl.uniform2f(PROG.u.uFogRange, 220, 1500);   /* at helmet height the far town fades into the haze */
+  else gl.uniform2f(PROG.u.uFogRange, CAM.dist * 1.1, CAM.dist * 1.1 + 2600);
   gl.uniform1f(PROG.u.uSeaT, G.t);
   /* uploads first, then bind the samplers, so a mid-frame upload cannot disturb them */
   if (decalDirty && G.t - _lastDecalUpload > .25) { uploadDecals(); _lastDecalUpload = G.t; }
@@ -14582,6 +14677,7 @@ function render() {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, VIEW.w, VIEW.h);
   if (ED.on) { drawMinimap(); return; }
+  if (POV.on) { drawPovFrame(); drawMinimap(); return; }
   /* sector rings on the ground */
   G.sectors.forEach(function (s) {
     var col = s.owner ? FACTION[s.owner].color : '#9aa07c';
@@ -14743,10 +14839,18 @@ function drawMinimap() {
     tmp.width = FW; tmp.height = FH; tmp.getContext('2d').putImageData(img, 0, 0);
     mctx.drawImage(tmp, 0, 0, W, H);
   }
-  /* the camera footprint */
-  var v = view();
+  /* the camera footprint, or in the periscope the eye and the way it looks */
   mctx.strokeStyle = '#e6e0c8'; mctx.lineWidth = 1.2;
   mctx.beginPath();
+  if (POV.on) {
+    var pe = povEye(), pf = povFov() / 2, pr = 22;
+    mctx.moveTo(pe.x * sx, pe.y * sy); mctx.lineTo((pe.x + Math.cos(POV.yaw - pf) * pr / sx) * sx, (pe.y + Math.sin(POV.yaw - pf) * pr / sy) * sy);
+    mctx.moveTo(pe.x * sx, pe.y * sy); mctx.lineTo((pe.x + Math.cos(POV.yaw + pf) * pr / sx) * sx, (pe.y + Math.sin(POV.yaw + pf) * pr / sy) * sy);
+    mctx.stroke();
+    mctx.beginPath(); mctx.arc(pe.x * sx, pe.y * sy, 2.5, 0, TAU); mctx.fillStyle = '#e6e0c8'; mctx.fill();
+    return;
+  }
+  var v = view();
   v.corners.forEach(function (c, i) { if (i) mctx.lineTo(c.x * sx, c.y * sy); else mctx.moveTo(c.x * sx, c.y * sy); });
   mctx.closePath(); mctx.stroke();
 }
@@ -14869,6 +14973,7 @@ function issueOrder(wx, wy, forceAttack) {
 cv.addEventListener('mousemove', function (e) {
   var r = cv.getBoundingClientRect();
   mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.inside = true;
+  if (POV.on && !ED.on) { if (POV.drag) { povLook(mouse.x - POV.drag.x, mouse.y - POV.drag.y); POV.drag = { x: mouse.x, y: mouse.y }; } return; }
   if (ED.on && !drag.pan) { var ew = s2w(mouse.x, mouse.y); edMove(ew.x, ew.y, mouse.x, mouse.y); }
   if (drag.on && (Math.abs(mouse.x - drag.x0) > 5 || Math.abs(mouse.y - drag.y0) > 5)) drag.moved = true;
   if (drag.pan) {
@@ -14893,6 +14998,7 @@ cv.addEventListener('mousedown', function (e) {
     return;
   }
   if (!G.running) return;
+  if (POV.on) { if (e.button === 0) POV.drag = { x: mouse.x, y: mouse.y }; return; }
   if (e.button === 0) {
     if (G.place) {
       /* the press fixes where it goes; the drag that follows aims it */
@@ -14910,6 +15016,7 @@ window.addEventListener('mouseup', function (e) {
     if (ED.press && Math.hypot(mouse.x - ED.press.x, mouse.y - ED.press.y) < 6 && e.button === 0) edTap(mouse.x, mouse.y);
     ED.press = null; return;
   }
+  if (POV.on) { POV.drag = null; return; }
   if (e.button === 1) { drag.pan = null; return; }
   if (e.button === 0 && G.place && G.place.aim) { doPlace(); return; }
   if (e.button !== 0 || !drag.on) return;
@@ -14949,6 +15056,7 @@ cv.addEventListener('contextmenu', function (e) {
 });
 cv.addEventListener('wheel', function (e) {
   e.preventDefault();
+  if (POV.on) { povZoom(e.deltaY > 0 ? .9 : 1.11); return; }
   if (e.ctrlKey || e.shiftKey) { CAM.pitch += (e.deltaY > 0 ? -.06 : .06); clampCam(); return; }
   zoomCam(e.deltaY > 0 ? 1.12 : .89, mouse.x, mouse.y);
 }, { passive: false });
@@ -14991,6 +15099,12 @@ cv.addEventListener('touchstart', function (e) {
   if (!G.running) return;
   e.preventDefault();
   clearTimeout(touch.timer);
+  if (POV.on) {
+    /* in the periscope a finger turns the head and two fingers are the binoculars */
+    if (e.touches.length >= 2) { var pa = tPos(e.touches[0]), pb = tPos(e.touches[1]); POV.pinch = Math.hypot(pa.x - pb.x, pa.y - pb.y); POV.drag = null; }
+    else { var pp = tPos(e.touches[0]); POV.drag = { x: pp.x, y: pp.y }; }
+    return;
+  }
   if (e.touches.length >= 2) {
     var a = tPos(e.touches[0]), b = tPos(e.touches[1]);
     touch.pinch = Math.hypot(a.x - b.x, a.y - b.y);
@@ -15036,6 +15150,18 @@ cv.addEventListener('touchmove', function (e) {
   }
   if (!G.running) return;
   e.preventDefault();
+  if (POV.on) {
+    if (e.touches.length >= 2) {
+      var qa = tPos(e.touches[0]), qb = tPos(e.touches[1]), qd = Math.hypot(qa.x - qb.x, qa.y - qb.y);
+      if (POV.pinch) povZoom(qd / POV.pinch);
+      POV.pinch = qd;
+    } else if (POV.drag) {
+      var q = tPos(e.touches[0]);
+      povLook(q.x - POV.drag.x, q.y - POV.drag.y);
+      POV.drag = { x: q.x, y: q.y };
+    }
+    return;
+  }
   if (e.touches.length >= 2) {
     var a = tPos(e.touches[0]), b = tPos(e.touches[1]);
     var d = Math.hypot(a.x - b.x, a.y - b.y), cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
@@ -15081,6 +15207,11 @@ cv.addEventListener('touchend', function (e) {
   }
   if (!G.running) return;
   clearTimeout(touch.timer);
+  if (POV.on) {
+    if (!e.touches.length) { POV.drag = null; POV.pinch = 0; }
+    else if (e.touches.length === 1) { var q1 = tPos(e.touches[0]); POV.drag = { x: q1.x, y: q1.y }; POV.pinch = 0; }
+    return;
+  }
   if (e.touches.length) return;
   var wasBox = touch.box, wasTwo = touch.two, moved = touch.moved;
   touch.pinch = 0; touch.box = false; touch.two = false;
@@ -15145,6 +15276,8 @@ window.addEventListener('keydown', function (e) {
   }
   if (!G.running) return;
   keys[k] = true;
+  if (k === 'v') { povToggle(); return; }
+  if (k === 'escape' && POV.on) { povOff(); return; }
   if (e.ctrlKey && k >= '1' && k <= '5') { G.groups[k] = selectedUnits().slice(); toast('Group ' + k + ' set'); e.preventDefault(); return; }
   if (!e.ctrlKey && k >= '1' && k <= '5' && !cmdHotkey(k)) {
     if (G.groups[k]) { select(G.groups[k].filter(function (u) { return !u.dead; }), false); focusSelection(); }
@@ -15208,6 +15341,7 @@ function cycleIdle() {
   select([idle[0]], false); focusSelection();
 }
 function cameraScroll(dt) {
+  if (POV.on) return;
   var sp = 520 * dt;
   if (keys.w || keys.arrowup) panCam(0, sp);
   if (keys.s || keys.arrowdown) panCam(0, -sp);
@@ -15500,6 +15634,7 @@ function startGame(side, diff, mode) {
   G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.sel = [];
+  POV.on = false; POV.u = null;
   G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
   G.made = { us: {}, ger: {} };
   var dd = DIFF[diff];
@@ -15592,6 +15727,7 @@ function frame(now) {
   if (shake.t > 0) { shake.t -= dt; if (shake.t <= 0) { shake.t = 0; shake.mag = 0; } }
   if (tipT > 0) { tipT -= dt; if (tipT <= 0) el('tip').classList.remove('on'); }
   if (perf.half) { perf.skip = !perf.skip; }
+  if (POV.on && (!POV.u || POV.u.dead)) povOff();   /* the eyes it was looking through are gone */
   if (ED.on) { edTick(dt); cameraScroll(dt); }
   if ((G.running || G.over) && !perf.skip) render();
   if (ED.on) edOverlay();
@@ -15633,6 +15769,7 @@ el('tIdle').onclick = function () { cycleIdle(); };
 el('tClear').onclick = function () { G.place = null; G.mode = null; select([], false); };
 el('mini').addEventListener('dblclick', function () { el('mini').classList.toggle('big'); });
 el('tMap').onclick = function () { el('mini').classList.toggle('big'); };
+el('tPov').onclick = povToggle;
 el('tPause').onclick = function () {
   G.paused = !G.paused;
   el('pausenote').classList.toggle('hidden', !G.paused);

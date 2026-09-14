@@ -673,6 +673,22 @@ Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone g
 elite infantry inside two hundred of it is a dead gun, which is what the men in front of
 it are for.
 
+**The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
+eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
+`povCamera` builds `MAT` from a yaw and a pitch instead of the orbit camera, so `CAMLIM`
+never sees it and `CAM` is untouched for the return. The direction starts along the unit's
+facing and a drag turns it (`povLook`), with the sign of a turn read off the camera basis
+(`povTurnSign`) rather than assumed, because the world is left-handed and the sign is easy to
+get wrong; a pinch or the wheel narrows the field of view (`povFov`, set by the narrower
+screen axis so a portrait phone still sees sixty degrees across). The renderer draws only
+what the side can see, so the view is honest by construction. In it a finger turns the head
+and nothing else: taps pick nothing and give no orders, the battle runs on, the ear follows
+the eye (`sfx` pans by bearing and fades by range), the minimap draws the eye and its cone,
+the sky's horizon follows the pitch (`povSkyPitch`) and the haze closes in so the far town
+fades. It closes on the button, on V or Escape, and on its own when the unit dies.
+`check.mjs` opens it, turns it and closes it on both devices; `tools/shoot.mjs pov` is the
+look at it.
+
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
 title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
 change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the

@@ -131,6 +131,21 @@ for (const device of TARGETS) {
        hud.small.slice(0, 4).join('; ') || `${hud.controls} controls checked`);
   }
 
+  /* --- the periscope: a look from a unit, turned by a drag, and back --- */
+  const pov = await page.evaluate(() => {
+    const u = window.G.units.find(u => u.side === window.G.side && !u.dead && u.cat !== 'veh') || window.G.units.find(u => u.side === window.G.side && !u.dead);
+    if (!u) return { ok: false };
+    window.select([u], false);
+    document.getElementById('tPov').click();
+    window.updateCamera();
+    const eye = window.povEye(), e = { x: window.MAT.eye.x, y: window.MAT.eye.y, z: window.MAT.eye.z };
+    const yaw0 = window.POV.yaw; window.povLook(120, 0); const yaw1 = window.POV.yaw;
+    return { ok: true, on: window.POV.on, near: Math.hypot(e.x - eye.x, e.y - eye.y) < 1 && Math.abs(e.z - eye.z) < 1, turned: Math.abs(yaw1 - yaw0) > .3, height: +(e.z - window.groundZ(e.x, e.y)).toFixed(1), btn: document.getElementById('tPov').classList.contains('on') };
+  });
+  await frames(page, 2);
+  const povOff = await page.evaluate(() => { document.getElementById('tPov').click(); return !window.POV.on && !document.getElementById('tPov').classList.contains('on'); });
+  ok('periscope looks from the unit, turns with a drag, and closes', pov.ok && pov.on && pov.near && pov.turned && pov.btn && povOff, `eye ${pov.height} above the ground`);
+
   /* --- the minimap and the tactical map --- */
   await page.click('#tMap');
   await frames(page, 1);
