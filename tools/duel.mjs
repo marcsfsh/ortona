@@ -61,6 +61,13 @@ const CARD = [
   ['us_sher', 'ger_stug'],
   ['us_at', 'ger_stug'],
   ['us_ab', 'ger_stug'],
+  /* the eighty-eight, which the Pioneers dig in: AP against what it is for, and HE
+     against men. It fights here in the open, without the ring of bags it is built in,
+     so its crew are worse off than in a battle. */
+  ['ger_flak88', 'us_sher'],
+  ['ger_flak88', 'us_ach'],
+  ['ger_flak88', 'us_rifle', { a: ['he'] }],
+  ['ger_flak88', 'us_ab', { a: ['he'] }],
   /* the Maus against everything that might be asked to stop one */
   ['us_ach', 'ger_maus'],
   ['us_sher', 'ger_maus'],

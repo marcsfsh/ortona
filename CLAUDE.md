@@ -643,6 +643,30 @@ is drawn per piece. The player aims one by pressing where it goes and dragging t
 enemy; the bearing matters because `coverValue` strips two grades off fire that comes in
 along the line of a parapet rather than across it.
 
+**The eighty-eight.** `UNITS.ger_flak88` is the one unit that is never queued: it arrives
+through `WORKS.flak`, a field work the Pioneers build (hotkey 6, 420 marks and 50 fuel,
+forty seconds), and `finishWork` spawns the gun inside the ring of bags facing the way the
+work was aimed, with the crew laid out where a crew stands (`lay` in `finishWork`). It has
+no speed, so `orderRetreat` refuses it, a right-click lays it rather than moving it (the
+`!u.def.speed` clause beside `def.arc` in `issueOrder`), `canGarrison` refuses it, and its
+crew are the only ones that do not walk to cover: the ring is the cover. The mesh is in
+two pieces, `flak36Base` (the cruciform, laid once on `u.baseA`) and `flak36Model` (the
+gun, drawn on `u.facing`), because a Flak 36 traverses on its platform and the platform
+does not turn; `MODELS.gunBase` carries the second buffer and both draw passes and the
+muzzle flash anchor a fixed mount at `u.x/u.y` rather than at the first crewman. Two
+rounds: `def.w` is AP and `def.wUp.he` is HE, `u.up.he` picks, `setRound` costs most of a
+reload to change, and because `mainW` hands back whichever is up, range, target choice,
+the shot and the AI's reading of it all follow the switch with nothing else to tell. The
+cards are J and L; the brain's crews pick AP while armour is in reach and HE otherwise.
+The Canadians have no equivalent, on purpose. `placeWork` now checks a unit-work's
+`limit` (two) and the population cap, which no wall of bags ever needed. The brain digs
+one once the enemy has brought two vehicles or anything medium, out of money the shopping
+list is not waiting on, on the overwatch post the Pak uses. Fought in the open without its
+ring it takes a Sherman eight times in eight at nineteen seconds and an Achilles or a
+Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone gun with
+elite infantry inside two hundred of it is a dead gun, which is what the men in front of
+it are for.
+
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens
 from the title screen, edits `G.mapData`, saves to `localStorage`, imports and
 exports JSON.
