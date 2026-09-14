@@ -132,7 +132,24 @@ const SCENES = {
         }, [hatch, turn, pitch]);
         await shoot(page, out('pov-tank-' + name), { settle: SETTLE });
       }
-      await page.evaluate(() => window.povOff());
+      /* and the gun laid on something, which is what the marks in the view are for */
+      await page.evaluate(() => {
+        const u = window.POV.u;
+        let best = null;
+        for (let a = 0; a < 64 && !best; a++) {
+          const ang = a * Math.PI / 32, q = window.nearestFree(u.x + Math.cos(ang) * 230, u.y + Math.sin(ang) * 230);
+          if (window.fireLine(u, q) && window.dist(u, q) > 150) best = { q, ang };
+        }
+        if (!best) return;
+        const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'ger_p4' : 'us_sher',
+                                   best.q.x, best.q.y, best.ang + Math.PI);
+        window.G.units.push(e);
+        window.povHatch(true); window.POV.yaw = best.ang; window.POV.pitch = -.06;
+        window.DRV.took = 1; window.DRV.padFire = true;
+      });
+      await fastForward(page, 2);
+      await shoot(page, out('pov-tank-lay'), { settle: SETTLE });
+      await page.evaluate(() => { window.DRV.padFire = false; window.povOff(); });
     }
   },
 

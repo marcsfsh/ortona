@@ -118,6 +118,29 @@ button:focus-visible,.card:focus-visible{outline:2px solid var(--ink);outline-of
 .tool.on{border-color:var(--fuel);color:var(--fuel)}
 .tool:active{background:#2b3120}
 
+/* ---------- the commander's controls ---------- */
+#drive{position:absolute;inset:0;z-index:6;pointer-events:none;display:none}
+#drive.on{display:block}
+#drivepad{position:absolute;left:calc(14px + var(--safeL));bottom:120px;width:132px;height:132px;
+  border:1px solid var(--line);border-radius:50%;background:#101408b8;pointer-events:auto;
+  touch-action:none;cursor:pointer}
+#drivepad::before{content:'';position:absolute;left:50%;top:14px;bottom:14px;width:1px;
+  background:rgba(108,120,101,.35)}
+#drivepad::after{content:'';position:absolute;top:50%;left:14px;right:14px;height:1px;
+  background:rgba(108,120,101,.35)}
+#driveknob{position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;
+  border:1px solid var(--line);border-radius:50%;background:#2b3120e6;pointer-events:none;
+  transition:transform .06s linear}
+#drivegear{position:absolute;left:0;right:0;bottom:-17px;text-align:center;font-size:9.5px;
+  letter-spacing:1.5px;color:var(--dim);pointer-events:none}
+#drivefire{position:absolute;right:calc(72px + var(--safeR));bottom:120px;width:98px;height:98px;
+  border:1px solid var(--line);border-radius:50%;background:#241a10d8;color:var(--ink);
+  font-size:12px;letter-spacing:1.8px;pointer-events:auto;touch-action:none;cursor:pointer}
+#drivefire.on{border-color:var(--fuel);color:var(--fuel);background:#3d2713}
+/* in the periscope the army is not his to order, so the buttons that order it go */
+body.pov #tHQ,body.pov #tIdle,body.pov #tClear{display:none}
+body.mob #drivefire{right:calc(12px + var(--safeR))}
+
 /* ---------- tips / toast ---------- */
 #tip{position:absolute;left:50%;top:calc(60px + var(--safeT));transform:translateX(-50%);z-index:7;
   background:#0d0f09ee;border:1px solid var(--line);padding:7px 16px;font-size:13px;
@@ -538,6 +561,10 @@ body.mob #mini{width:104px;height:72px}
   <button class="tool" id="tPov" title="Look from the selected unit (V)">◉<br>LOOK</button>
   <button class="tool hidden" id="tHatch" title="Open or shut the commander's hatch">▲<br>OPEN</button>
   <button class="tool" id="tPause" title="Pause battle (P)">Ⅱ</button>
+</div>
+<div id="drive">
+  <div id="drivepad"><i id="driveknob"></i><b id="drivegear">HALT</b></div>
+  <button id="drivefire">FIRE</button>
 </div>
 
 <div id="bar" class="hidden">
@@ -4179,8 +4206,14 @@ function updateUnit(u, dt) {
     } else u.reinf = 0;
   }
 
+  /* the player in the periscope is this vehicle's commander once he has touched a
+     control: his orders come first and nothing acquires a target for him */
+  u.manual = u === drivenUnit() && DRV.took ? 1 : 0;
+  if (u.manual) povDrive(u, dt);
+
   /* targeting */
   if (u.retreat) u.target = null;
+  else if (u.manual) u.target = DRV.fire && DRV.lock && !DRV.lock.dead ? DRV.lock : null;
   else {
     u.aim -= dt;
     if (u.aim <= 0 || !u.target || u.target.dead) { u.target = acquire(u); u.aim = .35; }
@@ -4224,7 +4257,7 @@ function updateUnit(u, dt) {
     }
     /* an assault gun has no turret: it pivots on its tracks to bring the target inside
        the few degrees either side of the barrel the gun itself can traverse */
-    else if (!u.moving && u.cat === 'veh' && u.def.arc && !(u.immob > 0)) {
+    else if (!u.moving && u.cat === 'veh' && u.def.arc && !(u.immob > 0) && !u.manual) {
       var pv = .95 * (u.shaken > 0 ? .6 : 1) * dt;
       u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -pv, pv);
     }
@@ -4233,13 +4266,13 @@ function updateUnit(u, dt) {
        nearly twice the side and three times the rear. A crew that has halted to fight
        something does not sit with its flank to it, and a tank that did was a tank the
        player lost to a gun it was already shooting at. */
-    else if (!u.moving && u.cat === 'veh' && !u.def.arc && !(u.immob > 0) && (u.sp || 0) < 2) {
+    else if (!u.moving && u.cat === 'veh' && !u.def.arc && !(u.immob > 0) && (u.sp || 0) < 2 && !u.manual) {
       var pv2 = .5 * (u.shaken > 0 ? .6 : 1) * dt;
       u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -pv2, pv2);
     }
-    if (u.cat === 'veh') u.want = angTo(u, u.target);
+    if (u.cat === 'veh') u.want = u.manual ? POV.yaw : angTo(u, u.target);
   } else if (u.cat === 'veh') {
-    u.want = u.facing;
+    u.want = u.manual ? POV.yaw : u.facing;
   } else if (!u.moving && !u.retreat && !u.gar && !u.def.arc && u.threatAng !== undefined && u.threatAng !== null) {
     /* Nothing to shoot at, but something known to be out there: a halted section turns
        to face it rather than standing the way it happened to arrive, and a machine gun
@@ -7325,9 +7358,21 @@ function povOn(u) {
   povHatch(host.cat !== 'veh' || !povClosed() || !buttonedUp(host));
   var b = el('tPov'); if (b) b.classList.add('on');
   var hb = el('tHatch'); if (hb) hb.classList.toggle('hidden', !povClosed());
+  DRV.took = 0; DRV.padFire = false; povPadOff();
+  document.body.classList.add('pov');
+  if (MOB && host.cat === 'veh' && host.side === G.side) toast('Pad drives  ·  FIRE shoots  ·  drag to look');
+  var dv = el('drive'); if (dv) dv.classList.toggle('on', !!drivenUnit());
+  povDriveLayout();
   return true;
 }
 function povOff() {
+  /* the driver stops when the commander leaves the seat */
+  var h = povHost();
+  if (h && h.cat === 'veh') { h.path = null; h.manual = 0; }
+  DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.padFire = false; DRV.took = 0;
+  DRV.lock = null; povPadOff();
+  var dv = el('drive'); if (dv) dv.classList.remove('on');
+  document.body.classList.remove('pov');
   POV.on = false; POV.u = null; POV.drag = null; POV.pinch = 0;
   var b = el('tPov'); if (b) b.classList.remove('on');
   var hb = el('tHatch'); if (hb) hb.classList.add('hidden');
@@ -7357,6 +7402,116 @@ function povFov() {
   var aspect = VIEW.w / VIEW.h, hi = povClosed() && !POV.hatch ? 1.3 : 1.6;
   return clamp(2 * Math.atan(Math.tan(.56) / aspect), 1.08, hi) / POV.zoom;
 }
+/* ---- the commander's tank ---------------------------------------------------------
+   In the periscope of one of his own vehicles the player is its commander, and a
+   commander's job is the driver and the gunner. `DRV` is what he is asking for this
+   frame: a throttle, a steer, and whether the gun is to go off.
+
+   None of the driving is written twice. The steer turns the hull; the throttle puts a
+   waypoint a tank's length ahead of it and finds it again every tick, so `moveUnit`
+   does the rest and the weight, the gearing, the slope, the metalled road, the walls
+   and the track marks are the ones the whole army drives on. Astern puts the waypoint a
+   short way behind instead, which is the distance the driver already reads as an
+   instruction to back up rather than to turn round in a street the width of the tank.
+
+   The gun follows his eye: `u.want` is the look bearing rather than a target's, so the
+   turret traverses at its own rate and a Tiger II still costs twenty seconds to come
+   round. FIRE lays it on whatever is under the crosshair, and while he is in the seat
+   nothing acquires for him -- he is the crew now.
+
+   He takes over on the first control he touches (`DRV.took`) and not on opening the
+   periscope, or a look out of a tank that was going somewhere would stop it dead. */
+var DRV = { thr: 0, steer: 0, fire: false, padT: 0, padS: 0, padFire: false,
+            padOn: false, padId: 0, took: 0, lock: null };
+var UPM = 11.7;                                     /* units to the metre, as tools/dims.mjs has it */
+function drivenUnit() {
+  var h = povHost();
+  return POV.on && h && !h.dead && h.cat === 'veh' && h.side === G.side && !h.towedBy ? h : null;
+}
+/* what the gun would be laid on: an enemy the side can see, inside the weapon's reach
+   and within a hand's breadth of the middle of the view, the one nearest the crosshair */
+function povTarget(u) {
+  var best = null, bs = 1e9;
+  for (var i = 0; i < G.units.length; i++) {
+    var e = G.units[i];
+    if (e.dead || e.side === u.side || e.inside) continue;
+    if (!visibleTo(u.side, e)) continue;
+    var w = weaponFor(u, e), d = dist(u, e);
+    if (d > w.range * 1.04) continue;
+    var off = Math.abs(angDiff(POV.yaw, angTo(u, e)));
+    if (off > .26) continue;
+    var s = off * 1200 + d * .3;
+    if (s < bs) { bs = s; best = e; }
+  }
+  return best;
+}
+/* the controls, read once a frame: the thumb pad, and the keys under the other hand */
+function povControls() {
+  var u = drivenUnit();
+  if (!u) { DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.lock = null; return; }
+  var t = DRV.padT, s = DRV.padS;
+  if (keys['w'] || keys['arrowup']) t = 1;
+  else if (keys['s'] || keys['arrowdown']) t = -1;
+  if (keys['a'] || keys['arrowleft']) s = -1;
+  else if (keys['d'] || keys['arrowright']) s = 1;
+  DRV.thr = clamp(t, -1, 1); DRV.steer = clamp(s, -1, 1);
+  DRV.fire = DRV.padFire || !!keys[' '];
+  if (!DRV.took && (DRV.thr || DRV.steer || DRV.fire)) {
+    DRV.took = 1;
+    toast(u.def.name + ': the driver and the gun are yours');
+  }
+  var g = el('drivegear');
+  if (g) g.textContent = DRV.thr > .05 ? 'AHEAD' : DRV.thr < -.05 ? 'ASTERN' : 'HALT';
+  var fb = el('drivefire'); if (fb) fb.classList.toggle('on', DRV.fire);
+}
+/* his orders, put on the vehicle itself before it moves */
+function povDrive(u, dt) {
+  u.order = null; u.dest = null; u.forced = null; u.retreat = false;
+  u.building = null; u.repairing = null; u.enterT = null; u.boardT = null; u.hitchT = null;
+  var turn = (u.def.hp > 1000 ? .70 : u.def.hp > 500 ? .95 : 1.35) * (u.shaken > 0 ? .7 : 1);
+  if (u.immob > 0 || u.sup > 1.0) turn = 0;
+  /* it turns on its tracks standing still and wants a wider one at speed */
+  turn *= 1 - .45 * clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1);
+  if (DRV.steer) u.facing += DRV.steer * turn * dt;
+  if (DRV.thr > .05) {
+    u.path = [{ x: u.x + Math.cos(u.facing) * 320, y: u.y + Math.sin(u.facing) * 320 }];
+    u.pi = 0; u.pathStamp = gridStamp;
+  } else if (DRV.thr < -.05) {
+    u.path = [{ x: u.x - Math.cos(u.facing) * 120, y: u.y - Math.sin(u.facing) * 120 }];
+    u.pi = 0; u.pathStamp = gridStamp;
+  } else u.path = null;
+  DRV.lock = povTarget(u);
+}
+/* the pad sits clear of the bottom bar, and on a phone the fire button clears the
+   little map in the corner as well */
+function povDriveLayout() {
+  var d = el('drive'); if (!d) return;
+  var barH = (el('bar') && el('bar').offsetHeight) || 0, fire = el('drivefire');
+  el('drivepad').style.bottom = (barH + 24) + 'px';
+  if (!MOB) { fire.style.top = 'auto'; fire.style.bottom = (barH + 24) + 'px'; return; }
+  /* between the bottom of the tool strip and the top of the little map, which is the
+     only band of a phone's right-hand edge that is not already spoken for */
+  var tb = el('tools') ? el('tools').getBoundingClientRect().bottom : 0;
+  var mr = el('mini') ? el('mini').getBoundingClientRect() : null;
+  var lo = (mr && mr.width ? mr.top : window.innerHeight - barH) - 12, hi = tb + 12;
+  var h = fire.offsetHeight || 98;
+  fire.style.bottom = 'auto';
+  fire.style.top = clamp((hi + lo) / 2 - h / 2, hi, Math.max(hi, lo - h)) + 'px';
+}
+function povKnob(dx, dy) {
+  var k = el('driveknob'); if (k) k.style.transform = 'translate(' + (dx * 34) + 'px,' + (dy * 34) + 'px)';
+}
+function povPadAt(e) {
+  var r = el('drivepad').getBoundingClientRect();
+  var dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
+  var dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
+  var m = Math.hypot(dx, dy);
+  if (m > 1) { dx /= m; dy /= m; }
+  DRV.padS = Math.abs(dx) < .22 ? 0 : dx;
+  DRV.padT = Math.abs(dy) < .22 ? 0 : -dy;
+  povKnob(dx, dy);
+}
+function povPadOff() { DRV.padOn = false; DRV.padT = 0; DRV.padS = 0; povKnob(0, 0); }
 function povSkyPitch() {
   var hy = clamp(-Math.tan(POV.pitch) / Math.tan(povFov() / 2), -1, 1);
   return -(1 + hy) / .6;
@@ -7385,6 +7540,13 @@ function drawPovFrame() {
   ctx.strokeStyle = 'rgba(230,224,200,.55)'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(W / 2 - 14, H / 2); ctx.lineTo(W / 2 - 4, H / 2); ctx.moveTo(W / 2 + 4, H / 2); ctx.lineTo(W / 2 + 14, H / 2);
   ctx.moveTo(W / 2, H / 2 - 14); ctx.lineTo(W / 2, H / 2 - 4); ctx.moveTo(W / 2, H / 2 + 4); ctx.lineTo(W / 2, H / 2 + 14); ctx.stroke();
+  var dv = drivenUnit();
+  if (dv && DRV.lock && !DRV.lock.dead) drawPovMark(dv, DRV.lock);
+  else if (dv && DRV.fire) {
+    ctx.textAlign = 'center'; ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = '#b9b3a0';
+    ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+    ctx.fillText('NO TARGET', W / 2, H / 2 + 34); ctx.shadowBlur = 0; ctx.textAlign = 'left';
+  }
   var barH = el('bar').offsetHeight || 0, y = H - barH - (MOB ? 26 : 30);
   /* on a phone the little map sits in the corner of the view; the caption keeps clear of it */
   var mr = el('mini').getBoundingClientRect(); if (mr.width && mr.top < y + 8 && mr.top > H * .45) y = mr.top - 14;
@@ -7394,9 +7556,37 @@ function drawPovFrame() {
   ctx.fillText((host.def ? host.def.name : 'Unit') + (POV.zoom > 1.05 ? '  ·  x' + POV.zoom.toFixed(1) : ''), W / 2, y - 18);
   ctx.fillStyle = '#b9b3a0'; ctx.font = '11px system-ui, sans-serif';
   var hatchHint = povClosed() ? (POV.hatch ? 'SHUT to button up  ·  ' : 'OPEN to look out  ·  ') : '';
-  ctx.fillText(MOB ? (hatchHint ? 'Drag to look  ·  ' + hatchHint + 'tap the camera to return' : 'Drag to look  ·  pinch to zoom  ·  tap the camera to return')
-                   : 'Drag to look  ·  wheel to zoom  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
+  if (dv && MOB) { /* the pad and the button are the caption */ }
+  else if (dv) ctx.fillText('W S drive  ·  A D steer  ·  Space fires  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
+  else ctx.fillText(MOB ? (hatchHint ? 'Drag to look  ·  ' + hatchHint + 'tap the camera to return' : 'Drag to look  ·  pinch to zoom  ·  tap the camera to return')
+                        : 'Drag to look  ·  wheel to zoom  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
   ctx.shadowBlur = 0; ctx.textAlign = 'left';
+}
+/* the mark on what the gun is laid on. The state under it is the honest one: the round
+   is not away until the turret has come round, the breech is loaded and the gun is
+   whole, and a commander who cannot see which of the three he is waiting on will swear
+   the tank is broken. */
+function drawPovMark(u, t) {
+  var p = w2s(t.x, t.y, groundZ(t.x, t.y) + (t.cat === 'veh' ? 20 : 13));
+  if (p.behind || p.x < -80 || p.x > VIEW.w + 80) return;
+  var r = t.cat === 'veh' ? 26 : 18, i, c;
+  var off = Math.abs(angDiff(u.turret, angTo(u, t))), d = dist(u, t);
+  var ready = u.gunDmg > 0 ? 'GUN OUT' : u.cd > 0 ? 'LOADING' : off > (u.moving ? .16 : .09) ? 'TRAVERSING' : 'READY';
+  var hot = ready === 'READY';
+  ctx.strokeStyle = hot ? '#d9a441' : 'rgba(230,224,200,.6)'; ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  for (i = 0; i < 4; i++) {
+    c = [[-1, -1], [1, -1], [1, 1], [-1, 1]][i];
+    ctx.moveTo(p.x + c[0] * r, p.y + c[1] * r - c[1] * 8);
+    ctx.lineTo(p.x + c[0] * r, p.y + c[1] * r);
+    ctx.lineTo(p.x + c[0] * r - c[0] * 8, p.y + c[1] * r);
+  }
+  ctx.stroke();
+  ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+  ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = hot ? '#d9a441' : '#cfcab4';
+  ctx.fillText((t.def ? t.def.name : 'Target') + '  ·  ' + Math.round(d / UPM) + ' m', p.x, p.y - r - 8);
+  ctx.fillText(ready, p.x, p.y + r + 15);
+  ctx.shadowBlur = 0;
 }
 /* world point (on the ground unless z given) to overlay pixels; null if behind the camera */
 function w2s(x, y, z) {
@@ -15834,6 +16024,15 @@ window.addEventListener('keydown', function (e) {
   keys[k] = true;
   if (k === 'v') { povToggle(); return; }
   if (k === 'escape' && POV.on) { povOff(); return; }
+  /* in the periscope the keys belong to the driver and the gunner; the rest of the army
+     is not his to order while he is sitting in a tank. Pause still is. */
+  if (POV.on) {
+    if (k === 'h') { if (povClosed()) povHatch(!POV.hatch); return; }
+    if (k !== 'p') {
+      if (k === ' ' || k === 'w' || k === 'a' || k === 's' || k === 'd' || k.indexOf('arrow') === 0) e.preventDefault();
+      return;
+    }
+  }
   if (e.ctrlKey && k >= '1' && k <= '5') { G.groups[k] = selectedUnits().slice(); toast('Group ' + k + ' set'); e.preventDefault(); return; }
   if (!e.ctrlKey && k >= '1' && k <= '5' && !cmdHotkey(k)) {
     if (G.groups[k]) { select(G.groups[k].filter(function (u) { return !u.dead; }), false); focusSelection(); }
@@ -16190,7 +16389,9 @@ function startGame(side, diff, mode) {
   G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.sel = [];
-  POV.on = false; POV.u = null;
+  POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false;
+  if (el('drive')) el('drive').classList.remove('on');
+  document.body.classList.remove('pov');
   G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
   G.made = { us: {}, ger: {} };
   var dd = DIFF[diff];
@@ -16264,6 +16465,7 @@ function frame(now) {
   }
   var dt = Math.min(.05, (now - last) / 1000); last = now;
   AU.budget = 7;
+  if (POV.on) povControls();
   if (G.running && !G.paused) {
     G.t += dt;
     computeVisibility(dt);
@@ -16327,6 +16529,25 @@ el('mini').addEventListener('dblclick', function () { el('mini').classList.toggl
 el('tMap').onclick = function () { el('mini').classList.toggle('big'); };
 el('tPov').onclick = povToggle;
 el('tHatch').onclick = function () { if (POV.on) povHatch(!POV.hatch); };
+el('drivepad').addEventListener('pointerdown', function (e) {
+  DRV.padOn = true; DRV.padId = e.pointerId;
+  if (el('drivepad').setPointerCapture) el('drivepad').setPointerCapture(e.pointerId);
+  povPadAt(e); e.preventDefault();
+});
+el('drivepad').addEventListener('pointermove', function (e) {
+  if (DRV.padOn && DRV.padId === e.pointerId) { povPadAt(e); e.preventDefault(); }
+});
+['pointerup', 'pointercancel'].forEach(function (ev) {
+  el('drivepad').addEventListener(ev, function (e) { if (DRV.padId === e.pointerId) povPadOff(); });
+});
+el('drivefire').addEventListener('pointerdown', function (e) {
+  DRV.padFire = true;
+  if (el('drivefire').setPointerCapture) el('drivefire').setPointerCapture(e.pointerId);
+  e.preventDefault();
+});
+['pointerup', 'pointercancel'].forEach(function (ev) {
+  el('drivefire').addEventListener(ev, function () { DRV.padFire = false; });
+});
 el('tPause').onclick = function () {
   G.paused = !G.paused;
   el('pausenote').classList.toggle('hidden', !G.paused);
@@ -16344,6 +16565,7 @@ window.addEventListener('resize', function () {
   var m = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth < 820;
   if (m !== MOB) { MOB = m; document.body.classList.toggle('mob', MOB); el('tools').classList.toggle('hidden', !G.running); }
   resize();
+  if (POV.on) povDriveLayout();
 });
 window.addEventListener('orientationchange', function () {
   setTimeout(resize, 120); setTimeout(resize, 420);

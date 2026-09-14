@@ -739,6 +739,40 @@ into his turret, and the periscope's vignette lifts inside a room that is alread
 `check.mjs` spawns a tank and asserts the eye drops when the lid shuts; the `pov` scene
 photographs the hatch up, the window, the turret and the crew.
 
+**And he commands it.** In the periscope of one of his own vehicles the player is its
+commander, so the driver and the gunner are his. `DRV` is what he is asking for this
+frame: a throttle, a steer and whether the gun is to go off. He takes over on the first
+control he touches (`DRV.took`) rather than on opening the periscope, or a look out of a
+tank that was going somewhere would stop it dead.
+
+**None of the driving is written twice**, which is the only reason it is worth having.
+The steer turns the hull; the throttle puts a waypoint a tank's length ahead of it and
+finds it again every tick, so `moveUnit` does the rest and the weight, the gearing, the
+slope, the metalled road, the walls, the separation and the track marks are the ones the
+whole army drives on. Astern puts the waypoint a short way behind instead, because 120
+units is the distance the driver already reads as an instruction to back up rather than
+to turn round in a street the width of the tank. A parallel integrator would have been
+a second set of rules to keep in step with the first, and it would have drifted.
+
+The gun follows his eye: `u.want` is the look bearing rather than a target's, so the
+turret traverses at its own rate and a Tiger II still costs twenty seconds to come
+round. FIRE lays it on whatever `povTarget` finds under the crosshair -- an enemy the
+side can see, inside the weapon's reach, within a hand's breadth of the middle of the
+view -- and `fireAt` then refuses it for all the usual reasons, so the mark carries the
+one that applies: TRAVERSING, LOADING, GUN OUT or READY. A commander who cannot see
+which of the four he is waiting on will swear the tank is broken. While he has it
+nothing acquires for him (`u.manual` skips `acquire` and the hull's turn-to-target),
+because he is the crew now.
+
+The controls are a thumb pad and a fire button (`#drive`), pointer-handled so a finger
+and a mouse take the same path, and on a desktop W S drive, A D steer and space fires.
+They are not laid out in CSS alone: a phone's right-hand edge already carries the tool
+strip at the top and the little map at the bottom, so `povDriveLayout` measures the band
+between them and puts the button in it, and `body.pov` takes away the three buttons that
+order the rest of the army, which is not his to order while he is sitting in a tank.
+`check.mjs` drives the tank three seconds under the pad and asserts it moved, turned and
+then stopped.
+
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
 title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
 change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the

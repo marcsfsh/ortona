@@ -150,7 +150,9 @@ for (const device of TARGETS) {
   const tank = await page.evaluate(() => {
     const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
-    const u = window.spawnUnit(window.G.side, key, (hq ? hq.x : 300) + 90, (hq ? hq.y : 950) + 60, 0);
+    /* on ground it can actually drive off, or the driving check below measures a wall */
+    const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
+    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);
     window.G.units.push(u); window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
@@ -163,7 +165,34 @@ for (const device of TARGETS) {
   await frames(page, 2);
   await page.evaluate(() => { window.povHatch(true); });
   await frames(page, 2);
-  const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden'); });
+
+  /* --- and he drives it: the pad turns the hull, moves it, and stops it --- */
+  const drv0 = await page.evaluate(() => {
+    const u = window.POV.u, pad = document.getElementById('drivepad'), fire = document.getElementById('drivefire');
+    const pr = pad.getBoundingClientRect(), fr = fire.getBoundingClientRect();
+    return { shown: document.getElementById('drive').classList.contains('on'),
+             padOk: pr.width >= 44 && pr.height >= 44, fireOk: fr.width >= 44 && fr.height >= 44,
+             clear: fr.right <= window.innerWidth + 1 && fr.top >= 0 && pr.bottom <= window.innerHeight + 1,
+             x: u.x, y: u.y, facing: u.facing };
+  });
+  await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = .8; });
+  await fastForward(page, 3);
+  const drv2 = await page.evaluate(([x, y, f]) => {
+    const u = window.POV.u;
+    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), turned: +Math.abs(u.facing - f).toFixed(2),
+             took: window.DRV.took, x: u.x, y: u.y };
+  }, [drv0.x, drv0.y, drv0.facing]);
+  await page.evaluate(() => { window.DRV.padT = 0; window.DRV.padS = 0; });
+  await fastForward(page, 3);
+  const drv3 = await page.evaluate(([x, y]) => {
+    const u = window.POV.u;
+    return { crept: +Math.hypot(u.x - x, u.y - y).toFixed(1), sp: +(u.sp || 0).toFixed(1) };
+  }, [drv2.x, drv2.y]);
+  ok('the commander drives his tank from the periscope',
+     drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 30 && drv2.turned > .2 && drv2.took === 1 && drv3.sp < 1,
+     `moved ${drv2.moved} and turned ${drv2.turned} rad under the pad, then stopped`);
+
+  const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
   ok('periscope sits in the tank commander\'s cupola, lid up or shut', tank.closed && tank.hatchShown && tank.pieces > 100 && tank.dropped > 3 && tank.above > 20 && tankOff, `${tank.key}: ${tank.pieces} inside triangles, the eye drops ${tank.dropped} when the lid shuts`);
 
   /* --- the minimap and the tactical map --- */
