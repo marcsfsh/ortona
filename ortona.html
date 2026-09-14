@@ -4281,6 +4281,11 @@ function updateUnit(u, dt) {
     var fw = u.threatAng + Math.PI, fr2 = (u.cat === 'team' ? .85 : 4) * dt;
     u.facing += clamp(angDiff(u.facing, fw), -fr2, fr2);
   }
+  /* nothing under the crosshair worth laying on, so the round goes where he is
+     pointing: into the house, or into the street in front of it. fireAt takes a bare
+     point as well as a unit, and with nothing aimed at, nothing is hit directly and
+     what lands is the burst. */
+  if (u.manual && DRV.fire && !u.target && DRV.mark) fireAt(u, DRV.mark, dt);
   updateModels(u, dt);
 }
 
@@ -7422,7 +7427,7 @@ function povFov() {
    He takes over on the first control he touches (`DRV.took`) and not on opening the
    periscope, or a look out of a tank that was going somewhere would stop it dead. */
 var DRV = { thr: 0, steer: 0, fire: false, padT: 0, padS: 0, padFire: false,
-            padOn: false, padId: 0, took: 0, lock: null };
+            padOn: false, padId: 0, took: 0, lock: null, mark: null, pt: { x: 0, y: 0 } };
 var UPM = 11.7;                                     /* units to the metre, as tools/dims.mjs has it */
 function drivenUnit() {
   var h = povHost();
@@ -7445,10 +7450,32 @@ function povTarget(u) {
   }
   return best;
 }
+/* Where he is pointing when nothing is worth locking on to: the line out of his eye
+   walked until it meets a wall or the ground, and the gunner puts the round there. The
+   blocker grid answers the wall question in one lookup a step; only when it says there
+   is something does the block itself get looked up, for its height, so a round can go
+   over a garden wall and into the house behind it. */
+function povGround(u) {
+  var e = povEye(), cp = Math.cos(POV.pitch), step = 12;
+  var dx = Math.cos(POV.yaw) * cp * step, dy = Math.sin(POV.yaw) * cp * step, dz = Math.sin(POV.pitch) * step;
+  var reach = mainW(u).range, x = e.x, y = e.y, z = e.z, s;
+  for (s = step; s <= reach; s += step) {
+    x += dx; y += dy; z += dz;
+    if (x < 20 || y < 20 || x > WORLD.w - 20 || y > WORLD.h - 20) return null;
+    var g = groundZ(x, y);
+    if (z <= g) { DRV.pt.x = x; DRV.pt.y = y; return DRV.pt; }
+    var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+    if (fblk[cidx(cx, cy)]) {
+      var b = blockAt(x, y), top = g + (b ? (b.tall ? 96 : 62) : 16);
+      if (z < top) { DRV.pt.x = x; DRV.pt.y = y; return DRV.pt; }
+    }
+  }
+  return null;
+}
 /* the controls, read once a frame: the thumb pad, and the keys under the other hand */
 function povControls() {
   var u = drivenUnit();
-  if (!u) { DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.lock = null; return; }
+  if (!u) { DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.lock = null; DRV.mark = null; return; }
   var t = DRV.padT, s = DRV.padS;
   if (keys['w'] || keys['arrowup']) t = 1;
   else if (keys['s'] || keys['arrowdown']) t = -1;
@@ -7481,6 +7508,7 @@ function povDrive(u, dt) {
     u.pi = 0; u.pathStamp = gridStamp;
   } else u.path = null;
   DRV.lock = povTarget(u);
+  DRV.mark = DRV.lock ? null : povGround(u);
 }
 /* the pad sits clear of the bottom bar, and on a phone the fire button clears the
    little map in the corner as well */
@@ -7542,11 +7570,7 @@ function drawPovFrame() {
   ctx.moveTo(W / 2, H / 2 - 14); ctx.lineTo(W / 2, H / 2 - 4); ctx.moveTo(W / 2, H / 2 + 4); ctx.lineTo(W / 2, H / 2 + 14); ctx.stroke();
   var dv = drivenUnit();
   if (dv && DRV.lock && !DRV.lock.dead) drawPovMark(dv, DRV.lock);
-  else if (dv && DRV.fire) {
-    ctx.textAlign = 'center'; ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = '#b9b3a0';
-    ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
-    ctx.fillText('NO TARGET', W / 2, H / 2 + 34); ctx.shadowBlur = 0; ctx.textAlign = 'left';
-  }
+  else if (dv && DRV.mark) drawPovImpact(dv, DRV.mark);
   var barH = el('bar').offsetHeight || 0, y = H - barH - (MOB ? 26 : 30);
   /* on a phone the little map sits in the corner of the view; the caption keeps clear of it */
   var mr = el('mini').getBoundingClientRect(); if (mr.width && mr.top < y + 8 && mr.top > H * .45) y = mr.top - 14;
@@ -7566,12 +7590,37 @@ function drawPovFrame() {
    is not away until the turret has come round, the breech is loaded and the gun is
    whole, and a commander who cannot see which of the three he is waiting on will swear
    the tank is broken. */
+/* where the round would land with nothing to lock on to: the ring the burst would
+   make, so a commander can walk his fire onto a window rather than guess */
+function drawPovImpact(u, m) {
+  var p = w2s(m.x, m.y, groundZ(m.x, m.y) + 2);
+  if (p.behind || p.x < -80 || p.x > VIEW.w + 80) return;
+  var d = dist(u, m), w = mainW(u), ready = gunReady(u, m), hot = ready === 'READY';
+  /* the burst drawn at its own size: the far edge of it projected rather than guessed */
+  var q = w2s(m.x + (w.aoe || 20), m.y, groundZ(m.x, m.y) + 2);
+  var r = clamp(Math.abs(q.x - p.x), 6, 110);
+  ctx.strokeStyle = hot ? 'rgba(217,164,65,.9)' : 'rgba(230,224,200,.55)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(p.x, p.y, r, r * .42, 0, 0, TAU); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(p.x - 5, p.y); ctx.lineTo(p.x + 5, p.y);
+  ctx.moveTo(p.x, p.y - 4); ctx.lineTo(p.x, p.y + 4); ctx.stroke();
+  ctx.textAlign = 'center'; ctx.shadowColor = '#000'; ctx.shadowBlur = 4;
+  ctx.font = '11px system-ui, sans-serif'; ctx.fillStyle = hot ? '#d9a441' : '#cfcab4';
+  ctx.fillText(Math.round(d / UPM) + ' m  ·  ' + ready, p.x, p.y - r * .42 - 8);
+  ctx.shadowBlur = 0; ctx.textAlign = 'left';
+}
+/* the one thing the gunner is waiting on, of the several he might be */
+function gunReady(u, t) {
+  if (u.gunDmg > 0) return 'GUN OUT';
+  if (u.cd > 0) return 'LOADING';
+  if (Math.abs(angDiff(u.turret, angTo(u, t))) > (u.moving ? .16 : .09)) return 'TRAVERSING';
+  if (dist(u, t) > mainW(u).range) return 'OUT OF RANGE';
+  return 'READY';
+}
 function drawPovMark(u, t) {
   var p = w2s(t.x, t.y, groundZ(t.x, t.y) + (t.cat === 'veh' ? 20 : 13));
   if (p.behind || p.x < -80 || p.x > VIEW.w + 80) return;
   var r = t.cat === 'veh' ? 26 : 18, i, c;
-  var off = Math.abs(angDiff(u.turret, angTo(u, t))), d = dist(u, t);
-  var ready = u.gunDmg > 0 ? 'GUN OUT' : u.cd > 0 ? 'LOADING' : off > (u.moving ? .16 : .09) ? 'TRAVERSING' : 'READY';
+  var d = dist(u, t), ready = gunReady(u, t);
   var hot = ready === 'READY';
   ctx.strokeStyle = hot ? '#d9a441' : 'rgba(230,224,200,.6)'; ctx.lineWidth = 1.4;
   ctx.beginPath();

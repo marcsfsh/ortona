@@ -152,8 +152,8 @@ for (const device of TARGETS) {
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
     /* on ground it can actually drive off, or the driving check below measures a wall */
     const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
-    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);
-    window.G.units.push(u); window.select([u], false);
+    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);   /* spawnUnit adds it to the field itself */
+    window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
     const out = { key, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
@@ -188,6 +188,23 @@ for (const device of TARGETS) {
     const u = window.POV.u;
     return { crept: +Math.hypot(u.x - x, u.y - y).toFixed(1), sp: +(u.sp || 0).toFixed(1) };
   }, [drv2.x, drv2.y]);
+  /* --- and he shoots with it: a round goes where he points, target or no target --- */
+  const shot = await page.evaluate(() => {
+    const u = window.POV.u;
+    window.__booms = 0;
+    const ex = window.explode;
+    window.explode = function (x, y, r, d, o, e) { window.__booms++; return ex(x, y, r, d, o, e); };
+    window.POV.yaw = u.facing; window.POV.pitch = -.22;
+    window.DRV.padFire = true;
+    return true;
+  });
+  await fastForward(page, 1);
+  const aim = await page.evaluate(() => ({ mark: !!window.DRV.mark, ready: window.DRV.mark ? window.gunReady(window.POV.u, window.DRV.mark) : null }));
+  await fastForward(page, 9);
+  const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
+  ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
+     `${fired} rounds into the street in nine seconds`);
+
   ok('the commander drives his tank from the periscope',
      drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 30 && drv2.turned > .2 && drv2.took === 1 && drv3.sp < 1,
      `moved ${drv2.moved} and turned ${drv2.turned} rad under the pad, then stopped`);

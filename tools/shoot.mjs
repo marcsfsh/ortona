@@ -120,7 +120,7 @@ const SCENES = {
       await page.evaluate(() => {
         const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
         const u = window.spawnUnit(window.G.side, key, window.WORLD.w / 2 - 220, window.WORLD.h / 2, 0);
-        window.G.units.push(u); window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
+        window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
       });
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });
       for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
@@ -143,7 +143,6 @@ const SCENES = {
         if (!best) return;
         const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'ger_p4' : 'us_sher',
                                    best.q.x, best.q.y, best.ang + Math.PI);
-        window.G.units.push(e);
         window.povHatch(true); window.POV.yaw = best.ang; window.POV.pitch = -.06;
         window.DRV.took = 1; window.DRV.padFire = true;
       });

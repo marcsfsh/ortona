@@ -764,6 +764,17 @@ which of the four he is waiting on will swear the tank is broken. While he has i
 nothing acquires for him (`u.manual` skips `acquire` and the hull's turn-to-target),
 because he is the crew now.
 
+**The trigger is not a lock.** With nothing worth laying on, `povGround` walks the line
+out of his eye until it meets a wall or the ground and the round goes there: `fireAt`
+takes a bare point as happily as a unit, and with nothing aimed at, nothing is hit
+directly and what lands is the burst. That is how you put HE through a window, and it is
+most of what a tank in a town is for. The blocker grid answers the wall question in one
+lookup a step and the block itself is only looked up for its height when the grid says
+there is something, so a round goes over a garden wall and into the house behind it. The
+mark on the ground is the burst drawn at its own size, with the far edge projected rather
+than guessed. Houses are scenery and have no hit points, but the men in them have: a
+round on the wall reaches the garrison standing along the inside of it.
+
 The controls are a thumb pad and a fire button (`#drive`), pointer-handled so a finger
 and a mouse take the same path, and on a desktop W S drive, A D steer and space fires.
 They are not laid out in CSS alone: a phone's right-hand edge already carries the tool
@@ -970,3 +981,8 @@ shots/                         screenshot output, gitignored
   the failure and sets `AU.on = false`, so silence is not necessarily a bug.
 - Terrain noise is seeded (`_s = 20240606`), so the map is identical every run.
   Combat uses `Math.random()` and is not reproducible.
+- `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
+  into `G.units` as well has it in the list twice, and a unit in the list twice is
+  updated twice a frame: it drives at double speed and its gun fires at twice its rate of
+  fire. That is exactly how a Sherman came back off the rate probe at 1.7 seconds a round
+  against a paper 3.3, with nothing wrong in the game at all.
