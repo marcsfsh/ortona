@@ -2581,6 +2581,10 @@ function findPath(sx, sy, tx, ty, u) {
       var ng = _g[cur] + (dx && dy ? 1.414 : 1) * cellCost(ni, kind);
       if (ng < _g[ni]) {
         _g[ni] = ng; _from[ni] = cur;
+        /* the heuristic is weighted a twentieth over the straight-line distance on
+           purpose: it is not admissible at that weight and the route can in principle be
+           a shade dearer than the best one, which measured out at nothing worth having,
+           and it is a good deal less of the map searched */
         var h = Math.hypot(tcx - nx2, tcy - ny2);
         _f[ni] = ng + h * 1.05;
         if (h < nearH) { nearH = h; near = ni; }
@@ -3317,7 +3321,13 @@ function coverSlots(u, c, threatAng) {
   if (c.axis !== null) {
     var ax = Math.cos(c.axis), ay = Math.sin(c.axis), nx = -ay, ny = ax;
     var side = Math.sign(Math.cos(awayAng) * nx + Math.sin(awayAng) * ny) || 1;
-    var stand = c.kind === 'trench' ? -2.5 : c.kind === 'wall' ? 9 : c.kind === 'bags' ? 5.5 : 4.5;
+    /* How far off the piece's own line a man stands, which has to clear the thing he is
+       standing behind. A field wall is drawn eleven units thick and a man was put four
+       and a half off its centreline -- a unit inside the masonry, for every man at every
+       garden wall on the map. A roadblock is a heap thirty-four across and had the same
+       default. Negative is inside, which is what a trench is for. */
+    var stand = c.kind === 'trench' ? -2.5 : c.kind === 'wall' ? 9 : c.kind === 'bags' ? 5.5
+              : c.kind === 'lowwall' ? 10 : c.kind === 'rubble' ? 13 : 4.5;
     /* if that side is solid ground (a wall against a house), take the other */
     if (!slotClear(c.x + nx * side * stand, c.y + ny * side * stand) &&
         slotClear(c.x - nx * side * stand, c.y - ny * side * stand)) side = -side;

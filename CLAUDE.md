@@ -625,6 +625,16 @@ three pinned tests in `updateModels` did not exempt `u.gar` the way the third al
 did, so a section under a machine gun lay down on the ground floor of the strongest cover
 on the map and vanished out of the windows it was holding.
 
+**A man stands clear of what he is standing behind.** `coverSlots` puts him a distance
+off the piece's own line, and only the trench, the house face and the sandbags were named,
+so a field wall drawn eleven units thick took the default four and a half: every man at
+every garden wall on the map stood a unit inside the masonry. A drill that takes cover at
+each wall run had ten men of ten in the stones before and none after. It does not move
+the battle probe, because the shipped map has twelve wall runs and sections rarely halt at
+one, but a generated map is laid out with field walls round every enclosure. The probe
+could not see it either until it was taught that a thin thing is still a thing: it tested
+buildings and solid props and no wall was on the movement grid to be caught any other way.
+
 **A house's faces lie along its walls.** The four patches ringing every building had the
 two axes the wrong way round. A patch's axis is the line it protects across, so the front
 of every house in Ortona sheltered you from fire coming along the street and left you in

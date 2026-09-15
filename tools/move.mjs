@@ -121,21 +121,37 @@ async function install(page) {
     };
 
     /* ---- what a man is standing in --------------------------------------------- */
-    /* The walkable grid pads a building by six units and rounds to forty, so a man
+    /* The walkable grid pads a building by six units and rounds it up to a cell, so a man
        correctly tucked against a wall reads as inside it. The honest question is
-       geometric, so the solid footprints are bucketed once and asked directly. */
+       geometric, so the solid shapes are bucketed once and asked directly.
+         Field walls count. They are eleven units of dry stone drawn as a run of boxes and
+       they are not on the movement grid at all, so a man standing in one is invisible to
+       every other test there is -- which is how the cover slots came to stand every man
+       at every garden wall on the map a unit inside the masonry, with this probe
+       reporting no men in walls at all. A thin thing is still a thing. */
     M.solids = function () {
       const B = 120, W = Math.ceil(WORLD.w / B), H = Math.ceil(WORLD.h / B), idx = [];
-      function put(x, y, w, h) {
-        const i0 = Math.max(0, ((x - w / 2) / B) | 0), i1 = Math.min(W - 1, ((x + w / 2) / B) | 0);
-        const j0 = Math.max(0, ((y - h / 2) / B) | 0), j1 = Math.min(H - 1, ((y + h / 2) / B) | 0);
+      function put(x, y, w, h, a) {
+        const rr = Math.max(w, h) / 2;
+        const i0 = Math.max(0, ((x - rr) / B) | 0), i1 = Math.min(W - 1, ((x + rr) / B) | 0);
+        const j0 = Math.max(0, ((y - rr) / B) | 0), j1 = Math.min(H - 1, ((y + rr) / B) | 0);
         for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
           const n = j * W + i;
-          (idx[n] || (idx[n] = [])).push([x, y, w, h]);
+          (idx[n] || (idx[n] = [])).push([x, y, w, h, a || 0]);
         }
       }
       G.props.forEach(p => { if (p.solid && p.kind !== 'sea') put(p.x, p.y, p.w, p.h); });
       G.blds.forEach(b => put(b.x, b.y, b.def.w, b.def.h));
+      /* each wall run chopped into boxes on its own bearing, the way it is drawn */
+      G.walls.forEach(w => {
+        const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1);
+        const a = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+        const n = Math.max(2, Math.round(len / 34));
+        for (let i = 0; i < n; i++) {
+          const t = (i + 0.5) / n;
+          put(w.x1 + (w.x2 - w.x1) * t, w.y1 + (w.y2 - w.y1) * t, len / n + 1, 11, a);
+        }
+      });
       M.sol = { B, W, H, idx };
       return M.sol;
     };
@@ -147,7 +163,13 @@ async function install(page) {
       if (!list) return false;
       for (let k = 0; k < list.length; k++) {
         const r = list[k];
-        if (Math.abs(x - r[0]) < r[2] / 2 && Math.abs(y - r[1]) < r[3] / 2) return true;
+        let dx = x - r[0], dy = y - r[1];
+        if (r[4]) {
+          const c = Math.cos(-r[4]), sn = Math.sin(-r[4]);
+          const rx = dx * c - dy * sn, ry = dx * sn + dy * c;
+          dx = rx; dy = ry;
+        }
+        if (Math.abs(dx) < r[2] / 2 && Math.abs(dy) < r[3] / 2) return true;
       }
       return false;
     };
