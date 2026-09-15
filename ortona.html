@@ -5416,7 +5416,7 @@ function aiPickTarget(u, reach) {
 var AISR = 430;
 var AIS = {
   u: null, t: 0, veh: 0, hp: 1, men: 1, sup: 0, pinned: 0, immob: 0, gunOut: 0, gar: 0,
-  moving: 0, vet: 0, calm: 99, value: 0, reach: 0, at: 0, cover: 0, room: 0,
+  moving: 0, vet: 0, value: 0, reach: 0, cover: 0, room: 0,
   hurt: null, hurtAge: 99, hurtHp: 1, hurtVeh: 0, hurtAmt: 0, thA: 0,
   thW: 0, thN: 0, thD: 9999, armW: 0, mgW: 0, gunW: 0, infW: 0,
   arm: null, armD: 9999, armHp: 1, atInf: null, atInfD: 9999, atInfHp: 1,
@@ -5435,8 +5435,8 @@ function aiSense(u, W) {
   S.sup = u.sup; S.pinned = u.sup > 1 ? 1 : 0;
   S.immob = u.immob > 0 ? 1 : 0; S.gunOut = u.gunDmg > 0 ? 1 : 0;
   S.gar = u.gar ? 1 : 0; S.moving = u.moving ? 1 : 0;
-  S.vet = u.vet || 0; S.calm = u.calm; S.value = aiValue(u);
-  S.reach = mainW(u).range; S.at = u.def.at ? 1 : 0;
+  S.vet = u.vet || 0; S.value = aiValue(u);
+  S.reach = mainW(u).range;
   S.hurtAmt = u.hurtAmt || 0;
   /* ---- what hit it, if that is still alive and its side still knows where it is */
   S.hurt = null; S.hurtAge = 99; S.hurtHp = 1; S.hurtVeh = 0;
@@ -5713,8 +5713,12 @@ function aiWeigh(u, S, W) {
   var best = '', bs = 34, sc, skill = W.skill;
   /* a thing about to die is the reason to stand, whatever else is happening: it counts
      once here rather than in every option below it */
-  var finish = S.weakest && S.canAnswer ? (1 - S.weakHp) * 70 : 0;
-  var pressure = S.sup * 58 + (1 - S.men) * 46 + (S.hurtAmt > 8 ? 22 : 0);
+  var finish = S.weakest && S.canAnswer
+             ? (1 - S.weakHp) * 70 * (S.weakD < 220 ? 1 : .5) : 0;
+  /* and it has to be being hit now. A tally that fades still reads high for several
+     seconds after the firing has stopped, which is a section taking cover from a fight
+     that is over. */
+  var pressure = S.sup * 58 + (1 - S.men) * 46 + (S.hurtAmt > 8 && S.hurtAge < 5 ? 22 : 0);
 
   if (S.veh) {
     /* ---- armour. It has no cover to take and cannot go to ground: what it has is its
@@ -5724,7 +5728,8 @@ function aiWeigh(u, S, W) {
        tank that is about to be a wreck blocking its own street. It used to fight there to
        the end unless an engineer happened to exist, because `mend` was the only way out
        and `mend` needs somebody to mend it. */
-    sc = (1 - S.hp) * 110 + (S.gunOut ? 60 : 0) - (S.danger > 40 ? 0 : 70);
+    sc = (1 - S.hp) * 110 + (S.gunOut ? 60 : 0) + S.gunW * .05 -
+         (S.danger > 40 ? 0 : 70);                     /* a gun line is worth backing out of */
     if (S.hp > .45 && !S.gunOut) sc = 0;
     if (sc > bs) { bs = sc; best = 'withdraw'; }
     /* Back off from a launcher. What it reads now: whether its own infantry is up, how
@@ -5798,7 +5803,7 @@ function aiWeigh(u, S, W) {
         sc = gain + 46 + pressure * .3 - Math.hypot(dh.x - u.x, dh.y - u.y) * .22;
         /* except against a tank, which knocks houses down and is exactly what a section
            in one cannot answer */
-        if (S.hurtVeh && !S.canAnswer) sc -= 40;
+        if ((S.hurtVeh || S.armW > 300) && !S.canAnswer) sc -= 40;
         if (sc > bs) { bs = sc; best = 'house'; S.goal = dh; }
       }
     }
@@ -5813,7 +5818,10 @@ function aiWeigh(u, S, W) {
        worth, which is why a section no longer walks off a victory flag it is holding */
     sc = 30 + pressure * .5 - (S.dObj < 200 ? 40 : 0) - (S.objVp && S.dObj < 260 ? 40 : 0) -
          finish * .8 - (S.thD < 120 ? 34 : 0) -       /* too close to break contact */
-         (S.dObj < 240 && S.objMine < S.value * 1.6 ? 30 : 0);   /* and nobody else on it */
+         (S.dObj < 240 && S.objMine < S.value * 1.6 ? 30 : 0) -  /* and nobody else on it */
+         (S.dObj < 400 && S.objTh > 150 ? 22 : 0) -   /* the flag is being come for */
+         (S.infW > S.thW * .7 ? 16 : 0) +             /* men follow; a tank does not chase */
+         (S.frD > 300 ? 24 : 0);                      /* and it is on its own out here */
     if (sc > bs) { bs = sc; best = 'back'; }
     /* and down where it stands, which gives up nothing and gains a little */
     sc = 26 + pressure * .34 + (S.cover >= 1 ? 22 : 0) - (S.armD < 260 ? 34 : 0) +

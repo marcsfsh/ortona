@@ -294,6 +294,18 @@ change needs something like a hundred pairs to see, and the honest answer to mos
 tweaks is that the tool cannot resolve them. Judge those on whether they are right, not on
 whether the table moved.
 
+**And the verdict line is not to be trusted at four pairs.** It is computed from a standard
+error estimated out of four numbers, which is itself so uncertain that the sentence can come
+out either way on the same code. Measured: `--base=HEAD` run on a revision *identical to the
+working file*, so that the true difference is zero by construction, came back at +367 with a
+standard error of 126 and the tool's own line saying it cleared twice that. Eight pairs of
+the same thing came back at -181 with a standard error of 173, which the tool correctly called no result at all. A pair sum on this map swings by
+five hundred points either way, so four of them can cluster anywhere. Run eight before
+reading the sentence at all, and treat anything under a few hundred points as unresolvable
+whatever the sentence says. A calibration is cheap and it is the only thing that tells a
+finding from a run of luck: `--base=<the commit you are working on top of, before your
+change>` with nothing changed is the control, and it should read zero.
+
 Two more things about the numbers are worth knowing before trusting them. **The two rosters
 are not the same army**, and the town is hand-placed rather than mirrored, so even with the
 flags now symmetric about the midline a side can have the better of the ground: `--self` is
@@ -920,8 +932,10 @@ what it met ten seconds earlier.
 
 On the tactics card the whole pass is a pair difference of -21 with a standard error of 302
 over four pairs against the commit before it: inside the noise, which is the honest answer
-for a change of this kind and the one the tool almost always gives. Every rule in it stands
-on whether it is right.
+for a change of this kind and the one the tool almost always gives. The control run beside
+it -- the same card against a revision identical to the working file -- came back at -181
+with a standard error of 173 over eight pairs, so neither number is anything but the map.
+Every rule in the pass stands on whether it is right.
 
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
