@@ -7829,7 +7829,14 @@ function sfx(kind, x, y) {
    their own matrices, one directional sun plus a sky term, fog of war and battle damage
    as textures the terrain shader samples, and a camera you can orbit and tilt. The HUD
    is a 2D canvas laid over the top and fed projected positions. */
-var SUN = { x: .40, y: .52, z: .72 };
+/* Ortona is 42 degrees 21 minutes north and the date on the HUD is the 23rd of December.
+   The sun reaches 24 degrees above the horizon at noon that day and is below twenty by
+   mid-afternoon; this was set at .72 on the vertical, which is a sun 46 degrees up -- a
+   June sun over an Adriatic winter. Twenty-one degrees, on the bearing the art direction
+   already had, which makes a shadow two and a half times the length of the thing casting
+   it instead of slightly shorter than it, leaves the ground in grazing light and lights
+   the faces of the houses, which is what a town in December actually looks like. */
+var SUN = { x: 0.5692, y: 0.7400, z: 0.3584 };
 (function () { var l = Math.hypot(SUN.x, SUN.y, SUN.z); SUN.x /= l; SUN.y /= l; SUN.z /= l; })();
 var SHADOW = { x: 5.5, y: 7 };
 
@@ -7975,14 +7982,21 @@ var FSH = [
   '    sh += shadowAt(sp.xy + vec2(-0.5, -0.5) * t, dz); sh += shadowAt(sp.xy + vec2(0.5, 0.5) * t, dz);',
   '    sh += shadowAt(sp.xy + vec2(-1.0, 1.0) * t, dz);  sh += shadowAt(sp.xy + vec2(1.0, -1.0) * t, dz);',
   '    sh += shadowAt(sp.xy, dz);',
-  '    lit = 1.0 - (sh / 9.0) * 0.9;',
+  '    lit = 1.0 - (sh / 9.0) * 0.88;',
   '  }',
   '#endif',
   '  vec3 V = normalize(uEye - vWpos);',
   '  float ndotl = max(0.0, dot(n, uSun));',
   '  float hemi = 0.55 + 0.45 * n.z;',
-  '  vec3 sky = vec3(0.80, 0.86, 0.96) * uAmb * hemi;',
-  '  vec3 sun = vec3(1.0, 0.93, 0.80) * ndotl * 0.82 * lit;',
+  /* With the sun at twenty-one degrees flat ground takes it at a graze and a wall facing
+     it takes it square, so the direct term carries nearly twice what it did: the ground
+     comes out a little darker than it was and the faces of the buildings a great deal
+     brighter, which is the whole difference between a winter afternoon and a noon in
+     June. Warmer with it, because a low sun is warmer, and the sky term is raised and
+     cooled to fill what the sun no longer reaches -- at this elevation most of the light
+     on a north face is skylight. */
+  '  vec3 sky = vec3(0.76, 0.84, 1.00) * uAmb * hemi;',
+  '  vec3 sun = vec3(1.0, 0.87, 0.68) * ndotl * 1.18 * lit;',
   '  vec3 H = normalize(uSun + V);',
   '  float specP = pow(max(0.0, dot(n, H)), vSpec.y) * vSpec.x * lit;',
   '  float fres = pow(1.0 - max(0.0, dot(n, V)), 4.0) * 0.06;',
@@ -17408,7 +17422,7 @@ function render() {
     gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, SHADOW.tex); gl.uniform1i(PROG.u.uShadow, 3);
   }
   gl.uniform3f(PROG.u.uSun, SUN.x, SUN.y, SUN.z);
-  gl.uniform1f(PROG.u.uAmb, .46);
+  gl.uniform1f(PROG.u.uAmb, .44);
   gl.uniform1f(PROG.u.uInside, 0);
   gl.uniform2f(PROG.u.uWorldSize, WORLD.w, WORLD.h);
   gl.uniform3f(PROG.u.uFogCol, .58, .60, .58);
