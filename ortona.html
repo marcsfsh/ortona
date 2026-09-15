@@ -1657,10 +1657,17 @@ function buildMap(data) {
       case 'house':
         var b = { x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'ruin', tall: e.tall, style: e.style || 'row', s: e.s || 0, damage: e.damage || 0, roof: !!e.roof, z: 0 };
         G.blocks.push(b); G.props.push(b);
-        addCover(e.x, e.y - e.h / 2 - 12, Math.max(e.w, 40) * .46, 3, 'wall', Math.PI / 2, 150);
-        addCover(e.x, e.y + e.h / 2 + 12, Math.max(e.w, 40) * .46, 3, 'wall', Math.PI / 2, 150);
-        addCover(e.x - e.w / 2 - 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', 0, 150);
-        addCover(e.x + e.w / 2 + 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', 0, 150);
+        /* The four faces of the house, each a piece of cover lying ALONG its own wall.
+           The two axes were the other way round, which is not a detail: a patch's axis
+           is the line it protects across, so the front of every house in Ortona sheltered
+           you from fire coming along the street and left you in the open against fire
+           coming straight at the wall. It also laid the men out at right angles to the
+           house, half of them inside it. The north and south faces run east and west
+           with the building's width, which is where their own radius comes from. */
+        addCover(e.x, e.y - e.h / 2 - 12, Math.max(e.w, 40) * .46, 3, 'wall', 0, 150);
+        addCover(e.x, e.y + e.h / 2 + 12, Math.max(e.w, 40) * .46, 3, 'wall', 0, 150);
+        addCover(e.x - e.w / 2 - 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', Math.PI / 2, 150);
+        addCover(e.x + e.w / 2 + 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', Math.PI / 2, 150);
         break;
       case 'farm':
         var fm = { x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'farm', z: 0 };
@@ -1699,7 +1706,7 @@ function buildMap(data) {
   G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea') p.z = levelPad(p.x, p.y, p.w, p.h); });
   makeFields();
 }
-function makeTerrain() { buildMap(G.mapData || (G.mapData = defaultMapData())); }
+function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = defaultMapData())); }
 
 /* ---------------------------------------------------------------- terrain height
    The world is a real surface, not a flat plane with boxes on it. A height is stored on
@@ -2113,6 +2120,10 @@ function coverStanceAt(x, y) {
 function coverOf(u, fromAng) {
   if (u.cat === 'veh') return 0;
   if (u.gar) return 4;                               /* two feet of rubble stone all round */
+  /* A building, or the bare point a tank commander has laid his gun on, has no men in
+     it to ask: those get the ground they stand on, which is what everything got before
+     the men were asked at all. */
+  if (!u.models) return coverAt(u.x, u.y, fromAng);
   var n = 0, sum = 0;
   for (var i = 0; i < u.models.length; i++) {
     if (!u.models[i].alive) continue;
@@ -2156,6 +2167,13 @@ function damageCover(x, y, radius, amount) {
       var c = list[k];
       if (c.st === _cstamp) continue;
       c.st = _cstamp;
+      /* Shelling a hole makes it a bigger hole. A crater and a ditch are the ground
+         itself, and they were being worn down like a sandbag wall and then vanishing
+         as cover while the map went on drawing them: after a barrage the men lying in
+         a crater field were in the open, and nothing on screen said so. Works are a
+         different matter and still come apart, which is why a position has to be
+         re-dug. */
+      if (c.kind === 'crater' || c.kind === 'ditch') continue;
       if (c.hp <= 0 || !c.maxhp) continue;
       if (dsq(x, y, c.x, c.y) < (radius + c.r) * (radius + c.r)) c.hp = Math.max(0, c.hp - amount);
     }
@@ -2163,7 +2181,16 @@ function damageCover(x, y, radius, amount) {
 }
 
 /* ---------------------------------------------------------------- grid + pathing */
-var CELL = 40, GW = Math.ceil(WORLD.w / CELL), GH = Math.ceil(WORLD.h / CELL);
+/* Twenty units to the cell, which is a little under two metres.
+     A cell has to be small enough to hold the ground it stands for. At forty it was
+   not: a building is marked by every cell its footprint touches, plus a pad, so a
+   hundred-and-ten-unit street came out one cell wide, a sixty-unit lane came out as
+   masonry, and thirty per cent of the open ground in the town -- eight per cent of it
+   with room for a whole section -- was simply not on the map the pathfinder reads. The
+   Corso, the widest street in Ortona, measured twenty units across, which is narrower
+   than a Sherman. Halving it costs four times the cells (13,300 of them, a few hundred
+   kilobytes and about a millisecond to rebuild) and hands back the lanes. */
+var CELL = 20, GW = Math.ceil(WORLD.w / CELL), GH = Math.ceil(WORLD.h / CELL);
 var grid = new Uint8Array(GW * GH);
 function cidx(cx, cy) { return cy * GW + cx; }
 /* Three different questions get asked of the same ground, and they have three different
@@ -2174,18 +2201,30 @@ function cidx(cx, cy) { return cy * GW + cx; }
    now refuses ground too steep to climb, and reading fire off it meant a squad could
    not shoot across a gully it was standing on the lip of. */
 var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH), road = new Uint8Array(GW * GH);
-var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH);
+var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH), wallg = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
   for (var cy = Math.max(0, y0); cy <= Math.min(GH - 1, y1); cy++)
     for (var cx = Math.max(0, x0); cx <= Math.min(GW - 1, x1); cx++) arr[cidx(cx, cy)] = 1;
 }
-function markSeg(arr, x1, y1, x2, y2) {
+/* A line has a width, and the width is not the cell. A street is forty-eight units of
+   metalling, a wire apron thirty-four, a garden wall six of dry stone; marked as one
+   cell each they were all whatever the cell happened to be, which made the road
+   narrower than the lorries driving down it and the wall wider than the gap beside it.
+   The swathe is stepped at half a cell along and across so nothing falls between two
+   samples. */
+function markSeg(arr, x1, y1, x2, y2, half) {
   var n = Math.max(1, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / (CELL * .5)));
+  var hw = half === undefined ? 0 : half, m = hw > 0 ? Math.ceil(hw / (CELL * .5)) : 0;
+  var a = Math.atan2(y2 - y1, x2 - x1), px = -Math.sin(a), py = Math.cos(a);
   for (var i = 0; i <= n; i++) {
-    var cx = ((lerp(x1, x2, i / n)) / CELL) | 0, cy = ((lerp(y1, y2, i / n)) / CELL) | 0;
-    if (cx >= 0 && cy >= 0 && cx < GW && cy < GH) arr[cidx(cx, cy)] = 1;
+    var bx = lerp(x1, x2, i / n), by = lerp(y1, y2, i / n);
+    for (var j = -m; j <= m; j++) {
+      var o = m ? hw * j / m : 0;
+      var cx = ((bx + px * o) / CELL) | 0, cy = ((by + py * o) / CELL) | 0;
+      if (cx >= 0 && cy >= 0 && cx < GW && cy < GH) arr[cidx(cx, cy)] = 1;
+    }
   }
 }
 function blockRect(x, y, w, h, pad) {
@@ -2196,28 +2235,44 @@ function blockRect(x, y, w, h, pad) {
    is a line through the new building, which is where retreating sections were found
    standing for the rest of the game, sliding along its wall by a hair a frame. */
 var gridStamp = 0;
-function rebuildGrid() {
-  gridStamp++;
-  grid.fill(0);
-  for (var cy = 0; cy < GH; cy++) { grid[cidx(0, cy)] = 1; grid[cidx(GW - 1, cy)] = 1; }
-  for (var cx = 0; cx < GW; cx++) { grid[cidx(cx, 0)] = 1; grid[cidx(cx, GH - 1)] = 1; }
-  /* Keep men and armour out of the Adriatic, and off anything too steep to climb. The
-     gradient is read over half a cell, which is coarse enough that a trench wall or a
-     terrace riser still lets a section through and steep enough that nobody walks down
-     the face of the sea cliff to get to the water. */
+/* The ground itself, read once. Keeping men and armour out of the Adriatic and off
+   anything too steep to climb costs four `groundZ` samples a cell, which at thirteen
+   thousand cells is most of what a rebuild costs -- and the shape of the ground does not
+   change during a battle, while the grid is rebuilt every time a building goes up or a
+   vehicle burns. So it is kept, and `makeTerrain` throws it away. The gradient is read
+   over half the old cell, which is coarse enough that a trench wall or a terrace riser
+   still lets a section through and steep enough that nobody walks down the face of the
+   sea cliff to get to the water. */
+var terrg = new Uint8Array(GW * GH), terrOk = 0;
+function buildTerrGrid() {
+  terrg.fill(0); steep.fill(0);
+  var cy, cx;
+  for (cy = 0; cy < GH; cy++) { terrg[cidx(0, cy)] = 1; terrg[cidx(GW - 1, cy)] = 1; }
+  for (cx = 0; cx < GW; cx++) { terrg[cidx(cx, 0)] = 1; terrg[cidx(cx, GH - 1)] = 1; }
   for (var gy = 0; gy < GH; gy++) for (var gx = 0; gx < GW; gx++) {
     var wx = gx * CELL + CELL / 2, wy = gy * CELL + CELL / 2;
-    if (wy < coastY(wx) + 24) { grid[cidx(gx, gy)] = 1; continue; }
+    if (wy < coastY(wx) + 24) { terrg[cidx(gx, gy)] = 1; continue; }
     var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
     var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
     var sg = Math.hypot(sgx, sgy);
-    if (sg > 1) grid[cidx(gx, gy)] = 1;
+    if (sg > 1) terrg[cidx(gx, gy)] = 1;
     /* and what is merely hard going: a bank a section walks up slowly and a lorry would
        rather go round, kept for the path cost below */
     steep[cidx(gx, gy)] = sg > .45 ? 1 : 0;
   }
+  terrOk = 1;
+}
+function rebuildGrid() {
+  gridStamp++;
+  if (!terrOk) buildTerrGrid();
+  grid.set(terrg);
   G.props.forEach(function (p) { if (p.solid) blockRect(p.x, p.y, p.w, p.h, 6); });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
+  /* Hulls that burned where they stopped. Marked a little inside their own length, so
+     that the cover a section takes behind one is still ground it can stand on, and they
+     stop a boot without stopping an eye: a man sees and shoots over a dead tank and
+     cannot walk through it, which is why this is on the movement grid alone. */
+  G.wrecks.forEach(function (w) { blockRect(w.x, w.y, w.w * .7, w.h * .78, 0); });
   /* the same world read for sight and for fire */
   sblk.fill(0); fblk.fill(0);
   G.props.forEach(function (p) {
@@ -2227,17 +2282,26 @@ function rebuildGrid() {
   G.blds.forEach(function (b) {
     markRect(sblk, b.x, b.y, b.def.w, b.def.h, 0); markRect(fblk, b.x, b.y, b.def.w, b.def.h, 0);
   });
+  /* A dry-stone field wall stops a bullet and an eye, and it is three different things
+     to three different ways of travelling: tracks go over it and flatten it, a man gets
+     over it but not at a walk, and a lorry goes round. It was none of them -- absent
+     from the movement grid entirely, so everything crossed it as if it were painted on
+     -- and it is priced rather than blocked, because a wall nothing may cross fences
+     off the gardens of half the town. */
+  wallg.fill(0);
   G.walls.forEach(function (w) {
-    markSeg(sblk, w.x1, w.y1, w.x2, w.y2); markSeg(fblk, w.x1, w.y1, w.x2, w.y2);
+    markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
+    markSeg(wallg, w.x1, w.y1, w.x2, w.y2, 4);
   });
   /* a hedge hides a section and does not save it */
-  G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2); });
+  G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 9); });
   /* And the metalling. A street is the reason a town like this is fought street by
      street: it is the only ground a lorry or a tank can make time on, and the map has
      had a road network painted on it that meant nothing to anything driving over it. */
   road.fill(0);
   G.roads.forEach(function (rd) {
-    for (var i = 0; i < rd.length - 1; i++) markSeg(road, rd[i].x, rd[i].y, rd[i + 1].x, rd[i + 1].y);
+    var hw = (rd.width || 48) * .5;
+    for (var i = 0; i < rd.length - 1; i++) markSeg(road, rd[i].x, rd[i].y, rd[i + 1].x, rd[i + 1].y, hw);
   });
   G.paved.forEach(function (p) { markRect(road, p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0); });
   /* Wire holds men up in the open rather than stopping them: it is laid to make them
@@ -2248,13 +2312,57 @@ function rebuildGrid() {
     if (!W || !W.slow) return;
     var wa = wk.a + workTurn(wk.kind);
     var hx = Math.cos(wa) * W.len / 2, hy = Math.sin(wa) * W.len / 2;
-    markSeg(wireg, wk.x - hx, wk.y - hy, wk.x + hx, wk.y + hy);
+    markSeg(wireg, wk.x - hx, wk.y - hy, wk.x + hx, wk.y + hy, (W.h || 34) * .5);
   });
+  buildRoom();
+}
+/* How much room a cell has: the distance in cells to the nearest thing that stops a
+   boot, by two chamfer passes over the grid that was just built.
+     It is here because a path that is clear is not the same as a path a thing can be
+   driven down. The search works cell centre to cell centre, which is honest; the
+   smoother then replaces a run of them with one straight line, and the only question it
+   asked was whether the middle of that line was clear. So it cut every corner to the
+   masonry, and a Sherman took the corner of the Palazzo with its sponson. Priced into
+   the cost instead of forbidden, because ground nothing may cross is ground the army
+   stops using: a lane it has to squeeze down is dear rather than closed, the shortcut
+   that scrapes a wall is priced against the one that does not, and when the tight way is
+   the only way it is still taken. */
+var roomg = new Float32Array(GW * GH);
+function buildRoom() {
+  var n = GW * GH, x, y, i, v;
+  for (i = 0; i < n; i++) roomg[i] = grid[i] ? 0 : 1e6;
+  for (y = 0; y < GH; y++) for (x = 0; x < GW; x++) {
+    i = cidx(x, y); v = roomg[i];
+    if (x > 0) v = Math.min(v, roomg[i - 1] + 1);
+    if (y > 0) v = Math.min(v, roomg[i - GW] + 1);
+    if (x > 0 && y > 0) v = Math.min(v, roomg[i - GW - 1] + 1.4142);
+    if (x < GW - 1 && y > 0) v = Math.min(v, roomg[i - GW + 1] + 1.4142);
+    roomg[i] = v;
+  }
+  for (y = GH - 1; y >= 0; y--) for (x = GW - 1; x >= 0; x--) {
+    i = cidx(x, y); v = roomg[i];
+    if (x < GW - 1) v = Math.min(v, roomg[i + 1] + 1);
+    if (y < GH - 1) v = Math.min(v, roomg[i + GW] + 1);
+    if (x < GW - 1 && y < GH - 1) v = Math.min(v, roomg[i + GW + 1] + 1.4142);
+    if (x > 0 && y < GH - 1) v = Math.min(v, roomg[i + GW - 1] + 1.4142);
+    roomg[i] = v;
+  }
+}
+/* the free radius about a point, in world units */
+function roomAt(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return 0;
+  return (roomg[cidx(cx, cy)] - .5) * CELL;
 }
 function inWire(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
   return wireg[cidx(cx, cy)] === 1;
+}
+function onWall(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return wallg[cidx(cx, cy)] === 1;
 }
 function onRoad(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
@@ -2269,11 +2377,14 @@ function traceClear(x0, y0, z0, x1, y1, z1, blk) {
   var dx = x1 - x0, dy = y1 - y0, d = Math.hypot(dx, dy);
   if (d < 30) return true;
   var steps = Math.min(40, Math.max(3, Math.ceil(d / 22)));
-  /* The cell a man is standing in is often the cell of the wall he is standing behind,
-     and the lip of his own trench is a foot from his face. Neither should blind him, so
-     the two end cells are exempt and the height test skips the ground at both ends. */
-  var ca = ((x0 / CELL) | 0) + ((y0 / CELL) | 0) * GW;
-  var cb = ((x1 / CELL) | 0) + ((y1 / CELL) | 0) * GW;
+  /* The wall a man is standing behind is a yard from his face and the lip of his own
+     trench is a foot from it. Neither should blind him, so a blocker within a couple of
+     paces of either end does not count, and the height test skips the ground at both
+     ends. The exemption is a distance and not a cell: read off the cell it was whatever
+     the cell size happened to be, and it had been silently calibrated to a forty-unit
+     one -- a man nine units behind his own wall lost his line the moment the grid got
+     finer. */
+  var near = 22;
   var skip = Math.min(.3, 30 / d);
   for (var i = 1; i < steps; i++) {
     var t = i / steps;
@@ -2282,7 +2393,7 @@ function traceClear(x0, y0, z0, x1, y1, z1, blk) {
       var cx = (px / CELL) | 0, cy = (py / CELL) | 0;
       if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
       var n = cidx(cx, cy);
-      if (blk[n] && n !== ca && n !== cb) return false;
+      if (blk[n] && Math.min(t, 1 - t) * d > near) return false;
     }
     if (t < skip || t > 1 - skip) continue;
     /* A metre of tolerance. Without it the ordinary hummocking of the ground blocks
@@ -2323,7 +2434,9 @@ function walkable(x, y) {
 }
 function nearestFree(x, y) {
   if (walkable(x, y)) return { x: x, y: y };
-  for (var r = 1; r < 12; r++) {
+  /* the reach is in cells, so it is written as a distance and converted: a destination
+     in the middle of a headquarters has to find the ground outside it */
+  for (var r = 1; r < 480 / CELL; r++) {
     for (var a = 0; a < 16; a++) {
       var th = a / 16 * TAU, nx = x + Math.cos(th) * r * CELL, ny = y + Math.sin(th) * r * CELL;
       if (walkable(nx, ny)) return { x: nx, y: ny };
@@ -2355,10 +2468,16 @@ function clearLine(x0, y0, x1, y1) {
      kind: -1 nobody in particular, 0 men on foot, 1 tracks, 2 wheels */
 function cellCost(ci, kind) {
   if (kind < 0) return 1;
-  if (kind === 0) return wireg[ci] ? 2.6 : steep[ci] ? 1.25 : 1;
+  /* and how much room it leaves. Nothing here is forbidden; a gap is dear in proportion
+     to how hard it is to get through, and a lorry minds it about three times as much as
+     a man does, which is the difference between a section filing down an alley and a
+     half-track trying to. Two cells is a section's width. */
+  var r = roomg[ci], tight = r < 2.6 ? (2.6 - r) * (kind === 0 ? .3 : 1.1) : 0;
+  if (kind === 0) return (wireg[ci] ? 2.6 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
   var c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
   if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
-  return c;
+  if (wallg[ci] && kind === 2) c *= 2.6;               /* a lorry goes round; tracks do not */
+  return c + tight;
 }
 function pathKind(u) {
   if (!u) return -1;
@@ -2368,15 +2487,15 @@ function pathKind(u) {
 /* the cost of walking a straight line, sampled the way clearLine samples it, so a
    shortcut can be priced against the path it would replace */
 function lineCost(x0, y0, x1, y1, kind) {
-  var d = Math.hypot(x1 - x0, y1 - y0), steps = Math.max(1, Math.ceil(d / 18)), sum = 0;
+  var d = Math.hypot(x1 - x0, y1 - y0), steps = Math.max(1, Math.ceil(d / 10)), sum = 0;
   for (var i = 0; i < steps; i++) {
     var t = (i + .5) / steps, x = lerp(x0, x1, t), y = lerp(y0, y1, t);
     sum += cellCost(cidx((x / CELL) | 0, (y / CELL) | 0), kind) * d / steps;
   }
   return sum;
 }
-var _open = new Int32Array(GW * GH), _g = new Float32Array(GW * GH),
-    _f = new Float32Array(GW * GH), _from = new Int32Array(GW * GH), _state = new Uint8Array(GW * GH);
+var _g = new Float32Array(GW * GH), _f = new Float32Array(GW * GH),
+    _from = new Int32Array(GW * GH), _state = new Uint8Array(GW * GH);
 var _stamp = new Int32Array(GW * GH), _run = 0;
 function findPath(sx, sy, tx, ty, u) {
   if (u) u.pathStamp = gridStamp;
@@ -2385,28 +2504,68 @@ function findPath(sx, sy, tx, ty, u) {
   var scx = (s0.x / CELL) | 0, scy = (s0.y / CELL) | 0, tcx = (tx / CELL) | 0, tcy = (ty / CELL) | 0;
   var start = cidx(scx, scy), end = cidx(tcx, tcy);
   var kind = pathKind(u);
-  /* a straight line is only the answer when nothing along it costs more than the ground
-     either side: a vehicle with a street to use is asked to find it */
-  if (start === end || (clearLine(sx, sy, tx, ty) && (kind < 1 || Math.hypot(tx - sx, ty - sy) < 160))) return [{ x: tx, y: ty }];
+  /* A straight line is only the answer when nothing along it costs more than the ground
+     either side: a vehicle with a street to use is asked to find it.
+       Men on foot used to be handed any clear line at all, however long and whatever it
+     ran through, so every cost the pathfinder charges a section -- the wire, the bank,
+     the field wall, the gap it has to squeeze down -- applied only to the routes it
+     happened to search for, and a section ordered across a wire apron with a gate a
+     hundred units to its left walked into the wire. So the line is priced: it is taken
+     when it costs no more than the open ground it is drawn across, and a search is run
+     when it does not. One lineCost is a good deal cheaper than the search it usually
+     saves. */
+  if (start === end) return [{ x: tx, y: ty }];
+  if (clearLine(sx, sy, tx, ty)) {
+    var straight = Math.hypot(tx - sx, ty - sy);
+    if (straight < 160) return [{ x: tx, y: ty }];
+    if (kind <= 0 && lineCost(sx, sy, tx, ty, kind) <= straight * 1.12) return [{ x: tx, y: ty }];
+  }
   _run++;
-  var heap = [start], n = 1;
+  var heap = [start], hkey = [0], n = 1;
   _g[start] = 0; _f[start] = Math.hypot(tcx - scx, tcy - scy);
+  hkey[0] = _f[start];
   _from[start] = -1; _stamp[start] = _run; _state[start] = 1;
-  var guard = 0;
-  function hpush(v) {
-    heap[n++] = v; var i = n - 1;
-    while (i > 0) { var p = (i - 1) >> 1; if (_f[heap[p]] <= _f[heap[i]]) break; var t = heap[p]; heap[p] = heap[i]; heap[i] = t; i = p; }
+  var guard = 0, near = start, nearH = _f[start];
+  /* The heap carries the key it was pushed with, and not a lookup of `_f`.
+       It used to compare `_f[heap[i]]` live, and the relaxation below lowers `_f` of a
+     node that may already be sitting in the heap -- which moves that entry's key
+     underneath it without moving the entry, so the heap was not a heap: eighty-nine per
+     cent of pops on this map were returning something that was not the smallest thing in
+     it. A re-found node is pushed again with its new key and the older entry is skipped
+     when it surfaces, which is the usual way of doing this without a position index.
+       It is worth knowing that fixing it bought nothing here. Forty long searches across
+     the shipped map came back at 1.64 ms, 4.9 legs and the same cost to the unit, before
+     and after, because a weighted heuristic on a map this size finds the same routes with
+     the queue in any order. It stays because the next person to touch the heuristic or
+     the cost model would be building on a queue that does not order, and would have no
+     reason to suspect it. */
+  function hpush(v, k) {
+    heap[n] = v; hkey[n] = k; n++;
+    var i = n - 1;
+    while (i > 0) {
+      var p = (i - 1) >> 1;
+      if (hkey[p] <= hkey[i]) break;
+      var t = heap[p]; heap[p] = heap[i]; heap[i] = t;
+      var tk = hkey[p]; hkey[p] = hkey[i]; hkey[i] = tk;
+      i = p;
+    }
   }
   function hpop() {
-    var top = heap[0]; heap[0] = heap[--n]; heap.length = n; var i = 0;
+    var top = heap[0];
+    n--; heap[0] = heap[n]; hkey[0] = hkey[n]; heap.length = n; hkey.length = n;
+    var i = 0;
     for (;;) { var l = i * 2 + 1, r = l + 1, m = i;
-      if (l < n && _f[heap[l]] < _f[heap[m]]) m = l;
-      if (r < n && _f[heap[r]] < _f[heap[m]]) m = r;
-      if (m === i) break; var t = heap[m]; heap[m] = heap[i]; heap[i] = t; i = m; }
+      if (l < n && hkey[l] < hkey[m]) m = l;
+      if (r < n && hkey[r] < hkey[m]) m = r;
+      if (m === i) break;
+      var t = heap[m]; heap[m] = heap[i]; heap[i] = t;
+      var tk2 = hkey[m]; hkey[m] = hkey[i]; hkey[i] = tk2;
+      i = m; }
     return top;
   }
-  while (n > 0 && guard++ < 9000) {
+  while (n > 0 && guard++ < GW * GH * 3) {
     var cur = hpop();
+    if (_state[cur] === 2) continue;                   /* an older entry for a node already done */
     if (cur === end) break;
     _state[cur] = 2;
     var cx = cur % GW, cy = (cur / GW) | 0;
@@ -2422,15 +2581,28 @@ function findPath(sx, sy, tx, ty, u) {
       var ng = _g[cur] + (dx && dy ? 1.414 : 1) * cellCost(ni, kind);
       if (ng < _g[ni]) {
         _g[ni] = ng; _from[ni] = cur;
-        _f[ni] = ng + Math.hypot(tcx - nx2, tcy - ny2) * 1.05;
-        if (_state[ni] !== 1) { _state[ni] = 1; hpush(ni); }
+        var h = Math.hypot(tcx - nx2, tcy - ny2);
+        _f[ni] = ng + h * 1.05;
+        if (h < nearH) { nearH = h; near = ni; }
+        _state[ni] = 1; hpush(ni, _f[ni]);
       }
     }
   }
-  if (_stamp[end] !== _run || _from[end] === -1) return [{ x: tx, y: ty }];
-  var raw = [], node = end;
+  /* There may be no way there at all: a courtyard walled off, a flag on the far side of
+     a building that has just gone up, a destination in the sea. Handing back a straight
+     line to it, which is what this did, is a lie a caller cannot see through -- the unit
+     walks into the wall, the stall timer asks for the same path again, and it stands
+     there for the rest of the battle. So it is told to go as near as it got, and the
+     path is marked so that anything that cares can tell a route from no route. */
+  var made = _stamp[end] === _run && _from[end] !== -1, goal = made ? end : near;
+  var raw = [], node = goal;
   while (node !== -1) { raw.push({ x: (node % GW) * CELL + CELL / 2, y: ((node / GW) | 0) * CELL + CELL / 2 }); node = _from[node]; }
-  raw.reverse(); raw[raw.length - 1] = { x: tx, y: ty };
+  raw.reverse();
+  if (made) raw[raw.length - 1] = { x: tx, y: ty };
+  if (raw.length < 2) { var one = [{ x: raw.length ? raw[0].x : tx, y: raw.length ? raw[0].y : ty }]; one.noWay = !made; return one; }
+  /* and from where the unit actually stands, rather than from the middle of the cell it
+     happens to be in, which is what the first leg used to be measured from */
+  raw[0] = { x: s0.x, y: s0.y };
   /* smooth: keep a waypoint only when the line to the next one is blocked, or when it
      would cost more than the way round -- the bends a street takes are the whole point
      of following it, and a smoother that only asked whether the shortcut was clear cut
@@ -2444,7 +2616,9 @@ function findPath(sx, sy, tx, ty, u) {
            (kind < 0 || lineCost(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y, kind) <= (rawC[j] - rawC[i2]) * 1.03 + 8))) j--;
     out.push(raw[j]); i2 = j;
   }
-  return out.length ? out : [{ x: tx, y: ty }];
+  if (!out.length) out = [{ x: tx, y: ty }];
+  out.noWay = !made;
+  return out;
 }
 
 /* ---------------------------------------------------------------- units */
@@ -2640,7 +2814,7 @@ function updateBuilding(b, dt) {
 }
 
 /* ---------------------------------------------------------------- orders */
-function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; }
+function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; }
 
 /* Holding a house. A ruin with two feet of rubble stone round it is the best cover on
    this map and the whole battle for Ortona was fought for one building at a time, so a
@@ -2774,6 +2948,10 @@ function orderMove(u, x, y, attackMove) {
   u.order = attackMove ? 'attackmove' : 'move';
   u.dest = { x: x, y: y };
   u.path = findPath(u.x, u.y, x, y, u); u.pi = 0;
+  /* and if there is no way there, say so once rather than letting the player watch a
+     section walk hopefully at a wall: it goes as near as it can get, which is what the
+     path now is */
+  if (u.path.noWay && u.side === G.side && G.sel.indexOf(u) >= 0) toast('No way through - going as near as it can');
   if (u.def.setup) u.setup = u.def.setup;
 }
 function orderAttack(u, t) {
@@ -2831,6 +3009,21 @@ function orderRetreat(u) {
 /* ---------------------------------------------------------------- movement */
 function moveUnit(u, dt) {
   var wantX = null, wantY = null;
+  /* Standing on ground that is no longer ground. A company post goes up on top of a
+     section, or a wreck settles across it, and from then on every step it tries is off
+     the grid, the stall timer fires, and the same path comes back: it is frozen where it
+     stands for the rest of the battle. So the first thing asked is whether it can stand
+     where it is, and if it cannot it walks out to the nearest ground that it can. */
+  if (!u.gar && !u.inside && !walkable(u.x, u.y)) {
+    var out0 = nearestFree(u.x, u.y);
+    var od = Math.hypot(out0.x - u.x, out0.y - u.y);
+    if (od > .5) {
+      var ost = Math.min(od, Math.max(u.speed || 30, 30) * dt);
+      u.x += (out0.x - u.x) / od * ost; u.y += (out0.y - u.y) / od * ost;
+      u.moving = true;
+      return;
+    }
+  }
   /* the ground has changed since this path was found: find it again from here */
   if (u.path && u.pi < u.path.length && u.pathStamp !== gridStamp) {
     var pend = u.path[u.path.length - 1];
@@ -2867,9 +3060,11 @@ function moveUnit(u, dt) {
     sp *= clamp(1 - rise * grip * (rise > 0 ? 1 : .35), .35, 1.12);
     if (u.cat === 'veh') sp *= onRoad(u.x, u.y) ? 1.22 : .94;
     else if (inWire(u.x, u.y)) sp *= .40;                /* caught in the apron */
+    else if (onWall(u.x, u.y)) sp *= .55;               /* over the field wall, one at a time */
   }
-  if (d < (u.pi === u.path.length - 1 ? 14 : 26)) {
+  if (d < (u.pi === u.path.length - 1 ? 14 : CELL * .8)) {
     u.pi++;
+    u.lastGap = undefined;                               /* a new leg, a new yardstick */
     if (u.pi >= u.path.length) {
       u.path = null;
       if (u.order === 'move' || u.order === 'attackmove') u.order = u.order === 'attackmove' ? 'attackmove' : null;
@@ -2891,7 +3086,11 @@ function moveUnit(u, dt) {
       df = angDiff(u.facing, want + Math.PI);
       sp *= .55;                                         /* and he does it slowly */
     }
-    u.facing += clamp(df, -2.6 * dt, 2.6 * dt);
+    /* Weight again: every vehicle in the game swung its hull round at the same rate,
+       so a Tiger II turned as smartly as a Daimler and there was nothing to be gained
+       by getting behind the heavy thing except the thinner plate. */
+    var turn = (u.def.hp > 1000 ? 1.5 : u.def.hp > 500 ? 2.1 : 2.9) * dt;
+    u.facing += clamp(df, -turn, turn);
     if (Math.abs(df) > 1.0) sp *= .25; else if (Math.abs(df) > .5) sp *= .6;
     /* Weight. Nothing on tracks steps off at speed or stops on the spot, and a tank
        that did read as a model being slid across a table. */
@@ -2922,7 +3121,7 @@ function moveUnit(u, dt) {
   }
   var mx = tx + px * .9, my = ty + py * .9, ml = Math.hypot(mx, my) || 1;
   if (rev) { mx = tx; my = ty; ml = 1; }                 /* backing up, no jostling */
-  var nx = u.x + mx / ml * sp * dt, ny = u.y + my / ml * sp * dt, ox = u.x, oy = u.y;
+  var nx = u.x + mx / ml * sp * dt, ny = u.y + my / ml * sp * dt;
   if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
   else if (walkable(nx, u.y)) u.x = nx;
   else if (walkable(u.x, ny)) u.y = ny;
@@ -2938,13 +3137,28 @@ function moveUnit(u, dt) {
         if (walkable(swx, swy)) { u.x = swx; u.y = swy; stepped = true; }
       }
     }
-    if (!stepped) { u.path = findPath(u.x, u.y, wantX, wantY, u); u.pi = 0; }
+    /* and if it cannot get round at all, ask again -- for the way to where it was
+       going, and not to the next waypoint. Repathing to the waypoint threw the rest of
+       the route away, so a section that squeezed past one corner arrived at that corner,
+       found its path spent, and considered the order carried out. */
+    if (!stepped) {
+      var far = u.path[u.path.length - 1];
+      u.path = findPath(u.x, u.y, far.x, far.y, u); u.pi = 0; u.lastGap = undefined;
+    }
   }
-  /* A slide along a wall that goes nowhere is a wall, not a way round. The slide above
-     counts as a step even when it moves the unit a hair, so a section walking square
-     into a building it was not told about stood at it for good. Half a second of no
-     progress and it asks for a new path to the end of the old one. */
-  if (Math.hypot(u.x - ox, u.y - oy) < sp * dt * .3) {
+  /* A slide along a wall that goes nowhere is a wall, not a way round.
+       What is measured is the ground made good toward the waypoint, and not how far the
+     unit moved. Those are not the same thing and the difference is the whole failure: a
+     unit pressed against a house slides along it at very nearly full speed, so the old
+     displacement test read a section creeping sideways down a frontage as a section
+     making excellent progress. It never tripped the timer, never asked for another way
+     round, and went on grinding along the wall for as long as the order stood. It is
+     about one per cent of unit-frames on the card and a seventh of them on a probe built
+     to provoke it. */
+  var gapNow = Math.hypot(wantX - u.x, wantY - u.y);
+  var good = u.lastGap === undefined ? sp * dt : u.lastGap - gapNow;
+  u.lastGap = gapNow;
+  if (good < sp * dt * .3) {
     u.blockT = (u.blockT || 0) + dt;
     if (u.blockT > .6 && u.path) {
       u.blockT = 0;
@@ -2952,9 +3166,14 @@ function moveUnit(u, dt) {
       /* a retreat that has got within a few paces of home and is held up by the crowd
          already there is home */
       if (u.retreat && dsq(u.x, u.y, pend2.x, pend2.y) < 90 * 90) { u.path = null; finishRetreat(u); return; }
-      u.path = findPath(u.x, u.y, pend2.x, pend2.y, u); u.pi = 0;
+      /* Once for another way round; twice means the way round is the same way, so the
+         waypoint itself is what cannot be reached and it is given up rather than asked
+         for again every half second until the battle ends. */
+      u.blockN = (u.blockN || 0) + 1;
+      if (u.blockN > 1 && u.pi < u.path.length - 1) { u.pi++; u.lastGap = undefined; u.blockN = 0; return; }
+      u.path = findPath(u.x, u.y, pend2.x, pend2.y, u); u.pi = 0; u.lastGap = undefined;
     }
-  } else u.blockT = 0;
+  } else { u.blockT = 0; u.blockN = 0; }
   u.x = clamp(u.x, 24, WORLD.w - 24); u.y = clamp(u.y, 24, WORLD.h - 24);
   u.moving = true;
   if (u.cat === 'veh') {
@@ -2969,6 +3188,38 @@ function moveUnit(u, dt) {
         spawnFx('exhaust', u.x - Math.cos(u.facing) * 26, u.y - Math.sin(u.facing) * 26);
     }
   }
+}
+/* Two sections that come to a halt on the same ground stay on it.
+     The only thing that had ever pushed units apart lived inside moveUnit, as a nudge to
+   the direction it was about to walk in -- and moveUnit returns on its first line when
+   there is nowhere to go. So a halted section had nothing to push it off another halted
+   section, and nearly every overlap in a battle was that one case: two sections drawn as
+   one clump of men, firing as two, and taking one shell between them. It is a step
+   rather than a steering hint for the same reason,
+   and it is bounded by what a man can walk in the time, so a crowd eases apart instead
+   of springing. A gun on its trail is not pushed anywhere: it was laid where it was
+   laid. */
+function unwedge(u, dt) {
+  if (u.dead || u.inside || u.gar || u.towedBy || !u.def.speed) return;
+  var px = 0, py = 0, n = 0, i;
+  for (i = 0; i < G.units.length; i++) {
+    var o = G.units[i];
+    if (o === u || o.dead || o.inside || o.gar) continue;
+    var rr = unitRadius(u) + unitRadius(o), dd = dsq(u.x, u.y, o.x, o.y);
+    if (dd >= rr * rr || dd < .01) continue;
+    var d = Math.sqrt(dd), w = 1 - d / rr;
+    /* the heavier thing gives way less: a section steps round a Tiger, not the reverse */
+    var give = o.cat === 'veh' && u.cat !== 'veh' ? 1.6 : u.cat === 'veh' && o.cat !== 'veh' ? .35 : 1;
+    px += (u.x - o.x) / d * w * give; py += (u.y - o.y) / d * w * give; n++;
+  }
+  if (!n) return;
+  var ml = Math.hypot(px, py);
+  if (ml < 1e-4) return;
+  var st = Math.min(u.speed * .5, 40) * dt;
+  var nx = u.x + px / ml * st, ny = u.y + py / ml * st;
+  if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
+  else if (walkable(nx, u.y)) u.x = nx;
+  else if (walkable(u.x, ny)) u.y = ny;
 }
 function finishRetreat(u) {
   u.retreat = 0; clearOrder(u); u.sup = 0;
@@ -2991,8 +3242,13 @@ function chooseCover(u, threatAng) {
   var best = null, bs = 0, need = aliveModels(u);
   var ox = u.x, oy = u.y;
   /* only the patches near enough to walk to, which is what the index is for: this runs
-     for every halted section on the map and used to read the whole list */
-  var near = coversNear(ox, oy, 70);
+     for every halted section on the map and used to read the whole list.
+       The reach is a walk and not an arm's length. It was seventy, and then anything
+     over sixty away was thrown out, while the men are allowed to walk a hundred and
+     forty to the place they are given -- so a section that halted in the middle of a
+     street with a garden wall eighty units off took nothing at all and stood in the
+     road. Cover that is never taken is scenery. */
+  var near = coversNear(ox, oy, 130);
   for (var i = 0; i < near.length; i++) {
     var c = near[i];
     if (c.type < 1 || c.hp <= 0 || c.kind === 'ditch') continue;
@@ -3005,22 +3261,27 @@ function chooseCover(u, threatAng) {
       d = Math.hypot(c.x - ox, c.y - oy) - c.r;
       cap = Math.max(2, Math.floor(c.r * 3.6 / 9));
     }
-    if (d > 60) continue;                                  /* within a short walk of where it stands */
+    if (d > 118) continue;                                 /* within a short walk of where it stands */
     if (c.kind === 'wall' && c.axis !== null) {
       /* the covers ringing a house sit on its face; only take one if a man can stand
          on at least one side of it */
       var wnx = -Math.sin(c.axis), wny = Math.cos(c.axis);
       if (!slotClear(c.x + wnx * 9, c.y + wny * 9) && !slotClear(c.x - wnx * 9, c.y - wny * 9)) continue;
     }
-    /* the cover the men would actually get from it, allowing for its facing: a wall
-       broadside to the enemy shields; one end-on to him does not */
-    var eff = c.type;
-    if (c.axis !== null && threatAng !== null && c.kind !== 'trench') {
-      var along = Math.abs(Math.cos(threatAng - c.axis));
-      eff = c.type * (1 - along * .75);                     /* end-on is nearly worthless */
-    }
+    /* The cover the men would actually get from it, allowing for its facing: a wall
+       broadside to the enemy shields and one end-on to him does not. Asked of
+       `coverValue`, which is the arithmetic that will be applied when the shooting
+       starts; the picker used to keep its own near-copy that let a trench off the
+       enfilade penalty, so a section would settle contentedly into one being raked from
+       the end -- the worst place on the map to be -- and never look again, because the
+       piece it had chosen still scored as dug in. */
+    var eff = coverValue(c, threatAng === null ? undefined : threatAng);
     if (eff < 1.2) continue;                                /* not worth breaking formation */
-    var score = eff * 30 - d * 1.15 - Math.max(0, need - cap) * 10;
+    /* Worth against distance. The distance term used to be more than a tier of cover
+       across the old sixty-unit reach, which over twice that would have made a section
+       take the nearest thing it could see whatever it was worth; a tier of cover is
+       worth about sixty units of walking. */
+    var score = eff * 34 - d * .55 - Math.max(0, need - cap) * 10;
     if (score > bs) { bs = score; best = c; }
   }
   return best;
@@ -3046,6 +3307,11 @@ function coverSlots(u, c, threatAng) {
     return true;
   }
   function claim(x, y) { taken.push([x, y]); return { x: x, y: y }; }
+  /* and nowhere the section would be strung out to reach: a long wall can hold a platoon
+     and this is one section of it, so the file keeps within a shout of its own marker.
+     It has to be longer than the reach the piece was chosen over, or a section picks a
+     wall a hundred units off and then refuses every place along it. */
+  var REACH = 165;
   /* the side away from the enemy; failing that, the side the squad already stands on */
   var awayAng = threatAng !== null ? threatAng : Math.atan2(u.y - c.y, u.x - c.x);
   if (c.axis !== null) {
@@ -3055,24 +3321,29 @@ function coverSlots(u, c, threatAng) {
     /* if that side is solid ground (a wall against a house), take the other */
     if (!slotClear(c.x + nx * side * stand, c.y + ny * side * stand) &&
         slotClear(c.x - nx * side * stand, c.y - ny * side * stand)) side = -side;
-    /* centre the file on the squad's own position along the line, spaced 9 apart, and
-       keep it inside the piece */
-    var mid = clamp((u.x - c.x) * ax + (u.y - c.y) * ay, -c.r + 6, c.r - 6);
+    /* Centre the file on the squad's own position along the line, spaced 9 apart, and
+       keep it inside the piece -- inside the circle, that is, and not merely inside its
+       length. A patch covers a disc of radius r, and a man standing `stand` off the axis
+       at the very end of it is r-and-a-bit from the middle and so outside the cover he
+       was given: the men on the ends of every file in the game were standing in the
+       open believing they were behind a wall. */
+    var lim = Math.max(4, Math.sqrt(Math.max(0, c.r * c.r - stand * stand)) - 3);
+    var mid = clamp((u.x - c.x) * ax + (u.y - c.y) * ay, -lim, lim);
     var span = (n - 1) * 9;
-    if (mid - span / 2 < -c.r + 4) mid = -c.r + 4 + span / 2;
-    if (mid + span / 2 > c.r - 4) mid = c.r - 4 - span / 2;
+    if (mid - span / 2 < -lim) mid = -lim + span / 2;
+    if (mid + span / 2 > lim) mid = lim - span / 2;
     for (var i = 0; i < n; i++) {
       var t = mid + (i - (n - 1) / 2) * 9;
       /* a little stagger so a wall does not read as a parade */
       var jit = ((i * 37) % 7) / 7 * 2.4 - 1.2;
       var px = c.x + ax * t + nx * side * (stand + jit), py = c.y + ay * t + ny * side * (stand + jit);
-      if (!free(px, py)) {
+      if (!free(px, py) || dsq(px, py, u.x, u.y) > REACH * REACH) {
         /* step along the piece until there is clear, unclaimed ground */
         var found = false;
         for (var s2 = 1; s2 <= 6 && !found; s2++) for (var dir = -1; dir <= 1 && !found; dir += 2) {
-          var t2 = clamp(t + dir * s2 * 8, -c.r + 3, c.r - 3);
+          var t2 = clamp(t + dir * s2 * 8, -lim, lim);
           var qx = c.x + ax * t2 + nx * side * stand, qy = c.y + ay * t2 + ny * side * stand;
-          if (free(qx, qy)) { px = qx; py = qy; found = true; }
+          if (free(qx, qy) && dsq(qx, qy, u.x, u.y) <= REACH * REACH) { px = qx; py = qy; found = true; }
         }
         if (!found) continue;
       }
@@ -3088,11 +3359,11 @@ function coverSlots(u, c, threatAng) {
     var a = awayAng + frac * arc + (((j * 53) % 11) / 11 - .5) * .35;
     var rr = (c.kind === 'tree' ? c.r * .55 : c.kind === 'pit' ? c.r * .45 : c.r * .82) + (((j * 29) % 9) / 9) * 7 - 2;
     var px2 = c.x + Math.cos(a) * rr, py2 = c.y + Math.sin(a) * rr;
-    if (!free(px2, py2)) {
+    if (!free(px2, py2) || dsq(px2, py2, u.x, u.y) > REACH * REACH) {
       var ok2 = false;
       for (var s3 = 1; s3 <= 7 && !ok2; s3++) for (var dir2 = -1; dir2 <= 1 && !ok2; dir2 += 2) {
         var a2 = a + dir2 * s3 * .3, qx2 = c.x + Math.cos(a2) * rr, qy2 = c.y + Math.sin(a2) * rr;
-        if (free(qx2, qy2)) { px2 = qx2; py2 = qy2; ok2 = true; }
+        if (free(qx2, qy2) && dsq(qx2, qy2, u.x, u.y) <= REACH * REACH) { px2 = qx2; py2 = qy2; ok2 = true; }
       }
       if (!ok2) continue;
     }
@@ -3118,7 +3389,12 @@ function updateModels(u, dt) {
     return;
   }
   var cs = Math.cos(u.facing), sn = Math.sin(u.facing);
-  var prone = u.sup > 1.0;
+  /* A garrison never goes flat. Men holding a house fight from its openings, and the
+     two pinned tests below did not exempt them the way the third already did, so a
+     section under a machine gun lay down on the ground floor and vanished out of the
+     windows it was holding -- the strongest cover on the map, with nobody visible in
+     it. */
+  var prone = u.sup > 1.0 && !u.gar;
   var halted = !u.moving && !u.retreat;
   /* in contact and standing still means the weapon is up, whether or not this tick
      happens to be one he squeezes off a round on */
@@ -3139,28 +3415,62 @@ function updateModels(u, dt) {
     }
     if (u.coverPiece && u.coverPiece.hp <= 0) { u.coverPiece = null; u.coverSlots = null; }
   } else { u.coverPiece = null; u.coverSlots = null; u.coverAng = null; }
+  /* The shape of a section is the shape of the ground it is on. Three files abreast is
+     right in a field and impossible in a lane a cart would fill: seven per cent of every
+     man-frame in a battle had its place in the formation inside a house, and the man
+     then closed on the section's own point, which is a section walking as one dot. So
+     the frontage is cut to the room there is and the length grows to take the men, which
+     is a section filing down an alley and opening out again at the end of it. The change
+     is eased over a second or so, because a formation that snapped between two shapes
+     every time it passed a gateway looked like a fault rather than a drill. */
+  var wide = !u.gar && u.def.speed ? clamp((roomAt(u.x, u.y) - 12) / 34, .34, 1) : 1;
+  u.formW = u.formW === undefined ? wide : u.formW + (wide - u.formW) * clamp(dt * 2.2, 0, 1);
+  var fw = u.formW, fl = 2 - fw;
   for (var i = 0; i < u.models.length; i++) {
     var m = u.models[i];
     if (!m.alive) continue;
-    var tx = u.x + m.ox * cs - m.oy * sn, ty = u.y + m.ox * sn + m.oy * cs;
+    var ox = m.ox * fl, oy = m.oy * fw;
+    var tx = u.x + ox * cs - oy * sn, ty = u.y + ox * sn + oy * cs;
     if (u.coverSlots && u.coverSlots[i]) {
-      /* a slot further than a short walk from where the man stands is not taken */
-      if (dsq(m.x, m.y, u.coverSlots[i].x, u.coverSlots[i].y) < 140 * 140) { tx = u.coverSlots[i].x; ty = u.coverSlots[i].y; }
+      /* a slot further than a short walk from where the man stands is not taken, and
+         the walk has to be at least as long as the reach the piece was chosen over or
+         the section picks cover it then refuses to go to */
+      if (dsq(m.x, m.y, u.coverSlots[i].x, u.coverSlots[i].y) < 190 * 190) { tx = u.coverSlots[i].x; ty = u.coverSlots[i].y; }
     } else if (!u.gar && !walkable(tx, ty)) {
-      /* A place in the formation that is inside a wall is not a place. The section's
-         own position keeps to the grid, but its men stood a formation's width either
-         side of it and the formation did not, so a section walking down a lane had its
-         flank files walking through the houses. The man closes on the centre instead,
-         by half if that is clear and all the way if not, which is what a file is. */
-      var kx = u.x + (tx - u.x) * .5, ky = u.y + (ty - u.y) * .5;
-      if (walkable(kx, ky)) { tx = kx; ty = ky; } else { tx = u.x; ty = u.y; }
+      /* A place in the formation that is inside a wall is not a place. The section's own
+         position keeps to the grid, but its men stand a formation's width either side of
+         it and the formation did not, so a section walking down a lane had its flank
+         files walking through the houses.
+           He takes the nearest clear place on the section's own axis: a little further
+         forward or back, a little closer in, until something is clear. Falling straight
+         back onto the section's point, which is what this did, put every blocked man in
+         the section on the identical square yard -- a section in an alley drawn as one
+         man with six shadows. */
+      var got = false;
+      for (var q = 1; q <= 5 && !got; q++) {
+        var lat = oy * (1 - q * .2);
+        for (var sg = 1; sg >= -1 && !got; sg -= 2) {
+          var aln = ox + sg * q * 13;
+          var qx = u.x + aln * cs - lat * sn, qy = u.y + aln * sn + lat * cs;
+          if (walkable(qx, qy)) { tx = qx; ty = qy; got = true; }
+        }
+      }
+      if (!got) { tx = u.x; ty = u.y; }
     }
     var px0 = m.x, py0 = m.y;
     /* close the gap at walking pace: a man never slides across the ground */
     var gap = Math.hypot(tx - m.x, ty - m.y);
     if (gap > .5 && !u.gar) {
       /* a gun crew with no vehicle still shuffles round the piece as it traverses */
-      var stepMax = ((u.speed || (u.cat === 'team' ? 30 : 0)) * (u.moving ? 1.25 : 1.0)) * dt;
+      /* He keeps up with the section, and if he has dropped behind he runs up. His
+         allowance was a flat quarter over the section's BASE pace, while the section
+         itself moves at half as much again in a retreat and forty per cent more at the
+         double: the faster it went the further behind he fell, and a quarter is not
+         enough to close a gap opened by walking round a wall the section walked straight
+         past. So the stance the section is in is read here too. */
+      var pace = u.retreat ? 1.5 : u.stance === 'double' ? 1.4 : 1;
+      var chase = 1 + clamp((gap - 45) / 80, 0, 1);
+      var stepMax = ((u.speed || (u.cat === 'team' ? 30 : 0)) * (u.moving ? 1.25 * pace * chase : 1.0)) * dt;
       if (u.sup > 1.0 && !u.moving) stepMax *= .35;                   /* pinned men crawl */
       var stp = Math.min(gap, stepMax);
       var nmx = m.x + (tx - m.x) / gap * stp, nmy = m.y + (ty - m.y) / gap * stp;
@@ -3184,7 +3494,7 @@ function updateModels(u, dt) {
        actually calls for. */
     var st = halted && !u.gar ? coverStanceAt(m.x, m.y) : 0;
     if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
-    else if (u.sup > .55 && !u.moving) m.pose = POSE_PRONE;
+    else if (u.sup > .55 && !u.moving && !u.gar) m.pose = POSE_PRONE;
     else if (u.stance === 'ground' && halted && !u.gar && st !== STAND_DUG) m.pose = POSE_PRONE;
     else if (u.moving) m.pose = POSE_WALK;
     else if (u.gar) m.pose = POSE_FIRE;                    /* at a window, weapon up */
@@ -3250,7 +3560,7 @@ var _expT = 0, _visT = 0;
    the same reach and there is nothing to be gained by keeping still. */
 function exposure(e) {
   if (e.cat === 'veh') return e.moving ? 1.2 : 1.05;
-  var cv = e.gar ? 4 : coverAt(e.x, e.y);
+  var cv = e.gar ? 4 : coverOf(e);
   var x = [1, .93, .84, .72, .6][cv];
   if (!e.moving) x *= .88;
   if (!e.moving && e.stance === 'ground') x *= .78;    /* flat on the ground */
@@ -3472,7 +3782,7 @@ function fireOneSecondary(u, key, dt) {
   var aimY = best ? best.y : u.y + Math.sin(u.turret) * w.range * .85;
   var acc = 0;
   if (best) {
-    var cov = best.gar ? 4 : coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
+    var cov = best.cat === 'veh' ? 0 : best.gar ? 4 : coverOf(best, Math.atan2(best.y - u.y, best.x - u.x));
     best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1) * (best.moving && best.stance === 'double' ? 1.4 : 1), 0,
                      w.supCap === undefined ? 1.35 : Math.max(best.sup, w.supCap));
     acc = w.acc * COVER[cov].acc * (u.moving ? .6 : 1);
@@ -3552,7 +3862,14 @@ function fireAt(u, t, dt) {
     }
   }
 
-  var cov = t.cat === 'veh' ? 0 : (t.gar ? 4 : coverAt(t.x, t.y, Math.atan2(t.y - u.y, t.x - u.x)));
+  /* Where the men are, and not where the section's marker is.
+       chooseCover and coverSlots go to some trouble to put each man against a wall, in a
+     trench or round the far side of a crater, and every shot fired at him then read the
+     cover at the section's own point -- a bare coordinate a dozen units away that is
+     usually in the middle of the street. So the whole business of taking cover changed
+     nothing whatever about how hard the men were to hit. coverOf averages over the men
+     still standing, which is the honest answer for a section firing as one. */
+  var cov = t.cat === 'veh' ? 0 : (t.gar ? 4 : coverOf(t, Math.atan2(t.y - u.y, t.x - u.x)));
   if (cov < 1 && t.cat !== 'veh' && t.stance === 'ground' && !t.moving) cov = 1;
   var acc = w.acc * COVER[cov].acc;
   acc *= (t.moving && t.cat !== 'veh') ? .86 : 1;
@@ -3635,6 +3952,9 @@ function fireAt(u, t, dt) {
 function explode(x, y, radius, dmg, owner, except) {
   spawnFx('boom', x, y, radius);
   decalScorch(x, y, radius * 1.15);
+  /* once, through the index. It was charged here and then again at the foot of this
+     function by a linear walk of all two thousand patches, so every medium patch on the
+     map took the shell twice and every shell cost a scan of the whole list. */
   damageCover(x, y, radius * .6, dmg * .5);
   for (var sm = 0; sm < 3; sm++) spawnFx('smoke', x + rnd(-radius * .4, radius * .4), y + rnd(-radius * .4, radius * .4));
   if (onScreen(x, y)) addShake(clamp(radius * .10, 1.5, 9));
@@ -3650,20 +3970,20 @@ function explode(x, y, radius, dmg, owner, except) {
       /* A hole in the ground is worth more against a shell than against a bullet: this
          is the whole reason men dig, and on a map fought over by artillery it should be
          the strongest thing cover does. */
-      var bcov = e.gar ? 4 : coverAt(e.x, e.y);
-      var shield = [1, .86, .72, .56, .4][bcov];
+      var bcov = e.gar ? 4 : coverOf(e);
+      var SHD = [1, .86, .72, .56, .4];
       for (var m = 0; m < e.models.length; m++) {
         var mo = e.models[m];
         if (!mo.alive) continue;
         var md = Math.hypot(mo.x - x, mo.y - y);
+        /* each man by what he is behind: the loop already has him, and the difference
+           between the man in the trench and the man who did not make it there is the
+           whole point of a trench */
+        var shield = SHD[e.gar ? 4 : coverAt(mo.x, mo.y, Math.atan2(mo.y - y, mo.x - x))];
         if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85 * shield * (e.def.blastRes || 1), owner);
       }
       e.sup = clamp(e.sup + .45 * f * COVER[bcov].sup / (1 + e.vet * .18), 0, 1.35);
     }
-  }
-  for (var c = 0; c < G.covers.length; c++) {
-    var cv = G.covers[c];
-    if (cv.type === 2 && dist(cv, { x: x, y: y }) < radius * .7) cv.hp -= dmg * .5;
   }
   var blist = G.blds.slice();
   for (var b = 0; b < blist.length; b++) {
@@ -3741,6 +4061,13 @@ function killUnit(u, src) {
     /* and the hull stays where it burned, thirty tons of plate in the middle of the
        street: heavy cover for a tank, medium for a car, and it does not get shelled away */
     addCover(u.x, u.y, u.def.hp > 500 ? 34 : 26, u.def.hp > 500 ? 3 : 2, 'wreck', null, 900);
+    /* and it is in the way. It was cover that everything drove straight through, so a
+       lane the defender had blocked with a burning Panzer was as open as it had been the
+       minute before, which is the opposite of what happens when a tank burns in a
+       street. Asked for rather than done here: the explosion on the next line can kill
+       the half-track beside it, which would rebuild the grid again inside this one, and
+       a chain of four kills is a chain of four rebuilds in a single frame. */
+    G.gridDirty = 1;
     explode(u.x, u.y, 58, 44, null);
     for (var s2 = 0; s2 < 6; s2++) spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
     /* Some of the crew get out and some of them do not. Two men down beside a burning
@@ -4289,6 +4616,7 @@ function updateUnit(u, dt) {
   }
 
   moveUnit(u, dt);
+  unwedge(u, dt);
   if (u.cat === 'veh' && !u.retreat) fireSecondary(u, dt);
   if (u.cat === 'veh') mgTick(u, dt);
   if (u.target && !u.target.dead) {
@@ -16600,6 +16928,7 @@ function frame(now) {
   if (POV.on) povControls();
   if (G.running && !G.paused) {
     G.t += dt;
+    if (G.gridDirty) { G.gridDirty = 0; rebuildGrid(); }   /* a hull burned somewhere last frame */
     computeVisibility(dt);
     for (var i = 0; i < G.units.length; i++) updateUnit(G.units[i], dt);
     for (var j = 0; j < G.blds.length; j++) updateBuilding(G.blds[j], dt);

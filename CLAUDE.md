@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game set in Ortona, December 1943:
 1st Canadian Infantry Division against 1. Fallschirmjäger-Division. Custom
 WebGL2 renderer, no engine, no dependencies, no build step.
 
-**The whole game is `ortona.html`.** Roughly 7,800 lines: CSS in one `<style>`,
-markup, then all the JavaScript in one `<script>`. Open the file in a browser
+**The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
+`<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
 and it runs.
 
 ---
@@ -46,6 +46,7 @@ npm install                  # once; Chromium is already on disk
 npm run verify               # lint + map check + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
+node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -92,7 +93,16 @@ node tools/duel.mjs --n=24               # more repeats, tighter numbers
 node tools/duel.mjs us_rifle ger_gren    # one matchup
 node tools/duel.mjs --d=200              # at a chosen opening range
 node tools/duel.mjs --cover=3            # with both sides in heavy cover
+node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
+node tools/duel.mjs --file=/tmp/x.html   # or on any file
 ```
+
+`--base` is there because a change that was never meant to touch the fighting still has
+to be fought. A near-even matchup swings by thirty points between runs of the same code,
+so one row moving is not evidence of anything: halving the cell size came back at 65 per
+cent and then 38 on `us_sher ger_p4`, and the whole card over forty-three rows moved by
+0.3 points with a standard error of 2.2, the spread of the row-to-row shifts being
+smaller than sampling noise alone. Read the card, not the row.
 
 Stats on paper do not tell you who wins. Damage per volley interacts with how
 many men are left to fire it, suppression feeds back into accuracy and rate of
@@ -109,6 +119,59 @@ Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 reinforcement left out, so it cannot drift away from the game. A third entry on a
 card row fits field upgrades before the fight, because half of what a vehicle can
 do is an upgrade.
+
+### `tools/move.mjs` - movement, pathing and cover, mechanically
+
+A path is a few hundred cells of arithmetic and the eye will not hold them. A section
+stuck against a wall looks exactly like a section holding a wall. A tank that took the
+gardens instead of the Corso arrives late and nothing on screen says why. So it is
+counted.
+
+```sh
+node tools/move.mjs                 # the whole card
+node tools/move.mjs routes          # one section of it
+node tools/move.mjs --base=HEAD     # the same card on an older file, side by side
+node tools/move.mjs --t=360         # a longer battle probe
+node tools/move.mjs --v             # every route and every drill rather than the summary
+```
+
+Three sections, because there are three questions.
+
+**ROUTES** asks whether a path is any good. Five journeys across the shipped map, each
+for a section, tracks, wheels and the heaviest thing on the roster, priced three ways:
+length against the crow, cost against a plain Dijkstra over the game's own grid and its
+own `cellCost`, and the narrowest place along it against the beam of the thing that has
+to fit. Then the unit is driven down it by the game's own `updateUnit`, because a path
+that prices well and cannot be walked is worth nothing. The Dijkstra reference is the one
+piece of arithmetic here that is deliberately *not* the game's: an optimum computed by
+the code under test is not an optimum.
+
+**TRAFFIC** is a whole battle, both brains, counted every frame, looking for the states a
+unit should never be in: with a path and four seconds of no progress, with its centre off
+the walkable grid, with its men inside a house, wedged inside another unit, in a gap
+narrower than its own beam. Plus the rates that say how hard the pathfinder is worked.
+
+**COVER** puts a section down at two dozen points through the town with an enemy on a
+known bearing, lets it settle, and asks what tier its men are actually getting against
+that bearing -- against the best tier that was there for the taking. Taken over available
+is the number, because cover that is never taken is scenery.
+
+Two things about reading it. **A metric needs a denominator you can see.** The first
+version counted four-second windows in which a unit with a path went nowhere; a path is
+usually spent in well under four seconds, so a whole battle produced about fifty windows
+and four coincidences read as a nine per cent regression. It counts unit-frames now, and
+the denominators are printed. And **`unitRadius` is half a vehicle's length**, not its
+width -- it is the separation radius -- so the card measures fit against a beam derived
+from it. Comparing a Sherman's 41 against the 55-unit clearance of the Corso says the
+main street of the town is too narrow for the tank that is driving down it.
+
+Where the overhaul left it, on one `--base=HEAD` run of 150 seconds a side: stuck
+unit-frames 0.95 per cent to none, wedged 2.65 per cent to none, halted men in cover 72.7
+per cent to 99.1, cover taken over available 0.59 to 0.76 with the two sections that
+stood in the open beside medium cover down to none. Off the same card's routes: the way
+across the town's grain 991 units to 840, its detour 1.37 to 1.16, and the share of that
+drive on the metalling 0.58 to 0.98. Formation slots inside a house, which the card does
+not print, went from 7.1 per cent of man-frames to 2.4.
 
 ### `tools/audio.mjs` - sound, mechanically
 
@@ -323,6 +386,11 @@ Four pieces are worth knowing about because they are not obvious:
   gallery shot that comes back empty is almost always this. `drawable(page)`
   reports `{units, blds, total}` that `render()` would actually draw, which is
   the quick way to tell a bad model from an invisible one.
+- **`openGame(browser, device, { file })`** takes the file to open, and forgetting it is
+  silent: both halves of a before-and-after comparison then load the working file and
+  come back identical, which reads as "the change did nothing" rather than as a broken
+  probe. It happened twice in one afternoon. If two runs agree to the last digit, check
+  that argument before believing them.
 - **`frames(page, n)`** waits for n real animation frames. A screenshot
   captures whatever the compositor last painted, so every camera or state
   change needs at least one frame before the picture reflects it. `shoot()`
@@ -355,45 +423,143 @@ it from `G.mapData`, which is plain JSON the map editor also reads and writes
 (`makeHeight`, `groundZ`, `groundNormal`) carries elevation, with trenches and
 craters cut in by `carve`.
 
-**Movement.** A 40-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
+**Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
-position; `updateModels` animates the individual soldiers.
+position; `updateModels` animates the individual soldiers. `tools/move.mjs` is the card
+for all of it.
+
+**The cell has to be small enough to hold the ground it stands for**, and at forty units
+it was not. A building is marked by every cell its footprint touches, plus a pad, so the
+Corso -- the widest street in Ortona, a hundred and ten units across -- came out one cell
+wide, which is narrower than a Sherman; a sixty-unit lane came out as masonry; and thirty
+per cent of the open ground in the town, eight per cent of it with room for a whole
+section, was not on the map the pathfinder reads at all. At twenty units it costs four
+times the cells (13,300 of them, a few hundred kilobytes and about a millisecond to
+rebuild) and the lanes come back: the route across the town's grain fell from 991 units
+to 840 and its detour from 1.37 to 1.16, and the share of that drive spent on the
+metalling went from 0.58 to 0.98.
+
+A rebuild at four times the cells cost four times as much, and it happens every time a
+building goes up or a vehicle burns. Most of it was four `groundZ` samples a cell to find
+the sea and the cliffs, and the shape of the ground does not change during a battle: it
+is kept in `terrg` and `makeTerrain` is the only thing that throws it away, which puts a
+rebuild back to 0.8 ms from 3.2 -- about what it cost at forty units to the cell.
+
+**What is marked on it has a width.** A street is forty-eight units of metalling, a wire
+apron thirty-four, a garden wall six of dry stone; `markSeg` took none of that and marked
+one cell, so all three were whatever the cell happened to be -- the road narrower than the
+lorries on it and the wall wider than the gap beside it. Sight and fire are marked the
+same way, so the same call fixed a garden wall blocking a forty-unit swathe of view.
 
 The grid says where a thing can go; `cellCost` says where it would want to, per
 `pathKind`: tracks pay 1.35 off the metalled streets and wheels 1.5, both more on a bank
 (`steep`), and men on foot pay 2.6 to cross wire and a little for a bank. A tank sent
 across the town used to cut straight over the gardens at two thirds pace with the Corso
-fifty units to its left. The smoother prices a shortcut against the path it replaces
-(`lineCost`) rather than only asking whether it is clear, or it cut every bend of the
-street back off across the gardens; and it samples every nine units, because at eighteen
-a line that clipped the corner of a blocked cell passed as clear and the section stood at
-that corner for the rest of the battle. Every path carries the `gridStamp` it was found
-on and is found again when the grid changes, which it does whenever a building goes up:
-retreating sections were found standing against their own side's new motor pool,
-sliding along its wall by a hair a frame, because the wall-slide counted as a step. A
-step that makes no progress for half a second now counts as blocked (`u.blockT`), and
-before a blocked unit asks for a new path it tries the step swung off the line, the way
-a man shoulders round a doorway full of the section in front. A retreat scatters its
-destination behind the headquarters and finishes when it is held up within a few paces
-of it, or a dozen retreating sections arrived into each other and the last stood in the
-crush for good.
+fifty units to its left.
 
-A man's place in the formation is not taken if it is inside a wall: he closes on the
-centre instead, by half if that is clear and all the way if not, and his own steps keep
-to the grid like the section's. Before that a section walking down a lane had its flank
-files walking through the houses, half a per cent of all man-frames. Halted with nothing
-to shoot at, a section turns to face the nearest known threat (`u.threatAng`, the bearing
-its cover was chosen against) rather than standing the way it arrived, and a machine gun
-is laid on that bearing before it is needed. A halted tank with a turret brings its hull
-round to its target as well, slowly, because the front plate is nearly twice the side.
+**And how much room it leaves.** `buildRoom` chamfers the grid into `roomg`, the distance
+in cells to the nearest thing that stops a boot, which `cellCost` charges for: a gap is
+dear in proportion to how hard it is to get through, and a lorry minds it about three
+times as much as a man. Nothing is forbidden, because ground nothing may cross is ground
+the army stops using -- the tight way is dear rather than closed, and when it is the only
+way it is still taken. This is what keeps a hull out of the masonry: the search runs cell
+centre to cell centre, which is honest, and the smoother then replaces a run of them with
+one line and only asked whether the middle of that line was clear, so it cut every corner
+to the wall. Priced instead, the shortcut that scrapes is weighed against the one that
+does not, and `lineCost` samples every ten units to see it.
 
-`tools/` has no card for any of this; the probe that measured it drives the working
-brain on both sides for four minutes and counts man-frames inside a solid prop, halted
-sections facing their threat, and unit-frames with a path and no progress over four
-seconds, then prices a tank's and a section's path across the town. Old code is injected
-the way `skirmish.mjs` injects a brain. Men in walls went from 0.5 per cent to none and
-stuck unit-frames from up to twelve per cent to none, with the retreat crush the last
-bucket to go.
+**A clear line is not the same as a good line.** Men on foot were handed any clear line
+at all, however long and whatever it ran through, so every cost the pathfinder charges a
+section -- wire, a bank, a field wall, a gap it has to squeeze down -- applied only to the
+routes it happened to search for. A section ordered across a wire apron with a gate a
+hundred units to its left walked into the wire. The line is priced now and taken only
+when it costs no more than the open ground it is drawn across; one `lineCost` is cheaper
+than the search it usually saves, and the battle probe came back with fewer searches
+rather than more, because the paths hold better once they are worth holding.
+
+**A step that makes no ground is blocked, however far it moves.** The stall detector
+measured displacement, and a unit pressed against a house slides along it at very nearly
+full speed: a section creeping sideways down a frontage read as a section making
+excellent progress, never tripped the timer, never asked for another way round, and went
+on grinding along the wall for as long as the order stood. A probe that put wrecks on the
+grid to make the blockages worse caught it at fourteen per cent of the frames an
+attacking section spent with a path in hand; on the card against the last commit it is
+about one per cent, and none. What is measured is the ground made good toward the
+waypoint (`u.lastGap`). Once blocked it tries the step swung off the line, the way a man
+shoulders round a doorway full of the section in front; then it asks for another way to
+where it was going, and not to the next waypoint, which threw the rest of the route away
+and left the section treating the corner it had reached as the order carried out; and on
+the second failure it gives the waypoint up rather than asking for it again every half
+second until the battle ends (`u.blockN`).
+
+**The queue was not a queue.** `findPath`'s heap compared `_f[heap[i]]` live while the
+relaxation lowered `_f` of nodes already sitting in it, so eighty-nine per cent of pops
+on this map returned something that was not the smallest thing in the heap. It carries
+the key it was pushed with now, and a re-found node is pushed again. Worth knowing: it
+bought nothing. Forty long searches across the map came back at 1.64 ms, 4.9 legs and the
+same cost, before and after, because a weighted heuristic on a map this size finds the
+same routes with the queue in any order. It is in because the next person to touch the
+heuristic or the cost model would be building on a queue that does not order.
+
+**There may be no way there at all.** A failed search used to hand back a straight line to
+the destination, which is a lie no caller can see through. It now walks the unit to the
+nearest cell the search actually reached and marks the path `noWay`. A unit standing on
+ground that has stopped being ground -- a company post raised on top of it, a wreck
+settled across it -- walks out to the nearest ground it can stand on rather than failing
+every step it tries.
+
+**Units are obstacles.** `unwedge` is the push, and it lives outside `moveUnit` because
+`moveUnit` returns on its first line when there is nowhere to go: the only thing that had
+ever pushed units apart was a steering hint inside the movement code, so a halted section
+had nothing to push it off another halted section. A diagnostic that bucketed the
+overlaps found nearly all of them in that one bucket -- two halted friendly sections
+standing inside each other, drawn as one clump of men, firing as two and taking one shell
+between them. It is a step rather than a hint, bounded by what a man walks in the time,
+and the heavier thing gives way less. On the card it took wedging from 2.7 per cent of
+every unit-frame to none.
+
+**A burnt-out hull is in the way.** `killUnit` puts a wreck on the movement grid as well
+as adding it as cover, so a lane blocked by a burning Panzer is blocked. It stops a boot
+and not an eye: a man sees and shoots over a dead tank.
+
+**A field wall is three things to three ways of travelling.** Tracks go over it and
+flatten it, a man gets over it but not at a walk, and a lorry goes round. It was none of
+them: absent from the movement grid entirely, so everything crossed a foot of dry stone
+as though it were painted on. `wallg` prices it -- 1.9 to a section, nothing at all to
+tracks, two and a half times to wheels -- and a man crossing one is at a little over half
+pace, the way wire already worked. Priced and not blocked, because a wall nothing may
+cross fences off the gardens of half the town; blocking them outright was tried and cost
+2.3 per cent of the free ground for no change to any route worth the name.
+
+**Weight turns a hull.** Every vehicle in the game swung round at the same 2.6 radians a
+second, so a Tiger II turned as smartly as a Daimler and there was nothing to be had from
+getting behind the heavy thing except the thinner plate. It is 1.5, 2.1 or 2.9 by weight
+now, beside the acceleration that was already graded that way.
+
+**The shape of a section is the shape of the ground it is on.** Three files abreast is
+right in a field and impossible in a lane a cart would fill: seven per cent of every
+man-frame had its place in the formation inside a house. `u.formW` cuts the frontage to
+the room there is (`roomAt`) and lengthens the column to take the men, eased over about a
+second so a section does not snap between two shapes at every gateway. A man whose place
+is still inside something takes the nearest clear place on the section's own axis rather
+than falling back onto its point, which put every blocked man in the section on the same
+square yard. A man keeps up with the section and runs up if he has fallen behind: his
+allowance was a flat quarter over the section's BASE pace, so the faster it went the
+further behind he fell, and a quarter never closed a gap opened by walking round a wall
+the section walked straight past.
+Slots inside something went from 7.1 per cent of man-frames to 2.4, and the mean distance
+of a man from his own marker went from 63 units to 92 -- a section holding a wall rather
+than a section standing on a dot.
+
+Every path carries the `gridStamp` it was found on and is found again when the grid
+changes, which it does whenever a building goes up or a vehicle burns. A retreat scatters
+its destination behind the headquarters and finishes when it is held up within a few
+paces of it, or a dozen retreating sections arrived into each other and the last stood in
+the crush for good. Halted with nothing to shoot at, a section turns to face the nearest
+known threat (`u.threatAng`, the bearing its cover was chosen against) rather than
+standing the way it arrived, and a machine gun is laid on that bearing before it is
+needed. A halted tank with a turret brings its hull round to its target as well, slowly,
+because the front plate is nearly twice the side.
 
 **Stances.** `u.stance` is `''`, `'ground'` or `'double'`, set by the player from the
 order cards (Z and C) and by the brain for its own men every tick. Gone to ground, a
@@ -415,9 +581,50 @@ which is what `coverValue` computes from the firing angle. `chooseCover` and
 `coverSlots` are why soldiers tuck themselves against walls. A burnt-out vehicle
 is cover too (`kind: 'wreck'`, heavy for a tank and medium for a car, added by
 `killUnit` where it died), because thirty tons of plate in the middle of a street
-is the best thing in it to get behind. On desktop the grade of cover under the
-pointer is shown beside it while infantry is selected, so the player can see what
-a move order would land in before giving it.
+is the best thing in it to get behind, and it blocks the street as well. On desktop
+the grade of cover under the pointer is shown beside it while infantry is selected, so
+the player can see what a move order would land in before giving it.
+
+**Cover is read where the men are.** `fireAt`, `fireOneSecondary`, `explode` and
+`exposure` all ask `coverOf`, which averages over the men still standing, and shellfire
+asks each man separately because the loop that hurts him already has him. They used to
+read `coverAt(t.x, t.y)`, the section's own marker -- a bare coordinate usually in the
+middle of the street, a dozen units from any of them. So `chooseCover` and `coverSlots`
+went to great trouble putting each man against a wall and it changed nothing whatever
+about how hard he was to hit: the whole business of taking cover was decoration. Fixing
+it took halted men behind something from 73 per cent of man-frames to 99.
+
+**A section takes cover, rather than standing in what it halted on.** The piece has to be
+within a hundred and eighteen units, not sixty, because the men are allowed to walk to it
+and a section that halted in a street with a garden wall eighty units off used to take
+nothing at all. A tier of cover is worth about sixty units of walking, which is what the
+score's distance term now says. `coverSlots` keeps the file inside the patch's own circle
+rather than inside its length -- a man standing nine units off the axis at the very end
+was outside the cover he had been given, so the ends of every file in the game were in
+the open believing they were behind a wall -- and within a shout of the section, so a long
+wall does not string one section across a whole frontage.
+
+**A hole in the ground cannot be shelled away.** Craters and ditches were being worn down
+by `damageCover` like a sandbag wall and then dropping out as cover entirely, while the
+map went on drawing them: after a barrage the men lying in a crater field were in the
+open and nothing on screen said so. Works still come apart, which is why a position has
+to be re-dug. And every shell used to be charged against medium cover twice -- once
+through the index and once by a linear walk of all two thousand patches at the foot of
+`explode`, which was also a scan of the whole list on every explosion.
+
+**A garrison never goes flat.** Men holding a house fight from its openings. Two of the
+three pinned tests in `updateModels` did not exempt `u.gar` the way the third already
+did, so a section under a machine gun lay down on the ground floor of the strongest cover
+on the map and vanished out of the windows it was holding.
+
+**A house's faces lie along its walls.** The four patches ringing every building had the
+two axes the wrong way round. A patch's axis is the line it protects across, so the front
+of every house in Ortona sheltered you from fire coming along the street and left you in
+the open against fire coming straight at the wall; it also laid the men out at right
+angles to the house, half of them inside it. And `chooseCover` now scores a piece with
+`coverValue` itself, rather than its own near-copy that let trenches off the enfilade
+penalty: a section would settle contentedly into a trench being raked from the end, which
+is the worst place on the map to be, and never look again.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
@@ -988,6 +1195,7 @@ package.json                   dev dependencies and script aliases
 tools/harness.mjs              Playwright library: boot, drive, pose, photograph
 tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
+tools/move.mjs                 movement card: routes, battle traffic, cover taken
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
@@ -1052,6 +1260,15 @@ shots/                         screenshot output, gitignored
   thing it found was the Sherman's open hatch hinged about the wrong line: correct enough
   in a gallery shot, a wall of paint from the commander's seat. When a model gains a
   first-person eye, photograph it from that eye before trusting the gallery.
+- **`unitRadius` is half a vehicle's LENGTH.** It is the separation radius, so a Sherman
+  reads 41 when it is 2.6 m across the tracks, which is 15. Anything asking whether a
+  thing fits through a gap wants the beam, and asking with `unitRadius` reports the main
+  street of Ortona as too narrow for the tank driving down it.
+- **A rate needs a denominator you can see.** A movement metric counted four-second
+  windows in which a unit with a path went nowhere; a path is usually spent in well under
+  four seconds, so a whole battle produced fifty windows and four coincidences read as a
+  nine per cent regression that sent a morning after a bug that was not there. Print the
+  denominator, and prefer counting frames to counting events.
 - `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
   into `G.units` as well has it in the list twice, and a unit in the list twice is
   updated twice a frame: it drives at double speed and its gun fires at twice its rate of
