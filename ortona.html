@@ -3859,7 +3859,10 @@ function computeVisibility(dt) {
        sight is not lost the instant a man steps behind a wall. */
     uu.vUs = uu.side === 'us' || uu.detUs >= (uu.vUs ? .42 : 1);
     uu.vGer = uu.side === 'ger' || uu.detGer >= (uu.vGer ? .42 : 1);
+    if (uu.side !== 'us' && uu.vUs) noteContact('us', uu);
+    if (uu.side !== 'ger' && uu.vGer) noteContact('ger', uu);
   }
+  fadeContacts();
   _expT = (_expT + 1) % 3;
   if (!_expT && G.side) {
     var mine = _eyes[G.side];
@@ -3870,6 +3873,31 @@ function computeVisibility(dt) {
     bb.vUs = bb.side === 'us' || seen(_eyes.us, bb, 1.25);
     bb.vGer = bb.side === 'ger' || seen(_eyes.ger, bb, 1.25);
   }
+}
+/* ---- what the side last saw ------------------------------------------------------
+   Detection is a rate, so a thing is lost as well as found, and until now a unit the
+   player lost simply stopped existing: the section that was shooting at him a second
+   ago is off the screen and off the little map with nothing left where it was. The
+   brain has had the other half of this since the memory was built -- AIM knows where a
+   contact was and how long ago -- and the player was given nothing at all.
+
+   A contact is a last known position and a kind, and it is a memory rather than a
+   tracker: it stays where the man was last seen, it does not follow him, and it says
+   nothing about what he is doing now. It goes stale at about the same age AIMEM does,
+   because the two are the same fact told to different people. */
+var CONT = { us: [], ger: [] }, CONTT = 30;
+function noteContact(side, u) {
+  var l = CONT[side], i;
+  for (i = 0; i < l.length; i++) if (l[i].id === u.id) { l[i].x = u.x; l[i].y = u.y; l[i].t = G.t; return; }
+  l.push({ id: u.id, x: u.x, y: u.y, t: G.t, side: u.side, veh: u.cat === 'veh' });
+}
+function dropContact(side, id) {
+  var l = CONT[side];
+  for (var i = l.length - 1; i >= 0; i--) if (l[i].id === id) l.splice(i, 1);
+}
+function fadeContacts() {
+  var s, l, i;
+  for (s in CONT) { l = CONT[s]; for (i = l.length - 1; i >= 0; i--) if (G.t - l[i].t > CONTT) l.splice(i, 1); }
 }
 function visibleTo(side, e) { return side === 'us' ? !!e.vUs : !!e.vGer; }
 /* What a gunner picks. The old score was distance and a couple of flat bonuses, which
@@ -4294,6 +4322,10 @@ function damageModel(u, m, amt, src) {
 function killUnit(u, src) {
   if (u.dead) return;
   u.dead = true;
+  /* a side that watched him die has nothing left to remember; a side that did not keeps
+     the contact and goes on believing he is where it last saw him, which is right */
+  if (visibleTo('us', u)) dropContact('us', u.id);
+  if (visibleTo('ger', u)) dropContact('ger', u.id);
   /* a fixed gun with its crew dead is still a gun in a ring of bags: cover, and a mark */
   if (u.cat === 'team' && !u.def.speed) {
     addCover(u.x, u.y, 24, 2, 'wreck', null, 400);
@@ -17540,6 +17572,24 @@ function render() {
     var e = u.path[u.path.length - 1];
     groundRing(e.x, e.y, 12 + Math.sin(G.t * 5) * 2, atk ? '#c95c4e' : '#9ecb62', 2);
   });
+  /* where an enemy was last seen, drawn hollow and dashed so it can never be mistaken
+     for a unit that is there now. It is where he was, and it fades because a contact
+     half a minute old is worth nothing. */
+  if (CONT[G.side]) CONT[G.side].forEach(function (c) {
+    if (G.t - c.t < .25) return;                 /* in sight: the unit itself is drawn */
+    var cp = w2s(c.x, c.y, groundZ(c.x, c.y) + 2);
+    if (cp.behind) return;
+    var cr = c.veh ? 8 : 6;
+    /* held at full for the first two thirds of its life and faded over the last third:
+       a mark that starts fading the moment it is made is unreadable for most of the time
+       it is on the screen, which is exactly when it is worth something */
+    ctx.globalAlpha = clamp((CONTT - (G.t - c.t)) / (CONTT * .35), 0, 1) * .78;
+    ctx.strokeStyle = 'rgba(6,8,4,.8)'; ctx.lineWidth = 3.4;
+    ctx.strokeRect(cp.x - cr, cp.y - cr, cr * 2, cr * 2);
+    ctx.strokeStyle = FACTION[c.side].color; ctx.lineWidth = 1.4; ctx.setLineDash([4, 3]);
+    ctx.strokeRect(cp.x - cr, cp.y - cr, cr * 2, cr * 2);
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  });
   /* tracers and shells */
   ctx.globalCompositeOperation = 'lighter';
   G.shots.forEach(function (s2) {
@@ -17664,6 +17714,14 @@ function drawMinimap() {
     var r = u.cat === 'veh' ? 2.6 : 1.9;
     mctx.fillStyle = 'rgba(8,10,6,.8)'; mctx.fillRect(u.x * sx - r - .8, u.y * sy - r - .8, r * 2 + 1.6, r * 2 + 1.6);
     mctx.fillStyle = FACTION[u.side].color; mctx.fillRect(u.x * sx - r, u.y * sy - r, r * 2, r * 2);
+  });
+  if (CONT[G.side]) CONT[G.side].forEach(function (c) {
+    if (G.t - c.t < .25) return;
+    var cr = c.veh ? 2.6 : 1.9;
+    mctx.globalAlpha = clamp((CONTT - (G.t - c.t)) / (CONTT * .35), 0, 1) * .85;
+    mctx.strokeStyle = FACTION[c.side].color; mctx.lineWidth = 1;
+    mctx.strokeRect(c.x * sx - cr, c.y * sy - cr, cr * 2, cr * 2);
+    mctx.globalAlpha = 1;
   });
   /* what has been seen */
   if (fog) {

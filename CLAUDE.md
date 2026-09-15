@@ -48,6 +48,7 @@ node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
+node tools/sight.mjs         # sight: the trace, what a position commands, how long spotting takes
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -97,6 +98,12 @@ node tools/duel.mjs --cover=3            # with both sides in heavy cover
 node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
 node tools/duel.mjs --file=/tmp/x.html   # or on any file
 ```
+
+A row reads `open` and `met`: where the pair were put down, and where they were when the
+first of them saw the other. Those are not the same number any more. Being seen takes a
+second or two, an attack-move walks for the whole of it, and a pair staged at 212 meet at
+130 -- which for a weapon with a `closeWeak` radius is the whole fight. An opening range
+nobody stays at is not a denominator.
 
 `--base` is there because a change that was never meant to touch the fighting still has
 to be fought, and because one row moving is not evidence of anything. A near-even matchup
@@ -269,6 +276,47 @@ is not there, and this file already records one that parsed, passed the gate and
 fired once -- with nothing to say so. It is also how a rule that fires once a battle shows
 up as one that may as well not be there: the duck rule fired exactly once in a five-minute
 battle at the last commit, which is what sent the reaction to fire into the weighing.
+
+### `tools/sight.mjs` - sight, mechanically
+
+What a unit can see cannot be reviewed by reading the diff and cannot be reviewed from a
+screenshot either, and the second half of that is the part worth saying out loud: the
+picture shows what the renderer drew, and what the renderer draws is filtered by the same
+vision code that is under test, so a bug in it hides itself. The fog of war ran for the
+life of the game with no live-vision tier at all -- `updateFog` asked each eye for `r2`
+and `computeVisibility` writes `r`, so the radius was the square root of undefined, which
+fails a loop bound silently and skips the eye. Every cell the player had ever walked past
+sat at 110 and nothing on the map was ever brighter, and since the terrain shader
+multiplies by `0.16 + 0.84 * vis`, the whole visible map rendered at 52 per cent
+brightness for the life of the game. Every screenshot ever taken of it looked plausible.
+That is why the fog buffer is a section of this card.
+
+```sh
+node tools/sight.mjs                 # the whole card
+node tools/sight.mjs trace           # one section of it
+node tools/sight.mjs --n=400         # more sample lines
+node tools/sight.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**TRACE** asks whether the line of sight agrees with the ground. The reference is a walk
+of the same line at four units a step, which is deliberately *not* what the game does, and
+it reads the game's own end exemption out of `traceClear`'s source rather than restating
+it. Three of the card's first four readings were wrong and the card was at fault each
+time: a reference using a different end exemption reported four per cent of walls stepped
+over that were not; a wall drill with the target three hundred and twenty units out
+reported a dense town as men blinded by their own cover, fifty-six per cent of it other
+people's buildings; and a spotting drill placed on what turned out to be a crater field
+reported a prone section as never seen at all. Each correction is written into the card
+beside the thing it got wrong.
+
+**REACH** is the share of a ring at each range that an eye there can actually see, which
+is the number that says whether a town is a town or an open field with houses drawn on it.
+The crossroads commands 58 per cent of a ring at 150 units and 7 per cent at 800; open
+ground west of the town commands 100 and 24.
+
+**SPOT** is seconds to pick a section out, by what it is doing, which is the whole point of
+making detection a rate. **FOG** is the share of the map in each of the three tiers.
+**COST** is what a vision tick costs and how many traces it runs.
 
 ### `tools/skirmish.mjs` - tactics, mechanically
 
@@ -662,6 +710,82 @@ sections to the forming-up point and at the objective while the ground round the
 quiet and they have no target, and goes to ground where it is when it is caught in the
 open with nowhere to go.
 
+**Being seen takes time.** Detection was a yes or a no: in reach, with a clear line, and
+the thing was seen, on the instant. So `exposure` -- the whole of what the game had to say
+about keeping still, lying flat, holding fire or being in cover -- could only ever move the
+RANGE at which that instant happened, and on the card it moved it by seven per cent between
+a section standing still and one walking. A file that says this is what makes an ambush an
+ambush was describing a seven per cent effect.
+
+It is a rate now. `rate()` inside `computeVisibility` is how fast a side is picking a thing
+out, taking the best of its eyes, and `detStep` works `u.detUs`/`u.detGer` up at that rate
+and down at a fixed one. Found at 1, lost at 0.42, so a man stepping behind a wall is not
+lost on the frame he does it. Everything that ought to make a man hard to find slows the
+rate: how exposed he is, how far inside the reach he is, whether the eye is even looking
+his way, and what is in the air between them.
+
+    the target is                  150u     260u     360u
+    walking, in the open           1.5s       3s    never
+    standing still                 2.1s     4.1s    never
+    flat on the ground             3.3s     6.7s    never
+    at the double                  1.1s     1.6s     4.7s
+    firing                         1.3s     2.2s    30.5s
+    still, eye looking away        3.7s     7.5s    never
+    flat, eye looking away           6s    12.1s    never
+    walking, behind smoke          7.3s    14.8s    never
+
+Two things fall out of a rate that a yes-or-no line could never say. **Facing**: `lookGain`
+reads `u.facing`, or a vehicle's turret, and an eye looking the other way works at a little
+over half speed, so the brain turning its halted men toward the threat it knows about is
+finally worth something. And **smoke**: `smokeColumns` and `smokeOn` attenuate along the
+line, so a burning hull obscures, which is a slowing rather than a wall.
+
+**Exposure multiplies the rate, not the reach.** Scaling the reach did the same job the
+distance falloff already does and did it worse: a section lying flat in a crater got a hard
+ring at forty-five per cent of the reach and was literally invisible a unit outside it,
+rather than slow to find. Only a loud target still gets reach for it, because a muzzle
+flash at nine hundred yards is a muzzle flash. With the rate to scale, movement is worth
+what movement is worth: it was twelve per cent, and a man who stops moving is doing the
+single most effective thing available to him.
+
+**`traceClear` walks the line cell by cell.** Sampled at `min(40, d/22)` the step grew with
+the line -- fifty units at two thousand against a twenty-unit grid -- so a long line could
+be stepped clean over a wall. A grid traversal cannot miss a cell at any range and costs
+less at short range because it does not oversample. It took blockers stepped over from 1.25
+per cent of lines to 0.42, which is the resolution floor of the comparison itself.
+
+**The fog draws three tiers, and they are three different things.** Ground in sight is what
+it is; ground walked past is a memory, dim with the colour out of it; ground nobody has
+been near is the winter haze with only a ghost of the shape in it. Multiplying by 0.16 kept
+every crater and every roof legible in ground the side had never been within half a mile
+of. The live circle falls to exactly the byte an explored cell carries, so the rim of what a
+section sees runs into what the side remembers rather than stepping down to it, which drew a
+hard line round every unit on the map. `fogCircle` rasterises both tiers, because
+`markExplored` and `updateFog` had written the aspect correction opposite ways round and
+were both only correct because the fog texture happens to be proportional to the world.
+
+**And the player is told what the side last saw.** `CONT` is a contact list per side, noted
+in `computeVisibility` while a thing is visible and left where it was when it is lost, drawn
+hollow and dashed on the overlay and on the little map, dropped in `killUnit` for a side
+that watched him die. Detection being a rate means a thing is lost as well as found, and
+until this the unit that was shooting at the player a second ago simply stopped existing.
+The brain has had the other half of this since `AIM` was built; the player had nothing.
+
+**What this cost the balance card, and why.** An attack-move walks for as long as it cannot
+see, so contact now happens about a hundred units closer than the pair were staged at: a
+rifle section opened at 212 against the eighty-eight and was at 130 before either could see
+the other, which is inside the gun's own `closeWeak` radius. That row went from 100 per cent
+to nil, and `ger_p4 us_ab` with it. Over forty rows the card moved +1.6 points with a
+standard error of 5.7 against a row-to-row spread of 36, so the roster as a whole is where
+it was. `tools/duel.mjs` prints `met` beside `open` now, because an opening range nobody
+stays at is not a denominator. The eighty-eight loses to a rifle section at 450 on the
+pre-change file too, which is a roster question and not this one.
+
+Measured on `tools/brain.mjs --base=3ed77e0` over a five-minute battle with a brain on both
+sides, the honesty boundary moved the right way on every count: targets picked that had
+never been seen 36.1 per cent to 19.2, attack orders on them 21.7 to 16.3, rounds actually
+fired at something unseen 13.7 to 6.66, threat weight unseen 75.4 to 61.5.
+
 **Combat.** `computeVisibility` fills `vUs`/`vGer` and drives both fog of war
 and target acquisition. `COVER` entries are graded open / light / medium /
 heavy / dug-in; linear cover (walls, trenches) only protects across its face,
@@ -731,6 +855,37 @@ static world is merged into tiled buffers by `buildScene` (a grid of prop tiles 
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
 ground shader multiplies in. A second 2D canvas (`#ov`) carries everything flat:
 selection rings, health bars, unit labels, the minimap.
+
+**The sun is where December puts it.** Ortona is 42 degrees north and the date on the HUD
+is the 23rd. The sun reaches 24 degrees at noon that day and is under twenty by
+mid-afternoon; `SUN` was set at 46 degrees, which is a June sun: shadows shorter than the
+things casting them, the ground taking the light square and the faces of the houses in the
+dark. At twenty-one degrees a shadow is two and a half times its caster, the ground is in
+grazing light and the house fronts are lit. The direct term carries nearly twice what it
+did to pay for the graze and is warmer, because a low sun is warmer, and the sky term is
+raised and cooled to fill what the sun no longer reaches, since at this elevation most of
+what lands on a north face is skylight.
+
+**The sky had never been drawn.** Its quad winds counter-clockwise, the world is drawn
+front-face CW with culling on, so the one draw was culled and what everyone had been
+calling the sky was `gl.clearColor`: a flat grey-green with no gradient, no horizon and no
+time of day in it. It reads as haze, which is exactly why nothing ever said so, and it is
+the cleanest example in this file of why a screenshot cannot review a renderer. With a sky
+to put it in, the sun goes in it: `uSunS` is its own place on the screen, projected on the
+CPU through the same matrix as everything else so it holds under the orbit camera and the
+periscope alike, and it is two lobes of warm haze rather than a disc. The distance haze
+follows it -- far ground is bright and warm looking into the light and cold with the sun
+behind, which is what aerial perspective is, and it now meets a sky that has a sun in it.
+Note that the desktop camera can barely see the sky at all: `CAMLIM` keeps the pitch at
+0.42 or more, so the view axis is always below the horizontal and the sun is off the top of
+the frame. The periscope is where to look at it.
+
+**A shadow box wants fitting to the sun it is under.** `sunMatrix`'s ortho was square in
+light space. A point `d` along the sun's bearing lands at `d * sin(elevation)` up the
+light's vertical axis, so a square box covers `1/sin` as much ground that way as it does
+across and spends the same texels on it: at twenty-one degrees that is nearly three times
+the ground for the same resolution, in the one direction the long shadows actually run. The
+up extent is `rad * SUN.z` plus headroom for the tallest thing that casts.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
 helmets and weapons. Vehicles get individual builders (`shermanHull`,
@@ -1658,6 +1813,7 @@ tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
 tools/move.mjs                 movement card: routes, battle traffic, cover taken
 tools/brain.mjs                the AI card: sight, plan, and which rules ever fire
+tools/sight.mjs                sight card: the trace, what a position commands, spotting time
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
@@ -1731,6 +1887,22 @@ shots/                         screenshot output, gitignored
   four seconds, so a whole battle produced fifty windows and four coincidences read as a
   nine per cent regression that sent a morning after a bug that was not there. Print the
   denominator, and prefer counting frames to counting events.
+- **A screenshot cannot review the thing that draws it.** Two of the largest bugs in this
+  file's history were invisible for exactly that reason. The fog of war had no live-vision
+  tier for the life of the game because `updateFog` asked an eye for `r2` and gets `r`, so
+  every picture ever taken came back at 52 per cent brightness and looked like weather. The
+  sky quad has been culled since it was written, so what looked like a sky was
+  `gl.clearColor`. Both render as something plausible. When a thing is meant to have
+  structure -- a gradient, a falloff, a tier -- read the buffer, do not look at it: one
+  `gl.readPixels` down a column says in three lines what an afternoon of screenshots will
+  not.
+- **`gl.frontFace` is CW here.** The world is left-handed and drawn front-face clockwise
+  with culling on, so a full-screen quad wound the ordinary way (bottom-left, bottom-right,
+  top-left) is a back face and is culled without a word. `QUAD` is wound that way. Anything
+  drawing it turns culling off first; the billboards already did and the sky did not.
+- **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
+  is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
+  were the radius comes out wrong in a way nothing will flag.
 - `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
   into `G.units` as well has it in the list twice, and a unit in the list twice is
   updated twice a frame: it drives at double speed and its gun fires at twice its rate of

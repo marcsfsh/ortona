@@ -181,14 +181,23 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
     computeVisibility();
     let t = 0;
     const dt = 1 / 20;
+    /* Where the fight was actually fought, which is no longer where it was staged.
+       Being seen takes a second or two now, and an attack-move walks the whole of that
+       second: a rifle section opened at 212 against the eighty-eight and was at 107
+       before either could see the other, which is inside the gun's own close-weakness
+       radius and is the whole of why that row reversed. An opening range nobody stays
+       at is not a denominator. Taken at the moment the first side could see the other,
+       because that is when the pair stop closing and start shooting. */
+    let met = -1;
     while (t < LIMIT) {
       step(dt); t += dt;
+      if (met < 0 && (a.vGer || b.vUs)) met = Math.hypot(a.x - b.x, a.y - b.y);
       if (a.dead || b.dead) break;
     }
     const sa = strength('us'), sb = strength('ger');
     G.covers = savedCovers; G.coverIdx = savedIdx;
     return { win: b.dead && !a.dead ? 0 : a.dead && !b.dead ? 1 : sa > sb ? 0 : sb > sa ? 1 : -1,
-             t: t, left: Math.max(sa, sb) };
+             t: t, left: Math.max(sa, sb), met: met < 0 ? dist : met };
   }
 
   const out = [];
@@ -204,15 +213,16 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
     const ra = Math.max(wa.range, A.at ? A.at.range : 0);
     const rb = Math.max(wb.range, B.at ? B.at.range : 0);
     const dist = DIST || Math.round(Math.min(ra, rb) * .82);
-    let winA = 0, winB = 0, draw = 0, sumT = 0, sumLeft = 0;
+    let winA = 0, winB = 0, draw = 0, sumT = 0, sumLeft = 0, sumMet = 0;
     for (let i = 0; i < N; i++) {
       const r = once(ka, kb, dist, i % 2, ups);
       if (r.win === 0) winA++; else if (r.win === 1) winB++; else draw++;
-      sumT += r.t; sumLeft += r.left;
+      sumT += r.t; sumLeft += r.left; sumMet += r.met;
     }
     const cost = k => (UNITS[k].cost.mp || 0) + (UNITS[k].cost.fu || 0) * 2.4;
     const tag = ups ? ((ups.a ? '+' + ups.a.join('+') : '') + (ups.b ? ' /+' + ups.b.join('+') : '')) : '';
-    out.push({ a: ka, b: kb, up: tag, dist: dist, winA: winA, winB: winB, draw: draw,
+    out.push({ a: ka, b: kb, up: tag, dist: dist, met: Math.round(sumMet / N),
+               winA: winA, winB: winB, draw: draw,
                pct: Math.round(100 * winA / N), t: +(sumT / N).toFixed(1),
                left: +(sumLeft / N).toFixed(2),
                costA: Math.round(cost(ka)), costB: Math.round(cost(kb)),
@@ -231,15 +241,19 @@ if (args.json) {
   const lpad = (s, n) => String(s).padStart(n);
   console.log(`\n  ${N} runs each, opening range ${DIST || 'per pair'}, cover tier ${COVER}\n`);
   console.log('  ' + pad('A', 11) + pad('B', 11) + lpad('A wins', 7) + lpad('secs', 7) +
-              lpad('left', 6) + lpad('cost A', 8) + lpad('cost B', 8) + lpad('pop', 7) + '  upgrades');
-  console.log('  ' + '-'.repeat(78));
+              lpad('open', 6) + lpad('met', 6) + lpad('left', 6) + lpad('cost A', 8) + lpad('cost B', 8) +
+              lpad('pop', 7) + '  upgrades');
+  console.log('  ' + '-'.repeat(90));
   for (const r of rows) {
     if (r.err) { console.log('  ' + pad(r.a, 11) + pad(r.b, 11) + r.err); continue; }
     const flag = r.pct >= 40 && r.pct <= 60 ? ' ' : r.pct >= 30 && r.pct <= 70 ? '.' : '!';
     console.log('  ' + pad(r.a, 11) + pad(r.b, 11) + lpad(r.pct + '%', 7) + lpad(r.t, 7) +
-                lpad(r.left, 6) + lpad(r.costA, 8) + lpad(r.costB, 8) +
+                lpad(r.dist, 6) + lpad(r.met, 6) + lpad(r.left, 6) + lpad(r.costA, 8) + lpad(r.costB, 8) +
                 lpad(r.popA + '/' + r.popB, 7) + ' ' + flag + ' ' + r.up);
   }
   console.log('\n  cost is manpower plus fuel at 2.4, which is roughly what fuel is worth here.');
+  console.log('  open is where they were put down; met is where they were when the first of them');
+  console.log('  saw the other, which is where the fight is actually fought. An attack-move closes');
+  console.log('  for as long as nobody can see, and being seen now takes a second or two.');
   console.log('  ! is a matchup outside 30-70 per cent and worth looking at.\n');
 }
