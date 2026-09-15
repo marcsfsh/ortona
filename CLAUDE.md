@@ -47,6 +47,7 @@ npm run verify               # lint + map check + smoke test, the gate before ca
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
+node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -212,6 +213,44 @@ written down with where it happened, and the busiest twenty seconds are handed b
 one offline context -- one room, one compressor, one set of rate limits -- so what comes
 out is a mix rather than a row of samples laid side by side.
 
+### `tools/brain.mjs` - the AI's own account of itself
+
+`skirmish.mjs` answers whether one brain beats another, which is the only honest verdict
+on its judgement and is nearly always too coarse to see one. This answers the questions
+underneath that, which are not about judgement at all and are cheap to count: what the
+brain can see, what it acts on that it has never seen, whether the rules it carries ever
+fire, and what a tick of it costs.
+
+```sh
+node tools/brain.mjs                # the card
+node tools/brain.mjs --t=420        # a longer battle
+node tools/brain.mjs --diff=2       # at veteran, where the skill-2 rules live
+node tools/brain.mjs --base=HEAD    # the same card on an older file, side by side
+```
+
+It puts a brain on **both** sides, the way `skirmish --self` does, and that is not a
+nicety. With one side thinking the other army stands at its base all game, the two never
+meet, and the first version of this probe watched `aiPickTarget` return null on all twelve
+hundred calls of a five-minute run. A probe that watches a brain fight nobody is measuring
+an empty map.
+
+**COST** is what a thinking tick costs, and how many times it takes a pass over the whole
+army to answer what it asks. That number was thirteen partial passes; it is one.
+
+**SIGHT** is the honesty boundary, and it is the reason the card exists. `acquire` refuses
+anything the side cannot see, which is what the whole fog of war rests on -- but it
+honours a FORCED target without asking, and the brain forces targets. Measured, one round
+in five that actually left a barrel was fired at something nobody had ever seen. The card
+counts picks, orders and rounds against the share of the enemy that is out of sight.
+
+**PLAN** is what it did: the moods it held, the jobs it dealt, how many waves it formed
+against how many ever went in, how long forming took, what it garrisoned and built.
+
+**RULES** is every named decision and how often it fired, out of the brain's own counters
+(`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
+is not there, and this file already records one that parsed, passed the gate and never
+fired once -- with nothing to say so.
+
 ### `tools/skirmish.mjs` - tactics, mechanically
 
 Puts an AI on both sides of the shipped map and lets them fight. One side runs the
@@ -255,6 +294,12 @@ the other side holds, so a 600-second match is nearly always cut short and the s
 the 300-point finish. The score is averaged over the marks a match actually ran rather than
 read off the final whistle, and even so a six-pair run moves by a couple of hundred points
 between runs. Read the shape of the table, not the last digit.
+
+What is actually swapped between the sides is the bundle `baselineBrain` extracts, and
+nothing else: a change made anywhere outside those functions applies to both sides and the
+card cannot see it at all. `aiPickTarget` is in the bundle for that reason -- it is where
+every attack order comes from -- and anything else whose judgement comes under test
+belongs there too.
 
 A cheaper cross-check than the full card is a kill-switch A/B: extract the working `aiTick`,
 disable one rule by text replacement, inject it against the last commit, and run six pairs.
@@ -687,7 +732,56 @@ for every fitted upgrade key, not only the one that swaps the gun.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
-what it pointed at. Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
+what it pointed at. `AI0` is what that plan is at the start of a battle and `aiInit`
+copies it: the reset used to be a second hand-typed list of the same twenty-five
+assignments, and two lists of one thing go out of step the moment somebody adds a field
+to one of them.
+
+**What it is allowed to look at.** Three things it stands on, and everything else reads
+them.
+
+`AIW` is **the picture**, assembled once at the top of the tick by `aiLook` and read by
+every rule. Before it there were thirteen separate walks of `G.units` in a tick, each with
+its own idea of what counted -- some skipped a unit the side could not see and some did
+not, some skipped a retreating one, some a man inside a carrier -- so adding a rule meant
+writing a fourteenth walk and choosing those conventions again, usually differently. It is
+one walk now: both sides classified, both orders of battle, both strengths, the money, the
+population, what is still in the queues, a rollup of every sector, and a two-hundred-unit
+bucket index of the enemy so that `aiNear(x, y, r, fn)` answers a question about a piece
+of ground in a handful of cells. It is rebuilt every tick and may hold unit references,
+because nothing in it outlives the tick that made it.
+
+`AIM` is **the memory**, and it is the opposite: it persists, so like `AI` it holds nothing
+but numbers and ids. Where each enemy was last seen and when (`AIMEM`, thirty-four
+seconds), what ground has cost it men (fed from `killUnit`, halved every ninety seconds by
+`aiFade`), how long it has held what. A brain with no memory can only be omniscient or
+blind. It does **not** feed `aiThreat`, for the reason set out there.
+
+`AIR` **counts**. Every named decision declares itself once at load and bumps a counter
+when it fires, and `tools/brain.mjs` prints the list with the zeroes in it. This file
+already records a duck rule that parsed, passed the gate and never fired once, with
+nothing anywhere to say so; that is the hole this closes.
+
+**The staff work is allowed the map; the guns are not -- including the brain's.** `acquire`
+refuses anything the side cannot see, which is what the fog of war rests on, but it honours
+a forced target without asking, and `aiPickTarget` is where forced targets come from. So
+the brain was walking sections onto units nobody had laid eyes on, and one round in five
+that left a barrel was fired at something unseen. `aiPickTarget` now asks `aiKnown`, which
+is *seen now, or seen within the last thirty-four seconds and still about where it was* --
+honest without being blind, which is the first thing the memory bought. The same test went
+on the tank's back-off reflex, which was reversing away from launchers it had not seen.
+
+Measured with `tools/brain.mjs --base=HEAD` over a four-minute battle with a brain on both
+sides: targets picked that had never been seen 47.1 per cent to 29.3, attack orders on
+them 36.6 to 18.0, rounds actually fired at something unseen 18.4 to 10.7. What is left of
+each is the memory doing its job -- a contact half a minute old is a fair thing to shoot
+at -- and of the rounds, a target that went out of sight after the gun had already picked
+it, which is the combat model rather than the brain. Whole-army walks a tick went 4.8 to
+1.0 and a tick went from 0.44 ms to 0.47, which is the trade: one assembly with one set of
+conventions costs a little more than four partial ones with four. Named decisions counted:
+none, to thirty-nine. Against the last commit the tactics card puts the whole pass at a
+pair difference of -76 with a standard error of 264, and -12 with 327 on an earlier run:
+twice inside the noise, which is what a framework pass should read. Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
 produces, buys field upgrades, builds, scores every sector into an objective list with a
@@ -1214,6 +1308,7 @@ tools/harness.mjs              Playwright library: boot, drive, pose, photograph
 tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
 tools/move.mjs                 movement card: routes, battle traffic, cover taken
+tools/brain.mjs                the AI card: sight, plan, and which rules ever fire
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
