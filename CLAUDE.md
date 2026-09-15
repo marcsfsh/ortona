@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game set in Ortona, December 1943:
 1st Canadian Infantry Division against 1. Fallschirmjäger-Division. Custom
 WebGL2 renderer, no engine, no dependencies, no build step.
 
-**The whole game is `ortona.html`.** Roughly 7,800 lines: CSS in one `<style>`,
-markup, then all the JavaScript in one `<script>`. Open the file in a browser
+**The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
+`<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
 and it runs.
 
 ---
@@ -46,6 +46,8 @@ npm install                  # once; Chromium is already on disk
 npm run verify               # lint + map check + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
+node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
+node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -92,7 +94,24 @@ node tools/duel.mjs --n=24               # more repeats, tighter numbers
 node tools/duel.mjs us_rifle ger_gren    # one matchup
 node tools/duel.mjs --d=200              # at a chosen opening range
 node tools/duel.mjs --cover=3            # with both sides in heavy cover
+node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
+node tools/duel.mjs --file=/tmp/x.html   # or on any file
 ```
+
+`--base` is there because a change that was never meant to touch the fighting still has
+to be fought, and because one row moving is not evidence of anything. A near-even matchup
+swings by thirty points between runs of the same code: halving the cell size came back at
+65 per cent and then 38 on `us_sher ger_p4` over forty runs a side, which looks like a
+finding and is not. Read the whole card, as a mean over its rows with the standard error
+of that mean. Sixteen runs a row put the grid change at +0.3 points with a standard error
+of 2.2; six runs a row put the whole movement and cover overhaul, hull turn rates and all,
+at +4.2 with a standard error of 4.6, and the spread of the row-to-row shifts was 30.2
+against the 28.9 that six runs a side produce out of nothing at all.
+
+The card is slow, and how slow depends on what else is running: forty-three rows at
+sixteen runs each is three quarters of an hour on a quiet box and does not finish at all
+on a busy one. Six runs a row takes about eight minutes and resolves a ten-point
+systematic shift across the card, which is usually the question being asked.
 
 Stats on paper do not tell you who wins. Damage per volley interacts with how
 many men are left to fire it, suppression feeds back into accuracy and rate of
@@ -109,6 +128,59 @@ Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 reinforcement left out, so it cannot drift away from the game. A third entry on a
 card row fits field upgrades before the fight, because half of what a vehicle can
 do is an upgrade.
+
+### `tools/move.mjs` - movement, pathing and cover, mechanically
+
+A path is a few hundred cells of arithmetic and the eye will not hold them. A section
+stuck against a wall looks exactly like a section holding a wall. A tank that took the
+gardens instead of the Corso arrives late and nothing on screen says why. So it is
+counted.
+
+```sh
+node tools/move.mjs                 # the whole card
+node tools/move.mjs routes          # one section of it
+node tools/move.mjs --base=HEAD     # the same card on an older file, side by side
+node tools/move.mjs --t=360         # a longer battle probe
+node tools/move.mjs --v             # every route and every drill rather than the summary
+```
+
+Three sections, because there are three questions.
+
+**ROUTES** asks whether a path is any good. Five journeys across the shipped map, each
+for a section, tracks, wheels and the heaviest thing on the roster, priced three ways:
+length against the crow, cost against a plain Dijkstra over the game's own grid and its
+own `cellCost`, and the narrowest place along it against the beam of the thing that has
+to fit. Then the unit is driven down it by the game's own `updateUnit`, because a path
+that prices well and cannot be walked is worth nothing. The Dijkstra reference is the one
+piece of arithmetic here that is deliberately *not* the game's: an optimum computed by
+the code under test is not an optimum.
+
+**TRAFFIC** is a whole battle, both brains, counted every frame, looking for the states a
+unit should never be in: with a path and four seconds of no progress, with its centre off
+the walkable grid, with its men inside a house, wedged inside another unit, in a gap
+narrower than its own beam. Plus the rates that say how hard the pathfinder is worked.
+
+**COVER** puts a section down at two dozen points through the town with an enemy on a
+known bearing, lets it settle, and asks what tier its men are actually getting against
+that bearing -- against the best tier that was there for the taking. Taken over available
+is the number, because cover that is never taken is scenery.
+
+Two things about reading it. **A metric needs a denominator you can see.** The first
+version counted four-second windows in which a unit with a path went nowhere; a path is
+usually spent in well under four seconds, so a whole battle produced about fifty windows
+and four coincidences read as a nine per cent regression. It counts unit-frames now, and
+the denominators are printed. And **`unitRadius` is half a vehicle's length**, not its
+width -- it is the separation radius -- so the card measures fit against a beam derived
+from it. Comparing a Sherman's 41 against the 55-unit clearance of the Corso says the
+main street of the town is too narrow for the tank that is driving down it.
+
+Where the overhaul left it, on one `--base=HEAD` run of 150 seconds a side: stuck
+unit-frames 0.95 per cent to none, wedged 2.65 per cent to none, halted men in cover 72.7
+per cent to 99.1, cover taken over available 0.59 to 0.76 with the two sections that
+stood in the open beside medium cover down to none. Off the same card's routes: the way
+across the town's grain 991 units to 840, its detour 1.37 to 1.16, and the share of that
+drive on the metalling 0.58 to 0.98. Formation slots inside a house, which the card does
+not print, went from 7.1 per cent of man-frames to 2.4.
 
 ### `tools/audio.mjs` - sound, mechanically
 
@@ -141,6 +213,63 @@ written down with where it happened, and the busiest twenty seconds are handed b
 one offline context -- one room, one compressor, one set of rate limits -- so what comes
 out is a mix rather than a row of samples laid side by side.
 
+### `tools/brain.mjs` - the AI's own account of itself
+
+`skirmish.mjs` answers whether one brain beats another, which is the only honest verdict
+on its judgement and is nearly always too coarse to see one. This answers the questions
+underneath that, which are not about judgement at all and are cheap to count: what the
+brain can see, what it acts on that it has never seen, whether the rules it carries ever
+fire, and what a tick of it costs.
+
+```sh
+node tools/brain.mjs                # the card
+node tools/brain.mjs --t=420        # a longer battle
+node tools/brain.mjs --diff=2       # at veteran, where the skill-2 rules live
+node tools/brain.mjs --base=HEAD    # the same card on an older file, side by side
+```
+
+It puts a brain on **both** sides, the way `skirmish --self` does, and that is not a
+nicety. With one side thinking the other army stands at its base all game, the two never
+meet, and the first version of this probe watched `aiPickTarget` return null on all twelve
+hundred calls of a five-minute run. A probe that watches a brain fight nobody is measuring
+an empty map.
+
+**COST** is what a thinking tick costs, and how many times it takes a pass over the whole
+army to answer what it asks. That number was thirteen partial passes; it is one.
+
+**SIGHT** is the honesty boundary, and it is the reason the card exists. `acquire` refuses
+anything the side cannot see, which is what the whole fog of war rests on -- but it
+honours a FORCED target without asking, and the brain forces targets. Measured, one round
+in five that actually left a barrel was fired at something nobody had ever seen. The card
+counts picks, orders and rounds against the share of the enemy that is out of sight.
+
+**PLAN** is what it did: the moods it held, the jobs it dealt, how many waves it formed
+against how many ever went in, how long forming took, what it garrisoned and built.
+
+**SENSE** is the situation layer: what a unit reads about its own position on a tick and
+which option it chose out of it. Two numbers carry it. The share of unit-ticks with armour
+in front that the unit cannot hurt is the case the calls exist for. And the spread of the
+actions chosen, because an option that never wins is a block of scoring nobody is running,
+which looks exactly like an option that is not there.
+
+**CALLS** is the routing: how many were raised, how long one stood before anybody was sent,
+and how they ended. Note that the three tick-counts at the foot of it are unit-ticks and
+not events -- a call is worked every tick it is open, so what they say is how long was
+spent holding, driving and fighting, not how often each started.
+
+**OPS** is what the army was trying to do: how many operations of each kind were raised,
+how long one ran, how much of the army was on one, and whether a feint drew anybody. The
+number to read is `ran` against the timeout in `aiOpsReview` -- an operation that always
+runs to its timeout has no working test for being finished, which makes it a habit rather
+than a plan. The feint is the exception and is meant to expire.
+
+**RULES** is every named decision and how often it fired, out of the brain's own counters
+(`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
+is not there, and this file already records one that parsed, passed the gate and never
+fired once -- with nothing to say so. It is also how a rule that fires once a battle shows
+up as one that may as well not be there: the duck rule fired exactly once in a five-minute
+battle at the last commit, which is what sent the reaction to fire into the weighing.
+
 ### `tools/skirmish.mjs` - tactics, mechanically
 
 Puts an AI on both sides of the shipped map and lets them fight. One side runs the
@@ -171,6 +300,18 @@ change needs something like a hundred pairs to see, and the honest answer to mos
 tweaks is that the tool cannot resolve them. Judge those on whether they are right, not on
 whether the table moved.
 
+**And the verdict line is not to be trusted at four pairs.** It is computed from a standard
+error estimated out of four numbers, which is itself so uncertain that the sentence can come
+out either way on the same code. Measured: `--base=HEAD` run on a revision *identical to the
+working file*, so that the true difference is zero by construction, came back at +367 with a
+standard error of 126 and the tool's own line saying it cleared twice that. Eight pairs of
+the same thing came back at -181 with a standard error of 173, which the tool correctly called no result at all. A pair sum on this map swings by
+five hundred points either way, so four of them can cluster anywhere. Run eight before
+reading the sentence at all, and treat anything under a few hundred points as unresolvable
+whatever the sentence says. A calibration is cheap and it is the only thing that tells a
+finding from a run of luck: `--base=<the commit you are working on top of, before your
+change>` with nothing changed is the control, and it should read zero.
+
 Two more things about the numbers are worth knowing before trusting them. **The two rosters
 are not the same army**, and the town is hand-placed rather than mirrored, so even with the
 flags now symmetric about the midline a side can have the better of the ground: `--self` is
@@ -184,6 +325,14 @@ the other side holds, so a 600-second match is nearly always cut short and the s
 the 300-point finish. The score is averaged over the marks a match actually ran rather than
 read off the final whistle, and even so a six-pair run moves by a couple of hundred points
 between runs. Read the shape of the table, not the last digit.
+
+What is actually swapped between the sides is the bundle `baselineBrain` extracts, and
+nothing else: a change made anywhere outside those functions applies to both sides and the
+card cannot see it at all. `aiPickTarget` is in the bundle for that reason -- it is where
+every attack order comes from -- and so are `aiSense`, `aiWeigh`, `aiCall`, `aiCanAnswer`
+and `aiAnswer`, which are where a unit decides what to do about what is in front of it and
+who gets sent to somebody else's trouble. A revision that has none of them simply has fewer
+parts; anything else whose judgement comes under test belongs there too.
 
 A cheaper cross-check than the full card is a kill-switch A/B: extract the working `aiTick`,
 disable one rule by text replacement, inject it against the last commit, and run six pairs.
@@ -229,7 +378,8 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1040 kB. Takes under a second. Exits non-zero on any violation.
+under 1180 kB (it was 1040 before vehicles carried a hand-laid interior). Takes
+under a second. Exits non-zero on any violation.
 
 ```sh
 node tools/lint.mjs
@@ -253,6 +403,13 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
+
+Two things the periscope block has to do to itself: it tops both sides' victory points up
+to nine thousand and gives its test tank a hundred thousand hit points. A minute of
+simulated battle for the gun and barrel tests on top of the three already fought is long
+enough for the game to end, and a game-over screen sits over everything the rest of the
+check wants to click; and a tank parked by its own headquarters for a minute of that is a
+tank that can be killed, which closes the periscope and takes `POV.u` with it.
 
 ### `tools/shoot.mjs` - looking at it
 
@@ -315,6 +472,11 @@ Four pieces are worth knowing about because they are not obvious:
   gallery shot that comes back empty is almost always this. `drawable(page)`
   reports `{units, blds, total}` that `render()` would actually draw, which is
   the quick way to tell a bad model from an invisible one.
+- **`openGame(browser, device, { file })`** takes the file to open, and forgetting it is
+  silent: both halves of a before-and-after comparison then load the working file and
+  come back identical, which reads as "the change did nothing" rather than as a broken
+  probe. It happened twice in one afternoon. If two runs agree to the last digit, check
+  that argument before believing them.
 - **`frames(page, n)`** waits for n real animation frames. A screenshot
   captures whatever the compositor last painted, so every camera or state
   change needs at least one frame before the picture reflects it. `shoot()`
@@ -347,45 +509,145 @@ it from `G.mapData`, which is plain JSON the map editor also reads and writes
 (`makeHeight`, `groundZ`, `groundNormal`) carries elevation, with trenches and
 craters cut in by `carve`.
 
-**Movement.** A 40-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
+**Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
-position; `updateModels` animates the individual soldiers.
+position; `updateModels` animates the individual soldiers. `tools/move.mjs` is the card
+for all of it.
+
+**The cell has to be small enough to hold the ground it stands for**, and at forty units
+it was not. A building is marked by every cell its footprint touches, plus a pad, so the
+Corso -- the widest street in Ortona, a hundred and ten units across -- came out one cell
+wide, which is narrower than a Sherman; a sixty-unit lane came out as masonry; and thirty
+per cent of the open ground in the town, eight per cent of it with room for a whole
+section, was not on the map the pathfinder reads at all. At twenty units it costs four
+times the cells (13,300 of them, a few hundred kilobytes and about a millisecond to
+rebuild) and the lanes come back: the route across the town's grain fell from 991 units
+to 840 and its detour from 1.37 to 1.16, and the share of that drive spent on the
+metalling went from 0.58 to 0.98.
+
+A rebuild at four times the cells cost four times as much, and it happens every time a
+building goes up or a vehicle burns. Most of it was four `groundZ` samples a cell to find
+the sea and the cliffs, and the shape of the ground does not change during a battle: it
+is kept in `terrg` and `makeTerrain` is the only thing that throws it away, which puts a
+rebuild back to 0.8 ms from 3.2 -- about what it cost at forty units to the cell.
+
+**What is marked on it has a width.** A street is forty-eight units of metalling, a wire
+apron thirty-four, a garden wall six of dry stone; `markSeg` took none of that and marked
+one cell, so all three were whatever the cell happened to be -- the road narrower than the
+lorries on it and the wall wider than the gap beside it. Sight and fire are marked the
+same way, so the same call fixed a garden wall blocking a forty-unit swathe of view.
 
 The grid says where a thing can go; `cellCost` says where it would want to, per
 `pathKind`: tracks pay 1.35 off the metalled streets and wheels 1.5, both more on a bank
 (`steep`), and men on foot pay 2.6 to cross wire and a little for a bank. A tank sent
 across the town used to cut straight over the gardens at two thirds pace with the Corso
-fifty units to its left. The smoother prices a shortcut against the path it replaces
-(`lineCost`) rather than only asking whether it is clear, or it cut every bend of the
-street back off across the gardens; and it samples every nine units, because at eighteen
-a line that clipped the corner of a blocked cell passed as clear and the section stood at
-that corner for the rest of the battle. Every path carries the `gridStamp` it was found
-on and is found again when the grid changes, which it does whenever a building goes up:
-retreating sections were found standing against their own side's new motor pool,
-sliding along its wall by a hair a frame, because the wall-slide counted as a step. A
-step that makes no progress for half a second now counts as blocked (`u.blockT`), and
-before a blocked unit asks for a new path it tries the step swung off the line, the way
-a man shoulders round a doorway full of the section in front. A retreat scatters its
-destination behind the headquarters and finishes when it is held up within a few paces
-of it, or a dozen retreating sections arrived into each other and the last stood in the
-crush for good.
+fifty units to its left. And it charges for the beaten zone when the thing crossing minds
+it (`DANG`, `u.fear`) -- see the AI section, because what is dangerous is a thing only the
+brain knows.
 
-A man's place in the formation is not taken if it is inside a wall: he closes on the
-centre instead, by half if that is clear and all the way if not, and his own steps keep
-to the grid like the section's. Before that a section walking down a lane had its flank
-files walking through the houses, half a per cent of all man-frames. Halted with nothing
-to shoot at, a section turns to face the nearest known threat (`u.threatAng`, the bearing
-its cover was chosen against) rather than standing the way it arrived, and a machine gun
-is laid on that bearing before it is needed. A halted tank with a turret brings its hull
-round to its target as well, slowly, because the front plate is nearly twice the side.
+**And how much room it leaves.** `buildRoom` chamfers the grid into `roomg`, the distance
+in cells to the nearest thing that stops a boot, which `cellCost` charges for: a gap is
+dear in proportion to how hard it is to get through, and a lorry minds it about three
+times as much as a man. Nothing is forbidden, because ground nothing may cross is ground
+the army stops using -- the tight way is dear rather than closed, and when it is the only
+way it is still taken. This is what keeps a hull out of the masonry: the search runs cell
+centre to cell centre, which is honest, and the smoother then replaces a run of them with
+one line and only asked whether the middle of that line was clear, so it cut every corner
+to the wall. Priced instead, the shortcut that scrapes is weighed against the one that
+does not, and `lineCost` samples every ten units to see it.
 
-`tools/` has no card for any of this; the probe that measured it drives the working
-brain on both sides for four minutes and counts man-frames inside a solid prop, halted
-sections facing their threat, and unit-frames with a path and no progress over four
-seconds, then prices a tank's and a section's path across the town. Old code is injected
-the way `skirmish.mjs` injects a brain. Men in walls went from 0.5 per cent to none and
-stuck unit-frames from up to twelve per cent to none, with the retreat crush the last
-bucket to go.
+**A clear line is not the same as a good line.** Men on foot were handed any clear line
+at all, however long and whatever it ran through, so every cost the pathfinder charges a
+section -- wire, a bank, a field wall, a gap it has to squeeze down -- applied only to the
+routes it happened to search for. A section ordered across a wire apron with a gate a
+hundred units to its left walked into the wire. The line is priced now and taken only
+when it costs no more than the open ground it is drawn across; one `lineCost` is cheaper
+than the search it usually saves, and the battle probe came back with fewer searches
+rather than more, because the paths hold better once they are worth holding.
+
+**A step that makes no ground is blocked, however far it moves.** The stall detector
+measured displacement, and a unit pressed against a house slides along it at very nearly
+full speed: a section creeping sideways down a frontage read as a section making
+excellent progress, never tripped the timer, never asked for another way round, and went
+on grinding along the wall for as long as the order stood. A probe that put wrecks on the
+grid to make the blockages worse caught it at fourteen per cent of the frames an
+attacking section spent with a path in hand; on the card against the last commit it is
+about one per cent, and none. What is measured is the ground made good toward the
+waypoint (`u.lastGap`). Once blocked it tries the step swung off the line, the way a man
+shoulders round a doorway full of the section in front; then it asks for another way to
+where it was going, and not to the next waypoint, which threw the rest of the route away
+and left the section treating the corner it had reached as the order carried out; and on
+the second failure it gives the waypoint up rather than asking for it again every half
+second until the battle ends (`u.blockN`).
+
+**The queue was not a queue.** `findPath`'s heap compared `_f[heap[i]]` live while the
+relaxation lowered `_f` of nodes already sitting in it, so eighty-nine per cent of pops
+on this map returned something that was not the smallest thing in the heap. It carries
+the key it was pushed with now, and a re-found node is pushed again. Worth knowing: it
+bought nothing. Forty long searches across the map came back at 1.64 ms, 4.9 legs and the
+same cost, before and after, because a weighted heuristic on a map this size finds the
+same routes with the queue in any order. It is in because the next person to touch the
+heuristic or the cost model would be building on a queue that does not order.
+
+**There may be no way there at all.** A failed search used to hand back a straight line to
+the destination, which is a lie no caller can see through. It now walks the unit to the
+nearest cell the search actually reached and marks the path `noWay`. A unit standing on
+ground that has stopped being ground -- a company post raised on top of it, a wreck
+settled across it -- walks out to the nearest ground it can stand on rather than failing
+every step it tries.
+
+**Units are obstacles.** `unwedge` is the push, and it lives outside `moveUnit` because
+`moveUnit` returns on its first line when there is nowhere to go: the only thing that had
+ever pushed units apart was a steering hint inside the movement code, so a halted section
+had nothing to push it off another halted section. A diagnostic that bucketed the
+overlaps found nearly all of them in that one bucket -- two halted friendly sections
+standing inside each other, drawn as one clump of men, firing as two and taking one shell
+between them. It is a step rather than a hint, bounded by what a man walks in the time,
+and the heavier thing gives way less. On the card it took wedging from 2.7 per cent of
+every unit-frame to none.
+
+**A burnt-out hull is in the way.** `killUnit` puts a wreck on the movement grid as well
+as adding it as cover, so a lane blocked by a burning Panzer is blocked. It stops a boot
+and not an eye: a man sees and shoots over a dead tank.
+
+**A field wall is three things to three ways of travelling.** Tracks go over it and
+flatten it, a man gets over it but not at a walk, and a lorry goes round. It was none of
+them: absent from the movement grid entirely, so everything crossed a foot of dry stone
+as though it were painted on. `wallg` prices it -- 1.9 to a section, nothing at all to
+tracks, two and a half times to wheels -- and a man crossing one is at a little over half
+pace, the way wire already worked. Priced and not blocked, because a wall nothing may
+cross fences off the gardens of half the town; blocking them outright was tried and cost
+2.3 per cent of the free ground for no change to any route worth the name.
+
+**Weight turns a hull.** Every vehicle in the game swung round at the same 2.6 radians a
+second, so a Tiger II turned as smartly as a Daimler and there was nothing to be had from
+getting behind the heavy thing except the thinner plate. It is 1.5, 2.1 or 2.9 by weight
+now, beside the acceleration that was already graded that way.
+
+**The shape of a section is the shape of the ground it is on.** Three files abreast is
+right in a field and impossible in a lane a cart would fill: seven per cent of every
+man-frame had its place in the formation inside a house. `u.formW` cuts the frontage to
+the room there is (`roomAt`) and lengthens the column to take the men, eased over about a
+second so a section does not snap between two shapes at every gateway. A man whose place
+is still inside something takes the nearest clear place on the section's own axis rather
+than falling back onto its point, which put every blocked man in the section on the same
+square yard. A man keeps up with the section and runs up if he has fallen behind: his
+allowance was a flat quarter over the section's BASE pace, so the faster it went the
+further behind he fell, and a quarter never closed a gap opened by walking round a wall
+the section walked straight past.
+Slots inside something went from 7.1 per cent of man-frames to 2.4, and the mean distance
+of a man from his own marker went from 63 units to 92 -- a section holding a wall rather
+than a section standing on a dot.
+
+Every path carries the `gridStamp` it was found on and is found again when the grid
+changes, which it does whenever a building goes up or a vehicle burns. A retreat scatters
+its destination behind the headquarters and finishes when it is held up within a few
+paces of it, or a dozen retreating sections arrived into each other and the last stood in
+the crush for good. Halted with nothing to shoot at, a section turns to face the nearest
+known threat (`u.threatAng`, the bearing its cover was chosen against) rather than
+standing the way it arrived, and a machine gun is laid on that bearing before it is
+needed. A halted tank with a turret brings its hull round to its target as well, slowly,
+because the front plate is nearly twice the side.
 
 **Stances.** `u.stance` is `''`, `'ground'` or `'double'`, set by the player from the
 order cards (Z and C) and by the brain for its own men every tick. Gone to ground, a
@@ -407,9 +669,60 @@ which is what `coverValue` computes from the firing angle. `chooseCover` and
 `coverSlots` are why soldiers tuck themselves against walls. A burnt-out vehicle
 is cover too (`kind: 'wreck'`, heavy for a tank and medium for a car, added by
 `killUnit` where it died), because thirty tons of plate in the middle of a street
-is the best thing in it to get behind. On desktop the grade of cover under the
-pointer is shown beside it while infantry is selected, so the player can see what
-a move order would land in before giving it.
+is the best thing in it to get behind, and it blocks the street as well. On desktop
+the grade of cover under the pointer is shown beside it while infantry is selected, so
+the player can see what a move order would land in before giving it.
+
+**Cover is read where the men are.** `fireAt`, `fireOneSecondary`, `explode` and
+`exposure` all ask `coverOf`, which averages over the men still standing, and shellfire
+asks each man separately because the loop that hurts him already has him. They used to
+read `coverAt(t.x, t.y)`, the section's own marker -- a bare coordinate usually in the
+middle of the street, a dozen units from any of them. So `chooseCover` and `coverSlots`
+went to great trouble putting each man against a wall and it changed nothing whatever
+about how hard he was to hit: the whole business of taking cover was decoration. Fixing
+it took halted men behind something from 73 per cent of man-frames to 99.
+
+**A section takes cover, rather than standing in what it halted on.** The piece has to be
+within a hundred and eighteen units, not sixty, because the men are allowed to walk to it
+and a section that halted in a street with a garden wall eighty units off used to take
+nothing at all. A tier of cover is worth about sixty units of walking, which is what the
+score's distance term now says. `coverSlots` keeps the file inside the patch's own circle
+rather than inside its length -- a man standing nine units off the axis at the very end
+was outside the cover he had been given, so the ends of every file in the game were in
+the open believing they were behind a wall -- and within a shout of the section, so a long
+wall does not string one section across a whole frontage.
+
+**A hole in the ground cannot be shelled away.** Craters and ditches were being worn down
+by `damageCover` like a sandbag wall and then dropping out as cover entirely, while the
+map went on drawing them: after a barrage the men lying in a crater field were in the
+open and nothing on screen said so. Works still come apart, which is why a position has
+to be re-dug. And every shell used to be charged against medium cover twice -- once
+through the index and once by a linear walk of all two thousand patches at the foot of
+`explode`, which was also a scan of the whole list on every explosion.
+
+**A garrison never goes flat.** Men holding a house fight from its openings. Two of the
+three pinned tests in `updateModels` did not exempt `u.gar` the way the third already
+did, so a section under a machine gun lay down on the ground floor of the strongest cover
+on the map and vanished out of the windows it was holding.
+
+**A man stands clear of what he is standing behind.** `coverSlots` puts him a distance
+off the piece's own line, and only the trench, the house face and the sandbags were named,
+so a field wall drawn eleven units thick took the default four and a half: every man at
+every garden wall on the map stood a unit inside the masonry. A drill that takes cover at
+each wall run had ten men of ten in the stones before and none after. It does not move
+the battle probe, because the shipped map has twelve wall runs and sections rarely halt at
+one, but a generated map is laid out with field walls round every enclosure. The probe
+could not see it either until it was taught that a thin thing is still a thing: it tested
+buildings and solid props and no wall was on the movement grid to be caught any other way.
+
+**A house's faces lie along its walls.** The four patches ringing every building had the
+two axes the wrong way round. A patch's axis is the line it protects across, so the front
+of every house in Ortona sheltered you from fire coming along the street and left you in
+the open against fire coming straight at the wall; it also laid the men out at right
+angles to the house, half of them inside it. And `chooseCover` now scores a piece with
+`coverValue` itself, rather than its own near-copy that let trenches off the enfilade
+penalty: a section would settle contentedly into a trench being raked from the end, which
+is the worst place on the map to be, and never look again.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
@@ -454,7 +767,354 @@ for every fitted upgrade key, not only the one that swaps the gun.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
-what it pointed at. Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
+what it pointed at. `AI0` is what that plan is at the start of a battle and `aiInit`
+copies it: the reset used to be a second hand-typed list of the same twenty-five
+assignments, and two lists of one thing go out of step the moment somebody adds a field
+to one of them.
+
+**What it is allowed to look at.** Three things it stands on, and everything else reads
+them.
+
+`AIW` is **the picture**, assembled once at the top of the tick by `aiLook` and read by
+every rule. Before it there were thirteen separate walks of `G.units` in a tick, each with
+its own idea of what counted -- some skipped a unit the side could not see and some did
+not, some skipped a retreating one, some a man inside a carrier -- so adding a rule meant
+writing a fourteenth walk and choosing those conventions again, usually differently. It is
+one walk now: both sides classified, both orders of battle, both strengths, the money, the
+population, what is still in the queues, a rollup of every sector, and a two-hundred-unit
+bucket index of the enemy so that `aiNear(x, y, r, fn)` answers a question about a piece
+of ground in a handful of cells. It is rebuilt every tick and may hold unit references,
+because nothing in it outlives the tick that made it.
+
+`AIM` is **the memory**, and it is the opposite: it persists, so like `AI` it holds nothing
+but numbers and ids. Where each enemy was last seen and when (`AIMEM`, thirty-four
+seconds), what ground has cost it men (`lost`, fed from `killUnit`, halved every ninety
+seconds by `aiFade`), what kind of thing did the killing (`lostTo`, which is a different
+question from what he owns -- a Tiger parked in his own base counts once in the order of
+battle and never in this, and `aiCutLadder` reads it to bring the answer to armour forward
+when armour is doing most of the killing), and how long each sector has been in the hands
+it is in (`held`). A brain with no memory can only be omniscient or blind. It does **not**
+feed `aiThreat`, for the reason set out there.
+
+`AIR` **counts**. Every named decision declares itself once at load and bumps a counter
+when it fires, and `tools/brain.mjs` prints the list with the zeroes in it. This file
+already records a duck rule that parsed, passed the gate and never fired once, with
+nothing anywhere to say so; that is the hole this closes.
+
+**The staff work is allowed the map; the guns are not -- including the brain's.** `acquire`
+refuses anything the side cannot see, which is what the fog of war rests on, but it honours
+a forced target without asking, and `aiPickTarget` is where forced targets come from. So
+the brain was walking sections onto units nobody had laid eyes on, and one round in five
+that left a barrel was fired at something unseen. `aiPickTarget` now asks `aiKnown`, which
+is *seen now, or seen within the last thirty-four seconds and still about where it was* --
+honest without being blind, which is the first thing the memory bought. The same test went
+on the tank's back-off reflex, which was reversing away from launchers it had not seen.
+
+Measured with `tools/brain.mjs --base=HEAD` over a four-minute battle with a brain on both
+sides: targets picked that had never been seen 47.1 per cent to 29.3, attack orders on
+them 36.6 to 18.0, rounds actually fired at something unseen 18.4 to 10.7. What is left of
+each is the memory doing its job -- a contact half a minute old is a fair thing to shoot
+at -- and of the rounds, a target that went out of sight after the gun had already picked
+it, which is the combat model rather than the brain. Whole-army walks a tick went 4.8 to
+1.0 and a tick went from 0.44 ms to 0.47, which is the trade: one assembly with one set of
+conventions costs a little more than four partial ones with four. Named decisions counted:
+none, to thirty-nine. Against the last commit the tactics card puts the whole pass at a
+pair difference of -76 with a standard error of 264, and -12 with 327 on an earlier run:
+twice inside the noise, which is what a framework pass should read.
+
+**What one unit is allowed to look at.** `AIS`, filled by `aiSense(u, W)` once per unit per
+tick, and read by every decision below it. `AIW` is what the side knows; this is what one
+section leader knows looking out of his own position, and it exists because every per-unit
+decision in the brain used to be made from a single input. Suppression alone decided
+whether a section went to ground. A launcher inside a hundred and ninety alone decided
+whether a tank reversed. Distance alone decided which flag a section walked at. Every one
+of those is a true fact and not one of them is a situation, and a rule built on one answers
+the fact correctly and the battle wrongly: a section pinned by a machine gun in a ditch and
+a section being shelled by a tank it cannot scratch carry the same suppression and want
+opposite things done about them. The brain could not tell them apart because it had never
+asked what was firing.
+
+So a unit reads the whole of it first and decides afterwards.
+
+- *Itself*: strength, hit points, suppression, whether it is pinned, veterancy, whether a
+  track or a gun is out, the cover its men are actually standing in, the room it has.
+- *What is shooting at it*: `damage()` now writes down who did it, with what and when
+  (`u.hurtId`, `u.hurtT`, `u.hurtVeh`, and `u.hurtAmt`, a running tally that fades), which
+  nothing anywhere recorded before. How hurt that thing is comes with it.
+- *What else is round it*, rolled up by what it can do to this rather than by what it is.
+  `S.danger` is the weight of what can actually get through this unit's plate, so a Tiger
+  two hundred out is a great deal of threat and no danger whatever to another Tiger's
+  front. `S.canAnswer` is whether it can hurt the worst of it back, which for infantry
+  against armour is usually the whole question. `S.weakest` is the nearly-dead one within
+  reach, because a thing about to die is worth standing to kill.
+- *Its own people*: how much weight is beside it, whether it has infantry escorting it,
+  and `S.frAt` -- the nearest friend that can open the tank it cannot.
+- *The job*: its objective, how far off, what is on it, and how long that ground has been
+  in the hands it is in (`AIM.held`, which is what tells a position from a place somebody
+  walked onto thirty seconds ago).
+
+It is honest. `aiThreat` is deliberately allowed the map, for the reason set out on it, but
+this is a man looking out of a window, so every enemy in `AIS` passes `aiKnown`.
+
+**It weighs the options rather than taking the first one that fits.** `aiWeigh(u, S, W)`
+scores what the unit could do against what each option is for and returns the winner; a
+score under the floor means get on with the job, which is what most units do on most ticks.
+What it replaced was a chain of reflexes tried in a fixed order, which means the decision
+was made by whoever wrote the order of the lines. A tank both caught side-on to a Pak and
+closed on by a launcher backed away from the launcher, presenting to the Pak the plate it
+had been about to turn out of the way, because the launcher rule happened to be written
+first. A section that had just shot a Sherman down to a tenth of its hit points went to
+ground and let it drive off, because the duck rule fires on suppression and suppression is
+all it read.
+
+The options are `stand`, the four ways out of the open (`house`, `cover`, `back`, `ground`),
+`hold`, `call`, and for armour `backoff`, `face` and `withdraw`. Each is argued with rather
+than triggered: the cover it would gain against the cover it has, the ground it would give
+up against what that ground is worth and whether anybody else is on it, whether there is
+room in the lane to get sideways at all, how close the thing is it would be breaking
+contact with, how hurt the launcher section is that it is reversing from. `stand` is the
+option that did not exist, and it fires more than all four ducks together: every reason to
+stay was a reason the chain never asked about.
+
+**It can ask.** A section that meets a tank has three honest answers and the brain had one
+of them: die where it stands, go home, or get behind something and say so. Nothing in this
+army could say anything -- every unit decided alone out of what it could see, and there was
+no way for what one of them found to become anybody else's business, so two Panzer IVs
+screened an empty approach four hundred units off while the section that could have taken
+the flag was shelled off it.
+
+`AIQ` is the call board, one per side, and like everything else that outlives a tick it
+holds nothing but numbers and ids. A unit that meets something it cannot answer raises a
+call (`aiCall`) -- where the trouble is, what kind of thing is wanted, and what answering
+it is worth. `aiCallTend` works the board once a tick inside `aiLook`: a call whose caller
+is gone, whose trouble is dead or has been lost track of, or that nobody has answered in
+half a minute comes off it, and the rest are kept pointed at where the trouble is now
+rather than where it was. `aiAnswer` deals them after the plan has dealt everything else,
+worth first and nearest capable thing within that, two to a call, and whoever is sent gets
+`answer` as a job, which outranks the plan. The caller reads its own call back -- how far
+off the answer is -- and that is what lets it hold the cover it has instead of walking into
+the tank, which is what the plan says, or walking home, which is what the retreat rule says
+once the tank has done enough.
+
+Three things about it are worth knowing. **A gun team is never an answer**: it belongs
+where it was sited covering the ground armour has to come up, and walked across the town to
+somebody else's trouble it arrives in the open, out of its own arc and unset up. The weapon
+test sorts the rest out on its own, because a rifle section fails it and an assault section
+with a launcher does not. **Holding is only worth it if somebody is coming**: the first
+version held on the call alone and sections stood still through eleven per cent of every
+unit-tick of a battle while help reached a third of it, so `hold` now wants an answerer
+actually dealt and `call` on its own costs a tick. And **the trouble has to be this unit's**:
+a tank four hundred out shooting at somebody else is a fact about the battle, not a reason
+for this section to stop, so it has to be hitting them, or inside two hundred and fifty, or
+sitting on the ground they were sent to take.
+
+Armour calls too, both ways. A Sherman that cannot open the front of what is in front of it
+asks for something that can and keeps the range open while it waits, rather than sitting
+and watching. And a tank backing away from a launcher asks for men: opening the range buys
+time and nothing else, and that rule is the one place that knows it has no section walking
+beside it.
+
+Measured with `tools/brain.mjs --base=642882e` over a five-minute battle with a brain on
+both sides. **The duck rule fired once in the whole battle at the last commit and
+thirty-seven times now**, which is the real finding: the reaction to being shot at in the
+open was written, gated, counted and for practical purposes absent, and nothing said so
+until the weighing put it up against an alternative. `stand` is chosen on about four unit-
+ticks in ten and did not exist. Sections are routed to somebody else's trouble on nine per
+cent of unit-ticks, a call is answered within five to seven seconds of being raised, and an
+answerer is in contact with what it was sent at for eighty to ninety unit-ticks a battle.
+A thinking tick costs about 0.6 to 0.7 ms against 0.5 before, which is what reading the
+whole situation for every unit on every tick costs.
+
+How the calls end is the part still worth work. Of thirty-four raised in a battle, half
+ended because the caller was dead or retreating before the answer did anything, twelve
+lapsed and two ended with the tank dead. That is partly the nature of infantry meeting
+armour and partly that the answer arrives late: a call is answered in five seconds and the
+answerer is a tank's drive away from the trouble. What was fixed off that number is the
+lapse -- a call whose answerer is in contact is not stale, the fight it asked for is
+happening, and timing it out in the middle of one un-deals the tank that is in it.
+
+Read those as orders of magnitude and nothing finer. Two runs of *identical* code came back
+with thirty-four calls raised and thirteen, `stand` on 36.4 per cent of unit-ticks and 44.0,
+and a tick at 0.71 ms and 0.59. A battle here compounds, and what a brain meets depends on
+what it met ten seconds earlier.
+
+On the tactics card the whole pass is a pair difference of -21 with a standard error of 302
+over four pairs against the commit before it: inside the noise, which is the honest answer
+for a change of this kind and the one the tool almost always gives. The control run beside
+it -- the same card against a revision identical to the working file -- came back at -181
+with a standard error of 173 over eight pairs, so neither number is anything but the map.
+Every rule in the pass stands on whether it is right.
+
+**The ground costs what it costs to cross alive.** Every route the army took was priced on
+what it cost to walk -- the metalling, the wire, the field wall, the room it had to squeeze
+through -- and on nothing whatever about what was shooting down it. So a section ordered to
+a flag three hundred units off took the street, because the street is the cheap way, and
+the street had a machine gun at the end of it.
+
+`DANG` is the beaten zone: two grids a side at half the movement grid's resolution, `inf`
+for what will hurt men and `veh` for what will open armour, because a rifle section and a
+Tiger are frightened of different things and a Pak covering a crossroads paints the second
+and barely the first. It is **cast**, not stamped: rays out of each contact until something
+stops the eye. A disc of danger round a machine gun says it threatens the street on the far
+side of the block it is standing behind, which is the opposite of the truth and would route
+the army round the one place it was safe; casting is also cheaper than the disc. Everything
+in it comes out of `AIM`, so it is only as good as where the side has been -- which is the
+point rather than a limitation, and is what the probe exists to fix.
+
+`cellCost` charges for it and `u.fear` is what a particular move will pay to stay out of
+it. A wave pressing home pays almost nothing (0.3), because crossing the beaten zone under
+covering fire is the whole of what a wave is; a section walking to a flag pays 1.05, a
+retreat 1.4, an engineer 1.3 and a scout 1.7. Nothing is forbidden by it, for the same
+reason nothing else in `cellCost` is.
+
+Measured on a staged drill -- a machine gun sited on the direct line of five crossings of
+the town, a section asked to walk past it -- exposure along the route falls ninety per cent
+for ten per cent more walking, and two of the five legs find a way the gun cannot see at
+all. Painting the field is 0.08 ms.
+
+One thing had to be fixed for it, and it is the thing to know before touching the cost
+model. **The straight-line shortcut has to ask two questions, not one.** Folded into a
+single priced line the danger term rejected nearly every shortcut, so the full search ran
+on every order at eight times the cost, for a route no different from the straight one
+wherever nothing was looking. The difference between the priced and the unpriced line *is*
+the danger integral, and that is the number to threshold.
+
+**What the army is trying to do.** `AIOP`, one list a side. An objective list says what
+ground is worth; it does not say what the army is doing about it, and until now nothing
+did. There was one wave, kept in eight fields spread through the plan, and everything not
+in it was a unit walking at the nearest flag. An army with one operation has no second
+axis, can commit nothing to anything that is not ground, and cannot tell a plan that has
+failed from one it has not finished.
+
+An operation has an aim, a force, a method, a clock and a test for being over. A unit
+carries the id of the one it is on (`u.op`), which outranks the job the plan dealt it, and
+`aiInWave` excludes it so the wave does not stand waiting for a section that has been sent
+somewhere else. Six kinds:
+
+- **take** and **raze** are the main effort -- the wave, and in annihilation the wave
+  against a building. Its state is still the wave's own, because the form post that steps
+  back until the ground it gathers on is quiet, the half-strength floor, the support gate,
+  the late go and the momentum re-form are a great deal of hard-won detail and moving them
+  into the record would be a rewrite with nothing able to say whether a piece had been
+  lost. What the record adds is that the main effort is one of the things the army is doing
+  rather than the only thing it can be doing.
+- **probe** sends one cheap thing to look at ground nobody has eyes on and ends the moment
+  it can see it (`aiScouted`). It pays for itself twice: everything the brain knows about
+  the enemy comes out of contacts, contacts come from having looked, and the beaten zone
+  the whole army routes around is painted from them. A prober is not forced onto a target
+  -- with no forced target its own `acquire` still fires at what is in front of it while it
+  keeps walking, which is what a section moving under contact actually does, and the first
+  version stopped at the first thing it saw and never scouted anything.
+- **destroy** is a task force against one named thing. What is worth one is a *kind* of
+  thing rather than a price: armour, a weapon team, or anything elite. Priced instead, the
+  first version wanted anything over two hundred and sixty and a full-strength section is
+  worth two hundred and fifty, so it never once fired.
+- **feint** goes to the fire post short of a flag well away from the main effort, where it
+  can be seen and can shoot at what is on it, and stays there. A demonstration that walks
+  in is an attack, and a two-section attack on a defended flag is two sections spent on
+  ground nobody wanted. It works on this opponent for the same reason it works on a real
+  one: `aiThreat` is what sizes the effort put against a sector, so men standing where they
+  can be seen pull weight off the place they are not going.
+- **hold** puts weight on ground it owns that is being come for. The plan already scores a
+  held sector a little higher, but a preference does not put men on a flag and keep them
+  there while it is attacked.
+
+Bounded hard: one of each at a time, and never more than a third of the fighting strength
+off the main effort, because an army running five operations is an army running none.
+`aiOpsReview` ends them, `aiOpsPlan` decides what should exist, `aiOpsMan` deals the force
+and a unit already on an operation stays on it -- re-manned every tick it is a section that
+walks halfway to two places.
+
+**And what the ground has already cost.** `AIM.lost` has remembered where this side's men
+have died since the memory was built and the objective scoring ignored it completely: an
+army that had fed three sections into the same flag one at a time wanted it exactly as much
+as it had the first time, and went again. It is a capped penalty, because ground that is
+dear is not ground to be given up -- it is ground to be gone at with more, or later -- and
+an uncapped term walks the army off the map.
+
+Measured over a five-minute battle at veteran with a brain on both sides: two operations
+open at any moment, a quarter of the army's unit-ticks spent on one that is not the main
+effort, and five per cent of the map painted as dangerous to men. All five kinds fire in a
+single battle. A probe runs about twenty seconds and ends because it can see the ground, a
+destroy forty, a hold under a minute, the main effort twenty to fifty.
+
+**Whether a feint draws anybody is not known.** The card measures the right thing -- the
+enemy weight within 420 of the ground it demonstrated against, at the moment it started and
+the moment it ended, because nothing else the brain does moves that number at that place --
+and three runs of two feints each came back 410 to 661, 0 to 85, and 325 to 240. Two up and
+one down out of six feints, on a battle whose absolute level is wherever the fight happened
+to be. The first two runs read as a direction and the third says they were not one. Settling
+it wants a staged drill rather than battle sampling: a feint put deliberately at a known
+sector, the same battle run with and without it, which is the shape `tools/move.mjs` uses
+for the beaten zone and the only way any of these tactical claims has ever been settled.
+The rule is in because it is right, and it is cheap now -- one section out of an army of
+twelve, at veteran.
+
+**A `hold` has to hold from a position, not from the middle.** Its first version aimed at
+the sector's own point, which is a coordinate in the open by construction, and parked two
+sections on it for the life of the operation: halted men behind something fell from 98.8
+per cent of man-frames to 90.1 on `tools/move.mjs`, which is the whole of what the cover
+overhaul bought, given back by an operation that meant well. It takes a house on the flag
+if there is one and otherwise the best cover within a hundred of the point, which is still
+inside the circle that counts. The card caught it and nothing else would have: a screenshot
+of two sections standing on a flag is two sections holding a flag.
+
+Fixed it reads 97.3 against the 98.8 it was before the pass, and the card's own control --
+the same battle run against a revision identical to the working file -- puts its two halves
+0.3 apart, so the remaining point and a half is probably real and is not established. If
+you are comparing against 98.8 and wondering, that is what is known about it.
+
+**An operation is paid for in ground, and the first version could not afford it.** This is
+the one thing on this page the tactics card was able to see. Against the commit before the
+pass: -470 with a standard error of 154 over eight pairs, the tool's own line saying it
+cleared twice that, and the working brain ahead in one of eight same-side comparisons --
+with the control on identical code clean at +110 over the same eight pairs, so the tool was
+not lying. Isolated to the operations commit alone it was -463 with a standard error of
+146, which is the whole of it: the beaten zone costs nothing.
+
+The per-side table said why. Ground held roughly halved (4.1 sectors against 8.8), the
+sections more scattered (clump 168 against 161 on the other side of the map, and 211
+against 147 on the run before) and the army pushing less far. That is the shape of an army
+with a third of itself committed to things that capture nothing, because only the main
+effort and `hold` take ground at all and this map pays by the second for ground held.
+
+Two things were cut. The share is two units out of an army of eight or more rather than a
+third of the fighting strength. And **an operation is manned out of what cannot capture
+anyway**: `aiOpsMan` prefers armour by a long margin, because a vehicle that cannot carry
+men cannot take a sector however long it stands on one, so a task force built out of the
+screen costs the capture allocation nothing, while a section taken off the dealing is a
+flag nobody is standing on.
+
+The cut does not disable it: the operations still run, at 1.45 open a tick against 1.84 and
+275 unit-ticks of the army's time against 827, which is nine per cent of it rather than
+twenty-five. `destroy` is rare enough now to miss a battle entirely, which is what wanting
+two units out of two costs it.
+
+Refought after the cut: **-163 with a standard error of 201 over eight pairs, inside the
+noise**, and the working brain ahead in four of eight same-side comparisons rather than
+one. Ground held came back from 4.1 sectors to 5.6 against the baseline's 6.4, and 6.1 to
+9.4 against 10.1. What is left is a small deficit in ground that the tool says would take
+about fifty pairs to see, so it is not known whether it is there at all. That is the right
+place for a change of this kind to land: the agency is kept and the army is paying a price
+for it that nothing can measure.
+
+**Order the planning by urgency, because room is the scarce thing.** There is room for
+another operation on fewer than half the ticks -- four kinds wanting seven slots out of the
+third of the army they are allowed between them -- so whichever is considered first wins.
+Written with the discretionary one first, the probe is cheap, nearly always available, and
+took the last slot on sixty-three per cent of ticks: the two operations that exist to
+answer a tank in the rear and a flag being taken off us lost to a scout every time.
+Reordered reactive-first (destroy, hold, probe, feint) the destroy operation went from
+twenty-one tick-samples in a battle to fifty and the probe's churn from four hundred and
+forty-five to two hundred and fifty-one.
+
+And the way to find out why a rule never fires is to count its gates separately rather than
+to guess which one shut. Guessing got the destroy threshold wrong twice. Counting said
+immediately that a prize worth a task force is on the field on nine per cent of ticks, is
+killable on six, and that room existed on thirty-seven -- which is a rule that is working
+and rare, not a rule that is broken.
+
+Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
 produces, buys field upgrades, builds, scores every sector into an objective list with a
@@ -543,36 +1203,52 @@ hook that walks into a second position is two assaults where there was one. When
 in, the hook ends on the flag on its own side of it, inside the circle that takes it, so the
 defender has two bearings to face.
 
-**The section leader's reflexes.** Four decisions are made per unit, before the plan and from
-what the unit can see, at skill 1 and up (`skill >= 1`; green stands in the street and loses men,
-which is what green is for):
+**The section leader's decisions.** Made per unit, before the plan and out of `AIS` rather
+than out of one number, at skill 1 and up (`skill >= 1`; green stands in the street and loses
+men, which is what green is for). `aiWeigh` scores them against each other; what follows is
+what each is for and what talks it out of firing.
 
-- *Under fire in the open* a section goes to ground: into an empty house within a hundred and
+- *Under fire in the open* a section gets out of it: into an empty house within a hundred and
   twenty (`aiHouse`), behind the nearest real cover within a dash that faces the fire (`aiDuck`,
-  which for a wall is the nearest point of the wall and the side away from the fire), or, outside
-  a wave, back a hundred and fifty the way it came. The threshold is `u.sup > .4` and low on
-  purpose: suppression climbs from nothing to pinned in a few seconds of machine gun fire and
-  decays at a fifth a second, so a rule that waited for half suppression found the men already
-  pinned or already recovered and fired perhaps once a battle. It still fires rarely, and the
-  histogram says why: this combat model shoots sections down to the retreat rule faster than
-  it suppresses them, so most of the time a section under fire is retreating, not ducking.
+  which for a wall is the nearest point of the wall and the side away from the fire), back a
+  hundred and fifty the way it came, or flat where it stands. The threshold is low on purpose:
+  suppression climbs from nothing to pinned in a few seconds of machine gun fire and decays at a
+  fifth a second, so a rule that waited for half suppression found the men already pinned or
+  already recovered. What talks it down is `stand`: a hurt enemy within reach that it can finish,
+  cover it is already in, friends who outnumber what is in front of it, veterancy, and ground it
+  is holding that is worth more than the walk. A house is worth less when the thing shelling it
+  is a tank; going flat is worth less with armour inside two hundred and sixty; giving ground is
+  worth less when nobody else is on the objective and worth nothing when the nearest enemy is
+  too close to break contact from.
 - *The odds*: a section outside a wave whose objective is held by more than twice what it is
   bringing (itself, the men already on the flag, the men moving with it) goes to the fire post
   three hundred short of the flag instead, the same point a wave against it would form on, and
-  looks again in twenty seconds (`u.holdT`). By then it has been dealt to a wave, which finds it
-  already on the forming-up point, or the rest have come up. It does not stop where it stands:
-  the first version froze in place, usually in the middle of a street, and the army's reach fell
-  by a third. Nearest-first dealing sends sections one at a time and one at a time is what a
-  defended flag eats.
+  looks again in twenty seconds (`u.holdT`). It does not stop where it stands, because where it
+  stands is usually the middle of a street: the first version froze in place and the army's
+  reach fell by a third. Two things were added to it. Ground that changed hands inside the last
+  twenty seconds is not a position -- nothing has been dug, nothing wired, and whoever took it
+  is still sorting itself out on top of it -- so the odds are waived up to about three to one
+  (`odds.weak`). And if what is holding the flag is armour this section cannot open, sitting
+  three hundred back looking at it answers nothing, so it raises a call and the flag becomes
+  somebody's job rather than nobody's.
 - *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
   airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
-  when no friendly section is within a hundred and thirty, opening the range two hundred and
-  firing as it goes (`u.backT`, nine seconds between).
+  when no friendly section is within a hundred and fifty, opening the range two hundred and
+  firing as it goes (`u.backT`, nine seconds between), and asking for men while it does. A
+  launcher section at a quarter strength is a section to shoot rather than to reverse from, and
+  the scoring now says so.
 - *It fights with its front to the gun*: a halted tank caught more than a radian off its facing
   from a visible gun that can open it, between two hundred and five hundred and forty out, drives
   at it a hundred and sixty-five to turn (`u.faceT`, eight seconds between). There is no pivot in
   place, and a move short of a hundred and fifty behind the vehicle is taken by the driver as an
-  instruction to reverse, which would present the rear plate instead.
+  instruction to reverse, which would present the rear plate instead. This is the one the fixed
+  order used to lose: a tank both caught side-on to a Pak and closed on by a launcher took the
+  launcher rule because it was written first, and reversed showing the Pak the plate it had been
+  about to turn away.
+- *And it withdraws*: a tank down to a third with something in front of it that can open it, or
+  one with its gun out, pulls back out of the beaten zone. `mend` is the older answer to the same
+  problem and it needs an engineer to exist; without one the tank used to fight where it stood
+  until it was a wreck blocking its own street.
 
 Two things about it are counter-intuitive enough to be worth knowing before touching it.
 
@@ -672,6 +1348,175 @@ ring it takes a Sherman eight times in eight at nineteen seconds and an Achilles
 Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone gun with
 elite infantry inside two hundred of it is a dead gun, which is what the men in front of
 it are for.
+
+**The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
+eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
+`povCamera` builds `MAT` from a yaw and a pitch instead of the orbit camera, so `CAMLIM`
+never sees it and `CAM` is untouched for the return. The direction starts along the unit's
+facing and a drag turns it (`povLook`), with the sign of a turn read off the camera basis
+(`povTurnSign`) rather than assumed, because the world is left-handed and the sign is easy to
+get wrong; a pinch or the wheel narrows the field of view (`povFov`, set by the narrower
+screen axis so a portrait phone still sees sixty degrees across). The renderer draws only
+what the side can see, so the view is honest by construction. In it a finger turns the head
+and nothing else: taps pick nothing and give no orders, the battle runs on, the ear follows
+the eye (`sfx` pans by bearing and fades by range), the minimap draws the eye and its cone,
+the sky's horizon follows the pitch (`povSkyPitch`) and the haze closes in so the far town
+fades. It closes on the button, on V or Escape, and on its own when the unit dies.
+`check.mjs` opens it, turns it and closes it on both devices; `tools/shoot.mjs pov` is the
+look at it.
+
+In a vehicle the eye is the commander's and the vehicle has an inside. The shell is a set
+of faces pointing out, so from in here it is not there at all, which is the fact the whole
+thing turns on: what the commander can see is whatever the room leaves open, so the view
+is something to design rather than something to measure.
+
+**An interior is drawn, not derived.** `VIN[key]` is a builder somebody sat down and laid
+out; `insideOf` reads a room off the shell for everything that has no entry yet. The
+derived one exists so a new vehicle is never empty, and it can only ever make a box the
+shape of the outside: the first version put a ring of eight pillars round the head and a
+commander behind a fence is no use to anybody. An authored room is laid out around the eye
+instead and is allowed to lie -- the wall stops below the sightline, the roof hangs above
+it -- because nothing in the shell will contradict it.
+
+A builder returns the room (`faces`, drawn on the mount or the hull by `drawInterior`),
+the `lid` (the same frame, drawn only with the hatch shut, because the shut lid outside
+has no underside and you would look up through it at the sky), the `hood` (drawn at the
+eye and turned by the head), `crew` stations, `eyeUp`/`eyeIn`, the `hole` for `drawHole`,
+and `hide`. `faceIn` is `faceOut`'s opposite and is why any of it is visible; `radialPlan`
+samples a closed outline as rays from a point inside it, which is how a roof runs from a
+hatch ring out to walls that share no vertices with it; `ringWall`, `ringDeck` and
+`inTube` build from those plans. `INC` is the palette and is registered in the atlas like
+any other.
+
+**The Sherman V is the one that is drawn.** The commander sits at the back of the turret
+on the hatch's side with the gunner low in front of him and the loader across the breech.
+The wall stops at his chest and the roof hangs over his head, so there is a band of
+daylight the whole way round at eye level; that band is the reason to draw a room by hand.
+The gun is in gunmetal against white lead so the two read apart, the roof carries the same
+periscope housings, ventilator and bomb thrower inside that the shell carries outside, and
+the floor has the traverse motor and the cases that rolled where they fell. Three things
+about it are worth knowing before drawing a second one. `hide: 'tur'` leaves the turret
+mesh out while the lid is shut, because a culled shell stops hiding the mantlet and the
+barrel and they come through the wall as slabs of paint hanging in the view. The `hood` is
+his rotating periscope: drawn at the eye and turned with `POV.yaw`, so the window is ahead
+of him wherever he looks and no post ever stands in the middle of it. And `povFov` clamps
+to 1.3 buttoned, or a portrait phone gets ninety degrees of vertical and the world becomes
+a letterbox between floor and ceiling.
+
+**The hatch has to open the way a hatch opens.** The Sherman's two D-doors were laid out
+fore and aft but hinged about the fore-and-aft centreline, so each swung up about its own
+middle: half of every door went under the roof and both stood vertically through the
+middle of the hatch. From outside, at the distance anyone had looked at it, that reads as
+an open hatch. From the commander's own eye it is a slab of olive paint filling a third
+of the screen, and it is what made the first head-out screenshots unreadable. The seam now
+runs fore and aft, each door hinges on its own outer edge and opens to 1.9 radians, and
+the nearest lid vertex is 5.7 units from the eye rather than nearly nothing. Every other
+vehicle's lid is a single leaf and clears the eye by 3.3 to 4.8.
+
+`vehFrames` is the one place the hull and mount matrices are made, so the draw and the eye
+agree to the frame. `uInside` lights the room flat, a little dim, and ignores the shadow
+map, which cannot see in there. `drawHole` draws a disc the size of the hatch into the
+depth buffer alone, pushed to the far plane, so the head-out eye can see down through a
+roof plate that has no hole in it; buttoned there is nothing to punch. OPEN and SHUT
+(`povHatch`, `tHatch`) put the head up out of the lid or down on the seat, starting as the
+crew would have it (`buttonedUp`); the pitch runs to -1.35 in a vehicle so he can look down
+into his turret, and the periscope's vignette lifts inside a room that is already a frame.
+`check.mjs` spawns a tank and asserts the eye drops when the lid shuts; the `pov` scene
+photographs the hatch up, the window, the turret and the crew.
+
+**And he commands it.** In the periscope of one of his own vehicles the player is its
+commander, so the driver and the gunner are his. `DRV` is what he is asking for this
+frame: a throttle, a steer and whether the gun is to go off. He takes over on the first
+control he touches (`DRV.took`) rather than on opening the periscope, or a look out of a
+tank that was going somewhere would stop it dead.
+
+**None of the driving is written twice**, which is the only reason it is worth having.
+The steer turns the hull; the throttle puts a waypoint a tank's length ahead of it and
+finds it again every tick, so `moveUnit` does the rest and the weight, the gearing, the
+slope, the metalled road, the walls, the separation and the track marks are the ones the
+whole army drives on. Astern puts the waypoint a short way behind instead, because 120
+units is the distance the driver already reads as an instruction to back up rather than
+to turn round in a street the width of the tank. A parallel integrator would have been
+a second set of rules to keep in step with the first, and it would have drifted.
+
+The gun follows his eye: `u.want` is the look bearing rather than a target's, so the
+turret traverses at its own rate and a Tiger II still costs twenty seconds to come
+round. FIRE lays it on whatever `povTarget` finds under the crosshair -- an enemy the
+side can see, inside the weapon's reach, within a hand's breadth of the middle of the
+view -- and `fireAt` then refuses it for all the usual reasons, so the mark carries the
+one that applies: TRAVERSING, LOADING, GUN OUT or READY. A commander who cannot see
+which of the four he is waiting on will swear the tank is broken. While he has it
+nothing acquires for him (`u.manual` skips `acquire` and the hull's turn-to-target),
+because he is the crew now.
+
+**The trigger is not a lock.** With nothing worth laying on, `povGround` walks the line
+out of his eye until it meets a wall or the ground and the round goes there: `fireAt`
+takes a bare point as happily as a unit, and with nothing aimed at, nothing is hit
+directly and what lands is the burst. That is how you put HE through a window, and it is
+most of what a tank in a town is for. The blocker grid answers the wall question in one
+lookup a step. The walk is horizontal with the pitch carried as a gradient, and it ends at
+the far edge of the gun's reach when it meets nothing, because a level look over open
+ground is the commander's commonest shot and the first version handed back nothing for it.
+A mark the gun cannot shoot at is worse than no mark, so the point is tested with
+`fireLine` and backed off along the bearing in twenty-four unit steps until it passes; the
+first version allowed a round a height over a blocker where `fireLine` allows none, so the
+crosshair sat on a wall, the button said READY, and pulling the trigger did nothing at all.
+The mark on the ground is the burst drawn at its own size, with the far edge projected
+rather than guessed. Houses are scenery and have no hit points, but the men in them have: a
+round on the wall reaches the garrison standing along the inside of it.
+
+**The gun is laid on the mark and not on the eye.** `DRV.want` is the bearing to whatever
+is designated, the target under the crosshair or the ground point, and `u.want` takes it
+while `u.manual`. The commander sits a couple of metres off the hull centre, which at two
+hundred units is several degrees, and `fireAt` wants the turret inside a tenth of a radian:
+laid on the raw look bearing the gun traversed for ever and the round never left.
+
+**The loader works whether or not there is a target.** `u.cd` and `u.atcd` count down in
+`updateUnit` and `fireAt` only reads them. They used to be decremented inside `fireAt`,
+which is only reached with something to shoot at, so a tank under command with nothing
+acquired never finished loading: the trigger did nothing and the button almost never said
+READY. It also means a gun that loses its target reloads during the gap, the way a crew
+does, and the balance card does not move on it, because in a duel both sides always have
+something in front of them.
+
+**He can see his own gun go off.** `fireAt` and `fireOneSecondary` skip the flash, the
+tracer and the report when the firer is off screen, and `onScreen` projects the ground point
+under the unit, which from the commander's own eye is behind the near plane. The one man
+sitting on the gun was the one man with no evidence it had fired. Both now test
+`onScreen(u.x, u.y) || u === povHost()`.
+
+**Two guns, two triggers.** The Sherman carries its coaxial as standard now (`def.sec`
+on the unit rather than an upgrade, which is what `secondaryKeys` reads alongside
+`u.up`), and under command neither gun fires on its own: the main gun answers GUN and the
+coaxial answers MG, and `fireOneSecondary` returns at once while the trigger is up. The
+coaxial is laid where he is looking, within a third of a radian, and with nothing in front
+of it the belt still goes down the street -- a trigger that does nothing when pulled reads
+as a broken tank.
+
+**A machine gun has no round to load; it has a barrel.** `mgHeat` climbs while the gun is
+running (`mgOnT`, set for a round and a half's worth each time one leaves, so the gauge
+does not flicker between rounds at four hundred a minute) and falls while it is not, and
+at the top of it the gun is out until it is back down to a third. `DIFF[].mgHold` is how
+many seconds of the trigger held down it takes to get there: thirty on green, twenty-two
+on regular, sixteen on veteran, and eighteen for anything the other side is driving.
+Cooling from full takes a little over half as long again. Held down for ever it cycles:
+twenty-two seconds of fire, eight of nothing, and round again. The roster barely notices,
+because a vehicle machine gun in `duel.mjs` finishes its fight in fifteen to eighteen
+seconds and never reaches the number.
+
+The controls are a thumb pad and two triggers (`#drive`), pointer-handled so a finger
+and a mouse take the same path, and on a desktop W A S D drive, space fires the gun and C
+the coaxial (the right mouse button does too). **Both triggers read the same way round:**
+the circle fills as the main gun loads and lights when the round is home, and the machine
+gun's circle shows the barrel it has left rather than the heat it has taken. A gauge that
+fills toward ready next to an identical gauge that fills toward danger is two opposite
+meanings in two identical circles, and the first version had exactly that.
+They are not laid out in CSS alone: a phone's right-hand edge already carries the tool
+strip at the top and the little map at the bottom, so `povDriveLayout` measures the band
+between them and puts the button in it, and `body.pov` takes away the three buttons that
+order the rest of the army, which is not his to order while he is sitting in a tank.
+`check.mjs` drives the tank three seconds under the pad and asserts it moved, turned and
+then stopped.
 
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
 title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
@@ -811,6 +1656,8 @@ package.json                   dev dependencies and script aliases
 tools/harness.mjs              Playwright library: boot, drive, pose, photograph
 tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
+tools/move.mjs                 movement card: routes, battle traffic, cover taken
+tools/brain.mjs                the AI card: sight, plan, and which rules ever fire
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
@@ -870,3 +1717,22 @@ shots/                         screenshot output, gitignored
   the failure and sets `AU.on = false`, so silence is not necessarily a bug.
 - Terrain noise is seeded (`_s = 20240606`), so the map is identical every run.
   Combat uses `Math.random()` and is not reproducible.
+- **A part that is right from outside can be ruinous from inside it.** The periscope puts
+  the eye a couple of units from geometry nobody had ever looked at closely, and the first
+  thing it found was the Sherman's open hatch hinged about the wrong line: correct enough
+  in a gallery shot, a wall of paint from the commander's seat. When a model gains a
+  first-person eye, photograph it from that eye before trusting the gallery.
+- **`unitRadius` is half a vehicle's LENGTH.** It is the separation radius, so a Sherman
+  reads 41 when it is 2.6 m across the tracks, which is 15. Anything asking whether a
+  thing fits through a gap wants the beam, and asking with `unitRadius` reports the main
+  street of Ortona as too narrow for the tank driving down it.
+- **A rate needs a denominator you can see.** A movement metric counted four-second
+  windows in which a unit with a path went nowhere; a path is usually spent in well under
+  four seconds, so a whole battle produced fifty windows and four coincidences read as a
+  nine per cent regression that sent a morning after a bug that was not there. Print the
+  denominator, and prefer counting frames to counting events.
+- `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
+  into `G.units` as well has it in the list twice, and a unit in the list twice is
+  updated twice a frame: it drives at double speed and its gun fires at twice its rate of
+  fire. That is exactly how a Sherman came back off the rate probe at 1.7 seconds a round
+  against a paper 3.3, with nothing wrong in the game at all.

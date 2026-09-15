@@ -95,6 +95,72 @@ const SCENES = {
     }
   },
 
+  pov: {
+    help: 'The periscope: a first-person look from a section, ahead and to either side.',
+    async run(page) {
+      await deploy(page, { side: SIDE, diff: DIFF });
+      if (SIM) await fastForward(page, SIM);
+      if (args.nofog) await setFog(page, false);
+      if (BARE) await chrome(page, false);
+      await page.evaluate(() => {
+        const own = window.G.units.filter(u => u.side === window.G.side && !u.dead && u.cat !== 'veh');
+        own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
+        window.select([own[0]], false); window.povOn(own[0]);
+      });
+      await shoot(page, out('pov-ahead'), { settle: SETTLE });
+      for (const [name, turn] of [['left', -Math.PI / 2], ['right', Math.PI / 2]]) {
+        await page.evaluate(t => { window.POV.yaw = (window.POV.u.facing || 0) + t; }, turn);
+        await shoot(page, out('pov-' + name), { settle: SETTLE });
+      }
+      await page.evaluate(() => { window.POV.yaw = window.POV.u.facing || 0; window.POV.zoom = 2.5; });
+      await shoot(page, out('pov-zoom'), { settle: SETTLE });
+      await page.evaluate(() => window.povOff());
+      /* and a tank: the commander up out of his hatch, then down on his seat behind the
+         periscope, then looking round the turret he is sitting in */
+      await page.evaluate(() => {
+        const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
+        /* with its own side, or the whole town is unexplored and the view is a black wall */
+        const own = window.G.units.filter(q => q.side === window.G.side && !q.dead && q.cat !== 'veh');
+        own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
+        const at = own.length ? window.nearestFree(own[0].x - 70, own[0].y + 40)
+                              : { x: window.WORLD.w / 2 - 220, y: window.WORLD.h / 2 };
+        const u = window.spawnUnit(window.G.side, key, at.x, at.y, 0);
+        window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
+      });
+      await shoot(page, out('pov-tank-up'), { settle: SETTLE });
+      for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
+                                                ['turret', false, .7, -.75], ['crew', false, .35, -.95],
+                                                ['inside', true, 0, -1.3]]) {
+        await page.evaluate(([h, t, p]) => {
+          window.povHatch(h);
+          window.POV.yaw = (window.POV.u.inside || window.POV.u).turret + t; window.POV.pitch = p;
+        }, [hatch, turn, pitch]);
+        await shoot(page, out('pov-tank-' + name), { settle: SETTLE });
+      }
+      /* and the gun laid on something, which is what the marks in the view are for */
+      await page.evaluate(() => {
+        const u = window.POV.u;
+        let best = null;
+        for (let a = 0; a < 64 && !best; a++) {
+          const ang = a * Math.PI / 32, q = window.nearestFree(u.x + Math.cos(ang) * 230, u.y + Math.sin(ang) * 230);
+          if (window.fireLine(u, q) && window.dist(u, q) > 150) best = { q, ang };
+        }
+        if (!best) return;
+        const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'ger_p4' : 'us_sher',
+                                   best.q.x, best.q.y, best.ang + Math.PI);
+        window.povHatch(true); window.POV.yaw = best.ang; window.POV.pitch = -.06;
+        window.DRV.took = 1; window.DRV.padFire = true;
+      });
+      await fastForward(page, 2);
+      await shoot(page, out('pov-tank-lay'), { settle: SETTLE });
+      /* and the coaxial running, so the heat on its button is in the picture */
+      await page.evaluate(() => { window.DRV.padFire = false; window.DRV.padMg = true; });
+      await fastForward(page, 9);
+      await shoot(page, out('pov-tank-mg'), { settle: SETTLE });
+      await page.evaluate(() => { window.DRV.padMg = false; window.povOff(); });
+    }
+  },
+
   terrain: {
     help: 'Wide shots of the town, the coast and the rail line: read the ground and the light.',
     async run(page) {

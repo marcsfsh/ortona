@@ -131,6 +131,119 @@ for (const device of TARGETS) {
        hud.small.slice(0, 4).join('; ') || `${hud.controls} controls checked`);
   }
 
+  /* --- the periscope: a look from a unit, turned by a drag, and back --- */
+  const pov = await page.evaluate(() => {
+    const u = window.G.units.find(u => u.side === window.G.side && !u.dead && u.cat !== 'veh') || window.G.units.find(u => u.side === window.G.side && !u.dead);
+    if (!u) return { ok: false };
+    window.select([u], false);
+    document.getElementById('tPov').click();
+    window.updateCamera();
+    const eye = window.povEye(), e = { x: window.MAT.eye.x, y: window.MAT.eye.y, z: window.MAT.eye.z };
+    const yaw0 = window.POV.yaw; window.povLook(120, 0); const yaw1 = window.POV.yaw;
+    return { ok: true, on: window.POV.on, near: Math.hypot(e.x - eye.x, e.y - eye.y) < 1 && Math.abs(e.z - eye.z) < 1, turned: Math.abs(yaw1 - yaw0) > .3, height: +(e.z - window.groundZ(e.x, e.y)).toFixed(1), btn: document.getElementById('tPov').classList.contains('on') };
+  });
+  await frames(page, 2);
+  const povOff = await page.evaluate(() => { document.getElementById('tPov').click(); return !window.POV.on && !document.getElementById('tPov').classList.contains('on'); });
+  ok('periscope looks from the unit, turns with a drag, and closes', pov.ok && pov.on && pov.near && pov.turned && pov.btn && povOff, `eye ${pov.height} above the ground`);
+
+  /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
+  const tank = await page.evaluate(() => {
+    /* the gun and barrel tests run another minute of battle on top of the one already
+       fought, which is long enough for the victory points to run out and the game-over
+       screen to come up over everything the rest of the check wants to click */
+    window.G.res.us.vp = 9000; window.G.res.ger.vp = 9000;
+    const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
+    const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
+    /* on ground it can actually drive off, or the driving check below measures a wall */
+    const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
+    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);   /* spawnUnit adds it to the field itself */
+    u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
+    window.select([u], false);
+    document.getElementById('tPov').click();
+    const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
+    const out = { key, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
+    window.povHatch(true); window.updateCamera(); const up = window.MAT.eye.z;
+    window.povHatch(false); window.updateCamera(); const down = window.MAT.eye.z;
+    out.dropped = +(up - down).toFixed(1); out.above = +(down - window.groundZ(window.MAT.eye.x, window.MAT.eye.y)).toFixed(1);
+    return out;
+  });
+  await frames(page, 2);
+  await page.evaluate(() => { window.povHatch(true); });
+  await frames(page, 2);
+
+  /* --- and he drives it: the pad turns the hull, moves it, and stops it --- */
+  const drv0 = await page.evaluate(() => {
+    const u = window.POV.u, pad = document.getElementById('drivepad'), fire = document.getElementById('drivefire');
+    const pr = pad.getBoundingClientRect(), fr = fire.getBoundingClientRect();
+    return { shown: document.getElementById('drive').classList.contains('on'),
+             padOk: pr.width >= 44 && pr.height >= 44, fireOk: fr.width >= 44 && fr.height >= 44,
+             clear: fr.right <= window.innerWidth + 1 && fr.top >= 0 && pr.bottom <= window.innerHeight + 1,
+             x: u.x, y: u.y, facing: u.facing };
+  });
+  await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = .8; });
+  await fastForward(page, 3);
+  const drv2 = await page.evaluate(([x, y, f]) => {
+    const u = window.POV.u;
+    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), turned: +Math.abs(u.facing - f).toFixed(2),
+             took: window.DRV.took, x: u.x, y: u.y };
+  }, [drv0.x, drv0.y, drv0.facing]);
+  await page.evaluate(() => { window.DRV.padT = 0; window.DRV.padS = 0; });
+  await fastForward(page, 3);
+  const drv3 = await page.evaluate(([x, y]) => {
+    const u = window.POV.u;
+    return { crept: +Math.hypot(u.x - x, u.y - y).toFixed(1), sp: +(u.sp || 0).toFixed(1) };
+  }, [drv2.x, drv2.y]);
+  /* --- and he shoots with it: a round goes where he points, target or no target --- */
+  const shot = await page.evaluate(() => {
+    const u = window.POV.u;
+    window.__booms = 0;
+    const ex = window.explode;
+    window.explode = function (x, y, r, d, o, e) { window.__booms++; return ex(x, y, r, d, o, e); };
+    window.POV.yaw = u.facing; window.POV.pitch = -.22;
+    window.DRV.padFire = true;
+    return true;
+  });
+  await fastForward(page, 1);
+  const aim = await page.evaluate(() => ({ mark: !!window.DRV.mark, ready: window.DRV.mark ? window.gunReady(window.POV.u, window.DRV.mark) : null }));
+  await fastForward(page, 9);
+  const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
+  ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
+     `${fired} rounds into the street in nine seconds`);
+
+  /* --- the coaxial: its own trigger, no reload, and a barrel that will only take so much --- */
+  const mg0 = await page.evaluate(() => {
+    const u = window.POV.u;
+    if (!u) return { sec: 0, btn: 0 };
+    u.mgHeat = 0; u.mgCook = 0; u.mgOnT = 0;
+    window.DRV.padFire = false; window.DRV.padMg = false;
+    return { sec: window.secondaryKeys(u).length, btn: document.getElementById('drivemg').getBoundingClientRect().height };
+  });
+  await fastForward(page, 6);
+  const mgIdle = await page.evaluate(() => window.POV.u ? +(window.POV.u.mgHeat || 0).toFixed(2) : -1);
+  await page.evaluate(() => { window.DRV.padMg = true; });
+  await fastForward(page, 8);
+  const mgWarm = await page.evaluate(() => window.POV.u ? +(window.POV.u.mgHeat || 0).toFixed(2) : -1);
+  /* the barrel cooks and then cools itself under a held trigger, so watch the whole
+     burst rather than sampling one moment of the cycle */
+  let cookedAt = 0;
+  for (let t = 10; t <= 30 && !cookedAt; t += 2) {
+    await fastForward(page, 2);
+    if (await page.evaluate(() => !!(window.POV.u && window.POV.u.mgCook))) cookedAt = t;
+  }
+  await page.evaluate(() => { window.DRV.padMg = false; });
+  await fastForward(page, 25);
+  const mgCool = await page.evaluate(() => window.POV.u ? { heat: +(window.POV.u.mgHeat || 0).toFixed(2), cooked: !!window.POV.u.mgCook } : { heat: 9, cooked: true });
+  ok('the coaxial fires on its own trigger and cooks the barrel',
+     mg0.sec > 0 && mg0.btn >= 44 && mgIdle === 0 && mgWarm > .1 && mgWarm < 1 && cookedAt > 8 && mgCool.heat < .1 && !mgCool.cooked,
+     `idle ${mgIdle}, ${mgWarm} after 8s on the trigger, cooked at ${cookedAt}s, cold again 25s after release`);
+
+  ok('the commander drives his tank from the periscope',
+     drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 30 && drv2.turned > .2 && drv2.took === 1 && drv3.sp < 1,
+     `moved ${drv2.moved} and turned ${drv2.turned} rad under the pad, then stopped`);
+
+  const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
+  ok('periscope sits in the tank commander\'s cupola, lid up or shut', tank.closed && tank.hatchShown && tank.pieces > 100 && tank.dropped > 3 && tank.above > 20 && tankOff, `${tank.key}: ${tank.pieces} inside triangles, the eye drops ${tank.dropped} when the lid shuts`);
+
   /* --- the minimap and the tactical map --- */
   await page.click('#tMap');
   await frames(page, 1);

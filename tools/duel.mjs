@@ -23,7 +23,11 @@
  * tool is to find the ones that are not.
  */
 
-import { launch, openGame, deploy, parseArgs } from './harness.mjs';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { launch, openGame, deploy, parseArgs, GAME } from './harness.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const N = args.n === undefined ? 12 : Number(args.n);
@@ -87,7 +91,17 @@ const CARD = [
 ];
 
 const browser = await launch();
-const { page } = await openGame(browser, 'desktop');
+/* A stat change has to be fought, and so does a change that was not meant to touch the
+   fighting at all: --base fights the card on an older file, which is the only way to
+   tell a real shift from the noise a near-even matchup throws off. */
+let file = args.file === undefined ? GAME : String(args.file), tmp = null;
+if (args.base !== undefined) {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ortona-duel-'));
+  file = path.join(tmp, 'ortona.html');
+  fs.writeFileSync(file, execFileSync('git', ['show', `${String(args.base)}:ortona.html`],
+                                      { encoding: 'utf8', maxBuffer: 1 << 28 }));
+}
+const { page } = await openGame(browser, 'desktop', { file });
 await deploy(page, { side: 'us', diff: 1 });
 
 const pairs = positional.length >= 2 ? [[positional[0], positional[1]]] : CARD;
@@ -208,6 +222,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
 }, { pairs, N, DIST, COVER, LIMIT });
 
 await browser.close();
+if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
 
 if (args.json) {
   console.log(JSON.stringify(rows, null, 1));

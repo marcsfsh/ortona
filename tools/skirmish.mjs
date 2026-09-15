@@ -57,8 +57,21 @@ function fn(src, name) {
 function baselineBrain(rev) {
   const src = execFileSync('git', ['show', `${rev}:ortona.html`], { encoding: 'utf8', maxBuffer: 1 << 28 });
   /* aiOwn goes with it: it is part of the brain and reads AI.side, so a baseline has to
-     carry its own copy rather than borrow whatever the working file now calls it. */
-  return [fn(src, 'aiOwn'), fn(src, 'aiTick')].join('\n');
+     carry its own copy rather than borrow whatever the working file now calls it. So does
+     aiPickTarget, which is where every attack order comes from: only what is inside this
+     bundle is actually swapped between the sides, so a change made anywhere else in the
+     brain applies to both of them and the card cannot see it at all. Anything whose
+     judgement is under test belongs here. */
+  const parts = [fn(src, 'aiOwn')];
+  /* Everything whose judgement is under test, and nothing else. A change made outside
+     these applies to both sides and the card cannot see it at all. aiSense and aiWeigh are
+     here because they are where a unit decides what to do about what is in front of it;
+     aiCall and aiAnswer because they decide who gets sent to somebody else's trouble. A
+     revision that has none of them just has fewer parts. */
+  for (const name of ['aiPickTarget', 'aiSense', 'aiWeigh', 'aiCall', 'aiCanAnswer', 'aiAnswer'])
+    { try { parts.push(fn(src, name)); } catch (e) { /* older file */ } }
+  parts.push(fn(src, 'aiTick'));
+  return parts.join('\n');
 }
 
 const baseSrc = SELF ? null : baselineBrain(BASE);
