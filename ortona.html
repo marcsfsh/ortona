@@ -4021,6 +4021,17 @@ function damage(t, amt, src) {
     }
     t.threatX = src.x; t.threatY = src.y;
   }
+  /* Who did it, and what with. Everything the brain knew about being under fire it read
+     off one number -- suppression -- which says a section is being shot at and nothing
+     whatever about by what. A section pinned by a machine gun and a section being shelled
+     by a tank it cannot scratch want opposite things done about them, and until this was
+     written down there was nothing to tell them apart. Kept as an id and a few numbers,
+     because the thing that fired may be dead by the time anybody asks. */
+  if (src && src.cat && src.side !== t.side) {
+    t.hurtId = src.id; t.hurtT = G.t; t.hurtX = src.x; t.hurtY = src.y;
+    t.hurtVeh = src.cat === 'veh' ? 1 : 0;
+    t.hurtAmt = (t.hurtAmt || 0) + amt;
+  }
   if (t.cat === 'veh') {
     t.hp -= amt;
     if (t.hp <= 0) killUnit(t, src);
@@ -4090,8 +4101,12 @@ function killUnit(u, src) {
     }
     if (src && src.vet !== undefined) { src.kills += 4; src.vet = src.kills >= 16 ? 3 : src.kills >= 9 ? 2 : src.kills >= 4 ? 1 : 0; }
   }
-  /* the side that lost it writes it down: what ground has cost it, and where */
+  /* the side that lost it writes it down: what ground has cost it, and where, and what
+     did the killing. An army that has lost four sections to armour and one to a machine
+     gun should be buying something different from one that has lost the reverse, and
+     until this was kept there was nothing to ask. */
   aiLoss(u.side, u.x, u.y, (u.def.cost.mp || 0) + (u.def.cost.fu || 0) * 2.4);
+  aiLostTo(u.side, u, src);
   var i = G.sel.indexOf(u); if (i >= 0) G.sel.splice(i, 1);
 }
 function killBuilding(b) {
@@ -4492,6 +4507,9 @@ function updateUnit(u, dt) {
   if (u.immob > 0) u.immob -= dt;
   if (u.gunDmg > 0) u.gunDmg -= dt;
   if (u.shaken > 0) u.shaken -= dt;
+  /* what it has taken lately, fading: a section that was shot at hard a minute ago is a
+     section that is fine now, and the brain reads the difference */
+  if (u.hurtAmt > 0) { u.hurtAmt *= Math.pow(.86, dt); if (u.hurtAmt < .4) u.hurtAmt = 0; }
   if (u.cat === 'team') u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
   if (u.hitT > 0) u.hitT -= dt;
   u.calm += dt;
@@ -4731,6 +4749,7 @@ function aiInit(side) {
   for (k in AI0) AI[k] = AI0[k];
   AI.side = side;
   aiForget();                                        /* last battle's contacts are not this one's */
+  aiCallsClear();
   for (k in AIR.fired) AIR.fired[k] = 0;
 }
 /* Kept although the brain no longer calls it: `tools/skirmish.mjs` injects the aiTick out
@@ -4746,7 +4765,7 @@ function aiOwn(pred) {
    of it. Gun teams are not in it -- their job is to be set up covering the ground the
    wave has to cross, which means being there before it starts. */
 function aiInWave(u, secId, raze) {
-  if (u.retreat || u.cat === 'team' || u.job === 'mend') return false;
+  if (u.retreat || u.cat === 'team' || u.job === 'mend' || u.job === 'answer') return false;
   if (u.cat === 'veh' && !u.def.caps) return true;
   return raze ? u.job === 'raze' : u.jobSec === secId;
 }
@@ -4788,8 +4807,13 @@ function aiFire(name) { AIR.fired[name] = (AIR.fired[name] || 0) + 1; }
                'duck.house', 'duck.cover', 'duck.back', 'duck.ground', 'odds.hold', 'retreat.hurt',
                'veh.backoff', 'veh.face', 'veh.mend', 'flak.round', 'flak.dig', 'work.dig',
                'buy.inf', 'buy.mg', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
+               'buy.hurt',
                'build.post', 'build.depot', 'mood.hold', 'mood.dig', 'mood.pushVp',
-               'target.seen', 'target.stale', 'approach.quiet'];
+               'target.seen', 'target.stale', 'approach.quiet',
+               /* the situation and what is decided out of it */
+               'stand', 'hold.help', 'veh.withdraw',
+               'call.armour', 'call.men', 'call.answer', 'call.done', 'call.lapsed', 'call.gone',
+               'answer.go', 'answer.here', 'odds.weak', 'press.finish'];
   for (var i = 0; i < names.length; i++) aiRule(names[i]);
 })();
 
@@ -4799,7 +4823,8 @@ function aiFire(name) { AIR.fired[name] = (AIR.fired[name] || 0) + 1; }
 var AIMEM = 34;
 var AIM = { us: null, ger: null };
 function aiMemOf(side) {
-  if (!AIM[side]) AIM[side] = { con: {}, n: 0, lost: {}, ownT: {}, lastHurt: 0, hurtX: 0, hurtY: 0 };
+  if (!AIM[side]) AIM[side] = { con: {}, n: 0, lost: {}, lostTo: {}, ownT: {}, held: {},
+                               lastHurt: 0, hurtX: 0, hurtY: 0 };
   return AIM[side];
 }
 function aiForget() { AIM.us = null; AIM.ger = null; }
@@ -4853,10 +4878,25 @@ function aiLoss(side, x, y, worth) {
   M.lost[best.id] = (M.lost[best.id] || 0) + worth;
   M.lastHurt = G.t; M.hurtX = x; M.hurtY = y;
 }
+/* And what did the killing, by the kind of thing it was. A side that has lost three
+   sections to armour wants an anti-tank gun; one that has lost them to machine guns
+   wants smoke and a flank. The shopping list reads the enemy's order of battle, which is
+   what he has; this is what he is actually doing with it, and the two are not the same
+   thing -- a Tiger parked in his own base counts once in the first and never in this. */
+function aiLostTo(side, u, src) {
+  if (!src || !src.cat || src.side === side) return;
+  var M = aiMemOf(side);
+  var k = src.cat === 'veh' ? (mainW(src).pen >= 200 ? 'gun' : 'veh')
+        : src.def.atOnly || (src.cat === 'team' && src.def.w.pen >= 200) ? 'gun'
+        : src.cat === 'team' ? 'mg' : 'inf';
+  var w = (u.def.cost.mp || 0) + (u.def.cost.fu || 0) * 2.4;
+  M.lostTo[k] = (M.lostTo[k] || 0) + w;
+}
 /* half of what it remembers about a place, every minute and a half */
 function aiFade(side, dt) {
   var M = aiMemOf(side), f = Math.pow(.5, dt / 90), k;
   for (k in M.lost) { M.lost[k] *= f; if (M.lost[k] < 1) delete M.lost[k]; }
+  for (k in M.lostTo) { M.lostTo[k] *= f; if (M.lostTo[k] < 1) delete M.lostTo[k]; }
 }
 
 /* ---- the picture ---- */
@@ -4869,39 +4909,50 @@ var AIW = {
   me: null, him: null, own: null,
   myStr: 0, foeStr: 0, ratio: 1, vpLead: 0, ground: 0,
   mp: 0, fu: 0, inc: 0, pop: 0, cap: 0, coming: [], comingPop: 0,
-  secs: [], bySec: {},
-  eng: {}, gi: null, gw: 0, gh: 0
+  secs: [], bySec: {}, byId: {},
+  eng: {}, gi: null, gm: null, gw: 0, gh: 0
 };
-/* the bucket index over the enemy, so "what is near this point" is a handful of cells
-   rather than the whole army. One walk of the list builds it; every range question after
-   that is free. */
+/* The bucket indexes, so "what is near this point" is a handful of cells rather than the
+   whole army. There are two of the same shape, one over the enemy and one over its own,
+   because half of what a unit needs to know is who it has beside it -- whether anybody
+   can answer the tank in front of it, whether it is the last one on this flag, whether
+   its own armour is close enough to be worth waiting for -- and every one of those was a
+   walk of the army each time it was asked. One walk of each list builds them; every range
+   question after that is free. */
 var AIG = 200;
-function aiIndex(list) {
-  var gw = Math.ceil(WORLD.w / AIG), gh = Math.ceil(WORLD.h / AIG), n = gw * gh, i;
-  if (!AIW.gi || AIW.gw !== gw) { AIW.gi = []; AIW.gw = gw; AIW.gh = gh; for (i = 0; i < n; i++) AIW.gi.push([]); }
-  for (i = 0; i < n; i++) AIW.gi[i].length = 0;
+function aiGrid() {
+  var gw = Math.ceil(WORLD.w / AIG), gh = Math.ceil(WORLD.h / AIG), i;
+  if (AIW.gi && AIW.gw === gw) return;
+  AIW.gw = gw; AIW.gh = gh; AIW.gi = []; AIW.gm = [];
+  for (i = 0; i < gw * gh; i++) { AIW.gi.push([]); AIW.gm.push([]); }
+}
+function aiIndex(list, cells) {
+  var gw = AIW.gw, gh = AIW.gh, i;
+  for (i = 0; i < cells.length; i++) cells[i].length = 0;
   for (i = 0; i < list.length; i++) {
     var e = list[i];
     var cx = clamp((e.x / AIG) | 0, 0, gw - 1), cy = clamp((e.y / AIG) | 0, 0, gh - 1);
-    AIW.gi[cy * gw + cx].push(e);
+    cells[cy * gw + cx].push(e);
   }
 }
-/* Everything on the other side within r of a point, handed one at a time. The only way
-   the brain asks about a piece of ground. */
-function aiNear(x, y, r, fn) {
-  if (!AIW.gi) return;
+function aiScan(cells, x, y, r, fn) {
   var gw = AIW.gw, gh = AIW.gh;
   var i0 = Math.max(0, (((x - r) / AIG) | 0)), i1 = Math.min(gw - 1, (((x + r) / AIG) | 0));
   var j0 = Math.max(0, (((y - r) / AIG) | 0)), j1 = Math.min(gh - 1, (((y + r) / AIG) | 0));
   var rr = r * r, i, j, k, list, e;
   for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
-    list = AIW.gi[j * gw + i];
+    list = cells[j * gw + i];
     for (k = 0; k < list.length; k++) {
       e = list[k];
       if (dsq(e.x, e.y, x, y) < rr) fn(e);
     }
   }
 }
+/* Everything on the other side within r of a point, handed one at a time. The only way
+   the brain asks about a piece of ground. */
+function aiNear(x, y, r, fn) { if (AIW.gi) aiScan(AIW.gi, x, y, r, fn); }
+/* and the same question about its own */
+function aiMine(x, y, r, fn) { if (AIW.gm) aiScan(AIW.gm, x, y, r, fn); }
 /* the order of battle of a list, by what has to be answered */
 function aiRoll(list, side) {
   var o = { inf: 0, mg: 0, at: 0, lt: 0, med: 0, heavy: 0, veh: 0, gun: 0, gar: 0,
@@ -4933,10 +4984,15 @@ function aiLook(side, D, skill) {
   W.foes.length = 0; W.known.length = 0;
   W.gars = 0; W.myStr = 0; W.foeStr = 0;
   W.eng = {};
+  /* by id, because half of what a unit wants to ask about is something it has only the
+     id of: what shot at it a moment ago, what a call was raised against, who was sent to
+     answer it. All three of those may be dead by the time anybody looks. */
+  W.byId = {};
   var own = W.own = { at: 0, gunVeh: 0, inf: 0, mg: 0, veh: 0 };
   for (i = 0; i < G.units.length; i++) {
     u = G.units[i];
     if (u.dead) continue;
+    W.byId[u.id] = u;
     if (u.side === side) {
       W.mine.push(u);
       if (u.def.builder) { W.engs.push(u); continue; }
@@ -4961,7 +5017,9 @@ function aiLook(side, D, skill) {
       if (visibleTo(side, u)) W.known.push(u);
     }
   }
-  aiIndex(W.foes);
+  aiGrid();
+  aiIndex(W.foes, W.gi);
+  aiIndex(W.fighters, W.gm);
   W.him = aiRoll(W.foes, foeSide);
   W.me = aiRoll(W.fighters, side);
   W.hq = hqOf(side);
@@ -4992,9 +5050,18 @@ function aiLook(side, D, skill) {
     var s = G.sectors[i];
     var held = s.owner === side;
     if (held && s.conn) W.ground++;
+    /* how long it has been in the hands it is in. Ground held for four minutes has been
+       dug into and reinforced; ground that changed hands twenty seconds ago has not, and
+       is the cheapest thing on the map to take. */
+    var Mh = aiMemOf(side).held;
+    /* it starts old. Set to the clock on the first look, every sector on the map reads as
+       having just changed hands for the first half minute of every battle, which is the
+       half minute the opening is fought in. */
+    if (Mh[s.id] === undefined) { Mh[s.id] = G.t - 600; Mh[s.id + '.o'] = s.owner; }
+    else if (Mh[s.id + '.o'] !== s.owner) { Mh[s.id] = G.t; Mh[s.id + '.o'] = s.owner; }
     var r = { s: s, id: s.id, held: held, th: 0, mine: 0, seen: 0,
               dHq: W.hq ? dist(s, W.hq) : 0, dFoe: W.foeHq ? dist(s, W.foeHq) : 0,
-              lost: aiMemOf(side).lost[s.id] || 0, nbHeld: 0 };
+              lost: aiMemOf(side).lost[s.id] || 0, nbHeld: 0, age: G.t - Mh[s.id] };
     aiNear(s.x, s.y, 400, function (e) {
       if (e.retreat) return;
       var v = aiValue(e);
@@ -5012,6 +5079,7 @@ function aiLook(side, D, skill) {
   aiRemember(side, G.t);
   aiFade(side, G.t - (AIM[side].fadeT || G.t));
   AIM[side].fadeT = G.t;
+  aiCallTend(W);
   return W;
 }
 /* ---- what an army is worth, and where the weight of it is -------------------- */
@@ -5191,6 +5259,16 @@ function aiIntel(side) {
      - armour with nothing of ours to answer it: the gun comes forward and the count on it
        goes up, which is the one case the old list already knew about. */
 function aiCutLadder(side, base, IN, own) {
+  /* And what is actually killing it, which is a different question from what he owns. A
+     Tiger parked in his own base counts once in the order of battle and never in this.
+     `AIM.lostTo` is the weight this side has lost by the kind of thing that did the
+     killing, and it fades, so what it reads is the last few minutes rather than the whole
+     battle. Armour doing most of it brings the answer to armour forward and raises the
+     count wanted on it even where the roll shows he has one of them, because one tank
+     that is working is worth more than three of them sitting. */
+  var LT = aiMemOf(side).lostTo, lostAll = 0, lk;
+  for (lk in LT) lostAll += LT[lk];
+  var byArm = lostAll > 400 ? ((LT.veh || 0) + (LT.gun || 0)) / lostAll : 0;
   var lt = side === 'us' ? { us_m8: 1, us_stuart: 1, us_m3: 1 } : { ger_sd222: 1, ger_h251: 1 };
   var killers = side === 'us' ? { us_ach: 1, us_at: 1 } : { ger_stug: 1, ger_tig: 1, ger_pak: 1 };
   var meds = side === 'us' ? { us_sher: 1 } : { ger_p4: 1 };
@@ -5204,6 +5282,7 @@ function aiCutLadder(side, base, IN, own) {
     var ownAt = own.at + own.gunVeh;
     if (k === atKey && noArmourToAnswer) { back.push(e); continue; }
     if (k === atKey && IN.veh > ownAt) { front.push([k, Math.max(e[1], Math.min(3, IN.veh)), e[2]]); continue; }
+    if (k === atKey && byArm > .5) { front.push([k, Math.max(e[1], 2), e[2]]); aiFire('buy.hurt'); continue; }
     if (lt[k] && pakLine) { back.push(e); continue; }
     if (heavies && killers[k]) { front.push(e); continue; }
     if (heavies && meds[k]) { back.push(e); continue; }
@@ -5292,14 +5371,479 @@ function aiPickTarget(u, reach) {
     if (e.cat === 'team') sc += 130;
     if (_aiEng[e.id]) sc += 150;                       /* finish what the others started */
     if (e.target && !e.target.dead && e.target.side === u.side) sc += 110;
-    if (e.cat !== 'veh' && hpFrac(e) < .5) sc += 90;
+    /* A thing that is nearly finished is worth finishing. Only infantry was ever read
+       this way: a Sherman at a fifth of its hit points, one round from being a wreck in
+       the middle of the street, scored exactly the same as one that had just driven out
+       of the depot. */
+    var ehf = hpFrac(e);
+    if (ehf < .5) sc += e.cat === 'veh' ? 160 * (1 - ehf) : 90;
     if (e.sup > 1) sc -= 80;                           /* pinned men are no longer the danger */
     if (sc > bs) { bs = sc; best = e; }
   }
   /* counted on the one it chose, not on every candidate it looked at: firing on a
      contact rather than on something in plain sight is the interesting number and it
      wants to be a count of orders, not of loop iterations */
-  if (best) aiFire(visibleTo(u.side, best) ? 'target.seen' : 'target.stale');
+  if (best) {
+    aiFire(visibleTo(u.side, best) ? 'target.seen' : 'target.stale');
+    if (hpFrac(best) < .5) aiFire('press.finish');
+  }
+  return best;
+}
+/* ---- the situation, one unit at a time -----------------------------------------
+   The picture is what the side knows. This is what one unit knows, and it is a thing of
+   its own because every decision made below it used to be made from a single input.
+   Suppression alone decided whether a section went to ground. A launcher within a
+   hundred and ninety alone decided whether a tank reversed. Distance alone decided which
+   flag a section walked at. Every one of those is a true fact and not one of them is a
+   situation, and a rule built on one of them answers that fact correctly and the battle
+   wrongly: a section pinned by a machine gun in a ditch and a section being shelled by a
+   tank it cannot scratch carry the same suppression and want opposite things done about
+   them. The brain could not tell them apart because it had never asked what was firing.
+
+   So a unit reads the whole of its situation first and decides afterwards. What is
+   shooting at it and how hurt that thing is, what else is round it and which of it can
+   actually hurt this, whether it can hurt any of it back, who it has beside it and
+   whether any of them can answer what it cannot, what it was told to do and what that is
+   worth, and what ground there is within a dash. One structure, reused rather than made
+   again because it is filled for every unit on every tick, and it holds unit references
+   for the same reason the picture does: nothing in it outlives the tick that made it.
+
+   It is honest. The staff work is allowed the map -- aiThreat reads every enemy in a
+   radius whether anybody has seen it or not, for the reason set out there -- but this is
+   the section leader looking out of his own position, so every enemy in it has to pass
+   aiKnown: seen now, or seen lately and still about where it was. A section that reacts
+   to a tank nobody has laid eyes on is a section reading the other player's screen. */
+var AISR = 430;
+var AIS = {
+  u: null, t: 0, veh: 0, hp: 1, men: 1, sup: 0, pinned: 0, immob: 0, gunOut: 0, gar: 0,
+  moving: 0, vet: 0, calm: 99, value: 0, reach: 0, at: 0, cover: 0, room: 0,
+  hurt: null, hurtAge: 99, hurtHp: 1, hurtVeh: 0, hurtAmt: 0, thA: 0,
+  thW: 0, thN: 0, thD: 9999, armW: 0, mgW: 0, gunW: 0, infW: 0,
+  arm: null, armD: 9999, armHp: 1, atInf: null, atInfD: 9999, atInfHp: 1,
+  danger: 0, canAnswer: 1, weakest: null, weakHp: 1, weakD: 9999,
+  frW: 0, frN: 0, frD: 9999, escort: 0, frAt: null, frAtD: 9999,
+  sec: null, dObj: 9999, objTh: 0, objMine: 0, objVp: 0, objAge: 0,
+  call: null, ansD: 9999, gx: 0, gy: 0, goal: null
+};
+function aiSense(u, W) {
+  var S = AIS, side = u.side, t = G.t;
+  S.u = u; S.t = t;
+  /* ---- itself */
+  S.veh = u.cat === 'veh' ? 1 : 0;
+  S.hp = hpFrac(u);
+  S.men = S.veh ? S.hp : aliveModels(u) / u.def.models;
+  S.sup = u.sup; S.pinned = u.sup > 1 ? 1 : 0;
+  S.immob = u.immob > 0 ? 1 : 0; S.gunOut = u.gunDmg > 0 ? 1 : 0;
+  S.gar = u.gar ? 1 : 0; S.moving = u.moving ? 1 : 0;
+  S.vet = u.vet || 0; S.calm = u.calm; S.value = aiValue(u);
+  S.reach = mainW(u).range; S.at = u.def.at ? 1 : 0;
+  S.hurtAmt = u.hurtAmt || 0;
+  /* ---- what hit it, if that is still alive and its side still knows where it is */
+  S.hurt = null; S.hurtAge = 99; S.hurtHp = 1; S.hurtVeh = 0;
+  if (u.hurtId !== undefined && t - (u.hurtT || -99) < 12) {
+    var hv = W.byId[u.hurtId];
+    if (hv && !hv.dead && aiKnown(side, hv, t)) {
+      S.hurt = hv; S.hurtAge = t - u.hurtT; S.hurtHp = hpFrac(hv);
+      S.hurtVeh = hv.cat === 'veh' ? 1 : 0;
+    }
+  }
+  /* ---- what is round it, by what it can do rather than by what it is */
+  S.thW = 0; S.thN = 0; S.thD = 9999; S.armW = 0; S.mgW = 0; S.gunW = 0; S.infW = 0;
+  S.arm = null; S.armD = 9999; S.armHp = 1; S.atInf = null; S.atInfD = 9999; S.atInfHp = 1;
+  S.danger = 0; S.weakest = null; S.weakHp = 1; S.weakD = 9999;
+  var cx = 0, cy = 0, cw = 0, bestA = -1, reach = S.reach;
+  aiNear(u.x, u.y, AISR, function (e) {
+    if (e.retreat || !aiKnown(side, e, t)) return;
+    var v = aiValue(e), d = Math.hypot(e.x - u.x, e.y - u.y);
+    S.thW += v; S.thN++;
+    if (d < S.thD) S.thD = d;
+    cx += e.x * v; cy += e.y * v; cw += v;
+    /* Danger is not threat. A Tiger two hundred out is a great weight of enemy and no
+       danger at all to another Tiger's front plate; a section with a launcher is worth a
+       fifth as much and will kill it. So what each thing can actually do to THIS is
+       asked, and that is the number the decisions below weigh. */
+    var hurts = 1;
+    if (S.veh) {
+      var ew = e.cat === 'team' && !e.def.speed ? e.def.w : mainW(e);
+      hurts = e.def.at ? .5 : penChance(penAt(ew, d), armourAt(u, e.x, e.y));
+      if (e.def.at && !e.gar && e.cat === 'inf' && d < 190 && d < S.atInfD) {
+        S.atInf = e; S.atInfD = d; S.atInfHp = hpFrac(e);
+      }
+    }
+    if (hurts > .12) S.danger += v * (hurts > 1 ? 1 : hurts);
+    if (e.cat === 'veh') {
+      S.armW += v;
+      var asc = v * (d < 240 ? 1.4 : 1);
+      if (asc > bestA) { bestA = asc; S.arm = e; S.armD = d; S.armHp = hpFrac(e); }
+    } else if (e.def.atOnly || (e.cat === 'team' && e.def.w.pen >= 200)) S.gunW += v;
+    else if (e.cat === 'team') S.mgW += v;
+    else S.infW += v;
+    /* And the one that is nearly finished. A thing about to die is worth standing to kill
+       and is no reason whatever to give up the ground it is standing on, which is the
+       difference between a section that wins a firefight and one that breaks off from a
+       fight it had already won. */
+    var hf = hpFrac(e);
+    if (hf < .55 && hf < S.weakHp && d < reach) { S.weakHp = hf; S.weakest = e; S.weakD = d; }
+  });
+  /* the bearing the trouble is on: what hit it, what it is firing at, the weight of what
+     it can see, and failing all three the direction the enemy lives in */
+  S.thA = S.hurt ? Math.atan2(S.hurt.y - u.y, S.hurt.x - u.x)
+        : u.target && !u.target.dead ? angTo(u, u.target)
+        : cw > 0 ? Math.atan2(cy / cw - u.y, cx / cw - u.x)
+        : u.threatX !== undefined ? Math.atan2(u.threatY - u.y, u.threatX - u.x)
+        : aiFoeDir(side, u.x, u.y);
+  /* can it answer the worst thing in front of it at all -- which for infantry against
+     armour is usually the whole question */
+  S.canAnswer = 1;
+  if (S.arm) {
+    var aw = weaponFor(u, S.arm);
+    S.canAnswer = penChance(penAt(aw, S.armD), armourAt(S.arm, u.x, u.y)) > .12 &&
+                  S.armD < aw.range ? 1 : 0;
+  }
+  /* ---- its own people, and whether any of them can answer what it cannot */
+  S.frW = 0; S.frN = 0; S.frD = 9999; S.escort = 0; S.frAt = null; S.frAtD = 9999;
+  var arm = S.arm;
+  aiMine(u.x, u.y, 380, function (f) {
+    if (f === u || f.dead || f.retreat || f.inside || f.def.builder) return;
+    var d = Math.hypot(f.x - u.x, f.y - u.y);
+    S.frW += aiValue(f); S.frN++;
+    if (d < S.frD) S.frD = d;
+    if (f.cat === 'inf' && !f.gar && d < 150) S.escort = 1;
+    if (arm && d < S.frAtD) {
+      var fd = Math.hypot(arm.x - f.x, arm.y - f.y), fw = weaponFor(f, arm);
+      if (fd < fw.range * 1.3 &&
+          penChance(penAt(fw, fd), armourAt(arm, f.x, f.y)) > .15) { S.frAt = f; S.frAtD = d; }
+    }
+  });
+  /* ---- what it was told to do, and what that is worth */
+  S.sec = u.jobSec ? G.secById[u.jobSec] || null : null;
+  S.dObj = S.sec ? Math.hypot(u.x - S.sec.x, u.y - S.sec.y) : 9999;
+  var R = S.sec ? W.bySec[S.sec.id] : null;
+  S.objTh = R ? R.th : 0; S.objMine = R ? R.mine : 0; S.objAge = R ? R.age : 0;
+  S.objVp = S.sec && S.sec.type === 'vp' ? 1 : 0;
+  /* ---- the ground it is on, read where the men actually are */
+  S.cover = S.veh ? 0 : coverOf(u, S.thA);
+  S.room = roomAt(u.x, u.y);
+  /* ---- and whether it has asked for help, and how far off the help is */
+  S.call = aiMyCall(u);
+  S.ansD = S.call ? S.call.nd : 9999;
+  S.gx = 0; S.gy = 0; S.goal = null;
+  return S;
+}
+
+/* ---- asking for help -----------------------------------------------------------
+   A section that meets a tank has three honest answers and the brain had one of them.
+   It can die where it stands, it can go home, or it can get behind something and say so,
+   and the third is the only one that wins the ground -- but it only works if somebody
+   hears. Nothing in this army could hear anything: every unit decided alone, out of what
+   it could see, and there was no way for what one of them found to become anybody else's
+   business. Two Panzer IVs would sit screening an empty approach four hundred units away
+   while the section that could have taken the flag was shelled off it by a Sherman.
+
+   So a unit that meets something it cannot answer raises a call: where the trouble is,
+   what kind of thing is needed, how much it is worth answering. The calls are worked
+   once a tick, nearest capable thing first, and whoever is sent gets `answer` as a job,
+   which outranks the plan it was given. The caller reads its own call back -- how far
+   off the answer is -- and that is what lets it hold in cover instead of pressing on
+   into the tank or walking home from a fight that is about to be won for it.
+
+   A call is numbers and ids, like everything else that outlives a tick. */
+var AIQ = { us: null, ger: null };
+function aiQOf(side) { if (!AIQ[side]) AIQ[side] = { list: [], n: 1 }; return AIQ[side]; }
+function aiCallsClear() { AIQ.us = null; AIQ.ger = null; }
+/* the call this unit has open, if any */
+function aiMyCall(u) {
+  var Q = AIQ[u.side];
+  if (!Q) return null;
+  for (var i = 0; i < Q.list.length; i++) if (Q.list[i].by === u.id) return Q.list[i];
+  return null;
+}
+/* Raise one, or refresh the one already standing. Refreshing rather than raising again
+   is what keeps the answer stable: a call re-raised every tick is a call whose answerer
+   is re-dealt every tick, and a tank that is re-dealt every tick never arrives. */
+function aiCall(u, need, th, pri) {
+  var Q = aiQOf(u.side), c = aiMyCall(u);
+  if (c) {
+    if (c.need !== need) { c.need = need; c.ans.length = 0; }
+    c.x = u.x; c.y = u.y; c.tid = th ? th.id : 0;
+    c.tx = th ? th.x : u.x; c.ty = th ? th.y : u.y;
+    c.pri = pri; c.t = G.t;
+    return c;
+  }
+  c = { id: Q.n++, by: u.id, need: need, x: u.x, y: u.y,
+        tid: th ? th.id : 0, tx: th ? th.x : u.x, ty: th ? th.y : u.y,
+        pri: pri, t: G.t, ans: [], nd: 9999 };
+  Q.list.push(c);
+  aiFire('call.' + need);
+  return c;
+}
+/* Tidy the board: a call whose caller is gone, whose trouble is dead or has been lost
+   track of, or that nobody has answered in half a minute, is off it. A call that is
+   being answered is left alone for as long as the answer is coming. */
+function aiCallTend(W) {
+  var Q = AIQ[W.side];
+  if (!Q) return;
+  var out = [], i, j, c;
+  for (i = 0; i < Q.list.length; i++) {
+    c = Q.list[i];
+    var by = W.byId[c.by];
+    if (!by || by.dead || by.retreat) { aiFire('call.gone'); continue; }
+    var th = c.tid ? W.byId[c.tid] : null;
+    if (c.tid && (!th || th.dead)) { aiFire('call.done'); continue; }
+    if (G.t - c.t > 30) { aiFire('call.lapsed'); continue; }
+    c.x = by.x; c.y = by.y;
+    if (th) { c.tx = th.x; c.ty = th.y; }
+    /* who is still coming, and how far off the nearest of them is */
+    var keep = [], nd = 9999;
+    for (j = 0; j < c.ans.length; j++) {
+      var a = W.byId[c.ans[j]];
+      if (!a || a.dead || a.retreat || a.ansId !== c.id) continue;
+      keep.push(a.id);
+      /* and he is kept pointed at where the trouble is now rather than where it was when
+         he was sent: a tank that has moved two streets is a tank the answer walks past */
+      a.jobX = c.tx; a.jobY = c.ty;
+      var d = Math.hypot(a.x - c.tx, a.y - c.ty);
+      if (d < nd) nd = d;
+    }
+    c.ans = keep; c.nd = nd;
+    /* Arrived: counted here rather than where the answerer is given its orders, because
+       by then it has already engaged. The target reflex sits above the answer branch and
+       ends the tick the moment a unit has something it can shoot, so an answerer that has
+       actually got there never reaches the branch and the branch could only ever count
+       the ones still on their way. */
+    if (nd < 340) aiFire('answer.here');
+    out.push(c);
+  }
+  Q.list = out;
+}
+/* Can this answer that: for armour, a weapon that will go through it at the range it
+   would be fought at; for men, a section that can walk there. */
+function aiCanAnswer(c, th, need) {
+  if (c.dead || c.retreat || c.def.builder || c.inside || c.gar) return false;
+  /* A gun team is never the answer to a call. It belongs where it was sited, covering the
+     ground armour has to come up; walked across the town to somebody else's trouble it
+     arrives in the open, out of its own arc, unset up, and dies there. So the answer to
+     armour is armour, or the men who carry something that opens it -- and the weapon
+     test below sorts those out on its own, because a rifle section fails it. */
+  if (c.job === 'mend' || c.cat === 'team') return false;
+  if (need === 'armour') {
+    if (!th) return false;
+    var d = Math.hypot(th.x - c.x, th.y - c.y), w = weaponFor(c, th);
+    return penChance(penAt(w, Math.min(d, w.range * .8)), armourAt(th, c.x, c.y)) > .2;
+  }
+  return c.cat === 'inf';
+}
+/* Deal the answers. Worth first, because an army that answers every call answers none of
+   them, and nearest first within that, because the nearest thing that can do the job is
+   the one that gets there while it is still worth doing. Two a call: one tank sent at a
+   tank is a duel, three is the rest of the front left open. */
+function aiAnswer(W) {
+  var Q = AIQ[W.side], list = W.fighters, i, j, taken = {}, live = {};
+  if (Q) for (i = 0; i < Q.list.length; i++) live[Q.list[i].id] = 1;
+  /* The dealing above hands every section and every tank a job out of the plan, which
+     takes this one off whoever is halfway to answering a call. So it is put back, and
+     whoever was answering a call that has since been settled goes to the plan he was just
+     given rather than standing over a piece of ground nobody is asking about any more. */
+  for (i = 0; i < list.length; i++) {
+    var st = list[i];
+    if (!st.ansId) continue;
+    if (!live[st.ansId]) { st.ansId = 0; continue; }
+    taken[st.id] = 1; st.job = 'answer';
+  }
+  if (!Q || !Q.list.length) return;
+  Q.list.sort(function (a, b) { return b.pri - a.pri; });
+  for (i = 0; i < Q.list.length; i++) {
+    var c = Q.list[i];
+    if (c.ans.length >= 2) continue;
+    var th = c.tid ? W.byId[c.tid] : null;
+    var lim = c.need === 'armour' ? 1150 : 700, best = null, bd = lim * lim + 520 * 520;
+    for (j = 0; j < list.length; j++) {
+      var a = list[j];
+      if (a.id === c.by || taken[a.id]) continue;
+      if (aiMyCall(a)) continue;                       /* it is in trouble of its own */
+      if (!aiCanAnswer(a, th, c.need)) continue;
+      /* And the last man on a flag stays on it. A section is dealt to an objective because
+         somebody has to be standing there for the money to come in, and answering a call
+         two streets away with the only weight on a sector held is a sector lost to nobody
+         at all. */
+      if (a.cat === 'inf' && a.jobSec) {
+        var R2 = W.bySec[a.jobSec];
+        if (R2 && R2.held && R2.mine < aiValue(a) * 1.7 &&
+            dsq(a.x, a.y, R2.s.x, R2.s.y) < R2.s.r * R2.s.r) continue;
+      }
+      var d2 = dsq(a.x, a.y, c.tx, c.ty);
+      /* armour before men, whatever the distance. The answer to a tank is a tank; a
+         section with a launcher is an answer and it is also the thing that takes ground,
+         so it goes only when nothing on tracks is anywhere near. */
+      if (a.cat !== 'veh') d2 += 520 * 520;
+      if (d2 > bd) continue;
+      bd = d2; best = a;
+    }
+    if (!best) continue;
+    taken[best.id] = 1;
+    c.ans.push(best.id);
+    best.job = 'answer'; best.ansId = c.id; best.jobT = G.t;
+    best.jobX = c.tx; best.jobY = c.ty; best.jobSec = null;
+    aiFire('call.answer');
+  }
+}
+
+/* ---- weighing it up ------------------------------------------------------------
+   What replaced a chain. The reflexes were tried in a fixed order and the first one that
+   could fire did, which is a decision made by whoever wrote the order of the lines: a
+   tank both caught side-on to a Pak and closed on by a launcher backed away from the
+   launcher, presenting to the Pak the plate it had been about to turn out of the way,
+   because the launcher rule happened to be written first. A section that had just shot a
+   Sherman down to a tenth of its hit points went to ground and let it drive away, because
+   the duck rule fired on suppression and suppression is all it read.
+
+   So the options are scored against each other out of the whole situation and the best
+   one is taken. Every option starts from what it is for and is then argued with: the
+   cover it would gain against the cover it already has, the ground it would give up, what
+   is answerable and what is not, who is coming and how far off. A score of nothing means
+   getting on with the job, which is what most units do on most ticks -- the floor is
+   there so that a reflex has to be worth more than the plan before it overrides it, and
+   that is the one thing a chain can never express. */
+function aiWeigh(u, S, W) {
+  var best = '', bs = 34, sc, skill = W.skill;
+  /* a thing about to die is the reason to stand, whatever else is happening: it counts
+     once here rather than in every option below it */
+  var finish = S.weakest && S.canAnswer ? (1 - S.weakHp) * 70 : 0;
+  var pressure = S.sup * 58 + (1 - S.men) * 46 + (S.hurtAmt > 8 ? 22 : 0);
+
+  if (S.veh) {
+    /* ---- armour. It has no cover to take and cannot go to ground: what it has is its
+       front plate, its gun and the range it chooses to fight at. */
+    if (S.immob) return '';                            /* a broken track decides for it */
+    /* Withdraw. A tank down to a third with something in front of it that opens it is a
+       tank that is about to be a wreck blocking its own street. It used to fight there to
+       the end unless an engineer happened to exist, because `mend` was the only way out
+       and `mend` needs somebody to mend it. */
+    sc = (1 - S.hp) * 110 + (S.gunOut ? 60 : 0) - (S.danger > 40 ? 0 : 70);
+    if (S.hp > .45 && !S.gunOut) sc = 0;
+    if (sc > bs) { bs = sc; best = 'withdraw'; }
+    /* Back off from a launcher. What it reads now: whether its own infantry is up, how
+       hurt the launcher section is -- a section at a quarter strength inside a hundred
+       and ninety is a section to shoot, not to reverse from -- and whether backing off
+       would hand its side to something worse behind it. */
+    if (S.atInf) {
+      sc = 78 - (S.escort ? 200 : 0) - (1 - S.atInfHp) * 90 + (1 - S.hp) * 40;
+      if (S.atInfD < 120) sc += 30;
+      if (G.t - (u.backT || -99) < 9) sc = 0;
+      if (sc > bs) { bs = sc; best = 'backoff'; }
+    }
+    /* Turn the front to the gun. Unchanged in what it is for and no longer bullied out of
+       the way by the rule above it: a gun that will go through the side and not the front
+       is worth more to turn to than a launcher is to reverse from, and the scores say so
+       rather than the line order. */
+    if (!S.moving && G.t - (u.faceT || -99) > 8) {
+      var gun = null, gsc = 0, ux = u.x, uy = u.y, uf = u.facing;
+      aiNear(ux, uy, 540, function (ge) {
+        if (ge.inside || !visibleTo(u.side, ge)) return;
+        if (!(ge.cat === 'veh' || ge.def.atOnly || (ge.cat === 'team' && ge.def.w.pen >= 200))) return;
+        var gd = Math.hypot(ge.x - ux, ge.y - uy);
+        if (gd < 200) return;
+        var gw = ge.cat === 'team' && !ge.def.speed ? ge.def.w : mainW(ge);
+        if (penChance(penAt(gw, gd), armourAt(u, ge.x, ge.y)) < .15) return;
+        var off = Math.abs(angDiff(uf, Math.atan2(ge.y - uy, ge.x - ux)));
+        if (off < 1.0) return;
+        var g2 = off * 100 - gd * .2;
+        if (g2 > gsc) { gsc = g2; gun = ge; }
+      });
+      if (gun) {
+        sc = 52 + gsc * .22;
+        if (sc > bs) { bs = sc; best = 'face'; S.goal = gun; }
+      }
+    }
+    /* And a tank can call too. Armour it cannot open -- a Sherman against a Tiger's
+       front -- is exactly the case the anti-tank gun and the other tank exist for. */
+    if (S.arm && !S.canAnswer && S.armD < 460 && skill >= 1) {
+      sc = 60 + aiValue(S.arm) * .08;
+      if (sc > bs) { bs = sc; best = 'call'; S.goal = S.arm; }
+    }
+    return best;
+  }
+
+  /* ---- infantry. */
+  if (S.gar) {
+    /* men in a house are in the best cover on the map and do not leave it to find worse */
+    return '';
+  }
+  /* Retreat is decided above this on its own hard test, because it is load bearing and
+     what it costs to get wrong is the army. What is added here is the other half of it:
+     a section that is winning where it stands. */
+  /* Stand and fight. The option nothing had: every reason to stay was a reason the chain
+     never asked about, so a section that was hurting the thing hurting it, or had four
+     friends beside it, or was already behind a wall, ducked anyway. */
+  sc = finish + (S.cover >= 2 ? 44 : 0) + (S.frW > S.thW * 1.25 ? 26 : 0) -
+       pressure * .55 + (S.dObj < 180 && S.objVp ? 30 : 0) + S.vet * 9;
+  if (sc > bs) { bs = sc; best = 'stand'; }
+
+  /* Under fire in the open. The four ways out of it, scored against each other and
+     against standing, rather than tried in the order they happen to be written. */
+  /* a weapon team keeps its post: it was sited to see a piece of ground and a team that
+     ducks out of its own arc is a team that fires nothing for the rest of the battle */
+  var open = u.cat === 'inf' && S.cover < 2 && (S.sup > .35 || S.hurtAmt > 6) && S.thN > 0;
+  if (open && G.t - (u.duckT || -99) > 14) {
+    var gain = (2 - S.cover) * 26 + S.mgW * .12;      /* what pins men is a machine gun */
+    /* a house: the heaviest cover in the game, and it holds the ground it stands on */
+    if (W.gars < 5) {
+      var dh = aiHouse(u, u.x, u.y, 120);
+      if (dh) {
+        sc = gain + 46 + pressure * .3 - Math.hypot(dh.x - u.x, dh.y - u.y) * .22;
+        /* except against a tank, which knocks houses down and is exactly what a section
+           in one cannot answer */
+        if (S.hurtVeh && !S.canAnswer) sc -= 40;
+        if (sc > bs) { bs = sc; best = 'house'; S.goal = dh; }
+      }
+    }
+    /* something to get behind within a dash, facing the fire */
+    var dk = aiDuck(u, S.thA);
+    if (dk) {
+      sc = gain + 40 + pressure * .34 - Math.hypot(dk.x - u.x, dk.y - u.y) * .2 -
+           (S.room < 2 ? 22 : 0);                     /* no room to get sideways in a lane */
+      if (sc > bs) { bs = sc; best = 'cover'; S.gx = dk.x; S.gy = dk.y; }
+    }
+    /* back the way it came, which costs the ground: priced against what the ground is
+       worth, which is why a section no longer walks off a victory flag it is holding */
+    sc = 30 + pressure * .5 - (S.dObj < 200 ? 40 : 0) - (S.objVp && S.dObj < 260 ? 40 : 0) -
+         finish * .8 - (S.thD < 120 ? 34 : 0) -       /* too close to break contact */
+         (S.dObj < 240 && S.objMine < S.value * 1.6 ? 30 : 0);   /* and nobody else on it */
+    if (sc > bs) { bs = sc; best = 'back'; }
+    /* and down where it stands, which gives up nothing and gains a little */
+    sc = 26 + pressure * .34 + (S.cover >= 1 ? 22 : 0) - (S.armD < 260 ? 34 : 0) +
+         S.pinned * 30;                               /* pinned men are not going anywhere */
+    if (sc > bs) { bs = sc; best = 'ground'; }
+  }
+
+  /* Ask, and wait for the answer. The case the whole thing was built for: a section that
+     has met something it cannot hurt, on ground it was told to take, with its own armour
+     close enough to come. It raises the call and holds what cover it has rather than
+     walking into the tank or walking home from a fight somebody else can finish. */
+  /* and it has to be in the way. A tank four hundred out that is shooting at somebody
+     else is a fact about the battle and not a reason for this section to stop: what makes
+     it this section's problem is that it is hitting them, or it is close, or it is sitting
+     on the ground they were told to take. The first version asked none of the three and
+     a section stopped for any tank on its side of the town. */
+  if (u.cat === 'inf' && S.arm && !S.canAnswer &&
+      (S.hurtVeh || S.armD < 250 ||
+       (S.sec && dsq(S.arm.x, S.arm.y, S.sec.x, S.sec.y) < 300 * 300))) {
+    var worth = (S.objVp ? 130 : 60) + aiValue(S.arm) * .06 + (1 - S.armHp) * 50;
+    if (!S.call) {
+      /* Asking is cheap and stops nobody for long: what the section does while it waits
+         is decided by the same scoring as everything else, on the next tick. */
+      sc = worth * (S.frAt ? 1 : .5);
+      if (sc > bs) { bs = sc; best = 'call'; S.goal = S.arm; }
+    } else if (S.call.ans.length) {
+      /* Somebody is actually coming. Holding is worth what the ground is worth and how
+         close the answer is -- and with nobody coming there is nothing to wait for, so
+         the options above decide and the section gets on with its own fight. Held on the
+         call alone it stood still in eleven per cent of every unit-tick of a battle and
+         help came to a third of it. */
+      sc = 52 + worth * .4 + (S.ansD < 700 ? (700 - S.ansD) * .06 : -30);
+      if (sc > bs) { bs = sc; best = 'hold'; }
+    }
+  }
   return best;
 }
 /* ---- the brain ---------------------------------------------------------------- */
@@ -5742,6 +6286,9 @@ function aiTick(dt) {
   }
   for (j = 0; j < teams.length; j++) teams[j].job = 'support';
   for (j = 0; j < screens.length; j++) if (screens[j].job !== 'mend') screens[j].job = 'screen';
+  /* and then the calls, which outrank the plan: a section that has met a tank it cannot
+     hurt has found out something about the ground that no scoring of sectors knows. */
+  aiAnswer(W);
 
   /* ---- the assault.
      A defended objective is not taken by sections arriving at it one at a time, and one
@@ -5958,69 +6505,13 @@ function aiTick(dt) {
     }
 
     /* ---- the fight in front of it. Everything from here to the plan is a decision the
-       section leader or the tank commander makes on his own, from what he can see, and
-       none of it waits on the plan: a plan that puts a tank on the right flag with its
-       side to a gun has still lost the tank. Green has none of it, because a green
-       opponent that ducks and backs off is one that does not lose men, and losing men
-       is what green is for. */
-    if (skill >= 1 && u.cat === 'veh' && u.job !== 'mend' && !(u.immob > 0)) {
-      /* Armour on its own backs away from infantry. A section with a launcher in it
-         inside two hundred of a tank with nobody on foot beside it is a dead tank,
-         whatever the tank does to the section, so it opens the range, firing as it
-         goes, and lets its own infantry catch up. Rate limited, because a tank that
-         reverses every tick from infantry that keep coming reverses into its own base. */
-      var nearInf = null, nid = 190 * 190, escort = false;
-      aiNear(u.x, u.y, 190, function (ni) {
-        if (ni.inside || ni.cat !== 'inf' || ni.retreat || !ni.def.at || ni.gar) return;
-        if (!visibleTo(side, ni)) return;               /* a launcher nobody has seen is not a reason to reverse */
-        var nd = dsq(ni.x, ni.y, u.x, u.y);
-        if (nd < nid) { nid = nd; nearInf = ni; }
-      });
-      for (j = 0; j < fighters.length; j++) {
-        var fe = fighters[j];
-        if (fe.cat === 'inf' && !fe.retreat && !fe.inside &&
-            dsq(fe.x, fe.y, u.x, u.y) < 130 * 130) { escort = true; break; }
-      }
-      if (nearInf && !escort && G.t - (u.backT || -99) > 9) {
-        u.backT = G.t; aiFire('veh.backoff');
-        var ba = angTo(nearInf, u);
-        var bp2 = nearestFree(clamp(u.x + Math.cos(ba) * 200, 60, WORLD.w - 60),
-                              clamp(u.y + Math.sin(ba) * 200, 60, WORLD.h - 60));
-        orderMove(u, bp2.x, bp2.y, true); continue;
-      }
-      if (u.backT && G.t - u.backT < 6 && u.order === 'attackmove') continue;
-      /* And it fights with its front to the gun. Side armour is a little over half the
-         plate on the front and the rear a third of it, so a halted tank that has been
-         caught side-on to something that can open it turns to face it, by driving at it
-         a short way: there is no pivot in place, and a move short enough to be one is
-         taken by the driver as an instruction to reverse. Only for a gun that can
-         actually go through it, and only from beyond the reach of a man with a
-         launcher, since the answer to him is the rule above and not a charge. */
-      if (!u.moving && G.t - (u.faceT || -99) > 8) {
-        var gun = null, gsc = 0;
-        aiNear(u.x, u.y, 540, function (ge) {
-          if (ge.inside || !visibleTo(side, ge)) return;
-          if (!(ge.cat === 'veh' || ge.def.atOnly || (ge.cat === 'team' && ge.def.w.pen >= 200))) return;
-          var gd = dist(ge, u);
-          if (gd < 200) return;
-          /* a gun that has HE up now has AP in the rack: it is judged by the worse case */
-          var gw = ge.cat === 'team' && !ge.def.speed ? ge.def.w : mainW(ge);
-          if (penChance(penAt(gw, gd), armourAt(u, ge.x, ge.y)) < .15) return;
-          var off2 = Math.abs(angDiff(u.facing, angTo(u, ge)));
-          if (off2 < 1.0) return;
-          var gs2 = off2 * 100 - gd * .2;
-          if (gs2 > gsc) { gsc = gs2; gun = ge; }
-        });
-        if (gun) {
-          u.faceT = G.t; aiFire('veh.face');
-          var fa3 = angTo(u, gun);
-          var fp4 = nearestFree(clamp(u.x + Math.cos(fa3) * 165, 60, WORLD.w - 60),
-                                clamp(u.y + Math.sin(fa3) * 165, 60, WORLD.h - 60));
-          orderMove(u, fp4.x, fp4.y, true); continue;
-        }
-      }
-      if (u.faceT && G.t - u.faceT < 5 && u.order === 'attackmove') continue;
-    }
+       section leader or the tank commander makes on his own, out of the whole of what he
+       can see, and none of it waits on the plan: a plan that puts a tank on the right
+       flag with its side to a gun has still lost the tank. Green has none of it, because
+       a green opponent that ducks, backs off and asks for help is one that does not lose
+       men, and losing men is what green is for. */
+    W.gars = garCount;
+    var S = aiSense(u, W);
     /* The stance is the brain's to set, every tick, from what the section is doing: men
        who have been told to go to ground stay down for a while, men crossing quiet
        ground to a forming-up point or an objective run for it, and the rest walk. */
@@ -6033,40 +6524,104 @@ function aiTick(dt) {
       }
       u.stance = want2;
     }
-    if (skill >= 1 && u.cat === 'inf' && !u.gar && !u.inside) {
-      /* Under fire in the open. A section being suppressed where it stands has a few
-         seconds before it is pinned, and a pinned section cannot move at all: it is
-         shot to pieces where it lies. So a section that is losing a firefight in the
-         open goes to ground now -- into an empty house if there is one at hand, behind
-         the nearest thing within a short dash that faces the fire if not, and if there
-         is nothing, back the way it came far enough to be out of the worst of it. A
-         section in a wave that is pressing has no back to go to: it ducks or it keeps
-         going. The threshold is low on purpose: suppression climbs from nothing to
-         pinned in a few seconds of machine gun fire and decays at a fifth a second, so a
-         rule that waited for the men to be half suppressed found them either pinned
-         already or recovered, and never fired at all. A pinned section is given the
-         order too; it goes the moment it can move. */
-      if (u.duckT && G.t - u.duckT < 9 && (u.order === 'move' || u.order === 'enter')) continue;
-      if (u.sup > .4 && G.t - (u.duckT || -99) > 14) {
-        var thA = u.threatX !== undefined ? Math.atan2(u.threatY - u.y, u.threatX - u.x)
-                : u.target && !u.target.dead ? angTo(u, u.target) : aiFoeDir(side, u.x, u.y);
-        if (coverOf(u, thA) < 2) {
-          u.duckT = G.t;
-          var dh = garCount < 5 ? aiHouse(u, u.x, u.y, 120) : null;
-          if (dh) { aiFire('duck.house'); clearOrder(u); u.order = 'enter'; u.enterT = dh; garCount++; continue; }
-          var dk = aiDuck(u, thA);
-          if (dk) { aiFire('duck.cover'); orderMove(u, dk.x, dk.y, false); continue; }
-          if (!(pressing && aiInWave(u, asId, razeT))) {
-            var bx = clamp(u.x - Math.cos(thA) * 150, 40, WORLD.w - 40);
-            var by = clamp(u.y - Math.sin(thA) * 150, 40, WORLD.h - 40);
-            aiFire('duck.back'); orderMove(u, bx, by, false); continue;
-          }
-          /* nothing to get behind and nowhere to go: down where it stands, and it fights
-             from there */
-          aiFire('duck.ground');
-          u.stance = 'ground'; u.stanceT = G.t;
+    /* A move already given is left to run rather than decided again every tick: a
+       section re-ordered every four seconds walks in circles, and a tank that reverses
+       on every tick from infantry that keep coming reverses into its own base. */
+    if (skill >= 1) {
+      if (u.cat === 'veh') {
+        if (u.backT && G.t - u.backT < 6 && u.order === 'attackmove') continue;
+        if (u.faceT && G.t - u.faceT < 5 && u.order === 'attackmove') continue;
+      } else if (u.duckT && G.t - u.duckT < 9 && (u.order === 'move' || u.order === 'enter')) continue;
+    }
+    /* ---- and what it decides to do about it. The options are scored against each other
+       and against getting on with the job; what comes back is the one that won. */
+    var act = skill >= 1 && !(u.cat === 'veh' && (u.job === 'mend' || u.immob > 0)) &&
+              !(u.cat === 'team' && !u.def.speed) ? aiWeigh(u, S, W) : '';
+    if (act === 'withdraw') {
+      /* out of the beaten zone rather than to an engineer, because the engineer may not
+         exist: mend is the rule above and it needs somebody to do the mending */
+      aiFire('veh.withdraw'); u.backT = G.t;
+      var wa = S.thA + Math.PI;
+      var wp = nearestFree(clamp(u.x + Math.cos(wa) * 280, 60, WORLD.w - 60),
+                           clamp(u.y + Math.sin(wa) * 280, 60, WORLD.h - 60));
+      orderMove(u, wp.x, wp.y, true); continue;
+    }
+    if (act === 'backoff') {
+      /* A section with a launcher in it inside two hundred of a tank with nobody on foot
+         beside it is a dead tank, whatever the tank does to the section, so it opens the
+         range, firing as it goes, and lets its own infantry catch up. */
+      u.backT = G.t; aiFire('veh.backoff');
+      /* and it says why it is reversing. Opening the range buys time and nothing else; a
+         tank in a town wants a section walking beside it, and this is the one place that
+         knows it has not got one. */
+      aiCall(u, 'men', S.atInf, 70 + (1 - S.hp) * 60);
+      var ba = angTo(S.atInf, u);
+      var bp2 = nearestFree(clamp(u.x + Math.cos(ba) * 200, 60, WORLD.w - 60),
+                            clamp(u.y + Math.sin(ba) * 200, 60, WORLD.h - 60));
+      orderMove(u, bp2.x, bp2.y, true); continue;
+    }
+    if (act === 'face' && S.goal) {
+      /* Side armour is a little over half the plate on the front and the rear a third of
+         it, so a halted tank caught side-on to something that can open it turns to face
+         it, by driving at it a short way: there is no pivot in place, and a move short
+         enough to be one is taken by the driver as an instruction to reverse. */
+      u.faceT = G.t; aiFire('veh.face');
+      var fa3 = angTo(u, S.goal);
+      var fp4 = nearestFree(clamp(u.x + Math.cos(fa3) * 165, 60, WORLD.w - 60),
+                            clamp(u.y + Math.sin(fa3) * 165, 60, WORLD.h - 60));
+      orderMove(u, fp4.x, fp4.y, true); continue;
+    }
+    if (act === 'house' && S.goal && garCount < 5) {
+      aiFire('duck.house'); u.duckT = G.t;
+      clearOrder(u); u.order = 'enter'; u.enterT = S.goal; garCount++; continue;
+    }
+    if (act === 'cover') {
+      aiFire('duck.cover'); u.duckT = G.t; orderMove(u, S.gx, S.gy, false); continue;
+    }
+    if (act === 'back' && !(pressing && aiInWave(u, asId, razeT))) {
+      aiFire('duck.back'); u.duckT = G.t;
+      var bx = clamp(u.x - Math.cos(S.thA) * 150, 40, WORLD.w - 40);
+      var by = clamp(u.y - Math.sin(S.thA) * 150, 40, WORLD.h - 40);
+      orderMove(u, bx, by, false); continue;
+    }
+    if (act === 'ground' || (act === 'back' && pressing)) {
+      /* nothing worth getting to and nowhere worth going: down where it stands, and it
+         fights from there */
+      aiFire('duck.ground'); u.duckT = G.t;
+      u.stance = 'ground'; u.stanceT = G.t;
+    }
+    if (act === 'stand') aiFire('stand');
+    if (act === 'call' || act === 'hold') {
+      /* The one the whole thing was built for. A section that has met something it cannot
+         hurt, on ground it was told to take, says so and holds what cover it has --
+         rather than walking into the tank, which is what the plan says, or walking home,
+         which is what the retreat rule says once the tank has done enough. Somebody who
+         can answer it is dealt to it on the next tick. */
+      if (act === 'call' && S.goal) {
+        aiCall(u, 'armour', S.goal,
+               (S.objVp ? 130 : 60) + aiValue(S.goal) * .06 + (1 - S.armHp) * 50 + (1 - S.men) * 40);
+      }
+      aiFire('hold.help');
+      if (u.cat === 'veh') {
+        /* a tank that cannot open what is in front of it does not sit and watch it: it
+           keeps the range open while whatever it asked for comes up */
+        if (G.t - (u.backT || -99) > 9) {
+          u.backT = G.t;
+          var ca2 = S.thA + Math.PI;
+          var cp2 = nearestFree(clamp(u.x + Math.cos(ca2) * 220, 60, WORLD.w - 60),
+                                clamp(u.y + Math.sin(ca2) * 220, 60, WORLD.h - 60));
+          orderMove(u, cp2.x, cp2.y, true);
+        }
+        continue;
+      }
+      if (S.cover < 2) {
+        var hk = aiDuck(u, S.thA);
+        if (hk && (!u.dest || dsq(u.dest.x, u.dest.y, hk.x, hk.y) > 90 * 90)) {
+          u.duckT = G.t; orderMove(u, hk.x, hk.y, false); continue;
         }
       }
+      if (u.order === 'move' || u.order === 'attackmove') orderStop(u);
+      continue;
     }
 
     /* Green keeps its army near its own line for the first few minutes, which is what
@@ -6122,6 +6677,24 @@ function aiTick(dt) {
     /* a gun with no engine has no post to walk to: its round was chosen at the top of
        the loop and its targets are its own */
     if (u.cat === 'team' && !u.def.speed) continue;
+    /* ---- sent to answer somebody. It drives at the trouble rather than at the plan, and
+       the target reflex above has already put its gun on whatever it can reach, so once
+       it is there this does nothing but keep it there. What it is answering moves, and it
+       is kept pointed at where that is now rather than where it was when it was sent. */
+    if (u.job === 'answer' && u.ansId) {
+      var ac = null, AQ = AIQ[side];
+      if (AQ) for (j = 0; j < AQ.list.length; j++) if (AQ.list[j].id === u.ansId) { ac = AQ.list[j]; break; }
+      if (ac) {
+        if (Math.hypot(u.x - ac.tx, u.y - ac.ty) > Math.min(330, w0.range * .8)) {
+          aiFire('answer.go');
+          if (!u.dest || dsq(u.dest.x, u.dest.y, ac.tx, ac.ty) > 210 * 210)
+            orderMove(u, clamp(ac.tx + rnd(-45, 45), 40, WORLD.w - 40),
+                         clamp(ac.ty + rnd(-45, 45), 40, WORLD.h - 40), true);
+        }
+        continue;
+      }
+      u.ansId = 0;
+    }
     if (u.job === 'support') {
       /* A machine gun belongs where it can see the ground the enemy has to cross, which
          is short of the objective on its own side of it and behind something. An
@@ -6234,8 +6807,20 @@ function aiTick(dt) {
           if (fr === u || fr.dead || fr.retreat || fr.cat === 'team') continue;
           if (dsq(fr.x, fr.y, sec.x, sec.y) < 330 * 330 || dsq(fr.x, fr.y, u.x, u.y) < 220 * 220) ownW += aiValue(fr);
         }
+        /* And how long it has been his. Ground that changed hands half a minute ago has
+           not been dug into, has no wire in front of it and has whoever took it still
+           sorting itself out on top of it; the same weight standing on ground held since
+           the first minute is a position. The odds are the same number and they are not
+           the same objective, and until the clock went on the sectors there was nothing
+           to tell them apart. Not at any odds: three to one is three to one. */
+        if (S.objAge < 20 && foeW < 2.8 * ownW) { aiFire('odds.weak'); foeW = 0; }
         if (foeW > 2 * ownW) {
           u.holdT = G.t; aiFire('odds.hold');
+          /* and what it is that is holding it. If it is armour this section cannot open,
+             sitting three hundred short looking at it answers nothing: it asks for
+             something that can, and the flag becomes somebody's job rather than nobody's. */
+          if (S.arm && !S.canAnswer)
+            aiCall(u, 'armour', S.arm, 90 + (sec.type === 'vp' ? 120 : 0));
           var hp2 = aiFirePost(side, sec.x, sec.y, 300);
           if (Math.hypot(u.x - hp2.x, u.y - hp2.y) > 120) orderMove(u, hp2.x + rnd(-40, 40), hp2.y + rnd(-40, 40), true);
           else if (u.order !== 'hold') orderStop(u);

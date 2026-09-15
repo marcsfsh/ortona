@@ -36,6 +36,15 @@
  * it garrisoned, built and bought. A brain with a rule it never reaches looks identical
  * to one without the rule, and this is where that shows.
  *
+ * SENSE is the situation layer: what a unit reads about its own position on a tick, and
+ * what it decided out of it. The two numbers to watch are the share of unit-ticks where
+ * the unit could not hurt the armour in front of it -- which is the case the calls exist
+ * for -- and the spread of the actions chosen, because an option that is never chosen is
+ * a line of scoring nobody is running.
+ *
+ * CALLS is the routing: how many were raised, how long one stood before anybody was sent,
+ * and how they ended. A call that always lapses is an army that never answers.
+ *
  * RULES is every named decision and how often it fired, straight out of the brain's own
  * counters. A rule that never fires is a rule that is not there.
  */
@@ -76,7 +85,10 @@ async function install(page) {
         threatCalls: 0, threatUnseen: 0, threatAll: 0,
         frames: 0, foeF: 0, unseenF: 0,
         mood: {}, jobs: {}, waves: 0, wentIn: 0, formMs: [], gar: 0, works: 0, ups: 0,
-        queued: {}, marks: 0, fuel: 0, sample: 0, rules: {}
+        queued: {}, marks: 0, fuel: 0, sample: 0, rules: {},
+        sense: { n: 0, contact: 0, arm: 0, cannot: 0, friendCan: 0, covered: 0, weak: 0,
+                 knowsWho: 0, hurt: 0 },
+        acts: {}, callOpen: 0, callWait: [], callSeen: {}
       };
       startGame('us', diff, 'vp');
       AI.t = 0;
@@ -99,6 +111,37 @@ async function install(page) {
         const c = B.c;
         if (c) { c.calls[name] = (c.calls[name] || 0) + 1; if (WALKS[name]) c.walks++; }
         return real.apply(this, arguments);
+      };
+    }
+
+    /* --- the situation, and what was decided out of it --- */
+    /* Counted off the layer's own output rather than re-derived: what a unit read, and
+       which option won. An option that never wins is scoring nobody runs, and it looks
+       exactly like an option that is not there -- which is the same hole the rule
+       counters were dug for. */
+    if (typeof window.aiSense === 'function') {
+      const realSense = window.aiSense;
+      window.aiSense = function (u, W) {
+        const S = realSense(u, W), c = B.c;
+        if (c && c.sense) {
+          const q = c.sense;
+          q.n++;
+          if (S.thN) q.contact++;
+          if (S.hurt) q.knowsWho++;
+          if (S.hurtAmt > 4) q.hurt++;
+          if (S.cover >= 2) q.covered++;
+          if (S.weakest) q.weak++;
+          if (S.arm) { q.arm++; if (!S.canAnswer) q.cannot++; if (S.frAt) q.friendCan++; }
+        }
+        return S;
+      };
+    }
+    if (typeof window.aiWeigh === 'function') {
+      const realWeigh = window.aiWeigh;
+      window.aiWeigh = function (u, S, W) {
+        const a = realWeigh(u, S, W), c = B.c;
+        if (c) c.acts[a || 'plan'] = (c.acts[a || 'plan'] || 0) + 1;
+        return a;
       };
     }
 
@@ -182,6 +225,19 @@ async function install(page) {
             if (u.gar) c.gar++;
           }
           c.works = G.works.length;
+          /* the call board: how many are standing, and how long one stood before anybody
+             was sent. Kept outside the call itself so the probe writes nothing into the
+             game's own objects. */
+          const Q = window.AIQ && AIQ[side];
+          if (Q) {
+            c.callOpen += Q.list.length;
+            for (const q of Q.list) {
+              const key = side + ':' + q.id;
+              if (q.ans.length && !c.callSeen[key]) {
+                c.callSeen[key] = 1; c.callWait.push(+(G.t - q.t).toFixed(1));
+              }
+            }
+          }
           c.sample++;
           c.marks += G.res[side].mp; c.fuel += G.res[side].fu;
           /* every named rule the brain counts for itself */
@@ -337,6 +393,43 @@ function show(c) {
               Math.round(sum(runs, r => r.fuel) / sum(runs, r => r.sample)) + ' fuel');
 
   const rules = mergeMap(runs, 'rules');
+  const sense = runs.reduce((a, r) => {
+    for (const k in r.sense) a[k] = (a[k] || 0) + r.sense[k];
+    return a;
+  }, {});
+  if (sense.n) {
+    console.log('\n  SENSE    what a unit reads about its own position, and what it chose\n');
+    console.log('  ' + pad('unit-ticks read', 22) + pad(sense.n, 9, 1));
+    console.log('  ' + pad('in contact', 22) + pad(pct(sense.contact, sense.n), 9, 1) +
+                '   knows what hit it: ' + pct(sense.knowsWho, sense.n));
+    console.log('  ' + pad('behind something', 22) + pad(pct(sense.covered, sense.n), 9, 1) +
+                '   a hurt enemy in reach: ' + pct(sense.weak, sense.n));
+    console.log('  ' + pad('armour in front', 22) + pad(pct(sense.arm, sense.n), 9, 1) +
+                '   cannot answer it: ' + pct(sense.cannot, sense.n) +
+                ', a friend can: ' + pct(sense.friendCan, sense.n));
+    const acts = mergeMap(runs, 'acts'), actN = Object.values(acts).reduce((a, b) => a + b, 0);
+    console.log('\n  ' + pad('chose', 22) + Object.entries(acts).sort((a, b) => b[1] - a[1])
+      .map(([k, v]) => k + ' ' + pct(v, actN)).join('  '));
+  }
+
+  const waited = runs.flatMap(r => r.callWait || []);
+  console.log('\n  CALLS    asking for what it cannot do itself\n');
+  console.log('  ' + pad('raised', 22) +
+              pad((rules['call.armour'] || 0) + (rules['call.men'] || 0), 9, 1) +
+              '   answered: ' + (rules['call.answer'] || 0) +
+              ', settled: ' + (rules['call.done'] || 0) +
+              ', lapsed: ' + (rules['call.lapsed'] || 0));
+  console.log('  ' + pad('standing a tick', 22) +
+              pad((sum(runs, r => r.callOpen) / ticks).toFixed(2), 9, 1));
+  if (waited.length) console.log('  ' + pad('waited to be answered', 22) +
+    pad((waited.reduce((a, b) => a + b, 0) / waited.length).toFixed(1) + 's', 9, 1) +
+    '   worst ' + Math.max(...waited).toFixed(1) + 's over ' + waited.length);
+  /* the three below are unit-ticks rather than events: a call is worked every tick it is
+     open, so what these count is how long was spent doing each, not how often it started */
+  console.log('  ' + pad('unit-ticks held', 22) + pad(rules['hold.help'] || 0, 9, 1) +
+              '   driving to a call: ' + (rules['answer.go'] || 0) +
+              ', answerer in contact: ' + (rules['answer.here'] || 0));
+
   console.log('\n  RULES    every named decision, and how often it fired\n');
   const rk = Object.keys(rules);
   if (!rk.length) {

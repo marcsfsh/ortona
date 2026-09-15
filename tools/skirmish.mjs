@@ -63,7 +63,13 @@ function baselineBrain(rev) {
      brain applies to both of them and the card cannot see it at all. Anything whose
      judgement is under test belongs here. */
   const parts = [fn(src, 'aiOwn')];
-  for (const name of ['aiPickTarget']) { try { parts.push(fn(src, name)); } catch (e) { /* older file */ } }
+  /* Everything whose judgement is under test, and nothing else. A change made outside
+     these applies to both sides and the card cannot see it at all. aiSense and aiWeigh are
+     here because they are where a unit decides what to do about what is in front of it;
+     aiCall and aiAnswer because they decide who gets sent to somebody else's trouble. A
+     revision that has none of them just has fewer parts. */
+  for (const name of ['aiPickTarget', 'aiSense', 'aiWeigh', 'aiCall', 'aiCanAnswer', 'aiAnswer'])
+    { try { parts.push(fn(src, name)); } catch (e) { /* older file */ } }
   parts.push(fn(src, 'aiTick'));
   return parts.join('\n');
 }

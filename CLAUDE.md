@@ -246,10 +246,23 @@ counts picks, orders and rounds against the share of the enemy that is out of si
 **PLAN** is what it did: the moods it held, the jobs it dealt, how many waves it formed
 against how many ever went in, how long forming took, what it garrisoned and built.
 
+**SENSE** is the situation layer: what a unit reads about its own position on a tick and
+which option it chose out of it. Two numbers carry it. The share of unit-ticks with armour
+in front that the unit cannot hurt is the case the calls exist for. And the spread of the
+actions chosen, because an option that never wins is a block of scoring nobody is running,
+which looks exactly like an option that is not there.
+
+**CALLS** is the routing: how many were raised, how long one stood before anybody was sent,
+and how they ended. Note that the three tick-counts at the foot of it are unit-ticks and
+not events -- a call is worked every tick it is open, so what they say is how long was
+spent holding, driving and fighting, not how often each started.
+
 **RULES** is every named decision and how often it fired, out of the brain's own counters
 (`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
 is not there, and this file already records one that parsed, passed the gate and never
-fired once -- with nothing to say so.
+fired once -- with nothing to say so. It is also how a rule that fires once a battle shows
+up as one that may as well not be there: the duck rule fired exactly once in a five-minute
+battle at the last commit, which is what sent the reaction to fire into the weighing.
 
 ### `tools/skirmish.mjs` - tactics, mechanically
 
@@ -298,8 +311,10 @@ between runs. Read the shape of the table, not the last digit.
 What is actually swapped between the sides is the bundle `baselineBrain` extracts, and
 nothing else: a change made anywhere outside those functions applies to both sides and the
 card cannot see it at all. `aiPickTarget` is in the bundle for that reason -- it is where
-every attack order comes from -- and anything else whose judgement comes under test
-belongs there too.
+every attack order comes from -- and so are `aiSense`, `aiWeigh`, `aiCall`, `aiCanAnswer`
+and `aiAnswer`, which are where a unit decides what to do about what is in front of it and
+who gets sent to somebody else's trouble. A revision that has none of them simply has fewer
+parts; anything else whose judgement comes under test belongs there too.
 
 A cheaper cross-check than the full card is a kill-switch A/B: extract the working `aiTick`,
 disable one rule by text replacement, inject it against the last commit, and run six pairs.
@@ -753,9 +768,13 @@ because nothing in it outlives the tick that made it.
 
 `AIM` is **the memory**, and it is the opposite: it persists, so like `AI` it holds nothing
 but numbers and ids. Where each enemy was last seen and when (`AIMEM`, thirty-four
-seconds), what ground has cost it men (fed from `killUnit`, halved every ninety seconds by
-`aiFade`), how long it has held what. A brain with no memory can only be omniscient or
-blind. It does **not** feed `aiThreat`, for the reason set out there.
+seconds), what ground has cost it men (`lost`, fed from `killUnit`, halved every ninety
+seconds by `aiFade`), what kind of thing did the killing (`lostTo`, which is a different
+question from what he owns -- a Tiger parked in his own base counts once in the order of
+battle and never in this, and `aiCutLadder` reads it to bring the answer to armour forward
+when armour is doing most of the killing), and how long each sector has been in the hands
+it is in (`held`). A brain with no memory can only be omniscient or blind. It does **not**
+feed `aiThreat`, for the reason set out there.
 
 `AIR` **counts**. Every named decision declares itself once at load and bumps a counter
 when it fires, and `tools/brain.mjs` prints the list with the zeroes in it. This file
@@ -781,7 +800,101 @@ it, which is the combat model rather than the brain. Whole-army walks a tick wen
 conventions costs a little more than four partial ones with four. Named decisions counted:
 none, to thirty-nine. Against the last commit the tactics card puts the whole pass at a
 pair difference of -76 with a standard error of 264, and -12 with 327 on an earlier run:
-twice inside the noise, which is what a framework pass should read. Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
+twice inside the noise, which is what a framework pass should read.
+
+**What one unit is allowed to look at.** `AIS`, filled by `aiSense(u, W)` once per unit per
+tick, and read by every decision below it. `AIW` is what the side knows; this is what one
+section leader knows looking out of his own position, and it exists because every per-unit
+decision in the brain used to be made from a single input. Suppression alone decided
+whether a section went to ground. A launcher inside a hundred and ninety alone decided
+whether a tank reversed. Distance alone decided which flag a section walked at. Every one
+of those is a true fact and not one of them is a situation, and a rule built on one answers
+the fact correctly and the battle wrongly: a section pinned by a machine gun in a ditch and
+a section being shelled by a tank it cannot scratch carry the same suppression and want
+opposite things done about them. The brain could not tell them apart because it had never
+asked what was firing.
+
+So a unit reads the whole of it first and decides afterwards.
+
+- *Itself*: strength, hit points, suppression, whether it is pinned, veterancy, whether a
+  track or a gun is out, the cover its men are actually standing in, the room it has.
+- *What is shooting at it*: `damage()` now writes down who did it, with what and when
+  (`u.hurtId`, `u.hurtT`, `u.hurtVeh`, and `u.hurtAmt`, a running tally that fades), which
+  nothing anywhere recorded before. How hurt that thing is comes with it.
+- *What else is round it*, rolled up by what it can do to this rather than by what it is.
+  `S.danger` is the weight of what can actually get through this unit's plate, so a Tiger
+  two hundred out is a great deal of threat and no danger whatever to another Tiger's
+  front. `S.canAnswer` is whether it can hurt the worst of it back, which for infantry
+  against armour is usually the whole question. `S.weakest` is the nearly-dead one within
+  reach, because a thing about to die is worth standing to kill.
+- *Its own people*: how much weight is beside it, whether it has infantry escorting it,
+  and `S.frAt` -- the nearest friend that can open the tank it cannot.
+- *The job*: its objective, how far off, what is on it, and how long that ground has been
+  in the hands it is in (`AIM.held`, which is what tells a position from a place somebody
+  walked onto thirty seconds ago).
+
+It is honest. `aiThreat` is deliberately allowed the map, for the reason set out on it, but
+this is a man looking out of a window, so every enemy in `AIS` passes `aiKnown`.
+
+**It weighs the options rather than taking the first one that fits.** `aiWeigh(u, S, W)`
+scores what the unit could do against what each option is for and returns the winner; a
+score under the floor means get on with the job, which is what most units do on most ticks.
+What it replaced was a chain of reflexes tried in a fixed order, which means the decision
+was made by whoever wrote the order of the lines. A tank both caught side-on to a Pak and
+closed on by a launcher backed away from the launcher, presenting to the Pak the plate it
+had been about to turn out of the way, because the launcher rule happened to be written
+first. A section that had just shot a Sherman down to a tenth of its hit points went to
+ground and let it drive off, because the duck rule fires on suppression and suppression is
+all it read.
+
+The options are `stand`, the four ways out of the open (`house`, `cover`, `back`, `ground`),
+`hold`, `call`, and for armour `backoff`, `face` and `withdraw`. Each is argued with rather
+than triggered: the cover it would gain against the cover it has, the ground it would give
+up against what that ground is worth and whether anybody else is on it, whether there is
+room in the lane to get sideways at all, how close the thing is it would be breaking
+contact with, how hurt the launcher section is that it is reversing from. `stand` is the
+option that did not exist, and it fires more than all four ducks together: every reason to
+stay was a reason the chain never asked about.
+
+**It can ask.** A section that meets a tank has three honest answers and the brain had one
+of them: die where it stands, go home, or get behind something and say so. Nothing in this
+army could say anything -- every unit decided alone out of what it could see, and there was
+no way for what one of them found to become anybody else's business, so two Panzer IVs
+screened an empty approach four hundred units off while the section that could have taken
+the flag was shelled off it.
+
+`AIQ` is the call board, one per side, and like everything else that outlives a tick it
+holds nothing but numbers and ids. A unit that meets something it cannot answer raises a
+call (`aiCall`) -- where the trouble is, what kind of thing is wanted, and what answering
+it is worth. `aiCallTend` works the board once a tick inside `aiLook`: a call whose caller
+is gone, whose trouble is dead or has been lost track of, or that nobody has answered in
+half a minute comes off it, and the rest are kept pointed at where the trouble is now
+rather than where it was. `aiAnswer` deals them after the plan has dealt everything else,
+worth first and nearest capable thing within that, two to a call, and whoever is sent gets
+`answer` as a job, which outranks the plan. The caller reads its own call back -- how far
+off the answer is -- and that is what lets it hold the cover it has instead of walking into
+the tank, which is what the plan says, or walking home, which is what the retreat rule says
+once the tank has done enough.
+
+Three things about it are worth knowing. **A gun team is never an answer**: it belongs
+where it was sited covering the ground armour has to come up, and walked across the town to
+somebody else's trouble it arrives in the open, out of its own arc and unset up. The weapon
+test sorts the rest out on its own, because a rifle section fails it and an assault section
+with a launcher does not. **Holding is only worth it if somebody is coming**: the first
+version held on the call alone and sections stood still through eleven per cent of every
+unit-tick of a battle while help reached a third of it, so `hold` now wants an answerer
+actually dealt and `call` on its own costs a tick. And **the trouble has to be this unit's**:
+a tank four hundred out shooting at somebody else is a fact about the battle, not a reason
+for this section to stop, so it has to be hitting them, or inside two hundred and fifty, or
+sitting on the ground they were sent to take.
+
+Armour calls too, both ways. A Sherman that cannot open the front of what is in front of it
+asks for something that can and keeps the range open while it waits, rather than sitting
+and watching. And a tank backing away from a launcher asks for men: opening the range buys
+time and nothing else, and that rule is the one place that knows it has no section walking
+beside it.
+
+Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
 produces, buys field upgrades, builds, scores every sector into an objective list with a
@@ -870,36 +983,52 @@ hook that walks into a second position is two assaults where there was one. When
 in, the hook ends on the flag on its own side of it, inside the circle that takes it, so the
 defender has two bearings to face.
 
-**The section leader's reflexes.** Four decisions are made per unit, before the plan and from
-what the unit can see, at skill 1 and up (`skill >= 1`; green stands in the street and loses men,
-which is what green is for):
+**The section leader's decisions.** Made per unit, before the plan and out of `AIS` rather
+than out of one number, at skill 1 and up (`skill >= 1`; green stands in the street and loses
+men, which is what green is for). `aiWeigh` scores them against each other; what follows is
+what each is for and what talks it out of firing.
 
-- *Under fire in the open* a section goes to ground: into an empty house within a hundred and
+- *Under fire in the open* a section gets out of it: into an empty house within a hundred and
   twenty (`aiHouse`), behind the nearest real cover within a dash that faces the fire (`aiDuck`,
-  which for a wall is the nearest point of the wall and the side away from the fire), or, outside
-  a wave, back a hundred and fifty the way it came. The threshold is `u.sup > .4` and low on
-  purpose: suppression climbs from nothing to pinned in a few seconds of machine gun fire and
-  decays at a fifth a second, so a rule that waited for half suppression found the men already
-  pinned or already recovered and fired perhaps once a battle. It still fires rarely, and the
-  histogram says why: this combat model shoots sections down to the retreat rule faster than
-  it suppresses them, so most of the time a section under fire is retreating, not ducking.
+  which for a wall is the nearest point of the wall and the side away from the fire), back a
+  hundred and fifty the way it came, or flat where it stands. The threshold is low on purpose:
+  suppression climbs from nothing to pinned in a few seconds of machine gun fire and decays at a
+  fifth a second, so a rule that waited for half suppression found the men already pinned or
+  already recovered. What talks it down is `stand`: a hurt enemy within reach that it can finish,
+  cover it is already in, friends who outnumber what is in front of it, veterancy, and ground it
+  is holding that is worth more than the walk. A house is worth less when the thing shelling it
+  is a tank; going flat is worth less with armour inside two hundred and sixty; giving ground is
+  worth less when nobody else is on the objective and worth nothing when the nearest enemy is
+  too close to break contact from.
 - *The odds*: a section outside a wave whose objective is held by more than twice what it is
   bringing (itself, the men already on the flag, the men moving with it) goes to the fire post
   three hundred short of the flag instead, the same point a wave against it would form on, and
-  looks again in twenty seconds (`u.holdT`). By then it has been dealt to a wave, which finds it
-  already on the forming-up point, or the rest have come up. It does not stop where it stands:
-  the first version froze in place, usually in the middle of a street, and the army's reach fell
-  by a third. Nearest-first dealing sends sections one at a time and one at a time is what a
-  defended flag eats.
+  looks again in twenty seconds (`u.holdT`). It does not stop where it stands, because where it
+  stands is usually the middle of a street: the first version froze in place and the army's
+  reach fell by a third. Two things were added to it. Ground that changed hands inside the last
+  twenty seconds is not a position -- nothing has been dug, nothing wired, and whoever took it
+  is still sorting itself out on top of it -- so the odds are waived up to about three to one
+  (`odds.weak`). And if what is holding the flag is armour this section cannot open, sitting
+  three hundred back looking at it answers nothing, so it raises a call and the flag becomes
+  somebody's job rather than nobody's.
 - *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
   airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
-  when no friendly section is within a hundred and thirty, opening the range two hundred and
-  firing as it goes (`u.backT`, nine seconds between).
+  when no friendly section is within a hundred and fifty, opening the range two hundred and
+  firing as it goes (`u.backT`, nine seconds between), and asking for men while it does. A
+  launcher section at a quarter strength is a section to shoot rather than to reverse from, and
+  the scoring now says so.
 - *It fights with its front to the gun*: a halted tank caught more than a radian off its facing
   from a visible gun that can open it, between two hundred and five hundred and forty out, drives
   at it a hundred and sixty-five to turn (`u.faceT`, eight seconds between). There is no pivot in
   place, and a move short of a hundred and fifty behind the vehicle is taken by the driver as an
-  instruction to reverse, which would present the rear plate instead.
+  instruction to reverse, which would present the rear plate instead. This is the one the fixed
+  order used to lose: a tank both caught side-on to a Pak and closed on by a launcher took the
+  launcher rule because it was written first, and reversed showing the Pak the plate it had been
+  about to turn away.
+- *And it withdraws*: a tank down to a third with something in front of it that can open it, or
+  one with its gun out, pulls back out of the beaten zone. `mend` is the older answer to the same
+  problem and it needs an engineer to exist; without one the tank used to fight where it stood
+  until it was a wreck blocking its own street.
 
 Two things about it are counter-intuitive enough to be worth knowing before touching it.
 
