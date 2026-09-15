@@ -786,11 +786,36 @@ out of his eye until it meets a wall or the ground and the round goes there: `fi
 takes a bare point as happily as a unit, and with nothing aimed at, nothing is hit
 directly and what lands is the burst. That is how you put HE through a window, and it is
 most of what a tank in a town is for. The blocker grid answers the wall question in one
-lookup a step and the block itself is only looked up for its height when the grid says
-there is something, so a round goes over a garden wall and into the house behind it. The
-mark on the ground is the burst drawn at its own size, with the far edge projected rather
-than guessed. Houses are scenery and have no hit points, but the men in them have: a
+lookup a step. The walk is horizontal with the pitch carried as a gradient, and it ends at
+the far edge of the gun's reach when it meets nothing, because a level look over open
+ground is the commander's commonest shot and the first version handed back nothing for it.
+A mark the gun cannot shoot at is worse than no mark, so the point is tested with
+`fireLine` and backed off along the bearing in twenty-four unit steps until it passes; the
+first version allowed a round a height over a blocker where `fireLine` allows none, so the
+crosshair sat on a wall, the button said READY, and pulling the trigger did nothing at all.
+The mark on the ground is the burst drawn at its own size, with the far edge projected
+rather than guessed. Houses are scenery and have no hit points, but the men in them have: a
 round on the wall reaches the garrison standing along the inside of it.
+
+**The gun is laid on the mark and not on the eye.** `DRV.want` is the bearing to whatever
+is designated, the target under the crosshair or the ground point, and `u.want` takes it
+while `u.manual`. The commander sits a couple of metres off the hull centre, which at two
+hundred units is several degrees, and `fireAt` wants the turret inside a tenth of a radian:
+laid on the raw look bearing the gun traversed for ever and the round never left.
+
+**The loader works whether or not there is a target.** `u.cd` and `u.atcd` count down in
+`updateUnit` and `fireAt` only reads them. They used to be decremented inside `fireAt`,
+which is only reached with something to shoot at, so a tank under command with nothing
+acquired never finished loading: the trigger did nothing and the button almost never said
+READY. It also means a gun that loses its target reloads during the gap, the way a crew
+does, and the balance card does not move on it, because in a duel both sides always have
+something in front of them.
+
+**He can see his own gun go off.** `fireAt` and `fireOneSecondary` skip the flash, the
+tracer and the report when the firer is off screen, and `onScreen` projects the ground point
+under the unit, which from the commander's own eye is behind the near plane. The one man
+sitting on the gun was the one man with no evidence it had fired. Both now test
+`onScreen(u.x, u.y) || u === povHost()`.
 
 **Two guns, two triggers.** The Sherman carries its coaxial as standard now (`def.sec`
 on the unit rather than an upgrade, which is what `secondaryKeys` reads alongside

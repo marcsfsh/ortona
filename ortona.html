@@ -3477,7 +3477,7 @@ function fireOneSecondary(u, key, dt) {
                      w.supCap === undefined ? 1.35 : Math.max(best.sup, w.supCap));
     acc = w.acc * COVER[cov].acc * (u.moving ? .6 : 1);
   }
-  if (onScreen(u.x, u.y)) {
+  if (onScreen(u.x, u.y) || u === povHost()) {
     var M = VMODEL[u.key] || {}, mo = mountPose(u, M);
     var tx0 = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
     var ty0 = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
@@ -3512,8 +3512,7 @@ function fireAt(u, t, dt) {
   var w = weaponFor(u, t);
   var isAt = (w === u.def.at);
   var cdKey = isAt ? 'atcd' : 'cd';
-  u[cdKey] -= dt;
-  if (u[cdKey] > 0) return;
+  if (u[cdKey] > 0) return;                              /* the loader works in updateUnit */
   var d = dist(u, t);
   if (d > w.range) return;
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
@@ -3595,7 +3594,7 @@ function fireAt(u, t, dt) {
   if (w.shell) {
     if (u.cat === 'veh') {
       u.recoil = 1;
-      if (onScreen(u.x, u.y)) {
+      if (onScreen(u.x, u.y) || u === povHost()) {
         var gm = gunMuzzle(u);
         spawnFx('flash', gm.x, gm.y, 16 + w.pen * .022, gm.z);
         spawnFx('gunsmoke', gm.x, gm.y, 10, gm.z);
@@ -4158,6 +4157,8 @@ function updateUnit(u, dt) {
   if (u.hitT > 0) u.hitT -= dt;
   u.calm += dt;
   if (u.fireT > 0) u.fireT -= dt;
+  if (u.cd > 0) u.cd -= dt;                                /* the loader works whether or not there is a target */
+  if (u.atcd > 0) u.atcd -= dt;
   if (u.setup > 0 && !u.moving) u.setup -= dt;
   if (u.cat === 'veh') {
     /* Smoke in proportion to the state of it: a wisp off a scorched deck, a steady
@@ -4314,9 +4315,9 @@ function updateUnit(u, dt) {
       var pv2 = .5 * (u.shaken > 0 ? .6 : 1) * dt;
       u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -pv2, pv2);
     }
-    if (u.cat === 'veh') u.want = u.manual ? POV.yaw : angTo(u, u.target);
+    if (u.cat === 'veh') u.want = u.manual ? DRV.want : angTo(u, u.target);
   } else if (u.cat === 'veh') {
-    u.want = u.manual ? POV.yaw : u.facing;
+    u.want = u.manual ? DRV.want : u.facing;
   } else if (!u.moving && !u.retreat && !u.gar && !u.def.arc && u.threatAng !== undefined && u.threatAng !== null) {
     /* Nothing to shoot at, but something known to be out there: a halted section turns
        to face it rather than standing the way it happened to arrive, and a machine gun
@@ -7472,7 +7473,7 @@ function povFov() {
    He takes over on the first control he touches (`DRV.took`) and not on opening the
    periscope, or a look out of a tank that was going somewhere would stop it dead. */
 var DRV = { thr: 0, steer: 0, fire: false, mg: false, padT: 0, padS: 0, padFire: false, padMg: false,
-            mouseMg: false, padOn: false, padId: 0, took: 0, lock: null, mark: null, pt: { x: 0, y: 0 } };
+            mouseMg: false, padOn: false, padId: 0, took: 0, lock: null, mark: null, want: 0, pt: { x: 0, y: 0 } };
 var UPM = 11.7;                                     /* units to the metre, as tools/dims.mjs has it */
 function drivenUnit() {
   var h = povHost();
@@ -7497,25 +7498,33 @@ function povTarget(u) {
 }
 /* Where he is pointing when nothing is worth locking on to: the line out of his eye
    walked until it meets a wall or the ground, and the gunner puts the round there. The
-   blocker grid answers the wall question in one lookup a step; only when it says there
-   is something does the block itself get looked up, for its height, so a round can go
-   over a garden wall and into the house behind it. */
+   blocker grid answers the wall question in one lookup a step, and a level look over
+   open ground, which is the commonest shot there is, ends at the far edge of the gun's
+   reach rather than nowhere. */
 function povGround(u) {
-  var e = povEye(), cp = Math.cos(POV.pitch), step = 12;
-  var dx = Math.cos(POV.yaw) * cp * step, dy = Math.sin(POV.yaw) * cp * step, dz = Math.sin(POV.pitch) * step;
-  var reach = mainW(u).range, x = e.x, y = e.y, z = e.z, s;
+  var e = povEye(), step = 12, tz = Math.tan(POV.pitch);
+  var hx = Math.cos(POV.yaw), hy = Math.sin(POV.yaw);
+  var reach = mainW(u).range * .96, x = e.x, y = e.y, z = e.z, s, far = 0, hit = 0;
   for (s = step; s <= reach; s += step) {
-    x += dx; y += dy; z += dz;
-    if (x < 20 || y < 20 || x > WORLD.w - 20 || y > WORLD.h - 20) return null;
-    var g = groundZ(x, y);
-    if (z <= g) { DRV.pt.x = x; DRV.pt.y = y; return DRV.pt; }
-    var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
-    if (fblk[cidx(cx, cy)]) {
-      var b = blockAt(x, y), top = g + (b ? (b.tall ? 96 : 62) : 16);
-      if (z < top) { DRV.pt.x = x; DRV.pt.y = y; return DRV.pt; }
-    }
+    x = e.x + hx * s; y = e.y + hy * s; z = e.z + tz * s;
+    if (x < 20 || y < 20 || x > WORLD.w - 20 || y > WORLD.h - 20) break;
+    far = s;
+    if (z <= groundZ(x, y)) { hit = 1; break; }
+    /* whatever stops a bullet stops this: the round obeys `fireLine` and the mark has
+       to obey the same thing, or the crosshair sits on a street the gun will not fire
+       down and the trigger does nothing when it is pulled */
+    if (fblk[cidx((x / CELL) | 0, (y / CELL) | 0)]) { hit = 1; break; }
   }
-  return null;
+  if (!far) return null;
+  if (!hit) { x = e.x + hx * far; y = e.y + hy * far; }
+  /* and then back off along the line until the gun can see it, because terrain the ray
+     passed over can still stand between the muzzle and the ground it lands on */
+  DRV.pt.x = x; DRV.pt.y = y;
+  for (s = 0; s < 14 && !fireLine(u, DRV.pt); s++) {
+    DRV.pt.x = x - hx * (s + 1) * 24; DRV.pt.y = y - hy * (s + 1) * 24;
+    if (dsq(u.x, u.y, DRV.pt.x, DRV.pt.y) < 44 * 44) return null;
+  }
+  return DRV.pt;
 }
 /* the controls, read once a frame: the thumb pad, and the keys under the other hand */
 function povControls() {
@@ -7570,6 +7579,8 @@ function povDrive(u, dt) {
   } else u.path = null;
   DRV.lock = povTarget(u);
   DRV.mark = DRV.lock ? null : povGround(u);
+  var at = DRV.lock || DRV.mark;
+  DRV.want = at ? angTo(u, at) : POV.yaw;
 }
 /* the pad sits clear of the bottom bar, and on a phone the fire button clears the
    little map in the corner as well */
