@@ -8191,10 +8191,37 @@ var FSH = [
      that looks up is lit and a face that looks down is not, and the shadow map, which
      cannot see in here, is ignored */
   '  if (uInside > 0.0) c = base * (0.66 + 0.36 * (n.z * 0.5 + 0.5)) * uInside + vec3(1.0, 0.96, 0.88) * specP * 0.35;',
+  /* The sea has no water plane: it is the sea bed, sunk to sixty units and painted blue,
+     so the normal under a fragment of it is the normal of the mud at the bottom. What it
+     had on top of that was a product of two sines at a hundred and twenty-six units and
+     seventy, which is a chequerboard, and that is exactly what it read as -- broad bands
+     of light and dark laid across the Adriatic in a grid.
+
+     So the surface is made here instead, and everything else follows from its normal. Two
+     scrolling samples of the grit, a swell and a chop running on different bearings at
+     different speeds, differenced for a gradient. The colour is a Fresnel mix of what the
+     water scatters back and what it reflects, which is why a sea is dark under your feet
+     and bright toward the horizon, and the glitter is a hard specular on the same normal.
+     The grain has mips, so at range the three fetches converge, the normal flattens to
+     straight up and the glitter goes out on its own: level of detail for nothing, and the
+     alternative is a sea that boils. */
   '  if (uUseTex > 0.5 && vWpos.z < -40.0) {',
-  '    float sw = sin(vWpos.x * 0.05 + uSeaT * 1.6) * sin(vWpos.y * 0.09 - uSeaT * 1.1);',
-  '    c += vec3(0.06, 0.08, 0.08) * sw;',
-  '    c += vec3(0.5, 0.55, 0.6) * pow(max(0.0, dot(n, H)), 60.0) * 0.5;',
+  '    vec2 w1 = vWpos.xy * 0.0075 + vec2(uSeaT * 0.42, uSeaT * 0.23);',
+  '    vec2 w2 = vWpos.xy * 0.0190 - vec2(uSeaT * 0.64, uSeaT * 0.37);',
+  '    float e = 0.012;',
+  '    float a0 = texture2D(uGrit, w1).b;',
+  '    float ax = texture2D(uGrit, w1 + vec2(e, 0.0)).b;',
+  '    float ay = texture2D(uGrit, w1 + vec2(0.0, e)).b;',
+  '    float b0 = texture2D(uGrit, w2).g;',
+  '    vec3 wn = normalize(vec3((a0 - ax) * 2.6, (a0 - ay) * 2.6, 1.0));',
+  '    vec3 wh = normalize(uSun + V);',
+  '    float wf = 0.09 + 0.91 * pow(1.0 - max(0.0, dot(wn, V)), 5.0);',
+  '    vec3 refl = vec3(0.60, 0.69, 0.82) * (0.88 + 0.46 * b0);',
+  '    vec3 deep = vec3(0.058, 0.108, 0.116);',
+  '    c = mix(deep, refl, wf) * uAmb * 1.9;',
+  /* the glitter, and a crest catching the light through the top of the wave */
+  '    c += vec3(1.0, 0.94, 0.82) * pow(max(0.0, dot(wn, wh)), 110.0) * 1.4 * lit;',
+  '    c += vec3(0.10, 0.20, 0.18) * max(0.0, a0 + b0 * 0.45 - 0.78) * 4.0;',
   '  }',
   /* Three tiers, and the ground wants to read as three different things rather than as
      one picture at three brightnesses. Ground in sight is what it is. Ground that has

@@ -1089,6 +1089,21 @@ goes from 0.39 of the fine contrast of the open ground beside it to 0.46, and on
 0.37 to 0.42. Nothing on this map is steeper than 48 degrees and sunlit, so the trench walls
 and the crater walls where it does most of its work are judged by looking at them.
 
+**The sea had no surface either, and for a different reason: there is no water.** What is
+drawn is the sea bed, sunk to sixty units and painted blue, so the normal under a fragment of
+sea is the normal of the mud at the bottom of it. On top of that sat a product of two sines
+at a hundred and twenty-six units and seventy, which is a chequerboard, and that is what it
+read as: broad bands of light and dark laid in a grid across the Adriatic.
+
+The surface is made in the shader now and everything else follows from its normal. Two
+scrolling samples of the grit, a swell and a chop on different bearings at different speeds,
+differenced for a gradient. The colour is a Fresnel mix of what the water scatters back and
+what it reflects, which is why a sea is dark under your feet and bright toward the horizon,
+and the glitter is a hard specular on the same normal rather than on the sea bed's. Four
+fetches, and only a fragment of sea pays for them. The grain has mips, so at range the three
+gradient fetches converge, the normal flattens to straight up and the glitter goes out on its
+own: level of detail for nothing, and the alternative is a sea that boils.
+
 **A crater is three things and the paint had one of them.** There is the bowl, damp subsoil
 turned up out of a dry surface, which is darker and redder than anything round it. There is
 the lip, the same spoil thrown out and lying on top of what was there, which is the
