@@ -1036,12 +1036,19 @@ Measured over a five-minute battle at veteran with a brain on both sides: two op
 open at any moment, a quarter of the army's unit-ticks spent on one that is not the main
 effort, and five per cent of the map painted as dangerous to men. All five kinds fire in a
 single battle. A probe runs about twenty seconds and ends because it can see the ground, a
-destroy forty, a hold under a minute, the main effort twenty to fifty. **A feint drew 410
-to 661 in one run and 0 to 85 in another** -- the enemy weight within 420 of the ground it
-demonstrated against, at the moment it started and the moment it ended. Two feints a run
-and four in all, both runs up: that is a direction and not a result, and the absolute level
-is wherever the fight happened to be. It is the right measurement, because nothing else the
-brain does moves that number at that place.
+destroy forty, a hold under a minute, the main effort twenty to fifty.
+
+**Whether a feint draws anybody is not known.** The card measures the right thing -- the
+enemy weight within 420 of the ground it demonstrated against, at the moment it started and
+the moment it ended, because nothing else the brain does moves that number at that place --
+and three runs of two feints each came back 410 to 661, 0 to 85, and 325 to 240. Two up and
+one down out of six feints, on a battle whose absolute level is wherever the fight happened
+to be. The first two runs read as a direction and the third says they were not one. Settling
+it wants a staged drill rather than battle sampling: a feint put deliberately at a known
+sector, the same battle run with and without it, which is the shape `tools/move.mjs` uses
+for the beaten zone and the only way any of these tactical claims has ever been settled.
+The rule is in because it is right, and it is cheap now -- one section out of an army of
+twelve, at veteran.
 
 **A `hold` has to hold from a position, not from the middle.** Its first version aimed at
 the sector's own point, which is a coordinate in the open by construction, and parked two
@@ -1077,6 +1084,11 @@ anyway**: `aiOpsMan` prefers armour by a long margin, because a vehicle that can
 men cannot take a sector however long it stands on one, so a task force built out of the
 screen costs the capture allocation nothing, while a section taken off the dealing is a
 flag nobody is standing on.
+
+The cut does not disable it: the operations still run, at 1.45 open a tick against 1.84 and
+275 unit-ticks of the army's time against 827, which is nine per cent of it rather than
+twenty-five. `destroy` is rare enough now to miss a battle entirely, which is what wanting
+two units out of two costs it.
 
 Refought after the cut: **-163 with a standard error of 201 over eight pairs, inside the
 noise**, and the working brain ahead in four of eight same-side comparisons rather than
