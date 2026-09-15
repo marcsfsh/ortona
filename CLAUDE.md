@@ -69,7 +69,18 @@ a fact rather than a judgement, so it gets checked rather than eyeballed.
 node tools/dims.mjs              # every vehicle
 node tools/dims.mjs ger_kt       # one
 node tools/dims.mjs --tol=3      # tighten the tolerance to 3 per cent
+node tools/dims.mjs --base=HEAD  # measure an older file instead
 ```
+
+**`--base` is there because the tool could only ever open the working file**, so it could
+say whether a model is the right size and never whether a change made it a different size.
+The first thing it caught was the detail pass: the Stuart had grown half a metre and the
+Sherman likewise with no vertex moved. `aoSplit` was the cause and this tool was the fault
+-- it drops a whole face that reaches above a height cap, which is how two and a half
+metres of rod aerial stays out of a published height, and a face cut into pieces has every
+piece below the cap survive the filter. A split face carries `zt`, the top of the plate it
+came off, and the filter reads that: a filter on the model rather than on how the model
+happens to be tessellated.
 
 It reports two tables. **Envelope** is hull length, length with the gun forward,
 width over the tracks and height. **Internals** is the superstructure width at
@@ -1028,6 +1039,14 @@ all of it on a flat panel, half of it on a convex edge, a quarter at a corner. T
 tells an edge from a panel without anything having to know which faces were neighbours, and
 a convex edge on a painted vehicle is where the paint is off and the steel is showing --
 `f.wear`, which lifts the colour and takes the colour out of it.
+
+**Three things come off the one bake and they are the same fact read three ways**: how shut
+in a piece of the model is, which way it faces, and how high it sits. Occlusion is a
+darkening. **Grime** is what collects in what is shut in, and that is a colour rather than a
+darkening -- a joint packed with oil and dust is browner than the plate round it and not a
+dimmer green. **Dust** is what the road throws at the bottom of a hull and what settles on
+anything that looks up, and it is read off the model's own height rather than the world's,
+so a tank on a slope is still dirtiest along its belly and cleanest on its roof.
 
 **And the plate had no surface.** The atlas tile is a luminance and the lighting read the
 face's own normal, so a plate with grain painted on it was still a mathematically flat
