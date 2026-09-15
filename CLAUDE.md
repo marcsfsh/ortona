@@ -98,11 +98,19 @@ node tools/duel.mjs --file=/tmp/x.html   # or on any file
 ```
 
 `--base` is there because a change that was never meant to touch the fighting still has
-to be fought. A near-even matchup swings by thirty points between runs of the same code,
-so one row moving is not evidence of anything: halving the cell size came back at 65 per
-cent and then 38 on `us_sher ger_p4`, and the whole card over forty-three rows moved by
-0.3 points with a standard error of 2.2, the spread of the row-to-row shifts being
-smaller than sampling noise alone. Read the card, not the row.
+to be fought, and because one row moving is not evidence of anything. A near-even matchup
+swings by thirty points between runs of the same code: halving the cell size came back at
+65 per cent and then 38 on `us_sher ger_p4` over forty runs a side, which looks like a
+finding and is not. Read the whole card, as a mean over its rows with the standard error
+of that mean. Sixteen runs a row put the grid change at +0.3 points with a standard error
+of 2.2; six runs a row put the whole movement and cover overhaul, hull turn rates and all,
+at +4.2 with a standard error of 4.6, and the spread of the row-to-row shifts was 30.2
+against the 28.9 that six runs a side produce out of nothing at all.
+
+The card is slow, and how slow depends on what else is running: forty-three rows at
+sixteen runs each is three quarters of an hour on a quiet box and does not finish at all
+on a busy one. Six runs a row takes about eight minutes and resolves a ten-point
+systematic shift across the card, which is usually the question being asked.
 
 Stats on paper do not tell you who wins. Damage per volley interacts with how
 many men are left to fire it, suppression feeds back into accuracy and rate of
