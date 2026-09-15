@@ -257,6 +257,12 @@ and how they ended. Note that the three tick-counts at the foot of it are unit-t
 not events -- a call is worked every tick it is open, so what they say is how long was
 spent holding, driving and fighting, not how often each started.
 
+**OPS** is what the army was trying to do: how many operations of each kind were raised,
+how long one ran, how much of the army was on one, and whether a feint drew anybody. The
+number to read is `ran` against the timeout in `aiOpsReview` -- an operation that always
+runs to its timeout has no working test for being finished, which makes it a habit rather
+than a plan. The feint is the exception and is meant to expire.
+
 **RULES** is every named decision and how often it fired, out of the brain's own counters
 (`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
 is not there, and this file already records one that parsed, passed the gate and never
@@ -535,7 +541,9 @@ The grid says where a thing can go; `cellCost` says where it would want to, per
 `pathKind`: tracks pay 1.35 off the metalled streets and wheels 1.5, both more on a bank
 (`steep`), and men on foot pay 2.6 to cross wire and a little for a bank. A tank sent
 across the town used to cut straight over the gardens at two thirds pace with the Corso
-fifty units to its left.
+fifty units to its left. And it charges for the beaten zone when the thing crossing minds
+it (`DANG`, `u.fear`) -- see the AI section, because what is dangerous is a thing only the
+brain knows.
 
 **And how much room it leaves.** `buildRoom` chamfers the grid into `roomg`, the distance
 in cells to the nearest thing that stops a boot, which `cellCost` charges for: a gap is
@@ -936,6 +944,118 @@ for a change of this kind and the one the tool almost always gives. The control 
 it -- the same card against a revision identical to the working file -- came back at -181
 with a standard error of 173 over eight pairs, so neither number is anything but the map.
 Every rule in the pass stands on whether it is right.
+
+**The ground costs what it costs to cross alive.** Every route the army took was priced on
+what it cost to walk -- the metalling, the wire, the field wall, the room it had to squeeze
+through -- and on nothing whatever about what was shooting down it. So a section ordered to
+a flag three hundred units off took the street, because the street is the cheap way, and
+the street had a machine gun at the end of it.
+
+`DANG` is the beaten zone: two grids a side at half the movement grid's resolution, `inf`
+for what will hurt men and `veh` for what will open armour, because a rifle section and a
+Tiger are frightened of different things and a Pak covering a crossroads paints the second
+and barely the first. It is **cast**, not stamped: rays out of each contact until something
+stops the eye. A disc of danger round a machine gun says it threatens the street on the far
+side of the block it is standing behind, which is the opposite of the truth and would route
+the army round the one place it was safe; casting is also cheaper than the disc. Everything
+in it comes out of `AIM`, so it is only as good as where the side has been -- which is the
+point rather than a limitation, and is what the probe exists to fix.
+
+`cellCost` charges for it and `u.fear` is what a particular move will pay to stay out of
+it. A wave pressing home pays almost nothing (0.3), because crossing the beaten zone under
+covering fire is the whole of what a wave is; a section walking to a flag pays 1.05, a
+retreat 1.4, an engineer 1.3 and a scout 1.7. Nothing is forbidden by it, for the same
+reason nothing else in `cellCost` is.
+
+Measured on a staged drill -- a machine gun sited on the direct line of five crossings of
+the town, a section asked to walk past it -- exposure along the route falls ninety per cent
+for ten per cent more walking, and two of the five legs find a way the gun cannot see at
+all. Painting the field is 0.08 ms.
+
+One thing had to be fixed for it, and it is the thing to know before touching the cost
+model. **The straight-line shortcut has to ask two questions, not one.** Folded into a
+single priced line the danger term rejected nearly every shortcut, so the full search ran
+on every order at eight times the cost, for a route no different from the straight one
+wherever nothing was looking. The difference between the priced and the unpriced line *is*
+the danger integral, and that is the number to threshold.
+
+**What the army is trying to do.** `AIOP`, one list a side. An objective list says what
+ground is worth; it does not say what the army is doing about it, and until now nothing
+did. There was one wave, kept in eight fields spread through the plan, and everything not
+in it was a unit walking at the nearest flag. An army with one operation has no second
+axis, can commit nothing to anything that is not ground, and cannot tell a plan that has
+failed from one it has not finished.
+
+An operation has an aim, a force, a method, a clock and a test for being over. A unit
+carries the id of the one it is on (`u.op`), which outranks the job the plan dealt it, and
+`aiInWave` excludes it so the wave does not stand waiting for a section that has been sent
+somewhere else. Six kinds:
+
+- **take** and **raze** are the main effort -- the wave, and in annihilation the wave
+  against a building. Its state is still the wave's own, because the form post that steps
+  back until the ground it gathers on is quiet, the half-strength floor, the support gate,
+  the late go and the momentum re-form are a great deal of hard-won detail and moving them
+  into the record would be a rewrite with nothing able to say whether a piece had been
+  lost. What the record adds is that the main effort is one of the things the army is doing
+  rather than the only thing it can be doing.
+- **probe** sends one cheap thing to look at ground nobody has eyes on and ends the moment
+  it can see it (`aiScouted`). It pays for itself twice: everything the brain knows about
+  the enemy comes out of contacts, contacts come from having looked, and the beaten zone
+  the whole army routes around is painted from them. A prober is not forced onto a target
+  -- with no forced target its own `acquire` still fires at what is in front of it while it
+  keeps walking, which is what a section moving under contact actually does, and the first
+  version stopped at the first thing it saw and never scouted anything.
+- **destroy** is a task force against one named thing. What is worth one is a *kind* of
+  thing rather than a price: armour, a weapon team, or anything elite. Priced instead, the
+  first version wanted anything over two hundred and sixty and a full-strength section is
+  worth two hundred and fifty, so it never once fired.
+- **feint** goes to the fire post short of a flag well away from the main effort, where it
+  can be seen and can shoot at what is on it, and stays there. A demonstration that walks
+  in is an attack, and a two-section attack on a defended flag is two sections spent on
+  ground nobody wanted. It works on this opponent for the same reason it works on a real
+  one: `aiThreat` is what sizes the effort put against a sector, so men standing where they
+  can be seen pull weight off the place they are not going.
+- **hold** puts weight on ground it owns that is being come for. The plan already scores a
+  held sector a little higher, but a preference does not put men on a flag and keep them
+  there while it is attacked.
+
+Bounded hard: one of each at a time, and never more than a third of the fighting strength
+off the main effort, because an army running five operations is an army running none.
+`aiOpsReview` ends them, `aiOpsPlan` decides what should exist, `aiOpsMan` deals the force
+and a unit already on an operation stays on it -- re-manned every tick it is a section that
+walks halfway to two places.
+
+**And what the ground has already cost.** `AIM.lost` has remembered where this side's men
+have died since the memory was built and the objective scoring ignored it completely: an
+army that had fed three sections into the same flag one at a time wanted it exactly as much
+as it had the first time, and went again. It is a capped penalty, because ground that is
+dear is not ground to be given up -- it is ground to be gone at with more, or later -- and
+an uncapped term walks the army off the map.
+
+Measured over a five-minute battle at veteran with a brain on both sides: two operations
+open at any moment, a quarter of the army's unit-ticks spent on one that is not the main
+effort, and five to six per cent of the map painted as dangerous to men. A probe runs about
+eight seconds and ends because it can see the ground; a hold about half a minute; the main
+effort about three quarters of one. **A feint drew 410 to 661** -- the enemy weight within
+420 of the ground it demonstrated against, at the moment it started and the moment it
+ended, over two of them. Two samples is a direction rather than a result, and it is the
+right measurement: nothing else the brain does moves that number at that place.
+
+**Order the planning by urgency, because room is the scarce thing.** There is room for
+another operation on fewer than half the ticks -- four kinds wanting seven slots out of the
+third of the army they are allowed between them -- so whichever is considered first wins.
+Written with the discretionary one first, the probe is cheap, nearly always available, and
+took the last slot on sixty-three per cent of ticks: the two operations that exist to
+answer a tank in the rear and a flag being taken off us lost to a scout every time.
+Reordered reactive-first (destroy, hold, probe, feint) the destroy operation went from
+twenty-one tick-samples in a battle to fifty and the probe's churn from four hundred and
+forty-five to two hundred and fifty-one.
+
+And the way to find out why a rule never fires is to count its gates separately rather than
+to guess which one shut. Guessing got the destroy threshold wrong twice. Counting said
+immediately that a prize worth a task force is on the field on nine per cent of ticks, is
+killable on six, and that room existed on thirty-seven -- which is a rule that is working
+and rare, not a rule that is broken.
 
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a

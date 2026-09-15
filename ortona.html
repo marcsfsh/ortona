@@ -5923,21 +5923,12 @@ function aiOpsPlan(W, objs, skill) {
   var room = Math.floor(n / 3) - spare;
   if (room < 1) return;
 
-  /* ---- probe. The ground nobody has looked at, nearest first. It is worth one cheap
-     thing and it pays for itself twice over: every contact it takes feeds the memory the
-     beaten zone is painted from, so the whole army routes better for the rest of the
-     battle on what one section found out. */
-  if (!aiOpKind(side, 'probe')) {
-    var pb = null, pd = 1e9;
-    for (i = 0; i < objs.length && i < 6; i++) {
-      var s = objs[i].s;
-      if (s.owner === side) continue;
-      if (aiScouted(W, s)) continue;
-      var d = dsq(s.x, s.y, W.hqX, W.hqY);
-      if (d < pd) { pd = d; pb = s; }
-    }
-    if (pb) { aiOpAdd(side, 'probe', { sec: pb.id, x: pb.x, y: pb.y, want: 1, pri: 120 }); room--; }
-  }
+  /* The order below is the order they are considered in, and it is the order of how much
+     each is answering something that is happening rather than something that might be
+     worth doing. It was written the other way round and the discretionary one came first:
+     the probe is cheap, it is nearly always available, and it took the last slot on
+     sixty-three per cent of ticks, so the two operations that exist to answer a tank in
+     the rear and a flag being taken off us lost to a scout every time. */
 
   /* ---- seek and destroy. One named thing, when it is worth a task force and there is
      something on the field that can actually kill it. A Tiger loose behind the line is not
@@ -5992,6 +5983,30 @@ function aiOpsPlan(W, objs, skill) {
     }
     if (hb && hbs > 260)
       { aiOpAdd(side, 'hold', { sec: hb.id, x: hb.s.x, y: hb.s.y, want: 2, pri: hbs }); room -= 2; }
+  }
+
+  /* ---- probe. The ground nobody has looked at, nearest first. It is worth one cheap
+     thing and it pays for itself twice over: every contact it takes feeds the memory the
+     beaten zone is painted from, so the whole army routes better for the rest of the
+     battle on what one section found out. */
+  if (!aiOpKind(side, 'probe')) {
+    var pb = null, pd = 1e9;
+    for (i = 0; i < objs.length && i < 6; i++) {
+      var s = objs[i].s;
+      if (s.owner === side) continue;
+      if (aiScouted(W, s)) continue;
+      /* and far enough off to be worth sending anybody. Raised for anything unscouted at
+         all it went up and was won again eight seconds later, thirty-seven times in a
+         battle, because the nearest section was already most of the way there: an
+         operation that is over before it has done anything is churn with a name on it. */
+      var near = 1e9;
+      for (var pj = 0; pj < W.fighters.length; pj++)
+        near = Math.min(near, dsq(W.fighters[pj].x, W.fighters[pj].y, s.x, s.y));
+      if (near < 760 * 760) continue;
+      var d = dsq(s.x, s.y, W.hqX, W.hqY);
+      if (d < pd) { pd = d; pb = s; }
+    }
+    if (pb) { aiOpAdd(side, 'probe', { sec: pb.id, x: pb.x, y: pb.y, want: 1, pri: 120 }); room--; }
   }
 
   /* ---- the feint. Veteran only, and only while the main effort is still gathering,
