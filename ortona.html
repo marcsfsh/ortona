@@ -8112,6 +8112,16 @@ var FSH = [
      stone as one on the shore */
   '      base = mix(base, mix(rock, base, 0.30), rocky * 0.85);',
   '    }',
+  /* and it is December. Wet earth is darker than dry earth and it is warmer, because
+     water fills the air between the grains and stops them scattering; the grain goes
+     with it, since what is wet is down in the hollow and what has dried is on the crown.
+     Below the water table of the hollow it stops being wet ground and starts being a
+     puddle, which is a surface rather than a colour and gets a sheen of its own further
+     down. `wet` is a vertex channel, so it is free. */
+  '    float wet = vUV.x;',
+  '    if (wet > 0.01) {',
+  '      base = mix(base, base * vec3(0.54, 0.50, 0.44) * (1.0 + grit * 0.45), wet * 0.85);',
+  '    }',
   /* and the grain gets a normal, which at twenty-one degrees of sun is most of what
      makes ground read as a surface rather than as a photograph of one: every clod
      throws its own small shadow up the slope away from the light. Two more fetches,
@@ -8162,14 +8172,22 @@ var FSH = [
      round. Two more taps give the tile a gradient, and the gradient bends the normal,
      which is the difference between Zimmerit that is combed into the paste and Zimmerit
      that is printed on a slab. The tangent frame is the triplanar axis pair the uv was
-     projected along, which is the same test the triangulator made. */
+     projected along, which is the same test the triangulator made.
+
+     It is for a plate, and it was running on the ground as well. The ground carries the
+     atlas's material 9 and never looks at it -- every scale of its surface comes out of
+     the grit texture instead -- so what this did there was bend the terrain's normal by
+     the gradient of a tile it does not use, sampled through a `fract()` with no mip and
+     no distance fade, on top of the bump the ground had asked for. */
   '#if BUMP',
-  '  vec3 an = abs(n); vec3 tu, tv;',
-  '  if (an.z >= an.x && an.z >= an.y) { tu = vec3(1.0, 0.0, 0.0); tv = vec3(0.0, 1.0, 0.0); }',
-  '  else if (an.x >= an.y) { tu = vec3(0.0, 1.0, 0.0); tv = vec3(0.0, 0.0, 1.0); }',
-  '  else { tu = vec3(1.0, 0.0, 0.0); tv = vec3(0.0, 0.0, 1.0); }',
-  '  float hu = tile(m, vUV + vec2(0.0078, 0.0)).r, hv = tile(m, vUV + vec2(0.0, 0.0078)).r;',
-  '  n = normalize(n + (tu * (det.r - hu) + tv * (det.r - hv)) * 1.1);',
+  '  if (uUseTex < 0.5) {',
+  '    vec3 an = abs(n); vec3 tu, tv;',
+  '    if (an.z >= an.x && an.z >= an.y) { tu = vec3(1.0, 0.0, 0.0); tv = vec3(0.0, 1.0, 0.0); }',
+  '    else if (an.x >= an.y) { tu = vec3(0.0, 1.0, 0.0); tv = vec3(0.0, 0.0, 1.0); }',
+  '    else { tu = vec3(1.0, 0.0, 0.0); tv = vec3(0.0, 0.0, 1.0); }',
+  '    float hu = tile(m, vUV + vec2(0.0078, 0.0)).r, hv = tile(m, vUV + vec2(0.0, 0.0078)).r;',
+  '    n = normalize(n + (tu * (det.r - hu) + tv * (det.r - hv)) * 1.1);',
+  '  }',
   '#endif',
   '  vec3 V = normalize(uEye - vWpos);',
   '  float ndotl = max(0.0, dot(n, uSun));',
@@ -8187,6 +8205,18 @@ var FSH = [
   '  float specP = pow(max(0.0, dot(n, H)), vSpec.y) * vSpec.x * lit;',
   '  float fres = pow(1.0 - max(0.0, dot(n, V)), 4.0) * 0.06;',
   '  vec3 c = base * (sky + sun) + vec3(1.0, 0.96, 0.88) * specP + vec3(0.7, 0.8, 0.95) * fres * hemi;',
+  /* the sheen off standing water, which is the half of wetness a colour cannot say. A
+     film of water is smooth where the ground under it is not, so it is a broad highlight
+     and a piece of the sky at a grazing angle, and it comes on late: ground is damp long
+     before it holds a puddle. */
+  '  if (uUseTex > 0.5) {',
+  '    float pool = smoothstep(0.55, 0.95, vUV.x);',
+  '    if (pool > 0.004) {',
+  '      float pf = pow(1.0 - max(0.0, dot(n, V)), 4.0);',
+  '      c += (vec3(1.0, 0.97, 0.90) * pow(max(0.0, dot(n, H)), 46.0) * 0.85',
+  '            + vec3(0.52, 0.60, 0.74) * pf * 0.55) * pool * lit;',
+  '    }',
+  '  }',
   /* inside a hull the sun never reaches: light comes down through the hatch, so a face
      that looks up is lit and a face that looks down is not, and the shadow map, which
      cannot see in here, is ignored */
@@ -9253,6 +9283,36 @@ function buildTerrain(only) {
       if (Math.hypot(fgx, fgy) > .9) fine[fj * cols + fi] = 1;
     }
   }
+  /* Where the ground has been opened, which is where the water is. Ortona in December is
+     rain and mud: a trench holds water in its floor, a shell hole holds it in its bowl,
+     and the open field between them drains and does not. Derived from the crater and
+     trench lists rather than from the shape of the heightfield, because curvature over a
+     boot's length cannot see the bottom of a bowl fifty units across -- measured, the
+     floor of a trench came out at 0.95 on a curvature probe and the middle of the biggest
+     crater on the map at 0.20, and the crater is the one you look into. One grid at the
+     mesh's own resolution, one lookup a vertex, and no more sampling of the height. */
+  var dug = new Float32Array(cols * rows);
+  function markWet(x, y, r, amt) {
+    var i0 = Math.max(0, Math.floor((x - r) / TG)), i1 = Math.min(cols - 1, Math.ceil((x + r) / TG));
+    var j0 = Math.max(0, Math.floor((y - r) / TG)), j1 = Math.min(rows - 1, Math.ceil((y + r) / TG));
+    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+      var d = Math.hypot(i * TG + TG / 2 - x, j * TG + TG / 2 - y);
+      if (d > r) continue;
+      var w = amt * (1 - d / r), k = j * cols + i;
+      if (w > dug[k]) dug[k] = w;
+    }
+  }
+  G.trenches.forEach(function (t) {
+    var n2 = Math.ceil(Math.hypot(t.x2 - t.x1, t.y2 - t.y1) / 5);
+    for (var k = 0; k <= n2; k++) markWet(lerp(t.x1, t.x2, k / n2), lerp(t.y1, t.y2, k / n2), 16, 1.45);
+  });
+  G.covers.forEach(function (c) { if (c.kind === 'crater') markWet(c.x, c.y, c.r * 0.92, 1.15); });
+  function dugAt(x, y) {
+    var i = Math.min(cols - 1, Math.max(0, Math.floor(x / TG)));
+    var j = Math.min(rows - 1, Math.max(0, Math.floor(y / TG)));
+    return dug[j * cols + i];
+  }
+
   var lastCol = [], lastVal = [];
   function vert(x, y, zOverride) {
     var z = zOverride === undefined ? groundZ(x, y) : zOverride, n = groundNormal(x, y);
@@ -9260,7 +9320,18 @@ function buildTerrain(only) {
     var ring = (groundZ(x + 24, y) + groundZ(x - 24, y) + groundZ(x, y + 24) + groundZ(x, y - 24)) / 4;
     var ao = clamp((ring - z) / 22, 0, 1);
     v *= 1 - ao * .42;
-    arr.push(x, y, z, n.x, n.y, n.z, v, v, v, x * .04, y * .04, 9);
+    /* How wet a piece of ground is, is how well it drains, and what decides that is
+       whether the water has anywhere to go: a hole holds it, a natural hollow is damp,
+       a slope sheds it and a field drains. The hole comes off the grid above, the hollow
+       off `ring`, which is the mean of the four neighbours a boot's length out and is
+       already here, and the shedding off the normal. It goes out in the u of the vertex
+       uv, which costs nothing at all, because the ground carries the atlas's material 9
+       and has never once looked at it -- every scale of its surface comes out of the grit
+       texture instead. A natural hollow is capped short of standing water; only a dug one
+       gets a puddle. */
+    var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55);
+    wet = clamp(wet, 0, 1) * clamp(1 - (1 - n.z) * 3.0, 0, 1);
+    arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, y * .04, 9);
   }
   function quad(x0, y0, x1, y1, z00, z10, z01, z11) {
     vert(x0, y0, z00); vert(x1, y0, z10); vert(x0, y1, z01);

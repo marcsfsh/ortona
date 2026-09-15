@@ -1089,6 +1089,34 @@ goes from 0.39 of the fine contrast of the open ground beside it to 0.46, and on
 0.37 to 0.42. Nothing on this map is steeper than 48 degrees and sunlit, so the trench walls
 and the crater walls where it does most of its work are judged by looking at them.
 
+**And it is December.** Ortona in that week is rain and mud, and the ground was bone dry
+everywhere. How wet a piece of it is, is how well it drains, and what decides that is
+whether the water has anywhere to go: a hole holds it, a natural hollow is damp, a slope
+sheds it and an open field drains. Wet earth is darker than dry earth and warmer, because
+water fills the air between the grains and stops them scattering, and below the water table
+of a hollow it stops being wet ground and starts being a puddle, which is a surface rather
+than a colour: a film of water is smooth where the ground under it is not, so it gets a
+broad highlight and a piece of the sky at a grazing angle. Only a dug hollow gets that far;
+a natural one is capped short of it.
+
+Two things about it. **The hole comes off the crater and trench lists rather than off the
+shape of the heightfield**, because curvature over a boot's length cannot see the bottom of
+a bowl fifty units across: measured on a curvature probe, the floor of a trench came out at
+0.95 and the middle of the biggest crater on the map at 0.20, and the crater is the one you
+look into. It is one grid at the mesh's own resolution, marked in the same pass that marks
+the cells to refine, and one lookup a vertex. And **it rides in the u of the vertex uv**,
+which costs nothing whatever: the ground carries the atlas's material 9 and has never once
+looked at it, since every scale of its surface comes out of the grit texture instead. Only
+the ground buffers are drawn with `uUseTex`, so that channel is the terrain's alone.
+
+Finding that out turned up the one bug in the pass. **The model bump was running on the
+ground**, bending the terrain's normal by the gradient of the tile it does not use, sampled
+through a `fract()` with no mip and no distance fade, on top of the bump the ground had
+asked for. It is gated now. It bought nothing measurable, because material 9 has no gradient
+to speak of; it is in because it saves two fetches a ground fragment and because the next
+person to give that tile a texture would otherwise get a second bump on the whole map for
+free.
+
 **The sea had no surface either, and for a different reason: there is no water.** What is
 drawn is the sea bed, sunk to sixty units and painted blue, so the normal under a fragment of
 sea is the normal of the mud at the bottom of it. On top of that sat a product of two sines
