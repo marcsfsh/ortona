@@ -1049,7 +1049,13 @@ sections on it for the life of the operation: halted men behind something fell f
 per cent of man-frames to 90.1 on `tools/move.mjs`, which is the whole of what the cover
 overhaul bought, given back by an operation that meant well. It takes a house on the flag
 if there is one and otherwise the best cover within a hundred of the point, which is still
-inside the circle that counts. The card caught it and nothing else would have.
+inside the circle that counts. The card caught it and nothing else would have: a screenshot
+of two sections standing on a flag is two sections holding a flag.
+
+Fixed it reads 97.3 against the 98.8 it was before the pass, and the card's own control --
+the same battle run against a revision identical to the working file -- puts its two halves
+0.3 apart, so the remaining point and a half is probably real and is not established. If
+you are comparing against 98.8 and wondering, that is what is known about it.
 
 **Order the planning by urgency, because room is the scarce thing.** There is room for
 another operation on fewer than half the ticks -- four kinds wanting seven slots out of the
