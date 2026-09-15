@@ -45,6 +45,11 @@
  * CALLS is the routing: how many were raised, how long one stood before anybody was sent,
  * and how they ended. A call that always lapses is an army that never answers.
  *
+ * OPS is what the army was trying to do: how many operations were raised of each kind,
+ * how long one ran, and how much of the army was on one. The number to read is `ran`
+ * against the timeout in aiOpsReview -- an operation that always runs to its timeout has
+ * no working test for being finished, which makes it a habit rather than a plan.
+ *
  * RULES is every named decision and how often it fired, straight out of the brain's own
  * counters. A rule that never fires is a rule that is not there.
  */
@@ -88,7 +93,8 @@ async function install(page) {
         queued: {}, marks: 0, fuel: 0, sample: 0, rules: {},
         sense: { n: 0, contact: 0, arm: 0, cannot: 0, friendCan: 0, covered: 0, weak: 0,
                  knowsWho: 0, hurt: 0 },
-        acts: {}, callOpen: 0, callWait: [], callSeen: {}
+        acts: {}, callOpen: 0, callWait: [], callSeen: {},
+        opsOpen: 0, opKindT: {}, opSeen: {}, opUnitT: {}, dangHot: 0, dangN: 0
       };
       startGame('us', diff, 'vp');
       AI.t = 0;
@@ -237,6 +243,40 @@ async function install(page) {
                 c.callSeen[key] = 1; c.callWait.push(+(G.t - q.t).toFixed(1));
               }
             }
+          }
+          /* what the army is trying to do, sampled the same way. An operation is worked
+             every tick it is open, so the kind counts are tick counts and the lifetimes
+             come off the first and last tick each id was seen on. */
+          const OQ = window.AIOP && AIOP[side];
+          if (OQ) {
+            c.opsOpen += OQ.list.length;
+            for (const o of OQ.list) {
+              c.opKindT[o.kind] = (c.opKindT[o.kind] || 0) + 1;
+              const ok = side + ':' + o.id;
+              if (!c.opSeen[ok]) c.opSeen[ok] = { kind: o.kind, main: o.main, t0: o.t0, last: G.t };
+              c.opSeen[ok].last = G.t;
+              /* Does a feint draw anybody? It claims to, and the claim is testable: the
+                 enemy weight within reach of the ground it is demonstrating against, at
+                 the moment it starts and at the moment it ends. Nothing else the brain
+                 does moves that number at that place. */
+              if (o.kind === 'feint') {
+                const w = aiThreat(side, o.x, o.y, 420);
+                if (c.opSeen[ok].w0 === undefined) c.opSeen[ok].w0 = w;
+                c.opSeen[ok].w1 = w;
+              }
+            }
+            for (const u of G.units) {
+              if (u.dead || u.side !== side || !u.op) continue;
+              const oo = OQ.list.find(z => z.id === u.op);
+              if (oo) c.opUnitT[oo.kind] = (c.opUnitT[oo.kind] || 0) + 1;
+            }
+          }
+          /* and how much of the map the side has painted as dangerous to men */
+          const DG = window.DANG && DANG[side];
+          if (DG && DG.t >= 0) {
+            let hot = 0;
+            for (let z = 0; z < DG.inf.length; z++) if (DG.inf[z] > .3) hot++;
+            c.dangHot += hot / DG.inf.length; c.dangN++;
           }
           c.sample++;
           c.marks += G.res[side].mp; c.fuel += G.res[side].fu;
@@ -429,6 +469,46 @@ function show(c) {
   console.log('  ' + pad('unit-ticks held', 22) + pad(rules['hold.help'] || 0, 9, 1) +
               '   driving to a call: ' + (rules['answer.go'] || 0) +
               ', answerer in contact: ' + (rules['answer.here'] || 0));
+
+  const opSeen = runs.reduce((a, r) => { for (const k in r.opSeen) a[k] = r.opSeen[k]; return a; }, {});
+  const opKindT = mergeMap(runs, 'opKindT'), opUnitT = mergeMap(runs, 'opUnitT');
+  const ops = Object.values(opSeen);
+  if (ops.length) {
+    console.log('\n  OPS      what the army was trying to do, and for how long\n');
+    console.log('  ' + pad('open a tick', 22) + pad((sum(runs, r => r.opsOpen) / ticks).toFixed(2), 9, 1) +
+                '   raised: ' + ops.length);
+    console.log('  ' + pad('map dangerous to men', 22) +
+                pad(((sum(runs, r => r.dangHot) / Math.max(1, sum(runs, r => r.dangN))) * 100).toFixed(1) + '%', 9, 1));
+    console.log('\n  ' + pad('kind', 12) + pad('raised', 8, 1) + pad('ran', 9, 1) +
+                pad('longest', 9, 1) + pad('tickshare', 11, 1) + pad('unit-ticks', 12, 1));
+    const byKind = {};
+    for (const o of ops) {
+      const k = (o.main ? '*' : '') + o.kind;
+      const e = byKind[k] || (byKind[k] = { n: 0, life: [], });
+      e.n++; e.life.push(o.last - o.t0);
+    }
+    const tickAll = Object.values(opKindT).reduce((a, b) => a + b, 0);
+    for (const [k, e] of Object.entries(byKind).sort((a, b) => b[1].n - a[1].n)) {
+      const bare = k.replace('*', '');
+      const mean = e.life.reduce((a, b) => a + b, 0) / e.life.length;
+      console.log('  ' + pad(k, 12) + pad(e.n, 8, 1) + pad(mean.toFixed(0) + 's', 9, 1) +
+                  pad(Math.max(...e.life).toFixed(0) + 's', 9, 1) +
+                  pad(pct(opKindT[bare] || 0, tickAll), 11, 1) +
+                  pad(opUnitT[bare] || 0, 12, 1));
+    }
+    const fe = ops.filter(o => o.kind === 'feint' && o.w0 !== undefined);
+    if (fe.length) {
+      const w0 = fe.reduce((a, o) => a + o.w0, 0) / fe.length;
+      const w1 = fe.reduce((a, o) => a + o.w1, 0) / fe.length;
+      console.log('\n  ' + pad('a feint drew', 22) +
+                  pad(w0.toFixed(0) + ' -> ' + w1.toFixed(0), 14, 1) +
+                  '   enemy weight within 420 of the ground it demonstrated against, over ' +
+                  fe.length);
+    }
+    console.log('\n    * is the main effort. `ran` is the mean life of one, which for a thing');
+    console.log('    with a test for being over is the number that says whether the test works:');
+    console.log('    an operation that always runs to its timeout has no test at all.');
+  }
 
   console.log('\n  RULES    every named decision, and how often it fired\n');
   const rk = Object.keys(rules);
