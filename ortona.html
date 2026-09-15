@@ -8995,15 +8995,24 @@ function buildScene() {
 /* ---- fog of war: unexplored, explored, visible ---- */
 var FW = 140, FH = 95, fogBuf = new Uint8Array(FW * FH), explored = new Uint8Array(FW * FH), _fogWasOff = false;
 function initExplored() { explored.fill(0); fogBuf.fill(0); _fogWasOff = false; }
-function markExplored(x, y, r) {
-  var cx = x / WORLD.w * FW, cy = y / WORLD.h * FH, cr = r / WORLD.w * FW;
-  var i0 = Math.max(0, Math.floor(cx - cr)), i1 = Math.min(FW - 1, Math.ceil(cx + cr));
-  var j0 = Math.max(0, Math.floor(cy - cr * (FH / WORLD.h) * (WORLD.w / FW))), j1 = Math.min(FH - 1, Math.ceil(cy + cr * (FH / WORLD.h) * (WORLD.w / FW)));
-  var r2 = cr * cr, ky = (FH / WORLD.h) / (FW / WORLD.w);
+/* A circle of world radius r, rasterised into the fog texture. Its two axes have their
+   own scales, so the test is an ellipse in cell space and not a circle with a correction
+   bolted on: the two places that did this wrote the correction the opposite way up from
+   each other and both happened to be right only because the texture is proportional to
+   the world. */
+function fogCircle(x, y, r, fn) {
+  var cx = x / WORLD.w * FW, cy = y / WORLD.h * FH;
+  var rx = r / WORLD.w * FW, ry = r / WORLD.h * FH;
+  if (!(rx > 0) || !(ry > 0)) return;
+  var i0 = Math.max(0, Math.floor(cx - rx)), i1 = Math.min(FW - 1, Math.ceil(cx + rx));
+  var j0 = Math.max(0, Math.floor(cy - ry)), j1 = Math.min(FH - 1, Math.ceil(cy + ry));
   for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
-    var dx = i - cx, dy = (j - cy) / ky;
-    if (dx * dx + dy * dy < r2) explored[j * FW + i] = 1;
+    var dx = (i - cx) / rx, dy = (j - cy) / ry, q = dx * dx + dy * dy;
+    if (q < 1) fn(j * FW + i, q);
   }
+}
+function markExplored(x, y, r) {
+  fogCircle(x, y, r, function (k) { explored[k] = 1; });
 }
 function updateFog() {
   if (!GLOK) return;
@@ -9013,17 +9022,24 @@ function updateFog() {
   }
   _fogWasOff = false;
   var eyes = _eyes[G.side] || [];
-  var ky = (FH / WORLD.h) / (FW / WORLD.w);
   for (var k = 0; k < fogBuf.length; k++) fogBuf[k] = explored[k] ? 110 : 0;
+  /* What the side can see THIS INSTANT, drawn bright over the explored grey.
+       It never drew. `computeVisibility` gives every eye an `r` and this asked it for
+     `r2`, so the radius was the square root of undefined: NaN, which fails the loop
+     bounds silently and skips the eye. Every cell the player had ever walked past sat at
+     110 and not one cell on the map was ever brighter, so the ground a section was
+     standing in the middle of looked exactly like ground it had crossed four minutes
+     earlier -- and since the terrain shader multiplies by 0.16 + 0.84 * vis, the whole
+     visible map was rendered at 52 per cent brightness for the life of the game. One
+     word. It is the reason the fog buffer is on the sight card now. */
   for (var e = 0; e < eyes.length; e++) {
-    var ey = eyes[e], cx = ey.x / WORLD.w * FW, cy = ey.y / WORLD.h * FH;
-    var cr = Math.sqrt(ey.r2) / WORLD.w * FW, r2 = cr * cr;
-    var i0 = Math.max(0, Math.floor(cx - cr)), i1 = Math.min(FW - 1, Math.ceil(cx + cr));
-    var j0 = Math.max(0, Math.floor(cy - cr / ky)), j1 = Math.min(FH - 1, Math.ceil(cy + cr / ky));
-    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
-      var dx = i - cx, dy = (j - cy) * ky, d2 = dx * dx + dy * dy;
-      if (d2 < r2) { var v = 255 - Math.floor(70 * Math.max(0, d2 / r2 - .7) / .3); if (v > fogBuf[j * FW + i]) fogBuf[j * FW + i] = v; }
-    }
+    var ey = eyes[e];
+    fogCircle(ey.x, ey.y, ey.r, function (k, q) {
+      /* full out to seven tenths of the reach and falling away over the last third, so
+         the edge of what a section can see is a soft one */
+      var v = 255 - Math.floor(70 * Math.max(0, q - .49) / .51);
+      if (v > fogBuf[k]) fogBuf[k] = v;
+    });
   }
   gl.activeTexture(gl.TEXTURE6);
   gl.bindTexture(gl.TEXTURE_2D, TEX.fog);
