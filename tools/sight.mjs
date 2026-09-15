@@ -359,13 +359,13 @@ function show(c) {
   }
   if (c.fog) {
     const f = c.fog;
-    console.log('\n  FOG      the buffer the ground shader multiplies in\n');
+    console.log('\n  FOG      the buffer the ground shader reads for its three tiers\n');
     console.log('  ' + pad('seen now', 22) + pad(pct(f.now, f.cells), 9, 1) +
-                '   drawn at full brightness');
+                '   the ground as it is');
     console.log('  ' + pad('seen once', 22) + pad(pct(f.seen, f.cells), 9, 1) +
-                '   drawn at about half');
+                '   a memory: dim, and the colour out of it');
     console.log('  ' + pad('never seen', 22) + pad(pct(f.never, f.cells), 9, 1) +
-                '   drawn at a sixth');
+                '   the haze, with a ghost of the shape in it');
     console.log('  ' + pad('eyes on the map', 22) + pad(f.eyes, 9, 1));
     if (!f.now) console.log('\n    NOTHING is seen now. The live tier is not drawing at all.');
   }

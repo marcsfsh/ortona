@@ -8010,10 +8010,28 @@ var FSH = [
   '    c += vec3(0.06, 0.08, 0.08) * sw;',
   '    c += vec3(0.5, 0.55, 0.6) * pow(max(0.0, dot(n, H)), 60.0) * 0.5;',
   '  }',
+  /* Three tiers, and the ground wants to read as three different things rather than as
+     one picture at three brightnesses. Ground in sight is what it is. Ground that has
+     been walked past is a memory: dimmer, and the colour gone out of it. Ground nobody
+     has been near is the winter haze, with only enough of the shape left in it to steer
+     by -- multiplying by 0.16 kept every crater and every roof legible in ground the
+     side had never been within half a mile of. 0.431 is the byte updateFog writes for
+     explored, and the live circle falls to exactly that at its rim, so what a section
+     can see fades into what the side remembers instead of stepping down to it. */
   '  float vis = texture2D(uFog, uvw).r;',
-  '  c *= 0.16 + 0.84 * vis;',
+  '  float lum = dot(c, vec3(0.34, 0.45, 0.21));',
+  '  vec3 haze = uFogCol * (0.28 + 0.13 * lum);',
+  '  vec3 memo = mix(vec3(lum) * 0.95, c, 0.40) * 0.80;',
+  '  c = mix(mix(haze, memo, clamp(vis / 0.431, 0.0, 1.0)), c,',
+  '          clamp((vis - 0.431) / 0.569, 0.0, 1.0));',
   '  float f = clamp((vDist - uFogRange.x) / (uFogRange.y - uFogRange.x), 0.0, 1.0);',
-  '  c = mix(c, uFogCol, f * f * 0.62);',
+  /* Haze scatters hardest in the direction of the light, so the far town is bright and
+     warm when you are looking into the sun and cold when it is behind you. One colour
+     for the whole distance reads as a wall of grey paint hung at a fixed range, and it
+     no longer meets the sky, which now has a sun in it. */
+  '  float vs = dot(normalize(vWpos - uEye), uSun);',
+  '  vec3 hz = uFogCol * (0.90 + 0.34 * max(0.0, vs)) + vec3(0.20, 0.13, 0.04) * pow(max(0.0, vs), 6.0);',
+  '  c = mix(c, hz, f * f * 0.62);',
   '  c = aces(c * 0.92);',
   '  c = pow(c, vec3(1.0 / 1.02));',
   '  gl_FragColor = vec4(c, 1.0);',
@@ -8024,11 +8042,21 @@ var VSK = [
   'void main(){ vQ = aQuad; gl_Position = vec4(aQuad, 0.9999, 1.0); }'].join('\n');
 var FSK = [
   'precision mediump float; varying vec2 vQ; uniform float uPitch; uniform vec3 uFogCol;',
+  /* where the sun is on the screen, projected on the CPU, with the aspect in z so the
+     glow comes out round. Off the screen it is parked far enough away to vanish. */
+  'uniform vec3 uSunS;',
   'vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }',
   'void main(){',
   '  float h = clamp(vQ.y * 0.5 + 0.5 + uPitch * 0.3, 0.0, 1.0);',
-  '  vec3 zenith = vec3(0.42, 0.50, 0.62), horizon = uFogCol * 0.95;',
+  '  vec3 zenith = vec3(0.38, 0.47, 0.61), horizon = uFogCol * 0.95;',
   '  vec3 c = mix(horizon, zenith, pow(h, 0.7));',
+  /* A sun twenty-one degrees up in December haze is a bright warm patch rather than a
+     disc, and it is the only thing that puts a direction in a sky which otherwise looks
+     the same whichever way the camera is turned. Two lobes: a wide one that warms half
+     the sky and a tight one for the sun itself. */
+  '  float d = length((vQ - uSunS.xy) * vec2(uSunS.z, 1.0));',
+  '  c += vec3(0.34, 0.23, 0.11) * exp(-d * d * 0.9);',
+  '  c += vec3(0.60, 0.44, 0.24) * exp(-d * d * 26.0);',
   '  c = aces(c * 0.92); c = pow(c, vec3(1.0 / 1.02));',
   '  gl_FragColor = vec4(c, 1.0);',
   '}'].join('\n');
@@ -8155,11 +8183,18 @@ function sunMatrix(v) {
      moves instead of crawling across every surface */
   var cx = v.x + v.w / 2, cy = v.y + v.h / 2;
   var rad = Math.min(1500, Math.ceil((Math.max(v.w, v.h) * .6 + 120) / 100) * 100);
-  var texel = 2 * rad / SHADOW.size;
   var cz = groundZ(clamp(cx, 0, WORLD.w), clamp(cy, 0, WORLD.h));
   var ex = cx + SUN.x * 2200, ey = cy + SUN.y * 2200, ez = cz + SUN.z * 2200;
   var view = m4lookAt(ex, ey, ez, cx, cy, cz);
-  var proj = m4ortho(-rad, rad, -rad, rad, 200, 4400);
+  /* The box was square in light space, which is right for a sun overhead and wasteful
+     for one near the horizon: a point d along the sun's bearing lands at d * sin(the
+     sun's elevation) up the light's vertical axis, so a square box covers 1/sin as much
+     ground that way as it does across, and spends the same texels on it. At twenty-one
+     degrees that is nearly three times the ground for the same resolution, which is a
+     shadow edge nearly three times as blocky in the one direction the long shadows
+     actually run. Fitted, plus headroom for the tallest thing that casts. */
+  var up = rad * SUN.z + 130;
+  var proj = m4ortho(-rad, rad, -up, up, 200, 4400);
   var vp = m4mul(proj, view);
   /* snap: measure where the world origin lands in light space and shift by the fraction */
   var o = m4apply(vp, 0, 0, 0);
@@ -9180,9 +9215,13 @@ function updateFog() {
   for (var e = 0; e < eyes.length; e++) {
     var ey = eyes[e];
     fogCircle(ey.x, ey.y, ey.r, function (k, q) {
-      /* full out to seven tenths of the reach and falling away over the last third, so
-         the edge of what a section can see is a soft one */
-      var v = 255 - Math.floor(70 * Math.max(0, q - .49) / .51);
+      /* Full out to three quarters of the reach and falling away over the last quarter
+         to exactly the 110 an explored cell carries, so the rim of what a section can
+         see runs into what the side remembers rather than stepping down to it. It fell
+         to 185 before and the last 75 went in one texel, which drew a hard line round
+         every unit on the map. */
+      var t = clamp((q - .56) / .44, 0, 1);   /* q is already the square of the radius */
+      var v = 255 - Math.floor(145 * t * t * (3 - 2 * t));
       if (v > fogBuf[k]) fogBuf[k] = v;
     });
   }
@@ -17404,10 +17443,24 @@ function render() {
   gl.useProgram(SKY.p);
   gl.uniform1f(SKY.u.uPitch, POV.on ? povSkyPitch() : CAM.pitch - .9);
   gl.uniform3f(SKY.u.uFogCol, .58, .60, .58);
+  /* the sun's own place on the screen: a point a long way off along SUN, put through the
+     same matrix as everything else, so it holds under the orbit camera and the periscope
+     alike. Behind the eye it is parked off the screen. */
+  var sunP = m4apply(MAT.vp, MAT.eye.x + SUN.x * 60000, MAT.eye.y + SUN.y * 60000, MAT.eye.z + SUN.z * 60000);
+  var sunX = 9, sunY = 9;
+  if (sunP.w > 0) { sunX = sunP.x / sunP.w; sunY = sunP.y / sunP.w; }
+  gl.uniform3f(SKY.u.uSunS, sunX, sunY, cv.width / cv.height);
   gl.bindBuffer(gl.ARRAY_BUFFER, QUAD);
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
   gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3); gl.disableVertexAttribArray(4);
+  /* The quad is wound the other way from everything else in the file and the world is
+     drawn front-face CW, so this draw was culled and had been for as long as there has
+     been a sky: what looked like one was gl.clearColor, a flat grey-green with no
+     gradient, no horizon and no time of day in it. It reads as a hazy sky, which is why
+     nothing ever said so. Culling off for the one draw that does not want it. */
+  gl.disable(gl.CULL_FACE);
   gl.depthMask(false); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); gl.depthMask(true);
+  gl.enable(gl.CULL_FACE);
   gl.useProgram(PROG.p);
   gl.uniformMatrix4fv(PROG.u.uMVP, false, MAT.vp);
   gl.uniform3f(PROG.u.uEye, MAT.eye.x, MAT.eye.y, MAT.eye.z);
