@@ -1017,6 +1017,17 @@ It reads as sharpness in a still and as a crawl the moment anything moves. A pat
 invalidates the chain under it and the editor paints patches, so it is regenerated there
 too.
 
+**A crater is three things and the paint had one of them.** There is the bowl, damp subsoil
+turned up out of a dry surface, which is darker and redder than anything round it. There is
+the lip, the same spoil thrown out and lying on top of what was there, which is the
+brightest thing on the crater because it has not weathered. And there is what went further,
+in rays, because a shell does not distribute its spoil evenly. What was painted was a soft
+dark wash out to twice the radius with twenty faint ellipses scattered over it, which at the
+distance a player looks from is a smudge. The rays go down first, the lip ring over them
+with its clods, and the bowl last and hardest-edged, because it is a hole rather than a
+stain. The shipped map has a crater field west of the town and the whole of it used to read
+as weather.
+
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The

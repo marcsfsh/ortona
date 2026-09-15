@@ -10694,19 +10694,55 @@ function paintGround(t, DET) {
       }
     });
   });
+  /* A shell crater is three things and the paint had one of them. There is the bowl,
+     which is damp subsoil turned up out of a dry surface and is darker and redder than
+     anything round it. There is the lip, which is that same subsoil thrown out and lying
+     on top of whatever was there, and it is the brightest thing on the crater because it
+     has not weathered. And there is what was thrown further, in rays, because a shell
+     does not distribute its spoil evenly. What was drawn was a soft dark wash out to
+     twice the radius with twenty faint ellipses scattered over it, which at the distance
+     a player actually looks from is a smudge on the ground. */
   G.craters.forEach(function (cr) {
-    var cg = t.createRadialGradient(cr.x, cr.y, cr.r * .2, cr.x, cr.y, cr.r * 2.2);
-    cg.addColorStop(0, 'rgba(42,34,24,.26)'); cg.addColorStop(.35, 'rgba(68,58,42,.16)'); cg.addColorStop(1, 'rgba(0,0,0,0)');
-    t.fillStyle = cg; t.beginPath(); t.arc(cr.x, cr.y, cr.r * 2.2, 0, TAU); t.fill();
-    for (var q = 0; q < 20; q++) {
-      var sa = noise2(q, 3, Math.floor(cr.x)) * TAU, sd = cr.r * (1.05 + noise2(q, 5, Math.floor(cr.y)) * 1.0);
-      t.globalAlpha = .14 + noise2(q, 7, Math.floor(cr.x + cr.y)) * .18;
-      t.fillStyle = '#75684c';
+    var R = cr.r, sx = Math.floor(cr.x), sy = Math.floor(cr.y), q, a, d;
+    /* the rays first, so the lip lies on top of them */
+    for (q = 0; q < 26; q++) {
+      a = (q / 26 + noise2(q, 11, sx) * .05) * TAU;
+      d = R * (1.15 + noise2(q, 5, sy) * 1.35);
+      var rg = t.createLinearGradient(cr.x + Math.cos(a) * R * .9, cr.y + Math.sin(a) * R * .9,
+                                      cr.x + Math.cos(a) * d, cr.y + Math.sin(a) * d);
+      rg.addColorStop(0, 'rgba(120,102,72,' + (.30 + noise2(q, 7, sx + sy) * .22).toFixed(2) + ')');
+      rg.addColorStop(1, 'rgba(120,102,72,0)');
+      t.strokeStyle = rg;
+      t.lineWidth = R * (.10 + noise2(q, 13, sy) * .12);
       t.beginPath();
-      t.ellipse(cr.x + Math.cos(sa) * sd, cr.y + Math.sin(sa) * sd, cr.r * .32, cr.r * .13, sa, 0, TAU);
+      t.moveTo(cr.x + Math.cos(a) * R * .9, cr.y + Math.sin(a) * R * .9);
+      t.lineTo(cr.x + Math.cos(a) * d, cr.y + Math.sin(a) * d);
+      t.stroke();
+    }
+    /* the lip: a ring of fresh spoil sitting proud of the surface */
+    var lg = t.createRadialGradient(cr.x, cr.y, R * .86, cr.x, cr.y, R * 1.34);
+    lg.addColorStop(0, 'rgba(126,108,76,0)');
+    lg.addColorStop(.3, 'rgba(138,119,84,.52)');
+    lg.addColorStop(1, 'rgba(126,108,76,0)');
+    t.fillStyle = lg; t.beginPath(); t.arc(cr.x, cr.y, R * 1.34, 0, TAU); t.fill();
+    /* and the clods lying along it */
+    for (q = 0; q < 30; q++) {
+      a = noise2(q, 3, sx) * TAU; d = R * (.92 + noise2(q, 17, sy) * .38);
+      t.globalAlpha = .22 + noise2(q, 7, sx + sy) * .3;
+      t.fillStyle = noise2(q, 23, sx) > .55 ? '#8d7a56' : '#5d4c34';
+      t.beginPath();
+      t.ellipse(cr.x + Math.cos(a) * d, cr.y + Math.sin(a) * d,
+                R * (.05 + noise2(q, 29, sy) * .07), R * (.03 + noise2(q, 31, sx) * .04), a, 0, TAU);
       t.fill();
     }
     t.globalAlpha = 1;
+    /* the bowl, last and hardest-edged, because it is a hole and not a stain */
+    var bg = t.createRadialGradient(cr.x, cr.y, 0, cr.x, cr.y, R * 1.02);
+    bg.addColorStop(0, 'rgba(52,39,26,.66)');
+    bg.addColorStop(.58, 'rgba(64,49,33,.56)');
+    bg.addColorStop(.88, 'rgba(86,68,46,.32)');
+    bg.addColorStop(1, 'rgba(86,68,46,0)');
+    t.fillStyle = bg; t.beginPath(); t.arc(cr.x, cr.y, R * 1.02, 0, TAU); t.fill();
   });
   t.restore();
 
