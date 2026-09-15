@@ -5590,7 +5590,6 @@ function aiCallTend(W) {
     if (!by || by.dead || by.retreat) { aiFire('call.gone'); continue; }
     var th = c.tid ? W.byId[c.tid] : null;
     if (c.tid && (!th || th.dead)) { aiFire('call.done'); continue; }
-    if (G.t - c.t > 30) { aiFire('call.lapsed'); continue; }
     c.x = by.x; c.y = by.y;
     if (th) { c.tx = th.x; c.ty = th.y; }
     /* who is still coming, and how far off the nearest of them is */
@@ -5612,6 +5611,12 @@ function aiCallTend(W) {
        actually got there never reaches the branch and the branch could only ever count
        the ones still on their way. */
     if (nd < 340) aiFire('answer.here');
+    /* Half a minute is how long a call nobody came to is worth keeping. A call whose
+       answer has arrived is a different thing: the fight it asked for is happening, and
+       timing it out in the middle of one un-deals the tank that is in it. Twelve of
+       thirty-four lapsed that way in a five-minute battle with an answerer in contact. */
+    if (nd < 340) c.t = G.t;
+    if (G.t - c.t > 30) { aiFire('call.lapsed'); continue; }
     out.push(c);
   }
   Q.list = out;

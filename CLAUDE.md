@@ -894,6 +894,30 @@ and watching. And a tank backing away from a launcher asks for men: opening the 
 time and nothing else, and that rule is the one place that knows it has no section walking
 beside it.
 
+Measured with `tools/brain.mjs --base=642882e` over a five-minute battle with a brain on
+both sides. **The duck rule fired once in the whole battle at the last commit and
+thirty-seven times now**, which is the real finding: the reaction to being shot at in the
+open was written, gated, counted and for practical purposes absent, and nothing said so
+until the weighing put it up against an alternative. `stand` is chosen on about four unit-
+ticks in ten and did not exist. Sections are routed to somebody else's trouble on nine per
+cent of unit-ticks, a call is answered within five to seven seconds of being raised, and an
+answerer is in contact with what it was sent at for eighty to ninety unit-ticks a battle.
+A thinking tick costs about 0.6 to 0.7 ms against 0.5 before, which is what reading the
+whole situation for every unit on every tick costs.
+
+How the calls end is the part still worth work. Of thirty-four raised in a battle, half
+ended because the caller was dead or retreating before the answer did anything, twelve
+lapsed and two ended with the tank dead. That is partly the nature of infantry meeting
+armour and partly that the answer arrives late: a call is answered in five seconds and the
+answerer is a tank's drive away from the trouble. What was fixed off that number is the
+lapse -- a call whose answerer is in contact is not stale, the fight it asked for is
+happening, and timing it out in the middle of one un-deals the tank that is in it.
+
+Read those as orders of magnitude and nothing finer. Two runs of *identical* code came back
+with thirty-four calls raised and thirteen, `stand` on 36.4 per cent of unit-ticks and 44.0,
+and a tick at 0.71 ms and 0.59. A battle here compounds, and what a brain meets depends on
+what it met ten seconds earlier.
+
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
