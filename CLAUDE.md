@@ -1057,6 +1057,27 @@ the same battle run against a revision identical to the working file -- puts its
 0.3 apart, so the remaining point and a half is probably real and is not established. If
 you are comparing against 98.8 and wondering, that is what is known about it.
 
+**An operation is paid for in ground, and the first version could not afford it.** This is
+the one thing on this page the tactics card was able to see. Against the commit before the
+pass: -470 with a standard error of 154 over eight pairs, the tool's own line saying it
+cleared twice that, and the working brain ahead in one of eight same-side comparisons --
+with the control on identical code clean at +110 over the same eight pairs, so the tool was
+not lying. Isolated to the operations commit alone it was -463 with a standard error of
+146, which is the whole of it: the beaten zone costs nothing.
+
+The per-side table said why. Ground held roughly halved (4.1 sectors against 8.8), the
+sections more scattered (clump 168 against 161 on the other side of the map, and 211
+against 147 on the run before) and the army pushing less far. That is the shape of an army
+with a third of itself committed to things that capture nothing, because only the main
+effort and `hold` take ground at all and this map pays by the second for ground held.
+
+Two things were cut. The share is two units out of an army of eight or more rather than a
+third of the fighting strength. And **an operation is manned out of what cannot capture
+anyway**: `aiOpsMan` prefers armour by a long margin, because a vehicle that cannot carry
+men cannot take a sector however long it stands on one, so a task force built out of the
+screen costs the capture allocation nothing, while a section taken off the dealing is a
+flag nobody is standing on.
+
 **Order the planning by urgency, because room is the scarce thing.** There is room for
 another operation on fewer than half the ticks -- four kinds wanting seven slots out of the
 third of the army they are allowed between them -- so whichever is considered first wins.

@@ -5916,11 +5916,19 @@ function aiOpsReview(W) {
    an army running five operations is an army running none. */
 function aiOpsPlan(W, objs, skill) {
   var side = W.side, i, n = W.fighters.length;
-  if (skill < 1 || n < 5) return;
+  if (skill < 1 || n < 8) return;
   var Q = aiOpsOf(side);
   var spare = 0;
   for (i = 0; i < Q.list.length; i++) if (!Q.list[i].main) spare += Q.list[i].want;
-  var room = Math.floor(n / 3) - spare;
+  /* Two units, and only out of an army that has eight. The first version allowed a third
+     of the fighting strength and it cost 463 points a pair against the commit before it
+     over eight mirror pairs, with the tool's control on identical code clean at the same
+     time: ground held roughly halved on both sides, the sections more scattered and the
+     army pushing less far, which is exactly the shape of an army with a third of itself
+     committed to things that capture nothing. Only the main effort and `hold` take ground
+     at all, and an operation has to be worth more than the flag the section it took would
+     otherwise be standing on. */
+  var room = Math.min(2, Math.floor(n / 6)) - spare;
   if (room < 1) return;
 
   /* The order below is the order they are considered in, and it is the order of how much
@@ -5965,8 +5973,11 @@ function aiOpsPlan(W, objs, skill) {
             penChance(penAt(wf, Math.min(dist(f, best), wf.range * .8)),
                       armourAt(best, f.x, f.y)) > .2) canKill++;
       }
-      if (canKill >= 2)
-        { aiOpAdd(side, 'destroy', { tid: best.id, x: best.x, y: best.y, want: 2, pri: bs }); room -= 2; }
+      /* two against armour, because one tank against a tank is a duel it may lose; one
+         against anything else, because a gun team is two men and a section is enough */
+      var dWant = best.cat === 'veh' ? 2 : 1;
+      if (canKill >= 2 && dWant <= room)
+        { aiOpAdd(side, 'destroy', { tid: best.id, x: best.x, y: best.y, want: dWant, pri: bs }); room -= dWant; }
     }
   }
 
@@ -5982,7 +5993,7 @@ function aiOpsPlan(W, objs, skill) {
       if (hsc > hbs) { hbs = hsc; hb = R; }
     }
     if (hb && hbs > 260)
-      { aiOpAdd(side, 'hold', { sec: hb.id, x: hb.s.x, y: hb.s.y, want: 2, pri: hbs }); room -= 2; }
+      { aiOpAdd(side, 'hold', { sec: hb.id, x: hb.s.x, y: hb.s.y, want: 1, pri: hbs }); room--; }
   }
 
   /* ---- probe. The ground nobody has looked at, nearest first. It is worth one cheap
@@ -6013,7 +6024,10 @@ function aiOpsPlan(W, objs, skill) {
      because a demonstration after the real attack has gone in is two attacks and no
      surprise. It goes at a sector well away from the main effort, on ground the enemy
      holds, and it is meant to be seen. */
-  if (room > 1 && skill >= 2 && !aiOpKind(side, 'feint')) {
+  /* and a demonstration is what an army with men to spare does. Out of twelve it is one
+     section that is not taking a flag; out of eight it is the difference between having a
+     wave and not. */
+  if (room > 0 && n >= 12 && skill >= 2 && !aiOpKind(side, 'feint')) {
     var mainOp = null;
     for (i = 0; i < Q.list.length; i++) if (Q.list[i].main) mainOp = Q.list[i];
     if (mainOp && mainOp.state === 'form' && G.t - mainOp.tForm < 30) {
@@ -6027,7 +6041,7 @@ function aiOpsPlan(W, objs, skill) {
         var fsc = away * .3 + objs[i].th * .2;
         if (fsc > fbs) { fbs = fsc; fb = fs; }
       }
-      if (fb) aiOpAdd(side, 'feint', { sec: fb.id, x: fb.x, y: fb.y, want: 2, pri: 100 });
+      if (fb) aiOpAdd(side, 'feint', { sec: fb.id, x: fb.x, y: fb.y, want: 1, pri: 100 });
     }
   }
 }
@@ -6062,6 +6076,12 @@ function aiOpsMan(W) {
         /* a probe wants the cheapest thing that can get there and come back; everything
            else wants whatever is nearest to the aim */
         var d = dsq(f.x, f.y, o.x, o.y);
+        /* Armour first, and by a long way. A vehicle that cannot carry men cannot capture
+           a sector however long it stands on one, so an operation manned out of the screen
+           costs the capture allocation nothing at all; a section taken off the dealing is a
+           flag nobody is standing on. This is the difference between an operation that
+           pays for itself and one that pays for itself with ground. */
+        if (!(f.cat === 'veh' && !f.def.caps)) d += 900 * 900;
         if (o.kind === 'probe') d += aiValue(f) * 900;
         if (o.kind === 'destroy' && f.cat !== 'veh' && !f.def.at) d += 700 * 700;
         if (d < pd) { pd = d; pick = f; }
