@@ -50,6 +50,7 @@ node tools/move.mjs          # movement: routes, traffic, and whether cover is t
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
 node tools/sight.mjs         # sight: the trace, what a position commands, how long spotting takes
 node tools/model.mjs         # the models: the occlusion bake against shapes with known answers
+node tools/terrain.mjs       # the ground: what grain is on it, at what distance, and what crawls
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -380,6 +381,53 @@ and a half, and every vehicle built costs about 580 ms against 210 before.
 **SIZE** is faces and vertices per vehicle, because `aoSplit` cuts the big plates and a
 detail pass that quietly trebles the roster is a detail pass that does not run. It is
 152,000 faces over twelve vehicles and the split adds about a hundred of them.
+
+### `tools/terrain.mjs` - the ground, mechanically
+
+A photograph of ground is the one thing that looks fine whatever is wrong with it. Soft
+and airbrushed reads as haze. Aliased reads as detail until the camera moves. Detail at
+one fixed scale reads as noise up close and as a flat wash at range, and every one of
+those is a picture somebody would call acceptable. So the ground is read off the
+framebuffer: the camera is pointed straight down at a patch of open ground, the frame is
+rendered, and what is actually there is measured.
+
+```sh
+node tools/terrain.mjs                 # the card
+node tools/terrain.mjs grain           # one section of it
+node tools/terrain.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**GRAIN** is the root-mean-square contrast of the ground at four spatial scales, at three
+camera distances, and the column that matters is `fine`: the contrast living above the
+eight-pixel scale, which is the difference of the squares because variance adds. Whole-
+patch contrast is dominated by the painted macro drift and moves by a point or two
+whatever the grain does -- the ground before this pass read 52.2 per cent at full
+resolution and 49.1 boxed down by eight, which is a picture with nothing on it finer than
+eight pixels at any distance. The rows are not comparable to each other, because the patch
+is a fixed number of pixels and so covers more world the further back the camera is. They
+are comparable across files, which is what `--base` is for.
+
+**SHIMMER** is the level-of-detail measurement and it is the reason the card exists rather
+than a screenshot. The camera is moved a third of a pixel and the same patch read again:
+what changes is detail that was never filtered down to the pixel it lands in. It is
+reported twice, with the props in and with them taken out, because a rubble pile a pixel
+across aliases however well the ground is filtered and that is not the ground's fault --
+measured, the props are very nearly half the shimmer at twelve hundred units, and without
+splitting them no change to the terrain can be read at all.
+
+Read shimmer against `fine` rather than on its own. Grain you can see at two hundred units
+is grain that moves when the camera moves, and that is detail rather than aliasing; the
+indictment is a large shimmer with a small `fine` beside it.
+
+**PAINT** is what the albedo canvas carries before any of the shader's detail goes on top,
+and what its filter is. **COST** is ground triangles and what the textures weigh.
+
+Two things about writing a drill for it. **`CAM.tx`/`CAM.ty` is what the camera looks at;
+`CAM.x`/`CAM.y` is not the camera at all**, and setting the wrong pair moved nothing: every
+distance read the same patch of whatever the game had left on screen and the shimmer column
+came back at a clean nought three times over, which reads as a perfectly filtered ground.
+And the patch of ground has to be clear for two hundred units every way, because the widest
+read is that across and a roof in the corner of it is not the ground.
 
 ### `tools/skirmish.mjs` - tactics, mechanically
 
@@ -933,6 +981,41 @@ angles to the house, half of them inside it. And `chooseCover` now scores a piec
 `coverValue` itself, rather than its own near-copy that let trenches off the enfilade
 penalty: a section would settle contentedly into a trench being raked from the end, which
 is the worst place on the map to be, and never look again.
+
+**The ground had no surface.** Detail on the earth came out of a tile of the atlas at one
+fixed scale, applied as a multiply about one: a faint ripple in brightness with no colour
+in it. Measured, the contrast of the ground fell three points between full resolution and
+the same picture boxed down by eight, which means there was nothing on it finer than eight
+pixels at any distance -- a hundred and fifty units of dry earth reading as an airbrushed
+sheet.
+
+It has a texture of its own now (`buildGrit`, `TEX.grit`), and the reason it is not another
+atlas tile is worth knowing: **`tile()` wraps with a `fract()`, and a `fract()` in a
+fragment shader breaks the screen-space derivative the hardware chooses a mip level from**,
+so every repeat of the pattern carries a seam of the coarsest mip along it. At the strength
+the old detail was applied nobody could see the seams because nobody could see the detail
+either; at a strength that makes earth read as earth, the ground comes out ruled into
+squares. A texture wrapped `GL_REPEAT` has nothing to fract and no seam to have. Its noise
+tiles because every octave's lattice wraps on its own period.
+
+Three channels carry three sizes of thing, so two fetches give four scales: `r` is grit,
+`g` is clods, `b` is the slow drift of a field. **The fine ones are faded by distance and
+that fade is the level of detail**: below a pixel, grain is not detail, it is shimmer.
+The weighting is deliberately toward the fine end, because the painted map already carries
+the macro drift, the slope materials and the hollows, and a second lot of thirty-unit
+blotches on top of it reads as camouflage rather than as ground.
+
+The grain carries a normal as well, which at twenty-one degrees of sun is most of what
+makes ground read as a surface rather than as a photograph of one: every clod throws its
+own small shadow away from the light. Two more fetches, faded out with the same distance
+the grain is, and behind `#define BUMP` so a phone does not pay for them.
+
+**And the albedo had no mip chain.** Two thousand eight hundred by nineteen hundred, one
+world unit a texel, `LINEAR` with nothing under it: at any camera further off than a street
+the ground is minified several to one and every frame samples a different set of texels.
+It reads as sharpness in a still and as a crawl the moment anything moves. A patch upload
+invalidates the chain under it and the editor paints patches, so it is regenerated there
+too.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
@@ -1988,6 +2071,7 @@ tools/move.mjs                 movement card: routes, battle traffic, cover take
 tools/brain.mjs                the AI card: sight, plan, and which rules ever fire
 tools/sight.mjs                sight card: the trace, what a position commands, spotting time
 tools/model.mjs                model card: the occlusion bake, its cost, and what is in each vehicle
+tools/terrain.mjs              ground card: grain by scale and distance, and what shimmers
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI

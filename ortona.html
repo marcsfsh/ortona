@@ -7997,6 +7997,7 @@ var FSH = [
   'varying vec3 vCol; varying vec3 vNrm; varying vec3 vWpos; varying vec2 vUV; varying float vMat; varying vec2 vSpec;',
   'varying vec4 vSunPos; varying float vDist;',
   'uniform sampler2D uAlbedo; uniform sampler2D uFog; uniform sampler2D uDecal; uniform sampler2D uShadow; uniform sampler2D uAtlas;',
+  'uniform sampler2D uGrit;',
   'uniform vec4 uLPos[NLIGHTS]; uniform vec3 uLCol[NLIGHTS];',
   'uniform float uUseTex; uniform vec2 uWorldSize; uniform vec3 uFogCol; uniform vec2 uFogRange;',
   'uniform float uSeaT; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest; uniform float uInside;',
@@ -8022,9 +8023,40 @@ var FSH = [
      steep slopes where the paint would smear */
   '    base *= texture2D(uAlbedo, uvw).rgb * 1.12;',
   '    base *= texture2D(uDecal, uvw).rgb;',
-  '    vec3 d1 = tile(9.0, vWpos.xy * 0.045).rgb * 2.0;',
-  '    vec3 d2 = tile(9.0, vWpos.xy * 0.011 + 0.37).rgb * 2.0;',
-  '    base *= mix(1.0, d1.r * d2.r * 1.02, 0.9);',
+  /* Four scales of ground out of two fetches, and the fine ones faded by distance.
+     That fade is the level of detail: below a pixel, grain is not detail, it is
+     shimmer, and the whole of what a still photograph cannot tell you about ground is
+     what it does when the camera moves a third of a pixel. The old detail was one
+     scale, applied as a multiply about one, which is a ripple in brightness with no
+     colour in it -- measured, the contrast of the ground fell three points between full
+     resolution and the same picture boxed down by eight, meaning there was nothing on
+     it finer than eight pixels at any distance. */
+  '    vec3 ga = texture2D(uGrit, vWpos.xy * 0.0833).rgb;',
+  '    vec3 gb = texture2D(uGrit, vWpos.xy * 0.0125 + 0.37).rgb;',
+  '    float nearD = clamp(1.0 - vDist / 620.0, 0.0, 1.0);',
+  '    float midD = clamp(1.0 - vDist / 1900.0, 0.0, 1.0);',
+  /* weighted toward the fine end on purpose: the painted map already carries the macro
+     drift, the slope materials and the hollows, and a second lot of thirty-unit blotches
+     on top of it reads as camouflage rather than as ground */
+  '    float grit = (ga.r - 0.5) * 1.75 * nearD + (ga.g - 0.5) * 1.00 * midD',
+  '              + (gb.g - 0.5) * 0.40 + (gb.b - 0.5) * 0.26;',
+  '    base *= 1.0 + grit * 0.80;',
+  /* and the colour goes with it, because damp earth down in the grain and dry dust on
+     the crowns of it is a hue and not a brightness */
+  '    base = mix(base * vec3(0.90, 0.91, 0.95), base * vec3(1.07, 1.01, 0.90),',
+  '               clamp(grit * 2.2 + 0.5, 0.0, 1.0));',
+  /* and the grain gets a normal, which at twenty-one degrees of sun is most of what
+     makes ground read as a surface rather than as a photograph of one: every clod
+     throws its own small shadow up the slope away from the light. Two more fetches,
+     faded out with the same distance the grain is, because a normal perturbation below
+     the pixel is the purest form of shimmer there is. */
+  '#if BUMP',
+  '    if (nearD > 0.02) {',
+  '      float gu = texture2D(uGrit, vWpos.xy * 0.0833 + vec2(0.0039, 0.0)).r;',
+  '      float gv = texture2D(uGrit, vWpos.xy * 0.0833 + vec2(0.0, 0.0039)).r;',
+  '      n = normalize(n + vec3(ga.r - gu, ga.r - gv, 0.0) * 3.4 * nearD);',
+  '    }',
+  '#endif',
   '    float steep = clamp((0.82 - n.z) * 4.0, 0.0, 1.0);',
   '    vec3 bare = vec3(0.42, 0.36, 0.26) * tile(8.0, vWpos.xz * 0.05 + vWpos.yz * 0.05).rgb * 2.0;',
   '    base = mix(base, bare, steep * 0.75);',
@@ -8225,7 +8257,7 @@ function initGL() {
     BILL = compileProgram(VSB, FSB, ['aQuad']);
     SKY = compileProgram(VSK, FSK, ['aQuad']);
     DEPTHP = compileProgram(VSD, FSD, ['aPos']);
-    registerMaterials(); buildAtlas();
+    registerMaterials(); buildAtlas(); buildGrit();
     if (SHADOWS) initShadowMap();
     gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);
     gl.clearColor(.52, .55, .52, 1);
@@ -8459,6 +8491,69 @@ function fbm(x, y, s, oct) {
     a *= .5; f *= 2;
   }
   return v;
+}
+/* ---- the ground's own grain -------------------------------------------------------
+   The detail on the earth came out of a tile of the atlas, and `tile()` wraps with a
+   `fract()`. A `fract()` in a fragment shader breaks the screen-space derivative the
+   hardware chooses a mip level from, so every repeat of the pattern carries a seam of
+   the coarsest mip along it. At the strength the old detail was applied -- a multiply
+   about one, a faint ripple in brightness with no colour in it -- nobody could see the
+   seams because nobody could see the detail either. At a strength that makes a hundred
+   and fifty units of dry earth read as earth, the ground comes out ruled into squares.
+
+   So the ground gets a texture of its own, wrapped with GL_REPEAT, where there is
+   nothing to fract and no seam to have. Three channels, three sizes of thing, so two
+   fetches carry four scales: `r` is grit, `g` is clods, `b` is the slow drift of a
+   field. The noise tiles because every octave's lattice wraps on its own period; one
+   that does not tile puts a hard join across the map every time the texture repeats,
+   which is the thing this was built to avoid. */
+function tileNoise(x, y, seed, oct, per) {
+  var v = 0, a = .5, f = 1, o, P, ix, iy, fx, fy, i0, i1, j0, j1;
+  function wrap(i, m) { return ((i % m) + m) % m; }
+  for (o = 0; o < oct; o++) {
+    P = per * f;
+    ix = Math.floor(x * f * per); iy = Math.floor(y * f * per);
+    fx = x * f * per - ix; fy = y * f * per - iy;
+    fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+    i0 = wrap(ix, P); i1 = wrap(ix + 1, P); j0 = wrap(iy, P); j1 = wrap(iy + 1, P);
+    var a00 = noise2(i0, j0, seed + o), a10 = noise2(i1, j0, seed + o);
+    var a01 = noise2(i0, j1, seed + o), a11 = noise2(i1, j1, seed + o);
+    v += a * ((a00 * (1 - fx) + a10 * fx) * (1 - fy) + (a01 * (1 - fx) + a11 * fx) * fy);
+    a *= .5; f *= 2;
+  }
+  return v;
+}
+function buildGrit() {
+  var T = 256, c = document.createElement('canvas');
+  c.width = T; c.height = T;
+  var g = c.getContext('2d'), img = g.createImageData(T, T), d = img.data, x, y, u, v, i;
+  for (y = 0; y < T; y++) for (x = 0; x < T; x++) {
+    u = x / T; v = y / T; i = (y * T + x) * 4;
+    /* grit: the smallest thing on the ground, a stone or a clod of the size of a fist */
+    var r = tileNoise(u, v, 41, 3, 16);
+    /* clods: what a boot turns over, and what a shell throws about */
+    var gg = tileNoise(u, v, 57, 3, 6);
+    /* and the slow drift of a field, which is the one that survives to any distance */
+    var b = tileNoise(u, v, 73, 2, 3);
+    /* pushed off the middle a little, because ground is not symmetrical about its mean:
+       there are more small stones than there are hollows */
+    r = r * r * (3 - 2 * r);
+    d[i] = clamp(r * 255, 0, 255);
+    d[i + 1] = clamp(gg * 255, 0, 255);
+    d[i + 2] = clamp(b * 255, 0, 255);
+    d[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  TEX.grit = gl.createTexture();
+  gl.activeTexture(gl.TEXTURE5);
+  gl.bindTexture(gl.TEXTURE_2D, TEX.grit);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+  gl.generateMipmap(gl.TEXTURE_2D);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+  gl.activeTexture(gl.TEXTURE0);
 }
 function buildAtlas() {
   var T = MATS.TILE, C = MATS.COLS, N = MATS.names.length, rows = Math.ceil(N / C);
@@ -9003,7 +9098,7 @@ function makeTexture(w, h, linear) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, linear ? gl.LINEAR : gl.NEAREST);
   return t;   /* left bound on unit 6; callers upload, then restore unit 0 */
 }
-var TEX = { albedo: null, fog: null, decal: null };
+var TEX = { albedo: null, fog: null, decal: null, grit: null };
 var SCENE = { ground: [], tiles: [], grass: null, ready: false };
 /* ---- the props are built in tiles, a static one for what the ground itself grows
    (outcrop, boulders, pavements, flag poles) and a grid of twelve for everything placed,
@@ -9128,10 +9223,18 @@ function buildAlbedo(rect) {
     sc.getContext('2d').drawImage(c, x0, y0, sc.width, sc.height, 0, 0, sc.width, sc.height);
     gl.activeTexture(gl.TEXTURE6); gl.bindTexture(gl.TEXTURE_2D, TEX.albedo);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, x0, y0, gl.RGB, gl.UNSIGNED_BYTE, sc);
+    /* a patch invalidates the chain under it, and the editor paints patches */
+    if (GL2) gl.generateMipmap(gl.TEXTURE_2D);
   } else {
     if (TEX.albedo) gl.deleteTexture(TEX.albedo);
     TEX.albedo = makeTexture(c.width, c.height, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, c);
+    /* Two thousand eight hundred by nineteen hundred with no mip chain, which is one
+       world unit a texel: at any camera further off than a street the ground is
+       minified several to one and every frame samples a different set of texels. It
+       reads as sharpness in a still and as a crawling shimmer the moment anything
+       moves, and it is most of the far-distance shimmer on its own. */
+    if (GL2) { gl.generateMipmap(gl.TEXTURE_2D); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR); }
     /* the minimap wants the same picture */
     mbase = c;
   }
@@ -17942,6 +18045,7 @@ function render() {
   gl.uniform1f(PROG.u.uAlphaTest, 0);
   gl.uniform1f(PROG.u.uAtlasCols, MATS.COLS); gl.uniform1f(PROG.u.uAtlasRows, Math.ceil(MATS.names.length / MATS.COLS));
   gl.activeTexture(gl.TEXTURE4); gl.bindTexture(gl.TEXTURE_2D, MATS.tex); gl.uniform1i(PROG.u.uAtlas, 4);
+  gl.activeTexture(gl.TEXTURE5); gl.bindTexture(gl.TEXTURE_2D, TEX.grit); gl.uniform1i(PROG.u.uGrit, 5);
   if (!_specTab) { _specTab = new Float32Array(48); for (var si = 0; si < MATS.spec.length; si++) { _specTab[si * 2] = MATS.spec[si][0]; _specTab[si * 2 + 1] = MATS.spec[si][1]; } }
   gl.uniform2fv(PROG.u['uSpecTab[0]'] || PROG.u.uSpecTab, _specTab);
   if (SHADOWS) {
