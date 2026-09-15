@@ -2453,34 +2453,56 @@ function onRoad(x, y) {
    the blocker grid, and the ground itself, which is why a crest gives dead ground behind
    it. The ends are skipped, because the parapet a man is standing behind is a foot from
    his face and would otherwise blind him. */
+/* Walk a line and ask whether anything stands in it. Two things can: something solid on
+   the blocker grid, and the ground itself, which is why a crest gives dead ground behind
+   it.
+
+   It walks the line CELL BY CELL rather than at a fixed number of samples, and that is
+   the whole of the difference. Sampled at `min(40, d/22)` steps the step size grew with
+   the line -- fifty units at two thousand, against a grid whose cells are twenty -- so
+   a long line could be stepped clean over a wall. The sight card put that at five per
+   cent of all lines and nine per cent of the four-hundred-to-nine-hundred band, which is
+   the band a town is fought at. A grid traversal visits every cell the line passes
+   through, exactly, so a blocker cannot be missed at any range and there is nothing to
+   calibrate; it also costs less than the old loop did at short range, because it does
+   not oversample.
+
+   The exemption at each end has to clear the CELL the cover is marked in and not the
+   cover itself. The grid quantises a six-unit dry-stone wall into a twenty-unit cell, so
+   a man standing nine units behind his own wall has twenty-nine units of marked cell in
+   front of his face; at twenty-two he was blinded by his own cover on forty-four per cent
+   of the wall cells on the shipped map. It is bounded by a third of the line as well, so
+   that two units almost in contact are not given a free line through masonry. */
 function traceClear(x0, y0, z0, x1, y1, z1, blk) {
   var dx = x1 - x0, dy = y1 - y0, d = Math.hypot(dx, dy);
   if (d < 30) return true;
-  var steps = Math.min(40, Math.max(3, Math.ceil(d / 22)));
-  /* The wall a man is standing behind is a yard from his face and the lip of his own
-     trench is a foot from it. Neither should blind him, so a blocker within a couple of
-     paces of either end does not count, and the height test skips the ground at both
-     ends. The exemption is a distance and not a cell: read off the cell it was whatever
-     the cell size happened to be, and it had been silently calibrated to a forty-unit
-     one -- a man nine units behind his own wall lost his line the moment the grid got
-     finer. */
-  var near = 22;
-  var skip = Math.min(.3, 30 / d);
-  for (var i = 1; i < steps; i++) {
-    var t = i / steps;
-    var px = x0 + dx * t, py = y0 + dy * t;
-    if (blk) {
-      var cx = (px / CELL) | 0, cy = (py / CELL) | 0;
+  var near = Math.min(CELL + 10, d * .34);
+  var skip = Math.min(.3, 30 / d) * d;                 /* the ground test, in units */
+  var nx = dx / d, ny = dy / d;
+  var cx = (x0 / CELL) | 0, cy = (y0 / CELL) | 0;
+  var ecx = (x1 / CELL) | 0, ecy = (y1 / CELL) | 0;
+  var sx = nx > 0 ? 1 : -1, sy = ny > 0 ? 1 : -1;
+  var ax = Math.abs(nx), ay = Math.abs(ny);
+  var dtx = ax > 1e-9 ? CELL / ax : 1e9, dty = ay > 1e-9 ? CELL / ay : 1e9;
+  var tx = ax > 1e-9 ? (nx > 0 ? (cx + 1) * CELL - x0 : x0 - cx * CELL) / ax : 1e9;
+  var ty = ay > 1e-9 ? (ny > 0 ? (cy + 1) * CELL - y0 : y0 - cy * CELL) / ay : 1e9;
+  var t = 0, guard = 0;
+  while (guard++ < 500) {
+    if (t > near && t < d - near) {
       if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
-      var n = cidx(cx, cy);
-      if (blk[n] && Math.min(t, 1 - t) * d > near) return false;
+      if (blk && blk[cidx(cx, cy)]) return false;
     }
-    if (t < skip || t > 1 - skip) continue;
-    /* A metre of tolerance. Without it the ordinary hummocking of the ground blocks
+    /* A metre of tolerance on the ground. Without it the ordinary hummocking blocks
        every sight line on the map, because the chord between two men standing on it
        passes below bumps a man plainly sees over. What is left blocking is what should:
        the wall of a vallone, the lip of the shelf, the crest of the spur. */
-    if (groundZ(px, py) > z0 + (z1 - z0) * t + 12) return false;
+    if (t > skip && t < d - skip) {
+      var px = x0 + nx * t, py = y0 + ny * t;
+      if (groundZ(px, py) > z0 + (z1 - z0) * (t / d) + 12) return false;
+    }
+    if (cx === ecx && cy === ecy) break;
+    if (tx < ty) { t = tx; tx += dtx; cx += sx; } else { t = ty; ty += dty; cy += sy; }
+    if (t >= d) break;
   }
   return true;
 }
@@ -3676,12 +3698,88 @@ var _expT = 0, _visT = 0;
 function exposure(e) {
   if (e.cat === 'veh') return e.moving ? 1.2 : 1.05;
   var cv = e.gar ? 4 : coverOf(e);
-  var x = [1, .93, .84, .72, .6][cv];
-  if (!e.moving) x *= .88;
-  if (!e.moving && e.stance === 'ground') x *= .78;    /* flat on the ground */
-  if (e.moving && e.stance === 'double') x *= 1.15;    /* running, upright, in a hurry */
-  if (e.fireT > 0 || e.sup > .3) x *= 1.3;           /* muzzle flash, and men who have been found */
-  return clamp(x, .45, 1.4);
+  var x = [1, .93, .84, .72, .6][cv] || .6;
+  /* Movement is the thing the eye is built to catch, and it was worth twelve per cent.
+     A man who stops moving is doing the single most effective thing available to him and
+     the card said it bought him thirteen per cent more time before he was found; a man
+     who also gets flat is halving what is showing. Both are worth a great deal more than
+     that, and with detection a rate rather than a ring they can be. */
+  if (!e.moving) x *= .72;
+  if (!e.moving && e.stance === 'ground') x *= .62;    /* flat on the ground */
+  if (e.moving && e.stance === 'double') x *= 1.25;    /* running, upright, in a hurry */
+  /* A section that has opened fire has given itself away, and at 1.3 against the 0.72 a
+     halted section gets the two very nearly cancelled: a firing section came out slightly
+     harder to find than one strolling across the open. */
+  if (e.fireT > 0 || e.sup > .3) x *= 1.55;           /* muzzle flash, and men who have been found */
+  /* The floor can go lower than it could when this shrank the reach, because a tenth of
+     the rate is a section that takes a long time to find and not a section nobody can
+     see: being hard to spot is a delay and never a wall. */
+  return clamp(x, .28, 1.45);
+}
+/* ---- being seen takes time ------------------------------------------------------
+   Detection was a yes or a no: in reach, with a clear line, and the thing was seen, on
+   the instant. So `exposure` -- the whole of what the game had to say about keeping
+   still, lying flat, holding fire or being in cover -- could only ever move the RANGE at
+   which that instant happened, and on the card it moved it by seven per cent between a
+   section standing still and one walking. A file that says this is what makes an ambush
+   an ambush was describing a seven per cent effect.
+
+   It is a rate now. A side works at picking a thing out and gets there in its own time,
+   and everything that ought to make a man hard to find slows that rate rather than
+   shortening a ring: how exposed he is, how far inside the reach he is, whether the eye
+   is even looking his way, and what is in the air between them. Two seconds in the open
+   at close range, ten or more for a section lying still in a ditch at the edge of the
+   reach with the eye pointed elsewhere, and nothing at all through a burning hull's
+   smoke. The numbers are `u.detUs` and `u.detGer`, and they are what `vUs`/`vGer` are
+   made of, with enough hysteresis that a man stepping behind a wall is not lost on the
+   frame he does it. */
+var DETUP = 1.15, DETDN = 2.2;
+function detStep(v, r, dt) {
+  v = v || 0;
+  if (r > 0) v += (r > 3 ? 3 : r) * dt / DETUP;
+  else v -= dt / DETDN;
+  return v < 0 ? 0 : v > 1.35 ? 1.35 : v;
+}
+/* A section sees best where it is looking. It is deliberately not a cone: men look
+   about, and a hard cone means a unit walks past an enemy forty units away because he
+   happens to be behind its shoulder. What it is worth is the difference between the
+   front and the back, which is what makes facing mean anything at all -- and the brain
+   already turns its halted men toward the threat it knows about (`u.threatAng`), so the
+   rule it has been following for nothing starts paying. */
+function lookGain(u, ang) {
+  if (!u || u.gar) return 1;                         /* men at the windows watch all round */
+  var f = u.cat === 'veh' && u.turret !== undefined ? u.turret : u.facing;
+  if (f === undefined) return 1;
+  var off = Math.abs(angDiff(f, ang));
+  var back = u.cat === 'veh' ? .72 : .55;            /* a commander's head turns */
+  var t = clamp((off - 1.05) / (Math.PI - 1.05), 0, 1);
+  return back + (1 - back) * (1 - t);
+}
+/* Smoke thick enough to look through is worth as much as a wall and does not work like
+   one: it slows a man down finding you rather than making it impossible, which is a thing
+   a rate can say and a yes-or-no line never could. A burning hull smokes hard for the
+   first half minute and thins out over the next minute and a half. */
+var _smoke = [];
+function smokeColumns() {
+  _smoke.length = 0;
+  for (var i = 0; i < G.wrecks.length; i++) {
+    var w = G.wrecks[i];
+    if (w.t > 120) continue;
+    var k = w.t < 30 ? 1 : clamp(1 - (w.t - 30) / 90, 0, 1);
+    _smoke.push({ x: w.x, y: w.y, r: 52, k: k * .8 });
+  }
+}
+function smokeOn(x0, y0, x1, y1) {
+  if (!_smoke.length) return 1;
+  var f = 1, dx = x1 - x0, dy = y1 - y0, L2 = dx * dx + dy * dy;
+  for (var i = 0; i < _smoke.length; i++) {
+    var sm = _smoke[i];
+    var t = L2 > 0 ? clamp(((sm.x - x0) * dx + (sm.y - y0) * dy) / L2, 0, 1) : 0;
+    var px = x0 + dx * t - sm.x, py = y0 + dy * t - sm.y;
+    var q = Math.hypot(px, py) / sm.r;
+    if (q < 1) f *= 1 - sm.k * (1 - q * q);
+  }
+  return f;
 }
 function computeVisibility(dt) {
   /* Vision does not need to be recomputed sixty times a second, and the sight lines
@@ -3692,6 +3790,7 @@ function computeVisibility(dt) {
   }
   _visT = .1;
   _eyes.us.length = 0; _eyes.ger.length = 0;
+  smokeColumns();
   var i, j, k;
   for (i = 0; i < G.units.length; i++) {
     var u = G.units[i];
@@ -3701,33 +3800,65 @@ function computeVisibility(dt) {
     var uz = groundZ(u.x, u.y);
     var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
             (u.stance === 'ground' && !u.moving ? .85 : 1);
-    _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz });
+    _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz, u: u });
   }
   for (j = 0; j < G.blds.length; j++) {
     var b = G.blds[j];
-    if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, z: groundZ(b.x, b.y) + 40, r: 400, ez: 0 });
+    /* A company post is not a watchtower, and a building still going up is a pile of
+       stores with a man on it: what it watches is its own ground. */
+    if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, z: groundZ(b.x, b.y) + 40,
+                                      r: (b.def && b.def.hq ? 400 : 300) * (b.built >= 1 ? 1 : .55),
+                                      ez: 0, u: null });
   }
-  function seen(list, e, ex) {
+  /* How fast this side is picking that thing out, taking the best of its eyes. Nought
+     means no eye has it at all. The trace is the expensive part, so an eye that cannot
+     beat the best rate found so far is not traced for, and the walk stops once the rate
+     is high enough that no eye could improve on it. */
+  function rate(list, e, ex) {
+    var best = 0, ez = groundZ(e.x, e.y);
     for (k = 0; k < list.length; k++) {
       var ey = list[k], d2 = dsq(ey.x, ey.y, e.x, e.y);
-      /* height gives a little reach; the crest test below takes away far more */
-      var rr = ey.r * ex * (1 + clamp((ey.z - groundZ(e.x, e.y)) / 900, -.12, .18));
+      /* How far the eye reaches is about the eye: height gives it a little, the crest
+         test below takes away far more, and how hard the target is to pick out has
+         nothing to do with it. Exposure used to shrink this ring, which did the same job
+         the rate's own falloff does and did it worse: a section lying flat in a crater
+         came out with a hard ring at forty-five per cent of the reach and was literally
+         invisible a unit outside it, rather than slow to find. It multiplies the rate
+         now, which is what it always meant. */
+      var rr = ey.r * (1 + clamp((ey.z - ez) / 900, -.12, .18));
+      /* A loud target is picked up beyond the reach a quiet one would be: a muzzle flash
+         at nine hundred yards is a muzzle flash. Only ever a bonus, because exposure
+         shortening the ring is the thing that was just taken out of it -- a man who is
+         hard to see is slow to find and not invisible at three hundred and one units. */
+      if (ex > 1) rr *= 1 + clamp(ex - 1, 0, .45) * .8;
       if (d2 > rr * rr) continue;
-      if (d2 < 110 * 110) return true;               /* at this range he is simply there */
-      if (sightLine(ey, e)) return true;
+      if (d2 < 110 * 110) return 3;                  /* at this range he is simply there */
+      var g = lookGain(ey.u, Math.atan2(e.y - ey.y, e.x - ey.x));
+      var q = Math.sqrt(d2) / rr;
+      var r0 = (1 - q * q) * g * ex;
+      if (r0 <= best) continue;
+      if (!sightLine(ey, e)) continue;
+      r0 *= smokeOn(ey.x, ey.y, e.x, e.y);
+      if (r0 > best) best = r0;
+      if (best > .92) break;
     }
-    return false;
+    return best;
   }
+  function seen(list, e, ex) { return rate(list, e, ex) > 0; }
   for (var a = 0; a < G.units.length; a++) {
     var uu = G.units[a];
     if (uu.dead) continue;
     var ex2 = uu.inside ? 0 : exposure(uu);
-    if (!uu.inside && seen(_eyes.us, uu, ex2)) uu.seenUs = G.t + .9;
-    if (!uu.inside && seen(_eyes.ger, uu, ex2)) uu.seenGer = G.t + .9;
-    /* Sight is not lost the instant a man steps behind a wall: what the other side has
-       is a last known position, and it is worth about a second. */
-    uu.vUs = uu.side === 'us' || G.t < (uu.seenUs || -1);
-    uu.vGer = uu.side === 'ger' || G.t < (uu.seenGer || -1);
+    var ru = uu.inside ? 0 : rate(_eyes.us, uu, ex2);
+    var rg = uu.inside ? 0 : rate(_eyes.ger, uu, ex2);
+    uu.detUs = detStep(uu.detUs, ru, .1);
+    uu.detGer = detStep(uu.detGer, rg, .1);
+    if (uu.detUs >= 1) uu.seenUs = G.t;
+    if (uu.detGer >= 1) uu.seenGer = G.t;
+    /* Found when the side has worked up to it, and kept until the trail has gone cold:
+       sight is not lost the instant a man steps behind a wall. */
+    uu.vUs = uu.side === 'us' || uu.detUs >= (uu.vUs ? .42 : 1);
+    uu.vGer = uu.side === 'ger' || uu.detGer >= (uu.vGer ? .42 : 1);
   }
   _expT = (_expT + 1) % 3;
   if (!_expT && G.side) {
