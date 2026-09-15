@@ -100,10 +100,21 @@ node tools/duel.mjs --file=/tmp/x.html   # or on any file
 ```
 
 A row reads `open` and `met`: where the pair were put down, and where they were when the
-first of them saw the other. Those are not the same number any more. Being seen takes a
-second or two, an attack-move walks for the whole of it, and a pair staged at 212 meet at
-130 -- which for a weapon with a `closeWeak` radius is the whole fight. An opening range
-nobody stays at is not a denominator.
+first round left a barrel. **Both sides are given time to find each other before the clock
+starts**, which they need now that being seen takes a second or two. Unprimed, an
+attack-move walks for the whole of that second and a pair staged at 381 were at 71 before
+either could see the other: every row on the card was a knife fight and the reach a weapon
+has was not being tested at all. The card stages a fight at a range and a fight at that
+range is what it should measure; what the closing costs is a real effect and it belongs to
+the sight and movement cards, where it is not confounded with the roster. `B` on a row
+means the pair never saw each other from where they were staged, which is a fact about the
+roster and not about the fight.
+
+**And the hulls of the last fight are cleared between runs.** They have always been left
+lying on the staging ground and have always been on the movement grid; since a burning
+wreck also obscures, they were attenuating the sight line as well, so from the second run
+of every row the pair were fighting through the smoke of the one before. It cost the card
+about half its row-to-row spread: 36 points against 19 on the same comparison.
 
 `--base` is there because a change that was never meant to touch the fighting still has
 to be fought, and because one row moving is not evidence of anything. A near-even matchup
@@ -771,6 +782,29 @@ that watched him die. Detection being a rate means a thing is lost as well as fo
 until this the unit that was shooting at the player a second ago simply stopped existing.
 The brain has had the other half of this since `AIM` was built; the player had nothing.
 
+**A gunner sees as far as his gun reaches.** Every gun-armed vehicle and every anti-tank
+gun on this roster was written with a sight shorter than its own weapon -- the Maus by 220
+units, the eighty-eight by 170, the Tiger by 125, and every tank on the card by fifty or
+more. Under a yes-or-no detection model that only capped the gun at the eye and made the
+extra reach decorative, which is why it went unnoticed for so long. With detection a rate
+it is worse than decorative: the rate falls away to nothing at the edge of the eye's reach,
+so the unit works very slowly at picking anything out at the ranges its gun was built for,
+and a pair of tanks staged at the Tiger's own 480 could not see each other at all. The
+balance card was quietly fighting eight of its rows in the dark. It is a rule applied to
+`UNITS` at load rather than fourteen edited numbers, because two lists of one thing go out
+of step the moment somebody adds a weapon to one of them, and because every tool reads
+`UNITS[k].sight` and would otherwise disagree with the game. Infantry is left alone: a
+rifle section that sees a great deal further than it shoots is correct, and every one of
+them already does.
+
+Fought over 43 rows at eight runs each against the same file without the rule: -3.7 points
+with a standard error of 3.4, against a row-to-row spread of 22 that eight runs produce out
+of nothing. Blind rows went from two to none. The one row that moved far is the one the
+rule is for: `us_ach ger_tig` went 100 per cent to 13 because the Tiger could not see at
+381 and now can, which is the honest number rather than the flattering one. Whether a
+17-pounder Achilles should lose seven of eight to a Tiger head-on on flat ground is a
+roster question the card now flags rather than hides.
+
 **What this cost the balance card, and why.** An attack-move walks for as long as it cannot
 see, so contact now happens about a hundred units closer than the pair were staged at: a
 rifle section opened at 212 against the eighty-eight and was at 130 before either could see
@@ -879,6 +913,18 @@ behind, which is what aerial perspective is, and it now meets a sky that has a s
 Note that the desktop camera can barely see the sky at all: `CAMLIM` keeps the pitch at
 0.42 or more, so the view axis is always below the horizontal and the sun is off the top of
 the frame. The periscope is where to look at it.
+
+**The sun was the only light in the game.** At twenty-one degrees it leaves a great deal of
+the town in its own shadow -- a street between two blocks, the floor of a trench, the inside
+of a hull -- and nothing else on the map gave any light at all. A burning wreck and the
+flash of a burst are the other two, and both are things the simulation already keeps: the
+wreck is what makes the smoke that blocks the eye. A forward pass pays for every light on
+every fragment, so `NLIGHTS` is four on a desktop and two on a phone, compiled into the
+shader the way `SHADOWS` is; `gatherLights` keeps the nearest by insertion rather than a
+sort, because four is short enough that a scan is cheaper and a sort would allocate every
+frame; and an unused slot carries a radius of one so its own contribution is nought without
+a branch to work it out. A fire is given a slow flicker off its own position, because a
+steady one reads as a lamp.
 
 **A shadow box wants fitting to the sun it is under.** `sunMatrix`'s ortho was square in
 light space. A point `d` along the sun's bearing lands at `d * sin(elevation)` up the

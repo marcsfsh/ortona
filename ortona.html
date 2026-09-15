@@ -958,6 +958,34 @@ var UNITS = {
   }
 };
 
+/* A gunner sees as far as his gun reaches. Every gun-armed vehicle and every anti-tank
+   gun on this roster was written with a sight shorter than its own weapon -- the Maus by
+   220 units, the eighty-eight by 170, the Tiger by 125, and every tank on the card by
+   fifty or more. Under a yes-or-no detection model that only capped the gun at the eye
+   and made the extra reach decorative, which is why it went unnoticed. With detection a
+   rate it is worse than decorative: the unit works very slowly at picking anything out
+   at the ranges its gun was built for, because the rate falls away to nothing at the
+   edge of the eye's reach -- so a pair of tanks staged at the Tiger's own 480 could not
+   see each other at all, and the balance card was quietly fighting eight of its rows in
+   the dark. The eye is the gun's telescope and the commander's glasses; it is not
+   shorter than the barrel.
+
+   It is a rule and not fourteen edited numbers, because two lists of one thing go out of
+   step the moment somebody adds a weapon to one of them, and because every tool reads
+   `UNITS[k].sight` and would otherwise disagree with the game. Infantry is left alone: a
+   rifle section that sees a great deal further than it shoots is correct, and every one
+   of them already does. */
+(function () {
+  for (var k in UNITS) {
+    var d = UNITS[k], far, u;
+    if (!d.w || d.cat === 'inf') continue;
+    far = d.w.range || 0;
+    if (d.wUp) for (u in d.wUp) far = Math.max(far, d.wUp[u].range || 0);
+    if (d.at) far = Math.max(far, d.at.range || 0);
+    if (far > d.sight) d.sight = far;
+  }
+})();
+
 var BUILDINGS = {
   us_hq:  { side: 'us', name: 'Canadian Field Headquarters', short: 'FIELD HQ', w: 132, h: 104, hp: 3000, hq: 1,
             makes: ['us_eng', 'us_rifle'] },
@@ -7963,10 +7991,12 @@ var VSH = [
   '}'].join('\n');
 var FSH = [
   '#define SHADOWS 0',
+  '#define NLIGHTS 4',
   'precision highp float;',
   'varying vec3 vCol; varying vec3 vNrm; varying vec3 vWpos; varying vec2 vUV; varying float vMat; varying vec2 vSpec;',
   'varying vec4 vSunPos; varying float vDist;',
   'uniform sampler2D uAlbedo; uniform sampler2D uFog; uniform sampler2D uDecal; uniform sampler2D uShadow; uniform sampler2D uAtlas;',
+  'uniform vec4 uLPos[NLIGHTS]; uniform vec3 uLCol[NLIGHTS];',
   'uniform float uUseTex; uniform vec2 uWorldSize; uniform vec3 uFogCol; uniform vec2 uFogRange;',
   'uniform float uSeaT; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest; uniform float uInside;',
   'uniform float uAtlasCols; uniform float uAtlasRows;',
@@ -8050,6 +8080,20 @@ var FSH = [
      side had never been within half a mile of. 0.431 is the byte updateFog writes for
      explored, and the live circle falls to exactly that at its rim, so what a section
      can see fades into what the side remembers instead of stepping down to it. */
+  /* The sun is the only light on this battlefield, and at twenty-one degrees it leaves a
+     great deal of the town in its own shadow: a street between two blocks, the floor of a
+     trench, the inside of a hull. A burning wreck and the flash of a burst are the other
+     two, and both are things the simulation already keeps -- the wreck is what makes the
+     smoke that blocks the eye. A forward pass pays for every light on every fragment, so
+     there are four of them on a desktop and two on a phone, nearest the camera first, and
+     an unused slot carries a radius of one so its own contribution is nought without a
+     branch to work it out. */
+  '  for (int li = 0; li < NLIGHTS; li++) {',
+  '    vec3 dl = uLPos[li].xyz - vWpos;',
+  '    float dd = length(dl);',
+  '    float att = max(0.0, 1.0 - dd / uLPos[li].w);',
+  '    c += base * uLCol[li] * att * att * (0.40 + 0.60 * max(0.0, dot(n, dl / max(dd, 0.001))));',
+  '  }',
   '  float vis = texture2D(uFog, uvw).r;',
   '  float lum = dot(c, vec3(0.34, 0.45, 0.21));',
   '  vec3 haze = uFogCol * (0.28 + 0.13 * lum);',
@@ -8153,8 +8197,11 @@ function initGL() {
     if (!gl) throw new Error('WebGL is not available in this browser.');
     /* shadows need a depth texture: core in WebGL2, an extension in WebGL1 */
     SHADOWS = GL2 || !!gl.getExtension('WEBGL_depth_texture');
+    LITN = MOB ? 2 : 4;
+    _lpos = new Float32Array(LITN * 4); _lcol = new Float32Array(LITN * 3); _ld = new Float32Array(LITN);
+    var fsh = FSH.replace('#define NLIGHTS 4', '#define NLIGHTS ' + LITN);
     PROG = compileProgram(SHADOWS ? VSH.replace('#define SHADOWS 0', '#define SHADOWS 1') : VSH,
-                          SHADOWS ? FSH.replace('#define SHADOWS 0', '#define SHADOWS 1') : FSH,
+                          SHADOWS ? fsh.replace('#define SHADOWS 0', '#define SHADOWS 1') : fsh,
                           ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat']);
     BILL = compileProgram(VSB, FSB, ['aQuad']);
     SKY = compileProgram(VSK, FSK, ['aQuad']);
@@ -8208,6 +8255,41 @@ function m4ortho(l, r, b, t, n, f) {
   m[0] = 2 / (r - l); m[5] = 2 / (t - b); m[10] = -2 / (f - n);
   m[12] = -(r + l) / (r - l); m[13] = -(t + b) / (t - b); m[14] = -(f + n) / (f - n); m[15] = 1;
   return m;
+}
+/* What else is burning. Four slots kept by insertion rather than a sort, because four is
+   short enough that a scan is cheaper and because a sort would allocate every frame. A
+   fire is not steady, so it is given a slow flicker off its own position; a burst is
+   bright and brief and is drawn for as long as the boom lasts. */
+var LITN = 4, _lpos = null, _lcol = null, _ld = null;
+function litPut(x, y, z, r, cr, cg, cb, d) {
+  var i, worst = 0;
+  for (i = 1; i < LITN; i++) if (_ld[i] > _ld[worst]) worst = i;
+  if (d >= _ld[worst]) return;
+  _ld[worst] = d;
+  _lpos[worst * 4] = x; _lpos[worst * 4 + 1] = y; _lpos[worst * 4 + 2] = z; _lpos[worst * 4 + 3] = r;
+  _lcol[worst * 3] = cr; _lcol[worst * 3 + 1] = cg; _lcol[worst * 3 + 2] = cb;
+}
+function gatherLights(v) {
+  var cx = v.x + v.w / 2, cy = v.y + v.h / 2, i;
+  for (i = 0; i < LITN; i++) {
+    _ld[i] = 1e18;
+    _lpos[i * 4] = _lpos[i * 4 + 1] = _lpos[i * 4 + 2] = 0; _lpos[i * 4 + 3] = 1;
+    _lcol[i * 3] = _lcol[i * 3 + 1] = _lcol[i * 3 + 2] = 0;
+  }
+  for (i = 0; i < G.wrecks.length; i++) {
+    var w = G.wrecks[i];
+    if (w.t > 90) continue;
+    var k = w.t < 24 ? 1 : clamp(1 - (w.t - 24) / 66, 0, 1);
+    var fl = k * (.78 + .22 * Math.sin(G.t * 9 + w.x * .07) * Math.sin(G.t * 13 + w.y * .05));
+    litPut(w.x, w.y, groundZ(w.x, w.y) + 14, 148, 1.22 * fl, .49 * fl, .14 * fl, dsq(cx, cy, w.x, w.y));
+  }
+  for (i = 0; i < G.fx.length; i++) {
+    var f = G.fx[i];
+    if (f.kind !== 'boom') continue;
+    var a = clamp(1 - f.t / f.dur, 0, 1);
+    litPut(f.x, f.y, groundZ(f.x, f.y) + 12, 70 + (f.r || 20) * 2.2,
+           2.4 * a, 1.35 * a, .42 * a, dsq(cx, cy, f.x, f.y));
+  }
 }
 function sunMatrix(v) {
   /* the footprint's centre and radius; the radius steps in coarse increments and the
@@ -17507,6 +17589,8 @@ function render() {
     gl.activeTexture(gl.TEXTURE3); gl.bindTexture(gl.TEXTURE_2D, SHADOW.tex); gl.uniform1i(PROG.u.uShadow, 3);
   }
   gl.uniform3f(PROG.u.uSun, SUN.x, SUN.y, SUN.z);
+  gatherLights(v);
+  gl.uniform4fv(PROG.u.uLPos, _lpos); gl.uniform3fv(PROG.u.uLCol, _lcol);
   gl.uniform1f(PROG.u.uAmb, .44);
   gl.uniform1f(PROG.u.uInside, 0);
   gl.uniform2f(PROG.u.uWorldSize, WORLD.w, WORLD.h);
