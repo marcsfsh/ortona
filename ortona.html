@@ -2328,6 +2328,86 @@ function rebuildGrid() {
    that scrapes a wall is priced against the one that does not, and when the tight way is
    the only way it is still taken. */
 var roomg = new Float32Array(GW * GH);
+
+/* ---- the beaten zone ----------------------------------------------------------------
+   Where the ground is dangerous, and to what. Every route the army took was priced on
+   what it cost to walk -- the metalling, the wire, the wall, the room -- and on nothing
+   whatever about what was shooting down it, so a section ordered to a flag three hundred
+   units away took the street, because the street is the cheap way, and the street had a
+   machine gun at the end of it. The cost of a piece of ground is what it costs to cross
+   it alive.
+
+   Two grids a side, because a rifle section and a Tiger are frightened of different
+   things: `inf` is what will hurt men and `veh` what will open armour, and a Pak covering
+   a crossroads paints the second and barely the first. Half the resolution of the
+   movement grid, which is as fine as this needs to be and a quarter of the cells.
+
+   And it is CAST, not stamped. A disc of danger round a machine gun says it threatens the
+   street on the far side of the block it is standing behind, which is the opposite of the
+   truth and would route the army round the one place it was safe. Rays out of the contact
+   until something stops the eye is both cheaper than the disc and right.
+
+   Everything in it comes out of `AIM`, so it is only as good as what the side has seen.
+   That is the point: ground nobody has looked at is not dangerous, and the army walks
+   into it, which is what an army with no eyes does and what the probe exists to fix. */
+var DCELL = CELL * 2, DGW = Math.ceil(WORLD.w / DCELL), DGH = Math.ceil(WORLD.h / DCELL);
+var DANG = { us: null, ger: null };
+var _d2c = null;
+function dangerMap() {
+  if (_d2c && _d2c.length === GW * GH) return;
+  _d2c = new Int32Array(GW * GH);
+  for (var cy = 0; cy < GH; cy++)
+    for (var cx = 0; cx < GW; cx++) _d2c[cy * GW + cx] = (cy >> 1) * DGW + (cx >> 1);
+}
+function dangerOf(side) {
+  if (!DANG[side]) DANG[side] = { inf: new Float32Array(DGW * DGH), veh: new Float32Array(DGW * DGH), t: -99 };
+  return DANG[side];
+}
+/* which of the two a thing on this path kind is minding */
+function aiDangerFor(side, kind) {
+  var D = DANG[side];
+  if (!D || D.t < 0) return null;
+  return kind === 0 ? D.inf : D.veh;
+}
+function dangerClear() { DANG.us = null; DANG.ger = null; }
+/* one walk out of one contact, writing both grids, because walking it twice is the whole
+   cost of this and the second walk finds the same cells */
+function castDanger(gi, gv, x, y, r, wi, wv) {
+  var n = 64, step = DCELL * .8, i, j;
+  for (i = 0; i < n; i++) {
+    var a = i * TAU / n, dx = Math.cos(a) * step, dy = Math.sin(a) * step;
+    var px = x, py = y;
+    for (j = step; j < r; j += step) {
+      px += dx; py += dy;
+      if (px < 4 || py < 4 || px > WORLD.w - 4 || py > WORLD.h - 4) break;
+      if (sblk[cidx((px / CELL) | 0, (py / CELL) | 0)]) break;    /* the eye stops here */
+      var di = ((py / DCELL) | 0) * DGW + ((px / DCELL) | 0);
+      var f = 1 - j / r;                                 /* thinner at the end of its reach */
+      /* capped as it is written rather than in a second pass over the whole grid: a
+         crossfire should be dear and no piece of ground should be a wall, and the pass
+         cost more than the casting did */
+      var a1 = gi[di] + wi * f; gi[di] = a1 > 3 ? 3 : a1;
+      if (wv > 0) { var a2 = gv[di] + wv * f; gv[di] = a2 > 3 ? 3 : a2; }
+    }
+  }
+}
+/* Painted once a tick from what the side remembers. A contact half a minute old still
+   paints, faded by its age, because a gun that was covering a crossroads thirty seconds
+   ago is very likely still covering it -- and that is the difference between an army that
+   walks into the same fire twice and one that does not. */
+function aiPaintDanger(side, t) {
+  dangerMap();
+  var D = dangerOf(side), gi = D.inf, gv = D.veh, M = aiMemOf(side), k;
+  gi.fill(0); gv.fill(0);                              /* one memset, not two JS loops */
+  for (k in M.con) {
+    var c = M.con[k], age = t - c.t;
+    if (age > AIMEM) continue;
+    var fresh = 1 - age / AIMEM;
+    var w = (c.v / 260) * fresh;
+    castDanger(gi, gv, c.x, c.y, Math.min(c.rng || 300, 470), w, c.pen >= 60 ? w : 0);
+  }
+  D.t = t;
+}
 function buildRoom() {
   var n = GW * GH, x, y, i, v;
   for (i = 0; i < n; i++) roomg[i] = grid[i] ? 0 : 1e6;
@@ -2466,18 +2546,29 @@ function clearLine(x0, y0, x1, y1) {
    bank a little. Nobody is asked to pay for anything below one, so the straight-line
    heuristic stays honest.
      kind: -1 nobody in particular, 0 men on foot, 1 tracks, 2 wheels */
-function cellCost(ci, kind) {
+/* What a cell costs to cross, and -- if the thing crossing it minds -- what it costs to
+   be seen crossing it. `dang` is the beaten zone the unit's own side knows about and
+   `fear` is how much this particular move is willing to pay to stay out of it: a section
+   walking to a flag pays a lot, a wave going in pays little, because crossing the beaten
+   zone is what a wave is for. Nothing is forbidden by it, for the same reason nothing
+   else here is: ground the army will not cross is ground the army has given away. */
+function cellCost(ci, kind, dang, fear) {
   if (kind < 0) return 1;
   /* and how much room it leaves. Nothing here is forbidden; a gap is dear in proportion
      to how hard it is to get through, and a lorry minds it about three times as much as
      a man does, which is the difference between a section filing down an alley and a
      half-track trying to. Two cells is a section's width. */
   var r = roomg[ci], tight = r < 2.6 ? (2.6 - r) * (kind === 0 ? .3 : 1.1) : 0;
-  if (kind === 0) return (wireg[ci] ? 2.6 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
-  var c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
-  if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
-  if (wallg[ci] && kind === 2) c *= 2.6;               /* a lorry goes round; tracks do not */
-  return c + tight;
+  var c;
+  if (kind === 0) c = (wireg[ci] ? 2.6 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
+  else {
+    c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
+    if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
+    if (wallg[ci] && kind === 2) c *= 2.6;             /* a lorry goes round; tracks do not */
+    c += tight;
+  }
+  if (dang) c += dang[_d2c[ci]] * fear;
+  return c;
 }
 function pathKind(u) {
   if (!u) return -1;
@@ -2486,11 +2577,11 @@ function pathKind(u) {
 }
 /* the cost of walking a straight line, sampled the way clearLine samples it, so a
    shortcut can be priced against the path it would replace */
-function lineCost(x0, y0, x1, y1, kind) {
+function lineCost(x0, y0, x1, y1, kind, dang, fear) {
   var d = Math.hypot(x1 - x0, y1 - y0), steps = Math.max(1, Math.ceil(d / 10)), sum = 0;
   for (var i = 0; i < steps; i++) {
     var t = (i + .5) / steps, x = lerp(x0, x1, t), y = lerp(y0, y1, t);
-    sum += cellCost(cidx((x / CELL) | 0, (y / CELL) | 0), kind) * d / steps;
+    sum += cellCost(cidx((x / CELL) | 0, (y / CELL) | 0), kind, dang, fear) * d / steps;
   }
   return sum;
 }
@@ -2504,6 +2595,11 @@ function findPath(sx, sy, tx, ty, u) {
   var scx = (s0.x / CELL) | 0, scy = (s0.y / CELL) | 0, tcx = (tx / CELL) | 0, tcy = (ty / CELL) | 0;
   var start = cidx(scx, scy), end = cidx(tcx, tcy);
   var kind = pathKind(u);
+  /* What this move is willing to pay to stay out of the beaten zone. A unit with no fear
+     -- the player's, and anything the brain has not spoken to -- gets the map as it has
+     always been. */
+  var fear = (u && u.fear) || 0, dang = fear > 0 ? aiDangerFor(u.side, kind) : null;
+  if (!dang) fear = 0;
   /* A straight line is only the answer when nothing along it costs more than the ground
      either side: a vehicle with a street to use is asked to find it.
        Men on foot used to be handed any clear line at all, however long and whatever it
@@ -2518,7 +2614,16 @@ function findPath(sx, sy, tx, ty, u) {
   if (clearLine(sx, sy, tx, ty)) {
     var straight = Math.hypot(tx - sx, ty - sy);
     if (straight < 160) return [{ x: tx, y: ty }];
-    if (kind <= 0 && lineCost(sx, sy, tx, ty, kind) <= straight * 1.12) return [{ x: tx, y: ty }];
+    /* Two questions, not one. Is the line cheap to walk -- which is what it always
+       asked -- and is it worth searching for a way round what is shooting down it. Folded
+       into a single priced line the danger term rejected nearly every shortcut and the
+       search ran on every order, at eight times the cost, for a route no different from
+       the straight one wherever nothing was looking. The difference of the two prices IS
+       the danger integral, which is the number to threshold. */
+    var lc0 = kind <= 0 ? lineCost(sx, sy, tx, ty, kind, null, 0) : 0;
+    if (kind <= 0 && lc0 <= straight * 1.12 &&
+        (!dang || lineCost(sx, sy, tx, ty, kind, dang, fear) - lc0 <= straight * .12))
+      return [{ x: tx, y: ty }];
   }
   _run++;
   var heap = [start], hkey = [0], n = 1;
@@ -2578,7 +2683,7 @@ function findPath(sx, sy, tx, ty, u) {
       if (dx && dy && (grid[cidx(cx + dx, cy)] || grid[cidx(cx, cy + dy)])) continue;
       if (_stamp[ni] !== _run) { _stamp[ni] = _run; _g[ni] = 1e9; _state[ni] = 0; _from[ni] = -1; }
       if (_state[ni] === 2) continue;
-      var ng = _g[cur] + (dx && dy ? 1.414 : 1) * cellCost(ni, kind);
+      var ng = _g[cur] + (dx && dy ? 1.414 : 1) * cellCost(ni, kind, dang, fear);
       if (ng < _g[ni]) {
         _g[ni] = ng; _from[ni] = cur;
         /* the heuristic is weighted a twentieth over the straight-line distance on
@@ -2612,12 +2717,12 @@ function findPath(sx, sy, tx, ty, u) {
      of following it, and a smoother that only asked whether the shortcut was clear cut
      every one of them off across the gardens */
   var rawC = [0];
-  for (var rc = 1; rc < raw.length; rc++) rawC[rc] = rawC[rc - 1] + lineCost(raw[rc - 1].x, raw[rc - 1].y, raw[rc].x, raw[rc].y, kind);
+  for (var rc = 1; rc < raw.length; rc++) rawC[rc] = rawC[rc - 1] + lineCost(raw[rc - 1].x, raw[rc - 1].y, raw[rc].x, raw[rc].y, kind, dang, fear);
   var out = [], i2 = 0;
   while (i2 < raw.length - 1) {
     var j = raw.length - 1;
     while (j > i2 + 1 && !(clearLine(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y) &&
-           (kind < 0 || lineCost(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y, kind) <= (rawC[j] - rawC[i2]) * 1.03 + 8))) j--;
+           (kind < 0 || lineCost(raw[i2].x, raw[i2].y, raw[j].x, raw[j].y, kind, dang, fear) <= (rawC[j] - rawC[i2]) * 1.03 + 8))) j--;
     out.push(raw[j]); i2 = j;
   }
   if (!out.length) out = [{ x: tx, y: ty }];
@@ -4750,6 +4855,7 @@ function aiInit(side) {
   AI.side = side;
   aiForget();                                        /* last battle's contacts are not this one's */
   aiCallsClear();
+  dangerClear();
   for (k in AIR.fired) AIR.fired[k] = 0;
 }
 /* Kept although the brain no longer calls it: `tools/skirmish.mjs` injects the aiTick out
@@ -4844,8 +4950,13 @@ function aiRemember(side, t) {
     if (e.dead || e.side === side || e.inside) continue;
     if (!visibleTo(side, e)) continue;
     c = M.con[e.id];
-    if (!c) { c = M.con[e.id] = { x: 0, y: 0, t: 0, v: 0, veh: 0, team: 0, gun: 0 }; M.n++; }
+    if (!c) { c = M.con[e.id] = { x: 0, y: 0, t: 0, v: 0, veh: 0, team: 0, gun: 0, rng: 0, pen: 0 }; M.n++; }
     c.x = e.x; c.y = e.y; c.t = t; c.v = aiValue(e);
+    /* how far it reaches and what it goes through, which is what the beaten zone is made
+       of: a rifle section and a Pak covering the same crossroads are not the same danger
+       to the same things */
+    c.rng = mainW(e).range;
+    c.pen = e.cat === 'veh' ? mainW(e).pen : (e.def.at ? e.def.at.pen : e.def.w.pen);
     c.veh = e.cat === 'veh' ? 1 : 0;
     c.team = e.cat === 'team' ? 1 : 0;
     c.gun = (e.def.atOnly || (e.cat === 'team' && e.def.w.pen >= 200) || (e.cat === 'veh' && mainW(e).pen >= 200)) ? 1 : 0;
@@ -5077,6 +5188,7 @@ function aiLook(side, D, skill) {
     W.secs.push(r); W.bySec[s.id] = r;
   }
   aiRemember(side, G.t);
+  aiPaintDanger(side, G.t);
   aiFade(side, G.t - (AIM[side].fadeT || G.t));
   AIM[side].fadeT = G.t;
   aiCallTend(W);
@@ -6481,6 +6593,13 @@ function aiTick(dt) {
   for (i = 0; i < fighters.length; i++) {
     u = fighters[i];
     if (u.dead) continue;
+    /* What this unit will pay to stay out of the beaten zone, which every path it asks
+       for from here reads. A wave pressing home pays almost nothing, because crossing the
+       beaten zone under covering fire is the whole of what a wave is: priced at what
+       everybody else pays it would walk the long way round and arrive after the covering
+       fire had stopped. Everything else pays, because nothing else gains anything at all
+       by being shot at on the way to where it is going. */
+    u.fear = (pressing && aiInWave(u, asId, razeT)) ? .3 : u.cat === 'veh' ? .85 : 1.05;
     /* The eighty-eight's crew choose the round from what is in front of them: AP while
        there is armour it can reach, HE otherwise. It is decided before anything else
        can end the tick, because the retreat rule and the target reflex both do, and a
@@ -6499,7 +6618,11 @@ function aiTick(dt) {
        home to be mended rather than dying where it stands for nothing. */
     if (u.cat !== 'veh') {
       if ((aliveModels(u) <= 1 || hpFrac(u) < .3 || (u.sup > 1 && hpFrac(u) < .62)) &&
-          !u.retreat && dist(u, hq) > 300) { aiFire('retreat.hurt'); orderRetreat(u); continue; }
+          !u.retreat && dist(u, hq) > 300) {
+        aiFire('retreat.hurt');
+        u.fear = 1.4;                                  /* the safest way out, not the shortest */
+        orderRetreat(u); continue;
+      }
       if (u.retreat) continue;
     } else if (skill >= 1) {
       if (u.job !== 'mend' && u.hp < u.maxhp * .40 && engs.length) { u.job = 'mend'; u.jobT = G.t; aiFire('veh.mend'); }
@@ -6881,6 +7004,7 @@ function aiTick(dt) {
   for (i = 0; i < engs.length; i++) {
     var e = engs[i];
     if (e.building || e.repairing || e.retreat) continue;
+    e.fear = 1.3;                                      /* a builder walked into fire is a base not built */
     var job = null, jd = 1e9;
     for (j = 0; j < G.units.length; j++) {
       u = G.units[j];
