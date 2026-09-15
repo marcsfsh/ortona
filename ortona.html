@@ -7169,10 +7169,26 @@ function aiTick(dt) {
           continue;
         }
         if (OP.kind === 'hold') {
+          /* Ground is held from a position on it, not from the middle of it. The first
+             version aimed at the sector's own point, which is a coordinate in the open by
+             construction, and parked two sections there for the life of the operation:
+             halted men behind something fell from 98.8 per cent of man-frames to 90.1 on
+             the movement card, which is the whole of what the cover overhaul bought being
+             given back by an operation that meant well. It takes a house on the flag if
+             there is one -- inside, it holds the sector just as well and it is the best
+             cover on the map -- and otherwise the best cover within a hundred of the
+             point, which is still inside the circle that counts. */
           var hsec = G.secById[OP.sec];
-          if (hsec && dsq(u.x, u.y, hsec.x, hsec.y) > hsec.r * .7 * hsec.r * .7 &&
-              (!u.dest || dsq(u.dest.x, u.dest.y, hsec.x, hsec.y) > 200 * 200))
-            orderMove(u, hsec.x + rnd(-60, 60), hsec.y + rnd(-60, 60), true);
+          if (hsec) {
+            if (skill >= 1 && garCount < 4 && dsq(u.x, u.y, hsec.x, hsec.y) < 420 * 420) {
+              var hh = aiHouse(u, hsec.x, hsec.y, hsec.r * .8);
+              if (hh) { aiFire('garrison.duck'); clearOrder(u); u.order = 'enter'; u.enterT = hh; garCount++; continue; }
+            }
+            if (!OP.fupX) { var hp3 = aiFirePost(side, hsec.x, hsec.y, 0); OP.fupX = hp3.x; OP.fupY = hp3.y; }
+            if (Math.hypot(u.x - OP.fupX, u.y - OP.fupY) > 110 &&
+                (!u.dest || dsq(u.dest.x, u.dest.y, OP.fupX, OP.fupY) > 200 * 200))
+              orderMove(u, OP.fupX + rnd(-50, 50), OP.fupY + rnd(-50, 50), true);
+          }
           continue;
         }
       }

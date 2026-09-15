@@ -1034,12 +1034,22 @@ an uncapped term walks the army off the map.
 
 Measured over a five-minute battle at veteran with a brain on both sides: two operations
 open at any moment, a quarter of the army's unit-ticks spent on one that is not the main
-effort, and five to six per cent of the map painted as dangerous to men. A probe runs about
-eight seconds and ends because it can see the ground; a hold about half a minute; the main
-effort about three quarters of one. **A feint drew 410 to 661** -- the enemy weight within
-420 of the ground it demonstrated against, at the moment it started and the moment it
-ended, over two of them. Two samples is a direction rather than a result, and it is the
-right measurement: nothing else the brain does moves that number at that place.
+effort, and five per cent of the map painted as dangerous to men. All five kinds fire in a
+single battle. A probe runs about twenty seconds and ends because it can see the ground, a
+destroy forty, a hold under a minute, the main effort twenty to fifty. **A feint drew 410
+to 661 in one run and 0 to 85 in another** -- the enemy weight within 420 of the ground it
+demonstrated against, at the moment it started and the moment it ended. Two feints a run
+and four in all, both runs up: that is a direction and not a result, and the absolute level
+is wherever the fight happened to be. It is the right measurement, because nothing else the
+brain does moves that number at that place.
+
+**A `hold` has to hold from a position, not from the middle.** Its first version aimed at
+the sector's own point, which is a coordinate in the open by construction, and parked two
+sections on it for the life of the operation: halted men behind something fell from 98.8
+per cent of man-frames to 90.1 on `tools/move.mjs`, which is the whole of what the cover
+overhaul bought, given back by an operation that meant well. It takes a house on the flag
+if there is one and otherwise the best cover within a hundred of the point, which is still
+inside the circle that counts. The card caught it and nothing else would have.
 
 **Order the planning by urgency, because room is the scarce thing.** There is room for
 another operation on fewer than half the ticks -- four kinds wanting seven slots out of the
