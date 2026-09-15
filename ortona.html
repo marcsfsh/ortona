@@ -133,13 +133,22 @@ button:focus-visible,.card:focus-visible{outline:2px solid var(--ink);outline-of
   transition:transform .06s linear}
 #drivegear{position:absolute;left:0;right:0;bottom:-17px;text-align:center;font-size:9.5px;
   letter-spacing:1.5px;color:var(--dim);pointer-events:none}
-#drivefire{position:absolute;right:calc(72px + var(--safeR));bottom:120px;width:98px;height:98px;
-  border:1px solid var(--line);border-radius:50%;background:#241a10d8;color:var(--ink);
-  font-size:12px;letter-spacing:1.8px;pointer-events:auto;touch-action:none;cursor:pointer}
-#drivefire.on{border-color:var(--fuel);color:var(--fuel);background:#3d2713}
+#drivefire,#drivemg{position:absolute;right:calc(72px + var(--safeR));bottom:120px;
+  border:1px solid var(--line);border-radius:50%;background:#14110adc;color:var(--ink);
+  pointer-events:auto;touch-action:none;cursor:pointer;overflow:hidden;padding:0;
+  display:flex;align-items:center;justify-content:center}
+#drivefire{width:98px;height:98px;font-size:11.5px;letter-spacing:1.6px}
+#drivemg{width:78px;height:78px;font-size:10.5px;letter-spacing:1.3px}
+#drivefire i,#drivemg i{position:absolute;left:0;right:0;bottom:0;height:0;
+  background:#4a3313;pointer-events:none;transition:height .05s linear}
+#drivefire b,#drivemg b{position:relative;font-weight:400;line-height:1.25;text-align:center}
+#drivefire.on,#drivemg.on{border-color:var(--fuel);color:var(--fuel)}
+#drivefire.on i,#drivemg.on i{background:#7a5119}
+#drivefire.bad,#drivemg.bad{border-color:#a0453a;color:#d89c92}
+#drivefire.bad i,#drivemg.bad i{background:#6b241b}
 /* in the periscope the army is not his to order, so the buttons that order it go */
 body.pov #tHQ,body.pov #tIdle,body.pov #tClear{display:none}
-body.mob #drivefire{right:calc(12px + var(--safeR))}
+body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 
 /* ---------- tips / toast ---------- */
 #tip{position:absolute;left:50%;top:calc(60px + var(--safeT));transform:translateX(-50%);z-index:7;
@@ -564,7 +573,8 @@ body.mob #mini{width:104px;height:72px}
 </div>
 <div id="drive">
   <div id="drivepad"><i id="driveknob"></i><b id="drivegear">HALT</b></div>
-  <button id="drivefire">FIRE</button>
+  <button id="drivemg" title="Coaxial machine gun (C)"><i id="drivemgi"></i><b id="drivemgl">MG</b></button>
+  <button id="drivefire" title="Main gun (Space)"><i id="drivefirei"></i><b id="drivefirel">GUN</b></button>
 </div>
 
 <div id="bar" class="hidden">
@@ -713,9 +723,14 @@ var SECW = {
   mgs:  { ger: { range: 235, dmg: 4.5, rof: .065, acc: .5, sup: .075, pen: 6, aoe: 0 } }
 };
 function secondaryKeys(u) {
-  var keys = Object.keys(SECW), out = [], i;
-  if (!u.up) return out;
-  for (i = 0; i < keys.length; i++) if (u.up[keys[i]] && SECW[keys[i]][u.side]) out.push(keys[i]);
+  var keys = Object.keys(SECW), out = [], i, k;
+  for (i = 0; i < keys.length; i++) {
+    k = keys[i];
+    if (!SECW[k][u.side]) continue;
+    /* a coaxial comes with the gun mount and is listed on the vehicle (`def.sec`); a
+       roof gun is bought and is listed on the upgrade */
+    if ((u.up && u.up[k]) || (u.def && u.def.sec && u.def.sec.indexOf(k) >= 0)) out.push(k);
+  }
   return out;
 }
 function secBuffer(B, key) { return key === 'mg' ? B.mg : (B.mgUp ? B.mgUp[key] : null); }
@@ -820,7 +835,7 @@ var UNITS = {
   us_sher: {
     side: 'us', name: 'Sherman V (M4A4)', short: 'SHR V', cat: 'veh', hk: 'F', upgrades: ['mg'], tows: 1,
     hp: 760, armor: 118, speed: 80, sight: 330, pop: 14, cost: { mp: 340, fu: 90 }, time: 34,
-    req: 'us_mot',
+    req: 'us_mot', sec: ['coax'],
     w: { range: 380, dmg: 140, rof: 3.3, acc: .70, sup: .05, pen: 210, aoe: 46, shell: 1 },
     desc: 'Long-hulled Sherman V of the Three Rivers Regiment, with the M4A4 engine deck, VVSS bogies and 75 mm gun used in Italy.'
   },
@@ -3417,33 +3432,61 @@ function fireSecondary(u, dt) {
   var keys = secondaryKeys(u), i;
   for (i = 0; i < keys.length; i++) fireOneSecondary(u, keys[i], dt);
 }
+/* A machine gun has no round to load: it has a barrel, and a barrel will only take so
+   much. Heat climbs while the gun is running and falls while it is not, and at the top
+   of it the gun is out until it has come back down to a third. `mgHold` is how many
+   seconds of the trigger held down it takes to get there, and on green that is half a
+   minute of it. Cooling from full takes a little over half as long again. */
+function mgHold(u) {
+  return u.side === G.side && DIFF[G.diff] && DIFF[G.diff].mgHold ? DIFF[G.diff].mgHold : 18;
+}
+function mgTick(u, dt) {
+  var hold = mgHold(u);
+  u.mgOnT = Math.max(0, (u.mgOnT || 0) - dt);
+  if (u.mgOnT > 0) u.mgHeat = clamp((u.mgHeat || 0) + dt / hold, 0, 1);
+  else u.mgHeat = clamp((u.mgHeat || 0) - dt / (hold * .55), 0, 1);
+  if (u.mgHeat >= 1) { if (!u.mgCook && u.side === G.side) toast(u.def.short + ' machine gun is cooked'); u.mgCook = 1; }
+  else if (u.mgCook && u.mgHeat < .33) u.mgCook = 0;
+}
 function fireOneSecondary(u, key, dt) {
   var cd = (u.cdSec[key] || 0) - dt;
   u.cdSec[key] = cd;
+  /* under command the gun is the commander's: it fires on his trigger and nowhere else,
+     and it is laid where he is looking rather than wherever the hull gunner fancies */
+  if (u.manual && !DRV.mg) return;
+  if (u.mgCook) return;
   if (cd > 0) return;
   var w = SECW[key][u.side], best = null, bd = w.range * w.range;
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e.side === u.side || e.cat === 'veh' || e.inside || !visibleTo(u.side, e)) continue;
+    if (u.manual && Math.abs(angDiff(POV.yaw, angTo(u, e))) > .30) continue;
     var d2 = dsq(u.x, u.y, e.x, e.y);
     if (d2 < bd && fireLine(u, e)) { bd = d2; best = e; }
   }
-  if (!best) { u.cdSec[key] = .3; return; }
+  if (!best && !u.manual) { u.cdSec[key] = .3; return; }
   u.cdSec[key] = w.rof * rnd(.9, 1.1);
-  var cov = best.gar ? 4 : coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
-  best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1) * (best.moving && best.stance === 'double' ? 1.4 : 1), 0,
-                   w.supCap === undefined ? 1.35 : Math.max(best.sup, w.supCap));
-  var acc = w.acc * COVER[cov].acc * (u.moving ? .6 : 1);
+  u.mgOnT = w.rof * 1.7;
+  /* with nothing in front of it the gun still runs: the belt goes down the street */
+  var aimX = best ? best.x : u.x + Math.cos(u.turret) * w.range * .85;
+  var aimY = best ? best.y : u.y + Math.sin(u.turret) * w.range * .85;
+  var acc = 0;
+  if (best) {
+    var cov = best.gar ? 4 : coverAt(best.x, best.y, Math.atan2(best.y - u.y, best.x - u.x));
+    best.sup = clamp(best.sup + w.sup * COVER[cov].sup * (best.cat === 'team' ? .5 : 1) * (best.moving && best.stance === 'double' ? 1.4 : 1), 0,
+                     w.supCap === undefined ? 1.35 : Math.max(best.sup, w.supCap));
+    acc = w.acc * COVER[cov].acc * (u.moving ? .6 : 1);
+  }
   if (onScreen(u.x, u.y)) {
     var M = VMODEL[u.key] || {}, mo = mountPose(u, M);
     var tx0 = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
     var ty0 = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
-    G.shots.push({ kind: 'tracer', x: tx0 - Math.cos(u.turret) * 8, y: ty0 - Math.sin(u.turret) * 8, tx: best.x + rnd(-8, 8), ty: best.y + rnd(-8, 8), t: 0, dur: .14 });
+    G.shots.push({ kind: 'tracer', x: tx0 - Math.cos(u.turret) * 8, y: ty0 - Math.sin(u.turret) * 8, tx: aimX + rnd(-8, 8), ty: aimY + rnd(-8, 8), t: 0, dur: .14 });
     spawnFx('flash', tx0 + Math.cos(u.turret) * 14, ty0 + Math.sin(u.turret) * 14, 6,
             groundZ(u.x, u.y) + (mo.z || 0) + 6);
     if (Math.random() < .4) sfx('mg');
   }
-  if (Math.random() < acc) damage(best, w.dmg * rnd(.85, 1.15), u);
+  if (best && Math.random() < acc) damage(best, w.dmg * rnd(.85, 1.15), u);
 }
 /* What a round that goes through actually does, beyond the hole it makes. Most hits on
    a tank do not brew it up: they break a track, wreck the gun, or simply frighten the
@@ -4246,6 +4289,7 @@ function updateUnit(u, dt) {
 
   moveUnit(u, dt);
   if (u.cat === 'veh' && !u.retreat) fireSecondary(u, dt);
+  if (u.cat === 'veh') mgTick(u, dt);
   if (u.target && !u.target.dead) {
     if (!u.moving || u.cat === 'veh') fireAt(u, u.target, dt);
     /* A section turns to face what it is shooting at; a gun on a split trail has to be
@@ -4321,16 +4365,16 @@ var DIFF = [
      first one arrives. */
   { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 6, mech: 2, skill: 0, push: 420, aim: .34, tough: .5,
     startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 3,
-    youPop: 350, foePop: 175, wave: 6, form: 105, press: 95, grace: 210 },
+    youPop: 350, foePop: 175, wave: 6, form: 105, press: 95, grace: 210, mgHold: 30 },
   { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 5, skill: 1, push: 0,  aim: 1,   tough: 1,
     startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1,
-    wave: 3, form: 32, press: 75 },
+    wave: 3, form: 32, press: 75, mgHold: 22 },
   /* Veteran: on a map this defensive an economic edge alone barely registers, so the
      opposition also shoots straighter, takes more killing, techs earlier and opens with
      a larger force while your own victory points drain faster. */
   { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 6, skill: 2, push: 0, aim: 1.04, tough: 1.07,
     startMp: 420, startFu: 20, vp: 1.07, tech: 1.12, youAim: 1, youTough: 1, extra: 0, build: 1,
-    wave: 4, form: 30, press: 80 }
+    wave: 4, form: 30, press: 80, mgHold: 16 }
 ];
 function aiInit(side) {
   AI.side = side; AI.t = 0; AI.main = null; AI.mainT = -99;
@@ -7363,9 +7407,9 @@ function povOn(u) {
   povHatch(host.cat !== 'veh' || !povClosed() || !buttonedUp(host));
   var b = el('tPov'); if (b) b.classList.add('on');
   var hb = el('tHatch'); if (hb) hb.classList.toggle('hidden', !povClosed());
-  DRV.took = 0; DRV.padFire = false; povPadOff();
+  DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false; povPadOff();
   document.body.classList.add('pov');
-  if (MOB && host.cat === 'veh' && host.side === G.side) toast('Pad drives  ·  FIRE shoots  ·  drag to look');
+  if (MOB && host.cat === 'veh' && host.side === G.side) toast('Pad drives  ·  GUN and MG fire  ·  drag to look');
   var dv = el('drive'); if (dv) dv.classList.toggle('on', !!drivenUnit());
   povDriveLayout();
   return true;
@@ -7374,7 +7418,8 @@ function povOff() {
   /* the driver stops when the commander leaves the seat */
   var h = povHost();
   if (h && h.cat === 'veh') { h.path = null; h.manual = 0; }
-  DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.padFire = false; DRV.took = 0;
+  DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.mg = false;
+  DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false; DRV.took = 0;
   DRV.lock = null; povPadOff();
   var dv = el('drive'); if (dv) dv.classList.remove('on');
   document.body.classList.remove('pov');
@@ -7426,8 +7471,8 @@ function povFov() {
 
    He takes over on the first control he touches (`DRV.took`) and not on opening the
    periscope, or a look out of a tank that was going somewhere would stop it dead. */
-var DRV = { thr: 0, steer: 0, fire: false, padT: 0, padS: 0, padFire: false,
-            padOn: false, padId: 0, took: 0, lock: null, mark: null, pt: { x: 0, y: 0 } };
+var DRV = { thr: 0, steer: 0, fire: false, mg: false, padT: 0, padS: 0, padFire: false, padMg: false,
+            mouseMg: false, padOn: false, padId: 0, took: 0, lock: null, mark: null, pt: { x: 0, y: 0 } };
 var UPM = 11.7;                                     /* units to the metre, as tools/dims.mjs has it */
 function drivenUnit() {
   var h = povHost();
@@ -7475,7 +7520,7 @@ function povGround(u) {
 /* the controls, read once a frame: the thumb pad, and the keys under the other hand */
 function povControls() {
   var u = drivenUnit();
-  if (!u) { DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.lock = null; DRV.mark = null; return; }
+  if (!u) { DRV.thr = 0; DRV.steer = 0; DRV.fire = false; DRV.mg = false; DRV.lock = null; DRV.mark = null; return; }
   var t = DRV.padT, s = DRV.padS;
   if (keys['w'] || keys['arrowup']) t = 1;
   else if (keys['s'] || keys['arrowdown']) t = -1;
@@ -7483,13 +7528,29 @@ function povControls() {
   else if (keys['d'] || keys['arrowright']) s = 1;
   DRV.thr = clamp(t, -1, 1); DRV.steer = clamp(s, -1, 1);
   DRV.fire = DRV.padFire || !!keys[' '];
-  if (!DRV.took && (DRV.thr || DRV.steer || DRV.fire)) {
+  DRV.mg = DRV.padMg || !!keys['c'] || !!DRV.mouseMg;
+  if (!DRV.took && (DRV.thr || DRV.steer || DRV.fire || DRV.mg)) {
     DRV.took = 1;
-    toast(u.def.name + ': the driver and the gun are yours');
+    toast(u.def.name + ': the driver and the guns are yours');
   }
   var g = el('drivegear');
   if (g) g.textContent = DRV.thr > .05 ? 'AHEAD' : DRV.thr < -.05 ? 'ASTERN' : 'HALT';
-  var fb = el('drivefire'); if (fb) fb.classList.toggle('on', DRV.fire);
+  /* What each gun is waiting on, on the button that fires it, because a commander who
+     cannot see whether the round is home will pull the trigger and believe the tank is
+     broken. The main gun fills as it loads and lights when the round is in; the machine
+     gun fills as the barrel heats and goes red when it is cooked. */
+  var rf = mainW(u).rof || 1, gp = clamp(1 - (u.cd || 0) / rf, 0, 1), out = u.gunDmg > 0;
+  povBtn('drivefire', gp, out ? 'GUN<br>OUT' : gp >= 1 ? 'GUN<br>READY' : 'GUN', gp >= 1 && !out, out);
+  var hasMg = secondaryKeys(u).length > 0;
+  povBtn('drivemg', 1 - (u.mgHeat || 0), u.mgCook ? 'MG<br>HOT' : 'MG', DRV.mg && !u.mgCook && hasMg, !!u.mgCook);
+  var mgb = el('drivemg'); if (mgb) mgb.classList.toggle('hidden', !hasMg);
+}
+function povBtn(id, fill, label, on, bad) {
+  var b = el(id), f = el(id + 'i'), l = el(id + 'l');
+  if (!b) return;
+  if (f) f.style.height = (clamp(fill, 0, 1) * 100) + '%';
+  if (l && l.innerHTML !== label) l.innerHTML = label;
+  b.classList.toggle('on', !!on); b.classList.toggle('bad', !!bad);
 }
 /* his orders, put on the vehicle itself before it moves */
 function povDrive(u, dt) {
@@ -7514,17 +7575,24 @@ function povDrive(u, dt) {
    little map in the corner as well */
 function povDriveLayout() {
   var d = el('drive'); if (!d) return;
-  var barH = (el('bar') && el('bar').offsetHeight) || 0, fire = el('drivefire');
+  var barH = (el('bar') && el('bar').offsetHeight) || 0, gun = el('drivefire'), mg = el('drivemg');
   el('drivepad').style.bottom = (barH + 24) + 'px';
-  if (!MOB) { fire.style.top = 'auto'; fire.style.bottom = (barH + 24) + 'px'; return; }
+  var gh = gun.offsetHeight || 98, mh = mg.offsetHeight || 78;
+  if (!MOB) {
+    gun.style.top = 'auto'; mg.style.top = 'auto';
+    gun.style.bottom = (barH + 24) + 'px';
+    mg.style.bottom = (barH + 34 + gh) + 'px';
+    return;
+  }
   /* between the bottom of the tool strip and the top of the little map, which is the
      only band of a phone's right-hand edge that is not already spoken for */
   var tb = el('tools') ? el('tools').getBoundingClientRect().bottom : 0;
   var mr = el('mini') ? el('mini').getBoundingClientRect() : null;
-  var lo = (mr && mr.width ? mr.top : window.innerHeight - barH) - 12, hi = tb + 12;
-  var h = fire.offsetHeight || 98;
-  fire.style.bottom = 'auto';
-  fire.style.top = clamp((hi + lo) / 2 - h / 2, hi, Math.max(hi, lo - h)) + 'px';
+  var lo = (mr && mr.width ? mr.top : window.innerHeight - barH) - 10, hi = tb + 10;
+  var tot = mh + 8 + gh, top = clamp((hi + lo) / 2 - tot / 2, hi, Math.max(hi, lo - tot));
+  gun.style.bottom = 'auto'; mg.style.bottom = 'auto';
+  mg.style.top = top + 'px';
+  gun.style.top = (top + mh + 8) + 'px';
 }
 function povKnob(dx, dy) {
   var k = el('driveknob'); if (k) k.style.transform = 'translate(' + (dx * 34) + 'px,' + (dy * 34) + 'px)';
@@ -7581,7 +7649,7 @@ function drawPovFrame() {
   ctx.fillStyle = '#b9b3a0'; ctx.font = '11px system-ui, sans-serif';
   var hatchHint = povClosed() ? (POV.hatch ? 'SHUT to button up  ·  ' : 'OPEN to look out  ·  ') : '';
   if (dv && MOB) { /* the pad and the button are the caption */ }
-  else if (dv) ctx.fillText('W S drive  ·  A D steer  ·  Space fires  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
+  else if (dv) ctx.fillText('W A S D drive  ·  Space gun  ·  C coax  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
   else ctx.fillText(MOB ? (hatchHint ? 'Drag to look  ·  ' + hatchHint + 'tap the camera to return' : 'Drag to look  ·  pinch to zoom  ·  tap the camera to return')
                         : 'Drag to look  ·  wheel to zoom  ·  ' + hatchHint + 'V or Esc to return', W / 2, y);
   ctx.shadowBlur = 0; ctx.textAlign = 'left';
@@ -15797,7 +15865,7 @@ cv.addEventListener('mousedown', function (e) {
     return;
   }
   if (!G.running) return;
-  if (POV.on) { if (e.button === 0) POV.drag = { x: mouse.x, y: mouse.y }; return; }
+  if (POV.on) { if (e.button === 0) POV.drag = { x: mouse.x, y: mouse.y }; else if (e.button === 2) DRV.mouseMg = true; return; }
   if (e.button === 0) {
     if (G.place) {
       /* the press fixes where it goes; the drag that follows aims it */
@@ -15815,7 +15883,7 @@ window.addEventListener('mouseup', function (e) {
     if (ED.press && Math.hypot(mouse.x - ED.press.x, mouse.y - ED.press.y) < 6 && e.button === 0) edTap(mouse.x, mouse.y);
     ED.press = null; return;
   }
-  if (POV.on) { POV.drag = null; return; }
+  if (POV.on) { POV.drag = null; DRV.mouseMg = false; return; }
   if (e.button === 1) { drag.pan = null; return; }
   if (e.button === 0 && G.place && G.place.aim) { doPlace(); return; }
   if (e.button !== 0 || !drag.on) return;
@@ -16082,7 +16150,7 @@ window.addEventListener('keydown', function (e) {
   if (POV.on) {
     if (k === 'h') { if (povClosed()) povHatch(!POV.hatch); return; }
     if (k !== 'p') {
-      if (k === ' ' || k === 'w' || k === 'a' || k === 's' || k === 'd' || k.indexOf('arrow') === 0) e.preventDefault();
+      if (k === ' ' || k === 'w' || k === 'a' || k === 's' || k === 'd' || k === 'c' || k.indexOf('arrow') === 0) e.preventDefault();
       return;
     }
   }
@@ -16442,7 +16510,7 @@ function startGame(side, diff, mode) {
   G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.sel = [];
-  POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false;
+  POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
   G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
@@ -16593,13 +16661,16 @@ el('drivepad').addEventListener('pointermove', function (e) {
 ['pointerup', 'pointercancel'].forEach(function (ev) {
   el('drivepad').addEventListener(ev, function (e) { if (DRV.padId === e.pointerId) povPadOff(); });
 });
-el('drivefire').addEventListener('pointerdown', function (e) {
-  DRV.padFire = true;
-  if (el('drivefire').setPointerCapture) el('drivefire').setPointerCapture(e.pointerId);
-  e.preventDefault();
-});
-['pointerup', 'pointercancel'].forEach(function (ev) {
-  el('drivefire').addEventListener(ev, function () { DRV.padFire = false; });
+[['drivefire', 'padFire'], ['drivemg', 'padMg']].forEach(function (b) {
+  var q = el(b[0]);
+  q.addEventListener('pointerdown', function (e) {
+    DRV[b[1]] = true;
+    if (q.setPointerCapture) q.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  ['pointerup', 'pointercancel'].forEach(function (ev) {
+    q.addEventListener(ev, function () { DRV[b[1]] = false; });
+  });
 });
 el('tPause').onclick = function () {
   G.paused = !G.paused;

@@ -148,11 +148,16 @@ for (const device of TARGETS) {
 
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
+    /* the gun and barrel tests run another minute of battle on top of the one already
+       fought, which is long enough for the victory points to run out and the game-over
+       screen to come up over everything the rest of the check wants to click */
+    window.G.res.us.vp = 9000; window.G.res.ger.vp = 9000;
     const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
     /* on ground it can actually drive off, or the driving check below measures a wall */
     const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
     const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);   /* spawnUnit adds it to the field itself */
+    u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
     window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
@@ -204,6 +209,33 @@ for (const device of TARGETS) {
   const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
   ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
      `${fired} rounds into the street in nine seconds`);
+
+  /* --- the coaxial: its own trigger, no reload, and a barrel that will only take so much --- */
+  const mg0 = await page.evaluate(() => {
+    const u = window.POV.u;
+    if (!u) return { sec: 0, btn: 0 };
+    u.mgHeat = 0; u.mgCook = 0; u.mgOnT = 0;
+    window.DRV.padFire = false; window.DRV.padMg = false;
+    return { sec: window.secondaryKeys(u).length, btn: document.getElementById('drivemg').getBoundingClientRect().height };
+  });
+  await fastForward(page, 6);
+  const mgIdle = await page.evaluate(() => window.POV.u ? +(window.POV.u.mgHeat || 0).toFixed(2) : -1);
+  await page.evaluate(() => { window.DRV.padMg = true; });
+  await fastForward(page, 8);
+  const mgWarm = await page.evaluate(() => window.POV.u ? +(window.POV.u.mgHeat || 0).toFixed(2) : -1);
+  /* the barrel cooks and then cools itself under a held trigger, so watch the whole
+     burst rather than sampling one moment of the cycle */
+  let cookedAt = 0;
+  for (let t = 10; t <= 30 && !cookedAt; t += 2) {
+    await fastForward(page, 2);
+    if (await page.evaluate(() => !!(window.POV.u && window.POV.u.mgCook))) cookedAt = t;
+  }
+  await page.evaluate(() => { window.DRV.padMg = false; });
+  await fastForward(page, 25);
+  const mgCool = await page.evaluate(() => window.POV.u ? { heat: +(window.POV.u.mgHeat || 0).toFixed(2), cooked: !!window.POV.u.mgCook } : { heat: 9, cooked: true });
+  ok('the coaxial fires on its own trigger and cooks the barrel',
+     mg0.sec > 0 && mg0.btn >= 44 && mgIdle === 0 && mgWarm > .1 && mgWarm < 1 && cookedAt > 8 && mgCool.heat < .1 && !mgCool.cooked,
+     `idle ${mgIdle}, ${mgWarm} after 8s on the trigger, cooked at ${cookedAt}s, cold again 25s after release`);
 
   ok('the commander drives his tank from the periscope',
      drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 30 && drv2.turned > .2 && drv2.took === 1 && drv3.sp < 1,

@@ -153,7 +153,11 @@ const SCENES = {
       });
       await fastForward(page, 2);
       await shoot(page, out('pov-tank-lay'), { settle: SETTLE });
-      await page.evaluate(() => { window.DRV.padFire = false; window.povOff(); });
+      /* and the coaxial running, so the heat on its button is in the picture */
+      await page.evaluate(() => { window.DRV.padFire = false; window.DRV.padMg = true; });
+      await fastForward(page, 9);
+      await shoot(page, out('pov-tank-mg'), { settle: SETTLE });
+      await page.evaluate(() => { window.DRV.padMg = false; window.povOff(); });
     }
   },
 

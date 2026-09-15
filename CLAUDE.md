@@ -255,6 +255,13 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
 
+Two things the periscope block has to do to itself: it tops both sides' victory points up
+to nine thousand and gives its test tank a hundred thousand hit points. A minute of
+simulated battle for the gun and barrel tests on top of the three already fought is long
+enough for the game to end, and a game-over screen sits over everything the rest of the
+check wants to click; and a tank parked by its own headquarters for a minute of that is a
+tank that can be killed, which closes the periscope and takes `POV.u` with it.
+
 ### `tools/shoot.mjs` - looking at it
 
 Writes PNGs to `shots/<device>/`. Read them back with the Read tool and judge
@@ -785,8 +792,32 @@ mark on the ground is the burst drawn at its own size, with the far edge project
 than guessed. Houses are scenery and have no hit points, but the men in them have: a
 round on the wall reaches the garrison standing along the inside of it.
 
-The controls are a thumb pad and a fire button (`#drive`), pointer-handled so a finger
-and a mouse take the same path, and on a desktop W S drive, A D steer and space fires.
+**Two guns, two triggers.** The Sherman carries its coaxial as standard now (`def.sec`
+on the unit rather than an upgrade, which is what `secondaryKeys` reads alongside
+`u.up`), and under command neither gun fires on its own: the main gun answers GUN and the
+coaxial answers MG, and `fireOneSecondary` returns at once while the trigger is up. The
+coaxial is laid where he is looking, within a third of a radian, and with nothing in front
+of it the belt still goes down the street -- a trigger that does nothing when pulled reads
+as a broken tank.
+
+**A machine gun has no round to load; it has a barrel.** `mgHeat` climbs while the gun is
+running (`mgOnT`, set for a round and a half's worth each time one leaves, so the gauge
+does not flicker between rounds at four hundred a minute) and falls while it is not, and
+at the top of it the gun is out until it is back down to a third. `DIFF[].mgHold` is how
+many seconds of the trigger held down it takes to get there: thirty on green, twenty-two
+on regular, sixteen on veteran, and eighteen for anything the other side is driving.
+Cooling from full takes a little over half as long again. Held down for ever it cycles:
+twenty-two seconds of fire, eight of nothing, and round again. The roster barely notices,
+because a vehicle machine gun in `duel.mjs` finishes its fight in fifteen to eighteen
+seconds and never reaches the number.
+
+The controls are a thumb pad and two triggers (`#drive`), pointer-handled so a finger
+and a mouse take the same path, and on a desktop W A S D drive, space fires the gun and C
+the coaxial (the right mouse button does too). **Both triggers read the same way round:**
+the circle fills as the main gun loads and lights when the round is home, and the machine
+gun's circle shows the barrel it has left rather than the heat it has taken. A gauge that
+fills toward ready next to an identical gauge that fills toward danger is two opposite
+meanings in two identical circles, and the first version had exactly that.
 They are not laid out in CSS alone: a phone's right-hand edge already carries the tool
 strip at the top and the little map at the bottom, so `povDriveLayout` measures the band
 between them and puts the button in it, and `body.pov` takes away the three buttons that
