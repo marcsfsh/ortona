@@ -918,6 +918,11 @@ with thirty-four calls raised and thirteen, `stand` on 36.4 per cent of unit-tic
 and a tick at 0.71 ms and 0.59. A battle here compounds, and what a brain meets depends on
 what it met ten seconds earlier.
 
+On the tactics card the whole pass is a pair difference of -21 with a standard error of 302
+over four pairs against the commit before it: inside the noise, which is the honest answer
+for a change of this kind and the one the tool almost always gives. Every rule in it stands
+on whether it is right.
+
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
