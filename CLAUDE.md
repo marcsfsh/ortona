@@ -1078,6 +1078,14 @@ men cannot take a sector however long it stands on one, so a task force built ou
 screen costs the capture allocation nothing, while a section taken off the dealing is a
 flag nobody is standing on.
 
+Refought after the cut: **-163 with a standard error of 201 over eight pairs, inside the
+noise**, and the working brain ahead in four of eight same-side comparisons rather than
+one. Ground held came back from 4.1 sectors to 5.6 against the baseline's 6.4, and 6.1 to
+9.4 against 10.1. What is left is a small deficit in ground that the tool says would take
+about fifty pairs to see, so it is not known whether it is there at all. That is the right
+place for a change of this kind to land: the agency is kept and the army is paying a price
+for it that nothing can measure.
+
 **Order the planning by urgency, because room is the scarce thing.** There is room for
 another operation on fewer than half the ticks -- four kinds wanting seven slots out of the
 third of the army they are allowed between them -- so whichever is considered first wins.
