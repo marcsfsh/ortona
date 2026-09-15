@@ -8018,6 +8018,7 @@ var FSH = [
   '  float m = floor(vMat + 0.5);',
   '  vec4 det = tile(m, vUV);',
   '  if (uAlphaTest > 0.5 && det.a < 0.5) discard;',
+  '  vec3 gn = n;',
   '  if (uUseTex > 0.5) {',
   /* ground: the painted map, a fine earth detail on top, and bare earth blended in on
      steep slopes where the paint would smear */
@@ -8031,10 +8032,58 @@ var FSH = [
      colour in it -- measured, the contrast of the ground fell three points between full
      resolution and the same picture boxed down by eight, meaning there was nothing on
      it finer than eight pixels at any distance. */
-  '    vec3 ga = texture2D(uGrit, vWpos.xy * 0.0833).rgb;',
-  '    vec3 gb = texture2D(uGrit, vWpos.xy * 0.0125 + 0.37).rgb;',
   '    float nearD = clamp(1.0 - vDist / 620.0, 0.0, 1.0);',
   '    float midD = clamp(1.0 - vDist / 1900.0, 0.0, 1.0);',
+  /* How far off level the ground is here, on the painted map's own two thresholds: it
+     holds soil below eleven degrees and is bare bedded rock above thirty-two, with the
+     shoulder between. `rocky` is the colour and it starts at the second of those, because
+     the shoulder is already painted as scree thinning off the face above it and a stone
+     wash over the whole of the rolling ground takes the warmth out of the map. `lean` is
+     the projection, and it is a weight rather than a threshold: a plan projection
+     stretches a pattern on a face by one over the cosine and a vertical one stretches it
+     by one over the sine, so each is given the ground it is the better of the two on.
+     The first version had the weight backwards and handed the vertical frame to the
+     gentlest slopes on the map, which is where that frame is at its worst: the wall of a
+     shell hole at twenty-eight degrees came back stretched two to one where the plan
+     projection had it stretched by a tenth. The second crossed them at forty-five
+     degrees, which is correct and still costs, because the two patterns are unrelated
+     and a half of each carries less fine contrast than the whole of either -- measured,
+     three per cent of it off every face on the map, which is the whole natural range of
+     this one. So the cross-fade is narrow and late: everything up to thirty-eight
+     degrees keeps the plan projection, where it is stretched by at most a quarter, and
+     it is given up over the band where it starts costing more than the swap does. A
+     trench wall at seventy is stretched three to one by a plan projection and by a
+     fifteenth by this. Both read the GEOMETRIC normal, because the bump below can swing a flat
+     fragment's normal most of a radian, and keyed off the bumped one this painted rock
+     into open ground wherever the grain happened to have a steep gradient. */
+  '    float sh = length(gn.xy);',
+  '    float lean = smoothstep(0.62, 0.90, sh);',
+  '    float rocky = clamp((0.905 - gn.z) * 6.2, 0.0, 1.0);',
+  /* The painted map is a plan and nothing else, so on a face it is stretched by one over
+     the cosine and every scale of grain on top of it was stretched with it. The coastal
+     bluff, the wadi banks and the wall of a trench all came out as broad smears with no
+     detail at any distance, and the old answer to it was a `tile()` of the atlas on a
+     diagonal uv -- the one thing the grit texture exists to avoid, since a `fract()`
+     breaks the derivative the hardware picks a mip from and every repeat carries a seam
+     of the coarsest one.
+
+     The projection on a face is cylindrical about the face's own bearing: u runs across
+     it along the horizontal tangent and v runs up it. That is stable on anything from a
+     bank to a vertical cut, it needs no tangent frame in the vertex stream, and it is
+     what makes a cut face read as a cut face rather than as a floor seen edge-on. Two
+     fetches, and only a sloped fragment pays for them. */
+  '    vec3 ga = texture2D(uGrit, vWpos.xy * 0.0833).rgb;',
+  '    vec3 gb = texture2D(uGrit, vWpos.xy * 0.0125 + 0.37).rgb;',
+  '    vec2 st = vec2(1.0, 0.0), sv = vWpos.xy;',
+  '    float gp = ga.r, gf = ga.r;',
+  '    if (lean > 0.02) {',
+  '      st = normalize(vec2(-gn.y, gn.x) + vec2(1e-4, 0.0));',
+  '      sv = vec2(dot(vWpos.xy, st), vWpos.z);',
+  '      vec3 sa = texture2D(uGrit, sv * 0.0833).rgb;',
+  '      gf = sa.r;',
+  '      ga = mix(ga, sa, lean);',
+  '      gb = mix(gb, texture2D(uGrit, sv * 0.0125 + 0.61).rgb, lean);',
+  '    }',
   /* weighted toward the fine end on purpose: the painted map already carries the macro
      drift, the slope materials and the hollows, and a second lot of thirty-unit blotches
      on top of it reads as camouflage rather than as ground */
@@ -8045,21 +8094,48 @@ var FSH = [
      the crowns of it is a hue and not a brightness */
   '    base = mix(base * vec3(0.90, 0.91, 0.95), base * vec3(1.07, 1.01, 0.90),',
   '               clamp(grit * 2.2 + 0.5, 0.0, 1.0));',
+  /* A face is bedded, and bedding is a horizontal band. A constant u makes the sample a
+     pure function of height, which is exactly that: topsoil over subsoil in the wall of
+     a trench, courses of sandstone in the bluff. The colour is the one the painter lays
+     on bedrock, so the reprojected face and the plan view meet without a step. */
+  '    if (rocky > 0.01) {',
+  '      float bed = texture2D(uGrit, vec2(0.137, vWpos.z * 0.016)).b;',
+  '      vec3 rock = mix(vec3(0.44, 0.41, 0.33), vec3(0.70, 0.65, 0.53), bed);',
+  '      rock *= 1.0 + (ga.r - 0.5) * 1.20 * nearD + (ga.g - 0.5) * 0.70 * midD',
+  '                  + (gb.b - 0.5) * 0.50;',
+  /* and it is scaled to what the painter put there, because the reprojection is a fix
+     for the DETAIL on a face and not for its tone. Left absolute it lifted the inside of
+     every shell crater to the value of a sunlit bluff and the crater field stopped
+     reading as holes in the ground. */
+  '      rock *= 0.34 + dot(base, vec3(0.34, 0.36, 0.30)) * 0.94;',
+  /* a third of what the map painted is kept, so a bank in a green field is not the same
+     stone as one on the shore */
+  '      base = mix(base, mix(rock, base, 0.30), rocky * 0.85);',
+  '    }',
   /* and the grain gets a normal, which at twenty-one degrees of sun is most of what
      makes ground read as a surface rather than as a photograph of one: every clod
      throws its own small shadow up the slope away from the light. Two more fetches,
      faded out with the same distance the grain is, because a normal perturbation below
-     the pixel is the purest form of shimmer there is. */
+     the pixel is the purest form of shimmer there is. The frame is the one the grain was
+     sampled in, so on a face the clods lie across it and up it rather than in plan. */
   '#if BUMP',
   '    if (nearD > 0.02) {',
   '      float gu = texture2D(uGrit, vWpos.xy * 0.0833 + vec2(0.0039, 0.0)).r;',
   '      float gv = texture2D(uGrit, vWpos.xy * 0.0833 + vec2(0.0, 0.0039)).r;',
-  '      n = normalize(n + vec3(ga.r - gu, ga.r - gv, 0.0) * 3.4 * nearD);',
+  '      n = normalize(n + vec3(gp - gu, gp - gv, 0.0) * 3.4 * nearD * (1.0 - lean));',
+  /* and the face's own share of it in the face's own frame, so the clods on a cut lie
+     across it and up it. A gradient has to be taken in the frame its sample came from:
+     differencing a blended value against a single-frame neighbour is not a gradient, it
+     is two unrelated noises subtracted, and it puts the whole amplitude of the grain
+     into the normal everywhere the two frames are both in play. */
+  '      if (lean > 0.02) {',
+  '        float su = texture2D(uGrit, sv * 0.0833 + vec2(0.0039, 0.0)).r;',
+  '        float sw = texture2D(uGrit, sv * 0.0833 + vec2(0.0, 0.0039)).r;',
+  '        n = normalize(n + (vec3(st, 0.0) * (gf - su) + vec3(0.0, 0.0, 1.0) * (gf - sw))',
+  '                          * 3.4 * nearD * lean);',
+  '      }',
   '    }',
   '#endif',
-  '    float steep = clamp((0.82 - n.z) * 4.0, 0.0, 1.0);',
-  '    vec3 bare = vec3(0.42, 0.36, 0.26) * tile(8.0, vWpos.xz * 0.05 + vWpos.yz * 0.05).rgb * 2.0;',
-  '    base = mix(base, bare, steep * 0.75);',
   '  } else {',
   '    base *= det.rgb * 2.0;',
   '  }',

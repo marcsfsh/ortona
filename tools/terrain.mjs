@@ -24,6 +24,13 @@
  * whose detail is finer than the pixel it lands in changes a great deal. Aliasing is
  * invisible in a still and is the first thing anybody notices in motion.
  *
+ * FACE is the same reading on a cut face rather than on open ground, and it is a
+ * separate section because the two are sampled in different frames. The painted map is a
+ * plan and nothing else, so on a slope it is stretched by one over the cosine and every
+ * scale of grain on top of it was stretched with it: the coastal bluff, the wadi banks
+ * and the wall of a trench all came out as broad smears. A face carries a fraction of the
+ * fine contrast the flat ground beside it carries, and that fraction is the number.
+ *
  * PAINT is what the albedo canvas carries before any of the shader's detail goes on top,
  * and whether it is mipmapped. A 2800 by 1900 texture with no mip chain is the whole of
  * the far-distance shimmer on its own.
@@ -47,7 +54,7 @@ async function run(file, label) {
   const browser = await launch();
   const { page } = await openGame(browser, 'desktop', { file, quiet: true });
   await deploy(page, { side: 'us', diff: 1 });
-  const out = await page.evaluate(({ DISTS, doGrain, doPaint, doCost }) => {
+  const out = await page.evaluate(({ DISTS, doGrain, doFace, doPaint, doCost }) => {
     const R = {};
 
     /* the camera has to get closer and look straighter down than a player can, because
@@ -114,6 +121,29 @@ async function run(file, label) {
       return out;
     }
 
+    /* The fine part of the contrast, taken directly rather than as the difference of
+       two squares. sqrt(full^2 - boxed8^2) is right in principle and hopeless in
+       practice once the two are close: on the wall of a shell hole the whole-patch
+       contrast is 36 per cent and the boxed one 35, so the fine part is a difference of
+       two large numbers and moves ten per cent on nothing. This boxes the image down by
+       eight, puts it back up, subtracts, and takes the rms of what is left, which is the
+       same quantity measured instead of inferred. */
+    function fineRms(l, n) {
+      const half = n >> 3, box = new Float64Array(half * half);
+      for (let j = 0; j < half; j++) for (let i = 0; i < half; i++) {
+        let s2 = 0;
+        for (let b = 0; b < 8; b++) for (let a = 0; a < 8; a++) s2 += l[(j * 8 + b) * n + i * 8 + a];
+        box[j * half + i] = s2 / 64;
+      }
+      let ss = 0, m = 0;
+      for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+        const d = l[j * n + i] - box[Math.min(half - 1, j >> 3) * half + Math.min(half - 1, i >> 3)];
+        ss += d * d; m += l[j * n + i];
+      }
+      m /= n * n;
+      return Math.sqrt(ss / (n * n)) / Math.max(1e-6, m);
+    }
+
     if (doGrain) {
       function shim(d) {
         const l = shoot(F.x, F.y, d);
@@ -137,9 +167,72 @@ async function run(file, label) {
         SCENE.tiles = tiles.map(() => ({ props: { vbo: null, n: 0 }, leaves: { vbo: null, n: 0 } }));
         const b = shim(d);
         SCENE.tiles = tiles;
-        R.grain.push({ d, c: contrasts(a.l, N), shimmer: a.s, ground: b.s });
+        R.grain.push({ d, c: contrasts(a.l, N), fine: fineRms(a.l, N), shimmer: a.s, ground: b.s });
       }
       R.at = F;
+    }
+
+    if (doFace) {
+      /* A face of about twenty-five, forty-five and sixty-five degrees, whichever point
+         on the map comes nearest each and is in the sun. Three rows rather than one,
+         because the projection this measures is a blend of two and the shape of the
+         answer is the point: a plan projection stretches a pattern on a face by one over
+         the cosine and a vertical one by one over the sine, so the blend is a large win
+         on a cut, about even at forty-five where both are out by root two, and a small
+         loss either side of it. A card with one row at forty-five says the pass did
+         nothing.
+
+         Every point has to be in the sun, because the grain does most of its work
+         through the normal and the sun term: a north face at twenty-one degrees of
+         elevation is in its own shadow all day and reads the same whatever is done to
+         it. And the square is read from seventy units up, which is fourteen units of
+         ground, so it lands on the face and not on the crest above it -- the first
+         version hunted for a hundred and twenty units of uniformly sloped ground,
+         found none anywhere inland, and fell back to flat on every run. */
+      const TARGETS = [0.466, 1.0, 1.428];                     /* tan 25, 45, 65 degrees */
+      function faceAt(want) {
+        let best = null, bd = 1e9;
+        for (let y = 200; y < 1700; y += 8) for (let x = 200; x < 2600; x += 8) {
+          const ci = cidx((x / CELL) | 0, (y / CELL) | 0);
+          if (sblk[ci] || fblk[ci]) continue;
+          const nv = groundNormal(x, y);
+          if (nv.x * SUN.x + nv.y * SUN.y + nv.z * SUN.z < 0.35) continue;
+          let lo = 9, hi = 0;
+          for (let dx = -10; dx <= 10; dx += 10) for (let dy = -10; dy <= 10; dy += 10) {
+            const gx = (groundZ(x + dx + 5, y + dy) - groundZ(x + dx - 5, y + dy)) / 10;
+            const gy = (groundZ(x + dx, y + dy + 5) - groundZ(x + dx, y + dy - 5)) / 10;
+            const g = Math.hypot(gx, gy);
+            if (g < lo) lo = g; if (g > hi) hi = g;
+          }
+          if (hi > lo * 1.6 + 0.12) continue;                  /* the square is one face */
+          const d = Math.abs((lo + hi) / 2 - want);
+          if (d < bd) { bd = d; best = { x, y, sl: (lo + hi) / 2 }; }
+        }
+        return best;
+      }
+      const tiles = SCENE.tiles;
+      const off = tiles.map(() => ({ props: { vbo: null, n: 0 }, leaves: { vbo: null, n: 0 } }));
+      R.face = { rows: [] };
+      SCENE.tiles = off;
+      const lf = shoot(F.x, F.y, 70);
+      const flatFine = fineRms(lf, N);
+      SCENE.tiles = tiles;
+      for (const want of TARGETS) {
+        const P = faceAt(want);
+        if (!P) { R.face.rows.push({ deg: Math.atan(want) * 180 / Math.PI, miss: true }); continue; }
+        SCENE.tiles = off;
+        const l = shoot(P.x, P.y, 70);
+        const perPx = (70 * 1.1) / cv.height;
+        const l2 = shoot(P.x + perPx * 0.33, P.y, 70);
+        SCENE.tiles = tiles;
+        let diff = 0, mean = 0;
+        for (let i = 0; i < N * N; i++) { diff += Math.abs(l[i] - l2[i]); mean += l[i]; }
+        R.face.rows.push({ deg: Math.atan(P.sl) * 180 / Math.PI, at: P, c: contrasts(l, N),
+                           fine: fineRms(l, N), flatFine,
+                           shimmer: diff / N / N / Math.max(1e-6, mean / N / N) });
+      }
+      R.face.flatFine = flatFine;
+      R.face.flatAt = F;
     }
 
     if (doPaint) {
@@ -179,7 +272,7 @@ async function run(file, label) {
                  atlasPx: MATS.TILE * MATS.COLS };
     }
     return R;
-  }, { DISTS, doGrain: want('grain'), doPaint: want('paint'), doCost: want('cost') });
+  }, { DISTS, doGrain: want('grain'), doFace: want('face'), doPaint: want('paint'), doCost: want('cost') });
   await browser.close();
   return { label, ...out };
 }
@@ -198,10 +291,9 @@ function show(c) {
     console.log('  ' + '-'.repeat(75));
     for (const g of c.grain) {
       /* the contrast that lives ABOVE the eight-pixel scale, which is the only column
-         this pass can move. Variance adds, so the fine part is the difference of the
-         squares: a whole-patch contrast is dominated by the painted macro drift and a
-         doubling of the grain shifts it by a point or two, which reads as nothing. */
-      const fine = Math.sqrt(Math.max(0, g.c[0] * g.c[0] - g.c[3] * g.c[3]));
+         this pass can move: a whole-patch contrast is dominated by the painted macro
+         drift and a doubling of the grain shifts it by a point or two. */
+      const fine = g.fine;
       console.log('  ' + pad(g.d + 'u', 10) + g.c.map(v => lpad(pc(v), 9)).join('') +
                   lpad(pc(fine), 9) + lpad(pc(g.ground), 9) + lpad(pc(g.shimmer), 10));
     }
@@ -213,12 +305,32 @@ function show(c) {
     console.log('  ground alone and `all` has the props in: a rubble pile a pixel across aliases');
     console.log('  however well the ground is filtered, and it is not the ground\'s fault.');
   }
+  if (c.face) {
+    const f = c.face;
+    console.log('\n  FACE     three sunlit faces, read from seventy units up, against the open');
+    console.log('           ground at ' + Math.round(f.flatAt.x) + ',' + Math.round(f.flatAt.y) +
+                ' read the same way\n');
+    console.log('  ' + pad('face', 10) + lpad('at', 14) + lpad('full', 9) + lpad('fine', 9) +
+                lpad('flat fine', 11) + lpad('face/flat', 11) + lpad('shimmer', 10));
+    console.log('  ' + '-'.repeat(74));
+    for (const r of f.rows) {
+      if (r.miss) { console.log('  ' + pad(r.deg.toFixed(0) + ' deg', 10) + '   nowhere on the map'); continue; }
+      console.log('  ' + pad(r.deg.toFixed(0) + ' deg', 10) +
+                  lpad(Math.round(r.at.x) + ',' + Math.round(r.at.y), 14) +
+                  lpad(pc(r.c[0]), 9) + lpad(pc(r.fine), 9) + lpad(pc(r.flatFine), 11) +
+                  lpad((r.fine / Math.max(1e-6, r.flatFine)).toFixed(2), 11) +
+                  lpad(pc(r.shimmer), 10));
+    }
+    console.log('\n  the painted map is a plan and nothing else, so on a face it is stretched by');
+    console.log('  one over the cosine and every scale of grain on top of it goes with it.');
+    console.log('  face/flat is the share of the fine contrast a face carries against the open');
+    console.log('  ground beside it, which is the one number a picture of a slope cannot give.');
+  }
   if (c.paint) {
     const p = c.paint;
     console.log('\n  PAINT    the albedo canvas under all of it\n');
     console.log('  ' + pad('size', 22) + p.w + ' x ' + p.h + '   ' +
                 p.unitsPerTexel.toFixed(2) + ' world units a texel');
-    console.log('  ' + pad('weighs', 22) + p.albedoMB === undefined ? '' : '');
     if (p.c) console.log('  ' + pad('its own contrast', 22) + p.c.map(v => lpad(pc(v), 9)).join(''));
     console.log('  ' + pad('albedo filter', 22) + p.albedoFilter);
     console.log('  ' + pad('atlas filter', 22) + p.atlasFilter);

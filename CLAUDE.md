@@ -509,6 +509,28 @@ far it has pushed, how many different targets the sections that are firing have 
 and how much money it is sitting on. A win rate says which brain is better; those say
 why.
 
+**FACE** is the same reading on a sunlit slope. The painted map is a plan and nothing else,
+so on a face it is stretched by one over the cosine and every scale of grain on top of it is
+stretched with it: a face carries about two thirds of the fine contrast the open ground
+beside it carries at twenty-five degrees and about two fifths at forty-five. Three rows
+rather than one, because what it measures is a blend of two projections and the shape of the
+answer is the point -- a card with one row at forty-five degrees, where a plan projection and
+a vertical one are out by the same root two, says the pass did nothing.
+
+Two things had to be fixed before it could say anything at all. **The steepest thing on
+Ortona is a sea cliff**, so a probe that hunts the map for the steepest patch reads the
+Adriatic in the corner of its square and comes back at forty-nine per cent contrast; made to
+insist on a hundred and twenty units of uniformly sloped inland ground, there is nowhere on
+the map that qualifies and it falls back to flat every run. And **a face has to be in the
+sun**: the grain does most of its work through the normal and the sun term, so a north face
+at twenty-one degrees of elevation is in its own shadow all day and reads the same whatever
+is done to it.
+
+The fine column is measured rather than inferred. `sqrt(full^2 - boxed8^2)` is right in
+principle and hopeless in practice once the two are close: on the wall of a shell hole the
+whole-patch contrast is 36 per cent and the boxed one 35, so the fine part is a difference of
+two large numbers and moves ten per cent on nothing.
+
 ### `tools/mapcheck.mjs` - the map, mechanically
 
 A hand-placed map is a few hundred coordinates and the eye will not hold them. Craters
@@ -1016,6 +1038,56 @@ the ground is minified several to one and every frame samples a different set of
 It reads as sharpness in a still and as a crawl the moment anything moves. A patch upload
 invalidates the chain under it and the editor paints patches, so it is regenerated there
 too.
+
+**And a cut face is not a floor seen edge-on.** The painted map is a plan, so on a slope it
+is stretched by one over the cosine and every scale of grain on top of it was stretched with
+it. The coastal bluff, the wadi banks and the wall of a trench all came out as broad smears,
+and the old answer to that was a `tile()` of the atlas on a diagonal uv -- the one thing the
+grit texture exists to avoid, since a `fract()` breaks the derivative the hardware picks a
+mip from and every repeat carries a seam of the coarsest one. It was replaced with a
+cylindrical projection about the face's own bearing: u runs across the face along the
+horizontal tangent and v runs up it, which is stable on anything from a bank to a vertical
+cut and needs no tangent frame in the vertex stream. Two fetches, and only a sloped fragment
+pays for them.
+
+**The weight between the two projections is the whole of it, and it was wrong twice.** A plan
+projection stretches a pattern on a face by one over the cosine and a vertical one stretches
+it by one over the sine, so each wants the ground it is the better of the two on. Written as
+a threshold on how far off level the ground is, it handed the vertical frame to the gentlest
+slopes on the map, which is where that frame is at its worst: the wall of a shell hole at
+twenty-eight degrees came back stretched two to one where the plan projection had it
+stretched by a tenth. Written as the textbook triplanar crossing at forty-five it is correct
+and still costs, because the two patterns are unrelated and a half of each carries less fine
+contrast than the whole of either -- measured, three points of fine contrast off every face
+on the map, which is the whole natural range of this one. It is a narrow, late cross-fade
+now: everything up to thirty-eight degrees keeps the plan projection, where it is stretched
+by at most a quarter, and gives it up over the band where holding it costs more than the swap
+does. A trench wall at seventy degrees is stretched three to one by a plan projection and by
+a fifteenth by this one.
+
+Three more things about it. **The steep test reads the geometric normal**, because the bump
+can swing a flat fragment's normal most of a radian and keyed off the bumped one it painted
+rock into open ground wherever the grain happened to have a steep gradient. **A gradient has
+to be taken in the frame its sample came from**: differencing a blended value against a
+single-frame neighbour is not a gradient, it is two unrelated noises subtracted, and it puts
+the whole amplitude of the grain into the normal everywhere the two frames are both in play,
+so the bump is taken twice and weighted. And **the rock is scaled to what the painter put
+there**, because the reprojection is a fix for the detail on a face and not for its tone:
+left absolute it lifted the inside of every shell crater to the value of a sunlit bluff and
+the crater field stopped reading as holes in the ground.
+
+The colour starts where the painted map's own geology starts -- it holds soil below eleven
+degrees and is bare bedded rock above thirty-two -- because the shoulder between is already
+painted as scree thinning off the face above it, and a stone wash over the whole of the
+rolling ground takes the warmth out of the map. The bedding is a sample of the grit texture
+at a constant u, which makes it a pure function of height, and a horizontal band is what a
+cut through layered ground has: topsoil over subsoil in a trench wall, courses of sandstone
+in the bluff.
+
+On the card, against the same file without it: a face at 25 degrees is unchanged, one at 45
+goes from 0.39 of the fine contrast of the open ground beside it to 0.46, and one at 48 from
+0.37 to 0.42. Nothing on this map is steeper than 48 degrees and sunlit, so the trench walls
+and the crater walls where it does most of its work are judged by looking at them.
 
 **A crater is three things and the paint had one of them.** There is the bowl, damp subsoil
 turned up out of a dry surface, which is darker and redder than anything round it. There is
