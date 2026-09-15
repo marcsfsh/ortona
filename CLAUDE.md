@@ -49,6 +49,7 @@ node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
 node tools/sight.mjs         # sight: the trace, what a position commands, how long spotting takes
+node tools/model.mjs         # the models: the occlusion bake against shapes with known answers
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -328,6 +329,46 @@ ground west of the town commands 100 and 24.
 **SPOT** is seconds to pick a section out, by what it is doing, which is the whole point of
 making detection a rate. **FOG** is the share of the map in each of the three tiers.
 **COST** is what a vision tick costs and how many traces it runs.
+
+### `tools/model.mjs` - the models, mechanically
+
+A vehicle is judged by looking at it, and that is right for proportion, for paint and for
+whether a fitting is on the correct side. It is no use at all for the occlusion baked into
+it, because the bake is arithmetic over a grid and every way of getting it wrong produces a
+picture that is plausible. Too strong and the tank is a darker tank. Too weak and nothing
+happened. Self-occluding and every surface is shaded evenly. Stepping over a wall and the
+joint beside the wall comes back open. All four of those were written into the working file
+in one afternoon and the photographs said nothing, because a shaded slab and an unshaded
+slab both look like a slab.
+
+```sh
+node tools/model.mjs                 # the card
+node tools/model.mjs bake            # one section of it
+node tools/model.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**BAKE** puts the bake against shapes whose answer is known before it is run. A plate alone
+in the sky is occluded by nothing and has to read 1. A deck two hundred units wide is not
+occluded in the middle of it. The foot of a block standing on that deck is, and so is the
+deck at the block's foot, and the inside of a corner is darker than either. Those are facts
+about shapes rather than judgements about tanks, and each of the four faults above breaks
+at least one of them. It reads 1.000, 1.000, 0.882, 0.328, 1.000, 0.487, 1.000, 0.439.
+
+Two things about writing a drill for it. **Read the vertex nearest the thing, not a window
+round it**: occlusion at the foot of a wall falls away over a foot or two, so a window a
+dozen units wide averages the joint with the open deck beyond and reports the joint as
+open, which sent me hunting a bug in a bake that was answering correctly. And **a drill
+builds its own faces**, because the bake writes onto the face lists it is given.
+
+**COST** is what it costs at boot: the bake is a march over a grid at every vertex of every
+vehicle and there are six hundred thousand of them. The number to read is how many marches
+the quantised cache saves -- occlusion varies over the width of a joint and no faster, so
+asking at every face-vertex asks the same question a dozen times. It is one march in three
+and a half, and every vehicle built costs about 580 ms against 210 before.
+
+**SIZE** is faces and vertices per vehicle, because `aoSplit` cuts the big plates and a
+detail pass that quietly trebles the roster is a detail pass that does not run. It is
+152,000 faces over twelve vehicles and the split adds about a hundred of them.
 
 ### `tools/skirmish.mjs` - tactics, mechanically
 
@@ -932,6 +973,73 @@ light's vertical axis, so a square box covers `1/sin` as much ground that way as
 across and spends the same texels on it: at twenty-one degrees that is nearly three times
 the ground for the same resolution, in the one direction the long shadows actually run. The
 up extent is `rad * SUN.z` plus headroom for the tallest thing that casts.
+
+**A box against a box has no crease.** Every vehicle here is built out of boxes and
+cylinders, and until this the turret met the roof, the sponson overhung the track and the
+engine grille sat on the deck with nothing whatever between them: the sun was the only
+light in the scene and the sun cannot reach into a joint a quarter of an inch wide. It is
+the single thing that most made a procedural model read as a stack of slabs -- the
+silhouette right, the plates right, and nothing at all where they meet.
+
+`bakeAO` asks a model once, at build time, how much of the sky each of its own vertices can
+see, and folds the answer into the vertex colour, which is free: the shader already reads
+it and the material was chosen from the face's own hex long before. Five things about it
+are worth knowing before touching it, because each one was wrong first and the picture said
+nothing about any of them.
+
+- **It is a march, not a set of sample points.** A point test steps clean through a plate
+  and finds nothing, which is the mistake `traceClear` was making before it walked the grid
+  cell by cell. And the step is **half a cell**: a wall is marked one cell thick, so a ray
+  stepping a whole cell lands inside the box, where nothing is marked because only surfaces
+  are, and reports clear.
+- **A mount is built about its own ring.** `VMODEL[k].tur` is drawn on its own matrix, so
+  its vertices are nowhere near the hull's in the numbers the builder wrote down. Put both
+  in one grid untranslated and the turret sits inside the engine deck, every vertex of both
+  comes out buried, and the only effect is a darker tank. The mount goes where `mountPose`
+  puts it. Alternative mounts are baked *against* that grid rather than into it, because
+  they all stand in the same place and a grid holding every variant has each of them
+  shading the one that is never fitted beside it.
+- **A wall beside a deck is very nearly in the deck's own plane.** One ring of six rays at
+  fifty-seven degrees puts at most one anywhere near such a wall, and that one carries the
+  least weight because the weight is the cosine: a deck two units from a thirty-unit block
+  came back at 0.99 with the occluder right there. Three rings, and the low one nearest the
+  horizon has the most rays in it.
+- **Do not blur the grid.** It is the obvious cure for the striping that a binary test gives
+  and it is the wrong one: a blur puts a halo of density one cell thick around every
+  surface, the march's first step lands in that halo, and every vertex on the model
+  self-occludes. An isolated box came back shaded on all six faces. The march origin is
+  lifted clear of its own surface cell instead.
+- **The calibration is the whole thing.** A crease occludes two or three of seven directions
+  and not all of them, so the raw number in a joint is about four tenths against half a
+  tenth on the open deck beside it. Scaled at 0.58 that is a crease at 0.85 against a deck
+  at 0.97, a difference nobody can see, with the whole of the dynamic range spent on the
+  inside of the hull where there is nothing to look at.
+
+**And a face carries occlusion at its corners and nowhere else**, so a plate two hundred
+units long is four numbers with a gradient smeared between them. `aoSplit` cuts the big
+flat ones into a grid first, and only flat ones: a bilinear split of a face that is not
+planar is a different surface from the fan the triangulator would have made of it, and the
+seam against its unsplit neighbour shows as a crack. The cap is on the quad count rather
+than per axis, because a cap of fourteen a side on a two-hundred-unit hull plate is a
+sample every fourteen units and the joint comes out as a gradient across the whole panel.
+
+The same march turned the other way says how solid the model is *below* the tangent plane:
+all of it on a flat panel, half of it on a convex edge, a quarter at a corner. That is what
+tells an edge from a panel without anything having to know which faces were neighbours, and
+a convex edge on a painted vehicle is where the paint is off and the steel is showing --
+`f.wear`, which lifts the colour and takes the colour out of it.
+
+**And the plate had no surface.** The atlas tile is a luminance and the lighting read the
+face's own normal, so a plate with grain painted on it was still a mathematically flat
+plate: the grain went light and dark with nothing and did not move at all as the light came
+round. Two more taps give the tile a gradient and the gradient bends the normal, which is
+the difference between Zimmerit combed into the paste and Zimmerit printed on a slab. The
+tangent frame is the triplanar axis pair the uv was projected along, which is the same test
+the triangulator made. It is `#define BUMP`, off on a phone, which has not two more taps a
+fragment to spare beside the nine the shadow already costs. The strength is one constant
+for every material on purpose: a smooth paint tile has small gradients and bumps a little,
+a combed Zimmerit tile has large ones and bumps a lot, so the material's own texture sets
+it. At five it is corrugated iron; it is 1.1.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
 helmets and weapons. Vehicles get individual builders (`shermanHull`,
@@ -1860,6 +1968,7 @@ tools/duel.mjs                 balance card: staged matchups, win rates
 tools/move.mjs                 movement card: routes, battle traffic, cover taken
 tools/brain.mjs                the AI card: sight, plan, and which rules ever fire
 tools/sight.mjs                sight card: the trace, what a position commands, spotting time
+tools/model.mjs                model card: the occlusion bake, its cost, and what is in each vehicle
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI

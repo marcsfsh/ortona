@@ -7992,6 +7992,7 @@ var VSH = [
 var FSH = [
   '#define SHADOWS 0',
   '#define NLIGHTS 4',
+  '#define BUMP 1',
   'precision highp float;',
   'varying vec3 vCol; varying vec3 vNrm; varying vec3 vWpos; varying vec2 vUV; varying float vMat; varying vec2 vSpec;',
   'varying vec4 vSunPos; varying float vDist;',
@@ -8046,6 +8047,21 @@ var FSH = [
   '    sh += shadowAt(sp.xy, dz);',
   '    lit = 1.0 - (sh / 9.0) * 0.88;',
   '  }',
+  '#endif',
+  /* The atlas tile is a luminance and the lighting has been reading the face's own
+     normal, so a plate with grain painted on it was still a mathematically flat plate:
+     the grain went light and dark with nothing and did not move at all as the light came
+     round. Two more taps give the tile a gradient, and the gradient bends the normal,
+     which is the difference between Zimmerit that is combed into the paste and Zimmerit
+     that is printed on a slab. The tangent frame is the triplanar axis pair the uv was
+     projected along, which is the same test the triangulator made. */
+  '#if BUMP',
+  '  vec3 an = abs(n); vec3 tu, tv;',
+  '  if (an.z >= an.x && an.z >= an.y) { tu = vec3(1.0, 0.0, 0.0); tv = vec3(0.0, 1.0, 0.0); }',
+  '  else if (an.x >= an.y) { tu = vec3(0.0, 1.0, 0.0); tv = vec3(0.0, 0.0, 1.0); }',
+  '  else { tu = vec3(1.0, 0.0, 0.0); tv = vec3(0.0, 0.0, 1.0); }',
+  '  float hu = tile(m, vUV + vec2(0.0078, 0.0)).r, hv = tile(m, vUV + vec2(0.0, 0.0078)).r;',
+  '  n = normalize(n + (tu * (det.r - hu) + tv * (det.r - hv)) * 1.1);',
   '#endif',
   '  vec3 V = normalize(uEye - vWpos);',
   '  float ndotl = max(0.0, dot(n, uSun));',
@@ -8199,7 +8215,10 @@ function initGL() {
     SHADOWS = GL2 || !!gl.getExtension('WEBGL_depth_texture');
     LITN = MOB ? 2 : 4;
     _lpos = new Float32Array(LITN * 4); _lcol = new Float32Array(LITN * 3); _ld = new Float32Array(LITN);
-    var fsh = FSH.replace('#define NLIGHTS 4', '#define NLIGHTS ' + LITN);
+    /* two more taps a fragment, which a phone has not got to spare beside the nine the
+       shadow already costs */
+    var fsh = FSH.replace('#define NLIGHTS 4', '#define NLIGHTS ' + LITN)
+                 .replace('#define BUMP 1', '#define BUMP ' + (MOB ? 0 : 1));
     PROG = compileProgram(SHADOWS ? VSH.replace('#define SHADOWS 0', '#define SHADOWS 1') : VSH,
                           SHADOWS ? fsh.replace('#define SHADOWS 0', '#define SHADOWS 1') : fsh,
                           ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat']);
@@ -8606,6 +8625,274 @@ function hexRGB(hex) {
   var n = parseInt(hex.slice(1), 16);
   return [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
 }
+/* ---- ambient occlusion, baked into the model --------------------------------------
+   Every vehicle here is built out of boxes and cylinders, and a box against a box has no
+   crease. The turret meets the roof, the sponson overhangs the track and the engine
+   grille sits on the deck with nothing whatever between them, because until now the sun
+   was the only light in the scene and the sun cannot reach into a joint a quarter of an
+   inch wide. It is the single thing that most makes a procedural model read as a stack
+   of slabs rather than as a vehicle: the silhouette is right, the plates are right, and
+   there is nothing at all where they meet.
+
+   So a model is asked once, at build time, how much of the sky each of its own vertices
+   can see. The test is a short march over a coarse occupancy grid of the model's own
+   faces rather than a ray cast against them: a Tiger II is a few thousand faces and
+   casting even eight rays a vertex against all of them is minutes of arithmetic at boot,
+   while the grid costs one pass over the faces to fill and one lookup a step. It has to
+   be a march and not a set of sample points -- a point test steps clean through a plate
+   and finds nothing, which is the same mistake `traceClear` was making before it walked
+   the grid cell by cell.
+
+   The same march, turned the other way, says how solid the model is *below* the tangent
+   plane: all of it on a flat panel, half of it on a convex edge, a quarter at a corner.
+   That is what tells an edge from a panel without anything having to know which faces
+   were neighbours, and a convex edge on a painted vehicle is where the paint is off and
+   the steel is showing.
+
+   Both come back folded into the vertex colour, which is free: the shader already reads
+   it, and the material was chosen from the face's own hex long before any of this. */
+var AOC = 4;                    /* the grid cell in model units: 34 cm at 11.7 to the metre */
+var AOSPLIT = 8;                /* nothing carries occlusion over more than this, 68 cm */
+var AOUP = 4, AODN = 2;         /* how far the march looks, up and down, in cells */
+/* the directions, in a frame whose z is the vertex normal: straight up, a ring above the
+   plane and a ring below it. The rings are phased off the axes because a box's own
+   creases are axis-aligned and a ring that lines up with them samples the same crease
+   six times. */
+var AODIR = (function () {
+  var d = [[0, 0, 1, 1, 1]], i, r, a, s, c, e, n;
+  /* Three rings above the plane, and the low one does most of the work. A wall standing
+     on a deck lies very nearly in the deck's own plane, so a single ring at fifty-seven
+     degrees with six rays in it puts at most one anywhere near the wall -- and that one
+     carries the least weight, because the weight is the cosine. Measured, a deck two
+     units from a thirty-unit box came back at 0.99: the occluder was right there and
+     nothing could see it. Ten rays near the horizon is what finds a wall. */
+  var rings = [[.42, 6], [.82, 8], [1.20, 10]];
+  for (r = 0; r < rings.length; r++) {
+    e = rings[r][0]; n = rings[r][1];
+    for (i = 0; i < n; i++) {
+      a = (i + r * .37) / n * TAU; s = Math.sin(e); c = Math.cos(e);
+      d.push([Math.cos(a) * s, Math.sin(a) * s, c, c, 1]);
+    }
+  }
+  for (i = 0; i < 6; i++) {
+    a = (i + .25) / 6 * TAU; s = Math.cos(.35); c = -Math.sin(.35);
+    d.push([Math.cos(a) * s, Math.sin(a) * s, c, 1, 0]);      /* the last field: 0 is the lower ring */
+  }
+  return d;
+})();
+/* A face carries occlusion at its corners and nowhere else, so a plate two hundred units
+   long is four numbers with a gradient smeared between them: the crease where it meets
+   the next plate cannot be drawn at all, and whatever the corners happened to read
+   spreads across the whole panel. That is what the first bake looked like -- a tank in
+   blotches. Big faces are cut into a grid before any of it.
+
+   Only flat ones. A bilinear split of a face that is not planar is a different surface
+   from the fan the triangulator would have made of it, and the seam against its
+   unsplit neighbour shows as a crack. Per-vertex normals come through interpolated, or
+   a smooth-shaded lathe would lose its shading on the way. */
+function aoLerp3(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+function aoNorm3(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+function aoFlat(v) {
+  if (v.length < 4) return true;
+  var n = faceNormal(v[0], v[1], v[2]), i, d;
+  for (i = 3; i < v.length; i++) {
+    d = (v[i][0] - v[0][0]) * n.x + (v[i][1] - v[0][1]) * n.y + (v[i][2] - v[0][2]) * n.z;
+    if (Math.abs(d) > .35) return false;
+  }
+  return true;
+}
+function aoSplit(faces, edge) {
+  var out = [], i, j, k, f, v, n0, n1, nu, nw, u0, u1, w0, w1, made;
+  function corner(f2, u, w) {
+    var v2 = f2.v, p = aoLerp3(aoLerp3(v2[0], v2[1], u), aoLerp3(v2[3], v2[2], u), w), q = null;
+    if (f2.n) q = aoNorm3(aoLerp3(aoLerp3(f2.n[0], f2.n[1], u), aoLerp3(f2.n[3], f2.n[2], u), w));
+    return [p, q];
+  }
+  for (i = 0; i < faces.length; i++) {
+    f = faces[i]; v = f.v;
+    if (v.length !== 4 || !aoFlat(v)) { out.push(f); continue; }
+    nu = Math.ceil(Math.max(Math.hypot(v[1][0] - v[0][0], v[1][1] - v[0][1], v[1][2] - v[0][2]),
+                            Math.hypot(v[2][0] - v[3][0], v[2][1] - v[3][1], v[2][2] - v[3][2])) / edge);
+    nw = Math.ceil(Math.max(Math.hypot(v[3][0] - v[0][0], v[3][1] - v[0][1], v[3][2] - v[0][2]),
+                            Math.hypot(v[2][0] - v[1][0], v[2][1] - v[1][1], v[2][2] - v[1][2])) / edge);
+    if (nu < 1) nu = 1; if (nw < 1) nw = 1;
+    /* The cap was fourteen a side, which on a two-hundred-unit hull plate is a sample
+       every fourteen units: the occlusion at the foot of a wall was right and the next
+       sample along was twelve units away and open, so the joint came out as a gradient
+       across the whole panel rather than a line against the wall. Capped on the count
+       instead, so a long thin plate keeps its resolution along its length and only a
+       genuinely huge face is coarsened. */
+    if (nu > 40) nu = 40; if (nw > 40) nw = 40;
+    while (nu * nw > 520) { if (nu >= nw) nu--; else nw--; }
+    if (nu === 1 && nw === 1) { out.push(f); continue; }
+    for (j = 0; j < nu; j++) for (k = 0; k < nw; k++) {
+      u0 = j / nu; u1 = (j + 1) / nu; w0 = k / nw; w1 = (k + 1) / nw;
+      var a = corner(f, u0, w0), b = corner(f, u1, w0), c = corner(f, u1, w1), d = corner(f, u0, w1);
+      made = { v: [a[0], b[0], c[0], d[0]], c: f.c };
+      if (f.m !== undefined) made.m = f.m;
+      if (a[1]) made.n = [a[1], b[1], c[1], d[1]];
+      out.push(made);
+    }
+  }
+  return out;
+}
+function aoSet(g, x, y, z) {
+  var i = ((x - g.x0) / AOC) | 0, j = ((y - g.y0) / AOC) | 0, k = ((z - g.z0) / AOC) | 0;
+  if (i < 0 || j < 0 || k < 0 || i >= g.nx || j >= g.ny || k >= g.nz) return;
+  g.d[(k * g.ny + j) * g.nx + i] = 1;
+}
+function aoAt(g, x, y, z) {
+  var i = ((x - g.x0) / AOC) | 0, j = ((y - g.y0) / AOC) | 0, k = ((z - g.z0) / AOC) | 0;
+  if (i < 0 || j < 0 || k < 0 || i >= g.nx || j >= g.ny || k >= g.nz) return 0;
+  return g.d[(k * g.ny + j) * g.nx + i];
+}
+function aoMark(g, f, ox, oy, oz) {
+  var v = f.v, t, a, b, c, i, j, n, u, w, q, step = AOC * .55;
+  for (t = 1; t < v.length - 1; t++) {
+    a = v[0]; b = v[t]; c = v[t + 1];
+    n = Math.ceil(Math.max(Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]),
+                           Math.hypot(c[0] - a[0], c[1] - a[1], c[2] - a[2]),
+                           Math.hypot(c[0] - b[0], c[1] - b[1], c[2] - b[2])) / step);
+    if (n < 1) n = 1;
+    if (n > 120) n = 120;
+    for (i = 0; i <= n; i++) for (j = 0; i + j <= n; j++) {
+      u = i / n; w = j / n; q = 1 - u - w;
+      aoSet(g, a[0] * q + b[0] * u + c[0] * w + ox, a[1] * q + b[1] * u + c[1] * w + oy,
+            a[2] * q + b[2] * u + c[2] * w + oz);
+    }
+  }
+}
+/* one grid over several face lists, so a turret shades the roof it sits on. It is baked
+   in the pose the model is built in and the turret then turns under it, which leaves a
+   soft ring where a hard shadow ought to swing round; a ring is very nearly what a
+   turret ring looks like from any bearing and it is a great deal better than nothing. */
+function aoGridOf(parts) {
+  var x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, z1 = -1e9, L, i, j, v, P;
+  for (L = 0; L < parts.length; L++) {
+    P = parts[L];
+    if (!P.f || !P.occ) continue;
+    for (i = 0; i < P.f.length; i++) {
+      v = P.f[i].v;
+      for (j = 0; j < v.length; j++) {
+        if (v[j][0] + P.x < x0) x0 = v[j][0] + P.x; if (v[j][0] + P.x > x1) x1 = v[j][0] + P.x;
+        if (v[j][1] + P.y < y0) y0 = v[j][1] + P.y; if (v[j][1] + P.y > y1) y1 = v[j][1] + P.y;
+        if (v[j][2] + P.z < z0) z0 = v[j][2] + P.z; if (v[j][2] + P.z > z1) z1 = v[j][2] + P.z;
+      }
+    }
+  }
+  if (x1 < x0) return null;
+  var pad = AOC * (AOUP + 2);
+  var g = { x0: x0 - pad, y0: y0 - pad, z0: z0 - pad, nx: 0, ny: 0, nz: 0, d: null };
+  g.nx = Math.ceil((x1 - x0 + pad * 2) / AOC) + 1;
+  g.ny = Math.ceil((y1 - y0 + pad * 2) / AOC) + 1;
+  g.nz = Math.ceil((z1 - z0 + pad * 2) / AOC) + 1;
+  g.d = new Uint8Array(g.nx * g.ny * g.nz);
+  for (L = 0; L < parts.length; L++) {
+    P = parts[L];
+    if (!P.f || !P.occ) continue;
+    for (i = 0; i < P.f.length; i++) aoMark(g, P.f[i], P.x, P.y, P.z);
+  }
+  return g;
+}
+/* what one vertex can see: [how shut in it is, how much of an edge it is on] */
+function aoVert(g, p, nx, ny, nz) {
+  /* a frame about the normal; the helper axis is swung away from it so the cross is sane */
+  var tx = Math.abs(nz) < .9 ? 0 : 1, ty = 0, tz = Math.abs(nz) < .9 ? 1 : 0;
+  var ax = ty * nz - tz * ny, ay = tz * nx - tx * nz, az = tx * ny - ty * nx;
+  var l = Math.hypot(ax, ay, az) || 1; ax /= l; ay /= l; az /= l;
+  var bx = ny * az - nz * ay, by = nz * ax - nx * az, bz = nx * ay - ny * ax;
+  /* lifted clear of the cell the vertex's own surface is marked in: that cell reaches a
+     whole cell above the surface, and a ray near the horizon rises very little a step */
+  var ox = p[0] + nx * AOC * 1.15, oy = p[1] + ny * AOC * 1.15, oz = p[2] + nz * AOC * 1.15;
+  var shut = 0, wsum = 0, below = 0, bsum = 0, k, s, d, dx, dy, dz, hit, steps, sx, sy, sz;
+  for (k = 0; k < AODIR.length; k++) {
+    d = AODIR[k];
+    dx = ax * d[0] + bx * d[1] + nx * d[2];
+    dy = ay * d[0] + by * d[1] + ny * d[2];
+    dz = az * d[0] + bz * d[1] + nz * d[2];
+    steps = d[4] ? AOUP : AODN;
+    sx = d[4] ? ox : p[0] + nx * AOC * .2;
+    sy = d[4] ? oy : p[1] + ny * AOC * .2;
+    sz = d[4] ? oz : p[2] + nz * AOC * .2;
+    hit = 0;
+    /* an inverse square on the step, which is the whole difference between a crease and
+       a darker tank. A linear falloff let a plate twenty units away darken a vertex by a
+       fifth, and on a model of eleven thousand faces there is always something twenty
+       units away: three quarters of every vehicle came back shaded, uniformly, which is
+       not occlusion but a coat of grey. Weighted 1, 0.25, 0.11, 0.06, only what is in
+       the joint counts for anything. The density is accumulated rather than stopped at,
+       because stopping is the binary test the stripes came from. */
+    /* half a cell a step. A wall is marked one cell thick and the march was stepping a
+       whole cell, so a ray aimed straight at a box wall two units away landed inside the
+       box, where nothing is marked because only surfaces are, and reported clear. It is
+       the same mistake `traceClear` was making before it walked the grid cell by cell,
+       and it is why a deck beside a thirty-unit box came back at 0.99 however many rays
+       were thrown at it. */
+    for (s = 1; s <= steps * 2; s++) {
+      if (aoAt(g, sx + dx * AOC * .5 * s, sy + dy * AOC * .5 * s, sz + dz * AOC * .5 * s)) {
+        var dcell = s * .5 + .5;
+        hit = Math.min(1, 2.25 / (dcell * dcell));
+        break;
+      }
+    }
+    if (d[4]) { shut += hit * d[3]; wsum += d[3]; }
+    else { below += hit > .25 ? 1 : 0; bsum++; }
+  }
+  return [wsum ? shut / wsum : 0, bsum ? below / bsum : 1];
+}
+/* Every vertex of every list against one grid. The occluders are given separately from
+   the lists that are baked, because a vehicle's alternative mounts all stand in the same
+   place: with every variant in the grid at once the quad fifty shades the howitzer that
+   is never fitted beside it, and both come out black. What shades is the hull, the
+   fitted mount and what is bolted to them; what is baked is everything that can be
+   drawn, alternatives included. */
+function bakeAO(parts, dark, wear) {
+  var g = aoGridOf(parts);
+  if (!g) return;
+  /* A crease occludes two or three of seven directions, not all of them, so the raw
+     number in the joint between two plates is about four tenths and the open deck beside
+     it is half a tenth. Calibrated at 0.58 that was a crease at 0.85 against a deck at
+     0.97, which is a difference nobody can see: the whole of the dynamic range was being
+     spent on the inside of the hull, where there is nothing to look at. What a joint
+     wants is to go dark. */
+  dark = dark === undefined ? .95 : dark;
+  wear = wear === undefined ? .30 : wear;
+  var _p = [0, 0, 0], cache = {}, marched = 0;
+  for (var L = 0; L < parts.length; L++) {
+    var P = parts[L], fl = P.f;
+    if (!fl) continue;
+    for (var i = 0; i < fl.length; i++) {
+      var f = fl[i], v = f.v;
+      if (v.length < 3) continue;
+      var fn = faceNormal(v[0], v[1], v[2]);
+      f.ao = []; f.wear = [];
+      for (var j = 0; j < v.length; j++) {
+        var n = f.n ? f.n[j] : null;
+        _p[0] = v[j][0] + P.x; _p[1] = v[j][1] + P.y; _p[2] = v[j][2] + P.z;
+        var nx2 = n ? n[0] : fn.x, ny2 = n ? n[1] : fn.y, nz2 = n ? n[2] : fn.z;
+        /* the same corner is a vertex of every face that meets there, and a box has
+           eleven thousand of them: one march a point and bearing rather than a march a
+           face-vertex, which is most of the cost of the bake */
+        /* Quantised, and that is the whole of what makes the bake affordable. Occlusion
+           varies over a joint's width and no faster, so asking for it at every one of six
+           hundred thousand face-vertices is asking the same question a dozen times: two
+           units of position and a fifth of a normal is finer than the answer can be, and
+           it takes the marches down by more than ten to one. */
+        var ck = (Math.round(_p[0] * .5) + 512) + ',' + (Math.round(_p[1] * .5) + 512) + ',' +
+                 (Math.round(_p[2] * .5) + 512) + ',' + Math.round(nx2 * 2.5) + ',' +
+                 Math.round(ny2 * 2.5) + ',' + Math.round(nz2 * 2.5);
+        var r = cache[ck];
+        if (!r) { r = cache[ck] = aoVert(g, _p, nx2, ny2, nz2); marched++; }
+        f.ao.push(1 - r[0] * dark);
+        /* sharpened, because a panel that is very slightly open is still a panel */
+        var e = clamp((.82 - r[1]) / .5, 0, 1);
+        f.wear.push(e * e * wear);
+      }
+    }
+  }
+  AOSTAT.marched += marched;
+}
+var AOSTAT = { marched: 0, verts: 0, ms: 0 };
 function facesToArray(faces, out) {
   out = out || [];
   for (var i = 0; i < faces.length; i++) {
@@ -8620,7 +8907,14 @@ function facesToArray(faces, out) {
         var vi = q === 0 ? 0 : q === 1 ? k : k + 1;
         var p = v[vi], nn = f.n ? f.n[vi] : null, u, w;
         if (az >= ax && az >= ay) { u = p[0]; w = p[1]; } else if (ax >= ay) { u = p[1]; w = p[2]; } else { u = p[0]; w = p[2]; }
-        out.push(p[0], p[1], p[2], nn ? nn[0] : n.x, nn ? nn[1] : n.y, nn ? nn[2] : n.z, c[0], c[1], c[2], u * sc, w * sc, mi);
+        /* what the bake found: shut in, so darker; on a convex edge, so the paint is off
+           it and the steel is showing, which is a lift and the colour going out of it */
+        var r = c[0], g2 = c[1], b2 = c[2];
+        if (f.ao) {
+          var k2 = f.ao[vi], we = f.wear[vi], lm = (r + g2 + b2) * .45 + .14;
+          r = (r + (lm - r) * we) * k2; g2 = (g2 + (lm - g2) * we) * k2; b2 = (b2 + (lm - b2) * we) * k2;
+        }
+        out.push(p[0], p[1], p[2], nn ? nn[0] : n.x, nn ? nn[1] : n.y, nn ? nn[2] : n.z, r, g2, b2, u * sc, w * sc, mi);
       }
     }
   }
@@ -16300,6 +16594,35 @@ function buildVehicleModels() {
                       turUp: { kwk: sd222Turret20(PZ.body, PZ.lit) }, barUp: { kwk: { bar: 27, gunZ: 3.3 } }, bar: 13,
                       big: 0, scout: 1, scale: 1, mountZ: sd222At(-1.0, 'zD'),
                       gunZ: 3.9, turX: -1.0, belly: SD2.zFloor };
+  /* and every one of them is asked what it can see of itself. The hull, the mount it is
+     built with and what is bolted to them are the occluders; the alternative mounts are
+     baked against that rather than against each other, because they all stand in the
+     same place and a grid holding every variant at once has each of them shading the one
+     that is never fitted beside it. */
+  for (var vk in VMODEL) {
+    var vm = VMODEL[vk], uk, parts = [];
+    /* A mount is built about its own ring and drawn on its own matrix, so its vertices
+       are nowhere near the hull's in the numbers the builder wrote down. Put both in one
+       grid untranslated and the turret sits inside the engine deck: every vertex of both
+       comes out buried, which is what the first version of this did and why it only ever
+       made the whole tank darker. The mount goes where `mountPose` puts it. */
+    var mz = vm.mountZ || 0, mx = vm.turX || 0, my = vm.turY || 0;
+    function cut(o, key) { if (o && o[key]) o[key] = aoSplit(o[key], AOSPLIT); }
+    cut(vm, 'hull'); cut(vm, 'tur'); cut(vm, 'mg'); cut(vm, 'skirts'); cut(vm, 'turSkirts');
+    if (vm.turUp) for (uk in vm.turUp) cut(vm.turUp, uk);
+    if (vm.mgUp) for (uk in vm.mgUp) cut(vm.mgUp, uk);
+    if (vm.addUp) for (uk in vm.addUp) cut(vm.addUp, uk);
+    function put(f, onMount, occ) {
+      if (f) parts.push({ f: f, x: onMount ? mx : 0, y: onMount ? my : 0, z: onMount ? mz : 0, occ: occ });
+    }
+    put(vm.hull, 0, 1); put(vm.tur, 1, 1); put(vm.mg, 1, 1);
+    put(vm.skirts, 0, 1); put(vm.turSkirts, 1, 1);
+    if (vm.turUp) for (uk in vm.turUp) put(vm.turUp[uk], 1, 0);
+    if (vm.mgUp) for (uk in vm.mgUp) put(vm.mgUp[uk], 1, 0);
+    if (vm.addUp) for (uk in vm.addUp) put(vm.addUp[uk], 0, 0);
+    bakeAO(parts);
+  }
+
   /* each was set out generously; bring it to its published length */
   TEAMMODEL.us = scaleFaces(vickersModel(), .60);
   TEAMMODEL.ger = scaleFaces(mg42TeamModel(), .72);

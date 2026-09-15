@@ -129,13 +129,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    and gzips to roughly a fifth of this, so the number that matters on a phone is parse
    time and not transfer. It was 900 while the roster was the only thing growing; it is
    1040 once the map was hand-placed entity by entity, which is the one part of the
-   game where more bytes on disk are more thought rather than more code. It is 1180 now
-   that vehicles carry an interior somebody sat down and laid out: a room is a few
-   hundred boxes and there is a tank's worth of them still to draw. Raise it
-   deliberately, with a reason, or not at all. */
+   game where more bytes on disk are more thought rather than more code. It was 1180 once
+   vehicles carried an interior somebody sat down and laid out: a room is a few hundred
+   boxes and there is a tank's worth of them still to draw. It is 1260 for the detail
+   pass, which is the one kind of work where the bytes are the product: occlusion baked
+   into every model, faces cut fine enough to carry it, and the surface detail that goes
+   on top. Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1180) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1180 kB so it stays quick to load on a phone`);
+if (kb > 1260) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1260 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
