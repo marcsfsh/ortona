@@ -8725,10 +8725,18 @@ function aoSplit(faces, edge) {
     if (nu > 40) nu = 40; if (nw > 40) nw = 40;
     while (nu * nw > 520) { if (nu >= nw) nu--; else nw--; }
     if (nu === 1 && nw === 1) { out.push(f); continue; }
+    /* A piece of a plate has to be able to say what plate it came off. `tools/dims.mjs`
+       drops a whole face that reaches above a height cap, which is how two and a half
+       metres of rod aerial stays out of a published height; cut into pieces, the ones
+       below the cap survive the filter and the Sherman grew half a metre without a
+       vertex moving. Nothing else in the file needs it, and it is the only thing that
+       would have caught it. */
+    var zt = f.zt;
+    if (zt === undefined) { zt = -1e9; for (j = 0; j < v.length; j++) if (v[j][2] > zt) zt = v[j][2]; }
     for (j = 0; j < nu; j++) for (k = 0; k < nw; k++) {
       u0 = j / nu; u1 = (j + 1) / nu; w0 = k / nw; w1 = (k + 1) / nw;
       var a = corner(f, u0, w0), b = corner(f, u1, w0), c = corner(f, u1, w1), d = corner(f, u0, w1);
-      made = { v: [a[0], b[0], c[0], d[0]], c: f.c };
+      made = { v: [a[0], b[0], c[0], d[0]], c: f.c, zt: zt };
       if (f.m !== undefined) made.m = f.m;
       if (a[1]) made.n = [a[1], b[1], c[1], d[1]];
       out.push(made);
@@ -8846,9 +8854,25 @@ function aoVert(g, p, nx, ny, nz) {
    is never fitted beside it, and both come out black. What shades is the hull, the
    fitted mount and what is bolted to them; what is baked is everything that can be
    drawn, alternatives included. */
+/* what collects in a joint, and what the road throws at the bottom of a hull */
+var AOGRIME = [.227, .196, .149], AODUST = [.553, .506, .412];
 function bakeAO(parts, dark, wear) {
   var g = aoGridOf(parts);
   if (!g) return;
+  /* the model's own height, for the dust: a tank on a slope is still dirtiest along its
+     belly and cleanest on its roof, so this is read off the model and not off the world */
+  var zlo = 1e9, zhi = -1e9, _L, _i, _j, _v;
+  for (_L = 0; _L < parts.length; _L++) {
+    if (!parts[_L].f) continue;
+    for (_i = 0; _i < parts[_L].f.length; _i++) {
+      _v = parts[_L].f[_i].v;
+      for (_j = 0; _j < _v.length; _j++) {
+        if (_v[_j][2] + parts[_L].z < zlo) zlo = _v[_j][2] + parts[_L].z;
+        if (_v[_j][2] + parts[_L].z > zhi) zhi = _v[_j][2] + parts[_L].z;
+      }
+    }
+  }
+  var zspan = Math.max(1, zhi - zlo);
   /* A crease occludes two or three of seven directions, not all of them, so the raw
      number in the joint between two plates is about four tenths and the open deck beside
      it is half a tenth. Calibrated at 0.58 that was a crease at 0.85 against a deck at
@@ -8865,7 +8889,7 @@ function bakeAO(parts, dark, wear) {
       var f = fl[i], v = f.v;
       if (v.length < 3) continue;
       var fn = faceNormal(v[0], v[1], v[2]);
-      f.ao = []; f.wear = [];
+      f.ao = []; f.wear = []; f.dust = [];
       for (var j = 0; j < v.length; j++) {
         var n = f.n ? f.n[j] : null;
         _p[0] = v[j][0] + P.x; _p[1] = v[j][1] + P.y; _p[2] = v[j][2] + P.z;
@@ -8887,6 +8911,11 @@ function bakeAO(parts, dark, wear) {
         /* sharpened, because a panel that is very slightly open is still a panel */
         var e = clamp((.82 - r[1]) / .5, 0, 1);
         f.wear.push(e * e * wear);
+        /* and the road: the bottom near-half of a hull is thrown at all day and anything
+           that looks up collects what settles */
+        var hgt = clamp(1 - (_p[2] - zlo) / (zspan * .46), 0, 1);
+        var upw = clamp(n ? n[2] : fn.z, 0, 1);
+        f.dust.push(clamp(hgt * hgt * .50 + upw * .13, 0, .58));
       }
     }
   }
@@ -8907,11 +8936,20 @@ function facesToArray(faces, out) {
         var vi = q === 0 ? 0 : q === 1 ? k : k + 1;
         var p = v[vi], nn = f.n ? f.n[vi] : null, u, w;
         if (az >= ax && az >= ay) { u = p[0]; w = p[1]; } else if (ax >= ay) { u = p[1]; w = p[2]; } else { u = p[0]; w = p[2]; }
-        /* what the bake found: shut in, so darker; on a convex edge, so the paint is off
-           it and the steel is showing, which is a lift and the colour going out of it */
+        /* Three things come off the one bake and they are the same fact read three ways:
+           how shut in a piece of the model is, which way it faces and how high it sits.
+           Occlusion is a darkening. Grime is what collects in what is shut in, and that
+           is a colour rather than a darkening -- a joint packed with oil and dust is
+           browner than the plate round it, not a dimmer green. Dust is what the road
+           throws at the bottom of a hull and what settles on anything that looks up.
+           And a convex edge is where the paint is off and the steel is showing, which is
+           a lift and the colour going out of it. */
         var r = c[0], g2 = c[1], b2 = c[2];
         if (f.ao) {
-          var k2 = f.ao[vi], we = f.wear[vi], lm = (r + g2 + b2) * .45 + .14;
+          var k2 = f.ao[vi], gr = (1 - k2) * .45, du = f.dust[vi], we = f.wear[vi];
+          r += (AOGRIME[0] - r) * gr; g2 += (AOGRIME[1] - g2) * gr; b2 += (AOGRIME[2] - b2) * gr;
+          r += (AODUST[0] - r) * du; g2 += (AODUST[1] - g2) * du; b2 += (AODUST[2] - b2) * du;
+          var lm = (r + g2 + b2) * .45 + .14;
           r = (r + (lm - r) * we) * k2; g2 = (g2 + (lm - g2) * we) * k2; b2 = (b2 + (lm - b2) * we) * k2;
         }
         out.push(p[0], p[1], p[2], nn ? nn[0] : n.x, nn ? nn[1] : n.y, nn ? nn[2] : n.z, r, g2, b2, u * sc, w * sc, mi);
