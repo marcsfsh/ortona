@@ -249,6 +249,78 @@ for (const device of TARGETS) {
      men.table ? `${men.variants} variants, ${men.poses} poses, ${men.frames} buffers, ${men.freed} freed on a rebuild, eye ${men.eye} standing`
                : 'no MODELS.man table in this file');
 
+  /* --- the mortars: the first weapon here that shoots what it cannot see. Three claims
+     worth a row. It needs no line, so it drops bombs through a building. It still needs
+     the target SEEN, by the side rather than by itself, which is what keeps it honest. And
+     a fire mission lands where it was laid, inside the circle the player is shown.
+       Staged on the map's own buildings so the blocker is the game's, and it puts back
+     what it borrowed: everything after this needs the battle intact. --- */
+  const mor = await page.evaluate(() => {
+    const key = window.G.side === 'us' ? 'us_mor' : 'ger_mor';
+    if (!window.UNITS[key] || !window.UNITS[key].indirect) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    const foe = window.G.side === 'us' ? 'ger' : 'us';
+    const b = window.G.blds[0], a = Math.PI / 2, R = 190;
+    function stage(withEyes) {
+      window.G.units.length = 0; window.G.shots.length = 0;
+      const u = window.spawnUnit(window.G.side, key, b.x - Math.cos(a) * R, b.y - Math.sin(a) * R, a);
+      const e = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle',
+                                 b.x + Math.cos(a) * R, b.y + Math.sin(a) * R, a + Math.PI);
+      u.setup = 0;
+      if (withEyes) {
+        const o = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'us_rifle' : 'ger_gren',
+                                   e.x + 120, e.y + 40, a + Math.PI);
+        o.setup = 0;
+      }
+      window.computeVisibility();
+      return { u, e };
+    }
+    function runFor(s, secs) {
+      let fired = 0;
+      for (let f = 0; f < 60 * secs; f++) {
+        window.computeVisibility();
+        s.u.target = window.acquire(s.u) || null;
+        const n = window.G.shots.length;
+        window.updateUnit(s.u, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+        if (window.G.shots.length > n) fired++;
+      }
+      return fired;
+    }
+    const blind = stage(false);
+    const line = window.fireLine(blind.u, blind.e);
+    const unobserved = runFor(blind, 40);
+    const seenS = stage(true);
+    const observed = runFor(seenS, 40);
+    /* and a mission, laid past the range the tube engages on its own */
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const m = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    m.setup = 0;
+    const B = m.def.barrage, tx = 600 + Math.round((B.range + m.def.w.range) / 2), ty = 900;
+    const laid = window.orderBarrage(m, tx, ty);
+    const far = window.orderBarrage(m, 600 + B.range + 120, 900);
+    const out = [];
+    for (let f = 0; f < 60 * 80 && (m.barrage || window.G.shots.length); f++) {
+      const before = window.G.shots.slice();
+      window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      before.forEach(sh => {
+        if (sh.kind === 'shell' && window.G.shots.indexOf(sh) < 0)
+          out.push(Math.hypot(sh.tx - tx, sh.ty - ty));
+      });
+    }
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    return { has: true, line, unobserved, observed, laid, far,
+             rounds: out.length, want: B.rounds, r: B.r,
+             inCircle: out.filter(d => d <= B.r + 2).length,
+             past: tx - 600 > m.def.w.range };
+  });
+  ok('a mortar shells what the side can see, over what is in the way, and lands where it is laid',
+     !mor.has || (mor.line === false && mor.unobserved === 0 && mor.observed > 0 &&
+                  mor.laid && !mor.far && mor.past && mor.rounds === mor.want && mor.inCircle === mor.rounds),
+     !mor.has ? 'no indirect weapon in this file'
+              : `through a building: ${mor.unobserved} rounds unobserved, ${mor.observed} with eyes on; ` +
+                `a mission past free-fire range put ${mor.inCircle}/${mor.rounds} of ${mor.want} inside ${mor.r}, and out of range was refused`);
+
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
     /* the gun and barrel tests run another minute of battle on top of the one already

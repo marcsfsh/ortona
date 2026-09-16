@@ -47,6 +47,15 @@ const CARD = [
   ['us_mg', 'ger_mg42'],
   ['us_mg', 'ger_gren'],
   ['ger_mg42', 'us_rifle'],
+  /* The mortars. A tube against a section is the row the roster is judged on -- what a
+     mortar is for is men in the open and men behind something -- and tube against tube is
+     the calibration row for the pair, the way us_eng against ger_pio is for the rifles.
+     Note what a duel cannot show about one: it stages both sides in sight of each other,
+     so a mortar here is firing at what it can see itself, which is the half of its job it
+     is worst at. What it does to ground nobody can see into is not a duel question. */
+  ['us_mor', 'ger_gren'],
+  ['ger_mor', 'us_rifle'],
+  ['us_mor', 'ger_mor'],
   ['us_eng', 'ger_pio'],
   ['us_at', 'ger_p4'],
   ['ger_pak', 'us_sher'],
