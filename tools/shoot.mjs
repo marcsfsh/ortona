@@ -279,26 +279,35 @@ const SCENES = {
             window.__o.pose([{ key: o.key, x: 0, y: 0, facing: 0 }], o.spot);
             const u = window.G.units[0], side = u.side, enemy = side === 'us' ? 'ger' : 'us';
             let at = null, kind = 'house';
+            const mid = c => dsq(c.x, c.y, WORLD.w / 2, WORLD.h / 2);
             if (o.stage === 'window') {
-              const bk = spawnBuilding(side, side === 'us' ? 'us_bar' : 'ger_qtr', o.spot.x, o.spot.y, true);
-              enterBuilding(u, bk); at = { x: bk.x, y: bk.y };
-              u.threatX = bk.x + (side === 'us' ? 300 : -300); u.threatY = bk.y;
+              /* a house of the town, not a base structure: what a section garrisons is a
+                 block, which carries the w and h canGarrison reads, and the first version
+                 put up a company post that it then refused to enter */
+              const houses = window.G.blocks.filter(b => canGarrison(u, b)).sort((a, b) => mid(a) - mid(b));
+              if (!houses.length) return { none: true };
+              enterBuilding(u, houses[0]); at = { x: houses[0].x, y: houses[0].y };
+              u.threatX = at.x + (side === 'us' ? 300 : -300); u.threatY = at.y;
             } else {
               const kinds = o.stage === 'trench' ? ['trench'] : ['bags', 'lowwall'];
-              let best = null, bd = 1e18;
-              window.G.covers.forEach(c => {
-                if (kinds.indexOf(c.kind) < 0 || c.hp <= 0) return;
-                const d = dsq(c.x, c.y, WORLD.w / 2, WORLD.h / 2);
-                if (d < bd) { bd = d; best = c; }
-              });
+              const want = o.stage === 'trench' ? STAND_DUG : STAND_LOW;
+              const pieces = window.G.covers.filter(c => kinds.indexOf(c.kind) >= 0 && c.hp > 0).sort((a, b) => mid(a) - mid(b));
+              const seat = c => {
+                const ax = c.axis === null || c.axis === undefined ? 0 : c.axis, nx = -Math.sin(ax), ny = Math.cos(ax);
+                const dir = side === 'us' ? 1 : -1, sgn = nx * dir >= 0 ? -1 : 1;
+                return { nx, ny, sgn };
+              };
+              /* the first piece where a man at its stand-off reads the stance the stage is
+                 for: the low wall nearest the centre stands under a tall one, and the chain
+                 read the tall one and put the section on its feet */
+              let best = pieces.find(c => { const q = seat(c), off = c.kind === 'trench' ? 0 : 8; return coverStanceAt(c.x + q.nx * q.sgn * off, c.y + q.ny * q.sgn * off) === want; }) || pieces[0];
               if (!best) return { none: true };
               kind = best.kind;
               /* the section halts beside the piece with the enemy beyond it */
-              const ax = best.axis === null ? 0 : best.axis, nx = -Math.sin(ax), ny = Math.cos(ax);
-              const dir = side === 'us' ? 1 : -1, sgn = nx * dir >= 0 ? -1 : 1;
-              u.x = best.x + nx * sgn * 30; u.y = best.y + ny * sgn * 30;
+              const q = seat(best);
+              u.x = best.x + q.nx * q.sgn * 30; u.y = best.y + q.ny * q.sgn * 30;
               u.models.forEach(m => { m.x = u.x + m.ox; m.y = u.y + m.oy; });
-              u.threatX = best.x - nx * sgn * 300; u.threatY = best.y - ny * sgn * 300;
+              u.threatX = best.x - q.nx * q.sgn * 300; u.threatY = best.y - q.ny * q.sgn * 300;
               at = { x: best.x, y: best.y };
             }
             const e = spawnUnit(enemy, enemy === 'us' ? 'us_rifle' : 'ger_gren', u.threatX, u.threatY, 0);

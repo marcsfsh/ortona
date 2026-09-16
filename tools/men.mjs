@@ -85,6 +85,14 @@ function GEO(opt) {
   };
   const cat = lists => [].concat.apply([], lists.filter(Boolean));
   const r2 = v => Math.round(v * 100) / 100, r3 = v => Math.round(v * 1000) / 1000;
+  function faceArea(f) {
+    let A = 0;
+    for (let k = 1; k < f.v.length - 1; k++) {
+      const u = sub(f.v[k], f.v[0]), w = sub(f.v[k + 1], f.v[0]);
+      A += .5 * len3([u[1] * w[2] - u[2] * w[1], u[2] * w[0] - u[0] * w[2], u[0] * w[1] - u[1] * w[0]]);
+    }
+    return A;
+  }
   /* the surface centroid: area-weighted over the fan each face is drawn as */
   function surfaceCentroid(faces) {
     let A = 0, cx = 0, cy = 0, cz = 0;
@@ -422,8 +430,12 @@ function GEO(opt) {
         const r = rec(v, P), J = r.joints;
         if (!r.ok || r.flat || !J.hipL || !J.skull || P.name === 'seat' || P.name === 'sit') return;
         const sc = surfaceCentroid(r.faces), low = ext(r.legFaces).z0;
+        /* the ground contact is every boot within a boot's height of the lowest point. A
+           tilted sole touches at one edge, and a range read off the lowest 0.3 collapsed
+           to that edge and reported every pose as not over its feet. */
+        const boots = r.parts.boots && r.parts.boots.length ? cat(r.parts.boots) : r.legFaces;
         let x0 = 1e9, x1 = -1e9;
-        r.legFaces.forEach(f => f.v.forEach(p => { if (p[2] <= low + .3) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; } }));
+        boots.forEach(f => f.v.forEach(p => { if (p[2] <= low + 1.2) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; } }));
         const hip = [(J.hipL[0] + J.hipR[0]) / 2, 0, (J.hipL[2] + J.hipR[2]) / 2];
         const spine = Math.atan2(J.skull[0] - hip[0], J.skull[2] - hip[2]);
         rows.push({ v, pose: label(P), cx: sc[0], x0, x1, spine, lean: r.lean === undefined ? null : r.lean });
@@ -537,29 +549,39 @@ function GEO(opt) {
     R.sections.muzzle = { rows, source: RIG && MODELS.muz ? 'MODELS.muz' : 'muzzlePoint(m)' };
   }
 
-  /* ---------------- WIND ---------------- */
+  /* ---------------- WIND ----------------
+     A part is inside out when the volume its faces enclose, by the divergence theorem
+     about its own centroid, comes out negative. Counting faces whose normal points at
+     the centroid is not the test, and the first version did exactly that: the Mk II is
+     a concave lathe, its brim top faces the crown the centroid sits in, and eighteen
+     correct faces a pose were reported on every Canadian. The count is still printed,
+     as a fact about the shape rather than a miss. */
   if (opt.do.wind) {
     const rows = [];
     variants.forEach(v => {
-      let inward = 0, faces = 0, parts = 0, poses = 0;
+      let inward = 0, faces = 0, parts = 0, poses = 0, inside = 0;
+      const named = [];
       posesOf(v).forEach(P => {
         const r = rec(v, P);
         if (!r.ok || !r.leaves) return;
         poses++;
-        r.leaves.forEach(part => {
+        r.leaves.forEach((part, pi) => {
           if (!part.length) return;
           parts++;
           const c = cen(part);
+          let vol = 0;
           part.forEach(f => {
             const n = faceNormal(f.v[0], f.v[1], f.v[2]);
             if (Math.hypot(n.x, n.y, n.z) < .5) return;
             faces++;
-            const fc = fcen(f);
-            if ((fc[0] - c[0]) * n.x + (fc[1] - c[1]) * n.y + (fc[2] - c[2]) * n.z < -1e-4) inward++;
+            const fc = fcen(f), d = (fc[0] - c[0]) * n.x + (fc[1] - c[1]) * n.y + (fc[2] - c[2]) * n.z;
+            if (d < -1e-4) inward++;
+            vol += d * faceArea(f);
           });
+          if (vol < 0) { inside++; if (named.length < 6) named.push(label(P) + ' part ' + pi + ' (' + part.length + ' faces)'); }
         });
       });
-      rows.push({ v, inward, faces, parts, poses, noparts: poses === 0 });
+      rows.push({ v, inward, faces, parts, poses, inside, named, noparts: poses === 0 });
     });
     R.sections.wind = { rows };
   }
@@ -661,7 +683,10 @@ function GEO(opt) {
    dead (the ground alone). The figure is C against B and the shadow A against C, over a
    window round him, because a smoke column at the edge of the frame is not the man. */
 function PIX(opt) {
-  const O = window.__o, spot = O.flatSpot(140);
+  /* the stage is the one the readability critique measured on, so its rows and these
+     agree: a spot picked with more room round it lands on brighter ground and reads
+     the Canadian four levels lighter, which is a fact about the ground */
+  const O = window.__o, spot = O.flatSpot(120);
   const W = cv.width, H = cv.height;
   const realCast = window.castUnit;
   function grab() { render(); const b = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, b); return b; }
@@ -849,10 +874,14 @@ function show(c, base) {
         if (r.refused) return;
         of++;
         const tol = r.kind === 'flat' ? .35 : r.kind === 'upright' ? .25 : .3;
-        const z = r.kind === 'flat' ? r.bodyLow : r.kind === 'sit' ? r.hipsLow : r.kind === 'kneel' ? Math.max.apply(null, r.legLow.filter(q => q !== null).map(Math.abs)) : Math.abs(r.low);
+        /* a kneel is judged on the leg furthest from the ground, signed, so the worst
+           column names the leg through the floor and not the one nearer it */
+        const legs = r.legLow.filter(q => q !== null);
+        const kz = legs.length ? legs.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0) : r.low;
+        const z = r.kind === 'flat' ? r.bodyLow : r.kind === 'sit' ? r.hipsLow : r.kind === 'kneel' ? kz : r.low;
         const miss = Math.abs(z) > tol;
         if (miss) bad++;
-        if (!worst || Math.abs(z) > Math.abs(worst.z)) worst = { pose: r.pose, z: r.kind === 'kneel' ? Math.max.apply(null, r.legLow.map(q => q)) : z, miss };
+        if (!worst || Math.abs(z) > Math.abs(worst.z)) worst = { pose: r.pose, z, miss };
       });
       const w = cyc('walk'), rn = cyc('run');
       if (w && w.spread > .3) { bad++; }
@@ -970,13 +999,16 @@ function show(c, base) {
   }
 
   if (S.wind) {
-    console.log('\n  WIND   faces of a part whose normal points at the part\'s own centroid: an inside-out limb is culled and reads as a missing limb\n');
+    console.log('\n  WIND   parts wound inside out, by the sign of the volume their faces enclose: an inside-out limb is culled and reads as a missing limb\n');
     let bad = 0, of = 0;
     for (const r of S.wind.rows) {
       if (r.noparts) { console.log('  ' + pad(r.v, 13) + 'no parts on the record'); continue; }
-      of++; if (r.inward) bad++;
-      console.log('  ' + pad(r.v, 13) + lpad(r.inward, 5) + ' inward of ' + r.faces + ' faces over ' + r.parts + ' parts in ' + r.poses + ' poses' + (r.inward ? ' !' : ''));
+      of++; if (r.inside) bad++;
+      console.log('  ' + pad(r.v, 13) + lpad(r.inside, 4) + ' inside out of ' + r.parts + ' parts in ' + r.poses + ' poses' + (r.inside ? ' ! ' + r.named.join(', ') : '') +
+                  '   (' + r.inward + ' of ' + r.faces + ' faces look at their part\'s centroid: a concave part has some)');
     }
+    console.log('\n  the face count is not the test: the Mk II brim top faces the crown its centroid sits in, and counted that way');
+    console.log('  eighteen correct faces a pose were reported on every Canadian.');
     foot('wind', bad, of);
   }
 

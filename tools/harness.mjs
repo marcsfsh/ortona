@@ -455,6 +455,7 @@ export async function installHooks(page) {
       const mat = s => m4model(s.x, s.y, groundZ(s.x, s.y) + s.z, s.f, s.k);
       window.drawUnits3D = function (v, l) {
         S.units(v, l);
+        if (O._noFig) return;                       /* hide('figure') came first: the shadow alone */
         S.list.forEach(s => {
           if (!s.buf) return;
           drawGeom(s.buf, mat(s), false, s.tint);
@@ -486,10 +487,11 @@ export async function installHooks(page) {
     O.hide = function (what) {
       O._hid = O._hid || [];
       if (what === 'shadow') { O._hid.push(['castUnit', window.castUnit]); window.castUnit = function () {}; }
-      if (what === 'figure') { O._hid.push(['drawUnits3D', window.drawUnits3D]); window.drawUnits3D = function () {}; }
+      if (what === 'figure') { O._hid.push(['drawUnits3D', window.drawUnits3D]); window.drawUnits3D = function () {}; O._noFig = true; }
     };
     O.show = function () {
       while (O._hid && O._hid.length) { const h = O._hid.pop(); window[h[0]] = h[1]; }
+      O._noFig = false;
     };
 
     /* the luminance of the ground at a world point, read off the framebuffer after a
