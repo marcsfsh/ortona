@@ -8522,12 +8522,16 @@ function markVert(x, y, z, c) {
    is scaled by how far back the camera is, because a mark is a piece of the interface
    and wants to stay about the same thickness on the screen whatever the zoom; a fixed
    world width is a hairline across the town and a stripe at the closest the camera goes.
+   The constant puts a mark at about three CSS pixels, which is what the overlay drew at
+   plus a little: thinner than that a ground ribbon shimmers as the camera moves, and at
+   twice it the rings came out as heavy green bands that dominated a phone's frame.
      `lift` clears the ground mesh without floating: at a tenth of a unit the two z-fight
    and the mark crawls, at half a unit nothing on this terrain shows daylight under it. */
-var MARK_LIFT = .5;
+var MARK_LIFT = .5, MARK_W = .0011;
+function markWide(w) { return (w || 2.2) * clamp(CAM.dist * MARK_W, .5, 4); }
 function markRun(pts, col, a, w) {
   if (pts.length < 2) return;
-  var hw = (w || 2.2) * clamp(CAM.dist * .0024, .5, 4) * .5;
+  var hw = markWide(w) * .5;
   var c = [col[0], col[1], col[2], a === undefined ? 1 : a];
   for (var i = 0; i + 1 < pts.length; i++) {
     var p0 = pts[i], p1 = pts[i + 1];
