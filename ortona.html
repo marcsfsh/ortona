@@ -3022,7 +3022,7 @@ function updateBuilding(b, dt) {
 }
 
 /* ---------------------------------------------------------------- orders */
-function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; }
+function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; }
 
 /* Holding a house. A ruin with two feet of rubble stone round it is the best cover on
    this map and the whole battle for Ortona was fought for one building at a time, so a
@@ -3168,8 +3168,45 @@ function orderAttack(u, t) {
   u.order = 'attack'; u.forced = t;
   u.path = null; u.dest = null;
 }
+/* A fire mission. Free, a mortar shells what the side can see inside its own reach at
+   its own rate; ordered onto a patch of ground it reaches further, fires faster, and does
+   not care whether anything is visible there -- which is the point, because the ground
+   worth shelling is usually the ground nobody can see into.
+     It is a fixed number of bombs and not a duration, so it is a decision about a scarce
+   thing rather than a switch left on. Moving cancels it: a mortar off its baseplate is
+   three men carrying pipes. */
+function orderBarrage(u, wx, wy) {
+  var B = u.def.barrage;
+  if (!B || u.retreat) return false;
+  var d = Math.hypot(wx - u.x, wy - u.y);
+  if (d > B.range) return false;
+  clearOrder(u); u.order = 'hold';
+  u.barrage = { x: wx, y: wy, r: B.r, left: B.rounds, t: 0 };
+  return true;
+}
+function barrageTick(u, dt) {
+  var b = u.barrage; if (!b) return;
+  /* off the baseplate, or broken up, and the mission is over */
+  if (u.moving || u.retreat || u.setup > 0 || !aliveModels(u)) {
+    if (u.moving || u.retreat) u.barrage = null;
+    return;
+  }
+  b.t += dt;
+  if (u.cd > 0) return;
+  /* the bearing is to the middle of the beaten zone; the crew lay on it once and then
+     work, which is why a mission fires faster than the same tube picking targets */
+  var want = Math.atan2(b.y - u.y, b.x - u.x);
+  u.facing += clamp(angDiff(u.facing, want), -.85 * dt, .85 * dt);
+  if (Math.abs(angDiff(u.facing, want)) > .35) return;
+  var a = rnd(0, TAU), rr = Math.sqrt(Math.random()) * b.r;
+  fireAt(u, { x: b.x + Math.cos(a) * rr, y: b.y + Math.sin(a) * rr }, dt);
+  /* fireAt sets the cooldown from the weapon's own rate; a mission works faster */
+  u.cd *= u.def.barrage.rof / u.def.w.rof;
+  if (--b.left <= 0) u.barrage = null;
+}
 function orderStop(u) {
   if (u.retreat) return;
+  u.barrage = null;
   clearOrder(u); u.order = 'hold';
 }
 /* Stances. A section has three ways of carrying itself and the player picks one; it
@@ -4222,7 +4259,12 @@ function fireAt(u, t, dt) {
   var cdKey = isAt ? 'atcd' : 'cd';
   if (u[cdKey] > 0) return;                              /* the loader works in updateUnit */
   var d = dist(u, t);
-  if (d > w.range) return;
+  /* A tube on a fire mission reaches further than the same tube picking its own targets.
+     Laying on a known patch of ground at a bearing somebody has worked out is a longer
+     shot than seeing something and engaging it, and the extra range is most of the
+     reason to order a mission rather than leave the crew to it. */
+  var maxR = u.barrage && u.def.barrage ? u.def.barrage.range : w.range;
+  if (d > maxR) return;
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0) return;
   if (u.retreat) return;
@@ -4279,7 +4321,7 @@ function fireAt(u, t, dt) {
   acc *= (u.sup > .55 ? .5 : 1) * (u.sup > 1 ? .5 : 1);
   acc *= (1 + u.vet * .07);
   acc *= u.side === G.side ? DIFF[G.diff].youAim : DIFF[G.diff].aim;
-  acc *= clamp(1.30 - (d / w.range) * .62, .48, 1.30);
+  acc *= clamp(1.30 - (d / maxR) * .62, .48, 1.30);
   /* a vehicle is a far larger mark than a man, and a moving one is a far worse gun
      platform than a halted one */
   if (t.cat === 'veh') acc *= t.moving ? 1.1 : 1.25;
@@ -4336,7 +4378,11 @@ function fireAt(u, t, dt) {
     /* A shell that misses goes somewhere, and where it goes matters when it has a
        bursting radius: it used to land within eight units of the target whether it hit
        or not, so every miss still splashed. A miss now opens out with range. */
-    var sp2 = hits > 0 ? 7 : 16 + d * .07;
+    /* Round to round, a tube firing a prepared mission is tight: the elevation and the
+       bearing are set and the crew are working, so the error is in the lay rather than
+       between the bombs. Drawn at fifty-four and landing at ninety, the ring told the
+       player he was shelling ground he was not. */
+    var sp2 = u.barrage ? 10 : hits > 0 ? 7 : 16 + d * .07;
     /* A bomb out of a mortar goes up and comes down: it is in the air for seconds rather
        than a fraction of one, and the height it reaches is what carries it over the roof
        it was fired behind. Everything else is flat-trajectory and keeps the token hop it
@@ -5047,6 +5093,7 @@ function updateUnit(u, dt) {
   /* targeting */
   if (u.retreat) u.target = null;
   else if (u.manual) u.target = DRV.fire && DRV.lock && !DRV.lock.dead ? DRV.lock : null;
+  else if (u.barrage) u.target = null;        /* laid on the ground, not hunting */
   else {
     u.aim -= dt;
     if (u.aim <= 0 || !u.target || u.target.dead) { u.target = acquire(u); u.aim = .35; }
@@ -5121,6 +5168,7 @@ function updateUnit(u, dt) {
      point as well as a unit, and with nothing aimed at, nothing is hit directly and
      what lands is the burst. */
   if (u.manual && DRV.fire && !u.target && DRV.mark) fireAt(u, DRV.mark, dt);
+  if (u.barrage) barrageTick(u, dt);
   updateModels(u, dt);
 }
 
@@ -8650,6 +8698,15 @@ function buildMarks(v) {
   G.sectors.forEach(function (s) {
     if (!inView(v, s.x, s.y, s.r + 60)) return;
     markRing(s.x, s.y, s.r, markCol(s.owner ? FACTION[s.owner].color : '#9aa07c'), .5, 2, [14, 10], 0);
+  });
+  /* every fire mission this side has running, whether its tube is selected or not: a
+     player who has laid one on wants to see where it is falling while he does something
+     else, and the ring is on the ground where the bombs are */
+  G.units.forEach(function (u) {
+    if (u.dead || !u.barrage || u.side !== G.side) return;
+    var b = u.barrage, cl = markCol('#d8a334');
+    markRing(b.x, b.y, b.r, cl, .55, 2, [12, 9], G.t * .15);
+    markRing(b.x, b.y, b.r * .30, cl, .45, 1.6);
   });
   G.sel.forEach(function (u) {
     if (!u.cat) return;
@@ -19616,6 +19673,18 @@ function select(list, add) {
 function selectedUnits() { return G.sel.filter(function (s) { return s.cat; }); }
 function selectedBuilding() { return G.sel.length === 1 && G.sel[0].built !== undefined ? G.sel[0] : null; }
 
+/* Lay every selected tube that can reach onto the same patch of ground, and say so.
+   Out of range is told rather than silently ignored: a mortar's two ranges are the
+   whole of what a player has to think about with one. */
+function callBarrage(wx, wy) {
+  var tubes = selectedUnits().filter(function (u) { return u.side === G.side && u.def.barrage; });
+  if (!tubes.length) return;
+  var on = 0, far = 0;
+  tubes.forEach(function (u) { if (orderBarrage(u, wx, wy)) on++; else far++; });
+  if (on) { toast(on === 1 ? 'Fire mission' : on + ' tubes on the mission'); sfx('click'); }
+  else if (far) toast('Out of range');
+  syncHud();
+}
 function issueOrder(wx, wy, forceAttack) {
   var mine = selectedUnits().filter(function (u) { return u.side === G.side; });
   var b = selectedBuilding();
@@ -19715,6 +19784,7 @@ cv.addEventListener('mousedown', function (e) {
       return;
     }
     if (G.mode === 'attack') { var w0 = s2w(mouse.x, mouse.y); issueOrder(w0.x, w0.y, true); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
+    if (G.mode === 'barrage') { var wb = s2w(mouse.x, mouse.y); callBarrage(wb.x, wb.y); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
     drag.on = true; drag.x0 = mouse.x; drag.y0 = mouse.y; drag.moved = false;
   } else if (e.button === 1) { e.preventDefault(); drag.pan = { x: mouse.x, y: mouse.y, rotate: !e.shiftKey }; }
 });
@@ -19939,6 +20009,7 @@ cv.addEventListener('touchend', function (e) {
   if (G.mode === 'attack') {
     issueOrder(w.x, w.y, true); G.mode = null; syncHud(); buzz(16); return;
   }
+  if (G.mode === 'barrage') { callBarrage(w.x, w.y); G.mode = null; syncHud(); buzz(16); return; }
   /* fingers are blunt, so widen the pick radius as the map zooms out */
   var grab = clamp(CAM.dist * .05, 26, 90);
   var own = nearestOwn(w.x, w.y, grab);
@@ -20015,6 +20086,10 @@ window.addEventListener('keydown', function (e) {
     return;
   }
   if (k === 'q') { if (selectedUnits().length) { G.mode = 'attack'; cv.style.cursor = 'cell'; syncHud(); } return; }
+  if (k === 'f') {
+    if (selectedUnits().some(function (u) { return u.def.barrage; })) { G.mode = 'barrage'; cv.style.cursor = 'cell'; syncHud(); }
+    return;
+  }
   if (k === 'x') { selectedUnits().forEach(orderStop); syncHud(); return; }
   if (k === 'r') { selectedUnits().forEach(function (u) { if (u.side === G.side) orderRetreat(u); }); syncHud(); return; }
   if (k === 'p') {
@@ -20188,6 +20263,14 @@ function buildCmds() {
         function () { setStance(foot, allDown ? '' : 'ground'); sfx('click'); syncHud(); }, allDown);
       addCmd('Double time', 'run, easy to pin', 'C', true,
         function () { setStance(foot, allRun ? '' : 'double'); sfx('click'); syncHud(); }, allRun);
+    }
+    var tubes = units.filter(function (u) { return u.def.barrage; });
+    if (tubes.length) {
+      var firing = tubes.some(function (u) { return u.barrage; });
+      addCmd(firing ? 'Cancel mission' : 'Fire mission', firing ? 'stop shelling' : 'F + click', 'F', true, function () {
+        if (firing) { tubes.forEach(function (u) { u.barrage = null; }); toast('Mission cancelled'); sfx('click'); syncHud(); return; }
+        G.mode = 'barrage'; cv.style.cursor = 'cell'; syncHud();
+      }, G.mode === 'barrage' || firing);
     }
     var guns = units.filter(function (u) { return u.def.wUp && u.def.wUp.he; });
     if (guns.length) {
