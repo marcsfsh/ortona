@@ -3200,6 +3200,13 @@ function barrageTick(u, dt) {
   if (Math.abs(angDiff(u.facing, want)) > .35) return;
   var a = rnd(0, TAU), rr = Math.sqrt(Math.random()) * b.r;
   fireAt(u, { x: b.x + Math.cos(a) * rr, y: b.y + Math.sin(a) * rr }, dt);
+  /* A round is only spent when one left the tube. fireAt refuses for its own reasons --
+     and one of them bites here, because an aim point may fall up to the circle's radius
+     beyond its centre and so past the mission's own maximum range. Decremented
+     regardless, a mission laid near the edge of that range quietly fired nine bombs of
+     ten and the count was the only thing that said so. The cooldown is the signal: it is
+     zero on the way in and fireAt is the only thing that sets it. */
+  if (u.cd <= 0) return;
   /* fireAt sets the cooldown from the weapon's own rate; a mission works faster */
   u.cd *= u.def.barrage.rof / u.def.w.rof;
   if (--b.left <= 0) u.barrage = null;
