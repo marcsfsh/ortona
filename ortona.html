@@ -17985,15 +17985,23 @@ function frameOf(set, m) {
   return Math.floor((m.gait || 0) / (set.len / n)) % n;
 }
 /* One man's matrix, for the shadow pass, the colour pass and the corpses alike. */
-/* One man's matrix, for the shadow pass, the colour pass and the corpses alike. On a
-   phone there is no run cycle baked -- it is the same eight shapes at a longer stride
-   and it doubles what the infantry weighs -- so a running man is drawn from the walk
-   frames with the whole figure pitched onto his nose through the matrix, which is most
-   of what tells a run from a walk at the distance a phone is looked at. */
+/* One man's matrix, for the shadow pass, the colour pass and the corpses alike.
+     A running man is pitched onto his nose through it, because a pose's own `lean`
+   pivots the trunk at the hip and leaves the legs upright: at the double that is a man
+   walking with a bent back, and measured off the framebuffer at nine hundred units it
+   came out the same silhouette as a man standing still, to within three pixels of width
+   plus height. A whole-body tip is what a run actually is, and the matrix is the only
+   place a pose can have one.
+     A phone has no run cycle baked -- it is the same eight shapes at a longer stride and
+   it doubles what the infantry weighs -- so there the walk frames stand in and the tip is
+   the whole of what says run. */
+var RUN_NOSE = -.16, RUN_NOSE_FLAT = -.28;
 function figMat(m, variant) {
   var k = FIG_SCALE * (m.sc || 1), gz = groundZ(m.x, m.y);
-  if (m.pose === POSE_RUN && MODELS.man[variant] && !MODELS.man[variant][POSE_RUN])
-    return m4lean(m.x, m.y, gz, m.f, k, 0, -.28);
+  if (m.pose === POSE_RUN) {
+    var T = MODELS.man[variant];
+    return m4lean(m.x, m.y, gz, m.f, k, 0, T && T[POSE_RUN] ? RUN_NOSE : RUN_NOSE_FLAT);
+  }
   return m4model(m.x, m.y, gz, m.f, k);
 }
 /* the mesh a weapon team stands round: its own piece if it has one, otherwise the
