@@ -2799,7 +2799,9 @@ function spawnUnit(side, key, x, y, facing) {
     u.models = [];
     for (var i = 0; i < d.models; i++) {
       var o = squadOffset(i, d.models);
-      u.models.push({ hp: d.hpPer, alive: true, x: x + o.x, y: y + o.y, ox: o.x, oy: o.y, f: u.facing, fire: 0 });
+      var mm = { hp: d.hpPer, alive: true, x: x + o.x, y: y + o.y, ox: o.x, oy: o.y, f: u.facing, fire: 0 };
+      manSeed(mm);
+      u.models.push(mm);
     }
     u.armor = 0;
     u.up = {};                                       /* the eighty-eight keeps its round here */
@@ -2807,6 +2809,17 @@ function spawnUnit(side, key, x, y, facing) {
   u.baseA = u.facing;                                /* what a fixed mount was laid on */
   G.units.push(u);
   return u;
+}
+/* What makes one man of a section not the man beside him. Four numbers, none of them a
+   buffer and none of them read by anything that fights: where he is in his own stride
+   (a section marched in perfect lockstep, eight men hitting the ground on the same
+   frame), the bearing he faces when halted and idle, the bolt his serge was cut from,
+   and his height. */
+function manSeed(m) {
+  m.gait = Math.random() * STRIDE_LEN;
+  m.jit = (Math.random() - .5) * .24;
+  m.tint = .93 + Math.random() * .14;
+  m.sc = .96 + Math.random() * .08;
 }
 function squadOffset(i, n) {
   var cols = n <= 3 ? 3 : 3, row = Math.floor(i / cols), col = i % cols;
@@ -3647,10 +3660,18 @@ function updateModels(u, dt) {
     /* stride advances with ground covered, so the feet never skate */
     var moved = Math.hypot(m.x - px0, m.y - py0);
     m.gait = (m.gait || 0) + moved;
-    m.walk = m.walk === undefined ? 0 : m.walk + (moved / Math.max(dt, .001) - m.walk) * clamp(dt * 8, 0, 1);
-    /* a man watches his target if he has one, otherwise he looks where he is going */
-    var want = u.target ? angTo(m, u.target)
-             : (moved > .35 ? Math.atan2(m.y - py0, m.x - px0) : u.facing);
+    /* Where he looks. A man on his feet faces the way he is walking; he turns his head
+       and his weapon onto a target only when it lies near enough to that line to look at
+       without walking sideways. Facing the target whatever he was doing put a section
+       crossing a street in front of an enemy on its flank into a crab -- every man
+       square to the enemy with a forward walk cycle running under him, sliding along his
+       own frontage at four cycles a second. Halted, he watches the target if there is
+       one, and otherwise stands on his own bearing rather than the section's, which is
+       what stops eight men facing one way like a guard of honour. */
+    var travel = moved > .35 ? Math.atan2(m.y - py0, m.x - px0) : u.facing;
+    var want = u.target && (!u.moving || u.gar || Math.abs(angDiff(angTo(m, u.target), travel)) < .6)
+             ? angTo(m, u.target)
+             : u.moving ? travel : u.facing + (halted ? (m.jit || 0) : 0);
     if (m.f === undefined) m.f = want;
     else m.f += Math.atan2(Math.sin(want - m.f), Math.cos(want - m.f)) * clamp(dt * 9, 0, 1);
     /* What he is doing with himself. In order of how little choice he has about it:
@@ -3674,7 +3695,7 @@ function updateModels(u, dt) {
       if (!m.flashed) {
         m.flashed = 1;
         if (onScreen(m.x, m.y)) {
-          var mz = muzzlePoint(m);
+          var mz = muzzlePoint(u, m, i);
           spawnFx('flash', mz.x, mz.y, 7.5, mz.z);
         }
       }
@@ -4426,11 +4447,18 @@ function spawnFx(kind, x, y, r, z) {
   G.fx.push({ kind: kind, x: x, y: y, r: r || 0, t: 0, z: z,
               dur: FXDUR[kind] || .25, a: rnd(TAU) });
 }
-/* Where a man's muzzle is, which depends on what he is doing with himself. */
-function muzzlePoint(m) {
-  var reach = m.pose === POSE_PRONE || m.pose === POSE_CRAWL ? 15 : m.pose === POSE_CROUCH || m.pose === POSE_CFIRE ? 11 : 13;
-  var hz = m.pose === POSE_PRONE || m.pose === POSE_CRAWL ? 3.4 : m.pose === POSE_CROUCH || m.pose === POSE_CFIRE ? 12.4 : 16.4;
-  return { x: m.x + Math.cos(m.f) * reach, y: m.y + Math.sin(m.f) * reach, z: groundZ(m.x, m.y) + hz };
+/* Where a man's muzzle is: the end of the barrel the builder laid on him, in the pose he
+   is actually in. It was three reaches and three heights typed per pose -- 13 and 16.4
+   upright, 11 and 12.4 crouched -- against a weapon whose muzzle moves with the carry,
+   the lean, the bob and the frame, so the flash was spawned up to seven units ahead of
+   the barrel and two and a half below it, and at the port it came out of a man's elbow. */
+function muzzlePoint(u, m, i) {
+  var variant = variantForModel(u, i), tab = MODELS.muz[variant], mz = tab && tab[m.pose];
+  if (mz && mz.length && mz[0] && mz[0].length) mz = mz[frameOf(m.pose, m)];
+  if (!mz) mz = [13, 0, 16.4];
+  var c = Math.cos(m.f), s2 = Math.sin(m.f), k = FIG_SCALE * (m.sc || 1);
+  return { x: m.x + (mz[0] * c - mz[1] * s2) * k, y: m.y + (mz[0] * s2 + mz[1] * c) * k,
+           z: groundZ(m.x, m.y) + mz[2] * k };
 }
 /* Where a vehicle's is. The mount sits off the hull centre and the barrel reaches out
    from the mount on the turret's own bearing. */
@@ -4896,6 +4924,7 @@ function updateUnit(u, dt) {
           for (var m = 0; m < u.models.length; m++) if (!u.models[m].alive) {
             u.models[m].alive = true; u.models[m].hp = u.def.hpPer;
             u.models[m].x = u.x + rnd(-14, 14); u.models[m].y = u.y + rnd(-14, 14);
+            manSeed(u.models[m]);              /* a replacement is a different man */
             break;
           }
         }
@@ -12882,7 +12911,8 @@ var HATCHES = {};
 /* the man himself, sunk into the ring so what shows over the rim is a head, shoulders
    and a helmet, which is all that ever shows of a tank commander */
 function commander(side, cx, cy, zl) {
-  return place(soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1), 0, cx, cy, zl - 13.4);
+  var f = soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1);
+  return place(f, 0, cx, cy, zl - 13.4 - (f.lift || 0));
 }
 function hatchShut(cx, cy, zl, r, col, cap) {
   return cyl(cx, cy, zl, r, r, .5, 18, col, cap, 0, true)
@@ -17155,7 +17185,11 @@ var SOLDIER_VARIANTS = {
    Nothing is cut away for him: the hull plate or the turret wall in front of him does
    the cutting, so what shows over the rim is a head, shoulders and a helmet. */
 function crewman(side, yaw, x, y, z) {
-  return place(soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1), yaw || 0, x, y, z);
+  /* the figure stands on its feet now rather than 0.93 into the ground, so a crewman
+     dropped into a hull at the z the builders were written against would show that much
+     more of himself over every rim: he is sunk by what the figure was lifted by */
+  var f = soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1);
+  return place(f, yaw || 0, x, y, (z || 0) - (f.lift || 0));
 }
 function variantForModel(u, i) {
   if (u.side === 'us') {
@@ -17188,10 +17222,16 @@ function soldierModel(variant, phase, pose) {
   var crouch = pose === 'crouch' || pose === 'crouchfire';
   var ph = phase < 0 ? 0 : phase;
   var sw = phase < 0 ? 0 : Math.sin(ph * TAU), sw2 = phase < 0 ? 0 : Math.sin(ph * TAU + Math.PI);
+  var cw = phase < 0 ? 0 : Math.cos(ph * TAU);
   var bob = phase < 0 ? 0 : Math.abs(Math.cos(ph * TAU)) * .5;
-  /* the knee bends the shin back (a negative pitch here), most when the leg is
-     swinging forward; at rest the knees carry a slight flex and the stance is open */
-  var kneeF = phase < 0 ? -.12 : -(.18 + Math.max(0, sw) * 1.05), kneeB = phase < 0 ? -.12 : -(.18 + Math.max(0, sw2) * 1.05);
+  /* The knee bends the shin back, and it bends on the COSINE. On the sine it bent most
+     when the thigh was furthest forward, which is heel strike -- the one moment of the
+     stride a knee is straight -- so the eight baked frames were five shapes played as a
+     ping-pong (1 = 5, 2 = 4, 6 = 8) and the leg nearest the ground was the bent one.
+     On the cosine it bends as the leg passes under the body and is straight at heel
+     strike and toe off, which is a loop of eight shapes and a cycle that reads as a
+     man walking. At rest the knees carry a slight flex and the stance is open. */
+  var kneeF = phase < 0 ? -.12 : -(.10 + Math.max(0, cw) * 1.2), kneeB = phase < 0 ? -.12 : -(.10 + Math.max(0, -cw) * 1.2);
   /* Down on his haunches the thigh comes forward and the shin folds back under it, so
      the hip has to come down to where the two of them actually leave it or the man
      floats. Everything above the hip drops with it. */
@@ -17278,12 +17318,23 @@ function soldierModel(variant, phase, pose) {
   f = f.concat(side === 'us' ? helmetUS(k, hz + .75) : helmetGER(k, hz + .35));
 
   /* ---- the weapon, laid along the line from the grip hand to the fore-end hand ---- */
-  var w = weaponModel(k, V.weapon);
+  var w = weaponModel(k, V.weapon), wStart = f.length;
   var gx = rHand[0], gy = rHand[1], gz = rHand[2], fx = lHand[0], fy = lHand[1], fz = lHand[2];
   var wdx = fx - gx, wdy = fy - gy, wdz = fz - gz, wdxy = Math.hypot(wdx, wdy);
   f = f.concat(place(pitch(w, Math.atan2(wdz, wdxy), 0, 0), Math.atan2(wdy, wdx), gx + 1.0, gy, gz + .6));
-  /* lean the whole upper body forward about the hips, and take it down with them */
-  var upper = pitch(f.slice(bodyStart), lean, 0, 10.4 + bob);
+  var wEnd = f.length;
+  /* The point on the bore at the end of the barrel: the weapon is built along its own +x
+     with the bore on that axis, so the axis after laying runs from where it was placed
+     along the direction it was laid, and the tip is the furthest weapon vertex projected
+     back onto it. The vertex itself is a corner of the muzzle ring or of the foresight
+     guard and sits a unit off the bore. */
+  var wLen = Math.hypot(wdxy, wdz) || 1;
+  var tip = boreTip(f.slice(wStart, wEnd), [gx + 1.0, gy, gz + .6], [wdx / wLen, wdy / wLen, wdz / wLen]);
+  /* Lean the whole upper body forward about the hips, and take it down with them.
+     `pitch` moves a point above its pivot toward -x, so a forward lean is a NEGATIVE
+     angle: written positive, as it was, every pose on this figure leaned backward, and
+     the crouch put a man's head two units behind his own hips. */
+  var upper = pitch(f.slice(bodyStart), -lean, 0, 10.4 + bob);
   /* not `at`, which does not carry a face's material or its alpha flag through, and the
      scrim over the helmet is both */
   if (drop) upper = upper.map(function (q) {
@@ -17291,7 +17342,49 @@ function soldierModel(variant, phase, pose) {
              c: q.c, n: q.n, m: q.m, alpha: q.alpha };
   });
   f = f.slice(0, bodyStart).concat(upper);
+  /* And stand him on the ground. The hip was two typed numbers, 10.6 upright and 7.5
+     crouched, and the legs that hang off it are longer than either allows: the soles sat
+     0.93 under the ground standing and 1.78 crouched, and at two frames of the walk in
+     eight both boots were in the air. Solved from the lowest leg vertex instead, every
+     pose stands on its own feet for nothing at runtime -- and the stature the card reads
+     goes up by the same 0.93, because the figure was always that tall and part of him
+     was buried. The rig brings it back. */
+  var lift = -lowestLeg(f, bodyStart);
+  if (lift) f = liftFaces(f, lift);
+  /* how far he was raised, because a crewman built into a hull is placed by a z the
+     vehicle builders were written against and has to be put back down by it */
+  f.lift = lift;
+  /* the tip through the same two moves the upper body made, which is where the flash
+     belongs: read off the barrel rather than typed per pose */
+  if (tip) {
+    var tc = Math.cos(-lean), ts = Math.sin(-lean), tz = tip[2] - (10.4 + bob);
+    f.muzzle = [tip[0] * tc - tz * ts, tip[1], tip[0] * ts + tz * tc + 10.4 + bob + drop + lift];
+  }
   return f;
+}
+/* the lowest point of the legs, which are everything built before the trunk */
+function lowestLeg(f, bodyStart) {
+  var lo = 1e9, i, j, v;
+  for (i = 0; i < bodyStart; i++) for (j = 0, v = f[i].v; j < v.length; j++) if (v[j][2] < lo) lo = v[j][2];
+  return lo === 1e9 ? 0 : lo;
+}
+/* a face list moved up, carrying the material and the alpha flag that `at` drops */
+function liftFaces(f, dz) {
+  var out = [], i;
+  for (i = 0; i < f.length; i++) out.push({ v: f[i].v.map(function (p) { return [p[0], p[1], p[2] + dz]; }),
+                                            c: f[i].c, n: f[i].n, m: f[i].m, alpha: f[i].alpha });
+  return out;
+}
+/* The muzzle: the weapon's furthest vertex along its own bore, projected back onto the
+   bore, so the point is on the axis the round leaves down and not on the rim of the
+   barrel or the top of a foresight guard. */
+function boreTip(f, at, dir) {
+  var best = -1e9, i, j, v, t;
+  for (i = 0; i < f.length; i++) for (j = 0, v = f[i].v; j < v.length; j++) {
+    t = (v[j][0] - at[0]) * dir[0] + (v[j][1] - at[1]) * dir[1] + (v[j][2] - at[2]) * dir[2];
+    if (t > best) best = t;
+  }
+  return best === -1e9 ? null : [at[0] + dir[0] * best, at[1] + dir[1] * best, at[2] + dir[2] * best];
 }
 /* The same man flat on the ground, weapon forward. `phase` puts him through a crawl:
    pinned men were moving across the ground in a fixed pose, which reads as a body being
@@ -17323,19 +17416,42 @@ function proneModel(variant, phase) {
   f = f.concat(headF);
   f = f.concat(side === 'us' ? helmetUS(k, 3.6).map(function (q) { return { v: q.v.map(function (p) { return [p[0] + 2.4 + (p[2] - 3.6) * .6, p[1], p[2] * .9]; }), c: q.c, n: q.n }; })
                              : helmetGER(k, 3.4).map(function (q) { return { v: q.v.map(function (p) { return [p[0] + 2.4 + (p[2] - 3.4) * .6, p[1], p[2] * .9]; }), c: q.c, n: q.n }; }));
+  var wStart = f.length;
   f = f.concat(place(pitch(weaponModel(k, V.weapon), .04, 0, 0), 0, 4.2, 0, 2.2));
+  f.muzzle = boreTip(f.slice(wStart), [4.2, 0, 2.2], [Math.cos(.04), 0, Math.sin(.04)]);
+  f.lift = 0;
   return f;
 }
 
-var WALKF = 9, STRIDE_LEN = 16;      /* one full stride cycle in world units */
+/* One full stride cycle in world units. At sixteen a section walking at sixty-four units
+   a second turned its legs over 4 times a second, which is a sprinter's cadence on a man
+   out for a walk; at twenty-eight it is 2.3, and the planted foot slides about a fifth of
+   the ground a frame stands for instead of all of it. */
+var WALKF = 9, STRIDE_LEN = 28;
 var CRAWLF = 3, CRAWL_LEN = 11;      /* and one crawl beat, which covers less ground */
 /* Every posture a man can be in, baked once per variant. POSE_* are what updateModels
    writes into a model and what the draw path reads back. */
 var POSE_STAND = 0, POSE_WALK = 1, POSE_CROUCH = 2, POSE_FIRE = 3, POSE_CFIRE = 4,
     POSE_PRONE = 5, POSE_CRAWL = 6;
 var MODELS = { sol: {}, solA: {}, prone: {}, proneA: {}, crouch: {}, crouchA: {},
-               fire: {}, fireA: {}, cfire: {}, cfireA: {}, crawl: {}, crawlA: {},
+               fire: {}, fireA: {}, cfire: {}, cfireA: {}, crawl: {}, crawlA: {}, muz: {},
                veh: {}, team: {}, at: {}, gun: {}, gunBase: {}, bld: {}, bldA: {}, tree: [], bush: [] };
+/* A man is drawn at this over his built size. On a phone he is 12.7 CSS pixels tall at
+   the camera the game opens at and every part that tells one side from the other is under
+   two; a fifth over the vehicles beside him is a deliberate over-scale of the kind every
+   top-down game makes, and it costs nothing, because only the draw matrix scales -- hit
+   tests, cover slots and the formation are all on the marker. */
+var FIG_SCALE = 1;
+/* Which frame of a cycle a man is on, from the ground he has covered. The draw and the
+   muzzle both ask here, so they cannot disagree about which frame is on the screen. */
+function frameOf(pose, m) {
+  if (pose === POSE_CRAWL) return Math.floor((m.gait || 0) / (CRAWL_LEN / CRAWLF)) % CRAWLF;
+  return 1 + (Math.floor((m.gait || 0) / (STRIDE_LEN / (WALKF - 1))) % (WALKF - 1));
+}
+/* One man's matrix, for the shadow pass, the colour pass and the corpses alike. */
+function figMat(m) {
+  return m4model(m.x, m.y, groundZ(m.x, m.y), m.f, FIG_SCALE * (m.sc || 1));
+}
 /* the mesh a weapon team stands round: its own piece if it has one, otherwise the
    side's anti-tank gun or its medium machine gun */
 function teamMesh(u) {
@@ -17357,25 +17473,36 @@ function buildModels() {
     alpha[key] = al.length ? facesToBuffer(al) : null;
   }
   Object.keys(SOLDIER_VARIANTS).forEach(function (variant) {
-    MODELS.sol[variant] = []; MODELS.solA[variant] = [];
+    /* Where the flash belongs, per pose and per frame, read off the barrel the builder
+       just laid rather than the three hand-typed reaches muzzlePoint carried. Those put
+       it up to seven units off the muzzle it was meant to leave, and 2.5 below it. */
+    var muz = MODELS.muz[variant] = [];
+    MODELS.sol[variant] = []; MODELS.solA[variant] = []; muz[POSE_WALK] = [];
     for (var fr = 0; fr < WALKF; fr++) {
       var sf = soldierModel(variant, fr === 0 ? -1 : (fr - 1) / (WALKF - 1));
       MODELS.sol[variant].push(facesToBuffer(sf.filter(function (q) { return !q.alpha; })));
       var sa = sf.filter(function (q) { return q.alpha; });
       MODELS.solA[variant].push(sa.length ? facesToBuffer(sa) : null);
+      muz[POSE_WALK].push(sf.muzzle);
+      if (fr === 0) muz[POSE_STAND] = sf.muzzle;
     }
-    bake(proneModel(variant), MODELS.prone, MODELS.proneA, variant);
+    var pm = proneModel(variant);
+    bake(pm, MODELS.prone, MODELS.proneA, variant);
+    muz[POSE_PRONE] = pm.muzzle;
     /* vehicle crew stand where they stand: they never crouch, fire or crawl */
     if (SOLDIER_VARIANTS[variant].weapon === 'none') return;
-    bake(soldierModel(variant, -1, 'crouch'), MODELS.crouch, MODELS.crouchA, variant);
-    bake(soldierModel(variant, -1, 'fire'), MODELS.fire, MODELS.fireA, variant);
-    bake(soldierModel(variant, -1, 'crouchfire'), MODELS.cfire, MODELS.cfireA, variant);
-    MODELS.crawl[variant] = []; MODELS.crawlA[variant] = [];
+    var cr = soldierModel(variant, -1, 'crouch'), fi = soldierModel(variant, -1, 'fire'), cfi = soldierModel(variant, -1, 'crouchfire');
+    bake(cr, MODELS.crouch, MODELS.crouchA, variant);
+    bake(fi, MODELS.fire, MODELS.fireA, variant);
+    bake(cfi, MODELS.cfire, MODELS.cfireA, variant);
+    muz[POSE_CROUCH] = cr.muzzle; muz[POSE_FIRE] = fi.muzzle; muz[POSE_CFIRE] = cfi.muzzle;
+    MODELS.crawl[variant] = []; MODELS.crawlA[variant] = []; muz[POSE_CRAWL] = [];
     for (var cf = 0; cf < CRAWLF; cf++) {
       var cm = proneModel(variant, (cf + .5) / CRAWLF);
       MODELS.crawl[variant].push(facesToBuffer(cm.filter(function (q) { return !q.alpha; })));
       var ca = cm.filter(function (q) { return q.alpha; });
       MODELS.crawlA[variant].push(ca.length ? facesToBuffer(ca) : null);
+      muz[POSE_CRAWL].push(cm.muzzle);
     }
   });
   Object.keys(VMODEL).forEach(function (k) {
@@ -17819,7 +17946,7 @@ function poseBuffers(u, m, variant) {
   switch (m.pose) {
     case POSE_CRAWL:
       if (!MODELS.crawl[variant]) break;
-      fr = Math.floor(m.gait / (CRAWL_LEN / CRAWLF)) % CRAWLF;
+      fr = frameOf(POSE_CRAWL, m);
       return [MODELS.crawl[variant][fr], MODELS.crawlA[variant][fr]];
     case POSE_PRONE: return [MODELS.prone[variant], MODELS.proneA[variant]];
     case POSE_CROUCH:
@@ -17832,7 +17959,7 @@ function poseBuffers(u, m, variant) {
       if (MODELS.cfire[variant]) return [MODELS.cfire[variant], MODELS.cfireA[variant]];
       break;
     case POSE_WALK:
-      fr = 1 + (Math.floor(m.gait / (STRIDE_LEN / (WALKF - 1))) % (WALKF - 1));
+      fr = frameOf(POSE_WALK, m);
       return [MODELS.sol[variant][fr], MODELS.solA[variant][fr]];
   }
   return [MODELS.sol[variant][0], MODELS.solA[variant][0]];
@@ -17856,7 +17983,7 @@ function castUnit(u) {
       var m = u.models[k]; if (!m.alive) continue;
       var variant = variantForModel(u, k);
       var buf = poseBuffers(u, m, variant)[0];
-      if (buf) drawDepthGeom(buf, m4model(m.x, m.y, groundZ(m.x, m.y), m.f, 1));
+      if (buf) drawDepthGeom(buf, figMat(m));
     }
     if (u.cat === 'team' && aliveModels(u) > 0) {
       var a = u.models.find(function (mm) { return mm.alive; });
@@ -17919,6 +18046,7 @@ function drawInterior(u) {
   }
   gl.uniform1f(PROG.u.uInside, 0);
 }
+var _mt = [1, 1, 1];
 function drawUnits3D(v, list) {
   var fr, m;
   for (var i = 0; i < list.length; i++) {
@@ -17970,9 +18098,12 @@ function drawUnits3D(v, list) {
         var variant = variantForModel(u, k);
         var gzm = groundZ(m.x, m.y);
         var pb = poseBuffers(u, m, variant), buf = pb[0], bufA = pb[1];
-        var mmat = m4model(m.x, m.y, gzm, m.f, 1);
-        if (buf) drawGeom(buf, mmat, false, tint);
-        if (bufA) { gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE); drawGeom(bufA, mmat, false, tint); gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0); }
+        var mmat = figMat(m);
+        /* his own tint: no two men of a section are cut from the same bolt of serge, and
+           a per-draw uniform the renderer already takes costs nothing */
+        _mt[0] = tint[0] * (m.tint || 1); _mt[1] = tint[1] * (m.tint || 1); _mt[2] = tint[2] * (m.tint || 1);
+        if (buf) drawGeom(buf, mmat, false, _mt);
+        if (bufA) { gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE); drawGeom(bufA, mmat, false, _mt); gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0); }
         _blobs.push({ x: m.x, y: m.y, r: m.prone ? 12 : 8, a: .38 });
       }
       if (u.cat === 'team' && aliveModels(u) > 0) {
@@ -18039,7 +18170,7 @@ function drawWrecks3D() {
   G.corpses.forEach(function (c) {
     var variant = c.side === 'us' ? 'can_rifle' : 'fj_rifle', buf = MODELS.prone[variant]; if (!buf) return;
     var a = clamp(1 - c.t / 55, .15, .55);
-    drawGeom(buf, m4model(c.x, c.y, groundZ(c.x, c.y) - .5, c.a, 1), false, [a, a * .95, a * .9]);
+    drawGeom(buf, m4model(c.x, c.y, groundZ(c.x, c.y) - .5, c.a, FIG_SCALE), false, [a, a * .95, a * .9]);
   });
 }
 function drawParticles3D() {
@@ -18718,6 +18849,7 @@ if (MOB) {
   document.body.classList.add('mob');
   dpr = Math.min(1.75, window.devicePixelRatio || 1);
   FOGDIV = 3;
+  FIG_SCALE = 1.2;
 }
 
 var touch = { id: null, x: 0, y: 0, sx: 0, sy: 0, t0: 0, moved: false, pinch: 0,

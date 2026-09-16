@@ -254,7 +254,19 @@ function GEO(opt) {
     }
     const body = cap.faces.filter(f => parts.weapon.indexOf(f) < 0);
     const id = window.__o.poseId(P.name);
-    const gz = groundZ(0, 0), mz = id === null ? null : muzzlePoint({ x: 0, y: 0, f: 0, pose: id });
+    /* muzzlePoint takes the unit and the man's index and reads the variant off them, so
+       the variant under test is pinned for the length of the call: the point of the row
+       is the real function against the real table, not a reimplementation of it */
+    const realVariant = window.variantForModel;
+    window.variantForModel = function () { return variant; };
+    /* the gait that puts him on the frame this record was built for, by the same
+       arithmetic the draw uses, or the row compares one frame's geometry against
+       another frame's flash */
+    const gait = P.cycle ? P.frame * (P.cycle.len / P.cycle.n) + .01 : 0;
+    let mz = null;
+    try { mz = id === null ? null : muzzlePoint({ side: V.side, key: '_men' }, { x: 0, y: 0, f: 0, pose: id, gait }, 0); }
+    finally { window.variantForModel = realVariant; }
+    const gz = groundZ(0, 0);
     return { faces: cap.faces, ok: cap.ok, logged: cap.logged, parts, joints, leaves: cap.leaves.map(e => e.faces),
              lean: LEGACY_LEAN[P.name], flat, body, legFaces: cat(parts.legs),
              runtimeMuzzle: mz ? [mz.x, mz.y, mz.z - gz] : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none' };
