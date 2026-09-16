@@ -764,6 +764,7 @@ var UNITS = {
     side: 'us', name: 'Vickers MMG Team', short: 'VICK', cat: 'team', hk: 'G',
     models: 3, hpPer: 58, speed: 48, sight: 340, pop: 6, cost: { mp: 270 }, time: 22,
     req: 'us_bar', setup: 1.3,
+    gunAt: 9.0, gunMuz: [12.24, 8.63], gunGrip: [-3.96, 1.26, 7.92], gunSit: 1,
     w: { range: 340, dmg: 8.0, rof: 0.14, acc: .46, sup: .058, pen: 10 },
     desc: 'A water-cooled .303 Vickers on its tripod. Sustained, accurate fire, but it must set up after moving.'
   },
@@ -787,6 +788,7 @@ var UNITS = {
     side: 'us', name: 'Ordnance QF 6-Pounder', short: '6-PDR', cat: 'team', hk: 'T',
     models: 4, hpPer: 70, speed: 40, sight: 360, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
     req: 'us_mot', setup: 1.6, atOnly: true, blastRes: .58, closeWeak: 2.2,
+    gunAt: 8.3, gunMuz: [18.79, 7.84], gunGrip: [-2.75, 3.42, 5.19],
     w: { range: 440, dmg: 92, rof: 3.8, acc: .74, sup: .02, pen: 265, aoe: 30, shell: 1 },
     desc: 'Kills tanks and nothing else. Slow to move and helpless if infantry get on top of it.'
   },
@@ -794,6 +796,7 @@ var UNITS = {
     side: 'us', name: '105 mm Gun T8', short: 'T8 105', cat: 'team', hk: 'K',
     models: 5, hpPer: 66, speed: 0, sight: 470, pop: 12, cost: { mp: 400, fu: 40 }, time: 38,
     req: 'us_mot', setup: 2.6, arc: Math.PI, towable: 1, closeWeak: 2.4, blastRes: .72,
+    gunAt: 10.6, gunMuz: [41.77, 14.61], gunGrip: [-5.06, 6.44, 9.57],
     w: { range: 540, dmg: 172, rof: 5.4, acc: .78, sup: .05, pen: 300, aoe: 46, shell: 1 },
     desc: 'A 105 on a split trail, sited rather than driven: it has no engine and a half-track or a tank has to bring it up and hitch it again to take it away. It sees further than anything else on the field and it reaches most of the way across a street from cover, but it only shoots through the half-circle it is laid on. Right-click to lay it. Anything that gets in among the crew kills them.'
   },
@@ -857,6 +860,7 @@ var UNITS = {
     side: 'ger', name: 'MG42 Team', short: 'MG42', cat: 'team', hk: 'G',
     models: 3, hpPer: 60, speed: 46, sight: 350, pop: 6, cost: { mp: 250 }, time: 22,
     req: 'ger_qtr', setup: 1.3,
+    gunAt: 8.0, gunMuz: [7.06, 9.09], gunGrip: [-2.45, .90, 6.98],
     w: { range: 355, dmg: 5.0, rof: 0.10, acc: .38, sup: .068, pen: 10 },
     desc: 'The best suppression in the game. Set it behind cover facing open ground and infantry stop moving.'
   },
@@ -872,6 +876,7 @@ var UNITS = {
     side: 'ger', name: '7.5 cm Pak 40', short: 'PAK 40', cat: 'team', hk: 'T',
     models: 4, hpPer: 70, speed: 38, sight: 380, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
     req: 'ger_dep', setup: 1.6, atOnly: true, blastRes: .58, closeWeak: 2.2,
+    gunAt: 8.7, gunMuz: [24.65, 8.61], gunGrip: [-3.19, 3.60, 5.45],
     w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1 },
     desc: 'Longest reach on the field. Even a Sherman cannot afford to take two clean hits from it.'
   },
@@ -3610,6 +3615,12 @@ function updateModels(u, dt) {
     if (!m.alive) continue;
     var ox = m.ox * fl, oy = m.oy * fw;
     var tx = u.x + ox * cs - oy * sn, ty = u.y + ox * sn + oy * cs;
+    /* A gun that was built where it stands does not move to its layer, so its layer
+       moves to it: man 0 stands behind the breech and man 1 beside him. */
+    if (!u.def.speed && u.def.gunAt && i < 2 && gunSet(u)) {
+      tx = u.x - cs * u.def.gunAt - sn * (i ? 9 : 0);
+      ty = u.y - sn * u.def.gunAt + cs * (i ? 9 : 0);
+    }
     if (u.coverSlots && u.coverSlots[i]) {
       /* a slot further than a short walk from where the man stands is not taken, and
          the walk has to be at least as long as the reach the piece was chosen over or
@@ -3703,11 +3714,17 @@ function updateModels(u, dt) {
        ever shows, and POSE_STAND was the whole of what this army did when it was not
        actually pulling a trigger. */
     var alert = engaged || u.sup > .15 || (halted && u.threatAng !== null && u.threatAng !== undefined);
+    /* The two men who serve the piece are at it while it is laid, with their hands on its
+       own grips. The Vickers number one sits on the ground behind the tripod; everybody
+       else kneels. It comes above the cover stances and below going flat, because a crew
+       pinned in the open leaves the gun. */
+    var atGun = u.cat === 'team' && u.def.gunAt && i < (u.def.gunSit ? 1 : 2) && gunSet(u);
     if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
     else if (u.sup > .55 && !u.moving && !u.gar) m.pose = POSE_PRONE;
     else if (u.stance === 'ground' && halted && !u.gar && st !== STAND_DUG) m.pose = POSE_PRONE;
     else if (u.moving) m.pose = (u.stance === 'double' || u.retreat) ? POSE_RUN : POSE_WALK;
     else if (m.settle > 0 || (moved > dt * 8 && !u.gar)) m.pose = POSE_WALK;   /* finishing a step, or walking to his slot */
+    else if (atGun) m.pose = i === 0 && u.def.gunSit ? POSE_SIT : POSE_SERVED;
     else if (u.gar) m.pose = shooting ? POSE_FIRE : POSE_READY;   /* at a window */
     else if (st === STAND_FLAT) m.pose = POSE_PRONE;              /* a crater lip, a ditch */
     else if (st === STAND_LOW) m.pose = engaged && shooting ? POSE_CFIRE : POSE_CROUCH;   /* the kneel, under the old ids */
@@ -4488,6 +4505,10 @@ function muzzlePoint(u, m, i) {
   var variant = variantForModel(u, i), tab = MODELS.muz[variant], mz = tab && tab[m.pose];
   var set = MODELS.man[variant] && MODELS.man[variant][m.pose];
   if (mz && mz.length && mz[0] && mz[0].length) mz = mz[frameOf(set, m)];
+  /* the layer's round leaves the piece and not his shoulder, and the piece is ahead of
+     him by the same gunAt the draw uses */
+  if (i === 0 && u.def.gunMuz && gunSet(u))
+    mz = [(u.def.speed ? u.def.gunAt : -u.def.gunAt) + u.def.gunMuz[0], 0, u.def.gunMuz[1]];
   if (!mz) mz = [13, 0, 16.4];
   var c = Math.cos(m.f), s2 = Math.sin(m.f), k = FIG_SCALE * (m.sc || 1);
   return { x: m.x + (mz[0] * c - mz[1] * s2) * k, y: m.y + (mz[0] * s2 + mz[1] * c) * k,
@@ -17532,10 +17553,12 @@ var SOLDIER_VARIANTS = {
   can_bren:     { side: 'us', weapon: 'bren', set: 'field' },
   can_piat:     { side: 'us', weapon: 'piat', assault: 1, set: 'field' },
   can_scope:    { side: 'us', weapon: 'leescope', jerkin: 1, set: 'field' },
+  can_gunner:   { side: 'us', weapon: 'sten', jerkin: 1, set: 'gunner' },
   can_crew:     { side: 'us', weapon: 'none', jerkin: 1, set: 'hull' },
   fj_rifle:     { side: 'ger', weapon: 'kar', pouch: 'leather', set: 'field' },
   fj_mp40:      { side: 'ger', weapon: 'mp40', assault: 1, pouch: 'canvas', set: 'field' },
   fj_schreck:   { side: 'ger', weapon: 'schreck', assault: 1, pouch: 'canvas', set: 'field' },
+  fj_gunner:    { side: 'ger', weapon: 'mp40', pouch: 'canvas', set: 'gunner' },
   fj_crew:      { side: 'ger', weapon: 'none', set: 'hull' }
 };
 function variantForModel(u, i) {
@@ -17549,13 +17572,15 @@ function variantForModel(u, i) {
     if (u.key === 'us_rifle') return i === 0 ? 'can_bren' : i === 1 ? 'can_sten' : i === 3 ? 'can_rifle_bd' : 'can_rifle';
     if (u.key === 'us_ab') return i === 0 ? 'can_piat' : i < 3 ? 'can_sten' : 'can_rifle';
     if (u.key === 'us_eng') return i === 0 ? 'can_sten' : i === 2 ? 'can_rifle_bd' : 'can_rifle';
-    /* the gun teams get their own gunner and his served pose with the team meshes */
-    if (u.key === 'us_mg') return i === 0 ? 'can_sten' : 'can_rifle';
+    /* the gun teams get their own gunner, who serves the piece with both hands */
+    if (u.def.gunAt) return i === 0 || (i === 1 && !u.def.gunSit) ? 'can_gunner' : 'can_rifle';
     return 'can_rifle';
   }
   if (u.key === 'ger_gren') return i === 0 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pgren') return i === 0 ? 'fj_schreck' : i < 3 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pio') return i === 0 ? 'fj_mp40' : 'fj_rifle';
+  /* the eighty-eight is laid by its own crew and never queued, so it has no gunAt */
+  if (u.def.gunAt || u.key === 'ger_flak88') return i < 2 ? 'fj_gunner' : 'fj_rifle';
   return 'fj_rifle';
 }
 /* The two old names, kept while the table and the draw still call them. `phase` runs
@@ -17707,7 +17732,13 @@ function manFaces(variant, P) {
   add(figKit(V, side, k, ger, KQ), 'kit');
 
   /* the weapon, then the arms onto it */
-  var W = WEAP[V.weapon], w = W ? weaponModel(k, V.weapon, P.carry === 'aim' ? 'out' : '') : null;
+  /* The grips carry means both hands on something that is not his weapon -- a gun's
+     handwheels, a tripod's spades -- so it takes the arms whatever he is carrying, and
+     his own weapon is not drawn at all. Tested on the variant alone, a gunner issued a
+     Sten took the weapon carry and every layer on the roster ended up with his hands in
+     the same place, which is the one thing the per-gun grips exist to stop. */
+  var grip = P.carry === 'grips';
+  var W = grip ? null : WEAP[V.weapon], w = W ? weaponModel(k, V.weapon, P.carry === 'aim' ? 'out' : '') : null;
   var C = W ? figCarry(P, W, w, ger ? .9 : 0) : null, anchors = {};
   var bl = blade ? Math.cos(blade) : 1, bs = blade ? Math.sin(blade) : 0;
   function shoulder(sd) {
@@ -18022,6 +18053,20 @@ function teamMesh(u) {
   if (MODELS.gun[u.key]) return MODELS.gun[u.key];
   return u.def.atOnly ? MODELS.at[u.side] : MODELS.team[u.side];
 }
+/* A gun is not standing on its layer. The mesh was drawn on the first alive man, so
+   every crew served their piece from inside it; `gunAt` is how far in front of him it
+   sits, and which of the two moves depends on which of them can walk. A team that
+   carries its gun puts the gun ahead of the man; a mount that was built where it stands
+   keeps the gun on its own marker and puts the man behind the breech. Neither applies
+   while the team is carrying it: then the gun is on the man's back and is drawn there. */
+function gunSet(u) { return !!(u.def.gunAt && u.setup <= 0 && !u.moving && aliveModels(u) > 0); }
+function gunPost(u) {
+  var a = u.models && u.models.find(function (mm) { return mm.alive; });
+  if (!u.def.speed) a = u;
+  if (!a) a = u;
+  if (!gunSet(u) || !u.def.speed) return { x: a.x, y: a.y };
+  return { x: a.x + Math.cos(u.facing) * u.def.gunAt, y: a.y + Math.sin(u.facing) * u.def.gunAt };
+}
 /* Every pose of every variant off the one rig. A cycle is baked as its frames with the
    ground one cycle covers, so nothing downstream needs a divisor typed beside it, and
    the previous buffers are freed first: a restart used to leak every man on the roster.
@@ -18057,12 +18102,46 @@ function bakeMen() {
     cycle(POSE_WALK, WALK, WALKF, STRIDE_LEN);
     if (!MOB) cycle(POSE_RUN, RUN, RUNF, RUN_LEN);
     cycle(POSE_CRAWL, CRAWL, CRAWLF, CRAWL_LEN);
+    /* a gunner serves the piece with both hands and has no aimed pose of his own */
+    if (V.set === 'gunner') return;
     one(POSE_READY, FIGPOSE.ready); one(POSE_FIRE, FIGPOSE.fire); one(POSE_CFIRE, FIGPOSE.kfire);
     if (v === 'can_rifle' || v === 'fj_rifle') {
       var sd = V.side;
       MODELS.fall[sd] = [FIGPOSE.fall0, FIGPOSE.fall1, FIGPOSE.fall2].map(function (P) { return buf(manFaces(v, P)); });
       MODELS.dead[sd] = [buf(deadFaces(v, 0)), buf(deadFaces(v, 1))];
     }
+  });
+  bakeGunners(buf);
+}
+/* The layer, one per gun, with his hands on that gun's own grips.
+     A single served pose cannot fit five pieces: the handwheels of a 6-pounder are 5.2
+   units off the ground and the T8's are 9.6, spread 3.4 either side against 6.4, so a
+   pose with one pair of hands has them in the air on four guns out of five. The pose's
+   `grips` are in the trunk's own frame, which is not the frame the gun is in, so rather
+   than hand-converting five times the figure is built once, its hand is read back out of
+   the joints it returns, and the grips are corrected by the exact inverse of the lean and
+   the stand the builder applied. One correction is enough because that map is affine.
+     It is six buffers. Baking a gunner VARIANT per team instead would be eight poses each
+   and about a fifth again on the whole roster, for men who stand and walk like anybody. */
+function bakeGunners(buf) {
+  MODELS.served = {};
+  Object.keys(UNITS).forEach(function (key) {
+    var d = UNITS[key], G0 = d.gunGrip; if (!G0) return;
+    var v = d.side === 'ger' ? 'fj_gunner' : 'can_gunner';
+    var base = d.gunSit ? FIGPOSE.sit : FIGPOSE.served;
+    /* where the hands have to end up, in the man's own frame: the grips of the piece,
+       which is drawn gunAt ahead of him */
+    var want = [d.gunAt + G0[0], G0[1], G0[2]];
+    var P = { legs: base.legs, lean: base.lean, carry: 'grips', grips: base.grips };
+    var r = manFaces(v, P), h = r.joints.handR;
+    if (h) {
+      var c = Math.cos(base.lean), sn = Math.sin(base.lean), dz = want[2] - r.lift;
+      P = { legs: base.legs, lean: base.lean, carry: 'grips',
+            grips: [want[0] * c - dz * sn, want[1], want[0] * sn + dz * c] };
+      r = manFaces(v, P);
+    }
+    MODELS.served[key] = { buf: buf(r), pose: d.gunSit ? POSE_SIT : POSE_SERVED,
+                           hand: r.joints.handR, want: want };
   });
 }
 function buildModels() {
@@ -18508,6 +18587,12 @@ function groundRing(x, y, r, col, width, dash) {
    through the run to the walk and then to standing. One buffer and no alpha twin: no
    infantry face has carried alpha since the helmets lost their nets. */
 function poseBuffers(u, m, variant) {
+  /* a man at his gun is drawn from his gun's own buffer, not from his variant's: the
+     served pose is where the piece's grips are and every piece's are somewhere else */
+  if (m.pose === POSE_SERVED || m.pose === POSE_SIT) {
+    var S = MODELS.served && MODELS.served[u.key];
+    if (S) return S.buf;
+  }
   var T = MODELS.man[variant]; if (!T) return null;
   var set = T[m.pose] || (m.pose === POSE_RUN ? T[POSE_WALK] : null) || T[POSE_STAND];
   if (!set) return null;
@@ -18534,8 +18619,7 @@ function castUnit(u) {
       if (buf) drawDepthGeom(buf, figMat(m, variant));
     }
     if (u.cat === 'team' && aliveModels(u) > 0) {
-      var a = u.models.find(function (mm) { return mm.alive; });
-      if (!u.def.speed) a = u;
+      var a = gunPost(u);
       drawDepthGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1));
       if (MODELS.gunBase[u.key]) drawDepthGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, 1));
     }
@@ -18658,8 +18742,7 @@ function drawUnits3D(v, list) {
         _blobs.push({ x: m.x, y: m.y, r: m.prone ? 12 : 8, a: .38 });
       }
       if (u.cat === 'team' && aliveModels(u) > 0) {
-        var a = u.models.find(function (mm) { return mm.alive; });
-        if (!u.def.speed) a = u;                     /* a fixed mount is drawn where it was built */
+        var a = gunPost(u);                          /* a fixed mount is drawn where it was built */
         var trec = recoilAt(u.recoil) * 7;
         drawGeom(teamMesh(u), m4model(a.x - Math.cos(u.facing) * trec, a.y - Math.sin(u.facing) * trec,
                                       groundZ(a.x, a.y), u.facing, 1), false, tint);
