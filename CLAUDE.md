@@ -2082,16 +2082,40 @@ its own population cap, and `vp` -- the rate the player's points drain, which st
 because being bled faster is pressure the opponent applies rather than a modifier on the
 player's units.
 
-`PD` is the player's own side, five settings on the title screen behind a HANDICAP button
-that lights when any of them is off even: income rate, production speed (a unit out of a
-queue), construction speed (a building or a field work going up), the manpower cap from a
-hundred to five hundred, and what is in the till at the first shot. Each is an index into
-a named list, because the stepper and the game have to read one table -- two lists of the
-same five settings go out of step the moment somebody adds a sixth. `pdMake()` resolves
-the indices once in `startGame` so the income tick and the population check read a number,
-and `pd()` hands the even game to anything that reaches it before a battle. The setting is
-kept in `localStorage` under `ORT_HCAP`, and a handicap carried over from the last battle
-opens the panel rather than hiding in it.
+`PD` is the player's own side, ten settings on the title screen behind a HANDICAP button
+that lights when any of them is off even: manpower income and fuel income, what is in the
+till at the first shot in each of the two, production speed (a unit out of a queue),
+construction speed (a building or a field work going up), the manpower cap from a hundred
+to five hundred, the damage his units take, the damage they deal, and how far they see.
+Each is an index into a named list, because the stepper and the game have to read one
+table -- two lists of the same settings go out of step the moment somebody adds another.
+`pdMake()` resolves the indices once in `startGame` so the income tick and the population
+check read a number, and `pd()` hands the even game to anything that reaches it before a
+battle. The setting is kept in `localStorage` under `ORT_HCAP`, and a handicap carried
+over from the last battle opens the panel rather than hiding in it.
+
+**Manpower and fuel are two settings each, not one.** A single income multiplier and a
+single starting purse could only ever scale the two together, and the two are not the same
+scarcity: manpower is what raises sections and fuel is what puts a tank behind them, so a
+player who wants to field armour without also fielding twice the infantry has to be able
+to say so. `inc`/`incf` and `smp`/`sfu` are the four, and the income tick reads one
+multiplier per resource rather than one for the tick. The ceilings are generous on purpose
+-- income and the two speeds run to 10x, the till to 15,000 marks and 6,000 of fuel --
+because a handicap is a knob the player is turning with his eyes open and not a balance
+figure.
+
+**Three of them only go one way.** Damage taken runs from 1x down to 0.1x, damage dealt
+from 1x up to 4x, and sight from 1x up to 2x: each is a thumb on the scale in the player's
+favour and there is no reason to offer him the other half of it, which is a difficulty
+setting and lives on `DIFF`. The two damage multipliers are applied at the top of
+`damage()` rather than in `damageModel`, and that placement is the whole of what makes
+them work on everything: `damageModel` is only ever reached for infantry, which is why
+`DIFF`'s own `tough` has never once applied to a vehicle or a building. Dealt is charged
+only against an enemy (`src.side === G.side && src.side !== t.side`), so a round between
+two of the opposition's is untouched and so is one the player puts into his own men.
+Sight multiplies the radius the eye goes into `_eyes` with, on the unit eye and the
+building eye alike, which means it moves detection as a rate and not only the ring it
+happens at.
 
 **Four of green's thumbs on the scale are gone rather than moved**, and that is the point
 of the split as much as the settings are. `youAim` multiplied the player's accuracy by
@@ -2109,13 +2133,24 @@ difficulty. They are two settings because they are two decisions: a fast queue w
 spade is a side with an army and no position, and the other way round is a side dug in with
 nothing in it.
 
-Measured by the gate, with every setting at its top and the opposition on GREEN: the
-player's cap is 500 and the opposition's is still green's own 175, the till opens at
-2406/401, income is 34 against 4.42, a second of wall clock buys four seconds of queue
-against one, and a second of digging puts up 0.154 of a building against 0.038. The
-production and construction figures are timed rather than read back off the settings,
-because a setting that is stored and never multiplied into anything looks exactly like one
-that works.
+Measured by the gate, with every setting at its most generous and the opposition on
+GREEN: the player's cap is 500 and the opposition's is still green's own 175, the till
+opens at 15,011 marks and 6,001 of fuel, income is 85 marks and 11 fuel against 4.42 and
+0.57, a second of wall clock buys ten seconds of queue against one, and a second of
+digging puts up 0.3846 of a building against 0.0385. A hundred-point round takes 10 off
+one of his and 400 off one of theirs, and 100 between two of theirs. His eye reaches 760
+off a 380 sight where the opposition's reaches 400 off its own 400. The production and
+construction figures are timed rather than read back off the settings, because a setting
+that is stored and never multiplied into anything looks exactly like one that works.
+
+Two things had to be got right before that row could say anything. **The damage probe has
+to hit something a round cannot kill**: fired at a rifle section it went through
+`damageModel`, which picks a living man at random, so reading `models[0].hp` measured the
+pick, and summing the section measured the man's remaining hit points rather than the
+round. It hits a vehicle at a million hit points now. And **`computeVisibility(dt)` runs
+at a tenth of the frame rate**: called with a dt it returns at once while its own timer is
+still down, so a probe that passes one reads an `_eyes` list built before the units it
+just spawned and comes back -1 both ways. The row calls it with no argument.
 
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and

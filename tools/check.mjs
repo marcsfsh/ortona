@@ -643,17 +643,23 @@ for (const device of TARGETS) {
   await page.click('#tMap').catch(() => {});
 
   /* --- the handicap, which is the player's half of what difficulty used to be. What is
-     asserted is the split: with every setting at its top and the opposition on GREEN, the
-     five numbers reach the player's side and none of them reaches the opposition's, whose
-     population cap is still green's own hundred and seventy-five. Production and
-     construction are timed rather than read off the settings, because a setting that is
-     stored and never multiplied into anything looks exactly like one that works. --- */
+     asserted is the split: with every setting at its best and the opposition on GREEN, all
+     ten numbers reach the player's side and none of them reaches the opposition's, whose
+     population cap is still green's own hundred and seventy-five. Production, construction,
+     damage and sight are timed or measured rather than read off the settings, because a
+     setting that is stored and never multiplied into anything looks exactly like one that
+     works. Damage is read against a VEHICLE both ways: `damageModel` picks a living man at
+     random and caps the hit at what that man had left, so a fifty-point round on a section
+     measures the pick and the man's remaining hit points rather than the multiplier. --- */
   await reload(page);
   await page.evaluate(() => {
     /* every knob to its top, through the stepper the player uses rather than by writing
        PD, so the row covers the control as well as the number */
     document.getElementById('hopen').click();
-    window.HCAP.forEach(h => { for (let i = 0; i < 12; i++) window.hcapStep(h, 1); });
+    /* DAMAGE TAKEN is the one list whose good end is the bottom, so it is stepped down */
+    window.HCAP.forEach(h => {
+      for (let i = 0; i < 20; i++) window.hcapStep(h, h.k === 'take' ? -1 : 1);
+    });
   });
   await deploy(page, { side: args.side || 'us', diff: 0 });
   const hcap = await page.evaluate(() => {
@@ -686,34 +692,79 @@ for (const device of TARGETS) {
       return +r.toFixed(4);
     }
     const consYou = cRate(side), consFoe = cRate(foe);
+    /* damage, both ways, against a hull that cannot be killed by one round of it */
+    function hit(victim, shooter, amt) {
+      const before = victim.hp;
+      window.damage(victim, amt, shooter);
+      const d = before - victim.hp;
+      victim.hp = before; victim.dead = false;
+      return +d.toFixed(2);
+    }
+    const mine = window.spawnUnit(side, side === 'us' ? 'us_sher' : 'ger_p4', 700, 1500, 0);
+    const theirs = window.spawnUnit(foe, foe === 'us' ? 'us_sher' : 'ger_p4', 900, 1500, 0);
+    mine.hp = theirs.hp = 1e6;
+    const took = hit(mine, theirs, 100), dealt = hit(theirs, mine, 100);
+    /* and the cross-check: a round between two of the opposition's is untouched by either */
+    const theirs2 = window.spawnUnit(foe, foe === 'us' ? 'us_sher' : 'ger_p4', 1100, 1500, 0);
+    theirs2.hp = 1e6;
+    const neither = hit(theirs2, theirs, 100);
+    /* Sight: the radius the eye actually goes into the list with. Called with NO argument
+       on purpose -- `computeVisibility(dt)` runs at a tenth of the frame rate and returns
+       at once while its timer is still down, so a probe that passes a dt reads whatever
+       the last real pass built, which here predates the units it just spawned. */
+    window.computeVisibility();
+    function eyeOf(s, u) {
+      const e = window._eyes[s].find(q => q.u === u);
+      return e ? Math.round(e.r) : -1;
+    }
+    const eyeYou = eyeOf(side, mine), eyeFoe = eyeOf(foe, theirs);
+    /* each vehicle's own sight, because the two are different vehicles: the Sherman's
+       380 against the Panzer IV's 400, and comparing one against the other is not a test */
+    const eyeDef = mine.sight, eyeFoeDef = theirs.sight;
+    [mine, theirs, theirs2].forEach(u => {
+      u.dead = true;
+      const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1);
+    });
     return { pd, diff: window.G.diff,
              popYou: window.popCap(side), popFoe: window.popCap(foe),
              mp: Math.round(window.G.res[side].mp), fu: Math.round(window.G.res[side].fu),
              incYou: +window.G.inc[side].mp.toFixed(2), incFoe: +window.G.inc[foe].mp.toFixed(2),
-             prodYou, prodFoe, consYou, consFoe,
+             incFuYou: +window.G.inc[side].fu.toFixed(2), incFuFoe: +window.G.inc[foe].fu.toFixed(2),
+             prodYou, prodFoe, consYou, consFoe, took, dealt, neither,
+             eyeYou, eyeFoe, eyeDef, eyeFoeDef,
              even: window.hcapEven(), rows: document.querySelectorAll('#hgrid .hrow').length,
              hqTime: hq.def.makes.length };
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
-     hcap.rows === 5 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
+     hcap.rows === 10 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
      hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
-     hcap.incYou > hcap.incFoe * 2 &&
-     hcap.prodYou > hcap.prodFoe * 3 && hcap.prodFoe > 0 &&
-     hcap.consYou > hcap.consFoe * 3 && hcap.consFoe > 0,
+     hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
+     hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
+     hcap.consYou > hcap.consFoe * 9 && hcap.consFoe > 0 &&
+     Math.abs(hcap.took - 100 * hcap.pd.take) < 1 &&
+     Math.abs(hcap.dealt - 100 * hcap.pd.deal) < 1 &&
+     Math.abs(hcap.neither - 100) < 1 &&
+     Math.abs(hcap.eyeYou - hcap.eyeDef * hcap.pd.eye) < 2 && hcap.eyeFoe === hcap.eyeFoeDef,
      `${hcap.rows} settings, all off even; on GREEN the player's cap is ${hcap.popYou} and the opposition's ${hcap.popFoe}; ` +
-     `the till opened at ${hcap.mp}/${hcap.fu}f; income ${hcap.incYou} against ${hcap.incFoe}; ` +
-     `a second of queue buys ${hcap.prodYou}s against ${hcap.prodFoe}s and a second of digging ` +
-     `${hcap.consYou} of a building against ${hcap.consFoe}`);
+     `the till opened at ${hcap.mp}/${hcap.fu}f; income ${hcap.incYou}mp ${hcap.incFuYou}f against ` +
+     `${hcap.incFoe}mp ${hcap.incFuFoe}f; a second of queue buys ${hcap.prodYou}s against ${hcap.prodFoe}s ` +
+     `and a second of digging ${hcap.consYou} of a building against ${hcap.consFoe}; ` +
+     `a hundred-point round took ${hcap.took} off one of his and ${hcap.dealt} off one of theirs, ` +
+     `and ${hcap.neither} between two of theirs; his eye reaches ${hcap.eyeYou} off a ${hcap.eyeDef} sight ` +
+     `where theirs reaches ${hcap.eyeFoe} off ${hcap.eyeFoeDef}`);
   /* and EVEN puts every one of them back */
   await page.evaluate(() => { document.getElementById('heven').click(); });
   const evened = await page.evaluate(() => ({ even: window.hcapEven(), made: window.pdMake(),
                                               badge: document.getElementById('hopen').textContent }));
   ok('the EVEN button puts every setting back where it started',
-     evened.even && evened.made.inc === 1 && evened.made.prod === 1 && evened.made.cons === 1 &&
-     evened.made.pop === 200 && evened.made.mp === 420 && evened.made.fu === 20 &&
-     evened.badge.indexOf('ON') < 0,
-     `${evened.made.inc}x income, ${evened.made.prod}x production, ${evened.made.cons}x construction, ` +
-     `cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, the button reads "${evened.badge}"`);
+     evened.even && evened.made.inc === 1 && evened.made.incf === 1 && evened.made.prod === 1 &&
+     evened.made.cons === 1 && evened.made.pop === 200 && evened.made.mp === 420 &&
+     evened.made.fu === 20 && evened.made.take === 1 && evened.made.deal === 1 &&
+     evened.made.eye === 1 && evened.badge.indexOf('ON') < 0,
+     `${evened.made.inc}x/${evened.made.incf}x income, ${evened.made.prod}x production, ` +
+     `${evened.made.cons}x construction, cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, ` +
+     `${evened.made.take}x taken, ${evened.made.deal}x dealt, ${evened.made.eye}x sight, ` +
+     `the button reads "${evened.badge}"`);
 
   /* --- the switch on the title screen that takes the opposition's guns away. What is
      asserted is the negative -- over eight minutes of battle the brain never once bought
