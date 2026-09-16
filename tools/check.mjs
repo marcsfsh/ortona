@@ -104,6 +104,40 @@ for (const device of TARGETS) {
   ok('the men reach their postures, not only standing', upright > 0 && (poses.walk || 0) > 0 && kinds >= 3,
      Object.keys(poses).sort((a, b) => poses[b] - poses[a]).map(k => `${k} ${poses[k]}`).join(', '));
 
+  /* --- the dead, and what it costs to draw them. The list runs to two hundred and
+     twenty and every one of them used to be drawn every frame wherever it lay, off
+     screen or not. Count the binds in a real frame rather than reading the loop. --- */
+  const dead = await page.evaluate(() => {
+    const M = window.MODELS;
+    if (!M.dead || !M.dead.us) return { table: false };
+    const bufs = new Set([].concat(M.dead.us || [], M.dead.ger || [], M.fall.us || [], M.fall.ger || []));
+    let binds = 0;
+    const real = window.drawGeom;
+    window.drawGeom = function (b) { if (bufs.has(b)) binds++; return real.apply(null, arguments); };
+    window.render();
+    window.drawGeom = real;
+    const v = window.view();
+    const inv = window.G.corpses.filter(c => window.inView(v, c.x, c.y, 40)).length;
+    /* A battle of this length leaves a handful of bodies and they are all on screen, so
+       the cull and the cap go untested by it. Stage them: two hundred off the far side of
+       the map, which must add nothing at all to the binds, then two hundred under the
+       camera, which must stop at sixty. Put the real list back afterwards. */
+    const keep = window.G.corpses.slice();
+    const lay = (x, y) => { for (let i = 0; i < 200; i++) window.G.corpses.push({ x, y, a: 0, t: 1, side: 'us', k: i & 1 }); };
+    window.G.corpses.length = 0; lay(v.x + v.w + 2000, v.y + v.h + 2000);
+    let away = 0; window.drawGeom = function (b) { if (bufs.has(b)) away++; return real.apply(null, arguments); };
+    window.render(); window.drawGeom = real;
+    window.G.corpses.length = 0; lay(v.x + v.w / 2, v.y + v.h / 2);
+    let near = 0; window.drawGeom = function (b) { if (bufs.has(b)) near++; return real.apply(null, arguments); };
+    window.render(); window.drawGeom = real;
+    window.G.corpses.length = 0; keep.forEach(c => window.G.corpses.push(c));
+    return { table: true, corpses: keep.length, falls: window.G.falls.length, inView: inv, binds, away, near };
+  });
+  ok('the dead are drawn where they can be seen, and sixty of them at most',
+     dead.table && dead.binds <= dead.inView + dead.falls && dead.away === dead.falls && dead.near <= 60 + dead.falls,
+     dead.table ? `${dead.corpses} on the ground, ${dead.inView} in view, ${dead.binds} drawn; of 200 staged off the map ${dead.away - dead.falls} drawn, of 200 under the camera ${dead.near - dead.falls}`
+                : 'no MODELS.dead table in this file');
+
   /* --- draw rate, measured on the real renderer --- */
   const tDraw = Date.now();
   await frames(page, 4);
@@ -196,7 +230,13 @@ for (const device of TARGETS) {
   const tank = await page.evaluate(() => {
     /* the gun and barrel tests run another minute of battle on top of the one already
        fought, which is long enough for the victory points to run out and the game-over
-       screen to come up over everything the rest of the check wants to click */
+       screen to come up over everything the rest of the check wants to click.
+         Topping the points up is not enough on its own once the battle has ALREADY been
+       decided, which a --sim long enough to reach a decision does: G.over is set, the
+       clock is stopped and the screen is up, and endGame returns on its first line so
+       nothing can put it back. Put the battle back on its feet first. */
+    window.G.over = null; window.G.running = true;
+    document.getElementById('over').classList.add('hidden');
     window.G.res.us.vp = 9000; window.G.res.ger.vp = 9000;
     const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);

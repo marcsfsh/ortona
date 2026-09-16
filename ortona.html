@@ -781,7 +781,7 @@ var UNITS = {
     req: 'us_bar',
     w: { range: 240, dmg: 9.2, rof: 0.48, acc: .63, sup: .021, pen: 18 },
     at: { range: 175, dmg: 58, rof: 3.8, acc: .60, sup: .02, pen: 96, aoe: 12, shell: 1 },
-    desc: 'Two Brens, a belt-fed .30, a marksman and two Stens, and the Sten men put the Stens down and pick up bazookas the moment anything tracked comes round the corner. It will take a street off a Fallschirmjaeger group and strip a half-track or an armoured car, and against a Panzer the bazookas are a nuisance rather than an answer.'
+    desc: 'Two Brens, a rifleman, a marksman\'s scoped Lee and two Stens, and the Sten men put the Stens down and take up the PIAT the moment anything tracked comes round the corner. It will take a street off a Fallschirmjaeger group and strip a half-track or an armoured car; against a Panzer the PIAT is a nuisance rather than an answer.'
   },
   us_at: {
     side: 'us', name: 'Ordnance QF 6-Pounder', short: '6-PDR', cat: 'team', hk: 'T',
@@ -1044,7 +1044,7 @@ var G = {
   inc: { us: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 } },
   pop: { us: 0, ger: 0 },
   made: { us: {}, ger: {} },
-  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], covers: [], sectors: [],
+  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [],
   sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
@@ -4386,7 +4386,14 @@ function damageModel(u, m, amt, src) {
   m.hp -= amt;
   if (m.hp <= 0) {
     m.alive = false;
-    G.corpses.push({ x: m.x, y: m.y, a: m.f, side: u.side, t: 0 });
+    /* A man on his feet does not become a body lying flat on the frame he is hit: he
+       buckles, goes to his knees and goes down, which is three frames and half a second.
+       A man already prone or crawling has nowhere to fall from and goes straight onto
+       the corpse list, which is where every casualty used to go. `k` picks which of the
+       two dead layouts he settles into. */
+    var lying = m.pose === POSE_PRONE || m.pose === POSE_CRAWL;
+    var rec = { x: m.x, y: m.y, a: m.f, side: u.side, t: 0, k: Math.random() < .5 ? 0 : 1 };
+    if (lying) G.corpses.push(rec); else G.falls.push(rec);
     spawnFx('hit', m.x, m.y);
     decalStain(m.x, m.y, u.side);
     if (src && src.vet !== undefined) { src.kills++; src.vet = src.kills >= 16 ? 3 : src.kills >= 9 ? 2 : src.kills >= 4 ? 1 : 0; }
@@ -4439,7 +4446,7 @@ function killUnit(u, src) {
     for (var cw2 = 0; cw2 < 2; cw2++) {
       var ca = rnd(0, TAU), cd = 22 + Math.random() * 26;
       G.corpses.push({ x: u.x + Math.cos(ca) * cd, y: u.y + Math.sin(ca) * cd,
-                       a: ca, t: 0, side: u.side });
+                       a: ca, t: 0, side: u.side, k: cw2 });
     }
     if (src && src.vet !== undefined) { src.kills += 4; src.vet = src.kills >= 16 ? 3 : src.kills >= 9 ? 2 : src.kills >= 4 ? 1 : 0; }
   }
@@ -4516,6 +4523,11 @@ function updateShots(dt) {
   for (var j = G.fx.length - 1; j >= 0; j--) { G.fx[j].t += dt; if (G.fx[j].t >= G.fx[j].dur) G.fx.splice(j, 1); }
   for (var k2 = 0; k2 < G.wrecks.length; k2++) G.wrecks[k2].t += dt;
   for (var c = G.corpses.length - 1; c >= 0; c--) { G.corpses[c].t += dt; if (G.corpses[c].t > 55) G.corpses.splice(c, 1); }
+  /* half a second of falling, then he is a body and ages like one */
+  for (var fl = G.falls.length - 1; fl >= 0; fl--) {
+    var fa = G.falls[fl]; fa.t += dt;
+    if (fa.t > .5) { fa.t = 0; G.corpses.push(fa); G.falls.splice(fl, 1); }
+  }
 }
 
 /* ---------------------------------------------------------------- sectors + economy */
@@ -18692,7 +18704,7 @@ function drawWorks3D() {
     if (w.buf) drawGeom(w.buf, m4model(0, 0, -(1 - w.prog) * 13, 0, 1), false, [.88, .88, .84]);
   }
 }
-function drawWrecks3D() {
+function drawWrecks3D(v) {
   G.wrecks.forEach(function (w) {
     var B = MODELS.veh[w.key]; if (!B) return;
     var t = [.28, .27, .24];
@@ -18706,11 +18718,22 @@ function drawWrecks3D() {
       drawGeom(B.tur, m4model(tx, ty, wz + M.mountZ - 1, w.turret || w.a, 1), false, t);
     } else drawGeom(B.tur, m4model(w.x + 3, w.y - 2, wz + M.mountZ - 3, (w.turret || w.a) + .5, 1), false, t);
   });
+  /* A man going down, and then a man lying where he went down. Two layouts a side so
+     a street is not paved with one silhouette repeated, and the loose helmet three units
+     beyond his head is the one cue that still reads at nine hundred units.
+       Drawn only in view, and only sixty of them: the list runs to two hundred and twenty
+     and every one of them used to be drawn every frame wherever it lay. */
+  var shown = 0;
+  G.falls.forEach(function (c) {
+    var L = MODELS.fall[c.side]; if (!L || !inView(v, c.x, c.y, 40)) return;
+    drawGeom(L[Math.min(L.length - 1, Math.floor(c.t / .17))], m4model(c.x, c.y, groundZ(c.x, c.y), c.a, FIG_SCALE),
+             false, [1, 1, 1]);
+  });
   G.corpses.forEach(function (c) {
-    var variant = c.side === 'us' ? 'can_rifle' : 'fj_rifle';
-    var buf = MODELS.man[variant] && MODELS.man[variant][POSE_PRONE]; if (!buf) return;
+    var L = MODELS.dead[c.side]; if (!L || shown >= 60 || !inView(v, c.x, c.y, 40)) return;
+    shown++;
     var a = clamp(1 - c.t / 55, .15, .55);
-    drawGeom(buf, m4model(c.x, c.y, groundZ(c.x, c.y) - .5, c.a, FIG_SCALE), false, [a, a * .95, a * .9]);
+    drawGeom(L[(c.k || 0) % L.length], m4model(c.x, c.y, groundZ(c.x, c.y) - .3, c.a, FIG_SCALE), false, [a, a * .95, a * .9]);
   });
 }
 function drawParticles3D() {
@@ -18966,7 +18989,7 @@ function render() {
   drawWorks3D();
   drawUnits3D(v, list);
   if (POV.on && POV.u && (POV.u.inside || POV.u).cat === 'veh') drawInterior(POV.u.inside || POV.u);
-  drawWrecks3D();
+  drawWrecks3D(v);
   drawParticles3D();
 
   /* ---- the overlay ---- */
@@ -19965,7 +19988,7 @@ function endGame(winner, why) {
 function startGame(side, diff, mode) {
   G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
-  G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.sel = [];
+  G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.sel = [];
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
@@ -20057,6 +20080,7 @@ function frame(now) {
     for (var k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
     if (G.wrecks.length > 26) G.wrecks.shift();
     if (G.corpses.length > 220) G.corpses.splice(0, 40);
+    if (G.falls.length > 40) G.falls.splice(0, 20);
     updateTop(dt);
     cameraScroll(dt);
   }
@@ -20246,7 +20270,7 @@ function edOpen(data) {
   ED.name = ED.data.name || 'Ortona';
   ED.undo = []; ED.redo = []; ED.sel = []; ED.line = null; ED.drag = null; ED.marq = null; ED.tool = null; ED.cat = 'select';
   G.mapData = ED.data; G.side = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
-  G.wrecks = []; G.corpses = []; G.fx = []; G.shots = [];
+  G.wrecks = []; G.corpses = []; G.falls = []; G.fx = []; G.shots = [];
   fog = false;
   ED.scope = 'full'; ED.tiles = {}; ED.rect = null; ED.padTiles = {}; ED.padRect = null; ED.padT = 0;
   edRebuildNow();

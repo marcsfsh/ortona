@@ -256,6 +256,7 @@ export async function installHooks(page) {
       window.G.shots.length = 0;
       window.G.fx.length = 0;
       window.G.corpses.length = 0;
+      if (window.G.falls) window.G.falls.length = 0;   /* a man still going down is a man on the stage */
       window.G.wrecks.length = 0;
       window.G.sel.length = 0;
       const out = [];
