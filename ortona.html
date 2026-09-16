@@ -719,21 +719,40 @@ function popCap(side) {
    do the same job where he can read them. `vp`, the rate his own points drain, stays on
    the opposition's table, because being bled faster is pressure the opponent applies.
      The values are held as indices into these lists so that the stepper on the title
-   screen and the game read one table rather than two. */
-var PD_INC  = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
-var PD_PROD = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
-var PD_CONS = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
+   screen and the game read one table rather than two.
+     Manpower and fuel are two settings each rather than one, for income and for what is
+   in the till at the whistle. They were a pair to begin with and that was a mistake the
+   moment either wanted to move on its own: fuel is what gates armour and manpower is what
+   gates men, so a player who wants a company of infantry and no tanks and a player who
+   wants three Shermans and nobody to hold the ground are asking for opposite things out of
+   one stepper.
+     Three of the ten are one-way on purpose. Damage taken runs from even down to a tenth,
+   damage dealt from even up to fourfold and sight from even up to double, because each is
+   a handicap in the player's favour and nothing here is for making the player's own units
+   worse -- the opposition's difficulty is where a harder game comes from. */
+var PD_MULT = [.5, .75, 1, 1.25, 1.5, 2, 3, 4, 5, 6, 8, 10];
+var PD_INC  = PD_MULT;
+var PD_INCF = PD_MULT;
+var PD_PROD = PD_MULT;
+var PD_CONS = PD_MULT;
 var PD_POP  = [100, 150, 175, 200, 250, 300, 400, 500];
-var PD_RES  = [[210, 10], [420, 20], [800, 80], [1200, 150], [1600, 240], [2400, 400]];
+var PD_SMP  = [210, 420, 800, 1200, 1600, 2400, 4000, 6000, 9000, 15000];
+var PD_SFU  = [10, 20, 80, 150, 240, 400, 800, 1500, 3000, 6000];
+var PD_TAKE = [.1, .15, .2, .25, .3, .4, .5, .6, .75, .9, 1];
+var PD_DEAL = [1, 1.15, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
+var PD_EYE  = [1, 1.1, 1.2, 1.35, 1.5, 1.75, 2];
 /* the even game, and the index of it in each list */
-var PD_EVEN = { inc: 2, prod: 2, cons: 2, pop: 3, res: 1 };
-var PD = { inc: 2, prod: 2, cons: 2, pop: 3, res: 1 };
+var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0 };
+var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0 };
 /* What the player's side is actually running, resolved once when the battle starts so the
-   income tick and the population check read a number rather than an index. Anything that
-   reaches it before a battle -- the editor, a tool staging a scene -- gets the even game. */
+   income tick, the population check and every shot fired read a number rather than an
+   index. Anything that reaches it before a battle -- the editor, a tool staging a scene --
+   gets the even game. */
 function pdMake() {
-  return { inc: PD_INC[PD.inc], prod: PD_PROD[PD.prod], cons: PD_CONS[PD.cons],
-           pop: PD_POP[PD.pop], mp: PD_RES[PD.res][0], fu: PD_RES[PD.res][1] };
+  return { inc: PD_INC[PD.inc], incf: PD_INCF[PD.incf], prod: PD_PROD[PD.prod],
+           cons: PD_CONS[PD.cons], pop: PD_POP[PD.pop],
+           mp: PD_SMP[PD.smp], fu: PD_SFU[PD.sfu],
+           take: PD_TAKE[PD.take], deal: PD_DEAL[PD.deal], eye: PD_EYE[PD.eye] };
 }
 function pd() { return G.pd || (G.pd = pdMake()); }
 /* fitted in the field, one purchase per vehicle */
@@ -4145,7 +4164,8 @@ function computeVisibility(dt) {
        so height is worth a little reach as well as the dead ground it denies him */
     var uz = groundZ(u.x, u.y);
     var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
-            (u.stance === 'ground' && !u.moving ? .85 : 1);
+            (u.stance === 'ground' && !u.moving ? .85 : 1) *
+            (u.side === G.side ? pd().eye : 1);
     _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz, u: u });
   }
   for (j = 0; j < G.blds.length; j++) {
@@ -4153,7 +4173,8 @@ function computeVisibility(dt) {
     /* A company post is not a watchtower, and a building still going up is a pile of
        stores with a man on it: what it watches is its own ground. */
     if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, z: groundZ(b.x, b.y) + 40,
-                                      r: (b.def && b.def.hq ? 400 : 300) * (b.built >= 1 ? 1 : .55),
+                                      r: (b.def && b.def.hq ? 400 : 300) * (b.built >= 1 ? 1 : .55) *
+                                         (b.side === G.side ? pd().eye : 1),
                                       ez: 0, u: null });
   }
   /* How fast this side is picking that thing out, taking the best of its eyes. Nought
@@ -4653,6 +4674,15 @@ function explode(x, y, radius, dmg, owner, except) {
 }
 function damage(t, amt, src) {
   if (!t || t.dead) return;
+  /* The handicap, and it is applied here rather than in `damageModel` because a player's
+     tank and a player's company post are units of his too. `damageModel` only ever sees
+     infantry, which is why the opposition's own `tough` has never once applied to one of
+     its vehicles -- a thing worth knowing before moving either of these down there.
+       Dealt is guarded on the sides differing so that a player's own shell bursting among
+     his own men is not amplified on the way in and then reduced on the way out. */
+  var PDh = pd();
+  if (PDh.deal !== 1 && src && src.side === G.side && src.side !== t.side) amt *= PDh.deal;
+  if (PDh.take !== 1 && t.side === G.side) amt *= PDh.take;
   if (t.built !== undefined) { /* building */
     t.hp -= amt * .6; t.hitT = .2; if (t.hp <= 0) killBuilding(t); return;
   }
@@ -4901,10 +4931,14 @@ function tickEconomy(dt) {
       mp += y.mp; fu += y.fu;
       if (s.type === 'vp') vps++;
     });
-    var mult = side === G.side ? pd().inc : DIFF[G.diff].foe;
-    G.inc[side].mp = mp * mult; G.inc[side].fu = fu * mult;
-    G.res[side].mp += mp * mult * dt;
-    G.res[side].fu += fu * mult * dt;
+    /* two multipliers on the player's side and one on the opposition's, because fuel
+       gates armour and manpower gates men: a player who wants a company of infantry and a
+       player who wants three Shermans are asking opposite things of one number. */
+    var mMul = side === G.side ? pd().inc : DIFF[G.diff].foe;
+    var fMul = side === G.side ? pd().incf : DIFF[G.diff].foe;
+    G.inc[side].mp = mp * mMul; G.inc[side].fu = fu * fMul;
+    G.res[side].mp += mp * mMul * dt;
+    G.res[side].fu += fu * fMul * dt;
     if (vps && G.win !== 'anni') {
       var rate = .8 * (foe(side) === G.side ? DIFF[G.diff].vp : 1);
       G.res[foe(side)].vp = Math.max(0, G.res[foe(side)].vp - vps * rate * dt);
@@ -21261,22 +21295,29 @@ document.querySelectorAll('.mode').forEach(function (btn) {
    moment somebody adds a sixth. `get` and `set` name the field on `PD` and `fmt` says how
    the value reads, which is the only part that differs between a multiplier, a count and
    a pair of numbers. */
+function hcapMult(v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; }
+function hcapNum(v) { return String(v); }
 var HCAP = [
-  { k: 'inc',  name: 'INCOME', list: PD_INC,
-    fmt: function (v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; },
-    tip: 'What your sectors pay, against what they pay at even.' },
-  { k: 'prod', name: 'PRODUCTION', list: PD_PROD,
-    fmt: function (v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; },
+  { k: 'inc',  name: 'MANPOWER INCOME', list: PD_INC, fmt: hcapMult,
+    tip: 'What your sectors pay in manpower, against what they pay at even.' },
+  { k: 'incf', name: 'FUEL INCOME', list: PD_INCF, fmt: hcapMult,
+    tip: 'What your sectors pay in fuel. Fuel is what gates armour.' },
+  { k: 'smp',  name: 'STARTING MANPOWER', list: PD_SMP, fmt: hcapNum,
+    tip: 'Manpower in the till when the first shot is fired.' },
+  { k: 'sfu',  name: 'STARTING FUEL', list: PD_SFU, fmt: hcapNum,
+    tip: 'Fuel in the till when the first shot is fired.' },
+  { k: 'prod', name: 'PRODUCTION', list: PD_PROD, fmt: hcapMult,
     tip: 'How fast a unit comes out of a queue.' },
-  { k: 'cons', name: 'CONSTRUCTION', list: PD_CONS,
-    fmt: function (v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; },
+  { k: 'cons', name: 'CONSTRUCTION', list: PD_CONS, fmt: hcapMult,
     tip: 'How fast your engineers put up a building or a field work.' },
-  { k: 'pop',  name: 'MANPOWER CAP', list: PD_POP,
-    fmt: function (v) { return String(v); },
+  { k: 'pop',  name: 'MANPOWER CAP', list: PD_POP, fmt: hcapNum,
     tip: 'How many men you may have on the field at once. The opposition keeps its own.' },
-  { k: 'res',  name: 'STARTING', list: PD_RES,
-    fmt: function (v) { return v[0] + ' / ' + v[1] + 'f'; },
-    tip: 'What is in the till when the first shot is fired.' }
+  { k: 'take', name: 'DAMAGE TAKEN', list: PD_TAKE, fmt: hcapMult,
+    tip: 'What a round that hits one of yours actually does. Even down to a tenth.' },
+  { k: 'deal', name: 'DAMAGE DEALT', list: PD_DEAL, fmt: hcapMult,
+    tip: 'What a round of yours does to the opposition. Even up to fourfold.' },
+  { k: 'eye',  name: 'SIGHT', list: PD_EYE, fmt: hcapMult,
+    tip: 'How far your men and your buildings see. Even up to double.' }
 ];
 var HCAP_KEY = 'ORT_HCAP';
 function hcapSave() {
