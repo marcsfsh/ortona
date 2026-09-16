@@ -278,8 +278,22 @@ const SCENES = {
           const got = await page.evaluate(o => {
             window.__o.pose([{ key: o.key, x: 0, y: 0, facing: 0 }], o.spot);
             const u = window.G.units[0], side = u.side, enemy = side === 'us' ? 'ger' : 'us';
-            let at = null, kind = 'house';
+            const e = spawnUnit(enemy, enemy === 'us' ? 'us_rifle' : 'ger_gren', o.spot.x + 300, o.spot.y, 0);
+            e.order = null; e.path = null; e.dest = null;
             const mid = c => dsq(c.x, c.y, WORLD.w / 2, WORLD.h / 2);
+            /* the enemy is put where the threat is, the section is given it as a target,
+               and the game's own chain places the men and chooses what they do */
+            const settle = () => {
+              e.x = u.threatX; e.y = u.threatY; e.models.forEach(m => { m.x = e.x + m.ox; m.y = e.y + m.oy; });
+              computeVisibility(); window.__o.reveal();
+              u.target = e; u.moving = false; u.retreat = 0; u.setup = 0;
+              u.coverSlots = null; u.coverT = -9;
+              for (let k = 0; k < 6; k++) {
+                updateModels(u, .1);
+                if (u.coverSlots) u.models.forEach((m, i) => { if (u.coverSlots[i]) { m.x = u.coverSlots[i].x; m.y = u.coverSlots[i].y; } });
+              }
+            };
+            let at = null, kind = 'house';
             if (o.stage === 'window') {
               /* a house of the town, not a base structure: what a section garrisons is a
                  block, which carries the w and h canGarrison reads, and the first version
@@ -288,36 +302,32 @@ const SCENES = {
               if (!houses.length) return { none: true };
               enterBuilding(u, houses[0]); at = { x: houses[0].x, y: houses[0].y };
               u.threatX = at.x + (side === 'us' ? 300 : -300); u.threatY = at.y;
+              settle();
             } else {
               const kinds = o.stage === 'trench' ? ['trench'] : ['bags', 'lowwall'];
               const want = o.stage === 'trench' ? STAND_DUG : STAND_LOW;
               const pieces = window.G.covers.filter(c => kinds.indexOf(c.kind) >= 0 && c.hp > 0).sort((a, b) => mid(a) - mid(b));
-              const seat = c => {
+              if (!pieces.length) return { none: true };
+              /* the section halts beside each piece in turn, nearest the centre first, with
+                 the enemy beyond it, and the first piece where the stance the chain reads
+                 under most of the men is the one the stage is for is kept. A probe at the
+                 piece's own stand-off was not enough: the low wall nearest the centre stands
+                 under a tall one, and the chain read the tall one wherever the men stood. */
+              const beside = c => {
                 const ax = c.axis === null || c.axis === undefined ? 0 : c.axis, nx = -Math.sin(ax), ny = Math.cos(ax);
                 const dir = side === 'us' ? 1 : -1, sgn = nx * dir >= 0 ? -1 : 1;
-                return { nx, ny, sgn };
+                u.x = c.x + nx * sgn * 30; u.y = c.y + ny * sgn * 30;
+                u.models.forEach(m => { m.x = u.x + m.ox; m.y = u.y + m.oy; });
+                u.threatX = c.x - nx * sgn * 300; u.threatY = c.y - ny * sgn * 300;
+                settle();
+                const st = u.models.filter(m => m.alive).map(m => coverStanceAt(m.x, m.y));
+                return st.filter(q => q === want).length * 2 >= st.length;
               };
-              /* the first piece where a man at its stand-off reads the stance the stage is
-                 for: the low wall nearest the centre stands under a tall one, and the chain
-                 read the tall one and put the section on its feet */
-              let best = pieces.find(c => { const q = seat(c), off = c.kind === 'trench' ? 0 : 8; return coverStanceAt(c.x + q.nx * q.sgn * off, c.y + q.ny * q.sgn * off) === want; }) || pieces[0];
-              if (!best) return { none: true };
-              kind = best.kind;
-              /* the section halts beside the piece with the enemy beyond it */
-              const q = seat(best);
-              u.x = best.x + q.nx * q.sgn * 30; u.y = best.y + q.ny * q.sgn * 30;
-              u.models.forEach(m => { m.x = u.x + m.ox; m.y = u.y + m.oy; });
-              u.threatX = best.x - q.nx * q.sgn * 300; u.threatY = best.y - q.ny * q.sgn * 300;
-              at = { x: best.x, y: best.y };
+              let best = null;
+              for (let i = 0; i < Math.min(12, pieces.length) && !best; i++) if (beside(pieces[i])) best = pieces[i];
+              if (!best) { best = pieces[0]; beside(best); }
+              kind = best.kind; at = { x: best.x, y: best.y };
             }
-            const e = spawnUnit(enemy, enemy === 'us' ? 'us_rifle' : 'ger_gren', u.threatX, u.threatY, 0);
-            e.order = null; e.path = null; e.dest = null;
-            u.target = e; u.moving = false; u.retreat = 0; u.setup = 0;
-            for (let k = 0; k < 6; k++) {
-              updateModels(u, .1);
-              if (u.coverSlots) u.models.forEach((m, i) => { if (u.coverSlots[i]) { m.x = u.coverSlots[i].x; m.y = u.coverSlots[i].y; } });
-            }
-            computeVisibility(); window.__o.reveal();
             const names = {};
             Object.keys(window).filter(k => /^POSE_/.test(k)).forEach(k => { names[window[k]] = k.slice(5).toLowerCase(); });
             const alive = u.models.filter(m => m.alive);
@@ -327,11 +337,13 @@ const SCENES = {
           if (!got || got.none) { console.error(`  no ${args.stage} on this map`); continue; }
           const name = `man-stage-${key}-${args.stage}${MODE}`;
           console.log(`  ${name}  in a ${got.kind} at ${Math.round(got.at.x)},${Math.round(got.at.y)}: ${got.poses.join(' ')}`);
-          await camera(page, { x: got.x, y: got.y, dist: Number(args.dist) || 120, pitch: Number(args.pitch) || 0.42, yaw: camYaw, lift: 6 });
+          /* a house wants the camera back far enough to take the whole of it in */
+          const sd = Number(args.dist) || (args.stage === 'window' ? 200 : 120), sp = Number(args.pitch) || (args.stage === 'window' ? 0.6 : 0.42);
+          await camera(page, { x: got.x, y: got.y, dist: sd, pitch: sp, yaw: camYaw, lift: 6 });
           await note(got.x, got.y);
           /* the men are in their cover, so it is the camera that goes round */
           for (let i = 0; i < steps; i++) {
-            await camera(page, { x: got.x, y: got.y, dist: Number(args.dist) || 120, pitch: Number(args.pitch) || 0.42, yaw: camYaw + (i * Math.PI * 2) / steps, lift: 6 });
+            await camera(page, { x: got.x, y: got.y, dist: sd, pitch: sp, yaw: camYaw + (i * Math.PI * 2) / steps, lift: 6 });
             await shoot(page, out(steps > 1 ? `${name}-${String(Math.round((i * 360) / steps)).padStart(3, '0')}` : name), { settle: SETTLE });
           }
         }
