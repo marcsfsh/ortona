@@ -48,6 +48,9 @@ node tools/dims.mjs          # proportion against published dimensions
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
+node tools/sight.mjs         # sight: the trace, what a position commands, how long spotting takes
+node tools/model.mjs         # the models: the occlusion bake against shapes with known answers
+node tools/terrain.mjs       # the ground: what grain is on it, at what distance, and what crawls
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
@@ -67,7 +70,18 @@ a fact rather than a judgement, so it gets checked rather than eyeballed.
 node tools/dims.mjs              # every vehicle
 node tools/dims.mjs ger_kt       # one
 node tools/dims.mjs --tol=3      # tighten the tolerance to 3 per cent
+node tools/dims.mjs --base=HEAD  # measure an older file instead
 ```
+
+**`--base` is there because the tool could only ever open the working file**, so it could
+say whether a model is the right size and never whether a change made it a different size.
+The first thing it caught was the detail pass: the Stuart had grown half a metre and the
+Sherman likewise with no vertex moved. `aoSplit` was the cause and this tool was the fault
+-- it drops a whole face that reaches above a height cap, which is how two and a half
+metres of rod aerial stays out of a published height, and a face cut into pieces has every
+piece below the cap survive the filter. A split face carries `zt`, the top of the plate it
+came off, and the filter reads that: a filter on the model rather than on how the model
+happens to be tessellated.
 
 It reports two tables. **Envelope** is hull length, length with the gun forward,
 width over the tracks and height. **Internals** is the superstructure width at
@@ -97,6 +111,23 @@ node tools/duel.mjs --cover=3            # with both sides in heavy cover
 node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
 node tools/duel.mjs --file=/tmp/x.html   # or on any file
 ```
+
+A row reads `open` and `met`: where the pair were put down, and where they were when the
+first round left a barrel. **Both sides are given time to find each other before the clock
+starts**, which they need now that being seen takes a second or two. Unprimed, an
+attack-move walks for the whole of that second and a pair staged at 381 were at 71 before
+either could see the other: every row on the card was a knife fight and the reach a weapon
+has was not being tested at all. The card stages a fight at a range and a fight at that
+range is what it should measure; what the closing costs is a real effect and it belongs to
+the sight and movement cards, where it is not confounded with the roster. `B` on a row
+means the pair never saw each other from where they were staged, which is a fact about the
+roster and not about the fight.
+
+**And the hulls of the last fight are cleared between runs.** They have always been left
+lying on the staging ground and have always been on the movement grid; since a burning
+wreck also obscures, they were attenuating the sight line as well, so from the second run
+of every row the pair were fighting through the smoke of the one before. It cost the card
+about half its row-to-row spread: 36 points against 19 on the same comparison.
 
 `--base` is there because a change that was never meant to touch the fighting still has
 to be fought, and because one row moving is not evidence of anything. A near-even matchup
@@ -270,6 +301,134 @@ fired once -- with nothing to say so. It is also how a rule that fires once a ba
 up as one that may as well not be there: the duck rule fired exactly once in a five-minute
 battle at the last commit, which is what sent the reaction to fire into the weighing.
 
+### `tools/sight.mjs` - sight, mechanically
+
+What a unit can see cannot be reviewed by reading the diff and cannot be reviewed from a
+screenshot either, and the second half of that is the part worth saying out loud: the
+picture shows what the renderer drew, and what the renderer draws is filtered by the same
+vision code that is under test, so a bug in it hides itself. The fog of war ran for the
+life of the game with no live-vision tier at all -- `updateFog` asked each eye for `r2`
+and `computeVisibility` writes `r`, so the radius was the square root of undefined, which
+fails a loop bound silently and skips the eye. Every cell the player had ever walked past
+sat at 110 and nothing on the map was ever brighter, and since the terrain shader
+multiplies by `0.16 + 0.84 * vis`, the whole visible map rendered at 52 per cent
+brightness for the life of the game. Every screenshot ever taken of it looked plausible.
+That is why the fog buffer is a section of this card.
+
+```sh
+node tools/sight.mjs                 # the whole card
+node tools/sight.mjs trace           # one section of it
+node tools/sight.mjs --n=400         # more sample lines
+node tools/sight.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**TRACE** asks whether the line of sight agrees with the ground. The reference is a walk
+of the same line at four units a step, which is deliberately *not* what the game does, and
+it reads the game's own end exemption out of `traceClear`'s source rather than restating
+it. Three of the card's first four readings were wrong and the card was at fault each
+time: a reference using a different end exemption reported four per cent of walls stepped
+over that were not; a wall drill with the target three hundred and twenty units out
+reported a dense town as men blinded by their own cover, fifty-six per cent of it other
+people's buildings; and a spotting drill placed on what turned out to be a crater field
+reported a prone section as never seen at all. Each correction is written into the card
+beside the thing it got wrong.
+
+**REACH** is the share of a ring at each range that an eye there can actually see, which
+is the number that says whether a town is a town or an open field with houses drawn on it.
+The crossroads commands 58 per cent of a ring at 150 units and 7 per cent at 800; open
+ground west of the town commands 100 and 24.
+
+**SPOT** is seconds to pick a section out, by what it is doing, which is the whole point of
+making detection a rate. **FOG** is the share of the map in each of the three tiers.
+**COST** is what a vision tick costs and how many traces it runs.
+
+### `tools/model.mjs` - the models, mechanically
+
+A vehicle is judged by looking at it, and that is right for proportion, for paint and for
+whether a fitting is on the correct side. It is no use at all for the occlusion baked into
+it, because the bake is arithmetic over a grid and every way of getting it wrong produces a
+picture that is plausible. Too strong and the tank is a darker tank. Too weak and nothing
+happened. Self-occluding and every surface is shaded evenly. Stepping over a wall and the
+joint beside the wall comes back open. All four of those were written into the working file
+in one afternoon and the photographs said nothing, because a shaded slab and an unshaded
+slab both look like a slab.
+
+```sh
+node tools/model.mjs                 # the card
+node tools/model.mjs bake            # one section of it
+node tools/model.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**BAKE** puts the bake against shapes whose answer is known before it is run. A plate alone
+in the sky is occluded by nothing and has to read 1. A deck two hundred units wide is not
+occluded in the middle of it. The foot of a block standing on that deck is, and so is the
+deck at the block's foot, and the inside of a corner is darker than either. Those are facts
+about shapes rather than judgements about tanks, and each of the four faults above breaks
+at least one of them. It reads 1.000, 1.000, 0.882, 0.328, 1.000, 0.487, 1.000, 0.439.
+
+Two things about writing a drill for it. **Read the vertex nearest the thing, not a window
+round it**: occlusion at the foot of a wall falls away over a foot or two, so a window a
+dozen units wide averages the joint with the open deck beyond and reports the joint as
+open, which sent me hunting a bug in a bake that was answering correctly. And **a drill
+builds its own faces**, because the bake writes onto the face lists it is given.
+
+**COST** is what it costs at boot: the bake is a march over a grid at every vertex of every
+vehicle and there are six hundred thousand of them. The number to read is how many marches
+the quantised cache saves -- occlusion varies over the width of a joint and no faster, so
+asking at every face-vertex asks the same question a dozen times. It is one march in three
+and a half, and every vehicle built costs about 580 ms against 210 before.
+
+**SIZE** is faces and vertices per vehicle, because `aoSplit` cuts the big plates and a
+detail pass that quietly trebles the roster is a detail pass that does not run. It is
+152,000 faces over twelve vehicles and the split adds about a hundred of them.
+
+### `tools/terrain.mjs` - the ground, mechanically
+
+A photograph of ground is the one thing that looks fine whatever is wrong with it. Soft
+and airbrushed reads as haze. Aliased reads as detail until the camera moves. Detail at
+one fixed scale reads as noise up close and as a flat wash at range, and every one of
+those is a picture somebody would call acceptable. So the ground is read off the
+framebuffer: the camera is pointed straight down at a patch of open ground, the frame is
+rendered, and what is actually there is measured.
+
+```sh
+node tools/terrain.mjs                 # the card
+node tools/terrain.mjs grain           # one section of it
+node tools/terrain.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**GRAIN** is the root-mean-square contrast of the ground at four spatial scales, at three
+camera distances, and the column that matters is `fine`: the contrast living above the
+eight-pixel scale, which is the difference of the squares because variance adds. Whole-
+patch contrast is dominated by the painted macro drift and moves by a point or two
+whatever the grain does -- the ground before this pass read 52.2 per cent at full
+resolution and 49.1 boxed down by eight, which is a picture with nothing on it finer than
+eight pixels at any distance. The rows are not comparable to each other, because the patch
+is a fixed number of pixels and so covers more world the further back the camera is. They
+are comparable across files, which is what `--base` is for.
+
+**SHIMMER** is the level-of-detail measurement and it is the reason the card exists rather
+than a screenshot. The camera is moved a third of a pixel and the same patch read again:
+what changes is detail that was never filtered down to the pixel it lands in. It is
+reported twice, with the props in and with them taken out, because a rubble pile a pixel
+across aliases however well the ground is filtered and that is not the ground's fault --
+measured, the props are very nearly half the shimmer at twelve hundred units, and without
+splitting them no change to the terrain can be read at all.
+
+Read shimmer against `fine` rather than on its own. Grain you can see at two hundred units
+is grain that moves when the camera moves, and that is detail rather than aliasing; the
+indictment is a large shimmer with a small `fine` beside it.
+
+**PAINT** is what the albedo canvas carries before any of the shader's detail goes on top,
+and what its filter is. **COST** is ground triangles and what the textures weigh.
+
+Two things about writing a drill for it. **`CAM.tx`/`CAM.ty` is what the camera looks at;
+`CAM.x`/`CAM.y` is not the camera at all**, and setting the wrong pair moved nothing: every
+distance read the same patch of whatever the game had left on screen and the shimmer column
+came back at a clean nought three times over, which reads as a perfectly filtered ground.
+And the patch of ground has to be clear for two hundred units every way, because the widest
+read is that across and a roof in the corner of it is not the ground.
+
 ### `tools/skirmish.mjs` - tactics, mechanically
 
 Puts an AI on both sides of the shipped map and lets them fight. One side runs the
@@ -349,6 +508,28 @@ how much of the infantry is behind something, how many sections are holding hous
 far it has pushed, how many different targets the sections that are firing have picked,
 and how much money it is sitting on. A win rate says which brain is better; those say
 why.
+
+**FACE** is the same reading on a sunlit slope. The painted map is a plan and nothing else,
+so on a face it is stretched by one over the cosine and every scale of grain on top of it is
+stretched with it: a face carries about two thirds of the fine contrast the open ground
+beside it carries at twenty-five degrees and about two fifths at forty-five. Three rows
+rather than one, because what it measures is a blend of two projections and the shape of the
+answer is the point -- a card with one row at forty-five degrees, where a plan projection and
+a vertical one are out by the same root two, says the pass did nothing.
+
+Two things had to be fixed before it could say anything at all. **The steepest thing on
+Ortona is a sea cliff**, so a probe that hunts the map for the steepest patch reads the
+Adriatic in the corner of its square and comes back at forty-nine per cent contrast; made to
+insist on a hundred and twenty units of uniformly sloped inland ground, there is nowhere on
+the map that qualifies and it falls back to flat every run. And **a face has to be in the
+sun**: the grain does most of its work through the normal and the sun term, so a north face
+at twenty-one degrees of elevation is in its own shadow all day and reads the same whatever
+is done to it.
+
+The fine column is measured rather than inferred. `sqrt(full^2 - boxed8^2)` is right in
+principle and hopeless in practice once the two are close: on the wall of a shell hole the
+whole-patch contrast is 36 per cent and the boxed one 35, so the fine part is a difference of
+two large numbers and moves ten per cent on nothing.
 
 ### `tools/mapcheck.mjs` - the map, mechanically
 
@@ -662,6 +843,105 @@ sections to the forming-up point and at the objective while the ground round the
 quiet and they have no target, and goes to ground where it is when it is caught in the
 open with nowhere to go.
 
+**Being seen takes time.** Detection was a yes or a no: in reach, with a clear line, and
+the thing was seen, on the instant. So `exposure` -- the whole of what the game had to say
+about keeping still, lying flat, holding fire or being in cover -- could only ever move the
+RANGE at which that instant happened, and on the card it moved it by seven per cent between
+a section standing still and one walking. A file that says this is what makes an ambush an
+ambush was describing a seven per cent effect.
+
+It is a rate now. `rate()` inside `computeVisibility` is how fast a side is picking a thing
+out, taking the best of its eyes, and `detStep` works `u.detUs`/`u.detGer` up at that rate
+and down at a fixed one. Found at 1, lost at 0.42, so a man stepping behind a wall is not
+lost on the frame he does it. Everything that ought to make a man hard to find slows the
+rate: how exposed he is, how far inside the reach he is, whether the eye is even looking
+his way, and what is in the air between them.
+
+    the target is                  150u     260u     360u
+    walking, in the open           1.5s       3s    never
+    standing still                 2.1s     4.1s    never
+    flat on the ground             3.3s     6.7s    never
+    at the double                  1.1s     1.6s     4.7s
+    firing                         1.3s     2.2s    30.5s
+    still, eye looking away        3.7s     7.5s    never
+    flat, eye looking away           6s    12.1s    never
+    walking, behind smoke          7.3s    14.8s    never
+
+Two things fall out of a rate that a yes-or-no line could never say. **Facing**: `lookGain`
+reads `u.facing`, or a vehicle's turret, and an eye looking the other way works at a little
+over half speed, so the brain turning its halted men toward the threat it knows about is
+finally worth something. And **smoke**: `smokeColumns` and `smokeOn` attenuate along the
+line, so a burning hull obscures, which is a slowing rather than a wall.
+
+**Exposure multiplies the rate, not the reach.** Scaling the reach did the same job the
+distance falloff already does and did it worse: a section lying flat in a crater got a hard
+ring at forty-five per cent of the reach and was literally invisible a unit outside it,
+rather than slow to find. Only a loud target still gets reach for it, because a muzzle
+flash at nine hundred yards is a muzzle flash. With the rate to scale, movement is worth
+what movement is worth: it was twelve per cent, and a man who stops moving is doing the
+single most effective thing available to him.
+
+**`traceClear` walks the line cell by cell.** Sampled at `min(40, d/22)` the step grew with
+the line -- fifty units at two thousand against a twenty-unit grid -- so a long line could
+be stepped clean over a wall. A grid traversal cannot miss a cell at any range and costs
+less at short range because it does not oversample. It took blockers stepped over from 1.25
+per cent of lines to 0.42, which is the resolution floor of the comparison itself.
+
+**The fog draws three tiers, and they are three different things.** Ground in sight is what
+it is; ground walked past is a memory, dim with the colour out of it; ground nobody has
+been near is the winter haze with only a ghost of the shape in it. Multiplying by 0.16 kept
+every crater and every roof legible in ground the side had never been within half a mile
+of. The live circle falls to exactly the byte an explored cell carries, so the rim of what a
+section sees runs into what the side remembers rather than stepping down to it, which drew a
+hard line round every unit on the map. `fogCircle` rasterises both tiers, because
+`markExplored` and `updateFog` had written the aspect correction opposite ways round and
+were both only correct because the fog texture happens to be proportional to the world.
+
+**And the player is told what the side last saw.** `CONT` is a contact list per side, noted
+in `computeVisibility` while a thing is visible and left where it was when it is lost, drawn
+hollow and dashed on the overlay and on the little map, dropped in `killUnit` for a side
+that watched him die. Detection being a rate means a thing is lost as well as found, and
+until this the unit that was shooting at the player a second ago simply stopped existing.
+The brain has had the other half of this since `AIM` was built; the player had nothing.
+
+**A gunner sees as far as his gun reaches.** Every gun-armed vehicle and every anti-tank
+gun on this roster was written with a sight shorter than its own weapon -- the Maus by 220
+units, the eighty-eight by 170, the Tiger by 125, and every tank on the card by fifty or
+more. Under a yes-or-no detection model that only capped the gun at the eye and made the
+extra reach decorative, which is why it went unnoticed for so long. With detection a rate
+it is worse than decorative: the rate falls away to nothing at the edge of the eye's reach,
+so the unit works very slowly at picking anything out at the ranges its gun was built for,
+and a pair of tanks staged at the Tiger's own 480 could not see each other at all. The
+balance card was quietly fighting eight of its rows in the dark. It is a rule applied to
+`UNITS` at load rather than fourteen edited numbers, because two lists of one thing go out
+of step the moment somebody adds a weapon to one of them, and because every tool reads
+`UNITS[k].sight` and would otherwise disagree with the game. Infantry is left alone: a
+rifle section that sees a great deal further than it shoots is correct, and every one of
+them already does.
+
+Fought over 43 rows at eight runs each against the same file without the rule: -3.7 points
+with a standard error of 3.4, against a row-to-row spread of 22 that eight runs produce out
+of nothing. Blind rows went from two to none. The one row that moved far is the one the
+rule is for: `us_ach ger_tig` went 100 per cent to 13 because the Tiger could not see at
+381 and now can, which is the honest number rather than the flattering one. Whether a
+17-pounder Achilles should lose seven of eight to a Tiger head-on on flat ground is a
+roster question the card now flags rather than hides.
+
+**What this cost the balance card, and why.** An attack-move walks for as long as it cannot
+see, so contact now happens about a hundred units closer than the pair were staged at: a
+rifle section opened at 212 against the eighty-eight and was at 130 before either could see
+the other, which is inside the gun's own `closeWeak` radius. That row went from 100 per cent
+to nil, and `ger_p4 us_ab` with it. Over forty rows the card moved +1.6 points with a
+standard error of 5.7 against a row-to-row spread of 36, so the roster as a whole is where
+it was. `tools/duel.mjs` prints `met` beside `open` now, because an opening range nobody
+stays at is not a denominator. The eighty-eight loses to a rifle section at 450 on the
+pre-change file too, which is a roster question and not this one.
+
+Measured on `tools/brain.mjs --base=3ed77e0` over a five-minute battle with a brain on both
+sides, the honesty boundary moved the right way on every count: targets picked that had
+never been seen 36.1 per cent to 19.2, attack orders on them 21.7 to 16.3, rounds actually
+fired at something unseen 13.7 to 6.66, threat weight unseen 75.4 to 61.5.
+
 **Combat.** `computeVisibility` fills `vUs`/`vGer` and drives both fog of war
 and target acquisition. `COVER` entries are graded open / light / medium /
 heavy / dug-in; linear cover (walls, trenches) only protects across its face,
@@ -724,6 +1004,145 @@ angles to the house, half of them inside it. And `chooseCover` now scores a piec
 penalty: a section would settle contentedly into a trench being raked from the end, which
 is the worst place on the map to be, and never look again.
 
+**The ground had no surface.** Detail on the earth came out of a tile of the atlas at one
+fixed scale, applied as a multiply about one: a faint ripple in brightness with no colour
+in it. Measured, the contrast of the ground fell three points between full resolution and
+the same picture boxed down by eight, which means there was nothing on it finer than eight
+pixels at any distance -- a hundred and fifty units of dry earth reading as an airbrushed
+sheet.
+
+It has a texture of its own now (`buildGrit`, `TEX.grit`), and the reason it is not another
+atlas tile is worth knowing: **`tile()` wraps with a `fract()`, and a `fract()` in a
+fragment shader breaks the screen-space derivative the hardware chooses a mip level from**,
+so every repeat of the pattern carries a seam of the coarsest mip along it. At the strength
+the old detail was applied nobody could see the seams because nobody could see the detail
+either; at a strength that makes earth read as earth, the ground comes out ruled into
+squares. A texture wrapped `GL_REPEAT` has nothing to fract and no seam to have. Its noise
+tiles because every octave's lattice wraps on its own period.
+
+Three channels carry three sizes of thing, so two fetches give four scales: `r` is grit,
+`g` is clods, `b` is the slow drift of a field. **The fine ones are faded by distance and
+that fade is the level of detail**: below a pixel, grain is not detail, it is shimmer.
+The weighting is deliberately toward the fine end, because the painted map already carries
+the macro drift, the slope materials and the hollows, and a second lot of thirty-unit
+blotches on top of it reads as camouflage rather than as ground.
+
+The grain carries a normal as well, which at twenty-one degrees of sun is most of what
+makes ground read as a surface rather than as a photograph of one: every clod throws its
+own small shadow away from the light. Two more fetches, faded out with the same distance
+the grain is, and behind `#define BUMP` so a phone does not pay for them.
+
+**And the albedo had no mip chain.** Two thousand eight hundred by nineteen hundred, one
+world unit a texel, `LINEAR` with nothing under it: at any camera further off than a street
+the ground is minified several to one and every frame samples a different set of texels.
+It reads as sharpness in a still and as a crawl the moment anything moves. A patch upload
+invalidates the chain under it and the editor paints patches, so it is regenerated there
+too.
+
+**And a cut face is not a floor seen edge-on.** The painted map is a plan, so on a slope it
+is stretched by one over the cosine and every scale of grain on top of it was stretched with
+it. The coastal bluff, the wadi banks and the wall of a trench all came out as broad smears,
+and the old answer to that was a `tile()` of the atlas on a diagonal uv -- the one thing the
+grit texture exists to avoid, since a `fract()` breaks the derivative the hardware picks a
+mip from and every repeat carries a seam of the coarsest one. It was replaced with a
+cylindrical projection about the face's own bearing: u runs across the face along the
+horizontal tangent and v runs up it, which is stable on anything from a bank to a vertical
+cut and needs no tangent frame in the vertex stream. Two fetches, and only a sloped fragment
+pays for them.
+
+**The weight between the two projections is the whole of it, and it was wrong twice.** A plan
+projection stretches a pattern on a face by one over the cosine and a vertical one stretches
+it by one over the sine, so each wants the ground it is the better of the two on. Written as
+a threshold on how far off level the ground is, it handed the vertical frame to the gentlest
+slopes on the map, which is where that frame is at its worst: the wall of a shell hole at
+twenty-eight degrees came back stretched two to one where the plan projection had it
+stretched by a tenth. Written as the textbook triplanar crossing at forty-five it is correct
+and still costs, because the two patterns are unrelated and a half of each carries less fine
+contrast than the whole of either -- measured, three points of fine contrast off every face
+on the map, which is the whole natural range of this one. It is a narrow, late cross-fade
+now: everything up to thirty-eight degrees keeps the plan projection, where it is stretched
+by at most a quarter, and gives it up over the band where holding it costs more than the swap
+does. A trench wall at seventy degrees is stretched three to one by a plan projection and by
+a fifteenth by this one.
+
+Three more things about it. **The steep test reads the geometric normal**, because the bump
+can swing a flat fragment's normal most of a radian and keyed off the bumped one it painted
+rock into open ground wherever the grain happened to have a steep gradient. **A gradient has
+to be taken in the frame its sample came from**: differencing a blended value against a
+single-frame neighbour is not a gradient, it is two unrelated noises subtracted, and it puts
+the whole amplitude of the grain into the normal everywhere the two frames are both in play,
+so the bump is taken twice and weighted. And **the rock is scaled to what the painter put
+there**, because the reprojection is a fix for the detail on a face and not for its tone:
+left absolute it lifted the inside of every shell crater to the value of a sunlit bluff and
+the crater field stopped reading as holes in the ground.
+
+The colour starts where the painted map's own geology starts -- it holds soil below eleven
+degrees and is bare bedded rock above thirty-two -- because the shoulder between is already
+painted as scree thinning off the face above it, and a stone wash over the whole of the
+rolling ground takes the warmth out of the map. The bedding is a sample of the grit texture
+at a constant u, which makes it a pure function of height, and a horizontal band is what a
+cut through layered ground has: topsoil over subsoil in a trench wall, courses of sandstone
+in the bluff.
+
+On the card, against the same file without it: a face at 25 degrees is unchanged, one at 45
+goes from 0.39 of the fine contrast of the open ground beside it to 0.46, and one at 48 from
+0.37 to 0.42. Nothing on this map is steeper than 48 degrees and sunlit, so the trench walls
+and the crater walls where it does most of its work are judged by looking at them.
+
+**And it is December.** Ortona in that week is rain and mud, and the ground was bone dry
+everywhere. How wet a piece of it is, is how well it drains, and what decides that is
+whether the water has anywhere to go: a hole holds it, a natural hollow is damp, a slope
+sheds it and an open field drains. Wet earth is darker than dry earth and warmer, because
+water fills the air between the grains and stops them scattering, and below the water table
+of a hollow it stops being wet ground and starts being a puddle, which is a surface rather
+than a colour: a film of water is smooth where the ground under it is not, so it gets a
+broad highlight and a piece of the sky at a grazing angle. Only a dug hollow gets that far;
+a natural one is capped short of it.
+
+Two things about it. **The hole comes off the crater and trench lists rather than off the
+shape of the heightfield**, because curvature over a boot's length cannot see the bottom of
+a bowl fifty units across: measured on a curvature probe, the floor of a trench came out at
+0.95 and the middle of the biggest crater on the map at 0.20, and the crater is the one you
+look into. It is one grid at the mesh's own resolution, marked in the same pass that marks
+the cells to refine, and one lookup a vertex. And **it rides in the u of the vertex uv**,
+which costs nothing whatever: the ground carries the atlas's material 9 and has never once
+looked at it, since every scale of its surface comes out of the grit texture instead. Only
+the ground buffers are drawn with `uUseTex`, so that channel is the terrain's alone.
+
+Finding that out turned up the one bug in the pass. **The model bump was running on the
+ground**, bending the terrain's normal by the gradient of the tile it does not use, sampled
+through a `fract()` with no mip and no distance fade, on top of the bump the ground had
+asked for. It is gated now. It bought nothing measurable, because material 9 has no gradient
+to speak of; it is in because it saves two fetches a ground fragment and because the next
+person to give that tile a texture would otherwise get a second bump on the whole map for
+free.
+
+**The sea had no surface either, and for a different reason: there is no water.** What is
+drawn is the sea bed, sunk to sixty units and painted blue, so the normal under a fragment of
+sea is the normal of the mud at the bottom of it. On top of that sat a product of two sines
+at a hundred and twenty-six units and seventy, which is a chequerboard, and that is what it
+read as: broad bands of light and dark laid in a grid across the Adriatic.
+
+The surface is made in the shader now and everything else follows from its normal. Two
+scrolling samples of the grit, a swell and a chop on different bearings at different speeds,
+differenced for a gradient. The colour is a Fresnel mix of what the water scatters back and
+what it reflects, which is why a sea is dark under your feet and bright toward the horizon,
+and the glitter is a hard specular on the same normal rather than on the sea bed's. Four
+fetches, and only a fragment of sea pays for them. The grain has mips, so at range the three
+gradient fetches converge, the normal flattens to straight up and the glitter goes out on its
+own: level of detail for nothing, and the alternative is a sea that boils.
+
+**A crater is three things and the paint had one of them.** There is the bowl, damp subsoil
+turned up out of a dry surface, which is darker and redder than anything round it. There is
+the lip, the same spoil thrown out and lying on top of what was there, which is the
+brightest thing on the crater because it has not weathered. And there is what went further,
+in rays, because a shell does not distribute its spoil evenly. What was painted was a soft
+dark wash out to twice the radius with twenty faint ellipses scattered over it, which at the
+distance a player looks from is a smudge. The rays go down first, the lip ring over them
+with its clods, and the bowl last and hardest-edged, because it is a hole rather than a
+stain. The shipped map has a crater field west of the town and the whole of it used to read
+as weather.
+
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
@@ -731,6 +1150,124 @@ static world is merged into tiled buffers by `buildScene` (a grid of prop tiles 
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
 ground shader multiplies in. A second 2D canvas (`#ov`) carries everything flat:
 selection rings, health bars, unit labels, the minimap.
+
+**The sun is where December puts it.** Ortona is 42 degrees north and the date on the HUD
+is the 23rd. The sun reaches 24 degrees at noon that day and is under twenty by
+mid-afternoon; `SUN` was set at 46 degrees, which is a June sun: shadows shorter than the
+things casting them, the ground taking the light square and the faces of the houses in the
+dark. At twenty-one degrees a shadow is two and a half times its caster, the ground is in
+grazing light and the house fronts are lit. The direct term carries nearly twice what it
+did to pay for the graze and is warmer, because a low sun is warmer, and the sky term is
+raised and cooled to fill what the sun no longer reaches, since at this elevation most of
+what lands on a north face is skylight.
+
+**The sky had never been drawn.** Its quad winds counter-clockwise, the world is drawn
+front-face CW with culling on, so the one draw was culled and what everyone had been
+calling the sky was `gl.clearColor`: a flat grey-green with no gradient, no horizon and no
+time of day in it. It reads as haze, which is exactly why nothing ever said so, and it is
+the cleanest example in this file of why a screenshot cannot review a renderer. With a sky
+to put it in, the sun goes in it: `uSunS` is its own place on the screen, projected on the
+CPU through the same matrix as everything else so it holds under the orbit camera and the
+periscope alike, and it is two lobes of warm haze rather than a disc. The distance haze
+follows it -- far ground is bright and warm looking into the light and cold with the sun
+behind, which is what aerial perspective is, and it now meets a sky that has a sun in it.
+Note that the desktop camera can barely see the sky at all: `CAMLIM` keeps the pitch at
+0.42 or more, so the view axis is always below the horizontal and the sun is off the top of
+the frame. The periscope is where to look at it.
+
+**The sun was the only light in the game.** At twenty-one degrees it leaves a great deal of
+the town in its own shadow -- a street between two blocks, the floor of a trench, the inside
+of a hull -- and nothing else on the map gave any light at all. A burning wreck and the
+flash of a burst are the other two, and both are things the simulation already keeps: the
+wreck is what makes the smoke that blocks the eye. A forward pass pays for every light on
+every fragment, so `NLIGHTS` is four on a desktop and two on a phone, compiled into the
+shader the way `SHADOWS` is; `gatherLights` keeps the nearest by insertion rather than a
+sort, because four is short enough that a scan is cheaper and a sort would allocate every
+frame; and an unused slot carries a radius of one so its own contribution is nought without
+a branch to work it out. A fire is given a slow flicker off its own position, because a
+steady one reads as a lamp.
+
+**A shadow box wants fitting to the sun it is under.** `sunMatrix`'s ortho was square in
+light space. A point `d` along the sun's bearing lands at `d * sin(elevation)` up the
+light's vertical axis, so a square box covers `1/sin` as much ground that way as it does
+across and spends the same texels on it: at twenty-one degrees that is nearly three times
+the ground for the same resolution, in the one direction the long shadows actually run. The
+up extent is `rad * SUN.z` plus headroom for the tallest thing that casts.
+
+**A box against a box has no crease.** Every vehicle here is built out of boxes and
+cylinders, and until this the turret met the roof, the sponson overhung the track and the
+engine grille sat on the deck with nothing whatever between them: the sun was the only
+light in the scene and the sun cannot reach into a joint a quarter of an inch wide. It is
+the single thing that most made a procedural model read as a stack of slabs -- the
+silhouette right, the plates right, and nothing at all where they meet.
+
+`bakeAO` asks a model once, at build time, how much of the sky each of its own vertices can
+see, and folds the answer into the vertex colour, which is free: the shader already reads
+it and the material was chosen from the face's own hex long before. Five things about it
+are worth knowing before touching it, because each one was wrong first and the picture said
+nothing about any of them.
+
+- **It is a march, not a set of sample points.** A point test steps clean through a plate
+  and finds nothing, which is the mistake `traceClear` was making before it walked the grid
+  cell by cell. And the step is **half a cell**: a wall is marked one cell thick, so a ray
+  stepping a whole cell lands inside the box, where nothing is marked because only surfaces
+  are, and reports clear.
+- **A mount is built about its own ring.** `VMODEL[k].tur` is drawn on its own matrix, so
+  its vertices are nowhere near the hull's in the numbers the builder wrote down. Put both
+  in one grid untranslated and the turret sits inside the engine deck, every vertex of both
+  comes out buried, and the only effect is a darker tank. The mount goes where `mountPose`
+  puts it. Alternative mounts are baked *against* that grid rather than into it, because
+  they all stand in the same place and a grid holding every variant has each of them
+  shading the one that is never fitted beside it.
+- **A wall beside a deck is very nearly in the deck's own plane.** One ring of six rays at
+  fifty-seven degrees puts at most one anywhere near such a wall, and that one carries the
+  least weight because the weight is the cosine: a deck two units from a thirty-unit block
+  came back at 0.99 with the occluder right there. Three rings, and the low one nearest the
+  horizon has the most rays in it.
+- **Do not blur the grid.** It is the obvious cure for the striping that a binary test gives
+  and it is the wrong one: a blur puts a halo of density one cell thick around every
+  surface, the march's first step lands in that halo, and every vertex on the model
+  self-occludes. An isolated box came back shaded on all six faces. The march origin is
+  lifted clear of its own surface cell instead.
+- **The calibration is the whole thing.** A crease occludes two or three of seven directions
+  and not all of them, so the raw number in a joint is about four tenths against half a
+  tenth on the open deck beside it. Scaled at 0.58 that is a crease at 0.85 against a deck
+  at 0.97, a difference nobody can see, with the whole of the dynamic range spent on the
+  inside of the hull where there is nothing to look at.
+
+**And a face carries occlusion at its corners and nowhere else**, so a plate two hundred
+units long is four numbers with a gradient smeared between them. `aoSplit` cuts the big
+flat ones into a grid first, and only flat ones: a bilinear split of a face that is not
+planar is a different surface from the fan the triangulator would have made of it, and the
+seam against its unsplit neighbour shows as a crack. The cap is on the quad count rather
+than per axis, because a cap of fourteen a side on a two-hundred-unit hull plate is a
+sample every fourteen units and the joint comes out as a gradient across the whole panel.
+
+The same march turned the other way says how solid the model is *below* the tangent plane:
+all of it on a flat panel, half of it on a convex edge, a quarter at a corner. That is what
+tells an edge from a panel without anything having to know which faces were neighbours, and
+a convex edge on a painted vehicle is where the paint is off and the steel is showing --
+`f.wear`, which lifts the colour and takes the colour out of it.
+
+**Three things come off the one bake and they are the same fact read three ways**: how shut
+in a piece of the model is, which way it faces, and how high it sits. Occlusion is a
+darkening. **Grime** is what collects in what is shut in, and that is a colour rather than a
+darkening -- a joint packed with oil and dust is browner than the plate round it and not a
+dimmer green. **Dust** is what the road throws at the bottom of a hull and what settles on
+anything that looks up, and it is read off the model's own height rather than the world's,
+so a tank on a slope is still dirtiest along its belly and cleanest on its roof.
+
+**And the plate had no surface.** The atlas tile is a luminance and the lighting read the
+face's own normal, so a plate with grain painted on it was still a mathematically flat
+plate: the grain went light and dark with nothing and did not move at all as the light came
+round. Two more taps give the tile a gradient and the gradient bends the normal, which is
+the difference between Zimmerit combed into the paste and Zimmerit printed on a slab. The
+tangent frame is the triplanar axis pair the uv was projected along, which is the same test
+the triangulator made. It is `#define BUMP`, off on a phone, which has not two more taps a
+fragment to spare beside the nine the shadow already costs. The strength is one constant
+for every material on purpose: a smooth paint tile has small gradients and bumps a little,
+a combed Zimmerit tile has large ones and bumps a lot, so the material's own texture sets
+it. At five it is corrugated iron; it is 1.1.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
 helmets and weapons. Vehicles get individual builders (`shermanHull`,
@@ -1658,6 +2195,9 @@ tools/check.mjs                smoke test, exits non-zero on failure
 tools/duel.mjs                 balance card: staged matchups, win rates
 tools/move.mjs                 movement card: routes, battle traffic, cover taken
 tools/brain.mjs                the AI card: sight, plan, and which rules ever fire
+tools/sight.mjs                sight card: the trace, what a position commands, spotting time
+tools/model.mjs                model card: the occlusion bake, its cost, and what is in each vehicle
+tools/terrain.mjs              ground card: grain by scale and distance, and what shimmers
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
@@ -1731,6 +2271,22 @@ shots/                         screenshot output, gitignored
   four seconds, so a whole battle produced fifty windows and four coincidences read as a
   nine per cent regression that sent a morning after a bug that was not there. Print the
   denominator, and prefer counting frames to counting events.
+- **A screenshot cannot review the thing that draws it.** Two of the largest bugs in this
+  file's history were invisible for exactly that reason. The fog of war had no live-vision
+  tier for the life of the game because `updateFog` asked an eye for `r2` and gets `r`, so
+  every picture ever taken came back at 52 per cent brightness and looked like weather. The
+  sky quad has been culled since it was written, so what looked like a sky was
+  `gl.clearColor`. Both render as something plausible. When a thing is meant to have
+  structure -- a gradient, a falloff, a tier -- read the buffer, do not look at it: one
+  `gl.readPixels` down a column says in three lines what an afternoon of screenshots will
+  not.
+- **`gl.frontFace` is CW here.** The world is left-handed and drawn front-face clockwise
+  with culling on, so a full-screen quad wound the ordinary way (bottom-left, bottom-right,
+  top-left) is a back face and is culled without a word. `QUAD` is wound that way. Anything
+  drawing it turns culling off first; the billboards already did and the sky did not.
+- **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
+  is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
+  were the radius comes out wrong in a way nothing will flag.
 - `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
   into `G.units` as well has it in the list twice, and a unit in the list twice is
   updated twice a frame: it drives at double speed and its gun fires at twice its rate of

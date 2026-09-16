@@ -78,6 +78,66 @@ for (const device of TARGETS) {
   ok('both sides still in the field', mid.unitsBySide.us > 0 && mid.unitsBySide.ger > 0,
      `us ${mid.unitsBySide.us}, ger ${mid.unitsBySide.ger}`);
 
+  /* --- the postures a battle actually reaches. A pose that is written, baked and never
+     chosen looks exactly like a pose that is not there, and standing was for the life of
+     the game the whole of what a man did whenever he was not pulling a trigger. Sampled
+     over twenty seconds rather than at one instant, because one frame catches whatever
+     the battle happened to be doing on it. Twenty samples and not ten: counted every
+     frame of a forty-second battle the weapon is up on 1.7 per cent of man-frames, which
+     ten instants two seconds apart can miss entirely and did. --- */
+  const poses = {};
+  for (let i = 0; i < 20; i++) {
+    await fastForward(page, 1);
+    const s = await page.evaluate(() => {
+      const names = {}, out = {};
+      Object.keys(window).filter(k => /^POSE_/.test(k)).forEach(k => { names[window[k]] = k.slice(5).toLowerCase(); });
+      window.G.units.forEach(u => {
+        if (u.dead || u.cat === 'veh' || !u.models) return;
+        u.models.forEach(m => { if (m.alive) { const n = names[m.pose] || m.pose; out[n] = (out[n] || 0) + 1; } });
+      });
+      return out;
+    });
+    Object.keys(s).forEach(k => { poses[k] = (poses[k] || 0) + s[k]; });
+  }
+  const upright = (poses.stand || 0) + (poses.ready || 0);
+  const kinds = Object.keys(poses).length;
+  ok('the men reach their postures, not only standing', upright > 0 && (poses.walk || 0) > 0 && kinds >= 3,
+     Object.keys(poses).sort((a, b) => poses[b] - poses[a]).map(k => `${k} ${poses[k]}`).join(', '));
+
+  /* --- the dead, and what it costs to draw them. The list runs to two hundred and
+     twenty and every one of them used to be drawn every frame wherever it lay, off
+     screen or not. Count the binds in a real frame rather than reading the loop. --- */
+  const dead = await page.evaluate(() => {
+    const M = window.MODELS;
+    if (!M.dead || !M.dead.us) return { table: false };
+    const bufs = new Set([].concat(M.dead.us || [], M.dead.ger || [], M.fall.us || [], M.fall.ger || []));
+    let binds = 0;
+    const real = window.drawGeom;
+    window.drawGeom = function (b) { if (bufs.has(b)) binds++; return real.apply(null, arguments); };
+    window.render();
+    window.drawGeom = real;
+    const v = window.view();
+    const inv = window.G.corpses.filter(c => window.inView(v, c.x, c.y, 40)).length;
+    /* A battle of this length leaves a handful of bodies and they are all on screen, so
+       the cull and the cap go untested by it. Stage them: two hundred off the far side of
+       the map, which must add nothing at all to the binds, then two hundred under the
+       camera, which must stop at sixty. Put the real list back afterwards. */
+    const keep = window.G.corpses.slice();
+    const lay = (x, y) => { for (let i = 0; i < 200; i++) window.G.corpses.push({ x, y, a: 0, t: 1, side: 'us', k: i & 1 }); };
+    window.G.corpses.length = 0; lay(v.x + v.w + 2000, v.y + v.h + 2000);
+    let away = 0; window.drawGeom = function (b) { if (bufs.has(b)) away++; return real.apply(null, arguments); };
+    window.render(); window.drawGeom = real;
+    window.G.corpses.length = 0; lay(v.x + v.w / 2, v.y + v.h / 2);
+    let near = 0; window.drawGeom = function (b) { if (bufs.has(b)) near++; return real.apply(null, arguments); };
+    window.render(); window.drawGeom = real;
+    window.G.corpses.length = 0; keep.forEach(c => window.G.corpses.push(c));
+    return { table: true, corpses: keep.length, falls: window.G.falls.length, inView: inv, binds, away, near };
+  });
+  ok('the dead are drawn where they can be seen, and sixty of them at most',
+     dead.table && dead.binds <= dead.inView + dead.falls && dead.away === dead.falls && dead.near <= 60 + dead.falls,
+     dead.table ? `${dead.corpses} on the ground, ${dead.inView} in view, ${dead.binds} drawn; of 200 staged off the map ${dead.away - dead.falls} drawn, of 200 under the camera ${dead.near - dead.falls}`
+                : 'no MODELS.dead table in this file');
+
   /* --- draw rate, measured on the real renderer --- */
   const tDraw = Date.now();
   await frames(page, 4);
@@ -146,11 +206,37 @@ for (const device of TARGETS) {
   const povOff = await page.evaluate(() => { document.getElementById('tPov').click(); return !window.POV.on && !document.getElementById('tPov').classList.contains('on'); });
   ok('periscope looks from the unit, turns with a drag, and closes', pov.ok && pov.on && pov.near && pov.turned && pov.btn && povOff, `eye ${pov.height} above the ground`);
 
+  /* --- the men's table: one buffer a pose, nothing NaN in it, and a rebuild that frees
+     what it replaces. A part built from an undefined constant is NaN and vanishes with
+     no error at all, and the bake used to leak every man on the roster on a restart. --- */
+  const men = await page.evaluate(() => {
+    const M = window.MODELS;
+    if (!M.man) return { table: false };
+    let poses = 0, frames = 0;
+    Object.keys(M.man).forEach(v => Object.keys(M.man[v]).forEach(pz => {
+      poses++; const set = M.man[v][pz]; frames += set.frames ? set.frames.length : 1;
+    }));
+    const before = M.nan;
+    window.bakeMen();
+    return { table: true, variants: Object.keys(M.man).length, poses, frames,
+             nan: M.nan, wasNan: before, freed: M.freed,
+             eye: M.eye.can_rifle ? +M.eye.can_rifle[window.POSE_STAND].toFixed(1) : null };
+  });
+  ok('the men bake into one table, with nothing NaN and nothing leaked', men.table && men.nan === 0 && men.wasNan === 0 && men.freed >= men.frames,
+     men.table ? `${men.variants} variants, ${men.poses} poses, ${men.frames} buffers, ${men.freed} freed on a rebuild, eye ${men.eye} standing`
+               : 'no MODELS.man table in this file');
+
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
     /* the gun and barrel tests run another minute of battle on top of the one already
        fought, which is long enough for the victory points to run out and the game-over
-       screen to come up over everything the rest of the check wants to click */
+       screen to come up over everything the rest of the check wants to click.
+         Topping the points up is not enough on its own once the battle has ALREADY been
+       decided, which a --sim long enough to reach a decision does: G.over is set, the
+       clock is stopped and the screen is up, and endGame returns on its first line so
+       nothing can put it back. Put the battle back on its feet first. */
+    window.G.over = null; window.G.running = true;
+    document.getElementById('over').classList.add('hidden');
     window.G.res.us.vp = 9000; window.G.res.ger.vp = 9000;
     const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
@@ -203,12 +289,27 @@ for (const device of TARGETS) {
     window.DRV.padFire = true;
     return true;
   });
-  await fastForward(page, 1);
-  const aim = await page.evaluate(() => ({ mark: !!window.DRV.mark, ready: window.DRV.mark ? window.gunReady(window.POV.u, window.DRV.mark) : null }));
-  await fastForward(page, 9);
+  /* The mark over the whole burst rather than at one instant. `povGround` walks the look
+     out of the eye and backs it off along the bearing until `fireLine` passes, so where
+     the tank happens to have ended the drive test decides whether there is a mark on any
+     one frame: sampled a second in, the same assertion came back FAIL and PASS on the two
+     devices of one run with the same rounds in the street beside it. What the row is for
+     is that pointing and pulling puts a round somewhere, and a mark at any point in the
+     nine seconds is that. */
+  let markEver = false;
+  for (let i = 0; i < 10; i++) {
+    await fastForward(page, 1);
+    if (await page.evaluate(() => !!window.DRV.mark)) markEver = true;
+  }
+  const aim = { mark: markEver };
   const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
+  /* The message says which half it was. Both halves have to hold -- he has to have a
+     mark under the crosshair and rounds have to leave -- and printed as the round count
+     alone a run that failed on the mark read identically to one that passed, which is
+     how the same line came back FAIL on one device and PASS on the other with the same
+     three rounds beside it. */
   ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
-     `${fired} rounds into the street in nine seconds`);
+     `${fired} rounds into the street in nine seconds` + (aim.mark ? '' : ', but no mark under the crosshair'));
 
   /* --- the coaxial: its own trigger, no reload, and a barrel that will only take so much --- */
   const mg0 = await page.evaluate(() => {

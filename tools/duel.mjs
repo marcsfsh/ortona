@@ -148,6 +148,12 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
 
   function once(ka, kb, dist, flip, ups) {
     G.units.length = 0; G.shots.length = 0; G.fx.length = 0; G.corpses.length = 0;
+    /* and the hulls of the last fight, which were left lying on the staging ground. They
+       have always been on the movement grid; since a burning wreck also obscures they
+       were attenuating the sight line as well, so from the second run of every row the
+       pair were fighting through the smoke of the one before and a vehicle row could not
+       see across the range it was staged at. */
+    G.wrecks.length = 0; rebuildGrid();
     AI.t = 1e9;
     const savedCovers = G.covers, savedIdx = G.coverIdx;
     G.covers = []; G.coverIdx = [];
@@ -178,17 +184,35 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
     }
     a.order = 'attackmove'; b.order = 'attackmove';
     a.dest = { x: b.x, y: b.y }; b.dest = { x: a.x, y: a.y };
-    computeVisibility();
+    /* Let both sides find each other before the clock starts. Being seen takes a second
+       or two now and an attack-move walks the whole of it, so unprimed a pair staged at
+       381 were at 71 before either could see the other and every row on the card was a
+       knife fight: the reach a weapon has was not being tested at all. The card stages a
+       fight at a range and a fight at that range is what it should measure. What the
+       closing costs is a real effect and it belongs to the sight and movement cards,
+       where it is not confounded with the roster. Forty seconds of detection is plenty
+       for anything that can be seen from where it was put down; a pair that still cannot
+       see each other is flagged rather than fought in the dark. */
+    let primed = false;
+    for (let s = 0; s < 400; s++) {
+      computeVisibility(0);
+      if (a.vGer && b.vUs) { primed = true; break; }
+    }
     let t = 0;
     const dt = 1 / 20;
+    /* and where they were when the first round left a barrel, which is not the staged
+       range for anything that has to close to use what it carries */
+    let met = -1, nsh = G.shots.length;
     while (t < LIMIT) {
       step(dt); t += dt;
+      if (met < 0 && G.shots.length > nsh) met = Math.hypot(a.x - b.x, a.y - b.y);
+      nsh = G.shots.length;
       if (a.dead || b.dead) break;
     }
     const sa = strength('us'), sb = strength('ger');
     G.covers = savedCovers; G.coverIdx = savedIdx;
     return { win: b.dead && !a.dead ? 0 : a.dead && !b.dead ? 1 : sa > sb ? 0 : sb > sa ? 1 : -1,
-             t: t, left: Math.max(sa, sb) };
+             t: t, left: Math.max(sa, sb), met: met < 0 ? dist : met, blind: primed ? 0 : 1 };
   }
 
   const out = [];
@@ -204,15 +228,16 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
     const ra = Math.max(wa.range, A.at ? A.at.range : 0);
     const rb = Math.max(wb.range, B.at ? B.at.range : 0);
     const dist = DIST || Math.round(Math.min(ra, rb) * .82);
-    let winA = 0, winB = 0, draw = 0, sumT = 0, sumLeft = 0;
+    let winA = 0, winB = 0, draw = 0, sumT = 0, sumLeft = 0, sumMet = 0, blind = 0;
     for (let i = 0; i < N; i++) {
       const r = once(ka, kb, dist, i % 2, ups);
       if (r.win === 0) winA++; else if (r.win === 1) winB++; else draw++;
-      sumT += r.t; sumLeft += r.left;
+      sumT += r.t; sumLeft += r.left; sumMet += r.met; blind += r.blind;
     }
     const cost = k => (UNITS[k].cost.mp || 0) + (UNITS[k].cost.fu || 0) * 2.4;
     const tag = ups ? ((ups.a ? '+' + ups.a.join('+') : '') + (ups.b ? ' /+' + ups.b.join('+') : '')) : '';
-    out.push({ a: ka, b: kb, up: tag, dist: dist, winA: winA, winB: winB, draw: draw,
+    out.push({ a: ka, b: kb, up: tag, dist: dist, met: Math.round(sumMet / N), blind: blind,
+               winA: winA, winB: winB, draw: draw,
                pct: Math.round(100 * winA / N), t: +(sumT / N).toFixed(1),
                left: +(sumLeft / N).toFixed(2),
                costA: Math.round(cost(ka)), costB: Math.round(cost(kb)),
@@ -231,15 +256,20 @@ if (args.json) {
   const lpad = (s, n) => String(s).padStart(n);
   console.log(`\n  ${N} runs each, opening range ${DIST || 'per pair'}, cover tier ${COVER}\n`);
   console.log('  ' + pad('A', 11) + pad('B', 11) + lpad('A wins', 7) + lpad('secs', 7) +
-              lpad('left', 6) + lpad('cost A', 8) + lpad('cost B', 8) + lpad('pop', 7) + '  upgrades');
-  console.log('  ' + '-'.repeat(78));
+              lpad('open', 6) + lpad('met', 6) + lpad('left', 6) + lpad('cost A', 8) + lpad('cost B', 8) +
+              lpad('pop', 7) + '  upgrades');
+  console.log('  ' + '-'.repeat(90));
   for (const r of rows) {
     if (r.err) { console.log('  ' + pad(r.a, 11) + pad(r.b, 11) + r.err); continue; }
-    const flag = r.pct >= 40 && r.pct <= 60 ? ' ' : r.pct >= 30 && r.pct <= 70 ? '.' : '!';
+    const flag = r.blind ? 'B' : r.pct >= 40 && r.pct <= 60 ? ' ' : r.pct >= 30 && r.pct <= 70 ? '.' : '!';
     console.log('  ' + pad(r.a, 11) + pad(r.b, 11) + lpad(r.pct + '%', 7) + lpad(r.t, 7) +
-                lpad(r.left, 6) + lpad(r.costA, 8) + lpad(r.costB, 8) +
+                lpad(r.dist, 6) + lpad(r.met, 6) + lpad(r.left, 6) + lpad(r.costA, 8) + lpad(r.costB, 8) +
                 lpad(r.popA + '/' + r.popB, 7) + ' ' + flag + ' ' + r.up);
   }
   console.log('\n  cost is manpower plus fuel at 2.4, which is roughly what fuel is worth here.');
+  console.log('  open is where they were put down, with both sides given time to find each other');
+  console.log('  first; met is where they were when the first round left a barrel, which is nearer');
+  console.log('  for anything that has to close to use what it carries.');
+  console.log('  B is a pair that never saw each other from where they were staged.');
   console.log('  ! is a matchup outside 30-70 per cent and worth looking at.\n');
 }

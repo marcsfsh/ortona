@@ -4,6 +4,13 @@
  *   node tools/dims.mjs              every vehicle
  *   node tools/dims.mjs ger_kt       one
  *   node tools/dims.mjs --tol=3      tighten the tolerance to 3 per cent
+ *   node tools/dims.mjs --base=HEAD  measure an older file instead
+ *   node tools/dims.mjs --file=x.html
+ *
+ * It could only ever open the working file, which meant it could say whether a model is
+ * the right size and never whether a change made it a different size. A pass that cuts
+ * every big face into a grid has to be able to prove it moved nothing, and this is the
+ * only thing that can say so.
  *
  * Proportion is the one thing about a model that is a fact rather than a
  * judgement, so it gets checked rather than eyeballed. Figures below are the
@@ -11,7 +18,11 @@
  * the note says so.
  */
 
-import { launch, openGame, deploy, parseArgs } from './harness.mjs';
+import { execFileSync } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { launch, openGame, deploy, parseArgs, GAME } from './harness.mjs';
 
 const args = parseArgs(process.argv.slice(2));
 const TOL = Number(args.tol || 5) / 100;
@@ -127,7 +138,14 @@ const PROBE = {
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
 const browser = await launch();
-const { page, context } = await openGame(browser, 'laptop', { quiet: true });
+let file = args.file === undefined ? GAME : String(args.file), tmp = null;
+if (args.base !== undefined) {
+  tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ortona-dims-'));
+  file = path.join(tmp, 'ortona.html');
+  fs.writeFileSync(file, execFileSync('git', ['show', `${String(args.base)}:ortona.html`],
+                                      { encoding: 'utf8', maxBuffer: 1 << 28 }));
+}
+const { page, context } = await openGame(browser, 'laptop', { file, quiet: true });
 await deploy(page, { side: 'us' });
 
 const measured = await page.evaluate(probe => {
@@ -137,8 +155,12 @@ const measured = await page.evaluate(probe => {
     const pr0 = probe[k] || {};
     const hullCap = pr0.hullZ === undefined ? 1e9 : pr0.hullZ;
     let hx0 = 1e9, hx1 = -1e9, hy = 0, hz = 0;
+    /* `zt` is the top of the plate a piece was cut off, where the piece is a piece: a
+       face that reaches above the cap is dropped whole, and a cut one has to be dropped
+       on its parent's extent or the filter is only a filter on tessellation */
+    const topOf = f => (f.zt === undefined ? Math.max.apply(null, f.v.map(p => p[2])) : f.zt);
     V.hull.forEach(function (f) {
-      const tall = f.v.some(p => p[2] > hullCap);
+      const tall = topOf(f) > hullCap;
       f.v.forEach(p => {
         hx0 = Math.min(hx0, p[0]); hx1 = Math.max(hx1, p[0]); hy = Math.max(hy, Math.abs(p[1]));
         if (!tall) hz = Math.max(hz, p[2]);
@@ -175,7 +197,7 @@ const measured = await page.evaluate(probe => {
     let tz = 0, tx1 = -1e9;
     const hCap = pr.topZ === undefined ? 20 : pr.topZ;
     V.tur.forEach(function (f) {
-      const tall = f.v.some(p => p[2] > hCap);
+      const tall = topOf(f) > hCap;
       f.v.forEach(function (p) {
         if (!tall) tz = Math.max(tz, p[2]);
         tx1 = Math.max(tx1, p[0]);
@@ -195,6 +217,7 @@ const measured = await page.evaluate(probe => {
 
 await context.close();
 await browser.close();
+if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
 
 let bad = 0;
 const keys = (ONLY || Object.keys(REAL)).filter(k => measured[k]);
