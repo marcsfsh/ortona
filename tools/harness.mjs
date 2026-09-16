@@ -375,6 +375,138 @@ export async function installHooks(page) {
         sectors: G.sectors ? G.sectors.length : 0
       };
     };
+
+    /* ---- the figure: a posture by name, whichever table this file keeps ----
+       A man's postures are looked up by what they are called rather than by which
+       list they happen to live in, so the same tool reads a file that keeps one MODELS
+       list per posture and one that keeps MODELS.man[variant][pose] with a cycle stored
+       as { frames, len }. `kneel` and `kfire` are the crouch ids under their newer
+       names; a posture this file has no buffer for comes back null rather than as the
+       standing man, because a photograph of the wrong posture is worse than none. */
+    O.poseId = function (name) {
+      const alias = { kneel: 'CROUCH', kfire: 'CFIRE' };
+      const id = window['POSE_' + (alias[name] || name).toUpperCase()];
+      return id === undefined ? null : id;
+    };
+    O.figure = function (variant, name, frame) {
+      const M = window.MODELS, V = window.SOLDIER_VARIANTS[variant], side = V ? V.side : 'us';
+      frame = frame || 0;
+      const one = (buf, bufA, z) => buf ? { buf, bufA: bufA || null, z: z || 0, n: 1, len: 0 } : null;
+      const cyc = (list, listA, len, z) => list && list.length
+        ? { buf: list[frame % list.length], bufA: listA ? listA[frame % list.length] : null, z: z || 0, n: list.length, len } : null;
+      if (M.man) {
+        if (name === 'fall' || name === 'dead') {
+          const L = M[name] && M[name][side];
+          return L ? { buf: L[frame % L.length], bufA: null, z: name === 'dead' ? -.3 : 0, n: L.length, len: 0 } : null;
+        }
+        const T = M.man[variant], id = O.poseId(name), set = T && id !== null ? T[id] : null;
+        if (!set) return null;
+        return set.frames ? cyc(set.frames, null, set.len, 0) : one(set, null, 0);
+      }
+      if (!M.sol || !M.sol[variant]) return null;
+      switch (name) {
+        case 'stand':  return one(M.sol[variant][0], M.solA[variant][0]);
+        case 'walk':   return cyc(M.sol[variant].slice(1), M.solA[variant].slice(1), STRIDE_LEN);
+        case 'fire':   return one(M.fire[variant], M.fireA[variant]);
+        case 'crouch': case 'kneel': return one(M.crouch[variant], M.crouchA[variant]);
+        case 'cfire':  case 'kfire': return one(M.cfire[variant], M.cfireA[variant]);
+        case 'prone':  return one(M.prone[variant], M.proneA[variant]);
+        case 'crawl':  return cyc(M.crawl[variant], M.crawlA[variant], CRAWL_LEN);
+        /* a corpse is the side's rifleman lying prone, sunk half a unit */
+        case 'dead':   return one(M.prone[side === 'ger' ? 'fj_rifle' : 'can_rifle'], null, -.5);
+      }
+      return null;
+    };
+    /* put a man into a posture the way updateModels would have left him: the pose id,
+       the prone flag, and a gait that lands on the frame asked for */
+    O.setPose = function (m, variant, name, frame) {
+      const id = O.poseId(name);
+      if (id === null) return null;
+      m.pose = id; m.prone = id === POSE_PRONE || id === POSE_CRAWL;
+      const f = O.figure(variant, name, 0);
+      const step = f && f.n > 1 ? f.len / f.n : 0;
+      m.gait = (frame || 0) * step + 0.01;
+      return id;
+    };
+
+    /* ---- one buffer at a point, in both passes, with no unit behind it ----
+       The man scene stages a figure by spawning a section and keeping one man of it,
+       which needs a unit key that reaches the variant. A hull crewman, a corpse or a
+       fall frame has no such key. `items` is [{ buf, x, y, f, z, k, tint }], and each
+       is drawn in the colour pass after the units and cast into the shadow map beside
+       them. The shadow pass only visits units render() has listed, so a host unit of
+       the player's side stands at the first item with its men dead: it draws nothing
+       itself and keeps the pass calling. */
+    O.stage = function (items) {
+      O.unstage();
+      const side = window.G.side;
+      const key = Object.keys(UNITS).find(k => UNITS[k].side === side && UNITS[k].cat === 'inf');
+      const host = spawnUnit(side, key, items[0].x, items[0].y, 0);
+      host.order = null; host.path = null; host.dest = null;
+      host.models.forEach(m => { m.alive = false; });
+      /* an item names a variant and a posture (a buffer cannot cross page.evaluate),
+         or carries a buffer when the caller is already in the page */
+      const list = items.map(it => {
+        const fig = it.buf ? { buf: it.buf, bufA: null, z: 0 } : O.figure(it.variant, it.pose, it.frame);
+        return { buf: fig ? fig.buf : null, bufA: fig ? fig.bufA : null, x: it.x, y: it.y, f: it.f || 0,
+                 z: (it.z || 0) + (fig ? fig.z : 0), k: it.k || 1, tint: it.tint || null };
+      });
+      const S = O._stage = { host, list, units: window.drawUnits3D, cast: window.castUnit };
+      const mat = s => m4model(s.x, s.y, groundZ(s.x, s.y) + s.z, s.f, s.k);
+      window.drawUnits3D = function (v, l) {
+        S.units(v, l);
+        S.list.forEach(s => {
+          if (!s.buf) return;
+          drawGeom(s.buf, mat(s), false, s.tint);
+          /* the alpha half, drawn the way the units pass draws it */
+          if (s.bufA) { gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE); drawGeom(s.bufA, mat(s), false, s.tint); gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0); }
+        });
+      };
+      window.castUnit = function (u) {
+        S.cast(u);
+        if (u === S.host) S.list.forEach(s => { if (s.buf) drawDepthGeom(s.buf, mat(s)); });
+      };
+      computeVisibility();
+      O.reveal();
+      return list.filter(s => s.buf).length;
+    };
+    O.unstage = function () {
+      const S = O._stage;
+      if (!S) return;
+      window.drawUnits3D = S.units; window.castUnit = S.cast;
+      const i = window.G.units.indexOf(S.host);
+      if (i >= 0) window.G.units.splice(i, 1);
+      O._stage = null;
+    };
+
+    /* Leave the shadow out, or the figure out and its shadow in. The shadow is the
+       larger half of what a man puts on the screen at any play distance, and it is
+       his side silhouette, so it wants looking at on its own. `hide('shadow')` stubs
+       castUnit; `hide('figure')` stubs the colour draw of the units. */
+    O.hide = function (what) {
+      O._hid = O._hid || [];
+      if (what === 'shadow') { O._hid.push(['castUnit', window.castUnit]); window.castUnit = function () {}; }
+      if (what === 'figure') { O._hid.push(['drawUnits3D', window.drawUnits3D]); window.drawUnits3D = function () {}; }
+    };
+    O.show = function () {
+      while (O._hid && O._hid.length) { const h = O._hid.pop(); window[h[0]] = h[1]; }
+    };
+
+    /* the luminance of the ground at a world point, read off the framebuffer after a
+       render: a stage that landed on the lip of the crater field reads dark, and a
+       photograph does not say so */
+    O.groundLum = function (x, y) {
+      render();
+      const p = w2s(x, y);
+      if (p.behind) return null;
+      const N = 12, px = Math.round(p.x * cv.width / VIEW.w) - N / 2, py = cv.height - Math.round(p.y * cv.height / VIEW.h) - N / 2;
+      if (px < 0 || py < 0 || px + N > cv.width || py + N > cv.height) return null;
+      const b = new Uint8Array(N * N * 4);
+      gl.readPixels(px, py, N, N, gl.RGBA, gl.UNSIGNED_BYTE, b);
+      let l = 0;
+      for (let i = 0; i < N * N; i++) l += (b[i * 4] * .299 + b[i * 4 + 1] * .587 + b[i * 4 + 2] * .114) / 255;
+      return l / (N * N);
+    };
   });
 }
 
@@ -418,6 +550,14 @@ export async function catalog(page) { return page.evaluate(() => window.__o.cata
 /** Bounding extent of a vehicle's built model, in world units, for framing a shot. */
 export async function modelExtent(page, key) { return page.evaluate(k => window.__o.extent(k), key); }
 export async function pause(page, on = true) { await page.evaluate(v => { window.G.paused = v; }, on); }
+/** Draw baked buffers at points, in both passes, with no unit behind them (see O.stage). */
+export async function stage(page, items) { return page.evaluate(a => window.__o.stage(a), items); }
+export async function unstage(page) { return page.evaluate(() => window.__o.unstage()); }
+/** Leave the shadow out ('shadow') or the figure out ('figure'); show() puts both back. */
+export async function hide(page, what) { return page.evaluate(w => window.__o.hide(w), what); }
+export async function show(page) { return page.evaluate(() => window.__o.show()); }
+/** The ground's luminance at a world point, off the framebuffer; null when it is off screen. */
+export async function groundLum(page, x, y) { return page.evaluate(a => window.__o.groundLum(a[0], a[1]), [x, y]); }
 
 /** Centre the camera on a unit picked by key (or the first of a side). */
 export async function lookAt(page, { key, side, dist = 300, pitch = 0.8, yaw } = {}) {
