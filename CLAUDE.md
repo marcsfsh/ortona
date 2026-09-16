@@ -2070,6 +2070,53 @@ and -116 with 203 -- both inside the noise, straddling zero, which is the honest
 a change of this kind and the one the tool almost always gives. On the brain card the gun
 is bought once a battle and the tube three times, and nine missions are laid.
 
+**Difficulty is two questions and it used to be one number.** `DIFF` set how hard the
+opposition is to beat and how much help the player gets, in the same row, so a player who
+wanted a veteran opponent had to take a veteran economy with it and a player who wanted an
+easy economy got an opponent that thinks every four seconds and shoots at a third
+accuracy. They are asked separately now.
+
+`DIFF` is the opposition and nothing else: what it earns, how often it thinks, what it
+fields, how well it shoots, how much killing it takes, how it waves, how early it techs,
+its own population cap, and `vp` -- the rate the player's points drain, which stays here
+because being bled faster is pressure the opponent applies rather than a modifier on the
+player's units.
+
+`PD` is the player's own side, five settings on the title screen behind a HANDICAP button
+that lights when any of them is off even: income rate, production speed (a unit out of a
+queue), construction speed (a building or a field work going up), the manpower cap from a
+hundred to five hundred, and what is in the till at the first shot. Each is an index into
+a named list, because the stepper and the game have to read one table -- two lists of the
+same five settings go out of step the moment somebody adds a sixth. `pdMake()` resolves
+the indices once in `startGame` so the income tick and the population check read a number,
+and `pd()` hands the even game to anything that reaches it before a battle. The setting is
+kept in `localStorage` under `ORT_HCAP`, and a handicap carried over from the last battle
+opens the panel rather than hiding in it.
+
+**Four of green's thumbs on the scale are gone rather than moved**, and that is the point
+of the split as much as the settings are. `youAim` multiplied the player's accuracy by
+1.3, `youTough` divided the damage he took by 1.45, `extra` handed him three sections and
+a second engineer at the whistle, and `mgHold` -- read for the player's side alone, off the
+opposition's table -- gave him thirty seconds of trigger before a barrel went on green and
+sixteen on veteran, so picking a harder opponent quietly burnt his own barrels out faster.
+None of it was visible, switchable or mentioned anywhere. A player who wants an easier
+game turns knobs he can read instead; the barrel is one number for him and the eighteen it
+always was for the other side.
+
+**Construction speed is a knob that did not exist.** `build` only ever scaled the
+production queue; a building or a work went up at `dt / time` for both sides at every
+difficulty. They are two settings because they are two decisions: a fast queue with a slow
+spade is a side with an army and no position, and the other way round is a side dug in with
+nothing in it.
+
+Measured by the gate, with every setting at its top and the opposition on GREEN: the
+player's cap is 500 and the opposition's is still green's own 175, the till opens at
+2406/401, income is 34 against 4.42, a second of wall clock buys four seconds of queue
+against one, and a second of digging puts up 0.154 of a building against 0.038. The
+production and construction figures are timed rather than read back off the settings,
+because a setting that is stored and never multiplied into anything looks exactly like one
+that works.
+
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
 `povCamera` builds `MAT` from a yaw and a pitch instead of the orbit camera, so `CAMLIM`

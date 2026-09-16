@@ -642,6 +642,79 @@ for (const device of TARGETS) {
   ok('tactical map expands', mapOpen);
   await page.click('#tMap').catch(() => {});
 
+  /* --- the handicap, which is the player's half of what difficulty used to be. What is
+     asserted is the split: with every setting at its top and the opposition on GREEN, the
+     five numbers reach the player's side and none of them reaches the opposition's, whose
+     population cap is still green's own hundred and seventy-five. Production and
+     construction are timed rather than read off the settings, because a setting that is
+     stored and never multiplied into anything looks exactly like one that works. --- */
+  await reload(page);
+  await page.evaluate(() => {
+    /* every knob to its top, through the stepper the player uses rather than by writing
+       PD, so the row covers the control as well as the number */
+    document.getElementById('hopen').click();
+    window.HCAP.forEach(h => { for (let i = 0; i < 12; i++) window.hcapStep(h, 1); });
+  });
+  await deploy(page, { side: args.side || 'us', diff: 0 });
+  const hcap = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const pd = window.G.pd, hq = window.G.blds.filter(b => b.side === side && b.def.hq)[0];
+    /* production: how much queue time one second of wall clock buys, at the handicap
+       against the flat one the opposition gets */
+    function qRate(s) {
+      const b = window.G.blds.filter(x => x.side === s && x.def.hq)[0];
+      const keep = b.queue.slice(), qt = b.qt;
+      b.queue = [b.def.makes[0]]; b.qt = 0;
+      for (let f = 0; f < 60; f++) window.updateBuilding(b, 1 / 60);
+      const r = b.qt;
+      b.queue = keep; b.qt = qt;
+      return +r.toFixed(2);
+    }
+    const prodYou = qRate(side), prodFoe = qRate(foe);
+    /* construction: an engineer put against a half-built post, a second of it each way */
+    function cRate(s) {
+      const e = window.G.units.filter(u => u.side === s && u.def.builder)[0];
+      if (!e) return -1;
+      const b = window.spawnBuilding(s, s === 'us' ? 'us_bar' : 'ger_qtr',
+                                    e.x + (s === 'us' ? 90 : -90), e.y, false);
+      b.built = 0;
+      e.order = 'build'; e.building = b; e.x = b.x; e.y = b.y;
+      for (let f = 0; f < 60; f++) window.updateUnit(e, 1 / 60);
+      const r = b.built;
+      b.dead = true; window.G.blds.splice(window.G.blds.indexOf(b), 1);
+      e.building = null; e.order = null;
+      return +r.toFixed(4);
+    }
+    const consYou = cRate(side), consFoe = cRate(foe);
+    return { pd, diff: window.G.diff,
+             popYou: window.popCap(side), popFoe: window.popCap(foe),
+             mp: Math.round(window.G.res[side].mp), fu: Math.round(window.G.res[side].fu),
+             incYou: +window.G.inc[side].mp.toFixed(2), incFoe: +window.G.inc[foe].mp.toFixed(2),
+             prodYou, prodFoe, consYou, consFoe,
+             even: window.hcapEven(), rows: document.querySelectorAll('#hgrid .hrow').length,
+             hqTime: hq.def.makes.length };
+  });
+  ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
+     hcap.rows === 5 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
+     hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
+     hcap.incYou > hcap.incFoe * 2 &&
+     hcap.prodYou > hcap.prodFoe * 3 && hcap.prodFoe > 0 &&
+     hcap.consYou > hcap.consFoe * 3 && hcap.consFoe > 0,
+     `${hcap.rows} settings, all off even; on GREEN the player's cap is ${hcap.popYou} and the opposition's ${hcap.popFoe}; ` +
+     `the till opened at ${hcap.mp}/${hcap.fu}f; income ${hcap.incYou} against ${hcap.incFoe}; ` +
+     `a second of queue buys ${hcap.prodYou}s against ${hcap.prodFoe}s and a second of digging ` +
+     `${hcap.consYou} of a building against ${hcap.consFoe}`);
+  /* and EVEN puts every one of them back */
+  await page.evaluate(() => { document.getElementById('heven').click(); });
+  const evened = await page.evaluate(() => ({ even: window.hcapEven(), made: window.pdMake(),
+                                              badge: document.getElementById('hopen').textContent }));
+  ok('the EVEN button puts every setting back where it started',
+     evened.even && evened.made.inc === 1 && evened.made.prod === 1 && evened.made.cons === 1 &&
+     evened.made.pop === 200 && evened.made.mp === 420 && evened.made.fu === 20 &&
+     evened.badge.indexOf('ON') < 0,
+     `${evened.made.inc}x income, ${evened.made.prod}x production, ${evened.made.cons}x construction, ` +
+     `cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, the button reads "${evened.badge}"`);
+
   /* --- the switch on the title screen that takes the opposition's guns away. What is
      asserted is the negative -- over eight minutes of battle the brain never once bought
      a tube, bought a gun or dug a battery, and has none on the field -- with the control

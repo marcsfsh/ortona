@@ -179,6 +179,20 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
 .pill,.mode,.arty{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+/* the handicap block: five rows of label, minus, value, plus. A stepper rather than a
+   slider because the values are a short named list and a slider would invent the ones
+   between them, and rather than a row of segmented buttons because five settings at
+   six values each is thirty controls on a phone. */
+.hcap{width:min(720px,100%);box-sizing:border-box;border:1px solid var(--line);background:#12160d;padding:12px 14px}
+.hcaph{font-size:11px;letter-spacing:2px;color:var(--ink);display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.hcaph span{font-size:11px;letter-spacing:0;color:var(--dim);flex:1 1 220px;line-height:1.35}
+.hres{border:1px solid var(--line);background:#15190f;color:var(--dim);font-size:10px;letter-spacing:1.6px;padding:7px 12px}
+.hgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:6px 18px;margin-top:10px}
+.hrow{display:flex;align-items:center;gap:8px}
+.hrow b{font-size:10px;letter-spacing:1.5px;color:var(--dim);flex:1 1 auto;font-weight:400}
+.hrow i{font-family:var(--mono);font-style:normal;font-size:13px;color:var(--ink);min-width:88px;text-align:center}
+.hb{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:15px;line-height:1;width:34px;height:34px;box-sizing:border-box;flex:0 0 auto}
+.hb[disabled]{color:#3d4436;border-color:#2b3126}
 .pill.on,.mode.on,.arty.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
 .go{border:1px solid var(--ink);background:var(--ink);color:#12150e;padding:13px 46px;
   font-size:17px;letter-spacing:2px;font-weight:500}
@@ -244,6 +258,8 @@ body.mob .go{width:100%;max-width:340px;padding:15px 0}
 /* the title screen's own option buttons were 33px on a phone, which is under the rule
    the rest of the game holds itself to; they are the first thing a thumb ever touches */
 body.mob .pill,body.mob .mode,body.mob .arty{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.mob .hgrid{grid-template-columns:1fr}
+body.mob .hb{width:46px;height:46px;min-width:46px;min-height:46px;font-size:17px}body.mob .hres{min-height:44px;padding:0 14px}
 body.mob .side{flex:1 1 100%;min-width:0}
 
 /* landscape phones give the map back its width */
@@ -359,7 +375,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
 .side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
-.pill,.mode,.arty{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}
+.pill,.mode,.arty{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
 
@@ -627,8 +643,14 @@ body.mob #mini{width:104px;height:72px}
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">ENEMY GUNS</span>
     <button class="arty on" data-arty="1" title="The opposition buys mortars and howitzers and digs a battery" aria-pressed="true">ARTILLERY</button>
     <button class="arty" data-arty="0" title="The opposition fields no indirect fire at all; yours is unaffected" aria-pressed="false">NONE</button>
+    <button class="arty" id="hopen" title="Your own economy, production, construction and manpower cap" aria-expanded="false" style="margin-left:14px">HANDICAP</button>
 
     <button class="edb" id="openeditor" title="Design your own map">MAP EDITOR</button><button class="edb hidden" id="playcustom" title="Play the map saved on this device">PLAY CUSTOM MAP</button>
+  </div>
+  <div class="hcap hidden" id="hcap">
+    <div class="hcaph">HANDICAP<span>your own side of it. The opposition above is set on its own, so a veteran
+      opponent can be fought on any economy you like.</span><button class="hres" id="heven">EVEN</button></div>
+    <div class="hgrid" id="hgrid"></div>
   </div>
   <button class="go" id="deploy">DEPLOY</button>
   <div class="keys" id="keyhelp">
@@ -676,15 +698,44 @@ function srange(a, b) { return a + srand() * (b - a); }
 /* ---------------------------------------------------------------- data */
 var WORLD = { w: 2800, h: 1900 };
 var POPCAP = 200;
-/* The cap is per side, because the easy setting is not an even fight and should not
-   pretend to be: on green the player fields nearly twice what the opposition can, which
-   is a cushion that shows up in the one place a player actually reads it. Everywhere
-   else both sides get the same two hundred. */
+/* The cap is per side, because the two sides are set separately. The player's is a
+   handicap setting and runs from a hundred to five hundred; the opposition's comes off its
+   own difficulty and is a hundred and seventy-five on green and two hundred otherwise. */
 function popCap(side) {
   var D = DIFF[G.diff];
-  if (!D) return POPCAP;
-  return side === G.side ? (D.youPop || POPCAP) : (D.foePop || POPCAP);
+  if (side === G.side) return pd().pop;
+  return D ? (D.foePop || POPCAP) : POPCAP;
 }
+/* ---- the handicap.
+   Difficulty was one number and it set two unrelated things: how hard the opposition is
+   to beat, and how much help the player gets. A player who wanted a veteran opponent had
+   to take a veteran economy with it, and a player who wanted an easy economy got an
+   opponent that thinks slowly, shoots badly and folds. They are separate questions and
+   they are asked separately now. `DIFF` is the opposition and nothing else; `PD` is the
+   player's own side of the game, and every one of its five numbers is one he chose.
+     Three of green's old thumbs on the scale are gone with the split rather than moved:
+   `youAim`, `youTough` and the extra sections it handed out. They were help the player
+   could not see, could not turn off and was never told about, and the five settings here
+   do the same job where he can read them. `vp`, the rate his own points drain, stays on
+   the opposition's table, because being bled faster is pressure the opponent applies.
+     The values are held as indices into these lists so that the stepper on the title
+   screen and the game read one table rather than two. */
+var PD_INC  = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
+var PD_PROD = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
+var PD_CONS = [.5, .75, 1, 1.25, 1.5, 2, 3, 4];
+var PD_POP  = [100, 150, 175, 200, 250, 300, 400, 500];
+var PD_RES  = [[210, 10], [420, 20], [800, 80], [1200, 150], [1600, 240], [2400, 400]];
+/* the even game, and the index of it in each list */
+var PD_EVEN = { inc: 2, prod: 2, cons: 2, pop: 3, res: 1 };
+var PD = { inc: 2, prod: 2, cons: 2, pop: 3, res: 1 };
+/* What the player's side is actually running, resolved once when the battle starts so the
+   income tick and the population check read a number rather than an index. Anything that
+   reaches it before a battle -- the editor, a tool staging a scene -- gets the even game. */
+function pdMake() {
+  return { inc: PD_INC[PD.inc], prod: PD_PROD[PD.prod], cons: PD_CONS[PD.cons],
+           pop: PD_POP[PD.pop], mp: PD_RES[PD.res][0], fu: PD_RES[PD.res][1] };
+}
+function pd() { return G.pd || (G.pd = pdMake()); }
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
   skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates along the hull sides, and round the turret where there is one: hollow-charge rounds burst on the plate before the armour.' },
@@ -3043,7 +3094,7 @@ function queueUnit(b, key) {
   var d = UNITS[key];
   if (d.retired) return false;
   if (b.def.makes.indexOf(key) < 0) return false;
-  if (b.side === G.side && DIFF[G.diff].you > 2 && b.queue.length > 3) return false;
+  if (b.side === G.side && pd().inc > 2 && b.queue.length > 3) return false;
   if (d.req && !hasBuilding(b.side, d.req)) return false;
   if (!canAfford(b.side, d.cost)) { if (b.side === G.side) toast('Not enough ' + (G.res[b.side].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); return false; }
   if (popOf(b.side) + d.pop > popCap(b.side)) { if (b.side === G.side) toast('Population cap reached'); return false; }
@@ -3116,7 +3167,7 @@ function worthSaving(side, d) {
 function updateBuilding(b, dt) {
   if (b.built < 1) return;
   if (!b.queue.length) { b.qt = 0; return; }
-  b.qt += dt * (b.side === G.side ? DIFF[G.diff].build : 1);
+  b.qt += dt * (b.side === G.side ? pd().prod : 1);
   var key = b.queue[0], d = UNITS[key];
   if (b.qt >= d.time) {
     b.queue.shift(); b.qt = 0;
@@ -4319,13 +4370,17 @@ function fireSecondary(u, dt) {
   for (i = 0; i < keys.length; i++) fireOneSecondary(u, keys[i], dt);
 }
 /* A machine gun has no round to load: it has a barrel, and a barrel will only take so
-   much. Heat climbs while the gun is running and falls while it is not, and at the top
-   of it the gun is out until it has come back down to a third. `mgHold` is how many
-   seconds of the trigger held down it takes to get there, and on green that is half a
-   minute of it. Cooling from full takes a little over half as long again. */
-function mgHold(u) {
-  return u.side === G.side && DIFF[G.diff] && DIFF[G.diff].mgHold ? DIFF[G.diff].mgHold : 18;
-}
+   much. Heat climbs while the gun is running and falls while it is not, and at the top of
+   it the gun is out until it has come back down to a third. `MG_HOLD` is how many seconds
+   of the trigger held down it takes to get there; cooling from full takes a little over
+   half as long again.
+     It was thirty seconds on green, twenty-two on regular and sixteen on veteran, and it
+   was read for the player's side alone -- a number on the opposition's table that only
+   ever touched the player's own guns. Picking a harder opponent burnt your barrels out
+   faster and nothing said so, which is exactly the hidden thumb the handicap exists to
+   replace, so it is one number now and the opposition's is the eighteen it always was. */
+var MG_HOLD = 22, MG_HOLD_FOE = 18;
+function mgHold(u) { return u.side === G.side ? MG_HOLD : MG_HOLD_FOE; }
 function mgTick(u, dt) {
   var hold = mgHold(u);
   u.mgOnT = Math.max(0, (u.mgOnT || 0) - dt);
@@ -4462,7 +4517,9 @@ function fireAt(u, t, dt) {
   acc *= (t.moving && t.stance === 'double') ? 1.18 : 1;
   acc *= (u.sup > .55 ? .5 : 1) * (u.sup > 1 ? .5 : 1);
   acc *= (1 + u.vet * .07);
-  acc *= u.side === G.side ? DIFF[G.diff].youAim : DIFF[G.diff].aim;
+  /* the opposition's own hand on the trigger. The player's men used to get a matching
+     multiplier out of the same table and no longer do: see the handicap. */
+  if (u.side !== G.side) acc *= DIFF[G.diff].aim;
   acc *= clamp(1.30 - (d / maxR) * .62, .48, 1.30);
   /* a vehicle is a far larger mark than a man, and a moving one is a far worse gun
      platform than a halted one */
@@ -4636,7 +4693,7 @@ function damage(t, amt, src) {
 }
 function damageModel(u, m, amt, src) {
   if (!m.alive) return;
-  amt /= (u.side === G.side ? DIFF[G.diff].youTough : DIFF[G.diff].tough);
+  if (u.side !== G.side) amt /= DIFF[G.diff].tough;
   m.hp -= amt;
   if (m.hp <= 0) {
     m.alive = false;
@@ -4844,7 +4901,7 @@ function tickEconomy(dt) {
       mp += y.mp; fu += y.fu;
       if (s.type === 'vp') vps++;
     });
-    var mult = side === G.side ? DIFF[G.diff].you : DIFF[G.diff].foe;
+    var mult = side === G.side ? pd().inc : DIFF[G.diff].foe;
     G.inc[side].mp = mp * mult; G.inc[side].fu = fu * mult;
     G.res[side].mp += mp * mult * dt;
     G.res[side].fu += fu * mult * dt;
@@ -5179,13 +5236,18 @@ function updateUnit(u, dt) {
     var near = dist(u, b) < workReach(b);
     if (near) {
       u.path = null;
+      /* how fast a thing goes up, which until the handicap existed was one rate for both
+         sides and no setting anywhere. Production and construction are two knobs because
+         they are two decisions: a fast queue with a slow spade is a side that has an army
+         and no position, and the other way round is a side dug in with nothing in it. */
+      var cs = u.side === G.side ? pd().cons : 1;
       if (b.def) {
-        b.built = clamp(b.built + dt / b.def.time, 0, 1);
+        b.built = clamp(b.built + dt * cs / b.def.time, 0, 1);
         b.hp = Math.max(b.hp, b.maxhp * (.18 + .82 * b.built));
         if (Math.random() < dt * 6) spawnFx('spark', b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2));
         if (b.built >= 1) { u.building = null; clearOrder(u); if (u.side === G.side) toast(b.def.name + ' complete'); }
       } else {
-        b.prog = clamp(b.prog + dt / b.time, 0, 1);
+        b.prog = clamp(b.prog + dt * cs / b.time, 0, 1);
         if (b.prog >= 1) { u.building = null; clearOrder(u); }
       }
     }
@@ -5343,11 +5405,20 @@ var AI0 = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, b
             flkX: 0, flkY: 0, flkT: -99 };
 var AI = {};
 (function () { for (var k in AI0) AI[k] = AI0[k]; })();
+/* ---- the opposition, and nothing but the opposition.
+   Every field here is about the other side: what it earns, how often it thinks, what it
+   fields, how well it shoots, how much killing it takes, how it attacks and how fast it
+   bleeds the player's points. What the PLAYER'S side gets is the handicap (`PD`, up beside
+   `popCap`), set separately on the title screen, so a veteran opponent can be fought with
+   any economy at all and an easy economy no longer drags a slow-witted opponent in with
+   it. `you`, `build`, `startMp`, `startFu`, `youPop`, `youAim`, `youTough` and `extra`
+   used to live here and are gone: the first five are settings now and the last three were
+   help the player was never told he had. `mgHold` went the same way, to a constant beside
+   `mgHold()`. What is left that touches the player at all is `vp`, the rate his own points
+   drain, and that belongs here: being bled faster is pressure the opponent applies. */
 var DIFF = [
-  /* Green: money is barely a constraint. You earn triple, start with enough to fill the
-     queue immediately, and the opposition runs a quarter economy, thinks every four
-     seconds, fields four squads, holds near its own line for seven minutes, shoots badly
-     and folds fast. Losing here takes real effort. */
+  /* Green: the opposition runs a quarter economy, thinks every four seconds, fields four
+     squads, holds near its own line for seven minutes, shoots badly and folds fast. */
   /* It runs a weak economy, thinks slowly, shoots badly and folds fast, but it is still
      an army: an easy opponent that fields nothing but riflemen teaches the player
      nothing about the game, and half the roster never gets used. So green still puts up
@@ -5360,24 +5431,18 @@ var DIFF = [
      a minute and a half before the next one forms. That is what makes green a defensive
      game -- a line that is dug in has time to bury its dead, mend its armour and be
      ready for the next one, and what arrives is a body of men with the tanks in it
-     rather than a section every twenty seconds.
-
-     Your own side of it: everything you build comes out three times as fast, and in
-     annihilation the opposition does nothing at all for the first three and a half
-     minutes (`grace`), which is long enough to get a base up and a line dug before the
-     first one arrives. */
-  { you: 3.2, foe: .52, tick: 3.8, inf: 1, mg: 1, army: 6, mech: 2, skill: 0, push: 420, aim: .34, tough: .5,
-    startMp: 1600, startFu: 240, vp: .24, tech: .9, youAim: 1.3, youTough: 1.45, extra: 3, build: 3,
-    youPop: 350, foePop: 175, wave: 6, form: 105, press: 95, grace: 210, mgHold: 30 },
-  { you: 1,    foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 5, skill: 1, push: 0,  aim: 1,   tough: 1,
-    startMp: 420, startFu: 20, vp: 1,   tech: 1, youAim: 1, youTough: 1, extra: 0, build: 1,
-    wave: 3, form: 32, press: 75, mgHold: 22 },
+     rather than a section every twenty seconds. And in annihilation it does nothing at
+     all for the first three and a half minutes (`grace`), which is long enough to get a
+     base up and a line dug before the first one arrives. */
+  { foe: .52, tick: 3.8, inf: 1, mg: 1, army: 6, mech: 2, skill: 0, push: 420, aim: .34, tough: .5,
+    vp: .24, tech: .9, foePop: 175, wave: 6, form: 105, press: 95, grace: 210 },
+  { foe: 1,   tick: 1.1, inf: 4, mg: 2, army: 99, mech: 5, skill: 1, push: 0,  aim: 1,   tough: 1,
+    vp: 1,   tech: 1, wave: 3, form: 32, press: 75 },
   /* Veteran: on a map this defensive an economic edge alone barely registers, so the
      opposition also shoots straighter, takes more killing, techs earlier and opens with
      a larger force while your own victory points drain faster. */
-  { you: 1,    foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 6, skill: 2, push: 0, aim: 1.04, tough: 1.07,
-    startMp: 420, startFu: 20, vp: 1.07, tech: 1.12, youAim: 1, youTough: 1, extra: 0, build: 1,
-    wave: 4, form: 30, press: 80, mgHold: 16 }
+  { foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 6, skill: 2, push: 0, aim: 1.04, tough: 1.07,
+    vp: 1.07, tech: 1.12, wave: 4, form: 30, press: 80 }
 ];
 function aiInit(side) {
   var k;
@@ -21067,9 +21132,11 @@ function startGame(side, diff, mode, arty) {
   document.body.classList.remove('pov');
   G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
   G.made = { us: {}, ger: {} };
-  var dd = DIFF[diff];
+  /* The handicap is resolved here and nowhere else, so a setting changed on the title
+     screen after the deploy button cannot reach a battle already running. */
+  G.pd = pdMake();
   G.res = { us: { mp: 420, fu: 20, vp: VP_START }, ger: { mp: 420, fu: 20, vp: VP_START } };
-  G.res[side].mp = dd.startMp; G.res[side].fu = dd.startFu;
+  G.res[side].mp = G.pd.mp; G.res[side].fu = G.pd.fu;
   if (!G.mapData) G.mapData = defaultMapData();
   makeSectors(); makeTerrain(); rebuildGrid();
   initDecals(); initExplored();
@@ -21089,15 +21156,10 @@ function startGame(side, diff, mode, arty) {
   spawnUnit('ger', 'ger_pio', WORLD.w - 380, 880, Math.PI);
   spawnUnit('ger', 'ger_gren', WORLD.w - 390, 990, Math.PI);
   spawnUnit('ger', 'ger_gren', WORLD.w - 340, 1060, Math.PI);
-  /* a forgiving setting hands you a second engineer and a couple of extra squads */
-  for (var ex = 0; ex < dd.extra; ex++) {
-    var exx = (side === 'us' ? 300 : WORLD.w - 300), exf = side === 'us' ? 0 : Math.PI;
-    spawnUnit(side, side === 'us' ? 'us_rifle' : 'ger_gren', exx, 820 - ex * 90, exf);
-  }
-  if (dd.extra) {
-    spawnUnit(side, side === 'us' ? 'us_eng' : 'ger_pio',
-              side === 'us' ? 300 : WORLD.w - 300, 1130, side === 'us' ? 0 : Math.PI);
-  }
+  /* Green used to hand the player three extra sections and a second engineer here, on top
+     of an economy he could not see the size of. Both are the starting-resources setting
+     now: a player who wants a head start buys one, which is the same head start arriving
+     in a form he chose and can count. */
 
   aiInit(foe(side));
   var hq = hqOf(side);
@@ -21193,6 +21255,96 @@ document.querySelectorAll('.mode').forEach(function (btn) {
       : 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.';
   };
 });
+/* ---- the handicap on the title screen.
+   One table drives the rows, the steppers and what the game reads, because a second list
+   of the same five settings is a second list of one thing and they go out of step the
+   moment somebody adds a sixth. `get` and `set` name the field on `PD` and `fmt` says how
+   the value reads, which is the only part that differs between a multiplier, a count and
+   a pair of numbers. */
+var HCAP = [
+  { k: 'inc',  name: 'INCOME', list: PD_INC,
+    fmt: function (v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; },
+    tip: 'What your sectors pay, against what they pay at even.' },
+  { k: 'prod', name: 'PRODUCTION', list: PD_PROD,
+    fmt: function (v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; },
+    tip: 'How fast a unit comes out of a queue.' },
+  { k: 'cons', name: 'CONSTRUCTION', list: PD_CONS,
+    fmt: function (v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; },
+    tip: 'How fast your engineers put up a building or a field work.' },
+  { k: 'pop',  name: 'MANPOWER CAP', list: PD_POP,
+    fmt: function (v) { return String(v); },
+    tip: 'How many men you may have on the field at once. The opposition keeps its own.' },
+  { k: 'res',  name: 'STARTING', list: PD_RES,
+    fmt: function (v) { return v[0] + ' / ' + v[1] + 'f'; },
+    tip: 'What is in the till when the first shot is fired.' }
+];
+var HCAP_KEY = 'ORT_HCAP';
+function hcapSave() {
+  try { localStorage.setItem(HCAP_KEY, JSON.stringify(PD)); } catch (e) { /* private browsing */ }
+}
+function hcapLoad() {
+  try {
+    var raw = localStorage.getItem(HCAP_KEY);
+    if (!raw) return;
+    var v = JSON.parse(raw);
+    for (var i = 0; i < HCAP.length; i++) {
+      var h = HCAP[i], n = v[h.k];
+      if (typeof n === 'number' && n >= 0 && n < h.list.length) PD[h.k] = n | 0;
+    }
+  } catch (e) { /* a stored setting that will not parse is no setting */ }
+}
+function hcapBuild() {
+  var host = el('hgrid');
+  if (!host) return;
+  host.innerHTML = '';
+  HCAP.forEach(function (h) {
+    var row = document.createElement('div');
+    row.className = 'hrow'; row.title = h.tip;
+    var lab = document.createElement('b'); lab.textContent = h.name;
+    var dn = document.createElement('button'); dn.className = 'hb'; dn.textContent = '\u2212';
+    dn.setAttribute('aria-label', 'less ' + h.name.toLowerCase());
+    var val = document.createElement('i'); val.id = 'h_' + h.k;
+    var up = document.createElement('button'); up.className = 'hb'; up.textContent = '+';
+    up.setAttribute('aria-label', 'more ' + h.name.toLowerCase());
+    dn.onclick = function () { hcapStep(h, -1); };
+    up.onclick = function () { hcapStep(h, 1); };
+    h.dn = dn; h.up = up; h.val = val;
+    row.appendChild(lab); row.appendChild(dn); row.appendChild(val); row.appendChild(up);
+    host.appendChild(row);
+  });
+  hcapSync();
+}
+function hcapStep(h, d) {
+  PD[h.k] = clamp(PD[h.k] + d, 0, h.list.length - 1);
+  hcapSync(); hcapSave(); sfx('click');
+}
+function hcapSync() {
+  HCAP.forEach(function (h) {
+    if (!h.val) return;
+    var i = PD[h.k];
+    h.val.textContent = h.fmt(h.list[i]);
+    /* the even game is marked, because a player who has been turning knobs wants to know
+       which of them are still where they started */
+    h.val.style.color = i === PD_EVEN[h.k] ? 'var(--dim)' : 'var(--ink)';
+    h.dn.disabled = i <= 0; h.up.disabled = i >= h.list.length - 1;
+  });
+  hcapBadge();
+}
+/* The block is folded away by default and the button says whether anything in it has been
+   moved. On a phone the title screen already runs to two and a half screens, and five more
+   rows put the DEPLOY button four hundred pixels below where it was: a setting nobody has
+   touched should not push the one button everybody presses off the bottom. */
+function hcapEven() {
+  for (var k in PD_EVEN) if (PD[k] !== PD_EVEN[k]) return false;
+  return true;
+}
+function hcapBadge() {
+  var b = el('hopen');
+  if (!b) return;
+  var on = !hcapEven();
+  b.classList.toggle('on', on);
+  b.textContent = on ? 'HANDICAP \u00b7 ON' : 'HANDICAP';
+}
 /* The opposition's guns, on or off, settled before the battle rather than during it.
    Artillery is the one arm a player cannot answer in kind on the spot -- a battery is
    eighty seconds of engineer work away and the shells are already coming -- so whether
@@ -21206,6 +21358,19 @@ document.querySelectorAll('.arty').forEach(function (btn) {
     btn.setAttribute('aria-pressed', 'true');
   };
 });
+el('hopen').onclick = function () {
+  var shut = el('hcap').classList.toggle('hidden');
+  el('hopen').setAttribute('aria-expanded', shut ? 'false' : 'true');
+  sfx('click');
+};
+el('heven').onclick = function () {
+  for (var k in PD_EVEN) PD[k] = PD_EVEN[k];
+  hcapSync(); hcapSave(); sfx('click');
+};
+hcapLoad(); hcapBuild();
+/* a handicap kept from the last battle is shown rather than hidden, because a player who
+   turned the knobs and came back to the title screen wants to see where he left them */
+if (!hcapEven()) el('hcap').classList.remove('hidden');
 el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.side); if (!hq) return;
