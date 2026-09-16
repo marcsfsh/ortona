@@ -768,6 +768,23 @@ var UNITS = {
     w: { range: 340, dmg: 8.0, rof: 0.14, acc: .46, sup: .058, pen: 10 },
     desc: 'A water-cooled .303 Vickers on its tripod. Sustained, accurate fire, but it must set up after moving.'
   },
+  /* The first indirect weapon on the roster. A mortar does not shoot what it can see --
+     it shoots what its SIDE can see, over whatever is in the way, which is why it sits
+     behind the houses instead of in the street among them. Two ranges: `w.range` is what
+     it will engage on its own initiative at its own slow rate, and `barrage.range`, a
+     little further, is what it will reach on an ordered fire mission, faster, into an
+     area rather than at a unit.
+       The 1st Canadian Division's mortar platoon carried the ML 3-inch. This is the M1
+     because that is what was asked for. */
+  us_mor: {
+    side: 'us', name: 'M1 81 mm Mortar', short: '81MM', cat: 'team', hk: 'M',
+    models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 300, fu: 10 }, time: 26,
+    req: 'us_bar', setup: 2.4, indirect: 1, blastRes: .5,
+    gunAt: 4.7, gunMuz: [1.65, 15.05], gunGrip: [0.80, 1.80, 8.30],
+    barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
+    w: { range: 470, dmg: 58, rof: 4.4, acc: .40, sup: .052, pen: 12, aoe: 34, shell: 1 },
+    desc: 'Drops its bombs over the roofs onto ground nobody can see into. Left alone it will shell whatever the battalion can see inside its own reach, slowly. Ordered onto a patch of ground it reaches further and fires faster, ten bombs into the circle, and it does not care whether anything is visible there. It must set up after moving and it is helpless if anything reaches it.'
+  },
   us_ab: {
     side: 'us', name: 'Mousehole Assault Section', short: 'ASLT', cat: 'inf', hk: 'B',
     models: 4, hpPer: 94, speed: 71, sight: 310, pop: 9, cost: { mp: 340, fu: 20 }, time: 26,
@@ -863,6 +880,15 @@ var UNITS = {
     gunAt: 8.0, gunMuz: [7.06, 9.09], gunGrip: [-2.45, .90, 6.98],
     w: { range: 355, dmg: 5.0, rof: 0.10, acc: .38, sup: .068, pen: 10 },
     desc: 'The best suppression in the game. Set it behind cover facing open ground and infantry stop moving.'
+  },
+  ger_mor: {
+    side: 'ger', name: '8 cm Granatwerfer 34', short: 'GRW 34', cat: 'team', hk: 'M',
+    models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 290, fu: 10 }, time: 26,
+    req: 'ger_qtr', setup: 2.4, indirect: 1, blastRes: .5,
+    gunAt: 4.7, gunMuz: [1.73, 13.63], gunGrip: [0.90, 1.80, 7.60],
+    barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
+    w: { range: 470, dmg: 60, rof: 4.4, acc: .41, sup: .054, pen: 12, aoe: 34, shell: 1 },
+    desc: 'The German battalion mortar, and the reason a street in Ortona is not a safe street. It shells what the company can see, over the roofs, or it is laid on a patch of ground and puts ten bombs into it faster than it fires on its own. Set it behind a block and it reaches most of the way across the town.'
   },
   ger_pgren: {
     side: 'ger', name: 'Fallschirmjäger Assault Group', short: 'STOSS', cat: 'inf', hk: 'B',
@@ -984,6 +1010,10 @@ var UNITS = {
   for (var k in UNITS) {
     var d = UNITS[k], far, u;
     if (!d.w || d.cat === 'inf') continue;
+    /* except an indirect one, whose reach has nothing to do with its eye. A mortar
+       shoots what the side can see; raising its own sight to its own range would make
+       a weapon that sits behind a block into the best observation post on the map. */
+    if (d.indirect) continue;
     far = d.w.range || 0;
     if (d.wUp) for (u in d.wUp) far = Math.max(far, d.wUp[u].range || 0);
     if (d.at) far = Math.max(far, d.at.range || 0);
@@ -995,15 +1025,15 @@ var BUILDINGS = {
   us_hq:  { side: 'us', name: 'Canadian Field Headquarters', short: 'FIELD HQ', w: 132, h: 104, hp: 3000, hq: 1,
             makes: ['us_eng', 'us_rifle'] },
   us_bar: { side: 'us', name: 'Infantry Company Post', short: 'COMPANY POST', w: 112, h: 92, hp: 1500, hk: '1',
-            cost: { mp: 200 }, time: 26, makes: ['us_mg', 'us_ab', 'us_fg'],
-            desc: 'Unlocks the Vickers team and mousehole assault section.' },
+            cost: { mp: 200 }, time: 26, makes: ['us_mg', 'us_mor', 'us_ab', 'us_fg'],
+            desc: 'Unlocks the Vickers team, the 81 mm mortar and the mousehole assault section.' },
   us_mot: { side: 'us', name: 'Armour Support Point', short: 'ARMOUR POINT', w: 134, h: 104, hp: 1700, hk: '2',
             cost: { mp: 240, fu: 25 }, time: 32, makes: ['us_at', 'us_t8', 'us_m8', 'us_m3', 'us_stuart', 'us_sher', 'us_ach'],
             desc: 'Unlocks the 6-pounder, Universal Carrier and Sherman V.' },
   ger_hq:  { side: 'ger', name: 'Fallschirmjäger Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['ger_pio', 'ger_gren'] },
   ger_qtr: { side: 'ger', name: 'Parachute Company Post', short: 'KOMPANIE POST', w: 112, h: 92, hp: 1500, hk: '1',
-             cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_pgren'],
+             cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_mor', 'ger_pgren'],
              desc: 'Unlocks the MG42 team and assault group.' },
   ger_dep: { side: 'ger', name: 'Armoured Support Point', short: 'PANZER SUPPORT', w: 134, h: 104, hp: 1700, hk: '2',
              cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
@@ -4017,7 +4047,10 @@ function acquire(u) {
     var offArc = u.def.arc && Math.abs(angDiff(u.facing, angTo(u, e))) > u.def.arc / 2;
     if (offArc && u.cat !== 'veh') continue;
     if (!visibleTo(u.side, e)) continue;
-    if (!fireLine(u, e)) continue;
+    /* An indirect weapon needs no line. It still needs the target to be SEEN -- by the
+       side, not by itself -- which is the whole of what makes a mortar worth having and
+       the whole of what keeps it honest: it shells what somebody is looking at. */
+    if (!u.def.indirect && !fireLine(u, e)) continue;
     var w = weaponFor(u, e);
     /* what this weapon would do to this target, per round */
     var worth;
@@ -4204,10 +4237,14 @@ function fireAt(u, t, dt) {
     var off = Math.abs(angDiff(u.turret, angTo(u, t)));
     if (off > (u.moving ? .16 : .09)) return;
   }
-  /* and a crewed gun has to be laid on the same way round */
-  if (u.cat === 'team' && !u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > .11) return;
-  /* hedges do not block fire, stone walls and structures do */
-  if (!fireLine(u, t)) return;
+  /* and a crewed gun has to be laid on the same way round. A mortar is looser about it:
+     the bipod traverses a few degrees on its own and the number two shifts it for more,
+     where a gun on a split trail has to be heaved bodily round. */
+  var layOff = u.def.indirect ? .35 : .11;
+  if (u.cat === 'team' && !u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > layOff) return;
+  /* hedges do not block fire, stone walls and structures do -- and nothing blocks a bomb
+     that goes over the top of it */
+  if (!u.def.indirect && !fireLine(u, t)) return;
   var shots = u.cat === 'veh' ? 1 : (w.shell ? 1 : aliveModels(u));
   if (!shots) return;
   u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * (u.gunDmg > 0 ? 1.8 : 1) *
@@ -4300,8 +4337,16 @@ function fireAt(u, t, dt) {
        bursting radius: it used to land within eight units of the target whether it hit
        or not, so every miss still splashed. A miss now opens out with range. */
     var sp2 = hits > 0 ? 7 : 16 + d * .07;
+    /* A bomb out of a mortar goes up and comes down: it is in the air for seconds rather
+       than a fraction of one, and the height it reaches is what carries it over the roof
+       it was fired behind. Everything else is flat-trajectory and keeps the token hop it
+       has always had. */
+    var ind = !!u.def.indirect;
     G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: t.x + rnd(-sp2, sp2), ty: t.y + rnd(-sp2, sp2),
-                   sx: from.x, sy: from.y, t: 0, dur: Math.max(.14, d / 900), w: w, hit: hits > 0,
+                   sx: from.x, sy: from.y, t: 0,
+                   dur: ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
+                   arc: ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
+                   w: w, hit: hits > 0,
                    side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t });
     sfx(u.cat === 'veh' || u.cat === 'team' ? 'cannon' : 'rocket', u.x, u.y);
   } else {
@@ -4532,7 +4577,10 @@ function updateShots(dt) {
       var k = clamp(s.t / s.dur, 0, 1);
       s.x = lerp(s.sx, s.tx, k); s.y = lerp(s.sy, s.ty, k);
       if (k >= 1) {
-        var direct = s.hit && s.target && !s.target.dead &&
+        /* A bomb dropped from a thousand feet does not score a hit on a turret roof the
+           way a laid gun scores one on a glacis: what an indirect round does, it does
+           with its burst. */
+        var direct = s.hit && !s.ind && s.target && !s.target.dead &&
           (s.target.cat === 'veh' || s.target.built !== undefined) ? s.target : null;
         if (direct) damage(direct, s.dmg, s.owner);
         if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct);
@@ -16516,6 +16564,47 @@ function vickersModel() {
   return f;
 }
 
+/* A battalion mortar: baseplate, tube and bipod, with a few bombs laid out beside it.
+   Three loads a crew carries between them and puts down in about that order -- the plate
+   first, the tube on it, the bipod last -- and it is the one weapon here whose barrel is
+   pointed at the sky rather than at anything. `lean` is how far off vertical the tube
+   sits: a mortar at maximum range is nearly at forty-five degrees and at minimum nearly
+   straight up, and a little over seventy from the horizontal is what one laid on a town
+   at medium range looks like. */
+function mortarModel(ger) {
+  var C = GUN, f = [], lean = ger ? .30 : .27;
+  var tube = ger ? 13.4 : 14.8, bore = ger ? 1.35 : 1.45;
+  /* the baseplate: a pressed dish bedded into the ground, canted back under the tube */
+  f = f.concat(cyl(-1.6, 0, .1, 4.6, 4.2, 1.1, 10, C.dgD, C.dg, 0, true));
+  f = f.concat(box(-1.6, 0, 1.0, 5.6, 5.0, .5, C.dgD, C.dg, C.dgD));
+  f = f.concat(box(.2, 0, 1.4, 2.0, 1.6, 1.4, C.steel, C.steelL));                    /* the socket the ball sits in */
+  /* the tube, leaned forward off the plate, with a collar and the muzzle ring */
+  var t = cyl(0, 0, 0, bore + .5, bore + .35, tube, 10, C.steel, C.steelL, 0, true);
+  t = t.concat(cyl(0, 0, tube - .5, bore + .55, bore + .55, .7, 10, C.steelL, C.steelL, 0, true));
+  t = t.concat(cyl(0, 0, tube * .42, bore + .8, bore + .8, 1.1, 10, C.steelL, C.steel, 0, true));
+  t = t.concat(cyl(0, 0, -.2, bore + .7, bore + .7, .9, 10, C.steel, C.steel, 0, true));   /* the ball at the foot */
+  f = f.concat(pitch(t, -lean, 0, 1.6));
+  /* the bipod: two legs out to the front, a cross-level screw between them, and the
+     elevating screw up to the collar */
+  [-1, 1].forEach(function (sd) {
+    var leg = pitch(box(0, 0, 4.6, .8, .8, 9.2, C.dgD, C.dg), .42, 0, 0);
+    f = f.concat(place(leg, sd * .40, 2.6, 0, .2));
+    f = f.concat(box(2.6 + Math.cos(sd * .40) * 7.4, Math.sin(sd * .40) * 7.4, .2, 1.8, 1.2, .5, C.dgD, C.dg));
+  });
+  f = f.concat(box(3.0, 0, 7.0, 1.4, 4.6, 1.0, C.dgD, C.dg));                          /* the cross-level yoke */
+  f = f.concat(cyl(2.2, 0, 3.2, .45, .45, 5.2, 8, C.brass, C.brass, 0, true));          /* elevating screw */
+  f = f.concat(box(2.0, -2.4, 6.6, .7, .7, 1.2, C.steel, C.steelL));                    /* the sight bracket */
+  f = f.concat(box(2.0, -3.0, 7.6, 1.0, 1.4, 1.6, C.dgD, C.dg));                        /* and the sight on it */
+  /* bombs, fins up, in a shallow rack to the right of the plate */
+  [0, 1, 2, 3].forEach(function (i) {
+    var bx = -5.4 + (i % 2) * 2.2, by = 5.4 + Math.floor(i / 2) * 2.3;
+    f = f.concat(cyl(bx, by, .3, .95, .95, 3.4, 8, C.od, C.odL, 0, true));
+    f = f.concat(cyl(bx, by, 3.7, .95, .35, 1.6, 8, C.od, C.odL, 0, true));
+    f = f.concat(cyl(bx, by, -.4, .55, .55, .8, 6, C.steel, C.steelL, 0, true));
+  });
+  f = f.concat(box(-5.0, 5.9, -.1, 5.6, 5.4, .5, C.canvas, lit(C.canvas, 1.1)));        /* the rack they stand in */
+  return f;
+}
 /* MG42 on the Lafette 42: the gun with its stamped receiver and perforated jacket, bipod
    folded under, in the cradle with the recoil buffer, the tripod's two front legs and
    long rear leg, the periscope sight on its arm, and a belt box on the left */
@@ -17304,6 +17393,8 @@ function buildVehicleModels() {
   TEAMMODEL.ger = scaleFaces(mg42TeamModel(), .72);
   ATMODEL.us = { mesh: scaleFaces(sixPounderModel(), .61), bar: 31 * .61, z: 12.2 * .61 };
   ATMODEL.ger = { mesh: scaleFaces(pak40Model(), .58), bar: 43 * .58, z: 13.8 * .58 };
+  GUNMODEL.us_mor = { mesh: mortarModel(false), bar: 6, z: 9 };
+  GUNMODEL.ger_mor = { mesh: mortarModel(true), bar: 6, z: 9 };
   GUNMODEL.us_t8 = { mesh: scaleFaces(gunT8Model(), .92), bar: 45 * .92, z: 15.0 * .92 };
   GUNMODEL.ger_flak88 = { mesh: flak36Model(), base: flak36Base(), bar: 47.5, z: 18.5 };
 }
@@ -19288,7 +19379,7 @@ function render() {
       ctx.strokeStyle = 'rgba(255,248,214,' + (a * .95).toFixed(2) + ')'; ctx.lineWidth = 1.3;
       ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
     } else {
-      var f2 = clamp(s2.t / s2.dur, 0, 1), arc = Math.sin(f2 * Math.PI) * 16;
+      var f2 = clamp(s2.t / s2.dur, 0, 1), arc = Math.sin(f2 * Math.PI) * (s2.arc || 16);
       var here = w2s(s2.x, s2.y, groundZ(s2.x, s2.y) + 13 + arc);
       if (here.behind) return;
       ctx.fillStyle = '#fff3cd'; ctx.beginPath(); ctx.arc(here.x, here.y, 2.6, 0, TAU); ctx.fill();

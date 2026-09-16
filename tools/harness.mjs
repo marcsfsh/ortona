@@ -310,9 +310,20 @@ export async function installHooks(page) {
               dev = Math.max(dev, Math.abs(groundZ(px, py) - z0));
             }
             if (!ok) continue;
-            for (let i = 0; i < COVER.length && ok; i++) {
-              const cv = COVER[i];
-              if (Math.hypot(cv.x - x, cv.y - y) < c + cv.r) ok = false;
+            /* The cover patches, which are G.covers. `COVER` is the five-entry table of
+               GRADES -- open, light, medium, heavy, dug-in -- so this read cv.x off a
+               row that has no x, compared NaN, and rejected nothing: the filter had
+               never once fired, which is why every gallery shot of a weapon team on this
+               map came back staged in a trench.
+                 It scores rather than vetoes. Ortona has walls, trenches and craters
+               over most of it and a hard clearance of a hundred and twenty found nowhere
+               at all, so the spot with the furthest cover wins and the caller is told
+               how far that was. */
+            const covs = window.G.covers || [];
+            let clearOf = 1e9;
+            for (let i = 0; i < covs.length; i++) {
+              const cv = covs[i];
+              clearOf = Math.min(clearOf, Math.hypot(cv.x - x, cv.y - y) - (cv.r || 0));
             }
             for (let b = 0; b < window.G.blds.length && ok; b++) {
               if (Math.hypot(window.G.blds[b].x - x, window.G.blds[b].y - y) < c + 90) ok = false;
@@ -322,8 +333,38 @@ export async function installHooks(page) {
               const sc = window.G.sectors[j];
               if (Math.hypot(sc.x - x, sc.y - y) < 130) ok = false;
             }
+            /* And the map's own hand-placed entities, which nothing above sees. A trench
+               is a carve in the heightfield with revetment boards and a sandbag parapet
+               as props: it is not a COVER patch at every point along it, it is walkable,
+               and its floor is level, so it passed every test here and every gallery
+               shot of a weapon team on this map came back a picture of a trench. Roads
+               and paving are exempt because flat ground is what this is looking for. */
+            const md = window.G.mapData || {};
+            const ents = md.entities || (Array.isArray(md) ? md : []);
+            for (let q = 0; q < ents.length && ok; q++) {
+              const en = ents[q];
+              if (!en || en.t === 'road' || en.t === 'paved') continue;
+              const pad = c + 34 + (en.w ? en.w / 2 : 0) + (en.r || 0);
+              if (en.pts) {
+                /* to the SEGMENTS and not the vertices: a wire run is two points a
+                   thousand units apart, and testing its ends put the stage in the
+                   middle of it with the pickets all round the figure */
+                for (let k = 0; k + 1 < en.pts.length && ok; k++) {
+                  const ax = en.pts[k].x, ay = en.pts[k].y;
+                  const bx = en.pts[k + 1].x, by = en.pts[k + 1].y;
+                  const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy;
+                  const t = L2 > 0 ? Math.max(0, Math.min(1, ((x - ax) * vx + (y - ay) * vy) / L2)) : 0;
+                  if (Math.hypot(ax + vx * t - x, ay + vy * t - y) < pad) ok = false;
+                }
+                if (ok && en.pts.length === 1 && Math.hypot(en.pts[0].x - x, en.pts[0].y - y) < pad) ok = false;
+              } else if (en.x !== undefined && Math.hypot(en.x - x, en.y - y) < pad) ok = false;
+            }
             if (!ok) continue;
-            if (best === null || dev < best.dev) best = { x: x, y: y, z: z0, dev: dev };
+            /* clearest ground first, and flattest among ground that is equally clear.
+               A gallery wants somewhere to stand a model, and a bank under it reads as
+               a broken model. */
+            const score = Math.min(clearOf, 220) * 3 - dev * 8;
+            if (best === null || score > best.score) best = { x: x, y: y, z: z0, dev: dev, score: score, open: Math.round(clearOf) };
           }
         }
         return best;

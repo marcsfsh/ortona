@@ -622,16 +622,26 @@ async function gallery(page, label, filter) {
   await setFog(page, false);
   await chrome(page, false);
   await unlockCamera(page, 40, 0.12);
+  /* The props go, the way the man scene has always cleared them. Measured by brute force
+     over every walkable point, the clearest flat ground on Ortona is 72 units from the
+     nearest wire picket or trench, and a weapon team is photographed from 72: the map is
+     a battlefield and simply has nowhere open on it, so every gallery shot of a team
+     came back a picture of an entanglement with a helmet behind it. --dirty keeps them. */
+  if (!args.dirty) await clearStage(page);
   const spot = await flatSpot(page, 150);
   const cat = await catalog(page);
   const only = args.only ? String(args.only).split(',') : null;
   const keys = cat.units.filter(filter).map(u => u.key).filter(k => !only || only.includes(k));
   if (!keys.length) { console.error(`  no units match --only=${args.only}`); return; }
-  console.log(`  staging ${keys.length} model(s) at (${spot.x}, ${spot.y}), height spread ${spot.dev.toFixed(1)}`);
+  console.log(`  staging ${keys.length} model(s) at (${spot.x}, ${spot.y}), height spread ${spot.dev.toFixed(1)}, ${spot.open === undefined ? '?' : spot.open} clear of cover`);
 
   for (const key of keys) {
     const unit = cat.units.find(u => u.key === key);
     await pose(page, [{ key, x: 0, y: 0, facing: -Math.PI / 2 }], spot);
+    /* A weapon team is photographed packed, with its piece drawn on man 0 where the
+       crew carry it. Setting it up here does not work: the stage is paused, so the crew
+       never walk to their stations, and driving updateModels by hand on a paused stage
+       walks them out of frame instead. A set-up team is photographed in a battle. */
     /* Vehicles are roughly twice the footprint of a squad, so they need twice
      * the standoff to fill the same fraction of the frame. */
     const dist = Number(args.dist) || (unit.cat === 'veh' ? 115 : 72);
