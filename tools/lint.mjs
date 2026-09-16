@@ -137,10 +137,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    on top. It is 1290 for the infantry: one jointed rig with two-bone arms and legs in
    place of a stack of boxes a posture, a pose table every one of them is built from, and
    the fall and the dead laid out by hand -- and the three weapon branches that pass
-   bought back is already spent. Raise it deliberately, with a reason, or not at all. */
+   bought back is already spent. It is 1320 for the artillery: a game about Ortona that
+   had none now has mortars and pack howitzers on both sides, with the guns, the fire
+   mission and the brain that lays one. Raise it deliberately, with a reason, or not at
+   all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1290) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1290 kB so it stays quick to load on a phone`);
+if (kb > 1320) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1320 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

@@ -333,6 +333,91 @@ for (const device of TARGETS) {
                 `a mission past free-fire range fired ${mor.rounds} of ${mor.want}, ${mor.inCircle} inside ${mor.r} and ` +
                 `${mor.inBound} inside ${mor.bound}, and out of range was refused`);
 
+  /* --- the pack howitzers, which are the mortar's claims turned round. The mortar fires
+     on its own account and the gun never does, so what is worth asserting is the refusal:
+     an enemy plainly in sight, well inside the gun's reach, and not one round in a minute
+     of it. Then the same gun with a mission on it, to show the refusal is the flag and not
+     a broken weapon. And the setup, which is the one mechanic the mortar row zeroed out:
+     a mission laid on a gun that has just been put down waits for the crew. --- */
+  const how = await page.evaluate(() => {
+    const key = window.G.side === 'us' ? 'us_how' : 'ger_how';
+    if (!window.UNITS[key] || !window.UNITS[key].barrageOnly) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    const foe = window.G.side === 'us' ? 'ger' : 'us';
+    function clear() { window.G.units.length = 0; window.G.shots.length = 0; }
+    function run(u, secs) {
+      let fired = 0;
+      for (let f = 0; f < 60 * secs; f++) {
+        window.computeVisibility();
+        u.target = window.acquire(u) || null;
+        const n = window.G.shots.length;
+        window.updateUnit(u, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+        if (window.G.shots.length > n) fired++;
+      }
+      return fired;
+    }
+    /* In the open, in daylight, well inside the gun's OWN eye -- half the barrage range
+       is outside it, and a target the side cannot see proves nothing about a rule that is
+       meant to refuse targets it can. Seeing is a rate now, so the flag is read after the
+       minute rather than off one call to computeVisibility. */
+    clear();
+    const g = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    g.setup = 0;
+    const B = g.def.barrage, D = Math.round(Math.min(B.range / 2, g.def.sight - 60));
+    const e = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle', 600 + D, 900, Math.PI);
+    window.computeVisibility();
+    const idle = run(g, 60);
+    const seen = window.G.side === 'us' ? e.vUs : e.vGer;
+    const picked = window.acquire(g);
+    /* and the same gun, told to shell the ground he is standing on */
+    const laid = window.orderBarrage(g, e.x, e.y);
+    const out = [];
+    let quiet = 0;
+    for (let f = 0; f < 60 * 120 && quiet < 30; f++) {
+      const before = window.G.shots.slice();
+      window.updateUnit(g, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      before.forEach(sh => {
+        if (sh.kind === 'shell' && window.G.shots.indexOf(sh) < 0)
+          out.push(Math.hypot(sh.tx - e.x, sh.ty - e.y));
+      });
+      quiet = (g.barrage || window.G.shots.length) ? 0 : quiet + 1;
+    }
+    /* the crew have to get it into action first: a mission on a gun just put down waits */
+    clear();
+    const h = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    h.setup = h.def.setup;
+    window.orderBarrage(h, 600 + D, 900);
+    let early = 0;
+    for (let f = 0; f < 60 * Math.max(1, h.def.setup - 1); f++) {
+      const n = window.G.shots.length;
+      window.updateUnit(h, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      if (window.G.shots.length > n) early++;
+    }
+    let after = 0;
+    for (let f = 0; f < 60 * 20; f++) {
+      const n = window.G.shots.length;
+      window.updateUnit(h, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      if (window.G.shots.length > n) after++;
+    }
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    const bound = B.r + 14;
+    return { has: true, key, seen: !!seen, picked: !!picked, idle, laid, dist: D,
+             rounds: out.length, want: B.rounds, r: B.r, bound,
+             inCircle: out.filter(d => d <= B.r).length,
+             inBound: out.filter(d => d <= bound).length,
+             setup: h.def.setup, early, after };
+  });
+  ok('a pack howitzer fires only on an order, into an area, and only once it is in action',
+     !how.has || (how.seen && !how.picked && how.idle === 0 && how.laid &&
+                  how.rounds === how.want && how.inBound === how.rounds &&
+                  how.inCircle >= how.rounds - 2 && how.early === 0 && how.after > 0),
+     !how.has ? 'no barrage-only weapon in this file'
+              : `${how.key} with a section in sight at ${how.dist}: acquired ${how.picked ? 'one' : 'nothing'}, ` +
+                `fired ${how.idle} rounds in a minute; laid on him it fired ${how.rounds} of ${how.want}, ` +
+                `${how.inCircle} inside ${how.r} and ${how.inBound} inside ${how.bound}; ` +
+                `${how.early} rounds during ${how.setup}s of setup and ${how.after} after it`);
+
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
     /* the gun and barrel tests run another minute of battle on top of the one already

@@ -785,6 +785,26 @@ var UNITS = {
     w: { range: 470, dmg: 58, rof: 4.4, acc: .40, sup: .052, pen: 12, aoe: 34, shell: 1 },
     desc: 'Drops its bombs over the roofs onto ground nobody can see into. Left alone it will shell whatever the battalion can see inside its own reach, slowly. Ordered onto a patch of ground it reaches further and fires faster, ten bombs into the circle, and it does not care whether anything is visible there. It must set up after moving and it is helpless if anything reaches it.'
   },
+  /* Pack artillery, and the first weapon here that cannot shoot at anything at all on
+     its own initiative. A mortar left alone will still engage what the battalion can see;
+     a howitzer will not, because a gun this size is laid by somebody else's map and fired
+     on somebody else's order. `barrageOnly` is the whole of that: it never acquires, and
+     it refuses to fire without a mission on it.
+       The ranges are chosen against this map and not by feel. An HQ stands 1150 from
+     every victory flag and 586 from the nearest supply flag, so at 760 this gun reaches
+     the near flags from home and has to be moved four hundred forward to touch a victory
+     sector -- which puts it inside the town's approaches, in front of its own infantry,
+     where a section working round the flank will find it. That exposure is the price of
+     the shell, and it is the reason the reach stops where it does. */
+  us_how: {
+    side: 'us', name: 'M1 75 mm Pack Howitzer', short: '75 PACK', cat: 'team', hk: 'H',
+    models: 5, hpPer: 58, speed: 30, sight: 250, pop: 9, cost: { mp: 380, fu: 45 }, time: 34,
+    req: 'us_bar', setup: 5.0, indirect: 1, barrageOnly: 1, blastRes: .55, closeWeak: 2.4,
+    gunAt: 8.6, gunMuz: [17.22, 11.99], gunGrip: [-3.10, 3.50, 5.40],
+    barrage: { range: 760, r: 76, rof: 3.2, rounds: 8 },
+    w: { range: 760, dmg: 102, rof: 3.2, acc: .44, sup: .10, pen: 26, aoe: 54, shell: 1 },
+    desc: 'Six mule loads and a crew of five, which is why it goes where a field gun cannot. It reaches further than anything else the company owns and it will not fire a round on its own account: lay it on a patch of ground and it puts eight shells into it. To touch the victory sectors it has to come forward of the headquarters, and forward of the headquarters is where the flanking parties are.'
+  },
   us_ab: {
     side: 'us', name: 'Mousehole Assault Section', short: 'ASLT', cat: 'inf', hk: 'B',
     models: 4, hpPer: 94, speed: 71, sight: 310, pop: 9, cost: { mp: 340, fu: 20 }, time: 26,
@@ -889,6 +909,18 @@ var UNITS = {
     barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
     w: { range: 470, dmg: 60, rof: 4.4, acc: .41, sup: .054, pen: 12, aoe: 34, shell: 1 },
     desc: 'The German battalion mortar, and the reason a street in Ortona is not a safe street. It shells what the company can see, over the roofs, or it is laid on a patch of ground and puts ten bombs into it faster than it fires on its own. Set it behind a block and it reaches most of the way across the town.'
+  },
+  /* The Italian 75/18, of which the Germans in Italy had a great many and used every one
+     they could recover. Shorter reach than the Canadian gun and a heavier shell, so it
+     has to come further forward for the same ground and hurts more when it gets there. */
+  ger_how: {
+    side: 'ger', name: 'Obice da 75/18 mod. 34', short: '75/18', cat: 'team', hk: 'H',
+    models: 5, hpPer: 58, speed: 30, sight: 250, pop: 9, cost: { mp: 370, fu: 45 }, time: 34,
+    req: 'ger_qtr', setup: 5.0, indirect: 1, barrageOnly: 1, blastRes: .55, closeWeak: 2.4,
+    gunAt: 8.6, gunMuz: [19.66, 14.01], gunGrip: [-3.10, 3.50, 5.40],
+    barrage: { range: 660, r: 76, rof: 3.2, rounds: 8 },
+    w: { range: 660, dmg: 118, rof: 3.2, acc: .44, sup: .11, pen: 28, aoe: 58, shell: 1 },
+    desc: 'An Italian mountain howitzer taken over wholesale, and the heaviest thing the company can put behind a street. It fires only on an order and only into an area, eight shells at a time, and its reach is short enough that it has to be sited among the houses it is shelling for rather than behind them.'
   },
   ger_pgren: {
     side: 'ger', name: 'Fallschirmjäger Assault Group', short: 'STOSS', cat: 'inf', hk: 'B',
@@ -1025,16 +1057,16 @@ var BUILDINGS = {
   us_hq:  { side: 'us', name: 'Canadian Field Headquarters', short: 'FIELD HQ', w: 132, h: 104, hp: 3000, hq: 1,
             makes: ['us_eng', 'us_rifle'] },
   us_bar: { side: 'us', name: 'Infantry Company Post', short: 'COMPANY POST', w: 112, h: 92, hp: 1500, hk: '1',
-            cost: { mp: 200 }, time: 26, makes: ['us_mg', 'us_mor', 'us_ab', 'us_fg'],
-            desc: 'Unlocks the Vickers team, the 81 mm mortar and the mousehole assault section.' },
+            cost: { mp: 200 }, time: 26, makes: ['us_mg', 'us_mor', 'us_how', 'us_ab', 'us_fg'],
+            desc: 'Unlocks the Vickers team, the 81 mm mortar, the 75 mm pack howitzer and the mousehole assault section.' },
   us_mot: { side: 'us', name: 'Armour Support Point', short: 'ARMOUR POINT', w: 134, h: 104, hp: 1700, hk: '2',
             cost: { mp: 240, fu: 25 }, time: 32, makes: ['us_at', 'us_t8', 'us_m8', 'us_m3', 'us_stuart', 'us_sher', 'us_ach'],
             desc: 'Unlocks the 6-pounder, Universal Carrier and Sherman V.' },
   ger_hq:  { side: 'ger', name: 'Fallschirmjäger Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['ger_pio', 'ger_gren'] },
   ger_qtr: { side: 'ger', name: 'Parachute Company Post', short: 'KOMPANIE POST', w: 112, h: 92, hp: 1500, hk: '1',
-             cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_mor', 'ger_pgren'],
-             desc: 'Unlocks the MG42 team and assault group.' },
+             cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_mor', 'ger_how', 'ger_pgren'],
+             desc: 'Unlocks the MG42 team, the 8 cm mortar, the 75/18 howitzer and the Panzergrenadier group.' },
   ger_dep: { side: 'ger', name: 'Armoured Support Point', short: 'PANZER SUPPORT', w: 134, h: 104, hp: 1700, hk: '2',
              cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
              desc: 'Unlocks the Pak 40, Sd.Kfz. 222, StuG IV and Panzer IV.' }
@@ -2994,6 +3026,17 @@ function aiWants(side, ladder, gate) {
   }
   return out;
 }
+/* Can the company post afford this one? A section or a machine gun spends `spare`, what
+   is left once the armour ladder has put its head aside. The company's two heavy weapons
+   spend the whole till above a cushion instead, because `spare` never once in five hundred
+   thinking ticks cleared the price of either and a rule that waits for money nothing else
+   wants is a rule that never fires. Read by the purchase and by the gate counter that says
+   whether it could have been, so the two cannot answer differently. */
+function canPost(key, heavy, spare, spareFu, side) {
+  var d = UNITS[key];
+  var mp = heavy ? G.res[side].mp : spare, fu = heavy ? G.res[side].fu : spareFu;
+  return mp >= (d.cost.mp || 0) && fu >= (d.cost.fu || 0);
+}
 /* an armour purchase most of the way paid for is worth waiting for: spending the
    difference on something cheaper is how a side that wanted a tank ends up with a yard
    of armoured cars and no fuel. */
@@ -4072,6 +4115,10 @@ function visibleTo(side, e) { return side === 'us' ? !!e.vUs : !!e.vGer; }
    prefers whatever is already shooting at us, and gives the target already being
    engaged enough of an edge that a gunner sees a job through. */
 function acquire(u) {
+  /* A howitzer is laid by somebody else's map and fired on somebody else's order: it has
+     no target of its own, ever. That is the difference between it and a mortar, which
+     will engage what the battalion can see when nobody has told it otherwise. */
+  if (u.def.barrageOnly) return null;
   if (u.forced && !u.forced.dead) {
     var wr = weaponFor(u, u.forced);
     if (wr && dist(u, u.forced) <= wr.range * 1.05) return u.forced;
@@ -4275,6 +4322,7 @@ function fireAt(u, t, dt) {
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0) return;
   if (u.retreat) return;
+  if (u.def.barrageOnly && !u.barrage) return;   /* only ever on an order, only ever at ground */
   if (u.lay > 0) return;                                 /* still laying on */
   /* a tripod has to be down, and a man with a launcher on his shoulder has to stop;
      a tank fires on the move and pays for it in accuracy below */
@@ -5296,7 +5344,8 @@ function aiFire(name) { AIR.fired[name] = (AIR.fired[name] || 0) + 1; }
                'duck.house', 'duck.cover', 'duck.back', 'duck.ground', 'odds.hold', 'retreat.hurt',
                'veh.backoff', 'veh.face', 'veh.mend', 'flak.round', 'flak.dig', 'work.dig',
                'buy.inf', 'buy.mg', 'buy.mortar', 'mortar.gate.reached', 'mortar.gate.want',
-               'mortar.gate.money', 'mortar.mission', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
+               'mortar.gate.money', 'mortar.mission', 'buy.how', 'how.gate.reached', 'how.gate.want',
+               'how.gate.money', 'how.gate.pop', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
                'buy.hurt',
                'build.post', 'build.depot', 'mood.hold', 'mood.dig', 'mood.pushVp',
                'target.seen', 'target.stale', 'approach.quiet',
@@ -5827,11 +5876,16 @@ function aiOverwatch(side, tx, ty, back, reach) {
    test -- a mortar that can see the ground it is shelling is a mortar the enemy can see,
    and the reason to own one is that it does not have to be looked at. What it wants is
    distance, cover, and the objective inside the reach of a fire mission. */
-function aiMortarPost(side, tx, ty) {
+function aiMortarPost(side, tx, ty, range) {
   var a0 = aiFoeDir(side, tx, ty) + Math.PI, best = null, bs = -1e9, ri, k, c;
-  var reach = (UNITS[side === 'us' ? 'us_mor' : 'ger_mor'].barrage.range) * .88;
+  /* the piece's own reach, because there are three of these on a side now and a table
+     that names one of them is a second list of one thing */
+  var reach = range * .88;
   for (ri = 0; ri < 3; ri++) {
-    var rad = Math.min(reach, 460 - ri * 90);
+    /* how far back it stands grows with what it can reach, but slowly: a howitzer that
+       used the whole of its 760 would be shelling from behind its own headquarters,
+       which is the one place a gun this size is not meant to be safe. */
+    var rad = Math.max(170, Math.min(reach, 380 + reach * .16) - ri * 90);
     for (k = -4; k <= 4; k++) {
       var a = a0 + k * .26;
       var px = clamp(tx + Math.cos(a) * rad, 70, WORLD.w - 70);
@@ -6711,8 +6765,8 @@ function aiTick(dt) {
   if (!hq) return;
   var D = DIFF[G.diff], skill = D.skill === undefined ? 1 : D.skill;
   var K = side === 'us'
-    ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
-    : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', mor: 'ger_mor', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
+    ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', how: 'us_how', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
+    : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', mor: 'ger_mor', how: 'ger_how', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
 
   /* ---- what it has.
      Five lists, because the same unit is a different thing to each part of the brain.
@@ -6813,6 +6867,27 @@ function aiTick(dt) {
      infantry is answered with machine guns, one that sits in houses with assault groups */
   var mgCap = D.mg + (IN.inf >= 5 && IN.veh === 0 ? 1 : 0) + (rich ? 1 : 0);
   var wantElite = IN.gar >= 1 || IN.mg >= 2;
+  /* What the post already has, counted once out of the picture rather than by another
+     walk of the army. It is read here rather than down in the post's own block because
+     the reserve below has to know whether the company still wants its gun. */
+  var mgs = 0, mors = 0, hows = 0;
+  for (var mi = 0; mi < teams.length; mi++) {
+    if (teams[mi].key === K.mg) mgs++;
+    else if (teams[mi].key === K.mor) mors++;
+    else if (teams[mi].key === K.how) hows++;
+  }
+  /* One mortar, and it is bought for a reason rather than as another body: it is the
+     answer to men in a house and to a gun line, both of which are things you cannot shoot
+     at from in front. Skill 1 and up, because a green opponent that drops bombs on a
+     position before walking into it is not a green opponent. */
+  var morWant = IN.gar >= 1 || IN.mg >= 1 || (AIW.foe && AIW.mine && AIW.mine.sec <= AIW.foe.sec);
+  /* Pack artillery, and it wants the mortar bought first: the tube is the cheap answer to
+     the same problem and there is no sense owning the gun without it. It wants an army
+     round it as well, because five men and a howitzer cannot defend themselves. */
+  var howD = K.how ? UNITS[K.how] : null;
+  var howWant = !!howD && skill >= 1 && hows < 1 && mors >= 1 && men.length >= 4 &&
+                (IN.gar >= 1 || IN.mg >= 1 || IN.at >= 1);
+  var howPop = !!howD && popOf(side) + howD.pop <= popCap(side);
   /* And what it is saving up for, in marks and in fuel.
 
      The population reserve above was only half of the problem. Sections are bought before
@@ -6836,6 +6911,23 @@ function aiTick(dt) {
     if (men.length < 3 || popOf(side) + w0.pop > popCap(side) ||
         G.res[side].fu + (G.inc[side].fu || 0) * 60 < wantFu) { wantMp = 0; wantFu = 0; }
   }
+  /* The company's own indirect fire is bought out of the till rather than out of `spare`,
+     and this is the second thing tried rather than the first. A reserve was: the mortar
+     and the gun were saved for the way the head of the armour ladder is, and on the
+     tactics card against the commit before it that came back at -721 a pair with a
+     standard error of 135 and the working brain ahead in none of eight, which is as
+     decisive as this tool ever gets. The per-side table said why -- half the units and a
+     fifth of the ground -- and the reason is the opening: `morWant` is true on the first
+     tick of a battle, so a side reserved two hundred and fifty marks for a mortar it had
+     no company post to build yet and did not raise the sections that take the empty
+     flags in the first three minutes. This economy has no slack to save out of.
+       So there is no reserve and no cushion either. The tube and the gun are bought once
+     each, out of the whole till, when the till happens to hold their price. A cushion of
+     a hundred and fifty was tried first, on the reasoning that the armour branch keeps
+     one: at that the money on hand cleared the gun's cost on none of four hundred and
+     thirty thinking ticks, and at nothing it clears it on about one in twenty-five, which
+     is plenty for a thing bought once a battle. One gun, only when the company wants one,
+     is a bounded thing to empty a till for; a reserve held every tick is not. */
   /* what a section may spend without eating into it */
   AI.wantMp = wantMp;
   var spare = Math.max(0, G.res[side].mp - wantMp), spareFu = Math.max(0, G.res[side].fu - wantFu);
@@ -6854,40 +6946,47 @@ function aiTick(dt) {
      figure the company post raises a second section out of the reserve */
   spare = Math.max(0, G.res[side].mp - wantMp); spareFu = Math.max(0, G.res[side].fu - wantFu);
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(side) < infRoom) {
-    /* out of the picture rather than another walk of the army for one count */
-    var mgs = 0, mors = 0;
-    for (var mi = 0; mi < teams.length; mi++) {
-      if (teams[mi].key === K.mg) mgs++;
-      else if (teams[mi].key === K.mor) mors++;
+    /* The post's shopping list, in the order it would rather have things, and it is a
+       list rather than the chain of else-ifs it was for a reason `brain.mjs` caught by
+       counting. The chain was tried cheapest first and every branch below the first
+       WANTED one was unreachable whether or not that one could be paid for, so a side
+       with no mortar and never two hundred and fifty spare marks to buy one with spent a
+       whole battle unable to raise anything else out of the post: buy.elite fired nought
+       times in three hundred seconds of battle, and the two gate counters said why --
+       mortar.gate.reached 447, mortar.gate.money 0. Wanting a thing and affording it are
+       different questions and only the second should stop the list. */
+    var shop = [];
+    if (mgs < mgCap) shop.push([K.mg, 'buy.mg']);
+    if (skill >= 1 && K.mor && mors < 1 && morWant) shop.push([K.mor, 'buy.mortar']);
+    if (howWant && howPop) shop.push([K.how, 'buy.how']);
+    /* the assault group is the answer to men in a house and to a machine gun line, so
+       when the enemy has either it is bought on a lower fuel floor than usual */
+    if (men.length < armyCap && G.res[side].fu > (wantElite ? 40 : b2 ? (b2.built >= 1 ? 120 : 999) : 58))
+      shop.push([K.elite, 'buy.elite']);
+    /* Counted gate by gate, because the way to find out why a rule does not fire is to
+       count what shut it rather than to guess, and guessing has been wrong twice here
+       already. `want` is whether there is anything the thing is the answer to; `money` is
+       whether it can be paid for out of what the armour ladder is not saving. */
+    aiFire('mortar.gate.reached');
+    if (morWant) aiFire('mortar.gate.want');
+    if (canPost(K.mor, true, spare, spareFu, side)) aiFire('mortar.gate.money');
+    if (howD) {
+      aiFire('how.gate.reached');
+      if (howWant) aiFire('how.gate.want');
+      if (howPop) aiFire('how.gate.pop');
+      if (canPost(K.how, true, spare, spareFu, side)) aiFire('how.gate.money');
     }
-    if (mgs < mgCap && spare >= (UNITS[K.mg].cost.mp || 0)) { if (queueUnit(b1, K.mg)) aiFire('buy.mg'); }
-    /* One mortar, and it is bought for a reason rather than as another body: it is the
-       answer to men in a house and to a gun line, both of which are things you cannot
-       shoot at from in front. Skill 1 and up, because a green opponent that drops bombs
-       on a position before walking into it is not a green opponent. */
-    else if (skill >= 1 && K.mor && mors < 1) {
-      /* Counted gate by gate, because the way to find out why a rule never fires is to
-         count what shut it rather than to guess, and guessing has been wrong twice here
-         already. `want` is whether there is anything a mortar is the answer to; `money`
-         is whether it can be paid for out of what the shopping list is not saving. */
-      var morWant = IN.gar >= 1 || IN.mg >= 1 || (AIW.foe && AIW.mine && AIW.mine.sec <= AIW.foe.sec);
-      var morPay = spare >= (UNITS[K.mor].cost.mp || 0) && spareFu >= (UNITS[K.mor].cost.fu || 0);
-      aiFire('mortar.gate.reached');
-      if (morWant) aiFire('mortar.gate.want');
-      if (morPay) aiFire('mortar.gate.money');
-      if (morWant && morPay && queueUnit(b1, K.mor)) aiFire('buy.mortar');
+    var bought = false;
+    for (var si = 0; si < shop.length && !bought; si++) {
+      var k2 = shop[si][0];
+      if (!canPost(k2, k2 === K.mor || k2 === K.how, spare, spareFu, side)) continue;
+      if (queueUnit(b1, k2)) { aiFire(shop[si][1]); bought = true; }
     }
-    /* The company post used to sit outside the army cap, so an easy opponent held to
-       four sections by the headquarters quietly raised a dozen more out of the post.
-       The cap now holds everywhere, which leaves the easy settings spending what they
-       have on one of each arm rather than on a crowd of riflemen. */
-    else if (men.length < armyCap) {
-      var el = UNITS[K.elite];
-      /* the assault group is the answer to men in a house and to a machine gun line, so
-         when the enemy has either it is bought on a lower fuel floor than usual */
-      if (G.res[side].fu > (wantElite ? 40 : b2 ? (b2.built >= 1 ? 120 : 999) : 58) &&
-          spare >= (el.cost.mp || 0) && spareFu >= (el.cost.fu || 0)) { if (queueUnit(b1, K.elite)) aiFire('buy.elite'); }
-      else if (q < 1 && spare >= (UNITS[K.inf].cost.mp || 0)) { if (queueUnit(hq, K.inf)) aiFire('buy.inf'); }
+    /* and a rifle section out of the headquarters with whatever the post did not spend.
+       The post used to sit outside the army cap, so an easy opponent held to four
+       sections by the headquarters quietly raised a dozen more out of it. */
+    if (!bought && men.length < armyCap && q < 1 && spare >= (UNITS[K.inf].cost.mp || 0)) {
+      if (queueUnit(hq, K.inf)) aiFire('buy.inf');
     }
   }
   if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < cap - 14) {
@@ -7675,7 +7774,7 @@ function aiTick(dt) {
            nothing on the arc has a line, because a gun in the wrong place still beats a
            gun standing in the open where it was built. */
         var back = u.def.atOnly ? 420 : 170;
-        var post = (u.def.barrage ? aiMortarPost(side, supX, supY) : null) ||
+        var post = (u.def.barrage ? aiMortarPost(side, supX, supY, u.def.barrage.range) : null) ||
                    aiOverwatch(side, supX, supY, back, mainW(u).range * .92) ||
                    aiFirePost(side, supX, supY, u.def.atOnly ? 260 : 150);
         u.aimX = supX; u.aimY = supY; u.jobX = post.x; u.jobY = post.y; u.jobT = G.t;
@@ -8677,10 +8776,19 @@ function initGL() {
 }
 var QUAD = null, MARKP = null, MARKB = null;
 /* One frame's worth of marks, built as triangles and uploaded once. Seven floats a
-   vertex: three of position, four of colour. */
-var MARK = { f: new Float32Array(9000), n: 0 };
+   vertex: three of position, four of colour.
+     It grows rather than dropping, and it dropped silently before: a dashed ring is
+   walked in 24-unit steps of six vertices each, so the sector rings alone filled nine
+   thousand floats with the camera at its limit and everything built after them -- the
+   fire missions, the order lines, the selection rings -- was thrown away without a word.
+   A ring with a piece missing still looks like a ring, which is why nothing ever said so.
+   The initial size is the usual frame; the growth is for the worst one. */
+var MARK = { f: new Float32Array(20000), n: 0 };
 function markVert(x, y, z, c) {
-  if (MARK.n * 7 + 7 > MARK.f.length) return;
+  if (MARK.n * 7 + 7 > MARK.f.length) {
+    var g = new Float32Array(MARK.f.length * 2);
+    g.set(MARK.f); MARK.f = g;
+  }
   var i = MARK.n * 7;
   MARK.f[i] = x; MARK.f[i + 1] = y; MARK.f[i + 2] = z;
   MARK.f[i + 3] = c[0]; MARK.f[i + 4] = c[1]; MARK.f[i + 5] = c[2]; MARK.f[i + 6] = c[3];
@@ -8780,6 +8888,16 @@ function buildMarks(v) {
     markRing(b.x, b.y, b.r, cl, .55, 2, [12, 9], G.t * .15);
     markRing(b.x, b.y, b.r * .30, cl, .45, 1.6);
   });
+  /* and while a mission is being laid, how far each selected tube can actually throw one.
+     The reach is a hard edge and without it the only feedback is a refusal after the
+     click, which on a gun that can fire at nothing else is the whole of what the player
+     needs to know before choosing where to put it. */
+  if (G.mode === 'barrage') {
+    G.sel.forEach(function (u) {
+      if (u.dead || u.side !== G.side || !u.def || !u.def.barrage) return;
+      markRing(u.x, u.y, u.def.barrage.range, markCol('#d8a334'), .42, 2, [30, 34], 0);
+    });
+  }
   G.sel.forEach(function (u) {
     if (!u.cat) return;
     var mine = u.side === G.side;
@@ -16693,6 +16811,63 @@ function vickersModel() {
   return f;
 }
 
+/* A 75 mm pack howitzer, and the Italian 75/18 built off the same frame. Both are short
+   guns on light carriages -- an M1 comes apart into six mule loads and the 75/18 was made
+   for mountain batteries -- so the barrel is stubby against its wheels and the whole thing
+   sits low and wide. That squatness is what tells it from the anti-tank guns at a glance,
+   which have long thin barrels on the same sort of trail.
+     What tells the two apart is the trail. The M1 sits on a box trail -- one beam under
+   the breech with a single spade on the end of it -- and the 75/18 mod. 34 on split ones
+   that open out to either side, which is also why the Italian gun is the wider of the
+   two on the ground. The 75/18 is the longer barrel of the pair at eighteen calibres
+   against the M1's sixteen, and carries the taller shield. Neither has a muzzle brake.
+   Both are laid up at the elevation a gun that only fires indirect actually sits at,
+   which is what tells the class from the anti-tank guns at a glance: those have long
+   thin barrels held level on the same sort of carriage. */
+function packHowModel(ital) {
+  var C = GUN, f = [], up = ital ? .40 : .34;
+  var barrel = ital ? 18.8 : 17.0, hub = ital ? 4.2 : 4.6;
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(at(lathe(0, 0, 0, [[0, -1.4], [1.2, -1.4], [1.2, -.7], [2.3, -1.1], [3.2, -1.4], [hub, -1.4], [hub, 1.4], [3.2, 1.4], [2.3, 1.1], [1.2, .7], [1.2, 1.4], [0, 1.4]], 14,
+                     [C.odL, C.od, C.dgD, C.od, '#2a2b26', C.rubber, '#2a2b26', C.od, C.dgD, C.od, C.odL], true), 0, sd * 10.5, hub));
+    for (var t = 0; t < 14; t++) { var ta = t / 14 * TAU; f = f.concat(box(Math.cos(ta) * (hub - .1), sd * 10.5, hub + Math.sin(ta) * (hub - .1), .5, 2.6, .5, '#2a2b26', C.rubber)); }
+  });
+  f = f.concat(box(0, 0, 3.4, 4.4, 19, 2.0, C.od, C.odL, lit(C.od, .9)));                      /* axle */
+  /* the trails: the Italian gun splits, the American one is a box that does not */
+  [-1, 1].forEach(function (sd) {
+    var trail = box(-10, 0, 0, 20, 2.0, 3.0, C.od, C.odL, lit(C.od, .9))
+                  .concat(box(-19.5, 0, -1.0, 2.6, 4.4, 4.8, C.steel, C.steelL));
+    f = f.concat(place(trail, sd * (ital ? .50 : .14), 0, 0, 2.8));
+  });
+  if (!ital) f = f.concat(box(-14, 0, 2.6, 9, 5.4, 1.4, C.od, C.odL, lit(C.od, .9)));          /* the beam between the two rails */
+  /* saddle, cradle and the handwheels the layer works */
+  f = f.concat(box(0, 0, 5.4, 7, 8.4, 4.0, C.od, C.odL, lit(C.od, .9)));
+  f = f.concat(cyl(-3.1, 3.5, 5.4, 1.5, 1.5, .5, 12, C.steel, C.steelL, 0, true));
+  f = f.concat(cyl(-3.1, -3.5, 5.4, 1.5, 1.5, .5, 12, C.steel, C.steelL, 0, true));
+  /* the shield, low and sloped on the American gun and taller on the Italian */
+  f = f.concat(place(pitch(box(0, 0, 0, .9, ital ? 19 : 15, ital ? 15 : 9.5, C.od, C.odL, lit(C.od, .9)), .20, 0, 0), 0, 5.4, 0, 4.2));
+  f = f.concat(box(5.0, -4.0, ital ? 12.4 : 8.8, 1.2, 2.4, 1.8, '#14150f', '#14150f'));        /* the sight aperture */
+  /* the gun itself, laid up: breech, cradle and a barrel short enough to say howitzer */
+  var g = box(-3.2, 0, 0, 6.4, 5.2, 5.2, C.steel, C.steelL, C.steel);
+  g = g.concat(box(2.6, 0, .2, 11, 4.4, 3.6, C.od, C.odL, lit(C.od, .9)));                     /* cradle over the trunnions */
+  g = g.concat(tubeSmooth(1.0, barrel, 0, 0, 1.45, 12, C.steel, C.steel));
+  if (ital) g = g.concat(tubeSmooth(barrel, barrel + 1.8, 0, 0, 1.75, 12, '#4a4e43', '#1a1b16'));
+  else g = g.concat(tubeSmooth(barrel, barrel + .7, 0, 0, 1.6, 12, '#4a4e43', '#1a1b16'));
+  /* Up on its trunnions and laid for indirect. The sign is positive here and negative on
+     the mortar's tube, and both are right: pitch swings +z toward -x, so a thing built
+     along +x rises with a positive angle and a thing built along +z leans forward with a
+     negative one. Measured rather than reasoned -- the first version had the howitzer's
+     muzzle in the dirt at z 2.4. */
+  f = f.concat(at(pitch(g, up, 0, 0), 0, 0, 7.6));
+  /* rounds in their baskets beside the trail, fuzes up */
+  [0, 1, 2].forEach(function (i) {
+    var bx = -8 - (i % 2) * 3.2, by = 8.4 + Math.floor(i / 2) * 3.0;
+    f = f.concat(cyl(bx, by, .2, 1.5, 1.5, 4.6, 8, C.brass, C.copper, 0, true));
+    f = f.concat(cyl(bx, by, 4.8, 1.5, .5, 2.0, 8, C.steel, C.steelL, 0, true));
+  });
+  f = f.concat(box(-9.6, 9.0, -.1, 7.8, 6.2, .5, C.canvas, lit(C.canvas, 1.1)));
+  return f;
+}
 /* A battalion mortar: baseplate, tube and bipod, with a few bombs laid out beside it.
    Three loads a crew carries between them and puts down in about that order -- the plate
    first, the tube on it, the bipod last -- and it is the one weapon here whose barrel is
@@ -17522,6 +17697,8 @@ function buildVehicleModels() {
   TEAMMODEL.ger = scaleFaces(mg42TeamModel(), .72);
   ATMODEL.us = { mesh: scaleFaces(sixPounderModel(), .61), bar: 31 * .61, z: 12.2 * .61 };
   ATMODEL.ger = { mesh: scaleFaces(pak40Model(), .58), bar: 43 * .58, z: 13.8 * .58 };
+  GUNMODEL.us_how = { mesh: packHowModel(false), bar: 20, z: 13 };
+  GUNMODEL.ger_how = { mesh: packHowModel(true), bar: 19, z: 13 };
   GUNMODEL.us_mor = { mesh: mortarModel(false), bar: 6, z: 9 };
   GUNMODEL.ger_mor = { mesh: mortarModel(true), bar: 6, z: 9 };
   GUNMODEL.us_t8 = { mesh: scaleFaces(gunT8Model(), .92), bar: 45 * .92, z: 15.0 * .92 };
@@ -19765,7 +19942,19 @@ function issueOrder(wx, wy, forceAttack) {
   var enemies = unitsAt(wx, wy, 16).filter(function (u) { return u.side !== G.side; });
   var eb = buildingAt(wx, wy);
   if (!enemies.length && eb && eb.side !== G.side) enemies = [eb];
-  if (enemies.length) { mine.forEach(function (u) { orderAttack(u, enemies[0]); }); sfx('click'); return; }
+  if (enemies.length) {
+    /* A gun that only ever fires into an area has no attack order to give. A click on
+       something is a mission laid on the ground that thing is standing on, and out of
+       reach it is nothing at all rather than an attack order that walks a five-man crew
+       and its howitzer toward the enemy to get inside a range the gun will never use. */
+    var noReach = 0;
+    mine.forEach(function (u) {
+      if (u.def.barrageOnly) { if (!orderBarrage(u, enemies[0].x, enemies[0].y)) noReach++; return; }
+      orderAttack(u, enemies[0]);
+    });
+    if (noReach === mine.length) toast('Out of range');
+    sfx('click'); return;
+  }
   /* engineers get context jobs on friendly targets */
   var friendlyVeh = unitsAt(wx, wy, 16).filter(function (u) { return u.side === G.side && u.cat === 'veh'; })[0];
   var friendlyBld = eb && eb.side === G.side ? eb : null;

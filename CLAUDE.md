@@ -1886,6 +1886,101 @@ Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone g
 elite infantry inside two hundred of it is a dead gun, which is what the men in front of
 it are for.
 
+**Artillery, and what makes it artillery.** Everything else on this roster shoots at a
+thing it can see down a line it has to have. `def.indirect` is the other kind: `acquire`
+and `fireAt` skip the line test entirely, the shell is given a long flight and a high arc
+instead of the nearly flat one a gun's round takes, and the unit is left out of the rule
+that gives a gunner a sight as long as his weapon -- a tube that could see eight hundred
+units would be a tube with no reason to exist. What it does not skip is `vUs`/`vGer`: the
+target still has to be seen by the side, by somebody, which is the whole of what keeps it
+honest. A mortar with nobody forward is a mortar with nothing to shoot at.
+
+**A fire mission is the other half of it.** `def.barrage` is
+`{ range, r, rof, rounds }`: a longer reach than the weapon's own, a circle, a faster rate
+and a fixed number of rounds. `orderBarrage(u, x, y)` lays one and `barrageTick` works it.
+**A round is spent only when one leaves the tube.** An aim point may fall up to `r` beyond
+the circle's centre and so past the mission's own maximum range; `fireAt` refuses it for
+that, and decremented regardless a mission laid near the edge of its range quietly fired
+nine bombs of ten with nothing anywhere to say so. The cooldown is the signal, because
+`fireAt` is the only thing that sets it. A fixed number of rounds rather than a duration
+makes a mission a decision about a scarce thing instead of a switch left on. Moving
+cancels it, setting up suspends it, and the crew lay on the middle of the circle once and
+then work, which is why a mission fires faster than the same tube picking its own targets.
+
+The player lays one with F and a click (`callBarrage`, `G.mode = 'barrage'`) and the same
+card cancels it. Every mission the side has running is drawn on the ground whether its
+tube is selected or not, because a player who has laid one on wants to see where it is
+falling while he does something else; and while a mission is being laid, each selected
+tube's reach is drawn round it, because the reach is a hard edge and without it the only
+feedback is a refusal after the click.
+
+**Four pieces, and the second pair cannot do the first pair's job.** The mortars
+(`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
+the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
+pack howitzers (`us_how`, the M1, and `ger_how`, the Italian 75/18 the Germans in Italy
+used every one of they could recover) are `barrageOnly`, which is the whole of what they
+are: `acquire` returns null for them and `fireAt` refuses without a mission, because a gun
+this size is laid by somebody else's map and fired on somebody else's order. A right-click
+on an enemy is a mission on the ground he is standing on, and out of reach it is nothing
+at all rather than an attack order that walks a five-man crew and its howitzer toward the
+enemy to get inside a range the gun will never use.
+
+The reaches are chosen against this map rather than by feel. A headquarters stands 1150
+from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
+it has to come four hundred forward, which puts it among the town's approaches, in front
+of its own infantry, where a section working round the flank will find it. That exposure is
+the price of the shell and it is the reason the reach stops where it does. The Canadian gun
+reaches further and hits softer and the Italian one is the other way round, so the German
+side has to come further forward for the same ground.
+
+On the models, the trail is what tells the two apart: the M1 sits on a box trail, one beam
+under the breech with a single spade on the end of it, and the 75/18 mod. 34 on split ones
+that open out to either side. The 75/18 is the longer barrel of the pair at eighteen
+calibres against the M1's sixteen and carries the taller shield. Neither has a muzzle
+brake. Both are laid up at the elevation a gun that only fires indirect sits at, which is
+what tells the class from the anti-tank guns at a glance: those have long thin barrels held
+level on the same sort of carriage.
+
+**Where a tube goes is not where anything else goes.** `aiMortarPost` is the one post on
+the map that wants to be further back rather than nearer, and it deliberately does not ask
+whether the objective can be seen from there: `aiOverwatch` insists on a line, which for a
+tube is exactly the wrong test, because a mortar that can see the ground it is shelling is
+a mortar the enemy can see. It wants distance, cover, and the objective inside a mission's
+reach, and it reads the piece's own reach rather than a table naming one of them.
+`aiSetUp` is exempted the same way, so a wave steps off once its tube is laid rather than
+waiting for a line it should not have. The mission is laid on the nearest thing the side
+knows about within 190 of the objective rather than on the flag: a defended sector is
+defended from somewhere, and bombs into the middle of a circle nobody is standing in are
+ten bombs spent on scenery.
+
+**The company post buys off a list, and that list is not a chain of else-ifs.** It was,
+tried cheapest first, and every branch below the first WANTED one was unreachable whether
+or not that one could be paid for: `brain.mjs` counted `mortar.gate.reached` at 447 and
+`mortar.gate.money` at nought over one battle, which means a side with no mortar and never
+250 spare marks to buy one with spent the whole battle unable to raise an assault group, a
+gun or a rifleman out of the post. `buy.elite` fired nought times in three hundred seconds.
+Wanting a thing and affording it are different questions and only the second should stop
+the list.
+
+**And the post's two heavy weapons are bought out of the till rather than out of `spare`.**
+`spare` is what is left once the armour ladder has put its head aside, and it never once in
+five hundred thinking ticks cleared the price of either the mortar or the gun, so both
+rules were waiting on money nothing else wanted. **A reserve was tried first and it is the
+one thing on this page the tactics card could see plainly:** saving for them the way the
+head of the armour ladder is saved for came back at **-721 a pair with a standard error of
+135 over eight pairs, the working brain ahead in none of eight**. The per-side table said
+why -- half the units and a fifth of the ground -- and the reason is the opening. `morWant`
+is true on the first tick of a battle, so a side reserved 250 marks for a mortar it had no
+company post to build yet and did not raise the sections that take the empty flags in the
+first three minutes, which on this map is the battle. This economy has no slack to save out
+of. A cushion of 150 was tried next, on the reasoning that the armour branch keeps one, and
+at that the till cleared the gun's price on none of 430 ticks. With no cushion it clears on
+about one tick in twenty-five, which is plenty for a thing bought once a battle. Refought
+over eight pairs each way, the two cushions came back at +182 with a standard error of 193
+and -116 with 203 -- both inside the noise, straddling zero, which is the honest answer for
+a change of this kind and the one the tool almost always gives. On the brain card the gun
+is bought once a battle and the tube three times, and nine missions are laid.
+
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
 `povCamera` builds `MAT` from a yaw and a pitch instead of the orbit camera, so `CAMLIM`
@@ -2284,6 +2379,13 @@ shots/                         screenshot output, gitignored
   with culling on, so a full-screen quad wound the ordinary way (bottom-left, bottom-right,
   top-left) is a back face and is culled without a word. `QUAD` is wound that way. Anything
   drawing it turns culling off first; the billboards already did and the sky did not.
+- **The ground-mark buffer grows now; it used to drop.** `markVert` returned on overflow,
+  so the marks built last -- the fire missions, the order lines, the selection rings --
+  were the ones thrown away, and a ring with a piece missing still looks like a ring. The
+  sector rings alone filled nine thousand floats with the camera at its limit: a dashed
+  ring is walked in 24-unit steps of six vertices each, and a gun's reach ring is 760
+  units across. It was found by adding that ring and watching the frame count stick at
+  exactly the buffer's capacity.
 - **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
   is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
   were the radius comes out wrong in a way nothing will flag.
