@@ -1914,7 +1914,7 @@ falling while he does something else; and while a mission is being laid, each se
 tube's reach is drawn round it, because the reach is a hard edge and without it the only
 feedback is a refusal after the click.
 
-**Four pieces, and the second pair cannot do the first pair's job.** The mortars
+**Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
 (`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
 the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
 pack howitzers (`us_how`, the M1, and `ger_how`, the Italian 75/18 the Germans in Italy
@@ -1940,6 +1940,95 @@ calibres against the M1's sixteen and carries the taller shield. Neither has a m
 brake. Both are laid up at the elevation a gun that only fires indirect sits at, which is
 what tells the class from the anti-tank guns at a glance: those have long thin barrels held
 level on the same sort of carriage.
+
+**And the heavy battery, which is a position rather than a unit.** `us_how8` (the M1
+8-inch) and `ger_how210` (the Obice da 210/22 mod. 35) are never queued: `WORKS.how8` and
+`WORKS.how210` are how they arrive, the engineers spend eighty seconds and a lorry-load of
+fuel bedding one in, and it stands where it was bedded for the rest of the battle. Four
+rules make it a decision rather than a bigger pack howitzer, and each of them is a refusal
+that has to be counted rather than assumed:
+
+- **One a side** (`limit: 1` on the unit, which `placeWork` already enforced for the
+  eighty-eight). A second battery is not a second decision.
+- **Not near home** (`WORKS[].minHq`, 700). A gun that reaches most of the way across the
+  map and stands behind its own headquarters cannot be got at, so it has to be dug forward
+  of home, which puts it somewhere a flanking section can walk to. The rule is on the work
+  rather than on the player's judgement.
+- **Not into the enemy's base** (`barrage.safe`, 600 round any enemy building). Five
+  two-hundred-kilogram shells into a headquarters wins an annihilation match without an
+  infantryman leaving home. Guns of this weight fired on map references onto ground
+  somebody was fighting over; they did not break up a rear area on a whim.
+- **Slow onto a bearing** (`def.traverse`, a fifth of a radian a second against the
+  mortar's 0.85, with `def.layTol` for how close it has to be before it will fire). Laid
+  behind itself the gun takes fifteen seconds before the first round leaves, which the
+  check row measures against the arithmetic rather than trusting.
+
+And it is the least accurate weapon in the game by a long way: a hundred and ninety units
+of beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that
+so the round-to-round scatter is the gun's own rather than the mortar's flat ten. What it
+has instead is the shell -- three hundred damage over a hundred and thirty of burst, which
+is the heaviest thing either side can put on the ground.
+
+**The two rules meet in the middle, and that is the finding worth keeping.** Dug on the
+first legal patch beyond `minHq`, the Canadian gun is 1575 from the German headquarters
+and its reach is 1250: the range and the minimum distance from home already keep it off
+the enemy base without `safe` ever being consulted. The no-fire zone is what stops a
+player walking the battery forward until it can. The check row had to stand the gun
+forward deliberately to ask the question at all, because from where it is dug the answer
+is 'out of range' and the rule under test is never reached.
+
+**Whether the brain ever digs one was the hard part, and it took four measurements.** The
+rule lives on the engineer, and the first version sat inside the works ladder -- one work
+every fifty-two seconds, and only with fewer than nine standing -- so it was consulted
+seven to fourteen times in a whole battle and lost every one of them to a wall of sandbags
+on money. A thing capped at one a side does not need a cooldown; it has a limit. Asked on
+its own, `battery.reached` went to about 120 a battle. Then `battery.money` read nought of
+ninety-seven, which looked like the price being out of reach and was not: a probe that
+watched the enemy's purse frame by frame found it holding 460 marks and 170 fuel together
+on 193 frames of 8270, with a peak of 568 and 231, so the money is there about two per
+cent of the time and ninety-seven samples of a two per cent event coming back empty is
+luck rather than a rule. What was actually shut was `battery.post`, on every tick where
+the money was there: `aiMortarPost` stands a tube three hundred and eighty to five hundred
+and sixty back from the front, which early in a battle is between the front and the
+headquarters and so inside `minHq`. The two rules were fighting again. Sited instead by
+walking the line from home out to the front sector from the floor upward, the rule fires:
+over three battles of two hundred seconds it reached 113-127 times, wanted on 10-16,
+could pay on 0-3 and dug one. Two hundred seconds is a walkover -- the AI beats a passive
+player by then -- so in a game somebody is playing the want count is hundreds and a
+battery is near certain.
+
+Three smaller things about the emplacement. The **crew are laid out by the work**
+(`WORKS[].lay`, the eighty-eight's own list generalised) rather than walking to cover,
+because the pit is the cover. The **gun is two pieces the way the eighty-eight is**: the
+platform is drawn once on `u.baseA` and does not turn, the gun on top of it is drawn on
+`u.facing` and does, and that is the only thing on screen that shows a battery taking a
+minute to come round -- with an arc drawn on the ground from the present lay to the
+mission's bearing, because a battery that has been given an order otherwise looks exactly
+like a battery that has ignored one. And **the position is not a ring of bags built
+bigger**: that was tried, and a bag laid on an arc at about five units means a ring of
+sixty-two at six courses and three deep is fourteen hundred bags and twenty thousand faces
+for one object, four times the whole German roster. It is two stepped banks of revetted
+earth in forty-six segments, which is six hundred faces and is also what a battery
+position actually looks like.
+
+**The opposition's guns can be switched off before the battle.** `G.aiArty`, set from the
+title screen beside the difficulty and passed through `startGame(side, diff, mode, arty)`,
+gates `morWant`, `howWant` and the battery dig. It gates the enemy only: the player's own
+mortars, pack howitzers and battery are there either way. Artillery is the one arm a player
+cannot answer in kind on the spot -- a battery is eighty seconds of engineer work away and
+the shells are already falling -- so whether the other side has any is a decision about
+what sort of game this is rather than a difficulty setting. `check.mjs` asserts the
+negative over eight minutes of battle, with the control being that the block those rules
+live in was reached at all: without that control a misspelt counter name passes the row by
+never moving.
+
+On the tactics card the whole pass -- the batteries, the switch and the brain that digs
+one -- is a pair difference of -70 with a standard error of 233 over eight pairs, ahead in
+five of eight, which is inside the noise and is the right place for a change that adds a
+weapon neither side can usually afford. And two things the title screen gained on the way:
+its option buttons were 33px on a phone, under the rule the rest of the game holds itself
+to and the first thing a thumb ever touches, so `.pill`, `.mode` and `.arty` now carry a
+44px floor on a coarse pointer.
 
 **Where a tube goes is not where anything else goes.** `aiMortarPost` is the one post on
 the map that wants to be further back rather than nearer, and it deliberately does not ask

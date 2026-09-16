@@ -139,11 +139,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the fall and the dead laid out by hand -- and the three weapon branches that pass
    bought back is already spent. It is 1320 for the artillery: a game about Ortona that
    had none now has mortars and pack howitzers on both sides, with the guns, the fire
-   mission and the brain that lays one. Raise it deliberately, with a reason, or not at
-   all. */
+   mission and the brain that lays one. It is 1345 for the heavy batteries, which are
+   emplacements rather than units: two more guns, two platforms, the position they are
+   dug into and the rules that keep them out of the enemy's base and out of their own
+   rear. Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1320) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1320 kB so it stays quick to load on a phone`);
+if (kb > 1345) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1345 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
