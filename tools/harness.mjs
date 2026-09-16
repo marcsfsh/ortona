@@ -181,12 +181,23 @@ export async function installHooks(page) {
       CAMLIM.pitchMin = minPitch === undefined ? 0.12 : minPitch;
     };
 
+    /* The camera aims at a point on the ground, which is right for a battle and wrong
+     * for a figure: at a low pitch a man standing on the aim point has his head off the
+     * top of the frame. `lift` raises the aim point that many units, by pulling the
+     * ground target back toward the eye along the view line so that the line passes
+     * through the raised point; nothing in the game's own camera is touched. */
     O.camera = function (c) {
       if (c.x !== undefined && c.y !== undefined) centreOn(c.x, c.y);
       if (c.dist !== undefined) CAM.dist = c.dist;
       if (c.yaw !== undefined) CAM.yaw = c.yaw;
       if (c.pitch !== undefined) CAM.pitch = c.pitch;
-      clampCam(); updateCamera();
+      clampCam();
+      if (c.lift) {
+        const back = c.lift / Math.tan(CAM.pitch);
+        CAM.tx -= Math.cos(CAM.yaw) * back; CAM.ty -= Math.sin(CAM.yaw) * back;
+        CAM.dist += c.lift / Math.sin(CAM.pitch);
+      }
+      updateCamera();
       return { x: CAM.tx, y: CAM.ty, dist: CAM.dist, yaw: CAM.yaw, pitch: CAM.pitch };
     };
 
@@ -436,11 +447,11 @@ export async function shoot(page, file, { settle = 2, fullPage = false } = {}) {
 }
 
 /** Four screenshots of the same subject, one per 90 degrees of camera yaw. */
-export async function turntable(page, prefix, { x, y, dist = 260, pitch = 0.72, steps = 4 } = {}) {
+export async function turntable(page, prefix, { x, y, dist = 260, pitch = 0.72, steps = 4, lift = 0 } = {}) {
   const made = [];
   for (let i = 0; i < steps; i++) {
     const yaw = (Math.PI / 2) + (i * Math.PI * 2) / steps;
-    await camera(page, { x, y, dist, pitch, yaw });
+    await camera(page, { x, y, dist, pitch, yaw, lift });
     made.push(await shoot(page, `${prefix}-${String(Math.round((i * 360) / steps)).padStart(3, '0')}.png`));
   }
   return made;

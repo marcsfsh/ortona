@@ -206,6 +206,54 @@ const SCENES = {
   infantry: { help: 'Every infantry and weapon-team model, posed on level ground.',
               run: (page) => gallery(page, 'infantry', u => u.cat === 'inf' || u.cat === 'team') },
 
+  /* One man, close. The infantry gallery stages a whole section at seventy-two units
+     and gets a row of helmets over a sandbag wall; a model is judged one figure at a
+     time, from lower than a player looks, in each posture it can hold, and against the
+     distance the player really sees it from. */
+  man: {
+    help: 'One soldier, one posture, from four angles: --only=us_rifle --man=0 --pose=fire --dist=60',
+    async run(page) {
+      await deploy(page, { side: SIDE, diff: DIFF });
+      await setFog(page, false);
+      await chrome(page, false);
+      await unlockCamera(page, 12, 0.02);
+      const spot = await flatSpot(page, 90);
+      const cat = await catalog(page);
+      const keys = (args.only ? String(args.only).split(',') : ['us_rifle', 'ger_gren'])
+        .filter(k => cat.units.some(u => u.key === k && (u.cat === 'inf' || u.cat === 'team')));
+      const poses = (args.pose ? String(args.pose).split(',') : ['stand', 'walk', 'fire', 'crouch', 'cfire', 'prone', 'crawl']);
+      const men = args.man === undefined ? [0] : String(args.man).split(',').map(Number);
+      const dist = Number(args.dist) || 58, pitch = Number(args.pitch) || 0.30;
+      const steps = Number(args.steps) || (TURN ? 4 : 1);
+      /* aim at the middle of him, or at the middle of a man lying down */
+      const liftOf = pz => (pz === 'prone' || pz === 'crawl') ? 3 : (pz === 'crouch' || pz === 'cfire') ? 7 : 10;
+      for (const key of keys) for (const man of men) for (const pz of poses) {
+        const got = await page.evaluate(o => {
+          /* stage the section, then leave one man of it standing in the posture asked for */
+          const specs = [{ key: o.key, x: 0, y: 0, facing: -Math.PI / 2 }];
+          window.__o.pose(specs, o.spot);
+          const u = window.G.units[0];
+          const P = { stand: POSE_STAND, walk: POSE_WALK, crouch: POSE_CROUCH, fire: POSE_FIRE,
+                      cfire: POSE_CFIRE, prone: POSE_PRONE, crawl: POSE_CRAWL }[o.pose];
+          let kept = null;
+          u.models.forEach(function (m, i) {
+            if (i !== o.man) { m.alive = false; return; }
+            kept = m; m.x = o.spot.x; m.y = o.spot.y; m.f = -Math.PI / 2; m.pose = P;
+            m.prone = P === POSE_PRONE || P === POSE_CRAWL;
+            m.gait = o.frame * (P === POSE_CRAWL ? CRAWL_LEN / CRAWLF : STRIDE_LEN / (WALKF - 1)) + 0.01;
+          });
+          return kept ? { variant: variantForModel(u, o.man), x: kept.x, y: kept.y } : null;
+        }, { key, man, pose: pz, spot, frame: Number(args.frame) || 0 });
+        if (!got) { console.error(`  ${key} has no man ${man}`); continue; }
+        const name = `man-${key}-${man}-${got.variant}-${pz}`;
+        console.log(`  ${name}`);
+        const lift = args.lift === undefined ? liftOf(pz) : Number(args.lift);
+        if (steps > 1) await turntable(page, path.join(SHOTS, DEVICE, name + TAG), { x: got.x, y: got.y, dist, pitch, steps, lift });
+        else { await camera(page, { x: got.x, y: got.y, dist, pitch, yaw: Math.PI / 2 + 0.6, lift }); await shoot(page, out(name), { settle: SETTLE }); }
+      }
+    }
+  },
+
   armour:   { help: 'Every vehicle model, posed on level ground.',
               run: (page) => gallery(page, 'armour', u => u.cat === 'veh') },
 
