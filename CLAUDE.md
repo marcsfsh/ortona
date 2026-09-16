@@ -1148,8 +1148,24 @@ geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
 static world is merged into tiled buffers by `buildScene` (a grid of prop tiles and
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
-ground shader multiplies in. A second 2D canvas (`#ov`) carries everything flat:
-selection rings, health bars, unit labels, the minimap.
+ground shader multiplies in. A second 2D canvas (`#ov`) carries what is text or a bar:
+health bars, unit labels, cover readouts, the minimap.
+
+**What is flat goes on the ground, not over it.** The rings and the order paths are built
+as ribbons lying on the terrain (`buildMarks`, `MARK`, `drawMarks3D`) and go through the
+depth buffer, because the 2D canvas is stacked over the WebGL one and nothing drawn on it
+can be behind anything in the world: a section's selection ring was drawn over the section
+and four sections under orders put four dashed lines over every man on the screen.
+
+**A selection ring goes round the men and never changes size.** Both halves of that were
+wrong in turn. It was drawn at the unit's marker, which on a section that has taken cover
+is a bare patch of street a hundred and nine units from anybody -- the one mark that says
+*this is selected*, with nothing inside it. Moved onto the men, the first version then
+took the circle that held them all, and that circle breathes with every step they take: a
+section opening out across a street trebled its own ring and shrank it again at the far
+side, and a mark that moves reads as something happening rather than as a selection. It is
+the mean of the men who are still standing, at the unit's own `unitRadius`, which is a
+constant per unit.
 
 **The sun is where December puts it.** Ortona is 42 degrees north and the date on the HUD
 is the 23rd. The sun reaches 24 degrees at noon that day and is under twenty by
@@ -2082,17 +2098,18 @@ its own population cap, and `vp` -- the rate the player's points drain, which st
 because being bled faster is pressure the opponent applies rather than a modifier on the
 player's units.
 
-`PD` is the player's own side, ten settings on the title screen behind a HANDICAP button
-that lights when any of them is off even: manpower income and fuel income, what is in the
-till at the first shot in each of the two, production speed (a unit out of a queue),
-construction speed (a building or a field work going up), the manpower cap from a hundred
-to five hundred, the damage his units take, the damage they deal, and how far they see.
-Each is an index into a named list, because the stepper and the game have to read one
-table -- two lists of the same settings go out of step the moment somebody adds another.
-`pdMake()` resolves the indices once in `startGame` so the income tick and the population
-check read a number, and `pd()` hands the even game to anything that reaches it before a
-battle. The setting is kept in `localStorage` under `ORT_HCAP`, and a handicap carried
-over from the last battle opens the panel rather than hiding in it.
+`PD` is the player's own side, eleven settings on the title screen behind a HANDICAP
+button that lights when any of them is off even: manpower income and fuel income, what is
+in the till at the first shot in each of the two, production speed (a unit out of a
+queue), construction speed (a building or a field work going up), the manpower cap from a
+hundred to five hundred, the damage his units take, the damage they deal, how far they
+see, and whether the artillery rules bind him. Each is an index into a named list, because
+the stepper and the game have to read one table -- two lists of the same settings go out
+of step the moment somebody adds another. `pdMake()` resolves the indices once in
+`startGame` so the income tick and the population check read a number, and `pd()` hands
+the even game to anything that reaches it before a battle. The setting is kept in
+`localStorage` under `ORT_HCAP`, and a handicap carried over from the last battle opens
+the panel rather than hiding in it.
 
 **Manpower and fuel are two settings each, not one.** A single income multiplier and a
 single starting purse could only ever scale the two together, and the two are not the same
@@ -2105,7 +2122,7 @@ because a handicap is a knob the player is turning with his eyes open and not a 
 figure.
 
 **Three of them only go one way.** Damage taken runs from 1x down to 0.1x, damage dealt
-from 1x up to 4x, and sight from 1x up to 2x: each is a thumb on the scale in the player's
+from 1x up to 4x, and sight from 1x up to 4x: each is a thumb on the scale in the player's
 favour and there is no reason to offer him the other half of it, which is a difficulty
 setting and lives on `DIFF`. The two damage multipliers are applied at the top of
 `damage()` rather than in `damageModel`, and that placement is the whole of what makes
@@ -2116,6 +2133,32 @@ two of the opposition's is untouched and so is one the player puts into his own 
 Sight multiplies the radius the eye goes into `_eyes` with, on the unit eye and the
 building eye alike, which means it moves detection as a rate and not only the ring it
 happens at.
+
+**Sight carries the tubes, which is why the row is not called vision.** A mortar, a pack
+howitzer and a dug battery reach exactly as far as somebody can see for them -- that is
+the whole of what `def.indirect` means and the reason those pieces are left out of the
+rule giving a gunner a sight as long as his weapon. So a player who sees four times as far
+and shells no further than before has bought half a setting. `barrageReach(def, side)` is
+what a fire mission can reach and `reachOf(u, w)` is what an indirect piece will engage on
+its own initiative, and every caller reads one of the two rather than `def.barrage.range`
+or `w.range`: there are eight of them between the two, across `fireAt`, `acquire`, the
+attack-move, the reach ring, `aiSetUp`, the brain's own missions and its siting, and two
+lists of one thing go out of step the moment somebody adds a third. `reachOf` scales an
+indirect weapon and nothing else, so a rifle section is exactly where it was. Measured at
+4x: a mortar throws 2240 off a published 560 and engages at 1880 off 470, where the
+opposition's throws 560 and engages at 470.
+
+**And `arty` is a switch rather than a scale.** It lifts the three rules that make the
+heavy battery a decision -- one a side, dug forward of home (`WORKS[].minHq`), and no
+missions into the enemy's base (`barrage.safe`) -- for the player's side and for nobody
+else. The test in `placeWork` is whether the work puts a piece that fires missions on the
+ground (`UNITS[W.unit].barrage`), so the eighty-eight keeps its two a side whatever the
+handicap says, and the population cap is not one of the three: it is what stops a
+free-for-all. The rules are there because a gun that heavy is meant to cost something to
+site and to be answerable once sited, and a player who would rather have the gun than the
+argument can see on the panel that he has turned them off. Each of the three is measured
+twice by the gate, once on his side and once on the opposition's, with the opposition
+handed the money first so that a refusal is the rule and never the till.
 
 **Four of green's thumbs on the scale are gone rather than moved**, and that is the point
 of the split as much as the settings are. `youAim` multiplied the player's accuracy by
@@ -2138,10 +2181,13 @@ GREEN: the player's cap is 500 and the opposition's is still green's own 175, th
 opens at 15,011 marks and 6,001 of fuel, income is 85 marks and 11 fuel against 4.42 and
 0.57, a second of wall clock buys ten seconds of queue against one, and a second of
 digging puts up 0.3846 of a building against 0.0385. A hundred-point round takes 10 off
-one of his and 400 off one of theirs, and 100 between two of theirs. His eye reaches 760
-off a 380 sight where the opposition's reaches 400 off its own 400. The production and
-construction figures are timed rather than read back off the settings, because a setting
-that is stored and never multiplied into anything looks exactly like one that works.
+one of his and 400 off one of theirs, and 100 between two of theirs. His eye reaches 1520
+off a 380 sight where the opposition's reaches 400 off its own 400. He digs a battery 130
+units from his own headquarters inside a 700 exclusion and then a second one, where the
+opposition is refused both; a mission onto the enemy headquarters is allowed for him and
+refused against him. The production and construction figures are timed rather than read
+back off the settings, because a setting that is stored and never multiplied into anything
+looks exactly like one that works.
 
 Two things had to be got right before that row could say anything. **The damage probe has
 to hit something a round cannot kill**: fired at a rifle section it went through

@@ -736,7 +736,7 @@ for (const device of TARGETS) {
              hqTime: hq.def.makes.length };
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
-     hcap.rows === 10 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
+     hcap.rows === 11 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
      hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
      hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
      hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
@@ -752,6 +752,93 @@ for (const device of TARGETS) {
      `a hundred-point round took ${hcap.took} off one of his and ${hcap.dealt} off one of theirs, ` +
      `and ${hcap.neither} between two of theirs; his eye reaches ${hcap.eyeYou} off a ${hcap.eyeDef} sight ` +
      `where theirs reaches ${hcap.eyeFoe} off ${hcap.eyeFoeDef}`);
+  /* --- the artillery settings, which are the two on the panel that do not simply
+     multiply a number. SIGHT carries the tubes: a mortar reaches as far as somebody can
+     see for it, so the handicap's eye scales `barrageReach` and the indirect half of
+     `reachOf` as well as the vision radius. ARTILLERY lifts the three rules that make the
+     heavy battery a decision, for the player and for nobody else -- which is why each of
+     the three is measured twice, once on his side and once on the opposition's, and the
+     opposition is handed the money first so that a refusal is the rule and never the
+     till. --- */
+  const arty = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const WK = side === 'us' ? 'how8' : 'how210', WKF = foe === 'us' ? 'how8' : 'how210';
+    const WB = window.WORKS[WK], WBF = window.WORKS[WKF];
+    const hq = window.hqOf(side), fhq = window.hqOf(foe);
+    window.G.res[side].mp = window.G.res[foe].mp = 9000;
+    window.G.res[side].fu = window.G.res[foe].fu = 4000;
+    /* a patch the ground will take, at a chosen distance band from a headquarters */
+    function spot(h, W, lo, hi, skip) {
+      for (let r = lo; r < hi; r += 40)
+        for (let a = 0; a < 16; a++) {
+          const x = h.x + Math.cos(a / 16 * Math.PI * 2) * r, y = h.y + Math.sin(a / 16 * Math.PI * 2) * r;
+          if (x < 90 || y < 90 || x > window.WORLD.w - 90 || y > window.WORLD.h - 90) continue;
+          if (!window.workRoom(x, y, W)) continue;
+          if (skip && Math.hypot(x - skip.x, y - skip.y) < 180) continue;
+          return { x, y, d: Math.round(r) };
+        }
+      return null;
+    }
+    /* his: both dug inside his own exclusion, and both of them, because he has the rules off */
+    const n1 = spot(hq, WB, 130, WB.minHq - 80);
+    const y1 = n1 && window.placeWork(side, WK, n1.x, n1.y, 0, []);
+    const n2 = spot(hq, WB, 130, WB.minHq - 80, n1);
+    const y2 = n2 && window.placeWork(side, WK, n2.x, n2.y, 0, []);
+    /* theirs: the same two, and both refused */
+    const f1 = spot(fhq, WBF, 130, WBF.minHq - 80);
+    const fNear = f1 ? window.placeWork(foe, WKF, f1.x, f1.y, 0, []) : 'nospot';
+    const f2 = spot(fhq, WBF, WBF.minHq + 60, WBF.minHq + 700);
+    const fOk = f2 && window.placeWork(foe, WKF, f2.x, f2.y, 0, []);
+    const f3 = spot(fhq, WBF, WBF.minHq + 60, WBF.minHq + 700, f2);
+    const fTwo = f3 ? window.placeWork(foe, WKF, f3.x, f3.y, 0, []) : 'nospot';
+    /* the no-fire zone, from a tube standing close enough to reach the base it may not
+       shell. His mission is taken; the same mission the other way round is refused. */
+    const key = side === 'us' ? 'us_how8' : 'ger_how210', keyF = foe === 'us' ? 'us_how8' : 'ger_how210';
+    const bA = Math.atan2(hq.y - fhq.y, hq.x - fhq.x);
+    const mine = window.spawnUnit(side, key, fhq.x + Math.cos(bA) * 420, fhq.y + Math.sin(bA) * 420, 0);
+    const bB = Math.atan2(fhq.y - hq.y, fhq.x - hq.x);
+    const yours = window.spawnUnit(foe, keyF, hq.x + Math.cos(bB) * 420, hq.y + Math.sin(bB) * 420, 0);
+    const safeYou = window.barrageWhy(mine, fhq.x, fhq.y);
+    const safeFoe = window.barrageWhy(yours, hq.x, hq.y);
+    /* and the reach: the def's own number, what the handicap makes of it, and the
+       opposition's, which is the def's number and nothing else */
+    const mor = window.spawnUnit(side, side === 'us' ? 'us_mor' : 'ger_mor', 700, 1400, 0);
+    const morF = window.spawnUnit(foe, foe === 'us' ? 'us_mor' : 'ger_mor', 900, 1400, 0);
+    const barDef = mor.def.barrage.range;
+    const barYou = Math.round(window.barrageRange(mor)), barFoe = Math.round(window.barrageRange(morF));
+    const freeYou = Math.round(window.reachOf(mor, window.mainW(mor)));
+    const freeFoe = Math.round(window.reachOf(morF, window.mainW(morF)));
+    const freeDef = window.mainW(mor).range;
+    /* a rifle section is not carried: only an indirect piece is */
+    const rif = window.spawnUnit(side, side === 'us' ? 'us_rifle' : 'ger_gren', 700, 1600, 0);
+    const rifSame = Math.round(window.reachOf(rif, window.mainW(rif))) === Math.round(window.mainW(rif).range);
+    [mine, yours, mor, morF, rif].forEach(u => {
+      u.dead = true;
+      const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1);
+    });
+    window.G.sites.length = 0;
+    return { eye: window.G.pd.eye, freeArty: window.G.pd.arty,
+             nearYou: !!y1, twoYou: !!y2, nearD: n1 ? n1.d : -1, minHq: WB.minHq,
+             nearFoe: fNear === null ? 'refused' : String(fNear === 'nospot' ? 'nospot' : 'allowed'),
+             foeLegal: !!fOk,
+             twoFoe: fTwo === null ? 'refused' : String(fTwo === 'nospot' ? 'nospot' : 'allowed'),
+             safeYou: safeYou || 'allowed', safeFoe: safeFoe || 'allowed',
+             barDef, barYou, barFoe, freeDef, freeYou, freeFoe, rifSame };
+  });
+  ok('the handicap can take the artillery rules off, for the player and for nobody else',
+     arty.freeArty === true && arty.nearYou && arty.twoYou &&
+     arty.nearFoe === 'refused' && arty.foeLegal && arty.twoFoe === 'refused' &&
+     arty.safeYou === 'allowed' && arty.safeFoe === 'safe' &&
+     Math.abs(arty.barYou - arty.barDef * arty.eye) < 2 && arty.barFoe === arty.barDef &&
+     Math.abs(arty.freeYou - arty.freeDef * arty.eye) < 2 && arty.freeFoe === arty.freeDef &&
+     arty.rifSame,
+     `at ${arty.eye}x sight with the rules off: he dug a battery ${arty.nearD} from his own HQ ` +
+     `inside a ${arty.minHq} exclusion and then a second one, where the opposition was ${arty.nearFoe} ` +
+     `near its own and ${arty.twoFoe} a second beyond it; a mission onto the enemy HQ was ` +
+     `${arty.safeYou} for him and ${arty.safeFoe} against him; his mortar throws ${arty.barYou} ` +
+     `and reaches ${arty.freeYou} off a ${arty.barDef}/${arty.freeDef} piece where theirs throws ` +
+     `${arty.barFoe} and reaches ${arty.freeFoe}, and his riflemen are unchanged`);
+
   /* and EVEN puts every one of them back */
   await page.evaluate(() => { document.getElementById('heven').click(); });
   const evened = await page.evaluate(() => ({ even: window.hcapEven(), made: window.pdMake(),
@@ -760,11 +847,11 @@ for (const device of TARGETS) {
      evened.even && evened.made.inc === 1 && evened.made.incf === 1 && evened.made.prod === 1 &&
      evened.made.cons === 1 && evened.made.pop === 200 && evened.made.mp === 420 &&
      evened.made.fu === 20 && evened.made.take === 1 && evened.made.deal === 1 &&
-     evened.made.eye === 1 && evened.badge.indexOf('ON') < 0,
+     evened.made.eye === 1 && evened.made.arty === false && evened.badge.indexOf('ON') < 0,
      `${evened.made.inc}x/${evened.made.incf}x income, ${evened.made.prod}x production, ` +
      `${evened.made.cons}x construction, cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, ` +
      `${evened.made.take}x taken, ${evened.made.deal}x dealt, ${evened.made.eye}x sight, ` +
-     `the button reads "${evened.badge}"`);
+     `artillery ${evened.made.arty ? 'free' : 'by rule'}, the button reads "${evened.badge}"`);
 
   /* --- the switch on the title screen that takes the opposition's guns away. What is
      asserted is the negative -- over eight minutes of battle the brain never once bought
