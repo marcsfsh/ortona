@@ -712,10 +712,10 @@ function popCap(side) {
    to take a veteran economy with it, and a player who wanted an easy economy got an
    opponent that thinks slowly, shoots badly and folds. They are separate questions and
    they are asked separately now. `DIFF` is the opposition and nothing else; `PD` is the
-   player's own side of the game, and every one of its five numbers is one he chose.
+   player's own side of the game, and every one of its settings is one he chose.
      Three of green's old thumbs on the scale are gone with the split rather than moved:
    `youAim`, `youTough` and the extra sections it handed out. They were help the player
-   could not see, could not turn off and was never told about, and the five settings here
+   could not see, could not turn off and was never told about, and the settings here
    do the same job where he can read them. `vp`, the rate his own points drain, stays on
    the opposition's table, because being bled faster is pressure the opponent applies.
      The values are held as indices into these lists so that the stepper on the title
@@ -726,10 +726,20 @@ function popCap(side) {
    gates men, so a player who wants a company of infantry and no tanks and a player who
    wants three Shermans and nobody to hold the ground are asking for opposite things out of
    one stepper.
-     Three of the ten are one-way on purpose. Damage taken runs from even down to a tenth,
-   damage dealt from even up to fourfold and sight from even up to double, because each is
-   a handicap in the player's favour and nothing here is for making the player's own units
-   worse -- the opposition's difficulty is where a harder game comes from. */
+     Three are one-way on purpose. Damage taken runs from even down to a tenth, damage
+   dealt from even up to fourfold and sight from even up to fourfold, because each is a
+   handicap in the player's favour and nothing here is for making the player's own units
+   worse -- the opposition's difficulty is where a harder game comes from.
+     Sight carries the tubes with it, which is why it is not called vision. A mortar, a
+   pack howitzer and a dug battery reach as far as somebody can see for them, so a player
+   who sees four times as far and shells no further than before has bought half a setting:
+   `barrageReach` and `reachOf` are the two readers and they scale on the same number.
+     `arty` is the one setting that is a switch rather than a scale. It lifts the three
+   rules that make the heavy battery a decision -- one a side, dug forward of home, and no
+   firing into the enemy's base -- for the player's side and for nobody else. They are
+   there because a gun that heavy is meant to cost something to site and to be answerable
+   once sited; a player who would rather have the gun than the argument turns them off
+   where he can see he has done it. */
 var PD_MULT = [.5, .75, 1, 1.25, 1.5, 2, 3, 4, 5, 6, 8, 10];
 var PD_INC  = PD_MULT;
 var PD_INCF = PD_MULT;
@@ -740,10 +750,11 @@ var PD_SMP  = [210, 420, 800, 1200, 1600, 2400, 4000, 6000, 9000, 15000];
 var PD_SFU  = [10, 20, 80, 150, 240, 400, 800, 1500, 3000, 6000];
 var PD_TAKE = [.1, .15, .2, .25, .3, .4, .5, .6, .75, .9, 1];
 var PD_DEAL = [1, 1.15, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
-var PD_EYE  = [1, 1.1, 1.2, 1.35, 1.5, 1.75, 2];
+var PD_EYE  = [1, 1.1, 1.2, 1.35, 1.5, 1.75, 2, 2.5, 3, 4];
+var PD_ARTY = [0, 1];
 /* the even game, and the index of it in each list */
-var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0 };
-var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0 };
+var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0 };
+var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0 };
 /* What the player's side is actually running, resolved once when the battle starts so the
    income tick, the population check and every shot fired read a number rather than an
    index. Anything that reaches it before a battle -- the editor, a tool staging a scene --
@@ -752,7 +763,8 @@ function pdMake() {
   return { inc: PD_INC[PD.inc], incf: PD_INCF[PD.incf], prod: PD_PROD[PD.prod],
            cons: PD_CONS[PD.cons], pop: PD_POP[PD.pop],
            mp: PD_SMP[PD.smp], fu: PD_SFU[PD.sfu],
-           take: PD_TAKE[PD.take], deal: PD_DEAL[PD.deal], eye: PD_EYE[PD.eye] };
+           take: PD_TAKE[PD.take], deal: PD_DEAL[PD.deal], eye: PD_EYE[PD.eye],
+           arty: !!PD_ARTY[PD.arty] };
 }
 function pd() { return G.pd || (G.pd = pdMake()); }
 /* fitted in the field, one purchase per vehicle */
@@ -3360,11 +3372,33 @@ function orderAttack(u, t) {
    enemy's headquarters is a battery that wins an annihilation match without an infantryman
    leaving home. Guns of that weight fired on map references onto ground somebody was
    fighting over; they did not shell a base area on a whim, and that is the rule. */
+/* How far a tube can throw a fire mission, and how far an indirect piece will engage on
+   its own initiative. Both are read through here rather than off the def, because the
+   handicap's sight setting carries the artillery with it: a piece of this kind reaches as
+   far as somebody can see for it, so a player who sees four times as far and shells no
+   further than before has bought half a setting. Two lists of one thing go out of step
+   the moment somebody adds a third, and there are eight callers between them.
+     `reachOf` scales an indirect weapon and nothing else. A rifle that carried as far as
+   the man could see would be a different game, and the rule that gives a gunner a sight
+   as long as his weapon already leaves the tubes out for the same reason. */
+function barrageReach(def, side) {
+  var b = def && def.barrage;
+  if (!b) return 0;
+  return b.range * (side === G.side ? pd().eye : 1);
+}
+function barrageRange(u) { return barrageReach(u.def, u.side); }
+function reachOf(u, w) {
+  return w.range * (u.def.indirect && u.side === G.side ? pd().eye : 1);
+}
 function barrageWhy(u, wx, wy) {
   var B = u.def.barrage;
   if (!B || u.retreat) return 'no';
-  if (Math.hypot(wx - u.x, wy - u.y) > B.range) return 'far';
-  if (B.safe) {
+  if (Math.hypot(wx - u.x, wy - u.y) > barrageRange(u)) return 'far';
+  /* and not into the enemy's rear, unless the player has asked for that rule off. Guns of
+     this weight fired onto ground somebody was fighting over; five two-hundred-kilogram
+     shells into a headquarters wins an annihilation match without an infantryman leaving
+     home, which is the whole reason the zone exists. */
+  if (B.safe && !(u.side === G.side && pd().arty)) {
     for (var i = 0; i < G.blds.length; i++) {
       var b = G.blds[i];
       if (b.dead || b.side === u.side) continue;
@@ -4280,10 +4314,10 @@ function acquire(u) {
   if (u.def.barrageOnly) return null;
   if (u.forced && !u.forced.dead) {
     var wr = weaponFor(u, u.forced);
-    if (wr && dist(u, u.forced) <= wr.range * 1.05) return u.forced;
+    if (wr && dist(u, u.forced) <= reachOf(u, wr) * 1.05) return u.forced;
   }
   var best = null, bestScore = -1e9;
-  var maxR = Math.max(mainW(u).range, u.def.at ? u.def.at.range : 0);
+  var maxR = Math.max(reachOf(u, mainW(u)), u.def.at ? u.def.at.range : 0);
   var antiTank = !!(u.def.at || u.def.atOnly) || mainW(u).pen > 60;
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
@@ -4480,7 +4514,7 @@ function fireAt(u, t, dt) {
      Laying on a known patch of ground at a bearing somebody has worked out is a longer
      shot than seeing something and engaging it, and the extra range is most of the
      reason to order a mission rather than leave the crew to it. */
-  var maxR = u.barrage && u.def.barrage ? u.def.barrage.range : w.range;
+  var maxR = u.barrage && u.def.barrage ? barrageRange(u) : reachOf(u, w);
   if (d > maxR) return;
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0) return;
@@ -5080,10 +5114,16 @@ function placeWork(side, kind, x, y, ang, engineers) {
   if (!canAfford(side, W.cost)) { if (side === G.side) toast('Not enough ' + (G.res[side].mp < (W.cost.mp || 0) ? 'manpower' : 'fuel')); return null; }
   if (!workRoom(x, y, W)) { if (side === G.side) toast('The ground will not take it there'); return null; }
   /* a work that becomes a unit answers to the unit's limit and to the population cap,
-     which placeWork never had to ask about a wall of bags */
+     which placeWork never had to ask about a wall of bags.
+       The player may have the two artillery rules off, and only those two: the test is
+     whether the work puts a piece that fires missions on the ground, so the eighty-eight
+     keeps its two a side whatever the handicap says. It is the population cap that stops
+     a free-for-all, and that is not one of the rules this lifts. */
+  var freeArty = side === G.side && pd().arty;
   if (W.unit) {
     var ud = UNITS[W.unit];
-    if (ud.limit && countOf(side, W.unit) + siteCount(side, kind) >= ud.limit) {
+    var ruled = !(freeArty && ud.barrage);
+    if (ruled && ud.limit && countOf(side, W.unit) + siteCount(side, kind) >= ud.limit) {
       if (side === G.side) toast('Only ' + ud.limit + ' ' + ud.name + ' may be fielded'); return null;
     }
     if (popOf(side) + (ud.pop || 0) > popCap(side)) { if (side === G.side) toast('Population cap reached'); return null; }
@@ -5091,7 +5131,7 @@ function placeWork(side, kind, x, y, ang, engineers) {
   /* and a heavy battery has to be dug forward of home. A gun that reaches most of the way
      across the map and stands behind its own headquarters cannot be got at, so the rule is
      on the work rather than on the player's judgement. */
-  if (W.minHq) {
+  if (W.minHq && !freeArty) {
     var ohq = hqOf(side);
     if (ohq && dsq(ohq.x, ohq.y, x, y) < W.minHq * W.minHq) {
       if (side === G.side) toast('Dig it forward: not within ' + W.minHq + ' of your own headquarters');
@@ -5355,13 +5395,13 @@ function updateUnit(u, dt) {
   /* forced attack walks into range */
   if (u.order === 'attack' && u.forced && !u.forced.dead) {
     var w = weaponFor(u, u.forced), dd = dist(u, u.forced);
-    if (dd > w.range * .92) {
+    if (dd > reachOf(u, w) * .92) {
       if (!u.path) { u.path = findPath(u.x, u.y, u.forced.x, u.forced.y, u); u.pi = 0; }
     } else u.path = null;
   }
   /* attack-move: stop while an enemy is in reach */
-  if (u.order === 'attackmove' && u.target && dist(u, u.target) < weaponFor(u, u.target).range * .95) u.path = null;
-  else if (u.order === 'attackmove' && u.dest && !u.path && (!u.target || dist(u, u.target) > weaponFor(u, u.target).range)) {
+  if (u.order === 'attackmove' && u.target && dist(u, u.target) < reachOf(u, weaponFor(u, u.target)) * .95) u.path = null;
+  else if (u.order === 'attackmove' && u.dest && !u.path && (!u.target || dist(u, u.target) > reachOf(u, weaponFor(u, u.target)))) {
     if (dist(u, u.dest) > 40) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
   }
   /* engineers walk to the job itself, not to a spot that may sit outside working range */
@@ -6110,7 +6150,7 @@ function aiSetUp(u, tx, ty) {
   var w = mainW(u);
   /* a tube is in position when it is on its post and the ground is inside a mission's
      reach; asking it for a line would be asking it to be somewhere it should not be */
-  if (u.def.barrage) return Math.hypot(u.x - tx, u.y - ty) <= u.def.barrage.range;
+  if (u.def.barrage) return Math.hypot(u.x - tx, u.y - ty) <= barrageRange(u);
   if (Math.hypot(u.x - tx, u.y - ty) > w.range * 1.05) return false;
   return aiSightsOn(u.x, u.y, tx, ty);
 }
@@ -7981,7 +8021,7 @@ function aiTick(dt) {
            under that is an `else` -- so a battery that cost eighty seconds of engineer
            work and a lorry of fuel sat in its pit for the whole battle and never fired. */
         var post = !u.def.speed ? { x: u.x, y: u.y }
-                 : (u.def.barrage ? aiMortarPost(side, supX, supY, u.def.barrage.range) : null) ||
+                 : (u.def.barrage ? aiMortarPost(side, supX, supY, barrageRange(u)) : null) ||
                    aiOverwatch(side, supX, supY, back, mainW(u).range * .92) ||
                    aiFirePost(side, supX, supY, u.def.atOnly ? 260 : 150);
         u.aimX = supX; u.aimY = supY; u.jobX = post.x; u.jobY = post.y; u.jobT = G.t;
@@ -8007,7 +8047,7 @@ function aiTick(dt) {
           if (dd < mb) { mb = dd; mt = e; }
         });
         var bx = mt ? mt.x : u.aimX, by = mt ? mt.y : u.aimY;
-        if (Math.hypot(u.x - bx, u.y - by) <= u.def.barrage.range && orderBarrage(u, bx, by)) aiFire('mortar.mission');
+        if (Math.hypot(u.x - bx, u.y - by) <= barrageRange(u) && orderBarrage(u, bx, by)) aiFire('mortar.mission');
       }
       continue;
     }
@@ -8229,7 +8269,7 @@ function aiTick(dt) {
             var bx2 = clamp(hq.x + Math.cos(bang) * br, 70, WORLD.w - 70);
             var by2 = clamp(hq.y + Math.sin(bang) * br, 70, WORLD.h - 70);
             if (!walkable(bx2, by2)) continue;
-            if (Math.hypot(bx2 - bAt.x, by2 - bAt.y) > bdf.barrage.range * .85) continue;
+            if (Math.hypot(bx2 - bAt.x, by2 - bAt.y) > barrageReach(bdf, side) * .85) continue;
             pB = { x: bx2, y: by2 };
           }
         }
@@ -9183,7 +9223,7 @@ function buildMarks(v) {
   if (G.mode === 'barrage') {
     G.sel.forEach(function (u) {
       if (u.dead || u.side !== G.side || !u.def || !u.def.barrage) return;
-      markRing(u.x, u.y, u.def.barrage.range, markCol('#d8a334'), .42, 2, [30, 34], 0);
+      markRing(u.x, u.y, barrageRange(u), markCol('#d8a334'), .42, 2, [30, 34], 0);
     });
   }
   G.sel.forEach(function (u) {
@@ -9192,20 +9232,17 @@ function buildMarks(v) {
     /* The ring goes round the men, not round the marker. Measured on a real battle, a
        section's men stand a hundred and nine units from their own marker while its ring
        has a radius of thirty-two -- so the one mark that says "this is selected" was
-       drawn on a bare patch of street with nobody in it. The circle is the one that
-       holds them, floored at the marker's own size so a section standing on its point
-       still gets a ring worth seeing. */
+       drawn on a bare patch of street with nobody in it.
+         And it does not change size. The first version drew the circle that held the
+       whole section, which breathes with every step the men take: a section that opened
+       out across a street trebled its own ring and then shrank it again at the far side,
+       and a mark that moves reads as something happening rather than as a selection. It
+       is the unit's own size, which is a constant per unit, put where the men are. */
     var cx = u.x, cy = u.y, rr = unitRadius(u) + 5, men = 0, k;
     if (u.models) {
       var sx = 0, sy = 0;
       for (k = 0; k < u.models.length; k++) if (u.models[k].alive) { sx += u.models[k].x; sy += u.models[k].y; men++; }
-      if (men) {
-        cx = sx / men; cy = sy / men;
-        var sp = 0;
-        for (k = 0; k < u.models.length; k++) if (u.models[k].alive)
-          sp = Math.max(sp, Math.hypot(u.models[k].x - cx, u.models[k].y - cy));
-        rr = clamp(sp + 14, unitRadius(u) + 5, 150);
-      }
+      if (men) { cx = sx / men; cy = sy / men; }
     }
     markRing(cx, cy, rr, markCol(mine ? '#9ecb62' : '#c95c4e'), .85, 2.4);
     if (!u.dest || !u.path) return;
@@ -11061,7 +11098,7 @@ function povTarget(u) {
     if (e.dead || e.side === u.side || e.inside) continue;
     if (!visibleTo(u.side, e)) continue;
     var w = weaponFor(u, e), d = dist(u, e);
-    if (d > w.range * 1.04) continue;
+    if (d > reachOf(u, w) * 1.04) continue;
     var off = Math.abs(angDiff(POV.yaw, angTo(u, e)));
     if (off > .26) continue;
     var s = off * 1200 + d * .3;
@@ -11265,7 +11302,7 @@ function gunReady(u, t) {
   if (u.gunDmg > 0) return 'GUN OUT';
   if (u.cd > 0) return 'LOADING';
   if (Math.abs(angDiff(u.turret, angTo(u, t))) > (u.moving ? .16 : .09)) return 'TRAVERSING';
-  if (dist(u, t) > mainW(u).range) return 'OUT OF RANGE';
+  if (dist(u, t) > reachOf(u, mainW(u))) return 'OUT OF RANGE';
   return 'READY';
 }
 function drawPovMark(u, t) {
@@ -21297,6 +21334,7 @@ document.querySelectorAll('.mode').forEach(function (btn) {
    a pair of numbers. */
 function hcapMult(v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; }
 function hcapNum(v) { return String(v); }
+function hcapRule(v) { return v ? 'NO LIMIT' : 'BY RULE'; }
 var HCAP = [
   { k: 'inc',  name: 'MANPOWER INCOME', list: PD_INC, fmt: hcapMult,
     tip: 'What your sectors pay in manpower, against what they pay at even.' },
@@ -21317,7 +21355,9 @@ var HCAP = [
   { k: 'deal', name: 'DAMAGE DEALT', list: PD_DEAL, fmt: hcapMult,
     tip: 'What a round of yours does to the opposition. Even up to fourfold.' },
   { k: 'eye',  name: 'SIGHT', list: PD_EYE, fmt: hcapMult,
-    tip: 'How far your men and your buildings see. Even up to double.' }
+    tip: 'How far your men and your buildings see, and how far your mortars, howitzers and battery throw with it. Even up to fourfold.' },
+  { k: 'arty', name: 'ARTILLERY', list: PD_ARTY, fmt: hcapRule,
+    tip: 'BY RULE: one heavy battery a side, dug forward of your own headquarters, and no missions into the enemy base. NO LIMIT takes all three off, for you only.' }
 ];
 var HCAP_KEY = 'ORT_HCAP';
 function hcapSave() {
