@@ -778,7 +778,7 @@ var UNITS = {
      because that is what was asked for. */
   us_mor: {
     side: 'us', name: 'M1 81 mm Mortar', short: '81MM', cat: 'team', hk: 'M',
-    models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 300, fu: 10 }, time: 26,
+    models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 260, fu: 10 }, time: 26,
     req: 'us_bar', setup: 2.4, indirect: 1, blastRes: .5,
     gunAt: 4.7, gunMuz: [1.65, 15.05], gunGrip: [0.80, 1.80, 8.30],
     barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
@@ -883,7 +883,7 @@ var UNITS = {
   },
   ger_mor: {
     side: 'ger', name: '8 cm Granatwerfer 34', short: 'GRW 34', cat: 'team', hk: 'M',
-    models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 290, fu: 10 }, time: 26,
+    models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 250, fu: 10 }, time: 26,
     req: 'ger_qtr', setup: 2.4, indirect: 1, blastRes: .5,
     gunAt: 4.7, gunMuz: [1.73, 13.63], gunGrip: [0.90, 1.80, 7.60],
     barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
@@ -5288,7 +5288,8 @@ function aiFire(name) { AIR.fired[name] = (AIR.fired[name] || 0) + 1; }
                'wave.nosupport', 'concentrate', 'garrison.hold', 'garrison.duck', 'garrison.post',
                'duck.house', 'duck.cover', 'duck.back', 'duck.ground', 'odds.hold', 'retreat.hurt',
                'veh.backoff', 'veh.face', 'veh.mend', 'flak.round', 'flak.dig', 'work.dig',
-               'buy.inf', 'buy.mg', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
+               'buy.inf', 'buy.mg', 'buy.mortar', 'mortar.gate.reached', 'mortar.gate.want',
+               'mortar.gate.money', 'mortar.mission', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
                'buy.hurt',
                'build.post', 'build.depot', 'mood.hold', 'mood.dig', 'mood.pushVp',
                'target.seen', 'target.stale', 'approach.quiet',
@@ -5814,12 +5815,40 @@ function aiOverwatch(side, tx, ty, back, reach) {
   }
   return best ? nearestFree(best.x, best.y) : null;
 }
+/* Where a mortar goes: well back, in whatever cover is there, and NOT where it can see
+   the objective. aiOverwatch insists on a line, which for a tube is exactly the wrong
+   test -- a mortar that can see the ground it is shelling is a mortar the enemy can see,
+   and the reason to own one is that it does not have to be looked at. What it wants is
+   distance, cover, and the objective inside the reach of a fire mission. */
+function aiMortarPost(side, tx, ty) {
+  var a0 = aiFoeDir(side, tx, ty) + Math.PI, best = null, bs = -1e9, ri, k, c;
+  var reach = (UNITS[side === 'us' ? 'us_mor' : 'ger_mor'].barrage.range) * .88;
+  for (ri = 0; ri < 3; ri++) {
+    var rad = Math.min(reach, 460 - ri * 90);
+    for (k = -4; k <= 4; k++) {
+      var a = a0 + k * .26;
+      var px = clamp(tx + Math.cos(a) * rad, 70, WORLD.w - 70);
+      var py = clamp(ty + Math.sin(a) * rad, 70, WORLD.h - 70);
+      if (!walkable(px, py)) continue;
+      var near = coversNear(px, py, 90), bestC = 0;
+      for (c = 0; c < near.length; c++)
+        if (near[c].hp > 0 && near[c].kind !== 'ditch' && near[c].type > bestC) bestC = near[c].type;
+      /* further back is better, which is the opposite of every other post on the map */
+      var sc = bestC * 40 + rad * .06 - Math.abs(k) * 10;
+      if (sc > bs) { bs = sc; best = { x: px, y: py }; }
+    }
+  }
+  return best ? nearestFree(best.x, best.y) : null;
+}
 /* Is this weapon in position and able to do its job? Used to decide whether a wave has
    its fire support before it goes rather than after. */
 function aiSetUp(u, tx, ty) {
   if (u.jobX === undefined) return false;
   if (Math.hypot(u.x - u.jobX, u.y - u.jobY) > 70) return false;
   var w = mainW(u);
+  /* a tube is in position when it is on its post and the ground is inside a mission's
+     reach; asking it for a line would be asking it to be somewhere it should not be */
+  if (u.def.barrage) return Math.hypot(u.x - tx, u.y - ty) <= u.def.barrage.range;
   if (Math.hypot(u.x - tx, u.y - ty) > w.range * 1.05) return false;
   return aiSightsOn(u.x, u.y, tx, ty);
 }
@@ -6675,8 +6704,8 @@ function aiTick(dt) {
   if (!hq) return;
   var D = DIFF[G.diff], skill = D.skill === undefined ? 1 : D.skill;
   var K = side === 'us'
-    ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
-    : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
+    ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
+    : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', mor: 'ger_mor', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
 
   /* ---- what it has.
      Five lists, because the same unit is a different thing to each part of the brain.
@@ -6819,9 +6848,28 @@ function aiTick(dt) {
   spare = Math.max(0, G.res[side].mp - wantMp); spareFu = Math.max(0, G.res[side].fu - wantFu);
   if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(side) < infRoom) {
     /* out of the picture rather than another walk of the army for one count */
-    var mgs = 0;
-    for (var mi = 0; mi < teams.length; mi++) if (teams[mi].key === K.mg) mgs++;
+    var mgs = 0, mors = 0;
+    for (var mi = 0; mi < teams.length; mi++) {
+      if (teams[mi].key === K.mg) mgs++;
+      else if (teams[mi].key === K.mor) mors++;
+    }
     if (mgs < mgCap && spare >= (UNITS[K.mg].cost.mp || 0)) { if (queueUnit(b1, K.mg)) aiFire('buy.mg'); }
+    /* One mortar, and it is bought for a reason rather than as another body: it is the
+       answer to men in a house and to a gun line, both of which are things you cannot
+       shoot at from in front. Skill 1 and up, because a green opponent that drops bombs
+       on a position before walking into it is not a green opponent. */
+    else if (skill >= 1 && K.mor && mors < 1) {
+      /* Counted gate by gate, because the way to find out why a rule never fires is to
+         count what shut it rather than to guess, and guessing has been wrong twice here
+         already. `want` is whether there is anything a mortar is the answer to; `money`
+         is whether it can be paid for out of what the shopping list is not saving. */
+      var morWant = IN.gar >= 1 || IN.mg >= 1 || (AIW.foe && AIW.mine && AIW.mine.sec <= AIW.foe.sec);
+      var morPay = spare >= (UNITS[K.mor].cost.mp || 0) && spareFu >= (UNITS[K.mor].cost.fu || 0);
+      aiFire('mortar.gate.reached');
+      if (morWant) aiFire('mortar.gate.want');
+      if (morPay) aiFire('mortar.gate.money');
+      if (morWant && morPay && queueUnit(b1, K.mor)) aiFire('buy.mortar');
+    }
     /* The company post used to sit outside the army cap, so an easy opponent held to
        four sections by the headquarters quietly raised a dozen more out of the post.
        The cap now holds everywhere, which leaves the easy settings spending what they
@@ -7620,7 +7668,8 @@ function aiTick(dt) {
            nothing on the arc has a line, because a gun in the wrong place still beats a
            gun standing in the open where it was built. */
         var back = u.def.atOnly ? 420 : 170;
-        var post = aiOverwatch(side, supX, supY, back, mainW(u).range * .92) ||
+        var post = (u.def.barrage ? aiMortarPost(side, supX, supY) : null) ||
+                   aiOverwatch(side, supX, supY, back, mainW(u).range * .92) ||
                    aiFirePost(side, supX, supY, u.def.atOnly ? 260 : 150);
         u.aimX = supX; u.aimY = supY; u.jobX = post.x; u.jobY = post.y; u.jobT = G.t;
       }
@@ -7630,6 +7679,22 @@ function aiTick(dt) {
         var th2 = skill >= 1 ? aiHouse(u, u.jobX, u.jobY, 140) : null;
         if (th2 && garCount < 3) { aiFire('garrison.post'); clearOrder(u); u.order = 'enter'; u.enterT = th2; garCount++; }
         else orderMove(u, u.jobX, u.jobY, true);
+      } else if (u.def.barrage && !u.barrage && u.setup <= 0 && !u.moving) {
+        /* On its post and laid: the tube shells the ground the wave is about to walk
+           into. Preparation, not opportunity -- a mission takes twenty-five seconds to
+           run and the men need it falling while they cross, not after they arrive.
+             It is laid on what is holding the objective rather than on the flag itself:
+           a defended sector is defended from somewhere, and bombs on the middle of a
+           circle nobody is standing in are ten bombs spent on scenery. With nothing
+           known to be there it puts them on the objective and is no worse off. */
+        var mt = null, mb = 1e9;
+        aiNear(u.aimX, u.aimY, 190, function (e) {
+          if (e.cat === 'veh' || !aiKnown(side, e)) return;
+          var dd = Math.hypot(e.x - u.aimX, e.y - u.aimY);
+          if (dd < mb) { mb = dd; mt = e; }
+        });
+        var bx = mt ? mt.x : u.aimX, by = mt ? mt.y : u.aimY;
+        if (Math.hypot(u.x - bx, u.y - by) <= u.def.barrage.range && orderBarrage(u, bx, by)) aiFire('mortar.mission');
       }
       continue;
     }
