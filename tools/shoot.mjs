@@ -16,6 +16,8 @@ import { launch, openGame, deploy, openEditor, fastForward, frames, camera, chro
          reveal, drawable, unlockCamera, modelExtent, parseArgs, deviceNames, SHOTS, ROOT } from './harness.mjs';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
+import { execFileSync } from 'node:child_process';
 
 const args = parseArgs(process.argv.slice(2));
 const DEVICE = args.device || 'desktop';
@@ -27,7 +29,10 @@ const TURN = !!args.turn;               /* four angles instead of one */
 const SETTLE = args.settle === undefined ? 2 : Number(args.settle);
 /* field upgrades to fit before photographing, e.g. --up=skirts,mg */
 const UP = args.up ? String(args.up).split(',') : [];
-const TAG = args.tag ? `-${args.tag}` : '';
+/* --base=<rev> photographs an older revision of the game instead, with -base on the
+   name, so a before and an after of any scene can be laid side by side */
+const BASE = args.base === undefined ? null : String(args.base);
+const TAG = (args.tag ? `-${args.tag}` : '') + (BASE ? '-base' : '');
 
 const out = (name) => path.join(SHOTS, DEVICE, `${name}${TAG}.png`);
 
@@ -227,6 +232,36 @@ const SCENES = {
       const steps = Number(args.steps) || (TURN ? 4 : 1);
       /* aim at the middle of him, or at the middle of a man lying down */
       const liftOf = pz => (pz === 'prone' || pz === 'crawl') ? 3 : (pz === 'crouch' || pz === 'cfire') ? 7 : 10;
+      /* --strip lays every frame of the walk or the crawl out in a row, broadside to the
+         camera, so a cycle can be read in one picture instead of eight */
+      if (args.strip) {
+        for (const key of keys) for (const man of men) for (const pz of poses.filter(p => p === 'walk' || p === 'crawl')) {
+          const got = await page.evaluate(o => {
+            window.__o.pose([{ key: o.key, x: 0, y: 0, facing: 0 }], o.spot);
+            const u = window.G.units[0], P = o.pose === 'walk' ? POSE_WALK : POSE_CRAWL;
+            const n = P === POSE_WALK ? WALKF - 1 : CRAWLF, step = P === POSE_WALK ? STRIDE_LEN / (WALKF - 1) : CRAWL_LEN / CRAWLF;
+            const proto = u.models[o.man], variant = variantForModel(u, o.man);
+            /* the roster is shorter than the cycle: the man asked for is copied until
+               there is one of him per frame, each on his own frame, in a row along x.
+               The draw path picks a variant by a man's index in his section, so it is
+               pinned to the one he was for the life of this page. */
+            window.variantForModel = function () { return variant; };
+            u.models.length = 0;
+            for (let k = 0; k < n; k++) {
+              const m = {}; for (const q in proto) m[q] = proto[q];
+              m.alive = true; m.x = o.spot.x + (k - (n - 1) / 2) * o.gap; m.y = o.spot.y; m.f = 0;
+              m.pose = P; m.prone = P === POSE_CRAWL; m.gait = k * step + 0.01;
+              u.models.push(m);
+            }
+            return { variant: variant, n };
+          }, { key, man, pose: pz, spot, gap: pz === 'walk' ? 16 : 26 });
+          const name = `strip-${key}-${man}-${got.variant}-${pz}`;
+          console.log(`  ${name}  ${got.n} frames`);
+          await camera(page, { x: spot.x, y: spot.y, dist: Number(args.dist) || (pz === 'walk' ? 150 : 110), pitch: Number(args.pitch) || 0.22, yaw: Math.PI / 2, lift: pz === 'walk' ? 10 : 3 });
+          await shoot(page, out(name), { settle: SETTLE });
+        }
+        return;
+      }
       for (const key of keys) for (const man of men) for (const pz of poses) {
         const got = await page.evaluate(o => {
           /* stage the section, then leave one man of it standing in the posture asked for */
@@ -420,11 +455,18 @@ for (const s of wanted) if (!SCENES[s]) { console.error(`unknown scene "${s}" (t
 const t0 = Date.now();
 const browser = await launch();
 let failed = 0;
+let FILE;
+if (BASE) {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'ortona-shoot-'));
+  FILE = path.join(tmp, 'ortona.html');
+  fs.writeFileSync(FILE, execFileSync('git', ['show', `${BASE}:ortona.html`], { cwd: ROOT, encoding: 'utf8', maxBuffer: 1 << 28 }));
+  console.log(`photographing ${BASE}`);
+}
 
 for (const name of wanted) {
   /* A fresh page per scene: scenes mutate global game state freely, and a
    * stale one would quietly poison the next capture. */
-  const { page, context, log } = await openGame(browser, DEVICE);
+  const { page, context, log } = await openGame(browser, DEVICE, FILE ? { file: FILE } : {});
   console.log(`\n[${name}] ${DEVICE}`);
   try {
     await SCENES[name].run(page);
