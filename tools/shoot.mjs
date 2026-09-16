@@ -148,6 +148,12 @@ const SCENES = {
         await page.evaluate(([h, t, p]) => {
           window.povHatch(h);
           const u = window.POV.u.inside || window.POV.u;
+          /* hold the turret while the shot settles. Every angle here is set against
+             u.turret and the settle frames run the simulation, so a tank that acquires
+             something traverses out from under the framing between the two: at a radian
+             a second and a field of view of one, the crew shot came back looking out over
+             the hull at open ground with nobody in it. */
+          u.manual = 1; u.want = undefined;
           if (t === null) {
             /* aimed at a station rather than at a fixed angle. The crew sit low and close,
                so a framing chosen before they were seated points at the floor between
@@ -256,7 +262,7 @@ const SCENES = {
       const cat = await catalog(page);
       const keys = (args.only ? String(args.only).split(',') : ['us_rifle', 'ger_gren'])
         .filter(k => cat.units.some(u => u.key === k && (u.cat === 'inf' || u.cat === 'team')));
-      const poses = (args.pose ? String(args.pose).split(',') : ['stand', 'walk', 'fire', 'crouch', 'cfire', 'prone', 'crawl']);
+      const poses = (args.pose ? String(args.pose).split(',') : ['stand', 'ready', 'walk', 'run', 'fire', 'kneel', 'kfire', 'prone', 'crawl']);
       const men = args.man === undefined ? [0] : String(args.man).split(',').map(Number);
       const dist = Number(args.dist) || (play ? 600 : 58), pitch = Number(args.pitch) || (play ? 0.75 : 0.30);
       const steps = Number(args.steps) || (TURN ? 4 : 1);

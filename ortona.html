@@ -2799,7 +2799,8 @@ function spawnUnit(side, key, x, y, facing) {
     u.models = [];
     for (var i = 0; i < d.models; i++) {
       var o = squadOffset(i, d.models);
-      var mm = { hp: d.hpPer, alive: true, x: x + o.x, y: y + o.y, ox: o.x, oy: o.y, f: u.facing, fire: 0 };
+      var mm = { hp: d.hpPer, alive: true, x: x + o.x, y: y + o.y, ox: o.x, oy: o.y, f: u.facing,
+                 fire: 0, pose: POSE_STAND, aim: 0, settle: 0, wasMoving: false };
       manSeed(mm);
       u.models.push(mm);
     }
@@ -3657,9 +3658,19 @@ function updateModels(u, dt) {
       else if (walkable(nmx, m.y)) m.x = nmx;
       else if (walkable(m.x, nmy)) m.y = nmy;
     }
-    /* stride advances with ground covered, so the feet never skate */
+    /* Stride advances with ground covered, so the feet never skate. And a section that
+       halts finishes the step it is in: on the frame the order ends, the gait runs on to
+       the next double-support frame at sixty units a second, so a man arrives with his
+       feet together in under a quarter of a second rather than snapping out of mid-stride
+       into attention with one leg still out in front of him. */
     var moved = Math.hypot(m.x - px0, m.y - py0);
     m.gait = (m.gait || 0) + moved;
+    if (m.wasMoving && !u.moving) {
+      var half = STRIDE_LEN / 2, rem = half - (m.gait % half);
+      m.settle = rem < .5 ? 0 : rem;
+    }
+    m.wasMoving = u.moving;
+    if (m.settle > 0) { var adv = Math.min(m.settle, 60 * dt); m.gait += adv; m.settle -= adv; }
     /* Where he looks. A man on his feet faces the way he is walking; he turns his head
        and his weapon onto a target only when it lies near enough to that line to look at
        without walking sideways. Facing the target whatever he was doing put a section
@@ -3677,17 +3688,31 @@ function updateModels(u, dt) {
     /* What he is doing with himself. In order of how little choice he has about it:
        pinned men are flat and crawl if they move at all, men under fire go down, men on
        their feet walk, and men halted take whatever posture the thing they are behind
-       actually calls for. */
+       actually calls for.
+         A round leaving is what puts the weapon in the shoulder, and it stays there for
+       six tenths of a second afterwards: a rifle at its own rate of fire keeps it up
+       continuously, and a man who has stopped shooting comes down to the low ready
+       rather than standing with his rifle at his cheek at nothing. This is read below
+       the moment it is written, so it comes first. */
+    if (m.fire > 0) m.aim = .6; else if (m.aim > 0) m.aim -= dt;
     var st = halted && !u.gar ? coverStanceAt(m.x, m.y) : 0;
+    var shooting = m.aim > 0;
+    /* Alert is short of engaged: nothing to shoot at this instant, but rounds in the
+       air, or a bearing the section has already been told to watch. A man standing at
+       attention in the middle of a firefight is the one posture no photograph of one
+       ever shows, and POSE_STAND was the whole of what this army did when it was not
+       actually pulling a trigger. */
+    var alert = engaged || u.sup > .15 || (halted && u.threatAng !== null && u.threatAng !== undefined);
     if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
     else if (u.sup > .55 && !u.moving && !u.gar) m.pose = POSE_PRONE;
     else if (u.stance === 'ground' && halted && !u.gar && st !== STAND_DUG) m.pose = POSE_PRONE;
-    else if (u.moving) m.pose = POSE_WALK;
-    else if (u.gar) m.pose = POSE_FIRE;                    /* at a window, weapon up */
-    else if (st === STAND_FLAT) m.pose = POSE_PRONE;       /* a crater lip, a ditch */
-    else if (st === STAND_LOW) m.pose = engaged ? POSE_CFIRE : POSE_CROUCH;
-    else if (engaged) m.pose = POSE_FIRE;                  /* in a trench, or against a wall */
-    else if (st === STAND_DUG || st === STAND_TALL) m.pose = POSE_STAND;
+    else if (u.moving) m.pose = (u.stance === 'double' || u.retreat) ? POSE_RUN : POSE_WALK;
+    else if (m.settle > 0 || (moved > dt * 8 && !u.gar)) m.pose = POSE_WALK;   /* finishing a step, or walking to his slot */
+    else if (u.gar) m.pose = shooting ? POSE_FIRE : POSE_READY;   /* at a window */
+    else if (st === STAND_FLAT) m.pose = POSE_PRONE;              /* a crater lip, a ditch */
+    else if (st === STAND_LOW) m.pose = engaged && shooting ? POSE_CFIRE : POSE_CROUCH;   /* the kneel, under the old ids */
+    else if (engaged) m.pose = shooting ? POSE_FIRE : POSE_READY; /* in a trench, or against a wall */
+    else if (alert) m.pose = POSE_READY;
     else m.pose = POSE_STAND;
     m.prone = m.pose === POSE_PRONE || m.pose === POSE_CRAWL;
     if (m.fire > 0) {
@@ -17960,8 +17985,16 @@ function frameOf(set, m) {
   return Math.floor((m.gait || 0) / (set.len / n)) % n;
 }
 /* One man's matrix, for the shadow pass, the colour pass and the corpses alike. */
-function figMat(m) {
-  return m4model(m.x, m.y, groundZ(m.x, m.y), m.f, FIG_SCALE * (m.sc || 1));
+/* One man's matrix, for the shadow pass, the colour pass and the corpses alike. On a
+   phone there is no run cycle baked -- it is the same eight shapes at a longer stride
+   and it doubles what the infantry weighs -- so a running man is drawn from the walk
+   frames with the whole figure pitched onto his nose through the matrix, which is most
+   of what tells a run from a walk at the distance a phone is looked at. */
+function figMat(m, variant) {
+  var k = FIG_SCALE * (m.sc || 1), gz = groundZ(m.x, m.y);
+  if (m.pose === POSE_RUN && MODELS.man[variant] && !MODELS.man[variant][POSE_RUN])
+    return m4lean(m.x, m.y, gz, m.f, k, 0, -.28);
+  return m4model(m.x, m.y, gz, m.f, k);
 }
 /* the mesh a weapon team stands round: its own piece if it has one, otherwise the
    side's anti-tank gun or its medium machine gun */
@@ -18477,8 +18510,8 @@ function castUnit(u) {
   } else {
     for (var k = 0; k < u.models.length; k++) {
       var m = u.models[k]; if (!m.alive) continue;
-      var buf = poseBuffers(u, m, variantForModel(u, k));
-      if (buf) drawDepthGeom(buf, figMat(m));
+      var variant = variantForModel(u, k), buf = poseBuffers(u, m, variant);
+      if (buf) drawDepthGeom(buf, figMat(m, variant));
     }
     if (u.cat === 'team' && aliveModels(u) > 0) {
       var a = u.models.find(function (mm) { return mm.alive; });
@@ -18601,7 +18634,7 @@ function drawUnits3D(v, list) {
         /* his own tint: no two men of a section are cut from the same bolt of serge, and
            a per-draw uniform the renderer already takes costs nothing */
         _mt[0] = tint[0] * (m.tint || 1); _mt[1] = tint[1] * (m.tint || 1); _mt[2] = tint[2] * (m.tint || 1);
-        if (buf) drawGeom(buf, figMat(m), false, _mt);
+        if (buf) drawGeom(buf, figMat(m, variant), false, _mt);
         _blobs.push({ x: m.x, y: m.y, r: m.prone ? 12 : 8, a: .38 });
       }
       if (u.cat === 'team' && aliveModels(u) > 0) {

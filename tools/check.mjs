@@ -78,6 +78,32 @@ for (const device of TARGETS) {
   ok('both sides still in the field', mid.unitsBySide.us > 0 && mid.unitsBySide.ger > 0,
      `us ${mid.unitsBySide.us}, ger ${mid.unitsBySide.ger}`);
 
+  /* --- the postures a battle actually reaches. A pose that is written, baked and never
+     chosen looks exactly like a pose that is not there, and standing was for the life of
+     the game the whole of what a man did whenever he was not pulling a trigger. Sampled
+     over twenty seconds rather than at one instant, because one frame catches whatever
+     the battle happened to be doing on it. Twenty samples and not ten: counted every
+     frame of a forty-second battle the weapon is up on 1.7 per cent of man-frames, which
+     ten instants two seconds apart can miss entirely and did. --- */
+  const poses = {};
+  for (let i = 0; i < 20; i++) {
+    await fastForward(page, 1);
+    const s = await page.evaluate(() => {
+      const names = {}, out = {};
+      Object.keys(window).filter(k => /^POSE_/.test(k)).forEach(k => { names[window[k]] = k.slice(5).toLowerCase(); });
+      window.G.units.forEach(u => {
+        if (u.dead || u.cat === 'veh' || !u.models) return;
+        u.models.forEach(m => { if (m.alive) { const n = names[m.pose] || m.pose; out[n] = (out[n] || 0) + 1; } });
+      });
+      return out;
+    });
+    Object.keys(s).forEach(k => { poses[k] = (poses[k] || 0) + s[k]; });
+  }
+  const upright = (poses.stand || 0) + (poses.ready || 0);
+  const kinds = Object.keys(poses).length;
+  ok('the men reach their postures, not only standing', upright > 0 && (poses.walk || 0) > 0 && kinds >= 3,
+     Object.keys(poses).sort((a, b) => poses[b] - poses[a]).map(k => `${k} ${poses[k]}`).join(', '));
+
   /* --- draw rate, measured on the real renderer --- */
   const tDraw = Date.now();
   await frames(page, 4);
