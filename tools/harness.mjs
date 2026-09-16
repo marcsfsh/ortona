@@ -363,7 +363,11 @@ export async function installHooks(page) {
             /* clearest ground first, and flattest among ground that is equally clear.
                A gallery wants somewhere to stand a model, and a bank under it reads as
                a broken model. */
-            const score = Math.min(clearOf, 220) * 3 - dev * 8;
+            /* Flat first and clear second. A bench measures a figure in framebuffer
+               pixels against thresholds of four to six, and a slope under one foot moves
+               a bounding box by one: weighted the other way the search traded three
+               units of clearance for five of fall and two pose pairs changed verdict. */
+            const score = Math.min(clearOf, 200) - dev * 30;
             if (best === null || score > best.score) best = { x: x, y: y, z: z0, dev: dev, score: score, open: Math.round(clearOf) };
           }
         }
