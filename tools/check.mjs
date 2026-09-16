@@ -104,6 +104,29 @@ for (const device of TARGETS) {
   ok('the men reach their postures, not only standing', upright > 0 && (poses.walk || 0) > 0 && kinds >= 3,
      Object.keys(poses).sort((a, b) => poses[b] - poses[a]).map(k => `${k} ${poses[k]}`).join(', '));
 
+  /* --- clicking the men. A section is not its marker: its men walk to their formation
+     places and then to whatever cover the section chose, which the cover pass allows a
+     hundred and eighteen units away. Measured on a real battle, near half of the
+     player's own men stand further from their marker than a click could reach, so a
+     player who clicked what he could see selected nothing. --- */
+  const pick = await page.evaluate(() => {
+    let men = 0, far = 0, hit = 0, worst = 0;
+    window.G.units.forEach(u => {
+      if (u.dead || u.inside || !u.models || u.side !== window.G.side) return;
+      u.models.forEach(m => {
+        if (!m.alive) return;
+        men++;
+        const d = Math.hypot(m.x - u.x, m.y - u.y), reach = window.unitRadius(u) + 10;
+        if (d > worst) worst = d;
+        if (d > reach) { far++; if (window.unitsAt(m.x, m.y, 10).indexOf(u) >= 0) hit++; }
+      });
+    });
+    return { men, far, hit, worst: +worst.toFixed(0) };
+  });
+  ok('a click on a man selects his section, wherever he has walked to',
+     pick.men > 0 && pick.hit === pick.far,
+     `${pick.men} men, ${pick.far} of them past a click's reach of their marker, ${pick.hit} still selectable; furthest ${pick.worst}`);
+
   /* --- the dead, and what it costs to draw them. The list runs to two hundred and
      twenty and every one of them used to be drawn every frame wherever it lay, off
      screen or not. Count the binds in a real frame rather than reading the loop. --- */
@@ -225,6 +248,272 @@ for (const device of TARGETS) {
   ok('the men bake into one table, with nothing NaN and nothing leaked', men.table && men.nan === 0 && men.wasNan === 0 && men.freed >= men.frames,
      men.table ? `${men.variants} variants, ${men.poses} poses, ${men.frames} buffers, ${men.freed} freed on a rebuild, eye ${men.eye} standing`
                : 'no MODELS.man table in this file');
+
+  /* --- the mortars: the first weapon here that shoots what it cannot see. Three claims
+     worth a row. It needs no line, so it drops bombs through a building. It still needs
+     the target SEEN, by the side rather than by itself, which is what keeps it honest. And
+     a fire mission lands where it was laid, inside the circle the player is shown.
+       Staged on the map's own buildings so the blocker is the game's, and it puts back
+     what it borrowed: everything after this needs the battle intact. --- */
+  const mor = await page.evaluate(() => {
+    const key = window.G.side === 'us' ? 'us_mor' : 'ger_mor';
+    if (!window.UNITS[key] || !window.UNITS[key].indirect) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    const foe = window.G.side === 'us' ? 'ger' : 'us';
+    const b = window.G.blds[0], a = Math.PI / 2, R = 190;
+    function stage(withEyes) {
+      window.G.units.length = 0; window.G.shots.length = 0;
+      const u = window.spawnUnit(window.G.side, key, b.x - Math.cos(a) * R, b.y - Math.sin(a) * R, a);
+      const e = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle',
+                                 b.x + Math.cos(a) * R, b.y + Math.sin(a) * R, a + Math.PI);
+      u.setup = 0;
+      if (withEyes) {
+        const o = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'us_rifle' : 'ger_gren',
+                                   e.x + 120, e.y + 40, a + Math.PI);
+        o.setup = 0;
+      }
+      window.computeVisibility();
+      return { u, e };
+    }
+    function runFor(s, secs) {
+      let fired = 0;
+      for (let f = 0; f < 60 * secs; f++) {
+        window.computeVisibility();
+        s.u.target = window.acquire(s.u) || null;
+        const n = window.G.shots.length;
+        window.updateUnit(s.u, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+        if (window.G.shots.length > n) fired++;
+      }
+      return fired;
+    }
+    const blind = stage(false);
+    const line = window.fireLine(blind.u, blind.e);
+    const unobserved = runFor(blind, 40);
+    const seenS = stage(true);
+    const observed = runFor(seenS, 40);
+    /* and a mission, laid past the range the tube engages on its own */
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const m = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    m.setup = 0;
+    const B = m.def.barrage, tx = 600 + Math.round((B.range + m.def.w.range) / 2), ty = 900;
+    const laid = window.orderBarrage(m, tx, ty);
+    const far = window.orderBarrage(m, 600 + B.range + 120, 900);
+    const out = [];
+    /* run on past the end: the last bomb is counted by seeing it leave the list, and a
+       loop that stops the moment the list empties never sees the one that emptied it */
+    let quiet = 0;
+    for (let f = 0; f < 60 * 90 && quiet < 30; f++) {
+      const before = window.G.shots.slice();
+      window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      before.forEach(sh => {
+        if (sh.kind === 'shell' && window.G.shots.indexOf(sh) < 0)
+          out.push(Math.hypot(sh.tx - tx, sh.ty - ty));
+      });
+      quiet = (m.barrage || window.G.shots.length) ? 0 : quiet + 1;
+    }
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    /* A mission aims anywhere inside its circle and then has its own round-to-round
+       scatter on top, so the honest bound on a bomb is the circle plus that scatter.
+       Asserting the circle alone failed on one round in ten, which is the scatter doing
+       exactly what it is there for.
+         The count inside the drawn circle is the loose one and has to be read that way:
+       an aim point is uniform in the circle, so a round near its edge is thrown outside
+       by the scatter about as often as not. Ten runs of unchanged code put it at 7, 8, 9
+       and 10 of ten, and an assertion pinned at eight failed on the fourth run of a day.
+       `inBound` is the claim; this is a floor under how much of the mission the player is
+       shown honestly. */
+    const bound = B.r + 14;
+    return { has: true, line, unobserved, observed, laid, far,
+             rounds: out.length, want: B.rounds, r: B.r, bound,
+             inCircle: out.filter(d => d <= B.r).length,
+             inBound: out.filter(d => d <= bound).length,
+             past: tx - 600 > m.def.w.range };
+  });
+  ok('a mortar shells what the side can see, over what is in the way, and lands where it is laid',
+     !mor.has || (mor.line === false && mor.unobserved === 0 && mor.observed > 0 &&
+                  mor.laid && !mor.far && mor.past && mor.rounds === mor.want &&
+                  mor.inBound === mor.rounds && mor.inCircle >= mor.rounds - 4),
+     !mor.has ? 'no indirect weapon in this file'
+              : `through a building: ${mor.unobserved} rounds unobserved, ${mor.observed} with eyes on; ` +
+                `a mission past free-fire range fired ${mor.rounds} of ${mor.want}, ${mor.inCircle} inside ${mor.r} and ` +
+                `${mor.inBound} inside ${mor.bound}, and out of range was refused`);
+
+  /* --- the pack howitzers, which are the mortar's claims turned round. The mortar fires
+     on its own account and the gun never does, so what is worth asserting is the refusal:
+     an enemy plainly in sight, well inside the gun's reach, and not one round in a minute
+     of it. Then the same gun with a mission on it, to show the refusal is the flag and not
+     a broken weapon. And the setup, which is the one mechanic the mortar row zeroed out:
+     a mission laid on a gun that has just been put down waits for the crew. --- */
+  const how = await page.evaluate(() => {
+    const key = window.G.side === 'us' ? 'us_how' : 'ger_how';
+    if (!window.UNITS[key] || !window.UNITS[key].barrageOnly) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    const foe = window.G.side === 'us' ? 'ger' : 'us';
+    function clear() { window.G.units.length = 0; window.G.shots.length = 0; }
+    function run(u, secs) {
+      let fired = 0;
+      for (let f = 0; f < 60 * secs; f++) {
+        window.computeVisibility();
+        u.target = window.acquire(u) || null;
+        const n = window.G.shots.length;
+        window.updateUnit(u, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+        if (window.G.shots.length > n) fired++;
+      }
+      return fired;
+    }
+    /* In the open, in daylight, well inside the gun's OWN eye -- half the barrage range
+       is outside it, and a target the side cannot see proves nothing about a rule that is
+       meant to refuse targets it can. Seeing is a rate now, so the flag is read after the
+       minute rather than off one call to computeVisibility. */
+    clear();
+    const g = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    g.setup = 0;
+    const B = g.def.barrage, D = Math.round(Math.min(B.range / 2, g.def.sight - 60));
+    const e = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle', 600 + D, 900, Math.PI);
+    window.computeVisibility();
+    const idle = run(g, 60);
+    const seen = window.G.side === 'us' ? e.vUs : e.vGer;
+    const picked = window.acquire(g);
+    /* and the same gun, told to shell the ground he is standing on */
+    const laid = window.orderBarrage(g, e.x, e.y);
+    const out = [];
+    let quiet = 0;
+    for (let f = 0; f < 60 * 120 && quiet < 30; f++) {
+      const before = window.G.shots.slice();
+      window.updateUnit(g, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      before.forEach(sh => {
+        if (sh.kind === 'shell' && window.G.shots.indexOf(sh) < 0)
+          out.push(Math.hypot(sh.tx - e.x, sh.ty - e.y));
+      });
+      quiet = (g.barrage || window.G.shots.length) ? 0 : quiet + 1;
+    }
+    /* the crew have to get it into action first: a mission on a gun just put down waits */
+    clear();
+    const h = window.spawnUnit(window.G.side, key, 600, 900, 0);
+    h.setup = h.def.setup;
+    window.orderBarrage(h, 600 + D, 900);
+    let early = 0;
+    for (let f = 0; f < 60 * Math.max(1, h.def.setup - 1); f++) {
+      const n = window.G.shots.length;
+      window.updateUnit(h, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      if (window.G.shots.length > n) early++;
+    }
+    let after = 0;
+    for (let f = 0; f < 60 * 20; f++) {
+      const n = window.G.shots.length;
+      window.updateUnit(h, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      if (window.G.shots.length > n) after++;
+    }
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    const bound = B.r + 14;
+    return { has: true, key, seen: !!seen, picked: !!picked, idle, laid, dist: D,
+             rounds: out.length, want: B.rounds, r: B.r, bound,
+             inCircle: out.filter(d => d <= B.r).length,
+             inBound: out.filter(d => d <= bound).length,
+             setup: h.def.setup, early, after };
+  });
+  ok('a pack howitzer fires only on an order, into an area, and only once it is in action',
+     !how.has || (how.seen && !how.picked && how.idle === 0 && how.laid &&
+                  how.rounds === how.want && how.inBound === how.rounds &&
+                  how.inCircle >= how.rounds - 2 && how.early === 0 && how.after > 0),
+     !how.has ? 'no barrage-only weapon in this file'
+              : `${how.key} with a section in sight at ${how.dist}: acquired ${how.picked ? 'one' : 'nothing'}, ` +
+                `fired ${how.idle} rounds in a minute; laid on him it fired ${how.rounds} of ${how.want}, ` +
+                `${how.inCircle} inside ${how.r} and ${how.inBound} inside ${how.bound}; ` +
+                `${how.early} rounds during ${how.setup}s of setup and ${how.after} after it`);
+
+  /* --- the heavy battery, which is four rules rather than a weapon. It is dug as a field
+     work and not queued, it may not be dug near its own headquarters, it will not fire
+     into the enemy's base, and it takes the best part of a minute to come round onto a
+     bearing behind it. Each of those is a refusal, and a refusal that has quietly stopped
+     working looks exactly like one that never fires. --- */
+  const bat = await page.evaluate(() => {
+    const side = window.G.side, kind = side === 'us' ? 'how8' : 'how210';
+    const W = window.WORKS[kind];
+    if (!W || !W.minHq) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    const sites = window.G.sites.slice(), works = window.G.works.slice();
+    const mp = window.G.res[side].mp, fu = window.G.res[side].fu;
+    window.G.res[side].mp = 9000; window.G.res[side].fu = 9000;
+    const hq = window.G.blds.filter(b => b.side === side && b.def.hq)[0];
+    const foeHq = window.G.blds.filter(b => b.side !== side && b.def.hq)[0];
+    const dir = side === 'us' ? 1 : -1;
+    /* inside its own back yard: refused however clear the ground is */
+    const near = window.placeWork(side, kind, hq.x + dir * 200, hq.y, 0, []);
+    /* and forward of it: taken, on the first patch of ground that will hold it */
+    let site = null, at = null;
+    for (let d = W.minHq + 60; d < W.minHq + 700 && !site; d += 60)
+      for (let k = -4; k <= 4 && !site; k++) {
+        const x = hq.x + dir * d, y = hq.y + k * 110;
+        site = window.placeWork(side, kind, x, y, dir > 0 ? 0 : Math.PI, []);
+        if (site) at = { x, y };
+      }
+    if (!site) { window.G.res[side].mp = mp; window.G.res[side].fu = fu; return { has: true, dug: false }; }
+    site.prog = 1; window.updateSites(0);
+    const g = window.G.units.filter(u => u.key === W.unit)[0];
+    /* a second one, with the first already standing: one a side */
+    const twice = window.placeWork(side, kind, at.x + dir * 200, at.y + 200, 0, []);
+    window.G.res[side].mp = mp; window.G.res[side].fu = fu;
+    const B = g.def.barrage;
+    /* The enemy's own base is out of bounds, and asking that question needs a gun that
+       can reach it. Dug on the first legal patch the Canadian eight-inch is 1275 from a
+       point 300 short of the German headquarters and its reach is 1250, so from there the
+       answer is 'out of range' and the rule under test is never consulted -- which is the
+       two rules doing the same job from opposite ends and is worth knowing, but it is not
+       a test of either. `homeReach` records it; the gun is then stood forward for the
+       question itself and put back. The control is the same range on a bearing with
+       nothing of the enemy's on it. */
+    const homeReach = Math.round(Math.hypot(foeHq.x - g.x, foeHq.y - g.y));
+    const gx0 = g.x, gy0 = g.y, hA = Math.atan2(hq.y - foeHq.y, hq.x - foeHq.x);
+    g.x = foeHq.x + Math.cos(hA) * 900; g.y = foeHq.y + Math.sin(hA) * 900;
+    const bx0 = foeHq.x + Math.cos(hA) * 300, by0 = foeHq.y + Math.sin(hA) * 300;
+    const onBase = window.orderBarrage(g, bx0, by0);
+    const whyBase = window.barrageWhy(g, bx0, by0);
+    const dd0 = Math.hypot(bx0 - g.x, by0 - g.y);
+    const cA = Math.atan2(by0 - g.y, bx0 - g.x) + 1.4;
+    const clear = window.barrageWhy(g, g.x + Math.cos(cA) * dd0, g.y + Math.sin(cA) * dd0);
+    g.barrage = null; g.x = gx0; g.y = gy0;
+    /* a mission behind the gun, so the whole of the traverse has to be paid for */
+    const tx = g.x - Math.cos(g.facing) * 700, ty = g.y - Math.sin(g.facing) * 700;
+    const laid = window.orderBarrage(g, tx, ty);
+    const slew = (Math.PI - (g.def.layTol || .35)) / g.def.traverse;
+    let first = -1, out = [], quiet = 0;
+    for (let f = 0; f < 60 * 260 && quiet < 40; f++) {
+      const before = window.G.shots.slice();
+      window.updateUnit(g, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60;
+      if (first < 0 && window.G.shots.length > before.length) first = f / 60;
+      before.forEach(sh => {
+        if (sh.kind === 'shell' && window.G.shots.indexOf(sh) < 0) out.push(Math.hypot(sh.tx - tx, sh.ty - ty));
+      });
+      quiet = (g.barrage || window.G.shots.length) ? 0 : quiet + 1;
+    }
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    window.G.sites.length = 0; sites.forEach(q => window.G.sites.push(q));
+    window.G.works.length = 0; works.forEach(q => window.G.works.push(q));
+    window.computeVisibility();
+    const bound = B.r + (B.sp || 10) * 1.6;
+    return { has: true, dug: true, key: W.unit, minHq: W.minHq, near: !!near, twice: !!twice,
+             onBase, whyBase, clear, reach: +dd0.toFixed(0), homeReach, laid, slew: +slew.toFixed(1), first: +first.toFixed(1),
+             rounds: out.length, want: B.rounds, r: B.r, bound,
+             inBound: out.filter(d => d <= bound).length,
+             wider: B.r > window.UNITS[side === 'us' ? 'us_how' : 'ger_how'].barrage.r };
+  });
+  ok('a heavy battery is dug forward, fires only on an order, and is slow onto a new bearing',
+     !bat.has || (bat.dug && !bat.near && !bat.twice && !bat.onBase && bat.whyBase === 'safe' &&
+                  bat.clear === null && bat.laid && bat.wider && bat.first >= bat.slew * 0.9 &&
+                  bat.rounds === bat.want && bat.inBound === bat.rounds),
+     !bat.has ? 'no heavy battery in this file'
+              : !bat.dug ? `nowhere beyond ${bat.minHq} of the headquarters would take the position`
+              : `${bat.key}: refused inside ${bat.minHq} of its own HQ ${bat.near ? 'NO' : 'yes'}, ` +
+                `a second one ${bat.twice ? 'NO' : 'refused'}, ${bat.homeReach} from the enemy HQ where it stands; ` +
+                `stood ${bat.reach} off it, a mission 300 short of it ` +
+                `${bat.onBase ? 'NO' : 'refused (' + bat.whyBase + ')'} and the same range on clear ground ` +
+                `${bat.clear === null ? 'taken' : 'NO (' + bat.clear + ')'}; ` +
+                `laid behind itself the first round left at ${bat.first}s against ${bat.slew}s of traverse, ` +
+                `${bat.rounds} of ${bat.want} rounds, ${bat.inBound} inside ${bat.bound} on a circle of ${bat.r}`);
 
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
@@ -352,6 +641,106 @@ for (const device of TARGETS) {
                                          || document.getElementById('mini').getBoundingClientRect().width > 260);
   ok('tactical map expands', mapOpen);
   await page.click('#tMap').catch(() => {});
+
+  /* --- the handicap, which is the player's half of what difficulty used to be. What is
+     asserted is the split: with every setting at its top and the opposition on GREEN, the
+     five numbers reach the player's side and none of them reaches the opposition's, whose
+     population cap is still green's own hundred and seventy-five. Production and
+     construction are timed rather than read off the settings, because a setting that is
+     stored and never multiplied into anything looks exactly like one that works. --- */
+  await reload(page);
+  await page.evaluate(() => {
+    /* every knob to its top, through the stepper the player uses rather than by writing
+       PD, so the row covers the control as well as the number */
+    document.getElementById('hopen').click();
+    window.HCAP.forEach(h => { for (let i = 0; i < 12; i++) window.hcapStep(h, 1); });
+  });
+  await deploy(page, { side: args.side || 'us', diff: 0 });
+  const hcap = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const pd = window.G.pd, hq = window.G.blds.filter(b => b.side === side && b.def.hq)[0];
+    /* production: how much queue time one second of wall clock buys, at the handicap
+       against the flat one the opposition gets */
+    function qRate(s) {
+      const b = window.G.blds.filter(x => x.side === s && x.def.hq)[0];
+      const keep = b.queue.slice(), qt = b.qt;
+      b.queue = [b.def.makes[0]]; b.qt = 0;
+      for (let f = 0; f < 60; f++) window.updateBuilding(b, 1 / 60);
+      const r = b.qt;
+      b.queue = keep; b.qt = qt;
+      return +r.toFixed(2);
+    }
+    const prodYou = qRate(side), prodFoe = qRate(foe);
+    /* construction: an engineer put against a half-built post, a second of it each way */
+    function cRate(s) {
+      const e = window.G.units.filter(u => u.side === s && u.def.builder)[0];
+      if (!e) return -1;
+      const b = window.spawnBuilding(s, s === 'us' ? 'us_bar' : 'ger_qtr',
+                                    e.x + (s === 'us' ? 90 : -90), e.y, false);
+      b.built = 0;
+      e.order = 'build'; e.building = b; e.x = b.x; e.y = b.y;
+      for (let f = 0; f < 60; f++) window.updateUnit(e, 1 / 60);
+      const r = b.built;
+      b.dead = true; window.G.blds.splice(window.G.blds.indexOf(b), 1);
+      e.building = null; e.order = null;
+      return +r.toFixed(4);
+    }
+    const consYou = cRate(side), consFoe = cRate(foe);
+    return { pd, diff: window.G.diff,
+             popYou: window.popCap(side), popFoe: window.popCap(foe),
+             mp: Math.round(window.G.res[side].mp), fu: Math.round(window.G.res[side].fu),
+             incYou: +window.G.inc[side].mp.toFixed(2), incFoe: +window.G.inc[foe].mp.toFixed(2),
+             prodYou, prodFoe, consYou, consFoe,
+             even: window.hcapEven(), rows: document.querySelectorAll('#hgrid .hrow').length,
+             hqTime: hq.def.makes.length };
+  });
+  ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
+     hcap.rows === 5 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
+     hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
+     hcap.incYou > hcap.incFoe * 2 &&
+     hcap.prodYou > hcap.prodFoe * 3 && hcap.prodFoe > 0 &&
+     hcap.consYou > hcap.consFoe * 3 && hcap.consFoe > 0,
+     `${hcap.rows} settings, all off even; on GREEN the player's cap is ${hcap.popYou} and the opposition's ${hcap.popFoe}; ` +
+     `the till opened at ${hcap.mp}/${hcap.fu}f; income ${hcap.incYou} against ${hcap.incFoe}; ` +
+     `a second of queue buys ${hcap.prodYou}s against ${hcap.prodFoe}s and a second of digging ` +
+     `${hcap.consYou} of a building against ${hcap.consFoe}`);
+  /* and EVEN puts every one of them back */
+  await page.evaluate(() => { document.getElementById('heven').click(); });
+  const evened = await page.evaluate(() => ({ even: window.hcapEven(), made: window.pdMake(),
+                                              badge: document.getElementById('hopen').textContent }));
+  ok('the EVEN button puts every setting back where it started',
+     evened.even && evened.made.inc === 1 && evened.made.prod === 1 && evened.made.cons === 1 &&
+     evened.made.pop === 200 && evened.made.mp === 420 && evened.made.fu === 20 &&
+     evened.badge.indexOf('ON') < 0,
+     `${evened.made.inc}x income, ${evened.made.prod}x production, ${evened.made.cons}x construction, ` +
+     `cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, the button reads "${evened.badge}"`);
+
+  /* --- the switch on the title screen that takes the opposition's guns away. What is
+     asserted is the negative -- over eight minutes of battle the brain never once bought
+     a tube, bought a gun or dug a battery, and has none on the field -- with the control
+     being that the block those rules live in was reached at all. Without the control a
+     misspelt counter name passes the whole row by never moving. --- */
+  await reload(page);
+  await page.click('.arty[data-arty="0"]');
+  await deploy(page, { side: args.side || 'us', diff: args.diff === undefined ? 1 : Number(args.diff) });
+  await fastForward(page, 480);
+  const noArty = await page.evaluate(() => {
+    const R = (window.AIR && window.AIR.fired) || {}, foe = window.G.side === 'us' ? 'ger' : 'us';
+    return {
+      off: window.G.aiArty === false,
+      reached: R['mortar.gate.reached'] || 0,
+      bought: (R['buy.mortar'] || 0) + (R['buy.how'] || 0) + (R['battery.dig'] || 0) + (R['battery.want'] || 0),
+      onField: window.G.units.filter(u => u.side === foe && u.def.barrage).length,
+      sites: window.G.sites.filter(q => q.side === foe && window.WORKS[q.kind] &&
+                                        window.WORKS[q.kind].unit &&
+                                        window.UNITS[window.WORKS[q.kind].unit].barrage).length,
+      army: window.G.units.filter(u => u.side === foe).length
+    };
+  });
+  ok('the title screen can take the opposition\'s artillery away',
+     noArty.off && noArty.reached > 0 && noArty.bought === 0 && noArty.onField === 0 && noArty.sites === 0,
+     `G.aiArty ${noArty.off ? 'off' : 'STILL ON'}; over 480s the post block was reached ${noArty.reached} times, ` +
+     `artillery rules fired ${noArty.bought} times, and an army of ${noArty.army} has ${noArty.onField} tubes and ${noArty.sites} positions going up`);
 
   /* --- the map editor --- */
   await reload(page);

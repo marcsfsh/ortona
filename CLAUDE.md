@@ -1886,6 +1886,237 @@ Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone g
 elite infantry inside two hundred of it is a dead gun, which is what the men in front of
 it are for.
 
+**Artillery, and what makes it artillery.** Everything else on this roster shoots at a
+thing it can see down a line it has to have. `def.indirect` is the other kind: `acquire`
+and `fireAt` skip the line test entirely, the shell is given a long flight and a high arc
+instead of the nearly flat one a gun's round takes, and the unit is left out of the rule
+that gives a gunner a sight as long as his weapon -- a tube that could see eight hundred
+units would be a tube with no reason to exist. What it does not skip is `vUs`/`vGer`: the
+target still has to be seen by the side, by somebody, which is the whole of what keeps it
+honest. A mortar with nobody forward is a mortar with nothing to shoot at.
+
+**A fire mission is the other half of it.** `def.barrage` is
+`{ range, r, rof, rounds }`: a longer reach than the weapon's own, a circle, a faster rate
+and a fixed number of rounds. `orderBarrage(u, x, y)` lays one and `barrageTick` works it.
+**A round is spent only when one leaves the tube.** An aim point may fall up to `r` beyond
+the circle's centre and so past the mission's own maximum range; `fireAt` refuses it for
+that, and decremented regardless a mission laid near the edge of its range quietly fired
+nine bombs of ten with nothing anywhere to say so. The cooldown is the signal, because
+`fireAt` is the only thing that sets it. A fixed number of rounds rather than a duration
+makes a mission a decision about a scarce thing instead of a switch left on. Moving
+cancels it, setting up suspends it, and the crew lay on the middle of the circle once and
+then work, which is why a mission fires faster than the same tube picking its own targets.
+
+The player lays one with F and a click (`callBarrage`, `G.mode = 'barrage'`) and the same
+card cancels it. Every mission the side has running is drawn on the ground whether its
+tube is selected or not, because a player who has laid one on wants to see where it is
+falling while he does something else; and while a mission is being laid, each selected
+tube's reach is drawn round it, because the reach is a hard edge and without it the only
+feedback is a refusal after the click.
+
+**Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
+(`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
+the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
+pack howitzers (`us_how`, the M1, and `ger_how`, the Italian 75/18 the Germans in Italy
+used every one of they could recover) are `barrageOnly`, which is the whole of what they
+are: `acquire` returns null for them and `fireAt` refuses without a mission, because a gun
+this size is laid by somebody else's map and fired on somebody else's order. A right-click
+on an enemy is a mission on the ground he is standing on, and out of reach it is nothing
+at all rather than an attack order that walks a five-man crew and its howitzer toward the
+enemy to get inside a range the gun will never use.
+
+The reaches are chosen against this map rather than by feel. A headquarters stands 1150
+from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
+it has to come four hundred forward, which puts it among the town's approaches, in front
+of its own infantry, where a section working round the flank will find it. That exposure is
+the price of the shell and it is the reason the reach stops where it does. The Canadian gun
+reaches further and hits softer and the Italian one is the other way round, so the German
+side has to come further forward for the same ground.
+
+On the models, the trail is what tells the two apart: the M1 sits on a box trail, one beam
+under the breech with a single spade on the end of it, and the 75/18 mod. 34 on split ones
+that open out to either side. The 75/18 is the longer barrel of the pair at eighteen
+calibres against the M1's sixteen and carries the taller shield. Neither has a muzzle
+brake. Both are laid up at the elevation a gun that only fires indirect sits at, which is
+what tells the class from the anti-tank guns at a glance: those have long thin barrels held
+level on the same sort of carriage.
+
+**And the heavy battery, which is a position rather than a unit.** `us_how8` (the M1
+8-inch) and `ger_how210` (the Obice da 210/22 mod. 35) are never queued: `WORKS.how8` and
+`WORKS.how210` are how they arrive, the engineers spend eighty seconds and a lorry-load of
+fuel bedding one in, and it stands where it was bedded for the rest of the battle. Four
+rules make it a decision rather than a bigger pack howitzer, and each of them is a refusal
+that has to be counted rather than assumed:
+
+- **One a side** (`limit: 1` on the unit, which `placeWork` already enforced for the
+  eighty-eight). A second battery is not a second decision.
+- **Not near home** (`WORKS[].minHq`, 700). A gun that reaches most of the way across the
+  map and stands behind its own headquarters cannot be got at, so it has to be dug forward
+  of home, which puts it somewhere a flanking section can walk to. The rule is on the work
+  rather than on the player's judgement.
+- **Not into the enemy's base** (`barrage.safe`, 600 round any enemy building). Five
+  two-hundred-kilogram shells into a headquarters wins an annihilation match without an
+  infantryman leaving home. Guns of this weight fired on map references onto ground
+  somebody was fighting over; they did not break up a rear area on a whim.
+- **Slow onto a bearing** (`def.traverse`, a fifth of a radian a second against the
+  mortar's 0.85, with `def.layTol` for how close it has to be before it will fire). Laid
+  behind itself the gun takes fifteen seconds before the first round leaves, which the
+  check row measures against the arithmetic rather than trusting.
+
+And it is the least accurate weapon in the game by a long way: a hundred and ninety units
+of beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that
+so the round-to-round scatter is the gun's own rather than the mortar's flat ten. What it
+has instead is the shell -- three hundred damage over a hundred and thirty of burst, which
+is the heaviest thing either side can put on the ground.
+
+**The two rules meet in the middle, and that is the finding worth keeping.** Dug on the
+first legal patch beyond `minHq`, the Canadian gun is 1575 from the German headquarters
+and its reach is 1250: the range and the minimum distance from home already keep it off
+the enemy base without `safe` ever being consulted. The no-fire zone is what stops a
+player walking the battery forward until it can. The check row had to stand the gun
+forward deliberately to ask the question at all, because from where it is dug the answer
+is 'out of range' and the rule under test is never reached.
+
+**Whether the brain ever digs one was the hard part, and it took four measurements.** The
+rule lives on the engineer, and the first version sat inside the works ladder -- one work
+every fifty-two seconds, and only with fewer than nine standing -- so it was consulted
+seven to fourteen times in a whole battle and lost every one of them to a wall of sandbags
+on money. A thing capped at one a side does not need a cooldown; it has a limit. Asked on
+its own, `battery.reached` went to about 120 a battle. Then `battery.money` read nought of
+ninety-seven, which looked like the price being out of reach and was not: a probe that
+watched the enemy's purse frame by frame found it holding 460 marks and 170 fuel together
+on 193 frames of 8270, with a peak of 568 and 231, so the money is there about two per
+cent of the time and ninety-seven samples of a two per cent event coming back empty is
+luck rather than a rule. What was actually shut was `battery.post`, on every tick where
+the money was there: `aiMortarPost` stands a tube three hundred and eighty to five hundred
+and sixty back from the front, which early in a battle is between the front and the
+headquarters and so inside `minHq`. The two rules were fighting again. Sited instead by
+walking the line from home out to the front sector from the floor upward, the rule fires:
+over three battles of two hundred seconds it reached 113-127 times, wanted on 10-16,
+could pay on 0-3 and dug one. Two hundred seconds is a walkover -- the AI beats a passive
+player by then -- so in a game somebody is playing the want count is hundreds and a
+battery is near certain.
+
+Three smaller things about the emplacement. The **crew are laid out by the work**
+(`WORKS[].lay`, the eighty-eight's own list generalised) rather than walking to cover,
+because the pit is the cover. The **gun is two pieces the way the eighty-eight is**: the
+platform is drawn once on `u.baseA` and does not turn, the gun on top of it is drawn on
+`u.facing` and does, and that is the only thing on screen that shows a battery taking a
+minute to come round -- with an arc drawn on the ground from the present lay to the
+mission's bearing, because a battery that has been given an order otherwise looks exactly
+like a battery that has ignored one. And **the position is not a ring of bags built
+bigger**: that was tried, and a bag laid on an arc at about five units means a ring of
+sixty-two at six courses and three deep is fourteen hundred bags and twenty thousand faces
+for one object, four times the whole German roster. It is two stepped banks of revetted
+earth in forty-six segments, which is six hundred faces and is also what a battery
+position actually looks like.
+
+**The opposition's guns can be switched off before the battle.** `G.aiArty`, set from the
+title screen beside the difficulty and passed through `startGame(side, diff, mode, arty)`,
+gates `morWant`, `howWant` and the battery dig. It gates the enemy only: the player's own
+mortars, pack howitzers and battery are there either way. Artillery is the one arm a player
+cannot answer in kind on the spot -- a battery is eighty seconds of engineer work away and
+the shells are already falling -- so whether the other side has any is a decision about
+what sort of game this is rather than a difficulty setting. `check.mjs` asserts the
+negative over eight minutes of battle, with the control being that the block those rules
+live in was reached at all: without that control a misspelt counter name passes the row by
+never moving.
+
+On the tactics card the whole pass -- the batteries, the switch and the brain that digs
+one -- is a pair difference of -70 with a standard error of 233 over eight pairs, ahead in
+five of eight, which is inside the noise and is the right place for a change that adds a
+weapon neither side can usually afford. And two things the title screen gained on the way:
+its option buttons were 33px on a phone, under the rule the rest of the game holds itself
+to and the first thing a thumb ever touches, so `.pill`, `.mode` and `.arty` now carry a
+44px floor on a coarse pointer.
+
+**Where a tube goes is not where anything else goes.** `aiMortarPost` is the one post on
+the map that wants to be further back rather than nearer, and it deliberately does not ask
+whether the objective can be seen from there: `aiOverwatch` insists on a line, which for a
+tube is exactly the wrong test, because a mortar that can see the ground it is shelling is
+a mortar the enemy can see. It wants distance, cover, and the objective inside a mission's
+reach, and it reads the piece's own reach rather than a table naming one of them.
+`aiSetUp` is exempted the same way, so a wave steps off once its tube is laid rather than
+waiting for a line it should not have. The mission is laid on the nearest thing the side
+knows about within 190 of the objective rather than on the flag: a defended sector is
+defended from somewhere, and bombs into the middle of a circle nobody is standing in are
+ten bombs spent on scenery.
+
+**The company post buys off a list, and that list is not a chain of else-ifs.** It was,
+tried cheapest first, and every branch below the first WANTED one was unreachable whether
+or not that one could be paid for: `brain.mjs` counted `mortar.gate.reached` at 447 and
+`mortar.gate.money` at nought over one battle, which means a side with no mortar and never
+250 spare marks to buy one with spent the whole battle unable to raise an assault group, a
+gun or a rifleman out of the post. `buy.elite` fired nought times in three hundred seconds.
+Wanting a thing and affording it are different questions and only the second should stop
+the list.
+
+**And the post's two heavy weapons are bought out of the till rather than out of `spare`.**
+`spare` is what is left once the armour ladder has put its head aside, and it never once in
+five hundred thinking ticks cleared the price of either the mortar or the gun, so both
+rules were waiting on money nothing else wanted. **A reserve was tried first and it is the
+one thing on this page the tactics card could see plainly:** saving for them the way the
+head of the armour ladder is saved for came back at **-721 a pair with a standard error of
+135 over eight pairs, the working brain ahead in none of eight**. The per-side table said
+why -- half the units and a fifth of the ground -- and the reason is the opening. `morWant`
+is true on the first tick of a battle, so a side reserved 250 marks for a mortar it had no
+company post to build yet and did not raise the sections that take the empty flags in the
+first three minutes, which on this map is the battle. This economy has no slack to save out
+of. A cushion of 150 was tried next, on the reasoning that the armour branch keeps one, and
+at that the till cleared the gun's price on none of 430 ticks. With no cushion it clears on
+about one tick in twenty-five, which is plenty for a thing bought once a battle. Refought
+over eight pairs each way, the two cushions came back at +182 with a standard error of 193
+and -116 with 203 -- both inside the noise, straddling zero, which is the honest answer for
+a change of this kind and the one the tool almost always gives. On the brain card the gun
+is bought once a battle and the tube three times, and nine missions are laid.
+
+**Difficulty is two questions and it used to be one number.** `DIFF` set how hard the
+opposition is to beat and how much help the player gets, in the same row, so a player who
+wanted a veteran opponent had to take a veteran economy with it and a player who wanted an
+easy economy got an opponent that thinks every four seconds and shoots at a third
+accuracy. They are asked separately now.
+
+`DIFF` is the opposition and nothing else: what it earns, how often it thinks, what it
+fields, how well it shoots, how much killing it takes, how it waves, how early it techs,
+its own population cap, and `vp` -- the rate the player's points drain, which stays here
+because being bled faster is pressure the opponent applies rather than a modifier on the
+player's units.
+
+`PD` is the player's own side, five settings on the title screen behind a HANDICAP button
+that lights when any of them is off even: income rate, production speed (a unit out of a
+queue), construction speed (a building or a field work going up), the manpower cap from a
+hundred to five hundred, and what is in the till at the first shot. Each is an index into
+a named list, because the stepper and the game have to read one table -- two lists of the
+same five settings go out of step the moment somebody adds a sixth. `pdMake()` resolves
+the indices once in `startGame` so the income tick and the population check read a number,
+and `pd()` hands the even game to anything that reaches it before a battle. The setting is
+kept in `localStorage` under `ORT_HCAP`, and a handicap carried over from the last battle
+opens the panel rather than hiding in it.
+
+**Four of green's thumbs on the scale are gone rather than moved**, and that is the point
+of the split as much as the settings are. `youAim` multiplied the player's accuracy by
+1.3, `youTough` divided the damage he took by 1.45, `extra` handed him three sections and
+a second engineer at the whistle, and `mgHold` -- read for the player's side alone, off the
+opposition's table -- gave him thirty seconds of trigger before a barrel went on green and
+sixteen on veteran, so picking a harder opponent quietly burnt his own barrels out faster.
+None of it was visible, switchable or mentioned anywhere. A player who wants an easier
+game turns knobs he can read instead; the barrel is one number for him and the eighteen it
+always was for the other side.
+
+**Construction speed is a knob that did not exist.** `build` only ever scaled the
+production queue; a building or a work went up at `dt / time` for both sides at every
+difficulty. They are two settings because they are two decisions: a fast queue with a slow
+spade is a side with an army and no position, and the other way round is a side dug in with
+nothing in it.
+
+Measured by the gate, with every setting at its top and the opposition on GREEN: the
+player's cap is 500 and the opposition's is still green's own 175, the till opens at
+2406/401, income is 34 against 4.42, a second of wall clock buys four seconds of queue
+against one, and a second of digging puts up 0.154 of a building against 0.038. The
+production and construction figures are timed rather than read back off the settings,
+because a setting that is stored and never multiplied into anything looks exactly like one
+that works.
+
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
 `povCamera` builds `MAT` from a yaw and a pitch instead of the orbit camera, so `CAMLIM`
@@ -2284,6 +2515,13 @@ shots/                         screenshot output, gitignored
   with culling on, so a full-screen quad wound the ordinary way (bottom-left, bottom-right,
   top-left) is a back face and is culled without a word. `QUAD` is wound that way. Anything
   drawing it turns culling off first; the billboards already did and the sky did not.
+- **The ground-mark buffer grows now; it used to drop.** `markVert` returned on overflow,
+  so the marks built last -- the fire missions, the order lines, the selection rings --
+  were the ones thrown away, and a ring with a piece missing still looks like a ring. The
+  sector rings alone filled nine thousand floats with the camera at its limit: a dashed
+  ring is walked in 24-unit steps of six vertices each, and a gun's reach ring is 760
+  units across. It was found by adding that ring and watching the frame count stick at
+  exactly the buffer's capacity.
 - **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
   is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
   were the radius comes out wrong in a way nothing will flag.
