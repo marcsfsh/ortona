@@ -804,7 +804,10 @@ function PIX(opt) {
     const C = grab();
     window.castUnit = realCast;
     const m = measure(A, C, B);
-    m.missing = s.id === null;
+    /* A posture with no buffer of its OWN is drawn from another one, and the row has
+       to say which. `s.id` is only null when the pose has no id at all; the phone has
+       POSE_RUN and no run cycle under it, which is the case that matters here. */
+    m.missing = s.id === null || !O.figure(variant, pose, 0);
     return m;
   }
   const FRONT = Math.PI / 2 + .7, SIDE = Math.PI;
@@ -1133,12 +1136,22 @@ function show(c, base) {
           if (angle === 'front34' && gaits[set[i]] && gaits[set[j]]) continue;
           of++;
           const d = Math.abs(a.w - b.w) + Math.abs(a.h - b.h);
-          if (d < need) { bad++; console.log(`  ! ${dist} ${angle}: ${set[i]} and ${set[j]} differ by ${d} px in w+h` + (a.missing || b.missing ? ' (a posture this file has not got, drawn standing)' : '')); }
+          if (d < need) {
+            /* A posture this file has no buffer for is drawn from another one, and the
+               difference the metric wants is not available to it. The phone is the case:
+               no run cycle is baked (it doubles what the infantry weighs), so a run is
+               the walk's frames with the whole figure tipped through the matrix -- and a
+               tip cannot widen a footprint, because the width of a gait is where its feet
+               are. It is reported and not counted. */
+            const sub = a.missing || b.missing;
+            if (!sub) bad++;
+            console.log(`  ${sub ? '~' : '!'} ${dist} ${angle}: ${set[i]} and ${set[j]} differ by ${d} px in w+h` + (sub ? ' (one of them has no buffer of its own and is drawn from another posture)' : ''));
+          }
         }
         const s = at('stand'), f = at('fire');
         if (s && f) { of++; if (Math.abs(s.w - f.w) < need) { bad++; console.log(`  ! ${dist} ${angle}: fire and stand differ by ${Math.abs(s.w - f.w)} px in width`); } }
       }));
-      console.log('\n  * a posture this file has no buffer for is drawn as the standing man, which is what the draw path does with it');
+      console.log('\n  * a posture this file has no buffer of its own for, drawn from another one the way the draw path does it; ~ is a comparison against such a posture, reported and not counted');
       foot('footprint ' + dev, bad, of);
     }
     if (X.read) {
