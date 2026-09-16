@@ -143,11 +143,28 @@ const SCENES = {
       });
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });
       for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
-                                                ['turret', false, .7, -.75], ['crew', false, .35, -.95],
+                                                ['turret', false, .7, -.75], ['crew', false, null, null],
                                                 ['inside', true, 0, -1.3]]) {
         await page.evaluate(([h, t, p]) => {
           window.povHatch(h);
-          window.POV.yaw = (window.POV.u.inside || window.POV.u).turret + t; window.POV.pitch = p;
+          const u = window.POV.u.inside || window.POV.u;
+          if (t === null) {
+            /* aimed at a station rather than at a fixed angle. The crew sit low and close,
+               so a framing chosen before they were seated points at the floor between
+               them: the gunner is all but straight down from the commander's eye, at the
+               pitch limit. Take whichever station stands furthest off in plan, which is
+               the one there is room to see. */
+            const I = window.VMODEL[u.key].inside, e = I.eyeIn;
+            let best = null, far = -1;
+            I.crew.forEach(c => {
+              const d = Math.hypot(c.x - e.x, c.y - e.y);
+              if (d > far) { far = d; best = c; }
+            });
+            window.POV.yaw = u.turret + Math.atan2(best.y - e.y, best.x - e.x);
+            window.POV.pitch = Math.max(-1.35, Math.atan2(best.z - e.z, far));
+            return;
+          }
+          window.POV.yaw = u.turret + t; window.POV.pitch = p;
         }, [hatch, turn, pitch]);
         await shoot(page, out('pov-tank-' + name), { settle: SETTLE });
       }

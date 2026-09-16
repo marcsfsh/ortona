@@ -720,7 +720,8 @@ function GEO(opt) {
       sections.push({ key: k, men: d.models, tris: Math.round(t), draws, depthTris: Math.round(t), depthDraws: d.models });
     });
     R.sections.size = { rows, bufs, tris: Math.round(tris), mb: bytes / 1e6, phoneTris: Math.round(tris - runTris), phoneMb: (bytes - runTris * 3 * STRIDE) / 1e6,
-                        bakeMs: ms, nan, sections, table: M.man ? 'MODELS.man' : 'MODELS.sol/prone/crouch/fire/cfire/crawl', mob: !!MOB };
+                        bakeMs: ms, nan, freed: MODELS.freed === undefined ? null : MODELS.freed,
+                        sections, table: M.man ? 'MODELS.man' : 'MODELS.sol/prone/crouch/fire/cfire/crawl', mob: !!MOB };
   }
   return R;
 }

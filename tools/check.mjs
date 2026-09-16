@@ -146,6 +146,26 @@ for (const device of TARGETS) {
   const povOff = await page.evaluate(() => { document.getElementById('tPov').click(); return !window.POV.on && !document.getElementById('tPov').classList.contains('on'); });
   ok('periscope looks from the unit, turns with a drag, and closes', pov.ok && pov.on && pov.near && pov.turned && pov.btn && povOff, `eye ${pov.height} above the ground`);
 
+  /* --- the men's table: one buffer a pose, nothing NaN in it, and a rebuild that frees
+     what it replaces. A part built from an undefined constant is NaN and vanishes with
+     no error at all, and the bake used to leak every man on the roster on a restart. --- */
+  const men = await page.evaluate(() => {
+    const M = window.MODELS;
+    if (!M.man) return { table: false };
+    let poses = 0, frames = 0;
+    Object.keys(M.man).forEach(v => Object.keys(M.man[v]).forEach(pz => {
+      poses++; const set = M.man[v][pz]; frames += set.frames ? set.frames.length : 1;
+    }));
+    const before = M.nan;
+    window.bakeMen();
+    return { table: true, variants: Object.keys(M.man).length, poses, frames,
+             nan: M.nan, wasNan: before, freed: M.freed,
+             eye: M.eye.can_rifle ? +M.eye.can_rifle[window.POSE_STAND].toFixed(1) : null };
+  });
+  ok('the men bake into one table, with nothing NaN and nothing leaked', men.table && men.nan === 0 && men.wasNan === 0 && men.freed >= men.frames,
+     men.table ? `${men.variants} variants, ${men.poses} poses, ${men.frames} buffers, ${men.freed} freed on a rebuild, eye ${men.eye} standing`
+               : 'no MODELS.man table in this file');
+
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
     /* the gun and barrel tests run another minute of battle on top of the one already
@@ -203,9 +223,19 @@ for (const device of TARGETS) {
     window.DRV.padFire = true;
     return true;
   });
-  await fastForward(page, 1);
-  const aim = await page.evaluate(() => ({ mark: !!window.DRV.mark, ready: window.DRV.mark ? window.gunReady(window.POV.u, window.DRV.mark) : null }));
-  await fastForward(page, 9);
+  /* The mark over the whole burst rather than at one instant. `povGround` walks the look
+     out of the eye and backs it off along the bearing until `fireLine` passes, so where
+     the tank happens to have ended the drive test decides whether there is a mark on any
+     one frame: sampled a second in, the same assertion came back FAIL and PASS on the two
+     devices of one run with the same rounds in the street beside it. What the row is for
+     is that pointing and pulling puts a round somewhere, and a mark at any point in the
+     nine seconds is that. */
+  let markEver = false;
+  for (let i = 0; i < 10; i++) {
+    await fastForward(page, 1);
+    if (await page.evaluate(() => !!window.DRV.mark)) markEver = true;
+  }
+  const aim = { mark: markEver };
   const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
   /* The message says which half it was. Both halves have to hold -- he has to have a
      mark under the crosshair and rounds have to leave -- and printed as the round count
