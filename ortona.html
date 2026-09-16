@@ -8546,12 +8546,13 @@ function drawDepthGeom(buf, model) {
 var MATS = {
   names: ['generic', 'paint', 'steel', 'rubber', 'wood', 'hessian', 'brick', 'plaster',
           'stone', 'earth', 'canvas', 'concrete', 'track', 'tile', 'cloth', 'grass', 'leaf', 'bark',
-          'zimmerit', 'splinter', 'net', 'leather', 'ktcamo', 'p4camo'],
+          'zimmerit', 'splinter', 'net', 'leather', 'ktcamo', 'p4camo', 'scrim'],
   /* [specular strength, shininess, uv scale] per material */
   spec: [[.08, 18, .10], [.32, 42, .08], [.55, 70, .12], [.10, 12, .16], [.14, 20, .10], [.04, 8, .12],
          [.06, 10, .05], [.05, 10, .06], [.08, 12, .06], [.03, 6, .04], [.06, 9, .12], [.09, 14, .05],
          [.40, 38, .18], [.14, 18, .08], [.05, 8, .16], [.02, 6, .25], [.06, 10, .3], [.04, 8, .14],
-         [.14, 20, .05], [.05, 8, .22], [.03, 6, .5], [.30, 26, .2], [.10, 14, .018], [.11, 15, .024]],
+         [.14, 20, .05], [.05, 8, .22], [.03, 6, .5], [.30, 26, .2], [.10, 14, .018], [.11, 15, .024],
+         [.04, 8, .35]],
   byColour: {}, atlas: null, tex: null, TILE: 256, COLS: 4
 };
 function matIndex(name) { return MATS.names.indexOf(name); }
@@ -8625,19 +8626,56 @@ function registerMaterials() {
   tag(['#4d5340', '#5d6450', '#41473a', '#4f5643', '#8a7a4e'], 'paint');
   tag(['#cfccbe', '#dcd9cb', '#8e2f26', '#a03a30', '#6b5a3c', '#7d6a48', '#3c3a2e'], 'paint');
   tag(['#4e4230', '#5c4e38', '#42382a', '#6d6144', '#5d5236', '#3a3020', '#251e13', '#0f110c'], 'earth');
-  if (typeof KIT !== 'undefined') Object.keys(KIT).forEach(function (k) {
-    var q = KIT[k];
-    tag([q.coat, q.coatD, q.trous, q.pack, q.helm, q.helmD], 'cloth');
-    tag([q.boot, q.skin], 'generic'); tag([q.wood], 'wood'); tag([q.steel], 'steel');
-  });
+  if (typeof KIT !== 'undefined') tagKit();
   tag(['#4c4131', '#5e5240', '#4a3f2e', '#5a4e3a', '#39301f'], 'bark');
   tag(['#59653c', '#616d43', '#4e5a34', '#56623a', '#3d4a2c', '#22300f', '#293914'], 'grass');
   tag(['#7d8a6a', '#76856a'], 'leaf');
   if (typeof OLIVE !== 'undefined') tag([OLIVE.lo, OLIVE.mid, OLIVE.hi, OLIVE.card, OLIVE.card2], 'leaf');
   tag(['#3f4c31', '#4f5d3c', '#65734b'], 'leaf');
   tag(['#9d9f6c', '#8f965f'], 'grass');
-  tag(['#8a8460', '#948e68', '#7a7456'], 'splinter');
-  tag(['#5d5a44'], 'net');
+  tag(['#5d5a44'], 'net');                                  /* the camouflage net over the HQ yard */
+}
+/* Every colour a figure wears and every lit() derivative of it a builder makes. A
+   derivative nobody tagged falls to the flat generic tile, which is how 433 of a
+   rifleman's 772 faces came to be drawn with no weave in them and a different gloss from
+   the panel beside them: `box` shades its bevel strips with lit() of the face colours,
+   and nothing has ever registered those for the men.
+   It is a ladder of every step rather than a list of the steps the builders happen to
+   use, because a list is exactly what went out of step in the first place: written as
+   the nineteen multipliers I read out of the builders, six derivatives were still on the
+   generic tile the first time it was measured, and they were `box`'s bevel shades of
+   colours that were already shaded. `lit` keys its cache on the multiplier truncated to
+   a hundredth, so every step a hundredth apart is a colour in its own right and nothing
+   between KIT_LO and KIT_HI can be missed. The bounds are measured rather than chosen:
+   instrumenting `lit` over every pose of every variant gives 0.90 to 1.20, and the range
+   here carries that with room for the value ladder the rig brings in, which reaches .55
+   under a helmet brim. `tagEdges` then closes it over the three shades `box` makes of
+   whatever it is handed, which is where all six of the survivors came from. */
+var KIT_LO = 50, KIT_HI = 125;
+function tagKit() {
+  function tagAll(cols, name) {
+    var mi = matIndex(name), i, j, c;
+    for (i = 0; i < cols.length; i++) {
+      if (!cols[i]) continue;
+      MATS.byColour[cols[i]] = mi;
+      MATS.byColour[lit(cols[i], 1.06)] = mi; MATS.byColour[lit(cols[i], .92)] = mi;
+      MATS.byColour[lit(cols[i], 1.03)] = mi;
+      for (j = KIT_LO; j <= KIT_HI; j++) {
+        c = lit(cols[i], j / 100);
+        MATS.byColour[c] = mi;
+        MATS.byColour[lit(c, 1.06)] = mi; MATS.byColour[lit(c, .92)] = mi; MATS.byColour[lit(c, 1.03)] = mi;
+      }
+    }
+  }
+  var U = KIT.us, D = KIT.ger;
+  tagAll([U.coat, U.coatD, U.trous, U.patch, D.coat, D.coatD, D.trous], 'cloth');
+  tagAll([U.boot, U.jerkin, D.boot, D.belt, D.pouch, D.gaiter], 'leather');
+  tagAll([U.web, U.webD, U.pack, U.canvas, U.gaiter, D.canvas, D.pack, D.pouchC, D.web, D.webD], 'canvas');
+  tagAll([U.skin, U.skinD, U.hair, U.helm, U.helmD, D.helm, D.helmD], 'generic');
+  tagAll([U.wood, D.wood], 'wood');
+  tagAll([U.steel, D.steel, '#3a4a4a', '#20221a'], 'steel');
+  tagAll(['#3b3226', '#4a4030'], 'rubber');
+  tagAll([D.smock], 'splinter');
 }
 function matOf(col) { var m = MATS.byColour[col]; return m === undefined ? 0 : m; }
 
@@ -8825,16 +8863,26 @@ function buildAtlas() {
     var l = .5 + ((wx + wy) * .5 - .5) * .07 + (fbm(u * 30, v * 30, 34, 3) - .5) * .07;
     return [l * 1.01, l * .99, l * .95, 1];
   });
-  /* Luftwaffe splinter: angular patches of two greens over tan, with the rain streaks */
+  /* Luftwaffe splinter, third pattern: angular patches over a grey-tan, with the rain
+     strokes. The shipped tile was two greens over a warm tan and came out within a level
+     of Canadian serge at the distance the game is played from; one blue-green class and
+     one red-brown one put the hue of the two sides apart.
+     It is painted at the mean every other opaque tile in the atlas sits at, which is
+     about 0.49, and that is the whole of what the READ row turned on. A tile is a
+     pattern and the value belongs in the vertex colour: repainted at 0.40 -- greyer, and
+     I thought better for it -- it multiplied the Fallschirmjaeger's pale smock and paler
+     crown down to darker than the Canadian's wet serge, and the two sides came off the
+     framebuffer 5 levels apart out of 255 with the palettes as far apart as they are. */
   paint(19, function (u, v) {
     var cell = noise2(Math.floor(u * 5 + v * 2.2), Math.floor(v * 4 - u * 1.4), 35);
-    var l = .52, r = 1.08, g = 1.0, b = .82;
-    if (cell < .3) { l = .42; r = .82; g = .95; b = .74; } else if (cell < .55) { l = .38; r = .78; g = .86; b = .7; }
-    if (noise2(Math.floor(u * 80), Math.floor(v * 6), 36) > .86) l -= .1;                /* rain streaks */
-    l += (fbm(u * 12, v * 12, 37, 2) - .5) * .06;
+    var l = .58, r = 1.04, g = 1.0, b = .86;
+    if (cell < .30) { l = .445; r = .74; g = .92; b = .76; }
+    else if (cell < .55) { l = .42; r = 1.16; g = .82; b = .66; }
+    if (noise2(Math.floor(u * 80), Math.floor(v * 6), 36) > .86) l -= .10;               /* rain strokes */
+    l += (fbm(u * 12, v * 12, 37, 2) - .5) * .074;
     return [l * r, l * g, l * b, 1];
   });
-  /* scrim net over a helmet: a wide mesh with hessian strips knotted through it */
+  /* scrim net on transparency, for the camouflage net over the headquarters yard */
   paint(20, function (u, v, x, y) {
     var mesh = ((x % 24) < 3) || ((y % 24) < 3), strip = noise2(Math.floor(u * 10), Math.floor(v * 10), 38) > .55;
     var a = mesh ? 1 : strip ? .85 : 0, l = mesh ? .28 : .5 + (noise2(Math.floor(u * 10), Math.floor(v * 10), 39) - .5) * .2;
@@ -8868,6 +8916,22 @@ function buildAtlas() {
     else if (q > .61) col = [.72, .50, .37];                                           /* rotbraun */
     l += (fbm(u * 12, v * 12, 49, 2) - .5) * .07;
     return [l * col[0], l * col[1], l * col[2], 1];
+  });
+  /* A helmet under scrim: the net, the hessian knotted through it and the shell showing
+     between, in one opaque tile. It is a new tile rather than a repaint of 20, because
+     that one is the camouflage net over the headquarters yard and wants its alpha; the
+     canvas and the shader both size themselves from the names, so a name is all it takes. */
+  paint(24, function (u, v, x, y) {
+    var mesh = ((x % 20) < 3) || ((y % 20) < 3);
+    var strip = noise2(Math.floor(u * 9), Math.floor(v * 9), 38) > .5;
+    var l = .5, r = 1, g = 1, b = 1;
+    if (mesh) { l = .30; r = .95; g = .95; b = .8; }
+    else if (strip) {
+      if (noise2(Math.floor(u * 9), Math.floor(v * 9), 39) > .5) { l = .60; r = 1.06; g = 1.0; b = .78; }
+      else { l = .42; r = .86; g = 1.0; b = .74; }
+    }
+    l += (fbm(u * 16, v * 16, 40, 2) - .5) * .06;
+    return [l * r, l * g, l * b, 1];
   });
   MATS.atlas = c;
   MATS.tex = makeTexture(c.width, c.height, true);
@@ -17024,13 +17088,25 @@ function dirVec(a, len) { var cx = Math.cos(a) * len, cy = Math.sin(a) * len; re
    shoulders 5.4 across, his head 1.8 wide under a helmet whose brim is 3.5 across. The
    Canadians are in serge battledress with 37-pattern webbing and the Mk II helmet; the
    Fallschirmjäger in the jump smock, side-laced boots and the rimless M38. */
+/* Measured on the live page at six hundred units, which is where the game is played
+   from: the two sides came out of the pixel the same colour to within one level of 255
+   (102,95,66 against 102,95,67) and the same luminance to within 0.002, so nothing a
+   player could see told a Canadian from a Fallschirmjaeger. What a palette can move is
+   not the whole figure -- fifteen per cent off every albedo shifted the mean by 0.02,
+   because most of what a man puts on the screen at this sun and this pitch is his own
+   sky-lit sides -- but the top of him against the bottom. So both sides read light over
+   dark and are told apart by how much: a scrimmed Mk II over wet serge against a pale
+   splinter crown over a black belt and field-grey legs. */
 var KIT = {
-  us:  { coat: '#6d6b4c', coatD: '#54533b', trous: '#66644a', boot: '#2e2a22', web: '#8d865e', webD: '#746e4c',
-         helm: '#5f6446', helmD: '#4b503a', pack: '#7e7754', canvas: '#8a8460', skin: '#c19a72', skinD: '#a88259',
-         hair: '#3b2e22', wood: '#5a4630', steel: '#34382f', gaiter: '#8d865e' },
-  ger: { coat: '#7a7d6a', coatD: '#5f6252', trous: '#6b6d5c', boot: '#2a261e', web: '#4a4c40', webD: '#3a3c32',
-         helm: '#5d6150', helmD: '#4a4e40', pack: '#5a5c4c', canvas: '#7c7e6c', skin: '#c19a72', skinD: '#a88259',
-         hair: '#3b2e22', wood: '#4a3423', steel: '#2f332a', gaiter: '#2a261e' }
+  us:  { coat: '#59563c', coatD: '#45422e', trous: '#57543b', jerkin: '#4e3a28', boot: '#26221b',
+         web: '#a29a74', webD: '#867f5f', pack: '#8d8562', canvas: '#8c8462', gaiter: '#a29a74',
+         helm: '#666c4c', helmD: '#4c5238', patch: '#7a2e26', skin: '#c19a72', skinD: '#a88259',
+         hair: '#3b2e22', wood: '#5a4630', steel: '#34382f' },
+  ger: { coat: '#7a7d6a', coatD: '#5f6252', trous: '#575b52', smock: '#b6ac92', boot: '#1f1d19',
+         belt: '#2a2520', pouch: '#2a2520', pouchC: '#8c8466', canvas: '#8a8266', pack: '#8a8266',
+         web: '#8a8266', webD: '#6b6857', gaiter: '#1f1d19',
+         helm: '#4f5545', helmD: '#3f4436', skin: '#c19a72', skinD: '#a88259',
+         hair: '#3b2e22', wood: '#4a3423', steel: '#2f332a' }
 };
 /* a head: a lathe for the skull, a flat for the face, ears, hair line under the helmet */
 function headModel(k, z) {
@@ -17046,31 +17122,38 @@ function headModel(k, z) {
   f = f.concat(cyl(-.1, 0, z - 2.15, .62, .62, .9, 8, k.skinD, k.skin, 0, true));           /* neck */
   return f;
 }
-/* Mk II Brodie: a shallow crown on a broad flat brim, chinstrap under the jaw */
+/* Mk II Brodie: a shallow crown on a broad flat brim.
+   The scrim was a second lathe over the crown on the alpha-tested net tile -- 72 faces
+   and 144 triangles of mesh drawn at a distance where the whole helmet is five pixels
+   across, the only alpha geometry any soldier had, a second draw call and a second state
+   change on every Canadian on the field, and it never cast a shadow. It is the crown's
+   own tile now: scrim painted opaque, mesh, hessian and shell in one. The chinstraps
+   under the jaw were 0.12 units thick, a tenth of a pixel at six hundred. */
 function helmetUS(k, z) {
+  var sc = matIndex('scrim');
   var f = lathe(0, 0, 0, [[0, 0], [1.75, 0], [1.75, .2], [1.42, .26], [1.36, .62], [1.14, .92], [.6, 1.12], [0, 1.16]], 18,
                 [k.helmD, k.helmD, k.helm, k.helm, k.helm, lit(k.helm, 1.1), lit(k.helm, 1.18)], true)
-    .map(function (q) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
+    .map(function (q, i) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c,
+                                    m: i < 36 ? undefined : sc,
+                                    n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
   f = f.concat(box(0, 0, z - .1, 3.5, 3.6, .12, k.helmD, k.helmD));                          /* the brim's underside edge */
-  /* a scrim net over the crown, with hessian knotted through it */
-  f = f.concat(lathe(0, 0, 0, [[1.47, .3], [1.42, .66], [1.18, .98], [.63, 1.19], [0, 1.23]], 18, '#5d5a44', true)
-    .map(function (q) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, m: matIndex('net'), alpha: 1, n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; }));
-  f = f.concat(cyl(0, -1.15, z - 1.9, .12, .12, 2.0, 4, k.web, k.web));                      /* chinstrap */
-  f = f.concat(cyl(0,  1.15, z - 1.9, .12, .12, 2.0, 4, k.web, k.web));
   return f;
 }
-/* M38 paratrooper helmet: rimless, close-fitting, with the deep neck guard and the
-   four-point strap */
+/* M38 paratrooper helmet: rimless and close-fitting, under the splinter cover most of
+   the division wore in Italy.
+   The cover was a second lathe a fiftieth of a unit outside the shell, which is a
+   z-fighting pair at any distance and two hundred and forty triangles of it; it is the
+   shell's own tile above the rim now. The neck guard was a box standing 1.2 behind the
+   crown, which is the M35's skirt and the one thing an M38 does not have -- it is what
+   the helmet was cut down to lose. The straps go with the Canadian's. */
 function helmetGER(k, z) {
+  var sp = matIndex('splinter');
   var f = lathe(0, 0, 0, [[0, 0], [1.45, 0], [1.5, .5], [1.42, 1.1], [1.15, 1.6], [.6, 1.9], [0, 1.95]], 18,
                 [k.helmD, k.helm, k.helm, k.helm, lit(k.helm, 1.1), lit(k.helm, 1.18)], true)
-    .map(function (q) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
-  f = f.concat(box(-1.2, 0, z - .35, 1.0, 2.4, .5, k.helmD, k.helm));                        /* neck guard */
-  /* the splinter helmet cover most of the division wore in Italy */
-  f = f.concat(lathe(0, 0, 0, [[1.48, .3], [1.5, .55], [1.44, 1.12], [1.17, 1.62], [.62, 1.92], [0, 1.97]], 18, '#8a8460', true)
-    .map(function (q) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, m: matIndex('splinter'), n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; }));
-  f = f.concat(cyl(.3, -1.2, z - 1.9, .12, .12, 2.1, 4, k.web, k.web));
-  f = f.concat(cyl(.3,  1.2, z - 1.9, .12, .12, 2.1, 4, k.web, k.web));
+    .map(function (q, i) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }),
+                                    c: i < 18 ? q.c : lit(k.smock, i < 36 ? 1 : i < 72 ? 1.04 : 1.08),
+                                    m: i < 18 ? undefined : sp,
+                                    n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
   return f;
 }
 /* a limb segment from one point to another: a box laid along the vector */
@@ -17217,7 +17300,7 @@ function variantForModel(u, i) {
    posture is most of what tells the player what the squad is doing. */
 function soldierModel(variant, phase, pose) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side];
-  var f = [], coat = side === 'ger' ? '#8a8460' : k.coat;
+  var f = [], coat = side === 'ger' ? k.smock : k.coat;
   var firing = pose === 'fire' || pose === 'crouchfire';
   var crouch = pose === 'crouch' || pose === 'crouchfire';
   var ph = phase < 0 ? 0 : phase;
@@ -17260,12 +17343,12 @@ function soldierModel(variant, phase, pose) {
   f = f.concat(box(0, 0, 13.4 + bob, 3.0, 5.0, 4.4, coat, lit(coat, 1.05), k.coatD, .8));                  /* chest */
   if (side === 'ger') {
     /* the jump smock, a long loose over-garment down to the thigh, in splinter */
-    var smock = box(0, 0, 9.6 + bob, 3.4, 5.4, 8.6, '#8a8460', '#948e68', '#7a7456', .8).map(function (q) { q.m = matIndex('splinter'); return q; });
+    var smock = box(0, 0, 9.6 + bob, 3.4, 5.4, 8.6, k.smock, lit(k.smock, 1.06), lit(k.smock, .9), .8).map(function (q) { q.m = matIndex('splinter'); return q; });
     f = f.concat(smock);
   } else {
     /* 'CANADA' shoulder titles and the divisional patch on the sleeve */
-    f = f.concat(box(-.3, -2.9, 17.9 + bob, 1.4, .3, .5, '#7a2e26', '#8a3830'));
-    f = f.concat(box(-.3,  2.9, 17.9 + bob, 1.4, .3, .5, '#7a2e26', '#8a3830'));
+    f = f.concat(box(-.3, -2.9, 17.9 + bob, 1.4, .3, .5, k.patch, lit(k.patch, 1.12)));
+    f = f.concat(box(-.3,  2.9, 17.9 + bob, 1.4, .3, .5, k.patch, lit(k.patch, 1.12)));
   }
   f = f.concat(box(0, 0, 13.2 + bob, 3.0, 5.2, .9, k.coatD, k.coatD));                                      /* waist band */
   f = f.concat(box(-.3, 0, 17.6 + bob, 3.0, 5.6, .8, k.coatD, coat));                                       /* shoulders */
@@ -17368,6 +17451,12 @@ function lowestLeg(f, bodyStart) {
   for (i = 0; i < bodyStart; i++) for (j = 0, v = f[i].v; j < v.length; j++) if (v[j][2] < lo) lo = v[j][2];
   return lo === 1e9 ? 0 : lo;
 }
+/* a material set on every face of a list, or the list untouched when there is none */
+function mark(f, mi) {
+  if (mi === undefined) return f;
+  for (var i = 0; i < f.length; i++) f[i].m = mi;
+  return f;
+}
 /* a face list moved up, carrying the material and the alpha flag that `at` drops */
 function liftFaces(f, dz) {
   var out = [], i;
@@ -17390,9 +17479,13 @@ function boreTip(f, at, dir) {
    pinned men were moving across the ground in a fixed pose, which reads as a body being
    dragged rather than a man pulling himself along on his elbows. */
 function proneModel(variant, phase) {
-  var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side], coat = k.coat;
+  /* A Fallschirmjaeger flat on the ground was in a plain Fliegerbluse: the smock that
+     covers him standing, 153 faces of splinter, was simply not built lying down, so a
+     section going to ground changed sides as it went. */
+  var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side];
+  var coat = side === 'ger' ? k.smock : k.coat, sm = side === 'ger' ? matIndex('splinter') : undefined;
   var f = [], cw = phase ? Math.sin(phase * TAU) : 0;
-  f = f.concat(box(-2.5, 0, .6, 6.5, 4.8, 2.6, coat, lit(coat, 1.05), k.coatD));                             /* torso */
+  f = f.concat(mark(box(-2.5, 0, .6, 6.5, 4.8, 2.6, coat, lit(coat, 1.05), side === 'ger' ? lit(coat, .9) : k.coatD), sm));   /* torso */
   f = f.concat(box(-7.0, 0, .5, 3.6, 4.4, 2.2, k.trous, k.trous, lit(k.trous, .9)));                        /* hips */
   /* The legs, and on a crawl beat one swings wide while the other draws in. The three
      segments of a leg are placed at fixed points here rather than hung off each other,
@@ -17409,13 +17502,21 @@ function proneModel(variant, phase) {
      and both halves of it go forward together for the same reason as the legs */
   [[-1, -3.0, -1], [1, 3.0, 1]].forEach(function (p) {
     var reach = cw * p[2] * 1.6;
-    f = f.concat(place(box(1.8, 0, 0, 3.6, 1.25, 1.25, coat, lit(coat, 1.05), k.coatD), p[0] * .5, 0.6 + reach, p[1], 1.6));
-    f = f.concat(place(box(1.5, 0, 0, 3.0, 1.1, 1.1, coat, lit(coat, 1.05), k.coatD), -p[0] * .5, 3.4 + reach, p[1] * .55, 2.2));
+    var cD = side === 'ger' ? lit(coat, .9) : k.coatD;
+    f = f.concat(mark(place(box(1.8, 0, 0, 3.6, 1.25, 1.25, coat, lit(coat, 1.05), cD), p[0] * .5, 0.6 + reach, p[1], 1.6), sm));
+    f = f.concat(mark(place(box(1.5, 0, 0, 3.0, 1.1, 1.1, coat, lit(coat, 1.05), cD), -p[0] * .5, 3.4 + reach, p[1] * .55, 2.2), sm));
   });
-  var headF = headModel(k, 2.9).map(function (q) { return { v: q.v.map(function (p) { return [p[0] + 1.8 + (p[2] - 2.9) * .6, p[1], p[2] - (p[0]) * .5 + .6]; }), c: q.c, n: q.n }; });
-  f = f.concat(headF);
-  f = f.concat(side === 'us' ? helmetUS(k, 3.6).map(function (q) { return { v: q.v.map(function (p) { return [p[0] + 2.4 + (p[2] - 3.6) * .6, p[1], p[2] * .9]; }), c: q.c, n: q.n }; })
-                             : helmetGER(k, 3.4).map(function (q) { return { v: q.v.map(function (p) { return [p[0] + 2.4 + (p[2] - 3.4) * .6, p[1], p[2] * .9]; }), c: q.c, n: q.n }; }));
+  /* the shear that lays the head forward and looks it up, carrying the material and the
+     alpha flag: rebuilt bare, as these two were, a scrimmed helmet came back drawn on a
+     tile it does not own */
+  function shear(fs, dx, z0) {
+    return fs.map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0] + dx + (p[2] - z0) * .6, p[1], z0 === 2.9 ? p[2] - p[0] * .5 + .6 : p[2] * .9]; }),
+               c: q.c, n: q.n, m: q.m, alpha: q.alpha };
+    });
+  }
+  f = f.concat(shear(headModel(k, 2.9), 1.8, 2.9));
+  f = f.concat(side === 'us' ? shear(helmetUS(k, 3.6), 2.4, 3.6) : shear(helmetGER(k, 3.4), 2.4, 3.4));
   var wStart = f.length;
   f = f.concat(place(pitch(weaponModel(k, V.weapon), .04, 0, 0), 0, 4.2, 0, 2.2));
   f.muzzle = boreTip(f.slice(wStart), [4.2, 0, 2.2], [Math.cos(.04), 0, Math.sin(.04)]);
