@@ -207,8 +207,13 @@ for (const device of TARGETS) {
   const aim = await page.evaluate(() => ({ mark: !!window.DRV.mark, ready: window.DRV.mark ? window.gunReady(window.POV.u, window.DRV.mark) : null }));
   await fastForward(page, 9);
   const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
+  /* The message says which half it was. Both halves have to hold -- he has to have a
+     mark under the crosshair and rounds have to leave -- and printed as the round count
+     alone a run that failed on the mark read identically to one that passed, which is
+     how the same line came back FAIL on one device and PASS on the other with the same
+     three rounds beside it. */
   ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
-     `${fired} rounds into the street in nine seconds`);
+     `${fired} rounds into the street in nine seconds` + (aim.mark ? '' : ', but no mark under the crosshair'));
 
   /* --- the coaxial: its own trigger, no reload, and a barrel that will only take so much --- */
   const mg0 = await page.evaluate(() => {

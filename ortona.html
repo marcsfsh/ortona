@@ -9176,7 +9176,7 @@ function aoVert(g, p, nx, ny, nz) {
    fitted mount and what is bolted to them; what is baked is everything that can be
    drawn, alternatives included. */
 /* what collects in a joint, and what the road throws at the bottom of a hull */
-var AOGRIME = [.227, .196, .149], AODUST = [.553, .506, .412];
+var AOGRIME = [.227, .196, .149], AODUST = [.553, .506, .412], AOMUD = [.30, .26, .20];
 function bakeAO(parts, dark, wear) {
   var g = aoGridOf(parts);
   if (!g) return;
@@ -9270,6 +9270,9 @@ function facesToArray(faces, out) {
           var k2 = f.ao[vi], gr = (1 - k2) * .45, du = f.dust[vi], we = f.wear[vi];
           r += (AOGRIME[0] - r) * gr; g2 += (AOGRIME[1] - g2) * gr; b2 += (AOGRIME[2] - b2) * gr;
           r += (AODUST[0] - r) * du; g2 += (AODUST[1] - g2) * du; b2 += (AODUST[2] - b2) * du;
+          /* and December: a man walks in mud to the knee, which is darker and browner
+             than anything the road throws at a hull. Only the figure writes f.mud. */
+          if (f.mud) { var mu = f.mud[vi]; r += (AOMUD[0] - r) * mu; g2 += (AOMUD[1] - g2) * mu; b2 += (AOMUD[2] - b2) * mu; }
           var lm = (r + g2 + b2) * .45 + .14;
           r = (r + (lm - r) * we) * k2; g2 = (g2 + (lm - g2) * we) * k2; b2 = (b2 + (lm - b2) * we) * k2;
         }
@@ -12975,8 +12978,7 @@ var HATCHES = {};
 /* the man himself, sunk into the ring so what shows over the rim is a head, shoulders
    and a helmet, which is all that ever shows of a tank commander */
 function commander(side, cx, cy, zl) {
-  var f = soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1);
-  return place(f, 0, cx, cy, zl - 13.4 - (f.lift || 0));
+  return place(soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1), 0, cx, cy, zl - 13.4 + CREW_RISE);
 }
 function hatchShut(cx, cy, zl, r, col, cap) {
   return cyl(cx, cy, zl, r, r, .5, 18, col, cap, 0, true)
@@ -17108,430 +17110,826 @@ var KIT = {
          helm: '#4f5545', helmD: '#3f4436', skin: '#c19a72', skinD: '#a88259',
          hair: '#3b2e22', wood: '#4a3423', steel: '#2f332a' }
 };
-/* a head: a lathe for the skull, a flat for the face, ears, hair line under the helmet */
-function headModel(k, z) {
-  var f = [];
-  var prof = [[0, -1.35], [.9, -1.35], [1.05, -.9], [1.1, -.2], [1.05, .5], [.8, 1.05], [.4, 1.3], [0, 1.35]];
-  /* the lathe is about y; stand it up so its axis is z and its face looks along +x */
-  var skull = lathe(0, 0, 0, prof, 14, [k.skinD, k.skin, k.skin, k.skin, k.skin, k.skinD, k.hair], true)
-    .map(function (q) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
-  f = f.concat(skull);
-  f = f.concat(box(1.0, 0, z - .35, .4, .55, .9, k.skin, k.skin, k.skinD));                  /* nose */
-  f = f.concat(box(-.1, -1.15, z - .1, .5, .25, .8, k.skinD, k.skin));                       /* ears */
-  f = f.concat(box(-.1,  1.15, z - .1, .5, .25, .8, k.skinD, k.skin));
-  f = f.concat(cyl(-.1, 0, z - 2.15, .62, .62, .9, 8, k.skinD, k.skin, 0, true));           /* neck */
+/* ---- the rig ------------------------------------------------------------------
+   One figure, one set of joints, one table of poses. What was here was a stack of
+   boxes with the hip typed as a number per posture and both hands typed per pose
+   and per weapon class: a forearm ended a unit and a half inside the blouse, a
+   crouch put the boots two units under the road, and a new posture meant a new set
+   of hand positions for every weapon on the roster. The rig hangs both legs off a
+   hip at zero and stands the whole man on the lowest thing he has, so no height is
+   ever typed; and it solves the arms onto the weapon rather than the weapon onto
+   the arms, so a hand is on the fore-end by construction.
+   Proportions are Drillis and Contini on a 20.6 unit man: the hip pivot at 0.52 of
+   him, the upper arm 0.186 and the forearm to the palm 0.20. */
+var RIG = { thigh: 5.0, shin: 4.7, sole: 1.0, arm: 3.7, fore: 3.8, reach: 7.4,
+            shX: .2, shY: 2.25, shZ: 5.9, hipY: 1.15, chin: 7.0, eye: [.9, 0, 8.7] };
+/* a limb from p0 to p1: a four-sided frustum t0 across at p0 and t1 at p1. Six faces
+   and no bevel, because at the range the game is played from a limb is a line and its
+   taper is the whole of its shape. Built up +z; pitching by (elevation - pi/2) lays
+   +z along the vector and place yaws it about z through the origin. */
+function taperLimb(p0, p1, t0, t1, col) {
+  var dx = p1[0] - p0[0], dy = p1[1] - p0[1], dz = p1[2] - p0[2];
+  var dxy = Math.hypot(dx, dy), len = Math.hypot(dxy, dz) || .01, a = t0 / 2, b = t1 / 2;
+  var seg = frustum([[-a, -a], [a, -a], [a, a], [-a, a]],
+                    [[-b, -b], [b, -b], [b, b], [-b, b]], 0, len, col, col, col);
+  seg = faceOut(seg, 0, 0, len / 2);
+  return place(pitch(seg, Math.atan2(dz, dxy) - Math.PI / 2, 0, 0), Math.atan2(dy, dx), p0[0], p0[1], p0[2]);
+}
+/* Shade a placed part and give it its tile. From the play camera a man is lit mostly
+   by the sky, so the value that reads as a body rather than a silhouette is built into
+   the colours here rather than left to a bake: faces looking toward +x take `front`,
+   toward -x `back`, and the rest `side`. Setting `m` is what keeps a lit() derivative
+   off the flat generic tile whatever the colour table knows, and `faceOut` hands back a
+   flipped face bare, which is why this runs after it and not before. */
+function figPart(faces, mat, front, back, side) {
+  var mi = matIndex(mat), i;
+  for (i = 0; i < faces.length; i++) {
+    var q = faces[i], n = faceNormal(q.v[0], q.v[1], q.v[2]);
+    q.c = Math.abs(n.y) > Math.abs(n.x) + .2 ? side : n.x >= 0 ? front : back;
+    q.m = mi;
+  }
+  return faces;
+}
+/* Two-bone inverse kinematics. A hand out of reach is brought in along the line to the
+   shoulder and the forearm is never lengthened, which is how the old figure put a hand
+   a unit inside its own blouse. `pole` is the direction the elbow is pushed toward. */
+function elbowFor(S, H, U, F, pole, floor) {
+  var dx = H[0] - S[0], dy = H[1] - S[1], dz = H[2] - S[2], L = Math.hypot(dx, dy, dz) || .01;
+  var Lc = clamp(L, Math.abs(U - F) + .05, U + F - .05);
+  if (Lc !== L) {
+    H[0] = S[0] + dx / L * Lc; H[1] = S[1] + dy / L * Lc; H[2] = S[2] + dz / L * Lc;
+    dx = H[0] - S[0]; dy = H[1] - S[1]; dz = H[2] - S[2]; L = Lc;
+  }
+  var ux = dx / L, uy = dy / L, uz = dz / L;
+  var a = (U * U - F * F + L * L) / (2 * L), h = Math.sqrt(Math.max(0, U * U - a * a));
+  var cx = S[0] + ux * a, cy = S[1] + uy * a, cz = S[2] + uz * a;
+  var d = pole[0] * ux + pole[1] * uy + pole[2] * uz;
+  var px = pole[0] - ux * d, py = pole[1] - uy * d, pz = pole[2] - uz * d, pl = Math.hypot(px, py, pz) || 1;
+  px /= pl; py /= pl; pz /= pl;
+  /* The elbow runs on a circle about the shoulder-to-hand line and the pole says where
+     on it; poled downward from a shoulder two units up, a prone man's elbow goes through
+     the ground, which is the one place an elbow crawl actually puts it. `floor` turns it
+     round the circle to the nearest point at or above the ground, and takes the highest
+     point there is when the whole circle is under it. */
+  var t = 0;
+  if (floor !== undefined) {
+    var qx = uy * pz - uz * py, qy = uz * px - ux * pz, qz = ux * py - uy * px;
+    var R = h * Math.hypot(pz, qz);
+    if (R > 1e-6) {
+      var phi = Math.atan2(qz, pz), want = (floor - cz) / R;
+      t = want > 1 ? phi : want < -1 ? phi : Math.abs(angDiff(phi + Math.acos(want), 0)) < Math.abs(angDiff(phi - Math.acos(want), 0))
+        ? phi + Math.acos(want) : phi - Math.acos(want);
+      if (cz + R * Math.cos(t - phi) < floor - .001) t = phi;
+      if (cz + h * pz >= floor) t = 0;
+    }
+    var ct = Math.cos(t), st = Math.sin(t);
+    return [cx + h * (px * ct + qx * st), cy + h * (py * ct + qy * st), cz + h * (pz * ct + qz * st)];
+  }
+  return [cx + px * h, cy + py * h, cz + pz * h];
+}
+/* one arm: shoulder S to a hand H with the elbow solved. `sd` is +1 for the right arm
+   and -1 for the left; the divisional patch is a plate on the outer face of the upper */
+function figArm(S, H, pole, k, coat, mat, sd, patch, floor, rec) {
+  var E = elbowFor(S, H, RIG.arm, RIG.fore, pole, floor);
+  var up = figPart(taperLimb(S, E, 1.3, 1.1, coat), mat, coat, lit(coat, .88), lit(coat, .94));
+  var fo = figPart(taperLimb(E, H, 1.15, .9, coat), mat, coat, lit(coat, .88), lit(coat, .94));
+  var hn = figPart(box(H[0], H[1], H[2] - .5, 1.0, 1.0, 1.0, k.skin, k.skin, k.skinD, 0), 'generic', k.skin, k.skinD, k.skinD);
+  var f = up.concat(fo).concat(hn);
+  if (rec) rec.push({ nu: up.length, nf: fo.length, nh: hn.length, elbow: E, at: [H[0], H[1], H[2]] });
+  if (patch) {
+    var px = S[0] + (E[0] - S[0]) * .4, py = S[1] + (E[1] - S[1]) * .4 + sd * .72, pz = S[2] + (E[2] - S[2]) * .4;
+    f = f.concat(figPart(box(px, py, pz - .35, .7, .16, .7, k.patch, k.patch, k.patch, 0), 'cloth', k.patch, k.patch, lit(k.patch, 1.12)));
+  }
   return f;
 }
-/* Mk II Brodie: a shallow crown on a broad flat brim.
+/* One leg hung from a hip pivot at (0, y, 0). The thigh runs half a unit past the knee
+   so a bent knee stays closed at the back. L is [swing, knee, ankle], and the ankle is
+   there for the kneel's rear foot and for the flat feet of a seated man. */
+function figLeg(R, L, y, k, trous, anklet, rec) {
+  var thigh = figPart(taperLimb([0, 0, 0], [0, 0, -R.thigh - .5], 2.0, 1.5, trous), 'cloth',
+                      lit(trous, .92), lit(trous, .82), lit(trous, .88));
+  var shin = figPart(taperLimb([0, 0, 0], [0, 0, -R.shin], 1.6, 1.15, trous), 'cloth',
+                     lit(trous, .85), lit(trous, .74), lit(trous, .80));
+  var foot = figPart(box(.6, 0, -R.shin - R.sole, 3.2, 1.3, 1.0, k.boot, k.boot, k.boot, 0), 'leather',
+                     lit(k.boot, 1.1), k.boot, k.boot);
+  if (anklet) shin = shin.concat(figPart(box(0, 0, -R.shin, 1.5, 1.5, 1.6, k.gaiter, k.gaiter, k.gaiter, 0), 'canvas',
+                                           k.gaiter, lit(k.gaiter, .9), lit(k.gaiter, .95)));
+  else shin = shin.concat(figPart(box(0, 0, -R.shin, 1.5, 1.5, 2.4, k.boot, k.boot, k.boot, 0), 'leather',
+                                  lit(k.boot, 1.1), k.boot, k.boot));
+  if (L[2]) foot = pitch(foot, L[2], 0, -R.shin);
+  var nt = thigh.length, ns = shin.length;
+  var lower = place(pitch(shin.concat(foot), L[1], 0, 0), 0, 0, 0, -R.thigh);
+  var all = place(pitch(thigh.concat(lower), L[0], 0, 0), 0, 0, y, 0);
+  /* Counts and not face lists, because every transform after this rebuilds the objects
+     and a range survives where a reference does not; and the two joints put through the
+     same transforms the faces were. Read off the geometry instead, the knee came back
+     half a unit low every time: the thigh runs past it on purpose, so a bent knee stays
+     closed at the back, and the lowest vertex of a thigh is the over-run. */
+  if (rec) {
+    var kn = pitchPt([0, 0, -R.thigh], L[0]);
+    var an = pitchPt([0, 0, -R.shin], L[1]);
+    an = pitchPt([an[0], an[1], an[2] - R.thigh], L[0]);
+    rec.push({ n: all.length, nt: nt, ns: ns, knee: [kn[0], y, kn[2]], ankle: [an[0], y, an[2]] });
+  }
+  return all;
+}
+function lowestZ(faces) {
+  var z = 1e9, i, j;
+  for (i = 0; i < faces.length; i++) for (j = 0; j < faces[i].v.length; j++) if (faces[i].v[j][2] < z) z = faces[i].v[j][2];
+  return z === 1e9 ? 0 : z;
+}
+/* December ground reaches the knee. It is a colour band on the vertex rather than a
+   bake: wet mud from the sole up to mudZ, squared so it is thickest at the boot, with
+   `settle` a little on anything that looks up. The three bake fields are written as
+   no-ops so the block in facesToArray that reads them runs at all. */
+function mudPass(faces, mudZ, amt, settle) {
+  for (var i = 0; i < faces.length; i++) {
+    var f = faces[i], fn = faceNormal(f.v[0], f.v[1], f.v[2]);
+    f.ao = []; f.wear = []; f.dust = []; f.mud = [];
+    for (var j = 0; j < f.v.length; j++) {
+      var h = clamp((mudZ - f.v[j][2]) / mudZ, 0, 1), up = Math.max(0, f.n ? f.n[j][2] : fn.z);
+      f.ao.push(1); f.wear.push(0); f.dust.push(0);
+      f.mud.push(Math.min(.6, h * h * amt + up * settle));
+    }
+  }
+  return faces;
+}
+/* Lay a weapon at org with a roll about its own bore, a pitch and a yaw, and hand back
+   where any anchor of it now is; the hands and the muzzle are both read off that rather
+   than typed. The roll is there for the Sten, whose magazine sticks 3.4 units out of the
+   left of the receiver: carried at the right hip with the muzzle forward it went through
+   the man's chest and out the other side, and no amount of hanging the carry further
+   outboard can fix a magazine pointing inboard. */
+function layWeapon(w, org, yaw, pt, rl) {
+  var cr = Math.cos(rl || 0), sr = Math.sin(rl || 0);
+  var rolled = rl ? w.map(function (q) {
+    return { v: q.v.map(function (p) { return [p[0], p[1] * cr - p[2] * sr, p[1] * sr + p[2] * cr]; }),
+             c: q.c, m: q.m, alpha: q.alpha,
+             n: q.n ? q.n.map(function (n) { return [n[0], n[1] * cr - n[2] * sr, n[1] * sr + n[2] * cr]; }) : undefined };
+  }) : w;
+  var faces = place(pitch(rolled, pt, 0, 0), yaw, org[0], org[1], org[2]);
+  var cp = Math.cos(pt), sp = Math.sin(pt), cy = Math.cos(yaw), sy = Math.sin(yaw);
+  return { faces: faces, at: function (a) {
+    var ay = a[1] * cr - a[2] * sr, az = a[1] * sr + a[2] * cr;
+    var xp = a[0] * cp - az * sp, zp = a[0] * sp + az * cp;
+    return [org[0] + xp * cy - ay * sy, org[1] + xp * sy + ay * cy, org[2] + zp];
+  } };
+}
+/* The support hand: the furthest point between foreMin and fore that the shoulder can
+   reach. The weapon does not move to meet the hand; the hand slides back along the
+   fore-end, which is what a man with a short reach actually does, and it is why GRIP
+   passes by construction rather than by a number typed per weapon. */
+function fitHand(S, L, a0, a1, reach) {
+  for (var t = 1; t >= 0; t -= .05) {
+    var a = [a0[0] + (a1[0] - a0[0]) * t, a0[1], a0[2] + (a1[2] - a0[2]) * t], H = L.at(a);
+    if (Math.hypot(H[0] - S[0], H[1] - S[1], H[2] - S[2]) <= reach * .98) return H;
+  }
+  return L.at(a0);
+}
+/* Lay a weapon so a named anchor lands on a point, at a yaw and a pitch. The aim uses
+   it with the pitch set to the trunk's own lean, so that once the upper body is leaned
+   the bore comes out level on the facing: laid flat and then leaned with the body, every
+   aimed pose on the roster pointed its gun eight hundredths of a radian into the ground,
+   and the flash with it. */
+function layTo(w, anchor, at, yaw, pt, rl) {
+  var cr = Math.cos(rl || 0), sr = Math.sin(rl || 0);
+  var ay = anchor[1] * cr - anchor[2] * sr, az = anchor[1] * sr + anchor[2] * cr;
+  var cp = Math.cos(pt), sp = Math.sin(pt), cy = Math.cos(yaw), sy = Math.sin(yaw);
+  var xp = anchor[0] * cp - az * sp, zp = anchor[0] * sp + az * cp;
+  return layWeapon(w, [at[0] - (xp * cy - ay * sy), at[1] - (xp * sy + ay * cy), at[2] - zp], yaw, pt, rl);
+}
+function aimLay(w, W, pocket, drop, lean) {
+  return layTo(w, W.buttOut || W.butt, [pocket[0], pocket[1], pocket[2] - (drop || 0)], 0, lean || 0);
+}
+/* a point through the same pitch the faces get: above the pivot it moves toward -x */
+function pitchPt(p, ang) {
+  var c = Math.cos(ang), s2 = Math.sin(ang);
+  return [p[0] * c - p[2] * s2, p[1], p[0] * s2 + p[2] * c];
+}
+/* a point through the lean and the stand, which is the same pair of moves the faces make */
+function figPt(p, lean, dz) {
+  var c = Math.cos(-lean), s = Math.sin(-lean), x = p[0], z = p[2];
+  return [x * c - z * s, p[1], x * s + z * c + dz];
+}
+/* Where a weapon is held and where its muzzle is, in the weapon's own frame: butt at
+   negative x, muzzle along +x, the bore near y 0 and z 0. Anchors rather than hand
+   positions, because a hand position is a fact about one pose and an anchor is a fact
+   about the weapon; the builder never types a hand for an armed pose again. */
+var WEAP = {
+  lee:      { butt: [-3.4, 0, -.3], grip: [-.8, 0, -.8], fore: [3.8, 0, -.9], foreMin: [2.0, 0, -.9], muzzle: [9.9, 0, .25], carryPt: [1.2, 0, -.6] },
+  leescope: { butt: [-3.4, 0, -.3], grip: [-.8, 0, -.8], fore: [3.8, 0, -.9], foreMin: [2.0, 0, -.9], muzzle: [9.9, 0, .25], carryPt: [1.2, 0, -.6] },
+  kar:      { butt: [-3.4, 0, -.3], grip: [-.8, 0, -.8], fore: [3.4, 0, -.9], foreMin: [1.8, 0, -.9], muzzle: [9.7, 0, .25], carryPt: [1.0, 0, -.6] },
+  sten:     { butt: [-3.8, 0, -.4], grip: [-.6, 0, -1.2], fore: [2.2, 0, -.5], foreMin: [1.2, 0, -.5], muzzle: [5.4, 0, 0], carryPt: [.2, 0, -.5], sideMag: 1 },
+  mp40:     { butt: [-1.8, 0, -.3], buttOut: [-3.6, 0, -.3], grip: [-.8, 0, -1.4], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, .1], carryPt: [.4, 0, -.6] },
+  bren:     { butt: [-5.1, 0, -.5], grip: [-1.4, 0, -1.2], fore: [3.2, 0, -.7], foreMin: [1.2, 0, -.7], muzzle: [8.0, 0, .1], rest: [2.0, 0, -.6], carryPt: [1.5, 0, -.6], heavy: 1 },
+  piat:     { butt: [-4.8, 0, -1.0], grip: [-.5, 0, -1.2], fore: [2.4, 0, -1.0], foreMin: [1.6, 0, -1.0], muzzle: [6.6, 0, 0], rest: [0, 0, -.8], carryPt: [.5, 0, -.9], heavy: 1 },
+  schreck:  { butt: [-4.0, 0, -1.0], rest: [-4.0, 0, -1.0], grip: [-1.5, 0, -1.4], fore: [2.0, 0, -.6], foreMin: [1.0, 0, -.6], muzzle: [9.5, 0, 0], carryPt: [0, 0, -.7], tube: 1 }
+};
+/* A pose is two leg triples, a lean and a carry; the aimed ones add a blade and an
+   offset for the head. One table drives the builder, the bake, the muzzle table, the
+   eye table and the card, so none of them can hold a different idea of what a kneel is.
+   `legs` is [left, right] and the left leg is at -hipY, which is screen left. */
+var FIGPOSE = {
+  stand:  { legs: [[.10, -.10, 0], [-.06, .06, 0]], lean: .04, carry: 'ready' },
+  ready:  { legs: [[.45, -.45, 0], [-.25, -.10, .35]], lean: .16, carry: 'lowready', blade: .25 },
+  fire:   { legs: [[.30, -.30, 0], [-.22, -.05, .27]], lean: .08, carry: 'aim', blade: .35, head: [.4, 1.3, -.3] },
+  kneel:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .10, carry: 'ready' },
+  kfire:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .10, carry: 'aim', blade: .35, head: [.4, 1.3, -.3] },
+  seat:   { legs: [[1.50, -1.50, 0], [1.50, -1.50, 0]], lean: .05, carry: 'tiller' },
+  sit:    { legs: [[1.90, -.72, 0], [1.90, -.72, 0]], lean: .10, carry: 'grips', grips: [5.8, .9, 3.8] },
+  served: { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .18, carry: 'grips', grips: [5.6, .9, 5.2] },
+  fall0:  { legs: [[.30, -.90, 0], [-.10, -1.10, 0]], lean: .45, carry: 'drop', headLean: 0 },
+  fall1:  { legs: [[.90, -1.60, 0], [.70, -1.80, 0]], lean: .90, carry: 'drop', headLean: 0 },
+  fall2:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: 1.35, carry: 'drop', headLean: 0 }
+};
+/* One frame of a cycle. ph runs 0..1 over two steps and the right leg runs half a cycle
+   behind the left. The thigh is on the sine and the knee on the COSINE, so it bends as
+   the leg passes under the body and is straight at heel strike and toe off: eight frames
+   are eight shapes and the cycle is a loop. On the sine it bent most when the thigh was
+   furthest forward, which is the one moment of a stride a knee is straight, and the
+   eight frames came out as five played as a ping pong. KS bends the planted knee a
+   little, which is what keeps a run's hip bob at a run's. */
+function gaitPose(ph, A, KB, KS, lean, carry, swing) {
+  var s = Math.sin(ph * TAU), c = Math.cos(ph * TAU);
+  return { legs: [[s * A, -(.10 + Math.max(0, c) * KB + Math.max(0, -c) * KS), 0],
+                  [-s * A, -(.10 + Math.max(0, -c) * KB + Math.max(0, c) * KS), 0]],
+           lean: lean, carry: carry, armSwing: -s * swing };
+}
+function WALK(ph) { return gaitPose(ph, .60, 1.2, 0, .10, 'trail', 2.4); }
+function RUN(ph) { return gaitPose(ph, .75, 1.7, .35, .28, 'port', 3.0); }
+/* Eight frames of walk over a stride of 28 units, which is 2.3 cycles a second for a
+   section covering 64 units of ground a second. A stride that matched the ground would
+   turn at 3.2 and read as a jog for a section that is walking, so the planted foot
+   skates about a fifth of a pace, which is one pixel of boot at six hundred units.
+   WALKF counts the standing frame the bake puts in front of the cycle. */
+var WALKF = 8, STRIDE_LEN = 28;
+var RUNF = 8, RUN_LEN = 36;          /* 2.5 cycles a second at 90 units */
+var CRAWLF = 4, CRAWL_LEN = 18;      /* and one beat of an elbow crawl */
+function PRONE() { return { flat: 1, ph: 0 }; }
+function CRAWL(ph) { return { flat: 1, ph: ph }; }
+/* A head: one lathe for the skull, squeezed across so it is longer than it is wide, and
+   the value bands a bake would have put there and never can at this scale -- the two
+   rings under the brim in shadow and the ring at the eyes a little down. The nose and
+   the two ears were 36 faces at a scale where the whole head is two pixels; they are
+   out. The neck is built with the trunk, which is where it belongs. */
+function headModel(k, z) {
+  var prof = [[0, -1.35], [.9, -1.35], [1.05, -.9], [1.1, -.2], [1.0, .6], [.55, 1.15], [0, 1.35]];
+  return lathe(0, 0, 0, prof, 8,
+               [k.skinD, k.skin, lit(k.skin, .9), lit(k.skin, .8), lit(k.skin, .8), k.hair], true)
+    .map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0], -p[2] * .85, p[1] + z]; }), c: q.c, m: 0,
+               n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined };
+    });
+}
+/* Mk II Brodie: a shallow crown on a broad flat brim, seated on the skull.
    The scrim was a second lathe over the crown on the alpha-tested net tile -- 72 faces
-   and 144 triangles of mesh drawn at a distance where the whole helmet is five pixels
-   across, the only alpha geometry any soldier had, a second draw call and a second state
-   change on every Canadian on the field, and it never cast a shadow. It is the crown's
-   own tile now: scrim painted opaque, mesh, hessian and shell in one. The chinstraps
-   under the jaw were 0.12 units thick, a tenth of a pixel at six hundred. */
+   and 144 triangles of mesh at a distance where the whole helmet is five pixels across,
+   the only alpha geometry any soldier had, a second draw call and a second state change
+   on every Canadian on the field, and it never cast a shadow. It is the crown's own tile
+   now: net, hessian and the shell between them painted opaque in one. The chinstraps
+   were cylinders 0.12 across, a tenth of a pixel at six hundred units. */
 function helmetUS(k, z) {
-  var sc = matIndex('scrim');
-  var f = lathe(0, 0, 0, [[0, 0], [1.75, 0], [1.75, .2], [1.42, .26], [1.36, .62], [1.14, .92], [.6, 1.12], [0, 1.16]], 18,
-                [k.helmD, k.helmD, k.helm, k.helm, k.helm, lit(k.helm, 1.1), lit(k.helm, 1.18)], true)
-    .map(function (q, i) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c,
-                                    m: i < 36 ? undefined : sc,
-                                    n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
-  f = f.concat(box(0, 0, z - .1, 3.5, 3.6, .12, k.helmD, k.helmD));                          /* the brim's underside edge */
-  return f;
+  var sc = matIndex('scrim'), gn = matIndex('paint');
+  return lathe(0, 0, 0, [[0, 0], [1.9, 0], [1.9, .2], [1.5, .26], [1.42, .62], [1.18, .92], [.62, 1.12], [0, 1.16]], 10,
+               [k.helmD, k.helmD, k.helm, k.helm, k.helm, lit(k.helm, 1.06), lit(k.helm, 1.06)], true)
+    .map(function (q, i) {
+      return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, m: i < 20 ? gn : sc,
+               n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined };
+    });
 }
 /* M38 paratrooper helmet: rimless and close-fitting, under the splinter cover most of
-   the division wore in Italy.
-   The cover was a second lathe a fiftieth of a unit outside the shell, which is a
-   z-fighting pair at any distance and two hundred and forty triangles of it; it is the
-   shell's own tile above the rim now. The neck guard was a box standing 1.2 behind the
-   crown, which is the M35's skirt and the one thing an M38 does not have -- it is what
-   the helmet was cut down to lose. The straps go with the Canadian's. */
+   the division wore in Italy. The cover was a second lathe a fiftieth of a unit outside
+   the shell, which is a z-fighting pair at any distance and 240 triangles of it; it is
+   the shell's own tile above the rim now. The neck guard was a box standing 1.2 behind
+   the crown, which is the M35's skirt and the one thing an M38 does not have -- it is
+   what the helmet was cut down to lose. */
 function helmetGER(k, z) {
-  var sp = matIndex('splinter');
-  var f = lathe(0, 0, 0, [[0, 0], [1.45, 0], [1.5, .5], [1.42, 1.1], [1.15, 1.6], [.6, 1.9], [0, 1.95]], 18,
-                [k.helmD, k.helm, k.helm, k.helm, lit(k.helm, 1.1), lit(k.helm, 1.18)], true)
-    .map(function (q, i) { return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }),
-                                    c: i < 18 ? q.c : lit(k.smock, i < 36 ? 1 : i < 72 ? 1.04 : 1.08),
-                                    m: i < 18 ? undefined : sp,
-                                    n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined }; });
-  return f;
-}
-/* a limb segment from one point to another: a box laid along the vector */
-function limb(p0, p1, t, col, capC, sideC, bev) {
-  var dx = p1[0] - p0[0], dy = p1[1] - p0[1], dz = p1[2] - p0[2];
-  var dxy = Math.hypot(dx, dy), len = Math.hypot(dxy, dz) || .01;
-  var seg = box(len / 2, 0, 0, len, t, t, col, capC || col, sideC || col, bev);
-  return place(pitch(seg, Math.atan2(dz, dxy), 0, 0), Math.atan2(dy, dx), p0[0], p0[1], p0[2]);
+  var sp = matIndex('splinter'), gn = matIndex('paint');
+  var c = [k.helmD, k.helm, k.smock, k.smock, k.smock, lit(k.smock, 1.08)];
+  return lathe(0, 0, 0, [[0, 0], [1.45, 0], [1.5, .5], [1.42, 1.05], [1.15, 1.45], [.6, 1.62], [0, 1.7]], 10, c, true)
+    .map(function (q, i) {
+      return { v: q.v.map(function (p) { return [p[0], -p[2], p[1] + z]; }), c: q.c, m: i < 20 ? gn : sp,
+               n: q.n ? q.n.map(function (n) { return [n[0], -n[2], n[1]]; }) : undefined };
+    });
 }
 /* the small arms at their real lengths, along +x from the butt */
-function weaponModel(k, type) {
+function weaponModel(k, type, opt) {
   var f = [], st = k.steel, wd = k.wood;
   function stock(len, h) { return box(len / 2, 0, -h / 2, len, 1.0, h, wd, lit(wd, 1.15), lit(wd, .9)); }
-  if (type === 'lee') {                                   /* No.4 Mk I: 1.13 m */
-    f = f.concat(stock(3.6, 1.6).map(function (q) { return { v: q.v.map(function (p) { return [p[0] - 3.4, p[1], p[2] - .3]; }), c: q.c }; }));
+  function barrel(x0, x1, z, r) { return tubeSmooth(x0, x1, 0, z, r, 6, st, st); }
+  if (type === 'lee' || type === 'leescope') {            /* No.4 Mk I: 1.13 m */
+    f = f.concat(at(stock(3.6, 1.6), -3.4, 0, -.3));
     f = f.concat(box(3.0, 0, -.55, 7.2, .95, 1.1, wd, lit(wd, 1.15), lit(wd, .9)));           /* fore-end */
-    f = f.concat(tubeSmooth(-1.2, 9.9, 0, .25, .28, 8, st, st));                            /* barrel */
-    f = f.concat(box(-.4, 0, .1, 2.6, .9, .9, st, lit(st, 1.2)));                             /* receiver */
+    f = f.concat(barrel(-1.2, 9.9, 0, .45));
+    f = f.concat(box(-.4, 0, .1, 2.6, 1.1, .9, st, lit(st, 1.2)));                            /* receiver */
     f = f.concat(box(.4, .6, -.6, 1.2, .5, 1.6, st, lit(st, 1.2)));                          /* bolt handle */
     f = f.concat(box(-.6, 0, -1.3, 1.6, .7, .9, st, lit(st, 1.2)));                          /* magazine */
-    f = f.concat(box(9.5, 0, .32, .8, .5, .7, st, lit(st, 1.2)));                             /* foresight guard */
+    if (type === 'leescope') {                            /* the No.32 on its two mounts */
+      f = f.concat(tubeSmooth(-.8, 4.4, 0, 1.55, .42, 6, st, lit(st, 1.2)));
+      f = f.concat(box(-.4, 0, .6, .6, .5, .95, st, lit(st, 1.2)));
+      f = f.concat(box(2.8, 0, .6, .6, .5, .95, st, lit(st, 1.2)));
+      f = f.concat(box(-2.6, 0, -1.2, 1.6, .95, .8, wd, lit(wd, 1.15)));                     /* the cheek piece */
+    }
   } else if (type === 'kar') {                            /* Kar98k: 1.11 m */
-    f = f.concat(stock(3.6, 1.6).map(function (q) { return { v: q.v.map(function (p) { return [p[0] - 3.4, p[1], p[2] - .3]; }), c: q.c }; }));
+    f = f.concat(at(stock(3.6, 1.6), -3.4, 0, -.3));
     f = f.concat(box(2.4, 0, -.55, 6.2, .95, 1.1, wd, lit(wd, 1.15), lit(wd, .9)));
-    f = f.concat(tubeSmooth(-1.2, 9.7, 0, .25, .3, 8, st, st));
-    f = f.concat(box(-.3, 0, .1, 2.6, .9, .9, st, lit(st, 1.2)));
+    f = f.concat(barrel(-1.2, 9.7, 0, .45));
+    f = f.concat(box(-.3, 0, .1, 2.6, 1.1, .9, st, lit(st, 1.2)));
     f = f.concat(box(.3, .6, -.3, 1.0, .5, 1.2, st, lit(st, 1.2)));
   } else if (type === 'sten') {                           /* Sten Mk II: 0.76 m */
-    f = f.concat(tubeSmooth(-1.5, 3.0, 0, 0, .55, 8, st, st));                              /* receiver tube */
-    f = f.concat(tubeSmooth(3.0, 5.4, 0, 0, .28, 8, st, st));                               /* barrel jacket */
-    f = f.concat(box(.2, 1.9, 0, 1.4, 3.0, .9, st, lit(st, 1.2)));                            /* side magazine */
+    f = f.concat(tubeSmooth(-1.5, 3.0, 0, 0, .55, 6, st, st));                                /* receiver tube */
+    f = f.concat(barrel(3.0, 5.4, 0, .45));
+    /* it feeds from the LEFT, and on screen +y is the man's right */
+    f = f.concat(box(.2, -1.9, 0, 1.4, 3.0, .9, st, lit(st, 1.2)));
     f = f.concat(box(-2.6, 0, -.4, 2.2, .3, .3, st, st));                                     /* skeleton stock */
     f = f.concat(box(-3.6, 0, -1.2, .4, .3, 2.0, st, st));
     f = f.concat(box(-.6, 0, -1.4, .8, .6, 1.4, st, lit(st, 1.2)));                          /* grip */
-  } else if (type === 'mp40') {                           /* MP40: 0.83 m */
-    f = f.concat(box(0, 0, -.3, 5.0, .9, 1.2, st, lit(st, 1.2)));
-    f = f.concat(tubeSmooth(2.5, 5.6, 0, .1, .28, 8, st, st));
+  } else if (type === 'mp40') {                           /* MP40: 0.63 m folded, 0.83 out */
+    f = f.concat(box(.35, 0, -.3, 4.3, 1.1, 1.2, st, lit(st, 1.2)));
+    f = f.concat(barrel(2.5, 5.6, .1, .45));
     f = f.concat(box(.4, 0, -2.4, .9, .7, 3.2, st, lit(st, 1.2)));                            /* vertical magazine */
-    f = f.concat(box(-1.8, 0, -1.6, 1.4, .8, 1.6, '#3b3226', '#4a4030'));                    /* bakelite grip */
-    f = f.concat(box(-3.6, 0, -.3, 2.4, .3, .3, st, st));                                     /* folding stock */
+    f = f.concat(box(-.8, 0, -1.6, 1.2, .8, 1.6, '#3b3226', '#4a4030'));                     /* bakelite grip */
+    if (opt === 'out') {
+      f = f.concat(box(-2.7, 0, -.3, 1.8, .3, .3, st, st));                                   /* the stock extended */
+      f = f.concat(box(-3.6, 0, -.3, .3, .6, 1.2, st, st));
+    } else f = f.concat(box(-.9, 0, -1.0, 1.8, .3, .3, st, st));                              /* and folded under */
   } else if (type === 'bren') {                           /* Bren Mk I: 1.15 m */
-    f = f.concat(box(-4.2, 0, -.5, 3.4, .95, 1.7, wd, lit(wd, 1.15), lit(wd, .9)));           /* butt */
-    f = f.concat(box(0, 0, -.2, 5.5, 1.0, 1.4, st, lit(st, 1.2)));                            /* receiver */
+    f = f.concat(box(-3.6, 0, -.5, 3.0, 1.1, 1.7, wd, lit(wd, 1.15), lit(wd, .9)));           /* butt, plate at -5.1 */
+    f = f.concat(box(0, 0, -.2, 5.5, 1.1, 1.4, st, lit(st, 1.2)));                            /* receiver */
     f = f.concat(box(.4, 0, 1.0, 2.2, .8, 2.6, st, lit(st, 1.2)));                            /* curved top magazine */
-    f = f.concat(tubeSmooth(2.7, 9.3, 0, .1, .32, 8, st, st));
-    f = f.concat(tubeSmooth(7.8, 9.3, 0, .1, .45, 8, st, st));                               /* gas cylinder/flash hider */
+    f = f.concat(barrel(2.7, 8.0, .1, .45));
+    f = f.concat(tubeSmooth(6.6, 8.0, 0, .1, .6, 6, st, st));                                 /* gas cylinder */
     f = f.concat(box(-1.4, 0, -1.4, .9, .6, 1.2, wd, lit(wd, 1.1)));                          /* pistol grip */
-    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.6, st, st), .5, 0, 0), 0, 6.5, -.6, -2.2));   /* bipod legs */
-    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.6, st, st), .5, 0, 0), 0, 6.5, .6, -2.2));
-  } else if (type === 'mg42') {                           /* MG42: 1.22 m */
-    f = f.concat(box(-4.6, 0, -.5, 3.0, .9, 1.6, '#3b3226', '#4a4030'));                     /* butt */
-    f = f.concat(box(0, 0, -.2, 5.8, 1.1, 1.6, st, lit(st, 1.2)));
-    f = f.concat(box(4.5, 0, -.1, 5.4, .9, 1.1, st, lit(st, 1.2)));                          /* barrel jacket, slotted */
-    f = f.concat(tubeSmooth(7.2, 9.8, 0, 0, .3, 8, st, st));
-    f = f.concat(box(-1.6, 0, -1.5, 1.0, .6, 1.4, '#3b3226', '#4a4030'));
-    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 6.8, -.6, -2.4));
-    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 6.8, .6, -2.4));
-  } else if (type === 'm1919') {                          /* Browning M1919A6: 1.35 m, belt fed */
-    f = f.concat(box(-4.4, 0, -.5, 3.6, 1.0, 1.8, wd, lit(wd, 1.15), lit(wd, .9)));            /* shoulder stock */
-    f = f.concat(box(0, 0, -.2, 5.8, 1.15, 1.5, st, lit(st, 1.2)));                            /* receiver */
-    f = f.concat(box(1.0, 1.7, -1.0, 2.6, 2.2, 2.4, k.canvas, lit(k.canvas, 1.1)));            /* the belt bag on the feed side */
-    f = f.concat(tubeSmooth(2.9, 9.0, 0, .1, .42, 8, st, st));                                 /* barrel jacket */
-    for (var jj = 0; jj < 4; jj++)
-      f = f.concat(tubeSmooth(3.4 + jj * 1.2, 3.7 + jj * 1.2, 0, .1, .5, 8, '#20221a', '#20221a'));
-    f = f.concat(tubeSmooth(9.0, 10.4, 0, .1, .3, 8, st, st));
-    f = f.concat(box(-1.5, 0, -1.5, 1.0, .6, 1.3, wd, lit(wd, 1.1)));                          /* pistol grip */
-    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 7.2, -.7, -2.3));
-    f = f.concat(place(pitch(box(0, 0, 0, .25, .25, 2.8, st, st), .5, 0, 0), 0, 7.2, .7, -2.3));
-  } else if (type === 'zook') {                           /* M1A1 bazooka: 1.37 m of stovepipe */
-    f = f.concat(tubeSmooth(-5.5, 8.4, 0, 0, .7, 10, st, st));
-    f = f.concat(tubeSmooth(8.4, 9.6, 0, 0, .88, 10, st, st));                                 /* the muzzle ring */
-    f = f.concat(tubeSmooth(-6.2, -5.5, 0, 0, .88, 10, st, st));                               /* and the breech one */
-    f = f.concat(box(-5.2, 0, -1.7, 2.6, 1.0, 1.6, wd, lit(wd, 1.1)));                         /* shoulder rest */
-    f = f.concat(box(-1.2, 0, -1.8, 1.0, .6, 1.6, wd, lit(wd, 1.1)));                          /* the two grips */
-    f = f.concat(box(-3.6, 0, -1.6, 1.0, .6, 1.4, wd, lit(wd, 1.1)));
-    f = f.concat(box(1.6, .95, .75, 3.4, .5, .6, st, lit(st, 1.2)));                           /* the sight rail */
-  } else if (type === 'leescope') {                       /* No.4 Mk I (T), with the No.32 on it */
-    f = f.concat(weaponModel(k, 'lee'));
-    f = f.concat(tubeSmooth(-.8, 4.4, 0, 1.55, .42, 8, st, lit(st, 1.2)));                     /* the telescope */
-    f = f.concat(box(-.4, 0, .6, .6, .5, .95, st, lit(st, 1.2)));                              /* its two mounts */
-    f = f.concat(box(2.8, 0, .6, .6, .5, .95, st, lit(st, 1.2)));
-    f = f.concat(box(-4.4, 0, -1.2, 2.6, .95, .8, wd, lit(wd, 1.15)));                         /* the cheek piece */
+    [-.7, .7].forEach(function (y) {
+      f = f.concat(place(pitch(box(0, 0, 0, .5, .5, 2.8, st, st), .7, 0, 0), 0, 5.6, y, -2.4));
+    });
   } else if (type === 'piat') {                           /* PIAT: 0.99 m */
-    f = f.concat(tubeSmooth(-4, 5, 0, 0, .8, 10, st, st));
-    f = f.concat(tubeSmooth(5, 7.5, 0, 0, 1.1, 10, st, st));                                  /* the trough at the front */
-    f = f.concat(box(-4.5, 0, -1.8, 1.6, 1.2, 2.2, k.canvas, lit(k.canvas, 1.1)));            /* shoulder pad */
+    f = f.concat(tubeSmooth(-3.6, 4.6, 0, 0, .8, 8, st, st));
+    f = f.concat(tubeSmooth(4.6, 6.6, 0, 0, 1.1, 8, st, st));                                 /* the trough at the front */
+    f = f.concat(box(-4.0, 0, -1.8, 1.6, 1.2, 2.2, k.canvas, lit(k.canvas, 1.1)));            /* shoulder pad */
     f = f.concat(box(-.5, 0, -1.6, .9, .6, 1.4, st, lit(st, 1.2)));
-    f = f.concat(box(2, 0, -2.0, .3, .3, 1.6, st, st));                                        /* monopod */
+    f = f.concat(box(2, 0, -2.0, .4, .4, 1.6, st, st));                                       /* monopod */
   } else if (type === 'schreck') {                        /* Panzerschreck: 1.64 m */
-    f = f.concat(tubeSmooth(-9, 9.5, 0, 0, .55, 10, st, st));
-    f = f.concat(box(4.5, 0, 0, 3.6, 4.2, 4.6, st, lit(st, 1.1)));                            /* the blast shield */
-    f = f.concat(box(4.5, 0, 1.4, .3, 1.2, 1.2, '#3a4a4a', '#3a4a4a'));                       /* its window */
+    f = f.concat(tubeSmooth(-9, 9.5, 0, 0, .55, 8, st, st));
+    f = f.concat(box(4.5, 0, -.3, .2, 4.2, 3.6, st, lit(st, 1.1)));                           /* the blast shield, a plate */
+    f = f.concat(box(4.42, 0, .9, .06, 1.4, 1.2, '#3a4a4a', '#3a4a4a'));                      /* its window, inset */
+    f = f.concat(box(3.9, 0, -.4, 1.0, .5, .5, st, lit(st, 1.2)));                            /* its bracket */
     f = f.concat(box(-1.5, 0, -1.6, 1.0, .6, 1.6, st, lit(st, 1.2)));
     f = f.concat(box(-4, 0, -1.4, 2.4, .7, 1.4, wd, lit(wd, 1.1)));                            /* shoulder rest */
   }
   return f;
 }
 var SOLDIER_VARIANTS = {
-  can_rifle:{ side:'us', weapon:'lee' }, can_sten:{ side:'us', weapon:'sten' },
-  can_bren:{ side:'us', weapon:'bren' }, can_piat:{ side:'us', weapon:'piat', assault:1 },
-  fj_rifle:{ side:'ger', weapon:'kar' }, fj_mp40:{ side:'ger', weapon:'mp40', assault:1 },
-  fj_mg42:{ side:'ger', weapon:'mg42' }, fj_schreck:{ side:'ger', weapon:'schreck', assault:1 },
-  /* crew carry their rifles slung or stowed. A driver has both hands on the tiller and a
-     loader has both on a round, so these two go into a vehicle without a weapon in them. */
-  can_crew:{ side:'us', weapon:'none' }, fj_crew:{ side:'ger', weapon:'none' },
-  /* the Foot Guards: the belt-fed .30, the marksman's scoped Lee, and the two Sten men
-     who swap to bazookas the moment the thing they are shooting at has tracks */
-  can_thirty:{ side:'us', weapon:'m1919' }, can_scope:{ side:'us', weapon:'leescope' },
-  can_zook:{ side:'us', weapon:'zook', assault:1 }
+  can_rifle:    { side: 'us', weapon: 'lee', jerkin: 1, set: 'field' },
+  can_rifle_bd: { side: 'us', weapon: 'lee', set: 'field' },
+  can_sten:     { side: 'us', weapon: 'sten', set: 'field' },
+  can_bren:     { side: 'us', weapon: 'bren', set: 'field' },
+  can_piat:     { side: 'us', weapon: 'piat', assault: 1, set: 'field' },
+  can_scope:    { side: 'us', weapon: 'leescope', jerkin: 1, set: 'field' },
+  can_crew:     { side: 'us', weapon: 'none', jerkin: 1, set: 'hull' },
+  fj_rifle:     { side: 'ger', weapon: 'kar', pouch: 'leather', set: 'field' },
+  fj_mp40:      { side: 'ger', weapon: 'mp40', assault: 1, pouch: 'canvas', set: 'field' },
+  fj_schreck:   { side: 'ger', weapon: 'schreck', assault: 1, pouch: 'canvas', set: 'field' },
+  fj_crew:      { side: 'ger', weapon: 'none', set: 'hull' }
 };
-/* One crewman, standing where he stands and sunk to the depth his feet are really at.
-   Nothing is cut away for him: the hull plate or the turret wall in front of him does
-   the cutting, so what shows over the rim is a head, shoulders and a helmet. */
-function crewman(side, yaw, x, y, z) {
-  /* the figure stands on its feet now rather than 0.93 into the ground, so a crewman
-     dropped into a hull at the z the builders were written against would show that much
-     more of himself over every rim: he is sunk by what the figure was lifted by */
-  var f = soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1);
-  return place(f, yaw || 0, x, y, (z || 0) - (f.lift || 0));
-}
 function variantForModel(u, i) {
   if (u.side === 'us') {
     if (u.key === 'us_fg') {
-      if (i === 0) return 'can_thirty';
-      if (i < 3) return 'can_bren';
+      if (i < 2) return 'can_bren';
+      if (i === 2) return 'can_rifle';
       if (i === 3) return 'can_scope';
-      return (u.target && u.target.cat === 'veh') ? 'can_zook' : 'can_sten';
+      return (u.target && u.target.cat === 'veh') ? 'can_piat' : 'can_sten';
     }
-    if (u.key === 'us_rifle') return i === 0 ? 'can_bren' : i === 1 ? 'can_sten' : 'can_rifle';
+    if (u.key === 'us_rifle') return i === 0 ? 'can_bren' : i === 1 ? 'can_sten' : i === 3 ? 'can_rifle_bd' : 'can_rifle';
     if (u.key === 'us_ab') return i === 0 ? 'can_piat' : i < 3 ? 'can_sten' : 'can_rifle';
-    if (u.key === 'us_eng') return i === 0 ? 'can_sten' : 'can_rifle';
-    return i === 0 && u.key === 'us_mg' ? 'can_sten' : 'can_rifle';
+    if (u.key === 'us_eng') return i === 0 ? 'can_sten' : i === 2 ? 'can_rifle_bd' : 'can_rifle';
+    /* the gun teams get their own gunner and his served pose with the team meshes */
+    if (u.key === 'us_mg') return i === 0 ? 'can_sten' : 'can_rifle';
+    return 'can_rifle';
   }
   if (u.key === 'ger_gren') return i === 0 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pgren') return i === 0 ? 'fj_schreck' : i < 3 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pio') return i === 0 ? 'fj_mp40' : 'fj_rifle';
-  return i === 0 && u.key === 'ger_mg42' ? 'fj_mg42' : 'fj_rifle';
+  return 'fj_rifle';
 }
-/* one soldier, posed. phase runs 0..1 over a stride; -1 means standing still */
-/* A man in one of four postures. `pose` is what he is doing with himself rather than
-   where he is: standing or walking, down on his haunches behind something, or with the
-   weapon into his shoulder. A section that stands bolt upright behind a wall and never
-   raises a rifle reads as a row of tin soldiers however good the model is, and the
-   posture is most of what tells the player what the squad is doing. */
+/* The two old names, kept while the table and the draw still call them. `phase` runs
+   0..1 over a stride and -1 is standing still; `pose` is what he is doing with himself.
+   Everything they answer now comes off `manFaces`. */
 function soldierModel(variant, phase, pose) {
-  var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side];
-  var f = [], coat = side === 'ger' ? k.smock : k.coat;
-  var firing = pose === 'fire' || pose === 'crouchfire';
-  var crouch = pose === 'crouch' || pose === 'crouchfire';
-  var ph = phase < 0 ? 0 : phase;
-  var sw = phase < 0 ? 0 : Math.sin(ph * TAU), sw2 = phase < 0 ? 0 : Math.sin(ph * TAU + Math.PI);
-  var cw = phase < 0 ? 0 : Math.cos(ph * TAU);
-  var bob = phase < 0 ? 0 : Math.abs(Math.cos(ph * TAU)) * .5;
-  /* The knee bends the shin back, and it bends on the COSINE. On the sine it bent most
-     when the thigh was furthest forward, which is heel strike -- the one moment of the
-     stride a knee is straight -- so the eight baked frames were five shapes played as a
-     ping-pong (1 = 5, 2 = 4, 6 = 8) and the leg nearest the ground was the bent one.
-     On the cosine it bends as the leg passes under the body and is straight at heel
-     strike and toe off, which is a loop of eight shapes and a cycle that reads as a
-     man walking. At rest the knees carry a slight flex and the stance is open. */
-  var kneeF = phase < 0 ? -.12 : -(.10 + Math.max(0, cw) * 1.2), kneeB = phase < 0 ? -.12 : -(.10 + Math.max(0, -cw) * 1.2);
-  /* Down on his haunches the thigh comes forward and the shin folds back under it, so
-     the hip has to come down to where the two of them actually leave it or the man
-     floats. Everything above the hip drops with it. */
-  var hipZ = crouch ? 7.5 : 10.6, drop = hipZ - 10.6;
-  if (crouch) { kneeF = -1.66; kneeB = -1.78; }
-
-  /* ---- legs: thigh and shin as separate segments with a knee, gaiters and boots ---- */
-  function leg(swing, knee, y) {
-    var thigh = box(0, 0, -5.3, 2.0, 2.0, 5.3, k.trous, k.trous, lit(k.trous, .9), .5);
-    var shin = box(0, 0, -5.0, 1.7, 1.7, 5.0, k.trous, k.trous, lit(k.trous, .9), .42);
-    if (side === 'us') shin = shin.concat(box(0, 0, -5.0, 1.8, 1.8, 1.6, k.gaiter, lit(k.gaiter, 1.1)));   /* anklets */
-    else shin = shin.concat(box(0, 0, -5.0, 1.8, 1.8, 2.4, k.boot, lit(k.boot, 1.15)));                    /* jump boots */
-    var boot = box(.7, 0, -5.9, 3.2, 1.45, 1.1, k.boot, lit(k.boot, 1.2), lit(k.boot, .9), .3);
-    var lower = place(pitch(shin.concat(boot), knee, 0, 0), 0, 0, 0, -5.3);
-    return place(pitch(thigh.concat(lower), swing, 0, 0), 0, 0, y, hipZ + bob);
-  }
-  var stanceF = phase < 0 ? .16 : 0, stanceB = phase < 0 ? -.10 : 0;
-  if (crouch) { stanceF = .80; stanceB = .88; }
-  else if (firing) { stanceF = .34; stanceB = -.26; }     /* one foot forward, braced */
-  f = f.concat(leg(sw * .6 + stanceF, kneeF, -1.15));
-  f = f.concat(leg(sw2 * .6 + stanceB, kneeB, 1.15));
-
-  var lean = crouch ? .21 : firing ? .17 : phase < 0 ? .05 : .11, bodyStart = f.length;
-  /* ---- torso: the battledress blouse, tapered, with the waist band and collar ---- */
-  f = f.concat(box(0, 0, 10.4 + bob, 2.9, 4.6, 3.2, k.trous, k.trous, lit(k.trous, .9), .7));               /* hips */
-  f = f.concat(box(0, 0, 13.4 + bob, 3.0, 5.0, 4.4, coat, lit(coat, 1.05), k.coatD, .8));                  /* chest */
-  if (side === 'ger') {
-    /* the jump smock, a long loose over-garment down to the thigh, in splinter */
-    var smock = box(0, 0, 9.6 + bob, 3.4, 5.4, 8.6, k.smock, lit(k.smock, 1.06), lit(k.smock, .9), .8).map(function (q) { q.m = matIndex('splinter'); return q; });
-    f = f.concat(smock);
-  } else {
-    /* 'CANADA' shoulder titles and the divisional patch on the sleeve */
-    f = f.concat(box(-.3, -2.9, 17.9 + bob, 1.4, .3, .5, k.patch, lit(k.patch, 1.12)));
-    f = f.concat(box(-.3,  2.9, 17.9 + bob, 1.4, .3, .5, k.patch, lit(k.patch, 1.12)));
-  }
-  f = f.concat(box(0, 0, 13.2 + bob, 3.0, 5.2, .9, k.coatD, k.coatD));                                      /* waist band */
-  f = f.concat(box(-.3, 0, 17.6 + bob, 3.0, 5.6, .8, k.coatD, coat));                                       /* shoulders */
-  f = f.concat(box(.4, 0, 18.3 + bob, 1.6, 2.4, .7, k.coatD, coat));                                        /* collar */
-  /* 37-pattern webbing: braces over the shoulders, belt, basic pouches on the chest,
-     small pack high on the back, water bottle on the right hip; the FJ carry the
-     bandolier and gas-mask tin instead */
-  f = f.concat(box(0, 0, 12.9 + bob, 3.1, 5.3, .8, k.web, lit(k.web, 1.08)));                                /* belt */
-  [-1.1, 1.1].forEach(function (y) { f = f.concat(box(1.55, y, 15.6 + bob, .25, .9, 4.2, k.web, lit(k.web, 1.08))); });   /* braces */
-  if (side === 'us') {
-    [-1.5, 1.5].forEach(function (y) { f = f.concat(box(1.75, y, 14.6 + bob, 1.2, 1.5, 2.2, k.web, lit(k.web, 1.1), k.webD)); });   /* basic pouches */
-    f = f.concat(box(-2.0, 0, 15.2 + bob, 1.6, 3.6, 3.0, k.pack, lit(k.pack, 1.1), lit(k.pack, .9)));      /* small pack */
-    f = f.concat(cyl(-1.6, 2.2, 11.6 + bob, .7, .7, 1.8, 8, k.canvas, lit(k.canvas, 1.1), 0, true));         /* water bottle */
-    f = f.concat(box(-1.9, -.4, 11.2 + bob, .9, 2.6, 2.4, k.web, lit(k.web, 1.1), k.webD));                   /* entrenching tool carrier */
-    f = f.concat(box(-1.7, -2.4, 11.0 + bob, .5, .5, 3.6, k.webD, k.web));                                    /* bayonet frog */
-  } else {
-    f = f.concat(box(1.7, 0, 15.0 + bob, .5, 2.4, 3.2, k.webD, k.web));                                       /* bandolier */
-    f = f.concat(cyl(-1.7, -2.0, 11.4 + bob, .7, .7, 2.6, 8, k.webD, k.web, 0, true));                       /* gas-mask tin */
-    f = f.concat(box(-1.9, 1.2, 11.5 + bob, 1.2, 1.6, 2.0, k.webD, k.web));                                   /* bread bag */
-  }
-
-  /* ---- arms: the weapon carried at the port across the chest, right hand on the grip
-     by the hip, left hand forward on the fore-end. Each arm is shoulder, elbow, hand,
-     built between points so the pose is exactly what is written here ---- */
-  var heavy = V.weapon === 'piat' || V.weapon === 'schreck' || V.weapon === 'bren' || V.weapon === 'mg42' ||
-              V.weapon === 'm1919' || V.weapon === 'zook';
-  var swing = firing ? 0 : sw * .35;
-  var rShoulder = [.2, 2.9, 17.6 + bob], lShoulder = [.2, -2.9, 17.6 + bob];
-  var rElbow = [-.6 + swing, 3.5, 14.3 + bob], rHand = [1.9 + swing, .9, 13.9 + bob];
-  var lElbow = [2.0, -3.6, 14.8 + bob], lHand = [5.6, -1.4, 15.7 + bob];
-  if (heavy) { rHand = [1.2 + swing, 1.4, 14.4 + bob]; lHand = [5.0, -1.2, 16.4 + bob]; lElbow = [2.2, -3.8, 15.4 + bob]; }
-  if (firing) {
-    /* The butt into the right shoulder, the right elbow out, the left hand forward under
-       the fore-end, and the whole weapon lying along the line the eye is looking down.
-       It is not quite along the body: the sights come back over the right shoulder, so
-       the muzzle sits a little inboard of the butt. */
-    rElbow = [-.9, 4.4, 14.8 + bob]; rHand = [1.3, 2.1, 16.2 + bob];
-    lElbow = [3.0, -1.9, 15.0 + bob]; lHand = [6.2, .9, 16.5 + bob];
-    if (heavy) { rHand = [.9, 2.3, 16.0 + bob]; lHand = [5.8, 1.0, 16.8 + bob]; lElbow = [2.9, -1.6, 15.4 + bob]; }
-  }
-  [[rShoulder, rElbow, rHand], [lShoulder, lElbow, lHand]].forEach(function (A) {
-    f = f.concat(limb(A[0], A[1], 1.35, coat, lit(coat, 1.05), k.coatD, .4));
-    f = f.concat(limb(A[1], A[2], 1.2, coat, lit(coat, 1.05), k.coatD, .36));
-    f = f.concat(box(A[2][0], A[2][1], A[2][2] - .5, 1.0, 1.0, 1.0, k.skin, k.skinD));
-  });
-
-  /* ---- head and helmet ---- */
-  var hz = 19.6 + bob;
-  f = f.concat(headModel(k, hz));
-  f = f.concat(side === 'us' ? helmetUS(k, hz + .75) : helmetGER(k, hz + .35));
-
-  /* ---- the weapon, laid along the line from the grip hand to the fore-end hand ---- */
-  var w = weaponModel(k, V.weapon), wStart = f.length;
-  var gx = rHand[0], gy = rHand[1], gz = rHand[2], fx = lHand[0], fy = lHand[1], fz = lHand[2];
-  var wdx = fx - gx, wdy = fy - gy, wdz = fz - gz, wdxy = Math.hypot(wdx, wdy);
-  f = f.concat(place(pitch(w, Math.atan2(wdz, wdxy), 0, 0), Math.atan2(wdy, wdx), gx + 1.0, gy, gz + .6));
-  var wEnd = f.length;
-  /* The point on the bore at the end of the barrel: the weapon is built along its own +x
-     with the bore on that axis, so the axis after laying runs from where it was placed
-     along the direction it was laid, and the tip is the furthest weapon vertex projected
-     back onto it. The vertex itself is a corner of the muzzle ring or of the foresight
-     guard and sits a unit off the bore. */
-  var wLen = Math.hypot(wdxy, wdz) || 1;
-  var tip = boreTip(f.slice(wStart, wEnd), [gx + 1.0, gy, gz + .6], [wdx / wLen, wdy / wLen, wdz / wLen]);
-  /* Lean the whole upper body forward about the hips, and take it down with them.
-     `pitch` moves a point above its pivot toward -x, so a forward lean is a NEGATIVE
-     angle: written positive, as it was, every pose on this figure leaned backward, and
-     the crouch put a man's head two units behind his own hips. */
-  var upper = pitch(f.slice(bodyStart), -lean, 0, 10.4 + bob);
-  /* not `at`, which does not carry a face's material or its alpha flag through, and the
-     scrim over the helmet is both */
-  if (drop) upper = upper.map(function (q) {
-    return { v: q.v.map(function (p) { return [p[0], p[1], p[2] + drop]; }),
-             c: q.c, n: q.n, m: q.m, alpha: q.alpha };
-  });
-  f = f.slice(0, bodyStart).concat(upper);
-  /* And stand him on the ground. The hip was two typed numbers, 10.6 upright and 7.5
-     crouched, and the legs that hang off it are longer than either allows: the soles sat
-     0.93 under the ground standing and 1.78 crouched, and at two frames of the walk in
-     eight both boots were in the air. Solved from the lowest leg vertex instead, every
-     pose stands on its own feet for nothing at runtime -- and the stature the card reads
-     goes up by the same 0.93, because the figure was always that tall and part of him
-     was buried. The rig brings it back. */
-  var lift = -lowestLeg(f, bodyStart);
-  if (lift) f = liftFaces(f, lift);
-  /* how far he was raised, because a crewman built into a hull is placed by a z the
-     vehicle builders were written against and has to be put back down by it */
-  f.lift = lift;
-  /* the tip through the same two moves the upper body made, which is where the flash
-     belongs: read off the barrel rather than typed per pose */
-  if (tip) {
-    var tc = Math.cos(-lean), ts = Math.sin(-lean), tz = tip[2] - (10.4 + bob);
-    f.muzzle = [tip[0] * tc - tz * ts, tip[1], tip[0] * ts + tz * tc + 10.4 + bob + drop + lift];
-  }
+  var P = pose === 'fire' ? FIGPOSE.fire : pose === 'crouchfire' ? FIGPOSE.kfire
+        : pose === 'crouch' ? FIGPOSE.kneel : phase < 0 ? FIGPOSE.stand : WALK(phase);
+  var r = manFaces(variant, P), f = r.faces;
+  f.muzzle = r.muzzle; f.eye = r.eye; f.lift = r.lift; f.joints = r.joints;
   return f;
 }
-/* the lowest point of the legs, which are everything built before the trunk */
-function lowestLeg(f, bodyStart) {
-  var lo = 1e9, i, j, v;
-  for (i = 0; i < bodyStart; i++) for (j = 0, v = f[i].v; j < v.length; j++) if (v[j][2] < lo) lo = v[j][2];
-  return lo === 1e9 ? 0 : lo;
-}
-/* a material set on every face of a list, or the list untouched when there is none */
-function mark(f, mi) {
-  if (mi === undefined) return f;
-  for (var i = 0; i < f.length; i++) f[i].m = mi;
-  return f;
-}
-/* a face list moved up, carrying the material and the alpha flag that `at` drops */
-function liftFaces(f, dz) {
-  var out = [], i;
-  for (i = 0; i < f.length; i++) out.push({ v: f[i].v.map(function (p) { return [p[0], p[1], p[2] + dz]; }),
-                                            c: f[i].c, n: f[i].n, m: f[i].m, alpha: f[i].alpha });
-  return out;
-}
-/* The muzzle: the weapon's furthest vertex along its own bore, projected back onto the
-   bore, so the point is on the axis the round leaves down and not on the rim of the
-   barrel or the top of a foresight guard. */
-function boreTip(f, at, dir) {
-  var best = -1e9, i, j, v, t;
-  for (i = 0; i < f.length; i++) for (j = 0, v = f[i].v; j < v.length; j++) {
-    t = (v[j][0] - at[0]) * dir[0] + (v[j][1] - at[1]) * dir[1] + (v[j][2] - at[2]) * dir[2];
-    if (t > best) best = t;
-  }
-  return best === -1e9 ? null : [at[0] + dir[0] * best, at[1] + dir[1] * best, at[2] + dir[2] * best];
-}
-/* The same man flat on the ground, weapon forward. `phase` puts him through a crawl:
-   pinned men were moving across the ground in a fixed pose, which reads as a body being
-   dragged rather than a man pulling himself along on his elbows. */
 function proneModel(variant, phase) {
-  /* A Fallschirmjaeger flat on the ground was in a plain Fliegerbluse: the smock that
-     covers him standing, 153 faces of splinter, was simply not built lying down, so a
-     section going to ground changed sides as it went. */
+  var r = manFaces(variant, phase ? CRAWL(phase) : PRONE()), f = r.faces;
+  f.muzzle = r.muzzle; f.eye = r.eye; f.lift = 0; f.joints = r.joints;
+  return f;
+}
+/* What he is wearing over the blouse, hip-relative. 37 pattern on the Canadian: belt,
+   braces over the shoulders, two basic pouches on the chest, the small pack high on the
+   back, water bottle on the right hip, entrenching tool and bayonet frog. The FJ carry
+   the black leather belt, the pouches, the bread bag and the gas-mask tin. */
+function figKit(V, side, k, ger, rec) {
+  var f = [], web = ger ? k.belt : k.web, wmat = ger ? 'leather' : 'canvas';
+  function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
+  function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
+  f = f.concat(figPart(box(0, 0, 2.0, 3.1, 5.1, .8, web, web, web, 0), wmat, lit(web, 1.08), lit(web, .9), web));
+  [-1.1, 1.1].forEach(function (y) {
+    f = f.concat(figPart(box(1.5, y, 2.8, .25, .9, 3.2, web, web, web, 0), wmat, lit(web, 1.08), lit(web, .9), web));
+  });
+  if (ger) {
+    var pm = V.pouch === 'canvas' ? 'canvas' : 'leather', pc = V.pouch === 'canvas' ? k.pouchC : k.pouch;
+    [-1.6, 1.6].forEach(function (y) {
+      var a = mark('pouches');
+      f = f.concat(figPart(box(1.6, y, 1.9, 1.1, 1.6, 1.8, pc, pc, pc, 0), pm, lit(pc, 1.06), lit(pc, .9), pc));
+      upto('pouches', a);
+    });
+    f = f.concat(figPart(cyl(-1.6, -2.0, .8, .7, .7, 2.6, 6, k.canvas, k.canvas, 0, true), 'canvas', lit(k.canvas, 1.05), lit(k.canvas, .9), k.canvas));
+    var gp = mark('pack');
+    f = f.concat(figPart(box(-1.8, 1.4, .9, 1.2, 1.6, 2.0, k.pack, k.pack, k.pack, 0), 'canvas', lit(k.pack, 1.08), lit(k.pack, .9), k.pack));
+    upto('pack', gp);
+  } else {
+    [-1.5, 1.5].forEach(function (y) {
+      var a = mark('pouches');
+      f = f.concat(figPart(box(1.7, y, 2.9, 1.2, 1.5, 2.2, k.web, k.web, k.web, 0), 'canvas', lit(k.web, 1.1), k.webD, k.web));
+      upto('pouches', a);
+    });
+    var up = mark('pack');
+    f = f.concat(figPart(box(-1.9, 0, 3.4, 1.6, 3.6, 3.0, k.pack, k.pack, k.pack, 0), 'canvas', lit(k.pack, .95), lit(k.pack, 1.1), k.pack));
+    upto('pack', up);
+    f = f.concat(figPart(cyl(-1.5, 2.2, .6, .7, .7, 1.8, 6, k.canvas, k.canvas, 0, true), 'canvas', lit(k.canvas, 1.05), lit(k.canvas, .9), k.canvas));
+    f = f.concat(figPart(box(-1.8, -.4, .2, .9, 2.6, 2.4, k.web, k.web, k.web, 0), 'canvas', lit(k.web, 1.05), k.webD, k.web));
+    f = f.concat(figPart(box(-1.6, -2.4, 0, .5, .5, 3.6, k.webD, k.webD, k.webD, 0), 'leather', k.web, k.webD, k.webD));
+  }
+  return f;
+}
+/* A box laid along +x rather than up +z, which is the frame a man lying down is built
+   in: `frustum` runs up its own axis, so a prone torso is built standing and turned. */
+function layFrustum(x0, x1, t, wA, wB, z0, col) {
+  function r(w) { var a = t / 2, b = w / 2; return [[-a, -b], [a, -b], [a, b], [-a, b]]; }
+  var g = frustum(r(wA), r(wB), 0, x1 - x0, col, col, col);
+  return place(pitch(faceOut(g, 0, 0, (x1 - x0) / 2), -Math.PI / 2, 0, 0), 0, x0, 0, z0 + t / 2);
+}
+/* Where the weapon goes and where the hands go for it, in hip-relative z. One place
+   answers it for every pose and every weapon, against the old figure's two sets of six
+   hand positions typed per weapon class. `light` is the rifles and the machine
+   carbines, `heavy` the Bren and the PIAT, `tube` the Panzerschreck. */
+/* `wide` is how far outboard a carry hangs, which is a fact about the man rather than
+   about the weapon: a Fallschirmjaeger's smock is 6.4 across the hem against a Canadian's
+   4.6 at the waist, so a carry laid to clear one goes straight through the other. */
+function figCarry(P, W, w, wide) {
+  var cls = W.tube ? 'tube' : W.heavy ? 'heavy' : 'light', c = P.carry, L, rA, both = 1, head = null;
+  var rPole = [0, 1, -.3], lPole = [1.6, -.4, -.4], lean = P.lean || 0, y = wide || 0;
+  /* The Sten's magazine is turned down out of the way in every carry but the aim, where
+     it is clear of the man and where a Mk II is actually fired from. Down rather than up
+     because the roll takes the pistol grip with it: turned up, the grip came round to
+     the man's left and dragged his firing forearm across his own chest. */
+  var rl = W.sideMag && c !== 'aim' ? Math.PI / 2 : 0;
+  if (c === 'aim') {
+    /* a tube rides on the shoulder and the cheek goes on the tube, not behind a comb */
+    if (cls === 'tube') { L = layTo(w, W.rest, [-.3, 2.2, 6.9], 0, lean); head = [.2, 1.5, -.15]; }
+    else L = aimLay(w, W, [.9, 2.0, 7.1], cls === 'heavy' ? .25 : 0, lean);
+  } else if (c === 'lowready') {
+    if (cls === 'tube') L = layTo(w, W.rest, [0, 3.6 + y, 6.9], 0, .35);
+    else L = layTo(w, W.butt, [.9, 2.0 + y, 7.0 - (cls === 'heavy' ? .25 : 0)], -.08, -.35, rl);
+  } else if (c === 'port') {
+    if (cls === 'tube') L = layTo(w, W.rest, [0, 3.6 + y, 6.9], 0, .35);
+    else L = layWeapon(w, [3.0, 2.0 + y, 3.2], -.50, .50, rl);
+  } else if (c === 'trail') {
+    /* On the march a rifle is carried at the balance, muzzle forward at hip height and
+       well outboard of the man; the free arm swings. Laid on the centreline it ran from
+       behind his back to a yard in front of his chest, straight through him. */
+    if (cls === 'light') {
+      L = layTo(w, W.carryPt, [.6, 3.1 + y, 2.6 + (P.armSwing || 0) * .4], -.06, -.12, rl);
+      rA = L.at(W.carryPt); both = 0;
+    } else { L = layTo(w, W.rest, [0, 3.4 + y, 6.9], 0, cls === 'tube' ? .35 : .15); both = 0; rA = L.at(W.grip); }
+  } else if (c === 'drop') {
+    L = layTo(w, W.grip, [.6, 3.0 + y, 5.2], .3, -.9, rl);
+    rA = L.at(W.grip); both = 0;
+  } else {
+    /* The casual carry: at the port, the butt low by the right hip and the muzzle up
+       and across to his left. Held level at the waist, as it was, the whole length of
+       the rifle lay through the man from one side to the other. */
+    if (cls === 'tube') L = layTo(w, W.rest, [0, 3.6 + y, 6.9], 0, .35);
+    else if (cls === 'heavy') L = layWeapon(w, [2.4, 2.4 + y, 2.2], -.35, .35, rl);
+    else L = layWeapon(w, [2.2, 2.4 + y, 2.6], -.45, .55, rl);
+  }
+  if (!rA) rA = L.at(W.grip);
+  return { L: L, rHand: rA, both: both, rPole: rPole, lPole: lPole, head: head };
+}
+/* The whole figure, from the pose record and nothing else. Returns the faces and the
+   record the bake, the muzzle table, the eye table and the card all read: no tool ever
+   partitions a face list by counting primitive calls again. */
+function manFaces(variant, P) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side];
-  var coat = side === 'ger' ? k.smock : k.coat, sm = side === 'ger' ? matIndex('splinter') : undefined;
-  var f = [], cw = phase ? Math.sin(phase * TAU) : 0;
-  f = f.concat(mark(box(-2.5, 0, .6, 6.5, 4.8, 2.6, coat, lit(coat, 1.05), side === 'ger' ? lit(coat, .9) : k.coatD), sm));   /* torso */
-  f = f.concat(box(-7.0, 0, .5, 3.6, 4.4, 2.2, k.trous, k.trous, lit(k.trous, .9)));                        /* hips */
-  /* The legs, and on a crawl beat one swings wide while the other draws in. The three
-     segments of a leg are placed at fixed points here rather than hung off each other,
-     so a beat may only swing them together: moving one of the three on its own takes
-     the leg apart. */
-  [[-1.4, .35, 1], [1.4, -.35, -1]].forEach(function (p) {
-    var kick = cw * p[2], yw = p[1] + kick * .42, yy = p[0] + kick * 1.4;
-    f = f.concat(place(box(-2.3, 0, 0, 4.6, 1.8, 1.7, k.trous, k.trous, lit(k.trous, .9)), yw, -8.6, yy, .6));
-    f = f.concat(place(box(-2.1, 0, 0, 4.2, 1.6, 1.5, k.trous, k.trous, lit(k.trous, .9)), yw * 1.6, -12.8, yy * 1.6, .6));
-    f = f.concat(place(box(-.8, 0, 0, 1.6, 1.4, 2.8, k.boot, lit(k.boot, 1.15)), yw * 1.6, -16.6, yy * 2.0, .3));
+  if (P.flat) return flatFaces(V, side, k, P);
+  var ger = side === 'ger', coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth';
+  var lean = P.lean || 0, blade = P.blade || 0, J = {}, Q = {}, LR = [], AR = [];
+
+  /* the legs first, and the lift that every other part is built on. They are not put
+     down until the trunk has been leaned, because a fall leans far enough to take a
+     shoulder through the ground and the plant has to answer for the whole man. */
+  var raw = figLeg(RIG, P.legs[0], -RIG.hipY, k, k.trous, !ger, LR).concat(figLeg(RIG, P.legs[1], RIG.hipY, k, k.trous, !ger, LR));
+  var hipZ = -lowestZ(raw);
+
+  /* everything above the hip, in hip-relative z, leaned as one at the end */
+  var up = [];
+  function rect(l, w) { var a = l / 2, b = w / 2; return [[-a, -b], [a, -b], [a, b], [-a, b]]; }
+  function add(f, name) { if (name) Q[name] = [up.length, up.length + f.length]; up = up.concat(f); return f; }
+  if (ger) {
+    /* The jump smock: loose over the body, and no looser. At 6.4 across the hem it was
+       wider than the shoulders it hangs from and both arms disappeared inside it, so a
+       Fallschirmjaeger came off the man scene as a splinter-pattern slab with a weapon
+       sticking out of it and no arms at all. The shoulder is at 2.25 and an upper arm is
+       1.3 across, so anything over 5.8 at the hem swallows one. */
+    add(figPart(faceOut(frustum(rect(3.6, 5.8), rect(3.2, 5.0), -2.5, 6.1, coat), 0, 0, 1.8),
+                cmat, coat, lit(coat, .92), lit(coat, .95)), 'smock');
+  } else {
+    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.3), -1.2, 2.0, k.trous), 0, 0, .4),
+                'cloth', lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
+    add(figPart(faceOut(frustum(rect(3.0, 4.3), rect(3.0, 4.9), 2.0, 6.0, coat), 0, 0, 4.0),
+                'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
+    if (V.jerkin) add(figPart(faceOut(frustum(rect(3.3, 4.7), rect(3.3, 5.2), 1.2, 5.4, k.jerkin), 0, 0, 3.3),
+                              'leather', k.jerkin, lit(k.jerkin, .9), lit(k.jerkin, .94)), 'jerkin');
+  }
+  add(figPart(box(0, 0, 5.8, 3.0, 5.4, .8, coat, coat, coat, 0), cmat, lit(coat, 1.06), lit(coat, .94), lit(coat, 1.0)), 'plate');
+  add(figPart(box(.4, 0, 6.6, 1.6, 2.4, .6, coat, coat, coat, 0), cmat, lit(coat, .95), lit(coat, .9), lit(coat, .92)), 'collar');
+  add(figPart(cyl(0, 0, 6.4, .6, .6, .9, 6, k.skinD, k.skin, 0, true), 'generic', k.skin, k.skinD, k.skinD), 'neck');
+  var KQ = {}, kitAt = up.length;
+  add(figKit(V, side, k, ger, KQ), 'kit');
+
+  /* the weapon, then the arms onto it */
+  var W = WEAP[V.weapon], w = W ? weaponModel(k, V.weapon, P.carry === 'aim' ? 'out' : '') : null;
+  var C = W ? figCarry(P, W, w, ger ? .9 : 0) : null, anchors = {};
+  var bl = blade ? Math.cos(blade) : 1, bs = blade ? Math.sin(blade) : 0;
+  function shoulder(sd) {
+    var x = RIG.shX, y = sd * RIG.shY;
+    return [x * bl - y * bs, x * bs + y * bl, RIG.shZ];
+  }
+  var rS = shoulder(1), lS = shoulder(-1), AT = [], wRange = null;
+  function arm(f) { AT.push(up.length); up = up.concat(f); return f; }
+  if (C) {
+    wRange = [up.length, up.length + C.L.faces.length];
+    add(C.L.faces, 'weapon');
+    arm(figArm(rS, C.rHand.slice(), C.rPole, k, coat, cmat, 1, 0, undefined, AR));
+    if (C.both) arm(figArm(lS, fitHand(lS, C.L, W.foreMin, W.fore, RIG.reach).slice(), C.lPole, k, coat, cmat, -1, !ger, undefined, AR));
+    /* the free arm swings against the legs */
+    /* and it hangs outboard of him: a jump smock is 6.4 across the hem, so an arm
+       swinging at 2.6 hangs inside the man wearing it */
+    else arm(figArm(lS, [1.2 + (P.armSwing || 0), ger ? -3.9 : -3.0, 1.6], [0, -1, -.6], k, coat, cmat, -1, !ger, undefined, AR));
+    anchors.muzzle = C.L.at(W.muzzle);
+    anchors.bore = C.L.at([W.muzzle[0] - 3, W.muzzle[1], W.muzzle[2]]);
+  } else {
+    var g = P.grips || [3.0, 1.7, 1.7];
+    arm(figArm(rS, [g[0], g[1], g[2]], [0, 1, -.6], k, coat, cmat, 1, 0, undefined, AR));
+    arm(figArm(lS, [g[0], -g[1], g[2]], [0, -1, -.6], k, coat, cmat, -1, !ger, undefined, AR));
+  }
+
+  /* The head is counter-pitched about the chin by the lean it is about to be given, so
+     the eyes stay level whatever the trunk is doing; the fall frames switch that off
+     with headLean 0 and the head goes down with the body. */
+  var hd = headModel(k, RIG.chin + 1.35), nsk = hd.length, off = (C && C.head) || P.head;
+  hd = hd.concat(side === 'us' ? helmetUS(k, 9.05) : helmetGER(k, 8.6));
+  var eye = RIG.eye.slice();
+  if (off) { hd = at(hd, off[0], off[1], off[2]); eye = [eye[0] + off[0], eye[1] + off[1], eye[2] + off[2]]; }
+  var hl = P.headLean === undefined ? lean : P.headLean;
+  if (hl) { hd = pitch(hd, hl, 0, RIG.chin); eye = figPtAbout(eye, hl, RIG.chin); }
+  add(hd, 'head');   /* the skull and the helmet in one range, cut apart by nsk below */
+
+  /* The lean, and then the stand. Everything the record hands back goes through the same
+     two moves, so a tool reading a joint and a tool reading the faces cannot disagree. */
+  var leaned = pitch(up, -lean, 0, 0);
+  var body = wRange ? leaned.slice(0, wRange[0]).concat(leaned.slice(wRange[1])) : leaned;
+  hipZ += Math.max(0, -(lowestZ(body) + hipZ));
+  var legs = mudPass(place(raw, 0, 0, 0, hipZ), 6.0, .55, .05);
+  var moved = place(leaned, 0, 0, 0, hipZ);
+  var faces = legs.concat(moved), i;
+  function cut(r) { return r ? moved.slice(r[0], r[1]) : []; }
+  var o0 = LR[0].n;
+  var Pt = { legs: [legs.slice(0, o0), legs.slice(o0)],
+             thighs: [legs.slice(0, LR[0].nt), legs.slice(o0, o0 + LR[1].nt)],
+             shins: [legs.slice(LR[0].nt, LR[0].nt + LR[0].ns), legs.slice(o0 + LR[1].nt, o0 + LR[1].nt + LR[1].ns)],
+             boots: [legs.slice(LR[0].nt + LR[0].ns, o0), legs.slice(o0 + LR[1].nt + LR[1].ns)],
+             hands: [], limbs: [], skull: [], head: [], helmet: [], weapon: [] };
+  Object.keys(Q).forEach(function (name) { Pt[name] = cut(Q[name]); });
+  Object.keys(KQ).forEach(function (name) {
+    var out = [], j;
+    for (j = 0; j < KQ[name].length; j++) out.push(cut([KQ[name][j][0] + kitAt, KQ[name][j][1] + kitAt]));
+    Pt[name] = name === 'pouches' ? out : out[0] || [];
   });
-  f = f.concat(box(-3.2, 0, 3.2, 3.2, 3.6, 2.4, side === 'us' ? k.pack : k.webD, lit(side === 'us' ? k.pack : k.webD, 1.1)));   /* pack */
-  /* the arms, reaching alternately: on a beat one goes out ahead and takes his weight,
-     and both halves of it go forward together for the same reason as the legs */
-  [[-1, -3.0, -1], [1, 3.0, 1]].forEach(function (p) {
-    var reach = cw * p[2] * 1.6;
-    var cD = side === 'ger' ? lit(coat, .9) : k.coatD;
-    f = f.concat(mark(place(box(1.8, 0, 0, 3.6, 1.25, 1.25, coat, lit(coat, 1.05), cD), p[0] * .5, 0.6 + reach, p[1], 1.6), sm));
-    f = f.concat(mark(place(box(1.5, 0, 0, 3.0, 1.1, 1.1, coat, lit(coat, 1.05), cD), -p[0] * .5, 3.4 + reach, p[1] * .55, 2.2), sm));
+  Pt.skull = Pt.head.slice(0, nsk); Pt.helmet = Pt.head.slice(nsk); Pt.head = Pt.skull;
+  for (i = 0; i < AR.length; i++) {
+    var a = AR[i], b = AT[i];
+    Pt.limbs.push(moved.slice(b, b + a.nu));
+    Pt.limbs.push(moved.slice(b + a.nu, b + a.nu + a.nf));
+    Pt.hands.push(moved.slice(b + a.nu + a.nf, b + a.nu + a.nf + a.nh));
+  }
+  Pt.barrel = anchors.muzzle ? { front: figPt(anchors.muzzle, lean, hipZ), back: figPt(anchors.bore, lean, hipZ) } : null;
+  J.hip = [0, 0, hipZ];
+  J.hipL = figPt([0, -RIG.hipY, 0], 0, hipZ); J.hipR = figPt([0, RIG.hipY, 0], 0, hipZ);
+  J.kneeL = atZ(LR[0].knee, hipZ); J.kneeR = atZ(LR[1].knee, hipZ);
+  J.ankleL = atZ(LR[0].ankle, hipZ); J.ankleR = atZ(LR[1].ankle, hipZ);
+  J.shoulderR = figPt(rS, lean, hipZ); J.shoulderL = figPt(lS, lean, hipZ);
+  if (AR[0]) { J.elbowR = figPt(AR[0].elbow, lean, hipZ); J.handR = figPt(AR[0].at, lean, hipZ); }
+  if (AR[1]) { J.elbowL = figPt(AR[1].elbow, lean, hipZ); J.handL = figPt(AR[1].at, lean, hipZ); }
+  J.eye = figPt(eye, lean, hipZ);
+  if (Pt.skull.length) { J.skull = partCentre(Pt.skull); J.crown = [J.skull[0], J.skull[1], topZ(Pt.helmet.length ? Pt.helmet : Pt.skull)]; }
+  return { faces: faces, joints: J, parts: Pt, lift: hipZ, anchors: anchors,
+           handsOn: C ? (C.both ? 2 : 1) : 0,
+           muzzle: anchors.muzzle ? figPt(anchors.muzzle, lean, hipZ) : null,
+           eye: J.eye };
+}
+function atZ(p, dz) { return [p[0], p[1], p[2] + dz]; }
+function partCentre(f) {
+  var sx = 0, sy = 0, sz = 0, n = 0, i, j;
+  for (i = 0; i < f.length; i++) for (j = 0; j < f[i].v.length; j++) { sx += f[i].v[j][0]; sy += f[i].v[j][1]; sz += f[i].v[j][2]; n++; }
+  return n ? [sx / n, sy / n, sz / n] : [0, 0, 0];
+}
+function topZ(f) {
+  var hi = -1e9, i, j;
+  for (i = 0; i < f.length; i++) for (j = 0; j < f[i].v.length; j++) if (f[i].v[j][2] > hi) hi = f[i].v[j][2];
+  return hi;
+}
+function figPtAbout(p, ang, oz) {
+  var c = Math.cos(ang), s = Math.sin(ang), x = p[0], z = p[2] - oz;
+  return [x * c - z * s, p[1], x * s + z * c + oz];
+}
+/* Flat on the ground, and crawling. Built in its own frame along +x from the hips,
+   because a man lying down has no hip pivot to hang anything off and everything about
+   him is a distance along the ground rather than a height. `ph` is the crawl phase;
+   with no phase it is the still prone. */
+function flatFaces(V, side, k, P) {
+  var ger = side === 'ger', coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth';
+  var f = [], Q = {}, LG = [], AR = [], AT = [];
+  var ph = P.ph || 0, cw = ph ? Math.cos(ph * TAU) : 0, sw = ph ? Math.sin(ph * TAU) : 0;
+  function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
+  add(figPart(layFrustum(-6.5, 0, 2.4, 4.6, 5.0, .4, coat), cmat, coat, lit(coat, .92), lit(coat, .95)), 'torso');
+  add(figPart(box(-8.3, 0, .4, 3.6, 4.4, 2.0, k.trous, k.trous, k.trous, 0), 'cloth',
+              lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
+  add(figPart(box(-3.0, 0, 2.8, 3.8, 4.0, 1.6, k.pack, 0, 0, 0), 'canvas',
+              lit(k.pack, 1.10), lit(k.pack, .92), k.pack), 'pack');
+  /* the legs: three boxes each, and on a crawl beat one draws up and swings out while
+     the other trails straight */
+  [[-1, -2.4], [1, 2.4]].forEach(function (p) {
+    var draw = Math.max(0, cw * p[0]), yaw = draw * .6, fwd = draw * 2.0;
+    var th = figPart(box(-8.5 + 2.3, 0, 0, 4.6, 1.8, 1.5, k.trous, k.trous, k.trous, 0), 'cloth',
+                     lit(k.trous, .92), lit(k.trous, .82), lit(k.trous, .88));
+    var sh = figPart(box(-8.5 - 2.1, 0, 0, 4.2, 1.5, 1.3, k.trous, k.trous, k.trous, 0), 'cloth',
+                     lit(k.trous, .85), lit(k.trous, .74), lit(k.trous, .80));
+    var bt = figPart(box(-8.5 - 5.8, 0, -.1, 3.2, 1.3, 1.0, k.boot, k.boot, k.boot, 0), 'leather',
+                     lit(k.boot, 1.1), k.boot, k.boot);
+    LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
+    f = f.concat(place(at(th.concat(sh).concat(bt), 8.5, 0, 0), yaw * p[0], -8.5 + fwd, p[1], .35));
   });
-  /* the shear that lays the head forward and looks it up, carrying the material and the
-     alpha flag: rebuilt bare, as these two were, a scrimmed helmet came back drawn on a
-     tile it does not own */
+  /* the head through the file's own shear, which lays it forward and looks it up, and
+     the helmet built at its seat on the head and put through the same map so the crown
+     sits above the skull and nothing shows through it */
   function shear(fs, dx, z0) {
     return fs.map(function (q) {
-      return { v: q.v.map(function (p) { return [p[0] + dx + (p[2] - z0) * .6, p[1], z0 === 2.9 ? p[2] - p[0] * .5 + .6 : p[2] * .9]; }),
+      return { v: q.v.map(function (p) { return [p[0] + dx + (p[2] - z0) * .6, p[1], p[2] * .9]; }),
                c: q.c, n: q.n, m: q.m, alpha: q.alpha };
     });
   }
-  f = f.concat(shear(headModel(k, 2.9), 1.8, 2.9));
-  f = f.concat(side === 'us' ? shear(helmetUS(k, 3.6), 2.4, 3.6) : shear(helmetGER(k, 3.4), 2.4, 3.4));
-  var wStart = f.length;
-  f = f.concat(place(pitch(weaponModel(k, V.weapon), .04, 0, 0), 0, 4.2, 0, 2.2));
-  f.muzzle = boreTip(f.slice(wStart), [4.2, 0, 2.2], [Math.cos(.04), 0, Math.sin(.04)]);
-  f.lift = 0;
-  return f;
+  var hd = headModel(k, 2.9), nsk = hd.length;
+  hd = hd.concat(side === 'us' ? helmetUS(k, 3.60) : helmetGER(k, 3.15));
+  add(shear(hd, 1.9, 2.9), 'head');
+  /* the weapon, then the arms onto it. A bipod weapon is laid so its feet touch. */
+  var W = WEAP[V.weapon], L = null, J = {}, muz = null;
+  if (W) {
+    /* the butt plate just clear of the torso's own front face, which is where a prone
+       man's shoulder is; laid at a fixed x the Bren's butt sat 0.84 inside his chest */
+    var w = weaponModel(k, V.weapon), org = [.2 - W.butt[0], 1.4, 2.6];
+    if (V.weapon === 'bren' || V.weapon === 'piat') org[2] = -lowestZ(w) + .1;
+    /* a Panzerschreck is 18.5 long and its breech end reaches back past the shoulder:
+       laid at a prone rifle's height its rear five units were inside the man's chest */
+    else if (W.tube) org = [4.2, 1.8, 4.3];
+    L = layWeapon(w, org, 0, .04);
+    add(L.faces, 'weapon');
+    muz = L.at(W.muzzle);
+  }
+  var rS = [0, 2.4, 2.4], lS = [0, -2.4, 2.4];
+  var rH = L ? L.at(W.grip) : [3.2, 2.2, 1.0], lH = L ? fitHand(lS, L, W.foreMin, W.fore, RIG.reach) : [3.2, -2.2, 1.0];
+  /* The support hand comes off the fore-end and reaches, which is what pulls a man
+     along on his elbows; the firing hand stays on the grip, because a rifle held by
+     neither hand is a rifle lying in the mud behind him. */
+  if (ph) lH = [lH[0] - sw * 2.4, lH[1] - Math.abs(sw) * .6, lH[2]];
+  function arm(g) { AT.push(f.length); f = f.concat(g); }
+  arm(figArm(rS, rH.slice(), [0, 1, -1], k, coat, cmat, 1, 0, .55, AR));
+  arm(figArm(lS, lH.slice(), [0, -1, -1], k, coat, cmat, -1, !ger, .55, AR));
+  mudPass(f, 4.5, .35, 0);
+  var Pt = { legs: [], thighs: [], shins: [], boots: [], limbs: [], hands: [],
+             skull: [], head: [], helmet: [], weapon: [] };
+  function cut(r) { return r ? f.slice(r[0], r[1]) : []; }
+  Object.keys(Q).forEach(function (name) { Pt[name] = cut(Q[name]); });
+  Pt.skull = Pt.head.slice(0, nsk); Pt.helmet = Pt.head.slice(nsk); Pt.head = Pt.skull;
+  LG.forEach(function (g) {
+    Pt.thighs.push(f.slice(g.at, g.at + g.nt));
+    Pt.shins.push(f.slice(g.at + g.nt, g.at + g.nt + g.ns));
+    Pt.boots.push(f.slice(g.at + g.nt + g.ns, g.at + g.nt + g.ns + g.nb));
+    Pt.legs.push(f.slice(g.at, g.at + g.nt + g.ns + g.nb));
+  });
+  AR.forEach(function (a, i) {
+    var b = AT[i];
+    Pt.limbs.push(f.slice(b, b + a.nu));
+    Pt.limbs.push(f.slice(b + a.nu, b + a.nu + a.nf));
+    Pt.hands.push(f.slice(b + a.nu + a.nf, b + a.nu + a.nf + a.nh));
+  });
+  Pt.barrel = muz && L ? { front: muz, back: L.at([W.muzzle[0] - 3, W.muzzle[1], W.muzzle[2]]) } : null;
+  J.handR = AR[0] ? AR[0].at : rH; J.handL = AR[1] ? AR[1].at : lH;
+  J.elbowR = AR[0] ? AR[0].elbow : null; J.elbowL = AR[1] ? AR[1].elbow : null;
+  J.shoulderR = rS; J.shoulderL = lS;
+  if (Pt.skull.length) { J.skull = partCentre(Pt.skull); J.crown = [J.skull[0], J.skull[1], topZ(Pt.helmet.length ? Pt.helmet : Pt.skull)]; }
+  J.eye = [2.6, 0, 3.4];
+  return { faces: f, joints: J, parts: Pt, lift: 0, muzzle: muz, eye: J.eye, handsOn: L ? (ph ? 1 : 2) : 0 };
 }
-
-/* One full stride cycle in world units. At sixteen a section walking at sixty-four units
-   a second turned its legs over 4 times a second, which is a sprinter's cadence on a man
-   out for a walk; at twenty-eight it is 2.3, and the planted foot slides about a fifth of
-   the ground a frame stands for instead of all of it. */
-var WALKF = 9, STRIDE_LEN = 28;
-var CRAWLF = 3, CRAWL_LEN = 11;      /* and one crawl beat, which covers less ground */
-/* Every posture a man can be in, baked once per variant. POSE_* are what updateModels
-   writes into a model and what the draw path reads back. */
+/* The two dead men a side, built from the side's rifleman kit and drawn a little into
+   the ground. The loose helmet is the one corpse cue that survives at nine hundred
+   units, so one of the two has lost his. */
+function deadFaces(variant, kind) {
+  var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[side];
+  var ger = side === 'ger', coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth';
+  var f = [], Q = {}, LG = [], AR = [], AT = [], W = WEAP[V.weapon], w = W ? weaponModel(k, V.weapon) : null;
+  function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
+  function arm(g) { AT.push(f.length); f = f.concat(g); }
+  function leg(a, b, c) {
+    var th = figPart(taperLimb(a, b, 2.0, 1.5, k.trous), 'cloth', lit(k.trous, .92), lit(k.trous, .82), lit(k.trous, .88));
+    var sh = figPart(taperLimb(b, c, 1.6, 1.15, k.trous), 'cloth', lit(k.trous, .85), lit(k.trous, .74), lit(k.trous, .80));
+    var bt = figPart(box(c[0] - 1.2, c[1], c[2] - .5, 3.2, 1.3, 1.0, k.boot, k.boot, k.boot, 0), 'leather',
+                     lit(k.boot, 1.1), k.boot, k.boot);
+    LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
+    f = f.concat(th).concat(sh).concat(bt);
+  }
+  var nsk;
+  if (kind === 0) {
+    /* on his back, a quarter roll to the right, the helmet off and lying beyond him */
+    add(figPart(box(-3.0, 0, .3, 6.5, 4.8, 2.4, coat, coat, coat, 0), cmat, coat, lit(coat, .92), lit(coat, .95)), 'torso');
+    add(figPart(box(-7.4, 0, .3, 3.2, 4.4, 2.0, k.trous, k.trous, k.trous, 0), 'cloth',
+                lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
+    arm(figArm([.5, 2.4, 1.6], [0, 8.0, .5], [0, 1, 1], k, coat, cmat, 1, 0, undefined, AR));
+    arm(figArm([.5, -2.4, 1.6], [4.0, 1.0, 2.6], [0, -1, 1], k, coat, cmat, -1, !ger, undefined, AR));
+    leg([-4.5, -1.0, 1.2], [-9.0, -2.5, 1.0], [-13.5, -3.0, .8]);
+    leg([-4.5, 1.2, 1.2], [-8.5, 3.2, 1.6], [-11.5, 1.5, .8]);
+    var h0 = at(headModel(k, 0), 3.0, -1.0, 1.6);
+    nsk = h0.length;
+    h0 = h0.concat(place(pitch(side === 'us' ? helmetUS(k, 0) : helmetGER(k, 0), Math.PI, 0, 0), .4, 3.5, -2.5, 1.2));
+    add(h0, 'head');
+    if (w) add(place(w, .15, -2.0, 6.0, .5), 'weapon');
+  } else {
+    /* on his face, a quarter roll to the left, the helmet on and askew */
+    add(figPart(layFrustum(-6.5, 0, 2.4, 4.6, 5.0, .3, coat), cmat, coat, lit(coat, .92), lit(coat, .95)), 'torso');
+    add(figPart(box(-8.3, -.6, .3, 3.6, 4.4, 2.0, k.trous, k.trous, k.trous, 0), 'cloth',
+                lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
+    arm(figArm([.5, -2.4, 1.6], [6.5, -4.5, .5], [0, -1, 1], k, coat, cmat, -1, !ger, .3, AR));
+    leg([-8.0, -1.4, 1.0], [-12.0, -2.0, .8], [-15.5, -2.2, .7]);
+    leg([-8.0, 1.4, 1.0], [-11.0, 3.6, 1.2], [-14.0, 2.4, .7]);
+    var h1 = place(headModel(k, 2.6), .5, 2.2, -.8, -.5);
+    nsk = h1.length;
+    h1 = h1.concat(place(pitch(side === 'us' ? helmetUS(k, 3.35) : helmetGER(k, 3.15), -.3, 2.2, 3.0), .4, 2.2, -.8, -.5));
+    add(h1, 'head');
+    if (w) add(place(pitch(w, -.05, 0, 0), 2.9, 1.0, -3.0, .5), 'weapon');
+  }
+  /* and he lies on the ground: the head and the helmet of the second layout are laid
+     through a place that took them half a unit under it */
+  var sink = lowestZ(Q.weapon ? f.slice(0, Q.weapon[0]).concat(f.slice(Q.weapon[1])) : f);
+  if (sink) f = mudPass(place(f, 0, 0, 0, -sink), 4.5, .35, 0);
+  else mudPass(f, 4.5, .35, 0);
+  var Pt = { legs: [], thighs: [], shins: [], boots: [], limbs: [], hands: [],
+             skull: [], head: [], helmet: [], weapon: [] }, J = {};
+  function cut(r) { return r ? f.slice(r[0], r[1]) : []; }
+  Object.keys(Q).forEach(function (name) { Pt[name] = cut(Q[name]); });
+  Pt.skull = Pt.head.slice(0, nsk); Pt.helmet = Pt.head.slice(nsk); Pt.head = Pt.skull;
+  LG.forEach(function (g) {
+    Pt.thighs.push(f.slice(g.at, g.at + g.nt));
+    Pt.shins.push(f.slice(g.at + g.nt, g.at + g.nt + g.ns));
+    Pt.boots.push(f.slice(g.at + g.nt + g.ns, g.at + g.nt + g.ns + g.nb));
+    Pt.legs.push(f.slice(g.at, g.at + g.nt + g.ns + g.nb));
+  });
+  AR.forEach(function (a, i) {
+    var b = AT[i];
+    Pt.limbs.push(f.slice(b, b + a.nu));
+    Pt.limbs.push(f.slice(b + a.nu, b + a.nu + a.nf));
+    Pt.hands.push(f.slice(b + a.nu + a.nf, b + a.nu + a.nf + a.nh));
+  });
+  if (AR[0]) { J.handR = AR[0].at; J.elbowR = AR[0].elbow; }
+  if (AR[1]) { J.handL = AR[1].at; J.elbowL = AR[1].elbow; }
+  if (Pt.skull.length) { J.skull = partCentre(Pt.skull); J.crown = [J.skull[0], J.skull[1], topZ(Pt.skull)]; }
+  return { faces: f, joints: J, parts: Pt, lift: 0, muzzle: null, eye: [0, 0, 2], handsOn: 0 };
+}
+/* Every vehicle builder places its crew by a z written against the figure as it was,
+   which stood 0.93 under its own origin and carried its shoulders 19.38 above its soles.
+   The rig stands on its feet and carries them at 17.35, so a crewman put down at the old
+   z would sink two units into his own hull. What a rim cuts is the chest, so the
+   shoulder line is what decides how much of a man shows over one and the shoulder line
+   is what is matched: 0.93 back for the figure no longer being buried, and 2.03 up for
+   the shorter trunk. His crown comes out half a unit higher than before, because the
+   rig's head is smaller against its body than the stack of boxes was, and that is the
+   anatomy rather than the placement. The armour gallery before and after is the check. */
+var CREW_RISE = 1.10;
+function crewman(side, yaw, x, y, z) {
+  return place(soldierModel(side === 'ger' ? 'fj_crew' : 'can_crew', -1), yaw || 0, x, y, (z || 0) + CREW_RISE);
+}
 var POSE_STAND = 0, POSE_WALK = 1, POSE_CROUCH = 2, POSE_FIRE = 3, POSE_CFIRE = 4,
     POSE_PRONE = 5, POSE_CRAWL = 6;
 var MODELS = { sol: {}, solA: {}, prone: {}, proneA: {}, crouch: {}, crouchA: {},
@@ -17547,7 +17945,7 @@ var FIG_SCALE = 1;
    muzzle both ask here, so they cannot disagree about which frame is on the screen. */
 function frameOf(pose, m) {
   if (pose === POSE_CRAWL) return Math.floor((m.gait || 0) / (CRAWL_LEN / CRAWLF)) % CRAWLF;
-  return 1 + (Math.floor((m.gait || 0) / (STRIDE_LEN / (WALKF - 1))) % (WALKF - 1));
+  return 1 + (Math.floor((m.gait || 0) / (STRIDE_LEN / WALKF)) % WALKF);
 }
 /* One man's matrix, for the shadow pass, the colour pass and the corpses alike. */
 function figMat(m) {
@@ -17579,8 +17977,11 @@ function buildModels() {
        it up to seven units off the muzzle it was meant to leave, and 2.5 below it. */
     var muz = MODELS.muz[variant] = [];
     MODELS.sol[variant] = []; MODELS.solA[variant] = []; muz[POSE_WALK] = [];
-    for (var fr = 0; fr < WALKF; fr++) {
-      var sf = soldierModel(variant, fr === 0 ? -1 : (fr - 1) / (WALKF - 1));
+    /* one standing frame in front of the cycle, then the cycle itself. WALKF counts the
+       frames of the cycle and nothing else: counted as the buffers instead, it was nine,
+       and the card sampled the walk at ninths while the bake laid it down in eighths. */
+    for (var fr = 0; fr <= WALKF; fr++) {
+      var sf = soldierModel(variant, fr === 0 ? -1 : (fr - 1) / WALKF);
       MODELS.sol[variant].push(facesToBuffer(sf.filter(function (q) { return !q.alpha; })));
       var sa = sf.filter(function (q) { return q.alpha; });
       MODELS.solA[variant].push(sa.length ? facesToBuffer(sa) : null);
@@ -17599,7 +18000,7 @@ function buildModels() {
     muz[POSE_CROUCH] = cr.muzzle; muz[POSE_FIRE] = fi.muzzle; muz[POSE_CFIRE] = cfi.muzzle;
     MODELS.crawl[variant] = []; MODELS.crawlA[variant] = []; muz[POSE_CRAWL] = [];
     for (var cf = 0; cf < CRAWLF; cf++) {
-      var cm = proneModel(variant, (cf + .5) / CRAWLF);
+      var cm = proneModel(variant, cf / CRAWLF);
       MODELS.crawl[variant].push(facesToBuffer(cm.filter(function (q) { return !q.alpha; })));
       var ca = cm.filter(function (q) { return q.alpha; });
       MODELS.crawlA[variant].push(ca.length ? facesToBuffer(ca) : null);

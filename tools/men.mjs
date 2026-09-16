@@ -150,6 +150,27 @@ function GEO(opt) {
     return out;
   }
   const deepest = (moving, into) => { let d = -9; samples(moving).forEach(p => { const q = depthIn(p, into); if (q > d) d = q; }); return d; };
+  /* The far half of a limb, which is the only half a clip can be in. A thigh's top is
+     inside the pelvis and an upper arm's top is inside the chest, on this figure and on
+     every jointed figure ever built: measured whole, every limb of every pose came back
+     over a unit deep and the row could not be passed by anything. What the row exists to
+     catch is the other end -- a forearm ending inside a blouse, which is what the figure
+     before this one did -- so it is the other end that is sampled. The far cap of a
+     frustum limb is its second-to-last face, `frustum` having pushed the lid and then
+     the floor after the sides. */
+  function distal(faces) {
+    if (faces.length !== 6) return faces;
+    const c = f => { const q = [0, 0, 0]; f.v.forEach(p => { q[0] += p[0]; q[1] += p[1]; q[2] += p[2]; }); return q.map(v => v / f.v.length); };
+    const tip = c(faces[4]), root = c(faces[5]);
+    const ax = sub(tip, root), L = len3(ax) || 1, u = ax.map(v => v / L);
+    const half = p => {
+      const t = dot(sub(p, root), u) / L;
+      if (t >= .5) return p;
+      const d = (.5 - t) * L;
+      return [p[0] + u[0] * d, p[1] + u[1] * d, p[2] + u[2] * d];
+    };
+    return faces.map(f => ({ v: f.v.map(half) }));
+  }
 
   /* ---------------- legacy(): the primitive-wrapping partition ----------------
      The old builders concatenate what every primitive returns, in call order, and the
@@ -296,7 +317,7 @@ function GEO(opt) {
     let mz = null;
     if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && mz[0].length) mz = mz[P.frame % mz.length]; }
     return { faces, ok: true, logged: faces.length, parts, joints, leaves: parts.leaves || null,
-             lean: pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors,
+             lean: pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors, handsOn: r.handsOn,
              runtimeMuzzle: mz ? mz.slice() : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none' };
   }
   const RIG = typeof window.manFaces === 'function' && !!window.FIGPOSE;
@@ -346,7 +367,10 @@ function GEO(opt) {
   if (opt.do.proportion) {
     const rows = [], arms = [], weapons = [];
     variants.forEach(v => {
-      const r = rec(v, { name: RIG && SOLDIER_VARIANTS[v].set === 'hull' ? 'seat' : 'stand', frame: 0 });
+      /* on his feet, whatever poses this variant is baked in: a seated hull crewman
+         measured against a standing man's stature reads a fifth short, which is a fact
+         about sitting down */
+      const r = rec(v, { name: 'stand', frame: 0 });
       const J = r.joints, P = r.parts, side = SOLDIER_VARIANTS[v].side;
       if (!r.ok || !J.crown) { rows.push({ v, refused: true }); return; }
       const sole = ext(r.legFaces).z0;
@@ -389,7 +413,7 @@ function GEO(opt) {
         const r = rec(v, P);
         if (!r.ok) { rows.push({ v, pose: label(P), refused: true }); return; }
         const legs = r.parts.legs || [];
-        const row = { v, pose: label(P), kind: r.flat ? 'flat' : KNEEL[P.name] ? 'kneel' : P.name === 'sit' ? 'sit' : 'upright',
+        const row = { v, pose: label(P), kind: r.flat ? 'flat' : P.name === 'fall' ? 'fall' : KNEEL[P.name] ? 'kneel' : P.name === 'sit' ? 'sit' : 'upright',
                       low: r.legFaces.length ? ext(r.legFaces).z0 : ext(r.body).z0, bodyLow: ext(r.body).z0,
                       legLow: legs.map(l => (l.length ? ext(l).z0 : null)),
                       soles: r.parts.boots ? r.parts.boots.map(b => (b.length ? ext(b).z0 : null)) : [],
@@ -449,7 +473,13 @@ function GEO(opt) {
         let x0 = 1e9, x1 = -1e9;
         boots.forEach(f => f.v.forEach(p => { if (p[2] <= low + 1.2) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; } }));
         const hip = [(J.hipL[0] + J.hipR[0]) / 2, 0, (J.hipL[2] + J.hipR[2]) / 2];
-        const spine = Math.atan2(J.skull[0] - hip[0], J.skull[2] - hip[2]);
+        /* hip to the shoulder line, which is the trunk. Taken to the skull instead it
+           reads the head as well, and the head is counter-leaned on purpose so the eyes
+           stay level: every aimed and ready pose then came back with a spine a third
+           short of the lean it was built with. */
+        const top = J.shoulderR && J.shoulderL
+          ? [(J.shoulderR[0] + J.shoulderL[0]) / 2, 0, (J.shoulderR[2] + J.shoulderL[2]) / 2] : J.skull;
+        const spine = Math.atan2(top[0] - hip[0], top[2] - hip[2]);
         rows.push({ v, pose: label(P), cx: sc[0], x0, x1, spine, lean: r.lean === undefined ? null : r.lean });
       });
     });
@@ -466,8 +496,12 @@ function GEO(opt) {
         const W = r.parts.weapon;
         if (!W || !W.length) { rows.push({ v, pose: label(P), noparts: true }); return; }
         const J = r.joints;
+        /* only the hands that are on it. A rifle at the trail is carried in one hand and
+           the other arm swings, and an elbow crawl pulls with the support hand: measured
+           against the weapon anyway, a swinging hand reads as a grip six units off. */
         const gap = h => (h ? ptFaces(h, W) - .5 : null);
-        rows.push({ v, pose: label(P), R: gap(J.handR), L: gap(J.handL), flat: r.flat });
+        const on = r.handsOn === undefined ? 2 : r.handsOn;
+        rows.push({ v, pose: label(P), R: gap(J.handR), L: on > 1 ? gap(J.handL) : null, flat: r.flat });
       });
     });
     R.sections.grip = { rows };
@@ -493,14 +527,17 @@ function GEO(opt) {
         } else {
           if (Pp.torso && Pp.torso.length) into.push(['torso', Pp.torso]);
         }
-        Pp.limbs.forEach((l, i) => { if (l.length) into.forEach(t => pairs.push([limbName[i] + ' in ' + t[0], l, t[1]])); });
+        Pp.limbs.forEach((l, i) => { if (l.length) into.forEach(t => pairs.push([limbName[i] + ' in ' + t[0], distal(l), t[1]])); });
         if (Pp.weapon && Pp.weapon.length) {
           into.filter(t => t[0] === 'chest' || t[0] === 'smock' || t[0] === 'torso').forEach(t => pairs.push(['weapon in ' + t[0], Pp.weapon, t[1]]));
-          if (Pp.skull && Pp.skull.length) pairs.push(['weapon in skull', Pp.weapon, Pp.skull]);
+          /* not in an aimed pose, where the comb of the stock is meant to be against the
+             cheek: a head 1.87 across and a receiver 1.1 across cannot both sit within
+             0.9 of the bore without overlapping, and AIM governs that geometry instead */
+          if (Pp.skull && Pp.skull.length && !AIMED[P.name]) pairs.push(['weapon in skull', Pp.weapon, Pp.skull]);
           if (Pp.shell && Pp.shell.length) pairs.push(['weapon in helmet', Pp.weapon, Pp.shell]);
         }
         if (!r.flat && Pp.thighs && Pp.thighs.length === 2) {
-          into.filter(t => t[0] === 'hips' || t[0] === 'smock').forEach(t => { pairs.push(['left thigh in ' + t[0], Pp.thighs[0], t[1]]); pairs.push(['right thigh in ' + t[0], Pp.thighs[1], t[1]]); });
+          into.filter(t => t[0] === 'hips' || t[0] === 'smock').forEach(t => { pairs.push(['left thigh in ' + t[0], distal(Pp.thighs[0]), t[1]]); pairs.push(['right thigh in ' + t[0], distal(Pp.thighs[1]), t[1]]); });
           pairs.push(['left thigh in right thigh', Pp.thighs[0], Pp.thighs[1]]);
         }
         const out = pairs.map(p => ({ pair: p[0], d: deepest(p[1], p[2]) }));
@@ -886,11 +923,15 @@ function show(c, base) {
         if (r.refused) return;
         of++;
         const tol = r.kind === 'flat' ? .35 : r.kind === 'upright' ? .25 : .3;
+        /* a fall is judged on the lowest thing he has and nothing else: a man buckling
+           has one foot still down and the other coming up, and the far-leg rule that is
+           right for a kneel reads that lifted foot as a man floating */
         /* a kneel is judged on the leg furthest from the ground, signed, so the worst
            column names the leg through the floor and not the one nearer it */
         const legs = r.legLow.filter(q => q !== null);
         const kz = legs.length ? legs.reduce((a, b) => (Math.abs(b) > Math.abs(a) ? b : a), 0) : r.low;
-        const z = r.kind === 'flat' ? r.bodyLow : r.kind === 'sit' ? r.hipsLow : r.kind === 'kneel' ? kz : r.low;
+        const z = r.kind === 'flat' ? r.bodyLow : r.kind === 'fall' ? Math.min(r.bodyLow, r.low)
+                : r.kind === 'sit' ? r.hipsLow : r.kind === 'kneel' ? kz : r.low;
         const miss = Math.abs(z) > tol;
         if (miss) bad++;
         if (!worst || Math.abs(z) > Math.abs(worst.z)) worst = { pose: r.pose, z, miss };
@@ -926,12 +967,16 @@ function show(c, base) {
   }
 
   if (S.gravity) {
-    console.log('\n  GRAVITY   the surface centroid over the feet, and the spine (hip to skull) within 0.05 rad of the pose\'s lean, forward positive\n');
+    console.log('\n  GRAVITY   the surface centroid over the feet, and the spine (hip to the shoulder line) within 0.05 rad of the pose\'s lean, forward positive\n');
     let bad = 0, of = 0;
     console.log('  ' + pad('variant', 13) + pad('pose', 8) + pad('centroid x', 12) + pad('feet x', 16) + pad('spine', 8) + pad('lean', 8) + 'note');
     for (const r of S.gravity.rows) {
       of++;
-      const over = r.cx >= r.x0 && r.cx <= r.x1, sp = r.lean === null ? true : Math.abs(r.spine - r.lean) <= .05;
+      /* A run and a fall are not judged on balance. At the passing position of a run
+         both feet are behind the hip and the mass is ahead of them, which is what
+         running is; a man falling over is off balance by definition. */
+      const dyn = r.pose.indexOf('run') === 0 || r.pose.indexOf('fall') === 0;
+      const over = dyn || (r.cx >= r.x0 && r.cx <= r.x1), sp = r.lean === null ? true : Math.abs(r.spine - r.lean) <= .05;
       if (!over || !sp) bad++;
       console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + pad(f2(r.cx) + (over ? ' ' : '!'), 12) + pad(`${f2(r.x0)}..${f2(r.x1)}`, 16) + pad(f2(r.spine) + (sp ? ' ' : '!'), 8) + pad(f2(r.lean), 8) +
                   (!over ? 'not over his feet ' : '') + (!sp ? (r.spine < 0 && r.lean > 0 ? 'leans the other way from the pose' : 'spine off the lean') : ''));
