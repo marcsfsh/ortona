@@ -8431,6 +8431,23 @@ var FSB = [
   '  gl_FragColor = vec4(uColor.rgb, uColor.a * a);',
   '}'].join('\n');
 
+/* Ground marks: the rings and the order paths, drawn as ribbons lying ON the ground
+   rather than painted over the finished frame. Everything flat used to live on the 2D
+   overlay, which is a separate canvas stacked over the WebGL one, so nothing on it could
+   ever be behind anything in the world: a section's selection ring was drawn over the
+   section, and four sections under orders put four dashed lines over every man on the
+   screen. These go through the depth buffer instead. Position and colour, nothing else --
+   a mark is not lit and has no material. */
+var VSM = [
+  'attribute vec3 aPos; attribute vec4 aCol;',
+  'uniform mat4 uVP;',
+  'varying vec4 vCol;',
+  'void main(){ vCol = aCol; gl_Position = uVP * vec4(aPos, 1.0); }'].join('\n');
+var FSM = [
+  'precision mediump float;',
+  'varying vec4 vCol;',
+  'void main(){ gl_FragColor = vCol; }'].join('\n');
+
 function glFail(msg) {
   GLOK = false;
   var e = document.getElementById('glerr');
@@ -8478,6 +8495,8 @@ function initGL() {
     BILL = compileProgram(VSB, FSB, ['aQuad']);
     SKY = compileProgram(VSK, FSK, ['aQuad']);
     DEPTHP = compileProgram(VSD, FSD, ['aPos']);
+    MARKP = compileProgram(VSM, FSM, ['aPos', 'aCol']);
+    MARKB = gl.createBuffer();
     registerMaterials(); buildAtlas(); buildGrit();
     if (SHADOWS) initShadowMap();
     gl.enable(gl.DEPTH_TEST); gl.enable(gl.CULL_FACE); gl.cullFace(gl.BACK); gl.frontFace(gl.CW);
@@ -8488,7 +8507,146 @@ function initGL() {
     GLOK = true;
   } catch (e) { glFail(e.message || String(e)); }
 }
-var QUAD = null;
+var QUAD = null, MARKP = null, MARKB = null;
+/* One frame's worth of marks, built as triangles and uploaded once. Seven floats a
+   vertex: three of position, four of colour. */
+var MARK = { f: new Float32Array(9000), n: 0 };
+function markVert(x, y, z, c) {
+  if (MARK.n * 7 + 7 > MARK.f.length) return;
+  var i = MARK.n * 7;
+  MARK.f[i] = x; MARK.f[i + 1] = y; MARK.f[i + 2] = z;
+  MARK.f[i + 3] = c[0]; MARK.f[i + 4] = c[1]; MARK.f[i + 5] = c[2]; MARK.f[i + 6] = c[3];
+  MARK.n++;
+}
+/* A ribbon along a run of world points, lying on the ground and following it. The width
+   is scaled by how far back the camera is, because a mark is a piece of the interface
+   and wants to stay about the same thickness on the screen whatever the zoom; a fixed
+   world width is a hairline across the town and a stripe at the closest the camera goes.
+     `lift` clears the ground mesh without floating: at a tenth of a unit the two z-fight
+   and the mark crawls, at half a unit nothing on this terrain shows daylight under it. */
+var MARK_LIFT = .5;
+function markRun(pts, col, a, w) {
+  if (pts.length < 2) return;
+  var hw = (w || 2.2) * clamp(CAM.dist * .0024, .5, 4) * .5;
+  var c = [col[0], col[1], col[2], a === undefined ? 1 : a];
+  for (var i = 0; i + 1 < pts.length; i++) {
+    var p0 = pts[i], p1 = pts[i + 1];
+    var dx = p1[0] - p0[0], dy = p1[1] - p0[1], d = Math.hypot(dx, dy);
+    if (d < 1e-4) continue;
+    /* a long straight run over rolling ground would cut through it, so it is walked */
+    var steps = Math.max(1, Math.ceil(d / 24));
+    var nx = -dy / d * hw, ny = dx / d * hw;
+    for (var q = 0; q < steps; q++) {
+      var t0 = q / steps, t1 = (q + 1) / steps;
+      var ax = p0[0] + dx * t0, ay = p0[1] + dy * t0;
+      var bx = p0[0] + dx * t1, by = p0[1] + dy * t1;
+      var az = groundZ(ax, ay) + MARK_LIFT, bz = groundZ(bx, by) + MARK_LIFT;
+      markVert(ax - nx, ay - ny, az, c); markVert(ax + nx, ay + ny, az, c); markVert(bx - nx, by - ny, bz, c);
+      markVert(bx + nx, by + ny, bz, c); markVert(bx - nx, by - ny, bz, c); markVert(ax + nx, ay + ny, az, c);
+    }
+  }
+}
+/* A ring on the ground, whole or dashed. The dash is built as separate runs rather than
+   asked of the shader, and its phase is free, which is what makes an order path crawl
+   toward where it is going. */
+function markRing(x, y, r, col, a, w, dash, phase) {
+  var n = 40, pts = [], i;
+  if (!dash) {
+    for (i = 0; i <= n; i++) { var t = i / n * TAU; pts.push([x + Math.cos(t) * r, y + Math.sin(t) * r]); }
+    markRun(pts, col, a, w);
+    return;
+  }
+  var circ = TAU * r, step = dash[0] + dash[1], m = Math.max(4, Math.round(circ / step));
+  for (i = 0; i < m; i++) {
+    var a0 = (i + (phase || 0)) / m * TAU, a1 = a0 + (dash[0] / step) / m * TAU;
+    markRun([[x + Math.cos(a0) * r, y + Math.sin(a0) * r],
+             [x + Math.cos(a1) * r, y + Math.sin(a1) * r]], col, a, w);
+  }
+}
+function markDashed(pts, col, a, w, dash, phase) {
+  /* walk the polyline by arc length, laying dash then gap */
+  var on = true, left = dash[0] * (1 - (phase || 0) % 1), run = [pts[0]];
+  for (var i = 0; i + 1 < pts.length; i++) {
+    var p0 = pts[i].slice(), p1 = pts[i + 1], d = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+    while (d > left) {
+      var t = left / d;
+      var mx = p0[0] + (p1[0] - p0[0]) * t, my = p0[1] + (p1[1] - p0[1]) * t;
+      run.push([mx, my]);
+      if (on) markRun(run, col, a, w);
+      run = [[mx, my]]; on = !on; d -= left; p0 = [mx, my]; left = dash[on ? 0 : 1];
+    }
+    left -= d; run.push(p1);
+  }
+  if (on && run.length > 1) markRun(run, col, a, w);
+}
+var _markHex = {};
+function markCol(hex) {
+  var c = _markHex[hex];
+  if (!c) {
+    c = [parseInt(hex.slice(1, 3), 16) / 255, parseInt(hex.slice(3, 5), 16) / 255, parseInt(hex.slice(5, 7), 16) / 255];
+    _markHex[hex] = c;
+  }
+  return c;
+}
+/* Drawn after the world and before the smoke: depth tested, so a man standing on a mark
+   hides it and a mark behind a house is behind the house, with depth writing off so the
+   marks do not occlude each other. */
+/* What is drawn on the ground: the sectors, whatever the selection has been ordered to
+   do, and a ring round each selected unit. Built once a frame, before the draw. */
+function buildMarks(v) {
+  MARK.n = 0;
+  G.sectors.forEach(function (s) {
+    if (!inView(v, s.x, s.y, s.r + 60)) return;
+    markRing(s.x, s.y, s.r, markCol(s.owner ? FACTION[s.owner].color : '#9aa07c'), .5, 2, [14, 10], 0);
+  });
+  G.sel.forEach(function (u) {
+    if (!u.cat) return;
+    var mine = u.side === G.side;
+    /* The ring goes round the men, not round the marker. Measured on a real battle, a
+       section's men stand a hundred and nine units from their own marker while its ring
+       has a radius of thirty-two -- so the one mark that says "this is selected" was
+       drawn on a bare patch of street with nobody in it. The circle is the one that
+       holds them, floored at the marker's own size so a section standing on its point
+       still gets a ring worth seeing. */
+    var cx = u.x, cy = u.y, rr = unitRadius(u) + 5, men = 0, k;
+    if (u.models) {
+      var sx = 0, sy = 0;
+      for (k = 0; k < u.models.length; k++) if (u.models[k].alive) { sx += u.models[k].x; sy += u.models[k].y; men++; }
+      if (men) {
+        cx = sx / men; cy = sy / men;
+        var sp = 0;
+        for (k = 0; k < u.models.length; k++) if (u.models[k].alive)
+          sp = Math.max(sp, Math.hypot(u.models[k].x - cx, u.models[k].y - cy));
+        rr = clamp(sp + 14, unitRadius(u) + 5, 150);
+      }
+    }
+    markRing(cx, cy, rr, markCol(mine ? '#9ecb62' : '#c95c4e'), .85, 2.4);
+    if (!u.dest || !u.path) return;
+    var atk = u.order === 'attackmove' || u.order === 'attack';
+    var col = markCol(atk ? '#c95c4e' : '#9ecb62');
+    var pts = [[cx, cy]], i;
+    for (i = u.pi; i < u.path.length; i++) pts.push([u.path[i].x, u.path[i].y]);
+    if (pts.length > 1) markDashed(pts, col, .8, 2.2, [8, 7], -G.t * 2);
+    var e = u.path[u.path.length - 1];
+    markRing(e.x, e.y, 12 + Math.sin(G.t * 5) * 2, col, .9, 2.2);
+  });
+}
+function drawMarks3D() {
+  if (!MARK.n || !MARKP) return;
+  gl.useProgram(MARKP.p);
+  gl.uniformMatrix4fv(MARKP.u.uVP, false, MAT.vp);
+  gl.bindBuffer(gl.ARRAY_BUFFER, MARKB);
+  gl.bufferData(gl.ARRAY_BUFFER, MARK.f.subarray(0, MARK.n * 7), gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(0); gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 28, 0);
+  gl.vertexAttribPointer(1, 4, gl.FLOAT, false, 28, 12);
+  gl.depthMask(false); gl.enable(gl.BLEND); gl.disable(gl.CULL_FACE);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.drawArrays(gl.TRIANGLES, 0, MARK.n);
+  gl.disable(gl.BLEND); gl.depthMask(true); gl.enable(gl.CULL_FACE);
+  gl.disableVertexAttribArray(1);
+  MARK.n = 0;
+}
 
 /* ---- the shadow map ---- */
 function initShadowMap() {
@@ -18899,7 +19057,7 @@ function drawUnitOverlay(u, p) {
   if (top.behind) return;
   var z = clamp(700 / (top.d || 700), .55, 1.3);
   var ix = top.x, ty = top.y - 8 * z;
-  if (selected) groundRing(u.x, u.y, rad + 5, u.side === G.side ? '#9ecb62' : '#c95c4e', 2.2);
+  /* the ring is laid on the ground in the 3D pass, where the men can stand in front of it */
   if (selected || hf < .999 || u.sup > .2) {
     var w = (u.cat === 'veh' ? 42 : 36) * z;
     drawBar(ix - w / 2, ty - 6, w, hf, hf > .6 ? '#8bb356' : hf > .3 ? '#d8a334' : '#c95c4e');
@@ -19073,6 +19231,9 @@ function render() {
   drawUnits3D(v, list);
   if (POV.on && POV.u && (POV.u.inside || POV.u).cat === 'veh') drawInterior(POV.u.inside || POV.u);
   drawWrecks3D(v);
+  /* not in the periscope, where the player is a man in a turret and has no map to read,
+     and not in the editor, which draws its own cursor on the overlay */
+  if (!POV.on && !ED.on) { buildMarks(v); drawMarks3D(); }
   drawParticles3D();
 
   /* ---- the overlay ---- */
@@ -19080,13 +19241,9 @@ function render() {
   ctx.clearRect(0, 0, VIEW.w, VIEW.h);
   if (ED.on) { drawMinimap(); return; }
   if (POV.on) { drawPovFrame(); drawMinimap(); return; }
-  /* sector rings on the ground */
-  G.sectors.forEach(function (s) {
-    var col = s.owner ? FACTION[s.owner].color : '#9aa07c';
-    ctx.globalAlpha = .55;
-    groundRing(s.x, s.y, s.r, col, 2, [14, 10]);
-    ctx.globalAlpha = 1;
-  });
+  /* the sector rings and the order paths are laid on the ground in the 3D pass above,
+     so they go under the men rather than over them; what is left here is the flat
+     interface -- bars, tags, labels, contacts, the little map -- which belongs on top */
   /* build sites and sandbag lines under construction */
   G.sites.forEach(function (s2) {
     ctx.strokeStyle = '#d8a334'; ctx.lineWidth = 2; ctx.setLineDash([9, 7]);
@@ -19095,19 +19252,7 @@ function render() {
     ctx.setLineDash([]);
     var sp2 = w2s(s2.x, s2.y); drawBar(sp2.x - 30, sp2.y + 12, 60, s2.prog, '#d8a334');
   });
-  /* order paths */
-  G.sel.forEach(function (u) {
-    if (!u.dest || !u.path) return;
-    var atk = u.order === 'attackmove' || u.order === 'attack';
-    ctx.strokeStyle = atk ? 'rgba(201,92,78,.75)' : 'rgba(158,203,98,.75)';
-    ctx.lineWidth = 2.2; ctx.setLineDash([8, 7]); ctx.lineDashOffset = -G.t * 30;
-    ctx.beginPath();
-    var p0 = w2s(u.x, u.y); ctx.moveTo(p0.x, p0.y);
-    for (var i = u.pi; i < u.path.length; i++) { var wp = w2s(u.path[i].x, u.path[i].y); ctx.lineTo(wp.x, wp.y); }
-    ctx.stroke(); ctx.setLineDash([]); ctx.lineDashOffset = 0;
-    var e = u.path[u.path.length - 1];
-    groundRing(e.x, e.y, 12 + Math.sin(G.t * 5) * 2, atk ? '#c95c4e' : '#9ecb62', 2);
-  });
+
   /* where an enemy was last seen, drawn hollow and dashed so it can never be mistaken
      for a unit that is there now. It is where he was, and it fades because a contact
      half a minute old is worth nothing. */
@@ -19289,13 +19434,33 @@ var keys = {};
 var fog = true;
 var edgeScroll = true;
 
+/* How near a click has to land, and to WHAT. A section is not its marker: its men walk
+   to their places in the formation and then walk again to whatever cover the section
+   chose, which the cover pass allows up to a hundred and eighteen units away. So a
+   player who clicked the men he could see clicked nothing at all, and had to remember
+   the bare patch of street the section had been ordered to.
+     The marker still counts, because it is where the ring is drawn and it is what a
+   player aims at when the men are scattered; each man counts too, at a man's own size
+   rather than a section's. */
+function hitsUnit(u, wx, wy, r) {
+  var pad = r === undefined ? 6 : r;
+  var rad = unitRadius(u) + pad;
+  if (dsq(wx, wy, u.x, u.y) < rad * rad) return true;
+  if (!u.models) return false;
+  var mr = 11 + pad;
+  for (var k = 0; k < u.models.length; k++) {
+    var m = u.models[k];
+    if (m.alive && dsq(wx, wy, m.x, m.y) < mr * mr) return true;
+  }
+  return false;
+}
 function unitsAt(wx, wy, r) {
   var out = [];
   for (var i = 0; i < G.units.length; i++) {
     var u = G.units[i];
     if (u.dead || u.inside) continue;
     if (u.side !== G.side && !visibleTo(G.side, u)) continue;
-    if (dsq(wx, wy, u.x, u.y) < (unitRadius(u) + (r || 6)) * (unitRadius(u) + (r || 6))) out.push(u);
+    if (hitsUnit(u, wx, wy, r)) out.push(u);
   }
   return out;
 }
@@ -19307,13 +19472,23 @@ function buildingAt(wx, wy) {
   }
   return null;
 }
-/* closest friendly unit within reach of a tap, so near-misses still select */
+/* closest friendly unit within reach of a tap, so near-misses still select. The
+   distance is to the nearest thing of his the player can actually see -- a man, or the
+   marker -- for the reason set out on hitsUnit. */
+function nearOwnDist(u, wx, wy) {
+  var d = dsq(wx, wy, u.x, u.y);
+  if (u.models) for (var k = 0; k < u.models.length; k++) {
+    var m = u.models[k];
+    if (m.alive) d = Math.min(d, dsq(wx, wy, m.x, m.y));
+  }
+  return d;
+}
 function nearestOwn(wx, wy, r) {
   var best = null, bd = r * r;
   for (var i = 0; i < G.units.length; i++) {
     var u = G.units[i];
     if (u.dead || u.inside || u.side !== G.side) continue;
-    var d = dsq(wx, wy, u.x, u.y);
+    var d = nearOwnDist(u, wx, wy);
     if (d < bd) { bd = d; best = u; }
   }
   return best;
@@ -19321,10 +19496,20 @@ function nearestOwn(wx, wy, r) {
 function unitsInScreenRect(ax, ay, bx, by) {
   var x0 = Math.min(ax, bx), x1 = Math.max(ax, bx);
   var y0 = Math.min(ay, by), y1 = Math.max(ay, by);
+  function inBox(x, y) {
+    var p = w2s(x, y);
+    return !p.behind && p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
+  }
   return G.units.filter(function (u) {
     if (u.dead || u.side !== G.side) return false;
-    var p = w2s(u.x, u.y);
-    return p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
+    if (inBox(u.x, u.y)) return true;
+    /* a box drawn round the men the player can see takes the section, even when the
+       marker they are away from is outside it */
+    if (u.models) for (var k = 0; k < u.models.length; k++) {
+      var m = u.models[k];
+      if (m.alive && inBox(m.x, m.y)) return true;
+    }
+    return false;
   });
 }
 function select(list, add) {

@@ -104,6 +104,29 @@ for (const device of TARGETS) {
   ok('the men reach their postures, not only standing', upright > 0 && (poses.walk || 0) > 0 && kinds >= 3,
      Object.keys(poses).sort((a, b) => poses[b] - poses[a]).map(k => `${k} ${poses[k]}`).join(', '));
 
+  /* --- clicking the men. A section is not its marker: its men walk to their formation
+     places and then to whatever cover the section chose, which the cover pass allows a
+     hundred and eighteen units away. Measured on a real battle, near half of the
+     player's own men stand further from their marker than a click could reach, so a
+     player who clicked what he could see selected nothing. --- */
+  const pick = await page.evaluate(() => {
+    let men = 0, far = 0, hit = 0, worst = 0;
+    window.G.units.forEach(u => {
+      if (u.dead || u.inside || !u.models || u.side !== window.G.side) return;
+      u.models.forEach(m => {
+        if (!m.alive) return;
+        men++;
+        const d = Math.hypot(m.x - u.x, m.y - u.y), reach = window.unitRadius(u) + 10;
+        if (d > worst) worst = d;
+        if (d > reach) { far++; if (window.unitsAt(m.x, m.y, 10).indexOf(u) >= 0) hit++; }
+      });
+    });
+    return { men, far, hit, worst: +worst.toFixed(0) };
+  });
+  ok('a click on a man selects his section, wherever he has walked to',
+     pick.men > 0 && pick.hit === pick.far,
+     `${pick.men} men, ${pick.far} of them past a click's reach of their marker, ${pick.hit} still selectable; furthest ${pick.worst}`);
+
   /* --- the dead, and what it costs to draw them. The list runs to two hundred and
      twenty and every one of them used to be drawn every frame wherever it lay, off
      screen or not. Count the binds in a real frame rather than reading the loop. --- */
