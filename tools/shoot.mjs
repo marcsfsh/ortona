@@ -216,7 +216,7 @@ const SCENES = {
      time, from lower than a player looks, in each posture it can hold, and against the
      distance the player really sees it from. */
   man: {
-    help: 'One soldier, one posture, from four angles: --only=us_rifle --man=0 --pose=fire --dist=60',
+    help: 'One soldier, one posture, turned under a fixed light: --only=us_rifle --man=0 --pose=fire --turn [--strip --frame=n --dirty]',
     async run(page) {
       await deploy(page, { side: SIDE, diff: DIFF });
       await setFog(page, false);
@@ -235,6 +235,10 @@ const SCENES = {
       /* --strip lays every frame of the walk or the crawl out in a row, broadside to the
          camera, so a cycle can be read in one picture instead of eight */
       if (args.strip) {
+        if (!args.dirty) await page.evaluate(() => {
+          SCENE.tiles = SCENE.tiles.map(() => ({ props: { vbo: null, n: 0 }, leaves: { vbo: null, n: 0 } }));
+          SCENE.grass = null;
+        });
         for (const key of keys) for (const man of men) for (const pz of poses.filter(p => p === 'walk' || p === 'crawl')) {
           const got = await page.evaluate(o => {
             window.__o.pose([{ key: o.key, x: 0, y: 0, facing: 0 }], o.spot);
@@ -262,6 +266,16 @@ const SCENES = {
         }
         return;
       }
+      /* The sun stays over the camera's shoulder and the MAN turns, the way the vehicle
+         scene works: a turntable that orbits the camera lights -000 from the front and
+         -180 from behind, and two angles of one figure cannot be compared for shape.
+         The stage is cleared of props for the same reason: a grass tuft through the
+         legs and a pole behind the head are not the figure. */
+      const camYaw = Math.atan2(0.52, 0.40), frame = Number(args.frame) || 0;
+      if (!args.dirty) await page.evaluate(() => {
+        SCENE.tiles = SCENE.tiles.map(() => ({ props: { vbo: null, n: 0 }, leaves: { vbo: null, n: 0 } }));
+        SCENE.grass = null;
+      });
       for (const key of keys) for (const man of men) for (const pz of poses) {
         const got = await page.evaluate(o => {
           /* stage the section, then leave one man of it standing in the posture asked for */
@@ -278,13 +292,18 @@ const SCENES = {
             m.gait = o.frame * (P === POSE_CRAWL ? CRAWL_LEN / CRAWLF : STRIDE_LEN / (WALKF - 1)) + 0.01;
           });
           return kept ? { variant: variantForModel(u, o.man), x: kept.x, y: kept.y } : null;
-        }, { key, man, pose: pz, spot, frame: Number(args.frame) || 0 });
+        }, { key, man, pose: pz, spot, frame });
         if (!got) { console.error(`  ${key} has no man ${man}`); continue; }
-        const name = `man-${key}-${man}-${got.variant}-${pz}`;
+        const name = `man-${key}-${man}-${got.variant}-${pz}` + (args.frame !== undefined ? `-f${frame}` : '');
         console.log(`  ${name}`);
         const lift = args.lift === undefined ? liftOf(pz) : Number(args.lift);
-        if (steps > 1) await turntable(page, path.join(SHOTS, DEVICE, name + TAG), { x: got.x, y: got.y, dist, pitch, steps, lift });
-        else { await camera(page, { x: got.x, y: got.y, dist, pitch, yaw: Math.PI / 2 + 0.6, lift }); await shoot(page, out(name), { settle: SETTLE }); }
+        await camera(page, { x: got.x, y: got.y, dist, pitch, yaw: camYaw, lift });
+        for (let i = 0; i < steps; i++) {
+          /* his facing: 000 is toward the camera, 090 his right side to it, 180 his back */
+          await page.evaluate(a => { window.G.units[0].models.forEach(m => { if (m.alive) m.f = a; }); },
+                              camYaw + Math.PI - (i * Math.PI * 2) / steps);
+          await shoot(page, out(steps > 1 ? `${name}-${String(Math.round((i * 360) / steps)).padStart(3, '0')}` : name), { settle: SETTLE });
+        }
       }
     }
   },
