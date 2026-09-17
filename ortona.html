@@ -194,6 +194,55 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .hb{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:15px;line-height:1;width:34px;height:34px;box-sizing:border-box;flex:0 0 auto}
 .hb[disabled]{color:#3d4436;border-color:#2b3126}
 .pill.on,.mode.on,.arty.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+/* The game-over screen's two ways on. They are deliberately NOT `.pill`: the title
+   screen binds every `.pill` on the page as a side picker, by class and with a plain
+   `onclick =`, and it runs after this, so a button that borrowed the look silently
+   borrowed the handler as well and did nothing when pressed. */
+.obtn{border:1px solid var(--line);padding:11px 20px;font-size:12px;background:#15190f;
+  letter-spacing:1.2px;color:var(--ink);min-height:44px}
+.obtn:hover{border-color:var(--line2);background:#1c2116}
+/* the after-action page: a tab strip, a scrolling body and a row of buttons. It takes the
+   screen rather than sitting in a panel, because five tabs of tables on a phone in a box
+   is a box you scroll two things inside. */
+.stats{position:absolute;inset:0;z-index:24;display:flex;flex-direction:column;
+  background:radial-gradient(128% 92% at 50% 16%,#20251a,#070903 76%);
+  padding:calc(12px + var(--safeT)) calc(12px + var(--safeR)) calc(12px + var(--safeB)) calc(12px + var(--safeL))}
+.stath{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:0 0 auto}
+.stath h2{font-size:17px;letter-spacing:2px;font-weight:500}
+.stath em{font-style:normal;font-size:11px;color:var(--dim);letter-spacing:1px;flex:1 1 auto}
+.sttabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 8px;flex:0 0 auto}
+.sttab{border:1px solid var(--line);background:#15190f;color:var(--dim);font-size:10px;
+  letter-spacing:1.6px;padding:9px 14px;min-height:34px}
+.sttab.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.stbody{flex:1 1 auto;overflow:auto;border:1px solid var(--line);background:#0f130b;padding:10px 12px}
+.stbody table{border-collapse:collapse;width:100%;font-family:var(--mono);font-size:11.5px}
+.stbody th{text-align:left;color:var(--dim);font-weight:400;letter-spacing:1.2px;font-size:9.5px;
+  padding:4px 8px 6px;border-bottom:1px solid var(--line);position:sticky;top:-10px;background:#0f130b}
+.stbody td{padding:3px 8px;border-bottom:1px solid #1b2015;white-space:nowrap}
+.stbody td.n,.stbody th.n{text-align:right}
+.stbody tr.us td:first-child{border-left:3px solid var(--us);padding-left:7px}
+.stbody tr.ger td:first-child{border-left:3px solid var(--ger);padding-left:7px}
+.stbody tr.gone{color:#6d7563}
+.stbody h4{font-size:11px;letter-spacing:2px;color:var(--ink);margin:14px 0 6px}
+.stbody h4:first-child{margin-top:2px}
+.stcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin-bottom:6px}
+.stcard{border:1px solid var(--line);background:#141810;padding:9px 11px}
+.stcard b{display:block;font-size:9.5px;letter-spacing:1.5px;color:var(--dim);font-weight:400}
+.stcard i{font-style:normal;font-family:var(--mono);font-size:18px;color:var(--ink)}
+.stcard u{display:block;text-decoration:none;font-size:10px;color:var(--dim);margin-top:2px}
+.stgraph{width:100%;height:150px;display:block;border:1px solid var(--line);background:#0c0f08;margin-bottom:12px}
+.stfoot{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;flex:0 0 auto}
+.stfoot button{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:11px;
+  letter-spacing:1.6px;padding:11px 18px;min-height:44px}
+.stfoot button.go2{background:var(--ink);color:#12150e;border-color:var(--ink)}
+body.mob .sttab{min-height:44px;padding:0 14px}
+body.mob .stbody table{font-size:11px}
+/* spectating: the whole of the 2D chrome goes, and the battle is left on screen */
+body.spec .screen,body.spec #top,body.spec #bar,body.spec #tools{display:none!important}
+#specbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + var(--safeB));
+  z-index:25;display:flex;gap:8px}
+#specbar button{border:1px solid var(--line2);background:#161b10e8;color:var(--ink);font-size:11px;
+  letter-spacing:1.6px;padding:12px 20px;min-height:44px}
 .go{border:1px solid var(--ink);background:var(--ink);color:#12150e;padding:13px 46px;
   font-size:17px;letter-spacing:2px;font-weight:500}
 .go:hover{background:#fff;border-color:#fff}
@@ -644,13 +693,20 @@ body.mob #mini{width:104px;height:72px}
     <button class="arty on" data-arty="1" title="The opposition buys mortars and howitzers and digs a battery" aria-pressed="true">ARTILLERY</button>
     <button class="arty" data-arty="0" title="The opposition fields no indirect fire at all; yours is unaffected" aria-pressed="false">NONE</button>
     <button class="arty" id="hopen" title="Your own economy, production, construction and manpower cap" aria-expanded="false" style="margin-left:14px">HANDICAP</button>
+    <button class="arty" id="aopen" title="The same settings turned on the opposition, up or down" aria-expanded="false">OPPOSITION</button>
 
+    <button class="edb" id="pasthist" title="Read the report on any battle this device has finished">PAST BATTLES</button>
     <button class="edb" id="openeditor" title="Design your own map">MAP EDITOR</button><button class="edb hidden" id="playcustom" title="Play the map saved on this device">PLAY CUSTOM MAP</button>
   </div>
   <div class="hcap hidden" id="hcap">
     <div class="hcaph">HANDICAP<span>your own side of it. The opposition above is set on its own, so a veteran
       opponent can be fought on any economy you like.</span><button class="hres" id="heven">EVEN</button></div>
     <div class="hgrid" id="hgrid"></div>
+  </div>
+  <div class="hcap hidden" id="acap">
+    <div class="hcaph">OPPOSITION<span>the same settings turned on the other side, up or down, on top of whatever
+      GREEN, REGULAR or VETERAN already says. A veteran brain on half an economy, or a green one with a real army.</span><button class="hres" id="aeven">EVEN</button></div>
+    <div class="hgrid" id="agrid"></div>
   </div>
   <button class="go" id="deploy">DEPLOY</button>
   <div class="keys" id="keyhelp">
@@ -665,8 +721,25 @@ body.mob #mini{width:104px;height:72px}
     <div class="rule"></div>
     <div class="sub" id="overtext"></div>
   </div>
+  <div class="row">
+    <button class="obtn" id="overspec" title="Look round the map before reading the report">WATCH THE MAP</button>
+    <button class="obtn" id="overstats" title="The after-action report">AFTER ACTION</button>
+  </div>
   <button class="go" id="again">FIGHT AGAIN</button>
   <button class="go hidden" id="overedit">BACK TO EDITOR</button>
+</div>
+<div id="specbar" class="hidden">
+  <button id="specdone">AFTER ACTION</button>
+</div>
+<div id="stats" class="stats hidden">
+  <div class="stath"><h2 id="sttitle">AFTER ACTION</h2><em id="stsub"></em></div>
+  <div class="sttabs" id="sttabs"></div>
+  <div class="stbody" id="stbody"></div>
+  <div class="stfoot">
+    <button id="stback">BACK</button>
+    <button id="sthist">PAST BATTLES</button>
+    <button class="go2" id="stagain">FIGHT AGAIN</button>
+  </div>
 </div>
 
 <script>
@@ -704,6 +777,7 @@ var POPCAP = 200;
 function popCap(side) {
   var D = DIFF[G.diff];
   if (side === G.side) return pd().pop;
+  if (ad().setPop) return ad().pop;
   return D ? (D.foePop || POPCAP) : POPCAP;
 }
 /* ---- the handicap.
@@ -745,7 +819,7 @@ var PD_INC  = PD_MULT;
 var PD_INCF = PD_MULT;
 var PD_PROD = PD_MULT;
 var PD_CONS = PD_MULT;
-var PD_POP  = [100, 150, 175, 200, 250, 300, 400, 500];
+var PD_POP  = [100, 150, 175, 200, 250, 300, 400, 500, 650, 800, 1000];
 var PD_SMP  = [210, 420, 800, 1200, 1600, 2400, 4000, 6000, 9000, 15000];
 var PD_SFU  = [10, 20, 80, 150, 240, 400, 800, 1500, 3000, 6000];
 var PD_TAKE = [.1, .15, .2, .25, .3, .4, .5, .6, .75, .9, 1];
@@ -767,6 +841,43 @@ function pdMake() {
            arty: !!PD_ARTY[PD.arty] };
 }
 function pd() { return G.pd || (G.pd = pdMake()); }
+/* ---- and the same knobs turned on the opposition.
+   `DIFF` is three settings and nothing in between, which is right for what it is -- how
+   the brain thinks, how it waves, how early it techs -- and wrong for the arithmetic
+   around it. A player who wants a veteran opponent on half an economy, or a green one
+   with twice the manpower to see what a green brain does with a real army, has no way to
+   say so; and a player who is handing himself ten times the income has no way to hand
+   any of it to the other side.
+     `AD` is the opposition's own row of the same settings, and every one of them runs
+   BOTH ways, because this is the side a player might want to make harder. It multiplies
+   what `DIFF` already says rather than replacing it, so an even `AD` is the game as it
+   was: income and the two speeds are factors on the difficulty's own, the cap and the
+   till are absolute the way the player's are, and damage, sight and the artillery rules
+   read exactly as they do on his side.
+     The lists are symmetric about the even game, which the one-way ones on `PD` are not:
+   there is no reason to offer the player a way to make his own men worse, and every
+   reason to offer him a way to make theirs better. */
+var AD_MULT = [.25, .4, .5, .75, 1, 1.25, 1.5, 2, 3, 4, 6, 8, 10];
+var AD_POP  = [50, 100, 150, 175, 200, 250, 300, 400, 500, 650, 800, 1000];
+var AD_SMP  = [100, 210, 420, 800, 1200, 1600, 2400, 4000, 6000, 9000, 15000];
+var AD_SFU  = [0, 10, 20, 80, 150, 240, 400, 800, 1500, 3000, 6000];
+var AD_DMG  = [.1, .25, .5, .75, 1, 1.25, 1.5, 2, 3, 4];
+var AD_EYE  = [.25, .5, .75, 1, 1.25, 1.5, 2, 3, 4];
+var AD_ARTY = [0, 1];
+var AD_EVEN = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0 };
+var AD = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0 };
+function adMake() {
+  return { inc: AD_MULT[AD.inc], incf: AD_MULT[AD.incf], prod: AD_MULT[AD.prod],
+           cons: AD_MULT[AD.cons], pop: AD_POP[AD.pop],
+           mp: AD_SMP[AD.smp], fu: AD_SFU[AD.sfu],
+           take: AD_DMG[AD.take], deal: AD_DMG[AD.deal], eye: AD_EYE[AD.eye],
+           arty: !!AD_ARTY[AD.arty],
+           /* whether the cap and the till were asked for at all: left even they defer to
+              the difficulty's own `foePop` and to the 420/20 both sides open on, because
+              a setting nobody touched should not quietly overrule green's own table */
+           setPop: AD.pop !== AD_EVEN.pop, setTill: AD.smp !== AD_EVEN.smp || AD.sfu !== AD_EVEN.sfu };
+}
+function ad() { return G.ad || (G.ad = adMake()); }
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
   skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates along the hull sides, and round the turret where there is one: hollow-charge rounds burst on the plate before the armour.' },
@@ -3022,6 +3133,7 @@ function spawnUnit(side, key, x, y, facing) {
   }
   u.baseA = u.facing;                                /* what a fixed mount was laid on */
   G.units.push(u);
+  recBorn(u);
   return u;
 }
 /* What makes one man of a section not the man beside him. Four numbers, none of them a
@@ -3069,6 +3181,20 @@ function unitRadius(u) {
   if (u.cat !== 'veh') return 27;
   return u.def.hp > 1200 ? 50 : u.def.hp > 500 ? 41 : 32;
 }
+/* The circle a unit is drawn in, and the circle its men are kept inside. It is one
+   number for both on purpose: a ring that does not hold the thing it is drawn round is a
+   lie, and it was one twice over. `unitRadius` is the SEPARATION radius -- half a
+   vehicle's length -- and a section was given 27 of it, while `squadOffset` lays three
+   files and three ranks out to eighty units from the marker and the lane-narrowed
+   formation stretches that half as far again. So the ring held about a sixth of the
+   ground its men were standing on.
+     Ninety-two units is 7.9 m, a section holding a circle about sixteen metres across,
+   which takes the natural formation with room and leaves a man nowhere to be that is not
+   inside his own unit. Everything that puts a man somewhere reads it: the formation, the
+   cover slots, and the walk to them. */
+function selRadius(u) {
+  return u.cat === 'veh' ? unitRadius(u) + 5 : 92;
+}
 
 /* ---------------------------------------------------------------- buildings */
 function spawnBuilding(side, key, x, y, done) {
@@ -3107,7 +3233,7 @@ function canAfford(side, cost) {
   var r = G.res[side];
   return r.mp >= (cost.mp || 0) && r.fu >= (cost.fu || 0);
 }
-function pay(side, cost) { G.res[side].mp -= (cost.mp || 0); G.res[side].fu -= (cost.fu || 0); }
+function pay(side, cost) { G.res[side].mp -= (cost.mp || 0); G.res[side].fu -= (cost.fu || 0); recSpend(side, cost); }
 function popOf(side) {
   var p = 0;
   G.units.forEach(function (u) { if (u.side === side && !u.dead) p += u.def.pop; });
@@ -3198,7 +3324,7 @@ function worthSaving(side, d) {
 function updateBuilding(b, dt) {
   if (b.built < 1) return;
   if (!b.queue.length) { b.qt = 0; return; }
-  b.qt += dt * (b.side === G.side ? pd().prod : 1);
+  b.qt += dt * (b.side === G.side ? pd().prod : ad().prod);
   var key = b.queue[0], d = UNITS[key];
   if (b.qt >= d.time) {
     b.queue.shift(); b.qt = 0;
@@ -3211,7 +3337,10 @@ function updateBuilding(b, dt) {
 }
 
 /* ---------------------------------------------------------------- orders */
-function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; }
+/* `coverDone` goes with the order, because a new order is the one thing that is allowed
+   to make a section take cover again. Everything else -- the enemy moving round, a man
+   falling, the piece being shot away -- leaves it where it chose to be. */
+function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; u.coverDone = 0; }
 
 /* Holding a house. A ruin with two feet of rubble stone round it is the best cover on
    this map and the whole battle for Ortona was fought for one building at a time, so a
@@ -3384,11 +3513,11 @@ function orderAttack(u, t) {
 function barrageReach(def, side) {
   var b = def && def.barrage;
   if (!b) return 0;
-  return b.range * (side === G.side ? pd().eye : 1);
+  return b.range * (side === G.side ? pd().eye : ad().eye);
 }
 function barrageRange(u) { return barrageReach(u.def, u.side); }
 function reachOf(u, w) {
-  return w.range * (u.def.indirect && u.side === G.side ? pd().eye : 1);
+  return w.range * (!u.def.indirect ? 1 : u.side === G.side ? pd().eye : ad().eye);
 }
 function barrageWhy(u, wx, wy) {
   var B = u.def.barrage;
@@ -3398,7 +3527,7 @@ function barrageWhy(u, wx, wy) {
      this weight fired onto ground somebody was fighting over; five two-hundred-kilogram
      shells into a headquarters wins an annihilation match without an infantryman leaving
      home, which is the whole reason the zone exists. */
-  if (B.safe && !(u.side === G.side && pd().arty)) {
+  if (B.safe && !(u.side === G.side ? pd().arty : ad().arty)) {
     for (var i = 0; i < G.blds.length; i++) {
       var b = G.blds[i];
       if (b.dead || b.side === u.side) continue;
@@ -3724,8 +3853,18 @@ function finishRetreat(u) {
 function chooseCover(u, threatAng) {
   /* A section takes cover near where it was sent, not wherever the best cover happens
      to be: the piece has to lie within a short walk of the order, and it has to shield
-     the men from the enemy's bearing to be worth taking at all. */
-  var best = null, bs = 0, need = aliveModels(u);
+     the men from the enemy's bearing to be worth taking at all.
+       And it has to be close enough that the WHOLE section gets on it without the marker
+     moving, because a section is the circle it is drawn in: a piece a hundred and
+     eighteen units off put the file outside its own unit, which is a section that is one
+     place for the pathfinder, another for the player's eye and a third for a shell. The
+     reach is the circle, less the room a man needs to stand clear of what he is behind.
+       It hands back a ranked list rather than the winner, because whether every man can
+     actually be placed is not known until the places are laid out, and a piece that
+     cannot take the section should lose to the next one down rather than leave it in the
+     open. */
+  var out = [], need = aliveModels(u);
+  var reach = selRadius(u) - 16;
   var ox = u.x, oy = u.y;
   /* only the patches near enough to walk to, which is what the index is for: this runs
      for every halted section on the map and used to read the whole list.
@@ -3734,7 +3873,7 @@ function chooseCover(u, threatAng) {
      forty to the place they are given -- so a section that halted in the middle of a
      street with a garden wall eighty units off took nothing at all and stood in the
      road. Cover that is never taken is scenery. */
-  var near = coversNear(ox, oy, 130);
+  var near = coversNear(ox, oy, reach + 40);
   for (var i = 0; i < near.length; i++) {
     var c = near[i];
     if (c.type < 1 || c.hp <= 0 || c.kind === 'ditch') continue;
@@ -3747,7 +3886,7 @@ function chooseCover(u, threatAng) {
       d = Math.hypot(c.x - ox, c.y - oy) - c.r;
       cap = Math.max(2, Math.floor(c.r * 3.6 / 9));
     }
-    if (d > 118) continue;                                 /* within a short walk of where it stands */
+    if (d > reach) continue;                               /* inside the section's own circle */
     if (c.kind === 'wall' && c.axis !== null) {
       /* the covers ringing a house sit on its face; only take one if a man can stand
          on at least one side of it */
@@ -3768,9 +3907,10 @@ function chooseCover(u, threatAng) {
        take the nearest thing it could see whatever it was worth; a tier of cover is
        worth about sixty units of walking. */
     var score = eff * 34 - d * .55 - Math.max(0, need - cap) * 10;
-    if (score > bs) { bs = score; best = c; }
+    out.push({ c: c, s: score });
   }
-  return best;
+  out.sort(function (a, b) { return b.s - a.s; });
+  return out;
 }
 /* a point is no good if it is inside a building or off the walkable grid */
 function slotClear(x, y) {
@@ -3789,7 +3929,7 @@ function coverSlots(u, c, threatAng) {
   /* a place is only usable if it is clear ground and no one else has it */
   function free(x, y) {
     if (!slotClear(x, y)) return false;
-    for (var q = 0; q < taken.length; q++) if (dsq(x, y, taken[q][0], taken[q][1]) < 49) return false;
+    for (var q = 0; q < taken.length; q++) if (dsq(x, y, taken[q][0], taken[q][1]) < 25) return false;
     return true;
   }
   function claim(x, y) { taken.push([x, y]); return { x: x, y: y }; }
@@ -3797,7 +3937,7 @@ function coverSlots(u, c, threatAng) {
      and this is one section of it, so the file keeps within a shout of its own marker.
      It has to be longer than the reach the piece was chosen over, or a section picks a
      wall a hundred units off and then refuses every place along it. */
-  var REACH = 165;
+  var REACH = selRadius(u) - 6;
   /* the side away from the enemy; failing that, the side the squad already stands on */
   var awayAng = threatAng !== null ? threatAng : Math.atan2(u.y - c.y, u.x - c.x);
   if (c.axis !== null) {
@@ -3821,11 +3961,18 @@ function coverSlots(u, c, threatAng) {
        open believing they were behind a wall. */
     var lim = Math.max(4, Math.sqrt(Math.max(0, c.r * c.r - stand * stand)) - 3);
     var mid = clamp((u.x - c.x) * ax + (u.y - c.y) * ay, -lim, lim);
-    var span = (n - 1) * 9;
+    /* The file closes up on a short piece rather than running off the end of it. Spaced
+       at a flat nine, a section of nine wants seventy-two units of wall and a garden wall
+       twenty across gave it nineteen, so the men past the end were stepped along, failed,
+       and the whole piece was thrown out under the rule that a section goes on one piece
+       or on none. Men behind a short wall stand shoulder to shoulder, which is both what
+       happens and what makes the piece usable. */
+    var sp = clamp(2 * lim / Math.max(1, n - 1), 6, 9);
+    var span = (n - 1) * sp;
     if (mid - span / 2 < -lim) mid = -lim + span / 2;
     if (mid + span / 2 > lim) mid = lim - span / 2;
     for (var i = 0; i < n; i++) {
-      var t = mid + (i - (n - 1) / 2) * 9;
+      var t = mid + (i - (n - 1) / 2) * sp;
       /* a little stagger so a wall does not read as a parade */
       var jit = ((i * 37) % 7) / 7 * 2.4 - 1.2;
       var px = c.x + ax * t + nx * side * (stand + jit), py = c.y + ay * t + ny * side * (stand + jit);
@@ -3833,7 +3980,7 @@ function coverSlots(u, c, threatAng) {
         /* step along the piece until there is clear, unclaimed ground */
         var found = false;
         for (var s2 = 1; s2 <= 6 && !found; s2++) for (var dir = -1; dir <= 1 && !found; dir += 2) {
-          var t2 = clamp(t + dir * s2 * 8, -lim, lim);
+          var t2 = clamp(t + dir * s2 * sp * .9, -lim, lim);
           var qx = c.x + ax * t2 + nx * side * stand, qy = c.y + ay * t2 + ny * side * stand;
           if (free(qx, qy) && dsq(qx, qy, u.x, u.y) <= REACH * REACH) { px = qx; py = qy; found = true; }
         }
@@ -3862,6 +4009,17 @@ function coverSlots(u, c, threatAng) {
     out[men[j]] = claim(px2, py2);
   }
   return out;
+}
+/* Whether a set of slots takes the whole section. A piece that places six men of nine
+   leaves three standing in the open beside a wall the other six are behind, which reads
+   on screen as a section that half took cover and reads in the arithmetic as a section
+   whose `coverOf` is an average of a trench and a street. The section goes on one piece
+   or on none. */
+function slotsWhole(u, sl) {
+  if (!sl) return false;
+  for (var i = 0; i < u.models.length; i++)
+    if (u.models[i].alive && !sl[i]) return false;
+  return true;
 }
 function updateModels(u, dt) {
   if (u.cat === 'veh') {
@@ -3892,21 +4050,30 @@ function updateModels(u, dt) {
      happens to be one he squeezes off a round on */
   var engaged = !!(u.target && !u.target.dead && !u.moving && !u.retreat && u.setup <= 0);
   if (halted && !(u.cat === 'team' && !u.def.speed)) {
-    /* choose the piece once, and again only if the threat has swung round or someone
-       has fallen; the slots are then fixed, so nobody shuffles on the spot */
-    var threatAng = nearestThreat(u), aliveNow = aliveModels(u);
-    u.threatAng = threatAng;
-    /* re-pick only when something real changes: a first halt, a casualty, or the enemy
-       moving right round the piece. Never because the men themselves have shifted. */
-    var stale = !u.coverSlots || u.coverN !== aliveNow ||
-                (threatAng !== null && u.coverAng !== null && Math.abs(angDiff(threatAng, u.coverAng)) > 1.6);
-    if (stale && G.t - (u.coverT || -9) > 2.5) {
-      var piece = chooseCover(u, threatAng);
-      u.coverPiece = piece; u.coverAng = threatAng; u.coverN = aliveNow; u.coverT = G.t;
-      u.coverSlots = piece ? coverSlots(u, piece, threatAng) : {};
+    /* A section takes cover once, when it halts, and then holds it. It used to re-pick
+       whenever the threat swung round or a man fell, which is a section that shuffles
+       between two walls while it is being shot at and a ring that crawls across the
+       street behind it; and since the men are what the shooting is scored against, it
+       also meant the cover a section had was a thing that kept changing under it. The
+       decision belongs to the halt. A new move order is what lets it be taken again
+       (`clearOrder`), which is the player's own hand and not a drift.
+         `coverDone` is the flag rather than the slots, because a halt that finds nothing
+       worth taking has to be remembered as well, or the search runs every tick for the
+       rest of the battle. */
+    u.threatAng = nearestThreat(u);
+    if (!u.coverDone) {
+      u.coverDone = 1; u.coverAng = u.threatAng;
+      u.coverPiece = null; u.coverSlots = null;
+      /* the best piece the whole section fits on, trying the next one down when it does
+         not: a piece that places six men of nine is no good to a section of nine */
+      var cand = chooseCover(u, u.threatAng);
+      for (var ci = 0; ci < cand.length && ci < 4; ci++) {
+        var sl = coverSlots(u, cand[ci].c, u.threatAng);
+        if (slotsWhole(u, sl)) { u.coverPiece = cand[ci].c; u.coverSlots = sl; break; }
+      }
     }
     if (u.coverPiece && u.coverPiece.hp <= 0) { u.coverPiece = null; u.coverSlots = null; }
-  } else { u.coverPiece = null; u.coverSlots = null; u.coverAng = null; }
+  } else { u.coverPiece = null; u.coverSlots = null; u.coverAng = null; u.coverDone = 0; }
   /* The shape of a section is the shape of the ground it is on. Three files abreast is
      right in a field and impossible in a lane a cart would fill: seven per cent of every
      man-frame in a battle had its place in the formation inside a house, and the man
@@ -3930,10 +4097,7 @@ function updateModels(u, dt) {
       ty = u.y - sn * u.def.gunAt + cs * (i ? 9 : 0);
     }
     if (u.coverSlots && u.coverSlots[i]) {
-      /* a slot further than a short walk from where the man stands is not taken, and
-         the walk has to be at least as long as the reach the piece was chosen over or
-         the section picks cover it then refuses to go to */
-      if (dsq(m.x, m.y, u.coverSlots[i].x, u.coverSlots[i].y) < 190 * 190) { tx = u.coverSlots[i].x; ty = u.coverSlots[i].y; }
+      tx = u.coverSlots[i].x; ty = u.coverSlots[i].y;
     } else if (!u.gar && !walkable(tx, ty)) {
       /* A place in the formation that is inside a wall is not a place. The section's own
          position keeps to the grid, but its men stand a formation's width either side of
@@ -3955,6 +4119,25 @@ function updateModels(u, dt) {
       }
       if (!got) { tx = u.x; ty = u.y; }
     }
+    /* And nowhere outside the circle the unit is drawn in. The formation lengthens in a
+       lane (`fl` runs to 1.66) and the men walk to cover, and both used to carry a man
+       well past his own unit's ring: a section became a mark on the ground with its men
+       somewhere else, which is what let a shell laid on the mark burst among nobody. The
+       place is pulled back along its own bearing rather than dropped, so the shape of the
+       formation is kept and only its size is bounded, and it is walked in further if the
+       ground where it lands will not take a boot. A garrison is exempt: its men stand in
+       the house, and the house is where they belong. */
+    if (!u.gar) {
+      var rdx = tx - u.x, rdy = ty - u.y, rdd = Math.hypot(rdx, rdy), rlim = selRadius(u) - 6;
+      if (rdd > rlim) {
+        var kf = rlim / rdd, cxr = 0, cyr = 0, okr = false;
+        for (var wr = 0; wr < 5 && !okr; wr++) {
+          cxr = u.x + rdx * kf; cyr = u.y + rdy * kf;
+          if (walkable(cxr, cyr)) okr = true; else kf *= .78;
+        }
+        if (okr) { tx = cxr; ty = cyr; }
+      }
+    }
     var px0 = m.x, py0 = m.y;
     /* close the gap at walking pace: a man never slides across the ground */
     var gap = Math.hypot(tx - m.x, ty - m.y);
@@ -3967,7 +4150,12 @@ function updateModels(u, dt) {
          enough to close a gap opened by walking round a wall the section walked straight
          past. So the stance the section is in is read here too. */
       var pace = u.retreat ? 1.5 : u.stance === 'double' ? 1.4 : 1;
-      var chase = 1 + clamp((gap - 45) / 80, 0, 1);
+      /* He keeps up, and he runs harder the further out of his own circle he is. Bounding
+         the PLACE he is walking to is not the same as bounding where he is: on a long
+         move the tail of a section is limited only by how fast it can run, and it trailed
+         out of the ring it is drawn in for as long as the order lasted. */
+      var outR = Math.hypot(m.x - u.x, m.y - u.y) - (selRadius(u) - 6);
+      var chase = 1 + clamp((gap - 45) / 80, 0, 1) + clamp(outR / 60, 0, 1.2);
       var stepMax = ((u.speed || (u.cat === 'team' ? 30 : 0)) * (u.moving ? 1.25 * pace * chase : 1.0)) * dt;
       if (u.sup > 1.0 && !u.moving) stepMax *= .35;                   /* pinned men crawl */
       var stp = Math.min(gap, stepMax);
@@ -3976,6 +4164,14 @@ function updateModels(u, dt) {
       if (walkable(nmx, nmy)) { m.x = nmx; m.y = nmy; }
       else if (walkable(nmx, m.y)) m.x = nmx;
       else if (walkable(m.x, nmy)) m.y = nmy;
+    }
+    /* and the rim is a wall he cannot be the far side of. The run above closes nearly
+       every case on its own; this is what makes the ring true rather than nearly true,
+       which matters because the ring is what a click picks, what a shell is laid on and
+       what the player reads as the unit. */
+    if (!u.gar) {
+      var hx = m.x - u.x, hy = m.y - u.y, hd = Math.hypot(hx, hy), hlim = selRadius(u) - 4;
+      if (hd > hlim) { m.x = u.x + hx / hd * hlim; m.y = u.y + hy / hd * hlim; }
     }
     /* Stride advances with ground covered, so the feet never skate. And a section that
        halts finishes the step it is in: on the frame the order ends, the gait runs on to
@@ -4199,7 +4395,7 @@ function computeVisibility(dt) {
     var uz = groundZ(u.x, u.y);
     var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
             (u.stance === 'ground' && !u.moving ? .85 : 1) *
-            (u.side === G.side ? pd().eye : 1);
+            (u.side === G.side ? pd().eye : ad().eye);
     _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz, u: u });
   }
   for (j = 0; j < G.blds.length; j++) {
@@ -4208,7 +4404,7 @@ function computeVisibility(dt) {
        stores with a man on it: what it watches is its own ground. */
     if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, z: groundZ(b.x, b.y) + 40,
                                       r: (b.def && b.def.hq ? 400 : 300) * (b.built >= 1 ? 1 : .55) *
-                                         (b.side === G.side ? pd().eye : 1),
+                                         (b.side === G.side ? pd().eye : ad().eye),
                                       ez: 0, u: null });
   }
   /* How fast this side is picking that thing out, taking the best of its eyes. Nought
@@ -4504,6 +4700,25 @@ function vehCrit(t, w, src) {
     t.shaken = Math.max(t.shaken || 0, 3 + Math.random() * 2);
   }
 }
+/* Where a round is actually sent. A section is several men standing round a marker, and
+   the marker is usually the one place none of them is: laid on `t.x, t.y` a shell burst
+   in the middle of a formation that had walked to a wall, every tracer went to a patch of
+   street, and the spark off a bounced round appeared beside the tank rather than on it.
+   The round goes at the man nearest the firer, which is the one a gunner picks and the
+   one whose own cover the shot is already being scored against.
+     A bare point is handed straight back, because `fireAt` takes one as happily as a unit
+   and that is how a fire mission is laid. */
+function aimAt(u, t) {
+  if (!t || !t.models) return { x: t.x, y: t.y };
+  var best = null, bd = 1e18;
+  for (var i = 0; i < t.models.length; i++) {
+    var m = t.models[i];
+    if (!m.alive) continue;
+    var dd = dsq(m.x, m.y, u.x, u.y);
+    if (dd < bd) { bd = dd; best = m; }
+  }
+  return best ? { x: best.x, y: best.y } : { x: t.x, y: t.y };
+}
 function fireAt(u, t, dt) {
   var w = weaponFor(u, t);
   var isAt = (w === u.def.at);
@@ -4544,6 +4759,7 @@ function fireAt(u, t, dt) {
   u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * (u.gunDmg > 0 ? 1.8 : 1) *
              (u.moving && u.cat === 'veh' ? 1.35 : 1) * (u.stance === 'ground' && !u.moving ? 1.25 : 1) * rnd(.9, 1.12);
   u.fireT = .12;
+  recFired(u, shots);
   /* A section's volley is a ripple down the line, not a salvo: the rounds all count at
      once, and only the flashes are spread out over the fraction of a second the men
      actually take. A rifle group going off as one instant of light read as a firing
@@ -4598,7 +4814,7 @@ function fireAt(u, t, dt) {
   var hits = 0, bounced = 0;
   for (var s = 0; s < shots; s++) {
     if (Math.random() > acc) continue;
-    if (t.cat === 'veh' && Math.random() > pc) { bounced++; spawnFx('spark', t.x + rnd(-12, 12), t.y + rnd(-12, 12)); continue; }
+    if (t.cat === 'veh' && Math.random() > pc) { bounced++; spawnFx('spark', t.x + rnd(-12, 12), t.y + rnd(-12, 12)); continue; }  /* a vehicle is its own marker */
     hits++;
   }
   /* a round that stops on the plate still rings the hull; the crew flinch and the
@@ -4606,6 +4822,7 @@ function fireAt(u, t, dt) {
   if (bounced && t.cat === 'veh' && w.shell) { t.shaken = Math.max(t.shaken || 0, 1.6); t.hitT = .2; }
   if (hits && t.cat === 'veh' && w.shell) vehCrit(t, w, u);
   var from = u.cat === 'veh' ? { x: u.x + Math.cos(u.turret) * 26, y: u.y + Math.sin(u.turret) * 26 } : { x: u.x, y: u.y };
+  var at = aimAt(u, t);
   if (w.shell) {
     if (u.cat === 'veh') {
       u.recoil = 1;
@@ -4646,7 +4863,7 @@ function fireAt(u, t, dt) {
        it was fired behind. Everything else is flat-trajectory and keeps the token hop it
        has always had. */
     var ind = !!u.def.indirect;
-    G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: t.x + rnd(-sp2, sp2), ty: t.y + rnd(-sp2, sp2),
+    G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: at.x + rnd(-sp2, sp2), ty: at.y + rnd(-sp2, sp2),
                    sx: from.x, sy: from.y, t: 0,
                    dur: ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
                    arc: ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
@@ -4656,11 +4873,11 @@ function fireAt(u, t, dt) {
   } else {
     for (var q = 0; q < Math.min(shots, 6); q++)
       G.shots.push({ kind: 'tracer', x: from.x + rnd(-9, 9), y: from.y + rnd(-9, 9),
-                     tx: t.x + rnd(-14, 14), ty: t.y + rnd(-14, 14), t: 0, dur: .075, side: u.side });
+                     tx: at.x + rnd(-14, 14), ty: at.y + rnd(-14, 14), t: 0, dur: .075, side: u.side });
     var close = (t.def && t.def.closeWeak && u.cat !== 'veh' && d < 170) ? t.def.closeWeak : 1;
     if (hits > 0) damage(t, w.dmg * hits * close, u);
     sfx(w.rof < .2 ? 'mg' : 'rifle', u.x, u.y);
-    if (hits) spawnFx('hit', t.x + rnd(-14, 14), t.y + rnd(-14, 14));
+    if (hits) spawnFx('hit', at.x + rnd(-14, 14), at.y + rnd(-14, 14));
   }
 }
 function explode(x, y, radius, dmg, owner, except) {
@@ -4714,10 +4931,14 @@ function damage(t, amt, src) {
      its vehicles -- a thing worth knowing before moving either of these down there.
        Dealt is guarded on the sides differing so that a player's own shell bursting among
      his own men is not amplified on the way in and then reduced on the way out. */
+  var ADh = ad();
+  if (ADh.take !== 1 && t.side !== G.side) amt *= ADh.take;
+  if (ADh.deal !== 1 && src && src.side !== G.side && src.side !== t.side) amt *= ADh.deal;
   var PDh = pd();
   if (PDh.deal !== 1 && src && src.side === G.side && src.side !== t.side) amt *= PDh.deal;
   if (PDh.take !== 1 && t.side === G.side) amt *= PDh.take;
   if (t.built !== undefined) { /* building */
+    recHurt(t, amt * .6, src);
     t.hp -= amt * .6; t.hitT = .2; if (t.hp <= 0) killBuilding(t); return;
   }
   if (t.retreat) amt *= .45;
@@ -4746,13 +4967,18 @@ function damage(t, amt, src) {
     t.hurtAmt = (t.hurtAmt || 0) + amt;
   }
   if (t.cat === 'veh') {
+    recHurt(t, Math.min(amt, t.hp), src);
     t.hp -= amt;
     if (t.hp <= 0) killUnit(t, src);
   } else {
     var alive = [];
     for (var i = 0; i < t.models.length; i++) if (t.models[i].alive) alive.push(t.models[i]);
     if (!alive.length) return;
-    damageModel(t, pick(alive), amt, src);
+    var vic = pick(alive);
+    /* what the round actually took off him, which on a man with eleven points left is
+       eleven and not the forty the shell says */
+    recHurt(t, Math.min(amt / (t.side === G.side ? 1 : DIFF[G.diff].tough), vic.hp), src);
+    damageModel(t, vic, amt, src);
   }
 }
 function damageModel(u, m, amt, src) {
@@ -4761,6 +4987,7 @@ function damageModel(u, m, amt, src) {
   m.hp -= amt;
   if (m.hp <= 0) {
     m.alive = false;
+    recMan(u, src);
     /* A man on his feet does not become a body lying flat on the frame he is hit: he
        buckles, goes to his knees and goes down, which is three frames and half a second.
        A man already prone or crawling has nowhere to fall from and goes straight onto
@@ -4778,6 +5005,7 @@ function damageModel(u, m, amt, src) {
 function killUnit(u, src) {
   if (u.dead) return;
   u.dead = true;
+  recKill(u, src);
   /* a side that watched him die has nothing left to remember; a side that did not keeps
      the contact and goes on believing he is where it last saw him, which is right */
   if (visibleTo('us', u)) dropContact('us', u.id);
@@ -4912,6 +5140,130 @@ function updateShots(dt) {
   }
 }
 
+/* ---- the after-action record.
+   A battle is twenty minutes of decisions and the only thing that survived it was a line
+   saying who won. `REC` is what actually happened, kept as it happens rather than
+   reconstructed at the whistle -- which is the whole design decision here, because
+   nothing at the end of a battle knows what a section did before it died, and most of
+   what is interesting belongs to units that are no longer on the field.
+     Three layers, and the second two are read off the first. A row per UNIT, alive or
+   dead, carrying what it did and what was done to it. A row per TYPE, rolled up from the
+   units at read time so there is one source of truth and a Sherman cannot be counted in
+   one place and not the other. And a row per ARMY: what it earned, what it spent, what it
+   raised and what it had standing.
+     Plus a timeline, sampled every two seconds, which is what the graphs are drawn from.
+   Two seconds over a twenty-minute battle is six hundred samples of eight numbers, which
+   is small enough to keep in `localStorage` alongside everything else.
+     Everything in it is a number or a string. It outlives the battle -- it is written to
+   the history and read back days later -- so it may not hold a reference to a unit, a
+   sector or a building, the same rule the AI's own memory is built on. */
+var REC = null, RECDT = 2;
+function recArmy() {
+  return { earnMp: 0, earnFu: 0, spendMp: 0, spendFu: 0, made: {}, built: {}, works: 0,
+           lost: 0, killed: 0, menKilled: 0, dmgOut: 0, dmgIn: 0, rounds: 0, caps: 0,
+           peakPop: 0, peakArmy: 0 };
+}
+function recInit() {
+  REC = { when: Date.now(), side: G.side, diff: G.diff, win: G.win, t: 0, over: null, why: '',
+          us: recArmy(), ger: recArmy(), units: {}, line: [], lineT: 0 };
+}
+/* A unit's own row, opened when it is raised. `name` and `key` are copied rather than
+   looked up later, because a saved record is read on a page that may have moved on. */
+function recBorn(u) {
+  if (!REC || !u.def) return;
+  REC.units[u.id] = { id: u.id, key: u.key, side: u.side, name: u.def.short || u.def.name,
+                      born: G.t, died: -1, kills: 0, vkills: 0, mkills: 0, lost: 0,
+                      dmgOut: 0, dmgIn: 0, rounds: 0, walked: 0, caps: 0, vet: 0, hp: 1 };
+  /* what was raised, and nothing about what it cost: spending is counted in `pay`, which
+     is the one place money actually leaves the till. Charged here as well, the three
+     sections both sides open the battle with came out as 650 marks nobody ever spent. */
+  var A = REC[u.side];
+  A.made[u.key] = (A.made[u.key] || 0) + 1;
+}
+function recOf(u) { return REC && u && REC.units[u.id]; }
+/* Damage as it is actually applied, after every multiplier, which is the only figure
+   worth keeping: what a round says on paper is not what it did. */
+function recHurt(t, amt, src) {
+  if (!REC || !(amt > 0)) return;
+  var rt = recOf(t);
+  if (rt) rt.dmgIn += amt;
+  if (t.side) REC[t.side].dmgIn += amt;
+  if (!src || !src.side || src.side === t.side) return;
+  var rs = recOf(src);
+  if (rs) rs.dmgOut += amt;
+  REC[src.side].dmgOut += amt;
+}
+function recFired(u, n) {
+  if (!REC) return;
+  var r = recOf(u);
+  if (r) r.rounds += n;
+  if (u.side) REC[u.side].rounds += n;
+}
+function recKill(victim, src) {
+  if (!REC) return;
+  var rv = recOf(victim);
+  if (rv) { rv.died = G.t; rv.hp = 0; }
+  if (victim.side) REC[victim.side].lost++;
+  if (!src || !src.side || src.side === victim.side) return;
+  var rs = recOf(src);
+  if (rs) { rs.kills++; if (victim.cat === 'veh') rs.vkills++; }
+  REC[src.side].killed++;
+}
+/* A man down, counted on the section that lost him and on whoever shot him. Unit kills
+   and men killed are two different questions and the page asks both: a machine gun that
+   never destroys a section outright can still have killed more men than anything else on
+   the field. */
+function recMan(victim, src) {
+  if (!REC) return;
+  var rv = recOf(victim);
+  if (rv) rv.lost++;
+  if (!src || !src.side || !REC[src.side] || src.side === victim.side) return;
+  REC[src.side].menKilled++;
+  var rs = recOf(src);
+  if (rs) rs.mkills++;
+}
+function recCap(side) { if (REC && REC[side]) REC[side].caps++; }
+function recEarn(side, mp, fu) { if (REC && REC[side]) { REC[side].earnMp += mp; REC[side].earnFu += fu; } }
+function recSpend(side, cost) {
+  if (!REC || !REC[side] || !cost) return;
+  REC[side].spendMp += cost.mp || 0; REC[side].spendFu += cost.fu || 0;
+}
+function recBuild(side, key) { if (REC && REC[side]) REC[side].built[key] = (REC[side].built[key] || 0) + 1; }
+function recWork(side) { if (REC && REC[side]) REC[side].works++; }
+/* What each side had standing at this moment, and a sample of it every two seconds. The
+   strength is what the army is worth rather than how many units are in it, because six
+   riflemen and a Tiger are not six of one and one of the other. */
+function armyWorth(side) {
+  var w = 0;
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.side !== side) continue;
+    var full = (u.def.cost && u.def.cost.mp || 0) + (u.def.cost && u.def.cost.fu || 0) * 2;
+    w += full * (u.cat === 'veh' ? clamp(u.hp / Math.max(1, u.maxhp), 0, 1)
+                                 : clamp(aliveModels(u) / Math.max(1, u.def.models), 0, 1));
+  }
+  return Math.round(w);
+}
+function recTick(dt, last) {
+  if (!REC || (!G.running && !last)) return;
+  REC.t = G.t;
+  REC.lineT += dt;
+  if (REC.lineT < RECDT && !last) return;
+  REC.lineT = 0;
+  var row = { t: Math.round(G.t) };
+  ['us', 'ger'].forEach(function (sd) {
+    var secs = 0, vps = 0, i;
+    for (i = 0; i < G.sectors.length; i++)
+      if (G.sectors[i].owner === sd) { secs++; if (G.sectors[i].type === 'vp') vps++; }
+    var worth = armyWorth(sd), pop = G.pop[sd] || 0;
+    var A = REC[sd];
+    if (worth > A.peakArmy) A.peakArmy = worth;
+    if (pop > A.peakPop) A.peakPop = pop;
+    row[sd] = { vp: Math.round(G.res[sd].vp), mp: Math.round(G.res[sd].mp), fu: Math.round(G.res[sd].fu),
+                sec: secs, vps: vps, army: worth, pop: pop };
+  });
+  REC.line.push(row);
+}
 /* ---------------------------------------------------------------- sectors + economy */
 var SEC_YIELD = {
   mp:   { mp: 3.6, fu: 0 },
@@ -4938,6 +5290,7 @@ function updateSectors(dt) {
     var was = s.owner;
     s.owner = s.prog >= 1 ? 'us' : s.prog <= -1 ? 'ger' : null;
     if (was !== s.owner && s.owner && G.running) {
+      recCap(s.owner);
       if (s.owner === G.side) { toast((s.label || 'Sector ' + s.id) + ' taken'); sfx('cap'); }
       else if (was === G.side) toast((s.label || 'Sector ' + s.id) + ' lost');
     }
@@ -4968,11 +5321,12 @@ function tickEconomy(dt) {
     /* two multipliers on the player's side and one on the opposition's, because fuel
        gates armour and manpower gates men: a player who wants a company of infantry and a
        player who wants three Shermans are asking opposite things of one number. */
-    var mMul = side === G.side ? pd().inc : DIFF[G.diff].foe;
-    var fMul = side === G.side ? pd().incf : DIFF[G.diff].foe;
+    var mMul = side === G.side ? pd().inc : DIFF[G.diff].foe * ad().inc;
+    var fMul = side === G.side ? pd().incf : DIFF[G.diff].foe * ad().incf;
     G.inc[side].mp = mp * mMul; G.inc[side].fu = fu * fMul;
     G.res[side].mp += mp * mMul * dt;
     G.res[side].fu += fu * fMul * dt;
+    recEarn(side, mp * mMul * dt, fu * fMul * dt);
     if (vps && G.win !== 'anni') {
       var rate = .8 * (foe(side) === G.side ? DIFF[G.diff].vp : 1);
       G.res[foe(side)].vp = Math.max(0, G.res[foe(side)].vp - vps * rate * dt);
@@ -5119,7 +5473,7 @@ function placeWork(side, kind, x, y, ang, engineers) {
      whether the work puts a piece that fires missions on the ground, so the eighty-eight
      keeps its two a side whatever the handicap says. It is the population cap that stops
      a free-for-all, and that is not one of the rules this lifts. */
-  var freeArty = side === G.side && pd().arty;
+  var freeArty = side === G.side ? pd().arty : ad().arty;
   if (W.unit) {
     var ud = UNITS[W.unit];
     var ruled = !(freeArty && ud.barrage);
@@ -5160,6 +5514,7 @@ function finishWork(s) {
   var W = WORKS[s.kind];
   if (!W) return;
   G.works.push({ kind: s.kind, x: s.x, y: s.y, a: s.a || 0, side: s.side, buf: s.buf });
+  recWork(s.side);
   if (W.cover) {
     var c = W.cover;
     addCover(s.x, s.y, c.r, c.type, c.kind, c.faced ? s.a + workTurn(s.kind) : null, c.hp);
@@ -5314,12 +5669,12 @@ function updateUnit(u, dt) {
          sides and no setting anywhere. Production and construction are two knobs because
          they are two decisions: a fast queue with a slow spade is a side that has an army
          and no position, and the other way round is a side dug in with nothing in it. */
-      var cs = u.side === G.side ? pd().cons : 1;
+      var cs = u.side === G.side ? pd().cons : ad().cons;
       if (b.def) {
         b.built = clamp(b.built + dt * cs / b.def.time, 0, 1);
         b.hp = Math.max(b.hp, b.maxhp * (.18 + .82 * b.built));
         if (Math.random() < dt * 6) spawnFx('spark', b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2));
-        if (b.built >= 1) { u.building = null; clearOrder(u); if (u.side === G.side) toast(b.def.name + ' complete'); }
+        if (b.built >= 1) { if (!b.recDone) { b.recDone = 1; recBuild(b.side, b.key); } u.building = null; clearOrder(u); if (u.side === G.side) toast(b.def.name + ' complete'); }
       } else {
         b.prog = clamp(b.prog + dt * cs / b.time, 0, 1);
         if (b.prog >= 1) { u.building = null; clearOrder(u); }
@@ -9229,21 +9584,16 @@ function buildMarks(v) {
   G.sel.forEach(function (u) {
     if (!u.cat) return;
     var mine = u.side === G.side;
-    /* The ring goes round the men, not round the marker. Measured on a real battle, a
-       section's men stand a hundred and nine units from their own marker while its ring
-       has a radius of thirty-two -- so the one mark that says "this is selected" was
-       drawn on a bare patch of street with nobody in it.
-         And it does not change size. The first version drew the circle that held the
-       whole section, which breathes with every step the men take: a section that opened
-       out across a street trebled its own ring and then shrank it again at the far side,
-       and a mark that moves reads as something happening rather than as a selection. It
-       is the unit's own size, which is a constant per unit, put where the men are. */
-    var cx = u.x, cy = u.y, rr = unitRadius(u) + 5, men = 0, k;
-    if (u.models) {
-      var sx = 0, sy = 0;
-      for (k = 0; k < u.models.length; k++) if (u.models[k].alive) { sx += u.models[k].x; sy += u.models[k].y; men++; }
-      if (men) { cx = sx / men; cy = sy / men; }
-    }
+    /* The ring is `selRadius` on the unit's own point, and it neither moves nor changes
+       size. Three versions got that wrong in turn. Drawn at the marker with a radius of
+       thirty-two it held about a sixth of the ground its men were standing on. Moved onto
+       the mean of the men it left the marker, which is what the order line, the
+       pathfinder and every shell are laid on, so the mark and the thing it marks were two
+       places. Sized to the circle that held them all, it breathed with every step they
+       took.
+         It is a fixed circle on the unit, and the men are bounded to it in
+       `updateModels`, so the ring is true by construction rather than by chasing. */
+    var cx = u.x, cy = u.y, rr = selRadius(u);
     markRing(cx, cy, rr, markCol(mine ? '#9ecb62' : '#c95c4e'), .85, 2.4);
     if (!u.dest || !u.path) return;
     var atk = u.order === 'attackmove' || u.order === 'attack';
@@ -20314,15 +20664,15 @@ var edgeScroll = true;
 
 /* How near a click has to land, and to WHAT. A section is not its marker: its men walk
    to their places in the formation and then walk again to whatever cover the section
-   chose, which the cover pass allows up to a hundred and eighteen units away. So a
-   player who clicked the men he could see clicked nothing at all, and had to remember
-   the bare patch of street the section had been ordered to.
-     The marker still counts, because it is where the ring is drawn and it is what a
-   player aims at when the men are scattered; each man counts too, at a man's own size
-   rather than a section's. */
+   chose. So a player who clicked the men he could see clicked nothing at all, and had to
+   remember the bare patch of street the section had been ordered to.
+     It is the ring that answers now, because the ring is the unit: `selRadius` is what is
+   drawn, the men are bounded inside it, and a click anywhere in the circle picks the
+   thing the circle is round. Each man still counts on his own account, at a man's own
+   size, so a finger on a soldier is a hit whatever the ring is doing. */
 function hitsUnit(u, wx, wy, r) {
   var pad = r === undefined ? 6 : r;
-  var rad = unitRadius(u) + pad;
+  var rad = selRadius(u) + pad;
   if (dsq(wx, wy, u.x, u.y) < rad * rad) return true;
   if (!u.models) return false;
   var mr = 11 + pad;
@@ -20397,6 +20747,38 @@ function select(list, add) {
   syncHud();
 }
 function selectedUnits() { return G.sel.filter(function (s) { return s.cat; }); }
+/* Widen a selection to every unit of the same kind. Two of them, because they answer two
+   different questions: SAME TYPE is every rifle section on the map, which is how a player
+   moves an arm of his army at once; SAME NEARBY is every rifle section within sight of
+   the ones he has, which is how he handles the fight in front of him without dragging in
+   a section holding a flag four hundred metres behind.
+     The kinds come off what is already selected, so it widens a mixed selection sensibly:
+   two Shermans and a rifle section selects every Sherman and every rifle section. And a
+   building is never swept in, because a selection with a headquarters in it shows
+   production cards rather than order cards. */
+function selectSame(near) {
+  var have = selectedUnits();
+  if (!have.length) return;
+  var keys = {}, i;
+  for (i = 0; i < have.length; i++) keys[have[i].key] = 1;
+  var out = [];
+  for (i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.inside || u.side !== G.side || !keys[u.key]) continue;
+    if (near) {
+      /* within sight of one of the units already picked, by that unit's own eye */
+      var seen = false;
+      for (var j = 0; j < have.length && !seen; j++)
+        if (dsq(u.x, u.y, have[j].x, have[j].y) < have[j].sight * have[j].sight) seen = true;
+      if (!seen) continue;
+    }
+    out.push(u);
+  }
+  if (!out.length) return;
+  select(out, false);
+  toast(out.length + ' ' + (out.length === 1 ? 'unit' : 'units') + ' selected');
+  sfx('click');
+}
 function selectedBuilding() { return G.sel.length === 1 && G.sel[0].built !== undefined ? G.sel[0] : null; }
 
 /* Lay every selected tube that can reach onto the same patch of ground, and say so.
@@ -20963,6 +21345,8 @@ function syncHud() {
 }
 var cmdList = [];
 function cmdGlyph(label) {
+  if (/Same type/i.test(label)) return '⁙';
+  if (/Same nearby/i.test(label)) return '⁘';
   if (/Attack/i.test(label)) return '⌖';
   if (/Move/i.test(label)) return '↗';
   if (/Stop/i.test(label)) return '■';
@@ -21013,6 +21397,8 @@ function buildCmds() {
     addCmd('Move', 'right-click', 'V', true, function () { toast('Right-click the ground to move'); });
     addCmd('Attack move', 'Q + click', 'Q', true, function () { G.mode = 'attack'; cv.style.cursor = 'cell'; syncHud(); }, G.mode === 'attack');
     addCmd('Stop', '', 'X', true, function () { units.forEach(orderStop); syncHud(); });
+    addCmd('Same type', 'all on the map', 'T', true, function () { selectSame(false); });
+    addCmd('Same nearby', 'within sight', 'Y', true, function () { selectSame(true); });
     addCmd('Retreat', 'to HQ', 'R', units.some(function (u) { return u.cat !== 'veh' && u.def.speed > 0; }),
       function () { units.forEach(orderRetreat); syncHud(); });
     var foot = units.filter(function (u) { return u.cat !== 'veh' && u.def.speed > 0; });
@@ -21182,6 +21568,366 @@ function updateTop(dt) {
   else refreshCmdState();
 }
 
+var DIFFNAME = ['GREEN', 'REGULAR', 'VETERAN'];
+/* ---- spectating.
+   A battle ends and the map is still there: the wrecks, the craters, the ground that
+   changed hands and the line the last attack died on. The game-over panel used to cover
+   all of it, so the one moment a player most wants to look at the map is the moment he is
+   shown a sentence instead. SPEC takes the 2D chrome away and leaves the camera, which
+   already pans, zooms and rotates on its own; the simulation stays stopped, because this
+   is a look at how it finished rather than a continuation of it. */
+function specStart() {
+  if (!G.over) return;
+  document.body.classList.add('spec');
+  el('specbar').classList.remove('hidden');
+  el('stats').classList.add('hidden');
+  ST.on = false;
+}
+function specStop() {
+  document.body.classList.remove('spec');
+  el('specbar').classList.add('hidden');
+}
+/* ---- the after-action page.
+   Five tabs over one record. The split is by the question being asked rather than by
+   where the numbers happen to live: OVERVIEW is who won and by how much, ARMIES is what
+   each side raised and spent, TYPES is every Sherman against every other Sherman, UNITS
+   is one row for each thing that was ever on the field, and GRAPHS is the shape of the
+   battle over time.
+     TYPES is rolled up from the unit rows every time it is drawn rather than kept
+   alongside them, because two tallies of one thing go out of step the moment somebody
+   adds a column, and a player reading a total that does not match the rows under it has
+   no reason to believe either. */
+var ST = { on: false, tab: 'over', rec: null, hist: false };
+var HIST_KEY = 'ORT_HIST', HIST_MAX = 24;
+var ST_TABS = [
+  { k: 'over',  name: 'OVERVIEW' },
+  { k: 'army',  name: 'ARMIES' },
+  { k: 'type',  name: 'BY TYPE' },
+  { k: 'unit',  name: 'EVERY UNIT' },
+  { k: 'graph', name: 'GRAPHS' }
+];
+function stNum(v, d) {
+  if (v === undefined || v === null || v !== v) return '-';
+  return d ? (Math.round(v * 10) / 10).toFixed(1) : String(Math.round(v));
+}
+/* what a side is called on this page: the player's own side is his whether he took the
+   Canadians or the paratroopers, and a record read out of the history remembers which.
+   The faction's own short name is wrong here and was tried: with the Germans it reads
+   "FJ · FJ", the faction beside a Fallschirmjaeger section, which says nothing. */
+function stWho(R, sd) { return sd === R.side ? 'YOU' : 'THEM'; }
+function stRows(R) {
+  var out = [], k;
+  for (k in R.units) out.push(R.units[k]);
+  out.sort(function (a, b) { return (b.kills * 100 + b.dmgOut) - (a.kills * 100 + a.dmgOut); });
+  return out;
+}
+/* every type that was ever raised, with its units rolled into it */
+function stTypes(R) {
+  var by = {}, rows = stRows(R), i;
+  for (i = 0; i < rows.length; i++) {
+    var r = rows[i], id = r.side + '/' + r.key;
+    var t = by[id];
+    if (!t) t = by[id] = { side: r.side, key: r.key, name: r.name, n: 0, alive: 0, kills: 0,
+                           vkills: 0, mkills: 0, lost: 0, dmgOut: 0, dmgIn: 0, rounds: 0, life: 0, ended: 0 };
+    t.n++;
+    if (r.died < 0) t.alive++; else { t.life += r.died - r.born; t.ended++; }
+    t.kills += r.kills; t.vkills += r.vkills; t.mkills += r.mkills; t.lost += r.lost;
+    t.dmgOut += r.dmgOut; t.dmgIn += r.dmgIn; t.rounds += r.rounds;
+  }
+  var list = [];
+  for (i in by) list.push(by[i]);
+  list.sort(function (a, b) { return b.kills - a.kills || b.dmgOut - a.dmgOut; });
+  return list;
+}
+function stCard(label, value, note) {
+  return '<div class="stcard"><b>' + label + '</b><i>' + value + '</i>' +
+         (note ? '<u>' + note + '</u>' : '') + '</div>';
+}
+function stTable(head, rows) {
+  var h = '<table><thead><tr>', i;
+  for (i = 0; i < head.length; i++)
+    h += '<th' + (i ? ' class="n"' : '') + '>' + head[i] + '</th>';
+  h += '</tr></thead><tbody>' + rows.join('') + '</tbody></table>';
+  return h;
+}
+function stTr(cls, cells) {
+  var h = '<tr' + (cls ? ' class="' + cls + '"' : '') + '>', i;
+  for (i = 0; i < cells.length; i++) h += '<td' + (i ? ' class="n"' : '') + '>' + cells[i] + '</td>';
+  return h + '</tr>';
+}
+function stOver(R) {
+  var win = R.over, mine = win === R.side;
+  var h = '<div class="stcards">';
+  h += stCard('RESULT', mine ? 'GROUND HELD' : 'POSITION LOST', R.why || '');
+  h += stCard('LENGTH', fmtTime(R.t), DIFFNAME[R.diff] + ' · ' + (R.win === 'anni' ? 'annihilation' : 'sectors'));
+  h += stCard('UNITS RAISED', stNum(R[R.side].lost + stAlive(R, R.side)) + ' v ' + stNum(R[foe(R.side)].lost + stAlive(R, foe(R.side))), 'yours against theirs');
+  h += stCard('UNITS LOST', stNum(R[R.side].lost) + ' v ' + stNum(R[foe(R.side)].lost), 'yours against theirs');
+  h += stCard('DAMAGE DEALT', stNum(R[R.side].dmgOut), 'against ' + stNum(R[foe(R.side)].dmgOut) + ' of theirs');
+  h += stCard('MEN KILLED', stNum(R[R.side].menKilled), 'against ' + stNum(R[foe(R.side)].menKilled) + ' of yours');
+  h += stCard('ROUNDS FIRED', stNum(R[R.side].rounds), 'against ' + stNum(R[foe(R.side)].rounds));
+  h += stCard('SECTORS TAKEN', stNum(R[R.side].caps), 'against ' + stNum(R[foe(R.side)].caps));
+  h += stCard('PEAK ARMY', stNum(R[R.side].peakArmy), 'against ' + stNum(R[foe(R.side)].peakArmy) + ', in marks on the field');
+  h += '</div>';
+  /* the best unit either side had, which is the one thing a player always wants and the
+     one thing a score line never tells him */
+  var rows = stRows(R), best = [];
+  for (var i = 0; i < rows.length && best.length < 8; i++) if (rows[i].kills || rows[i].mkills || rows[i].dmgOut > 40) best.push(rows[i]);
+  if (best.length) {
+    h += '<h4>WHO DID THE WORK</h4>';
+    var tr = [];
+    for (i = 0; i < best.length; i++) {
+      var r = best[i];
+      tr.push(stTr(r.side + (r.died >= 0 ? ' gone' : ''),
+        [stWho(R, r.side) + ' · ' + r.name, stNum(r.kills), stNum(r.mkills), stNum(r.vkills),
+         stNum(r.dmgOut), stNum(r.rounds), r.died >= 0 ? fmtTime(r.died) : 'survived']));
+    }
+    h += stTable(['UNIT', 'UNITS KILLED', 'MEN KILLED', 'VEHICLES', 'DAMAGE', 'ROUNDS', 'FATE'], tr);
+  }
+  return h;
+}
+function stAlive(R, sd) {
+  var n = 0, k;
+  for (k in R.units) if (R.units[k].side === sd && R.units[k].died < 0) n++;
+  return n;
+}
+function stArmies(R) {
+  var h = '', sides = [R.side, foe(R.side)], i, j;
+  for (i = 0; i < sides.length; i++) {
+    var sd = sides[i], A = R[sd];
+    h += '<h4>' + stWho(R, sd) + ' · ' + FACTION[sd].name.toUpperCase() + '</h4>';
+    h += '<div class="stcards">';
+    h += stCard('MANPOWER EARNED', stNum(A.earnMp), stNum(A.spendMp) + ' spent');
+    h += stCard('FUEL EARNED', stNum(A.earnFu), stNum(A.spendFu) + ' spent');
+    h += stCard('UNITS RAISED', stNum(A.lost + stAlive(R, sd)), stNum(A.lost) + ' lost, ' + stNum(stAlive(R, sd)) + ' left');
+    h += stCard('MEN LOST', stNum(stMen(R, sd)), 'out of the sections');
+    h += stCard('PEAK ARMY', stNum(A.peakArmy), 'marks on the field at once');
+    h += stCard('PEAK POPULATION', stNum(A.peakPop), 'against the cap');
+    h += stCard('UNITS KILLED', stNum(A.killed), stNum(A.menKilled) + ' men killed, ' + stNum(A.dmgOut) + ' damage dealt');
+    h += stCard('WORKS BUILT', stNum(A.works), 'bags, pits, wire and emplacements');
+    h += '</div>';
+    var tr = [], k;
+    for (k in A.made) {
+      var d = UNITS[k];
+      tr.push(stTr(sd, [d ? (d.short || d.name) : k, stNum(A.made[k]),
+                        stNum((d && d.cost && d.cost.mp || 0) * A.made[k]),
+                        stNum((d && d.cost && d.cost.fu || 0) * A.made[k])]));
+    }
+    for (k in A.built) {
+      var bd = BUILDINGS[k];
+      tr.push(stTr(sd, [(bd ? bd.short || bd.name : k) + ' (building)', stNum(A.built[k]),
+                        stNum((bd && bd.cost && bd.cost.mp || 0) * A.built[k]),
+                        stNum((bd && bd.cost && bd.cost.fu || 0) * A.built[k])]));
+    }
+    h += tr.length ? stTable(['WHAT IT BUILT', 'COUNT', 'MANPOWER', 'FUEL'], tr)
+                   : '<p style="color:var(--dim);font-size:11px">Nothing was raised.</p>';
+  }
+  return h;
+}
+function stMen(R, sd) {
+  var n = 0, k;
+  for (k in R.units) if (R.units[k].side === sd) n += R.units[k].lost;
+  return n;
+}
+function stTypeTab(R) {
+  var list = stTypes(R), tr = [], i;
+  for (i = 0; i < list.length; i++) {
+    var t = list[i];
+    tr.push(stTr(t.side, [stWho(R, t.side) + ' · ' + t.name, stNum(t.n), stNum(t.alive),
+                          stNum(t.kills), stNum(t.mkills), stNum(t.vkills), stNum(t.lost),
+                          stNum(t.dmgOut), stNum(t.dmgIn), stNum(t.rounds),
+                          t.ended ? fmtTime(t.life / t.ended) : '-']));
+  }
+  return tr.length ? stTable(['TYPE', 'RAISED', 'LEFT', 'UNITS KILLED', 'MEN KILLED', 'VEHICLES',
+                              'MEN LOST', 'DAMAGE OUT', 'DAMAGE IN', 'ROUNDS', 'MEAN LIFE'], tr)
+                   : '<p style="color:var(--dim)">No units were raised.</p>';
+}
+function stUnitTab(R) {
+  var rows = stRows(R), tr = [], i;
+  for (i = 0; i < rows.length; i++) {
+    var r = rows[i];
+    tr.push(stTr(r.side + (r.died >= 0 ? ' gone' : ''),
+      ['#' + r.id + ' ' + stWho(R, r.side) + ' · ' + r.name, fmtTime(r.born),
+       r.died >= 0 ? fmtTime(r.died) : 'survived',
+       r.died >= 0 ? fmtTime(r.died - r.born) : fmtTime(R.t - r.born),
+       stNum(r.kills), stNum(r.mkills), stNum(r.vkills), stNum(r.lost), stNum(r.dmgOut),
+       stNum(r.dmgIn), stNum(r.rounds)]));
+  }
+  return tr.length ? stTable(['UNIT', 'RAISED', 'FATE', 'TIME UP', 'UNITS KILLED', 'MEN KILLED',
+                              'VEHICLES', 'MEN LOST', 'DAMAGE OUT', 'DAMAGE IN', 'ROUNDS'], tr)
+                   : '<p style="color:var(--dim)">No units were raised.</p>';
+}
+/* The graphs. Drawn on a canvas apiece rather than as an SVG, because the page already
+   has a 2D context idiom and a line of six hundred points is one path either way. Each is
+   two series, one per side, on a shared scale: the question every one of them answers is
+   who was ahead, and two charts side by side cannot answer it. */
+var ST_GRAPHS = [
+  { k: 'army', name: 'ARMY ON THE FIELD', note: 'what each side had standing, in marks' },
+  { k: 'vp',   name: 'VICTORY POINTS',    note: 'the clock both sides are playing against' },
+  { k: 'sec',  name: 'SECTORS HELD',      note: 'ground, which is what pays' },
+  { k: 'mp',   name: 'MANPOWER IN HAND',  note: 'money sitting in the till rather than on the field' },
+  { k: 'pop',  name: 'POPULATION',        note: 'men on the field against the cap' }
+];
+function stGraphTab(R) {
+  var h = '', i;
+  if (!R.line || R.line.length < 2) return '<p style="color:var(--dim)">The battle was too short to draw.</p>';
+  for (i = 0; i < ST_GRAPHS.length; i++)
+    h += '<h4>' + ST_GRAPHS[i].name + ' <span style="color:var(--dim);letter-spacing:0;font-size:10px">' +
+         ST_GRAPHS[i].note + '</span></h4><canvas class="stgraph" id="stg_' + ST_GRAPHS[i].k + '"></canvas>';
+  return h;
+}
+function stDrawGraphs(R) {
+  for (var i = 0; i < ST_GRAPHS.length; i++) stDrawGraph(R, ST_GRAPHS[i].k);
+}
+function stDrawGraph(R, key) {
+  var cv2 = el('stg_' + key);
+  if (!cv2 || !R.line.length) return;
+  var w = cv2.clientWidth || 600, hh = cv2.clientHeight || 150, dpr2 = Math.min(2, window.devicePixelRatio || 1);
+  cv2.width = Math.round(w * dpr2); cv2.height = Math.round(hh * dpr2);
+  var c = cv2.getContext('2d');
+  c.setTransform(dpr2, 0, 0, dpr2, 0, 0);
+  c.clearRect(0, 0, w, hh);
+  var pad = 8, hi = 1, i, sd;
+  for (i = 0; i < R.line.length; i++)
+    for (sd = 0; sd < 2; sd++) {
+      var v = R.line[i][sd ? 'ger' : 'us'][key];
+      if (v > hi) hi = v;
+    }
+  /* a grid of four, labelled at the top so the reader has a scale without an axis */
+  c.strokeStyle = '#1e2418'; c.lineWidth = 1;
+  for (i = 1; i < 4; i++) {
+    var gy = pad + (hh - pad * 2) * i / 4;
+    c.beginPath(); c.moveTo(pad, gy); c.lineTo(w - pad, gy); c.stroke();
+  }
+  c.fillStyle = '#6d7563'; c.font = '9px ' + 'ui-monospace,Menlo,Consolas,monospace';
+  c.fillText(String(Math.round(hi)), pad + 2, pad + 9);
+  /* the clock sits bottom LEFT, because both lines end at the right edge and the label
+     was drawn straight through them */
+  c.fillText('0:00 to ' + fmtTime(R.line[R.line.length - 1].t), pad + 2, hh - 3);
+  /* and each line is named, once per graph: two coloured lines with nothing to say which
+     is which is a picture of a battle nobody can read */
+  c.fillStyle = FACTION[R.side].color;
+  c.fillText('YOU', w - pad - 62, hh - 3);
+  c.fillStyle = FACTION[foe(R.side)].color;
+  c.fillText('THEM', w - pad - 32, hh - 3);
+  ['us', 'ger'].forEach(function (side) {
+    c.strokeStyle = FACTION[side].color;
+    c.lineWidth = side === R.side ? 2 : 1.4;
+    c.beginPath();
+    for (var q = 0; q < R.line.length; q++) {
+      var row = R.line[q];
+      var x = pad + (w - pad * 2) * (R.line.length === 1 ? 0 : q / (R.line.length - 1));
+      var y = hh - pad - (hh - pad * 2) * clamp(row[side][key] / hi, 0, 1);
+      if (q) c.lineTo(x, y); else c.moveTo(x, y);
+    }
+    c.stroke();
+  });
+}
+function stRender() {
+  var R = ST.rec, host = el('stbody');
+  el('sttitle').textContent = ST.hist ? 'PAST BATTLES' : 'AFTER ACTION';
+  if (!R) { el('stsub').textContent = ''; host.innerHTML = stHistList(); return; }
+  el('stsub').textContent = ST.hist ? 'every battle this device has finished'
+    : (R.over === R.side ? 'ground held' : 'position lost') + ' · ' + fmtTime(R.t) +
+      ' · ' + DIFFNAME[R.diff] + ' · ' + (R.why || '');
+  if (ST.hist) { host.innerHTML = stHistList(); return; }
+  host.innerHTML = ST.tab === 'over' ? stOver(R)
+                 : ST.tab === 'army' ? stArmies(R)
+                 : ST.tab === 'type' ? stTypeTab(R)
+                 : ST.tab === 'unit' ? stUnitTab(R)
+                 : stGraphTab(R);
+  if (ST.tab === 'graph') stDrawGraphs(R);
+  host.scrollTop = 0;
+}
+function stTabs() {
+  var host = el('sttabs');
+  host.innerHTML = '';
+  if (ST.hist) return;
+  ST_TABS.forEach(function (t) {
+    var b = document.createElement('button');
+    b.className = 'sttab' + (ST.tab === t.k ? ' on' : '');
+    b.textContent = t.name;
+    b.onclick = function () { ST.tab = t.k; stTabs(); stRender(); sfx('click'); };
+    host.appendChild(b);
+  });
+}
+function stOpen(rec, hist) {
+  ST.rec = rec || ST.rec; ST.on = true; ST.hist = !!hist;
+  /* the history is readable with no battle behind it, which is how it is reached from the
+     title screen; every other tab needs a record and there is nothing to show without one */
+  if (!ST.rec && !ST.hist) return;
+  el('stats').classList.remove('hidden');
+  el('over').classList.add('hidden');
+  specStop();
+  stTabs(); stRender();
+}
+function stClose() {
+  ST.on = false; ST.hist = false;
+  el('stats').classList.add('hidden');
+  if (G.over) el('over').classList.remove('hidden');
+  else if (!G.running) el('start').classList.remove('hidden');
+}
+/* ---- the history.
+   Every finished battle is kept, newest first, with the oldest dropped once there are
+   more than two dozen. It is written the moment the battle ends rather than when the page
+   is opened, because a player who quits on the game-over screen has still finished a
+   battle and should find it here next time. */
+function histLoad() {
+  try {
+    var raw = localStorage.getItem(HIST_KEY);
+    var v = raw ? JSON.parse(raw) : [];
+    return v && v.length !== undefined ? v : [];
+  } catch (e) { return []; }
+}
+function histSave(rec) {
+  try {
+    var all = histLoad();
+    all.unshift(rec);
+    while (all.length > HIST_MAX) all.pop();
+    localStorage.setItem(HIST_KEY, JSON.stringify(all));
+  } catch (e) { /* out of room, or private browsing: the report still reads this session */ }
+}
+function histDate(ms) {
+  var d = new Date(ms);
+  return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2) +
+         ' ' + ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+function stHistList() {
+  var all = histLoad();
+  if (!all.length) return '<p style="color:var(--dim)">No battle has been finished on this device yet.</p>';
+  var tr = [], i;
+  for (i = 0; i < all.length; i++) {
+    var R = all[i], mine = R.over === R.side;
+    tr.push('<tr class="' + R.side + '"><td><button class="sttab" data-hist="' + i + '" style="min-height:30px;padding:5px 10px">OPEN</button> ' +
+            histDate(R.when) + '</td><td class="n">' + (mine ? 'HELD' : 'LOST') + '</td><td class="n">' +
+            fmtTime(R.t) + '</td><td class="n">' + DIFFNAME[R.diff] + '</td><td class="n">' +
+            (R.win === 'anni' ? 'annihilation' : 'sectors') + '</td><td class="n">' +
+            stNum(R[R.side].killed) + '</td><td class="n">' + stNum(R[R.side].lost) + '</td></tr>');
+  }
+  var h = stTable(['BATTLE', 'RESULT', 'LENGTH', 'OPPOSITION', 'VICTORY', 'KILLS', 'LOST'], tr);
+  return h;
+}
+
+/* ---- and the wiring. */
+el('overspec').onclick = function () { specStart(); sfx('click'); };
+el('overstats').onclick = function () { stOpen(REC, false); sfx('click'); };
+el('specdone').onclick = function () { specStop(); stOpen(REC, false); sfx('click'); };
+el('stback').onclick = function () {
+  if (ST.hist && ST.rec) { ST.hist = false; stTabs(); stRender(); sfx('click'); return; }
+  stClose(); sfx('click');
+};
+el('sthist').onclick = function () { stOpen(ST.rec, !ST.hist); sfx('click'); };
+el('pasthist').onclick = function () { el('start').classList.add('hidden'); stOpen(null, true); sfx('click'); };
+el('stagain').onclick = function () { stClose(); specStop(); el('again').click(); };
+/* a click on any OPEN button in the history list reads that battle back */
+el('stbody').addEventListener('click', function (e) {
+  var b = e.target && e.target.getAttribute && e.target.getAttribute('data-hist');
+  if (b === null || b === undefined) return;
+  var all = histLoad(), R = all[b | 0];
+  if (!R) return;
+  ST.rec = R; ST.hist = false; ST.tab = 'over';
+  stTabs(); stRender(); sfx('click');
+});
+
 /* ---------------------------------------------------------------- game flow */
 function endGame(winner, why) {
   if (G.over) return;
@@ -21190,6 +21936,15 @@ function endGame(winner, why) {
   el('overtitle').style.color = FACTION[winner].color;
   el('overtext').textContent = FACTION[winner].name + ' wins after ' + fmtTime(G.t) + ' - ' + why + '.';
   el('over').classList.remove('hidden');
+  /* The record is closed and written here, at the whistle, rather than when the report is
+     opened: a player who presses FIGHT AGAIN without reading it has still finished a
+     battle, and it should be in the history next time he looks. */
+  if (REC) {
+    REC.over = winner; REC.why = why; REC.t = G.t;
+    recTick(RECDT, 1);                   /* one last sample, so the graphs end where the battle did */
+    ST.rec = REC; ST.tab = 'over';
+    histSave(REC);
+  }
 }
 function startGame(side, diff, mode, arty) {
   G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
@@ -21205,9 +21960,11 @@ function startGame(side, diff, mode, arty) {
   G.made = { us: {}, ger: {} };
   /* The handicap is resolved here and nowhere else, so a setting changed on the title
      screen after the deploy button cannot reach a battle already running. */
-  G.pd = pdMake();
+  G.pd = pdMake(); G.ad = adMake();
+  recInit();
   G.res = { us: { mp: 420, fu: 20, vp: VP_START }, ger: { mp: 420, fu: 20, vp: VP_START } };
   G.res[side].mp = G.pd.mp; G.res[side].fu = G.pd.fu;
+  if (G.ad.setTill) { G.res[foe(side)].mp = G.ad.mp; G.res[foe(side)].fu = G.ad.fu; }
   if (!G.mapData) G.mapData = defaultMapData();
   makeSectors(); makeTerrain(); rebuildGrid();
   initDecals(); initExplored();
@@ -21282,6 +22039,7 @@ function frame(now) {
     updateSectors(dt);
     updateSites(dt);
     tickEconomy(dt);
+    recTick(dt);
     aiTick(dt);
     for (var k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
     if (G.wrecks.length > 26) G.wrecks.shift();
@@ -21349,7 +22107,7 @@ var HCAP = [
   { k: 'cons', name: 'CONSTRUCTION', list: PD_CONS, fmt: hcapMult,
     tip: 'How fast your engineers put up a building or a field work.' },
   { k: 'pop',  name: 'MANPOWER CAP', list: PD_POP, fmt: hcapNum,
-    tip: 'How many men you may have on the field at once. The opposition keeps its own.' },
+    tip: 'How many men you may have on the field at once, up to a thousand. The opposition keeps its own.' },
   { k: 'take', name: 'DAMAGE TAKEN', list: PD_TAKE, fmt: hcapMult,
     tip: 'What a round that hits one of yours actually does. Even down to a tenth.' },
   { k: 'deal', name: 'DAMAGE DEALT', list: PD_DEAL, fmt: hcapMult,
@@ -21359,72 +22117,115 @@ var HCAP = [
   { k: 'arty', name: 'ARTILLERY', list: PD_ARTY, fmt: hcapRule,
     tip: 'BY RULE: one heavy battery a side, dug forward of your own headquarters, and no missions into the enemy base. NO LIMIT takes all three off, for you only.' }
 ];
-var HCAP_KEY = 'ORT_HCAP';
-function hcapSave() {
-  try { localStorage.setItem(HCAP_KEY, JSON.stringify(PD)); } catch (e) { /* private browsing */ }
+/* The opposition's rows, the same machinery on a second table. The names and the tips
+   are its own, because what SIGHT means to the player ("how far YOUR men see") is the
+   opposite of what it means here, and a row that reads the same on both panels is a row
+   a player will set the wrong way round. */
+var ACAP = [
+  { k: 'inc',  name: 'MANPOWER INCOME', list: AD_MULT, fmt: hcapMult,
+    tip: 'What the opposition\'s sectors pay in manpower, on top of what its difficulty already says.' },
+  { k: 'incf', name: 'FUEL INCOME', list: AD_MULT, fmt: hcapMult,
+    tip: 'What its sectors pay in fuel. Fuel is what gates its armour.' },
+  { k: 'smp',  name: 'STARTING MANPOWER', list: AD_SMP, fmt: hcapNum,
+    tip: 'Manpower in its till at the first shot. Left even, both sides open on 420.' },
+  { k: 'sfu',  name: 'STARTING FUEL', list: AD_SFU, fmt: hcapNum,
+    tip: 'Fuel in its till at the first shot. Left even, both sides open on 20.' },
+  { k: 'prod', name: 'PRODUCTION', list: AD_MULT, fmt: hcapMult,
+    tip: 'How fast a unit comes out of its queue.' },
+  { k: 'cons', name: 'CONSTRUCTION', list: AD_MULT, fmt: hcapMult,
+    tip: 'How fast its engineers put up a building or a field work.' },
+  { k: 'pop',  name: 'MANPOWER CAP', list: AD_POP, fmt: hcapNum,
+    tip: 'How many men it may have on the field. Left even, its difficulty sets it: 175 on GREEN.' },
+  { k: 'take', name: 'DAMAGE TAKEN', list: AD_DMG, fmt: hcapMult,
+    tip: 'What a round that hits one of theirs does. Below even they are tougher.' },
+  { k: 'deal', name: 'DAMAGE DEALT', list: AD_DMG, fmt: hcapMult,
+    tip: 'What a round of theirs does to you.' },
+  { k: 'eye',  name: 'SIGHT', list: AD_EYE, fmt: hcapMult,
+    tip: 'How far its men and buildings see, and how far its mortars, howitzers and battery throw.' },
+  { k: 'arty', name: 'ARTILLERY', list: AD_ARTY, fmt: hcapRule,
+    tip: 'BY RULE: one heavy battery, dug forward of its own headquarters, and no missions into your base. NO LIMIT takes all three off, for them.' }
+];
+/* One set of functions for both panels, because two panels of the same eleven settings
+   are two lists of one thing: the row carries which table it edits (`vals`, `even`) and
+   which host it is drawn into, and everything below reads that rather than `PD`. */
+var HCAP_KEY = 'ORT_HCAP', ACAP_KEY = 'ORT_ACAP';
+function hcapPanel(rows) { return rows === ACAP ? { vals: AD, even: AD_EVEN, key: ACAP_KEY, host: 'agrid', open: 'aopen', name: 'OPPOSITION' }
+                                                : { vals: PD, even: PD_EVEN, key: HCAP_KEY, host: 'hgrid', open: 'hopen', name: 'HANDICAP' }; }
+function hcapSave(rows) {
+  var P = hcapPanel(rows || HCAP);
+  try { localStorage.setItem(P.key, JSON.stringify(P.vals)); } catch (e) { /* private browsing */ }
 }
-function hcapLoad() {
+function hcapLoad(rows) {
+  rows = rows || HCAP;
+  var P = hcapPanel(rows);
   try {
-    var raw = localStorage.getItem(HCAP_KEY);
+    var raw = localStorage.getItem(P.key);
     if (!raw) return;
     var v = JSON.parse(raw);
-    for (var i = 0; i < HCAP.length; i++) {
-      var h = HCAP[i], n = v[h.k];
-      if (typeof n === 'number' && n >= 0 && n < h.list.length) PD[h.k] = n | 0;
+    for (var i = 0; i < rows.length; i++) {
+      var h = rows[i], n = v[h.k];
+      if (typeof n === 'number' && n >= 0 && n < h.list.length) P.vals[h.k] = n | 0;
     }
   } catch (e) { /* a stored setting that will not parse is no setting */ }
 }
-function hcapBuild() {
-  var host = el('hgrid');
+function hcapBuild(rows) {
+  rows = rows || HCAP;
+  var P = hcapPanel(rows), host = el(P.host);
   if (!host) return;
   host.innerHTML = '';
-  HCAP.forEach(function (h) {
+  rows.forEach(function (h) {
     var row = document.createElement('div');
     row.className = 'hrow'; row.title = h.tip;
     var lab = document.createElement('b'); lab.textContent = h.name;
     var dn = document.createElement('button'); dn.className = 'hb'; dn.textContent = '\u2212';
-    dn.setAttribute('aria-label', 'less ' + h.name.toLowerCase());
-    var val = document.createElement('i'); val.id = 'h_' + h.k;
+    dn.setAttribute('aria-label', 'less ' + P.name.toLowerCase() + ' ' + h.name.toLowerCase());
+    var val = document.createElement('i'); val.id = (rows === ACAP ? 'a_' : 'h_') + h.k;
     var up = document.createElement('button'); up.className = 'hb'; up.textContent = '+';
-    up.setAttribute('aria-label', 'more ' + h.name.toLowerCase());
-    dn.onclick = function () { hcapStep(h, -1); };
-    up.onclick = function () { hcapStep(h, 1); };
+    up.setAttribute('aria-label', 'more ' + P.name.toLowerCase() + ' ' + h.name.toLowerCase());
+    dn.onclick = function () { hcapStep(h, -1, rows); };
+    up.onclick = function () { hcapStep(h, 1, rows); };
     h.dn = dn; h.up = up; h.val = val;
     row.appendChild(lab); row.appendChild(dn); row.appendChild(val); row.appendChild(up);
     host.appendChild(row);
   });
-  hcapSync();
+  hcapSync(rows);
 }
-function hcapStep(h, d) {
-  PD[h.k] = clamp(PD[h.k] + d, 0, h.list.length - 1);
-  hcapSync(); hcapSave(); sfx('click');
+function hcapStep(h, d, rows) {
+  rows = rows || HCAP;
+  var P = hcapPanel(rows);
+  P.vals[h.k] = clamp(P.vals[h.k] + d, 0, h.list.length - 1);
+  hcapSync(rows); hcapSave(rows); sfx('click');
 }
-function hcapSync() {
-  HCAP.forEach(function (h) {
+function hcapSync(rows) {
+  rows = rows || HCAP;
+  var P = hcapPanel(rows);
+  rows.forEach(function (h) {
     if (!h.val) return;
-    var i = PD[h.k];
+    var i = P.vals[h.k];
     h.val.textContent = h.fmt(h.list[i]);
     /* the even game is marked, because a player who has been turning knobs wants to know
        which of them are still where they started */
-    h.val.style.color = i === PD_EVEN[h.k] ? 'var(--dim)' : 'var(--ink)';
+    h.val.style.color = i === P.even[h.k] ? 'var(--dim)' : 'var(--ink)';
     h.dn.disabled = i <= 0; h.up.disabled = i >= h.list.length - 1;
   });
-  hcapBadge();
+  hcapBadge(rows);
 }
 /* The block is folded away by default and the button says whether anything in it has been
    moved. On a phone the title screen already runs to two and a half screens, and five more
    rows put the DEPLOY button four hundred pixels below where it was: a setting nobody has
    touched should not push the one button everybody presses off the bottom. */
-function hcapEven() {
-  for (var k in PD_EVEN) if (PD[k] !== PD_EVEN[k]) return false;
+function hcapEven(rows) {
+  var P = hcapPanel(rows || HCAP), k;
+  for (k in P.even) if (P.vals[k] !== P.even[k]) return false;
   return true;
 }
-function hcapBadge() {
-  var b = el('hopen');
+function hcapBadge(rows) {
+  rows = rows || HCAP;
+  var P = hcapPanel(rows), b = el(P.open);
   if (!b) return;
-  var on = !hcapEven();
+  var on = !hcapEven(rows);
   b.classList.toggle('on', on);
-  b.textContent = on ? 'HANDICAP \u00b7 ON' : 'HANDICAP';
+  b.textContent = on ? P.name + ' \u00b7 ON' : P.name;
 }
 /* The opposition's guns, on or off, settled before the battle rather than during it.
    Artillery is the one arm a player cannot answer in kind on the spot -- a battery is
@@ -21448,10 +22249,21 @@ el('heven').onclick = function () {
   for (var k in PD_EVEN) PD[k] = PD_EVEN[k];
   hcapSync(); hcapSave(); sfx('click');
 };
+el('aopen').onclick = function () {
+  var shut = el('acap').classList.toggle('hidden');
+  el('aopen').setAttribute('aria-expanded', shut ? 'false' : 'true');
+  sfx('click');
+};
+el('aeven').onclick = function () {
+  for (var k in AD_EVEN) AD[k] = AD_EVEN[k];
+  hcapSync(ACAP); hcapSave(ACAP); sfx('click');
+};
 hcapLoad(); hcapBuild();
+hcapLoad(ACAP); hcapBuild(ACAP);
 /* a handicap kept from the last battle is shown rather than hidden, because a player who
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
+if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
 el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.side); if (!hq) return;
