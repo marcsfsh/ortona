@@ -48,6 +48,26 @@ for (const device of TARGETS) {
   }));
   ok('title screen does not scroll sideways', startFits.hScroll <= 0, `overflow ${startFits.hScroll}px`);
   ok('title screen controls stay on screen', startFits.offscreen.length === 0, startFits.offscreen.join(', '));
+  /* and with BOTH panels open, because that is where most of the buttons are and where
+     every one added since has landed: the sides picker, the role strip, eleven stepper
+     rows a panel and the eight the shopping weights carry. A control a thumb cannot hit
+     is a control that is not there. */
+  const startTap = await page.evaluate(() => {
+    document.getElementById('hopen').click(); document.getElementById('aopen').click();
+    const small = [...document.querySelectorAll('#start button')]
+      .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.width < 44 || r.height < 44); })
+      .map(e => (e.id || e.className) + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' +
+                Math.round(e.getBoundingClientRect().height));
+    const n = document.querySelectorAll('#start button').length;
+    const hScroll = document.documentElement.scrollWidth - window.innerWidth;
+    document.getElementById('hopen').click(); document.getElementById('aopen').click();
+    return { small, n, hScroll };
+  });
+  ok('every title-screen control is a touch target, panels open',
+     !DEVICES[device].hasTouch || (startTap.small.length === 0 && startTap.hScroll <= 0),
+     `${startTap.n} controls with both panels open, ${startTap.small.length} under 44px` +
+     (startTap.small.length ? ': ' + startTap.small.slice(0, 6).join(', ') : '') +
+     `, overflow ${startTap.hScroll}px`);
 
   /* --- deploy and fight --- */
   const tDeploy = Date.now();
@@ -736,7 +756,7 @@ for (const device of TARGETS) {
              hqTime: hq.def.makes.length };
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
-     hcap.rows === 11 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
+     hcap.rows === 12 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
      hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
      hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
      hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
@@ -839,7 +859,7 @@ for (const device of TARGETS) {
      `and reaches ${arty.freeYou} off a ${arty.barDef}/${arty.freeDef} piece where theirs throws ` +
      `${arty.barFoe} and reaches ${arty.freeFoe}, and his riflemen are unchanged`);
 
-  /* --- and the same eleven settings turned on the opposition, which is the panel that
+  /* --- and the same settings turned on the opposition, which is the panel that
      runs both ways. What is asserted is that each one reaches the other side and that
      none of them reaches the player's: `AD` multiplies what `DIFF` already says, so the
      control is the player's own numbers standing still while theirs move. --- */
@@ -850,8 +870,11 @@ for (const device of TARGETS) {
        a 4x round of theirs comes back as 40 */
     document.getElementById('heven').click();
     document.getElementById('aopen').click();
-    /* every opposition knob to its top, through the stepper rather than by writing AD */
-    window.ACAP.forEach(h => { for (let i = 0; i < 20; i++) window.hcapStep(h, 1, window.ACAP); });
+    /* every opposition knob to its top, through the stepper rather than by writing the
+       row. DIFFICULTY is stepped DOWN instead, to SAME: this row is about the arithmetic
+       reaching the other side and nothing else, and moving the brain to veteran underneath
+       it changes what the row is measuring against. */
+    window.ACAP.forEach(h => { for (let i = 0; i < 20; i++) window.hcapStep(h, h.k === 'diff' ? -1 : 1, window.ACAP); });
   });
   await deploy(page, { side: args.side || 'us', diff: 0 });
   const acap = await page.evaluate(() => {
@@ -878,7 +901,7 @@ for (const device of TARGETS) {
       u.dead = true;
       const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1);
     });
-    return { ad: window.G.ad, rows: document.querySelectorAll('#agrid .hrow').length,
+    return { ad: window.hcapOf(foe), rows: document.querySelectorAll('#agrid .hrow').length,
              popFoe: window.popCap(foe), popYou: window.popCap(side),
              mpFoe: Math.round(window.G.res[foe].mp), fuFoe: Math.round(window.G.res[foe].fu),
              mpYou: Math.round(window.G.res[side].mp),
@@ -886,8 +909,8 @@ for (const device of TARGETS) {
              dealt, took, eyeFoe, eyeYou, eyeFoeDef: theirs.sight, eyeDef: mine.sight,
              even: window.hcapEven(window.ACAP) };
   });
-  ok('the opposition has the same eleven settings, and they run both ways',
-     acap.rows === 11 && !acap.even && acap.ad.pop === 1000 && acap.popFoe === 1000 &&
+  ok('every computer player has the same settings as the player, and they run both ways',
+     acap.rows === 13 && !acap.even && acap.ad.pop === 1000 && acap.popFoe === 1000 &&
      acap.popYou === 200 && acap.mpFoe > 8000 && acap.mpYou < 500 &&
      acap.incFoe > acap.incYou * 4 &&
      Math.abs(acap.dealt - 100 * acap.ad.deal) < 1 &&
@@ -899,7 +922,7 @@ for (const device of TARGETS) {
      `${acap.took}; their eye reaches ${acap.eyeFoe} off a ${acap.eyeFoeDef} sight where his stays ` +
      `${acap.eyeYou} off ${acap.eyeDef}`);
   await page.evaluate(() => { document.getElementById('aeven').click(); });
-  const aeven = await page.evaluate(() => ({ even: window.hcapEven(window.ACAP), made: window.adMake(),
+  const aeven = await page.evaluate(() => ({ even: window.hcapEven(window.ACAP), made: window.adMake('foe1'),
                                              badge: document.getElementById('aopen').textContent }));
   ok('the opposition EVEN button defers to the difficulty again',
      aeven.even && aeven.made.inc === 1 && aeven.made.prod === 1 && aeven.made.cons === 1 &&
@@ -928,6 +951,144 @@ for (const device of TARGETS) {
      `${evened.made.cons}x construction, cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, ` +
      `${evened.made.take}x taken, ${evened.made.deal}x dealt, ${evened.made.eye}x sight, ` +
      `artillery ${evened.made.arty ? 'free' : 'by rule'}, the button reads "${evened.badge}"`);
+
+  /* --- 2v2. A player is not a side: a TEAM shares vision, ground, the memory of where
+     the enemy was and the victory points, and a PLAYER has his own headquarters, his own
+     purse, his own queue, his own population cap and his own brain. The row asserts both
+     halves, because each of them alone reads as working: four headquarters with one purse
+     between two of them is a team pretending to be players, and four purses with one brain
+     is four players pretending to be a team. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  await page.evaluate(() => window.startGame('us', 1, 'vp', true, true));
+  await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
+  const duo0 = await page.evaluate(() => ({
+    slots: window.G.slots.map(s => s.k + ':' + s.side + ':' + (s.ai ? 'ai' : 'you')),
+    hqs: window.G.blds.filter(b => b.def.hq).map(b => b.own).sort(),
+    hqSep: (() => { const h = window.G.blds.filter(b => b.def.hq && b.side === 'us');
+                    return h.length === 2 ? Math.round(Math.hypot(h[0].x - h[1].x, h[0].y - h[1].y)) : -1; })(),
+    /* and every one of them on ground the army can walk out of */
+    hqWalk: window.G.blds.filter(b => b.def.hq)
+      .filter(b => window.walkable(b.x + (b.side === 'us' ? 130 : -130), b.y)).length,
+    brains: Object.keys(window.AIP).sort(),
+    units: window.G.slots.map(s => window.G.units.filter(u => !u.dead && u.own === s.k).length),
+    vp: [Math.round(window.vpOf('us')), Math.round(window.vpOf('ger'))],
+    vpSlots: window.SLOTS.map(k => Math.round(window.G.res[k].vp))
+  }));
+  await fastForward(page, 150);
+  const duo = await page.evaluate(() => {
+    const own = window.G.own, ally = window.G.slots.filter(s => s.side === window.G.side && s.ai)[0].k;
+    /* his own money is his: spending the ally's is not open to him, and the HUD reads his */
+    const mineMp = Math.round(window.G.res[own].mp), allyMp = Math.round(window.G.res[ally].mp);
+    /* the order cards reach only his own men, so an ally's section cannot be selected into
+       the list the command bar issues to */
+    const allyU = window.G.units.filter(u => !u.dead && u.own === ally && u.cat !== 'veh')[0];
+    window.select([allyU], false);
+    const allyCmd = window.selectedUnits().filter(window.owned).length;
+    window.select([], false);
+    return {
+      mineMp, allyMp, hud: document.getElementById('mpv').textContent,
+      pop: window.SLOTS.map(k => window.G.pop[k] + '/' + window.popCap(k)),
+      units: window.G.slots.map(s => s.k + ':' + window.G.units.filter(u => !u.dead && u.own === s.k).length),
+      raised: window.G.slots.filter(s => s.ai).map(s => Object.keys(window.G.made[s.k]).length),
+      queues: window.G.slots.filter(s => s.ai).map(s => window.G.blds.filter(b => b.own === s.k).length),
+      allyCmd, sel: 0,
+      /* the two brains on a team hold separate plans and separate call boards */
+      plans: window.G.slots.filter(s => s.ai).map(s => window.AIP[s.k] && window.AIP[s.k].own),
+      hq: window.hqOf(own) && window.hqOf(own).own,
+      /* and the team's ground is still the team's: one owner per sector, not one per player */
+      secOwners: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort().join(',')
+    };
+  });
+  ok('a 2v2 is four players on two teams: four headquarters, four purses, four brains, two sides',
+     duo0.slots.length === 4 && duo0.hqs.join(',') === 'ger,ger2,us,us2' && duo0.hqSep > 400 &&
+     duo0.brains.join(',') === 'ger,ger2,us2' && duo0.hqWalk === 4 &&
+     duo0.vp[0] === 420 && duo0.vp[1] === 420 &&
+     duo0.vpSlots[1] === 0 && duo0.vpSlots[3] === 0 &&
+     duo.plans.join(',') === 'us2,ger,ger2' && duo.hq === 'us' &&
+     duo.secOwners.split(',').every(o => o === 'us' || o === 'ger') &&
+     duo.mineMp !== duo.allyMp && Math.abs(+duo.hud - duo.mineMp) <= 2 &&
+     duo.raised.every(n => n > 0) && duo.queues.every(n => n >= 1) && duo.allyCmd === 0,
+     `${duo0.slots.join(' ')}; headquarters ${duo0.hqs.join(',')} with the two allies ${duo0.hqSep} apart ` +
+     `and ${duo0.hqWalk} of 4 with room to march out of; ` +
+     `brains ${duo.plans.join(',')}; his till ${duo.mineMp} against his ally's ${duo.allyMp} and the HUD ` +
+     `reading ${duo.hud}; population ${duo.pop.join(' ')}; after 150s ${duo.units.join(' ')}; ` +
+     `the ground has ${duo.secOwners} on it and the points are ${duo0.vp.join('/')} a team; ` +
+     `an ally's section gives ${duo.allyCmd} of his own units to order`);
+
+  /* --- the one-a-side vehicles. `limit: 1` on the Maus, the Tiger II and the King Tiger,
+     and two on the eighty-eight, is a rule about the game rather than a fact about the
+     vehicle, so it is a setting rather than an edit to the roster. Measured through
+     `queueUnit`, which is one of the two doors a purchase goes through, with the till and
+     the population filled first so that a refusal is the limit and never the money; and
+     through `unitLimit`, which is what the other door reads. The player is GERMAN for this
+     row, because every limited vehicle on the roster is, and both a player's slot and an
+     AI's are measured, since the setting is per player. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  await deploy(page, { side: 'ger', diff: 1 });
+  const lim = await page.evaluate(() => {
+    function tryTwo(slot, key) {
+      const hq = window.hqOf(slot), us = window.slotSide(slot) === 'us';
+      const dep = window.G.blds.filter(b => b.own === slot && b.key === (us ? 'us_mot' : 'ger_dep'))[0] ||
+                  window.spawnBuilding(slot, us ? 'us_mot' : 'ger_dep', hq.x + (us ? 240 : -240), hq.y, true);
+      dep.built = 1; dep.queue.length = 0;
+      window.G.res[slot].mp = 99999; window.G.res[slot].fu = 99999;
+      window.queueUnit(dep, key); window.queueUnit(dep, key);
+      const n = dep.queue.filter(k => k === key).length;
+      dep.queue.length = 0;
+      return n;
+    }
+    const you = window.G.own, ai = 'us';
+    const byRule = tryTwo(you, 'ger_tig');
+    const aiRule = window.unitLimit(ai, window.UNITS.us_how8);
+    window.G.hc[you].noLimit = true;
+    const free = tryTwo(you, 'ger_tig');
+    const aiStill = window.unitLimit(ai, window.UNITS.us_how8);
+    window.G.hc[you].noLimit = false;
+    window.G.hc[ai].noLimit = true;
+    const aiFree = window.unitLimit(ai, window.UNITS.us_how8);
+    const backByRule = tryTwo(you, 'ger_tig');
+    window.G.hc[ai].noLimit = false;
+    return { byRule, free, backByRule, aiRule, aiStill, aiFree,
+             def: window.UNITS.ger_tig.limit, flak: window.UNITS.ger_flak88.limit,
+             rows: window.HCAP.filter(h => h.k === 'one').length +
+                   window.ACAP.filter(h => h.k === 'one').length };
+  });
+  ok('the one-a-side vehicles are a setting, lifted per player and for nobody else',
+     lim.rows === 2 && lim.def === 1 && lim.flak === 2 &&
+     lim.byRule === 1 && lim.free === 2 && lim.backByRule === 1 &&
+     lim.aiRule === 1 && lim.aiStill === 1 && lim.aiFree === 0,
+     `the roster says one Tiger and ${lim.flak} eighty-eights; by rule he queues ${lim.byRule} of the ` +
+     `Tiger, with his own setting lifted ${lim.free}, and ${lim.backByRule} again once it is back; ` +
+     `the opposition's battery limit reads ${lim.aiRule} by rule, still ${lim.aiStill} while HIS is ` +
+     `lifted, and ${lim.aiFree} (no limit) once its own is`);
+
+  /* --- the build preference. A weight per KIND of thing on top of what the brain thinks
+     the battle wants: nought takes a rung off the ladder altogether, above even raises the
+     count it wants and brings the hour it opens forward. Measured on the ladder itself
+     rather than on a battle, because what a brain gets round to buying in three minutes is
+     a fact about the battle and this is a fact about the rule. --- */
+  const pref = await page.evaluate(() => {
+    const L = [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_p4', 2, 260], ['ger_tig', 1, 620]];
+    const cls = ['ger_sd222', 'ger_pak', 'ger_p4', 'ger_tig'].map(window.bClassOf);
+    window.G.bp.ger = { inf: 1, elite: 1, mg: 1, at: 1, arty: 1, light: 1, med: 1, heavy: 1 };
+    const even = window.aiPrefLadder('ger', L).map(e => e[0] + 'x' + e[1] + '@' + e[2]);
+    window.G.bp.ger.light = 0; window.G.bp.ger.heavy = 3; window.G.bp.ger.med = 2;
+    const tuned = window.aiPrefLadder('ger', L).map(e => e[0] + 'x' + e[1] + '@' + e[2]);
+    window.G.bp.ger = { inf: 1, elite: 1, mg: 1, at: 1, arty: 1, light: 1, med: 1, heavy: 1 };
+    return { cls, even, tuned, keys: window.BP_KEYS.length,
+             rows: document.querySelectorAll('#bpref .hrow').length,
+             never: window.BP_W[0], top: window.BP_W[window.BP_W.length - 1] };
+  });
+  ok('an AI can be told what to buy: a weight per kind, on top of what it thinks the battle wants',
+     pref.cls.join(',') === 'light,at,med,heavy' && pref.keys === 8 && pref.rows === 8 &&
+     pref.never === 0 &&
+     pref.even.join(' ') === 'ger_sd222x1@40 ger_pakx2@130 ger_p4x2@260 ger_tigx1@620' &&
+     pref.tuned.join(' ') === 'ger_pakx2@130 ger_p4x4@130 ger_tigx3@207',
+     `${pref.rows} kinds; the roster falls into ${pref.cls.join(',')}; even the ladder reads ` +
+     `${pref.even.join(' ')}, and with light at NEVER, medium at 2x and heavy at 3x it reads ` +
+     `${pref.tuned.join(' ')}`);
 
   /* --- the selection ring, which has now been wrong three times and was caught by a
      player twice. It has to HOLD its unit and it has to FIT it, and those are two

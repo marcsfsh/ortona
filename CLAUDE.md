@@ -2351,6 +2351,119 @@ at a tenth of the frame rate**: called with a dt it returns at once while its ow
 still down, so a probe that passes one reads an `_eyes` list built before the units it
 just spawned and comes back -1 both ways. The row calls it with no argument.
 
+**A player is not a side, and until the 2v2 they were the same thing.** A side was a team,
+an economy, an army and a brain all at once, which is exactly right while there is one
+player on each of them and falls apart the moment there are two. What comes apart is this:
+a TEAM shares vision, ground, the memory of where the enemy was and the victory points; a
+PLAYER has his own headquarters, his own purse, his own queue, his own population cap and
+his own brain, and cannot spend his ally's money or give his ally's men orders.
+
+`u.own` and `b.own` say whose a thing is and `u.side` is still the team, which is what
+makes this a change of about a page rather than a rewrite: every test about whether
+something is an enemy, whether the fog shows it, whose flag a sector flies or who a shell
+may hurt reads the team and is untouched, and that is most of the eighty-odd side tests in
+the file. What moved to `own` is money, command, population, production and the brain.
+
+**A slot key is a STRING, chosen so that everything already keyed by side takes it with no
+change at all.** The purse, the income, the population, what has been ordered, the call
+board and the operations are `[slot]` where they were `[side]`, and in a 1v1 the slots are
+`'us'` and `'ger'`, which is exactly what they were. A 2v2 adds `'us2'` and `'ger2'`.
+`G.slots` is what is actually being played, `G.own` is the player's own slot and
+`owned(x)` is whether a thing is his. The victory points stay on a team's FIRST slot,
+because a team wins or loses together and `G.res.us.vp` is what every reader of them
+already asks for; `vpOf(side)` and `vpSet` are the two that know it.
+
+**The ground pays a team and the money reaches a player.** A sector is held by a side, so
+the yield is counted once for the side and split evenly between the slots on it: two
+allies who hold half the map between them have half the map's income each rather than all
+of it each, and a 1v1 is the arithmetic it always was because a team of one gets the whole
+share. The base trickle is per player, because it is what keeps a side pushed off every
+flag able to raise a section at all, and that is a thing each of them needs rather than a
+thing the team needs once.
+
+**One brain per AI slot.** `AIP` holds a plan per slot and `AI` is whichever of them is
+thinking right now, reassigned rather than copied: every rule in `aiTick` reads the bare
+global, and swapping twenty-five fields in and out of one object a tick is both slower and
+a thing to get wrong. `aiThink` is the driver the frame loop calls and `aiTick` is still
+one brain's tick, which is what keeps `tools/skirmish.mjs` working -- it wraps `aiTick`,
+and in its 1v1 there is one AI slot, so it is called once and the wrapper runs both of its
+brains inside that call. Which brain thinks first rotates, because running one of them
+first every tick gives it the newer picture and the first orders for the whole battle,
+which is a systematic edge sitting underneath every comparison anybody makes between two
+AIs on a team. `AIM` and `DANG` stay per team, because what the side has seen and what
+ground has been shown to be dangerous are things a team knows; `AIQ` and `AIOP` are per
+slot, because a call board is a brain asking itself for help.
+
+`AIW` gained the distinction as well. `W.fighters` is what this brain may give an order
+to, which is its own slot's men, and `W.team` is the whole team's fighting strength, which
+is what the odds, the friendly grid and a sector's weight are about. Getting that the
+other way round is an AI that reads its ally's sections as its own and deals them jobs
+they will never carry out.
+
+**Four things had to be got right and each of them reads as working from the outside.**
+`updateBuilding` spawned the finished unit with `b.side` rather than `b.own`, so on a team
+of two every man either of them raised came out belonging to the FIRST slot: the ally's
+till emptied at the right rate, its population never moved, and one player ran to
+twenty-six units while his ally sat at three. It is the clearest case in this file of a
+bug whose symptom is a plausible-looking battle. `hqOf` falls back from the slot to the
+team so that a team-level caller still gets somewhere behind the line. `orderRetreat`
+takes the unit's own headquarters rather than the team's first. And `placeWork`,
+`placeStructure`, `siteOf` and `siteCount` all take the slot, because a work is paid for
+out of one till and counts against one limit.
+
+**Each computer player is set on its own, and the settings are stored against a ROLE.** A
+slot key depends on which side the player picked -- his ally is `us2` playing Canadian and
+`ger2` playing German -- so a panel storing its settings under the slot would move them to
+a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2` and `ally`;
+`ADS[role]` is that one's handicap row, `ABUY[role]` is what it is told to buy, and
+`startGame` is the one place that says which slot is playing which role. The OPPOSITION
+panel carries a strip of three and edits one at a time; the two that a 1v1 does not use
+are shown rather than hidden, because a player who sets his ally's economy and then
+switches back should be able to see the setting is still there and is not being used.
+
+**The AI's own difficulty is on that row too.** `DIFF` is three settings with nothing in
+between, which is right for what it is and wrong when there are three brains: a player who
+wants a veteran opponent beside a green one had no way to say so. SAME is whatever the
+three buttons say and the other three name themselves, resolved by `adDiff` in
+`buildSlots`.
+
+**And an AI can be told what to buy.** The shopping list is the brain's own judgement
+about what the battle wants, and this is a thumb on it rather than a replacement: a weight
+per KIND of thing, which multiplies the count the ladder wants and moves the hour the rung
+opens against itself, so a heavy weight means earlier and more of them and a nought takes
+the rung off the list altogether. It is a kind rather than a unit key because a panel of
+twenty rows on a phone is a panel nobody reads, and because what a player wants to say is
+"more tanks" or "no armoured cars" rather than a number against each Sherman. Eight of
+them: rifle sections, assault groups, machine guns, anti-tank guns, the tubes, and light,
+medium and heavy armour.
+
+`bClassOf` reads the class off the def rather than off a list, so a vehicle added to the
+roster falls into one without anybody remembering to say which: armour under a hundred is
+light, under two hundred medium and above it heavy, a team with a two-hundred-penetration
+weapon is an anti-tank gun and anything else on a crew is a machine gun, and infantry that
+costs fuel is the assault group -- which is the only thing separating the two on paper as
+well as on the field. `aiPrefLadder` applies it to the vehicles and the infantry side
+reads `bpOf` at the five places the counts are set. The weights bind the brain and not the
+roster: the Maus is off every brain's shopping list whatever this says, because a brain
+saving twenty-two hundred marks buys nothing else for four minutes.
+
+**The one-a-side vehicles are a setting rather than an edit to the roster.** `limit: 1` on
+the Maus and the Tiger II, and two on the eighty-eight, is a rule about the game, so a
+player who wants six Tigers -- or an AI turned loose with them -- sets it off rather than
+editing the def. `unitLimit(slot, def)` is the one reader and `queueUnit` and `placeWork`
+are the two doors a purchase goes through. The population cap is deliberately not one of
+the things it lifts: that is what stops a free-for-all. Note that every limited vehicle on
+this roster is German, which is why the gate row has to play that side to test the
+player's half of it at all.
+
+Measured by the gate on the shipped map: four headquarters on four owners, the two allies
+580 apart and all four with walkable ground to march out of; three brains, one plan each;
+the player's till at 904 against his ally's 159 with the strip reading his; four
+populations counted separately; and an ally's section selected gives nothing at all to the
+command bar. The ladder under the weights reads `ger_sd222x1@40 ger_pakx2@130 ger_p4x2@260
+ger_tigx1@620` at even, and with light at NEVER, medium at 2x and heavy at 3x it reads
+`ger_pakx2@130 ger_p4x4@130 ger_tigx3@207`.
+
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
 `povCamera` builds `MAT` from a yaw and a pitch instead of the orbit camera, so `CAMLIM`

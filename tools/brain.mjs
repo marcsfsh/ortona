@@ -79,7 +79,7 @@ async function install(page) {
     const realTick = window.aiTick;
     B.st = { us: null, ger: null };
     B.turn = 0;
-    function snap() { const o = {}; for (const k in AI) if (k !== 'side') o[k] = AI[k]; return o; }
+    function snap() { const o = {}; for (const k in AI) if (k !== 'side' && k !== 'own') o[k] = AI[k]; return o; }
     function load(s) { if (s) for (const k in s) AI[k] = s[k]; }
 
     B.reset = function (diff) {
@@ -208,10 +208,10 @@ async function install(page) {
 
     /* both brains think on the game's own cadence, alternating who thinks first */
     window.aiTick = function (dt) {
-      const c = B.c, game = AI.side, keep = snap();
+      const c = B.c, game = AI.side, gown = AI.own, keep = snap();
       const order = (B.turn++ & 1) ? ['ger', 'us'] : ['us', 'ger'];
       for (const side of order) {
-        load(B.st[side]); AI.side = side;
+        load(B.st[side]); AI.side = side; AI.own = side;
         const before = c ? c.calls.__n : 0;
         const t0 = rnow();
         const ticked = AI.t - dt <= 0;
@@ -285,7 +285,7 @@ async function install(page) {
         }
         B.st[side] = snap();
       }
-      load(keep); AI.side = game;
+      load(keep); AI.side = game; AI.own = gown;
     };
 
     /* waves: watched rather than counted inside the brain, so the card works on a file
@@ -323,16 +323,16 @@ async function hookWaves(page) {
     window.aiTick = function (dt) {
       realTick(dt);
       /* read the plan of each side after both have thought */
-      const game = AI.side;
+      const game = AI.side, gown = AI.own;
       for (const side of ['us', 'ger']) {
         const s = B.st[side];
         if (!s) continue;
-        const keep = {}; for (const k in AI) if (k !== 'side') keep[k] = AI[k];
+        const keep = {}; for (const k in AI) if (k !== 'side' && k !== 'own') keep[k] = AI[k];
         for (const k in s) AI[k] = s[k];
-        AI.side = side;
+        AI.side = side; AI.own = side;
         B.waveWatch(side);
         for (const k in keep) AI[k] = keep[k];
-        AI.side = game;
+        AI.side = game; AI.own = gown;
       }
     };
   });
