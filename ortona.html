@@ -3132,6 +3132,7 @@ function spawnUnit(side, key, x, y, facing) {
     u.up = {};                                       /* the eighty-eight keeps its round here */
   }
   u.baseA = u.facing;                                /* what a fixed mount was laid on */
+  if (u.models) fitRadius(u);
   G.units.push(u);
   recBorn(u);
   return u;
@@ -3183,17 +3184,39 @@ function unitRadius(u) {
 }
 /* The circle a unit is drawn in, and the circle its men are kept inside. It is one
    number for both on purpose: a ring that does not hold the thing it is drawn round is a
-   lie, and it was one twice over. `unitRadius` is the SEPARATION radius -- half a
-   vehicle's length -- and a section was given 27 of it, while `squadOffset` lays three
-   files and three ranks out to eighty units from the marker and the lane-narrowed
-   formation stretches that half as far again. So the ring held about a sixth of the
-   ground its men were standing on.
-     Ninety-two units is 7.9 m, a section holding a circle about sixteen metres across,
-   which takes the natural formation with room and leaves a man nowhere to be that is not
-   inside his own unit. Everything that puts a man somewhere reads it: the formation, the
+   lie, and it has been one three times over. `unitRadius` is the SEPARATION radius --
+   half a vehicle's length -- and a section was given 27 of it, while the men stand a
+   formation's width either side of the marker, so the ring held a fraction of the ground
+   they were on. Then it was a flat 92 for every section, sized off a nine-man formation:
+   nothing on this roster has nine men, the biggest is six at 48 units and a weapon team
+   is three at 32, so a gun crew was drawn in a circle nearly three times the ground it
+   stood on.
+     It is measured off the unit's OWN formation now, once, from the offsets it was
+   actually given -- which is the only way to get it right for both layouts, because a
+   section is laid out by `squadOffset` and a battery crew by its work's `lay` list, and
+   those two spread to 48 and 60 respectively. `def.models` would have answered for the
+   first and not the second.
+     Measured once and kept on the unit, because a ring that shrinks as men die is a ring
+   that changes size. Everything that puts a man somewhere reads it: the formation, the
    cover slots, and the walk to them. */
+function fitRadius(u) {
+  if (!u.models) return 0;
+  var far = 0, i;
+  for (i = 0; i < u.models.length; i++) {
+    var d = Math.hypot(u.models[i].ox || 0, u.models[i].oy || 0);
+    if (d > far) far = d;
+  }
+  /* the formation plus one man's width, and nothing for the lane. Allowing for the
+     lengthening as well put twenty units of empty ground round every section: the `fl`
+     cap of 1.3 above keeps the longest shape the formation takes inside this anyway, so
+     a team comes out at 44 against men who stand 32 out and a section at 60 against 48.
+     The men's own bodies are the margin and there is no other. */
+  u.selR = Math.max(30, Math.round(far + 12));
+  return u.selR;
+}
 function selRadius(u) {
-  return u.cat === 'veh' ? unitRadius(u) + 5 : 92;
+  if (u.cat === 'veh') return unitRadius(u) + 5;
+  return u.selR || fitRadius(u) || 60;
 }
 
 /* ---------------------------------------------------------------- buildings */
@@ -3864,7 +3887,13 @@ function chooseCover(u, threatAng) {
      cannot take the section should lose to the next one down rather than leave it in the
      open. */
   var out = [], need = aliveModels(u);
-  var reach = selRadius(u) - 16;
+  /* The pre-filter is the circle itself rather than the circle less a guess at the room a
+     man needs to stand clear. Whether the section fits is settled by laying the places out
+     and asking `slotsWhole`, so a second, tighter rule in front of that is one more thing
+     to keep in step with it. Worth knowing: on the cover card it changes nothing either
+     way (0.61 both), because what actually binds is `coverSlots`'s own reach and not
+     this. */
+  var reach = selRadius(u);
   var ox = u.x, oy = u.y;
   /* only the patches near enough to walk to, which is what the index is for: this runs
      for every halted section on the map and used to read the whole list.
@@ -4084,7 +4113,13 @@ function updateModels(u, dt) {
      every time it passed a gateway looked like a fault rather than a drill. */
   var wide = !u.gar && u.def.speed ? clamp((roomAt(u.x, u.y) - 12) / 34, .34, 1) : 1;
   u.formW = u.formW === undefined ? wide : u.formW + (wide - u.formW) * clamp(dt * 2.2, 0, 1);
-  var fw = u.formW, fl = 2 - fw;
+  /* The frontage is cut to the room there is and the column lengthens to take the men --
+     but only so far. Unbounded (`2 - fw`, which runs to 1.66) the lengthened formation
+     reaches half again past the circle the unit is drawn in, so either the ring has to be
+     sized for a shape a section holds in an alley and looks absurd everywhere else, or
+     the tail gets clamped onto the rim. Capped at 1.3 the lengthened formation fits, and
+     the narrowing -- which is the half that keeps a man out of a wall -- is untouched. */
+  var fw = u.formW, fl = Math.min(2 - fw, 1.3);
   for (var i = 0; i < u.models.length; i++) {
     var m = u.models[i];
     if (!m.alive) continue;
@@ -5537,6 +5572,10 @@ function finishWork(s) {
       gm.ox = lay[gi][0]; gm.oy = lay[gi][1];
       gm.x = g.x + gm.ox * gcs - gm.oy * gsn; gm.y = g.y + gm.ox * gsn + gm.oy * gcs; gm.f = g.facing;
     }
+    /* the ring is measured off the formation, and this crew's formation is the work's own
+       `lay` list rather than `squadOffset`: it spreads to sixty units where a section
+       spreads to forty-eight, so it has to be measured again now the men have been moved */
+    fitRadius(g);
   }
   if (s.side === G.side) { toast(W.name + ' up'); sfx('click'); }
 }
