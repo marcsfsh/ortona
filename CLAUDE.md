@@ -559,8 +559,9 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1180 kB (it was 1040 before vehicles carried a hand-laid interior). Takes
-under a second. Exits non-zero on any violation.
+under 1460 kB (it was 1040 before vehicles carried a hand-laid interior, and 1345
+before a battle wrote itself down). Takes under a second. Exits non-zero on any
+violation.
 
 ```sh
 node tools/lint.mjs
@@ -1157,15 +1158,70 @@ depth buffer, because the 2D canvas is stacked over the WebGL one and nothing dr
 can be behind anything in the world: a section's selection ring was drawn over the section
 and four sections under orders put four dashed lines over every man on the screen.
 
-**A selection ring goes round the men and never changes size.** Both halves of that were
-wrong in turn. It was drawn at the unit's marker, which on a section that has taken cover
-is a bare patch of street a hundred and nine units from anybody -- the one mark that says
-*this is selected*, with nothing inside it. Moved onto the men, the first version then
-took the circle that held them all, and that circle breathes with every step they take: a
-section opening out across a street trebled its own ring and shrank it again at the far
-side, and a mark that moves reads as something happening rather than as a selection. It is
-the mean of the men who are still standing, at the unit's own `unitRadius`, which is a
-constant per unit.
+**A unit is the circle it is drawn in, and `selRadius` is that circle.** Three versions of
+the selection ring were wrong in turn, and the third was wrong in a way that mattered a
+long way past the ring. Drawn at the marker with `unitRadius + 5` it held about a sixth of
+the ground its men were standing on: `unitRadius` is the SEPARATION radius, twenty-seven
+for a section, while `squadOffset` lays three files and three ranks out to eighty units and
+the lane-narrowed formation stretches that half again. Moved onto the mean of the men it
+left the marker, which is what the order line, the pathfinder and every shell are laid on,
+so the mark and the thing it marked were two places. Sized to the circle that held them all
+it breathed with every step they took.
+
+It is a fixed circle on the unit's own point -- ninety-two units, 7.9 m, a section holding
+about sixteen metres across -- and the men are bounded to it rather than chased. Three
+things read it and they are what make it true: the formation place is pulled back onto the
+rim along its own bearing (so the shape is kept and only its size is bounded, and it is
+walked in further if the ground there will not take a boot), a man who has fallen behind
+runs harder the further out he is, and his position is clamped at the rim as a backstop.
+The click test reads it too, so a tap anywhere in the circle picks the thing the circle is
+round. On the movement card that took stragglers -- a man over 150 from his section -- from
+2.37 per cent of man-frames to none, and the mean distance of a man from his own marker
+from 76 units to 32.
+
+**A round goes at the men and not at the marker.** `aimAt(u, t)` picks the living man
+nearest the firer and `fireAt` lays the shell, the tracer and the hit on him. Laid on
+`t.x, t.y` -- which is what every one of them did -- a shell burst in the middle of a
+formation that had walked to a wall, every tracer went to a patch of street, and the burst
+radius that decides how many men a shell actually kills was centred on nobody. It is the
+visible half of the same fault the ring had: the marker is not where the unit is. A bare
+point is handed straight back, because `fireAt` takes one as happily as a unit and that is
+how a fire mission is laid.
+
+**Cover is taken once, by the whole section, inside its own circle.** Three rules, and all
+three are narrower than what they replaced. The piece has to be near enough that every man
+gets on it without the marker moving, which is `selRadius - 16` rather than the hundred and
+eighteen units it was. `chooseCover` returns a RANKED list rather than a winner, and
+`updateModels` walks it until `slotsWhole` says a piece places every living man -- a piece
+that takes six of nine leaves three in the open beside a wall the others are behind, which
+reads on screen as half a section in cover and reads in the arithmetic as a `coverOf`
+averaged between a trench and a street. And the choice belongs to the halt: `u.coverDone`
+is set when a section stops and cleared only by `clearOrder`, so nothing re-picks when the
+threat swings round or a man falls. The file also closes up on a short piece
+(`clamp(2*lim/(n-1), 6, 9)` rather than a flat nine), because a section of nine wants
+seventy-two units of wall and a garden wall twenty across gave it nineteen, so every man
+past the end failed and the piece was thrown out whole.
+
+What that cost, measured: halted men behind something 99.1 per cent to 76.9, and cover
+taken over available 0.76 to 0.66 with one drill of twenty-four standing in the open beside
+medium cover. **The reach is not what binds it.** Widening the circle to 108 recovered
+nothing at all (0.65 against 0.66 on the same card), so the loss is the whole-section rule
+and the pick-once rule rather than the distance -- which is worth knowing before anyone
+tries to buy the cover back by making the circle bigger.
+
+Fought over the whole balance card at six runs a row against the commit before it: **-3.9
+points with a standard error of 3.2, against a row-to-row spread of 21.2**, which is inside
+the noise and is where a change to how men stand should land. The calibration row went 0
+per cent to 67 on the same comparison, which is what six runs of two identical units does
+and is the reason the card is read as a mean over its rows.
+
+**Selecting all of a kind.** `selectSame(near)` widens a selection to every unit of the
+same `key`, and the two order cards are T for the whole map and Y for what is within sight
+of the units already picked. Two of them because they answer two questions: moving an arm
+of the army at once, and handling the fight in front of you without dragging in the section
+holding a flag four hundred metres behind. The kinds come off what is already selected, so
+a mixed selection widens sensibly, and a building is never swept in because a selection
+with a headquarters in it shows production cards rather than order cards.
 
 **The sun is where December puts it.** Ortona is 42 degrees north and the date on the HUD
 is the 23rd. The sun reaches 24 degrees at noon that day and is under twenty by
@@ -1863,6 +1919,58 @@ without one turns into a rattle. `auInit` makes the real context; `tools/audio.m
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
 and no separate update thread.
 
+**The after-action record.** A battle is twenty minutes of decisions and the only thing
+that used to survive it was a sentence saying who won. `REC` is what happened, kept AS it
+happens rather than reconstructed at the whistle, and that is the whole design decision
+here: nothing at the end of a battle knows what a section did before it died, and most of
+what is interesting belongs to units that are no longer on the field.
+
+Three layers, and the second two are read off the first. A row per UNIT -- `recBorn` opens
+it, and it carries kills, men killed, vehicles, men lost, damage in and out, rounds, when
+it was raised and when it died. A row per TYPE, rolled up from the units every time the
+page is drawn rather than kept alongside them, because two tallies of one thing go out of
+step the moment somebody adds a column and a player reading a total that does not match the
+rows under it has no reason to believe either. And a row per ARMY: earned, spent, what it
+raised, what it built, sectors taken, peak strength and peak population. Plus a timeline
+sampled every two seconds, which is what the graphs are drawn from and which at six hundred
+samples of eight numbers is small enough to keep in `localStorage`.
+
+The hooks are `recBorn`, `recKill`, `recMan`, `recHurt`, `recFired`, `recEarn`, `recSpend`,
+`recBuild`, `recWork`, `recCap` and `recTick`, each at the one place the thing actually
+happens. Two of them are worth knowing about. **Damage is recorded as APPLIED**, after
+every multiplier and capped at what the target had left: a forty-point round into a man with
+eleven points is eleven, and the figure on paper is not the figure that mattered. And
+**`recBorn` records what was raised and nothing about what it cost**, because spending is
+counted in `pay`, which is the one place money leaves the till -- charged in both, the three
+sections each side opens with came out as 650 marks nobody ever spent.
+
+Everything in it is a number or a string. It outlives the battle, so like the AI's own
+memory it may not hold a reference to a unit, a sector or a building.
+
+**The page it is read on.** Five tabs over that one record, split by the question rather
+than by where the numbers live: OVERVIEW is who won and by how much, ARMIES is what each
+side raised and spent, BY TYPE is every Sherman against every other Sherman, EVERY UNIT is
+one row for each thing that was ever on the field, and GRAPHS is the shape of the battle.
+The graphs are canvases (`stDrawGraph`), two series on a shared scale, because the question
+every one of them answers is who was ahead and two charts side by side cannot answer it;
+each carries its own colour key, since two coloured lines with nothing to say which is which
+is a picture of a battle nobody can read.
+
+**And the map comes first.** `specStart` takes the 2D chrome away (`body.spec`) and leaves
+the battle on screen with one button on it, because the moment a player most wants to look
+at the ground is the moment the game-over panel used to cover it. The simulation stays
+stopped: this is a look at how it finished rather than a continuation.
+
+The record is closed and written to the history in `endGame`, at the whistle rather than
+when the report is opened, so a player who presses FIGHT AGAIN without reading it still
+finds the battle in PAST BATTLES next time. Two dozen are kept under `ORT_HIST`, newest
+first, and the title screen opens the list without a battle behind it.
+
+One thing caught by the gate and by nothing else: **the game-over buttons are `.obtn` and
+not `.pill`**. The title screen binds every `.pill` on the page as a side picker, by class
+and with a plain `onclick =`, and it runs after the wiring here -- so a button that borrowed
+the look silently borrowed the handler with it and did nothing at all when pressed.
+
 **Field works.** `WORKS` is what a section of engineers can put up during a battle:
 sandbag wall, weapon pit, wire. Placement is `placeWork`, which pegs a site out on a
 bearing; `finishWork` turns a finished site into a `G.works` entry, a piece of cover laid
@@ -2102,7 +2210,7 @@ player's units.
 button that lights when any of them is off even: manpower income and fuel income, what is
 in the till at the first shot in each of the two, production speed (a unit out of a
 queue), construction speed (a building or a field work going up), the manpower cap from a
-hundred to five hundred, the damage his units take, the damage they deal, how far they
+hundred to a thousand, the damage his units take, the damage they deal, how far they
 see, and whether the artillery rules bind him. Each is an index into a named list, because
 the stepper and the game have to read one table -- two lists of the same settings go out
 of step the moment somebody adds another. `pdMake()` resolves the indices once in
@@ -2148,6 +2256,31 @@ indirect weapon and nothing else, so a rifle section is exactly where it was. Me
 4x: a mortar throws 2240 off a published 560 and engages at 1880 off 470, where the
 opposition's throws 560 and engages at 470.
 
+**The opposition has the same eleven settings, and they run both ways.** `DIFF` is three
+settings with nothing in between, which is right for what it is -- how the brain thinks, how
+it waves, how early it techs -- and wrong for the arithmetic round it. A player who wants a
+veteran opponent on half an economy, or a green one with twice the manpower to see what a
+green brain does with a real army, had no way to say so; and a player handing himself ten
+times the income had no way to hand any of it to the other side.
+
+`AD` is that row, resolved by `adMake` in `startGame` beside `pdMake`, behind an OPPOSITION
+button on the title screen. It MULTIPLIES what `DIFF` already says rather than replacing it,
+so an even `AD` is the game as it was: income and the two speeds are factors on the
+difficulty's own, and damage, sight and the artillery rules read exactly as they do on the
+player's side. Two of them are absolute rather than factors and so carry a flag --
+`setPop` and `setTill` are false until the setting is moved, because a cap nobody touched
+should defer to green's own 175 and a till nobody touched should be the 420/20 both sides
+open on. Its lists are symmetric about the even game where three of the player's are
+one-way: there is no reason to offer him a way to make his own men worse and every reason to
+offer him a way to make theirs better.
+
+Measured by the gate at the top of every opposition setting, on GREEN, with the player's own
+panel at even: their cap is 1000 where his stays 200, their till opens at 14,556 (it spends
+as it goes) where his stays 421, their income is 44.2 against his 8.5, a hundred-point round
+of theirs does 400 and one into them does 400, and their eye reaches 1600 off a 400 sight
+where his stays 380 off 380. Each of those is measured on both sides, because the claim is
+that it reaches one and not the other.
+
 **And `arty` is a switch rather than a scale.** It lifts the three rules that make the
 heavy battery a decision -- one a side, dug forward of home (`WORKS[].minHq`), and no
 missions into the enemy's base (`barrage.safe`) -- for the player's side and for nobody
@@ -2177,7 +2310,7 @@ spade is a side with an army and no position, and the other way round is a side 
 nothing in it.
 
 Measured by the gate, with every setting at its most generous and the opposition on
-GREEN: the player's cap is 500 and the opposition's is still green's own 175, the till
+GREEN: the player's cap is 1000 and the opposition's is still green's own 175, the till
 opens at 15,011 marks and 6,001 of fuel, income is 85 marks and 11 fuel against 4.42 and
 0.57, a second of wall clock buys ten seconds of queue against one, and a second of
 digging puts up 0.3846 of a building against 0.0385. A hundred-point round takes 10 off
@@ -2606,6 +2739,15 @@ shots/                         screenshot output, gitignored
 - **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
   is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
   were the radius comes out wrong in a way nothing will flag.
+- **A `.pill` on the page is a side picker.** The title screen binds every element of that
+  class as one, by class and with a plain `onclick =`, after the rest of the wiring has
+  run. A button that borrows the look to sit on the game-over screen silently borrows the
+  handler, loses its own, and does nothing whatever when pressed -- with no error anywhere.
+  Give a new button its own class.
+- **`unitRadius` is not the circle a unit is drawn in; `selRadius` is.** The first is the
+  separation radius the pathfinder and `unwedge` use and is half a vehicle's length. The
+  second is what the ring, the click test and the bound on where a man may stand all read.
+  Asking the wrong one puts a section's ring round a sixth of its own men.
 - `spawnUnit()` puts the unit on the field itself. A tool that pushes the return value
   into `G.units` as well has it in the list twice, and a unit in the list twice is
   updated twice a frame: it drives at double speed and its gun fires at twice its rate of

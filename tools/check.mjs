@@ -736,7 +736,7 @@ for (const device of TARGETS) {
              hqTime: hq.def.makes.length };
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
-     hcap.rows === 11 && !hcap.even && hcap.pd.pop === 500 && hcap.popYou === 500 &&
+     hcap.rows === 11 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
      hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
      hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
      hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
@@ -839,19 +839,200 @@ for (const device of TARGETS) {
      `and reaches ${arty.freeYou} off a ${arty.barDef}/${arty.freeDef} piece where theirs throws ` +
      `${arty.barFoe} and reaches ${arty.freeFoe}, and his riflemen are unchanged`);
 
+  /* --- and the same eleven settings turned on the opposition, which is the panel that
+     runs both ways. What is asserted is that each one reaches the other side and that
+     none of them reaches the player's: `AD` multiplies what `DIFF` already says, so the
+     control is the player's own numbers standing still while theirs move. --- */
+  await reload(page);
+  await page.evaluate(() => {
+    /* the player's own panel back to even first: it is kept in localStorage and survives
+       the reload, so without this the row reads their damage through his multipliers and
+       a 4x round of theirs comes back as 40 */
+    document.getElementById('heven').click();
+    document.getElementById('aopen').click();
+    /* every opposition knob to its top, through the stepper rather than by writing AD */
+    window.ACAP.forEach(h => { for (let i = 0; i < 20; i++) window.hcapStep(h, 1, window.ACAP); });
+  });
+  await deploy(page, { side: args.side || 'us', diff: 0 });
+  const acap = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    function hit(victim, shooter, amt) {
+      const before = victim.hp;
+      window.damage(victim, amt, shooter);
+      const d = before - victim.hp;
+      victim.hp = before; victim.dead = false;
+      return +d.toFixed(2);
+    }
+    const mine = window.spawnUnit(side, side === 'us' ? 'us_sher' : 'ger_p4', 700, 1500, 0);
+    const theirs = window.spawnUnit(foe, foe === 'us' ? 'us_sher' : 'ger_p4', 900, 1500, 0);
+    mine.hp = theirs.hp = 1e6;
+    /* a round of theirs into him, and one of his into them */
+    const dealt = hit(mine, theirs, 100), took = hit(theirs, mine, 100);
+    window.computeVisibility();
+    function eyeOf(s, u) {
+      const e = window._eyes[s].find(q => q.u === u);
+      return e ? Math.round(e.r) : -1;
+    }
+    const eyeFoe = eyeOf(foe, theirs), eyeYou = eyeOf(side, mine);
+    [mine, theirs].forEach(u => {
+      u.dead = true;
+      const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1);
+    });
+    return { ad: window.G.ad, rows: document.querySelectorAll('#agrid .hrow').length,
+             popFoe: window.popCap(foe), popYou: window.popCap(side),
+             mpFoe: Math.round(window.G.res[foe].mp), fuFoe: Math.round(window.G.res[foe].fu),
+             mpYou: Math.round(window.G.res[side].mp),
+             incFoe: +window.G.inc[foe].mp.toFixed(2), incYou: +window.G.inc[side].mp.toFixed(2),
+             dealt, took, eyeFoe, eyeYou, eyeFoeDef: theirs.sight, eyeDef: mine.sight,
+             even: window.hcapEven(window.ACAP) };
+  });
+  ok('the opposition has the same eleven settings, and they run both ways',
+     acap.rows === 11 && !acap.even && acap.ad.pop === 1000 && acap.popFoe === 1000 &&
+     acap.popYou === 200 && acap.mpFoe > 8000 && acap.mpYou < 500 &&
+     acap.incFoe > acap.incYou * 4 &&
+     Math.abs(acap.dealt - 100 * acap.ad.deal) < 1 &&
+     Math.abs(acap.took - 100 * acap.ad.take) < 1 &&
+     Math.abs(acap.eyeFoe - acap.eyeFoeDef * acap.ad.eye) < 2 && acap.eyeYou === acap.eyeDef,
+     `${acap.rows} settings, all off even; on GREEN their cap is ${acap.popFoe} where his stays ${acap.popYou}; ` +
+     `their till opened at ${acap.mpFoe}/${acap.fuFoe}f (it spends as it goes) where his stayed ${acap.mpYou}; income ${acap.incFoe} ` +
+     `against his ${acap.incYou}; a hundred-point round of theirs does ${acap.dealt} and one into them ` +
+     `${acap.took}; their eye reaches ${acap.eyeFoe} off a ${acap.eyeFoeDef} sight where his stays ` +
+     `${acap.eyeYou} off ${acap.eyeDef}`);
+  await page.evaluate(() => { document.getElementById('aeven').click(); });
+  const aeven = await page.evaluate(() => ({ even: window.hcapEven(window.ACAP), made: window.adMake(),
+                                             badge: document.getElementById('aopen').textContent }));
+  ok('the opposition EVEN button defers to the difficulty again',
+     aeven.even && aeven.made.inc === 1 && aeven.made.prod === 1 && aeven.made.cons === 1 &&
+     aeven.made.take === 1 && aeven.made.deal === 1 && aeven.made.eye === 1 &&
+     aeven.made.setPop === false && aeven.made.setTill === false && aeven.badge.indexOf('\u00b7') < 0,
+     `${aeven.made.inc}x income, ${aeven.made.prod}x production, ${aeven.made.cons}x construction, ` +
+     `${aeven.made.take}x taken, ${aeven.made.deal}x dealt, ${aeven.made.eye}x sight, cap set ` +
+     `${aeven.made.setPop}, till set ${aeven.made.setTill}, the button reads "${aeven.badge}"`);
+
   /* and EVEN puts every one of them back */
-  await page.evaluate(() => { document.getElementById('heven').click(); });
+  await reload(page);
+  await page.evaluate(() => {
+    document.getElementById('hopen').click();
+    window.HCAP.forEach(h => { for (let i = 0; i < 20; i++) window.hcapStep(h, h.k === 'take' ? -1 : 1); });
+    document.getElementById('heven').click();
+  });
   const evened = await page.evaluate(() => ({ even: window.hcapEven(), made: window.pdMake(),
                                               badge: document.getElementById('hopen').textContent }));
+
   ok('the EVEN button puts every setting back where it started',
      evened.even && evened.made.inc === 1 && evened.made.incf === 1 && evened.made.prod === 1 &&
      evened.made.cons === 1 && evened.made.pop === 200 && evened.made.mp === 420 &&
      evened.made.fu === 20 && evened.made.take === 1 && evened.made.deal === 1 &&
-     evened.made.eye === 1 && evened.made.arty === false && evened.badge.indexOf('ON') < 0,
+     evened.made.eye === 1 && evened.made.arty === false && evened.badge.indexOf('\u00b7') < 0,
      `${evened.made.inc}x/${evened.made.incf}x income, ${evened.made.prod}x production, ` +
      `${evened.made.cons}x construction, cap ${evened.made.pop}, ${evened.made.mp}/${evened.made.fu}f, ` +
      `${evened.made.take}x taken, ${evened.made.deal}x dealt, ${evened.made.eye}x sight, ` +
      `artillery ${evened.made.arty ? 'free' : 'by rule'}, the button reads "${evened.badge}"`);
+
+  /* --- the after-action record, and the page it is read on. The record is kept AS the
+     battle runs -- nothing at the end of one knows what a section did before it died --
+     so what is asserted is that it agrees with the field while the field is still there:
+     the units it holds against the units that were raised, its damage against hit points
+     actually taken off, and its spending against what left the till. Then the page: every
+     tab renders, the graphs put pixels on their canvases, and the whole thing survives a
+     round trip through localStorage, which is what the history is. --- */
+  await reload(page);
+  await deploy(page, { side: args.side || 'us', diff: 1 });
+  await fastForward(page, 200);
+  const rec = await page.evaluate(() => {
+    const R = window.REC, side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    /* a known round into a known hull, read on the record rather than inferred */
+    const a = window.spawnUnit(side, side === 'us' ? 'us_sher' : 'ger_p4', 700, 1500, 0);
+    const b = window.spawnUnit(foe, foe === 'us' ? 'us_sher' : 'ger_p4', 800, 1500, 0);
+    a.hp = b.hp = 1e6;
+    const beforeOut = R[foe].dmgOut, beforeIn = R[side].dmgIn;
+    window.damage(a, 250, b);
+    const gotOut = +(R[foe].dmgOut - beforeOut).toFixed(1), gotIn = +(R[side].dmgIn - beforeIn).toFixed(1);
+    const rowA = R.units[a.id], rowB = R.units[b.id];
+    /* and a kill, credited both ways */
+    const kBefore = R[foe].killed, lBefore = R[side].lost;
+    window.killUnit(a, b);
+    const killed = R[foe].killed - kBefore, lost = R[side].lost - lBefore;
+    /* the record's own unit count against the field's */
+    let live = 0;
+    window.G.units.forEach(u => { if (!u.dead) live++; });
+    const rows = Object.keys(R.units).length;
+    let alive = 0;
+    for (const k in R.units) if (R.units[k].died < 0) alive++;
+    return { rows, live, alive, gotOut, gotIn, killed, lost,
+             rowKills: rowB.kills, rowDied: rowA.died >= 0,
+             line: R.line.length, t: Math.round(R.t),
+             earn: Math.round(R[side].earnMp), spend: Math.round(R[foe].spendMp),
+             made: Object.keys(R[foe].made).length, caps: R[foe].caps + R[side].caps };
+  });
+  ok('a battle writes itself down as it is fought',
+     rec.rows >= 6 && rec.alive === rec.live && rec.line > 40 &&
+     Math.abs(rec.gotOut - 250) < 1 && Math.abs(rec.gotIn - 250) < 1 &&
+     rec.killed === 1 && rec.lost === 1 && rec.rowKills === 1 && rec.rowDied &&
+     rec.earn > 100 && rec.spend > 0 && rec.made >= 2 && rec.caps > 0,
+     `${rec.rows} unit rows for ${rec.live} still on the field and ${rec.alive} the record calls alive; ` +
+     `a 250-point round read back as ${rec.gotOut} dealt and ${rec.gotIn} taken; a kill counted once ` +
+     `each way and written onto the firer's own row; ${rec.line} timeline samples over ${rec.t}s; ` +
+     `${rec.earn} manpower earned, ${rec.spend} spent by them on ${rec.made} kinds of thing, ` +
+     `${rec.caps} sectors changed hands`);
+
+  /* the page itself, every tab, and the round trip through storage */
+  const page5 = await page.evaluate(() => {
+    window.endGame(window.G.side === 'us' ? 'ger' : 'us', 'the check called it');
+    const out = { tabs: [], errs: 0 };
+    ['over', 'army', 'type', 'unit', 'graph'].forEach(t => {
+      window.ST.tab = t;
+      window.stOpen(window.REC, false);
+      const b = document.getElementById('stbody');
+      out.tabs.push({ t, len: b.innerHTML.length, rows: b.querySelectorAll('tbody tr').length });
+    });
+    /* the graphs draw pixels rather than an empty canvas */
+    window.ST.tab = 'graph'; window.stOpen(window.REC, false);
+    const cv = document.getElementById('stg_army');
+    let ink = 0;
+    if (cv && cv.width) {
+      const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+      for (let i = 3; i < d.length; i += 4) if (d[i] > 40) ink++;
+    }
+    out.ink = ink;
+    out.canvas = cv ? cv.width + 'x' + cv.height : 'none';
+    /* the history: written at the whistle, read back as a record the page can render */
+    const all = JSON.parse(localStorage.getItem('ORT_HIST') || '[]');
+    out.hist = all.length;
+    if (all.length) {
+      window.ST.rec = all[0]; window.ST.tab = 'over'; window.stOpen(all[0], false);
+      out.reread = document.getElementById('stbody').innerHTML.length;
+      out.histUnits = Object.keys(all[0].units).length;
+      out.histLine = all[0].line.length;
+    }
+    window.stOpen(null, true);
+    out.listRows = document.getElementById('stbody').querySelectorAll('tbody tr').length;
+    window.stClose();
+    return out;
+  });
+  const tabsOk = page5.tabs.every(t => t.len > 200);
+  ok('the after-action page reads every tab, draws its graphs and survives the history',
+     tabsOk && page5.tabs[3].rows >= 6 && page5.ink > 300 && page5.hist >= 1 &&
+     page5.reread > 200 && page5.histUnits >= 6 && page5.histLine > 40 && page5.listRows >= 1,
+     `${page5.tabs.map(t => t.t + ' ' + t.len).join(', ')}; the army graph is ${page5.canvas} with ` +
+     `${page5.ink} lit pixels; ${page5.hist} battle(s) in the history, the newest read back with ` +
+     `${page5.histUnits} unit rows and ${page5.histLine} samples, listed on ${page5.listRows} row(s)`);
+
+  /* and spectating: the chrome goes and the battle is left on screen */
+  const spec = await page.evaluate(() => {
+    document.getElementById('over').classList.remove('hidden');
+    document.getElementById('overspec').click();
+    const hid = getComputedStyle(document.getElementById('over')).display;
+    const bar = !document.getElementById('specbar').classList.contains('hidden');
+    document.getElementById('specdone').click();
+    const back = !document.getElementById('stats').classList.contains('hidden');
+    const gone = document.getElementById('specbar').classList.contains('hidden');
+    window.stClose();
+    return { hid, bar, back, gone, spec: document.body.classList.contains('spec') };
+  });
+  ok('the map can be looked at before the report',
+     spec.hid === 'none' && spec.bar && spec.back && spec.gone && !spec.spec,
+     `the game-over panel goes to ${spec.hid} with the bar up, and AFTER ACTION brings the report back`);
 
   /* --- the switch on the title screen that takes the opposition's guns away. What is
      asserted is the negative -- over eight minutes of battle the brain never once bought
