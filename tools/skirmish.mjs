@@ -88,22 +88,22 @@ async function install(page, baseSrc) {
     /* One AI object, two brains. Each side's fields are swapped in around its own call,
        so neither can read the other's plan, and the game's own side is left in place
        afterwards because everything outside this function assumes it. */
-    function snap() { const o = {}; for (const k in AI) if (k !== 'side') o[k] = AI[k]; return o; }
+    function snap() { const o = {}; for (const k in AI) if (k !== 'side' && k !== 'own') o[k] = AI[k]; return o; }
     function load(s) { if (s) for (const k in s) AI[k] = s[k]; }
     /* Which side thinks first alternates. Running one of them first every tick gives it
        the newer picture and the first orders, every tick, for the whole battle -- a
        systematic edge sitting underneath every comparison the tool makes. */
     SK.turn = 0;
     window.aiTick = function (dt) {
-      const game = AI.side, keep = snap();
+      const game = AI.side, gown = AI.own, keep = snap();
       const order = (SK.turn++ & 1) ? ['ger', 'us'] : ['us', 'ger'];
       order.forEach(function (side) {
         const impl = SK.sides[side] === 'base' && base ? base : real;
-        load(SK.st[side]); AI.side = side;
+        load(SK.st[side]); AI.side = side; AI.own = side;
         impl(dt);
         SK.st[side] = snap();
       });
-      load(keep); AI.side = game;
+      load(keep); AI.side = game; AI.own = gown;
     };
 
     SK.reset = function (sides, diff) {

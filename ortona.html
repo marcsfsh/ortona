@@ -178,7 +178,16 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .side h3{font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:5px}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-.pill,.mode,.arty{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+.pill,.mode,.arty,.team{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+/* the opposition panel's own two strips: which computer player is being set, and what
+   that one is told to buy. `.arole` is deliberately not `.pill`, for the reason set out
+   beside `.obtn`. */
+.arow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.arole{border:1px solid var(--line);background:#15190f;color:var(--dim);font-size:11px;
+  letter-spacing:1.4px;padding:9px 16px;min-height:44px}
+.arole.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.bpref{margin-top:12px;border-top:1px solid var(--line);padding-top:10px}
+.bprefh{font-size:10px;letter-spacing:1.6px;color:var(--dim);margin-bottom:8px}
 /* the handicap block: five rows of label, minus, value, plus. A stepper rather than a
    slider because the values are a short named list and a slider would invent the ones
    between them, and rather than a row of segmented buttons because five settings at
@@ -193,7 +202,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .hrow i{font-family:var(--mono);font-style:normal;font-size:13px;color:var(--ink);min-width:88px;text-align:center}
 .hb{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:15px;line-height:1;width:34px;height:34px;box-sizing:border-box;flex:0 0 auto}
 .hb[disabled]{color:#3d4436;border-color:#2b3126}
-.pill.on,.mode.on,.arty.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.pill.on,.mode.on,.arty.on,.team.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
 /* The game-over screen's two ways on. They are deliberately NOT `.pill`: the title
    screen binds every `.pill` on the page as a side picker, by class and with a plain
    `onclick =`, and it runs after this, so a button that borrowed the look silently
@@ -306,7 +315,8 @@ body.mob .keys{font-size:11.5px;line-height:1.7}
 body.mob .go{width:100%;max-width:340px;padding:15px 0}
 /* the title screen's own option buttons were 33px on a phone, which is under the rule
    the rest of the game holds itself to; they are the first thing a thumb ever touches */
-body.mob .pill,body.mob .mode,body.mob .arty{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.mob .bpref .hgrid{grid-template-columns:1fr}
 body.mob .hgrid{grid-template-columns:1fr}
 body.mob .hb{width:46px;height:46px;min-width:46px;min-height:46px;font-size:17px}body.mob .hres{min-height:44px;padding:0 14px}
 body.mob .side{flex:1 1 100%;min-width:0}
@@ -424,7 +434,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
 .side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
-.pill,.mode,.arty{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
+.pill,.mode,.arty,.team{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
 
@@ -686,6 +696,9 @@ body.mob #mini{width:104px;height:72px}
     <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
     <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
     <button class="pill" data-diff="2" title="Hard" aria-pressed="false">VETERAN</button>
+    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">SIDES</span>
+    <button class="team on" data-team="1" title="You against one opponent" aria-pressed="true">1 v 1</button>
+    <button class="team" data-team="2" title="You and an ally against two opponents, each of the three set on its own" aria-pressed="false">2 v 2</button>
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">VICTORY</span>
     <button class="mode on" data-mode="vp" title="Hold the victory sectors until the enemy runs out" aria-pressed="true">SECTORS</button>
     <button class="mode" data-mode="anni" title="Level every building in the enemy base" aria-pressed="false">ANNIHILATION</button>
@@ -704,9 +717,12 @@ body.mob #mini{width:104px;height:72px}
     <div class="hgrid" id="hgrid"></div>
   </div>
   <div class="hcap hidden" id="acap">
-    <div class="hcaph">OPPOSITION<span>the same settings turned on the other side, up or down, on top of whatever
-      GREEN, REGULAR or VETERAN already says. A veteran brain on half an economy, or a green one with a real army.</span><button class="hres" id="aeven">EVEN</button></div>
+    <div class="hcaph">OPPOSITION<span>the same settings turned on each computer player, up or down, on top of whatever
+      GREEN, REGULAR or VETERAN already says. A veteran brain on half an economy, or a green one with a real army.
+      In a 2v2 there are three of them and each is set on its own.</span><button class="hres" id="aeven">EVEN</button></div>
+    <div class="arow" id="arole"></div>
     <div class="hgrid" id="agrid"></div>
+    <div class="bpref" id="bpref"></div>
   </div>
   <button class="go" id="deploy">DEPLOY</button>
   <div class="keys" id="keyhelp">
@@ -774,11 +790,36 @@ var POPCAP = 200;
 /* The cap is per side, because the two sides are set separately. The player's is a
    handicap setting and runs from a hundred to five hundred; the opposition's comes off its
    own difficulty and is a hundred and seventy-five on green and two hundred otherwise. */
-function popCap(side) {
-  var D = DIFF[G.diff];
-  if (side === G.side) return pd().pop;
-  if (ad().setPop) return ad().pop;
+/* ---- what a slot is running, and how hard its brain is.
+   The player's slot reads his own handicap and every AI slot reads its own, so one
+   function answers for all of them and nothing below has to know which is which. It was
+   two functions and a side test, which cannot say anything at all about a 2v2: with two
+   AIs on a team `side === G.side` is true of the player's ally. */
+function hcapOf(slot) {
+  /* asked with a TEAM rather than a slot -- which a handful of team-level readers still
+     do -- it falls through to that team's first slot, which is what `G.res[side]` and
+     everything else keyed that way already means */
+  return (G.hc && (G.hc[slot] || G.hc[slotSide(slot)])) || pdMake();
+}
+function diffOf(slot) {
+  var sl = slotOf(slot);
+  return DIFF[sl && sl.diff !== undefined ? sl.diff : G.diff] || DIFF[1];
+}
+/* the difficulty a unit is fought under: its owner's, so two AIs on a team can be a green
+   one beside a veteran */
+function diffFor(u) { return diffOf(u && u.own ? u.own : 'ger'); }
+function popCap(slot) {
+  var h = hcapOf(slot), D = diffOf(slot);
+  if (h.setPop) return h.pop;
   return D ? (D.foePop || POPCAP) : POPCAP;
+}
+/* And whether a def's own limit binds this slot. `limit: 1` on the Maus and the Tiger is
+   what stops an army of them, and it is a rule about the game rather than about the
+   vehicle -- a player who wants six Tigers, or an AI turned loose with them, sets it off
+   here rather than editing the roster. Nought means no limit at all. */
+function unitLimit(slot, d) {
+  if (!d || !d.limit) return 0;
+  return hcapOf(slot).noLimit ? 0 : d.limit;
 }
 /* ---- the handicap.
    Difficulty was one number and it set two unrelated things: how hard the opposition is
@@ -826,9 +867,10 @@ var PD_TAKE = [.1, .15, .2, .25, .3, .4, .5, .6, .75, .9, 1];
 var PD_DEAL = [1, 1.15, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 var PD_EYE  = [1, 1.1, 1.2, 1.35, 1.5, 1.75, 2, 2.5, 3, 4];
 var PD_ARTY = [0, 1];
+var PD_ONE  = [0, 1];
 /* the even game, and the index of it in each list */
-var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0 };
-var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0 };
+var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0, one: 0 };
+var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0, one: 0 };
 /* What the player's side is actually running, resolved once when the battle starts so the
    income tick, the population check and every shot fired read a number rather than an
    index. Anything that reaches it before a battle -- the editor, a tool staging a scene --
@@ -838,9 +880,13 @@ function pdMake() {
            cons: PD_CONS[PD.cons], pop: PD_POP[PD.pop],
            mp: PD_SMP[PD.smp], fu: PD_SFU[PD.sfu],
            take: PD_TAKE[PD.take], deal: PD_DEAL[PD.deal], eye: PD_EYE[PD.eye],
-           arty: !!PD_ARTY[PD.arty] };
+           arty: !!PD_ARTY[PD.arty], noLimit: !!PD_ONE[PD.one],
+           /* his cap and his till are always his: unlike the opposition's, which defer to
+              the difficulty's own table when nobody has touched them, there is no other
+              source for the player's */
+           setPop: true, setTill: true };
 }
-function pd() { return G.pd || (G.pd = pdMake()); }
+function pd() { return hcapOf(G.own); }
 /* ---- and the same knobs turned on the opposition.
    `DIFF` is three settings and nothing in between, which is right for what it is -- how
    the brain thinks, how it waves, how early it techs -- and wrong for the arithmetic
@@ -864,20 +910,123 @@ var AD_SFU  = [0, 10, 20, 80, 150, 240, 400, 800, 1500, 3000, 6000];
 var AD_DMG  = [.1, .25, .5, .75, 1, 1.25, 1.5, 2, 3, 4];
 var AD_EYE  = [.25, .5, .75, 1, 1.25, 1.5, 2, 3, 4];
 var AD_ARTY = [0, 1];
-var AD_EVEN = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0 };
-var AD = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0 };
-function adMake() {
-  return { inc: AD_MULT[AD.inc], incf: AD_MULT[AD.incf], prod: AD_MULT[AD.prod],
-           cons: AD_MULT[AD.cons], pop: AD_POP[AD.pop],
-           mp: AD_SMP[AD.smp], fu: AD_SFU[AD.sfu],
-           take: AD_DMG[AD.take], deal: AD_DMG[AD.deal], eye: AD_EYE[AD.eye],
-           arty: !!AD_ARTY[AD.arty],
+var AD_ONE  = [0, 1];
+/* and an AI's own difficulty, which is a separate question from the arithmetic round it:
+   -1 is the one the player picked for the game, and the other three name themselves. It
+   is on this table rather than on the title screen's three buttons because in a 2v2 there
+   are three brains and they need not all be the same. */
+var AD_DIFF = [-1, 0, 1, 2];
+var AD_EVEN = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0, one: 0, diff: 0 };
+/* ---- one row per AI, and they are named by ROLE rather than by slot.
+   A slot key depends on which side the player picked -- his ally is `us2` playing
+   Canadian and `ger2` playing German -- so a panel that stored its settings under the
+   slot would move them to a different AI the moment he changed sides. A role does not
+   move: `foe1` is the opponent he has in every game, `foe2` is the second one and `ally`
+   is his team-mate, and `startGame` is the one place that says which slot is which. */
+var AD_ROLES = ['foe1', 'foe2', 'ally'];
+var ADS = {};
+(function () {
+  for (var i = 0; i < AD_ROLES.length; i++) {
+    var r = ADS[AD_ROLES[i]] = {};
+    for (var k in AD_EVEN) r[k] = AD_EVEN[k];
+  }
+})();
+/* which role's row the opposition panel is editing */
+var ACAP_ROLE = 'foe1';
+function adRow(role) { return ADS[role] || ADS.foe1; }
+/* the difficulty one AI is playing at: its own if it has been given one, otherwise the
+   game's */
+function adDiff(role, diff) {
+  var d = AD_DIFF[adRow(role).diff];
+  return d < 0 ? diff : d;
+}
+/* ---- what an AI is told to buy.
+   The shopping list is the brain's own judgement about what the battle wants, and this is
+   a thumb on it rather than a replacement for it: a weight per KIND of thing, which
+   multiplies the count the ladder wants and moves the hour it opens against itself, so a
+   heavy weight means earlier and more of them and a nought means none at all. It is a
+   kind rather than a unit key because a panel of twenty rows on a phone is a panel nobody
+   reads, and because the thing a player actually wants to say is "more tanks" or "no
+   armoured cars" rather than a number against each Sherman.
+     The class is read off the def rather than listed, so a vehicle added to the roster
+   falls into one without anybody remembering to say which. Armour is what decides light
+   from medium from heavy, because that is what the class means in a fight; infantry that
+   costs fuel is the assault group, which is the only thing that separates the two on
+   paper as well as on the field. */
+var BP_KEYS = ['inf', 'elite', 'mg', 'at', 'arty', 'light', 'med', 'heavy'];
+var BP_NAME = { inf: 'RIFLE SECTIONS', elite: 'ASSAULT GROUPS', mg: 'MACHINE GUNS',
+                at: 'ANTI-TANK GUNS', arty: 'MORTARS, HOWITZERS', light: 'LIGHT ARMOUR',
+                med: 'MEDIUM ARMOUR', heavy: 'HEAVY ARMOUR' };
+var BP_TIP = {
+  inf: 'Rifle sections: the men who take ground. Nought stops it raising any past the two it keeps as a floor.',
+  elite: 'The assault group, which is the answer to men in a house and to a machine gun line.',
+  mg: 'Machine gun teams, sited to cover the ground a wave has to cross.',
+  at: 'The anti-tank gun and the eighty-eight, sited well back on the longest sight line.',
+  arty: 'Mortars, pack howitzers and the heavy battery. Nought leaves it with no indirect fire at all.',
+  light: 'Armoured cars, carriers and the Stuart: under a hundred millimetres of plate.',
+  med: 'The Sherman, the Panzer IV, the StuG and the Achilles.',
+  heavy: 'The Tiger, and above even the King Tiger as well. The Maus is off every brain\'s list whatever this says; only a player may have one.'
+};
+var BP_W = [0, .34, .5, .75, 1, 1.5, 2, 3];
+var BP_EVEN = 4;
+var ABUY = {};
+(function () {
+  for (var i = 0; i < AD_ROLES.length; i++) {
+    var r = ABUY[AD_ROLES[i]] = {};
+    for (var j = 0; j < BP_KEYS.length; j++) r[BP_KEYS[j]] = BP_EVEN;
+  }
+})();
+function bpRow(role) { return ABUY[role] || ABUY.foe1; }
+function bpMake(role) {
+  var A = bpRow(role), out = {}, i;
+  for (i = 0; i < BP_KEYS.length; i++) out[BP_KEYS[i]] = BP_W[A[BP_KEYS[i]]];
+  return out;
+}
+/* What kind of thing this is, worked out once and kept on the def. */
+function bClassOf(key) {
+  var d = UNITS[key];
+  if (!d) return '';
+  if (d.bcls) return d.bcls;
+  var c;
+  if (d.builder) c = 'eng';
+  else if (d.barrage || d.indirect) c = 'arty';
+  else if (d.cat === 'veh') c = d.armor >= 200 ? 'heavy' : d.armor >= 100 ? 'med' : 'light';
+  else if (d.cat === 'team') c = (d.atOnly || (d.w && d.w.pen >= 200)) ? 'at' : 'mg';
+  else c = d.cost && d.cost.fu ? 'elite' : 'inf';
+  d.bcls = c;
+  return c;
+}
+/* the weight this player puts on a kind, and on a particular thing. One is the even game
+   and everything reads it, so a player's own side comes back even without a branch. */
+function bpOf(slot, cls) {
+  var B = G.bp && G.bp[slot];
+  return B && B[cls] !== undefined ? B[cls] : 1;
+}
+function bpKey(slot, key) { return bpOf(slot, bClassOf(key)); }
+/* The ladder with the weights applied: the count wanted scales, the hour the rung opens
+   moves against the weight so a thing it is told to want arrives sooner, and a nought
+   takes the rung off the list altogether. */
+function aiPrefLadder(slot, ladder) {
+  var out = [], i, e, w;
+  for (i = 0; i < ladder.length; i++) {
+    e = ladder[i]; w = bpKey(slot, e[0]);
+    if (w <= 0) continue;
+    out.push([e[0], Math.max(1, Math.round(e[1] * w)), Math.round(e[2] / Math.max(.34, w))]);
+  }
+  return out;
+}
+function adMake(role) {
+  var A = adRow(role);
+  return { inc: AD_MULT[A.inc], incf: AD_MULT[A.incf], prod: AD_MULT[A.prod],
+           cons: AD_MULT[A.cons], pop: AD_POP[A.pop],
+           mp: AD_SMP[A.smp], fu: AD_SFU[A.sfu],
+           take: AD_DMG[A.take], deal: AD_DMG[A.deal], eye: AD_EYE[A.eye],
+           arty: !!AD_ARTY[A.arty], noLimit: !!AD_ONE[A.one],
            /* whether the cap and the till were asked for at all: left even they defer to
               the difficulty's own `foePop` and to the 420/20 both sides open on, because
               a setting nobody touched should not quietly overrule green's own table */
-           setPop: AD.pop !== AD_EVEN.pop, setTill: AD.smp !== AD_EVEN.smp || AD.sfu !== AD_EVEN.sfu };
+           setPop: A.pop !== AD_EVEN.pop, setTill: A.smp !== AD_EVEN.smp || A.sfu !== AD_EVEN.sfu };
 }
-function ad() { return G.ad || (G.ad = adMake()); }
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
   skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates along the hull sides, and round the turret where there is one: hollow-charge rounds burst on the plate before the armour.' },
@@ -940,6 +1089,45 @@ var FACTION = {
   ger: { name: '1. Fallschirmjäger-Division', short: 'FJ', color: '#ad6957', dark: '#4b2922', hq: 'ger_hq' }
 };
 function foe(s) { return s === 'us' ? 'ger' : 'us'; }
+/* ---- who is playing.
+   The game was two sides and nothing else, so a side was a team, an economy, an army and a
+   brain all at once. In a 2v2 those come apart. A TEAM shares vision, ground, the memory
+   of where the enemy was and the victory points; a PLAYER has his own purse, his own
+   queue, his own population cap and his own brain, and cannot spend his ally's money or
+   give his ally's men orders.
+     `u.own` and `b.own` say whose a thing is; `u.side` is still the team, so every test
+   about whether something is an enemy, whether the fog shows it or whose flag a sector
+   flies reads the team and is unchanged -- which is most of the eighty-odd side tests in
+   this file and is why this is a change of about a page rather than a rewrite.
+     A slot key is a STRING, chosen so that everything already keyed by side takes it with
+   no change at all: the purse, the income, the population, what has been ordered, the call
+   board and the operations are `[slot]` where they were `[side]`, and in a 1v1 the slots
+   are 'us' and 'ger', which is exactly what they were. A 2v2 adds 'us2' and 'ger2'.
+     The victory points stay on a team's FIRST slot, because a team wins or loses together
+   and `G.res.us.vp` is what every reader of them already asks for. */
+var SLOTS = ['us', 'us2', 'ger', 'ger2'];
+var SLOTSIDE = { us: 'us', us2: 'us', ger: 'ger', ger2: 'ger' };
+function slotSide(k) { return SLOTSIDE[k] || 'us'; }
+/* the live slots on a team, in order; the first of them is the one that holds the team's
+   victory points and the one a lone reader of `G.res[side]` gets */
+function slotsOf(side) {
+  var out = [], i;
+  for (i = 0; i < G.slots.length; i++) if (G.slots[i].side === side) out.push(G.slots[i].k);
+  return out;
+}
+function slotOf(k) {
+  for (var i = 0; i < G.slots.length; i++) if (G.slots[i].k === k) return G.slots[i];
+  return null;
+}
+/* the player's own slot, and whether a thing is his to command or pay for. It is not
+   called `mine` because the scene builder already has a local of that name. */
+function owned(x) { return !!x && x.own === G.own; }
+function isPlayer(slot) { return slot === G.own; }
+/* A team's victory points, held on its first slot. Read through here rather than off
+   `G.res[side]` wherever the answer has to be right in a 2v2, where a team's second
+   player has a purse of his own and no points in it. */
+function vpOf(side) { var k = slotsOf(side)[0]; return k ? G.res[k].vp : 0; }
+function vpSet(side, v) { var k = slotsOf(side)[0]; if (k) G.res[k].vp = v; }
 
 /* weapon: range, dmg, rof (seconds between volleys), acc, sup (per shot),
    pen (armour penetration), aoe (splash radius, 0 = none), shell (slow round) */
@@ -1354,20 +1542,24 @@ var WORKS = {
            lay: [[-30, -13], [-30, 13], [-46, 0], [-40, -30], [-40, 30], [-58, -16]],
            desc: 'A battery position for the 210/22: the gun on its circular firing platform inside a ring of bags, built by the Pioneers and never moved. It cannot be dug near your own headquarters, it will not fire into the enemy base, and it is most of a minute coming round onto a new bearing.' }
 };
-/* works of one kind a side has pegged out and not yet finished */
-function siteCount(side, kind) {
+/* works of one kind a player has pegged out and not yet finished */
+function siteCount(slot, kind) {
   var n = 0;
-  for (var i = 0; i < G.sites.length; i++) if (G.sites[i].side === side && G.sites[i].kind === kind) n++;
+  for (var i = 0; i < G.sites.length; i++) if (G.sites[i].own === slot && G.sites[i].kind === kind) n++;
   return n;
 }
 
 /* ---------------------------------------------------------------- state */
 var G = {
-  t: 0, running: false, paused: false, over: null, side: 'us', diff: 1, win: 'vp',
-  res: { us: { mp: 400, fu: 20, vp: VP_START }, ger: { mp: 400, fu: 20, vp: VP_START } },
-  inc: { us: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 } },
-  pop: { us: 0, ger: 0 },
-  made: { us: {}, ger: {} },
+  t: 0, running: false, paused: false, over: null, side: 'us', own: 'us', diff: 1, win: 'vp',
+  /* four purses always, so nothing has to ask whether a slot exists before reading one;
+     `G.slots` is what is actually being played and is the only list that is walked */
+  slots: [{ k: 'us', side: 'us', ai: 0 }, { k: 'ger', side: 'ger', ai: 1 }],
+  res: { us: { mp: 400, fu: 20, vp: VP_START }, us2: { mp: 400, fu: 20, vp: 0 },
+         ger: { mp: 400, fu: 20, vp: VP_START }, ger2: { mp: 400, fu: 20, vp: 0 } },
+  inc: { us: { mp: 0, fu: 0 }, us2: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 } },
+  pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
+  made: { us: {}, us2: {}, ger: {}, ger2: {} },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [],
   sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
   secById: {}, hqLink: { us: [], ger: [] },
@@ -3105,10 +3297,12 @@ function findPath(sx, sy, tx, ty, u) {
 }
 
 /* ---------------------------------------------------------------- units */
-function spawnUnit(side, key, x, y, facing) {
-  var d = UNITS[key];
+/* `slot` is who owns it -- his purse, his cap, his brain -- and `u.side` is the team it
+   fights for. In a 1v1 they are the same string, which is what they have always been. */
+function spawnUnit(slot, key, x, y, facing) {
+  var d = UNITS[key], side = slotSide(slot);
   var u = {
-    id: G.uid++, side: side, key: key, def: d, cat: d.cat, x: x, y: y,
+    id: G.uid++, own: slot, side: side, key: key, def: d, cat: d.cat, x: x, y: y,
     facing: facing === undefined ? (side === 'us' ? 0 : Math.PI) : facing,
     vx: 0, vy: 0, speed: d.speed, sight: d.sight,
     order: null, path: null, pi: 0, dest: null, target: null, forced: null,
@@ -3220,21 +3414,25 @@ function selRadius(u) {
 }
 
 /* ---------------------------------------------------------------- buildings */
-function spawnBuilding(side, key, x, y, done) {
-  var d = BUILDINGS[key];
+function spawnBuilding(slot, key, x, y, done) {
+  var d = BUILDINGS[key], side = slotSide(slot);
   /* In annihilation the buildings are the objective rather than a hidden instant-loss
      line, so they are built to be fought over: a base that comes down in two minutes to
      the first section that walks up to it is not a siege. */
   var mh = Math.round(d.hp * (G.win === 'anni' ? 1.8 : 1));
-  var b = { id: G.uid++, side: side, key: key, def: d, x: x, y: y,
+  var b = { id: G.uid++, own: slot, side: side, key: key, def: d, x: x, y: y,
             hp: done ? mh : mh * .18, maxhp: mh, built: done ? 1 : 0,
             queue: [], qt: 0, rally: { x: x + (side === 'us' ? 120 : -120), y: y + 90 },
             dead: false, hitT: 0 };
   G.blds.push(b); rebuildGrid();
   return b;
 }
-function hqOf(side) {
-  for (var i = 0; i < G.blds.length; i++) if (G.blds[i].side === side && G.blds[i].def.hq) return G.blds[i];
+/* A player's own headquarters. Asked with a TEAM in a 2v2 it hands back the first one on
+   that team, which is what the things that want "somewhere behind their line" mean. */
+function hqOf(slot) {
+  var i;
+  for (i = 0; i < G.blds.length; i++) if (G.blds[i].own === slot && G.blds[i].def.hq) return G.blds[i];
+  for (i = 0; i < G.blds.length; i++) if (G.blds[i].side === slot && G.blds[i].def.hq) return G.blds[i];
   return null;
 }
 function nearestEnemyBuilding(u) {
@@ -3247,26 +3445,34 @@ function nearestEnemyBuilding(u) {
   }
   return best;
 }
-function hasBuilding(side, key) {
+/* His own buildings: a tech gate is a thing this player put up, not a thing his ally did */
+function hasBuilding(slot, key) {
   for (var i = 0; i < G.blds.length; i++)
-    if (G.blds[i].side === side && G.blds[i].key === key && G.blds[i].built >= 1) return true;
+    if (G.blds[i].own === slot && G.blds[i].key === key && G.blds[i].built >= 1) return true;
   return false;
 }
-function canAfford(side, cost) {
-  var r = G.res[side];
-  return r.mp >= (cost.mp || 0) && r.fu >= (cost.fu || 0);
+function canAfford(slot, cost) {
+  var r = G.res[slot];
+  return !!r && r.mp >= (cost.mp || 0) && r.fu >= (cost.fu || 0);
 }
-function pay(side, cost) { G.res[side].mp -= (cost.mp || 0); G.res[side].fu -= (cost.fu || 0); recSpend(side, cost); }
-function popOf(side) {
+/* Money leaves one player's till, and is recorded against his team, because the
+   after-action report is an account of two armies. */
+function pay(slot, cost) {
+  var r = G.res[slot]; if (!r) return;
+  r.mp -= (cost.mp || 0); r.fu -= (cost.fu || 0); recSpend(slotSide(slot), cost);
+}
+/* Population is a player's own, not a team's: in a 2v2 two allies each raise an army and
+   a cap they shared would be a cap neither could plan against. */
+function popOf(slot) {
   var p = 0;
-  G.units.forEach(function (u) { if (u.side === side && !u.dead) p += u.def.pop; });
-  G.blds.forEach(function (b) { if (b.side === side) b.queue.forEach(function (k) { p += UNITS[k].pop; }); });
+  G.units.forEach(function (u) { if (u.own === slot && !u.dead) p += u.def.pop; });
+  G.blds.forEach(function (b) { if (b.own === slot) b.queue.forEach(function (k) { p += UNITS[k].pop; }); });
   /* a work that becomes a unit has its men on the way already: the site holds the
      population its gun will take, so nothing bought in the forty seconds it is being
      built puts the side over the cap when the last bag goes on */
   G.sites.forEach(function (st) {
     var W = WORKS[st.kind];
-    if (st.side === side && W && W.unit) p += UNITS[W.unit].pop || 0;
+    if (st.own === slot && W && W.unit) p += UNITS[W.unit].pop || 0;
   });
   return p;
 }
@@ -3274,27 +3480,28 @@ function queueUnit(b, key) {
   var d = UNITS[key];
   if (d.retired) return false;
   if (b.def.makes.indexOf(key) < 0) return false;
-  if (b.side === G.side && pd().inc > 2 && b.queue.length > 3) return false;
-  if (d.req && !hasBuilding(b.side, d.req)) return false;
-  if (!canAfford(b.side, d.cost)) { if (b.side === G.side) toast('Not enough ' + (G.res[b.side].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); return false; }
-  if (popOf(b.side) + d.pop > popCap(b.side)) { if (b.side === G.side) toast('Population cap reached'); return false; }
-  if (d.limit && countOf(b.side, key) >= d.limit) { if (b.side === G.side) toast('Only ' + d.limit + ' ' + d.name + ' may be fielded'); return false; }
-  pay(b.side, d.cost); b.queue.push(key);
-  G.made[b.side][key] = (G.made[b.side][key] || 0) + 1;
+  var o = b.own, you = o === G.own;
+  if (you && pd().inc > 2 && b.queue.length > 3) return false;
+  if (d.req && !hasBuilding(o, d.req)) return false;
+  if (!canAfford(o, d.cost)) { if (you) toast('Not enough ' + (G.res[o].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); return false; }
+  if (popOf(o) + d.pop > popCap(o)) { if (you) toast('Population cap reached'); return false; }
+  if (unitLimit(o, d) && countOf(o, key) >= unitLimit(o, d)) { if (you) toast('Only ' + unitLimit(o, d) + ' ' + d.name + ' may be fielded'); return false; }
+  pay(o, d.cost); b.queue.push(key);
+  G.made[o][key] = (G.made[o][key] || 0) + 1;
   return true;
 }
 /* how many of a type a side has alive or on order */
-function countOf(side, key) {
+function countOf(slot, key) {
   var n = 0;
-  for (var i = 0; i < G.units.length; i++) if (!G.units[i].dead && G.units[i].side === side && G.units[i].key === key) n++;
-  for (var b = 0; b < G.blds.length; b++) if (G.blds[b].side === side) for (var q = 0; q < G.blds[b].queue.length; q++) if (G.blds[b].queue[q] === key) n++;
+  for (var i = 0; i < G.units.length; i++) if (!G.units[i].dead && G.units[i].own === slot && G.units[i].key === key) n++;
+  for (var b = 0; b < G.blds.length; b++) if (G.blds[b].own === slot) for (var q = 0; q < G.blds[b].queue.length; q++) if (G.blds[b].queue[q] === key) n++;
   return n;
 }
 /* how many a side has ever put on order. a shopping list worked against what is alive
    walks backwards under fire -- every armoured car that burns reopens the first line of
    it -- so the list is climbed against this instead, and each rung is climbed once. */
-function madeOf(side, key) {
-  return (G.made && G.made[side] && G.made[side][key]) || 0;
+function madeOf(slot, key) {
+  return (G.made && G.made[slot] && G.made[slot][key]) || 0;
 }
 /* what a vehicle is worth buying back, fuel counted at what it is actually worth to a
    side that earns a trickle of it */
@@ -3306,17 +3513,17 @@ function vehWorth(key) {
    has never ordered, in list order, and then the holes in what it has, dearest first. One
    list, used twice -- the vehicle branch buys down it, and the money it is saving for is
    the head of it. Two separate loops had drifted apart once already. */
-function aiWants(side, ladder, gate) {
+function aiWants(slot, ladder, gate) {
   var out = [], i, e;
   for (i = 0; i < ladder.length; i++) {
     e = ladder[i];
-    if (G.t < e[2] * gate || madeOf(side, e[0]) >= e[1]) continue;
+    if (G.t < e[2] * gate || madeOf(slot, e[0]) >= e[1]) continue;
     out.push(e);
   }
   var rep = ladder.slice().sort(function (x, y) { return vehWorth(y[0]) - vehWorth(x[0]); });
   for (i = 0; i < rep.length; i++) {
     e = rep[i];
-    if (G.t < e[2] * gate || countOf(side, e[0]) >= e[1]) continue;
+    if (G.t < e[2] * gate || countOf(slot, e[0]) >= e[1]) continue;
     out.push(e);
   }
   return out;
@@ -3327,35 +3534,35 @@ function aiWants(side, ladder, gate) {
    thinking ticks cleared the price of either and a rule that waits for money nothing else
    wants is a rule that never fires. Read by the purchase and by the gate counter that says
    whether it could have been, so the two cannot answer differently. */
-function canPost(key, heavy, spare, spareFu, side) {
+function canPost(key, heavy, spare, spareFu, slot) {
   var d = UNITS[key];
-  var mp = heavy ? G.res[side].mp : spare, fu = heavy ? G.res[side].fu : spareFu;
+  var mp = heavy ? G.res[slot].mp : spare, fu = heavy ? G.res[slot].fu : spareFu;
   return mp >= (d.cost.mp || 0) && fu >= (d.cost.fu || 0);
 }
 /* an armour purchase most of the way paid for is worth waiting for: spending the
    difference on something cheaper is how a side that wanted a tank ends up with a yard
    of armoured cars and no fuel. */
-function worthSaving(side, d) {
+function worthSaving(slot, d) {
   var fu = d.cost.fu || 0;
   /* and only what it could actually field. Saving up for something there is no population
      left for is a side that has stopped buying anything at all: on green it sat on seven
      thousand marks and seven hundred fuel waiting for a Tiger it was one point of
      population short of. */
-  if (popOf(side) + d.pop > popCap(side)) return false;
-  return fu >= 60 && G.res[side].fu > fu * .4 && G.res[side].mp > (d.cost.mp || 0) * .4;
+  if (popOf(slot) + d.pop > popCap(slot)) return false;
+  return fu >= 60 && G.res[slot].fu > fu * .4 && G.res[slot].mp > (d.cost.mp || 0) * .4;
 }
 function updateBuilding(b, dt) {
   if (b.built < 1) return;
   if (!b.queue.length) { b.qt = 0; return; }
-  b.qt += dt * (b.side === G.side ? pd().prod : ad().prod);
+  b.qt += dt * hcapOf(b.own).prod;
   var key = b.queue[0], d = UNITS[key];
   if (b.qt >= d.time) {
     b.queue.shift(); b.qt = 0;
     var sp = d.speed > 0 ? nearestFree(b.x + (b.side === 'us' ? b.def.w / 2 + 42 : -b.def.w / 2 - 42), b.y + rnd(-30, 30))
                          : nearestFree(b.rally.x + rnd(-24, 24), b.rally.y + rnd(-24, 24));
-    var u = spawnUnit(b.side, key, sp.x, sp.y, b.side === 'us' ? 0 : Math.PI);
+    var u = spawnUnit(b.own, key, sp.x, sp.y, b.side === 'us' ? 0 : Math.PI);
     if (d.speed > 0) orderMove(u, b.rally.x + rnd(-24, 24), b.rally.y + rnd(-24, 24));
-    if (b.side === G.side) sfx('spawn');
+    if (owned(b)) sfx('spawn');
   }
 }
 
@@ -3406,7 +3613,7 @@ function enterBuilding(u, bk) {
   }
   u.x = bk.x; u.y = bk.y; u.moving = false; u.path = null;
   if (u.setup !== undefined) u.setup = 0;
-  if (u.side === G.side) toast(u.def.short + ' holding the building');
+  if (owned(u)) toast(u.def.short + ' holding the building');
 }
 function leaveBuilding(u) {
   var bk = u.gar, i;
@@ -3418,7 +3625,7 @@ function leaveBuilding(u) {
     u.models[i].x = u.x + u.models[i].ox; u.models[i].y = u.y + u.models[i].oy;
   }
   clearOrder(u);
-  if (u.side === G.side) toast(u.def.short + ' out of the building');
+  if (owned(u)) toast(u.def.short + ' out of the building');
 }
 /* A man at a window stands on the wall line and the wall is solid on every grid, so a
    straight test from his own cell fails before it starts. A garrison shoots out of its
@@ -3448,7 +3655,7 @@ function hitchGun(v, g) {
   if (!canHitch(v, g)) return;
   v.tow = g; g.towedBy = v;
   clearOrder(g); g.target = null; g.forced = null;
-  if (v.side === G.side) toast(g.def.short + ' hitched');
+  if (owned(v)) toast(g.def.short + ' hitched');
 }
 function unhitchGun(v) {
   var g = v.tow, i;
@@ -3460,7 +3667,7 @@ function unhitchGun(v) {
     g.models[i].x = g.x + g.models[i].ox; g.models[i].y = g.y + g.models[i].oy; g.models[i].f = g.facing;
   }
   g.setup = g.def.setup || 0;
-  if (v.side === G.side) toast(g.def.short + ' unhitched');
+  if (owned(v)) toast(g.def.short + ' unhitched');
 }
 /* A carrier takes one section aboard. The men stay in G.units, so the population, the
    selection and the reinforcement all still know about them; inside is the one flag
@@ -3475,7 +3682,7 @@ function boardVehicle(u, v) {
   clearOrder(u);
   u.inside = v; v.cargo = u; u.target = null;
   u.sup = Math.min(u.sup, .3);
-  if (u.side === G.side) toast(u.def.short + ' aboard');
+  if (owned(u)) toast(u.def.short + ' aboard');
 }
 function unloadVehicle(v) {
   var u = v.cargo, i;
@@ -3488,7 +3695,7 @@ function unloadVehicle(v) {
     u.models[i].f = v.facing;
   }
   clearOrder(u);
-  if (u.side === G.side) toast(u.def.short + ' dismounted');
+  if (owned(u)) toast(u.def.short + ' dismounted');
 }
 function orderMove(u, x, y, attackMove) {
   if (u.retreat) return;
@@ -3500,7 +3707,7 @@ function orderMove(u, x, y, attackMove) {
   /* and if there is no way there, say so once rather than letting the player watch a
      section walk hopefully at a wall: it goes as near as it can get, which is what the
      path now is */
-  if (u.path.noWay && u.side === G.side && G.sel.indexOf(u) >= 0) toast('No way through - going as near as it can');
+  if (u.path.noWay && owned(u) && G.sel.indexOf(u) >= 0) toast('No way through - going as near as it can');
   if (u.def.setup) u.setup = u.def.setup;
 }
 function orderAttack(u, t) {
@@ -3533,14 +3740,14 @@ function orderAttack(u, t) {
      `reachOf` scales an indirect weapon and nothing else. A rifle that carried as far as
    the man could see would be a different game, and the rule that gives a gunner a sight
    as long as his weapon already leaves the tubes out for the same reason. */
-function barrageReach(def, side) {
+function barrageReach(def, slot) {
   var b = def && def.barrage;
   if (!b) return 0;
-  return b.range * (side === G.side ? pd().eye : ad().eye);
+  return b.range * hcapOf(slot).eye;
 }
-function barrageRange(u) { return barrageReach(u.def, u.side); }
+function barrageRange(u) { return barrageReach(u.def, u.own); }
 function reachOf(u, w) {
-  return w.range * (!u.def.indirect ? 1 : u.side === G.side ? pd().eye : ad().eye);
+  return w.range * (!u.def.indirect ? 1 : hcapOf(u.own).eye);
 }
 function barrageWhy(u, wx, wy) {
   var B = u.def.barrage;
@@ -3550,7 +3757,7 @@ function barrageWhy(u, wx, wy) {
      this weight fired onto ground somebody was fighting over; five two-hundred-kilogram
      shells into a headquarters wins an annihilation match without an infantryman leaving
      home, which is the whole reason the zone exists. */
-  if (B.safe && !(u.side === G.side ? pd().arty : ad().arty)) {
+  if (B.safe && !hcapOf(u.own).arty) {
     for (var i = 0; i < G.blds.length; i++) {
       var b = G.blds[i];
       if (b.dead || b.side === u.side) continue;
@@ -3618,7 +3825,7 @@ function orderStop(u) {
 function setRound(list, he) {
   for (var i = 0; i < list.length; i++) {
     var u = list[i];
-    if (!u.def.wUp || !u.def.wUp.he || u.side !== G.side) continue;
+    if (!u.def.wUp || !u.def.wUp.he || !owned(u)) continue;
     u.up = u.up || {};
     if (!!u.up.he === he) continue;
     u.up.he = he;
@@ -3628,12 +3835,12 @@ function setRound(list, he) {
 function setStance(list, st) {
   for (var i = 0; i < list.length; i++) {
     var u = list[i];
-    if (u.cat === 'veh' || u.side !== G.side) continue;
+    if (u.cat === 'veh' || !owned(u)) continue;
     u.stance = st; u.stanceT = 0;
   }
 }
 function orderRetreat(u) {
-  var hq = hqOf(u.side); if (!hq || u.cat === 'veh' || !u.def.speed) return;   /* a gun with no engine stays where it is put */
+  var hq = hqOf(u.own) || hqOf(u.side); if (!hq || u.cat === 'veh' || !u.def.speed) return;   /* a gun with no engine stays where it is put */
   if (u.gar) leaveBuilding(u);
   clearOrder(u);
   u.retreat = 1; u.order = 'retreat';
@@ -4430,7 +4637,7 @@ function computeVisibility(dt) {
     var uz = groundZ(u.x, u.y);
     var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
             (u.stance === 'ground' && !u.moving ? .85 : 1) *
-            (u.side === G.side ? pd().eye : ad().eye);
+            hcapOf(u.own).eye;
     _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz, u: u });
   }
   for (j = 0; j < G.blds.length; j++) {
@@ -4439,7 +4646,7 @@ function computeVisibility(dt) {
        stores with a man on it: what it watches is its own ground. */
     if (!b.dead) _eyes[b.side].push({ x: b.x, y: b.y, z: groundZ(b.x, b.y) + 40,
                                       r: (b.def && b.def.hq ? 400 : 300) * (b.built >= 1 ? 1 : .55) *
-                                         (b.side === G.side ? pd().eye : ad().eye),
+                                         hcapOf(b.own).eye,
                                       ez: 0, u: null });
   }
   /* How fast this side is picking that thing out, taking the best of its eyes. Nought
@@ -4666,13 +4873,13 @@ function fireSecondary(u, dt) {
    faster and nothing said so, which is exactly the hidden thumb the handicap exists to
    replace, so it is one number now and the opposition's is the eighteen it always was. */
 var MG_HOLD = 22, MG_HOLD_FOE = 18;
-function mgHold(u) { return u.side === G.side ? MG_HOLD : MG_HOLD_FOE; }
+function mgHold(u) { return isPlayer(u.own) ? MG_HOLD : MG_HOLD_FOE; }
 function mgTick(u, dt) {
   var hold = mgHold(u);
   u.mgOnT = Math.max(0, (u.mgOnT || 0) - dt);
   if (u.mgOnT > 0) u.mgHeat = clamp((u.mgHeat || 0) + dt / hold, 0, 1);
   else u.mgHeat = clamp((u.mgHeat || 0) - dt / (hold * .55), 0, 1);
-  if (u.mgHeat >= 1) { if (!u.mgCook && u.side === G.side) toast(u.def.short + ' machine gun is cooked'); u.mgCook = 1; }
+  if (u.mgHeat >= 1) { if (!u.mgCook && owned(u)) toast(u.def.short + ' machine gun is cooked'); u.mgCook = 1; }
   else if (u.mgCook && u.mgHeat < .33) u.mgCook = 0;
 }
 function fireOneSecondary(u, key, dt) {
@@ -4727,10 +4934,10 @@ function vehCrit(t, w, src) {
     t.immob = Math.max(t.immob || 0, 5 + Math.random() * 4);
     t.path = null;
     spawnFx('spark', t.x + rnd(-18, 18), t.y + rnd(-18, 18));
-    if (t.side === G.side) toast(t.def.short + ' track hit');
+    if (owned(t)) toast(t.def.short + ' track hit');
   } else if (r < (heavy ? .22 : .13)) {
     t.gunDmg = Math.max(t.gunDmg || 0, 7 + Math.random() * 5);
-    if (t.side === G.side) toast(t.def.short + ' gun damaged');
+    if (owned(t)) toast(t.def.short + ' gun damaged');
   } else if (r < (heavy ? .40 : .28)) {
     t.shaken = Math.max(t.shaken || 0, 3 + Math.random() * 2);
   }
@@ -4825,7 +5032,7 @@ function fireAt(u, t, dt) {
   acc *= (1 + u.vet * .07);
   /* the opposition's own hand on the trigger. The player's men used to get a matching
      multiplier out of the same table and no longer do: see the handicap. */
-  if (u.side !== G.side) acc *= DIFF[G.diff].aim;
+  if (!isPlayer(u.own)) acc *= diffFor(u).aim;
   acc *= clamp(1.30 - (d / maxR) * .62, .48, 1.30);
   /* a vehicle is a far larger mark than a man, and a moving one is a far worse gun
      platform than a halted one */
@@ -4966,12 +5173,12 @@ function damage(t, amt, src) {
      its vehicles -- a thing worth knowing before moving either of these down there.
        Dealt is guarded on the sides differing so that a player's own shell bursting among
      his own men is not amplified on the way in and then reduced on the way out. */
-  var ADh = ad();
-  if (ADh.take !== 1 && t.side !== G.side) amt *= ADh.take;
-  if (ADh.deal !== 1 && src && src.side !== G.side && src.side !== t.side) amt *= ADh.deal;
-  var PDh = pd();
-  if (PDh.deal !== 1 && src && src.side === G.side && src.side !== t.side) amt *= PDh.deal;
-  if (PDh.take !== 1 && t.side === G.side) amt *= PDh.take;
+  var Th = hcapOf(t.own);
+  if (Th.take !== 1) amt *= Th.take;
+  if (src && src.own && src.side !== t.side) {
+    var Sh = hcapOf(src.own);
+    if (Sh.deal !== 1) amt *= Sh.deal;
+  }
   if (t.built !== undefined) { /* building */
     recHurt(t, amt * .6, src);
     t.hp -= amt * .6; t.hitT = .2; if (t.hp <= 0) killBuilding(t); return;
@@ -5012,13 +5219,13 @@ function damage(t, amt, src) {
     var vic = pick(alive);
     /* what the round actually took off him, which on a man with eleven points left is
        eleven and not the forty the shell says */
-    recHurt(t, Math.min(amt / (t.side === G.side ? 1 : DIFF[G.diff].tough), vic.hp), src);
+    recHurt(t, Math.min(amt / (isPlayer(t.own) ? 1 : diffFor(t).tough), vic.hp), src);
     damageModel(t, vic, amt, src);
   }
 }
 function damageModel(u, m, amt, src) {
   if (!m.alive) return;
-  if (u.side !== G.side) amt /= DIFF[G.diff].tough;
+  if (!isPlayer(u.own)) amt /= diffFor(u).tough;
   m.hp -= amt;
   if (m.hp <= 0) {
     m.alive = false;
@@ -5199,14 +5406,14 @@ function recArmy() {
            peakPop: 0, peakArmy: 0 };
 }
 function recInit() {
-  REC = { when: Date.now(), side: G.side, diff: G.diff, win: G.win, t: 0, over: null, why: '',
+  REC = { when: Date.now(), side: G.side, own: G.own, duo: !!G.duo, diff: G.diff, win: G.win, t: 0, over: null, why: '',
           us: recArmy(), ger: recArmy(), units: {}, line: [], lineT: 0 };
 }
 /* A unit's own row, opened when it is raised. `name` and `key` are copied rather than
    looked up later, because a saved record is read on a page that may have moved on. */
 function recBorn(u) {
   if (!REC || !u.def) return;
-  REC.units[u.id] = { id: u.id, key: u.key, side: u.side, name: u.def.short || u.def.name,
+  REC.units[u.id] = { id: u.id, key: u.key, side: u.side, own: u.own, name: u.def.short || u.def.name,
                       born: G.t, died: -1, kills: 0, vkills: 0, mkills: 0, lost: 0,
                       dmgOut: 0, dmgIn: 0, rounds: 0, walked: 0, caps: 0, vet: 0, hp: 1 };
   /* what was raised, and nothing about what it cost: spending is counted in `pay`, which
@@ -5344,30 +5551,51 @@ function updateSectors(dt) {
     G.sectors.forEach(function (sc) { if (sc.owner === side) sc.conn = !!seen[sc.id]; });
   });
 }
+/* The ground pays a TEAM and the money reaches a PLAYER, which are two different things
+   the moment there are two players on a team. A sector is held by a side, so the yield is
+   counted once for the side and then split evenly between the slots on it -- two allies
+   who hold half the map between them have half the map's income each rather than all of
+   it each, and a 1v1 is the arithmetic it always was because a team of one gets the whole
+   share. The base trickle is per player, because it is what keeps a side that has been
+   pushed off every flag able to raise a section at all, and that is a thing each of them
+   needs rather than a thing the team needs once.
+     The victory points stay on the team, on its first slot, which is where every reader
+   of `G.res.us.vp` already looks. */
 function tickEconomy(dt) {
   ['us', 'ger'].forEach(function (side) {
-    var mp = 3.9, fu = .28, vps = 0;
+    var mp = 0, fu = 0, vps = 0;
     G.sectors.forEach(function (s) {
       if (s.owner !== side || !s.conn) return;
       var y = SEC_YIELD[s.type];
       mp += y.mp; fu += y.fu;
       if (s.type === 'vp') vps++;
     });
-    /* two multipliers on the player's side and one on the opposition's, because fuel
-       gates armour and manpower gates men: a player who wants a company of infantry and a
-       player who wants three Shermans are asking opposite things of one number. */
-    var mMul = side === G.side ? pd().inc : DIFF[G.diff].foe * ad().inc;
-    var fMul = side === G.side ? pd().incf : DIFF[G.diff].foe * ad().incf;
-    G.inc[side].mp = mp * mMul; G.inc[side].fu = fu * fMul;
-    G.res[side].mp += mp * mMul * dt;
-    G.res[side].fu += fu * fMul * dt;
-    recEarn(side, mp * mMul * dt, fu * fMul * dt);
+    var ks = slotsOf(side), n = Math.max(1, ks.length);
+    ks.forEach(function (slot) {
+      var H = hcapOf(slot), D = diffOf(slot), ai = !isPlayer(slot);
+      /* two multipliers on each side, because fuel gates armour and manpower gates men: a
+         player who wants a company of infantry and a player who wants three Shermans are
+         asking opposite things of one number. An AI's own difficulty is a factor on top
+         of its row, so an even row is the game as it was. */
+      var mMul = H.inc * (ai ? D.foe : 1), fMul = H.incf * (ai ? D.foe : 1);
+      var m = (3.9 + mp / n) * mMul, f = (.28 + fu / n) * fMul;
+      G.inc[slot].mp = m; G.inc[slot].fu = f;
+      G.res[slot].mp += m * dt; G.res[slot].fu += f * dt;
+      recEarn(side, m * dt, f * dt);
+    });
     if (vps && G.win !== 'anni') {
-      var rate = .8 * (foe(side) === G.side ? DIFF[G.diff].vp : 1);
-      G.res[foe(side)].vp = Math.max(0, G.res[foe(side)].vp - vps * rate * dt);
+      /* whose points drain is the enemy TEAM's, and the rate is set by the difficulty of
+         whoever is bleeding them: a player's own points drain at the rate his opponent's
+         difficulty says, which is where `DIFF[].vp` has always lived */
+      var him = foe(side);
+      /* whose points drain is the enemy TEAM's; the rate is the difficulty of whoever is
+         taking the ground, and it only bites the player, which is where `DIFF[].vp` has
+         always lived */
+      var bleed = slotsOf(him).indexOf(G.own) >= 0 ? diffOf(slotsOf(side)[0]).vp : 1;
+      vpSet(him, Math.max(0, vpOf(him) - vps * .8 * bleed * dt));
     }
   });
-  G.pop.us = popOf('us'); G.pop.ger = popOf('ger');
+  for (var pi = 0; pi < G.slots.length; pi++) G.pop[G.slots[pi].k] = popOf(G.slots[pi].k);
   if (G.win === 'anni') {
     /* Annihilation. The sectors still pay for the army and still show who holds what;
        what they no longer do is decide the game. A side is finished when it has no
@@ -5378,8 +5606,8 @@ function tickEconomy(dt) {
     else if (!countBuildings('ger')) endGame('us', 'base annihilated');
     return;
   }
-  if (G.res.us.vp <= 0) endGame('ger', 'victory points exhausted');
-  else if (G.res.ger.vp <= 0) endGame('us', 'victory points exhausted');
+  if (vpOf('us') <= 0) endGame('ger', 'victory points exhausted');
+  else if (vpOf('ger') <= 0) endGame('us', 'victory points exhausted');
 }
 function countBuildings(side) {
   var n = 0;
@@ -5388,12 +5616,12 @@ function countBuildings(side) {
 }
 
 /* ---------------------------------------------------------------- construction sites */
-function placeStructure(side, key, x, y, engineers) {
-  var d = BUILDINGS[key];
-  if (!canAfford(side, d.cost)) { if (side === G.side) toast('Not enough resources'); return null; }
-  if (!siteClear(x, y, d.w, d.h)) { if (side === G.side) toast('No room there'); return null; }
-  pay(side, d.cost);
-  var b = spawnBuilding(side, key, x, y, false);
+function placeStructure(slot, key, x, y, engineers) {
+  var d = BUILDINGS[key], you = slot === G.own;
+  if (!canAfford(slot, d.cost)) { if (you) toast('Not enough resources'); return null; }
+  if (!siteClear(x, y, d.w, d.h)) { if (you) toast('No room there'); return null; }
+  pay(slot, d.cost);
+  var b = spawnBuilding(slot, key, x, y, false);
   /* The footprint goes solid on the movement grid the moment the site is pegged out,
      so anything standing inside it is left with nowhere legal to be: it fails every
      walkability test, repaths, and sits there for the rest of the game. Everyone in
@@ -5444,10 +5672,10 @@ function resumeBuild(u, b) {
                  : nearestFree(b.x + rnd(-26, 26), b.y + rnd(-26, 26));
   u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y, u); u.pi = 0;
 }
-function siteOf(side, key) {
+function siteOf(slot, key) {
   for (var i = 0; i < G.blds.length; i++) {
     var b = G.blds[i];
-    if (b.side === side && !b.dead && b.key === key) return b;
+    if (b.own === slot && !b.dead && b.key === key) return b;
   }
   return null;
 }
@@ -5497,38 +5725,41 @@ function workRoom(x, y, W) {
   for (i = 0; i < G.sites.length; i++) if (dsq(G.sites[i].x, G.sites[i].y, x, y) < 44 * 44) return false;
   return true;
 }
-function placeWork(side, kind, x, y, ang, engineers) {
+function placeWork(slot, kind, x, y, ang, engineers) {
   var W = WORKS[kind];
   if (!W) return null;
-  if (!canAfford(side, W.cost)) { if (side === G.side) toast('Not enough ' + (G.res[side].mp < (W.cost.mp || 0) ? 'manpower' : 'fuel')); return null; }
-  if (!workRoom(x, y, W)) { if (side === G.side) toast('The ground will not take it there'); return null; }
+  var you = slot === G.own;
+  if (!canAfford(slot, W.cost)) { if (you) toast('Not enough ' + (G.res[slot].mp < (W.cost.mp || 0) ? 'manpower' : 'fuel')); return null; }
+  if (!workRoom(x, y, W)) { if (you) toast('The ground will not take it there'); return null; }
   /* a work that becomes a unit answers to the unit's limit and to the population cap,
      which placeWork never had to ask about a wall of bags.
-       The player may have the two artillery rules off, and only those two: the test is
-     whether the work puts a piece that fires missions on the ground, so the eighty-eight
-     keeps its two a side whatever the handicap says. It is the population cap that stops
-     a free-for-all, and that is not one of the rules this lifts. */
-  var freeArty = side === G.side ? pd().arty : ad().arty;
+       The two artillery rules may be off, and only those two: the test is whether the work
+     puts a piece that fires missions on the ground, so the eighty-eight keeps its two a
+     slot whatever that setting says. The population cap is what stops a free-for-all and
+     is not one of the rules this lifts.
+       The unit limit itself is a separate setting (`noLimit`), asked through `unitLimit`
+     so that the roster is not edited to answer it. */
+  var freeArty = hcapOf(slot).arty;
   if (W.unit) {
     var ud = UNITS[W.unit];
-    var ruled = !(freeArty && ud.barrage);
-    if (ruled && ud.limit && countOf(side, W.unit) + siteCount(side, kind) >= ud.limit) {
-      if (side === G.side) toast('Only ' + ud.limit + ' ' + ud.name + ' may be fielded'); return null;
+    var lim = freeArty && ud.barrage ? 0 : unitLimit(slot, ud);
+    if (lim && countOf(slot, W.unit) + siteCount(slot, kind) >= lim) {
+      if (you) toast('Only ' + lim + ' ' + ud.name + ' may be fielded'); return null;
     }
-    if (popOf(side) + (ud.pop || 0) > popCap(side)) { if (side === G.side) toast('Population cap reached'); return null; }
+    if (popOf(slot) + (ud.pop || 0) > popCap(slot)) { if (you) toast('Population cap reached'); return null; }
   }
   /* and a heavy battery has to be dug forward of home. A gun that reaches most of the way
      across the map and stands behind its own headquarters cannot be got at, so the rule is
      on the work rather than on the player's judgement. */
   if (W.minHq && !freeArty) {
-    var ohq = hqOf(side);
+    var ohq = hqOf(slot);
     if (ohq && dsq(ohq.x, ohq.y, x, y) < W.minHq * W.minHq) {
-      if (side === G.side) toast('Dig it forward: not within ' + W.minHq + ' of your own headquarters');
+      if (you) toast('Dig it forward: not within ' + W.minHq + ' of your own headquarters');
       return null;
     }
   }
-  pay(side, W.cost);
-  var site = { x: x, y: y, a: ang || 0, kind: kind, side: side, prog: 0, time: W.time,
+  pay(slot, W.cost);
+  var site = { x: x, y: y, a: ang || 0, kind: kind, own: slot, side: slotSide(slot), prog: 0, time: W.time,
                buf: GLOK ? facesToBuffer(workFaces(kind, x, y, ang || 0)) : null };
   G.sites.push(site);
   (engineers || []).forEach(function (e) { resumeBuild(e, site); });
@@ -5548,7 +5779,7 @@ function updateSites(dt) {
 function finishWork(s) {
   var W = WORKS[s.kind];
   if (!W) return;
-  G.works.push({ kind: s.kind, x: s.x, y: s.y, a: s.a || 0, side: s.side, buf: s.buf });
+  G.works.push({ kind: s.kind, x: s.x, y: s.y, a: s.a || 0, own: s.own, side: s.side, buf: s.buf });
   recWork(s.side);
   if (W.cover) {
     var c = W.cover;
@@ -5562,7 +5793,7 @@ function finishWork(s) {
        is the cover, and the piece is drawn at the centre of the work rather than at
        the first man, which is where every other team's weapon is drawn. */
     var gsp = nearestFree(s.x, s.y);
-    var g = spawnUnit(s.side, W.unit, s.x, s.y, s.a || 0);
+    var g = spawnUnit(s.own, W.unit, s.x, s.y, s.a || 0);
     if (!walkable(s.x, s.y)) { g.x = gsp.x; g.y = gsp.y; }
     g.baseA = g.facing; g.setup = 0;
     var lay = W.lay || [[-14, -9], [-14, 9], [-27, 0], [-21, -22], [-21, 22], [-39, 0]];
@@ -5577,7 +5808,7 @@ function finishWork(s) {
        spreads to forty-eight, so it has to be measured again now the men have been moved */
     fitRadius(g);
   }
-  if (s.side === G.side) { toast(W.name + ' up'); sfx('click'); }
+  if (s.own === G.own) { toast(W.name + ' up'); sfx('click'); }
 }
 
 /* how close a builder has to stand to work on something */
@@ -5708,12 +5939,12 @@ function updateUnit(u, dt) {
          sides and no setting anywhere. Production and construction are two knobs because
          they are two decisions: a fast queue with a slow spade is a side that has an army
          and no position, and the other way round is a side dug in with nothing in it. */
-      var cs = u.side === G.side ? pd().cons : ad().cons;
+      var cs = hcapOf(u.own).cons;
       if (b.def) {
         b.built = clamp(b.built + dt * cs / b.def.time, 0, 1);
         b.hp = Math.max(b.hp, b.maxhp * (.18 + .82 * b.built));
         if (Math.random() < dt * 6) spawnFx('spark', b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2));
-        if (b.built >= 1) { if (!b.recDone) { b.recDone = 1; recBuild(b.side, b.key); } u.building = null; clearOrder(u); if (u.side === G.side) toast(b.def.name + ' complete'); }
+        if (b.built >= 1) { if (!b.recDone) { b.recDone = 1; recBuild(b.side, b.key); } u.building = null; clearOrder(u); if (owned(u)) toast(b.def.name + ' complete'); }
       } else {
         b.prog = clamp(b.prog + dt * cs / b.time, 0, 1);
         if (b.prog >= 1) { u.building = null; clearOrder(u); }
@@ -5867,12 +6098,17 @@ function updateUnit(u, dt) {
    field to one of them. A plan that carries a field over from the last battle is a brain
    acting on somebody else's war. Every value in it is a number, a string or null for the
    reason given above: nothing in the plan may outlive what it pointed at. */
-var AI0 = { side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
+var AI0 = { own: 'ger', side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
             asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0,
             contacts: null, owned: null, ctSec: null, ctT: -99, hot: null, momSec: null, momT: -99,
             flkX: 0, flkY: 0, flkT: -99 };
 var AI = {};
 (function () { for (var k in AI0) AI[k] = AI0[k]; })();
+/* One plan per AI slot. `AI` is whichever of them is thinking right now, reassigned
+   rather than copied, because every rule below reads the bare global and swapping the
+   fields in and out of one object a tick is both slower and a thing to get wrong. In a
+   1v1 there is one entry and `AI` never changes. */
+var AIP = { ger: AI };
 /* ---- the opposition, and nothing but the opposition.
    Every field here is about the other side: what it earns, how often it thinks, what it
    fields, how well it shoots, how much killing it takes, how it attacks and how fast it
@@ -5912,22 +6148,34 @@ var DIFF = [
   { foe: 1.16, tick: .84, inf: 6, mg: 3, army: 99, mech: 6, skill: 2, push: 0, aim: 1.04, tough: 1.07,
     vp: 1.07, tech: 1.12, wave: 4, form: 30, press: 80 }
 ];
-function aiInit(side) {
-  var k;
-  for (k in AI) if (AI0[k] === undefined) delete AI[k];
-  for (k in AI0) AI[k] = AI0[k];
-  AI.side = side;
+/* Raise a brain for one slot. Called once per AI slot at the start of a battle; the
+   per-TEAM things it clears -- the contacts, the beaten zone -- are cleared by every one
+   of them, which is harmless because a battle starts with nothing in either. */
+function aiInit(slot) {
+  var k, P = AIP[slot];
+  if (!P) P = AIP[slot] = {};
+  for (k in P) if (AI0[k] === undefined) delete P[k];
+  for (k in AI0) P[k] = AI0[k];
+  P.own = slot; P.side = slotSide(slot);
+  AI = P;
   aiForget();                                        /* last battle's contacts are not this one's */
   aiCallsClear();
   aiOpsClear();
   dangerClear();
   for (k in AIR.fired) AIR.fired[k] = 0;
 }
+/* and forget the ones that are not playing this game, so a 2v2 followed by a 1v1 does not
+   leave a third brain holding a plan about units that no longer exist */
+function aiSlotsInit() {
+  var k, i;
+  for (k in AIP) delete AIP[k];
+  for (i = 0; i < G.slots.length; i++) if (G.slots[i].ai) aiInit(G.slots[i].k);
+}
 /* Kept although the brain no longer calls it: `tools/skirmish.mjs` injects the aiTick out
    of an older revision to fight this one, and that one does. */
 function aiOwn(pred) {
   var out = [];
-  for (var i = 0; i < G.units.length; i++) { var u = G.units[i]; if (!u.dead && u.side === AI.side && (!pred || pred(u))) out.push(u); }
+  for (var i = 0; i < G.units.length; i++) { var u = G.units[i]; if (!u.dead && u.own === AI.own && (!pred || pred(u))) out.push(u); }
   return out;
 }
 /* Who is in the wave. The men told to take the objective it is forming against, the men
@@ -6085,9 +6333,9 @@ function aiFade(side, dt) {
 /* Rebuilt once a tick. The arrays are kept and emptied rather than made again, because
    this runs several times a second for the life of a battle. */
 var AIW = {
-  t: 0, side: 'ger', foe: 'us', skill: 1, D: null, hq: null, foeHq: null, hqX: 0, hqY: 0,
+  t: 0, slot: 'ger', side: 'ger', foe: 'us', skill: 1, D: null, hq: null, foeHq: null, hqX: 0, hqY: 0,
   mine: [], engs: [], men: [], rifles: [], teams: [], vehs: [], takers: [], screens: [], fighters: [],
-  foes: [], known: [], gars: 0,
+  team: [], foes: [], known: [], gars: 0,
   me: null, him: null, own: null,
   myStr: 0, foeStr: 0, ratio: 1, vpLead: 0, ground: 0,
   mp: 0, fu: 0, inc: 0, pop: 0, cap: 0, coming: [], comingPop: 0,
@@ -6158,12 +6406,17 @@ function aiRoll(list, side) {
 }
 /* Assemble it. One walk of G.units does the classification, the two orders of battle,
    both strengths and the index; the sector rollup is a second pass over nine sectors. */
-function aiLook(side, D, skill) {
-  var W = AIW, foeSide = foe(side), i, u;
-  W.t = G.t; W.side = side; W.foe = foeSide; W.D = D; W.skill = skill;
+/* `slot` is the player this brain is: what it may command, what it may spend and what
+   counts against its own cap. `W.side` is the team, and everything about the ground, the
+   enemy and what can be seen is read off that. `W.team` is the whole team's fighting
+   strength, which is what the odds are about; `W.fighters` is what this brain can give an
+   order to, which in a 1v1 is the same list. */
+function aiLook(slot, D, skill) {
+  var side = slotSide(slot), W = AIW, foeSide = foe(side), i, u;
+  W.t = G.t; W.slot = slot; W.side = side; W.foe = foeSide; W.D = D; W.skill = skill;
   W.mine.length = 0; W.engs.length = 0; W.men.length = 0; W.rifles.length = 0; W.teams.length = 0;
   W.vehs.length = 0; W.takers.length = 0; W.screens.length = 0; W.fighters.length = 0;
-  W.foes.length = 0; W.known.length = 0;
+  W.team.length = 0; W.foes.length = 0; W.known.length = 0;
   W.gars = 0; W.myStr = 0; W.foeStr = 0;
   W.eng = {};
   /* by id, because half of what a unit wants to ask about is something it has only the
@@ -6176,9 +6429,12 @@ function aiLook(side, D, skill) {
     if (u.dead) continue;
     W.byId[u.id] = u;
     if (u.side === side) {
+      /* the ally's men count toward the strength and stand on the friendly grid; they do
+         not go in any of the lists that are dealt orders */
+      if (!u.def.builder) { W.team.push(u); W.myStr += aiValue(u); }
+      if (u.own !== slot) continue;
       W.mine.push(u);
       if (u.def.builder) { W.engs.push(u); continue; }
-      W.myStr += aiValue(u);
       if (u.cat === 'veh') {
         W.vehs.push(u); own.veh++;
         if (u.def.caps) W.takers.push(u); else W.screens.push(u);
@@ -6201,24 +6457,25 @@ function aiLook(side, D, skill) {
   }
   aiGrid();
   aiIndex(W.foes, W.gi);
-  aiIndex(W.fighters, W.gm);
+  aiIndex(W.team, W.gm);
   W.him = aiRoll(W.foes, foeSide);
-  W.me = aiRoll(W.fighters, side);
-  W.hq = hqOf(side);
-  if (!W.hq) for (i = 0; i < G.blds.length; i++) if (G.blds[i].side === side && !G.blds[i].dead) { W.hq = G.blds[i]; break; }
+  W.me = aiRoll(W.team, side);
+  W.hq = hqOf(slot);
+  if (!W.hq) for (i = 0; i < G.blds.length; i++) if (G.blds[i].own === slot && !G.blds[i].dead) { W.hq = G.blds[i]; break; }
+  if (!W.hq) W.hq = hqOf(side);
   W.foeHq = hqOf(foeSide);
   W.hqX = W.hq ? W.hq.x : 0; W.hqY = W.hq ? W.hq.y : 0;
   W.ratio = W.myStr / Math.max(150, W.foeStr);
-  W.vpLead = G.win === 'vp' ? (G.res[side].vp || 0) - (G.res[foeSide].vp || 0) : 0;
-  W.mp = G.res[side].mp; W.fu = G.res[side].fu; W.inc = (G.inc[side] && G.inc[side].mp) || 0;
-  W.pop = popOf(side); W.cap = popCap(side);
+  W.vpLead = G.win === 'vp' ? (vpOf(side) || 0) - (vpOf(foeSide) || 0) : 0;
+  W.mp = G.res[slot].mp; W.fu = G.res[slot].fu; W.inc = (G.inc[slot] && G.inc[slot].mp) || 0;
+  W.pop = popOf(slot); W.cap = popCap(slot);
   /* What is already paid for and on its way. The brain used to count only what had
      arrived, so it read its own army as smaller than it was going to be for as long as
      anything was in a queue, and bought against that. */
   W.coming.length = 0; W.comingPop = 0;
   for (i = 0; i < G.blds.length; i++) {
     var bq = G.blds[i];
-    if (bq.side !== side || !bq.queue) continue;
+    if (bq.own !== slot || !bq.queue) continue;
     for (var qi = 0; qi < bq.queue.length; qi++) {
       var qk = bq.queue[qi];                         /* the queue holds bare keys */
       W.coming.push(qk);
@@ -6250,8 +6507,8 @@ function aiLook(side, D, skill) {
       r.th += v;
       if (visibleTo(side, e)) r.seen += v;
     });
-    for (var m = 0; m < W.fighters.length; m++)
-      if (dsq(W.fighters[m].x, W.fighters[m].y, s.x, s.y) < 400 * 400) r.mine += aiValue(W.fighters[m]);
+    for (var m = 0; m < W.team.length; m++)
+      if (dsq(W.team[m].x, W.team[m].y, s.x, s.y) < 400 * 400) r.mine += aiValue(W.team[m]);
     if (s.nb) for (var q = 0; q < s.nb.length; q++) {
       var nb = G.secById[s.nb[q]];
       if (nb && nb.owner === side) r.nbHeld++;
@@ -6441,7 +6698,8 @@ function aiIntel(side) {
        for it to shoot, and its manpower is a machine gun that would have.
      - armour with nothing of ours to answer it: the gun comes forward and the count on it
        goes up, which is the one case the old list already knew about. */
-function aiCutLadder(side, base, IN, own) {
+function aiCutLadder(slot, base, IN, own) {
+  var side = slotSide(slot);
   /* And what is actually killing it, which is a different question from what he owns. A
      Tiger parked in his own base counts once in the order of battle and never in this.
      `AIM.lostTo` is the weight this side has lost by the kind of thing that did the
@@ -6765,11 +7023,11 @@ function aiSense(u, W) {
 
    A call is numbers and ids, like everything else that outlives a tick. */
 var AIQ = { us: null, ger: null };
-function aiQOf(side) { if (!AIQ[side]) AIQ[side] = { list: [], n: 1 }; return AIQ[side]; }
-function aiCallsClear() { AIQ.us = null; AIQ.ger = null; }
+function aiQOf(slot) { if (!AIQ[slot]) AIQ[slot] = { list: [], n: 1 }; return AIQ[slot]; }
+function aiCallsClear() { for (var i = 0; i < SLOTS.length; i++) AIQ[SLOTS[i]] = null; }
 /* the call this unit has open, if any */
 function aiMyCall(u) {
-  var Q = AIQ[u.side];
+  var Q = AIQ[u.own];
   if (!Q) return null;
   for (var i = 0; i < Q.list.length; i++) if (Q.list[i].by === u.id) return Q.list[i];
   return null;
@@ -6778,7 +7036,7 @@ function aiMyCall(u) {
    is what keeps the answer stable: a call re-raised every tick is a call whose answerer
    is re-dealt every tick, and a tank that is re-dealt every tick never arrives. */
 function aiCall(u, need, th, pri) {
-  var Q = aiQOf(u.side), c = aiMyCall(u);
+  var Q = aiQOf(u.own), c = aiMyCall(u);
   if (c) {
     if (c.need !== need) { c.need = need; c.ans.length = 0; }
     c.x = u.x; c.y = u.y; c.tid = th ? th.id : 0;
@@ -6797,7 +7055,7 @@ function aiCall(u, need, th, pri) {
    track of, or that nobody has answered in half a minute, is off it. A call that is
    being answered is left alone for as long as the answer is coming. */
 function aiCallTend(W) {
-  var Q = AIQ[W.side];
+  var Q = AIQ[W.slot];
   if (!Q) return;
   var out = [], i, j, c;
   for (i = 0; i < Q.list.length; i++) {
@@ -6859,7 +7117,7 @@ function aiCanAnswer(c, th, need) {
    the one that gets there while it is still worth doing. Two a call: one tank sent at a
    tank is a duel, three is the rest of the front left open. */
 function aiAnswer(W) {
-  var Q = AIQ[W.side], list = W.fighters, i, j, taken = {}, live = {};
+  var Q = AIQ[W.slot], list = W.fighters, i, j, taken = {}, live = {};
   if (Q) for (i = 0; i < Q.list.length; i++) live[Q.list[i].id] = 1;
   /* The dealing above hands every section and every tank a job out of the plan, which
      takes this one off whoever is halfway to answering a call. So it is put back, and
@@ -6938,22 +7196,22 @@ function aiAnswer(W) {
    Like everything that outlives a tick it holds numbers and ids. A unit carries the id of
    the operation it is on (`u.op`), which outranks the job the plan deals it. */
 var AIOP = { us: null, ger: null };
-function aiOpsOf(side) { if (!AIOP[side]) AIOP[side] = { list: [], n: 1 }; return AIOP[side]; }
-function aiOpsClear() { AIOP.us = null; AIOP.ger = null; }
-function aiOpById(side, id) {
-  var Q = AIOP[side], i;
+function aiOpsOf(slot) { if (!AIOP[slot]) AIOP[slot] = { list: [], n: 1 }; return AIOP[slot]; }
+function aiOpsClear() { for (var i = 0; i < SLOTS.length; i++) AIOP[SLOTS[i]] = null; }
+function aiOpById(slot, id) {
+  var Q = AIOP[slot], i;
   if (!Q || !id) return null;
   for (i = 0; i < Q.list.length; i++) if (Q.list[i].id === id) return Q.list[i];
   return null;
 }
-function aiOpKind(side, kind) {
-  var Q = AIOP[side], i;
+function aiOpKind(slot, kind) {
+  var Q = AIOP[slot], i;
   if (!Q) return null;
   for (i = 0; i < Q.list.length; i++) if (Q.list[i].kind === kind) return Q.list[i];
   return null;
 }
-function aiOpAdd(side, kind, o) {
-  var Q = aiOpsOf(side), k;
+function aiOpAdd(slot, kind, o) {
+  var Q = aiOpsOf(slot), k;
   var op = { id: Q.n++, kind: kind, main: 0, sec: null, tid: 0, x: 0, y: 0,
              state: 'form', t0: G.t, tForm: G.t, tGo: -99, pick: G.t, key: '',
              fupX: 0, fupY: 0, flkX: 0, flkY: 0, flank: 0,
@@ -6969,8 +7227,8 @@ function aiOpAdd(side, kind, o) {
    the reason a probe is worth sending. */
 function aiScouted(W, s) {
   var i, side = W.side;
-  for (i = 0; i < W.fighters.length; i++)
-    if (dsq(W.fighters[i].x, W.fighters[i].y, s.x, s.y) < 380 * 380) return true;
+  for (i = 0; i < W.team.length; i++)
+    if (dsq(W.team[i].x, W.team[i].y, s.x, s.y) < 380 * 380) return true;
   var M = aiMemOf(side).con, k;
   for (k in M) {
     var c = M[k];
@@ -6982,7 +7240,7 @@ function aiScouted(W, s) {
    without one the army keeps doing the thing long after the thing has stopped being worth
    doing, which is what a wave held for a fixed press timer was. */
 function aiOpsReview(W) {
-  var Q = AIOP[W.side];
+  var Q = AIOP[W.slot];
   if (!Q || !Q.list.length) return;
   var out = [], i, side = W.side;
   for (i = 0; i < Q.list.length; i++) {
@@ -7017,7 +7275,7 @@ function aiOpsReview(W) {
 function aiOpsPlan(W, objs, skill) {
   var side = W.side, i, n = W.fighters.length;
   if (skill < 1 || n < 8) return;
-  var Q = aiOpsOf(side);
+  var Q = aiOpsOf(W.slot);
   var spare = 0;
   for (i = 0; i < Q.list.length; i++) if (!Q.list[i].main) spare += Q.list[i].want;
   /* Two units, and only out of an army that has eight. The first version allowed a third
@@ -7151,7 +7409,7 @@ function aiOpsPlan(W, objs, skill) {
    already there. A unit already on an operation stays on it: an operation re-manned every
    tick is a section that walks halfway to two places. */
 function aiOpsMan(W) {
-  var side = W.side, Q = AIOP[side], i, j;
+  var Q = AIOP[W.slot], i, j;
   var live = {}, held = {};
   if (Q) for (i = 0; i < Q.list.length; i++) { live[Q.list[i].id] = Q.list[i]; Q.list[i].n = 0; }
   for (i = 0; i < W.fighters.length; i++) {
@@ -7360,6 +7618,28 @@ function aiWeigh(u, S, W) {
   return best;
 }
 /* ---- the brain ---------------------------------------------------------------- */
+/* Every brain in the game, one after another, each on its own plan. `AI` is the global
+   the whole of `aiTick` reads, so it is pointed at the slot being thought for and left
+   pointing at the last of them, which nothing outside minds.
+     Which of them thinks first rotates. Running one of them first every tick would give
+   it the newer picture and the first orders for the whole battle, which is a systematic
+   edge sitting underneath every comparison anybody makes between two AIs on a team.
+     `tools/skirmish.mjs` wraps `aiTick` and not this, so it goes on working: in its 1v1
+   there is one AI slot, it is called once, and the wrapper runs both of its brains
+   inside that call. */
+var _aiTurn = 0;
+function aiThink(dt) {
+  var live = [], i;
+  for (i = 0; i < G.slots.length; i++) if (G.slots[i].ai) live.push(G.slots[i].k);
+  if (!live.length) return;
+  var off = live.length > 1 ? (_aiTurn++) % live.length : 0;
+  for (i = 0; i < live.length; i++) {
+    var k = live[(i + off) % live.length];
+    if (!AIP[k]) aiInit(k);
+    AI = AIP[k];
+    aiTick(dt);
+  }
+}
 function aiTick(dt) {
   /* The head start. On green, annihilation is meant to be a defensive game you set up
      for rather than a race, so the opposition does nothing whatever for the first three
@@ -7373,13 +7653,13 @@ function aiTick(dt) {
        was wiped out at five minutes with twelve hundred marks in the bank and nothing
        bought, which is also why no armour was ever seen. Anything shot, or anything
        hostile inside the base, wakes it. */
-    var gh = hqOf(AI.side), poked = false, gi;
+    var gh = hqOf(AI.own), poked = false, gi;
     for (gi = 0; gi < G.blds.length && !poked; gi++)
-      if (G.blds[gi].side === AI.side && G.blds[gi].hp < G.blds[gi].maxhp) poked = true;
+      if (G.blds[gi].own === AI.own && G.blds[gi].hp < G.blds[gi].maxhp) poked = true;
     for (gi = 0; gi < G.units.length && !poked; gi++) {
       var gu = G.units[gi];
       if (gu.dead) continue;
-      if (gu.side === AI.side) { if (hpFrac(gu) < .999) poked = true; }
+      if (gu.own === AI.own) { if (hpFrac(gu) < .999) poked = true; }
       else if (gh && dsq(gu.x, gu.y, gh.x, gh.y) < 920 * 920) poked = true;
     }
     if (!poked) return;
@@ -7387,18 +7667,21 @@ function aiTick(dt) {
   }
   AI.t -= dt;
   if (AI.t > 0) return;
-  AI.t = DIFF[G.diff].tick;
-  var side = AI.side, hq = hqOf(side), i, j, u, s;
+  AI.t = diffOf(AI.own).tick;
+  /* `slot` is this brain's own player -- his purse, his queue, his cap, his men -- and
+     `side` is the team he is on, which is what the ground, the enemy and the fog are read
+     against. In a 1v1 they are the same string. */
+  var slot = AI.own, side = AI.side, hq = hqOf(slot), i, j, u, s;
   /* In annihilation the headquarters is only the first building to fall, and an army
      that stops taking orders the moment it goes would leave the rest of the base to be
      knocked down unopposed. Whatever is still standing becomes the base it works from;
      production dries up on its own, since a company post turns out no engineers. */
   if (!hq) {
     for (i = 0; i < G.blds.length; i++)
-      if (G.blds[i].side === side && !G.blds[i].dead) { hq = G.blds[i]; break; }
+      if (G.blds[i].own === slot && !G.blds[i].dead) { hq = G.blds[i]; break; }
   }
   if (!hq) return;
-  var D = DIFF[G.diff], skill = D.skill === undefined ? 1 : D.skill;
+  var D = diffOf(slot), skill = D.skill === undefined ? 1 : D.skill;
   var K = side === 'us'
     ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', how: 'us_how', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
     : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', mor: 'ger_mor', how: 'ger_how', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
@@ -7412,7 +7695,7 @@ function aiTick(dt) {
   /* One look, and everything below reads it. This used to be four separate walks of the
      army and one of the whole unit list, each with its own conventions; they are one
      walk now and the conventions are in one place. */
-  var W = aiLook(side, D, skill);
+  var W = aiLook(slot, D, skill);
   var mine = W.mine, engs = W.engs, men = W.men, rifles = W.rifles, teams = W.teams;
   var vehs = W.vehs, screens = W.screens, takers = W.takers, fighters = W.fighters;
   var pop = W.pop;
@@ -7424,7 +7707,7 @@ function aiTick(dt) {
   var b1 = null, b2 = null;
   for (i = 0; i < G.blds.length; i++) {
     var bb = G.blds[i];
-    if (bb.side !== side) continue;
+    if (bb.own !== slot) continue;
     if (bb.key === K.b1) b1 = bb;
     if (bb.key === K.b2) b2 = bb;
   }
@@ -7432,7 +7715,7 @@ function aiTick(dt) {
      playing: an easy opponent banked ten thousand marks over twenty minutes because its
      own caps would not let it buy anything with them. The caps hold while it is poor,
      which is what keeps the early game gentle, and lift once it is rich. */
-  var rich = G.res[side].mp > 1500;
+  var rich = G.res[slot].mp > 1500;
   var meds = D.mech + (rich ? 1 : 0);
   /* The shopping list, worked down in order, with a cap on each and an hour of the
      battle before the heavy end of it opens.
@@ -7452,11 +7735,21 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(side, side === 'us'
+  var LADDER = aiCutLadder(slot, side === 'us'
     ? [['us_m8', 1, 40], ['us_at', 2, 130], ['us_m3', 1, 210], ['us_stuart', 1, 270],
        ['us_sher', 2, 310], ['us_ach', 1, 580], ['us_sher', meds, 650]]
     : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210], ['ger_stug', 1, 235],
        ['ger_p4', 2, 260], ['ger_tig', 1, 620], ['ger_p4', meds, 690]], IN, own);
+  /* and what this player has been told to want, which multiplies what the cut just
+     decided rather than replacing it.
+       A heavy weight above even also opens the one rung a brain is not otherwise allowed:
+     the King Tiger, at nine hundred marks and two hundred and twenty of fuel, late. The
+     Maus stays off it at any weight, for the reason it was ever taken off -- a brain
+     saving twenty-two hundred marks and seven hundred of fuel buys nothing at all for four
+     minutes, which is the starvation the money reserve exists to prevent, and it is priced
+     as a toy rather than as a vehicle. Only a player may have one. */
+  if (side === 'ger' && bpOf(slot, 'heavy') >= 1.5) LADDER.push(['ger_kt', 1, 760]);
+  LADDER = aiPrefLadder(slot, LADDER);
   var gate = 2 - D.tech, li, ent, lk, ld;
   /* Population is the other thing it can run out of, and infantry is cheap enough to
      spend all of it: at regular it filled the cap with sections by the seventh minute
@@ -7465,7 +7758,7 @@ function aiTick(dt) {
      wants -- and only for that, because a fixed reserve is a hole in the army once the
      list is finished: on green it held seventy-eight points of population empty with a
      full motor pool and ten thousand marks in the bank. */
-  var cap = popCap(side), rsv = 20;
+  var cap = popCap(slot), rsv = 20;
   if (b2 && b2.built >= 1) {
     rsv = 0;
     for (li = 0; li < LADDER.length && rsv < 78; li++) {
@@ -7475,12 +7768,12 @@ function aiTick(dt) {
          already unlocked is no reserve at all. It filled two hundred of population with
          sections in the ten seconds before the Panzer IV gate opened and then had a
          motor pool it could not use for the rest of the battle. */
-      var miss = ent[1] - countOf(side, ent[0]);
+      var miss = ent[1] - countOf(slot, ent[0]);
       if (miss > 0) rsv += ld.pop * Math.min(miss, 2);
     }
     /* with no fuel coming in no tank is coming either, and holding a fifth of the army's
        population empty for one is how a side loses while saving up */
-    rsv = Math.min(rsv, G.res[side].fu > 70 ? 78 : 34);
+    rsv = Math.min(rsv, G.res[slot].fu > 70 ? 78 : 34);
   }
   var infRoom = cap - rsv;
   /* Past a pile it cannot spend at all the headcount stops mattering. On green, armour
@@ -7488,7 +7781,8 @@ function aiTick(dt) {
      thousand of them over twenty minutes with six sections in the field while the
      population cap sat two thirds empty. The population cap is the real ceiling and it
      should be the one that binds. */
-  var armyCap = G.res[side].mp > 2400 ? 99 : D.army + (rich ? 2 : 0);
+  var armyCap = G.res[slot].mp > 2400 ? 99 : D.army + (rich ? 2 : 0);
+  armyCap = Math.round(armyCap * bpOf(slot, 'inf'));
   /* The opening. Ground taken in the first three minutes is ground held for the rest of
      the battle at no cost, because nobody is there to contest it, and the old brain spent
      those minutes building its company post while its two sections stood at the flag. On
@@ -7500,8 +7794,9 @@ function aiTick(dt) {
   if (opening) { armyCap = Math.max(armyCap, D.inf + 4); aiFire('opening'); }
   /* and what the infantry is for changes with what it is facing: an enemy that is all
      infantry is answered with machine guns, one that sits in houses with assault groups */
-  var mgCap = D.mg + (IN.inf >= 5 && IN.veh === 0 ? 1 : 0) + (rich ? 1 : 0);
-  var wantElite = IN.gar >= 1 || IN.mg >= 2;
+  var mgCap = Math.round((D.mg + (IN.inf >= 5 && IN.veh === 0 ? 1 : 0) + (rich ? 1 : 0)) * bpOf(slot, 'mg'));
+  var wElite = bpOf(slot, 'elite'), wArty = bpOf(slot, 'arty'), wAt = bpOf(slot, 'at');
+  var wantElite = wElite > 1 || IN.gar >= 1 || IN.mg >= 2;
   /* What the post already has, counted once out of the picture rather than by another
      walk of the army. It is read here rather than down in the post's own block because
      the reserve below has to know whether the company still wants its gun. */
@@ -7515,15 +7810,16 @@ function aiTick(dt) {
      answer to men in a house and to a gun line, both of which are things you cannot shoot
      at from in front. Skill 1 and up, because a green opponent that drops bombs on a
      position before walking into it is not a green opponent. */
-  var morWant = G.aiArty !== false &&
-                (IN.gar >= 1 || IN.mg >= 1 || (AIW.foe && AIW.mine && AIW.mine.sec <= AIW.foe.sec));
+  var morTubes = Math.max(1, Math.round(wArty));
+  var morWant = G.aiArty !== false && wArty > 0 &&
+                (wArty > 1 || IN.gar >= 1 || IN.mg >= 1 || (AIW.foe && AIW.mine && AIW.mine.sec <= AIW.foe.sec));
   /* Pack artillery, and it wants the mortar bought first: the tube is the cheap answer to
      the same problem and there is no sense owning the gun without it. It wants an army
      round it as well, because five men and a howitzer cannot defend themselves. */
   var howD = K.how ? UNITS[K.how] : null;
-  var howWant = !!howD && G.aiArty !== false && skill >= 1 && hows < 1 && mors >= 1 &&
-                men.length >= 4 && (IN.gar >= 1 || IN.mg >= 1 || IN.at >= 1);
-  var howPop = !!howD && popOf(side) + howD.pop <= popCap(side);
+  var howWant = !!howD && G.aiArty !== false && wArty > 0 && skill >= 1 && hows < 1 && mors >= 1 &&
+                men.length >= 4 && (wArty > 1 || IN.gar >= 1 || IN.mg >= 1 || IN.at >= 1);
+  var howPop = !!howD && popOf(slot) + howD.pop <= popCap(slot);
   /* And what it is saving up for, in marks and in fuel.
 
      The population reserve above was only half of the problem. Sections are bought before
@@ -7539,13 +7835,13 @@ function aiTick(dt) {
      are fewer than three sections left standing, and it never holds it for something whose
      fuel is not in sight, because a tank it cannot move is not worth going without men
      for. */
-  var wants = b2 && b2.built >= 1 ? aiWants(side, LADDER, gate) : [];
+  var wants = b2 && b2.built >= 1 ? aiWants(slot, LADDER, gate) : [];
   var wantMp = 0, wantFu = 0;
   if (wants.length) {
     var w0 = UNITS[wants[0][0]];
     wantMp = w0.cost.mp || 0; wantFu = w0.cost.fu || 0;
-    if (men.length < 3 || popOf(side) + w0.pop > popCap(side) ||
-        G.res[side].fu + (G.inc[side].fu || 0) * 60 < wantFu) { wantMp = 0; wantFu = 0; }
+    if (men.length < 3 || popOf(slot) + w0.pop > popCap(slot) ||
+        G.res[slot].fu + (G.inc[slot].fu || 0) * 60 < wantFu) { wantMp = 0; wantFu = 0; }
   }
   /* The company's own indirect fire is bought out of the till rather than out of `spare`,
      and this is the second thing tried rather than the first. A reserve was: the mortar
@@ -7566,7 +7862,7 @@ function aiTick(dt) {
      is a bounded thing to empty a till for; a reserve held every tick is not. */
   /* what a section may spend without eating into it */
   AI.wantMp = wantMp;
-  var spare = Math.max(0, G.res[side].mp - wantMp), spareFu = Math.max(0, G.res[side].fu - wantFu);
+  var spare = Math.max(0, G.res[slot].mp - wantMp), spareFu = Math.max(0, G.res[slot].fu - wantFu);
   var q = hq.queue.length;
   if (engs.length < 1 && q < 2) queueUnit(hq, K.eng);
   else if (men.length < 2 && q < 2) { if (queueUnit(hq, K.inf)) aiFire('buy.inf'); }
@@ -7574,14 +7870,14 @@ function aiTick(dt) {
      tick: two sections are raised here in the same tick, and against a stale figure the
      second one is bought with room that the first one has already spent. Fifteen points
      of overshoot is a Tiger that does not fit. */
-  else if (q < 1 && popOf(side) < infRoom && men.length < armyCap &&
+  else if (q < 1 && popOf(slot) < infRoom && men.length < armyCap &&
            spare >= (UNITS[K.inf].cost.mp || 0) &&
-           (men.length < 2 + D.inf || !b1 || G.res[side].mp > 480)) { if (queueUnit(hq, K.inf)) aiFire('buy.inf'); }
+           (men.length < 2 + D.inf || !b1 || G.res[slot].mp > 480)) { if (queueUnit(hq, K.inf)) aiFire('buy.inf'); }
   /* read the money again, for the same reason the population is read again: the
      headquarters may already have spent some of it three lines ago, and against a stale
      figure the company post raises a second section out of the reserve */
-  spare = Math.max(0, G.res[side].mp - wantMp); spareFu = Math.max(0, G.res[side].fu - wantFu);
-  if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(side) < infRoom) {
+  spare = Math.max(0, G.res[slot].mp - wantMp); spareFu = Math.max(0, G.res[slot].fu - wantFu);
+  if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(slot) < infRoom) {
     /* The post's shopping list, in the order it would rather have things, and it is a
        list rather than the chain of else-ifs it was for a reason `brain.mjs` caught by
        counting. The chain was tried cheapest first and every branch below the first
@@ -7593,11 +7889,12 @@ function aiTick(dt) {
        different questions and only the second should stop the list. */
     var shop = [];
     if (mgs < mgCap) shop.push([K.mg, 'buy.mg']);
-    if (skill >= 1 && K.mor && mors < 1 && morWant) shop.push([K.mor, 'buy.mortar']);
+    if (skill >= 1 && K.mor && mors < morTubes && morWant) shop.push([K.mor, 'buy.mortar']);
     if (howWant && howPop) shop.push([K.how, 'buy.how']);
     /* the assault group is the answer to men in a house and to a machine gun line, so
        when the enemy has either it is bought on a lower fuel floor than usual */
-    if (men.length < armyCap && G.res[side].fu > (wantElite ? 40 : b2 ? (b2.built >= 1 ? 120 : 999) : 58))
+    if (wElite > 0 && men.length < armyCap &&
+        G.res[slot].fu > (wantElite ? 40 : b2 ? (b2.built >= 1 ? 120 : 999) : 58))
       shop.push([K.elite, 'buy.elite']);
     /* Counted gate by gate, because the way to find out why a rule does not fire is to
        count what shut it rather than to guess, and guessing has been wrong twice here
@@ -7605,17 +7902,17 @@ function aiTick(dt) {
        whether it can be paid for out of what the armour ladder is not saving. */
     aiFire('mortar.gate.reached');
     if (morWant) aiFire('mortar.gate.want');
-    if (canPost(K.mor, true, spare, spareFu, side)) aiFire('mortar.gate.money');
+    if (canPost(K.mor, true, spare, spareFu, slot)) aiFire('mortar.gate.money');
     if (howD) {
       aiFire('how.gate.reached');
       if (howWant) aiFire('how.gate.want');
       if (howPop) aiFire('how.gate.pop');
-      if (canPost(K.how, true, spare, spareFu, side)) aiFire('how.gate.money');
+      if (canPost(K.how, true, spare, spareFu, slot)) aiFire('how.gate.money');
     }
     var bought = false;
     for (var si = 0; si < shop.length && !bought; si++) {
       var k2 = shop[si][0];
-      if (!canPost(k2, k2 === K.mor || k2 === K.how, spare, spareFu, side)) continue;
+      if (!canPost(k2, k2 === K.mor || k2 === K.how, spare, spareFu, slot)) continue;
       if (queueUnit(b1, k2)) { aiFire(shop[si][1]); bought = true; }
     }
     /* and a rifle section out of the headquarters with whatever the post did not spend.
@@ -7626,7 +7923,7 @@ function aiTick(dt) {
     }
   }
   if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < cap - 14) {
-    var ats = countOf(side, K.at);
+    var ats = countOf(slot, K.at);
     var done = false, save = false, keepFu = 0;
     /* Armour in the street jumps the queue: the gun that answers it is the one thing in
        the list that cannot be improvised, and it walks to its position at a crawl. With
@@ -7646,9 +7943,9 @@ function aiTick(dt) {
     for (li = 0; li < wants.length && !done && !save; li++) {
       ent = wants[li]; lk = ent[0]; ld = UNITS[lk];
       var fuel = ld.cost.fu || 0;
-      if (keepFu && fuel && G.res[side].fu < keepFu + fuel + 20) continue;
+      if (keepFu && fuel && G.res[slot].fu < keepFu + fuel + 20) continue;
       if (queueUnit(b2, lk)) { done = true; aiFire('buy.veh'); }
-      else if (fuel >= 60) { keepFu = Math.max(keepFu, fuel); if (worthSaving(side, ld)) { save = true; aiFire('buy.save'); } }
+      else if (fuel >= 60) { keepFu = Math.max(keepFu, fuel); if (worthSaving(slot, ld)) { save = true; aiFire('buy.save'); } }
     }
   }
 
@@ -7669,8 +7966,8 @@ function aiTick(dt) {
         if (u.up && u.up[uk]) continue;
         if (hasExclusive(u, U.excl)) continue;
         /* never buy a plate with the manpower the next section was going to cost */
-        if (!canAfford(side, U.cost) || G.res[side].mp - (U.cost.mp || 0) < 150 + wantMp) continue;
-        pay(side, U.cost); u.up[uk] = true; bought = true; aiFire('buy.upgrade');
+        if (!canAfford(slot, U.cost) || G.res[slot].mp - (U.cost.mp || 0) < 150 + wantMp) continue;
+        pay(slot, U.cost); u.up[uk] = true; bought = true; aiFire('buy.upgrade');
       }
     }
   }
@@ -7683,10 +7980,10 @@ function aiTick(dt) {
     var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
     if (stall && freeEng.length) {
       resumeBuild(freeEng[0], stall);
-    } else if (!b1 && G.res[side].mp >= 200 && freeEng.length) {
-      { placeStructure(side, K.b1, siteBase.x, siteBase.y - 150, [freeEng[0]]); aiFire('build.post'); }
-    } else if (b1 && b1.built >= 1 && !b2 && G.res[side].mp >= 240 && G.res[side].fu >= 25 && freeEng.length) {
-      { placeStructure(side, K.b2, siteBase.x, siteBase.y + 150, [freeEng[0]]); aiFire('build.depot'); }
+    } else if (!b1 && G.res[slot].mp >= 200 && freeEng.length) {
+      { placeStructure(slot, K.b1, siteBase.x, siteBase.y - 150, [freeEng[0]]); aiFire('build.post'); }
+    } else if (b1 && b1.built >= 1 && !b2 && G.res[slot].mp >= 240 && G.res[slot].fu >= 25 && freeEng.length) {
+      { placeStructure(slot, K.b2, siteBase.x, siteBase.y + 150, [freeEng[0]]); aiFire('build.depot'); }
     }
   }
 
@@ -8032,14 +8329,14 @@ function aiTick(dt) {
      it. What the record adds is that the main effort is now one of the things the army is
      doing rather than the only thing it can be doing. */
   var wantKind = razeT ? 'raze' : 'take';
-  var mainOp = aiOpKind(side, 'take') || aiOpKind(side, 'raze');
+  var mainOp = aiOpKind(slot, 'take') || aiOpKind(slot, 'raze');
   if (mainOp && (mainOp.kind !== wantKind || mainOp.key !== (asKey || ''))) {
-    var mi = AIOP[side].list.indexOf(mainOp);
-    if (mi >= 0) AIOP[side].list.splice(mi, 1);
+    var mi = AIOP[slot].list.indexOf(mainOp);
+    if (mi >= 0) AIOP[slot].list.splice(mi, 1);
     mainOp = null;
   }
   if (asKey && !mainOp)
-    mainOp = aiOpAdd(side, wantKind, { main: 1, key: asKey, sec: asId, x: asX, y: asY,
+    mainOp = aiOpAdd(slot, wantKind, { main: 1, key: asKey, sec: asId, x: asX, y: asY,
                                        tid: razeT ? razeT.id : 0, want: D.wave || 3, pri: 1000 });
   if (mainOp) {
     mainOp.x = asX; mainOp.y = asY; mainOp.sec = asId;
@@ -8291,7 +8588,7 @@ function aiTick(dt) {
        keeps going, which is what a section moving under contact actually does. Once it is
        being hurt rather than shot at, it is a section like any other. */
     if (hit && u.op && S.sup < .5) {
-      var OPh = aiOpById(side, u.op);
+      var OPh = aiOpById(slot, u.op);
       if (OPh && OPh.kind === 'probe') hit = null;
     }
     if (hit) {
@@ -8318,7 +8615,7 @@ function aiTick(dt) {
        fights that first -- except the prober, which is handled up there, because a scout
        that stops for the first thing it sees never gets near enough to see anything. */
     if (u.op) {
-      var OP = aiOpById(side, u.op);
+      var OP = aiOpById(slot, u.op);
       if (!OP) u.op = 0;
       else {
         aiFire('op.run');
@@ -8383,7 +8680,7 @@ function aiTick(dt) {
        it is there this does nothing but keep it there. What it is answering moves, and it
        is kept pointed at where that is now rather than where it was when it was sent. */
     if (u.job === 'answer' && u.ansId) {
-      var ac = null, AQ = AIQ[side];
+      var ac = null, AQ = AIQ[slot];
       if (AQ) for (j = 0; j < AQ.list.length; j++) if (AQ.list[j].id === u.ansId) { ac = AQ.list[j]; break; }
       if (ac) {
         if (Math.hypot(u.x - ac.tx, u.y - ac.ty) > Math.min(330, w0.range * .8)) {
@@ -8595,13 +8892,13 @@ function aiTick(dt) {
     var job = null, jd = 1e9;
     for (j = 0; j < G.units.length; j++) {
       u = G.units[j];
-      if (u.dead || u.side !== side || u.cat !== 'veh' || u.hp >= u.maxhp * .9) continue;
+      if (u.dead || u.own !== slot || u.cat !== 'veh' || u.hp >= u.maxhp * .9) continue;
       var vd = dist(u, e);
       if (vd < 800 && vd < jd) { jd = vd; job = u; }
     }
     if (!job) for (j = 0; j < G.blds.length; j++) {
       var bd2 = G.blds[j];
-      if (bd2.side !== side || bd2.dead || bd2.hp >= bd2.maxhp) continue;
+      if (bd2.own !== slot || bd2.dead || bd2.hp >= bd2.maxhp) continue;
       var bdd = dist(bd2, e);
       if (bdd < 700 && bdd < jd) { jd = bdd; job = bd2; }
     }
@@ -8631,11 +8928,12 @@ function aiTick(dt) {
        `post` is whether anywhere legal, forward of `minHq` and near enough the fighting to
        reach it, would take the position. */
     var WK = side === 'us' ? 'how8' : 'how210', WB = WORKS[WK], bdf = WB && UNITS[WB.unit];
+    if (wArty <= 0) WB = null;
     if (WB && bdf && G.aiArty !== false && skill >= 1 &&
-        countOf(side, WB.unit) + siteCount(side, WK) < 1) {
+        countOf(slot, WB.unit) + siteCount(slot, WK) < 1) {
       aiFire('battery.reached');
       var bWant = G.t > 190 && men.length >= 4;
-      var bPay = G.res[side].mp >= (WB.cost.mp || 0) && G.res[side].fu >= (WB.cost.fu || 0);
+      var bPay = G.res[slot].mp >= (WB.cost.mp || 0) && G.res[slot].fu >= (WB.cost.fu || 0);
       if (bWant) aiFire('battery.want');
       if (bPay) aiFire('battery.money');
       if (bWant && bPay) {
@@ -8663,19 +8961,19 @@ function aiTick(dt) {
             var bx2 = clamp(hq.x + Math.cos(bang) * br, 70, WORLD.w - 70);
             var by2 = clamp(hq.y + Math.sin(bang) * br, 70, WORLD.h - 70);
             if (!walkable(bx2, by2)) continue;
-            if (Math.hypot(bx2 - bAt.x, by2 - bAt.y) > barrageReach(bdf, side) * .85) continue;
+            if (Math.hypot(bx2 - bAt.x, by2 - bAt.y) > barrageReach(bdf, slot) * .85) continue;
             pB = { x: bx2, y: by2 };
           }
         }
         if (pB) aiFire('battery.post');
-        if (pB && placeWork(side, WK, pB.x, pB.y, aiFoeDir(side, pB.x, pB.y), [e])) {
+        if (pB && placeWork(slot, WK, pB.x, pB.y, aiFoeDir(side, pB.x, pB.y), [e])) {
           AI.bagT = G.t; aiFire('battery.dig'); continue;
         }
       }
     }
     var mine2 = 0;
-    for (j = 0; j < G.works.length; j++) if (G.works[j].side === side) mine2++;
-    if (skill >= 1 && mine2 < 9 && G.res[side].mp > 230 &&
+    for (j = 0; j < G.works.length; j++) if (G.works[j].own === slot) mine2++;
+    if (skill >= 1 && mine2 < 9 && G.res[slot].mp > 230 &&
         G.t - AI.bagT > (skill >= 2 ? 28 : 52)) {
       var front = null, fdist = -1, foeHq = hqOf(foeSide);
       for (j = 0; j < G.sectors.length; j++) {
@@ -8691,11 +8989,11 @@ function aiTick(dt) {
          money the shopping list is not standing in line for. It goes where the anti-tank
          guns go: well back, on a line onto the ground the armour has to come up. */
       var W88 = WORKS.flak;
-      if (W88 && (!W88.side || W88.side === side) && (IN.veh >= 2 || IN.med + IN.heavy >= 1) &&
-          countOf(side, W88.unit) + siteCount(side, 'flak') < 1 && digAt && dist(e, digAt) < 1100 &&
-          G.res[side].mp >= (W88.cost.mp || 0) + wantMp + 150 && G.res[side].fu >= (W88.cost.fu || 0) + wantFu) {
+      if (W88 && wAt > 0 && (!W88.side || W88.side === side) && (IN.veh >= 2 || IN.med + IN.heavy >= 1) &&
+          countOf(slot, W88.unit) + siteCount(slot, 'flak') < 1 && digAt && dist(e, digAt) < 1100 &&
+          G.res[slot].mp >= (W88.cost.mp || 0) + wantMp + 150 && G.res[slot].fu >= (W88.cost.fu || 0) + wantFu) {
         var p88 = aiOverwatch(side, digAt.x, digAt.y, 420, 600) || aiFirePost(side, digAt.x, digAt.y, 320);
-        if (placeWork(side, 'flak', p88.x, p88.y, aiFoeDir(side, p88.x, p88.y), [e])) { AI.bagT = G.t; aiFire('flak.dig'); continue; }
+        if (placeWork(slot, 'flak', p88.x, p88.y, aiFoeDir(side, p88.x, p88.y), [e])) { AI.bagT = G.t; aiFire('flak.dig'); continue; }
       }
       /* The heavy battery. It is the dearest thing either side can put on the ground and
          it is dug once, late, and only when there is something worth shelling: ground the
@@ -8708,7 +9006,7 @@ function aiTick(dt) {
       if (digAt && dist(e, digAt) < 1000) {
         var wk = AI.bagN % 3 === 0 ? 'pit' : AI.bagN % 3 === 1 ? 'bags' : 'wire';
         var bp = aiFirePost(side, digAt.x, digAt.y, wk === 'wire' ? -95 : 100);
-        if (placeWork(side, wk, bp.x, bp.y, aiFoeDir(side, bp.x, bp.y), [e])) {
+        if (placeWork(slot, wk, bp.x, bp.y, aiFoeDir(side, bp.x, bp.y), [e])) {
           AI.bagT = G.t; AI.bagN = (AI.bagN || 0) + 1; aiFire('work.dig'); continue;
         }
       }
@@ -9590,7 +9888,7 @@ function buildMarks(v) {
      player who has laid one on wants to see where it is falling while he does something
      else, and the ring is on the ground where the bombs are */
   G.units.forEach(function (u) {
-    if (u.dead || !u.barrage || u.side !== G.side) return;
+    if (u.dead || !u.barrage || !owned(u)) return;
     var b = u.barrage, cl = markCol('#d8a334');
     markRing(b.x, b.y, b.r, cl, .55, 2, [12, 9], G.t * .15);
     markRing(b.x, b.y, b.r * .30, cl, .45, 1.6);
@@ -9601,7 +9899,7 @@ function buildMarks(v) {
      the present lay. Without it a battery that has been given an order looks exactly like
      a battery that has ignored one. */
   G.units.forEach(function (u) {
-    if (u.dead || !u.barrage || u.side !== G.side || u.setup > 0) return;
+    if (u.dead || !u.barrage || !owned(u) || u.setup > 0) return;
     var wantA = Math.atan2(u.barrage.y - u.y, u.barrage.x - u.x), off = angDiff(u.facing, wantA);
     if (Math.abs(off) <= (u.def.layTol || .35)) return;
     var cl2 = markCol('#d8a334'), rr2 = unitRadius(u) + 34, pts = [], q;
@@ -9616,13 +9914,13 @@ function buildMarks(v) {
      needs to know before choosing where to put it. */
   if (G.mode === 'barrage') {
     G.sel.forEach(function (u) {
-      if (u.dead || u.side !== G.side || !u.def || !u.def.barrage) return;
+      if (u.dead || !owned(u) || !u.def || !u.def.barrage) return;
       markRing(u.x, u.y, barrageRange(u), markCol('#d8a334'), .42, 2, [30, 34], 0);
     });
   }
   G.sel.forEach(function (u) {
     if (!u.cat) return;
-    var mine = u.side === G.side;
+    var mine = owned(u);
     /* The ring is `selRadius` on the unit's own point, and it neither moves nor changes
        size. Three versions got that wrong in turn. Drawn at the marker with a radius of
        thirty-two it held about a sixth of the ground its men were standing on. Moved onto
@@ -11409,7 +11707,7 @@ function povOn(u) {
   var hb = el('tHatch'); if (hb) hb.classList.toggle('hidden', !povClosed());
   DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false; povPadOff();
   document.body.classList.add('pov');
-  if (MOB && host.cat === 'veh' && host.side === G.side) toast('Pad drives  ·  GUN and MG fire  ·  drag to look');
+  if (MOB && host.cat === 'veh' && owned(host)) toast('Pad drives  ·  GUN and MG fire  ·  drag to look');
   var dv = el('drive'); if (dv) dv.classList.toggle('on', !!drivenUnit());
   povDriveLayout();
   return true;
@@ -11476,7 +11774,7 @@ var DRV = { thr: 0, steer: 0, fire: false, mg: false, padT: 0, padS: 0, padFire:
 var UPM = 11.7;                                     /* units to the metre, as tools/dims.mjs has it */
 function drivenUnit() {
   var h = povHost();
-  return POV.on && h && !h.dead && h.cat === 'veh' && h.side === G.side && !h.towedBy ? h : null;
+  return POV.on && h && !h.dead && h.cat === 'veh' && owned(h) && !h.towedBy ? h : null;
 }
 /* what the gun would be laid on: an enemy the side can see, inside the weapon's reach
    and within a hand's breadth of the middle of the view, the one nearest the crosshair */
@@ -20576,7 +20874,7 @@ function render() {
      infantry is selected. Desktop only; there is no pointer to hover on a phone. */
   if (!MOB && !G.place && mouse.inside && !ED.on) {
     var hov = selectedUnits(), hovFoot = false;
-    for (var hv = 0; hv < hov.length; hv++) if (hov[hv].side === G.side && hov[hv].cat !== 'veh') { hovFoot = true; break; }
+    for (var hv = 0; hv < hov.length; hv++) if (owned(hov[hv]) && hov[hv].cat !== 'veh') { hovFoot = true; break; }
     if (hovFoot) {
       var hm = s2w(mouse.x, mouse.y), hc = coverAt(hm.x, hm.y), HC = COVER[hc];
       if (hc > 0) {
@@ -20754,7 +21052,7 @@ function nearestOwn(wx, wy, r) {
   var best = null, bd = r * r;
   for (var i = 0; i < G.units.length; i++) {
     var u = G.units[i];
-    if (u.dead || u.inside || u.side !== G.side) continue;
+    if (u.dead || u.inside || !owned(u)) continue;
     var d = nearOwnDist(u, wx, wy);
     if (d < bd) { bd = d; best = u; }
   }
@@ -20768,7 +21066,7 @@ function unitsInScreenRect(ax, ay, bx, by) {
     return !p.behind && p.x >= x0 && p.x <= x1 && p.y >= y0 && p.y <= y1;
   }
   return G.units.filter(function (u) {
-    if (u.dead || u.side !== G.side) return false;
+    if (u.dead || !owned(u)) return false;
     if (inBox(u.x, u.y)) return true;
     /* a box drawn round the men the player can see takes the section, even when the
        marker they are away from is outside it */
@@ -20803,7 +21101,7 @@ function selectSame(near) {
   var out = [];
   for (i = 0; i < G.units.length; i++) {
     var u = G.units[i];
-    if (u.dead || u.inside || u.side !== G.side || !keys[u.key]) continue;
+    if (u.dead || u.inside || !owned(u) || !keys[u.key]) continue;
     if (near) {
       /* within sight of one of the units already picked, by that unit's own eye */
       var seen = false;
@@ -20828,7 +21126,7 @@ function barrageToast(why) {
   return why === 'safe' ? 'It will not fire into the enemy base' : 'Out of range';
 }
 function callBarrage(wx, wy) {
-  var tubes = selectedUnits().filter(function (u) { return u.side === G.side && u.def.barrage; });
+  var tubes = selectedUnits().filter(function (u) { return owned(u) && u.def.barrage; });
   if (!tubes.length) return;
   var on = 0, why = null;
   tubes.forEach(function (u) {
@@ -20841,9 +21139,9 @@ function callBarrage(wx, wy) {
   syncHud();
 }
 function issueOrder(wx, wy, forceAttack) {
-  var mine = selectedUnits().filter(function (u) { return u.side === G.side; });
+  var mine = selectedUnits().filter(owned);
   var b = selectedBuilding();
-  if (b && b.side === G.side) { b.rally = { x: wx, y: wy }; toast('Rally point set'); return; }
+  if (b && owned(b)) { b.rally = { x: wx, y: wy }; toast('Rally point set'); return; }
   if (!mine.length) return;
   var enemies = unitsAt(wx, wy, 16).filter(function (u) { return u.side !== G.side; });
   var eb = buildingAt(wx, wy);
@@ -20868,11 +21166,11 @@ function issueOrder(wx, wy, forceAttack) {
     sfx('click'); return;
   }
   /* engineers get context jobs on friendly targets */
-  var friendlyVeh = unitsAt(wx, wy, 16).filter(function (u) { return u.side === G.side && u.cat === 'veh'; })[0];
-  var friendlyBld = eb && eb.side === G.side ? eb : null;
+  var friendlyVeh = unitsAt(wx, wy, 16).filter(function (u) { return owned(u) && u.cat === 'veh'; })[0];
+  var friendlyBld = eb && owned(eb) ? eb : null;
   var repairTarget = friendlyVeh || (friendlyBld && (friendlyBld.hp < friendlyBld.maxhp || friendlyBld.built < 1) ? friendlyBld : null);
   var lift = friendlyVeh && friendlyVeh.def.carries && !friendlyVeh.cargo ? friendlyVeh : null;
-  var hook = unitsAt(wx, wy, 20).filter(function (u) { return u.side === G.side && u.def.towable && !u.towedBy; })[0];
+  var hook = unitsAt(wx, wy, 20).filter(function (u) { return owned(u) && u.def.towable && !u.towedBy; })[0];
   var house = enemies.length ? null : blockAt(wx, wy);
   var n = mine.length, cols = Math.ceil(Math.sqrt(n));
   mine.forEach(function (u, i) {
@@ -20987,13 +21285,13 @@ window.addEventListener('mouseup', function (e) {
     else if (!add) select([], false);
   } else {
     var w2 = s2w(mouse.x, mouse.y);
-    var hit = unitsAt(w2.x, w2.y, 10).filter(function (u) { return u.side === G.side; })[0]
+    var hit = unitsAt(w2.x, w2.y, 10).filter(function (u) { return owned(u); })[0]
            || unitsAt(w2.x, w2.y, 10)[0];
     if (hit) {
-      if (e.detail >= 2 && hit.side === G.side) {
+      if (e.detail >= 2 && owned(hit)) {
         var v = view();
         select(G.units.filter(function (u) {
-          return !u.dead && u.side === G.side && u.key === hit.key && inView(v, u.x, u.y, 0);
+          return !u.dead && owned(u) && u.key === hit.key && inView(v, u.x, u.y, 0);
         }), add);
       } else select([hit], add);
     } else {
@@ -21196,7 +21494,7 @@ cv.addEventListener('touchend', function (e) {
   var own = nearestOwn(w.x, w.y, grab);
   if (own) { select([own], false); buzz(8); return; }
   var ob = buildingAt(w.x, w.y);
-  if (ob && ob.side === G.side) { select([ob], false); buzz(8); return; }
+  if (ob && owned(ob)) { select([ob], false); buzz(8); return; }
   /* with a selection live, any other tap is an order */
   if (G.sel.length) { issueOrder(w.x, w.y, false); buzz(14); return; }
   var foeU = unitsAt(w.x, w.y, grab)[0] || (ob || null);
@@ -21272,7 +21570,7 @@ window.addEventListener('keydown', function (e) {
     return;
   }
   if (k === 'x') { selectedUnits().forEach(orderStop); syncHud(); return; }
-  if (k === 'r') { selectedUnits().forEach(function (u) { if (u.side === G.side) orderRetreat(u); }); syncHud(); return; }
+  if (k === 'r') { selectedUnits().forEach(function (u) { if (owned(u)) orderRetreat(u); }); syncHud(); return; }
   if (k === 'p') {
     G.paused = !G.paused;
     document.getElementById('pausenote').classList.toggle('hidden', !G.paused);
@@ -21282,7 +21580,7 @@ window.addEventListener('keydown', function (e) {
   }
   if (k === 'm') { AU.on = !AU.on; toast(AU.on ? 'Sound on' : 'Sound off'); return; }
   if (k === 'f') { fog = !fog; toast(fog ? 'Fog of war on' : 'Fog of war off'); return; }
-  if (k === ' ') { var hq = hqOf(G.side); if (hq) { select([hq], false); focusSelection(); } e.preventDefault(); return; }
+  if (k === ' ') { var hq = hqOf(G.own); if (hq) { select([hq], false); focusSelection(); } e.preventDefault(); return; }
   if (k === 'tab') { e.preventDefault(); cycleIdle(); return; }
   cmdHotkey(k);
 });
@@ -21310,7 +21608,7 @@ function focusSelection() {
   centreOn(G.sel[0].x, G.sel[0].y);
 }
 function cycleIdle() {
-  var idle = G.units.filter(function (u) { return !u.dead && u.side === G.side && !u.order && !u.target; });
+  var idle = G.units.filter(function (u) { return !u.dead && owned(u) && !u.order && !u.target; });
   if (!idle.length) { toast('No idle units'); return; }
   select([idle[0]], false); focusSelection();
 }
@@ -21408,7 +21706,7 @@ function cmdGlyph(label) {
 function buildCmds() {
   var host = el('cmds'); host.innerHTML = ''; cmdList = [];
   host.classList.remove('dense');
-  var b = selectedBuilding(), units = selectedUnits().filter(function (u) { return u.side === G.side; });
+  var b = selectedBuilding(), units = selectedUnits().filter(owned);
   function addCmd(label, sub, hk, enabled, fn, active) {
     var btn = document.createElement('button');
     btn.className = 'cmd' + (active ? ' act' : '');
@@ -21422,15 +21720,15 @@ function buildCmds() {
     host.appendChild(btn);
     cmdList.push({ hk: hk.toLowerCase(), fn: fn, enabled: enabled, btn: btn, can: null });
   }
-  if (b && b.side === G.side && b.built >= 1) {
+  if (b && owned(b) && b.built >= 1) {
     b.def.makes.forEach(function (key) {
       var d = UNITS[key];
       if (d.retired) return;
-      var locked = d.req && !hasBuilding(G.side, d.req);
+      var locked = d.req && !hasBuilding(G.own, d.req);
       var sub = (d.cost.mp || 0) + (d.cost.fu ? ' <em>' + d.cost.fu + 'f</em>' : '');
       addCmd(d.name.replace(' Squad', '').replace(' Team', ''), sub, d.hk,
-        !locked && canAfford(G.side, d.cost), function () { if (queueUnit(b, key)) { sfx('click'); syncHud(); } });
-      cmdList[cmdList.length - 1].can = function () { return !locked && canAfford(G.side, d.cost) && !(d.limit && countOf(G.side, key) >= d.limit); };
+        !locked && canAfford(G.own, d.cost), function () { if (queueUnit(b, key)) { sfx('click'); syncHud(); } });
+      cmdList[cmdList.length - 1].can = function () { return !locked && canAfford(G.own, d.cost) && !(unitLimit(G.own, d) && countOf(G.own, key) >= unitLimit(G.own, d)); };
     });
   } else if (units.length) {
     addCmd('Move', 'right-click', 'V', true, function () { toast('Right-click the ground to move'); });
@@ -21480,16 +21778,16 @@ function buildCmds() {
                !(u.up && u.up[uk]) && !hasExclusive(u, U.excl);
       });
       if (!can.length) return;
-      addCmd(U.short, (U.cost.mp || 0) + (can.length > 1 ? ' <em>x' + can.length + '</em>' : ''), U.hk, canAfford(G.side, U.cost),
-        function () { var u = can[0]; if (!canAfford(G.side, U.cost)) { toast('Not enough manpower'); return; } pay(G.side, U.cost); u.up[uk] = true; toast(U.name + ': ' + u.def.short); sfx('click'); syncHud(); });
-      cmdList[cmdList.length - 1].can = function () { return canAfford(G.side, U.cost); };
+      addCmd(U.short, (U.cost.mp || 0) + (can.length > 1 ? ' <em>x' + can.length + '</em>' : ''), U.hk, canAfford(G.own, U.cost),
+        function () { var u = can[0]; if (!canAfford(G.own, U.cost)) { toast('Not enough manpower'); return; } pay(G.own, U.cost); u.up[uk] = true; toast(U.name + ': ' + u.def.short); sfx('click'); syncHud(); });
+      cmdList[cmdList.length - 1].can = function () { return canAfford(G.own, U.cost); };
     });
     var engs = units.filter(function (u) { return u.def.builder; });
     if (engs.length) {
       Object.keys(BUILDINGS).forEach(function (key) {
         var d = BUILDINGS[key];
         if (d.side !== G.side || d.hq) return;
-        var site = siteOf(G.side, key);
+        var site = siteOf(G.own, key);
         /* Once the site is pegged out the button has nothing left to place, so it turns
            into the way back onto the job: it is already paid for, and without this the
            only control the player has over an abandoned shell is greyed out. */
@@ -21500,28 +21798,28 @@ function buildCmds() {
           return;
         }
         addCmd(d.short, (d.cost.mp || 0) + (d.cost.fu ? ' <em>' + d.cost.fu + 'f</em>' : ''), d.hk,
-          !site && canAfford(G.side, d.cost),
+          !site && canAfford(G.own, d.cost),
           function () { G.place = { key: key, engs: engs }; toast('Click to place the ' + d.name); syncHud(); },
           G.place && G.place.key === key);
         cmdList[cmdList.length - 1].can = function () {
-          return !siteOf(G.side, key) && canAfford(G.side, d.cost);
+          return !siteOf(G.own, key) && canAfford(G.own, d.cost);
         };
       });
       Object.keys(WORKS).forEach(function (wk) {
         var W = WORKS[wk];
         if (W.side && W.side !== G.side) return;
-        addCmd(W.short, (W.cost.mp || 0) + (W.cost.fu ? ' <em>' + W.cost.fu + 'f</em>' : ''), W.hk, canAfford(G.side, W.cost),
+        addCmd(W.short, (W.cost.mp || 0) + (W.cost.fu ? ' <em>' + W.cost.fu + 'f</em>' : ''), W.hk, canAfford(G.own, W.cost),
           function () {
             G.place = { work: wk, engs: engs };
             toast('Place the ' + W.name.toLowerCase() + ': drag to aim it');
             syncHud();
           },
           G.place && G.place.work === wk);
-        cmdList[cmdList.length - 1].can = function () { return canAfford(G.side, W.cost); };
+        cmdList[cmdList.length - 1].can = function () { return canAfford(G.own, W.cost); };
       });
     }
   } else {
-    var hq = hqOf(G.side);
+    var hq = hqOf(G.own);
     if (hq) addCmd('Select HQ', 'space', 'H', true, function () { select([hq], false); focusSelection(); });
   }
   if (!MOB && cmdList.length > 8) host.classList.add('dense');
@@ -21542,7 +21840,7 @@ function cmdHotkey(k) {
 }
 function syncQueue() {
   var b = selectedBuilding(), host = el('queue');
-  if (!b || b.side !== G.side || !b.queue.length) { host.classList.add('hidden'); return; }
+  if (!b || !owned(b) || !b.queue.length) { host.classList.add('hidden'); return; }
   host.classList.remove('hidden'); host.innerHTML = '';
   b.queue.forEach(function (key, i) {
     var d = UNITS[key], q = document.createElement('div');
@@ -21551,7 +21849,7 @@ function syncQueue() {
     q.innerHTML += '<i style="width:' + Math.round(p * 100) + '%"></i>';
     q.onclick = function () {
       b.queue.splice(i, 1);
-      G.res[G.side].mp += d.cost.mp || 0; G.res[G.side].fu += d.cost.fu || 0;
+      G.res[G.own].mp += d.cost.mp || 0; G.res[G.own].fu += d.cost.fu || 0;
       if (i === 0) b.qt = 0;
       syncHud();
     };
@@ -21576,8 +21874,8 @@ function doPlace() {
   var p = G.place;
   if (!p) return;
   var w = p.aim ? { x: p.ax, y: p.ay } : s2w(mouse.x, mouse.y);
-  if (p.work) placeWork(G.side, p.work, w.x, w.y, placeAngle(w.x, w.y), p.engs);
-  else placeStructure(G.side, p.key, w.x, w.y, p.engs);
+  if (p.work) placeWork(G.own, p.work, w.x, w.y, placeAngle(w.x, w.y), p.engs);
+  else placeStructure(G.own, p.key, w.x, w.y, p.engs);
   G.place = null; syncHud();
 }
 var hudT = 0;
@@ -21585,21 +21883,22 @@ function updateTop(dt) {
   hudT -= dt;
   if (hudT > 0) return;
   hudT = .12;
-  var r = G.res[G.side], inc = G.inc[G.side];
+  var r = G.res[G.own], inc = G.inc[G.own];
   el('mpv').textContent = Math.floor(r.mp);
   el('fuv').textContent = Math.floor(r.fu);
   el('mpi').textContent = '+' + inc.mp.toFixed(1);
   el('fui').textContent = '+' + inc.fu.toFixed(2);
-  el('popv').textContent = G.pop[G.side] + '/' + popCap(G.side);
+  el('popv').textContent = G.pop[G.own] + '/' + popCap(G.own);
   if (G.win === 'anni') {
     /* nothing runs down in annihilation, so the strip counts what is still standing */
     var nu = countBuildings('us'), ng = countBuildings('ger');
     el('vpus').textContent = nu; el('vpger').textContent = ng;
     el('vpfill').style.width = (nu / Math.max(1, nu + ng) * 100).toFixed(1) + '%';
   } else {
-    el('vpus').textContent = Math.ceil(G.res.us.vp);
-    el('vpger').textContent = Math.ceil(G.res.ger.vp);
-    el('vpfill').style.width = (G.res.us.vp / (G.res.us.vp + G.res.ger.vp) * 100).toFixed(1) + '%';
+    var vu = vpOf('us'), vg = vpOf('ger');
+    el('vpus').textContent = Math.ceil(vu);
+    el('vpger').textContent = Math.ceil(vg);
+    el('vpfill').style.width = (vu / (vu + vg) * 100).toFixed(1) + '%';
   }
   el('clock').textContent = fmtTime(G.t);
   syncQueue();
@@ -21654,6 +21953,13 @@ function stNum(v, d) {
    The faction's own short name is wrong here and was tried: with the Germans it reads
    "FJ · FJ", the faction beside a Fallschirmjaeger section, which says nothing. */
 function stWho(R, sd) { return sd === R.side ? 'YOU' : 'THEM'; }
+/* Who on that team. A 1v1 has one player a side and the answer adds nothing, so it is
+   left off; a 2v2 has two, and a report that cannot tell an ally's Sherman from your own
+   is a report of one army that was really two. */
+function stOwn(R, r) {
+  if (!r.own || r.own === r.side) return '';
+  return ' \u00b7 ' + (r.own === R.own ? 'YOU' : 'ALLY');
+}
 function stRows(R) {
   var out = [], k;
   for (k in R.units) out.push(R.units[k]);
@@ -21785,7 +22091,7 @@ function stUnitTab(R) {
   for (i = 0; i < rows.length; i++) {
     var r = rows[i];
     tr.push(stTr(r.side + (r.died >= 0 ? ' gone' : ''),
-      ['#' + r.id + ' ' + stWho(R, r.side) + ' · ' + r.name, fmtTime(r.born),
+      ['#' + r.id + ' ' + stWho(R, r.side) + stOwn(R, r) + ' · ' + r.name, fmtTime(r.born),
        r.died >= 0 ? fmtTime(r.died) : 'survived',
        r.died >= 0 ? fmtTime(r.died - r.born) : fmtTime(R.t - r.born),
        stNum(r.kills), stNum(r.mkills), stNum(r.vkills), stNum(r.lost), stNum(r.dmgOut),
@@ -21985,8 +22291,39 @@ function endGame(winner, why) {
     histSave(REC);
   }
 }
-function startGame(side, diff, mode, arty) {
-  G.side = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
+/* Lay out the game's players. `duo` is the 2v2: four slots rather than two, the player
+   and an ally against two opponents, each of the three AIs on its own handicap row, its
+   own difficulty and its own brain.
+     A slot's key is a string chosen so that everything already keyed by side takes it
+   unchanged; the roles are what the title screen's panels are stored against, because a
+   role does not move when the player changes sides and a slot key does. */
+function buildSlots(side, diff, duo) {
+  var him = foe(side), out = [];
+  out.push({ k: side, side: side, ai: 0, role: 'you', diff: diff });
+  if (duo) out.push({ k: side + '2', side: side, ai: 1, role: 'ally', diff: adDiff('ally', diff) });
+  out.push({ k: him, side: him, ai: 1, role: 'foe1', diff: adDiff('foe1', diff) });
+  if (duo) out.push({ k: him + '2', side: him, ai: 1, role: 'foe2', diff: adDiff('foe2', diff) });
+  return out;
+}
+function roleSlot(role) {
+  for (var i = 0; i < G.slots.length; i++) if (G.slots[i].role === role) return G.slots[i].k;
+  return null;
+}
+/* Where a player's headquarters stands. A 1v1 puts it where the map says; a 2v2 splits
+   the two allies either side of that point, far enough apart that neither is inside the
+   other's footprint and near enough that they share a front. */
+function hqSpot(slot, duo) {
+  var side = slotSide(slot), p = G.hqPos[side];
+  if (!duo) return { x: p.x, y: p.y };
+  /* the second slot on a team is the one whose key is longer than its side's -- `us2`
+     against `us` -- rather than a fixed length, which reads as true for `ger` */
+  var second = slot.length > side.length;
+  return { x: p.x, y: clamp(p.y + (second ? 290 : -290), 160, WORLD.h - 160) };
+}
+function startGame(side, diff, mode, arty, duo) {
+  G.side = side; G.own = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
+  G.duo = !!duo;
+  G.slots = buildSlots(side, diff, duo);
   /* whether the brain is allowed indirect fire at all. Default on, because that is the
      game; off is for a player who would rather not be shelled. */
   G.aiArty = arty === undefined ? true : !!arty;
@@ -21996,14 +22333,28 @@ function startGame(side, diff, mode, arty) {
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
   G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
-  G.made = { us: {}, ger: {} };
-  /* The handicap is resolved here and nowhere else, so a setting changed on the title
-     screen after the deploy button cannot reach a battle already running. */
-  G.pd = pdMake(); G.ad = adMake();
+  var si, sk;
+  G.made = {}; G.res = {}; G.inc = {}; G.pop = {}; G.hc = {}; G.bp = {};
+  for (si = 0; si < SLOTS.length; si++) {
+    sk = SLOTS[si];
+    G.made[sk] = {}; G.inc[sk] = { mp: 0, fu: 0 }; G.pop[sk] = 0;
+    G.res[sk] = { mp: 420, fu: 20, vp: 0 };
+  }
+  /* The handicaps are resolved here and nowhere else, so a setting changed on the title
+     screen after the deploy button cannot reach a battle already running. One row per
+     player: his own, and one for each AI out of the role it is playing. */
+  for (si = 0; si < G.slots.length; si++) {
+    var sl = G.slots[si];
+    G.hc[sl.k] = sl.ai ? adMake(sl.role) : pdMake();
+    G.bp[sl.k] = sl.ai ? bpMake(sl.role) : null;
+    var H = G.hc[sl.k];
+    if (H.setTill) { G.res[sl.k].mp = H.mp; G.res[sl.k].fu = H.fu; }
+  }
+  G.pd = G.hc[side];
+  /* the points are the team's and are held on its first slot, which is what every reader
+     of `G.res.us.vp` already asks for */
+  G.res[slotsOf('us')[0]].vp = VP_START; G.res[slotsOf('ger')[0]].vp = VP_START;
   recInit();
-  G.res = { us: { mp: 420, fu: 20, vp: VP_START }, ger: { mp: 420, fu: 20, vp: VP_START } };
-  G.res[side].mp = G.pd.mp; G.res[side].fu = G.pd.fu;
-  if (G.ad.setTill) { G.res[foe(side)].mp = G.ad.mp; G.res[foe(side)].fu = G.ad.fu; }
   if (!G.mapData) G.mapData = defaultMapData();
   makeSectors(); makeTerrain(); rebuildGrid();
   initDecals(); initExplored();
@@ -22012,24 +22363,25 @@ function startGame(side, diff, mode, arty) {
 
   shake.t = 0; shake.mag = 0;
 
-  var usHq = spawnBuilding('us', 'us_hq', G.hqPos.us.x, G.hqPos.us.y, true);
-  var gerHq = spawnBuilding('ger', 'ger_hq', G.hqPos.ger.x, G.hqPos.ger.y, true);
-  usHq.rally = { x: G.hqPos.us.x + 180, y: G.hqPos.us.y }; gerHq.rally = { x: G.hqPos.ger.x - 180, y: G.hqPos.ger.y };
+  /* A headquarters and an opening company for every player in the game, so a 2v2 is two
+     armies a side rather than one army with twice the money. */
+  for (si = 0; si < G.slots.length; si++) {
+    sk = G.slots[si].k;
+    var us = slotSide(sk) === 'us', sp = hqSpot(sk, duo), dir = us ? 1 : -1;
+    var bh = spawnBuilding(sk, us ? 'us_hq' : 'ger_hq', sp.x, sp.y, true);
+    bh.rally = { x: sp.x + dir * 180, y: sp.y };
+    spawnUnit(sk, us ? 'us_eng' : 'ger_pio', sp.x + dir * 130, sp.y - 70, us ? 0 : Math.PI);
+    spawnUnit(sk, us ? 'us_rifle' : 'ger_gren', sp.x + dir * 140, sp.y + 40, us ? 0 : Math.PI);
+    spawnUnit(sk, us ? 'us_rifle' : 'ger_gren', sp.x + dir * 90, sp.y + 110, us ? 0 : Math.PI);
+  }
   rebuildGrid();
-
-  spawnUnit('us', 'us_eng', 380, 880);
-  spawnUnit('us', 'us_rifle', 390, 990);
-  spawnUnit('us', 'us_rifle', 340, 1060);
-  spawnUnit('ger', 'ger_pio', WORLD.w - 380, 880, Math.PI);
-  spawnUnit('ger', 'ger_gren', WORLD.w - 390, 990, Math.PI);
-  spawnUnit('ger', 'ger_gren', WORLD.w - 340, 1060, Math.PI);
   /* Green used to hand the player three extra sections and a second engineer here, on top
      of an economy he could not see the size of. Both are the starting-resources setting
      now: a player who wants a head start buys one, which is the same head start arriving
      in a form he chose and can count. */
 
-  aiInit(foe(side));
-  var hq = hqOf(side);
+  aiSlotsInit();
+  var hq = hqOf(G.own);
   resize();
   CAM.dist = MOB ? 760 : 620; CAM.pitch = MOB ? 1.0 : .92;
   CAM.yaw = Math.PI / 2;
@@ -22079,7 +22431,7 @@ function frame(now) {
     updateSites(dt);
     tickEconomy(dt);
     recTick(dt);
-    aiTick(dt);
+    aiThink(dt);
     for (var k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
     if (G.wrecks.length > 26) G.wrecks.shift();
     if (G.corpses.length > 220) G.corpses.splice(0, 40);
@@ -22098,7 +22450,7 @@ function frame(now) {
 }
 
 /* ---------------------------------------------------------------- boot */
-var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true;
+var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenDuo = false;
 document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
     document.querySelectorAll('.side').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
@@ -22132,6 +22484,7 @@ document.querySelectorAll('.mode').forEach(function (btn) {
 function hcapMult(v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; }
 function hcapNum(v) { return String(v); }
 function hcapRule(v) { return v ? 'NO LIMIT' : 'BY RULE'; }
+function hcapDiff(v) { return v < 0 ? 'SAME' : ['GREEN', 'REGULAR', 'VETERAN'][v]; }
 var HCAP = [
   { k: 'inc',  name: 'MANPOWER INCOME', list: PD_INC, fmt: hcapMult,
     tip: 'What your sectors pay in manpower, against what they pay at even.' },
@@ -22154,7 +22507,9 @@ var HCAP = [
   { k: 'eye',  name: 'SIGHT', list: PD_EYE, fmt: hcapMult,
     tip: 'How far your men and your buildings see, and how far your mortars, howitzers and battery throw with it. Even up to fourfold.' },
   { k: 'arty', name: 'ARTILLERY', list: PD_ARTY, fmt: hcapRule,
-    tip: 'BY RULE: one heavy battery a side, dug forward of your own headquarters, and no missions into the enemy base. NO LIMIT takes all three off, for you only.' }
+    tip: 'BY RULE: one heavy battery a side, dug forward of your own headquarters, and no missions into the enemy base. NO LIMIT takes all three off, for you only.' },
+  { k: 'one',  name: 'ONE-OFF VEHICLES', list: PD_ONE, fmt: hcapRule,
+    tip: 'BY RULE: one Maus and one Tiger II a player, and two eighty-eights. NO LIMIT lifts all of them for you; the population cap still binds.' }
 ];
 /* The opposition's rows, the same machinery on a second table. The names and the tips
    are its own, because what SIGHT means to the player ("how far YOUR men see") is the
@@ -22182,30 +22537,119 @@ var ACAP = [
   { k: 'eye',  name: 'SIGHT', list: AD_EYE, fmt: hcapMult,
     tip: 'How far its men and buildings see, and how far its mortars, howitzers and battery throw.' },
   { k: 'arty', name: 'ARTILLERY', list: AD_ARTY, fmt: hcapRule,
-    tip: 'BY RULE: one heavy battery, dug forward of its own headquarters, and no missions into your base. NO LIMIT takes all three off, for them.' }
+    tip: 'BY RULE: one heavy battery, dug forward of its own headquarters, and no missions into your base. NO LIMIT takes all three off, for them.' },
+  { k: 'one',  name: 'ONE-OFF VEHICLES', list: AD_ONE, fmt: hcapRule,
+    tip: 'BY RULE: one Maus and one Tiger II, two eighty-eights. NO LIMIT lifts them for this AI. The Maus is off its shopping list either way.' },
+  { k: 'diff', name: 'DIFFICULTY', list: AD_DIFF, fmt: hcapDiff,
+    tip: 'How this one thinks, waves and techs. SAME is whatever the three buttons above say; the others override it for this AI alone.' }
 ];
 /* One set of functions for both panels, because two panels of the same eleven settings
    are two lists of one thing: the row carries which table it edits (`vals`, `even`) and
    which host it is drawn into, and everything below reads that rather than `PD`. */
 var HCAP_KEY = 'ORT_HCAP', ACAP_KEY = 'ORT_ACAP';
-function hcapPanel(rows) { return rows === ACAP ? { vals: AD, even: AD_EVEN, key: ACAP_KEY, host: 'agrid', open: 'aopen', name: 'OPPOSITION' }
+function hcapPanel(rows) { return rows === ACAP ? { vals: adRow(ACAP_ROLE), even: AD_EVEN, key: ACAP_KEY, host: 'agrid', open: 'aopen', name: 'OPPOSITION' }
                                                 : { vals: PD, even: PD_EVEN, key: HCAP_KEY, host: 'hgrid', open: 'hopen', name: 'HANDICAP' }; }
+/* The player's row is one object; the opposition's is three of them under their role
+   names, plus what each is told to buy. A file written before there were three is a flat
+   object of the same keys, and is taken as `foe1`'s, because that is the one AI a 1v1
+   has and is where the settings were meant to go. */
 function hcapSave(rows) {
-  var P = hcapPanel(rows || HCAP);
-  try { localStorage.setItem(P.key, JSON.stringify(P.vals)); } catch (e) { /* private browsing */ }
+  rows = rows || HCAP;
+  var P = hcapPanel(rows);
+  try {
+    localStorage.setItem(P.key, JSON.stringify(rows === ACAP ? { r: ADS, b: ABUY } : P.vals));
+  } catch (e) { /* private browsing */ }
+}
+function hcapTake(rows, vals, v) {
+  for (var i = 0; i < rows.length; i++) {
+    var h = rows[i], n = v[h.k];
+    if (typeof n === 'number' && n >= 0 && n < h.list.length) vals[h.k] = n | 0;
+  }
 }
 function hcapLoad(rows) {
   rows = rows || HCAP;
-  var P = hcapPanel(rows);
+  var P = hcapPanel(rows), i, r;
   try {
     var raw = localStorage.getItem(P.key);
     if (!raw) return;
     var v = JSON.parse(raw);
-    for (var i = 0; i < rows.length; i++) {
-      var h = rows[i], n = v[h.k];
-      if (typeof n === 'number' && n >= 0 && n < h.list.length) P.vals[h.k] = n | 0;
+    if (rows !== ACAP) { hcapTake(rows, P.vals, v); return; }
+    if (!v.r) { hcapTake(rows, ADS.foe1, v); return; }   /* written before there were three */
+    for (i = 0; i < AD_ROLES.length; i++) {
+      r = AD_ROLES[i];
+      if (v.r[r]) hcapTake(rows, ADS[r], v.r[r]);
+      if (v.b && v.b[r]) for (var j = 0; j < BP_KEYS.length; j++) {
+        var n = v.b[r][BP_KEYS[j]];
+        if (typeof n === 'number' && n >= 0 && n < BP_W.length) ABUY[r][BP_KEYS[j]] = n | 0;
+      }
     }
   } catch (e) { /* a stored setting that will not parse is no setting */ }
+}
+/* ---- which computer player the panel is setting.
+   Three of them in a 2v2 and one in a 1v1, so the strip is drawn either way and the two
+   that are not playing are marked as such rather than hidden: a player who sets his
+   ally's economy and then switches to 1v1 should be able to see that the setting is still
+   there and is not being used. */
+var AD_ROLENAME = { foe1: 'OPPONENT 1', foe2: 'OPPONENT 2', ally: 'YOUR ALLY' };
+function aroleBuild() {
+  var host = el('arole');
+  if (!host) return;
+  host.innerHTML = '';
+  AD_ROLES.forEach(function (r) {
+    var b = document.createElement('button');
+    b.className = 'arole' + (r === ACAP_ROLE ? ' on' : '');
+    b.textContent = AD_ROLENAME[r];
+    b.title = r === 'foe1' ? 'The opponent you have in every game.'
+                           : 'In the 2v2 only. Set here and kept for when you play one.';
+    b.onclick = function () { ACAP_ROLE = r; aroleBuild(); hcapSync(ACAP); bprefSync(); sfx('click'); };
+    host.appendChild(b);
+  });
+}
+/* and what it is told to buy. The same stepper machinery as the rows above, on its own
+   table, because it answers a different question: those say how strong this one is and
+   these say what it spends it on. */
+function bprefBuild() {
+  var host = el('bpref');
+  if (!host) return;
+  host.innerHTML = '';
+  var h = document.createElement('div');
+  h.className = 'bprefh';
+  h.textContent = 'WHAT IT BUYS \u00b7 a weight on each kind, on top of what it thinks the battle wants';
+  host.appendChild(h);
+  var grid = document.createElement('div');
+  grid.className = 'hgrid';
+  BP_KEYS.forEach(function (k) {
+    var row = document.createElement('div');
+    row.className = 'hrow'; row.title = BP_TIP[k];
+    var lab = document.createElement('b'); lab.textContent = BP_NAME[k];
+    var dn = document.createElement('button'); dn.className = 'hb'; dn.textContent = '\u2212';
+    dn.setAttribute('aria-label', 'less ' + BP_NAME[k].toLowerCase());
+    var val = document.createElement('i'); val.id = 'b_' + k;
+    var up = document.createElement('button'); up.className = 'hb'; up.textContent = '+';
+    up.setAttribute('aria-label', 'more ' + BP_NAME[k].toLowerCase());
+    dn.onclick = function () { bprefStep(k, -1); };
+    up.onclick = function () { bprefStep(k, 1); };
+    row.appendChild(lab); row.appendChild(dn); row.appendChild(val); row.appendChild(up);
+    grid.appendChild(row);
+  });
+  host.appendChild(grid);
+  bprefSync();
+}
+function bprefStep(k, d) {
+  var A = bpRow(ACAP_ROLE);
+  A[k] = clamp(A[k] + d, 0, BP_W.length - 1);
+  bprefSync(); hcapSave(ACAP); sfx('click');
+}
+function bprefSync() {
+  var A = bpRow(ACAP_ROLE);
+  BP_KEYS.forEach(function (k) {
+    var v = el('b_' + k);
+    if (!v) return;
+    var w = BP_W[A[k]];
+    v.textContent = w === 0 ? 'NEVER' : hcapMult(w);
+    v.style.color = A[k] === BP_EVEN ? 'var(--dim)' : 'var(--ink)';
+  });
+  hcapBadge(ACAP);
 }
 function hcapBuild(rows) {
   rows = rows || HCAP;
@@ -22254,7 +22698,18 @@ function hcapSync(rows) {
    rows put the DEPLOY button four hundred pixels below where it was: a setting nobody has
    touched should not push the one button everybody presses off the bottom. */
 function hcapEven(rows) {
-  var P = hcapPanel(rows || HCAP), k;
+  rows = rows || HCAP;
+  var P = hcapPanel(rows), k, i, j;
+  if (rows === ACAP) {
+    /* every role's row and every role's shopping weights, because the badge is about the
+       whole panel and a setting on the ally is still a setting */
+    for (i = 0; i < AD_ROLES.length; i++) {
+      var A = ADS[AD_ROLES[i]], B = ABUY[AD_ROLES[i]];
+      for (k in AD_EVEN) if (A[k] !== AD_EVEN[k]) return false;
+      for (j = 0; j < BP_KEYS.length; j++) if (B[BP_KEYS[j]] !== BP_EVEN) return false;
+    }
+    return true;
+  }
   for (k in P.even) if (P.vals[k] !== P.even[k]) return false;
   return true;
 }
@@ -22294,18 +22749,30 @@ el('aopen').onclick = function () {
   sfx('click');
 };
 el('aeven').onclick = function () {
-  for (var k in AD_EVEN) AD[k] = AD_EVEN[k];
-  hcapSync(ACAP); hcapSave(ACAP); sfx('click');
+  var A = adRow(ACAP_ROLE), B = bpRow(ACAP_ROLE), k, i;
+  for (k in AD_EVEN) A[k] = AD_EVEN[k];
+  for (i = 0; i < BP_KEYS.length; i++) B[BP_KEYS[i]] = BP_EVEN;
+  hcapSync(ACAP); bprefSync(); hcapSave(ACAP); sfx('click');
 };
 hcapLoad(); hcapBuild();
-hcapLoad(ACAP); hcapBuild(ACAP);
+hcapLoad(ACAP); aroleBuild(); hcapBuild(ACAP); bprefBuild();
+/* one against one or two against two, decided here because it changes how many brains are
+   raised, how many headquarters go up and how the ground's income is split */
+document.querySelectorAll('.team').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('.team').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
+    btn.classList.add('on'); chosenDuo = btn.dataset.team === '2';
+    btn.setAttribute('aria-pressed', 'true');
+    sfx('click');
+  };
+});
 /* a handicap kept from the last battle is shown rather than hidden, because a player who
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
 if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
-el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty); };
+el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); };
 el('tHQ').onclick = function () {
-  var hq = hqOf(G.side); if (!hq) return;
+  var hq = hqOf(G.own); if (!hq) return;
   select([hq], false); focusSelection();
 };
 el('tIdle').onclick = function () { cycleIdle(); };
@@ -22452,7 +22919,7 @@ function edOpen(data) {
   ED.data = data || edLoadDraft() || edLoadLocal() || defaultMapData();
   ED.name = ED.data.name || 'Ortona';
   ED.undo = []; ED.redo = []; ED.sel = []; ED.line = null; ED.drag = null; ED.marq = null; ED.tool = null; ED.cat = 'select';
-  G.mapData = ED.data; G.side = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
+  G.mapData = ED.data; G.side = 'us'; G.own = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
   G.wrecks = []; G.corpses = []; G.falls = []; G.fx = []; G.shots = [];
   fog = false;
   ED.scope = 'full'; ED.tiles = {}; ED.rect = null; ED.padTiles = {}; ED.padRect = null; ED.padT = 0;
@@ -23726,7 +24193,7 @@ function edPanelCheck() {
   el('edmexit').addEventListener('click', function () { edMenu(false); edClose(); });
   el('overedit').addEventListener('click', function () { el('over').classList.add('hidden'); el('overedit').classList.add('hidden'); ED.fromEditor = false; G.running = false; edOpen(ED.data); });
   el('openeditor').addEventListener('click', function () { edOpen(null); });
-  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode, chosenArty); } });
+  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); } });
   edRefreshStart();
 })();
 
