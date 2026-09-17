@@ -929,6 +929,62 @@ for (const device of TARGETS) {
      `${evened.made.take}x taken, ${evened.made.deal}x dealt, ${evened.made.eye}x sight, ` +
      `artillery ${evened.made.arty ? 'free' : 'by rule'}, the button reads "${evened.badge}"`);
 
+  /* --- the selection ring, which has now been wrong three times and was caught by a
+     player twice. It has to HOLD its unit and it has to FIT it, and those are two
+     different failures: sized off the separation radius it held a fraction of a section,
+     and sized off a nine-man formation no unit on this roster has, a three-man weapon team
+     got a circle nearly three times the ground it stood on. So the row measures both, for
+     every infantry unit on the roster: the ring against the formation it is drawn round,
+     and then a battle's worth of men against the ring they belong to.
+       It deploys its own battle: the block above it ends on the title screen with the
+     handicap reset, and spawning into a world that was never built gives nineteen ring
+     measurements and no men at all to check them against. --- */
+  await reload(page);
+  await deploy(page, { side: args.side || 'us', diff: 1 });
+  const ring = await page.evaluate(() => {
+    const rows = [];
+    Object.keys(window.UNITS).forEach(k => {
+      const d = window.UNITS[k];
+      if (d.cat === 'veh' || !d.models) return;
+      const side = k.slice(0, 2) === 'us' ? 'us' : 'ger';
+      const u = window.spawnUnit(side, k, 600, 1200, 0);
+      let far = 0;
+      u.models.forEach(m => { far = Math.max(far, Math.hypot(m.ox, m.oy)); });
+      rows.push({ k, n: d.models, far: Math.round(far), r: window.selRadius(u) });
+      u.dead = true;
+      const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1);
+    });
+    return rows;
+  });
+  /* it holds the formation, and it is not more than a man's width bigger than it */
+  const tooSmall = ring.filter(r => r.r < r.far + 6);
+  const tooBig = ring.filter(r => r.r > r.far + 20);
+  await fastForward(page, 90);
+  const held = await page.evaluate(() => {
+    let men = 0, out = 0, worst = 0, worstKey = '';
+    window.G.units.forEach(u => {
+      if (u.dead || !u.models) return;
+      const R = window.selRadius(u);
+      u.models.forEach(m => {
+        if (!m.alive) return;
+        men++;
+        const d = Math.hypot(m.x - u.x, m.y - u.y);
+        if (d > R + 1) out++;
+        if (d - R > worst - 0) { worst = d - R; worstKey = u.key; }
+      });
+    });
+    return { men, out, over: Math.round(worst), worstKey };
+  });
+  ok('the selection ring holds its unit and fits it',
+     !tooSmall.length && !tooBig.length && held.men > 20 && held.out === 0,
+     `${ring.length} infantry types: a ${ring[0].n}-man ${ring[0].k} stands ${ring[0].far} out in a ` +
+     `ring of ${ring[0].r}, the widest is ${Math.max.apply(null, ring.map(r => r.far))} in ` +
+     `${Math.max.apply(null, ring.map(r => r.r))}; ` +
+     (tooSmall.length ? tooSmall.map(r => r.k + ' ' + r.r + '<' + r.far).join(', ') + '; ' : '') +
+     (tooBig.length ? tooBig.map(r => r.k + ' ' + r.r + '>>' + r.far).join(', ') + '; ' : '') +
+     `after 90s of battle ${held.out} of ${held.men} men are outside their own ring ` +
+     `(furthest ${held.over} past it, ${held.worstKey})`);
+
   /* --- the after-action record, and the page it is read on. The record is kept AS the
      battle runs -- nothing at the end of one knows what a section did before it died --
      so what is asserted is that it agrees with the field while the field is still there:

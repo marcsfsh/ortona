@@ -1158,26 +1158,44 @@ depth buffer, because the 2D canvas is stacked over the WebGL one and nothing dr
 can be behind anything in the world: a section's selection ring was drawn over the section
 and four sections under orders put four dashed lines over every man on the screen.
 
-**A unit is the circle it is drawn in, and `selRadius` is that circle.** Three versions of
-the selection ring were wrong in turn, and the third was wrong in a way that mattered a
-long way past the ring. Drawn at the marker with `unitRadius + 5` it held about a sixth of
-the ground its men were standing on: `unitRadius` is the SEPARATION radius, twenty-seven
-for a section, while `squadOffset` lays three files and three ranks out to eighty units and
-the lane-narrowed formation stretches that half again. Moved onto the mean of the men it
+**A unit is the circle it is drawn in, and `selRadius` is that circle.** It has been wrong
+four times, and the two failures are different: a ring has to HOLD its unit and it has to
+FIT it.
+
+Drawn at the marker with `unitRadius + 5` it held a fraction of the ground its men were
+standing on -- `unitRadius` is the SEPARATION radius, twenty-seven for a section, while the
+men stand a formation's width either side of the marker. Moved onto the mean of the men it
 left the marker, which is what the order line, the pathfinder and every shell are laid on,
 so the mark and the thing it marked were two places. Sized to the circle that held them all
-it breathed with every step they took.
+it breathed with every step they took. Then, sized to a flat ninety-two for every section,
+it fitted nothing: ninety-two came off a nine-man formation and **nothing on this roster
+has nine men**. The biggest is six and stands forty-eight units out; a weapon team is three
+and stands thirty-two. A gun crew was drawn in a circle nearly three times the ground it
+was on, and a player noticed before anything here did.
 
-It is a fixed circle on the unit's own point -- ninety-two units, 7.9 m, a section holding
-about sixteen metres across -- and the men are bounded to it rather than chased. Three
-things read it and they are what make it true: the formation place is pulled back onto the
-rim along its own bearing (so the shape is kept and only its size is bounded, and it is
-walked in further if the ground there will not take a boot), a man who has fallen behind
-runs harder the further out he is, and his position is clamped at the rim as a backstop.
-The click test reads it too, so a tap anywhere in the circle picks the thing the circle is
-round. On the movement card that took stragglers -- a man over 150 from his section -- from
-2.37 per cent of man-frames to none, and the mean distance of a man from his own marker
-from 76 units to 32.
+`fitRadius(u)` measures it off the unit's own formation, once, from the offsets the unit
+was actually given -- which is the only way to get it right for both layouts, because a
+section is laid out by `squadOffset` and a battery crew by its work's `lay` list, and those
+spread to forty-eight and sixty. `def.models` would have answered for the first and not the
+second. It is the formation plus twelve, a man's own width, and nothing for the lane:
+`fl` is capped at 1.3 so the longest shape the formation takes already fits inside. A team
+comes out at 44 and a section at 60. Measured once and kept on the unit, because a ring
+that shrinks as men die is a ring that changes size.
+
+The men are bounded to it rather than chased. Three things read it and they are what make
+it true: the formation place is pulled back onto the rim along its own bearing (so the
+shape is kept and only its size is bounded, and it is walked in further if the ground there
+will not take a boot), a man who has fallen behind runs harder the further out he is, and
+his position is clamped at the rim as a backstop. The click test reads it too, so a tap
+anywhere in the circle picks the thing the circle is round. On the movement card that took
+stragglers -- a man over 150 from his section -- from 2.37 per cent of man-frames to none,
+and the mean distance of a man from his own marker from 76 units to 29.
+
+**It is on the gate now**, because three of the four versions shipped and two were caught by
+a player. The row measures both failures for every infantry type on the roster: the ring
+against the formation it is drawn round (no smaller than it, and no more than a man's width
+bigger), and then ninety seconds of battle with every living man checked against the ring
+he belongs to.
 
 **A round goes at the men and not at the marker.** `aimAt(u, t)` picks the living man
 nearest the firer and `fireAt` lays the shell, the tracer and the hit on him. Laid on
@@ -1202,12 +1220,14 @@ threat swings round or a man falls. The file also closes up on a short piece
 seventy-two units of wall and a garden wall twenty across gave it nineteen, so every man
 past the end failed and the piece was thrown out whole.
 
-What that cost, measured: halted men behind something 99.1 per cent to 76.9, and cover
-taken over available 0.76 to 0.66 with one drill of twenty-four standing in the open beside
-medium cover. **The reach is not what binds it.** Widening the circle to 108 recovered
-nothing at all (0.65 against 0.66 on the same card), so the loss is the whole-section rule
-and the pick-once rule rather than the distance -- which is worth knowing before anyone
-tries to buy the cover back by making the circle bigger.
+What that cost, measured: halted men behind something 99.1 per cent to 76.1, and cover
+taken over available 0.76 to 0.61 with three drills of twenty-four standing in the open
+beside medium cover. **The reach is not what binds it.** Widening the circle to 108
+recovered nothing at all (0.65 against 0.66 on the same card), and loosening the
+`chooseCover` pre-filter from `selRadius - 16` to the whole circle changed nothing either
+(0.61 both) -- what binds is the whole-section rule and the pick-once rule, and after that
+`coverSlots`'s own reach. Worth knowing before anyone tries to buy the cover back by
+making the circle bigger; the circle is sized to the men and is not the lever.
 
 Fought over the whole balance card at six runs a row against the commit before it: **-3.9
 points with a standard error of 3.2, against a row-to-row spread of 21.2**, which is inside
