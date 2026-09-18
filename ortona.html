@@ -2154,7 +2154,50 @@ function defaultMapData() {
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
   E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
-  return { name: 'Ortona', version: 1, entities: E, height: HB };
+  return { name: 'Ortona', when: 'ADRIATIC FRONT · 23 DEC 1943', version: 1, entities: E, height: HB };
+}
+
+/* ================================================================ the Gothic Line
+   The Adriatic sector, at the end of August 1944: the Foglia running down the middle of
+   it with a ridge either side, and 1st Canadian Division coming at the line that ran
+   along the far bank. It is laid out for four players rather than two, and it is
+   mirrored exactly about the midline, which is the whole design constraint: the real
+   Gothic Line was a defensive position with one army above the other, and a map two
+   people are meant to fight over fairly cannot be.
+
+   So both sides get the same ground. Each holds a ridge, each has a shelf behind it
+   flat enough to assemble on and turn armour round, and between them is the river and
+   the ground the line has already been fought over twice. The works face both ways
+   because they have changed hands.
+
+   Read west to east, on the west half and mirrored: the base shelf out at the edge, the
+   back of the ridge, the crest, the forward slope with its spurs and draws, and the
+   Foglia in the bottom. Read north to south: broken high ground up in the shoulder,
+   where it is infantry country, and open water meadow at the bottom, where armour can
+   get across. */
+function gothicMapData() {
+  var E = [], HB = [];
+
+  /* Nine sectors, in Ortona's own topology, because that shape of map is known to play:
+     two the side opens holding, one on each crest, three on the river, and the two the
+     other side opens holding. Every position is mirrored about the midline to the unit.
+     The names are the real ones off that piece of the line -- Point 120 and Point 204
+     are the two hills the Canadians took at Montecchio, which is what the two crests
+     are. */
+  var secs = [
+    ['A', 400, 620, 'fuel', 'us', 'Montecalvo', ['C', 'D']],
+    ['B', 400, 1340, 'mp', 'us', 'Casa Rossa', ['C', 'F']],
+    ['C', 830, 980, 'mp', null, 'Point 120', ['A', 'B', 'E']],
+    ['D', 1400, 520, 'vp', null, 'Montecchio', ['A', 'E', 'H']],
+    ['E', 1400, 980, 'vp', null, 'The Foglia', ['C', 'D', 'F', 'G']],
+    ['F', 1400, 1420, 'vp', null, 'Osteria Nuova', ['B', 'E', 'I']],
+    ['G', 1970, 980, 'mp', null, 'Point 204', ['E', 'H', 'I']],
+    ['H', 2400, 620, 'fuel', 'ger', 'Tomba di Pesaro', ['D', 'G']],
+    ['I', 2400, 1340, 'mp', 'ger', 'Borgo Santa Maria', ['F', 'G']]];
+  secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
+  E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
+  E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
+  return { name: 'The Gothic Line', when: 'FOGLIA VALLEY · 30 AUG 1944', version: 1, land: 'gothic', entities: E, height: HB };
 }
 
 /* ---- build the world from a map ---- */
@@ -2328,6 +2371,20 @@ var VALLONI = [
   { pts: [[2160, 1760], [2196, 1500], [2140, 1300]], d: 34, w: 54 },
   { pts: [[1800, 1830], [1720, 1660], [1620, 1560]], d: 26, w: 50 }
 ];
+/* The Foglia, which runs down the middle of the Gothic Line map and is the one
+   watercourse on it. This is the CHANNEL and not the valley: the flood plain around it is
+   part of the landform, because a braided gravel bed painted two hundred units wide reads
+   as a set of pale bars laid across the map rather than as a river. Two entries rather
+   than one, because it is not the same river along its length -- a cut where it comes off
+   the shoulder in the north and a shallower, wider bed once the valley opens out. gullyAt
+   takes the deepest cut at each point, so they overlap and hand over to one another.
+   It is laid dead on the midline: a river that wandered would give one side more floor
+   than the other at any given latitude, and this map is meant to be fair before it is
+   meant to be pretty. */
+var FOGLIA = [
+  { pts: [[1400, -60], [1400, 760]], d: 13, w: 58 },
+  { pts: [[1400, 680], [1400, WORLD.h + 60]], d: 8, w: 74 }
+];
 
 /* ---- the country a map stands in ----
    Ortona's landform was never a property of its map: it was the only landform there
@@ -2336,11 +2393,13 @@ var VALLONI = [
    a map of anywhere at all came out with the Adriatic along the top of it. LAND is what
    sort of country the ground is. A map names one, and everything that wants to know
    where the sea runs or how deep the watercourses cut asks it rather than a constant.
-   padR is how much level ground each army is given to deploy onto, which belongs to the
-   country because it belongs to how the map is meant to be played: a 2v2 stands two
-   headquarters 580 apart and wants a shelf that holds both of them. */
+   padR and padY are how much level ground each army is given to deploy onto, and in what
+   shape, which belongs to the country because it belongs to how the map is meant to be
+   played: a 1v1 wants a circle round one headquarters and a 2v2 stands two of them 580
+   apart along the line and wants a band that holds both. */
 var LANDS = {
-  ortona: { name: 'ortona', build: landOrtona, coast: coastOrtona, rail: railOrtona, val: VALLONI, padR: 165, terrace: 1 }
+  ortona: { name: 'ortona', build: landOrtona, coast: coastOrtona, rail: railOrtona, val: VALLONI, padR: 165, padY: 165, terrace: 1 },
+  gothic: { name: 'gothic', build: landGothic, coast: null, rail: null, val: FOGLIA, padR: 210, padY: 500 }
 };
 var LAND = LANDS.ortona;
 /* Where the armies deploy, which is where their headquarters stand. This was two
@@ -2353,15 +2412,18 @@ var DEPOT = [[250, 950], [WORLD.w - 250, 950]];
    four-metre ditch is not terrain, it is a fault. The landform underneath is left
    alone, so a depot still stands where the shelf puts it; what is taken away is the
    relief, the terracing and the gully. */
-function depotAt(x, y) {
-  var best = 0, core = LAND.padR;
+function depotDist(x, y) {
+  var best = 1e9;
   for (var d2 = 0; d2 < DEPOT.length; d2++) {
-    var dd = Math.hypot(x - DEPOT[d2][0], y - DEPOT[d2][1]);
-    var w2 = clamp(1 - (dd - core) / 215, 0, 1);
-    w2 = w2 * w2 * (3 - 2 * w2);
-    if (w2 > best) best = w2;
+    var ex = (x - DEPOT[d2][0]) / LAND.padR, ey = (y - DEPOT[d2][1]) / LAND.padY;
+    var dd = Math.sqrt(ex * ex + ey * ey) * LAND.padR;
+    if (dd < best) best = dd;
   }
   return best;
+}
+function depotAt(x, y) {
+  var w2 = clamp(1 - (depotDist(x, y) - LAND.padR) / 215, 0, 1);
+  return w2 * w2 * (3 - 2 * w2);
 }
 /* distance to a watercourse's own course, and the fraction along it, for the V cut */
 function gullyAt(x, y) {
@@ -2499,6 +2561,85 @@ function landOrtona(h) {
     }
   }
 }
+/* ---- the Gothic Line ----
+   The Adriatic sector of it: the Foglia and the ridges above it, which is 1st Canadian
+   Corps ground at the end of August 1944. What is built here is that country and not
+   that battle. The real line had one army on the high ground and the other down in the
+   river, and a map has to be fair, so the valley is put down the middle with a ridge
+   either side of it and each side holds one. This is ground the line has already been
+   fought over and turned on.
+
+   Read from a base out at the edge toward the river: a shelf flat enough to assemble an
+   army on, the back of a ridge, the crest it forms up behind, the forward slope it has
+   to fight down, and the water at the bottom. Read north to south: the ridges stand
+   highest where they run up into the shoulder at the top of the map and die away into
+   water meadow at the bottom, so one flank is broken going and the other is open. Both
+   teams get both of those, because the map is mirrored about the midline and not about
+   this.
+
+   Every term is a function of the distance out from the midline and of y, the relief
+   included -- the sample point is folded about the midline before the noise is asked,
+   so the two halves of the ground are identical and not merely similar. Ortona does not
+   do that and does not need to: its two halves are a town with a headquarters at either
+   end of it. Here the ground itself is what the two armies are being asked to fight
+   over on equal terms. */
+function landGothic(h) {
+  var MX = WORLD.w / 2, i, j;
+  for (j = 0; j < HH; j++) {
+    for (i = 0; i < HW; i++) {
+      var x = i * HG, y = j * HG;
+      var dx = Math.abs(x - MX), fx = MX - dx;         /* folded, so the noise mirrors too */
+      var dp = depotAt(x, y);
+      /* how far south. The one thing allowed to differ across the map, because it differs
+         the same way on both sides of it */
+      var sy = clamp((y - 700) / 900, 0, 1); sy = sy * sy * (3 - 2 * sy);
+      /* The crest is not a ruled line: it wanders in and out along its length by most of
+         two hundred units, which is what puts spurs on a ridge and re-entrants between
+         them. It depends on y alone, so the two crests wander identically. */
+      var dxw = dx + (hfbm(y / 270, 0, 41, 3) - .5) * 176;
+
+      /* ---- 1. the landform ---- */
+      var crestH = 78 - sy * 42;
+      var rise = clamp((dxw - 250) / 250, 0, 1); rise = rise * rise * (3 - 2 * rise);
+      var back = clamp((dxw - 760) / 290, 0, 1); back = back * back * (3 - 2 * back);
+      var z = crestH * rise - (crestH - 30) * back;
+      /* the shoulder the ridges run up into at the north edge */
+      var nor = clamp(1 - y / 620, 0, 1);
+      z += nor * nor * 48;
+
+      /* ---- 2. spurs and draws. A ridge sheds its water down the fall line, so what a
+         forward slope is cut into is a comb of spurs with draws between them, and a draw
+         is the only covered way up a face. They live on the slope and die out at the
+         crest and at the foot, which is what onFace says. ---- */
+      var onFace = rise * (1 - rise) * 4;
+      z += (hridge(y / 105, dxw / 320, 47, 3) - .5) * 34 * onFace * (1 - dp);
+
+      /* ---- 3. relief, its domain warped so it does not read as noise laid over a ramp.
+         The floor is a flood plain and IS flat; the ridge is broken ground; the shelf
+         behind it is middling, and a depot wants to be level. ---- */
+      var floorF = 1 - clamp(dxw / 330, 0, 1);
+      var rough = clamp(.9 - floorF * .62 - back * .34, .12, 1) * (1 - dp * .94);
+      var wx = fx + (hfbm(fx / 430, y / 430, 83, 2) - .5) * 190;
+      var wy = y + (hfbm(fx / 390, y / 390, 97, 2) - .5) * 190;
+      z += (hfbm(wx / 300, wy / 300, 11, 4) - .5) * 42 * rough;
+      z += (hridge(wx / 155, wy / 155, 23, 3) - .45) * 24 * rough;
+      z += (hfbm(fx / 44, y / 44, 37, 3) - .5) * 6.5 * (1 - dp * .8);
+      var rill = hridge(fx / 26, y / 70, 53, 2);
+      z -= rill * rill * 3.2 * rough;
+
+      /* ---- 4. the flood plain, and the channel in the bottom of it. The plain is a
+         shallow dish that widens and deepens southward as the valley opens out; the
+         channel is cut along its own course the way a vallone is, and is what carries
+         the gravel bed and the boulders. ---- */
+      var plW = 210 + sy * 300;
+      var pl = clamp(1 - dx / plW, 0, 1);
+      z -= pl * pl * (3 - 2 * pl) * (7 + sy * 7);
+      z -= gullyAt(x, y) * (1 - dp);
+
+      h[hidx(i, j)] = z;
+    }
+  }
+}
 function makeHeight() {
   /* the noise under everything never changes for a given world, and it is two thirds
      of a second of arithmetic: the editor rebuilds the ground after every stroke and
@@ -2520,13 +2661,14 @@ function makeHeight() {
      ground actually has -- the depot still sits on the side of the shelf -- and takes
      away only the holes in it, so there is no step where the pad meets the country. */
   for (var dpi = 0; dpi < DEPOT.length; dpi++) {
-    var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1], R = LAND.padR + 215;
-    var i0 = Math.max(0, Math.floor((cx0 - R) / HG)), i1 = Math.min(HW - 1, Math.ceil((cx0 + R) / HG));
-    var j0 = Math.max(0, Math.floor((cy0 - R) / HG)), j1 = Math.min(HH - 1, Math.ceil((cy0 + R) / HG));
+    var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1];
+    var RX = LAND.padR + 215, RY = LAND.padY + 215;
+    var i0 = Math.max(0, Math.floor((cx0 - RX) / HG)), i1 = Math.min(HW - 1, Math.ceil((cx0 + RX) / HG));
+    var j0 = Math.max(0, Math.floor((cy0 - RY) / HG)), j1 = Math.min(HH - 1, Math.ceil((cy0 + RY) / HG));
     var n = 0, sx = 0, sy = 0, sz = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0;
     for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
       var px = i * HG - cx0, py = j * HG - cy0;
-      if (px * px + py * py > R * R) continue;
+      if (px * px / (RX * RX) + py * py / (RY * RY) > 1) continue;
       var pz = h[hidx(i, j)];
       n++; sx += px; sy += py; sz += pz;
       sxx += px * px; syy += py * py; sxy += px * py; sxz += px * pz; syz += py * pz;
@@ -2540,8 +2682,8 @@ function makeHeight() {
     var c = det ? (r2 * m11 - r1 * m12) / det : 0;
     var a = sz / n - b * sx / n - c * sy / n;
     for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
-      var qx = i * HG - cx0, qy = j * HG - cy0, dd2 = Math.hypot(qx, qy);
-      var w3 = clamp(1 - (dd2 - LAND.padR - 15) / 200, 0, 1);
+      var qx = i * HG - cx0, qy = j * HG - cy0;
+      var w3 = clamp(1 - (depotDist(i * HG, j * HG) - LAND.padR - 15) / 200, 0, 1);
       if (w3 <= 0) continue;
       w3 = w3 * w3 * (3 - 2 * w3) * .95;
       k = hidx(i, j);
@@ -22374,6 +22516,14 @@ function hqSpot(slot, duo) {
   var second = slot.length > side.length;
   return { x: p.x, y: clamp(p.y + (second ? 290 : -290), 160, WORLD.h - 160) };
 }
+/* The strip names the map rather than naming Ortona. A map carries its own place and its
+   own date; an imported one carries whatever the editor called it, which is why the two
+   lines are written as text and not as markup. */
+function missionTitle() {
+  var d = G.mapData || {}, m = el('mission');
+  m.children[0].textContent = (d.name || 'Custom map').toUpperCase();
+  m.children[1].textContent = d.when || 'CUSTOM MAP';
+}
 function startGame(side, diff, mode, arty, duo) {
   G.side = side; G.own = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   G.duo = !!duo;
@@ -22382,6 +22532,7 @@ function startGame(side, diff, mode, arty, duo) {
      game; off is for a player who would rather not be shelled. */
   G.aiArty = arty === undefined ? true : !!arty;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
+  missionTitle();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.sel = [];
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
