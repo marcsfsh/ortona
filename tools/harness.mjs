@@ -560,7 +560,12 @@ export async function installHooks(page) {
 
 /* ---------------------------------------------------------------- controls */
 
-export async function deploy(page, { side = 'us', diff = 1 } = {}) {
+export async function deploy(page, { side = 'us', diff = 1, map = null } = {}) {
+  /* The ground first. It is clicked on the title screen rather than assigned, because
+     that is the one path that also sets what a later startGame() inside a probe keeps:
+     startGame does not touch G.mapData, so whichever map the deploy button built is the
+     map every re-deploy in the same page runs on. */
+  if (map) await page.click(`.gmap[data-map="${map}"]`);
   await page.click(side === 'ger' ? '#pickger' : '#pickus');
   await page.click(`.pill[data-diff="${diff}"]`);
   await page.click('#deploy');

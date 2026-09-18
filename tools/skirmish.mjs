@@ -32,6 +32,7 @@ import { execFileSync } from 'node:child_process';
 import { launch, openGame, deploy, fastForward, parseArgs } from './harness.mjs';
 
 const args = parseArgs(process.argv.slice(2));
+const MAP = args.map || null;      /* which shipped map to fight on */
 const N = args.n === undefined ? 4 : Number(args.n);
 const SECS = args.t === undefined ? 600 : Number(args.t);
 const DIFF = args.diff === undefined ? 1 : Number(args.diff);
@@ -185,7 +186,7 @@ async function install(page, baseSrc) {
 
 const browser = await launch();
 const { page, log } = await openGame(browser, 'desktop', { quiet: true });
-await deploy(page, { side: 'us', diff: DIFF });
+await deploy(page, { side: 'us', diff: DIFF, map: MAP });
 await install(page, baseSrc);
 
 /* Ortona is not a symmetric map and the two rosters are not the same army: with the same

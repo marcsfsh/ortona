@@ -178,7 +178,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .side h3{font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:5px}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-.pill,.mode,.arty,.team{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+.pill,.mode,.arty,.team,.gmap{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
 /* the opposition panel's own two strips: which computer player is being set, and what
    that one is told to buy. `.arole` is deliberately not `.pill`, for the reason set out
    beside `.obtn`. */
@@ -202,7 +202,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .hrow i{font-family:var(--mono);font-style:normal;font-size:13px;color:var(--ink);min-width:88px;text-align:center}
 .hb{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:15px;line-height:1;width:34px;height:34px;box-sizing:border-box;flex:0 0 auto}
 .hb[disabled]{color:#3d4436;border-color:#2b3126}
-.pill.on,.mode.on,.arty.on,.team.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.pill.on,.mode.on,.arty.on,.team.on,.gmap.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
 /* The game-over screen's two ways on. They are deliberately NOT `.pill`: the title
    screen binds every `.pill` on the page as a side picker, by class and with a plain
    `onclick =`, and it runs after this, so a button that borrowed the look silently
@@ -315,7 +315,7 @@ body.mob .keys{font-size:11.5px;line-height:1.7}
 body.mob .go{width:100%;max-width:340px;padding:15px 0}
 /* the title screen's own option buttons were 33px on a phone, which is under the rule
    the rest of the game holds itself to; they are the first thing a thumb ever touches */
-body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .gmap,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 body.mob .bpref .hgrid{grid-template-columns:1fr}
 body.mob .hgrid{grid-template-columns:1fr}
 body.mob .hb{width:46px;height:46px;min-width:46px;min-height:46px;font-size:17px}body.mob .hres{min-height:44px;padding:0 14px}
@@ -434,7 +434,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
 .side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
-.pill,.mode,.arty,.team{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
+.pill,.mode,.arty,.team,.gmap{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on,.gmap.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
 
@@ -601,6 +601,7 @@ body.mob #mini{width:104px;height:72px}
     <button class="edb wide" id="edmload">LOAD…</button>
     <button class="edb wide" id="edmnew">NEW MAP…</button>
     <button class="edb wide" id="edmortona">RELOAD ORTONA</button>
+    <button class="edb wide" id="edmgothic">RELOAD GOTHIC LINE</button>
     <div class="edh">FILES</div>
     <button class="edb wide" id="edmexport">EXPORT FILE</button>
     <button class="edb wide" id="edmsharefile">SHARE…</button>
@@ -692,7 +693,10 @@ body.mob #mini{width:104px;height:72px}
     </button>
   </div>
   <div class="row">
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px">OPPOSITION</span>
+    <span style="font-size:11px;color:var(--dim);letter-spacing:2px">GROUND</span>
+    <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true">ORTONA</button>
+    <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false">GOTHIC LINE</button>
+    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">OPPOSITION</span>
     <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
     <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
     <button class="pill" data-diff="2" title="Hard" aria-pressed="false">VETERAN</button>
@@ -2265,8 +2269,12 @@ function gothicMapData() {
      line was: they run right across, and each side's half of one is mirrored onto the
      other, so a road laid from the western base to the midline is a road from base to
      base once the map is folded. */
-  road(52, [[404, 220], [446, 386], [418, 546], [452, 712], [430, 868], [458, 1012],
-            [424, 1178], [452, 1326], [416, 1490], [444, 1642], [412, 1800]]);
+  /* The lateral is two roads meeting at the centre crossing rather than one. A street
+     that runs the length of the map with no junction has nothing to fight over, which is
+     a rule of the map check and a fair one: the junction is where the ground is worth
+     holding, so the road is written as the two legs that meet at it. */
+  road(52, [[404, 220], [446, 386], [418, 546], [452, 712], [430, 868], [458, 1012]]);
+  road(52, [[458, 1012], [424, 1178], [452, 1326], [416, 1490], [444, 1642], [412, 1800]]);
   road(48, [[250, 950], [312, 934], [386, 966], [458, 1012]]);
   road(48, [[446, 386], [560, 448], [686, 496], [806, 524], [934, 556], [1042, 540],
             [1158, 518], [1284, 528], [1400, 520]]);
@@ -2279,12 +2287,17 @@ function gothicMapData() {
      Three bunkers, one on each crossing, and the fire trench run between them rather
      than through them: the concrete IS the line where it stands, and a trench dug across
      its front would be a trench its own garrison is firing over. */
-  bunker(706, 560, .18);
-  bunker(748, 980, .61);
-  bunker(720, 1400, .37);
+  /* Each stands beside the crossing it covers rather than on it. Astride the road the
+     concrete IS the roadblock, which is neither what a bunker is for nor what the map
+     wants: the lane has to stay open, because a lane the attacker cannot use is a lane
+     that decides nothing. They sit on alternate sides of their roads, so the three do not
+     read as one rule applied three times. */
+  bunker(706, 592, .18);
+  bunker(748, 1062, .61);
+  bunker(720, 1328, .37);
   zig(678, 300, 470, 26, 46);
   zig(678, 650, 880, 26, 46);
-  zig(678, 1080, 1300, 26, 46);
+  zig(678, 1080, 1258, 26, 46);
   zig(678, 1490, 1680, 26, 46);
   /* communication trenches back over the crest, so the position can be reinforced from
      the reverse slope without crossing the skyline */
@@ -2407,8 +2420,8 @@ function gothicMapData() {
       hb({ x: lx, y: y, r: 58, d: -15 });
     }
   })();
-  road(40, [[1292, 210], [1310, 420], [1288, 640], [1306, 860], [1296, 1080],
-            [1312, 1300], [1290, 1520], [1304, 1730]]);
+  road(40, [[1292, 210], [1310, 420], [1288, 640], [1300, 860], [1298, 986]]);
+  road(40, [[1298, 986], [1296, 1080], [1312, 1300], [1290, 1520], [1304, 1730]]);
   runWall(1252, 240, 1262, 720); runWall(1256, 790, 1248, 1240); runWall(1258, 1320, 1250, 1700);
   runWall(1340, 260, 1348, 700); runWall(1344, 830, 1336, 1260); runWall(1342, 1340, 1350, 1690);
 
@@ -2438,34 +2451,6 @@ function gothicMapData() {
   push({ t: 'roadblock', x: 1370, y: 528, a: 1.571 });
   push({ t: 'roadblock', x: 1366, y: 986, a: 1.571 });
   push({ t: 'roadblock', x: 1372, y: 1414, a: 1.571 });
-
-  /* ---- What the ground has taken ----
-     Where a map is torn is not random. It is heaviest on the three crossings, because
-     every attack has gone in on one of them; heavy along the bunker line, because
-     everything that could reach has been looking for the concrete; and it thins to
-     nothing on the rear shelf, which is the one piece of ground nobody has had to cross.
-     So the scatter is rejected against a density rather than laid out evenly, and it is
-     rejected again against everything already dug: a shell hole through a trench floor
-     or a wire apron is a hole the map draws and the works go on pretending is not there.
-     The number is capped rather than counted out, because a rejection scatter that must
-     place N will keep trying until it puts one somewhere it does not belong. */
-  function crater(x, y, r) { push({ t: 'crater', x: x, y: y, r: r }); keepOff(x, y, r * .8); }
-  (function () {
-    var tries = 0, made = 0, x, y, lane, d, r;
-    while (made < 210 && tries < 12000) {
-      tries++;
-      x = rr(300, 1398); y = rr(40, 1860);
-      lane = Math.min(Math.abs(y - 520), Math.abs(y - 980), Math.abs(y - 1420));
-      d = clamp(1 - lane / 300, 0, 1) * .40
-        + clamp(1 - Math.abs(x - 760) / 230, 0, 1) * .40
-        + clamp((x - 850) / 240, 0, 1) * .70;
-      if (r1() > d) continue;
-      r = rr(11, 20) + (r1() > .82 ? rr(8, 16) : 0);
-      if (!clearOf(x, y, r + 10)) continue;
-      crater(x, y, r);
-      made++;
-    }
-  })();
 
   /* ---- The country it was before ----
      The Foglia valley is farmland: scattered case coloniche with their yards and
@@ -2500,12 +2485,12 @@ function gothicMapData() {
   farm(256, 356, 62, 40);
   wall(136, 386, 300, 392, 22); wall(300, 392, 294, 302, 22); wall(136, 386, 132, 310, 22);
   house(196, 1684, 78, 58, .63, .25, { tall: 1 });
-  farm(136, 1644, 58, 38);
-  wall(144, 1740, 264, 1732, 22); wall(264, 1732, 268, 1626, 22);
+  farm(196, 1592, 58, 38);
+  wall(144, 1740, 264, 1732, 22); wall(264, 1732, 268, 1566, 22);
   /* the farm on the crest, shelled to a shell of itself, and its wall knocked about */
   house(556, 830, 74, 54, .44, .72);
-  farm(500, 866, 50, 34);
-  wall(488, 786, 600, 780); wall(488, 896, 548, 902);
+  farm(556, 736, 50, 34);
+  wall(488, 896, 600, 890, 22); wall(600, 890, 604, 792, 22);
 
   /* the enclosure walls behind the crest: field boundaries, so they run with the grain of
      the ground and stop where the shelling starts */
@@ -2517,6 +2502,38 @@ function gothicMapData() {
       wl = rr(70, 180);
       if (r1() > .5) wall(wx, wy, wx + wl, wy + rr(-22, 22));
       else wall(wx, wy, wx + rr(-22, 22), wy + wl);
+    }
+  })();
+
+  /* The shell holes come AFTER the farms and the walls and not before them, which is not
+     a matter of taste: the scatter rejects against everything already dug, so anything
+     laid later is laid on top of it. Written the other way round, the map check found six
+     craters undercutting the two farms nobody had told them about. */
+  /* ---- What the ground has taken ----
+     Where a map is torn is not random. It is heaviest on the three crossings, because
+     every attack has gone in on one of them; heavy along the bunker line, because
+     everything that could reach has been looking for the concrete; and it thins to
+     nothing on the rear shelf, which is the one piece of ground nobody has had to cross.
+     So the scatter is rejected against a density rather than laid out evenly, and it is
+     rejected again against everything already dug: a shell hole through a trench floor
+     or a wire apron is a hole the map draws and the works go on pretending is not there.
+     The number is capped rather than counted out, because a rejection scatter that must
+     place N will keep trying until it puts one somewhere it does not belong. */
+  function crater(x, y, r) { push({ t: 'crater', x: x, y: y, r: r }); keepOff(x, y, r * .8); }
+  (function () {
+    var tries = 0, made = 0, x, y, lane, d, r;
+    while (made < 210 && tries < 12000) {
+      tries++;
+      x = rr(300, 1398); y = rr(40, 1860);
+      lane = Math.min(Math.abs(y - 520), Math.abs(y - 980), Math.abs(y - 1420));
+      d = clamp(1 - lane / 300, 0, 1) * .40
+        + clamp(1 - Math.abs(x - 760) / 230, 0, 1) * .40
+        + clamp((x - 850) / 240, 0, 1) * .70;
+      if (r1() > d) continue;
+      r = rr(11, 20) + (r1() > .82 ? rr(8, 16) : 0);
+      if (!clearOf(x, y, r + 10)) continue;
+      crater(x, y, r);
+      made++;
     }
   })();
 
@@ -2703,10 +2720,8 @@ function buildMap(data) {
       case 'rubble': addCover(e.x, e.y, e.r, 2, 'rubble', null, 80); break;
       case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
       case 'bunker':
-        /* The footprint is axis-aligned like every solid thing here, so the frontage runs
-           across whichever axis the bearing is least along. */
-        var bax = Math.abs(Math.cos(e.a || 0)) > Math.abs(Math.sin(e.a || 0));
-        var bk2 = { x: e.x, y: e.y, w: bax ? 46 : 74, h: bax ? 74 : 46, solid: 1, kind: 'bunker',
+        var bb2 = bunkerBox(e);
+        var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
                     face: e.a || 0, arc: 1, s: e.s || 0, z: 0 };
         G.props.push(bk2); G.blocks.push(bk2);
         G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0 });
@@ -3209,6 +3224,14 @@ function distToSeg(px, py, x1, y1, x2, y2) {
 /* the side of a leg that faces the enemy: +1 is to the left of the drawing direction
    (the side its normal points to), -1 to the right; the map's centre decides unless the
    leg says otherwise */
+/* A bunker's footprint is axis-aligned like every solid thing here, so the frontage runs
+   across whichever axis the bearing is least along. Derived in one place rather than
+   stored on the entity, and handed out, because the editor has to mark and pick the same
+   rectangle the game builds and the check has to test it. */
+function bunkerBox(e) {
+  var ax = Math.abs(Math.cos(e.a || 0)) > Math.abs(Math.sin(e.a || 0));
+  return { w: ax ? 46 : 74, h: ax ? 74 : 46 };
+}
 function trenchFacing(a, b, flag) {
   if (flag === 'L') return 1;
   if (flag === 'R') return -1;
@@ -13350,23 +13373,39 @@ function paintGround(t, DET) {
      darkens ground and warms it, because water in the grain is warm; it was put in first
      on its own and what came out was damp stubble. Bleak is a colour, and the colour has
      to be painted. */
+  /* A neutral grey rather than a brown one. Mud is brown because it is wet and the
+     shader already does the wet; what the PAINT has to take away is the warmth the dry
+     stubble either side of it keeps, so the overlay is very nearly colourless and the
+     brown that comes out is the brown of water in the grain.
+     It is built as an image a quarter the size and drawn once, rather than as a quarter
+     of a million little rectangles. Written the obvious way it cost 2.8 seconds on a full
+     albedo and DOUBLED the editor's patch repaint, which is the one number in this file
+     that a person waiting with a finger on the screen can feel. A wash has no detail
+     finer than the noise under it, so there is nothing to lose by painting it coarse and
+     letting the scale-up smooth it -- and the clip does the rest, because drawImage
+     honours it where a loop over the whole world does not. */
   if (LAND.churn) {
-    for (var cy2 = 0; cy2 < WORLD.h; cy2 += 4) {
-      for (var cx2 = 0; cx2 < WORLD.w; cx2 += 4) {
-        var ch2 = LAND.churn(cx2, cy2);
-        if (ch2 <= .02) continue;
-        var cn2 = noise2(Math.floor(cx2 / 7), Math.floor(cy2 / 7), 181);
-        var cn3 = noise2(Math.floor(cx2 / 31), Math.floor(cy2 / 31), 183);
-        var ca2 = ch2 * (.50 + cn3 * .34) * (.66 + cn2 * .46);
-        var cg2 = Math.round(50 + cn2 * 26 + cn3 * 16);
-        /* a neutral grey rather than a brown one. Mud is brown because it is wet, and the
-           shader already does the wet; what the PAINT has to take away is the warmth the
-           dry stubble either side of it keeps, so the overlay is very nearly colourless
-           and the brown that comes out is the brown of water in the grain. */
-        t.fillStyle = 'rgba(' + (cg2 + 4) + ',' + (cg2 + 2) + ',' + (cg2 - 1) + ',' + Math.min(.9, ca2).toFixed(3) + ')';
-        t.fillRect(cx2, cy2, 4.5, 4.5);
+    var CQ = 4, cw = Math.ceil(WORLD.w / CQ), cht = Math.ceil(WORLD.h / CQ);
+    if (!paintGround._cc || paintGround._cc.width !== cw) {
+      paintGround._cc = document.createElement('canvas');
+      paintGround._cc.width = cw; paintGround._cc.height = cht;
+    }
+    var cc = paintGround._cc, cct = cc.getContext('2d');
+    var cim = cct.createImageData(cw, cht), cd = cim.data, cp = 0, ci2, cj2;
+    for (cj2 = 0; cj2 < cht; cj2++) {
+      for (ci2 = 0; ci2 < cw; ci2++) {
+        var cwx = ci2 * CQ, cwy = cj2 * CQ;
+        var ch2 = LAND.churn(cwx, cwy);
+        var cn2 = noise2(Math.floor(cwx / 7), Math.floor(cwy / 7), 181);
+        var cn3 = noise2(Math.floor(cwx / 31), Math.floor(cwy / 31), 183);
+        var ca2 = ch2 <= .02 ? 0 : Math.min(.9, ch2 * (.50 + cn3 * .34) * (.66 + cn2 * .46));
+        var cg2 = 50 + cn2 * 26 + cn3 * 16;
+        cd[cp] = cg2 + 4; cd[cp + 1] = cg2 + 2; cd[cp + 2] = cg2 - 1; cd[cp + 3] = ca2 * 255;
+        cp += 4;
       }
     }
+    cct.putImageData(cim, 0, 0);
+    t.drawImage(cc, 0, 0, WORLD.w, WORLD.h);
   }
 }
 
@@ -23371,6 +23410,23 @@ function frame(now) {
 
 /* ---------------------------------------------------------------- boot */
 var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenDuo = false;
+/* The maps that ship. A map nobody can pick is a map nobody has, and the editor's PLAY
+   CUSTOM MAP was the only door onto anything that was not Ortona. One table drives the
+   picker, what the deploy button builds and what the briefing says, because the briefing
+   named the piazza on every map there could ever be. */
+var MAPS = {
+  ortona: { make: defaultMapData,
+            brief: 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.' },
+  gothic: { make: gothicMapData,
+            brief: 'Force one of the three crossings of the Foglia and hold it. Cut-off sectors stop producing resources.' }
+};
+var chosenMap = 'ortona';
+function chosenMapData() { return (MAPS[chosenMap] || MAPS.ortona).make(); }
+function objSync() {
+  el('objtext').textContent = chosenMode === 'anni'
+    ? 'Destroy every building in the enemy base. Victory points do not run down.'
+    : (MAPS[chosenMap] || MAPS.ortona).brief;
+}
 document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
     document.querySelectorAll('.side').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
@@ -23390,9 +23446,16 @@ document.querySelectorAll('.mode').forEach(function (btn) {
     document.querySelectorAll('.mode').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('on'); chosenMode = btn.dataset.mode;
     btn.setAttribute('aria-pressed', 'true');
-    el('objtext').textContent = chosenMode === 'anni'
-      ? 'Destroy every building in the enemy base. Victory points do not run down.'
-      : 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.';
+    objSync();
+  };
+});
+/* which ground it is fought over, which is the first decision and so the first control */
+document.querySelectorAll('.gmap').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('.gmap').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
+    btn.classList.add('on'); chosenMap = btn.dataset.map;
+    btn.setAttribute('aria-pressed', 'true');
+    objSync(); sfx('click');
   };
 });
 /* ---- the handicap on the title screen.
@@ -23690,7 +23753,7 @@ document.querySelectorAll('.team').forEach(function (btn) {
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
 if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
-el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); };
+el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.own); if (!hq) return;
   select([hq], false); focusSelection();
@@ -23805,6 +23868,9 @@ var ED_CATS = [
     { id: 'bags', name: 'Sandbags', glyph: '▰', kind: 'place', t: 'bags', def: { r: 30 } },
     { id: 'pit', name: 'Weapon pit', glyph: '⊔', kind: 'place', t: 'emplace', def: { r: 22 } },
     { id: 'gunpos', name: 'Gun position', glyph: '⊥', kind: 'stamp', stamp: 'gunpos' },
+    { id: 'bunker', name: 'Bunker', glyph: '⌷', kind: 'place', t: 'bunker', def: { a: 0 } },
+    { id: 'hogs', name: 'Hedgehogs (draw)', glyph: '✳', kind: 'line', t: 'hogs', def: {} },
+    { id: 'teeth', name: 'Dragon\'s teeth (draw)', glyph: '◭', kind: 'line', t: 'hogs', def: { kind: 'teeth' } },
     { id: 'roadblock', name: 'Roadblock', glyph: '▮', kind: 'place', t: 'roadblock', def: {} }] },
   { id: 'damage', name: 'DAMAGE', glyph: '✷', tools: [
     { id: 'crater', name: 'Crater', glyph: '◯', kind: 'place', t: 'crater', def: { r: 48 } },
@@ -23830,7 +23896,7 @@ var ED_CATS = [
   { id: 'erase', name: 'ERASE', glyph: '⌫', tools: [
     { id: 'eraser', name: 'Eraser brush', glyph: '⌫', kind: 'erase' }] }
 ];
-var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1 };
+var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1, bunker: 1 };
 var ED_DRAFT = 'ortona.draft', ED_LAST = 'ortona.map', ED_SLOTS = 'ortona.maps';
 
 /* ---- opening and closing ---- */
@@ -23896,6 +23962,9 @@ function edBBox(e) {
   else if (e.x1 !== undefined) b = { x0: Math.min(e.x1, e.x2) - 20, y0: Math.min(e.y1, e.y2) - 20, x1: Math.max(e.x1, e.x2) + 20, y1: Math.max(e.y1, e.y2) + 20 };
   else if (e.t === 'paved') b = { x0: e.x, y0: e.y, x1: e.x + e.w, y1: e.y + e.h };
   else if (e.w) b = { x0: e.x - e.w / 2, y0: e.y - e.h / 2, x1: e.x + e.w / 2, y1: e.y + e.h / 2 };
+  /* a bunker's footprint is derived rather than stored, so the one place that derives it
+     hands the number out and nothing else has to know how big one is */
+  else if (e.t === 'bunker') { var bb = bunkerBox(e); b = { x0: e.x - bb.w / 2, y0: e.y - bb.h / 2, x1: e.x + bb.w / 2, y1: e.y + bb.h / 2 }; }
   else { var r = e.r || 30; b = { x0: e.x - r, y0: e.y - r, x1: e.x + r, y1: e.y + r }; }
   return b;
 }
@@ -23918,7 +23987,7 @@ function edMark(e) {
   if (ED_GROUND[e.t]) ED.needGround = true;
   if (e.t === 'grass') ED.needGrass = true;
   if (e.t === 'sector' || e.t === 'hq') ED.scope = 'full';
-  if (e.t === 'house' || e.t === 'farm') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
+  if (e.t === 'house' || e.t === 'farm' || e.t === 'bunker') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
 }
 /* what changed between two versions of the map, marked thing by thing: an undo costs
    what the edit it undoes cost, rather than the whole scene */
@@ -24101,6 +24170,10 @@ function edProps() {
       row('Name', '<input type="text" id="edslabel" value="' + (e.label || '').replace(/"/g, '') + '">');
     if (e.t === 'trench') html += row('Fires', seg('edsface', [['', 'TO CENTRE'], ['L', 'LEFT'], ['R', 'RIGHT']], e.face || '')) +
       row('Side', seg('edsside', [['us', 'CANADIAN'], ['ger', 'GERMAN']], e.side));
+    /* A wall's height is the one number that says what kind of wall it is: a field
+       boundary is cover a man fires over and a town wall is one he cannot see through. */
+    if (e.t === 'wall') html += row('Height', seg('edswh', [[11, 'FIELD'], [24, 'TOWN']], (e.h || 24) >= 16 ? 24 : 11));
+    if (e.t === 'hogs') html += row('Obstacle', seg('edshk', [['hog', 'HEDGEHOGS'], ['teeth', "DRAGON'S TEETH"]], e.kind === 'teeth' ? 'teeth' : 'hog'));
     html += '<div class="edbtns"><button class="edb" id="eddup">DUPLICATE</button><button class="edb" id="edmir">COPY ACROSS</button><button class="edb warn" id="eddel">DELETE</button></div>';
   } else if (ED.cat === 'select' && ED.sel.length > 1) {
     html += '<div class="edtitle">' + ED.sel.length + ' things selected</div>';
@@ -24117,6 +24190,7 @@ function edProps() {
     if (t.t === 'house') html += row('Roof', seg('edaroof', [[-1, 'RANDOM'], [1, 'INTACT'], [0, 'SHELLED']], d.roof === undefined ? -1 : d.roof));
     if (t.t === 'sector') html += row('Owner', seg('edaown', [['', 'NEUTRAL'], ['us', 'CANADIAN'], ['ger', 'GERMAN']], d.owner || ''));
     if (t.t === 'trench') html += row('Fires', seg('edaface', [['', 'TO CENTRE'], ['L', 'LEFT'], ['R', 'RIGHT']], ED.faceFlag || ''));
+    if (t.t === 'wall') html += row('Height', seg('edawh', [[11, 'FIELD'], [24, 'TOWN']], (d.h || 24) >= 16 ? 24 : 11));
   }
   p.innerHTML = html;
   sheet.classList.toggle('hidden', !html);
@@ -24143,6 +24217,7 @@ function edProps() {
     segs('edaroof', function (v) { if (+v < 0) delete t.def.roof; else t.def.roof = +v; });
     segs('edaown', function (v) { t.def.owner = v || null; });
     segs('edaface', function (v) { ED.faceFlag = v || undefined; });
+    segs('edawh', function (v) { t.def.h = +v; });
   }
   if (ED.sel.length) {
     var e2 = ED.sel[0];
@@ -24154,6 +24229,8 @@ function edProps() {
     bind('edsdmg', function (ev) { edSnapshot(); e2.damage = +ev.target.value / 100; edTouch(e2); });
     bind('edslabel', function (ev) { e2.label = ev.target.value; });
     segs('edsroof', function (v) { edSnapshot(); e2.roof = +v; edTouch(e2); });
+    segs('edswh', function (v) { edSnapshot(); e2.h = +v; edTouch(e2); });
+    segs('edshk', function (v) { edSnapshot(); if (v === 'teeth') e2.kind = 'teeth'; else delete e2.kind; edTouch(e2); });
     segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(e2); });
     segs('edstype', function (v) { edSnapshot(); e2.type = v; edTouch(e2); });
     segs('edsown', function (v) { edSnapshot(); e2.owner = v || null; edTouch(e2); });
@@ -24167,7 +24244,8 @@ function edProps() {
 function edKindName(e) {
   var names = { house: 'House', farm: 'Farmhouse', road: 'Street', paved: 'Paving', pole: 'Lamp post', trench: 'Trench', wire: 'Wire', bags: 'Sandbags',
                 emplace: 'Weapon pit', roadblock: 'Roadblock', wall: 'Wall', crater: 'Crater', rubble: 'Rubble', debris: 'Debris', cart: 'Cart',
-                smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters' };
+                smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters',
+                bunker: 'Bunker', hogs: 'Anti-tank belt' };
   return (names[e.t] || e.t) + (e.id ? ' ' + e.id : '') + (e.t === 'hq' ? (e.side === 'us' ? ' (Canadian)' : ' (German)') : '');
 }
 function edDuplicate() {
@@ -24218,9 +24296,16 @@ function edLineEntity(t, pts) {
   var e = { t: t.t };
   if (t.t === 'trench') { e.pts = pts; e.side = pts[0].x < WORLD.w / 2 ? 'us' : 'ger'; if (ED.faceFlag) e.face = ED.faceFlag; return [e]; }
   if (t.t === 'road') { e.pts = pts; e.width = t.def.width; return [e]; }
-  /* walls and wire are straight pieces: a bent line becomes several */
-  var out = [];
-  for (var i = 0; i < pts.length - 1; i++) out.push({ t: t.t, x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y });
+  /* Walls, wire and obstacle belts are straight pieces: a bent line becomes several, and
+     each of them carries the tool's own options. Without that a dragon's-teeth belt drawn
+     with the teeth tool came out as hedgehogs, because the only thing separating the two
+     is a field on the def. */
+  var out = [], i, k;
+  for (i = 0; i < pts.length - 1; i++) {
+    var q = { t: t.t, x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y };
+    for (k in t.def) if (t.def.hasOwnProperty(k) && k !== 'width') q[k] = t.def[k];
+    out.push(q);
+  }
   return out;
 }
 function edAbortDrag() { ED.drag = null; ED.marq = null; ED.hover = null; }
@@ -24930,11 +25015,20 @@ function edPanelLoad() {
     html += '<div class="edli"><div class="t">' + n.replace(/</g, '&lt;') + '<small>' + s.n + ' things · ' + when.toLocaleDateString() + ' ' + when.toLocaleTimeString().slice(0, 5) + '</small></div>' +
             '<button class="edb" data-load="' + encodeURIComponent(n) + '">LOAD</button><button class="edb warn" data-kill="' + encodeURIComponent(n) + '">✕</button></div>';
   });
-  html += '<div class="edh">THE SHIPPED MAP</div><div class="edli"><div class="t">Ortona<small>the map the game ships with</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
+  html += '<div class="edh">THE SHIPPED MAPS</div>';
+  html += '<div class="edli"><div class="t">Ortona<small>the old town, 23 December 1943</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
+  html += '<div class="edli"><div class="t">The Gothic Line<small>the Foglia valley, 30 August 1944, laid out for four</small></div><button class="edb" id="edloadgothic">LOAD</button></div>';
   edPanel('LOAD A MAP', html);
   document.querySelectorAll('#edpanelbody [data-load]').forEach(function (b) { b.addEventListener('click', function () { edLoadSlot(decodeURIComponent(b.getAttribute('data-load'))); }); });
   document.querySelectorAll('#edpanelbody [data-kill]').forEach(function (b) { b.addEventListener('click', function () { edDeleteSlot(decodeURIComponent(b.getAttribute('data-kill'))); }); });
-  el('edloadortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); });
+  /* One loader for both, because two copies of these nine statements go out of step the
+     moment a third map is added. */
+  function edLoadShipped(key, name) {
+    edSnapshot(); ED.data = (MAPS[key] || MAPS.ortona).make(); ED.name = name;
+    G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose();
+  }
+  el('edloadortona').addEventListener('click', function () { edLoadShipped('ortona', 'Ortona'); });
+  el('edloadgothic').addEventListener('click', function () { edLoadShipped('gothic', 'The Gothic Line'); });
 }
 function edPanelName(title, label, value, onok) {
   edPanel(title, '<div class="edh">' + label + '</div><input type="text" id="edpname" value="' + value.replace(/"/g, '') + '" maxlength="40"><div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edpok" style="flex:1;min-height:44px">OK</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:44px">CANCEL</button></div>');
@@ -24974,6 +25068,14 @@ function edTestPlay(side, diff, mode) {
 function edCheck() {
   var E = ED.data.entities, out = [];
   var blocks = E.filter(function (e) { return (e.t === 'house' || e.t === 'farm') && e.w; });
+  /* A bunker is a building for every one of these rules: nothing stands inside it, no
+     street runs through it, no trench crosses it. Its footprint is derived rather than
+     stored, so it is given one here out of the same function the game builds from. */
+  E.forEach(function (e) {
+    if (e.t !== 'bunker') return;
+    var bb = bunkerBox(e);
+    blocks.push({ t: 'bunker', x: e.x, y: e.y, w: bb.w, h: bb.h });
+  });
   var craters = E.filter(function (e) { return e.t === 'crater'; }), trenches = E.filter(function (e) { return e.t === 'trench' && e.pts; });
   var wires = E.filter(function (e) { return e.t === 'wire'; }), trees = E.filter(function (e) { return e.t === 'tree'; }), roads = E.filter(function (e) { return e.t === 'road' && e.pts; });
   function bad(rule, x, y, msg) { out.push({ rule: rule, x: x, y: y, msg: msg }); }
@@ -25100,7 +25202,12 @@ function edPanelCheck() {
   el('edmhelp').addEventListener('click', edPanelHelp);
   el('edmsharefile').addEventListener('click', function () { edShareFile(); edMenu(false); });
   if (!navigator.share) el('edmsharefile').classList.add('hidden');
-  el('edmortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false); });
+  function edReload(key, name) {
+    edSnapshot(); ED.data = (MAPS[key] || MAPS.ortona).make(); ED.name = name;
+    G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false);
+  }
+  el('edmortona').addEventListener('click', function () { edReload('ortona', 'Ortona'); });
+  el('edmgothic').addEventListener('click', function () { edReload('gothic', 'The Gothic Line'); });
   el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });
   el('edmimport').addEventListener('click', function () { el('edfile').click(); edMenu(false); });
   el('edfile').addEventListener('change', function (ev) { if (ev.target.files[0]) edImportFile(ev.target.files[0]); ev.target.value = ''; });

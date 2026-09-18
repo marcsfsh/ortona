@@ -1154,6 +1154,70 @@ for (const device of TARGETS) {
      `after 90s of battle ${held.out} of ${held.men} men are outside their own ring ` +
      `(furthest ${held.over} past it, ${held.worstKey})`);
 
+  /* --- Two maps ship, which makes two things true that were vacuous with one: the
+     picker has to build the one it names, and the second map has to be fair. Fairness on a
+     mirrored map is measurable rather than a matter of opinion, so the row measures it:
+     every entity has its opposite number reflected about the midline, every flag is the
+     same distance from each side's own headquarters, and the ground agrees with its own
+     reflection. The last of those is the one that would not survive a screenshot -- a
+     landform is arithmetic and two halves can look identical while one is a metre
+     higher. --- */
+  await reload(page);
+  const maps = await page.evaluate(() => {
+    const out = { keys: Object.keys(window.MAPS).sort().join(','), picked: '', brief: '' };
+    /* the picker builds the map it names */
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'gothic') b.click(); });
+    out.picked = window.chosenMapData().name;
+    out.brief = document.getElementById('objtext').textContent;
+    const E = window.gothicMapData().entities;
+    const key = e => e.t + '|' + Math.round(e.y !== undefined ? e.y : e.y1) +
+                     '|' + Math.round((e.r || 0) + (e.w || 0) * 3);
+    /* every thing on the west half has a twin at its reflection, bearing included */
+    const west = E.filter(e => (e.x !== undefined ? e.x : e.x1) < 1399);
+    const east = E.filter(e => (e.x !== undefined ? e.x : e.x1) > 1401);
+    out.west = west.length; out.east = east.length;
+    out.unpaired = west.filter(w => !east.some(e => {
+      const wx = w.x !== undefined ? w.x : w.x1, ex = e.x !== undefined ? e.x : e.x1;
+      if (e.t !== w.t || Math.abs(ex - (2800 - wx)) > 1) return false;
+      const wy = w.y !== undefined ? w.y : w.y1, ey = e.y !== undefined ? e.y : e.y1;
+      if (Math.abs(ey - wy) > 1) return false;
+      if (w.a !== undefined && Math.abs(Math.cos(e.a) + Math.cos(w.a)) > .01) return false;
+      return true;
+    })).length;
+    /* the ground against its own reflection */
+    window.G.mapData = window.gothicMapData();
+    window.startGame('us', 1, 'vp', true, true);
+    let worst = 0;
+    for (let y = 30; y < 1900; y += 37) for (let x = 30; x < 1400; x += 41)
+      worst = Math.max(worst, Math.abs(window.groundZ(x, y) - window.groundZ(2800 - x, y)));
+    out.ground = +worst.toFixed(2);
+    /* every flag the same distance from the headquarters of the side it belongs to */
+    const hq = window.G.hqPos, secs = window.G.sectors;
+    const d = (s, h) => Math.hypot(s.x - h.x, s.y - h.y);
+    out.flagSkew = Math.round(Math.max.apply(null, secs.map(s => {
+      const mir = secs.filter(q => Math.abs(q.x - (2800 - s.x)) < 2 && Math.abs(q.y - s.y) < 2)[0];
+      return mir ? Math.abs(d(s, hq.us) - d(mir, hq.ger)) : 0;
+    })));
+    out.vp = secs.filter(s => s.type === 'vp').length;
+    out.owned = secs.filter(s => s.owner === 'us').length + ':' + secs.filter(s => s.owner === 'ger').length;
+    /* and the ground between the two positions, which is what the map is about */
+    const bk = window.G.blocks.filter(b => b.kind === 'bunker');
+    out.gap = Math.round(Math.min.apply(null, bk.filter(b => b.x > 1400).map(b => b.x)) -
+                         Math.max.apply(null, bk.filter(b => b.x < 1400).map(b => b.x)));
+    return out;
+  });
+  ok('both maps ship, and the second one is fair to the unit',
+     maps.keys === 'gothic,ortona' && maps.picked === 'The Gothic Line' &&
+     maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
+     maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
+     maps.gap > 1200,
+     `maps ${maps.keys}; the picker on GOTHIC LINE builds "${maps.picked}" and the briefing ` +
+     `reads "${maps.brief.slice(0, 26)}..."; ${maps.west} entities on the west half and ${maps.east} on the ` +
+     `east with ${maps.unpaired} unpaired; the ground disagrees with its own reflection by at ` +
+     `most ${maps.ground} of a unit over 1750 samples; ${maps.vp} victory flags, ${maps.owned} ` +
+     `owned at the whistle, and no flag more than ${maps.flagSkew} units further from one ` +
+     `headquarters than its twin is from the other; ${maps.gap} units between the bunker lines`);
+
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
      can garrison is a wall, a garrison with no arc is a house with a grey roof, cover laid
