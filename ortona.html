@@ -2239,6 +2239,26 @@ function gothicMapData() {
     push({ t: 'trench', side: 'us', pts: pts.map(function (q) { return { x: q[0], y: q[1] }; }) });
   }
 
+  /* a height brush, and its reflection, for anything cut into the ground itself */
+  function hb(o) {
+    HB.push(o);
+    var m = {}, k;
+    for (k in o) if (o.hasOwnProperty(k)) m[k] = o[k];
+    m.x = WORLD.w - o.x; HB.push(m);
+  }
+  /* A wall run, broken. Two feet of dry stone stops a bullet and an eye and not a boot,
+     which makes a run of it a LANE rather than a fence, and the shelling has been through
+     every one of them, so no run is continuous and no gap is in the same place twice. */
+  function runWall(x0, y0, x1, y1, h) {
+    var len = Math.hypot(x1 - x0, y1 - y0), d = 0, seg;
+    var ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+    while (d < len - 30) {
+      seg = Math.min(rr(76, 180), len - d);
+      if (seg > 36 && r1() > .18) wall(x0 + ux * d, y0 + uy * d, x0 + ux * (d + seg), y0 + uy * (d + seg), h);
+      d += seg + rr(44, 130);
+    }
+  }
+
   /* ---- The three crossings ----
      There are three ways over the Foglia and each of them is a victory sector, so the
      whole map is a question about which one to force. The roads were there before the
@@ -2259,29 +2279,29 @@ function gothicMapData() {
      Three bunkers, one on each crossing, and the fire trench run between them rather
      than through them: the concrete IS the line where it stands, and a trench dug across
      its front would be a trench its own garrison is firing over. */
-  bunker(958, 560, .18);
-  bunker(1002, 980, .61);
-  bunker(972, 1400, .37);
-  zig(930, 300, 470, 26, 46);
-  zig(930, 650, 880, 26, 46);
-  zig(930, 1080, 1300, 26, 46);
-  zig(930, 1490, 1680, 26, 46);
+  bunker(706, 560, .18);
+  bunker(748, 980, .61);
+  bunker(720, 1400, .37);
+  zig(678, 300, 470, 26, 46);
+  zig(678, 650, 880, 26, 46);
+  zig(678, 1080, 1300, 26, 46);
+  zig(678, 1490, 1680, 26, 46);
   /* communication trenches back over the crest, so the position can be reinforced from
      the reverse slope without crossing the skyline */
-  sap([[936, 480], [880, 500], [836, 476], [782, 498]]);
-  sap([[944, 1010], [886, 1032], [840, 1006], [788, 1030]]);
-  sap([[938, 1466], [884, 1444], [838, 1470], [786, 1448]]);
+  sap([[684, 480], [628, 500], [584, 476], [530, 498]]);
+  sap([[692, 1010], [634, 1032], [588, 1006], [536, 1030]]);
+  sap([[686, 1466], [632, 1444], [586, 1470], [534, 1448]]);
   /* weapon pits on the forward slope beside the trench, and the anti-tank guns back on
      the crest where they have the length of the valley rather than the width of it */
-  pit(886, 392, 22, .21, 0);
-  pit(898, 742, 22, .67, 0);
-  pit(908, 1182, 22, .44, 0);
-  pit(880, 1592, 22, .83, 0);
-  pit(742, 636, 26, .31, .18);
-  pit(730, 1298, 26, .58, -.18);
-  bags(902, 606, 30, 1.571);
-  bags(946, 1026, 30, 1.571);
-  bags(916, 1352, 30, 1.571);
+  pit(634, 392, 22, .21, 0);
+  pit(646, 742, 22, .67, 0);
+  pit(656, 1182, 22, .44, 0);
+  pit(628, 1592, 22, .83, 0);
+  pit(490, 636, 26, .31, .18);
+  pit(478, 1298, 26, .58, -.18);
+  bags(650, 606, 30, 1.571);
+  bags(694, 1026, 30, 1.571);
+  bags(664, 1352, 30, 1.571);
 
   /* ---- The obstacle belts ----
      Laid to two different plans, because they are laid against two different things. The
@@ -2293,15 +2313,131 @@ function gothicMapData() {
      tells armour where to go, and where it goes is into a bunker's arc.
      The teeth are the far south, where the valley opens out and a squadron could
      otherwise swing wide round the end of everything. */
-  wire(1062, 200, 1062, 540);
-  wire(1062, 580, 1062, 960);
-  wire(1062, 1000, 1062, 1380);
-  wire(1062, 1420, 1062, 1760);
-  hogs(1168, 180, 1168, 470);
-  hogs(1168, 650, 1168, 890);
-  hogs(1168, 1070, 1168, 1310);
-  hogs(1168, 1490, 1168, 1870);
-  hogs(1250, 1620, 1250, 1880, 'teeth');
+  wire(830, 180, 830, 500);
+  wire(830, 562, 830, 942);
+  wire(830, 1004, 830, 1378);
+  wire(830, 1440, 830, 1780);
+  hogs(960, 160, 960, 470);
+  hogs(960, 654, 960, 892);
+  hogs(960, 1074, 960, 1310);
+  hogs(960, 1490, 960, 1880);
+  hogs(1060, 1620, 1060, 1880, 'teeth');
+
+  /* ---- The shape of the floor ----
+     Eight hundred units of level ground between the belts is a car park. What breaks it
+     up is not clutter but SHAPE: a spur to get behind, a hollow to form up in, a bank
+     along the water. Dead ground is the one kind of cover a map can give that costs
+     nothing to look at and changes every route across it, and it is the first thing to
+     reach for when a battlefield reads as too open -- putting a wall there instead gives
+     you a maze, which is what the first attempt at this was.
+     Hand-placed, because where the dead ground is IS the design: a hollow a hundred
+     units short of a bunker is a forming-up place, and one behind it is nothing. */
+  hb({ x: 1080, y: 250, r: 172, d: 13 });
+  hb({ x: 1236, y: 196, r: 132, d: -9 });
+  hb({ x: 1182, y: 432, r: 152, d: -11 });
+  hb({ x: 1042, y: 620, r: 142, d: -10 });
+  hb({ x: 1212, y: 760, r: 166, d: 12 });
+  hb({ x: 1334, y: 560, r: 122, d: 10 });
+  hb({ x: 1118, y: 1160, r: 176, d: 14 });
+  hb({ x: 1302, y: 1080, r: 152, d: -12 });
+  hb({ x: 1356, y: 1262, r: 124, d: 9 });
+  hb({ x: 1162, y: 1380, r: 156, d: -11 });
+  hb({ x: 1262, y: 1562, r: 162, d: 12 });
+  hb({ x: 1082, y: 1722, r: 152, d: -10 });
+  /* and two on the forward slope, so an attack has somewhere to lie up short of the wire */
+  hb({ x: 902, y: 700, r: 152, d: -10 });
+  hb({ x: 880, y: 1240, r: 152, d: -11 });
+
+  /* ---- No man's land ----
+     Fourteen hundred units of it between the two bunker lines, and the whole point of
+     widening the valley was to have somewhere to put something. Open ground of that width
+     is not a battlefield, it is a car park: a section ordered across it walks in a
+     straight line at a constant speed and arrives or does not, and nothing that happens
+     in between is a decision. So the floor is given bounds.
+
+     The enclosures do most of it. This is walled farmland and a dry-stone wall stops a
+     bullet and an eye and not a boot, which makes a run of them a set of LANES: ground
+     you can cross under cover, ground you cannot, and gaps that are worth holding. They
+     are laid as a grid because field boundaries are a grid, and broken because the
+     shelling has been through all of them. */
+  (function () {
+    var i, j, y, x;
+    /* Three boundaries running with the valley and four across it, which is half a dozen
+       enclosures rather than sixty. A grid fine enough to be a maze is a grid nobody
+       manoeuvres in: the walls are here to give the floor lanes and bounds, and a lane
+       has to be wide enough to put a company down. The ones that run north and south are
+       broken at all three crossings, because a field boundary across a road has a gate
+       in it and because the crossings are the one thing on this map that must stay
+       open. */
+    var BAND = [[150, 460], [600, 900], [1080, 1340], [1500, 1820]];
+    for (i = 0; i < 2; i++) {
+      x = 1074 + i * 170;
+      for (j = 0; j < BAND.length; j++)
+        if (r1() > .28) runWall(x + rr(-22, 22), BAND[j][0], x + rr(-22, 22), BAND[j][1]);
+    }
+    for (i = 0; i < 3; i++) {
+      y = 360 + i * 516 + rr(-44, 44);
+      runWall(1010, y, 1386, y + rr(-32, 32));
+    }
+  })();
+
+  /* Two farm compounds out in the middle, which are the strongpoints of no man's land:
+     a house with its roof off is the heaviest cover on this map that is not concrete, and
+     a section can be put inside one. Everything a map gives an attacker to fight FROM is
+     a reason for him to go somewhere rather than straight ahead. */
+  house(1124, 646, 76, 56, .29, .78, { tall: 1 });
+  farm(1188, 678, 54, 36);
+  runWall(1076, 596, 1232, 592, 22); runWall(1236, 592, 1240, 726, 22); runWall(1080, 712, 1234, 720, 22);
+  razed(1156, 742, 30, .41);
+  house(1178, 1214, 72, 54, .71, .84);
+  farm(1116, 1246, 50, 34);
+  runWall(1096, 1156, 1234, 1164, 22); runWall(1094, 1160, 1090, 1288, 22);
+  razed(1092, 1300, 26, .19);
+  razed(1046, 1526, 34, .63);
+
+  /* The sunken lane. A road cut below the fields with its banks revetted is the one thing
+     in this country that lets a company move laterally in front of a position without
+     being seen doing it, and it is what makes the middle of the map worth manoeuvring in
+     rather than only worth crossing. It is dug into the heightfield rather than drawn,
+     so the ground itself carries it and a man standing in it really is below the field. */
+  (function () {
+    var y, lx;
+    for (y = 200; y <= 1740; y += 62) {
+      lx = 1296 + Math.sin(y / 260) * 22;
+      hb({ x: lx, y: y, r: 58, d: -15 });
+    }
+  })();
+  road(40, [[1292, 210], [1310, 420], [1288, 640], [1306, 860], [1296, 1080],
+            [1312, 1300], [1290, 1520], [1304, 1730]]);
+  runWall(1252, 240, 1262, 720); runWall(1256, 790, 1248, 1240); runWall(1258, 1320, 1250, 1700);
+  runWall(1340, 260, 1348, 700); runWall(1344, 830, 1336, 1260); runWall(1342, 1340, 1350, 1690);
+
+  /* The outpost line: what the position had out in front of it before it was pushed back
+     onto the concrete. Abandoned, so it is nobody's and whoever holds it holds the middle
+     of the floor. Short lengths rather than a line, because a line of it out here would be
+     a second position and the map already has two. */
+  zig(1050, 360, 520, 22, 42);
+  zig(1046, 700, 862, 22, 42);
+  zig(1054, 1140, 1302, 22, 42);
+  zig(1042, 1560, 1690, 22, 42);
+  pit(1008, 596, 20, .13, .5);
+  pit(1102, 902, 20, .77, -.4);
+  pit(1168, 1420, 20, .35, .2);
+  pit(1276, 1004, 20, .52, 2.9);
+  pit(1230, 340, 20, .91, 2.6);
+  bags(1124, 1078, 26, .3);
+  bags(1216, 1640, 26, 1.2);
+  /* and the scrapes: what an attack that got this far dug when it was stopped, and left
+     when it was thrown back. Short, angled every way, and nobody's. */
+  sap([[1148, 470], [1196, 500], [1238, 476], [1286, 506]]);
+  sap([[1104, 1004], [1152, 1034], [1198, 1008], [1244, 1038]]);
+  sap([[1180, 1520], [1226, 1548], [1272, 1522], [1318, 1552]]);
+  sap([[1020, 840], [1066, 812], [1112, 838]]);
+  sap([[1296, 1340], [1338, 1372], [1380, 1346]]);
+  /* the fords, and what has been pushed across each of them */
+  push({ t: 'roadblock', x: 1370, y: 528, a: 1.571 });
+  push({ t: 'roadblock', x: 1366, y: 986, a: 1.571 });
+  push({ t: 'roadblock', x: 1372, y: 1414, a: 1.571 });
 
   /* ---- What the ground has taken ----
      Where a map is torn is not random. It is heaviest on the three crossings, because
@@ -2316,13 +2452,13 @@ function gothicMapData() {
   function crater(x, y, r) { push({ t: 'crater', x: x, y: y, r: r }); keepOff(x, y, r * .8); }
   (function () {
     var tries = 0, made = 0, x, y, lane, d, r;
-    while (made < 88 && tries < 4000) {
+    while (made < 210 && tries < 12000) {
       tries++;
-      x = rr(520, 1398); y = rr(40, 1860);
+      x = rr(300, 1398); y = rr(40, 1860);
       lane = Math.min(Math.abs(y - 520), Math.abs(y - 980), Math.abs(y - 1420));
-      d = clamp(1 - lane / 300, 0, 1) * .62
-        + clamp(1 - Math.abs(x - 1000) / 280, 0, 1) * .55
-        + clamp((x - 1040) / 300, 0, 1) * .40;
+      d = clamp(1 - lane / 300, 0, 1) * .40
+        + clamp(1 - Math.abs(x - 760) / 230, 0, 1) * .40
+        + clamp((x - 850) / 240, 0, 1) * .70;
       if (r1() > d) continue;
       r = rr(11, 20) + (r1() > .82 ? rr(8, 16) : 0);
       if (!clearOf(x, y, r + 10)) continue;
@@ -2335,12 +2471,12 @@ function gothicMapData() {
      The Foglia valley is farmland: scattered case coloniche with their yards and
      outbuildings, dry-stone walls round the enclosures, olives and vines on the slopes.
      What the line did to it is the point of the map, so the dressing is laid by how far
-     forward it stands. The rear shelf still has its farms, its walls and its grass
-     because nobody has had to cross it. The crest has ruins and stumps. The valley floor
-     was stripped for a kilometre in front of the position -- every vine and every tree
-     cut down for a field of fire -- and what is left on it is stumps, wire pickets and
-     what has been shelled. That is not a licence to leave it bare: bare ground reads as
-     a desert. It is a licence to make what is on it wreckage. */
+     forward it stands. The ground behind the crest still has its farms, its walls and its
+     grass because nobody has had to cross it. The crest has ruins and stumps. The floor
+     was cleared for a field of fire -- every vine and every tree cut down -- and what is
+     left on it is stumps, walls and what has been shelled. That is not a licence to leave
+     it bare: bare ground reads as a desert. It is a licence to make what is on it
+     wreckage. */
   function house(x, y, w, h, sv, dmg, o) {
     o = o || {};
     push({ t: 'house', x: x, y: y, w: w, h: h, tall: o.tall || 0, style: o.style || 'farm',
@@ -2348,7 +2484,7 @@ function gothicMapData() {
     keepOff(x, y, Math.max(w, h) * .7);
   }
   function farm(x, y, w, h) { push({ t: 'farm', x: x, y: y, w: w, h: h }); keepOff(x, y, Math.max(w, h) * .7); }
-  function wall(x1, y1, x2, y2) { push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2 }); }
+  function wall(x1, y1, x2, y2, h) { push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2, h: h || 11 }); }
   function tree(x, y, r, sv, lean) { push({ t: 'tree', x: x, y: y, r: r, s: sv, lean: lean || 0 }); }
   function scrub(x, y, r, sv) { push({ t: 'scrub', x: x, y: y, r: r, s: sv }); }
   function grass(x, y, r, tone) { push({ t: 'grass', x: x, y: y, r: r, tone: tone }); }
@@ -2359,45 +2495,41 @@ function gothicMapData() {
     keepOff(x, y, r);
   }
 
-  /* the two farms on each rear shelf, with their yards and their outbuildings */
-  house(330, 452, 86, 62, .21, .15, { tall: 1 });
-  farm(408, 470, 62, 40);
-  wall(288, 500, 452, 506); wall(452, 506, 446, 418); wall(288, 500, 284, 424);
-  house(352, 1552, 78, 58, .63, .25, { tall: 1 });
-  farm(292, 1592, 58, 38);
-  wall(300, 1508, 420, 1500); wall(420, 1500, 424, 1606);
+  /* the two farms behind each position, on ground nobody has had to cross */
+  house(178, 336, 86, 62, .21, .15, { tall: 1 });
+  farm(256, 356, 62, 40);
+  wall(136, 386, 300, 392, 22); wall(300, 392, 294, 302, 22); wall(136, 386, 132, 310, 22);
+  house(196, 1684, 78, 58, .63, .25, { tall: 1 });
+  farm(136, 1644, 58, 38);
+  wall(144, 1740, 264, 1732, 22); wall(264, 1732, 268, 1626, 22);
   /* the farm on the crest, shelled to a shell of itself, and its wall knocked about */
-  house(768, 826, 74, 54, .44, .72);
-  farm(712, 862, 50, 34);
-  wall(700, 782, 812, 776); wall(700, 892, 760, 898);
-  /* and the one on the valley floor, which is a heap of stone with a name */
-  razed(1218, 748, 40, .37);
-  razed(1252, 786, 26, .81);
-  wall(1178, 712, 1204, 792);
+  house(556, 830, 74, 54, .44, .72);
+  farm(500, 866, 50, 34);
+  wall(488, 786, 600, 780); wall(488, 896, 548, 902);
 
-  /* the enclosure walls on the rear shelf and the reverse slope: field boundaries, so
-     they run with the grain of the ground and stop where the shelling starts */
+  /* the enclosure walls behind the crest: field boundaries, so they run with the grain of
+     the ground and stop where the shelling starts */
   (function () {
     var i, wx, wy, wl;
-    for (i = 0; i < 16; i++) {
-      wx = rr(180, 760); wy = rr(120, 1820);
-      if (!clearOf(wx, wy, 60)) continue;
-      wl = rr(70, 190);
+    for (i = 0; i < 18; i++) {
+      wx = rr(90, 560); wy = rr(120, 1820);
+      if (!clearOf(wx, wy, 56)) continue;
+      wl = rr(70, 180);
       if (r1() > .5) wall(wx, wy, wx + wl, wy + rr(-22, 22));
       else wall(wx, wy, wx + rr(-22, 22), wy + wl);
     }
   })();
 
-  /* Olives and vines: standing on the rear shelf, cut to stumps on the crest, and gone
-     from the floor except where a root has come back. The line is where the field of
-     fire was cleared to, and it is drawn deliberately: a gradient of vegetation across
-     the map is the cheapest thing there is that says a position has been prepared. */
+  /* Olives and vines: standing behind the crest, cut to stumps on it, and gone from the
+     floor except where a root has come back. The line the clearing stops at is drawn
+     deliberately, because a gradient of vegetation across a map is the cheapest thing
+     there is that says a position has been prepared. */
   (function () {
     var i, tx, ty, d, keep;
-    for (i = 0; i < 620; i++) {
-      tx = rr(120, 1392); ty = rr(40, 1860);
-      d = clamp((820 - tx) / 420, 0, 1);              /* 1 well back, 0 out past the crest */
-      keep = d * d * .85 + .04;
+    for (i = 0; i < 700; i++) {
+      tx = rr(60, 1392); ty = rr(40, 1860);
+      d = clamp((580 - tx) / 360, 0, 1);              /* 1 well back, 0 out past the crest */
+      keep = d * d * .85 + .05;
       if (r1() > keep) continue;
       if (!clearOf(tx, ty, 22)) continue;
       if (r1() < .30 * d) tree(tx, ty, rr(12, 17), r1(), rr(-.2, .2));
@@ -2408,19 +2540,19 @@ function gothicMapData() {
   /* scrub has come back along the water, which is the one line nobody has cleared */
   (function () {
     var i, sx, sy;
-    for (i = 0; i < 120; i++) {
-      sy = rr(40, 1860); sx = 1400 - Math.abs(rr(12, 78));
+    for (i = 0; i < 140; i++) {
+      sy = rr(40, 1860); sx = 1400 - Math.abs(rr(12, 84));
       if (!clearOf(sx, sy, 16)) continue;
       scrub(sx, sy, rr(5, 11), r1());
       keepOff(sx, sy, 12);
     }
   })();
 
-  /* Grass. Winter wheat on the rear shelf, thinning forward, and none at all on the
-     ground that has been turned over. */
-  grass(300, 330, 190, .58); grass(250, 760, 200, .55); grass(300, 1180, 190, .52);
-  grass(340, 1700, 200, .58); grass(560, 520, 150, .46); grass(600, 1320, 150, .44);
-  grass(760, 980, 120, .34); grass(1330, 1720, 130, .40);
+  /* Grass. Winter wheat behind the crest, thinning forward, and none at all on the ground
+     that has been turned over. */
+  grass(160, 300, 180, .58); grass(130, 700, 190, .55); grass(180, 1120, 180, .52);
+  grass(200, 1680, 190, .58); grass(380, 480, 150, .46); grass(420, 1300, 150, .44);
+  grass(520, 980, 120, .32); grass(1330, 1740, 120, .30);
 
   /* the telegraph line along the lateral, standing where it is out of the shelling and
      down where it is not */
@@ -2428,11 +2560,13 @@ function gothicMapData() {
     var py;
     for (py = 180; py < 1860; py += 112) pole(rr(384, 414), py, py > 420 && py < 1520 && r1() > .62);
   })();
-  push({ t: 'cart', x: 646, y: 1088, a: .9 });
-  push({ t: 'cart', x: 1128, y: 486, a: 2.4 });
-  /* something at each end of the position is still burning */
-  push({ t: 'smoke', x: 1196, y: 1006 });
-  push({ t: 'smoke', x: 1046, y: 1462 });
+  push({ t: 'cart', x: 486, y: 1088, a: .9 });
+  push({ t: 'cart', x: 1136, y: 486, a: 2.4 });
+  push({ t: 'cart', x: 1274, y: 1148, a: 1.6 });
+  /* something out in the middle is still burning */
+  push({ t: 'smoke', x: 1160, y: 1006 });
+  push({ t: 'smoke', x: 1064, y: 1462 });
+  push({ t: 'smoke', x: 1238, y: 620 });
 
   /* Nine sectors, in Ortona's own topology, because that shape of map is known to play:
      two the side opens holding, one on each crest, three on the river, and the two the
@@ -2441,15 +2575,15 @@ function gothicMapData() {
      are the two hills the Canadians took at Montecchio, which is what the two crests
      are. */
   var secs = [
-    ['A', 400, 620, 'fuel', 'us', 'Montecalvo', ['C', 'D']],
-    ['B', 400, 1340, 'mp', 'us', 'Casa Rossa', ['C', 'F']],
-    ['C', 830, 980, 'mp', null, 'Point 120', ['A', 'B', 'E']],
+    ['A', 350, 620, 'fuel', 'us', 'Montecalvo', ['C', 'D']],
+    ['B', 350, 1340, 'mp', 'us', 'Casa Rossa', ['C', 'F']],
+    ['C', 640, 980, 'mp', null, 'Point 120', ['A', 'B', 'E']],
     ['D', 1400, 520, 'vp', null, 'Montecchio', ['A', 'E', 'H']],
     ['E', 1400, 980, 'vp', null, 'The Foglia', ['C', 'D', 'F', 'G']],
     ['F', 1400, 1420, 'vp', null, 'Osteria Nuova', ['B', 'E', 'I']],
-    ['G', 1970, 980, 'mp', null, 'Point 204', ['E', 'H', 'I']],
-    ['H', 2400, 620, 'fuel', 'ger', 'Tomba di Pesaro', ['D', 'G']],
-    ['I', 2400, 1340, 'mp', 'ger', 'Borgo Santa Maria', ['F', 'G']]];
+    ['G', 2160, 980, 'mp', null, 'Point 204', ['E', 'H', 'I']],
+    ['H', 2450, 620, 'fuel', 'ger', 'Tomba di Pesaro', ['D', 'G']],
+    ['I', 2450, 1340, 'mp', 'ger', 'Borgo Santa Maria', ['F', 'G']]];
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
   E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
@@ -2487,8 +2621,16 @@ function buildMap(data) {
   _s = 4242;
   if (LAND.coast) for (var shoreX = 0; shoreX <= WORLD.w; shoreX += 40) G.coastline.push({ x: shoreX, y: coastY(shoreX) });
   if (LAND.rail) for (var railX = 0; railX <= WORLD.w; railX += 40) G.rail.push({ x: railX, y: railY(railX) });
-  function wallRun(x1, y1, x2, y2) {
-    G.walls.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
+  /* A wall has a height, and it is the one number that decides what KIND of thing it is.
+     Ortona's are town garden walls at 24, which is over a man's head: he stands against
+     one and cannot see or shoot through it. A dry-stone field boundary is 11, which is
+     his waist: he gets down behind it and comes up over it, so it is cover and not a
+     sight line. Drawn at 24 out in open country a field wall reads as a prefabricated
+     barrier, and enough of them read as a maze -- which is what the first pass at the
+     Gothic Line's enclosures came out as. */
+  function wallRun(x1, y1, x2, y2, h) {
+    h = h || 24;
+    G.walls.push({ x1: x1, y1: y1, x2: x2, y2: y2, h: h });
     var ax = Math.atan2(y2 - y1, x2 - x1), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / 40));
     for (var i = 0; i <= n; i++) addCover(lerp(x1, x2, i / n), lerp(y1, y2, i / n), 26, 2, 'lowwall', ax, 90);
   }
@@ -2532,7 +2674,7 @@ function buildMap(data) {
         G.props.push(fm); G.blocks.push(fm);
         addCover(e.x - e.w / 2 - 18, e.y + e.h / 2 + 14, 36, 3, 'rubble'); addCover(e.x + e.w / 2 + 18, e.y + e.h / 2 + 14, 36, 3, 'rubble');
         break;
-      case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2); break;
+      case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2, e.h); break;
       case 'trench': trenchRun(e.pts, e.side || 'us', e.face); break;
       case 'wire': G.wire.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2 }); break;
       case 'hogs':
@@ -2690,7 +2832,8 @@ var FOGLIA = [
    apart along the line and wants a band that holds both. */
 var LANDS = {
   ortona: { name: 'ortona', build: landOrtona, coast: coastOrtona, rail: railOrtona, val: VALLONI, padR: 165, padY: 165, terrace: 1 },
-  gothic: { name: 'gothic', build: landGothic, coast: null, rail: null, val: FOGLIA, padR: 210, padY: 500 }
+  gothic: { name: 'gothic', build: landGothic, coast: null, rail: null, val: FOGLIA, padR: 190, padY: 430,
+            wet: wetGothic, churn: churnGothic }
 };
 var LAND = LANDS.ortona;
 /* Where the armies deploy, which is where their headquarters stand. This was two
@@ -2852,6 +2995,26 @@ function landOrtona(h) {
     }
   }
 }
+/* How wet the ground is before a spade has touched it, and how far it has been churned.
+   Both are facts about the COUNTRY rather than about the works on it, which is why they
+   sit on LAND: the crater and trench lists already say where the ground has been opened,
+   and they cannot say that the floor of a river valley in the rain is wet all over.
+   Ortona declares neither and is unchanged by both.
+   They are separate because they are different things. Wet is a surface: the shader
+   darkens it, takes the scatter out of it and puts a sheen on the worst of it. Churn is a
+   colour: ground that has been turned over, shelled, walked on and rained into until
+   whatever the soil had is gone, which is grey-brown and cold where dry stubble is warm
+   and pale. A no man's land that is only wet comes out as damp stubble, which is what
+   this one did. */
+function wetGothic(x, y) {
+  var dx = Math.abs(x - WORLD.w / 2);
+  return clamp((760 - dx) / 380, 0, 1) * .72;
+}
+function churnGothic(x, y) {
+  var dx = Math.abs(x - WORLD.w / 2);
+  return clamp((940 - dx) / 300, 0, 1);
+}
+
 /* ---- the Gothic Line ----
    The Adriatic sector of it: the Foglia and the ridges above it, which is 1st Canadian
    Corps ground at the end of August 1944. What is built here is that country and not
@@ -2889,10 +3052,15 @@ function landGothic(h) {
          them. It depends on y alone, so the two crests wander identically. */
       var dxw = dx + (hfbm(y / 270, 0, 41, 3) - .5) * 176;
 
-      /* ---- 1. the landform ---- */
+      /* ---- 1. the landform ----
+         The crest sits a long way out, at seven hundred from the midline rather than
+         five: the ground between the two positions is the whole of what this map is
+         about, and at the narrower spacing a section sent across the middle was at the
+         far bunkers before it had done anything. Fourteen hundred units between the two
+         lines is far enough to need bounds, cover and a plan to cross. */
       var crestH = 78 - sy * 42;
-      var rise = clamp((dxw - 250) / 250, 0, 1); rise = rise * rise * (3 - 2 * rise);
-      var back = clamp((dxw - 760) / 290, 0, 1); back = back * back * (3 - 2 * back);
+      var rise = clamp((dxw - 430) / 270, 0, 1); rise = rise * rise * (3 - 2 * rise);
+      var back = clamp((dxw - 900) / 220, 0, 1); back = back * back * (3 - 2 * back);
       var z = crestH * rise - (crestH - 30) * back;
       /* the shoulder the ridges run up into at the north edge */
       var nor = clamp(1 - y / 620, 0, 1);
@@ -2908,8 +3076,8 @@ function landGothic(h) {
       /* ---- 3. relief, its domain warped so it does not read as noise laid over a ramp.
          The floor is a flood plain and IS flat; the ridge is broken ground; the shelf
          behind it is middling, and a depot wants to be level. ---- */
-      var floorF = 1 - clamp(dxw / 330, 0, 1);
-      var rough = clamp(.9 - floorF * .62 - back * .34, .12, 1) * (1 - dp * .94);
+      var floorF = 1 - clamp(dxw / 500, 0, 1);
+      var rough = clamp(.9 - floorF * .46 - back * .34, .12, 1) * (1 - dp * .94);
       var wx = fx + (hfbm(fx / 430, y / 430, 83, 2) - .5) * 190;
       var wy = y + (hfbm(fx / 390, y / 390, 97, 2) - .5) * 190;
       z += (hfbm(wx / 300, wy / 300, 11, 4) - .5) * 42 * rough;
@@ -2922,7 +3090,7 @@ function landGothic(h) {
          shallow dish that widens and deepens southward as the valley opens out; the
          channel is cut along its own course the way a vallone is, and is what carries
          the gravel bed and the boulders. ---- */
-      var plW = 210 + sy * 300;
+      var plW = 300 + sy * 340;
       var pl = clamp(1 - dx / plW, 0, 1);
       z -= pl * pl * (3 - 2 * pl) * (7 + sy * 7);
       z -= gullyAt(x, y) * (1 - dp);
@@ -3320,7 +3488,12 @@ function rebuildGrid() {
      off the gardens of half the town. */
   wallg.fill(0);
   G.walls.forEach(function (w) {
-    markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
+    /* Only a wall taller than a man stops his eye and his round. A waist-high field
+       boundary is cover he fires OVER, so it is on the going grid and the cover index
+       and on neither of the two that block. */
+    if ((w.h || 24) >= 16) {
+      markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
+    }
     markSeg(wallg, w.x1, w.y1, w.x2, w.y2, 4);
   });
   /* a hedge hides a section and does not save it */
@@ -11496,7 +11669,8 @@ function buildTerrain(only) {
        and has never once looked at it -- every scale of its surface comes out of the grit
        texture instead. A natural hollow is capped short of standing water; only a dug one
        gets a puddle. */
-    var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55);
+    var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55,
+                       LAND.wet ? LAND.wet(x, y) : 0);
     wet = clamp(wet, 0, 1) * clamp(1 - (1 - n.z) * 3.0, 0, 1);
     arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, y * .04, 9);
   }
@@ -11746,7 +11920,8 @@ function sceneProps(tile) {
     var n = Math.max(2, Math.round(len / 34));
     for (var i = 0; i < n; i++) {
       var cx = lerp(wl.x1, wl.x2, (i + .5) / n), cy = lerp(wl.y1, wl.y2, (i + .5) / n);
-      put(box(0, 0, 0, len / n + 1, 11, 24, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
+      var wh = wl.h || 24;
+      put(box(0, 0, 0, len / n + 1, wh > 16 ? 11 : 8, wh, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
     }
   });
   /* ---- the trenches, dressed: every leg gets its revetment, fire step, duckboards,
@@ -13162,6 +13337,37 @@ function paintGround(t, DET) {
     t.globalAlpha = 1; t.restore();
   });
 
+  /* ---- What a line fought over twice has done to the colour of the ground ----
+     Everything above paints what the ground IS: the rock it is made of, the roads laid
+     on it, the holes blown in it. This is what has been DONE to it, and it goes on last
+     for exactly that reason. Turned over, shelled, walked on and rained into until
+     whatever colour the soil had is gone and what is left is churned subsoil -- darker,
+     greyer and colder than the dry stubble either side of it, and colder than the road
+     running through it, which after a fortnight of this is mud with a camber.
+     Laid over rather than mixed in, so the macro drift underneath still shows through
+     and the middle of the map does not come out as one flat slab.
+     It is the half of no man's land a wetness cannot give you. The shader's wet term
+     darkens ground and warms it, because water in the grain is warm; it was put in first
+     on its own and what came out was damp stubble. Bleak is a colour, and the colour has
+     to be painted. */
+  if (LAND.churn) {
+    for (var cy2 = 0; cy2 < WORLD.h; cy2 += 4) {
+      for (var cx2 = 0; cx2 < WORLD.w; cx2 += 4) {
+        var ch2 = LAND.churn(cx2, cy2);
+        if (ch2 <= .02) continue;
+        var cn2 = noise2(Math.floor(cx2 / 7), Math.floor(cy2 / 7), 181);
+        var cn3 = noise2(Math.floor(cx2 / 31), Math.floor(cy2 / 31), 183);
+        var ca2 = ch2 * (.50 + cn3 * .34) * (.66 + cn2 * .46);
+        var cg2 = Math.round(50 + cn2 * 26 + cn3 * 16);
+        /* a neutral grey rather than a brown one. Mud is brown because it is wet, and the
+           shader already does the wet; what the PAINT has to take away is the warmth the
+           dry stubble either side of it keeps, so the overlay is very nearly colourless
+           and the brown that comes out is the brown of water in the grain. */
+        t.fillStyle = 'rgba(' + (cg2 + 4) + ',' + (cg2 + 2) + ',' + (cg2 - 1) + ',' + Math.min(.9, ca2).toFixed(3) + ')';
+        t.fillRect(cx2, cy2, 4.5, 4.5);
+      }
+    }
+  }
 }
 
 /* ---------------------------------------------------------------- mesh renderer

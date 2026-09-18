@@ -142,13 +142,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    mission and the brain that lays one. It was 1345 for the heavy batteries, which are
    emplacements rather than units: two more guns, two platforms, the position they are
    dug into and the rules that keep them out of the enemy's base and out of their own
-   rear. It is 1460 for the after-action record and the stats page it is read on, which is
-   a battle's whole history kept per unit, per type and per army, five tabs of tables and
-   a set of graphs drawn on a canvas. Raise it deliberately, with a reason, or not at
+   rear. It was 1460 for the after-action record and the stats page it is read on, which
+   is a battle's whole history kept per unit, per type and per army, five tabs of tables
+   and a set of graphs drawn on a canvas. It is 1520 for a second map: the Gothic Line is
+   a landform, a bunker, two kinds of anti-tank obstacle and some six hundred entities
+   laid by hand, and a game that ships one map and cannot ship two is a game with a map
+   editor nobody has a reason to open. Raise it deliberately, with a reason, or not at
    all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1460) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1460 kB so it stays quick to load on a phone`);
+if (kb > 1520) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1520 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

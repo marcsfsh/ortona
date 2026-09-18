@@ -1228,8 +1228,8 @@ for (const device of TARGETS) {
        has to be one where the belt is SOLID: its gaps are the three crossings, and a
        section walking through a gap proves nothing about a belt. */
     function crossings(key, y) {
-      const u = window.spawnUnit('us', key, 1010, y);
-      const pth = window.findPath(u.x, u.y, 1330, y, u);
+      const u = window.spawnUnit('us', key, 878, y);
+      const pth = window.findPath(u.x, u.y, 1210, y, u);
       u.dead = true;
       if (!pth) return -1;
       let n = 0, prev = { x: u.x, y: u.y };
