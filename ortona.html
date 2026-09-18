@@ -2178,6 +2178,30 @@ function defaultMapData() {
 function gothicMapData() {
   var E = [], HB = [];
 
+  /* Everything on this map is laid on the west half and mirrored to the east, because
+     the one thing it may not do is give either side the better of the ground. push()
+     does both: x reflects about the midline, a bearing reflects with it, a trench
+     changes hands, and anything already on the midline is placed once. */
+  function push(e) {
+    E.push(e);
+    if (Math.abs(e.x - WORLD.w / 2) < 1 && e.x1 === undefined && !e.pts) return;
+    var m = {}, k;
+    for (k in e) if (e.hasOwnProperty(k)) m[k] = e[k];
+    if (e.x !== undefined) m.x = WORLD.w - e.x;
+    if (e.a !== undefined) m.a = Math.PI - e.a;
+    if (e.x1 !== undefined) { m.x1 = WORLD.w - e.x1; m.x2 = WORLD.w - e.x2; }
+    if (e.pts) m.pts = e.pts.map(function (q) { return { x: WORLD.w - q.x, y: q.y }; });
+    if (e.side) m.side = e.side === 'us' ? 'ger' : 'us';
+    E.push(m);
+  }
+  /* a bunker on the west ridge looking east down the valley, and its opposite number */
+  function bunker(x, y, sv) { push({ t: 'bunker', x: x, y: y, a: 0, s: sv }); }
+
+  /* ---- the works on the forward slope ---- */
+  bunker(958, 560, .18);
+  bunker(1002, 980, .61);
+  bunker(972, 1400, .37);
+
   /* Nine sectors, in Ortona's own topology, because that shape of map is known to play:
      two the side opens holding, one on each crest, three on the river, and the two the
      other side opens holding. Every position is mirrored about the midline to the unit.
@@ -2286,6 +2310,23 @@ function buildMap(data) {
         break;
       case 'rubble': addCover(e.x, e.y, e.r, 2, 'rubble', null, 80); break;
       case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
+      case 'bunker':
+        /* The footprint is axis-aligned like every solid thing here, so the frontage runs
+           across whichever axis the bearing is least along. */
+        var bax = Math.abs(Math.cos(e.a || 0)) > Math.abs(Math.sin(e.a || 0));
+        var bk2 = { x: e.x, y: e.y, w: bax ? 46 : 74, h: bax ? 74 : 46, solid: 1, kind: 'bunker',
+                    face: e.a || 0, arc: 1, s: e.s || 0, z: 0 };
+        G.props.push(bk2); G.blocks.push(bk2);
+        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0 });
+        /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
+           in front of it. The ground in front of a bunker is the beaten zone, and a cover
+           patch laid there would be the map telling a section that walking up to the slot
+           is the safe thing to do. The flanks and the rear get it and the front does not,
+           which is the whole of why a bunker is taken from the side. */
+        addCover(e.x - Math.cos(e.a || 0) * 34, e.y - Math.sin(e.a || 0) * 34, 34, 4, 'pit', (e.a || 0) + Math.PI / 2, 400);
+        addCover(e.x - Math.sin(e.a || 0) * 46, e.y + Math.cos(e.a || 0) * 46, 24, 3, 'wall', e.a || 0, 400);
+        addCover(e.x + Math.sin(e.a || 0) * 46, e.y - Math.cos(e.a || 0) * 46, 24, 3, 'wall', e.a || 0, 400);
+        break;
       case 'emplace':
         addCover(e.x, e.y, (e.r || 22) + 6, 3, 'pit', null, 140);
         G.stacks.push({ x: e.x, y: e.y, r: e.r || 22, kind: 'emplace', s: e.s || 0, a: e.a || 0 }); break;
@@ -3257,6 +3298,11 @@ function outPoint(u, tx, ty) {
   }
   if (!u.gar) return { x: u.x, y: u.y };
   var a = Math.atan2(ty - u.y, tx - u.x), o = Math.max(u.gar.w, u.gar.h) * .5 + 14;
+  /* A house is fought out of on every side. A bunker has a slot and a back wall, so the
+     point a round leaves from -- and the point one arrives at -- is clamped into its own
+     arc. Fire from behind is then a line drawn into the concrete, which is solid on the
+     fire grid and stops it, and nothing else has to know about bunkers for that to work. */
+  if (u.gar.arc) a = u.gar.face + clamp(angDiff(u.gar.face, a), -u.gar.arc, u.gar.arc);
   return { x: u.x + Math.cos(a) * o, y: u.y + Math.sin(a) * o };
 }
 /* how high off the ground the eye or the muzzle sits */
@@ -3779,11 +3825,23 @@ function blockAt(x, y) {
 }
 function canGarrison(u, bk) {
   return u && bk && (u.cat === 'inf' || u.cat === 'team') && u.def.speed > 0 && !u.gar && !u.retreat &&
-         !u.inside && !bk.gar && bk.w > 60 && bk.h > 60;
+         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60));
 }
 /* where the men stand: spread along the inside of the four walls, facing out */
 function garrisonSlots(bk, count) {
   var out = [], hw = bk.w / 2 - 10, hh = bk.h / 2 - 10, i;
+  /* A house is fought out of on all four sides. A thing with a face is not: its men stand
+     in a line inside the fighting slot, which is the only part of it they can see out of,
+     and that is the reason a bunker is taken from the flank rather than from in front. */
+  if (bk.face !== undefined) {
+    var ca = Math.cos(bk.face), sa = Math.sin(bk.face), along = Math.abs(ca) > Math.abs(sa);
+    var deep = (along ? hw : hh) - 7, span = along ? hh : hw;
+    for (i = 0; i < count; i++) {
+      var t = count < 2 ? 0 : (((i + .5) / count) - .5) * 1.75 * span;
+      out.push({ x: bk.x + ca * deep - sa * t, y: bk.y + sa * deep + ca * t, f: bk.face });
+    }
+    return out;
+  }
   var edges = [[0, hh, 1, 0, Math.PI / 2], [0, -hh, 1, 0, -Math.PI / 2],
                [hw, 0, 0, 1, 0], [-hw, 0, 0, 1, Math.PI]];
   var per = Math.max(1, Math.ceil(count / 4));
@@ -3811,7 +3869,10 @@ function leaveBuilding(u) {
   var bk = u.gar, i;
   if (!bk) return;
   bk.gar = null; u.gar = null;
-  var sp = nearestFree(bk.x, bk.y + bk.h / 2 + 34);
+  /* out of the back of it, because the front of a bunker is the beaten zone */
+  var ox = bk.face === undefined ? 0 : -Math.cos(bk.face) * (Math.max(bk.w, bk.h) * .5 + 34);
+  var oy = bk.face === undefined ? bk.h / 2 + 34 : -Math.sin(bk.face) * (Math.max(bk.w, bk.h) * .5 + 34);
+  var sp = nearestFree(bk.x + ox, bk.y + oy);
   u.x = sp.x; u.y = sp.y;
   for (i = 0; i < u.models.length; i++) {
     u.models[i].x = u.x + u.models[i].ox; u.models[i].y = u.y + u.models[i].oy;
@@ -10354,6 +10415,13 @@ function registerMaterials() {
   tag(['#3f4c31', '#4f5d3c', '#65734b'], 'leaf');
   tag(['#9d9f6c', '#8f965f'], 'grass');
   tag(['#5d5a44'], 'net');                                  /* the camouflage net over the HQ yard */
+  if (typeof BUNK !== 'undefined') {
+    tag([BUNK.con, BUNK.conL, BUNK.conD, BUNK.conW], 'concrete');
+    tagEdges([BUNK.con, BUNK.conL, BUNK.conD, BUNK.conW], 'concrete');
+    tag([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
+    tagEdges([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
+    tag([BUNK.steel, BUNK.dark], 'steel'); tagEdges([BUNK.steel, BUNK.dark], 'steel');
+  }
 }
 /* Every colour a figure wears and every lit() derivative of it a builder makes. A
    derivative nobody tagged falls to the flat generic tile, which is how 433 of a
@@ -11571,6 +11639,8 @@ function sceneProps(tile) {
       put(pitch(box(0, 0, 4, 28, 2.6, 2.6, '#4e402c', '#5f4e36'), .3, 0, 0), st.x, st.y, st.s * TAU);
       put(pitch(box(0, 0, 7, 22, 2.2, 2.2, '#4e402c', '#5f4e36'), -.2, 0, 0), st.x + 6, st.y - 4, st.s * TAU + 1.2);
       put(box(0, 0, .6, 16, 8, 1.2, '#5a4a32', '#6b5a3e'), st.x - 8, st.y + 6, st.s * 5);       /* a door */
+    } else if (st.kind === 'bunker') {
+      put(bunkerModel(74, 46, st.s), st.x, st.y, st.a || 0);
     } else if (st.kind === 'emplace') {
       /* a weapon pit: a horseshoe of sandbags two bags thick, six courses at the front
          falling to three at the open rear, each course laid header-and-stretcher round
@@ -20121,6 +20191,103 @@ function sandbagRun(x0, y0, ang, len, courses, rnd) {
   }
   return out;
 }
+/* ---- a Gothic Line bunker ----
+   Reinforced concrete dug into the slope with the spoil heaped back over it. What shows
+   from in front is a battered parapet with a long fighting slot above it and a roof slab
+   over that; what shows from behind and from the flanks is a bank of earth with a
+   doorway cut into the foot of it.
+
+   The slot is long rather than a loophole, and that is a decision about the game rather
+   than about the fortification. A player looks at this from four hundred units up: a
+   bunker whose garrison cannot be seen is a concrete box, and the garrison is the thing
+   being fought for. The type exists -- a Kampfstand with a concrete parapet and a roof
+   over it is what a good deal of that line actually was -- so nothing has to be invented
+   to get it.
+
+   Built facing +x with its frontage across y, and turned by the map. The footprint is
+   axis-aligned like every other solid thing here, so the bearing is taken to the nearest
+   quarter turn; on this map every bunker looks along the valley, which is the x axis, so
+   nothing is lost by it. */
+var BUNK = { con: '#7a7a6e', conL: '#8a8a7e', conD: '#6a6a60', conW: '#74746a',
+             earth: '#8a7f66', earthL: '#9b9179', earthD: '#6b6250',
+             steel: '#3f3b30', dark: '#26251f' };
+function bunkerModel(fw, dp, sv) {
+  var hy = fw / 2, hx = dp / 2, f = [], i, k, nrnd = 0;
+  var C = BUNK.con, CL = BUNK.conL, CD = BUNK.conD;
+  var E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
+  /* a hash rather than the map's own seeded sequence, because a model built at boot must
+     not touch that sequence: it would move every bag and every shell hole on the map */
+  function rnd(n) { var v = Math.sin(sv * 91.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  function rseq() { return rnd(++nrnd); }
+  /* A heap of spoil: a patch of ground drawn in to a narrow crest, which is the shape
+     earth takes when it is thrown out of a hole and left. The bank is built out of a row
+     of these rather than as one long wedge, because a wedge is two flat planes and at the
+     distance a player looks from two flat planes read as a plywood ramp leaning on a
+     shed. What makes it earth is that the crest wanders and the toe is ragged. */
+  function heap(cx, cy, bx, by, tx, ty, z0, z1) {
+    return frustum([[cx - bx, cy - by], [cx + bx, cy - by], [cx + bx, cy + by], [cx - bx, cy + by]],
+                   [[cx - tx, cy - ty], [cx + tx, cy - ty], [cx + tx, cy + ty], [cx - tx, cy + ty]],
+                   z0, z1, E, EL, ED);
+  }
+  /* the floor, darker than anything above it, so the inside reads as inside */
+  f = f.concat(box(0, 0, -2, dp, fw, 3, BUNK.dark, BUNK.earthD, BUNK.dark));
+  /* The parapet across the front. It is battered -- leaned back as it rises -- because a
+     sloped face throws a round off and a vertical one takes it square, and because that
+     lean is most of what says concrete rather than crate at any distance. */
+  f = f.concat(frustum([[hx - 10, -hy], [hx, -hy], [hx, hy], [hx - 10, hy]],
+                       [[hx - 10, -hy], [hx - 4, -hy], [hx - 4, hy], [hx - 10, hy]],
+                       0, 13, C, CL, CD));
+  /* two piers off the parapet carrying the roof, with the slot between and either side */
+  for (i = -1; i <= 1; i += 2) f = f.concat(box(hx - 7, i * 14, 13, 7, 9, 13, C, CL, CD));
+  /* the flanks, and the back with a doorway through the middle of it */
+  for (i = -1; i <= 1; i += 2) {
+    f = f.concat(box(0, i * (hy - 5), 0, dp, 10, 26, C, CL, CD));
+    f = f.concat(box(-(hx - 5), i * (hy / 2 + 6), 0, 10, hy - 12, 26, C, CL, CD));
+  }
+  /* the roof, overhanging every way: what throws the rain off the slot and what a shell
+     bursting in front of it goes off against */
+  f = f.concat(box(-1, 0, 26, dp + 8, fw + 9, 7, C, CL, CD));
+  /* The earth back over it. The flanks and the rear are buried to the roof and the spoil
+     runs out onto the ground; only the front and the roof lip are left showing, which is
+     the whole of what makes it a bunker rather than a hut. */
+  for (i = -1; i <= 1; i += 2) {
+    /* A bank is a run of mounds that overlap at the toe and stand apart at the crest.
+       Built with the ends square instead -- a frustum whose top is nearly as long as its
+       base -- what comes out is a row of buttresses with black slots between them, which
+       is the one shape earth never takes. The taper along the bank has to be the strong
+       one and the mounds have to overlap by half. */
+    for (k = 0; k < 8; k++) {
+      var mx = -(hx + 10) + (k + .5) * (dp + 20) / 8;
+      var reach = 17 + rnd(k * 3 + i * 7) * 12, ridge = 28 + rnd(k * 5 + i * 11) * 6;
+      f = f.concat(heap(mx, i * (hy - 7 + reach / 2), 12, reach / 2 + 6, 3.5, 4, -2, ridge));
+    }
+    for (k = 0; k < 3; k++) {
+      var my = i * (14 + k * 10), rch = 15 + rnd(k * 13 + i * 3) * 11, rdg = 27 + rnd(k * 17 + i * 5) * 6;
+      f = f.concat(heap(-(hx - 5 + rch / 2), my, rch / 2 + 6, 11, 4, 3.5, -2, rdg));
+    }
+  }
+  /* and the spoil on the roof, which is what the shelling is meant to go off in */
+  f = f.concat(heap(-1, 0, hx + 4, hy + 4.5, hx - 5, hy - 6, 32, 35.5));
+  for (k = 0; k < 3; k++) {
+    f = f.concat(heap(-2 + (rnd(k * 19) - .5) * dp * .5, (rnd(k * 23) - .5) * fw * .55,
+                      9 + rnd(k * 29) * 7, 11 + rnd(k * 31) * 10, 3, 4, 34.5, 37 + rnd(k * 37) * 2.5));
+  }
+  /* the doorway: a steel frame, and a blast wall a pace behind it so a burst in the
+     entrance does not go straight through into the chamber */
+  f = f.concat(box(-(hx - 5), 0, 0, 11, 26, 3, BUNK.steel, BUNK.steel, BUNK.dark));
+  f = f.concat(box(-(hx - 5), 0, 20, 11, 26, 4, BUNK.steel, BUNK.steel, BUNK.dark));
+  f = f.concat(box(-(hx + 17), 0, 0, 7, 30, 21, C, CL, CD));
+  /* a course of bags along the sill of the slot, which is what a garrison does to a
+     concrete parapet the day it moves in */
+  f = f.concat(sandbagRun(hx - 7, -hy + 5, Math.PI / 2, fw - 10, 1, rseq));
+  /* and what the shelling has taken out of the front */
+  for (k = 0; k < 4; k++) {
+    var cz = 2 + rnd(k * 41) * 9, cy2 = (rnd(k * 43) - .5) * (fw - 14);
+    f = f.concat(box(hx - 2.5, cy2, cz, 4, 4 + rnd(k * 47) * 5, 3 + rnd(k * 53) * 4, CD, BUNK.dark, CD));
+  }
+  return f;
+}
+
 /* A field work, built in world coordinates where it stands and then dropped onto the
    ground face by face. Works are rare -- a handful in a battle -- so each one gets its
    own little buffer rather than being merged into the scene, which is built once before
