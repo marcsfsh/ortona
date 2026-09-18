@@ -2194,32 +2194,245 @@ function gothicMapData() {
     if (e.side) m.side = e.side === 'us' ? 'ger' : 'us';
     E.push(m);
   }
+  /* Every draw on this map comes from one seed, so the map is the same on every run and
+     the east half is the west half reflected rather than a second roll of the dice. It is
+     the map's own sequence and not the game's: touching _s here would move every bag and
+     every shell hole in the scene builder as well. */
+  var _gs = 8271944;
+  function r1() { _gs = (_gs * 1103515245 + 12345) & 0x7fffffff; return _gs / 0x7fffffff; }
+  function rr(a, b) { return a + r1() * (b - a); }
+  /* what has been dug, so that nothing is later dropped on top of it */
+  var DUG = [];
+  function keepOff(x, y, r) { DUG.push([x, y, r]); }
+  function clearOf(x, y, r) {
+    for (var i = 0; i < DUG.length; i++)
+      if (Math.hypot(x - DUG[i][0], y - DUG[i][1]) < r + DUG[i][2]) return false;
+    return true;
+  }
   /* a bunker on the west ridge looking east down the valley, and its opposite number */
-  function bunker(x, y, sv) { push({ t: 'bunker', x: x, y: y, a: 0, s: sv }); }
-  function wire(x1, y1, x2, y2) { push({ t: 'wire', x1: x1, y1: y1, x2: x2, y2: y2 }); }
-  function hogs(x1, y1, x2, y2, kind) { push({ t: 'hogs', x1: x1, y1: y1, x2: x2, y2: y2, kind: kind }); }
+  function bunker(x, y, sv) { push({ t: 'bunker', x: x, y: y, a: 0, s: sv }); keepOff(x, y, 62); }
+  function wire(x1, y1, x2, y2) {
+    push({ t: 'wire', x1: x1, y1: y1, x2: x2, y2: y2 });
+    for (var wq = y1; wq <= y2; wq += 40) keepOff(x1, wq, 30);
+  }
+  function hogs(x1, y1, x2, y2, kind) {
+    push({ t: 'hogs', x1: x1, y1: y1, x2: x2, y2: y2, kind: kind });
+    for (var hq = y1; hq <= y2; hq += 40) keepOff(x1, hq, 34);
+  }
+  function road(w, pts) { push({ t: 'road', width: w, pts: pts.map(function (q) { return { x: q[0], y: q[1] }; }) }); }
+  function pit(x, y, r, sv, ang) { push({ t: 'emplace', x: x, y: y, r: r, s: sv, a: ang }); keepOff(x, y, r + 16); }
+  function bags(x, y, r, ang) { push({ t: 'bags', x: x, y: y, r: r, a: ang }); keepOff(x, y, r + 8); }
+  /* A fire trench is a zigzag and not a line: a traverse every dozen paces is what stops
+     a burst or a grenade running the length of it. The side the fire step goes on is left
+     to trenchFacing, which puts it toward the middle of the map -- which here is the
+     enemy, on both halves, because the map is mirrored about exactly that line. */
+  function zig(x, y0, y1, amp, step) {
+    var pts = [], n = Math.max(2, Math.round(Math.abs(y1 - y0) / step)), i;
+    for (i = 0; i <= n; i++) {
+      pts.push({ x: x + (i % 2 ? amp : 0), y: y0 + (y1 - y0) * i / n });
+      keepOff(pts[i].x, pts[i].y, 30);
+    }
+    push({ t: 'trench', side: 'us', pts: pts });
+  }
+  function sap(pts) {
+    pts.forEach(function (q) { keepOff(q[0], q[1], 30); });
+    push({ t: 'trench', side: 'us', pts: pts.map(function (q) { return { x: q[0], y: q[1] }; }) });
+  }
 
-  /* ---- the works on the forward slope ---- */
+  /* ---- The three crossings ----
+     There are three ways over the Foglia and each of them is a victory sector, so the
+     whole map is a question about which one to force. The roads were there before the
+     line was: they run right across, and each side's half of one is mirrored onto the
+     other, so a road laid from the western base to the midline is a road from base to
+     base once the map is folded. */
+  road(52, [[404, 220], [446, 386], [418, 546], [452, 712], [430, 868], [458, 1012],
+            [424, 1178], [452, 1326], [416, 1490], [444, 1642], [412, 1800]]);
+  road(48, [[250, 950], [312, 934], [386, 966], [458, 1012]]);
+  road(48, [[446, 386], [560, 448], [686, 496], [806, 524], [934, 556], [1042, 540],
+            [1158, 518], [1284, 528], [1400, 520]]);
+  road(48, [[458, 1012], [584, 1006], [702, 966], [828, 972], [946, 1000], [1064, 986],
+            [1188, 962], [1298, 974], [1400, 980]]);
+  road(48, [[416, 1490], [546, 1466], [664, 1428], [796, 1414], [914, 1392], [1036, 1408],
+            [1162, 1428], [1290, 1424], [1400, 1420]]);
+
+  /* ---- The position on the forward slope ----
+     Three bunkers, one on each crossing, and the fire trench run between them rather
+     than through them: the concrete IS the line where it stands, and a trench dug across
+     its front would be a trench its own garrison is firing over. */
   bunker(958, 560, .18);
   bunker(1002, 980, .61);
   bunker(972, 1400, .37);
+  zig(930, 300, 470, 26, 46);
+  zig(930, 650, 880, 26, 46);
+  zig(930, 1080, 1300, 26, 46);
+  zig(930, 1490, 1680, 26, 46);
+  /* communication trenches back over the crest, so the position can be reinforced from
+     the reverse slope without crossing the skyline */
+  sap([[936, 480], [880, 500], [836, 476], [782, 498]]);
+  sap([[944, 1010], [886, 1032], [840, 1006], [788, 1030]]);
+  sap([[938, 1466], [884, 1444], [838, 1470], [786, 1448]]);
+  /* weapon pits on the forward slope beside the trench, and the anti-tank guns back on
+     the crest where they have the length of the valley rather than the width of it */
+  pit(886, 392, 22, .21, 0);
+  pit(898, 742, 22, .67, 0);
+  pit(908, 1182, 22, .44, 0);
+  pit(880, 1592, 22, .83, 0);
+  pit(742, 636, 26, .31, .18);
+  pit(730, 1298, 26, .58, -.18);
+  bags(902, 606, 30, 1.571);
+  bags(946, 1026, 30, 1.571);
+  bags(916, 1352, 30, 1.571);
 
-  /* ---- the obstacle belt ----
-     Two belts and they are not laid to the same plan, because they are laid against two
-     different things. The wire is close in under the bunkers, where a section held up in
-     it is held up in front of a machine gun that is already looking at it. The hedgehogs
-     are out on the floor, far enough forward that armour is turned before it is in range
-     of anything, and their gaps are NOT the wire's gaps: a lane that lets a tank through
-     and a lane that lets a section through should not be the same lane, or there is only
-     one way in and the whole belt is one decision. The teeth go where the ground opens
-     out in the south and a squadron could otherwise cross on a frontage. */
-  wire(1075, 300, 1075, 720);
-  wire(1075, 800, 1075, 1180);
-  wire(1075, 1260, 1075, 1700);
-  hogs(1172, 240, 1172, 660);
-  hogs(1172, 900, 1172, 1320);
-  hogs(1172, 1500, 1172, 1860);
-  hogs(1244, 1555, 1244, 1880, 'teeth');
+  /* ---- The obstacle belts ----
+     Laid to two different plans, because they are laid against two different things. The
+     wire is close in under the bunkers, where a section held up in it is held up in front
+     of a gun that is already looking at it, and it is cut only by the defender's own
+     lanes on the three roads. The hedgehogs are out on the floor, far enough forward to
+     turn armour before it is in range of anything, and their gaps are the three crossings
+     -- which is the whole design of the map. An obstacle belt does not stop armour, it
+     tells armour where to go, and where it goes is into a bunker's arc.
+     The teeth are the far south, where the valley opens out and a squadron could
+     otherwise swing wide round the end of everything. */
+  wire(1062, 200, 1062, 540);
+  wire(1062, 580, 1062, 960);
+  wire(1062, 1000, 1062, 1380);
+  wire(1062, 1420, 1062, 1760);
+  hogs(1168, 180, 1168, 470);
+  hogs(1168, 650, 1168, 890);
+  hogs(1168, 1070, 1168, 1310);
+  hogs(1168, 1490, 1168, 1870);
+  hogs(1250, 1620, 1250, 1880, 'teeth');
+
+  /* ---- What the ground has taken ----
+     Where a map is torn is not random. It is heaviest on the three crossings, because
+     every attack has gone in on one of them; heavy along the bunker line, because
+     everything that could reach has been looking for the concrete; and it thins to
+     nothing on the rear shelf, which is the one piece of ground nobody has had to cross.
+     So the scatter is rejected against a density rather than laid out evenly, and it is
+     rejected again against everything already dug: a shell hole through a trench floor
+     or a wire apron is a hole the map draws and the works go on pretending is not there.
+     The number is capped rather than counted out, because a rejection scatter that must
+     place N will keep trying until it puts one somewhere it does not belong. */
+  function crater(x, y, r) { push({ t: 'crater', x: x, y: y, r: r }); keepOff(x, y, r * .8); }
+  (function () {
+    var tries = 0, made = 0, x, y, lane, d, r;
+    while (made < 88 && tries < 4000) {
+      tries++;
+      x = rr(520, 1398); y = rr(40, 1860);
+      lane = Math.min(Math.abs(y - 520), Math.abs(y - 980), Math.abs(y - 1420));
+      d = clamp(1 - lane / 300, 0, 1) * .62
+        + clamp(1 - Math.abs(x - 1000) / 280, 0, 1) * .55
+        + clamp((x - 1040) / 300, 0, 1) * .40;
+      if (r1() > d) continue;
+      r = rr(11, 20) + (r1() > .82 ? rr(8, 16) : 0);
+      if (!clearOf(x, y, r + 10)) continue;
+      crater(x, y, r);
+      made++;
+    }
+  })();
+
+  /* ---- The country it was before ----
+     The Foglia valley is farmland: scattered case coloniche with their yards and
+     outbuildings, dry-stone walls round the enclosures, olives and vines on the slopes.
+     What the line did to it is the point of the map, so the dressing is laid by how far
+     forward it stands. The rear shelf still has its farms, its walls and its grass
+     because nobody has had to cross it. The crest has ruins and stumps. The valley floor
+     was stripped for a kilometre in front of the position -- every vine and every tree
+     cut down for a field of fire -- and what is left on it is stumps, wire pickets and
+     what has been shelled. That is not a licence to leave it bare: bare ground reads as
+     a desert. It is a licence to make what is on it wreckage. */
+  function house(x, y, w, h, sv, dmg, o) {
+    o = o || {};
+    push({ t: 'house', x: x, y: y, w: w, h: h, tall: o.tall || 0, style: o.style || 'farm',
+           s: sv, damage: dmg, roof: o.roof === undefined ? 1 : o.roof });
+    keepOff(x, y, Math.max(w, h) * .7);
+  }
+  function farm(x, y, w, h) { push({ t: 'farm', x: x, y: y, w: w, h: h }); keepOff(x, y, Math.max(w, h) * .7); }
+  function wall(x1, y1, x2, y2) { push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2 }); }
+  function tree(x, y, r, sv, lean) { push({ t: 'tree', x: x, y: y, r: r, s: sv, lean: lean || 0 }); }
+  function scrub(x, y, r, sv) { push({ t: 'scrub', x: x, y: y, r: r, s: sv }); }
+  function grass(x, y, r, tone) { push({ t: 'grass', x: x, y: y, r: r, tone: tone }); }
+  function pole(x, y, broke) { push({ t: 'pole', x: x, y: y, broken: broke }); }
+  function razed(x, y, r, sv) {
+    push({ t: 'rubble', x: x, y: y, r: r });
+    push({ t: 'debris', x: x, y: y, r: r * .62, s: sv });
+    keepOff(x, y, r);
+  }
+
+  /* the two farms on each rear shelf, with their yards and their outbuildings */
+  house(330, 452, 86, 62, .21, .15, { tall: 1 });
+  farm(408, 470, 62, 40);
+  wall(288, 500, 452, 506); wall(452, 506, 446, 418); wall(288, 500, 284, 424);
+  house(352, 1552, 78, 58, .63, .25, { tall: 1 });
+  farm(292, 1592, 58, 38);
+  wall(300, 1508, 420, 1500); wall(420, 1500, 424, 1606);
+  /* the farm on the crest, shelled to a shell of itself, and its wall knocked about */
+  house(768, 826, 74, 54, .44, .72);
+  farm(712, 862, 50, 34);
+  wall(700, 782, 812, 776); wall(700, 892, 760, 898);
+  /* and the one on the valley floor, which is a heap of stone with a name */
+  razed(1218, 748, 40, .37);
+  razed(1252, 786, 26, .81);
+  wall(1178, 712, 1204, 792);
+
+  /* the enclosure walls on the rear shelf and the reverse slope: field boundaries, so
+     they run with the grain of the ground and stop where the shelling starts */
+  (function () {
+    var i, wx, wy, wl;
+    for (i = 0; i < 16; i++) {
+      wx = rr(180, 760); wy = rr(120, 1820);
+      if (!clearOf(wx, wy, 60)) continue;
+      wl = rr(70, 190);
+      if (r1() > .5) wall(wx, wy, wx + wl, wy + rr(-22, 22));
+      else wall(wx, wy, wx + rr(-22, 22), wy + wl);
+    }
+  })();
+
+  /* Olives and vines: standing on the rear shelf, cut to stumps on the crest, and gone
+     from the floor except where a root has come back. The line is where the field of
+     fire was cleared to, and it is drawn deliberately: a gradient of vegetation across
+     the map is the cheapest thing there is that says a position has been prepared. */
+  (function () {
+    var i, tx, ty, d, keep;
+    for (i = 0; i < 620; i++) {
+      tx = rr(120, 1392); ty = rr(40, 1860);
+      d = clamp((820 - tx) / 420, 0, 1);              /* 1 well back, 0 out past the crest */
+      keep = d * d * .85 + .04;
+      if (r1() > keep) continue;
+      if (!clearOf(tx, ty, 22)) continue;
+      if (r1() < .30 * d) tree(tx, ty, rr(12, 17), r1(), rr(-.2, .2));
+      else scrub(tx, ty, rr(6, 12), r1());
+      keepOff(tx, ty, 16);
+    }
+  })();
+  /* scrub has come back along the water, which is the one line nobody has cleared */
+  (function () {
+    var i, sx, sy;
+    for (i = 0; i < 120; i++) {
+      sy = rr(40, 1860); sx = 1400 - Math.abs(rr(12, 78));
+      if (!clearOf(sx, sy, 16)) continue;
+      scrub(sx, sy, rr(5, 11), r1());
+      keepOff(sx, sy, 12);
+    }
+  })();
+
+  /* Grass. Winter wheat on the rear shelf, thinning forward, and none at all on the
+     ground that has been turned over. */
+  grass(300, 330, 190, .58); grass(250, 760, 200, .55); grass(300, 1180, 190, .52);
+  grass(340, 1700, 200, .58); grass(560, 520, 150, .46); grass(600, 1320, 150, .44);
+  grass(760, 980, 120, .34); grass(1330, 1720, 130, .40);
+
+  /* the telegraph line along the lateral, standing where it is out of the shelling and
+     down where it is not */
+  (function () {
+    var py;
+    for (py = 180; py < 1860; py += 112) pole(rr(384, 414), py, py > 420 && py < 1520 && r1() > .62);
+  })();
+  push({ t: 'cart', x: 646, y: 1088, a: .9 });
+  push({ t: 'cart', x: 1128, y: 486, a: 2.4 });
+  /* something at each end of the position is still burning */
+  push({ t: 'smoke', x: 1196, y: 1006 });
+  push({ t: 'smoke', x: 1046, y: 1462 });
 
   /* Nine sectors, in Ortona's own topology, because that shape of map is known to play:
      two the side opens holding, one on each crest, three on the river, and the two the

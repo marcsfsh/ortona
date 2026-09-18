@@ -1224,7 +1224,9 @@ for (const device of TARGETS) {
     const W = window.G.wire[0], H = window.G.hogs.filter(h => h.kind !== 'teeth')[0];
     const wx = (W.x1 + W.x2) / 2, wy = (W.y1 + W.y2) / 2;
     const hx = (H.x1 + H.x2) / 2, hy = (H.y1 + H.y2) / 2;
-    /* and where a route actually goes, which is the thing a cost is for */
+    /* And where a route actually goes, which is the thing a cost is for. The latitude
+       has to be one where the belt is SOLID: its gaps are the three crossings, and a
+       section walking through a gap proves nothing about a belt. */
     function crossings(key, y) {
       const u = window.spawnUnit('us', key, 1010, y);
       const pth = window.findPath(u.x, u.y, 1330, y, u);
@@ -1251,7 +1253,7 @@ for (const device of TARGETS) {
       hogWheel: ab(window.hogg, hx, hy, 2),
       /* neither is closed: the tight way is dear and still there if it is the only way */
       walkHog: window.walkable(hx, hy), walkWire: window.walkable(wx, wy),
-      footCross: crossings('us_rifle', 1000), tankCross: crossings('us_sher', 1000)
+      footCross: crossings('us_rifle', 1200), tankCross: crossings('us_sher', 1200)
     };
   });
   ok('wire holds a man up and a hedgehog holds a tank up, and a map may lay both',
