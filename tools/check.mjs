@@ -1202,6 +1202,70 @@ for (const device of TARGETS) {
      `${bun.shotF ? 'allowed' : 'refused'} and the same shot to the rear is ` +
      `${bun.shotR ? 'allowed' : 'refused'}`);
 
+  /* --- The obstacle belts. Wire holds a man up and lets a tank drive over it; a
+     hedgehog does the opposite. Wire an ENGINEER put up did all of that and wire a MAP
+     laid did none of it -- G.wire was drawn and marked on no grid at all, so an apron
+     hand-placed across an approach was painted on -- which is the same fault the field
+     walls had and reads exactly the same from a photograph.
+     The effect is read as the same cell with the mark and without it, because the belts
+     are laid on ground that is also steep and also near something, and a cost compared
+     against the open field beside it measures the slope as much as the wire. --- */
+  const obs = await page.evaluate(() => {
+    const C = 20;
+    const at = (x, y) => window.cidx((x / C) | 0, (y / C) | 0);
+    const cost = (x, y, k) => window.cellCost(at(x, y), k, null, 0);
+    /* on over off, at one cell, for one kind of thing */
+    function ab(grid, x, y, k) {
+      const i = at(x, y), was = grid[i];
+      const on = cost(x, y, k); grid[i] = 0;
+      const off = cost(x, y, k); grid[i] = was;
+      return +(on / off).toFixed(2);
+    }
+    const W = window.G.wire[0], H = window.G.hogs.filter(h => h.kind !== 'teeth')[0];
+    const wx = (W.x1 + W.x2) / 2, wy = (W.y1 + W.y2) / 2;
+    const hx = (H.x1 + H.x2) / 2, hy = (H.y1 + H.y2) / 2;
+    /* and where a route actually goes, which is the thing a cost is for */
+    function crossings(key, y) {
+      const u = window.spawnUnit('us', key, 1010, y);
+      const pth = window.findPath(u.x, u.y, 1330, y, u);
+      u.dead = true;
+      if (!pth) return -1;
+      let n = 0, prev = { x: u.x, y: u.y };
+      pth.forEach(q => {
+        for (let t = 0; t <= 1; t += .05) {
+          if (window.inHogs(prev.x + (q.x - prev.x) * t, prev.y + (q.y - prev.y) * t)) { n++; break; }
+        }
+        prev = q;
+      });
+      return n;
+    }
+    const mirrored = window.G.hogs.filter(h => h.x1 < 1400).every(w =>
+      window.G.hogs.some(e => Math.abs(e.x1 - (2800 - w.x1)) < 1 && Math.abs(e.y1 - w.y1) < 1)) &&
+      window.G.wire.filter(w => w.x1 < 1400).every(w =>
+      window.G.wire.some(e => Math.abs(e.x1 - (2800 - w.x1)) < 1 && Math.abs(e.y1 - w.y1) < 1));
+    return {
+      wire: window.G.wire.length, hogs: window.G.hogs.length, mirrored,
+      inWire: window.inWire(wx, wy), inHogs: window.inHogs(hx, hy),
+      wireFoot: ab(window.wireg, wx, wy, 0), wireTrack: ab(window.wireg, wx, wy, 1),
+      hogFoot: ab(window.hogg, hx, hy, 0), hogTrack: ab(window.hogg, hx, hy, 1),
+      hogWheel: ab(window.hogg, hx, hy, 2),
+      /* neither is closed: the tight way is dear and still there if it is the only way */
+      walkHog: window.walkable(hx, hy), walkWire: window.walkable(wx, wy),
+      footCross: crossings('us_rifle', 1000), tankCross: crossings('us_sher', 1000)
+    };
+  });
+  ok('wire holds a man up and a hedgehog holds a tank up, and a map may lay both',
+     obs.wire >= 6 && obs.hogs >= 6 && obs.mirrored && obs.inWire && obs.inHogs &&
+     obs.wireFoot > 2 && obs.wireTrack === 1 && obs.hogFoot === 1 && obs.hogTrack > 8 &&
+     obs.hogWheel > 8 && obs.walkHog && obs.walkWire &&
+     obs.footCross > 0 && obs.tankCross === 0,
+     `${obs.wire} wire runs and ${obs.hogs} obstacle belts, each mirrored about the midline ` +
+     `${obs.mirrored ? 'yes' : 'NO'}; on one cell of wire a man pays ${obs.wireFoot}x what he ` +
+     `would without it and a tank ${obs.wireTrack}x; on one cell of hedgehog a man pays ` +
+     `${obs.hogFoot}x, tracks ${obs.hogTrack}x and wheels ${obs.hogWheel}x; neither cell is ` +
+     `closed to anything; asked to cross at the same place a section went through the belt ` +
+     `(${obs.footCross} legs in it) and a Sherman went round it (${obs.tankCross})`);
+
   /* --- the after-action record, and the page it is read on. The record is kept AS the
      battle runs -- nothing at the end of one knows what a section did before it died --
      so what is asserted is that it agrees with the field while the field is still there:

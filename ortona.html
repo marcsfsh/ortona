@@ -1561,7 +1561,7 @@ var G = {
   pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
   made: { us: {}, us2: {}, ger: {}, ger2: {} },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [],
-  sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
+  sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
 };
@@ -2196,11 +2196,30 @@ function gothicMapData() {
   }
   /* a bunker on the west ridge looking east down the valley, and its opposite number */
   function bunker(x, y, sv) { push({ t: 'bunker', x: x, y: y, a: 0, s: sv }); }
+  function wire(x1, y1, x2, y2) { push({ t: 'wire', x1: x1, y1: y1, x2: x2, y2: y2 }); }
+  function hogs(x1, y1, x2, y2, kind) { push({ t: 'hogs', x1: x1, y1: y1, x2: x2, y2: y2, kind: kind }); }
 
   /* ---- the works on the forward slope ---- */
   bunker(958, 560, .18);
   bunker(1002, 980, .61);
   bunker(972, 1400, .37);
+
+  /* ---- the obstacle belt ----
+     Two belts and they are not laid to the same plan, because they are laid against two
+     different things. The wire is close in under the bunkers, where a section held up in
+     it is held up in front of a machine gun that is already looking at it. The hedgehogs
+     are out on the floor, far enough forward that armour is turned before it is in range
+     of anything, and their gaps are NOT the wire's gaps: a lane that lets a tank through
+     and a lane that lets a section through should not be the same lane, or there is only
+     one way in and the whole belt is one decision. The teeth go where the ground opens
+     out in the south and a squadron could otherwise cross on a frontage. */
+  wire(1075, 300, 1075, 720);
+  wire(1075, 800, 1075, 1180);
+  wire(1075, 1260, 1075, 1700);
+  hogs(1172, 240, 1172, 660);
+  hogs(1172, 900, 1172, 1320);
+  hogs(1172, 1500, 1172, 1860);
+  hogs(1244, 1555, 1244, 1880, 'teeth');
 
   /* Nine sectors, in Ortona's own topology, because that shape of map is known to play:
      two the side opens holding, one on each crest, three on the river, and the two the
@@ -2248,7 +2267,7 @@ function buildMap(data) {
   });
   G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
-  G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = [];
+  G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
   G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
@@ -2303,6 +2322,24 @@ function buildMap(data) {
       case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2); break;
       case 'trench': trenchRun(e.pts, e.side || 'us', e.face); break;
       case 'wire': G.wire.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2 }); break;
+      case 'hogs':
+        var hgk = e.kind || 'hog';
+        G.hogs.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2, kind: hgk });
+        /* A belt is a firing line as well as an obstacle: a section that has to cross it
+           lies down among it, and a section holding it has something in front of it. A
+           hedgehog is open steel and worth lying behind and no more; a dragon's tooth is a
+           metre of concrete and worth getting down behind. The patch runs ALONG the belt,
+           which is the line it protects across.
+           The KIND is not free choice: a patch of kind 'rubble' or 'bags' draws itself in
+           the scene, so asking for rubble here put a house's worth of masonry and a roof
+           timber on the map every forty units of belt, straight through the hedgehogs. */
+        var hga = Math.atan2(e.y2 - e.y1, e.x2 - e.x1), hgl = Math.hypot(e.x2 - e.x1, e.y2 - e.y1);
+        var hgn = Math.max(2, Math.round(hgl / 40));
+        for (var hgi = 0; hgi <= hgn; hgi++)
+          addCover(lerp(e.x1, e.x2, hgi / hgn), lerp(e.y1, e.y2, hgi / hgn), 24,
+                   hgk === 'teeth' ? 2 : 1, hgk === 'teeth' ? 'lowwall' : 'ditch',
+                   hga, hgk === 'teeth' ? 260 : 90);
+        break;
       case 'crater':
         addCover(e.x, e.y, e.r, 1, 'crater');
         G.craters.push({ x: e.x, y: e.y, r: e.r });
@@ -2979,6 +3016,9 @@ function cidx(cx, cy) { return cy * GW + cx; }
    not shoot across a gully it was standing on the lip of. */
 var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH), road = new Uint8Array(GW * GH);
 var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH), wallg = new Uint8Array(GW * GH);
+/* anti-tank obstacles: hedgehogs and dragon's teeth. The mirror image of wire, which
+   holds a man up and lets a tank drive over it. */
+var hogg = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -3082,8 +3122,13 @@ function rebuildGrid() {
   });
   G.paved.forEach(function (p) { markRect(road, p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0); });
   /* Wire holds men up in the open rather than stopping them: it is laid to make them
-     stand still somewhere a machine gun is already looking. Tracks go straight over. */
+     stand still somewhere a machine gun is already looking. Tracks go straight over.
+     Wire an ENGINEER put up did all of that and wire a MAP laid did none of it: G.wire
+     was drawn and marked on nothing, so an apron hand-placed across an approach was
+     painted on. A line that is there to stop somebody has to be on the grid that stops
+     him, and that is the same fault the field walls had. */
   wireg.fill(0);
+  G.wire.forEach(function (wr) { markSeg(wireg, wr.x1, wr.y1, wr.x2, wr.y2, 17); });
   G.works.forEach(function (wk) {
     var W = WORKS[wk.kind];
     if (!W || !W.slow) return;
@@ -3091,6 +3136,14 @@ function rebuildGrid() {
     var hx = Math.cos(wa) * W.len / 2, hy = Math.sin(wa) * W.len / 2;
     markSeg(wireg, wk.x - hx, wk.y - hy, wk.x + hx, wk.y + hy, (W.h || 34) * .5);
   });
+  /* And the other way about. A hedgehog is three lengths of rail welded through each
+     other: it fouls a belly or a track and a man walks between them, so it is dear to
+     anything driving and free to anything on foot. Dear rather than closed, like
+     everything else in this cost model -- ground nothing may cross is ground the army
+     stops using -- but dear enough to be worth a long detour, which is what an obstacle
+     belt is for. */
+  hogg.fill(0);
+  G.hogs.forEach(function (hg) { markSeg(hogg, hg.x1, hg.y1, hg.x2, hg.y2, 15); });
   buildRoom();
 }
 /* How much room a cell has: the distance in cells to the nearest thing that stops a
@@ -3210,6 +3263,11 @@ function roomAt(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return 0;
   return (roomg[cidx(cx, cy)] - .5) * CELL;
+}
+function inHogs(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return hogg[cidx(cx, cy)] === 1;
 }
 function inWire(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
@@ -3369,6 +3427,7 @@ function cellCost(ci, kind, dang, fear) {
     c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
     if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
     if (wallg[ci] && kind === 2) c *= 2.6;             /* a lorry goes round; tracks do not */
+    if (hogg[ci]) c *= 12;                             /* and neither goes through a hedgehog */
     c += tight;
   }
   if (dang) c += dang[_d2c[ci]] * fear;
@@ -4156,7 +4215,12 @@ function moveUnit(u, dt) {
     var wheeled = u.cat === 'veh' && (u.key === 'ger_sd222' || u.key === 'us_m3' || u.key === 'ger_h251');
     var grip = u.cat !== 'veh' ? .55 : wheeled ? 1.5 : 1.0;
     sp *= clamp(1 - rise * grip * (rise > 0 ? 1 : .35), .35, 1.12);
-    if (u.cat === 'veh') sp *= onRoad(u.x, u.y) ? 1.22 : .94;
+    if (u.cat === 'veh') {
+      sp *= onRoad(u.x, u.y) ? 1.22 : .94;
+      /* and a hull that has taken the belt anyway, because it was the only way through,
+         is over it at a crawl rather than through it at a drive */
+      if (inHogs(u.x, u.y)) sp *= .35;
+    }
     else if (inWire(u.x, u.y)) sp *= .40;                /* caught in the apron */
     else if (onWall(u.x, u.y)) sp *= .55;               /* over the field wall, one at a time */
   }
@@ -10415,6 +10479,12 @@ function registerMaterials() {
   tag(['#3f4c31', '#4f5d3c', '#65734b'], 'leaf');
   tag(['#9d9f6c', '#8f965f'], 'grass');
   tag(['#5d5a44'], 'net');                                  /* the camouflage net over the HQ yard */
+  if (typeof HOGC !== 'undefined') {
+    tag([HOGC.steel, HOGC.steelL], 'steel'); tagEdges([HOGC.steel, HOGC.steelL], 'steel');
+    tag([HOGC.rust, HOGC.rustL], 'steel'); tagEdges([HOGC.rust, HOGC.rustL], 'steel');
+    tag([HOGC.con, HOGC.conL, HOGC.conD], 'concrete');
+    tagEdges([HOGC.con, HOGC.conL, HOGC.conD], 'concrete');
+  }
   if (typeof BUNK !== 'undefined') {
     tag([BUNK.con, BUNK.conL, BUNK.conD, BUNK.conW], 'concrete');
     tagEdges([BUNK.con, BUNK.conL, BUNK.conD, BUNK.conW], 'concrete');
@@ -11555,6 +11625,33 @@ function sceneProps(tile) {
   });
   /* wire: screw pickets with a concertina coil strung between them, each coil a helix
      of short segments, plus a low apron strand either side to catch the feet */
+  G.hogs.forEach(function (hg) {
+    var ha = Math.atan2(hg.y2 - hg.y1, hg.x2 - hg.x1), hl = Math.hypot(hg.x2 - hg.x1, hg.y2 - hg.y1);
+    var hnx = -Math.sin(ha), hny = Math.cos(ha), hr, hd, hpx, hpy;
+    if (hg.kind === 'teeth') {
+      /* four ranks stepping up toward the enemy and staggered, so nothing has a line
+         through and a hull that climbs the first rank grounds itself on the second */
+      for (hr = 0; hr < 4; hr++) {
+        for (hd = (hr % 2) * 12; hd < hl; hd += 24) {
+          hpx = hg.x1 + Math.cos(ha) * hd + hnx * (hr * 17 - 26);
+          hpy = hg.y1 + Math.sin(ha) * hd + hny * (hr * 17 - 26);
+          if (!mine(hpx, hpy)) continue;
+          seedAt(hpx, hpy, 11);
+          put(dragonTooth(8 + hr * 2.6 + srange(0, 1.8), srand()), hpx, hpy, ha + srange(-.22, .22));
+        }
+      }
+    } else {
+      for (hr = 0; hr < 2; hr++) {
+        for (hd = (hr % 2) * 14; hd < hl; hd += 28) {
+          hpx = hg.x1 + Math.cos(ha) * hd + hnx * (hr * 17 - 8.5);
+          hpy = hg.y1 + Math.sin(ha) * hd + hny * (hr * 17 - 8.5);
+          if (!mine(hpx, hpy)) continue;
+          seedAt(hpx, hpy, 11);
+          put(hedgehogModel(srand()), hpx, hpy, srange(0, TAU));
+        }
+      }
+    }
+  });
   G.wire.forEach(function (wr) {
     if (!mine((wr.x1 + wr.x2) / 2, (wr.y1 + wr.y2) / 2)) return;
     seedAt(wr.x1, wr.y1, 5);
@@ -20191,6 +20288,38 @@ function sandbagRun(x0, y0, ang, len, courses, rnd) {
   }
   return out;
 }
+/* ---- anti-tank obstacles ----
+   A Czech hedgehog is three lengths of angle iron welded through each other at their
+   centres, which makes a six-pointed star that stands on three of its points whichever
+   way up it lands. That is the whole of its design and the whole of why it works: it
+   cannot be pushed flat, and what it fouls is the belly of a tank rather than its track.
+   A dragon's tooth is a metre of reinforced concrete, laid in ranks that step up toward
+   the enemy so a hull that climbs the first rank is stopped by the second with its floor
+   in the air.
+   Neither stops a man, which is the point of both, and is why they are laid where a
+   machine gun is already looking. */
+var HOGC = { steel: '#5a5348', steelL: '#6d6558', rust: '#54443a', rustL: '#6a564a',
+             con: '#8a8a7e', conL: '#9a9a8e', conD: '#74746a' };
+function hedgehogModel(sv) {
+  var L = 10.5 + sv * 2.4, t = 1.7, i, j, lo = 1e9;
+  var c = sv > .55 ? HOGC.rust : HOGC.steel, cl = sv > .55 ? HOGC.rustL : HOGC.steelL;
+  var f = box(0, 0, -t / 2, L, t, t, c, cl, c)
+    .concat(box(0, 0, -t / 2, t, L, t, c, cl, c))
+    .concat(box(0, 0, -L / 2, t, t, L, c, cl, c))
+    .concat(box(0, 0, -2.4, 4.4, 4.4, 4.8, cl, cl, c));         /* the weld at the middle */
+  /* tipped off the axes so it stands on three points rather than lying square, and then
+     set down on whatever the lowest of them turns out to be: guessing the drop leaves a
+     star either buried to the weld or hovering over its own shadow */
+  f = roll(pitch(f, .62, 0, 0), .55 + sv * .3, 0, 0);
+  for (i = 0; i < f.length; i++) for (j = 0; j < f[i].v.length; j++) if (f[i].v[j][2] < lo) lo = f[i].v[j][2];
+  return place(f, 0, 0, 0, -lo);
+}
+function dragonTooth(h, sv) {
+  var b = 5.4 + sv * 2.2, t = b * .42;
+  return frustum([[-b, -b], [b, -b], [b, b], [-b, b]], [[-t, -t], [t, -t], [t, t], [-t, t]],
+                 0, h, HOGC.con, HOGC.conL, HOGC.conD);
+}
+
 /* ---- a Gothic Line bunker ----
    Reinforced concrete dug into the slope with the spoil heaped back over it. What shows
    from in front is a battered parapet with a long fighting slot above it and a roof slab
