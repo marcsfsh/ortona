@@ -978,8 +978,13 @@ for (const device of TARGETS) {
   await fastForward(page, 150);
   const duo = await page.evaluate(() => {
     const own = window.G.own, ally = window.G.slots.filter(s => s.side === window.G.side && s.ai)[0].k;
-    /* his own money is his: spending the ally's is not open to him, and the HUD reads his */
-    const mineMp = Math.round(window.G.res[own].mp), allyMp = Math.round(window.G.res[ally].mp);
+    /* His own money is his: spending the ally's is not open to him, and the strip reads
+       his. The strip is refreshed first, because it is otherwise up to a tenth of a second
+       of game time behind the till and a queue can take a lump out inside that window --
+       read stale against a live till the row flaps on how much money there is rather than
+       on whose money it is, which is the thing under test. */
+    window.updateTop(1);
+    const mineMp = Math.floor(window.G.res[own].mp), allyMp = Math.floor(window.G.res[ally].mp);
     /* the order cards reach only his own men, so an ally's section cannot be selected into
        the list the command bar issues to */
     const allyU = window.G.units.filter(u => !u.dead && u.own === ally && u.cat !== 'veh')[0];
@@ -1007,7 +1012,7 @@ for (const device of TARGETS) {
      duo0.vpSlots[1] === 0 && duo0.vpSlots[3] === 0 &&
      duo.plans.join(',') === 'us2,ger,ger2' && duo.hq === 'us' &&
      duo.secOwners.split(',').every(o => o === 'us' || o === 'ger') &&
-     duo.mineMp !== duo.allyMp && Math.abs(+duo.hud - duo.mineMp) <= 2 &&
+     duo.mineMp !== duo.allyMp && +duo.hud === duo.mineMp &&
      duo.raised.every(n => n > 0) && duo.queues.every(n => n >= 1) && duo.allyCmd === 0,
      `${duo0.slots.join(' ')}; headquarters ${duo0.hqs.join(',')} with the two allies ${duo0.hqSep} apart ` +
      `and ${duo0.hqWalk} of 4 with room to march out of; ` +

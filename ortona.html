@@ -1644,11 +1644,19 @@ function coverValue(c, fromAng) {
   }
   return clamp(t, 0, 4);
 }
-/* The sea lies along the north edge and the railway along the south, both read as
-   functions of distance from the midline so the two armies face identical ground. */
-function coastY(x) { var d = Math.abs(x - WORLD.w / 2); return 170 + Math.sin(d / 290) * 16 + Math.sin(d / 83) * 5; }
+/* Where the sea is and where the railway is. Those are facts about the COUNTRY a map
+   stands in rather than about the game, so they are asked of LAND. Ortona's lie along
+   its north and south edges and are read as functions of distance from the midline, so
+   the two armies face identical ground.
+   A landlocked country answers both as well, with a shore far above the map and a line
+   far below it, because a dozen things here ask how near the sea a point is and the
+   honest answer for inland ground is 'further off than anything'. Gating each of them
+   on its own is a dozen places to forget one. */
+function coastY(x) { return LAND.coast ? LAND.coast(x) : -4000; }
+function railY(x) { return LAND.rail ? LAND.rail(x) : WORLD.h + 4000; }
+function coastOrtona(x) { var d = Math.abs(x - WORLD.w / 2); return 170 + Math.sin(d / 290) * 16 + Math.sin(d / 83) * 5; }
+function railOrtona(x) { var d = Math.abs(x - WORLD.w / 2); return 1790 - Math.sin(d / 400) * 10; }
 function mainRoadY(x) { return 1038 - clamp((x - 350) / 2250, 0, 1) * 142 + Math.sin(x / 420) * 13; }
-function railY(x) { var d = Math.abs(x - WORLD.w / 2); return 1790 - Math.sin(d / 400) * 10; }
 /* ================================================================ the map as data
    A map is a list of entities in world units plus a height-brush list. The editor edits
    exactly what the game builds from, so a custom map is this with different entries.
@@ -2152,6 +2160,13 @@ function defaultMapData() {
 /* ---- build the world from a map ---- */
 function buildMap(data) {
   G.earthworksApplied = false;
+  /* The country first, because the landform is built out of it; then where the armies
+     deploy, which is where THIS map stood its headquarters rather than where Ortona
+     stood hers. Both are read before a vertex is built, since makeHeight wants them. */
+  LAND = LANDS[data.land] || LANDS.ortona;
+  var dep = [];
+  data.entities.forEach(function (e) { if (e.t === 'hq') dep.push([e.x, e.y]); });
+  DEPOT = dep.length ? dep : [[250, 950], [WORLD.w - 250, 950]];
   makeHeight();
   /* height brushes over the natural ground */
   (data.height || []).forEach(function (hb) {
@@ -2171,8 +2186,8 @@ function buildMap(data) {
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
   _s = 4242;
-  for (var shoreX = 0; shoreX <= WORLD.w; shoreX += 40) G.coastline.push({ x: shoreX, y: coastY(shoreX) });
-  for (var railX = 0; railX <= WORLD.w; railX += 40) G.rail.push({ x: railX, y: railY(railX) });
+  if (LAND.coast) for (var shoreX = 0; shoreX <= WORLD.w; shoreX += 40) G.coastline.push({ x: shoreX, y: coastY(shoreX) });
+  if (LAND.rail) for (var railX = 0; railX <= WORLD.w; railX += 40) G.rail.push({ x: railX, y: railY(railX) });
   function wallRun(x1, y1, x2, y2) {
     G.walls.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
     var ax = Math.atan2(y2 - y1, x2 - x1), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / 40));
@@ -2244,8 +2259,10 @@ function buildMap(data) {
       case 'hq': G.hqPos[e.side] = { x: e.x, y: e.y }; break;
     }
   });
-  for (var rl = 120; rl <= WORLD.w - 120; rl += 60) addCover(rl, railY(rl), 30, 1, 'ditch');
-  for (var bx = 0; bx <= WORLD.w; bx += 40) { var cyy = coastY(bx); G.props.push({ x: bx, y: cyy / 2 - 10, w: 42, h: cyy + 20, solid: 1, kind: 'sea' }); }
+  /* the ditch along the railway, and the sea itself, which is a wall of props rather
+     than a surface: both belong to the country and an inland map has neither */
+  if (LAND.rail) for (var rl = 120; rl <= WORLD.w - 120; rl += 60) addCover(rl, railY(rl), 30, 1, 'ditch');
+  if (LAND.coast) for (var bx = 0; bx <= WORLD.w; bx += 40) { var cyy = coastY(bx); G.props.push({ x: bx, y: cyy / 2 - 10, w: 42, h: cyy + 20, solid: 1, kind: 'sea' }); }
   applyEarthworks();
   G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea') p.z = levelPad(p.x, p.y, p.w, p.h); });
   makeFields();
@@ -2311,6 +2328,59 @@ var VALLONI = [
   { pts: [[2160, 1760], [2196, 1500], [2140, 1300]], d: 34, w: 54 },
   { pts: [[1800, 1830], [1720, 1660], [1620, 1560]], d: 26, w: 50 }
 ];
+
+/* ---- the country a map stands in ----
+   Ortona's landform was never a property of its map: it was the only landform there
+   was. The coast, the cliff with its bedding, the valloni, the railway in its cutting
+   and the two depots were all written into makeHeight and into the tail of buildMap, so
+   a map of anywhere at all came out with the Adriatic along the top of it. LAND is what
+   sort of country the ground is. A map names one, and everything that wants to know
+   where the sea runs or how deep the watercourses cut asks it rather than a constant.
+   padR is how much level ground each army is given to deploy onto, which belongs to the
+   country because it belongs to how the map is meant to be played: a 2v2 stands two
+   headquarters 580 apart and wants a shelf that holds both of them. */
+var LANDS = {
+  ortona: { name: 'ortona', build: landOrtona, coast: coastOrtona, rail: railOrtona, val: VALLONI, padR: 165, terrace: 1 }
+};
+var LAND = LANDS.ortona;
+/* Where the armies deploy, which is where their headquarters stand. This was two
+   coordinates written into the height code that happened to match Ortona's own hq
+   entities; buildMap reads it off the map now, because a map that puts a headquarters
+   somewhere else wants its level ground somewhere else with it. */
+var DEPOT = [[250, 950], [WORLD.w - 250, 950]];
+/* How near a point is to ground an army deploys onto. An army assembles where it can
+   get lorries in and turn armour round, and a tank reversing out of a depot into a
+   four-metre ditch is not terrain, it is a fault. The landform underneath is left
+   alone, so a depot still stands where the shelf puts it; what is taken away is the
+   relief, the terracing and the gully. */
+function depotAt(x, y) {
+  var best = 0, core = LAND.padR;
+  for (var d2 = 0; d2 < DEPOT.length; d2++) {
+    var dd = Math.hypot(x - DEPOT[d2][0], y - DEPOT[d2][1]);
+    var w2 = clamp(1 - (dd - core) / 215, 0, 1);
+    w2 = w2 * w2 * (3 - 2 * w2);
+    if (w2 > best) best = w2;
+  }
+  return best;
+}
+/* distance to a watercourse's own course, and the fraction along it, for the V cut */
+function gullyAt(x, y) {
+  var best = 0, val = LAND.val;
+  for (var g = 0; g < val.length; g++) {
+    var v = val[g], pts = v.pts, dmin = 1e9;
+    for (var p = 0; p < pts.length - 1; p++) {
+      var d = distToSeg(x, y, pts[p][0], pts[p][1], pts[p + 1][0], pts[p + 1][1]);
+      if (d < dmin) dmin = d;
+    }
+    if (dmin > v.w) continue;
+    /* a floor with a rounded bottom and walls that stand up: a vallone is a ravine
+       cut into the shelf, not a dip in it, so the profile is square in the shoulder
+       and only eases over the last of its width */
+    var t = dmin / v.w, cut = v.d * (1 - t * t * t) * (1 - t * .18);
+    if (cut > best) best = cut;
+  }
+  return best;
+}
 function hnoise(x, y, s) {
   var ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
   fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
@@ -2333,62 +2403,27 @@ function hridge(x, y, s, oct) {
   }
   return v / sum;
 }
-function makeHeight() {
-  /* the noise under everything never changes for a given world, and it is two thirds
-     of a second of arithmetic: the editor rebuilds the ground after every stroke and
-     was paying for it every time */
-  if (makeHeight._base) {
-    G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
-    G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
-    return;
-  }
-  var h = new Float32Array(HW * HH), i, j, k;
+/* ---- Ortona ----
+   Built in four passes, in this order: the landform, stated analytically off the
+   distance to the midline so the two halves of the map match exactly; fractal
+   relief, its domain warped so it does not read as plain noise laid over a ramp;
+   the gullies, cut as V-profiles along their own courses; and the terraces, a
+   staircase quantisation of whatever the first three passes left. Each pass is
+   masked off the town, because the town has to stay a place two sections can
+   fight over. */
+function landOrtona(h) {
+  var i, j;
   var MX = WORLD.w / 2, MY = WORLD.h / 2;
   /* the town and the ground the two sides face each other across stay quiet */
   function calm(x, y) {
     var ax = Math.abs(x - MX) / 760, ay = Math.abs(y - MY) / 470;
     return clamp(1.3 - Math.max(ax, ay) * 1.3, 0, 1);
   }
-  /* And so does the ground each side deploys onto. An army assembles where it can get
-     lorries in and turn armour round, and both of these sit out on the flanks, which is
-     where this map puts its roughest ground, its terraces and the head of a vallone. A
-     tank reversing out of a depot into a four-metre ditch is not terrain, it is a fault.
-     The landform underneath is left alone, so the depots still stand where the shelf
-     puts them; what is taken away is the relief, the terracing and the gully. */
-  var DEPOT = [[250, 950], [WORLD.w - 250, 950]];      /* matches G.hqPos, set below */
-  function depot(x, y) {
-    var best = 0;
-    for (var d2 = 0; d2 < DEPOT.length; d2++) {
-      var dd = Math.hypot(x - DEPOT[d2][0], y - DEPOT[d2][1]);
-      var w2 = clamp(1 - (dd - 165) / 215, 0, 1);
-      w2 = w2 * w2 * (3 - 2 * w2);
-      if (w2 > best) best = w2;
-    }
-    return best;
-  }
-  /* distance to a vallone's course, and the fraction along it, for the V cut */
-  function gully(x, y) {
-    var best = 0;
-    for (var g = 0; g < VALLONI.length; g++) {
-      var v = VALLONI[g], pts = v.pts, dmin = 1e9;
-      for (var p = 0; p < pts.length - 1; p++) {
-        var d = distToSeg(x, y, pts[p][0], pts[p][1], pts[p + 1][0], pts[p + 1][1]);
-        if (d < dmin) dmin = d;
-      }
-      if (dmin > v.w) continue;
-      /* a floor with a rounded bottom and walls that stand up: a vallone is a ravine
-         cut into the shelf, not a dip in it, so the profile is square in the shoulder
-         and only eases over the last of its width */
-      var t = dmin / v.w, cut = v.d * (1 - t * t * t) * (1 - t * .18);
-      if (cut > best) best = cut;
-    }
-    return best;
-  }
   for (j = 0; j < HH; j++) {
     for (i = 0; i < HW; i++) {
       var x = i * HG, y = j * HG;
       var dx = Math.abs(x - MX), dy = y - MY;
-      var shore = coastY(x), z, q = calm(x, y), dp = depot(x, y);
+      var shore = coastY(x), z, q = calm(x, y), dp = depotAt(x, y);
 
       /* ---- 1. the landform ---- */
       /* the cliff line is not a ruled edge: the sea has cut re-entrants into the soft
@@ -2447,7 +2482,7 @@ function makeHeight() {
         z -= rill * rill * 3.4 * rough;
 
         /* ---- 3. the valloni ---- */
-        z -= gully(x, y) * (1 - q * .55) * (1 - dp);
+        z -= gullyAt(x, y) * (1 - q * .55) * (1 - dp);
 
         /* ---- 4. terraces. Olive terraces on this coast are cut into the slope and
            held up by a dry stone riser, so the tread is level and the riser is not:
@@ -2463,6 +2498,20 @@ function makeHeight() {
       h[hidx(i, j)] = z;
     }
   }
+}
+function makeHeight() {
+  /* the noise under everything never changes for a given world, and it is two thirds
+     of a second of arithmetic: the editor rebuilds the ground after every stroke and
+     was paying for it every time. The cache is keyed by the country and by where the
+     depots were put, which are the two things a map can change under it. */
+  var key = LAND.name + '|' + DEPOT.join(';');
+  if (makeHeight._key === key) {
+    G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
+    G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+    return;
+  }
+  var h = new Float32Array(HW * HH), i, j, k;
+  LAND.build(h);
   /* Level the two depots. Damping the noise that builds the relief is not enough on
      its own, because a good deal of what makes this ground rough is the landform itself:
      out here the shelf is climbing toward the map edge and the rills are cutting down
@@ -2471,7 +2520,7 @@ function makeHeight() {
      ground actually has -- the depot still sits on the side of the shelf -- and takes
      away only the holes in it, so there is no step where the pad meets the country. */
   for (var dpi = 0; dpi < DEPOT.length; dpi++) {
-    var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1], R = 380;
+    var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1], R = LAND.padR + 215;
     var i0 = Math.max(0, Math.floor((cx0 - R) / HG)), i1 = Math.min(HW - 1, Math.ceil((cx0 + R) / HG));
     var j0 = Math.max(0, Math.floor((cy0 - R) / HG)), j1 = Math.min(HH - 1, Math.ceil((cy0 + R) / HG));
     var n = 0, sx = 0, sy = 0, sz = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0;
@@ -2492,7 +2541,7 @@ function makeHeight() {
     var a = sz / n - b * sx / n - c * sy / n;
     for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
       var qx = i * HG - cx0, qy = j * HG - cy0, dd2 = Math.hypot(qx, qy);
-      var w3 = clamp(1 - (dd2 - 180) / 200, 0, 1);
+      var w3 = clamp(1 - (dd2 - LAND.padR - 15) / 200, 0, 1);
       if (w3 <= 0) continue;
       w3 = w3 * w3 * (3 - 2 * w3) * .95;
       k = hidx(i, j);
@@ -2506,7 +2555,7 @@ function makeHeight() {
     var j0 = Math.max(0, j - 1), j1 = Math.min(HH - 1, j + 1);
     sm[hidx(i, j)] = (h[hidx(i0, j)] + h[hidx(i1, j)] + h[hidx(i, j0)] + h[hidx(i, j1)] + h[hidx(i, j)] * 2) / 6;
   }
-  makeHeight._base = new Float32Array(sm);
+  makeHeight._key = key; makeHeight._base = new Float32Array(sm);
   G.hmap0 = sm; G.hmap = new Float32Array(sm);
   G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
 }
@@ -2597,8 +2646,9 @@ function makeFields() {
   G.terraces = []; G.vines = [];
   if (!G.grass.length) G.grass.push({ x: WORLD.w / 2, y: WORLD.h / 2, r: 10, t: .4, a: 0 });
   /* terrace walls follow the height steps on the flanks; the steps are functions of
-     distance from the midline, so each wall is a line of constant x */
-  for (var st = 1; st <= 4; st++) {
+     distance from the midline, so each wall is a line of constant x. They are a piece of
+     this coast's farming and belong to the country rather than to the map. */
+  for (var st = 1; LAND.terrace && st <= 4; st++) {
     var fl = (st - .5) / 5, dxw = 900 + fl * 520;
     var yTop = 300, yBot = WORLD.h - 150;
     G.terraces.push({ x1: WORLD.w / 2 - dxw, y1: yTop, x2: WORLD.w / 2 - dxw, y2: yBot });
@@ -11168,7 +11218,7 @@ function sceneProps(tile) {
   /* Boulders in the stream beds. What comes down a vallone in a winter storm is rounded
      by the time it stops, so these are squat and tumbled rather than bedded like the
      outcrop above them. */
-  VALLONI.forEach(function (vl, vi) {
+  LAND.val.forEach(function (vl, vi) {
     for (var sg = 0; sg < vl.pts.length - 1; sg++) {
       var ax = vl.pts[sg][0], ay = vl.pts[sg][1], bx = vl.pts[sg + 1][0], by = vl.pts[sg + 1][1];
       var sl2 = Math.hypot(bx - ax, by - ay), nx2 = -(by - ay) / sl2, ny2 = (bx - ax) / sl2;
@@ -12175,6 +12225,7 @@ function paintGround(t, DET) {
   }
 
   /* ---- the Adriatic: deep water, swell lines, a foam edge and the cliff face ---- */
+  if (G.coastline.length) {
   t.save();
   t.beginPath(); t.moveTo(0, 0); t.lineTo(WORLD.w, 0);
   for (var ci = G.coastline.length - 1; ci >= 0; ci--) t.lineTo(G.coastline[ci].x, G.coastline[ci].y);
@@ -12224,10 +12275,11 @@ function paintGround(t, DET) {
     }
   }
 
-  /* ---- The floor of a vallone. Nothing runs in one in December but the rain, and what
-     it leaves behind is a braided bed of limestone gravel with a damp thread wandering
-     down the middle of it, widening where the fall eases. ---- */
-  VALLONI.forEach(function (vl, vi) {
+  }
+  /* ---- The floor of a watercourse. Nothing runs in one in December but the rain, and
+     what it leaves behind is a braided bed of limestone gravel with a damp thread
+     wandering down the middle of it, widening where the fall eases. ---- */
+  LAND.val.forEach(function (vl, vi) {
     var pts = vl.pts, sp;
     for (var sg = 0; sg < pts.length - 1; sg++) {
       var ax = pts[sg][0], ay = pts[sg][1], bx = pts[sg + 1][0], by = pts[sg + 1][1];
@@ -12276,6 +12328,7 @@ function paintGround(t, DET) {
   });
 
   /* ---- the railway along the south edge: ballast, sleepers, paired rails ---- */
+  if (G.rail.length) {
   t.save();
   t.lineCap = 'butt';
   t.strokeStyle = '#6f6a58'; t.lineWidth = 38;
@@ -12290,6 +12343,7 @@ function paintGround(t, DET) {
     t.beginPath(); G.rail.forEach(function (p, n) { if (!n) t.moveTo(p.x, p.y + off); else t.lineTo(p.x, p.y + off); }); t.stroke();
   });
   t.restore();
+  }
 
   /* ---- paving: the town streets and the piazza ---- */
   /* ---- The town floor. Ortona's streets are setts and its squares are flagged, and
