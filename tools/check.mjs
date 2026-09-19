@@ -605,12 +605,19 @@ for (const device of TARGETS) {
      devices of one run with the same rounds in the street beside it. What the row is for
      is that pointing and pulling puts a round somewhere, and a mark at any point in the
      nine seconds is that. */
-  let markEver = false;
+  let markEver = false, lockEver = false;
   for (let i = 0; i < 10; i++) {
     await fastForward(page, 1);
-    if (await page.evaluate(() => !!window.DRV.mark)) markEver = true;
+    const a = await page.evaluate(() => ({ m: !!window.DRV.mark, l: !!window.DRV.lock }));
+    if (a.m) markEver = true;
+    if (a.l) lockEver = true;
   }
-  const aim = { mark: markEver };
+  /* A LOCK counts as well as a mark, and the row is named for exactly that: "target or
+     none". povDrive sets DRV.mark only when there is nothing designated -- with an enemy
+     under the crosshair the mark is null by construction and the lock holds instead -- so
+     asking for the mark alone failed the row on the one run where somebody walked into
+     the commander's sight, with three rounds in the street beside it. */
+  const aim = { mark: markEver || lockEver, how: markEver ? (lockEver ? 'ground and a target' : 'the ground') : 'a target' };
   const fired = await page.evaluate(() => { window.DRV.padFire = false; return window.__booms; });
   /* The message says which half it was. Both halves have to hold -- he has to have a
      mark under the crosshair and rounds have to leave -- and printed as the round count
@@ -618,7 +625,8 @@ for (const device of TARGETS) {
      how the same line came back FAIL on one device and PASS on the other with the same
      three rounds beside it. */
   ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
-     `${fired} rounds into the street in nine seconds` + (aim.mark ? '' : ', but no mark under the crosshair'));
+     `${fired} rounds into the street in nine seconds` +
+     (aim.mark ? ', laid on ' + aim.how : ', but nothing under the crosshair at any point'));
 
   /* --- the coaxial: its own trigger, no reload, and a barrel that will only take so much --- */
   const mg0 = await page.evaluate(() => {
@@ -1206,17 +1214,34 @@ for (const device of TARGETS) {
                          Math.max.apply(null, bk.filter(b => b.x < 1400).map(b => b.x)));
     return out;
   });
+  /* and a battle is actually fought on it, because every other row in this file deploys
+     on Ortona: a second map that boots and is never played is a second map nobody has
+     run the game on */
+  await fastForward(page, 120);
+  const gfight = await page.evaluate(() => ({
+    live: window.G.slots.map(s => window.G.units.filter(u => !u.dead && u.own === s.k).length),
+    made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
+    held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
+  }));
   ok('both maps ship, and the second one is fair to the unit',
      maps.keys === 'gothic,ortona' && maps.picked === 'The Gothic Line' &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
-     maps.gap > 1200,
+     /* Three of the four players are brains and have to be alive and buying; the fourth
+        is the human's slot, which nobody is playing, so it is allowed to be wiped. And
+        the ground is asked to be owned by a SIDE and never by a slot -- which an empty
+        list satisfies, because a moment when every flag on the map is being contested is
+        a fact about the battle rather than a fault in the 2v2. */
+     maps.gap > 1200 && gfight.live.filter(n => n > 0).length >= 3 && gfight.made &&
+     gfight.held.filter(o => o !== 'us' && o !== 'ger').length === 0,
      `maps ${maps.keys}; the picker on GOTHIC LINE builds "${maps.picked}" and the briefing ` +
      `reads "${maps.brief.slice(0, 26)}..."; ${maps.west} entities on the west half and ${maps.east} on the ` +
      `east with ${maps.unpaired} unpaired; the ground disagrees with its own reflection by at ` +
      `most ${maps.ground} of a unit over 1750 samples; ${maps.vp} victory flags, ${maps.owned} ` +
      `owned at the whistle, and no flag more than ${maps.flagSkew} units further from one ` +
-     `headquarters than its twin is from the other; ${maps.gap} units between the bunker lines`);
+     `headquarters than its twin is from the other; ${maps.gap} units between the bunker ` +
+     `lines; after 120s of battle on it the four players have ${gfight.live.join('/')} units ` +
+     `and the ground is held by ${gfight.held.join(',') || 'nobody, every flag contested'}`);
 
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody

@@ -422,7 +422,12 @@ async function install(page) {
           const m = u.models[k];
           if (!m.alive) continue;
           c.manF++;
-          if (M.inSolid(m.x, m.y)) c.inSolid++;
+          /* A man in a building on PURPOSE is not the thing this counts. A garrison
+             stands inside the footprint of what it is holding, by construction and in
+             both maps -- and on a map with bunkers on it that is most of a section every
+             time one is taken, which read as three per cent of the army standing in
+             masonry. What is being looked for is the man who is in a wall by accident. */
+          if (!u.gar && M.inSolid(m.x, m.y)) c.inSolid++;
           /* A straggler is a man who is not where his section put him. One standing at a
              cover slot a hundred units off IS where it put him -- it chose that wall for
              him -- so counting him as lost measures the cover reach rather than the

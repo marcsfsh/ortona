@@ -2729,7 +2729,12 @@ function buildMap(data) {
            in front of it. The ground in front of a bunker is the beaten zone, and a cover
            patch laid there would be the map telling a section that walking up to the slot
            is the safe thing to do. The flanks and the rear get it and the front does not,
-           which is the whole of why a bunker is taken from the side. */
+           which is the whole of why a bunker is taken from the side.
+           Nothing is laid in the MIDDLE of it either, though that is where the garrison
+           stands. coverOf already hands a garrison tier 4 outright, so the patch would buy
+           the men nothing -- and a cover patch inside a solid footprint is a lie the whole
+           index believes: aiFirePost reads it and would site a machine gun in the
+           concrete, on ground no man can stand on. */
         addCover(e.x - Math.cos(e.a || 0) * 34, e.y - Math.sin(e.a || 0) * 34, 34, 4, 'pit', (e.a || 0) + Math.PI / 2, 400);
         addCover(e.x - Math.sin(e.a || 0) * 46, e.y + Math.cos(e.a || 0) * 46, 24, 3, 'wall', e.a || 0, 400);
         addCover(e.x + Math.sin(e.a || 0) * 46, e.y - Math.cos(e.a || 0) * 46, 24, 3, 'wall', e.a || 0, 400);
@@ -4303,11 +4308,15 @@ function garrisonSlots(bk, count) {
      and that is the reason a bunker is taken from the flank rather than from in front. */
   if (bk.face !== undefined) {
     var ca = Math.cos(bk.face), sa = Math.sin(bk.face), along = Math.abs(ca) > Math.abs(sa);
-    var deep = (along ? hw : hh) - 7, span = along ? hh : hw;
-    for (i = 0; i < count; i++) {
-      var t = count < 2 ? 0 : (((i + .5) / count) - .5) * 1.75 * span;
-      out.push({ x: bk.x + ca * deep - sa * t, y: bk.y + sa * deep + ca * t, f: bk.face });
-    }
+    var deep = (along ? hw : hh) - 7, span = along ? hh : hw, offs = [];
+    for (i = 0; i < count; i++) offs.push(count < 2 ? 0 : (((i + .5) / count) - .5) * 1.75 * span);
+    /* The leader takes the middle of the slot and the rest are dealt outward from him.
+       His is the eye the periscope uses -- povEye reads the first living man -- and dealt
+       in order he stood at the far left end of the embrasure with a roof pier a few units
+       in front of his face, so a commander looking out of his own bunker saw concrete. */
+    offs.sort(function (p, q) { return Math.abs(p) - Math.abs(q); });
+    for (i = 0; i < count; i++)
+      out.push({ x: bk.x + ca * deep - sa * offs[i], y: bk.y + sa * deep + ca * offs[i], f: bk.face });
     return out;
   }
   var edges = [[0, hh, 1, 0, Math.PI / 2], [0, -hh, 1, 0, -Math.PI / 2],
