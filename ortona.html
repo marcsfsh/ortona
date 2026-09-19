@@ -11985,16 +11985,46 @@ function sceneProps(tile) {
       put(box(0, 0, 0, sw[2], sw[3], 1.6, flag, lit(flag, 1.06), kerb, .3), sw[0], sw[1], 0);
     });
   });
-  /* garden walls */
+  /* ---- walls ----
+     A town garden wall is a built thing: rendered, coursed, standing plumb, and a run of
+     34-unit boxes is what it is. A dry-stone field boundary is not. It is what came out
+     of the field stacked on the edge of it, it stands as high as the man who stacked it
+     could reach comfortably, and in a valley that has been shelled for a fortnight it is
+     down in places. Drawn the same way, every enclosure on the Gothic Line came out as a
+     ruled white line two hundred units long with a level top -- the one thing left in the
+     frame that read as placed by a program rather than fought over.
+     So a low wall is laid stone by stone, in 13s rather than 34s: the height wanders, the
+     depth wanders, the line wanders off its own axis by a foot or so, and one course in
+     eight is down to a tumble. Nothing about the cover, the grid or the sight line
+     changes -- those come off G.walls, which is still the straight line it always was. */
+  var WSTONE = ['#8b8067', '#7d7460', '#8f836a', '#948c78', '#a2977c'];
   G.walls.forEach(function (wl) {
     if (!mine((wl.x1 + wl.x2) / 2, (wl.y1 + wl.y2) / 2)) return;
     seedAt(wl.x1, wl.y1, 4);
     var len = Math.hypot(wl.x2 - wl.x1, wl.y2 - wl.y1), a = Math.atan2(wl.y2 - wl.y1, wl.x2 - wl.x1);
-    var n = Math.max(2, Math.round(len / 34));
-    for (var i = 0; i < n; i++) {
-      var cx = lerp(wl.x1, wl.x2, (i + .5) / n), cy = lerp(wl.y1, wl.y2, (i + .5) / n);
-      var wh = wl.h || 24;
-      put(box(0, 0, 0, len / n + 1, wh > 16 ? 11 : 8, wh, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
+    var wh = wl.h || 24, town = wh > 16;
+    var nx = Math.cos(a + Math.PI / 2), ny = Math.sin(a + Math.PI / 2), i, cx, cy;
+    if (town) {
+      var n = Math.max(2, Math.round(len / 34)), seg = len / n;
+      for (i = 0; i < n; i++) {
+        cx = lerp(wl.x1, wl.x2, (i + .5) / n); cy = lerp(wl.y1, wl.y2, (i + .5) / n);
+        put(box(0, 0, 0, seg + 1, 11, wh, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
+      }
+      return;
+    }
+    /* stepped rather than divided, so no two lengths along a run are the same: a fixed
+       division reads as a row of identical blocks however much the heights wander. */
+    var ux = Math.cos(a), uy = Math.sin(a), d = 0, ln;
+    while (d < len - 2) {
+      ln = Math.min(srange(8.5, 17), len - d);
+      cx = wl.x1 + ux * (d + ln / 2); cy = wl.y1 + uy * (d + ln / 2);
+      d += ln;
+      var col = WSTONE[(srand() * WSTONE.length) | 0], down = srand() < .12;
+      var hh = down ? wh * srange(.22, .38) : wh * srange(.74, 1.06);
+      var dp = down ? srange(11, 14) : srange(6.6, 9.8);
+      var sw = srange(-1.7, 1.7);
+      put(box(0, 0, 0, ln + 1.2, dp, hh, col, lit(col, 1.1), lit(col, .88), .9),
+          cx + nx * sw, cy + ny * sw, a + srange(-.055, .055));
     }
   });
   /* ---- the trenches, dressed: every leg gets its revetment, fire step, duckboards,
