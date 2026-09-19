@@ -12337,6 +12337,12 @@ function buildGrass() {
     if (inPatch) { var a = srange(0, TAU), rr = Math.sqrt(srand()) * gp.r; x = gp.x + Math.cos(a) * rr; y = gp.y + Math.sin(a) * rr * .62; }
     else { x = srange(40, WORLD.w - 40); y = srange(220, WORLD.h - 40); }
     if (blocked(x, y)) continue;
+    /* and nothing much grows where the ground has been turned over. A map that says its
+       country has been shelled for a fortnight (LAND.churn) had bright tufts standing all
+       over it, because the grass scatter knew about paving, roads, trenches and the sea
+       and about nothing else. Thinned rather than forbidden: a few come through in the
+       lee of a bank or a wall, which is what the ground actually looks like. */
+    if (LAND.churn && srand() < LAND.churn(x, y) * .88) continue;
     var z = groundZ(x, y), h = srange(3.2, 5.8), w = h * 1.6, yaw = srange(0, Math.PI), col = hexRGB(srand() < .5 ? '#9d9f6c' : '#8f965f');
     /* two quads at right angles, each drawn from both sides */
     for (var q = 0; q < 2; q++) {
