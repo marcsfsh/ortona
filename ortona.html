@@ -10889,6 +10889,35 @@ function registerMaterials() {
   tag(['#4d5340', '#5d6450', '#41473a', '#4f5643', '#8a7a4e'], 'paint');
   tag(['#cfccbe', '#dcd9cb', '#8e2f26', '#a03a30', '#6b5a3c', '#7d6a48', '#3c3a2e'], 'paint');
   tag(['#4e4230', '#5c4e38', '#42382a', '#6d6144', '#5d5236', '#3a3020', '#251e13', '#0f110c'], 'earth');
+  /* ---- the roots the sweep found ----
+     With a tint able to find its own source, what is left on the untextured tile is a
+     colour nobody ever tagged. Measured on the Gothic Line, 13.6 per cent of the world's
+     faces, and four fifths of that was one string: the third sandbag shade, which was
+     left out of the hessian list when the other two went in, so every parapet, every
+     weapon pit and the whole of both bunker lines' bagwork was drawn on the flat tile.
+     The rest is the tail -- the room read off a shell when nobody has drawn one, the
+     gun's own palette, the joists in a roof, the drums on a fuel dump. */
+  tag(['#7a6e4b'], 'hessian');                              /* the sandbag shade that was missed */
+  tag(['#26261f', '#33332b'], 'track');                     /* the M3's track */
+  tag(['#4a3824', '#5a4530', '#3a2c1c', '#3a352a', '#4a4436', '#332f26'], 'wood');   /* joists, purlins, floors */
+  tag(['#c8c1a0', '#d3d1c3', '#b0a888', '#bbb9ab', '#2f3330', '#4d524d'], 'paint');  /* the derived interior */
+  tag(['#4a4d48', '#63665f', '#3b3e39', '#b8a052'], 'steel');
+  tag(['#6b5237'], 'leather');
+  if (typeof GUN !== 'undefined') {
+    tag([GUN.steel, GUN.steelL, GUN.brass], 'steel'); tag([GUN.canvas], 'canvas');
+    tag([GUN.wood], 'wood'); tag([GUN.rubber], 'rubber');
+    tag([GUN.od, GUN.odL, GUN.dg, GUN.dgL, GUN.dgD], 'paint');
+  }
+  tag(['#586247', '#798366', '#424a35', '#88784e', '#a18f61', '#675d40'], 'paint');  /* the light vehicles */
+  tag(['#5b6243', '#8c7a4e', '#4f5643', '#6d6249', '#3f3a30'], 'paint');             /* jerricans and drums */
+  tag(['#6a6a4a', '#8a8a62'], 'steel');                     /* ready rounds round an open turret */
+  tag(['#2f2b22', '#3a362c'], 'stone');                     /* the floor of a gutted house */
+  tag(['#5a4a32', '#6b5a3e', '#2a2418'], 'wood');           /* a door, and a flag pole */
+  tag(['#1d1f19', '#141610', '#20231b', '#23261f', '#1a1d18', '#17190f', '#191c16',
+       '#2d3128', '#24261e', '#cfcdb6'], 'steel');          /* lamp glass, sight blocks, studs */
+  /* a window recess, a door and a sight aperture are holes, and a hole is meant to be
+     flat and dark. Named so that the probe counts them as intended rather than as a miss. */
+  tag(['#1a1c16', '#15170f', '#14150f'], 'generic');
   if (typeof KIT !== 'undefined') tagKit();
   tag(['#4c4131', '#5e5240', '#4a3f2e', '#5a4e3a', '#39301f'], 'bark');
   tag(['#59653c', '#616d43', '#4e5a34', '#56623a', '#3d4a2c', '#22300f', '#293914'], 'grass');
@@ -10953,7 +10982,19 @@ function tagKit() {
   tagAll(['#3b3226', '#4a4030'], 'rubber');
   tagAll([D.smock], 'splinter');
 }
-function matOf(col) { var m = MATS.byColour[col]; return m === undefined ? 0 : m; }
+function matOf(col) {
+  var m = MATS.byColour[col];
+  if (m !== undefined) return m;
+  /* not a colour anybody tagged: follow it back up the chain of tints it was derived
+     from, and keep the answer, because a scene asks about the same colour thousands of
+     times. The bound is there because a tint of a tint of a tint is still only three. */
+  var c = col, n = 0;
+  while (n++ < 8 && (c = _lsrc[c]) !== undefined) {
+    m = MATS.byColour[c];
+    if (m !== undefined) { MATS.byColour[col] = m; return m; }
+  }
+  return 0;
+}
 
 /* ---- the atlas: sixteen 256-pixel tiles painted procedurally ---- */
 function noise2(x, y, s) { var v = Math.sin(x * 12.9898 + y * 78.233 + s * 37.719) * 43758.5453; return v - Math.floor(v); }
@@ -13681,10 +13722,19 @@ function tint(col, f) {
   return a < .999 ? 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(3) + ')'
                   : 'rgb(' + r + ',' + g + ',' + b + ')';
 }
-var _lc = {};
+var _lc = {}, _lsrc = {};
 function lit(hex, f) {
-  var k = hex + (f * 100 | 0);
-  return _lc[k] || (_lc[k] = tint(hex, f));
+  var k = hex + (f * 100 | 0), v = _lc[k];
+  /* A derived colour is a colour in its own right and the material table is keyed by the
+     exact string, so every tint has to be registered or it falls back to the untextured
+     tile. Registering them by hand meant enumerating every factor every caller uses --
+     box() shades its bevels at 1.06, .92 and 1.03, a sandbag asks for 1.12 and .9 on top
+     of that, and a miss anywhere is silent. Measured on the Gothic Line, 42 per cent of
+     the world's faces were coming out generic: the whole of the sandbags, every bevel on
+     every wall and most of the masonry. So remember where a tint came from instead and
+     let matOf follow it back to the material its source was tagged with. */
+  if (v === undefined) { v = _lc[k] = tint(hex, f); if (v !== hex) _lsrc[v] = hex; }
+  return v;
 }
 
 /* ---------------------------------------------------------------- building models

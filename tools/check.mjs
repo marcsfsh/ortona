@@ -36,6 +36,20 @@ for (const device of TARGETS) {
   const { page, context, log, gl } = await openGame(browser, device, { quiet: true });
 
   ok('WebGL context', gl.ok, `${gl.gl2 ? 'webgl2' : 'webgl1'}, shadows ${gl.shadows ? 'on' : 'off'}`);
+  /* Count what the world builder asks the material table for, before anything is built.
+     A face whose colour nobody tagged is drawn on the untextured generic tile, and that
+     is invisible in a screenshot: a flat slab and a textured slab both look like a slab.
+     It was 42 per cent of the world. */
+  await page.evaluate(() => {
+    window.__mt = { tot: 0, gen: 0, cols: {} };
+    const real = window.matOf;
+    window.matOf = function (col) {
+      const m = real(col);
+      window.__mt.tot++;
+      if (m === 0) { window.__mt.gen++; window.__mt.cols[col] = (window.__mt.cols[col] || 0) + 1; }
+      return m;
+    };
+  });
   ok('touch layout matches device', gl.mob === !!DEVICES[device].hasTouch, `MOB=${gl.mob}`);
 
   /* --- the title screen --- */
@@ -77,6 +91,32 @@ for (const device of TARGETS) {
   const before = await state(page);
   ok('scene built', before.sceneReady && before.units > 0 && before.blds === 2,
      `${before.units} units, ${before.blds} buildings`);
+
+  /* --- and what that build put on the untextured tile. A lit() derivative is a colour in
+     its own right and the table is keyed by the exact string, so every tint had to be
+     registered by hand and a miss was silent. matOf follows a tint back to its source
+     now; what is left over is a root nobody tagged, and this is the row that says so.
+     Faces tagged 'generic' on purpose -- skin, hair, a painted helmet, a window recess --
+     are counted apart from the misses, because a hole is meant to be flat. --- */
+  const mats = await page.evaluate(() => {
+    const t = window.__mt, roll = {};
+    let meant = 0;
+    for (const c in t.cols) {
+      let r = c, n = 0;
+      while (n++ < 8 && window._lsrc[r] !== undefined) r = window._lsrc[r];
+      if (window.MATS.byColour[r] !== undefined) { meant += t.cols[c]; continue; }
+      roll[r] = (roll[r] || 0) + t.cols[c];
+    }
+    const out = Object.keys(roll).map(k => [k, roll[k]]).sort((a, b) => b[1] - a[1]);
+    return { tot: t.tot, gen: t.gen, meant, miss: t.gen - meant, top: out.slice(0, 4) };
+  });
+  const missPc = 100 * mats.miss / mats.tot;
+  /* 0.5 per cent, against 0.07 where this leaves it and 41.7 where it started: a whole
+     palette nobody tagged trips it and one small prop does not. */
+  ok('every colour the world draws with has a material', missPc < 0.5,
+     `${mats.tot} faces asked, ${mats.gen} on the flat tile (${(100 * mats.gen / mats.tot).toFixed(1)}%) of which ` +
+     `${mats.meant} meant to be; untagged ${mats.miss} = ${missPc.toFixed(2)}%` +
+     (mats.top.length ? ', worst ' + mats.top.map(x => `${x[0]}x${x[1]}`).join(' ') : ''));
 
   const tSim = Date.now();
   const after = await fastForward(page, SIM);
