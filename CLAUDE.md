@@ -919,6 +919,37 @@ Drawn at 24 out in open country a field wall reads as a prefabricated barrier an
 of them read as a maze, which is exactly what the first pass at its enclosures came out
 as.
 
+**And it is stacked rather than extruded.** A town garden wall is a built thing --
+rendered, coursed, standing plumb -- and a run of identical 34-unit boxes is a fair
+drawing of one. A dry-stone field boundary is not, and in a valley shelled for a
+fortnight it is down in places. Drawn the same way, every enclosure on the Gothic Line
+came out as a ruled pale line two hundred units long with a level top, which was the one
+thing left in the frame that read as placed by a program rather than fought over. A wall
+under 16 is laid stone by stone instead: the heights wander, the depths wander, the line
+wanders off its own axis by a foot, the colour is picked per stone out of the registered
+stone shades, and one course in eight is down to a tumble. Stepped rather than divided,
+because a fixed division reads as a row of identical blocks however much the heights
+wander. It costs four per cent of the prop scene (573,936 triangles to 596,640) with the
+all-tile rebuild unchanged, and Ortona reads 677,630 either way to the triangle, because
+every wall in the town is 24 and takes the path it always took. Nothing about the cover,
+the movement grid or the sight line moves: those come off `G.walls`, which is the
+straight line it always was.
+
+**A man gets over a field wall; he does not stand in one.** It is on neither blocking
+grid by design and it is not in `G.props` either, so nothing that asks whether a man may
+STAND somewhere knew it was there at all. The movement card put it at 2.72 per cent of
+every man-frame of a battle on the Gothic Line against Ortona's 0.23, and a probe that
+split the hits by whether the unit was moving said what it was: 992 of 1161 were HALTED
+men standing inside a field wall -- men at a stop, drawn in the stones and getting
+nothing from them. The cover slots were already right, standing a man ten units off a
+`lowwall`'s own line; it was the FORMATION that walked through, because its test for a
+place is `walkable`. `inMasonry` is the geometric question, bucketed at 120 units so it
+is a handful of boxes, rebuilt with the wall list, and skipping a town wall outright
+because that one is already solid. Four callers: `slotClear`, the formation's own place,
+its search for a clear one, and the clamp onto the unit's ring. Men in walls went 2.72
+per cent to 0.14 and halted men behind something 43.9 to 54.8, because a man who was in
+the masonry now stands beside it.
+
 **And the other way about from wire: a hedgehog holds a tank up and lets a man walk
 between.** A Czech hedgehog is three lengths of angle iron welded through each other at
 their centres, which makes a star that stands on three points whichever way up it lands;
@@ -1291,6 +1322,23 @@ worst of it, and it folds into the same `wet` channel a shell hole already uses.
 a COLOUR: ground turned over, shelled, walked on and rained into until whatever the soil
 had is gone.
 
+**And nothing grows where the ground has been turned over.** The grass scatter knew about
+paving, roads, trenches, bare rock and the sea, and about nothing else, so a map that
+says its country has been shelled for a fortnight had bright tufts standing all over it
+-- in the middle of no man's land, on ground the paint had already made bleak, the one
+thing left in the frame with any colour in it. `buildGrass` reads `LAND.churn` and thins
+with it rather than forbidding it, because a few come through in the lee of a bank or a
+wall. Only a map that declares churn is touched.
+
+**It is measured off the albedo canvas rather than looked at.** A churn that quietly
+stopped being painted would read as a perfectly good map in every photograph ever taken
+of it, which is the same shape as the fog of war having no live tier for the life of the
+game. The gate reads the canvas, which is the paint on its own with no sun, no fog and
+nothing standing on it, and asks for a DIFFERENCE and never an absolute: no man's land
+darker than the shelf the army forms up on, and less warm, which is what separates wet
+turned earth from dry stubble. It reads shelf 110/34.1, forward slope 96/15.5, no man's
+land 90/16.7, the midline 88/14.5.
+
 **A wetness is not a colour, and the Gothic Line's no man's land proves it.** The shader's
 wet term darkens ground and WARMS it, because water in the grain is warm; put in on its
 own, what came out was damp stubble and read as dead grass. What the paint has to take
@@ -1339,6 +1387,38 @@ static world is merged into tiled buffers by `buildScene` (a grid of prop tiles 
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
 ground shader multiplies in. A second 2D canvas (`#ov`) carries what is text or a bar:
 health bars, unit labels, cover readouts, the minimap.
+
+**A tint has to find its own material, and for a long time it could not.** `MATS.byColour`
+is keyed by the exact colour string, and `box()` shades its bevel strips with `lit()`
+derivatives of the face colours, so a derived value is a colour in its own right and a
+colour the table does not know falls back to the untextured `generic` tile. `tagEdges()`
+exists to register those, and it was called for the vehicles and for almost nothing else.
+Measured on the Gothic Line, **41.7 per cent of every face the world builder makes** was
+coming out untextured: every bevel on every wall, most of the masonry, and the whole of
+the sandbags.
+
+It is invisible in a photograph, which is why it lasted. A shaded slab and an unshaded
+slab both look like a slab, and a wall hemmed with a flat pinstripe along every edge reads
+as a wall somebody built out of concrete rather than as a fault.
+
+Registering the derivatives by hand is the wrong shape of fix, because it means
+enumerating every factor every caller uses -- `box()` at 1.06, .92 and 1.03, a sandbag
+asking for 1.12 and .9 on top of that -- and a miss anywhere is silent. `lit()` remembers
+where each tint came from (`_lsrc`) and `matOf` follows the chain back to the material its
+source was tagged with, keeping the answer because a scene asks about the same colour
+thousands of times. One place, exact rather than fuzzy, and it covers a tint of a tint.
+
+That took it to 14.4 per cent, and what was left was roots nobody had ever tagged. Four
+fifths of it was one string: the third sandbag shade, left out of the hessian list when
+the other two went in, so every parapet, every weapon pit and the whole of both bunker
+lines' bagwork was flat. The rest is the tail -- the room read off a shell when nobody has
+drawn one, the gun's own palette, the joists in a roof, the drums on a fuel dump, the floor
+of a gutted house.
+
+It is on the gate, because the next palette added will be missed the same way and nothing
+on screen will say so. The row separates a face tagged `generic` ON PURPOSE -- skin, hair,
+a painted helmet, a window recess, all of which are meant to be flat -- from a root nobody
+tagged, and trips at half a per cent. Both maps read 0.1.
 
 **What is flat goes on the ground, not over it.** The rings and the order paths are built
 as ribbons lying on the terrain (`buildMarks`, `MARK`, `drawMarks3D`) and go through the
@@ -3020,12 +3100,15 @@ shots/                         screenshot output, gitignored
 - `var` hoists. A hull constant referenced above its own `var` line is
   `undefined`, every vertex built from it is `NaN`, and the part vanishes without
   an error. `tools/dims.mjs` reports NaN when this happens.
-- `box()` shades its bevel strips with `lit()` derivatives of the face colours, and
-  a derived value is a colour in its own right. `registerMaterials()` maps colours
-  to atlas materials, and a colour it does not know falls back to the untextured
-  `generic` tile, so a vehicle whose paint comes from a camouflage tile comes out
-  hemmed with a bright flat pinstripe along every edge it has. `tagEdges()` exists
-  to register those derivatives; call it alongside `tag()` for any new palette.
+- **A colour nobody tagged is drawn on the untextured tile, and it looks fine.**
+  `registerMaterials()` maps colours to atlas materials and a miss falls back to
+  `generic`, so a vehicle whose paint comes from a camouflage tile comes out hemmed
+  with a bright flat pinstripe along every edge it has. `lit()` derivatives find
+  their own way home now -- `matOf` follows a tint back to its source -- so what is
+  left to get wrong is a ROOT colour nobody put in a `tag()` list at all. One
+  sandbag shade left out of the hessian list drew every parapet on both bunker lines
+  flat, and no photograph ever said so. Tag a new palette, and read the gate row that
+  counts what is left: it separates a face that is `generic` on purpose from a miss.
 - Terrain, scene buffers and the atlas are rebuilt only by `startGame()` and
   the editor's rebuild. Editing `G.mapData` alone changes nothing on screen.
 - `updateFog()` and the decal upload happen inside `render()`, not every frame.
@@ -3068,6 +3151,19 @@ shots/                         screenshot output, gitignored
   ring is walked in 24-unit steps of six vertices each, and a gun's reach ring is 760
   units across. It was found by adding that ring and watching the frame count stick at
   exactly the buffer's capacity.
+- **A probe that measures with the function under test cannot see it fail.** The gate
+  row for men standing inside a field wall asked `inMasonry`, which is the function
+  that keeps them out of one. Switched off to calibrate the row, the row read a clean
+  nought: the men were in the stones and the thing counting them had been told there
+  were no stones. It does its own geometry over `G.walls` now. The same trap is why
+  `tools/sight.mjs` walks its reference line at four units a step rather than calling
+  `traceClear`, and why `duel.mjs`'s optimum comes off a plain Dijkstra.
+- **A rate can hide behind a denominator full of people it does not apply to.** With
+  the field-wall fix switched off, a sample taken out of a running battle read 0.91
+  per cent of halted men in the masonry, because most of a battle's men are nowhere
+  near a wall. Twelve sections stood AT twelve walls read 9.4. When a fault is about
+  a place, stage the drill at the place; when it is about a rate, print the
+  denominator.
 - **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
   is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
   were the radius comes out wrong in a way nothing will flag.
