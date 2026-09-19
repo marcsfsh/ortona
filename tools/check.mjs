@@ -1311,6 +1311,77 @@ for (const device of TARGETS) {
        `${k} ${mud[k].v.toFixed(0)}/${mud[k].warm.toFixed(1)}`).join('  ') + '  (value/warmth off the albedo)'
          : 'no albedo canvas to read');
 
+  /* --- and that a halted man stands BESIDE a field wall rather than in it. A wall under
+     16 is on neither blocking grid, because a man is meant to get over one, and it is not
+     a prop either, so the formation laid its files straight through the masonry: two per
+     cent of every man-frame of a battle here was a halted man standing in the stones,
+     drawn inside them and getting nothing from them. Ortona never showed it because every
+     wall in the town is over head height and solid. The test is geometric and asks the
+     game's own index, and it is asked of a battle that has already been fought rather
+     than of a staged drill, because what went wrong was where men end up and not where
+     they are put. --- */
+  const stones = await (async () => {
+    /* Staged rather than sampled out of the battle, because a battle puts most of its men
+       nowhere near a wall: with the fix switched off to calibrate it, a battle sample read
+       0.91 per cent, which is a fault of two per cent hiding behind a denominator full of
+       men in the open. A drill stands a section AT each wall and asks the whole question.
+       And the count does its own geometry over G.walls rather than asking inMasonry,
+       because a probe that measures with the function under test cannot see it fail. */
+    const put = await page.evaluate(() => {
+      const low = window.G.walls.filter(w => (w.h || 24) < 16);
+      window.__keep = window.G.units.slice();
+      window.G.units.length = 0;
+      const key = window.G.side === 'us' ? 'us_rifle' : 'ger_gren';
+      let n = 0;
+      for (let i = 0; i < low.length && n < 12; i += Math.max(1, Math.floor(low.length / 12))) {
+        const w = low[i];
+        const mx = (w.x1 + w.x2) / 2, my = (w.y1 + w.y2) / 2;
+        const a = Math.atan2(w.y2 - w.y1, w.x2 - w.x1), nx = -Math.sin(a), ny = Math.cos(a);
+        /* on one side of it, with the trouble coming from the other */
+        const u = window.spawnUnit(window.G.side, key, mx + nx * 26, my + ny * 26, a);
+        if (!u) continue;
+        u.threatAng = a - Math.PI / 2;
+        n++;
+      }
+      return { drills: n, low: low.length };
+    });
+    await fastForward(page, 8);
+    const c = await page.evaluate(() => {
+      const low = window.G.walls.filter(w => (w.h || 24) < 16), box = [];
+      low.forEach(w => {
+        const len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), a = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+        const n = Math.max(2, Math.round(len / 34));
+        for (let i = 0; i < n; i++) {
+          const t = (i + 0.5) / n;
+          box.push([w.x1 + (w.x2 - w.x1) * t, w.y1 + (w.y2 - w.y1) * t, len / n + 1, a]);
+        }
+      });
+      const hit = (x, y) => box.some(b => {
+        const dx = x - b[0], dy = y - b[1], c2 = Math.cos(-b[3]), sn = Math.sin(-b[3]);
+        return Math.abs(dx * c2 - dy * sn) <= b[2] / 2 && Math.abs(dx * sn + dy * c2) <= 4;
+      });
+      let men = 0, inside = 0, covered = 0;
+      window.G.units.forEach(u => {
+        if (u.dead || !u.models) return;
+        u.models.forEach(m => {
+          if (!m.alive) return;
+          men++;
+          if (hit(m.x, m.y)) inside++;
+          if (window.coverAt(m.x, m.y) > 0) covered++;
+        });
+      });
+      window.G.units.length = 0;
+      window.__keep.forEach(u => window.G.units.push(u));
+      return { men, inside, covered };
+    });
+    return { ...put, ...c };
+  })();
+  ok('a halted man stands beside a field wall and not in it',
+     stones.drills >= 6 && stones.men > 0 && 100 * stones.inside / stones.men < 2,
+     `${stones.low} low wall runs on the map; ${stones.drills} sections stood at one and left to settle, ` +
+     `${stones.inside} of ${stones.men} men in the stones ` +
+     `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
+
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
      can garrison is a wall, a garrison with no arc is a house with a grey roof, cover laid

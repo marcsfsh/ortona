@@ -2632,6 +2632,7 @@ function buildMap(data) {
   G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
+  wallq = null;                                    /* the standing index is rebuilt with them */
   G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
@@ -4884,6 +4885,55 @@ function chooseCover(u, threatAng) {
   return out;
 }
 /* a point is no good if it is inside a building or off the walkable grid */
+/* ---- where the drawn masonry actually is ----
+   A field wall is on neither blocking grid, because a man is MEANT to get over one, and
+   it is not in G.props either, so nothing that asks whether a man may STAND somewhere
+   knew it was there at all. Measured over 150 seconds of battle on the Gothic Line, two
+   per cent of every man-frame was a halted man standing inside a field wall -- not a man
+   climbing it, a man at a stop, drawn in the stones and getting nothing from them.
+   Ortona reads nothing, because every wall in the town is over head height and is solid
+   on the grid, so the fault arrived with the first map that has low ones.
+   The cover slots were already right: they stand a man ten units off a lowwall's own
+   line. It was the formation that walked through, because its test for a place is
+   `walkable`, and the wall is not on that grid. Bucketed at 120 units, so the question
+   is a handful of boxes, and rebuilt whenever the wall list is. */
+var WQ = 120, wallq = null, wallqW = 0, wallqH = 0;
+function buildWallQ() {
+  wallqW = Math.ceil(WORLD.w / WQ); wallqH = Math.ceil(WORLD.h / WQ);
+  wallq = [];
+  for (var i = 0; i < G.walls.length; i++) {
+    var w = G.walls[i];
+    if ((w.h || 24) >= 16) continue;                  /* a town wall is already solid */
+    var len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), a = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+    var n = Math.max(2, Math.round(len / 34)), sl = len / n;
+    for (var k = 0; k < n; k++) {
+      var t = (k + .5) / n, cx = w.x1 + (w.x2 - w.x1) * t, cy = w.y1 + (w.y2 - w.y1) * t;
+      var seg = [cx, cy, sl + 1, a], rr = sl * .5 + 8;
+      var i0 = Math.max(0, ((cx - rr) / WQ) | 0), i1 = Math.min(wallqW - 1, ((cx + rr) / WQ) | 0);
+      var j0 = Math.max(0, ((cy - rr) / WQ) | 0), j1 = Math.min(wallqH - 1, ((cy + rr) / WQ) | 0);
+      for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
+        var bq = j * wallqW + ii;
+        (wallq[bq] || (wallq[bq] = [])).push(seg);
+      }
+    }
+  }
+}
+/* seven is the widest half-depth a stone is drawn at, so a man on the cover slots' own
+   ten units off the line clears it by three and a man laid out on a formation grid that
+   happens to cross it does not */
+function inMasonry(x, y) {
+  if (!wallq) buildWallQ();
+  var i = (x / WQ) | 0, j = (y / WQ) | 0;
+  if (i < 0 || j < 0 || i >= wallqW || j >= wallqH) return false;
+  var list = wallq[j * wallqW + i];
+  if (!list) return false;
+  for (var k = 0; k < list.length; k++) {
+    var sg = list[k], dx = x - sg[0], dy = y - sg[1];
+    var c = Math.cos(-sg[3]), sn = Math.sin(-sg[3]);
+    if (Math.abs(dx * c - dy * sn) <= sg[2] * .5 && Math.abs(dx * sn + dy * c) <= 7) return true;
+  }
+  return false;
+}
 function slotClear(x, y) {
   if (x < 20 || y < 20 || x > WORLD.w - 20 || y > WORLD.h - 20) return false;
   for (var i = 0; i < G.props.length; i++) {
@@ -4891,7 +4941,7 @@ function slotClear(x, y) {
     if (!p.solid || p.kind === 'sea') continue;
     if (Math.abs(x - p.x) < p.w / 2 + 4 && Math.abs(y - p.y) < p.h / 2 + 4) return false;
   }
-  return true;
+  return !inMasonry(x, y);
 }
 function coverSlots(u, c, threatAng) {
   var men = [];
@@ -5075,7 +5125,7 @@ function updateModels(u, dt) {
     }
     if (u.coverSlots && u.coverSlots[i]) {
       tx = u.coverSlots[i].x; ty = u.coverSlots[i].y;
-    } else if (!u.gar && !walkable(tx, ty)) {
+    } else if (!u.gar && (!walkable(tx, ty) || inMasonry(tx, ty))) {
       /* A place in the formation that is inside a wall is not a place. The section's own
          position keeps to the grid, but its men stand a formation's width either side of
          it and the formation did not, so a section walking down a lane had its flank
@@ -5091,7 +5141,7 @@ function updateModels(u, dt) {
         for (var sg = 1; sg >= -1 && !got; sg -= 2) {
           var aln = ox + sg * q * 13;
           var qx = u.x + aln * cs - lat * sn, qy = u.y + aln * sn + lat * cs;
-          if (walkable(qx, qy)) { tx = qx; ty = qy; got = true; }
+          if (walkable(qx, qy) && !inMasonry(qx, qy)) { tx = qx; ty = qy; got = true; }
         }
       }
       if (!got) { tx = u.x; ty = u.y; }
@@ -5110,7 +5160,7 @@ function updateModels(u, dt) {
         var kf = rlim / rdd, cxr = 0, cyr = 0, okr = false;
         for (var wr = 0; wr < 5 && !okr; wr++) {
           cxr = u.x + rdx * kf; cyr = u.y + rdy * kf;
-          if (walkable(cxr, cyr)) okr = true; else kf *= .78;
+          if (walkable(cxr, cyr) && !inMasonry(cxr, cyr)) okr = true; else kf *= .78;
         }
         if (okr) { tx = cxr; ty = cyr; }
       }
