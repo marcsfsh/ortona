@@ -61,6 +61,7 @@ import path from 'node:path';
 import { launch, openGame, deploy, fastForward, parseArgs, GAME } from './harness.mjs';
 
 const args = parseArgs(process.argv.slice(2));
+const MAP = args.map || null;      /* which shipped map to fight on */
 const SECS = args.t === undefined ? 300 : Number(args.t);
 const DIFF = args.diff === undefined ? 1 : Number(args.diff);
 const N = args.n === undefined ? 1 : Number(args.n);
@@ -343,7 +344,7 @@ async function hookWaves(page) {
 async function card(file, label) {
   const browser = await launch();
   const { page } = await openGame(browser, 'desktop', { file, quiet: true });
-  await deploy(page, { side: 'us', diff: DIFF });
+  await deploy(page, { side: 'us', diff: DIFF, map: MAP });
   await install(page);
   await hookWaves(page);
 

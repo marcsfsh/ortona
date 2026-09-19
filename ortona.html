@@ -178,7 +178,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .side h3{font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:5px}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-.pill,.mode,.arty,.team{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+.pill,.mode,.arty,.team,.gmap{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
 /* the opposition panel's own two strips: which computer player is being set, and what
    that one is told to buy. `.arole` is deliberately not `.pill`, for the reason set out
    beside `.obtn`. */
@@ -202,7 +202,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .hrow i{font-family:var(--mono);font-style:normal;font-size:13px;color:var(--ink);min-width:88px;text-align:center}
 .hb{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:15px;line-height:1;width:34px;height:34px;box-sizing:border-box;flex:0 0 auto}
 .hb[disabled]{color:#3d4436;border-color:#2b3126}
-.pill.on,.mode.on,.arty.on,.team.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.pill.on,.mode.on,.arty.on,.team.on,.gmap.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
 /* The game-over screen's two ways on. They are deliberately NOT `.pill`: the title
    screen binds every `.pill` on the page as a side picker, by class and with a plain
    `onclick =`, and it runs after this, so a button that borrowed the look silently
@@ -315,7 +315,7 @@ body.mob .keys{font-size:11.5px;line-height:1.7}
 body.mob .go{width:100%;max-width:340px;padding:15px 0}
 /* the title screen's own option buttons were 33px on a phone, which is under the rule
    the rest of the game holds itself to; they are the first thing a thumb ever touches */
-body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .gmap,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 body.mob .bpref .hgrid{grid-template-columns:1fr}
 body.mob .hgrid{grid-template-columns:1fr}
 body.mob .hb{width:46px;height:46px;min-width:46px;min-height:46px;font-size:17px}body.mob .hres{min-height:44px;padding:0 14px}
@@ -434,7 +434,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
 .side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
-.pill,.mode,.arty,.team{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
+.pill,.mode,.arty,.team,.gmap{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on,.gmap.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
 
@@ -601,6 +601,7 @@ body.mob #mini{width:104px;height:72px}
     <button class="edb wide" id="edmload">LOAD…</button>
     <button class="edb wide" id="edmnew">NEW MAP…</button>
     <button class="edb wide" id="edmortona">RELOAD ORTONA</button>
+    <button class="edb wide" id="edmgothic">RELOAD GOTHIC LINE</button>
     <div class="edh">FILES</div>
     <button class="edb wide" id="edmexport">EXPORT FILE</button>
     <button class="edb wide" id="edmsharefile">SHARE…</button>
@@ -692,7 +693,10 @@ body.mob #mini{width:104px;height:72px}
     </button>
   </div>
   <div class="row">
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px">OPPOSITION</span>
+    <span style="font-size:11px;color:var(--dim);letter-spacing:2px">GROUND</span>
+    <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true">ORTONA</button>
+    <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false">GOTHIC LINE</button>
+    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">OPPOSITION</span>
     <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
     <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
     <button class="pill" data-diff="2" title="Hard" aria-pressed="false">VETERAN</button>
@@ -1561,7 +1565,7 @@ var G = {
   pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
   made: { us: {}, us2: {}, ger: {}, ger2: {} },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [],
-  sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [],
+  sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
 };
@@ -1644,11 +1648,19 @@ function coverValue(c, fromAng) {
   }
   return clamp(t, 0, 4);
 }
-/* The sea lies along the north edge and the railway along the south, both read as
-   functions of distance from the midline so the two armies face identical ground. */
-function coastY(x) { var d = Math.abs(x - WORLD.w / 2); return 170 + Math.sin(d / 290) * 16 + Math.sin(d / 83) * 5; }
+/* Where the sea is and where the railway is. Those are facts about the COUNTRY a map
+   stands in rather than about the game, so they are asked of LAND. Ortona's lie along
+   its north and south edges and are read as functions of distance from the midline, so
+   the two armies face identical ground.
+   A landlocked country answers both as well, with a shore far above the map and a line
+   far below it, because a dozen things here ask how near the sea a point is and the
+   honest answer for inland ground is 'further off than anything'. Gating each of them
+   on its own is a dozen places to forget one. */
+function coastY(x) { return LAND.coast ? LAND.coast(x) : -4000; }
+function railY(x) { return LAND.rail ? LAND.rail(x) : WORLD.h + 4000; }
+function coastOrtona(x) { var d = Math.abs(x - WORLD.w / 2); return 170 + Math.sin(d / 290) * 16 + Math.sin(d / 83) * 5; }
+function railOrtona(x) { var d = Math.abs(x - WORLD.w / 2); return 1790 - Math.sin(d / 400) * 10; }
 function mainRoadY(x) { return 1038 - clamp((x - 350) / 2250, 0, 1) * 142 + Math.sin(x / 420) * 13; }
-function railY(x) { var d = Math.abs(x - WORLD.w / 2); return 1790 - Math.sin(d / 400) * 10; }
 /* ================================================================ the map as data
    A map is a list of entities in world units plus a height-brush list. The editor edits
    exactly what the game builds from, so a custom map is this with different entries.
@@ -2146,12 +2158,465 @@ function defaultMapData() {
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
   E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
-  return { name: 'Ortona', version: 1, entities: E, height: HB };
+  return { name: 'Ortona', when: 'ADRIATIC FRONT · 23 DEC 1943', version: 1, entities: E, height: HB };
+}
+
+/* ================================================================ the Gothic Line
+   The Adriatic sector, at the end of August 1944: the Foglia running down the middle of
+   it with a ridge either side, and 1st Canadian Division coming at the line that ran
+   along the far bank. It is laid out for four players rather than two, and it is
+   mirrored exactly about the midline, which is the whole design constraint: the real
+   Gothic Line was a defensive position with one army above the other, and a map two
+   people are meant to fight over fairly cannot be.
+
+   So both sides get the same ground. Each holds a ridge, each has a shelf behind it
+   flat enough to assemble on and turn armour round, and between them is the river and
+   the ground the line has already been fought over twice. The works face both ways
+   because they have changed hands.
+
+   Read west to east, on the west half and mirrored: the base shelf out at the edge, the
+   back of the ridge, the crest, the forward slope with its spurs and draws, and the
+   Foglia in the bottom. Read north to south: broken high ground up in the shoulder,
+   where it is infantry country, and open water meadow at the bottom, where armour can
+   get across. */
+function gothicMapData() {
+  var E = [], HB = [];
+
+  /* Everything on this map is laid on the west half and mirrored to the east, because
+     the one thing it may not do is give either side the better of the ground. push()
+     does both: x reflects about the midline, a bearing reflects with it, a trench
+     changes hands, and anything already on the midline is placed once. */
+  function push(e) {
+    E.push(e);
+    if (Math.abs(e.x - WORLD.w / 2) < 1 && e.x1 === undefined && !e.pts) return;
+    var m = {}, k;
+    for (k in e) if (e.hasOwnProperty(k)) m[k] = e[k];
+    if (e.x !== undefined) m.x = WORLD.w - e.x;
+    if (e.a !== undefined) m.a = Math.PI - e.a;
+    if (e.x1 !== undefined) { m.x1 = WORLD.w - e.x1; m.x2 = WORLD.w - e.x2; }
+    if (e.pts) m.pts = e.pts.map(function (q) { return { x: WORLD.w - q.x, y: q.y }; });
+    if (e.side) m.side = e.side === 'us' ? 'ger' : 'us';
+    E.push(m);
+  }
+  /* Every draw on this map comes from one seed, so the map is the same on every run and
+     the east half is the west half reflected rather than a second roll of the dice. It is
+     the map's own sequence and not the game's: touching _s here would move every bag and
+     every shell hole in the scene builder as well. */
+  var _gs = 8271944;
+  function r1() { _gs = (_gs * 1103515245 + 12345) & 0x7fffffff; return _gs / 0x7fffffff; }
+  function rr(a, b) { return a + r1() * (b - a); }
+  /* what has been dug, so that nothing is later dropped on top of it */
+  var DUG = [];
+  function keepOff(x, y, r) { DUG.push([x, y, r]); }
+  function clearOf(x, y, r) {
+    for (var i = 0; i < DUG.length; i++)
+      if (Math.hypot(x - DUG[i][0], y - DUG[i][1]) < r + DUG[i][2]) return false;
+    return true;
+  }
+  /* a bunker on the west ridge looking east down the valley, and its opposite number */
+  function bunker(x, y, sv) { push({ t: 'bunker', x: x, y: y, a: 0, s: sv }); keepOff(x, y, 62); }
+  function wire(x1, y1, x2, y2) {
+    push({ t: 'wire', x1: x1, y1: y1, x2: x2, y2: y2 });
+    for (var wq = y1; wq <= y2; wq += 40) keepOff(x1, wq, 30);
+  }
+  function hogs(x1, y1, x2, y2, kind) {
+    push({ t: 'hogs', x1: x1, y1: y1, x2: x2, y2: y2, kind: kind });
+    for (var hq = y1; hq <= y2; hq += 40) keepOff(x1, hq, 34);
+  }
+  function road(w, pts) { push({ t: 'road', width: w, pts: pts.map(function (q) { return { x: q[0], y: q[1] }; }) }); }
+  function pit(x, y, r, sv, ang) { push({ t: 'emplace', x: x, y: y, r: r, s: sv, a: ang }); keepOff(x, y, r + 16); }
+  function bags(x, y, r, ang) { push({ t: 'bags', x: x, y: y, r: r, a: ang }); keepOff(x, y, r + 8); }
+  /* A fire trench is a zigzag and not a line: a traverse every dozen paces is what stops
+     a burst or a grenade running the length of it. The side the fire step goes on is left
+     to trenchFacing, which puts it toward the middle of the map -- which here is the
+     enemy, on both halves, because the map is mirrored about exactly that line. */
+  function zig(x, y0, y1, amp, step) {
+    var pts = [], n = Math.max(2, Math.round(Math.abs(y1 - y0) / step)), i;
+    for (i = 0; i <= n; i++) {
+      pts.push({ x: x + (i % 2 ? amp : 0), y: y0 + (y1 - y0) * i / n });
+      keepOff(pts[i].x, pts[i].y, 30);
+    }
+    push({ t: 'trench', side: 'us', pts: pts });
+  }
+  function sap(pts) {
+    pts.forEach(function (q) { keepOff(q[0], q[1], 30); });
+    push({ t: 'trench', side: 'us', pts: pts.map(function (q) { return { x: q[0], y: q[1] }; }) });
+  }
+
+  /* a height brush, and its reflection, for anything cut into the ground itself */
+  function hb(o) {
+    HB.push(o);
+    var m = {}, k;
+    for (k in o) if (o.hasOwnProperty(k)) m[k] = o[k];
+    m.x = WORLD.w - o.x; HB.push(m);
+  }
+  /* A wall run, broken. Two feet of dry stone stops a bullet and an eye and not a boot,
+     which makes a run of it a LANE rather than a fence, and the shelling has been through
+     every one of them, so no run is continuous and no gap is in the same place twice. */
+  function runWall(x0, y0, x1, y1, h) {
+    var len = Math.hypot(x1 - x0, y1 - y0), d = 0, seg;
+    var ux = (x1 - x0) / len, uy = (y1 - y0) / len;
+    while (d < len - 30) {
+      seg = Math.min(rr(76, 180), len - d);
+      if (seg > 36 && r1() > .18) wall(x0 + ux * d, y0 + uy * d, x0 + ux * (d + seg), y0 + uy * (d + seg), h);
+      d += seg + rr(44, 130);
+    }
+  }
+
+  /* ---- The three crossings ----
+     There are three ways over the Foglia and each of them is a victory sector, so the
+     whole map is a question about which one to force. The roads were there before the
+     line was: they run right across, and each side's half of one is mirrored onto the
+     other, so a road laid from the western base to the midline is a road from base to
+     base once the map is folded. */
+  /* The lateral is two roads meeting at the centre crossing rather than one. A street
+     that runs the length of the map with no junction has nothing to fight over, which is
+     a rule of the map check and a fair one: the junction is where the ground is worth
+     holding, so the road is written as the two legs that meet at it. */
+  road(52, [[404, 220], [446, 386], [418, 546], [452, 712], [430, 868], [458, 1012]]);
+  road(52, [[458, 1012], [424, 1178], [452, 1326], [416, 1490], [444, 1642], [412, 1800]]);
+  road(48, [[250, 950], [312, 934], [386, 966], [458, 1012]]);
+  road(48, [[446, 386], [560, 448], [686, 496], [806, 524], [934, 556], [1042, 540],
+            [1158, 518], [1284, 528], [1400, 520]]);
+  road(48, [[458, 1012], [584, 1006], [702, 966], [828, 972], [946, 1000], [1064, 986],
+            [1188, 962], [1298, 974], [1400, 980]]);
+  road(48, [[416, 1490], [546, 1466], [664, 1428], [796, 1414], [914, 1392], [1036, 1408],
+            [1162, 1428], [1290, 1424], [1400, 1420]]);
+
+  /* ---- The position on the forward slope ----
+     Three bunkers, one on each crossing, and the fire trench run between them rather
+     than through them: the concrete IS the line where it stands, and a trench dug across
+     its front would be a trench its own garrison is firing over. */
+  /* Each stands beside the crossing it covers rather than on it. Astride the road the
+     concrete IS the roadblock, which is neither what a bunker is for nor what the map
+     wants: the lane has to stay open, because a lane the attacker cannot use is a lane
+     that decides nothing. They sit on alternate sides of their roads, so the three do not
+     read as one rule applied three times. */
+  bunker(706, 592, .18);
+  bunker(748, 1062, .61);
+  bunker(720, 1328, .37);
+  zig(678, 300, 470, 26, 46);
+  zig(678, 650, 880, 26, 46);
+  zig(678, 1080, 1258, 26, 46);
+  zig(678, 1490, 1680, 26, 46);
+  /* communication trenches back over the crest, so the position can be reinforced from
+     the reverse slope without crossing the skyline */
+  sap([[684, 480], [628, 500], [584, 476], [530, 498]]);
+  sap([[692, 1010], [634, 1032], [588, 1006], [536, 1030]]);
+  sap([[686, 1466], [632, 1444], [586, 1470], [534, 1448]]);
+  /* weapon pits on the forward slope beside the trench, and the anti-tank guns back on
+     the crest where they have the length of the valley rather than the width of it */
+  pit(634, 392, 22, .21, 0);
+  pit(646, 742, 22, .67, 0);
+  pit(656, 1182, 22, .44, 0);
+  pit(628, 1592, 22, .83, 0);
+  pit(490, 636, 26, .31, .18);
+  pit(478, 1298, 26, .58, -.18);
+  bags(650, 606, 30, 1.571);
+  bags(694, 1026, 30, 1.571);
+  bags(664, 1352, 30, 1.571);
+
+  /* ---- The obstacle belts ----
+     Laid to two different plans, because they are laid against two different things. The
+     wire is close in under the bunkers, where a section held up in it is held up in front
+     of a gun that is already looking at it, and it is cut only by the defender's own
+     lanes on the three roads. The hedgehogs are out on the floor, far enough forward to
+     turn armour before it is in range of anything, and their gaps are the three crossings
+     -- which is the whole design of the map. An obstacle belt does not stop armour, it
+     tells armour where to go, and where it goes is into a bunker's arc.
+     The teeth are the far south, where the valley opens out and a squadron could
+     otherwise swing wide round the end of everything. */
+  wire(830, 180, 830, 500);
+  wire(830, 562, 830, 942);
+  wire(830, 1004, 830, 1378);
+  wire(830, 1440, 830, 1780);
+  hogs(960, 160, 960, 470);
+  hogs(960, 654, 960, 892);
+  hogs(960, 1074, 960, 1310);
+  hogs(960, 1490, 960, 1880);
+  hogs(1060, 1620, 1060, 1880, 'teeth');
+
+  /* ---- The shape of the floor ----
+     Eight hundred units of level ground between the belts is a car park. What breaks it
+     up is not clutter but SHAPE: a spur to get behind, a hollow to form up in, a bank
+     along the water. Dead ground is the one kind of cover a map can give that costs
+     nothing to look at and changes every route across it, and it is the first thing to
+     reach for when a battlefield reads as too open -- putting a wall there instead gives
+     you a maze, which is what the first attempt at this was.
+     Hand-placed, because where the dead ground is IS the design: a hollow a hundred
+     units short of a bunker is a forming-up place, and one behind it is nothing. */
+  hb({ x: 1080, y: 250, r: 172, d: 13 });
+  hb({ x: 1236, y: 196, r: 132, d: -9 });
+  hb({ x: 1182, y: 432, r: 152, d: -11 });
+  hb({ x: 1042, y: 620, r: 142, d: -10 });
+  hb({ x: 1212, y: 760, r: 166, d: 12 });
+  hb({ x: 1334, y: 560, r: 122, d: 10 });
+  hb({ x: 1118, y: 1160, r: 176, d: 14 });
+  hb({ x: 1302, y: 1080, r: 152, d: -12 });
+  hb({ x: 1356, y: 1262, r: 124, d: 9 });
+  hb({ x: 1162, y: 1380, r: 156, d: -11 });
+  hb({ x: 1262, y: 1562, r: 162, d: 12 });
+  hb({ x: 1082, y: 1722, r: 152, d: -10 });
+  /* and two on the forward slope, so an attack has somewhere to lie up short of the wire */
+  hb({ x: 902, y: 700, r: 152, d: -10 });
+  hb({ x: 880, y: 1240, r: 152, d: -11 });
+
+  /* ---- No man's land ----
+     Fourteen hundred units of it between the two bunker lines, and the whole point of
+     widening the valley was to have somewhere to put something. Open ground of that width
+     is not a battlefield, it is a car park: a section ordered across it walks in a
+     straight line at a constant speed and arrives or does not, and nothing that happens
+     in between is a decision. So the floor is given bounds.
+
+     The enclosures do most of it. This is walled farmland and a dry-stone wall stops a
+     bullet and an eye and not a boot, which makes a run of them a set of LANES: ground
+     you can cross under cover, ground you cannot, and gaps that are worth holding. They
+     are laid as a grid because field boundaries are a grid, and broken because the
+     shelling has been through all of them. */
+  (function () {
+    var i, j, y, x;
+    /* Three boundaries running with the valley and four across it, which is half a dozen
+       enclosures rather than sixty. A grid fine enough to be a maze is a grid nobody
+       manoeuvres in: the walls are here to give the floor lanes and bounds, and a lane
+       has to be wide enough to put a company down. The ones that run north and south are
+       broken at all three crossings, because a field boundary across a road has a gate
+       in it and because the crossings are the one thing on this map that must stay
+       open. */
+    var BAND = [[150, 460], [600, 900], [1080, 1340], [1500, 1820]];
+    for (i = 0; i < 2; i++) {
+      x = 1074 + i * 170;
+      for (j = 0; j < BAND.length; j++)
+        if (r1() > .28) runWall(x + rr(-22, 22), BAND[j][0], x + rr(-22, 22), BAND[j][1]);
+    }
+    for (i = 0; i < 3; i++) {
+      y = 360 + i * 516 + rr(-44, 44);
+      runWall(1010, y, 1386, y + rr(-32, 32));
+    }
+  })();
+
+  /* Two farm compounds out in the middle, which are the strongpoints of no man's land:
+     a house with its roof off is the heaviest cover on this map that is not concrete, and
+     a section can be put inside one. Everything a map gives an attacker to fight FROM is
+     a reason for him to go somewhere rather than straight ahead. */
+  house(1124, 646, 76, 56, .29, .78, { tall: 1 });
+  farm(1188, 678, 54, 36);
+  runWall(1076, 596, 1232, 592, 22); runWall(1236, 592, 1240, 726, 22); runWall(1080, 712, 1234, 720, 22);
+  razed(1156, 742, 30, .41);
+  house(1178, 1214, 72, 54, .71, .84);
+  farm(1116, 1246, 50, 34);
+  runWall(1096, 1156, 1234, 1164, 22); runWall(1094, 1160, 1090, 1288, 22);
+  razed(1092, 1300, 26, .19);
+  razed(1046, 1526, 34, .63);
+
+  /* The sunken lane. A road cut below the fields with its banks revetted is the one thing
+     in this country that lets a company move laterally in front of a position without
+     being seen doing it, and it is what makes the middle of the map worth manoeuvring in
+     rather than only worth crossing. It is dug into the heightfield rather than drawn,
+     so the ground itself carries it and a man standing in it really is below the field. */
+  (function () {
+    var y, lx;
+    for (y = 200; y <= 1740; y += 62) {
+      lx = 1296 + Math.sin(y / 260) * 22;
+      hb({ x: lx, y: y, r: 58, d: -15 });
+    }
+  })();
+  road(40, [[1292, 210], [1310, 420], [1288, 640], [1300, 860], [1298, 986]]);
+  road(40, [[1298, 986], [1296, 1080], [1312, 1300], [1290, 1520], [1304, 1730]]);
+  runWall(1252, 240, 1262, 720); runWall(1256, 790, 1248, 1240); runWall(1258, 1320, 1250, 1700);
+  runWall(1340, 260, 1348, 700); runWall(1344, 830, 1336, 1260); runWall(1342, 1340, 1350, 1690);
+
+  /* The outpost line: what the position had out in front of it before it was pushed back
+     onto the concrete. Abandoned, so it is nobody's and whoever holds it holds the middle
+     of the floor. Short lengths rather than a line, because a line of it out here would be
+     a second position and the map already has two. */
+  zig(1050, 360, 520, 22, 42);
+  zig(1046, 700, 862, 22, 42);
+  zig(1054, 1140, 1302, 22, 42);
+  zig(1042, 1560, 1690, 22, 42);
+  pit(1008, 596, 20, .13, .5);
+  pit(1102, 902, 20, .77, -.4);
+  pit(1168, 1420, 20, .35, .2);
+  pit(1276, 1004, 20, .52, 2.9);
+  pit(1230, 340, 20, .91, 2.6);
+  bags(1124, 1078, 26, .3);
+  bags(1216, 1640, 26, 1.2);
+  /* and the scrapes: what an attack that got this far dug when it was stopped, and left
+     when it was thrown back. Short, angled every way, and nobody's. */
+  sap([[1148, 470], [1196, 500], [1238, 476], [1286, 506]]);
+  sap([[1104, 1004], [1152, 1034], [1198, 1008], [1244, 1038]]);
+  sap([[1180, 1520], [1226, 1548], [1272, 1522], [1318, 1552]]);
+  sap([[1020, 840], [1066, 812], [1112, 838]]);
+  sap([[1296, 1340], [1338, 1372], [1380, 1346]]);
+  /* the fords, and what has been pushed across each of them */
+  push({ t: 'roadblock', x: 1370, y: 528, a: 1.571 });
+  push({ t: 'roadblock', x: 1366, y: 986, a: 1.571 });
+  push({ t: 'roadblock', x: 1372, y: 1414, a: 1.571 });
+
+  /* ---- The country it was before ----
+     The Foglia valley is farmland: scattered case coloniche with their yards and
+     outbuildings, dry-stone walls round the enclosures, olives and vines on the slopes.
+     What the line did to it is the point of the map, so the dressing is laid by how far
+     forward it stands. The ground behind the crest still has its farms, its walls and its
+     grass because nobody has had to cross it. The crest has ruins and stumps. The floor
+     was cleared for a field of fire -- every vine and every tree cut down -- and what is
+     left on it is stumps, walls and what has been shelled. That is not a licence to leave
+     it bare: bare ground reads as a desert. It is a licence to make what is on it
+     wreckage. */
+  function house(x, y, w, h, sv, dmg, o) {
+    o = o || {};
+    push({ t: 'house', x: x, y: y, w: w, h: h, tall: o.tall || 0, style: o.style || 'farm',
+           s: sv, damage: dmg, roof: o.roof === undefined ? 1 : o.roof });
+    keepOff(x, y, Math.max(w, h) * .7);
+  }
+  function farm(x, y, w, h) { push({ t: 'farm', x: x, y: y, w: w, h: h }); keepOff(x, y, Math.max(w, h) * .7); }
+  function wall(x1, y1, x2, y2, h) { push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2, h: h || 11 }); }
+  function tree(x, y, r, sv, lean) { push({ t: 'tree', x: x, y: y, r: r, s: sv, lean: lean || 0 }); }
+  function scrub(x, y, r, sv) { push({ t: 'scrub', x: x, y: y, r: r, s: sv }); }
+  function grass(x, y, r, tone) { push({ t: 'grass', x: x, y: y, r: r, tone: tone }); }
+  function pole(x, y, broke) { push({ t: 'pole', x: x, y: y, broken: broke }); }
+  function razed(x, y, r, sv) {
+    push({ t: 'rubble', x: x, y: y, r: r });
+    push({ t: 'debris', x: x, y: y, r: r * .62, s: sv });
+    keepOff(x, y, r);
+  }
+
+  /* the two farms behind each position, on ground nobody has had to cross */
+  house(178, 336, 86, 62, .21, .15, { tall: 1 });
+  farm(256, 356, 62, 40);
+  wall(136, 386, 300, 392, 22); wall(300, 392, 294, 302, 22); wall(136, 386, 132, 310, 22);
+  house(196, 1684, 78, 58, .63, .25, { tall: 1 });
+  farm(196, 1592, 58, 38);
+  wall(144, 1740, 264, 1732, 22); wall(264, 1732, 268, 1566, 22);
+  /* the farm on the crest, shelled to a shell of itself, and its wall knocked about */
+  house(556, 830, 74, 54, .44, .72);
+  farm(556, 736, 50, 34);
+  wall(488, 896, 600, 890, 22); wall(600, 890, 604, 792, 22);
+
+  /* the enclosure walls behind the crest: field boundaries, so they run with the grain of
+     the ground and stop where the shelling starts */
+  (function () {
+    var i, wx, wy, wl;
+    for (i = 0; i < 18; i++) {
+      wx = rr(90, 560); wy = rr(120, 1820);
+      if (!clearOf(wx, wy, 56)) continue;
+      wl = rr(70, 180);
+      if (r1() > .5) wall(wx, wy, wx + wl, wy + rr(-22, 22));
+      else wall(wx, wy, wx + rr(-22, 22), wy + wl);
+    }
+  })();
+
+  /* The shell holes come AFTER the farms and the walls and not before them, which is not
+     a matter of taste: the scatter rejects against everything already dug, so anything
+     laid later is laid on top of it. Written the other way round, the map check found six
+     craters undercutting the two farms nobody had told them about. */
+  /* ---- What the ground has taken ----
+     Where a map is torn is not random. It is heaviest on the three crossings, because
+     every attack has gone in on one of them; heavy along the bunker line, because
+     everything that could reach has been looking for the concrete; and it thins to
+     nothing on the rear shelf, which is the one piece of ground nobody has had to cross.
+     So the scatter is rejected against a density rather than laid out evenly, and it is
+     rejected again against everything already dug: a shell hole through a trench floor
+     or a wire apron is a hole the map draws and the works go on pretending is not there.
+     The number is capped rather than counted out, because a rejection scatter that must
+     place N will keep trying until it puts one somewhere it does not belong. */
+  function crater(x, y, r) { push({ t: 'crater', x: x, y: y, r: r }); keepOff(x, y, r * .8); }
+  (function () {
+    var tries = 0, made = 0, x, y, lane, d, r;
+    while (made < 210 && tries < 12000) {
+      tries++;
+      x = rr(300, 1398); y = rr(40, 1860);
+      lane = Math.min(Math.abs(y - 520), Math.abs(y - 980), Math.abs(y - 1420));
+      d = clamp(1 - lane / 300, 0, 1) * .40
+        + clamp(1 - Math.abs(x - 760) / 230, 0, 1) * .40
+        + clamp((x - 850) / 240, 0, 1) * .70;
+      if (r1() > d) continue;
+      r = rr(11, 20) + (r1() > .82 ? rr(8, 16) : 0);
+      if (!clearOf(x, y, r + 10)) continue;
+      crater(x, y, r);
+      made++;
+    }
+  })();
+
+  /* Olives and vines: standing behind the crest, cut to stumps on it, and gone from the
+     floor except where a root has come back. The line the clearing stops at is drawn
+     deliberately, because a gradient of vegetation across a map is the cheapest thing
+     there is that says a position has been prepared. */
+  (function () {
+    var i, tx, ty, d, keep;
+    for (i = 0; i < 700; i++) {
+      tx = rr(60, 1392); ty = rr(40, 1860);
+      d = clamp((580 - tx) / 360, 0, 1);              /* 1 well back, 0 out past the crest */
+      keep = d * d * .85 + .05;
+      if (r1() > keep) continue;
+      if (!clearOf(tx, ty, 22)) continue;
+      if (r1() < .30 * d) tree(tx, ty, rr(12, 17), r1(), rr(-.2, .2));
+      else scrub(tx, ty, rr(6, 12), r1());
+      keepOff(tx, ty, 16);
+    }
+  })();
+  /* scrub has come back along the water, which is the one line nobody has cleared */
+  (function () {
+    var i, sx, sy;
+    for (i = 0; i < 140; i++) {
+      sy = rr(40, 1860); sx = 1400 - Math.abs(rr(12, 84));
+      if (!clearOf(sx, sy, 16)) continue;
+      scrub(sx, sy, rr(5, 11), r1());
+      keepOff(sx, sy, 12);
+    }
+  })();
+
+  /* Grass. Winter wheat behind the crest, thinning forward, and none at all on the ground
+     that has been turned over. */
+  grass(160, 300, 180, .58); grass(130, 700, 190, .55); grass(180, 1120, 180, .52);
+  grass(200, 1680, 190, .58); grass(380, 480, 150, .46); grass(420, 1300, 150, .44);
+  grass(520, 980, 120, .32); grass(1330, 1740, 120, .30);
+
+  /* the telegraph line along the lateral, standing where it is out of the shelling and
+     down where it is not */
+  (function () {
+    var py;
+    for (py = 180; py < 1860; py += 112) pole(rr(384, 414), py, py > 420 && py < 1520 && r1() > .62);
+  })();
+  push({ t: 'cart', x: 486, y: 1088, a: .9 });
+  push({ t: 'cart', x: 1136, y: 486, a: 2.4 });
+  push({ t: 'cart', x: 1274, y: 1148, a: 1.6 });
+  /* something out in the middle is still burning */
+  push({ t: 'smoke', x: 1160, y: 1006 });
+  push({ t: 'smoke', x: 1064, y: 1462 });
+  push({ t: 'smoke', x: 1238, y: 620 });
+
+  /* Nine sectors, in Ortona's own topology, because that shape of map is known to play:
+     two the side opens holding, one on each crest, three on the river, and the two the
+     other side opens holding. Every position is mirrored about the midline to the unit.
+     The names are the real ones off that piece of the line -- Point 120 and Point 204
+     are the two hills the Canadians took at Montecchio, which is what the two crests
+     are. */
+  var secs = [
+    ['A', 350, 620, 'fuel', 'us', 'Montecalvo', ['C', 'D']],
+    ['B', 350, 1340, 'mp', 'us', 'Casa Rossa', ['C', 'F']],
+    ['C', 640, 980, 'mp', null, 'Point 120', ['A', 'B', 'E']],
+    ['D', 1400, 520, 'vp', null, 'Montecchio', ['A', 'E', 'H']],
+    ['E', 1400, 980, 'vp', null, 'The Foglia', ['C', 'D', 'F', 'G']],
+    ['F', 1400, 1420, 'vp', null, 'Osteria Nuova', ['B', 'E', 'I']],
+    ['G', 2160, 980, 'mp', null, 'Point 204', ['E', 'H', 'I']],
+    ['H', 2450, 620, 'fuel', 'ger', 'Tomba di Pesaro', ['D', 'G']],
+    ['I', 2450, 1340, 'mp', 'ger', 'Borgo Santa Maria', ['F', 'G']]];
+  secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
+  E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
+  E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
+  return { name: 'The Gothic Line', when: 'FOGLIA VALLEY · 30 AUG 1944', version: 1, land: 'gothic', entities: E, height: HB };
 }
 
 /* ---- build the world from a map ---- */
 function buildMap(data) {
   G.earthworksApplied = false;
+  /* The country first, because the landform is built out of it; then where the armies
+     deploy, which is where THIS map stood its headquarters rather than where Ortona
+     stood hers. Both are read before a vertex is built, since makeHeight wants them. */
+  LAND = LANDS[data.land] || LANDS.ortona;
+  var dep = [];
+  data.entities.forEach(function (e) { if (e.t === 'hq') dep.push([e.x, e.y]); });
+  DEPOT = dep.length ? dep : [[250, 950], [WORLD.w - 250, 950]];
   makeHeight();
   /* height brushes over the natural ground */
   (data.height || []).forEach(function (hb) {
@@ -2166,15 +2631,24 @@ function buildMap(data) {
   });
   G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
-  G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = [];
+  G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
+  wallq = null;                                    /* the standing index is rebuilt with them */
   G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
   _s = 4242;
-  for (var shoreX = 0; shoreX <= WORLD.w; shoreX += 40) G.coastline.push({ x: shoreX, y: coastY(shoreX) });
-  for (var railX = 0; railX <= WORLD.w; railX += 40) G.rail.push({ x: railX, y: railY(railX) });
-  function wallRun(x1, y1, x2, y2) {
-    G.walls.push({ x1: x1, y1: y1, x2: x2, y2: y2 });
+  if (LAND.coast) for (var shoreX = 0; shoreX <= WORLD.w; shoreX += 40) G.coastline.push({ x: shoreX, y: coastY(shoreX) });
+  if (LAND.rail) for (var railX = 0; railX <= WORLD.w; railX += 40) G.rail.push({ x: railX, y: railY(railX) });
+  /* A wall has a height, and it is the one number that decides what KIND of thing it is.
+     Ortona's are town garden walls at 24, which is over a man's head: he stands against
+     one and cannot see or shoot through it. A dry-stone field boundary is 11, which is
+     his waist: he gets down behind it and comes up over it, so it is cover and not a
+     sight line. Drawn at 24 out in open country a field wall reads as a prefabricated
+     barrier, and enough of them read as a maze -- which is what the first pass at the
+     Gothic Line's enclosures came out as. */
+  function wallRun(x1, y1, x2, y2, h) {
+    h = h || 24;
+    G.walls.push({ x1: x1, y1: y1, x2: x2, y2: y2, h: h });
     var ax = Math.atan2(y2 - y1, x2 - x1), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / 40));
     for (var i = 0; i <= n; i++) addCover(lerp(x1, x2, i / n), lerp(y1, y2, i / n), 26, 2, 'lowwall', ax, 90);
   }
@@ -2218,9 +2692,27 @@ function buildMap(data) {
         G.props.push(fm); G.blocks.push(fm);
         addCover(e.x - e.w / 2 - 18, e.y + e.h / 2 + 14, 36, 3, 'rubble'); addCover(e.x + e.w / 2 + 18, e.y + e.h / 2 + 14, 36, 3, 'rubble');
         break;
-      case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2); break;
+      case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2, e.h); break;
       case 'trench': trenchRun(e.pts, e.side || 'us', e.face); break;
       case 'wire': G.wire.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2 }); break;
+      case 'hogs':
+        var hgk = e.kind || 'hog';
+        G.hogs.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2, kind: hgk });
+        /* A belt is a firing line as well as an obstacle: a section that has to cross it
+           lies down among it, and a section holding it has something in front of it. A
+           hedgehog is open steel and worth lying behind and no more; a dragon's tooth is a
+           metre of concrete and worth getting down behind. The patch runs ALONG the belt,
+           which is the line it protects across.
+           The KIND is not free choice: a patch of kind 'rubble' or 'bags' draws itself in
+           the scene, so asking for rubble here put a house's worth of masonry and a roof
+           timber on the map every forty units of belt, straight through the hedgehogs. */
+        var hga = Math.atan2(e.y2 - e.y1, e.x2 - e.x1), hgl = Math.hypot(e.x2 - e.x1, e.y2 - e.y1);
+        var hgn = Math.max(2, Math.round(hgl / 40));
+        for (var hgi = 0; hgi <= hgn; hgi++)
+          addCover(lerp(e.x1, e.x2, hgi / hgn), lerp(e.y1, e.y2, hgi / hgn), 24,
+                   hgk === 'teeth' ? 2 : 1, hgk === 'teeth' ? 'lowwall' : 'ditch',
+                   hga, hgk === 'teeth' ? 260 : 90);
+        break;
       case 'crater':
         addCover(e.x, e.y, e.r, 1, 'crater');
         G.craters.push({ x: e.x, y: e.y, r: e.r });
@@ -2228,6 +2720,26 @@ function buildMap(data) {
         break;
       case 'rubble': addCover(e.x, e.y, e.r, 2, 'rubble', null, 80); break;
       case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
+      case 'bunker':
+        var bb2 = bunkerBox(e);
+        var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
+                    face: e.a || 0, arc: 1, s: e.s || 0, z: 0 };
+        G.props.push(bk2); G.blocks.push(bk2);
+        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0 });
+        /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
+           in front of it. The ground in front of a bunker is the beaten zone, and a cover
+           patch laid there would be the map telling a section that walking up to the slot
+           is the safe thing to do. The flanks and the rear get it and the front does not,
+           which is the whole of why a bunker is taken from the side.
+           Nothing is laid in the MIDDLE of it either, though that is where the garrison
+           stands. coverOf already hands a garrison tier 4 outright, so the patch would buy
+           the men nothing -- and a cover patch inside a solid footprint is a lie the whole
+           index believes: aiFirePost reads it and would site a machine gun in the
+           concrete, on ground no man can stand on. */
+        addCover(e.x - Math.cos(e.a || 0) * 34, e.y - Math.sin(e.a || 0) * 34, 34, 4, 'pit', (e.a || 0) + Math.PI / 2, 400);
+        addCover(e.x - Math.sin(e.a || 0) * 46, e.y + Math.cos(e.a || 0) * 46, 24, 3, 'wall', e.a || 0, 400);
+        addCover(e.x + Math.sin(e.a || 0) * 46, e.y - Math.cos(e.a || 0) * 46, 24, 3, 'wall', e.a || 0, 400);
+        break;
       case 'emplace':
         addCover(e.x, e.y, (e.r || 22) + 6, 3, 'pit', null, 140);
         G.stacks.push({ x: e.x, y: e.y, r: e.r || 22, kind: 'emplace', s: e.s || 0, a: e.a || 0 }); break;
@@ -2244,8 +2756,10 @@ function buildMap(data) {
       case 'hq': G.hqPos[e.side] = { x: e.x, y: e.y }; break;
     }
   });
-  for (var rl = 120; rl <= WORLD.w - 120; rl += 60) addCover(rl, railY(rl), 30, 1, 'ditch');
-  for (var bx = 0; bx <= WORLD.w; bx += 40) { var cyy = coastY(bx); G.props.push({ x: bx, y: cyy / 2 - 10, w: 42, h: cyy + 20, solid: 1, kind: 'sea' }); }
+  /* the ditch along the railway, and the sea itself, which is a wall of props rather
+     than a surface: both belong to the country and an inland map has neither */
+  if (LAND.rail) for (var rl = 120; rl <= WORLD.w - 120; rl += 60) addCover(rl, railY(rl), 30, 1, 'ditch');
+  if (LAND.coast) for (var bx = 0; bx <= WORLD.w; bx += 40) { var cyy = coastY(bx); G.props.push({ x: bx, y: cyy / 2 - 10, w: 42, h: cyy + 20, solid: 1, kind: 'sea' }); }
   applyEarthworks();
   G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea') p.z = levelPad(p.x, p.y, p.w, p.h); });
   makeFields();
@@ -2311,6 +2825,79 @@ var VALLONI = [
   { pts: [[2160, 1760], [2196, 1500], [2140, 1300]], d: 34, w: 54 },
   { pts: [[1800, 1830], [1720, 1660], [1620, 1560]], d: 26, w: 50 }
 ];
+/* The Foglia, which runs down the middle of the Gothic Line map and is the one
+   watercourse on it. This is the CHANNEL and not the valley: the flood plain around it is
+   part of the landform, because a braided gravel bed painted two hundred units wide reads
+   as a set of pale bars laid across the map rather than as a river. Two entries rather
+   than one, because it is not the same river along its length -- a cut where it comes off
+   the shoulder in the north and a shallower, wider bed once the valley opens out. gullyAt
+   takes the deepest cut at each point, so they overlap and hand over to one another.
+   It is laid dead on the midline: a river that wandered would give one side more floor
+   than the other at any given latitude, and this map is meant to be fair before it is
+   meant to be pretty. */
+var FOGLIA = [
+  { pts: [[1400, -60], [1400, 760]], d: 13, w: 58 },
+  { pts: [[1400, 680], [1400, WORLD.h + 60]], d: 8, w: 74 }
+];
+
+/* ---- the country a map stands in ----
+   Ortona's landform was never a property of its map: it was the only landform there
+   was. The coast, the cliff with its bedding, the valloni, the railway in its cutting
+   and the two depots were all written into makeHeight and into the tail of buildMap, so
+   a map of anywhere at all came out with the Adriatic along the top of it. LAND is what
+   sort of country the ground is. A map names one, and everything that wants to know
+   where the sea runs or how deep the watercourses cut asks it rather than a constant.
+   padR and padY are how much level ground each army is given to deploy onto, and in what
+   shape, which belongs to the country because it belongs to how the map is meant to be
+   played: a 1v1 wants a circle round one headquarters and a 2v2 stands two of them 580
+   apart along the line and wants a band that holds both. */
+var LANDS = {
+  ortona: { name: 'ortona', build: landOrtona, coast: coastOrtona, rail: railOrtona, val: VALLONI, padR: 165, padY: 165, terrace: 1 },
+  gothic: { name: 'gothic', build: landGothic, coast: null, rail: null, val: FOGLIA, padR: 190, padY: 430,
+            wet: wetGothic, churn: churnGothic }
+};
+var LAND = LANDS.ortona;
+/* Where the armies deploy, which is where their headquarters stand. This was two
+   coordinates written into the height code that happened to match Ortona's own hq
+   entities; buildMap reads it off the map now, because a map that puts a headquarters
+   somewhere else wants its level ground somewhere else with it. */
+var DEPOT = [[250, 950], [WORLD.w - 250, 950]];
+/* How near a point is to ground an army deploys onto. An army assembles where it can
+   get lorries in and turn armour round, and a tank reversing out of a depot into a
+   four-metre ditch is not terrain, it is a fault. The landform underneath is left
+   alone, so a depot still stands where the shelf puts it; what is taken away is the
+   relief, the terracing and the gully. */
+function depotDist(x, y) {
+  var best = 1e9;
+  for (var d2 = 0; d2 < DEPOT.length; d2++) {
+    var ex = (x - DEPOT[d2][0]) / LAND.padR, ey = (y - DEPOT[d2][1]) / LAND.padY;
+    var dd = Math.sqrt(ex * ex + ey * ey) * LAND.padR;
+    if (dd < best) best = dd;
+  }
+  return best;
+}
+function depotAt(x, y) {
+  var w2 = clamp(1 - (depotDist(x, y) - LAND.padR) / 215, 0, 1);
+  return w2 * w2 * (3 - 2 * w2);
+}
+/* distance to a watercourse's own course, and the fraction along it, for the V cut */
+function gullyAt(x, y) {
+  var best = 0, val = LAND.val;
+  for (var g = 0; g < val.length; g++) {
+    var v = val[g], pts = v.pts, dmin = 1e9;
+    for (var p = 0; p < pts.length - 1; p++) {
+      var d = distToSeg(x, y, pts[p][0], pts[p][1], pts[p + 1][0], pts[p + 1][1]);
+      if (d < dmin) dmin = d;
+    }
+    if (dmin > v.w) continue;
+    /* a floor with a rounded bottom and walls that stand up: a vallone is a ravine
+       cut into the shelf, not a dip in it, so the profile is square in the shoulder
+       and only eases over the last of its width */
+    var t = dmin / v.w, cut = v.d * (1 - t * t * t) * (1 - t * .18);
+    if (cut > best) best = cut;
+  }
+  return best;
+}
 function hnoise(x, y, s) {
   var ix = Math.floor(x), iy = Math.floor(y), fx = x - ix, fy = y - iy;
   fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
@@ -2333,62 +2920,27 @@ function hridge(x, y, s, oct) {
   }
   return v / sum;
 }
-function makeHeight() {
-  /* the noise under everything never changes for a given world, and it is two thirds
-     of a second of arithmetic: the editor rebuilds the ground after every stroke and
-     was paying for it every time */
-  if (makeHeight._base) {
-    G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
-    G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
-    return;
-  }
-  var h = new Float32Array(HW * HH), i, j, k;
+/* ---- Ortona ----
+   Built in four passes, in this order: the landform, stated analytically off the
+   distance to the midline so the two halves of the map match exactly; fractal
+   relief, its domain warped so it does not read as plain noise laid over a ramp;
+   the gullies, cut as V-profiles along their own courses; and the terraces, a
+   staircase quantisation of whatever the first three passes left. Each pass is
+   masked off the town, because the town has to stay a place two sections can
+   fight over. */
+function landOrtona(h) {
+  var i, j;
   var MX = WORLD.w / 2, MY = WORLD.h / 2;
   /* the town and the ground the two sides face each other across stay quiet */
   function calm(x, y) {
     var ax = Math.abs(x - MX) / 760, ay = Math.abs(y - MY) / 470;
     return clamp(1.3 - Math.max(ax, ay) * 1.3, 0, 1);
   }
-  /* And so does the ground each side deploys onto. An army assembles where it can get
-     lorries in and turn armour round, and both of these sit out on the flanks, which is
-     where this map puts its roughest ground, its terraces and the head of a vallone. A
-     tank reversing out of a depot into a four-metre ditch is not terrain, it is a fault.
-     The landform underneath is left alone, so the depots still stand where the shelf
-     puts them; what is taken away is the relief, the terracing and the gully. */
-  var DEPOT = [[250, 950], [WORLD.w - 250, 950]];      /* matches G.hqPos, set below */
-  function depot(x, y) {
-    var best = 0;
-    for (var d2 = 0; d2 < DEPOT.length; d2++) {
-      var dd = Math.hypot(x - DEPOT[d2][0], y - DEPOT[d2][1]);
-      var w2 = clamp(1 - (dd - 165) / 215, 0, 1);
-      w2 = w2 * w2 * (3 - 2 * w2);
-      if (w2 > best) best = w2;
-    }
-    return best;
-  }
-  /* distance to a vallone's course, and the fraction along it, for the V cut */
-  function gully(x, y) {
-    var best = 0;
-    for (var g = 0; g < VALLONI.length; g++) {
-      var v = VALLONI[g], pts = v.pts, dmin = 1e9;
-      for (var p = 0; p < pts.length - 1; p++) {
-        var d = distToSeg(x, y, pts[p][0], pts[p][1], pts[p + 1][0], pts[p + 1][1]);
-        if (d < dmin) dmin = d;
-      }
-      if (dmin > v.w) continue;
-      /* a floor with a rounded bottom and walls that stand up: a vallone is a ravine
-         cut into the shelf, not a dip in it, so the profile is square in the shoulder
-         and only eases over the last of its width */
-      var t = dmin / v.w, cut = v.d * (1 - t * t * t) * (1 - t * .18);
-      if (cut > best) best = cut;
-    }
-    return best;
-  }
   for (j = 0; j < HH; j++) {
     for (i = 0; i < HW; i++) {
       var x = i * HG, y = j * HG;
       var dx = Math.abs(x - MX), dy = y - MY;
-      var shore = coastY(x), z, q = calm(x, y), dp = depot(x, y);
+      var shore = coastY(x), z, q = calm(x, y), dp = depotAt(x, y);
 
       /* ---- 1. the landform ---- */
       /* the cliff line is not a ruled edge: the sea has cut re-entrants into the soft
@@ -2447,7 +2999,7 @@ function makeHeight() {
         z -= rill * rill * 3.4 * rough;
 
         /* ---- 3. the valloni ---- */
-        z -= gully(x, y) * (1 - q * .55) * (1 - dp);
+        z -= gullyAt(x, y) * (1 - q * .55) * (1 - dp);
 
         /* ---- 4. terraces. Olive terraces on this coast are cut into the slope and
            held up by a dry stone riser, so the tread is level and the riser is not:
@@ -2463,6 +3015,124 @@ function makeHeight() {
       h[hidx(i, j)] = z;
     }
   }
+}
+/* How wet the ground is before a spade has touched it, and how far it has been churned.
+   Both are facts about the COUNTRY rather than about the works on it, which is why they
+   sit on LAND: the crater and trench lists already say where the ground has been opened,
+   and they cannot say that the floor of a river valley in the rain is wet all over.
+   Ortona declares neither and is unchanged by both.
+   They are separate because they are different things. Wet is a surface: the shader
+   darkens it, takes the scatter out of it and puts a sheen on the worst of it. Churn is a
+   colour: ground that has been turned over, shelled, walked on and rained into until
+   whatever the soil had is gone, which is grey-brown and cold where dry stubble is warm
+   and pale. A no man's land that is only wet comes out as damp stubble, which is what
+   this one did. */
+function wetGothic(x, y) {
+  var dx = Math.abs(x - WORLD.w / 2);
+  return clamp((760 - dx) / 380, 0, 1) * .72;
+}
+function churnGothic(x, y) {
+  var dx = Math.abs(x - WORLD.w / 2);
+  return clamp((940 - dx) / 300, 0, 1);
+}
+
+/* ---- the Gothic Line ----
+   The Adriatic sector of it: the Foglia and the ridges above it, which is 1st Canadian
+   Corps ground at the end of August 1944. What is built here is that country and not
+   that battle. The real line had one army on the high ground and the other down in the
+   river, and a map has to be fair, so the valley is put down the middle with a ridge
+   either side of it and each side holds one. This is ground the line has already been
+   fought over and turned on.
+
+   Read from a base out at the edge toward the river: a shelf flat enough to assemble an
+   army on, the back of a ridge, the crest it forms up behind, the forward slope it has
+   to fight down, and the water at the bottom. Read north to south: the ridges stand
+   highest where they run up into the shoulder at the top of the map and die away into
+   water meadow at the bottom, so one flank is broken going and the other is open. Both
+   teams get both of those, because the map is mirrored about the midline and not about
+   this.
+
+   Every term is a function of the distance out from the midline and of y, the relief
+   included -- the sample point is folded about the midline before the noise is asked,
+   so the two halves of the ground are identical and not merely similar. Ortona does not
+   do that and does not need to: its two halves are a town with a headquarters at either
+   end of it. Here the ground itself is what the two armies are being asked to fight
+   over on equal terms. */
+function landGothic(h) {
+  var MX = WORLD.w / 2, i, j;
+  for (j = 0; j < HH; j++) {
+    for (i = 0; i < HW; i++) {
+      var x = i * HG, y = j * HG;
+      var dx = Math.abs(x - MX), fx = MX - dx;         /* folded, so the noise mirrors too */
+      var dp = depotAt(x, y);
+      /* how far south. The one thing allowed to differ across the map, because it differs
+         the same way on both sides of it */
+      var sy = clamp((y - 700) / 900, 0, 1); sy = sy * sy * (3 - 2 * sy);
+      /* The crest is not a ruled line: it wanders in and out along its length by most of
+         two hundred units, which is what puts spurs on a ridge and re-entrants between
+         them. It depends on y alone, so the two crests wander identically. */
+      var dxw = dx + (hfbm(y / 270, 0, 41, 3) - .5) * 176;
+
+      /* ---- 1. the landform ----
+         The crest sits a long way out, at seven hundred from the midline rather than
+         five: the ground between the two positions is the whole of what this map is
+         about, and at the narrower spacing a section sent across the middle was at the
+         far bunkers before it had done anything. Fourteen hundred units between the two
+         lines is far enough to need bounds, cover and a plan to cross. */
+      var crestH = 78 - sy * 42;
+      var rise = clamp((dxw - 430) / 270, 0, 1); rise = rise * rise * (3 - 2 * rise);
+      var back = clamp((dxw - 900) / 220, 0, 1); back = back * back * (3 - 2 * back);
+      var z = crestH * rise - (crestH - 30) * back;
+      /* the shoulder the ridges run up into at the north edge */
+      var nor = clamp(1 - y / 620, 0, 1);
+      z += nor * nor * 48;
+
+      /* ---- 2. spurs and draws. A ridge sheds its water down the fall line, so what a
+         forward slope is cut into is a comb of spurs with draws between them, and a draw
+         is the only covered way up a face. They live on the slope and die out at the
+         crest and at the foot, which is what onFace says. ---- */
+      var onFace = rise * (1 - rise) * 4;
+      z += (hridge(y / 105, dxw / 320, 47, 3) - .5) * 34 * onFace * (1 - dp);
+
+      /* ---- 3. relief, its domain warped so it does not read as noise laid over a ramp.
+         The floor is a flood plain and IS flat; the ridge is broken ground; the shelf
+         behind it is middling, and a depot wants to be level. ---- */
+      var floorF = 1 - clamp(dxw / 500, 0, 1);
+      var rough = clamp(.9 - floorF * .46 - back * .34, .12, 1) * (1 - dp * .94);
+      var wx = fx + (hfbm(fx / 430, y / 430, 83, 2) - .5) * 190;
+      var wy = y + (hfbm(fx / 390, y / 390, 97, 2) - .5) * 190;
+      z += (hfbm(wx / 300, wy / 300, 11, 4) - .5) * 42 * rough;
+      z += (hridge(wx / 155, wy / 155, 23, 3) - .45) * 24 * rough;
+      z += (hfbm(fx / 44, y / 44, 37, 3) - .5) * 6.5 * (1 - dp * .8);
+      var rill = hridge(fx / 26, y / 70, 53, 2);
+      z -= rill * rill * 3.2 * rough;
+
+      /* ---- 4. the flood plain, and the channel in the bottom of it. The plain is a
+         shallow dish that widens and deepens southward as the valley opens out; the
+         channel is cut along its own course the way a vallone is, and is what carries
+         the gravel bed and the boulders. ---- */
+      var plW = 300 + sy * 340;
+      var pl = clamp(1 - dx / plW, 0, 1);
+      z -= pl * pl * (3 - 2 * pl) * (7 + sy * 7);
+      z -= gullyAt(x, y) * (1 - dp);
+
+      h[hidx(i, j)] = z;
+    }
+  }
+}
+function makeHeight() {
+  /* the noise under everything never changes for a given world, and it is two thirds
+     of a second of arithmetic: the editor rebuilds the ground after every stroke and
+     was paying for it every time. The cache is keyed by the country and by where the
+     depots were put, which are the two things a map can change under it. */
+  var key = LAND.name + '|' + DEPOT.join(';');
+  if (makeHeight._key === key) {
+    G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
+    G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+    return;
+  }
+  var h = new Float32Array(HW * HH), i, j, k;
+  LAND.build(h);
   /* Level the two depots. Damping the noise that builds the relief is not enough on
      its own, because a good deal of what makes this ground rough is the landform itself:
      out here the shelf is climbing toward the map edge and the rills are cutting down
@@ -2471,13 +3141,14 @@ function makeHeight() {
      ground actually has -- the depot still sits on the side of the shelf -- and takes
      away only the holes in it, so there is no step where the pad meets the country. */
   for (var dpi = 0; dpi < DEPOT.length; dpi++) {
-    var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1], R = 380;
-    var i0 = Math.max(0, Math.floor((cx0 - R) / HG)), i1 = Math.min(HW - 1, Math.ceil((cx0 + R) / HG));
-    var j0 = Math.max(0, Math.floor((cy0 - R) / HG)), j1 = Math.min(HH - 1, Math.ceil((cy0 + R) / HG));
+    var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1];
+    var RX = LAND.padR + 215, RY = LAND.padY + 215;
+    var i0 = Math.max(0, Math.floor((cx0 - RX) / HG)), i1 = Math.min(HW - 1, Math.ceil((cx0 + RX) / HG));
+    var j0 = Math.max(0, Math.floor((cy0 - RY) / HG)), j1 = Math.min(HH - 1, Math.ceil((cy0 + RY) / HG));
     var n = 0, sx = 0, sy = 0, sz = 0, sxx = 0, syy = 0, sxy = 0, sxz = 0, syz = 0;
     for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
       var px = i * HG - cx0, py = j * HG - cy0;
-      if (px * px + py * py > R * R) continue;
+      if (px * px / (RX * RX) + py * py / (RY * RY) > 1) continue;
       var pz = h[hidx(i, j)];
       n++; sx += px; sy += py; sz += pz;
       sxx += px * px; syy += py * py; sxy += px * py; sxz += px * pz; syz += py * pz;
@@ -2491,8 +3162,8 @@ function makeHeight() {
     var c = det ? (r2 * m11 - r1 * m12) / det : 0;
     var a = sz / n - b * sx / n - c * sy / n;
     for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
-      var qx = i * HG - cx0, qy = j * HG - cy0, dd2 = Math.hypot(qx, qy);
-      var w3 = clamp(1 - (dd2 - 180) / 200, 0, 1);
+      var qx = i * HG - cx0, qy = j * HG - cy0;
+      var w3 = clamp(1 - (depotDist(i * HG, j * HG) - LAND.padR - 15) / 200, 0, 1);
       if (w3 <= 0) continue;
       w3 = w3 * w3 * (3 - 2 * w3) * .95;
       k = hidx(i, j);
@@ -2506,7 +3177,7 @@ function makeHeight() {
     var j0 = Math.max(0, j - 1), j1 = Math.min(HH - 1, j + 1);
     sm[hidx(i, j)] = (h[hidx(i0, j)] + h[hidx(i1, j)] + h[hidx(i, j0)] + h[hidx(i, j1)] + h[hidx(i, j)] * 2) / 6;
   }
-  makeHeight._base = new Float32Array(sm);
+  makeHeight._key = key; makeHeight._base = new Float32Array(sm);
   G.hmap0 = sm; G.hmap = new Float32Array(sm);
   G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
 }
@@ -2559,6 +3230,14 @@ function distToSeg(px, py, x1, y1, x2, y2) {
 /* the side of a leg that faces the enemy: +1 is to the left of the drawing direction
    (the side its normal points to), -1 to the right; the map's centre decides unless the
    leg says otherwise */
+/* A bunker's footprint is axis-aligned like every solid thing here, so the frontage runs
+   across whichever axis the bearing is least along. Derived in one place rather than
+   stored on the entity, and handed out, because the editor has to mark and pick the same
+   rectangle the game builds and the check has to test it. */
+function bunkerBox(e) {
+  var ax = Math.abs(Math.cos(e.a || 0)) > Math.abs(Math.sin(e.a || 0));
+  return { w: ax ? 46 : 74, h: ax ? 74 : 46 };
+}
 function trenchFacing(a, b, flag) {
   if (flag === 'L') return 1;
   if (flag === 'R') return -1;
@@ -2597,8 +3276,9 @@ function makeFields() {
   G.terraces = []; G.vines = [];
   if (!G.grass.length) G.grass.push({ x: WORLD.w / 2, y: WORLD.h / 2, r: 10, t: .4, a: 0 });
   /* terrace walls follow the height steps on the flanks; the steps are functions of
-     distance from the midline, so each wall is a line of constant x */
-  for (var st = 1; st <= 4; st++) {
+     distance from the midline, so each wall is a line of constant x. They are a piece of
+     this coast's farming and belong to the country rather than to the map. */
+  for (var st = 1; LAND.terrace && st <= 4; st++) {
     var fl = (st - .5) / 5, dxw = 900 + fl * 520;
     var yTop = 300, yBot = WORLD.h - 150;
     G.terraces.push({ x1: WORLD.w / 2 - dxw, y1: yTop, x2: WORLD.w / 2 - dxw, y2: yBot });
@@ -2746,6 +3426,9 @@ function cidx(cx, cy) { return cy * GW + cx; }
    not shoot across a gully it was standing on the lip of. */
 var sblk = new Uint8Array(GW * GH), fblk = new Uint8Array(GW * GH), road = new Uint8Array(GW * GH);
 var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH), wallg = new Uint8Array(GW * GH);
+/* anti-tank obstacles: hedgehogs and dragon's teeth. The mirror image of wire, which
+   holds a man up and lets a tank drive over it. */
+var hogg = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -2834,7 +3517,12 @@ function rebuildGrid() {
      off the gardens of half the town. */
   wallg.fill(0);
   G.walls.forEach(function (w) {
-    markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
+    /* Only a wall taller than a man stops his eye and his round. A waist-high field
+       boundary is cover he fires OVER, so it is on the going grid and the cover index
+       and on neither of the two that block. */
+    if ((w.h || 24) >= 16) {
+      markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
+    }
     markSeg(wallg, w.x1, w.y1, w.x2, w.y2, 4);
   });
   /* a hedge hides a section and does not save it */
@@ -2849,8 +3537,13 @@ function rebuildGrid() {
   });
   G.paved.forEach(function (p) { markRect(road, p.x + p.w / 2, p.y + p.h / 2, p.w, p.h, 0); });
   /* Wire holds men up in the open rather than stopping them: it is laid to make them
-     stand still somewhere a machine gun is already looking. Tracks go straight over. */
+     stand still somewhere a machine gun is already looking. Tracks go straight over.
+     Wire an ENGINEER put up did all of that and wire a MAP laid did none of it: G.wire
+     was drawn and marked on nothing, so an apron hand-placed across an approach was
+     painted on. A line that is there to stop somebody has to be on the grid that stops
+     him, and that is the same fault the field walls had. */
   wireg.fill(0);
+  G.wire.forEach(function (wr) { markSeg(wireg, wr.x1, wr.y1, wr.x2, wr.y2, 17); });
   G.works.forEach(function (wk) {
     var W = WORKS[wk.kind];
     if (!W || !W.slow) return;
@@ -2858,6 +3551,14 @@ function rebuildGrid() {
     var hx = Math.cos(wa) * W.len / 2, hy = Math.sin(wa) * W.len / 2;
     markSeg(wireg, wk.x - hx, wk.y - hy, wk.x + hx, wk.y + hy, (W.h || 34) * .5);
   });
+  /* And the other way about. A hedgehog is three lengths of rail welded through each
+     other: it fouls a belly or a track and a man walks between them, so it is dear to
+     anything driving and free to anything on foot. Dear rather than closed, like
+     everything else in this cost model -- ground nothing may cross is ground the army
+     stops using -- but dear enough to be worth a long detour, which is what an obstacle
+     belt is for. */
+  hogg.fill(0);
+  G.hogs.forEach(function (hg) { markSeg(hogg, hg.x1, hg.y1, hg.x2, hg.y2, 15); });
   buildRoom();
 }
 /* How much room a cell has: the distance in cells to the nearest thing that stops a
@@ -2978,6 +3679,11 @@ function roomAt(x, y) {
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return 0;
   return (roomg[cidx(cx, cy)] - .5) * CELL;
 }
+function inHogs(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return hogg[cidx(cx, cy)] === 1;
+}
 function inWire(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
@@ -3065,6 +3771,11 @@ function outPoint(u, tx, ty) {
   }
   if (!u.gar) return { x: u.x, y: u.y };
   var a = Math.atan2(ty - u.y, tx - u.x), o = Math.max(u.gar.w, u.gar.h) * .5 + 14;
+  /* A house is fought out of on every side. A bunker has a slot and a back wall, so the
+     point a round leaves from -- and the point one arrives at -- is clamped into its own
+     arc. Fire from behind is then a line drawn into the concrete, which is solid on the
+     fire grid and stops it, and nothing else has to know about bunkers for that to work. */
+  if (u.gar.arc) a = u.gar.face + clamp(angDiff(u.gar.face, a), -u.gar.arc, u.gar.arc);
   return { x: u.x + Math.cos(a) * o, y: u.y + Math.sin(a) * o };
 }
 /* how high off the ground the eye or the muzzle sits */
@@ -3131,6 +3842,7 @@ function cellCost(ci, kind, dang, fear) {
     c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
     if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
     if (wallg[ci] && kind === 2) c *= 2.6;             /* a lorry goes round; tracks do not */
+    if (hogg[ci]) c *= 12;                             /* and neither goes through a hedgehog */
     c += tight;
   }
   if (dang) c += dang[_d2c[ci]] * fear;
@@ -3587,11 +4299,27 @@ function blockAt(x, y) {
 }
 function canGarrison(u, bk) {
   return u && bk && (u.cat === 'inf' || u.cat === 'team') && u.def.speed > 0 && !u.gar && !u.retreat &&
-         !u.inside && !bk.gar && bk.w > 60 && bk.h > 60;
+         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60));
 }
 /* where the men stand: spread along the inside of the four walls, facing out */
 function garrisonSlots(bk, count) {
   var out = [], hw = bk.w / 2 - 10, hh = bk.h / 2 - 10, i;
+  /* A house is fought out of on all four sides. A thing with a face is not: its men stand
+     in a line inside the fighting slot, which is the only part of it they can see out of,
+     and that is the reason a bunker is taken from the flank rather than from in front. */
+  if (bk.face !== undefined) {
+    var ca = Math.cos(bk.face), sa = Math.sin(bk.face), along = Math.abs(ca) > Math.abs(sa);
+    var deep = (along ? hw : hh) - 7, span = along ? hh : hw, offs = [];
+    for (i = 0; i < count; i++) offs.push(count < 2 ? 0 : (((i + .5) / count) - .5) * 1.75 * span);
+    /* The leader takes the middle of the slot and the rest are dealt outward from him.
+       His is the eye the periscope uses -- povEye reads the first living man -- and dealt
+       in order he stood at the far left end of the embrasure with a roof pier a few units
+       in front of his face, so a commander looking out of his own bunker saw concrete. */
+    offs.sort(function (p, q) { return Math.abs(p) - Math.abs(q); });
+    for (i = 0; i < count; i++)
+      out.push({ x: bk.x + ca * deep - sa * offs[i], y: bk.y + sa * deep + ca * offs[i], f: bk.face });
+    return out;
+  }
   var edges = [[0, hh, 1, 0, Math.PI / 2], [0, -hh, 1, 0, -Math.PI / 2],
                [hw, 0, 0, 1, 0], [-hw, 0, 0, 1, Math.PI]];
   var per = Math.max(1, Math.ceil(count / 4));
@@ -3619,7 +4347,10 @@ function leaveBuilding(u) {
   var bk = u.gar, i;
   if (!bk) return;
   bk.gar = null; u.gar = null;
-  var sp = nearestFree(bk.x, bk.y + bk.h / 2 + 34);
+  /* out of the back of it, because the front of a bunker is the beaten zone */
+  var ox = bk.face === undefined ? 0 : -Math.cos(bk.face) * (Math.max(bk.w, bk.h) * .5 + 34);
+  var oy = bk.face === undefined ? bk.h / 2 + 34 : -Math.sin(bk.face) * (Math.max(bk.w, bk.h) * .5 + 34);
+  var sp = nearestFree(bk.x + ox, bk.y + oy);
   u.x = sp.x; u.y = sp.y;
   for (i = 0; i < u.models.length; i++) {
     u.models[i].x = u.x + u.models[i].ox; u.models[i].y = u.y + u.models[i].oy;
@@ -3903,7 +4634,12 @@ function moveUnit(u, dt) {
     var wheeled = u.cat === 'veh' && (u.key === 'ger_sd222' || u.key === 'us_m3' || u.key === 'ger_h251');
     var grip = u.cat !== 'veh' ? .55 : wheeled ? 1.5 : 1.0;
     sp *= clamp(1 - rise * grip * (rise > 0 ? 1 : .35), .35, 1.12);
-    if (u.cat === 'veh') sp *= onRoad(u.x, u.y) ? 1.22 : .94;
+    if (u.cat === 'veh') {
+      sp *= onRoad(u.x, u.y) ? 1.22 : .94;
+      /* and a hull that has taken the belt anyway, because it was the only way through,
+         is over it at a crawl rather than through it at a drive */
+      if (inHogs(u.x, u.y)) sp *= .35;
+    }
     else if (inWire(u.x, u.y)) sp *= .40;                /* caught in the apron */
     else if (onWall(u.x, u.y)) sp *= .55;               /* over the field wall, one at a time */
   }
@@ -4149,6 +4885,55 @@ function chooseCover(u, threatAng) {
   return out;
 }
 /* a point is no good if it is inside a building or off the walkable grid */
+/* ---- where the drawn masonry actually is ----
+   A field wall is on neither blocking grid, because a man is MEANT to get over one, and
+   it is not in G.props either, so nothing that asks whether a man may STAND somewhere
+   knew it was there at all. Measured over 150 seconds of battle on the Gothic Line, two
+   per cent of every man-frame was a halted man standing inside a field wall -- not a man
+   climbing it, a man at a stop, drawn in the stones and getting nothing from them.
+   Ortona reads nothing, because every wall in the town is over head height and is solid
+   on the grid, so the fault arrived with the first map that has low ones.
+   The cover slots were already right: they stand a man ten units off a lowwall's own
+   line. It was the formation that walked through, because its test for a place is
+   `walkable`, and the wall is not on that grid. Bucketed at 120 units, so the question
+   is a handful of boxes, and rebuilt whenever the wall list is. */
+var WQ = 120, wallq = null, wallqW = 0, wallqH = 0;
+function buildWallQ() {
+  wallqW = Math.ceil(WORLD.w / WQ); wallqH = Math.ceil(WORLD.h / WQ);
+  wallq = [];
+  for (var i = 0; i < G.walls.length; i++) {
+    var w = G.walls[i];
+    if ((w.h || 24) >= 16) continue;                  /* a town wall is already solid */
+    var len = Math.hypot(w.x2 - w.x1, w.y2 - w.y1), a = Math.atan2(w.y2 - w.y1, w.x2 - w.x1);
+    var n = Math.max(2, Math.round(len / 34)), sl = len / n;
+    for (var k = 0; k < n; k++) {
+      var t = (k + .5) / n, cx = w.x1 + (w.x2 - w.x1) * t, cy = w.y1 + (w.y2 - w.y1) * t;
+      var seg = [cx, cy, sl + 1, a], rr = sl * .5 + 8;
+      var i0 = Math.max(0, ((cx - rr) / WQ) | 0), i1 = Math.min(wallqW - 1, ((cx + rr) / WQ) | 0);
+      var j0 = Math.max(0, ((cy - rr) / WQ) | 0), j1 = Math.min(wallqH - 1, ((cy + rr) / WQ) | 0);
+      for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
+        var bq = j * wallqW + ii;
+        (wallq[bq] || (wallq[bq] = [])).push(seg);
+      }
+    }
+  }
+}
+/* seven is the widest half-depth a stone is drawn at, so a man on the cover slots' own
+   ten units off the line clears it by three and a man laid out on a formation grid that
+   happens to cross it does not */
+function inMasonry(x, y) {
+  if (!wallq) buildWallQ();
+  var i = (x / WQ) | 0, j = (y / WQ) | 0;
+  if (i < 0 || j < 0 || i >= wallqW || j >= wallqH) return false;
+  var list = wallq[j * wallqW + i];
+  if (!list) return false;
+  for (var k = 0; k < list.length; k++) {
+    var sg = list[k], dx = x - sg[0], dy = y - sg[1];
+    var c = Math.cos(-sg[3]), sn = Math.sin(-sg[3]);
+    if (Math.abs(dx * c - dy * sn) <= sg[2] * .5 && Math.abs(dx * sn + dy * c) <= 7) return true;
+  }
+  return false;
+}
 function slotClear(x, y) {
   if (x < 20 || y < 20 || x > WORLD.w - 20 || y > WORLD.h - 20) return false;
   for (var i = 0; i < G.props.length; i++) {
@@ -4156,7 +4941,7 @@ function slotClear(x, y) {
     if (!p.solid || p.kind === 'sea') continue;
     if (Math.abs(x - p.x) < p.w / 2 + 4 && Math.abs(y - p.y) < p.h / 2 + 4) return false;
   }
-  return true;
+  return !inMasonry(x, y);
 }
 function coverSlots(u, c, threatAng) {
   var men = [];
@@ -4340,7 +5125,7 @@ function updateModels(u, dt) {
     }
     if (u.coverSlots && u.coverSlots[i]) {
       tx = u.coverSlots[i].x; ty = u.coverSlots[i].y;
-    } else if (!u.gar && !walkable(tx, ty)) {
+    } else if (!u.gar && (!walkable(tx, ty) || inMasonry(tx, ty))) {
       /* A place in the formation that is inside a wall is not a place. The section's own
          position keeps to the grid, but its men stand a formation's width either side of
          it and the formation did not, so a section walking down a lane had its flank
@@ -4356,7 +5141,7 @@ function updateModels(u, dt) {
         for (var sg = 1; sg >= -1 && !got; sg -= 2) {
           var aln = ox + sg * q * 13;
           var qx = u.x + aln * cs - lat * sn, qy = u.y + aln * sn + lat * cs;
-          if (walkable(qx, qy)) { tx = qx; ty = qy; got = true; }
+          if (walkable(qx, qy) && !inMasonry(qx, qy)) { tx = qx; ty = qy; got = true; }
         }
       }
       if (!got) { tx = u.x; ty = u.y; }
@@ -4375,7 +5160,7 @@ function updateModels(u, dt) {
         var kf = rlim / rdd, cxr = 0, cyr = 0, okr = false;
         for (var wr = 0; wr < 5 && !okr; wr++) {
           cxr = u.x + rdx * kf; cyr = u.y + rdy * kf;
-          if (walkable(cxr, cyr)) okr = true; else kf *= .78;
+          if (walkable(cxr, cyr) && !inMasonry(cxr, cyr)) okr = true; else kf *= .78;
         }
         if (okr) { tx = cxr; ty = cyr; }
       }
@@ -10154,6 +10939,35 @@ function registerMaterials() {
   tag(['#4d5340', '#5d6450', '#41473a', '#4f5643', '#8a7a4e'], 'paint');
   tag(['#cfccbe', '#dcd9cb', '#8e2f26', '#a03a30', '#6b5a3c', '#7d6a48', '#3c3a2e'], 'paint');
   tag(['#4e4230', '#5c4e38', '#42382a', '#6d6144', '#5d5236', '#3a3020', '#251e13', '#0f110c'], 'earth');
+  /* ---- the roots the sweep found ----
+     With a tint able to find its own source, what is left on the untextured tile is a
+     colour nobody ever tagged. Measured on the Gothic Line, 13.6 per cent of the world's
+     faces, and four fifths of that was one string: the third sandbag shade, which was
+     left out of the hessian list when the other two went in, so every parapet, every
+     weapon pit and the whole of both bunker lines' bagwork was drawn on the flat tile.
+     The rest is the tail -- the room read off a shell when nobody has drawn one, the
+     gun's own palette, the joists in a roof, the drums on a fuel dump. */
+  tag(['#7a6e4b'], 'hessian');                              /* the sandbag shade that was missed */
+  tag(['#26261f', '#33332b'], 'track');                     /* the M3's track */
+  tag(['#4a3824', '#5a4530', '#3a2c1c', '#3a352a', '#4a4436', '#332f26'], 'wood');   /* joists, purlins, floors */
+  tag(['#c8c1a0', '#d3d1c3', '#b0a888', '#bbb9ab', '#2f3330', '#4d524d'], 'paint');  /* the derived interior */
+  tag(['#4a4d48', '#63665f', '#3b3e39', '#b8a052'], 'steel');
+  tag(['#6b5237'], 'leather');
+  if (typeof GUN !== 'undefined') {
+    tag([GUN.steel, GUN.steelL, GUN.brass], 'steel'); tag([GUN.canvas], 'canvas');
+    tag([GUN.wood], 'wood'); tag([GUN.rubber], 'rubber');
+    tag([GUN.od, GUN.odL, GUN.dg, GUN.dgL, GUN.dgD], 'paint');
+  }
+  tag(['#586247', '#798366', '#424a35', '#88784e', '#a18f61', '#675d40'], 'paint');  /* the light vehicles */
+  tag(['#5b6243', '#8c7a4e', '#4f5643', '#6d6249', '#3f3a30'], 'paint');             /* jerricans and drums */
+  tag(['#6a6a4a', '#8a8a62'], 'steel');                     /* ready rounds round an open turret */
+  tag(['#2f2b22', '#3a362c'], 'stone');                     /* the floor of a gutted house */
+  tag(['#5a4a32', '#6b5a3e', '#2a2418'], 'wood');           /* a door, and a flag pole */
+  tag(['#1d1f19', '#141610', '#20231b', '#23261f', '#1a1d18', '#17190f', '#191c16',
+       '#2d3128', '#24261e', '#cfcdb6'], 'steel');          /* lamp glass, sight blocks, studs */
+  /* a window recess, a door and a sight aperture are holes, and a hole is meant to be
+     flat and dark. Named so that the probe counts them as intended rather than as a miss. */
+  tag(['#1a1c16', '#15170f', '#14150f'], 'generic');
   if (typeof KIT !== 'undefined') tagKit();
   tag(['#4c4131', '#5e5240', '#4a3f2e', '#5a4e3a', '#39301f'], 'bark');
   tag(['#59653c', '#616d43', '#4e5a34', '#56623a', '#3d4a2c', '#22300f', '#293914'], 'grass');
@@ -10162,6 +10976,19 @@ function registerMaterials() {
   tag(['#3f4c31', '#4f5d3c', '#65734b'], 'leaf');
   tag(['#9d9f6c', '#8f965f'], 'grass');
   tag(['#5d5a44'], 'net');                                  /* the camouflage net over the HQ yard */
+  if (typeof HOGC !== 'undefined') {
+    tag([HOGC.steel, HOGC.steelL], 'steel'); tagEdges([HOGC.steel, HOGC.steelL], 'steel');
+    tag([HOGC.rust, HOGC.rustL], 'steel'); tagEdges([HOGC.rust, HOGC.rustL], 'steel');
+    tag([HOGC.con, HOGC.conL, HOGC.conD], 'concrete');
+    tagEdges([HOGC.con, HOGC.conL, HOGC.conD], 'concrete');
+  }
+  if (typeof BUNK !== 'undefined') {
+    tag([BUNK.con, BUNK.conL, BUNK.conD, BUNK.conW], 'concrete');
+    tagEdges([BUNK.con, BUNK.conL, BUNK.conD, BUNK.conW], 'concrete');
+    tag([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
+    tagEdges([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
+    tag([BUNK.steel, BUNK.dark], 'steel'); tagEdges([BUNK.steel, BUNK.dark], 'steel');
+  }
 }
 /* Every colour a figure wears and every lit() derivative of it a builder makes. A
    derivative nobody tagged falls to the flat generic tile, which is how 433 of a
@@ -10205,7 +11032,19 @@ function tagKit() {
   tagAll(['#3b3226', '#4a4030'], 'rubber');
   tagAll([D.smock], 'splinter');
 }
-function matOf(col) { var m = MATS.byColour[col]; return m === undefined ? 0 : m; }
+function matOf(col) {
+  var m = MATS.byColour[col];
+  if (m !== undefined) return m;
+  /* not a colour anybody tagged: follow it back up the chain of tints it was derived
+     from, and keep the answer, because a scene asks about the same colour thousands of
+     times. The bound is there because a tint of a tint of a tint is still only three. */
+  var c = col, n = 0;
+  while (n++ < 8 && (c = _lsrc[c]) !== undefined) {
+    m = MATS.byColour[c];
+    if (m !== undefined) { MATS.byColour[col] = m; return m; }
+  }
+  return 0;
+}
 
 /* ---- the atlas: sixteen 256-pixel tiles painted procedurally ---- */
 function noise2(x, y, s) { var v = Math.sin(x * 12.9898 + y * 78.233 + s * 37.719) * 43758.5453; return v - Math.floor(v); }
@@ -10953,7 +11792,8 @@ function buildTerrain(only) {
        and has never once looked at it -- every scale of its surface comes out of the grit
        texture instead. A natural hollow is capped short of standing water; only a dug one
        gets a puddle. */
-    var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55);
+    var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55,
+                       LAND.wet ? LAND.wet(x, y) : 0);
     wet = clamp(wet, 0, 1) * clamp(1 - (1 - n.z) * 3.0, 0, 1);
     arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, y * .04, 9);
   }
@@ -11168,7 +12008,7 @@ function sceneProps(tile) {
   /* Boulders in the stream beds. What comes down a vallone in a winter storm is rounded
      by the time it stops, so these are squat and tumbled rather than bedded like the
      outcrop above them. */
-  VALLONI.forEach(function (vl, vi) {
+  LAND.val.forEach(function (vl, vi) {
     for (var sg = 0; sg < vl.pts.length - 1; sg++) {
       var ax = vl.pts[sg][0], ay = vl.pts[sg][1], bx = vl.pts[sg + 1][0], by = vl.pts[sg + 1][1];
       var sl2 = Math.hypot(bx - ax, by - ay), nx2 = -(by - ay) / sl2, ny2 = (bx - ax) / sl2;
@@ -11195,15 +12035,46 @@ function sceneProps(tile) {
       put(box(0, 0, 0, sw[2], sw[3], 1.6, flag, lit(flag, 1.06), kerb, .3), sw[0], sw[1], 0);
     });
   });
-  /* garden walls */
+  /* ---- walls ----
+     A town garden wall is a built thing: rendered, coursed, standing plumb, and a run of
+     34-unit boxes is what it is. A dry-stone field boundary is not. It is what came out
+     of the field stacked on the edge of it, it stands as high as the man who stacked it
+     could reach comfortably, and in a valley that has been shelled for a fortnight it is
+     down in places. Drawn the same way, every enclosure on the Gothic Line came out as a
+     ruled white line two hundred units long with a level top -- the one thing left in the
+     frame that read as placed by a program rather than fought over.
+     So a low wall is laid stone by stone, in 13s rather than 34s: the height wanders, the
+     depth wanders, the line wanders off its own axis by a foot or so, and one course in
+     eight is down to a tumble. Nothing about the cover, the grid or the sight line
+     changes -- those come off G.walls, which is still the straight line it always was. */
+  var WSTONE = ['#8b8067', '#7d7460', '#8f836a', '#948c78', '#a2977c'];
   G.walls.forEach(function (wl) {
     if (!mine((wl.x1 + wl.x2) / 2, (wl.y1 + wl.y2) / 2)) return;
     seedAt(wl.x1, wl.y1, 4);
     var len = Math.hypot(wl.x2 - wl.x1, wl.y2 - wl.y1), a = Math.atan2(wl.y2 - wl.y1, wl.x2 - wl.x1);
-    var n = Math.max(2, Math.round(len / 34));
-    for (var i = 0; i < n; i++) {
-      var cx = lerp(wl.x1, wl.x2, (i + .5) / n), cy = lerp(wl.y1, wl.y2, (i + .5) / n);
-      put(box(0, 0, 0, len / n + 1, 11, 24, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
+    var wh = wl.h || 24, town = wh > 16;
+    var nx = Math.cos(a + Math.PI / 2), ny = Math.sin(a + Math.PI / 2), i, cx, cy;
+    if (town) {
+      var n = Math.max(2, Math.round(len / 34)), seg = len / n;
+      for (i = 0; i < n; i++) {
+        cx = lerp(wl.x1, wl.x2, (i + .5) / n); cy = lerp(wl.y1, wl.y2, (i + .5) / n);
+        put(box(0, 0, 0, seg + 1, 11, wh, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
+      }
+      return;
+    }
+    /* stepped rather than divided, so no two lengths along a run are the same: a fixed
+       division reads as a row of identical blocks however much the heights wander. */
+    var ux = Math.cos(a), uy = Math.sin(a), d = 0, ln;
+    while (d < len - 2) {
+      ln = Math.min(srange(8.5, 17), len - d);
+      cx = wl.x1 + ux * (d + ln / 2); cy = wl.y1 + uy * (d + ln / 2);
+      d += ln;
+      var col = WSTONE[(srand() * WSTONE.length) | 0], down = srand() < .12;
+      var hh = down ? wh * srange(.22, .38) : wh * srange(.74, 1.06);
+      var dp = down ? srange(11, 14) : srange(6.6, 9.8);
+      var sw = srange(-1.7, 1.7);
+      put(box(0, 0, 0, ln + 1.2, dp, hh, col, lit(col, 1.1), lit(col, .88), .9),
+          cx + nx * sw, cy + ny * sw, a + srange(-.055, .055));
     }
   });
   /* ---- the trenches, dressed: every leg gets its revetment, fire step, duckboards,
@@ -11295,6 +12166,33 @@ function sceneProps(tile) {
   });
   /* wire: screw pickets with a concertina coil strung between them, each coil a helix
      of short segments, plus a low apron strand either side to catch the feet */
+  G.hogs.forEach(function (hg) {
+    var ha = Math.atan2(hg.y2 - hg.y1, hg.x2 - hg.x1), hl = Math.hypot(hg.x2 - hg.x1, hg.y2 - hg.y1);
+    var hnx = -Math.sin(ha), hny = Math.cos(ha), hr, hd, hpx, hpy;
+    if (hg.kind === 'teeth') {
+      /* four ranks stepping up toward the enemy and staggered, so nothing has a line
+         through and a hull that climbs the first rank grounds itself on the second */
+      for (hr = 0; hr < 4; hr++) {
+        for (hd = (hr % 2) * 12; hd < hl; hd += 24) {
+          hpx = hg.x1 + Math.cos(ha) * hd + hnx * (hr * 17 - 26);
+          hpy = hg.y1 + Math.sin(ha) * hd + hny * (hr * 17 - 26);
+          if (!mine(hpx, hpy)) continue;
+          seedAt(hpx, hpy, 11);
+          put(dragonTooth(8 + hr * 2.6 + srange(0, 1.8), srand()), hpx, hpy, ha + srange(-.22, .22));
+        }
+      }
+    } else {
+      for (hr = 0; hr < 2; hr++) {
+        for (hd = (hr % 2) * 14; hd < hl; hd += 28) {
+          hpx = hg.x1 + Math.cos(ha) * hd + hnx * (hr * 17 - 8.5);
+          hpy = hg.y1 + Math.sin(ha) * hd + hny * (hr * 17 - 8.5);
+          if (!mine(hpx, hpy)) continue;
+          seedAt(hpx, hpy, 11);
+          put(hedgehogModel(srand()), hpx, hpy, srange(0, TAU));
+        }
+      }
+    }
+  });
   G.wire.forEach(function (wr) {
     if (!mine((wr.x1 + wr.x2) / 2, (wr.y1 + wr.y2) / 2)) return;
     seedAt(wr.x1, wr.y1, 5);
@@ -11379,6 +12277,8 @@ function sceneProps(tile) {
       put(pitch(box(0, 0, 4, 28, 2.6, 2.6, '#4e402c', '#5f4e36'), .3, 0, 0), st.x, st.y, st.s * TAU);
       put(pitch(box(0, 0, 7, 22, 2.2, 2.2, '#4e402c', '#5f4e36'), -.2, 0, 0), st.x + 6, st.y - 4, st.s * TAU + 1.2);
       put(box(0, 0, .6, 16, 8, 1.2, '#5a4a32', '#6b5a3e'), st.x - 8, st.y + 6, st.s * 5);       /* a door */
+    } else if (st.kind === 'bunker') {
+      put(bunkerModel(74, 46, st.s), st.x, st.y, st.a || 0);
     } else if (st.kind === 'emplace') {
       /* a weapon pit: a horseshoe of sandbags two bags thick, six courses at the front
          falling to three at the open rear, each course laid header-and-stretcher round
@@ -11487,6 +12387,12 @@ function buildGrass() {
     if (inPatch) { var a = srange(0, TAU), rr = Math.sqrt(srand()) * gp.r; x = gp.x + Math.cos(a) * rr; y = gp.y + Math.sin(a) * rr * .62; }
     else { x = srange(40, WORLD.w - 40); y = srange(220, WORLD.h - 40); }
     if (blocked(x, y)) continue;
+    /* and nothing much grows where the ground has been turned over. A map that says its
+       country has been shelled for a fortnight (LAND.churn) had bright tufts standing all
+       over it, because the grass scatter knew about paving, roads, trenches and the sea
+       and about nothing else. Thinned rather than forbidden: a few come through in the
+       lee of a bank or a wall, which is what the ground actually looks like. */
+    if (LAND.churn && srand() < LAND.churn(x, y) * .88) continue;
     var z = groundZ(x, y), h = srange(3.2, 5.8), w = h * 1.6, yaw = srange(0, Math.PI), col = hexRGB(srand() < .5 ? '#9d9f6c' : '#8f965f');
     /* two quads at right angles, each drawn from both sides */
     for (var q = 0; q < 2; q++) {
@@ -12175,6 +13081,7 @@ function paintGround(t, DET) {
   }
 
   /* ---- the Adriatic: deep water, swell lines, a foam edge and the cliff face ---- */
+  if (G.coastline.length) {
   t.save();
   t.beginPath(); t.moveTo(0, 0); t.lineTo(WORLD.w, 0);
   for (var ci = G.coastline.length - 1; ci >= 0; ci--) t.lineTo(G.coastline[ci].x, G.coastline[ci].y);
@@ -12224,10 +13131,11 @@ function paintGround(t, DET) {
     }
   }
 
-  /* ---- The floor of a vallone. Nothing runs in one in December but the rain, and what
-     it leaves behind is a braided bed of limestone gravel with a damp thread wandering
-     down the middle of it, widening where the fall eases. ---- */
-  VALLONI.forEach(function (vl, vi) {
+  }
+  /* ---- The floor of a watercourse. Nothing runs in one in December but the rain, and
+     what it leaves behind is a braided bed of limestone gravel with a damp thread
+     wandering down the middle of it, widening where the fall eases. ---- */
+  LAND.val.forEach(function (vl, vi) {
     var pts = vl.pts, sp;
     for (var sg = 0; sg < pts.length - 1; sg++) {
       var ax = pts[sg][0], ay = pts[sg][1], bx = pts[sg + 1][0], by = pts[sg + 1][1];
@@ -12276,6 +13184,7 @@ function paintGround(t, DET) {
   });
 
   /* ---- the railway along the south edge: ballast, sleepers, paired rails ---- */
+  if (G.rail.length) {
   t.save();
   t.lineCap = 'butt';
   t.strokeStyle = '#6f6a58'; t.lineWidth = 38;
@@ -12290,6 +13199,7 @@ function paintGround(t, DET) {
     t.beginPath(); G.rail.forEach(function (p, n) { if (!n) t.moveTo(p.x, p.y + off); else t.lineTo(p.x, p.y + off); }); t.stroke();
   });
   t.restore();
+  }
 
   /* ---- paving: the town streets and the piazza ---- */
   /* ---- The town floor. Ortona's streets are setts and its squares are flagged, and
@@ -12586,6 +13496,53 @@ function paintGround(t, DET) {
     t.globalAlpha = 1; t.restore();
   });
 
+  /* ---- What a line fought over twice has done to the colour of the ground ----
+     Everything above paints what the ground IS: the rock it is made of, the roads laid
+     on it, the holes blown in it. This is what has been DONE to it, and it goes on last
+     for exactly that reason. Turned over, shelled, walked on and rained into until
+     whatever colour the soil had is gone and what is left is churned subsoil -- darker,
+     greyer and colder than the dry stubble either side of it, and colder than the road
+     running through it, which after a fortnight of this is mud with a camber.
+     Laid over rather than mixed in, so the macro drift underneath still shows through
+     and the middle of the map does not come out as one flat slab.
+     It is the half of no man's land a wetness cannot give you. The shader's wet term
+     darkens ground and warms it, because water in the grain is warm; it was put in first
+     on its own and what came out was damp stubble. Bleak is a colour, and the colour has
+     to be painted. */
+  /* A neutral grey rather than a brown one. Mud is brown because it is wet and the
+     shader already does the wet; what the PAINT has to take away is the warmth the dry
+     stubble either side of it keeps, so the overlay is very nearly colourless and the
+     brown that comes out is the brown of water in the grain.
+     It is built as an image a quarter the size and drawn once, rather than as a quarter
+     of a million little rectangles. Written the obvious way it cost 2.8 seconds on a full
+     albedo and DOUBLED the editor's patch repaint, which is the one number in this file
+     that a person waiting with a finger on the screen can feel. A wash has no detail
+     finer than the noise under it, so there is nothing to lose by painting it coarse and
+     letting the scale-up smooth it -- and the clip does the rest, because drawImage
+     honours it where a loop over the whole world does not. */
+  if (LAND.churn) {
+    var CQ = 4, cw = Math.ceil(WORLD.w / CQ), cht = Math.ceil(WORLD.h / CQ);
+    if (!paintGround._cc || paintGround._cc.width !== cw) {
+      paintGround._cc = document.createElement('canvas');
+      paintGround._cc.width = cw; paintGround._cc.height = cht;
+    }
+    var cc = paintGround._cc, cct = cc.getContext('2d');
+    var cim = cct.createImageData(cw, cht), cd = cim.data, cp = 0, ci2, cj2;
+    for (cj2 = 0; cj2 < cht; cj2++) {
+      for (ci2 = 0; ci2 < cw; ci2++) {
+        var cwx = ci2 * CQ, cwy = cj2 * CQ;
+        var ch2 = LAND.churn(cwx, cwy);
+        var cn2 = noise2(Math.floor(cwx / 7), Math.floor(cwy / 7), 181);
+        var cn3 = noise2(Math.floor(cwx / 31), Math.floor(cwy / 31), 183);
+        var ca2 = ch2 <= .02 ? 0 : Math.min(.9, ch2 * (.50 + cn3 * .34) * (.66 + cn2 * .46));
+        var cg2 = 50 + cn2 * 26 + cn3 * 16;
+        cd[cp] = cg2 + 4; cd[cp + 1] = cg2 + 2; cd[cp + 2] = cg2 - 1; cd[cp + 3] = ca2 * 255;
+        cp += 4;
+      }
+    }
+    cct.putImageData(cim, 0, 0);
+    t.drawImage(cc, 0, 0, WORLD.w, WORLD.h);
+  }
 }
 
 /* ---------------------------------------------------------------- mesh renderer
@@ -12851,10 +13808,19 @@ function tint(col, f) {
   return a < .999 ? 'rgba(' + r + ',' + g + ',' + b + ',' + a.toFixed(3) + ')'
                   : 'rgb(' + r + ',' + g + ',' + b + ')';
 }
-var _lc = {};
+var _lc = {}, _lsrc = {};
 function lit(hex, f) {
-  var k = hex + (f * 100 | 0);
-  return _lc[k] || (_lc[k] = tint(hex, f));
+  var k = hex + (f * 100 | 0), v = _lc[k];
+  /* A derived colour is a colour in its own right and the material table is keyed by the
+     exact string, so every tint has to be registered or it falls back to the untextured
+     tile. Registering them by hand meant enumerating every factor every caller uses --
+     box() shades its bevels at 1.06, .92 and 1.03, a sandbag asks for 1.12 and .9 on top
+     of that, and a miss anywhere is silent. Measured on the Gothic Line, 42 per cent of
+     the world's faces were coming out generic: the whole of the sandbags, every bevel on
+     every wall and most of the masonry. So remember where a tint came from instead and
+     let matOf follow it back to the material its source was tagged with. */
+  if (v === undefined) { v = _lc[k] = tint(hex, f); if (v !== hex) _lsrc[v] = hex; }
+  return v;
 }
 
 /* ---------------------------------------------------------------- building models
@@ -19925,6 +20891,135 @@ function sandbagRun(x0, y0, ang, len, courses, rnd) {
   }
   return out;
 }
+/* ---- anti-tank obstacles ----
+   A Czech hedgehog is three lengths of angle iron welded through each other at their
+   centres, which makes a six-pointed star that stands on three of its points whichever
+   way up it lands. That is the whole of its design and the whole of why it works: it
+   cannot be pushed flat, and what it fouls is the belly of a tank rather than its track.
+   A dragon's tooth is a metre of reinforced concrete, laid in ranks that step up toward
+   the enemy so a hull that climbs the first rank is stopped by the second with its floor
+   in the air.
+   Neither stops a man, which is the point of both, and is why they are laid where a
+   machine gun is already looking. */
+var HOGC = { steel: '#5a5348', steelL: '#6d6558', rust: '#54443a', rustL: '#6a564a',
+             con: '#8a8a7e', conL: '#9a9a8e', conD: '#74746a' };
+function hedgehogModel(sv) {
+  var L = 10.5 + sv * 2.4, t = 1.7, i, j, lo = 1e9;
+  var c = sv > .55 ? HOGC.rust : HOGC.steel, cl = sv > .55 ? HOGC.rustL : HOGC.steelL;
+  var f = box(0, 0, -t / 2, L, t, t, c, cl, c)
+    .concat(box(0, 0, -t / 2, t, L, t, c, cl, c))
+    .concat(box(0, 0, -L / 2, t, t, L, c, cl, c))
+    .concat(box(0, 0, -2.4, 4.4, 4.4, 4.8, cl, cl, c));         /* the weld at the middle */
+  /* tipped off the axes so it stands on three points rather than lying square, and then
+     set down on whatever the lowest of them turns out to be: guessing the drop leaves a
+     star either buried to the weld or hovering over its own shadow */
+  f = roll(pitch(f, .62, 0, 0), .55 + sv * .3, 0, 0);
+  for (i = 0; i < f.length; i++) for (j = 0; j < f[i].v.length; j++) if (f[i].v[j][2] < lo) lo = f[i].v[j][2];
+  return place(f, 0, 0, 0, -lo);
+}
+function dragonTooth(h, sv) {
+  var b = 5.4 + sv * 2.2, t = b * .42;
+  return frustum([[-b, -b], [b, -b], [b, b], [-b, b]], [[-t, -t], [t, -t], [t, t], [-t, t]],
+                 0, h, HOGC.con, HOGC.conL, HOGC.conD);
+}
+
+/* ---- a Gothic Line bunker ----
+   Reinforced concrete dug into the slope with the spoil heaped back over it. What shows
+   from in front is a battered parapet with a long fighting slot above it and a roof slab
+   over that; what shows from behind and from the flanks is a bank of earth with a
+   doorway cut into the foot of it.
+
+   The slot is long rather than a loophole, and that is a decision about the game rather
+   than about the fortification. A player looks at this from four hundred units up: a
+   bunker whose garrison cannot be seen is a concrete box, and the garrison is the thing
+   being fought for. The type exists -- a Kampfstand with a concrete parapet and a roof
+   over it is what a good deal of that line actually was -- so nothing has to be invented
+   to get it.
+
+   Built facing +x with its frontage across y, and turned by the map. The footprint is
+   axis-aligned like every other solid thing here, so the bearing is taken to the nearest
+   quarter turn; on this map every bunker looks along the valley, which is the x axis, so
+   nothing is lost by it. */
+var BUNK = { con: '#7a7a6e', conL: '#8a8a7e', conD: '#6a6a60', conW: '#74746a',
+             earth: '#8a7f66', earthL: '#9b9179', earthD: '#6b6250',
+             steel: '#3f3b30', dark: '#26251f' };
+function bunkerModel(fw, dp, sv) {
+  var hy = fw / 2, hx = dp / 2, f = [], i, k, nrnd = 0;
+  var C = BUNK.con, CL = BUNK.conL, CD = BUNK.conD;
+  var E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
+  /* a hash rather than the map's own seeded sequence, because a model built at boot must
+     not touch that sequence: it would move every bag and every shell hole on the map */
+  function rnd(n) { var v = Math.sin(sv * 91.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  function rseq() { return rnd(++nrnd); }
+  /* A heap of spoil: a patch of ground drawn in to a narrow crest, which is the shape
+     earth takes when it is thrown out of a hole and left. The bank is built out of a row
+     of these rather than as one long wedge, because a wedge is two flat planes and at the
+     distance a player looks from two flat planes read as a plywood ramp leaning on a
+     shed. What makes it earth is that the crest wanders and the toe is ragged. */
+  function heap(cx, cy, bx, by, tx, ty, z0, z1) {
+    return frustum([[cx - bx, cy - by], [cx + bx, cy - by], [cx + bx, cy + by], [cx - bx, cy + by]],
+                   [[cx - tx, cy - ty], [cx + tx, cy - ty], [cx + tx, cy + ty], [cx - tx, cy + ty]],
+                   z0, z1, E, EL, ED);
+  }
+  /* the floor, darker than anything above it, so the inside reads as inside */
+  f = f.concat(box(0, 0, -2, dp, fw, 3, BUNK.dark, BUNK.earthD, BUNK.dark));
+  /* The parapet across the front. It is battered -- leaned back as it rises -- because a
+     sloped face throws a round off and a vertical one takes it square, and because that
+     lean is most of what says concrete rather than crate at any distance. */
+  f = f.concat(frustum([[hx - 10, -hy], [hx, -hy], [hx, hy], [hx - 10, hy]],
+                       [[hx - 10, -hy], [hx - 4, -hy], [hx - 4, hy], [hx - 10, hy]],
+                       0, 13, C, CL, CD));
+  /* two piers off the parapet carrying the roof, with the slot between and either side */
+  for (i = -1; i <= 1; i += 2) f = f.concat(box(hx - 7, i * 14, 13, 7, 9, 13, C, CL, CD));
+  /* the flanks, and the back with a doorway through the middle of it */
+  for (i = -1; i <= 1; i += 2) {
+    f = f.concat(box(0, i * (hy - 5), 0, dp, 10, 26, C, CL, CD));
+    f = f.concat(box(-(hx - 5), i * (hy / 2 + 6), 0, 10, hy - 12, 26, C, CL, CD));
+  }
+  /* the roof, overhanging every way: what throws the rain off the slot and what a shell
+     bursting in front of it goes off against */
+  f = f.concat(box(-1, 0, 26, dp + 8, fw + 9, 7, C, CL, CD));
+  /* The earth back over it. The flanks and the rear are buried to the roof and the spoil
+     runs out onto the ground; only the front and the roof lip are left showing, which is
+     the whole of what makes it a bunker rather than a hut. */
+  for (i = -1; i <= 1; i += 2) {
+    /* A bank is a run of mounds that overlap at the toe and stand apart at the crest.
+       Built with the ends square instead -- a frustum whose top is nearly as long as its
+       base -- what comes out is a row of buttresses with black slots between them, which
+       is the one shape earth never takes. The taper along the bank has to be the strong
+       one and the mounds have to overlap by half. */
+    for (k = 0; k < 8; k++) {
+      var mx = -(hx + 10) + (k + .5) * (dp + 20) / 8;
+      var reach = 17 + rnd(k * 3 + i * 7) * 12, ridge = 28 + rnd(k * 5 + i * 11) * 6;
+      f = f.concat(heap(mx, i * (hy - 7 + reach / 2), 12, reach / 2 + 6, 3.5, 4, -2, ridge));
+    }
+    for (k = 0; k < 3; k++) {
+      var my = i * (14 + k * 10), rch = 15 + rnd(k * 13 + i * 3) * 11, rdg = 27 + rnd(k * 17 + i * 5) * 6;
+      f = f.concat(heap(-(hx - 5 + rch / 2), my, rch / 2 + 6, 11, 4, 3.5, -2, rdg));
+    }
+  }
+  /* and the spoil on the roof, which is what the shelling is meant to go off in */
+  f = f.concat(heap(-1, 0, hx + 4, hy + 4.5, hx - 5, hy - 6, 32, 35.5));
+  for (k = 0; k < 3; k++) {
+    f = f.concat(heap(-2 + (rnd(k * 19) - .5) * dp * .5, (rnd(k * 23) - .5) * fw * .55,
+                      9 + rnd(k * 29) * 7, 11 + rnd(k * 31) * 10, 3, 4, 34.5, 37 + rnd(k * 37) * 2.5));
+  }
+  /* the doorway: a steel frame, and a blast wall a pace behind it so a burst in the
+     entrance does not go straight through into the chamber */
+  f = f.concat(box(-(hx - 5), 0, 0, 11, 26, 3, BUNK.steel, BUNK.steel, BUNK.dark));
+  f = f.concat(box(-(hx - 5), 0, 20, 11, 26, 4, BUNK.steel, BUNK.steel, BUNK.dark));
+  f = f.concat(box(-(hx + 17), 0, 0, 7, 30, 21, C, CL, CD));
+  /* a course of bags along the sill of the slot, which is what a garrison does to a
+     concrete parapet the day it moves in */
+  f = f.concat(sandbagRun(hx - 7, -hy + 5, Math.PI / 2, fw - 10, 1, rseq));
+  /* and what the shelling has taken out of the front */
+  for (k = 0; k < 4; k++) {
+    var cz = 2 + rnd(k * 41) * 9, cy2 = (rnd(k * 43) - .5) * (fw - 14);
+    f = f.concat(box(hx - 2.5, cy2, cz, 4, 4 + rnd(k * 47) * 5, 3 + rnd(k * 53) * 4, CD, BUNK.dark, CD));
+  }
+  return f;
+}
+
 /* A field work, built in world coordinates where it stands and then dropped onto the
    ground face by face. Works are rare -- a handful in a battle -- so each one gets its
    own little buffer rather than being merged into the scene, which is built once before
@@ -22320,6 +23415,14 @@ function hqSpot(slot, duo) {
   var second = slot.length > side.length;
   return { x: p.x, y: clamp(p.y + (second ? 290 : -290), 160, WORLD.h - 160) };
 }
+/* The strip names the map rather than naming Ortona. A map carries its own place and its
+   own date; an imported one carries whatever the editor called it, which is why the two
+   lines are written as text and not as markup. */
+function missionTitle() {
+  var d = G.mapData || {}, m = el('mission');
+  m.children[0].textContent = (d.name || 'Custom map').toUpperCase();
+  m.children[1].textContent = d.when || 'CUSTOM MAP';
+}
 function startGame(side, diff, mode, arty, duo) {
   G.side = side; G.own = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   G.duo = !!duo;
@@ -22328,6 +23431,7 @@ function startGame(side, diff, mode, arty, duo) {
      game; off is for a player who would rather not be shelled. */
   G.aiArty = arty === undefined ? true : !!arty;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
+  missionTitle();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.sel = [];
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
@@ -22451,6 +23555,23 @@ function frame(now) {
 
 /* ---------------------------------------------------------------- boot */
 var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenDuo = false;
+/* The maps that ship. A map nobody can pick is a map nobody has, and the editor's PLAY
+   CUSTOM MAP was the only door onto anything that was not Ortona. One table drives the
+   picker, what the deploy button builds and what the briefing says, because the briefing
+   named the piazza on every map there could ever be. */
+var MAPS = {
+  ortona: { make: defaultMapData,
+            brief: 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.' },
+  gothic: { make: gothicMapData,
+            brief: 'Force one of the three crossings of the Foglia and hold it. Cut-off sectors stop producing resources.' }
+};
+var chosenMap = 'ortona';
+function chosenMapData() { return (MAPS[chosenMap] || MAPS.ortona).make(); }
+function objSync() {
+  el('objtext').textContent = chosenMode === 'anni'
+    ? 'Destroy every building in the enemy base. Victory points do not run down.'
+    : (MAPS[chosenMap] || MAPS.ortona).brief;
+}
 document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
     document.querySelectorAll('.side').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
@@ -22470,9 +23591,16 @@ document.querySelectorAll('.mode').forEach(function (btn) {
     document.querySelectorAll('.mode').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('on'); chosenMode = btn.dataset.mode;
     btn.setAttribute('aria-pressed', 'true');
-    el('objtext').textContent = chosenMode === 'anni'
-      ? 'Destroy every building in the enemy base. Victory points do not run down.'
-      : 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.';
+    objSync();
+  };
+});
+/* which ground it is fought over, which is the first decision and so the first control */
+document.querySelectorAll('.gmap').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('.gmap').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
+    btn.classList.add('on'); chosenMap = btn.dataset.map;
+    btn.setAttribute('aria-pressed', 'true');
+    objSync(); sfx('click');
   };
 });
 /* ---- the handicap on the title screen.
@@ -22770,7 +23898,7 @@ document.querySelectorAll('.team').forEach(function (btn) {
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
 if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
-el('deploy').onclick = function () { G.mapData = defaultMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); };
+el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.own); if (!hq) return;
   select([hq], false); focusSelection();
@@ -22885,6 +24013,9 @@ var ED_CATS = [
     { id: 'bags', name: 'Sandbags', glyph: '▰', kind: 'place', t: 'bags', def: { r: 30 } },
     { id: 'pit', name: 'Weapon pit', glyph: '⊔', kind: 'place', t: 'emplace', def: { r: 22 } },
     { id: 'gunpos', name: 'Gun position', glyph: '⊥', kind: 'stamp', stamp: 'gunpos' },
+    { id: 'bunker', name: 'Bunker', glyph: '⌷', kind: 'place', t: 'bunker', def: { a: 0 } },
+    { id: 'hogs', name: 'Hedgehogs (draw)', glyph: '✳', kind: 'line', t: 'hogs', def: {} },
+    { id: 'teeth', name: 'Dragon\'s teeth (draw)', glyph: '◭', kind: 'line', t: 'hogs', def: { kind: 'teeth' } },
     { id: 'roadblock', name: 'Roadblock', glyph: '▮', kind: 'place', t: 'roadblock', def: {} }] },
   { id: 'damage', name: 'DAMAGE', glyph: '✷', tools: [
     { id: 'crater', name: 'Crater', glyph: '◯', kind: 'place', t: 'crater', def: { r: 48 } },
@@ -22910,7 +24041,7 @@ var ED_CATS = [
   { id: 'erase', name: 'ERASE', glyph: '⌫', tools: [
     { id: 'eraser', name: 'Eraser brush', glyph: '⌫', kind: 'erase' }] }
 ];
-var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1 };
+var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1, bunker: 1 };
 var ED_DRAFT = 'ortona.draft', ED_LAST = 'ortona.map', ED_SLOTS = 'ortona.maps';
 
 /* ---- opening and closing ---- */
@@ -22976,6 +24107,9 @@ function edBBox(e) {
   else if (e.x1 !== undefined) b = { x0: Math.min(e.x1, e.x2) - 20, y0: Math.min(e.y1, e.y2) - 20, x1: Math.max(e.x1, e.x2) + 20, y1: Math.max(e.y1, e.y2) + 20 };
   else if (e.t === 'paved') b = { x0: e.x, y0: e.y, x1: e.x + e.w, y1: e.y + e.h };
   else if (e.w) b = { x0: e.x - e.w / 2, y0: e.y - e.h / 2, x1: e.x + e.w / 2, y1: e.y + e.h / 2 };
+  /* a bunker's footprint is derived rather than stored, so the one place that derives it
+     hands the number out and nothing else has to know how big one is */
+  else if (e.t === 'bunker') { var bb = bunkerBox(e); b = { x0: e.x - bb.w / 2, y0: e.y - bb.h / 2, x1: e.x + bb.w / 2, y1: e.y + bb.h / 2 }; }
   else { var r = e.r || 30; b = { x0: e.x - r, y0: e.y - r, x1: e.x + r, y1: e.y + r }; }
   return b;
 }
@@ -22998,7 +24132,7 @@ function edMark(e) {
   if (ED_GROUND[e.t]) ED.needGround = true;
   if (e.t === 'grass') ED.needGrass = true;
   if (e.t === 'sector' || e.t === 'hq') ED.scope = 'full';
-  if (e.t === 'house' || e.t === 'farm') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
+  if (e.t === 'house' || e.t === 'farm' || e.t === 'bunker') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
 }
 /* what changed between two versions of the map, marked thing by thing: an undo costs
    what the edit it undoes cost, rather than the whole scene */
@@ -23181,6 +24315,10 @@ function edProps() {
       row('Name', '<input type="text" id="edslabel" value="' + (e.label || '').replace(/"/g, '') + '">');
     if (e.t === 'trench') html += row('Fires', seg('edsface', [['', 'TO CENTRE'], ['L', 'LEFT'], ['R', 'RIGHT']], e.face || '')) +
       row('Side', seg('edsside', [['us', 'CANADIAN'], ['ger', 'GERMAN']], e.side));
+    /* A wall's height is the one number that says what kind of wall it is: a field
+       boundary is cover a man fires over and a town wall is one he cannot see through. */
+    if (e.t === 'wall') html += row('Height', seg('edswh', [[11, 'FIELD'], [24, 'TOWN']], (e.h || 24) >= 16 ? 24 : 11));
+    if (e.t === 'hogs') html += row('Obstacle', seg('edshk', [['hog', 'HEDGEHOGS'], ['teeth', "DRAGON'S TEETH"]], e.kind === 'teeth' ? 'teeth' : 'hog'));
     html += '<div class="edbtns"><button class="edb" id="eddup">DUPLICATE</button><button class="edb" id="edmir">COPY ACROSS</button><button class="edb warn" id="eddel">DELETE</button></div>';
   } else if (ED.cat === 'select' && ED.sel.length > 1) {
     html += '<div class="edtitle">' + ED.sel.length + ' things selected</div>';
@@ -23197,6 +24335,7 @@ function edProps() {
     if (t.t === 'house') html += row('Roof', seg('edaroof', [[-1, 'RANDOM'], [1, 'INTACT'], [0, 'SHELLED']], d.roof === undefined ? -1 : d.roof));
     if (t.t === 'sector') html += row('Owner', seg('edaown', [['', 'NEUTRAL'], ['us', 'CANADIAN'], ['ger', 'GERMAN']], d.owner || ''));
     if (t.t === 'trench') html += row('Fires', seg('edaface', [['', 'TO CENTRE'], ['L', 'LEFT'], ['R', 'RIGHT']], ED.faceFlag || ''));
+    if (t.t === 'wall') html += row('Height', seg('edawh', [[11, 'FIELD'], [24, 'TOWN']], (d.h || 24) >= 16 ? 24 : 11));
   }
   p.innerHTML = html;
   sheet.classList.toggle('hidden', !html);
@@ -23223,6 +24362,7 @@ function edProps() {
     segs('edaroof', function (v) { if (+v < 0) delete t.def.roof; else t.def.roof = +v; });
     segs('edaown', function (v) { t.def.owner = v || null; });
     segs('edaface', function (v) { ED.faceFlag = v || undefined; });
+    segs('edawh', function (v) { t.def.h = +v; });
   }
   if (ED.sel.length) {
     var e2 = ED.sel[0];
@@ -23234,6 +24374,8 @@ function edProps() {
     bind('edsdmg', function (ev) { edSnapshot(); e2.damage = +ev.target.value / 100; edTouch(e2); });
     bind('edslabel', function (ev) { e2.label = ev.target.value; });
     segs('edsroof', function (v) { edSnapshot(); e2.roof = +v; edTouch(e2); });
+    segs('edswh', function (v) { edSnapshot(); e2.h = +v; edTouch(e2); });
+    segs('edshk', function (v) { edSnapshot(); if (v === 'teeth') e2.kind = 'teeth'; else delete e2.kind; edTouch(e2); });
     segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(e2); });
     segs('edstype', function (v) { edSnapshot(); e2.type = v; edTouch(e2); });
     segs('edsown', function (v) { edSnapshot(); e2.owner = v || null; edTouch(e2); });
@@ -23247,7 +24389,8 @@ function edProps() {
 function edKindName(e) {
   var names = { house: 'House', farm: 'Farmhouse', road: 'Street', paved: 'Paving', pole: 'Lamp post', trench: 'Trench', wire: 'Wire', bags: 'Sandbags',
                 emplace: 'Weapon pit', roadblock: 'Roadblock', wall: 'Wall', crater: 'Crater', rubble: 'Rubble', debris: 'Debris', cart: 'Cart',
-                smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters' };
+                smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters',
+                bunker: 'Bunker', hogs: 'Anti-tank belt' };
   return (names[e.t] || e.t) + (e.id ? ' ' + e.id : '') + (e.t === 'hq' ? (e.side === 'us' ? ' (Canadian)' : ' (German)') : '');
 }
 function edDuplicate() {
@@ -23298,9 +24441,16 @@ function edLineEntity(t, pts) {
   var e = { t: t.t };
   if (t.t === 'trench') { e.pts = pts; e.side = pts[0].x < WORLD.w / 2 ? 'us' : 'ger'; if (ED.faceFlag) e.face = ED.faceFlag; return [e]; }
   if (t.t === 'road') { e.pts = pts; e.width = t.def.width; return [e]; }
-  /* walls and wire are straight pieces: a bent line becomes several */
-  var out = [];
-  for (var i = 0; i < pts.length - 1; i++) out.push({ t: t.t, x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y });
+  /* Walls, wire and obstacle belts are straight pieces: a bent line becomes several, and
+     each of them carries the tool's own options. Without that a dragon's-teeth belt drawn
+     with the teeth tool came out as hedgehogs, because the only thing separating the two
+     is a field on the def. */
+  var out = [], i, k;
+  for (i = 0; i < pts.length - 1; i++) {
+    var q = { t: t.t, x1: pts[i].x, y1: pts[i].y, x2: pts[i + 1].x, y2: pts[i + 1].y };
+    for (k in t.def) if (t.def.hasOwnProperty(k) && k !== 'width') q[k] = t.def[k];
+    out.push(q);
+  }
   return out;
 }
 function edAbortDrag() { ED.drag = null; ED.marq = null; ED.hover = null; }
@@ -24010,11 +25160,20 @@ function edPanelLoad() {
     html += '<div class="edli"><div class="t">' + n.replace(/</g, '&lt;') + '<small>' + s.n + ' things · ' + when.toLocaleDateString() + ' ' + when.toLocaleTimeString().slice(0, 5) + '</small></div>' +
             '<button class="edb" data-load="' + encodeURIComponent(n) + '">LOAD</button><button class="edb warn" data-kill="' + encodeURIComponent(n) + '">✕</button></div>';
   });
-  html += '<div class="edh">THE SHIPPED MAP</div><div class="edli"><div class="t">Ortona<small>the map the game ships with</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
+  html += '<div class="edh">THE SHIPPED MAPS</div>';
+  html += '<div class="edli"><div class="t">Ortona<small>the old town, 23 December 1943</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
+  html += '<div class="edli"><div class="t">The Gothic Line<small>the Foglia valley, 30 August 1944, laid out for four</small></div><button class="edb" id="edloadgothic">LOAD</button></div>';
   edPanel('LOAD A MAP', html);
   document.querySelectorAll('#edpanelbody [data-load]').forEach(function (b) { b.addEventListener('click', function () { edLoadSlot(decodeURIComponent(b.getAttribute('data-load'))); }); });
   document.querySelectorAll('#edpanelbody [data-kill]').forEach(function (b) { b.addEventListener('click', function () { edDeleteSlot(decodeURIComponent(b.getAttribute('data-kill'))); }); });
-  el('edloadortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose(); });
+  /* One loader for both, because two copies of these nine statements go out of step the
+     moment a third map is added. */
+  function edLoadShipped(key, name) {
+    edSnapshot(); ED.data = (MAPS[key] || MAPS.ortona).make(); ED.name = name;
+    G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edPanelClose();
+  }
+  el('edloadortona').addEventListener('click', function () { edLoadShipped('ortona', 'Ortona'); });
+  el('edloadgothic').addEventListener('click', function () { edLoadShipped('gothic', 'The Gothic Line'); });
 }
 function edPanelName(title, label, value, onok) {
   edPanel(title, '<div class="edh">' + label + '</div><input type="text" id="edpname" value="' + value.replace(/"/g, '') + '" maxlength="40"><div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edpok" style="flex:1;min-height:44px">OK</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:44px">CANCEL</button></div>');
@@ -24054,6 +25213,14 @@ function edTestPlay(side, diff, mode) {
 function edCheck() {
   var E = ED.data.entities, out = [];
   var blocks = E.filter(function (e) { return (e.t === 'house' || e.t === 'farm') && e.w; });
+  /* A bunker is a building for every one of these rules: nothing stands inside it, no
+     street runs through it, no trench crosses it. Its footprint is derived rather than
+     stored, so it is given one here out of the same function the game builds from. */
+  E.forEach(function (e) {
+    if (e.t !== 'bunker') return;
+    var bb = bunkerBox(e);
+    blocks.push({ t: 'bunker', x: e.x, y: e.y, w: bb.w, h: bb.h });
+  });
   var craters = E.filter(function (e) { return e.t === 'crater'; }), trenches = E.filter(function (e) { return e.t === 'trench' && e.pts; });
   var wires = E.filter(function (e) { return e.t === 'wire'; }), trees = E.filter(function (e) { return e.t === 'tree'; }), roads = E.filter(function (e) { return e.t === 'road' && e.pts; });
   function bad(rule, x, y, msg) { out.push({ rule: rule, x: x, y: y, msg: msg }); }
@@ -24180,7 +25347,12 @@ function edPanelCheck() {
   el('edmhelp').addEventListener('click', edPanelHelp);
   el('edmsharefile').addEventListener('click', function () { edShareFile(); edMenu(false); });
   if (!navigator.share) el('edmsharefile').classList.add('hidden');
-  el('edmortona').addEventListener('click', function () { edSnapshot(); ED.data = defaultMapData(); ED.name = 'Ortona'; G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false); });
+  function edReload(key, name) {
+    edSnapshot(); ED.data = (MAPS[key] || MAPS.ortona).make(); ED.name = name;
+    G.mapData = ED.data; ED.sel = []; edTouch(); edProps(); edTitle(); edMenu(false);
+  }
+  el('edmortona').addEventListener('click', function () { edReload('ortona', 'Ortona'); });
+  el('edmgothic').addEventListener('click', function () { edReload('gothic', 'The Gothic Line'); });
   el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });
   el('edmimport').addEventListener('click', function () { el('edfile').click(); edMenu(false); });
   el('edfile').addEventListener('change', function (ev) { if (ev.target.files[0]) edImportFile(ev.target.files[0]); ev.target.value = ''; });

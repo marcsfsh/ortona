@@ -1,8 +1,14 @@
 # Ortona
 
-A single-file, real-time tactical battle game set in Ortona, December 1943:
-1st Canadian Infantry Division against 1. Fallschirmjäger-Division. Custom
-WebGL2 renderer, no engine, no dependencies, no build step.
+A single-file, real-time tactical battle game: 1st Canadian Infantry Division against
+1. Fallschirmjäger-Division. Custom WebGL2 renderer, no engine, no dependencies, no
+build step.
+
+Two maps ship. **Ortona**, December 1943, is the town fought one building at a time.
+**The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
+fourteen hundred units of no man's land between them, laid out for four players and
+mirrored about the midline to the unit. They are picked on the title screen under GROUND
+and both open in the editor.
 
 **The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
@@ -56,6 +62,15 @@ node tools/audio.mjs         # sound: renders every effect to WAV, with the numb
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
+
+**`--map=gothic` runs a card on the other ground.** `harness.deploy` clicks the title
+screen's own GROUND control, which is the one path that also decides what a later
+`startGame()` inside a probe keeps, so `shoot`, `move`, `brain` and `skirmish` all take
+it and nothing else had to change. A card run only on Ortona is a card that has never
+seen a map with 1,400 units of open ground on it -- the movement card put the Gothic Line
+at 131 paths found against Ortona's 12,177, because Ortona's are nearly all the
+straight-line shortcut down a street and here the belts and the walls make the search do
+real work.
 
 A `SessionStart` hook (`.claude/hooks/session-start.sh`) runs `npm install` and
 confirms Chromium is present, so a fresh session is ready without being asked.
@@ -542,15 +557,28 @@ the moment a section has to walk through it. The first hand-placed draft had a h
 and sixty-four conflicts in it and looked fine.
 
 ```sh
-node tools/mapcheck.mjs        # every rule
-node tools/mapcheck.mjs --v    # list every conflict rather than the first few
+node tools/mapcheck.mjs          # every rule, on every map the game ships
+node tools/mapcheck.mjs gothic   # one of them
+node tools/mapcheck.mjs --v      # list every conflict rather than the first few
 ```
 
 The rules are things that cannot be true of real ground: a crater does not sit on a
 trench, wire is not laid across a bowl or a parapet, nothing stands inside a building, a
 street does not run through one, and two buildings either share a wall or leave room to
 walk between them. Plus two about streets -- nothing thread-width, and nothing that runs
-the length of the map without a junction. It is in `npm run verify`.
+the length of the map without a junction. A bunker is a building for every one of them,
+and its footprint is derived rather than stored, so `bunkerBox` hands the same rectangle
+to the game, the editor and the check. It is in `npm run verify`.
+
+**It checks every shipped map rather than only the first**, because a rule nobody runs on
+the second map is a rule the second map does not have. Pointed at the Gothic Line the
+first time, it found seven faults nobody had seen in a week of photographs: six shell
+holes undercutting the two farms, two outbuildings overlapping their own farmhouses, the
+centre and south crossings running straight through the bunkers that cover them, the
+lateral and the sunken lane each running sixteen hundred units without a junction, and
+the south trench clipping the corner of its own bunker. The one worth keeping is the
+craters: the scatter rejects against everything already dug, so anything laid AFTER it is
+laid on top of it, and the farms were written below the shell holes in the file.
 
 ### `tools/lint.mjs` - the rules, mechanically
 
@@ -559,9 +587,11 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1460 kB (it was 1040 before vehicles carried a hand-laid interior, and 1345
-before a battle wrote itself down). Takes under a second. Exits non-zero on any
-violation.
+under 1520 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+battle wrote itself down, and 1460 before a second map). Takes under a second. Exits
+non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
+each step is written beside it in the file: raise it deliberately, with a reason, or not
+at all.
 
 ```sh
 node tools/lint.mjs
@@ -575,6 +605,13 @@ sides survive, the HUD stays inside the viewport, touch targets are at least
 44px, the tactical map opens, and the map editor loads, opens every category's
 tray, keeps its controls at 44px and throws nothing. Exits non-zero on any
 failure.
+
+**It fights on the second map as well as building it**, because every other row deploys
+on Ortona and a map that boots and is never played is a map nobody has run the game on.
+That row is also where the Gothic Line's fairness is measured rather than asserted: 454
+entities on each half with none unpaired, the ground disagreeing with its own reflection
+by at most 0.23 of a unit over 1,750 samples, no flag further from one headquarters than
+its twin is from the other, and 1,304 units between the bunker lines.
 
 ```sh
 node tools/check.mjs                  # desktop + phone, 180s of battle
@@ -687,9 +724,80 @@ is no state container and no immutability; systems mutate `G` directly.
 
 **World.** 2800 x 1900 units. `makeSectors` / `buildMap` / `makeTerrain` build
 it from `G.mapData`, which is plain JSON the map editor also reads and writes
-(`defaultMapData()` is the shipped Ortona map). A separate 4-unit heightfield
-(`makeHeight`, `groundZ`, `groundNormal`) carries elevation, with trenches and
-craters cut in by `carve`.
+(`defaultMapData()` is Ortona and `gothicMapData()` the Gothic Line; `MAPS` is the table
+the title screen, the deploy button, the briefing and the editor's load panel all read).
+A separate 4-unit heightfield (`makeHeight`, `groundZ`, `groundNormal`) carries
+elevation, with trenches and craters cut in by `carve`.
+
+**The country a map stands in is a property of the map.** It was not: Ortona's landform
+was the only landform there was. The coast, the cliff with its bedding, the valloni, the
+railway in its cutting and two hard-coded depot coordinates were written into
+`makeHeight` and into the tail of `buildMap`, so a map of anywhere at all came out with
+the Adriatic along the top of it and a railway along the bottom.
+
+`LAND` is what sort of country the ground is, and a map names one in `data.land`. It
+carries the landform builder, where the coast and the railway run, the watercourses, how
+much level ground each army is given to deploy onto and in what shape, and -- for a map
+that wants them -- how wet the ground is and how far it has been churned. **A landlocked
+country still answers `coastY` and `railY`**, with a shore far above the map and a line
+far below it, because a dozen things here ask how near the sea a point is and the honest
+answer for inland ground is 'further off than anything'. Gating each of them on its own
+is a dozen places to forget one.
+
+The deploy pad is a SHAPE rather than a radius (`padR`, `padY`, `depotDist`). A 1v1 wants
+a circle round one headquarters; a 2v2 stands two of them 580 apart along the line and
+wants a band that holds both. And `DEPOT` comes off the map's own `hq` entities rather
+than off two coordinates that happened to match Ortona's.
+
+**The Gothic Line.** The Adriatic sector at the end of August 1944: the Foglia with a
+ridge either side, which is 1st Canadian Corps ground. What is built is that country and
+not that battle -- the real line had one army on the high ground and the other down in
+the river, and a map two people are meant to fight over cannot be. So the valley goes
+down the middle with a ridge either side, each side holds one, and this is ground the
+line has already been fought over and turned on.
+
+Read from a base out at the edge toward the river: a shelf flat enough to assemble an
+army on, the back of a ridge, the crest it forms up behind, the forward slope it has to
+fight down, and the water at the bottom. Read north to south: the ridges stand highest
+where they run up into the shoulder at the top of the map and die away into water meadow
+at the bottom, so one flank is broken going and the other is open. Both teams get both,
+because the map is mirrored about the midline and not about that.
+
+**Every term is a function of the distance out from the midline and of y, the relief
+included**: the sample point is folded about the midline before the noise is asked, so
+the two halves are identical and not merely similar. Measured over 1,750 samples the
+ground disagrees with its own reflection by at most 0.23 of a unit, which is the
+smoothing pass and float rounding. Ortona does not fold and does not need to: its two
+halves are a town with a headquarters at either end. Here the ground itself is what two
+armies are being asked to fight over on equal terms, so it is measured rather than
+eyeballed, and the gate measures it.
+
+**There are three ways over the river and each is a victory sector**, so the whole map is
+a question about which crossing to force. The roads were there before the line was and
+run right across. On each forward slope: three bunkers, one on each crossing, with the
+fire trench run BETWEEN them rather than through them, because the concrete is the line
+where it stands and a trench dug across its front is a trench its own garrison is firing
+over. The wire is close in under the bunkers and cut only by the defender's own lanes on
+the three roads; the hedgehogs are out on the floor and their gaps ARE the three
+crossings, which is the design of the map. An obstacle belt does not stop armour, it
+tells armour where to go, and where it goes is into a bunker's arc.
+
+**The bunker lines are 1,304 units apart, and that took two goes.** At the first spacing
+the crest sat five hundred units out and the lines were eight hundred apart: a section
+sent across the middle was at the far concrete before it had done anything. Widening it
+then bought the opposite problem, because eight hundred units of level ground between the
+belts is a car park -- a section ordered across walks in a straight line at a constant
+speed and arrives or does not, and nothing in between is a decision.
+
+What fixes that is SHAPE before it is clutter. Fourteen hand-placed brushes of dead
+ground and low spur across the floor and two on the forward slope, so there is somewhere
+to lie up short of the wire and somewhere to form up behind; then the enclosures, the
+outpost line, the scrapes an attack dug when it was stopped, the weapon pits, the sunken
+lane cut into the heightfield with its banks revetted, and half again as many shell
+holes. On the ground between the belts: 62 wall runs, 244 craters, 56 trench legs and 788
+pieces of cover. **Dead ground is the first thing to reach for when a battlefield reads
+as too open**, and it costs nothing to look at; the first attempt reached for walls
+instead and came out a maze.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
@@ -800,6 +908,67 @@ tracks, two and a half times to wheels -- and a man crossing one is at a little 
 pace, the way wire already worked. Priced and not blocked, because a wall nothing may
 cross fences off the gardens of half the town; blocking them outright was tried and cost
 2.3 per cent of the free ground for no change to any route worth the name.
+
+**And a wall has a HEIGHT, which is the one number that says what kind of wall it is.**
+Ortona's are town garden walls at 24, over a man's head -- his eye is at 17 -- so he
+stands against one and cannot see or shoot through it. A dry-stone field boundary is 11,
+which is his chest: he gets down behind it and comes up over it. So a wall under 16 is on
+the going grid and the cover index and on NEITHER of the two grids that block, which is
+both truer and the whole of why the Gothic Line's floor stopped reading as a bombed city.
+Drawn at 24 out in open country a field wall reads as a prefabricated barrier and enough
+of them read as a maze, which is exactly what the first pass at its enclosures came out
+as.
+
+**And it is stacked rather than extruded.** A town garden wall is a built thing --
+rendered, coursed, standing plumb -- and a run of identical 34-unit boxes is a fair
+drawing of one. A dry-stone field boundary is not, and in a valley shelled for a
+fortnight it is down in places. Drawn the same way, every enclosure on the Gothic Line
+came out as a ruled pale line two hundred units long with a level top, which was the one
+thing left in the frame that read as placed by a program rather than fought over. A wall
+under 16 is laid stone by stone instead: the heights wander, the depths wander, the line
+wanders off its own axis by a foot, the colour is picked per stone out of the registered
+stone shades, and one course in eight is down to a tumble. Stepped rather than divided,
+because a fixed division reads as a row of identical blocks however much the heights
+wander. It costs four per cent of the prop scene (573,936 triangles to 596,640) with the
+all-tile rebuild unchanged, and Ortona reads 677,630 either way to the triangle, because
+every wall in the town is 24 and takes the path it always took. Nothing about the cover,
+the movement grid or the sight line moves: those come off `G.walls`, which is the
+straight line it always was.
+
+**A man gets over a field wall; he does not stand in one.** It is on neither blocking
+grid by design and it is not in `G.props` either, so nothing that asks whether a man may
+STAND somewhere knew it was there at all. The movement card put it at 2.72 per cent of
+every man-frame of a battle on the Gothic Line against Ortona's 0.23, and a probe that
+split the hits by whether the unit was moving said what it was: 992 of 1161 were HALTED
+men standing inside a field wall -- men at a stop, drawn in the stones and getting
+nothing from them. The cover slots were already right, standing a man ten units off a
+`lowwall`'s own line; it was the FORMATION that walked through, because its test for a
+place is `walkable`. `inMasonry` is the geometric question, bucketed at 120 units so it
+is a handful of boxes, rebuilt with the wall list, and skipping a town wall outright
+because that one is already solid. Four callers: `slotClear`, the formation's own place,
+its search for a clear one, and the clamp onto the unit's ring. Men in walls went 2.72
+per cent to 0.14 and halted men behind something 43.9 to 54.8, because a man who was in
+the masonry now stands beside it.
+
+**And the other way about from wire: a hedgehog holds a tank up and lets a man walk
+between.** A Czech hedgehog is three lengths of angle iron welded through each other at
+their centres, which makes a star that stands on three points whichever way up it lands;
+it cannot be pushed flat and what it fouls is a belly rather than a track. A dragon's
+tooth is a metre of concrete laid in ranks that step up toward the enemy, so a hull that
+climbs the first rank grounds itself on the second. `hogg` is the grid for both: free to
+anything on foot and twelve times over to anything driving, and a hull that takes the
+belt anyway because it was the only way through is over it at a third of its pace. Dear
+rather than closed, like everything else in this cost model.
+
+**And wire a MAP laid did nothing at all.** Wire an engineer put up was marked on `wireg`
+and held men up; `G.wire` was drawn and marked on no grid anywhere, so an apron
+hand-placed across an approach was painted on. That is the fault the field walls had, it
+reads identically from a photograph, and it had been there for as long as the entity had.
+Measured on one cell with the mark and without it -- which is the only way to read the
+effect off ground that is also steep and also near something -- a man pays 2.08 times on
+wire where a tank pays 1, and on a hedgehog a man pays 1 where tracks and wheels pay 12.
+Asked to cross at the same place, a section goes straight through the belt and a Sherman
+goes round the end of it.
 
 **Weight turns a hull.** Every vehicle in the game swung round at the same 2.6 radians a
 second, so a Tiger II turned as smartly as a Daimler and there was nothing to be had from
@@ -981,6 +1150,32 @@ to be re-dug. And every shell used to be charged against medium cover twice -- o
 through the index and once by a linear walk of all two thousand patches at the foot of
 `explode`, which was also a scan of the whole list on every explosion.
 
+**A bunker has a front and a back, and that is the whole of what makes it one.** A house
+is fought out of on every side. A bunker has a fighting slot and a back wall, so
+`outPoint` clamps a garrison's firing point -- and the point a round arrives at -- into
+its own arc (`bk.face`, `bk.arc`). Fire from behind is then a line drawn into the
+concrete, which is solid on the fire grid and stops it, and nothing else in the game has
+to know what a bunker is for that to work. Measured at 300 units: a shot out of the slot
+is allowed and the same shot to the rear is refused by its own walls.
+
+The rest follows from that. Its garrison stands in ONE RANK inside the slot rather than
+round four walls, and the section leader takes the middle of it with the rest dealt
+outward -- `povEye` reads the first living man, so dealt in order he stood at the far
+left end of the embrasure with a roof pier a few units in front of his face, and a
+commander looking out of his own bunker saw concrete. The cover is on the flanks and
+behind and NOT in front, because the ground in front of a bunker is the beaten zone and a
+patch laid there would be the map telling a section that walking up to the slot is safe.
+Nothing is laid in the middle either, though that is where the garrison stands: `coverOf`
+hands a garrison tier 4 outright, so the patch buys the men nothing, and **a cover patch
+inside a solid footprint is a lie the whole index believes** -- `aiFirePost` reads it and
+would site a machine gun in the concrete.
+
+`canGarrison` takes anything with a `face` whatever its size, because the size test is
+asking whether a thing is a strongpoint or a shed and a bunker is a strongpoint at any
+size. Its footprint is axis-aligned like every solid thing here, so the bearing is taken
+to the nearest quarter turn; on the Gothic Line every bunker looks along the valley,
+which is the x axis, so nothing is lost by it.
+
 **A garrison never goes flat.** Men holding a house fight from its openings. Two of the
 three pinned tests in `updateModels` did not exempt `u.gar` the way the third already
 did, so a section under a machine gun lay down on the ground floor of the strongest cover
@@ -1118,6 +1313,47 @@ to speak of; it is in because it saves two fetches a ground fragment and because
 person to give that tile a texture would otherwise get a second bump on the whole map for
 free.
 
+**And a map can say that its ground is wet and that it has been churned, because the
+crater and trench lists cannot.** Those say where the ground has been OPENED, and they
+have nothing to say about the floor of a river valley in the rain. `LAND.wet` and
+`LAND.churn` are the two, and they are separate because they are different things. Wet is
+a surface: the shader darkens it, takes the scatter out of it and puts a sheen on the
+worst of it, and it folds into the same `wet` channel a shell hole already uses. Churn is
+a COLOUR: ground turned over, shelled, walked on and rained into until whatever the soil
+had is gone.
+
+**And nothing grows where the ground has been turned over.** The grass scatter knew about
+paving, roads, trenches, bare rock and the sea, and about nothing else, so a map that
+says its country has been shelled for a fortnight had bright tufts standing all over it
+-- in the middle of no man's land, on ground the paint had already made bleak, the one
+thing left in the frame with any colour in it. `buildGrass` reads `LAND.churn` and thins
+with it rather than forbidding it, because a few come through in the lee of a bank or a
+wall. Only a map that declares churn is touched.
+
+**It is measured off the albedo canvas rather than looked at.** A churn that quietly
+stopped being painted would read as a perfectly good map in every photograph ever taken
+of it, which is the same shape as the fog of war having no live tier for the life of the
+game. The gate reads the canvas, which is the paint on its own with no sun, no fog and
+nothing standing on it, and asks for a DIFFERENCE and never an absolute: no man's land
+darker than the shelf the army forms up on, and less warm, which is what separates wet
+turned earth from dry stubble. It reads shelf 110/34.1, forward slope 96/15.5, no man's
+land 90/16.7, the midline 88/14.5.
+
+**A wetness is not a colour, and the Gothic Line's no man's land proves it.** The shader's
+wet term darkens ground and WARMS it, because water in the grain is warm; put in on its
+own, what came out was damp stubble and read as dead grass. What the paint has to take
+away is the warmth the dry ground either side of it keeps, so the overlay is very nearly
+colourless and the brown that comes out is the brown of water in the grain.
+
+The churn goes on LAST of everything in `paintGround`, after the roads and the craters,
+because after a fortnight of this a road through no man's land is mud with a camber. And
+it is built as one quarter-scale `ImageData` and drawn once rather than as a quarter of a
+million little rectangles: written the obvious way it cost 2.8 seconds on a full albedo
+and DOUBLED the editor's patch repaint, 210 ms to 433, which is the one number in this
+file a person waiting with a finger on the screen can feel. It is 36 ms now, a wash has
+no detail finer than the noise under it so nothing is lost by painting it coarse, and
+`drawImage` honours the clip where a loop over the whole world does not.
+
 **The sea had no surface either, and for a different reason: there is no water.** What is
 drawn is the sea bed, sunk to sixty units and painted blue, so the normal under a fragment of
 sea is the normal of the mud at the bottom of it. On top of that sat a product of two sines
@@ -1151,6 +1387,38 @@ static world is merged into tiled buffers by `buildScene` (a grid of prop tiles 
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
 ground shader multiplies in. A second 2D canvas (`#ov`) carries what is text or a bar:
 health bars, unit labels, cover readouts, the minimap.
+
+**A tint has to find its own material, and for a long time it could not.** `MATS.byColour`
+is keyed by the exact colour string, and `box()` shades its bevel strips with `lit()`
+derivatives of the face colours, so a derived value is a colour in its own right and a
+colour the table does not know falls back to the untextured `generic` tile. `tagEdges()`
+exists to register those, and it was called for the vehicles and for almost nothing else.
+Measured on the Gothic Line, **41.7 per cent of every face the world builder makes** was
+coming out untextured: every bevel on every wall, most of the masonry, and the whole of
+the sandbags.
+
+It is invisible in a photograph, which is why it lasted. A shaded slab and an unshaded
+slab both look like a slab, and a wall hemmed with a flat pinstripe along every edge reads
+as a wall somebody built out of concrete rather than as a fault.
+
+Registering the derivatives by hand is the wrong shape of fix, because it means
+enumerating every factor every caller uses -- `box()` at 1.06, .92 and 1.03, a sandbag
+asking for 1.12 and .9 on top of that -- and a miss anywhere is silent. `lit()` remembers
+where each tint came from (`_lsrc`) and `matOf` follows the chain back to the material its
+source was tagged with, keeping the answer because a scene asks about the same colour
+thousands of times. One place, exact rather than fuzzy, and it covers a tint of a tint.
+
+That took it to 14.4 per cent, and what was left was roots nobody had ever tagged. Four
+fifths of it was one string: the third sandbag shade, left out of the hessian list when
+the other two went in, so every parapet, every weapon pit and the whole of both bunker
+lines' bagwork was flat. The rest is the tail -- the room read off a shell when nobody has
+drawn one, the gun's own palette, the joists in a roof, the drums on a fuel dump, the floor
+of a gutted house.
+
+It is on the gate, because the next palette added will be missed the same way and nothing
+on screen will say so. The row separates a face tagged `generic` ON PURPOSE -- skin, hair,
+a painted helmet, a window recess, all of which are meant to be flat -- from a root nobody
+tagged, and trips at half a per cent. Both maps read 0.1.
 
 **What is flat goes on the ground, not over it.** The rings and the order paths are built
 as ribbons lying on the terrain (`buildMarks`, `MARK`, `drawMarks3D`) and go through the
@@ -2641,7 +2909,18 @@ tools above it, a sheet of options that folds up over that (`edProps`: sliders a
 segmented choices, never a dropdown), a menu behind the top-left button, a little map top
 right that jumps the camera (`edMinimap`), and a panel that takes the screen for lists
 (load, check, test, new, help). Every control is 44px or more and `check.mjs` asserts it,
-sliders included. The first open shows the help (`edPanelHelp`, `ED_HELPED`).
+sliders included. The first open shows the help (`edPanelHelp`, `ED_HELPED`). Both
+shipped maps load, from the panel and from the menu, through one `edLoadShipped` reading
+`MAPS`: two copies of those nine statements go out of step the moment a third map is
+added.
+
+**A new kind of thing is not in the editor until five places know about it**, which the
+bunker and the two anti-tank belts each had to be walked through: a tool in `ED_CATS`, a
+footprint in `edBBox` so it can be marked and picked, a line in `edMark` if it levels a
+pad the way a house does, a name in `edKindName`, and its own options in `edProps`. A
+line tool also has to carry its `def` onto every piece it cuts -- without that a dragon's
+teeth belt drawn with the teeth tool came out as hedgehogs, because the only thing
+separating the two is one field on the def.
 
 The rule of the hand is the same with a mouse and a thumb: a drag on the ground pans, a
 tap does the tool's one thing, and a press held still picks something up. Only the tools
@@ -2821,12 +3100,15 @@ shots/                         screenshot output, gitignored
 - `var` hoists. A hull constant referenced above its own `var` line is
   `undefined`, every vertex built from it is `NaN`, and the part vanishes without
   an error. `tools/dims.mjs` reports NaN when this happens.
-- `box()` shades its bevel strips with `lit()` derivatives of the face colours, and
-  a derived value is a colour in its own right. `registerMaterials()` maps colours
-  to atlas materials, and a colour it does not know falls back to the untextured
-  `generic` tile, so a vehicle whose paint comes from a camouflage tile comes out
-  hemmed with a bright flat pinstripe along every edge it has. `tagEdges()` exists
-  to register those derivatives; call it alongside `tag()` for any new palette.
+- **A colour nobody tagged is drawn on the untextured tile, and it looks fine.**
+  `registerMaterials()` maps colours to atlas materials and a miss falls back to
+  `generic`, so a vehicle whose paint comes from a camouflage tile comes out hemmed
+  with a bright flat pinstripe along every edge it has. `lit()` derivatives find
+  their own way home now -- `matOf` follows a tint back to its source -- so what is
+  left to get wrong is a ROOT colour nobody put in a `tag()` list at all. One
+  sandbag shade left out of the hessian list drew every parapet on both bunker lines
+  flat, and no photograph ever said so. Tag a new palette, and read the gate row that
+  counts what is left: it separates a face that is `generic` on purpose from a miss.
 - Terrain, scene buffers and the atlas are rebuilt only by `startGame()` and
   the editor's rebuild. Editing `G.mapData` alone changes nothing on screen.
 - `updateFog()` and the decal upload happen inside `render()`, not every frame.
@@ -2869,6 +3151,19 @@ shots/                         screenshot output, gitignored
   ring is walked in 24-unit steps of six vertices each, and a gun's reach ring is 760
   units across. It was found by adding that ring and watching the frame count stick at
   exactly the buffer's capacity.
+- **A probe that measures with the function under test cannot see it fail.** The gate
+  row for men standing inside a field wall asked `inMasonry`, which is the function
+  that keeps them out of one. Switched off to calibrate the row, the row read a clean
+  nought: the men were in the stones and the thing counting them had been told there
+  were no stones. It does its own geometry over `G.walls` now. The same trap is why
+  `tools/sight.mjs` walks its reference line at four units a step rather than calling
+  `traceClear`, and why `duel.mjs`'s optimum comes off a plain Dijkstra.
+- **A rate can hide behind a denominator full of people it does not apply to.** With
+  the field-wall fix switched off, a sample taken out of a running battle read 0.91
+  per cent of halted men in the masonry, because most of a battle's men are nowhere
+  near a wall. Twelve sections stood AT twelve walls read 9.4. When a fault is about
+  a place, stage the drill at the place; when it is about a rate, print the
+  denominator.
 - **`fogCircle` hands its callback the SQUARE of the normalised radius**, not the radius. It
   is `dx*dx + dy*dy` and both callers want it that way, but a falloff written as though it
   were the radius comes out wrong in a way nothing will flag.
@@ -2886,3 +3181,24 @@ shots/                         screenshot output, gitignored
   updated twice a frame: it drives at double speed and its gun fires at twice its rate of
   fire. That is exactly how a Sherman came back off the rate probe at 1.7 seconds a round
   against a paper 3.3, with nothing wrong in the game at all.
+- **A cover patch of kind `rubble` or `bags` DRAWS ITSELF.** The cover list is not only an
+  index: the scene builder walks it and puts a house's worth of masonry and a roof timber
+  down for every `rubble` patch. Asking for rubble as the cover on a hedgehog belt put one
+  every forty units of belt, straight through the hedgehogs, while the cost model stayed
+  perfectly correct. Pick the kind for what it means -- `ditch` for flat, `lowwall` for
+  crouching, `pit` and `trench` for dug -- and know that two of them come with geometry.
+- **A cover patch inside a solid footprint is a lie the whole index believes.** `aiFirePost`
+  and `coversNear` read the patch list and neither asks whether a man can stand there, so
+  a tier-4 patch in the middle of a bunker sites a machine gun in the concrete. A garrison
+  does not need one: `coverOf` returns 4 for anything with `u.gar`.
+- **A rejection scatter only avoids what was placed BEFORE it.** The Gothic Line's shell
+  holes are rejected against everything already dug, so the farms written below them in
+  the file were invisible to them and the map check found six craters undercutting the
+  two of them. Order is the mechanism, not a matter of taste. And cap the count rather
+  than counting it out: a scatter that MUST place N will keep trying until it puts one
+  somewhere it does not belong.
+- **A landform is arithmetic and two halves can look identical while one is a metre
+  higher.** A mirrored map is fair only if the ground agrees with its own reflection, and
+  the only way to know that is to sample it: the Gothic Line is measured over 1,750 points
+  and disagrees with itself by at most 0.23 of a unit. No photograph would ever have
+  said so.

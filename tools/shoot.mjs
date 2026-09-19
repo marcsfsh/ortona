@@ -23,6 +23,7 @@ import os from 'node:os';
 import { execFileSync } from 'node:child_process';
 
 const args = parseArgs(process.argv.slice(2));
+const MAP = args.map || null;      /* which shipped map the scene is shot on */
 let DEVICE = args.device || 'desktop';
 const SIM = args.sim === undefined ? 0 : Number(args.sim);
 const SIDE = args.side || 'us';
@@ -61,7 +62,7 @@ const SCENES = {
   battle: {
     help: 'The live battlefield from the default opening camera (use --sim to let it develop).',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       if (SIM) await fastForward(page, SIM);
       if (args.nofog) await setFog(page, false);
       if (BARE) await chrome(page, false);
@@ -72,7 +73,7 @@ const SCENES = {
   hud: {
     help: 'In-game with a squad selected, so the command panel and orders are populated.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       if (SIM) await fastForward(page, SIM);
       if (args.nofog) await setFog(page, false);
       await page.evaluate(s => {
@@ -95,7 +96,7 @@ const SCENES = {
   closeup: {
     help: 'Ground-level look at the player HQ and the squads around it.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       if (SIM) await fastForward(page, SIM);
       if (args.nofog) await setFog(page, false);
       if (BARE) await chrome(page, false);
@@ -112,7 +113,7 @@ const SCENES = {
   pov: {
     help: 'The periscope: a first-person look from a section, ahead and to either side.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       if (SIM) await fastForward(page, SIM);
       if (args.nofog) await setFog(page, false);
       if (BARE) await chrome(page, false);
@@ -201,7 +202,7 @@ const SCENES = {
   terrain: {
     help: 'Wide shots of the town, the coast and the rail line: read the ground and the light.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       await setFog(page, false);
       if (BARE) await chrome(page, false);
       const w = (await catalog(page)).world;
@@ -232,7 +233,7 @@ const SCENES = {
   over: {
     help: 'The end-of-battle screen.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       await page.evaluate(s => endGame(s, 'Test capture'), SIDE);
       await shoot(page, out('over'), { settle: 1 });
     }
@@ -250,7 +251,7 @@ const SCENES = {
   man: {
     help: 'One soldier, one posture, turned under a fixed light: --only=us_rifle --man=0 --pose=fire --turn [--strip --frame=n --dirty --play --noshadow --shadowonly --variant=v --sheet --stage=trench|wall|window --side]',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       /* --play is the picture the player sees and the one the READ row of the men card
          measures: six hundred units, pitch 0.75, the fog on and the camera under its
          real limits. Everything else is a model reference shot and gets none of that. */
@@ -508,7 +509,7 @@ const SCENES = {
   lineup: {
     help: 'One shot per side with the entire roster stood in a row.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       await setFog(page, false);
       await chrome(page, false);
       await unlockCamera(page, 40, 0.12);
@@ -533,7 +534,7 @@ const SCENES = {
   buildings: {
     help: 'The six base structures, each photographed on its own.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       await setFog(page, false);
       await chrome(page, false);
       await unlockCamera(page, 40, 0.12);
@@ -555,7 +556,7 @@ const SCENES = {
   vehicle: {
     help: 'Reference sheet for one vehicle: front, front 3/4, side, rear 3/4, rear, top. Use --only=<key>, --up=<upgrades>.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       await setFog(page, false);
       await chrome(page, false);
       await unlockCamera(page, 30, 0.02);
@@ -601,7 +602,7 @@ const SCENES = {
   free: {
     help: 'Deploy, then point the camera wherever --cam=x,y,dist,yaw,pitch says.',
     async run(page) {
-      await deploy(page, { side: SIDE, diff: DIFF });
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       if (SIM) await fastForward(page, SIM);
       if (args.nofog) await setFog(page, false);
       if (BARE) await chrome(page, false);
@@ -618,7 +619,7 @@ const SCENES = {
  * Camera limits are lifted here: these are model reference shots, closer than
  * any in-game camera goes. Use `battle` or `closeup` to judge playing scale. */
 async function gallery(page, label, filter) {
-  await deploy(page, { side: SIDE, diff: DIFF });
+  await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
   await setFog(page, false);
   await chrome(page, false);
   await unlockCamera(page, 40, 0.12);
