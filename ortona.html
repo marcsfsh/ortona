@@ -871,10 +871,11 @@ var PD_TAKE = [.1, .15, .2, .25, .3, .4, .5, .6, .75, .9, 1];
 var PD_DEAL = [1, 1.15, 1.25, 1.5, 1.75, 2, 2.5, 3, 4];
 var PD_EYE  = [1, 1.1, 1.2, 1.35, 1.5, 1.75, 2, 2.5, 3, 4];
 var PD_ARTY = [0, 1];
+var PD_FREE = [0, 1];
 var PD_ONE  = [0, 1];
 /* the even game, and the index of it in each list */
-var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0, one: 0 };
-var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0, one: 0 };
+var PD_EVEN = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0, free: 0, one: 0 };
+var PD = { inc: 2, incf: 2, prod: 2, cons: 2, pop: 3, smp: 1, sfu: 1, take: 10, deal: 0, eye: 0, arty: 0, free: 0, one: 0 };
 /* What the player's side is actually running, resolved once when the battle starts so the
    income tick, the population check and every shot fired read a number rather than an
    index. Anything that reaches it before a battle -- the editor, a tool staging a scene --
@@ -884,7 +885,7 @@ function pdMake() {
            cons: PD_CONS[PD.cons], pop: PD_POP[PD.pop],
            mp: PD_SMP[PD.smp], fu: PD_SFU[PD.sfu],
            take: PD_TAKE[PD.take], deal: PD_DEAL[PD.deal], eye: PD_EYE[PD.eye],
-           arty: !!PD_ARTY[PD.arty], noLimit: !!PD_ONE[PD.one],
+           arty: !!PD_ARTY[PD.arty], free: !!PD_FREE[PD.free], noLimit: !!PD_ONE[PD.one],
            /* his cap and his till are always his: unlike the opposition's, which defer to
               the difficulty's own table when nobody has touched them, there is no other
               source for the player's */
@@ -914,13 +915,14 @@ var AD_SFU  = [0, 10, 20, 80, 150, 240, 400, 800, 1500, 3000, 6000];
 var AD_DMG  = [.1, .25, .5, .75, 1, 1.25, 1.5, 2, 3, 4];
 var AD_EYE  = [.25, .5, .75, 1, 1.25, 1.5, 2, 3, 4];
 var AD_ARTY = [0, 1];
+var AD_FREE = [0, 1];
 var AD_ONE  = [0, 1];
 /* and an AI's own difficulty, which is a separate question from the arithmetic round it:
    -1 is the one the player picked for the game, and the other three name themselves. It
    is on this table rather than on the title screen's three buttons because in a 2v2 there
    are three brains and they need not all be the same. */
 var AD_DIFF = [-1, 0, 1, 2];
-var AD_EVEN = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0, one: 0, diff: 0 };
+var AD_EVEN = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take: 4, deal: 4, eye: 3, arty: 0, free: 0, one: 0, diff: 0 };
 /* ---- one row per AI, and they are named by ROLE rather than by slot.
    A slot key depends on which side the player picked -- his ally is `us2` playing
    Canadian and `ger2` playing German -- so a panel that stored its settings under the
@@ -1025,7 +1027,7 @@ function adMake(role) {
            cons: AD_MULT[A.cons], pop: AD_POP[A.pop],
            mp: AD_SMP[A.smp], fu: AD_SFU[A.sfu],
            take: AD_DMG[A.take], deal: AD_DMG[A.deal], eye: AD_EYE[A.eye],
-           arty: !!AD_ARTY[A.arty], noLimit: !!AD_ONE[A.one],
+           arty: !!AD_ARTY[A.arty], free: !!AD_FREE[A.free], noLimit: !!AD_ONE[A.one],
            /* whether the cap and the till were asked for at all: left even they defer to
               the difficulty's own `foePop` and to the 420/20 both sides open on, because
               a setting nobody touched should not quietly overrule green's own table */
@@ -5530,11 +5532,17 @@ function visibleTo(side, e) { return side === 'us' ? !!e.vUs : !!e.vGer; }
    appeared. This weighs what the weapon in hand can actually do to each candidate,
    prefers whatever is already shooting at us, and gives the target already being
    engaged enough of an edge that a gunner sees a job through. */
+/* Whether a piece will fire only on an ordered mission. A pack howitzer and a dug
+   battery are laid by somebody else's map and fired on somebody else's order, which is
+   the whole difference between them and a mortar, and `barrageOnly` is that rule. FREE
+   FIRE on the handicap lifts it for one side: the piece then engages what the side can
+   see the way a mortar does, and everything else about it -- the beaten zone, the slow
+   traverse, the shell -- is where it was. The two ORDER paths deliberately do not read
+   this: a right-click is a fire mission on that ground either way, because that is the
+   control a howitzer wants and the setting is about initiative rather than about orders. */
+function onOrderOnly(u) { return !!u.def.barrageOnly && !hcapOf(u.own).free; }
 function acquire(u) {
-  /* A howitzer is laid by somebody else's map and fired on somebody else's order: it has
-     no target of its own, ever. That is the difference between it and a mortar, which
-     will engage what the battalion can see when nobody has told it otherwise. */
-  if (u.def.barrageOnly) return null;
+  if (onOrderOnly(u)) return null;
   if (u.forced && !u.forced.dead) {
     var wr = weaponFor(u, u.forced);
     if (wr && dist(u, u.forced) <= reachOf(u, wr) * 1.05) return u.forced;
@@ -5761,7 +5769,7 @@ function fireAt(u, t, dt) {
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0) return;
   if (u.retreat) return;
-  if (u.def.barrageOnly && !u.barrage) return;   /* only ever on an order, only ever at ground */
+  if (onOrderOnly(u) && !u.barrage) return;      /* only ever on an order, only ever at ground */
   if (u.lay > 0) return;                                 /* still laying on */
   /* a tripod has to be down, and a man with a launcher on his shoulder has to stop;
      a tank fires on the move and pays for it in accuracy below */
@@ -5776,7 +5784,11 @@ function fireAt(u, t, dt) {
   /* and a crewed gun has to be laid on the same way round. A mortar is looser about it:
      the bipod traverses a few degrees on its own and the number two shifts it for more,
      where a gun on a split trail has to be heaved bodily round. */
-  var layOff = u.def.indirect ? .35 : .11;
+  /* A battery declares its own tolerance, and until FREE FIRE existed only barrageTick
+     ever read it, because the two pieces that carry one are the two that never acquired.
+     Now that they can, it has to bind here too: otherwise the same gun lays itself three
+     times as loosely on a target it picked as on a mission it was given. */
+  var layOff = u.def.layTol || (u.def.indirect ? .35 : .11);
   if (u.cat === 'team' && !u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > layOff) return;
   /* hedges do not block fire, stone walls and structures do -- and nothing blocks a bomb
      that goes over the top of it */
@@ -6836,7 +6848,12 @@ function updateUnit(u, dt) {
        heaved round on its trail and takes its time about it, which is the whole reason
        a flanking move works against one. */
     if (!u.moving && u.cat !== 'veh' && !u.def.arc) {
-      if (u.cat === 'team') u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -.85 * dt, .85 * dt);
+      /* and at its OWN rate. The flat 0.85 here is the mortar's, and it was never wrong
+         before because the only two pieces with a `traverse` of their own are the two
+         that never picked a target. With FREE FIRE they do, and an eight-inch howitzer
+         that came round at 0.85 on a target it chose and 0.20 on a mission it was given
+         would be a different gun depending on who laid it. */
+      if (u.cat === 'team') { var tvz = (u.def.traverse || .85) * dt; u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -tvz, tvz); }
       else u.facing += clamp(angDiff(u.facing, angTo(u, u.target)), -7 * dt, 7 * dt);
     }
     /* an assault gun has no turret: it pivots on its tracks to bring the target inside
@@ -23612,6 +23629,7 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
 function hcapMult(v) { return v.toFixed(2).replace(/\.?0+$/, '') + 'x'; }
 function hcapNum(v) { return String(v); }
 function hcapRule(v) { return v ? 'NO LIMIT' : 'BY RULE'; }
+function hcapFree(v) { return v ? 'FREE FIRE' : 'ON ORDER'; }
 function hcapDiff(v) { return v < 0 ? 'SAME' : ['GREEN', 'REGULAR', 'VETERAN'][v]; }
 var HCAP = [
   { k: 'inc',  name: 'MANPOWER INCOME', list: PD_INC, fmt: hcapMult,
@@ -23636,6 +23654,8 @@ var HCAP = [
     tip: 'How far your men and your buildings see, and how far your mortars, howitzers and battery throw with it. Even up to fourfold.' },
   { k: 'arty', name: 'ARTILLERY', list: PD_ARTY, fmt: hcapRule,
     tip: 'BY RULE: one heavy battery a side, dug forward of your own headquarters, and no missions into the enemy base. NO LIMIT takes all three off, for you only.' },
+  { k: 'free', name: 'HOWITZER FIRE', list: PD_FREE, fmt: hcapFree,
+    tip: 'ON ORDER: your pack howitzers and your heavy battery fire only on a mission you lay, which is what separates them from a mortar. FREE FIRE lets them engage what your side can see on their own account as well. The beaten zone and the slow traverse are unchanged, so a battery still takes most of a minute to come round.' },
   { k: 'one',  name: 'ONE-OFF VEHICLES', list: PD_ONE, fmt: hcapRule,
     tip: 'BY RULE: one Maus and one Tiger II a player, and two eighty-eights. NO LIMIT lifts all of them for you; the population cap still binds.' }
 ];
@@ -23666,6 +23686,8 @@ var ACAP = [
     tip: 'How far its men and buildings see, and how far its mortars, howitzers and battery throw.' },
   { k: 'arty', name: 'ARTILLERY', list: AD_ARTY, fmt: hcapRule,
     tip: 'BY RULE: one heavy battery, dug forward of its own headquarters, and no missions into your base. NO LIMIT takes all three off, for them.' },
+  { k: 'free', name: 'HOWITZER FIRE', list: AD_FREE, fmt: hcapFree,
+    tip: 'ON ORDER: its pack howitzers and its battery fire only on missions its brain lays. FREE FIRE lets them shell whatever its side can see as well, which is a great deal of pressure on ground you are crossing.' },
   { k: 'one',  name: 'ONE-OFF VEHICLES', list: AD_ONE, fmt: hcapRule,
     tip: 'BY RULE: one Maus and one Tiger II, two eighty-eights. NO LIMIT lifts them for this AI. The Maus is off its shopping list either way.' },
   { k: 'diff', name: 'DIFFICULTY', list: AD_DIFF, fmt: hcapDiff,

@@ -804,7 +804,7 @@ for (const device of TARGETS) {
              hqTime: hq.def.makes.length };
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
-     hcap.rows === 12 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
+     hcap.rows === 13 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
      hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
      hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
      hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
@@ -907,6 +907,73 @@ for (const device of TARGETS) {
      `and reaches ${arty.freeYou} off a ${arty.barDef}/${arty.freeDef} piece where theirs throws ` +
      `${arty.barFoe} and reaches ${arty.freeFoe}, and his riflemen are unchanged`);
 
+  /* --- HOWITZER FIRE, which is the other switch on the panel. A pack howitzer and a dug
+     battery are laid by somebody else's map and fired on somebody else's order, and
+     `barrageOnly` is the whole of that rule; FREE FIRE lifts it for one side so the piece
+     engages what its own side can see the way a mortar always has.
+       Three things are asked, and each of them is a refusal that has to be counted rather
+     than assumed. His two fire with nothing ordered; the opposition's two, with the same
+     enemy at the same range and its own row left even, fire nothing at all. The mortar is
+     the control: it had the initiative either way and must read the same on both sides,
+     or the row is measuring something other than the switch.
+       And the battery keeps its own traverse. The flat 0.85 in the turn-to-target was
+     never wrong before, because the only two pieces that carry a `traverse` of their own
+     were the two that never picked a target; laid the other way about, an eight-inch
+     howitzer has to take its own fifteen seconds to come round on a target it chose, the
+     same fifteen it takes on a mission it was given. --- */
+  const freeFire = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const keep = window.G.units.slice();
+    /* a round is spent only when one leaves the tube, and the cooldown is the signal:
+       fireAt is the only thing that sets it and it refuses for its own reasons */
+    function drill(owner, key, behind) {
+      window.G.units.length = 0;
+      const other = owner === 'us' ? 'ger' : 'us';
+      const u = window.spawnUnit(owner, key, 700, 900, behind ? Math.PI : 0);
+      u.setup = 0;
+      window.spawnUnit(other, other === 'ger' ? 'ger_gren' : 'us_rifle', 1100, 900, Math.PI);
+      window.spawnUnit(owner, owner === 'us' ? 'us_rifle' : 'ger_gren', 1000, 900, 0);
+      window.computeVisibility();
+      let rounds = 0, first = -1, cd0 = u.cd || 0;
+      for (let i = 0; i < 1400; i++) {
+        window.G.t += 1 / 20;
+        if (i % 2 === 0) window.computeVisibility();
+        window.updateUnit(u, 1 / 20);
+        if ((u.cd || 0) > cd0 + 1e-6) { rounds++; if (first < 0) first = i / 20; }
+        cd0 = u.cd || 0;
+      }
+      return { rounds, first: first < 0 ? null : +first.toFixed(1) };
+    }
+    const K = s => ({ how: s === 'us' ? 'us_how' : 'ger_how',
+                      bat: s === 'us' ? 'us_how8' : 'ger_how210',
+                      mor: s === 'us' ? 'us_mor' : 'ger_mor' });
+    const me = K(side), them = K(foe);
+    const out = {
+      onYou: window.hcapOf(side).free, onFoe: window.hcapOf(foe).free,
+      howYou: drill(side, me.how), batYou: drill(side, me.bat),
+      howFoe: drill(foe, them.how), batFoe: drill(foe, them.bat),
+      morYou: drill(side, me.mor), morFoe: drill(foe, them.mor),
+      batBehind: drill(side, me.bat, 1), morBehind: drill(side, me.mor, 1),
+      traverse: window.UNITS[me.bat].traverse
+    };
+    window.G.units.length = 0;
+    keep.forEach(u => window.G.units.push(u));
+    return out;
+  });
+  const swing = Math.PI / freeFire.traverse;
+  ok('free fire is the howitzers\' initiative, for the player and for nobody else',
+     freeFire.onYou === true && freeFire.onFoe === false &&
+     freeFire.howYou.rounds > 0 && freeFire.batYou.rounds > 0 &&
+     freeFire.howFoe.rounds === 0 && freeFire.batFoe.rounds === 0 &&
+     freeFire.morYou.rounds > 0 && freeFire.morFoe.rounds > 0 &&
+     freeFire.batBehind.first !== null && Math.abs(freeFire.batBehind.first - swing) < 2.5 &&
+     freeFire.morBehind.first !== null && freeFire.morBehind.first < swing * .4,
+     `with nothing ordered over 70s: his howitzer fired ${freeFire.howYou.rounds} and his battery ` +
+     `${freeFire.batYou.rounds}, where theirs fired ${freeFire.howFoe.rounds} and ${freeFire.batFoe.rounds}; ` +
+     `the mortar is the control at ${freeFire.morYou.rounds} his and ${freeFire.morFoe.rounds} theirs. ` +
+     `Laid the other way about, the battery took ${freeFire.batBehind.first}s to come round against ` +
+     `${swing.toFixed(1)}s of its own traverse, and the mortar ${freeFire.morBehind.first}s`);
+
   /* --- and the same settings turned on the opposition, which is the panel that
      runs both ways. What is asserted is that each one reaches the other side and that
      none of them reaches the player's: `AD` multiplies what `DIFF` already says, so the
@@ -958,7 +1025,7 @@ for (const device of TARGETS) {
              even: window.hcapEven(window.ACAP) };
   });
   ok('every computer player has the same settings as the player, and they run both ways',
-     acap.rows === 13 && !acap.even && acap.ad.pop === 1000 && acap.popFoe === 1000 &&
+     acap.rows === 14 && !acap.even && acap.ad.pop === 1000 && acap.popFoe === 1000 &&
      acap.popYou === 200 && acap.mpFoe > 8000 && acap.mpYou < 500 &&
      acap.incFoe > acap.incYou * 4 &&
      Math.abs(acap.dealt - 100 * acap.ad.deal) < 1 &&

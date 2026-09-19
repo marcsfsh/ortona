@@ -2337,6 +2337,23 @@ on an enemy is a mission on the ground he is standing on, and out of reach it is
 at all rather than an attack order that walks a five-man crew and its howitzer toward the
 enemy to get inside a range the gun will never use.
 
+**And `barrageOnly` is a rule a player may turn off.** HOWITZER FIRE on the handicap is
+the switch: at ON ORDER the pack howitzer and the dug battery fire only on a mission,
+which is what separates them from a mortar, and at FREE FIRE they engage what their own
+side can see on their own account as well. `onOrderOnly(u)` is the one reader, and
+`acquire` and `fireAt` are its two callers; the two ORDER paths deliberately keep reading
+the raw def, because a right-click is a fire mission on that ground either way. The
+setting is about initiative rather than about orders.
+
+Two numbers had to follow it, and neither was wrong before. The flat 0.85 radians a
+second in the turn-to-target is the mortar's, and the only two pieces that carry a
+`traverse` of their own are the two that never picked a target; the same goes for
+`layTol`, which until now only `barrageTick` ever read. With free fire they do pick
+targets, and an eight-inch howitzer that came round at 0.85 on a target it chose and 0.20
+on a mission it was given would be a different gun depending on who laid it. Measured by
+the gate: laid the other way about it takes 15.4 seconds to come round against the 15.7
+its own traverse says, where a mortar takes 3.5.
+
 The reaches are chosen against this map rather than by feel. A headquarters stands 1150
 from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
 it has to come four hundred forward, which puts it among the town's approaches, in front
@@ -2494,12 +2511,13 @@ its own population cap, and `vp` -- the rate the player's points drain, which st
 because being bled faster is pressure the opponent applies rather than a modifier on the
 player's units.
 
-`PD` is the player's own side, eleven settings on the title screen behind a HANDICAP
+`PD` is the player's own side, thirteen settings on the title screen behind a HANDICAP
 button that lights when any of them is off even: manpower income and fuel income, what is
 in the till at the first shot in each of the two, production speed (a unit out of a
 queue), construction speed (a building or a field work going up), the manpower cap from a
 hundred to a thousand, the damage his units take, the damage they deal, how far they
-see, and whether the artillery rules bind him. Each is an index into a named list, because
+see, whether the artillery rules bind him, whether his howitzers fire on their own
+account, and whether the one-a-side vehicle limits bind him. Each is an index into a named list, because
 the stepper and the game have to read one table -- two lists of the same settings go out
 of step the moment somebody adds another. `pdMake()` resolves the indices once in
 `startGame` so the income tick and the population check read a number, and `pd()` hands
@@ -2544,7 +2562,7 @@ indirect weapon and nothing else, so a rifle section is exactly where it was. Me
 4x: a mortar throws 2240 off a published 560 and engages at 1880 off 470, where the
 opposition's throws 560 and engages at 470.
 
-**The opposition has the same eleven settings, and they run both ways.** `DIFF` is three
+**The opposition has the same settings, and they run both ways.** `DIFF` is three
 settings with nothing in between, which is right for what it is -- how the brain thinks, how
 it waves, how early it techs -- and wrong for the arithmetic round it. A player who wants a
 veteran opponent on half an economy, or a green one with twice the manpower to see what a
@@ -2580,6 +2598,18 @@ site and to be answerable once sited, and a player who would rather have the gun
 argument can see on the panel that he has turned them off. Each of the three is measured
 twice by the gate, once on his side and once on the opposition's, with the opposition
 handed the money first so that a refusal is the rule and never the till.
+
+**`free` is the second switch, and it is the one that changes what a piece IS.** The other
+twelve settings scale a number the game already had; this one takes a rule off the roster
+for one side. A howitzer that engages on its own account is a different weapon from one
+that waits to be laid, and it is worth knowing that the rest of the piece is untouched:
+the beaten zone is the same seventy-six or hundred and ninety, the rate is the same, and
+the battery still takes most of a minute to come onto a new bearing. What the player buys
+is initiative and nothing else. Measured by the gate over seventy seconds with nothing
+ordered: his howitzer fires 22 rounds and his battery 9, where the opposition's fire none
+at all, with the mortar as the control at 16 on both sides -- because a mortar always had
+the initiative and a row where it moved would be measuring something other than the
+switch.
 
 **Four of green's thumbs on the scale are gone rather than moved**, and that is the point
 of the split as much as the settings are. `youAim` multiplied the player's accuracy by
