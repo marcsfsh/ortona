@@ -1283,6 +1283,34 @@ for (const device of TARGETS) {
      `lines; after 120s of battle on it the four players have ${gfight.live.join('/')} units ` +
      `and the ground is held by ${gfight.held.join(',') || 'nobody, every flag contested'}`);
 
+  /* --- and that the ground between the two lines is mud. A map says how wet its country
+     is and how far it has been churned (LAND.wet, LAND.churn), and the churn is a wash
+     painted last of everything in paintGround, after the roads and the craters. It is
+     read off the albedo canvas rather than off the framebuffer, because the canvas is
+     the paint on its own with no sun, no fog and nothing standing on it. What is asked
+     is a difference and never an absolute: no man's land darker than the shelf the army
+     forms up on, and less warm, which is what separates wet turned earth from dry
+     stubble. A churn that quietly stopped being painted reads as a perfectly good map
+     in every photograph ever taken of it. --- */
+  const mud = await page.evaluate(() => {
+    if (typeof window.mbase === 'undefined' || !window.mbase) return null;
+    const ct = window.mbase.getContext('2d'), N = 90;
+    const at = (x, y) => {
+      const d = ct.getImageData(x - N / 2, y - N / 2, N, N).data;
+      let r = 0, g = 0, b = 0;
+      for (let i = 0; i < N * N; i++) { r += d[i * 4]; g += d[i * 4 + 1]; b += d[i * 4 + 2]; }
+      const n = N * N;
+      return { r: r / n, g: g / n, b: b / n, v: Math.max(r, g, b) / n, warm: (r - b) / n };
+    };
+    return { shelf: at(240, 980), slope: at(800, 980), nml: at(1150, 980), mid: at(1400, 700) };
+  });
+  ok('the ground between the lines is mud, and the ground behind them is not',
+     !!mud && mud.nml.v < mud.shelf.v * 0.9 && mud.nml.warm < mud.shelf.warm * 0.8 &&
+     mud.mid.v < mud.shelf.v * 0.9,
+     mud ? ['shelf', 'slope', 'nml', 'mid'].map(k =>
+       `${k} ${mud[k].v.toFixed(0)}/${mud[k].warm.toFixed(1)}`).join('  ') + '  (value/warmth off the albedo)'
+         : 'no albedo canvas to read');
+
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
      can garrison is a wall, a garrison with no arc is a house with a grey roof, cover laid
