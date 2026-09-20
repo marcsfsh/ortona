@@ -8124,9 +8124,12 @@ function bunkerUpOK(bk, kind, slot) {
     var d = UNITS[W.unit[slotSide(slot)]];
     if (!d) return false;
     /* a fitting that brings men with it is a fitting that counts against the cap, and one
-       that fills the slot is refused while somebody is standing in it */
+       that fills the slot is refused while somebody is standing in it -- somebody ALIVE.
+       `killUnit` frees the bunker it held, but a dead unit left in `bk.gar` by any other
+       path would refuse the re-crew of a gun whose crew had just been shot off it, which
+       is the one case the re-crew exists for. */
     if (popOf(slot) + d.pop > popCap(slot)) return false;
-    if (!W.rear && bk.gar) return false;
+    if (!W.rear && bk.gar && !bk.gar.dead) return false;
   }
   return canAfford(slot, W.cost);
 }

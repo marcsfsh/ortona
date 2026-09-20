@@ -2401,10 +2401,14 @@ for (const device of TARGETS) {
           row.back = Math.round((g.x - bk.x) * Math.cos(bk.face) + (g.y - bk.y) * Math.sin(bk.face));
           row.stands = window.walkable(g.x, g.y);
         }
-        /* killing the crew is the one case that may buy the same fitting again: the mount
+        /* Killing the crew is the one case that may buy the same fitting again: the mount
            in the wall is masonry and the men on it are a unit, so a gun whose crew has
-           been shot off it is re-crewed rather than written off for the battle */
-        window.G.units.filter(u => u.id === bk.upUid).forEach(u => { u.dead = true; });
+           been shot off it is re-crewed rather than written off for the battle.
+             Through `killUnit` and not by setting `dead`, because a probe that kills a
+           unit with a flag is not testing a death: the flag leaves the bunker holding a
+           reference to the corpse, `bk.gar` is still set, and the row reported a re-crew
+           refused that the game would have allowed. */
+        window.G.units.filter(u => u.id === bk.upUid).forEach(u => window.killUnit(u));
         window.G.units = window.G.units.filter(u => !u.dead);
         row.recrew = window.bunkerUpOK(bk, k, 'us');
       }
