@@ -781,10 +781,18 @@ fine comparison and it is measured against ITS OWN first piece rendered twice: e
 layer of every report is jittered per shot, so a ratio with no floor under it says
 nothing, and the floor is not the same for a mortar as for a tank gun. The row keeps only
 the metrics that separate a pair by an amount worth having and reports whichever of those
-is measured most reliably, at nineteen to a hundred to one: choosing on signal-to-noise
-alone picks the smallest floor and once reported the two mortars 1.07x apart in length,
-which is inaudible, while choosing the biggest difference alone picks a metric that may be
-measured badly. Level is rms and never peak, because the bus ends in a compressor.
+is measured most reliably: choosing on signal-to-noise alone picks the smallest floor and
+once reported the two mortars 1.07x apart in length, which is inaudible, while choosing
+the biggest difference alone picks a metric that may be measured badly.
+
+Over three runs on both devices -- six samples of each pair -- it reads 15 to 104 to one on
+the mortars, 15 to 136 on the pack howitzers and 8 to 66 on the heavy batteries, against a
+bar of three. The heavy pair is the loose one and the reason is its floor rather than its
+difference: a report whose tail runs a second and a half is harder to measure twice the
+same way, so twelve takes put its floor anywhere from 1.00x to 1.06x while its difference
+sits steadily at 1.21x to 1.27x. That is the number to raise the take count against if the
+row ever flakes, and the row prints the metric and the floor it chose so one run says
+which it was. Level is rms and never peak, because the bus ends in a compressor.
 Brightness is the rms of the first difference over the rms of the signal, which rises and
 falls with the spectral centroid and needs no transform, because what is wanted is an
 ORDER and not a hertz.
