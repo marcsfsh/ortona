@@ -1516,10 +1516,15 @@ var WORKS = {
           w: 96, h: 26, len: 96, line: 1,
           cover: { r: 46, type: 3, kind: 'bags', hp: 120, faced: 1 },
           desc: 'Four courses of filled bags on a bearing. Heavy cover to anything in front of it and nothing at all from the flank.' },
+  /* The one work that is DUG rather than laid on the grass, which is the whole of what
+     separates a pit from a ring of bags: `dig` sends it through the shell hole's own
+     carve, so the ground under it drops and the spoil stands up round it. Built without
+     that it was six courses of bags ten units high on flat earth -- it drew, it laid its
+     cover and from a player's camera it read as nothing at all. */
   pit:  { name: 'Weapon pit', short: 'WEAPON PIT', hk: '4', cost: { mp: 45 }, time: 12,
-          w: 64, h: 64, len: 64,
+          w: 64, h: 64, len: 64, dig: { r: 30, depth: 9, lip: { w: 17, h: 5.5 } },
           cover: { r: 30, type: 3, kind: 'pit', hp: 150 },
-          desc: 'A horseshoe of bags with the open end to the rear. Dug-in cover from every side, and a gun team in one stands to fire instead of lying down.' },
+          desc: 'A pit dug two feet into the ground with the spoil revetted round it and a horseshoe of bags on the parapet, open at the rear. Dug-in cover from every side, and a gun team in one stands to fire instead of lying down.' },
   wire: { name: 'Wire entanglement', short: 'WIRE', hk: '5', cost: { mp: 30 }, time: 9,
           w: 124, h: 34, len: 124, line: 1, slow: 1,
           desc: 'Concertina on screw pickets with an apron either side. No cover: it holds infantry in the open where the machine guns can see them, and tracks go over it.' },
@@ -6555,13 +6560,12 @@ function digCrater(x, y, burst) {
    hole's own footprint: the whole-map versions are 0.60 ms for the height and 2.70 for
    the terrain grid, which is not a thing to do per shell, and over a crater they are
    four and eight microseconds. */
-function craterCarve(x, y, r) {
-  /* A shade sharper than the map's own hand-placed holes, which have had a fortnight of
-     rain in them: the same bowl, dug a third deeper and thrown up a third higher. The
-     wall still comes out at about a third of a gradient, which is well under the 1.0
-     `buildTerrGrid` calls unwalkable and under the 0.45 it calls hard going, so a fresh
-     crater is somewhere to lie down rather than a pit that swallows a section. */
-  carve(x, y, x, y, r * .78, -(3.4 + r * .21), { w: r * .55, h: 2.6 + r * .075 }, 'bowl');
+/* What has to follow ANY carve made while the game is running: the worked height over the
+   footprint, the going grid the height feeds, and the flag that carries a rebuild to the
+   top of the next frame. It is factored out because a shell hole is no longer the only
+   thing that digs -- a weapon pit is dug too, and a second copy of this is a second place
+   to forget one of the three. */
+function carveRefresh(x, y, r) {
   var reach = Math.ceil((r * 1.4 + HG) / HG), i, j;
   var ci = Math.round(x / HG), cj = Math.round(y / HG);
   for (j = cj - reach; j <= cj + reach; j++) for (i = ci - reach; i <= ci + reach; i++) {
@@ -6585,6 +6589,27 @@ function craterCarve(x, y, r) {
     steep[cidx(i, j)] = sg > .45 ? 1 : 0;
   }
   G.gridDirty = 1;
+}
+function craterCarve(x, y, r) {
+  /* A shade sharper than the map's own hand-placed holes, which have had a fortnight of
+     rain in them: the same bowl, dug a third deeper and thrown up a third higher. The
+     wall still comes out at about a third of a gradient, which is well under the 1.0
+     `buildTerrGrid` calls unwalkable and under the 0.45 it calls hard going, so a fresh
+     crater is somewhere to lie down rather than a pit that swallows a section. */
+  carve(x, y, x, y, r * .78, -(3.4 + r * .21), { w: r * .55, h: 2.6 + r * .075 }, 'bowl');
+  carveRefresh(x, y, r);
+}
+/* A weapon pit is DUG, and that is the whole of what separates one from a ring of bags
+   laid on the grass. It goes through the shell hole's own door -- `carve` writes the bowl
+   and the spoil into the earthwork layers, `carveRefresh` puts the world back over the
+   footprint and `craterMark` queues the tile -- with a shallower, flatter bowl and a
+   parapet thrown up round it, because what a crew wants is somewhere to stand below
+   ground level with earth in front of them rather than a hole to fall into. */
+function workDig(x, y, d) {
+  if (!G.hmap || !G.cut || !d) return;
+  carve(x, y, x, y, d.r, -d.depth, d.lip, 'bowl');
+  carveRefresh(x, y, d.r + (d.lip ? d.lip.w : 0));
+  craterMark(x, y, d.r + (d.lip ? d.lip.w : 0));
 }
 
 /* ---- the heap ----
@@ -7456,6 +7481,27 @@ function resumeBuild(u, b) {
   var sp = workSpot(b);
   u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y, u); u.pi = 0;
 }
+/* The nearest thing of this side's that is worth mending, which is what a player pressing
+   REPAIR means nine times in ten. A vehicle below its hit points or a building below its
+   own, and nothing else: an untouched tank is not a job. The right-click on a particular
+   thing is still there for the tenth time, and this is the affordance for the other nine --
+   repair had no card, no glyph and no hotkey, so the only way to find it at all was to
+   right-click a friendly vehicle and notice that something happened. */
+function repairNearest(u) {
+  var best = null, bd = 1e9, i, d;
+  for (i = 0; i < G.units.length; i++) {
+    var v = G.units[i];
+    if (v === u || v.dead || v.side !== u.side || v.cat !== 'veh' || v.hp >= v.maxhp) continue;
+    d = dist(u, v); if (d < bd) { bd = d; best = v; }
+  }
+  for (i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (b.dead || b.side !== u.side) continue;
+    if (b.built >= 1 && b.hp >= b.maxhp) continue;
+    d = dist(u, b); if (d < bd) { bd = d; best = b; }
+  }
+  return best;
+}
 function siteOf(slot, key) {
   for (var i = 0; i < G.blds.length; i++) {
     var b = G.blds[i];
@@ -7570,6 +7616,7 @@ function finishWork(s) {
     addCover(s.x, s.y, c.r, c.type, c.kind, c.faced ? s.a + workTurn(s.kind) : null, c.hp);
   }
   if (W.slow) rebuildGrid();
+  if (W.dig) workDig(s.x, s.y, W.dig);
   if (W.unit) {
     /* The gun. Its crew are put where a crew stands: the two layers at the breech,
        the loader behind them, the ammunition numbers back on the platform. They keep
@@ -24432,6 +24479,7 @@ function cmdGlyph(label) {
   if (/Sherman|Panzer|Sturmgesch/i.test(label)) return '▬';
   if (/Carrier|222/i.test(label)) return '◇';
   if (/Vickers|MG42|6-Pounder|Pak/i.test(label)) return '⊢';
+  if (/Repair/i.test(label)) return '✚';
   if (/Engineer|Pionier|RCE/i.test(label)) return '⚒';
   return '◆';
 }
@@ -24537,6 +24585,17 @@ function buildCmds() {
           return !siteOf(G.own, key) && canAfford(G.own, d.cost);
         };
       });
+      /* Repair sits with the works because it is the same arm's job, and it takes `8`
+         because the works have 3 to 7 and a control group has 1 to 5. */
+      var mend = repairNearest(engs[0]);
+      addCmd('Repair', mend ? 'nearest damaged' : 'nothing damaged', '8', !!mend,
+        function () {
+          var sent = 0;
+          engs.forEach(function (e) { var t = repairNearest(e); if (t) { resumeBuild(e, t); sent++; } });
+          toast(sent ? 'Repairing' : 'Nothing of ours is damaged');
+          sfx('click'); syncHud();
+        });
+      cmdList[cmdList.length - 1].can = function () { return !!repairNearest(engs[0]); };
       Object.keys(WORKS).forEach(function (wk) {
         var W = WORKS[wk];
         if (W.side && W.side !== G.side) return;
