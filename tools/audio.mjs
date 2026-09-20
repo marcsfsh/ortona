@@ -7,13 +7,16 @@
  * numbers that say what a sound actually is: how hard it starts, how long it lasts, where
  * its energy sits and how much of it is body rather than hiss.
  *
- *   node tools/audio.mjs                 every sound, plus a montage and a firefight
+ *   node tools/audio.mjs                 every sound, the roster, a montage, a firefight
  *   node tools/audio.mjs rifle mg        two of them
+ *   node tools/audio.mjs us_how8         one piece off the roster, in its own voice
  *   node tools/audio.mjs --tag=before    keep a set to compare against
  *
  * Nothing is reimplemented. The page's own auAttach() builds the graph on the offline
  * context and the page's own sfx() fills it, so what is written here is what a player
- * hears, sample for sample.
+ * hears, sample for sample. A named unit key goes the same way: the page's own gunVoice()
+ * reads the voice off that unit's real weapon and the page's own sfx() plays it, so the
+ * roster table below is thirty-odd guns firing rather than a list somebody typed.
  */
 
 import fs from 'node:fs';
@@ -23,7 +26,8 @@ import { launch, openGame, parseArgs, ROOT } from './harness.mjs';
 const args = parseArgs(process.argv.slice(2));
 const TAG = args.tag === undefined ? '' : '-' + String(args.tag);
 const SR = 44100;
-const KINDS = ['rifle', 'mg', 'cannon', 'rocket', 'boom', 'cap', 'spawn', 'click'];
+const KINDS = ['rifle', 'mg', 'gun', 'at', 'mortar', 'how', 'heavy', 'rocket',
+               'incoming', 'boom', 'cap', 'spawn', 'click'];
 const want = args._ && args._.length ? args._ : KINDS;
 const OUT = path.join(ROOT, 'shots', 'audio');
 const VARIANTS = 4;
@@ -137,8 +141,16 @@ function measure(x, sr) {
 const browser = await launch();
 const { page } = await openGame(browser, 'desktop', { quiet: true });
 
-async function render(kind, secs) {
-  const b64 = await page.evaluate(async ([kind, secs, sr]) => {
+/* Which units on the roster fire a shell, in the order the roster lists them. The page
+   answers this rather than a list here: a weapon added to one army and not to a list in
+   this file is exactly the drift `gunVoice` exists to stop. */
+const ROSTER = await page.evaluate(() => Object.keys(UNITS).filter(k => {
+  const d = UNITS[k];
+  return (d.w && d.w.shell) && d.cat !== 'inf';
+}));
+
+async function render(kind, secs, unit, burst) {
+  const b64 = await page.evaluate(async ([kind, secs, sr, unit, burst]) => {
     const oc = new OfflineAudioContext(2, Math.round(sr * secs), sr);
     const keep = { ctx: AU.ctx, noise: AU.noise, on: AU.on, budget: AU.budget, last: AU.last };
     /* the page builds its own graph on the offline context, so this cannot drift from
@@ -151,7 +163,13 @@ async function render(kind, secs) {
       AU.noise = buf;
     }
     AU.on = true; AU.budget = 99; AU.last = {};
-    sfx(kind);
+    if (unit) {
+      /* the page's own voice, off the page's own def: a stand-in unit is enough because
+         gunVoice and muzClass read the category, the side and the weapon and nothing else */
+      const d = UNITS[unit], gv = gunVoice({ cat: d.cat, def: d, side: d.side }, d.w);
+      sfx(gv.cls, undefined, undefined, gv);
+    } else if (kind === 'incoming' || kind === 'boom') sfx(kind, undefined, undefined, burstVoice(burst || 44));
+    else sfx(kind);
     const out = await oc.startRendering();
     for (const k in keep) AU[k] = keep[k];
     const L = out.getChannelData(0), R = out.numberOfChannels > 1 ? out.getChannelData(1) : L;
@@ -164,7 +182,7 @@ async function render(kind, secs) {
     const u8 = new Uint8Array(pcm.buffer);
     for (let i = 0; i < u8.length; i += 8192) s += String.fromCharCode.apply(null, u8.subarray(i, i + 8192));
     return btoa(s);
-  }, [kind, secs, SR]);
+  }, [kind, secs, SR, unit || null, burst || 0]);
   const raw = Buffer.from(b64, 'base64');
   const n = raw.length / 4;
   const L = new Float32Array(n), R = new Float32Array(n);
@@ -176,18 +194,99 @@ async function render(kind, secs) {
 }
 
 fs.mkdirSync(OUT, { recursive: true });
+function mono1(take) {
+  const [L, R] = take, m = new Float32Array(L.length);
+  for (let i = 0; i < L.length; i++) m[i] = (L[i] + R[i]) * .5;
+  return m;
+}
 const takes = {};
 const rows = [];
 let fight = '';
-for (const kind of want) {
-  const secs = kind === 'boom' || kind === 'cannon' ? 2.6 : 1.6;
+/* a named unit key is a piece off the roster rather than a class, and it is rendered
+   through the game's own gunVoice: this is the whole point of the roster table */
+const wantKinds = want.filter(k => !ROSTER.includes(k));
+const wantUnits = want.filter(k => ROSTER.includes(k));
+for (const kind of wantKinds) {
+  const secs = kind === 'boom' || kind === 'heavy' || kind === 'gun' ? 2.6 : 1.6;
   takes[kind] = [];
   for (let v = 0; v < VARIANTS; v++) takes[kind].push(await render(kind, secs));
-  const [L, R] = takes[kind][0];
-  const mono = new Float32Array(L.length);
-  for (let i = 0; i < L.length; i++) mono[i] = (L[i] + R[i]) * .5;
-  rows.push([kind, measure(mono, SR)]);
-  fs.writeFileSync(path.join(OUT, kind + TAG + '.wav'), wav([L, R], SR));
+  rows.push([kind, measure(mono1(takes[kind][0]), SR)]);
+  fs.writeFileSync(path.join(OUT, kind + TAG + '.wav'), wav(takes[kind][0], SR));
+}
+
+/* ---- the roster: every gun that fires a shell, in its own voice ------------------
+   A class table says a mortar is not a tank gun. It cannot say whether the two mortars
+   are two mortars, and that is the question: what is claimed is that a report is read
+   off the weapon, so six artillery pieces with six different shells behind them are six
+   different sounds without anybody typing one. Each row is the game's own gunVoice
+   against that unit's own def, played through the game's own sfx. */
+const ART_KEYS = ['us_mor', 'ger_mor', 'us_how', 'ger_how', 'us_how8', 'ger_how210'];
+/* Every layer of every report is jittered on purpose, so one take of a gun says almost
+   nothing: measured once, the Pak 40's centroid came back at 776 Hz and then at 1050 on
+   the same file. A row here is the mean of several, which is the difference between a
+   table that can support the word 'different' and a table that cannot. */
+const ROSTER_TAKES = 10;
+function meanOf(ms) {
+  const o = { on: {} };
+  ['peak', 'rms', 'crest', 'attack', 'dur', 'centroid', 'lo', 'mid', 'hi'].forEach(k => {
+    o[k] = ms.reduce((a, m) => a + m[k], 0) / ms.length;
+  });
+  ['lo', 'mid', 'hi', 'centroid', 'p6'].forEach(k => {
+    o.on[k] = ms.reduce((a, m) => a + m.on[k], 0) / ms.length;
+  });
+  return o;
+}
+const pieces = [];
+/* named pieces if any were named, the whole roster on a bare run, and nothing at all when
+   the run was for a class or two -- `node tools/audio.mjs rifle mg` should be quick */
+const rosterWant = wantUnits.length ? wantUnits : want === KINDS ? ROSTER : [];
+for (const key of rosterWant) {
+  const v = await page.evaluate(k => {
+    const d = UNITS[k], gv = gunVoice({ cat: d.cat, def: d, side: d.side }, d.w);
+    return { name: d.short || k, side: d.side, cls: gv.cls, pit: gv.pit, wt: gv.wt,
+             crk: gv.crk, aoe: d.w.aoe || 0, pen: d.w.pen || 0 };
+  }, key);
+  const secs = v.cls === 'heavy' || v.cls === 'gun' ? 2.6 : 1.8, ms = [];
+  let first = null;
+  for (let i = 0; i < ROSTER_TAKES; i++) {
+    const take = await render(null, secs, key);
+    if (!first) first = take;
+    ms.push(measure(mono1(take), SR));
+  }
+  pieces.push([key, v, meanOf(ms)]);
+  fs.writeFileSync(path.join(OUT, 'gun-' + key + TAG + '.wav'), wav(first, SR));
+}
+
+/* Each pair's own calibration. A ratio with no floor under it says nothing, and the
+   floor is not the same for every class: a tank gun's crack carries most of its variance
+   in the top end and a mortar's carries almost none, so the Panzer IV against the StuG,
+   which is one gun on two hulls, is the wrong control for a mortar. Each of the three
+   pairs is measured against ITS OWN first piece rendered a second time, which is the
+   duel card's identical row and nothing more. */
+const selfCtrl = {};
+for (const key of ['us_mor', 'us_how', 'us_how8']) {
+  const row = pieces.filter(p => p[0] === key)[0];
+  if (!row) continue;
+  const secs = row[1].cls === 'heavy' ? 2.6 : 1.8, ms = [];
+  for (let i = 0; i < ROSTER_TAKES; i++) ms.push(measure(mono1(await render(null, secs, key)), SR));
+  selfCtrl[key] = meanOf(ms);
+}
+
+/* ---- and what it put on the ground ---------------------------------------------- */
+const landings = [];
+for (const [key, v] of pieces.map(p => [p[0], p[1]])) {
+  if (!ART_KEYS.includes(key)) continue;
+  const secs = v.aoe > 90 ? 3.4 : 2.6, ms = [];
+  let first = null;
+  for (let i = 0; i < ROSTER_TAKES; i++) {
+    const take = await render('boom', secs, null, v.aoe);
+    if (!first) first = take;
+    ms.push(measure(mono1(take), SR));
+  }
+  landings.push([v.name, v.aoe, meanOf(ms)]);
+  fs.writeFileSync(path.join(OUT, 'land-' + key + TAG + '.wav'), wav(first, SR));
+  const inc = await render('incoming', 2.2, null, v.aoe);
+  fs.writeFileSync(path.join(OUT, 'incoming-' + key + TAG + '.wav'), wav(inc, SR));
 }
 
 /* ---- montage, and a real battle ------------------------------------------------- */
@@ -203,7 +302,7 @@ function mix(into, take, at, gain, pan) {
 }
 function blank(secs) { return [new Float32Array(Math.round(SR * secs)), new Float32Array(Math.round(SR * secs))]; }
 
-if (want.length === KINDS.length) {
+if (wantKinds.length === KINDS.length) {
   const mont = blank(KINDS.length * 1.3 + 1);
   KINDS.forEach((k, i) => mix(mont, takes[k][0], Math.round(SR * (.3 + i * 1.3)), 1, 0));
   fs.writeFileSync(path.join(OUT, 'montage' + TAG + '.wav'), wav(mont, SR));
@@ -341,6 +440,82 @@ console.log('');
 console.log('  low is under 250Hz, high over 2.2kHz, as a share of the energy in that window.');
 console.log('  crest is peak over rms: a crack is a high number, a hiss is a low one.');
 console.log('  the last column is the peak in the first six milliseconds, which is the crack.');
+
+if (pieces.length) {
+  console.log('');
+  console.log('  ROSTER -- every gun that fires a shell, in the voice read off its own weapon');
+  console.log('');
+  console.log('  each row is the mean of ' + ROSTER_TAKES + ' takes, because every layer is jittered per shot');
+  console.log('');
+  console.log('  ' + 'piece'.padEnd(13) + 'sd  class   burst  pen    pitch  wt   crack   ' +
+              'peak   crest  length   whole   onset');
+  console.log('  ' + ' '.repeat(63) + 'centroid');
+  console.log('  ' + '-'.repeat(94));
+  pieces.forEach(([k, v, m]) => {
+    console.log('  ' + v.name.padEnd(13) + v.side.padEnd(4) + v.cls.padEnd(8) +
+      String(v.aoe).padStart(4) + String(v.pen).padStart(7) + '  ' +
+      v.pit.toFixed(2).padStart(6) + v.wt.toFixed(2).padStart(6) + v.crk.toFixed(2).padStart(7) + '  ' +
+      m.peak.toFixed(3).padStart(6) + m.crest.toFixed(1).padStart(7) +
+      (m.dur.toFixed(0) + 'ms').padStart(8) + (m.centroid.toFixed(0) + 'Hz').padStart(9) +
+      (m.on.centroid.toFixed(0) + 'Hz').padStart(9));
+  });
+  /* the two numbers that say the roster is differentiated rather than merely loud, in the
+     same shape as the muzzle card's `spread`: the loudest report over the quietest, and
+     the highest centroid over the lowest. A roster that is one sound reads 1.0 on both. */
+  const pk = pieces.map(p => p[2].peak), ce = pieces.map(p => p[2].centroid).filter(c => c > 0);
+  const du = pieces.map(p => p[2].dur);
+  console.log('');
+  console.log('  spread: ' + (Math.max(...pk) / Math.min(...pk)).toFixed(1) + 'x in level, ' +
+              (Math.max(...ce) / Math.min(...ce)).toFixed(1) + 'x in centroid, ' +
+              (Math.max(...du) / Math.min(...du)).toFixed(1) + 'x in length, over ' +
+              pieces.length + ' guns.');
+  /* And the six pieces the question was about, paired by key rather than by where they
+     happen to sit in the roster. Each pair is the same class firing nearly the same
+     shell, which is the hard case: what has to separate them is the propellant, and if
+     the side timbre were doing nothing these three would read 1.00x across the board. */
+  const by = {};
+  pieces.forEach(p => { by[p[0]] = p; });
+  const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['us_how8', 'ger_how210']];
+  const rat = (x, y) => (Math.max(x, y) / Math.max(1e-9, Math.min(x, y))).toFixed(2);
+  function ratLine(label, A, B) {
+    return '    ' + label.padEnd(24) +
+      rat(A.on.centroid, B.on.centroid) + 'x onset  ' + rat(A.peak, B.peak) + 'x level  ' +
+      rat(A.dur, B.dur) + 'x length  ' + rat(A.crest, B.crest) + 'x crest';
+  }
+  if (PAIRS.every(([a, b]) => by[a] && by[b])) {
+    console.log('');
+    console.log('  the six: each pair is one class firing nearly the same shell, so what is left to');
+    console.log('  separate them is the propellant -- the onset colour, the edge and the tail.');
+    console.log('  Under each pair is that pair\'s own first piece rendered twice, which is what the');
+    console.log('  jitter alone produces and what the row above it has to beat.');
+    PAIRS.forEach(([a, b]) => {
+      console.log('');
+      console.log(ratLine(by[a][1].name + ' / ' + by[b][1].name, by[a][2], by[b][2]));
+      if (selfCtrl[a]) console.log(ratLine('  (' + by[a][1].name + ' twice)', by[a][2], selfCtrl[a]));
+    });
+  }
+}
+
+if (landings.length) {
+  /* And what the piece put on the ground, which is the other half of a gun's voice: every
+     shell on the map used to land as the same `boom` whatever made the hole. */
+  console.log('');
+  console.log('  LANDING -- the burst, sized off the hole the shell dug');
+  console.log('');
+  console.log('  ' + 'shell'.padEnd(13) + 'burst   peak   rms    length  centroid   low  mid');
+  console.log('  ' + '-'.repeat(66));
+  landings.forEach(([n, r, m]) => {
+    console.log('  ' + n.padEnd(13) + String(r).padStart(4) + '  ' +
+      m.peak.toFixed(3).padStart(6) + m.rms.toFixed(3).padStart(7) +
+      (m.dur.toFixed(0) + 'ms').padStart(9) + (m.centroid.toFixed(0) + 'Hz').padStart(10) +
+      m.lo.toFixed(0).padStart(6) + m.mid.toFixed(0).padStart(5));
+  });
+  const lc = landings.map(l => l[2].centroid), ld = landings.map(l => l[2].dur);
+  console.log('');
+  console.log('  spread: ' + (Math.max(...lc) / Math.min(...lc)).toFixed(1) + 'x in centroid and ' +
+              (Math.max(...ld) / Math.min(...ld)).toFixed(1) + 'x in length, over ' +
+              landings.length + ' shells. Every one of them was one sound before.');
+}
 if (fight) { console.log(''); console.log(fight); }
 console.log('  wrote ' + path.relative(ROOT, OUT) + '/');
 console.log('');

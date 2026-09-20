@@ -5977,7 +5977,14 @@ function fireAt(u, t, dt) {
                       a gun in the street puts one through the ground floor; a bomb comes
                       down and bursts at the foot of what it hits. */
                    bz: ind ? 0 : clamp(groundZ(u.x, u.y) + (u.cat === 'veh' ? 26 : 15) - groundZ(at.x, at.y), 0, 70) });
-    sfx(u.cat === 'veh' || u.cat === 'team' ? 'cannon' : 'rocket', u.x, u.y);
+    /* a flat round is at the target before anybody could act on the noise of it; a bomb
+       is in the air for seconds and the whistle is what a player moves out from under */
+    if (ind) G.shots[G.shots.length - 1].wh = 0;
+    /* The report is the weapon's own -- see `gunVoice`, which reads it off the burst and
+       the penetration the way `muzFx` reads the flash off the same two numbers. An
+       infantry launcher is not a gun and keeps the shove it always had. */
+    var gv = gunVoice(u, w);
+    sfx(u.cat === 'veh' || u.cat === 'team' ? gv.cls : 'rocket', u.x, u.y, gv);
   } else {
     for (var q = 0; q < Math.min(shots, 6); q++) {
       var fx0 = from.x + rnd(-9, 9), fy0 = from.y + rnd(-9, 9);
@@ -6336,8 +6343,9 @@ function ruinCollapse(p, b, owner) {
     b.brk[fi] = b.brk[fi].filter(function (hl) { return hl.z0 < now; });
   }
   /* pale, not sooty: what comes off a storey falling in is plaster and stone dust */
-  burstFx(b.x, b.y, Math.max(40, Math.min(b.w, b.d) * .5), 1, 12);
-  sfx('boom', b.x, b.y);
+  var cr = Math.max(40, Math.min(b.w, b.d) * .5);
+  burstFx(b.x, b.y, cr, 1, 12);
+  sfx('boom', b.x, b.y, burstVoice(cr));
   if (onScreen(b.x, b.y)) addShake(7);
   /* What was a wall is now a heap of what the wall was made of. The four patches ringing
      a house are tier 3 lying along its four faces, and a face that has come down cannot
@@ -6692,7 +6700,7 @@ function explode(x, y, radius, dmg, owner, except, bz) {
      map took the shell twice and every shell cost a scan of the whole list. */
   damageCover(x, y, radius * .6, dmg * .5);
   if (onScreen(x, y)) addShake(clamp(radius * .10, 1.5, 9));
-  sfx('boom', x, y);
+  sfx('boom', x, y, burstVoice(radius));
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e === except || e.inside) continue;
@@ -7071,6 +7079,13 @@ function updateShots(dt) {
     if (s.kind === 'shell') {
       var k = clamp(s.t / s.dur, 0, 1);
       s.x = lerp(s.sx, s.tx, k); s.y = lerp(s.sy, s.ty, k);
+      /* the incoming, timed to finish where the shell does rather than to start there:
+         it is a warning or it is nothing, and it is played at the ground it is coming at
+         and not at the tube, so a player hears a mission arriving on his own position */
+      if (s.wh === 0) {
+        var iv = burstVoice(s.aoe || 26);
+        if (s.t >= s.dur - iv.lead) { s.wh = 1; sfx('incoming', s.tx, s.ty, iv); }
+      }
       if (k >= 1) {
         /* A bomb dropped from a thousand feet does not score a hit on a turret roof the
            way a laid gun scores one on a glacis: what an indirect round does, it does
@@ -10810,7 +10825,63 @@ var AU = { ctx: null, on: true, budget: 0, noise: null, rumb: null, dry: null, s
 /* how close together two of the same sound may be. Two rifles inside a fiftieth of a
    second are one rifle as far as the ear is concerned, and stacking them is half of why
    massed fire sounded like a rattle rather than like weight of fire. */
-var AUGAP = { rifle: .045, mg: .036, cannon: .06, rocket: .06, boom: .05 };
+var AUGAP = { rifle: .045, mg: .036, gun: .06, at: .06, mortar: .07, how: .07, heavy: .08,
+              rocket: .06, boom: .05, incoming: .09 };
+/* ---- the voice of a gun ----------------------------------------------------------
+   Read off the WEAPON rather than typed against six artillery pieces and thirty-six unit
+   keys, which is the decision `muzFx` already made for the eye and for the same reason:
+   two lists of one thing go out of step the moment somebody adds a weapon to one of them.
+   Every gun on the roster played one of two sounds -- `cannon` if it was on a vehicle or
+   a crew and `rocket` otherwise -- so a mortar dropping an eighty-millimetre bomb over a
+   roof and a Tiger's eighty-eight were the same noise, and the two heavy batteries, which
+   are the loudest thing either army owns, were that noise again at the same level.
+
+   What separates one report from another is the shell and the charge behind it, and the
+   weapon already carries both: the burst radius says how big the projectile was and the
+   penetration says how hard it was pushed. Those are the two numbers the flash is sized
+   off, so the ear and the eye are reading the same physical fact, which is the whole
+   point -- a 37 and a 128 are both a tank gun and are not the same event in either sense.
+   `muzClass` gives the SHAPE, and it is the same list for both because a second list of
+   gun kinds is a second list to keep in step. */
+/* German propellant is drier and cracks higher; the Commonwealth charge is rounder and
+   carries more body. It is the ear's half of what FLASHC says to the eye, and it is what
+   tells the two mortars apart: an M1 81 mm and an 8 cm GrW 34 fire nearly the same bomb
+   with nearly the same charge, so nothing read off the weapon will ever separate them.
+     `pit` moves the CRACK and not the body, because the propellant sets the colour of the
+   edge and the shell sets the pitch of everything under it. Written the other way about
+   the side shifted the body too, and since the German piece of each pair throws the
+   heavier shell the two effects cancelled and the two heavy batteries came out at the
+   same pitch. */
+var AUSIDE = { us:  { crk: .86, bod: 1.12, pit: .90, tail: 1.16 },
+               ger: { crk: 1.18, bod: .88, pit: 1.12, tail: .86 } };
+/* what a branch reads when nobody handed it a voice: the even gun */
+var AUVD = { cls: 'gun', pit: 1, wt: 1, crk: 1, s: AUSIDE.us };
+function gunVoice(u, w) {
+  /* the shell. A mortar bomb at 34 of burst and a 210's at 140 are different objects and
+     the pitch of the body is where that difference lives: the bigger the thing that left
+     the barrel, the lower everything about the report. */
+  var sh = (w.aoe || 0) + (w.dmg || 0) * .35;
+  return { cls: muzClass(u, w),
+           pit: clamp(Math.pow(70 / Math.max(14, sh), .62), .40, 1.5),
+           /* and how much there is of it. A mortar carries across a street; a battery
+              carries across the map. */
+           wt: clamp(Math.pow(sh / 70, .34), .55, 1.8),
+           /* the charge, which is the crack, normalised about a tank gun so that a 75 on
+              a Sherman is 1 and the branch below it is the one the whole roster used to
+              fire. A Pak at 290 of penetration is nearly all crack and a pack howitzer
+              at 26 has almost none in it. */
+           crk: clamp(Math.pow((w.pen || 0) / 120, .55), .22, 1.9),
+           s: AUSIDE[u.side] || AUSIDE.us };
+}
+/* And what lands. A burst has no propellant in it and no side: what sets it is the hole,
+   which is the one number `explode` already has. */
+function burstVoice(r) {
+  var p = clamp(Math.pow(44 / Math.max(10, r), .5), .42, 1.6);
+  /* how long the thing was falling before it got here, which is the length of the
+     incoming: a bomb gives you half a second of warning and a 210 gives you most of two */
+  return { cls: 'boom', pit: p, wt: clamp(Math.pow(r / 44, .38), .5, 1.9),
+           lead: clamp(.5 / p, .4, 1.5), crk: 1, s: AUSIDE.us };
+}
 /* a street: two walls close enough to hear and a dark tail off everything else. The taps
    are a couple of milliseconds apart between the ears, which is what stops it sounding
    like a plate and starts it sounding like somewhere. */
@@ -10892,8 +10963,12 @@ function auHiss(t, dest, buf, type, f0, f1, q, vol, dur, at) {
   g.gain.exponentialRampToValueAtTime(.0004, t + at + dur);
   src.connect(f); f.connect(g); g.connect(dest);
   /* start somewhere else in the buffer every time: the same two hundred milliseconds of
-     noise on every shot is a texture the ear learns in about four seconds */
-  src.start(t + at, Math.random() * (buf.duration - dur - .05));
+     noise on every shot is a texture the ear learns in about four seconds. A layer longer
+     than the buffer has no window to pick and starts at the top; the source loops, so it
+     runs for as long as it was asked for. Left unclamped it throws, which is what a
+     heavy battery's second and a half of tail did to a fourteen-hundred-millisecond
+     buffer the first time one was built. */
+  src.start(t + at, Math.max(0, Math.random() * (buf.duration - dur - .05)));
   src.stop(t + at + dur + .03);
 }
 /* and one layer of pitch, which is the thump: a sine falling away under everything else */
@@ -10908,7 +10983,7 @@ function auTone(t, dest, type, f0, f1, vol, dur, at) {
   o.connect(g); g.connect(dest);
   o.start(t + at); o.stop(t + at + dur + .03);
 }
-function sfx(kind, x, y) {
+function sfx(kind, x, y, vo) {
   if (!AU.on || !AU.ctx || AU.budget <= 0) return;
   var c = AU.ctx, t = c.currentTime;
   var gap = AUGAP[kind];
@@ -10944,6 +11019,10 @@ function sfx(kind, x, y) {
   else lp.connect(AU.dry);
   out.connect(snd); snd.connect(AU.send);
   var j = rnd(.88, 1.14);                       /* no two of anything are the same */
+  /* what kind of gun this is, read off the weapon by `gunVoice`. A branch that is handed
+     nothing gets the even gun, which is what `tools/audio.mjs` renders when it is asked
+     for a class rather than for a piece off the roster. */
+  var v = vo || AUVD, vs = v.s || AUSIDE.us, wd;
 
   if (kind === 'rifle') {
     /* Lee-Enfield and Kar98k: a hard crack, a short barrel-shaped body under it, and a
@@ -10959,15 +11038,82 @@ function sfx(kind, x, y) {
     auHiss(t, out, AU.noise, 'highpass', 2300 * j, 0, .6, .72, .03, 0);
     auHiss(t, out, AU.noise, 'bandpass', 1000 * j, 560 * j, 1.2, .5, .065, .001);
     auTone(t, out, 'triangle', 135 * j, 60, .2, .055, 0);
-  } else if (kind === 'cannon') {
-    /* a 75 from a tank: the crack is nearly all of what you hear at the gun and the rest
-       of it arrives as weight */
-    snd.gain.value = .72;
-    auHiss(t, out, AU.noise, 'highpass', 1500 * j, 600, .6, 1, .2, 0);
-    auHiss(t, out, AU.noise, 'bandpass', 1300 * j, 500, 1, .6, .3, .004);
-    auHiss(t, out, AU.rumb, 'lowpass', 900, 190, .8, .8, .55, 0);
-    auTone(t, out, 'sine', 128 * j, 33, .7, .5, 0);
-    auTone(t, out, 'triangle', 62 * j, 28, .4, .4, .012);
+  } else if (kind === 'gun') {
+    /* A tank gun: the crack is nearly all of what you hear at the muzzle and the rest of
+       it arrives as weight. At an even voice this is the 75 every gun on the roster used
+       to fire; a Stuart's 37 comes out a third lighter and half an octave up, and the
+       Maus's 128 the other way about. */
+    snd.gain.value = clamp(.72 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 1500 * j * v.pit * vs.pit, 600, .6, v.crk * vs.crk, .2, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1300 * j * v.pit * vs.pit, 500, 1, .6 * v.crk * vs.crk, .3, .004);
+    auHiss(t, out, AU.rumb, 'lowpass', 900 * v.pit, 190 * v.pit, .8, .8 * v.wt * vs.bod, .55 * vs.tail, 0);
+    auTone(t, out, 'sine', 128 * j * v.pit, 33, .7 * v.wt, .5 * vs.tail, 0);
+    auTone(t, out, 'triangle', 62 * j * v.pit, 28, .4 * v.wt * vs.bod, .4, .012);
+  } else if (kind === 'at') {
+    /* An anti-tank gun is a long barrel at high velocity with a brake on the end of it.
+       The whole event is the crack; it is over before a tank gun's body has started, and
+       the brake throws the blast out sideways rather than down the range. */
+    snd.gain.value = clamp(.5 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 2300 * j * v.pit * vs.pit, 900, .7, .95 * v.crk * vs.crk, .13, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1750 * j * v.pit * vs.pit, 720, 1.3, .5 * v.crk * vs.crk, .2, .003);
+    auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 170 * v.pit, .8, .55 * v.wt * vs.bod, .4 * vs.tail, .006);
+    auTone(t, out, 'sine', 112 * j * v.pit, 30, .5 * v.wt, .34 * vs.tail, 0);
+  } else if (kind === 'mortar') {
+    /* A tube. The charge is small and it burns in the open behind the bomb, so there is
+       almost no crack in this at all: what you hear is gas leaving the muzzle, the tube
+       itself ringing, and a soft thump under both. Then the bomb is in the air for three
+       seconds. It is the one report on the roster a player picks out of a firefight by
+       its lack of an edge rather than by having one. */
+    snd.gain.value = .42;
+    auHiss(t, out, AU.noise, 'bandpass', 700 * j * v.pit * vs.pit, 300 * v.pit, 2.6, .8 * vs.crk, .085, 0);
+    auTone(t, out, 'sine', 176 * j * v.pit, 62, .5 * v.wt * vs.bod, .2 * vs.tail, 0);
+    /* The tube: a short metallic ring, and the whole of what says mortar rather than gun,
+       so it carries rather than sits under the thump. It is also where the two mortars
+       are told apart -- an M1 81 mm and an 8 cm GrW 34 throw nearly the same bomb on
+       nearly the same charge, so nothing read off the weapon will ever separate them and
+       what is left is the colour of the tube. Written at a fifth of the thump it was
+       inaudible in the measurement as well as in the ear: the pair read 1.03x in onset
+       colour against a control -- the same piece rendered twice -- of 1.01x, which is no
+       difference at all. At two fifths they read 1.12x against 1.01x. */
+    auTone(t, out, 'triangle', 340 * j * v.pit * vs.pit, 305 * v.pit, .42 * vs.bod, .24 * vs.tail, .006);
+    auHiss(t, out, AU.rumb, 'lowpass', 380 * v.pit, 130, .9, .42 * v.wt * vs.bod, .26 * vs.tail, 0);
+    auHiss(t, out, AU.noise, 'highpass', 2100 * j * vs.pit, 0, .6, .2 * v.crk * vs.crk, .03, 0);
+  } else if (kind === 'how') {
+    /* A pack howitzer: a short barrel and a big shell, so it barks rather than cracks.
+       Most of the report is over in a fifth of a second with the ground still moving. */
+    snd.gain.value = clamp(.62 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 1250 * j * v.pit * vs.pit, 480, .6, 1.5 * v.crk * vs.crk, .17, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 900 * j * v.pit * vs.pit, 380, 1.1, .7 * vs.crk, .3, .005);
+    auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 160 * v.pit, .85, v.wt * vs.bod, .7 * vs.tail, 0);
+    auTone(t, out, 'sine', 104 * j * v.pit, 30, .85 * v.wt, .6 * vs.tail, 0);
+    auTone(t, out, 'triangle', 52 * j * v.pit, 26, .42 * v.wt * vs.bod, .46, .014);
+  } else if (kind === 'heavy') {
+    /* A heavy battery, and the crack is there without being what the event is: two
+       hundred kilograms leaving a tube eight inches across is a blow rather than a bang,
+       and what carries is the body and the tail behind it. It is the loudest thing either
+       army owns and it ought to be the loudest thing on the map. */
+    snd.gain.value = 1;
+    auHiss(t, out, AU.noise, 'highpass', 900 * j * v.pit * vs.pit, 340, .6, 1.1 * v.crk * vs.crk, .24, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 620 * j * v.pit * vs.pit, 250, 1.1, .75 * vs.crk, .5, .006);
+    auHiss(t, out, AU.rumb, 'lowpass', 520 * v.pit, 90, .9, 1.25 * v.wt * vs.bod, 1.3 * vs.tail, 0);
+    auTone(t, out, 'sine', 96 * j * v.pit, 22, 1.05 * v.wt, 1.05 * vs.tail, 0);
+    auTone(t, out, 'triangle', 46 * j * v.pit, 20, .5 * v.wt * vs.bod, .8, .016);
+    /* and the ground comes back at you a beat later, which is the half of a heavy report
+       that happens where you are standing rather than where the gun is */
+    auHiss(t, out, AU.rumb, 'lowpass', 300, 70, .9, .5 * v.wt, .9 * vs.tail, .1);
+  } else if (kind === 'incoming') {
+    /* The round on its way down, and the only warning there is that a mission is landing
+       where you are standing. An indirect round made no sound at all between the tube and
+       the ground, which is a strange thing for the one weapon on this roster you are
+       meant to move out from under. It is pitched off the same burst the landing is, so a
+       bomb comes in as a thin whistle and a two-hundred-kilogram shell as a freight
+       train, and it is timed to finish where the shell does. */
+    snd.gain.value = .5;
+    wd = v.lead || .5;
+    auTone(t, out, 'sine', 900 * v.pit, 210 * v.pit, .3 * v.wt, wd, 0);
+    auTone(t, out, 'triangle', 1350 * v.pit, 300 * v.pit, .12 * v.wt, wd, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1500 * v.pit, 380 * v.pit, 3.2, .3 * v.wt, wd, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 400 * v.pit, 200 * v.pit, .8, .3 * v.wt, wd, .05);
   } else if (kind === 'rocket') {
     /* Panzerschreck and bazooka: not a bang but a shove, with the back-blast behind it */
     snd.gain.value = .62;
@@ -10975,13 +11121,16 @@ function sfx(kind, x, y) {
     auHiss(t, out, AU.rumb, 'lowpass', 700, 240, .8, .45, .36, 0);
     auTone(t, out, 'sine', 104 * j, 42, .38, .3, .01);
   } else if (kind === 'boom') {
-    /* a shell landing. Most of it is under a hundred hertz, some of it is the crack of
-       the burst, and the rest is the street coming down for the best part of a second. */
+    /* A shell landing. Most of it is under a hundred hertz, some of it is the crack of
+       the burst, and the rest is the street coming down for the best part of a second.
+       Sized off the hole the shell dug, because a mortar bomb at thirty-four of burst and
+       a 210's shell at a hundred and forty are not the same event on the ground either,
+       and every one of them used to be this one. */
     snd.gain.value = 1;
-    auHiss(t, out, AU.noise, 'highpass', 1100 * j, 400, .6, .85, .18, 0);
-    auHiss(t, out, AU.rumb, 'lowpass', 620, 120, .9, 1, .95, 0);
-    auTone(t, out, 'sine', 88 * j, 26, .8, .8, 0);
-    auHiss(t, out, AU.noise, 'bandpass', 2400 * j, 900, 1.1, .38, .55, .06);
+    auHiss(t, out, AU.noise, 'highpass', 1100 * j * v.pit, 400 * v.pit, .6, .85, .18 * v.wt, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 620 * v.pit, 120 * v.pit, .9, v.wt, .95 * v.wt, 0);
+    auTone(t, out, 'sine', 88 * j * v.pit, 26, .8 * v.wt, .8 * v.wt, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 2400 * j * v.pit, 900, 1.1, .38, .55 * v.wt, .06);
   } else if (kind === 'cap') {
     /* ground taken. A pair of notes rather than a hiss, because it is the one sound in
        the game that is telling you something rather than depicting something. */

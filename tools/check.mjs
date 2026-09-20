@@ -359,6 +359,18 @@ for (const device of TARGETS) {
     const laid = window.orderBarrage(m, tx, ty);
     const far = window.orderBarrage(m, 600 + B.range + 120, 900);
     const out = [];
+    /* And what the mission SOUNDS like, which until now was nothing at all between the
+       tube and the ground: a bomb is in the air for three seconds and the whistle is the
+       only warning a player gets that a mission is landing on him. It is played at the
+       ground it is coming at rather than at the tube, so it is counted here with the
+       rounds rather than with the reports. */
+    const heard = {};
+    const realSfx = window.sfx;
+    window.sfx = function (kind, sx, sy, sv) {
+      heard[kind] = (heard[kind] || 0) + 1;
+      if (kind === 'incoming') heard.at = Math.round(Math.hypot(sx - tx, sy - ty));
+      return realSfx.apply(null, arguments);
+    };
     /* run on past the end: the last bomb is counted by seeing it leave the list, and a
        loop that stops the moment the list empties never sees the one that emptied it */
     let quiet = 0;
@@ -371,6 +383,7 @@ for (const device of TARGETS) {
       });
       quiet = (m.barrage || window.G.shots.length) ? 0 : quiet + 1;
     }
+    window.sfx = realSfx;
     window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
     window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
     /* A mission aims anywhere inside its circle and then has its own round-to-round
@@ -388,16 +401,24 @@ for (const device of TARGETS) {
              rounds: out.length, want: B.rounds, r: B.r, bound,
              inCircle: out.filter(d => d <= B.r).length,
              inBound: out.filter(d => d <= bound).length,
-             past: tx - 600 > m.def.w.range };
+             past: tx - 600 > m.def.w.range,
+             inc: heard.incoming || 0, boom: heard.boom || 0, rep: heard.mortar || 0,
+             incAt: heard.at === undefined ? -1 : heard.at };
   });
   ok('a mortar shells what the side can see, over what is in the way, and lands where it is laid',
      !mor.has || (mor.line === false && mor.unobserved === 0 && mor.observed > 0 &&
                   mor.laid && !mor.far && mor.past && mor.rounds === mor.want &&
-                  mor.inBound === mor.rounds && mor.inCircle >= mor.rounds - 4),
+                  mor.inBound === mor.rounds && mor.inCircle >= mor.rounds - 4 &&
+                  /* every bomb is announced by its own report, its own incoming and its
+                     own burst, and the incoming is laid at the ground and not at the tube */
+                  mor.rep === mor.rounds && mor.inc === mor.rounds && mor.boom === mor.rounds &&
+                  mor.incAt >= 0 && mor.incAt <= mor.bound),
      !mor.has ? 'no indirect weapon in this file'
               : `through a building: ${mor.unobserved} rounds unobserved, ${mor.observed} with eyes on; ` +
                 `a mission past free-fire range fired ${mor.rounds} of ${mor.want}, ${mor.inCircle} inside ${mor.r} and ` +
-                `${mor.inBound} inside ${mor.bound}, and out of range was refused`);
+                `${mor.inBound} inside ${mor.bound}, and out of range was refused; ` +
+                `${mor.rep} tube reports, ${mor.inc} incoming and ${mor.boom} bursts, the last ` +
+                `incoming ${mor.incAt} units from the aim point`);
 
   /* --- the pack howitzers, which are the mortar's claims turned round. The mortar fires
      on its own account and the gun never does, so what is worth asserting is the refusal:
@@ -1819,6 +1840,121 @@ for (const device of TARGETS) {
              `over ${hole.flushes} tile rebuild(s), the height is its own layers to ${hole.layers}, ` +
              `and a round on a headquarters ${hole.onBld ? '! DUG' : 'was refused'} and one under the ` +
              `floor ${hole.small ? '! DUG' : 'was refused'}`);
+
+  /* --- The voice of a gun. Every piece on this roster that fires a shell played one of
+     two sounds -- `cannon` if it was on a vehicle or a crew and `rocket` otherwise -- so a
+     mortar dropping a bomb over a roof, a Pak 40 and a two-hundred-and-ten-millimetre
+     battery were the same noise at the same level. A sound is the one thing here a
+     screenshot cannot review at all, and an ear is not available to a gate, so it is
+     rendered offline through the page's own graph and read as numbers.
+       Three claims. Every shell weapon puts something on the bus, because a report that
+     is built and inaudible looks exactly like one that is not built. The roster is
+     differentiated rather than merely loud, which is the muzzle card's `spread` asked of
+     the ear. And the six artillery pieces are six sounds: each pair is one class firing
+     nearly the same shell, so what has to separate them is the propellant, and the row
+     measures each pair against ITS OWN first piece rendered twice -- every layer of every
+     report is jittered per shot, so a ratio with no floor under it says nothing, and the
+     floor is not the same for a mortar as for a tank gun. `tools/audio.mjs` is the card
+     that writes the WAVs and prints the whole table. --- */
+  const voice = await page.evaluate(async () => {
+    const SR = 22050;                       /* half rate: this is arithmetic, not listening */
+    /* rms, length and brightness off the samples. Brightness is the rms of the first
+       difference over the rms of the signal, which rises and falls with the spectral
+       centroid and costs no transform: what is wanted here is an ORDER, not a hertz. */
+    function meas(x) {
+      let peak = 0, sum = 0, d = 0;
+      for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > peak) peak = a; sum += x[i] * x[i]; }
+      for (let i = 1; i < x.length; i++) { const q = x[i] - x[i - 1]; d += q * q; }
+      const rms = Math.sqrt(sum / x.length);
+      let head = 0, end = 0;
+      for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > peak * .02) { head = i; break; }
+      for (let i = x.length - 1; i >= 0; i--) if (Math.abs(x[i]) > peak * .001) { end = i; break; }
+      return { peak: peak, rms: rms, dur: (end - head) / SR,
+               bright: Math.sqrt(d / x.length) / (rms || 1e-9) };
+    }
+    async function play(key, secs) {
+      const oc = new OfflineAudioContext(1, Math.round(SR * secs), SR);
+      const keep = { ctx: AU.ctx, noise: AU.noise, rumb: AU.rumb, on: AU.on,
+                     budget: AU.budget, last: AU.last, dry: AU.dry, send: AU.send };
+      auAttach(oc);
+      AU.on = true; AU.budget = 99; AU.last = {};
+      const d = UNITS[key];
+      const gv = gunVoice({ cat: d.cat, def: d, side: d.side }, d.w);
+      sfx(gv.cls, undefined, undefined, gv);
+      const out = await oc.startRendering();
+      for (const k in keep) AU[k] = keep[k];
+      return { m: meas(out.getChannelData(0)), cls: gv.cls };
+    }
+    /* the mean of several takes, because one take of a jittered report is noise. Two is
+       enough for the roster sweep, which asks for a spread of several times over; the six
+       are a fine comparison against their own floor and get twelve. */
+    async function mean(key, secs, n) {
+      let cls = '', a = { peak: 0, rms: 0, dur: 0, bright: 0 };
+      for (let i = 0; i < n; i++) {
+        const r = await play(key, secs);
+        cls = r.cls;
+        a.peak += r.m.peak / n; a.rms += r.m.rms / n; a.dur += r.m.dur / n; a.bright += r.m.bright / n;
+      }
+      a.cls = cls;
+      return a;
+    }
+    const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['us_how8', 'ger_how210']];
+    const six = [].concat.apply([], PAIRS);
+    const shells = Object.keys(UNITS).filter(k => UNITS[k].w && UNITS[k].w.shell && UNITS[k].cat !== 'inf');
+    const rows = {}, silent = [];
+    for (const k of shells) {
+      rows[k] = await mean(k, 2.2, six.indexOf(k) < 0 ? 2 : 12);
+      if (rows[k].peak < .05) silent.push(k);
+    }
+    const pk = shells.map(k => rows[k].peak), br = shells.map(k => rows[k].bright);
+    const du = shells.map(k => rows[k].dur);
+    const r = (x, y) => Math.max(x, y) / Math.max(1e-9, Math.min(x, y));
+    const pairs = [];
+    for (const [a, b] of PAIRS) {
+      const ctl = await mean(a, 2.2, 12);    /* the same piece twice: the jitter, and nothing else */
+      const A = rows[a], B = rows[b];
+      /* per metric, how far apart the pair is against how far apart the SAME piece is
+         from itself. A max taken over the three ratios first and then compared is biased
+         both ways at once and put a floor of 1.09 under a pair that is 1.32 apart. */
+      const M = ['bright', 'peak', 'dur'];
+      let best = 0, bd = 1, bf = 1, bm = '';
+      M.forEach(k => {
+        const d = r(A[k], B[k]), f = r(A[k], ctl[k]), sn = (d - 1) / Math.max(.004, f - 1);
+        if (sn > best) { best = sn; bd = d; bf = f; bm = k; }
+      });
+      pairs.push({ a: UNITS[a].short, b: UNITS[b].short, cls: A.cls, m: bm,
+                   d: +bd.toFixed(2), f: +bf.toFixed(2), sn: +best.toFixed(1) });
+    }
+    /* and the three classes are three shapes: a tube is short and a battery is long */
+    const shape = { mortar: +rows.us_mor.dur.toFixed(2), how: +rows.us_how.dur.toFixed(2),
+                    heavy: +rows.us_how8.dur.toFixed(2) };
+    return { n: shells.length, silent: silent,
+             lvl: +(Math.max.apply(null, pk) / Math.min.apply(null, pk)).toFixed(1),
+             brt: +(Math.max.apply(null, br) / Math.min.apply(null, br)).toFixed(1),
+             len: +(Math.max.apply(null, du) / Math.min.apply(null, du)).toFixed(1),
+             pairs: pairs, shape: shape };
+  });
+  ok('every gun has its own report, and the six artillery pieces are six of them',
+     voice.n >= 16 && voice.silent.length === 0 && voice.brt > 1.8 && voice.len > 2 &&
+     /* the EXCESS over parity against the floor's excess, and not the two ratios against
+        each other: a floor of 1.01 is one per cent of jitter, so a pair thirty-two per
+        cent apart clears it by thirty to one. Multiplied instead, a floor that close to
+        parity sets a bar of 1.515x that only a wholly different weapon would clear, and
+        the row failed on a pair it should have passed. */
+     /* and a tenth of a difference as the absolute bar, because that is the honest
+        separation for two pieces that throw nearly the same bomb on nearly the same
+        charge: an M1 81 mm and an 8 cm GrW 34 are not a tank gun and a mortar, and a bar
+        that demanded they be would be a bar demanding the roster lie. The claim is the
+        line above -- that each pair beats its own jitter several times over. */
+     voice.pairs.every(p => p.sn > 3 && p.d > 1.10) &&
+     voice.shape.mortar < voice.shape.how && voice.shape.how < voice.shape.heavy,
+     `${voice.n} shell weapons, ${voice.silent.length} of them putting nothing on the bus` +
+     `${voice.silent.length ? ' (' + voice.silent.join(' ') + ')' : ''}; across the roster ` +
+     `${voice.lvl}x in level, ${voice.brt}x in brightness and ${voice.len}x in length; ` +
+     `a tube rings for ${voice.shape.mortar}s, a pack howitzer ${voice.shape.how}s and a ` +
+     `battery ${voice.shape.heavy}s; ` +
+     voice.pairs.map(p => `${p.a}/${p.b} differ ${p.d}x in ${p.m} against a jitter floor of ` +
+                          `${p.f}x, which is ${p.sn} to one`).join(', '));
 
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody

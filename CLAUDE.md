@@ -238,14 +238,17 @@ game's own `sfx()` through an `OfflineAudioContext`, writes WAVs to `shots/audio
 prints what a sound actually is.
 
 ```sh
-node tools/audio.mjs                 every sound, a montage, and a firefight
+node tools/audio.mjs                 every sound, the roster, a montage, a firefight
 node tools/audio.mjs rifle mg        two of them
+node tools/audio.mjs us_how8         one piece off the roster, in its own voice
 node tools/audio.mjs --tag=before    keep a set to compare against
 ```
 
 Nothing is reimplemented: the page's own `auAttach()` builds the graph on the offline
 context and the page's own `sfx()` fills it, so what lands on disk is what a player
-hears, sample for sample.
+hears, sample for sample. A named unit key goes the same way -- the page's own
+`gunVoice()` reads the voice off that unit's real weapon and the page's own `sfx()` plays
+it -- so the ROSTER table is thirty-odd guns firing rather than a list somebody typed.
 
 Two columns matter more than the rest. **Crest** is peak over rms: a crack is a high
 number and a hiss is a low one. And the **first 50ms** band split is where the character
@@ -254,6 +257,31 @@ which is always the bottom end. Measuring band *power* out of a transform rather
 magnitude at a few single frequencies is not a detail: the cheap way compares a sine,
 whose energy sits in one bin, against noise, which is spread over thousands, and reports
 any sound with a thump in it as ninety-nine per cent bass with no crack at all.
+
+**ROSTER** is every gun on the roster that fires a shell, in the voice read off its own
+weapon. Over eighteen guns it is about 2.4x in level, 10x in centroid and 3x in length:
+a mortar is 523 ms with a crest of 12, a pack howitzer 835 ms at 6.2 and a heavy battery
+1,513 ms at 4.6, and the Pak 40's onset sits at about 1,840 Hz against the eight-inch's
+210. A row is the mean of ten takes, because every layer of every report is jittered per
+shot and one take says nothing: measured once, the Pak's centroid came back at 776 Hz and
+then at 1,050 on the same file. Even at ten takes the lengths and the class order hold to
+a few per cent between runs while the onset colour of a single gun moves by as much as a
+tenth, so read the shape of the table and not the last digit.
+
+**And each of the three artillery pairs is measured against its own first piece rendered
+twice.** A ratio with no floor under it says nothing, and the floor is not the same for
+every class -- a tank gun carries most of its variance in the top end and a mortar carries
+almost none, so the Panzer IV against the StuG, which is one gun on two hulls, is the
+wrong control for a mortar. Over several runs the pairs read 1.13x to 1.52x in onset
+colour, 1.04x to 1.36x in length and 1.16x to 1.25x in crest, against floors of 1.01x to
+1.07x. The gate row states the same thing as one number, the best metric's excess over
+its own floor, and reads 10 to 80 to one.
+
+**LANDING** is the burst, sized off the hole the shell dug: 1.7x to 1.9x in centroid and
+1.6x in length over the six shells, every one of which was one sound before. The two
+mortars land identically (213 Hz against 213 Hz), which is correct and is the point -- a
+burst has no propellant in it and no side, so what separates two shells on the ground is
+the size of the shell and nothing else.
 
 The firefight is the one to listen to. A company a side is put down two hundred units
 apart in the middle of the town and left to it, every sound the game really plays is
@@ -737,6 +765,28 @@ the biggest blast has to light many times the pixels of the smallest, a round la
 house has to be hidden by it from one side and not the other, and a heavy shell has to
 still be on the screen a second and a half after it lands. The column's floor is what a
 PHONE has to clear, because a phone spawns four puffs of it rather than eleven.
+
+**And one row RENDERS the roster and reads it as numbers**, because a sound is the one
+thing here a screenshot cannot review at all and an ear is not available to a gate. Every
+shell weapon has to put something on the bus, since a report that is built and inaudible
+looks exactly like one that is not built; the roster has to be differentiated rather than
+merely loud, which is the muzzle row's `spread` asked of the ear; the three artillery
+shapes have to be three lengths, a tube ringing for half a second where a battery rings
+for a second and a half; and the six pieces have to be six sounds. That last one is the
+fine comparison and it is measured against ITS OWN first piece rendered twice: every
+layer of every report is jittered per shot, so a ratio with no floor under it says
+nothing, and the floor is not the same for a mortar as for a tank gun. It reads between
+10 and 80 to one on the three pairs, and which metric carries a pair changes from run to
+run, so the row takes the best of brightness, level and length per pair rather than one
+of them. The row uses the rms of the first difference over the rms of
+the signal for brightness, which rises and falls with the spectral centroid and needs no
+transform, because what is wanted is an ORDER and not a hertz.
+
+**And a mortar's mission is counted by ear as well as by where the bombs land**: ten tube
+reports, ten incoming and ten bursts for ten bombs, with the incoming inside the beaten
+zone rather than back at the tube. An indirect round used to make no sound at all between
+the tube and the ground, and the shape of that fault is the same as the fog of war having
+no live tier -- everything about it reads as working from the outside.
 
 **And one row asks whether a shell leaves a hole or a stain.** They are the same picture
 from above -- a dark patch on the ground -- so the row asks the two questions a photograph
@@ -2659,6 +2709,52 @@ limits how close together two of the same sound may be, because massed fire stac
 without one turns into a rattle. `auInit` makes the real context; `tools/audio.mjs` hands
 `auAttach` an offline one.
 
+**A gun's report is read off the WEAPON, the way its muzzle flash already was.** Every
+piece on this roster that fires a shell played one of two sounds -- `cannon` if it was on
+a vehicle or a crew and `rocket` otherwise -- so a mortar dropping an eighty-millimetre
+bomb over a roof, a Pak 40 and a two-hundred-and-ten-millimetre battery were the same
+noise at the same level, and the six artillery pieces were that noise six times.
+
+`gunVoice(u, w)` is the fix and it is the same decision `muzFx` made for the eye, for the
+same reason: two lists of one thing go out of step the moment somebody adds a weapon to
+one of them. What separates one report from another is the shell and the charge behind
+it, and the weapon already carries both -- the burst radius says how big the projectile
+was and the penetration says how hard it was pushed. Those are the two numbers the flash
+is sized off, so the ear and the eye read the same physical fact. `muzClass` gives the
+SHAPE and it is the same list for both, because a second list of gun kinds is a second
+list to keep in step: a tube (`mortar`), a bark (`how`), a blow (`heavy`), a tank gun
+(`gun`) and a high-velocity crack (`at`). An even voice is the 75 the whole roster used
+to fire, so nothing about a Sherman moved and everything else moved away from it.
+
+**And the side is the ear's `FLASHC`.** German propellant is drier and cracks higher and
+the Commonwealth charge is rounder with more body -- one number a player picks a side out
+by, the same claim the flash colour makes. It is there because nothing read off the weapon
+will ever separate an M1 81 mm from an 8 cm GrW 34: they throw nearly the same bomb on
+nearly the same charge, and the numbers agree (a pitch of 1.17 against 1.16). `AUSIDE`
+moves the CRACK and not the body, because the propellant sets the colour of the edge and
+the shell sets the pitch of everything under it. Written the other way about, the side
+shifted the body too, and since the German piece of each pair throws the heavier shell the
+two effects cancelled and the two heavy batteries came out at the same pitch.
+
+**The tube ring is where the two mortars are told apart**, so it carries rather than sits
+under the thump. At a fifth of the thump's volume it was inaudible in the measurement as
+well as in the ear: the pair read 1.03x in onset colour, which is what the same piece
+rendered twice reads, so there was no difference to hear. At two fifths they read 1.12x
+against a floor of 1.01x.
+
+**A shell landing is the shell that landed.** `burstVoice(r)` is the other half, off the
+one number `explode` already has, so a mortar bomb at thirty-four of burst and a 210's
+shell at a hundred and forty are not the same event on the ground either. It has no side
+in it, because a burst has no propellant.
+
+**And a round in the air makes a sound now.** An indirect round was silent between the
+tube and the ground, which is a strange thing for the one weapon on this roster a player
+is meant to move out from under: the incoming is the only warning there is. It is pitched
+off the same burst the landing is -- a bomb comes in as a thin whistle and a
+two-hundred-kilogram shell as a freight train -- it is played at the ground it is coming
+at rather than at the tube, and it is timed to FINISH where the shell does rather than to
+start there (`burstVoice().lead`, half a second for a bomb and most of two for a heavy).
+
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
 and no separate update thread.
@@ -3756,6 +3852,22 @@ shots/                         screenshot output, gitignored
   Measured on Ortona, the Canadian tracer put a sixth of the pixels on the screen that the
   German one did for the same number of rounds. The tail carries the side's colour and the
   head is near-white on both, which is also what a burning element looks like.
+- **`auHiss` picks a random window out of a 1.4-second noise buffer, and a layer longer
+  than the buffer has no window to pick.** The offset goes negative and `start()` throws,
+  which is what a heavy battery's second and a half of tail did the first time one was
+  built. It is clamped to nought and the source loops, so a long layer runs for as long as
+  it was asked for.
+- **A ratio is compared against its floor on the EXCESS over parity, not by multiplying.**
+  A jitter floor of 1.01x is one per cent, so a pair thirty-two per cent apart clears it by
+  thirty to one; asked as `d > f * 1.5` the same floor sets a bar of 1.515x that only a
+  wholly different weapon would clear, and the row failed on a pair it should have passed.
+- **And the floor has to come from the same kind of thing.** A tank gun's report carries
+  most of its variance in the top end and a mortar's carries almost none, so a Panzer IV
+  against a StuG -- one gun on two hulls, which is the obvious control -- is the wrong
+  control for a mortar. Each pair is measured against its own first piece rendered twice.
+  Taking a max over three metrics before comparing is wrong for the same reason in the
+  other direction: it is biased upward on both sides at once and put a floor of 1.09 under
+  a pair that is 1.32 apart. Compare per metric, then take the best.
 - **A landform is arithmetic and two halves can look identical while one is a metre
   higher.** A mirrored map is fair only if the ground agrees with its own reflection, and
   the only way to know that is to sample it: the Gothic Line is measured over 1,750 points
