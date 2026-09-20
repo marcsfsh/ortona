@@ -459,13 +459,15 @@ if (pieces.length) {
       (m.dur.toFixed(0) + 'ms').padStart(8) + (m.centroid.toFixed(0) + 'Hz').padStart(9) +
       (m.on.centroid.toFixed(0) + 'Hz').padStart(9));
   });
-  /* the two numbers that say the roster is differentiated rather than merely loud, in the
-     same shape as the muzzle card's `spread`: the loudest report over the quietest, and
-     the highest centroid over the lowest. A roster that is one sound reads 1.0 on both. */
-  const pk = pieces.map(p => p[2].peak), ce = pieces.map(p => p[2].centroid).filter(c => c > 0);
+  /* The numbers that say the roster is differentiated rather than merely loud, in the
+     same shape as the muzzle card's `spread`. A roster that is one sound reads 1.0 on all
+     of them. Level is rms and not peak: the bus ends in a compressor whose whole job is
+     flattening peaks, so peak is the one loudness measure this graph is built to destroy
+     -- measured across the roster it reads 2.2x where rms reads 8.9x. */
+  const pk = pieces.map(p => p[2].rms), ce = pieces.map(p => p[2].centroid).filter(c => c > 0);
   const du = pieces.map(p => p[2].dur);
   console.log('');
-  console.log('  spread: ' + (Math.max(...pk) / Math.min(...pk)).toFixed(1) + 'x in level, ' +
+  console.log('  spread: ' + (Math.max(...pk) / Math.min(...pk)).toFixed(1) + 'x in level (rms), ' +
               (Math.max(...ce) / Math.min(...ce)).toFixed(1) + 'x in centroid, ' +
               (Math.max(...du) / Math.min(...du)).toFixed(1) + 'x in length, over ' +
               pieces.length + ' guns.');
@@ -477,9 +479,11 @@ if (pieces.length) {
   pieces.forEach(p => { by[p[0]] = p; });
   const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['us_how8', 'ger_how210']];
   const rat = (x, y) => (Math.max(x, y) / Math.max(1e-9, Math.min(x, y))).toFixed(2);
+  /* `level` is rms for the reason above: read as peak the heavy pair comes out 1.03x
+     apart, which is the compressor's answer and not the guns'. */
   function ratLine(label, A, B) {
     return '    ' + label.padEnd(24) +
-      rat(A.on.centroid, B.on.centroid) + 'x onset  ' + rat(A.peak, B.peak) + 'x level  ' +
+      rat(A.on.centroid, B.on.centroid) + 'x onset  ' + rat(A.rms, B.rms) + 'x level  ' +
       rat(A.dur, B.dur) + 'x length  ' + rat(A.crest, B.crest) + 'x crest';
   }
   if (PAIRS.every(([a, b]) => by[a] && by[b])) {

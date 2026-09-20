@@ -259,7 +259,8 @@ whose energy sits in one bin, against noise, which is spread over thousands, and
 any sound with a thump in it as ninety-nine per cent bass with no crack at all.
 
 **ROSTER** is every gun on the roster that fires a shell, in the voice read off its own
-weapon. Over eighteen guns it is about 2.4x in level, 10x in centroid and 3x in length:
+weapon. Over eighteen guns it is about 8.9x in level (rms, because the bus ends in a
+compressor and peak reads 2.2x), 10x in centroid and 3x in length:
 a mortar is 523 ms with a crest of 12, a pack howitzer 835 ms at 6.2 and a heavy battery
 1,513 ms at 4.6, and the Pak 40's onset sits at about 1,840 Hz against the eight-inch's
 210. A row is the mean of ten takes, because every layer of every report is jittered per
@@ -272,10 +273,13 @@ tenth, so read the shape of the table and not the last digit.
 twice.** A ratio with no floor under it says nothing, and the floor is not the same for
 every class -- a tank gun carries most of its variance in the top end and a mortar carries
 almost none, so the Panzer IV against the StuG, which is one gun on two hulls, is the
-wrong control for a mortar. Over several runs the pairs read 1.13x to 1.52x in onset
-colour, 1.04x to 1.36x in length and 1.16x to 1.25x in crest, against floors of 1.01x to
-1.07x. The gate row states the same thing as one number, the best metric's excess over
-its own floor, and reads 10 to 80 to one.
+wrong control for a mortar. Measured over fourteen takes on each device, the metric that
+carries each pair is rms, at 1.40x, 1.30x and 1.26x against floors of 1.00x to 1.01x --
+nineteen to a hundred to one. Which metric carries which pair is the point: the two
+mortars are the pair whose tails are most alike, so length separates them by 1.04x and
+says nothing, while it separates the two heavy batteries by 1.33x. The gate row keeps only
+the metrics that separate a pair by a real amount and then reports the one measured most
+reliably, because each half of that alone fails the other's case.
 
 **LANDING** is the burst, sized off the hole the shell dug: 1.7x to 1.9x in centroid and
 1.6x in length over the six shells, every one of which was one sound before. The two
@@ -775,12 +779,15 @@ shapes have to be three lengths, a tube ringing for half a second where a batter
 for a second and a half; and the six pieces have to be six sounds. That last one is the
 fine comparison and it is measured against ITS OWN first piece rendered twice: every
 layer of every report is jittered per shot, so a ratio with no floor under it says
-nothing, and the floor is not the same for a mortar as for a tank gun. It reads between
-10 and 80 to one on the three pairs, and which metric carries a pair changes from run to
-run, so the row takes the best of brightness, level and length per pair rather than one
-of them. The row uses the rms of the first difference over the rms of
-the signal for brightness, which rises and falls with the spectral centroid and needs no
-transform, because what is wanted is an ORDER and not a hertz.
+nothing, and the floor is not the same for a mortar as for a tank gun. The row keeps only
+the metrics that separate a pair by an amount worth having and reports whichever of those
+is measured most reliably, at nineteen to a hundred to one: choosing on signal-to-noise
+alone picks the smallest floor and once reported the two mortars 1.07x apart in length,
+which is inaudible, while choosing the biggest difference alone picks a metric that may be
+measured badly. Level is rms and never peak, because the bus ends in a compressor.
+Brightness is the rms of the first difference over the rms of the signal, which rises and
+falls with the spectral centroid and needs no transform, because what is wanted is an
+ORDER and not a hertz.
 
 **And a mortar's mission is counted by ear as well as by where the bombs land**: ten tube
 reports, ten incoming and ten bursts for ten bombs, with the incoming inside the beaten
@@ -3867,7 +3874,28 @@ shots/                         screenshot output, gitignored
   control for a mortar. Each pair is measured against its own first piece rendered twice.
   Taking a max over three metrics before comparing is wrong for the same reason in the
   other direction: it is biased upward on both sides at once and put a floor of 1.09 under
-  a pair that is 1.32 apart. Compare per metric, then take the best.
+  a pair that is 1.32 apart. Compare per metric.
+- **Choosing which metric to report is two questions, and either one alone gets it
+  wrong.** Signal-to-noise says whether a difference is real; it does not say whether the
+  difference matters, and choosing by it picks the metric with the smallest floor. The two
+  mortars differ by 1.04x in length against a floor of 1.004x, which reads as ten to one
+  and is inaudible, while they differ by 1.40x in rms, which is the whole thing: selected
+  that way the gate row reported brightness one run and length the next from identical
+  code. Choosing the biggest difference instead picks a metric that may be measured badly
+  -- brightness separates the two heavy batteries by 1.46x, but its floor on a piece whose
+  tail runs a second and a half wanders out to 1.14x, so the same fact that reads fifty to
+  one in rms read five to one there. Filter to the metrics that separate the pair by an
+  amount worth having, then among those report the one measured most reliably.
+- **Do not measure loudness as peak through a compressor.** The audio bus ends in one, and
+  flattening peaks is the whole of what a compressor does, so peak is the single loudness
+  measure that graph is built to destroy. Measured across the shell weapons it reads 2.2x
+  where rms reads 8.9x, and on the two heavy batteries it reads 1.03x -- which is the
+  compressor's answer rather than the guns'. Every level in the audio card and the gate row
+  is rms for that reason.
+- **A phone is a different bus, so measure on both.** `auRoom` builds a 0.42-second room on
+  a phone against 0.62 on a desktop, which compresses anything the reverb tail carries: the
+  two mortars' length difference falls from a thing to nothing, and a row resting on it
+  passed on the desktop and failed on the phone in the same run.
 - **A landform is arithmetic and two halves can look identical while one is a metre
   higher.** A mirrored map is fair only if the ground agrees with its own reflection, and
   the only way to know that is to sample it: the Gothic Line is measured over 1,750 points

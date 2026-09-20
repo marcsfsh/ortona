@@ -1869,8 +1869,16 @@ for (const device of TARGETS) {
       let head = 0, end = 0;
       for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > peak * .02) { head = i; break; }
       for (let i = x.length - 1; i >= 0; i--) if (Math.abs(x[i]) > peak * .001) { end = i; break; }
+      /* the onset alone, which is where the propellant lives: a whole-buffer reading is
+         dominated by whatever rings longest, which is always the bottom end */
+      const on = x.subarray(head, Math.min(x.length, head + Math.round(SR * .05)));
+      let od = 0, os = 0;
+      for (let i = 1; i < on.length; i++) { const q = on[i] - on[i - 1]; od += q * q; }
+      for (let i = 0; i < on.length; i++) os += on[i] * on[i];
+      const orms = Math.sqrt(os / Math.max(1, on.length));
       return { peak: peak, rms: rms, dur: (end - head) / SR,
-               bright: Math.sqrt(d / x.length) / (rms || 1e-9) };
+               bright: Math.sqrt(d / x.length) / (rms || 1e-9),
+               obright: Math.sqrt(od / Math.max(1, on.length)) / (orms || 1e-9) };
     }
     async function play(key, secs) {
       const oc = new OfflineAudioContext(1, Math.round(SR * secs), SR);
@@ -1888,12 +1896,15 @@ for (const device of TARGETS) {
     /* the mean of several takes, because one take of a jittered report is noise. Two is
        enough for the roster sweep, which asks for a spread of several times over; the six
        are a fine comparison against their own floor and get twelve. */
+    const MK = ['peak', 'rms', 'dur', 'bright', 'obright'];
     async function mean(key, secs, n) {
-      let cls = '', a = { peak: 0, rms: 0, dur: 0, bright: 0 };
+      let cls = '';
+      const a = {};
+      MK.forEach(k => a[k] = 0);
       for (let i = 0; i < n; i++) {
         const r = await play(key, secs);
         cls = r.cls;
-        a.peak += r.m.peak / n; a.rms += r.m.rms / n; a.dur += r.m.dur / n; a.bright += r.m.bright / n;
+        MK.forEach(k => a[k] += r.m[k] / n);
       }
       a.cls = cls;
       return a;
@@ -1906,51 +1917,81 @@ for (const device of TARGETS) {
       rows[k] = await mean(k, 2.2, six.indexOf(k) < 0 ? 2 : 12);
       if (rows[k].peak < .05) silent.push(k);
     }
-    const pk = shells.map(k => rows[k].peak), br = shells.map(k => rows[k].bright);
+    /* Level is read as rms and not as peak. The bus ends in a compressor whose whole job
+       is flattening peaks, so peak is the one loudness measure this graph is built to
+       destroy: measured across the roster it reads 2.2x where rms reads 8.9x, which is
+       the difference between a table that says the roster is differentiated and one that
+       says it is not. */
+    const lv = shells.map(k => rows[k].rms), br = shells.map(k => rows[k].bright);
     const du = shells.map(k => rows[k].dur);
     const r = (x, y) => Math.max(x, y) / Math.max(1e-9, Math.min(x, y));
     const pairs = [];
     for (const [a, b] of PAIRS) {
       const ctl = await mean(a, 2.2, 12);    /* the same piece twice: the jitter, and nothing else */
       const A = rows[a], B = rows[b];
-      /* per metric, how far apart the pair is against how far apart the SAME piece is
-         from itself. A max taken over the three ratios first and then compared is biased
-         both ways at once and put a floor of 1.09 under a pair that is 1.32 apart. */
-      const M = ['bright', 'peak', 'dur'];
-      let best = 0, bd = 1, bf = 1, bm = '';
+      /* Per metric, how far apart the pair is against how far apart the SAME piece is
+         from itself. Both of the obvious selectors are half right and each fails the
+         other's case, so the row uses them in order: keep only the metrics that separate
+         the pair by a real amount, and among those report the one measured most reliably.
+           Choosing by signal-to-noise alone picks whichever metric has the smallest floor
+         rather than whichever holds the real difference. The two mortars differ by 1.04x
+         in length against a floor of 1.004x, which reads as ten to one and is inaudible,
+         while they differ by 1.40x in rms, which is the whole thing; selected that way the
+         row reported brightness one run and length the next from identical code.
+           Choosing by the biggest difference alone picks a metric that may be measured
+         badly. Brightness separates the two heavy batteries by 1.46x, which is real, but
+         its floor on a piece whose tail runs a second and a half wanders out to 1.14x, so
+         the row came back at five to one where rms on the same pair is 1.26x against a
+         floor of 1.005x -- fifty to one for the same fact.
+           The three metrics are the ones that carry it on BOTH devices. `peak` is out
+         because the bus ends in a compressor and peak is what a compressor flattens: it
+         reads 1.02x on the heavy pair. `dur` is out because it is 1.25x to 1.36x on the
+         two bigger pairs and 1.04x on the mortars, whose tails are the most alike -- it
+         keeps its job in the class-shape test below, where it does real work. */
+      const M = ['rms', 'bright', 'obright'];
+      let bd = 1, bf = 1, bm = '', bsn = -1;
       M.forEach(k => {
         const d = r(A[k], B[k]), f = r(A[k], ctl[k]), sn = (d - 1) / Math.max(.004, f - 1);
-        if (sn > best) { best = sn; bd = d; bf = f; bm = k; }
+        if (d > 1.15 && sn > bsn) { bd = d; bf = f; bm = k; bsn = sn; }
       });
+      /* nothing separated them by a real amount: report the biggest difference there was,
+         so a failure names what it actually found rather than printing an empty row */
+      if (bsn < 0) {
+        bsn = 0;
+        M.forEach(k => {
+          const d = r(A[k], B[k]);
+          if (d > bd) { bd = d; bf = r(A[k], ctl[k]); bm = k; bsn = (d - 1) / Math.max(.004, bf - 1); }
+        });
+      }
       pairs.push({ a: UNITS[a].short, b: UNITS[b].short, cls: A.cls, m: bm,
-                   d: +bd.toFixed(2), f: +bf.toFixed(2), sn: +best.toFixed(1) });
+                   d: +bd.toFixed(2), f: +bf.toFixed(2), sn: +bsn.toFixed(1) });
     }
     /* and the three classes are three shapes: a tube is short and a battery is long */
     const shape = { mortar: +rows.us_mor.dur.toFixed(2), how: +rows.us_how.dur.toFixed(2),
                     heavy: +rows.us_how8.dur.toFixed(2) };
     return { n: shells.length, silent: silent,
-             lvl: +(Math.max.apply(null, pk) / Math.min.apply(null, pk)).toFixed(1),
+             lvl: +(Math.max.apply(null, lv) / Math.min.apply(null, lv)).toFixed(1),
              brt: +(Math.max.apply(null, br) / Math.min.apply(null, br)).toFixed(1),
              len: +(Math.max.apply(null, du) / Math.min.apply(null, du)).toFixed(1),
              pairs: pairs, shape: shape };
   });
   ok('every gun has its own report, and the six artillery pieces are six of them',
-     voice.n >= 16 && voice.silent.length === 0 && voice.brt > 1.8 && voice.len > 2 &&
+     voice.n >= 16 && voice.silent.length === 0 && voice.lvl > 4 && voice.brt > 1.8 &&
+     voice.len > 2 &&
      /* the EXCESS over parity against the floor's excess, and not the two ratios against
         each other: a floor of 1.01 is one per cent of jitter, so a pair thirty-two per
         cent apart clears it by thirty to one. Multiplied instead, a floor that close to
         parity sets a bar of 1.515x that only a wholly different weapon would clear, and
         the row failed on a pair it should have passed. */
-     /* and a tenth of a difference as the absolute bar, because that is the honest
-        separation for two pieces that throw nearly the same bomb on nearly the same
-        charge: an M1 81 mm and an 8 cm GrW 34 are not a tank gun and a mortar, and a bar
-        that demanded they be would be a bar demanding the roster lie. The claim is the
-        line above -- that each pair beats its own jitter several times over. */
-     voice.pairs.every(p => p.sn > 3 && p.d > 1.10) &&
+     /* A real difference AND a real signal-to-noise. Measured over fourteen takes on both
+        devices, the metric each pair is reported on separates it by 1.21x to 1.42x at 19
+        to 104 to one, so neither bar is anywhere near the edge. */
+     voice.pairs.every(p => p.sn > 3 && p.d > 1.15) &&
      voice.shape.mortar < voice.shape.how && voice.shape.how < voice.shape.heavy,
      `${voice.n} shell weapons, ${voice.silent.length} of them putting nothing on the bus` +
      `${voice.silent.length ? ' (' + voice.silent.join(' ') + ')' : ''}; across the roster ` +
-     `${voice.lvl}x in level, ${voice.brt}x in brightness and ${voice.len}x in length; ` +
+     `${voice.lvl}x in level (rms, since the bus compresses peaks), ${voice.brt}x in ` +
+     `brightness and ${voice.len}x in length; ` +
      `a tube rings for ${voice.shape.mortar}s, a pack howitzer ${voice.shape.how}s and a ` +
      `battery ${voice.shape.heavy}s; ` +
      voice.pairs.map(p => `${p.a}/${p.b} differ ${p.d}x in ${p.m} against a jitter floor of ` +
