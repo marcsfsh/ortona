@@ -163,10 +163,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    models rather than typed beside them, a hull is tested against the MEN, tracks pivot
    where wheels have to drive the turn, and a dead vehicle settles, cants, sheds its
    plate and sometimes throws its turret clear instead of being redrawn in a darker
-   colour. Raise it deliberately, with a reason, or not at all. */
+   colour. It is 1655 for the bunker fittings: a bunker was a box of concrete a section
+   could stand in and nothing else, on a map whose whole question is which of three
+   crossings to force, so each one is now fitted out once with one of five things -- a
+   belt or a gun laid through its own slot, a tube dug in behind it, a workshop, or an
+   aid post -- each of which is its own geometry, its own per-bunker buffer and its own
+   effect on the ground round it. Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1625) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1625 kB so it stays quick to load on a phone`);
+if (kb > 1655) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1655 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

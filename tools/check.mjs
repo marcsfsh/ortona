@@ -2342,6 +2342,164 @@ for (const device of TARGETS) {
      `${bun.shotF ? 'allowed' : 'refused'} and the same shot to the rear is ` +
      `${bun.shotR ? 'allowed' : 'refused'}`);
 
+  /* --- And what goes IN one. A bunker was a box of concrete a section could stand in,
+     on a map whose whole question is which of three crossings to force, so the thing the
+     map is about had exactly one thing you could do with it. It is fitted out once now,
+     with one of five, and every one of the five is a claim a photograph would call true
+     whatever was wrong underneath it: a mount drawn in the slot that fires nowhere in
+     particular, a tube that stands in the embrasure it is supposed to leave free, an aid
+     post that patches up the enemy as readily as its own, a workshop that mends a hull
+     nine hundred units away, and a fitting that can be bought twice.
+       So each is asked the question it would fail. The two that fire are garrisoned, so
+     the row fires them: the same target in front of the slot and behind it, one allowed
+     and one refused by the concrete, which is the arc doing the work rather than new
+     firing code. The tube is asked where it stands. The two radius effects are asked
+     three ways each -- near, far and ENEMY -- because a radius with no side test in it
+     works perfectly in a photograph. And the whole thing is asked once more after it is
+     fitted, because 'once' is the rule that makes it a decision. --- */
+  const bup = await page.evaluate(() => {
+    const out = { rows: [], err: null };
+    const mine = window.bunkersOf('us');
+    out.n = mine.length;
+    window.G.res.us.mp = 90000; window.G.res.us.fu = 90000;
+    window.G.res.ger.mp = 90000; window.G.res.ger.fu = 90000;
+    const R = 300;
+    for (const k of window.BUNKUP_ORD) {
+      const bk = mine[0], W = window.BUNKUP[k];
+      /* a clean bunker each time: the rule is one fitting a bunker and there are three */
+      if (bk.gar) window.leaveBuilding(bk.gar);
+      window.G.units = window.G.units.filter(u => !(u.own === 'us' && (u.gar === bk || u.def.barrage)));
+      window.G.pop.us = 0;
+      bk.upKind = null; bk.up = null; bk.upBuf = null; bk.upSite = null; bk.upT = 0;
+      const okd = window.bunkerUpOK(bk, k, 'us');
+      const ord = okd && window.orderBunkerUp(bk, k, 'us');
+      const site = bk.upSite ? bk.upSite.n : 0;
+      for (let t = 0; t < 900 && bk.up; t++) window.updateBunkers(.2);
+      /* and it may not be bought twice -- neither a different fitting, nor the same one
+         while the men it brought are still alive */
+      const again = window.bunkerUpOK(bk, k === 'mg' ? 'at' : 'mg', 'us');
+      const same = window.bunkerUpOK(bk, k, 'us');
+      const row = { k, ord: !!ord, fitted: bk.upKind, site, buf: bk.upBuf ? bk.upBuf.n : 0,
+                    again, same, recrew: null };
+      /* what it brought with it, asked BEFORE the crew is killed off below: written the
+         other way about, the men are gone by the time the row looks for them, `unit` comes
+         back null and the firing test never runs at all */
+      if (W.unit) {
+        const g = window.G.units.filter(u => u.own === 'us' && u.key === W.unit.us)[0];
+        row.unit = g ? g.key : null;
+        row.gar = !!(g && g.gar === bk);
+        if (g && !W.rear) {
+          const cf = Math.cos(bk.face), sf = Math.sin(bk.face);
+          const fr = window.spawnUnit('ger', 'ger_gren', bk.x + cf * R, bk.y + sf * R);
+          const re = window.spawnUnit('ger', 'ger_gren', bk.x - cf * R, bk.y - sf * R);
+          row.shotF = window.fireLine(g, fr); row.shotR = window.fireLine(g, re);
+          fr.dead = re.dead = true;
+          window.G.units = window.G.units.filter(u => !u.dead);
+        }
+        /* the tube is BEHIND it, on ground a man can stand on, and out of the slot */
+        if (g && W.rear) {
+          row.back = Math.round((g.x - bk.x) * Math.cos(bk.face) + (g.y - bk.y) * Math.sin(bk.face));
+          row.stands = window.walkable(g.x, g.y);
+        }
+        /* killing the crew is the one case that may buy the same fitting again: the mount
+           in the wall is masonry and the men on it are a unit, so a gun whose crew has
+           been shot off it is re-crewed rather than written off for the battle */
+        window.G.units.filter(u => u.id === bk.upUid).forEach(u => { u.dead = true; });
+        window.G.units = window.G.units.filter(u => !u.dead);
+        row.recrew = window.bunkerUpOK(bk, k, 'us');
+      }
+      out.rows.push(row);
+    }
+    /* the two radius effects, each asked near, far and against an enemy */
+    const rep = mine[1], med = mine[2];
+    rep.upKind = 'rep'; rep.upOwn = 'us'; rep.own = 'us';
+    med.upKind = 'med'; med.upOwn = 'us'; med.own = 'us';
+    const RR = window.BUNKUP.rep.aid.r;
+    const near = window.spawnUnit('us', 'us_sher', rep.x + 40, rep.y + 40, 0);
+    const far = window.spawnUnit('us', 'us_sher', rep.x + RR * 3, rep.y, 0);
+    const foe = window.spawnUnit('ger', 'ger_p4', rep.x + 40, rep.y - 40, 0);
+    for (const v of [near, far, foe]) { v.hp = Math.round(v.maxhp * .4); }
+    near.immob = 3; near.gunDmg = 3;
+    const h0 = near.hp, f0 = far.hp, e0 = foe.hp;
+    for (let t = 0; t < 20; t++) window.bunkerRepair(.2);
+    out.rep = { gain: Math.round(near.hp - h0), far: Math.round(far.hp - f0), foe: Math.round(foe.hp - e0),
+                immob: +near.immob.toFixed(1), gun: +near.gunDmg.toFixed(1) };
+    const s1 = window.spawnUnit('us', 'us_rifle', med.x + 40, med.y + 40, 0);
+    const s2 = window.spawnUnit('us', 'us_rifle', med.x + RR * 3, med.y, 0);
+    const s3 = window.spawnUnit('ger', 'ger_gren', med.x + 40, med.y - 40, 0);
+    out.med = { near: window.bunkerAidAt(s1), far: window.bunkerAidAt(s2), foe: window.bunkerAidAt(s3) };
+    /* And the tap. Garrisoning goes through `issueOrder`, which on a phone is the branch
+       BELOW the bunker pick, so a pick that fires unconditionally takes the only way a
+       phone has of putting men in a bunker and replaces it with a selection -- a working
+       order silently removed, invisible on a desktop and in every screenshot. The test is
+       the predicate the pick yields on. */
+    const tapBk = mine[0];
+    if (tapBk.gar) window.leaveBuilding(tapBk.gar);
+    const tapper = window.spawnUnit('us', 'us_rifle', tapBk.x - 150, tapBk.y, 0);
+    window.select([tapper], false);
+    out.tapOrder = window.G.sel.some(q => window.canGarrison(q, tapBk));
+    window.select([], false);
+    out.tapPick = !window.G.sel.some(q => window.canGarrison(q, tapBk));
+    /* and a crew the fitting raised belongs to the bunker: the brain's own rule walks a
+       garrison out once the fight moves on, which applied to a fitted gun is the whole
+       purchase getting up and leaving the emplacement it was bought for */
+    window.enterBuilding(tapper, tapBk);
+    out.stayForeign = !(tapBk.kind === 'bunker' && tapBk.upUid === tapper.id);
+    window.leaveBuilding(tapper);
+    tapper.dead = true;
+    window.G.units = window.G.units.filter(u => !u.dead);
+    /* and a bunker changes hands, fitting and all, to whoever puts men in it */
+    const was = window.bunkerOwner(med);
+    const sq = window.spawnUnit('ger', 'ger_gren', med.x, med.y, 0);
+    window.enterBuilding(sq, med);
+    out.took = was + '->' + window.bunkerOwner(med);
+    out.tookKept = med.upKind;
+    /* And the card. Five on an empty one, one on a fitted one, and nothing at all on
+       theirs. SELECT HQ is added to every card list whatever is picked, so it comes off
+       here -- counted raw, an enemy bunker that offers nothing reads as offering one. */
+    const cards = () => [...document.querySelectorAll('#cmds .cmd')]
+      .map(e => e.querySelector('.n').textContent).filter(t => t !== 'Select HQ');
+    const free = mine.filter(x => !x.upKind && !x.up)[0] || mine[0];
+    free.upKind = null; free.up = null;
+    window.select([free], false);
+    out.cardsFree = cards().length;
+    window.select([rep], false);
+    out.cardsFitted = cards().join(',');
+    window.select([window.bunkersOf('ger')[0]], false);
+    out.cardsFoe = cards().join(',');
+    window.select([], false);
+    return out;
+  });
+  const bupGood = bup.n >= 3 && bup.rows.length === 5 &&
+    bup.rows.every(r => r.ord && r.fitted === r.k && r.buf > 0 && r.site > 0 && !r.again && !r.same) &&
+    bup.rows.filter(r => r.recrew !== null).every(r => r.recrew === true) &&
+    bup.rows.filter(r => r.gar !== undefined).every(r => r.unit) &&
+    bup.rows.filter(r => r.shotF !== undefined).every(r => r.gar && r.shotF && !r.shotR) &&
+    bup.rows.filter(r => r.back !== undefined).every(r => r.back < -40 && r.stands) &&
+    bup.rep.gain > 0 && bup.rep.far === 0 && bup.rep.foe === 0 &&
+    bup.rep.immob < 3 && bup.rep.gun < 3 &&
+    bup.med.near && !bup.med.far && !bup.med.foe &&
+    bup.tapOrder && bup.tapPick && bup.stayForeign &&
+    bup.took === 'us->ger' && bup.tookKept === 'med' &&
+    bup.cardsFree === 5 && bup.cardsFitted === 'Repair shelter' && bup.cardsFoe === '';
+  ok('a bunker is fitted out once, and each of the five does the one thing it claims',
+     bupGood,
+     `${bup.n} bunkers a side; ` +
+     bup.rows.map(r => `${r.k} built ${r.site}-vertex site into a ${r.buf}-vertex fitting` +
+       (r.unit ? `, bringing a ${r.unit}${r.gar ? ' into the slot' : ''}` : '') +
+       (r.shotF !== undefined ? `, which shoots 300 out of the slot (${r.shotF ? 'yes' : 'NO'}) and not 300 behind it (${r.shotR ? 'FIRES' : 'refused'})` : '') +
+       (r.back !== undefined ? `, dug in ${-r.back} units behind it on ground a man can stand on (${r.stands ? 'yes' : 'NO'})` : '') +
+       `, refuses a second fitting (${r.again || r.same ? 'ACCEPTS' : 'yes'})` +
+       (r.recrew === null ? '' : ` and re-crews once its men are dead (${r.recrew ? 'yes' : 'NO'})`)).join('; ') +
+     `; the workshop puts ${bup.rep.gain} hp into a hull beside it, ${bup.rep.far} into one out of reach and ` +
+     `${bup.rep.foe} into the enemy's, and takes its track and gun damage to ${bup.rep.immob}/${bup.rep.gun} from 3/3; ` +
+     `the aid post reaches a section beside it (${bup.med.near}) and neither one far off (${bup.med.far}) nor the ` +
+     `enemy's (${bup.med.foe}); a tap with men in hand that could go in is their order ` +
+     `(${bup.tapOrder ? 'yes' : 'NO'}) and with none it picks the bunker (${bup.tapPick ? 'yes' : 'NO'}); ` +
+     `a section that merely walked in is not the fitting's crew (${bup.stayForeign ? 'yes' : 'NO'}); ` +
+     `taking it changes hands ${bup.took} and keeps the ${bup.tookKept}; the card offers ` +
+     `${bup.cardsFree} on an empty one, "${bup.cardsFitted}" on a fitted one and "${bup.cardsFoe}" on theirs`);
+
   /* --- The obstacle belts. Wire holds a man up and lets a tank drive over it; a
      hedgehog does the opposite. Wire an ENGINEER put up did all of that and wire a MAP
      laid did none of it -- G.wire was drawn and marked on no grid at all, so an apron

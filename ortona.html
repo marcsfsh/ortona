@@ -1556,6 +1556,67 @@ var WORKS = {
            lay: [[-30, -13], [-30, 13], [-46, 0], [-40, -30], [-40, 30], [-58, -16]],
            desc: 'A battery position for the 210/22: the gun on its circular firing platform inside a ring of bags, built by the Pioneers and never moved. It cannot be dug near your own headquarters, it will not fire into the enemy base, and it is most of a minute coming round onto a new bearing.' }
 };
+/* ---- what a bunker can be fitted out as -------------------------------------------
+   A bunker is the one thing on this map that is neither a unit nor a building: a solid
+   prop with a fighting slot, a bearing and an arc, which a section can go into and fight
+   out of. That makes it the natural thing to FIT OUT, because everything a fitting needs
+   is already true of it -- it has a front and a back, it is held by whoever is standing
+   in it, and `outPoint` already clamps what fires out of it into its own arc.
+     Five fittings, and a bunker takes one of them. The choice is the decision: a bunker
+   with a Pak in it is a gun position and cannot also be a dressing station, which is what
+   makes picking one worth thinking about.
+     Three of them ARE a weapon team, spawned and garrisoned, and that is why they need no
+   firing code of their own: `acquire`, `fireAt`, the arc clamp, the cover tier a garrison
+   gets, the rule that a garrison never goes flat, and the way a dead garrison frees the
+   concrete are all machinery that already runs. It also means each side gets its own
+   piece out of its own roster with nothing typed twice -- a Vickers or an MG42, a
+   six-pounder or a Pak 40, an M1 or a Granatwerfer.
+     The mortar is the exception and goes BEHIND. A tube in an embrasure is a tube firing
+   into the lintel above it; a mortar pit is dug on the reverse slope where nothing can
+   see it, which is what `aiMortarPost` has always said about where a tube wants to be.
+   Putting it there also leaves the slot free for a rifle section, so the pit is the one
+   fitting that adds to a bunker rather than filling it. */
+var BUNKUP = {
+  mg:  { name: 'Machine gun post', short: 'MG POST', hk: '1', cost: { mp: 230 }, time: 18,
+         unit: { us: 'us_mg', ger: 'ger_mg42' },
+         desc: 'A belt-fed gun laid through the slot on a fixed mount, with the boxes stacked beside it. It fires where the bunker looks and nowhere else.' },
+  at:  { name: 'Anti-tank casemate', short: 'AT GUN', hk: '2', cost: { mp: 300, fu: 20 }, time: 26,
+         unit: { us: 'us_at', ger: 'ger_pak' },
+         desc: 'The embrasure opened out and a field gun run into it. It kills armour coming up the crossing in front of it and can do nothing at all about anything that gets round the side.' },
+  mor: { name: 'Mortar pit', short: 'MORTAR PIT', hk: '3', cost: { mp: 250, fu: 10 }, time: 22,
+         unit: { us: 'us_mor', ger: 'ger_mor' }, rear: 92,
+         desc: 'A tube dug in behind the bunker where nothing can see it, firing over the top of it. It leaves the slot free for the men who are holding it.' },
+  rep: { name: 'Repair shelter', short: 'REPAIR', hk: '4', cost: { mp: 190, fu: 40 }, time: 22,
+         aid: { r: 220, rate: .022 },
+         desc: 'A lean-to and a pit at the back with the tools in it. Anything of yours on tracks that stops near the bunker is worked on where it stands.' },
+  med: { name: 'Aid post', short: 'AID POST', hk: '5', cost: { mp: 170 }, time: 16,
+         med: { r: 220 },
+         desc: 'A dressing station under the back wall. The wounded near it are patched up, and a section that has lost men fills up again without walking home for them.' }
+};
+/* the order they are offered in, because an object's key order is not a thing to rely on
+   and the two that shoot belong at the top of the card */
+var BUNKUP_ORD = ['mg', 'at', 'mor', 'rep', 'med'];
+/* Which player a bunker answers to. A map lays one out for a side; whoever puts men in it
+   owns it from then on, which is what makes taking one worth the walk -- the fitting goes
+   with the concrete. The slot rather than the side, because in a 2v2 two allies have two
+   purses and only one of them paid for this. */
+function bunkerOwner(bk) { return bk.own || (bk.sd === 'ger' ? 'ger' : 'us'); }
+/* `G.bunks` is the same objects as the bunkers in `G.props`, kept as a short list because
+   four things now ask a question of every bunker on every frame and `G.props` is six
+   hundred entities. They are map entities: nothing adds or removes one during a battle,
+   so the list is built where they are and never maintained again. */
+function bunkerAt(wx, wy) {
+  for (var i = 0; i < G.bunks.length; i++) {
+    var p = G.bunks[i];
+    if (Math.abs(wx - p.x) < p.w / 2 + 8 && Math.abs(wy - p.y) < p.h / 2 + 8) return p;
+  }
+  return null;
+}
+function bunkersOf(slot) {
+  var out = [], i;
+  for (i = 0; i < G.bunks.length; i++) if (bunkerOwner(G.bunks[i]) === slot) out.push(G.bunks[i]);
+  return out;
+}
 /* works of one kind a player has pegged out and not yet finished */
 function siteCount(slot, kind) {
   var n = 0;
@@ -1575,7 +1636,7 @@ var G = {
   pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
   made: { us: {}, us2: {}, ger: {}, ger2: {} },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
-  sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
+  sites: [], works: [], props: [], bunks: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
 };
@@ -2651,6 +2712,7 @@ function buildMap(data) {
   G.hurt.length = 0; G.rub.length = 0; G.rubDirty = 1; MND = null;
   G.tileQ = {}; G.groundQ = {};
   G.blocks = []; G.craterFx = []; G.craters = []; G.cratersDug = 0; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
+  G.bunks = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
   _s = 4242;
@@ -2742,7 +2804,7 @@ function buildMap(data) {
         var bsd = bunkerSide(e);
         var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
                     face: e.a || 0, arc: 1, s: e.s || 0, z: 0, sd: bsd };
-        G.props.push(bk2); G.blocks.push(bk2);
+        G.props.push(bk2); G.blocks.push(bk2); G.bunks.push(bk2);
         G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd });
         /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
            in front of it. The ground in front of a bunker is the beaten zone, and a cover
@@ -4424,6 +4486,13 @@ function popOf(slot) {
     var W = WORKS[st.kind];
     if (st.own === slot && W && W.unit) p += UNITS[W.unit].pop || 0;
   });
+  /* and a bunker fitting that will put a weapon team in the slot when it finishes, for
+     exactly the same reason: three bunkers ordered in one tick would otherwise each see a
+     cap with room in it and put the side over it the moment the last of them came in */
+  for (var bi = 0; bi < G.bunks.length; bi++) {
+    var bu = G.bunks[bi], bW = bu.up && BUNKUP[bu.up];
+    if (bu.upOwn === slot && bW && bW.unit) p += UNITS[bW.unit[slotSide(slot)]].pop || 0;
+  }
   return p;
 }
 function queueUnit(b, key) {
@@ -4584,6 +4653,12 @@ function enterBuilding(u, bk) {
   }
   u.x = bk.x; u.y = bk.y; u.moving = false; u.path = null;
   if (u.setup !== undefined) u.setup = 0;
+  /* A bunker answers to whoever is standing in it, and the fitting goes with the concrete:
+     an aid post overrun is an aid post patching up the men who took it. That is the whole
+     of why walking round the side of one is worth doing. What does NOT change is the
+     geometry -- a Normandy casemate does not become a sandbag sangar because the men in it
+     are Canadian, and the buffer is built once for that reason. */
+  if (bk.kind === 'bunker') bk.own = u.own;
   if (owned(u)) toast(u.def.short + ' holding the building');
 }
 function leaveBuilding(u) {
@@ -8024,6 +8099,120 @@ function updateSites(dt) {
    Before this the only thing a built work left behind was three round patches of cover
    with no bearing and no geometry at all, so it protected a man from every direction
    equally and could not be seen. */
+/* Ordering a fitting. Paid for on the order the way a queued unit is, and built by the
+   men holding it rather than walked to by an engineer: the concrete is already there and
+   what goes into it is a mount, a bench and a few boxes. `upT` counts up to the work's own
+   `time` and `upKind` is the one field that outlives it. */
+/* Whether the men a fitting brought with it are still alive. A weapon team is a unit and
+   units die; the emplacement it was given is masonry and does not. So a gun whose crew has
+   been killed may be RE-CREWED, at the same price and only with the same weapon, which is
+   what the mount in the wall is built for -- and a bunker whose crew has merely been
+   ordered out may not, which is why this reads the unit that was raised rather than
+   whether anybody is standing in the slot. */
+function bunkerManned(bk) {
+  if (!bk.upUid) return false;
+  for (var i = 0; i < G.units.length; i++)
+    if (G.units[i].id === bk.upUid && !G.units[i].dead) return true;
+  return false;
+}
+function bunkerUpOK(bk, kind, slot) {
+  var W = BUNKUP[kind];
+  if (!bk || !W || bk.up) return false;
+  if (bk.upKind && (kind !== bk.upKind || !W.unit || bunkerManned(bk))) return false;
+  if (bunkerOwner(bk) !== slot) return false;
+  if (W.unit) {
+    var d = UNITS[W.unit[slotSide(slot)]];
+    if (!d) return false;
+    /* a fitting that brings men with it is a fitting that counts against the cap, and one
+       that fills the slot is refused while somebody is standing in it */
+    if (popOf(slot) + d.pop > popCap(slot)) return false;
+    if (!W.rear && bk.gar) return false;
+  }
+  return canAfford(slot, W.cost);
+}
+function orderBunkerUp(bk, kind, slot) {
+  if (!bunkerUpOK(bk, kind, slot)) return false;
+  pay(slot, BUNKUP[kind].cost);
+  bk.up = kind; bk.upT = 0; bk.upOwn = slot;
+  if (GLOK) bk.upSite = facesToBuffer(conformFaces(bunkerUpFaces(bk, kind)));
+  if (slot === G.own) { toast(BUNKUP[kind].name + ' going in'); sfx('click'); }
+  return true;
+}
+/* The fitting itself, once the work is done. Three of the five are a weapon team out of
+   the side's OWN roster rather than a new unit written twice, which is why each side gets
+   its own piece for nothing: a Vickers or an MG42, a six-pounder or a Pak 40, an M1 or a
+   Granatwerfer. The two that fire through the slot are garrisoned, so the arc clamp in
+   `outPoint` is the whole of "it fires the way it is facing"; the tube is dug in behind
+   and is not. */
+function finishBunkerUp(bk) {
+  var W = BUNKUP[bk.up], slot = bk.upOwn || bunkerOwner(bk), side = slotSide(slot);
+  bk.upKind = bk.up; bk.up = null; bk.upT = 0;
+  if (W.unit) {
+    var key = W.unit[side], d = UNITS[key];
+    var sx = bk.x, sy = bk.y;
+    if (W.rear) {
+      /* behind it, on the reverse side of its own face, and on ground a man can stand on */
+      var rp = nearestFree(bk.x - Math.cos(bk.face) * W.rear, bk.y - Math.sin(bk.face) * W.rear);
+      sx = rp.x; sy = rp.y;
+    }
+    var g = spawnUnit(slot, key, sx, sy, bk.face);
+    g.setup = 0; bk.upUid = g.id;
+    /* the slot belongs to the crew the fitting was bought for. `bunkerUpOK` refuses a
+       slot fitting while somebody is standing in it, but a section can walk in during the
+       eighteen seconds the work takes, and `canGarrison` refuses an occupied bunker: the
+       gun would then stand in the open beside the position it was paid to hold. */
+    if (!W.rear) { if (bk.gar) leaveBuilding(bk.gar); enterBuilding(g, bk); }
+  }
+  if (GLOK) bk.upBuf = facesToBuffer(conformFaces(bunkerUpFaces(bk)));
+  bk.upSite = null;
+  if (slot === G.own) { toast(W.name + ' in'); sfx('click'); }
+}
+function updateBunkers(dt) {
+  for (var i = 0; i < G.bunks.length; i++) {
+    var bk = G.bunks[i];
+    if (!bk.up) continue;
+    /* A bunker overrun mid-build keeps building, and the work goes with the concrete the
+       way a finished fitting does. The alternative is worse than it looks: left pointed at
+       whoever paid for it, an MG post finishing under an enemy garrison spawns its crew,
+       throws that garrison out and hands the position back for nothing. */
+    if (bunkerOwner(bk) !== bk.upOwn) bk.upOwn = bunkerOwner(bk);
+    bk.upT += dt * hcapOf(bk.upOwn).cons;
+    if (bk.upT >= BUNKUP[bk.up].time) finishBunkerUp(bk);
+  }
+}
+/* What a fitted bunker does every tick that an unfitted one does not. Both of these are
+   RADIUS effects read by machinery that already exists -- `medicNear` for the men and the
+   engineer's own repair rate for the tracks -- so a bunker with one is simply another
+   thing in the world that answers the question those already ask. */
+function bunkerAidAt(u) {
+  for (var i = 0; i < G.bunks.length; i++) {
+    var bk = G.bunks[i];
+    if (bk.upKind !== 'med') continue;
+    if (slotSide(bunkerOwner(bk)) !== u.side) continue;
+    var r = BUNKUP.med.med.r;
+    if (dsq(u.x, u.y, bk.x, bk.y) < r * r) return true;
+  }
+  return false;
+}
+function bunkerRepair(dt) {
+  var i, j, W = BUNKUP.rep.aid;
+  for (i = 0; i < G.bunks.length; i++) {
+    var bk = G.bunks[i];
+    if (bk.upKind !== 'rep') continue;
+    var side = slotSide(bunkerOwner(bk));
+    for (j = 0; j < G.units.length; j++) {
+      var v = G.units[j];
+      if (v.dead || v.cat !== 'veh' || v.side !== side || v.hp >= v.maxhp) continue;
+      if (dsq(v.x, v.y, bk.x, bk.y) >= W.r * W.r) continue;
+      v.hp = Math.min(v.maxhp, v.hp + v.maxhp * W.rate * dt);
+      /* a track or a gun is mended by standing in the shelter too, which is most of what
+         a workshop was for: a vehicle with a shed track is a vehicle that is not coming
+         back on its own */
+      if (v.immob > 0) v.immob = Math.max(0, v.immob - dt * .6);
+      if (v.gunDmg > 0) v.gunDmg = Math.max(0, v.gunDmg - dt * .6);
+    }
+  }
+}
 function finishWork(s) {
   var W = WORKS[s.kind];
   if (!W) return;
@@ -8227,10 +8416,11 @@ function updateUnit(u, dt) {
     }
   }
 
-  /* reinforcement near friendly production, or beside a Krankenpanzerwagen */
+  /* reinforcement near friendly production, beside a Krankenpanzerwagen, or under the
+     awning of a bunker fitted out as an aid post */
   if (u.cat !== 'veh' && !u.retreat) {
     var missing = u.def.models - aliveModels(u);
-    var medic = medicNear(u);
+    var medic = medicNear(u) || bunkerAidAt(u);
     if (medic) {
       /* the wounded are patched up whether or not anyone is dead, and slowly */
       for (var mw = 0; mw < u.models.length; mw++) {
@@ -8497,6 +8687,9 @@ function aiFire(name) { AIR.fired[name] = (AIR.fired[name] || 0) + 1; }
                'duck.house', 'duck.cover', 'duck.back', 'duck.ground', 'odds.hold', 'retreat.hurt',
                'veh.backoff', 'veh.face', 'veh.mend', 'flak.round', 'flak.dig', 'work.dig',
                'battery.reached', 'battery.want', 'battery.money', 'battery.post', 'battery.dig',
+               'bunker.reached', 'bunker.money', 'bunker.ok', 'bunker.man',
+               'bunker.mg', 'bunker.at', 'bunker.mor',
+               'bunker.rep', 'bunker.med',
                'buy.inf', 'buy.mg', 'buy.mortar', 'mortar.gate.reached', 'mortar.gate.want',
                'mortar.gate.money', 'mortar.mission', 'buy.how', 'how.gate.reached', 'how.gate.want',
                'how.gate.money', 'how.gate.pop', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
@@ -10258,6 +10451,53 @@ function aiTick(dt) {
     }
   }
 
+  /* ---- fitting out a bunker.
+     A bunker is a hole in the ground with a roof on it until something is put in it, and
+     it is the one piece of construction on this map that needs no engineer: the concrete
+     is already there and what goes in is a mount, a bench and a few boxes, built by the
+     men holding it. So it is not on the works ladder and does not take its cooldown --
+     that ladder is one work every fifty-two seconds against a thing there are three of
+     on the whole map, which is the mistake the battery rule made and was measured making.
+       What goes in is read off the battle rather than off a list. Armour on the field
+     wants a gun in the embrasure and nothing but infantry wants a belt, which `aiIntel`
+     already answers. The other two are about this side rather than the enemy: a workshop
+     is worth having when there are hulls standing about with holes in them, and an aid
+     post when the sections are under strength, so both are counted off the roll and not
+     off what did the killing. The tube is last, because it is the one fitting that leaves
+     the slot free and so is worth having only once something is in the others.
+       Counted gate by gate, because the way to find out why a rule never fires is to
+     count what shut it rather than to guess which one. */
+  if (skill >= 1) {
+    var myBk = bunkersOf(slot), bkFree = null, bkN = 0;
+    for (i = 0; i < myBk.length; i++) {
+      if (myBk[i].upKind || myBk[i].up) { bkN++; continue; }
+      if (!bkFree) bkFree = myBk[i];
+    }
+    if (bkFree) {
+      aiFire('bunker.reached');
+      var bkHurtV = 0, bkThin = 0;
+      for (i = 0; i < mine.length; i++) {
+        if (mine[i].cat === 'veh') { if (hpFrac(mine[i]) < .7) bkHurtV++; }
+        else if (aliveModels(mine[i]) < mine[i].def.models) bkThin++;
+      }
+      var want = IN.veh + IN.med + IN.heavy >= 1 ? 'at'
+               : IN.inf >= 3 ? 'mg'
+               : bkHurtV >= 2 ? 'rep'
+               : bkThin >= 3 ? 'med'
+               : bkN >= 1 ? 'mor' : 'med';
+      /* a fitting that fills the slot is refused while somebody is standing in it, so an
+         occupied bunker takes the tube instead: it is dug in behind and leaves the slot */
+      if (bkFree.gar && want !== 'mor' && want !== 'rep' && want !== 'med') want = 'mor';
+      /* the two gates counted apart, because 'it did not fire' has two quite different
+         causes here and only one of them is a bug: the till, and the population */
+      var wC = BUNKUP[want].cost;
+      if (canAfford(slot, wC)) aiFire('bunker.money');
+      var okBk = bunkerUpOK(bkFree, want, slot);
+      if (okBk) aiFire('bunker.ok');
+      if (okBk && orderBunkerUp(bkFree, want, slot)) aiFire('bunker.' + want);
+    }
+  }
+
   /* ---- the objectives.
      This is a game about holding sectors, and one main effort loses the map: an army
      sent at a single point leaves five others standing empty behind it while the
@@ -10871,9 +11111,15 @@ function aiTick(dt) {
        moved on they come out and follow it. */
     if (u.gar) {
       var sec0 = G.secById[u.jobSec];
-      var stay = aiThreat(side, u.x, u.y, 420) > 30 ||
+      /* A crew the bunker itself raised belongs to the bunker. This rule is about a
+         section holding a house and following the fight when it moves on, and applied to
+         a fitted gun it walks two hundred and thirty marks of machine gun out of the
+         emplacement it was bought for, leaves the slot empty, and reads afterwards as a
+         fitting whose crew was lost. */
+      var own0 = u.gar.kind === 'bunker' && u.gar.upUid === u.id;
+      var stay = own0 || aiThreat(side, u.x, u.y, 420) > 30 ||
                  (sec0 && dsq(sec0.x, sec0.y, u.x, u.y) < sec0.r * sec0.r);
-      if (stay) { aiFire('garrison.hold'); continue; }
+      if (stay) { aiFire(own0 ? 'bunker.man' : 'garrison.hold'); continue; }
       leaveBuilding(u);
     }
 
@@ -12656,6 +12902,12 @@ function registerMaterials() {
     tag([BUNK.steel, BUNK.dark], 'steel'); tagEdges([BUNK.steel, BUNK.dark], 'steel');
     tag([BUNK.canv, BUNK.canvL, BUNK.canvD], 'net');
     tagEdges([BUNK.canv, BUNK.canvL, BUNK.canvD], 'net');
+    tag([BUNK.tarp, BUNK.tarpL, BUNK.tarpD], 'canvas');
+    tagEdges([BUNK.tarp, BUNK.tarpL, BUNK.tarpD], 'canvas');
+    tag([BUNK.panel, BUNK.panelL, BUNK.panelD], 'canvas');
+    tagEdges([BUNK.panel, BUNK.panelL, BUNK.panelD], 'canvas');
+    tag([BUNK.cross, BUNK.crossL, BUNK.crossD], 'paint');
+    tagEdges([BUNK.cross, BUNK.crossL, BUNK.crossD], 'paint');
     tag([BUNK.timb, BUNK.timbL, BUNK.timbD], 'wood');
     tagEdges([BUNK.timb, BUNK.timbL, BUNK.timbD], 'wood');
   }
@@ -22690,7 +22942,16 @@ var BUNK = { con: '#7a7a6e', conL: '#8a8a7e', conD: '#6a6a60', conW: '#74746a',
              /* the Canadian emplacement: proofed canvas over a timber frame, and the
                 timber itself. A tarpaulin in this weather is dark and a little green. */
              canv: '#5c6148', canvL: '#6b7155', canvD: '#474b38',
-             timb: '#6a5c42', timbL: '#7d6e50', timbD: '#4c412d' };
+             timb: '#6a5c42', timbL: '#7d6e50', timbD: '#4c412d',
+             /* proofed tarpaulin, which is what a field workshop is roofed with on either
+                side. It is its own shade because `canv` is tagged to the camouflage NET
+                and an awning drawn in it comes out as a piece of scrim over the yard. */
+             tarp: '#6b6350', tarpL: '#7d7460', tarpD: '#544d3e',
+             /* the panel on a dressing station, in the palette rather than written into
+                the builder as three loose hex strings: a root nobody tagged draws on the
+                untextured tile and nothing on screen says so */
+             panel: '#d9d2c4', panelL: '#e6e0d4', panelD: '#b9b2a4',
+             cross: '#9a2f26', crossL: '#ab392f', crossD: '#7a221b' };
 /* Which army built a bunker. Both shipped maps put `us` at the west edge and `ger` at the
    east, so the midline answers it for every bunker either of them has ever placed, and an
    entity that says so outright (`sd`) is believed. It is derived rather than stored
@@ -22706,6 +22967,112 @@ function bunkerSide(e) { return e.sd || (e.x < WORLD.w / 2 ? 'us' : 'ger'); }
    a month. They read as different things from any distance, which is the point.
      Both keep the same footprint, the same fighting slot and the same `bunkerBox`, so the
    game, the editor and `mapcheck` are untouched by the split. */
+/* What a fitting looks like on the concrete. Each is a handful of boxes bolted to the
+   bunker it belongs to, built in world coordinates and conformed to the ground the way a
+   field work is, because the bunker itself is meshed into a static prop tile and a tile
+   re-mesh is a hundred and ten milliseconds for something a player buys five of.
+     Per side, because the two bunkers are built of different things: a German fitting is
+   steel and concrete bolted to a casemate, a Canadian one is timber, canvas and bags
+   pegged onto an earth emplacement. The materials come out of `BUNK`, which is already
+   registered, so nothing here lands on the untextured tile. */
+function bunkerUpFaces(bk, kind) {
+  var side = slotSide(bunkerOwner(bk)), k = kind || bk.upKind, a = bk.face || 0;
+  var ger = side === 'ger', f = [], i;
+  var fwd = Math.max(bk.w, bk.h) * .5, hy = Math.min(bk.w, bk.h) * .5;
+  var hard = ger ? BUNK.con : BUNK.timb, hardL = ger ? BUNK.conL : BUNK.timbL;
+  var hardD = ger ? BUNK.conD : BUNK.timbD;
+  /* what a screen is made of: a German position banks earth against it and a Canadian one
+     hangs a tarpaulin. Not `canv`, which is the palette's CAMOUFLAGE NET -- a dressing
+     station screened with a piece of scrim is not a screen. */
+  var soft = ger ? BUNK.earth : BUNK.tarp, softL = ger ? BUNK.earthL : BUNK.tarpL;
+  var softD = ger ? BUNK.earthD : BUNK.tarpD;
+  function wat(ox, oy) {
+    return [bk.x + Math.cos(a) * ox - Math.sin(a) * oy, bk.y + Math.sin(a) * ox + Math.cos(a) * oy];
+  }
+  /* The bunker's own frame: x forward out of the slot, y across it. And LEVELLED about a
+     datum, because `conformFaces` drops every face to the ground under its own centre --
+     right for a thing laid along the ground and wrong for a thing that is level by
+     construction. On a crater field the first bag ring came out with two of its fourteen
+     segments standing in the air over a shell hole's lip and two sunk into it, and the
+     shield over the slot was measured off the slope in front rather than off the concrete
+     it is bolted to. A piece is given the difference between the ground under it and the
+     ground under its datum, so the conform puts it back where it was meant to be: `dx/dy`
+     is that datum, the bunker itself unless something says otherwise. */
+  var _gz0 = groundZ(bk.x, bk.y);
+  function at(faces, ox, oy, oz, dx, dy) {
+    var w = wat(ox, oy), gd = _gz0;
+    if (dx !== undefined) { var d = wat(dx, dy); gd = groundZ(d[0], d[1]); }
+    return place(faces, a, w[0], w[1], oz + gd - groundZ(w[0], w[1]));
+  }
+  if (k === 'mg') {
+    /* a splinter shield across the embrasure with a slit in it, and the belt boxes */
+    f = f.concat(at(box(0, 0, 0, 3, 13, 5, BUNK.steel, hardL, hardD), fwd - 9, -9, 15));
+    f = f.concat(at(box(0, 0, 0, 3, 13, 5, BUNK.steel, hardL, hardD), fwd - 9, 9, 15));
+    f = f.concat(at(box(0, 0, 0, 4, 34, 3, BUNK.steel, hardL, hardD), fwd - 9, 0, 24));
+    for (i = 0; i < 4; i++)
+      f = f.concat(at(box(0, 0, 0, 8, 5, 4, BUNK.steel, hardL, BUNK.dark),
+                      fwd - 22 - (i % 2) * 9, -hy + 9 + ((i / 2) | 0) * 7, 1));
+  } else if (k === 'at') {
+    /* the embrasure opened out: the lintel carried on two jambs, with a blast apron of
+       spoil thrown up either side of the muzzle. Spoil is spoil on either side, so it is
+       earth for both rather than the side's own screen material. */
+    for (i = -1; i <= 1; i += 2) {
+      f = f.concat(at(box(0, 0, 0, 7, 8, 22, hard, hardL, hardD), fwd - 6, i * 21, 0));
+      f = f.concat(at(frustum([[-7, -11], [7, -11], [7, 11], [-7, 11]],
+                              [[-4, -6], [4, -6], [4, 6], [-4, 6]], 0, 6,
+                              BUNK.earth, BUNK.earthL, BUNK.earthD),
+                      fwd + 5, i * 17, 0));
+    }
+    f = f.concat(at(box(0, 0, 0, 9, 52, 6, hard, hardL, hardD), fwd - 6, 0, 22));
+  } else if (k === 'mor') {
+    /* The pit, dug in behind: a ring of bags round a bedded plate, levelled about the
+       pit's own centre rather than the bunker's, because it is ninety-odd units back up
+       a slope. A sandbag is hessian on either side, off the shades the rest of the map's
+       bagwork is laid in. */
+    var px = -(BUNKUP.mor.rear || 92);
+    var BAGS = ['#6f6444', '#85795a', '#766b4a', '#655c40'];
+    /* Twenty-two to a course at twenty-seven, and each bag laid ALONG the ring rather
+       than square to the bunker: placed square, a bag is a block pointing whichever way
+       the concrete does, the ring never closes, and what comes out is two dozen stones
+       scattered in a circle rather than a parapet. The radius holds the crew, which
+       stands out to about thirty from the plate. */
+    for (i = 0; i < 22; i++) {
+      var ea = i / 22 * TAU, rr = 27, bg = BAGS[i % 4], bg2 = BAGS[(i + 2) % 4];
+      f = f.concat(at(place(box(0, 0, 0, 5.5, 9, 4.5, bg, lit(bg, 1.1), lit(bg, .88)), ea, 0, 0, 0),
+                      px + Math.cos(ea) * rr, Math.sin(ea) * rr, 0, px, 0));
+      var eb = ea + TAU / 44;
+      f = f.concat(at(place(box(0, 0, 0, 5.5, 9, 4.5, bg2, lit(bg2, 1.1), lit(bg2, .88)), eb, 0, 0, 0),
+                      px + Math.cos(eb) * rr, Math.sin(eb) * rr, 4.5, px, 0));
+    }
+    f = f.concat(at(box(0, 0, 0, 16, 16, 1.6, hard, hardL, hardD), px, 0, 0, px, 0));
+    /* the ready rounds, stood on end against the parapet */
+    for (i = 0; i < 5; i++)
+      f = f.concat(at(box(0, 0, 0, 3.4, 3.4, 9, BUNK.steel, hardL, BUNK.dark),
+                      px - 12 + (i % 3) * 5, -14 + ((i / 3) | 0) * 5, 0, px, 0));
+  } else if (k === 'rep') {
+    /* a lean-to off the back wall on four posts, a bench under it and fuel drums */
+    for (i = 0; i < 4; i++)
+      f = f.concat(at(box(0, 0, 0, 4, 4, 20, hard, hardL, hardD),
+                      -fwd - 6 - (i % 2) * 26, (((i / 2) | 0) - .5) * 2 * (hy - 6), 0));
+    f = f.concat(at(pitch(box(0, 0, 0, 36, 2 * hy - 4, 2.5, BUNK.tarp, BUNK.tarpL, BUNK.tarpD),
+                          .13, 0, 0), -fwd - 19, 0, 20));
+    f = f.concat(at(box(0, 0, 0, 22, 7, 7, hard, hardL, hardD), -fwd - 14, -hy + 12, 0));
+    for (i = 0; i < 3; i++)
+      f = f.concat(at(drum(0, 0, 0, BUNK.steel), -fwd - 12 - i * 3, hy - 12 - i * 11, 0));
+  } else if (k === 'med') {
+    /* a dressing station under the back wall: an earth or a tarpaulin screen, two
+       stretchers on trestles, and the panel that says what it is */
+    f = f.concat(at(box(0, 0, 0, 3, 2 * hy - 10, 23, soft, softL, softD), -fwd - 14, 0, 0));
+    for (i = -1; i <= 1; i += 2) {
+      f = f.concat(at(box(0, 0, 0, 24, 8, 1.6, BUNK.tarpL, BUNK.tarp, BUNK.tarpD), -fwd - 26, i * 13, 9));
+      f = f.concat(at(box(0, 0, 0, 22, 2, 9, hard, hardL, hardD), -fwd - 26, i * 13, 0));
+    }
+    f = f.concat(at(box(0, 0, 0, 1.4, 11, 11, BUNK.panel, BUNK.panelL, BUNK.panelD), -fwd - 15.6, 0, 11));
+    f = f.concat(at(box(0, 0, 0, 1, 3.4, 11, BUNK.cross, BUNK.crossL, BUNK.crossD), -fwd - 16.2, 0, 11));
+    f = f.concat(at(box(0, 0, 0, 1, 11, 3.4, BUNK.cross, BUNK.crossL, BUNK.crossD), -fwd - 16.2, 0, 14.8));
+  }
+  return f;
+}
 function bunkerModel(fw, dp, sv, side) {
   return side === 'us' ? bunkerSandbag(fw, dp, sv) : bunkerConcrete(fw, dp, sv);
 }
@@ -23726,6 +24093,16 @@ function drawWorks3D() {
     w = G.sites[i];
     if (w.buf) drawGeom(w.buf, m4model(0, 0, -(1 - w.prog) * 13, 0, 1), false, [.88, .88, .84]);
   }
+  /* A bunker's fitting is its own world-space buffer for the same reason a work is: it
+     appears after `buildScene` has run and a prop tile is a hundred and ten milliseconds
+     to re-mesh, which is not a thing to spend on a mount and a few boxes. It rises out of
+     the ground as the work goes in, which is the only thing on screen that says anything
+     is happening in there. */
+  for (i = 0; i < G.bunks.length; i++) {
+    w = G.bunks[i];
+    if (w.upBuf) drawGeom(w.upBuf, m4model(0, 0, 0, 0, 1), false, null);
+    else if (w.up && w.upSite) drawGeom(w.upSite, m4model(0, 0, -(1 - w.upT / BUNKUP[w.up].time) * 13, 0, 1), false, [.88, .88, .84]);
+  }
 }
 function drawWrecks3D(v) {
   G.wrecks.forEach(function (w) {
@@ -24092,6 +24469,7 @@ function render() {
       drawDepthGeom(B, mm);
     });
     G.works.forEach(function (w) { if (w.buf) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
+    G.bunks.forEach(function (w) { if (w.upBuf) drawDepthGeom(w.upBuf, m4model(0, 0, 0, 0, 1)); });
     /* a house that has left the merged tile still has to throw the shadow it threw
        before it was hit, or a shelled street lights up as the walls come off it */
     for (var hri = 0; hri < G.hurt.length; hri++) {
@@ -24220,6 +24598,28 @@ function render() {
   /* unit and building labels */
   list.forEach(function (u) { drawUnitOverlay(u, w2s(u.x, u.y)); });
   G.blds.forEach(function (b) { if (b.side === G.side || visibleTo(G.side, b)) drawBuildingOverlay(b); });
+  /* The selected bunker, which is the one thing in `G.sel` that is neither a unit nor a
+     building: `buildMarks` skips it for want of a `cat` and the loop above walks `G.blds`.
+     Until this, a player picking one of three bunkers got five different cards and nothing
+     whatever on the map to say which one he had picked. The colour, the width, the pad and
+     the bar are the ones `drawBuildingOverlay` uses, so it reads as the same kind of
+     thing. */
+  var selBk = selectedBunker();
+  if (selBk) {
+    var bq = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) {
+      return w2s(selBk.x + q[0] * (selBk.w / 2 + 10), selBk.y + q[1] * (selBk.h / 2 + 10));
+    });
+    if (!bq.some(function (q) { return q.behind; })) {
+      ctx.strokeStyle = '#9ecb62'; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      bq.forEach(function (q, i) { if (i) ctx.lineTo(q.x, q.y); else ctx.moveTo(q.x, q.y); });
+      ctx.closePath(); ctx.stroke();
+      if (selBk.up) {
+        var bfp = w2s(selBk.x, selBk.y + selBk.h / 2);
+        drawBar(bfp.x - 42, bfp.y + 10, 84, selBk.upT / BUNKUP[selBk.up].time, '#d8a334');
+      }
+    }
+  }
   G.sectors.forEach(drawSectorFlag);
   /* what the ground under the cursor is worth, before the order is given: the grade
      of cover a section would take at the point, shown beside the pointer while
@@ -24469,6 +24869,13 @@ function selectSame(near) {
   sfx('click');
 }
 function selectedBuilding() { return G.sel.length === 1 && G.sel[0].built !== undefined ? G.sel[0] : null; }
+/* A bunker is a prop rather than a building, so it has no `built` and no `cat` and every
+   one of the three readers above passes it over. That is what lets it be selected at all
+   without the command bar, the order path or the production panel having to learn what it
+   is: it is picked, it shows its own five cards, and nothing else in the HUD sees it. */
+function selectedBunker() {
+  return G.sel.length === 1 && G.sel[0].kind === 'bunker' ? G.sel[0] : null;
+}
 
 /* Lay every selected tube that can reach onto the same patch of ground, and say so.
    Out of range is told rather than silently ignored: a mortar's two ranges are the
@@ -24647,7 +25054,7 @@ window.addEventListener('mouseup', function (e) {
         }), add);
       } else select([hit], add);
     } else {
-      var bl = buildingAt(w2.x, w2.y);
+      var bl = buildingAt(w2.x, w2.y) || bunkerAt(w2.x, w2.y);
       if (bl) select([bl], false); else if (!add) select([], false);
     }
   }
@@ -24847,6 +25254,17 @@ cv.addEventListener('touchend', function (e) {
   if (own) { select([own], false); buzz(8); return; }
   var ob = buildingAt(w.x, w.y);
   if (ob && owned(ob)) { select([ob], false); buzz(8); return; }
+  /* A tap on a bunker is two different things and which one is meant is never in doubt.
+     Garrisoning goes through `issueOrder`, which is the branch BELOW this one, so a pick
+     that fires unconditionally takes the only way a phone has of putting men in a bunker
+     and silently replaces it with a selection. With men in hand that could go in, the tap
+     is the order; with none, it is "show me what is in this". Whose it is does not come
+     into it, because a player wants to read the thing that is shooting at him as much as
+     his own, which is what the panel's own text already promises him. */
+  var obk = bunkerAt(w.x, w.y);
+  if (obk && !G.sel.some(function (q) { return canGarrison(q, obk); })) {
+    select([obk], false); buzz(8); return;
+  }
   /* with a selection live, any other tap is an order */
   if (G.sel.length) { issueOrder(w.x, w.y, false); buzz(14); return; }
   var foeU = unitsAt(w.x, w.y, grab)[0] || (ob || null);
@@ -25024,6 +25442,15 @@ function syncHud() {
       c.onclick = function () { select([u], false); };
       body.appendChild(c);
     });
+  } else if (selectedBunker()) {
+    var sbk = selectedBunker(), sbW = BUNKUP[sbk.upKind || sbk.up];
+    head.textContent = (slotSide(bunkerOwner(sbk)) === 'ger' ? 'Concrete bunker' : 'Sandbag emplacement');
+    stat.textContent = sbk.up ? Math.round(sbk.upT / BUNKUP[sbk.up].time * 100) + '% built'
+                     : sbk.upKind ? BUNKUP[sbk.upKind].short : 'not fitted out';
+    desc.textContent = sbW ? sbW.desc
+      : bunkerOwner(sbk) === G.own
+        ? 'Yours to fit out, once, with one of five things. A bunker with nothing in it is a hole with a roof on.'
+        : 'Theirs. Put a section in it and it is yours, and so is whatever is fitted in it.';
   } else {
     head.textContent = 'Nothing selected';
     stat.textContent = '';
@@ -25034,6 +25461,14 @@ function syncHud() {
 }
 var cmdList = [];
 function cmdGlyph(label) {
+  /* The bunker fittings go FIRST, because the tests below them match on substrings and a
+     substring match is not a specific one: `/HQ|POST|SUPPORT/` claims both 'Machine gun
+     post' and 'Aid post' and drew a house on each. The mortar pit is deliberately left to
+     the `/Pit/` test further down, which is the better glyph for it. */
+  if (/Machine gun post/i.test(label)) return '⊢';
+  if (/Anti-tank casemate/i.test(label)) return '⌁';
+  if (/Repair shelter|Re-crew/i.test(label)) return '⚒';
+  if (/Aid post/i.test(label)) return '✚';
   if (/Same type/i.test(label)) return '⁙';
   if (/Same nearby/i.test(label)) return '⁘';
   if (/Attack/i.test(label)) return '⌖';
@@ -25059,7 +25494,7 @@ function cmdGlyph(label) {
 function buildCmds() {
   var host = el('cmds'); host.innerHTML = ''; cmdList = [];
   host.classList.remove('dense');
-  var b = selectedBuilding(), units = selectedUnits().filter(owned);
+  var b = selectedBuilding(), bk = selectedBunker(), units = selectedUnits().filter(owned);
   function addCmd(label, sub, hk, enabled, fn, active) {
     var btn = document.createElement('button');
     btn.className = 'cmd' + (active ? ' act' : '');
@@ -25083,6 +25518,33 @@ function buildCmds() {
         !locked && canAfford(G.own, d.cost), function () { if (queueUnit(b, key)) { sfx('click'); syncHud(); } });
       cmdList[cmdList.length - 1].can = function () { return !locked && canAfford(G.own, d.cost) && !(unitLimit(G.own, d) && countOf(G.own, key) >= unitLimit(G.own, d)); };
     });
+  } else if (bk && bunkerOwner(bk) === G.own) {
+    /* A bunker is fitted out ONCE. Before that it offers the five; while the work is going
+       in it shows what and how far; after it there is nothing left to decide, so the card
+       says what is in it rather than offering four more. */
+    if (bk.up) {
+      addCmd(BUNKUP[bk.up].name, Math.round(bk.upT / BUNKUP[bk.up].time * 100) + '% built', '', false, function () {});
+    } else if (bk.upKind) {
+      addCmd(BUNKUP[bk.upKind].name, bunkerManned(bk) || !BUNKUP[bk.upKind].unit ? 'fitted' : 'crew lost', '',
+             false, function () {});
+      /* the emplacement outlives its crew: a gun whose men have been killed is re-crewed
+         at the same price rather than written off, and the card says so */
+      if (BUNKUP[bk.upKind].unit && !bunkerManned(bk)) {
+        var rk = bk.upKind, rW = BUNKUP[rk];
+        addCmd('Re-crew', (rW.cost.mp || 0) + (rW.cost.fu ? ' <em>' + rW.cost.fu + 'f</em>' : ''), rW.hk,
+               bunkerUpOK(bk, rk, G.own), function () { if (orderBunkerUp(bk, rk, G.own)) syncHud(); });
+        cmdList[cmdList.length - 1].can = function () { return bunkerUpOK(bk, rk, G.own); };
+      }
+    } else {
+      BUNKUP_ORD.forEach(function (kind) {
+        var W = BUNKUP[kind];
+        var sub = (W.cost.mp || 0) + (W.cost.fu ? ' <em>' + W.cost.fu + 'f</em>' : '');
+        addCmd(W.name, sub, W.hk, bunkerUpOK(bk, kind, G.own), function () {
+          if (orderBunkerUp(bk, kind, G.own)) syncHud();
+        });
+        cmdList[cmdList.length - 1].can = function () { return bunkerUpOK(bk, kind, G.own); };
+      });
+    }
   } else if (units.length) {
     addCmd('Move', 'right-click', 'V', true, function () { toast('Right-click the ground to move'); });
     addCmd('Attack move', 'Q + click', 'Q', true, function () { G.mode = 'attack'; cv.style.cursor = 'cell'; syncHud(); }, G.mode === 'attack');
@@ -25808,6 +26270,8 @@ function frame(now) {
     flushGroundQ();
     updateSectors(dt);
     updateSites(dt);
+    updateBunkers(dt);
+    bunkerRepair(dt);
     tickEconomy(dt);
     recTick(dt);
     aiThink(dt);

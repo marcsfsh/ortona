@@ -754,9 +754,10 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1625 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1655 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
-knocked down, and 1595 before bodies and wrecks). Takes under a second. Exits
+knocked down, 1595 before bodies and wrecks, and 1640 before a bunker could be fitted
+out). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -1509,6 +1510,88 @@ asking whether a thing is a strongpoint or a shed and a bunker is a strongpoint 
 size. Its footprint is axis-aligned like every solid thing here, so the bearing is taken
 to the nearest quarter turn; on the Gothic Line every bunker looks along the valley,
 which is the x axis, so nothing is lost by it.
+
+**A bunker is fitted out once, and that is what makes it a decision rather than a box.**
+A bunker was a hole in the ground with a roof on it: a section could stand in it and
+nothing else about it was yours. On a map whose whole question is which of three
+crossings to force, the thing the map is about had exactly one thing you could do with
+it. `BUNKUP` is the five, one per bunker and no second go: a machine gun post, an
+anti-tank casemate, a mortar pit, a repair shelter and an aid post.
+
+**Three of the five are a weapon team off the side's OWN roster**, which is why each side
+gets its own piece for nothing: a Vickers or an MG42, a six-pounder or a Pak 40, an M1 or
+a Granatwerfer. The two that fire through the slot are GARRISONED, so `outPoint`'s arc
+clamp is the whole of "it fires the way it is facing" and there is no new firing code
+anywhere. Measured at 300 units: a shot out of the slot is allowed and the same shot to
+the rear is refused by the bunker's own concrete. The tube is the other way about -- it is
+dug in 92 units BEHIND the bunker, on ground `nearestFree` says a man can stand on,
+firing over the top of it, and it leaves the slot free for the men holding it. That is
+also why it is the one fitting that may go into an occupied bunker.
+
+The other two are radius effects (220 units) read by machinery that already asks those
+questions. `bunkerAidAt` goes beside `medicNear` in the reinforcement block, so an aid
+post patches up the wounded near it and fills a section that has lost men back up without
+it walking home. `bunkerRepair` is the engineer's own repair applied where the hull
+stands, and it takes a shed track and a wrecked gun down with the hit points, because a
+vehicle that cannot move is a vehicle that is not coming back on its own. Both are asked
+three ways by the gate -- near, far and ENEMY -- because a radius with no side test in it
+works perfectly in a photograph.
+
+**The geometry is a per-bunker world-space buffer** (`bk.upBuf`, built through
+`conformFaces` and `facesToBuffer`, the way a field work already is), because a bunker
+lives in a static prop tile and re-meshing one is 110 ms for a mount, a bench and a few
+boxes. While the work goes in, `bk.upSite` is the same buffer drawn sunk into the ground
+and rising out of it, which is the only thing on screen that says anything is happening
+in there.
+
+**And a bunker answers to whoever is standing in it.** `bunkerOwner(bk)` is `bk.own` with
+the map's own side as the fallback, a SLOT rather than a side so a 2v2 works, and
+`enterBuilding` flips it. A fitting still being built goes with the concrete too: left
+pointed at whoever paid for it, an MG post finishing under an enemy garrison would spawn
+its crew, throw that garrison out and hand the position back for nothing. The fitting goes with the concrete: an aid post overrun is an
+aid post patching up the men who took it, which is the whole of why walking round the
+side of one is worth doing. What does NOT change is the geometry -- a Normandy casemate
+does not become a sandbag sangar because the men in it are Canadian, and the buffer is
+built once for that reason.
+
+**The brain fits them, and it is deliberately NOT on the works ladder.** That ladder is
+one work every fifty-two seconds against a thing there are three of on the whole map,
+which is exactly the mistake the heavy battery's first version made and was measured
+making. What goes in is read off the battle rather than off a list: armour on the field
+wants a gun in the embrasure and nothing but infantry wants a belt, which `aiIntel`
+already answers; the other two are about this side rather than the enemy, so hulls
+standing about with holes in them want a workshop and under-strength sections want an aid
+post, both counted off the roll. Counted gate by gate (`bunker.reached`, `bunker.money`
+and one per kind), because the way to find out why a rule never fires is to count what
+shut it. Measured over four minutes with a brain on both sides it reaches on 46 ticks,
+can pay on 3, and fits 3: money-bound, which for a thing bought once a bunker is right.
+
+**The emplacement outlives its crew.** A mount cast into a wall is masonry and the men on
+it are a unit, so a gun whose crew has been shot off it is RE-CREWED at the same price
+rather than written off for the battle -- only with the same weapon, because the
+embrasure was opened out for that one. `bunkerManned` reads the id of the unit the
+fitting raised rather than whether anybody is standing in the slot, so a crew merely
+ordered out does not buy a second gun. And `popOf` counts the men a fitting has on the
+way, the same clause it already carries for a field work: three bunkers ordered in one
+tick would each see a cap with room in it and put the side over it when the last came in.
+
+**Three things about it read as working and were not, and a photograph caught one of
+them.** A tap on a bunker is two different things: with men in hand that could go into it
+the tap is their order, and with none it is "show me what is in this". Picked
+unconditionally, the new branch sat ABOVE `issueOrder` on the touch path and garrisoning
+goes THROUGH `issueOrder`, so a phone quietly lost the only way it had of putting men in
+a bunker at all. A crew the fitting raised belongs to the bunker: `aiTick`'s rule about a
+section holding a house and following the fight when it moves on, applied to a fitted gun,
+walks two hundred and thirty marks of machine gun out of the emplacement it was bought
+for and leaves the slot empty, so `bunker.man` holds it there. And a selected bunker drew
+NOTHING on the map -- `buildMarks` skips it for want of a `cat` and the overlay walks
+`G.blds` -- so a player picking one of three got five different cards and nothing to say
+which one he had picked.
+
+**`G.bunks` is the short list.** Four things now ask a question of every bunker on every
+frame and `G.props` is six hundred entities. They are map entities and nothing adds or
+removes one during a battle, so the list is built where they are pushed and never
+maintained again.
 
 **A garrison never goes flat.** Men holding a house fight from its openings. Two of the
 three pinned tests in `updateModels` did not exempt `u.gar` the way the third already
@@ -3952,6 +4035,32 @@ shots/                         screenshot output, gitignored
   every forty units of belt, straight through the hedgehogs, while the cost model stayed
   perfectly correct. Pick the kind for what it means -- `ditch` for flat, `lowwall` for
   crouching, `pit` and `trench` for dug -- and know that two of them come with geometry.
+- **A new pick inserted above `issueOrder` can silently delete an order.** On the touch
+  path, garrisoning, hitching, boarding and laying a fire mission all go through
+  `issueOrder`, so anything picked before it takes the tap away from all of them. The
+  bunker pick did exactly that and the loss is invisible on a desktop, where the two live
+  on different buttons. Give a new pick the condition it should yield on.
+- **A glyph test that matches a substring is not a specific test.** `cmdGlyph` walks its
+  list in order and `/HQ|POST|SUPPORT/` claims both 'Machine gun post' and 'Aid post', so
+  both came out drawn as a house. A new label goes at the TOP of that list, or it gets
+  whatever an earlier line happens to match.
+- **`conformFaces` drops every face to the ground under its OWN centre**, which is right
+  for a thing laid along the ground and wrong for a thing that is level by construction.
+  On the Gothic Line's crater field the first bag ring round a mortar pit came out with
+  two of its fourteen segments standing in the air over a shell hole's lip and two sunk
+  into it, and a splinter shield bolted to a bunker was measured off the slope in front of
+  it rather than off the concrete. A piece that has to be level is given the difference
+  between the ground under it and the ground under its own datum before the conform, which
+  puts it back where it was meant to be.
+- **A bag laid square to the thing it is beside does not make a ring.** Twenty-two bags
+  placed on a circle with their long axis pointing whichever way the bunker does read as
+  two dozen stones scattered in a circle; the ring only closes when each is rotated to its
+  own tangent.
+- **`BUNK.canv` is tagged to the camouflage NET**, because that is what the Canadian
+  emplacement uses it for. Anything else drawn in it -- an awning over a workshop, a screen
+  round a dressing station, a stretcher -- comes out as a piece of scrim, which reads as a
+  fault in a photograph and is a fault in the palette. `BUNK.tarp` is the proofed
+  tarpaulin, tagged `canvas`, and is what a field shelter is roofed with on either side.
 - **A cover patch inside a solid footprint is a lie the whole index believes.** `aiFirePost`
   and `coversNear` read the patch list and neither asks whether a man can stand there, so
   a tier-4 patch in the middle of a bunker sites a machine gun in the concrete. A garrison
