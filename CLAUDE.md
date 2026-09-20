@@ -192,7 +192,25 @@ node tools/move.mjs --t=360         # a longer battle probe
 node tools/move.mjs --v             # every route and every drill rather than the summary
 ```
 
-Three sections, because there are three questions.
+Five sections, because there are five questions.
+
+**CONTACT** asks what a unit's collision body is against the model it is drawn as, and
+what was actually between two models at the moment the push fired. The hull is measured off
+the model's own faces here and deliberately not asked of the game, because a probe that asks
+the code under test how big a tank is cannot see it being wrong about how big a tank is. The
+number to read is the SPREAD of the gap over bearing rather than any one row of it: one
+isotropic threshold gives a different answer on every bearing, which is both halves of the
+complaint at once. It ran at 20.7 units of spread for a Sherman meeting a rifle section
+(-9.7 to +11.0) and 21.3 for two Shermans; it reads 0.1 and 0.1 now.
+
+**MOTION** is a staged move with every frame of it recorded, because rubber-banding is a
+property of a path through time and there is no still picture of it. `jerk` is the mean
+frame-to-frame change in velocity, `revs` counts the steps that reversed on the one before
+-- which is the rubber band itself -- `flips` counts how often a hull changed which way it
+was turning, and `drift` is the ground made while turning, which for a tracked pivot should
+be near nought and for a wheeled vehicle cannot be. The trace STOPS when the unit arrives:
+counting the frames it sits still afterwards put half of a clean run in the stall column and
+said nothing about the run.
 
 **ROUTES** asks whether a path is any good. Five journeys across the shipped map, each
 for a section, tracks, wheels and the heaviest thing on the roster, priced three ways:
@@ -619,6 +637,18 @@ questions with the bay standing and with the bay down.
 
 **WALL** is the same question asked of an object rather than a building.
 
+**HULK** is the other half of destruction, which is a vehicle. It is the one thing on this
+page a photograph is worst at, because the effects round a dying tank were never in doubt
+and its BODY never changed: from above, a dark tank and a dead tank are the same picture.
+So the row renders the same Sherman alive and then dead from one camera and counts the
+pixels between them, against a control of the live frame rendered twice -- which is nought
+-- and it reads about 25,000 to 50,000 of a 1.44-million-pixel frame. The rest of the
+section counts what the body actually did: over forty deaths each, how many threw the
+turret off (a third of the Shermans, none of the StuGs, which is the casemate), how far the
+hull cants and sinks, how much plate comes off it, and then one mount followed through its
+flight -- how high, how far, how long, how much it tumbled, that it lies still afterwards
+and that it is cover where it lands.
+
 **COST** is what it is worth in milliseconds. Note that the two mesh times are the geometry
 alone and not the upload: under SwiftShader every third consecutive `bufferData` of a tile
 blocks for over a second, so a loop of whole tile rebuilds reports two and a half seconds
@@ -724,9 +754,9 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1560 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
-battle wrote itself down, 1460 before a second map, and 1520 before a building could be
-knocked down). Takes under a second. Exits
+under 1625 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+battle wrote itself down, 1460 before a second map, 1520 before a building could be
+knocked down, and 1595 before bodies and wrecks). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -1084,6 +1114,42 @@ ground that has stopped being ground -- a company post raised on top of it, a wr
 settled across it -- walks out to the nearest ground it can stand on rather than failing
 every step it tries.
 
+**A unit's body is the shape it is drawn as.** Every collision in the game was one
+isotropic circle on two markers, and `unitRadius` is that circle: half a vehicle's LENGTH,
+bucketed off its HIT POINTS. A hull is twice as long as it is wide, so a circle that holds
+the nose holds a metre and a half of open ground either side of the tracks with it -- over
+the roster the body ran 2.0 to 2.8 times the hull's own half-beam -- and because the
+buckets key off `hp`, moving a Stuart from 480 to 510 would have jumped its collision
+radius by 28 per cent with no vertex moved. Measured over eight bearings, a rifle section
+walking past a Sherman was held off with eleven units of daylight between the models on
+one and stood nine units inside the hull on another: a spread of 20.7 units, which is
+wider than the tank. Both halves of that are what a player sees and neither shows in a
+photograph, because a tank stopping short and a tank standing in a man are the same
+picture from above.
+
+`unitBody(u)` is the fix and everything about it is MEASURED. A vehicle's half-length and
+half-beam come off the model's own faces the way `tools/dims.mjs` reads a published
+dimension, so a plate that moves moves the body with it and there is no second list to go
+out of step; the mount is left out, since a gun barrel is not a body anybody walks into. A
+section's come off the offsets it was actually dealt, plus `MAN_R` -- the eleven units
+`hitsUnit` already picks a man by -- so the body a tank is kept out of is the body the
+player's own finger goes through.
+
+**`sepDepth` is the four-axis separating test on two boxes**, and the shallowest overlap
+is the depth and its axis the way out, which is what a box does: it puts a thing out the
+near side rather than away from a centre. A capsule was tried first and is the wrong shape
+for both of these -- three files of two is a block, and the capsule that holds its corners
+stands four to eleven units proud of its flanks, so the gap at contact still wandered by
+six units over bearing with nothing on screen to say why.
+
+**And a hull is tested against the MEN.** A section's box has empty corners by
+construction, so a tank coming in at forty-five degrees stopped seventeen units short of
+the nearest soldier. `menPen` walks the living men against the hull's own rectangle, which
+is exact, and it is the first thing in this file ever to ask where a man is standing before
+deciding whether a tank had run into his section. Over eight bearings the gap between a
+Sherman and a rifle section is 0.0 to 0.1 units, and between two Shermans 0.1 to 0.2,
+against a spread of 20.7 and 21.3 before.
+
 **Units are obstacles.** `unwedge` is the push, and it lives outside `moveUnit` because
 `moveUnit` returns on its first line when there is nowhere to go: the only thing that had
 ever pushed units apart was a steering hint inside the movement code, so a halted section
@@ -1093,6 +1159,42 @@ standing inside each other, drawn as one clump of men, firing as two and taking 
 between them. It is a step rather than a hint, bounded by what a man walks in the time,
 and the heavier thing gives way less. On the card it took wedging from 2.7 per cent of
 every unit-frame to none.
+
+**And for a long time neither of those last two things was true.** The push kept a depth
+weight and a mass factor and then NORMALISED the sum to a unit vector three lines later,
+which cancels both exactly. What survived was `min(u.speed * .5, 40)` -- the PUSHED unit's
+own speed -- so a Sherman backed away from a rifle section faster than the section backed
+away from the Sherman, the precise inverse of the sentence above it; and a pair overlapping
+by a tenth of a unit came apart at the same rate as a pair standing on the same spot, with
+the rate falling to nothing the instant they cleared. A step at the boundary is a limit
+cycle waiting for the pathfinder to pull the unit straight back into it. It is a spring
+priced on the depth now, with the give taken from the two bodies (a vehicle's plan area
+against a section's men, derived rather than tabled), so a crowd eases apart and settles.
+
+**Avoidance steers; it does not push back down the line.** The same fault ran in
+`moveUnit`: the avoid vector was blended into the want vector and the sum renormalised, so
+a unit pressed head-on was left with a residual of a tenth whose DIRECTION was whatever
+survived the near-cancellation, and that tenth was scaled straight back up to full speed.
+It darted about at full pace on a bearing that flipped every frame while `unwedge` shoved
+it the other way inside the same frame. One section walking past one parked Sherman
+reversed on itself **198 times** in a fourteen-second walk. The push is split by what each
+half of it is for now: the part ACROSS the line steers, the part ALONG it brakes, and
+nothing reverses a unit that is trying to go forwards.
+
+Two more things were needed before that settled. **Which side to go round is decided once
+and held** (`u.avoidS`, 1.4 seconds), because decided afresh every frame it swaps the
+instant the geometry crosses over and the section grinds along the flank of the thing for
+the whole order -- 57 reversals, and it never arrived. And **the swerve is eased in and
+out** (`u.avoidM`) rather than switched, because applied on the frame a contact appears and
+dropped on the frame it clears the wanted bearing jumps sixty degrees and back every few
+frames, which costs nothing while a heading is decoration and comes out as a tank spinning
+on the spot once a hull drives on its own nose.
+
+On the motion drills, that section walking past a tank went from 198 reversals, a jerk of
+0.212 and 14.5 seconds for a 400-unit walk to **none, 0.0163 and 9.2 seconds** -- against
+0.0113 on clean open ground, so the rise from meeting a tank is 1.4x rather than 19x. A
+Sherman driving through three sections went from a jerk of 0.0711 and 200 units of drift to
+0.0233 and 18.
 
 **A burnt-out hull is in the way.** `killUnit` puts a wreck on the movement grid as well
 as adding it as cover, so a lane blocked by a burning Panzer is blocked. It stops a boot
@@ -1172,6 +1274,34 @@ goes round the end of it.
 second, so a Tiger II turned as smartly as a Daimler and there was nothing to be had from
 getting behind the heavy thing except the thinner plate. It is 1.5, 2.1 or 2.9 by weight
 now, beside the acceleration that was already graded that way.
+
+**And a hull goes where its nose is pointing.** The position was integrated along the
+bearing to the next waypoint and `u.facing` appeared nowhere in it, so the heading was
+decoration: a tank crabbed sideways and backwards at up to a hundred degrees off its own
+front plate, at full speed, while the turn rate and the whole weight model swung a drawing
+round afterwards. That is most of what reads as unnatural about armour here, and it is why
+the two fixes below could not have worked without it -- a speed that falls away with the
+heading error does nothing at all if the vehicle is not travelling on its heading.
+
+**Tracks and wheels do not turn the same way, and until now they turned identically.**
+Asked for a hundred and eighty degrees, a Sherman, a Tiger II, a Universal Carrier and a
+half-track all came round through the same 3.26 radians and all drove between 53 and 67
+units of ground doing it. A tracked vehicle counter-rotates its tracks and turns where it
+stands, so its speed falls away with the heading error and is gone by the time the error is
+most of a right angle: it pivots, then drives off. A steered axle only bites while the
+wheels are rolling, so a half-track or a car keeps its pace through the turn, comes round
+in an arc, and turns more slowly the slower it is going. Measured on the about-turn: the
+Sherman now holds its ground and turns through 3.15 radians having driven 10 units, and the
+Sd.Kfz. 222 arcs through 3.33 having driven 100. `wheeled` is declared on the three defs
+that carry a steered axle -- the 222 and the two half-tracks -- rather than tested by key in
+two places, which is how `pathKind` and the slope grip came to disagree about which vehicles
+those were. The Universal Carrier is tracked, whatever its unit key suggests.
+
+**And the ways round an obstacle are a man's, not a hull's.** When a step is blocked the
+code tried each world axis on its own and then swung the step by up to 1.8 radians, which
+for a vehicle is the same fault as driving it off its nose: a tank slid sideways at full
+speed with no change of heading. A hull gets one swing of 0.6 radians and its front plate
+follows it round; the axis slides are infantry's alone.
 
 **The shape of a section is the shape of the ground it is on.** Three files abreast is
 right in a field and impossible in a lane a cart would fill: seven per cent of every
@@ -1701,6 +1831,42 @@ wall is laid in: a course at a time in six-unit lengths, because at a slab a met
 sixty units of garden wall came apart into seven pieces. Worth knowing: the gaps are honest
 and the movement grid is twenty units, so a gap under about thirty units is visible and
 does not clear the cell it is in.
+
+**A vehicle dies by changing shape rather than colour.** The effects round a dying tank
+were never the fault: there is a full staged burst, a real crater, two corpses, two minutes
+of streaming smoke and a fire that lights the street. The BODY never changed. The same hull
+buffer was redrawn with a hard-coded tint, standing level on its suspension as though it had
+parked, and the code comment beside it said the turret was thrown half off its ring when
+what it actually did was move three units and turn a quarter of a radian -- most of which
+was not a throw at all but the mount offset the live draw applies and the wreck draw left
+off, so how far a turret appeared to move depended on where its ring happened to sit.
+
+What a burnt-out hull looks like is four things, and each of them is a number the draw
+already had somewhere. It is DOWN, because the suspension is gone and the belly is on the
+ground. It is OVER, because it went down unevenly. It is STRIPPED, with the skirts and a
+good deal of plate off it and lying about. And often the turret is OFF, which is the single
+most recognisable shape of a dead tank. `makeWreck` decides which of the three deaths this
+was at the moment it dies and keeps the answer on the wreck; `m4lean` already carried the
+three rotations a cant needs, and `spawnChunk` is already a rigid body with gravity, bounce,
+friction and a mound to land on that takes any colour, so torn plate is the same system the
+masonry uses and the paint is read off the model's own commonest face colour.
+
+**The mount is one more body, stepped beside the wreck's own clock.** `stepHulk` integrates
+it under the same gravity as the masonry, tumbling on three axes, and where it lands is
+where it is drawn from then on -- lying at the angle it stopped at, and tier-3 cover, because
+a turret on the ground is a good thing to get behind. Two numbers had to come down: given a
+blast's own speed it went seventeen metres into the air and seventeen metres down the street,
+which is a stunt rather than a tank. It is 47 up and 54 out over 2.7 seconds now. And the
+tumble is a magnitude with a sign rather than a range through zero, because written the
+obvious way one throw in a hundred came down without having turned at all, which reads as a
+turret somebody gently lifted off.
+
+A casemate never throws one (`VMODEL.fixed`), which is the whole difference between a StuG
+and a Panzer IV on the day they die: over forty deaths each the StuG threw none and the
+Panzer's cousin threw a third of them. And a wreck is marked on the movement grid along its
+OWN hull now -- `blockRect`'s fifth argument is a pad rather than an angle, so the bearing a
+wreck has always carried was stored and never read, and a tank that burned across a street
+was blocked as a box square to the map.
 
 **The one-off costs, measured.** Recording a hit is 0.01 ms. Re-meshing the bay it changed
 is 5.2 ms. Freeing the tile is 110 ms of geometry, once per house and queued one a frame.
@@ -3819,6 +3985,50 @@ shots/                         screenshot output, gitignored
   ON the origin rather than around it. Rotate that about the origin and the piece swings
   round its own base; an integrator that treats the same number as the centre then rests it
   half its own height in the air. Pass `-h/2` for anything that is going to tumble.
+- **A normalised vector has forgotten everything that was multiplied into it.** `unwedge`
+  built a push out of an overlap depth and a mass factor and then divided the sum by its
+  own length three lines later, which cancels both exactly -- with a single neighbour the
+  result is the bare unit vector and the two rules above it do nothing whatever. What
+  survived was the step magnitude, `min(u.speed * .5, 40)`, which is the PUSHED unit's own
+  speed, so a Sherman backed away from a rifle section faster than the section backed away
+  from the Sherman: the precise inverse of the comment describing it. Anything meant to
+  scale a direction has to scale the STEP.
+- **A separation that switches at a boundary is a limit cycle.** Priced with no softening,
+  a pair overlapping by a tenth of a unit came apart at the same rate as a pair standing on
+  the same spot and the rate fell to nothing the instant they cleared, so the pathfinder
+  pulled the unit straight back in and the push threw it straight back out: 198 reversals
+  on one section walking past one parked tank. Price it on the depth and it settles.
+- **Avoidance decided afresh every frame has no side.** A unit that picks the marginally
+  clearer way out each frame swaps sides the instant the geometry crosses over and grinds
+  along the flank of the thing for the whole order. A man picks a side and commits; so does
+  `u.avoidS`, for 1.4 seconds.
+- **A wanted bearing that steps is a hull that spins.** Applied on the frame a contact
+  appears and dropped on the frame it clears, an avoidance term jumps the wanted heading
+  sixty degrees and back every few frames. That costs nothing while the heading is
+  decoration and, the moment a hull drives on its own nose, comes out as a tank turning
+  through two and a half revolutions to walk past a section. Ease it in and out.
+- **`blockRect`'s fifth argument is a PAD, not an angle.** A wreck has carried its bearing
+  since wrecks existed and nothing has ever read it, so a tank that burned across a street
+  was blocked as a box square to the map -- the wrong sixty units of it. `markSeg` takes a
+  segment and a half-width and is the right tool for anything that lies along its own axis.
+- **A frame-difference probe needs `shake` cleared, and a camera that has settled.** The
+  camera shake is the one thing in the frame that is random per RENDER, and `shake.t` is
+  wound down inside `frame()` alone -- so a shake left running by anything earlier jitters
+  the camera a few pixels on every draw for the rest of the run. And a camera moved to a
+  new place takes a dozen frames to settle, because the fog is refreshed every third one
+  and eases toward what it should be. Measured with neither, the control of two identical
+  frames came back at 41,975 pixels of 1.44 million, which is larger than the thing being
+  measured. With both, it is nought.
+- **A drill staged on ground the probe did not check is a drill about `nearestFree`.** A
+  spot search that asks for 340 units of open ground with no cover in it finds nothing on
+  Ortona, so it falls to whatever it was initialised with -- the map's corner -- and every
+  vehicle in the drill spends its time walking out to the nearest ground it can stand on,
+  turning through half a radian and never doing the thing under test. Ask for the shape the
+  drill needs (a corridor, not a square), ask only for what matters to it (what SLOWS a
+  vehicle, not what counts as cover, since three battles of craters is cover everywhere),
+  and RETURN whether one was found rather than assuming it.
+- **Two background runs writing to one output file make a sparse file full of nulls**, and
+  the rows that go missing look exactly like rows that never ran.
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo
   is several of them in one frame.** Queue the rebuild and take one tile a frame; the thing
   that left the tile is drawn twice for that frame and nobody sees it.

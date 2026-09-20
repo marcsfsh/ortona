@@ -1258,6 +1258,7 @@ var UNITS = {
   },
   us_m3: {
     side: 'us', name: 'M3A1 Half-Track', short: 'M3', cat: 'veh', hk: 'H',
+    wheeled: 1,
     upgrades: ['quad50', 'how75', 'aid'], tows: 1,
     hp: 360, armor: 40, speed: 112, sight: 320, pop: 10, cost: { mp: 240, fu: 30 }, time: 22,
     req: 'us_mot',
@@ -1390,6 +1391,7 @@ var UNITS = {
   },
   ger_sd222: {
     side: 'ger', name: 'Sd.Kfz. 222', short: '222', cat: 'veh', hk: 'V', upgrades: ['kwk'],
+    wheeled: 1,
     hp: 400, armor: 52, speed: 124, sight: 320, pop: 8, cost: { mp: 190, fu: 15 }, time: 20,
     req: 'ger_dep',
     w: { range: 250, dmg: 9, rof: .16, acc: .55, sup: .055, pen: 30, aoe: 0 },
@@ -1434,6 +1436,7 @@ var UNITS = {
   },
   ger_h251: {
     side: 'ger', name: 'Sd.Kfz. 251 Ausf. D', short: '251', cat: 'veh', hk: 'H',
+    wheeled: 1,
     upgrades: ['pak36', 'drill', 'krank'],
     hp: 340, armor: 44, speed: 108, sight: 315, pop: 10, cost: { mp: 230, fu: 30 }, time: 22,
     req: 'ger_dep',
@@ -3541,7 +3544,15 @@ function rebuildGrid() {
      that the cover a section takes behind one is still ground it can stand on, and they
      stop a boot without stopping an eye: a man sees and shoots over a dead tank and
      cannot walk through it, which is why this is on the movement grid alone. */
-  G.wrecks.forEach(function (w) { blockRect(w.x, w.y, w.w * .7, w.h * .78, 0); });
+  G.wrecks.forEach(function (w) {
+    /* along its own hull and not along the world's x axis. `blockRect`'s fifth argument
+       is a pad rather than an angle, so the bearing a wreck has always carried was
+       stored and never read: a tank that burned across a street was blocked as a box
+       square to the map, which is the wrong sixty units of it. */
+    var e = Math.max(0, w.w * .35 - w.h * .39);
+    markSeg(grid, w.x - Math.cos(w.a) * e, w.y - Math.sin(w.a) * e,
+            w.x + Math.cos(w.a) * e, w.y + Math.sin(w.a) * e, w.h * .39);
+  });
   /* the same world read for sight and for fire */
   sblk.fill(0); fblk.fill(0);
   G.props.forEach(function (p) {
@@ -3910,7 +3921,7 @@ function cellCost(ci, kind, dang, fear) {
 function pathKind(u) {
   if (!u) return -1;
   if (u.cat !== 'veh') return 0;
-  return (u.key === 'ger_sd222' || u.key === 'us_m3' || u.key === 'ger_h251') ? 2 : 1;
+  return u.def.wheeled ? 2 : 1;
 }
 /* the cost of walking a straight line, sampled the way clearLine samples it, so a
    shortcut can be priced against the path it would replace */
@@ -4113,9 +4124,27 @@ function manSeed(m) {
   m.tint = .93 + Math.random() * .14;
   m.sc = .96 + Math.random() * .08;
 }
-function squadOffset(i, n) {
+function squadRaw(i, n) {
   var cols = n <= 3 ? 3 : 3, row = Math.floor(i / cols), col = i % cols;
   return { x: (col - (cols - 1) / 2) * 30 - row * 15, y: (row - 0.4) * 29 + (col % 2) * 8 };
+}
+/* And the shape is centred on the marker. Summed over the men the raw offsets do not
+   average to nothing: a six-man section's centre of mass sat nine units forward and to
+   one side of the point that every path, every shell, every selection ring and every
+   collision test works from, and that offset rotated with the section, so the men were
+   drawn systematically off the thing that stands for them by an amount that swung round
+   as it turned. Nothing said so, because a clump of men a metre from a dot on the ground
+   looks exactly like a clump of men on it. */
+var _soMean = {};
+function squadMean(n) {
+  if (_soMean[n]) return _soMean[n];
+  var sx = 0, sy = 0, i, o;
+  for (i = 0; i < n; i++) { o = squadRaw(i, n); sx += o.x; sy += o.y; }
+  return (_soMean[n] = { x: sx / n, y: sy / n });
+}
+function squadOffset(i, n) {
+  var o = squadRaw(i, n), m = squadMean(n);
+  return { x: o.x - m.x, y: o.y - m.y };
 }
 /* An Sd.Kfz. 251/8 with the stretcher racks in it reinforces and patches up the
    infantry standing around it exactly as a base building does, as long as nothing has
@@ -4146,6 +4175,156 @@ function hpFrac(u) { return clamp(unitHp(u) / unitMaxHp(u), 0, 1); }
 function unitRadius(u) {
   if (u.cat !== 'veh') return 27;
   return u.def.hp > 1200 ? 50 : u.def.hp > 500 ? 41 : 32;
+}
+/* ---- the body a unit is kept out of -----------------------------------------------
+   `unitRadius` is a circle at half a vehicle's LENGTH, and it was the only thing that
+   had ever decided whether two units were touching. A hull is twice as long as it is
+   wide, so a circle that holds the nose holds a metre and a half of open ground either
+   side of the tracks with it: measured over the roster the collision body was 2.0 to
+   2.8 times the hull's own half-beam, and a rifle section walking past a Sherman was
+   held off with eleven units of daylight between them on one bearing and stood nine
+   units inside the hull on another. One isotropic threshold on two markers gives a
+   different answer on every bearing, and the player sees both halves of that.
+     Everything here is a box with a bearing, because everything here IS one. A hull is
+   a box. A section is three files of two, which is seventy-five units long and thirty-
+   seven across, so a circle fits it no better than it fits a tank -- and that is why the
+   fix is not simply a smaller number for infantry: shrunk to the huddle, the men on the
+   flanks were outside their own body and a Sherman drove through them.
+     Both pairs of numbers are MEASURED. A vehicle's come off the model's own faces, the
+   way `tools/dims.mjs` measures a published dimension, because a number typed beside the
+   def is a second list of one thing and goes out of step the moment somebody moves a
+   plate; the mount is left out of it, since a gun barrel is not a body anybody walks
+   into. A section's come off the offsets the unit was actually given, plus a man's own
+   width -- the radius `hitsUnit` already picks him by, so the body a tank is kept out of
+   is the body the player can click on. */
+var MAN_R = 11;                     /* a man's own body, and the one number for it */
+function vehBody(k) {
+  var V = VMODEL[k];
+  if (!V) return null;
+  if (V.body) return V.body;
+  var x = 0, y = 0;
+  function eat(fs) {
+    if (!fs) return;
+    for (var i = 0; i < fs.length; i++) {
+      var v = fs[i].v;
+      for (var j = 0; j < v.length; j++) {
+        var ax = Math.abs(v[j][0]), ay = Math.abs(v[j][1]);
+        if (ax > x) x = ax;
+        if (ay > y) y = ay;
+      }
+    }
+  }
+  eat(V.hull); eat(V.skirts);
+  V.body = { hl: x, hw: y };
+  return V.body;
+}
+function unitBody(u) {
+  if (u.bodyW !== undefined) return u;
+  if (u.cat === 'veh') {
+    var B = vehBody(u.key);
+    /* with no model there is nothing to measure -- a unit asked about before the roster
+       is built, or a page with no WebGL behind it -- so it falls back to the circle */
+    u.bodyL = B ? B.hl : unitRadius(u);
+    u.bodyW = B ? B.hw : unitRadius(u);
+  } else {
+    /* `ox` runs along the unit's facing and `oy` across it, which is the pair
+       `updateModels` scales by the lane and the frontage */
+    var ax = 0, ay = 0, i;
+    if (u.models) for (i = 0; i < u.models.length; i++) {
+      var qx = Math.abs(u.models[i].ox || 0), qy = Math.abs(u.models[i].oy || 0);
+      if (qx > ax) ax = qx;
+      if (qy > ay) ay = qy;
+    }
+    u.bodyL = ax + MAN_R; u.bodyW = ay + MAN_R;
+  }
+  return u;
+}
+/* What a thing weighs, for the one purpose of being shouldered aside: a vehicle's own
+   plan area against a section's men. Derived rather than declared, so a vehicle added to
+   the roster has a weight without anybody having to remember to give it one. */
+function sepMass(u) {
+  unitBody(u);
+  return u.cat === 'veh' ? u.bodyL * u.bodyW : aliveModels(u) * 9;
+}
+/* How far two units are inside each other, and nought when they are not. Two boxes, so
+   it is the four-axis separating test: project both of them onto each box's own two
+   axes, and daylight on any one axis means they are apart. The shallowest overlap is the
+   depth and its axis is the way out, which is what a box does -- it puts a thing out the
+   near side rather than away from a centre.
+     A capsule was tried first and is the wrong shape for both of these. Three files of
+   two is a block, and the capsule that holds its corners stands four to eleven units
+   proud of its flanks, so the gap at contact still wandered by six units over bearing
+   with nothing on screen to say why. Four axes is a dozen more multiplies and it is
+   exact.
+     The way out for the FIRST unit is left in `_sepX`/`_sepY` rather than returned,
+   because this is asked of every pair on every frame twice over and a vector returned
+   from it would be an allocation each time. */
+var _sepX = 0, _sepY = 0;
+/* A hull against the MEN, which is what the player is looking at. Nothing in this file
+   had ever asked where a man was actually standing before deciding whether a tank had
+   run into his section: the whole system was two markers and a radius, and `hitsUnit` --
+   which the player's own finger goes through -- was the only thing anywhere that knew a
+   section is six men rather than a dot. A box against a disc is exact, so the gap at
+   contact is nought on every bearing instead of wandering by the length of the tank.
+     It has to be the men and not the section's own box because the box has empty
+   corners: three files of two leaves nothing at the four angles of the rectangle that
+   holds them, so a tank coming in at forty-five degrees stopped seventeen units short of
+   the nearest soldier and there was nothing on screen to say why. */
+function menPen(V, S) {
+  var c = Math.cos(V.facing), s = Math.sin(V.facing), best = 0, i;
+  for (i = 0; i < S.models.length; i++) {
+    var m = S.models[i];
+    if (!m.alive) continue;
+    var dx = m.x - V.x, dy = m.y - V.y;
+    var lx = dx * c + dy * s, ly = dy * c - dx * s;
+    var qx = clamp(lx, -V.bodyL, V.bodyL), qy = clamp(ly, -V.bodyW, V.bodyW);
+    var ex = lx - qx, ey = ly - qy, d = Math.hypot(ex, ey), pen, nx, ny;
+    if (d > 1e-4) {
+      pen = MAN_R - d;                                    /* he is off the plate */
+      if (pen <= 0 || pen <= best) continue;
+      nx = -ex / d; ny = -ey / d;
+    } else {
+      /* and when he is inside it, out by the nearest face rather than away from the
+         middle: a man a foot inside a hull flank belongs a foot outside that flank and
+         not eighteen feet out of the front of the tank */
+      var fx = V.bodyL - Math.abs(lx), fy = V.bodyW - Math.abs(ly);
+      pen = MAN_R + Math.min(fx, fy);
+      if (pen <= best) continue;
+      if (fx < fy) { nx = lx > 0 ? -1 : 1; ny = 0; } else { nx = 0; ny = ly > 0 ? -1 : 1; }
+    }
+    best = pen;
+    _sepX = nx * c - ny * s; _sepY = nx * s + ny * c;
+  }
+  return best;
+}
+function sepDepth(u, o) {
+  unitBody(u); unitBody(o);
+  var dx = u.x - o.x, dy = u.y - o.y, reach = u.bodyL + o.bodyL + 18;
+  if (dx * dx + dy * dy > reach * reach) return 0;        /* the cheap circle first */
+  /* a vehicle against men is the men; everything else is box against box */
+  if (u.cat === 'veh' && o.models) return menPen(u, o);
+  if (o.cat === 'veh' && u.models) {
+    var mp = menPen(o, u);
+    if (mp > 0) { _sepX = -_sepX; _sepY = -_sepY; }
+    return mp;
+  }
+  var ca = Math.cos(u.facing), sa = Math.sin(u.facing);
+  var cb = Math.cos(o.facing), sb = Math.sin(o.facing);
+  var best = 1e9, bx = 1, by = 0, k, nx, ny, pa, pb, dn, ov;
+  for (k = 0; k < 4; k++) {
+    if (k === 0) { nx = ca; ny = sa; }
+    else if (k === 1) { nx = -sa; ny = ca; }
+    else if (k === 2) { nx = cb; ny = sb; }
+    else { nx = -sb; ny = cb; }
+    pa = u.bodyL * Math.abs(nx * ca + ny * sa) + u.bodyW * Math.abs(ny * ca - nx * sa);
+    pb = o.bodyL * Math.abs(nx * cb + ny * sb) + o.bodyW * Math.abs(ny * cb - nx * sb);
+    dn = nx * dx + ny * dy;
+    ov = pa + pb - Math.abs(dn);
+    if (ov <= 0) return 0;
+    if (ov < best) { best = ov; bx = dn < 0 ? -nx : nx; by = dn < 0 ? -ny : ny; }
+  }
+  _sepX = bx; _sepY = by;
+  return best;
 }
 /* The circle a unit is drawn in, and the circle its men are kept inside. It is one
    number for both on purpose: a ring that does not hold the thing it is drawn round is a
@@ -4695,8 +4874,7 @@ function moveUnit(u, dt) {
     var ahead = 26 / d;
     var gz0 = groundZ(u.x, u.y), gz1 = groundZ(u.x + dx * ahead, u.y + dy * ahead);
     var rise = (gz1 - gz0) / Math.min(26, d);
-    var wheeled = u.cat === 'veh' && (u.key === 'ger_sd222' || u.key === 'us_m3' || u.key === 'ger_h251');
-    var grip = u.cat !== 'veh' ? .55 : wheeled ? 1.5 : 1.0;
+    var grip = u.cat !== 'veh' ? .55 : u.def.wheeled ? 1.5 : 1.0;
     sp *= clamp(1 - rise * grip * (rise > 0 ? 1 : .35), .35, 1.12);
     if (u.cat === 'veh') {
       sp *= onRoad(u.x, u.y) ? 1.22 : .94;
@@ -4724,10 +4902,59 @@ function moveUnit(u, dt) {
   var tx = dx / d, ty = dy / d;
 
   var rev = 0;
+  /* Avoidance steers; it does not push back down the line. Blended in as a force and
+     then renormalised, the two terms fought each other: a unit pressed head-on into
+     another is left with a residual of a tenth, whose DIRECTION is whatever survives the
+     near-cancellation, and that tenth was then scaled straight back up to full speed. So
+     it darted about at full pace on a bearing that flipped every frame, while `unwedge`
+     shoved it the other way inside the same frame. One section walking past one tank
+     reversed on itself 198 times in a fourteen-second walk, and that is the rubber band.
+       The push is split by what each half of it is for. The part ACROSS the line steers,
+     which is how a man shoulders round somebody; the part ALONG it brakes, which is what
+     you do when the thing is in front of you. Nothing reverses a unit that is trying to
+     go forwards, and being crowded costs it speed rather than direction. */
+  var px = 0, py = 0;
+  for (var i = 0; i < G.units.length; i++) {
+    var o = G.units[i];
+    if (o === u || o.dead || o.inside || o.gar) continue;
+    var dep = sepDepth(u, o);
+    if (dep <= 0) continue;
+    var w = Math.min(1, dep / Math.max(8, u.bodyW + o.bodyW));
+    px += _sepX * w; py += _sepY * w;
+  }
+  var pushL = Math.hypot(px, py), along = 0;
+  if (pushL > 0) {
+    along = px * tx + py * ty;                           /* the push resolved on the line */
+    var cross = py * tx - px * ty;                       /* and what is left, across it */
+    /* Which side to go round is decided once and then held. Decided afresh every frame
+       it swaps the instant the geometry crosses over, so a section stepped left, found
+       the way marginally clearer to the right, stepped back, and ground along the flank
+       of the thing for the whole order: 57 reversals on a 400-unit walk with one parked
+       Sherman in the way, and it never arrived. A man picks a side and commits to it. */
+    if (G.t > (u.avoidT || 0)) u.avoidS = cross >= 0 ? 1 : -1;
+    u.avoidT = G.t + 1.4;
+  }
+  /* And the swerve is eased in and eased out rather than switched. Applied on the frame
+     a contact appears and dropped on the frame it clears, the wanted bearing jumped
+     sixty degrees and back every few frames -- which cost nothing while the heading was
+     decoration and, once a hull drives on its own nose, comes out as a tank spinning on
+     the spot: 49 changes of turn direction on one drive past three sections, and a
+     section that turned through two and a half revolutions walking past one tank. */
+  var wantA = Math.min(u.cat === 'veh' ? 1.1 : 2.2, pushL * 2.4), am = u.avoidM || 0;
+  am += (wantA - am) * clamp(dt * (wantA > am ? 6 : 2.2), 0, 1);
+  u.avoidM = am;
+  var mx = tx, my = ty;
+  if (am > .01 && u.avoidS) {
+    mx = tx - ty * u.avoidS * am; my = ty + tx * u.avoidS * am;
+    var ml0 = Math.hypot(mx, my) || 1; mx /= ml0; my /= ml0;
+  }
+  if (along < 0) sp *= clamp(1 + along * (u.cat === 'veh' ? .8 : .5), .3, 1);
+
+  var rev = 0, turn = 0;
   if (u.cat === 'veh') {
     /* A driver asked to go a short way behind him backs up rather than turning the
        whole vehicle round in a street the width of the vehicle. */
-    var want = Math.atan2(ty, tx), df = angDiff(u.facing, want);
+    var want = Math.atan2(my, mx), df = angDiff(u.facing, want);
     if (Math.abs(df) > 2.1 && d < 150) {
       rev = 1;
       df = angDiff(u.facing, want + Math.PI);
@@ -4735,10 +4962,29 @@ function moveUnit(u, dt) {
     }
     /* Weight again: every vehicle in the game swung its hull round at the same rate,
        so a Tiger II turned as smartly as a Daimler and there was nothing to be gained
-       by getting behind the heavy thing except the thinner plate. */
-    var turn = (u.def.hp > 1000 ? 1.5 : u.def.hp > 500 ? 2.1 : 2.9) * dt;
+       by getting behind the heavy thing except the thinner plate.
+         And tracks and wheels do not turn the same way, which until now they did: asked
+       for a hundred and eighty degrees, a Sherman, a Tiger II, a Universal Carrier and a
+       half-track all came round through the same 3.26 radians and all drove between 53
+       and 67 units of ground doing it. A tracked vehicle counter-rotates its tracks and
+       turns where it stands, so its speed falls away with the heading error and is gone
+       by the time the error is most of a right angle: it pivots, then drives off. A
+       steered axle only bites while the wheels are rolling, so a half-track or a car
+       keeps its pace through the turn, comes round in an arc, and turns more slowly the
+       slower it is going -- which is also why it is the one that has to back up rather
+       than turn round in a street its own width. */
+    turn = (u.def.hp > 1000 ? 1.5 : u.def.hp > 500 ? 2.1 : 2.9) * dt;
+    var err = Math.abs(df);
+    u.pivot = 0;
+    if (u.def.wheeled) {
+      turn *= clamp((u.sp || 0) / Math.max(1, u.def.speed * .45), .12, 1);
+      sp *= err > 1.0 ? .7 : err > .5 ? .85 : 1;
+    } else {
+      var kk = clamp(1 - err / .9, 0, 1);
+      sp *= kk * (2 - kk);
+      if (err > .5) u.pivot = 1;
+    }
     u.facing += clamp(df, -turn, turn);
-    if (Math.abs(df) > 1.0) sp *= .25; else if (Math.abs(df) > .5) sp *= .6;
     /* Weight. Nothing on tracks steps off at speed or stops on the spot, and a tank
        that did read as a model being slid across a table. */
     var accel = (u.def.hp > 1000 ? 70 : u.def.hp > 500 ? 110 : 180) * dt;
@@ -4750,38 +4996,41 @@ function moveUnit(u, dt) {
     var cur = u.sp || 0;
     u.sp = cur + clamp(sp - cur, -accel * 2.2, accel);
     sp = Math.max(0, u.sp);
+    /* And it goes where its nose is pointing. The position was integrated along the
+       bearing to the next waypoint and `u.facing` appeared nowhere in it, so the heading
+       was decoration: a hull crabbed sideways and backwards at up to a hundred degrees
+       off its own front plate, at full speed, with the turn rate and the whole weight
+       model doing nothing but swinging a drawing round afterwards. Driven on its own
+       nose, the speed falloff above stops being a number and becomes the manoeuvre --
+       tracks pivot where they stand and then drive off, wheels have to drive the turn. */
+    mx = Math.cos(u.facing) * (rev ? -1 : 1);
+    my = Math.sin(u.facing) * (rev ? -1 : 1);
   } else {
     /* a man turns onto a new bearing rather than pivoting on the spot */
-    u.facing += clamp(angDiff(u.facing, Math.atan2(ty, tx)), -6.5 * dt, 6.5 * dt);
+    u.facing += clamp(angDiff(u.facing, Math.atan2(my, mx)), -6.5 * dt, 6.5 * dt);
   }
 
-  /* separation from neighbours so squads do not stack into one dot */
-  var px = 0, py = 0;
-  for (var i = 0; i < G.units.length; i++) {
-    var o = G.units[i];
-    if (o === u || o.dead || o.inside || o.gar) continue;
-    var od = dsq(u.x, u.y, o.x, o.y), rr = unitRadius(u) + unitRadius(o);
-    if (od < rr * rr && od > 1) {
-      var dd = Math.sqrt(od);
-      px += (u.x - o.x) / dd * (1 - dd / rr); py += (u.y - o.y) / dd * (1 - dd / rr);
-    }
-  }
-  var mx = tx + px * .9, my = ty + py * .9, ml = Math.hypot(mx, my) || 1;
-  if (rev) { mx = tx; my = ty; ml = 1; }                 /* backing up, no jostling */
-  var nx = u.x + mx / ml * sp * dt, ny = u.y + my / ml * sp * dt;
+  var nx = u.x + mx * sp * dt, ny = u.y + my * sp * dt;
   if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
-  else if (walkable(nx, u.y)) u.x = nx;
-  else if (walkable(u.x, ny)) u.y = ny;
+  /* and the ways round are a man's, not a hull's. Sliding a vehicle along whichever
+     world axis happened to be clear is the same fault as driving it off its nose: it
+     put a tank sideways at full speed with no change of heading at all. A hull noses
+     round a corner, which is a small swing with the front plate following it. */
+  else if (u.cat !== 'veh' && walkable(nx, u.y)) u.x = nx;
+  else if (u.cat !== 'veh' && walkable(u.x, ny)) u.y = ny;
   else {
     /* Neither straight on nor along either axis: a corner, or a doorway full of the
        section in front. Before asking for a new path, which from here is usually the
        same path, try the step swung off the line a little, then a lot, the way a man
        shoulders round an obstacle rather than standing at it. */
-    var sa0 = Math.atan2(my, mx), stepped = false;
-    for (var sw = 1; sw <= 3 && !stepped; sw++) {
+    var sa0 = Math.atan2(my, mx), stepped = false, swN = u.cat === 'veh' ? 1 : 3;
+    for (var sw = 1; sw <= swN && !stepped; sw++) {
       for (var sd = -1; sd <= 1 && !stepped; sd += 2) {
         var swa = sa0 + sd * sw * .6, swx = u.x + Math.cos(swa) * sp * dt, swy = u.y + Math.sin(swa) * sp * dt;
-        if (walkable(swx, swy)) { u.x = swx; u.y = swy; stepped = true; }
+        if (walkable(swx, swy)) {
+          u.x = swx; u.y = swy; stepped = true;
+          if (u.cat === 'veh') u.facing += clamp(angDiff(u.facing, swa), -turn, turn);
+        }
       }
     }
     /* and if it cannot get round at all, ask again -- for the way to where it was
@@ -4805,7 +5054,12 @@ function moveUnit(u, dt) {
   var gapNow = Math.hypot(wantX - u.x, wantY - u.y);
   var good = u.lastGap === undefined ? sp * dt : u.lastGap - gapNow;
   u.lastGap = gapNow;
-  if (good < sp * dt * .3) {
+  /* A hull turning on its tracks is making no ground by design, so it is not stuck. Left
+     out, a Sherman asked for an about-turn spent a second and a half pivoting, tripped
+     the timer twice on the way round and asked for the same path back: the battle probe
+     came back with half again as many searches for no change to any route. */
+  if (u.pivot) { u.blockT = 0; u.blockN = 0; }
+  else if (good < sp * dt * .3) {
     u.blockT = (u.blockT || 0) + dt;
     if (u.blockT > .6 && u.path) {
       u.blockT = 0;
@@ -4852,17 +5106,26 @@ function unwedge(u, dt) {
   for (i = 0; i < G.units.length; i++) {
     var o = G.units[i];
     if (o === u || o.dead || o.inside || o.gar) continue;
-    var rr = unitRadius(u) + unitRadius(o), dd = dsq(u.x, u.y, o.x, o.y);
-    if (dd >= rr * rr || dd < .01) continue;
-    var d = Math.sqrt(dd), w = 1 - d / rr;
-    /* the heavier thing gives way less: a section steps round a Tiger, not the reverse */
-    var give = o.cat === 'veh' && u.cat !== 'veh' ? 1.6 : u.cat === 'veh' && o.cat !== 'veh' ? .35 : 1;
-    px += (u.x - o.x) / d * w * give; py += (u.y - o.y) / d * w * give; n++;
+    var dep = sepDepth(u, o);
+    if (dep <= 0) continue;
+    /* The heavier thing gives way less, and how much less comes off the two bodies
+       rather than off a table. Written as a factor on a vector that was then normalised
+       to a unit length three lines later, the whole rule cancelled out exactly -- and
+       what survived it was the PUSHED unit's own speed, so a Sherman backed away from a
+       rifle section faster than the section backed away from the Sherman, which is the
+       precise inverse of what the comment above claims. */
+    var give = sepMass(o) / (sepMass(u) + sepMass(o));
+    /* And it is a spring rather than a switch. Normalised, a pair overlapping by a tenth
+       of a unit came apart at the same rate as a pair standing on the same spot, and
+       that rate fell to nothing the instant they cleared: a step at the boundary, which
+       is a limit cycle waiting for the pathfinder to pull the unit straight back into
+       it. Priced on the depth it is continuous, and a crowd eases apart and settles. */
+    px += _sepX * dep * give; py += _sepY * dep * give; n++;
   }
   if (!n) return;
   var ml = Math.hypot(px, py);
   if (ml < 1e-4) return;
-  var st = Math.min(u.speed * .5, 40) * dt;
+  var st = Math.min(ml * 6, 60) * dt;
   var nx = u.x + px / ml * st, ny = u.y + py / ml * st;
   if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
   else if (walkable(nx, u.y)) u.x = nx;
@@ -6858,6 +7121,161 @@ function damageModel(u, m, amt, src) {
     if (aliveModels(u) === 0) killUnit(u, src);
   }
 }
+/* ---- what is left of a vehicle ------------------------------------------------------
+   A tank died by being drawn in a different colour. The effects round it were never the
+   problem -- there is a full staged burst, a real crater, two minutes of smoke and
+   flame and a fire that lights the street -- but the BODY did not change: the same hull
+   buffer, the same shape, standing level on its suspension as though it had parked, with
+   the turret nudged three units and turned a quarter of a radian, which at any distance
+   a player looks from is no change at all. And most of that nudge was not a throw: the
+   wreck branch left off the mount offset the live draw applies, so how far a turret
+   appeared to move depended on where its ring happened to sit.
+     What a burnt-out hull actually looks like is four things, and each of them is a
+   number the draw already had somewhere. It is DOWN, because the suspension is gone and
+   the belly is on the ground. It is OVER, because it went down unevenly, or because it
+   was on a bank when it stopped. It is STRIPPED: the skirts, the stowage and a good
+   deal of plate are off it and lying about. And often the turret is OFF -- the
+   ammunition goes up, the roof is the weakest thing holding it and the whole mount lands
+   somewhere else entirely, which is the single most recognisable shape of a dead tank.
+     None of it needs new physics. `spawnChunk` is a rigid body with gravity, bounce,
+   friction and a mound to land on, and it takes any colour, so torn plate is the same
+   system the masonry uses. The turret is one more body integrated beside the wreck's own
+   clock and drawn on `m4lean`, whose three rotations are a free tumble. */
+function vehPaint(k) {
+  var V = VMODEL[k];
+  if (!V) return '#4a4f3e';
+  if (V.paint) return V.paint;
+  /* The colour that covers the most of it, weighted by AREA. Counted by face instead,
+     the answer is whatever has the most faces -- and `box()` hems every plate with bevel
+     strips, so a hull's face count is dominated by slivers a few units across and the
+     paint that came back was a lit derivative of a fitting. Torn plate then landed in a
+     pale grey nobody on the roster is painted, which reads as builder's rubble rather
+     than as a tank coming apart. */
+  var n = {}, best = null, bn = 0, i, j, c, v, x0, x1, y0, y1, z0, z1, a;
+  for (i = 0; i < V.hull.length; i++) {
+    c = V.hull[i].c;
+    if (!c) continue;
+    v = V.hull[i].v;
+    x0 = y0 = z0 = 1e9; x1 = y1 = z1 = -1e9;
+    for (j = 0; j < v.length; j++) {
+      if (v[j][0] < x0) x0 = v[j][0];
+      if (v[j][0] > x1) x1 = v[j][0];
+      if (v[j][1] < y0) y0 = v[j][1];
+      if (v[j][1] > y1) y1 = v[j][1];
+      if (v[j][2] < z0) z0 = v[j][2];
+      if (v[j][2] > z1) z1 = v[j][2];
+    }
+    /* the two longest sides of the face's own box, which is its area to within a fold */
+    a = (x1 - x0) * (y1 - y0) + (y1 - y0) * (z1 - z0) + (x1 - x0) * (z1 - z0);
+    n[c] = (n[c] || 0) + a;
+    if (n[c] > bn) { bn = n[c]; best = c; }
+  }
+  return (V.paint = best || '#4a4f3e');
+}
+/* The mount's own place on the hull, which the live draw works out and the wreck draw
+   did not. */
+function mountAt(M, x, y, a) {
+  var c = Math.cos(a), s = Math.sin(a), tx = M.turX || 0, ty = M.turY || 0;
+  return { x: x + c * tx - s * ty, y: y + s * tx + c * ty };
+}
+function makeWreck(u) {
+  unitBody(u);
+  var M = VMODEL[u.key] || {}, gz = groundZ(u.x, u.y), paint = vehPaint(u.key);
+  var heavy = u.def.hp > 500;
+  /* Which of the three deaths this was. A turret comes off when the ammunition goes,
+     which wants a mount to come off and something to set it alight, so a casemate and a
+     lorry are never it. The rest burn out, and one in six goes over far enough that the
+     hull is plainly broken rather than merely dead. */
+  var roll = Math.random();
+  var blown = !M.fixed && M.tur && roll < (heavy ? .34 : .18);
+  var broke = !blown && roll > .84;
+  var w = {
+    x: u.x, y: u.y, a: u.facing, turret: u.turret,
+    w: u.bodyL * 2, h: u.bodyW * 2,
+    t: 0, side: u.side, key: u.key,
+    /* down on the belly, and over. A broken back goes a long way over; a burnt-out hull
+       settles a few degrees onto whichever side let go first. */
+    sink: 2.2 + Math.random() * 2.4,
+    lean: (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.16, .30) : rnd(.02, .10)),
+    nose: (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.08, .17) : rnd(.01, .06)),
+    skirts: !blown && !broke && Math.random() < .45,     /* what is left of them */
+    slew: (Math.random() < .5 ? -1 : 1) * rnd(.12, .9),  /* the traverse gear has gone */
+    blown: blown
+  };
+  if (blown) {
+    /* The mount leaves the ring on the charge under it, so it goes up and out rather
+       than sideways, and it tumbles because nothing is holding it. Where it lands is
+       where it is drawn from then on. */
+    var mp = mountAt(M, u.x, u.y, u.facing), ba = rnd(0, TAU), bs = rnd(16, 40);
+    /* up rather than out, and not very far either way. Given a blast's own speed it went
+       seventeen metres into the air and seventeen metres down the street, which is a
+       stunt rather than a tank: what a mount actually does is lift off its race, turn
+       over once or twice and come down beside the hull. And it is always spinning --
+       written as a range through zero, one throw in a hundred came down without having
+       turned at all, which looks like a turret that was gently lifted off. */
+    var spin = function () { return (Math.random() < .5 ? -1 : 1) * rnd(1.6, 4.2); };
+    w.fly = {
+      x: mp.x, y: mp.y, z: gz + (M.mountZ || 20),
+      vx: Math.cos(ba) * bs, vy: Math.sin(ba) * bs, vz: rnd(82, 132),
+      a: u.turret === undefined ? u.facing : u.turret,
+      lean: 0, nose: 0,
+      wa: spin(), wl: spin(), wn: spin()
+    };
+    burstFx(mp.x, mp.y, 44, 0, (M.mountZ || 20) + 8);
+  }
+  G.wrecks.push(w);
+  /* And the plate that came off it, as bodies rather than as a puff. Half the vehicle's
+     own paint and half scorched steel, because what tears off a burning tank is both. */
+  var np = Math.min(11, Math.round(u.bodyL * u.bodyW / 62)) + (blown ? 4 : 0);
+  for (var i = 0; i < np; i++) {
+    /* Torn plate stays by the hull it came off. Given a shell's own speed it went a
+       hundred units and more -- across the street and into the next crater -- which
+       reads as somebody having dropped a load of crates rather than as a tank coming
+       apart. A track link, a fender, a bin and a length of skirt land beside it. */
+    var pa = rnd(0, TAU), pd = rnd(4, u.bodyL * .7), ps = rnd(10, 40);
+    spawnChunk(u.x + Math.cos(pa) * pd, u.y + Math.sin(pa) * pd, gz + rnd(5, 16),
+               rnd(3.5, 9), rnd(3, 7), rnd(1.4, 3.2),
+               Math.random() < .5 ? paint : '#332f2a',
+               Math.cos(pa) * ps, Math.sin(pa) * ps, rnd(40, 105));
+  }
+  return w;
+}
+/* The mount in the air, on its own clock beside the wreck's. One body, so it is stepped
+   here rather than through `G.debris`: that list carries boxes and this is a turret. */
+function stepHulk(w, dt) {
+  var f = w.fly;
+  f.vz -= RUIN_G * dt;
+  f.x += f.vx * dt; f.y += f.vy * dt; f.z += f.vz * dt;
+  f.a += f.wa * dt; f.lean += f.wl * dt; f.nose += f.wn * dt;
+  var gz = groundZ(f.x, f.y) + 6;
+  if (f.z > gz) return;
+  f.z = gz;
+  var imp = -f.vz;
+  if (imp < RUIN_G * .2) {
+    /* Down for good, and settled into a pose a mount can actually come to rest in. Left
+       at whatever the tumble happened to reach, one landed on its mantlet with the gun
+       pointing at the sky, which reads as a flagpole, and another came down far enough
+       past its side to show its own open bottom -- a turret has no floor, the back faces
+       are culled, and what that draws is a black hole in the ground beside the tank.
+       Heeled over rather than rolled through, with the gun within twenty degrees of
+       level, it is a turret lying beside the hull it came off. */
+    w.fly = null;
+    w.tx = f.x; w.ty = f.y; w.tz = f.z;
+    w.ta = f.a;
+    w.tLean = (f.lean < 0 ? -1 : 1) * rnd(.12, 1.0);
+    w.tNose = (f.nose < 0 ? -1 : 1) * rnd(.02, .35);
+    addCover(f.x, f.y, 26, 3, 'wreck', null, 900);
+    G.gridDirty = 1;
+    sfx('hit', f.x, f.y);
+    var dz = spawnFx('dust', f.x, f.y, 16);
+    if (dz) { dz.c = 0; dz.op = .5; }
+    return;
+  }
+  f.vz = imp * .22;
+  f.vx *= .5; f.vy *= .5;
+  f.wa *= .4; f.wl *= .3; f.wn *= .3;
+  if (imp > 100) { sfx('hit', f.x, f.y); addShake(2.2); }
+}
 function killUnit(u, src) {
   if (u.dead) return;
   u.dead = true;
@@ -6887,9 +7305,7 @@ function killUnit(u, src) {
   if (u.towedBy) { u.towedBy.tow = null; u.towedBy = null; }
   if (u.tow) { u.tow.towedBy = null; u.tow = null; }
   if (u.cat === 'veh') {
-    G.wrecks.push({ x: u.x, y: u.y, a: u.facing, turret: u.turret,
-                    w: u.def.hp > 500 ? 82 : 55, h: u.def.hp > 500 ? 38 : 28,
-                    t: 0, side: u.side, key: u.key });
+    makeWreck(u);
     /* and the hull stays where it burned, thirty tons of plate in the middle of the
        street: heavy cover for a tank, medium for a car, and it does not get shelled away */
     addCover(u.x, u.y, u.def.hp > 500 ? 34 : 26, u.def.hp > 500 ? 3 : 2, 'wreck', null, 900);
@@ -7151,6 +7567,7 @@ function updateShots(dt) {
   for (var k2 = 0; k2 < G.wrecks.length; k2++) {
     var wk = G.wrecks[k2];
     wk.t += dt;
+    if (wk.fly) stepHulk(wk, dt);
     /* A hull burns for two minutes and `smokeColumns` has been attenuating the sight
        line through it for as long as detection has been a rate. Nothing drew any of it
        after the six puffs it died with: the eye was being slowed by smoke that was not
@@ -7637,8 +8054,10 @@ function finishWork(s) {
     }
     /* the ring is measured off the formation, and this crew's formation is the work's own
        `lay` list rather than `squadOffset`: it spreads to sixty units where a section
-       spreads to forty-eight, so it has to be measured again now the men have been moved */
-    fitRadius(g);
+       spreads to forty-eight, so it has to be measured again now the men have been moved
+       -- and so does the body it is separated on, which is read off the same offsets */
+    g.bodyL = g.bodyW = undefined;
+    fitRadius(g); unitBody(g);
   }
   if (s.own === G.own) { toast(W.name + ' up'); sfx('click'); }
 }
@@ -23312,15 +23731,32 @@ function drawWrecks3D(v) {
   G.wrecks.forEach(function (w) {
     var B = MODELS.veh[w.key]; if (!B) return;
     var t = [.28, .27, .24];
-    drawGeom(B.hull, m4model(w.x, w.y, groundZ(w.x, w.y), w.a, 1), false, t);
-    var M = VMODEL[w.key], wz = groundZ(w.x, w.y);
-    /* a turret is thrown half off its ring; a casemate gun cannot leave its frame, so it
-       stays in the mantlet and droops */
-    if (M.fixed) {
-      var tx = w.x + Math.cos(w.a) * (M.turX || 0) - Math.sin(w.a) * (M.turY || 0);
-      var ty = w.y + Math.sin(w.a) * (M.turX || 0) + Math.cos(w.a) * (M.turY || 0);
-      drawGeom(B.tur, m4model(tx, ty, wz + M.mountZ - 1, w.turret || w.a, 1), false, t);
-    } else drawGeom(B.tur, m4model(w.x + 3, w.y - 2, wz + M.mountZ - 3, (w.turret || w.a) + .5, 1), false, t);
+    var M = VMODEL[w.key], wz = groundZ(w.x, w.y) - (w.sink || 0);
+    var hm = m4lean(w.x, w.y, wz, w.a, 1, w.lean || 0, w.nose || 0);
+    drawGeom(B.hull, hm, false, t);
+    /* the skirts are the first thing off a burning tank, and what is left of the stowage
+       goes with them, so a hull that lost them is drawn without them */
+    if (B.skirts && w.skirts !== false) drawGeom(B.skirts, hm, false, t);
+    if (!B.tur) return;
+    if (w.fly) {
+      /* still in the air */
+      var f = w.fly;
+      drawGeom(B.tur, m4lean(f.x, f.y, f.z, f.a, 1, f.lean, f.nose), false, t);
+      return;
+    }
+    if (w.tx !== undefined) {
+      /* and where it came down, lying at the angle it stopped at */
+      drawGeom(B.tur, m4lean(w.tx, w.ty, w.tz, w.ta, 1, w.tLean, w.tNose), false, t);
+      return;
+    }
+    /* Still on its ring: dropped onto the race and slewed off the bearing it was laid
+       on, which is what a mount does when the traverse gear goes. It is drawn at its own
+       mount offset -- the live draw applies one and the wreck draw did not, so a turret
+       appeared to move by however far its ring happens to sit off the hull's centre and
+       the code comment called that a throw. */
+    var mp = mountAt(M, w.x, w.y, w.a);
+    drawGeom(B.tur, m4lean(mp.x, mp.y, wz + M.mountZ - (M.fixed ? 1 : 2.6), (w.turret || w.a) + (M.fixed ? 0 : (w.slew || 0)),
+                           1, w.lean || 0, w.nose || 0), false, t);
   });
   /* A man going down, and then a man lying where he went down. Two layouts a side so
      a street is not paved with one silhouette repeated, and the loose helmet three units
@@ -23928,7 +24364,7 @@ function hitsUnit(u, wx, wy, r) {
   var rad = selRadius(u) + pad;
   if (dsq(wx, wy, u.x, u.y) < rad * rad) return true;
   if (!u.models) return false;
-  var mr = 11 + pad;
+  var mr = MAN_R + pad;
   for (var k = 0; k < u.models.length; k++) {
     var m = u.models[k];
     if (m.alive && dsq(wx, wy, m.x, m.y) < mr * mr) return true;

@@ -1571,6 +1571,242 @@ for (const device of TARGETS) {
              `${wreck.down.vol} of ${wreck.vol} units of stone kept, heap ${wreck.down.mound} deep`
            : '');
 
+
+  /* --- Bodies. Every collision in the game was one circle on two markers, sized at half
+     a vehicle's LENGTH off its hit points -- so a Sherman carried a metre and a half of
+     open ground either side of its tracks, and a rifle section walking past one was held
+     off with eleven units of daylight on one bearing and stood nine units inside the hull
+     on another. Both halves of that are what the player sees, and neither shows in a
+     picture: a tank stopping short and a tank standing in a man look identical from
+     above. So the row walks the pair together on eight bearings and measures what was
+     actually between the two MODELS at the moment the push fired, off the model faces
+     rather than off anything the game carries. --- */
+  const bodies = await page.evaluate(() => {
+    const keep = window.G.units.slice();
+    const MAN = 11;
+    function hullBox(key) {
+      const V = window.VMODEL[key];
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      const eat = fs => { if (!fs) return; for (const f of fs) for (const v of f.v) {
+        if (v[0] < x0) x0 = v[0]; if (v[0] > x1) x1 = v[0];
+        if (v[1] < y0) y0 = v[1]; if (v[1] > y1) y1 = v[1]; } };
+      eat(V.hull); eat(V.skirts);
+      return { x0, x1, y0, y1 };
+    }
+    function boxDist(cx, cy, yaw, b, px, py) {
+      const c = Math.cos(yaw), s = Math.sin(yaw), dx = px - cx, dy = py - cy;
+      const lx = dx * c + dy * s, ly = dy * c - dx * s;
+      return Math.hypot(Math.max(b.x0 - lx, 0, lx - b.x1), Math.max(b.y0 - ly, 0, ly - b.y1));
+    }
+    const drop = u => { const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); };
+    /* A CORRIDOR, and whether one was found is reported rather than assumed. Asked for a
+       340-unit square with no cover anywhere in it, Ortona has nowhere that qualifies --
+       so the search came back empty, `sx` and `sy` stayed at nought, and every drill was
+       staged in the map's corner where nothing is walkable. What that reads as is a row
+       measuring a tank that spends the whole drill walking out to the nearest ground it
+       can stand on, which is not the row anybody wrote. */
+    let sx = 0, sy = 0, found = false;
+    for (let ty = 400; ty < window.WORLD.h - 400 && !found; ty += 40)
+      for (let tx = 400; tx < window.WORLD.w - 400 && !found; tx += 40) {
+        let ok = true;
+        for (let a = -190; a <= 190 && ok; a += 20)
+          for (let b = -70; b <= 70 && ok; b += 20)
+            if (!window.walkable(tx + a, ty + b)) ok = false;
+        /* and what the drill needs off the ground, which is not "no cover anywhere". By
+           the time these rows run three battles have been fought on Ortona and the map
+           is covered in craters, every one of which is a piece of cover, so a cover-free
+           patch does not exist and the search fell to the map's middle with nothing
+           saying so. What matters to a vehicle driving and turning is what SLOWS it. */
+        for (let a = -120; a <= 120 && ok; a += 20)
+          for (let b = -60; b <= 60 && ok; b += 20)
+            if (window.onRubble(tx + a, ty + b) || window.inWire(tx + a, ty + b) ||
+                window.inHogs(tx + a, ty + b)) ok = false;
+        if (ok) { sx = tx; sy = ty; found = true; }
+      }
+    if (!found) { sx = window.WORLD.w / 2; sy = window.WORLD.h / 2; }
+    /* the body against the hull, over the whole roster */
+    let worstL = 0, worstW = 0, n = 0;
+    for (const k of Object.keys(window.UNITS)) {
+      const d = window.UNITS[k];
+      if (d.cat !== 'veh' || !window.VMODEL[k]) continue;
+      const b = hullBox(k), u = window.spawnUnit(d.side, k, sx, sy, 0);
+      window.unitBody(u);
+      worstL = Math.max(worstL, u.bodyL / Math.max(b.x1, -b.x0));
+      worstW = Math.max(worstW, u.bodyW / Math.max(b.y1, -b.y0));
+      n++; drop(u);
+    }
+    /* and the gap at contact, over eight bearings */
+    const rows = [];
+    for (const [ak, as, bk, bs] of [['us_sher', 'us', 'us_rifle', 'us'],
+                                    ['us_sher', 'us', 'us_sher', 'us']]) {
+      const A = window.spawnUnit(as, ak, sx, sy, 0), B = window.spawnUnit(bs, bk, sx + 700, sy, Math.PI);
+      const ab = hullBox(ak), bb = window.VMODEL[bk] ? hullBox(bk) : null;
+      let lo9 = 1e9, hi9 = -1e9;
+      for (let i = 0; i < 8; i++) {
+        const br = i / 8 * Math.PI * 2;
+        A.x = sx; A.y = sy; A.facing = 0;
+        const put = dd => {
+          B.x = sx + Math.cos(br) * dd; B.y = sy + Math.sin(br) * dd;
+          B.facing = br + Math.PI;
+          if (B.models) { const c = Math.cos(B.facing), s = Math.sin(B.facing);
+            for (const m of B.models) { m.x = B.x + m.ox * c - m.oy * s; m.y = B.y + m.ox * s + m.oy * c; } }
+        };
+        let lo = 2, hi = 520;
+        put(hi);
+        if (window.sepDepth(A, B) > 0) { lo9 = -999; continue; }
+        for (let it = 0; it < 44; it++) {
+          const mid = (lo + hi) / 2; put(mid);
+          if (window.sepDepth(A, B) > 0) lo = mid; else hi = mid;
+        }
+        put(hi);
+        let gap = 1e9;
+        if (B.models) {
+          for (const m of B.models) if (m.alive) gap = Math.min(gap, boxDist(A.x, A.y, A.facing, ab, m.x, m.y) - MAN);
+        } else {
+          const c = Math.cos(B.facing), s = Math.sin(B.facing);
+          for (const cx of [bb.x0, bb.x1]) for (const cy of [bb.y0, bb.y1])
+            gap = Math.min(gap, boxDist(A.x, A.y, A.facing, ab, B.x + cx * c - cy * s, B.y + cx * s + cy * c));
+          for (const cx of [ab.x0, ab.x1]) for (const cy of [ab.y0, ab.y1])
+            gap = Math.min(gap, boxDist(B.x, B.y, B.facing, bb, A.x + cx, A.y + cy));
+        }
+        lo9 = Math.min(lo9, gap); hi9 = Math.max(hi9, gap);
+      }
+      rows.push({ pair: ak + ' vs ' + bk, lo: +lo9.toFixed(1), hi: +hi9.toFixed(1) });
+      drop(A); drop(B);
+    }
+    /* tracks against wheels, the same 180 asked of both */
+    const turns = [];
+    for (const k of ['us_sher', 'ger_sd222']) {
+      window.G.units.length = 0;
+      /* and inside the ground the spot search actually cleared. Staged at 200 either
+         side, both ends fell outside the 170-unit box that was checked, so both vehicles
+         spent the drill walking out to the nearest ground they could stand on and the
+         about-turn never happened at all. */
+      const u = window.spawnUnit(window.UNITS[k].side, k, sx + 150, sy, 0);
+      /* the waypoint is set by hand rather than asked for. `orderMove` goes through the
+         pathfinder, which on a real map hands back a route that curves away instead of
+         doubling back, so the drill measured half a radian of correction and not an
+         about-turn at all. */
+      u.order = 'move';
+      u.path = [{ x: sx - 150, y: sy }];
+      u.pi = 0; u.pathStamp = window.gridStamp;
+      let drift = 0, turned = 0, px = u.x, py = u.y, pf = u.facing;
+      for (let i = 0; i < 1400; i++) {
+        window.G.t += 1 / 60;
+        window.updateUnit(u, 1 / 60);
+        let df = u.facing - pf;
+        while (df > Math.PI) df -= 2 * Math.PI;
+        while (df < -Math.PI) df += 2 * Math.PI;
+        turned += Math.abs(df);
+        if (Math.abs(df) > .004) drift += Math.hypot(u.x - px, u.y - py);
+        px = u.x; py = u.y; pf = u.facing;
+        if (Math.hypot(u.x - (sx - 150), u.y - sy) < 30) break;
+      }
+      turns.push({ key: k, wheeled: !!u.def.wheeled, drift: Math.round(drift), turned: +turned.toFixed(2) });
+    }
+    window.G.units.length = 0;
+    keep.forEach(e => window.G.units.push(e));
+    window.rebuildGrid();
+    return { n, worstL: +worstL.toFixed(2), worstW: +worstW.toFixed(2), rows, turns, sx, sy, found };
+  });
+  ok('a hull is the shape of a hull, and what it is kept off is the men',
+     bodies.n >= 10 && bodies.worstL < 1.02 && bodies.worstW < 1.02 &&
+     bodies.rows.every(r => r.lo > -3 && r.hi < 6),
+     `${bodies.n} vehicles, the collision body at most ${bodies.worstL}x their own half-length and ` +
+     `${bodies.worstW}x their half-beam; ` +
+     bodies.rows.map(r => `${r.pair} meet with ${r.lo} to ${r.hi} units between the models over 8 bearings`).join('; '));
+  ok('tracks turn where they stand and wheels have to drive the turn',
+     bodies.found && bodies.turns.length === 2 &&
+     bodies.turns[0].turned > 2.6 && bodies.turns[1].turned > 2.6 &&
+     bodies.turns[0].drift < 40 && bodies.turns[1].drift > 60 &&
+     bodies.turns[1].drift > bodies.turns[0].drift * 2,
+     (bodies.found ? '' : 'NO CLEAR CORRIDOR FOUND; ') +
+     bodies.turns.map(t => `${t.key} (${t.wheeled ? 'wheels' : 'tracks'}) drove ${t.drift} units through ` +
+                           `${t.turned} rad of about-turn`).join(', '));
+
+  /* --- And a dead vehicle. The effects round one were never the fault: there is a full
+     burst, a real crater, two minutes of smoke and a fire that lights the street. The
+     BODY never changed -- the same hull buffer, standing level on its suspension, drawn
+     in a darker colour, with the turret nudged three units. From above that is a dark
+     tank beside a live one, which is why no screenshot ever said so. The row renders the
+     same Sherman alive and then dead from one camera and counts the pixels between them,
+     against a control of the live frame rendered twice. --- */
+  const hulk = await page.evaluate(({ sx, sy }) => {
+    const keep = window.G.units.slice(), gl = window.gl;
+    const W = () => gl.drawingBufferWidth, H = () => gl.drawingBufferHeight;
+    /* three renders a grab: `render()` refreshes the fog and uploads the decal canvas
+       every third frame, so two consecutive frames of a still scene differ by whichever
+       of those fell between them -- measured, that control was larger than the thing
+       being measured. Grabbing on the period puts the control back at nothing. */
+    function grab() {
+      const px = new Uint8Array(W() * H() * 4);
+      window.render(); window.render(); window.render();
+      gl.readPixels(0, 0, W(), H(), gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return px;
+    }
+    function lift(a, b) {
+      let hit = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+        if (d > 6) hit++;
+      }
+      return hit;
+    }
+    window.G.units.length = 0; window.G.wrecks.length = 0; window.G.debris.length = 0;
+    window.G.rub.length = 0; window.G.fx.length = 0; window.G.corpses.length = 0;
+    /* and the camera shake, which is the one thing in the frame that is random per
+       RENDER: `shake.t` is wound down inside `frame()` alone, so a shake left running by
+       anything earlier jitters the camera a few pixels on every draw and the control of
+       two identical frames comes back at tens of thousands of pixels */
+    window.shake.t = 0; window.shake.mag = 0;
+    const u = window.spawnUnit('us', 'us_sher', sx, sy, .7);
+    window.CAM.tx = sx; window.CAM.ty = sy; window.CAM.dist = 250;
+    window.CAM.yaw = 1.1; window.CAM.pitch = .62;
+    /* and the frame is warmed before anything is measured. A camera moved to a new
+       place takes a dozen frames to settle -- the fog is refreshed every third one and
+       eases toward what it should be -- so a control of two "identical" frames came back
+       at 41,975 pixels of 1.44 million, larger than the thing being measured. */
+    for (let i = 0; i < 14; i++) window.render();
+    window.G.units.forEach(q => { q.vUs = q.vGer = true; });
+    window.G.blds.forEach(q => { q.vUs = q.vGer = true; });
+    const a1 = grab(), a2 = grab(), ctrl = lift(a1, a2);
+    /* and the shapes the death can take, counted over enough of them to be a share */
+    let off = 0, cant = 0;
+    for (let i = 0; i < 40; i++) {
+      window.G.wrecks.length = 0; window.G.debris.length = 0;
+      window.makeWreck(u);
+      const w = window.G.wrecks[0];
+      if (w.blown) off++;
+      cant += Math.hypot(w.lean, w.nose) * 180 / Math.PI;
+    }
+    /* one of them, staged with the turret down so the picture is the same every run */
+    window.G.units.length = 0; window.G.wrecks.length = 0; window.G.debris.length = 0;
+    window.makeWreck(u);
+    const w = window.G.wrecks[0];
+    const plate = window.G.debris.length;
+    w.blown = true; w.fly = null; w.skirts = false;
+    w.tx = sx + 46; w.ty = sy + 20; w.tz = window.groundZ(sx + 46, sy + 20) + 6;
+    w.ta = 1.9; w.tLean = 1.4; w.tNose = .3;
+    /* the plate and the blast are cleared before the shutter. `makeWreck` throws its own
+       burst when the mount comes off, and a fireball forty units across from a camera two
+       hundred and fifty away covers most of the frame -- so the row came back at 846,319
+       pixels and was measuring the explosion rather than the body it exists to measure. */
+    window.G.debris.length = 0; window.G.fx.length = 0; window.G.shots.length = 0;
+    window.shake.t = 0; window.shake.mag = 0;
+    const b = grab(), moved = lift(a1, b);
+    window.G.wrecks.length = 0; window.G.debris.length = 0; window.G.rub.length = 0;
+    window.G.units.length = 0;
+    keep.forEach(e => window.G.units.push(e));
+    window.rebuildGrid();
+    return { ctrl, moved, off, cant: +(cant / 40).toFixed(1), plate, tot: W() * H() };
+  }, { sx: bodies.sx, sy: bodies.sy });
+  ok('a dead vehicle is a different shape, not a darker colour',
+     hulk.moved > 12000 && hulk.moved > hulk.ctrl * 20 && hulk.off > 4 && hulk.off < 36 &&
+     hulk.cant > 1 && hulk.plate >= 5,
+     `${hulk.moved} pixels of a ${hulk.tot}-pixel frame moved between the same tank alive and dead, ` +
+     `against ${hulk.ctrl} between two live frames; ${hulk.off} of 40 deaths threw the turret off, ` +
+     `the hull settles ${hulk.cant} degrees over, and ${hulk.plate} pieces of plate come off it`);
+
   /* --- Effects. Every particle the game makes used to be one draw call of one soft
      disc, so a Lee-Enfield and a 210mm shell were the same picture at two sizes, and a
      tracer lived on the 2D overlay -- a separate canvas stacked over the world, where

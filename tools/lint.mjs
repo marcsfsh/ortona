@@ -156,11 +156,17 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    same picture at two sizes; they go out as one packed buffer and one draw a blend pass
    now, with five shapes, a muzzle blast read off the weapon, tracers that live in the
    world instead of on the canvas stacked over it, and a burst staged into a flash, a
-   fireball, thrown dirt, a shock ring and a column. Raise it deliberately, with a
-   reason, or not at all. */
+   fireball, thrown dirt, a shock ring and a column. It is 1625 for bodies and wrecks:
+   every collision in the game was one circle at half a vehicle's length on two markers,
+   so a tank held a section off with a metre of daylight on one bearing and stood in the
+   middle of it on another; a hull and a formation are both boxes now, measured off the
+   models rather than typed beside them, a hull is tested against the MEN, tracks pivot
+   where wheels have to drive the turn, and a dead vehicle settles, cants, sheds its
+   plate and sometimes throws its turret clear instead of being redrawn in a darker
+   colour. Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1595) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1595 kB so it stays quick to load on a phone`);
+if (kb > 1625) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1625 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
