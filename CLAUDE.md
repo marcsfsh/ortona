@@ -58,6 +58,8 @@ node tools/sight.mjs         # sight: the trace, what a position commands, how l
 node tools/model.mjs         # the models: the occlusion bake against shapes with known answers
 node tools/terrain.mjs       # the ground: what grain is on it, at what distance, and what crawls
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
+node tools/wreck.mjs         # destruction: the hole, the collapse, the falling masonry, the grids
+node tools/fx.mjs            # effects: the muzzle blast, the tracer, the burst, read off the framebuffer
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
@@ -236,14 +238,17 @@ game's own `sfx()` through an `OfflineAudioContext`, writes WAVs to `shots/audio
 prints what a sound actually is.
 
 ```sh
-node tools/audio.mjs                 every sound, a montage, and a firefight
+node tools/audio.mjs                 every sound, the roster, a montage, a firefight
 node tools/audio.mjs rifle mg        two of them
+node tools/audio.mjs us_how8         one piece off the roster, in its own voice
 node tools/audio.mjs --tag=before    keep a set to compare against
 ```
 
 Nothing is reimplemented: the page's own `auAttach()` builds the graph on the offline
 context and the page's own `sfx()` fills it, so what lands on disk is what a player
-hears, sample for sample.
+hears, sample for sample. A named unit key goes the same way -- the page's own
+`gunVoice()` reads the voice off that unit's real weapon and the page's own `sfx()` plays
+it -- so the ROSTER table is thirty-odd guns firing rather than a list somebody typed.
 
 Two columns matter more than the rest. **Crest** is peak over rms: a crack is a high
 number and a hiss is a low one. And the **first 50ms** band split is where the character
@@ -252,6 +257,35 @@ which is always the bottom end. Measuring band *power* out of a transform rather
 magnitude at a few single frequencies is not a detail: the cheap way compares a sine,
 whose energy sits in one bin, against noise, which is spread over thousands, and reports
 any sound with a thump in it as ninety-nine per cent bass with no crack at all.
+
+**ROSTER** is every gun on the roster that fires a shell, in the voice read off its own
+weapon. Over eighteen guns it is about 8.9x in level (rms, because the bus ends in a
+compressor and peak reads 2.2x), 10x in centroid and 3x in length:
+a mortar is 523 ms with a crest of 12, a pack howitzer 835 ms at 6.2 and a heavy battery
+1,513 ms at 4.6, and the Pak 40's onset sits at about 1,840 Hz against the eight-inch's
+210. A row is the mean of ten takes, because every layer of every report is jittered per
+shot and one take says nothing: measured once, the Pak's centroid came back at 776 Hz and
+then at 1,050 on the same file. Even at ten takes the lengths and the class order hold to
+a few per cent between runs while the onset colour of a single gun moves by as much as a
+tenth, so read the shape of the table and not the last digit.
+
+**And each of the three artillery pairs is measured against its own first piece rendered
+twice.** A ratio with no floor under it says nothing, and the floor is not the same for
+every class -- a tank gun carries most of its variance in the top end and a mortar carries
+almost none, so the Panzer IV against the StuG, which is one gun on two hulls, is the
+wrong control for a mortar. Measured over fourteen takes on each device, the metric that
+carries each pair is rms, at 1.40x, 1.30x and 1.26x against floors of 1.00x to 1.01x --
+nineteen to a hundred to one. Which metric carries which pair is the point: the two
+mortars are the pair whose tails are most alike, so length separates them by 1.04x and
+says nothing, while it separates the two heavy batteries by 1.33x. The gate row keeps only
+the metrics that separate a pair by a real amount and then reports the one measured most
+reliably, because each half of that alone fails the other's case.
+
+**LANDING** is the burst, sized off the hole the shell dug: 1.7x to 1.9x in centroid and
+1.6x in length over the six shells, every one of which was one sound before. The two
+mortars land identically (213 Hz against 213 Hz), which is correct and is the point -- a
+burst has no propellant in it and no side, so what separates two shells on the ground is
+the size of the shell and nothing else.
 
 The firefight is the one to listen to. A company a side is put down two hundred units
 apart in the middle of the town and left to it, every sound the game really plays is
@@ -546,6 +580,109 @@ principle and hopeless in practice once the two are close: on the wall of a shel
 whole-patch contrast is 36 per cent and the boxed one 35, so the fine part is a difference of
 two large numbers and moves ten per cent on nothing.
 
+### `tools/wreck.mjs` - destruction, mechanically
+
+A building coming down is the one change in this file that looks convincing whatever is
+wrong underneath it. A hole in the wrong place is a hole. Stone that vanishes on the way
+out is stone nobody counted. A chunk that falls at the wrong rate falls. A bay that comes
+down on the second round instead of the eighteenth still comes down, and the photograph of
+it is the same photograph. The grids are worse than that: a house knocked flat that still
+stops a boot and still stops an eye is a picture of rubble laid over a building that is, as
+far as everything else in the game is concerned, exactly where it was.
+
+```sh
+node tools/wreck.mjs                 # the card
+node tools/wreck.mjs shell           # one section of it
+node tools/wreck.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**SHELL** is a round against a wall: the hole it cuts against the hole the burst says it
+should cut, and the masonry that comes out against the masonry that left the wall. The
+second is the conservation check and it is the one that matters -- the area a wall has lost
+is bookkeeping until the stone it lost is in the air at the right size. It reads `kept` at
+0.76 to 0.79 against a declared `RUIN_KEEP` of 0.78, averaged over twenty-four rounds a row
+because two chunks with three jitters each have a spread that swamps the number.
+
+**FALL** is the structural rule, staged by writing the damage on the walls directly rather
+than by shelling until something happens: one face three quarters out takes the storey, two
+faces half out take it, and one face half out does not. Underneath it is what it costs in
+rounds on one wall -- 49 mortar bombs, 18 rounds of 105, or 3 out of a heavy battery.
+
+**DEBRIS** is the integrator against arithmetic that was true before the game was written.
+A 197-unit fall takes 2.000 seconds against the 2.005 that `sqrt(2h/g)` says. It bounces
+back to 0.038 of the drop against the 0.04 its restitution squared gives. Everything is
+lying still inside three seconds, everything that came off a collapse settles, and the heap
+it builds is measured against the stone that came down.
+
+**WORLD** is the part a screenshot cannot see at all: the same cell asked the same
+questions with the bay standing and with the bay down.
+
+**WALL** is the same question asked of an object rather than a building.
+
+**COST** is what it is worth in milliseconds. Note that the two mesh times are the geometry
+alone and not the upload: under SwiftShader every third consecutive `bufferData` of a tile
+blocks for over a second, so a loop of whole tile rebuilds reports two and a half seconds
+and reports it about the rasteriser.
+
+### `tools/fx.mjs` - munitions, muzzle blast and bursts, mechanically
+
+An effect is the one thing in this file a screenshot is worst at reviewing, and not for
+the usual reason. A model holds still and can be photographed; a muzzle flash lasts
+seventy-five milliseconds and a frame under SwiftShader is most of a second, so catching
+one at all is luck. Worse, an effect that is drawn and invisible looks exactly like an
+effect that is not drawn: this card's own development spent five rounds of screenshots on
+a smoke column that was being packed, uploaded and rasterised correctly the whole time and
+was simply the colour of the ground it was drawn over, and then on the same column
+climbing three hundred units out of the top of the plate. Neither is visible in a picture.
+Both are one number.
+
+So the frame is read rather than looked at. Every row renders the same scene twice, once
+with the effect and once without, and reports what the effect actually put on the screen.
+
+```sh
+node tools/fx.mjs                 # the card
+node tools/fx.mjs muzzle          # one section of it
+node tools/fx.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**MUZZLE** is every weapon on the roster fired once from the same spot with the same
+camera on it. The claim is that a blast is read off the weapon rather than typed per unit
+key, so `spread` -- the biggest lift over the smallest -- is the number that says the
+roster is differentiated rather than merely loud. It is 53x, from a Lee-Enfield at four
+thousand pixels to the 210 at eight hundred and sixty thousand. `seen` says whether the
+firer was on camera when it fired, because every flash in the game is gated on that and a
+row reading nought otherwise has two causes that are different faults.
+
+**BURST** is a shell landing, read at five ages, because what was wrong with the old one
+was its SHAPE IN TIME: a flash and then nothing. A heavy shell now holds nearly half a
+million pixels from a tenth of a second out to nearly two seconds, and its column reaches
+235 units where a mortar bomb's reaches 62.
+
+**TRACER** is the round in the world. The test that matters is occlusion, and it is done by
+laying the same round across the same patch of screen twice, once on the far side of a
+house and once on the near side: 17,638 pixels in front of the wall and none behind it.
+Drawn on the overlay both would read the same.
+
+**CRATER** is the hole the burst leaves. What a shell used to do to the ground was paint a
+stain on it, and a stain is exactly as deep as the ground was before, so the row measures
+the DEPTH the ground actually lost against the depth the carve asked it for: a mortar bomb
+takes 5.8 units out and throws a 3.3 lip, a 210 takes 13.4 and throws 7.4, and `lost`
+equals `asked` to the tenth on every row. Plus the cover that appeared where there was
+none, that the hole is still ground a section can walk into, the merge rule (twelve rounds
+into one place make one hole and not twelve), what a forty-round mission costs, and the two
+refusals.
+
+**COST** is the packer. Six bursts in the air at once is 144 effects, 228 quads, 0.17 ms to
+pack and two draw calls; it was one draw call per particle.
+
+Two things about writing a drill for it. **A screen point out of `w2s` is in CSS pixels
+with y down and `readPixels` is in device pixels with y up**, and getting either wrong puts
+the window somewhere else in the frame and the row reads a clean nought, which looks
+exactly like an effect that is not drawn. And **stage the target inside the FIRER's reach
+rather than the stage point's**: written the other way about, the two 165-reach engineer
+sections were put down at 175 and fired nothing at all, and the row read as a weapon with
+no muzzle flash.
+
 ### `tools/mapcheck.mjs` - the map, mechanically
 
 A hand-placed map is a few hundred coordinates and the eye will not hold them. Craters
@@ -587,8 +724,9 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1520 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
-battle wrote itself down, and 1460 before a second map). Takes under a second. Exits
+under 1560 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+battle wrote itself down, 1460 before a second map, and 1520 before a building could be
+knocked down). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -622,6 +760,66 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
+
+**And two rows read the framebuffer rather than looking at it.** An effect that is drawn
+and invisible looks exactly like an effect that is not drawn, so the effects rows render
+the same scene twice, once with the thing and once without, and count the pixels that
+moved: every gun on the roster fires once and none of them may put nothing on the screen,
+the biggest blast has to light many times the pixels of the smallest, a round laid across a
+house has to be hidden by it from one side and not the other, and a heavy shell has to
+still be on the screen a second and a half after it lands. The column's floor is what a
+PHONE has to clear, because a phone spawns four puffs of it rather than eleven.
+
+**And one row RENDERS the roster and reads it as numbers**, because a sound is the one
+thing here a screenshot cannot review at all and an ear is not available to a gate. Every
+shell weapon has to put something on the bus, since a report that is built and inaudible
+looks exactly like one that is not built; the roster has to be differentiated rather than
+merely loud, which is the muzzle row's `spread` asked of the ear; the three artillery
+shapes have to be three lengths, a tube ringing for half a second where a battery rings
+for a second and a half; and the six pieces have to be six sounds. That last one is the
+fine comparison and it is measured against ITS OWN first piece rendered twice: every
+layer of every report is jittered per shot, so a ratio with no floor under it says
+nothing, and the floor is not the same for a mortar as for a tank gun. The row keeps only
+the metrics that separate a pair by an amount worth having and reports whichever of those
+is measured most reliably: choosing on signal-to-noise alone picks the smallest floor and
+once reported the two mortars 1.07x apart in length, which is inaudible, while choosing
+the biggest difference alone picks a metric that may be measured badly.
+
+Over three runs on both devices -- six samples of each pair -- it reads 15 to 104 to one on
+the mortars, 15 to 136 on the pack howitzers and 8 to 66 on the heavy batteries, against a
+bar of three. The heavy pair is the loose one and the reason is its floor rather than its
+difference: a report whose tail runs a second and a half is harder to measure twice the
+same way, so twelve takes put its floor anywhere from 1.00x to 1.06x while its difference
+sits steadily at 1.21x to 1.27x. That is the number to raise the take count against if the
+row ever flakes, and the row prints the metric and the floor it chose so one run says
+which it was. Level is rms and never peak, because the bus ends in a compressor.
+Brightness is the rms of the first difference over the rms of the signal, which rises and
+falls with the spectral centroid and needs no transform, because what is wanted is an
+ORDER and not a hertz.
+
+**And a mortar's mission is counted by ear as well as by where the bombs land**: ten tube
+reports, ten incoming and ten bursts for ten bombs, with the incoming inside the beaten
+zone rather than back at the tube. An indirect round used to make no sound at all between
+the tube and the ground, and the shape of that fault is the same as the fog of war having
+no live tier -- everything about it reads as working from the outside.
+
+**And one row asks whether a shell leaves a hole or a stain.** They are the same picture
+from above -- a dark patch on the ground -- so the row asks the two questions a photograph
+of a dark patch cannot tell apart: did the SURFACE move, and did the picture of it move
+with it. It digs rather than explodes, because an explosion also paints a scorch and the
+scorch is the stain the row exists to tell apart from a hole; then it reads the frame
+before and after against a control of two identical frames, which is nought. A 47.6-unit
+hole moves 1.2 million pixels of a 1.44 million pixel frame. It also checks the height is
+still the sum of its own layers over the whole grid, which is what `levelPad` broke.
+
+**And the destruction rows load Ortona to run on**, because a terrace is what they are
+about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
+house flat with a battery and ask the SAME CELL the same questions before and after -- can
+a man walk here, does it stop an eye, does it stop a round, is it rubble, may a section
+hold it -- because a house knocked flat that still stops a boot and still stops an eye is
+the one fault here a screenshot would call a success. The second row counts the stone: what
+settles has to be what came out of the walls, since masonry that vanishes on landing is a
+collapse nobody can stand in.
 
 Two things the periscope block has to do to itself: it tops both sides' victory points up
 to nine thousand and gives its test tank a hundred thousand hit points. A minute of
@@ -989,6 +1187,12 @@ the section walked straight past.
 Slots inside something went from 7.1 per cent of man-frames to 2.4, and the mean distance
 of a man from his own marker went from 63 units to 92 -- a section holding a wall rather
 than a section standing on a dot.
+
+**And the ground itself changes during a battle now.** A shell that lands on open ground
+digs a hole in the heightfield (see *The hole a shell leaves*), so `terrg` -- which is
+cached precisely because the shape of the ground was a thing that did not change -- is
+read again over the hole's own footprint, and `G.gridDirty` carries the rebuild to the top
+of the next frame the way a burning hull already did.
 
 Every path carries the `gridStamp` it was found on and is found again when the grid
 changes, which it does whenever a building goes up or a vehicle burns. A retreat scatters
@@ -1380,8 +1584,325 @@ with its clods, and the bowl last and hardest-edged, because it is a hole rather
 stain. The shipped map has a crater field west of the town and the whole of it used to read
 as weather.
 
+**Destruction.** A town house is a set of bays and each bay is four walls built in
+seven-unit courses round a list of holes, and that list being DATA is the whole of why any
+of this is possible without a second geometry path. A shell records where it struck in the
+wall's own frame, `holesFor` concatenates the record onto the windows and the doors, and
+`wallCourses` cuts the breach out of the courses the same way it cuts out a window. Nothing
+new draws a damaged building; the thing that drew the building draws it.
+
+**What breaks is a town house and a wall.** `ruinHit` refuses anything that is not
+`kind: 'ruin'`, so a bunker stands: it is reinforced concrete and a field gun was not going
+to open one, which is the whole reason the Gothic Line is a question about which crossing
+to force. A farm and a church stand too, and those are a scope line rather than a claim --
+neither is built in bays round a list of openings, so neither has a structure to break, and
+giving them one is the same work again on two more builders.
+
+`ruinState(p)` is the structure, worked out once and kept on the prop, and it is the same
+arithmetic `sceneProps` does when it meshes one -- here rather than there because the
+mesher runs on a tile rebuild and this has to survive one. Per bay: the breaches cut in
+each of its four walls, the share of each wall that is now out of it, and how many storeys
+it has lost.
+
+**A wall is an area rather than a pool of hit points.** `ruinHit` records the hole and adds
+`2*hw*(z1-z0) / (len*h)` to that wall's `gone`. One face past three quarters is a wall that
+has fallen out; two faces past a half is a box that is no longer a box. Either takes the
+storey standing on them, and what comes down is the bay's whole perimeter above the new
+height. It is checked per bay, which is the entire reason a town house is meshed in bays: a
+terrace does not come down all at once.
+
+**How far a blast REACHES masonry and how big a hole it makes when it gets there are two
+numbers**, and written as one they fought each other. A hole scaled off the weight of the
+shell is a metre across for a tank round, so a round bursting a metre and a half from a
+wall -- which is where a man taking cover at a house stands, and therefore where most
+rounds in a town actually land -- took nothing out of it at all. The reach is the weight of
+the shell too and it is several times the hole: `hw = br * sqrt(1 - (d/reach)^2)`, so the
+wall is scarred at the edge of it and breached in the middle. Two things had to be got
+right with it. **The distance is to the WALL and not to its plane**: a heavy round reaches
+past the end of the bay it burst against, so with only the perpendicular in it a shell on
+one bay cut a full-width breach in the next bay's frontage sixty units away at exactly the
+size it cut in the one it hit. And **a round in the street outside one wall does not take a
+bite out of the wall on the far side of the room**: `ruinFace` measures `nd` along the
+OUTWARD normal, which nothing needed while every reader took its absolute value and which
+is the whole question the moment one of them asks which side the blast is on. A burst
+INSIDE the bay is the other case and blows all four out, which is what a round through a
+window does.
+
+**The masonry that comes out is a rigid body.** No solver is possible here and none is
+wanted: what `G.debris` carries is a position, a velocity, an orientation and an angular
+velocity per chunk, integrated with semi-implicit Euler under gravity at 98 units a second
+squared, with the ground as the only collider. Stone does not bounce, so the restitution is
+a fifth and the friction takes most of the rest; below the speed one frame of gravity gives
+it there is nothing left to model and it is lying on the ground. A shell THROWS masonry and
+a collapse DROPS it, and that is not a detail: given a blast's speed, the perimeter of a
+bay ended up scattered a hundred and twenty units into the street, four fifths of it too
+far from the house to be its rubble at all.
+
+**The one thing a solver would give that a heap actually needs is that masonry lands ON
+masonry, and that is a height field rather than a solver.** `MND` is one coarse grid over
+the whole map at fourteen units: a falling chunk collides against the ground plus whatever
+is already lying there, and what settles raises it. Dropped into the same yard, a hundred
+and fifty stones then build a mound where most of the wall came down and thin out at the
+edges. Without it every chunk rests on bare ground and a collapsed house is a carpet of
+separate blocks that reads as spilt cargo. It is one grid for the map and not one per
+building, because a chunk that lands clear of a building has nowhere to go and was thrown
+away -- and a garden wall blown apart in open country belongs to no building at all, so
+every stone of it vanished on landing.
+
+**A hit building leaves the merged tile and draws from its own buffer.** The tile is a
+megabyte of merged geometry and cannot be edited; re-meshing one house is a thousandth of
+re-meshing the tile it sits in. The tile it was merged into still has to lose it, and that
+is a re-mesh of everything else in the tile with it -- about a hundred and ten
+milliseconds. Done inside the burst that is the hitch once per house, which in a barrage is
+several of them in one frame, so it is queued in `G.tileQ` and `flushTileQ` takes one a
+frame however many houses were in the salvo. The house is drawn twice for that one frame,
+which nobody sees.
+
+**Two buffers rather than one, because the heap changes and the walls do not.** A bay's
+packed vertices are cached on the bay and only the bay a round changed is re-packed: three
+bays of a terrace is six thousand faces and nineteen thousand vertices, which is eighteen
+milliseconds -- a whole frame, on a frame where a house was hit, and a barrage hits houses
+constantly. It is five milliseconds for one bay. The settled rubble is one buffer for the
+whole map, rebuilt on the frames a stone lands, and it goes through the same hand-written
+packer the airborne debris uses.
+
+**`packChunks` is written by hand and it is the only vertex packer in the file that is.**
+`buildDebrisBuf` is rebuilt while the game is running, which nothing else here is. Built
+the way everything else is built -- `box()`, `roll()`, `pitch()`, `place()`,
+`facesToBuffer()` -- it cost 2.8 ms a frame with the cap in the air, and nearly all of that
+was garbage rather than arithmetic: four arrays of six faces and thirty-six vertex arrays
+per chunk, three hundred times over, on every frame. A chunk is an axis-aligned box under
+one rotation, so its eight corners are the centre plus and minus three half-axes and those
+half-axes are the columns of the rotation scaled by the half-extents. Written straight into
+one array that is allocated once and re-uploaded it is 0.5 ms and allocates nothing.
+
+**And the world follows the storey down.** This is the half a screenshot cannot review at
+all, and it is where a destruction feature is usually a lie: a house knocked flat that goes
+on stopping a boot and an eye is rubble painted over a building that has not moved. A bay
+still standing blocks what a house blocks; a bay that is down is marked on `rubg` instead
+-- dear to cross (2.3 to a man, 2.4 times to tracks and five times to a lorry), crossed at
+half pace, and on NEITHER of the two grids that stop sight or fire, which is the same rule
+a field wall under sixteen units already gets. `canGarrison` refuses a house with nothing
+standing above 34, the four tier-3 patches lying along a fallen face are written off (which
+drops them a tier, the way a shelled sandbag wall drops one) and their axis goes with them
+because a mound of masonry is the same from every bearing, and a garrison is damaged by
+every storey that comes down and put out when the last of the house goes. Nothing new is
+added to the cover index, because a patch laid on ground that is now rubble is a patch
+`aiFirePost` would read as somewhere to site a machine gun.
+
+**A wall is an object, and objects break too.** A garden wall does not need a structure: it
+is a LINE, and what a shell does to one is take a length out of the middle. A gap is a span
+measured along the run, which is the one number every reader of a wall already works in --
+the mesher steps along it stone by stone, the movement and sight grids mark it piece by
+piece, and `buildWallQ` buckets it by piece as well -- so a gap is skipped in all of them
+rather than modelled in any of them. `wallSpans` hands back the pieces that are still
+standing and `rebuildGrid` marks those. The stones that were there come out at the size a
+wall is laid in: a course at a time in six-unit lengths, because at a slab a metre long
+sixty units of garden wall came apart into seven pieces. Worth knowing: the gaps are honest
+and the movement grid is twenty units, so a gap under about thirty units is visible and
+does not clear the cell it is in.
+
+**The one-off costs, measured.** Recording a hit is 0.01 ms. Re-meshing the bay it changed
+is 5.2 ms. Freeing the tile is 110 ms of geometry, once per house and queued one a frame.
+Stepping 280 chunks is 0.013 ms and their buffer 0.5 ms. `tools/wreck.mjs` is the card for
+all of it.
+
+**Effects.** Every particle in the game was one `drawArrays` of one uniform-driven quad
+running one fragment shader with exactly one shape in it -- `smoothstep(1.0, 0.25, d)`, a
+soft disc. So a Lee-Enfield flash and the burst of a 210mm shell were the same picture at
+two sizes and two alphas, nothing had an edge, and three hundred of them were three
+hundred draw calls.
+
+The quads are built in world space on the CPU now, the way `packChunks` builds falling
+masonry, and go out as one buffer and one draw a blend pass. That buys the COUNT -- a
+single heavy burst wants sixty particles between its fireball, its clods, its ring and its
+column -- and it buys the SHAPE, because a vertex can carry a shape id and a seed where a
+uniform cannot without a draw call each. Five shapes: a soft disc for haze and for a
+shadow, a puff with a broken curdled rim, a flash with spikes out of a hot core, a ring,
+and a streak whose falloff is the bar across it and the taper down its length. Six bursts
+in the air at once is 228 quads, 0.17 ms to pack and two draw calls.
+
+**The puff's rim is angular and its inside is not.** Modulating the interior on the angle
+as well gives a spoke pattern, and three overlapping copies of it read as a starburst
+rather than as a cloud -- which is what the first heavy burst came out as, a lens flare
+the size of the crater. The inside is modulated on the quad's own x and y instead.
+
+**A muzzle flash is a cone of burning propellant coming out of a bore**, and what the game
+had was a round disc at the barrel tip with nothing in it to say which way the gun was
+pointing. It is a streak laid along the bore now, brightest at the muzzle, with a star at
+the muzzle itself; a muzzle brake throws two lobes out sideways, which is the single most
+recognisable thing about a braked gun. `w.brake` is declared on the six weapons that
+carried one -- the Pak 40, the KwK 40 on the Panzer IV and the StuG, the KwK 36 and 43 on
+the two Tigers, and the 17-pounder on the Achilles -- the way `belly` is declared on a
+vehicle rather than derived.
+
+**And the blast is read off the WEAPON rather than typed against thirty-six unit keys**,
+for the same reason the sight rule is applied to `UNITS` at load rather than written out
+fourteen times: two lists of one thing go out of step the moment somebody adds a weapon to
+one of them. `muzClass` sorts a weapon into one of eight profiles in `MUZ` and the size
+comes off the charge behind the round, so a 37mm and a 128mm are both 'a tank gun' and are
+not the same event. Measured across the roster the biggest blast lights 53 times the
+pixels of the smallest. `MUZ.dust` is how far in front of the muzzle the ground is
+stripped, which on a tank is most of what tells a player at a hundred units up that it
+fired at all, and it is only spawned when the muzzle is low enough over the ground for the
+blast to reach it -- so the Maus, whose gun is two storeys up, kicks none.
+
+**An armoured car's autocannon and a half-track's machine gun are the vehicle's MAIN
+weapon and carry no shell**, so they went down the small-arms path in `fireAt` and spawned
+no flash at all. Four of the roster fired invisibly except for the belt.
+
+**A round in flight is in the world.** Tracers and shells were drawn on the 2D overlay,
+which is a separate canvas stacked over the WebGL one, so nothing on it could ever be
+behind anything: a belt fired at a house was drawn straight across the front of it, and no
+photograph ever said so. They go through the depth buffer now, and the card measures it by
+laying the same round across the same patch of screen with a house first behind it and then
+in front -- 17,638 pixels in front of the wall and none behind. A tracer is a ribbon from
+tail to head whose width runs across the flight AND across the line of sight, which is the
+cross product of the two, so a round crossing the view is a bar and one coming at the
+camera is a point.
+
+**A belt is one round in four or five, not every round**, and the two armies' tracer burned
+different colours: Commonwealth ran red-orange and German a pale yellow-white. The tail
+carries the side's colour and the head is nearly white on both, because the element burning
+is white-hot -- and because a red trace drawn flat over pale dry ground disappears into a
+red channel that is already at the top of its range. Measured on this map before that fix
+the Canadian tracer put a sixth of the pixels on the screen that the German one did for the
+same number of rounds. The rounds of a volley are staged by a few hundredths of a second as
+well: fired on the same instant, five tracers read as one thick bar of light.
+
+**A shell landing is five things at five rates.** There is the flash, which is over in a
+twentieth of a second and is what the eye actually registers; the fireball, drawn as a
+handful of billowing lobes that climb and go from white through orange to soot; the shock
+running out along the ground, which is what gives a burst a size the eye can read off the
+ground rather than off a ball of light; the DIRT, which nothing in this game was ever
+thrown by before; and the column. Every count is scaled off the burst radius, so a mortar
+bomb is a different event from a heavy shell rather than the same event drawn bigger.
+
+Three things about it were wrong first and each reads as a working feature in a photograph.
+**How hard a shell throws its spoil is a function of the hole and not a multiple of it**: a
+clod goes up about as far as the hole is wide and lands one to two radii out, and written
+as `r * rnd(2.6, 5.2)` a heavy shell threw its dirt two thousand units into the air and a
+quarter of the way across the map. It is `sqrt(98 * r)` now, which is the speed that gets a
+clod to about a radius of height. **The column starts ON THE GROUND and grows**, and
+spreading its z at birth instead puts the whole of it in the air on the frame the shell
+lands, with clear daylight between the crater and its own smoke. And **the climb is
+front-loaded rather than linear** (`k^0.55`), because off a straight ramp the column is
+still lying in its own crater half a second later, which is a dark puff over a dark scorch
+and reads as nothing at all.
+
+**What a puff STARTS as is the whole of whether it reads.** A pale translucent puff over
+pale dry ground is invisible, and that is what every puff in this game used to be; a sooty
+one over the scorch its own shell just painted is invisible in the other direction. It
+comes off the ground sooty and lightens as it climbs, which is both what smoke does and
+what keeps it legible against the ground it is leaving. `FXCOL` is the four things a puff
+can be made of -- thrown earth, burnt propellant, oily black, and pale masonry dust -- where
+there used to be one 0.34 grey for all of them.
+
+**And anything that moves has to move the ENTRY, not the quad.** A column that climbs only
+inside `drawParticles3D` is a column nothing but the rasteriser knows about: the lights
+read the position, and so does anything measuring how high a burst got. `spawnFx` keeps
+`x0/y0/z0` beside `x/y/z` and `updateShots` integrates both the ballistic entries (a clod,
+a spark, under gravity with the ground as the only collider) and the rising ones.
+
+**A gun going off is a light.** At twenty-one degrees of December sun a great deal of this
+town is in its own shadow, and until this the only things that lit any of it were the sun
+and a burning hull: a tank firing out of a side street lit nothing at all, including
+itself. `gatherLights` reads a muzzle flash's own `lit` flag now, and the burst's light was
+cut from 2.4 to 1.9 because a salvo is several of these at once and four slots of 2.4
+bleached the whole town.
+
+**A hull burns for two minutes and nothing drew any of it.** `smokeColumns` has been
+attenuating the sight line through a wreck for as long as detection has been a rate, and
+what the renderer put there was the six puffs it died with. That is the same shape of fault
+as the fog of war having no live tier: the eye was being slowed by smoke that was not on
+the screen. A wreck in view now streams smoke and licks flame at a rate that falls away
+over the two minutes `smokeColumns` already models.
+
+**The hole a shell leaves.** A burst painted a scorch decal, which is a stain on a
+surface that is exactly where it was before, so ground a battery had worked over for ten
+minutes was flat ground with dark patches on it and the men lying in it were lying on a
+plain.
+
+The machinery for a real one was already here and had only ever been run at build time.
+Earthworks are kept as layers over the natural ground -- `G.cut` is the deepest cut at
+each point and `G.fill` the highest spoil -- and `carve` writes a bowl into them, which is
+how the map's own crater fields are dug. So a hole blown during a battle is the same call
+the map makes, plus the four things that have to follow it: the worked height, the going
+grid, the cover, and the mesh. `digCrater` is the one door and `tools/fx.mjs`'s CRATER
+section is the card.
+
+**What was wrong with the height was that it was not the sum of its own parts.**
+`levelPad` presses a building's footprint flat and wrote the result straight into
+`G.hmap`, so `hmap = hmap0 + cut + fill` held everywhere except under a pad -- which is
+fine while nothing ever recomputes a piece of the height, and is exactly wrong the moment
+something does. The first shell hole blown beside a house recomputed the ground under the
+house off the parts it could see and put the pad back on the hillside. The pad is a third
+layer now (`G.pad`) and the invariant holds everywhere, which the gate measures over the
+whole grid rather than trusting.
+
+**Everything is refreshed over the hole's own footprint.** The whole-map versions are
+0.60 ms for the height and 2.70 for the terrain grid, which is not a thing to do once a
+shell; over a crater they are four and eight microseconds. `terrg` is the interesting one:
+it is cached because the shape of the ground does not change during a battle, which
+stopped being true here, so the cells a hole touches are read again and `makeTerrain` still
+throws the rest away.
+
+**A hole is cover, and it is cover a man lies in.** `addCover(x, y, r, 1, 'crater')` is
+what the map's own craters get, and the `crater` kind already carries `STAND_FLAT`. The
+wall comes out at about a third of a gradient, well under the 1.0 `buildTerrGrid` calls
+unwalkable and under the 0.45 it calls hard going, so a fresh crater is somewhere to lie
+down rather than a pit that swallows a section. Measured: cover 0 to 1, walkable before and
+after.
+
+**Shells landing in the same place make ONE bigger hole.** `G.cut` keeps the deepest cut
+so the ground would agree either way; what merging saves is the list, the cover index and
+the mesh, all of which a ten-minute fire mission would otherwise fill with overlapping
+copies of the same hole. The centre stays put when a hole widens, on purpose: `indexCover`
+files a patch under every cell its circle reaches and has no way to unfile one, so a circle
+that only grows can be filed again for the cells it has gained where one that moved would
+leave cover indexed on ground that no longer has any.
+
+**The mesh is queued, and coalesced on two clocks.** Re-meshing one ground tile is 40 to 60
+ms, and a fire mission puts ten shells into one tile inside ten seconds: done as they land
+that is ten rebuilds of the same tile. A tile is rebuilt once it has been quiet for 0.45 s,
+which is what makes a salvo one rebuild, and at the latest 1.6 s after the first shell
+landed in it -- because a battery firing steadily would otherwise keep the tile permanently
+un-quiet and the ground would never change at all while it was being shelled, which is
+exactly when a player is looking at it. A forty-round mission is 0.115 ms a round, four
+tiles queued, four rebuilds.
+
+**And `buildTerrain` stopped scanning the whole map to rebuild one tile of it.** The
+refinement pass is four `groundZ` calls at each of eighty-three thousand cells and it is
+most of what a tile costs; asked for the whole map on every partial rebuild it was being
+paid twenty-four times over for a shell hole in one corner. It is restricted to the tiles
+being rebuilt plus a one-cell margin, because a fine cell pins its edge midpoints against a
+coarse neighbour and has to be able to see it.
+
+**What it deliberately does not do is repaint the ground.** `buildAlbedo(rect)` is 222 ms
+whatever the rect -- `paintGround` walks every road, crater, trench and cobble on the map
+before the clip throws the drawing away -- and two hundred milliseconds a shell is not a
+thing that can happen while a battery is firing. The hole carries its own appearance
+instead: the mesh darkens its own bowl through the ambient term it already computes off its
+neighbours, the wet channel fills it because a hole is where the water goes and a deep one
+gets standing water, the scorch decal blackens the middle, and the fresh spoil round the
+rim rides in the vertex colour off a grid marked in the same pass the wet channel's is.
+Only the LIP is tinted: the bowl darkens itself twice over already, and a third darkening
+on top turned a fresh crater into a pit of shadow beside the map's own.
+
+**And the burn was drawn at a radius and a bit of the whole burst**, which was the scorch
+standing in for a crater. With a real hole under it as well, a salvo painted the ground
+black between its own craters; it is drawn tight round the hole when there is one.
+
+**What will not open.** A floor somebody levelled and built on, concrete, the sea, and
+anything under the size floor -- `CRATER_MIN`, which is eleven units of hole and sixteen on
+a phone, because a tile re-mesh costs what it costs wherever it runs and the thing to cut
+there is how often one is asked for. A crater is about a third of the burst radius, which
+puts a mortar bomb at eleven and a 210 at forty-five, and those are the two ends of what
+the map itself was hand-placed with. A round that burst against an upper storey scorches
+the street and does not open it.
+
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
-geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
+geometry, plus sky, depth and particle programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
 static world is merged into tiled buffers by `buildScene` (a grid of prop tiles and
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
@@ -2202,6 +2723,52 @@ also pans and attenuates from where the sound happened relative to the view, and
 limits how close together two of the same sound may be, because massed fire stacked
 without one turns into a rattle. `auInit` makes the real context; `tools/audio.mjs` hands
 `auAttach` an offline one.
+
+**A gun's report is read off the WEAPON, the way its muzzle flash already was.** Every
+piece on this roster that fires a shell played one of two sounds -- `cannon` if it was on
+a vehicle or a crew and `rocket` otherwise -- so a mortar dropping an eighty-millimetre
+bomb over a roof, a Pak 40 and a two-hundred-and-ten-millimetre battery were the same
+noise at the same level, and the six artillery pieces were that noise six times.
+
+`gunVoice(u, w)` is the fix and it is the same decision `muzFx` made for the eye, for the
+same reason: two lists of one thing go out of step the moment somebody adds a weapon to
+one of them. What separates one report from another is the shell and the charge behind
+it, and the weapon already carries both -- the burst radius says how big the projectile
+was and the penetration says how hard it was pushed. Those are the two numbers the flash
+is sized off, so the ear and the eye read the same physical fact. `muzClass` gives the
+SHAPE and it is the same list for both, because a second list of gun kinds is a second
+list to keep in step: a tube (`mortar`), a bark (`how`), a blow (`heavy`), a tank gun
+(`gun`) and a high-velocity crack (`at`). An even voice is the 75 the whole roster used
+to fire, so nothing about a Sherman moved and everything else moved away from it.
+
+**And the side is the ear's `FLASHC`.** German propellant is drier and cracks higher and
+the Commonwealth charge is rounder with more body -- one number a player picks a side out
+by, the same claim the flash colour makes. It is there because nothing read off the weapon
+will ever separate an M1 81 mm from an 8 cm GrW 34: they throw nearly the same bomb on
+nearly the same charge, and the numbers agree (a pitch of 1.17 against 1.16). `AUSIDE`
+moves the CRACK and not the body, because the propellant sets the colour of the edge and
+the shell sets the pitch of everything under it. Written the other way about, the side
+shifted the body too, and since the German piece of each pair throws the heavier shell the
+two effects cancelled and the two heavy batteries came out at the same pitch.
+
+**The tube ring is where the two mortars are told apart**, so it carries rather than sits
+under the thump. At a fifth of the thump's volume it was inaudible in the measurement as
+well as in the ear: the pair read 1.03x in onset colour, which is what the same piece
+rendered twice reads, so there was no difference to hear. At two fifths they read 1.12x
+against a floor of 1.01x.
+
+**A shell landing is the shell that landed.** `burstVoice(r)` is the other half, off the
+one number `explode` already has, so a mortar bomb at thirty-four of burst and a 210's
+shell at a hundred and forty are not the same event on the ground either. It has no side
+in it, because a burst has no propellant.
+
+**And a round in the air makes a sound now.** An indirect round was silent between the
+tube and the ground, which is a strange thing for the one weapon on this roster a player
+is meant to move out from under: the incoming is the only warning there is. It is pitched
+off the same burst the landing is -- a bomb comes in as a thin whistle and a
+two-hundred-kilogram shell as a freight train -- it is played at the ground it is coming
+at rather than at the tube, and it is timed to FINISH where the shell does rather than to
+start there (`burstVoice().lead`, half a second for a bomb and most of two for a heavy).
 
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
@@ -3086,6 +3653,8 @@ tools/sight.mjs                sight card: the trace, what a position commands, 
 tools/model.mjs                model card: the occlusion bake, its cost, and what is in each vehicle
 tools/terrain.mjs              ground card: grain by scale and distance, and what shimmers
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
+tools/wreck.mjs                destruction card: the breach, the collapse, the heap, the grids
+tools/fx.mjs                   effects card: the muzzle blast, the tracer, the burst, off the framebuffer
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
@@ -3227,6 +3796,114 @@ shots/                         screenshot output, gitignored
   two of them. Order is the mechanism, not a matter of taste. And cap the count rather
   than counting it out: a scatter that MUST place N will keep trying until it puts one
   somewhere it does not belong.
+- **A signed distance is only signed if every case signs it the same way.** `ruinFace`
+  handed back `ly - o` for one wall of a bay and `ly + o` for the opposite one, which is
+  correct for the absolute value every reader took and is opposite in sign. The moment one
+  reader asked WHICH SIDE the blast was on -- the one thing that decides whether a round in
+  the street takes a bite out of the far wall of the room -- half the walls in the town
+  answered backwards, and what it looked like was a feature that had simply stopped
+  working. Measure a face distance along its outward normal, whichever face it is.
+- **A rubble heap is a height field, not a solver.** There is no chunk-against-chunk
+  contact here and there will not be. What a heap actually needs out of a solver is one
+  thing, that masonry lands ON masonry, and one coarse grid gives it: a chunk falls onto
+  whatever is already lying there and what settles raises it. Without it every stone rests
+  on bare ground and a collapsed house is a flat carpet of blocks that reads as spilt
+  cargo rather than as a building that fell over.
+- **The one buffer rebuilt while the game is running is worth writing by hand.** Falling
+  masonry cost 2.8 ms a frame built the way everything else here is built, and nearly all
+  of it was garbage rather than arithmetic: four arrays of six faces and thirty-six vertex
+  arrays per chunk, three hundred times over, every frame. `packChunks` writes into one
+  preallocated `Float32Array` and it is 0.5 ms. Everything else in the file is built once
+  and can go on using `box()` and `place()`.
+- **`box(cx, cy, cz, l, w, h)` spans z from `cz` to `cz + h`**, so `box(0, 0, 0, ...)` sits
+  ON the origin rather than around it. Rotate that about the origin and the piece swings
+  round its own base; an integrator that treats the same number as the centre then rests it
+  half its own height in the air. Pass `-h/2` for anything that is going to tumble.
+- **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo
+  is several of them in one frame.** Queue the rebuild and take one tile a frame; the thing
+  that left the tile is drawn twice for that frame and nobody sees it.
+
+- **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
+  `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the
+  height be recomputed from its parts when a shell opens the ground. `levelPad` used to
+  write a building's footprint straight into `hmap` and not into a layer, so the first
+  crater blown beside a house recomputed the ground under the house off the parts it
+  could see and put the pad back on the hillside. Anything that changes the height writes
+  a layer.
+- **A drill about the ground has to be staged on ground that is open, and prove it.**
+  A crater drill put down in a trench measures a hole that is already deeper than the one
+  the shell would cut; `G.cut` keeps the deeper of the two, and the row comes back saying
+  a 210 moves the ground half a unit. Require `coverAt` to read nought at the point AND
+  round it, and print what it read.
+- **A frame-difference row needs a control of two identical frames.** The renderer has
+  its own frame-to-frame variation and anything that advances `G.t` -- which is easy to do
+  by accident when forcing a queue -- moves the smoke, the sea and the grass with it, and
+  then the whole frame differs and the row proves nothing. Age the queue rather than the
+  clock, and print the floor.
+- **An effect that is drawn and invisible looks exactly like one that is not drawn.** A
+  smoke column was packed, uploaded and rasterised correctly for five rounds of
+  screenshots and was simply the colour of the ground it was drawn over; then, fixed, it
+  climbed three hundred units clean out of the top of the plate. Neither shows in a
+  picture and both are one `gl.readPixels` away. When an effect looks absent, read the
+  frame with and without it before touching the code -- `tools/fx.mjs` is that reading.
+- **A screen point out of `w2s` is CSS pixels with y DOWN; `readPixels` is device pixels
+  with y UP.** A window built the wrong way round lands somewhere else in the frame and
+  the row comes back a clean nought, which is indistinguishable from the effect not being
+  drawn.
+- **`frame()` takes its dt off `last`, which the last real frame set.** Under SwiftShader
+  that was most of a second ago, so the first stubbed step lands on the 50ms clamp and
+  ages a 75ms muzzle flash almost out of existence. Anchor `last` to the virtual clock
+  before stepping, and pause before the shutter: two settling frames are a tenth of a
+  second of simulation.
+- **A particle's motion has to move the ENTRY and not just the quad.** A column that
+  climbs only inside `drawParticles3D` is a column that nothing but the rasteriser knows
+  about: `gatherLights` reads the position, and so does anything measuring how high a
+  burst got. `spawnFx` keeps `x0/y0/z0` beside `x/y/z` for that reason.
+- **A pale translucent puff over pale dry ground is invisible, and so is a sooty one over
+  its own scorch.** What a puff STARTS as is the whole of whether it reads at all. It
+  leaves the ground sooty and lightens as it climbs, which is both what smoke does and
+  what keeps it legible against the ground it is leaving.
+- **A red tracer over dry ground adds nothing to a red channel that is already clipped.**
+  Measured on Ortona, the Canadian tracer put a sixth of the pixels on the screen that the
+  German one did for the same number of rounds. The tail carries the side's colour and the
+  head is near-white on both, which is also what a burning element looks like.
+- **`auHiss` picks a random window out of a 1.4-second noise buffer, and a layer longer
+  than the buffer has no window to pick.** The offset goes negative and `start()` throws,
+  which is what a heavy battery's second and a half of tail did the first time one was
+  built. It is clamped to nought and the source loops, so a long layer runs for as long as
+  it was asked for.
+- **A ratio is compared against its floor on the EXCESS over parity, not by multiplying.**
+  A jitter floor of 1.01x is one per cent, so a pair thirty-two per cent apart clears it by
+  thirty to one; asked as `d > f * 1.5` the same floor sets a bar of 1.515x that only a
+  wholly different weapon would clear, and the row failed on a pair it should have passed.
+- **And the floor has to come from the same kind of thing.** A tank gun's report carries
+  most of its variance in the top end and a mortar's carries almost none, so a Panzer IV
+  against a StuG -- one gun on two hulls, which is the obvious control -- is the wrong
+  control for a mortar. Each pair is measured against its own first piece rendered twice.
+  Taking a max over three metrics before comparing is wrong for the same reason in the
+  other direction: it is biased upward on both sides at once and put a floor of 1.09 under
+  a pair that is 1.32 apart. Compare per metric.
+- **Choosing which metric to report is two questions, and either one alone gets it
+  wrong.** Signal-to-noise says whether a difference is real; it does not say whether the
+  difference matters, and choosing by it picks the metric with the smallest floor. The two
+  mortars differ by 1.04x in length against a floor of 1.004x, which reads as ten to one
+  and is inaudible, while they differ by 1.40x in rms, which is the whole thing: selected
+  that way the gate row reported brightness one run and length the next from identical
+  code. Choosing the biggest difference instead picks a metric that may be measured badly
+  -- brightness separates the two heavy batteries by 1.46x, but its floor on a piece whose
+  tail runs a second and a half wanders out to 1.14x, so the same fact that reads fifty to
+  one in rms read five to one there. Filter to the metrics that separate the pair by an
+  amount worth having, then among those report the one measured most reliably.
+- **Do not measure loudness as peak through a compressor.** The audio bus ends in one, and
+  flattening peaks is the whole of what a compressor does, so peak is the single loudness
+  measure that graph is built to destroy. Measured across the shell weapons it reads 2.2x
+  where rms reads 8.9x, and on the two heavy batteries it reads 1.03x -- which is the
+  compressor's answer rather than the guns'. Every level in the audio card and the gate row
+  is rms for that reason.
+- **A phone is a different bus, so measure on both.** `auRoom` builds a 0.42-second room on
+  a phone against 0.62 on a desktop, which compresses anything the reverb tail carries: the
+  two mortars' length difference falls from a thing to nothing, and a row resting on it
+  passed on the desktop and failed on the phone in the same run.
 - **A landform is arithmetic and two halves can look identical while one is a metre
   higher.** A mirrored map is fair only if the ground agrees with its own reflection, and
   the only way to know that is to sample it: the Gothic Line is measured over 1,750 points

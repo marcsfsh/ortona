@@ -1288,7 +1288,7 @@ var UNITS = {
     side: 'us', name: '17pdr SP Achilles', short: 'ACHILLES', cat: 'veh', hk: 'A', upgrades: ['mg', 'coax'], tows: 1,
     hp: 560, armor: 84, speed: 96, sight: 380, pop: 16, cost: { mp: 450, fu: 140 }, time: 46,
     req: 'us_mot',
-    w: { range: 465, dmg: 138, rof: 2.3, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1 },
+    w: { range: 465, dmg: 138, rof: 2.3, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1, brake: 1 },
     desc: 'An M10 with a 17-pounder in it. It goes through anything on the field from any angle, and it gets away three rounds in the time a Panzer IV takes two, but it fires solid shot from an open turret behind a quarter of the plate a Sherman has: it kills armour and it cannot touch infantry. Keep it back, keep it hull down, and keep men around it.'
   },
   us_sher: {
@@ -1368,7 +1368,7 @@ var UNITS = {
     models: 4, hpPer: 70, speed: 38, sight: 380, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
     req: 'ger_dep', setup: 1.6, atOnly: true, blastRes: .58, closeWeak: 2.2,
     gunAt: 8.7, gunMuz: [24.65, 8.61], gunGrip: [-3.19, 3.60, 5.45],
-    w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1 },
+    w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1, brake: 1 },
     desc: 'Longest reach on the field. Even a Sherman cannot afford to take two clean hits from it.'
   },
   /* Asked for, and built where it will fight. The eighty-eight was never a Pioneer's issue
@@ -1403,7 +1403,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger II (Königstiger)', short: 'TIGER II', cat: 'veh', hk: 'K', upgrades: ['mg'],
     hp: 1500, armor: 380, speed: 68, sight: 360, pop: 24, cost: { mp: 900, fu: 220 }, time: 95,
     req: 'ger_dep', limit: 1, retired: 1,
-    w: { range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1 },
+    w: { range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1, brake: 1 },
     desc: 'The heaviest tank of the war: 70 tonnes, a glacis nothing on this map can pierce, and an 8.8 cm L/71 that kills a Sherman at any range it can see. One per army. Slow, and it drinks fuel.'
   },
   /* Asked for, and built. Two Maus were finished and neither fought, so this is the
@@ -1421,15 +1421,15 @@ var UNITS = {
     side: 'ger', name: 'Panzer IV Ausf. H', short: 'PZ IV', cat: 'veh', hk: 'F', upgrades: ['skirts', 'mg'],
     hp: 700, armor: 132, speed: 76, sight: 340, pop: 14, cost: { mp: 345, fu: 90 }, time: 34,
     req: 'ger_dep',
-    w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1 },
+    w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
     desc: 'Better gun than a Sherman and thicker plate. Slower, and it hates being flanked.'
   },
   ger_stug: {
     side: 'ger', name: 'Sturmgeschütz IV', short: 'STUG IV', cat: 'veh', hk: 'S', upgrades: ['scope', 'mgs', 'skirts'],
     hp: 640, armor: 134, speed: 78, sight: 330, pop: 12, cost: { mp: 300, fu: 75 }, time: 30,
     req: 'ger_dep', arc: .35,
-    w: { range: 400, dmg: 152, rof: 3.5, acc: .72, sup: .05, pen: 228, aoe: 46, shell: 1 },
-    wUp: { scope: { range: 450, dmg: 152, rof: 3.5, acc: .75, sup: .05, pen: 228, aoe: 46, shell: 1 } },
+    w: { range: 400, dmg: 152, rof: 3.5, acc: .72, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
+    wUp: { scope: { range: 450, dmg: 152, rof: 3.5, acc: .75, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 } },
     desc: 'A month early for Ortona. The Panzer IV chassis under the StuG III fighting compartment: the same L/48 gun as the Panzer IV, half a metre lower and a seventh cheaper, and no turret. It fires ten degrees either side of where it points and turns the whole vehicle for anything else, so it is a gun to hold a street with, not to chase down one. Three fittings in the field: the scissors periscope, the two machine guns, and Schürzen.'
   },
   ger_h251: {
@@ -1449,7 +1449,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger I Ausf. E', short: 'TIGER I', cat: 'veh', hk: 'K', upgrades: ['mg'],
     hp: 1150, armor: 245, speed: 72, sight: 355, pop: 20, cost: { mp: 700, fu: 165 }, time: 76,
     req: 'ger_dep', limit: 1,
-    w: { range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1 },
+    w: { range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1, brake: 1 },
     desc: 'Fifty-seven tonnes, a hundred millimetres of flat plate all round the front, and an 8.8 cm KwK 36 that opens a Sherman at any range it can see. One per army. It is slow, it drinks fuel, and the streets here are narrow enough to trap it.'
   }
 };
@@ -1516,10 +1516,15 @@ var WORKS = {
           w: 96, h: 26, len: 96, line: 1,
           cover: { r: 46, type: 3, kind: 'bags', hp: 120, faced: 1 },
           desc: 'Four courses of filled bags on a bearing. Heavy cover to anything in front of it and nothing at all from the flank.' },
+  /* The one work that is DUG rather than laid on the grass, which is the whole of what
+     separates a pit from a ring of bags: `dig` sends it through the shell hole's own
+     carve, so the ground under it drops and the spoil stands up round it. Built without
+     that it was six courses of bags ten units high on flat earth -- it drew, it laid its
+     cover and from a player's camera it read as nothing at all. */
   pit:  { name: 'Weapon pit', short: 'WEAPON PIT', hk: '4', cost: { mp: 45 }, time: 12,
-          w: 64, h: 64, len: 64,
+          w: 64, h: 64, len: 64, dig: { r: 30, depth: 9, lip: { w: 17, h: 5.5 } },
           cover: { r: 30, type: 3, kind: 'pit', hp: 150 },
-          desc: 'A horseshoe of bags with the open end to the rear. Dug-in cover from every side, and a gun team in one stands to fire instead of lying down.' },
+          desc: 'A pit dug two feet into the ground with the spoil revetted round it and a horseshoe of bags on the parapet, open at the rear. Dug-in cover from every side, and a gun team in one stands to fire instead of lying down.' },
   wire: { name: 'Wire entanglement', short: 'WIRE', hk: '5', cost: { mp: 30 }, time: 9,
           w: 124, h: 34, len: 124, line: 1, slow: 1,
           desc: 'Concertina on screw pickets with an apron either side. No cover: it holds infantry in the open where the machine guns can see them, and tracks go over it.' },
@@ -1566,7 +1571,7 @@ var G = {
   inc: { us: { mp: 0, fu: 0 }, us2: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 } },
   pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
   made: { us: {}, us2: {}, ger: {}, ger2: {} },
-  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [],
+  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
   sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
@@ -2635,7 +2640,14 @@ function buildMap(data) {
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
   wallq = null;                                    /* the standing index is rebuilt with them */
-  G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
+  ruinq = null;                                    /* and the index of what can be knocked down */
+  /* Every prop in G.hurt is one of the objects just thrown away, so what is left of a
+     shelled house is thrown away with it -- otherwise the editor rebuilds its scene and
+     the last battle's rubble is still drawn over the top of it from a buffer pointing at
+     props that no longer exist. */
+  G.hurt.length = 0; G.rub.length = 0; G.rubDirty = 1; MND = null;
+  G.tileQ = {}; G.groundQ = {};
+  G.blocks = []; G.craterFx = []; G.craters = []; G.cratersDug = 0; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
   _s = 4242;
@@ -2724,10 +2736,11 @@ function buildMap(data) {
       case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
       case 'bunker':
         var bb2 = bunkerBox(e);
+        var bsd = bunkerSide(e);
         var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
-                    face: e.a || 0, arc: 1, s: e.s || 0, z: 0 };
+                    face: e.a || 0, arc: 1, s: e.s || 0, z: 0, sd: bsd };
         G.props.push(bk2); G.blocks.push(bk2);
-        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0 });
+        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd });
         /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
            in front of it. The ground in front of a bunker is the beaten zone, and a cover
            patch laid there would be the map telling a section that walking up to the slot
@@ -3131,6 +3144,7 @@ function makeHeight() {
   if (makeHeight._key === key) {
     G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
     G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+    G.pad = new Float32Array(HW * HH);
     return;
   }
   var h = new Float32Array(HW * HH), i, j, k;
@@ -3182,6 +3196,7 @@ function makeHeight() {
   makeHeight._key = key; makeHeight._base = new Float32Array(sm);
   G.hmap0 = sm; G.hmap = new Float32Array(sm);
   G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+  G.pad = new Float32Array(HW * HH);
 }
 /* Earthworks are kept as two layers over the natural ground: the deepest cut at each
    point and the highest spoil. Overlapping passes along a trench then agree instead of
@@ -3248,10 +3263,15 @@ function trenchFacing(a, b, flag) {
 }
 /* fold the earthworks into the natural ground */
 function applyEarthworks() {
-  for (var k = 0; k < G.hmap.length; k++) G.hmap[k] = G.hmap0[k] + G.cut[k] + G.fill[k];
+  for (var k = 0; k < G.hmap.length; k++) G.hmap[k] = G.hmap0[k] + G.cut[k] + G.fill[k] + G.pad[k];
   G.earthworksApplied = true;
 }
-/* press a footprint flat so buildings do not sit on a slope */
+/* Press a footprint flat so buildings do not sit on a slope.
+   It is kept as a THIRD layer over the natural ground rather than written straight into
+   the worked height, because `hmap = hmap0 + cut + fill + pad` then holds everywhere and
+   a piece of the height can be recomputed from its parts. Written into `hmap` directly
+   it did not, and the first shell hole blown beside a house recomputed the ground under
+   the house off the parts it could see and put the pad back on the hillside. */
 function levelPad(cx, cy, w, hgt) {
   if (!G.earthworksApplied) return groundZ(cx, cy);
   var z = groundZ(cx, cy);
@@ -3264,7 +3284,9 @@ function levelPad(cx, cy, w, hgt) {
       var d = Math.hypot(ox, oy);
       var f = clamp(1 - d / 40, 0, 1);
       var k = hidx(i, j);
-      G.hmap[k] = G.hmap[k] * (1 - f) + z * f;
+      var base = G.hmap0[k] + G.cut[k] + G.fill[k];
+      G.pad[k] = (base + G.pad[k]) * (1 - f) + z * f - base;
+      G.hmap[k] = base + G.pad[k];
     }
   }
   return z;
@@ -3431,6 +3453,9 @@ var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH), wallg = ne
 /* anti-tank obstacles: hedgehogs and dragon's teeth. The mirror image of wire, which
    holds a man up and lets a tank drive over it. */
 var hogg = new Uint8Array(GW * GH);
+/* and what a house that has been knocked down leaves behind, which is neither a
+   building nor open ground */
+var rubg = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -3495,7 +3520,22 @@ function rebuildGrid() {
   gridStamp++;
   if (!terrOk) buildTerrGrid();
   grid.set(terrg);
-  G.props.forEach(function (p) { if (p.solid) blockRect(p.x, p.y, p.w, p.h, 6); });
+  rubg.fill(0);
+  G.props.forEach(function (p) {
+    if (!p.solid) return;
+    /* A house that has been knocked down is not a house. Blocking the footprint of
+       something that is not standing there any more is the field walls' fault the other
+       way about, and it is the one thing that would make bringing a building down change
+       nothing whatever about the fight in the street it stood in: the lane would still
+       be shut, the eye would still be stopped, and the picture would be the only thing
+       that had moved. So the four walls of a bay block while the bay is up, and once it
+       is down what is left is its own masonry -- dear to cross and no use at all for
+       hiding behind, which is `rubg`. */
+    if (p.hurt) { ruinBlocks(p, function (x, y, w, h, up) {
+      if (up) blockRect(x, y, w, h, 6); else markRect(rubg, x, y, w, h, 0);
+    }); return; }
+    blockRect(p.x, p.y, p.w, p.h, 6);
+  });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
   /* Hulls that burned where they stopped. Marked a little inside their own length, so
      that the cover a section takes behind one is still ground it can stand on, and they
@@ -3506,6 +3546,12 @@ function rebuildGrid() {
   sblk.fill(0); fblk.fill(0);
   G.props.forEach(function (p) {
     if (!p.solid || p.kind === 'sea') return;
+    if (p.hurt) { ruinBlocks(p, function (x, y, w, h, up) {
+      /* a stump a man sees and shoots over, which is the same rule a field wall under
+         sixteen units already gets */
+      if (!up) return;
+      markRect(sblk, x, y, w, h, 0); markRect(fblk, x, y, w, h, 0);
+    }); return; }
     markRect(sblk, p.x, p.y, p.w, p.h, 0); markRect(fblk, p.x, p.y, p.w, p.h, 0);
   });
   G.blds.forEach(function (b) {
@@ -3521,11 +3567,14 @@ function rebuildGrid() {
   G.walls.forEach(function (w) {
     /* Only a wall taller than a man stops his eye and his round. A waist-high field
        boundary is cover he fires OVER, so it is on the going grid and the cover index
-       and on neither of the two that block. */
-    if ((w.h || 24) >= 16) {
-      markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
-    }
-    markSeg(wallg, w.x1, w.y1, w.x2, w.y2, 4);
+       and on neither of the two that block. And what a shell has knocked out of it is
+       marked on none of them: a gap in a wall is a way through, which is the whole
+       reason for blowing one. */
+    var tall = (w.h || 24) >= 16;
+    wallSpans(w, function (x1, y1, x2, y2) {
+      if (tall) { markSeg(sblk, x1, y1, x2, y2, 7); markSeg(fblk, x1, y1, x2, y2, 7); }
+      markSeg(wallg, x1, y1, x2, y2, 4);
+    });
   });
   /* a hedge hides a section and does not save it */
   G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 9); });
@@ -3696,6 +3745,11 @@ function onWall(x, y) {
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
   return wallg[cidx(cx, cy)] === 1;
 }
+function onRubble(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return rubg[cidx(cx, cy)] === 1;
+}
 function onRoad(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
@@ -3839,11 +3893,14 @@ function cellCost(ci, kind, dang, fear) {
      half-track trying to. Two cells is a section's width. */
   var r = roomg[ci], tight = r < 2.6 ? (2.6 - r) * (kind === 0 ? .3 : 1.1) : 0;
   var c;
-  if (kind === 0) c = (wireg[ci] ? 2.6 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
+  if (kind === 0) c = (wireg[ci] ? 2.6 : rubg[ci] ? 2.3 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
   else {
     c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
     if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
     if (wallg[ci] && kind === 2) c *= 2.6;             /* a lorry goes round; tracks do not */
+    /* A collapsed house is a couple of metres of broken masonry. Men climb it, tracks
+       push over it slowly and a lorry has no business on it at all. */
+    if (rubg[ci]) c *= kind === 2 ? 5 : 2.4;
     if (hogg[ci]) c *= 12;                             /* and neither goes through a hedgehog */
     c += tight;
   }
@@ -4301,7 +4358,12 @@ function blockAt(x, y) {
 }
 function canGarrison(u, bk) {
   return u && bk && (u.cat === 'inf' || u.cat === 'team') && u.def.speed > 0 && !u.gar && !u.retreat &&
-         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60));
+         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60)) &&
+         /* and it has to still be a building. A house shelled flat is a heap of its own
+            masonry: there are no windows to fight out of and no storey to stand on, and
+            a section sent into one would be standing in the open believing it held the
+            strongest cover on the map. */
+         (!bk.hurt || ruinStanding(bk) >= 34);
 }
 /* where the men stand: spread along the inside of the four walls, facing out */
 function garrisonSlots(bk, count) {
@@ -4641,9 +4703,11 @@ function moveUnit(u, dt) {
       /* and a hull that has taken the belt anyway, because it was the only way through,
          is over it at a crawl rather than through it at a drive */
       if (inHogs(u.x, u.y)) sp *= .35;
+      if (onRubble(u.x, u.y)) sp *= .45;
     }
     else if (inWire(u.x, u.y)) sp *= .40;                /* caught in the apron */
     else if (onWall(u.x, u.y)) sp *= .55;               /* over the field wall, one at a time */
+    else if (onRubble(u.x, u.y)) sp *= .50;             /* over what is left of the house */
   }
   if (d < (u.pi === u.path.length - 1 ? 14 : CELL * .8)) {
     u.pi++;
@@ -4910,6 +4974,7 @@ function buildWallQ() {
     var n = Math.max(2, Math.round(len / 34)), sl = len / n;
     for (var k = 0; k < n; k++) {
       var t = (k + .5) / n, cx = w.x1 + (w.x2 - w.x1) * t, cy = w.y1 + (w.y2 - w.y1) * t;
+      if (wallGap(w, t * len)) continue;              /* nothing to stand in any more */
       var seg = [cx, cy, sl + 1, a], rr = sl * .5 + 8;
       var i0 = Math.max(0, ((cx - rr) / WQ) | 0), i1 = Math.min(wallqW - 1, ((cx + rr) / WQ) | 0);
       var j0 = Math.max(0, ((cy - rr) / WQ) | 0), j1 = Math.min(wallqH - 1, ((cy + rr) / WQ) | 0);
@@ -5271,7 +5336,7 @@ function updateModels(u, dt) {
         m.flashed = 1;
         if (onScreen(m.x, m.y)) {
           var mz = muzzlePoint(u, m, i);
-          spawnFx('flash', mz.x, mz.y, 7.5, mz.z);
+          muzFx(u, u.def.w, mz.x, mz.y, mz.z, m.f);
         }
       }
     } else m.flashed = 0;
@@ -5708,9 +5773,12 @@ function fireOneSecondary(u, key, dt) {
     var M = VMODEL[u.key] || {}, mo = mountPose(u, M);
     var tx0 = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
     var ty0 = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
-    G.shots.push({ kind: 'tracer', x: tx0 - Math.cos(u.turret) * 8, y: ty0 - Math.sin(u.turret) * 8, tx: aimX + rnd(-8, 8), ty: aimY + rnd(-8, 8), t: 0, dur: .14 });
-    spawnFx('flash', tx0 + Math.cos(u.turret) * 14, ty0 + Math.sin(u.turret) * 14, 6,
-            groundZ(u.x, u.y) + (mo.z || 0) + 6);
+    var cbx = tx0 - Math.cos(u.turret) * 8, cby = ty0 - Math.sin(u.turret) * 8;
+    G.shots.push({ kind: 'tracer', x: cbx, y: cby, sx: cbx, sy: cby,
+                   tx: aimX + rnd(-8, 8), ty: aimY + rnd(-8, 8), t: 0, dur: .14, tail: .34,
+                   z0: (mo.z || 0) + 6, tr: Math.random() < .5, col: TRACER[u.side], side: u.side });
+    muzFx(u, w, tx0 + Math.cos(u.turret) * 14, ty0 + Math.sin(u.turret) * 14,
+          groundZ(u.x, u.y) + (mo.z || 0) + 6, u.turret);
     if (Math.random() < .4) sfx('mg');
   }
   if (best && Math.random() < acc) damage(best, w.dmg * rnd(.85, 1.15), u);
@@ -5726,7 +5794,7 @@ function vehCrit(t, w, src) {
   if (r < (heavy ? .13 : .07)) {
     t.immob = Math.max(t.immob || 0, 5 + Math.random() * 4);
     t.path = null;
-    spawnFx('spark', t.x + rnd(-18, 18), t.y + rnd(-18, 18));
+    sparkFx(t.x + rnd(-16, 16), t.y + rnd(-16, 16), groundZ(t.x, t.y) + 8, 4);
     if (owned(t)) toast(t.def.short + ' track hit');
   } else if (r < (heavy ? .22 : .13)) {
     t.gunDmg = Math.max(t.gunDmg || 0, 7 + Math.random() * 5);
@@ -5853,7 +5921,7 @@ function fireAt(u, t, dt) {
   var hits = 0, bounced = 0;
   for (var s = 0; s < shots; s++) {
     if (Math.random() > acc) continue;
-    if (t.cat === 'veh' && Math.random() > pc) { bounced++; spawnFx('spark', t.x + rnd(-12, 12), t.y + rnd(-12, 12)); continue; }  /* a vehicle is its own marker */
+    if (t.cat === 'veh' && Math.random() > pc) { bounced++; sparkFx(t.x + rnd(-10, 10), t.y + rnd(-10, 10), groundZ(t.x, t.y) + 18, 5, angTo(t, u)); continue; }  /* a vehicle is its own marker */
     hits++;
   }
   /* a round that stops on the plate still rings the hull; the crew flinch and the
@@ -5867,8 +5935,7 @@ function fireAt(u, t, dt) {
       u.recoil = 1;
       if (onScreen(u.x, u.y) || u === povHost()) {
         var gm = gunMuzzle(u);
-        spawnFx('flash', gm.x, gm.y, 16 + w.pen * .022, gm.z);
-        spawnFx('gunsmoke', gm.x, gm.y, 10, gm.z);
+        muzFx(u, w, gm.x, gm.y, gm.z, u.turret);
         spawnFx('brass', u.x - Math.cos(u.turret) * 8, u.y - Math.sin(u.turret) * 8);
       }
     } else if (u.cat === 'team') {
@@ -5880,8 +5947,7 @@ function fireAt(u, t, dt) {
           var gm2 = GUNMODEL[u.key];
           var reach = gm2 ? gm2.bar : (u.def.atOnly ? 44 : 26), lift = gm2 ? gm2.z : 13;
           var bx = tm2.x + Math.cos(u.facing) * reach, by = tm2.y + Math.sin(u.facing) * reach;
-          spawnFx('flash', bx, by, gm2 ? 20 : 15, groundZ(tm2.x, tm2.y) + lift);
-          spawnFx('gunsmoke', bx, by, 11, groundZ(tm2.x, tm2.y) + lift);
+          muzFx(u, w, bx, by, groundZ(tm2.x, tm2.y) + lift, u.facing);
         }
       }
     }
@@ -5906,29 +5972,761 @@ function fireAt(u, t, dt) {
                    sx: from.x, sy: from.y, t: 0,
                    dur: ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
                    arc: ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
+                   /* a flat round carries a tracer element in its base and is drawn as
+                      one; a bomb has none and is a dark body against the sky */
+                   z0: u.cat === 'veh' ? 24 : 14, tail: ind ? .05 : .30, col: TRACER[u.side],
                    w: w, hit: hits > 0,
-                   side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t });
-    sfx(u.cat === 'veh' || u.cat === 'team' ? 'cannon' : 'rocket', u.x, u.y);
+                   side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t,
+                   /* how high up it goes off, which is the whole of where a hole in a
+                      wall ends up. A flat round arrives at about the height it left the
+                      barrel at, so a tank on a rise puts one through an upper storey and
+                      a gun in the street puts one through the ground floor; a bomb comes
+                      down and bursts at the foot of what it hits. */
+                   bz: ind ? 0 : clamp(groundZ(u.x, u.y) + (u.cat === 'veh' ? 26 : 15) - groundZ(at.x, at.y), 0, 70) });
+    /* a flat round is at the target before anybody could act on the noise of it; a bomb
+       is in the air for seconds and the whistle is what a player moves out from under */
+    if (ind) G.shots[G.shots.length - 1].wh = 0;
+    /* The report is the weapon's own -- see `gunVoice`, which reads it off the burst and
+       the penetration the way `muzFx` reads the flash off the same two numbers. An
+       infantry launcher is not a gun and keeps the shove it always had. */
+    var gv = gunVoice(u, w);
+    sfx(u.cat === 'veh' || u.cat === 'team' ? gv.cls : 'rocket', u.x, u.y, gv);
   } else {
-    for (var q = 0; q < Math.min(shots, 6); q++)
-      G.shots.push({ kind: 'tracer', x: from.x + rnd(-9, 9), y: from.y + rnd(-9, 9),
-                     tx: at.x + rnd(-14, 14), ty: at.y + rnd(-14, 14), t: 0, dur: .075, side: u.side });
+    for (var q = 0; q < Math.min(shots, 6); q++) {
+      var fx0 = from.x + rnd(-9, 9), fy0 = from.y + rnd(-9, 9);
+      G.shots.push({ kind: 'tracer', x: fx0, y: fy0, sx: fx0, sy: fy0,
+                     /* the men of a section do not fire on the same instant and neither
+                        do their rounds: staged, five tracers read as five rounds rather
+                        than as one thick bar of light */
+                     tx: at.x + rnd(-14, 14), ty: at.y + rnd(-14, 14), t: -q * .016, dur: .075,
+                     tail: .34, z0: u.cat === 'veh' ? 24 : 15, side: u.side,
+                     /* a belt is one round in four or five, not every round; enough of
+                        them burn here that a player can see who is shooting at whom */
+                     tr: Math.random() < (w.rof < .3 ? .5 : .34), col: TRACER[u.side] });
+    }
+    /* An armoured car's autocannon and a half-track's machine gun are the vehicle's MAIN
+       weapon and carry no shell, so they went down the small-arms path and spawned no
+       flash at all: four of the roster fired invisibly except for the belt. */
+    if (u.cat === 'veh' && (onScreen(u.x, u.y) || u === povHost())) {
+      var vmz = gunMuzzle(u);
+      muzFx(u, w, vmz.x, vmz.y, vmz.z, u.turret);
+    }
     var close = (t.def && t.def.closeWeak && u.cat !== 'veh' && d < 170) ? t.def.closeWeak : 1;
     if (hits > 0) damage(t, w.dmg * hits * close, u);
     sfx(w.rof < .2 ? 'mg' : 'rifle', u.x, u.y);
     if (hits) spawnFx('hit', at.x + rnd(-14, 14), at.y + rnd(-14, 14));
   }
 }
-function explode(x, y, radius, dmg, owner, except) {
-  spawnFx('boom', x, y, radius);
-  decalScorch(x, y, radius * 1.15);
+/* ---- masonry, and what is left of it -------------------------------------------
+   A town house here is a set of BAYS and each bay is four walls built up in seven-unit
+   courses round a list of openings -- the windows, the door, the shell holes the map was
+   born with. `wallCourses` already cuts those holes out of the courses, which means the
+   openings are DATA rather than geometry, and that is the whole reason a building here
+   can be knocked down at all: a shell adds a hole to the list and the wall is rebuilt
+   round it. Nothing had to be modelled twice.
+
+   A bay's four walls run, in order, along +y, -y, +x and -x of the bay's own frame; the
+   builder places each of them with a yaw, so a hit has to be turned into the wall's own
+   `u` along its length and a normal distance out of its plane. The chord the shell cuts
+   through the plane is `sqrt(r^2 - nd^2)`, which is the hole's half-width, and that is
+   why a round that grazes a wall takes a bite out of it and one that hits it square
+   takes a hole the width of the burst. */
+var RUIN_T = 4.5, RUIN_CH = 7.0;                   /* the wall thickness and the course */
+function ruinBays(p) { return Math.max(1, Math.round(p.w / 70)); }
+/* The bays, worked out once and kept on the prop. It is the same arithmetic sceneProps
+   does when it meshes one, and it is here rather than there because the mesher runs on a
+   tile rebuild and this has to survive one. */
+function ruinState(p) {
+  if (p.bay) return p.bay;
+  var n = ruinBays(p), bw = p.w / n, i, b = [];
+  for (i = 0; i < n; i++) {
+    b.push({ x: p.x - p.w / 2 + bw * (i + .5), y: p.y, w: bw - 2, d: p.h - 2,
+             h: (p.tall || p.style === 'civic' ? 84 : 66) + ((i % 3) - 1) * 6,
+             seed: (p.s * 3 + i * .41) % 1, dmg: ((p.damage * 9.7 + i * .317) % 1) > .45,
+             brk: [[], [], [], []],               /* the breaches cut in each wall */
+             gone: [0, 0, 0, 0],                  /* the share of each wall that is out */
+             down: 0, fell: 0 });                 /* storeys lost, and when the last went */
+  }
+  p.bay = b;
+  return b;
+}
+/* Where a bay's four walls stand in its own frame: how far off the plane a point is,
+   which way `u` runs along the wall, and how long it is. `nd` is measured ALONG THE
+   OUTWARD NORMAL, so it is positive in the street and negative in the room whichever of
+   the four it is -- which nothing needed while every reader took its absolute value, and
+   which is the whole question the moment one of them asks which side the blast is on. */
+function ruinFace(b, fi, lx, ly) {
+  var o = b.d / 2 - RUIN_T / 2, q = b.w / 2 - RUIN_T / 2;
+  if (fi === 0) return { nd: ly - o, u: lx, len: b.w, nx: 0, ny: 1 };
+  if (fi === 1) return { nd: -(ly + o), u: -lx, len: b.w, nx: 0, ny: -1 };
+  if (fi === 2) return { nd: lx - q, u: ly, len: b.d, nx: 1, ny: 0 };
+  return { nd: -(lx + q), u: -ly, len: b.d, nx: -1, ny: 0 };
+}
+/* and the other way about, for putting the masonry that came out back in the world */
+function ruinWorld(b, fi, u, off) {
+  var o = b.d / 2 - RUIN_T / 2, q = b.w / 2 - RUIN_T / 2;
+  if (fi === 0) return [b.x + u, b.y + o + off];
+  if (fi === 1) return [b.x - u, b.y - o - off];
+  if (fi === 2) return [b.x + q + off, b.y + u];
+  return [b.x - q - off, b.y - u];
+}
+/* ---- the masonry in the air ----
+   What a breach removes is not a puff of particles: it is the courses that were standing
+   there, and they come out at their own size, in their own colour, from their own place
+   in the wall. Each is a rigid body -- a position, a velocity, an orientation and an
+   angular velocity -- integrated under gravity with a bounce and friction against the
+   ground until it stops. There is no chunk-against-chunk contact, which is the one thing
+   a solver would give and the one thing nothing here can afford; everything else about
+   the motion is the real arithmetic, and a hundred and twenty slabs of stone turning over
+   as they fall is what a wall coming down looks like.
+
+   A man's eye is at 17, so a metre is about ten units and gravity is 98 of them a second
+   squared. Stone does not bounce: the restitution is a fifth and the friction takes most
+   of what is left, so a chunk lands, skips once and lies down. */
+var RUIN_G = 98, DEB_CAP = 280;
+function debrisCap() { return MOB ? 90 : DEB_CAP; }
+/* And not all of a broken wall becomes a block. A shell turns a good share of what it
+   takes out into dust and chips -- what the burst and the smoke already draw -- so the
+   stone that appears in the air is a declared fraction of the stone that left the wall
+   rather than an accident of three independent jitters, which is what it was: the card
+   measures it and there has to be something to measure it against. */
+var RUIN_KEEP = .78;
+/* one piece of wall, thrown */
+function spawnChunk(x, y, z, l, w, h, col, vx, vy, vz) {
+  if (G.debris.length >= debrisCap()) return;
+  G.debris.push({ x: x, y: y, z: z, l: l, w: w, h: h, c: col,
+                  vx: vx, vy: vy, vz: vz,
+                  rx: rnd(0, TAU), ry: rnd(0, TAU), rz: rnd(0, TAU),
+                  wx: rnd(-7, 7), wy: rnd(-7, 7), wz: rnd(-5, 5),
+                  rest: 0, t: 0 });
+}
+/* A breach, turned into the courses it took out. The hole spans whole courses, so the
+   chunks are the courses: one per course, cut to the width of the hole and split when
+   that is wider than it is tall, because a slab eight times longer than it is deep reads
+   as a plank rather than as masonry. */
+function breachChunks(b, fi, hole, away, blast) {
+  var z, z0 = Math.max(0, hole.z0), z1 = Math.min(b.h, hole.z1), nrm = ruinFace(b, fi, 0, 0);
+  for (z = Math.floor(z0 / RUIN_CH) * RUIN_CH; z < z1; z += RUIN_CH) {
+    var cz = Math.max(z, z0), ct = Math.min(z + RUIN_CH, z1);
+    if (ct - cz < 1.4) continue;
+    var full = hole.hw * 2, np = Math.max(1, Math.min(4, Math.round(full / 11)));
+    for (var k = 0; k < np; k++) {
+      var cw = full / np, cu = hole.u - hole.hw + cw * (k + .5);
+      var wp = ruinWorld(b, fi, cu, 0);
+      /* A shell THROWS masonry and a collapse DROPS it, and that is not a detail: given
+         a blast's speed, the perimeter of a bay ended up scattered a hundred and twenty
+         units into the street, four fifths of it too far from the house to be its
+         rubble at all. Out of the wall on the side the round came from, up a little, and
+         faster the higher it was standing; or, coming down under its own weight, a
+         shrug outward and a fall. */
+      var sp = blast ? 26 + Math.random() * 46 + cz * .35 : 7 + Math.random() * 13;
+      var up = blast ? rnd(14, 52) + cz * .25 : rnd(-6, 6);
+      var sd2 = blast ? 16 : 7;
+      /* each dimension jittered about one, so no block is the same as the last and the
+         three of them together still average the fraction the wall is meant to keep */
+      spawnChunk(wp[0], wp[1], groundZ(wp[0], wp[1]) + cz + (ct - cz) / 2,
+                 cw * RUIN_KEEP * rnd(.82, 1.18), RUIN_T * rnd(.85, 1.15), (ct - cz) * rnd(.84, 1.16),
+                 ruinStone(b),
+                 nrm.nx * sp * away + rnd(-sd2, sd2), nrm.ny * sp * away + rnd(-sd2, sd2),
+                 up);
+    }
+  }
+}
+/* ---- finding the masonry a shell is standing in ----
+   A burst is a small circle and the town is two thousand props, so the walk has to be
+   bucketed the way the field walls already are. This is the same index and the same
+   reason: `damageCover` was once a linear scan of the whole cover list at the foot of
+   every explosion, and an explosion happens several times a second in a firefight. Built
+   the first time a shell asks and thrown away with the map. */
+var RQ = 140, ruinq = null, ruinqW = 0, ruinqH = 0;
+function buildRuinQ() {
+  ruinqW = Math.ceil(WORLD.w / RQ); ruinqH = Math.ceil(WORLD.h / RQ);
+  ruinq = [];
+  for (var i = 0; i < G.props.length; i++) {
+    var p = G.props[i];
+    if (p.kind !== 'ruin') continue;
+    var i0 = Math.max(0, ((p.x - p.w / 2) / RQ) | 0), i1 = Math.min(ruinqW - 1, ((p.x + p.w / 2) / RQ) | 0);
+    var j0 = Math.max(0, ((p.y - p.h / 2) / RQ) | 0), j1 = Math.min(ruinqH - 1, ((p.y + p.h / 2) / RQ) | 0);
+    for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
+      var b = j * ruinqW + ii;
+      (ruinq[b] || (ruinq[b] = [])).push(p);
+    }
+  }
+}
+/* every house within `r` of a point, each offered once */
+function ruinsNear(x, y, r, fn) {
+  if (!ruinq) buildRuinQ();
+  var i0 = Math.max(0, ((x - r) / RQ) | 0), i1 = Math.min(ruinqW - 1, ((x + r) / RQ) | 0);
+  var j0 = Math.max(0, ((y - r) / RQ) | 0), j1 = Math.min(ruinqH - 1, ((y + r) / RQ) | 0);
+  for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
+    var list = ruinq[j * ruinqW + ii];
+    if (!list) continue;
+    for (var k = 0; k < list.length; k++) {
+      var p = list[k];
+      if (p._rq === RQSTAMP) continue;
+      p._rq = RQSTAMP;
+      if (Math.abs(x - p.x) < p.w / 2 + r && Math.abs(y - p.y) < p.h / 2 + r) fn(p);
+    }
+  }
+  RQSTAMP++;
+}
+var RQSTAMP = 1;
+/* ---- a shell against a wall ----
+   Every face within the burst is asked, because a round into the corner of a house takes
+   a bite out of two walls and that is what a corner looks like afterwards. What is
+   recorded is the hole, and what is counted is the share of the wall that is now out of
+   it: a wall is not a pool of hit points, it is an area, and the area is what decides
+   whether it is still carrying anything. */
+function ruinHit(p, sx, sy, sz, r, br, owner) {
+  if (p.kind !== 'ruin' || p.style === 'church') return 0;
+  var B = ruinState(p), fi, i, any = 0;
+  for (i = 0; i < B.length; i++) {
+    var b = B[i];
+    if (b.down >= 2) continue;
+    if (Math.abs(sx - b.x) > b.w / 2 + r + 10 || Math.abs(sy - b.y) > b.d / 2 + r + 10) continue;
+    var lx = sx - b.x, ly = sy - b.y;
+    /* A round bursting in the street outside one wall does not take a bite out of the
+       wall on the far side of the room, and at a battery's reach it was taking one out
+       of all four: the signed distance to a face says how far off the blast is and says
+       nothing about whether there is a building in between. A burst INSIDE the bay is
+       the other case and blows all four out, which is what a round through a window
+       does. */
+    var inside = Math.abs(lx) < b.w / 2 && Math.abs(ly) < b.d / 2;
+    for (fi = 0; fi < 4; fi++) {
+      var F = ruinFace(b, fi, lx, ly);
+      if (Math.abs(F.nd) >= r || Math.abs(F.u) > F.len / 2 + r) continue;
+      if (!inside && F.nd <= 0) continue;
+      /* How far the blast REACHES masonry and how big a hole it makes when it gets
+         there are two numbers, and written as one they fought each other. A hole scaled
+         off the weight of the shell is a metre across for a tank round, so a round that
+         burst a metre and a half from the wall -- which is where a man taking cover at a
+         house is standing, and therefore where most rounds in a town actually land --
+         took nothing out of it at all. The reach is the weight of the shell too, but it
+         is several times the hole: at the edge of it the wall is scarred and at the
+         middle of it the hole is the full breach.
+           And the distance is to the WALL and not to its plane. A terrace is meshed in
+         bays and a heavy round reaches past the end of the one it burst against, so with
+         only the perpendicular in it a shell on one bay cut a full-width breach in the
+         next bay's frontage sixty units away, at exactly the size it cut in the bay it
+         hit. */
+      var du = Math.abs(F.u) - F.len / 2;
+      var dd = du > 0 ? Math.sqrt(F.nd * F.nd + du * du) : Math.abs(F.nd);
+      var fall = 1 - (dd / r) * (dd / r);
+      var hw = br * Math.sqrt(fall > 0 ? fall : 0);
+      if (hw < 2) continue;
+      var z0 = clamp(sz - hw * .85, 0, b.h), z1 = clamp(sz + hw * .85, 0, b.h);
+      if (z1 - z0 < 2) continue;
+      var u = clamp(F.u, -F.len / 2, F.len / 2);
+      b.brk[fi].push({ u: u, hw: hw, z0: z0, z1: z1, rag: 3.2 });
+      b.dirty = 1;
+      b.gone[fi] = clamp(b.gone[fi] + (2 * hw * (z1 - z0)) / (F.len * b.h), 0, 1);
+      /* and the stone goes the way the blast went, which is through the wall and away
+         from the round rather than back at it */
+      breachChunks(b, fi, { u: u, hw: hw, z0: z0, z1: z1 }, F.nd > 0 ? -1 : 1, 1);
+      any = 1;
+    }
+    if (any) ruinCollapse(p, b, owner);
+  }
+  if (any) ruinTouch(p);
+  return any;
+}
+/* ---- a wall is an object, and objects break too ----
+   A garden wall does not need a structure. It is a LINE, and what a shell does to one is
+   take a length out of the middle of it, so a gap is a span measured along the run --
+   which is the one number every reader of a wall already works in. The mesher steps
+   along it stone by stone, the movement and sight grids mark it piece by piece, and the
+   standing index buckets it by piece as well, so a gap is skipped in all of them rather
+   than modelled in any of them. */
+function wallLen(w) { return Math.hypot(w.x2 - w.x1, w.y2 - w.y1); }
+function wallGap(w, s) {
+  var g = w.gaps, i;
+  if (!g) return false;
+  for (i = 0; i < g.length; i++) if (s > g[i][0] && s < g[i][1]) return true;
+  return false;
+}
+/* the pieces of a run that are still standing, as world segments */
+function wallSpans(w, fn) {
+  var len = wallLen(w);
+  if (!w.gaps || !w.gaps.length || len < 1) { fn(w.x1, w.y1, w.x2, w.y2); return; }
+  var ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len;
+  var g = w.gaps.slice().sort(function (a, b) { return a[0] - b[0]; }), s = 0, i;
+  for (i = 0; i < g.length; i++) {
+    var a0 = clamp(g[i][0], 0, len), a1 = clamp(g[i][1], 0, len);
+    if (a0 > s + 2) fn(w.x1 + ux * s, w.y1 + uy * s, w.x1 + ux * a0, w.y1 + uy * a0);
+    if (a1 > s) s = a1;
+  }
+  if (len - s > 2) fn(w.x1 + ux * s, w.y1 + uy * s, w.x2, w.y2);
+}
+/* A round against a run. The gap is the same falloff a wall of a house gets, because it
+   is the same question asked of thinner masonry: the burst reaches a distance that is
+   the weight of the shell and takes the full bite at the middle of it. Below a couple of
+   stones there is no gap worth cutting -- a scar on a wall is what the scorch decal
+   already draws. */
+function wallHit(w, sx, sy, sz, r, br, owner) {
+  var len = wallLen(w);
+  if (len < 6) return 0;
+  var wh = w.h || 24;
+  if (sz > wh + 22) return 0;                        /* the round went over the top of it */
+  var ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len;
+  var t = clamp((sx - w.x1) * ux + (sy - w.y1) * uy, 0, len);
+  var px = w.x1 + ux * t, py = w.y1 + uy * t, d = Math.hypot(sx - px, sy - py);
+  if (d >= r) return 0;
+  var hw = br * Math.sqrt(1 - (d / r) * (d / r));
+  if (hw < 5) return 0;
+  var a0 = t - hw, a1 = t + hw;
+  if (!w.gaps) w.gaps = [];
+  /* merged as it goes in, so a wall shelled all afternoon is a handful of spans rather
+     than a hundred overlapping ones every reader has to walk */
+  var i, g = w.gaps;
+  for (i = g.length - 1; i >= 0; i--) {
+    if (g[i][0] > a1 + 2 || g[i][1] < a0 - 2) continue;
+    a0 = Math.min(a0, g[i][0]); a1 = Math.max(a1, g[i][1]);
+    g.splice(i, 1);
+  }
+  g.push([a0, a1]);
+  /* the stones that were standing there, thrown off the run the way the blast went */
+  var side = ((sx - w.x1) * uy - (sy - w.y1) * ux) < 0 ? 1 : -1;
+  var nx = -uy * side, ny = ux * side;
+  /* a course at a time, and a wall is laid in small stones rather than in slabs: at a
+     slab a metre long, sixty units of garden wall came apart into seven pieces */
+  var st, step = 6.5, cz2 = wh > 16 ? 2 : 1;
+  for (st = Math.max(0, a0); st < Math.min(len, a1); st += step) {
+    for (var cc = 0; cc < cz2; cc++) {
+      var cx = w.x1 + ux * (st + step / 2), cy = w.y1 + uy * (st + step / 2);
+      var col = WSTONE[(Math.random() * WSTONE.length) | 0];
+      var sp = 20 + Math.random() * 34;
+      spawnChunk(cx + nx * rnd(-2, 2), cy + ny * rnd(-2, 2),
+                 groundZ(cx, cy) + wh * (cc + .5) / cz2,
+                 step * rnd(.62, .95), (wh > 16 ? 9 : 7) * rnd(.75, 1.1),
+                 (wh / cz2) * rnd(.55, .92), col,
+                 nx * sp + rnd(-12, 12), ny * sp + rnd(-12, 12), rnd(10, 38));
+    }
+  }
+  /* the mesher, the grids and the standing index all read it, and all three have to be
+     told. The run belongs to the tile its midpoint is in, which is how it was merged. */
+  if (SCENE && SCENE.tiles) G.tileQ[tileOf((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2)] = 1;
+  wallq = null;
+  G.gridDirty = 1;
+  return 1;
+}
+/* what a broken wall is made of, and it is two things. The face was rendered and the
+   core behind it is rubble stone, so a fresh breach is a pale scar with dark stone in it
+   and the heap at the foot is mottled rather than one colour. Both come off the bay's own
+   seed, which is what the mesher built the wall out of. */
+function ruinStone(b) {
+  if (Math.random() < .45) return PLASTER[Math.floor(((b.seed * 7.3) % 1) * PLASTER.length)];
+  return STONE[Math.floor(clamp(b.seed, 0, .999) * STONE.length)];
+}
+/* ---- what a wall was carrying ----
+   A storey stands on the walls under it, so the test is not how much punishment a
+   building has taken in total but whether any one wall has stopped being a wall. One
+   face past three quarters is a wall that has fallen out; two faces past a half is a box
+   that is no longer a box. Either takes the storey above it, and what comes down is the
+   masonry that was up there: the whole of the bay's perimeter above the new height,
+   thrown outward and turning.
+     Note that this is checked per bay. A terrace does not come down all at once, which
+   is the entire reason a town house is meshed in bays in the first place. */
+function ruinCollapse(p, b, owner) {
+  var worst = Math.max(b.gone[0], b.gone[1], b.gone[2], b.gone[3]);
+  var spread = 0, fi;
+  for (fi = 0; fi < 4; fi++) if (b.gone[fi] > .45) spread++;
+  if (!(worst > .75 || spread >= 2)) return;
+  if (b.down >= 2) return;
+  var was = ruinHeight(b);
+  b.down++;
+  var now = ruinHeight(b);
+  if (now >= was - 2) return;
+  b.fell = G.t;
+  b.dirty = 1;
+  ruinTouch(p);                        /* whatever brought it down, it is out of the tile now */
+  /* the perimeter above the new height, coming off all four faces at once */
+  for (fi = 0; fi < 4; fi++) {
+    var F = ruinFace(b, fi, 0, 0), step = 11, uu;
+    for (uu = -F.len / 2 + step / 2; uu < F.len / 2; uu += step)
+      breachChunks(b, fi, { u: uu, hw: step / 2, z0: now, z1: was }, 1, 0);
+    /* and the wall it was standing on is written off along with it */
+    b.gone[fi] = clamp(b.gone[fi] * .6, 0, 1);
+    b.brk[fi] = b.brk[fi].filter(function (hl) { return hl.z0 < now; });
+  }
+  /* pale, not sooty: what comes off a storey falling in is plaster and stone dust */
+  var cr = Math.max(40, Math.min(b.w, b.d) * .5);
+  burstFx(b.x, b.y, cr, 1, 12);
+  sfx('boom', b.x, b.y, burstVoice(cr));
+  if (onScreen(b.x, b.y)) addShake(7);
+  /* What was a wall is now a heap of what the wall was made of. The four patches ringing
+     a house are tier 3 lying along its four faces, and a face that has come down cannot
+     go on sheltering anybody from fire across it: the patch is written off, which drops
+     it a tier the same way a shelled sandbag wall drops one, and its axis goes with it
+     because a mound of masonry is the same from every bearing. That is the whole of the
+     cover change -- nothing new is added, because a patch laid on ground that is now
+     rubble is a patch the index and `aiFirePost` would read as somewhere to stand. */
+  if (!ruinUp(b)) {
+    var near = coversNear(b.x, b.y, Math.max(b.w, b.d) * .6);
+    for (var ci = 0; ci < near.length; ci++) {
+      var cv = near[ci];
+      if (cv.kind !== 'wall') continue;
+      if (Math.abs(cv.x - b.x) > b.w / 2 + 26 || Math.abs(cv.y - b.y) > b.d / 2 + 26) continue;
+      cv.hp = 0; cv.axis = null; cv.kind = 'lowwall';
+    }
+  }
+  /* and whoever was holding it. A storey coming down on a section is the heaviest thing
+     that happens to men in this game, and the ones still inside are put out only when
+     there is no house left to hold: a section in a three-bay terrace with one bay down
+     is still in the building. */
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || !u.gar || u.gar !== p) continue;
+    damage(u, 140 + Math.random() * 90, owner || null);
+    if (!u.dead && ruinStanding(p) < 34) leaveBuilding(u);
+  }
+}
+/* how tall a bay still stands: a storey is most of what it had, and what is left after
+   two is a stump a man can stand behind and not in */
+function ruinHeight(b) {
+  if (b.down <= 0) return b.h;
+  if (b.down === 1) return Math.max(26, b.h * .52);
+  return 16;
+}
+/* A man's eye is at seventeen, so a bay that still stands above about that is a wall he
+   is stopped by and one below it is a heap he steps over. The threshold is a little
+   above his eye because a storey does not end level. */
+function ruinUp(b) { return ruinHeight(b) >= 34; }
+/* the tallest thing a house has left, which is what says whether it is still a house */
+function ruinStanding(p) {
+  var B = p.bay, i, top = 0;
+  if (!B) return p.tall ? 90 : 66;
+  for (i = 0; i < B.length; i++) top = Math.max(top, ruinHeight(B[i]));
+  return top;
+}
+/* the footprint of each bay and whether it is still standing, for the three grids that
+   have to know the difference */
+function ruinBlocks(p, fn) {
+  var B = p.bay, i;
+  if (!B) { fn(p.x, p.y, p.w, p.h, 1); return; }
+  var bw = p.w / B.length;
+  for (i = 0; i < B.length; i++) fn(B[i].x, p.y, bw, p.h, ruinUp(B[i]) ? 1 : 0);
+}
+/* A hit building leaves the merged tile and draws from its own buffer: the tile is a
+   megabyte of merged geometry and cannot be edited, and re-meshing one house is a
+   thousandth of re-meshing the tile it sits in. The grid follows on the next frame,
+   through the same deferred flag a burning hull uses. */
+function ruinTouch(p) {
+  if (!p.hurt) {
+    p.hurt = 1;
+    G.hurt.push(p);
+    /* The tile it was merged into has to lose it, and that is a re-mesh of everything
+       else in the tile with it -- about ninety milliseconds here. Done inside the burst
+       that is the hitch once per house, which in a barrage is several of them in one
+       frame; queued instead it is at most one tile a frame however many houses were in
+       the salvo, and the house is drawn twice for that one frame, which nobody sees. */
+    if (SCENE && SCENE.tiles) G.tileQ[tileOf(p.x, p.y)] = 1;
+  }
+  p.rebuild = 1;
+  G.gridDirty = 1;
+}
+/* one of them, on the frames there are any */
+function flushTileQ() {
+  for (var k in G.tileQ) {
+    delete G.tileQ[k];
+    buildTile(+k);
+    return;
+  }
+}
+/* ---- and the ground's own queue.
+   Re-meshing one ground tile is 62 ms, which is a whole frame and then some, and a fire
+   mission puts ten shells into one tile inside ten seconds. Done as they land that is
+   ten rebuilds of the same tile; queued and coalesced it is one.
+     Two clocks, because either alone is wrong. A tile is rebuilt once it has been quiet
+   for `CRQ_SETTLE`, which is what makes a salvo one rebuild -- and at the latest
+   `CRQ_MAX` after the first shell landed in it, because a battery firing steadily would
+   otherwise keep the tile permanently un-quiet and the ground would never change at all
+   while it was being shelled, which is exactly when a player is looking at it. */
+var CRQ_SETTLE = .45, CRQ_MAX = 1.6;
+function craterMark(x, y, r) {
+  var tw = WORLD.w / PT_W, th = WORLD.h / PT_H, m = r * 1.5 + 12;
+  var i0 = clamp(Math.floor((x - m) / tw), 0, PT_W - 1), i1 = clamp(Math.floor((x + m) / tw), 0, PT_W - 1);
+  var j0 = clamp(Math.floor((y - m) / th), 0, PT_H - 1), j1 = clamp(Math.floor((y + m) / th), 0, PT_H - 1);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var ti = 1 + j * PT_W + i, q = G.groundQ[ti];
+    if (q) q.hit = G.t;
+    else G.groundQ[ti] = { first: G.t, hit: G.t };
+  }
+}
+function flushGroundQ() {
+  if (!SCENE.ready) return;
+  var best = 0, bt = 1e18;
+  for (var k in G.groundQ) {
+    var q = G.groundQ[k];
+    if (G.t - q.hit < CRQ_SETTLE && G.t - q.first < CRQ_MAX) continue;
+    if (q.first < bt) { bt = q.first; best = +k; }     /* the one that has waited longest */
+  }
+  if (!best) return;
+  delete G.groundQ[best];
+  var only = {}; only[best] = 1;
+  buildTerrain(only);
+}
+/* ---- the hole a shell leaves ----------------------------------------------------
+   A shell that lands on open ground takes a piece of the ground away, and until this
+   one did not: what a burst left was a scorch decal, which is a stain painted on a
+   surface that is exactly where it was before. A crater field a battery had worked over
+   for ten minutes was flat ground with dark patches on it, and the men lying in it were
+   lying on a plain.
+
+   The machinery for a real one was already here and was only ever run at build time.
+   Earthworks are kept as two layers over the natural ground -- `G.cut` is the deepest
+   cut at each point and `G.fill` the highest spoil -- and `carve` writes a bowl into
+   them. So a shell hole blown during a battle is the same call the map makes, plus the
+   four things that have to follow it: the worked height, the going, the cover, and the
+   mesh.
+
+   What it deliberately does NOT do is repaint the ground. `buildAlbedo(rect)` is 222 ms
+   whatever the rect, because `paintGround` walks every road, crater, trench and cobble
+   on the map before the clip throws the drawing away, and two hundred milliseconds a
+   shell is not a thing that can happen while a battery is firing. The hole carries its
+   own appearance instead: the mesh darkens its own bowl through the ambient term it
+   already computes off its neighbours, the wet channel fills it because a hole is where
+   the water goes, the scorch decal blackens the middle, and the fresh spoil round the
+   rim rides in the vertex colour off the same kind of grid the wet channel uses. */
+var CRATER_CAP = MOB ? 70 : 170;          /* how many a battle may dig, beyond the map's */
+/* What a burst of a given radius takes out of the ground. A shell hole is a good deal
+   smaller than the radius the blast hurts men over -- about a third of it -- which is
+   what puts a mortar bomb at eleven units and a 210 at forty-five, and those are the two
+   ends of what the map itself was hand-placed with. Under the floor a round scars the
+   ground without opening it, and that is where the tank guns sit. */
+function craterR(burst) { return burst * .34; }
+/* The floor is what separates a round that opens the ground from one that scars it, and
+   it is higher on a phone: a tile re-mesh is 62 ms wherever it runs, so the thing to cut
+   there is how often one is asked for rather than how good the hole is. At eleven a
+   mortar bomb digs; at sixteen it takes a howitzer. */
+var CRATER_MIN = MOB ? 16 : 11;
+/* Where the ground can be opened at all. Not through a floor somebody levelled and built
+   on, not through concrete, and not in the sea. */
+function canDig(x, y) {
+  var i;
+  if (x < 40 || y < 40 || x > WORLD.w - 40 || y > WORLD.h - 40) return false;
+  if (LAND.coast && y < coastY(x) + 30) return false;
+  for (i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (Math.abs(b.x - x) < b.def.w / 2 + 14 && Math.abs(b.y - y) < b.def.h / 2 + 14) return false;
+  }
+  for (i = 0; i < G.blocks.length; i++) {
+    var k = G.blocks[i];
+    if (k.kind === 'sea') continue;
+    if (Math.abs(k.x - x) < k.w / 2 + 8 && Math.abs(k.y - y) < k.h / 2 + 8) return false;
+  }
+  return true;
+}
+/* The hole itself. It is given back so a caller can tell a fresh hole from one that was
+   already there, which is what the card reads. */
+function digCrater(x, y, burst) {
+  if (!G.hmap || !G.cut) return null;
+  var r = craterR(burst);
+  if (r < CRATER_MIN || !canDig(x, y)) return null;
+  var i, c = null;
+  /* Shells landing in the same place make ONE bigger hole rather than a stack of holes.
+     `G.cut` already keeps the deepest cut, so the ground would agree either way; what
+     merging saves is the list, the cover index and the mesh, all of which a ten-minute
+     fire mission would otherwise fill with overlapping copies of the same hole. */
+  for (i = G.craters.length - 1; i >= 0; i--) {
+    var e = G.craters[i];
+    if (Math.hypot(e.x - x, e.y - y) < Math.max(e.r, r) * .75) { c = e; break; }
+  }
+  if (c) {
+    /* Already a bigger hole than this one would be. The hole is handed back rather than
+       a refusal, because the caller sizes the burn off it and a round landing in an
+       existing crater would otherwise get the wide scorch the stain used to be. */
+    if (r <= c.r * 1.04) return c;
+    /* it widens the one that was there rather than being stacked on top of it. The
+       centre stays put on purpose: `indexCover` files a patch under every cell its
+       circle reaches and has no way to unfile one, so a circle that only GROWS can be
+       filed again for the cells it has gained, where a circle that moved would leave
+       cover indexed on ground that no longer has any. */
+    c.r = r; c.fresh = 1;
+    if (c.cov) { c.cov.r = r; indexCover(c.cov); }
+  } else {
+    if (G.cratersDug >= CRATER_CAP) return null;
+    G.cratersDug++;
+    c = { x: x, y: y, r: r, fresh: 1 };
+    G.craters.push(c);
+    /* a hole is cover, and it is cover a man lies in rather than stands behind, which is
+       what `STAND_FLAT` on the `crater` kind already says */
+    addCover(x, y, r, 1, 'crater');
+    c.cov = G.covers[G.covers.length - 1];
+  }
+  craterCarve(c.x, c.y, c.r);
+  craterMark(c.x, c.y, c.r);
+  return c;
+}
+/* The carve, and the three local refreshes that have to follow it. Each is over the
+   hole's own footprint: the whole-map versions are 0.60 ms for the height and 2.70 for
+   the terrain grid, which is not a thing to do per shell, and over a crater they are
+   four and eight microseconds. */
+/* What has to follow ANY carve made while the game is running: the worked height over the
+   footprint, the going grid the height feeds, and the flag that carries a rebuild to the
+   top of the next frame. It is factored out because a shell hole is no longer the only
+   thing that digs -- a weapon pit is dug too, and a second copy of this is a second place
+   to forget one of the three. */
+function carveRefresh(x, y, r) {
+  var reach = Math.ceil((r * 1.4 + HG) / HG), i, j;
+  var ci = Math.round(x / HG), cj = Math.round(y / HG);
+  for (j = cj - reach; j <= cj + reach; j++) for (i = ci - reach; i <= ci + reach; i++) {
+    if (i < 0 || j < 0 || i >= HW || j >= HH) continue;
+    var k = hidx(i, j);
+    G.hmap[k] = G.hmap0[k] + G.cut[k] + G.fill[k] + G.pad[k];
+  }
+  /* and what the going grid reads off the height. `terrg` is kept because the shape of
+     the ground does not change during a battle -- which stopped being true here, so the
+     cells the hole touches are read again and `makeTerrain` still throws the rest away. */
+  var cr = r * 1.6;
+  var g0 = Math.max(1, Math.floor((x - cr) / CELL)), g1 = Math.min(GW - 2, Math.ceil((x + cr) / CELL));
+  var h0 = Math.max(1, Math.floor((y - cr) / CELL)), h1 = Math.min(GH - 2, Math.ceil((y + cr) / CELL));
+  for (j = h0; j <= h1; j++) for (i = g0; i <= g1; i++) {
+    var wx = i * CELL + CELL / 2, wy = j * CELL + CELL / 2;
+    var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
+    var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
+    var sg = Math.hypot(sgx, sgy);
+    if (LAND.coast && wy < coastY(wx) + 24) continue;  /* the sea is not the hole's to say */
+    terrg[cidx(i, j)] = sg > 1 ? 1 : 0;
+    steep[cidx(i, j)] = sg > .45 ? 1 : 0;
+  }
+  G.gridDirty = 1;
+}
+function craterCarve(x, y, r) {
+  /* A shade sharper than the map's own hand-placed holes, which have had a fortnight of
+     rain in them: the same bowl, dug a third deeper and thrown up a third higher. The
+     wall still comes out at about a third of a gradient, which is well under the 1.0
+     `buildTerrGrid` calls unwalkable and under the 0.45 it calls hard going, so a fresh
+     crater is somewhere to lie down rather than a pit that swallows a section. */
+  carve(x, y, x, y, r * .78, -(3.4 + r * .21), { w: r * .55, h: 2.6 + r * .075 }, 'bowl');
+  carveRefresh(x, y, r);
+}
+/* A weapon pit is DUG, and that is the whole of what separates one from a ring of bags
+   laid on the grass. It goes through the shell hole's own door -- `carve` writes the bowl
+   and the spoil into the earthwork layers, `carveRefresh` puts the world back over the
+   footprint and `craterMark` queues the tile -- with a shallower, flatter bowl and a
+   parapet thrown up round it, because what a crew wants is somewhere to stand below
+   ground level with earth in front of them rather than a hole to fall into. */
+function workDig(x, y, d) {
+  if (!G.hmap || !G.cut || !d) return;
+  carve(x, y, x, y, d.r, -d.depth, d.lip, 'bowl');
+  carveRefresh(x, y, d.r + (d.lip ? d.lip.w : 0));
+  craterMark(x, y, d.r + (d.lip ? d.lip.w : 0));
+}
+
+/* ---- the heap ----
+   There is no chunk-against-chunk contact here and there is not going to be: a solver
+   that resolves a hundred and fifty boxes against each other every frame is not
+   something a phone will run beside everything else in this file. But a heap needs
+   exactly one thing out of a solver, which is that masonry lands ON masonry, and that
+   is a height field rather than a solver. Each hit building keeps a coarse one over its
+   own footprint; a chunk falls onto whatever is already lying there and what settles
+   raises it. Dropped into the same yard, a hundred and fifty stones then build a mound
+   where most of the wall came down and thin out at the edges, which is what a collapsed
+   house looks like -- where every chunk resting on bare ground is a carpet of separate
+   blocks and reads as spilt cargo. */
+var MC = 14, MCAP = 34;                        /* the cell, about a man's width, and the ceiling */
+var MNDW = Math.ceil(WORLD.w / MC), MNDH = Math.ceil(WORLD.h / MC), MND = null;
+/* One grid over the whole map rather than one per building. A heap was kept on the
+   house it came off, which meant a chunk that landed clear of one had nowhere to go and
+   was thrown away -- and a garden wall blown apart in open country belongs to no
+   building at all, so every stone of it vanished on landing. Where masonry lies is a
+   fact about the ground, not about who owned it. */
+function moundAt(x, y) {
+  if (!MND) return 0;
+  var ci = (x / MC) | 0, cj = (y / MC) | 0;
+  if (ci < 0 || cj < 0 || ci >= MNDW || cj >= MNDH) return 0;
+  return MND[cj * MNDW + ci];
+}
+/* and what one stone adds to it. Broken masonry packs loose, so the volume it takes up
+   on the ground is about half again what it took up in the wall; most of that goes into
+   the cell it landed in and the rest spreads to the eight round it, which is what keeps
+   a pile a pile rather than a column. */
+function moundAdd(x, y, vol) {
+  if (!MND) MND = new Float32Array(MNDW * MNDH);
+  var ci = (x / MC) | 0, cj = (y / MC) | 0;
+  if (ci < 0 || cj < 0 || ci >= MNDW || cj >= MNDH) return;
+  var rise = vol * 1.5 / (MC * MC), di, dj;
+  for (dj = -1; dj <= 1; dj++) for (di = -1; di <= 1; di++) {
+    var ii = ci + di, jj = cj + dj;
+    if (ii < 0 || jj < 0 || ii >= MNDW || jj >= MNDH) continue;
+    var k = jj * MNDW + ii;
+    MND[k] = Math.min(MCAP, MND[k] + rise * (di || dj ? .069 : .45));
+  }
+}
+/* ---- the integrator ----
+   Semi-implicit Euler on each chunk, which is what every game physics engine runs and is
+   stable at this step where the explicit form is not: the velocity is stepped first and
+   the position with the new velocity. The step is the frame's own, clamped to 50ms by
+   the loop, and at 98 units a second squared that is at most five units of fall a frame
+   against a chunk seven units deep, so nothing tunnels through the ground.
+
+   The ground is the only collider. A chunk that reaches it keeps a fifth of the speed it
+   arrived with, loses two fifths of what it had sideways and most of its spin, and once
+   it is moving slower than it would fall in a frame it is laid flat and stops. It is
+   then written into the building's own rubble and taken off the list, so the cost of a
+   collapse is bounded by what is still in the air rather than by how much has ever come
+   down. */
+function stepDebris(dt) {
+  var D = G.debris, i, c, gz, hit, imp;
+  for (i = D.length - 1; i >= 0; i--) {
+    c = D[i];
+    c.t += dt;
+    c.vz -= RUIN_G * dt;
+    c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
+    c.rx += c.wx * dt; c.ry += c.wy * dt; c.rz += c.wz * dt;
+    gz = groundZ(c.x, c.y) + moundAt(c.x, c.y) + c.h * .5;
+    if (c.z > gz) continue;
+    imp = -c.vz;
+    c.z = gz;
+    /* stone does not bounce. Below the speed one frame of gravity gives it there is
+       nothing left to model: it is lying on the ground. */
+    if (imp < RUIN_G * .12 || c.t > 9) {
+      settleChunk(c);
+      D.splice(i, 1);
+      continue;
+    }
+    c.vz = imp * .2;
+    c.vx *= .58; c.vy *= .58;
+    c.wx *= .35; c.wy *= .35; c.wz *= .5;
+    /* it lands flat rather than on a corner, which is what a slab of wall does */
+    c.rx *= .4; c.ry *= .4;
+    if (imp > 90) { sfx('hit', c.x, c.y); var cd2 = spawnFx('dust', c.x, c.y, 5); if (cd2) cd2.c = 3; }
+  }
+}
+/* What has stopped moving is rubble. It is banked onto the building it came off, so a
+   house that has been shelled for a minute is standing in its own masonry, and it is
+   written into that building's buffer rather than kept as a body nobody is integrating.
+   A chunk that came down too far from any building is dropped: it is a stone in a field
+   and the scene has plenty. */
+function settleChunk(c) {
+  /* A stone that comes to rest on bare ground lies flat; one that comes to rest on other
+     stones lies at whatever angle they left it, and that angle is most of what tells a
+     heap of rubble from a pavement of blocks. */
+  if (moundAt(c.x, c.y) > 5) { c.rx += rnd(-.42, .42); c.ry += rnd(-.42, .42); }
+  /* Oldest out when the yard is full, rather than refusing what lands: a battle that
+     goes on long enough should show the last house that came down and not the first. */
+  if (G.rub.length >= rubCap()) G.rub.shift();
+  G.rub.push({ x: c.x, y: c.y, z: c.z, l: c.l, w: c.w, h: c.h, c: c.c,
+               rx: c.rx, ry: c.ry, rz: c.rz });
+  moundAdd(c.x, c.y, c.l * c.w * c.h);
+  G.rubDirty = 1;
+}
+function rubCap() { return MOB ? 500 : 1400; }
+function explode(x, y, radius, dmg, owner, except, bz) {
+  burstFx(x, y, radius, 0, bz);
+  /* And it takes a piece of the ground away. Only a round that went off on the ground:
+     one that burst against an upper storey scorches the street and does not open it.
+     The burn is drawn tight round the hole when there is one, because the scorch used to
+     be standing in for a crater at a radius and a bit of the whole burst -- with a real
+     hole under it as well, a salvo painted the ground black between its own craters. */
+  var dug = (bz || 0) < 26 ? digCrater(x, y, radius) : null;
+  decalScorch(x, y, dug ? dug.r * 1.45 : radius * 1.15);
   /* once, through the index. It was charged here and then again at the foot of this
      function by a linear walk of all two thousand patches, so every medium patch on the
      map took the shell twice and every shell cost a scan of the whole list. */
   damageCover(x, y, radius * .6, dmg * .5);
-  for (var sm = 0; sm < 3; sm++) spawnFx('smoke', x + rnd(-radius * .4, radius * .4), y + rnd(-radius * .4, radius * .4));
   if (onScreen(x, y)) addShake(clamp(radius * .10, 1.5, 9));
-  sfx('boom', x, y);
+  sfx('boom', x, y, burstVoice(radius));
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e === except || e.inside) continue;
@@ -5960,6 +6758,25 @@ function explode(x, y, radius, dmg, owner, except) {
     var bl = blist[b];
     if (bl.dead || bl === except || !owner || bl.side === owner.side) continue;
     if (dist(bl, { x: x, y: y }) < radius + 50) { bl.hp -= dmg * .5; bl.hitT = .2; if (bl.hp <= 0) killBuilding(bl); }
+  }
+  /* And the masonry. The hole a round makes in a wall is its own near field and not its
+     casualty radius: a 25-pounder kills out to fifteen metres and takes about a metre of
+     stone out of the house it hits, so the breach is scaled off the weight of the shell
+     rather than off the burst. Below a couple of dozen points of damage nothing gets
+     through a stone wall at all, which is why a grenade leaves a scorch mark and the
+     eight-inch leaves daylight. */
+  if (dmg >= 22) {
+    var br = clamp(3 + dmg * .075, 4, 26), reach = clamp(12 + dmg * .2, 16, 74);
+    var bh = bz === undefined ? 10 : bz;
+    ruinsNear(x, y, reach, function (pr) { ruinHit(pr, x, y, bh, reach, br, owner); });
+    /* and the walls, which are a list of a hundred segments rather than a town of props,
+       so a bounding test and a straight walk is cheaper than an index of them */
+    for (var wi = 0; wi < G.walls.length; wi++) {
+      var wl = G.walls[wi];
+      if (Math.min(wl.x1, wl.x2) - reach > x || Math.max(wl.x1, wl.x2) + reach < x ||
+          Math.min(wl.y1, wl.y2) - reach > y || Math.max(wl.y1, wl.y2) + reach < y) continue;
+      wallHit(wl, x, y, bh, reach, br, owner);
+    }
   }
 }
 function damage(t, amt, src) {
@@ -6052,7 +6869,10 @@ function killUnit(u, src) {
   /* a fixed gun with its crew dead is still a gun in a ring of bags: cover, and a mark */
   if (u.cat === 'team' && !u.def.speed) {
     addCover(u.x, u.y, 24, 2, 'wreck', null, 400);
-    for (var gk = 0; gk < 4; gk++) spawnFx('smoke', u.x + rnd(-12, 12), u.y + rnd(-12, 12));
+    for (var gk = 0; gk < 4; gk++) {
+      var gs2 = spawnFx('smoke', u.x + rnd(-12, 12), u.y + rnd(-12, 12), 11, groundZ(u.x, u.y) + 10);
+      if (gs2) { gs2.c = 2; gs2.rise = 110 + gk * 26; gs2.op = .46; gs2.dur = 3.4; }
+    }
     /* and the piece stays where it stood, drawn with the works: a dead unit is gone from
        the list the frame after, and an empty ring of bags is not what a knocked-out gun
        looks like */
@@ -6081,7 +6901,10 @@ function killUnit(u, src) {
        a chain of four kills is a chain of four rebuilds in a single frame. */
     G.gridDirty = 1;
     explode(u.x, u.y, 58, 44, null);
-    for (var s2 = 0; s2 < 6; s2++) spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
+    for (var s2 = 0; s2 < 6; s2++) {
+      var ks = spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16), 14 + rnd(0, 10), groundZ(u.x, u.y) + 14);
+      if (ks) { ks.c = 2; ks.rise = 150 + s2 * 34; ks.op = .55; ks.dur = 4 + Math.random() * 2; ks.drift = 46; }
+    }
     /* Some of the crew get out and some of them do not. Two men down beside a burning
        hull is what the loss of a tank looks like from outside it, and a wreck that
        appeared with nobody near it read as a prop being swapped for another prop. */
@@ -6112,14 +6935,140 @@ function killBuilding(b) {
 }
 
 /* ---------------------------------------------------------------- effects */
-var FXDUR = { boom: .72, hit: .3, spark: .26, smoke: 2.6, dust: .8, exhaust: 1.3, brass: .9,
-              flash: .07, gunsmoke: 1.5 };
+var FXDUR = { boom: .62, hit: .34, spark: .5, smoke: 3.4, dust: 1.1, exhaust: 1.3, brass: .9,
+              flash: .075, gunsmoke: 1.6, ring: .6, ejecta: 1.4 };
+/* The cap is what one heavy burst can want between its fireball, its clods, its ring and
+   its column, times a few of them falling at once. It could be 260 when every particle
+   was a draw call of its own; they go out as one buffer and one draw a blend pass now. */
+var FXCAP = MOB ? 190 : 620;
 /* z is where the effect actually is rather than where the ground under it is: a muzzle
-   flash belongs at the muzzle, and the barrel smoke that follows it drifts from there. */
+   flash belongs at the muzzle, and the barrel smoke that follows it drifts from there.
+   The entry is handed back so a caller can say what KIND of thing this one is -- which
+   way the bore points, what colour the smoke starts, how fast the clod was thrown. */
 function spawnFx(kind, x, y, r, z) {
-  if (G.fx.length > (MOB ? 130 : 260)) return;
-  G.fx.push({ kind: kind, x: x, y: y, r: r || 0, t: 0, z: z,
-              dur: FXDUR[kind] || .25, a: rnd(TAU) });
+  if (G.fx.length > FXCAP) return null;
+  /* where it started is kept beside where it is, because anything that moves -- a
+     column climbing, a clod thrown -- has to move the ENTRY and not just the quad the
+     draw makes of it: the lights read the position, and so does anything measuring how
+     high a burst got. A column that climbs only inside drawParticles3D is a column that
+     nothing but the rasteriser knows about. */
+  var f = { kind: kind, x: x, y: y, r: r || 0, t: 0, z: z,
+            x0: x, y0: y, z0: z, dur: FXDUR[kind] || .25, a: rnd(TAU), sd: rnd(TAU) };
+  G.fx.push(f);
+  return f;
+}
+/* ---- what a shell landing actually is.
+   Five things happen and they happen at five different rates, and what the game drew was
+   one soft disc for a twentieth of a second and three grey puffs. A 210mm shell and a
+   mortar bomb were the same picture at two sizes.
+     There is the flash and the fireball, which are over inside a second and belong to
+   `boom`. There is the shock running out along the ground, which is what gives a burst a
+   size the eye can read off the ground rather than off a ball of light. There is the
+   DIRT -- a shell throws its spoil up and out on a ballistic arc, and nothing in this
+   game was ever thrown by one. There is the column, which lifts and leans and hangs for
+   seconds. And there is the low dust that runs out along the surface and settles.
+     Every count is scaled off the burst radius, so a mortar bomb is a different event
+   from a heavy shell rather than the same event drawn bigger. */
+function burstFx(x, y, r, stone, bz) {
+  var i, n, gz = groundZ(x, y), col = stone ? 3 : 0;
+  var f = spawnFx('boom', x, y, r, gz + clamp(bz || 0, 0, 40));
+  if (f) f.dur = clamp(.26 + r / 320, .26, .68);   /* a fireball is over fast; the cloud carries it */
+  var rg = spawnFx('ring', x, y, r * 1.25, gz);
+  if (rg) rg.dur = clamp(.34 + r / 280, .34, .9);
+  /* How hard a shell throws its spoil: a clod goes up about as far as the hole is wide
+     and lands one to two radii out. Written as a multiple of the radius instead, a
+     heavy shell threw its dirt two thousand units into the air and a quarter of the way
+     across the map, which reads as a fountain rather than as a burst. */
+  var v0 = Math.sqrt(98 * r);
+  n = MOB ? clamp(Math.round(r / 24), 3, 7) : clamp(Math.round(r / 11), 5, 17);
+  for (i = 0; i < n; i++) {
+    var ea = rnd(TAU), sp = v0 * rnd(.35, .95);
+    var e = spawnFx('ejecta', x + Math.cos(ea) * r * .16, y + Math.sin(ea) * r * .16, rnd(1.5, 4.2), gz + 6);
+    if (!e) break;
+    e.vx = Math.cos(ea) * sp; e.vy = Math.sin(ea) * sp; e.vz = v0 * rnd(.7, 1.3);
+    e.c = col; e.dur = clamp(2 * e.vz / 98 + .3, .6, 2.6);
+  }
+  /* The column starts ON THE GROUND and grows. Spread up the z at birth instead and the
+     whole of it is already in the air on the frame the shell lands, with clear daylight
+     between the crater and its own smoke. */
+  n = MOB ? 4 : clamp(Math.round(r / 13), 4, 11);
+  for (i = 0; i < n; i++) {
+    var sm = spawnFx('smoke', x + rnd(-r * .3, r * .3), y + rnd(-r * .3, r * .3),
+                     r * rnd(.30, .52), gz + 3 + i * r * .04);
+    if (!sm) break;
+    sm.rise = r * (.5 + i * .17) * rnd(.85, 1.2);
+    sm.c = stone ? 3 : 4; sm.op = .6; sm.dur = rnd(2.0, 3.4) + r / 80;
+  }
+  n = MOB ? 2 : clamp(Math.round(r / 26), 2, 6);
+  for (i = 0; i < n; i++) {
+    var da = rnd(TAU);
+    var dd = spawnFx('dust', x + Math.cos(da) * r * rnd(.4, 1.0), y + Math.sin(da) * r * rnd(.4, 1.0),
+                     r * rnd(.16, .30), gz);
+    if (!dd) break;
+    dd.a = da; dd.dur = rnd(.9, 1.7);
+  }
+}
+/* A round that stops on the plate. It is the commonest event in a tank fight and it was
+   worth one dot: what it actually is, is several pieces of hot metal coming off the
+   armour at the angle the round came in at. */
+function sparkFx(x, y, z, n, dir) {
+  for (var i = 0; i < n; i++) {
+    var a = dir === undefined ? rnd(TAU) : dir + rnd(-1.2, 1.2);
+    var f = spawnFx('spark', x, y, 1.4, z);
+    if (!f) return;
+    var sp = rnd(70, 240);
+    f.vx = Math.cos(a) * sp; f.vy = Math.sin(a) * sp; f.vz = rnd(40, 180);
+    f.dur = rnd(.3, .7);
+  }
+}
+/* ---- what a gun looks like when it goes off.
+   It is read off the WEAPON rather than typed against thirty-six unit keys, for the same
+   reason the sight rule is applied to `UNITS` at load rather than written out fourteen
+   times: two lists of one thing go out of step the moment somebody adds a weapon to one
+   of them. What separates one blast from another is the charge behind the round, so the
+   size comes off the weapon's own penetration and burst and the shape comes off what
+   kind of piece it is -- a mortar blows a puff straight up out of a tube and a 210 blows
+   the ground flat for twenty metres in front of it.
+     `el` is how much of the bore points at the sky, because a tube is not a gun. `sm` is
+   the barrel smoke and `dust` how far in front of the muzzle the ground is stripped,
+   which on a tank is most of what tells a player at a hundred units up that it fired. */
+var MUZ = {
+  rifle:  { r: 4.0,  ln: 1.6, sm: 0,  dust: 0 },
+  mg:     { r: 5.6,  ln: 2.8, sm: 0,  dust: 0,  lit: 1 },
+  coax:   { r: 5.0,  ln: 2.6, sm: 0,  dust: 0,  lit: 1 },
+  at:     { r: 11,   ln: 3.4, sm: 11, dust: 26, lit: 1 },
+  gun:    { r: 12,   ln: 3.1, sm: 13, dust: 30, lit: 1 },
+  mortar: { r: 6,    ln: 1.1, sm: 13, dust: 0,  el: 1.7 },
+  how:    { r: 15,   ln: 3.4, sm: 19, dust: 44, lit: 1 },
+  heavy:  { r: 21,   ln: 4.0, sm: 28, dust: 70, lit: 1 }
+};
+/* German propellant reads paler and Commonwealth reads more orange. It is one number a
+   player can pick a side out of a night-dark street by, and it costs two entries. */
+var FLASHC = { us: [1, .78, .36], ger: [1, .92, .66] };
+function muzClass(u, w) {
+  if (!w.shell) return u.cat === 'veh' ? 'coax' : w.rof < .3 ? 'mg' : 'rifle';
+  if (u.def.indirect) return (w.aoe || 0) >= 100 ? 'heavy' : u.def.barrageOnly ? 'how' : 'mortar';
+  if (u.cat === 'veh') return 'gun';
+  return (w.aoe || 0) >= 44 ? 'how' : 'at';
+}
+function muzFx(u, w, x, y, z, ang) {
+  var M = MUZ[muzClass(u, w)] || MUZ.rifle, col = FLASHC[u.side] || FLASHC.us, i;
+  /* the charge behind the round: a 37mm and a 128mm are both 'a tank gun' and are not
+     the same event */
+  var g = w.shell ? clamp(.65 + w.pen / 620 + (w.aoe || 0) / 320, .7, 1.9) : 1;
+  var f = spawnFx('flash', x, y, M.r * g, z);
+  if (!f) return;
+  f.a = ang; f.ln = M.ln; f.col = col; f.el = M.el || 0; f.br = w.brake ? 1 : 0; f.lit = M.lit || 0;
+  if (M.sm) { var sg = spawnFx('gunsmoke', x, y, M.sm * g, z); if (sg) { sg.a = ang; sg.c = 1; } }
+  if (M.dust) {
+    /* only when the muzzle is low enough over the ground for the blast to reach it */
+    var gz = groundZ(x, y);
+    if (z - gz < M.dust * 1.1) for (i = 0; i < 3; i++) {
+      var dd = M.dust * g * (.35 + i * .48);
+      var d2 = spawnFx('dust', x + Math.cos(ang) * dd + rnd(-9, 9), y + Math.sin(ang) * dd + rnd(-9, 9), 5 + i * 3);
+      if (d2) d2.a = ang + rnd(-.5, .5);
+    }
+  }
 }
 /* Where a man's muzzle is: the end of the barrel the builder laid on him, in the pose he
    is actually in. It was three reaches and three heights typed per pose -- 13 and 16.4
@@ -6156,6 +7105,13 @@ function updateShots(dt) {
     if (s.kind === 'shell') {
       var k = clamp(s.t / s.dur, 0, 1);
       s.x = lerp(s.sx, s.tx, k); s.y = lerp(s.sy, s.ty, k);
+      /* the incoming, timed to finish where the shell does rather than to start there:
+         it is a warning or it is nothing, and it is played at the ground it is coming at
+         and not at the tube, so a player hears a mission arriving on his own position */
+      if (s.wh === 0) {
+        var iv = burstVoice(s.aoe || 26);
+        if (s.t >= s.dur - iv.lead) { s.wh = 1; sfx('incoming', s.tx, s.ty, iv); }
+      }
       if (k >= 1) {
         /* A bomb dropped from a thousand feet does not score a hit on a turret roof the
            way a laid gun scores one on a glacis: what an indirect round does, it does
@@ -6163,14 +7119,54 @@ function updateShots(dt) {
         var direct = s.hit && !s.ind && s.target && !s.target.dead &&
           (s.target.cat === 'veh' || s.target.built !== undefined) ? s.target : null;
         if (direct) damage(direct, s.dmg, s.owner);
-        if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct);
+        if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct, s.bz);
         else if (s.hit) spawnFx('hit', s.tx, s.ty);
         G.shots.splice(i, 1);
       }
     } else if (s.t >= s.dur) G.shots.splice(i, 1);
   }
-  for (var j = G.fx.length - 1; j >= 0; j--) { G.fx[j].t += dt; if (G.fx[j].t >= G.fx[j].dur) G.fx.splice(j, 1); }
-  for (var k2 = 0; k2 < G.wrecks.length; k2++) G.wrecks[k2].t += dt;
+  for (var j = G.fx.length - 1; j >= 0; j--) {
+    var fj = G.fx[j];
+    fj.t += dt;
+    /* anything thrown -- a clod out of a crater, a spark off a plate -- under gravity,
+       with the ground as the only collider, which is the same arithmetic the masonry
+       runs and for the same reason: a solver would buy nothing a heap actually needs */
+    if (fj.vz !== undefined) {
+      fj.x += fj.vx * dt; fj.y += fj.vy * dt; fj.z += fj.vz * dt; fj.vz -= 98 * dt;
+      var fg = groundZ(fj.x, fj.y) + 1.5;
+      if (fj.z <= fg) { fj.z = fg; fj.vx *= .18; fj.vy *= .18; fj.vz = 0;
+                        if (fj.dur - fj.t > .14) fj.t = fj.dur - .14; }
+    } else if (fj.rise && fj.z0 !== undefined) {
+      /* a column shoots up and then slows, so the climb is front-loaded rather than
+         linear: off a straight ramp it is still lying in its own crater half a second
+         after the shell lands, which is a dark puff over a dark stain and reads as
+         nothing at all */
+      var kr = Math.pow(clamp(fj.t / fj.dur, 0, 1), .55);
+      fj.z = fj.z0 + 8 + kr * fj.rise;
+      fj.x = fj.x0 + Math.cos(fj.a) * kr * (fj.drift || 34);
+      fj.y = fj.y0 + Math.sin(fj.a) * kr * (fj.drift || 34) * .65;
+    }
+    if (fj.t >= fj.dur) G.fx.splice(j, 1);
+  }
+  for (var k2 = 0; k2 < G.wrecks.length; k2++) {
+    var wk = G.wrecks[k2];
+    wk.t += dt;
+    /* A hull burns for two minutes and `smokeColumns` has been attenuating the sight
+       line through it for as long as detection has been a rate. Nothing drew any of it
+       after the six puffs it died with: the eye was being slowed by smoke that was not
+       on the screen, which is the same shape of fault as the fog having no live tier. */
+    if (wk.t > 120 || !onScreen(wk.x, wk.y)) continue;
+    var wkk = wk.t < 30 ? 1 : clamp(1 - (wk.t - 30) / 90, 0, 1);
+    if (Math.random() < dt * (3 + wkk * 8)) {
+      var ws = spawnFx('smoke', wk.x + rnd(-11, 11), wk.y + rnd(-11, 11), 13 + rnd(0, 9), groundZ(wk.x, wk.y) + 16);
+      if (ws) { ws.c = 2; ws.rise = 110 + Math.random() * 100; ws.op = .44 * (.4 + wkk * .6);
+                ws.dur = 3.4 + Math.random() * 2.2; ws.drift = 44; }
+    }
+    if (wkk > .45 && Math.random() < dt * 7) {
+      var wf = spawnFx('flash', wk.x + rnd(-9, 9), wk.y + rnd(-9, 9), 7 + Math.random() * 6, groundZ(wk.x, wk.y) + 13);
+      if (wf) { wf.ln = 0; wf.col = [1, .64, .24]; wf.dur = .14; }
+    }
+  }
   for (var c = G.corpses.length - 1; c >= 0; c--) { G.corpses[c].t += dt; if (G.corpses[c].t > 55) G.corpses.splice(c, 1); }
   /* half a second of falling, then he is a body and ages like one */
   for (var fl = G.falls.length - 1; fl >= 0; fl--) {
@@ -6461,13 +7457,51 @@ function siteClear(x, y, w, h) {
    nothing puts anyone back on: the shell counts as a building the side already has, so
    the button that raised it greys out and the AI queues out of a barracks that will
    never open. Any builder can pick up any of his own side's unfinished work. */
+/* Where a builder stands to work on a thing. There are three kinds of job -- a building,
+   a pegged-out site and a unit -- and the test between them is NOT `job.def`, because a
+   unit has a def as well and its def has no `h` and keeps its WEAPON in `w`. Read the
+   building's way, a vehicle produced a destination with a NaN in its y, `findPath` was
+   handed nowhere, and the engineer wandered off across the map still holding the repair.
+   `job.cat` is the unit test and it goes first, here and in `workReach`. */
+function workSpot(job) {
+  if (job.cat) return nearestFree(job.x + rnd(-18, 18), job.y + unitRadius(job) + 16);
+  if (job.def) return nearestFree(job.x + rnd(-job.def.w * .3, job.def.w * .3), job.y + job.def.h / 2 + 34);
+  return nearestFree(job.x + rnd(-26, 26), job.y + rnd(-26, 26));
+}
+/* A thing that is FINISHED is repaired; a thing that is not is built. A unit is always
+   the first kind, and so is a building that is merely damaged -- put on `build` instead it
+   runs the construction tick, which divides by a build time its def does not have once it
+   is standing, writes NaN into `built`, and from there into the hit points and into the
+   geometry that is drawn from them. `issueOrder` has always made this distinction on the
+   right-click; `resumeBuild` did not, and it is the other door to the same job. */
 function resumeBuild(u, b) {
   clearOrder(u);
-  u.order = b.def ? 'build' : 'work';
-  u.building = b;
-  var sp = b.def ? nearestFree(b.x + rnd(-b.def.w * .3, b.def.w * .3), b.y + b.def.h / 2 + 34)
-                 : nearestFree(b.x + rnd(-26, 26), b.y + rnd(-26, 26));
+  var done = !!b.cat || (b.built !== undefined && b.built >= 1);
+  u.order = done ? 'repair' : b.def ? 'build' : 'work';
+  if (done) u.repairing = b; else u.building = b;
+  var sp = workSpot(b);
   u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y, u); u.pi = 0;
+}
+/* The nearest thing of this side's that is worth mending, which is what a player pressing
+   REPAIR means nine times in ten. A vehicle below its hit points or a building below its
+   own, and nothing else: an untouched tank is not a job. The right-click on a particular
+   thing is still there for the tenth time, and this is the affordance for the other nine --
+   repair had no card, no glyph and no hotkey, so the only way to find it at all was to
+   right-click a friendly vehicle and notice that something happened. */
+function repairNearest(u) {
+  var best = null, bd = 1e9, i, d;
+  for (i = 0; i < G.units.length; i++) {
+    var v = G.units[i];
+    if (v === u || v.dead || v.side !== u.side || v.cat !== 'veh' || v.hp >= v.maxhp) continue;
+    d = dist(u, v); if (d < bd) { bd = d; best = v; }
+  }
+  for (i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (b.dead || b.side !== u.side) continue;
+    if (b.built >= 1 && b.hp >= b.maxhp) continue;
+    d = dist(u, b); if (d < bd) { bd = d; best = b; }
+  }
+  return best;
 }
 function siteOf(slot, key) {
   for (var i = 0; i < G.blds.length; i++) {
@@ -6583,6 +7617,7 @@ function finishWork(s) {
     addCover(s.x, s.y, c.r, c.type, c.kind, c.faced ? s.a + workTurn(s.kind) : null, c.hp);
   }
   if (W.slow) rebuildGrid();
+  if (W.dig) workDig(s.x, s.y, W.dig);
   if (W.unit) {
     /* The gun. Its crew are put where a crew stands: the two layers at the breech,
        the loader behind them, the ammunition numbers back on the platform. They keep
@@ -6608,9 +7643,18 @@ function finishWork(s) {
   if (s.own === G.own) { toast(W.name + ' up'); sfx('click'); }
 }
 
-/* how close a builder has to stand to work on something */
+/* How close a builder has to stand to work on something.
+   **On a UNIT's def, `w` is the weapon; on a BUILDING's, `w` is the width.** The same key
+   carries two unrelated things, and this read the building's meaning off whatever it was
+   handed: for a vehicle it computed `Math.max(<the weapon object>, undefined) / 2 + 62`,
+   which is NaN, and `dist(u, r) < NaN` is false for ever. So an engineer ordered to repair
+   a tank pathed to it, arrived, stood on top of it and never started -- repair of a vehicle
+   was written, wired to the right-click, given an order and a cursor, and had never once
+   worked. A unit is asked for its own radius instead, and is tested first because it is the
+   case that has a `def` of the wrong kind. */
 function workReach(job) {
   if (!job) return 60;
+  if (job.cat) return unitRadius(job) + 34;
   if (job.def) return Math.max(job.def.w, job.def.h) / 2 + 62;
   if (job.time !== undefined) return 62;
   return 62;
@@ -6708,15 +7752,21 @@ function updateUnit(u, dt) {
        plume once it is badly hurt, and flame licking out of the engine louvres at the
        point where the crew are thinking about getting out. */
     var hf2 = u.hp / u.maxhp;
-    if (hf2 < .62 && Math.random() < dt * (hf2 < .3 ? 3.4 : 1.1))
-      spawnFx('smoke', u.x + rnd(-10, 10), u.y + rnd(-10, 10), 0, groundZ(u.x, u.y) + 16);
-    if (hf2 < .22 && Math.random() < dt * 5)
-      spawnFx('flash', u.x - Math.cos(u.facing) * 14 + rnd(-4, 4), u.y - Math.sin(u.facing) * 14 + rnd(-4, 4),
-              6 + Math.random() * 5, groundZ(u.x, u.y) + 14);
+    if (hf2 < .62 && Math.random() < dt * (hf2 < .3 ? 3.4 : 1.1)) {
+      var hs2 = spawnFx('smoke', u.x + rnd(-10, 10), u.y + rnd(-10, 10), 9 + rnd(0, 6), groundZ(u.x, u.y) + 16);
+      if (hs2) { hs2.c = 2; hs2.rise = 90 + Math.random() * 80; hs2.op = .38; hs2.dur = 3 + Math.random() * 2; hs2.drift = 40; }
+    }
+    if (hf2 < .22 && Math.random() < dt * 5) {
+      var hfl = spawnFx('flash', u.x - Math.cos(u.facing) * 14 + rnd(-4, 4), u.y - Math.sin(u.facing) * 14 + rnd(-4, 4),
+                        6 + Math.random() * 5, groundZ(u.x, u.y) + 14);
+      /* a fire, not a gun: no bore to lay a cone along, and it is a light in the street */
+      if (hfl) { hfl.ln = 0; hfl.col = [1, .62, .22]; hfl.dur = .14; hfl.lit = 1; }
+    }
     /* a wrecked gun streams from the mantlet, and a shed track throws dust */
     if (u.gunDmg > 0 && Math.random() < dt * 2.2) {
       var gmz = gunMuzzle(u);
-      spawnFx('smoke', u.x + Math.cos(u.turret) * 16, u.y + Math.sin(u.turret) * 16, 0, gmz.z + 4);
+      var gsm = spawnFx('smoke', u.x + Math.cos(u.turret) * 16, u.y + Math.sin(u.turret) * 16, 6, gmz.z + 4);
+      if (gsm) { gsm.c = 2; gsm.rise = 50; gsm.op = .3; gsm.dur = 2.2; }
     }
     if (u.immob > 0 && Math.random() < dt * 3)
       spawnFx('dust', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
@@ -6740,7 +7790,7 @@ function updateUnit(u, dt) {
       if (b.def) {
         b.built = clamp(b.built + dt * cs / b.def.time, 0, 1);
         b.hp = Math.max(b.hp, b.maxhp * (.18 + .82 * b.built));
-        if (Math.random() < dt * 6) spawnFx('spark', b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2));
+        if (Math.random() < dt * 6) sparkFx(b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2), groundZ(b.x, b.y) + 12, 2);
         if (b.built >= 1) { if (!b.recDone) { b.recDone = 1; recBuild(b.side, b.key); } u.building = null; clearOrder(u); if (owned(u)) toast(b.def.name + ' complete'); }
       } else {
         b.prog = clamp(b.prog + dt * cs / b.time, 0, 1);
@@ -6754,7 +7804,7 @@ function updateUnit(u, dt) {
     else if (dist(u, r) < workReach(r)) {
       u.path = null;
       r.hp = Math.min(r.maxhp, r.hp + 42 * dt);
-      if (Math.random() < dt * 8) spawnFx('spark', r.x + rnd(-14, 14), r.y + rnd(-14, 14));
+      if (Math.random() < dt * 8) sparkFx(r.x + rnd(-14, 14), r.y + rnd(-14, 14), groundZ(r.x, r.y) + 12, 2);
     }
   }
 
@@ -6832,7 +7882,7 @@ function updateUnit(u, dt) {
     if (job) {
       var reach = workReach(job);
       if (dist(u, job) > reach - 8) {
-        var sp3 = nearestFree(job.x + rnd(-18, 18), job.y + (job.def ? job.def.h / 2 + 30 : 26));
+        var sp3 = workSpot(job);
         u.dest = sp3; u.path = findPath(u.x, u.y, sp3.x, sp3.y, u); u.pi = 0;
       }
     } else if (u.dest && dist(u, u.dest) > 60) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
@@ -9849,7 +10899,63 @@ var AU = { ctx: null, on: true, budget: 0, noise: null, rumb: null, dry: null, s
 /* how close together two of the same sound may be. Two rifles inside a fiftieth of a
    second are one rifle as far as the ear is concerned, and stacking them is half of why
    massed fire sounded like a rattle rather than like weight of fire. */
-var AUGAP = { rifle: .045, mg: .036, cannon: .06, rocket: .06, boom: .05 };
+var AUGAP = { rifle: .045, mg: .036, gun: .06, at: .06, mortar: .07, how: .07, heavy: .08,
+              rocket: .06, boom: .05, incoming: .09 };
+/* ---- the voice of a gun ----------------------------------------------------------
+   Read off the WEAPON rather than typed against six artillery pieces and thirty-six unit
+   keys, which is the decision `muzFx` already made for the eye and for the same reason:
+   two lists of one thing go out of step the moment somebody adds a weapon to one of them.
+   Every gun on the roster played one of two sounds -- `cannon` if it was on a vehicle or
+   a crew and `rocket` otherwise -- so a mortar dropping an eighty-millimetre bomb over a
+   roof and a Tiger's eighty-eight were the same noise, and the two heavy batteries, which
+   are the loudest thing either army owns, were that noise again at the same level.
+
+   What separates one report from another is the shell and the charge behind it, and the
+   weapon already carries both: the burst radius says how big the projectile was and the
+   penetration says how hard it was pushed. Those are the two numbers the flash is sized
+   off, so the ear and the eye are reading the same physical fact, which is the whole
+   point -- a 37 and a 128 are both a tank gun and are not the same event in either sense.
+   `muzClass` gives the SHAPE, and it is the same list for both because a second list of
+   gun kinds is a second list to keep in step. */
+/* German propellant is drier and cracks higher; the Commonwealth charge is rounder and
+   carries more body. It is the ear's half of what FLASHC says to the eye, and it is what
+   tells the two mortars apart: an M1 81 mm and an 8 cm GrW 34 fire nearly the same bomb
+   with nearly the same charge, so nothing read off the weapon will ever separate them.
+     `pit` moves the CRACK and not the body, because the propellant sets the colour of the
+   edge and the shell sets the pitch of everything under it. Written the other way about
+   the side shifted the body too, and since the German piece of each pair throws the
+   heavier shell the two effects cancelled and the two heavy batteries came out at the
+   same pitch. */
+var AUSIDE = { us:  { crk: .86, bod: 1.12, pit: .90, tail: 1.16 },
+               ger: { crk: 1.18, bod: .88, pit: 1.12, tail: .86 } };
+/* what a branch reads when nobody handed it a voice: the even gun */
+var AUVD = { cls: 'gun', pit: 1, wt: 1, crk: 1, s: AUSIDE.us };
+function gunVoice(u, w) {
+  /* the shell. A mortar bomb at 34 of burst and a 210's at 140 are different objects and
+     the pitch of the body is where that difference lives: the bigger the thing that left
+     the barrel, the lower everything about the report. */
+  var sh = (w.aoe || 0) + (w.dmg || 0) * .35;
+  return { cls: muzClass(u, w),
+           pit: clamp(Math.pow(70 / Math.max(14, sh), .62), .40, 1.5),
+           /* and how much there is of it. A mortar carries across a street; a battery
+              carries across the map. */
+           wt: clamp(Math.pow(sh / 70, .34), .55, 1.8),
+           /* the charge, which is the crack, normalised about a tank gun so that a 75 on
+              a Sherman is 1 and the branch below it is the one the whole roster used to
+              fire. A Pak at 290 of penetration is nearly all crack and a pack howitzer
+              at 26 has almost none in it. */
+           crk: clamp(Math.pow((w.pen || 0) / 120, .55), .22, 1.9),
+           s: AUSIDE[u.side] || AUSIDE.us };
+}
+/* And what lands. A burst has no propellant in it and no side: what sets it is the hole,
+   which is the one number `explode` already has. */
+function burstVoice(r) {
+  var p = clamp(Math.pow(44 / Math.max(10, r), .5), .42, 1.6);
+  /* how long the thing was falling before it got here, which is the length of the
+     incoming: a bomb gives you half a second of warning and a 210 gives you most of two */
+  return { cls: 'boom', pit: p, wt: clamp(Math.pow(r / 44, .38), .5, 1.9),
+           lead: clamp(.5 / p, .4, 1.5), crk: 1, s: AUSIDE.us };
+}
 /* a street: two walls close enough to hear and a dark tail off everything else. The taps
    are a couple of milliseconds apart between the ears, which is what stops it sounding
    like a plate and starts it sounding like somewhere. */
@@ -9931,8 +11037,12 @@ function auHiss(t, dest, buf, type, f0, f1, q, vol, dur, at) {
   g.gain.exponentialRampToValueAtTime(.0004, t + at + dur);
   src.connect(f); f.connect(g); g.connect(dest);
   /* start somewhere else in the buffer every time: the same two hundred milliseconds of
-     noise on every shot is a texture the ear learns in about four seconds */
-  src.start(t + at, Math.random() * (buf.duration - dur - .05));
+     noise on every shot is a texture the ear learns in about four seconds. A layer longer
+     than the buffer has no window to pick and starts at the top; the source loops, so it
+     runs for as long as it was asked for. Left unclamped it throws, which is what a
+     heavy battery's second and a half of tail did to a fourteen-hundred-millisecond
+     buffer the first time one was built. */
+  src.start(t + at, Math.max(0, Math.random() * (buf.duration - dur - .05)));
   src.stop(t + at + dur + .03);
 }
 /* and one layer of pitch, which is the thump: a sine falling away under everything else */
@@ -9947,7 +11057,7 @@ function auTone(t, dest, type, f0, f1, vol, dur, at) {
   o.connect(g); g.connect(dest);
   o.start(t + at); o.stop(t + at + dur + .03);
 }
-function sfx(kind, x, y) {
+function sfx(kind, x, y, vo) {
   if (!AU.on || !AU.ctx || AU.budget <= 0) return;
   var c = AU.ctx, t = c.currentTime;
   var gap = AUGAP[kind];
@@ -9983,6 +11093,10 @@ function sfx(kind, x, y) {
   else lp.connect(AU.dry);
   out.connect(snd); snd.connect(AU.send);
   var j = rnd(.88, 1.14);                       /* no two of anything are the same */
+  /* what kind of gun this is, read off the weapon by `gunVoice`. A branch that is handed
+     nothing gets the even gun, which is what `tools/audio.mjs` renders when it is asked
+     for a class rather than for a piece off the roster. */
+  var v = vo || AUVD, vs = v.s || AUSIDE.us, wd;
 
   if (kind === 'rifle') {
     /* Lee-Enfield and Kar98k: a hard crack, a short barrel-shaped body under it, and a
@@ -9998,15 +11112,82 @@ function sfx(kind, x, y) {
     auHiss(t, out, AU.noise, 'highpass', 2300 * j, 0, .6, .72, .03, 0);
     auHiss(t, out, AU.noise, 'bandpass', 1000 * j, 560 * j, 1.2, .5, .065, .001);
     auTone(t, out, 'triangle', 135 * j, 60, .2, .055, 0);
-  } else if (kind === 'cannon') {
-    /* a 75 from a tank: the crack is nearly all of what you hear at the gun and the rest
-       of it arrives as weight */
-    snd.gain.value = .72;
-    auHiss(t, out, AU.noise, 'highpass', 1500 * j, 600, .6, 1, .2, 0);
-    auHiss(t, out, AU.noise, 'bandpass', 1300 * j, 500, 1, .6, .3, .004);
-    auHiss(t, out, AU.rumb, 'lowpass', 900, 190, .8, .8, .55, 0);
-    auTone(t, out, 'sine', 128 * j, 33, .7, .5, 0);
-    auTone(t, out, 'triangle', 62 * j, 28, .4, .4, .012);
+  } else if (kind === 'gun') {
+    /* A tank gun: the crack is nearly all of what you hear at the muzzle and the rest of
+       it arrives as weight. At an even voice this is the 75 every gun on the roster used
+       to fire; a Stuart's 37 comes out a third lighter and half an octave up, and the
+       Maus's 128 the other way about. */
+    snd.gain.value = clamp(.72 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 1500 * j * v.pit * vs.pit, 600, .6, v.crk * vs.crk, .2, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1300 * j * v.pit * vs.pit, 500, 1, .6 * v.crk * vs.crk, .3, .004);
+    auHiss(t, out, AU.rumb, 'lowpass', 900 * v.pit, 190 * v.pit, .8, .8 * v.wt * vs.bod, .55 * vs.tail, 0);
+    auTone(t, out, 'sine', 128 * j * v.pit, 33, .7 * v.wt, .5 * vs.tail, 0);
+    auTone(t, out, 'triangle', 62 * j * v.pit, 28, .4 * v.wt * vs.bod, .4, .012);
+  } else if (kind === 'at') {
+    /* An anti-tank gun is a long barrel at high velocity with a brake on the end of it.
+       The whole event is the crack; it is over before a tank gun's body has started, and
+       the brake throws the blast out sideways rather than down the range. */
+    snd.gain.value = clamp(.5 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 2300 * j * v.pit * vs.pit, 900, .7, .95 * v.crk * vs.crk, .13, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1750 * j * v.pit * vs.pit, 720, 1.3, .5 * v.crk * vs.crk, .2, .003);
+    auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 170 * v.pit, .8, .55 * v.wt * vs.bod, .4 * vs.tail, .006);
+    auTone(t, out, 'sine', 112 * j * v.pit, 30, .5 * v.wt, .34 * vs.tail, 0);
+  } else if (kind === 'mortar') {
+    /* A tube. The charge is small and it burns in the open behind the bomb, so there is
+       almost no crack in this at all: what you hear is gas leaving the muzzle, the tube
+       itself ringing, and a soft thump under both. Then the bomb is in the air for three
+       seconds. It is the one report on the roster a player picks out of a firefight by
+       its lack of an edge rather than by having one. */
+    snd.gain.value = .42;
+    auHiss(t, out, AU.noise, 'bandpass', 700 * j * v.pit * vs.pit, 300 * v.pit, 2.6, .8 * vs.crk, .085, 0);
+    auTone(t, out, 'sine', 176 * j * v.pit, 62, .5 * v.wt * vs.bod, .2 * vs.tail, 0);
+    /* The tube: a short metallic ring, and the whole of what says mortar rather than gun,
+       so it carries rather than sits under the thump. It is also where the two mortars
+       are told apart -- an M1 81 mm and an 8 cm GrW 34 throw nearly the same bomb on
+       nearly the same charge, so nothing read off the weapon will ever separate them and
+       what is left is the colour of the tube. Written at a fifth of the thump it was
+       inaudible in the measurement as well as in the ear: the pair read 1.03x in onset
+       colour against a control -- the same piece rendered twice -- of 1.01x, which is no
+       difference at all. At two fifths they read 1.12x against 1.01x. */
+    auTone(t, out, 'triangle', 340 * j * v.pit * vs.pit, 305 * v.pit, .42 * vs.bod, .24 * vs.tail, .006);
+    auHiss(t, out, AU.rumb, 'lowpass', 380 * v.pit, 130, .9, .42 * v.wt * vs.bod, .26 * vs.tail, 0);
+    auHiss(t, out, AU.noise, 'highpass', 2100 * j * vs.pit, 0, .6, .2 * v.crk * vs.crk, .03, 0);
+  } else if (kind === 'how') {
+    /* A pack howitzer: a short barrel and a big shell, so it barks rather than cracks.
+       Most of the report is over in a fifth of a second with the ground still moving. */
+    snd.gain.value = clamp(.62 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 1250 * j * v.pit * vs.pit, 480, .6, 1.5 * v.crk * vs.crk, .17, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 900 * j * v.pit * vs.pit, 380, 1.1, .7 * vs.crk, .3, .005);
+    auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 160 * v.pit, .85, v.wt * vs.bod, .7 * vs.tail, 0);
+    auTone(t, out, 'sine', 104 * j * v.pit, 30, .85 * v.wt, .6 * vs.tail, 0);
+    auTone(t, out, 'triangle', 52 * j * v.pit, 26, .42 * v.wt * vs.bod, .46, .014);
+  } else if (kind === 'heavy') {
+    /* A heavy battery, and the crack is there without being what the event is: two
+       hundred kilograms leaving a tube eight inches across is a blow rather than a bang,
+       and what carries is the body and the tail behind it. It is the loudest thing either
+       army owns and it ought to be the loudest thing on the map. */
+    snd.gain.value = 1;
+    auHiss(t, out, AU.noise, 'highpass', 900 * j * v.pit * vs.pit, 340, .6, 1.1 * v.crk * vs.crk, .24, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 620 * j * v.pit * vs.pit, 250, 1.1, .75 * vs.crk, .5, .006);
+    auHiss(t, out, AU.rumb, 'lowpass', 520 * v.pit, 90, .9, 1.25 * v.wt * vs.bod, 1.3 * vs.tail, 0);
+    auTone(t, out, 'sine', 96 * j * v.pit, 22, 1.05 * v.wt, 1.05 * vs.tail, 0);
+    auTone(t, out, 'triangle', 46 * j * v.pit, 20, .5 * v.wt * vs.bod, .8, .016);
+    /* and the ground comes back at you a beat later, which is the half of a heavy report
+       that happens where you are standing rather than where the gun is */
+    auHiss(t, out, AU.rumb, 'lowpass', 300, 70, .9, .5 * v.wt, .9 * vs.tail, .1);
+  } else if (kind === 'incoming') {
+    /* The round on its way down, and the only warning there is that a mission is landing
+       where you are standing. An indirect round made no sound at all between the tube and
+       the ground, which is a strange thing for the one weapon on this roster you are
+       meant to move out from under. It is pitched off the same burst the landing is, so a
+       bomb comes in as a thin whistle and a two-hundred-kilogram shell as a freight
+       train, and it is timed to finish where the shell does. */
+    snd.gain.value = .5;
+    wd = v.lead || .5;
+    auTone(t, out, 'sine', 900 * v.pit, 210 * v.pit, .3 * v.wt, wd, 0);
+    auTone(t, out, 'triangle', 1350 * v.pit, 300 * v.pit, .12 * v.wt, wd, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1500 * v.pit, 380 * v.pit, 3.2, .3 * v.wt, wd, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 400 * v.pit, 200 * v.pit, .8, .3 * v.wt, wd, .05);
   } else if (kind === 'rocket') {
     /* Panzerschreck and bazooka: not a bang but a shove, with the back-blast behind it */
     snd.gain.value = .62;
@@ -10014,13 +11195,16 @@ function sfx(kind, x, y) {
     auHiss(t, out, AU.rumb, 'lowpass', 700, 240, .8, .45, .36, 0);
     auTone(t, out, 'sine', 104 * j, 42, .38, .3, .01);
   } else if (kind === 'boom') {
-    /* a shell landing. Most of it is under a hundred hertz, some of it is the crack of
-       the burst, and the rest is the street coming down for the best part of a second. */
+    /* A shell landing. Most of it is under a hundred hertz, some of it is the crack of
+       the burst, and the rest is the street coming down for the best part of a second.
+       Sized off the hole the shell dug, because a mortar bomb at thirty-four of burst and
+       a 210's shell at a hundred and forty are not the same event on the ground either,
+       and every one of them used to be this one. */
     snd.gain.value = 1;
-    auHiss(t, out, AU.noise, 'highpass', 1100 * j, 400, .6, .85, .18, 0);
-    auHiss(t, out, AU.rumb, 'lowpass', 620, 120, .9, 1, .95, 0);
-    auTone(t, out, 'sine', 88 * j, 26, .8, .8, 0);
-    auHiss(t, out, AU.noise, 'bandpass', 2400 * j, 900, 1.1, .38, .55, .06);
+    auHiss(t, out, AU.noise, 'highpass', 1100 * j * v.pit, 400 * v.pit, .6, .85, .18 * v.wt, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 620 * v.pit, 120 * v.pit, .9, v.wt, .95 * v.wt, 0);
+    auTone(t, out, 'sine', 88 * j * v.pit, 26, .8 * v.wt, .8 * v.wt, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 2400 * j * v.pit, 900, 1.1, .38, .55 * v.wt, .06);
   } else if (kind === 'cap') {
     /* ground taken. A pair of notes rather than a hiss, because it is the one sound in
        the game that is telling you something rather than depicting something. */
@@ -10128,7 +11312,7 @@ function m4apply(m, x, y, z) {
 /* ---- context and shaders ---- */
 var cv = document.getElementById('cv');
 var ov = document.getElementById('ov'), ctx = ov.getContext('2d');
-var gl = null, GLOK = false, GL2 = false, SHADOWS = false, PROG = null, BILL = null, DEPTHP = null, SKY = null;
+var gl = null, GLOK = false, GL2 = false, SHADOWS = false, PROG = null, PARTP = null, DEPTHP = null, SKY = null;
 var SHADOW = { fb: null, tex: null, size: 2048, vp: null };
 var dpr = Math.min(2, window.devicePixelRatio || 1);
 var VIEW = { w: 800, h: 600 };
@@ -10487,22 +11671,56 @@ var FSD = [
   'precision mediump float;',
   'void main(){ gl_FragColor = vec4(1.0); }'].join('\n');
 /* billboards: soft particles and blob shadows */
-var VSB = [
-  'attribute vec2 aQuad;',
-  'uniform mat4 uVP; uniform vec3 uPos; uniform vec3 uRight; uniform vec3 uUp; uniform vec2 uSize;',
-  'varying vec2 vUV;',
-  'void main(){',
-  '  vec3 p = uPos + uRight * (aQuad.x * uSize.x) + uUp * (aQuad.y * uSize.y);',
-  '  vUV = aQuad * 0.5 + 0.5;',
-  '  gl_Position = uVP * vec4(p, 1.0);',
-  '}'].join('\n');
-var FSB = [
+/* Particles. Every effect in the game -- smoke, dust, a muzzle flash, the fireball of a
+   210mm shell -- used to be one drawArrays of one uniform-driven quad running one
+   fragment shader with exactly one shape in it: `smoothstep(1.0, 0.25, d)`, a soft disc.
+   So a rifle flash and a heavy burst were the same picture at two sizes and two alphas,
+   nothing had an edge, and three hundred of them were three hundred draw calls.
+     The quads are built in world space on the CPU now, the way `packChunks` builds
+   falling masonry, and go out as one buffer and one draw a blend pass. That buys the
+   count -- a single heavy burst wants sixty particles between its fireball, its ejecta,
+   its dust ring and its column -- and it buys the SHAPE, because a vertex can carry a
+   shape id and a seed where a uniform cannot without a draw call each.
+     Five shapes. A soft disc is still right for haze and for a shadow. A puff has a
+   broken, curdled rim and is what separates smoke from fog. A flash is a hot core with
+   spikes out of it. A ring is the shock running out along the ground. And a streak is
+   the quad already laid along a round's flight, so its falloff is the bar across it and
+   the taper down its length rather than a radius. */
+var VSP = [
+  'attribute vec3 aPos; attribute vec2 aUV; attribute vec4 aCol; attribute vec2 aShp;',
+  'uniform mat4 uVP;',
+  'varying vec2 vUV; varying vec4 vCol; varying vec2 vShp;',
+  'void main(){ vUV = aUV; vCol = aCol; vShp = aShp; gl_Position = uVP * vec4(aPos, 1.0); }'].join('\n');
+var FSP = [
   'precision mediump float;',
-  'varying vec2 vUV; uniform vec4 uColor;',
+  'varying vec2 vUV; varying vec4 vCol; varying vec2 vShp;',
   'void main(){',
-  '  float d = length(vUV - 0.5) * 2.0;',
-  '  float a = smoothstep(1.0, 0.25, d);',
-  '  gl_FragColor = vec4(uColor.rgb, uColor.a * a);',
+  '  vec2 q = vUV - 0.5;',
+  '  float d = length(q) * 2.0;',
+  '  float id = vShp.x, sd = vShp.y;',
+  '  float a;',
+  '  if (id < 0.5) {',
+  '    a = smoothstep(1.0, 0.18, d);',
+  '  } else if (id < 1.5) {',
+  '    float ang = atan(q.y, q.x);',
+  '    float w = 1.0 + 0.24 * sin(ang * 3.0 + sd) + 0.15 * sin(ang * 7.0 - sd * 2.3)',
+  '            + 0.08 * sin(ang * 13.0 + sd * 4.1);',
+  '    a = smoothstep(1.0, 0.10, d / w);',
+  '    float n = sin(q.x * 29.0 + sd) * sin(q.y * 23.0 - sd * 1.7)',
+  '            + 0.5 * sin(q.x * 61.0 - sd * 2.3) * sin(q.y * 53.0 + sd);',
+  '    a *= 0.62 + 0.38 * (n * 0.34 + 0.5);',
+  '  } else if (id < 2.5) {',
+  '    float ang = atan(q.y, q.x);',
+  '    float core = pow(max(0.0, 1.0 - d), 2.3);',
+  '    float sp = pow(max(0.0, cos(ang * 5.0 + sd)), 9.0) * max(0.0, 1.0 - d * 0.72);',
+  '    a = min(1.0, core + sp * 0.8);',
+  '  } else if (id < 3.5) {',
+  '    a = smoothstep(0.30, 0.0, abs(d - 0.80)) * smoothstep(1.04, 0.88, d);',
+  '  } else {',
+  '    float across = 1.0 - abs(vUV.y * 2.0 - 1.0);',
+  '    a = across * across * pow(vUV.x, 1.7);',
+  '  }',
+  '  gl_FragColor = vec4(vCol.rgb, vCol.a * a);',
   '}'].join('\n');
 
 /* Ground marks: the rings and the order paths, drawn as ribbons lying ON the ground
@@ -10566,7 +11784,8 @@ function initGL() {
     PROG = compileProgram(SHADOWS ? VSH.replace('#define SHADOWS 0', '#define SHADOWS 1') : VSH,
                           SHADOWS ? fsh.replace('#define SHADOWS 0', '#define SHADOWS 1') : fsh,
                           ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat']);
-    BILL = compileProgram(VSB, FSB, ['aQuad']);
+    PARTP = compileProgram(VSP, FSP, ['aPos', 'aUV', 'aCol', 'aShp']);
+    PART.a.buf = gl.createBuffer(); PART.b.buf = gl.createBuffer();
     SKY = compileProgram(VSK, FSK, ['aQuad']);
     DEPTHP = compileProgram(VSD, FSD, ['aPos']);
     MARKP = compileProgram(VSM, FSM, ['aPos', 'aCol']);
@@ -10828,10 +12047,21 @@ function gatherLights(v) {
   }
   for (i = 0; i < G.fx.length; i++) {
     var f = G.fx[i];
-    if (f.kind !== 'boom') continue;
-    var a = clamp(1 - f.t / f.dur, 0, 1);
-    litPut(f.x, f.y, groundZ(f.x, f.y) + 12, 70 + (f.r || 20) * 2.2,
-           2.4 * a, 1.35 * a, .42 * a, dsq(cx, cy, f.x, f.y));
+    if (f.kind === 'boom') {
+      var a = clamp(1 - f.t / f.dur, 0, 1);
+      /* a salvo is several of these at once and four slots of 2.4 bleached the whole
+         town; one shell still lights the street it lands in */
+      litPut(f.x, f.y, groundZ(f.x, f.y) + 12, 70 + (f.r || 20) * 2.2,
+             1.9 * a * a, 1.05 * a * a, .34 * a * a, dsq(cx, cy, f.x, f.y));
+    } else if (f.kind === 'flash' && f.lit) {
+      /* A gun going off is a light. At twenty-one degrees of December sun a great deal
+         of this town is in its own shadow, and until now the only things that lit any of
+         it were the sun and a burning hull -- a tank firing out of a side street lit
+         nothing at all, including itself. */
+      var fa = clamp(1 - f.t / f.dur, 0, 1);
+      litPut(f.x, f.y, f.z === undefined ? groundZ(f.x, f.y) + 12 : f.z, 55 + (f.r || 10) * 4.5,
+             2.7 * fa, 1.75 * fa, .72 * fa, dsq(cx, cy, f.x, f.y));
+    }
   }
 }
 function sunMatrix(v) {
@@ -11005,6 +12235,10 @@ function registerMaterials() {
     tag([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
     tagEdges([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
     tag([BUNK.steel, BUNK.dark], 'steel'); tagEdges([BUNK.steel, BUNK.dark], 'steel');
+    tag([BUNK.canv, BUNK.canvL, BUNK.canvD], 'net');
+    tagEdges([BUNK.canv, BUNK.canvL, BUNK.canvD], 'net');
+    tag([BUNK.timb, BUNK.timbL, BUNK.timbD], 'wood');
+    tagEdges([BUNK.timb, BUNK.timbL, BUNK.timbD], 'wood');
   }
 }
 /* Every colour a figure wears and every lit() derivative of it a builder makes. A
@@ -11754,8 +12988,27 @@ function buildTerrain(only) {
      couple of cells wide, and at eight units across the mesh rounds it off into the
      slope it was cut from. Phones keep the coarse mesh: the cost is triangles, and
      they have none to spare. */
+  /* and only over the tiles being rebuilt. This is four `groundZ` calls at each of
+     eighty-three thousand cells and it is most of what a tile costs; asked for the whole
+     map on every rebuild it was being paid twenty-four times over for a shell hole in
+     one corner. The margin is one cell, because a fine cell pins its edge midpoints
+     against a coarse neighbour and has to be able to see it. */
+  var sc0 = 0, sc1 = cols - 1, sr0 = 0, sr1 = rows - 1;
+  if (only) {
+    sc0 = cols; sc1 = -1; sr0 = rows; sr1 = -1;
+    for (var oi = 1; oi < PT_N; oi++) {
+      if (!only[oi]) continue;
+      var oci = (oi - 1) % PT_W, ocj = Math.floor((oi - 1) / PT_W);
+      sc0 = Math.min(sc0, Math.floor(oci * cols / PT_W) - 1);
+      sc1 = Math.max(sc1, Math.floor((oci + 1) * cols / PT_W));
+      sr0 = Math.min(sr0, Math.floor(ocj * rows / PT_H) - 1);
+      sr1 = Math.max(sr1, Math.floor((ocj + 1) * rows / PT_H));
+    }
+    sc0 = Math.max(0, sc0); sr0 = Math.max(0, sr0);
+    sc1 = Math.min(cols - 1, sc1); sr1 = Math.min(rows - 1, sr1);
+  }
   if (!MOB) {
-    for (var fj = 0; fj < rows; fj++) for (var fi = 0; fi < cols; fi++) {
+    for (var fj = sr0; fj <= sr1; fj++) for (var fi = sc0; fi <= sc1; fi++) {
       if (fine[fj * cols + fi]) continue;
       var fx = fi * TG + TG / 2, fy = fj * TG + TG / 2;
       var fgx = (groundZ(fx + TG, fy) - groundZ(fx - TG, fy)) / (2 * TG);
@@ -11792,6 +13045,37 @@ function buildTerrain(only) {
     var j = Math.min(rows - 1, Math.max(0, Math.floor(y / TG)));
     return dug[j * cols + i];
   }
+  /* And what a hole blown during the battle looks like, which the painted map cannot
+     say because a patch repaint is 222 ms whatever its size -- `paintGround` walks every
+     road, crater, trench and cobble on the map before the clip throws the drawing away,
+     and that is not a thing that can happen once a shell. The map's own craters get
+     their bowl, their lip and their rays painted into the albedo; a fresh one carries
+     the same reading in its vertex colour instead, off a grid marked in this pass beside
+     the wet one. Subsoil thrown out on top of weathered surface is the BRIGHTEST thing
+     on a crater, because it has not had a fortnight of rain on it, and the bowl under it
+     is the darkest. */
+  var spoil = new Float32Array(cols * rows);
+  function markSpoil(x, y, r) {
+    var reach = r * 1.5;
+    var i0 = Math.max(0, Math.floor((x - reach) / TG)), i1 = Math.min(cols - 1, Math.ceil((x + reach) / TG));
+    var j0 = Math.max(0, Math.floor((y - reach) / TG)), j1 = Math.min(rows - 1, Math.ceil((y + reach) / TG));
+    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+      var d = Math.hypot(i * TG + TG / 2 - x, j * TG + TG / 2 - y) / r;
+      if (d > 1.5) continue;
+      /* a bowl from the middle out to 0.8, then a ring of spoil thinning to nothing */
+      var v = d < .8 ? -(1 - d / .8) : (1 - Math.abs(d - 1.03) / .47);
+      var k = j * cols + i;
+      if (Math.abs(v) > Math.abs(spoil[k])) spoil[k] = clamp(v, -1, 1);
+    }
+  }
+  var anySpoil = 0;
+  G.craters.forEach(function (c) { if (c.fresh) { markSpoil(c.x, c.y, c.r); anySpoil = 1; } });
+  function spoilAt(x, y) {
+    if (!anySpoil) return 0;
+    var i = Math.min(cols - 1, Math.max(0, Math.floor(x / TG)));
+    var j = Math.min(rows - 1, Math.max(0, Math.floor(y / TG)));
+    return spoil[j * cols + i];
+  }
 
   var lastCol = [], lastVal = [];
   function vert(x, y, zOverride) {
@@ -11812,6 +13096,12 @@ function buildTerrain(only) {
     var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55,
                        LAND.wet ? LAND.wet(x, y) : 0);
     wet = clamp(wet, 0, 1) * clamp(1 - (1 - n.z) * 3.0, 0, 1);
+    /* Only the LIP is tinted. The bowl darkens itself twice over already -- through the
+       ambient term two lines up, which reads a hole off its own neighbours, and through
+       the wet channel, because a hole is where the water goes -- and a third darkening
+       on top of those turned a fresh crater into a pit of shadow beside the map's own. */
+    var sp = spoilAt(x, y);
+    if (sp > 0) v *= 1 + sp * .42;
     arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, y * .04, 9);
   }
   function quad(x0, y0, x1, y1, z00, z10, z01, z11) {
@@ -11942,6 +13232,9 @@ function sceneProps(tile) {
     if (!mine(p.x, p.y)) return;
     seedAt(p.x, p.y, 1);
     if (p.kind === 'ruin') {
+      /* once a shell has been into it, it draws from its own buffer rather than out of
+         this one: the merged tile cannot be edited and this house is going to change */
+      if (p.hurt) return;
       if (p.style === 'church') { put(churchModel(p.w, p.h), p.x, p.y, 0); return; }
       var bays = Math.max(1, Math.round(p.w / 70)), bayW = p.w / bays;
       for (var bh = 0; bh < bays; bh++) {
@@ -12064,7 +13357,6 @@ function sceneProps(tile) {
      depth wanders, the line wanders off its own axis by a foot or so, and one course in
      eight is down to a tumble. Nothing about the cover, the grid or the sight line
      changes -- those come off G.walls, which is still the straight line it always was. */
-  var WSTONE = ['#8b8067', '#7d7460', '#8f836a', '#948c78', '#a2977c'];
   G.walls.forEach(function (wl) {
     if (!mine((wl.x1 + wl.x2) / 2, (wl.y1 + wl.y2) / 2)) return;
     seedAt(wl.x1, wl.y1, 4);
@@ -12074,6 +13366,7 @@ function sceneProps(tile) {
     if (town) {
       var n = Math.max(2, Math.round(len / 34)), seg = len / n;
       for (i = 0; i < n; i++) {
+        if (wallGap(wl, (i + .5) * seg)) continue;      /* a shell has been through here */
         cx = lerp(wl.x1, wl.x2, (i + .5) / n); cy = lerp(wl.y1, wl.y2, (i + .5) / n);
         put(box(0, 0, 0, seg + 1, 11, wh, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
       }
@@ -12085,13 +13378,18 @@ function sceneProps(tile) {
     while (d < len - 2) {
       ln = Math.min(srange(8.5, 17), len - d);
       cx = wl.x1 + ux * (d + ln / 2); cy = wl.y1 + uy * (d + ln / 2);
+      var gone = wallGap(wl, d + ln / 2);
       d += ln;
       var col = WSTONE[(srand() * WSTONE.length) | 0], down = srand() < .12;
       var hh = down ? wh * srange(.22, .38) : wh * srange(.74, 1.06);
       var dp = down ? srange(11, 14) : srange(6.6, 9.8);
       var sw = srange(-1.7, 1.7);
+      var jit = a + srange(-.055, .055);
+      /* the draws are all taken whether the stone is there or not, so a gap does not
+         re-seed the rest of the run into a different wall */
+      if (gone) continue;
       put(box(0, 0, 0, ln + 1.2, dp, hh, col, lit(col, 1.1), lit(col, .88), .9),
-          cx + nx * sw, cy + ny * sw, a + srange(-.055, .055));
+          cx + nx * sw, cy + ny * sw, jit);
     }
   });
   /* ---- the trenches, dressed: every leg gets its revetment, fire step, duckboards,
@@ -12295,7 +13593,7 @@ function sceneProps(tile) {
       put(pitch(box(0, 0, 7, 22, 2.2, 2.2, '#4e402c', '#5f4e36'), -.2, 0, 0), st.x + 6, st.y - 4, st.s * TAU + 1.2);
       put(box(0, 0, .6, 16, 8, 1.2, '#5a4a32', '#6b5a3e'), st.x - 8, st.y + 6, st.s * 5);       /* a door */
     } else if (st.kind === 'bunker') {
-      put(bunkerModel(74, 46, st.s), st.x, st.y, st.a || 0);
+      put(bunkerModel(74, 46, st.s, st.sd), st.x, st.y, st.a || 0);
     } else if (st.kind === 'emplace') {
       /* a weapon pit: a horseshoe of sandbags two bags thick, six courses at the front
          falling to three at the open rear, each course laid header-and-stretcher round
@@ -13846,6 +15144,11 @@ function lit(hex, f) {
    what. Walls have thickness; windows are cut in as recessed boxes; broken tops are
    a ragged run of stumps; roofs are tiled prisms with a ridge and eaves. */
 var STONE = ['#9a8d74', '#8b7e68', '#a3967d', '#84796a', '#9d9078'];
+/* The stones a dry field boundary is laid out of, at the top level rather than inside
+   the mesher, because what a shell knocks off a wall has to be the colour of the wall it
+   came off and the thing that throws it is nowhere near the thing that draws it. All
+   five are in the `stone` list. */
+var WSTONE = ['#8b8067', '#7d7460', '#8f836a', '#948c78', '#a2977c'];
 var TILE = ['#7a4a33', '#875138', '#704431', '#8e5a3d'];
 var PLASTER = ['#d3b985', '#d8c9a3', '#c9a68a', '#c2bba6', '#c69a6a', '#dcc8a0'];
 var SHUTTER = ['#4e5a4b', '#5a4a36', '#3f4f4a', '#6a5a44'];
@@ -13910,7 +15213,7 @@ function wallCourses(len, thick, top, holes, seed, col, cap, sideC) {
    with windows drawn on it: each wall is built up in courses round its openings, its
    shell holes and the collapse that has taken its head off, the floors show through the
    gaps, and what came down is piled against the foot of it. */
-function houseModel(w, d, h, seed, roofed, damaged) {
+function houseModel(w, d, h, seed, roofed, damaged, st) {
   var stone = STONE[Math.floor(clamp(seed, 0, .999) * STONE.length)];
   var plaster = PLASTER[Math.floor(((seed * 7.3) % 1) * PLASTER.length)];
   var shutter = SHUTTER[Math.floor(((seed * 3.7) % 1) * SHUTTER.length)];
@@ -13919,8 +15222,13 @@ function houseModel(w, d, h, seed, roofed, damaged) {
   var wreck = clamp(.5 + ((seed * 5.7) % 1) * .4 + (damaged ? .08 : 0), .5, .96);
   var floors = h > 60 ? 2 : 1, flz = h * .46;
 
-  function holesFor(len, fs, street) {
+  function holesFor(len, fs, street, fi) {
     var hs = [], bays = Math.max(2, Math.round(len / 26)), b, fl, u;
+    /* and every breach a shell has put in this wall since the battle started. They are
+       the same shape of thing the windows are -- a `u` along the wall and a band of
+       height -- which is why a building here can be knocked about without a second
+       geometry path: wallCourses cuts them out of the courses the same way. */
+    if (st && st.brk[fi]) hs = hs.concat(st.brk[fi]);
     for (fl = 0; fl < floors; fl++) {
       var wz = 13 + fl * (h - 30) * .55;
       for (b = 0; b < bays; b++) {
@@ -13952,7 +15260,7 @@ function houseModel(w, d, h, seed, roofed, damaged) {
   var faces = [[w, 0, d / 2 - T / 2, 0, 1], [w, 0, -(d / 2 - T / 2), Math.PI, 0],
                [d, w / 2 - T / 2, 0, Math.PI / 2, 0], [d, -(w / 2 - T / 2), 0, -Math.PI / 2, 0]];
   faces.forEach(function (fc, fi) {
-    var len = fc[0], hs = holesFor(len, seed * 31 + fi * 13.7, fc[4]);
+    var len = fc[0], hs = holesFor(len, seed * 31 + fi * 13.7, fc[4], fi);
     f = f.concat(place(wallCourses(len, T, h, hs, seed + fi, plaster, cap, lit(plaster, .93)), fc[3], fc[1], fc[2], 0));
     /* sills, lintels and the odd shutter still on its hinges, on the openings that are
        still openings rather than part of a larger hole */
@@ -20959,8 +22267,30 @@ function dragonTooth(h, sv) {
    nothing is lost by it. */
 var BUNK = { con: '#7a7a6e', conL: '#8a8a7e', conD: '#6a6a60', conW: '#74746a',
              earth: '#8a7f66', earthL: '#9b9179', earthD: '#6b6250',
-             steel: '#3f3b30', dark: '#26251f' };
-function bunkerModel(fw, dp, sv) {
+             steel: '#3f3b30', dark: '#26251f',
+             /* the Canadian emplacement: proofed canvas over a timber frame, and the
+                timber itself. A tarpaulin in this weather is dark and a little green. */
+             canv: '#5c6148', canvL: '#6b7155', canvD: '#474b38',
+             timb: '#6a5c42', timbL: '#7d6e50', timbD: '#4c412d' };
+/* Which army built a bunker. Both shipped maps put `us` at the west edge and `ger` at the
+   east, so the midline answers it for every bunker either of them has ever placed, and an
+   entity that says so outright (`sd`) is believed. It is derived rather than stored
+   because the maps were written before a bunker had a side at all, and a field nobody has
+   filled in is a field that would make every existing bunker German. */
+function bunkerSide(e) { return e.sd || (e.x < WORLD.w / 2 ? 'us' : 'ger'); }
+/* Two armies, two ways of holding ground, and until now one model served both. A German
+   bunker on this front is poured concrete with the earth banked back over it -- the
+   Atlantic Wall pattern that got built wherever the organisation that built it went. A
+   Canadian one is not a lesser version of that: it is a field emplacement, revetted earth
+   and sandbags on a timber frame with a tarpaulin over the back half, put up by the men
+   who are going to fight out of it in a day rather than poured by a labour organisation in
+   a month. They read as different things from any distance, which is the point.
+     Both keep the same footprint, the same fighting slot and the same `bunkerBox`, so the
+   game, the editor and `mapcheck` are untouched by the split. */
+function bunkerModel(fw, dp, sv, side) {
+  return side === 'us' ? bunkerSandbag(fw, dp, sv) : bunkerConcrete(fw, dp, sv);
+}
+function bunkerConcrete(fw, dp, sv) {
   var hy = fw / 2, hx = dp / 2, f = [], i, k, nrnd = 0;
   var C = BUNK.con, CL = BUNK.conL, CD = BUNK.conD;
   var E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
@@ -21034,6 +22364,116 @@ function bunkerModel(fw, dp, sv) {
     var cz = 2 + rnd(k * 41) * 9, cy2 = (rnd(k * 43) - .5) * (fw - 14);
     f = f.concat(box(hx - 2.5, cy2, cz, 4, 4 + rnd(k * 47) * 5, 3 + rnd(k * 53) * 4, CD, BUNK.dark, CD));
   }
+  return f;
+}
+
+/* The Canadian emplacement. Not concrete and not a smaller casemate: a section position
+   dug and revetted by the men in it, which is what the Canadians on this front actually
+   held ground out of. Sandbags on a timber frame round three sides, the spoil banked
+   outside them, a fire slot in the front wall under a timber lintel, and a tarpaulin on a
+   ridge pole over the rear half -- the part that keeps the rain off the men and the
+   ammunition, and the one thing about it a player will pick out at any distance.
+     Its front is +x, the same way the concrete one faces, because `outPoint` clamps a
+   garrison's fire into `bk.face` and that is measured off the prop and not off the model. */
+function bunkerSandbag(fw, dp, sv) {
+  var hy = fw / 2, hx = dp / 2, f = [], i, k, nrnd = 0;
+  var T = BUNK.timb, TL = BUNK.timbL, TD = BUNK.timbD;
+  var E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
+  var V = BUNK.canv, VL = BUNK.canvL, VD = BUNK.canvD;
+  function rnd(n) { var v = Math.sin(sv * 77.3 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  function rseq() { return rnd(++nrnd); }
+  /* A WALL is revetted earth with a coping of bags on top, and not bags all the way down.
+     The arithmetic is the heavy battery position's: a course of bags is laid at about
+     four units, so a wall twenty-six high all round this footprint is some nine hundred
+     bags and five thousand faces for one object -- and the first version of this was
+     exactly that, eight courses deep, eleven units tall, six thousand faces and still not
+     up to a man''s chest. Earth behind timber revetting carries the height for a handful
+     of faces, and the bags that show are the two courses along the top where a player can
+     see one. */
+  /* `inw` is the local-y side the revetting goes on, and it has to be told rather than
+     assumed: the timber faces the INSIDE of the position, which is a different side of the
+     wall depending on which wall it is. Written as one fixed offset, half the walls came
+     out revetted on the outward face and the thing read as a wooden stockade rather than
+     as an earthwork. The pickets stop below the coping for the same reason -- run up to
+     the top they are a paling fence. */
+  function wall(cx, cy, ang, len, h, inw) {
+    var o = [], n = Math.max(2, Math.round(len / 13)), seg = len / n;
+    o = o.concat(place(frustum([[-len / 2, -7], [len / 2, -7], [len / 2, 7], [-len / 2, 7]],
+                               [[-len / 2, -4.5], [len / 2, -4.5], [len / 2, 4.5], [-len / 2, 4.5]],
+                               -2, h - 3, E, EL, ED), ang, cx, cy, 0));
+    /* split timber against the inner face, held by pickets: what stops the earth */
+    for (var q = 0; q < n; q++) {
+      var d = -len / 2 + (q + .5) * seg;
+      o = o.concat(place(box(d, inw * 6.2, 0, seg * .92, 1.3, h - 4.5, T, TL, TD), ang, cx, cy, 0));
+      o = o.concat(place(box(d, inw * 6.7, 0, 2, 2, h - 3.6, TD, T, TD), ang, cx, cy, 0));
+    }
+    /* and the coping: two courses of real bags along the top, which is the only part of a
+       revetted wall anybody ever sees as bags */
+    o = o.concat(place(sandbagRun(-len / 2, 0, 0, len, 2, rseq), ang, cx, cy, h - 3));
+    return o;
+  }
+  /* the floor, trodden and darker than the ground outside it */
+  f = f.concat(box(0, 0, -2, dp, fw, 3, BUNK.dark, ED, BUNK.dark));
+  /* The front, in two halves with the fire slot between them, and a timber lintel over
+     the opening. The slot is the whole reason a thing with a face is taken from the flank. */
+  for (i = -1; i <= 1; i += 2) {
+    var fseg = (fw - 30) / 2;
+    f = f.concat(wall(hx - 6, i * (15 + fseg / 2), Math.PI / 2, fseg, 26, 1));
+  }
+  f = f.concat(box(hx - 6, 0, 17, 13, 30, 3, T, TL, TD));               /* the lintel */
+  f = f.concat(wall(hx - 6, 0, Math.PI / 2, 30, 11, 1));                /* the sill under the slot */
+  /* the flanks, and the back with the entrance left open at one corner */
+  for (i = -1; i <= 1; i += 2) f = f.concat(wall(-2, i * (hy - 6), 0, dp - 14, 26, -i));
+  f = f.concat(wall(-(hx - 6), -6, Math.PI / 2, fw - 24, 26, -1));
+  f = f.concat(wall(-(hx - 17), hy - 15, Math.PI / 2, 22, 24, -1));     /* the traverse */
+  /* The spoil banked outside, and it has to come most of the way UP the wall rather than
+     lying round its foot. A revetted wall seen from outside is a frustum, which is two
+     flat planes, and the concrete bunker's own notes say what two flat planes read as at
+     the distance a player looks from: a plywood ramp leaning on a shed. What makes it
+     earth is a run of mounds that overlap at the toe and stand apart at the crest, so the
+     crest wanders and the toe is ragged. Banked to a third of the height the wall above it
+     still read as rendered slab; it goes to three quarters. */
+  function bank(cx, cy, ang, len, n) {
+    var o = [], q;
+    for (q = 0; q < n; q++) {
+      var d = -len / 2 + (q + .5) * len / n;
+      var reach = 15 + rnd(q * 3 + cx * 7) * 11, hgt = 17 + rnd(q * 5 + cy * 3) * 6;
+      o = o.concat(place(frustum([[d - len / n * .78, 6], [d + len / n * .78, 6],
+                                  [d + len / n * .78, 6 + reach], [d - len / n * .78, 6 + reach]],
+                                 [[d - 3.5, 7], [d + 3.5, 7], [d + 3.5, 11], [d - 3.5, 11]],
+                                 -2, hgt, E, EL, ED), ang, cx, cy, 0));
+    }
+    return o;
+  }
+  for (i = -1; i <= 1; i += 2) f = f.concat(bank(-2, i * (hy - 6), i > 0 ? 0 : Math.PI, dp - 14, 6));
+  f = f.concat(bank(-(hx - 6), -6, -Math.PI / 2, fw - 24, 6));
+  for (i = -1; i <= 1; i += 2) {
+    var bseg = (fw - 30) / 2;
+    f = f.concat(bank(hx - 6, i * (15 + bseg / 2), Math.PI / 2, bseg, 3));
+  }
+  /* The timber frame over the rear half and the tarpaulin on it: a ridge pole on four
+     uprights with the canvas falling either side. It is the one thing about this a player
+     picks out at any distance, and it is what a section actually lives under. */
+  var rx = -(hx - 8), rl = dp * .46;
+  for (i = -1; i <= 1; i += 2) {
+    f = f.concat(box(rx + rl / 2 - 2, i * (hy - 9), 0, 3.4, 3.4, 33, T, TL, TD));
+    f = f.concat(box(rx - rl / 2 + 2, i * (hy - 9), 0, 3.4, 3.4, 33, T, TL, TD));
+  }
+  f = f.concat(box(rx, 0, 33, rl, 3, 3, T, TL, TD));
+  for (i = -1; i <= 1; i += 2)
+    f = f.concat(place(pitch(box(0, 0, 0, rl, hy - 6, 1.2, V, VL, VD), i * .44, 0, 0),
+                       0, rx, i * (hy / 2 - 3), 29.5));
+  /* what a section keeps in one, out of the wet under the canvas */
+  for (k = 0; k < 4; k++)
+    f = f.concat(place(box(0, 0, 0, 9, 5.5, 4.5, '#4d5340', '#5d6450', '#41473a'),
+                       rnd(k * 11) * .7, rx + (rnd(k * 13) - .5) * rl * .6,
+                       (rnd(k * 17) - .5) * (fw - 30), k % 2 ? 4.5 : 0));
+  f = f.concat(place(box(0, 0, 0, 6, 6, 9, BUNK.steel, BUNK.steel, BUNK.dark), .4, rx - 4, -hy + 14, 0));
+  /* and the bags the shelling has burst on the parapet, which is what says it is held */
+  for (k = 0; k < 5; k++)
+    f = f.concat(place(box(0, 0, 0, 5 + rnd(k * 23) * 3, 4, 1.6, ED, E, BUNK.dark),
+                       rnd(k * 29) * 3.1, hx - 4 + rnd(k * 31) * 4,
+                       (rnd(k * 37) - .5) * (fw - 14), 23 + rnd(k * 41) * 3));
   return f;
 }
 
@@ -21368,18 +22808,103 @@ function bushModel(r, seed) {
 
 /* ================================================================ drawing the frame */
 var _blobs = [];
-function billboard(x, y, z, sx, sy, r, g, b, a, additive) {
-  gl.uniform3f(BILL.u.uPos, x, y, z);
-  gl.uniform2f(BILL.u.uSize, sx, sy);
-  gl.uniform4f(BILL.u.uColor, r, g, b, a);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+/* ---- the particle packer.
+   Eleven floats a vertex, six vertices a quad, written by hand into one array that is
+   allocated once, for the same reason `packChunks` is written by hand: this is rebuilt
+   from nothing on every frame the game runs, and building it out of `box()` and
+   `facesToBuffer()` would allocate a few hundred small arrays a frame and spend more
+   time in the collector than in the arithmetic.
+     A quad is a centre and two half-axes. What those axes are is the whole of the
+   difference between the three kinds of quad here: the camera's right and up for
+   anything facing the viewer, the ground plane for a ring or a shadow, and the round's
+   own flight crossed with the view for a tracer. */
+var PSTRIDE = 11;
+var PART = { a: { f: new Float32Array(PSTRIDE * 6 * 420), n: 0, buf: null },
+             b: { f: new Float32Array(PSTRIDE * 6 * 300), n: 0, buf: null } };
+function partPut(P, x, y, z, ex, ey, ez, fx, fy, fz, r, g, b, a, shp, sd) {
+  if ((P.n + 6) * PSTRIDE > P.f.length) {
+    /* grow rather than drop: the marks buffer used to return on overflow and what it
+       threw away was whatever was built last, which is never what anybody expects */
+    var gw = new Float32Array(P.f.length * 2); gw.set(P.f); P.f = gw;
+  }
+  var f = P.f, i = P.n * PSTRIDE, c;
+  /* (0,0) (1,0) (1,1) then (0,0) (1,1) (0,1); culling is off for this pass so the
+     winding does not matter */
+  var CU = PART._u, CV = PART._v;
+  CU[0] = 0; CV[0] = 0; CU[1] = 1; CV[1] = 0; CU[2] = 1; CV[2] = 1;
+  CU[3] = 0; CV[3] = 0; CU[4] = 1; CV[4] = 1; CU[5] = 0; CV[5] = 1;
+  for (c = 0; c < 6; c++) {
+    var su = CU[c] * 2 - 1, sv = CV[c] * 2 - 1;
+    f[i] = x + ex * su + fx * sv; f[i + 1] = y + ey * su + fy * sv; f[i + 2] = z + ez * su + fz * sv;
+    f[i + 3] = CU[c]; f[i + 4] = CV[c];
+    f[i + 5] = r; f[i + 6] = g; f[i + 7] = b; f[i + 8] = a;
+    f[i + 9] = shp; f[i + 10] = sd;
+    i += PSTRIDE;
+  }
+  P.n += 6;
 }
-function groundBlob(x, y, r, a) {
-  /* a shadow flat on the ground: the quad's axes lie in the ground plane */
-  gl.uniform3f(BILL.u.uRight, 1, 0, 0);
-  gl.uniform3f(BILL.u.uUp, 0, 1, 0);
-  billboard(x, y, groundZ(x, y) + .6, r, r * .8, 0, 0, 0, a);
+PART._u = new Float32Array(6); PART._v = new Float32Array(6);
+/* facing the camera, rolled about the view axis so a dozen puffs are not a dozen copies
+   of one picture */
+function partBill(x, y, z, sx, sy, roll, r, g, b, a, shp, sd, add) {
+  if (a <= .004 || sx <= 0) return;
+  var R = MAT.right, U = MAT.up, c = Math.cos(roll || 0), sn = Math.sin(roll || 0);
+  partPut(add ? PART.b : PART.a, x, y, z,
+          (R.x * c + U.x * sn) * sx, (R.y * c + U.y * sn) * sx, (R.z * c + U.z * sn) * sx,
+          (U.x * c - R.x * sn) * sy, (U.y * c - R.y * sn) * sy, (U.z * c - R.z * sn) * sy,
+          r, g, b, a, shp, sd || 0);
 }
+/* lying flat on the ground: a shock ring, a shadow, the scorch under a fire */
+function partFlat(x, y, z, sx, sy, roll, r, g, b, a, shp, sd, add) {
+  if (a <= .004 || sx <= 0) return;
+  var c = Math.cos(roll || 0), sn = Math.sin(roll || 0);
+  partPut(add ? PART.b : PART.a, x, y, z, c * sx, sn * sx, 0, -sn * sy, c * sy, 0,
+          r, g, b, a, shp, sd || 0);
+}
+/* a ribbon from tail to head. The width runs across the flight AND across the line of
+   sight, which is the cross product of the two, so a round crossing the view is a bar
+   and one coming at the camera is a point -- which is what a tracer does. */
+function partStreak(x0, y0, z0, x1, y1, z1, w, r, g, b, a, add) {
+  if (a <= .004) return;
+  var dx = (x1 - x0) * .5, dy = (y1 - y0) * .5, dz = (z1 - z0) * .5;
+  var mx = x0 + dx, my = y0 + dy, mz = z0 + dz;
+  var vx = MAT.eye.x - mx, vy = MAT.eye.y - my, vz = MAT.eye.z - mz;
+  var sx = dy * vz - dz * vy, sy = dz * vx - dx * vz, sz = dx * vy - dy * vx;
+  var sl = Math.sqrt(sx * sx + sy * sy + sz * sz);
+  if (sl < 1e-5) { sx = MAT.right.x; sy = MAT.right.y; sz = MAT.right.z; sl = 1; }
+  sl = w / sl;
+  partPut(add ? PART.b : PART.a, mx, my, mz, dx, dy, dz, sx * sl, sy * sl, sz * sl,
+          r, g, b, a, 4, 0);
+}
+function drawParts() {
+  var pass, P;
+  gl.useProgram(PARTP.p);
+  gl.uniformMatrix4fv(PARTP.u.uVP, false, MAT.vp);
+  gl.depthMask(false); gl.enable(gl.BLEND); gl.disable(gl.CULL_FACE);
+  gl.enableVertexAttribArray(0); gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(2); gl.enableVertexAttribArray(3);
+  FXN.quads = 0; FXN.draws = 0;
+  for (pass = 0; pass < 2; pass++) {
+    P = pass ? PART.b : PART.a;
+    if (P.n) {
+      gl.blendFunc(gl.SRC_ALPHA, pass ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+      gl.bindBuffer(gl.ARRAY_BUFFER, P.buf);
+      gl.bufferData(gl.ARRAY_BUFFER, P.f.subarray(0, P.n * PSTRIDE), gl.DYNAMIC_DRAW);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, PSTRIDE * 4, 0);
+      gl.vertexAttribPointer(1, 2, gl.FLOAT, false, PSTRIDE * 4, 12);
+      gl.vertexAttribPointer(2, 4, gl.FLOAT, false, PSTRIDE * 4, 20);
+      gl.vertexAttribPointer(3, 2, gl.FLOAT, false, PSTRIDE * 4, 36);
+      gl.drawArrays(gl.TRIANGLES, 0, P.n);
+      FXN.quads += P.n / 6; FXN.draws++;
+    }
+    P.n = 0;
+  }
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3);
+  gl.disable(gl.BLEND); gl.depthMask(true); gl.enable(gl.CULL_FACE);
+}
+/* what the last frame's particle pass came to, for the card and for nothing else */
+var FXN = { quads: 0, draws: 0 };
 function unitTop(u) { return u.cat === 'veh' ? (u.def.hp > 1200 ? 44 : u.def.hp > 500 ? 40 : 28) : 26; }
 /* the bearing of the nearest enemy, from the squad's own position */
 /* Which way the men should be facing when they go to ground. The nearest enemy they
@@ -21608,6 +23133,167 @@ function drawBuildings3D() {
    scene is built once at the start of a battle and these go up during it. A site under
    construction rises out of the ground as the engineers work, which is the only way the
    player can see that anything is happening. */
+/* ---- a hurt building, meshed on its own ----
+   Every bay is rebuilt at the height it still stands to and round the holes it has
+   collected, and the rubble that has settled against it is laid on top. It is one
+   building's worth of geometry rather than a tile's, which is the whole reason it leaves
+   the merged buffer the moment it is first hit. */
+/* One bay's vertices, kept on the bay. A shell changes one wall of one bay, and the
+   whole house was being re-meshed and re-packed for it: three bays of a terrace is six
+   thousand faces and nineteen thousand vertices, which is eighteen milliseconds -- a
+   whole frame, on a frame where a house was hit, and a barrage hits houses constantly.
+   Meshing a bay is not the expensive half; packing it into the vertex stream is. */
+function ruinBayArray(b) {
+  return new Float32Array(facesToArray(place(houseModel(b.w, b.d, ruinHeight(b), b.seed, false, b.dmg, b),
+                                             0, b.x, b.y, groundZ(b.x, b.y))));
+}
+function ruinRebuild(p) {
+  var B = ruinState(p), i, tot = 0;
+  for (i = 0; i < B.length; i++) {
+    if (!B[i].arr || B[i].dirty) { B[i].arr = ruinBayArray(B[i]); B[i].dirty = 0; }
+    tot += B[i].arr.length;
+  }
+  var A = new Float32Array(tot), o = 0;
+  for (i = 0; i < B.length; i++) { A.set(B[i].arr, o); o += B[i].arr.length; }
+  if (p.buf) freeBuffer(p.buf);
+  p.buf = makeBuffer(A);
+  p.rebuild = 0;
+}
+/* ---- the debris buffer ----
+   This is the one buffer in the file that is rebuilt while the game is running, and that
+   is what makes it worth writing by hand. Built the way everything else here is built --
+   `box()`, `roll()`, `pitch()`, `place()`, `facesToBuffer()` -- it cost 2.8 ms a frame
+   with the cap of masonry in the air, and nearly all of that was garbage rather than
+   arithmetic: four arrays of six faces and thirty-six vertex arrays per chunk, three
+   hundred times over, on every frame.
+
+   A chunk is an axis-aligned box under one rotation, so its eight corners are the centre
+   plus and minus three half-axes, and those half-axes are the columns of the rotation
+   scaled by the half-extents. The thirty-six vertices are then a fixed pattern over
+   eight points. Written straight into one array that is allocated once and re-uploaded,
+   it allocates nothing at all.
+
+   A chunk is also unbevelled -- six faces rather than twenty-six -- because a chamfer on
+   a lump of masonry going past at forty units a second is twenty faces nobody sees. */
+var DEBBUF = null, DEBARR = null, DEBN = 0;
+/* the six faces as indices into the eight corners, wound the way `box()` winds them, so
+   a chunk faces out under the same culling as everything else. The corner index is a bit
+   per axis: 1 is +x, 2 is +y, 4 is +z. */
+var DEBF = [[1, 3, 7, 5], [2, 0, 4, 6], [3, 2, 6, 7], [0, 1, 5, 4], [5, 7, 6, 4], [3, 1, 0, 2]];
+var _dcx = new Float64Array(8), _dcy = new Float64Array(8), _dcz = new Float64Array(8);
+/* a colour, turned into what the vertex stream wants of it. A heap is three or four
+   stone shades, so this is asked thousands of times a frame about a handful of strings. */
+var _dmat = {};
+function debMat(col) {
+  var m = _dmat[col];
+  if (!m) {
+    var c = hexRGB(col), mi = matOf(col);
+    m = _dmat[col] = [c[0], c[1], c[2], mi, MATS.spec[mi][2]];
+  }
+  return m;
+}
+/* a list of chunks, written into `A` at `o`, and the offset it reached. The settled
+   rubble is the same shape of thing as the masonry still in the air and goes through
+   here too: built the long way it was nine of the sixteen milliseconds a hurt house cost
+   to re-mesh, and a heap is re-meshed on every frame a stone lands on it. */
+function packChunks(D, A, o) {
+  var n = D.length, i, j, q, k;
+  for (i = 0; i < n; i++) {
+    var c = D[i];
+    var ca = Math.cos(c.rx), sa = Math.sin(c.rx);
+    var cb = Math.cos(c.ry), sb = Math.sin(c.ry);
+    var cz = Math.cos(c.rz), sz = Math.sin(c.rz);
+    /* rolled about x, then pitched about y, then yawed about z, which is the order
+       everything else in this file is assembled in */
+    var m00 = cz * cb, m01 = -(cz * sb * sa + sz * ca), m02 = sz * sa - cz * sb * ca;
+    var m10 = sz * cb, m11 = cz * ca - sz * sb * sa, m12 = -(sz * sb * ca + cz * sa);
+    var m20 = sb, m21 = cb * sa, m22 = cb * ca;
+    var hx = c.l * .5, hy = c.w * .5, hz = c.h * .5;
+    var axx = m00 * hx, axy = m10 * hx, axz = m20 * hx;
+    var byx = m01 * hy, byy = m11 * hy, byz = m21 * hy;
+    var czx = m02 * hz, czy = m12 * hz, czz = m22 * hz;
+    for (k = 0; k < 8; k++) {
+      var sx = (k & 1) ? 1 : -1, sy = (k & 2) ? 1 : -1, sw = (k & 4) ? 1 : -1;
+      _dcx[k] = c.x + sx * axx + sy * byx + sw * czx;
+      _dcy[k] = c.y + sx * axy + sy * byy + sw * czy;
+      _dcz[k] = c.z + sx * axz + sy * byz + sw * czz;
+    }
+    var base = debMat(c.c), cap = debMat(lit(c.c, 1.12)), sd = debMat(lit(c.c, .88));
+    for (j = 0; j < 6; j++) {
+      var F = DEBF[j], nx, ny, nz2, M;
+      /* the outward normal is the matrix column the face looks along, which is already a
+         unit vector because the matrix is a rotation */
+      if (j === 0) { nx = m00; ny = m10; nz2 = m20; M = base; }
+      else if (j === 1) { nx = -m00; ny = -m10; nz2 = -m20; M = base; }
+      else if (j === 2) { nx = m01; ny = m11; nz2 = m21; M = sd; }
+      else if (j === 3) { nx = -m01; ny = -m11; nz2 = -m21; M = sd; }
+      else if (j === 4) { nx = m02; ny = m12; nz2 = m22; M = cap; }
+      else { nx = -m02; ny = -m12; nz2 = -m22; M = base; }
+      var anx = nx < 0 ? -nx : nx, any = ny < 0 ? -ny : ny, anz = nz2 < 0 ? -nz2 : nz2;
+      /* the same triplanar choice facesToArray makes, along the dominant axis */
+      var pl = anz >= anx && anz >= any ? 0 : anx >= any ? 1 : 2;
+      var sc2 = M[4];
+      for (q = 0; q < 6; q++) {
+        /* the quad as a fan from its first corner, which is how a face is triangulated
+           everywhere else */
+        var ci = F[q === 0 || q === 3 ? 0 : q === 1 ? 1 : q === 2 || q === 4 ? 2 : 3];
+        var px = _dcx[ci], py = _dcy[ci], pz = _dcz[ci];
+        A[o] = px; A[o + 1] = py; A[o + 2] = pz;
+        A[o + 3] = nx; A[o + 4] = ny; A[o + 5] = nz2;
+        A[o + 6] = M[0]; A[o + 7] = M[1]; A[o + 8] = M[2];
+        A[o + 9] = (pl === 1 ? py : px) * sc2;
+        A[o + 10] = (pl === 0 ? py : pz) * sc2;
+        A[o + 11] = M[3];
+        o += 12;
+      }
+    }
+  }
+  return o;
+}
+function buildDebrisBuf() {
+  var n = G.debris.length;
+  DEBN = 0;
+  if (!n) return;
+  var need = n * 36 * 12;
+  if (!DEBARR || DEBARR.length < need) DEBARR = new Float32Array(Math.ceil(need * 1.3));
+  var A = DEBARR, o = packChunks(G.debris, A, 0);
+  DEBN = o / 12;
+  if (!DEBBUF) DEBBUF = { vbo: gl.createBuffer(), n: 0, cap: -1 };
+  gl.bindBuffer(gl.ARRAY_BUFFER, DEBBUF.vbo);
+  if (DEBBUF.cap !== A.length) { gl.bufferData(gl.ARRAY_BUFFER, A, gl.DYNAMIC_DRAW); DEBBUF.cap = A.length; }
+  else gl.bufferSubData(gl.ARRAY_BUFFER, 0, A, 0, o);
+  DEBBUF.n = DEBN;
+}
+/* and all the masonry that has come to rest, which is one buffer for the whole map: it
+   changes on every frame of a collapse while the walls above it do not, so it is not in
+   with them. */
+var RUBBUF = null, RUBARR = null;
+function buildRubBuf() {
+  G.rubDirty = 0;
+  if (!G.rub.length) { if (RUBBUF) RUBBUF.n = 0; return; }
+  /* the same persistent buffer the airborne masonry uses, and for the same reason: a
+     stone lands on most frames of a collapse, and a fresh GL buffer on each of them is
+     the churn the hand-written packer exists to avoid */
+  var need = G.rub.length * 36 * 12;
+  if (!RUBARR || RUBARR.length < need) RUBARR = new Float32Array(Math.ceil(need * 1.3));
+  var A = RUBARR, o = packChunks(G.rub, A, 0);
+  if (!RUBBUF) RUBBUF = { vbo: gl.createBuffer(), n: 0, cap: -1 };
+  gl.bindBuffer(gl.ARRAY_BUFFER, RUBBUF.vbo);
+  if (RUBBUF.cap !== A.length) { gl.bufferData(gl.ARRAY_BUFFER, A, gl.DYNAMIC_DRAW); RUBBUF.cap = A.length; }
+  else gl.bufferSubData(gl.ARRAY_BUFFER, 0, A, 0, o);
+  RUBBUF.n = o / 12;
+}
+function drawRuins3D() {
+  var i, p;
+  for (i = 0; i < G.hurt.length; i++) {
+    p = G.hurt[i];
+    if (p.rebuild) ruinRebuild(p);
+    if (p.buf) drawGeom(p.buf, m4model(0, 0, 0, 0, 1), false, null);
+  }
+  if (G.rubDirty) buildRubBuf();
+  if (RUBBUF && RUBBUF.n) drawGeom(RUBBUF, m4model(0, 0, 0, 0, 1), false, null);
+  if (G.debris.length) { buildDebrisBuf(); if (DEBN) drawGeom(DEBBUF, m4model(0, 0, 0, 0, 1), false, null); }
+}
 function drawWorks3D() {
   var i, w;
   /* The geometry is already in world coordinates, so the matrix is a plain translation:
@@ -21655,53 +23341,191 @@ function drawWrecks3D(v) {
   });
 }
 function drawParticles3D() {
-  gl.useProgram(BILL.p);
-  gl.uniformMatrix4fv(BILL.u.uVP, false, MAT.vp);
-  gl.bindBuffer(gl.ARRAY_BUFFER, QUAD);
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3); gl.disableVertexAttribArray(4);
-  gl.depthMask(false); gl.enable(gl.BLEND); gl.disable(gl.CULL_FACE);
-  /* shadows first, multiplied into the ground */
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  if (!SHADOWS) for (var i = 0; i < _blobs.length; i++) groundBlob(_blobs[i].x, _blobs[i].y, _blobs[i].r, _blobs[i].a);
+  var i, f, k, z, c;
+  /* the ground shadows, when there is no shadow map to draw them */
+  if (!SHADOWS) for (i = 0; i < _blobs.length; i++)
+    partFlat(_blobs[i].x, _blobs[i].y, groundZ(_blobs[i].x, _blobs[i].y) + .6,
+             _blobs[i].r, _blobs[i].r * .8, 0, 0, 0, 0, _blobs[i].a, 0, 0);
   _blobs.length = 0;
-  /* then the smoke and dust, facing the camera */
-  gl.uniform3f(BILL.u.uRight, MAT.right.x, MAT.right.y, MAT.right.z);
-  gl.uniform3f(BILL.u.uUp, MAT.up.x, MAT.up.y, MAT.up.z);
   G.ambientSmoke.forEach(function (sm) {
     for (var q = 0; q < 5; q++) {
-      var age = ((G.t * .12 + sm.phase + q * .2) % 1), s = sm.size * (.6 + age * 1.6);
-      billboard(sm.x + Math.sin(age * 4 + q) * 18 * age, sm.y - age * 30, groundZ(sm.x, sm.y) + 10 + age * 140,
-                s, s, .22, .21, .19, (1 - age) * .28);
+      var age = ((G.t * .12 + sm.phase + q * .2) % 1), sz = sm.size * (.6 + age * 1.6);
+      partBill(sm.x + Math.sin(age * 4 + q) * 18 * age, sm.y - age * 30,
+               groundZ(sm.x, sm.y) + 10 + age * 140, sz, sz, age * 1.7 + q,
+               .34, .33, .30, (1 - age) * .26, 1, q * 1.1 + sm.phase * 6);
     }
   });
-  G.fx.forEach(function (f) {
-    var k = f.t / f.dur, z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
-    if (f.kind === 'smoke') billboard(f.x + Math.cos(f.a) * k * 12, f.y, z + 12 + k * 46, 8 + k * 22, 8 + k * 22, .34, .34, .31, (1 - k) * .34);
-    else if (f.kind === 'dust') billboard(f.x + Math.cos(f.a) * k * 8, f.y, z + 4 + k * 9, 4 + k * 11, 4 + k * 11, .55, .49, .36, (1 - k) * .3);
-    else if (f.kind === 'exhaust') billboard(f.x + Math.cos(f.a) * k * 7, f.y, z + 8 + k * 24, 4 + k * 13, 4 + k * 13, .29, .28, .25, (1 - k) * .22);
-    else if (f.kind === 'boom') billboard(f.x, f.y, z + 10 + k * 34, f.r * (.55 + k * 1.1), f.r * (.55 + k * 1.1), .24, .22, .18, (1 - k) * .82);
-    else if (f.kind === 'gunsmoke') billboard(f.x + Math.cos(f.a) * k * 16, f.y + Math.sin(f.a) * k * 9, (f.z || z) + k * 20,
-                                             f.r * (.5 + k * 2.2), f.r * (.5 + k * 2.2), .42, .41, .38, (1 - k) * (1 - k) * .4);
-  });
-  /* fire is additive */
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-  G.fx.forEach(function (f) {
-    var k = f.t / f.dur, z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
-    if (f.kind === 'boom' && k < .55) {
-      var s = f.r * (.5 + k * .9), a = 1 - k * 1.8;
-      billboard(f.x, f.y, z + 8, s, s, 1, .78, .36, a * .9);
-      billboard(f.x, f.y, z + 8, s * .45, s * .45, 1, .98, .9, a);
+  /* Rounds in the air. These lived on the 2D overlay, which is a separate canvas stacked
+     over the WebGL one, so a tracer could never be behind anything in the world: a belt
+     fired at a house was drawn straight across the front of it. They go through the
+     depth buffer now, which is the whole reason a round crossing a street reads as
+     passing between two buildings rather than over them. */
+  for (i = 0; i < G.shots.length; i++) drawShot(G.shots[i]);
+  for (i = 0; i < G.fx.length; i++) {
+    f = G.fx[i]; k = f.t / f.dur;
+    z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
+    c = FXCOL[f.c || 0];
+    if (f.kind === 'smoke') {
+      /* a shell's smoke starts as the dirt it threw up and ends as smoke: it lifts,
+         spreads, leans downwind and loses the earth out of it on the way */
+      /* it comes off the ground sooty and thins to grey as it climbs; the colour it
+         STARTS at is the whole of whether it reads at all, because a pale translucent
+         puff over pale dry ground is invisible and that is what every puff in this game
+         used to be */
+      /* It shoots up and then slows, which is why the climb is front-loaded rather than
+         linear: read off a straight ramp a column is still lying in its own crater half
+         a second after the shell lands, where it has to be clear of the scorch by then
+         or it is a dark puff over a dark stain and nobody can see it at all. It lightens
+         as it climbs, the way smoke does. */
+      var kk = Math.pow(k, .55), ss = (f.r || 9) * (.55 + kk * 1.9);
+      partBill(f.x, f.y, z, ss, ss * (.9 + k * .2), f.a + k * .5,
+               lerp(c[0], .56, kk), lerp(c[1], .54, kk), lerp(c[2], .51, kk),
+               Math.min(1, (1 - k * k) * 3.4) * (f.op === undefined ? .46 : f.op), 1, f.sd || 0);
+    } else if (f.kind === 'dust') {
+      var ds = (f.r || 5) * (1 + k * 2.4);
+      partBill(f.x + Math.cos(f.a) * k * 26, f.y + Math.sin(f.a) * k * 17, z + 3 + k * 16,
+               ds, ds * .66, f.a, .47, .41, .32, Math.min(1, (1 - k) * 2.4) * .34, 1, f.sd || 0);
+    } else if (f.kind === 'exhaust') {
+      var es = 4 + k * 13;
+      partBill(f.x + Math.cos(f.a) * k * 7, f.y, z + 8 + k * 24, es, es, f.a,
+               .29, .28, .25, (1 - k) * .20, 1, f.sd || 0);
+    } else if (f.kind === 'gunsmoke') {
+      /* the cloud a gun blows out of its own barrel, which goes where the barrel is
+         pointing and then stops and hangs */
+      var gk = Math.min(1, k * 3.2), ca = Math.cos(f.a), sa = Math.sin(f.a);
+      for (var g = 0; g < 3; g++) {
+        var gd = (f.r || 10) * (.5 + g * 1.5) * gk, gs = (f.r || 10) * (.5 + g * .42 + k * 2.1);
+        partBill(f.x + ca * gd, f.y + sa * gd, z + k * 16 + g * 2, gs, gs, f.a + g * 2.1,
+                 .40, .38, .36, Math.min(1, (1 - k) * (1 - k) * 2.2) * .40 * (1 - g * .22), 1, (f.sd || 0) + g);
+      }
+    } else if (f.kind === 'boom') {
+      burstDraw(f, k, z);
+    } else if (f.kind === 'ring') {
+      /* the shock running out along the ground, which is what gives a burst a size the
+         eye can read off the ground rather than off a ball of light */
+      var rr = (f.r || 40) * (.25 + k * 1.5);
+      partFlat(f.x, f.y, z + 2.5, rr, rr, f.a, .40, .34, .26, (1 - k) * (1 - k) * .55, 3, 0);
+    } else if (f.kind === 'ejecta' || f.kind === 'spark') {
+      drawBallistic(f, k);
+    } else if (f.kind === 'hit') {
+      /* a bullet strike: the little spout of dust it kicks and the flick of light off it */
+      var hs = 2.2 + k * 7;
+      partBill(f.x, f.y, z + 2 + k * 8, hs, hs, f.a, .58, .52, .40, (1 - k) * .42, 1, f.sd || 0);
+      if (k < .45) partBill(f.x, f.y, z + 4, 3.0 * (1 - k * 2), 3.0 * (1 - k * 2), 0,
+                            1, .86, .55, (1 - k * 2.2) * .7, 0, 0, 1);
     } else if (f.kind === 'flash') {
-      /* short, bright, and gone: the flash is what tells the player who is firing */
-      var fs = f.r * (1.15 - k * .5), fa = (1 - k) * (1 - k);
-      billboard(f.x, f.y, f.z === undefined ? z + 12 : f.z, fs, fs, 1, .82, .42, fa * .95);
-      billboard(f.x, f.y, f.z === undefined ? z + 12 : f.z, fs * .42, fs * .42, 1, .99, .88, fa);
+      muzzleDraw(f, k, z);
     }
-  });
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.disable(gl.BLEND); gl.depthMask(true); gl.enable(gl.CULL_FACE);
+  }
 }
+/* The colours a puff can start as. Earth thrown out of a hole, the grey of burnt
+   propellant, the oily black of fuel and rubber, and pale masonry dust -- four different
+   things that all used to be the same 0.34 grey. */
+var FXCOL = [[.52, .44, .33], [.42, .41, .39], [.13, .12, .11], [.70, .64, .52],
+             [.31, .26, .21]];
+/* Tracer burned different colours in the two armies, and that is the cheapest true thing
+   a player can read off a firefight at two hundred units: Commonwealth tracer ran
+   red-orange and German ran a pale yellow-white. */
+var TRACER = { us: [1, .52, .20], ger: [1, .95, .58] };
+/* A burst, staged rather than drawn as one disc. There is the flash, which is over in a
+   twentieth of a second and is what the eye actually registers; the fireball, which is
+   turbulent and goes from white through orange to nothing; and the flash on the ground
+   under it. The dirt, the ring and the column are their own entries, spawned by
+   `explode`, because they outlive this by seconds. */
+function burstDraw(f, k, z) {
+  var r = f.r || 40, i;
+  if (k < .13) {
+    /* white, compact, and over before the eye resolves it. A star the size of the crater
+       reads as a lens flare rather than as a shell. */
+    var fk = k / .13, fs = r * (.26 + fk * .22);
+    partBill(f.x, f.y, z + r * .14, fs, fs, f.sd || 0, 1, .96, .86, (1 - fk) * (1 - fk) * .95, 1, f.sd || 0, 1);
+  }
+  if (k < .62) {
+    /* the fireball, as a handful of billowing lobes rather than one ball: it climbs,
+       spreads and goes from white through orange to the soot the column is made of */
+    /* two lobes on a phone rather than four: these are large alpha quads over each
+       other and the budget here is fill rate rather than draw calls */
+    var bk = k / .62, br = r * (.24 + bk * .40), hot = 1 - bk, nl = MOB ? 2 : 4;
+    for (i = 0; i < nl; i++) {
+      var ba = (f.sd || 0) + i * 1.61, bo = r * (.10 + bk * .42) * (i ? 1 : 0);
+      partBill(f.x + Math.cos(ba) * bo, f.y + Math.sin(ba) * bo,
+               z + r * (.12 + bk * .48) + i * r * .07, br * (1 - i * .13), br * (1 - i * .15),
+               ba, lerp(1, .58, bk * bk), lerp(.82, .20, bk) * (1 - i * .08), lerp(.44, .05, bk),
+               hot * hot * .8, 1, ba);
+    }
+  }
+  if (k < .34) {
+    /* the flash on the ground under it, which is how a burst behind a wall still tells
+       the player where it was */
+    var gk = k / .34, gr = r * (.42 + gk * .55);
+    partFlat(f.x, f.y, groundZ(f.x, f.y) + 1.5, gr, gr, 0, 1, .68, .28, (1 - gk) * (1 - gk) * .26, 0, 0, 1);
+  }
+}
+/* Anything thrown: a clod out of a crater, a spark off a plate. It is integrated under
+   gravity in `updateShots`, and what is drawn is the ground it covered since the last
+   frame -- a streak rather than a dot, because at four hundred units a second a dot is a
+   row of unrelated specks. */
+function drawBallistic(f, k) {
+  var tx = f.x - (f.vx || 0) * .035, ty = f.y - (f.vy || 0) * .035, tz = f.z - (f.vz || 0) * .035;
+  if (f.kind === 'spark') partStreak(tx, ty, tz, f.x, f.y, f.z, 1.5, 1, .84, .48, (1 - k) * .95, 1);
+  else {
+    var c = FXCOL[f.c || 0], r = f.r || 3;
+    partStreak(tx, ty, tz, f.x, f.y, f.z, r * .8, c[0], c[1], c[2], (1 - k * k) * .8, 0);
+    partBill(f.x, f.y, f.z, r, r, f.a, c[0], c[1], c[2], (1 - k * k) * .75, 1, f.sd || 0);
+  }
+}
+/* A muzzle flash is a cone of burning propellant coming out of a bore, and what the game
+   had was a round disc at the barrel tip: the same picture for a Lee-Enfield and for a
+   210mm howitzer, with nothing in it to say which way the gun was even pointing. It is
+   laid along the bore now -- bright at the muzzle and tapering out to the length the
+   charge earns -- with a star at the muzzle itself, and a muzzle brake throws two lobes
+   out sideways, which is the single most recognisable thing about a braked gun. */
+function muzzleDraw(f, k, z) {
+  var r = f.r || 8, a = (1 - k) * (1 - k), ca = Math.cos(f.a || 0), sa = Math.sin(f.a || 0);
+  var len = r * (f.ln || 2.2) * (.55 + k * .9), col = f.col || FLASHC.us;
+  partStreak(f.x + ca * len, f.y + sa * len, z + (f.el || 0) * len, f.x, f.y, z,
+             r * .55, col[0], col[1], col[2], a * .95, 1);
+  partBill(f.x, f.y, z, r * (1.05 - k * .35), r * (1.05 - k * .35), f.sd || 0,
+           col[0], col[1], col[2], a * .85, 2, f.sd || 0, 1);
+  partBill(f.x, f.y, z, r * .4, r * .4, 0, 1, .99, .92, a, 0, 0, 1);
+  if (f.br) {
+    /* the two lobes out of a brake's side ports, thrown square to the bore */
+    var px = -sa, py = ca, bl = len * .5;
+    for (var q = -1; q <= 1; q += 2)
+      partStreak(f.x + px * q * bl, f.y + py * q * bl, z, f.x + ca * r * .4, f.y + sa * r * .4, z,
+                 r * .34, col[0], col[1], col[2], a * .7, 1);
+  }
+}
+/* Where a round is right now, and how high. A flat round bows a little over its flight;
+   a bomb goes up and comes down, and the height it reaches is what carries it over the
+   roof it was fired from behind. */
+function shotPoint(s, k) {
+  var x = lerp(s.sx, s.tx, k), y = lerp(s.sy, s.ty, k);
+  return { x: x, y: y, z: groundZ(x, y) + (s.z0 === undefined ? 12 : s.z0) +
+              Math.sin(clamp(k, 0, 1) * Math.PI) * (s.arc || 0) };
+}
+function drawShot(s) {
+  var k1 = clamp(s.t / s.dur, 0, 1), k0 = Math.max(0, k1 - (s.tail || .22));
+  var h = shotPoint(s, k1), t = shotPoint(s, k0), c = s.col || TRACER.us;
+  if (s.t < 0) return;                        /* a volley is a ripple, not a salvo */
+  if (s.kind === 'tracer') {
+    if (!s.tr) return;                        /* one round in a belt burns, not all of them */
+    /* the tail carries the side's colour and the head is the element burning, which is
+       nearly white on both. A red trace drawn flat over pale dry ground disappears into
+       a red channel that is already at the top of its range: measured on this map the
+       Canadian tracer put a sixth of the pixels on the screen that the German one did,
+       for the same number of rounds. */
+    partStreak(t.x, t.y, t.z, h.x, h.y, h.z, 1.2, c[0], c[1], c[2], .95, 1);
+    partBill(h.x, h.y, h.z, 2.0, 2.0, 0, 1, c[1] * .35 + .65, c[2] * .35 + .6, .9, 0, 0, 1);
+  } else if (s.ind) {
+    /* a bomb has no tracer in it; what is visible is the body against the sky */
+    partBill(h.x, h.y, h.z, 2.4, 3.4, 0, .16, .15, .14, .8, 0, 0, 0);
+  } else {
+    partStreak(t.x, t.y, t.z, h.x, h.y, h.z, 1.9, c[0], c[1], c[2], .88, 1);
+    partBill(h.x, h.y, h.z, 2.6, 2.6, 0, 1, .84, .55, .85, 0, 0, 1);
+  }
+}
+
 
 /* ---- the 2D overlay: everything that is text, a bar, a line or a selection ---- */
 function drawSectorFlag(s) {
@@ -21832,6 +23656,13 @@ function render() {
       drawDepthGeom(B, mm);
     });
     G.works.forEach(function (w) { if (w.buf) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
+    /* a house that has left the merged tile still has to throw the shadow it threw
+       before it was hit, or a shelled street lights up as the walls come off it */
+    for (var hri = 0; hri < G.hurt.length; hri++) {
+      if (G.hurt[hri].buf) drawDepthGeom(G.hurt[hri].buf, m4model(0, 0, 0, 0, 1));
+    }
+    if (DEBBUF && DEBN) drawDepthGeom(DEBBUF, m4model(0, 0, 0, 0, 1));
+    if (RUBBUF && RUBBUF.n) drawDepthGeom(RUBBUF, m4model(0, 0, 0, 0, 1));
     list.forEach(function (u) { castUnit(u); });
     gl.cullFace(gl.BACK);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -21905,6 +23736,7 @@ function render() {
   });
   drawBuildings3D();
   drawWorks3D();
+  drawRuins3D();
   drawUnits3D(v, list);
   if (POV.on && POV.u && (POV.u.inside || POV.u).cat === 'veh') drawInterior(POV.u.inside || POV.u);
   drawWrecks3D(v);
@@ -21912,6 +23744,7 @@ function render() {
      and not in the editor, which draws its own cursor on the overlay */
   if (!POV.on && !ED.on) { buildMarks(v); drawMarks3D(); }
   drawParticles3D();
+  drawParts();
 
   /* ---- the overlay ---- */
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -21948,35 +23781,6 @@ function render() {
     ctx.strokeRect(cp.x - cr, cp.y - cr, cr * 2, cr * 2);
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   });
-  /* tracers and shells */
-  ctx.globalCompositeOperation = 'lighter';
-  G.shots.forEach(function (s2) {
-    if (s2.kind === 'tracer') {
-      var a = 1 - s2.t / s2.dur, k0 = clamp(s2.t / s2.dur, 0, 1) * .82, k1 = clamp(s2.t / s2.dur + .3, 0, 1);
-      var p0 = w2s(lerp(s2.x, s2.tx, k0), lerp(s2.y, s2.ty, k0), groundZ(lerp(s2.x, s2.tx, k0), lerp(s2.y, s2.ty, k0)) + 10);
-      var p1 = w2s(lerp(s2.x, s2.tx, k1), lerp(s2.y, s2.ty, k1), groundZ(lerp(s2.x, s2.tx, k1), lerp(s2.y, s2.ty, k1)) + 10);
-      if (p0.behind || p1.behind) return;
-      ctx.strokeStyle = 'rgba(255,214,128,' + (a * .3).toFixed(2) + ')'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,248,214,' + (a * .95).toFixed(2) + ')'; ctx.lineWidth = 1.3;
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-    } else {
-      var f2 = clamp(s2.t / s2.dur, 0, 1), arc = Math.sin(f2 * Math.PI) * (s2.arc || 16);
-      var here = w2s(s2.x, s2.y, groundZ(s2.x, s2.y) + 13 + arc);
-      if (here.behind) return;
-      ctx.fillStyle = '#fff3cd'; ctx.beginPath(); ctx.arc(here.x, here.y, 2.6, 0, TAU); ctx.fill();
-    }
-  });
-  G.fx.forEach(function (f) {
-    if (f.kind !== 'spark' && f.kind !== 'hit') return;
-    var k = f.t / f.dur, p = w2s(f.x, f.y, groundZ(f.x, f.y) + 8);
-    if (p.behind) return;
-    ctx.globalAlpha = 1 - k;
-    ctx.fillStyle = f.kind === 'spark' ? '#ffe3a0' : '#8a7a58';
-    ctx.beginPath(); ctx.arc(p.x, p.y, (f.kind === 'spark' ? 3.4 : 2.6) * (1 - k) + .8, 0, TAU); ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-  ctx.globalCompositeOperation = 'source-over';
   /* unit and building labels */
   list.forEach(function (u) { drawUnitOverlay(u, w2s(u.x, u.y)); });
   G.blds.forEach(function (b) { if (b.side === G.side || visibleTo(G.side, b)) drawBuildingOverlay(b); });
@@ -22812,6 +24616,7 @@ function cmdGlyph(label) {
   if (/Sherman|Panzer|Sturmgesch/i.test(label)) return '▬';
   if (/Carrier|222/i.test(label)) return '◇';
   if (/Vickers|MG42|6-Pounder|Pak/i.test(label)) return '⊢';
+  if (/Repair/i.test(label)) return '✚';
   if (/Engineer|Pionier|RCE/i.test(label)) return '⚒';
   return '◆';
 }
@@ -22917,6 +24722,17 @@ function buildCmds() {
           return !siteOf(G.own, key) && canAfford(G.own, d.cost);
         };
       });
+      /* Repair sits with the works because it is the same arm's job, and it takes `8`
+         because the works have 3 to 7 and a control group has 1 to 5. */
+      var mend = repairNearest(engs[0]);
+      addCmd('Repair', mend ? 'nearest damaged' : 'nothing damaged', '8', !!mend,
+        function () {
+          var sent = 0;
+          engs.forEach(function (e) { var t = repairNearest(e); if (t) { resumeBuild(e, t); sent++; } });
+          toast(sent ? 'Repairing' : 'Nothing of ours is damaged');
+          sfx('click'); syncHud();
+        });
+      cmdList[cmdList.length - 1].can = function () { return !!repairNearest(engs[0]); };
       Object.keys(WORKS).forEach(function (wk) {
         var W = WORKS[wk];
         if (W.side && W.side !== G.side) return;
@@ -23450,6 +25266,9 @@ function startGame(side, diff, mode, arty, duo) {
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   missionTitle();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.sel = [];
+  G.debris = []; G.hurt = []; G.rub = []; G.tileQ = {}; G.rubDirty = 1;
+  MND = null;
+  if (RUBBUF) RUBBUF.n = 0;
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
@@ -23548,6 +25367,9 @@ function frame(now) {
     for (var i = 0; i < G.units.length; i++) updateUnit(G.units[i], dt);
     for (var j = 0; j < G.blds.length; j++) updateBuilding(G.blds[j], dt);
     updateShots(dt);
+    stepDebris(dt);
+    flushTileQ();
+    flushGroundQ();
     updateSectors(dt);
     updateSites(dt);
     tickEconomy(dt);

@@ -359,6 +359,18 @@ for (const device of TARGETS) {
     const laid = window.orderBarrage(m, tx, ty);
     const far = window.orderBarrage(m, 600 + B.range + 120, 900);
     const out = [];
+    /* And what the mission SOUNDS like, which until now was nothing at all between the
+       tube and the ground: a bomb is in the air for three seconds and the whistle is the
+       only warning a player gets that a mission is landing on him. It is played at the
+       ground it is coming at rather than at the tube, so it is counted here with the
+       rounds rather than with the reports. */
+    const heard = {};
+    const realSfx = window.sfx;
+    window.sfx = function (kind, sx, sy, sv) {
+      heard[kind] = (heard[kind] || 0) + 1;
+      if (kind === 'incoming') heard.at = Math.round(Math.hypot(sx - tx, sy - ty));
+      return realSfx.apply(null, arguments);
+    };
     /* run on past the end: the last bomb is counted by seeing it leave the list, and a
        loop that stops the moment the list empties never sees the one that emptied it */
     let quiet = 0;
@@ -371,6 +383,7 @@ for (const device of TARGETS) {
       });
       quiet = (m.barrage || window.G.shots.length) ? 0 : quiet + 1;
     }
+    window.sfx = realSfx;
     window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
     window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
     /* A mission aims anywhere inside its circle and then has its own round-to-round
@@ -388,16 +401,24 @@ for (const device of TARGETS) {
              rounds: out.length, want: B.rounds, r: B.r, bound,
              inCircle: out.filter(d => d <= B.r).length,
              inBound: out.filter(d => d <= bound).length,
-             past: tx - 600 > m.def.w.range };
+             past: tx - 600 > m.def.w.range,
+             inc: heard.incoming || 0, boom: heard.boom || 0, rep: heard.mortar || 0,
+             incAt: heard.at === undefined ? -1 : heard.at };
   });
   ok('a mortar shells what the side can see, over what is in the way, and lands where it is laid',
      !mor.has || (mor.line === false && mor.unobserved === 0 && mor.observed > 0 &&
                   mor.laid && !mor.far && mor.past && mor.rounds === mor.want &&
-                  mor.inBound === mor.rounds && mor.inCircle >= mor.rounds - 4),
+                  mor.inBound === mor.rounds && mor.inCircle >= mor.rounds - 4 &&
+                  /* every bomb is announced by its own report, its own incoming and its
+                     own burst, and the incoming is laid at the ground and not at the tube */
+                  mor.rep === mor.rounds && mor.inc === mor.rounds && mor.boom === mor.rounds &&
+                  mor.incAt >= 0 && mor.incAt <= mor.bound),
      !mor.has ? 'no indirect weapon in this file'
               : `through a building: ${mor.unobserved} rounds unobserved, ${mor.observed} with eyes on; ` +
                 `a mission past free-fire range fired ${mor.rounds} of ${mor.want}, ${mor.inCircle} inside ${mor.r} and ` +
-                `${mor.inBound} inside ${mor.bound}, and out of range was refused`);
+                `${mor.inBound} inside ${mor.bound}, and out of range was refused; ` +
+                `${mor.rep} tube reports, ${mor.inc} incoming and ${mor.boom} bursts, the last ` +
+                `incoming ${mor.incAt} units from the aim point`);
 
   /* --- the pack howitzers, which are the mortar's claims turned round. The mortar fires
      on its own account and the gun never does, so what is worth asserting is the refusal:
@@ -1448,6 +1469,594 @@ for (const device of TARGETS) {
      `${stones.low} low wall runs on the map; ${stones.drills} sections stood at one and left to settle, ` +
      `${stones.inside} of ${stones.men} men in the stones ` +
      `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
+
+  /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
+     is a picture of rubble laid over a building that is, as far as everything else in the
+     game is concerned, exactly where it was -- and it is the one fault here a screenshot
+     would call a success. So the row asks the SAME CELL the same four questions with the
+     bay standing and with the bay down, puts a section in the house first to see it put
+     out, and counts the stone: what settles has to be what came out of the walls, because
+     masonry that vanishes on landing is a collapse nobody can stand in. --- */
+  const wreck = await (async () => {
+    /* on Ortona, because a terrace is what this is about and the Gothic Line is a valley
+       floor with two farms on it */
+    await reload(page);
+    await page.evaluate(() => {
+      window.G.mapData = window.defaultMapData();
+      window.startGame('us', 1, 'vp', true, true);
+    });
+    await page.waitForFunction(() => window.SCENE && window.SCENE.ready, null, { timeout: 180000 });
+    const put = await page.evaluate(() => {
+      /* the widest house that has nothing else standing right beside it, so most of what
+         the battery does lands on the thing under test */
+      const p = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 90 &&
+        !window.G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300) &&
+        !window.G.props.some(r => r !== q && r.solid && r.kind !== 'sea' &&
+                                  Math.hypot(r.x - q.x, r.y - q.y) < 150))
+        .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      if (!p) return null;
+      window.__keep = window.G.units.slice();
+      window.G.units.length = 0;
+      const u = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'us_rifle' : 'ger_gren',
+                                 p.x, p.y + p.h / 2 + 40);
+      window.enterBuilding(u, p);
+      window.rebuildGrid();
+      const B = window.ruinState(p), b = B[Math.floor(B.length / 2)];
+      const ci = window.cidx((b.x / window.CELL) | 0, (p.y / window.CELL) | 0);
+      return { up: { walk: window.walkable(b.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+                     fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
+                     gar: !!u.gar, hurt: !!p.hurt },
+               bays: B.length, x: b.x, y: p.y, w: Math.round(p.w), h: Math.round(p.h) };
+    });
+    if (!put) return null;
+    /* a battery on it, which is the one thing on the roster that brings a house down */
+    const shot = await page.evaluate(a => {
+      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
+                                           Math.abs(q.y - a.y) < a.h)[0];
+      let n = 0;
+      for (let i = 0; i < 14; i++) {
+        window.explode(a.x + (i % 5 - 2) * 11, a.y - a.h / 2 - 2, 130, 300, null, null, 22);
+        n++;
+      }
+      let vol = 0;
+      for (const c of window.G.debris) vol += c.l * c.w * c.h;
+      return { rounds: n, air: window.G.debris.length, vol: Math.round(vol),
+               queued: Object.keys(window.G.tileQ).length, bays: (p.bay || []).filter(b => b.down > 0).length };
+    }, put);
+    await fastForward(page, 14);
+    /* and one drawn frame, because the house's own buffer is built in the draw: fast
+       forward stubs render() out, so without this the row asks whether a thing that has
+       not been drawn yet has been drawn */
+    await frames(page, 2);
+    const down = await page.evaluate(a => {
+      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
+                                           Math.abs(q.y - a.y) < a.h)[0];
+      const ci = window.cidx((a.x / window.CELL) | 0, (a.y / window.CELL) | 0);
+      const u = window.G.units.filter(e => !e.dead)[0];
+      let vol = 0;
+      for (const r of window.G.rub) vol += r.l * r.w * r.h;
+      let mound = 0;
+      for (let dx = -60; dx <= 60; dx += 14) for (let dy = -40; dy <= 40; dy += 14)
+        mound = Math.max(mound, window.moundAt(a.x + dx, a.y + dy));
+      const st = { walk: window.walkable(a.x, a.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+                   fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
+                   gar: !!(u && u.gar), hurt: !!p.hurt, standing: Math.round(window.ruinStanding(p)),
+                   canGar: window.canGarrison({ cat: 'inf', def: { speed: 30 }, models: [] }, p),
+                   settled: window.G.rub.length, vol: Math.round(vol), mound: +mound.toFixed(1),
+                   air: window.G.debris.length, buf: !!p.buf };
+      window.G.units.length = 0;
+      window.__keep.forEach(e => window.G.units.push(e));
+      window.rebuildGrid();
+      return st;
+    }, put);
+    return { ...put, ...shot, down };
+  })();
+  ok('a house shelled flat stops being a house on every grid that reads one',
+     !!wreck && wreck.up.walk === 0 && wreck.up.sight === 1 && wreck.up.fire === 1 &&
+     wreck.up.rub === 0 && wreck.up.gar === true && wreck.up.hurt === false &&
+     wreck.down.walk === 1 && wreck.down.sight === 0 && wreck.down.fire === 0 &&
+     wreck.down.rub === 1 && wreck.down.gar === false && wreck.down.canGar === false &&
+     wreck.down.standing < 34 && wreck.down.buf === true,
+     wreck ? `${wreck.w}x${wreck.h} in ${wreck.bays} bays, ${wreck.rounds} heavy rounds: ` +
+             `walkable ${wreck.up.walk}->${wreck.down.walk}, stops an eye ${wreck.up.sight}->${wreck.down.sight}, ` +
+             `stops a round ${wreck.up.fire}->${wreck.down.fire}, rubble ${wreck.up.rub}->${wreck.down.rub}, ` +
+             `garrison ${wreck.up.gar ? 'held' : 'none'}->${wreck.down.gar ? 'held' : 'put out'}, ` +
+             `${wreck.down.standing} units left standing, ` +
+             `holdable ${wreck.down.canGar ? 'still' : 'no'}, own buffer ${wreck.down.buf ? 'yes' : 'no'}`
+           : 'no isolated terrace on the map to shell');
+  ok('the masonry that comes out of it is the masonry that lands',
+     !!wreck && wreck.air > 40 && wreck.down.air === 0 && wreck.down.settled > 40 &&
+     wreck.down.vol > wreck.vol * 0.75 && wreck.down.mound > 3,
+     wreck ? `${wreck.air} chunks in the air and ${wreck.down.settled} settled, ` +
+             `${wreck.down.vol} of ${wreck.vol} units of stone kept, heap ${wreck.down.mound} deep`
+           : '');
+
+  /* --- Effects. Every particle the game makes used to be one draw call of one soft
+     disc, so a Lee-Enfield and a 210mm shell were the same picture at two sizes, and a
+     tracer lived on the 2D overlay -- a separate canvas stacked over the world, where
+     nothing can be behind anything. Both faults render as something plausible, which is
+     why they lasted: a flash is a flash and a bright line is a bright line. So the rows
+     read the FRAMEBUFFER rather than looking at it, twice, once with the effect and once
+     without, and ask what it actually put on the screen. --- */
+  const fx = await (async () => {
+    /* on Ortona, which the destruction rows above have already loaded: the occlusion
+       drill wants a terrace to hide a round behind and the Gothic Line is a valley
+       floor with two farms on it */
+    const r = await page.evaluate(() => {
+      const gl = window.gl;
+      const W = () => gl.drawingBufferWidth, H = () => gl.drawingBufferHeight;
+      function grab() {
+        const px = new Uint8Array(W() * H() * 4);
+        window.render();
+        gl.readPixels(0, 0, W(), H(), gl.RGBA, gl.UNSIGNED_BYTE, px);
+        return px;
+      }
+      function lift(a, b) {
+        let hit = 0;
+        for (let i = 0; i < a.length; i += 4) {
+          const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+          if (d > 6) hit++;
+        }
+        return hit;
+      }
+      function step(sec) {
+        const rr = window.render, ra = window.requestAnimationFrame;
+        window.render = function () {}; window.requestAnimationFrame = function () { return 0; };
+        let t = performance.now(); window.last = t;
+        for (let i = 0; i < Math.round(sec / .02); i++) { t += 20; window.frame(t); }
+        window.render = rr; window.requestAnimationFrame = ra;
+        window.last = performance.now();
+      }
+      const G = window.G;
+      G.ambientSmoke.length = 0;
+      const keep = G.units.slice();
+      /* level, inland, clear: the coastal bench is flat and looks down a sea cliff */
+      let F = null, bs = -1;
+      for (let x = 500; x < window.WORLD.w - 500; x += 60) for (let y = 400; y < window.WORLD.h - 400; y += 60) {
+        const z = window.groundZ(x, y);
+        if (z < 6) continue;
+        let worst = 0;
+        for (let a = 0; a < 8; a++) worst = Math.max(worst, Math.abs(
+          window.groundZ(x + Math.cos(a) * 240, y + Math.sin(a) * 240) - z));
+        if (worst > 10) continue;
+        let near = 1e9;
+        for (const b of G.blds) near = Math.min(near, Math.hypot(b.x - x, b.y - y));
+        for (const q of G.props) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+        if (near < 150) continue;
+        const sc = Math.min(near, 600) - worst * 20;
+        if (sc > bs) { bs = sc; F = { x, y }; }
+      }
+      F = F || { x: window.WORLD.w / 2, y: window.WORLD.h / 2 };
+
+      /* MUZZLE: every weapon fired once from the same spot with the same camera on it */
+      G.units.length = 0; G.fx.length = 0; G.shots.length = 0;
+      window.__o.reveal();
+      window.__o.camera({ x: F.x - 40, y: F.y, dist: 210, yaw: -1.1, pitch: .32 });
+      const blasts = [];
+      let blind = [];
+      for (const key of Object.keys(window.UNITS)) {
+        const def = window.UNITS[key];
+        if (!def.cat || !def.w || def.hq) continue;
+        G.units.length = 0; G.fx.length = 0; G.shots.length = 0; G.paused = false;
+        const u = window.spawnUnit(def.side, key, F.x - 60, F.y, 0);
+        if (!u) continue;
+        u.setup = 0; u.lay = 0; u.turret = 0; u.facing = 0; u.cd = 0; u.atcd = 0;
+        /* inside the weapon's own reach, measured from the FIRER rather than from the
+           stage point it stands sixty units short of: written the other way about, the
+           two 165-reach engineer sections were staged at 175 and fired nothing */
+        const e = window.spawnUnit(def.side === 'us' ? 'ger' : 'us',
+                                   def.side === 'us' ? 'ger_gren' : 'us_rifle',
+                                   u.x + Math.min(240, (def.w.range || 300) * .7), F.y, Math.PI);
+        G.paused = true;
+        const ref = grab();
+        G.paused = false;
+        if (def.barrageOnly || def.indirect) { window.orderBarrage(u, e.x, e.y); u.lay = 0; u.facing = 0; }
+        u.cd = 0; u.atcd = 0;
+        window.fireAt(u, e);
+        step(.04);
+        G.paused = true;
+        const px = lift(ref, grab());
+        /* a battery refused its mission by the safe radius is a rule working rather
+           than a gun with no flash, and the stage point is only clear of buildings by
+           150 where that radius is 600 */
+        if (def.barrageOnly && !u.barrage) continue;
+        if (px < 400) blind.push(key); else blasts.push({ key, px });
+      }
+      blasts.sort((a, b) => a.px - b.px);
+
+      /* TRACER: the same round laid across the same patch of screen, once on the far
+         side of a house and once on the near side. On the overlay both read the same. */
+      G.units.length = 0; G.fx.length = 0; G.shots.length = 0; G.paused = true;
+      const house = G.props.filter(q => q.kind === 'ruin' && q.w > 110 && q.h > 60)
+                           .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      let front = 0, behind = 0;
+      if (house) {
+        window.__o.camera({ x: house.x, y: house.y, dist: 300, yaw: Math.PI, pitch: .45 });
+        const ref = grab();
+        const lay = dx => {
+          G.shots.length = 0;
+          for (let i = 0; i < 7; i++)
+            G.shots.push({ kind: 'tracer', x: house.x + dx, y: house.y - 130,
+                           sx: house.x + dx, sy: house.y - 130,
+                           tx: house.x + dx, ty: house.y + 130,
+                           t: .08 + i * .002, dur: .16, tail: .5, z0: 30, tr: 1,
+                           col: window.TRACER.us, side: 'us' });
+        };
+        lay(house.w / 2 + 40); behind = lift(ref, grab());
+        lay(-(house.w / 2 + 40)); front = lift(ref, grab());
+        G.shots.length = 0;
+      }
+
+      /* BURST: the heaviest shell in the game, read at four ages. What was wrong with
+         the old one was its shape in TIME -- a flash and then nothing. */
+      const ages = [];
+      window.__o.camera({ x: F.x, y: F.y, dist: 560, yaw: -1.1, pitch: .62 });
+      G.fx.length = 0; G.paused = true;
+      const bref = grab();
+      let draws = 0, quads = 0, top = 0;
+      for (const age of [.02, .30, .80, 1.60]) {
+        G.fx.length = 0; G.paused = false;
+        window.explode(F.x, F.y, 130, 40, null, null, 6);
+        step(age);
+        G.paused = true;
+        ages.push({ age, px: lift(bref, grab()), n: G.fx.length });
+        draws = window.FXN.draws; quads = window.FXN.quads;
+        for (const f of G.fx) if (f.z !== undefined) top = Math.max(top, f.z - window.groundZ(F.x, F.y));
+      }
+      G.fx.length = 0; G.shots.length = 0;
+      G.units.length = 0; keep.forEach(u => G.units.push(u));
+      G.paused = false;
+      return { blasts, blind, front, behind, ages, draws, quads, top: Math.round(top),
+               cols: { us: window.TRACER.us.join(','), ger: window.TRACER.ger.join(',') },
+               house: house ? Math.round(house.w) + 'x' + Math.round(house.h) : 'none' };
+    });
+    return r;
+  })();
+  const spread = fx.blasts.length ? fx.blasts[fx.blasts.length - 1].px / Math.max(1, fx.blasts[0].px) : 0;
+  ok('every gun on the roster has its own blast, and a tracer is in the world rather than over it',
+     fx.blasts.length >= 20 && fx.blind.length === 0 && spread > 8 &&
+     fx.front > 2000 && fx.behind < Math.max(200, fx.front * 0.1) &&
+     fx.cols.us !== fx.cols.ger,
+     `${fx.blasts.length} weapons fired, ${fx.blind.length} of them putting nothing on the screen` +
+     `${fx.blind.length ? ' (' + fx.blind.join(' ') + ')' : ''}; ` +
+     `the biggest blast lights ${Math.round(spread)}x the pixels of the smallest ` +
+     `(${fx.blasts[0].key} ${fx.blasts[0].px} to ${fx.blasts[fx.blasts.length - 1].key} ` +
+     `${fx.blasts[fx.blasts.length - 1].px}); a round laid across a ${fx.house} house lights ` +
+     `${fx.front} px in front of it and ${fx.behind} behind it; tracer runs ${fx.cols.us} for one ` +
+     `side and ${fx.cols.ger} for the other`);
+  ok('a shell landing is an event with a shape in time, not a flash and then nothing',
+     /* the column is shorter on a phone, which spawns four puffs of it rather than
+        eleven, so the floor is what a phone has to clear */
+     fx.ages.every(a => a.px > 1500) && fx.ages[3].px > 1500 && fx.top > 90 && fx.draws <= 2,
+     fx.ages.map(a => `${a.age.toFixed(2)}s ${a.px}px/${a.n}fx`).join('  ') +
+     `; the column reaches ${fx.top} units and the whole of it goes out in ${fx.draws} draw call(s) ` +
+     `of ${fx.quads} quads`);
+
+  /* --- The hole a shell leaves. What a burst did to the ground was paint a stain on it,
+     and a stain is exactly as deep as the ground was before: a crater field a battery had
+     worked over for ten minutes was flat ground with dark patches on it. The row asks the
+     two questions a photograph of a dark patch cannot tell apart -- did the SURFACE move,
+     and did the picture of it move with it -- and then the three that follow from a hole
+     being a hole: cover where there was none, ground a section can still walk into, and
+     the height still being the sum of its own layers, which is what `levelPad` broke the
+     first time by writing a building's pad straight into the worked height. --- */
+  const hole = await page.evaluate(() => {
+    const gl = window.gl, G = window.G;
+    const W = () => gl.drawingBufferWidth, H = () => gl.drawingBufferHeight;
+    function grab() {
+      const px = new Uint8Array(W() * H() * 4);
+      window.render();
+      gl.readPixels(0, 0, W(), H(), gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return px;
+    }
+    function moved(a, b) {
+      let n = 0;
+      for (let i = 0; i < a.length; i += 4)
+        if ((Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3 > 6) n++;
+      return n;
+    }
+    /* open ground, and proved open: a drill staged in a trench measures a hole already
+       deeper than the one the shell would cut, and `G.cut` keeps the deeper of the two */
+    let P = null, bs = -1;
+    for (let x = 400; x < window.WORLD.w - 400; x += 40) for (let y = 300; y < window.WORLD.h - 300; y += 40) {
+      const z = window.groundZ(x, y);
+      if (z < 6 || window.coverAt(x, y) > 0) continue;
+      let worst = 0;
+      for (let a = 0; a < 8; a++) worst = Math.max(worst, Math.abs(
+        window.groundZ(x + Math.cos(a) * 150, y + Math.sin(a) * 150) - z));
+      if (worst > 9) continue;
+      let open = 0;
+      for (let a = 0; a < 8; a++) if (window.coverAt(x + Math.cos(a) * 80, y + Math.sin(a) * 80) === 0) open++;
+      if (open < 6) continue;
+      let near = 1e9;
+      for (const q of G.blds) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+      for (const q of G.props) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+      if (near < 130) continue;
+      const sc = Math.min(near, 600) - worst * 20;
+      if (sc > bs) { bs = sc; P = { x, y }; }
+    }
+    if (!P) return null;
+    const keep = G.units.slice();
+    G.units.length = 0; G.fx.length = 0; G.shots.length = 0;
+    window.__o.reveal();
+    window.__o.camera({ x: P.x, y: P.y, dist: 300, yaw: -1.1, pitch: .45 });
+    G.paused = true;
+    const z0 = window.groundZ(P.x, P.y);
+    const up = { cover: window.coverAt(P.x, P.y), walk: window.walkable(P.x, P.y) ? 1 : 0 };
+    /* Two identical frames first, because the renderer has its own frame-to-frame
+       variation -- the fog texture refreshes every third frame -- and a difference this
+       row reports has to be against that floor rather than against nought. */
+    const warm = grab();
+    const before = grab();
+    const noise = moved(warm, before);
+
+    /* dug rather than exploded, so that the only thing that can change the picture is
+       the ground mesh: an explosion also paints a scorch, which is the stain this row
+       exists to tell apart from a hole */
+    const c = window.digCrater(P.x, P.y, 140);
+    if (!c) return null;
+    window.rebuildGrid();
+    /* the queue is aged rather than the clock: moving G.t moves the ambient smoke, the
+       sea and the grass with it, and then the whole frame differs and the row proves
+       nothing about the ground */
+    for (const k in G.groundQ) { G.groundQ[k].first = G.t - 10; G.groundQ[k].hit = G.t - 10; }
+    let flushes = 0;
+    while (Object.keys(G.groundQ).length && flushes < 30) { window.flushGroundQ(); flushes++; }
+    const after = grab();
+
+    let lip = -1e9;
+    for (let a = 0; a < 12; a++)
+      lip = Math.max(lip, window.groundZ(P.x + Math.cos(a / 12 * 6.283) * c.r,
+                                         P.y + Math.sin(a / 12 * 6.283) * c.r) - z0);
+    /* the height is the sum of its layers everywhere, including under a building's pad */
+    let worstK = 0;
+    for (let k = 0; k < G.hmap.length; k += 37)
+      worstK = Math.max(worstK, Math.abs(G.hmap[k] - (G.hmap0[k] + G.cut[k] + G.fill[k] + G.pad[k])));
+
+    const bd = G.blds[0];
+    const onBld = !!window.digCrater(bd.x, bd.y, 140);
+    const small = !!window.digCrater(P.x + 700, P.y, 20);
+
+    G.craters.length = 0; G.cratersDug = 0; G.groundQ = {};
+    G.units.length = 0; keep.forEach(u => G.units.push(u));
+    G.paused = false;
+    return { r: +c.r.toFixed(1), want: +(3.4 + c.r * .21).toFixed(1),
+             deep: +(z0 - window.groundZ(P.x, P.y)).toFixed(1), lip: +lip.toFixed(1),
+             cover: up.cover, cover2: window.coverAt(P.x, P.y),
+             walk: up.walk, walk2: window.walkable(P.x, P.y) ? 1 : 0,
+             px: moved(before, after), noise, flushes, layers: +worstK.toFixed(3),
+             onBld, small };
+  });
+  ok('a shell landing on open ground leaves a hole in it and not a stain on it',
+     !!hole && Math.abs(hole.deep - hole.want) < 1.2 && hole.lip > 2 &&
+     hole.cover === 0 && hole.cover2 > 0 && hole.walk === 1 && hole.walk2 === 1 &&
+     hole.px > Math.max(12000, hole.noise * 4) && hole.flushes > 0 && hole.layers < 0.01 &&
+     !hole.onBld && !hole.small,
+     !hole ? 'no open ground on this map to shell'
+           : `a ${hole.r}-unit hole: the ground lost ${hole.deep} of the ${hole.want} the carve asked ` +
+             `for and threw a ${hole.lip} lip round it, cover ${hole.cover}->${hole.cover2}, ` +
+             `walkable ${hole.walk}->${hole.walk2}; ${hole.px} pixels of the picture moved with it ` +
+             `against ${hole.noise} between two identical frames, ` +
+             `over ${hole.flushes} tile rebuild(s), the height is its own layers to ${hole.layers}, ` +
+             `and a round on a headquarters ${hole.onBld ? '! DUG' : 'was refused'} and one under the ` +
+             `floor ${hole.small ? '! DUG' : 'was refused'}`);
+
+  /* --- Repair, and what a builder is allowed to stand near. There are three kinds of job
+     an engineer can be put on -- a building going up, a pegged-out field work, and a thing
+     that is merely damaged -- and the test that told them apart was `job.def`. A UNIT has a
+     def too. Its def has no `h` and keeps its WEAPON in `w`, so a vehicle handed to the
+     building's arithmetic produced `Math.max(<the weapon object>, undefined) / 2 + 62`,
+     which is NaN; `dist(u, r) < NaN` is false for ever, and the destination one line over
+     came out with a NaN in its y. An engineer ordered to repair a tank pathed to nowhere,
+     wandered off across the map and never turned a spanner. The order, the cursor and the
+     right-click were all written and none of it had ever worked once.
+       So the row repairs one of each and asks for a number back: every kind of job has a
+     reach that is a number, a damaged vehicle comes up, a damaged building comes up, and
+     the engineer is still standing beside the thing at the end rather than half a map
+     away. --- */
+  const fix = await page.evaluate(() => {
+    const step = s => { const n = Math.round(s / 0.05); for (let i = 0; i < n; i++) { G.t += 0.05; G.units.forEach(u => updateUnit(u, 0.05)); } };
+    const keep = G.units.slice();
+    G.units.length = 0;
+    const out = { reach: {} };
+    const tank = spawnUnit(G.side, G.side === 'us' ? 'us_sher' : 'ger_p4', 1060, 900, 0);
+    const team = spawnUnit(G.side, G.side === 'us' ? 'us_mg' : 'ger_mg42', 1300, 900, 0);
+    const bld = G.blds.filter(b => b.own === G.own)[0];
+    /* a reach that is not a number is the whole bug, so it is asked for by name */
+    [['veh', tank], ['team', team], ['bld', bld], ['site', { time: 12 }]].forEach(([k, j]) => {
+      const r = j ? workReach(j) : null;
+      out.reach[k] = (typeof r === 'number' && isFinite(r)) ? Math.round(r) : String(r);
+    });
+
+    /* a vehicle, ordered the way the right-click orders one */
+    tank.hp = tank.maxhp * 0.25;
+    const v0 = Math.round(tank.hp);
+    const eng = spawnUnit(G.own, G.side === 'us' ? 'us_eng' : 'ger_pio', 940, 900, 0);
+    resumeBuild(eng, tank);
+    out.ordered = eng.order;
+    step(30);
+    out.veh = { from: v0, to: Math.round(tank.hp), max: Math.round(tank.maxhp),
+                stood: Math.round(dist(eng, tank)), released: !eng.repairing };
+
+    /* and a building */
+    let b = null;
+    if (bld) {
+      bld.hp = bld.maxhp * 0.4;
+      const b0 = Math.round(bld.hp);
+      const e2 = spawnUnit(G.own, G.side === 'us' ? 'us_eng' : 'ger_pio', bld.x, bld.y + 70, 0);
+      resumeBuild(e2, bld);
+      step(12);
+      b = { from: b0, to: Math.round(bld.hp), max: Math.round(bld.maxhp) };
+    }
+    out.bld = b;
+    G.units.length = 0; keep.forEach(u => G.units.push(u));
+    return out;
+  });
+  ok('an engineer repairs a vehicle and a building, and knows how near to stand to each',
+     Object.keys(fix.reach).every(k => typeof fix.reach[k] === 'number') &&
+     fix.ordered === 'repair' &&
+     fix.veh.to >= fix.veh.max - 1 && fix.veh.stood < 120 && fix.veh.released &&
+     !!fix.bld && fix.bld.to > fix.bld.from,
+     `reach: ${Object.keys(fix.reach).map(k => k + ' ' + fix.reach[k]).join(', ')}; ` +
+     `a vehicle went ${fix.veh.from}/${fix.veh.max} to ${fix.veh.to} with the engineer ` +
+     `${fix.veh.stood} away at the end and the job ${fix.veh.released ? 'released' : '! STILL HELD'}; ` +
+     (fix.bld ? `a building went ${fix.bld.from}/${fix.bld.max} to ${fix.bld.to}` : 'no building to mend'));
+
+  /* --- The voice of a gun. Every piece on this roster that fires a shell played one of
+     two sounds -- `cannon` if it was on a vehicle or a crew and `rocket` otherwise -- so a
+     mortar dropping a bomb over a roof, a Pak 40 and a two-hundred-and-ten-millimetre
+     battery were the same noise at the same level. A sound is the one thing here a
+     screenshot cannot review at all, and an ear is not available to a gate, so it is
+     rendered offline through the page's own graph and read as numbers.
+       Three claims. Every shell weapon puts something on the bus, because a report that
+     is built and inaudible looks exactly like one that is not built. The roster is
+     differentiated rather than merely loud, which is the muzzle card's `spread` asked of
+     the ear. And the six artillery pieces are six sounds: each pair is one class firing
+     nearly the same shell, so what has to separate them is the propellant, and the row
+     measures each pair against ITS OWN first piece rendered twice -- every layer of every
+     report is jittered per shot, so a ratio with no floor under it says nothing, and the
+     floor is not the same for a mortar as for a tank gun. `tools/audio.mjs` is the card
+     that writes the WAVs and prints the whole table. --- */
+  const voice = await page.evaluate(async () => {
+    const SR = 22050;                       /* half rate: this is arithmetic, not listening */
+    /* rms, length and brightness off the samples. Brightness is the rms of the first
+       difference over the rms of the signal, which rises and falls with the spectral
+       centroid and costs no transform: what is wanted here is an ORDER, not a hertz. */
+    function meas(x) {
+      let peak = 0, sum = 0, d = 0;
+      for (let i = 0; i < x.length; i++) { const a = Math.abs(x[i]); if (a > peak) peak = a; sum += x[i] * x[i]; }
+      for (let i = 1; i < x.length; i++) { const q = x[i] - x[i - 1]; d += q * q; }
+      const rms = Math.sqrt(sum / x.length);
+      let head = 0, end = 0;
+      for (let i = 0; i < x.length; i++) if (Math.abs(x[i]) > peak * .02) { head = i; break; }
+      for (let i = x.length - 1; i >= 0; i--) if (Math.abs(x[i]) > peak * .001) { end = i; break; }
+      /* the onset alone, which is where the propellant lives: a whole-buffer reading is
+         dominated by whatever rings longest, which is always the bottom end */
+      const on = x.subarray(head, Math.min(x.length, head + Math.round(SR * .05)));
+      let od = 0, os = 0;
+      for (let i = 1; i < on.length; i++) { const q = on[i] - on[i - 1]; od += q * q; }
+      for (let i = 0; i < on.length; i++) os += on[i] * on[i];
+      const orms = Math.sqrt(os / Math.max(1, on.length));
+      return { peak: peak, rms: rms, dur: (end - head) / SR,
+               bright: Math.sqrt(d / x.length) / (rms || 1e-9),
+               obright: Math.sqrt(od / Math.max(1, on.length)) / (orms || 1e-9) };
+    }
+    async function play(key, secs) {
+      const oc = new OfflineAudioContext(1, Math.round(SR * secs), SR);
+      const keep = { ctx: AU.ctx, noise: AU.noise, rumb: AU.rumb, on: AU.on,
+                     budget: AU.budget, last: AU.last, dry: AU.dry, send: AU.send };
+      auAttach(oc);
+      AU.on = true; AU.budget = 99; AU.last = {};
+      const d = UNITS[key];
+      const gv = gunVoice({ cat: d.cat, def: d, side: d.side }, d.w);
+      sfx(gv.cls, undefined, undefined, gv);
+      const out = await oc.startRendering();
+      for (const k in keep) AU[k] = keep[k];
+      return { m: meas(out.getChannelData(0)), cls: gv.cls };
+    }
+    /* the mean of several takes, because one take of a jittered report is noise. Two is
+       enough for the roster sweep, which asks for a spread of several times over; the six
+       are a fine comparison against their own floor and get twelve. */
+    const MK = ['peak', 'rms', 'dur', 'bright', 'obright'];
+    async function mean(key, secs, n) {
+      let cls = '';
+      const a = {};
+      MK.forEach(k => a[k] = 0);
+      for (let i = 0; i < n; i++) {
+        const r = await play(key, secs);
+        cls = r.cls;
+        MK.forEach(k => a[k] += r.m[k] / n);
+      }
+      a.cls = cls;
+      return a;
+    }
+    const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['us_how8', 'ger_how210']];
+    const six = [].concat.apply([], PAIRS);
+    const shells = Object.keys(UNITS).filter(k => UNITS[k].w && UNITS[k].w.shell && UNITS[k].cat !== 'inf');
+    const rows = {}, silent = [];
+    for (const k of shells) {
+      rows[k] = await mean(k, 2.2, six.indexOf(k) < 0 ? 2 : 12);
+      if (rows[k].peak < .05) silent.push(k);
+    }
+    /* Level is read as rms and not as peak. The bus ends in a compressor whose whole job
+       is flattening peaks, so peak is the one loudness measure this graph is built to
+       destroy: measured across the roster it reads 2.2x where rms reads 8.9x, which is
+       the difference between a table that says the roster is differentiated and one that
+       says it is not. */
+    const lv = shells.map(k => rows[k].rms), br = shells.map(k => rows[k].bright);
+    const du = shells.map(k => rows[k].dur);
+    const r = (x, y) => Math.max(x, y) / Math.max(1e-9, Math.min(x, y));
+    const pairs = [];
+    for (const [a, b] of PAIRS) {
+      const ctl = await mean(a, 2.2, 12);    /* the same piece twice: the jitter, and nothing else */
+      const A = rows[a], B = rows[b];
+      /* Per metric, how far apart the pair is against how far apart the SAME piece is
+         from itself. Both of the obvious selectors are half right and each fails the
+         other's case, so the row uses them in order: keep only the metrics that separate
+         the pair by a real amount, and among those report the one measured most reliably.
+           Choosing by signal-to-noise alone picks whichever metric has the smallest floor
+         rather than whichever holds the real difference. The two mortars differ by 1.04x
+         in length against a floor of 1.004x, which reads as ten to one and is inaudible,
+         while they differ by 1.40x in rms, which is the whole thing; selected that way the
+         row reported brightness one run and length the next from identical code.
+           Choosing by the biggest difference alone picks a metric that may be measured
+         badly. Brightness separates the two heavy batteries by 1.46x, which is real, but
+         its floor on a piece whose tail runs a second and a half wanders out to 1.14x, so
+         the row came back at five to one where rms on the same pair is 1.26x against a
+         floor of 1.005x -- fifty to one for the same fact.
+           The three metrics are the ones that carry it on BOTH devices. `peak` is out
+         because the bus ends in a compressor and peak is what a compressor flattens: it
+         reads 1.02x on the heavy pair. `dur` is out because it is 1.25x to 1.36x on the
+         two bigger pairs and 1.04x on the mortars, whose tails are the most alike -- it
+         keeps its job in the class-shape test below, where it does real work. */
+      const M = ['rms', 'bright', 'obright'];
+      let bd = 1, bf = 1, bm = '', bsn = -1;
+      M.forEach(k => {
+        const d = r(A[k], B[k]), f = r(A[k], ctl[k]), sn = (d - 1) / Math.max(.004, f - 1);
+        if (d > 1.15 && sn > bsn) { bd = d; bf = f; bm = k; bsn = sn; }
+      });
+      /* nothing separated them by a real amount: report the biggest difference there was,
+         so a failure names what it actually found rather than printing an empty row */
+      if (bsn < 0) {
+        bsn = 0;
+        M.forEach(k => {
+          const d = r(A[k], B[k]);
+          if (d > bd) { bd = d; bf = r(A[k], ctl[k]); bm = k; bsn = (d - 1) / Math.max(.004, bf - 1); }
+        });
+      }
+      pairs.push({ a: UNITS[a].short, b: UNITS[b].short, cls: A.cls, m: bm,
+                   d: +bd.toFixed(2), f: +bf.toFixed(2), sn: +bsn.toFixed(1) });
+    }
+    /* and the three classes are three shapes: a tube is short and a battery is long */
+    const shape = { mortar: +rows.us_mor.dur.toFixed(2), how: +rows.us_how.dur.toFixed(2),
+                    heavy: +rows.us_how8.dur.toFixed(2) };
+    return { n: shells.length, silent: silent,
+             lvl: +(Math.max.apply(null, lv) / Math.min.apply(null, lv)).toFixed(1),
+             brt: +(Math.max.apply(null, br) / Math.min.apply(null, br)).toFixed(1),
+             len: +(Math.max.apply(null, du) / Math.min.apply(null, du)).toFixed(1),
+             pairs: pairs, shape: shape };
+  });
+  ok('every gun has its own report, and the six artillery pieces are six of them',
+     voice.n >= 16 && voice.silent.length === 0 && voice.lvl > 4 && voice.brt > 1.8 &&
+     voice.len > 2 &&
+     /* the EXCESS over parity against the floor's excess, and not the two ratios against
+        each other: a floor of 1.01 is one per cent of jitter, so a pair thirty-two per
+        cent apart clears it by thirty to one. Multiplied instead, a floor that close to
+        parity sets a bar of 1.515x that only a wholly different weapon would clear, and
+        the row failed on a pair it should have passed. */
+     /* A real difference AND a real signal-to-noise. Measured over fourteen takes on both
+        devices, the metric each pair is reported on separates it by 1.21x to 1.42x at 19
+        to 104 to one, so neither bar is anywhere near the edge. */
+     voice.pairs.every(p => p.sn > 3 && p.d > 1.15) &&
+     voice.shape.mortar < voice.shape.how && voice.shape.how < voice.shape.heavy,
+     `${voice.n} shell weapons, ${voice.silent.length} of them putting nothing on the bus` +
+     `${voice.silent.length ? ' (' + voice.silent.join(' ') + ')' : ''}; across the roster ` +
+     `${voice.lvl}x in level (rms, since the bus compresses peaks), ${voice.brt}x in ` +
+     `brightness and ${voice.len}x in length; ` +
+     `a tube rings for ${voice.shape.mortar}s, a pack howitzer ${voice.shape.how}s and a ` +
+     `battery ${voice.shape.heavy}s; ` +
+     voice.pairs.map(p => `${p.a}/${p.b} differ ${p.d}x in ${p.m} against a jitter floor of ` +
+                          `${p.f}x, which is ${p.sn} to one`).join(', '));
 
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
