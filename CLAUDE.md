@@ -59,6 +59,7 @@ node tools/model.mjs         # the models: the occlusion bake against shapes wit
 node tools/terrain.mjs       # the ground: what grain is on it, at what distance, and what crawls
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
 node tools/wreck.mjs         # destruction: the hole, the collapse, the falling masonry, the grids
+node tools/fx.mjs            # effects: the muzzle blast, the tracer, the burst, read off the framebuffer
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
@@ -591,6 +592,56 @@ alone and not the upload: under SwiftShader every third consecutive `bufferData`
 blocks for over a second, so a loop of whole tile rebuilds reports two and a half seconds
 and reports it about the rasteriser.
 
+### `tools/fx.mjs` - munitions, muzzle blast and bursts, mechanically
+
+An effect is the one thing in this file a screenshot is worst at reviewing, and not for
+the usual reason. A model holds still and can be photographed; a muzzle flash lasts
+seventy-five milliseconds and a frame under SwiftShader is most of a second, so catching
+one at all is luck. Worse, an effect that is drawn and invisible looks exactly like an
+effect that is not drawn: this card's own development spent five rounds of screenshots on
+a smoke column that was being packed, uploaded and rasterised correctly the whole time and
+was simply the colour of the ground it was drawn over, and then on the same column
+climbing three hundred units out of the top of the plate. Neither is visible in a picture.
+Both are one number.
+
+So the frame is read rather than looked at. Every row renders the same scene twice, once
+with the effect and once without, and reports what the effect actually put on the screen.
+
+```sh
+node tools/fx.mjs                 # the card
+node tools/fx.mjs muzzle          # one section of it
+node tools/fx.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**MUZZLE** is every weapon on the roster fired once from the same spot with the same
+camera on it. The claim is that a blast is read off the weapon rather than typed per unit
+key, so `spread` -- the biggest lift over the smallest -- is the number that says the
+roster is differentiated rather than merely loud. It is 53x, from a Lee-Enfield at four
+thousand pixels to the 210 at eight hundred and sixty thousand. `seen` says whether the
+firer was on camera when it fired, because every flash in the game is gated on that and a
+row reading nought otherwise has two causes that are different faults.
+
+**BURST** is a shell landing, read at five ages, because what was wrong with the old one
+was its SHAPE IN TIME: a flash and then nothing. A heavy shell now holds nearly half a
+million pixels from a tenth of a second out to nearly two seconds, and its column reaches
+235 units where a mortar bomb's reaches 62.
+
+**TRACER** is the round in the world. The test that matters is occlusion, and it is done by
+laying the same round across the same patch of screen twice, once on the far side of a
+house and once on the near side: 17,638 pixels in front of the wall and none behind it.
+Drawn on the overlay both would read the same.
+
+**COST** is the packer. Six bursts in the air at once is 144 effects, 228 quads, 0.17 ms to
+pack and two draw calls; it was one draw call per particle.
+
+Two things about writing a drill for it. **A screen point out of `w2s` is in CSS pixels
+with y down and `readPixels` is in device pixels with y up**, and getting either wrong puts
+the window somewhere else in the frame and the row reads a clean nought, which looks
+exactly like an effect that is not drawn. And **stage the target inside the FIRER's reach
+rather than the stage point's**: written the other way about, the two 165-reach engineer
+sections were put down at 175 and fired nothing at all, and the row read as a weapon with
+no muzzle flash.
+
 ### `tools/mapcheck.mjs` - the map, mechanically
 
 A hand-placed map is a few hundred coordinates and the eye will not hold them. Craters
@@ -668,6 +719,15 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
+
+**And two rows read the framebuffer rather than looking at it.** An effect that is drawn
+and invisible looks exactly like an effect that is not drawn, so the effects rows render
+the same scene twice, once with the thing and once without, and count the pixels that
+moved: every gun on the roster fires once and none of them may put nothing on the screen,
+the biggest blast has to light many times the pixels of the smallest, a round laid across a
+house has to be hidden by it from one side and not the other, and a heavy shell has to
+still be on the screen a second and a half after it lands. The column's floor is what a
+PHONE has to clear, because a phone spawns four puffs of it rather than eleven.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1558,8 +1618,119 @@ is 5.2 ms. Freeing the tile is 110 ms of geometry, once per house and queued one
 Stepping 280 chunks is 0.013 ms and their buffer 0.5 ms. `tools/wreck.mjs` is the card for
 all of it.
 
+**Effects.** Every particle in the game was one `drawArrays` of one uniform-driven quad
+running one fragment shader with exactly one shape in it -- `smoothstep(1.0, 0.25, d)`, a
+soft disc. So a Lee-Enfield flash and the burst of a 210mm shell were the same picture at
+two sizes and two alphas, nothing had an edge, and three hundred of them were three
+hundred draw calls.
+
+The quads are built in world space on the CPU now, the way `packChunks` builds falling
+masonry, and go out as one buffer and one draw a blend pass. That buys the COUNT -- a
+single heavy burst wants sixty particles between its fireball, its clods, its ring and its
+column -- and it buys the SHAPE, because a vertex can carry a shape id and a seed where a
+uniform cannot without a draw call each. Five shapes: a soft disc for haze and for a
+shadow, a puff with a broken curdled rim, a flash with spikes out of a hot core, a ring,
+and a streak whose falloff is the bar across it and the taper down its length. Six bursts
+in the air at once is 228 quads, 0.17 ms to pack and two draw calls.
+
+**The puff's rim is angular and its inside is not.** Modulating the interior on the angle
+as well gives a spoke pattern, and three overlapping copies of it read as a starburst
+rather than as a cloud -- which is what the first heavy burst came out as, a lens flare
+the size of the crater. The inside is modulated on the quad's own x and y instead.
+
+**A muzzle flash is a cone of burning propellant coming out of a bore**, and what the game
+had was a round disc at the barrel tip with nothing in it to say which way the gun was
+pointing. It is a streak laid along the bore now, brightest at the muzzle, with a star at
+the muzzle itself; a muzzle brake throws two lobes out sideways, which is the single most
+recognisable thing about a braked gun. `w.brake` is declared on the six weapons that
+carried one -- the Pak 40, the KwK 40 on the Panzer IV and the StuG, the KwK 36 and 43 on
+the two Tigers, and the 17-pounder on the Achilles -- the way `belly` is declared on a
+vehicle rather than derived.
+
+**And the blast is read off the WEAPON rather than typed against thirty-six unit keys**,
+for the same reason the sight rule is applied to `UNITS` at load rather than written out
+fourteen times: two lists of one thing go out of step the moment somebody adds a weapon to
+one of them. `muzClass` sorts a weapon into one of eight profiles in `MUZ` and the size
+comes off the charge behind the round, so a 37mm and a 128mm are both 'a tank gun' and are
+not the same event. Measured across the roster the biggest blast lights 53 times the
+pixels of the smallest. `MUZ.dust` is how far in front of the muzzle the ground is
+stripped, which on a tank is most of what tells a player at a hundred units up that it
+fired at all, and it is only spawned when the muzzle is low enough over the ground for the
+blast to reach it -- so the Maus, whose gun is two storeys up, kicks none.
+
+**An armoured car's autocannon and a half-track's machine gun are the vehicle's MAIN
+weapon and carry no shell**, so they went down the small-arms path in `fireAt` and spawned
+no flash at all. Four of the roster fired invisibly except for the belt.
+
+**A round in flight is in the world.** Tracers and shells were drawn on the 2D overlay,
+which is a separate canvas stacked over the WebGL one, so nothing on it could ever be
+behind anything: a belt fired at a house was drawn straight across the front of it, and no
+photograph ever said so. They go through the depth buffer now, and the card measures it by
+laying the same round across the same patch of screen with a house first behind it and then
+in front -- 17,638 pixels in front of the wall and none behind. A tracer is a ribbon from
+tail to head whose width runs across the flight AND across the line of sight, which is the
+cross product of the two, so a round crossing the view is a bar and one coming at the
+camera is a point.
+
+**A belt is one round in four or five, not every round**, and the two armies' tracer burned
+different colours: Commonwealth ran red-orange and German a pale yellow-white. The tail
+carries the side's colour and the head is nearly white on both, because the element burning
+is white-hot -- and because a red trace drawn flat over pale dry ground disappears into a
+red channel that is already at the top of its range. Measured on this map before that fix
+the Canadian tracer put a sixth of the pixels on the screen that the German one did for the
+same number of rounds. The rounds of a volley are staged by a few hundredths of a second as
+well: fired on the same instant, five tracers read as one thick bar of light.
+
+**A shell landing is five things at five rates.** There is the flash, which is over in a
+twentieth of a second and is what the eye actually registers; the fireball, drawn as a
+handful of billowing lobes that climb and go from white through orange to soot; the shock
+running out along the ground, which is what gives a burst a size the eye can read off the
+ground rather than off a ball of light; the DIRT, which nothing in this game was ever
+thrown by before; and the column. Every count is scaled off the burst radius, so a mortar
+bomb is a different event from a heavy shell rather than the same event drawn bigger.
+
+Three things about it were wrong first and each reads as a working feature in a photograph.
+**How hard a shell throws its spoil is a function of the hole and not a multiple of it**: a
+clod goes up about as far as the hole is wide and lands one to two radii out, and written
+as `r * rnd(2.6, 5.2)` a heavy shell threw its dirt two thousand units into the air and a
+quarter of the way across the map. It is `sqrt(98 * r)` now, which is the speed that gets a
+clod to about a radius of height. **The column starts ON THE GROUND and grows**, and
+spreading its z at birth instead puts the whole of it in the air on the frame the shell
+lands, with clear daylight between the crater and its own smoke. And **the climb is
+front-loaded rather than linear** (`k^0.55`), because off a straight ramp the column is
+still lying in its own crater half a second later, which is a dark puff over a dark scorch
+and reads as nothing at all.
+
+**What a puff STARTS as is the whole of whether it reads.** A pale translucent puff over
+pale dry ground is invisible, and that is what every puff in this game used to be; a sooty
+one over the scorch its own shell just painted is invisible in the other direction. It
+comes off the ground sooty and lightens as it climbs, which is both what smoke does and
+what keeps it legible against the ground it is leaving. `FXCOL` is the four things a puff
+can be made of -- thrown earth, burnt propellant, oily black, and pale masonry dust -- where
+there used to be one 0.34 grey for all of them.
+
+**And anything that moves has to move the ENTRY, not the quad.** A column that climbs only
+inside `drawParticles3D` is a column nothing but the rasteriser knows about: the lights
+read the position, and so does anything measuring how high a burst got. `spawnFx` keeps
+`x0/y0/z0` beside `x/y/z` and `updateShots` integrates both the ballistic entries (a clod,
+a spark, under gravity with the ground as the only collider) and the rising ones.
+
+**A gun going off is a light.** At twenty-one degrees of December sun a great deal of this
+town is in its own shadow, and until this the only things that lit any of it were the sun
+and a burning hull: a tank firing out of a side street lit nothing at all, including
+itself. `gatherLights` reads a muzzle flash's own `lit` flag now, and the burst's light was
+cut from 2.4 to 1.9 because a salvo is several of these at once and four slots of 2.4
+bleached the whole town.
+
+**A hull burns for two minutes and nothing drew any of it.** `smokeColumns` has been
+attenuating the sight line through a wreck for as long as detection has been a rate, and
+what the renderer put there was the six puffs it died with. That is the same shape of fault
+as the fog of war having no live tier: the eye was being slowed by smoke that was not on
+the screen. A wreck in view now streams smoke and licks flame at a rate that falls away
+over the two minutes `smokeColumns` already models.
+
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
-geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
+geometry, plus sky, depth and particle programs. A 2048px shadow map from a
 sun matrix. A procedurally painted 16-tile texture atlas (`buildAtlas`). The
 static world is merged into tiled buffers by `buildScene` (a grid of prop tiles and
 ground tiles, culled to the view); units and vehicles are per-model draws. Fog of war and battle damage are textures the
@@ -3265,6 +3436,7 @@ tools/model.mjs                model card: the occlusion bake, its cost, and wha
 tools/terrain.mjs              ground card: grain by scale and distance, and what shimmers
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/wreck.mjs                destruction card: the breach, the collapse, the heap, the grids
+tools/fx.mjs                   effects card: the muzzle blast, the tracer, the burst, off the framebuffer
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
@@ -3433,6 +3605,33 @@ shots/                         screenshot output, gitignored
   is several of them in one frame.** Queue the rebuild and take one tile a frame; the thing
   that left the tile is drawn twice for that frame and nobody sees it.
 
+- **An effect that is drawn and invisible looks exactly like one that is not drawn.** A
+  smoke column was packed, uploaded and rasterised correctly for five rounds of
+  screenshots and was simply the colour of the ground it was drawn over; then, fixed, it
+  climbed three hundred units clean out of the top of the plate. Neither shows in a
+  picture and both are one `gl.readPixels` away. When an effect looks absent, read the
+  frame with and without it before touching the code -- `tools/fx.mjs` is that reading.
+- **A screen point out of `w2s` is CSS pixels with y DOWN; `readPixels` is device pixels
+  with y UP.** A window built the wrong way round lands somewhere else in the frame and
+  the row comes back a clean nought, which is indistinguishable from the effect not being
+  drawn.
+- **`frame()` takes its dt off `last`, which the last real frame set.** Under SwiftShader
+  that was most of a second ago, so the first stubbed step lands on the 50ms clamp and
+  ages a 75ms muzzle flash almost out of existence. Anchor `last` to the virtual clock
+  before stepping, and pause before the shutter: two settling frames are a tenth of a
+  second of simulation.
+- **A particle's motion has to move the ENTRY and not just the quad.** A column that
+  climbs only inside `drawParticles3D` is a column that nothing but the rasteriser knows
+  about: `gatherLights` reads the position, and so does anything measuring how high a
+  burst got. `spawnFx` keeps `x0/y0/z0` beside `x/y/z` for that reason.
+- **A pale translucent puff over pale dry ground is invisible, and so is a sooty one over
+  its own scorch.** What a puff STARTS as is the whole of whether it reads at all. It
+  leaves the ground sooty and lightens as it climbs, which is both what smoke does and
+  what keeps it legible against the ground it is leaving.
+- **A red tracer over dry ground adds nothing to a red channel that is already clipped.**
+  Measured on Ortona, the Canadian tracer put a sixth of the pixels on the screen that the
+  German one did for the same number of rounds. The tail carries the side's colour and the
+  head is near-white on both, which is also what a burning element looks like.
 - **A landform is arithmetic and two halves can look identical while one is a metre
   higher.** A mirrored map is fair only if the ground agrees with its own reflection, and
   the only way to know that is to sample it: the Gothic Line is measured over 1,750 points

@@ -1288,7 +1288,7 @@ var UNITS = {
     side: 'us', name: '17pdr SP Achilles', short: 'ACHILLES', cat: 'veh', hk: 'A', upgrades: ['mg', 'coax'], tows: 1,
     hp: 560, armor: 84, speed: 96, sight: 380, pop: 16, cost: { mp: 450, fu: 140 }, time: 46,
     req: 'us_mot',
-    w: { range: 465, dmg: 138, rof: 2.3, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1 },
+    w: { range: 465, dmg: 138, rof: 2.3, acc: .74, sup: .02, pen: 320, aoe: 0, shell: 1, brake: 1 },
     desc: 'An M10 with a 17-pounder in it. It goes through anything on the field from any angle, and it gets away three rounds in the time a Panzer IV takes two, but it fires solid shot from an open turret behind a quarter of the plate a Sherman has: it kills armour and it cannot touch infantry. Keep it back, keep it hull down, and keep men around it.'
   },
   us_sher: {
@@ -1368,7 +1368,7 @@ var UNITS = {
     models: 4, hpPer: 70, speed: 38, sight: 380, pop: 8, cost: { mp: 300, fu: 15 }, time: 24,
     req: 'ger_dep', setup: 1.6, atOnly: true, blastRes: .58, closeWeak: 2.2,
     gunAt: 8.7, gunMuz: [24.65, 8.61], gunGrip: [-3.19, 3.60, 5.45],
-    w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1 },
+    w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1, brake: 1 },
     desc: 'Longest reach on the field. Even a Sherman cannot afford to take two clean hits from it.'
   },
   /* Asked for, and built where it will fight. The eighty-eight was never a Pioneer's issue
@@ -1403,7 +1403,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger II (Königstiger)', short: 'TIGER II', cat: 'veh', hk: 'K', upgrades: ['mg'],
     hp: 1500, armor: 380, speed: 68, sight: 360, pop: 24, cost: { mp: 900, fu: 220 }, time: 95,
     req: 'ger_dep', limit: 1, retired: 1,
-    w: { range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1 },
+    w: { range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1, brake: 1 },
     desc: 'The heaviest tank of the war: 70 tonnes, a glacis nothing on this map can pierce, and an 8.8 cm L/71 that kills a Sherman at any range it can see. One per army. Slow, and it drinks fuel.'
   },
   /* Asked for, and built. Two Maus were finished and neither fought, so this is the
@@ -1421,15 +1421,15 @@ var UNITS = {
     side: 'ger', name: 'Panzer IV Ausf. H', short: 'PZ IV', cat: 'veh', hk: 'F', upgrades: ['skirts', 'mg'],
     hp: 700, armor: 132, speed: 76, sight: 340, pop: 14, cost: { mp: 345, fu: 90 }, time: 34,
     req: 'ger_dep',
-    w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1 },
+    w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
     desc: 'Better gun than a Sherman and thicker plate. Slower, and it hates being flanked.'
   },
   ger_stug: {
     side: 'ger', name: 'Sturmgeschütz IV', short: 'STUG IV', cat: 'veh', hk: 'S', upgrades: ['scope', 'mgs', 'skirts'],
     hp: 640, armor: 134, speed: 78, sight: 330, pop: 12, cost: { mp: 300, fu: 75 }, time: 30,
     req: 'ger_dep', arc: .35,
-    w: { range: 400, dmg: 152, rof: 3.5, acc: .72, sup: .05, pen: 228, aoe: 46, shell: 1 },
-    wUp: { scope: { range: 450, dmg: 152, rof: 3.5, acc: .75, sup: .05, pen: 228, aoe: 46, shell: 1 } },
+    w: { range: 400, dmg: 152, rof: 3.5, acc: .72, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
+    wUp: { scope: { range: 450, dmg: 152, rof: 3.5, acc: .75, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 } },
     desc: 'A month early for Ortona. The Panzer IV chassis under the StuG III fighting compartment: the same L/48 gun as the Panzer IV, half a metre lower and a seventh cheaper, and no turret. It fires ten degrees either side of where it points and turns the whole vehicle for anything else, so it is a gun to hold a street with, not to chase down one. Three fittings in the field: the scissors periscope, the two machine guns, and Schürzen.'
   },
   ger_h251: {
@@ -1449,7 +1449,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger I Ausf. E', short: 'TIGER I', cat: 'veh', hk: 'K', upgrades: ['mg'],
     hp: 1150, armor: 245, speed: 72, sight: 355, pop: 20, cost: { mp: 700, fu: 165 }, time: 76,
     req: 'ger_dep', limit: 1,
-    w: { range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1 },
+    w: { range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1, brake: 1 },
     desc: 'Fifty-seven tonnes, a hundred millimetres of flat plate all round the front, and an 8.8 cm KwK 36 that opens a Sherman at any range it can see. One per army. It is slow, it drinks fuel, and the streets here are narrow enough to trap it.'
   }
 };
@@ -5321,7 +5321,7 @@ function updateModels(u, dt) {
         m.flashed = 1;
         if (onScreen(m.x, m.y)) {
           var mz = muzzlePoint(u, m, i);
-          spawnFx('flash', mz.x, mz.y, 7.5, mz.z);
+          muzFx(u, u.def.w, mz.x, mz.y, mz.z, m.f);
         }
       }
     } else m.flashed = 0;
@@ -5758,9 +5758,12 @@ function fireOneSecondary(u, key, dt) {
     var M = VMODEL[u.key] || {}, mo = mountPose(u, M);
     var tx0 = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
     var ty0 = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
-    G.shots.push({ kind: 'tracer', x: tx0 - Math.cos(u.turret) * 8, y: ty0 - Math.sin(u.turret) * 8, tx: aimX + rnd(-8, 8), ty: aimY + rnd(-8, 8), t: 0, dur: .14 });
-    spawnFx('flash', tx0 + Math.cos(u.turret) * 14, ty0 + Math.sin(u.turret) * 14, 6,
-            groundZ(u.x, u.y) + (mo.z || 0) + 6);
+    var cbx = tx0 - Math.cos(u.turret) * 8, cby = ty0 - Math.sin(u.turret) * 8;
+    G.shots.push({ kind: 'tracer', x: cbx, y: cby, sx: cbx, sy: cby,
+                   tx: aimX + rnd(-8, 8), ty: aimY + rnd(-8, 8), t: 0, dur: .14, tail: .34,
+                   z0: (mo.z || 0) + 6, tr: Math.random() < .5, col: TRACER[u.side], side: u.side });
+    muzFx(u, w, tx0 + Math.cos(u.turret) * 14, ty0 + Math.sin(u.turret) * 14,
+          groundZ(u.x, u.y) + (mo.z || 0) + 6, u.turret);
     if (Math.random() < .4) sfx('mg');
   }
   if (best && Math.random() < acc) damage(best, w.dmg * rnd(.85, 1.15), u);
@@ -5776,7 +5779,7 @@ function vehCrit(t, w, src) {
   if (r < (heavy ? .13 : .07)) {
     t.immob = Math.max(t.immob || 0, 5 + Math.random() * 4);
     t.path = null;
-    spawnFx('spark', t.x + rnd(-18, 18), t.y + rnd(-18, 18));
+    sparkFx(t.x + rnd(-16, 16), t.y + rnd(-16, 16), groundZ(t.x, t.y) + 8, 4);
     if (owned(t)) toast(t.def.short + ' track hit');
   } else if (r < (heavy ? .22 : .13)) {
     t.gunDmg = Math.max(t.gunDmg || 0, 7 + Math.random() * 5);
@@ -5903,7 +5906,7 @@ function fireAt(u, t, dt) {
   var hits = 0, bounced = 0;
   for (var s = 0; s < shots; s++) {
     if (Math.random() > acc) continue;
-    if (t.cat === 'veh' && Math.random() > pc) { bounced++; spawnFx('spark', t.x + rnd(-12, 12), t.y + rnd(-12, 12)); continue; }  /* a vehicle is its own marker */
+    if (t.cat === 'veh' && Math.random() > pc) { bounced++; sparkFx(t.x + rnd(-10, 10), t.y + rnd(-10, 10), groundZ(t.x, t.y) + 18, 5, angTo(t, u)); continue; }  /* a vehicle is its own marker */
     hits++;
   }
   /* a round that stops on the plate still rings the hull; the crew flinch and the
@@ -5917,8 +5920,7 @@ function fireAt(u, t, dt) {
       u.recoil = 1;
       if (onScreen(u.x, u.y) || u === povHost()) {
         var gm = gunMuzzle(u);
-        spawnFx('flash', gm.x, gm.y, 16 + w.pen * .022, gm.z);
-        spawnFx('gunsmoke', gm.x, gm.y, 10, gm.z);
+        muzFx(u, w, gm.x, gm.y, gm.z, u.turret);
         spawnFx('brass', u.x - Math.cos(u.turret) * 8, u.y - Math.sin(u.turret) * 8);
       }
     } else if (u.cat === 'team') {
@@ -5930,8 +5932,7 @@ function fireAt(u, t, dt) {
           var gm2 = GUNMODEL[u.key];
           var reach = gm2 ? gm2.bar : (u.def.atOnly ? 44 : 26), lift = gm2 ? gm2.z : 13;
           var bx = tm2.x + Math.cos(u.facing) * reach, by = tm2.y + Math.sin(u.facing) * reach;
-          spawnFx('flash', bx, by, gm2 ? 20 : 15, groundZ(tm2.x, tm2.y) + lift);
-          spawnFx('gunsmoke', bx, by, 11, groundZ(tm2.x, tm2.y) + lift);
+          muzFx(u, w, bx, by, groundZ(tm2.x, tm2.y) + lift, u.facing);
         }
       }
     }
@@ -5956,6 +5957,9 @@ function fireAt(u, t, dt) {
                    sx: from.x, sy: from.y, t: 0,
                    dur: ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
                    arc: ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
+                   /* a flat round carries a tracer element in its base and is drawn as
+                      one; a bomb has none and is a dark body against the sky */
+                   z0: u.cat === 'veh' ? 24 : 14, tail: ind ? .05 : .30, col: TRACER[u.side],
                    w: w, hit: hits > 0,
                    side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t,
                    /* how high up it goes off, which is the whole of where a hole in a
@@ -5966,9 +5970,25 @@ function fireAt(u, t, dt) {
                    bz: ind ? 0 : clamp(groundZ(u.x, u.y) + (u.cat === 'veh' ? 26 : 15) - groundZ(at.x, at.y), 0, 70) });
     sfx(u.cat === 'veh' || u.cat === 'team' ? 'cannon' : 'rocket', u.x, u.y);
   } else {
-    for (var q = 0; q < Math.min(shots, 6); q++)
-      G.shots.push({ kind: 'tracer', x: from.x + rnd(-9, 9), y: from.y + rnd(-9, 9),
-                     tx: at.x + rnd(-14, 14), ty: at.y + rnd(-14, 14), t: 0, dur: .075, side: u.side });
+    for (var q = 0; q < Math.min(shots, 6); q++) {
+      var fx0 = from.x + rnd(-9, 9), fy0 = from.y + rnd(-9, 9);
+      G.shots.push({ kind: 'tracer', x: fx0, y: fy0, sx: fx0, sy: fy0,
+                     /* the men of a section do not fire on the same instant and neither
+                        do their rounds: staged, five tracers read as five rounds rather
+                        than as one thick bar of light */
+                     tx: at.x + rnd(-14, 14), ty: at.y + rnd(-14, 14), t: -q * .016, dur: .075,
+                     tail: .34, z0: u.cat === 'veh' ? 24 : 15, side: u.side,
+                     /* a belt is one round in four or five, not every round; enough of
+                        them burn here that a player can see who is shooting at whom */
+                     tr: Math.random() < (w.rof < .3 ? .5 : .34), col: TRACER[u.side] });
+    }
+    /* An armoured car's autocannon and a half-track's machine gun are the vehicle's MAIN
+       weapon and carry no shell, so they went down the small-arms path and spawned no
+       flash at all: four of the roster fired invisibly except for the belt. */
+    if (u.cat === 'veh' && (onScreen(u.x, u.y) || u === povHost())) {
+      var vmz = gunMuzzle(u);
+      muzFx(u, w, vmz.x, vmz.y, vmz.z, u.turret);
+    }
     var close = (t.def && t.def.closeWeak && u.cat !== 'veh' && d < 170) ? t.def.closeWeak : 1;
     if (hits > 0) damage(t, w.dmg * hits * close, u);
     sfx(w.rof < .2 ? 'mg' : 'rifle', u.x, u.y);
@@ -6306,9 +6326,8 @@ function ruinCollapse(p, b, owner) {
     b.gone[fi] = clamp(b.gone[fi] * .6, 0, 1);
     b.brk[fi] = b.brk[fi].filter(function (hl) { return hl.z0 < now; });
   }
-  spawnFx('boom', b.x, b.y, 40);
-  for (var sm = 0; sm < 5; sm++)
-    spawnFx('smoke', b.x + rnd(-b.w * .4, b.w * .4), b.y + rnd(-b.d * .4, b.d * .4));
+  /* pale, not sooty: what comes off a storey falling in is plaster and stone dust */
+  burstFx(b.x, b.y, Math.max(40, Math.min(b.w, b.d) * .5), 1, 12);
   sfx('boom', b.x, b.y);
   if (onScreen(b.x, b.y)) addShake(7);
   /* What was a wall is now a heap of what the wall was made of. The four patches ringing
@@ -6467,7 +6486,7 @@ function stepDebris(dt) {
     c.wx *= .35; c.wy *= .35; c.wz *= .5;
     /* it lands flat rather than on a corner, which is what a slab of wall does */
     c.rx *= .4; c.ry *= .4;
-    if (imp > 90) { sfx('hit', c.x, c.y); spawnFx('dust', c.x, c.y); }
+    if (imp > 90) { sfx('hit', c.x, c.y); var cd2 = spawnFx('dust', c.x, c.y, 5); if (cd2) cd2.c = 3; }
   }
 }
 /* What has stopped moving is rubble. It is banked onto the building it came off, so a
@@ -6490,13 +6509,12 @@ function settleChunk(c) {
 }
 function rubCap() { return MOB ? 500 : 1400; }
 function explode(x, y, radius, dmg, owner, except, bz) {
-  spawnFx('boom', x, y, radius);
+  burstFx(x, y, radius, 0, bz);
   decalScorch(x, y, radius * 1.15);
   /* once, through the index. It was charged here and then again at the foot of this
      function by a linear walk of all two thousand patches, so every medium patch on the
      map took the shell twice and every shell cost a scan of the whole list. */
   damageCover(x, y, radius * .6, dmg * .5);
-  for (var sm = 0; sm < 3; sm++) spawnFx('smoke', x + rnd(-radius * .4, radius * .4), y + rnd(-radius * .4, radius * .4));
   if (onScreen(x, y)) addShake(clamp(radius * .10, 1.5, 9));
   sfx('boom', x, y);
   for (var i = 0; i < G.units.length; i++) {
@@ -6641,7 +6659,10 @@ function killUnit(u, src) {
   /* a fixed gun with its crew dead is still a gun in a ring of bags: cover, and a mark */
   if (u.cat === 'team' && !u.def.speed) {
     addCover(u.x, u.y, 24, 2, 'wreck', null, 400);
-    for (var gk = 0; gk < 4; gk++) spawnFx('smoke', u.x + rnd(-12, 12), u.y + rnd(-12, 12));
+    for (var gk = 0; gk < 4; gk++) {
+      var gs2 = spawnFx('smoke', u.x + rnd(-12, 12), u.y + rnd(-12, 12), 11, groundZ(u.x, u.y) + 10);
+      if (gs2) { gs2.c = 2; gs2.rise = 110 + gk * 26; gs2.op = .46; gs2.dur = 3.4; }
+    }
     /* and the piece stays where it stood, drawn with the works: a dead unit is gone from
        the list the frame after, and an empty ring of bags is not what a knocked-out gun
        looks like */
@@ -6670,7 +6691,10 @@ function killUnit(u, src) {
        a chain of four kills is a chain of four rebuilds in a single frame. */
     G.gridDirty = 1;
     explode(u.x, u.y, 58, 44, null);
-    for (var s2 = 0; s2 < 6; s2++) spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
+    for (var s2 = 0; s2 < 6; s2++) {
+      var ks = spawnFx('smoke', u.x + rnd(-16, 16), u.y + rnd(-16, 16), 14 + rnd(0, 10), groundZ(u.x, u.y) + 14);
+      if (ks) { ks.c = 2; ks.rise = 150 + s2 * 34; ks.op = .55; ks.dur = 4 + Math.random() * 2; ks.drift = 46; }
+    }
     /* Some of the crew get out and some of them do not. Two men down beside a burning
        hull is what the loss of a tank looks like from outside it, and a wreck that
        appeared with nobody near it read as a prop being swapped for another prop. */
@@ -6701,14 +6725,140 @@ function killBuilding(b) {
 }
 
 /* ---------------------------------------------------------------- effects */
-var FXDUR = { boom: .72, hit: .3, spark: .26, smoke: 2.6, dust: .8, exhaust: 1.3, brass: .9,
-              flash: .07, gunsmoke: 1.5 };
+var FXDUR = { boom: .62, hit: .34, spark: .5, smoke: 3.4, dust: 1.1, exhaust: 1.3, brass: .9,
+              flash: .075, gunsmoke: 1.6, ring: .6, ejecta: 1.4 };
+/* The cap is what one heavy burst can want between its fireball, its clods, its ring and
+   its column, times a few of them falling at once. It could be 260 when every particle
+   was a draw call of its own; they go out as one buffer and one draw a blend pass now. */
+var FXCAP = MOB ? 190 : 620;
 /* z is where the effect actually is rather than where the ground under it is: a muzzle
-   flash belongs at the muzzle, and the barrel smoke that follows it drifts from there. */
+   flash belongs at the muzzle, and the barrel smoke that follows it drifts from there.
+   The entry is handed back so a caller can say what KIND of thing this one is -- which
+   way the bore points, what colour the smoke starts, how fast the clod was thrown. */
 function spawnFx(kind, x, y, r, z) {
-  if (G.fx.length > (MOB ? 130 : 260)) return;
-  G.fx.push({ kind: kind, x: x, y: y, r: r || 0, t: 0, z: z,
-              dur: FXDUR[kind] || .25, a: rnd(TAU) });
+  if (G.fx.length > FXCAP) return null;
+  /* where it started is kept beside where it is, because anything that moves -- a
+     column climbing, a clod thrown -- has to move the ENTRY and not just the quad the
+     draw makes of it: the lights read the position, and so does anything measuring how
+     high a burst got. A column that climbs only inside drawParticles3D is a column that
+     nothing but the rasteriser knows about. */
+  var f = { kind: kind, x: x, y: y, r: r || 0, t: 0, z: z,
+            x0: x, y0: y, z0: z, dur: FXDUR[kind] || .25, a: rnd(TAU), sd: rnd(TAU) };
+  G.fx.push(f);
+  return f;
+}
+/* ---- what a shell landing actually is.
+   Five things happen and they happen at five different rates, and what the game drew was
+   one soft disc for a twentieth of a second and three grey puffs. A 210mm shell and a
+   mortar bomb were the same picture at two sizes.
+     There is the flash and the fireball, which are over inside a second and belong to
+   `boom`. There is the shock running out along the ground, which is what gives a burst a
+   size the eye can read off the ground rather than off a ball of light. There is the
+   DIRT -- a shell throws its spoil up and out on a ballistic arc, and nothing in this
+   game was ever thrown by one. There is the column, which lifts and leans and hangs for
+   seconds. And there is the low dust that runs out along the surface and settles.
+     Every count is scaled off the burst radius, so a mortar bomb is a different event
+   from a heavy shell rather than the same event drawn bigger. */
+function burstFx(x, y, r, stone, bz) {
+  var i, n, gz = groundZ(x, y), col = stone ? 3 : 0;
+  var f = spawnFx('boom', x, y, r, gz + clamp(bz || 0, 0, 40));
+  if (f) f.dur = clamp(.26 + r / 320, .26, .68);   /* a fireball is over fast; the cloud carries it */
+  var rg = spawnFx('ring', x, y, r * 1.25, gz);
+  if (rg) rg.dur = clamp(.34 + r / 280, .34, .9);
+  /* How hard a shell throws its spoil: a clod goes up about as far as the hole is wide
+     and lands one to two radii out. Written as a multiple of the radius instead, a
+     heavy shell threw its dirt two thousand units into the air and a quarter of the way
+     across the map, which reads as a fountain rather than as a burst. */
+  var v0 = Math.sqrt(98 * r);
+  n = MOB ? clamp(Math.round(r / 24), 3, 7) : clamp(Math.round(r / 11), 5, 17);
+  for (i = 0; i < n; i++) {
+    var ea = rnd(TAU), sp = v0 * rnd(.35, .95);
+    var e = spawnFx('ejecta', x + Math.cos(ea) * r * .16, y + Math.sin(ea) * r * .16, rnd(1.5, 4.2), gz + 6);
+    if (!e) break;
+    e.vx = Math.cos(ea) * sp; e.vy = Math.sin(ea) * sp; e.vz = v0 * rnd(.7, 1.3);
+    e.c = col; e.dur = clamp(2 * e.vz / 98 + .3, .6, 2.6);
+  }
+  /* The column starts ON THE GROUND and grows. Spread up the z at birth instead and the
+     whole of it is already in the air on the frame the shell lands, with clear daylight
+     between the crater and its own smoke. */
+  n = MOB ? 4 : clamp(Math.round(r / 13), 4, 11);
+  for (i = 0; i < n; i++) {
+    var sm = spawnFx('smoke', x + rnd(-r * .3, r * .3), y + rnd(-r * .3, r * .3),
+                     r * rnd(.30, .52), gz + 3 + i * r * .04);
+    if (!sm) break;
+    sm.rise = r * (.5 + i * .17) * rnd(.85, 1.2);
+    sm.c = stone ? 3 : 4; sm.op = .6; sm.dur = rnd(2.0, 3.4) + r / 80;
+  }
+  n = MOB ? 2 : clamp(Math.round(r / 26), 2, 6);
+  for (i = 0; i < n; i++) {
+    var da = rnd(TAU);
+    var dd = spawnFx('dust', x + Math.cos(da) * r * rnd(.4, 1.0), y + Math.sin(da) * r * rnd(.4, 1.0),
+                     r * rnd(.16, .30), gz);
+    if (!dd) break;
+    dd.a = da; dd.dur = rnd(.9, 1.7);
+  }
+}
+/* A round that stops on the plate. It is the commonest event in a tank fight and it was
+   worth one dot: what it actually is, is several pieces of hot metal coming off the
+   armour at the angle the round came in at. */
+function sparkFx(x, y, z, n, dir) {
+  for (var i = 0; i < n; i++) {
+    var a = dir === undefined ? rnd(TAU) : dir + rnd(-1.2, 1.2);
+    var f = spawnFx('spark', x, y, 1.4, z);
+    if (!f) return;
+    var sp = rnd(70, 240);
+    f.vx = Math.cos(a) * sp; f.vy = Math.sin(a) * sp; f.vz = rnd(40, 180);
+    f.dur = rnd(.3, .7);
+  }
+}
+/* ---- what a gun looks like when it goes off.
+   It is read off the WEAPON rather than typed against thirty-six unit keys, for the same
+   reason the sight rule is applied to `UNITS` at load rather than written out fourteen
+   times: two lists of one thing go out of step the moment somebody adds a weapon to one
+   of them. What separates one blast from another is the charge behind the round, so the
+   size comes off the weapon's own penetration and burst and the shape comes off what
+   kind of piece it is -- a mortar blows a puff straight up out of a tube and a 210 blows
+   the ground flat for twenty metres in front of it.
+     `el` is how much of the bore points at the sky, because a tube is not a gun. `sm` is
+   the barrel smoke and `dust` how far in front of the muzzle the ground is stripped,
+   which on a tank is most of what tells a player at a hundred units up that it fired. */
+var MUZ = {
+  rifle:  { r: 4.0,  ln: 1.6, sm: 0,  dust: 0 },
+  mg:     { r: 5.6,  ln: 2.8, sm: 0,  dust: 0,  lit: 1 },
+  coax:   { r: 5.0,  ln: 2.6, sm: 0,  dust: 0,  lit: 1 },
+  at:     { r: 11,   ln: 3.4, sm: 11, dust: 26, lit: 1 },
+  gun:    { r: 12,   ln: 3.1, sm: 13, dust: 30, lit: 1 },
+  mortar: { r: 6,    ln: 1.1, sm: 13, dust: 0,  el: 1.7 },
+  how:    { r: 15,   ln: 3.4, sm: 19, dust: 44, lit: 1 },
+  heavy:  { r: 21,   ln: 4.0, sm: 28, dust: 70, lit: 1 }
+};
+/* German propellant reads paler and Commonwealth reads more orange. It is one number a
+   player can pick a side out of a night-dark street by, and it costs two entries. */
+var FLASHC = { us: [1, .78, .36], ger: [1, .92, .66] };
+function muzClass(u, w) {
+  if (!w.shell) return u.cat === 'veh' ? 'coax' : w.rof < .3 ? 'mg' : 'rifle';
+  if (u.def.indirect) return (w.aoe || 0) >= 100 ? 'heavy' : u.def.barrageOnly ? 'how' : 'mortar';
+  if (u.cat === 'veh') return 'gun';
+  return (w.aoe || 0) >= 44 ? 'how' : 'at';
+}
+function muzFx(u, w, x, y, z, ang) {
+  var M = MUZ[muzClass(u, w)] || MUZ.rifle, col = FLASHC[u.side] || FLASHC.us, i;
+  /* the charge behind the round: a 37mm and a 128mm are both 'a tank gun' and are not
+     the same event */
+  var g = w.shell ? clamp(.65 + w.pen / 620 + (w.aoe || 0) / 320, .7, 1.9) : 1;
+  var f = spawnFx('flash', x, y, M.r * g, z);
+  if (!f) return;
+  f.a = ang; f.ln = M.ln; f.col = col; f.el = M.el || 0; f.br = w.brake ? 1 : 0; f.lit = M.lit || 0;
+  if (M.sm) { var sg = spawnFx('gunsmoke', x, y, M.sm * g, z); if (sg) { sg.a = ang; sg.c = 1; } }
+  if (M.dust) {
+    /* only when the muzzle is low enough over the ground for the blast to reach it */
+    var gz = groundZ(x, y);
+    if (z - gz < M.dust * 1.1) for (i = 0; i < 3; i++) {
+      var dd = M.dust * g * (.35 + i * .48);
+      var d2 = spawnFx('dust', x + Math.cos(ang) * dd + rnd(-9, 9), y + Math.sin(ang) * dd + rnd(-9, 9), 5 + i * 3);
+      if (d2) d2.a = ang + rnd(-.5, .5);
+    }
+  }
 }
 /* Where a man's muzzle is: the end of the barrel the builder laid on him, in the pose he
    is actually in. It was three reaches and three heights typed per pose -- 13 and 16.4
@@ -6758,8 +6908,48 @@ function updateShots(dt) {
       }
     } else if (s.t >= s.dur) G.shots.splice(i, 1);
   }
-  for (var j = G.fx.length - 1; j >= 0; j--) { G.fx[j].t += dt; if (G.fx[j].t >= G.fx[j].dur) G.fx.splice(j, 1); }
-  for (var k2 = 0; k2 < G.wrecks.length; k2++) G.wrecks[k2].t += dt;
+  for (var j = G.fx.length - 1; j >= 0; j--) {
+    var fj = G.fx[j];
+    fj.t += dt;
+    /* anything thrown -- a clod out of a crater, a spark off a plate -- under gravity,
+       with the ground as the only collider, which is the same arithmetic the masonry
+       runs and for the same reason: a solver would buy nothing a heap actually needs */
+    if (fj.vz !== undefined) {
+      fj.x += fj.vx * dt; fj.y += fj.vy * dt; fj.z += fj.vz * dt; fj.vz -= 98 * dt;
+      var fg = groundZ(fj.x, fj.y) + 1.5;
+      if (fj.z <= fg) { fj.z = fg; fj.vx *= .18; fj.vy *= .18; fj.vz = 0;
+                        if (fj.dur - fj.t > .14) fj.t = fj.dur - .14; }
+    } else if (fj.rise && fj.z0 !== undefined) {
+      /* a column shoots up and then slows, so the climb is front-loaded rather than
+         linear: off a straight ramp it is still lying in its own crater half a second
+         after the shell lands, which is a dark puff over a dark stain and reads as
+         nothing at all */
+      var kr = Math.pow(clamp(fj.t / fj.dur, 0, 1), .55);
+      fj.z = fj.z0 + 8 + kr * fj.rise;
+      fj.x = fj.x0 + Math.cos(fj.a) * kr * (fj.drift || 34);
+      fj.y = fj.y0 + Math.sin(fj.a) * kr * (fj.drift || 34) * .65;
+    }
+    if (fj.t >= fj.dur) G.fx.splice(j, 1);
+  }
+  for (var k2 = 0; k2 < G.wrecks.length; k2++) {
+    var wk = G.wrecks[k2];
+    wk.t += dt;
+    /* A hull burns for two minutes and `smokeColumns` has been attenuating the sight
+       line through it for as long as detection has been a rate. Nothing drew any of it
+       after the six puffs it died with: the eye was being slowed by smoke that was not
+       on the screen, which is the same shape of fault as the fog having no live tier. */
+    if (wk.t > 120 || !onScreen(wk.x, wk.y)) continue;
+    var wkk = wk.t < 30 ? 1 : clamp(1 - (wk.t - 30) / 90, 0, 1);
+    if (Math.random() < dt * (3 + wkk * 8)) {
+      var ws = spawnFx('smoke', wk.x + rnd(-11, 11), wk.y + rnd(-11, 11), 13 + rnd(0, 9), groundZ(wk.x, wk.y) + 16);
+      if (ws) { ws.c = 2; ws.rise = 110 + Math.random() * 100; ws.op = .44 * (.4 + wkk * .6);
+                ws.dur = 3.4 + Math.random() * 2.2; ws.drift = 44; }
+    }
+    if (wkk > .45 && Math.random() < dt * 7) {
+      var wf = spawnFx('flash', wk.x + rnd(-9, 9), wk.y + rnd(-9, 9), 7 + Math.random() * 6, groundZ(wk.x, wk.y) + 13);
+      if (wf) { wf.ln = 0; wf.col = [1, .64, .24]; wf.dur = .14; }
+    }
+  }
   for (var c = G.corpses.length - 1; c >= 0; c--) { G.corpses[c].t += dt; if (G.corpses[c].t > 55) G.corpses.splice(c, 1); }
   /* half a second of falling, then he is a body and ages like one */
   for (var fl = G.falls.length - 1; fl >= 0; fl--) {
@@ -7297,15 +7487,21 @@ function updateUnit(u, dt) {
        plume once it is badly hurt, and flame licking out of the engine louvres at the
        point where the crew are thinking about getting out. */
     var hf2 = u.hp / u.maxhp;
-    if (hf2 < .62 && Math.random() < dt * (hf2 < .3 ? 3.4 : 1.1))
-      spawnFx('smoke', u.x + rnd(-10, 10), u.y + rnd(-10, 10), 0, groundZ(u.x, u.y) + 16);
-    if (hf2 < .22 && Math.random() < dt * 5)
-      spawnFx('flash', u.x - Math.cos(u.facing) * 14 + rnd(-4, 4), u.y - Math.sin(u.facing) * 14 + rnd(-4, 4),
-              6 + Math.random() * 5, groundZ(u.x, u.y) + 14);
+    if (hf2 < .62 && Math.random() < dt * (hf2 < .3 ? 3.4 : 1.1)) {
+      var hs2 = spawnFx('smoke', u.x + rnd(-10, 10), u.y + rnd(-10, 10), 9 + rnd(0, 6), groundZ(u.x, u.y) + 16);
+      if (hs2) { hs2.c = 2; hs2.rise = 90 + Math.random() * 80; hs2.op = .38; hs2.dur = 3 + Math.random() * 2; hs2.drift = 40; }
+    }
+    if (hf2 < .22 && Math.random() < dt * 5) {
+      var hfl = spawnFx('flash', u.x - Math.cos(u.facing) * 14 + rnd(-4, 4), u.y - Math.sin(u.facing) * 14 + rnd(-4, 4),
+                        6 + Math.random() * 5, groundZ(u.x, u.y) + 14);
+      /* a fire, not a gun: no bore to lay a cone along, and it is a light in the street */
+      if (hfl) { hfl.ln = 0; hfl.col = [1, .62, .22]; hfl.dur = .14; hfl.lit = 1; }
+    }
     /* a wrecked gun streams from the mantlet, and a shed track throws dust */
     if (u.gunDmg > 0 && Math.random() < dt * 2.2) {
       var gmz = gunMuzzle(u);
-      spawnFx('smoke', u.x + Math.cos(u.turret) * 16, u.y + Math.sin(u.turret) * 16, 0, gmz.z + 4);
+      var gsm = spawnFx('smoke', u.x + Math.cos(u.turret) * 16, u.y + Math.sin(u.turret) * 16, 6, gmz.z + 4);
+      if (gsm) { gsm.c = 2; gsm.rise = 50; gsm.op = .3; gsm.dur = 2.2; }
     }
     if (u.immob > 0 && Math.random() < dt * 3)
       spawnFx('dust', u.x + rnd(-16, 16), u.y + rnd(-16, 16));
@@ -7329,7 +7525,7 @@ function updateUnit(u, dt) {
       if (b.def) {
         b.built = clamp(b.built + dt * cs / b.def.time, 0, 1);
         b.hp = Math.max(b.hp, b.maxhp * (.18 + .82 * b.built));
-        if (Math.random() < dt * 6) spawnFx('spark', b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2));
+        if (Math.random() < dt * 6) sparkFx(b.x + rnd(-b.def.w / 2, b.def.w / 2), b.y + rnd(-b.def.h / 2, b.def.h / 2), groundZ(b.x, b.y) + 12, 2);
         if (b.built >= 1) { if (!b.recDone) { b.recDone = 1; recBuild(b.side, b.key); } u.building = null; clearOrder(u); if (owned(u)) toast(b.def.name + ' complete'); }
       } else {
         b.prog = clamp(b.prog + dt * cs / b.time, 0, 1);
@@ -7343,7 +7539,7 @@ function updateUnit(u, dt) {
     else if (dist(u, r) < workReach(r)) {
       u.path = null;
       r.hp = Math.min(r.maxhp, r.hp + 42 * dt);
-      if (Math.random() < dt * 8) spawnFx('spark', r.x + rnd(-14, 14), r.y + rnd(-14, 14));
+      if (Math.random() < dt * 8) sparkFx(r.x + rnd(-14, 14), r.y + rnd(-14, 14), groundZ(r.x, r.y) + 12, 2);
     }
   }
 
@@ -10717,7 +10913,7 @@ function m4apply(m, x, y, z) {
 /* ---- context and shaders ---- */
 var cv = document.getElementById('cv');
 var ov = document.getElementById('ov'), ctx = ov.getContext('2d');
-var gl = null, GLOK = false, GL2 = false, SHADOWS = false, PROG = null, BILL = null, DEPTHP = null, SKY = null;
+var gl = null, GLOK = false, GL2 = false, SHADOWS = false, PROG = null, PARTP = null, DEPTHP = null, SKY = null;
 var SHADOW = { fb: null, tex: null, size: 2048, vp: null };
 var dpr = Math.min(2, window.devicePixelRatio || 1);
 var VIEW = { w: 800, h: 600 };
@@ -11076,22 +11272,56 @@ var FSD = [
   'precision mediump float;',
   'void main(){ gl_FragColor = vec4(1.0); }'].join('\n');
 /* billboards: soft particles and blob shadows */
-var VSB = [
-  'attribute vec2 aQuad;',
-  'uniform mat4 uVP; uniform vec3 uPos; uniform vec3 uRight; uniform vec3 uUp; uniform vec2 uSize;',
-  'varying vec2 vUV;',
-  'void main(){',
-  '  vec3 p = uPos + uRight * (aQuad.x * uSize.x) + uUp * (aQuad.y * uSize.y);',
-  '  vUV = aQuad * 0.5 + 0.5;',
-  '  gl_Position = uVP * vec4(p, 1.0);',
-  '}'].join('\n');
-var FSB = [
+/* Particles. Every effect in the game -- smoke, dust, a muzzle flash, the fireball of a
+   210mm shell -- used to be one drawArrays of one uniform-driven quad running one
+   fragment shader with exactly one shape in it: `smoothstep(1.0, 0.25, d)`, a soft disc.
+   So a rifle flash and a heavy burst were the same picture at two sizes and two alphas,
+   nothing had an edge, and three hundred of them were three hundred draw calls.
+     The quads are built in world space on the CPU now, the way `packChunks` builds
+   falling masonry, and go out as one buffer and one draw a blend pass. That buys the
+   count -- a single heavy burst wants sixty particles between its fireball, its ejecta,
+   its dust ring and its column -- and it buys the SHAPE, because a vertex can carry a
+   shape id and a seed where a uniform cannot without a draw call each.
+     Five shapes. A soft disc is still right for haze and for a shadow. A puff has a
+   broken, curdled rim and is what separates smoke from fog. A flash is a hot core with
+   spikes out of it. A ring is the shock running out along the ground. And a streak is
+   the quad already laid along a round's flight, so its falloff is the bar across it and
+   the taper down its length rather than a radius. */
+var VSP = [
+  'attribute vec3 aPos; attribute vec2 aUV; attribute vec4 aCol; attribute vec2 aShp;',
+  'uniform mat4 uVP;',
+  'varying vec2 vUV; varying vec4 vCol; varying vec2 vShp;',
+  'void main(){ vUV = aUV; vCol = aCol; vShp = aShp; gl_Position = uVP * vec4(aPos, 1.0); }'].join('\n');
+var FSP = [
   'precision mediump float;',
-  'varying vec2 vUV; uniform vec4 uColor;',
+  'varying vec2 vUV; varying vec4 vCol; varying vec2 vShp;',
   'void main(){',
-  '  float d = length(vUV - 0.5) * 2.0;',
-  '  float a = smoothstep(1.0, 0.25, d);',
-  '  gl_FragColor = vec4(uColor.rgb, uColor.a * a);',
+  '  vec2 q = vUV - 0.5;',
+  '  float d = length(q) * 2.0;',
+  '  float id = vShp.x, sd = vShp.y;',
+  '  float a;',
+  '  if (id < 0.5) {',
+  '    a = smoothstep(1.0, 0.18, d);',
+  '  } else if (id < 1.5) {',
+  '    float ang = atan(q.y, q.x);',
+  '    float w = 1.0 + 0.24 * sin(ang * 3.0 + sd) + 0.15 * sin(ang * 7.0 - sd * 2.3)',
+  '            + 0.08 * sin(ang * 13.0 + sd * 4.1);',
+  '    a = smoothstep(1.0, 0.10, d / w);',
+  '    float n = sin(q.x * 29.0 + sd) * sin(q.y * 23.0 - sd * 1.7)',
+  '            + 0.5 * sin(q.x * 61.0 - sd * 2.3) * sin(q.y * 53.0 + sd);',
+  '    a *= 0.62 + 0.38 * (n * 0.34 + 0.5);',
+  '  } else if (id < 2.5) {',
+  '    float ang = atan(q.y, q.x);',
+  '    float core = pow(max(0.0, 1.0 - d), 2.3);',
+  '    float sp = pow(max(0.0, cos(ang * 5.0 + sd)), 9.0) * max(0.0, 1.0 - d * 0.72);',
+  '    a = min(1.0, core + sp * 0.8);',
+  '  } else if (id < 3.5) {',
+  '    a = smoothstep(0.30, 0.0, abs(d - 0.80)) * smoothstep(1.04, 0.88, d);',
+  '  } else {',
+  '    float across = 1.0 - abs(vUV.y * 2.0 - 1.0);',
+  '    a = across * across * pow(vUV.x, 1.7);',
+  '  }',
+  '  gl_FragColor = vec4(vCol.rgb, vCol.a * a);',
   '}'].join('\n');
 
 /* Ground marks: the rings and the order paths, drawn as ribbons lying ON the ground
@@ -11155,7 +11385,8 @@ function initGL() {
     PROG = compileProgram(SHADOWS ? VSH.replace('#define SHADOWS 0', '#define SHADOWS 1') : VSH,
                           SHADOWS ? fsh.replace('#define SHADOWS 0', '#define SHADOWS 1') : fsh,
                           ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat']);
-    BILL = compileProgram(VSB, FSB, ['aQuad']);
+    PARTP = compileProgram(VSP, FSP, ['aPos', 'aUV', 'aCol', 'aShp']);
+    PART.a.buf = gl.createBuffer(); PART.b.buf = gl.createBuffer();
     SKY = compileProgram(VSK, FSK, ['aQuad']);
     DEPTHP = compileProgram(VSD, FSD, ['aPos']);
     MARKP = compileProgram(VSM, FSM, ['aPos', 'aCol']);
@@ -11417,10 +11648,21 @@ function gatherLights(v) {
   }
   for (i = 0; i < G.fx.length; i++) {
     var f = G.fx[i];
-    if (f.kind !== 'boom') continue;
-    var a = clamp(1 - f.t / f.dur, 0, 1);
-    litPut(f.x, f.y, groundZ(f.x, f.y) + 12, 70 + (f.r || 20) * 2.2,
-           2.4 * a, 1.35 * a, .42 * a, dsq(cx, cy, f.x, f.y));
+    if (f.kind === 'boom') {
+      var a = clamp(1 - f.t / f.dur, 0, 1);
+      /* a salvo is several of these at once and four slots of 2.4 bleached the whole
+         town; one shell still lights the street it lands in */
+      litPut(f.x, f.y, groundZ(f.x, f.y) + 12, 70 + (f.r || 20) * 2.2,
+             1.9 * a * a, 1.05 * a * a, .34 * a * a, dsq(cx, cy, f.x, f.y));
+    } else if (f.kind === 'flash' && f.lit) {
+      /* A gun going off is a light. At twenty-one degrees of December sun a great deal
+         of this town is in its own shadow, and until now the only things that lit any of
+         it were the sun and a burning hull -- a tank firing out of a side street lit
+         nothing at all, including itself. */
+      var fa = clamp(1 - f.t / f.dur, 0, 1);
+      litPut(f.x, f.y, f.z === undefined ? groundZ(f.x, f.y) + 12 : f.z, 55 + (f.r || 10) * 4.5,
+             2.7 * fa, 1.75 * fa, .72 * fa, dsq(cx, cy, f.x, f.y));
+    }
   }
 }
 function sunMatrix(v) {
@@ -21975,18 +22217,103 @@ function bushModel(r, seed) {
 
 /* ================================================================ drawing the frame */
 var _blobs = [];
-function billboard(x, y, z, sx, sy, r, g, b, a, additive) {
-  gl.uniform3f(BILL.u.uPos, x, y, z);
-  gl.uniform2f(BILL.u.uSize, sx, sy);
-  gl.uniform4f(BILL.u.uColor, r, g, b, a);
-  gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+/* ---- the particle packer.
+   Eleven floats a vertex, six vertices a quad, written by hand into one array that is
+   allocated once, for the same reason `packChunks` is written by hand: this is rebuilt
+   from nothing on every frame the game runs, and building it out of `box()` and
+   `facesToBuffer()` would allocate a few hundred small arrays a frame and spend more
+   time in the collector than in the arithmetic.
+     A quad is a centre and two half-axes. What those axes are is the whole of the
+   difference between the three kinds of quad here: the camera's right and up for
+   anything facing the viewer, the ground plane for a ring or a shadow, and the round's
+   own flight crossed with the view for a tracer. */
+var PSTRIDE = 11;
+var PART = { a: { f: new Float32Array(PSTRIDE * 6 * 420), n: 0, buf: null },
+             b: { f: new Float32Array(PSTRIDE * 6 * 300), n: 0, buf: null } };
+function partPut(P, x, y, z, ex, ey, ez, fx, fy, fz, r, g, b, a, shp, sd) {
+  if ((P.n + 6) * PSTRIDE > P.f.length) {
+    /* grow rather than drop: the marks buffer used to return on overflow and what it
+       threw away was whatever was built last, which is never what anybody expects */
+    var gw = new Float32Array(P.f.length * 2); gw.set(P.f); P.f = gw;
+  }
+  var f = P.f, i = P.n * PSTRIDE, c;
+  /* (0,0) (1,0) (1,1) then (0,0) (1,1) (0,1); culling is off for this pass so the
+     winding does not matter */
+  var CU = PART._u, CV = PART._v;
+  CU[0] = 0; CV[0] = 0; CU[1] = 1; CV[1] = 0; CU[2] = 1; CV[2] = 1;
+  CU[3] = 0; CV[3] = 0; CU[4] = 1; CV[4] = 1; CU[5] = 0; CV[5] = 1;
+  for (c = 0; c < 6; c++) {
+    var su = CU[c] * 2 - 1, sv = CV[c] * 2 - 1;
+    f[i] = x + ex * su + fx * sv; f[i + 1] = y + ey * su + fy * sv; f[i + 2] = z + ez * su + fz * sv;
+    f[i + 3] = CU[c]; f[i + 4] = CV[c];
+    f[i + 5] = r; f[i + 6] = g; f[i + 7] = b; f[i + 8] = a;
+    f[i + 9] = shp; f[i + 10] = sd;
+    i += PSTRIDE;
+  }
+  P.n += 6;
 }
-function groundBlob(x, y, r, a) {
-  /* a shadow flat on the ground: the quad's axes lie in the ground plane */
-  gl.uniform3f(BILL.u.uRight, 1, 0, 0);
-  gl.uniform3f(BILL.u.uUp, 0, 1, 0);
-  billboard(x, y, groundZ(x, y) + .6, r, r * .8, 0, 0, 0, a);
+PART._u = new Float32Array(6); PART._v = new Float32Array(6);
+/* facing the camera, rolled about the view axis so a dozen puffs are not a dozen copies
+   of one picture */
+function partBill(x, y, z, sx, sy, roll, r, g, b, a, shp, sd, add) {
+  if (a <= .004 || sx <= 0) return;
+  var R = MAT.right, U = MAT.up, c = Math.cos(roll || 0), sn = Math.sin(roll || 0);
+  partPut(add ? PART.b : PART.a, x, y, z,
+          (R.x * c + U.x * sn) * sx, (R.y * c + U.y * sn) * sx, (R.z * c + U.z * sn) * sx,
+          (U.x * c - R.x * sn) * sy, (U.y * c - R.y * sn) * sy, (U.z * c - R.z * sn) * sy,
+          r, g, b, a, shp, sd || 0);
 }
+/* lying flat on the ground: a shock ring, a shadow, the scorch under a fire */
+function partFlat(x, y, z, sx, sy, roll, r, g, b, a, shp, sd, add) {
+  if (a <= .004 || sx <= 0) return;
+  var c = Math.cos(roll || 0), sn = Math.sin(roll || 0);
+  partPut(add ? PART.b : PART.a, x, y, z, c * sx, sn * sx, 0, -sn * sy, c * sy, 0,
+          r, g, b, a, shp, sd || 0);
+}
+/* a ribbon from tail to head. The width runs across the flight AND across the line of
+   sight, which is the cross product of the two, so a round crossing the view is a bar
+   and one coming at the camera is a point -- which is what a tracer does. */
+function partStreak(x0, y0, z0, x1, y1, z1, w, r, g, b, a, add) {
+  if (a <= .004) return;
+  var dx = (x1 - x0) * .5, dy = (y1 - y0) * .5, dz = (z1 - z0) * .5;
+  var mx = x0 + dx, my = y0 + dy, mz = z0 + dz;
+  var vx = MAT.eye.x - mx, vy = MAT.eye.y - my, vz = MAT.eye.z - mz;
+  var sx = dy * vz - dz * vy, sy = dz * vx - dx * vz, sz = dx * vy - dy * vx;
+  var sl = Math.sqrt(sx * sx + sy * sy + sz * sz);
+  if (sl < 1e-5) { sx = MAT.right.x; sy = MAT.right.y; sz = MAT.right.z; sl = 1; }
+  sl = w / sl;
+  partPut(add ? PART.b : PART.a, mx, my, mz, dx, dy, dz, sx * sl, sy * sl, sz * sl,
+          r, g, b, a, 4, 0);
+}
+function drawParts() {
+  var pass, P;
+  gl.useProgram(PARTP.p);
+  gl.uniformMatrix4fv(PARTP.u.uVP, false, MAT.vp);
+  gl.depthMask(false); gl.enable(gl.BLEND); gl.disable(gl.CULL_FACE);
+  gl.enableVertexAttribArray(0); gl.enableVertexAttribArray(1);
+  gl.enableVertexAttribArray(2); gl.enableVertexAttribArray(3);
+  FXN.quads = 0; FXN.draws = 0;
+  for (pass = 0; pass < 2; pass++) {
+    P = pass ? PART.b : PART.a;
+    if (P.n) {
+      gl.blendFunc(gl.SRC_ALPHA, pass ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA);
+      gl.bindBuffer(gl.ARRAY_BUFFER, P.buf);
+      gl.bufferData(gl.ARRAY_BUFFER, P.f.subarray(0, P.n * PSTRIDE), gl.DYNAMIC_DRAW);
+      gl.vertexAttribPointer(0, 3, gl.FLOAT, false, PSTRIDE * 4, 0);
+      gl.vertexAttribPointer(1, 2, gl.FLOAT, false, PSTRIDE * 4, 12);
+      gl.vertexAttribPointer(2, 4, gl.FLOAT, false, PSTRIDE * 4, 20);
+      gl.vertexAttribPointer(3, 2, gl.FLOAT, false, PSTRIDE * 4, 36);
+      gl.drawArrays(gl.TRIANGLES, 0, P.n);
+      FXN.quads += P.n / 6; FXN.draws++;
+    }
+    P.n = 0;
+  }
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3);
+  gl.disable(gl.BLEND); gl.depthMask(true); gl.enable(gl.CULL_FACE);
+}
+/* what the last frame's particle pass came to, for the card and for nothing else */
+var FXN = { quads: 0, draws: 0 };
 function unitTop(u) { return u.cat === 'veh' ? (u.def.hp > 1200 ? 44 : u.def.hp > 500 ? 40 : 28) : 26; }
 /* the bearing of the nearest enemy, from the squad's own position */
 /* Which way the men should be facing when they go to ground. The nearest enemy they
@@ -22423,53 +22750,191 @@ function drawWrecks3D(v) {
   });
 }
 function drawParticles3D() {
-  gl.useProgram(BILL.p);
-  gl.uniformMatrix4fv(BILL.u.uVP, false, MAT.vp);
-  gl.bindBuffer(gl.ARRAY_BUFFER, QUAD);
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-  gl.disableVertexAttribArray(1); gl.disableVertexAttribArray(2); gl.disableVertexAttribArray(3); gl.disableVertexAttribArray(4);
-  gl.depthMask(false); gl.enable(gl.BLEND); gl.disable(gl.CULL_FACE);
-  /* shadows first, multiplied into the ground */
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  if (!SHADOWS) for (var i = 0; i < _blobs.length; i++) groundBlob(_blobs[i].x, _blobs[i].y, _blobs[i].r, _blobs[i].a);
+  var i, f, k, z, c;
+  /* the ground shadows, when there is no shadow map to draw them */
+  if (!SHADOWS) for (i = 0; i < _blobs.length; i++)
+    partFlat(_blobs[i].x, _blobs[i].y, groundZ(_blobs[i].x, _blobs[i].y) + .6,
+             _blobs[i].r, _blobs[i].r * .8, 0, 0, 0, 0, _blobs[i].a, 0, 0);
   _blobs.length = 0;
-  /* then the smoke and dust, facing the camera */
-  gl.uniform3f(BILL.u.uRight, MAT.right.x, MAT.right.y, MAT.right.z);
-  gl.uniform3f(BILL.u.uUp, MAT.up.x, MAT.up.y, MAT.up.z);
   G.ambientSmoke.forEach(function (sm) {
     for (var q = 0; q < 5; q++) {
-      var age = ((G.t * .12 + sm.phase + q * .2) % 1), s = sm.size * (.6 + age * 1.6);
-      billboard(sm.x + Math.sin(age * 4 + q) * 18 * age, sm.y - age * 30, groundZ(sm.x, sm.y) + 10 + age * 140,
-                s, s, .22, .21, .19, (1 - age) * .28);
+      var age = ((G.t * .12 + sm.phase + q * .2) % 1), sz = sm.size * (.6 + age * 1.6);
+      partBill(sm.x + Math.sin(age * 4 + q) * 18 * age, sm.y - age * 30,
+               groundZ(sm.x, sm.y) + 10 + age * 140, sz, sz, age * 1.7 + q,
+               .34, .33, .30, (1 - age) * .26, 1, q * 1.1 + sm.phase * 6);
     }
   });
-  G.fx.forEach(function (f) {
-    var k = f.t / f.dur, z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
-    if (f.kind === 'smoke') billboard(f.x + Math.cos(f.a) * k * 12, f.y, z + 12 + k * 46, 8 + k * 22, 8 + k * 22, .34, .34, .31, (1 - k) * .34);
-    else if (f.kind === 'dust') billboard(f.x + Math.cos(f.a) * k * 8, f.y, z + 4 + k * 9, 4 + k * 11, 4 + k * 11, .55, .49, .36, (1 - k) * .3);
-    else if (f.kind === 'exhaust') billboard(f.x + Math.cos(f.a) * k * 7, f.y, z + 8 + k * 24, 4 + k * 13, 4 + k * 13, .29, .28, .25, (1 - k) * .22);
-    else if (f.kind === 'boom') billboard(f.x, f.y, z + 10 + k * 34, f.r * (.55 + k * 1.1), f.r * (.55 + k * 1.1), .24, .22, .18, (1 - k) * .82);
-    else if (f.kind === 'gunsmoke') billboard(f.x + Math.cos(f.a) * k * 16, f.y + Math.sin(f.a) * k * 9, (f.z || z) + k * 20,
-                                             f.r * (.5 + k * 2.2), f.r * (.5 + k * 2.2), .42, .41, .38, (1 - k) * (1 - k) * .4);
-  });
-  /* fire is additive */
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-  G.fx.forEach(function (f) {
-    var k = f.t / f.dur, z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
-    if (f.kind === 'boom' && k < .55) {
-      var s = f.r * (.5 + k * .9), a = 1 - k * 1.8;
-      billboard(f.x, f.y, z + 8, s, s, 1, .78, .36, a * .9);
-      billboard(f.x, f.y, z + 8, s * .45, s * .45, 1, .98, .9, a);
+  /* Rounds in the air. These lived on the 2D overlay, which is a separate canvas stacked
+     over the WebGL one, so a tracer could never be behind anything in the world: a belt
+     fired at a house was drawn straight across the front of it. They go through the
+     depth buffer now, which is the whole reason a round crossing a street reads as
+     passing between two buildings rather than over them. */
+  for (i = 0; i < G.shots.length; i++) drawShot(G.shots[i]);
+  for (i = 0; i < G.fx.length; i++) {
+    f = G.fx[i]; k = f.t / f.dur;
+    z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
+    c = FXCOL[f.c || 0];
+    if (f.kind === 'smoke') {
+      /* a shell's smoke starts as the dirt it threw up and ends as smoke: it lifts,
+         spreads, leans downwind and loses the earth out of it on the way */
+      /* it comes off the ground sooty and thins to grey as it climbs; the colour it
+         STARTS at is the whole of whether it reads at all, because a pale translucent
+         puff over pale dry ground is invisible and that is what every puff in this game
+         used to be */
+      /* It shoots up and then slows, which is why the climb is front-loaded rather than
+         linear: read off a straight ramp a column is still lying in its own crater half
+         a second after the shell lands, where it has to be clear of the scorch by then
+         or it is a dark puff over a dark stain and nobody can see it at all. It lightens
+         as it climbs, the way smoke does. */
+      var kk = Math.pow(k, .55), ss = (f.r || 9) * (.55 + kk * 1.9);
+      partBill(f.x, f.y, z, ss, ss * (.9 + k * .2), f.a + k * .5,
+               lerp(c[0], .56, kk), lerp(c[1], .54, kk), lerp(c[2], .51, kk),
+               Math.min(1, (1 - k * k) * 3.4) * (f.op === undefined ? .46 : f.op), 1, f.sd || 0);
+    } else if (f.kind === 'dust') {
+      var ds = (f.r || 5) * (1 + k * 2.4);
+      partBill(f.x + Math.cos(f.a) * k * 26, f.y + Math.sin(f.a) * k * 17, z + 3 + k * 16,
+               ds, ds * .66, f.a, .47, .41, .32, Math.min(1, (1 - k) * 2.4) * .34, 1, f.sd || 0);
+    } else if (f.kind === 'exhaust') {
+      var es = 4 + k * 13;
+      partBill(f.x + Math.cos(f.a) * k * 7, f.y, z + 8 + k * 24, es, es, f.a,
+               .29, .28, .25, (1 - k) * .20, 1, f.sd || 0);
+    } else if (f.kind === 'gunsmoke') {
+      /* the cloud a gun blows out of its own barrel, which goes where the barrel is
+         pointing and then stops and hangs */
+      var gk = Math.min(1, k * 3.2), ca = Math.cos(f.a), sa = Math.sin(f.a);
+      for (var g = 0; g < 3; g++) {
+        var gd = (f.r || 10) * (.5 + g * 1.5) * gk, gs = (f.r || 10) * (.5 + g * .42 + k * 2.1);
+        partBill(f.x + ca * gd, f.y + sa * gd, z + k * 16 + g * 2, gs, gs, f.a + g * 2.1,
+                 .40, .38, .36, Math.min(1, (1 - k) * (1 - k) * 2.2) * .40 * (1 - g * .22), 1, (f.sd || 0) + g);
+      }
+    } else if (f.kind === 'boom') {
+      burstDraw(f, k, z);
+    } else if (f.kind === 'ring') {
+      /* the shock running out along the ground, which is what gives a burst a size the
+         eye can read off the ground rather than off a ball of light */
+      var rr = (f.r || 40) * (.25 + k * 1.5);
+      partFlat(f.x, f.y, z + 2.5, rr, rr, f.a, .40, .34, .26, (1 - k) * (1 - k) * .55, 3, 0);
+    } else if (f.kind === 'ejecta' || f.kind === 'spark') {
+      drawBallistic(f, k);
+    } else if (f.kind === 'hit') {
+      /* a bullet strike: the little spout of dust it kicks and the flick of light off it */
+      var hs = 2.2 + k * 7;
+      partBill(f.x, f.y, z + 2 + k * 8, hs, hs, f.a, .58, .52, .40, (1 - k) * .42, 1, f.sd || 0);
+      if (k < .45) partBill(f.x, f.y, z + 4, 3.0 * (1 - k * 2), 3.0 * (1 - k * 2), 0,
+                            1, .86, .55, (1 - k * 2.2) * .7, 0, 0, 1);
     } else if (f.kind === 'flash') {
-      /* short, bright, and gone: the flash is what tells the player who is firing */
-      var fs = f.r * (1.15 - k * .5), fa = (1 - k) * (1 - k);
-      billboard(f.x, f.y, f.z === undefined ? z + 12 : f.z, fs, fs, 1, .82, .42, fa * .95);
-      billboard(f.x, f.y, f.z === undefined ? z + 12 : f.z, fs * .42, fs * .42, 1, .99, .88, fa);
+      muzzleDraw(f, k, z);
     }
-  });
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.disable(gl.BLEND); gl.depthMask(true); gl.enable(gl.CULL_FACE);
+  }
 }
+/* The colours a puff can start as. Earth thrown out of a hole, the grey of burnt
+   propellant, the oily black of fuel and rubber, and pale masonry dust -- four different
+   things that all used to be the same 0.34 grey. */
+var FXCOL = [[.52, .44, .33], [.42, .41, .39], [.13, .12, .11], [.70, .64, .52],
+             [.31, .26, .21]];
+/* Tracer burned different colours in the two armies, and that is the cheapest true thing
+   a player can read off a firefight at two hundred units: Commonwealth tracer ran
+   red-orange and German ran a pale yellow-white. */
+var TRACER = { us: [1, .52, .20], ger: [1, .95, .58] };
+/* A burst, staged rather than drawn as one disc. There is the flash, which is over in a
+   twentieth of a second and is what the eye actually registers; the fireball, which is
+   turbulent and goes from white through orange to nothing; and the flash on the ground
+   under it. The dirt, the ring and the column are their own entries, spawned by
+   `explode`, because they outlive this by seconds. */
+function burstDraw(f, k, z) {
+  var r = f.r || 40, i;
+  if (k < .13) {
+    /* white, compact, and over before the eye resolves it. A star the size of the crater
+       reads as a lens flare rather than as a shell. */
+    var fk = k / .13, fs = r * (.26 + fk * .22);
+    partBill(f.x, f.y, z + r * .14, fs, fs, f.sd || 0, 1, .96, .86, (1 - fk) * (1 - fk) * .95, 1, f.sd || 0, 1);
+  }
+  if (k < .62) {
+    /* the fireball, as a handful of billowing lobes rather than one ball: it climbs,
+       spreads and goes from white through orange to the soot the column is made of */
+    /* two lobes on a phone rather than four: these are large alpha quads over each
+       other and the budget here is fill rate rather than draw calls */
+    var bk = k / .62, br = r * (.24 + bk * .40), hot = 1 - bk, nl = MOB ? 2 : 4;
+    for (i = 0; i < nl; i++) {
+      var ba = (f.sd || 0) + i * 1.61, bo = r * (.10 + bk * .42) * (i ? 1 : 0);
+      partBill(f.x + Math.cos(ba) * bo, f.y + Math.sin(ba) * bo,
+               z + r * (.12 + bk * .48) + i * r * .07, br * (1 - i * .13), br * (1 - i * .15),
+               ba, lerp(1, .58, bk * bk), lerp(.82, .20, bk) * (1 - i * .08), lerp(.44, .05, bk),
+               hot * hot * .8, 1, ba);
+    }
+  }
+  if (k < .34) {
+    /* the flash on the ground under it, which is how a burst behind a wall still tells
+       the player where it was */
+    var gk = k / .34, gr = r * (.42 + gk * .55);
+    partFlat(f.x, f.y, groundZ(f.x, f.y) + 1.5, gr, gr, 0, 1, .68, .28, (1 - gk) * (1 - gk) * .26, 0, 0, 1);
+  }
+}
+/* Anything thrown: a clod out of a crater, a spark off a plate. It is integrated under
+   gravity in `updateShots`, and what is drawn is the ground it covered since the last
+   frame -- a streak rather than a dot, because at four hundred units a second a dot is a
+   row of unrelated specks. */
+function drawBallistic(f, k) {
+  var tx = f.x - (f.vx || 0) * .035, ty = f.y - (f.vy || 0) * .035, tz = f.z - (f.vz || 0) * .035;
+  if (f.kind === 'spark') partStreak(tx, ty, tz, f.x, f.y, f.z, 1.5, 1, .84, .48, (1 - k) * .95, 1);
+  else {
+    var c = FXCOL[f.c || 0], r = f.r || 3;
+    partStreak(tx, ty, tz, f.x, f.y, f.z, r * .8, c[0], c[1], c[2], (1 - k * k) * .8, 0);
+    partBill(f.x, f.y, f.z, r, r, f.a, c[0], c[1], c[2], (1 - k * k) * .75, 1, f.sd || 0);
+  }
+}
+/* A muzzle flash is a cone of burning propellant coming out of a bore, and what the game
+   had was a round disc at the barrel tip: the same picture for a Lee-Enfield and for a
+   210mm howitzer, with nothing in it to say which way the gun was even pointing. It is
+   laid along the bore now -- bright at the muzzle and tapering out to the length the
+   charge earns -- with a star at the muzzle itself, and a muzzle brake throws two lobes
+   out sideways, which is the single most recognisable thing about a braked gun. */
+function muzzleDraw(f, k, z) {
+  var r = f.r || 8, a = (1 - k) * (1 - k), ca = Math.cos(f.a || 0), sa = Math.sin(f.a || 0);
+  var len = r * (f.ln || 2.2) * (.55 + k * .9), col = f.col || FLASHC.us;
+  partStreak(f.x + ca * len, f.y + sa * len, z + (f.el || 0) * len, f.x, f.y, z,
+             r * .55, col[0], col[1], col[2], a * .95, 1);
+  partBill(f.x, f.y, z, r * (1.05 - k * .35), r * (1.05 - k * .35), f.sd || 0,
+           col[0], col[1], col[2], a * .85, 2, f.sd || 0, 1);
+  partBill(f.x, f.y, z, r * .4, r * .4, 0, 1, .99, .92, a, 0, 0, 1);
+  if (f.br) {
+    /* the two lobes out of a brake's side ports, thrown square to the bore */
+    var px = -sa, py = ca, bl = len * .5;
+    for (var q = -1; q <= 1; q += 2)
+      partStreak(f.x + px * q * bl, f.y + py * q * bl, z, f.x + ca * r * .4, f.y + sa * r * .4, z,
+                 r * .34, col[0], col[1], col[2], a * .7, 1);
+  }
+}
+/* Where a round is right now, and how high. A flat round bows a little over its flight;
+   a bomb goes up and comes down, and the height it reaches is what carries it over the
+   roof it was fired from behind. */
+function shotPoint(s, k) {
+  var x = lerp(s.sx, s.tx, k), y = lerp(s.sy, s.ty, k);
+  return { x: x, y: y, z: groundZ(x, y) + (s.z0 === undefined ? 12 : s.z0) +
+              Math.sin(clamp(k, 0, 1) * Math.PI) * (s.arc || 0) };
+}
+function drawShot(s) {
+  var k1 = clamp(s.t / s.dur, 0, 1), k0 = Math.max(0, k1 - (s.tail || .22));
+  var h = shotPoint(s, k1), t = shotPoint(s, k0), c = s.col || TRACER.us;
+  if (s.t < 0) return;                        /* a volley is a ripple, not a salvo */
+  if (s.kind === 'tracer') {
+    if (!s.tr) return;                        /* one round in a belt burns, not all of them */
+    /* the tail carries the side's colour and the head is the element burning, which is
+       nearly white on both. A red trace drawn flat over pale dry ground disappears into
+       a red channel that is already at the top of its range: measured on this map the
+       Canadian tracer put a sixth of the pixels on the screen that the German one did,
+       for the same number of rounds. */
+    partStreak(t.x, t.y, t.z, h.x, h.y, h.z, 1.2, c[0], c[1], c[2], .95, 1);
+    partBill(h.x, h.y, h.z, 2.0, 2.0, 0, 1, c[1] * .35 + .65, c[2] * .35 + .6, .9, 0, 0, 1);
+  } else if (s.ind) {
+    /* a bomb has no tracer in it; what is visible is the body against the sky */
+    partBill(h.x, h.y, h.z, 2.4, 3.4, 0, .16, .15, .14, .8, 0, 0, 0);
+  } else {
+    partStreak(t.x, t.y, t.z, h.x, h.y, h.z, 1.9, c[0], c[1], c[2], .88, 1);
+    partBill(h.x, h.y, h.z, 2.6, 2.6, 0, 1, .84, .55, .85, 0, 0, 1);
+  }
+}
+
 
 /* ---- the 2D overlay: everything that is text, a bar, a line or a selection ---- */
 function drawSectorFlag(s) {
@@ -22688,6 +23153,7 @@ function render() {
      and not in the editor, which draws its own cursor on the overlay */
   if (!POV.on && !ED.on) { buildMarks(v); drawMarks3D(); }
   drawParticles3D();
+  drawParts();
 
   /* ---- the overlay ---- */
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -22724,35 +23190,6 @@ function render() {
     ctx.strokeRect(cp.x - cr, cp.y - cr, cr * 2, cr * 2);
     ctx.setLineDash([]); ctx.globalAlpha = 1;
   });
-  /* tracers and shells */
-  ctx.globalCompositeOperation = 'lighter';
-  G.shots.forEach(function (s2) {
-    if (s2.kind === 'tracer') {
-      var a = 1 - s2.t / s2.dur, k0 = clamp(s2.t / s2.dur, 0, 1) * .82, k1 = clamp(s2.t / s2.dur + .3, 0, 1);
-      var p0 = w2s(lerp(s2.x, s2.tx, k0), lerp(s2.y, s2.ty, k0), groundZ(lerp(s2.x, s2.tx, k0), lerp(s2.y, s2.ty, k0)) + 10);
-      var p1 = w2s(lerp(s2.x, s2.tx, k1), lerp(s2.y, s2.ty, k1), groundZ(lerp(s2.x, s2.tx, k1), lerp(s2.y, s2.ty, k1)) + 10);
-      if (p0.behind || p1.behind) return;
-      ctx.strokeStyle = 'rgba(255,214,128,' + (a * .3).toFixed(2) + ')'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-      ctx.strokeStyle = 'rgba(255,248,214,' + (a * .95).toFixed(2) + ')'; ctx.lineWidth = 1.3;
-      ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(p1.x, p1.y); ctx.stroke();
-    } else {
-      var f2 = clamp(s2.t / s2.dur, 0, 1), arc = Math.sin(f2 * Math.PI) * (s2.arc || 16);
-      var here = w2s(s2.x, s2.y, groundZ(s2.x, s2.y) + 13 + arc);
-      if (here.behind) return;
-      ctx.fillStyle = '#fff3cd'; ctx.beginPath(); ctx.arc(here.x, here.y, 2.6, 0, TAU); ctx.fill();
-    }
-  });
-  G.fx.forEach(function (f) {
-    if (f.kind !== 'spark' && f.kind !== 'hit') return;
-    var k = f.t / f.dur, p = w2s(f.x, f.y, groundZ(f.x, f.y) + 8);
-    if (p.behind) return;
-    ctx.globalAlpha = 1 - k;
-    ctx.fillStyle = f.kind === 'spark' ? '#ffe3a0' : '#8a7a58';
-    ctx.beginPath(); ctx.arc(p.x, p.y, (f.kind === 'spark' ? 3.4 : 2.6) * (1 - k) + .8, 0, TAU); ctx.fill();
-    ctx.globalAlpha = 1;
-  });
-  ctx.globalCompositeOperation = 'source-over';
   /* unit and building labels */
   list.forEach(function (u) { drawUnitOverlay(u, w2s(u.x, u.y)); });
   G.blds.forEach(function (b) { if (b.side === G.side || visibleTo(G.side, b)) drawBuildingOverlay(b); });

@@ -151,11 +151,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    in seven-unit courses round a list of openings, a shell adds an opening to that list
    and the wall is rebuilt round it, the masonry that came out is a rigid body under
    gravity until it lands on the heap it is building, and the grids, the cover and the
-   garrison all follow the storey down. Raise it deliberately, with a reason, or not at
-   all. */
+   garrison all follow the storey down. It is 1595 for the effects: every particle in the
+   game was one draw call of one soft disc, so a rifle flash and a 210mm burst were the
+   same picture at two sizes; they go out as one packed buffer and one draw a blend pass
+   now, with five shapes, a muzzle blast read off the weapon, tracers that live in the
+   world instead of on the canvas stacked over it, and a burst staged into a flash, a
+   fireball, thrown dirt, a shock ring and a column. Raise it deliberately, with a
+   reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1560) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1560 kB so it stays quick to load on a phone`);
+if (kb > 1595) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1595 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

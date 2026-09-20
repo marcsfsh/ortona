@@ -1550,6 +1550,167 @@ for (const device of TARGETS) {
              `${wreck.down.vol} of ${wreck.vol} units of stone kept, heap ${wreck.down.mound} deep`
            : '');
 
+  /* --- Effects. Every particle the game makes used to be one draw call of one soft
+     disc, so a Lee-Enfield and a 210mm shell were the same picture at two sizes, and a
+     tracer lived on the 2D overlay -- a separate canvas stacked over the world, where
+     nothing can be behind anything. Both faults render as something plausible, which is
+     why they lasted: a flash is a flash and a bright line is a bright line. So the rows
+     read the FRAMEBUFFER rather than looking at it, twice, once with the effect and once
+     without, and ask what it actually put on the screen. --- */
+  const fx = await (async () => {
+    /* on Ortona, which the destruction rows above have already loaded: the occlusion
+       drill wants a terrace to hide a round behind and the Gothic Line is a valley
+       floor with two farms on it */
+    const r = await page.evaluate(() => {
+      const gl = window.gl;
+      const W = () => gl.drawingBufferWidth, H = () => gl.drawingBufferHeight;
+      function grab() {
+        const px = new Uint8Array(W() * H() * 4);
+        window.render();
+        gl.readPixels(0, 0, W(), H(), gl.RGBA, gl.UNSIGNED_BYTE, px);
+        return px;
+      }
+      function lift(a, b) {
+        let hit = 0;
+        for (let i = 0; i < a.length; i += 4) {
+          const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+          if (d > 6) hit++;
+        }
+        return hit;
+      }
+      function step(sec) {
+        const rr = window.render, ra = window.requestAnimationFrame;
+        window.render = function () {}; window.requestAnimationFrame = function () { return 0; };
+        let t = performance.now(); window.last = t;
+        for (let i = 0; i < Math.round(sec / .02); i++) { t += 20; window.frame(t); }
+        window.render = rr; window.requestAnimationFrame = ra;
+        window.last = performance.now();
+      }
+      const G = window.G;
+      G.ambientSmoke.length = 0;
+      const keep = G.units.slice();
+      /* level, inland, clear: the coastal bench is flat and looks down a sea cliff */
+      let F = null, bs = -1;
+      for (let x = 500; x < window.WORLD.w - 500; x += 60) for (let y = 400; y < window.WORLD.h - 400; y += 60) {
+        const z = window.groundZ(x, y);
+        if (z < 6) continue;
+        let worst = 0;
+        for (let a = 0; a < 8; a++) worst = Math.max(worst, Math.abs(
+          window.groundZ(x + Math.cos(a) * 240, y + Math.sin(a) * 240) - z));
+        if (worst > 10) continue;
+        let near = 1e9;
+        for (const b of G.blds) near = Math.min(near, Math.hypot(b.x - x, b.y - y));
+        for (const q of G.props) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+        if (near < 150) continue;
+        const sc = Math.min(near, 600) - worst * 20;
+        if (sc > bs) { bs = sc; F = { x, y }; }
+      }
+      F = F || { x: window.WORLD.w / 2, y: window.WORLD.h / 2 };
+
+      /* MUZZLE: every weapon fired once from the same spot with the same camera on it */
+      G.units.length = 0; G.fx.length = 0; G.shots.length = 0;
+      window.__o.reveal();
+      window.__o.camera({ x: F.x - 40, y: F.y, dist: 210, yaw: -1.1, pitch: .32 });
+      const blasts = [];
+      let blind = [];
+      for (const key of Object.keys(window.UNITS)) {
+        const def = window.UNITS[key];
+        if (!def.cat || !def.w || def.hq) continue;
+        G.units.length = 0; G.fx.length = 0; G.shots.length = 0; G.paused = false;
+        const u = window.spawnUnit(def.side, key, F.x - 60, F.y, 0);
+        if (!u) continue;
+        u.setup = 0; u.lay = 0; u.turret = 0; u.facing = 0; u.cd = 0; u.atcd = 0;
+        /* inside the weapon's own reach, measured from the FIRER rather than from the
+           stage point it stands sixty units short of: written the other way about, the
+           two 165-reach engineer sections were staged at 175 and fired nothing */
+        const e = window.spawnUnit(def.side === 'us' ? 'ger' : 'us',
+                                   def.side === 'us' ? 'ger_gren' : 'us_rifle',
+                                   u.x + Math.min(240, (def.w.range || 300) * .7), F.y, Math.PI);
+        G.paused = true;
+        const ref = grab();
+        G.paused = false;
+        if (def.barrageOnly || def.indirect) { window.orderBarrage(u, e.x, e.y); u.lay = 0; u.facing = 0; }
+        u.cd = 0; u.atcd = 0;
+        window.fireAt(u, e);
+        step(.04);
+        G.paused = true;
+        const px = lift(ref, grab());
+        /* a battery refused its mission by the safe radius is a rule working rather
+           than a gun with no flash, and the stage point is only clear of buildings by
+           150 where that radius is 600 */
+        if (def.barrageOnly && !u.barrage) continue;
+        if (px < 400) blind.push(key); else blasts.push({ key, px });
+      }
+      blasts.sort((a, b) => a.px - b.px);
+
+      /* TRACER: the same round laid across the same patch of screen, once on the far
+         side of a house and once on the near side. On the overlay both read the same. */
+      G.units.length = 0; G.fx.length = 0; G.shots.length = 0; G.paused = true;
+      const house = G.props.filter(q => q.kind === 'ruin' && q.w > 110 && q.h > 60)
+                           .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      let front = 0, behind = 0;
+      if (house) {
+        window.__o.camera({ x: house.x, y: house.y, dist: 300, yaw: Math.PI, pitch: .45 });
+        const ref = grab();
+        const lay = dx => {
+          G.shots.length = 0;
+          for (let i = 0; i < 7; i++)
+            G.shots.push({ kind: 'tracer', x: house.x + dx, y: house.y - 130,
+                           sx: house.x + dx, sy: house.y - 130,
+                           tx: house.x + dx, ty: house.y + 130,
+                           t: .08 + i * .002, dur: .16, tail: .5, z0: 30, tr: 1,
+                           col: window.TRACER.us, side: 'us' });
+        };
+        lay(house.w / 2 + 40); behind = lift(ref, grab());
+        lay(-(house.w / 2 + 40)); front = lift(ref, grab());
+        G.shots.length = 0;
+      }
+
+      /* BURST: the heaviest shell in the game, read at four ages. What was wrong with
+         the old one was its shape in TIME -- a flash and then nothing. */
+      const ages = [];
+      window.__o.camera({ x: F.x, y: F.y, dist: 560, yaw: -1.1, pitch: .62 });
+      G.fx.length = 0; G.paused = true;
+      const bref = grab();
+      let draws = 0, quads = 0, top = 0;
+      for (const age of [.02, .30, .80, 1.60]) {
+        G.fx.length = 0; G.paused = false;
+        window.explode(F.x, F.y, 130, 40, null, null, 6);
+        step(age);
+        G.paused = true;
+        ages.push({ age, px: lift(bref, grab()), n: G.fx.length });
+        draws = window.FXN.draws; quads = window.FXN.quads;
+        for (const f of G.fx) if (f.z !== undefined) top = Math.max(top, f.z - window.groundZ(F.x, F.y));
+      }
+      G.fx.length = 0; G.shots.length = 0;
+      G.units.length = 0; keep.forEach(u => G.units.push(u));
+      G.paused = false;
+      return { blasts, blind, front, behind, ages, draws, quads, top: Math.round(top),
+               cols: { us: window.TRACER.us.join(','), ger: window.TRACER.ger.join(',') },
+               house: house ? Math.round(house.w) + 'x' + Math.round(house.h) : 'none' };
+    });
+    return r;
+  })();
+  const spread = fx.blasts.length ? fx.blasts[fx.blasts.length - 1].px / Math.max(1, fx.blasts[0].px) : 0;
+  ok('every gun on the roster has its own blast, and a tracer is in the world rather than over it',
+     fx.blasts.length >= 20 && fx.blind.length === 0 && spread > 8 &&
+     fx.front > 2000 && fx.behind < Math.max(200, fx.front * 0.1) &&
+     fx.cols.us !== fx.cols.ger,
+     `${fx.blasts.length} weapons fired, ${fx.blind.length} of them putting nothing on the screen` +
+     `${fx.blind.length ? ' (' + fx.blind.join(' ') + ')' : ''}; ` +
+     `the biggest blast lights ${Math.round(spread)}x the pixels of the smallest ` +
+     `(${fx.blasts[0].key} ${fx.blasts[0].px} to ${fx.blasts[fx.blasts.length - 1].key} ` +
+     `${fx.blasts[fx.blasts.length - 1].px}); a round laid across a ${fx.house} house lights ` +
+     `${fx.front} px in front of it and ${fx.behind} behind it; tracer runs ${fx.cols.us} for one ` +
+     `side and ${fx.cols.ger} for the other`);
+  ok('a shell landing is an event with a shape in time, not a flash and then nothing',
+     /* the column is shorter on a phone, which spawns four puffs of it rather than
+        eleven, so the floor is what a phone has to clear */
+     fx.ages.every(a => a.px > 1500) && fx.ages[3].px > 1500 && fx.top > 90 && fx.draws <= 2,
+     fx.ages.map(a => `${a.age.toFixed(2)}s ${a.px}px/${a.n}fx`).join('  ') +
+     `; the column reaches ${fx.top} units and the whole of it goes out in ${fx.draws} draw call(s) ` +
+     `of ${fx.quads} quads`);
+
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
      can garrison is a wall, a garrison with no arc is a house with a grey roof, cover laid
