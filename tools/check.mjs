@@ -1841,6 +1841,67 @@ for (const device of TARGETS) {
              `and a round on a headquarters ${hole.onBld ? '! DUG' : 'was refused'} and one under the ` +
              `floor ${hole.small ? '! DUG' : 'was refused'}`);
 
+  /* --- Repair, and what a builder is allowed to stand near. There are three kinds of job
+     an engineer can be put on -- a building going up, a pegged-out field work, and a thing
+     that is merely damaged -- and the test that told them apart was `job.def`. A UNIT has a
+     def too. Its def has no `h` and keeps its WEAPON in `w`, so a vehicle handed to the
+     building's arithmetic produced `Math.max(<the weapon object>, undefined) / 2 + 62`,
+     which is NaN; `dist(u, r) < NaN` is false for ever, and the destination one line over
+     came out with a NaN in its y. An engineer ordered to repair a tank pathed to nowhere,
+     wandered off across the map and never turned a spanner. The order, the cursor and the
+     right-click were all written and none of it had ever worked once.
+       So the row repairs one of each and asks for a number back: every kind of job has a
+     reach that is a number, a damaged vehicle comes up, a damaged building comes up, and
+     the engineer is still standing beside the thing at the end rather than half a map
+     away. --- */
+  const fix = await page.evaluate(() => {
+    const step = s => { const n = Math.round(s / 0.05); for (let i = 0; i < n; i++) { G.t += 0.05; G.units.forEach(u => updateUnit(u, 0.05)); } };
+    const keep = G.units.slice();
+    G.units.length = 0;
+    const out = { reach: {} };
+    const tank = spawnUnit(G.side, G.side === 'us' ? 'us_sher' : 'ger_p4', 1060, 900, 0);
+    const team = spawnUnit(G.side, G.side === 'us' ? 'us_mg' : 'ger_mg42', 1300, 900, 0);
+    const bld = G.blds.filter(b => b.own === G.own)[0];
+    /* a reach that is not a number is the whole bug, so it is asked for by name */
+    [['veh', tank], ['team', team], ['bld', bld], ['site', { time: 12 }]].forEach(([k, j]) => {
+      const r = j ? workReach(j) : null;
+      out.reach[k] = (typeof r === 'number' && isFinite(r)) ? Math.round(r) : String(r);
+    });
+
+    /* a vehicle, ordered the way the right-click orders one */
+    tank.hp = tank.maxhp * 0.25;
+    const v0 = Math.round(tank.hp);
+    const eng = spawnUnit(G.own, G.side === 'us' ? 'us_eng' : 'ger_pio', 940, 900, 0);
+    resumeBuild(eng, tank);
+    out.ordered = eng.order;
+    step(30);
+    out.veh = { from: v0, to: Math.round(tank.hp), max: Math.round(tank.maxhp),
+                stood: Math.round(dist(eng, tank)), released: !eng.repairing };
+
+    /* and a building */
+    let b = null;
+    if (bld) {
+      bld.hp = bld.maxhp * 0.4;
+      const b0 = Math.round(bld.hp);
+      const e2 = spawnUnit(G.own, G.side === 'us' ? 'us_eng' : 'ger_pio', bld.x, bld.y + 70, 0);
+      resumeBuild(e2, bld);
+      step(12);
+      b = { from: b0, to: Math.round(bld.hp), max: Math.round(bld.maxhp) };
+    }
+    out.bld = b;
+    G.units.length = 0; keep.forEach(u => G.units.push(u));
+    return out;
+  });
+  ok('an engineer repairs a vehicle and a building, and knows how near to stand to each',
+     Object.keys(fix.reach).every(k => typeof fix.reach[k] === 'number') &&
+     fix.ordered === 'repair' &&
+     fix.veh.to >= fix.veh.max - 1 && fix.veh.stood < 120 && fix.veh.released &&
+     !!fix.bld && fix.bld.to > fix.bld.from,
+     `reach: ${Object.keys(fix.reach).map(k => k + ' ' + fix.reach[k]).join(', ')}; ` +
+     `a vehicle went ${fix.veh.from}/${fix.veh.max} to ${fix.veh.to} with the engineer ` +
+     `${fix.veh.stood} away at the end and the job ${fix.veh.released ? 'released' : '! STILL HELD'}; ` +
+     (fix.bld ? `a building went ${fix.bld.from}/${fix.bld.max} to ${fix.bld.to}` : 'no building to mend'));
+
   /* --- The voice of a gun. Every piece on this roster that fires a shell played one of
      two sounds -- `cannon` if it was on a vehicle or a crew and `rocket` otherwise -- so a
      mortar dropping a bomb over a roof, a Pak 40 and a two-hundred-and-ten-millimetre

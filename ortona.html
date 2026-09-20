@@ -7431,12 +7431,29 @@ function siteClear(x, y, w, h) {
    nothing puts anyone back on: the shell counts as a building the side already has, so
    the button that raised it greys out and the AI queues out of a barracks that will
    never open. Any builder can pick up any of his own side's unfinished work. */
+/* Where a builder stands to work on a thing. There are three kinds of job -- a building,
+   a pegged-out site and a unit -- and the test between them is NOT `job.def`, because a
+   unit has a def as well and its def has no `h` and keeps its WEAPON in `w`. Read the
+   building's way, a vehicle produced a destination with a NaN in its y, `findPath` was
+   handed nowhere, and the engineer wandered off across the map still holding the repair.
+   `job.cat` is the unit test and it goes first, here and in `workReach`. */
+function workSpot(job) {
+  if (job.cat) return nearestFree(job.x + rnd(-18, 18), job.y + unitRadius(job) + 16);
+  if (job.def) return nearestFree(job.x + rnd(-job.def.w * .3, job.def.w * .3), job.y + job.def.h / 2 + 34);
+  return nearestFree(job.x + rnd(-26, 26), job.y + rnd(-26, 26));
+}
+/* A thing that is FINISHED is repaired; a thing that is not is built. A unit is always
+   the first kind, and so is a building that is merely damaged -- put on `build` instead it
+   runs the construction tick, which divides by a build time its def does not have once it
+   is standing, writes NaN into `built`, and from there into the hit points and into the
+   geometry that is drawn from them. `issueOrder` has always made this distinction on the
+   right-click; `resumeBuild` did not, and it is the other door to the same job. */
 function resumeBuild(u, b) {
   clearOrder(u);
-  u.order = b.def ? 'build' : 'work';
-  u.building = b;
-  var sp = b.def ? nearestFree(b.x + rnd(-b.def.w * .3, b.def.w * .3), b.y + b.def.h / 2 + 34)
-                 : nearestFree(b.x + rnd(-26, 26), b.y + rnd(-26, 26));
+  var done = !!b.cat || (b.built !== undefined && b.built >= 1);
+  u.order = done ? 'repair' : b.def ? 'build' : 'work';
+  if (done) u.repairing = b; else u.building = b;
+  var sp = workSpot(b);
   u.dest = sp; u.path = findPath(u.x, u.y, sp.x, sp.y, u); u.pi = 0;
 }
 function siteOf(slot, key) {
@@ -7578,9 +7595,18 @@ function finishWork(s) {
   if (s.own === G.own) { toast(W.name + ' up'); sfx('click'); }
 }
 
-/* how close a builder has to stand to work on something */
+/* How close a builder has to stand to work on something.
+   **On a UNIT's def, `w` is the weapon; on a BUILDING's, `w` is the width.** The same key
+   carries two unrelated things, and this read the building's meaning off whatever it was
+   handed: for a vehicle it computed `Math.max(<the weapon object>, undefined) / 2 + 62`,
+   which is NaN, and `dist(u, r) < NaN` is false for ever. So an engineer ordered to repair
+   a tank pathed to it, arrived, stood on top of it and never started -- repair of a vehicle
+   was written, wired to the right-click, given an order and a cursor, and had never once
+   worked. A unit is asked for its own radius instead, and is tested first because it is the
+   case that has a `def` of the wrong kind. */
 function workReach(job) {
   if (!job) return 60;
+  if (job.cat) return unitRadius(job) + 34;
   if (job.def) return Math.max(job.def.w, job.def.h) / 2 + 62;
   if (job.time !== undefined) return 62;
   return 62;
@@ -7808,7 +7834,7 @@ function updateUnit(u, dt) {
     if (job) {
       var reach = workReach(job);
       if (dist(u, job) > reach - 8) {
-        var sp3 = nearestFree(job.x + rnd(-18, 18), job.y + (job.def ? job.def.h / 2 + 30 : 26));
+        var sp3 = workSpot(job);
         u.dest = sp3; u.path = findPath(u.x, u.y, sp3.x, sp3.y, u); u.pi = 0;
       }
     } else if (u.dest && dist(u, u.dest) > 60) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
