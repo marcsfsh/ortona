@@ -2736,10 +2736,11 @@ function buildMap(data) {
       case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
       case 'bunker':
         var bb2 = bunkerBox(e);
+        var bsd = bunkerSide(e);
         var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
-                    face: e.a || 0, arc: 1, s: e.s || 0, z: 0 };
+                    face: e.a || 0, arc: 1, s: e.s || 0, z: 0, sd: bsd };
         G.props.push(bk2); G.blocks.push(bk2);
-        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0 });
+        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd });
         /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
            in front of it. The ground in front of a bunker is the beaten zone, and a cover
            patch laid there would be the map telling a section that walking up to the slot
@@ -12234,6 +12235,10 @@ function registerMaterials() {
     tag([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
     tagEdges([BUNK.earth, BUNK.earthL, BUNK.earthD], 'earth');
     tag([BUNK.steel, BUNK.dark], 'steel'); tagEdges([BUNK.steel, BUNK.dark], 'steel');
+    tag([BUNK.canv, BUNK.canvL, BUNK.canvD], 'net');
+    tagEdges([BUNK.canv, BUNK.canvL, BUNK.canvD], 'net');
+    tag([BUNK.timb, BUNK.timbL, BUNK.timbD], 'wood');
+    tagEdges([BUNK.timb, BUNK.timbL, BUNK.timbD], 'wood');
   }
 }
 /* Every colour a figure wears and every lit() derivative of it a builder makes. A
@@ -13588,7 +13593,7 @@ function sceneProps(tile) {
       put(pitch(box(0, 0, 7, 22, 2.2, 2.2, '#4e402c', '#5f4e36'), -.2, 0, 0), st.x + 6, st.y - 4, st.s * TAU + 1.2);
       put(box(0, 0, .6, 16, 8, 1.2, '#5a4a32', '#6b5a3e'), st.x - 8, st.y + 6, st.s * 5);       /* a door */
     } else if (st.kind === 'bunker') {
-      put(bunkerModel(74, 46, st.s), st.x, st.y, st.a || 0);
+      put(bunkerModel(74, 46, st.s, st.sd), st.x, st.y, st.a || 0);
     } else if (st.kind === 'emplace') {
       /* a weapon pit: a horseshoe of sandbags two bags thick, six courses at the front
          falling to three at the open rear, each course laid header-and-stretcher round
@@ -22262,8 +22267,30 @@ function dragonTooth(h, sv) {
    nothing is lost by it. */
 var BUNK = { con: '#7a7a6e', conL: '#8a8a7e', conD: '#6a6a60', conW: '#74746a',
              earth: '#8a7f66', earthL: '#9b9179', earthD: '#6b6250',
-             steel: '#3f3b30', dark: '#26251f' };
-function bunkerModel(fw, dp, sv) {
+             steel: '#3f3b30', dark: '#26251f',
+             /* the Canadian emplacement: proofed canvas over a timber frame, and the
+                timber itself. A tarpaulin in this weather is dark and a little green. */
+             canv: '#5c6148', canvL: '#6b7155', canvD: '#474b38',
+             timb: '#6a5c42', timbL: '#7d6e50', timbD: '#4c412d' };
+/* Which army built a bunker. Both shipped maps put `us` at the west edge and `ger` at the
+   east, so the midline answers it for every bunker either of them has ever placed, and an
+   entity that says so outright (`sd`) is believed. It is derived rather than stored
+   because the maps were written before a bunker had a side at all, and a field nobody has
+   filled in is a field that would make every existing bunker German. */
+function bunkerSide(e) { return e.sd || (e.x < WORLD.w / 2 ? 'us' : 'ger'); }
+/* Two armies, two ways of holding ground, and until now one model served both. A German
+   bunker on this front is poured concrete with the earth banked back over it -- the
+   Atlantic Wall pattern that got built wherever the organisation that built it went. A
+   Canadian one is not a lesser version of that: it is a field emplacement, revetted earth
+   and sandbags on a timber frame with a tarpaulin over the back half, put up by the men
+   who are going to fight out of it in a day rather than poured by a labour organisation in
+   a month. They read as different things from any distance, which is the point.
+     Both keep the same footprint, the same fighting slot and the same `bunkerBox`, so the
+   game, the editor and `mapcheck` are untouched by the split. */
+function bunkerModel(fw, dp, sv, side) {
+  return side === 'us' ? bunkerSandbag(fw, dp, sv) : bunkerConcrete(fw, dp, sv);
+}
+function bunkerConcrete(fw, dp, sv) {
   var hy = fw / 2, hx = dp / 2, f = [], i, k, nrnd = 0;
   var C = BUNK.con, CL = BUNK.conL, CD = BUNK.conD;
   var E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
@@ -22337,6 +22364,116 @@ function bunkerModel(fw, dp, sv) {
     var cz = 2 + rnd(k * 41) * 9, cy2 = (rnd(k * 43) - .5) * (fw - 14);
     f = f.concat(box(hx - 2.5, cy2, cz, 4, 4 + rnd(k * 47) * 5, 3 + rnd(k * 53) * 4, CD, BUNK.dark, CD));
   }
+  return f;
+}
+
+/* The Canadian emplacement. Not concrete and not a smaller casemate: a section position
+   dug and revetted by the men in it, which is what the Canadians on this front actually
+   held ground out of. Sandbags on a timber frame round three sides, the spoil banked
+   outside them, a fire slot in the front wall under a timber lintel, and a tarpaulin on a
+   ridge pole over the rear half -- the part that keeps the rain off the men and the
+   ammunition, and the one thing about it a player will pick out at any distance.
+     Its front is +x, the same way the concrete one faces, because `outPoint` clamps a
+   garrison's fire into `bk.face` and that is measured off the prop and not off the model. */
+function bunkerSandbag(fw, dp, sv) {
+  var hy = fw / 2, hx = dp / 2, f = [], i, k, nrnd = 0;
+  var T = BUNK.timb, TL = BUNK.timbL, TD = BUNK.timbD;
+  var E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
+  var V = BUNK.canv, VL = BUNK.canvL, VD = BUNK.canvD;
+  function rnd(n) { var v = Math.sin(sv * 77.3 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  function rseq() { return rnd(++nrnd); }
+  /* A WALL is revetted earth with a coping of bags on top, and not bags all the way down.
+     The arithmetic is the heavy battery position's: a course of bags is laid at about
+     four units, so a wall twenty-six high all round this footprint is some nine hundred
+     bags and five thousand faces for one object -- and the first version of this was
+     exactly that, eight courses deep, eleven units tall, six thousand faces and still not
+     up to a man''s chest. Earth behind timber revetting carries the height for a handful
+     of faces, and the bags that show are the two courses along the top where a player can
+     see one. */
+  /* `inw` is the local-y side the revetting goes on, and it has to be told rather than
+     assumed: the timber faces the INSIDE of the position, which is a different side of the
+     wall depending on which wall it is. Written as one fixed offset, half the walls came
+     out revetted on the outward face and the thing read as a wooden stockade rather than
+     as an earthwork. The pickets stop below the coping for the same reason -- run up to
+     the top they are a paling fence. */
+  function wall(cx, cy, ang, len, h, inw) {
+    var o = [], n = Math.max(2, Math.round(len / 13)), seg = len / n;
+    o = o.concat(place(frustum([[-len / 2, -7], [len / 2, -7], [len / 2, 7], [-len / 2, 7]],
+                               [[-len / 2, -4.5], [len / 2, -4.5], [len / 2, 4.5], [-len / 2, 4.5]],
+                               -2, h - 3, E, EL, ED), ang, cx, cy, 0));
+    /* split timber against the inner face, held by pickets: what stops the earth */
+    for (var q = 0; q < n; q++) {
+      var d = -len / 2 + (q + .5) * seg;
+      o = o.concat(place(box(d, inw * 6.2, 0, seg * .92, 1.3, h - 4.5, T, TL, TD), ang, cx, cy, 0));
+      o = o.concat(place(box(d, inw * 6.7, 0, 2, 2, h - 3.6, TD, T, TD), ang, cx, cy, 0));
+    }
+    /* and the coping: two courses of real bags along the top, which is the only part of a
+       revetted wall anybody ever sees as bags */
+    o = o.concat(place(sandbagRun(-len / 2, 0, 0, len, 2, rseq), ang, cx, cy, h - 3));
+    return o;
+  }
+  /* the floor, trodden and darker than the ground outside it */
+  f = f.concat(box(0, 0, -2, dp, fw, 3, BUNK.dark, ED, BUNK.dark));
+  /* The front, in two halves with the fire slot between them, and a timber lintel over
+     the opening. The slot is the whole reason a thing with a face is taken from the flank. */
+  for (i = -1; i <= 1; i += 2) {
+    var fseg = (fw - 30) / 2;
+    f = f.concat(wall(hx - 6, i * (15 + fseg / 2), Math.PI / 2, fseg, 26, 1));
+  }
+  f = f.concat(box(hx - 6, 0, 17, 13, 30, 3, T, TL, TD));               /* the lintel */
+  f = f.concat(wall(hx - 6, 0, Math.PI / 2, 30, 11, 1));                /* the sill under the slot */
+  /* the flanks, and the back with the entrance left open at one corner */
+  for (i = -1; i <= 1; i += 2) f = f.concat(wall(-2, i * (hy - 6), 0, dp - 14, 26, -i));
+  f = f.concat(wall(-(hx - 6), -6, Math.PI / 2, fw - 24, 26, -1));
+  f = f.concat(wall(-(hx - 17), hy - 15, Math.PI / 2, 22, 24, -1));     /* the traverse */
+  /* The spoil banked outside, and it has to come most of the way UP the wall rather than
+     lying round its foot. A revetted wall seen from outside is a frustum, which is two
+     flat planes, and the concrete bunker's own notes say what two flat planes read as at
+     the distance a player looks from: a plywood ramp leaning on a shed. What makes it
+     earth is a run of mounds that overlap at the toe and stand apart at the crest, so the
+     crest wanders and the toe is ragged. Banked to a third of the height the wall above it
+     still read as rendered slab; it goes to three quarters. */
+  function bank(cx, cy, ang, len, n) {
+    var o = [], q;
+    for (q = 0; q < n; q++) {
+      var d = -len / 2 + (q + .5) * len / n;
+      var reach = 15 + rnd(q * 3 + cx * 7) * 11, hgt = 17 + rnd(q * 5 + cy * 3) * 6;
+      o = o.concat(place(frustum([[d - len / n * .78, 6], [d + len / n * .78, 6],
+                                  [d + len / n * .78, 6 + reach], [d - len / n * .78, 6 + reach]],
+                                 [[d - 3.5, 7], [d + 3.5, 7], [d + 3.5, 11], [d - 3.5, 11]],
+                                 -2, hgt, E, EL, ED), ang, cx, cy, 0));
+    }
+    return o;
+  }
+  for (i = -1; i <= 1; i += 2) f = f.concat(bank(-2, i * (hy - 6), i > 0 ? 0 : Math.PI, dp - 14, 6));
+  f = f.concat(bank(-(hx - 6), -6, -Math.PI / 2, fw - 24, 6));
+  for (i = -1; i <= 1; i += 2) {
+    var bseg = (fw - 30) / 2;
+    f = f.concat(bank(hx - 6, i * (15 + bseg / 2), Math.PI / 2, bseg, 3));
+  }
+  /* The timber frame over the rear half and the tarpaulin on it: a ridge pole on four
+     uprights with the canvas falling either side. It is the one thing about this a player
+     picks out at any distance, and it is what a section actually lives under. */
+  var rx = -(hx - 8), rl = dp * .46;
+  for (i = -1; i <= 1; i += 2) {
+    f = f.concat(box(rx + rl / 2 - 2, i * (hy - 9), 0, 3.4, 3.4, 33, T, TL, TD));
+    f = f.concat(box(rx - rl / 2 + 2, i * (hy - 9), 0, 3.4, 3.4, 33, T, TL, TD));
+  }
+  f = f.concat(box(rx, 0, 33, rl, 3, 3, T, TL, TD));
+  for (i = -1; i <= 1; i += 2)
+    f = f.concat(place(pitch(box(0, 0, 0, rl, hy - 6, 1.2, V, VL, VD), i * .44, 0, 0),
+                       0, rx, i * (hy / 2 - 3), 29.5));
+  /* what a section keeps in one, out of the wet under the canvas */
+  for (k = 0; k < 4; k++)
+    f = f.concat(place(box(0, 0, 0, 9, 5.5, 4.5, '#4d5340', '#5d6450', '#41473a'),
+                       rnd(k * 11) * .7, rx + (rnd(k * 13) - .5) * rl * .6,
+                       (rnd(k * 17) - .5) * (fw - 30), k % 2 ? 4.5 : 0));
+  f = f.concat(place(box(0, 0, 0, 6, 6, 9, BUNK.steel, BUNK.steel, BUNK.dark), .4, rx - 4, -hy + 14, 0));
+  /* and the bags the shelling has burst on the parapet, which is what says it is held */
+  for (k = 0; k < 5; k++)
+    f = f.concat(place(box(0, 0, 0, 5 + rnd(k * 23) * 3, 4, 1.6, ED, E, BUNK.dark),
+                       rnd(k * 29) * 3.1, hx - 4 + rnd(k * 31) * 4,
+                       (rnd(k * 37) - .5) * (fw - 14), 23 + rnd(k * 41) * 3));
   return f;
 }
 
