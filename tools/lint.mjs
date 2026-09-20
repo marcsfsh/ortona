@@ -147,11 +147,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    and a set of graphs drawn on a canvas. It is 1520 for a second map: the Gothic Line is
    a landform, a bunker, two kinds of anti-tank obstacle and some six hundred entities
    laid by hand, and a game that ships one map and cannot ship two is a game with a map
-   editor nobody has a reason to open. Raise it deliberately, with a reason, or not at
+   editor nobody has a reason to open. It is 1560 for destruction: a house is four walls
+   in seven-unit courses round a list of openings, a shell adds an opening to that list
+   and the wall is rebuilt round it, the masonry that came out is a rigid body under
+   gravity until it lands on the heap it is building, and the grids, the cover and the
+   garrison all follow the storey down. Raise it deliberately, with a reason, or not at
    all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1520) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1520 kB so it stays quick to load on a phone`);
+if (kb > 1560) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1560 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

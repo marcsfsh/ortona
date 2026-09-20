@@ -1566,7 +1566,7 @@ var G = {
   inc: { us: { mp: 0, fu: 0 }, us2: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 } },
   pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
   made: { us: {}, us2: {}, ger: {}, ger2: {} },
-  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [],
+  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
   sites: [], works: [], props: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
@@ -2635,6 +2635,13 @@ function buildMap(data) {
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
   wallq = null;                                    /* the standing index is rebuilt with them */
+  ruinq = null;                                    /* and the index of what can be knocked down */
+  /* Every prop in G.hurt is one of the objects just thrown away, so what is left of a
+     shelled house is thrown away with it -- otherwise the editor rebuilds its scene and
+     the last battle's rubble is still drawn over the top of it from a buffer pointing at
+     props that no longer exist. */
+  G.hurt.length = 0; G.rub.length = 0; G.rubDirty = 1; MND = null;
+  G.tileQ = {};
   G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
@@ -3431,6 +3438,9 @@ var wireg = new Uint8Array(GW * GH), steep = new Uint8Array(GW * GH), wallg = ne
 /* anti-tank obstacles: hedgehogs and dragon's teeth. The mirror image of wire, which
    holds a man up and lets a tank drive over it. */
 var hogg = new Uint8Array(GW * GH);
+/* and what a house that has been knocked down leaves behind, which is neither a
+   building nor open ground */
+var rubg = new Uint8Array(GW * GH);
 function markRect(arr, x, y, w, h, pad) {
   var x0 = Math.floor((x - w / 2 - pad) / CELL), x1 = Math.floor((x + w / 2 + pad) / CELL);
   var y0 = Math.floor((y - h / 2 - pad) / CELL), y1 = Math.floor((y + h / 2 + pad) / CELL);
@@ -3495,7 +3505,22 @@ function rebuildGrid() {
   gridStamp++;
   if (!terrOk) buildTerrGrid();
   grid.set(terrg);
-  G.props.forEach(function (p) { if (p.solid) blockRect(p.x, p.y, p.w, p.h, 6); });
+  rubg.fill(0);
+  G.props.forEach(function (p) {
+    if (!p.solid) return;
+    /* A house that has been knocked down is not a house. Blocking the footprint of
+       something that is not standing there any more is the field walls' fault the other
+       way about, and it is the one thing that would make bringing a building down change
+       nothing whatever about the fight in the street it stood in: the lane would still
+       be shut, the eye would still be stopped, and the picture would be the only thing
+       that had moved. So the four walls of a bay block while the bay is up, and once it
+       is down what is left is its own masonry -- dear to cross and no use at all for
+       hiding behind, which is `rubg`. */
+    if (p.hurt) { ruinBlocks(p, function (x, y, w, h, up) {
+      if (up) blockRect(x, y, w, h, 6); else markRect(rubg, x, y, w, h, 0);
+    }); return; }
+    blockRect(p.x, p.y, p.w, p.h, 6);
+  });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
   /* Hulls that burned where they stopped. Marked a little inside their own length, so
      that the cover a section takes behind one is still ground it can stand on, and they
@@ -3506,6 +3531,12 @@ function rebuildGrid() {
   sblk.fill(0); fblk.fill(0);
   G.props.forEach(function (p) {
     if (!p.solid || p.kind === 'sea') return;
+    if (p.hurt) { ruinBlocks(p, function (x, y, w, h, up) {
+      /* a stump a man sees and shoots over, which is the same rule a field wall under
+         sixteen units already gets */
+      if (!up) return;
+      markRect(sblk, x, y, w, h, 0); markRect(fblk, x, y, w, h, 0);
+    }); return; }
     markRect(sblk, p.x, p.y, p.w, p.h, 0); markRect(fblk, p.x, p.y, p.w, p.h, 0);
   });
   G.blds.forEach(function (b) {
@@ -3521,11 +3552,14 @@ function rebuildGrid() {
   G.walls.forEach(function (w) {
     /* Only a wall taller than a man stops his eye and his round. A waist-high field
        boundary is cover he fires OVER, so it is on the going grid and the cover index
-       and on neither of the two that block. */
-    if ((w.h || 24) >= 16) {
-      markSeg(sblk, w.x1, w.y1, w.x2, w.y2, 7); markSeg(fblk, w.x1, w.y1, w.x2, w.y2, 7);
-    }
-    markSeg(wallg, w.x1, w.y1, w.x2, w.y2, 4);
+       and on neither of the two that block. And what a shell has knocked out of it is
+       marked on none of them: a gap in a wall is a way through, which is the whole
+       reason for blowing one. */
+    var tall = (w.h || 24) >= 16;
+    wallSpans(w, function (x1, y1, x2, y2) {
+      if (tall) { markSeg(sblk, x1, y1, x2, y2, 7); markSeg(fblk, x1, y1, x2, y2, 7); }
+      markSeg(wallg, x1, y1, x2, y2, 4);
+    });
   });
   /* a hedge hides a section and does not save it */
   G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 9); });
@@ -3696,6 +3730,11 @@ function onWall(x, y) {
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
   return wallg[cidx(cx, cy)] === 1;
 }
+function onRubble(x, y) {
+  var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+  if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
+  return rubg[cidx(cx, cy)] === 1;
+}
 function onRoad(x, y) {
   var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
   if (cx < 0 || cy < 0 || cx >= GW || cy >= GH) return false;
@@ -3839,11 +3878,14 @@ function cellCost(ci, kind, dang, fear) {
      half-track trying to. Two cells is a section's width. */
   var r = roomg[ci], tight = r < 2.6 ? (2.6 - r) * (kind === 0 ? .3 : 1.1) : 0;
   var c;
-  if (kind === 0) c = (wireg[ci] ? 2.6 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
+  if (kind === 0) c = (wireg[ci] ? 2.6 : rubg[ci] ? 2.3 : wallg[ci] ? 1.9 : steep[ci] ? 1.25 : 1) + tight;
   else {
     c = road[ci] ? 1 : (kind === 2 ? 1.5 : 1.35);
     if (steep[ci]) c *= kind === 2 ? 1.7 : 1.3;
     if (wallg[ci] && kind === 2) c *= 2.6;             /* a lorry goes round; tracks do not */
+    /* A collapsed house is a couple of metres of broken masonry. Men climb it, tracks
+       push over it slowly and a lorry has no business on it at all. */
+    if (rubg[ci]) c *= kind === 2 ? 5 : 2.4;
     if (hogg[ci]) c *= 12;                             /* and neither goes through a hedgehog */
     c += tight;
   }
@@ -4301,7 +4343,12 @@ function blockAt(x, y) {
 }
 function canGarrison(u, bk) {
   return u && bk && (u.cat === 'inf' || u.cat === 'team') && u.def.speed > 0 && !u.gar && !u.retreat &&
-         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60));
+         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60)) &&
+         /* and it has to still be a building. A house shelled flat is a heap of its own
+            masonry: there are no windows to fight out of and no storey to stand on, and
+            a section sent into one would be standing in the open believing it held the
+            strongest cover on the map. */
+         (!bk.hurt || ruinStanding(bk) >= 34);
 }
 /* where the men stand: spread along the inside of the four walls, facing out */
 function garrisonSlots(bk, count) {
@@ -4641,9 +4688,11 @@ function moveUnit(u, dt) {
       /* and a hull that has taken the belt anyway, because it was the only way through,
          is over it at a crawl rather than through it at a drive */
       if (inHogs(u.x, u.y)) sp *= .35;
+      if (onRubble(u.x, u.y)) sp *= .45;
     }
     else if (inWire(u.x, u.y)) sp *= .40;                /* caught in the apron */
     else if (onWall(u.x, u.y)) sp *= .55;               /* over the field wall, one at a time */
+    else if (onRubble(u.x, u.y)) sp *= .50;             /* over what is left of the house */
   }
   if (d < (u.pi === u.path.length - 1 ? 14 : CELL * .8)) {
     u.pi++;
@@ -4910,6 +4959,7 @@ function buildWallQ() {
     var n = Math.max(2, Math.round(len / 34)), sl = len / n;
     for (var k = 0; k < n; k++) {
       var t = (k + .5) / n, cx = w.x1 + (w.x2 - w.x1) * t, cy = w.y1 + (w.y2 - w.y1) * t;
+      if (wallGap(w, t * len)) continue;              /* nothing to stand in any more */
       var seg = [cx, cy, sl + 1, a], rr = sl * .5 + 8;
       var i0 = Math.max(0, ((cx - rr) / WQ) | 0), i1 = Math.min(wallqW - 1, ((cx + rr) / WQ) | 0);
       var j0 = Math.max(0, ((cy - rr) / WQ) | 0), j1 = Math.min(wallqH - 1, ((cy + rr) / WQ) | 0);
@@ -5907,7 +5957,13 @@ function fireAt(u, t, dt) {
                    dur: ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
                    arc: ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
                    w: w, hit: hits > 0,
-                   side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t });
+                   side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t,
+                   /* how high up it goes off, which is the whole of where a hole in a
+                      wall ends up. A flat round arrives at about the height it left the
+                      barrel at, so a tank on a rise puts one through an upper storey and
+                      a gun in the street puts one through the ground floor; a bomb comes
+                      down and bursts at the foot of what it hits. */
+                   bz: ind ? 0 : clamp(groundZ(u.x, u.y) + (u.cat === 'veh' ? 26 : 15) - groundZ(at.x, at.y), 0, 70) });
     sfx(u.cat === 'veh' || u.cat === 'team' ? 'cannon' : 'rocket', u.x, u.y);
   } else {
     for (var q = 0; q < Math.min(shots, 6); q++)
@@ -5919,7 +5975,521 @@ function fireAt(u, t, dt) {
     if (hits) spawnFx('hit', at.x + rnd(-14, 14), at.y + rnd(-14, 14));
   }
 }
-function explode(x, y, radius, dmg, owner, except) {
+/* ---- masonry, and what is left of it -------------------------------------------
+   A town house here is a set of BAYS and each bay is four walls built up in seven-unit
+   courses round a list of openings -- the windows, the door, the shell holes the map was
+   born with. `wallCourses` already cuts those holes out of the courses, which means the
+   openings are DATA rather than geometry, and that is the whole reason a building here
+   can be knocked down at all: a shell adds a hole to the list and the wall is rebuilt
+   round it. Nothing had to be modelled twice.
+
+   A bay's four walls run, in order, along +y, -y, +x and -x of the bay's own frame; the
+   builder places each of them with a yaw, so a hit has to be turned into the wall's own
+   `u` along its length and a normal distance out of its plane. The chord the shell cuts
+   through the plane is `sqrt(r^2 - nd^2)`, which is the hole's half-width, and that is
+   why a round that grazes a wall takes a bite out of it and one that hits it square
+   takes a hole the width of the burst. */
+var RUIN_T = 4.5, RUIN_CH = 7.0;                   /* the wall thickness and the course */
+function ruinBays(p) { return Math.max(1, Math.round(p.w / 70)); }
+/* The bays, worked out once and kept on the prop. It is the same arithmetic sceneProps
+   does when it meshes one, and it is here rather than there because the mesher runs on a
+   tile rebuild and this has to survive one. */
+function ruinState(p) {
+  if (p.bay) return p.bay;
+  var n = ruinBays(p), bw = p.w / n, i, b = [];
+  for (i = 0; i < n; i++) {
+    b.push({ x: p.x - p.w / 2 + bw * (i + .5), y: p.y, w: bw - 2, d: p.h - 2,
+             h: (p.tall || p.style === 'civic' ? 84 : 66) + ((i % 3) - 1) * 6,
+             seed: (p.s * 3 + i * .41) % 1, dmg: ((p.damage * 9.7 + i * .317) % 1) > .45,
+             brk: [[], [], [], []],               /* the breaches cut in each wall */
+             gone: [0, 0, 0, 0],                  /* the share of each wall that is out */
+             down: 0, fell: 0 });                 /* storeys lost, and when the last went */
+  }
+  p.bay = b;
+  return b;
+}
+/* Where a bay's four walls stand in its own frame: how far off the plane a point is,
+   which way `u` runs along the wall, and how long it is. `nd` is measured ALONG THE
+   OUTWARD NORMAL, so it is positive in the street and negative in the room whichever of
+   the four it is -- which nothing needed while every reader took its absolute value, and
+   which is the whole question the moment one of them asks which side the blast is on. */
+function ruinFace(b, fi, lx, ly) {
+  var o = b.d / 2 - RUIN_T / 2, q = b.w / 2 - RUIN_T / 2;
+  if (fi === 0) return { nd: ly - o, u: lx, len: b.w, nx: 0, ny: 1 };
+  if (fi === 1) return { nd: -(ly + o), u: -lx, len: b.w, nx: 0, ny: -1 };
+  if (fi === 2) return { nd: lx - q, u: ly, len: b.d, nx: 1, ny: 0 };
+  return { nd: -(lx + q), u: -ly, len: b.d, nx: -1, ny: 0 };
+}
+/* and the other way about, for putting the masonry that came out back in the world */
+function ruinWorld(b, fi, u, off) {
+  var o = b.d / 2 - RUIN_T / 2, q = b.w / 2 - RUIN_T / 2;
+  if (fi === 0) return [b.x + u, b.y + o + off];
+  if (fi === 1) return [b.x - u, b.y - o - off];
+  if (fi === 2) return [b.x + q + off, b.y + u];
+  return [b.x - q - off, b.y - u];
+}
+/* ---- the masonry in the air ----
+   What a breach removes is not a puff of particles: it is the courses that were standing
+   there, and they come out at their own size, in their own colour, from their own place
+   in the wall. Each is a rigid body -- a position, a velocity, an orientation and an
+   angular velocity -- integrated under gravity with a bounce and friction against the
+   ground until it stops. There is no chunk-against-chunk contact, which is the one thing
+   a solver would give and the one thing nothing here can afford; everything else about
+   the motion is the real arithmetic, and a hundred and twenty slabs of stone turning over
+   as they fall is what a wall coming down looks like.
+
+   A man's eye is at 17, so a metre is about ten units and gravity is 98 of them a second
+   squared. Stone does not bounce: the restitution is a fifth and the friction takes most
+   of what is left, so a chunk lands, skips once and lies down. */
+var RUIN_G = 98, DEB_CAP = 280;
+function debrisCap() { return MOB ? 90 : DEB_CAP; }
+/* And not all of a broken wall becomes a block. A shell turns a good share of what it
+   takes out into dust and chips -- what the burst and the smoke already draw -- so the
+   stone that appears in the air is a declared fraction of the stone that left the wall
+   rather than an accident of three independent jitters, which is what it was: the card
+   measures it and there has to be something to measure it against. */
+var RUIN_KEEP = .78;
+/* one piece of wall, thrown */
+function spawnChunk(x, y, z, l, w, h, col, vx, vy, vz) {
+  if (G.debris.length >= debrisCap()) return;
+  G.debris.push({ x: x, y: y, z: z, l: l, w: w, h: h, c: col,
+                  vx: vx, vy: vy, vz: vz,
+                  rx: rnd(0, TAU), ry: rnd(0, TAU), rz: rnd(0, TAU),
+                  wx: rnd(-7, 7), wy: rnd(-7, 7), wz: rnd(-5, 5),
+                  rest: 0, t: 0 });
+}
+/* A breach, turned into the courses it took out. The hole spans whole courses, so the
+   chunks are the courses: one per course, cut to the width of the hole and split when
+   that is wider than it is tall, because a slab eight times longer than it is deep reads
+   as a plank rather than as masonry. */
+function breachChunks(b, fi, hole, away, blast) {
+  var z, z0 = Math.max(0, hole.z0), z1 = Math.min(b.h, hole.z1), nrm = ruinFace(b, fi, 0, 0);
+  for (z = Math.floor(z0 / RUIN_CH) * RUIN_CH; z < z1; z += RUIN_CH) {
+    var cz = Math.max(z, z0), ct = Math.min(z + RUIN_CH, z1);
+    if (ct - cz < 1.4) continue;
+    var full = hole.hw * 2, np = Math.max(1, Math.min(4, Math.round(full / 11)));
+    for (var k = 0; k < np; k++) {
+      var cw = full / np, cu = hole.u - hole.hw + cw * (k + .5);
+      var wp = ruinWorld(b, fi, cu, 0);
+      /* A shell THROWS masonry and a collapse DROPS it, and that is not a detail: given
+         a blast's speed, the perimeter of a bay ended up scattered a hundred and twenty
+         units into the street, four fifths of it too far from the house to be its
+         rubble at all. Out of the wall on the side the round came from, up a little, and
+         faster the higher it was standing; or, coming down under its own weight, a
+         shrug outward and a fall. */
+      var sp = blast ? 26 + Math.random() * 46 + cz * .35 : 7 + Math.random() * 13;
+      var up = blast ? rnd(14, 52) + cz * .25 : rnd(-6, 6);
+      var sd2 = blast ? 16 : 7;
+      /* each dimension jittered about one, so no block is the same as the last and the
+         three of them together still average the fraction the wall is meant to keep */
+      spawnChunk(wp[0], wp[1], groundZ(wp[0], wp[1]) + cz + (ct - cz) / 2,
+                 cw * RUIN_KEEP * rnd(.82, 1.18), RUIN_T * rnd(.85, 1.15), (ct - cz) * rnd(.84, 1.16),
+                 ruinStone(b),
+                 nrm.nx * sp * away + rnd(-sd2, sd2), nrm.ny * sp * away + rnd(-sd2, sd2),
+                 up);
+    }
+  }
+}
+/* ---- finding the masonry a shell is standing in ----
+   A burst is a small circle and the town is two thousand props, so the walk has to be
+   bucketed the way the field walls already are. This is the same index and the same
+   reason: `damageCover` was once a linear scan of the whole cover list at the foot of
+   every explosion, and an explosion happens several times a second in a firefight. Built
+   the first time a shell asks and thrown away with the map. */
+var RQ = 140, ruinq = null, ruinqW = 0, ruinqH = 0;
+function buildRuinQ() {
+  ruinqW = Math.ceil(WORLD.w / RQ); ruinqH = Math.ceil(WORLD.h / RQ);
+  ruinq = [];
+  for (var i = 0; i < G.props.length; i++) {
+    var p = G.props[i];
+    if (p.kind !== 'ruin') continue;
+    var i0 = Math.max(0, ((p.x - p.w / 2) / RQ) | 0), i1 = Math.min(ruinqW - 1, ((p.x + p.w / 2) / RQ) | 0);
+    var j0 = Math.max(0, ((p.y - p.h / 2) / RQ) | 0), j1 = Math.min(ruinqH - 1, ((p.y + p.h / 2) / RQ) | 0);
+    for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
+      var b = j * ruinqW + ii;
+      (ruinq[b] || (ruinq[b] = [])).push(p);
+    }
+  }
+}
+/* every house within `r` of a point, each offered once */
+function ruinsNear(x, y, r, fn) {
+  if (!ruinq) buildRuinQ();
+  var i0 = Math.max(0, ((x - r) / RQ) | 0), i1 = Math.min(ruinqW - 1, ((x + r) / RQ) | 0);
+  var j0 = Math.max(0, ((y - r) / RQ) | 0), j1 = Math.min(ruinqH - 1, ((y + r) / RQ) | 0);
+  for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
+    var list = ruinq[j * ruinqW + ii];
+    if (!list) continue;
+    for (var k = 0; k < list.length; k++) {
+      var p = list[k];
+      if (p._rq === RQSTAMP) continue;
+      p._rq = RQSTAMP;
+      if (Math.abs(x - p.x) < p.w / 2 + r && Math.abs(y - p.y) < p.h / 2 + r) fn(p);
+    }
+  }
+  RQSTAMP++;
+}
+var RQSTAMP = 1;
+/* ---- a shell against a wall ----
+   Every face within the burst is asked, because a round into the corner of a house takes
+   a bite out of two walls and that is what a corner looks like afterwards. What is
+   recorded is the hole, and what is counted is the share of the wall that is now out of
+   it: a wall is not a pool of hit points, it is an area, and the area is what decides
+   whether it is still carrying anything. */
+function ruinHit(p, sx, sy, sz, r, br, owner) {
+  if (p.kind !== 'ruin' || p.style === 'church') return 0;
+  var B = ruinState(p), fi, i, any = 0;
+  for (i = 0; i < B.length; i++) {
+    var b = B[i];
+    if (b.down >= 2) continue;
+    if (Math.abs(sx - b.x) > b.w / 2 + r + 10 || Math.abs(sy - b.y) > b.d / 2 + r + 10) continue;
+    var lx = sx - b.x, ly = sy - b.y;
+    /* A round bursting in the street outside one wall does not take a bite out of the
+       wall on the far side of the room, and at a battery's reach it was taking one out
+       of all four: the signed distance to a face says how far off the blast is and says
+       nothing about whether there is a building in between. A burst INSIDE the bay is
+       the other case and blows all four out, which is what a round through a window
+       does. */
+    var inside = Math.abs(lx) < b.w / 2 && Math.abs(ly) < b.d / 2;
+    for (fi = 0; fi < 4; fi++) {
+      var F = ruinFace(b, fi, lx, ly);
+      if (Math.abs(F.nd) >= r || Math.abs(F.u) > F.len / 2 + r) continue;
+      if (!inside && F.nd <= 0) continue;
+      /* How far the blast REACHES masonry and how big a hole it makes when it gets
+         there are two numbers, and written as one they fought each other. A hole scaled
+         off the weight of the shell is a metre across for a tank round, so a round that
+         burst a metre and a half from the wall -- which is where a man taking cover at a
+         house is standing, and therefore where most rounds in a town actually land --
+         took nothing out of it at all. The reach is the weight of the shell too, but it
+         is several times the hole: at the edge of it the wall is scarred and at the
+         middle of it the hole is the full breach.
+           And the distance is to the WALL and not to its plane. A terrace is meshed in
+         bays and a heavy round reaches past the end of the one it burst against, so with
+         only the perpendicular in it a shell on one bay cut a full-width breach in the
+         next bay's frontage sixty units away, at exactly the size it cut in the bay it
+         hit. */
+      var du = Math.abs(F.u) - F.len / 2;
+      var dd = du > 0 ? Math.sqrt(F.nd * F.nd + du * du) : Math.abs(F.nd);
+      var fall = 1 - (dd / r) * (dd / r);
+      var hw = br * Math.sqrt(fall > 0 ? fall : 0);
+      if (hw < 2) continue;
+      var z0 = clamp(sz - hw * .85, 0, b.h), z1 = clamp(sz + hw * .85, 0, b.h);
+      if (z1 - z0 < 2) continue;
+      var u = clamp(F.u, -F.len / 2, F.len / 2);
+      b.brk[fi].push({ u: u, hw: hw, z0: z0, z1: z1, rag: 3.2 });
+      b.dirty = 1;
+      b.gone[fi] = clamp(b.gone[fi] + (2 * hw * (z1 - z0)) / (F.len * b.h), 0, 1);
+      /* and the stone goes the way the blast went, which is through the wall and away
+         from the round rather than back at it */
+      breachChunks(b, fi, { u: u, hw: hw, z0: z0, z1: z1 }, F.nd > 0 ? -1 : 1, 1);
+      any = 1;
+    }
+    if (any) ruinCollapse(p, b, owner);
+  }
+  if (any) ruinTouch(p);
+  return any;
+}
+/* ---- a wall is an object, and objects break too ----
+   A garden wall does not need a structure. It is a LINE, and what a shell does to one is
+   take a length out of the middle of it, so a gap is a span measured along the run --
+   which is the one number every reader of a wall already works in. The mesher steps
+   along it stone by stone, the movement and sight grids mark it piece by piece, and the
+   standing index buckets it by piece as well, so a gap is skipped in all of them rather
+   than modelled in any of them. */
+function wallLen(w) { return Math.hypot(w.x2 - w.x1, w.y2 - w.y1); }
+function wallGap(w, s) {
+  var g = w.gaps, i;
+  if (!g) return false;
+  for (i = 0; i < g.length; i++) if (s > g[i][0] && s < g[i][1]) return true;
+  return false;
+}
+/* the pieces of a run that are still standing, as world segments */
+function wallSpans(w, fn) {
+  var len = wallLen(w);
+  if (!w.gaps || !w.gaps.length || len < 1) { fn(w.x1, w.y1, w.x2, w.y2); return; }
+  var ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len;
+  var g = w.gaps.slice().sort(function (a, b) { return a[0] - b[0]; }), s = 0, i;
+  for (i = 0; i < g.length; i++) {
+    var a0 = clamp(g[i][0], 0, len), a1 = clamp(g[i][1], 0, len);
+    if (a0 > s + 2) fn(w.x1 + ux * s, w.y1 + uy * s, w.x1 + ux * a0, w.y1 + uy * a0);
+    if (a1 > s) s = a1;
+  }
+  if (len - s > 2) fn(w.x1 + ux * s, w.y1 + uy * s, w.x2, w.y2);
+}
+/* A round against a run. The gap is the same falloff a wall of a house gets, because it
+   is the same question asked of thinner masonry: the burst reaches a distance that is
+   the weight of the shell and takes the full bite at the middle of it. Below a couple of
+   stones there is no gap worth cutting -- a scar on a wall is what the scorch decal
+   already draws. */
+function wallHit(w, sx, sy, sz, r, br, owner) {
+  var len = wallLen(w);
+  if (len < 6) return 0;
+  var wh = w.h || 24;
+  if (sz > wh + 22) return 0;                        /* the round went over the top of it */
+  var ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len;
+  var t = clamp((sx - w.x1) * ux + (sy - w.y1) * uy, 0, len);
+  var px = w.x1 + ux * t, py = w.y1 + uy * t, d = Math.hypot(sx - px, sy - py);
+  if (d >= r) return 0;
+  var hw = br * Math.sqrt(1 - (d / r) * (d / r));
+  if (hw < 5) return 0;
+  var a0 = t - hw, a1 = t + hw;
+  if (!w.gaps) w.gaps = [];
+  /* merged as it goes in, so a wall shelled all afternoon is a handful of spans rather
+     than a hundred overlapping ones every reader has to walk */
+  var i, g = w.gaps;
+  for (i = g.length - 1; i >= 0; i--) {
+    if (g[i][0] > a1 + 2 || g[i][1] < a0 - 2) continue;
+    a0 = Math.min(a0, g[i][0]); a1 = Math.max(a1, g[i][1]);
+    g.splice(i, 1);
+  }
+  g.push([a0, a1]);
+  /* the stones that were standing there, thrown off the run the way the blast went */
+  var side = ((sx - w.x1) * uy - (sy - w.y1) * ux) < 0 ? 1 : -1;
+  var nx = -uy * side, ny = ux * side;
+  /* a course at a time, and a wall is laid in small stones rather than in slabs: at a
+     slab a metre long, sixty units of garden wall came apart into seven pieces */
+  var st, step = 6.5, cz2 = wh > 16 ? 2 : 1;
+  for (st = Math.max(0, a0); st < Math.min(len, a1); st += step) {
+    for (var cc = 0; cc < cz2; cc++) {
+      var cx = w.x1 + ux * (st + step / 2), cy = w.y1 + uy * (st + step / 2);
+      var col = WSTONE[(Math.random() * WSTONE.length) | 0];
+      var sp = 20 + Math.random() * 34;
+      spawnChunk(cx + nx * rnd(-2, 2), cy + ny * rnd(-2, 2),
+                 groundZ(cx, cy) + wh * (cc + .5) / cz2,
+                 step * rnd(.62, .95), (wh > 16 ? 9 : 7) * rnd(.75, 1.1),
+                 (wh / cz2) * rnd(.55, .92), col,
+                 nx * sp + rnd(-12, 12), ny * sp + rnd(-12, 12), rnd(10, 38));
+    }
+  }
+  /* the mesher, the grids and the standing index all read it, and all three have to be
+     told. The run belongs to the tile its midpoint is in, which is how it was merged. */
+  if (SCENE && SCENE.tiles) G.tileQ[tileOf((w.x1 + w.x2) / 2, (w.y1 + w.y2) / 2)] = 1;
+  wallq = null;
+  G.gridDirty = 1;
+  return 1;
+}
+/* what a broken wall is made of, and it is two things. The face was rendered and the
+   core behind it is rubble stone, so a fresh breach is a pale scar with dark stone in it
+   and the heap at the foot is mottled rather than one colour. Both come off the bay's own
+   seed, which is what the mesher built the wall out of. */
+function ruinStone(b) {
+  if (Math.random() < .45) return PLASTER[Math.floor(((b.seed * 7.3) % 1) * PLASTER.length)];
+  return STONE[Math.floor(clamp(b.seed, 0, .999) * STONE.length)];
+}
+/* ---- what a wall was carrying ----
+   A storey stands on the walls under it, so the test is not how much punishment a
+   building has taken in total but whether any one wall has stopped being a wall. One
+   face past three quarters is a wall that has fallen out; two faces past a half is a box
+   that is no longer a box. Either takes the storey above it, and what comes down is the
+   masonry that was up there: the whole of the bay's perimeter above the new height,
+   thrown outward and turning.
+     Note that this is checked per bay. A terrace does not come down all at once, which
+   is the entire reason a town house is meshed in bays in the first place. */
+function ruinCollapse(p, b, owner) {
+  var worst = Math.max(b.gone[0], b.gone[1], b.gone[2], b.gone[3]);
+  var spread = 0, fi;
+  for (fi = 0; fi < 4; fi++) if (b.gone[fi] > .45) spread++;
+  if (!(worst > .75 || spread >= 2)) return;
+  if (b.down >= 2) return;
+  var was = ruinHeight(b);
+  b.down++;
+  var now = ruinHeight(b);
+  if (now >= was - 2) return;
+  b.fell = G.t;
+  b.dirty = 1;
+  ruinTouch(p);                        /* whatever brought it down, it is out of the tile now */
+  /* the perimeter above the new height, coming off all four faces at once */
+  for (fi = 0; fi < 4; fi++) {
+    var F = ruinFace(b, fi, 0, 0), step = 11, uu;
+    for (uu = -F.len / 2 + step / 2; uu < F.len / 2; uu += step)
+      breachChunks(b, fi, { u: uu, hw: step / 2, z0: now, z1: was }, 1, 0);
+    /* and the wall it was standing on is written off along with it */
+    b.gone[fi] = clamp(b.gone[fi] * .6, 0, 1);
+    b.brk[fi] = b.brk[fi].filter(function (hl) { return hl.z0 < now; });
+  }
+  spawnFx('boom', b.x, b.y, 40);
+  for (var sm = 0; sm < 5; sm++)
+    spawnFx('smoke', b.x + rnd(-b.w * .4, b.w * .4), b.y + rnd(-b.d * .4, b.d * .4));
+  sfx('boom', b.x, b.y);
+  if (onScreen(b.x, b.y)) addShake(7);
+  /* What was a wall is now a heap of what the wall was made of. The four patches ringing
+     a house are tier 3 lying along its four faces, and a face that has come down cannot
+     go on sheltering anybody from fire across it: the patch is written off, which drops
+     it a tier the same way a shelled sandbag wall drops one, and its axis goes with it
+     because a mound of masonry is the same from every bearing. That is the whole of the
+     cover change -- nothing new is added, because a patch laid on ground that is now
+     rubble is a patch the index and `aiFirePost` would read as somewhere to stand. */
+  if (!ruinUp(b)) {
+    var near = coversNear(b.x, b.y, Math.max(b.w, b.d) * .6);
+    for (var ci = 0; ci < near.length; ci++) {
+      var cv = near[ci];
+      if (cv.kind !== 'wall') continue;
+      if (Math.abs(cv.x - b.x) > b.w / 2 + 26 || Math.abs(cv.y - b.y) > b.d / 2 + 26) continue;
+      cv.hp = 0; cv.axis = null; cv.kind = 'lowwall';
+    }
+  }
+  /* and whoever was holding it. A storey coming down on a section is the heaviest thing
+     that happens to men in this game, and the ones still inside are put out only when
+     there is no house left to hold: a section in a three-bay terrace with one bay down
+     is still in the building. */
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || !u.gar || u.gar !== p) continue;
+    damage(u, 140 + Math.random() * 90, owner || null);
+    if (!u.dead && ruinStanding(p) < 34) leaveBuilding(u);
+  }
+}
+/* how tall a bay still stands: a storey is most of what it had, and what is left after
+   two is a stump a man can stand behind and not in */
+function ruinHeight(b) {
+  if (b.down <= 0) return b.h;
+  if (b.down === 1) return Math.max(26, b.h * .52);
+  return 16;
+}
+/* A man's eye is at seventeen, so a bay that still stands above about that is a wall he
+   is stopped by and one below it is a heap he steps over. The threshold is a little
+   above his eye because a storey does not end level. */
+function ruinUp(b) { return ruinHeight(b) >= 34; }
+/* the tallest thing a house has left, which is what says whether it is still a house */
+function ruinStanding(p) {
+  var B = p.bay, i, top = 0;
+  if (!B) return p.tall ? 90 : 66;
+  for (i = 0; i < B.length; i++) top = Math.max(top, ruinHeight(B[i]));
+  return top;
+}
+/* the footprint of each bay and whether it is still standing, for the three grids that
+   have to know the difference */
+function ruinBlocks(p, fn) {
+  var B = p.bay, i;
+  if (!B) { fn(p.x, p.y, p.w, p.h, 1); return; }
+  var bw = p.w / B.length;
+  for (i = 0; i < B.length; i++) fn(B[i].x, p.y, bw, p.h, ruinUp(B[i]) ? 1 : 0);
+}
+/* A hit building leaves the merged tile and draws from its own buffer: the tile is a
+   megabyte of merged geometry and cannot be edited, and re-meshing one house is a
+   thousandth of re-meshing the tile it sits in. The grid follows on the next frame,
+   through the same deferred flag a burning hull uses. */
+function ruinTouch(p) {
+  if (!p.hurt) {
+    p.hurt = 1;
+    G.hurt.push(p);
+    /* The tile it was merged into has to lose it, and that is a re-mesh of everything
+       else in the tile with it -- about ninety milliseconds here. Done inside the burst
+       that is the hitch once per house, which in a barrage is several of them in one
+       frame; queued instead it is at most one tile a frame however many houses were in
+       the salvo, and the house is drawn twice for that one frame, which nobody sees. */
+    if (SCENE && SCENE.tiles) G.tileQ[tileOf(p.x, p.y)] = 1;
+  }
+  p.rebuild = 1;
+  G.gridDirty = 1;
+}
+/* one of them, on the frames there are any */
+function flushTileQ() {
+  for (var k in G.tileQ) {
+    delete G.tileQ[k];
+    buildTile(+k);
+    return;
+  }
+}
+/* ---- the heap ----
+   There is no chunk-against-chunk contact here and there is not going to be: a solver
+   that resolves a hundred and fifty boxes against each other every frame is not
+   something a phone will run beside everything else in this file. But a heap needs
+   exactly one thing out of a solver, which is that masonry lands ON masonry, and that
+   is a height field rather than a solver. Each hit building keeps a coarse one over its
+   own footprint; a chunk falls onto whatever is already lying there and what settles
+   raises it. Dropped into the same yard, a hundred and fifty stones then build a mound
+   where most of the wall came down and thin out at the edges, which is what a collapsed
+   house looks like -- where every chunk resting on bare ground is a carpet of separate
+   blocks and reads as spilt cargo. */
+var MC = 14, MCAP = 34;                        /* the cell, about a man's width, and the ceiling */
+var MNDW = Math.ceil(WORLD.w / MC), MNDH = Math.ceil(WORLD.h / MC), MND = null;
+/* One grid over the whole map rather than one per building. A heap was kept on the
+   house it came off, which meant a chunk that landed clear of one had nowhere to go and
+   was thrown away -- and a garden wall blown apart in open country belongs to no
+   building at all, so every stone of it vanished on landing. Where masonry lies is a
+   fact about the ground, not about who owned it. */
+function moundAt(x, y) {
+  if (!MND) return 0;
+  var ci = (x / MC) | 0, cj = (y / MC) | 0;
+  if (ci < 0 || cj < 0 || ci >= MNDW || cj >= MNDH) return 0;
+  return MND[cj * MNDW + ci];
+}
+/* and what one stone adds to it. Broken masonry packs loose, so the volume it takes up
+   on the ground is about half again what it took up in the wall; most of that goes into
+   the cell it landed in and the rest spreads to the eight round it, which is what keeps
+   a pile a pile rather than a column. */
+function moundAdd(x, y, vol) {
+  if (!MND) MND = new Float32Array(MNDW * MNDH);
+  var ci = (x / MC) | 0, cj = (y / MC) | 0;
+  if (ci < 0 || cj < 0 || ci >= MNDW || cj >= MNDH) return;
+  var rise = vol * 1.5 / (MC * MC), di, dj;
+  for (dj = -1; dj <= 1; dj++) for (di = -1; di <= 1; di++) {
+    var ii = ci + di, jj = cj + dj;
+    if (ii < 0 || jj < 0 || ii >= MNDW || jj >= MNDH) continue;
+    var k = jj * MNDW + ii;
+    MND[k] = Math.min(MCAP, MND[k] + rise * (di || dj ? .069 : .45));
+  }
+}
+/* ---- the integrator ----
+   Semi-implicit Euler on each chunk, which is what every game physics engine runs and is
+   stable at this step where the explicit form is not: the velocity is stepped first and
+   the position with the new velocity. The step is the frame's own, clamped to 50ms by
+   the loop, and at 98 units a second squared that is at most five units of fall a frame
+   against a chunk seven units deep, so nothing tunnels through the ground.
+
+   The ground is the only collider. A chunk that reaches it keeps a fifth of the speed it
+   arrived with, loses two fifths of what it had sideways and most of its spin, and once
+   it is moving slower than it would fall in a frame it is laid flat and stops. It is
+   then written into the building's own rubble and taken off the list, so the cost of a
+   collapse is bounded by what is still in the air rather than by how much has ever come
+   down. */
+function stepDebris(dt) {
+  var D = G.debris, i, c, gz, hit, imp;
+  for (i = D.length - 1; i >= 0; i--) {
+    c = D[i];
+    c.t += dt;
+    c.vz -= RUIN_G * dt;
+    c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
+    c.rx += c.wx * dt; c.ry += c.wy * dt; c.rz += c.wz * dt;
+    gz = groundZ(c.x, c.y) + moundAt(c.x, c.y) + c.h * .5;
+    if (c.z > gz) continue;
+    imp = -c.vz;
+    c.z = gz;
+    /* stone does not bounce. Below the speed one frame of gravity gives it there is
+       nothing left to model: it is lying on the ground. */
+    if (imp < RUIN_G * .12 || c.t > 9) {
+      settleChunk(c);
+      D.splice(i, 1);
+      continue;
+    }
+    c.vz = imp * .2;
+    c.vx *= .58; c.vy *= .58;
+    c.wx *= .35; c.wy *= .35; c.wz *= .5;
+    /* it lands flat rather than on a corner, which is what a slab of wall does */
+    c.rx *= .4; c.ry *= .4;
+    if (imp > 90) { sfx('hit', c.x, c.y); spawnFx('dust', c.x, c.y); }
+  }
+}
+/* What has stopped moving is rubble. It is banked onto the building it came off, so a
+   house that has been shelled for a minute is standing in its own masonry, and it is
+   written into that building's buffer rather than kept as a body nobody is integrating.
+   A chunk that came down too far from any building is dropped: it is a stone in a field
+   and the scene has plenty. */
+function settleChunk(c) {
+  /* A stone that comes to rest on bare ground lies flat; one that comes to rest on other
+     stones lies at whatever angle they left it, and that angle is most of what tells a
+     heap of rubble from a pavement of blocks. */
+  if (moundAt(c.x, c.y) > 5) { c.rx += rnd(-.42, .42); c.ry += rnd(-.42, .42); }
+  /* Oldest out when the yard is full, rather than refusing what lands: a battle that
+     goes on long enough should show the last house that came down and not the first. */
+  if (G.rub.length >= rubCap()) G.rub.shift();
+  G.rub.push({ x: c.x, y: c.y, z: c.z, l: c.l, w: c.w, h: c.h, c: c.c,
+               rx: c.rx, ry: c.ry, rz: c.rz });
+  moundAdd(c.x, c.y, c.l * c.w * c.h);
+  G.rubDirty = 1;
+}
+function rubCap() { return MOB ? 500 : 1400; }
+function explode(x, y, radius, dmg, owner, except, bz) {
   spawnFx('boom', x, y, radius);
   decalScorch(x, y, radius * 1.15);
   /* once, through the index. It was charged here and then again at the foot of this
@@ -5960,6 +6530,25 @@ function explode(x, y, radius, dmg, owner, except) {
     var bl = blist[b];
     if (bl.dead || bl === except || !owner || bl.side === owner.side) continue;
     if (dist(bl, { x: x, y: y }) < radius + 50) { bl.hp -= dmg * .5; bl.hitT = .2; if (bl.hp <= 0) killBuilding(bl); }
+  }
+  /* And the masonry. The hole a round makes in a wall is its own near field and not its
+     casualty radius: a 25-pounder kills out to fifteen metres and takes about a metre of
+     stone out of the house it hits, so the breach is scaled off the weight of the shell
+     rather than off the burst. Below a couple of dozen points of damage nothing gets
+     through a stone wall at all, which is why a grenade leaves a scorch mark and the
+     eight-inch leaves daylight. */
+  if (dmg >= 22) {
+    var br = clamp(3 + dmg * .075, 4, 26), reach = clamp(12 + dmg * .2, 16, 74);
+    var bh = bz === undefined ? 10 : bz;
+    ruinsNear(x, y, reach, function (pr) { ruinHit(pr, x, y, bh, reach, br, owner); });
+    /* and the walls, which are a list of a hundred segments rather than a town of props,
+       so a bounding test and a straight walk is cheaper than an index of them */
+    for (var wi = 0; wi < G.walls.length; wi++) {
+      var wl = G.walls[wi];
+      if (Math.min(wl.x1, wl.x2) - reach > x || Math.max(wl.x1, wl.x2) + reach < x ||
+          Math.min(wl.y1, wl.y2) - reach > y || Math.max(wl.y1, wl.y2) + reach < y) continue;
+      wallHit(wl, x, y, bh, reach, br, owner);
+    }
   }
 }
 function damage(t, amt, src) {
@@ -6163,7 +6752,7 @@ function updateShots(dt) {
         var direct = s.hit && !s.ind && s.target && !s.target.dead &&
           (s.target.cat === 'veh' || s.target.built !== undefined) ? s.target : null;
         if (direct) damage(direct, s.dmg, s.owner);
-        if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct);
+        if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct, s.bz);
         else if (s.hit) spawnFx('hit', s.tx, s.ty);
         G.shots.splice(i, 1);
       }
@@ -11942,6 +12531,9 @@ function sceneProps(tile) {
     if (!mine(p.x, p.y)) return;
     seedAt(p.x, p.y, 1);
     if (p.kind === 'ruin') {
+      /* once a shell has been into it, it draws from its own buffer rather than out of
+         this one: the merged tile cannot be edited and this house is going to change */
+      if (p.hurt) return;
       if (p.style === 'church') { put(churchModel(p.w, p.h), p.x, p.y, 0); return; }
       var bays = Math.max(1, Math.round(p.w / 70)), bayW = p.w / bays;
       for (var bh = 0; bh < bays; bh++) {
@@ -12064,7 +12656,6 @@ function sceneProps(tile) {
      depth wanders, the line wanders off its own axis by a foot or so, and one course in
      eight is down to a tumble. Nothing about the cover, the grid or the sight line
      changes -- those come off G.walls, which is still the straight line it always was. */
-  var WSTONE = ['#8b8067', '#7d7460', '#8f836a', '#948c78', '#a2977c'];
   G.walls.forEach(function (wl) {
     if (!mine((wl.x1 + wl.x2) / 2, (wl.y1 + wl.y2) / 2)) return;
     seedAt(wl.x1, wl.y1, 4);
@@ -12074,6 +12665,7 @@ function sceneProps(tile) {
     if (town) {
       var n = Math.max(2, Math.round(len / 34)), seg = len / n;
       for (i = 0; i < n; i++) {
+        if (wallGap(wl, (i + .5) * seg)) continue;      /* a shell has been through here */
         cx = lerp(wl.x1, wl.x2, (i + .5) / n); cy = lerp(wl.y1, wl.y2, (i + .5) / n);
         put(box(0, 0, 0, seg + 1, 11, wh, '#8b8067', '#a2977c', '#7d7460'), cx, cy, a);
       }
@@ -12085,13 +12677,18 @@ function sceneProps(tile) {
     while (d < len - 2) {
       ln = Math.min(srange(8.5, 17), len - d);
       cx = wl.x1 + ux * (d + ln / 2); cy = wl.y1 + uy * (d + ln / 2);
+      var gone = wallGap(wl, d + ln / 2);
       d += ln;
       var col = WSTONE[(srand() * WSTONE.length) | 0], down = srand() < .12;
       var hh = down ? wh * srange(.22, .38) : wh * srange(.74, 1.06);
       var dp = down ? srange(11, 14) : srange(6.6, 9.8);
       var sw = srange(-1.7, 1.7);
+      var jit = a + srange(-.055, .055);
+      /* the draws are all taken whether the stone is there or not, so a gap does not
+         re-seed the rest of the run into a different wall */
+      if (gone) continue;
       put(box(0, 0, 0, ln + 1.2, dp, hh, col, lit(col, 1.1), lit(col, .88), .9),
-          cx + nx * sw, cy + ny * sw, a + srange(-.055, .055));
+          cx + nx * sw, cy + ny * sw, jit);
     }
   });
   /* ---- the trenches, dressed: every leg gets its revetment, fire step, duckboards,
@@ -13846,6 +14443,11 @@ function lit(hex, f) {
    what. Walls have thickness; windows are cut in as recessed boxes; broken tops are
    a ragged run of stumps; roofs are tiled prisms with a ridge and eaves. */
 var STONE = ['#9a8d74', '#8b7e68', '#a3967d', '#84796a', '#9d9078'];
+/* The stones a dry field boundary is laid out of, at the top level rather than inside
+   the mesher, because what a shell knocks off a wall has to be the colour of the wall it
+   came off and the thing that throws it is nowhere near the thing that draws it. All
+   five are in the `stone` list. */
+var WSTONE = ['#8b8067', '#7d7460', '#8f836a', '#948c78', '#a2977c'];
 var TILE = ['#7a4a33', '#875138', '#704431', '#8e5a3d'];
 var PLASTER = ['#d3b985', '#d8c9a3', '#c9a68a', '#c2bba6', '#c69a6a', '#dcc8a0'];
 var SHUTTER = ['#4e5a4b', '#5a4a36', '#3f4f4a', '#6a5a44'];
@@ -13910,7 +14512,7 @@ function wallCourses(len, thick, top, holes, seed, col, cap, sideC) {
    with windows drawn on it: each wall is built up in courses round its openings, its
    shell holes and the collapse that has taken its head off, the floors show through the
    gaps, and what came down is piled against the foot of it. */
-function houseModel(w, d, h, seed, roofed, damaged) {
+function houseModel(w, d, h, seed, roofed, damaged, st) {
   var stone = STONE[Math.floor(clamp(seed, 0, .999) * STONE.length)];
   var plaster = PLASTER[Math.floor(((seed * 7.3) % 1) * PLASTER.length)];
   var shutter = SHUTTER[Math.floor(((seed * 3.7) % 1) * SHUTTER.length)];
@@ -13919,8 +14521,13 @@ function houseModel(w, d, h, seed, roofed, damaged) {
   var wreck = clamp(.5 + ((seed * 5.7) % 1) * .4 + (damaged ? .08 : 0), .5, .96);
   var floors = h > 60 ? 2 : 1, flz = h * .46;
 
-  function holesFor(len, fs, street) {
+  function holesFor(len, fs, street, fi) {
     var hs = [], bays = Math.max(2, Math.round(len / 26)), b, fl, u;
+    /* and every breach a shell has put in this wall since the battle started. They are
+       the same shape of thing the windows are -- a `u` along the wall and a band of
+       height -- which is why a building here can be knocked about without a second
+       geometry path: wallCourses cuts them out of the courses the same way. */
+    if (st && st.brk[fi]) hs = hs.concat(st.brk[fi]);
     for (fl = 0; fl < floors; fl++) {
       var wz = 13 + fl * (h - 30) * .55;
       for (b = 0; b < bays; b++) {
@@ -13952,7 +14559,7 @@ function houseModel(w, d, h, seed, roofed, damaged) {
   var faces = [[w, 0, d / 2 - T / 2, 0, 1], [w, 0, -(d / 2 - T / 2), Math.PI, 0],
                [d, w / 2 - T / 2, 0, Math.PI / 2, 0], [d, -(w / 2 - T / 2), 0, -Math.PI / 2, 0]];
   faces.forEach(function (fc, fi) {
-    var len = fc[0], hs = holesFor(len, seed * 31 + fi * 13.7, fc[4]);
+    var len = fc[0], hs = holesFor(len, seed * 31 + fi * 13.7, fc[4], fi);
     f = f.concat(place(wallCourses(len, T, h, hs, seed + fi, plaster, cap, lit(plaster, .93)), fc[3], fc[1], fc[2], 0));
     /* sills, lintels and the odd shutter still on its hinges, on the openings that are
        still openings rather than part of a larger hole */
@@ -21608,6 +22215,167 @@ function drawBuildings3D() {
    scene is built once at the start of a battle and these go up during it. A site under
    construction rises out of the ground as the engineers work, which is the only way the
    player can see that anything is happening. */
+/* ---- a hurt building, meshed on its own ----
+   Every bay is rebuilt at the height it still stands to and round the holes it has
+   collected, and the rubble that has settled against it is laid on top. It is one
+   building's worth of geometry rather than a tile's, which is the whole reason it leaves
+   the merged buffer the moment it is first hit. */
+/* One bay's vertices, kept on the bay. A shell changes one wall of one bay, and the
+   whole house was being re-meshed and re-packed for it: three bays of a terrace is six
+   thousand faces and nineteen thousand vertices, which is eighteen milliseconds -- a
+   whole frame, on a frame where a house was hit, and a barrage hits houses constantly.
+   Meshing a bay is not the expensive half; packing it into the vertex stream is. */
+function ruinBayArray(b) {
+  return new Float32Array(facesToArray(place(houseModel(b.w, b.d, ruinHeight(b), b.seed, false, b.dmg, b),
+                                             0, b.x, b.y, groundZ(b.x, b.y))));
+}
+function ruinRebuild(p) {
+  var B = ruinState(p), i, tot = 0;
+  for (i = 0; i < B.length; i++) {
+    if (!B[i].arr || B[i].dirty) { B[i].arr = ruinBayArray(B[i]); B[i].dirty = 0; }
+    tot += B[i].arr.length;
+  }
+  var A = new Float32Array(tot), o = 0;
+  for (i = 0; i < B.length; i++) { A.set(B[i].arr, o); o += B[i].arr.length; }
+  if (p.buf) freeBuffer(p.buf);
+  p.buf = makeBuffer(A);
+  p.rebuild = 0;
+}
+/* ---- the debris buffer ----
+   This is the one buffer in the file that is rebuilt while the game is running, and that
+   is what makes it worth writing by hand. Built the way everything else here is built --
+   `box()`, `roll()`, `pitch()`, `place()`, `facesToBuffer()` -- it cost 2.8 ms a frame
+   with the cap of masonry in the air, and nearly all of that was garbage rather than
+   arithmetic: four arrays of six faces and thirty-six vertex arrays per chunk, three
+   hundred times over, on every frame.
+
+   A chunk is an axis-aligned box under one rotation, so its eight corners are the centre
+   plus and minus three half-axes, and those half-axes are the columns of the rotation
+   scaled by the half-extents. The thirty-six vertices are then a fixed pattern over
+   eight points. Written straight into one array that is allocated once and re-uploaded,
+   it allocates nothing at all.
+
+   A chunk is also unbevelled -- six faces rather than twenty-six -- because a chamfer on
+   a lump of masonry going past at forty units a second is twenty faces nobody sees. */
+var DEBBUF = null, DEBARR = null, DEBN = 0;
+/* the six faces as indices into the eight corners, wound the way `box()` winds them, so
+   a chunk faces out under the same culling as everything else. The corner index is a bit
+   per axis: 1 is +x, 2 is +y, 4 is +z. */
+var DEBF = [[1, 3, 7, 5], [2, 0, 4, 6], [3, 2, 6, 7], [0, 1, 5, 4], [5, 7, 6, 4], [3, 1, 0, 2]];
+var _dcx = new Float64Array(8), _dcy = new Float64Array(8), _dcz = new Float64Array(8);
+/* a colour, turned into what the vertex stream wants of it. A heap is three or four
+   stone shades, so this is asked thousands of times a frame about a handful of strings. */
+var _dmat = {};
+function debMat(col) {
+  var m = _dmat[col];
+  if (!m) {
+    var c = hexRGB(col), mi = matOf(col);
+    m = _dmat[col] = [c[0], c[1], c[2], mi, MATS.spec[mi][2]];
+  }
+  return m;
+}
+/* a list of chunks, written into `A` at `o`, and the offset it reached. The settled
+   rubble is the same shape of thing as the masonry still in the air and goes through
+   here too: built the long way it was nine of the sixteen milliseconds a hurt house cost
+   to re-mesh, and a heap is re-meshed on every frame a stone lands on it. */
+function packChunks(D, A, o) {
+  var n = D.length, i, j, q, k;
+  for (i = 0; i < n; i++) {
+    var c = D[i];
+    var ca = Math.cos(c.rx), sa = Math.sin(c.rx);
+    var cb = Math.cos(c.ry), sb = Math.sin(c.ry);
+    var cz = Math.cos(c.rz), sz = Math.sin(c.rz);
+    /* rolled about x, then pitched about y, then yawed about z, which is the order
+       everything else in this file is assembled in */
+    var m00 = cz * cb, m01 = -(cz * sb * sa + sz * ca), m02 = sz * sa - cz * sb * ca;
+    var m10 = sz * cb, m11 = cz * ca - sz * sb * sa, m12 = -(sz * sb * ca + cz * sa);
+    var m20 = sb, m21 = cb * sa, m22 = cb * ca;
+    var hx = c.l * .5, hy = c.w * .5, hz = c.h * .5;
+    var axx = m00 * hx, axy = m10 * hx, axz = m20 * hx;
+    var byx = m01 * hy, byy = m11 * hy, byz = m21 * hy;
+    var czx = m02 * hz, czy = m12 * hz, czz = m22 * hz;
+    for (k = 0; k < 8; k++) {
+      var sx = (k & 1) ? 1 : -1, sy = (k & 2) ? 1 : -1, sw = (k & 4) ? 1 : -1;
+      _dcx[k] = c.x + sx * axx + sy * byx + sw * czx;
+      _dcy[k] = c.y + sx * axy + sy * byy + sw * czy;
+      _dcz[k] = c.z + sx * axz + sy * byz + sw * czz;
+    }
+    var base = debMat(c.c), cap = debMat(lit(c.c, 1.12)), sd = debMat(lit(c.c, .88));
+    for (j = 0; j < 6; j++) {
+      var F = DEBF[j], nx, ny, nz2, M;
+      /* the outward normal is the matrix column the face looks along, which is already a
+         unit vector because the matrix is a rotation */
+      if (j === 0) { nx = m00; ny = m10; nz2 = m20; M = base; }
+      else if (j === 1) { nx = -m00; ny = -m10; nz2 = -m20; M = base; }
+      else if (j === 2) { nx = m01; ny = m11; nz2 = m21; M = sd; }
+      else if (j === 3) { nx = -m01; ny = -m11; nz2 = -m21; M = sd; }
+      else if (j === 4) { nx = m02; ny = m12; nz2 = m22; M = cap; }
+      else { nx = -m02; ny = -m12; nz2 = -m22; M = base; }
+      var anx = nx < 0 ? -nx : nx, any = ny < 0 ? -ny : ny, anz = nz2 < 0 ? -nz2 : nz2;
+      /* the same triplanar choice facesToArray makes, along the dominant axis */
+      var pl = anz >= anx && anz >= any ? 0 : anx >= any ? 1 : 2;
+      var sc2 = M[4];
+      for (q = 0; q < 6; q++) {
+        /* the quad as a fan from its first corner, which is how a face is triangulated
+           everywhere else */
+        var ci = F[q === 0 || q === 3 ? 0 : q === 1 ? 1 : q === 2 || q === 4 ? 2 : 3];
+        var px = _dcx[ci], py = _dcy[ci], pz = _dcz[ci];
+        A[o] = px; A[o + 1] = py; A[o + 2] = pz;
+        A[o + 3] = nx; A[o + 4] = ny; A[o + 5] = nz2;
+        A[o + 6] = M[0]; A[o + 7] = M[1]; A[o + 8] = M[2];
+        A[o + 9] = (pl === 1 ? py : px) * sc2;
+        A[o + 10] = (pl === 0 ? py : pz) * sc2;
+        A[o + 11] = M[3];
+        o += 12;
+      }
+    }
+  }
+  return o;
+}
+function buildDebrisBuf() {
+  var n = G.debris.length;
+  DEBN = 0;
+  if (!n) return;
+  var need = n * 36 * 12;
+  if (!DEBARR || DEBARR.length < need) DEBARR = new Float32Array(Math.ceil(need * 1.3));
+  var A = DEBARR, o = packChunks(G.debris, A, 0);
+  DEBN = o / 12;
+  if (!DEBBUF) DEBBUF = { vbo: gl.createBuffer(), n: 0, cap: -1 };
+  gl.bindBuffer(gl.ARRAY_BUFFER, DEBBUF.vbo);
+  if (DEBBUF.cap !== A.length) { gl.bufferData(gl.ARRAY_BUFFER, A, gl.DYNAMIC_DRAW); DEBBUF.cap = A.length; }
+  else gl.bufferSubData(gl.ARRAY_BUFFER, 0, A, 0, o);
+  DEBBUF.n = DEBN;
+}
+/* and all the masonry that has come to rest, which is one buffer for the whole map: it
+   changes on every frame of a collapse while the walls above it do not, so it is not in
+   with them. */
+var RUBBUF = null, RUBARR = null;
+function buildRubBuf() {
+  G.rubDirty = 0;
+  if (!G.rub.length) { if (RUBBUF) RUBBUF.n = 0; return; }
+  /* the same persistent buffer the airborne masonry uses, and for the same reason: a
+     stone lands on most frames of a collapse, and a fresh GL buffer on each of them is
+     the churn the hand-written packer exists to avoid */
+  var need = G.rub.length * 36 * 12;
+  if (!RUBARR || RUBARR.length < need) RUBARR = new Float32Array(Math.ceil(need * 1.3));
+  var A = RUBARR, o = packChunks(G.rub, A, 0);
+  if (!RUBBUF) RUBBUF = { vbo: gl.createBuffer(), n: 0, cap: -1 };
+  gl.bindBuffer(gl.ARRAY_BUFFER, RUBBUF.vbo);
+  if (RUBBUF.cap !== A.length) { gl.bufferData(gl.ARRAY_BUFFER, A, gl.DYNAMIC_DRAW); RUBBUF.cap = A.length; }
+  else gl.bufferSubData(gl.ARRAY_BUFFER, 0, A, 0, o);
+  RUBBUF.n = o / 12;
+}
+function drawRuins3D() {
+  var i, p;
+  for (i = 0; i < G.hurt.length; i++) {
+    p = G.hurt[i];
+    if (p.rebuild) ruinRebuild(p);
+    if (p.buf) drawGeom(p.buf, m4model(0, 0, 0, 0, 1), false, null);
+  }
+  if (G.rubDirty) buildRubBuf();
+  if (RUBBUF && RUBBUF.n) drawGeom(RUBBUF, m4model(0, 0, 0, 0, 1), false, null);
+  if (G.debris.length) { buildDebrisBuf(); if (DEBN) drawGeom(DEBBUF, m4model(0, 0, 0, 0, 1), false, null); }
+}
 function drawWorks3D() {
   var i, w;
   /* The geometry is already in world coordinates, so the matrix is a plain translation:
@@ -21832,6 +22600,13 @@ function render() {
       drawDepthGeom(B, mm);
     });
     G.works.forEach(function (w) { if (w.buf) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
+    /* a house that has left the merged tile still has to throw the shadow it threw
+       before it was hit, or a shelled street lights up as the walls come off it */
+    for (var hri = 0; hri < G.hurt.length; hri++) {
+      if (G.hurt[hri].buf) drawDepthGeom(G.hurt[hri].buf, m4model(0, 0, 0, 0, 1));
+    }
+    if (DEBBUF && DEBN) drawDepthGeom(DEBBUF, m4model(0, 0, 0, 0, 1));
+    if (RUBBUF && RUBBUF.n) drawDepthGeom(RUBBUF, m4model(0, 0, 0, 0, 1));
     list.forEach(function (u) { castUnit(u); });
     gl.cullFace(gl.BACK);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -21905,6 +22680,7 @@ function render() {
   });
   drawBuildings3D();
   drawWorks3D();
+  drawRuins3D();
   drawUnits3D(v, list);
   if (POV.on && POV.u && (POV.u.inside || POV.u).cat === 'veh') drawInterior(POV.u.inside || POV.u);
   drawWrecks3D(v);
@@ -23450,6 +24226,9 @@ function startGame(side, diff, mode, arty, duo) {
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   missionTitle();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.sel = [];
+  G.debris = []; G.hurt = []; G.rub = []; G.tileQ = {}; G.rubDirty = 1;
+  MND = null;
+  if (RUBBUF) RUBBUF.n = 0;
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
@@ -23548,6 +24327,8 @@ function frame(now) {
     for (var i = 0; i < G.units.length; i++) updateUnit(G.units[i], dt);
     for (var j = 0; j < G.blds.length; j++) updateBuilding(G.blds[j], dt);
     updateShots(dt);
+    stepDebris(dt);
+    flushTileQ();
     updateSectors(dt);
     updateSites(dt);
     tickEconomy(dt);

@@ -1449,6 +1449,107 @@ for (const device of TARGETS) {
      `${stones.inside} of ${stones.men} men in the stones ` +
      `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
 
+  /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
+     is a picture of rubble laid over a building that is, as far as everything else in the
+     game is concerned, exactly where it was -- and it is the one fault here a screenshot
+     would call a success. So the row asks the SAME CELL the same four questions with the
+     bay standing and with the bay down, puts a section in the house first to see it put
+     out, and counts the stone: what settles has to be what came out of the walls, because
+     masonry that vanishes on landing is a collapse nobody can stand in. --- */
+  const wreck = await (async () => {
+    /* on Ortona, because a terrace is what this is about and the Gothic Line is a valley
+       floor with two farms on it */
+    await reload(page);
+    await page.evaluate(() => {
+      window.G.mapData = window.defaultMapData();
+      window.startGame('us', 1, 'vp', true, true);
+    });
+    await page.waitForFunction(() => window.SCENE && window.SCENE.ready, null, { timeout: 180000 });
+    const put = await page.evaluate(() => {
+      /* the widest house that has nothing else standing right beside it, so most of what
+         the battery does lands on the thing under test */
+      const p = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 90 &&
+        !window.G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300) &&
+        !window.G.props.some(r => r !== q && r.solid && r.kind !== 'sea' &&
+                                  Math.hypot(r.x - q.x, r.y - q.y) < 150))
+        .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      if (!p) return null;
+      window.__keep = window.G.units.slice();
+      window.G.units.length = 0;
+      const u = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'us_rifle' : 'ger_gren',
+                                 p.x, p.y + p.h / 2 + 40);
+      window.enterBuilding(u, p);
+      window.rebuildGrid();
+      const B = window.ruinState(p), b = B[Math.floor(B.length / 2)];
+      const ci = window.cidx((b.x / window.CELL) | 0, (p.y / window.CELL) | 0);
+      return { up: { walk: window.walkable(b.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+                     fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
+                     gar: !!u.gar, hurt: !!p.hurt },
+               bays: B.length, x: b.x, y: p.y, w: Math.round(p.w), h: Math.round(p.h) };
+    });
+    if (!put) return null;
+    /* a battery on it, which is the one thing on the roster that brings a house down */
+    const shot = await page.evaluate(a => {
+      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
+                                           Math.abs(q.y - a.y) < a.h)[0];
+      let n = 0;
+      for (let i = 0; i < 14; i++) {
+        window.explode(a.x + (i % 5 - 2) * 11, a.y - a.h / 2 - 2, 130, 300, null, null, 22);
+        n++;
+      }
+      let vol = 0;
+      for (const c of window.G.debris) vol += c.l * c.w * c.h;
+      return { rounds: n, air: window.G.debris.length, vol: Math.round(vol),
+               queued: Object.keys(window.G.tileQ).length, bays: (p.bay || []).filter(b => b.down > 0).length };
+    }, put);
+    await fastForward(page, 14);
+    /* and one drawn frame, because the house's own buffer is built in the draw: fast
+       forward stubs render() out, so without this the row asks whether a thing that has
+       not been drawn yet has been drawn */
+    await frames(page, 2);
+    const down = await page.evaluate(a => {
+      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
+                                           Math.abs(q.y - a.y) < a.h)[0];
+      const ci = window.cidx((a.x / window.CELL) | 0, (a.y / window.CELL) | 0);
+      const u = window.G.units.filter(e => !e.dead)[0];
+      let vol = 0;
+      for (const r of window.G.rub) vol += r.l * r.w * r.h;
+      let mound = 0;
+      for (let dx = -60; dx <= 60; dx += 14) for (let dy = -40; dy <= 40; dy += 14)
+        mound = Math.max(mound, window.moundAt(a.x + dx, a.y + dy));
+      const st = { walk: window.walkable(a.x, a.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+                   fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
+                   gar: !!(u && u.gar), hurt: !!p.hurt, standing: Math.round(window.ruinStanding(p)),
+                   canGar: window.canGarrison({ cat: 'inf', def: { speed: 30 }, models: [] }, p),
+                   settled: window.G.rub.length, vol: Math.round(vol), mound: +mound.toFixed(1),
+                   air: window.G.debris.length, buf: !!p.buf };
+      window.G.units.length = 0;
+      window.__keep.forEach(e => window.G.units.push(e));
+      window.rebuildGrid();
+      return st;
+    }, put);
+    return { ...put, ...shot, down };
+  })();
+  ok('a house shelled flat stops being a house on every grid that reads one',
+     !!wreck && wreck.up.walk === 0 && wreck.up.sight === 1 && wreck.up.fire === 1 &&
+     wreck.up.rub === 0 && wreck.up.gar === true && wreck.up.hurt === false &&
+     wreck.down.walk === 1 && wreck.down.sight === 0 && wreck.down.fire === 0 &&
+     wreck.down.rub === 1 && wreck.down.gar === false && wreck.down.canGar === false &&
+     wreck.down.standing < 34 && wreck.down.buf === true,
+     wreck ? `${wreck.w}x${wreck.h} in ${wreck.bays} bays, ${wreck.rounds} heavy rounds: ` +
+             `walkable ${wreck.up.walk}->${wreck.down.walk}, stops an eye ${wreck.up.sight}->${wreck.down.sight}, ` +
+             `stops a round ${wreck.up.fire}->${wreck.down.fire}, rubble ${wreck.up.rub}->${wreck.down.rub}, ` +
+             `garrison ${wreck.up.gar ? 'held' : 'none'}->${wreck.down.gar ? 'held' : 'put out'}, ` +
+             `${wreck.down.standing} units left standing, ` +
+             `holdable ${wreck.down.canGar ? 'still' : 'no'}, own buffer ${wreck.down.buf ? 'yes' : 'no'}`
+           : 'no isolated terrace on the map to shell');
+  ok('the masonry that comes out of it is the masonry that lands',
+     !!wreck && wreck.air > 40 && wreck.down.air === 0 && wreck.down.settled > 40 &&
+     wreck.down.vol > wreck.vol * 0.75 && wreck.down.mound > 3,
+     wreck ? `${wreck.air} chunks in the air and ${wreck.down.settled} settled, ` +
+             `${wreck.down.vol} of ${wreck.vol} units of stone kept, heap ${wreck.down.mound} deep`
+           : '');
+
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
      can garrison is a wall, a garrison with no arc is a house with a grey roof, cover laid

@@ -58,6 +58,7 @@ node tools/sight.mjs         # sight: the trace, what a position commands, how l
 node tools/model.mjs         # the models: the occlusion bake against shapes with known answers
 node tools/terrain.mjs       # the ground: what grain is on it, at what distance, and what crawls
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
+node tools/wreck.mjs         # destruction: the hole, the collapse, the falling masonry, the grids
 node tools/audio.mjs         # sound: renders every effect to WAV, with the numbers
 node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
@@ -546,6 +547,50 @@ principle and hopeless in practice once the two are close: on the wall of a shel
 whole-patch contrast is 36 per cent and the boxed one 35, so the fine part is a difference of
 two large numbers and moves ten per cent on nothing.
 
+### `tools/wreck.mjs` - destruction, mechanically
+
+A building coming down is the one change in this file that looks convincing whatever is
+wrong underneath it. A hole in the wrong place is a hole. Stone that vanishes on the way
+out is stone nobody counted. A chunk that falls at the wrong rate falls. A bay that comes
+down on the second round instead of the eighteenth still comes down, and the photograph of
+it is the same photograph. The grids are worse than that: a house knocked flat that still
+stops a boot and still stops an eye is a picture of rubble laid over a building that is, as
+far as everything else in the game is concerned, exactly where it was.
+
+```sh
+node tools/wreck.mjs                 # the card
+node tools/wreck.mjs shell           # one section of it
+node tools/wreck.mjs --base=HEAD     # the same card on an older file, side by side
+```
+
+**SHELL** is a round against a wall: the hole it cuts against the hole the burst says it
+should cut, and the masonry that comes out against the masonry that left the wall. The
+second is the conservation check and it is the one that matters -- the area a wall has lost
+is bookkeeping until the stone it lost is in the air at the right size. It reads `kept` at
+0.76 to 0.79 against a declared `RUIN_KEEP` of 0.78, averaged over twenty-four rounds a row
+because two chunks with three jitters each have a spread that swamps the number.
+
+**FALL** is the structural rule, staged by writing the damage on the walls directly rather
+than by shelling until something happens: one face three quarters out takes the storey, two
+faces half out take it, and one face half out does not. Underneath it is what it costs in
+rounds on one wall -- 49 mortar bombs, 18 rounds of 105, or 3 out of a heavy battery.
+
+**DEBRIS** is the integrator against arithmetic that was true before the game was written.
+A 197-unit fall takes 2.000 seconds against the 2.005 that `sqrt(2h/g)` says. It bounces
+back to 0.038 of the drop against the 0.04 its restitution squared gives. Everything is
+lying still inside three seconds, everything that came off a collapse settles, and the heap
+it builds is measured against the stone that came down.
+
+**WORLD** is the part a screenshot cannot see at all: the same cell asked the same
+questions with the bay standing and with the bay down.
+
+**WALL** is the same question asked of an object rather than a building.
+
+**COST** is what it is worth in milliseconds. Note that the two mesh times are the geometry
+alone and not the upload: under SwiftShader every third consecutive `bufferData` of a tile
+blocks for over a second, so a loop of whole tile rebuilds reports two and a half seconds
+and reports it about the rasteriser.
+
 ### `tools/mapcheck.mjs` - the map, mechanically
 
 A hand-placed map is a few hundred coordinates and the eye will not hold them. Craters
@@ -587,8 +632,9 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1520 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
-battle wrote itself down, and 1460 before a second map). Takes under a second. Exits
+under 1560 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+battle wrote itself down, 1460 before a second map, and 1520 before a building could be
+knocked down). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -622,6 +668,15 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
+
+**And the destruction rows load Ortona to run on**, because a terrace is what they are
+about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
+house flat with a battery and ask the SAME CELL the same questions before and after -- can
+a man walk here, does it stop an eye, does it stop a round, is it rubble, may a section
+hold it -- because a house knocked flat that still stops a boot and still stops an eye is
+the one fault here a screenshot would call a success. The second row counts the stone: what
+settles has to be what came out of the walls, since masonry that vanishes on landing is a
+collapse nobody can stand in.
 
 Two things the periscope block has to do to itself: it tops both sides' victory points up
 to nine thousand and gives its test tank a hundred thousand hit points. A minute of
@@ -1379,6 +1434,129 @@ distance a player looks from is a smudge. The rays go down first, the lip ring o
 with its clods, and the bowl last and hardest-edged, because it is a hole rather than a
 stain. The shipped map has a crater field west of the town and the whole of it used to read
 as weather.
+
+**Destruction.** A town house is a set of bays and each bay is four walls built in
+seven-unit courses round a list of holes, and that list being DATA is the whole of why any
+of this is possible without a second geometry path. A shell records where it struck in the
+wall's own frame, `holesFor` concatenates the record onto the windows and the doors, and
+`wallCourses` cuts the breach out of the courses the same way it cuts out a window. Nothing
+new draws a damaged building; the thing that drew the building draws it.
+
+**What breaks is a town house and a wall.** `ruinHit` refuses anything that is not
+`kind: 'ruin'`, so a bunker stands: it is reinforced concrete and a field gun was not going
+to open one, which is the whole reason the Gothic Line is a question about which crossing
+to force. A farm and a church stand too, and those are a scope line rather than a claim --
+neither is built in bays round a list of openings, so neither has a structure to break, and
+giving them one is the same work again on two more builders.
+
+`ruinState(p)` is the structure, worked out once and kept on the prop, and it is the same
+arithmetic `sceneProps` does when it meshes one -- here rather than there because the
+mesher runs on a tile rebuild and this has to survive one. Per bay: the breaches cut in
+each of its four walls, the share of each wall that is now out of it, and how many storeys
+it has lost.
+
+**A wall is an area rather than a pool of hit points.** `ruinHit` records the hole and adds
+`2*hw*(z1-z0) / (len*h)` to that wall's `gone`. One face past three quarters is a wall that
+has fallen out; two faces past a half is a box that is no longer a box. Either takes the
+storey standing on them, and what comes down is the bay's whole perimeter above the new
+height. It is checked per bay, which is the entire reason a town house is meshed in bays: a
+terrace does not come down all at once.
+
+**How far a blast REACHES masonry and how big a hole it makes when it gets there are two
+numbers**, and written as one they fought each other. A hole scaled off the weight of the
+shell is a metre across for a tank round, so a round bursting a metre and a half from a
+wall -- which is where a man taking cover at a house stands, and therefore where most
+rounds in a town actually land -- took nothing out of it at all. The reach is the weight of
+the shell too and it is several times the hole: `hw = br * sqrt(1 - (d/reach)^2)`, so the
+wall is scarred at the edge of it and breached in the middle. Two things had to be got
+right with it. **The distance is to the WALL and not to its plane**: a heavy round reaches
+past the end of the bay it burst against, so with only the perpendicular in it a shell on
+one bay cut a full-width breach in the next bay's frontage sixty units away at exactly the
+size it cut in the one it hit. And **a round in the street outside one wall does not take a
+bite out of the wall on the far side of the room**: `ruinFace` measures `nd` along the
+OUTWARD normal, which nothing needed while every reader took its absolute value and which
+is the whole question the moment one of them asks which side the blast is on. A burst
+INSIDE the bay is the other case and blows all four out, which is what a round through a
+window does.
+
+**The masonry that comes out is a rigid body.** No solver is possible here and none is
+wanted: what `G.debris` carries is a position, a velocity, an orientation and an angular
+velocity per chunk, integrated with semi-implicit Euler under gravity at 98 units a second
+squared, with the ground as the only collider. Stone does not bounce, so the restitution is
+a fifth and the friction takes most of the rest; below the speed one frame of gravity gives
+it there is nothing left to model and it is lying on the ground. A shell THROWS masonry and
+a collapse DROPS it, and that is not a detail: given a blast's speed, the perimeter of a
+bay ended up scattered a hundred and twenty units into the street, four fifths of it too
+far from the house to be its rubble at all.
+
+**The one thing a solver would give that a heap actually needs is that masonry lands ON
+masonry, and that is a height field rather than a solver.** `MND` is one coarse grid over
+the whole map at fourteen units: a falling chunk collides against the ground plus whatever
+is already lying there, and what settles raises it. Dropped into the same yard, a hundred
+and fifty stones then build a mound where most of the wall came down and thin out at the
+edges. Without it every chunk rests on bare ground and a collapsed house is a carpet of
+separate blocks that reads as spilt cargo. It is one grid for the map and not one per
+building, because a chunk that lands clear of a building has nowhere to go and was thrown
+away -- and a garden wall blown apart in open country belongs to no building at all, so
+every stone of it vanished on landing.
+
+**A hit building leaves the merged tile and draws from its own buffer.** The tile is a
+megabyte of merged geometry and cannot be edited; re-meshing one house is a thousandth of
+re-meshing the tile it sits in. The tile it was merged into still has to lose it, and that
+is a re-mesh of everything else in the tile with it -- about a hundred and ten
+milliseconds. Done inside the burst that is the hitch once per house, which in a barrage is
+several of them in one frame, so it is queued in `G.tileQ` and `flushTileQ` takes one a
+frame however many houses were in the salvo. The house is drawn twice for that one frame,
+which nobody sees.
+
+**Two buffers rather than one, because the heap changes and the walls do not.** A bay's
+packed vertices are cached on the bay and only the bay a round changed is re-packed: three
+bays of a terrace is six thousand faces and nineteen thousand vertices, which is eighteen
+milliseconds -- a whole frame, on a frame where a house was hit, and a barrage hits houses
+constantly. It is five milliseconds for one bay. The settled rubble is one buffer for the
+whole map, rebuilt on the frames a stone lands, and it goes through the same hand-written
+packer the airborne debris uses.
+
+**`packChunks` is written by hand and it is the only vertex packer in the file that is.**
+`buildDebrisBuf` is rebuilt while the game is running, which nothing else here is. Built
+the way everything else is built -- `box()`, `roll()`, `pitch()`, `place()`,
+`facesToBuffer()` -- it cost 2.8 ms a frame with the cap in the air, and nearly all of that
+was garbage rather than arithmetic: four arrays of six faces and thirty-six vertex arrays
+per chunk, three hundred times over, on every frame. A chunk is an axis-aligned box under
+one rotation, so its eight corners are the centre plus and minus three half-axes and those
+half-axes are the columns of the rotation scaled by the half-extents. Written straight into
+one array that is allocated once and re-uploaded it is 0.5 ms and allocates nothing.
+
+**And the world follows the storey down.** This is the half a screenshot cannot review at
+all, and it is where a destruction feature is usually a lie: a house knocked flat that goes
+on stopping a boot and an eye is rubble painted over a building that has not moved. A bay
+still standing blocks what a house blocks; a bay that is down is marked on `rubg` instead
+-- dear to cross (2.3 to a man, 2.4 times to tracks and five times to a lorry), crossed at
+half pace, and on NEITHER of the two grids that stop sight or fire, which is the same rule
+a field wall under sixteen units already gets. `canGarrison` refuses a house with nothing
+standing above 34, the four tier-3 patches lying along a fallen face are written off (which
+drops them a tier, the way a shelled sandbag wall drops one) and their axis goes with them
+because a mound of masonry is the same from every bearing, and a garrison is damaged by
+every storey that comes down and put out when the last of the house goes. Nothing new is
+added to the cover index, because a patch laid on ground that is now rubble is a patch
+`aiFirePost` would read as somewhere to site a machine gun.
+
+**A wall is an object, and objects break too.** A garden wall does not need a structure: it
+is a LINE, and what a shell does to one is take a length out of the middle. A gap is a span
+measured along the run, which is the one number every reader of a wall already works in --
+the mesher steps along it stone by stone, the movement and sight grids mark it piece by
+piece, and `buildWallQ` buckets it by piece as well -- so a gap is skipped in all of them
+rather than modelled in any of them. `wallSpans` hands back the pieces that are still
+standing and `rebuildGrid` marks those. The stones that were there come out at the size a
+wall is laid in: a course at a time in six-unit lengths, because at a slab a metre long
+sixty units of garden wall came apart into seven pieces. Worth knowing: the gaps are honest
+and the movement grid is twenty units, so a gap under about thirty units is visible and
+does not clear the cell it is in.
+
+**The one-off costs, measured.** Recording a hit is 0.01 ms. Re-meshing the bay it changed
+is 5.2 ms. Freeing the tile is 110 ms of geometry, once per house and queued one a frame.
+Stepping 280 chunks is 0.013 ms and their buffer 0.5 ms. `tools/wreck.mjs` is the card for
+all of it.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and billboard programs. A 2048px shadow map from a
@@ -3086,6 +3264,7 @@ tools/sight.mjs                sight card: the trace, what a position commands, 
 tools/model.mjs                model card: the occlusion bake, its cost, and what is in each vehicle
 tools/terrain.mjs              ground card: grain by scale and distance, and what shimmers
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
+tools/wreck.mjs                destruction card: the breach, the collapse, the heap, the grids
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
@@ -3227,6 +3406,33 @@ shots/                         screenshot output, gitignored
   two of them. Order is the mechanism, not a matter of taste. And cap the count rather
   than counting it out: a scatter that MUST place N will keep trying until it puts one
   somewhere it does not belong.
+- **A signed distance is only signed if every case signs it the same way.** `ruinFace`
+  handed back `ly - o` for one wall of a bay and `ly + o` for the opposite one, which is
+  correct for the absolute value every reader took and is opposite in sign. The moment one
+  reader asked WHICH SIDE the blast was on -- the one thing that decides whether a round in
+  the street takes a bite out of the far wall of the room -- half the walls in the town
+  answered backwards, and what it looked like was a feature that had simply stopped
+  working. Measure a face distance along its outward normal, whichever face it is.
+- **A rubble heap is a height field, not a solver.** There is no chunk-against-chunk
+  contact here and there will not be. What a heap actually needs out of a solver is one
+  thing, that masonry lands ON masonry, and one coarse grid gives it: a chunk falls onto
+  whatever is already lying there and what settles raises it. Without it every stone rests
+  on bare ground and a collapsed house is a flat carpet of blocks that reads as spilt
+  cargo rather than as a building that fell over.
+- **The one buffer rebuilt while the game is running is worth writing by hand.** Falling
+  masonry cost 2.8 ms a frame built the way everything else here is built, and nearly all
+  of it was garbage rather than arithmetic: four arrays of six faces and thirty-six vertex
+  arrays per chunk, three hundred times over, every frame. `packChunks` writes into one
+  preallocated `Float32Array` and it is 0.5 ms. Everything else in the file is built once
+  and can go on using `box()` and `place()`.
+- **`box(cx, cy, cz, l, w, h)` spans z from `cz` to `cz + h`**, so `box(0, 0, 0, ...)` sits
+  ON the origin rather than around it. Rotate that about the origin and the piece swings
+  round its own base; an integrator that treats the same number as the centre then rests it
+  half its own height in the air. Pass `-h/2` for anything that is going to tumble.
+- **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo
+  is several of them in one frame.** Queue the rebuild and take one tile a frame; the thing
+  that left the tile is drawn twice for that frame and nobody sees it.
+
 - **A landform is arithmetic and two halves can look identical while one is a metre
   higher.** A mirrored map is fair only if the ground agrees with its own reflection, and
   the only way to know that is to sample it: the Gothic Line is measured over 1,750 points
