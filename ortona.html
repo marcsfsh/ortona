@@ -2641,8 +2641,8 @@ function buildMap(data) {
      the last battle's rubble is still drawn over the top of it from a buffer pointing at
      props that no longer exist. */
   G.hurt.length = 0; G.rub.length = 0; G.rubDirty = 1; MND = null;
-  G.tileQ = {};
-  G.blocks = []; G.craterFx = []; G.craters = []; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
+  G.tileQ = {}; G.groundQ = {};
+  G.blocks = []; G.craterFx = []; G.craters = []; G.cratersDug = 0; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
   G.grass = []; G.paved = []; G.sectorDefs = []; G.hqPos = { us: { x: 250, y: 950 }, ger: { x: WORLD.w - 250, y: 950 } };
   _s = 4242;
@@ -3138,6 +3138,7 @@ function makeHeight() {
   if (makeHeight._key === key) {
     G.hmap0 = new Float32Array(makeHeight._base); G.hmap = new Float32Array(makeHeight._base);
     G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+    G.pad = new Float32Array(HW * HH);
     return;
   }
   var h = new Float32Array(HW * HH), i, j, k;
@@ -3189,6 +3190,7 @@ function makeHeight() {
   makeHeight._key = key; makeHeight._base = new Float32Array(sm);
   G.hmap0 = sm; G.hmap = new Float32Array(sm);
   G.cut = new Float32Array(HW * HH); G.fill = new Float32Array(HW * HH);
+  G.pad = new Float32Array(HW * HH);
 }
 /* Earthworks are kept as two layers over the natural ground: the deepest cut at each
    point and the highest spoil. Overlapping passes along a trench then agree instead of
@@ -3255,10 +3257,15 @@ function trenchFacing(a, b, flag) {
 }
 /* fold the earthworks into the natural ground */
 function applyEarthworks() {
-  for (var k = 0; k < G.hmap.length; k++) G.hmap[k] = G.hmap0[k] + G.cut[k] + G.fill[k];
+  for (var k = 0; k < G.hmap.length; k++) G.hmap[k] = G.hmap0[k] + G.cut[k] + G.fill[k] + G.pad[k];
   G.earthworksApplied = true;
 }
-/* press a footprint flat so buildings do not sit on a slope */
+/* Press a footprint flat so buildings do not sit on a slope.
+   It is kept as a THIRD layer over the natural ground rather than written straight into
+   the worked height, because `hmap = hmap0 + cut + fill + pad` then holds everywhere and
+   a piece of the height can be recomputed from its parts. Written into `hmap` directly
+   it did not, and the first shell hole blown beside a house recomputed the ground under
+   the house off the parts it could see and put the pad back on the hillside. */
 function levelPad(cx, cy, w, hgt) {
   if (!G.earthworksApplied) return groundZ(cx, cy);
   var z = groundZ(cx, cy);
@@ -3271,7 +3278,9 @@ function levelPad(cx, cy, w, hgt) {
       var d = Math.hypot(ox, oy);
       var f = clamp(1 - d / 40, 0, 1);
       var k = hidx(i, j);
-      G.hmap[k] = G.hmap[k] * (1 - f) + z * f;
+      var base = G.hmap0[k] + G.cut[k] + G.fill[k];
+      G.pad[k] = (base + G.pad[k]) * (1 - f) + z * f - base;
+      G.hmap[k] = base + G.pad[k];
     }
   }
   return z;
@@ -6409,6 +6418,167 @@ function flushTileQ() {
     return;
   }
 }
+/* ---- and the ground's own queue.
+   Re-meshing one ground tile is 62 ms, which is a whole frame and then some, and a fire
+   mission puts ten shells into one tile inside ten seconds. Done as they land that is
+   ten rebuilds of the same tile; queued and coalesced it is one.
+     Two clocks, because either alone is wrong. A tile is rebuilt once it has been quiet
+   for `CRQ_SETTLE`, which is what makes a salvo one rebuild -- and at the latest
+   `CRQ_MAX` after the first shell landed in it, because a battery firing steadily would
+   otherwise keep the tile permanently un-quiet and the ground would never change at all
+   while it was being shelled, which is exactly when a player is looking at it. */
+var CRQ_SETTLE = .45, CRQ_MAX = 1.6;
+function craterMark(x, y, r) {
+  var tw = WORLD.w / PT_W, th = WORLD.h / PT_H, m = r * 1.5 + 12;
+  var i0 = clamp(Math.floor((x - m) / tw), 0, PT_W - 1), i1 = clamp(Math.floor((x + m) / tw), 0, PT_W - 1);
+  var j0 = clamp(Math.floor((y - m) / th), 0, PT_H - 1), j1 = clamp(Math.floor((y + m) / th), 0, PT_H - 1);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var ti = 1 + j * PT_W + i, q = G.groundQ[ti];
+    if (q) q.hit = G.t;
+    else G.groundQ[ti] = { first: G.t, hit: G.t };
+  }
+}
+function flushGroundQ() {
+  if (!SCENE.ready) return;
+  var best = 0, bt = 1e18;
+  for (var k in G.groundQ) {
+    var q = G.groundQ[k];
+    if (G.t - q.hit < CRQ_SETTLE && G.t - q.first < CRQ_MAX) continue;
+    if (q.first < bt) { bt = q.first; best = +k; }     /* the one that has waited longest */
+  }
+  if (!best) return;
+  delete G.groundQ[best];
+  var only = {}; only[best] = 1;
+  buildTerrain(only);
+}
+/* ---- the hole a shell leaves ----------------------------------------------------
+   A shell that lands on open ground takes a piece of the ground away, and until this
+   one did not: what a burst left was a scorch decal, which is a stain painted on a
+   surface that is exactly where it was before. A crater field a battery had worked over
+   for ten minutes was flat ground with dark patches on it, and the men lying in it were
+   lying on a plain.
+
+   The machinery for a real one was already here and was only ever run at build time.
+   Earthworks are kept as two layers over the natural ground -- `G.cut` is the deepest
+   cut at each point and `G.fill` the highest spoil -- and `carve` writes a bowl into
+   them. So a shell hole blown during a battle is the same call the map makes, plus the
+   four things that have to follow it: the worked height, the going, the cover, and the
+   mesh.
+
+   What it deliberately does NOT do is repaint the ground. `buildAlbedo(rect)` is 222 ms
+   whatever the rect, because `paintGround` walks every road, crater, trench and cobble
+   on the map before the clip throws the drawing away, and two hundred milliseconds a
+   shell is not a thing that can happen while a battery is firing. The hole carries its
+   own appearance instead: the mesh darkens its own bowl through the ambient term it
+   already computes off its neighbours, the wet channel fills it because a hole is where
+   the water goes, the scorch decal blackens the middle, and the fresh spoil round the
+   rim rides in the vertex colour off the same kind of grid the wet channel uses. */
+var CRATER_CAP = MOB ? 70 : 170;          /* how many a battle may dig, beyond the map's */
+/* What a burst of a given radius takes out of the ground. A shell hole is a good deal
+   smaller than the radius the blast hurts men over -- about a third of it -- which is
+   what puts a mortar bomb at eleven units and a 210 at forty-five, and those are the two
+   ends of what the map itself was hand-placed with. Under the floor a round scars the
+   ground without opening it, and that is where the tank guns sit. */
+function craterR(burst) { return burst * .34; }
+/* The floor is what separates a round that opens the ground from one that scars it, and
+   it is higher on a phone: a tile re-mesh is 62 ms wherever it runs, so the thing to cut
+   there is how often one is asked for rather than how good the hole is. At eleven a
+   mortar bomb digs; at sixteen it takes a howitzer. */
+var CRATER_MIN = MOB ? 16 : 11;
+/* Where the ground can be opened at all. Not through a floor somebody levelled and built
+   on, not through concrete, and not in the sea. */
+function canDig(x, y) {
+  var i;
+  if (x < 40 || y < 40 || x > WORLD.w - 40 || y > WORLD.h - 40) return false;
+  if (LAND.coast && y < coastY(x) + 30) return false;
+  for (i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (Math.abs(b.x - x) < b.def.w / 2 + 14 && Math.abs(b.y - y) < b.def.h / 2 + 14) return false;
+  }
+  for (i = 0; i < G.blocks.length; i++) {
+    var k = G.blocks[i];
+    if (k.kind === 'sea') continue;
+    if (Math.abs(k.x - x) < k.w / 2 + 8 && Math.abs(k.y - y) < k.h / 2 + 8) return false;
+  }
+  return true;
+}
+/* The hole itself. It is given back so a caller can tell a fresh hole from one that was
+   already there, which is what the card reads. */
+function digCrater(x, y, burst) {
+  if (!G.hmap || !G.cut) return null;
+  var r = craterR(burst);
+  if (r < CRATER_MIN || !canDig(x, y)) return null;
+  var i, c = null;
+  /* Shells landing in the same place make ONE bigger hole rather than a stack of holes.
+     `G.cut` already keeps the deepest cut, so the ground would agree either way; what
+     merging saves is the list, the cover index and the mesh, all of which a ten-minute
+     fire mission would otherwise fill with overlapping copies of the same hole. */
+  for (i = G.craters.length - 1; i >= 0; i--) {
+    var e = G.craters[i];
+    if (Math.hypot(e.x - x, e.y - y) < Math.max(e.r, r) * .75) { c = e; break; }
+  }
+  if (c) {
+    /* Already a bigger hole than this one would be. The hole is handed back rather than
+       a refusal, because the caller sizes the burn off it and a round landing in an
+       existing crater would otherwise get the wide scorch the stain used to be. */
+    if (r <= c.r * 1.04) return c;
+    /* it widens the one that was there rather than being stacked on top of it. The
+       centre stays put on purpose: `indexCover` files a patch under every cell its
+       circle reaches and has no way to unfile one, so a circle that only GROWS can be
+       filed again for the cells it has gained, where a circle that moved would leave
+       cover indexed on ground that no longer has any. */
+    c.r = r; c.fresh = 1;
+    if (c.cov) { c.cov.r = r; indexCover(c.cov); }
+  } else {
+    if (G.cratersDug >= CRATER_CAP) return null;
+    G.cratersDug++;
+    c = { x: x, y: y, r: r, fresh: 1 };
+    G.craters.push(c);
+    /* a hole is cover, and it is cover a man lies in rather than stands behind, which is
+       what `STAND_FLAT` on the `crater` kind already says */
+    addCover(x, y, r, 1, 'crater');
+    c.cov = G.covers[G.covers.length - 1];
+  }
+  craterCarve(c.x, c.y, c.r);
+  craterMark(c.x, c.y, c.r);
+  return c;
+}
+/* The carve, and the three local refreshes that have to follow it. Each is over the
+   hole's own footprint: the whole-map versions are 0.60 ms for the height and 2.70 for
+   the terrain grid, which is not a thing to do per shell, and over a crater they are
+   four and eight microseconds. */
+function craterCarve(x, y, r) {
+  /* A shade sharper than the map's own hand-placed holes, which have had a fortnight of
+     rain in them: the same bowl, dug a third deeper and thrown up a third higher. The
+     wall still comes out at about a third of a gradient, which is well under the 1.0
+     `buildTerrGrid` calls unwalkable and under the 0.45 it calls hard going, so a fresh
+     crater is somewhere to lie down rather than a pit that swallows a section. */
+  carve(x, y, x, y, r * .78, -(3.4 + r * .21), { w: r * .55, h: 2.6 + r * .075 }, 'bowl');
+  var reach = Math.ceil((r * 1.4 + HG) / HG), i, j;
+  var ci = Math.round(x / HG), cj = Math.round(y / HG);
+  for (j = cj - reach; j <= cj + reach; j++) for (i = ci - reach; i <= ci + reach; i++) {
+    if (i < 0 || j < 0 || i >= HW || j >= HH) continue;
+    var k = hidx(i, j);
+    G.hmap[k] = G.hmap0[k] + G.cut[k] + G.fill[k] + G.pad[k];
+  }
+  /* and what the going grid reads off the height. `terrg` is kept because the shape of
+     the ground does not change during a battle -- which stopped being true here, so the
+     cells the hole touches are read again and `makeTerrain` still throws the rest away. */
+  var cr = r * 1.6;
+  var g0 = Math.max(1, Math.floor((x - cr) / CELL)), g1 = Math.min(GW - 2, Math.ceil((x + cr) / CELL));
+  var h0 = Math.max(1, Math.floor((y - cr) / CELL)), h1 = Math.min(GH - 2, Math.ceil((y + cr) / CELL));
+  for (j = h0; j <= h1; j++) for (i = g0; i <= g1; i++) {
+    var wx = i * CELL + CELL / 2, wy = j * CELL + CELL / 2;
+    var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
+    var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
+    var sg = Math.hypot(sgx, sgy);
+    if (LAND.coast && wy < coastY(wx) + 24) continue;  /* the sea is not the hole's to say */
+    terrg[cidx(i, j)] = sg > 1 ? 1 : 0;
+    steep[cidx(i, j)] = sg > .45 ? 1 : 0;
+  }
+  G.gridDirty = 1;
+}
+
 /* ---- the heap ----
    There is no chunk-against-chunk contact here and there is not going to be: a solver
    that resolves a hundred and fifty boxes against each other every frame is not
@@ -6510,7 +6680,13 @@ function settleChunk(c) {
 function rubCap() { return MOB ? 500 : 1400; }
 function explode(x, y, radius, dmg, owner, except, bz) {
   burstFx(x, y, radius, 0, bz);
-  decalScorch(x, y, radius * 1.15);
+  /* And it takes a piece of the ground away. Only a round that went off on the ground:
+     one that burst against an upper storey scorches the street and does not open it.
+     The burn is drawn tight round the hole when there is one, because the scorch used to
+     be standing in for a crater at a radius and a bit of the whole burst -- with a real
+     hole under it as well, a salvo painted the ground black between its own craters. */
+  var dug = (bz || 0) < 26 ? digCrater(x, y, radius) : null;
+  decalScorch(x, y, dug ? dug.r * 1.45 : radius * 1.15);
   /* once, through the index. It was charged here and then again at the foot of this
      function by a linear walk of all two thousand patches, so every medium patch on the
      map took the shell twice and every shell cost a scan of the whole list. */
@@ -12585,8 +12761,27 @@ function buildTerrain(only) {
      couple of cells wide, and at eight units across the mesh rounds it off into the
      slope it was cut from. Phones keep the coarse mesh: the cost is triangles, and
      they have none to spare. */
+  /* and only over the tiles being rebuilt. This is four `groundZ` calls at each of
+     eighty-three thousand cells and it is most of what a tile costs; asked for the whole
+     map on every rebuild it was being paid twenty-four times over for a shell hole in
+     one corner. The margin is one cell, because a fine cell pins its edge midpoints
+     against a coarse neighbour and has to be able to see it. */
+  var sc0 = 0, sc1 = cols - 1, sr0 = 0, sr1 = rows - 1;
+  if (only) {
+    sc0 = cols; sc1 = -1; sr0 = rows; sr1 = -1;
+    for (var oi = 1; oi < PT_N; oi++) {
+      if (!only[oi]) continue;
+      var oci = (oi - 1) % PT_W, ocj = Math.floor((oi - 1) / PT_W);
+      sc0 = Math.min(sc0, Math.floor(oci * cols / PT_W) - 1);
+      sc1 = Math.max(sc1, Math.floor((oci + 1) * cols / PT_W));
+      sr0 = Math.min(sr0, Math.floor(ocj * rows / PT_H) - 1);
+      sr1 = Math.max(sr1, Math.floor((ocj + 1) * rows / PT_H));
+    }
+    sc0 = Math.max(0, sc0); sr0 = Math.max(0, sr0);
+    sc1 = Math.min(cols - 1, sc1); sr1 = Math.min(rows - 1, sr1);
+  }
   if (!MOB) {
-    for (var fj = 0; fj < rows; fj++) for (var fi = 0; fi < cols; fi++) {
+    for (var fj = sr0; fj <= sr1; fj++) for (var fi = sc0; fi <= sc1; fi++) {
       if (fine[fj * cols + fi]) continue;
       var fx = fi * TG + TG / 2, fy = fj * TG + TG / 2;
       var fgx = (groundZ(fx + TG, fy) - groundZ(fx - TG, fy)) / (2 * TG);
@@ -12623,6 +12818,37 @@ function buildTerrain(only) {
     var j = Math.min(rows - 1, Math.max(0, Math.floor(y / TG)));
     return dug[j * cols + i];
   }
+  /* And what a hole blown during the battle looks like, which the painted map cannot
+     say because a patch repaint is 222 ms whatever its size -- `paintGround` walks every
+     road, crater, trench and cobble on the map before the clip throws the drawing away,
+     and that is not a thing that can happen once a shell. The map's own craters get
+     their bowl, their lip and their rays painted into the albedo; a fresh one carries
+     the same reading in its vertex colour instead, off a grid marked in this pass beside
+     the wet one. Subsoil thrown out on top of weathered surface is the BRIGHTEST thing
+     on a crater, because it has not had a fortnight of rain on it, and the bowl under it
+     is the darkest. */
+  var spoil = new Float32Array(cols * rows);
+  function markSpoil(x, y, r) {
+    var reach = r * 1.5;
+    var i0 = Math.max(0, Math.floor((x - reach) / TG)), i1 = Math.min(cols - 1, Math.ceil((x + reach) / TG));
+    var j0 = Math.max(0, Math.floor((y - reach) / TG)), j1 = Math.min(rows - 1, Math.ceil((y + reach) / TG));
+    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+      var d = Math.hypot(i * TG + TG / 2 - x, j * TG + TG / 2 - y) / r;
+      if (d > 1.5) continue;
+      /* a bowl from the middle out to 0.8, then a ring of spoil thinning to nothing */
+      var v = d < .8 ? -(1 - d / .8) : (1 - Math.abs(d - 1.03) / .47);
+      var k = j * cols + i;
+      if (Math.abs(v) > Math.abs(spoil[k])) spoil[k] = clamp(v, -1, 1);
+    }
+  }
+  var anySpoil = 0;
+  G.craters.forEach(function (c) { if (c.fresh) { markSpoil(c.x, c.y, c.r); anySpoil = 1; } });
+  function spoilAt(x, y) {
+    if (!anySpoil) return 0;
+    var i = Math.min(cols - 1, Math.max(0, Math.floor(x / TG)));
+    var j = Math.min(rows - 1, Math.max(0, Math.floor(y / TG)));
+    return spoil[j * cols + i];
+  }
 
   var lastCol = [], lastVal = [];
   function vert(x, y, zOverride) {
@@ -12643,6 +12869,12 @@ function buildTerrain(only) {
     var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55,
                        LAND.wet ? LAND.wet(x, y) : 0);
     wet = clamp(wet, 0, 1) * clamp(1 - (1 - n.z) * 3.0, 0, 1);
+    /* Only the LIP is tinted. The bowl darkens itself twice over already -- through the
+       ambient term two lines up, which reads a hole off its own neighbours, and through
+       the wet channel, because a hole is where the water goes -- and a third darkening
+       on top of those turned a fresh crater into a pit of shadow beside the map's own. */
+    var sp = spoilAt(x, y);
+    if (sp > 0) v *= 1 + sp * .42;
     arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, y * .04, 9);
   }
   function quad(x0, y0, x1, y1, z00, z10, z01, z11) {
@@ -24766,6 +24998,7 @@ function frame(now) {
     updateShots(dt);
     stepDebris(dt);
     flushTileQ();
+    flushGroundQ();
     updateSectors(dt);
     updateSites(dt);
     tickEconomy(dt);

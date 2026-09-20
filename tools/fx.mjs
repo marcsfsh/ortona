@@ -38,6 +38,13 @@
  * so. The drill puts a wall between the camera and the round and asks whether the round
  * is still on the screen.
  *
+ * CRATER is the hole the burst leaves. What a shell used to do to the ground was paint a
+ * stain on it, and a stain is exactly as deep as the ground was before -- so the row
+ * measures the DEPTH the ground actually lost against the depth the carve asked it for,
+ * the lip standing round the rim, the cover that appeared where there was none, and that
+ * the hole is still ground a section can walk into. Plus the two refusals, the merge rule
+ * and what a fire mission of forty rounds costs.
+ *
  * COST is the packer: quads, bytes and milliseconds a frame, and the draw calls it comes
  * to. The old path was one drawArrays per particle.
  */
@@ -58,7 +65,7 @@ async function run(file, label) {
   const browser = await launch();
   const { page, log } = await openGame(browser, 'desktop', { file, quiet: true });
   await deploy(page, { side: 'us', diff: 1, map: MAP || undefined });
-  const out = await page.evaluate(({ doMuzzle, doBurst, doTracer, doCost }) => {
+  const out = await page.evaluate(({ doMuzzle, doBurst, doTracer, doCrater, doCost }) => {
     const R = {};
 
     /* Level, inland, clear for a long way. `flatSpot` hunts for flat ground and finds
@@ -291,6 +298,92 @@ async function run(file, label) {
       R.tracer = { rows, occ };
     }
 
+    /* ---- CRATER ---------------------------------------------------------------- */
+    if (doCrater) {
+      /* Open ground, and PROVED open: a drill staged in a trench measures a hole that is
+         already deeper than the one the shell would cut, `G.cut` keeps the deepest of the
+         two, and the row comes back saying a 210 moves the ground half a unit. */
+      const taken = [];
+      function openGround() {
+        let best = null, bs = -1;
+        for (let x = 400; x < WORLD.w - 400; x += 40) for (let y = 300; y < WORLD.h - 300; y += 40) {
+          const z = groundZ(x, y);
+          if (z < 6 || coverAt(x, y) > 0) continue;
+          if (taken.some(q => Math.hypot(q.x - x, q.y - y) < 220)) continue;
+          let worst = 0;
+          for (let a = 0; a < 8; a++) worst = Math.max(worst, Math.abs(
+            groundZ(x + Math.cos(a) * 150, y + Math.sin(a) * 150) - z));
+          if (worst > 9) continue;
+          let open = 0;
+          for (let a = 0; a < 8; a++) if (coverAt(x + Math.cos(a) * 80, y + Math.sin(a) * 80) === 0) open++;
+          if (open < 6) continue;
+          let near = 1e9;
+          for (const q of G.blds) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+          for (const q of G.props) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+          if (near < 130) continue;
+          const sc = Math.min(near, 600) - worst * 20;
+          if (sc > bs) { bs = sc; best = { x, y }; }
+        }
+        if (best) taken.push(best);
+        return best;
+      }
+      const rows = [];
+      const cellOf = (x, y) => ((y / CELL) | 0) * GW + ((x / CELL) | 0);
+      for (const [name, burst] of [['mortar', 34], ['105', 58], ['heavy', 140]]) {
+        const P = openGround();
+        if (!P) { rows.push({ name, burst, no: 1 }); continue; }
+        const z0 = groundZ(P.x, P.y);
+        const before = { cover: coverAt(P.x, P.y), walk: walkable(P.x, P.y) ? 1 : 0,
+                         steep: steep[cellOf(P.x, P.y)] };
+        const t0 = performance.now();
+        const c = digCrater(P.x, P.y, burst);
+        const dig = performance.now() - t0;
+        if (!c) { rows.push({ name, burst, no: 1 }); continue; }
+        rebuildGrid();
+        /* the lip is the highest ground on the rim, measured all the way round rather
+           than on one bearing, because the ground under it had a slope of its own */
+        let lip = -1e9;
+        for (let a = 0; a < 12; a++)
+          lip = Math.max(lip, groundZ(P.x + Math.cos(a / 12 * 6.283) * c.r,
+                                      P.y + Math.sin(a / 12 * 6.283) * c.r) - z0);
+        rows.push({ name, burst, r: r2(c.r), dig: r3(dig),
+                    /* what the carve asked the ground for, against what it lost */
+                    want: r2(3.4 + c.r * .21), deep: r2(z0 - groundZ(P.x, P.y)), lip: r2(lip),
+                    cover: before.cover + '->' + coverAt(P.x, P.y),
+                    walk: before.walk + '->' + (walkable(P.x, P.y) ? 1 : 0),
+                    tiles: Object.keys(G.groundQ).length });
+        G.groundQ = {};
+      }
+      /* a salvo into one place is ONE hole, deeper, and not a stack of holes */
+      let merge = null;
+      const P2 = openGround();
+      if (P2) {
+        const n0 = G.craters.length, z0 = groundZ(P2.x, P2.y);
+        for (let i = 0; i < 12; i++) digCrater(P2.x + rnd(-14, 14), P2.y + rnd(-14, 14), 90);
+        merge = { added: G.craters.length - n0, deep: r2(z0 - groundZ(P2.x, P2.y)) };
+        G.groundQ = {};
+      }
+      /* what a fire mission costs, and what the queue does with it */
+      const P3 = openGround() || { x: WORLD.w / 2, y: WORLD.h / 2 };
+      G.groundQ = {};
+      const t1 = performance.now();
+      let dug = 0;
+      for (let i = 0; i < 40; i++) if (digCrater(P3.x + rnd(-300, 300), P3.y + rnd(-300, 300), 90)) dug++;
+      const per = (performance.now() - t1) / 40;
+      const queued = Object.keys(G.groundQ).length;
+      G.t += 5;
+      const t2 = performance.now();
+      let flushes = 0;
+      for (let i = 0; i < 40 && Object.keys(G.groundQ).length; i++) { flushGroundQ(); flushes++; }
+      const mesh = flushes ? (performance.now() - t2) / flushes : 0;
+      /* and the two refusals */
+      const bd = G.blds[0];
+      const onBld = !!digCrater(bd.x, bd.y, 140);
+      const small = !!digCrater(P3.x + 600, P3.y, 20);
+      R.crater = { rows, merge, per: r3(per), dug, queued, flushes, mesh: Math.round(mesh),
+                   cap: CRATER_CAP, min: CRATER_MIN, onBld, small };
+    }
+
     /* ---- COST ------------------------------------------------------------------ */
     if (doCost) {
       clear(); G.paused = false;
@@ -314,7 +407,8 @@ async function run(file, label) {
       clear();
     }
     return R;
-  }, { doMuzzle: want('muzzle'), doBurst: want('burst'), doTracer: want('tracer'), doCost: want('cost') });
+  }, { doMuzzle: want('muzzle'), doBurst: want('burst'), doTracer: want('tracer'),
+       doCrater: want('crater'), doCost: want('cost') });
   out.label = label;
   out.errors = log.errors;
   await browser.close();
@@ -367,6 +461,30 @@ function show(c) {
                   '   ' + (o.hidden ? 'the wall hides it' : '! drawn straight through the wall'));
 
     }
+  }
+
+  if (c.crater) {
+    const k = c.crater;
+    console.log('\n  CRATER   a shell landing on open ground, and what the ground did about it\n');
+    console.log('  ' + pad('shell', 8) + lp('burst', 7) + lp('r', 6) + lp('asked', 7) + lp('lost', 7) +
+                lp('lip', 6) + lp('cover', 8) + lp('walk', 7) + lp('tiles', 7) + lp('ms', 7));
+    for (const r of k.rows) {
+      if (r.no) { console.log('  ' + pad(r.name, 8) + lp(r.burst, 7) + '   no open ground for it, or under the floor'); continue; }
+      console.log('  ' + pad(r.name, 8) + lp(r.burst, 7) + lp(r.r.toFixed(1), 6) + lp(r.want.toFixed(1), 7) +
+                  lp(r.deep.toFixed(1), 7) + lp(r.lip.toFixed(1), 6) + lp(r.cover, 8) + lp(r.walk, 7) +
+                  lp(r.tiles, 7) + lp(r.dig.toFixed(2), 7));
+    }
+    if (k.merge)
+      console.log('\n  ' + pad('twelve rounds into one place', 32) + lp(k.merge.added + ' new hole(s)', 14) +
+                  '   ' + k.merge.deep.toFixed(1) + ' units deep');
+    console.log('  ' + pad('a mission of forty rounds', 32) + lp(k.dug + ' dug', 14) +
+                '   ' + k.per.toFixed(3) + ' ms each, ' + k.queued + ' tiles queued');
+    console.log('  ' + pad('re-meshing what they changed', 32) + lp(k.flushes + ' rebuild(s)', 14) +
+                '   ' + k.mesh + ' ms each, one a frame');
+    console.log('  ' + pad('a round on a headquarters', 32) + lp(k.onBld ? '! dug' : 'refused', 14) +
+                '   nothing opens a floor somebody built on');
+    console.log('  ' + pad('a round under the floor', 32) + lp(k.small ? '! dug' : 'refused', 14) +
+                '   under ' + k.min + ' units of hole it scars rather than opens');
   }
 
   if (c.cost) {

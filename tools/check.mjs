@@ -1711,6 +1711,115 @@ for (const device of TARGETS) {
      `; the column reaches ${fx.top} units and the whole of it goes out in ${fx.draws} draw call(s) ` +
      `of ${fx.quads} quads`);
 
+  /* --- The hole a shell leaves. What a burst did to the ground was paint a stain on it,
+     and a stain is exactly as deep as the ground was before: a crater field a battery had
+     worked over for ten minutes was flat ground with dark patches on it. The row asks the
+     two questions a photograph of a dark patch cannot tell apart -- did the SURFACE move,
+     and did the picture of it move with it -- and then the three that follow from a hole
+     being a hole: cover where there was none, ground a section can still walk into, and
+     the height still being the sum of its own layers, which is what `levelPad` broke the
+     first time by writing a building's pad straight into the worked height. --- */
+  const hole = await page.evaluate(() => {
+    const gl = window.gl, G = window.G;
+    const W = () => gl.drawingBufferWidth, H = () => gl.drawingBufferHeight;
+    function grab() {
+      const px = new Uint8Array(W() * H() * 4);
+      window.render();
+      gl.readPixels(0, 0, W(), H(), gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return px;
+    }
+    function moved(a, b) {
+      let n = 0;
+      for (let i = 0; i < a.length; i += 4)
+        if ((Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3 > 6) n++;
+      return n;
+    }
+    /* open ground, and proved open: a drill staged in a trench measures a hole already
+       deeper than the one the shell would cut, and `G.cut` keeps the deeper of the two */
+    let P = null, bs = -1;
+    for (let x = 400; x < window.WORLD.w - 400; x += 40) for (let y = 300; y < window.WORLD.h - 300; y += 40) {
+      const z = window.groundZ(x, y);
+      if (z < 6 || window.coverAt(x, y) > 0) continue;
+      let worst = 0;
+      for (let a = 0; a < 8; a++) worst = Math.max(worst, Math.abs(
+        window.groundZ(x + Math.cos(a) * 150, y + Math.sin(a) * 150) - z));
+      if (worst > 9) continue;
+      let open = 0;
+      for (let a = 0; a < 8; a++) if (window.coverAt(x + Math.cos(a) * 80, y + Math.sin(a) * 80) === 0) open++;
+      if (open < 6) continue;
+      let near = 1e9;
+      for (const q of G.blds) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+      for (const q of G.props) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
+      if (near < 130) continue;
+      const sc = Math.min(near, 600) - worst * 20;
+      if (sc > bs) { bs = sc; P = { x, y }; }
+    }
+    if (!P) return null;
+    const keep = G.units.slice();
+    G.units.length = 0; G.fx.length = 0; G.shots.length = 0;
+    window.__o.reveal();
+    window.__o.camera({ x: P.x, y: P.y, dist: 300, yaw: -1.1, pitch: .45 });
+    G.paused = true;
+    const z0 = window.groundZ(P.x, P.y);
+    const up = { cover: window.coverAt(P.x, P.y), walk: window.walkable(P.x, P.y) ? 1 : 0 };
+    /* Two identical frames first, because the renderer has its own frame-to-frame
+       variation -- the fog texture refreshes every third frame -- and a difference this
+       row reports has to be against that floor rather than against nought. */
+    const warm = grab();
+    const before = grab();
+    const noise = moved(warm, before);
+
+    /* dug rather than exploded, so that the only thing that can change the picture is
+       the ground mesh: an explosion also paints a scorch, which is the stain this row
+       exists to tell apart from a hole */
+    const c = window.digCrater(P.x, P.y, 140);
+    if (!c) return null;
+    window.rebuildGrid();
+    /* the queue is aged rather than the clock: moving G.t moves the ambient smoke, the
+       sea and the grass with it, and then the whole frame differs and the row proves
+       nothing about the ground */
+    for (const k in G.groundQ) { G.groundQ[k].first = G.t - 10; G.groundQ[k].hit = G.t - 10; }
+    let flushes = 0;
+    while (Object.keys(G.groundQ).length && flushes < 30) { window.flushGroundQ(); flushes++; }
+    const after = grab();
+
+    let lip = -1e9;
+    for (let a = 0; a < 12; a++)
+      lip = Math.max(lip, window.groundZ(P.x + Math.cos(a / 12 * 6.283) * c.r,
+                                         P.y + Math.sin(a / 12 * 6.283) * c.r) - z0);
+    /* the height is the sum of its layers everywhere, including under a building's pad */
+    let worstK = 0;
+    for (let k = 0; k < G.hmap.length; k += 37)
+      worstK = Math.max(worstK, Math.abs(G.hmap[k] - (G.hmap0[k] + G.cut[k] + G.fill[k] + G.pad[k])));
+
+    const bd = G.blds[0];
+    const onBld = !!window.digCrater(bd.x, bd.y, 140);
+    const small = !!window.digCrater(P.x + 700, P.y, 20);
+
+    G.craters.length = 0; G.cratersDug = 0; G.groundQ = {};
+    G.units.length = 0; keep.forEach(u => G.units.push(u));
+    G.paused = false;
+    return { r: +c.r.toFixed(1), want: +(3.4 + c.r * .21).toFixed(1),
+             deep: +(z0 - window.groundZ(P.x, P.y)).toFixed(1), lip: +lip.toFixed(1),
+             cover: up.cover, cover2: window.coverAt(P.x, P.y),
+             walk: up.walk, walk2: window.walkable(P.x, P.y) ? 1 : 0,
+             px: moved(before, after), noise, flushes, layers: +worstK.toFixed(3),
+             onBld, small };
+  });
+  ok('a shell landing on open ground leaves a hole in it and not a stain on it',
+     !!hole && Math.abs(hole.deep - hole.want) < 1.2 && hole.lip > 2 &&
+     hole.cover === 0 && hole.cover2 > 0 && hole.walk === 1 && hole.walk2 === 1 &&
+     hole.px > Math.max(12000, hole.noise * 4) && hole.flushes > 0 && hole.layers < 0.01 &&
+     !hole.onBld && !hole.small,
+     !hole ? 'no open ground on this map to shell'
+           : `a ${hole.r}-unit hole: the ground lost ${hole.deep} of the ${hole.want} the carve asked ` +
+             `for and threw a ${hole.lip} lip round it, cover ${hole.cover}->${hole.cover2}, ` +
+             `walkable ${hole.walk}->${hole.walk2}; ${hole.px} pixels of the picture moved with it ` +
+             `against ${hole.noise} between two identical frames, ` +
+             `over ${hole.flushes} tile rebuild(s), the height is its own layers to ${hole.layers}, ` +
+             `and a round on a headquarters ${hole.onBld ? '! DUG' : 'was refused'} and one under the ` +
+             `floor ${hole.small ? '! DUG' : 'was refused'}`);
+
   /* --- The bunker, which is the one piece of cover on either map with a front and a
      back. Four claims, and each of them reads as working on its own: a solid prop nobody
      can garrison is a wall, a garrison with no arc is a house with a grey roof, cover laid

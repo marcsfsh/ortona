@@ -631,6 +631,15 @@ laying the same round across the same patch of screen twice, once on the far sid
 house and once on the near side: 17,638 pixels in front of the wall and none behind it.
 Drawn on the overlay both would read the same.
 
+**CRATER** is the hole the burst leaves. What a shell used to do to the ground was paint a
+stain on it, and a stain is exactly as deep as the ground was before, so the row measures
+the DEPTH the ground actually lost against the depth the carve asked it for: a mortar bomb
+takes 5.8 units out and throws a 3.3 lip, a 210 takes 13.4 and throws 7.4, and `lost`
+equals `asked` to the tenth on every row. Plus the cover that appeared where there was
+none, that the hole is still ground a section can walk into, the merge rule (twelve rounds
+into one place make one hole and not twelve), what a forty-round mission costs, and the two
+refusals.
+
 **COST** is the packer. Six bursts in the air at once is 144 effects, 228 quads, 0.17 ms to
 pack and two draw calls; it was one draw call per particle.
 
@@ -728,6 +737,15 @@ the biggest blast has to light many times the pixels of the smallest, a round la
 house has to be hidden by it from one side and not the other, and a heavy shell has to
 still be on the screen a second and a half after it lands. The column's floor is what a
 PHONE has to clear, because a phone spawns four puffs of it rather than eleven.
+
+**And one row asks whether a shell leaves a hole or a stain.** They are the same picture
+from above -- a dark patch on the ground -- so the row asks the two questions a photograph
+of a dark patch cannot tell apart: did the SURFACE move, and did the picture of it move
+with it. It digs rather than explodes, because an explosion also paints a scorch and the
+scorch is the stain the row exists to tell apart from a hole; then it reads the frame
+before and after against a control of two identical frames, which is nought. A 47.6-unit
+hole moves 1.2 million pixels of a 1.44 million pixel frame. It also checks the height is
+still the sum of its own layers over the whole grid, which is what `levelPad` broke.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1104,6 +1122,12 @@ the section walked straight past.
 Slots inside something went from 7.1 per cent of man-frames to 2.4, and the mean distance
 of a man from his own marker went from 63 units to 92 -- a section holding a wall rather
 than a section standing on a dot.
+
+**And the ground itself changes during a battle now.** A shell that lands on open ground
+digs a hole in the heightfield (see *The hole a shell leaves*), so `terrg` -- which is
+cached precisely because the shape of the ground was a thing that did not change -- is
+read again over the hole's own footprint, and `G.gridDirty` carries the rebuild to the top
+of the next frame the way a burning hull already did.
 
 Every path carries the `gridStamp` it was found on and is found again when the grid
 changes, which it does whenever a building goes up or a vehicle burns. A retreat scatters
@@ -1728,6 +1752,89 @@ what the renderer put there was the six puffs it died with. That is the same sha
 as the fog of war having no live tier: the eye was being slowed by smoke that was not on
 the screen. A wreck in view now streams smoke and licks flame at a rate that falls away
 over the two minutes `smokeColumns` already models.
+
+**The hole a shell leaves.** A burst painted a scorch decal, which is a stain on a
+surface that is exactly where it was before, so ground a battery had worked over for ten
+minutes was flat ground with dark patches on it and the men lying in it were lying on a
+plain.
+
+The machinery for a real one was already here and had only ever been run at build time.
+Earthworks are kept as layers over the natural ground -- `G.cut` is the deepest cut at
+each point and `G.fill` the highest spoil -- and `carve` writes a bowl into them, which is
+how the map's own crater fields are dug. So a hole blown during a battle is the same call
+the map makes, plus the four things that have to follow it: the worked height, the going
+grid, the cover, and the mesh. `digCrater` is the one door and `tools/fx.mjs`'s CRATER
+section is the card.
+
+**What was wrong with the height was that it was not the sum of its own parts.**
+`levelPad` presses a building's footprint flat and wrote the result straight into
+`G.hmap`, so `hmap = hmap0 + cut + fill` held everywhere except under a pad -- which is
+fine while nothing ever recomputes a piece of the height, and is exactly wrong the moment
+something does. The first shell hole blown beside a house recomputed the ground under the
+house off the parts it could see and put the pad back on the hillside. The pad is a third
+layer now (`G.pad`) and the invariant holds everywhere, which the gate measures over the
+whole grid rather than trusting.
+
+**Everything is refreshed over the hole's own footprint.** The whole-map versions are
+0.60 ms for the height and 2.70 for the terrain grid, which is not a thing to do once a
+shell; over a crater they are four and eight microseconds. `terrg` is the interesting one:
+it is cached because the shape of the ground does not change during a battle, which
+stopped being true here, so the cells a hole touches are read again and `makeTerrain` still
+throws the rest away.
+
+**A hole is cover, and it is cover a man lies in.** `addCover(x, y, r, 1, 'crater')` is
+what the map's own craters get, and the `crater` kind already carries `STAND_FLAT`. The
+wall comes out at about a third of a gradient, well under the 1.0 `buildTerrGrid` calls
+unwalkable and under the 0.45 it calls hard going, so a fresh crater is somewhere to lie
+down rather than a pit that swallows a section. Measured: cover 0 to 1, walkable before and
+after.
+
+**Shells landing in the same place make ONE bigger hole.** `G.cut` keeps the deepest cut
+so the ground would agree either way; what merging saves is the list, the cover index and
+the mesh, all of which a ten-minute fire mission would otherwise fill with overlapping
+copies of the same hole. The centre stays put when a hole widens, on purpose: `indexCover`
+files a patch under every cell its circle reaches and has no way to unfile one, so a circle
+that only grows can be filed again for the cells it has gained where one that moved would
+leave cover indexed on ground that no longer has any.
+
+**The mesh is queued, and coalesced on two clocks.** Re-meshing one ground tile is 40 to 60
+ms, and a fire mission puts ten shells into one tile inside ten seconds: done as they land
+that is ten rebuilds of the same tile. A tile is rebuilt once it has been quiet for 0.45 s,
+which is what makes a salvo one rebuild, and at the latest 1.6 s after the first shell
+landed in it -- because a battery firing steadily would otherwise keep the tile permanently
+un-quiet and the ground would never change at all while it was being shelled, which is
+exactly when a player is looking at it. A forty-round mission is 0.115 ms a round, four
+tiles queued, four rebuilds.
+
+**And `buildTerrain` stopped scanning the whole map to rebuild one tile of it.** The
+refinement pass is four `groundZ` calls at each of eighty-three thousand cells and it is
+most of what a tile costs; asked for the whole map on every partial rebuild it was being
+paid twenty-four times over for a shell hole in one corner. It is restricted to the tiles
+being rebuilt plus a one-cell margin, because a fine cell pins its edge midpoints against a
+coarse neighbour and has to be able to see it.
+
+**What it deliberately does not do is repaint the ground.** `buildAlbedo(rect)` is 222 ms
+whatever the rect -- `paintGround` walks every road, crater, trench and cobble on the map
+before the clip throws the drawing away -- and two hundred milliseconds a shell is not a
+thing that can happen while a battery is firing. The hole carries its own appearance
+instead: the mesh darkens its own bowl through the ambient term it already computes off its
+neighbours, the wet channel fills it because a hole is where the water goes and a deep one
+gets standing water, the scorch decal blackens the middle, and the fresh spoil round the
+rim rides in the vertex colour off a grid marked in the same pass the wet channel's is.
+Only the LIP is tinted: the bowl darkens itself twice over already, and a third darkening
+on top turned a fresh crater into a pit of shadow beside the map's own.
+
+**And the burn was drawn at a radius and a bit of the whole burst**, which was the scorch
+standing in for a crater. With a real hole under it as well, a salvo painted the ground
+black between its own craters; it is drawn tight round the hole when there is one.
+
+**What will not open.** A floor somebody levelled and built on, concrete, the sea, and
+anything under the size floor -- `CRATER_MIN`, which is eleven units of hole and sixteen on
+a phone, because a tile re-mesh costs what it costs wherever it runs and the thing to cut
+there is how often one is asked for. A crater is about a third of the burst radius, which
+puts a mortar bomb at eleven and a 210 at forty-five, and those are the two ends of what
+the map itself was hand-placed with. A round that burst against an upper storey scorches
+the street and does not open it.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and particle programs. A 2048px shadow map from a
@@ -3605,6 +3712,23 @@ shots/                         screenshot output, gitignored
   is several of them in one frame.** Queue the rebuild and take one tile a frame; the thing
   that left the tile is drawn twice for that frame and nobody sees it.
 
+- **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
+  `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the
+  height be recomputed from its parts when a shell opens the ground. `levelPad` used to
+  write a building's footprint straight into `hmap` and not into a layer, so the first
+  crater blown beside a house recomputed the ground under the house off the parts it
+  could see and put the pad back on the hillside. Anything that changes the height writes
+  a layer.
+- **A drill about the ground has to be staged on ground that is open, and prove it.**
+  A crater drill put down in a trench measures a hole that is already deeper than the one
+  the shell would cut; `G.cut` keeps the deeper of the two, and the row comes back saying
+  a 210 moves the ground half a unit. Require `coverAt` to read nought at the point AND
+  round it, and print what it read.
+- **A frame-difference row needs a control of two identical frames.** The renderer has
+  its own frame-to-frame variation and anything that advances `G.t` -- which is easy to do
+  by accident when forcing a queue -- moves the smoke, the sea and the grass with it, and
+  then the whole frame differs and the row proves nothing. Age the queue rather than the
+  clock, and print the floor.
 - **An effect that is drawn and invisible looks exactly like one that is not drawn.** A
   smoke column was packed, uploaded and rasterised correctly for five rounds of
   screenshots and was simply the colour of the ground it was drawn over; then, fixed, it
