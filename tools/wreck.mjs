@@ -56,7 +56,7 @@ async function run(file, label) {
   const browser = await launch();
   const { page, log } = await openGame(browser, 'desktop', { file, quiet: true });
   await deploy(page, { side: 'us', diff: 1 });
-  const out = await page.evaluate(({ doShell, doFall, doDebris, doWorld, doWall, doCost }) => {
+  const out = await page.evaluate(({ doShell, doFall, doDebris, doWorld, doWall, doCost, doHulk }) => {
     const R = {};
 
     /* A house on its own, so that nothing else on the map is in the burst and every
@@ -67,6 +67,27 @@ async function run(file, label) {
         !G.blds.some(b => Math.hypot(b.x - p.x, b.y - p.y) < 340) &&
         !G.props.some(q => q !== p && q.solid && q.kind !== 'sea' && Math.hypot(q.x - p.x, q.y - p.y) < 260));
       return c[0] || G.props.filter(p => p.kind === 'ruin' && p.style !== 'church')[0];
+    }
+    /* the frame, read rather than looked at */
+    /* Three renders a grab, and that is not padding. `render()` refreshes the fog
+       texture and uploads the decal canvas every THIRD frame, so two consecutive frames
+       of a perfectly still scene differ by whichever of those happened to fall between
+       them: the control came back at 35,063 pixels of a 1.44-million-pixel frame, which
+       is larger than the thing being measured. Grabbing on the period puts the control
+       where a control belongs. */
+    function grab() {
+      const w = cv.width, h = cv.height, px = new Uint8Array(w * h * 4);
+      render(); render(); render();
+      gl.readPixels(0, 0, w, h, gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return px;
+    }
+    function diffAll(a, b) {
+      let hit = 0, n = a.length / 4;
+      for (let i = 0; i < a.length; i += 4) {
+        const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+        if (d > 6) hit++;
+      }
+      return hit;
     }
     function reset(p) {
       p.bay = null;
@@ -387,9 +408,142 @@ async function run(file, label) {
       R.cost = { hit: +hit.toFixed(3), tile: +tile.toFixed(1), rebuild: +rebuild.toFixed(2), faces,
                  step: +step.toFixed(3), buf: +buf.toFixed(2), cap };
     }
+    /* ---- HULK ---- */
+    if (doHulk) {
+      /* A dying vehicle is the one thing on this page a photograph is worst at. The
+         effects round it were never in doubt -- a full burst, a real crater, two minutes
+         of smoke and a fire that lights the street -- and the BODY never changed: the
+         same hull buffer, standing level, drawn in a different colour. From above, at the
+         distance a player looks from, a dark tank and a dead tank are the same picture.
+           So the first row renders the two and counts the pixels between them, and the
+         rest count what the body actually did. */
+      const H = {};
+      /* a corridor rather than a square: asked for 340 units of open ground every way,
+         Ortona has nowhere that qualifies and the spot fell silently to the map's corner */
+      let fx0 = 0, fy0 = 0, fOK = false;
+      for (let ty = 400; ty < WORLD.h - 400 && !fOK; ty += 40)
+        for (let tx = 400; tx < WORLD.w - 400 && !fOK; tx += 40) {
+          let ok = true;
+          for (let a = -190; a <= 190 && ok; a += 20)
+            for (let b = -70; b <= 70 && ok; b += 20)
+              if (!walkable(tx + a, ty + b)) ok = false;
+          for (let a = -120; a <= 120 && ok; a += 20)
+            for (let b = -60; b <= 60 && ok; b += 20)
+              if (onRubble(tx + a, ty + b) || inWire(tx + a, ty + b) || inHogs(tx + a, ty + b)) ok = false;
+          if (ok) { fx0 = tx; fy0 = ty; fOK = true; }
+        }
+      if (!fOK) { fx0 = WORLD.w / 2; fy0 = WORLD.h / 2; }
+      H.spot = { x: fx0, y: fy0, found: fOK };
+      function clear() {
+        G.units.length = 0; G.wrecks.length = 0; G.debris.length = 0; G.rub.length = 0;
+        G.fx.length = 0; G.corpses.length = 0; G.falls.length = 0; G.shots.length = 0;
+        /* And the camera shake, which is the one thing here that is random per FRAME.
+           A turret coming down hard adds one, `shake.t` is only wound down inside
+           `frame()`, and nothing in a probe calls `frame()` -- so the camera jittered by
+           a few pixels on every render for the rest of the run and the control of two
+           identical frames came back at 37,737 pixels of 1.44 million. */
+        shake.t = 0; shake.mag = 0;
+        MND = null;
+      }
+      function reveal() {
+        G.units.forEach(q => { q.vUs = q.vGer = true; });
+        G.blds.forEach(q => { q.vUs = q.vGer = true; });
+      }
+
+      /* how far the body moved: the cant it settled at, how far it went down, and
+         whether the turret is still on the hull it was bolted to */
+      H.out = [];
+      for (const key of ['us_sher', 'ger_tig', 'ger_stug', 'us_stuart']) {
+        let off = 0, broke = 0, burn = 0, cant = 0, sink = 0, chunks = 0, n = 0;
+        for (let i = 0; i < 40; i++) {
+          clear();
+          const u = spawnUnit(UNITS[key].side, key, fx0, fy0, 0);
+          G.debris.length = 0;
+          makeWreck(u);
+          const w = G.wrecks[G.wrecks.length - 1];
+          n++;
+          if (w.blown) off++;
+          else if (Math.abs(w.lean) > .15) broke++;
+          else burn++;
+          cant += Math.hypot(w.lean, w.nose) * 180 / Math.PI;
+          sink += w.sink;
+          chunks += G.debris.length;
+        }
+        H.out.push({ key, n, off, broke, burn, cant: +(cant / n).toFixed(1),
+                     sink: +(sink / n).toFixed(1), chunks: +(chunks / n).toFixed(1) });
+      }
+
+      /* the mount in the air: how high, how far, how long, and that it stays where it
+         lands rather than going on for ever or sinking through the ground */
+      clear();
+      {
+        let tries = 0, w = null;
+        while (tries++ < 60 && (!w || !w.fly)) {
+          clear();
+          const u = spawnUnit('us', 'us_sher', fx0, fy0, 0);
+          makeWreck(u);
+          w = G.wrecks[G.wrecks.length - 1];
+        }
+        if (w && w.fly) {
+          const z0 = w.fly.z, x0 = w.fly.x, y0 = w.fly.y;
+          let apex = z0, t = 0, spun = 0, la = w.fly.a;
+          while (w.fly && t < 12) {
+            stepHulk(w, 1 / 60); t += 1 / 60;
+            if (w.fly) {
+              if (w.fly.z > apex) apex = w.fly.z;
+              let d = w.fly.a - la; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+              spun += Math.abs(d); la = w.fly.a;
+            }
+          }
+          const rest = { x: w.tx, y: w.ty, z: w.tz };
+          for (let i = 0; i < 240; i++) if (w.fly) stepHulk(w, 1 / 60);
+          H.fly = { apex: +(apex - z0).toFixed(1), range: +Math.hypot(w.tx - x0, w.ty - y0).toFixed(1),
+                    secs: +t.toFixed(2), spun: +spun.toFixed(1),
+                    still: w.tx === rest.x && w.ty === rest.y && w.tz === rest.z,
+                    onGround: +(w.tz - groundZ(w.tx, w.ty)).toFixed(1),
+                    cover: coverAt(w.tx, w.ty) };
+        }
+      }
+
+      /* the picture. One camera, one Sherman, rendered alive and then rendered dead, and
+         the pixels between them counted -- against a control of the same live frame
+         rendered twice, which is what says the number is the wreck and not the renderer. */
+      clear();
+      {
+        const u = spawnUnit('us', 'us_sher', fx0, fy0, .7);
+        CAM.tx = fx0; CAM.ty = fy0; CAM.dist = 240; CAM.yaw = 1.1; CAM.pitch = .62;
+        reveal();
+        /* and the frame is warmed before anything is measured. A camera moved to a new
+           place takes a dozen frames to settle -- the fog texture is refreshed every
+           third one and eases toward what it should be -- so the control of two
+           "identical" frames came back at 41,975 pixels of 1.44 million, which is larger
+           than the thing being measured. Warmed, it is nought. */
+        for (let i = 0; i < 14; i++) render();
+        const a1 = grab(), a2 = grab();
+        const ctrl = diffAll(a1, a2);
+        G.units.length = 0;
+        makeWreck(u);
+        /* the plate and the blast are cleared before the shutter: `makeWreck` throws its
+           own burst when the mount comes off, and a fireball forty units across from a
+           camera two hundred and fifty away covers most of the frame, so the row would be
+           measuring the explosion rather than the body it exists to measure */
+        G.debris.length = 0; G.fx.length = 0; G.shots.length = 0;
+        shake.t = 0; shake.mag = 0;
+        const w = G.wrecks[G.wrecks.length - 1];
+        w.blown = true; w.fly = null;
+        w.tx = fx0 + 46; w.ty = fy0 + 18; w.tz = groundZ(fx0 + 46, fy0 + 18) + 6;
+        w.ta = 1.9; w.tLean = 1.4; w.tNose = .3;
+        reveal();
+        const b = grab();
+        H.pic = { moved: diffAll(a1, b), ctrl };
+      }
+      clear();
+      rebuildGrid();
+      R.hulk = H;
+    }
     return R;
   }, { doShell: want('shell'), doFall: want('fall'), doDebris: want('debris'),
-       doWorld: want('world'), doWall: want('wall'), doCost: want('cost') });
+       doWorld: want('world'), doWall: want('wall'), doCost: want('cost'), doHulk: want('hulk') });
   await browser.close();
   return { label, errors: log.errors, ...out };
 }
@@ -400,6 +554,25 @@ const lp = (s, n) => String(s).padStart(n);
 function show(c) {
   if (c.label) console.log(`\n  ${c.label}`);
   if (c.errors && c.errors.length) console.log('  ! ' + c.errors.length + ' console errors: ' + c.errors[0]);
+
+  if (c.hulk) {
+    const h = c.hulk;
+    console.log('\n  HULK     what is left of a vehicle, and whether it is a different thing\n');
+    console.log('  ' + pad('vehicle', 12) + lp('deaths', 8) + lp('turret off', 12) + lp('broken', 8) +
+                lp('burnt', 8) + lp('cant', 8) + lp('sank', 7) + lp('plate', 8));
+    for (const r of h.out)
+      console.log('  ' + pad(r.key, 12) + lp(r.n, 8) + lp(r.off, 12) + lp(r.broke, 8) + lp(r.burn, 8) +
+                  lp(r.cant + ' deg', 8) + lp(r.sink, 7) + lp(r.chunks, 8));
+    if (h.fly)
+      console.log('\n  ' + pad('a mount thrown off its ring', 30) + h.fly.apex + ' up, ' + h.fly.range +
+                  ' out, down in ' + h.fly.secs + 's after ' + h.fly.spun + ' rad of tumble; ' +
+                  (h.fly.still ? 'lies still' : '! still moving') + ', ' + h.fly.onGround +
+                  ' off the ground, cover ' + h.fly.cover);
+    if (h.spot && !h.spot.found) console.log('  ! no clear corridor on the map; drills staged at the middle of it');
+    if (h.pic)
+      console.log('  ' + pad('the same tank alive and dead', 30) + h.pic.moved +
+                  ' pixels of the picture moved, against ' + h.pic.ctrl + ' between two live frames');
+  }
 
   if (c.shell) {
     const s = c.shell;

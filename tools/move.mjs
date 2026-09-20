@@ -58,7 +58,7 @@ const SECS = args.t === undefined ? 240 : Number(args.t);
 const DIFF = args.diff === undefined ? 1 : Number(args.diff);
 const BASE = args.base === undefined ? null : String(args.base);
 const VERB = !!args.v;
-const WANT = args._.length ? args._ : ['routes', 'traffic', 'cover'];
+const WANT = args._.length ? args._ : ['contact', 'routes', 'traffic', 'cover', 'motion'];
 
 /* ------------------------------------------------------------------ the page side */
 
@@ -405,8 +405,7 @@ async function install(page) {
         for (let j = i + 1; j < un.length; j++) {
           const o = un[j];
           if (o.dead || o.inside || o.gar) continue;
-          const rr = (unitRadius(u) + unitRadius(o)) * 0.72;
-          if (dsq(u.x, u.y, o.x, o.y) < rr * rr) c.overlap++;
+          if (M.meshHit(u, o)) c.overlap++;
         }
         if (u.cat === 'veh' || u.gar) continue;
         const halted = !u.moving && !u.retreat;
@@ -449,6 +448,254 @@ async function install(page) {
       r.secs = +(G.t - c.t0).toFixed(0);
       return r;
     };
+
+    /* ---- the body two units are kept apart on, against the model they are drawn as ---
+       The gap at the moment of contact is the whole of the complaint: a tank that stops
+       a section dead with three metres of daylight between them, and the same tank on
+       another bearing standing with the men inside its own tracks. Both come out of one
+       isotropic threshold on two markers, so what to read is the SPREAD of the gap over
+       bearing rather than any one row of it.
+         The hull is measured off the model's own faces here and deliberately not asked
+       of the game: a probe that asks the code under test how big a tank is cannot see it
+       being wrong about how big a tank is. */
+    M.hullBox = function (key) {
+      const V = VMODEL[key]; if (!V) return null;
+      let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
+      const eat = fs => {
+        if (!fs) return;
+        for (const f of fs) for (const v of f.v) {
+          if (v[0] < x0) x0 = v[0]; if (v[0] > x1) x1 = v[0];
+          if (v[1] < y0) y0 = v[1]; if (v[1] > y1) y1 = v[1];
+        }
+      };
+      /* hull and skirts: the plate that is actually in the way. The gun is on the mount
+         and is not a body anybody walks into. */
+      eat(V.hull); eat(V.skirts);
+      return { x0, x1, y0, y1, len: x1 - x0, wid: y1 - y0 };
+    };
+    /* the game's own answer to "are these two touching, and by how much". Before there
+       was one function to ask, the two separation loops each did their own arithmetic on
+       `unitRadius`; that is restated here for a --base run and nowhere else. */
+    M.depth = function (u, o) {
+      if (typeof sepDepth === 'function') return sepDepth(u, o);
+      return unitRadius(u) + unitRadius(o) - Math.hypot(u.x - o.x, u.y - o.y);
+    };
+    const MAN_R = 11;                /* a man's own body, the radius `hitsUnit` reads */
+    /* where the men stand, which is `updateModels`'s own line: the offsets the unit was
+       given, rotated onto its facing. In the open `fl` and `fw` are 1. */
+    M.layMen = function (u) {
+      const c = Math.cos(u.facing), s = Math.sin(u.facing);
+      for (const m of u.models) { m.x = u.x + m.ox * c - m.oy * s; m.y = u.y + m.ox * s + m.oy * c; }
+    };
+    function boxDist(cx, cy, yaw, box, px, py) {
+      const c = Math.cos(yaw), s = Math.sin(yaw), dx = px - cx, dy = py - cy;
+      const lx = dx * c + dy * s, ly = -dx * s + dy * c;
+      return Math.hypot(Math.max(box.x0 - lx, 0, lx - box.x1), Math.max(box.y0 - ly, 0, ly - box.y1));
+    }
+    M.drop = function (u) { const i = G.units.indexOf(u); if (i >= 0) G.units.splice(i, 1); };
+    /* Two MODELS inside each other, which is the thing the player sees and is not the
+       thing the game's own separation test asks. Read off the hulls and the men rather
+       than off any radius the game carries, because a probe that measures with the
+       function under test cannot see it fail -- and because a threshold written against
+       `unitRadius` reports two tanks parked properly side by side as wedged the moment
+       the collision body stops being a circle at half their length. */
+    const boxCache = {};
+    function hb(k) { return (k in boxCache) ? boxCache[k] : (boxCache[k] = M.hullBox(k)); }
+    function boxSAT(ax, ay, aa, A, bx, by, ba, B) {
+      const ca = Math.cos(aa), sa = Math.sin(aa), cb = Math.cos(ba), sb = Math.sin(ba);
+      const dx = ax + (A.x0 + A.x1) / 2 * ca - (A.y0 + A.y1) / 2 * sa - (bx + (B.x0 + B.x1) / 2 * cb - (B.y0 + B.y1) / 2 * sb);
+      const dy = ay + (A.x0 + A.x1) / 2 * sa + (A.y0 + A.y1) / 2 * ca - (by + (B.x0 + B.x1) / 2 * sb + (B.y0 + B.y1) / 2 * cb);
+      const al = A.len / 2, aw = A.wid / 2, bl = B.len / 2, bw = B.wid / 2;
+      for (let k = 0; k < 4; k++) {
+        const nx = k === 0 ? ca : k === 1 ? -sa : k === 2 ? cb : -sb;
+        const ny = k === 0 ? sa : k === 1 ? ca : k === 2 ? sb : cb;
+        const pa = al * Math.abs(nx * ca + ny * sa) + aw * Math.abs(ny * ca - nx * sa);
+        const pb = bl * Math.abs(nx * cb + ny * sb) + bw * Math.abs(ny * cb - nx * sb);
+        if (Math.abs(nx * dx + ny * dy) >= pa + pb) return false;
+      }
+      return true;
+    }
+    function inHull(V, box, px, py) {
+      const c = Math.cos(V.facing), s = Math.sin(V.facing), dx = px - V.x, dy = py - V.y;
+      const lx = dx * c + dy * s, ly = dy * c - dx * s;
+      return lx > box.x0 && lx < box.x1 && ly > box.y0 && ly < box.y1;
+    }
+    M.meshHit = function (u, o) {
+      const ub = u.cat === 'veh' ? hb(u.key) : null, ob = o.cat === 'veh' ? hb(o.key) : null;
+      if (ub && ob) return boxSAT(u.x, u.y, u.facing, ub, o.x, o.y, o.facing, ob);
+      if (ub && o.models) {
+        for (const m of o.models) if (m.alive && inHull(u, ub, m.x, m.y)) return true;
+        return false;
+      }
+      if (ob && u.models) {
+        for (const m of u.models) if (m.alive && inHull(o, ob, m.x, m.y)) return true;
+        return false;
+      }
+      if (u.models && o.models) {
+        for (const a of u.models) { if (!a.alive) continue;
+          for (const b of o.models) { if (!b.alive) continue;
+            if (dsq(a.x, a.y, b.x, b.y) < 144) return true; } }
+      }
+      return false;
+    };
+    /* Two hundred units of open ground every way is a thing Ortona does not have: asked
+       for a 340-unit square with no cover in it the search came back empty every run and
+       the spot fell silently to the map's corner, where nothing is walkable and every
+       drill spent itself walking out to the nearest ground it could stand on. What the
+       drills actually need is a CORRIDOR -- room to drive along and room to turn round
+       in -- so that is what is asked for, and whether one was found is returned rather
+       than assumed. */
+    M.openSpot = function () {
+      for (var ty = 400; ty < WORLD.h - 400; ty += 40)
+        for (var tx = 400; tx < WORLD.w - 400; tx += 40) {
+          var ok = true, a, b;
+          for (a = -190; a <= 190 && ok; a += 20)
+            for (b = -70; b <= 70 && ok; b += 20)
+              if (!walkable(tx + a, ty + b)) ok = false;
+          for (a = -120; a <= 120 && ok; a += 20)
+            for (b = -60; b <= 60 && ok; b += 20)
+              if (onRubble(tx + a, ty + b) || inWire(tx + a, ty + b) || inHogs(tx + a, ty + b)) ok = false;
+          if (ok) return { x: tx, y: ty, found: true };
+        }
+      return { x: WORLD.w / 2, y: WORLD.h / 2, found: false };
+    };
+    /* every vehicle on the roster: the hull it is drawn as, against the body it is
+       separated on. `err` is the body over the hull across the tracks, which is the
+       phantom the player walks into. */
+    M.bodies = function () {
+      const out = [];
+      for (const k of Object.keys(UNITS)) {
+        const d = UNITS[k];
+        if (d.cat !== 'veh' || !VMODEL[k]) continue;
+        const box = M.hullBox(k), u = spawnUnit(d.side, k, 300, 300, 0);
+        let b = { hl: unitRadius(u), hw: unitRadius(u) };
+        if (typeof unitBody === 'function') { unitBody(u); b = { hl: u.bodyL, hw: u.bodyW }; }
+        M.drop(u);
+        out.push({ key: k, hl: +Math.max(box.x1, -box.x0).toFixed(1), hw: +Math.max(box.y1, -box.y0).toFixed(1),
+                   len: +box.len.toFixed(1), wid: +box.wid.toFixed(1),
+                   bl: +b.hl.toFixed(1), bw: +b.hw.toFixed(1) });
+      }
+      return out;
+    };
+    /* A meets B on a bearing, walked in until the game says they are touching. `at` is
+       the marker-to-marker distance that happened at; `gap` is what was actually between
+       the two models when it did -- the nearest living man of a section, or the nearest
+       corner of the other hull, against the first hull's own plate. Positive is daylight
+       and negative is one model inside the other. */
+    M.contactRows = function (pairs, bearings) {
+      const sp = M.openSpot(), rows = [];
+      for (const [ak, aside, bk, bside] of pairs) {
+        const A = spawnUnit(aside, ak, sp.x, sp.y, 0);
+        const B = spawnUnit(bside, bk, sp.x + 700, sp.y, Math.PI);
+        const abox = M.hullBox(ak), bbox = M.hullBox(bk);
+        for (const br of bearings) {
+          A.x = sp.x; A.y = sp.y; A.facing = 0; A.turret = 0;
+          const put = d => {
+            B.x = sp.x + Math.cos(br) * d; B.y = sp.y + Math.sin(br) * d;
+            B.facing = br + Math.PI; B.turret = B.facing;
+            if (B.models) M.layMen(B);
+          };
+          let lo = 2, hi = 520;
+          put(hi);
+          if (M.depth(A, B) > 0) { rows.push({ a: ak, b: bk, br, at: hi, gap: null }); continue; }
+          for (let it = 0; it < 46; it++) {
+            const mid = (lo + hi) / 2;
+            put(mid);
+            if (M.depth(A, B) > 0) lo = mid; else hi = mid;
+          }
+          put(hi);
+          let gap = 1e9;
+          if (B.models) {
+            for (const m of B.models) if (m.alive)
+              gap = Math.min(gap, boxDist(A.x, A.y, A.facing, abox, m.x, m.y) - MAN_R);
+          } else {
+            /* two convex boxes: the closest pair always includes a vertex of one of
+               them, so both ways round are asked and the smaller kept */
+            const cs = Math.cos(B.facing), sn = Math.sin(B.facing);
+            for (const cx of [bbox.x0, bbox.x1]) for (const cy of [bbox.y0, bbox.y1])
+              gap = Math.min(gap, boxDist(A.x, A.y, A.facing, abox, B.x + cx * cs - cy * sn, B.y + cx * sn + cy * cs));
+            for (const cx of [abox.x0, abox.x1]) for (const cy of [abox.y0, abox.y1])
+              gap = Math.min(gap, boxDist(B.x, B.y, B.facing, bbox, A.x + cx, A.y + cy));
+          }
+          rows.push({ a: ak, b: bk, br, at: +hi.toFixed(1), gap: +gap.toFixed(1) });
+        }
+        M.drop(A); M.drop(B);
+      }
+      return rows;
+    };
+
+    /* ---- motion, read as a trajectory ------------------------------------------
+       "Rubber-bandy" is a property of a path through time and there is no still
+       picture of it. Every frame of a staged move is recorded and the track is read
+       for the three things that actually make motion look wrong: the frame-to-frame
+       change in velocity (`jerk`), the steps that reverse on the one before -- a unit
+       pulled back onto a line it has just been shoved off, which is the rubber band
+       itself -- and, for a vehicle, how far it travels while it is turning. A tracked
+       hull asked for a hundred and eighty degrees should pivot on its own tracks and
+       go nowhere; a wheeled one cannot and has to drive the turn.
+         The trace STOPS when the unit arrives. Counting the frames it sits still
+       afterwards put half of a clean run in the stall column and said nothing at all
+       about the run. */
+    M.trace = function (key, from, to, secs, others) {
+      const DT = 1 / 60;
+      G.units.length = 0; G.shots.length = 0;
+      const u = spawnUnit('us', key, from[0], from[1], 0);
+      (others || []).forEach(o => spawnUnit('us', o.k, o.x, o.y, 0));
+      orderMove(u, to[0], to[1], false);
+      const pts = [];
+      let arrived = false;
+      for (let i = 0; i < secs * 60; i++) {
+        G.t += DT;
+        G.units.forEach(q => updateUnit(q, DT));
+        pts.push([u.x, u.y, u.facing]);
+        if (Math.hypot(u.x - to[0], u.y - to[1]) < 30) { arrived = true; break; }
+      }
+      const sp = u.def.speed || 1, cap = sp * DT * 1.35;
+      let jerk = 0, revs = 0, jumps = 0, moved = 0, turned = 0, drift = 0, flips = 0, lastT = 0;
+      for (let i = 2; i < pts.length; i++) {
+        const v1x = pts[i][0] - pts[i - 1][0], v1y = pts[i][1] - pts[i - 1][1];
+        const v0x = pts[i - 1][0] - pts[i - 2][0], v0y = pts[i - 1][1] - pts[i - 2][1];
+        const l1 = Math.hypot(v1x, v1y), l0 = Math.hypot(v0x, v0y);
+        moved += l1;
+        if (l1 > cap) jumps++;
+        jerk += Math.hypot(v1x - v0x, v1y - v0y);
+        if (l1 > .05 && l0 > .05 && (v1x * v0x + v1y * v0y) / (l1 * l0) < 0) revs++;
+        let d = pts[i][2] - pts[i - 1][2];
+        while (d > Math.PI) d -= 2 * Math.PI;
+        while (d < -Math.PI) d += 2 * Math.PI;
+        turned += Math.abs(d);
+        if (Math.abs(d) > 1e-4) { if (lastT && Math.sign(d) !== Math.sign(lastT)) flips++; lastT = d; }
+        if (Math.abs(d) > .004) drift += l1;
+      }
+      const n = Math.max(1, pts.length);
+      return { secs: +(pts.length / 60).toFixed(1), moved: Math.round(moved),
+               crow: Math.round(Math.hypot(to[0] - from[0], to[1] - from[1])),
+               jerk: +(jerk / n).toFixed(4), revs, jumps, turned: +turned.toFixed(2),
+               flips, drift: Math.round(drift), arrived };
+    };
+    M.motion = function () {
+      let ax = 0, ay = 0;
+      for (let ty = 600; ty < 1300 && !ax; ty += 40)
+        for (let tx = 600; tx < 1400 && !ax; tx += 40)
+          if (walkable(tx, ty) && walkable(tx + 520, ty)) { ax = tx; ay = ty; }
+      const rows = [], add = (d, r) => rows.push(Object.assign({ drill: d }, r));
+      add('section, open 400', M.trace('us_rifle', [ax, ay], [ax + 400, ay], 20));
+      add('section, past a tank', M.trace('us_rifle', [ax, ay], [ax + 400, ay], 20,
+        [{ k: 'us_sher', x: ax + 200, y: ay + 20 }]));
+      add('sherman, open 500', M.trace('us_sher', [ax, ay], [ax + 500, ay], 20));
+      add('sherman, past a section', M.trace('us_sher', [ax, ay], [ax + 500, ay], 20,
+        [{ k: 'us_rifle', x: ax + 250, y: ay + 18 }]));
+      add('sherman, through 3 sections', M.trace('us_sher', [ax, ay], [ax + 500, ay], 20,
+        [{ k: 'us_rifle', x: ax + 180, y: ay + 16 }, { k: 'us_rifle', x: ax + 300, y: ay - 16 },
+         { k: 'us_rifle', x: ax + 420, y: ay + 10 }]));
+      add('sherman, 180 (tracks)', M.trace('us_sher', [ax + 300, ay], [ax - 120, ay], 20));
+      add('tiger II, 180 (tracks)', M.trace('ger_kt', [ax + 300, ay], [ax - 120, ay], 25));
+      add('stuart, 180 (tracks)', M.trace('us_stuart', [ax + 300, ay], [ax - 120, ay], 20));
+      add('carrier, 180 (tracks)', M.trace('us_m8', [ax + 300, ay], [ax - 120, ay], 20));
+      add('half-track, 180 (wheels)', M.trace('us_m3', [ax + 300, ay], [ax - 120, ay], 20));
+      add('car, 180 (wheels)', M.trace('ger_sd222', [ax + 300, ay], [ax - 120, ay], 20));
+      return rows;
+    };
   });
 }
 
@@ -472,12 +719,30 @@ const MOVERS = [
   ['heavy', 'ger', 'ger_tig']
 ];
 
+/* The pairs that matter: the tank meeting the men, which is the complaint, the heaviest
+   thing on the roster doing the same, a car, and two tanks. Eight bearings, because the
+   whole point is that one circle gives a different answer on every one of them. */
+const PAIRS = [
+  ['us_sher', 'us', 'us_rifle', 'us'],
+  ['ger_kt', 'ger', 'us_rifle', 'us'],
+  ['us_m8', 'us', 'us_rifle', 'us'],
+  ['us_sher', 'us', 'us_sher', 'us']
+];
+const BEARINGS = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4, Math.PI,
+                  Math.PI * 5 / 4, Math.PI * 3 / 2, Math.PI * 7 / 4];
+
 async function card(file, label) {
   const browser = await launch();
   const { page } = await openGame(browser, 'desktop', { file, quiet: true });
   await deploy(page, { side: 'us', diff: DIFF, map: MAP });
   await install(page);
   const out = { label };
+
+  if (WANT.includes('contact')) {
+    out.bodies = await page.evaluate(() => window.__mv.bodies());
+    out.contact = await page.evaluate(({ PAIRS, BEARINGS }) =>
+      window.__mv.contactRows(PAIRS, BEARINGS), { PAIRS, BEARINGS });
+  }
 
   if (WANT.includes('routes')) {
     out.routes = await page.evaluate(({ ROUTES, MOVERS }) => {
@@ -523,6 +788,10 @@ async function card(file, label) {
     }
     out.traffic = await page.evaluate(() => window.__mv.read());
   }
+
+  /* last of the lot, because the drills empty the field to run and there is no way back
+     to the title screen from inside a battle */
+  if (WANT.includes('motion')) out.motion = await page.evaluate(() => window.__mv.motion());
 
   await browser.close();
   return out;
@@ -583,6 +852,87 @@ function printCover(rows) {
   console.log('  ' + pad('missed', 14) + pad(none, 7, 1) + '   stood in the open with medium cover to hand');
 }
 
+function printContact(bodies, rows, oldB, oldR) {
+  console.log('\n  CONTACT  the body a unit is separated on, against the model it is drawn as\n');
+  console.log('  ' + pad('vehicle', 12) + pad('hull L', 8, 1) + pad('hull W', 8, 1) +
+              pad('body L', 8, 1) + pad('body W', 8, 1) + pad('L err', 8, 1) + pad('W err', 8, 1));
+  console.log('  ' + '-'.repeat(62));
+  let worst = 0;
+  for (const b of bodies) {
+    const le = b.bl / b.hl, we = b.bw / b.hw;
+    if (we > worst) worst = we;
+    console.log('  ' + pad(b.key, 12) + pad(b.hl.toFixed(1), 8, 1) + pad(b.hw.toFixed(1), 8, 1) +
+                pad(b.bl.toFixed(1), 8, 1) + pad(b.bw.toFixed(1), 8, 1) +
+                pad(le.toFixed(2) + 'x', 8, 1) + pad(we.toFixed(2) + 'x', 8, 1));
+  }
+  console.log('  ' + pad('widest', 12) + pad('', 32) + pad('', 8) + pad(worst.toFixed(2) + 'x', 8, 1) +
+              '   the phantom abeam: body over hull across the tracks');
+
+  console.log('\n  ' + pad('pair', 26) + pad('bearing', 9, 1) + pad('at', 8, 1) +
+              pad('gap', 8, 1) + '   what was between the two models when the push fired');
+  console.log('  ' + '-'.repeat(70));
+  const by = {};
+  for (const r of rows) {
+    const k = r.a + ' vs ' + r.b;
+    (by[k] = by[k] || []).push(r);
+  }
+  const NAME = ['ahead', 'ahead-left', 'abeam', 'astern-left', 'astern', 'astern-right', 'abeam R', 'ahead-right'];
+  for (const k of Object.keys(by)) {
+    const g = by[k].map(r => r.gap).filter(v => v !== null);
+    for (let i = 0; i < by[k].length; i++) {
+      const r = by[k][i];
+      console.log('  ' + pad(i ? '' : k, 26) + pad(NAME[i] || (r.br).toFixed(2), 9, 1) +
+                  pad(r.at === null ? '-' : r.at.toFixed(0), 8, 1) +
+                  pad(r.gap === null ? 'never' : r.gap.toFixed(1), 8, 1));
+    }
+    if (g.length) {
+      const lo = Math.min.apply(null, g), hi = Math.max.apply(null, g);
+      console.log('  ' + pad('', 26) + pad('spread', 9, 1) + pad('', 8) + pad((hi - lo).toFixed(1), 8, 1) +
+                  '   ' + lo.toFixed(1) + ' to ' + hi.toFixed(1) + ' over bearing' +
+                  (oldR ? '' : ''));
+    }
+    console.log('');
+  }
+  if (oldR) {
+    const sp = rr => {
+      const o = {};
+      for (const r of rr) { const k = r.a + ' vs ' + r.b; if (r.gap === null) continue;
+        o[k] = o[k] || [1e9, -1e9]; o[k][0] = Math.min(o[k][0], r.gap); o[k][1] = Math.max(o[k][1], r.gap); }
+      return o;
+    };
+    const a = sp(rows), b = sp(oldR);
+    console.log('  ' + pad('spread over bearing', 26) + pad('now', 10, 1) + pad('before', 10, 1));
+    for (const k of Object.keys(a)) if (b[k])
+      console.log('  ' + pad(k, 26) + pad((a[k][1] - a[k][0]).toFixed(1), 10, 1) +
+                  pad((b[k][1] - b[k][0]).toFixed(1), 10, 1));
+  }
+  console.log('  gap   nearest real thing on one model to the real plate of the other, at contact.');
+  console.log('        Positive is daylight between them; negative is one model inside the other.');
+}
+
+function printMotion(rows, old) {
+  console.log('\n  MOTION   a staged move, every frame of it\n');
+  console.log('  ' + pad('drill', 27) + pad('secs', 6, 1) + pad('moved', 7, 1) + pad('detour', 8, 1) +
+              pad('jerk', 9, 1) + pad('revs', 6, 1) + pad('turned', 8, 1) + pad('flips', 7, 1) + pad('drift', 7, 1));
+  console.log('  ' + '-'.repeat(86));
+  const om = {};
+  if (old) for (const r of old) om[r.drill] = r;
+  for (const r of rows) {
+    const o = om[r.drill];
+    console.log('  ' + pad(r.drill, 27) + pad(r.secs, 6, 1) + pad(r.moved, 7, 1) +
+                pad(r.crow ? (r.moved / r.crow).toFixed(2) : '-', 8, 1) +
+                pad(r.jerk.toFixed(4), 9, 1) + pad(r.revs, 6, 1) + pad(r.turned.toFixed(2), 8, 1) +
+                pad(r.flips, 7, 1) + pad(r.drift, 7, 1) +
+                (o ? '   was ' + o.jerk.toFixed(4) + ' jerk, ' + o.revs + ' revs, ' + o.drift + ' drift' : '') +
+                (r.arrived ? '' : '   (never arrived)'));
+  }
+  console.log('');
+  console.log('  jerk    mean frame-to-frame change in velocity; smooth motion is small');
+  console.log('  revs    steps that reversed on the one before: the rubber band itself');
+  console.log('  flips   how often the hull changed which way it was turning: hunting');
+  console.log('  drift   units travelled while turning. A tracked pivot is near nought; wheels cannot.');
+}
+
 function printTraffic(c) {
   console.log('\n  TRAFFIC  ' + c.secs + 's of battle, both brains, counted every frame\n');
   const rows = [
@@ -595,7 +945,7 @@ function printTraffic(c) {
     ['men in walls', pct(c.inSolid, c.manF), 'a man inside a house or a solid prop'],
     ['stragglers', pct(c.stray, c.manF), 'a man over 150 from his section and not sent there'],
     ['section spread', (c.manF ? (c.spread / c.manF).toFixed(0) : 0), 'mean distance of a man from his own marker'],
-    ['wedged', pct(c.overlap, c.unitF), 'two units inside each other'],
+    ['models inside', pct(c.overlap, c.unitF), 'two MODELS overlapping: a hull in a hull, or a man in a hull'],
     ['too tight', pct(c.tight, c.vehF), 'a vehicle in a gap narrower than its own beam'],
     ['', '', ''],
     ['paths found', c.paths, (c.frames ? (c.paths / c.frames).toFixed(2) : 0) + ' a frame, ' +
@@ -630,6 +980,8 @@ const now = await card(GAME, 'working');
 if (args.json) {
   console.log(JSON.stringify({ now, older }, null, 2));
 } else {
+  if (now.contact) printContact(now.bodies, now.contact, older && older.bodies, older && older.contact);
+  if (now.motion) printMotion(now.motion, older && older.motion);
   if (now.routes) printRoutes(now.routes, older && older.routes);
   if (now.cover) printCover(now.cover);
   if (now.traffic) printTraffic(now.traffic);
