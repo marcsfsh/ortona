@@ -5033,9 +5033,11 @@ function updateSmoke(dt) {
     sm.t += dt;
     if (sm.t > sm.dur) { G.smoke.splice(i, 1); continue; }
     if (!onScreen(sm.x, sm.y)) continue;
-    /* fed at a rate the cloud's own size sets, and thinning with it */
+    /* fed at a rate the cloud's own size sets, and thinning with it; half that on a phone,
+       whose particle cap is a third of a desktop's and which a five-cloud screen fed at
+       the full rate would fill on its own, with nothing left for the bursts */
     var k = smokeAt(sm) / sm.r;
-    if (Math.random() < dt * (2.5 + sm.r * .07) * k) smokePuff(sm, k);
+    if (Math.random() < dt * (MOB ? 1.2 + sm.r * .035 : 2.5 + sm.r * .07) * k) smokePuff(sm, k);
   }
 }
 function orderBarrage(u, wx, wy, smoke) {
