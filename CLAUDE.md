@@ -361,6 +361,11 @@ number to read is `ran` against the timeout in `aiOpsReview` -- an operation tha
 runs to its timeout has no working test for being finished, which makes it a habit rather
 than a plan. The feint is the exception and is meant to expire.
 
+**INTENT** is the second layer of inputs: how many contacts are fresh and how many of them
+carry a heading, how often a body was read as massing and walking onto a held flag and how
+far out, the weight the rollup expected onto held ground, the exchange, the clock, how
+pinned the defenders of an enemy flag were, and the tubes heard rather than seen.
+
 **RULES** is every named decision and how often it fired, out of the brain's own counters
 (`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
 is not there, and this file already records one that parsed, passed the gate and never
@@ -772,10 +777,11 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1655 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1720 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
-knocked down, 1595 before bodies and wrecks, and 1640 before a bunker could be fitted
-out). Takes under a second. Exits
+knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
+1655 before the second control scheme, and 1690 before the brain's second layer of
+inputs). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -830,7 +836,12 @@ and the classic scheme is put back and asked the same of a tap and a drag, becau
 scheme kept as an option is a scheme nobody runs. The drills want open ground, and
 `__clearPt` finds it clear of every ring of his by more than the pick and clear of any flag
 -- the first version asked `nearestOwn` at a hundred units, which is not the pick, and
-found no ground at all on the spawn.
+found no ground at all on the spawn. And the flag row hides the enemy from his side and
+empties his call board for its two ticks, because a section raised beside the headquarters
+with a tank in front of it calls for help and is dealt to nobody's operation, which is the
+brain being right about the wrong thing: on one desktop run the enemy was at the
+headquarters when the row ran, and both directed operations were raised with nobody on
+them out of ten fighters.
 
 **And two rows read the framebuffer rather than looking at it.** An effect that is drawn
 and invisible looks exactly like an effect that is not drawn, so the effects rows render
@@ -2913,6 +2924,139 @@ immediately that a prize worth a task force is on the field on nine per cent of 
 killable on six, and that room existed on thirty-seven -- which is a rule that is working
 and rare, not a rule that is broken.
 
+**The second layer of inputs.** Everything above reads the enemy as a set of places: where
+a contact was, what is within four hundred of a flag, what is in front of a section. Five
+more things are read now, each written down where it happens and read off the picture by
+the rules that want it, and `tools/brain.mjs` prints them as INTENT.
+
+*A contact carries a heading.* `aiRemember` keeps where a contact was last seen and derives
+a smoothed velocity from one look to the next (`c.vx`, `c.vy`), reset when the contact was
+lost for six seconds, because a heading from where it was last seen to where it turned up
+is a line through whatever it did in between. `aiMass` reads the enemy's intent off those:
+the heaviest cluster of fresh contacts within two hundred and sixty of one another, its
+shared heading, and the held sector that heading runs onto within forty-five seconds
+(`M.mass`, with `sec` and `eta`); standing still it is a position and says so with no
+sector. Each held sector's rollup gains `coming`, the weight whose next twenty seconds of
+line pass inside it while closing on it -- the nearest point of the segment and not the
+point at its end, because a section that will be past the flag by then walks over it on
+the way. Three rules read it: the `hold` operation goes up for a body twenty seconds out
+and not only for weight that has arrived (`hold.coming`), the objective list gives a flag
+being walked onto men now while they can still get there (`obj.coming`), and a body worth a
+third of the enemy's strength closing on a held flag takes the mood off push while it is
+closing (`mood.mass`). The tubes read it too: a mission into a wave while it gathers is laid
+where it will be when the rounds arrive, before the objective's defenders get theirs
+(`mortar.mass`), because a gathering is the one time the enemy stands still in the open.
+
+*Fire superiority.* The rollup also carries `pinned`, the share of the known enemy weight on
+a sector that is suppressed, and the wave reads it at the go. Set up is not the same as
+firing and firing is not the same as the defenders being pinned, so a formed wave now
+waits, bounded, for one of three things: the defenders on the objective mostly pinned, the
+support firing for eight seconds (`AI.supT`), or nobody there to pin, with the form timer
+bounding it at a third over so a gun that cannot find a target does not stop the battle
+(`wave.wait`, `wave.pinned`). Green goes when it is formed, which is what green is for, and
+a wave with a section already inside two hundred and forty of the objective goes too,
+because it is already in the fight and holding it there for fire it is under without is
+the queue in the open the wait exists to prevent. That exception was found on a card
+whose Canadian side could not buy (see the till lock under SIMPLE): there the baseline read
+forming as nought seconds on every wave that went in, because a wave that formed with its
+sections already on the objective went in on the tick it formed, and the wait turned those
+into twenty-six, thirty-five and fifty-three seconds of standing on three runs. With two
+armies on the card and the exception in, forming reads 16 seconds against the baseline's
+11, and the wave count is the number to watch: 32 formed and 13 went in against 14 and 11,
+which is a wave that waits being re-keyed by the sixty-second re-pick or broken off before
+it goes. The tactics card cannot see it (below), and it is left as the lever it is. And
+the pinned door is not one the battle has opened: read on the wave's own objective, the
+pinned share of the defenders' weight is 1.44 per cent over 658 ticks with an objective,
+so `wave.pinned` has never fired in a battle and what carries the go is the support firing
+for eight seconds, a section already there, or the bound. The threshold is a suppression
+over 0.6 on a scale where a section is pinned past 1, and lowering it is a lever nobody
+has measured. And
+the wave writes down what it stepped off with (`AI.asStr`): a press that has lost half of it
+without taking the ground or pinning what holds it is a queue and not an assault, so it
+breaks off, re-forms, and leaves that objective alone for a minute (`AI.asAvoid`,
+`wave.break`) -- which is also the moment the loss memory on that ground starts saying the
+same thing. Inside a press two more things hold it together: a section that has run ahead
+of its wave and is being shot at goes to ground for eight seconds until the rest close up
+(`wave.cohere`), and the wave's armour takes an overwatch post short of the objective with a
+line to it rather than driving onto the flag with the sections (`veh.overwatch`, found once
+a wave and looked for again every fourteen seconds because `aiOverwatch` is twenty-one
+traces).
+
+*The exchange and the clock.* `killUnit` writes a kill down for the side that made it as
+well as the loss for the side that took it (`M.exK`, `M.exL`, each with a minute's
+half-life), and the picture carries `W.exch`, the ratio smoothed so that two kills in an
+empty minute are not a rout either way. `aiClock` reads the drain `tickEconomy` applies and
+says how many seconds each side has before its points are gone at the flags held now
+(`W.clock`). The mood reads both after the ratio and the lead: losing on the clock it stops
+holding and pushes for a victory flag, because holding a losing hand is losing; winning on
+it comfortably it holds what pays (`mood.clock`); losing the exchange badly it stops pushing
+unless the clock says it has no choice, and winning it two to one it pushes whatever the
+count says (`mood.exch`). Dig is left alone by the clock, as it was by the lead.
+
+*Sound ranging.* `damage` writes down whether a hit came out of the sky (`u.hurtInd`), and a
+tube that shells this side is heard: `aiHeard` writes a contact for it with an error that
+shrinks with every round, two hundred and twenty units on the first and sixty by the fifth,
+flagged `heard` so that nothing wanting a heading or a body reads it as one and the beaten
+zone is not painted from it. `aiKnown` accepts it the way it accepts a contact seen half a
+minute ago, which is what lets a mission be laid on it (`mortar.counter`, second after the
+massing body and before the objective's defenders) and a task force sent to it (a tube is
+worth three hundred and twenty more than anything else to `destroy`, and `W.heard` puts it
+in front of the planner, `op.counter`). It is honest by the same test as the rest of the
+memory: a section walking to a heard tube walks to where the sound was, and finds it there
+or does not. The situation carries `shelled` as well, whether or not the tube is known,
+because a beaten zone is a place and the answer to it is to be somewhere else: under
+shellfire going flat is worth thirty less and giving ground twenty-eight more
+(`shelled.move`).
+
+Measured on `tools/brain.mjs --t=300 --diff=2 --file=<the commit before, with the till
+lock fixed>` over one battle of about 290 seconds a side with a brain on both sides and both
+of them buying, which the earlier runs of this card were not (the till lock, under SIMPLE).
+A thinking tick is 0.86 ms against 0.82, which is the cluster over the contacts and the
+clock. The memory holds 5.2 fresh contacts a tick and 61.6 per cent of them carry a
+heading; a body is read as massing on 80 per cent of ticks, weighing 667, and as walking
+onto a held flag on 8.4 per cent of them, 18 seconds out; weight is expected onto held
+ground on 49 per cent of ticks, 336 of it when it is. The exchange and the clock read
+nearly symmetrically because both brains are sampled and one side losing is the other
+winning: the exchange is lost badly on 10 per cent of ticks and won on 10, the clock lost
+on 45 and won on 39. A tube was in the memory by ear on 4 per cent of ticks. Of the rules,
+`obj.coming` fired 349 times, `mood.hold` 210 and `mood.clock` 163 -- on most of the ticks
+the ratio said hold, the clock said the side was losing on it and pushed -- `wave.wait`
+21, `mood.exch` 10, `wave.break` 5, `veh.overwatch` 4, `hold.coming` 3, `mood.mass` 2, and
+`mortar.mass`, `heard` and `op.counter` once each; `wave.pinned`, `wave.cohere`,
+`mortar.counter` and `shelled.move` never fired in it, and the card lists them with the
+zeroes. Calls are the other thing two armies changed: `answer` is 16 per cent of the jobs
+dealt where a card with one army read under one. Read those as one battle: two runs of
+identical code on this card have come back with the same rule at thirty-four and thirteen.
+
+On the tactics card, against the commit before the pass with both sides buying: **-46 with
+a standard error of 170 over eight pairs, ahead in three of eight, and -18 with 161 over
+eight more**, which is parity and is where a change of this kind lands on this tool; the
+first run's per-side table has the working brain with more army on both sides (3,202
+against 2,729 and 3,450 against 3,113) and fewer points on one, and the second has the
+German side winning whichever brain ran it, which is one run's shape each and not a
+finding. `tools/skirmish.mjs` swaps the operations planner with the rest
+of the bundle now and carries the new readers, with one thing worth knowing about the
+second half of that: the readers are reached through `aiLook`, which is not swapped, so
+a baseline side is handed the working file's headings and clock and what the card judges
+is what the two ticks do with them. The gate stages each input rather than sampling it: a
+body massing onto a held flag read off four looks a second apart, a tube heard through five
+rounds to within a fix, the exchange moved by a kill and by a loss, the clock read against
+`tickEconomy`'s own drain, and a wave the opposition's plan is told it stepped off with far
+more than it has, which breaks off in one tick of its own brain. Two things about that
+drill. **The heading is smoothed, so one look reads two fifths of the true pace** and the
+body's arrival would read at twenty-seven seconds off a section walking at sixty a second
+where four looks read it at about nine. And **the picture has to be the drill's**: three battles have
+been fought on the map by the time the row runs, the side's memory holds whatever it saw in
+them, and `aiMass` returns the heaviest cluster on the map, which would not otherwise be the
+three sections the row put down. The contacts are put aside and every enemy of the battle's
+own is hidden until the drill comes down. The break-off half has the same shape: a wave does
+not break off from defenders who cannot lift their heads, and on one phone run the tick
+read the battle and held on, with nothing in the row's line to say why. The likeliest
+reading is the flag's defenders being pinned, which is the one refusal in that branch the
+battle's state can supply, so the row unpins whatever of his is on the flag for the tick
+and prints what was there; the run after read 551 of weight with none of it pinned and the
+wave broken off.
+
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
@@ -4077,7 +4221,14 @@ for the best it has. And `aiBuys` locks it out of the till for units and posts, 
 strip is what those are for: every `queueUnit` and the two `placeStructure` sites in
 `aiTick` are behind `spend`, `wantMp` is nought so nothing is saved for a ladder it will
 never climb, and the works, the fittings and the upgrades it may still buy keep three
-hundred marks back for him (`keep`). The green grace in annihilation is the opposition's
+hundred marks back for him (`keep`). **Both of those are SIMPLE's and read `CTRL.simple`**,
+because under classic the only thing that ever puts a brain on the player's slot is a
+card: `tools/skirmish.mjs` and `tools/brain.mjs` run one on both sides, and a lock read
+off the slot alone left the Canadian side of every card unable to raise a section. It
+shipped that way, and what said so was the tactics card: eight mirror pairs at -578 and
++568 by side, a walkover for whichever brain was German, with 1,686 marks unspent on the
+other side against 264. Every brain-card number taken between that commit and this one
+was read off a battle with one army in it. The green grace in annihilation is the opposition's
 and is gated on `aiBuys` too, or a green game froze the player's own army for three and a
 half minutes. A tank he is driving from its own turret is skipped (`u.manual`), because
 in the periscope he is the crew.
@@ -4459,6 +4610,19 @@ shots/                         screenshot output, gitignored
   an operation carries it as the sector wrote it, so the two agree only when compared with
   `String()` on both sides; compared bare, a directed hold would match no operation and be
   raised again on every tick.
+- **There is a page error nobody has caught yet.** `Cannot read properties of undefined
+  (reading 'vbo')` in `bindGeom`, twice in about forty battles with a brain on both sides:
+  once on the phone half of the gate and once inside a sixteen-match tactics run, and not
+  on either run made to find it. Every lit-pass draw reads as guarded or always built, so
+  the caller has to come off a stack; the harness keeps the first three game frames of a
+  page error now rather than the message alone, and the next one will name it.
+- **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
+  that slot under classic, so a lock on its till read off the slot alone is invisible in
+  play and cripples every card that puts a brain on both sides: the tactics card came back
+  a walkover for whichever brain was German on all sixteen matches before anyone looked.
+  Gate such a rule on the scheme that wants it, and run `tools/skirmish.mjs --self` after
+  touching anything the player's slot reads, because it is the one card that cannot be
+  fooled by one side never buying.
 
 - **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
   `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the

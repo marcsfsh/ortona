@@ -170,11 +170,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    aid post -- each of which is its own geometry, its own per-bunker buffer and its own
    effect on the ground round it. It is 1690 for the simple scheme: a second set of
    controls for a phone, kept beside the classic one as a choice, under which the player
-   builds from a strip and the game's own brain runs his army, steered by the flags.
-   Raise it deliberately, with a reason, or not at all. */
+   builds from a strip and the game's own brain runs his army, steered by the flags. It
+   is 1720 for the brain's second layer of inputs: contacts that carry a heading and the
+   body the enemy is massing read off them, fire superiority at the wave's go and the
+   break-off when it fails, the exchange and the clock in the mood, and the tubes heard
+   rather than seen. Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1690) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1690 kB so it stays quick to load on a phone`);
+if (kb > 1720) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1720 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

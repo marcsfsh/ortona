@@ -460,9 +460,23 @@ for (const device of TARGETS) {
       window.spawnUnit(own, secKey, sp.x, sp.y, 0);
     }
     const P = window.AIP[own];
+    /* and the enemy is out of sight for the two ticks: a section raised beside the
+       headquarters with a tank in front of it calls for help and is dealt to nobody's
+       operation, which is right and is not what the row measures. On one desktop run the
+       enemy was at the headquarters when the row ran, and the two directed operations
+       were raised with nobody on them out of ten fighters. */
+    const M0 = window.aiMemOf(side), con0 = M0.con, n0 = M0.n, hid = [];
+    M0.con = {}; M0.n = 0;
+    for (const e of window.G.units) if (!e.dead && e.side !== side) { hid.push([e, us ? e.vUs : e.vGer]); if (us) e.vUs = false; else e.vGer = false; }
+    const Qc = window.AIQ[own], calls0 = Qc ? Qc.list.slice() : null; if (Qc) Qc.list.length = 0;
+    const unhide = () => {
+      M0.con = con0; M0.n = n0;
+      for (const h of hid) { if (us) h[0].vUs = h[1]; else h[0].vGer = h[1]; }
+      if (Qc) { Qc.list.length = 0; for (const c of calls0) Qc.list.push(c); }
+    };
     const byD = window.G.sectors.slice().sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
     const theirs = byD.filter(s => s.owner !== side);
-    if (theirs.length < 3) return { none: true };
+    if (theirs.length < 3) { unhide(); return { none: true }; }
     /* his nearest flag, taken for him if the battle has taken it off him */
     const H = byD[0]; H.owner = side; H.contest = false;
     const A = theirs.filter(s => s !== H)[0], F = theirs.filter(s => s !== H && s !== A).slice(-1)[0];
@@ -492,6 +506,7 @@ for (const device of TARGETS) {
     const cleared = !window.aiDirOf(own, H.id);
     window.aiThink(1);
     const dropped = !window.aiOpDirOf(own, H.id, 'hold');
+    unhide();
     return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, shutA, dirA, dirH, dirF, tick,
              asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, hasClear, cleared, dropped, status,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
@@ -1031,6 +1046,146 @@ for (const device of TARGETS) {
                                          || document.getElementById('mini').getBoundingClientRect().width > 260);
   ok('tactical map expands', mapOpen);
   await page.click('#tMap').catch(() => {});
+
+  /* --- the brain's second layer of inputs, staged rather than sampled: a body massing
+     against a held flag read off contacts that carry a heading, a tube heard rather than
+     seen, the exchange and the clock, and a wave that breaks off once it has been fed into
+     a defended flag. Each is asked of the function the brain reads it from, on the
+     player's side, whose brain is not running under classic and so moves nothing under
+     the row; the break-off is asked of the opposition's own plan through one tick of its
+     own brain. --- */
+  const intent = await page.evaluate(() => {
+    const D2 = window.DIFF[2], hq = window.hqOf('us'), M = window.aiMemOf('us'), W0 = window.WORLD;
+    const cl = (x, y) => [window.clamp(x, 60, W0.w - 60), window.clamp(y, 60, W0.h - 60)];
+    const spawned = [];
+    const put = (own, key, x, y) => { const [px, py] = cl(x, y), sp = window.nearestFree(px, py); const u = window.spawnUnit(own, key, sp.x, sp.y, 0); spawned.push(u); return u; };
+    /* a flag of his, taken for the drill if the battle has taken it, and no flag but that
+       one for the clock's arithmetic */
+    const secs = window.G.sectors.slice().sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
+    const owners = window.G.sectors.map(x => [x.owner, x.conn, x.contest]);
+    const S = secs[1]; S.owner = 'us'; S.conn = true; S.contest = false;
+    /* the picture has to be the drill's: three battles have been fought on this map by now
+       and the side's memory holds whatever it saw in them, so the contacts are put aside
+       and every enemy of the battle's own is hidden until the drill comes down */
+    const con0 = M.con, n0 = M.n, exK0 = M.exK, exL0 = M.exL, lost0 = M.lost, hid = [];
+    M.con = {}; M.n = 0; M.lost = {};
+    for (const e of window.G.units) if (!e.dead && e.side === 'ger') { hid.push([e, e.vUs]); e.vUs = false; }
+    /* --- three enemy sections seven hundred out, seen, walking at it: four looks a second
+       apart give the memory a heading (it is smoothed, and one look reads two fifths of the
+       true pace), and the picture reads a body massing onto the flag */
+    /* on the far side of it from home, or the nearest bearing to that which keeps seven
+       hundred units of ground inside the map: this flag stands four hundred from the
+       bottom edge, and clamped to it the body started 468 from the flag and its arrival
+       read 4.1 seconds, on the row's own floor */
+    const ang0 = Math.atan2(S.y - hq.y, S.x - hq.x);
+    let ang = ang0;
+    for (let q = 0; q < 16; q++) {
+      const a = ang0 + Math.ceil(q / 2) * Math.PI / 8 * (q % 2 ? 1 : -1);
+      const px = S.x + Math.cos(a) * 700, py = S.y + Math.sin(a) * 700;
+      if (px > 100 && px < W0.w - 100 && py > 100 && py < W0.h - 100) { ang = a; break; }
+    }
+    const foes = [];
+    for (let i = 0; i < 3; i++) {
+      const e = put('ger', 'ger_gren', S.x + Math.cos(ang) * 700 + Math.cos(ang + Math.PI / 2) * (i - 1) * 60,
+                    S.y + Math.sin(ang) * 700 + Math.sin(ang + Math.PI / 2) * (i - 1) * 60);
+      e.vUs = true; foes.push(e);
+    }
+    const t0 = window.G.t;
+    window.aiRemember('us', t0);
+    let W = null;
+    for (let k = 1; k <= 4; k++) {
+      for (const e of foes) { e.x -= Math.cos(ang) * 60; e.y -= Math.sin(ang) * 60; for (const m of e.models) { m.x -= Math.cos(ang) * 60; m.y -= Math.sin(ang) * 60; } }
+      window.G.t = t0 + k;
+      W = window.aiLook('us', D2, 2);
+    }
+    const c0 = M.con[foes[0].id], R = W.bySec[S.id], mass = W.mass;
+    const out = { headed: c0 ? +Math.hypot(c0.vx, c0.vy).toFixed(0) : -1, mass: !!mass, massSec: mass ? mass.sec : null, secId: S.id,
+                  dist: Math.round(Math.hypot(foes[0].x - S.x, foes[0].y - S.y)),
+                  massW: mass ? Math.round(mass.w) : 0, eta: mass ? +mass.eta.toFixed(1) : -1, coming: Math.round(R.coming), pinned: +R.pinned.toFixed(2) };
+    /* --- the exchange: kills lift it and losses sink it */
+    M.exK = 0; M.exL = 0;
+    window.aiKill('us', 600); W = window.aiLook('us', D2, 2); out.exWin = +W.exch.toFixed(2);
+    window.aiLoss('us', hq.x, hq.y, 2400); W = window.aiLook('us', D2, 2); out.exLose = +W.exch.toFixed(2);
+    M.exK = 0; M.exL = 0;
+    /* --- the clock: one victory flag of theirs drains his points and nothing drains
+       theirs; two of his, the other way about */
+    const vps = window.G.sectors.filter(x => x.type === 'vp');
+    for (const x of window.G.sectors) { x.owner = null; x.conn = false; }
+    vps[0].owner = 'ger'; vps[0].conn = true;
+    const k1 = window.aiClock('us'), bleed = window.diffOf('ger').vp;
+    out.clock1 = { me: +k1.me.toFixed(1), him: k1.him, want: +(window.vpOf('us') / (.8 * bleed)).toFixed(1) };
+    vps[0].owner = 'us'; vps[1].owner = 'us'; vps[1].conn = true;
+    const k2 = window.aiClock('us');
+    out.clock2 = { me: k2.me, him: +k2.him.toFixed(1), want: +(window.vpOf('ger') / (2 * .8)).toFixed(1) };
+    window.G.sectors.forEach((x, i) => { x.owner = owners[i][0]; x.conn = owners[i][1]; x.contest = owners[i][2]; });
+    S.owner = 'us'; S.conn = true; S.contest = false;
+    /* --- a tube heard rather than seen: a mortar out of sight shells a section of his
+       five times, and the memory has it to within a few dozen units, flagged, known, and
+       worth a task force; his own tube then lays on it */
+    const mor = put('ger', 'ger_mor', hq.x + 1100, hq.y + 60); mor.vUs = false;
+    const tgt = put('us', 'us_rifle', hq.x + 200, hq.y + 120);
+    for (let i = 0; i < 8; i++) put('us', 'us_rifle', hq.x + 120 + i * 40, hq.y - 160 + (i % 3) * 60);
+    window.damage(tgt, .5, mor);
+    const c1 = M.con[mor.id];
+    const heard = { first: c1 ? c1.err : -1, flag: c1 ? c1.heard : -1, ind: tgt.hurtInd };
+    for (let k = 0; k < 4; k++) { c1.t -= 2; window.damage(tgt, .5, mor); }
+    heard.after = c1.err; heard.off = +Math.hypot(c1.x - mor.x, c1.y - mor.y).toFixed(0);
+    heard.known = window.aiKnown('us', mor, window.G.t); heard.tube = M.tubeId === mor.id;
+    W = window.aiLook('us', D2, 2);
+    heard.listed = W.heard.indexOf(mor) >= 0; heard.painted = false;
+    window.AIOP.us = null;
+    const fired0 = window.AIR.fired['op.counter'] || 0;
+    window.aiOpsPlan(W, [], 2);
+    const Q = window.AIOP.us;
+    heard.op = !!(Q && Q.list.some(o => o.kind === 'destroy' && o.tid === mor.id));
+    heard.counter = (window.AIR.fired['op.counter'] || 0) - fired0;
+    heard.fighters = W.fighters.length;
+    window.AIOP.us = null;
+    out.heard = heard;
+    /* --- the break-off, asked of the opposition's own plan: told it stepped off against
+       the flag twenty seconds ago with far more than it has, one tick of its brain breaks
+       off, re-forms, and will not pick that flag again for a minute */
+    const P = window.AIP.ger, brk0 = window.AIR.fired['wave.break'] || 0;
+    P.asSec = S.id; P.asPick = window.G.t; P.asKey = 's' + S.id; P.asT = window.G.t - 20; P.asStr = 30000; P.asAvoid = null; P.t = 0;
+    /* and whoever of his is holding the flag is unpinned for the tick, because a wave does
+       not break off from defenders who cannot lift their heads: read off the battle, the
+       section holding this flag was pinned when the phone's row ran and the row read that */
+    const sup0 = [];
+    for (const e of window.G.units) if (!e.dead && e.side === 'us' && Math.hypot(e.x - S.x, e.y - S.y) < 420) { sup0.push([e, e.sup]); e.sup = 0; }
+    const keepAI = window.AI; window.AI = P; window.aiTick(1); window.AI = keepAI;
+    const RB = window.AIW.bySec[S.id];
+    out.brk = { fired: (window.AIR.fired['wave.break'] || 0) - brk0, avoid: P.asAvoid === S.id, off: P.asT < 0, key: P.asKey,
+                pinned: RB ? +RB.pinned.toFixed(2) : -1, th: RB ? Math.round(RB.th) : -1 };
+    for (const h of sup0) h[0].sup = h[1];
+    /* every new decision is declared, so the card can list the ones that never fire */
+    out.declared = ['hold.coming', 'obj.coming', 'mood.mass', 'mortar.mass', 'wave.wait', 'wave.pinned', 'wave.break', 'wave.cohere',
+                    'veh.overwatch', 'mood.clock', 'mood.exch', 'heard', 'op.counter', 'mortar.counter', 'shelled.move']
+      .filter(k => window.AIR.fired[k] === undefined);
+    /* and the drill comes down again */
+    for (const u of spawned) u.dead = true;
+    window.G.units = window.G.units.filter(u => !u.dead);
+    M.con = con0; M.n = n0; M.exK = exK0; M.exL = exL0; M.lost = lost0;
+    M.tubeId = 0; M.tubeT = -99; M.mass = null;
+    for (const h of hid) h[0].vUs = h[1];
+    window.G.t = t0;
+    window.rebuildGrid();
+    return out;
+  });
+  ok('the brain reads a body massing onto its flag off the contacts\' headings, the exchange and the clock',
+     intent.headed > 40 && intent.mass && intent.massSec === intent.secId && intent.eta > 4 && intent.eta < 20 && intent.coming > 160 &&
+     intent.exWin > 1.5 && intent.exLose < .6 &&
+     Math.abs(intent.clock1.me - intent.clock1.want) < 1 && intent.clock1.him === 9999 &&
+     Math.abs(intent.clock2.him - intent.clock2.want) < 1 && intent.clock2.me === 9999 && intent.declared.length === 0,
+     `heading ${intent.headed}/s; a body of ${intent.massW} at ${intent.dist} walking onto ${intent.massSec} (want ${intent.secId}) ${intent.eta}s out, ${intent.coming} coming; ` +
+     `exchange ${intent.exWin} after a kill and ${intent.exLose} after a loss; clock ${intent.clock1.me}s (want ${intent.clock1.want}) against ${intent.clock1.him}, ` +
+     `then ${intent.clock2.me} against ${intent.clock2.him}s (want ${intent.clock2.want})` +
+     (intent.declared.length ? '; undeclared: ' + intent.declared.join(',') : ''));
+  const H = intent.heard;
+  ok('a tube heard rather than seen is in the memory to within a fix that tightens, worth a task force, and a wave fed into a flag breaks off',
+     H.ind === 1 && H.first === 220 && H.flag === 1 && H.after < 100 && H.off <= 220 && H.known && H.listed && H.tube && H.op && H.counter === 1 &&
+     intent.brk.fired === 1 && intent.brk.avoid && intent.brk.off,
+     `heard: hit flagged ${H.ind}, first fix ${H.first} then ${H.after} after four more rounds, ${H.off} off the truth, known ${H.known}, listed ${H.listed}, ` +
+     `tube ${H.tube}, task force ${H.op} (${H.counter}) out of ${H.fighters} fighters; break-off fired ${intent.brk.fired}, avoiding ${intent.brk.avoid}, re-forming ${intent.brk.off} (${intent.brk.th} on the flag, ${intent.brk.pinned} of it pinned)`);
 
   /* --- the handicap, which is the player's half of what difficulty used to be. What is
      asserted is the split: with every setting at its best and the opposition on GREEN, all

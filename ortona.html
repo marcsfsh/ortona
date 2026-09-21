@@ -3851,7 +3851,7 @@ function aiPaintDanger(side, t) {
   gi.fill(0); gv.fill(0);                              /* one memset, not two JS loops */
   for (k in M.con) {
     var c = M.con[k], age = t - c.t;
-    if (age > AIMEM) continue;
+    if (age > AIMEM || c.heard) continue;
     var fresh = 1 - age / AIMEM;
     var w = (c.v / 260) * fresh;
     castDanger(gi, gv, c.x, c.y, Math.min(c.rng || 300, 470), w, c.pen >= 60 ? w : 0);
@@ -7329,7 +7329,11 @@ function damage(t, amt, src) {
   if (src && src.cat && src.side !== t.side) {
     t.hurtId = src.id; t.hurtT = G.t; t.hurtX = src.x; t.hurtY = src.y;
     t.hurtVeh = src.cat === 'veh' ? 1 : 0;
+    /* and whether it came out of the sky, which is the one kind of hurt a section cannot
+       shoot back at and the brain has to answer some other way */
+    t.hurtInd = src.def && src.def.indirect ? 1 : 0;
     t.hurtAmt = (t.hurtAmt || 0) + amt;
+    if (t.hurtInd) aiHeard(t.side, src);
   }
   if (t.cat === 'veh') {
     recHurt(t, Math.min(amt, t.hp), src);
@@ -7583,6 +7587,8 @@ function killUnit(u, src) {
      until this was kept there was nothing to ask. */
   aiLoss(u.side, u.x, u.y, (u.def.cost.mp || 0) + (u.def.cost.fu || 0) * 2.4);
   aiLostTo(u.side, u, src);
+  /* and the side that made the kill writes that down too: the exchange is both halves */
+  if (src && src.cat && src.side !== u.side) aiKill(src.side, (u.def.cost.mp || 0) + (u.def.cost.fu || 0) * 2.4);
   var i = G.sel.indexOf(u); if (i >= 0) G.sel.splice(i, 1);
 }
 function killBuilding(b) {
@@ -8747,7 +8753,8 @@ function updateUnit(u, dt) {
 var AI0 = { own: 'ger', side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
             asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0,
             contacts: null, owned: null, ctSec: null, ctT: -99, hot: null, momSec: null, momT: -99,
-            flkX: 0, flkY: 0, flkT: -99, dir: null };
+            flkX: 0, flkY: 0, flkT: -99, dir: null,
+            supT: -99, asStr: 0, asAvoid: null, asAvoidT: -99 };
 var AI = {};
 (function () { for (var k in AI0) AI[k] = AI0[k]; })();
 /* One plan per AI slot. `AI` is whichever of them is thinking right now, reassigned
@@ -8825,8 +8832,14 @@ function aiInit(slot, soft) {
    the fittings and the upgrades it may still buy, out of what is left once a reserve is
    kept for him, since those are the digging-in that is part of fighting. */
 function aiRuns(sl) { return !!sl.ai || (CTRL.simple && sl.k === G.own); }
-function aiBuys(slot) { var sl = slotOf(slot); return !sl || !!sl.ai; }
-function aiDiffOf(slot) { var sl = slotOf(slot); return sl && !sl.ai ? DIFF[2] : diffOf(slot); }
+/* The lock on the till and the veteran brain are SIMPLE's: under it the strip buys and the
+   brain fights with the best it has. Under classic no brain runs on the player's slot in
+   a game, and the one thing that does put one there is a card -- `tools/skirmish.mjs` and
+   `tools/brain.mjs` put a brain on both sides -- so a lock read off the slot alone left
+   the Canadian side of every card unable to raise a section: eight mirror pairs came back
+   a walkover for whichever side was German, with 1,686 marks unspent on the other. */
+function aiBuys(slot) { var sl = slotOf(slot); return !sl || !!sl.ai || !CTRL.simple; }
+function aiDiffOf(slot) { var sl = slotOf(slot); return sl && !sl.ai && CTRL.simple ? DIFF[2] : diffOf(slot); }
 /* and forget the ones that are not playing this game, so a 2v2 followed by a 1v1 does not
    leave a third brain holding a plan about units that no longer exist */
 function aiSlotsInit() {
@@ -8892,7 +8905,11 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
   'pincer': 'The wave is splitting to hook round', 'retreat.hurt': 'A section is falling back', 'veh.mend': 'A vehicle is pulling back for repair',
   'work.dig': 'Engineers digging in', 'flak.dig': 'Engineers digging in the 88', 'battery.dig': 'Engineers bedding in the battery',
   'bunker.at': 'Fitting a bunker as a gun casemate', 'bunker.mg': 'Fitting a bunker as a machine gun post', 'bunker.mor': 'Fitting a bunker with a mortar',
-  'bunker.rep': 'Fitting a bunker as a workshop', 'bunker.med': 'Fitting a bunker as an aid post', 'mortar.mission': 'Mortars laying on' };
+  'bunker.rep': 'Fitting a bunker as a workshop', 'bunker.med': 'Fitting a bunker as an aid post', 'mortar.mission': 'Mortars laying on',
+  'wave.break': 'Assault broken off: too costly', 'wave.pinned': 'Defenders pinned: going in', 'hold.coming': 'Enemy closing on our flag: holding it',
+  'mood.mass': 'Enemy massing: meeting it', 'mood.clock': 'The clock decides: pushing for a flag', 'mood.exch': 'The exchange has turned',
+  'mortar.mass': 'Mortars on the enemy forming up', 'mortar.counter': 'Counter-battery fire', 'op.counter': 'Task force sent after their guns',
+  'shelled.move': 'Moving out of the shelling' };
 /* declared here rather than where they fire, so the card lists a rule that has never
    been reached at all instead of leaving a hole where it should be */
 (function () {
@@ -8916,7 +8933,13 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
                'answer.go', 'answer.here', 'odds.weak', 'press.finish',
                /* what the army is trying to do */
                'op.take', 'op.raze', 'op.probe', 'op.destroy', 'op.feint', 'op.hold', 'op.man',
-               'op.won', 'op.lapsed', 'op.run', 'obj.dear'];
+               'op.won', 'op.lapsed', 'op.run', 'obj.dear',
+               /* the enemy's intent, read off the contacts' headings */
+               'hold.coming', 'obj.coming', 'mood.mass', 'mortar.mass',
+               /* fire superiority, the break-off, cohesion and the armour's post */
+               'wave.wait', 'wave.pinned', 'wave.break', 'wave.cohere', 'veh.overwatch',
+               /* the exchange, the clock, and the tubes heard */
+               'mood.clock', 'mood.exch', 'heard', 'op.counter', 'mortar.counter', 'shelled.move'];
   for (var i = 0; i < names.length; i++) aiRule(names[i]);
 })();
 
@@ -8927,7 +8950,10 @@ var AIMEM = 34;
 var AIM = { us: null, ger: null };
 function aiMemOf(side) {
   if (!AIM[side]) AIM[side] = { con: {}, n: 0, lost: {}, lostTo: {}, ownT: {}, held: {},
-                               lastHurt: 0, hurtX: 0, hurtY: 0 };
+                               lastHurt: 0, hurtX: 0, hurtY: 0,
+                               /* what it has killed and lost lately, the body the enemy
+                                  is massing, and the last tube that shelled it */
+                               exK: 0, exL: 0, mass: null, tubeId: 0, tubeX: 0, tubeY: 0, tubeT: -99 };
   return AIM[side];
 }
 function aiForget() { AIM.us = null; AIM.ger = null; }
@@ -8947,7 +8973,20 @@ function aiRemember(side, t) {
     if (e.dead || e.side === side || e.inside) continue;
     if (!visibleTo(side, e)) continue;
     c = M.con[e.id];
-    if (!c) { c = M.con[e.id] = { x: 0, y: 0, t: 0, v: 0, veh: 0, team: 0, gun: 0, rng: 0, pen: 0 }; M.n++; }
+    if (!c) { c = M.con[e.id] = { x: 0, y: 0, t: -1, v: 0, veh: 0, team: 0, gun: 0, rng: 0, pen: 0, vx: 0, vy: 0, heard: 0 }; M.n++; }
+    /* and which way it is going, smoothed over the last few looks. A contact is a place
+       and a heading: the place says where it was, and the heading is what says where it
+       will be when the men sent at it arrive, whether it is a wave forming against a flag
+       or a gun that has been standing in one spot for a minute. A contact re-found after
+       a gap is a place again, because a heading from where it was last seen to where it
+       turned up is a line through whatever it did in between. */
+    if (c.t >= 0 && !c.heard && t - c.t > .2 && t - c.t < 6) {
+      var cdt = t - c.t;
+      c.vx = c.vx * .6 + ((e.x - c.x) / cdt) * .4;
+      c.vy = c.vy * .6 + ((e.y - c.y) / cdt) * .4;
+    } else if (c.t < 0 || c.heard || t - c.t >= 6) { c.vx = 0; c.vy = 0; }
+    /* and a second look inside a fifth of a second keeps the heading it has */
+    c.heard = 0;
     c.x = e.x; c.y = e.y; c.t = t; c.v = aiValue(e);
     /* how far it reaches and what it goes through, which is what the beaten zone is made
        of: a rifle section and a Pak covering the same crossroads are not the same danger
@@ -8961,6 +9000,105 @@ function aiRemember(side, t) {
   /* and what has gone cold is thrown away, so the store cannot grow without bound over
      a long battle */
   for (var k in M.con) if (t - M.con[k].t > AIMEM * 3) { delete M.con[k]; M.n--; }
+}
+/* The enemy's intent, read off where his contacts are going. A body of them moving
+   together toward ground this side holds is a wave forming, and a wave is worth knowing
+   about before it arrives: the hold goes up while the men can still get there, the tubes
+   have somewhere to lay on, and the mood stops stepping off into a punch that is already
+   on its way. What is found is the heaviest cluster of fresh contacts, its shared heading,
+   and the held sector that heading runs onto; standing still it is a position and not a
+   wave, and it says so with no sector. Nothing here outlives the tick but the numbers
+   written to the memory (`M.mass`), and each held sector's rollup gains `coming`, the
+   weight that will be on it in twenty seconds if everything keeps walking. */
+var AIMASS = 260;
+function aiMass(side, W, t) {
+  var M = aiMemOf(side), keys = [], k, i, j, c0, R;
+  for (k in M.con) { c0 = M.con[k]; if (t - c0.t < AIMEM * .7 && !c0.heard) keys.push(c0); }
+  for (i = 0; i < W.secs.length; i++) W.secs[i].coming = 0;
+  var best = null, bw = 0;
+  for (i = 0; i < keys.length; i++) {
+    var a = keys[i], w = 0, n = 0, vx = 0, vy = 0, x = 0, y = 0;
+    for (j = 0; j < keys.length; j++) {
+      var b = keys[j];
+      if (dsq(a.x, a.y, b.x, b.y) > AIMASS * AIMASS) continue;
+      var f = 1 - (t - b.t) / AIMEM;
+      w += b.v * f; n++; x += b.x * b.v * f; y += b.y * b.v * f; vx += b.vx * b.v * f; vy += b.vy * b.v * f;
+    }
+    if (w > bw) { bw = w; best = { w: w, n: n, x: x / w, y: y / w, vx: vx / w, vy: vy / w, sp: 0, sec: null, eta: 999 }; }
+    /* what this one contact is walking onto: the held flag its line passes inside twenty
+       seconds, and only while it is closing on it. The nearest point of the next twenty
+       seconds of its line, not the point at the end of them: a section that will be past
+       the flag by then walks over it on the way. */
+    var asp = Math.hypot(a.vx, a.vy);
+    if (asp < 6) continue;
+    var af = 1 - (t - a.t) / AIMEM;
+    for (j = 0; j < W.secs.length; j++) {
+      R = W.secs[j];
+      if (!R.held) continue;
+      var sx = R.s.x - a.x, sy = R.s.y - a.y;
+      var al = clamp((sx * a.vx + sy * a.vy) / (asp * asp), 0, 20);
+      if (al <= 0) continue;
+      var dNow = dsq(a.x, a.y, R.s.x, R.s.y), dThen = dsq(a.x + a.vx * al, a.y + a.vy * al, R.s.x, R.s.y);
+      if (dThen < 420 * 420 && dThen < dNow) R.coming += a.v * af;
+    }
+  }
+  if (!best || bw < 200) { M.mass = null; return null; }
+  best.sp = Math.hypot(best.vx, best.vy);
+  if (best.sp > 6) {
+    var bd = 1e9;
+    for (i = 0; i < W.secs.length; i++) {
+      R = W.secs[i];
+      if (!R.held) continue;
+      /* the point on its line nearest the flag, and how long until it is there */
+      var rx = R.s.x - best.x, ry = R.s.y - best.y, along = (rx * best.vx + ry * best.vy) / (best.sp * best.sp);
+      if (along < 0 || along > 45) continue;
+      var qx = best.x + best.vx * along, qy = best.y + best.vy * along, off = dsq(qx, qy, R.s.x, R.s.y);
+      if (off < 420 * 420 && off < bd) { bd = off; best.sec = R.s.id; best.eta = along; }
+    }
+  }
+  M.mass = best;
+  return best;
+}
+/* what it has killed and what it has lost, lately: the two halves of the exchange */
+function aiKill(side, worth) { aiMemOf(side).exK += worth; }
+/* Sound ranging. A tube that is shelling this side is somewhere, and a side that has been
+   hit by it three times knows roughly where: what it cannot see it can hear. A contact is
+   written down for it with an error that shrinks with every round heard -- two hundred
+   and twenty units on the first and sixty by the fifth -- and flagged `heard`, so nothing
+   that wants a heading or a body of men reads it as one and the beaten zone is not
+   painted from it. `aiKnown` accepts it the way it accepts a contact seen half a minute
+   ago, which is what lets a mission be laid on it and a task force sent to it, and it is
+   honest by the same test: a section walking to a heard tube walks to where the sound
+   was, and finds it there or does not. */
+function aiHeard(side, src) {
+  if (!src || !src.cat || src.dead || src.side === side) return;
+  var M = aiMemOf(side), c = M.con[src.id];
+  if (c && !c.heard && G.t - c.t < AIMEM) return;     /* it can see it: nothing to guess */
+  if (c && G.t - c.t < 1) return;                      /* one fix a second is plenty */
+  if (!c) { c = M.con[src.id] = { x: 0, y: 0, t: -1, v: 0, veh: 0, team: 0, gun: 0, rng: 0, pen: 0, vx: 0, vy: 0, heard: 0, err: 220 }; M.n++; }
+  var err = c.heard ? Math.max(60, (c.err || 220) * .75) : 220;
+  var a = rnd(0, TAU), r = Math.sqrt(Math.random()) * err;
+  c.x = src.x + Math.cos(a) * r; c.y = src.y + Math.sin(a) * r; c.t = G.t; c.err = err;
+  c.v = aiValue(src); c.veh = src.cat === 'veh' ? 1 : 0; c.team = src.cat === 'team' ? 1 : 0;
+  c.gun = 0; c.rng = mainW(src).range; c.pen = 0; c.vx = 0; c.vy = 0; c.heard = 1;
+  M.tubeId = src.id; M.tubeX = c.x; M.tubeY = c.y; M.tubeT = G.t;
+  aiFire('heard');
+}
+/* The clock. What the points say now is not what they will say at the whistle: a side
+   twenty behind that holds two victory flags to the enemy's one is winning on the clock,
+   and one sixty ahead holding none is losing it. Seconds until each side's points are
+   gone at the drain the flags set now, read the way `tickEconomy` drains them. */
+function aiClock(side) {
+  var him = foe(side), my = 0, his = 0, i, s;
+  for (i = 0; i < G.sectors.length; i++) {
+    s = G.sectors[i];
+    if (s.type !== 'vp' || !s.conn) continue;
+    if (s.owner === side) my++; else if (s.owner === him) his++;
+  }
+  var bleedMe = slotsOf(side).indexOf(G.own) >= 0 ? diffOf(slotsOf(him)[0]).vp : 1;
+  var bleedHim = slotsOf(him).indexOf(G.own) >= 0 ? diffOf(slotsOf(side)[0]).vp : 1;
+  var onMe = his * .8 * bleedMe, onHim = my * .8 * bleedHim;
+  return { me: onMe > 0 ? vpOf(side) / onMe : 9999, him: onHim > 0 ? vpOf(him) / onHim : 9999, my: my, his: his };
 }
 /* Does the side know about this at all: it can see it now, or it saw it recently enough
    that acting on the memory is fair. */
@@ -8984,6 +9122,7 @@ function aiLoss(side, x, y, worth) {
   }
   if (!best) return;
   M.lost[best.id] = (M.lost[best.id] || 0) + worth;
+  M.exL += worth;
   M.lastHurt = G.t; M.hurtX = x; M.hurtY = y;
 }
 /* And what did the killing, by the kind of thing it was. A side that has lost three
@@ -9003,6 +9142,10 @@ function aiLostTo(side, u, src) {
 /* half of what it remembers about a place, every minute and a half */
 function aiFade(side, dt) {
   var M = aiMemOf(side), f = Math.pow(.5, dt / 90), k;
+  /* the exchange is a shorter memory than the ground: a minute, because what it is for
+     is whether the fight this side is in NOW is one it is winning */
+  var fe = Math.pow(.5, dt / 60);
+  M.exK *= fe; M.exL *= fe;
   for (k in M.lost) { M.lost[k] *= f; if (M.lost[k] < 1) delete M.lost[k]; }
   for (k in M.lostTo) { M.lostTo[k] *= f; if (M.lostTo[k] < 1) delete M.lostTo[k]; }
 }
@@ -9015,7 +9158,7 @@ var AIW = {
   mine: [], engs: [], men: [], rifles: [], teams: [], vehs: [], takers: [], screens: [], fighters: [],
   team: [], foes: [], known: [], gars: 0,
   me: null, him: null, own: null,
-  myStr: 0, foeStr: 0, ratio: 1, vpLead: 0, ground: 0,
+  myStr: 0, foeStr: 0, ratio: 1, vpLead: 0, ground: 0, exch: 1, mass: null, heard: [], clock: null,
   mp: 0, fu: 0, inc: 0, pop: 0, cap: 0, coming: [], comingPop: 0,
   secs: [], bySec: {}, byId: {},
   eng: {}, gi: null, gm: null, gw: 0, gh: 0
@@ -9094,7 +9237,7 @@ function aiLook(slot, D, skill) {
   W.t = G.t; W.slot = slot; W.side = side; W.foe = foeSide; W.D = D; W.skill = skill;
   W.mine.length = 0; W.engs.length = 0; W.men.length = 0; W.rifles.length = 0; W.teams.length = 0;
   W.vehs.length = 0; W.takers.length = 0; W.screens.length = 0; W.fighters.length = 0;
-  W.team.length = 0; W.foes.length = 0; W.known.length = 0;
+  W.team.length = 0; W.foes.length = 0; W.known.length = 0; W.heard.length = 0;
   W.gars = 0; W.myStr = 0; W.foeStr = 0;
   W.eng = {};
   /* by id, because half of what a unit wants to ask about is something it has only the
@@ -9176,7 +9319,7 @@ function aiLook(slot, D, skill) {
        half minute the opening is fought in. */
     if (Mh[s.id] === undefined) { Mh[s.id] = G.t - 600; Mh[s.id + '.o'] = s.owner; }
     else if (Mh[s.id + '.o'] !== s.owner) { Mh[s.id] = G.t; Mh[s.id + '.o'] = s.owner; }
-    var r = { s: s, id: s.id, held: held, th: 0, mine: 0, seen: 0,
+    var r = { s: s, id: s.id, held: held, th: 0, mine: 0, seen: 0, pin: 0, pinned: 0, coming: 0,
               dHq: W.hq ? dist(s, W.hq) : 0, dFoe: W.foeHq ? dist(s, W.foeHq) : 0,
               lost: aiMemOf(side).lost[s.id] || 0, nbHeld: 0, age: G.t - Mh[s.id] };
     aiNear(s.x, s.y, 400, function (e) {
@@ -9184,7 +9327,11 @@ function aiLook(slot, D, skill) {
       var v = aiValue(e);
       r.th += v;
       if (visibleTo(side, e)) r.seen += v;
+      /* and how much of it is pinned, which is what fire superiority is: a wave goes in
+         on defenders who cannot lift their heads, not on defenders who have formed */
+      if (e.sup > .6) r.pin += v;
     });
+    r.pinned = r.th > 0 ? r.pin / r.th : 0;
     for (var m = 0; m < W.team.length; m++)
       if (dsq(W.team[m].x, W.team[m].y, s.x, s.y) < 400 * 400) r.mine += aiValue(W.team[m]);
     if (s.nb) for (var q = 0; q < s.nb.length; q++) {
@@ -9194,9 +9341,19 @@ function aiLook(slot, D, skill) {
     W.secs.push(r); W.bySec[s.id] = r;
   }
   aiRemember(side, G.t);
+  aiMass(side, W, G.t);
   aiPaintDanger(side, G.t);
   aiFade(side, G.t - (AIM[side].fadeT || G.t));
   AIM[side].fadeT = G.t;
+  /* the exchange lately, smoothed so that two kills in an empty minute are not a rout
+     either way: above one it is winning the fight it is in, below it it is losing it */
+  W.exch = (AIM[side].exK + 90) / (AIM[side].exL + 90);
+  W.mass = AIM[side].mass;
+  W.clock = aiClock(side);
+  /* and what it has heard rather than seen: the tubes, alive and fresh, for the task
+     force and the counter-battery below */
+  var MC = AIM[side].con, hk;
+  for (hk in MC) if (MC[hk].heard && G.t - MC[hk].t < AIMEM) { var hu = W.byId[hk]; if (hu && !hu.dead) W.heard.push(hu); }
   aiCallTend(W);
   return W;
 }
@@ -9575,7 +9732,7 @@ var AIS = {
   danger: 0, canAnswer: 1, weakest: null, weakHp: 1, weakD: 9999,
   frW: 0, frN: 0, frD: 9999, escort: 0, frAt: null, frAtD: 9999,
   sec: null, dObj: 9999, objTh: 0, objMine: 0, objVp: 0, objAge: 0,
-  call: null, ansD: 9999, gx: 0, gy: 0, goal: null
+  call: null, ansD: 9999, gx: 0, gy: 0, goal: null, shelled: 0
 };
 function aiSense(u, W) {
   var S = AIS, side = u.side, t = G.t;
@@ -9590,6 +9747,9 @@ function aiSense(u, W) {
   S.vet = u.vet || 0; S.value = aiValue(u);
   S.reach = mainW(u).range;
   S.hurtAmt = u.hurtAmt || 0;
+  /* being shelled is its own fact, whether or not the tube is known: a beaten zone is a
+     place, and the answer to it is to be somewhere else */
+  S.shelled = u.hurtInd && t - (u.hurtT || -99) < 6 ? 1 : 0;
   /* ---- what hit it, if that is still alive and its side still knows where it is */
   S.hurt = null; S.hurtAge = 99; S.hurtHp = 1; S.hurtVeh = 0;
   if (u.hurtId !== undefined && t - (u.hurtT || -99) < 12) {
@@ -10048,9 +10208,9 @@ function aiOpsPlan(W, objs, skill) {
      something on the field that can actually kill it. A Tiger loose behind the line is not
      a sector's worth of threat to be dealt with by whoever was given that flag. */
   if (room > 0 && skill >= 1 && !aiOpKind(side, 'destroy')) {
-    var best = null, bs = 0;
-    for (i = 0; i < W.known.length; i++) {
-      var e = W.known[i];
+    var best = null, bs = 0, cands = W.heard.length ? W.known.concat(W.heard) : W.known;
+    for (i = 0; i < cands.length; i++) {
+      var e = cands[i];
       if (e.retreat || e.def.builder) continue;
       /* What is worth a task force is a kind of thing, not a price. A rifle section is
          what the whole army is already shooting at; armour, a weapon team and anything
@@ -10064,6 +10224,9 @@ function aiOpsPlan(W, objs, skill) {
          gun team, which is two men stopping a section and cannot run away */
       var dHq = Math.hypot(e.x - W.hqX, e.y - W.hqY);
       var sc = v + (dHq < 900 ? 420 : 0) + (e.cat === 'team' ? 180 : 0) - dHq * .12;
+      /* and a tube most of all: it is the one thing on the field that hurts this side
+         without ever being in front of anything, and it cannot run */
+      if (e.def.indirect) sc += 320;
       if (sc > bs) { bs = sc; best = e; }
     }
     if (bs < 430) best = null;                         /* not everything seen is a prize */
@@ -10082,8 +10245,11 @@ function aiOpsPlan(W, objs, skill) {
       /* two against armour, because one tank against a tank is a duel it may lose; one
          against anything else, because a gun team is two men and a section is enough */
       var dWant = best.cat === 'veh' ? 2 : 1;
-      if (canKill >= 2 && dWant <= room)
-        { aiOpAdd(side, 'destroy', { tid: best.id, x: best.x, y: best.y, want: dWant, pri: bs }); room -= dWant; }
+      if (canKill >= 2 && dWant <= room) {
+        aiOpAdd(side, 'destroy', { tid: best.id, x: best.x, y: best.y, want: dWant, pri: bs });
+        room -= dWant;
+        if (best.def.indirect) aiFire('op.counter');
+      }
     }
   }
 
@@ -10094,12 +10260,17 @@ function aiOpsPlan(W, objs, skill) {
     var hb = null, hbs = 0;
     for (i = 0; i < W.secs.length; i++) {
       var R = W.secs[i];
-      if (!R.held || R.th < 110) continue;
-      var hsc = R.th + (R.s.type === 'vp' ? 300 : 0) - R.mine * .5;
+      /* what is on it, and what is walking onto it: a body twenty seconds out is the case
+         the hold exists for, because men sent once it has arrived arrive into a fight
+         that is already lost */
+      if (!R.held || (R.th < 110 && R.coming < 160)) continue;
+      var hsc = R.th + R.coming * 1.1 + (R.s.type === 'vp' ? 300 : 0) - R.mine * .5;
       if (hsc > hbs) { hbs = hsc; hb = R; }
     }
-    if (hb && hbs > 260)
-      { aiOpAdd(side, 'hold', { sec: hb.id, x: hb.s.x, y: hb.s.y, want: 1, pri: hbs }); room--; }
+    if (hb && hbs > 260) {
+      aiOpAdd(side, 'hold', { sec: hb.id, x: hb.s.x, y: hb.s.y, want: 1, pri: hbs }); room--;
+      if (hb.coming > hb.th) aiFire('hold.coming');
+    }
   }
 
   /* ---- probe. The ground nobody has looked at, nearest first. It is worth one cheap
@@ -10299,7 +10470,7 @@ function aiWeigh(u, S, W) {
      against standing, rather than tried in the order they happen to be written. */
   /* a weapon team keeps its post: it was sited to see a piece of ground and a team that
      ducks out of its own arc is a team that fires nothing for the rest of the battle */
-  var open = u.cat === 'inf' && S.cover < 2 && (S.sup > .35 || S.hurtAmt > 6) && S.thN > 0;
+  var open = u.cat === 'inf' && S.cover < 2 && (S.sup > .35 || S.hurtAmt > 6) && (S.thN > 0 || S.shelled);
   if (open && G.t - (u.duckT || -99) > 14) {
     var gain = (2 - S.cover) * 26 + S.mgW * .12;      /* what pins men is a machine gun */
     /* a house: the heaviest cover in the game, and it holds the ground it stands on */
@@ -10324,6 +10495,7 @@ function aiWeigh(u, S, W) {
        worth, which is why a section no longer walks off a victory flag it is holding */
     sc = 30 + pressure * .5 - (S.dObj < 200 ? 40 : 0) - (S.objVp && S.dObj < 260 ? 40 : 0) -
          finish * .8 - (S.thD < 120 ? 34 : 0) -       /* too close to break contact */
+         (S.shelled ? -28 : 0) -                       /* a beaten zone is a place to leave */
          (S.dObj < 240 && S.objMine < S.value * 1.6 ? 30 : 0) -  /* and nobody else on it */
          (S.dObj < 400 && S.objTh > 150 ? 22 : 0) -   /* the flag is being come for */
          (S.infW > S.thW * .7 ? 16 : 0) +             /* men follow; a tank does not chase */
@@ -10331,8 +10503,10 @@ function aiWeigh(u, S, W) {
     if (sc > bs) { bs = sc; best = 'back'; }
     /* and down where it stands, which gives up nothing and gains a little */
     sc = 26 + pressure * .34 + (S.cover >= 1 ? 22 : 0) - (S.armD < 260 ? 34 : 0) +
-         S.pinned * 30;                               /* pinned men are not going anywhere */
+         S.pinned * 30 -                              /* pinned men are not going anywhere */
+         (S.shelled ? 30 : 0);                        /* and nobody lies down under shellfire */
     if (sc > bs) { bs = sc; best = 'ground'; }
+    if (S.shelled && (best === 'back' || best === 'cover')) aiFire('shelled.move');
   }
 
   /* Ask, and wait for the answer. The case the whole thing was built for: a section that
@@ -10818,8 +10992,30 @@ function aiTick(dt) {
   if (G.win === 'vp' && skill >= 1) {
     if (vpLead < -60 && AI.mood !== 'dig') { AI.mood = 'push'; aiFire('mood.pushVp'); }
     else if (vpLead > 140 && AI.mood === 'push' && G.t > 240 && ratio < 1.3) { AI.mood = 'hold'; aiFire('mood.pushVp'); }
+    /* and the clock, which is what the lead will be at the whistle: losing on it, the
+       army pushes for a victory flag whatever the ratio says, because holding what it
+       has is holding a losing hand; winning on it comfortably, it holds what pays */
+    if (W.clock.me < W.clock.him * .8 && W.clock.me < 900 && AI.mood === 'hold') { AI.mood = 'push'; aiFire('mood.clock'); }
+    else if (W.clock.him < W.clock.me * .6 && W.clock.him < 600 && AI.mood === 'push' && G.t > 200 && ratio < 1.4) { AI.mood = 'hold'; aiFire('mood.clock'); }
+  }
+  /* The exchange. The strength ratio says what the two armies are; the exchange says what
+     the fight they are in is doing to them, over the last minute, and the two disagree
+     more often than not: an army half the size that is killing two for one is winning,
+     and it should not be digging in because the count says it is small. Losing the
+     exchange badly it stops pushing, unless the clock says it has no choice. */
+  if (skill >= 1 && G.t > 120) {
+    var Mx = AIM[side];
+    if (W.exch < .5 && Mx.exL > 400 && AI.mood === 'push' && !(W.clock.me < W.clock.him * .8)) { AI.mood = 'hold'; aiFire('mood.exch'); }
+    else if (W.exch > 2 && Mx.exK > 400 && AI.mood !== 'push') { AI.mood = 'push'; aiFire('mood.exch'); }
   }
   if (opening) AI.mood = 'push';
+  /* A body forming against ground it holds is a punch on its way, and an army that steps
+     off into the far end of the map at that moment finds its flag gone when it looks
+     round. It meets it instead: the reach shortens to what it can hold, for as long as
+     the body is closing. Only a body worth a third of what the enemy has, because one
+     section walking at a flag is what every minute of a battle looks like. */
+  if (W.mass && W.mass.sec && W.mass.w > 400 && W.mass.w > W.foeStr * .35 &&
+      AI.mood === 'push' && ratio < 1.25 && !opening) { AI.mood = 'hold'; aiFire('mood.mass'); }
   /* Momentum. A capture is the moment the enemy is most disorganised, and the brain used
      to spend it re-forming for a minute and a quarter. For thirty seconds after taking a
      sector the next one along the same axis is worth more and the wave re-forms at once. */
@@ -10860,7 +11056,7 @@ function aiTick(dt) {
        one already near enough to be it. The economy sectors do not: a section standing
        on a quiet manpower point is a section missing from the fight, and posting one on
        each of them cost more ground than it saved. */
-    if (quiet && s.type !== 'vp' && !dir) continue;
+    if (quiet && s.type !== 'vp' && !dir && R.coming < 160) continue;
     /* Losing the arithmetic changes what is worth wanting. An army that is behind and
        still marching at the far end of the map is how a bad position becomes a rout, so
        it shortens its reach and holds what it can reach: on this ground that means the
@@ -10907,6 +11103,10 @@ function aiTick(dt) {
        at with more, or later, and an uncapped term walks the army off the map. */
     if (!held && R.lost > 0) { sc -= Math.min(140, R.lost * .06); aiFire('obj.dear'); }
     if (quiet) sc -= 150;                                           /* a sentry, not a push */
+    /* and a flag a body is walking onto is worth men now, while they can still get there:
+       the counter-attack below is for ground already lost, and this is the half minute
+       before it */
+    if (held && R.coming > 160) { sc += 120 + Math.min(200, R.coming * .2); cap = Math.max(cap, 2); maxD = 4000; aiFire('obj.coming'); }
     /* and what has just been taken off us goes to the top of the list, with the weight
        to do something about it, for as long as the clock runs */
     if (counter) { sc += 300; cap = Math.max(cap, 3); maxD = 4000; }
@@ -11014,9 +11214,11 @@ function aiTick(dt) {
     var dirA = aiDirAttack(slot);
     if (dirA && dirA.owner !== side) { asSec = dirA; if (AI.asSec !== dirA.id) AI.asPick = G.t; }
     var asHeld = G.secById[AI.asSec];
-    if (!asSec && asHeld && G.t - AI.asPick < 60 && asHeld.owner !== side) asSec = asHeld;
+    var avoid = AI.asAvoid && G.t - AI.asAvoidT < 60 ? AI.asAvoid : null;
+    if (!asSec && asHeld && G.t - AI.asPick < 60 && asHeld.owner !== side && asHeld.id !== avoid) asSec = asHeld;
     for (i = 0; i < objs.length && !asSec; i++) {
       var o3 = objs[i];
+      if (o3.s.id === avoid) continue;             /* it broke off from that one a moment ago */
       if (o3.cap >= 3 && (o3.s.owner === foeSide || o3.s.contest || o3.th > 60)) {
         asSec = o3.s; AI.asPick = G.t;
       }
@@ -11114,6 +11316,30 @@ function aiTick(dt) {
         if (aiSetUp(teams[j], asX, asY)) supUp++;
       }
       var laidOn = !supHave || supUp > 0 || G.t - AI.asForm > (D.form || 32) * .45;
+      /* And whether the fire is doing anything. Set up is not the same as firing, and
+         firing is not the same as the defenders being pinned, and a wave that steps off
+         the moment its gun is on its post crosses the open against men who have not yet
+         had to keep their heads down. So it waits, bounded, for one of three things: the
+         defenders on the objective mostly suppressed (`pinned` off the sector rollup),
+         the support firing for eight seconds, or nobody there to suppress. The form
+         timer still bounds it at a third over, because a gun that cannot find a target
+         must not stop the battle either. Veteran and regular; green goes when it is
+         formed, which is what green is for. */
+      var supFiring = 0;
+      for (j = 0; j < teams.length; j++)
+        if (teams[j].target && !teams[j].target.dead && !teams[j].retreat && !teams[j].def.atOnly) supFiring++;
+      if (supUp > 0 && AI.supT < 0) AI.supT = G.t;
+      if (supUp === 0) AI.supT = -99;
+      var RA = asId ? W.bySec[asId] : null, pinnedF = RA ? RA.pinned : 0;
+      /* and a wave with a section already on the objective is already in the fight, so it
+         goes: held back for fire it is under without, it is the queue in the open the wait
+         exists to prevent, and before the wait a wave that formed on its own objective
+         went in on the tick it formed */
+      var onObj = 0;
+      for (j = 0; j < wavers.length; j++) if (dsq(wavers[j].x, wavers[j].y, asX, asY) < 240 * 240) onObj++;
+      var superior = skill < 1 || !RA || RA.th < 80 || pinnedF >= .3 || onObj > 0 ||
+                     (supFiring > 0 && AI.supT >= 0 && G.t - AI.supT > 8) ||
+                     G.t - AI.asForm > (D.form || 32) * 1.3;
       var half = Math.max(2, Math.ceil((D.wave || 3) / 2));
       /* A sector falls to whoever is standing on it, so there a lone section still goes:
          holding it back waits for a wave that will never be gathered and gives away
@@ -11123,12 +11349,18 @@ function aiTick(dt) {
          line one assault group every two minutes for twenty minutes. */
       if (!razeT) half = Math.min(half, sent);
       if (sent && !laidOn) aiFire('wave.nosupport');
-      if (sent && ready >= half && laidOn &&
+      if (sent && ready >= half && laidOn && !superior) aiFire('wave.wait');
+      if (sent && ready >= half && laidOn && superior &&
           (ready >= Math.min(D.wave || 3, sent) ||
            G.t - AI.asForm > (D.form || 32))) {
         AI.asT = G.t;
         aiFire('wave.go');
+        if (pinnedF >= .3) aiFire('wave.pinned');
         if (ready < Math.min(D.wave || 3, sent)) aiFire('wave.late');
+        /* what it stepped off with, so the press below can tell a wave that is taking
+           the ground from one that is being fed into it */
+        AI.asStr = 0;
+        for (j = 0; j < wavers.length; j++) AI.asStr += aiValue(wavers[j]);
       }
     } else if (G.t - AI.asT > (D.press || 75) || (asSec && asSec.owner === side && !asSec.contest)) {
       /* the objective is taken, or the press has run its course. A capture is followed
@@ -11137,9 +11369,32 @@ function aiTick(dt) {
       if (asSec && asSec.owner === side) { AI.momSec = asSec.id; AI.momT = G.t; AI.asForm = G.t - (D.form || 32) * .6; }
       else AI.asForm = G.t;
       AI.asT = -99; AI.flkT = -99;                       /* the next wave reads the ground again */
+    } else if (asId && AI.asStr > 0 && G.t - AI.asT > 14) {
+      /* Breaking off. A wave that has lost half of what it stepped off with and has
+         neither taken the ground nor pinned what holds it is not an assault any more, it
+         is a queue: the press timer would have fed the rest of it in a section at a time
+         for another minute. It re-forms instead, and that objective is left alone for a
+         minute so the next wave is against something else -- which is also the moment
+         the loss memory on that ground starts to say the same thing. */
+      var wStr = 0;
+      for (j = 0; j < fighters.length; j++) { u = fighters[j]; if (!u.retreat && aiInWave(u, asId, razeT)) wStr += aiValue(u); }
+      var RB = W.bySec[asId];
+      if (wStr < AI.asStr * .5 && !(RB && RB.pinned > .4) && !(asSec && asSec.owner === side)) {
+        aiFire('wave.break');
+        AI.asAvoid = asId; AI.asAvoidT = G.t;
+        AI.asT = -99; AI.flkT = -99; AI.asForm = G.t; AI.asKey = null; AI.asStr = 0;
+      }
     }
   }
   var forming = asKey && AI.asT < 0, pressing = asKey && AI.asT >= 0;
+  /* where the wave is, for the sections that have got ahead of it */
+  var wvX = 0, wvY = 0, wvN = 0;
+  if (pressing) for (j = 0; j < fighters.length; j++) {
+    u = fighters[j];
+    if (u.cat === 'veh' || u.retreat || !aiInWave(u, asId, razeT)) continue;
+    wvX += u.x; wvY += u.y; wvN++;
+  }
+  if (wvN) { wvX /= wvN; wvY /= wvN; }
   /* The main effort, in the list with everything else the army is doing. Its state is
      still the wave's own -- the form post that steps back until the ground it gathers on
      is quiet, the half-strength floor, the support gate, the late go, the momentum
@@ -11564,8 +11819,24 @@ function aiTick(dt) {
           var dd = Math.hypot(e.x - u.aimX, e.y - u.aimY);
           if (dd < mb) { mb = dd; mt = e; }
         });
-        var bx = mt ? mt.x : u.aimX, by = mt ? mt.y : u.aimY;
-        if (Math.hypot(u.x - bx, u.y - by) <= barrageRange(u) && orderBarrage(u, bx, by)) aiFire('mortar.mission');
+        var bx = mt ? mt.x : u.aimX, by = mt ? mt.y : u.aimY, mLed = 'mortar.mission';
+        /* A body forming against a flag of ours comes first, laid where it will be when
+           the rounds arrive rather than where it is: bombs into a wave while it gathers
+           are worth more than bombs into a flag it has not reached, and a gathering is
+           the one time the enemy stands still in the open. Worth a mission on its own
+           account, so the objective's defenders wait their turn. */
+        var MS = W.mass;
+        if (MS && MS.sec && MS.w > 300 && Math.hypot(u.x - MS.x, u.y - MS.y) <= barrageRange(u)) {
+          bx = clamp(MS.x + MS.vx * 7, 40, WORLD.w - 40); by = clamp(MS.y + MS.vy * 7, 40, WORLD.h - 40); mLed = 'mortar.mass';
+        } else {
+          /* counter-battery: the tube that has been shelling this side, where it was last
+             heard, while the fix is fresh and the piece is still alive to be hit */
+          var MT = AIM[side], tu = MT.tubeId ? W.byId[MT.tubeId] : null;
+          if (tu && !tu.dead && G.t - MT.tubeT < 40 && Math.hypot(u.x - MT.tubeX, u.y - MT.tubeY) <= barrageRange(u)) {
+            bx = MT.tubeX; by = MT.tubeY; mLed = 'mortar.counter';
+          }
+        }
+        if (Math.hypot(u.x - bx, u.y - by) <= barrageRange(u) && orderBarrage(u, bx, by)) aiFire(mLed);
       }
       continue;
     }
@@ -11593,6 +11864,25 @@ function aiTick(dt) {
         if (Math.hypot(u.x - hx, u.y - hy) > 150 &&
             (!u.dest || Math.hypot(u.dest.x - hx, u.dest.y - hy) > 200)) orderMove(u, hx, hy, true);
         continue;
+      }
+      /* Armour in the wave takes an overwatch post short of the objective with a line to
+         it, and fights from there: a tank that drives onto the flag with the sections is
+         a tank in a street full of doorways, and a tank two hundred back with the flag in
+         its sights is the covering fire the sections were promised. The post is found
+         once per wave and looked for again every fourteen seconds, because `aiOverwatch`
+         is twenty-one traces and there may be six of these. Where nothing on the arc has
+         a line it falls through to the stand-off below. */
+      if (pressing && skill >= 1 && aiInWave(u, asId, razeT)) {
+        if (u.owKey !== asKey || G.t - (u.owT || -99) > 14) {
+          var owp = aiOverwatch(side, asX, asY, Math.min(280, w0.range * .6), w0.range * .9);
+          u.owKey = asKey; u.owT = G.t; u.owOk = owp ? 1 : 0;
+          if (owp) { u.owX = owp.x; u.owY = owp.y; aiFire('veh.overwatch'); }
+        }
+        if (u.owOk) {
+          if (Math.hypot(u.x - u.owX, u.y - u.owY) > 120 &&
+              (!u.dest || Math.hypot(u.dest.x - u.owX, u.dest.y - u.owY) > 160)) orderMove(u, u.owX, u.owY, true);
+          continue;
+        }
       }
       var sa = aiFoeDir(side, mainX, mainY), so = Math.min(170, w0.range * .45);
       var vx = clamp(mainX + Math.cos(sa) * so, 60, WORLD.w - 60);
@@ -11673,6 +11963,24 @@ function aiTick(dt) {
           else if (u.order !== 'hold') orderStop(u);
           continue;
         }
+      }
+    }
+    /* Cohesion. A section that has run ahead of its wave and is being shot at is a section
+       about to fight the objective alone, which is the trickle the wave exists to replace.
+       It goes to ground where it is until the rest close up: eight seconds at most, and
+       not again for sixteen, so a wave that has been stopped does not stop for good. */
+    if (pressing && skill >= 1 && aiInWave(u, asId, razeT)) {
+      if (u.cohT && G.t - u.cohT < 8) {
+        if (u.order === 'move' || u.order === 'attackmove') orderStop(u);
+        continue;
+      }
+      if (wvN > 1 && S.sup > .45 && !S.pinned && G.t - (u.cohT || -99) > 16 &&
+          dsq(u.x, u.y, wvX, wvY) > 150 * 150 &&
+          dsq(u.x, u.y, asX, asY) + 100 * 100 < dsq(wvX, wvY, asX, asY)) {
+        u.cohT = G.t; aiFire('wave.cohere');
+        u.stance = 'ground'; u.stanceT = G.t;
+        if (u.order === 'move' || u.order === 'attackmove') orderStop(u);
+        continue;
       }
     }
     /* A defended objective is come at from the quiet side rather than walked into. The
