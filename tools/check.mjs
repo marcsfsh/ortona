@@ -618,8 +618,15 @@ for (const device of TARGETS) {
     P.asKey = null; P.asT = -99; P.t = 0;
     const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
     tick();
-    const laid = !!(m.barrage && !m.barrage.smoke), aimD = m.barrage ? Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)) : -1;
-    const obj = String(P.asSec) === String(S.id), dirFired = (window.AIR.fired['mortar.dir'] || 0) - (f0['mortar.dir'] || 0);
+    /* what the tube was laid on after a tick: the preparation on the flag's defenders, or
+       the screen short of the flag. Either may come first. On the desktop the wave waits
+       for its fire and the go has to be forced below; on one phone run a section of his
+       from the battle already stood inside 240 of the flag, so the wave went on the tick
+       it formed and the screen came before the preparation rather than after it. Both are
+       the brain being right, so the row reads both ticks and asks for one of each. */
+    const mis = () => m.barrage ? { smoke: !!m.barrage.smoke, d: Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)), x: m.barrage.x, y: m.barrage.y } : null;
+    const m1 = mis(), went1 = P.asT >= 0;
+    const obj = String(P.asSec) === String(S.id);
     /* the preparation is spent before the go, the way it is in a battle -- with the
        nearest thing the side can see standing square off the line of fire, because a
        halted crew turns toward the nearest known enemy and a tube on a mission used to be
@@ -634,9 +641,11 @@ for (const device of TARGETS) {
     const spent = !m.barrage, thD = Math.round(Math.hypot(th.x - m.x, th.y - m.y)), thOff = Math.abs(window.angDiff(want, Math.atan2(th.y - m.y, th.x - m.x))).toFixed(2);
     const state = (m.barrage ? `left ${m.barrage.left} fired ${fired} moving ${m.moving} order ${m.order} packed ${m.packed} setup ${m.setup.toFixed(1)} cd ${m.cd.toFixed(1)} lay ${Math.abs(window.angDiff(m.facing, want)).toFixed(2)}` : `fired ${fired}`) +
                   ` with the nearest enemy ${thD} off at ${thOff} rad from the line`;
-    P.asForm = window.G.t - 200; P.asT = -99;
+    if (P.asT < 0) { P.asForm = window.G.t - 200; P.asT = -99; }
     tick();
-    const went = P.asT >= 0, smoke = !!(m.barrage && m.barrage.smoke);
+    const m2 = mis(), went = P.asT >= 0;
+    const he = m1 && !m1.smoke ? m1 : m2 && !m2.smoke ? m2 : null, sm = m1 && m1.smoke ? m1 : m2 && m2.smoke ? m2 : null;
+    const dirFired = (window.AIR.fired['mortar.dir'] || 0) - (f0['mortar.dir'] || 0);
     /* what the wave was dealt, because the go wants half of it near the forming-up point
        and the first version of this row lost two of the three sections to a held flag
        that outscored the directive */
@@ -644,23 +653,24 @@ for (const device of TARGETS) {
     const secs = raised.filter(u => u.own === own && u.cat === 'inf');
     const dealt = secs.filter(u => window.aiInWave(u, S.id, false)).length;
     const deal = secs.map(u => `${u.job}/${u.jobSec}${u.op ? '/op' : ''}`).join(' ');
-    const sD = m.barrage ? Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)) : -1;
-    const fD = m.barrage && mo.fupX ? Math.round(Math.hypot(m.barrage.x - mo.fupX, m.barrage.y - mo.fupY)) : -1;
+    const fD = sm && mo.fupX ? Math.round(Math.hypot(sm.x - mo.fupX, sm.y - mo.fupY)) : -1;
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
+    const kind = (q) => q ? (q.smoke ? 'smoke' : 'HE') + ' ' + q.d + ' from the flag' : 'nothing';
     /* down again */
     window.aiDirSet(own, S.id, null);
     P.asKey = null; P.asT = -99; P.asSec = null;
     raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
     window.G.smoke.length = 0; window.G.shots.length = 0;
     window.select([], false);
-    return { name: S.label || S.id, known, laid, aimD, obj, dirFired, spent, state, went, smoke, sD, fD, screenFired, dealt, deal, n: secs.length };
+    return { name: S.label || S.id, known, obj, dirFired, spent, state, went1, went, fD, screenFired, dealt, deal, n: secs.length,
+             m1: kind(m1), m2: kind(m2), heD: he ? he.d : -1, smD: sm ? sm.d : -1 };
   });
   ok('simple: ATTACK with a tube in reach lays it on the men holding the flag, and the go lays smoke short of the flag',
-     !dirArty.none && dirArty.laid && dirArty.aimD <= 190 && dirArty.obj && dirArty.dirFired >= 1 && dirArty.spent && dirArty.dealt === dirArty.n &&
-     dirArty.went && dirArty.smoke && dirArty.screenFired >= 1 && dirArty.sD > 0 && dirArty.sD <= 170,
-     dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid HE ${dirArty.laid} ${dirArty.aimD} from the flag (objective ${dirArty.obj}, mortar.dir ${dirArty.dirFired}); ` +
-                            `spent ${dirArty.spent} (${dirArty.state}); tick 2 dealt ${dirArty.dealt} of ${dirArty.n} to it (${dirArty.deal}), went ${dirArty.went}, ` +
-                            `smoke ${dirArty.smoke} ${dirArty.sD} short of the flag and ${dirArty.fD} from the fup (smoke.screen ${dirArty.screenFired})`);
+     !dirArty.none && dirArty.obj && dirArty.heD >= 0 && dirArty.heD <= 190 && dirArty.dirFired >= 1 && dirArty.spent && dirArty.dealt === dirArty.n &&
+     dirArty.went && dirArty.screenFired >= 1 && dirArty.smD > 0 && dirArty.smD <= 170,
+     dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid ${dirArty.m1} (objective ${dirArty.obj}, went ${dirArty.went1}); ` +
+                            `spent ${dirArty.spent} (${dirArty.state}); tick 2 dealt ${dirArty.dealt} of ${dirArty.n} to it (${dirArty.deal}), went ${dirArty.went}, laid ${dirArty.m2}; ` +
+                            `mortar.dir ${dirArty.dirFired}, smoke.screen ${dirArty.screenFired}, the screen ${dirArty.fD} from the fup`);
 
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */

@@ -4431,6 +4431,10 @@ sections of theirs on it and a mortar of his in action four hundred and thirty b
 the mortar on the defenders on the next tick; the mission runs down with a section in
 sight at a right angle to it; every section he put beside the objective is dealt to it;
 and with the preparation spent and the wave ready the go lays smoke short of the flag.
+The row takes the two in either order, because on a phone run a section of his from the
+battle already stood inside 240 of the flag, so the wave went on the tick it formed and
+the screen came before the preparation: both are the brain being right, and a row that
+insists on the desktop's order is a row about the battle it happened to run in.
 
 **He steers it by the flags.** `AI.dir` is one directive per sector on the plan, set by
 `aiDirSet` from the popup and read by `aiDirOf`. ATTACK makes the flag the main effort:
