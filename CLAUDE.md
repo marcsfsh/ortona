@@ -811,22 +811,26 @@ Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
 
 **And it drives both control schemes on both devices.** The simple rows switch the scheme
-without storing it, measure the chrome (a chip per kind plus ARMY, FALL BACK and MENU and
-nothing else, LOOK and PAUSE and nothing else, the little map, nothing under 44px, off
-screen or lying over the tool strip), and then raise the gestures as TouchEvents at the
-canvas: a drag out of the selected unit has to land an attack-move within a unit of the
-finger with the camera held still under it, a tap on bare ground has to let go and leave
-the order standing, a second tap on a unit has to pick its kind, a chip has to pick its
-kind and go to it, a tap on a flag has to send and a tap on an enemy has to attack, MENU
-has to put the sheet up clear of the little map and an attack-move card take it down, and
-FALL BACK has to send the section home. Then the adjutant is driven for a minute and read
-off the field -- a post raised, a queue filled, a section at a third falling back, a hull
-at a fifth in the yard, the stances, his howitzer free and theirs held -- and the classic
-scheme is put back and asked the same of a tap and a drag, because a scheme kept as an
-option is a scheme nobody runs. The drills want open ground, and `__clearPt` finds it
-clear of every ring of his by more than the pick and clear of any flag -- the first
-version asked `nearestOwn` at a hundred units, which is not the pick, and found no ground
-at all on the spawn.
+without storing it, measure the chrome (a strip of what he can build that agrees with
+`simpleItems` to the key, the line saying what the army is doing, LOOK and PAUSE and
+nothing else, the little map, the bar gone, nothing under 44px, off screen or lying over
+anything else), and then run the brain on his slot for a minute and read it off the field:
+a plan at veteran, every fighting unit with a job and something under orders, and not one
+kind raised nor one building put up out of his till while the opposition went on buying.
+Then the strip is tapped -- the post has to go down beside the headquarters with an
+engineer on it for its price, a section into the queue for its, and the same button dimmed
+and refused with the till emptied -- and the flags are tapped as TouchEvents at the canvas:
+ATTACK on a flag that is not his has to become the wave's objective with sections dealt to
+it, HOLD on one of his and FEINT on another of theirs have to raise directed operations
+with men on them, the popup on the held flag has to show HOLD lit with a CLEAR beside it,
+and CLEAR has to take the directive off and the review drop the operation. LOOK with
+nothing picked has to look from a unit of his, a tap on a unit has to pick it and order
+nothing, and a tap on the ground has to let go. Then everything the rows raised comes down
+and the classic scheme is put back and asked the same of a tap and a drag, because a
+scheme kept as an option is a scheme nobody runs. The drills want open ground, and
+`__clearPt` finds it clear of every ring of his by more than the pick and clear of any flag
+-- the first version asked `nearestOwn` at a hundred units, which is not the pick, and
+found no ground at all on the spawn.
 
 **And two rows read the framebuffer rather than looking at it.** An effect that is drawn
 and invisible looks exactly like an effect that is not drawn, so the effects rows render
@@ -936,7 +940,7 @@ Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--bare` (hide all 2D UI, leaving only the 3D) `--turn` (four yaw angles)
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
 `--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=simple|classic` (the control
-scheme, whatever the device would pick; `hud` then photographs the sheet as well).
+scheme, whatever the device would pick; `hud` then photographs the flag's popup as well).
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
 with `--tag=after`, and compare the two PNGs side by side.
@@ -4047,74 +4051,87 @@ classic, and either may pick the other. The classic touch path is untouched, bec
 every branch of the new scheme is behind `CTRL.simple`, and the gate measures the classic
 scheme on the phone as well.
 
-What SIMPLE is: it keeps the fighting and takes the housekeeping. On the screen there is
-a roster of what he has along the bottom-left (`#tgroups`: ARMY and one chip per kind on
-the field, built off what is alive rather than off groups he has to set, each with a
-count and a health bar; tap one and it is picked and the camera goes to it), FALL BACK
-and MENU at the bottom-right (`#tverbs`), the little map over the roster, a one-line
-label for the selection (`#tsel`), and LOOK and PAUSE up at the right; the tools that
-select and clear are hidden, because the roster and a tap on the ground do that. MENU is
-the classic bar laid out as a sheet under `body.simple.tmore` -- the cards, the production
-list, the works, the bunker fittings -- so nothing in it is built twice, and the little
-map is one element that `ctrlApply` moves between the two hosts. A card that arms the
-next tap (attack move, a fire mission, a work to place) shuts the sheet, because the next
-tap has to land on the map; a production card leaves it up.
+**Under SIMPLE the player builds and the brain fights.** That is the whole of the design,
+and the first two versions of the scheme were wrong for not saying it: the first laid the
+classic controls out again for a thumb, and the second kept every order the player's and
+handed the housekeeping to an adjutant, which is the classic game with fewer buttons.
+What the player has now is a strip along the bottom of every unit his finished buildings
+can turn out, and the two posts he has not got, one big button each with the price and
+the count on it (`#tbuild`, `simpleItems`, `simpleBuy`, `simplePost`); the little map
+above it; a line beside the map saying what the army is doing (`simpleStatus`, read off
+the brain's own plan rather than kept anywhere else); LOOK and PAUSE; and, when he taps
+a flag, a popup with ATTACK, HOLD and FEINT on it (`#tflag`, `simpleFlag`). Nothing
+selects a unit to order it and nothing drags one. A tap on a unit of his picks it so LOOK
+has something to look from, a tap on the ground lets go, and LOOK with nothing picked
+looks from the unit nearest the middle of the screen.
 
-What his hand does is four things. **Tap a unit** to pick it, and twice for every one of
-its kind in sight. **Drag it** to where it should go: the arrow is drawn on the overlay
-before the release gives the order, with a ring where it lands and the word for what it
-will do read off the same tests `issueOrder` applies -- ATTACK on an enemy, FIRE MISSION
-when everything in hand is a tube, and otherwise GO with the grade of cover at the point
-beside it. Every drag is an attack-move, because a thumb that sends men somewhere means
-them to fight what is in the way. **Tap a flag** to send the selection to it
-(`simpleSectorAt`, within 110 of the pole), and a tap on any other THING in hand's reach
--- an enemy, a house, a bunker, a carrier -- is the order `issueOrder` already gives on
-it. **Tap the ground** to let the selection go: the classic tap-to-move is deliberately
-not here, because under this scheme an order is a drag and a stray finger must not march
-the army. A second finger cancels a drag the way it cancels a marquee; pan, pinch, twist
-and hold-to-box-select are the classic path.
+**The army is run by the game's own brain on his slot.** `aiRuns(sl)` is what `aiThink`
+walks: every AI slot, and under SIMPLE the player's own, raised lazily on the first tick
+with `aiInit(slot, true)`. It is the same `aiTick` that runs the opposition, so his army
+forms waves, lays its support on before it goes in, hooks round at veteran, probes ground
+nobody has looked at, sends a task force after a tank loose behind the line, holds a flag
+that is being come for, ducks, calls for help, falls back hurt and digs in, with nothing
+written twice. Two things distinguish his slot from an AI's. `aiDiffOf` gives it veteran
+whatever the opposition was set to, because a brain running an army for somebody is asked
+for the best it has. And `aiBuys` locks it out of the till for units and posts, since the
+strip is what those are for: every `queueUnit` and the two `placeStructure` sites in
+`aiTick` are behind `spend`, `wantMp` is nought so nothing is saved for a ladder it will
+never climb, and the works, the fittings and the upgrades it may still buy keep three
+hundred marks back for him (`keep`). The green grace in annihilation is the opposition's
+and is gated on `aiBuys` too, or a green game froze the player's own army for three and a
+half minutes. A tank he is driving from its own turret is skipped (`u.manual`), because
+in the periscope he is the crew.
 
-**The adjutant is what makes it easy, and it is `adjTick`**, once a second for the
-player's slot alone. It only ever fills an EMPTY queue, so an order he gives himself runs
-first; it buys whichever kind he has fewest of against a weight (`ADJW`: four sections to
-an engineer, two assault groups, a machine gun and a half, a gun, a tube, a light hull or
-so, two mediums) out of what each building makes and what is unlocked, affordable and
-under the cap, and if the kind it wants is waiting on fuel it buys nothing else that burns
-fuel from that building in the meantime -- measured, without that rule it bought a second
-armoured car while the Sherman waited, which is the fault the brain's ladder was built
-against. It sites the company post and the armour point on the brain's own two spots
-beside the headquarters, puts an engineer back on a site that was walked off, and sends an
-idle engineer to mend the nearest holed thing of his within a walk. A section shot to a
-third of its men falls back to refill; a hull holed to a third drives to the yard behind
-the headquarters where the engineers will find it; men crossing quiet ground run and men
-caught halted in the open under fire go flat, on the brain's own thresholds. And his
-howitzers fire on their own account (`onOrderOnly` reads `CTRL.simple`), because a gun
-that waits to be laid is a gun that waits for attention. A toast says what it did, no
-more than one every seven seconds.
+**He steers it by the flags.** `AI.dir` is one directive per sector on the plan, set by
+`aiDirSet` from the popup and read by `aiDirOf`. ATTACK makes the flag the main effort:
+the objective list scores it 420 above everything else with a cap of four sections and no
+reach limit, the wave forms against it whatever the held pick would have said
+(`aiDirAttack`), and it is done the moment the flag is his and quiet (`aiDirDone`). HOLD
+raises a directed `hold` operation while the flag is his, which `aiOpsReview` keeps for as
+long as the directive stands rather than for the brain's own hundred and thirty seconds,
+and retakes the flag if it is lost. FEINT raises a directed `feint` the same way and
+expires on its own after ninety seconds, because a demonstration that goes on for ever is
+a section standing in a field. `aiDirTend` runs once a tick between the review and the
+brain's own planning, so a directed operation is never planned over, and a directed
+`hold` wants two sections out of an army of eight and one out of anything smaller, a
+`feint` one out of three or more. One attack and one feint at a time. The flag carries the
+word and a ring in the directive's colour on the overlay and on the little map.
 
-Four things about it are worth knowing before touching it. **A `body.mob` rule written
-after the editor's CSS beats one written before it** at the same specificity, and there
-is a second block of them there: the simple block sits at the END of the stylesheet for
-that reason, because placed with the first block its little map came out at 104 by 72
-rather than 132 by 90, and nothing but a measurement said so. **In landscape the tool
-strip runs along the top-right and the verb column stands where its end was**, so the
-strip moves in by the column's width and the sheet stands beside the roster under it; in
-portrait the sheet stops above the little map and the label. **The pick under a press is
-`hitsUnit` on the selection**, ring plus the same grab the tap uses, so a tap inside a
-selected unit's own ring narrows the selection to it rather than moving it a few units;
-the drag is the order there. And **the gate opens its page pinned to classic**
-(`openGame`'s `ctrl`, an init script that writes `ORT_CTRL` before the game reads it,
-reloads included) and switches simple on only where it measures it, because an adjutant
-spending the till and siting a post from the first frame under rows that read a pristine
-deploy is a gate measuring the adjutant: on the phone it read three buildings at the
-whistle, a handicap till 440 short, and a staging drill with a company post put down on
-top of it.
+**And the brain says what it is doing.** `aiFire` is where every named decision is
+counted, so it is also where the player's own brain speaks: `AIVOICE` maps a dozen of
+them (a wave forming, a wave going in, a counter-attack, scouts out, a section falling
+back, the engineers digging in, a bunker being fitted) to a line, and `simpleSay` puts one
+up no more than every seven seconds. His howitzers fire on their own account under this
+scheme (`onOrderOnly` reads `CTRL.simple`), because a gun that waits to be laid is a gun
+that waits for attention nobody is giving it.
+
+Four things about it are worth knowing before touching it. **A brain raised in the middle
+of a battle must not clear what is the team's**: `aiInit` calls `aiForget`, `aiCallsClear`,
+`aiOpsClear` and `dangerClear`, all of which wipe every side, and a player switching the
+scheme on would have handed himself a blind opponent; the soft init clears its own call
+board and its own operations and nothing else. **A directed sector has to be threaded
+through every `continue` in the objective scoring**: a held sector that is quiet is skipped
+outright, and a sector out of the mood's reach is skipped outright, so 420 points added
+below those lines would go on a flag the loop had already thrown away. **A sector id is a string
+the moment it is an object key**, so the directive map and the operation list compare with
+`String()` on both sides. And **the 2v2 gate row counts the brains that exist at the
+whistle** and wants exactly the AI slots, which is why the player's plan is raised on the
+first tick and not in `aiSlotsInit`.
+
+**A `body.mob` rule written after the editor's CSS beats one written before it** at the
+same specificity, and there is a second block of them there: the simple block sits at the
+END of the stylesheet for that reason, because placed with the first block its little map
+came out at 104 by 72 rather than 132 by 90, and nothing but a measurement said so. And
+**the gate opens its page pinned to classic** (`openGame`'s `ctrl`, an init script that
+writes `ORT_CTRL` before the game reads it, reloads included) and switches simple on only
+where it measures it, because a brain giving the player's army orders under rows that
+stage his units is a gate measuring the brain.
 
 The gate drives it through the TouchEvents a finger raises, dispatched at the canvas,
 rather than by calling the functions behind them: a handler that is never reached by the
 event it is written for is a handler that is not there. `node tools/shoot.mjs hud
---device=phone` photographs it, with the sheet up as a second frame, and `--ctrl=classic`
-or `--ctrl=simple` picks the scheme whatever the device would.
+--device=phone` photographs it, with the flag's popup up as a second frame, and
+`--ctrl=classic` or `--ctrl=simple` picks the scheme whatever the device would.
 
 ---
 
@@ -4428,16 +4445,20 @@ shots/                         screenshot output, gitignored
   specificity, and the loss is a size or a position rather than an error: the simple
   scheme's little map read 104 by 72 against the 132 by 90 it was written at until its
   block was moved to the end of the stylesheet. Measure the rect; do not read the rule.
-- **A press on the map has two readers in the simple scheme and they must not both fire.**
-  A press on a selected unit arms the drag-to-order and returns before the marquee timer
-  is set, so a hold on a unit is never a box; a press on the ground sets the timer and
-  never the tow. Any new gesture goes in as a third branch of that one `touchstart`, or it
-  fights one of the two.
-- **An adjutant that buys whatever it can afford buys armoured cars with the tank's fuel.**
-  Scored by count over weight alone, the first version queued a second car every time the
-  price of one came round while the Sherman it wanted waited on fuel, which is the brain's
-  ladder fault over again. Score what it WANTS first, and if that is waiting on fuel buy
-  nothing else that burns fuel from that building until it is there.
+- **A brain raised mid-battle must not clear what is the team's.** `aiInit` wipes the
+  contacts, the call boards, the operations and the beaten zone for every side, which is
+  right at the whistle and hands the player a blind opponent if it runs when he switches
+  the simple scheme on. A soft init clears the slot's own board and operations and nothing
+  else.
+- **A rule that adds weight to a sector adds nothing to a sector the loop has already
+  thrown away.** The objective scoring skips a quiet held sector and a sector out of the
+  mood's reach with a `continue` each, above the line where the score is built, so an
+  ATTACK directive weighed only there would put 420 points on a flag that was never in
+  the list. Thread a directive through every early exit, or it is decoration.
+- **A sector id is a string the moment it is an object key.** `AI.dir` is keyed by it and
+  an operation carries it as the sector wrote it, so the two agree only when compared with
+  `String()` on both sides; compared bare, a directed hold would match no operation and be
+  raised again on every tick.
 
 - **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
   `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the

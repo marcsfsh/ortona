@@ -169,8 +169,8 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    belt or a gun laid through its own slot, a tube dug in behind it, a workshop, or an
    aid post -- each of which is its own geometry, its own per-bunker buffer and its own
    effect on the ground round it. It is 1690 for the simple scheme: a second set of
-   controls for a phone, kept beside the classic one as a choice, with the roster, the
-   sheet, the drag-to-order arrow and the adjutant that runs the housekeeping under it.
+   controls for a phone, kept beside the classic one as a choice, under which the player
+   builds from a strip and the game's own brain runs his army, steered by the flags.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);

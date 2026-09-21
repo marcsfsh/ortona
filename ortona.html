@@ -578,83 +578,63 @@ body.mob #selhead b{font-size:13px}
 body.mob #mini{width:104px;height:72px}
 #mini .mmlabel,#mini::before{display:none}
 /* ---------- the simple scheme ----------
-   The second scheme, kept beside the classic one. The chrome is pushed out to the edges a
-   thumb rests on and the middle of the screen is left to the map: the roster runs along
-   the bottom-left, FALL BACK and MENU stand at the bottom-right, the little map sits
-   over the roster, and the classic bar -- the cards, the production list, the works --
-   becomes a sheet that slides up on MENU and goes away the moment a card arms the next
-   tap. Nothing in the bar is rebuilt for it; it is the same element laid out again. */
-body.simple #bar{display:none;left:calc(8px + var(--safeL));right:calc(78px + var(--safeR));bottom:calc(176px + var(--safeB));top:auto;
-  height:auto;max-height:min(62vh,520px);flex-direction:column;padding-bottom:0;overflow:hidden;
-  border:1px solid rgba(108,120,101,.55);border-radius:0}
-body.simple.tmore #bar{display:flex}
-body.simple #bar::before,body.simple #cmds::before{display:none}
-body.simple #selpane{flex:none;order:0;padding:8px 58px 0 10px}
-body.simple #seldesc{display:none}
-body.simple #cmds{order:1;width:auto;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;border:0;border-top:1px solid var(--line);
-  display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:8px;background:#0c0f0c;scroll-snap-type:none}
-body.simple .cmd{flex:1 1 calc(25% - 6px);min-width:72px;max-width:132px;height:60px;scroll-snap-align:none}
-body.simple #tclose,body.simple #tfoot{display:flex}
-#tclose{display:none;position:absolute;right:6px;top:6px;width:44px;height:44px;align-items:center;justify-content:center;z-index:2;
-  border:1px solid var(--line);background:#161a10;color:var(--ink);font-size:16px}
-#tfoot{display:none;order:2;flex:none;border-top:1px solid var(--line);padding:6px 8px;justify-content:flex-end}
-#tswitch{border:1px solid var(--line);background:#15190f;color:var(--dim);font:10px var(--mono);letter-spacing:1.4px;padding:0 14px;min-height:44px}
+   The second scheme, kept beside the classic one. Under it the player builds and the
+   brain fights, so the chrome is what that needs and no more: a strip of what he can
+   build along the bottom, one big button each; the little map above it at the left; a
+   line beside the map saying what the army is doing; and, when he taps a flag, a popup
+   with the three things he can tell the army about it. The classic bar is not shown at
+   all. Nothing selects, nothing drags, nothing is a card. */
+body.simple #bar{display:none}
 #simple{position:absolute;inset:0;z-index:6;pointer-events:none}
 #simple.hidden{display:none}
 #simple>*{pointer-events:auto}
-body.simple #mini{position:absolute;left:calc(8px + var(--safeL));bottom:calc(76px + var(--safeB));width:132px;height:90px;margin:0;
+body.simple #mini{position:absolute;left:calc(8px + var(--safeL));bottom:calc(84px + var(--safeB));width:132px;height:90px;margin:0;
   border:1px solid #566052;background:#070908;box-shadow:0 4px 14px #0007}
 body.simple #mini.big{width:min(70vw,320px);height:min(46vh,220px)}
 body.simple #mini::before{display:none}
 body.simple #minicv{inset:3px;width:calc(100% - 6px);height:calc(100% - 6px)}
-#tgroups{position:absolute;left:calc(8px + var(--safeL));bottom:calc(8px + var(--safeB));display:flex;gap:5px;
-  max-width:calc(100% - 90px - var(--safeL) - var(--safeR));overflow-x:auto;scrollbar-width:none}
-#tgroups::-webkit-scrollbar{display:none}
-.tchip{flex:none}
-.tchip{width:52px;height:60px;border:1px solid #4e594a;background:linear-gradient(155deg,rgba(34,40,31,.94),rgba(13,17,13,.96));
-  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#cbc6b3;
-  box-shadow:0 4px 14px #0007;touch-action:none;padding:0 0 8px}
-.tchip b{font:600 15px/1 var(--mono);color:#e9e4d3}
-.tchip span{font:9.5px/1 var(--mono);color:#9ba08e;letter-spacing:.5px}
-.tchip i{position:absolute;left:5px;right:5px;bottom:4px;height:3px;background:#080a05}
-.tchip i em{display:block;height:100%;background:var(--good)}
-.tchip.none{opacity:.42}
-.tchip.on{border-color:#c9a15d;background:linear-gradient(155deg,#3a341f,#211e14)}
-.tchip.on b,.tchip.on span{color:#dfbb77}
-.tchip:active{background:#2b3120}
-#tverbs{position:absolute;right:calc(8px + var(--safeR));bottom:calc(8px + var(--safeB));display:flex;flex-direction:column;gap:6px}
-.tverb{width:62px;height:56px;border:1px solid #4e594a;background:linear-gradient(155deg,rgba(34,40,31,.94),rgba(13,17,13,.96));
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#cbc6b3;box-shadow:0 4px 14px #0007;position:relative}
-.tverb .ico{font:17px/1 var(--mono);color:#d7d0bd}
-.tverb .n{font:9px/1 var(--mono);letter-spacing:.8px;text-transform:uppercase}
-.tverb:disabled{opacity:.3}
-.tverb.act{border-color:#c9a15d;color:#dfbb77;background:linear-gradient(155deg,#3a341f,#211e14)}
-.tverb.act .ico{color:#dfbb77}
-.tverb:active:not(:disabled){background:#2d3328}
-#tsel{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(76px + var(--safeB));max-width:calc(100% - 236px);
-  padding:7px 12px;border:1px solid rgba(108,120,101,.55);background:rgba(13,16,13,.9);font-size:11.5px;letter-spacing:.6px;
+/* the strip: every unit his finished buildings turn out, and the post he has not got */
+#tbuild{position:absolute;left:calc(8px + var(--safeL));right:calc(8px + var(--safeR));bottom:calc(8px + var(--safeB));display:flex;gap:6px;
+  overflow-x:auto;scrollbar-width:none;padding:2px 0}
+#tbuild::-webkit-scrollbar{display:none}
+.tb{flex:none;width:76px;height:66px;border:1px solid #4e594a;background:linear-gradient(155deg,rgba(34,40,31,.94),rgba(13,17,13,.96));
+  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#cbc6b3;box-shadow:0 4px 14px #0007;padding:0}
+.tb b{font:600 9.5px/1.2 var(--mono);color:#e9e4d3;letter-spacing:.3px;text-align:center;max-width:70px;overflow:hidden;text-transform:uppercase;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;max-height:2.4em}
+.tb span{font:10px/1 var(--mono);color:#c9a15d;letter-spacing:.4px}
+.tb i{position:absolute;right:4px;top:3px;font:600 10px/1 var(--mono);color:#9ecb62;font-style:normal}
+.tb.post{border-color:#8a8f5a;background:linear-gradient(155deg,rgba(52,54,34,.95),rgba(20,22,14,.96))}
+.tb.poor{opacity:.45}
+.tb:active{background:#2b3120}
+/* the flag: what the army is to do about the one he tapped */
+#tflag{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(184px + var(--safeB));width:min(94vw,380px);
+  border:1px solid rgba(108,120,101,.7);background:rgba(13,16,13,.94);box-shadow:0 6px 20px #000a;padding:8px}
+#tflag.hidden{display:none}
+#tflaghead{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px 8px;font-size:12px;letter-spacing:.8px;color:var(--ink)}
+#tflaghead span{font:10px var(--mono);color:var(--dim);letter-spacing:.6px}
+#tflagbtns{display:flex;gap:6px}
+.tf{flex:1 1 0;height:54px;border:1px solid #4e594a;background:linear-gradient(155deg,rgba(34,40,31,.94),rgba(13,17,13,.96));color:#e6e0c8;
+  font:600 10.5px var(--mono);letter-spacing:1px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0}
+.tf .ico{font-size:16px;line-height:1;color:#d7d0bd}
+.tf.on{border-color:#c9a15d;background:linear-gradient(155deg,#3a341f,#211e14);color:#dfbb77}
+.tf.on .ico{color:#dfbb77}
+.tf:active{background:#2d3328}
+/* the line: what the army is doing, read off the brain's own plan */
+#tsel{position:absolute;left:calc(148px + var(--safeL));right:calc(8px + var(--safeR));bottom:calc(84px + var(--safeB));
+  padding:7px 10px;border:1px solid rgba(108,120,101,.55);background:rgba(13,16,13,.9);font-size:11px;letter-spacing:.4px;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;color:var(--ink)}
-#tsel span{color:var(--bad);margin-left:6px;font:10px var(--mono)}
-#tsel.none,body.tmore #tsel{display:none}
+#tsel span{color:var(--dim);margin-left:6px;font:10px var(--mono)}
+#tsel.none,#simple.flag #tsel{display:none}
 body.simple #queue{right:auto;left:calc(8px + var(--safeL));bottom:auto;top:calc(52px + var(--safeT))}
-/* in the periscope the army is not his to order, so the chips and the verbs go */
-body.pov #tgroups,body.pov #tverbs,body.pov #tsel{display:none}
-/* and the tools that select and clear are what the roster and a tap on the ground do */
+/* in the periscope he is a commander and not a quartermaster */
+body.pov #tbuild,body.pov #tflag,body.pov #tsel{display:none}
+/* and the tools that select and clear have nothing to select or clear */
 body.simple #tHQ,body.simple #tIdle,body.simple #tClear,body.simple #tMap{display:none}
-@media (max-width:400px){
-  .tchip{width:44px}#tgroups{gap:4px}.tverb{width:56px}
-  body.simple #bar{right:calc(70px + var(--safeR))}
-}
+@media (max-width:400px){.tb{width:70px}#tbuild{gap:5px}}
 @media (max-height:520px) and (orientation:landscape){
-  .tverb{height:48px;width:60px}#tverbs{gap:5px}
-  .tchip{height:52px}
-  body.simple #mini{bottom:calc(68px + var(--safeB))}
-  #tsel{bottom:calc(68px + var(--safeB))}
-  /* the tool strip runs along the top here and the verb column stands where its end
-     was, so the strip moves in by the column's width */
-  body.simple #tools{right:calc(78px + var(--safeR))}
-  /* and the sheet stands beside the chips and under the strip, which is where the width is */
-  body.simple #bar{left:calc(354px + var(--safeL));top:calc(94px + var(--safeT));bottom:calc(8px + var(--safeB));max-height:none}
+  .tb{height:56px}
+  body.simple #mini{bottom:calc(74px + var(--safeB))}
+  #tsel{bottom:calc(74px + var(--safeB))}#tflag{bottom:calc(174px + var(--safeB))}
 }
 
 </style>
@@ -743,13 +723,11 @@ body.simple #tHQ,body.simple #tIdle,body.simple #tClear,body.simple #tMap{displa
     <div id="seldesc">Left-click to select. Drag a box to select several. Right-click to move or attack.</div>
   </div>
   <div id="cmds"></div>
-  <button id="tclose" title="Close" aria-label="Close the orders sheet">✕</button>
-  <div id="tfoot"><button id="tswitch" title="Back to the classic bar along the bottom">CLASSIC CONTROLS</button></div>
 </div>
 <div id="simple" class="hidden">
   <div id="tsel" class="none"><b id="tselname"></b><span id="tselstat"></span></div>
-  <div id="tgroups"></div>
-  <div id="tverbs"></div>
+  <div id="tflag" class="hidden"><div id="tflaghead"><b id="tflagname"></b><span id="tflagstat"></span></div><div id="tflagbtns"></div></div>
+  <div id="tbuild"></div>
 </div>
 <div id="queue" class="hidden"></div>
 <div id="tip"></div>
@@ -8769,7 +8747,7 @@ function updateUnit(u, dt) {
 var AI0 = { own: 'ger', side: 'ger', t: 0, main: null, mainT: -99, mood: 'push', upT: -99, bagT: -99, bagN: 0,
             asSec: null, asKey: null, asT: -99, asForm: -99, asPick: -99, woke: 0, wantMp: 0,
             contacts: null, owned: null, ctSec: null, ctT: -99, hot: null, momSec: null, momT: -99,
-            flkX: 0, flkY: 0, flkT: -99 };
+            flkX: 0, flkY: 0, flkT: -99, dir: null };
 var AI = {};
 (function () { for (var k in AI0) AI[k] = AI0[k]; })();
 /* One plan per AI slot. `AI` is whichever of them is thinking right now, reassigned
@@ -8819,19 +8797,36 @@ var DIFF = [
 /* Raise a brain for one slot. Called once per AI slot at the start of a battle; the
    per-TEAM things it clears -- the contacts, the beaten zone -- are cleared by every one
    of them, which is harmless because a battle starts with nothing in either. */
-function aiInit(slot) {
+function aiInit(slot, soft) {
   var k, P = AIP[slot];
   if (!P) P = AIP[slot] = {};
   for (k in P) if (AI0[k] === undefined) delete P[k];
   for (k in AI0) P[k] = AI0[k];
   P.own = slot; P.side = slotSide(slot);
   AI = P;
+  /* `soft` is a brain raised in the middle of a battle -- the player's own, the moment
+     the simple scheme is switched on -- and it clears only what is its own. The four
+     below are the team's and the enemy's, and a brain that wiped the other side's
+     memory and plans on being born would hand the player a blind opponent every time he
+     toggled a setting. */
+  if (soft) { AIQ[slot] = null; AIOP[slot] = null; return; }
   aiForget();                                        /* last battle's contacts are not this one's */
   aiCallsClear();
   aiOpsClear();
   dangerClear();
   for (k in AIR.fired) AIR.fired[k] = 0;
 }
+/* Whose army a brain runs: every AI slot, and under the simple scheme the player's own.
+   There he builds and the brain fights, so his slot thinks like the others and differs
+   from them in two things only: it thinks at veteran whatever the opposition was set to,
+   because a brain running an army for somebody is asked for the best it has (`aiDiffOf`),
+   and it is locked out of the till for units and posts (`aiBuys`), because what he
+   spends is his to spend and the strip along the bottom is what it is for. The works,
+   the fittings and the upgrades it may still buy, out of what is left once a reserve is
+   kept for him, since those are the digging-in that is part of fighting. */
+function aiRuns(sl) { return !!sl.ai || (CTRL.simple && sl.k === G.own); }
+function aiBuys(slot) { var sl = slotOf(slot); return !sl || !!sl.ai; }
+function aiDiffOf(slot) { var sl = slotOf(slot); return sl && !sl.ai ? DIFF[2] : diffOf(slot); }
 /* and forget the ones that are not playing this game, so a 2v2 followed by a 1v1 does not
    leave a third brain holding a plan about units that no longer exist */
 function aiSlotsInit() {
@@ -8885,7 +8880,19 @@ function aiInWave(u, secId, raze) {
 /* ---- the rules, by name ---- */
 var AIR = { fired: {} };
 function aiRule(name) { if (AIR.fired[name] === undefined) AIR.fired[name] = 0; }
-function aiFire(name) { AIR.fired[name] = (AIR.fired[name] || 0) + 1; }
+function aiFire(name) {
+  AIR.fired[name] = (AIR.fired[name] || 0) + 1;
+  /* the player's own brain says what it is doing, in the words below, no more than one
+     every few seconds: an army that fights on its own account and never says so is an
+     army the player cannot follow */
+  if (AIVOICE[name] && CTRL.simple && G.running && AI.own === G.own) simpleSay(AIVOICE[name]);
+}
+var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault going in', 'counter': 'Counter-attacking',
+  'op.probe': 'Scouts sent out', 'op.destroy': 'Task force sent after a target', 'op.hold': 'Holding ground', 'op.feint': 'Feint under way',
+  'pincer': 'The wave is splitting to hook round', 'retreat.hurt': 'A section is falling back', 'veh.mend': 'A vehicle is pulling back for repair',
+  'work.dig': 'Engineers digging in', 'flak.dig': 'Engineers digging in the 88', 'battery.dig': 'Engineers bedding in the battery',
+  'bunker.at': 'Fitting a bunker as a gun casemate', 'bunker.mg': 'Fitting a bunker as a machine gun post', 'bunker.mor': 'Fitting a bunker with a mortar',
+  'bunker.rep': 'Fitting a bunker as a workshop', 'bunker.med': 'Fitting a bunker as an aid post', 'mortar.mission': 'Mortars laying on' };
 /* declared here rather than where they fire, so the card lists a rule that has never
    been reached at all instead of leaving a hole where it should be */
 (function () {
@@ -9886,11 +9893,72 @@ function aiOpAdd(slot, kind, o) {
   var op = { id: Q.n++, kind: kind, main: 0, sec: null, tid: 0, x: 0, y: 0,
              state: 'form', t0: G.t, tForm: G.t, tGo: -99, pick: G.t, key: '',
              fupX: 0, fupY: 0, flkX: 0, flkY: 0, flank: 0,
-             want: 1, n: 0, pri: 0 };
+             want: 1, n: 0, pri: 0, dir: 0 };
   for (k in o) op[k] = o[k];
   Q.list.push(op);
   aiFire('op.' + kind);
   return op;
+}
+/* ---- directives: what the player tells his own brain, under the simple scheme.
+   One per flag, kept on the plan (`AI.dir`, sector id to kind and the time it was given),
+   because it is a fact about this battle and nothing else. ATTACK makes the flag the main
+   effort: the objective list scores it above everything and the wave forms against it,
+   and it is done the moment the flag is his and quiet. HOLD keeps men on the flag while it
+   is his, through a directed `hold` operation that does not run out, and retakes it if it
+   is lost. FEINT demonstrates at it through a directed `feint` and expires on its own,
+   because a demonstration that goes on for ever is a section standing in a field. One
+   attack and one feint at a time: two main efforts is none, and the brain forms one wave. */
+function aiDirOf(slot, secId) {
+  var P = AIP[slot];
+  return P && P.dir && P.dir[secId] ? P.dir[secId].k : null;
+}
+function aiDirSet(slot, secId, kind) {
+  var P = AIP[slot], id;
+  if (!P) return false;
+  if (!P.dir) P.dir = {};
+  if (!kind) { delete P.dir[secId]; aiFire('dir.clear'); return true; }
+  if (kind === 'attack' || kind === 'feint')
+    for (id in P.dir) if (P.dir[id].k === kind && String(id) !== String(secId)) delete P.dir[id];
+  P.dir[secId] = { k: kind, t: G.t };
+  aiFire('dir.' + kind);
+  return true;
+}
+function aiDirAttack(slot) {
+  var P = AIP[slot], id;
+  if (!P || !P.dir) return null;
+  for (id in P.dir) if (P.dir[id].k === 'attack') return G.secById[id] || null;
+  return null;
+}
+function aiDirDone(slot, secId, why) {
+  var P = AIP[slot];
+  if (!P || !P.dir || !P.dir[secId]) return;
+  var s = G.secById[secId], k = P.dir[secId].k;
+  delete P.dir[secId];
+  aiFire('dir.done');
+  if (slot === G.own && s) simpleSay((s.label || 'The flag') + (why === 'taken' ? ' taken' : ': ' + k + ' over'));
+}
+function aiOpDirOf(slot, secId, kind) {
+  var Q = AIOP[slot], i;
+  if (!Q) return null;
+  for (i = 0; i < Q.list.length; i++)
+    if (Q.list[i].dir && Q.list[i].kind === kind && String(Q.list[i].sec) === String(secId)) return Q.list[i];
+  return null;
+}
+/* raise the operations the directives call for, and retire the ones that have run their
+   course; called once a tick after the review and before the brain's own planning, so a
+   directed operation is never planned over */
+function aiDirTend(W) {
+  var slot = W.slot, D = AI.dir, id, n = W.fighters.length;
+  if (!D) return;
+  for (id in D) {
+    var d = D[id], s = G.secById[id];
+    if (!s) { delete D[id]; continue; }
+    if (d.k === 'feint' && G.t - d.t > 90) { aiDirDone(slot, id, 'over'); continue; }
+    if (d.k === 'hold' && s.owner === W.side && n >= 2 && !aiOpDirOf(slot, id, 'hold'))
+      aiOpAdd(slot, 'hold', { sec: s.id, x: s.x, y: s.y, want: n >= 8 ? 2 : 1, pri: 600, dir: 1 });
+    if (d.k === 'feint' && n >= 3 && !aiOpDirOf(slot, id, 'feint'))
+      aiOpAdd(slot, 'feint', { sec: s.id, x: s.x, y: s.y, want: 1, pri: 500, dir: 1 });
+  }
 }
 /* Does the side actually know what is on this ground: somebody of its own near enough to
    see it, or a contact taken there recently enough to still mean something. Neither, and
@@ -9917,6 +9985,15 @@ function aiOpsReview(W) {
   for (i = 0; i < Q.list.length; i++) {
     var op = Q.list[i], age = G.t - op.t0, keep = true, why = 'lapsed';
     if (op.main) { out.push(op); continue; }            /* the wave ends itself, below */
+    if (op.dir) {
+      /* a directed operation stands while the player's directive does: it is his order
+         and not the brain's judgement, so the tests below are not asked of it, only
+         whether the ground it is about is still ground it can be held from */
+      if (aiDirOf(W.slot, op.sec) !== op.kind) keep = false;
+      else if (op.kind === 'hold') { var hd = G.secById[op.sec]; if (!hd || hd.owner !== side) keep = false; }
+      if (keep) out.push(op); else aiFire('op.' + why);
+      continue;
+    }
     if (op.kind === 'destroy') {
       var th = W.byId[op.tid];
       if (!th || th.dead) { keep = false; why = 'won'; }
@@ -10301,12 +10378,12 @@ function aiWeigh(u, S, W) {
 var _aiTurn = 0;
 function aiThink(dt) {
   var live = [], i;
-  for (i = 0; i < G.slots.length; i++) if (G.slots[i].ai) live.push(G.slots[i].k);
+  for (i = 0; i < G.slots.length; i++) if (aiRuns(G.slots[i])) live.push(G.slots[i].k);
   if (!live.length) return;
   var off = live.length > 1 ? (_aiTurn++) % live.length : 0;
   for (i = 0; i < live.length; i++) {
     var k = live[(i + off) % live.length];
-    if (!AIP[k]) aiInit(k);
+    if (!AIP[k]) aiInit(k, !aiBuys(k));
     AI = AIP[k];
     aiTick(dt);
   }
@@ -10318,7 +10395,7 @@ function aiTick(dt) {
      earns in that time it keeps, so it wakes up with something in the bank rather than
      three and a half minutes behind for the rest of the battle. Only in annihilation:
      on points a side that stands still for three minutes has already lost. */
-  if (G.win === 'anni' && DIFF[G.diff] && DIFF[G.diff].grace && G.t < DIFF[G.diff].grace && !AI.woke) {
+  if (G.win === 'anni' && aiBuys(AI.own) && DIFF[G.diff] && DIFF[G.diff].grace && G.t < DIFF[G.diff].grace && !AI.woke) {
     /* The head start is for digging a line, not for a free run at a base that is standing
        still: against a player who spends it attacking instead of building, the opposition
        was wiped out at five minutes with twelve hundred marks in the bank and nothing
@@ -10338,7 +10415,7 @@ function aiTick(dt) {
   }
   AI.t -= dt;
   if (AI.t > 0) return;
-  AI.t = diffOf(AI.own).tick;
+  AI.t = aiDiffOf(AI.own).tick;
   /* `slot` is this brain's own player -- his purse, his queue, his cap, his men -- and
      `side` is the team he is on, which is what the ground, the enemy and the fog are read
      against. In a 1v1 they are the same string. */
@@ -10352,7 +10429,12 @@ function aiTick(dt) {
       if (G.blds[i].own === slot && !G.blds[i].dead) { hq = G.blds[i]; break; }
   }
   if (!hq) return;
-  var D = diffOf(slot), skill = D.skill === undefined ? 1 : D.skill;
+  var D = aiDiffOf(slot), skill = D.skill === undefined ? 1 : D.skill;
+  /* whether this brain buys its own units and posts, and what it leaves in the till when
+     it does not: the player's brain digs and fits out of his money and keeps three
+     hundred marks back for him, since the strip is his and a brain that spent the till
+     under him would be the housekeeping it exists to take away */
+  var spend = aiBuys(slot), keep = spend ? 0 : 300, arty = G.aiArty !== false || !spend;
   var K = side === 'us'
     ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', how: 'us_how', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
     : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', mor: 'ger_mor', how: 'ger_how', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
@@ -10531,11 +10613,13 @@ function aiTick(dt) {
      thirty thinking ticks, and at nothing it clears it on about one in twenty-five, which
      is plenty for a thing bought once a battle. One gun, only when the company wants one,
      is a bounded thing to empty a till for; a reserve held every tick is not. */
+  if (!spend) { wantMp = 0; wantFu = 0; }
   /* what a section may spend without eating into it */
   AI.wantMp = wantMp;
   var spare = Math.max(0, G.res[slot].mp - wantMp), spareFu = Math.max(0, G.res[slot].fu - wantFu);
   var q = hq.queue.length;
-  if (engs.length < 1 && q < 2) queueUnit(hq, K.eng);
+  if (!spend) { /* the player's: the strip along the bottom is where his units come from */ }
+  else if (engs.length < 1 && q < 2) queueUnit(hq, K.eng);
   else if (men.length < 2 && q < 2) { if (queueUnit(hq, K.inf)) aiFire('buy.inf'); }
   /* read the population again rather than trusting the count taken at the top of the
      tick: two sections are raised here in the same tick, and against a stale figure the
@@ -10548,7 +10632,7 @@ function aiTick(dt) {
      headquarters may already have spent some of it three lines ago, and against a stale
      figure the company post raises a second section out of the reserve */
   spare = Math.max(0, G.res[slot].mp - wantMp); spareFu = Math.max(0, G.res[slot].fu - wantFu);
-  if (b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(slot) < infRoom) {
+  if (spend && b1 && b1.built >= 1 && b1.queue.length < 1 && popOf(slot) < infRoom) {
     /* The post's shopping list, in the order it would rather have things, and it is a
        list rather than the chain of else-ifs it was for a reason `brain.mjs` caught by
        counting. The chain was tried cheapest first and every branch below the first
@@ -10593,7 +10677,7 @@ function aiTick(dt) {
       if (queueUnit(hq, K.inf)) aiFire('buy.inf');
     }
   }
-  if (b2 && b2.built >= 1 && b2.queue.length < 1 && pop < cap - 14) {
+  if (spend && b2 && b2.built >= 1 && b2.queue.length < 1 && pop < cap - 14) {
     var ats = countOf(slot, K.at);
     var done = false, save = false, keepFu = 0;
     /* Armour in the street jumps the queue: the gun that answers it is the one thing in
@@ -10637,7 +10721,8 @@ function aiTick(dt) {
         if (u.up && u.up[uk]) continue;
         if (hasExclusive(u, U.excl)) continue;
         /* never buy a plate with the manpower the next section was going to cost */
-        if (!canAfford(slot, U.cost) || G.res[slot].mp - (U.cost.mp || 0) < 150 + wantMp) continue;
+        if (!canAfford(slot, U.cost) || G.res[slot].mp - (U.cost.mp || 0) < 150 + wantMp + keep) continue;
+        if (!spend && G.res[slot].fu - (U.cost.fu || 0) < 60) continue;
         pay(slot, U.cost); u.up[uk] = true; bought = true; aiFire('buy.upgrade');
       }
     }
@@ -10651,9 +10736,9 @@ function aiTick(dt) {
     var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
     if (stall && freeEng.length) {
       resumeBuild(freeEng[0], stall);
-    } else if (!b1 && G.res[slot].mp >= 200 && freeEng.length) {
+    } else if (spend && !b1 && G.res[slot].mp >= 200 && freeEng.length) {
       { placeStructure(slot, K.b1, siteBase.x, siteBase.y - 150, [freeEng[0]]); aiFire('build.post'); }
-    } else if (b1 && b1.built >= 1 && !b2 && G.res[slot].mp >= 240 && G.res[slot].fu >= 25 && freeEng.length) {
+    } else if (spend && b1 && b1.built >= 1 && !b2 && G.res[slot].mp >= 240 && G.res[slot].fu >= 25 && freeEng.length) {
       { placeStructure(slot, K.b2, siteBase.x, siteBase.y + 150, [freeEng[0]]); aiFire('build.depot'); }
     }
   }
@@ -10699,7 +10784,7 @@ function aiTick(dt) {
          causes here and only one of them is a bug: the till, and the population */
       var wC = BUNKUP[want].cost;
       if (canAfford(slot, wC)) aiFire('bunker.money');
-      var okBk = bunkerUpOK(bkFree, want, slot);
+      var okBk = bunkerUpOK(bkFree, want, slot) && G.res[slot].mp - (wC.mp || 0) >= keep;
       if (okBk) aiFire('bunker.ok');
       if (okBk && orderBunkerUp(bkFree, want, slot)) aiFire('bunker.' + want);
     }
@@ -10765,17 +10850,22 @@ function aiTick(dt) {
     var held = R.held;
     var quiet = held && !s.contest && th < 50;
     var counter = ctSec && s.id === ctSec.id;
+    /* and what the player told it, under the simple scheme (`aiDirSet`): a flag he
+       tapped ATTACK on outranks everything the list would have put above it and is done
+       the moment it is his and quiet, and one he tapped HOLD on is retaken if it is lost */
+    var dir = aiDirOf(slot, s.id);
+    if (dir === 'attack' && held && !s.contest) { aiDirDone(slot, s.id, 'taken'); dir = null; }
     /* A victory sector left standing empty is taken back by the first section that walks
        onto it and the points go with it, so those keep a sentry -- one section, and only
        one already near enough to be it. The economy sectors do not: a section standing
        on a quiet manpower point is a section missing from the fight, and posting one on
        each of them cost more ground than it saved. */
-    if (quiet && s.type !== 'vp') continue;
+    if (quiet && s.type !== 'vp' && !dir) continue;
     /* Losing the arithmetic changes what is worth wanting. An army that is behind and
        still marching at the far end of the map is how a bad position becomes a rout, so
        it shortens its reach and holds what it can reach: on this ground that means the
        houses behind its own line. */
-    if (!held && !counter) {
+    if (!held && !counter && !dir) {
       var far = dist(s, hq);
       if (AI.mood === 'dig' && (far > 760 || th > 140)) continue;
       if (AI.mood === 'hold' && far > 1350 && th > 90) continue;
@@ -10820,12 +10910,19 @@ function aiTick(dt) {
     /* and what has just been taken off us goes to the top of the list, with the weight
        to do something about it, for as long as the clock runs */
     if (counter) { sc += 300; cap = Math.max(cap, 3); maxD = 4000; }
+    /* the player's directive outranks even that: an attack is the main effort whatever
+       the list says, and a hold that has been lost is a counter-attack that does not
+       run out */
+    if (dir === 'attack') { sc += 420; cap = Math.max(cap, 4); maxD = 4000; aiFire('dir.attack'); }
+    else if (dir === 'hold' && !held) { sc += 280; cap = Math.max(cap, 3); maxD = 4000; aiFire('dir.retake'); }
+    else if (dir === 'hold') sc += 60;
     objs.push({ s: s, sc: sc, cap: cap, th: th, maxD: maxD * maxD });
   }
   objs.sort(function (a, b) { return b.sc - a.sc; });
   /* What is already being done, and whether any of it is over. Reviewed before anything
      new is planned, so a force that has finished is back in the hand that deals. */
   aiOpsReview(W);
+  aiDirTend(W);
 
   /* the point of contact, kept for half a minute so support weapons are not marched up
      and down the map every time the list reorders */
@@ -10912,8 +11009,12 @@ function aiTick(dt) {
        objective every few seconds never gets to start: it was re-forming eight times a
        minute and going in twice. So once one is chosen it is held until it is taken or a
        minute has passed. */
+    /* and a flag the player tapped ATTACK on is the objective for as long as it is not
+       his, whatever the list or the held pick would have said */
+    var dirA = aiDirAttack(slot);
+    if (dirA && dirA.owner !== side) { asSec = dirA; if (AI.asSec !== dirA.id) AI.asPick = G.t; }
     var asHeld = G.secById[AI.asSec];
-    if (asHeld && G.t - AI.asPick < 60 && asHeld.owner !== side) asSec = asHeld;
+    if (!asSec && asHeld && G.t - AI.asPick < 60 && asHeld.owner !== side) asSec = asHeld;
     for (i = 0; i < objs.length && !asSec; i++) {
       var o3 = objs[i];
       if (o3.cap >= 3 && (o3.s.owner === foeSide || o3.s.contest || o3.th > 60)) {
@@ -11098,6 +11199,8 @@ function aiTick(dt) {
   for (i = 0; i < fighters.length; i++) {
     u = fighters[i];
     if (u.dead) continue;
+    /* a tank the player is driving from its own turret is his, for as long as he is in it */
+    if (u.manual) continue;
     /* What this unit will pay to stay out of the beaten zone, which every path it asks
        for from here reads. A wave pressing home pays almost nothing, because crossing the
        beaten zone under covering fire is the whole of what a wave is: priced at what
@@ -11653,11 +11756,11 @@ function aiTick(dt) {
        reach it, would take the position. */
     var WK = side === 'us' ? 'how8' : 'how210', WB = WORKS[WK], bdf = WB && UNITS[WB.unit];
     if (wArty <= 0) WB = null;
-    if (WB && bdf && G.aiArty !== false && skill >= 1 &&
+    if (WB && bdf && arty && skill >= 1 &&
         countOf(slot, WB.unit) + siteCount(slot, WK) < 1) {
       aiFire('battery.reached');
       var bWant = G.t > 190 && men.length >= 4;
-      var bPay = G.res[slot].mp >= (WB.cost.mp || 0) && G.res[slot].fu >= (WB.cost.fu || 0);
+      var bPay = G.res[slot].mp >= (WB.cost.mp || 0) + keep && G.res[slot].fu >= (WB.cost.fu || 0);
       if (bWant) aiFire('battery.want');
       if (bPay) aiFire('battery.money');
       if (bWant && bPay) {
@@ -11697,7 +11800,7 @@ function aiTick(dt) {
     }
     var mine2 = 0;
     for (j = 0; j < G.works.length; j++) if (G.works[j].own === slot) mine2++;
-    if (skill >= 1 && mine2 < 9 && G.res[slot].mp > 230 &&
+    if (skill >= 1 && mine2 < 9 && G.res[slot].mp > 230 + keep &&
         G.t - AI.bagT > (skill >= 2 ? 28 : 52)) {
       var front = null, fdist = -1, foeHq = hqOf(foeSide);
       for (j = 0; j < G.sectors.length; j++) {
@@ -11715,7 +11818,7 @@ function aiTick(dt) {
       var W88 = WORKS.flak;
       if (W88 && wAt > 0 && (!W88.side || W88.side === side) && (IN.veh >= 2 || IN.med + IN.heavy >= 1) &&
           countOf(slot, W88.unit) + siteCount(slot, 'flak') < 1 && digAt && dist(e, digAt) < 1100 &&
-          G.res[slot].mp >= (W88.cost.mp || 0) + wantMp + 150 && G.res[slot].fu >= (W88.cost.fu || 0) + wantFu) {
+          G.res[slot].mp >= (W88.cost.mp || 0) + wantMp + 150 + keep && G.res[slot].fu >= (W88.cost.fu || 0) + wantFu) {
         var p88 = aiOverwatch(side, digAt.x, digAt.y, 420, 600) || aiFirePost(side, digAt.x, digAt.y, 320);
         if (placeWork(slot, 'flak', p88.x, p88.y, aiFoeDir(side, p88.x, p88.y), [e])) { AI.bagT = G.t; aiFire('flak.dig'); continue; }
       }
@@ -14827,7 +14930,11 @@ function povOff() {
 function povToggle() {
   if (POV.on) { povOff(); return; }
   var u = selectedUnits()[0];
+  /* under the simple scheme nothing need be picked first: the look is from the unit of
+     his nearest the middle of the screen, which is the one he is looking at */
+  if (!u && CTRL.simple) u = nearestOwn(CAM.tx, CAM.ty, 1e9);
   if (!u) { toast('Select a unit to look from'); return; }
+  if (CTRL.simple) select([u], false);
   povOn(u);
 }
 /* which way a positive yaw turns on the screen, read off the camera basis rather than
@@ -14983,9 +15090,9 @@ function povDrive(u, dt) {
 function povDriveLayout() {
   var d = el('drive'); if (!d) return;
   var barH = (el('bar') && el('bar').offsetHeight) || 0, gun = el('drivefire'), mg = el('drivemg');
-  /* under the simple scheme the bar is a sheet that is shut, and what the pad has to
-     clear at the foot of the left edge is the little map */
-  if (CTRL.simple) barH = ((el('mini') && el('mini').offsetHeight) || 0) + 82;
+  /* under the simple scheme the bar is not shown, and what the pad has to clear at the
+     foot of the left edge is the little map standing over the strip */
+  if (CTRL.simple) barH = ((el('mini') && el('mini').offsetHeight) || 0) + 90;
   el('drivepad').style.bottom = (barH + 24) + 'px';
   var gh = gun.offsetHeight || 98, mh = mg.offsetHeight || 78;
   if (!MOB) {
@@ -24570,10 +24677,22 @@ function drawSectorFlag(s) {
   ctx.textBaseline = 'alphabetic';
   ctx.fillStyle = '#e6e0c8'; ctx.font = (10.5 * z) + 'px ' + FONT;
   ctx.fillText(s.label || s.id, 0, 26 * z);
-  if (s.contest) { ctx.fillStyle = '#d8a334'; ctx.fillText('CONTESTED', 0, 38 * z); }
-  else if (s.owner && !s.conn) { ctx.fillStyle = '#c95c4e'; ctx.fillText('CUT OFF', 0, 38 * z); }
+  var line2 = 38;
+  if (s.contest) { ctx.fillStyle = '#d8a334'; ctx.fillText('CONTESTED', 0, 38 * z); line2 = 50; }
+  else if (s.owner && !s.conn) { ctx.fillStyle = '#c95c4e'; ctx.fillText('CUT OFF', 0, 38 * z); line2 = 50; }
+  /* and under the simple scheme what the player told his brain about it: the word, and
+     a ring round the pole in its colour so it reads at a glance from any distance */
+  var dk = CTRL.simple ? aiDirOf(G.own, s.id) : null;
+  if (dk) {
+    ctx.strokeStyle = DIRCOL[dk]; ctx.lineWidth = 2.2 * z;
+    ctx.beginPath(); ctx.arc(0, 0, 19 * z, 0, TAU); ctx.stroke();
+    ctx.fillStyle = DIRCOL[dk]; ctx.font = '600 ' + (10 * z) + 'px ' + FONT;
+    ctx.fillText(DIRWORD[dk], 0, line2 * z);
+  }
   ctx.restore();
 }
+var DIRCOL = { attack: '#e2b25a', hold: '#9ecb62', feint: '#d8a334' };
+var DIRWORD = { attack: 'ATTACK', hold: 'HOLD', feint: 'FEINT' };
 function drawUnitOverlay(u, p) {
   var selected = G.sel.indexOf(u) >= 0;
   var hf = hpFrac(u), rad = unitRadius(u);
@@ -24877,38 +24996,6 @@ function render() {
       ctx.closePath(); ctx.fillStyle = ok ? '#e8e2cc' : '#c95c4e'; ctx.fill();
     }
   }
-  /* an order being dragged out of a unit under the simple scheme: the line from the unit
-     to the finger, the ring where the release lands, and the word for what it will do --
-     read off the same tests `issueOrder` will apply, so the label and the order agree.
-     The word sits above the finger, because the finger is on the one spot it names. */
-  if (touch.tow && touch.moved && !touch.two && !touch.tow.dead) {
-    var tow = touch.tow, tp0 = w2s(tow.x, tow.y, groundZ(tow.x, tow.y) + 2), twd = s2w(mouse.x, mouse.y);
-    var hostile = unitsAt(twd.x, twd.y, 16).some(function (q) { return q.side !== G.side; });
-    var teb = buildingAt(twd.x, twd.y);
-    if (!hostile && teb && teb.side !== G.side) hostile = true;
-    var mission = G.mode === 'barrage' || (CTRL.simple && simpleAllTubes());
-    var word = hostile ? 'ATTACK' : mission ? 'FIRE MISSION' : G.mode === 'attack' ? 'ATTACK MOVE' : CTRL.simple ? 'GO' : 'MOVE';
-    var tcol = hostile ? '#e0704f' : (G.mode || mission) ? '#e2b25a' : '#9ecb62';
-    if (!hostile && !G.mode && !mission && tow.cat !== 'veh') {
-      var thc = coverAt(twd.x, twd.y);
-      if (thc > 0) word += ' · ' + COVER[thc].tag;
-    }
-    if (!tp0.behind) {
-      ctx.strokeStyle = tcol; ctx.lineWidth = 2.5; ctx.setLineDash([9, 6]);
-      ctx.beginPath(); ctx.moveTo(tp0.x, tp0.y); ctx.lineTo(mouse.x, mouse.y); ctx.stroke(); ctx.setLineDash([]);
-      var tha = Math.atan2(mouse.y - tp0.y, mouse.x - tp0.x);
-      ctx.fillStyle = tcol; ctx.beginPath();
-      ctx.moveTo(mouse.x + Math.cos(tha) * 26, mouse.y + Math.sin(tha) * 26);
-      ctx.lineTo(mouse.x + Math.cos(tha - 2.5) * 13 + Math.cos(tha) * 22, mouse.y + Math.sin(tha - 2.5) * 13 + Math.sin(tha) * 22);
-      ctx.lineTo(mouse.x + Math.cos(tha + 2.5) * 13 + Math.cos(tha) * 22, mouse.y + Math.sin(tha + 2.5) * 13 + Math.sin(tha) * 22);
-      ctx.closePath(); ctx.fill();
-    }
-    ctx.strokeStyle = tcol; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 22, 0, TAU); ctx.stroke();
-    ctx.font = '600 11px ' + FONT; ctx.textAlign = 'center';
-    var tww = ctx.measureText(word).width + 14;
-    ctx.fillStyle = 'rgba(6,8,4,.76)'; ctx.fillRect(mouse.x - tww / 2, mouse.y - 56, tww, 18);
-    ctx.fillStyle = tcol; ctx.fillText(word, mouse.x, mouse.y - 43);
-  }
   if (drag.on && drag.moved) {
     var bx0 = Math.min(drag.x0, mouse.x), by0 = Math.min(drag.y0, mouse.y);
     var bw = Math.abs(mouse.x - drag.x0), bh = Math.abs(mouse.y - drag.y0);
@@ -24943,6 +25030,8 @@ function drawMinimap() {
     mctx.fillStyle = s2.owner ? FACTION[s2.owner].color : '#9aa07c';
     mctx.beginPath(); mctx.arc(s2.x * sx, s2.y * sy, s2.r * sx, 0, TAU); mctx.fill();
     mctx.globalAlpha = 1;
+    var dk2 = CTRL.simple ? aiDirOf(G.own, s2.id) : null;
+    if (dk2) { mctx.strokeStyle = DIRCOL[dk2]; mctx.lineWidth = 1.5; mctx.beginPath(); mctx.arc(s2.x * sx, s2.y * sy, s2.r * sx * .8, 0, TAU); mctx.stroke(); }
   });
   G.blds.forEach(function (b2) {
     if (b2.side !== G.side && !visibleTo(G.side, b2)) return;
@@ -25286,6 +25375,7 @@ window.addEventListener('mouseup', function (e) {
     else if (!add) select([], false);
   } else {
     var w2 = s2w(mouse.x, mouse.y);
+    if (CTRL.simple) { simpleTap(w2.x, w2.y); drag.moved = false; return; }
     var hit = unitsAt(w2.x, w2.y, 10).filter(function (u) { return owned(u); })[0]
            || unitsAt(w2.x, w2.y, 10)[0];
     if (hit) {
@@ -25308,6 +25398,7 @@ cv.addEventListener('contextmenu', function (e) {
   if (!G.running) return;
   if (G.place) { G.place = null; syncHud(); return; }
   if (G.mode) { G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
+  if (CTRL.simple) return;                     /* the orders are the brain's */
   var r = cv.getBoundingClientRect();
   var w = s2w(e.clientX - r.left, e.clientY - r.top);
   issueOrder(w.x, w.y, false);
@@ -25369,28 +25460,22 @@ cv.addEventListener('touchstart', function (e) {
     touch.pinch = Math.hypot(a.x - b.x, a.y - b.y);
     touch.ang = Math.atan2(b.y - a.y, b.x - a.x);
     touch.cx = (a.x + b.x) / 2; touch.cy = (a.y + b.y) / 2;
-    touch.two = true; touch.moved = true; touch.tow = null;
+    touch.two = true; touch.moved = true;
     if (touch.box) { touch.box = false; drag.on = false; drag.moved = false; }
     return;
   }
   var p = tPos(e.touches[0]);
   touch.x = p.x; touch.y = p.y; touch.sx = p.x; touch.sy = p.y;
   mouse.x = p.x; mouse.y = p.y;
-  touch.t0 = performance.now(); touch.moved = false; touch.two = false; touch.box = false; touch.tow = null;
-  if (CTRL.simple) {
-    simpleMore(false);                          /* a finger on the map closes the sheet */
-    /* a press on a selected unit is the start of an order rather than of a pan or a
-       marquee: the drag that follows draws the order and the release gives it */
-    if (!G.place) {
-      var tw0 = s2w(p.x, p.y), towU = simpleTowAt(tw0.x, tw0.y, clamp(CAM.dist * .05, 26, 90));
-      if (towU) { touch.tow = towU; return; }
-    }
-  }
+  touch.t0 = performance.now(); touch.moved = false; touch.two = false; touch.box = false;
   if (G.place) {
     var tw2 = s2w(p.x, p.y);
     G.place.ax = tw2.x; G.place.ay = tw2.y; G.place.aim = true;
     return;                                   /* no marquee timer while placing */
   }
+  /* under the simple scheme a finger on the map shuts the flag's popup and starts a pan
+     or a tap, never a marquee: there is nothing to box-select for */
+  if (CTRL.simple) { simpleFlag(null); return; }
   /* hold still for a moment to start a marquee */
   touch.timer = setTimeout(function () {
     if (touch.moved) return;
@@ -25448,7 +25533,6 @@ cv.addEventListener('touchmove', function (e) {
   if (Math.abs(p.x - touch.sx) > 8 || Math.abs(p.y - touch.sy) > 8) {
     touch.moved = true; clearTimeout(touch.timer);
   }
-  if (touch.tow) { mouse.x = p.x; mouse.y = p.y; touch.x = p.x; touch.y = p.y; return; }
   if (touch.box) {
     mouse.x = p.x; mouse.y = p.y; touch.x = p.x; touch.y = p.y;
     var m = 46;
@@ -25485,23 +25569,6 @@ cv.addEventListener('touchend', function (e) {
   var wasBox = touch.box, wasTwo = touch.two, moved = touch.moved;
   touch.pinch = 0; touch.box = false; touch.two = false;
   if (G.place && G.place.aim) { doPlace(); buzz(12); return; }
-  if (touch.tow) {
-    var tu = touch.tow; touch.tow = null;
-    if (wasTwo) return;
-    if (moved) {
-      /* the order is whatever the arrow said it was: a mission for a tube that has one
-         armed, an attack-move with ATTACK armed, and otherwise `issueOrder`'s own reading
-         of what is under the finger, which is an attack on an enemy and a move on ground */
-      var tw = s2w(mouse.x, mouse.y);
-      if (G.mode === 'barrage' || (CTRL.simple && simpleAllTubes())) callBarrage(tw.x, tw.y);
-      else issueOrder(tw.x, tw.y, G.mode === 'attack' || CTRL.simple);
-      G.mode = null; syncHud(); buzz(16); return;
-    }
-    /* a tap on a selected unit: twice picks its kind, once narrows the selection to it */
-    if (simpleDoubleTap(tu)) return;
-    select([tu], false); buzz(8); return;
-  }
-
   if (wasBox) {
     drag.on = false; drag.moved = false;
     var hits = unitsInScreenRect(touch.sx, touch.sy, mouse.x, mouse.y);
@@ -25516,10 +25583,13 @@ cv.addEventListener('touchend', function (e) {
     issueOrder(w.x, w.y, true); G.mode = null; syncHud(); buzz(16); return;
   }
   if (G.mode === 'barrage') { callBarrage(w.x, w.y); G.mode = null; syncHud(); buzz(16); return; }
+  /* under the simple scheme a tap is never an order: a flag puts its directives up, a
+     unit of his is picked for LOOK, and the ground lets go */
+  if (CTRL.simple) { simpleTap(w.x, w.y); return; }
   /* fingers are blunt, so widen the pick radius as the map zooms out */
   var grab = clamp(CAM.dist * .05, 26, 90);
   var own = nearestOwn(w.x, w.y, grab);
-  if (own) { if (CTRL.simple && simpleDoubleTap(own)) return; select([own], false); buzz(8); return; }
+  if (own) { select([own], false); buzz(8); return; }
   var ob = buildingAt(w.x, w.y);
   if (ob && owned(ob)) { select([ob], false); buzz(8); return; }
   /* A tap on a bunker is two different things and which one is meant is never in doubt.
@@ -25533,38 +25603,27 @@ cv.addEventListener('touchend', function (e) {
   if (obk && !G.sel.some(function (q) { return canGarrison(q, obk); })) {
     select([obk], false); buzz(8); return;
   }
-  /* under the simple scheme a tap on a thing is an order on it and a tap on bare ground
-     lets the selection go; the classic tap-to-move is the branch below */
-  if (CTRL.simple && G.sel.length) { simpleTap(w.x, w.y); return; }
   /* with a selection live, any other tap is an order */
   if (G.sel.length) { issueOrder(w.x, w.y, false); buzz(14); return; }
   var foeU = unitsAt(w.x, w.y, grab)[0] || (ob || null);
   select(foeU ? [foeU] : [], false);
 }, { passive: false });
 cv.addEventListener('touchcancel', function () {
-  clearTimeout(touch.timer); touch.box = false; touch.two = false; touch.tow = null; drag.on = false; drag.moved = false;
+  clearTimeout(touch.timer); touch.box = false; touch.two = false; drag.on = false; drag.moved = false;
 });
 function buzz(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
 
 /* ---- the simple scheme.
-   A second way of driving the game, kept beside the first as a choice on the title
-   screen and under `ORT_CTRL`. The classic scheme is a desktop's: a bar along the
-   bottom, the cards in a strip, every order a tap on the ground, and the economy, the
-   building, the repairs and the stances all the player's to run. It is the whole game
-   and it wants the whole of a player's attention, which a phone does not have to give.
-     SIMPLE keeps the fighting and takes the housekeeping. What is on the screen is a
-   roster of what he has along the bottom-left (ARMY and one chip per kind on the field:
-   tap to pick it and the camera goes to it), FALL BACK and MENU at the bottom-right, the
-   little map, and a line naming the selection. What his hand does is four things: tap a
-   unit to pick it, drag it to where it should go, tap a flag to send it there, tap the
-   ground to let go. A drag is always an attack-move, because a thumb that sends men
-   somewhere means them to fight what is in the way, and a drag out of a mortar is a fire
-   mission. An adjutant (`adjTick`) runs the rest: production off a weighted ladder,
-   the company post and the armour point sited beside the headquarters, idle engineers
-   on repair, the stances, a section shot to a third falling back on its own, a broken
-   vehicle pulled back to the yard, and the howitzers firing on their own account.
-   MENU is the classic bar laid out as a sheet, for the one time in ten he wants a hand
-   on any of it himself.
+   The second scheme, kept beside the classic one, for a thumb and for a player who wants
+   the battle without the housekeeping. Under it he BUILDS and the brain FIGHTS. The strip
+   along the bottom is every unit his finished buildings can turn out, and the two posts,
+   one big button each; the army is run by `aiTick` on his own slot (`aiRuns`), the same
+   brain that runs the opposition, at veteran, with the till locked against it for units
+   and posts (`aiBuys`) so that what he spends is his to spend. He steers it by the flags:
+   a tap on one puts up ATTACK, HOLD and FEINT, and the directive (`aiDirSet`) is what the
+   brain then forms its wave against, keeps men on, or demonstrates at. Nothing here
+   selects a unit to order it and nothing drags one: an order on the map is the brain's
+   to give, and a tap on a unit only picks it for LOOK.
      The classic touch path is untouched: every branch is behind `CTRL.simple`. Which
    scheme is up is a property of the page rather than of the device: a phone starts on
    this one and a desktop on the other, and either may pick the other. */
@@ -25584,7 +25643,6 @@ function ctrlSet(simple, keep) {
 }
 function ctrlApply() {
   document.body.classList.toggle('simple', CTRL.simple);
-  document.body.classList.remove('tmore');
   /* the little map is one element and lives in whichever chrome is up */
   var mini = el('mini'), host = CTRL.simple ? el('simple') : el('bar');
   if (mini && host && mini.parentNode !== host) {
@@ -25595,357 +25653,207 @@ function ctrlApply() {
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
   el('simple').classList.toggle('hidden', !(CTRL.simple && G.running));
+  simpleFlag(null);
   keyHelpSync();
-  if (G.running) { syncHud(); if (POV.on) povDriveLayout(); }
+  if (G.running) { syncHud(); simpleSync(); if (POV.on) povDriveLayout(); }
 }
 function keyHelpSync() {
   if (!MOB) return;
   el('keyhelp').innerHTML = CTRL.simple
-    ? '<b>tap</b> a unit or a chip to pick it &nbsp; <b>drag it</b> to where it should go &nbsp; <b>tap a flag</b> to send it there &nbsp; <b>tap the ground</b> to let go<br>' +
-      '<b>drag</b> the ground to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist</b> to rotate<br>' +
-      'Production, building and repairs look after themselves, and a section shot to pieces falls back on its own. MENU for anything else.'
+    ? '<b>tap a flag</b> and tell the army to ATTACK, HOLD or FEINT there &nbsp; <b>the strip</b> along the bottom builds<br>' +
+      '<b>drag</b> the ground to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist</b> to rotate &nbsp; <b>LOOK</b> puts you in the nearest unit<br>' +
+      'The army is commanded for you: it takes ground, forms up, assaults, digs in and falls back on its own. You build it.'
     : '<b>tap</b> your unit to select &nbsp; <b>tap</b> anywhere else to move or attack<br>' +
       '<b>drag</b> to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist two fingers</b> to rotate &nbsp; <b>press and hold</b> then drag to box-select<br>' +
       'Commands run along the bottom. The minimap sits above them.';
 }
-/* the selected unit under a press, if any: the start of a drag-to-order */
-function simpleTowAt(wx, wy, r) {
-  var best = null, bd = Infinity;
-  for (var i = 0; i < G.sel.length; i++) {
-    var u = G.sel[i];
-    if (!u.cat || u.dead || u.inside || !owned(u) || !hitsUnit(u, wx, wy, r)) continue;
-    var d = nearOwnDist(u, wx, wy);
-    if (d < bd) { bd = d; best = u; }
-  }
-  return best;
-}
-/* every unit in hand is a tube, so a drag out of it is a mission and not a walk */
-function simpleAllTubes() {
-  var units = selectedUnits().filter(owned);
-  if (!units.length) return false;
-  for (var i = 0; i < units.length; i++) if (!units[i].def.barrage) return false;
-  return true;
-}
-/* two taps on the same unit inside 0.38 s pick every one of its kind within sight, which
-   is the desktop's double-click and the T and Y cards, reached with one thumb */
-function simpleDoubleTap(u) {
-  var now = performance.now();
-  var twice = touch.tapU === u && now - touch.tapT < 380;
-  touch.tapU = twice ? null : u; touch.tapT = now;
-  if (!twice) return false;
-  select([u], false); selectSame(true); buzz(12);
-  return true;
+/* what the brain says as it goes, no more than one line every few seconds */
+var SIMPLESAID = { t: -99 };
+function simpleSay(msg) {
+  if (G.t - SIMPLESAID.t < 7) return;
+  SIMPLESAID.t = G.t; toast(msg);
 }
 /* the flag under a tap: a sector is a circle of 195 and the pole stands in the middle
-   of it, so a tap within a hundred and ten of the pole is a tap on the flag */
+   of it, so a tap within a hundred and thirty of the pole is a tap on the flag */
 function simpleSectorAt(wx, wy) {
-  var best = null, bd = 110 * 110;
+  var best = null, bd = 130 * 130;
   for (var i = 0; i < G.sectors.length; i++) {
     var d = dsq(wx, wy, G.sectors[i].x, G.sectors[i].y);
     if (d < bd) { bd = d; best = G.sectors[i]; }
   }
   return best;
 }
-/* A tap with something in hand. A tap on a THING is an order on it -- an enemy, a house,
-   a bunker, a carrier, a flag -- and a tap on bare ground lets the selection go, because
-   under this scheme an order is a drag and a stray finger must not march the army. The
-   building's rally point and the classic tap-to-move are deliberately not here. */
+/* A tap on the map. A flag puts its directives up; a unit of his is picked, so LOOK has
+   something to look from and the ring says which; anything else lets go and shuts the
+   popup. No tap gives an order: that is the brain's, and a stray finger must not march
+   the army. */
 function simpleTap(wx, wy) {
-  var units = selectedUnits().filter(owned);
-  if (!units.length) { select([], false); return; }
-  var at = unitsAt(wx, wy, 16), foe = false, lift = false;
-  for (var i = 0; i < at.length; i++) {
-    if (at[i].side !== G.side) foe = true;
-    else if (owned(at[i]) && at[i].cat === 'veh' && at[i].def.carries) lift = true;
-  }
-  var eb = buildingAt(wx, wy);
-  if (eb && eb.side !== G.side) foe = true;
-  if (foe || lift || blockAt(wx, wy) || bunkerAt(wx, wy)) { issueOrder(wx, wy, true); buzz(14); return; }
   var sec = simpleSectorAt(wx, wy);
-  if (sec) { issueOrder(sec.x, sec.y, true); toast('To ' + (sec.label || 'the flag')); buzz(14); return; }
-  select([], false); buzz(4);
+  if (sec) { simpleFlag(sec); buzz(10); return; }
+  simpleFlag(null);
+  var own = nearestOwn(wx, wy, clamp(CAM.dist * .05, 26, 90));
+  if (own) { select([own], false); buzz(8); return; }
+  select([], false);
 }
-/* FALL BACK: men run home and refill there; a vehicle drives to the yard behind the
-   headquarters, where the adjutant's engineers will find it */
-function simpleBackSpot(hq) {
-  var dir = hq.side === 'us' ? 1 : -1;
-  return nearestFree(clamp(hq.x - dir * 30 + rnd(-40, 40), 40, WORLD.w - 40),
-                     clamp(hq.y + hq.def.h / 2 + 110 + rnd(-30, 30), 40, WORLD.h - 40));
+/* ---- the flag's popup: ATTACK, HOLD, FEINT, and CLEAR once one of them is set. The one
+   already given is lit, and tapping it again clears it. */
+var SIMPLEFLAG = null;
+function simpleFlag(sec) {
+  SIMPLEFLAG = sec || null;
+  var box = el('tflag'); if (!box) return;
+  box.classList.toggle('hidden', !sec);
+  el('simple').classList.toggle('flag', !!sec);
+  if (sec) simpleFlagSync();
 }
-function simpleFallBack(list) {
-  var hq = hqOf(G.own), n = 0;
-  for (var i = 0; i < list.length; i++) {
-    var u = list[i];
-    if (!owned(u) || u.dead) continue;
-    if (u.cat === 'veh') { if (hq) { var sp = simpleBackSpot(hq); orderMove(u, sp.x, sp.y, false); n++; } }
-    else if (u.def.speed > 0) { orderRetreat(u); n++; }
-  }
-  if (n) { toast('Falling back'); sfx('click'); }
-  syncHud();
-}
-/* the sheet: the classic bar, laid out again, slid up over the map on MENU */
-function simpleMore(on) {
-  var is = document.body.classList.contains('tmore');
-  var want = on === undefined ? !is : !!on;
-  if (want === is) return;
-  document.body.classList.toggle('tmore', want);
-  if (CTRL.simple && G.running) simpleVerbs();
-}
-var simpleArmed = false;
-function simpleSync() {
-  if (!CTRL.simple) return;
-  var ts = el('tsel');
-  ts.classList.toggle('none', !G.sel.length);
-  el('tselname').textContent = el('selname').textContent;
-  el('tselstat').textContent = el('selstat').textContent;
-  /* a card that arms the next tap -- attack move, a fire mission, a work to place --
-     closes the sheet, because the next tap has to land on the map; the sheet stays up
-     for anything else, so a player queueing three sections is not made to reopen it */
-  var armed = !!(G.mode || G.place);
-  if (armed && !simpleArmed) document.body.classList.remove('tmore');
-  simpleArmed = armed;
-  simpleVerbs();
-  simpleRoster();
-}
-/* Two verbs, and the second is the door to everything else. FALL BACK is the one order
-   a drag cannot give, because home is usually off the screen; MENU is the classic bar. */
-function simpleVerbs() {
-  var host = el('tverbs'); if (!host) return;
+function simpleFlagSync() {
+  var s = SIMPLEFLAG; if (!s) return;
+  el('tflagname').textContent = (s.label || 'Sector ' + s.id).toUpperCase();
+  var stat = s.contest ? 'contested' : s.owner === G.side ? 'ours' : s.owner ? 'theirs' : 'empty';
+  el('tflagstat').textContent = (s.type === 'vp' ? 'victory' : s.type === 'fuel' ? 'fuel' : 'manpower') + ' · ' + stat;
+  var cur = aiDirOf(G.own, s.id), host = el('tflagbtns');
   host.innerHTML = '';
-  var units = selectedUnits().filter(owned), b = selectedBuilding(), bk = selectedBunker();
-  function add(ico, label, fn, active) {
-    var btn = document.createElement('button');
-    btn.className = 'tverb' + (active ? ' act' : '');
-    btn.setAttribute('aria-label', label);
-    btn.innerHTML = '<span class="ico" aria-hidden="true">' + ico + '</span><span class="n">' + label + '</span>';
-    btn.onclick = function () { fn(); };
-    host.appendChild(btn);
+  function add(kind, ico, label, fn) {
+    var b = document.createElement('button');
+    b.className = 'tf' + (cur === kind ? ' on' : ''); b.dataset.dir = kind;
+    b.setAttribute('aria-label', label.toLowerCase() + ' ' + (s.label || 'the flag'));
+    b.innerHTML = '<span class="ico" aria-hidden="true">' + ico + '</span>' + label;
+    b.onclick = fn;
+    host.appendChild(b);
   }
-  var back = units.filter(function (u) { return u.cat === 'veh' || u.def.speed > 0; });
-  if (back.length) add('⇙', 'fall back', function () { simpleFallBack(back); });
-  var sheet = units.length ? 'menu' : b && owned(b) ? 'build' : bk && bunkerOwner(bk) === G.own ? 'fit' : null;
-  if (sheet) add('⋯', sheet, function () { simpleMore(); sfx('click'); }, document.body.classList.contains('tmore'));
-}
-/* The roster. ARMY, and one chip per kind of thing he has on the field, in the order the
-   roster ranks them -- engineers, sections, the heavy weapons, then the vehicles by
-   weight -- with a count and a health bar on each. It is built off what is alive rather
-   than off groups he has to set, because finding a unit on a phone is harder than
-   ordering one and a chip for a group he never made is a chip that does nothing. */
-var SIMPLE_RANK = { eng: 0, inf: 1, elite: 2, mg: 3, at: 4, arty: 5, light: 6, med: 7, heavy: 8 };
-function simpleKinds() {
-  var kinds = {}, order = [];
-  for (var i = 0; i < G.units.length; i++) {
-    var u = G.units[i];
-    if (u.dead || u.inside || !owned(u) || !u.cat) continue;
-    if (!kinds[u.key]) { kinds[u.key] = []; order.push(u.key); }
-    kinds[u.key].push(u);
-  }
-  order.sort(function (a, c) {
-    var ra = SIMPLE_RANK[bClassOf(a)] || 0, rc = SIMPLE_RANK[bClassOf(c)] || 0;
-    return ra - rc || (a < c ? -1 : a > c ? 1 : 0);
+  [['attack', '⇑', 'ATTACK'], ['hold', '▣', 'HOLD'], ['feint', '◇', 'FEINT']].forEach(function (d) {
+    add(d[0], d[1], d[2], function () { simpleDir(s, cur === d[0] ? null : d[0]); });
   });
-  return { kinds: kinds, order: order };
+  if (cur) add('clear', '✕', 'CLEAR', function () { simpleDir(s, null); });
 }
-function simpleKindUnits(k) {
-  if (k === 'all') return G.units.filter(function (u) { return !u.dead && !u.inside && owned(u) && !!u.cat; });
-  return G.units.filter(function (u) { return !u.dead && !u.inside && owned(u) && u.key === k; });
+function simpleDir(s, kind) {
+  if (!AIP[G.own]) aiInit(G.own, true);
+  aiDirSet(G.own, s.id, kind);
+  var name = s.label || 'the flag';
+  toast(kind === 'attack' ? 'Attack ' + name : kind === 'hold' ? 'Hold ' + name : kind === 'feint' ? 'Feint at ' + name : 'Cleared ' + name);
+  sfx('click'); buzz(12);
+  /* and the brain reads it on its next tick rather than its next scheduled one */
+  AIP[G.own].t = 0;
+  simpleFlag(null);
 }
+/* ---- the strip. The post he has not got first, because a new player wants to see what
+   there is to build before what there is to raise, then every unit a finished building of
+   his can turn out, building by building. It is built off what stands rather than off a
+   list, so a post going up adds its units the moment it is finished. */
+function simpleItems() {
+  var out = [], i, k, slot = G.own, side = G.side;
+  var K1 = side === 'us' ? 'us_bar' : 'ger_qtr', K2 = side === 'us' ? 'us_mot' : 'ger_dep';
+  if (!siteOf(slot, K1)) out.push({ kind: 'post', key: K1 });
+  else if (!siteOf(slot, K2)) out.push({ kind: 'post', key: K2 });
+  for (i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (b.dead || b.own !== slot || b.built < 1 || !b.def.makes) continue;
+    for (k = 0; k < b.def.makes.length; k++) {
+      var key = b.def.makes[k], d = UNITS[key];
+      if (!d || d.retired) continue;
+      if (d.req && !hasBuilding(slot, d.req)) continue;
+      out.push({ kind: 'unit', key: key });
+    }
+  }
+  return out;
+}
+function simpleMaker(key) {
+  for (var i = 0; i < G.blds.length; i++) {
+    var b = G.blds[i];
+    if (!b.dead && b.own === G.own && b.built >= 1 && b.def.makes && b.def.makes.indexOf(key) >= 0) return b;
+  }
+  return null;
+}
+function simpleCost(c) { return (c.mp || 0) + (c.fu ? ' · ' + c.fu + ' FU' : ''); }
 var simpleSig = '';
-function simpleRoster() {
-  var host = el('tgroups'); if (!host) return;
-  var K = simpleKinds(), sig = K.order.join(',');
-  if (sig !== simpleSig || !host.children.length) {
-    simpleSig = sig;
-    host.innerHTML = '';
-    ['all'].concat(K.order).forEach(function (k) {
+function simpleStrip() {
+  var host = el('tbuild'); if (!host) return;
+  var items = simpleItems(), sig = items.map(function (it) { return it.key; }).join(',');
+  if (sig !== simpleSig || host.children.length !== items.length) {
+    simpleSig = sig; host.innerHTML = '';
+    items.forEach(function (it) {
+      var d = it.kind === 'post' ? BUILDINGS[it.key] : UNITS[it.key];
       var c = document.createElement('button');
-      c.className = 'tchip'; c.dataset.g = k;
-      var name = k === 'all' ? 'ARMY' : UNITS[k].short;
-      c.setAttribute('aria-label', k === 'all' ? 'Select the whole army' : 'Select every ' + UNITS[k].name);
-      c.innerHTML = '<b>' + name + '</b><span>–</span><i><em></em></i>';
-      c.onclick = function () { simpleChipTap(k); };
+      c.className = 'tb' + (it.kind === 'post' ? ' post' : ''); c.dataset.key = it.key; c.dataset.kind = it.kind;
+      c.setAttribute('aria-label', (it.kind === 'post' ? 'Build ' : 'Raise ') + d.name + ', ' + simpleCost(d.cost));
+      c.innerHTML = '<b>' + (it.kind === 'post' ? d.short : d.name) + '</b><span>' + simpleCost(d.cost) + '</span><i></i>';
+      c.onclick = function () { simpleBuy(it); };
       host.appendChild(c);
     });
   }
-  simpleRosterRefresh();
+  simpleStripRefresh(items);
 }
-function simpleRosterRefresh() {
-  var host = el('tgroups'); if (!host || !host.children.length) return;
-  var sel = selectedUnits();
-  for (var i = 0; i < host.children.length; i++) {
-    var c = host.children[i], list = simpleKindUnits(c.dataset.g), n = list.length, hp = 0, j;
-    for (j = 0; j < n; j++) hp += hpFrac(list[j]);
-    var on = n > 0 && sel.length === n;
-    for (j = 0; on && j < n; j++) if (G.sel.indexOf(list[j]) < 0) on = false;
-    var txt = n ? String(n) : '–', w = n ? Math.round(hp / n * 100) + '%' : '0%';
-    var sp = c.children[1], em = c.children[2].firstChild;
-    if (sp.textContent !== txt) sp.textContent = txt;
-    if (em.style.width !== w) em.style.width = w;
-    c.classList.toggle('none', !n);
-    c.classList.toggle('on', on);
+/* the count on each button is what he has of it, alive or on order, and a button he
+   cannot pay for is dimmed rather than taken away, so the price is still there to read */
+function simpleStripRefresh(items) {
+  var host = el('tbuild'); if (!host) return;
+  items = items || simpleItems();
+  for (var i = 0; i < host.children.length && i < items.length; i++) {
+    var c = host.children[i], it = items[i], d = it.kind === 'post' ? BUILDINGS[it.key] : UNITS[it.key];
+    var txt = it.kind === 'post' ? '' : String(countOf(G.own, it.key) || '');
+    if (c.lastChild.textContent !== txt) c.lastChild.textContent = txt;
+    c.classList.toggle('poor', !canAfford(G.own, d.cost));
   }
 }
-/* a tap picks the kind and goes to it, because the unit has to be on the screen for the
-   drag that follows, and a chip for a thing he cannot see is a chip for a thing he
-   cannot order */
-function simpleChipTap(k) {
-  var list = simpleKindUnits(k);
-  if (!list.length) return;
-  select(list, false); simpleCentre(list); buzz(8); sfx('click');
+function simpleBuy(it) {
+  var slot = G.own;
+  if (it.kind === 'post') { simplePost(it.key); return; }
+  var d = UNITS[it.key], b = simpleMaker(it.key);
+  if (!b) { simpleStrip(); return; }
+  if (!canAfford(slot, d.cost)) { toast('Not enough ' + (G.res[slot].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); buzz(6); return; }
+  if (queueUnit(b, it.key)) { toast(d.short + ' ordered'); sfx('click'); buzz(10); simpleStripRefresh(); }
 }
-function simpleCentre(list) {
-  var x = 0, y = 0;
-  for (var i = 0; i < list.length; i++) { x += list[i].x; y += list[i].y; }
-  centreOn(x / list.length, y / list.length);
+/* the post goes where the brain puts its own, beside the headquarters, with the first
+   engineer who is not building or mending; a busy one is taken off his job if there is
+   nobody else, because a post the player asked for outranks a repair he did not */
+function simplePost(key) {
+  var slot = G.own, hq = hqOf(slot), d = BUILDINGS[key], i;
+  if (!hq || !d) return;
+  if (!canAfford(slot, d.cost)) { toast('Not enough ' + (G.res[slot].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); buzz(6); return; }
+  var engs = G.units.filter(function (u) { return !u.dead && !u.inside && owned(u) && u.def.builder && !u.retreat; });
+  if (!engs.length) { toast('No engineers to build it: raise a section of them'); buzz(6); return; }
+  var e = null;
+  for (i = 0; i < engs.length && !e; i++) if (!engs[i].building && !engs[i].repairing) e = engs[i];
+  if (!e) e = engs[0];
+  var dir = hq.side === 'us' ? 1 : -1, first = key === 'us_bar' || key === 'ger_qtr';
+  var bx = hq.x + dir * 190, by = hq.y + (first ? -150 : 150);
+  var spots = [[bx, by], [bx, 2 * hq.y - by], [bx + dir * 160, by], [bx + dir * 160, 2 * hq.y - by], [hq.x, hq.y - 190], [hq.x, hq.y + 190]];
+  for (i = 0; i < spots.length; i++) {
+    if (!siteClear(spots[i][0], spots[i][1], d.w, d.h)) continue;
+    if (placeStructure(slot, key, spots[i][0], spots[i][1], [e])) { toast(d.short + ' going up'); sfx('click'); buzz(10); simpleStrip(); return; }
+  }
+  toast('No room for it beside the headquarters');
 }
-/* the roster counts men that die, hulls that burn and sections that arrive, so it is
-   refreshed off the strip's clock rather than only when the selection changes */
+/* ---- the line above the strip: what the army is doing, read off the brain's own plan
+   rather than kept anywhere else, so it cannot say one thing while the army does another */
+function simpleStatus() {
+  var P = AIP[G.own], name = el('tselname'), stat = el('tselstat'), ts = el('tsel');
+  if (!name || !stat || !ts) return;
+  ts.classList.remove('none');
+  if (!P) { name.textContent = 'ARMY FORMING'; stat.textContent = ''; return; }
+  var main = aiOpKind(G.own, 'take') || aiOpKind(G.own, 'raze'), txt, more = [], i;
+  if (main) {
+    var ms = G.secById[main.sec];
+    var mname = main.kind === 'raze' ? 'the enemy base' : ms ? (ms.label || 'the flag') : 'the objective';
+    txt = (main.state === 'press' ? 'ASSAULTING ' : 'FORMING ON ') + mname.toUpperCase();
+  } else txt = P.mood === 'dig' ? 'DIGGING IN' : P.mood === 'hold' ? 'HOLDING THE LINE' : 'TAKING GROUND';
+  var Q = AIOP[G.own];
+  if (Q) for (i = 0; i < Q.list.length; i++) if (!Q.list[i].main) more.push(Q.list[i].kind);
+  if (name.textContent !== txt) name.textContent = txt;
+  var mtxt = more.join(' · ');
+  if (stat.textContent !== mtxt) stat.textContent = mtxt;
+}
+function simpleSync() {
+  if (!CTRL.simple || !G.running) return;
+  simpleStrip(); simpleStatus();
+  if (SIMPLEFLAG) simpleFlagSync();
+}
+/* the strip counts what arrives and what dies and the line follows the plan, so both are
+   refreshed off the resource strip's clock rather than only when the selection changes */
 var simpleN = 0;
 function simpleTick() {
   if (!CTRL.simple) return;
   if (++simpleN % 4) return;
-  simpleRoster();
-}
-
-/* ---- the adjutant.
-   What the simple scheme takes off the player's hands, once a second, for his slot
-   alone. Each piece is the thing a player who has stopped paying attention would have
-   wanted done, and nothing here reaches for anything the brain would call judgement:
-   the ladder is a set of proportions, the posts go where the brain puts its own, a
-   section at a third of its men is a section that is about to be a corpse pile, and an
-   engineer with nothing to do is an engineer standing next to a tank with a hole in it.
-     It only ever fills an EMPTY queue, so an order he gives himself runs first; it never
-   spends fuel a tank is waiting on, because it buys whichever kind he has least of by
-   weight and the tanks are on the list too; and it sites the two posts on the same two
-   spots the brain uses, which are the two spots the maps were laid out for. */
-var ADJ = { t: 0, said: 0 };
-/* how many of each kind the army should carry, relative to the others: four sections to
-   an engineer, two assault groups, a machine gun and a half, a gun, a tube, a light hull
-   or so and two mediums */
-var ADJW = { eng: 1, inf: 4, elite: 2.5, mg: 1.5, at: 1, arty: 1, light: .6, med: 2, heavy: 1 };
-function adjSay(msg) {
-  if (G.t - ADJ.said < 7) return;
-  ADJ.said = G.t; toast(msg);
-}
-function adjTick(dt) {
-  if (!CTRL.simple || !G.running || G.over) return;
-  ADJ.t -= dt;
-  if (ADJ.t > 0) return;
-  ADJ.t = 1;
-  var slot = G.own, hq = hqOf(slot);
-  if (!hq) return;
-  var mine = [], engs = [], i, u;
-  for (i = 0; i < G.units.length; i++) {
-    u = G.units[i];
-    if (u.dead || u.inside || !owned(u) || !u.cat) continue;
-    mine.push(u);
-    if (u.def.builder) engs.push(u);
-  }
-  adjBuild(slot, hq, engs);
-  adjProduce(slot);
-  adjMen(mine, hq);
-}
-/* the two posts, on the brain's own spots beside the headquarters, and the engineers
-   put back on a site they walked off; then an idle engineer mends the nearest thing of
-   his that is holed, within a walk of where he stands */
-function adjBuild(slot, hq, engs) {
-  var us = hq.side === 'us', K1 = us ? 'us_bar' : 'ger_qtr', K2 = us ? 'us_mot' : 'ger_dep';
-  var b1 = siteOf(slot, K1), b2 = siteOf(slot, K2), dir = us ? 1 : -1;
-  /* only an engineer with nothing to do is the adjutant's to send: one the player has
-     just dragged somewhere is on his errand, and an adjutant that walked it straight
-     back to the site would be an adjutant he cannot overrule */
-  var idle = [], i;
-  for (i = 0; i < engs.length; i++) {
-    var e = engs[i];
-    if (!e.building && !e.repairing && !e.retreat && (!e.order || e.order === 'hold')) idle.push(e);
-  }
-  var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
-  if (stall && idle.length) {
-    var onIt = false;
-    for (i = 0; i < engs.length; i++) if (engs[i].building === stall) onIt = true;
-    if (!onIt) { resumeBuild(idle[0], stall); return; }
-  }
-  var want = !b1 ? K1 : (b1.built >= 1 && !b2) ? K2 : null;
-  if (want && idle.length && canAfford(slot, BUILDINGS[want].cost)) {
-    var d = BUILDINGS[want], bx = hq.x + dir * 190, by = hq.y + (want === K1 ? -150 : 150);
-    var spots = [[bx, by], [bx, -by + 2 * hq.y], [bx + dir * 160, by], [bx + dir * 160, -by + 2 * hq.y], [hq.x, hq.y - 190], [hq.x, hq.y + 190]];
-    for (i = 0; i < spots.length; i++) {
-      if (!siteClear(spots[i][0], spots[i][1], d.w, d.h)) continue;
-      if (placeStructure(slot, want, spots[i][0], spots[i][1], [idle[0]])) { adjSay('Engineers: ' + d.short.toLowerCase() + ' going up'); return; }
-    }
-  }
-  for (i = 0; i < idle.length; i++) {
-    var t = repairNearest(idle[i]);
-    if (t && (dist(idle[i], t) < 420 || dist(hq, t) < 320)) resumeBuild(idle[i], t);
-  }
-}
-/* one unit into every empty queue: the kind he has fewest of against its weight, out of
-   what the building makes, what is unlocked, what there is money and room for */
-function adjProduce(slot) {
-  for (var bi = 0; bi < G.blds.length; bi++) {
-    var b = G.blds[bi];
-    if (b.dead || b.own !== slot || b.built < 1 || b.queue.length || !b.def.makes) continue;
-    /* two passes: what it WANTS out of this building, and then what it can pay for. If
-       the thing it wants is waiting on fuel, nothing else that burns fuel is bought from
-       here in the meantime -- or a side saving for a tank buys an armoured car every time
-       the price of one comes round, which is the fault the brain's ladder was built
-       against */
-    var best = null, bs = Infinity, want = null, ws = Infinity, holdFuel = false, k, key, d, cls, n, sc;
-    for (k = 0; k < b.def.makes.length; k++) {
-      key = b.def.makes[k]; d = UNITS[key]; cls = bClassOf(key);
-      if (!d || d.retired || (d.cost.mp || 0) > 1000) continue;
-      if (d.req && !hasBuilding(slot, d.req)) continue;
-      if (popOf(slot) + d.pop > popCap(slot)) continue;
-      if (unitLimit(slot, d) && countOf(slot, key) >= unitLimit(slot, d)) continue;
-      n = countOf(slot, key);
-      if (cls === 'eng' && n >= 2) continue;
-      sc = (n + .001 * (d.cost.mp || 0)) / (ADJW[cls] || 1);
-      if (sc < ws) { ws = sc; want = key; }
-      if (canAfford(slot, d.cost) && sc < bs) { bs = sc; best = key; }
-    }
-    if (want && best !== want && (UNITS[want].cost.fu || 0) > 0 && G.res[slot].fu < (UNITS[want].cost.fu || 0)) holdFuel = true;
-    if (best && holdFuel && (UNITS[best].cost.fu || 0) > 0) {
-      best = null; bs = Infinity;
-      for (k = 0; k < b.def.makes.length; k++) {
-        key = b.def.makes[k]; d = UNITS[key]; cls = bClassOf(key);
-        if (!d || d.retired || (d.cost.fu || 0) > 0 || (d.cost.mp || 0) > 1000) continue;
-        if (d.req && !hasBuilding(slot, d.req)) continue;
-        if (!canAfford(slot, d.cost) || popOf(slot) + d.pop > popCap(slot)) continue;
-        if (unitLimit(slot, d) && countOf(slot, key) >= unitLimit(slot, d)) continue;
-        n = countOf(slot, key);
-        if (cls === 'eng' && n >= 2) continue;
-        sc = (n + .001 * (d.cost.mp || 0)) / (ADJW[cls] || 1);
-        if (sc < bs) { bs = sc; best = key; }
-      }
-    }
-    if (best) queueUnit(b, best);
-  }
-}
-/* the men: a section shot to a third falls back to refill, a vehicle holed to a third
-   drives to the yard, men crossing quiet ground run and men caught in the open under
-   fire go flat */
-function adjMen(mine, hq) {
-  for (var i = 0; i < mine.length; i++) {
-    var u = mine[i];
-    if (u.cat === 'veh') {
-      if (u.hp < u.maxhp * .3 && !u.adjBack && !u.manual) {
-        var sp = simpleBackSpot(hq); orderMove(u, sp.x, sp.y, false); u.adjBack = 1;
-        adjSay(u.def.short + ' pulling back for repair');
-      } else if (u.adjBack && u.hp > u.maxhp * .7) u.adjBack = 0;
-      continue;
-    }
-    if (u.retreat || u.gar || !u.def.speed) continue;
-    var men = u.def.models || 1, alive = aliveModels(u);
-    if (men >= 3 && alive <= Math.floor(men / 3) && alive > 0) {
-      orderRetreat(u); adjSay(u.def.short + ' falling back'); continue;
-    }
-    if (u.cat !== 'inf' && u.cat !== 'team') continue;
-    var moving = u.order === 'move' || u.order === 'attackmove', want = '';
-    if (u.stance === 'ground' && u.stanceT && G.t - u.stanceT < 20 && !moving) want = 'ground';
-    else if (moving && !u.target && u.sup < .3) want = 'double';
-    else if (!moving && u.sup > .45 && coverOf(u) < 2) { want = 'ground'; if (u.stance !== 'ground') u.stanceT = G.t; }
-    if (u.stance !== want) u.stance = want;
-  }
+  simpleSync();
 }
 
 mm.addEventListener('pointerdown', function (e) {
@@ -26902,8 +26810,8 @@ function startGame(side, diff, mode, arty, duo) {
   G.running = true; G.paused = false;
   el('top').classList.remove('hidden'); el('bar').classList.remove('hidden');
   el('tools').classList.remove('hidden');
-  el('simple').classList.toggle('hidden', !CTRL.simple); document.body.classList.remove('tmore');
-  ADJ.t = 0; ADJ.said = 0;
+  el('simple').classList.toggle('hidden', !CTRL.simple);
+  SIMPLESAID.t = -99; simpleFlag(null); simpleSig = '';
   el('start').classList.add('hidden'); el('over').classList.add('hidden');
   document.querySelectorAll('.vp span').forEach(function (sp, i) {
     var sid = i === 0 ? 'us' : 'ger';
@@ -26952,7 +26860,6 @@ function frame(now) {
     tickEconomy(dt);
     recTick(dt);
     aiThink(dt);
-    adjTick(dt);
     for (var k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
     if (G.wrecks.length > 26) G.wrecks.shift();
     if (G.corpses.length > 220) G.corpses.splice(0, 40);
@@ -27025,8 +26932,6 @@ document.querySelectorAll('.ctrl').forEach(function (btn) {
   btn.onclick = function () { ctrlSet(btn.dataset.ctrl === 'simple'); sfx('click'); };
 });
 ctrlLoad(); ctrlApply();
-el('tclose').onclick = function () { simpleMore(false); };
-el('tswitch').onclick = function () { ctrlSet(false); toast('Classic controls'); };
 /* ---- the handicap on the title screen.
    One table drives the rows, the steppers and what the game reads, because a second list
    of the same five settings is a second list of one thing and they go out of step the

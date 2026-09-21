@@ -82,11 +82,16 @@ const SCENES = {
         syncHud();
       }, SIDE);
       await shoot(page, out('hud'), { settle: SETTLE });
-      /* under the simple scheme the cards live in a sheet, so it is photographed up as well */
+      /* under the simple scheme the flag's popup is photographed up as well, on the
+         nearest flag that is not his */
       if (await page.evaluate(() => window.CTRL && window.CTRL.simple)) {
-        await page.evaluate(() => window.simpleMore(true));
-        await shoot(page, out('hud-more'), { settle: SETTLE });
-        await page.evaluate(() => window.simpleMore(false));
+        await page.evaluate(() => {
+          const hq = window.hqOf(window.G.own);
+          const s = window.G.sectors.filter(x => x.owner !== window.G.side).sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y))[0] || window.G.sectors[0];
+          window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.simpleFlag(s);
+        });
+        await shoot(page, out('hud-flag'), { settle: SETTLE });
+        await page.evaluate(() => window.simpleFlag(null));
       }
 
       /* The build menu: select the HQ so its production cards show. */
