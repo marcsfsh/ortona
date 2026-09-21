@@ -381,6 +381,19 @@ for (const device of TARGETS) {
      `raised ${brain.made} kinds against ${pre.made} before and ${brain.blds} buildings against ${pre.blds}, the opposition ${brain.foeMade}; ` +
      `line "${brain.status}", mood ${brain.mood}, fired ${brain.fired}`);
 
+  /* a finger on the canvas, installed before the first row that needs one: the strip's
+     emplacement is sited by the player's own tap now, so the helper cannot wait until the
+     flag rows further down */
+  await page.evaluate(() => {
+    const cv = document.getElementById('cv');
+    window.__tev = function (type, x, y) {
+      const r = cv.getBoundingClientRect();
+      const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
+      const up = type === 'touchend';
+      cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
+    };
+  });
+
   /* --- the strip: a tap builds. The post goes down beside the headquarters with an
      engineer on it, a section goes into the headquarters' queue, and a thing he cannot
      pay for is dimmed and refused. --- */
@@ -507,15 +520,8 @@ for (const device of TARGETS) {
      `bought: fitted ${upg.fitted} for ${upg.paid} of ${upg.cost}, button gone ${upg.gone}; AUTO tapped: ${upg.autoAfter} (word ${upg.word}), lit ${upg.autoLit1}; ` +
      `empty till dimmed ${upg.poor} and refused ${upg.refused}; ground tap took it down ${upg.down}`);
 
-  /* a finger on the canvas: TouchEvents built the way a touch screen builds them */
+  /* and the rest of the finger's helpers */
   await page.evaluate(() => {
-    const cv = document.getElementById('cv');
-    window.__tev = function (type, x, y) {
-      const r = cv.getBoundingClientRect();
-      const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
-      const up = type === 'touchend';
-      cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
-    };
     /* a point of open ground on the screen with nothing of either side on it and no flag
        near it, so that a tap there is a tap on bare ground */
     window.__clearPt = function (sx, sy, rad) {

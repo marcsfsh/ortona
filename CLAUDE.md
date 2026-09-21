@@ -837,7 +837,11 @@ and refused with the till emptied -- and the flags are tapped as TouchEvents at 
 ATTACK on a flag that is not his has to become the wave's objective with sections dealt to
 it, HOLD on one of his and FEINT on another of theirs have to raise directed operations
 with men on them, the popup on the held flag has to show HOLD lit with a CLEAR beside it,
-and CLEAR has to take the directive off and the review drop the operation. LOOK with
+and tapping the lit order again has to take it off and the review drop the operation. A
+second row does the rest of the board: an order about a piece of open ground given to a
+force he named by an arm chip, an order about a thing of theirs that carries its id, the
+ORDERS panel with a row per order and a cross that cancels one, and the army's own
+posture, reaction and temper set off the same panel and read back off the plan. LOOK with
 nothing picked has to look from a unit of his, a tap on a unit has to pick it and order
 nothing, and a tap on the ground has to let go. Then everything the rows raised comes down
 and the classic scheme is put back and asked the same of a tap and a drag, because a
@@ -959,7 +963,8 @@ Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--bare` (hide all 2D UI, leaving only the 3D) `--turn` (four yaw angles)
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
 `--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=simple|classic` (the control
-scheme, whatever the device would pick; `hud` then photographs the flag's popup as well).
+scheme, whatever the device would pick; `hud` then photographs the order pad, the unit's
+card and the ORDERS panel as well).
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
 with `--tag=after`, and compare the two PNGs side by side.
@@ -4363,10 +4368,12 @@ can turn out, and the two posts he has not got, one big button each with the pri
 the count on it (`#tbuild`, `simpleItems`, `simpleBuy`, `simplePost`); the little map
 above it; a line beside the map saying what the army is doing (`simpleStatus`, read off
 the brain's own plan rather than kept anywhere else); LOOK and PAUSE; and, when he taps
-a flag, a popup with ATTACK, HOLD and FEINT on it (`#tflag`, `simpleFlag`). Nothing
-selects a unit to order it and nothing drags one. A tap on a unit of his picks it so LOOK
-has something to look from, a tap on the ground lets go, and LOOK with nothing picked
-looks from the unit nearest the middle of the screen.
+anything that is not his -- a flag, a thing of theirs or a bare piece of ground -- the
+order pad on it (`#tord`, `simpleOrdOpen`). Nothing drags a unit and no tap is itself an
+order. A tap on a unit of his picks it and opens its card, which carries its posture, its
+reaction, its battle group and its upgrades, so LOOK has something to look from and the
+ring says which; LOOK with nothing picked looks from the unit nearest the middle of the
+screen.
 
 **The army is run by the game's own brain on his slot.** `aiRuns(sl)` is what `aiThink`
 walks: every AI slot, and under SIMPLE the player's own, raised lazily on the first tick
@@ -4628,7 +4635,8 @@ stage his units is a gate measuring the brain.
 The gate drives it through the TouchEvents a finger raises, dispatched at the canvas,
 rather than by calling the functions behind them: a handler that is never reached by the
 event it is written for is a handler that is not there. `node tools/shoot.mjs hud
---device=phone` photographs it, with the flag's popup up as a second frame, and
+--device=phone` photographs it, with the order pad, the unit's card and the ORDERS panel
+as further frames, and
 `--ctrl=classic` or `--ctrl=simple` picks the scheme whatever the device would.
 
 ---
