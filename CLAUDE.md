@@ -2956,17 +2956,21 @@ bounding it at a third over so a gun that cannot find a target does not stop the
 (`wave.wait`, `wave.pinned`). Green goes when it is formed, which is what green is for, and
 a wave with a section already inside two hundred and forty of the objective goes too,
 because it is already in the fight and holding it there for fire it is under without is
-the queue in the open the wait exists to prevent. That exception was measured in: the
-card's baseline read forming as nought seconds on every wave that went in, because a wave
-that formed with its sections already on the objective went in on the tick it formed, and
-the wait turned those into twenty-six, thirty-five and fifty-three seconds of standing on
-three runs; with the exception in, a fourth run read forming at eleven seconds with the
-longest nineteen, eleven waves formed and four in. And the pinned door is not one the battle has opened: read on the wave's own
-objective, the pinned share of the defenders' weight is 0.27 per cent over 371 ticks with
-an objective and 0.56 over 354 on the run after, so `wave.pinned` has never fired in a battle and what carries the go is the
-support firing for eight seconds, a section already there, or the bound. The threshold is
-a suppression over 0.6 on a scale where a section is pinned past 1, and lowering it is a
-lever nobody has measured. And
+the queue in the open the wait exists to prevent. That exception was found on a card
+whose Canadian side could not buy (see the till lock under SIMPLE): there the baseline read
+forming as nought seconds on every wave that went in, because a wave that formed with its
+sections already on the objective went in on the tick it formed, and the wait turned those
+into twenty-six, thirty-five and fifty-three seconds of standing on three runs. With two
+armies on the card and the exception in, forming reads 16 seconds against the baseline's
+11, and the wave count is the number to watch: 32 formed and 13 went in against 14 and 11,
+which is a wave that waits being re-keyed by the sixty-second re-pick or broken off before
+it goes. The tactics card cannot see it (below), and it is left as the lever it is. And
+the pinned door is not one the battle has opened: read on the wave's own objective, the
+pinned share of the defenders' weight is 1.44 per cent over 658 ticks with an objective,
+so `wave.pinned` has never fired in a battle and what carries the go is the support firing
+for eight seconds, a section already there, or the bound. The threshold is a suppression
+over 0.6 on a scale where a section is pinned past 1, and lowering it is a lever nobody
+has measured. And
 the wave writes down what it stepped off with (`AI.asStr`): a press that has lost half of it
 without taking the ground or pinning what holds it is a queue and not an assault, so it
 breaks off, re-forms, and leaves that objective alone for a minute (`AI.asAvoid`,
@@ -3004,28 +3008,31 @@ because a beaten zone is a place and the answer to it is to be somewhere else: u
 shellfire going flat is worth thirty less and giving ground twenty-eight more
 (`shelled.move`).
 
-Measured on `tools/brain.mjs --t=300 --diff=2` over one 244-second battle with a brain on
-both sides, with two more runs of the card beside it where they are cited. A thinking tick
-went 0.48 ms to 0.54, 0.59 and 0.60 over the three, which is the cluster over the contacts
-and the clock. The memory holds 2.2 fresh contacts a tick and 57.5 per cent of them carry
-a heading; a body is read as massing on 54 per cent of ticks, weighing 446, and as walking
-onto a held flag on 7 per cent of them, 27 seconds out; weight is expected onto held ground
-on 21 per cent of ticks, 298 of it when it is. The exchange and the clock read
-symmetrically, because both brains are sampled and one side losing on the clock is the
-other winning on it: 31 per cent of ticks each way. Neither moved the mood in that battle.
-The side losing was in `dig`, which the clock leaves alone the way the lead does, and the
-side winning held a ratio the clock rule refuses to hold on, so `mood.clock` and
-`mood.exch` read nought where a battle that is closer would read them; an earlier cut of
-the clock rule pushed out of `dig` as well and fired on 163 ticks of 561, the same 163 the
-dig rule fired on, which is a flip-flop and not a decision. Of the rules, `obj.coming`
-fired 126 times, `wave.wait` 77, `hold.coming` 10, `veh.overwatch` 3 and `wave.break`
-once; `mood.mass`, `mortar.mass`, `mortar.counter`, `heard`, `op.counter`, `shelled.move`,
-`wave.pinned` and `wave.cohere` never fired in it, and the card lists them with the
-zeroes. Waves formed 10 and went in 3 against the baseline's 8 and 3. Read those as one
-battle: two runs of identical code on this card have come back with the same rule at
-thirty-four and thirteen.
+Measured on `tools/brain.mjs --t=300 --diff=2 --file=<the commit before, with the till
+lock fixed>` over one battle of about 290 seconds a side with a brain on both sides and both
+of them buying, which the earlier runs of this card were not (the till lock, under SIMPLE).
+A thinking tick is 0.86 ms against 0.82, which is the cluster over the contacts and the
+clock. The memory holds 5.2 fresh contacts a tick and 61.6 per cent of them carry a
+heading; a body is read as massing on 80 per cent of ticks, weighing 667, and as walking
+onto a held flag on 8.4 per cent of them, 18 seconds out; weight is expected onto held
+ground on 49 per cent of ticks, 336 of it when it is. The exchange and the clock read
+nearly symmetrically because both brains are sampled and one side losing is the other
+winning: the exchange is lost badly on 10 per cent of ticks and won on 10, the clock lost
+on 45 and won on 39. A tube was in the memory by ear on 4 per cent of ticks. Of the rules,
+`obj.coming` fired 349 times, `mood.hold` 210 and `mood.clock` 163 -- on most of the ticks
+the ratio said hold, the clock said the side was losing on it and pushed -- `wave.wait`
+21, `mood.exch` 10, `wave.break` 5, `veh.overwatch` 4, `hold.coming` 3, `mood.mass` 2, and
+`mortar.mass`, `heard` and `op.counter` once each; `wave.pinned`, `wave.cohere`,
+`mortar.counter` and `shelled.move` never fired in it, and the card lists them with the
+zeroes. Calls are the other thing two armies changed: `answer` is 16 per cent of the jobs
+dealt where a card with one army read under one. Read those as one battle: two runs of
+identical code on this card have come back with the same rule at thirty-four and thirteen.
 
-`tools/skirmish.mjs` swaps the operations planner with the rest
+On the tactics card, against the commit before the pass with both sides buying: **-46 with
+a standard error of 170 over eight pairs, ahead in three of eight**, which is parity and
+is where a change of this kind lands on this tool; the per-side table has the working
+brain with more army on both sides (3,202 against 2,729 and 3,450 against 3,113) and fewer
+points on one, which is one run's shape and not a finding. `tools/skirmish.mjs` swaps the operations planner with the rest
 of the bundle now and carries the new readers, with one thing worth knowing about the
 second half of that: the readers are reached through `aiLook`, which is not swapped, so
 a baseline side is handed the working file's headings and clock and what the card judges
