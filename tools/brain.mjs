@@ -50,6 +50,10 @@
  * against the timeout in aiOpsReview -- an operation that always runs to its timeout has
  * no working test for being finished, which makes it a habit rather than a plan.
  *
+ * INTENT is the second layer of inputs: what the memory makes of the contacts' headings
+ * (a body massing, and the weight walking onto held ground), the exchange, the clock,
+ * how pinned the defenders of an enemy flag are, and the tubes heard rather than seen.
+ *
  * RULES is every named decision and how often it fired, straight out of the brain's own
  * counters. A rule that never fires is a rule that is not there.
  */
@@ -95,7 +99,12 @@ async function install(page) {
         sense: { n: 0, contact: 0, arm: 0, cannot: 0, friendCan: 0, covered: 0, weak: 0,
                  knowsWho: 0, hurt: 0 },
         acts: {}, callOpen: 0, callWait: [], callSeen: {},
-        opsOpen: 0, opKindT: {}, opSeen: {}, opUnitT: {}, dangHot: 0, dangN: 0
+        opsOpen: 0, opKindT: {}, opSeen: {}, opUnitT: {}, dangHot: 0, dangN: 0,
+        /* the second layer of inputs: what the memory makes of the contacts' headings,
+           the exchange, the clock, and what it has heard rather than seen */
+        intent: { n: 0, massT: 0, massSec: 0, massW: 0, massEta: 0, comingT: 0, coming: 0,
+                  exch: 0, exchLose: 0, exchWin: 0, clockLose: 0, clockWin: 0, heardT: 0, heard: 0,
+                  pinned: 0, pinnedN: 0, headed: 0, con: 0 }
       };
       startGame('us', diff, 'vp');
       AI.t = 0;
@@ -271,6 +280,24 @@ async function install(page) {
               const oo = OQ.list.find(z => z.id === u.op);
               if (oo) c.opUnitT[oo.kind] = (c.opUnitT[oo.kind] || 0) + 1;
             }
+          }
+          /* the second layer of inputs, read off the picture the tick just built and off
+             the memory it wrote: whether a body was read as massing and where it was
+             going, how much weight the rollup expected onto held ground, the exchange and
+             the clock, and the tubes it has heard */
+          const W = window.AIW, IM = window.AIM && AIM[side], q = c.intent;
+          if (W && W.side === side && IM) {
+            q.n++;
+            if (W.mass) { q.massT++; q.massW += W.mass.w; if (W.mass.sec) { q.massSec++; q.massEta += W.mass.eta; } }
+            let coming = 0;
+            for (const R of W.secs) if (R.held && R.coming > 0) coming += R.coming;
+            if (coming > 0) { q.comingT++; q.coming += coming; }
+            q.exch += W.exch;
+            if (W.exch < .5) q.exchLose++; else if (W.exch > 2) q.exchWin++;
+            if (W.clock) { if (W.clock.me < W.clock.him * .8 && W.clock.me < 900) q.clockLose++; else if (W.clock.him < W.clock.me * .6 && W.clock.him < 600) q.clockWin++; }
+            if (W.heard && W.heard.length) { q.heardT++; q.heard += W.heard.length; }
+            for (const R of W.secs) if (!R.held && R.th > 0) { q.pinned += R.pinned; q.pinnedN++; }
+            for (const k in IM.con) { const cc = IM.con[k]; if (G.t - cc.t < 34) { q.con++; if (Math.hypot(cc.vx || 0, cc.vy || 0) > 6) q.headed++; } }
           }
           /* and how much of the map the side has painted as dangerous to men */
           const DG = window.DANG && DANG[side];
@@ -509,6 +536,27 @@ function show(c) {
     console.log('\n    * is the main effort. `ran` is the mean life of one, which for a thing');
     console.log('    with a test for being over is the number that says whether the test works:');
     console.log('    an operation that always runs to its timeout has no test at all.');
+  }
+
+  const it = runs.reduce((a, r) => { for (const k in r.intent || {}) a[k] = (a[k] || 0) + r.intent[k]; return a; }, {});
+  if (it.n) {
+    console.log('\n  INTENT   the second layer of inputs: what the memory makes of what it has seen\n');
+    console.log('  ' + pad('contacts fresh', 22) + pad((it.con / it.n).toFixed(1), 9, 1) +
+                '   a tick, with a heading: ' + pct(it.headed, it.con));
+    console.log('  ' + pad('a body massing', 22) + pad(pct(it.massT, it.n), 9, 1) +
+                '   of ticks, weighing ' + (it.massT ? Math.round(it.massW / it.massT) : 0) +
+                '; walking onto a held flag: ' + pct(it.massSec, it.n) +
+                (it.massSec ? ', ' + (it.massEta / it.massSec).toFixed(0) + 's out' : ''));
+    console.log('  ' + pad('weight coming', 22) + pad(pct(it.comingT, it.n), 9, 1) +
+                '   of ticks, ' + (it.comingT ? Math.round(it.coming / it.comingT) : 0) + ' onto held ground when it was');
+    console.log('  ' + pad('exchange', 22) + pad((it.exch / it.n).toFixed(2), 9, 1) +
+                '   mean; losing it: ' + pct(it.exchLose, it.n) + ', winning it: ' + pct(it.exchWin, it.n));
+    console.log('  ' + pad('the clock', 22) + pad(pct(it.clockLose, it.n), 9, 1) +
+                '   of ticks losing on it, winning on it: ' + pct(it.clockWin, it.n));
+    console.log('  ' + pad('defenders pinned', 22) + pad(it.pinnedN ? pct(it.pinned, it.pinnedN) : '-', 9, 1) +
+                '   of the weight on an enemy flag, mean over ' + it.pinnedN + ' sector-ticks');
+    console.log('  ' + pad('tubes heard', 22) + pad(pct(it.heardT, it.n), 9, 1) +
+                '   of ticks with one in the memory' + (it.heardT ? ', ' + (it.heard / it.heardT).toFixed(1) + ' of them' : ''));
   }
 
   console.log('\n  RULES    every named decision, and how often it fired\n');

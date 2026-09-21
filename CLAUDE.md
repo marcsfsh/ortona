@@ -361,6 +361,11 @@ number to read is `ran` against the timeout in `aiOpsReview` -- an operation tha
 runs to its timeout has no working test for being finished, which makes it a habit rather
 than a plan. The feint is the exception and is meant to expire.
 
+**INTENT** is the second layer of inputs: how many contacts are fresh and how many of them
+carry a heading, how often a body was read as massing and walking onto a held flag and how
+far out, the weight the rollup expected onto held ground, the exchange, the clock, how
+pinned the defenders of an enemy flag were, and the tubes heard rather than seen.
+
 **RULES** is every named decision and how often it fired, out of the brain's own counters
 (`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
 is not there, and this file already records one that parsed, passed the gate and never
@@ -772,10 +777,11 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1655 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1720 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
-knocked down, 1595 before bodies and wrecks, and 1640 before a bunker could be fitted
-out). Takes under a second. Exits
+knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
+1655 before the second control scheme, and 1690 before the brain's second layer of
+inputs). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -2912,6 +2918,91 @@ to guess which one shut. Guessing got the destroy threshold wrong twice. Countin
 immediately that a prize worth a task force is on the field on nine per cent of ticks, is
 killable on six, and that room existed on thirty-seven -- which is a rule that is working
 and rare, not a rule that is broken.
+
+**The second layer of inputs.** Everything above reads the enemy as a set of places: where
+a contact was, what is within four hundred of a flag, what is in front of a section. Five
+more things are read now, each written down where it happens and read off the picture by
+the rules that want it, and `tools/brain.mjs` prints them as INTENT.
+
+*A contact carries a heading.* `aiRemember` keeps where a contact was last seen and derives
+a smoothed velocity from one look to the next (`c.vx`, `c.vy`), reset when the contact was
+lost for six seconds, because a heading from where it was last seen to where it turned up
+is a line through whatever it did in between. `aiMass` reads the enemy's intent off those:
+the heaviest cluster of fresh contacts within two hundred and sixty of one another, its
+shared heading, and the held sector that heading runs onto within forty-five seconds
+(`M.mass`, with `sec` and `eta`); standing still it is a position and says so with no
+sector. Each held sector's rollup gains `coming`, the weight whose next twenty seconds of
+line pass inside it while closing on it -- the nearest point of the segment and not the
+point at its end, because a section that will be past the flag by then walks over it on
+the way. Three rules read it: the `hold` operation goes up for a body twenty seconds out
+and not only for weight that has arrived (`hold.coming`), the objective list gives a flag
+being walked onto men now while they can still get there (`obj.coming`), and a body worth a
+third of the enemy's strength closing on a held flag takes the mood off push while it is
+closing (`mood.mass`). The tubes read it too: a mission into a wave while it gathers is laid
+where it will be when the rounds arrive, before the objective's defenders get theirs
+(`mortar.mass`), because a gathering is the one time the enemy stands still in the open.
+
+*Fire superiority.* The rollup also carries `pinned`, the share of the known enemy weight on
+a sector that is suppressed, and the wave reads it at the go. Set up is not the same as
+firing and firing is not the same as the defenders being pinned, so a formed wave now
+waits, bounded, for one of three things: the defenders on the objective mostly pinned, the
+support firing for eight seconds (`AI.supT`), or nobody there to pin, with the form timer
+bounding it at a third over so a gun that cannot find a target does not stop the battle
+(`wave.wait`, `wave.pinned`). Green goes when it is formed, which is what green is for. And
+the wave writes down what it stepped off with (`AI.asStr`): a press that has lost half of it
+without taking the ground or pinning what holds it is a queue and not an assault, so it
+breaks off, re-forms, and leaves that objective alone for a minute (`AI.asAvoid`,
+`wave.break`) -- which is also the moment the loss memory on that ground starts saying the
+same thing. Inside a press two more things hold it together: a section that has run ahead
+of its wave and is being shot at goes to ground for eight seconds until the rest close up
+(`wave.cohere`), and the wave's armour takes an overwatch post short of the objective with a
+line to it rather than driving onto the flag with the sections (`veh.overwatch`, found once
+a wave and looked for again every fourteen seconds because `aiOverwatch` is twenty-one
+traces).
+
+*The exchange and the clock.* `killUnit` writes a kill down for the side that made it as
+well as the loss for the side that took it (`M.exK`, `M.exL`, each with a minute's
+half-life), and the picture carries `W.exch`, the ratio smoothed so that two kills in an
+empty minute are not a rout either way. `aiClock` reads the drain `tickEconomy` applies and
+says how many seconds each side has before its points are gone at the flags held now
+(`W.clock`). The mood reads both after the ratio and the lead: losing on the clock it stops
+holding and pushes for a victory flag, because holding a losing hand is losing; winning on
+it comfortably it holds what pays (`mood.clock`); losing the exchange badly it stops pushing
+unless the clock says it has no choice, and winning it two to one it pushes whatever the
+count says (`mood.exch`). Dig is left alone by the clock, as it was by the lead.
+
+*Sound ranging.* `damage` writes down whether a hit came out of the sky (`u.hurtInd`), and a
+tube that shells this side is heard: `aiHeard` writes a contact for it with an error that
+shrinks with every round, two hundred and twenty units on the first and sixty by the fifth,
+flagged `heard` so that nothing wanting a heading or a body reads it as one and the beaten
+zone is not painted from it. `aiKnown` accepts it the way it accepts a contact seen half a
+minute ago, which is what lets a mission be laid on it (`mortar.counter`, second after the
+massing body and before the objective's defenders) and a task force sent to it (a tube is
+worth three hundred and twenty more than anything else to `destroy`, and `W.heard` puts it
+in front of the planner, `op.counter`). It is honest by the same test as the rest of the
+memory: a section walking to a heard tube walks to where the sound was, and finds it there
+or does not. The situation carries `shelled` as well, whether or not the tube is known,
+because a beaten zone is a place and the answer to it is to be somewhere else: under
+shellfire going flat is worth thirty less and giving ground twenty-eight more
+(`shelled.move`).
+
+What it cost: a thinking tick 0.48 ms to 0.59 on the brain card, which is the cluster over
+the contacts and the clock. `tools/skirmish.mjs` swaps the operations planner with the rest
+of the bundle now and carries the new readers, with one thing worth knowing about the
+second half of that: the readers are reached through `aiLook`, which is not swapped, so
+a baseline side is handed the working file's headings and clock and what the card judges
+is what the two ticks do with them. The gate stages each input rather than sampling it: a
+body massing onto a held flag read off four looks a second apart, a tube heard through five
+rounds to within a fix, the exchange moved by a kill and by a loss, the clock read against
+`tickEconomy`'s own drain, and a wave the opposition's plan is told it stepped off with far
+more than it has, which breaks off in one tick of its own brain. Two things about that
+drill. **The heading is smoothed, so one look reads two fifths of the true pace** and the
+body's arrival would read at twenty-seven seconds off a section walking at sixty a second
+where four looks read it at about nine. And **the picture has to be the drill's**: three battles have
+been fought on the map by the time the row runs, the side's memory holds whatever it saw in
+them, and `aiMass` returns the heaviest cluster on the map, which would not otherwise be the
+three sections the row put down. The contacts are put aside and every enemy of the battle's
+own is hidden until the drill comes down.
 
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a

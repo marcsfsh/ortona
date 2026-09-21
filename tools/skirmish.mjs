@@ -69,7 +69,10 @@ function baselineBrain(rev) {
      here because they are where a unit decides what to do about what is in front of it;
      aiCall and aiAnswer because they decide who gets sent to somebody else's trouble. A
      revision that has none of them just has fewer parts. */
-  for (const name of ['aiPickTarget', 'aiSense', 'aiWeigh', 'aiCall', 'aiCanAnswer', 'aiAnswer'])
+  for (const name of ['aiPickTarget', 'aiSense', 'aiWeigh', 'aiCall', 'aiCanAnswer', 'aiAnswer',
+                      /* the operations, whose planning is judgement too, and the second layer of
+                         inputs: a revision that reads the contacts' headings is judged on that */
+                      'aiOpsPlan', 'aiOpsReview', 'aiOpsMan', 'aiRemember', 'aiMass', 'aiHeard', 'aiClock', 'aiDirTend'])
     { try { parts.push(fn(src, name)); } catch (e) { /* older file */ } }
   parts.push(fn(src, 'aiTick'));
   return parts.join('\n');
