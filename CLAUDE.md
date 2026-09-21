@@ -4983,13 +4983,15 @@ shots/                         screenshot output, gitignored
   still coming round. When a gate row says a thing has not happened yet after a minute of
   simulation, print the bearing error and not only the count, and look for a second hand
   on the same wheel.
-- **A drill that taps a fixed point on the map is a drill about where the battle got
-  to.** The board row put its piece of open ground six hundred units out toward the
-  enemy, which after four minutes is exactly where his sections are; a tap on one of his
-  own picks it and shuts the pad, so every assertion under it read off a pad that had
-  never opened and the head still carried the last flag's name. Pick the ground by asking
-  for what the drill needs -- clear of his men, clear of any flag, walkable -- and print
-  where it landed.
+- **A tap is a point on the SCREEN, and `clampCam` will not put the camera where you
+  asked.** The board row chose its piece of open ground by arithmetic in world space and
+  projected it after centring: near the edge of the map the camera refuses to go there,
+  so the projection is of a point it is not looking at and the tap lands somewhere else
+  entirely. It read (141, 824), a pad that never opened, and a head still carrying the
+  last flag's name -- and the first version of the same row had put the point six hundred
+  units out toward the enemy, which after four minutes of battle is where his own
+  sections are, where a tap picks a unit and shuts the pad. Find the point on the screen
+  (`__clearPt`), take the world point it gives back, and print it.
 - **An armed placement takes the next tap on the ground, and every tap is one.** The
   emplacement button arms `G.place` and the touch path answers it before anything else,
   which is right; the gate row below it then tapped four pieces of open ground to give

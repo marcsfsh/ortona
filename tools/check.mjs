@@ -547,12 +547,20 @@ for (const device of TARGETS) {
                who: [...box.querySelectorAll('#tordwho .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.who, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
                how: [...box.querySelectorAll('#tordhow .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.how, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
     };
-    /* a tap on a point of open ground, which is the thing the board added */
-    window.__tapGround = function (x, y) {
-      window.__o.camera({ x, y, dist: 560, pitch: 0.95 }); window.render();
-      const p = window.w2s(x, y);
+    /* A tap on a piece of open ground, which is the thing the board added. The point is
+       found ON THE SCREEN rather than in the world: `clampCam` will not centre the camera
+       near the edge of the map, so a world point chosen by arithmetic and projected after
+       the camera has refused to go there lands somewhere else entirely -- the first
+       version tapped (141, 824), the camera was looking a long way off it, and the row
+       read a pad that had never opened. `__clearPt` already answers the question the
+       drill is asking: a point on screen with nothing of either side on it and no flag
+       near it. */
+    window.__tapGround = function (nearX, nearY) {
+      window.__o.camera({ x: nearX, y: nearY, dist: 620, pitch: 0.95 }); window.render();
+      const p = window.__clearPt(innerWidth / 2, innerHeight / 2, 140);
+      if (!p) return null;
       window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
-      return !document.getElementById('tord').classList.contains('hidden');
+      return document.getElementById('tord').classList.contains('hidden') ? null : p.w;
     };
     window.__ordOp = function (slot, id) {
       const o = window.aiOrdById(slot, id);
@@ -666,20 +674,13 @@ for (const device of TARGETS) {
        tap near a pole is a tap on the flag: the first version put the point six hundred
        units out toward the enemy, which after four minutes of battle is exactly where his
        sections are, and every assertion under it read off a pad that had never opened. */
-    const clearOf = (x, y) => !window.G.units.some(u => !u.dead && !u.inside && window.owned(u) && Math.hypot(u.x - x, u.y - y) < 170) &&
-                              !window.G.sectors.some(s2 => Math.hypot(s2.x - x, s2.y - y) < 260) &&
-                              window.walkable(x, y) && !window.buildingAt(x, y);
-    let gp = null;
-    for (let d = 420; d <= 900 && !gp; d += 90)
-      for (let a = 0; a < 12 && !gp; a++) {
-        const th = a * Math.PI / 6;
-        const c = { x: hq.x + (us ? 1 : -1) * d * Math.cos(th * .5) , y: hq.y + d * Math.sin(th) * .6 };
-        if (c.x < 80 || c.y < 80 || c.x > window.WORLD.w - 80 || c.y > window.WORLD.h - 80) continue;
-        if (clearOf(c.x, c.y)) gp = c;
-      }
-    if (!gp) gp = window.nearestFree(hq.x + (us ? 620 : -620), hq.y + 40);
     window.ORDWHO = 'inf'; window.ORDAGG = 2;
-    const padG = window.__tapGround(gp.x, gp.y);
+    let gp = null;
+    for (const d of [340, 520, 700, 180]) {
+      gp = window.__tapGround(hq.x + (us ? d : -d), hq.y + (d & 1 ? 120 : -80));
+      if (gp) break;
+    }
+    const padG = !!gp;
     const headG = document.getElementById('tordname').textContent;
     document.querySelector('#tordbtns .tf[data-ord="screen"]').click();
     const oG = window.aiOrds(own).filter(o => o.k === 'screen')[0];
@@ -694,8 +695,12 @@ for (const device of TARGETS) {
       if (us) foe.vUs = true; else foe.vGer = true;
       window.__o.camera({ x: foe.x, y: foe.y, dist: 520, pitch: 0.95 }); window.render();
       const p = window.w2s(foe.x, foe.y);
-      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
-      padF = !document.getElementById('tord').classList.contains('hidden');
+      /* and only if the camera could actually be put there: the clamp keeps it off the
+         edge of the map and a projection of a point the camera is not looking at is a
+         tap somewhere else */
+      const on = !p.behind && p.x > 10 && p.y > 10 && p.x < innerWidth - 10 && p.y < innerHeight - 10;
+      if (on) { window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y); }
+      padF = on && !document.getElementById('tord').classList.contains('hidden');
       headF = document.getElementById('tordname').textContent;
       window.ORDWHO = 'any';
       const b = document.querySelector('#tordbtns .tf[data-ord="raid"]');
@@ -751,7 +756,7 @@ for (const device of TARGETS) {
     for (const u of raised) { const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); }
     window.ORDWHO = 'any'; window.ORDAGG = null;
     window.simpleOrdOpen(null); window.select([], false);
-    return { padG, headG, gpAt: gp ? [Math.round(gp.x), Math.round(gp.y)] : null,
+    return { padG, headG, gpAt: gp ? [Math.round(gp.x), Math.round(gp.y)] : null, foeOn: padF,
              forceN, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
              fearOn, padF, headF, tid, foeId: foe ? foe.id : -1, badge, listUp, rows, nOrd, afterX, smallC, army,
              listDown, posed, t0: t0.fear, tPress, tCaut };
