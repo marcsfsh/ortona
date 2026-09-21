@@ -540,9 +540,23 @@ for (const device of TARGETS) {
     window.__tapFlag = function (s) {
       window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.render();
       const p = window.w2s(s.x, s.y);
-      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+      /* A tap on one of his own picks the unit, and his own men stand on his own flags:
+         the pole point is not always a tap on the flag. So it is nudged round the pole
+         until the pad is open on THAT sector -- the flag is a circle of a hundred and
+         thirty and the pick radius is a few dozen, so there is always room. */
+      const tryAt = (x, y) => {
+        window.__tev('touchstart', x, y); window.__tev('touchend', x, y);
+        return !!(window.SIMPLEORD && window.SIMPLEORD.sec === s);
+      };
+      if (!tryAt(p.x, p.y)) {
+        for (let k = 0; k < 8; k++) {
+          const a = k * Math.PI / 4;
+          if (tryAt(p.x + Math.cos(a) * 46, p.y + Math.sin(a) * 46)) break;
+        }
+      }
       const box = document.getElementById('tord');
       return { shown: !box.classList.contains('hidden'), name: document.getElementById('tordname').textContent,
+               on: !!(window.SIMPLEORD && window.SIMPLEORD.sec === s),
                btns: [...box.querySelectorAll('#tordbtns .tf')].map(b => { const r = b.getBoundingClientRect(); return { dir: b.dataset.ord, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
                who: [...box.querySelectorAll('#tordwho .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.who, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
                how: [...box.querySelectorAll('#tordhow .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.how, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
@@ -631,19 +645,20 @@ for (const device of TARGETS) {
     window.aiThink(1);
     const dropped = !window.aiOpById(own, hold ? hold.id : 0);
     unhide();
-    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick,
+    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick, onA: tapA.on,
              asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, cleared, dropped, status,
              who: tapA.who.length, how: tapA.how.length,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
              n: window.G.units.filter(u => window.owned(u) && !u.dead && !u.def.builder && u.cat).length };
   }, MIN_TAP);
   ok('simple: a tap on a flag puts the whole order pad up; ATTACK is the wave\'s objective, HOLD and FEINT raise operations with men on them, and the lit one taps off',
-     !flags.none && flags.shown && flags.name.length > 0 && flags.small === 0 && flags.kinds.split(',').length === 9 &&
+     !flags.none && flags.shown && flags.onA && flags.name.length > 0 && flags.small === 0 && flags.kinds.split(',').length === 9 &&
      flags.who === 9 && flags.how === 3 && flags.shutA && flags.dirA === 'attack' && flags.dirH === 'hold' &&
      flags.dirF === 'feint' && flags.tick === 0 && flags.asSec === flags.A && flags.mainSec === flags.A && flags.takers >= 1 && flags.hold &&
      flags.onHold >= 1 && flags.feint && flags.onFeint >= 1 && flags.lit === 'hold' && flags.cleared && flags.dropped,
      flags.none ? 'fewer than three flags that are not his' :
-     `${flags.name}: ${flags.kinds} with ${flags.who} who-chips and ${flags.how} tempers, none under ${MIN_TAP}px; attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; ` +
+     `${flags.name} (on the flag ${flags.onA}, wanted ${flags.A}): ${flags.kinds} with ${flags.who} who-chips and ${flags.how} tempers, none under ${MIN_TAP}px; ` +
+     `attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; ` +
      `hold ${flags.hold} with ${flags.onHold} on it; feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
      `lit ${flags.lit} -> cleared ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
 
@@ -669,6 +684,10 @@ for (const device of TARGETS) {
       u.setup = 0; raised.push(u);
     }
     const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat === 'inf' && !u.def.builder);
+    /* the section the posture is said of, held back from the screen order below: with
+       INF as the force every section on the field is on it, and a unit under an order is
+       not the plan's to march either -- which would have made the posture unreadable */
+    const poseSec = mine[mine.length - 1] || null;
     /* ---- a piece of open ground, given to his infantry, pressed home.
        Clear of his own men and of any flag, because a tap on one of his picks it and a
        tap near a pole is a tap on the flag: the first version put the point six hundred
@@ -739,9 +758,12 @@ for (const device of TARGETS) {
     const listDown = document.getElementById('tlist').classList.contains('hidden');
     /* ---- a posture on one section: the plan stops marching it, and its own weighing
        still has it, which is the whole distinction the posture rests on */
-    const sec = mine.find(u => !u.ord);
+    const sec = poseSec;
     let posed = null;
     if (sec) {
+      /* off whatever order it is under, because an order outranks a posture by design */
+      for (const o of window.aiOrds(own)) { const i = o.force.indexOf(sec.id); if (i >= 0) o.force.splice(i, 1); }
+      sec.ord = 0; sec.op = 0;
       window.select([sec], false); window.simpleUnit(sec);
       document.querySelector('#tunitpose .chip[data-pose="hold"]').click();
       const before = sec.jobSec;
@@ -828,6 +850,13 @@ for (const device of TARGETS) {
        from the battle already stood inside 240 of the flag, so the wave went on the tick
        it formed and the screen came before the preparation rather than after it. Both are
        the brain being right, so the row reads both ticks and asks for one of each. */
+    /* any tube of his, because `aiSmokeScreen` sends the screen to whichever is nearest
+       to being able to lay it and the battle has tubes of its own: the row stages one so
+       that there is certainly a gun in reach, not so that it is the only one */
+    const anyMis = (want) => {
+      const t = window.G.units.filter(u => window.owned(u) && !u.dead && u.barrage && !!u.barrage.smoke === want)[0];
+      return t ? { smoke: want, d: Math.round(Math.hypot(t.barrage.x - S.x, t.barrage.y - S.y)), x: t.barrage.x, y: t.barrage.y } : null;
+    };
     const mis = () => m.barrage ? { smoke: !!m.barrage.smoke, d: Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)), x: m.barrage.x, y: m.barrage.y } : null;
     const m1 = mis(), went1 = P.asT >= 0;
     const obj = String(P.asSec) === String(S.id);
@@ -848,7 +877,8 @@ for (const device of TARGETS) {
     if (P.asT < 0) { P.asForm = window.G.t - 200; P.asT = -99; }
     tick();
     const m2 = mis(), went = P.asT >= 0;
-    const he = m1 && !m1.smoke ? m1 : m2 && !m2.smoke ? m2 : null, sm = m1 && m1.smoke ? m1 : m2 && m2.smoke ? m2 : null;
+    const he = m1 && !m1.smoke ? m1 : m2 && !m2.smoke ? m2 : anyMis(false);
+    const sm = m1 && m1.smoke ? m1 : m2 && m2.smoke ? m2 : anyMis(true);
     const dirFired = (window.AIR.fired['mortar.dir'] || 0) - (f0['mortar.dir'] || 0);
     /* what the wave was dealt, because the go wants half of it near the forming-up point
        and the first version of this row lost two of the three sections to a held flag
@@ -1504,9 +1534,38 @@ for (const device of TARGETS) {
     window.G.res.us.vp = 9000; window.G.res.ger.vp = 9000;
     const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
-    /* on ground it can actually drive off, or the driving check below measures a wall */
-    const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
-    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);   /* spawnUnit adds it to the field itself */
+    /* On ground it can drive off ALONG ITS OWN FACING, which is what the throttle asks
+       for: `povDrive` puts a waypoint 320 units up the hull's nose and nothing else, so a
+       tank staged square to a wall drives into the wall and the row measures the wall.
+       And after four minutes of battle the ground round the headquarters is his own army,
+       so what the drill wants is a CORRIDOR rather than a spot -- the same fault
+       `nearestFree` has been caught with before. Staged on a spot it read 11 units of
+       ground in three seconds on one run and 33 on the next, on identical code. */
+    const hx = hq ? hq.x : 300, hy = hq ? hq.y : 950;
+    const clearRun = (x, y, a) => {
+      for (let d = 30; d <= 300; d += 20) {
+        const px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+        if (!window.walkable(px, py) || window.blockAt(px, py)) return false;
+        if (window.buildingAt(px, py) || window.bunkerAt(px, py)) return false;
+        if (window.unitsAt(px, py, 42).length) return false;
+      }
+      return true;
+    };
+    let sp = null, face = 0;
+    for (const r of [150, 260, 380, 500]) {
+      for (let k = 0; k < 12 && !sp; k++) {
+        const c = window.nearestFree(hx + Math.cos(k * Math.PI / 6) * r, hy + Math.sin(k * Math.PI / 6) * r);
+        if (window.unitsAt(c.x, c.y, 50).length) continue;
+        for (let j = 0; j < 16; j++) {
+          const a = j * Math.PI / 8;
+          if (clearRun(c.x, c.y, a)) { sp = c; face = a; break; }
+        }
+      }
+      if (sp) break;
+    }
+    const staged = !!sp;
+    if (!sp) sp = window.nearestFree(hx + 150, hy + 80);
+    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, face);   /* spawnUnit adds it to the field itself */
     u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
     /* and it is not to be pinned by whoever is shelling the base by now: a hull over
        full suppression cannot turn (`povDrive` zeroes the turn), and the driving row is
@@ -1517,7 +1576,7 @@ for (const device of TARGETS) {
     window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
-    const out = { key, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
+    const out = { key, staged, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
     window.povHatch(true); window.updateCamera(); const up = window.MAT.eye.z;
     window.povHatch(false); window.updateCamera(); const down = window.MAT.eye.z;
     out.dropped = +(up - down).toFixed(1); out.above = +(down - window.groundZ(window.MAT.eye.x, window.MAT.eye.y)).toFixed(1);
@@ -1630,8 +1689,9 @@ for (const device of TARGETS) {
      `idle ${mgIdle}, ${mgWarm} after 8s on the trigger, cooked at ${cookedAt}s, cold again 25s after release`);
 
   ok('the commander drives his tank from the periscope',
-     drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 60 && drv2.turned > .35 && drv2.took === 1 && drv3.sp < 1,
-     `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped`);
+     tank.staged && drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 60 && drv2.turned > .35 && drv2.took === 1 && drv3.sp < 1,
+     tank.staged ? `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped`
+                 : 'nowhere round the headquarters with 300 units of clear going in front of it');
 
   const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
   ok('periscope sits in the tank commander\'s cupola, lid up or shut', tank.closed && tank.hatchShown && tank.pieces > 100 && tank.dropped > 3 && tank.above > 20 && tankOff, `${tank.key}: ${tank.pieces} inside triangles, the eye drops ${tank.dropped} when the lid shuts`);

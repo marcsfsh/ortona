@@ -4588,21 +4588,23 @@ the moment it is an object key**, so the directive map and the operation list co
 whistle** and wants exactly the AI slots, which is why the player's plan is raised on the
 first tick and not in `aiSlotsInit`.
 
-**The emplacements are on the strip.** The first version of the strip had the posts and
-the units and nothing else, so a player under SIMPLE could never dig an eighty-eight or a
-battery position at all: the two things on the roster that arrive as field works were
-locked behind a scheme he had chosen not to use. They are the last two buttons now, the
-eighty-eight on the side that has one and the heavy battery position on either, dug by the
-first free engineer where the brain would have dug it. `workSite(slot, kind, at)` is that
-siting, pulled out of the brain's own two rules so that the brain and the strip ask one
-question -- the walk out from home from `minHq` toward the front for a battery, the
-overwatch post for the eighty-eight -- and `workAim` is the front when nobody has said
-otherwise, which is the held flag nearest the enemy's headquarters. Every refusal on the
-way (the till, the limit, the exclusion round home, the population) is `placeWork`'s own
-and it says so itself; `workFull` is the limit, asked by the strip to dim the button and by
-`placeWork` to refuse, so there are not two readings of it. Measured by the gate: a tap
-digs the eight-inch position 780 from home against a floor of 700, with an engineer on it,
-for 460 and 170; the button then reads 1 and dims, and a second tap leaves one site.
+**The emplacements are on the strip, and the player sites them.** The first version of the
+strip had the posts and the units and nothing else, so a player under SIMPLE could never
+dig an eighty-eight or a battery position at all: the two things on the roster that arrive
+as field works were locked behind a scheme he had chosen not to use. They are the last two
+buttons now, the eighty-eight on the side that has one and the heavy battery position on
+either. They then went where the BRAIN would have dug them, which is a good answer and not
+his, so the button ARMS the placement instead (`simpleWork`) and the next tap on the ground
+is the site. `workSite(slot, kind, at)` stays the brain's own siting and is the brain's
+alone -- the walk out from home from `minHq` toward the front for a battery, the overwatch
+post for the eighty-eight -- with `workAim` the front when nobody has said otherwise, which
+is the held flag nearest the enemy's headquarters. Every refusal on the way (the till, the
+limit, the exclusion round home, the population, the room) is `placeWork`'s own and it says
+so itself; `workFull` is the limit, asked by the strip to dim the button and by `placeWork`
+to refuse, so there are not two readings of it. Measured by the gate: the button arms and
+lights, his tap sites the eight-inch position where his finger went, 790 from home against
+a floor of 700, with an engineer on it, for 460 and 170; the button then reads 1 and dims,
+and tapping it again arms nothing and leaves the one site.
 
 **Field upgrades are fitted for the player by a setting, and each vehicle has its own word
 over it.** The opposition has always bought its own (`buyUpgradeAuto` is the brain's
