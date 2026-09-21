@@ -805,7 +805,16 @@ for (const device of TARGETS) {
        two streets away. The flag row empties the board for the same reason; this one has
        to stop the dealing as well, because a call raised inside the tick is dealt inside it */
     const realAns = window.aiAnswer; window.aiAnswer = function () {};
-    window.simpleDir(S, 'attack');
+    /* ATTACK given through the pad with the three sections he put down NAMED as its
+       force, which is the board's own way of saying it and is what makes the deal
+       readable: dealt by nearest-first they compete with whatever the battle's army has
+       left standing nearer the flag, and one of the three went to another objective. */
+    const secs3 = raised.filter(u => u.own === own && u.cat === 'inf');
+    window.select(secs3, false);
+    window.ORDWHO = 'sel'; window.ORDAGG = null;
+    window.simpleOrdOpen({ sec: S, x: S.x, y: S.y });
+    document.querySelector('#tordbtns .tf[data-ord="attack"]').click();
+    window.select([], false); window.ORDWHO = 'any';
     P.asKey = null; P.asT = -99; P.t = 0;
     const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
     tick();

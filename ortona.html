@@ -26813,9 +26813,10 @@ function autoUpTick() {
 function keyHelpSync() {
   if (!MOB) return;
   el('keyhelp').innerHTML = CTRL.simple
-    ? '<b>tap a flag</b> and tell the army to ATTACK, HOLD or FEINT there &nbsp; <b>the strip</b> along the bottom builds<br>' +
+    ? '<b>tap anything</b> -- a flag, a target, open ground -- for the order pad &nbsp; <b>the strip</b> along the bottom builds<br>' +
+      '<b>tap one of yours</b> for its posture, its reaction and its group &nbsp; <b>ORDERS</b> lists what is standing<br>' +
       '<b>drag</b> the ground to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist</b> to rotate &nbsp; <b>LOOK</b> puts you in the nearest unit<br>' +
-      'The army is commanded for you: it takes ground, forms up, assaults, digs in and falls back on its own. You build it.'
+      'The army fights itself: it forms up, assaults, digs in and falls back. You build it and you say what it is to do.'
     : '<b>tap</b> your unit to select &nbsp; <b>tap</b> anywhere else to move or attack<br>' +
       '<b>drag</b> to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist two fingers</b> to rotate &nbsp; <b>press and hold</b> then drag to box-select<br>' +
       'Commands run along the bottom. The minimap sits above them.';
@@ -26840,13 +26841,35 @@ function simpleSectorAt(wx, wy) {
    something to look from and the ring says which; anything else lets go and shuts the
    popup. No tap gives an order: that is the brain's, and a stray finger must not march
    the army. */
+/* the nearest thing of theirs the side can see under the finger, inside its own ring, so
+   a tap has to land on the tank rather than near it: the flag below is a hundred and
+   thirty units across and would otherwise swallow anything standing on one */
+function simpleFoeAt(wx, wy) {
+  var best = null, bd = 1e9, i;
+  for (i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.inside || u.side === G.side || !visibleTo(G.side, u)) continue;
+    var r = selRadius(u), d = dsq(wx, wy, u.x, u.y);
+    if (d > r * r || d > bd) continue;
+    bd = d; best = u;
+  }
+  return best;
+}
 function simpleTap(wx, wy) {
-  var sec = simpleSectorAt(wx, wy);
-  if (sec) { simpleFlag(sec); buzz(10); return; }
-  simpleFlag(null);
+  /* his own first: a unit of his is picked and gets its card, which is where its
+     posture, its reaction and its battle group live */
   var own = nearestOwn(wx, wy, clamp(CAM.dist * .05, 26, 90));
   if (own) { select([own], false); simpleUnit(own); buzz(8); return; }
-  select([], false); simpleUnit(null);
+  /* then a thing of theirs, then a flag, then the bare ground -- and each of the three
+     opens the order pad on what he tapped. The old scheme could only ever be told about
+     a flag, and most of what a player wants to say is about a crossroads, a house, or
+     the tank that has just come round the corner. */
+  var foe = simpleFoeAt(wx, wy);
+  if (foe) { select([], false); simpleOrdOpen({ u: foe, x: foe.x, y: foe.y }); buzz(10); return; }
+  var sec = simpleSectorAt(wx, wy);
+  if (sec) { select([], false); simpleOrdOpen({ sec: sec, x: sec.x, y: sec.y }); buzz(10); return; }
+  select([], false);
+  simpleOrdOpen({ x: wx, y: wy }); buzz(8);
 }
 /* ---- the unit's popup: what he tapped, and the field upgrades it can take. One button
    per upgrade with its price, dimmed when the till will not cover it, and AUTO, lit while
