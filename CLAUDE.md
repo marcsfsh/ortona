@@ -3029,10 +3029,12 @@ dealt where a card with one army read under one. Read those as one battle: two r
 identical code on this card have come back with the same rule at thirty-four and thirteen.
 
 On the tactics card, against the commit before the pass with both sides buying: **-46 with
-a standard error of 170 over eight pairs, ahead in three of eight**, which is parity and
-is where a change of this kind lands on this tool; the per-side table has the working
-brain with more army on both sides (3,202 against 2,729 and 3,450 against 3,113) and fewer
-points on one, which is one run's shape and not a finding. `tools/skirmish.mjs` swaps the operations planner with the rest
+a standard error of 170 over eight pairs, ahead in three of eight, and -18 with 161 over
+eight more**, which is parity and is where a change of this kind lands on this tool; the
+first run's per-side table has the working brain with more army on both sides (3,202
+against 2,729 and 3,450 against 3,113) and fewer points on one, and the second has the
+German side winning whichever brain ran it, which is one run's shape each and not a
+finding. `tools/skirmish.mjs` swaps the operations planner with the rest
 of the bundle now and carries the new readers, with one thing worth knowing about the
 second half of that: the readers are reached through `aiLook`, which is not swapped, so
 a baseline side is handed the working file's headings and clock and what the card judges
@@ -4608,6 +4610,12 @@ shots/                         screenshot output, gitignored
   an operation carries it as the sector wrote it, so the two agree only when compared with
   `String()` on both sides; compared bare, a directed hold would match no operation and be
   raised again on every tick.
+- **There is a page error nobody has caught yet.** `Cannot read properties of undefined
+  (reading 'vbo')` in `bindGeom`, twice in about forty battles with a brain on both sides:
+  once on the phone half of the gate and once inside a sixteen-match tactics run, and not
+  on either run made to find it. Every lit-pass draw reads as guarded or always built, so
+  the caller has to come off a stack; the harness keeps the first three game frames of a
+  page error now rather than the message alone, and the next one will name it.
 - **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
   that slot under classic, so a lock on its till read off the slot alone is invisible in
   play and cripples every card that puts a brain on both sides: the tactics card came back
