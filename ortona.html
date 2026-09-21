@@ -26926,7 +26926,13 @@ function edRefreshStart() {
 }
 /* what cuts or paints the ground itself, and so needs the heightfield mesh and the
    ground paint done again; everything else is a prop in a tile */
-var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1 };
+/* `emplace` is on this list because a weapon pit is DUG: it went on the moment the
+   map's own pits started going through `carve`, and it is the fourth of the five
+   places a new kind of thing has to be known about. Left off, the editor cut the
+   heightfield and rebuilt the walk grid under a pit and never rebuilt the ground
+   MESH or the paint, so the hole was there to walk into and not there to look at
+   until something else forced a full rebuild. */
+var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1, emplace: 1 };
 /* An edit rebuilds the least it can: the map's lists and the walk grid always (a
    tenth of a second), the ground mesh and paint only when something cut or painted
    it, the grass only when grass changed, and of the prop tiles only the ones the
