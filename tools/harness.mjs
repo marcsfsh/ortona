@@ -69,12 +69,18 @@ export async function launch({ headed = false, slowMo = 0 } = {}) {
  * Open the game and wait until WebGL has come up.
  * Returns { page, log } where log collects console output and page errors.
  */
-export async function openGame(browser, deviceKey = 'desktop', { file = GAME, quiet = false } = {}) {
+export async function openGame(browser, deviceKey = 'desktop', { file = GAME, quiet = false, ctrl = null } = {}) {
   const dev = DEVICES[deviceKey];
   if (!dev) throw new Error(`unknown device "${deviceKey}". known: ${deviceNames().join(', ')}`);
   const { name, ...ctxOpts } = dev;
 
   const context = await browser.newContext({ ...ctxOpts, reducedMotion: 'no-preference' });
+  /* `ctrl` pins the control scheme ('classic' or 'simple') for every page this context
+     opens, reloads included, by writing the stored choice before the game reads it. A
+     phone starts on simple, and simple carries an adjutant that spends the opening purse
+     and sites a post in the first seconds: a probe that wants a pristine deploy asks for
+     classic and switches simple on where it measures it. */
+  if (ctrl) await context.addInitScript(v => { try { localStorage.setItem('ORT_CTRL', v); } catch (e) {} }, ctrl);
   const page = await context.newPage();
   page.setDefaultTimeout(180000);
 

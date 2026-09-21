@@ -82,6 +82,17 @@ const SCENES = {
         syncHud();
       }, SIDE);
       await shoot(page, out('hud'), { settle: SETTLE });
+      /* under the simple scheme the flag's popup is photographed up as well, on the
+         nearest flag that is not his */
+      if (await page.evaluate(() => window.CTRL && window.CTRL.simple)) {
+        await page.evaluate(() => {
+          const hq = window.hqOf(window.G.own);
+          const s = window.G.sectors.filter(x => x.owner !== window.G.side).sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y))[0] || window.G.sectors[0];
+          window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.simpleFlag(s);
+        });
+        await shoot(page, out('hud-flag'), { settle: SETTLE });
+        await page.evaluate(() => window.simpleFlag(null));
+      }
 
       /* The build menu: select the HQ so its production cards show. */
       await page.evaluate(s => {
@@ -713,6 +724,7 @@ if (args.list || args.help) {
   console.log('\nflags: --device= --sim=<game seconds> --side=us|ger --diff=0|1|2 --bare --turn');
   console.log('       --settle=<frames> --tag=<suffix> --cam=x,y,dist,yaw,pitch --nofog --name=');
   console.log('       --dist=<units> --pitch=<radians>   (override gallery framing)');
+  console.log('       --ctrl=simple|classic               (the control scheme, whatever the device would pick)');
   console.log('       --only=<key[,key]>                 (restrict a gallery to named units)');
   console.log('       --base=<rev>                       (photograph an older revision, -base on the name)');
   console.log('       --base=<rev> --side                (that and the working file, composited into one PNG)');
@@ -746,6 +758,10 @@ for (const pass of passes) {
        * stale one would quietly poison the next capture. */
       const { page, context, log } = await openGame(browser, DEVICE, pass.file ? { file: pass.file } : {});
       console.log(`\n[${name}] ${DEVICE}`);
+      /* --ctrl=simple|classic picks the control scheme for the page, without storing it:
+         a phone starts on simple and a desktop on classic, and a picture of either on the
+         other device is worth having */
+      if (args.ctrl && !pass.base) await page.evaluate(v => { if (window.ctrlSet) window.ctrlSet(v === 'simple', true); }, String(args.ctrl));
       try {
         await SCENES[name].run(page);
       } catch (e) {

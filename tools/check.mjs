@@ -33,7 +33,10 @@ const browser = await launch();
 
 for (const device of TARGETS) {
   console.log(`\n=== ${device} (${DEVICES[device].viewport.width}x${DEVICES[device].viewport.height} @${DEVICES[device].deviceScaleFactor ?? 1}x) ===`);
-  const { page, context, log, gl } = await openGame(browser, device, { quiet: true });
+  /* on classic whatever the device would pick, because the simple scheme's adjutant spends
+     the till and sites a post from the first frame and half the rows below read a pristine
+     deploy; the simple rows switch it on where they measure it */
+  const { page, context, log, gl } = await openGame(browser, device, { quiet: true, ctrl: 'classic' });
 
   ok('WebGL context', gl.ok, `${gl.gl2 ? 'webgl2' : 'webgl1'}, shadows ${gl.shadows ? 'on' : 'off'}`);
   /* Count what the world builder asks the material table for, before anything is built.
@@ -251,7 +254,9 @@ for (const device of TARGETS) {
     const vw = window.innerWidth, vh = window.innerHeight;
     const seen = [];
     const small = [];
-    for (const sel of ['#tools .tool', '#cmds .cmd', '#bar button', '#queue .qi']) {
+    /* under the simple scheme the strip and the flag's popup are measured with the rest */
+    const simple = document.body.classList.contains('simple');
+    for (const sel of ['#tools .tool', '#cmds .cmd', '#bar button', '#queue .qi', '#simple button']) {
       for (const e of document.querySelectorAll(sel)) {
         const r = e.getBoundingClientRect();
         if (!r.width || !r.height) continue;
@@ -259,7 +264,8 @@ for (const device of TARGETS) {
         if (r.width < minTap || r.height < minTap) small.push(`${sel} ${r.width | 0}x${r.height | 0}`);
       }
     }
-    const bar = document.getElementById('bar').getBoundingClientRect();
+    /* the bar, or under simple the strip that stands where it stood */
+    const bar = (simple ? document.getElementById('tbuild') : document.getElementById('bar')).getBoundingClientRect();
     const top = document.getElementById('top').getBoundingClientRect();
     return { hScroll: document.documentElement.scrollWidth - vw,
              vScroll: document.documentElement.scrollHeight - vh,
@@ -273,6 +279,294 @@ for (const device of TARGETS) {
     ok(`touch targets are at least ${MIN_TAP}px`, hud.small.length === 0,
        hud.small.slice(0, 4).join('; ') || `${hud.controls} controls checked`);
   }
+
+  /* --- the simple scheme. A second set of controls kept beside the classic one: a phone
+     starts on it and a desktop does not, and either may pick the other. Under it the
+     player builds and the brain fights, so what is measured is the strip he builds from,
+     the brain running his slot without his money, and the flags he steers it by. Every
+     row runs on both devices, because the touch handlers are one piece of code whatever
+     the pointer is, and each switches the scheme without storing it. The gestures are
+     driven through the same TouchEvents a finger raises, dispatched at the canvas, rather
+     than by calling the functions behind them: a handler that is never reached by the
+     event it is written for is a handler that is not there. The rest of the gate then
+     runs on classic, because a brain giving the player's army orders under rows that
+     read where his units are is a gate measuring the brain. --- */
+  const ctrl0 = await page.evaluate(() => {
+    /* the page was opened pinned to classic; the default is what ctrlLoad decides with
+       nothing stored, so it is asked that way and the pin put back */
+    localStorage.removeItem('ORT_CTRL'); window.ctrlLoad();
+    const d = window.CTRL.simple;
+    localStorage.setItem('ORT_CTRL', 'classic'); window.ctrlLoad(); window.ctrlApply();
+    return { simple: d, pinned: !window.CTRL.simple };
+  });
+  ok('the control scheme starts on simple on a phone and classic on a desktop, with nothing stored',
+     ctrl0.simple === !!DEVICES[device].hasTouch && ctrl0.pinned, `simple=${ctrl0.simple} with nothing stored`);
+  /* what the player had before the scheme, and the brain that comes with it, was switched on */
+  const pre = await page.evaluate(() => {
+    const own = window.G.own, him = window.foe(window.G.side);
+    window.__preIds = window.G.units.filter(u => window.owned(u)).map(u => u.id);
+    window.__preBld = window.G.blds.filter(b => window.owned(b)).map(b => b.id);
+    /* the battle is three minutes old and the player's points are most of the way down,
+       so both sides are topped up before another minute is run: a game that ends inside
+       the minute stops the brain with everything else */
+    window.vpSet('us', 9000); window.vpSet('ger', 9000);
+    return { made: Object.keys(window.G.made[own]).length, blds: window.G.blds.filter(b => window.owned(b)).length,
+             foeMade: Object.keys(window.G.made[him]).length, mp: Math.round(window.G.res[own].mp), brains: Object.keys(window.AIP).sort().join(',') };
+  });
+  await page.evaluate(() => {
+    window.ctrlSet(true, true); window.select([], false);
+    const hq = window.hqOf(window.G.own);
+    window.__o.camera({ x: hq.x, y: hq.y, dist: 560, pitch: 0.95 });
+  });
+  await frames(page, 1);
+  const th = await page.evaluate(minTap => {
+    const vw = innerWidth, vh = innerHeight, inside = r => r.left >= -1 && r.top >= -1 && r.right <= vw + 1 && r.bottom <= vh + 1;
+    const rects = sel => [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()).filter(r => r.width && r.height);
+    const strip = rects('#tbuild .tb'), mini = document.getElementById('mini').getBoundingClientRect(), line = document.getElementById('tsel').getBoundingClientRect();
+    const small = strip.filter(r => r.width < minTap || r.height < minTap).length;
+    const off = [...strip, mini, line].filter(r => !inside(r)).length;
+    /* and nothing of the chrome lies over anything else of it, the tool strip and the
+       resource strip included */
+    const all = [...strip, mini, line, ...rects('#tools .tool'), document.getElementById('top').getBoundingClientRect()];
+    let overlap = 0;
+    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+      const a = all[i], b = all[j];
+      if (a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) overlap++;
+    }
+    /* the strip is the post he has not got and every unit his finished buildings make */
+    const want = window.simpleItems().map(it => it.key).join(',');
+    const have = [...document.querySelectorAll('#tbuild .tb')].map(e => e.dataset.key).join(',');
+    return { on: document.body.classList.contains('simple'), bar: getComputedStyle(document.getElementById('bar')).display,
+             strip: strip.length, want, have, post: (document.querySelector('#tbuild .tb.post') || {}).dataset,
+             tools: [...document.querySelectorAll('#tools .tool')].filter(e => e.getBoundingClientRect().width).map(e => e.id).join('+'),
+             small, off, overlap, miniIn: document.getElementById('mini').parentNode.id,
+             flag: document.getElementById('tflag').classList.contains('hidden'),
+             hScroll: document.documentElement.scrollWidth - vw, vScroll: document.documentElement.scrollHeight - vh,
+             label: document.getElementById('tselname').textContent.trim() };
+  }, MIN_TAP);
+  ok('simple: a strip of what he can build, a line saying what the army is doing, LOOK and PAUSE, the little map, the bar gone, nothing small, off screen or overlapping',
+     th.on && th.bar === 'none' && th.strip >= 3 && th.want === th.have && th.tools === 'tPov+tPause' && th.small === 0 && th.off === 0 &&
+     th.overlap === 0 && th.miniIn === 'simple' && th.flag && th.hScroll <= 0 && th.vScroll <= 0 && th.label.length > 0,
+     `${th.strip} buttons (${th.have}), tools ${th.tools}, ${th.small} small, ${th.off} off screen, ${th.overlap} overlapping, map in #${th.miniIn}, line "${th.label}"`);
+
+  /* --- the brain on his slot: it thinks at veteran, deals every fighting unit a job and
+     orders it, and never spends a mark of his. Driven the way the frame loop drives it,
+     for a minute, and read off the field. On fresh sections, because the three minutes
+     of battle above are fought with nobody running his army and what is left of it by
+     now is sometimes nothing at all. --- */
+  await page.evaluate(() => {
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    for (let i = 0; i < 4; i++) {
+      const sp = window.nearestFree(hq.x + (us ? 200 : -200) + i * 50, hq.y - 100 + i * 70);
+      window.spawnUnit(own, us ? 'us_rifle' : 'ger_gren', sp.x, sp.y, 0);
+    }
+  });
+  await fastForward(page, 60);
+  const brain = await page.evaluate(() => {
+    const own = window.G.own, him = window.foe(window.G.side), P = window.AIP[own];
+    const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat && !u.inside);
+    const fighters = mine.filter(u => !u.def.builder);
+    return { plan: !!P && P.own === own, skill: window.aiDiffOf(own).skill, runs: window.aiRuns(window.slotOf(own)), buys: window.aiBuys(own),
+             n: fighters.length, jobs: fighters.filter(u => u.job || u.op).length, ordered: mine.filter(u => u.order).length,
+             made: Object.keys(window.G.made[own]).length, blds: window.G.blds.filter(b => window.owned(b)).length,
+             foeMade: Object.keys(window.G.made[him]).length, foeBuys: window.aiBuys(him),
+             status: document.getElementById('tselname').textContent, mood: P && P.mood,
+             fired: ['opening', 'stand', 'wave.form'].filter(k => window.AIR.fired[k] > 0).join('+') };
+  });
+  ok('simple: the brain runs his slot at veteran, deals every section a job and orders it, and buys nothing out of his till',
+     brain.plan && brain.skill === 2 && brain.runs && !brain.buys && brain.n > 0 && brain.jobs === brain.n && brain.ordered > 0 &&
+     brain.made === pre.made && brain.blds === pre.blds && brain.foeBuys && brain.foeMade >= 1 && brain.status.length > 0,
+     `plan ${brain.plan} at skill ${brain.skill}; ${brain.jobs} of ${brain.n} fighters with a job, ${brain.ordered} under orders; ` +
+     `raised ${brain.made} kinds against ${pre.made} before and ${brain.blds} buildings against ${pre.blds}, the opposition ${brain.foeMade}; ` +
+     `line "${brain.status}", mood ${brain.mood}, fired ${brain.fired}`);
+
+  /* --- the strip: a tap builds. The post goes down beside the headquarters with an
+     engineer on it, a section goes into the headquarters' queue, and a thing he cannot
+     pay for is dimmed and refused. --- */
+  const strip = await page.evaluate(() => {
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const K1 = us ? 'us_bar' : 'ger_qtr', secKey = us ? 'us_rifle' : 'ger_gren';
+    /* on a fresh engineer, because after four minutes of a battle nobody is running the
+       one he started with is whatever the battle left of it */
+    const esp = window.nearestFree(hq.x + (us ? 150 : -150), hq.y - 60);
+    window.spawnUnit(own, us ? 'us_eng' : 'ger_pio', esp.x, esp.y, 0);
+    const mp0 = Math.round(window.G.res[own].mp);
+    const postBtn = document.querySelector('#tbuild .tb.post');
+    if (postBtn) postBtn.click();
+    const site = window.siteOf(own, K1);
+    const onIt = window.G.units.some(u => window.owned(u) && !u.dead && u.def.builder && u.building === site);
+    const mp1 = Math.round(window.G.res[own].mp);
+    const secBtn = document.querySelector(`#tbuild .tb[data-key="${secKey}"]`);
+    const q0 = hq.queue.length;
+    if (secBtn) secBtn.click();
+    const queued = hq.queue.length - q0, mp2 = Math.round(window.G.res[own].mp);
+    /* and with the till empty the same button is dimmed and does nothing */
+    const keep = window.G.res[own].mp; window.G.res[own].mp = 0; window.simpleSync();
+    const poor = secBtn && secBtn.classList.contains('poor');
+    if (secBtn) secBtn.click();
+    const refused = hq.queue.length === q0 + queued;
+    window.G.res[own].mp = keep; window.simpleSync();
+    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused };
+  });
+  ok('simple: a tap on the strip pegs the post out with an engineer, queues a section, and is refused when the till is empty',
+     strip.postBtn && strip.site && strip.onIt && strip.postCost === 200 && strip.secBtn && strip.queued === 1 && strip.secCost > 0 && strip.poor && strip.refused,
+     `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost}; empty till dimmed ${strip.poor} and refused ${strip.refused}`);
+
+  /* a finger on the canvas: TouchEvents built the way a touch screen builds them */
+  await page.evaluate(() => {
+    const cv = document.getElementById('cv');
+    window.__tev = function (type, x, y) {
+      const r = cv.getBoundingClientRect();
+      const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
+      const up = type === 'touchend';
+      cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
+    };
+    /* a point of open ground on the screen with nothing of either side on it and no flag
+       near it, so that a tap there is a tap on bare ground */
+    window.__clearPt = function (sx, sy, rad) {
+      for (const f of [1, 1.3, 1.6, .8, .6]) for (let k = 0; k < 24; k++) {
+        const a = k * Math.PI / 12 + .3, x = sx + Math.cos(a) * rad * f, y = sy + Math.sin(a) * rad * f;
+        if (x < 30 || y < 90 || x > innerWidth - 80 || y > innerHeight - 150) continue;
+        const w = window.s2w(x, y);
+        if (window.G.units.some(u => !u.dead && !u.inside && window.owned(u) && window.hitsUnit(u, w.x, w.y, 34))) continue;
+        if (window.unitsAt(w.x, w.y, 30).length || window.buildingAt(w.x, w.y) || window.bunkerAt(w.x, w.y) || !window.walkable(w.x, w.y)) continue;
+        if (window.blockAt(w.x, w.y) || window.simpleSectorAt(w.x, w.y)) continue;
+        return { x, y, w };
+      }
+      return null;
+    };
+    /* a tap on a flag: the camera goes to it first, because a tap is a point on the screen */
+    window.__tapFlag = function (s) {
+      window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.render();
+      const p = window.w2s(s.x, s.y);
+      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+      const box = document.getElementById('tflag');
+      return { shown: !box.classList.contains('hidden'), name: document.getElementById('tflagname').textContent,
+               btns: [...box.querySelectorAll('.tf')].map(b => { const r = b.getBoundingClientRect(); return { dir: b.dataset.dir, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
+    };
+  });
+
+  /* --- the flags: a tap on one puts its directives up, and each directive is read off
+     the brain's own plan rather than off what the popup said. Staged on fresh sections,
+     because after four minutes of battle the ones on the field are whatever the battle
+     left of them and a hold wants two and a feint wants three; and the brain is ticked
+     by hand rather than run, because a battle the player is losing takes the flag he
+     was told to hold off him while the clock runs. --- */
+  const flags = await page.evaluate(minTap => {
+    const own = window.G.own, side = window.G.side, us = side === 'us', hq = window.hqOf(own);
+    const secKey = us ? 'us_rifle' : 'ger_gren';
+    for (let i = 0; i < 5; i++) {
+      const sp = window.nearestFree(hq.x + (us ? 220 : -220) + i * 40, hq.y - 120 + i * 60);
+      window.spawnUnit(own, secKey, sp.x, sp.y, 0);
+    }
+    const P = window.AIP[own];
+    const byD = window.G.sectors.slice().sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
+    const theirs = byD.filter(s => s.owner !== side);
+    if (theirs.length < 3) return { none: true };
+    /* his nearest flag, taken for him if the battle has taken it off him */
+    const H = byD[0]; H.owner = side; H.contest = false;
+    const A = theirs.filter(s => s !== H)[0], F = theirs.filter(s => s !== H && s !== A).slice(-1)[0];
+    /* ATTACK on a flag that is not his */
+    const tapA = window.__tapFlag(A);
+    const small = tapA.btns.filter(b => b.w < minTap || b.h < minTap).length;
+    document.querySelector('#tflag .tf[data-dir="attack"]').click();
+    const shutA = document.getElementById('tflag').classList.contains('hidden');
+    const dirA = window.aiDirOf(own, A.id);
+    /* HOLD on one of his, FEINT on another of theirs */
+    window.__tapFlag(H); document.querySelector('#tflag .tf[data-dir="hold"]').click();
+    window.__tapFlag(F); document.querySelector('#tflag .tf[data-dir="feint"]').click();
+    const tick = P.t, dirH = window.aiDirOf(own, H.id), dirF = window.aiDirOf(own, F.id);
+    /* one tick of the brain, and what it made of the three */
+    window.aiThink(1);
+    const Q = window.AIOP[own], main = window.aiOpKind(own, 'take');
+    const takers = window.G.units.filter(u => window.owned(u) && !u.dead && u.jobSec === A.id && !u.retreat).length;
+    const hold = window.aiOpDirOf(own, H.id, 'hold'), feint = window.aiOpDirOf(own, F.id, 'feint');
+    const onHold = hold ? window.G.units.filter(u => window.owned(u) && !u.dead && u.op === hold.id).length : 0;
+    const onFeint = feint ? window.G.units.filter(u => window.owned(u) && !u.dead && u.op === feint.id).length : 0;
+    const status = document.getElementById('tselname').textContent;
+    /* the popup on the held flag shows HOLD lit and a CLEAR, and CLEAR takes it off; the
+       review then drops the operation it stood on */
+    const again = window.__tapFlag(H);
+    const lit = again.btns.filter(b => b.on).map(b => b.dir).join('+'), hasClear = again.btns.some(b => b.dir === 'clear');
+    const clr = document.querySelector('#tflag .tf[data-dir="clear"]'); if (clr) clr.click();
+    const cleared = !window.aiDirOf(own, H.id);
+    window.aiThink(1);
+    const dropped = !window.aiOpDirOf(own, H.id, 'hold');
+    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, shutA, dirA, dirH, dirF, tick,
+             asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, hasClear, cleared, dropped, status,
+             ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
+             n: window.G.units.filter(u => window.owned(u) && !u.dead && !u.def.builder && u.cat).length };
+  }, MIN_TAP);
+  ok('simple: a tap on a flag puts ATTACK, HOLD and FEINT up; ATTACK is the wave\'s objective, HOLD and FEINT raise directed operations with men on them, and CLEAR takes one off',
+     !flags.none && flags.shown && flags.name.length > 0 && flags.small === 0 && flags.shutA && flags.dirA === 'attack' && flags.dirH === 'hold' &&
+     flags.dirF === 'feint' && flags.tick === 0 && flags.asSec === flags.A && flags.mainSec === flags.A && flags.takers >= 1 && flags.hold &&
+     flags.onHold >= 1 && flags.feint && flags.onFeint >= 1 && flags.lit === 'hold' && flags.hasClear && flags.cleared && flags.dropped,
+     flags.none ? 'fewer than three flags that are not his' :
+     `${flags.name}: attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; hold ${flags.hold} with ${flags.onHold} on it; ` +
+     `feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; lit ${flags.lit}, clear ${flags.hasClear} -> ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
+
+  /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
+     a tap on the ground that lets go --- */
+  const look = await page.evaluate(() => {
+    window.select([], false);
+    document.getElementById('tPov').click();
+    const on = window.POV.on, from = window.POV.u && window.owned(window.POV.u) && !window.POV.u.dead;
+    window.povOff();
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    if (!u) return { on, from, none: true };
+    window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 }); window.render();
+    const p = window.w2s(u.x, u.y), o0 = u.order, d0 = JSON.stringify(u.dest && [u.dest.x, u.dest.y]);
+    window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+    const picked = window.G.sel.length === 1 && window.G.sel[0] === u;
+    const tap = window.__clearPt(p.x, p.y, 150);
+    if (tap) { window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y); }
+    const same = u.order === o0 && JSON.stringify(u.dest && [u.dest.x, u.dest.y]) === d0;
+    return { on, from, picked, tap: !!tap, let_: window.G.sel.length, same };
+  });
+  ok('simple: LOOK looks from the nearest unit with nothing picked, a tap on a unit picks it and orders nothing, and a tap on the ground lets go',
+     look.on && look.from && !look.none && look.picked && look.tap && look.let_ === 0 && look.same,
+     look.none ? 'no section to tap' : `look ${look.on} from his ${look.from}; picked ${look.picked}; ground tap left ${look.let_} selected with the order unchanged ${look.same}`);
+
+  /* and the classic scheme is what it was: the bar back, the strip gone, a tap an order */
+  const classic = await page.evaluate(() => {
+    window.ctrlSet(false, true);
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    if (!u) return { none: true };
+    window.clearOrder(u);
+    window.select([u], false);
+    window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 });
+    const p = window.w2s(u.x, u.y), tap = window.__clearPt(p.x, p.y, 150);
+    if (!tap) return { none: true };
+    window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y);
+    const dest = u.dest ? Math.hypot(u.dest.x - tap.w.x, u.dest.y - tap.w.y) : -1;
+    /* and a drag from the unit pans */
+    const cam0 = [window.CAM.tx, window.CAM.ty];
+    window.__tev('touchstart', p.x, p.y); window.__tev('touchmove', p.x + 30, p.y + 40); window.__tev('touchmove', p.x + 90, p.y + 120); window.__tev('touchend', p.x + 90, p.y + 120);
+    const panned = Math.hypot(window.CAM.tx - cam0[0], window.CAM.ty - cam0[1]);
+    return { off: !document.body.classList.contains('simple'), bar: getComputedStyle(document.getElementById('bar')).display,
+             hidden: document.getElementById('simple').classList.contains('hidden'), miniIn: document.getElementById('mini').parentNode.id,
+             order: u.order, dest: +dest.toFixed(1), panned: +panned.toFixed(0), brains: Object.keys(window.AIP).sort().join(',') };
+  });
+  ok('classic: the bar is back, the strip is gone, a tap on the ground orders, a drag from the unit pans, and the brain on his slot stops',
+     !classic.none && classic.off && classic.bar !== 'none' && classic.hidden && classic.miniIn === 'bar' && classic.order === 'move' &&
+     classic.dest >= 0 && classic.dest < 1 && classic.panned > 20,
+     classic.none ? 'no section or no open ground on screen' : `tap: ${classic.order} ${classic.dest} from the finger, drag panned ${classic.panned}, map in #${classic.miniIn}, brains ${classic.brains}`);
+  /* and what the rows raised comes down again, because the rows below park a tank
+     beside the headquarters on ground the post now stands on; the rest of the gate runs
+     on classic on both devices, since the brain would otherwise be ordering the units
+     the rows below stage */
+  await page.evaluate(() => {
+    const own = window.G.own, hadU = new Set(window.__preIds || []), hadB = new Set(window.__preBld || []);
+    window.ctrlSet(false, true);
+    window.G.units.forEach(q => { if (window.owned(q) && (q.building || q.repairing)) window.clearOrder(q); });
+    window.G.units = window.G.units.filter(q => !(window.owned(q) && !hadU.has(q.id) && !q.inside && !q.gar));
+    window.G.blds = window.G.blds.filter(b => !(b.own === own && !hadB.has(b.id)));
+    window.G.blds.forEach(b => { if (b.own === own) { b.queue.length = 0; b.qt = 0; } });
+    if (window.AIP[own]) { window.AIP[own].dir = null; }
+    window.AIOP[own] = null; window.AIQ[own] = null;
+    window.rebuildGrid(); window.select([], false);
+  });
+  await frames(page, 1);
 
   /* --- the periscope: a look from a unit, turned by a drag, and back --- */
   const pov = await page.evaluate(() => {
@@ -614,6 +908,12 @@ for (const device of TARGETS) {
     const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
     const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);   /* spawnUnit adds it to the field itself */
     u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
+    /* and it is not to be pinned by whoever is shelling the base by now: a hull over
+       full suppression cannot turn (`povDrive` zeroes the turn), and the driving row is
+       about the pad and not about how the battle above happened to end up */
+    const pd = window.povDrive;
+    window.__povDrive0 = pd;
+    window.povDrive = function (v, dt) { if (v === u) { v.sup = 0; v.shaken = 0; } return pd(v, dt); };
     window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
@@ -647,6 +947,7 @@ for (const device of TARGETS) {
   await fastForward(page, 3);
   const drv3 = await page.evaluate(([x, y]) => {
     const u = window.POV.u;
+    if (window.__povDrive0) { window.povDrive = window.__povDrive0; window.__povDrive0 = null; }
     return { crept: +Math.hypot(u.x - x, u.y - y).toFixed(1), sp: +(u.sp || 0).toFixed(1) };
   }, [drv2.x, drv2.y]);
   /* --- and he shoots with it: a round goes where he points, target or no target --- */
