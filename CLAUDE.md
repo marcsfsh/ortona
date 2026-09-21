@@ -836,7 +836,12 @@ and the classic scheme is put back and asked the same of a tap and a drag, becau
 scheme kept as an option is a scheme nobody runs. The drills want open ground, and
 `__clearPt` finds it clear of every ring of his by more than the pick and clear of any flag
 -- the first version asked `nearestOwn` at a hundred units, which is not the pick, and
-found no ground at all on the spawn.
+found no ground at all on the spawn. And the flag row hides the enemy from his side and
+empties his call board for its two ticks, because a section raised beside the headquarters
+with a tank in front of it calls for help and is dealt to nobody's operation, which is the
+brain being right about the wrong thing: on one desktop run the enemy was at the
+headquarters when the row ran, and both directed operations were raised with nobody on
+them out of ten fighters.
 
 **And two rows read the framebuffer rather than looking at it.** An effect that is drawn
 and invisible looks exactly like an effect that is not drawn, so the effects rows render
@@ -3022,7 +3027,13 @@ where four looks read it at about nine. And **the picture has to be the drill's*
 been fought on the map by the time the row runs, the side's memory holds whatever it saw in
 them, and `aiMass` returns the heaviest cluster on the map, which would not otherwise be the
 three sections the row put down. The contacts are put aside and every enemy of the battle's
-own is hidden until the drill comes down.
+own is hidden until the drill comes down. The break-off half has the same shape: a wave does
+not break off from defenders who cannot lift their heads, and on one phone run the tick
+read the battle and held on, with nothing in the row's line to say why. The likeliest
+reading is the flag's defenders being pinned, which is the one refusal in that branch the
+battle's state can supply, so the row unpins whatever of his is on the flag for the tick
+and prints what was there; the run after read 551 of weight with none of it pinned and the
+wave broken off.
 
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a

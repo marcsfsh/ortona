@@ -460,9 +460,23 @@ for (const device of TARGETS) {
       window.spawnUnit(own, secKey, sp.x, sp.y, 0);
     }
     const P = window.AIP[own];
+    /* and the enemy is out of sight for the two ticks: a section raised beside the
+       headquarters with a tank in front of it calls for help and is dealt to nobody's
+       operation, which is right and is not what the row measures. On one desktop run the
+       enemy was at the headquarters when the row ran, and the two directed operations
+       were raised with nobody on them out of ten fighters. */
+    const M0 = window.aiMemOf(side), con0 = M0.con, n0 = M0.n, hid = [];
+    M0.con = {}; M0.n = 0;
+    for (const e of window.G.units) if (!e.dead && e.side !== side) { hid.push([e, us ? e.vUs : e.vGer]); if (us) e.vUs = false; else e.vGer = false; }
+    const Qc = window.AIQ[own], calls0 = Qc ? Qc.list.slice() : null; if (Qc) Qc.list.length = 0;
+    const unhide = () => {
+      M0.con = con0; M0.n = n0;
+      for (const h of hid) { if (us) h[0].vUs = h[1]; else h[0].vGer = h[1]; }
+      if (Qc) { Qc.list.length = 0; for (const c of calls0) Qc.list.push(c); }
+    };
     const byD = window.G.sectors.slice().sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
     const theirs = byD.filter(s => s.owner !== side);
-    if (theirs.length < 3) return { none: true };
+    if (theirs.length < 3) { unhide(); return { none: true }; }
     /* his nearest flag, taken for him if the battle has taken it off him */
     const H = byD[0]; H.owner = side; H.contest = false;
     const A = theirs.filter(s => s !== H)[0], F = theirs.filter(s => s !== H && s !== A).slice(-1)[0];
@@ -492,6 +506,7 @@ for (const device of TARGETS) {
     const cleared = !window.aiDirOf(own, H.id);
     window.aiThink(1);
     const dropped = !window.aiOpDirOf(own, H.id, 'hold');
+    unhide();
     return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, shutA, dirA, dirH, dirF, tick,
              asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, hasClear, cleared, dropped, status,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
