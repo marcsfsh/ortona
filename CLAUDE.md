@@ -1237,6 +1237,21 @@ bigger than the walk and 0 to 0.2 backwards, and the push fires on half as many 
 (16.6 to 20.6 against 31.5 to 36.2), which is the men-test declaring the contacts that
 were never contacts.
 
+**What the two together are worth on the movement card**, over three runs of `--base` on
+the commit before them: unit-frames with a path and four seconds of no progress went from
+4.33, 22.1 and 15.6 per cent to 0.10, none and none; two models overlapping from 2.06,
+2.31 and 2.66 to 1.33, 0.29 and 0.96; and unit-frames with a path in hand from 32.1, 34.7
+and 33.9 to 23.3, 25.3 and 25.7, which is a third less searching because the paths hold
+once nothing is shoving the unit off them.
+
+And read `in cover` on that card over more than one run before believing it. The first
+comparison had it 60.5 against 66.7 and it reads as six points of cover given away; three
+runs put it at 60.5, 73.1 and 61.6 against 66.7, 62.3 and 70.2, which is a spread of
+twelve and eight points a side and a difference of one and a third between the means. The
+staged COVER drill, which is the one that is not a battle, reads 0.60 taken over available
+on both. A battle here compounds, so a single run of a battle statistic is worth about as
+much as a single pair on the tactics card.
+
 **Avoidance steers; it does not push back down the line.** The same fault ran in
 `moveUnit`: the avoid vector was blended into the want vector and the sum renormalised, so
 a unit pressed head-on was left with a residual of a tenth whose DIRECTION was whatever
