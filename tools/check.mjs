@@ -1724,6 +1724,219 @@ for (const device of TARGETS) {
      bodies.turns.map(t => `${t.key} (${t.wheeled ? 'wheels' : 'tracks'}) drove ${t.drift} units through ` +
                            `${t.turned} rad of about-turn`).join(', '));
 
+  /* --- And two sections walking past each other, which is the half of the same fault a
+     vehicle row cannot reach. A section's contact body is the bounding box of its whole
+     formation -- 106 by 66 for five riflemen, nearly three times the plan area of a
+     Sherman -- laid over three files of 11-unit discs with air between them and nobody at
+     all at the four corners. So two sections crossing at an offset where the BOXES touch
+     and no two MEN come near each other were shoved apart for the length of the crossing,
+     which is the player's complaint word for word: stuck moving past one another with
+     daylight between every model.
+       Both halves are measured, because either one alone is satisfied by a fix that
+     breaks the other. A section has to thread the gap (the crossing costs about what
+     walking alone costs, and no frame may go backwards), and two sections standing inside
+     one another still have to come apart (men against men can never do that: a formation
+     is a regular lattice, so for any man-to-man reach there is an offset that slots one
+     section's men into the other's gaps, and raising the reach moves the hole rather than
+     closing it -- 22 gives 22.0, 30 gives 30.0, 42 gives 42.0). The passing question is
+     the men and the resting question is the box. --- */
+  const thread = await page.evaluate(() => {
+    const keep = window.G.units.slice();
+    window.G.units.length = 0;
+    const drop = u => { const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); };
+    /* a corridor, and whether one was found is reported rather than assumed */
+    let sx = 0, sy = 0, found = false;
+    for (let ty = 400; ty < window.WORLD.h - 400 && !found; ty += 40)
+      for (let tx = 400; tx < window.WORLD.w - 400 && !found; tx += 40) {
+        let good = true;
+        for (let a = -260; a <= 260 && good; a += 20)
+          for (let b = -100; b <= 100 && good; b += 20)
+            if (!window.walkable(tx + a, ty + b)) good = false;
+        if (good) { sx = tx; sy = ty; found = true; }
+      }
+    if (!found) { sx = window.WORLD.w / 2; sy = window.WORLD.h / 2; }
+    const put = (side, key, x, y, f) => {
+      const u = window.spawnUnit(side, key, x, y, f);
+      const c = Math.cos(f), s2 = Math.sin(f);
+      if (u.models) for (const m of u.models) { m.x = u.x + m.ox * c - m.oy * s2; m.y = u.y + m.ox * s2 + m.oy * c; }
+      return u;
+    };
+    /* the crossing, and the same walk with nobody in the way as the control */
+    const walk = (lat) => {
+      window.G.units.length = 0;
+      const A = put('us', 'us_rifle', sx - 200, sy, 0);
+      const B = lat === null ? null : put('us', 'us_rifle', sx + 200, sy + lat, Math.PI);
+      const goA = { x: sx + 200, y: sy }, goB = { x: sx - 200, y: sy + lat };
+      A.order = 'move'; A.path = [goA]; A.pi = 0; A.pathStamp = window.gridStamp;
+      if (B) { B.order = 'move'; B.path = [goB]; B.pi = 0; B.pathStamp = window.gridStamp; }
+      let t = 0, back = 0, frames = 0, minMan = 1e9, px = A.x, py = A.y;
+      for (let i = 0; i < 1800; i++) {
+        window.G.t += 1 / 60;
+        window.updateUnit(A, 1 / 60);
+        if (B) window.updateUnit(B, 1 / 60);
+        t += 1 / 60;
+        /* ground made good toward the goal, which is what a shove that out-runs the walk
+           drives negative; displacement alone reads a unit sliding down a wall as
+           excellent progress */
+        const was = Math.hypot(px - goA.x, py - goA.y), now = Math.hypot(A.x - goA.x, A.y - goA.y);
+        if (Math.hypot(A.x - px, A.y - py) > 1e-6) { frames++; if (now > was + 1e-6) back++; }
+        px = A.x; py = A.y;
+        if (B) for (const m of A.models) { if (!m.alive) continue;
+          for (const o of B.models) if (o.alive) minMan = Math.min(minMan, Math.hypot(m.x - o.x, m.y - o.y)); }
+        if (now < 30) break;
+      }
+      const r = { lat, secs: +t.toFixed(2), arrived: Math.hypot(A.x - goA.x, A.y - goA.y) < 30,
+                  backPct: frames ? +(back / frames * 100).toFixed(1) : 0,
+                  minMan: B ? +minMan.toFixed(1) : null };
+      window.G.units.length = 0;
+      return r;
+    };
+    const solo = walk(null);
+    const cross = [30, 40, 50].map(walk);
+    /* and the resting case: two sections spawned at the four offsets a pure man-to-man
+       reach would weld, settled, and asked whether any man of one is standing inside the
+       other's own footprint. Measured geometrically rather than by asking `sepDepth`,
+       because the thing under test is what `sepDepth` returns. */
+    const rest = [];
+    for (const [key, ox, oy] of [['us_mg', 0, -22], ['ger_gren', -7, -21], ['us_rifle', 0, 0], ['us_fg', -4, 49]]) {
+      window.G.units.length = 0;
+      const A = put('us', 'us_rifle', sx, sy, 0);
+      const B = put(window.UNITS[key].side, key, sx + ox, sy + oy, 0);
+      for (let i = 0; i < 480; i++) { window.G.t += 1 / 60; window.updateUnit(A, 1 / 60); window.updateUnit(B, 1 / 60); }
+      window.unitBody(A);
+      const c = Math.cos(A.facing), s2 = Math.sin(A.facing);
+      let inside = 0, live = 0;
+      for (const m of B.models) {
+        if (!m.alive) continue;
+        live++;
+        const dx = m.x - A.x, dy = m.y - A.y;
+        const lx = dx * c + dy * s2, ly = dy * c - dx * s2;
+        if (Math.abs(lx) < A.bodyL && Math.abs(ly) < A.bodyW) inside++;
+      }
+      rest.push({ key, inside, live, markers: +Math.hypot(A.x - B.x, A.y - B.y).toFixed(1) });
+      window.G.units.length = 0;
+    }
+    keep.forEach(e => window.G.units.push(e));
+    window.rebuildGrid();
+    return { found, solo, cross, rest };
+  });
+  ok('two sections thread past each other, and two standing in each other come apart',
+     thread.found && thread.solo.arrived && thread.cross.every(r => r.arrived) &&
+     thread.cross.every(r => r.secs < thread.solo.secs * 1.35) &&
+     thread.cross.every(r => r.backPct < 1) &&
+     thread.rest.every(r => r.inside === 0),
+     (thread.found ? '' : 'NO CLEAR CORRIDOR FOUND; ') +
+     `walking alone takes ${thread.solo.secs}s; past another section at ` +
+     thread.cross.map(r => `${r.lat} it takes ${r.secs}s with ${r.minMan} units between the nearest men`).join(', ') +
+     `, and no frame of any of them goes backwards (${thread.cross.map(r => r.backPct).join('/')}%); ` +
+     `settled inside each other, ` +
+     thread.rest.map(r => `${r.key} ends ${r.markers} off with ${r.inside} of ${r.live} men inside the other`).join(', '));
+
+  /* --- And a weapon pit is a HOLE. This is the shape of fault a photograph is worst at:
+     a horseshoe of bags on flat grass and a horseshoe of bags round a pit are the same
+     picture from above, so the bags drew, the cover indexed, the crew stood in it, and
+     the one thing a pit IS was missing on all thirty-three the two maps ship.
+     `WORKS.pit.dig` had exactly one reader, `finishWork`, and a map pit never goes
+     through it. So the ground is read rather than looked at, and against a CONTROL: the
+     same profile taken 200 units off each pit, where there is no pit, which is the
+     natural roll of the country and has to stay flat whatever the carve does. Plus the
+     refusal that matters, which is that a hole a crew cannot stand in is worse than no
+     hole at all. --- */
+  const pit = await page.evaluate(() => {
+    const pits = (window.G.mapData.entities || []).filter(e => e.t === 'emplace');
+    const relief = (x, y, r) => {
+      let datum = 0;
+      for (let a = 0; a < 6.28; a += Math.PI / 2) datum += window.groundZ(x + Math.cos(a) * 120, y + Math.sin(a) * 120);
+      datum /= 4;
+      let rim = 0, n = 0;
+      for (let a = 0; a < 6.28; a += Math.PI / 6) { rim += window.groundZ(x + Math.cos(a) * (r + 8), y + Math.sin(a) * (r + 8)); n++; }
+      return (rim / n - datum) - (window.groundZ(x, y) - datum);
+    };
+    let dug = 0, ctrl = 0, nc = 0, walk = 0, cov = 0;
+    for (const e of pits) {
+      const r = e.r || 22;
+      dug += relief(e.x, e.y, r);
+      /* The control point has to be ground with nothing dug in it. By the time this row
+         runs three battles have been fought on this map, so a fixed offset lands in a
+         shell hole often enough to matter -- and a shell hole read as the control says
+         the country is as broken as the pit and fails a row that is working. Four
+         offsets are tried and only the clear ones counted. */
+      for (const [ox, oy] of [[200, 200], [-200, 200], [200, -200], [-200, -200]]) {
+        const cx = e.x + ox, cy = e.y + oy;
+        if (cx < 140 || cy < 140 || cx > window.WORLD.w - 140 || cy > window.WORLD.h - 140) continue;
+        if (window.coverAt(cx, cy) > 0 || !window.walkable(cx, cy)) continue;
+        /* the MAGNITUDE, because a mean of signed reliefs cancels: measured over sixteen
+           control spans on a battled map it summed to exactly nought, which reads as a
+           control proving the ground is flat and is really two hollows and two rises
+           agreeing to disagree. The claim is that the country beside a pit does not have
+           a pit's relief in it, whichever way up. */
+        ctrl += Math.abs(relief(cx, cy, r)); nc++;
+      }
+      if (window.walkable(e.x, e.y)) walk++;
+      if (window.coverAt(e.x, e.y) >= 3) cov++;
+    }
+    const out = { n: pits.length, dug: +(dug / Math.max(1, pits.length)).toFixed(2),
+                  ctrl: +(ctrl / Math.max(1, nc)).toFixed(2), nc, walk, cov };
+    /* and the engineer's own pit, whose model has to settle onto the ground it dug. The
+       array the GAME hands the card is captured rather than re-derived: a probe that
+       builds the model again after the dig reads correctly whichever order the game does
+       it in, and the order is the whole fault. */
+    const keep = window.G.units.slice();
+    let spot = null;
+    for (let t = 0; t < 6000 && !spot; t++) {
+      const x = 300 + (t * 137) % (window.WORLD.w - 600), y = 300 + (t * 211) % (window.WORLD.h - 600);
+      if (!window.walkable(x, y) || window.coverAt(x, y) > 0) continue;
+      let good = true;
+      for (let a = 0; a < 6.28 && good; a += Math.PI / 4) if (!window.walkable(x + Math.cos(a) * 70, y + Math.sin(a) * 70)) good = false;
+      if (good) spot = { x, y };
+    }
+    out.spot = !!spot;
+    if (spot) {
+      /* the till, because a refusal for forty-five marks is not the rule under test */
+      window.G.res.us.mp = Math.max(window.G.res.us.mp, 4000);
+      window.G.res.us.fu = Math.max(window.G.res.us.fu, 4000);
+      const z0 = window.groundZ(spot.x, spot.y), packed = [];
+      const real = window.facesToBuffer;
+      window.facesToBuffer = function (f) { packed.push(window.facesToArray(f)); return real(f); };
+      const site = window.placeWork('us', 'pit', spot.x, spot.y, 0, []);
+      if (site) { site.prog = 1; window.finishWork(site); window.G.sites.length = 0; }
+      window.facesToBuffer = real;
+      out.built = { packs: packed.length, dug: +(window.groundZ(spot.x, spot.y) - z0).toFixed(2) };
+      const arr = packed[packed.length - 1];
+      if (arr) {
+        const gaps = [];
+        for (let i = 0; i < arr.length; i += 12) {
+          const d = Math.hypot(arr[i] - spot.x, arr[i + 1] - spot.y);
+          if (d < 20 || d > 34) continue;                 /* the bag ring alone */
+          gaps.push(arr[i + 2] - window.groundZ(arr[i], arr[i + 1]));
+        }
+        gaps.sort((a, c) => a - c);
+        out.built.med = +gaps[(gaps.length / 2) | 0].toFixed(2);
+        out.built.hi = +gaps[gaps.length - 1].toFixed(2);
+      }
+    }
+    window.G.units.length = 0;
+    keep.forEach(e => window.G.units.push(e));
+    return out;
+  });
+  /* A pit is dug about nine units deep with the spoil thrown up round it, so the crest
+     stands a good way over the floor. The bar is six, well clear of the 1.2 the natural
+     roll of this country gives over the same span, which the control measures rather than
+     assumes. The built pit's bag ring runs six courses at 1.4 apart, so a median vertex
+     of a stack sitting ON the ground is about the middle of it; packed before the dig the
+     median stood at most of a stack height clear. */
+  ok('a weapon pit is a hole in the ground, and its bags sit on the parapet',
+     pit.n > 0 && pit.nc > 0 && pit.dug > 6 && Math.abs(pit.ctrl) < 3 && pit.dug > Math.abs(pit.ctrl) * 3 &&
+     pit.walk >= pit.n - 1 && pit.cov >= pit.n - 1 &&
+     pit.spot && pit.built && pit.built.packs >= 2 && pit.built.dug < -4 && pit.built.med < 5,
+     `${pit.n} pits on this map stand ${pit.dug} units from floor to crest against a mean ` +
+     `magnitude of ${pit.ctrl} ` +
+     `over ${pit.nc} spans of open ground beside them, with ${pit.walk} of ${pit.n} still walkable ` +
+     `and ${pit.cov} of ${pit.n} still heavy cover; an engineer's pit digs ` +
+     `${pit.built ? pit.built.dug : '-'} and packs its model ${pit.built ? pit.built.packs : '-'} times, ` +
+     `leaving its bag ring at a median ${pit.built ? pit.built.med : '-'} over the ground ` +
+     `(top ${pit.built ? pit.built.hi : '-'}) on a stack 8.4 tall`);
+
   /* --- And a dead vehicle. The effects round one were never the fault: there is a full
      burst, a real crater, two minutes of smoke and a fire that lights the street. The
      BODY never changed -- the same hull buffer, standing level on its suspension, drawn

@@ -843,6 +843,19 @@ before and after against a control of two identical frames, which is nought. A 4
 hole moves 1.2 million pixels of a 1.44 million pixel frame. It also checks the height is
 still the sum of its own layers over the whole grid, which is what `levelPad` broke.
 
+**And two rows ask what a photograph cannot tell apart.** Two sections crossing paths are
+walked past each other at three lateral offsets where their formation BOXES overlap and no
+two men come near touching: the crossing has to cost about what walking alone costs, no
+frame of it may make ground backwards, and then four pairs spawned inside one another have
+to come apart with no man of either inside the other's footprint. Both halves are there
+because either alone is satisfied by a fix that breaks the other. And a weapon pit has to
+be a hole: the floor-to-crest relief of every pit the map ships, against a control taken
+over the same span of open ground beside it, which is the natural roll of the country and
+stays flat whatever the carve does -- with the refusal that matters, which is that a pit a
+crew cannot stand in is worse than no pit. The control skips a point that has anything dug
+in it, because three battles have been fought on the map by the time the row runs and a
+shell hole read as the control says the country is as broken as the pit.
+
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
 house flat with a battery and ask the SAME CELL the same questions before and after -- can
@@ -1151,6 +1164,39 @@ deciding whether a tank had run into his section. Over eight bearings the gap be
 Sherman and a rifle section is 0.0 to 0.1 units, and between two Shermans 0.1 to 0.2,
 against a spread of 20.7 and 21.3 before.
 
+**And a section against a section is the MEN for the PASSING question and the box for the
+RESTING one**, which sounds like a hedge and is arithmetic. A section's body is the
+bounding box of its whole formation -- 106 by 66 for five riflemen, nearly three times the
+plan area of a Sherman -- laid over three files of 11-unit discs with air between them and
+nobody at all at the four corners. Two sections crossing at an offset where the boxes
+touch and no two men come near each other were shoved apart for the length of the
+crossing: measured on a staged pass, a walk that takes 7.5 seconds alone took 15.7 at a
+lateral offset of 20, 17.2 at 30, 18.9 at 40 and 21.1 at 50, with five or six units of
+clear ground between the nearest two men the whole way. That is the complaint word for
+word, which is stuck moving past one another with daylight between every model.
+
+The reason it is not simply the men everywhere is that a formation is a REGULAR LATTICE.
+For any man-to-man reach there is an offset that slots one section's men into the other's
+gaps, and raising the reach moves the hole rather than closing it: at 22 two weapon teams
+interleave at 22.0 units apart, at 26 they interleave at 26.0, at 30 at 30.0 and at 42 at
+42.0. Men against men can therefore never keep two formations from resting inside one
+another, which is the one thing `unwedge` exists to prevent -- tried anyway, it took merged
+pair-frames from 0.128 per cent of a battle to 0.431, three and a half times worse. So
+`sepDepth(u, o, fine)` takes a flag: `moveUnit` asks the fine question and gets `menMen`,
+one man-disc against another at `MAN_R * 2`; `unwedge` asks the coarse one and gets the box
+it always got. The cheap circle in front of both is sized off `selRadius` on the fine path,
+because that is the ring `updateModels` actually clamps a man onto and it is wider than
+`bodyL`.
+
+Measured on the same pass, the twelve rows where a contact happens go from 7.7 to 21.1
+seconds down to 7.3 to 8.1 against solo controls of 7.23 and 7.47, the clear ground between
+the nearest men at the three worst offsets goes from about 5.5 units to 18 to 22, and the
+frames that make ground BACKWARDS go to none. The rows where the boxes never met are
+bit-for-bit identical before and after, which is the control saying the change touches only
+the rows where there was a contact, and the four resting drills -- two sections spawned at
+the offsets a pure man-to-man reach would weld -- are identical too, at 32.7 to 66.4 units
+apart with not one man of either inside the other's footprint.
+
 **Units are obstacles.** `unwedge` is the push, and it lives outside `moveUnit` because
 `moveUnit` returns on its first line when there is nowhere to go: the only thing that had
 ever pushed units apart was a steering hint inside the movement code, so a halted section
@@ -1171,6 +1217,25 @@ the rate falling to nothing the instant they cleared. A step at the boundary is 
 cycle waiting for the pathfinder to pull the unit straight back into it. It is a spring
 priced on the depth now, with the give taken from the two bodies (a vehicle's plan area
 against a section's men, derived rather than tabled), so a crowd eases apart and settles.
+
+**And the push may not out-run the walk it is applied to.** The cap was a flat 60 units a
+second against a rifle section's 64, so the moment anything cut the walk -- 0.5 suppressed,
+0.4 in wire, 0.5 on rubble, 0.55 crossing a field wall -- the shove beat the step and the
+section went backwards. Counted over three battles of three minutes, on the unit-frames
+where a unit held a path and the push fired at all (31.5 to 36.2 per cent of them), the
+push opposed the walk on 88.2 to 90.8, was bigger than the walk on 22.6 to 40.9, and drove
+net motion BACKWARDS on 17.2 to 30.0. That is the rubber band: a unit walking forward and
+being shoved back further than it walked, every frame, for as long as the contact lasts.
+
+Half of what the walk actually made good is the bound now, so a moving unit always nets
+forward, with a floor of 22 for a halted one because unsticking two sections standing in
+each other is the whole reason this exists. The step is read off the unit
+(`u.stepX`/`u.stepY`, written at the top of `moveUnit`) rather than out of a local at the
+foot of it: six early returns sit above that line, and a bound that goes stale is a halted
+frame reading the last frame that moved. The same three battles read 0 to 0.4 per cent
+bigger than the walk and 0 to 0.2 backwards, and the push fires on half as many frames
+(16.6 to 20.6 against 31.5 to 36.2), which is the men-test declaring the contacts that
+were never contacts.
 
 **Avoidance steers; it does not push back down the line.** The same fault ran in
 `moveUnit`: the avoid vector was blended into the want vector and the sum renormalised, so
@@ -3085,6 +3150,37 @@ is drawn per piece. The player aims one by pressing where it goes and dragging t
 enemy; the bearing matters because `coverValue` strips two grades off fire that comes in
 along the line of a parapet rather than across it.
 
+**A weapon pit is a HOLE, and for the life of the game none of the thirty-three the two
+maps ship was one.** `WORKS.pit.dig` sends a work through the shell hole's own `carve`,
+and it had exactly one reader, `finishWork`. A map pit is a `t: 'emplace'` entity handled
+in `buildMap`, which laid its cover, pushed its stack of bags and dug nothing, so eleven
+pits on Ortona and twenty-two on the Gothic Line were a horseshoe of sandbags standing on
+undisturbed grass. From above that is the same picture as a pit, which is the whole of why
+it lasted: the bags drew, the cover indexed, the crew stood in it, and the one thing a pit
+IS was missing.
+
+Measured off the heightfield rather than looked at, the floor-to-crest relief of a shipped
+pit was -0.01 units on Ortona and 0.04 on the Gothic Line, against a CONTROL of 0.56 and
+1.16 taken over the same span of open ground beside it -- a pit reading flatter than the
+natural roll of the country round it. It is 9.12 and 11.38 now, with the control unchanged
+at 0.56 and 1.19, which is what says the carve touched the pit and not the map. The bowl
+runs six units outside the bag ring the way the engineer's does, so the bags sit on the
+inner face of their own parapet; the depth and the lip come off `WORKS.pit.dig` rather than
+being written out again, because two lists of one thing go out of step the moment somebody
+changes one. It is still ground a crew can use: walkable and tier-3 cover on every pit,
+before and after, and nothing on either map turned into hard going.
+
+**And a work's model has to be built on the ground the work dug.** The buffer is packed in
+`placeWork`, which is before the hole exists, and `conformFaces` drops every face to the
+ground under its own centre -- so the bags of a finished pit stood at the height the grass
+had been while the parapet they revet stood up five units underneath them. Over the bag
+ring's vertices, against a stack 8.4 units tall, they ran -4.35 to +14.64 with the median
+at 7.26; the dig runs first now and the model is packed again after it, and they run -4.55
+to +10.61 with the median at 3.81, which is the middle of the stack. `pit` is the only work
+with a `dig`, and the order is the fault rather than the packer: a probe that re-derives
+the model after the dig reads correctly whichever way round the game does it, so the gate
+row captures the array the game actually hands the card.
+
 **The eighty-eight.** `UNITS.ger_flak88` is the one unit that is never queued: it arrives
 through `WORKS.flak`, a field work the Pioneers build (hotkey 6, 420 marks and 50 fuel,
 forty seconds), and `finishWork` spawns the gun inside the ring of bags facing the way the
@@ -4094,6 +4190,27 @@ shots/                         screenshot output, gitignored
   ON the origin rather than around it. Rotate that about the origin and the piece swings
   round its own base; an integrator that treats the same number as the centre then rests it
   half its own height in the air. Pass `-h/2` for anything that is going to tumble.
+- **A separation push that can out-run the walk is the rubber band.** `unwedge`'s cap was
+  a flat 60 units a second and a rifle section walks 64, so anything that cut the walk --
+  suppression, wire, rubble, a field wall, all of which halve it -- left the shove bigger
+  than the step. Counted over a battle it drove net motion BACKWARDS on a quarter of the
+  frames where it fired. Bound any correction by what the thing being corrected actually
+  managed, and read that off the unit rather than a local: six early returns sit above the
+  line at the foot of `moveUnit` where a local would be written.
+- **A body derived from a bounding box has empty corners, and a formation is nearly all
+  corner.** A section's contact box is 106 by 66 laid over three files of 11-unit discs, so
+  two sections whose boxes touch can have forty units of clear ground between their nearest
+  men. But the men alone cannot replace it: a formation is a regular lattice, so for any
+  man-to-man reach there is an offset that interleaves the two and welds them together, and
+  raising the reach moves the hole instead of closing it (22 gives 22.0, 30 gives 30.0, 42
+  gives 42.0). Passing is the men and resting is the box; that is arithmetic rather than
+  taste.
+- **A feature with one reader has one caller's worth of coverage.** `WORKS.pit.dig` was
+  read only by `finishWork`, so the pit an engineer built during a battle was dug and all
+  thirty-three the two maps ship were not -- a horseshoe of bags on undisturbed grass,
+  which from above is the same picture as a pit. When a rule belongs to a KIND of thing,
+  check every door that kind comes through, and measure the shipped case rather than the
+  one the code you just wrote goes down.
 - **A normalised vector has forgotten everything that was multiplied into it.** `unwedge`
   built a push out of an overlap depth and a mass factor and then divided the sum by its
   own length three lines later, which cancels both exactly -- with a single neighbour the
