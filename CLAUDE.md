@@ -785,11 +785,12 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1745 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1800 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
-and 1720 before the arms had a doctrine). Takes under a second. Exits
+1720 before the arms had a doctrine, and 1745 before three directives on nine flags
+became a board of orders). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -4950,7 +4951,11 @@ shots/                         screenshot output, gitignored
   turning through half a radian and never doing the thing under test. Ask for the shape the
   drill needs (a corridor, not a square), ask only for what matters to it (what SLOWS a
   vehicle, not what counts as cover, since three battles of craters is cover everywhere),
-  and RETURN whether one was found rather than assuming it.
+  and RETURN whether one was found rather than assuming it. The periscope's driving row is
+  the same fault a second time: the throttle puts a waypoint 320 units up the hull's own
+  nose and nothing else, so a tank staged on the first free SPOT beside the headquarters
+  drives into whatever is in front of it. It read 33.2 units of ground in three seconds on
+  one run and 11.4 on the next, on identical code, and the bar decided which.
 - **Two background runs writing to one output file make a sparse file full of nulls**, and
   the rows that go missing look exactly like rows that never ran.
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo
