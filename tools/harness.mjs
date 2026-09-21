@@ -92,8 +92,11 @@ export async function openGame(browser, deviceKey = 'desktop', { file = GAME, qu
     if (!quiet && m.type() === 'error') console.error('  [console.error]', rec.text);
   });
   page.on('pageerror', e => {
-    log.errors.push(`pageerror: ${e.message}`);
-    if (!quiet) console.error('  [pageerror]', e.message);
+    /* and where: the first frame of the stack that is in the game, because a message
+       with no line in it names a draw call the file makes from forty places */
+    const at = ((e.stack || '').split('\n').find(l => /ortona\.html:\d+/.test(l)) || '').trim();
+    log.errors.push(`pageerror: ${e.message}${at ? ' ' + at : ''}`);
+    if (!quiet) console.error('  [pageerror]', e.message, at);
   });
   page.on('requestfailed', r => log.requests.push(`${r.url()} ${r.failure()?.errorText}`));
 
