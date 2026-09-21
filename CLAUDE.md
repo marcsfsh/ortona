@@ -2960,9 +2960,10 @@ the queue in the open the wait exists to prevent. That exception was measured in
 card's baseline read forming as nought seconds on every wave that went in, because a wave
 that formed with its sections already on the objective went in on the tick it formed, and
 the wait turned those into twenty-six, thirty-five and fifty-three seconds of standing on
-three runs. And the pinned door is not one the battle has opened: read on the wave's own
+three runs; with the exception in, a fourth run read forming at eleven seconds with the
+longest nineteen, eleven waves formed and four in. And the pinned door is not one the battle has opened: read on the wave's own
 objective, the pinned share of the defenders' weight is 0.27 per cent over 371 ticks with
-an objective, so `wave.pinned` has never fired in a battle and what carries the go is the
+an objective and 0.56 over 354 on the run after, so `wave.pinned` has never fired in a battle and what carries the go is the
 support firing for eight seconds, a section already there, or the bound. The threshold is
 a suppression over 0.6 on a scale where a section is pinned past 1, and lowering it is a
 lever nobody has measured. And
