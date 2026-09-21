@@ -1132,8 +1132,16 @@ for (const device of TARGETS) {
        off, re-forms, and will not pick that flag again for a minute */
     const P = window.AIP.ger, brk0 = window.AIR.fired['wave.break'] || 0;
     P.asSec = S.id; P.asPick = window.G.t; P.asKey = 's' + S.id; P.asT = window.G.t - 20; P.asStr = 30000; P.asAvoid = null; P.t = 0;
+    /* and whoever of his is holding the flag is unpinned for the tick, because a wave does
+       not break off from defenders who cannot lift their heads: read off the battle, the
+       section holding this flag was pinned when the phone's row ran and the row read that */
+    const sup0 = [];
+    for (const e of window.G.units) if (!e.dead && e.side === 'us' && Math.hypot(e.x - S.x, e.y - S.y) < 420) { sup0.push([e, e.sup]); e.sup = 0; }
     const keepAI = window.AI; window.AI = P; window.aiTick(1); window.AI = keepAI;
-    out.brk = { fired: (window.AIR.fired['wave.break'] || 0) - brk0, avoid: P.asAvoid === S.id, off: P.asT < 0, key: P.asKey };
+    const RB = window.AIW.bySec[S.id];
+    out.brk = { fired: (window.AIR.fired['wave.break'] || 0) - brk0, avoid: P.asAvoid === S.id, off: P.asT < 0, key: P.asKey,
+                pinned: RB ? +RB.pinned.toFixed(2) : -1, th: RB ? Math.round(RB.th) : -1 };
+    for (const h of sup0) h[0].sup = h[1];
     /* every new decision is declared, so the card can list the ones that never fire */
     out.declared = ['hold.coming', 'obj.coming', 'mood.mass', 'mortar.mass', 'wave.wait', 'wave.pinned', 'wave.break', 'wave.cohere',
                     'veh.overwatch', 'mood.clock', 'mood.exch', 'heard', 'op.counter', 'mortar.counter', 'shelled.move']
@@ -1162,7 +1170,7 @@ for (const device of TARGETS) {
      H.ind === 1 && H.first === 220 && H.flag === 1 && H.after < 100 && H.off <= 220 && H.known && H.listed && H.tube && H.op && H.counter === 1 &&
      intent.brk.fired === 1 && intent.brk.avoid && intent.brk.off,
      `heard: hit flagged ${H.ind}, first fix ${H.first} then ${H.after} after four more rounds, ${H.off} off the truth, known ${H.known}, listed ${H.listed}, ` +
-     `tube ${H.tube}, task force ${H.op} (${H.counter}) out of ${H.fighters} fighters; break-off fired ${intent.brk.fired}, avoiding ${intent.brk.avoid}, re-forming ${intent.brk.off}`);
+     `tube ${H.tube}, task force ${H.op} (${H.counter}) out of ${H.fighters} fighters; break-off fired ${intent.brk.fired}, avoiding ${intent.brk.avoid}, re-forming ${intent.brk.off} (${intent.brk.th} on the flag, ${intent.brk.pinned} of it pinned)`);
 
   /* --- the handicap, which is the player's half of what difficulty used to be. What is
      asserted is the split: with every setting at its best and the opposition on GREEN, all
