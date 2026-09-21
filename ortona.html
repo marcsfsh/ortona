@@ -11325,7 +11325,13 @@ function aiTick(dt) {
       if (supUp > 0 && AI.supT < 0) AI.supT = G.t;
       if (supUp === 0) AI.supT = -99;
       var RA = asId ? W.bySec[asId] : null, pinnedF = RA ? RA.pinned : 0;
-      var superior = skill < 1 || !RA || RA.th < 80 || pinnedF >= .3 ||
+      /* and a wave with a section already on the objective is already in the fight, so it
+         goes: held back for fire it is under without, it is the queue in the open the wait
+         exists to prevent, and before the wait a wave that formed on its own objective
+         went in on the tick it formed */
+      var onObj = 0;
+      for (j = 0; j < wavers.length; j++) if (dsq(wavers[j].x, wavers[j].y, asX, asY) < 240 * 240) onObj++;
+      var superior = skill < 1 || !RA || RA.th < 80 || pinnedF >= .3 || onObj > 0 ||
                      (supFiring > 0 && AI.supT >= 0 && G.t - AI.supT > 8) ||
                      G.t - AI.asForm > (D.form || 32) * 1.3;
       var half = Math.max(2, Math.ceil((D.wave || 3) / 2));
