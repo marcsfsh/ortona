@@ -4991,6 +4991,13 @@ shots/                         screenshot output, gitignored
   still coming round. When a gate row says a thing has not happened yet after a minute of
   simulation, print the bearing error and not only the count, and look for a second hand
   on the same wheel.
+- **A drill that asks for two things at once measures neither.** The periscope row drove
+  the tank at full throttle against a near-full steer for three seconds and asserted that
+  it both moved and turned. A tracked hull does one or the other -- its speed falls away
+  with the heading error and is gone by the time the error is a right angle -- so the same
+  code came back with 202 units of ground and 1.4 radians of turn on one run and 29 units
+  and 8 radians on the next, and the row passed or failed on where the tank happened to be
+  pointing. It drives straight for one leg and steers for the other now.
 - **An edit script that aborts on a later anchor writes nothing, including the edits
   that matched.** The rewrite that gave `simpleTap` its enemy and its ground branches was
   the first change in a script whose last change missed its anchor, so the file was never

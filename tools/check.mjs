@@ -1536,13 +1536,25 @@ for (const device of TARGETS) {
              clear: fr.right <= window.innerWidth + 1 && fr.top >= 0 && pr.bottom <= window.innerHeight + 1,
              x: u.x, y: u.y, facing: u.facing };
   });
-  await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = .8; });
+  /* Driving and turning are measured one at a time, because a TRACKED hull does one or
+     the other: its speed falls away with the heading error and is gone by the time the
+     error is a right angle, so full throttle against a near-full steer is a pivot. Read
+     together they swung between 202 units of ground with 1.4 radians of turn and 29 units
+     with 8 radians, on the same code, and the row passed or failed on where the tank
+     happened to be pointing when it started. */
+  await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = 0; });
   await fastForward(page, 3);
-  const drv2 = await page.evaluate(([x, y, f]) => {
+  const drvA = await page.evaluate(([x, y]) => {
     const u = window.POV.u;
-    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), turned: +Math.abs(u.facing - f).toFixed(2),
-             took: window.DRV.took, x: u.x, y: u.y };
-  }, [drv0.x, drv0.y, drv0.facing]);
+    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
+  }, [drv0.x, drv0.y]);
+  await page.evaluate(() => { window.DRV.padT = .35; window.DRV.padS = 1; });
+  await fastForward(page, 3);
+  const drv2 = await page.evaluate(([f]) => {
+    const u = window.POV.u;
+    return { turned: +Math.abs(window.angDiff(u.facing, f)).toFixed(2), x: u.x, y: u.y };
+  }, [drvA.f]);
+  drv2.moved = drvA.moved; drv2.took = drvA.took;
   await page.evaluate(() => { window.DRV.padT = 0; window.DRV.padS = 0; });
   await fastForward(page, 3);
   const drv3 = await page.evaluate(([x, y]) => {
@@ -1618,8 +1630,8 @@ for (const device of TARGETS) {
      `idle ${mgIdle}, ${mgWarm} after 8s on the trigger, cooked at ${cookedAt}s, cold again 25s after release`);
 
   ok('the commander drives his tank from the periscope',
-     drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 30 && drv2.turned > .2 && drv2.took === 1 && drv3.sp < 1,
-     `moved ${drv2.moved} and turned ${drv2.turned} rad under the pad, then stopped`);
+     drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 60 && drv2.turned > .35 && drv2.took === 1 && drv3.sp < 1,
+     `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped`);
 
   const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
   ok('periscope sits in the tank commander\'s cupola, lid up or shut', tank.closed && tank.hatchShown && tank.pieces > 100 && tank.dropped > 3 && tank.above > 20 && tankOff, `${tank.key}: ${tank.pieces} inside triangles, the eye drops ${tank.dropped} when the lid shuts`);
