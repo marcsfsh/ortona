@@ -54,6 +54,11 @@
  * (a body massing, and the weight walking onto held ground), the exchange, the clock,
  * how pinned the defenders of an enemy flag are, and the tubes heard rather than seen.
  *
+ * ARMS is each kind of thing against the line the sections make: how often a team or a
+ * tank stood with no section within reach, how often it stood forward of the nearest
+ * section to the main effort, and what state the crew-served weapons were in. Measured
+ * off the units, not off the brain's own anchor.
+ *
  * RULES is every named decision and how often it fired, straight out of the brain's own
  * counters. A rule that never fires is a rule that is not there.
  */
@@ -108,7 +113,11 @@ async function install(page) {
            the exchange, the clock, and what it has heard rather than seen */
         intent: { n: 0, massT: 0, massSec: 0, massW: 0, massEta: 0, comingT: 0, coming: 0,
                   exch: 0, exchLose: 0, exchWin: 0, clockLose: 0, clockWin: 0, heardT: 0, heard: 0,
-                  pinned: 0, pinnedN: 0, headed: 0, con: 0 }
+                  pinned: 0, pinnedN: 0, headed: 0, con: 0 },
+        /* the arms: where each kind of thing stood on a tick against the line the sections
+           make, and what state a crew-served weapon was in */
+        arms: { n: 0, teamT: 0, alone: 0, fwd: 0, act: 0, packing: 0, walk: 0, setting: 0, limb: 0,
+                atT: 0, atFwd: 0, atAlone: 0, morT: 0, morFwd: 0, vehT: 0, vehAlone: 0, vehFwd: 0 }
       };
       startGame('us', diff, 'vp');
       AI.t = 0;
@@ -245,6 +254,43 @@ async function install(page) {
             if (u.gar) c.gar++;
           }
           c.works = G.works.length;
+          /* The arms against the line. The line is the sections on foot; a team or a tank
+             is ALONE with none of them within reach of it, and FORWARD when it stands nearer
+             the main effort than the nearest section does by more than a post's worth.
+             Measured off the units and not off the brain's own anchor, because a probe that
+             asks the code under test where the line is cannot see it being wrong about
+             where the line is. The state of a crew-served weapon is read off its clocks. */
+          {
+            const a = c.arms, secs = [];
+            for (const f of G.units) if (!f.dead && f.side === side && f.cat === 'inf' && !f.inside && !f.retreat && !f.def.builder) secs.push(f);
+            const ms = AI.main !== undefined && G.secById && G.secById[AI.main];
+            const hq2 = hqOf(side === 'us' ? 'ger' : 'us');
+            const mx = ms ? ms.x : hq2 ? hq2.x : 0, my = ms ? ms.y : hq2 ? hq2.y : 0;
+            let lineD = 1e9;
+            for (const f of secs) lineD = Math.min(lineD, Math.hypot(f.x - mx, f.y - my));
+            const near = (u, r) => secs.some(f => f !== u && dsq(f.x, f.y, u.x, u.y) < r * r);
+            const fwd = u => secs.length > 0 && Math.hypot(u.x - mx, u.y - my) < lineD - 60;
+            a.n++;
+            for (const u of G.units) {
+              if (u.dead || u.side !== side || u.inside || u.gar) continue;
+              if (u.cat === 'team' && u.def.speed) {
+                a.teamT++;
+                if (!near(u, 220)) a.alone++;
+                if (fwd(u)) a.fwd++;
+                if (u.pack > 0) a.packing++;
+                else if (u.moving) a.walk++;
+                else if (u.setup > 0) a.setting++;
+                else if (u.packed) a.limb++;
+                else a.act++;
+                if (u.def.atOnly) { a.atT++; if (fwd(u)) a.atFwd++; if (!near(u, 220)) a.atAlone++; }
+                if (u.def.barrage) { a.morT++; if (fwd(u)) a.morFwd++; }
+              } else if (u.cat === 'veh' && !u.def.caps && !u.def.builder) {
+                a.vehT++;
+                if (!near(u, 250)) a.vehAlone++;
+                if (fwd(u)) a.vehFwd++;
+              }
+            }
+          }
           /* the call board: how many are standing, and how long one stood before anybody
              was sent. Kept outside the call itself so the probe writes nothing into the
              game's own objects. */
@@ -565,6 +611,23 @@ function show(c) {
                 '   of the weight on the wave\'s objective, mean over ' + it.pinnedN + ' ticks with one');
     console.log('  ' + pad('tubes heard', 22) + pad(pct(it.heardT, it.n), 9, 1) +
                 '   of ticks with one in the memory' + (it.heardT ? ', ' + (it.heard / it.heardT).toFixed(1) + ' of them' : ''));
+  }
+
+  const ar = runs.reduce((a, r) => { for (const k in r.arms || {}) a[k] = (a[k] || 0) + r.arms[k]; return a; }, {});
+  if (ar.n) {
+    console.log('\n  ARMS     each kind of thing against the line the sections make, in unit-ticks\n');
+    console.log('  ' + pad('teams', 22) + pad(ar.teamT, 9, 1) +
+                '   alone (no section within 220): ' + pct(ar.alone, ar.teamT) +
+                ', forward of the line: ' + pct(ar.fwd, ar.teamT));
+    console.log('  ' + pad('  in action', 22) + pad(pct(ar.act, ar.teamT), 9, 1) +
+                '   packing ' + pct(ar.packing, ar.teamT) + ', walking ' + pct(ar.walk, ar.teamT) +
+                ', setting up ' + pct(ar.setting, ar.teamT) + ', limbered ' + pct(ar.limb, ar.teamT));
+    console.log('  ' + pad('  anti-tank guns', 22) + pad(ar.atT, 9, 1) +
+                '   forward: ' + pct(ar.atFwd, ar.atT) + ', alone: ' + pct(ar.atAlone, ar.atT));
+    console.log('  ' + pad('  tubes', 22) + pad(ar.morT, 9, 1) + '   forward: ' + pct(ar.morFwd, ar.morT));
+    console.log('  ' + pad('armour', 22) + pad(ar.vehT, 9, 1) +
+                '   alone (no section within 250): ' + pct(ar.vehAlone, ar.vehT) +
+                ', forward of the line: ' + pct(ar.vehFwd, ar.vehT));
   }
 
   console.log('\n  RULES    every named decision, and how often it fired\n');

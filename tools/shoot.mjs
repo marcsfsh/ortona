@@ -92,6 +92,19 @@ const SCENES = {
         });
         await shoot(page, out('hud-flag'), { settle: SETTLE });
         await page.evaluate(() => window.simpleFlag(null));
+        /* and the unit's popup, on a vehicle of his that can take an upgrade: one is
+           spawned beside the headquarters if the battle has not raised one */
+        await page.evaluate(s => {
+          const own = window.G.own, hq = window.hqOf(own);
+          let v = window.G.units.find(u => !u.dead && window.owned(u) && u.cat === 'veh' && (u.def.upgrades || []).some(k => !(u.up && u.up[k])));
+          if (!v) {
+            const sp = window.nearestFree(hq.x + (s === 'us' ? 220 : -220), hq.y + 90);
+            v = window.spawnUnit(own, s === 'us' ? 'us_m8' : 'ger_sd222', sp.x, sp.y, 0);
+          }
+          window.__o.camera({ x: v.x, y: v.y, dist: 420, pitch: 0.9 }); window.simpleTap(v.x, v.y);
+        }, SIDE);
+        await shoot(page, out('hud-unit'), { settle: SETTLE });
+        await page.evaluate(() => window.simpleUnit(null));
       }
 
       /* The build menu: select the HQ so its production cards show. */

@@ -174,10 +174,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    is 1720 for the brain's second layer of inputs: contacts that carry a heading and the
    body the enemy is massing read off them, fire superiority at the wave's go and the
    break-off when it fails, the exchange and the clock in the mood, and the tubes heard
-   rather than seen. Raise it deliberately, with a reason, or not at all. */
+   rather than seen. It is 1745 for the arms: a crew-served weapon that has to be packed
+   before it moves and set up before it fires, a doctrine that anchors every team and
+   every tank on the sections and sites the anti-tank guns to defend, the emplacements on
+   the SIMPLE strip, and field upgrades fitted for the player by a setting each vehicle
+   can overrule. Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1720) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1720 kB so it stays quick to load on a phone`);
+if (kb > 1745) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1745 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

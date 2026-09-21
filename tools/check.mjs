@@ -406,11 +406,82 @@ for (const device of TARGETS) {
     if (secBtn) secBtn.click();
     const refused = hq.queue.length === q0 + queued;
     window.G.res[own].mp = keep; window.simpleSync();
-    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused };
+    /* and the emplacement: the heavy battery position, dug where the brain would dig it,
+       by an engineer, forward of home; a second is refused by the limit and the button
+       says so. Put back afterwards, because the rows below count his men and his sites. */
+    const wk = us ? 'how8' : 'how210', W = window.WORKS[wk];
+    window.G.res[own].mp = 5000; window.G.res[own].fu = 2000; window.simpleSync();
+    const wBtn = document.querySelector(`#tbuild .tb.work[data-key="${wk}"]`);
+    const s0 = window.siteCount(own, wk), mp3 = window.G.res[own].mp, fu3 = window.G.res[own].fu;
+    if (wBtn) wBtn.click();
+    const wSite = window.G.sites.find(q => q.own === own && q.kind === wk);
+    const wOn = !!wSite && window.G.units.some(u => window.owned(u) && !u.dead && u.def.builder && u.building === wSite);
+    const wFar = wSite ? Math.round(Math.hypot(wSite.x - hq.x, wSite.y - hq.y)) : -1;
+    const wCost = [mp3 - window.G.res[own].mp, fu3 - window.G.res[own].fu];
+    window.simpleSync();
+    const wFull = wBtn && wBtn.classList.contains('poor'), wCount = wBtn && wBtn.lastChild.textContent;
+    if (wBtn) wBtn.click();
+    const wAgain = window.siteCount(own, wk);
+    if (wSite) {
+      window.G.sites.splice(window.G.sites.indexOf(wSite), 1);
+      window.G.units.forEach(u => { if (u.building === wSite) window.clearOrder(u); });
+    }
+    window.G.res[own].mp = keep; window.G.res[own].fu = Math.max(0, fu3 - 400); window.simpleSync();
+    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused,
+             wk, wBtn: !!wBtn, wSite: !!wSite, wOn, wFar, minHq: W.minHq, wCost, want: [W.cost.mp || 0, W.cost.fu || 0], wFull, wCount, wAgain: wAgain - s0 };
   });
   ok('simple: a tap on the strip pegs the post out with an engineer, queues a section, and is refused when the till is empty',
      strip.postBtn && strip.site && strip.onIt && strip.postCost === 200 && strip.secBtn && strip.queued === 1 && strip.secCost > 0 && strip.poor && strip.refused,
      `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost}; empty till dimmed ${strip.poor} and refused ${strip.refused}`);
+  ok('simple: a tap on the strip digs the battery position in forward of home with an engineer, and a second is refused',
+     strip.wBtn && strip.wSite && strip.wOn && strip.wFar >= strip.minHq && strip.wCost[0] === strip.want[0] && strip.wCost[1] === strip.want[1] &&
+     strip.wFull && strip.wCount === '1' && strip.wAgain === 1,
+     `${strip.wk} button ${strip.wBtn}: site ${strip.wSite} with an engineer ${strip.wOn}, ${strip.wFar} from home against ${strip.minHq}, ` +
+     `for ${strip.wCost.join('/')} of ${strip.want.join('/')}; then dimmed ${strip.wFull} reading ${JSON.stringify(strip.wCount)}, and a second tap left ${strip.wAgain}`);
+
+  /* --- the unit's popup under SIMPLE: a tap on a vehicle of his puts up the upgrades it
+     can take with their prices and AUTO; an upgrade bought by hand is fitted and paid
+     for, AUTO is lit by the setting and tapping it is this one vehicle's own word over
+     it. Under classic, below, the same setting fits them for him on the tick. --- */
+  const upg = await page.evaluate(() => {
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const key = us ? 'us_m8' : 'ger_sd222', upKey = us ? 'thirty' : 'kwk';
+    const sp = window.nearestFree(hq.x + (us ? 220 : -220), hq.y + 90);
+    const v = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    window.G.res[own].mp = 3000; window.G.res[own].fu = 500;
+    window.simpleTap(v.x, v.y);
+    const box = document.getElementById('tunit');
+    const up = !box.classList.contains('hidden');
+    const name = document.getElementById('tunitname').textContent;
+    const btn = document.querySelector(`#tunit .tf[data-up="${upKey}"]`), auto = document.querySelector('#tunit .tf[data-up="auto"]');
+    const cost = window.UPGRADES[upKey].cost.mp || 0, mp0 = window.G.res[own].mp;
+    const autoLit0 = auto && auto.classList.contains('on'), globalOn = window.AUTOUP.on;
+    if (btn) btn.click();
+    const fitted = !!(v.up && v.up[upKey]), paid = mp0 - window.G.res[own].mp;
+    const gone = !document.querySelector(`#tunit .tf[data-up="${upKey}"]`);
+    if (auto) auto.click();
+    const autoAfter = window.autoUpOf(v), autoLit1 = !!document.querySelector('#tunit .tf[data-up="auto"].on');
+    const word = v.autoUp;
+    /* and with the till empty the price is dimmed and refused */
+    const v2 = window.spawnUnit(own, key, sp.x + 60, sp.y, 0);
+    window.simpleTap(v2.x, v2.y);
+    window.G.res[own].mp = 10; window.simpleSync();
+    const btn2 = document.querySelector(`#tunit .tf[data-up="${upKey}"]`);
+    const poor = btn2 && btn2.classList.contains('poor');
+    if (btn2) btn2.click();
+    const refused = !(v2.up && v2.up[upKey]);
+    window.simpleTap(sp.x + 400, sp.y + 400);   /* the ground: the popup comes down */
+    const down = box.classList.contains('hidden');
+    window.G.units.splice(window.G.units.indexOf(v), 1); window.G.units.splice(window.G.units.indexOf(v2), 1);
+    window.select([], false);
+    return { key, upKey, up, name, btn: !!btn, auto: !!auto, autoLit0, globalOn, fitted, paid, cost, gone, autoAfter, autoLit1, word, poor, refused, down };
+  });
+  ok('simple: a tap on a vehicle puts up its upgrades and AUTO; one bought by hand is fitted and paid for, AUTO is this vehicle\'s word over the setting, and an empty till is refused',
+     upg.up && upg.btn && upg.auto && upg.globalOn && upg.autoLit0 && upg.fitted && upg.paid === upg.cost && upg.gone &&
+     upg.autoAfter === false && !upg.autoLit1 && upg.word === false && upg.poor && upg.refused && upg.down,
+     `${upg.key} popup ${upg.up} "${upg.name}": ${upg.upKey} button ${upg.btn}, AUTO ${upg.auto} lit ${upg.autoLit0} with the setting ${upg.globalOn ? 'on' : 'off'}; ` +
+     `bought: fitted ${upg.fitted} for ${upg.paid} of ${upg.cost}, button gone ${upg.gone}; AUTO tapped: ${upg.autoAfter} (word ${upg.word}), lit ${upg.autoLit1}; ` +
+     `empty till dimmed ${upg.poor} and refused ${upg.refused}; ground tap took it down ${upg.down}`);
 
   /* a finger on the canvas: TouchEvents built the way a touch screen builds them */
   await page.evaluate(() => {
@@ -522,12 +593,24 @@ for (const device of TARGETS) {
 
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */
+  /* the section the two rows below tap is one standing clear of any flag and of any other
+     unit of his: under SIMPLE a tap within 130 of a flag is a tap on the flag, and a tap on a
+     section standing in another picks whichever is nearer, so the first section in the list
+     read as a picked-nothing on one run in ten */
+  await page.evaluate(() => {
+    window.__aloneSec = function () {
+      return window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar &&
+        !window.G.sectors.some(s => Math.hypot(s.x - q.x, s.y - q.y) < 170) &&
+        !window.G.units.some(o => o !== q && !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - q.x, o.y - q.y) < 80)) ||
+        window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    };
+  });
   const look = await page.evaluate(() => {
     window.select([], false);
     document.getElementById('tPov').click();
     const on = window.POV.on, from = window.POV.u && window.owned(window.POV.u) && !window.POV.u.dead;
     window.povOff();
-    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    const u = window.__aloneSec();
     if (!u) return { on, from, none: true };
     window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 }); window.render();
     const p = window.w2s(u.x, u.y), o0 = u.order, d0 = JSON.stringify(u.dest && [u.dest.x, u.dest.y]);
@@ -545,7 +628,7 @@ for (const device of TARGETS) {
   /* and the classic scheme is what it was: the bar back, the strip gone, a tap an order */
   const classic = await page.evaluate(() => {
     window.ctrlSet(false, true);
-    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    const u = window.__aloneSec();
     if (!u) return { none: true };
     window.clearOrder(u);
     window.select([u], false);
@@ -566,6 +649,43 @@ for (const device of TARGETS) {
      !classic.none && classic.off && classic.bar !== 'none' && classic.hidden && classic.miniIn === 'bar' && classic.order === 'move' &&
      classic.dest >= 0 && classic.dest < 1 && classic.panned > 20,
      classic.none ? 'no section or no open ground on screen' : `tap: ${classic.order} ${classic.dest} from the finger, drag panned ${classic.panned}, map in #${classic.miniIn}, brains ${classic.brains}`);
+  /* the setting under classic: the tick fits an upgrade to a vehicle of his that can take
+     one, leaves alone the one that said no, and fits nothing with the setting off. One
+     vehicle at a time, because the tick buys one a call and would otherwise pick whichever
+     of three it met first. The command bar's card is read off the same selection. */
+  const aup = await page.evaluate(() => {
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const key = us ? 'us_sher' : 'ger_p4', uk = 'mg';
+    const sp = window.nearestFree(hq.x + (us ? 260 : -260), hq.y - 120);
+    window.G.res[own].mp = 3000; window.G.res[own].fu = 500;
+    const brainRuns = window.aiRuns(window.slotOf(own));
+    function tick() { window.autoUpT = -99; window.autoUpTick(); }
+    const a = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    window.autoUpSet(true, true); tick();
+    const autoFit = !!a.up[uk];
+    /* the card, on the selection */
+    window.select([a], false); window.syncHud();
+    const card = Array.from(document.querySelectorAll('#cmds .cmd')).find(b => /Auto upgrade/i.test(b.textContent));
+    const lit0 = card && card.classList.contains('act');
+    if (card) card.click();
+    const word = a.autoUp, lit1 = !!Array.from(document.querySelectorAll('#cmds .cmd')).find(b => /Auto upgrade/i.test(b.textContent) && b.classList.contains('act'));
+    window.G.units.splice(window.G.units.indexOf(a), 1);
+    const b = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    b.autoUp = false; tick();
+    const saidNo = !b.up[uk];
+    window.G.units.splice(window.G.units.indexOf(b), 1);
+    const c = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    window.autoUpSet(false, true); tick();
+    const off = !c.up[uk];
+    window.autoUpSet(true, true);
+    window.G.units.splice(window.G.units.indexOf(c), 1);
+    window.select([], false); window.syncHud();
+    return { key, brainRuns, autoFit, card: !!card, lit0, word, lit1, saidNo, off };
+  });
+  ok('classic: the setting fits a vehicle its upgrade on the tick, the card on the bar is its own word over it, and BY HAND fits nothing',
+     !aup.brainRuns && aup.autoFit && aup.card && aup.lit0 && aup.word === false && !aup.lit1 && aup.saidNo && aup.off,
+     `${aup.key}: brain on his slot ${aup.brainRuns}; AUTO fitted the roof MG ${aup.autoFit}; card ${aup.card} lit ${aup.lit0}, tapped -> ${aup.word} lit ${aup.lit1}; ` +
+     `a vehicle that said no ${aup.saidNo ? 'kept its word' : 'was fitted anyway'}; BY HAND fitted nothing ${aup.off}`);
   /* and what the rows raised comes down again, because the rows below park a tank
      beside the headquarters on ground the post now stands on; the rest of the gate runs
      on classic on both devices, since the brain would otherwise be ordering the units
@@ -813,6 +933,108 @@ for (const device of TARGETS) {
                 `fired ${how.idle} rounds in a minute; laid on him it fired ${how.rounds} of ${how.want}, ` +
                 `${how.inCircle} inside ${how.r} and ${how.inBound} inside ${how.bound}; ` +
                 `${how.early} rounds during ${how.setup}s of setup and ${how.after} after it`);
+
+  /* --- a crew-served weapon is in action or it is on the move, and getting from one to the
+     other takes time both ways. The row walks a machine gun through the whole cycle on the
+     game's own updateUnit: set up after spawning; ordered off, it stands and packs for the
+     def's own clock with nothing leaving the barrel and the men still on the tripod; walks;
+     halts and sets up again. Then the loophole the old timer had is asked for: a team on an
+     attack-move that halts short of its path's end, which used to fire on the instant with
+     the gun still on somebody's shoulder, has to set up first. And a towed gun's hitch has
+     to wait on the crew taking it out of action. --- */
+  const pk = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const key = side === 'us' ? 'us_mg' : 'ger_mg42';
+    const D = window.UNITS[key];
+    if (!D || !D.pack) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const sp = window.__o.flatSpot(160);
+    const dt = 1 / 30;
+    let fired = 0;
+    const step = (units, n, fn) => {
+      for (let i = 0; i < n; i++) {
+        const ns = window.G.shots.length;
+        units.forEach(u => window.updateUnit(u, dt));
+        window.updateShots(dt); window.G.t += dt;
+        if (window.G.shots.length > ns) fired++;
+        if (fn) fn(i * dt);
+      }
+    };
+    /* 1. the cycle, alone on open ground */
+    const mg = window.spawnUnit(side, key, sp.x, sp.y, 0);
+    const r = { has: true, key, setup: D.setup, pack: D.pack, spawnSetup: mg.setup, spawnPacked: !!mg.packed };
+    step([mg], 30 * (D.setup + .5));
+    r.inAction = !mg.packed && mg.setup <= 0 && window.gunSet(mg);
+    window.orderMove(mg, sp.x, sp.y + 300, false);
+    const x0 = mg.x, y0 = mg.y;
+    let packEnd = -1, firstMove = -1, arrive = -1, setEnd = -1, maxPack = 0, gunDownWhilePacking = true;
+    step([mg], 30 * 24, t => {
+      if (mg.pack > maxPack) maxPack = mg.pack;
+      if (mg.pack > 0 && !window.gunSet(mg)) gunDownWhilePacking = false;
+      if (packEnd < 0 && mg.packed) packEnd = t;
+      if (firstMove < 0 && Math.hypot(mg.x - x0, mg.y - y0) > 2) firstMove = t;
+      if (arrive < 0 && firstMove >= 0 && !mg.path) arrive = t;
+      if (setEnd < 0 && arrive >= 0 && mg.setup <= 0 && !mg.packed) setEnd = t;
+    });
+    Object.assign(r, { packEnd, firstMove, arrive, setEnd, maxPack, gunDownWhilePacking,
+                       walked: Math.round(Math.hypot(mg.x - x0, mg.y - y0)), endInAction: !mg.packed && mg.setup <= 0 });
+    /* 2. the loophole: an attack-move that halts on a target in reach sets up before it fires */
+    window.G.units.length = 0;
+    const am = window.spawnUnit(side, key, sp.x, sp.y, 0);
+    am.setup = 0;
+    step([am], 3);
+    window.orderMove(am, sp.x, sp.y + 600, true);
+    step([am], 30 * (D.pack + 2));
+    const e = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle', am.x, am.y + Math.round(D.w.range * .6), Math.PI / 2);
+    e.setup = 0;
+    for (let k = 0; k < 400; k++) { window.computeVisibility(); if (side === 'us' ? e.vUs : e.vGer) break; }
+    const seen = side === 'us' ? e.vUs : e.vGer;
+    /* the section shoots back, so what is counted is the gun's own rounds and not the
+       shot list, which the tracers of both sides go into */
+    let haltedAt = -1, setupAtHalt = -1, firedAt = -1, packedAtHalt = null, own = 0;
+    const realRec = window.recFired;
+    window.recFired = function (u, n) { if (u === am) own += n; return realRec(u, n); };
+    step([am, e], 30 * (D.setup + 6), t => {
+      window.computeVisibility();
+      if (haltedAt < 0 && !am.path && !am.moving) { haltedAt = t; setupAtHalt = am.setup; packedAtHalt = !!am.packed; }
+      if (firedAt < 0 && own > 0) firedAt = t;
+    });
+    window.recFired = realRec;
+    Object.assign(r, { seen: !!seen, haltedAt, setupAtHalt, packedAtHalt, firedAt, target: !!am.target });
+    /* 3. the hitch: a gun in action packs behind the tow and the tow waits for it */
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const gk = side === 'us' ? 'us_t8' : null, tk = side === 'us' ? 'us_m3' : null;
+    if (gk && window.UNITS[gk] && window.UNITS[gk].pack) {
+      const g = window.spawnUnit(side, gk, sp.x, sp.y, 0);
+      g.setup = 0;
+      const v = window.spawnUnit(side, tk, sp.x, sp.y - 150, Math.PI / 2);
+      step([g, v], 3);
+      v.order = 'hitch'; v.hitchT = g;
+      let hitched = -1, moved = -1, hx = 0, hy = 0, packAtHitch = 0;
+      step([g, v], 30 * (window.UNITS[gk].pack + 8), t => {
+        if (hitched < 0 && g.towedBy) { hitched = t; hx = v.x; hy = v.y; packAtHitch = g.pack; window.orderMove(v, v.x, v.y + 400, false); }
+        else if (hitched >= 0 && moved < 0 && Math.hypot(v.x - hx, v.y - hy) > 2) moved = t;
+      });
+      Object.assign(r, { hasTow: true, towPack: window.UNITS[gk].pack, hitched, towMoved: moved, packAtHitch, towedPacked: !!g.packed, towedGun: !!g.towedBy });
+    } else r.hasTow = false;
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    return r;
+  });
+  ok('a crew-served weapon packs before it moves and sets up before it fires',
+     !pk.has || (pk.spawnSetup === pk.setup && !pk.spawnPacked && pk.inAction &&
+                 Math.abs(pk.maxPack - pk.pack) < .05 && pk.packEnd >= pk.pack - .1 && pk.firstMove >= pk.packEnd - .1 &&
+                 pk.gunDownWhilePacking && pk.arrive > pk.firstMove && pk.walked > 200 &&
+                 pk.setEnd >= pk.arrive + pk.setup - .1 && pk.endInAction &&
+                 pk.seen && pk.haltedAt >= 0 && pk.packedAtHalt && pk.firedAt >= 0 && pk.firedAt >= pk.haltedAt + pk.setup - .1 &&
+                 (!pk.hasTow || (pk.hitched >= 0 && Math.abs(pk.packAtHitch - pk.towPack) < .05 && pk.towMoved >= pk.hitched + pk.towPack - .1 && pk.towedPacked && pk.towedGun))),
+     !pk.has ? 'no packing weapon in this file'
+             : `${pk.key}: set up ${pk.setup}s after spawning; ordered off it packed ${pk.maxPack.toFixed(1)}s (gun ${pk.gunDownWhilePacking ? 'down' : 'UP'} the while) and ` +
+               `moved at ${pk.firstMove.toFixed(1)}s, walked ${pk.walked}, halted at ${pk.arrive.toFixed(1)}s and was in action at ${pk.setEnd.toFixed(1)}s; ` +
+               `on an attack-move it halted ${pk.packedAtHalt ? 'packed' : 'IN ACTION'} on a section ${pk.seen ? 'in sight' : 'UNSEEN'} at ${pk.haltedAt.toFixed(1)}s ` +
+               `and fired at ${pk.firedAt.toFixed(1)}s` +
+               (pk.hasTow ? `; the tow hitched at ${pk.hitched.toFixed(1)}s and moved at ${pk.towMoved.toFixed(1)}s` : ''));
 
   /* --- the heavy battery, which is four rules rather than a weapon. It is dug as a field
      work and not queued, it may not be dug near its own headquarters, it will not fire

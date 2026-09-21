@@ -366,6 +366,14 @@ carry a heading, how often a body was read as massing and walking onto a held fl
 far out, the weight the rollup expected onto held ground, the exchange, the clock, how
 pinned the defenders of an enemy flag were, and the tubes heard rather than seen.
 
+**ARMS** is each kind of thing against the line the sections make, in unit-ticks: how
+often a team or a tank stood with no section within reach of it, how often it stood
+forward of the nearest section to the main effort, what state the crew-served weapons were
+in (in action, packing, walking, setting up, limbered), and the anti-tank guns and the
+tubes on their own. It is measured off the units and not off the brain's own anchor,
+because a probe that asks the code under test where the line is cannot see it being wrong
+about where the line is.
+
 **RULES** is every named decision and how often it fired, out of the brain's own counters
 (`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
 is not there, and this file already records one that parsed, passed the gate and never
@@ -777,11 +785,11 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1720 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1745 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
-1655 before the second control scheme, and 1690 before the brain's second layer of
-inputs). Takes under a second. Exits
+1655 before the second control scheme, 1690 before the brain's second layer of inputs,
+and 1720 before the arms had a doctrine). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -1477,6 +1485,60 @@ known threat (`u.threatAng`, the bearing its cover was chosen against) rather th
 standing the way it arrived, and a machine gun is laid on that bearing before it is
 needed. A halted tank with a turret brings its hull round to its target as well, slowly,
 because the front plate is nearly twice the side.
+
+**A crew-served weapon is in action or it is on the move, and getting between the two
+takes time both ways.** It took time one way: `def.setup` was the seconds to bring a piece
+into action after a halt, and there was no cost at all to leaving it -- a Pak in action
+was ordered off and walked on the instant, the way a rifle section walks. Worse, the setup
+was zeroed on the first moving frame and started again only at the END of the path, so a
+team on an attack-move that halted short of its path's end because a target had come into
+reach fired on the instant with the tripod still on somebody's shoulder. The whole of what
+separates a team from a section is that it cannot do that.
+
+`def.pack` is the other half of the clock, declared on the nine pieces that move (a Vickers
+or an MG42 at 2.0 s, a mortar at 3.0, a Pak or a six-pounder at 5.0, a pack howitzer at
+6.0, the T8 at 4.0 paid to the tow that hitches it) beside a `setup` raised to match (2.5,
+3.5, 4.5, 5.0 and 4.0). The eighty-eight and the two batteries carry none, because they
+never move. Two fields on the unit carry the state: `u.pack` is the seconds left taking it
+down, and `u.packed` is whether it is on the men's backs. In action is `!packed` with the
+setup run out. Four rules, and each is one place:
+
+- **A piece in action packs before it goes anywhere**, in `moveUnit`, the moment it wants
+  ground: it stands, `u.pack` runs, and it moves when that is done. A step of under a few
+  paces is a shuffle and pays nothing; a piece ordered off in the middle of setting up is
+  picked up, since a tripod half up is a tripod. `fireAt` refuses it while it is packing,
+  packed or setting up, and `barrageTick` drops its mission the same way.
+- **Halted, packed and with nowhere to go, a crew puts the gun into action**, in the timer
+  block of `updateUnit`. That one rule is what catches an order cleared on the walk, a
+  forced attack whose target came into reach, a dismount, a walk out of a house and the
+  attack-move above, any of which would otherwise leave the piece limbered for the rest of
+  the battle. And a crew half-way through packing a gun that has nowhere to go any more
+  puts back what it took down, which is the share of the setup it had undone.
+- **A tow waits on the crew.** `hitchGun` starts the pack on a gun in action and the
+  vehicle's `moveUnit` returns while `u.tow.pack` runs; the clock is run inside the towed
+  block itself, because that block returns before the timers below it are reached, which
+  is how the first version hitched the T8 and sat there for the rest of the probe.
+- **A retreat packs in half the time**, because a crew running abandons the fine points.
+
+`gunSet` reads `packed` as well, so the model is drawn set while the crew take it down and
+limbered once they have, and the overlay says PACKING and SETTING UP over the unit, because
+a gun that will not move and will not fire for ten seconds with nothing on screen to say
+why reads as a broken gun. `aiSetUp` asks it too: set up means set up, and a wave's support
+gate was reading a team's post and never its clocks.
+
+Measured on the gate's own row: a Vickers is in action 2.5 s after spawning; ordered off, it
+packs 2.0 s with the gun drawn down the while, moves at 2.1, walks 279 units, halts and is
+in action 2.5 s later; on an attack-move it halts packed on a section in sight and fires
+2.5 s after halting where it fired on the instant before; and the half-track that hitches
+a T8 in action moves 4.2 s after the hook goes on. The row counts the gun's OWN rounds
+through `recFired`, because the section shoots back and the shot list carries both sides'
+tracers: counted off `G.shots` the first version read the grenadiers' first round as the
+Vickers firing through its setup. On the balance card the team rows do not move: nine rows
+at eight runs a side against the commit before it, and every one inside the swing the same
+row shows between two runs of one file (the machine guns 50 against 38, the Pak against
+the Sherman 13 against 25, the six-pounder against the StuG 13 against 0), because a
+staged pair is in reach where it stands and a piece that never moves pays only the extra
+second or three of setup.
 
 **Stances.** `u.stance` is `''`, `'ground'` or `'double'`, set by the player from the
 order cards (Z and C) and by the brain for its own men every tick. Gone to ground, a
@@ -3057,6 +3119,79 @@ battle's state can supply, so the row unpins whatever of his is on the flag for 
 and prints what was there; the run after read 551 of weight with none of it pinned and the
 wave broken off.
 
+**The arms, and what each one is for.** Everything above deals a unit a job by what it is
+-- sections take ground, teams support, armour screens -- and then sites it by what the
+job is for, with nothing anywhere asking where the rest of the army is. So a Vickers was
+posted a hundred and seventy short of the objective whether or not anybody else had got
+there yet, which is a machine gun team attacking on its own; a Pak was posted the same
+way, on the flag the army was attacking rather than the one it was holding; and the
+armour's stand-off was a hundred and seventy BEYOND the main effort whatever its
+ownership, which with the main effort an enemy flag put a tank past the enemy's own
+position with nobody beside it. Measured on the brain card before any of this, over a
+five-minute battle at veteran with a brain on both sides: a team stood with no section
+within 220 of it on 48.7 per cent of its ticks and nearer the main effort than any section
+on 11.5; an anti-tank gun was forward of the line on 13.9 and alone on 52.3; a tank was
+alone on 48.5 and forward on 9.2.
+
+Three helpers say what each arm is anchored on, and every rule below reads them. `aiAnchor`
+is the line: the section on foot nearest a point, out of the whole team's men, skipping
+anybody retreating, aboard or on somebody else's operation, because a scout walking at the
+enemy's base would otherwise drag a machine gun along behind it. `aiFrontSec` is the
+front: the held flag nearest the fight, which is what a gun that defends defends. And
+`aiArmourNear` is the armour the side knows about, read off the memory, because a gun laid
+on an approach wants to be laid on the approach the armour is actually using.
+
+- **A team is never forward of the line and never alone.** Its post is anchored on the
+  section nearest its aim: `aiOverwatch` and `aiMortarPost` take a floor on how far back
+  (`minR`, the anchor's own distance plus forty), so the post is no nearer the aim than
+  that section is; while the wave is still forming the floor is the forming-up point,
+  because a gun that sets up short of the fup is a gun in front of the men it is meant to
+  cover (`team.form`); and a post more than a leash from its section (260, a tube 420) is
+  pulled back along the line to it (`team.close`), rearward or sideways by construction.
+  It is found again when the line moves -- forward by a post's worth (`team.follow`), or
+  back past the gun -- and with no sections left at all a team goes back to the front flag
+  and defends that (`team.alone`).
+- **An anti-tank gun is a defensive weapon.** It is aimed at the ground armour has to come
+  up to the front held flag, two hundred and sixty out from it (`at.defend`), or at the
+  armour the side knows about within 760 of that flag (`at.armour`), sited from four
+  hundred and twenty back with a line, and then it is left alone: forty seconds between
+  moves and a move only when the aim shifts by three hundred, because every one costs it
+  ten seconds of packing and setting up during which it is a lorry-load of steel standing
+  in a street. It is not in the wave's support gate and never was.
+- **A tube is behind everything**, as before, and anchored the same way.
+- **Armour is escorted.** Its stand-off is on the army's side of the main effort now --
+  forward of a flag the side holds and nobody is contesting, two hundred short of one it
+  does not -- and the post has to be within 250 of a section: with none that near the
+  tank holds a little behind the nearest section to it and goes forward when they do
+  (`veh.escort`), and with no sections at all it holds the front flag.
+- **Light armour scouts and demonstrates; heavy armour hunts.** `aiOpsMan` still prefers
+  a vehicle for any operation, and now prefers a LIGHT one for a probe or a feint and a
+  heavy one for a task force (`op.light`, `op.heavy`), read off `bClassOf` rather than off
+  a list, because an armoured car is fast and cheap and a Tiger sent to look at a field is
+  a Tiger not on the line.
+
+`tools/brain.mjs` prints ARMS for all of it, measured off the units and not off the brain's
+own anchor. Three battles of the working file, one each as the rules went in: teams alone
+26.0, 38.7 and 34.1 per cent against the 48.7 before, forward 1.14, 0.36 and 7.55 against
+11.5; a team in action 45.4, 49.9 and 37.4 per cent of its ticks against 39.6 and walking
+36.8, 29.5 and 42.0 against 53.9, with the setting-up share doubled by the longer setups
+and four to seven per cent of it packing; the anti-tank guns forward on none of their ticks
+in any of the three against 13.9; the tubes forward on none against 2.6. Armour read alone
+on 66.6 and forward on 17.8 on the first battle, which is what sent the stand-off to the
+army's side of the flag: 34.3 and 4.7 on the next, then 66.0 and 5.5. Read those as one
+battle each -- the same rule fired four times on one run and none on the next -- and read
+the anti-tank guns' own `alone` (52.3 before, 1.4, 50.2 and 47.8 after) as the doctrine
+rather than a fault: a gun sited to defend the front flag stays there while the sections
+go on to the next one, which is what a defensive weapon does, and `forward` is the number
+that says whether it has been walked into the attack.
+
+On the tactics card the whole pass -- the pack cycle, the doctrine and the light armour on
+the operations -- is a pair difference of -78 with a standard error of 95 over eight pairs
+against the commit before it, the working brain ahead in four of eight same-side
+comparisons, which is parity and is where a change to how the arms are placed should land
+on a tool that cannot resolve under a few hundred points. Every rule in it stands on
+whether it is right, and the ARMS section is where that is read.
+
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
@@ -4269,6 +4404,49 @@ the moment it is an object key**, so the directive map and the operation list co
 whistle** and wants exactly the AI slots, which is why the player's plan is raised on the
 first tick and not in `aiSlotsInit`.
 
+**The emplacements are on the strip.** The first version of the strip had the posts and
+the units and nothing else, so a player under SIMPLE could never dig an eighty-eight or a
+battery position at all: the two things on the roster that arrive as field works were
+locked behind a scheme he had chosen not to use. They are the last two buttons now, the
+eighty-eight on the side that has one and the heavy battery position on either, dug by the
+first free engineer where the brain would have dug it. `workSite(slot, kind, at)` is that
+siting, pulled out of the brain's own two rules so that the brain and the strip ask one
+question -- the walk out from home from `minHq` toward the front for a battery, the
+overwatch post for the eighty-eight -- and `workAim` is the front when nobody has said
+otherwise, which is the held flag nearest the enemy's headquarters. Every refusal on the
+way (the till, the limit, the exclusion round home, the population) is `placeWork`'s own
+and it says so itself; `workFull` is the limit, asked by the strip to dim the button and by
+`placeWork` to refuse, so there are not two readings of it. Measured by the gate: a tap
+digs the eight-inch position 780 from home against a floor of 700, with an engineer on it,
+for 460 and 170; the button then reads 1 and dims, and a second tap leaves one site.
+
+**Field upgrades are fitted for the player by a setting, and each vehicle has its own word
+over it.** The opposition has always bought its own (`buyUpgradeAuto` is the brain's
+routine, pulled out so that there is one), and under SIMPLE the brain on the player's slot
+bought his; under classic nothing did, and a Universal Carrier without its .30 was a
+carrier nobody had had a spare minute for. UPGRADES on the title screen is AUTO or BY
+HAND, kept under `ORT_AUTOUP` the way the control scheme is, and AUTO fits what the money
+allows for every vehicle he owns on either scheme: under classic `autoUpTick` runs the
+routine on the brain's own nine-second cadence with a floor of 150 marks left, and under
+SIMPLE the brain on his slot runs it with the setting read. `u.autoUp` is one vehicle's
+word over the setting -- undefined follows it, true or false does not -- set from a card on
+the command bar (AUTO UPGRADE, lit while it is on, N) or from the unit's popup under
+SIMPLE. That popup is the other half: a tap on a vehicle of his puts up the upgrades it
+can take, one button each with its price, dimmed when the till will not cover it, and
+AUTO beside them, and a tap buys one by hand. It is not an order; it is the one thing a
+tap on his own unit does under SIMPLE besides giving LOOK something to look from, and a
+section gets the head of it and no buttons because a section has nothing to fit.
+
+Measured by the gate on both schemes. Under SIMPLE a tap on a Universal Carrier puts the
+popup up with the .30 and AUTO, AUTO lit by the setting; the .30 bought by hand is fitted
+for 70 and its button goes; AUTO tapped leaves the carrier's word at false and the button
+unlit; a second carrier with the till at ten has the price dimmed and the tap refused; and
+a tap on the ground takes the popup down. Under classic, with no brain on his slot, the
+tick fits a Sherman its roof MG, the card on the bar is lit and a tap on it turns the word
+off, a Sherman that said no keeps its word, and BY HAND fits nothing. Each of those is one
+vehicle at a time, because the tick buys one a call and would otherwise fit whichever of
+three it met first.
+
 **A `body.mob` rule written after the editor's CSS beats one written before it** at the
 same specificity, and there is a second block of them there: the simple block sits at the
 END of the stylesheet for that reason, because placed with the first block its little map
@@ -4610,12 +4788,16 @@ shots/                         screenshot output, gitignored
   an operation carries it as the sector wrote it, so the two agree only when compared with
   `String()` on both sides; compared bare, a directed hold would match no operation and be
   raised again on every tick.
-- **There is a page error nobody has caught yet.** `Cannot read properties of undefined
-  (reading 'vbo')` in `bindGeom`, twice in about forty battles with a brain on both sides:
-  once on the phone half of the gate and once inside a sixteen-match tactics run, and not
-  on either run made to find it. Every lit-pass draw reads as guarded or always built, so
-  the caller has to come off a stack; the harness keeps the first three game frames of a
-  page error now rather than the message alone, and the next one will name it.
+- **A frame's dt has to be floored as well as capped.** `frame()` took
+  `min(.05, (now - last) / 1000)` and a requestAnimationFrame stamp can sit a few
+  milliseconds behind a `last` written off `performance.now()` -- the harness does exactly
+  that after a fast forward. A negative dt walked a falling man's clock below zero, his
+  frame list was indexed at -1, and `bindGeom` threw on an undefined buffer: `Cannot read
+  properties of undefined (reading 'vbo')`, twice in forty battles and never on a run made
+  to find it, because it needs a man hit on the very frame the clock steps back. The
+  harness keeping three game frames of a page error is what named it: `drawWrecks3D`'s
+  falls loop, and not any of the guarded lit-pass draws the message pointed at. The dt is
+  clamped at nought now and the index with it.
 - **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
   that slot under classic, so a lock on its till read off the slot alone is invisible in
   play and cripples every card that puts a brain on both sides: the tactics card came back
