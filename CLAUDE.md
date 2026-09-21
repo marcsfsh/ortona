@@ -366,6 +366,14 @@ carry a heading, how often a body was read as massing and walking onto a held fl
 far out, the weight the rollup expected onto held ground, the exchange, the clock, how
 pinned the defenders of an enemy flag were, and the tubes heard rather than seen.
 
+**ARMS** is each kind of thing against the line the sections make, in unit-ticks: how
+often a team or a tank stood with no section within reach of it, how often it stood
+forward of the nearest section to the main effort, what state the crew-served weapons were
+in (in action, packing, walking, setting up, limbered), and the anti-tank guns and the
+tubes on their own. It is measured off the units and not off the brain's own anchor,
+because a probe that asks the code under test where the line is cannot see it being wrong
+about where the line is.
+
 **RULES** is every named decision and how often it fired, out of the brain's own counters
 (`AIR`). The zeroes are the point. A rule that never fires looks exactly like a rule that
 is not there, and this file already records one that parsed, passed the gate and never
@@ -777,11 +785,12 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1720 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1800 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
-1655 before the second control scheme, and 1690 before the brain's second layer of
-inputs). Takes under a second. Exits
+1655 before the second control scheme, 1690 before the brain's second layer of inputs,
+1720 before the arms had a doctrine, and 1745 before three directives on nine flags
+became a board of orders). Takes under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -829,7 +838,11 @@ and refused with the till emptied -- and the flags are tapped as TouchEvents at 
 ATTACK on a flag that is not his has to become the wave's objective with sections dealt to
 it, HOLD on one of his and FEINT on another of theirs have to raise directed operations
 with men on them, the popup on the held flag has to show HOLD lit with a CLEAR beside it,
-and CLEAR has to take the directive off and the review drop the operation. LOOK with
+and tapping the lit order again has to take it off and the review drop the operation. A
+second row does the rest of the board: an order about a piece of open ground given to a
+force he named by an arm chip, an order about a thing of theirs that carries its id, the
+ORDERS panel with a row per order and a cross that cancels one, and the army's own
+posture, reaction and temper set off the same panel and read back off the plan. LOOK with
 nothing picked has to look from a unit of his, a tap on a unit has to pick it and order
 nothing, and a tap on the ground has to let go. Then everything the rows raised comes down
 and the classic scheme is put back and asked the same of a tap and a drag, because a
@@ -940,7 +953,7 @@ node tools/shoot.mjs free --cam=1400,950,600,1.57,0.8 --bare --sim=60
 ```
 
 Scenes: `start` `battle` `hud` `closeup` `terrain` `editor` `over`
-`infantry` `armour` `models` `lineup` `buildings` `free`.
+`infantry` `armour` `models` `lineup` `buildings` `smoke` `free`.
 
 Devices: `desktop` (1600x900) `laptop` (1280x800) `wide` (1920x1080)
 `veh` (900x620, for the tight edit-render-look loop on a model)
@@ -951,7 +964,8 @@ Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--bare` (hide all 2D UI, leaving only the 3D) `--turn` (four yaw angles)
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
 `--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=simple|classic` (the control
-scheme, whatever the device would pick; `hud` then photographs the flag's popup as well).
+scheme, whatever the device would pick; `hud` then photographs the order pad, the unit's
+card and the ORDERS panel as well).
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
 with `--tag=after`, and compare the two PNGs side by side.
@@ -1477,6 +1491,60 @@ known threat (`u.threatAng`, the bearing its cover was chosen against) rather th
 standing the way it arrived, and a machine gun is laid on that bearing before it is
 needed. A halted tank with a turret brings its hull round to its target as well, slowly,
 because the front plate is nearly twice the side.
+
+**A crew-served weapon is in action or it is on the move, and getting between the two
+takes time both ways.** It took time one way: `def.setup` was the seconds to bring a piece
+into action after a halt, and there was no cost at all to leaving it -- a Pak in action
+was ordered off and walked on the instant, the way a rifle section walks. Worse, the setup
+was zeroed on the first moving frame and started again only at the END of the path, so a
+team on an attack-move that halted short of its path's end because a target had come into
+reach fired on the instant with the tripod still on somebody's shoulder. The whole of what
+separates a team from a section is that it cannot do that.
+
+`def.pack` is the other half of the clock, declared on the nine pieces that move (a Vickers
+or an MG42 at 2.0 s, a mortar at 3.0, a Pak or a six-pounder at 5.0, a pack howitzer at
+6.0, the T8 at 4.0 paid to the tow that hitches it) beside a `setup` raised to match (2.5,
+3.5, 4.5, 5.0 and 4.0). The eighty-eight and the two batteries carry none, because they
+never move. Two fields on the unit carry the state: `u.pack` is the seconds left taking it
+down, and `u.packed` is whether it is on the men's backs. In action is `!packed` with the
+setup run out. Four rules, and each is one place:
+
+- **A piece in action packs before it goes anywhere**, in `moveUnit`, the moment it wants
+  ground: it stands, `u.pack` runs, and it moves when that is done. A step of under a few
+  paces is a shuffle and pays nothing; a piece ordered off in the middle of setting up is
+  picked up, since a tripod half up is a tripod. `fireAt` refuses it while it is packing,
+  packed or setting up, and `barrageTick` drops its mission the same way.
+- **Halted, packed and with nowhere to go, a crew puts the gun into action**, in the timer
+  block of `updateUnit`. That one rule is what catches an order cleared on the walk, a
+  forced attack whose target came into reach, a dismount, a walk out of a house and the
+  attack-move above, any of which would otherwise leave the piece limbered for the rest of
+  the battle. And a crew half-way through packing a gun that has nowhere to go any more
+  puts back what it took down, which is the share of the setup it had undone.
+- **A tow waits on the crew.** `hitchGun` starts the pack on a gun in action and the
+  vehicle's `moveUnit` returns while `u.tow.pack` runs; the clock is run inside the towed
+  block itself, because that block returns before the timers below it are reached, which
+  is how the first version hitched the T8 and sat there for the rest of the probe.
+- **A retreat packs in half the time**, because a crew running abandons the fine points.
+
+`gunSet` reads `packed` as well, so the model is drawn set while the crew take it down and
+limbered once they have, and the overlay says PACKING and SETTING UP over the unit, because
+a gun that will not move and will not fire for ten seconds with nothing on screen to say
+why reads as a broken gun. `aiSetUp` asks it too: set up means set up, and a wave's support
+gate was reading a team's post and never its clocks.
+
+Measured on the gate's own row: a Vickers is in action 2.5 s after spawning; ordered off, it
+packs 2.0 s with the gun drawn down the while, moves at 2.1, walks 279 units, halts and is
+in action 2.5 s later; on an attack-move it halts packed on a section in sight and fires
+2.5 s after halting where it fired on the instant before; and the half-track that hitches
+a T8 in action moves 4.2 s after the hook goes on. The row counts the gun's OWN rounds
+through `recFired`, because the section shoots back and the shot list carries both sides'
+tracers: counted off `G.shots` the first version read the grenadiers' first round as the
+Vickers firing through its setup. On the balance card the team rows do not move: nine rows
+at eight runs a side against the commit before it, and every one inside the swing the same
+row shows between two runs of one file (the machine guns 50 against 38, the Pak against
+the Sherman 13 against 25, the six-pounder against the StuG 13 against 0), because a
+staged pair is in reach where it stands and a piece that never moves pays only the extra
+second or three of setup.
 
 **Stances.** `u.stance` is `''`, `'ground'` or `'double'`, set by the player from the
 order cards (Z and C) and by the brain for its own men every tick. Gone to ground, a
@@ -3057,6 +3125,79 @@ battle's state can supply, so the row unpins whatever of his is on the flag for 
 and prints what was there; the run after read 551 of weight with none of it pinned and the
 wave broken off.
 
+**The arms, and what each one is for.** Everything above deals a unit a job by what it is
+-- sections take ground, teams support, armour screens -- and then sites it by what the
+job is for, with nothing anywhere asking where the rest of the army is. So a Vickers was
+posted a hundred and seventy short of the objective whether or not anybody else had got
+there yet, which is a machine gun team attacking on its own; a Pak was posted the same
+way, on the flag the army was attacking rather than the one it was holding; and the
+armour's stand-off was a hundred and seventy BEYOND the main effort whatever its
+ownership, which with the main effort an enemy flag put a tank past the enemy's own
+position with nobody beside it. Measured on the brain card before any of this, over a
+five-minute battle at veteran with a brain on both sides: a team stood with no section
+within 220 of it on 48.7 per cent of its ticks and nearer the main effort than any section
+on 11.5; an anti-tank gun was forward of the line on 13.9 and alone on 52.3; a tank was
+alone on 48.5 and forward on 9.2.
+
+Three helpers say what each arm is anchored on, and every rule below reads them. `aiAnchor`
+is the line: the section on foot nearest a point, out of the whole team's men, skipping
+anybody retreating, aboard or on somebody else's operation, because a scout walking at the
+enemy's base would otherwise drag a machine gun along behind it. `aiFrontSec` is the
+front: the held flag nearest the fight, which is what a gun that defends defends. And
+`aiArmourNear` is the armour the side knows about, read off the memory, because a gun laid
+on an approach wants to be laid on the approach the armour is actually using.
+
+- **A team is never forward of the line and never alone.** Its post is anchored on the
+  section nearest its aim: `aiOverwatch` and `aiMortarPost` take a floor on how far back
+  (`minR`, the anchor's own distance plus forty), so the post is no nearer the aim than
+  that section is; while the wave is still forming the floor is the forming-up point,
+  because a gun that sets up short of the fup is a gun in front of the men it is meant to
+  cover (`team.form`); and a post more than a leash from its section (260, a tube 420) is
+  pulled back along the line to it (`team.close`), rearward or sideways by construction.
+  It is found again when the line moves -- forward by a post's worth (`team.follow`), or
+  back past the gun -- and with no sections left at all a team goes back to the front flag
+  and defends that (`team.alone`).
+- **An anti-tank gun is a defensive weapon.** It is aimed at the ground armour has to come
+  up to the front held flag, two hundred and sixty out from it (`at.defend`), or at the
+  armour the side knows about within 760 of that flag (`at.armour`), sited from four
+  hundred and twenty back with a line, and then it is left alone: forty seconds between
+  moves and a move only when the aim shifts by three hundred, because every one costs it
+  ten seconds of packing and setting up during which it is a lorry-load of steel standing
+  in a street. It is not in the wave's support gate and never was.
+- **A tube is behind everything**, as before, and anchored the same way.
+- **Armour is escorted.** Its stand-off is on the army's side of the main effort now --
+  forward of a flag the side holds and nobody is contesting, two hundred short of one it
+  does not -- and the post has to be within 250 of a section: with none that near the
+  tank holds a little behind the nearest section to it and goes forward when they do
+  (`veh.escort`), and with no sections at all it holds the front flag.
+- **Light armour scouts and demonstrates; heavy armour hunts.** `aiOpsMan` still prefers
+  a vehicle for any operation, and now prefers a LIGHT one for a probe or a feint and a
+  heavy one for a task force (`op.light`, `op.heavy`), read off `bClassOf` rather than off
+  a list, because an armoured car is fast and cheap and a Tiger sent to look at a field is
+  a Tiger not on the line.
+
+`tools/brain.mjs` prints ARMS for all of it, measured off the units and not off the brain's
+own anchor. Three battles of the working file, one each as the rules went in: teams alone
+26.0, 38.7 and 34.1 per cent against the 48.7 before, forward 1.14, 0.36 and 7.55 against
+11.5; a team in action 45.4, 49.9 and 37.4 per cent of its ticks against 39.6 and walking
+36.8, 29.5 and 42.0 against 53.9, with the setting-up share doubled by the longer setups
+and four to seven per cent of it packing; the anti-tank guns forward on none of their ticks
+in any of the three against 13.9; the tubes forward on none against 2.6. Armour read alone
+on 66.6 and forward on 17.8 on the first battle, which is what sent the stand-off to the
+army's side of the flag: 34.3 and 4.7 on the next, then 66.0 and 5.5. Read those as one
+battle each -- the same rule fired four times on one run and none on the next -- and read
+the anti-tank guns' own `alone` (52.3 before, 1.4, 50.2 and 47.8 after) as the doctrine
+rather than a fault: a gun sited to defend the front flag stays there while the sections
+go on to the next one, which is what a defensive weapon does, and `forward` is the number
+that says whether it has been walked into the attack.
+
+On the tactics card the whole pass -- the pack cycle, the doctrine and the light armour on
+the operations -- is a pair difference of -78 with a standard error of 95 over eight pairs
+against the commit before it, the working brain ahead in four of eight same-side
+comparisons, which is parity and is where a change to how the arms are placed should land
+on a tool that cannot resolve under a few hundred points. Every rule in it stands on
+whether it is right, and the ARMS section is where that is read.
+
 Per-unit intent lives on the unit (`u.job`, `u.jobSec`, `u.jobX/Y`,
 `u.aimX/Y`). Each tick it classifies what it has into five lists (the same unit is a
 different thing to the motor pool, the population cap and the capture allocation),
@@ -3448,6 +3589,30 @@ tube is selected or not, because a player who has laid one on wants to see where
 falling while he does something else; and while a mission is being laid, each selected
 tube's reach is drawn round it, because the reach is a hard edge and without it the only
 feedback is a refusal after the click.
+
+**A tube throws smoke as well.** A smoke round is the one thing on this roster that does
+nothing to anybody and changes a battle anyway: a cloud on the ground that no eye sees
+through and no gun is laid through. `orderBarrage(u, x, y, smoke)` is the same mission with
+the flag set, K and a click on the classic bar beside F, and `barrageTick` hands the flag to
+`fireAt`, whose shell carries the cloud it will make (`smk`, off `smokeOf(def)`) and hurts
+nobody when it lands. What a piece throws is read off the same number its burst is sized
+off, so the sizes are the roster's and not a table: a mortar bomb makes a cloud of 65 that
+is gone in 29 seconds, a pack howitzer's shell 76 for 35, and a battery's 118 for 62, with a
+mission at half the rounds of the HE one because each round is a cloud rather than a
+burst. `G.smoke` is the clouds; `smokeAt` is a cloud's radius now, building over three
+seconds and thinning over its last quarter; and `smokeBlocks` is asked at the top of
+`traceClear`, which is the ONE place, because a screen that blinds the eye and leaves the
+gun laid through it is a screen that does nothing -- `sightLine`, `fireLine`, `aiSightsOn`
+and the overwatch all go through that trace. Wreck smoke stays what it was, a slowing
+through `smokeOn`, because a burning hull is a column and not a curtain. The cloud is fed
+puffs at a rate its own size sets, only while it is on screen, and drawn on the little map
+as a grey disc; the mission's ring is drawn in the smoke's own colour.
+
+Measured by the gate: a section seen across 240 units of open ground, with a line to it
+and a fire line, is behind five mortar clouds inside the zone about twelve seconds after
+the mission is laid, and then has neither line, is lost by the eye inside a few vision ticks,
+and has not lost a hit point; a second mortar laid on it over the screen still fires; the
+clouds aged out give the line back; and the card on the bar sets the mode and lays one.
 
 **Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
 (`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
@@ -4204,10 +4369,12 @@ can turn out, and the two posts he has not got, one big button each with the pri
 the count on it (`#tbuild`, `simpleItems`, `simpleBuy`, `simplePost`); the little map
 above it; a line beside the map saying what the army is doing (`simpleStatus`, read off
 the brain's own plan rather than kept anywhere else); LOOK and PAUSE; and, when he taps
-a flag, a popup with ATTACK, HOLD and FEINT on it (`#tflag`, `simpleFlag`). Nothing
-selects a unit to order it and nothing drags one. A tap on a unit of his picks it so LOOK
-has something to look from, a tap on the ground lets go, and LOOK with nothing picked
-looks from the unit nearest the middle of the screen.
+anything that is not his -- a flag, a thing of theirs or a bare piece of ground -- the
+order pad on it (`#tord`, `simpleOrdOpen`). Nothing drags a unit and no tap is itself an
+order. A tap on a unit of his picks it and opens its card, which carries its posture, its
+reaction, its battle group and its upgrades, so LOOK has something to look from and the
+ring says which; LOOK with nothing picked looks from the unit nearest the middle of the
+screen.
 
 **The army is run by the game's own brain on his slot.** `aiRuns(sl)` is what `aiThink`
 walks: every AI slot, and under SIMPLE the player's own, raised lazily on the first tick
@@ -4233,20 +4400,173 @@ and is gated on `aiBuys` too, or a green game froze the player's own army for th
 half minutes. A tank he is driving from its own turret is skipped (`u.manual`), because
 in the periscope he is the crew.
 
-**He steers it by the flags.** `AI.dir` is one directive per sector on the plan, set by
-`aiDirSet` from the popup and read by `aiDirOf`. ATTACK makes the flag the main effort:
-the objective list scores it 420 above everything else with a cap of four sections and no
-reach limit, the wave forms against it whatever the held pick would have said
-(`aiDirAttack`), and it is done the moment the flag is his and quiet (`aiDirDone`). HOLD
-raises a directed `hold` operation while the flag is his, which `aiOpsReview` keeps for as
-long as the directive stands rather than for the brain's own hundred and thirty seconds,
-and retakes the flag if it is lost. FEINT raises a directed `feint` the same way and
-expires on its own after ninety seconds, because a demonstration that goes on for ever is
-a section standing in a field. `aiDirTend` runs once a tick between the review and the
-brain's own planning, so a directed operation is never planned over, and a directed
-`hold` wants two sections out of an army of eight and one out of anything smaller, a
-`feint` one out of three or more. One attack and one feint at a time. The flag carries the
-word and a ring in the directive's colour on the overlay and on the little map.
+**And the guns serve the attack he orders.** The support weapons aimed at whichever
+sector was hottest (`AI.main`), which is usually the wave's objective and was not the
+moment he tapped ATTACK on another flag: the tubes went on shelling the fight the army was
+leaving while the wave went in without them. The support aim is the wave's own objective
+now whenever there is one, and under a directed attack the tube's mission goes on the men
+holding that flag before a massing body or a heard tube gets its turn (`mortar.dir`). Then
+at the go, against a defended objective, smoke goes down: `aiSmokeScreen` lays a screen a
+third of the way from the flag back toward the forming-up point, which is the ground the
+defenders look out over and the wave walks in across, by the tube of this slot nearest to
+being able to do it -- in action, in reach, and without a mission of its own still worth
+finishing -- and one tube only, because a second screen beside the first is the same
+screen (`smoke.screen`). The opposition's brain does the same, since it is the same tick.
+
+The gate found the fault that would have made all of that decoration. The target reflex
+runs before the jobs and forced a tube onto any section it could see, and an attack order
+clears the order before it: a mortar on its post plinked at one section at its own slow
+rate while the ground the wave was about to cross went unshelled, and the smoke laid at
+the go was gone by the end of the same tick, cancelled by the reflex three hundred lines
+below it. A tube on a mission keeps it now, and one on its post is left to the support
+job, which lays the next; its own `acquire` still shoots at what is in front of it
+between missions, so nothing is silenced.
+
+And the same row found a second one, older than anything on this page: **a tube on a
+mission was turned back off its bearing every frame.** A halted section with nothing to
+shoot at turns to face the nearest enemy the side can see (`u.threatAng`), and a tube on
+a mission has no target by design, so it took that turn -- at the same 0.85 radians a
+second `barrageTick` was laying it on with, so the two cancelled to the frame and the
+crew stood with ten rounds in hand and fired none. A battery traverses at a quarter of
+that and could never have laid a mission at all with anything in sight off its line. It
+had not shown because the mortar row, the free-fire row and every hand-laid mission in a
+quiet minute had the nearest enemy on the same bearing as the beaten zone; the directed
+attack put the wave's own targets out of sight and the nearest thing in sight off to a
+flank. A tube on a mission is exempt from the turn now, and the row stands an enemy
+square off the line of fire while the preparation is spent, so that it stays measured.
+The row also lets nobody answer a call for its two ticks: a section of his from the
+battle meeting a tank raises one, an answer outranks the plan, and on one phone run the
+nearest capable thing to it was one of the three sections put down beside the objective,
+dealt off the flag and sent two streets away. Emptying the board is not enough there,
+because a call raised inside the tick is dealt inside it.
+Measured by the gate under SIMPLE: ATTACK on the nearest flag that is not his, with two
+sections of theirs on it and a mortar of his in action four hundred and thirty back, lays
+the mortar on the defenders on the next tick; the mission runs down with a section in
+sight at a right angle to it; every section he put beside the objective is dealt to it;
+and with the preparation spent and the wave ready the go lays smoke short of the flag.
+The row takes the two in either order, because on a phone run a section of his from the
+battle already stood inside 240 of the flag, so the wave went on the tick it formed and
+the screen came before the preparation: both are the brain being right, and a row that
+insists on the desktop's order is a row about the battle it happened to run in.
+
+**He steers it by ORDERS, and an order is about anything.** It was one directive per FLAG
+out of three kinds, with no way to say who was to carry it out and no way to say how hard
+to press it: nine coordinates on a map of two thousand, three sentences about each, and a
+player watching the army move had nothing anywhere to tell him which of its units were
+doing the thing he had asked for.
+
+`AI.ord` is the board -- a list on the plan, so like everything else that outlives a tick
+it holds nothing but numbers and ids, the unit ids of the force and never the units. An
+order is a KIND, a piece of ground or a thing standing on it, the FORCE he named, and a
+TEMPER. `aiOrdTend` works the list once a tick between the review and the brain's own
+planning, so an order is never planned over; `aiOrdMark` runs after the operations are
+manned and says which order each unit is under, which is what the temper is read through
+and what the player's list counts.
+
+Nine kinds, and seven of them raise one of the brain's own OPERATIONS. That is what makes
+this a table rather than nine new behaviours: going somewhere and fighting for it, holding
+ground, demonstrating at it, looking at it and hunting one named thing were all here
+already, each with a force, a clock and a test for being over. What an order adds is a
+door into them, a name for what came out, and a force he chose himself.
+
+| order | what it is | what it raises |
+|---|---|---|
+| ATTACK | take it, and keep taking it | the main effort on a flag, `push` anywhere else |
+| HOLD | put men on it and keep them there | `hold` |
+| SCREEN | cover this ground from a fire position | `screen` |
+| PROBE | send somebody to look | `probe` |
+| RAID | a task force after what is there | `destroy` |
+| FEINT | demonstrate, and draw them off it | `feint` |
+| SHELL | a fire mission on it | nothing: the tubes read the board |
+| SMOKE | a screen on it | nothing: the tubes read the board |
+| PULL BACK | break contact and rally here | `retire` |
+
+**ATTACK ON A FLAG is deliberately not an operation.** The wave -- its forming-up point,
+its support gate, the pinned wait, the hook and the break-off -- is the most worked-over
+machinery in this file, and an order that went round it would be a worse attack than the
+one the brain makes on its own account. It is the main effort instead, which is what the
+old ATTACK directive was: it goes to the top of the objective list whatever the scores say,
+with a cap of four sections and no reach limit (`aiDirAttack`), and it is done the moment
+the flag is his and quiet. It was 420 points added to the score rather than the top of the
+list, and 420 is not enough: a held victory flag with a body walking onto it is worth most
+of a thousand, and the gate row watched two of the three sections the player had put beside
+his objective dealt to that flag instead, so the wave he had asked for formed with one
+section in it. The directive is a sort key now and the score decides only among the rest.
+
+`push`, `screen` and `retire` are the three operations the brain has no use of its own for:
+an attack on ground that is not a flag, a fire position covering a piece of ground found
+once by `aiOverwatch` and kept, and a rally back to somewhere with the fear turned up so
+the force is not fighting on the way. `hold` gained the other half of its own job at the
+same time -- it reads a bare point when there is no sector, because an order to hold a
+crossroads is the same order as an order to hold a flag and the only thing the sector adds
+is a circle to be inside of.
+
+**The force is his, and an order given to men who are all dead is over.** With no force
+named the brain deals what the kind asks for out of `aiOpsMan`, the way it always has.
+With one named, `op.want` is nought so nobody else is added, the named units are put on the
+operation in `aiOrdTend`, and the objective dealing marks them picked BEFORE it runs --
+because the dealing is what would otherwise take them: a section he put on the flag he is
+attacking would be given the nearest objective on the list, walk off, and read afterwards
+as an order nobody carried out. It is not quietly re-manned when they die, because the
+force was half of what he said.
+
+**The temper is a multiplier on rules that already existed**, which is the whole reason it
+is a row of three chips rather than a new difficulty. `AGGR` is CAUTIOUS, STEADY and PRESS
+HOME, and every number in it is one some rule already read: what a unit pays to stay out of
+the beaten zone (`u.fear`, 1.75x to 0.35x), the odds it will walk onto a flag at (1.3 to
+3.2 against the old flat 2), how hurt a section goes home (half strength to a sixth), how
+much of a wave has to be left for it to still be an assault rather than a queue (0.70 to
+0.32 of what it stepped off with), and which way the weighing leans between standing and
+getting behind something. An order carries its own; a unit under none carries the army's.
+
+**A POSTURE is about the plan and a REACTION is about the weighing**, and that is why
+neither is a new chain of rules. `POSE` is ADVANCE, HOLD and DIG IN: a posture that is not
+ADVANCE takes the unit out of the objective dealing altogether, because the one thing the
+plan does to a unit that a player may want stopped is MARCH it somewhere -- a section left
+to watch a crossroads, a tank kept back off the skyline. It is not a refusal to fight: the
+weighing has already had its say about whatever is in front of it and its own `acquire` is
+still firing. DIG IN goes one further and takes the heaviest thing there is to stand in.
+`REACT` is TAKE COVER, STAND FAST and FALL BACK, and it leans `aiWeigh`'s own scores --
+stand against cover against giving ground -- and moves the hit-point threshold a section
+goes home at. **Every lean is measured from the default**, so an army nobody has said
+anything to weighs exactly what it weighed before there was a board: TAKE COVER is what
+the brain already did and adds nothing, and the other two are the departure from it. The
+same holds of the temper: STEADY is the old constant in every one of its five numbers
+(fear 1, odds 2, home at 0.30, break at 0.50, no lean), so the opposition is untouched by
+any of this and the tactics card has nothing to resolve. Both are the army's by default and either may be said of one unit or of a
+whole selection: `u.pose` and `u.react` undefined follow the army and anything else does
+not, which is the rule a vehicle's own word over the upgrade setting already uses.
+
+**The pad opens on whatever the tap landed on.** A flag, a thing of theirs (inside its own
+ring, so a tap has to land on the tank rather than near it) or a bare piece of ground --
+which is the point, because most of what a player wants to say is about a crossroads, a
+house, or the tank that has just come round the corner. Three rows: the nine orders, WHO,
+and HOW HARD. The last two are remembered, so an order after the first one is a tap on the
+ground and a tap on the verb. WHO is ANY (the brain deals it), ALL, INF, ARMOUR, GUNS,
+PICKED, and the three battle groups A to C; a unit's card carries the group chips and a
+SAME chip that picks every one of its kind, because PICKED is only worth having as a force
+if a selection can be made with a thumb. Tapping the order a flag already has takes it off.
+And it answers a keyboard: with the pad open the nine numbers are the nine orders, O opens
+and shuts the ORDERS panel and Escape puts any of it away, because a desktop player who
+has chosen the thumb scheme should not have to reach for the mouse to say the same thing.
+
+**And the ORDERS panel is the half he never had.** A row per order -- what it is, what it
+is about, how many are on it, how hard it is being pressed and whether the force is his own
+-- with a cross that cancels it and a tap that takes the camera to it, and under them the
+army's own three settings. The tool button carries the count. On the field every unit
+carrying an order wears that order's glyph in that order's colour, and an order about
+ground rather than a flag draws its own ring on the terrain and a dot on the little map:
+the complaint the whole board was built for was that there was no way to tell whether any
+of the army was doing the thing that had been asked.
+
+**The emplacements are sited by the player.** They went where the brain would have dug
+them, which is a good answer and not his: a gun that fires on a map reference is the one
+thing on the roster whose whole worth is where it stands. The strip's button arms the
+placement instead and the next tap on the ground is the site, with the same ghost the
+classic scheme has always drawn under the finger -- green where it will go and red where
+it will not -- and every refusal on the way is `placeWork`'s own. Tapping the button again
+puts it away, because an armed placement a player has forgotten about is a tap that digs a
+gun he did not want.
 
 **And the brain says what it is doing.** `aiFire` is where every named decision is
 counted, so it is also where the player's own brain speaks: `AIVOICE` maps a dozen of
@@ -4269,6 +4589,51 @@ the moment it is an object key**, so the directive map and the operation list co
 whistle** and wants exactly the AI slots, which is why the player's plan is raised on the
 first tick and not in `aiSlotsInit`.
 
+**The emplacements are on the strip, and the player sites them.** The first version of the
+strip had the posts and the units and nothing else, so a player under SIMPLE could never
+dig an eighty-eight or a battery position at all: the two things on the roster that arrive
+as field works were locked behind a scheme he had chosen not to use. They are the last two
+buttons now, the eighty-eight on the side that has one and the heavy battery position on
+either. They then went where the BRAIN would have dug them, which is a good answer and not
+his, so the button ARMS the placement instead (`simpleWork`) and the next tap on the ground
+is the site. `workSite(slot, kind, at)` stays the brain's own siting and is the brain's
+alone -- the walk out from home from `minHq` toward the front for a battery, the overwatch
+post for the eighty-eight -- with `workAim` the front when nobody has said otherwise, which
+is the held flag nearest the enemy's headquarters. Every refusal on the way (the till, the
+limit, the exclusion round home, the population, the room) is `placeWork`'s own and it says
+so itself; `workFull` is the limit, asked by the strip to dim the button and by `placeWork`
+to refuse, so there are not two readings of it. Measured by the gate: the button arms and
+lights, his tap sites the eight-inch position where his finger went, 790 from home against
+a floor of 700, with an engineer on it, for 460 and 170; the button then reads 1 and dims,
+and tapping it again arms nothing and leaves the one site.
+
+**Field upgrades are fitted for the player by a setting, and each vehicle has its own word
+over it.** The opposition has always bought its own (`buyUpgradeAuto` is the brain's
+routine, pulled out so that there is one), and under SIMPLE the brain on the player's slot
+bought his; under classic nothing did, and a Universal Carrier without its .30 was a
+carrier nobody had had a spare minute for. UPGRADES on the title screen is AUTO or BY
+HAND, kept under `ORT_AUTOUP` the way the control scheme is, and AUTO fits what the money
+allows for every vehicle he owns on either scheme: under classic `autoUpTick` runs the
+routine on the brain's own nine-second cadence with a floor of 150 marks left, and under
+SIMPLE the brain on his slot runs it with the setting read. `u.autoUp` is one vehicle's
+word over the setting -- undefined follows it, true or false does not -- set from a card on
+the command bar (AUTO UPGRADE, lit while it is on, N) or from the unit's popup under
+SIMPLE. That popup is the other half: a tap on a vehicle of his puts up the upgrades it
+can take, one button each with its price, dimmed when the till will not cover it, and
+AUTO beside them, and a tap buys one by hand. It is not an order; it is the one thing a
+tap on his own unit does under SIMPLE besides giving LOOK something to look from, and a
+section gets the head of it and no buttons because a section has nothing to fit.
+
+Measured by the gate on both schemes. Under SIMPLE a tap on a Universal Carrier puts the
+popup up with the .30 and AUTO, AUTO lit by the setting; the .30 bought by hand is fitted
+for 70 and its button goes; AUTO tapped leaves the carrier's word at false and the button
+unlit; a second carrier with the till at ten has the price dimmed and the tap refused; and
+a tap on the ground takes the popup down. Under classic, with no brain on his slot, the
+tick fits a Sherman its roof MG, the card on the bar is lit and a tap on it turns the word
+off, a Sherman that said no keeps its word, and BY HAND fits nothing. Each of those is one
+vehicle at a time, because the tick buys one a call and would otherwise fit whichever of
+three it met first.
+
 **A `body.mob` rule written after the editor's CSS beats one written before it** at the
 same specificity, and there is a second block of them there: the simple block sits at the
 END of the stylesheet for that reason, because placed with the first block its little map
@@ -4281,7 +4646,8 @@ stage his units is a gate measuring the brain.
 The gate drives it through the TouchEvents a finger raises, dispatched at the canvas,
 rather than by calling the functions behind them: a handler that is never reached by the
 event it is written for is a handler that is not there. `node tools/shoot.mjs hud
---device=phone` photographs it, with the flag's popup up as a second frame, and
+--device=phone` photographs it, with the order pad, the unit's card and the ORDERS panel
+as further frames, and
 `--ctrl=classic` or `--ctrl=simple` picks the scheme whatever the device would.
 
 ---
@@ -4585,7 +4951,11 @@ shots/                         screenshot output, gitignored
   turning through half a radian and never doing the thing under test. Ask for the shape the
   drill needs (a corridor, not a square), ask only for what matters to it (what SLOWS a
   vehicle, not what counts as cover, since three battles of craters is cover everywhere),
-  and RETURN whether one was found rather than assuming it.
+  and RETURN whether one was found rather than assuming it. The periscope's driving row is
+  the same fault a second time: the throttle puts a waypoint 320 units up the hull's own
+  nose and nothing else, so a tank staged on the first free SPOT beside the headquarters
+  drives into whatever is in front of it. It read 33.2 units of ground in three seconds on
+  one run and 11.4 on the next, on identical code, and the bar decided which.
 - **Two background runs writing to one output file make a sparse file full of nulls**, and
   the rows that go missing look exactly like rows that never ran.
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo
@@ -4610,12 +4980,59 @@ shots/                         screenshot output, gitignored
   an operation carries it as the sector wrote it, so the two agree only when compared with
   `String()` on both sides; compared bare, a directed hold would match no operation and be
   raised again on every tick.
-- **There is a page error nobody has caught yet.** `Cannot read properties of undefined
-  (reading 'vbo')` in `bindGeom`, twice in about forty battles with a brain on both sides:
-  once on the phone half of the gate and once inside a sixteen-match tactics run, and not
-  on either run made to find it. Every lit-pass draw reads as guarded or always built, so
-  the caller has to come off a stack; the harness keeps the first three game frames of a
-  page error now rather than the message alone, and the next one will name it.
+- **A frame's dt has to be floored as well as capped.** `frame()` took
+  `min(.05, (now - last) / 1000)` and a requestAnimationFrame stamp can sit a few
+  milliseconds behind a `last` written off `performance.now()` -- the harness does exactly
+  that after a fast forward. A negative dt walked a falling man's clock below zero, his
+  frame list was indexed at -1, and `bindGeom` threw on an undefined buffer: `Cannot read
+  properties of undefined (reading 'vbo')`, twice in forty battles and never on a run made
+  to find it, because it needs a man hit on the very frame the clock steps back. The
+  harness keeping three game frames of a page error is what named it: `drawWrecks3D`'s
+  falls loop, and not any of the guarded lit-pass draws the message pointed at. The dt is
+  clamped at nought now and the index with it.
+- **Two rules that turn the same thing at the same rate cancel to the frame, and what that
+  looks like is a thing that has not moved yet.** A tube on a mission was laid on its
+  beaten zone by `barrageTick` and turned toward the nearest known enemy by the
+  halted-facing rule, both at 0.85 radians a second, and the mission never fired a round:
+  ten left, cooldown at nought, nothing packed and nothing moving, which reads as a crew
+  still coming round. When a gate row says a thing has not happened yet after a minute of
+  simulation, print the bearing error and not only the count, and look for a second hand
+  on the same wheel.
+- **A drill that asks for two things at once measures neither.** The periscope row drove
+  the tank at full throttle against a near-full steer for three seconds and asserted that
+  it both moved and turned. A tracked hull does one or the other -- its speed falls away
+  with the heading error and is gone by the time the error is a right angle -- so the same
+  code came back with 202 units of ground and 1.4 radians of turn on one run and 29 units
+  and 8 radians on the next, and the row passed or failed on where the tank happened to be
+  pointing. It drives straight for one leg and steers for the other now.
+- **An edit script that aborts on a later anchor writes nothing, including the edits
+  that matched.** The rewrite that gave `simpleTap` its enemy and its ground branches was
+  the first change in a script whose last change missed its anchor, so the file was never
+  written and the tap kept the two branches it had. What it looked like from the gate was
+  a pad that would not open on open ground, and two rounds were spent looking at the
+  camera, the clamp and the touch path before anybody looked at `simpleTap` itself. When
+  a thing behaves exactly as it did before a change, check that the change is in the
+  file.
+- **A tap is a point on the SCREEN, and `clampCam` will not put the camera where you
+  asked.** The board row chose its piece of open ground by arithmetic in world space and
+  projected it after centring: near the edge of the map the camera refuses to go there,
+  so the projection is of a point it is not looking at and the tap lands somewhere else
+  entirely. It read (141, 824), a pad that never opened, and a head still carrying the
+  last flag's name -- and the first version of the same row had put the point six hundred
+  units out toward the enemy, which after four minutes of battle is where his own
+  sections are, where a tap picks a unit and shuts the pad. Find the point on the screen
+  (`__clearPt`), take the world point it gives back, and print it.
+- **An armed placement takes the next tap on the ground, and every tap is one.** The
+  emplacement button arms `G.place` and the touch path answers it before anything else,
+  which is right; the gate row below it then tapped four pieces of open ground to give
+  orders and the first of them dug a battery instead, with every assertion after it
+  reading off a pad that had never opened. A row that leaves a mode armed hands it to
+  every row under it.
+- **A bonus on a score is not a priority.** The player's ATTACK added 420 to a sector's
+  score and the doc said it outranked everything; a held victory flag with a body walking
+  onto it scores most of a thousand, so the directed flag came second and the deal gave
+  it one section of the three standing beside it. When a thing has to come first, sort
+  on it, and let the score decide only among the rest.
 - **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
   that slot under classic, so a lock on its till read off the slot alone is invisible in
   play and cripples every card that puts a brain on both sides: the tactics card came back

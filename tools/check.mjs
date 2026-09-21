@@ -340,12 +340,13 @@ for (const device of TARGETS) {
              strip: strip.length, want, have, post: (document.querySelector('#tbuild .tb.post') || {}).dataset,
              tools: [...document.querySelectorAll('#tools .tool')].filter(e => e.getBoundingClientRect().width).map(e => e.id).join('+'),
              small, off, overlap, miniIn: document.getElementById('mini').parentNode.id,
-             flag: document.getElementById('tflag').classList.contains('hidden'),
+             flag: document.getElementById('tord').classList.contains('hidden') &&
+                   document.getElementById('tlist').classList.contains('hidden'),
              hScroll: document.documentElement.scrollWidth - vw, vScroll: document.documentElement.scrollHeight - vh,
              label: document.getElementById('tselname').textContent.trim() };
   }, MIN_TAP);
   ok('simple: a strip of what he can build, a line saying what the army is doing, LOOK and PAUSE, the little map, the bar gone, nothing small, off screen or overlapping',
-     th.on && th.bar === 'none' && th.strip >= 3 && th.want === th.have && th.tools === 'tPov+tPause' && th.small === 0 && th.off === 0 &&
+     th.on && th.bar === 'none' && th.strip >= 3 && th.want === th.have && th.tools === 'tOrders+tPov+tPause' && th.small === 0 && th.off === 0 &&
      th.overlap === 0 && th.miniIn === 'simple' && th.flag && th.hScroll <= 0 && th.vScroll <= 0 && th.label.length > 0,
      `${th.strip} buttons (${th.have}), tools ${th.tools}, ${th.small} small, ${th.off} off screen, ${th.overlap} overlapping, map in #${th.miniIn}, line "${th.label}"`);
 
@@ -380,6 +381,19 @@ for (const device of TARGETS) {
      `raised ${brain.made} kinds against ${pre.made} before and ${brain.blds} buildings against ${pre.blds}, the opposition ${brain.foeMade}; ` +
      `line "${brain.status}", mood ${brain.mood}, fired ${brain.fired}`);
 
+  /* a finger on the canvas, installed before the first row that needs one: the strip's
+     emplacement is sited by the player's own tap now, so the helper cannot wait until the
+     flag rows further down */
+  await page.evaluate(() => {
+    const cv = document.getElementById('cv');
+    window.__tev = function (type, x, y) {
+      const r = cv.getBoundingClientRect();
+      const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
+      const up = type === 'touchend';
+      cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
+    };
+  });
+
   /* --- the strip: a tap builds. The post goes down beside the headquarters with an
      engineer on it, a section goes into the headquarters' queue, and a thing he cannot
      pay for is dimmed and refused. --- */
@@ -406,21 +420,108 @@ for (const device of TARGETS) {
     if (secBtn) secBtn.click();
     const refused = hq.queue.length === q0 + queued;
     window.G.res[own].mp = keep; window.simpleSync();
-    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused };
+    /* and the emplacement, which the PLAYER sites: the button arms the placement and the
+       next tap on the ground is where the gun goes, so the row taps the button, reads
+       that it is armed and lit, then taps a piece of ground forward of home. A second is
+       refused by the limit and the button says so. Put back afterwards, because the rows
+       below count his men and his sites. */
+    const wk = us ? 'how8' : 'how210', W = window.WORKS[wk];
+    window.G.res[own].mp = 5000; window.G.res[own].fu = 2000; window.simpleSync();
+    const wBtn = document.querySelector(`#tbuild .tb.work[data-key="${wk}"]`);
+    const s0 = window.siteCount(own, wk), mp3 = window.G.res[own].mp, fu3 = window.G.res[own].fu;
+    if (wBtn) wBtn.click();
+    const armed = !!(window.G.place && window.G.place.work === wk);
+    window.simpleSync();
+    const wLit = wBtn && wBtn.classList.contains('on');
+    /* the ground he picks: forward of home by more than the exclusion, and clear */
+    const dir = us ? 1 : -1;
+    let gp = null;
+    for (let d = W.minHq + 90; d <= W.minHq + 460 && !gp; d += 60) {
+      const c = window.nearestFree(hq.x + dir * d, hq.y);
+      if (window.workRoom(c.x, c.y, W)) gp = c;
+    }
+    if (gp) {
+      window.__o.camera({ x: gp.x, y: gp.y, dist: 560, pitch: 0.95 }); window.render();
+      const p = window.w2s(gp.x, gp.y);
+      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+    }
+    const wSite = window.G.sites.find(q => q.own === own && q.kind === wk);
+    const wOn = !!wSite && window.G.units.some(u => window.owned(u) && !u.dead && u.def.builder && u.building === wSite);
+    const wFar = wSite ? Math.round(Math.hypot(wSite.x - hq.x, wSite.y - hq.y)) : -1;
+    const wCost = [mp3 - window.G.res[own].mp, fu3 - window.G.res[own].fu];
+    window.simpleSync();
+    const wFull = wBtn && wBtn.classList.contains('poor'), wCount = wBtn && wBtn.lastChild.textContent;
+    if (wBtn) wBtn.click();
+    const armed2 = !!(window.G.place && window.G.place.work === wk);
+    window.G.place = null;
+    const wAgain = window.siteCount(own, wk);
+    if (wSite) {
+      window.G.sites.splice(window.G.sites.indexOf(wSite), 1);
+      window.G.units.forEach(u => { if (u.building === wSite) window.clearOrder(u); });
+    }
+    window.G.res[own].mp = keep; window.G.res[own].fu = Math.max(0, fu3 - 400); window.simpleSync();
+    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused,
+             wk, wBtn: !!wBtn, armed, wLit, gp: !!gp, wSite: !!wSite, wOn, wFar, minHq: W.minHq, wCost,
+             want: [W.cost.mp || 0, W.cost.fu || 0], wFull, wCount, armed2, wAgain: wAgain - s0,
+             wWhere: gp && wSite ? Math.round(Math.hypot(wSite.x - gp.x, wSite.y - gp.y)) : -1 };
   });
   ok('simple: a tap on the strip pegs the post out with an engineer, queues a section, and is refused when the till is empty',
      strip.postBtn && strip.site && strip.onIt && strip.postCost === 200 && strip.secBtn && strip.queued === 1 && strip.secCost > 0 && strip.poor && strip.refused,
      `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost}; empty till dimmed ${strip.poor} and refused ${strip.refused}`);
+  ok('simple: the strip arms the battery position and the player\'s own tap sites it, forward of home with an engineer; a second is refused',
+     strip.wBtn && strip.armed && strip.wLit && strip.gp && strip.wSite && strip.wOn && strip.wWhere >= 0 && strip.wWhere < 40 &&
+     strip.wFar >= strip.minHq && strip.wCost[0] === strip.want[0] && strip.wCost[1] === strip.want[1] &&
+     strip.wFull && strip.wCount === '1' && !strip.armed2 && strip.wAgain === 1,
+     `${strip.wk} button ${strip.wBtn}: armed ${strip.armed} and lit ${strip.wLit}; his tap sited it ${strip.wWhere} from where he put his finger, ` +
+     `${strip.wFar} from home against ${strip.minHq}, with an engineer ${strip.wOn}, for ${strip.wCost.join('/')} of ${strip.want.join('/')}; ` +
+     `then dimmed ${strip.wFull} reading ${JSON.stringify(strip.wCount)}, a second tap armed nothing ${!strip.armed2} and left ${strip.wAgain}`);
 
-  /* a finger on the canvas: TouchEvents built the way a touch screen builds them */
+  /* --- the unit's popup under SIMPLE: a tap on a vehicle of his puts up the upgrades it
+     can take with their prices and AUTO; an upgrade bought by hand is fitted and paid
+     for, AUTO is lit by the setting and tapping it is this one vehicle's own word over
+     it. Under classic, below, the same setting fits them for him on the tick. --- */
+  const upg = await page.evaluate(() => {
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const key = us ? 'us_m8' : 'ger_sd222', upKey = us ? 'thirty' : 'kwk';
+    const sp = window.nearestFree(hq.x + (us ? 220 : -220), hq.y + 90);
+    const v = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    window.G.res[own].mp = 3000; window.G.res[own].fu = 500;
+    window.simpleTap(v.x, v.y);
+    const box = document.getElementById('tunit');
+    const up = !box.classList.contains('hidden');
+    const name = document.getElementById('tunitname').textContent;
+    const btn = document.querySelector(`#tunit .tf[data-up="${upKey}"]`), auto = document.querySelector('#tunit .tf[data-up="auto"]');
+    const cost = window.UPGRADES[upKey].cost.mp || 0, mp0 = window.G.res[own].mp;
+    const autoLit0 = auto && auto.classList.contains('on'), globalOn = window.AUTOUP.on;
+    if (btn) btn.click();
+    const fitted = !!(v.up && v.up[upKey]), paid = mp0 - window.G.res[own].mp;
+    const gone = !document.querySelector(`#tunit .tf[data-up="${upKey}"]`);
+    if (auto) auto.click();
+    const autoAfter = window.autoUpOf(v), autoLit1 = !!document.querySelector('#tunit .tf[data-up="auto"].on');
+    const word = v.autoUp;
+    /* and with the till empty the price is dimmed and refused */
+    const v2 = window.spawnUnit(own, key, sp.x + 60, sp.y, 0);
+    window.simpleTap(v2.x, v2.y);
+    window.G.res[own].mp = 10; window.simpleSync();
+    const btn2 = document.querySelector(`#tunit .tf[data-up="${upKey}"]`);
+    const poor = btn2 && btn2.classList.contains('poor');
+    if (btn2) btn2.click();
+    const refused = !(v2.up && v2.up[upKey]);
+    window.simpleTap(sp.x + 400, sp.y + 400);   /* the ground: the popup comes down */
+    const down = box.classList.contains('hidden');
+    window.G.units.splice(window.G.units.indexOf(v), 1); window.G.units.splice(window.G.units.indexOf(v2), 1);
+    window.select([], false);
+    return { key, upKey, up, name, btn: !!btn, auto: !!auto, autoLit0, globalOn, fitted, paid, cost, gone, autoAfter, autoLit1, word, poor, refused, down };
+  });
+  ok('simple: a tap on a vehicle puts up its upgrades and AUTO; one bought by hand is fitted and paid for, AUTO is this vehicle\'s word over the setting, and an empty till is refused',
+     upg.up && upg.btn && upg.auto && upg.globalOn && upg.autoLit0 && upg.fitted && upg.paid === upg.cost && upg.gone &&
+     upg.autoAfter === false && !upg.autoLit1 && upg.word === false && upg.poor && upg.refused && upg.down,
+     `${upg.key} popup ${upg.up} "${upg.name}": ${upg.upKey} button ${upg.btn}, AUTO ${upg.auto} lit ${upg.autoLit0} with the setting ${upg.globalOn ? 'on' : 'off'}; ` +
+     `bought: fitted ${upg.fitted} for ${upg.paid} of ${upg.cost}, button gone ${upg.gone}; AUTO tapped: ${upg.autoAfter} (word ${upg.word}), lit ${upg.autoLit1}; ` +
+     `empty till dimmed ${upg.poor} and refused ${upg.refused}; ground tap took it down ${upg.down}`);
+
+  /* and the rest of the finger's helpers */
   await page.evaluate(() => {
-    const cv = document.getElementById('cv');
-    window.__tev = function (type, x, y) {
-      const r = cv.getBoundingClientRect();
-      const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
-      const up = type === 'touchend';
-      cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
-    };
     /* a point of open ground on the screen with nothing of either side on it and no flag
        near it, so that a tap there is a tap on bare ground */
     window.__clearPt = function (sx, sy, rad) {
@@ -439,10 +540,45 @@ for (const device of TARGETS) {
     window.__tapFlag = function (s) {
       window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.render();
       const p = window.w2s(s.x, s.y);
+      /* A tap on one of his own picks the unit, and his own men stand on his own flags:
+         the pole point is not always a tap on the flag. So it is nudged round the pole
+         until the pad is open on THAT sector -- the flag is a circle of a hundred and
+         thirty and the pick radius is a few dozen, so there is always room. */
+      const tryAt = (x, y) => {
+        window.__tev('touchstart', x, y); window.__tev('touchend', x, y);
+        return !!(window.SIMPLEORD && window.SIMPLEORD.sec === s);
+      };
+      if (!tryAt(p.x, p.y)) {
+        for (let k = 0; k < 8; k++) {
+          const a = k * Math.PI / 4;
+          if (tryAt(p.x + Math.cos(a) * 46, p.y + Math.sin(a) * 46)) break;
+        }
+      }
+      const box = document.getElementById('tord');
+      return { shown: !box.classList.contains('hidden'), name: document.getElementById('tordname').textContent,
+               on: !!(window.SIMPLEORD && window.SIMPLEORD.sec === s),
+               btns: [...box.querySelectorAll('#tordbtns .tf')].map(b => { const r = b.getBoundingClientRect(); return { dir: b.dataset.ord, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
+               who: [...box.querySelectorAll('#tordwho .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.who, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
+               how: [...box.querySelectorAll('#tordhow .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.how, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
+    };
+    /* A tap on a piece of open ground, which is the thing the board added. The point is
+       found ON THE SCREEN rather than in the world: `clampCam` will not centre the camera
+       near the edge of the map, so a world point chosen by arithmetic and projected after
+       the camera has refused to go there lands somewhere else entirely -- the first
+       version tapped (141, 824), the camera was looking a long way off it, and the row
+       read a pad that had never opened. `__clearPt` already answers the question the
+       drill is asking: a point on screen with nothing of either side on it and no flag
+       near it. */
+    window.__tapGround = function (nearX, nearY) {
+      window.__o.camera({ x: nearX, y: nearY, dist: 620, pitch: 0.95 }); window.render();
+      const p = window.__clearPt(innerWidth / 2, innerHeight / 2, 140);
+      if (!p) return null;
       window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
-      const box = document.getElementById('tflag');
-      return { shown: !box.classList.contains('hidden'), name: document.getElementById('tflagname').textContent,
-               btns: [...box.querySelectorAll('.tf')].map(b => { const r = b.getBoundingClientRect(); return { dir: b.dataset.dir, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
+      return document.getElementById('tord').classList.contains('hidden') ? null : p.w;
+    };
+    window.__ordOp = function (slot, id) {
+      const o = window.aiOrdById(slot, id);
+      return o && o.opId ? window.aiOpById(slot, o.opId) : null;
     };
   });
 
@@ -482,52 +618,318 @@ for (const device of TARGETS) {
     const A = theirs.filter(s => s !== H)[0], F = theirs.filter(s => s !== H && s !== A).slice(-1)[0];
     /* ATTACK on a flag that is not his */
     const tapA = window.__tapFlag(A);
-    const small = tapA.btns.filter(b => b.w < minTap || b.h < minTap).length;
-    document.querySelector('#tflag .tf[data-dir="attack"]').click();
-    const shutA = document.getElementById('tflag').classList.contains('hidden');
+    const small = tapA.btns.concat(tapA.who, tapA.how).filter(b => b.w < minTap || b.h < minTap).length;
+    const kinds = tapA.btns.map(b => b.dir).join(',');
+    document.querySelector('#tordbtns .tf[data-ord="attack"]').click();
+    const shutA = document.getElementById('tord').classList.contains('hidden');
     const dirA = window.aiDirOf(own, A.id);
     /* HOLD on one of his, FEINT on another of theirs */
-    window.__tapFlag(H); document.querySelector('#tflag .tf[data-dir="hold"]').click();
-    window.__tapFlag(F); document.querySelector('#tflag .tf[data-dir="feint"]').click();
+    window.__tapFlag(H); document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
+    window.__tapFlag(F); document.querySelector('#tordbtns .tf[data-ord="feint"]').click();
     const tick = P.t, dirH = window.aiDirOf(own, H.id), dirF = window.aiDirOf(own, F.id);
     /* one tick of the brain, and what it made of the three */
     window.aiThink(1);
     const Q = window.AIOP[own], main = window.aiOpKind(own, 'take');
     const takers = window.G.units.filter(u => window.owned(u) && !u.dead && u.jobSec === A.id && !u.retreat).length;
-    const hold = window.aiOpDirOf(own, H.id, 'hold'), feint = window.aiOpDirOf(own, F.id, 'feint');
+    const oH = window.aiOrdAt(own, H.id), oF = window.aiOrdAt(own, F.id);
+    const hold = oH && window.__ordOp(own, oH.id), feint = oF && window.__ordOp(own, oF.id);
     const onHold = hold ? window.G.units.filter(u => window.owned(u) && !u.dead && u.op === hold.id).length : 0;
     const onFeint = feint ? window.G.units.filter(u => window.owned(u) && !u.dead && u.op === feint.id).length : 0;
     const status = document.getElementById('tselname').textContent;
-    /* the popup on the held flag shows HOLD lit and a CLEAR, and CLEAR takes it off; the
-       review then drops the operation it stood on */
+    /* the pad on the held flag shows HOLD lit, and tapping the lit one again takes it
+       off; the review then drops the operation it stood on */
     const again = window.__tapFlag(H);
-    const lit = again.btns.filter(b => b.on).map(b => b.dir).join('+'), hasClear = again.btns.some(b => b.dir === 'clear');
-    const clr = document.querySelector('#tflag .tf[data-dir="clear"]'); if (clr) clr.click();
+    const lit = again.btns.filter(b => b.on).map(b => b.dir).join('+');
+    document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
     const cleared = !window.aiDirOf(own, H.id);
     window.aiThink(1);
-    const dropped = !window.aiOpDirOf(own, H.id, 'hold');
+    const dropped = !window.aiOpById(own, hold ? hold.id : 0);
     unhide();
-    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, shutA, dirA, dirH, dirF, tick,
-             asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, hasClear, cleared, dropped, status,
+    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick, onA: tapA.on,
+             asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, cleared, dropped, status,
+             who: tapA.who.length, how: tapA.how.length,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
              n: window.G.units.filter(u => window.owned(u) && !u.dead && !u.def.builder && u.cat).length };
   }, MIN_TAP);
-  ok('simple: a tap on a flag puts ATTACK, HOLD and FEINT up; ATTACK is the wave\'s objective, HOLD and FEINT raise directed operations with men on them, and CLEAR takes one off',
-     !flags.none && flags.shown && flags.name.length > 0 && flags.small === 0 && flags.shutA && flags.dirA === 'attack' && flags.dirH === 'hold' &&
+  ok('simple: a tap on a flag puts the whole order pad up; ATTACK is the wave\'s objective, HOLD and FEINT raise operations with men on them, and the lit one taps off',
+     !flags.none && flags.shown && flags.onA && flags.name.length > 0 && flags.small === 0 && flags.kinds.split(',').length === 9 &&
+     flags.who === 9 && flags.how === 3 && flags.shutA && flags.dirA === 'attack' && flags.dirH === 'hold' &&
      flags.dirF === 'feint' && flags.tick === 0 && flags.asSec === flags.A && flags.mainSec === flags.A && flags.takers >= 1 && flags.hold &&
-     flags.onHold >= 1 && flags.feint && flags.onFeint >= 1 && flags.lit === 'hold' && flags.hasClear && flags.cleared && flags.dropped,
+     flags.onHold >= 1 && flags.feint && flags.onFeint >= 1 && flags.lit === 'hold' && flags.cleared && flags.dropped,
      flags.none ? 'fewer than three flags that are not his' :
-     `${flags.name}: attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; hold ${flags.hold} with ${flags.onHold} on it; ` +
-     `feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; lit ${flags.lit}, clear ${flags.hasClear} -> ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
+     `${flags.name} (on the flag ${flags.onA}, wanted ${flags.A}): ${flags.kinds} with ${flags.who} who-chips and ${flags.how} tempers, none under ${MIN_TAP}px; ` +
+     `attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; ` +
+     `hold ${flags.hold} with ${flags.onHold} on it; feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
+     `lit ${flags.lit} -> cleared ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
+
+  /* --- the rest of the board: an order about a piece of open ground with a force he
+     named himself, an order about a thing of theirs, the list of what is standing with a
+     way to take one off, and the three settings every unit not under an order runs on.
+     None of it existed: three directives on nine flags was the whole of what a player
+     could say, and there was nothing anywhere that told him which of his units were
+     carrying one out. Driven through the events a finger raises, at the canvas. --- */
+  const board = await page.evaluate(minTap => {
+    const own = window.G.own, side = window.G.side, us = side === 'us', hq = window.hqOf(own);
+    if (!window.AIP[own]) window.aiInit(own, true);
+    const P = window.AIP[own];
+    /* a clean board, no placement left armed by the row above -- an armed emplacement
+       takes the next tap on the ground and every tap below is one -- and a few sections
+       of his own, away from the flags */
+    window.G.place = null;
+    window.aiOrds(own).length = 0;
+    const raised = [];
+    for (let i = 0; i < 4; i++) {
+      const sp = window.nearestFree(hq.x + (us ? 300 : -300) + i * 30, hq.y - 160 + i * 90);
+      const u = window.spawnUnit(own, us ? 'us_rifle' : 'ger_gren', sp.x, sp.y, 0);
+      u.setup = 0; raised.push(u);
+    }
+    const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat === 'inf' && !u.def.builder);
+    /* the section the posture is said of, held back from the screen order below: with
+       INF as the force every section on the field is on it, and a unit under an order is
+       not the plan's to march either -- which would have made the posture unreadable */
+    const poseSec = mine[mine.length - 1] || null;
+    /* ---- a piece of open ground, given to his infantry, pressed home.
+       Clear of his own men and of any flag, because a tap on one of his picks it and a
+       tap near a pole is a tap on the flag: the first version put the point six hundred
+       units out toward the enemy, which after four minutes of battle is exactly where his
+       sections are, and every assertion under it read off a pad that had never opened. */
+    window.ORDWHO = 'inf'; window.ORDAGG = 2;
+    let gp = null;
+    for (const d of [340, 520, 700, 180]) {
+      gp = window.__tapGround(hq.x + (us ? d : -d), hq.y + (d & 1 ? 120 : -80));
+      if (gp) break;
+    }
+    const padG = !!gp;
+    const headG = document.getElementById('tordname').textContent;
+    document.querySelector('#tordbtns .tf[data-ord="screen"]').click();
+    const oG = window.aiOrds(own).filter(o => o.k === 'screen')[0];
+    const forceN = oG ? oG.force.length : -1, aggr = oG ? oG.aggr : -1;
+    /* ---- a thing of theirs: the pad opens on it and RAID names it */
+    /* and a thing of theirs with nobody of his standing on top of it, for the same reason */
+    const foe = window.G.units.find(u => !u.dead && u.side !== side && !u.inside &&
+      !window.G.units.some(o => !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - u.x, o.y - u.y) < 170)) ||
+      window.G.units.find(u => !u.dead && u.side !== side && !u.inside);
+    let padF = false, headF = '', tid = 0;
+    if (foe) {
+      if (us) foe.vUs = true; else foe.vGer = true;
+      window.__o.camera({ x: foe.x, y: foe.y, dist: 520, pitch: 0.95 }); window.render();
+      const p = window.w2s(foe.x, foe.y);
+      /* and only if the camera could actually be put there: the clamp keeps it off the
+         edge of the map and a projection of a point the camera is not looking at is a
+         tap somewhere else */
+      const on = !p.behind && p.x > 10 && p.y > 10 && p.x < innerWidth - 10 && p.y < innerHeight - 10;
+      if (on) { window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y); }
+      padF = on && !document.getElementById('tord').classList.contains('hidden');
+      headF = document.getElementById('tordname').textContent;
+      window.ORDWHO = 'any';
+      const b = document.querySelector('#tordbtns .tf[data-ord="raid"]');
+      if (b) b.click();
+      const oR = window.aiOrds(own).filter(o => o.k === 'raid')[0];
+      tid = oR ? oR.tid : 0;
+    }
+    /* ---- one tick, and who is under what. The force is read again after it, because
+       the tend prunes whoever has died or is falling back and those are not carrying
+       anything: the count to check against is what the order still has, not what he
+       named a moment before. */
+    window.aiThink(1);
+    const forceAfter = oG ? oG.force.length : -1;
+    const onG = oG ? window.G.units.filter(u => window.owned(u) && !u.dead && u.ord === oG.id).length : 0;
+    const opG = oG && oG.opId ? window.aiOpById(own, oG.opId) : null;
+    const fearOn = oG ? window.G.units.filter(u => window.owned(u) && u.ord === oG.id && u.fear !== undefined)
+                                      .map(u => +u.fear.toFixed(2))[0] : -1;
+    /* ---- the list: the button's count, a row per order, and the cross that cancels */
+    const badge = document.getElementById('tordn').textContent;
+    document.getElementById('tOrders').click();
+    const listUp = !document.getElementById('tlist').classList.contains('hidden');
+    const rows = [...document.querySelectorAll('#tlistrows .orow')].map(r => ({
+      id: r.dataset.ord, h: r.getBoundingClientRect().height | 0, t: r.querySelector('b').textContent }));
+    const nOrd = window.aiOrds(own).length;
+    const cross = document.querySelector('.orow button');
+    if (cross) cross.click();
+    const afterX = window.aiOrds(own).length;
+    /* ---- and the army's own three, off the same panel */
+    const chips = [...document.querySelectorAll('#tarmypose .chip, #tarmyreact .chip, #tarmyhow .chip')];
+    const smallC = chips.filter(c => { const r = c.getBoundingClientRect(); return r.width < minTap || r.height < minTap; }).length;
+    document.querySelector('#tarmypose .chip[data-pose="dig"]').click();
+    document.querySelector('#tarmyreact .chip[data-react="fight"]').click();
+    document.querySelector('#tarmyhow .chip[data-how="0"]').click();
+    const army = { pose: P.pose, react: P.react, aggr: P.aggr };
+    document.getElementById('tlistx').click();
+    const listDown = document.getElementById('tlist').classList.contains('hidden');
+    /* ---- a posture on one section: the plan stops marching it, and its own weighing
+       still has it, which is the whole distinction the posture rests on */
+    const sec = poseSec;
+    let posed = null;
+    if (sec) {
+      /* off whatever order it is under, because an order outranks a posture by design */
+      for (const o of window.aiOrds(own)) { const i = o.force.indexOf(sec.id); if (i >= 0) o.force.splice(i, 1); }
+      sec.ord = 0; sec.op = 0;
+      window.select([sec], false); window.simpleUnit(sec);
+      document.querySelector('#tunitpose .chip[data-pose="hold"]').click();
+      const before = sec.jobSec;
+      window.aiThink(1);
+      posed = { pose: sec.pose, of: window.poseOf(sec), before, after: sec.jobSec, posed: window.aiPosed(sec) };
+      window.simpleUnit(null); window.select([], false);
+    }
+    /* ---- and the temper is read where it is spent: the same section under a cautious
+       order and under a press-home one pays a different price for the beaten zone */
+    P.aggr = 1; const t0 = window.aiAggr({ own: own, ord: 0 });
+    P.aggr = 2; const tPress = window.aiAggr({ own: own, ord: 0 }).fear;
+    P.aggr = 0; const tCaut = window.aiAggr({ own: own, ord: 0 }).fear;
+    P.aggr = 1; P.pose = 'advance'; P.react = 'cover';
+    /* down again */
+    window.aiOrds(own).length = 0;
+    for (const u of raised) { const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); }
+    window.ORDWHO = 'any'; window.ORDAGG = null;
+    window.simpleOrdOpen(null); window.select([], false);
+    return { padG, headG, gpAt: gp ? [Math.round(gp.x), Math.round(gp.y)] : null, foeOn: padF,
+             forceN, forceAfter, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
+             fearOn, padF, headF, tid, foeId: foe ? foe.id : -1, badge, listUp, rows, nOrd, afterX, smallC, army,
+             listDown, posed, t0: t0.fear, tPress, tCaut };
+  }, MIN_TAP);
+  ok('simple: an order on open ground with a force he named, one on a thing of theirs, the list that says what is standing, and the army\'s own posture, reaction and temper',
+     board.padG && board.headG === 'OPEN GROUND' && board.forceN === board.mine && board.aggr === 2 &&
+     board.onG === board.forceAfter && board.onG > 0 && board.opKind === 'screen' && board.opWant === 0 && board.fearOn > 0 && board.fearOn < .6 &&
+     board.padF && board.headF.length > 0 && board.tid === board.foeId &&
+     board.badge === String(board.nOrd) && board.listUp && board.rows.length === board.nOrd &&
+     board.rows.every(r => r.h >= MIN_TAP) && board.afterX === board.nOrd - 1 && board.smallC === 0 &&
+     board.army.pose === 'dig' && board.army.react === 'fight' && board.army.aggr === 0 && board.listDown &&
+     board.posed && board.posed.pose === 'hold' && board.posed.of === 'hold' && board.posed.posed && !board.posed.after &&
+     board.tPress < board.t0 && board.tCaut > board.t0,
+     `ground pad ${board.padG} at ${board.gpAt} "${board.headG}" -> screen on ${board.forceN} of ${board.mine} sections at ${board.aggr}, ` +
+     `${board.onG} of the ${board.forceAfter} it still has carrying it (op ${board.opKind} want ${board.opWant}, fear ${board.fearOn}); ` +
+     `a tap on theirs "${board.headF}" -> raid on ${board.tid}/${board.foeId}; badge ${board.badge} with ${board.rows.length} of ${board.nOrd} rows, ` +
+     `cross -> ${board.afterX}; army ${JSON.stringify(board.army)}; posture ${JSON.stringify(board.posed)}; ` +
+     `fear ${board.tCaut}/${board.t0}/${board.tPress}`);
+
+  /* --- and the guns serve the attack he ordered: a tube of his in action and in reach,
+     ATTACK tapped on a defended flag, and on the next tick the tube is laid on the men
+     holding it; with the wave ready to go and its preparation spent, the go lays smoke short
+     of the flag. Staged rather than sampled, with the tube's post set to where it stands so
+     the row is about the mission and not about the walk to a post. --- */
+  const dirArty = await page.evaluate(() => {
+    const own = window.G.own, side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const P = window.AIP[own]; if (!P) return { none: 'no plan on his slot' };
+    const hq = window.hqOf(own);
+    const S = window.G.sectors.filter(s => s.owner !== side).sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y))[0];
+    if (!S) return { none: 'no flag that is not his' };
+    const mk = side === 'us' ? 'us_mor' : 'ger_mor', rk = side === 'us' ? 'us_rifle' : 'ger_gren', fk = foe === 'ger' ? 'ger_gren' : 'us_rifle';
+    const ang = Math.atan2(hq.y - S.y, hq.x - S.x), raised = [];
+    const at = (d, o) => window.nearestFree(S.x + Math.cos(ang) * d + Math.cos(ang + Math.PI / 2) * o, S.y + Math.sin(ang) * d + Math.sin(ang + Math.PI / 2) * o);
+    const mp = at(430, 0), m = window.spawnUnit(own, mk, mp.x, mp.y, 0); raised.push(m);
+    m.setup = 0; m.packed = false;
+    const d1 = window.spawnUnit(foe, fk, S.x + 24, S.y, 0), d2 = window.spawnUnit(foe, fk, S.x - 24, S.y + 20, 0); raised.push(d1, d2);
+    [-70, 0, 70].forEach(o => { const p = at(300, o); const u = window.spawnUnit(own, rk, p.x, p.y, 0); u.setup = 0; raised.push(u); });
+    for (let k = 0; k < 400; k++) { window.computeVisibility(); if ((side === 'us' ? d1.vUs : d1.vGer) && (side === 'us' ? d2.vUs : d2.vGer)) break; }
+    const known = !!(side === 'us' ? d1.vUs : d1.vGer);
+    /* the tube stands on its post, aimed at the flag, so the plan finds it in position */
+    m.jobX = m.x; m.jobY = m.y; m.aimX = S.x; m.aimY = S.y; m.jobT = window.G.t; m.jobAnc = 300;
+    const f0 = Object.assign({}, window.AIR.fired);
+    /* and nobody answers a call for the drill's two ticks: a section of his from the
+       battle meeting a tank raises one, an answer outranks the plan, and the nearest
+       capable thing to it was one of the three put down here, dealt off the flag and sent
+       two streets away. The flag row empties the board for the same reason; this one has
+       to stop the dealing as well, because a call raised inside the tick is dealt inside it */
+    const realAns = window.aiAnswer; window.aiAnswer = function () {};
+    /* ATTACK given through the pad with the three sections he put down NAMED as its
+       force, which is the board's own way of saying it and is what makes the deal
+       readable: dealt by nearest-first they compete with whatever the battle's army has
+       left standing nearer the flag, and one of the three went to another objective. */
+    const secs3 = raised.filter(u => u.own === own && u.cat === 'inf');
+    window.select(secs3, false);
+    window.ORDWHO = 'sel'; window.ORDAGG = null;
+    window.simpleOrdOpen({ sec: S, x: S.x, y: S.y });
+    document.querySelector('#tordbtns .tf[data-ord="attack"]').click();
+    window.select([], false); window.ORDWHO = 'any';
+    P.asKey = null; P.asT = -99; P.t = 0;
+    const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
+    tick();
+    /* what the tube was laid on after a tick: the preparation on the flag's defenders, or
+       the screen short of the flag. Either may come first. On the desktop the wave waits
+       for its fire and the go has to be forced below; on one phone run a section of his
+       from the battle already stood inside 240 of the flag, so the wave went on the tick
+       it formed and the screen came before the preparation rather than after it. Both are
+       the brain being right, so the row reads both ticks and asks for one of each. */
+    /* any tube of his, because `aiSmokeScreen` sends the screen to whichever is nearest
+       to being able to lay it and the battle has tubes of its own: the row stages one so
+       that there is certainly a gun in reach, not so that it is the only one */
+    const anyMis = (want) => {
+      const t = window.G.units.filter(u => window.owned(u) && !u.dead && u.barrage && !!u.barrage.smoke === want)[0];
+      return t ? { smoke: want, d: Math.round(Math.hypot(t.barrage.x - S.x, t.barrage.y - S.y)), x: t.barrage.x, y: t.barrage.y } : null;
+    };
+    const mis = () => m.barrage ? { smoke: !!m.barrage.smoke, d: Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)), x: m.barrage.x, y: m.barrage.y } : null;
+    const m1 = mis(), went1 = P.asT >= 0;
+    const obj = String(P.asSec) === String(S.id);
+    /* the preparation is spent before the go, the way it is in a battle -- with the
+       nearest thing the side can see standing square off the line of fire, because a
+       halted crew turns toward the nearest known enemy and a tube on a mission used to be
+       turned back off its bearing every frame by exactly that, at the rate the mission
+       laid it on: ten rounds in hand and none of them fired, on a row that read as a
+       mission that had simply not run down yet */
+    const tp = at(430, 190), th = window.spawnUnit(foe, fk, tp.x, tp.y, 0); raised.push(th);
+    th.vUs = th.vGer = true;
+    const want = Math.atan2(m.barrage ? m.barrage.y - m.y : 0, m.barrage ? m.barrage.x - m.x : 1);
+    let fired = 0;
+    for (let f = 0; f < 60 * 60 && m.barrage; f++) { const n = window.G.shots.length; window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; if (window.G.shots.length > n) fired++; }
+    const spent = !m.barrage, thD = Math.round(Math.hypot(th.x - m.x, th.y - m.y)), thOff = Math.abs(window.angDiff(want, Math.atan2(th.y - m.y, th.x - m.x))).toFixed(2);
+    const state = (m.barrage ? `left ${m.barrage.left} fired ${fired} moving ${m.moving} order ${m.order} packed ${m.packed} setup ${m.setup.toFixed(1)} cd ${m.cd.toFixed(1)} lay ${Math.abs(window.angDiff(m.facing, want)).toFixed(2)}` : `fired ${fired}`) +
+                  ` with the nearest enemy ${thD} off at ${thOff} rad from the line`;
+    if (P.asT < 0) { P.asForm = window.G.t - 200; P.asT = -99; }
+    tick();
+    const m2 = mis(), went = P.asT >= 0;
+    const he = m1 && !m1.smoke ? m1 : m2 && !m2.smoke ? m2 : anyMis(false);
+    const sm = m1 && m1.smoke ? m1 : m2 && m2.smoke ? m2 : anyMis(true);
+    const dirFired = (window.AIR.fired['mortar.dir'] || 0) - (f0['mortar.dir'] || 0);
+    /* what the wave was dealt, because the go wants half of it near the forming-up point
+       and the first version of this row lost two of the three sections to a held flag
+       that outscored the directive */
+    const mo = ((window.AIOP[own] || {}).list || []).find(o => o.main) || {};
+    const secs = raised.filter(u => u.own === own && u.cat === 'inf');
+    /* by the job the deal gave, and not by aiInWave: an operation raised the same tick
+       borrows a section the deal had already put on the flag, which is the operations
+       outranking the plan by design, and on one run a hold took two of the three */
+    const dealt = secs.filter(u => String(u.jobSec) === String(S.id)).length;
+    const deal = secs.map(u => `${u.job}/${u.jobSec}${u.op ? '/op' : ''}`).join(' ');
+    const fD = sm && mo.fupX ? Math.round(Math.hypot(sm.x - mo.fupX, sm.y - mo.fupY)) : -1;
+    const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
+    const kind = (q) => q ? (q.smoke ? 'smoke' : 'HE') + ' ' + q.d + ' from the flag' : 'nothing';
+    /* down again */
+    window.aiAnswer = realAns;
+    window.aiDirSet(own, S.id, null);
+    P.asKey = null; P.asT = -99; P.asSec = null;
+    raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
+    window.G.smoke.length = 0; window.G.shots.length = 0;
+    window.select([], false);
+    return { name: S.label || S.id, known, obj, dirFired, spent, state, went1, went, fD, screenFired, dealt, deal, n: secs.length,
+             m1: kind(m1), m2: kind(m2), heD: he ? he.d : -1, smD: sm ? sm.d : -1 };
+  });
+  ok('simple: ATTACK with a tube in reach lays it on the men holding the flag, and the go lays smoke short of the flag',
+     !dirArty.none && dirArty.obj && dirArty.heD >= 0 && dirArty.heD <= 190 && dirArty.dirFired >= 1 && dirArty.spent && dirArty.dealt === dirArty.n &&
+     dirArty.went && dirArty.screenFired >= 1 && dirArty.smD > 0 && dirArty.smD <= 170,
+     dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid ${dirArty.m1} (objective ${dirArty.obj}, went ${dirArty.went1}); ` +
+                            `spent ${dirArty.spent} (${dirArty.state}); tick 2 dealt ${dirArty.dealt} of ${dirArty.n} to it (${dirArty.deal}), went ${dirArty.went}, laid ${dirArty.m2}; ` +
+                            `mortar.dir ${dirArty.dirFired}, smoke.screen ${dirArty.screenFired}, the screen ${dirArty.fD} from the fup`);
 
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */
+  /* the section the two rows below tap is one standing clear of any flag and of any other
+     unit of his: under SIMPLE a tap within 130 of a flag is a tap on the flag, and a tap on a
+     section standing in another picks whichever is nearer, so the first section in the list
+     read as a picked-nothing on one run in ten */
+  await page.evaluate(() => {
+    window.__aloneSec = function () {
+      return window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar &&
+        !window.G.sectors.some(s => Math.hypot(s.x - q.x, s.y - q.y) < 170) &&
+        !window.G.units.some(o => o !== q && !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - q.x, o.y - q.y) < 80)) ||
+        window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    };
+  });
   const look = await page.evaluate(() => {
     window.select([], false);
     document.getElementById('tPov').click();
     const on = window.POV.on, from = window.POV.u && window.owned(window.POV.u) && !window.POV.u.dead;
     window.povOff();
-    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    const u = window.__aloneSec();
     if (!u) return { on, from, none: true };
     window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 }); window.render();
     const p = window.w2s(u.x, u.y), o0 = u.order, d0 = JSON.stringify(u.dest && [u.dest.x, u.dest.y]);
@@ -545,7 +947,7 @@ for (const device of TARGETS) {
   /* and the classic scheme is what it was: the bar back, the strip gone, a tap an order */
   const classic = await page.evaluate(() => {
     window.ctrlSet(false, true);
-    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+    const u = window.__aloneSec();
     if (!u) return { none: true };
     window.clearOrder(u);
     window.select([u], false);
@@ -566,6 +968,43 @@ for (const device of TARGETS) {
      !classic.none && classic.off && classic.bar !== 'none' && classic.hidden && classic.miniIn === 'bar' && classic.order === 'move' &&
      classic.dest >= 0 && classic.dest < 1 && classic.panned > 20,
      classic.none ? 'no section or no open ground on screen' : `tap: ${classic.order} ${classic.dest} from the finger, drag panned ${classic.panned}, map in #${classic.miniIn}, brains ${classic.brains}`);
+  /* the setting under classic: the tick fits an upgrade to a vehicle of his that can take
+     one, leaves alone the one that said no, and fits nothing with the setting off. One
+     vehicle at a time, because the tick buys one a call and would otherwise pick whichever
+     of three it met first. The command bar's card is read off the same selection. */
+  const aup = await page.evaluate(() => {
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const key = us ? 'us_sher' : 'ger_p4', uk = 'mg';
+    const sp = window.nearestFree(hq.x + (us ? 260 : -260), hq.y - 120);
+    window.G.res[own].mp = 3000; window.G.res[own].fu = 500;
+    const brainRuns = window.aiRuns(window.slotOf(own));
+    function tick() { window.autoUpT = -99; window.autoUpTick(); }
+    const a = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    window.autoUpSet(true, true); tick();
+    const autoFit = !!a.up[uk];
+    /* the card, on the selection */
+    window.select([a], false); window.syncHud();
+    const card = Array.from(document.querySelectorAll('#cmds .cmd')).find(b => /Auto upgrade/i.test(b.textContent));
+    const lit0 = card && card.classList.contains('act');
+    if (card) card.click();
+    const word = a.autoUp, lit1 = !!Array.from(document.querySelectorAll('#cmds .cmd')).find(b => /Auto upgrade/i.test(b.textContent) && b.classList.contains('act'));
+    window.G.units.splice(window.G.units.indexOf(a), 1);
+    const b = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    b.autoUp = false; tick();
+    const saidNo = !b.up[uk];
+    window.G.units.splice(window.G.units.indexOf(b), 1);
+    const c = window.spawnUnit(own, key, sp.x, sp.y, 0);
+    window.autoUpSet(false, true); tick();
+    const off = !c.up[uk];
+    window.autoUpSet(true, true);
+    window.G.units.splice(window.G.units.indexOf(c), 1);
+    window.select([], false); window.syncHud();
+    return { key, brainRuns, autoFit, card: !!card, lit0, word, lit1, saidNo, off };
+  });
+  ok('classic: the setting fits a vehicle its upgrade on the tick, the card on the bar is its own word over it, and BY HAND fits nothing',
+     !aup.brainRuns && aup.autoFit && aup.card && aup.lit0 && aup.word === false && !aup.lit1 && aup.saidNo && aup.off,
+     `${aup.key}: brain on his slot ${aup.brainRuns}; AUTO fitted the roof MG ${aup.autoFit}; card ${aup.card} lit ${aup.lit0}, tapped -> ${aup.word} lit ${aup.lit1}; ` +
+     `a vehicle that said no ${aup.saidNo ? 'kept its word' : 'was fitted anyway'}; BY HAND fitted nothing ${aup.off}`);
   /* and what the rows raised comes down again, because the rows below park a tank
      beside the headquarters on ground the post now stands on; the rest of the gate runs
      on classic on both devices, since the brain would otherwise be ordering the units
@@ -814,6 +1253,182 @@ for (const device of TARGETS) {
                 `${how.inCircle} inside ${how.r} and ${how.inBound} inside ${how.bound}; ` +
                 `${how.early} rounds during ${how.setup}s of setup and ${how.after} after it`);
 
+  /* --- a crew-served weapon is in action or it is on the move, and getting from one to the
+     other takes time both ways. The row walks a machine gun through the whole cycle on the
+     game's own updateUnit: set up after spawning; ordered off, it stands and packs for the
+     def's own clock with nothing leaving the barrel and the men still on the tripod; walks;
+     halts and sets up again. Then the loophole the old timer had is asked for: a team on an
+     attack-move that halts short of its path's end, which used to fire on the instant with
+     the gun still on somebody's shoulder, has to set up first. And a towed gun's hitch has
+     to wait on the crew taking it out of action. --- */
+  const pk = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const key = side === 'us' ? 'us_mg' : 'ger_mg42';
+    const D = window.UNITS[key];
+    if (!D || !D.pack) return { has: false };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const sp = window.__o.flatSpot(160);
+    const dt = 1 / 30;
+    let fired = 0;
+    const step = (units, n, fn) => {
+      for (let i = 0; i < n; i++) {
+        const ns = window.G.shots.length;
+        units.forEach(u => window.updateUnit(u, dt));
+        window.updateShots(dt); window.G.t += dt;
+        if (window.G.shots.length > ns) fired++;
+        if (fn) fn(i * dt);
+      }
+    };
+    /* 1. the cycle, alone on open ground */
+    const mg = window.spawnUnit(side, key, sp.x, sp.y, 0);
+    const r = { has: true, key, setup: D.setup, pack: D.pack, spawnSetup: mg.setup, spawnPacked: !!mg.packed };
+    step([mg], 30 * (D.setup + .5));
+    r.inAction = !mg.packed && mg.setup <= 0 && window.gunSet(mg);
+    window.orderMove(mg, sp.x, sp.y + 300, false);
+    const x0 = mg.x, y0 = mg.y;
+    let packEnd = -1, firstMove = -1, arrive = -1, setEnd = -1, maxPack = 0, gunDownWhilePacking = true;
+    step([mg], 30 * 24, t => {
+      if (mg.pack > maxPack) maxPack = mg.pack;
+      if (mg.pack > 0 && !window.gunSet(mg)) gunDownWhilePacking = false;
+      if (packEnd < 0 && mg.packed) packEnd = t;
+      if (firstMove < 0 && Math.hypot(mg.x - x0, mg.y - y0) > 2) firstMove = t;
+      if (arrive < 0 && firstMove >= 0 && !mg.path) arrive = t;
+      if (setEnd < 0 && arrive >= 0 && mg.setup <= 0 && !mg.packed) setEnd = t;
+    });
+    Object.assign(r, { packEnd, firstMove, arrive, setEnd, maxPack, gunDownWhilePacking,
+                       walked: Math.round(Math.hypot(mg.x - x0, mg.y - y0)), endInAction: !mg.packed && mg.setup <= 0 });
+    /* 2. the loophole: an attack-move that halts on a target in reach sets up before it fires */
+    window.G.units.length = 0;
+    const am = window.spawnUnit(side, key, sp.x, sp.y, 0);
+    am.setup = 0;
+    step([am], 3);
+    window.orderMove(am, sp.x, sp.y + 600, true);
+    step([am], 30 * (D.pack + 2));
+    const e = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle', am.x, am.y + Math.round(D.w.range * .6), Math.PI / 2);
+    e.setup = 0;
+    for (let k = 0; k < 400; k++) { window.computeVisibility(); if (side === 'us' ? e.vUs : e.vGer) break; }
+    const seen = side === 'us' ? e.vUs : e.vGer;
+    /* the section shoots back, so what is counted is the gun's own rounds and not the
+       shot list, which the tracers of both sides go into */
+    let haltedAt = -1, setupAtHalt = -1, firedAt = -1, packedAtHalt = null, own = 0;
+    const realRec = window.recFired;
+    window.recFired = function (u, n) { if (u === am) own += n; return realRec(u, n); };
+    step([am, e], 30 * (D.setup + 6), t => {
+      window.computeVisibility();
+      if (haltedAt < 0 && !am.path && !am.moving) { haltedAt = t; setupAtHalt = am.setup; packedAtHalt = !!am.packed; }
+      if (firedAt < 0 && own > 0) firedAt = t;
+    });
+    window.recFired = realRec;
+    Object.assign(r, { seen: !!seen, haltedAt, setupAtHalt, packedAtHalt, firedAt, target: !!am.target });
+    /* 3. the hitch: a gun in action packs behind the tow and the tow waits for it */
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const gk = side === 'us' ? 'us_t8' : null, tk = side === 'us' ? 'us_m3' : null;
+    if (gk && window.UNITS[gk] && window.UNITS[gk].pack) {
+      const g = window.spawnUnit(side, gk, sp.x, sp.y, 0);
+      g.setup = 0;
+      const v = window.spawnUnit(side, tk, sp.x, sp.y - 150, Math.PI / 2);
+      step([g, v], 3);
+      v.order = 'hitch'; v.hitchT = g;
+      let hitched = -1, moved = -1, hx = 0, hy = 0, packAtHitch = 0;
+      step([g, v], 30 * (window.UNITS[gk].pack + 8), t => {
+        if (hitched < 0 && g.towedBy) { hitched = t; hx = v.x; hy = v.y; packAtHitch = g.pack; window.orderMove(v, v.x, v.y + 400, false); }
+        else if (hitched >= 0 && moved < 0 && Math.hypot(v.x - hx, v.y - hy) > 2) moved = t;
+      });
+      Object.assign(r, { hasTow: true, towPack: window.UNITS[gk].pack, hitched, towMoved: moved, packAtHitch, towedPacked: !!g.packed, towedGun: !!g.towedBy });
+    } else r.hasTow = false;
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    return r;
+  });
+  ok('a crew-served weapon packs before it moves and sets up before it fires',
+     !pk.has || (pk.spawnSetup === pk.setup && !pk.spawnPacked && pk.inAction &&
+                 Math.abs(pk.maxPack - pk.pack) < .05 && pk.packEnd >= pk.pack - .1 && pk.firstMove >= pk.packEnd - .1 &&
+                 pk.gunDownWhilePacking && pk.arrive > pk.firstMove && pk.walked > 200 &&
+                 pk.setEnd >= pk.arrive + pk.setup - .1 && pk.endInAction &&
+                 pk.seen && pk.haltedAt >= 0 && pk.packedAtHalt && pk.firedAt >= 0 && pk.firedAt >= pk.haltedAt + pk.setup - .1 &&
+                 (!pk.hasTow || (pk.hitched >= 0 && Math.abs(pk.packAtHitch - pk.towPack) < .05 && pk.towMoved >= pk.hitched + pk.towPack - .1 && pk.towedPacked && pk.towedGun))),
+     !pk.has ? 'no packing weapon in this file'
+             : `${pk.key}: set up ${pk.setup}s after spawning; ordered off it packed ${pk.maxPack.toFixed(1)}s (gun ${pk.gunDownWhilePacking ? 'down' : 'UP'} the while) and ` +
+               `moved at ${pk.firstMove.toFixed(1)}s, walked ${pk.walked}, halted at ${pk.arrive.toFixed(1)}s and was in action at ${pk.setEnd.toFixed(1)}s; ` +
+               `on an attack-move it halted ${pk.packedAtHalt ? 'packed' : 'IN ACTION'} on a section ${pk.seen ? 'in sight' : 'UNSEEN'} at ${pk.haltedAt.toFixed(1)}s ` +
+               `and fired at ${pk.firedAt.toFixed(1)}s` +
+               (pk.hasTow ? `; the tow hitched at ${pk.hitched.toFixed(1)}s and moved at ${pk.towMoved.toFixed(1)}s` : ''));
+
+  /* --- smoke. A tube throws it as a mission of its own, each round a cloud rather than a
+     burst, and the cloud is a wall to the eye and to the gun until it thins: a section seen
+     across open ground is lost behind it and a rifle cannot be laid through it, an indirect
+     round still goes over it, and nobody under it is hurt. Bigger pieces throw bigger clouds
+     that stand longer, and the card on the bar lays one the same way the fire mission is
+     laid. Everything is put back afterwards. --- */
+  const smk = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const mk = side === 'us' ? 'us_mor' : 'ger_mor', hk = side === 'us' ? 'us_how' : 'ger_how', bk = side === 'us' ? 'us_how8' : 'ger_how210';
+    const S = k => window.smokeOf(window.UNITS[k]);
+    if (!S(mk)) return { has: false };
+    const sizes = { mor: S(mk), how: S(hk), bat: S(bk) };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice(), sm0 = window.G.smoke.slice(), sel0 = window.G.sel.slice();
+    window.G.units.length = 0; window.G.shots.length = 0; window.G.smoke.length = 0;
+    const sp = window.__o.flatSpot(220), nf = (x, y) => window.nearestFree(x, y);
+    const p0 = nf(sp.x, sp.y), p1 = nf(sp.x + 240, sp.y), p2 = nf(sp.x - 120, sp.y + 60), p3 = nf(sp.x - 120, sp.y - 60);
+    const eye = window.spawnUnit(side, side === 'us' ? 'us_rifle' : 'ger_gren', p0.x, p0.y, 0); eye.setup = 0;
+    const foeU = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle', p1.x, p1.y, Math.PI);
+    const m = window.spawnUnit(side, mk, p2.x, p2.y, 0); m.setup = 0; m.packed = false;
+    const hp0 = foeU.models.map(q => q.hp);
+    let seen = false;
+    for (let k = 0; k < 400 && !seen; k++) { window.computeVisibility(); seen = !!(side === 'us' ? foeU.vUs : foeU.vGer); }
+    const gz = (x, y) => window.groundZ(x, y);
+    const line = () => window.traceClear(eye.x, eye.y, gz(eye.x, eye.y) + 17, foeU.x, foeU.y, gz(foeU.x, foeU.y) + 12, window.sblk);
+    const before = { line: line(), fire: window.fireLine(eye, foeU), seen };
+    const mx = (p0.x + p1.x) / 2, my = (p0.y + p1.y) / 2;
+    const laid = window.orderBarrage(m, mx, my, true);
+    const rounds = m.barrage ? m.barrage.left : -1, isSmoke = !!(m.barrage && m.barrage.smoke);
+    let t = 0;
+    for (let f = 0; f < 60 * 30 && (m.barrage || window.G.shots.length); f++) {
+      window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; t += 1 / 60;
+    }
+    const clouds = window.G.smoke.length, inZone = window.G.smoke.filter(c => Math.hypot(c.x - mx, c.y - my) <= m.def.barrage.r + 14).length;
+    const hurt = foeU.models.some((q, i) => q.hp !== hp0[i]) || window.aliveModels(foeU) !== foeU.models.length;
+    const during = { line: line(), fire: window.fireLine(eye, foeU) };
+    let lost = -1;
+    for (let k = 0; k < 200 && lost < 0; k++) { window.computeVisibility(); if (!(side === 'us' ? foeU.vUs : foeU.vGer)) lost = k; }
+    /* an indirect round goes over it: a second tube laid on the section beyond the screen fires */
+    const m2 = window.spawnUnit(side, mk, p3.x, p3.y, 0); m2.setup = 0; m2.packed = false;
+    const laid2 = window.orderBarrage(m2, foeU.x, foeU.y);
+    let fired2 = 0;
+    for (let f = 0; f < 60 * 12; f++) { const n = window.G.shots.length; window.updateUnit(m2, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; if (window.G.shots.length > n) fired2++; }
+    /* the clouds thin and go, and the line is back */
+    window.G.smoke.forEach(c => { c.t = c.dur + 1; });
+    window.updateShots(1 / 60);
+    const after = { clouds: window.G.smoke.length, line: line() };
+    /* the card: with the tube picked the bar offers a smoke mission, and it lays one */
+    window.select([m], false); window.syncHud();
+    const card = Array.from(document.querySelectorAll('#cmds .cmd')).find(b => /Smoke mission/i.test(b.textContent));
+    if (card) card.click();
+    const mode = window.G.mode;
+    m.barrage = null;
+    window.callBarrage(mx, my, window.G.mode === 'smoke'); window.G.mode = null;
+    const cardLaid = !!(m.barrage && m.barrage.smoke);
+    m.barrage = null; m2.barrage = null;
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    window.G.smoke.length = 0; sm0.forEach(q => window.G.smoke.push(q));
+    window.select(sel0, false); window.syncHud();
+    return { has: true, mk, sizes, before, laid, rounds, isSmoke, t: +t.toFixed(1), clouds, inZone, hurt, during, lost, laid2, fired2, after, card: !!card, mode, cardLaid };
+  });
+  ok('a smoke mission lays clouds that stop the eye and the gun and hurt nobody, an indirect round still goes over, and the bigger the piece the bigger and longer the cloud',
+     !smk.has || (smk.before.line && smk.before.fire && smk.before.seen && smk.laid && smk.isSmoke && smk.rounds === smk.sizes.mor.rounds &&
+                  smk.clouds >= smk.rounds - 1 && smk.inZone === smk.clouds && !smk.hurt && !smk.during.line && !smk.during.fire && smk.lost >= 0 &&
+                  smk.laid2 && smk.fired2 > 0 && smk.after.clouds === 0 && smk.after.line &&
+                  smk.sizes.mor.r < smk.sizes.how.r && smk.sizes.how.r < smk.sizes.bat.r && smk.sizes.mor.dur < smk.sizes.how.dur && smk.sizes.how.dur < smk.sizes.bat.dur &&
+                  smk.card && smk.mode === 'smoke' && smk.cardLaid),
+     !smk.has ? 'no tube in this file'
+              : `${smk.mk}: seen ${smk.before.seen}, line ${smk.before.line}, fire line ${smk.before.fire} before; ${smk.rounds} smoke rounds laid ${smk.laid}, ` +
+                `${smk.clouds} clouds in ${smk.t}s (${smk.inZone} inside the zone), hurt ${smk.hurt}; line ${smk.during.line}, fire line ${smk.during.fire}, ` +
+                `lost after ${smk.lost} vision ticks; a mission over it fired ${smk.fired2}; thinned: ${smk.after.clouds} clouds, line ${smk.after.line}; ` +
+                `mortar ${smk.sizes.mor.r}/${smk.sizes.mor.dur.toFixed(0)}s, howitzer ${smk.sizes.how.r}/${smk.sizes.how.dur.toFixed(0)}s, battery ${smk.sizes.bat.r}/${smk.sizes.bat.dur.toFixed(0)}s; ` +
+                `card ${smk.card} -> mode ${smk.mode}, laid ${smk.cardLaid}`);
+
   /* --- the heavy battery, which is four rules rather than a weapon. It is dug as a field
      work and not queued, it may not be dug near its own headquarters, it will not fire
      into the enemy's base, and it takes the best part of a minute to come round onto a
@@ -919,9 +1534,38 @@ for (const device of TARGETS) {
     window.G.res.us.vp = 9000; window.G.res.ger.vp = 9000;
     const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
     const hq = window.G.blds.find(b => b.side === window.G.side && b.def.hq);
-    /* on ground it can actually drive off, or the driving check below measures a wall */
-    const sp = window.nearestFree((hq ? hq.x : 300) + 150, (hq ? hq.y : 950) + 80);
-    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, 0);   /* spawnUnit adds it to the field itself */
+    /* On ground it can drive off ALONG ITS OWN FACING, which is what the throttle asks
+       for: `povDrive` puts a waypoint 320 units up the hull's nose and nothing else, so a
+       tank staged square to a wall drives into the wall and the row measures the wall.
+       And after four minutes of battle the ground round the headquarters is his own army,
+       so what the drill wants is a CORRIDOR rather than a spot -- the same fault
+       `nearestFree` has been caught with before. Staged on a spot it read 11 units of
+       ground in three seconds on one run and 33 on the next, on identical code. */
+    const hx = hq ? hq.x : 300, hy = hq ? hq.y : 950;
+    const clearRun = (x, y, a) => {
+      for (let d = 30; d <= 300; d += 20) {
+        const px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+        if (!window.walkable(px, py) || window.blockAt(px, py)) return false;
+        if (window.buildingAt(px, py) || window.bunkerAt(px, py)) return false;
+        if (window.unitsAt(px, py, 42).length) return false;
+      }
+      return true;
+    };
+    let sp = null, face = 0;
+    for (const r of [150, 260, 380, 500]) {
+      for (let k = 0; k < 12 && !sp; k++) {
+        const c = window.nearestFree(hx + Math.cos(k * Math.PI / 6) * r, hy + Math.sin(k * Math.PI / 6) * r);
+        if (window.unitsAt(c.x, c.y, 50).length) continue;
+        for (let j = 0; j < 16; j++) {
+          const a = j * Math.PI / 8;
+          if (clearRun(c.x, c.y, a)) { sp = c; face = a; break; }
+        }
+      }
+      if (sp) break;
+    }
+    const staged = !!sp;
+    if (!sp) sp = window.nearestFree(hx + 150, hy + 80);
+    const u = window.spawnUnit(window.G.side, key, sp.x, sp.y, face);   /* spawnUnit adds it to the field itself */
     u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
     /* and it is not to be pinned by whoever is shelling the base by now: a hull over
        full suppression cannot turn (`povDrive` zeroes the turn), and the driving row is
@@ -932,7 +1576,7 @@ for (const device of TARGETS) {
     window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
-    const out = { key, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
+    const out = { key, staged, closed: !!(I && I.closed), hatchShown: !hatchBtn.classList.contains('hidden'), pieces: window.MODELS.veh[key].inside.n };
     window.povHatch(true); window.updateCamera(); const up = window.MAT.eye.z;
     window.povHatch(false); window.updateCamera(); const down = window.MAT.eye.z;
     out.dropped = +(up - down).toFixed(1); out.above = +(down - window.groundZ(window.MAT.eye.x, window.MAT.eye.y)).toFixed(1);
@@ -951,13 +1595,25 @@ for (const device of TARGETS) {
              clear: fr.right <= window.innerWidth + 1 && fr.top >= 0 && pr.bottom <= window.innerHeight + 1,
              x: u.x, y: u.y, facing: u.facing };
   });
-  await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = .8; });
+  /* Driving and turning are measured one at a time, because a TRACKED hull does one or
+     the other: its speed falls away with the heading error and is gone by the time the
+     error is a right angle, so full throttle against a near-full steer is a pivot. Read
+     together they swung between 202 units of ground with 1.4 radians of turn and 29 units
+     with 8 radians, on the same code, and the row passed or failed on where the tank
+     happened to be pointing when it started. */
+  await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = 0; });
   await fastForward(page, 3);
-  const drv2 = await page.evaluate(([x, y, f]) => {
+  const drvA = await page.evaluate(([x, y]) => {
     const u = window.POV.u;
-    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), turned: +Math.abs(u.facing - f).toFixed(2),
-             took: window.DRV.took, x: u.x, y: u.y };
-  }, [drv0.x, drv0.y, drv0.facing]);
+    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
+  }, [drv0.x, drv0.y]);
+  await page.evaluate(() => { window.DRV.padT = .35; window.DRV.padS = 1; });
+  await fastForward(page, 3);
+  const drv2 = await page.evaluate(([f]) => {
+    const u = window.POV.u;
+    return { turned: +Math.abs(window.angDiff(u.facing, f)).toFixed(2), x: u.x, y: u.y };
+  }, [drvA.f]);
+  drv2.moved = drvA.moved; drv2.took = drvA.took;
   await page.evaluate(() => { window.DRV.padT = 0; window.DRV.padS = 0; });
   await fastForward(page, 3);
   const drv3 = await page.evaluate(([x, y]) => {
@@ -1033,8 +1689,9 @@ for (const device of TARGETS) {
      `idle ${mgIdle}, ${mgWarm} after 8s on the trigger, cooked at ${cookedAt}s, cold again 25s after release`);
 
   ok('the commander drives his tank from the periscope',
-     drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 30 && drv2.turned > .2 && drv2.took === 1 && drv3.sp < 1,
-     `moved ${drv2.moved} and turned ${drv2.turned} rad under the pad, then stopped`);
+     tank.staged && drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 60 && drv2.turned > .35 && drv2.took === 1 && drv3.sp < 1,
+     tank.staged ? `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped`
+                 : 'nowhere round the headquarters with 300 units of clear going in front of it');
 
   const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
   ok('periscope sits in the tank commander\'s cupola, lid up or shut', tank.closed && tank.hatchShown && tank.pieces > 100 && tank.dropped > 3 && tank.above > 20 && tankOff, `${tank.key}: ${tank.pieces} inside triangles, the eye drops ${tank.dropped} when the lid shuts`);
