@@ -94,7 +94,8 @@ export async function openGame(browser, deviceKey = 'desktop', { file = GAME, qu
   page.on('pageerror', e => {
     /* and where: the first frame of the stack that is in the game, because a message
        with no line in it names a draw call the file makes from forty places */
-    const at = ((e.stack || '').split('\n').find(l => /ortona\.html:\d+/.test(l)) || '').trim();
+    const at = (e.stack || '').split('\n').filter(l => /ortona\.html:\d+/.test(l)).slice(0, 3)
+      .map(l => l.trim().replace(/file:\/\/\S*ortona\.html/, 'ortona.html')).join(' < ');
     log.errors.push(`pageerror: ${e.message}${at ? ' ' + at : ''}`);
     if (!quiet) console.error('  [pageerror]', e.message, at);
   });
