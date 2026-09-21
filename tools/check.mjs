@@ -340,12 +340,13 @@ for (const device of TARGETS) {
              strip: strip.length, want, have, post: (document.querySelector('#tbuild .tb.post') || {}).dataset,
              tools: [...document.querySelectorAll('#tools .tool')].filter(e => e.getBoundingClientRect().width).map(e => e.id).join('+'),
              small, off, overlap, miniIn: document.getElementById('mini').parentNode.id,
-             flag: document.getElementById('tflag').classList.contains('hidden'),
+             flag: document.getElementById('tord').classList.contains('hidden') &&
+                   document.getElementById('tlist').classList.contains('hidden'),
              hScroll: document.documentElement.scrollWidth - vw, vScroll: document.documentElement.scrollHeight - vh,
              label: document.getElementById('tselname').textContent.trim() };
   }, MIN_TAP);
   ok('simple: a strip of what he can build, a line saying what the army is doing, LOOK and PAUSE, the little map, the bar gone, nothing small, off screen or overlapping',
-     th.on && th.bar === 'none' && th.strip >= 3 && th.want === th.have && th.tools === 'tPov+tPause' && th.small === 0 && th.off === 0 &&
+     th.on && th.bar === 'none' && th.strip >= 3 && th.want === th.have && th.tools === 'tOrders+tPov+tPause' && th.small === 0 && th.off === 0 &&
      th.overlap === 0 && th.miniIn === 'simple' && th.flag && th.hScroll <= 0 && th.vScroll <= 0 && th.label.length > 0,
      `${th.strip} buttons (${th.have}), tools ${th.tools}, ${th.small} small, ${th.off} off screen, ${th.overlap} overlapping, map in #${th.miniIn}, line "${th.label}"`);
 
@@ -406,14 +407,31 @@ for (const device of TARGETS) {
     if (secBtn) secBtn.click();
     const refused = hq.queue.length === q0 + queued;
     window.G.res[own].mp = keep; window.simpleSync();
-    /* and the emplacement: the heavy battery position, dug where the brain would dig it,
-       by an engineer, forward of home; a second is refused by the limit and the button
-       says so. Put back afterwards, because the rows below count his men and his sites. */
+    /* and the emplacement, which the PLAYER sites: the button arms the placement and the
+       next tap on the ground is where the gun goes, so the row taps the button, reads
+       that it is armed and lit, then taps a piece of ground forward of home. A second is
+       refused by the limit and the button says so. Put back afterwards, because the rows
+       below count his men and his sites. */
     const wk = us ? 'how8' : 'how210', W = window.WORKS[wk];
     window.G.res[own].mp = 5000; window.G.res[own].fu = 2000; window.simpleSync();
     const wBtn = document.querySelector(`#tbuild .tb.work[data-key="${wk}"]`);
     const s0 = window.siteCount(own, wk), mp3 = window.G.res[own].mp, fu3 = window.G.res[own].fu;
     if (wBtn) wBtn.click();
+    const armed = !!(window.G.place && window.G.place.work === wk);
+    window.simpleSync();
+    const wLit = wBtn && wBtn.classList.contains('on');
+    /* the ground he picks: forward of home by more than the exclusion, and clear */
+    const dir = us ? 1 : -1;
+    let gp = null;
+    for (let d = W.minHq + 90; d <= W.minHq + 460 && !gp; d += 60) {
+      const c = window.nearestFree(hq.x + dir * d, hq.y);
+      if (window.workRoom(c.x, c.y, W)) gp = c;
+    }
+    if (gp) {
+      window.__o.camera({ x: gp.x, y: gp.y, dist: 560, pitch: 0.95 }); window.render();
+      const p = window.w2s(gp.x, gp.y);
+      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+    }
     const wSite = window.G.sites.find(q => q.own === own && q.kind === wk);
     const wOn = !!wSite && window.G.units.some(u => window.owned(u) && !u.dead && u.def.builder && u.building === wSite);
     const wFar = wSite ? Math.round(Math.hypot(wSite.x - hq.x, wSite.y - hq.y)) : -1;
@@ -421,6 +439,8 @@ for (const device of TARGETS) {
     window.simpleSync();
     const wFull = wBtn && wBtn.classList.contains('poor'), wCount = wBtn && wBtn.lastChild.textContent;
     if (wBtn) wBtn.click();
+    const armed2 = !!(window.G.place && window.G.place.work === wk);
+    window.G.place = null;
     const wAgain = window.siteCount(own, wk);
     if (wSite) {
       window.G.sites.splice(window.G.sites.indexOf(wSite), 1);
@@ -428,16 +448,20 @@ for (const device of TARGETS) {
     }
     window.G.res[own].mp = keep; window.G.res[own].fu = Math.max(0, fu3 - 400); window.simpleSync();
     return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused,
-             wk, wBtn: !!wBtn, wSite: !!wSite, wOn, wFar, minHq: W.minHq, wCost, want: [W.cost.mp || 0, W.cost.fu || 0], wFull, wCount, wAgain: wAgain - s0 };
+             wk, wBtn: !!wBtn, armed, wLit, gp: !!gp, wSite: !!wSite, wOn, wFar, minHq: W.minHq, wCost,
+             want: [W.cost.mp || 0, W.cost.fu || 0], wFull, wCount, armed2, wAgain: wAgain - s0,
+             wWhere: gp && wSite ? Math.round(Math.hypot(wSite.x - gp.x, wSite.y - gp.y)) : -1 };
   });
   ok('simple: a tap on the strip pegs the post out with an engineer, queues a section, and is refused when the till is empty',
      strip.postBtn && strip.site && strip.onIt && strip.postCost === 200 && strip.secBtn && strip.queued === 1 && strip.secCost > 0 && strip.poor && strip.refused,
      `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost}; empty till dimmed ${strip.poor} and refused ${strip.refused}`);
-  ok('simple: a tap on the strip digs the battery position in forward of home with an engineer, and a second is refused',
-     strip.wBtn && strip.wSite && strip.wOn && strip.wFar >= strip.minHq && strip.wCost[0] === strip.want[0] && strip.wCost[1] === strip.want[1] &&
-     strip.wFull && strip.wCount === '1' && strip.wAgain === 1,
-     `${strip.wk} button ${strip.wBtn}: site ${strip.wSite} with an engineer ${strip.wOn}, ${strip.wFar} from home against ${strip.minHq}, ` +
-     `for ${strip.wCost.join('/')} of ${strip.want.join('/')}; then dimmed ${strip.wFull} reading ${JSON.stringify(strip.wCount)}, and a second tap left ${strip.wAgain}`);
+  ok('simple: the strip arms the battery position and the player\'s own tap sites it, forward of home with an engineer; a second is refused',
+     strip.wBtn && strip.armed && strip.wLit && strip.gp && strip.wSite && strip.wOn && strip.wWhere >= 0 && strip.wWhere < 40 &&
+     strip.wFar >= strip.minHq && strip.wCost[0] === strip.want[0] && strip.wCost[1] === strip.want[1] &&
+     strip.wFull && strip.wCount === '1' && !strip.armed2 && strip.wAgain === 1,
+     `${strip.wk} button ${strip.wBtn}: armed ${strip.armed} and lit ${strip.wLit}; his tap sited it ${strip.wWhere} from where he put his finger, ` +
+     `${strip.wFar} from home against ${strip.minHq}, with an engineer ${strip.wOn}, for ${strip.wCost.join('/')} of ${strip.want.join('/')}; ` +
+     `then dimmed ${strip.wFull} reading ${JSON.stringify(strip.wCount)}, a second tap armed nothing ${!strip.armed2} and left ${strip.wAgain}`);
 
   /* --- the unit's popup under SIMPLE: a tap on a vehicle of his puts up the upgrades it
      can take with their prices and AUTO; an upgrade bought by hand is fitted and paid
@@ -619,7 +643,10 @@ for (const device of TARGETS) {
     const own = window.G.own, side = window.G.side, us = side === 'us', hq = window.hqOf(own);
     if (!window.AIP[own]) window.aiInit(own, true);
     const P = window.AIP[own];
-    /* a clean board and a few sections of his own, away from the flags */
+    /* a clean board, no placement left armed by the row above -- an armed emplacement
+       takes the next tap on the ground and every tap below is one -- and a few sections
+       of his own, away from the flags */
+    window.G.place = null;
     window.aiOrds(own).length = 0;
     const raised = [];
     for (let i = 0; i < 4; i++) {
@@ -691,7 +718,7 @@ for (const device of TARGETS) {
     }
     /* ---- and the temper is read where it is spent: the same section under a cautious
        order and under a press-home one pays a different price for the beaten zone */
-    const t0 = window.aiAggr({ own: own, ord: 0 });
+    P.aggr = 1; const t0 = window.aiAggr({ own: own, ord: 0 });
     P.aggr = 2; const tPress = window.aiAggr({ own: own, ord: 0 }).fear;
     P.aggr = 0; const tCaut = window.aiAggr({ own: own, ord: 0 }).fear;
     P.aggr = 1; P.pose = 'advance'; P.react = 'cover';

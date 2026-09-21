@@ -4441,25 +4441,116 @@ battle already stood inside 240 of the flag, so the wave went on the tick it for
 the screen came before the preparation: both are the brain being right, and a row that
 insists on the desktop's order is a row about the battle it happened to run in.
 
-**He steers it by the flags.** `AI.dir` is one directive per sector on the plan, set by
-`aiDirSet` from the popup and read by `aiDirOf`. ATTACK makes the flag the main effort:
-it goes to the top of the objective list whatever the scores say, with a cap of four
-sections and no reach limit, the wave forms against it whatever the held pick would have
-said (`aiDirAttack`), and it is done the moment the flag is his and quiet (`aiDirDone`).
-It was 420 points on top of the score rather than the top of the list, and 420 is not
-enough: a held victory flag with a body walking onto it is worth most of a thousand, and
-the directed-attack row watched two of the three sections the player had put beside his
-objective dealt to that flag instead, so the wave he had asked for formed with one section
-in it. The directive is a sort key now and the score decides only among the rest. HOLD
-raises a directed `hold` operation while the flag is his, which `aiOpsReview` keeps for as
-long as the directive stands rather than for the brain's own hundred and thirty seconds,
-and retakes the flag if it is lost. FEINT raises a directed `feint` the same way and
-expires on its own after ninety seconds, because a demonstration that goes on for ever is
-a section standing in a field. `aiDirTend` runs once a tick between the review and the
-brain's own planning, so a directed operation is never planned over, and a directed
-`hold` wants two sections out of an army of eight and one out of anything smaller, a
-`feint` one out of three or more. One attack and one feint at a time. The flag carries the
-word and a ring in the directive's colour on the overlay and on the little map.
+**He steers it by ORDERS, and an order is about anything.** It was one directive per FLAG
+out of three kinds, with no way to say who was to carry it out and no way to say how hard
+to press it: nine coordinates on a map of two thousand, three sentences about each, and a
+player watching the army move had nothing anywhere to tell him which of its units were
+doing the thing he had asked for.
+
+`AI.ord` is the board -- a list on the plan, so like everything else that outlives a tick
+it holds nothing but numbers and ids, the unit ids of the force and never the units. An
+order is a KIND, a piece of ground or a thing standing on it, the FORCE he named, and a
+TEMPER. `aiOrdTend` works the list once a tick between the review and the brain's own
+planning, so an order is never planned over; `aiOrdMark` runs after the operations are
+manned and says which order each unit is under, which is what the temper is read through
+and what the player's list counts.
+
+Nine kinds, and seven of them raise one of the brain's own OPERATIONS. That is what makes
+this a table rather than nine new behaviours: going somewhere and fighting for it, holding
+ground, demonstrating at it, looking at it and hunting one named thing were all here
+already, each with a force, a clock and a test for being over. What an order adds is a
+door into them, a name for what came out, and a force he chose himself.
+
+| order | what it is | what it raises |
+|---|---|---|
+| ATTACK | take it, and keep taking it | the main effort on a flag, `push` anywhere else |
+| HOLD | put men on it and keep them there | `hold` |
+| SCREEN | cover this ground from a fire position | `screen` |
+| PROBE | send somebody to look | `probe` |
+| RAID | a task force after what is there | `destroy` |
+| FEINT | demonstrate, and draw them off it | `feint` |
+| SHELL | a fire mission on it | nothing: the tubes read the board |
+| SMOKE | a screen on it | nothing: the tubes read the board |
+| PULL BACK | break contact and rally here | `retire` |
+
+**ATTACK ON A FLAG is deliberately not an operation.** The wave -- its forming-up point,
+its support gate, the pinned wait, the hook and the break-off -- is the most worked-over
+machinery in this file, and an order that went round it would be a worse attack than the
+one the brain makes on its own account. It is the main effort instead, which is what the
+old ATTACK directive was: it goes to the top of the objective list whatever the scores say,
+with a cap of four sections and no reach limit (`aiDirAttack`), and it is done the moment
+the flag is his and quiet. It was 420 points added to the score rather than the top of the
+list, and 420 is not enough: a held victory flag with a body walking onto it is worth most
+of a thousand, and the gate row watched two of the three sections the player had put beside
+his objective dealt to that flag instead, so the wave he had asked for formed with one
+section in it. The directive is a sort key now and the score decides only among the rest.
+
+`push`, `screen` and `retire` are the three operations the brain has no use of its own for:
+an attack on ground that is not a flag, a fire position covering a piece of ground found
+once by `aiOverwatch` and kept, and a rally back to somewhere with the fear turned up so
+the force is not fighting on the way. `hold` gained the other half of its own job at the
+same time -- it reads a bare point when there is no sector, because an order to hold a
+crossroads is the same order as an order to hold a flag and the only thing the sector adds
+is a circle to be inside of.
+
+**The force is his, and an order given to men who are all dead is over.** With no force
+named the brain deals what the kind asks for out of `aiOpsMan`, the way it always has.
+With one named, `op.want` is nought so nobody else is added, the named units are put on the
+operation in `aiOrdTend`, and the objective dealing marks them picked BEFORE it runs --
+because the dealing is what would otherwise take them: a section he put on the flag he is
+attacking would be given the nearest objective on the list, walk off, and read afterwards
+as an order nobody carried out. It is not quietly re-manned when they die, because the
+force was half of what he said.
+
+**The temper is a multiplier on rules that already existed**, which is the whole reason it
+is a row of three chips rather than a new difficulty. `AGGR` is CAUTIOUS, STEADY and PRESS
+HOME, and every number in it is one some rule already read: what a unit pays to stay out of
+the beaten zone (`u.fear`, 1.75x to 0.35x), the odds it will walk onto a flag at (1.3 to
+3.2 against the old flat 2), how hurt a section goes home (half strength to a sixth), how
+much of a wave has to be left for it to still be an assault rather than a queue (0.70 to
+0.32 of what it stepped off with), and which way the weighing leans between standing and
+getting behind something. An order carries its own; a unit under none carries the army's.
+
+**A POSTURE is about the plan and a REACTION is about the weighing**, and that is why
+neither is a new chain of rules. `POSE` is ADVANCE, HOLD and DIG IN: a posture that is not
+ADVANCE takes the unit out of the objective dealing altogether, because the one thing the
+plan does to a unit that a player may want stopped is MARCH it somewhere -- a section left
+to watch a crossroads, a tank kept back off the skyline. It is not a refusal to fight: the
+weighing has already had its say about whatever is in front of it and its own `acquire` is
+still firing. DIG IN goes one further and takes the heaviest thing there is to stand in.
+`REACT` is TAKE COVER, STAND FAST and FALL BACK, and it leans `aiWeigh`'s own scores --
+stand against cover against giving ground -- and moves the hit-point threshold a section
+goes home at. Both are the army's by default and either may be said of one unit or of a
+whole selection: `u.pose` and `u.react` undefined follow the army and anything else does
+not, which is the rule a vehicle's own word over the upgrade setting already uses.
+
+**The pad opens on whatever the tap landed on.** A flag, a thing of theirs (inside its own
+ring, so a tap has to land on the tank rather than near it) or a bare piece of ground --
+which is the point, because most of what a player wants to say is about a crossroads, a
+house, or the tank that has just come round the corner. Three rows: the nine orders, WHO,
+and HOW HARD. The last two are remembered, so an order after the first one is a tap on the
+ground and a tap on the verb. WHO is ANY (the brain deals it), ALL, INF, ARMOUR, GUNS,
+PICKED, and the three battle groups A to C; a unit's card carries the group chips and a
+SAME chip that picks every one of its kind, because PICKED is only worth having as a force
+if a selection can be made with a thumb. Tapping the order a flag already has takes it off.
+
+**And the ORDERS panel is the half he never had.** A row per order -- what it is, what it
+is about, how many are on it, how hard it is being pressed and whether the force is his own
+-- with a cross that cancels it and a tap that takes the camera to it, and under them the
+army's own three settings. The tool button carries the count. On the field every unit
+carrying an order wears that order's glyph in that order's colour, and an order about
+ground rather than a flag draws its own ring on the terrain and a dot on the little map:
+the complaint the whole board was built for was that there was no way to tell whether any
+of the army was doing the thing that had been asked.
+
+**The emplacements are sited by the player.** They went where the brain would have dug
+them, which is a good answer and not his: a gun that fires on a map reference is the one
+thing on the roster whose whole worth is where it stands. The strip's button arms the
+placement instead and the next tap on the ground is the site, with the same ghost the
+classic scheme has always drawn under the finger -- green where it will go and red where
+it will not -- and every refusal on the way is `placeWork`'s own. Tapping the button again
+puts it away, because an armed placement a player has forgotten about is a tap that digs a
+gun he did not want.
 
 **And the brain says what it is doing.** `aiFire` is where every named decision is
 counted, so it is also where the player's own brain speaks: `AIVOICE` maps a dozen of
@@ -4884,6 +4975,12 @@ shots/                         screenshot output, gitignored
   still coming round. When a gate row says a thing has not happened yet after a minute of
   simulation, print the bearing error and not only the count, and look for a second hand
   on the same wheel.
+- **An armed placement takes the next tap on the ground, and every tap is one.** The
+  emplacement button arms `G.place` and the touch path answers it before anything else,
+  which is right; the gate row below it then tapped four pieces of open ground to give
+  orders and the first of them dug a battery instead, with every assertion after it
+  reading off a pad that had never opened. A row that leaves a mode armed hands it to
+  every row under it.
 - **A bonus on a score is not a priority.** The player's ATTACK added 420 to a sector's
   score and the doc said it outranked everything; a held victory flag with a body walking
   onto it scores most of a thousand, so the directed flag came second and the deal gave

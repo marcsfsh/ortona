@@ -72,7 +72,10 @@ function baselineBrain(rev) {
   for (const name of ['aiPickTarget', 'aiSense', 'aiWeigh', 'aiCall', 'aiCanAnswer', 'aiAnswer',
                       /* the operations, whose planning is judgement too, and the second layer of
                          inputs: a revision that reads the contacts' headings is judged on that */
-                      'aiOpsPlan', 'aiOpsReview', 'aiOpsMan', 'aiRemember', 'aiMass', 'aiHeard', 'aiClock', 'aiDirTend'])
+                      'aiOpsPlan', 'aiOpsReview', 'aiOpsMan', 'aiRemember', 'aiMass', 'aiHeard', 'aiClock',
+                      /* and the player's own board, which an AI slot never writes to but every
+                         tick reads: a revision without it simply has fewer parts */
+                      'aiOrdTend', 'aiOrdMark', 'aiOrdOver'])
     { try { parts.push(fn(src, name)); } catch (e) { /* older file */ } }
   parts.push(fn(src, 'aiTick'));
   return parts.join('\n');

@@ -91,7 +91,7 @@ const SCENES = {
           window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.simpleFlag(s);
         });
         await shoot(page, out('hud-flag'), { settle: SETTLE });
-        await page.evaluate(() => window.simpleFlag(null));
+        await page.evaluate(() => window.simpleOrdOpen(null));
         /* and the unit's popup, on a vehicle of his that can take an upgrade: one is
            spawned beside the headquarters if the battle has not raised one */
         await page.evaluate(s => {
@@ -105,6 +105,33 @@ const SCENES = {
         }, SIDE);
         await shoot(page, out('hud-unit'), { settle: SETTLE });
         await page.evaluate(() => window.simpleUnit(null));
+        /* and the board: a few orders standing, the list open over them, so the one
+           picture says what he asked for and who is on it */
+        await page.evaluate(() => {
+          const own = window.G.own, hq = window.hqOf(own), side = window.G.side;
+          if (!window.AIP[own]) window.aiInit(own, true);
+          window.aiOrds(own).length = 0;
+          const by = window.G.sectors.slice().sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y));
+          const theirs = by.filter(s2 => s2.owner !== side), mine = by.filter(s2 => s2.owner === side);
+          if (theirs[0]) window.aiOrdAdd(own, 'attack', { sec: theirs[0].id, x: theirs[0].x, y: theirs[0].y, aggr: 2 });
+          if (mine[0]) window.aiOrdAdd(own, 'hold', { sec: mine[0].id, x: mine[0].x, y: mine[0].y });
+          const gp = window.nearestFree(hq.x + (side === 'us' ? 560 : -560), hq.y - 60);
+          window.aiOrdAdd(own, 'screen', { x: gp.x, y: gp.y, force: window.simpleOrdForce('inf'), aggr: 0 });
+          window.AIP[own].t = 0; window.aiThink(1);
+          window.simpleList(true); window.simpleTools();
+        });
+        await shoot(page, out('hud-orders'), { settle: SETTLE });
+        /* and the pad itself, open on a piece of open ground, which is the thing the
+           board added and the one the old scheme could not say at all */
+        await page.evaluate(() => {
+          const hq = window.hqOf(window.G.own), side = window.G.side;
+          const gp = window.nearestFree(hq.x + (side === 'us' ? 420 : -420), hq.y + 140);
+          window.simpleList(false);
+          window.__o.camera({ x: gp.x, y: gp.y, dist: 560, pitch: 0.95 });
+          window.simpleOrdOpen({ x: gp.x, y: gp.y });
+        });
+        await shoot(page, out('hud-pad'), { settle: SETTLE });
+        await page.evaluate(() => { window.simpleOrdOpen(null); window.aiOrds(window.G.own).length = 0; });
       }
 
       /* The build menu: select the HQ so its production cards show. */
