@@ -737,6 +737,24 @@ the length of the map without a junction. A bunker is a building for every one o
 and its footprint is derived rather than stored, so `bunkerBox` hands the same rectangle
 to the game, the editor and the check. It is in `npm run verify`.
 
+**A weapon pit is checked as an earthwork**, because the day it started going through
+`carve` it became one. It was not, and two things fell out of that on maps that had read
+clean for months: on the Gothic Line one pit's spoil stood 4.32 units up in the floor of a
+trench 32 units away and another's bowl reached 4.4 units into one, and on Ortona a pit
+stood inside the ruin at (1560, 610) -- which is why its centre had been unwalkable for as
+long as it had existed -- with another undercutting a building corner by four units. Five
+pits moved and both maps come back clean.
+
+**Its radius is the BOWL and not the outer edge of the spoil**, and that is the part worth
+knowing before touching it. The lip falls off as the SQUARE of the distance across its
+band, so its outer half is under a unit high: taken at the geometric edge (`r + 25`) the
+rule flagged five placements whose real effect on a trench was 0.11 of a unit or nothing at
+all, which is a rule nobody can act on and would have had a map author moving pits for
+nothing. Calibrated against what each pit actually puts on a trench -- measured per pit,
+not argued about -- `r + 8` separates the two that matter from the ones that do not. Its
+margin is the trench's own half-width rather than the crater's 16, because the trench is
+the thing being undercut, so each entry in `digs` carries its own.
+
 **It checks every shipped map rather than only the first**, because a rule nobody runs on
 the second map is a rule the second map does not have. Pointed at the Gothic Line the
 first time, it found seven faults nobody had seen in a week of photographs: six shell
@@ -1184,7 +1202,18 @@ another, which is the one thing `unwedge` exists to prevent -- tried anyway, it 
 pair-frames from 0.128 per cent of a battle to 0.431, three and a half times worse. So
 `sepDepth(u, o, fine)` takes a flag: `moveUnit` asks the fine question and gets `menMen`,
 one man-disc against another at `MAN_R * 2`; `unwedge` asks the coarse one and gets the box
-it always got. The cheap circle in front of both is sized off `selRadius` on the fine path,
+it always got.
+
+**And `bothAfoot` is what decides which pair is which, off `cat` rather than off a speed.**
+A crew-served weapon is not a body of men on the march: what a section walks round is the
+GUN, and the men are laid out on a ring round it with gaps far wider than a man. The first
+version tested `def.speed > 0`, which is a different question -- only three pieces on the
+roster have no speed (the eighty-eight and the two heavy batteries) and every other crew
+can be manhandled or limbered, so a six-pounder at 40 and a Pak at 38 read as men on the
+march and a rifle section closed to 33.9 units of a deployed Pak's gun point where the box
+had held it at 48.9. `cat` is the roster's own word for it: 'inf' is the eleven sections
+and 'team' is every machine gun, mortar, anti-tank gun, howitzer and battery on both sides,
+and it excludes a vehicle for free. The cheap circle in front of both is sized off `selRadius` on the fine path,
 because that is the ring `updateModels` actually clamps a man onto and it is wider than
 `bodyL`.
 
@@ -4228,6 +4257,19 @@ shots/                         screenshot output, gitignored
   raising the reach moves the hole instead of closing it (22 gives 22.0, 30 gives 30.0, 42
   gives 42.0). Passing is the men and resting is the box; that is arithmetic rather than
   taste.
+- **A rule about a KIND of thing goes stale the moment that kind changes.** `crater/trench`
+  and `house/crater` are about EARTHWORKS, and a weapon pit became one the day it started
+  going through `carve` -- but the rules name craters, so both shipped maps went on reading
+  clean with a pit's spoil standing in a trench floor and a pit standing inside a ruin. And
+  when you widen such a rule, calibrate its radius against the effect rather than the
+  geometry: a pit's spoil falls off as the square of the distance across its band, so taken
+  at its outer edge the rule flagged five placements whose real effect was a tenth of a unit
+  or nothing.
+- **A derived test has to ask the question it means.** `bothAfoot` meant "is this a body of
+  men on the march or a thing in the way", and asked `def.speed > 0`. Every crew-served
+  weapon on this roster except three can be manhandled and carries a speed, so a deployed
+  Pak read as men and a section walked through the gun. `cat` is what the roster already
+  says: 'inf' or 'team'.
 - **A feature with one reader has one caller's worth of coverage.** `WORKS.pit.dig` was
   read only by `finishWork`, so the pit an engineer built during a battle was dug and all
   thirty-three the two maps ship were not -- a horseshoe of bags on undisturbed grass,
