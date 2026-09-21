@@ -623,6 +623,29 @@ const SCENES = {
 
   /* ---- free camera: the escape hatch for anything the scenes above miss ---- */
 
+  smoke: {
+    help: 'A smoke mission on open ground, photographed once the screen is standing.',
+    async run(page) {
+      await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
+      if (args.nofog) await setFog(page, false);
+      if (BARE) await chrome(page, false);
+      const at = await page.evaluate(s => {
+        const sp = window.__o.flatSpot(220), mp = window.nearestFree(sp.x - 200, sp.y + 40), ep = window.nearestFree(sp.x + 260, sp.y);
+        /* on ground it can stand on, because a tube that walks out of a wall drops its mission on the way */
+        const m = window.spawnUnit(window.G.own, s === 'us' ? 'us_mor' : 'ger_mor', mp.x, mp.y, 0);
+        m.setup = 0; m.packed = false;
+        const e = window.spawnUnit(s === 'us' ? 'ger' : 'us', s === 'us' ? 'ger_gren' : 'us_rifle', ep.x, ep.y, Math.PI);
+        e.setup = 0;
+        window.orderBarrage(m, sp.x + 40, sp.y, true);
+        window.__o.camera({ x: sp.x + 20, y: sp.y, dist: 520, pitch: 0.9 });
+        return sp;
+      }, SIDE);
+      await fastForward(page, 16);
+      await page.evaluate(() => { window.G.paused = true; });
+      await shoot(page, out('smoke'), { settle: Math.max(SETTLE, 6) });
+    }
+  },
+
   free: {
     help: 'Deploy, then point the camera wherever --cam=x,y,dist,yaw,pitch says.',
     async run(page) {

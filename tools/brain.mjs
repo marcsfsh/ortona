@@ -191,7 +191,7 @@ async function install(page) {
     const realFireAt = window.fireAt;
     window.fireAt = function (u, t, dt) {
       const cd0 = u.cd, at0 = u.atcd;
-      const r = realFireAt(u, t, dt);
+      const r = realFireAt.apply(this, arguments);
       if (B.c && t && t.side && t.side !== u.side && (u.cd > cd0 || u.atcd > at0)) {
         B.c.shots++; if (!visibleTo(u.side, t)) B.c.blindShots++;
       }

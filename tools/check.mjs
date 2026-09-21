@@ -591,6 +591,69 @@ for (const device of TARGETS) {
      `${flags.name}: attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; hold ${flags.hold} with ${flags.onHold} on it; ` +
      `feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; lit ${flags.lit}, clear ${flags.hasClear} -> ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
 
+  /* --- and the guns serve the attack he ordered: a tube of his in action and in reach,
+     ATTACK tapped on a defended flag, and on the next tick the tube is laid on the men
+     holding it; with the wave ready to go and its preparation spent, the go lays smoke short
+     of the flag. Staged rather than sampled, with the tube's post set to where it stands so
+     the row is about the mission and not about the walk to a post. --- */
+  const dirArty = await page.evaluate(() => {
+    const own = window.G.own, side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const P = window.AIP[own]; if (!P) return { none: 'no plan on his slot' };
+    const hq = window.hqOf(own);
+    const S = window.G.sectors.filter(s => s.owner !== side).sort((a, b) => Math.hypot(a.x - hq.x, a.y - hq.y) - Math.hypot(b.x - hq.x, b.y - hq.y))[0];
+    if (!S) return { none: 'no flag that is not his' };
+    const mk = side === 'us' ? 'us_mor' : 'ger_mor', rk = side === 'us' ? 'us_rifle' : 'ger_gren', fk = foe === 'ger' ? 'ger_gren' : 'us_rifle';
+    const ang = Math.atan2(hq.y - S.y, hq.x - S.x), raised = [];
+    const at = (d, o) => window.nearestFree(S.x + Math.cos(ang) * d + Math.cos(ang + Math.PI / 2) * o, S.y + Math.sin(ang) * d + Math.sin(ang + Math.PI / 2) * o);
+    const mp = at(430, 0), m = window.spawnUnit(own, mk, mp.x, mp.y, 0); raised.push(m);
+    m.setup = 0; m.packed = false;
+    const d1 = window.spawnUnit(foe, fk, S.x + 24, S.y, 0), d2 = window.spawnUnit(foe, fk, S.x - 24, S.y + 20, 0); raised.push(d1, d2);
+    [-70, 0, 70].forEach(o => { const p = at(300, o); const u = window.spawnUnit(own, rk, p.x, p.y, 0); u.setup = 0; raised.push(u); });
+    for (let k = 0; k < 400; k++) { window.computeVisibility(); if ((side === 'us' ? d1.vUs : d1.vGer) && (side === 'us' ? d2.vUs : d2.vGer)) break; }
+    const known = !!(side === 'us' ? d1.vUs : d1.vGer);
+    /* the tube stands on its post, aimed at the flag, so the plan finds it in position */
+    m.jobX = m.x; m.jobY = m.y; m.aimX = S.x; m.aimY = S.y; m.jobT = window.G.t; m.jobAnc = 300;
+    const f0 = Object.assign({}, window.AIR.fired);
+    window.simpleDir(S, 'attack');
+    P.asKey = null; P.asT = -99; P.t = 0;
+    const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
+    tick();
+    const laid = !!(m.barrage && !m.barrage.smoke), aimD = m.barrage ? Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)) : -1;
+    const obj = String(P.asSec) === String(S.id), dirFired = (window.AIR.fired['mortar.dir'] || 0) - (f0['mortar.dir'] || 0);
+    /* the preparation is spent before the go, the way it is in a battle -- with the
+       nearest thing the side can see standing square off the line of fire, because a
+       halted crew turns toward the nearest known enemy and a tube on a mission used to be
+       turned back off its bearing every frame by exactly that, at the rate the mission
+       laid it on: ten rounds in hand and none of them fired, on a row that read as a
+       mission that had simply not run down yet */
+    const tp = at(430, 190), th = window.spawnUnit(foe, fk, tp.x, tp.y, 0); raised.push(th);
+    th.vUs = th.vGer = true;
+    const want = Math.atan2(m.barrage ? m.barrage.y - m.y : 0, m.barrage ? m.barrage.x - m.x : 1);
+    let fired = 0;
+    for (let f = 0; f < 60 * 60 && m.barrage; f++) { const n = window.G.shots.length; window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; if (window.G.shots.length > n) fired++; }
+    const spent = !m.barrage, thD = Math.round(Math.hypot(th.x - m.x, th.y - m.y)), thOff = Math.abs(window.angDiff(want, Math.atan2(th.y - m.y, th.x - m.x))).toFixed(2);
+    const state = (m.barrage ? `left ${m.barrage.left} fired ${fired} moving ${m.moving} order ${m.order} packed ${m.packed} setup ${m.setup.toFixed(1)} cd ${m.cd.toFixed(1)} lay ${Math.abs(window.angDiff(m.facing, want)).toFixed(2)}` : `fired ${fired}`) +
+                  ` with the nearest enemy ${thD} off at ${thOff} rad from the line`;
+    P.asForm = window.G.t - 200; P.asT = -99;
+    tick();
+    const went = P.asT >= 0, smoke = !!(m.barrage && m.barrage.smoke);
+    const sD = m.barrage ? Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)) : -1;
+    const fD = m.barrage ? Math.round(Math.hypot(m.barrage.x - P.fupX, m.barrage.y - P.fupY)) : -1;
+    const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
+    /* down again */
+    window.aiDirSet(own, S.id, null);
+    P.asKey = null; P.asT = -99; P.asSec = null;
+    raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
+    window.G.smoke.length = 0; window.G.shots.length = 0;
+    window.select([], false);
+    return { name: S.label || S.id, known, laid, aimD, obj, dirFired, spent, state, went, smoke, sD, fD, screenFired };
+  });
+  ok('simple: ATTACK with a tube in reach lays it on the men holding the flag, and the go lays smoke short of the flag',
+     !dirArty.none && dirArty.laid && dirArty.aimD <= 190 && dirArty.obj && dirArty.dirFired >= 1 && dirArty.spent && dirArty.went && dirArty.smoke &&
+     dirArty.screenFired >= 1 && dirArty.sD > 0 && dirArty.sD <= 170,
+     dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid HE ${dirArty.laid} ${dirArty.aimD} from the flag (objective ${dirArty.obj}, mortar.dir ${dirArty.dirFired}); ` +
+                            `spent ${dirArty.spent} (${dirArty.state}); tick 2 went ${dirArty.went}, smoke ${dirArty.smoke} ${dirArty.sD} short of the flag and ${dirArty.fD} from the fup (smoke.screen ${dirArty.screenFired})`);
+
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */
   /* the section the two rows below tap is one standing clear of any flag and of any other
@@ -1035,6 +1098,80 @@ for (const device of TARGETS) {
                `on an attack-move it halted ${pk.packedAtHalt ? 'packed' : 'IN ACTION'} on a section ${pk.seen ? 'in sight' : 'UNSEEN'} at ${pk.haltedAt.toFixed(1)}s ` +
                `and fired at ${pk.firedAt.toFixed(1)}s` +
                (pk.hasTow ? `; the tow hitched at ${pk.hitched.toFixed(1)}s and moved at ${pk.towMoved.toFixed(1)}s` : ''));
+
+  /* --- smoke. A tube throws it as a mission of its own, each round a cloud rather than a
+     burst, and the cloud is a wall to the eye and to the gun until it thins: a section seen
+     across open ground is lost behind it and a rifle cannot be laid through it, an indirect
+     round still goes over it, and nobody under it is hurt. Bigger pieces throw bigger clouds
+     that stand longer, and the card on the bar lays one the same way the fire mission is
+     laid. Everything is put back afterwards. --- */
+  const smk = await page.evaluate(() => {
+    const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
+    const mk = side === 'us' ? 'us_mor' : 'ger_mor', hk = side === 'us' ? 'us_how' : 'ger_how', bk = side === 'us' ? 'us_how8' : 'ger_how210';
+    const S = k => window.smokeOf(window.UNITS[k]);
+    if (!S(mk)) return { has: false };
+    const sizes = { mor: S(mk), how: S(hk), bat: S(bk) };
+    const keep = window.G.units.slice(), shots = window.G.shots.slice(), sm0 = window.G.smoke.slice(), sel0 = window.G.sel.slice();
+    window.G.units.length = 0; window.G.shots.length = 0; window.G.smoke.length = 0;
+    const sp = window.__o.flatSpot(220), nf = (x, y) => window.nearestFree(x, y);
+    const p0 = nf(sp.x, sp.y), p1 = nf(sp.x + 240, sp.y), p2 = nf(sp.x - 120, sp.y + 60), p3 = nf(sp.x - 120, sp.y - 60);
+    const eye = window.spawnUnit(side, side === 'us' ? 'us_rifle' : 'ger_gren', p0.x, p0.y, 0); eye.setup = 0;
+    const foeU = window.spawnUnit(foe, foe === 'ger' ? 'ger_gren' : 'us_rifle', p1.x, p1.y, Math.PI);
+    const m = window.spawnUnit(side, mk, p2.x, p2.y, 0); m.setup = 0; m.packed = false;
+    const hp0 = foeU.models.map(q => q.hp);
+    let seen = false;
+    for (let k = 0; k < 400 && !seen; k++) { window.computeVisibility(); seen = !!(side === 'us' ? foeU.vUs : foeU.vGer); }
+    const gz = (x, y) => window.groundZ(x, y);
+    const line = () => window.traceClear(eye.x, eye.y, gz(eye.x, eye.y) + 17, foeU.x, foeU.y, gz(foeU.x, foeU.y) + 12, window.sblk);
+    const before = { line: line(), fire: window.fireLine(eye, foeU), seen };
+    const mx = (p0.x + p1.x) / 2, my = (p0.y + p1.y) / 2;
+    const laid = window.orderBarrage(m, mx, my, true);
+    const rounds = m.barrage ? m.barrage.left : -1, isSmoke = !!(m.barrage && m.barrage.smoke);
+    let t = 0;
+    for (let f = 0; f < 60 * 30 && (m.barrage || window.G.shots.length); f++) {
+      window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; t += 1 / 60;
+    }
+    const clouds = window.G.smoke.length, inZone = window.G.smoke.filter(c => Math.hypot(c.x - mx, c.y - my) <= m.def.barrage.r + 14).length;
+    const hurt = foeU.models.some((q, i) => q.hp !== hp0[i]) || window.aliveModels(foeU) !== foeU.models.length;
+    const during = { line: line(), fire: window.fireLine(eye, foeU) };
+    let lost = -1;
+    for (let k = 0; k < 200 && lost < 0; k++) { window.computeVisibility(); if (!(side === 'us' ? foeU.vUs : foeU.vGer)) lost = k; }
+    /* an indirect round goes over it: a second tube laid on the section beyond the screen fires */
+    const m2 = window.spawnUnit(side, mk, p3.x, p3.y, 0); m2.setup = 0; m2.packed = false;
+    const laid2 = window.orderBarrage(m2, foeU.x, foeU.y);
+    let fired2 = 0;
+    for (let f = 0; f < 60 * 12; f++) { const n = window.G.shots.length; window.updateUnit(m2, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; if (window.G.shots.length > n) fired2++; }
+    /* the clouds thin and go, and the line is back */
+    window.G.smoke.forEach(c => { c.t = c.dur + 1; });
+    window.updateShots(1 / 60);
+    const after = { clouds: window.G.smoke.length, line: line() };
+    /* the card: with the tube picked the bar offers a smoke mission, and it lays one */
+    window.select([m], false); window.syncHud();
+    const card = Array.from(document.querySelectorAll('#cmds .cmd')).find(b => /Smoke mission/i.test(b.textContent));
+    if (card) card.click();
+    const mode = window.G.mode;
+    m.barrage = null;
+    window.callBarrage(mx, my, window.G.mode === 'smoke'); window.G.mode = null;
+    const cardLaid = !!(m.barrage && m.barrage.smoke);
+    m.barrage = null; m2.barrage = null;
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    window.G.smoke.length = 0; sm0.forEach(q => window.G.smoke.push(q));
+    window.select(sel0, false); window.syncHud();
+    return { has: true, mk, sizes, before, laid, rounds, isSmoke, t: +t.toFixed(1), clouds, inZone, hurt, during, lost, laid2, fired2, after, card: !!card, mode, cardLaid };
+  });
+  ok('a smoke mission lays clouds that stop the eye and the gun and hurt nobody, an indirect round still goes over, and the bigger the piece the bigger and longer the cloud',
+     !smk.has || (smk.before.line && smk.before.fire && smk.before.seen && smk.laid && smk.isSmoke && smk.rounds === smk.sizes.mor.rounds &&
+                  smk.clouds >= smk.rounds - 1 && smk.inZone === smk.clouds && !smk.hurt && !smk.during.line && !smk.during.fire && smk.lost >= 0 &&
+                  smk.laid2 && smk.fired2 > 0 && smk.after.clouds === 0 && smk.after.line &&
+                  smk.sizes.mor.r < smk.sizes.how.r && smk.sizes.how.r < smk.sizes.bat.r && smk.sizes.mor.dur < smk.sizes.how.dur && smk.sizes.how.dur < smk.sizes.bat.dur &&
+                  smk.card && smk.mode === 'smoke' && smk.cardLaid),
+     !smk.has ? 'no tube in this file'
+              : `${smk.mk}: seen ${smk.before.seen}, line ${smk.before.line}, fire line ${smk.before.fire} before; ${smk.rounds} smoke rounds laid ${smk.laid}, ` +
+                `${smk.clouds} clouds in ${smk.t}s (${smk.inZone} inside the zone), hurt ${smk.hurt}; line ${smk.during.line}, fire line ${smk.during.fire}, ` +
+                `lost after ${smk.lost} vision ticks; a mission over it fired ${smk.fired2}; thinned: ${smk.after.clouds} clouds, line ${smk.after.line}; ` +
+                `mortar ${smk.sizes.mor.r}/${smk.sizes.mor.dur.toFixed(0)}s, howitzer ${smk.sizes.how.r}/${smk.sizes.how.dur.toFixed(0)}s, battery ${smk.sizes.bat.r}/${smk.sizes.bat.dur.toFixed(0)}s; ` +
+                `card ${smk.card} -> mode ${smk.mode}, laid ${smk.cardLaid}`);
 
   /* --- the heavy battery, which is four rules rather than a weapon. It is dug as a field
      work and not queued, it may not be dug near its own headquarters, it will not fire

@@ -1719,7 +1719,7 @@ var G = {
   inc: { us: { mp: 0, fu: 0 }, us2: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 } },
   pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
   made: { us: {}, us2: {}, ger: {}, ger2: {} },
-  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
+  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], smoke: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
   sites: [], works: [], props: [], bunks: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
@@ -3952,6 +3952,7 @@ function onRoad(x, y) {
 function traceClear(x0, y0, z0, x1, y1, z1, blk) {
   var dx = x1 - x0, dy = y1 - y0, d = Math.hypot(dx, dy);
   if (d < 30) return true;
+  if (G.smoke.length && smokeBlocks(x0, y0, x1, y1)) return false;   /* a screen is a wall to the eye */
   var near = Math.min(CELL + 10, d * .34);
   var skip = Math.min(.3, 30 / d) * d;                 /* the ground test, in units */
   var nx = dx / d, ny = dy / d;
@@ -4981,11 +4982,67 @@ function barrageWhy(u, wx, wy) {
   }
   return null;
 }
-function orderBarrage(u, wx, wy) {
-  var B = u.def.barrage;
+/* ---- smoke.
+   A tube throws smoke as well as high explosive, and a smoke round is the one thing on
+   this roster that does nothing to anybody and changes a battle anyway: a cloud on the
+   ground that no eye sees through and no gun is laid through. What a piece throws is read
+   off the same number its burst is sized off, so a mortar bomb makes a small cloud that
+   is gone in half a minute and a two-hundred-kilogram shell makes one twice the width
+   that stands for a minute, and a mission is half the rounds of the HE one because each
+   round is a cloud rather than a burst. `G.smoke` is the clouds; `smokeAt` is a cloud's
+   radius now, building over three seconds and thinning over its last quarter; and
+   `smokeBlocks` is the one test both traces ask, because a screen that blinds the eye
+   and leaves the gun laid through it is a screen that does nothing. Wreck smoke stays
+   what it was, a slowing, because a burning hull is a column and not a curtain. */
+function smokeOf(def) {
+  var b = def && def.barrage;
+  if (!b) return null;
+  return { r: clamp(38 + b.r * .5, 50, 118), dur: clamp(14 + b.r * .27, 22, 62), rounds: Math.max(2, Math.ceil(b.rounds / 2)) };
+}
+function smokeAt(sm) {
+  var k = sm.t < 3 ? .35 + .65 * (sm.t / 3) : sm.t > sm.dur * .75 ? clamp((sm.dur - sm.t) / (sm.dur * .25), 0, 1) : 1;
+  return sm.r * k;
+}
+function smokeBlocks(x0, y0, x1, y1) {
+  var dx = x1 - x0, dy = y1 - y0, L2 = dx * dx + dy * dy;
+  for (var i = 0; i < G.smoke.length; i++) {
+    var sm = G.smoke[i], r = smokeAt(sm);
+    if (r < 8) continue;
+    var t = L2 > 0 ? clamp(((sm.x - x0) * dx + (sm.y - y0) * dy) / L2, 0, 1) : 0;
+    var px = x0 + dx * t - sm.x, py = y0 + dy * t - sm.y;
+    if (px * px + py * py < r * r) return true;
+  }
+  return false;
+}
+function smokeBurst(x, y, S, side) {
+  if (G.smoke.length >= 24) G.smoke.shift();
+  var sm = { x: x, y: y, r: S.r, dur: S.dur, t: 0, side: side };
+  G.smoke.push(sm);
+  sfx('boom', x, y, burstVoice(S.r * .3));
+  if (onScreen(x, y)) for (var i = 0; i < 6; i++) smokePuff(sm, 1);
+  return sm;
+}
+function smokePuff(sm, k) {
+  var r = smokeAt(sm), a = rnd(0, TAU), d = Math.sqrt(Math.random()) * r * .8;
+  var f = spawnFx('smoke', sm.x + Math.cos(a) * d, sm.y + Math.sin(a) * d, 14 + r * .22 + rnd(0, 8), groundZ(sm.x, sm.y) + 9 + rnd(0, 10));
+  if (f) { f.c = 3; f.rise = 26 + Math.random() * 30; f.op = .58 * k; f.dur = 4.2 + Math.random() * 2.6; f.drift = 22; }
+}
+function updateSmoke(dt) {
+  for (var i = G.smoke.length - 1; i >= 0; i--) {
+    var sm = G.smoke[i];
+    sm.t += dt;
+    if (sm.t > sm.dur) { G.smoke.splice(i, 1); continue; }
+    if (!onScreen(sm.x, sm.y)) continue;
+    /* fed at a rate the cloud's own size sets, and thinning with it */
+    var k = smokeAt(sm) / sm.r;
+    if (Math.random() < dt * (2.5 + sm.r * .07) * k) smokePuff(sm, k);
+  }
+}
+function orderBarrage(u, wx, wy, smoke) {
+  var B = u.def.barrage, S = smoke ? smokeOf(u.def) : null;
   if (barrageWhy(u, wx, wy)) return false;
   clearOrder(u); u.order = 'hold';
-  u.barrage = { x: wx, y: wy, r: B.r, left: B.rounds, t: 0 };
+  u.barrage = { x: wx, y: wy, r: B.r, left: S ? S.rounds : B.rounds, t: 0, smoke: !!S };
   return true;
 }
 function barrageTick(u, dt) {
@@ -5007,7 +5064,7 @@ function barrageTick(u, dt) {
   u.facing += clamp(angDiff(u.facing, want), -(u.def.traverse || .85) * dt, (u.def.traverse || .85) * dt);
   if (Math.abs(angDiff(u.facing, want)) > (u.def.layTol || .35)) return;
   var a = rnd(0, TAU), rr = Math.sqrt(Math.random()) * b.r;
-  fireAt(u, { x: b.x + Math.cos(a) * rr, y: b.y + Math.sin(a) * rr }, dt);
+  fireAt(u, { x: b.x + Math.cos(a) * rr, y: b.y + Math.sin(a) * rr }, dt, b.smoke ? { smoke: 1 } : null);
   /* A round is only spent when one left the tube. fireAt refuses for its own reasons --
      and one of them bites here, because an aim point may fall up to the circle's radius
      beyond its centre and so past the mission's own maximum range. Decremented
@@ -6394,7 +6451,7 @@ function aimAt(u, t) {
   }
   return best ? { x: best.x, y: best.y } : { x: t.x, y: t.y };
 }
-function fireAt(u, t, dt) {
+function fireAt(u, t, dt, opt) {
   var w = weaponFor(u, t);
   var isAt = (w === u.def.at);
   var cdKey = isAt ? 'atcd' : 'cd';
@@ -6547,7 +6604,9 @@ function fireAt(u, t, dt) {
                    /* a flat round carries a tracer element in its base and is drawn as
                       one; a bomb has none and is a dark body against the sky */
                    z0: u.cat === 'veh' ? 24 : 14, tail: ind ? .05 : .30, col: TRACER[u.side],
-                   w: w, hit: hits > 0,
+                   w: w, hit: hits > 0 && !(opt && opt.smoke),
+                   /* a smoke round carries the cloud it will make and hurts nobody */
+                   smk: opt && opt.smoke ? smokeOf(u.def) : null,
                    side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t,
                    /* how high up it goes off, which is the whole of where a hole in a
                       wall ends up. A flat round arrives at about the height it left the
@@ -7849,9 +7908,12 @@ function updateShots(dt) {
            with its burst. */
         var direct = s.hit && !s.ind && s.target && !s.target.dead &&
           (s.target.cat === 'veh' || s.target.built !== undefined) ? s.target : null;
-        if (direct) damage(direct, s.dmg, s.owner);
-        if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct, s.bz);
-        else if (s.hit) spawnFx('hit', s.tx, s.ty);
+        if (s.smk) smokeBurst(s.tx, s.ty, s.smk, s.side);
+        else {
+          if (direct) damage(direct, s.dmg, s.owner);
+          if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct, s.bz);
+          else if (s.hit) spawnFx('hit', s.tx, s.ty);
+        }
         G.shots.splice(i, 1);
       }
     } else if (s.t >= s.dur) G.shots.splice(i, 1);
@@ -7899,6 +7961,7 @@ function updateShots(dt) {
       if (wf) { wf.ln = 0; wf.col = [1, .64, .24]; wf.dur = .14; }
     }
   }
+  updateSmoke(dt);
   for (var c = G.corpses.length - 1; c >= 0; c--) { G.corpses[c].t += dt; if (G.corpses[c].t > 55) G.corpses.splice(c, 1); }
   /* half a second of falling, then he is a body and ages like one */
   for (var fl = G.falls.length - 1; fl >= 0; fl--) {
@@ -8856,11 +8919,16 @@ function updateUnit(u, dt) {
     if (u.cat === 'veh') u.want = u.manual ? DRV.want : angTo(u, u.target);
   } else if (u.cat === 'veh') {
     u.want = u.manual ? DRV.want : u.facing;
-  } else if (!u.moving && !u.retreat && !u.gar && !u.def.arc && u.threatAng !== undefined && u.threatAng !== null) {
+  } else if (!u.moving && !u.retreat && !u.gar && !u.def.arc && !u.barrage && u.threatAng !== undefined && u.threatAng !== null) {
     /* Nothing to shoot at, but something known to be out there: a halted section turns
        to face it rather than standing the way it happened to arrive, and a machine gun
        is laid on that bearing before it is needed rather than heaved round after the
-       first burst comes in. The bearing is the one the cover was chosen against. */
+       first burst comes in. The bearing is the one the cover was chosen against.
+         Not a tube on a mission: barrageTick lays that on the beaten zone, and a crew
+       turned toward the nearest known enemy at the same rate every frame is a crew that
+       never comes onto its bearing. A mortar with the threat off to one side stood with
+       ten rounds in hand and fired none of them, and a battery, which traverses at a
+       quarter of the rate, could never have laid at all. */
     var fw = u.threatAng + Math.PI, fr2 = (u.cat === 'team' ? .85 : 4) * dt;
     u.facing += clamp(angDiff(u.facing, fw), -fr2, fr2);
   }
@@ -9041,7 +9109,7 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
   'wave.break': 'Assault broken off: too costly', 'wave.pinned': 'Defenders pinned: going in', 'hold.coming': 'Enemy closing on our flag: holding it',
   'mood.mass': 'Enemy massing: meeting it', 'mood.clock': 'The clock decides: pushing for a flag', 'mood.exch': 'The exchange has turned',
   'mortar.mass': 'Mortars on the enemy forming up', 'mortar.counter': 'Counter-battery fire', 'op.counter': 'Task force sent after their guns',
-  'shelled.move': 'Moving out of the shelling' };
+  'shelled.move': 'Moving out of the shelling', 'mortar.dir': 'Guns laid on the objective', 'smoke.screen': 'Smoke going down for the assault' };
 /* declared here rather than where they fire, so the card lists a rule that has never
    been reached at all instead of leaving a hole where it should be */
 (function () {
@@ -9074,7 +9142,9 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
                'mood.clock', 'mood.exch', 'heard', 'op.counter', 'mortar.counter', 'shelled.move',
                /* the arms: a team anchored on the line, a gun that defends, armour that is escorted */
                'team.anchor', 'team.form', 'team.follow', 'team.alone', 'team.close', 'at.defend', 'at.armour',
-               'veh.escort', 'op.light', 'op.heavy'];
+               'veh.escort', 'op.light', 'op.heavy',
+               /* the guns in support of the attack, and the screen laid at the go */
+               'mortar.dir', 'smoke.screen'];
   for (var i = 0; i < names.length; i++) aiRule(names[i]);
 })();
 
@@ -9809,6 +9879,30 @@ function aiArmourNear(W, side, x, y, r, t) {
     if (d < bd) { bd = d; best = c; }
   }
   return best;
+}
+/* A screen for the assault. The point is a third of the way from the objective back
+   toward the forming-up point, which is the ground the defenders look out over and the
+   wave walks in across: our sections come out of the cloud a hundred units from the flag
+   and the men holding it have seen nothing coming. Laid by the tube of this slot nearest
+   to being able to do it -- in action, in reach, and without a mission of its own still
+   worth finishing -- and one tube only, because a second screen beside the first is the
+   same screen. */
+function aiSmokeScreen(W, ox, oy, fx, fy) {
+  var d = Math.hypot(fx - ox, fy - oy), px, py, best = null, bd = 1e18, i;
+  if (d < 40) return false;
+  px = clamp(ox + (fx - ox) / d * Math.min(d * .34, 150), 40, WORLD.w - 40);
+  py = clamp(oy + (fy - oy) / d * Math.min(d * .34, 150), 40, WORLD.h - 40);
+  for (i = 0; i < W.teams.length; i++) {
+    var u = W.teams[i];
+    if (u.dead || u.retreat || !u.def.barrage || u.packed || u.pack > 0 || u.setup > 0 || u.moving) continue;
+    if (u.barrage && (u.barrage.smoke || u.barrage.left > 3)) continue;
+    if (barrageWhy(u, px, py)) continue;
+    var dd = dsq(u.x, u.y, px, py);
+    if (dd < bd) { bd = dd; best = u; }
+  }
+  if (!best || !orderBarrage(best, px, py, true)) return false;
+  aiFire('smoke.screen');
+  return true;
 }
 /* Is this weapon in position and able to do its job? Used to decide whether a wave has
    its fire support before it goes rather than after. */
@@ -11533,6 +11627,10 @@ function aiTick(dt) {
            G.t - AI.asForm > (D.form || 32))) {
         AI.asT = G.t;
         aiFire('wave.go');
+        /* and smoke goes down as it goes: a screen short of a defended objective, laid
+           by a tube that can reach it, so the crossing is made behind something the
+           defenders cannot see through */
+        if (skill >= 1 && RA && RA.th > 60) aiSmokeScreen(W, asX, asY, fupX, fupY);
         if (pinnedF >= .3) aiFire('wave.pinned');
         if (ready < Math.min(D.wave || 3, sent)) aiFire('wave.late');
         /* what it stepped off with, so the press below can tell a wave that is taking
@@ -11624,7 +11722,11 @@ function aiTick(dt) {
      the line on its own. Every gun team the opposition built died that way, one at a
      time, and its army never grew past four. They go to the forming-up point instead,
      which is where the wave is and where the ground it has to cross begins. */
-  var supX = razeT && asKey ? fupX : mainX, supY = razeT && asKey ? fupY : mainY;
+  /* and outside annihilation the support aims at the wave's own objective when there
+     is one, rather than at whichever sector is hottest: the two are usually the same
+     flag and were not the moment a player tapped ATTACK on another, so the tubes went on
+     shelling the fight the army was leaving while the wave went in without them */
+  var supX = razeT && asKey ? fupX : asKey ? asX : mainX, supY = razeT && asKey ? fupY : asKey ? asY : mainY;
 
   /* ---- orders */
   var garCount = 0;
@@ -11819,6 +11921,14 @@ function aiTick(dt) {
     var onTask = u.dest && dist(u, u.dest) > 190;
     var reach = u.cat === 'team' ? w0.range * .86 : (onTask ? 210 : Math.max(300, w0.range * .95));
     var hit = aiPickTarget(u, reach);
+    /* A tube works by the mission and not by the section in front of it. Forced onto a
+       target it can see, a mortar plinks at one section at its own slow rate while the
+       ground the wave is about to cross goes unshelled, and the attack order CANCELS the
+       mission it was on, because an order clears the order before it -- which is how the
+       smoke laid at the go was gone by the end of the same tick. A tube on a mission
+       keeps it, and one on its post is left to the support job, which lays the next. */
+    if (hit && u.def.barrage && (u.barrage || (u.job === 'support' && u.jobX !== undefined &&
+        dsq(u.x, u.y, u.jobX, u.jobY) <= 90 * 90 && !u.packed && !(u.pack > 0) && u.setup <= 0))) hit = null;
     /* Pressing home. An attack order only closes to weapon range, so a section that stops
        for something it cannot actually shoot stops for good: men who lock onto a target
        on the far side of a wall stand at the wall and fire at the stone. Once a wave has
@@ -12061,8 +12171,11 @@ function aiTick(dt) {
            are worth more than bombs into a flag it has not reached, and a gathering is
            the one time the enemy stands still in the open. Worth a mission on its own
            account, so the objective's defenders wait their turn. */
-        var MS = W.mass;
-        if (MS && MS.sec && MS.w > 300 && Math.hypot(u.x - MS.x, u.y - MS.y) <= barrageRange(u)) {
+        /* unless the attack is one the player ordered: then the objective is what the
+           guns are for and nothing else comes first (`mortar.dir`) */
+        var MS = W.mass, dirM = !razeT && asKey && aiDirAttack(slot);
+        if (dirM) mLed = 'mortar.dir';
+        else if (MS && MS.sec && MS.w > 300 && Math.hypot(u.x - MS.x, u.y - MS.y) <= barrageRange(u)) {
           bx = clamp(MS.x + MS.vx * 7, 40, WORLD.w - 40); by = clamp(MS.y + MS.vy * 7, 40, WORLD.h - 40); mLed = 'mortar.mass';
         } else {
           /* counter-battery: the tube that has been shelling this side, where it was last
@@ -13427,7 +13540,7 @@ function buildMarks(v) {
      else, and the ring is on the ground where the bombs are */
   G.units.forEach(function (u) {
     if (u.dead || !u.barrage || !owned(u)) return;
-    var b = u.barrage, cl = markCol('#d8a334');
+    var b = u.barrage, cl = markCol(b.smoke ? '#d9d6ca' : '#d8a334');
     markRing(b.x, b.y, b.r, cl, .55, 2, [12, 9], G.t * .15);
     markRing(b.x, b.y, b.r * .30, cl, .45, 1.6);
   });
@@ -13450,10 +13563,10 @@ function buildMarks(v) {
      The reach is a hard edge and without it the only feedback is a refusal after the
      click, which on a gun that can fire at nothing else is the whole of what the player
      needs to know before choosing where to put it. */
-  if (G.mode === 'barrage') {
+  if (G.mode === 'barrage' || G.mode === 'smoke') {
     G.sel.forEach(function (u) {
       if (u.dead || !owned(u) || !u.def || !u.def.barrage) return;
-      markRing(u.x, u.y, barrageRange(u), markCol('#d8a334'), .42, 2, [30, 34], 0);
+      markRing(u.x, u.y, barrageRange(u), markCol(G.mode === 'smoke' ? '#d9d6ca' : '#d8a334'), .42, 2, [30, 34], 0);
     });
   }
   G.sel.forEach(function (u) {
@@ -25588,6 +25701,11 @@ function drawMinimap() {
     mctx.fillStyle = 'rgba(8,10,6,.8)'; mctx.fillRect(u.x * sx - r - .8, u.y * sy - r - .8, r * 2 + 1.6, r * 2 + 1.6);
     mctx.fillStyle = FACTION[u.side].color; mctx.fillRect(u.x * sx - r, u.y * sy - r, r * 2, r * 2);
   });
+  G.smoke.forEach(function (sm) {
+    var sr = smokeAt(sm) * sx; if (sr < 1) return;
+    mctx.fillStyle = 'rgba(214,210,196,.42)';
+    mctx.beginPath(); mctx.arc(sm.x * sx, sm.y * sy, sr, 0, TAU); mctx.fill();
+  });
   if (CONT[G.side]) CONT[G.side].forEach(function (c) {
     if (G.t - c.t < .25) return;
     var cr = c.veh ? 2.6 : 1.9;
@@ -25759,16 +25877,16 @@ function selectedBunker() {
 function barrageToast(why) {
   return why === 'safe' ? 'It will not fire into the enemy base' : 'Out of range';
 }
-function callBarrage(wx, wy) {
+function callBarrage(wx, wy, smoke) {
   var tubes = selectedUnits().filter(function (u) { return owned(u) && u.def.barrage; });
   if (!tubes.length) return;
   var on = 0, why = null;
   tubes.forEach(function (u) {
-    if (orderBarrage(u, wx, wy)) { on++; return; }
+    if (orderBarrage(u, wx, wy, smoke)) { on++; return; }
     var w = barrageWhy(u, wx, wy);
     if (w === 'safe' || !why) why = w;
   });
-  if (on) { toast(on === 1 ? 'Fire mission' : on + ' tubes on the mission'); sfx('click'); }
+  if (on) { toast((smoke ? 'Smoke mission' : 'Fire mission') + (on === 1 ? '' : ', ' + on + ' tubes')); sfx('click'); }
   else if (why) toast(barrageToast(why));
   syncHud();
 }
@@ -25897,7 +26015,7 @@ cv.addEventListener('mousedown', function (e) {
       return;
     }
     if (G.mode === 'attack') { var w0 = s2w(mouse.x, mouse.y); issueOrder(w0.x, w0.y, true); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
-    if (G.mode === 'barrage') { var wb = s2w(mouse.x, mouse.y); callBarrage(wb.x, wb.y); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
+    if (G.mode === 'barrage' || G.mode === 'smoke') { var wb = s2w(mouse.x, mouse.y); callBarrage(wb.x, wb.y, G.mode === 'smoke'); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
     drag.on = true; drag.x0 = mouse.x; drag.y0 = mouse.y; drag.moved = false;
   } else if (e.button === 1) { e.preventDefault(); drag.pan = { x: mouse.x, y: mouse.y, rotate: !e.shiftKey }; }
 });
@@ -26126,7 +26244,7 @@ cv.addEventListener('touchend', function (e) {
   if (G.mode === 'attack') {
     issueOrder(w.x, w.y, true); G.mode = null; syncHud(); buzz(16); return;
   }
-  if (G.mode === 'barrage') { callBarrage(w.x, w.y); G.mode = null; syncHud(); buzz(16); return; }
+  if (G.mode === 'barrage' || G.mode === 'smoke') { callBarrage(w.x, w.y, G.mode === 'smoke'); G.mode = null; syncHud(); buzz(16); return; }
   /* under the simple scheme a tap is never an order: a flag puts its directives up, a
      unit of his is picked for LOOK, and the ground lets go */
   if (CTRL.simple) { simpleTap(w.x, w.y); return; }
@@ -26574,8 +26692,8 @@ window.addEventListener('keydown', function (e) {
     return;
   }
   if (k === 'q') { if (selectedUnits().length) { G.mode = 'attack'; cv.style.cursor = 'cell'; syncHud(); } return; }
-  if (k === 'f') {
-    if (selectedUnits().some(function (u) { return u.def.barrage; })) { G.mode = 'barrage'; cv.style.cursor = 'cell'; syncHud(); }
+  if (k === 'f' || k === 'k') {
+    if (selectedUnits().some(function (u) { return u.def.barrage; })) { G.mode = k === 'f' ? 'barrage' : 'smoke'; cv.style.cursor = 'cell'; syncHud(); }
     return;
   }
   if (k === 'x') { selectedUnits().forEach(orderStop); syncHud(); return; }
@@ -26706,6 +26824,7 @@ function cmdGlyph(label) {
      post' and 'Aid post' and drew a house on each. The mortar pit is deliberately left to
      the `/Pit/` test further down, which is the better glyph for it. */
   if (/Auto upgrade/i.test(label)) return '⟳';
+  if (/Smoke mission/i.test(label)) return '☁';
   if (/Machine gun post/i.test(label)) return '⊢';
   if (/Anti-tank casemate/i.test(label)) return '⌁';
   if (/Repair shelter|Re-crew/i.test(label)) return '⚒';
@@ -26810,6 +26929,11 @@ function buildCmds() {
         if (firing) { tubes.forEach(function (u) { u.barrage = null; }); toast('Mission cancelled'); sfx('click'); syncHud(); return; }
         G.mode = 'barrage'; cv.style.cursor = 'cell'; syncHud();
       }, G.mode === 'barrage' || firing);
+      /* and smoke: a screen laid the same way, which blinds whatever is on the far side
+         of it -- and whatever is on this side looking through it */
+      if (!firing) addCmd('Smoke mission', 'K + click', 'K', true, function () {
+        G.mode = 'smoke'; cv.style.cursor = 'cell'; syncHud();
+      }, G.mode === 'smoke');
     }
     var guns = units.filter(function (u) { return u.def.wUp && u.def.wUp.he; });
     if (guns.length) {
@@ -27416,7 +27540,7 @@ function startGame(side, diff, mode, arty, duo) {
   G.aiArty = arty === undefined ? true : !!arty;
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   missionTitle();
-  G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.sel = [];
+  G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.smoke = []; G.sel = [];
   G.debris = []; G.hurt = []; G.rub = []; G.tileQ = {}; G.rubDirty = 1;
   MND = null;
   if (RUBBUF) RUBBUF.n = 0;
@@ -28059,7 +28183,7 @@ function edOpen(data) {
   ED.name = ED.data.name || 'Ortona';
   ED.undo = []; ED.redo = []; ED.sel = []; ED.line = null; ED.drag = null; ED.marq = null; ED.tool = null; ED.cat = 'select';
   G.mapData = ED.data; G.side = 'us'; G.own = 'us'; G.diff = 1; G.over = null; G.units = []; G.blds = []; G.sel = []; G.sites = []; G.works = [];
-  G.wrecks = []; G.corpses = []; G.falls = []; G.fx = []; G.shots = [];
+  G.wrecks = []; G.corpses = []; G.falls = []; G.smoke = []; G.fx = []; G.shots = [];
   fog = false;
   ED.scope = 'full'; ED.tiles = {}; ED.rect = null; ED.padTiles = {}; ED.padRect = null; ED.padT = 0;
   edRebuildNow();

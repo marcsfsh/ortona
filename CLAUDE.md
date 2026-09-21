@@ -948,7 +948,7 @@ node tools/shoot.mjs free --cam=1400,950,600,1.57,0.8 --bare --sim=60
 ```
 
 Scenes: `start` `battle` `hud` `closeup` `terrain` `editor` `over`
-`infantry` `armour` `models` `lineup` `buildings` `free`.
+`infantry` `armour` `models` `lineup` `buildings` `smoke` `free`.
 
 Devices: `desktop` (1600x900) `laptop` (1280x800) `wide` (1920x1080)
 `veh` (900x620, for the tight edit-render-look loop on a model)
@@ -3584,6 +3584,30 @@ falling while he does something else; and while a mission is being laid, each se
 tube's reach is drawn round it, because the reach is a hard edge and without it the only
 feedback is a refusal after the click.
 
+**A tube throws smoke as well.** A smoke round is the one thing on this roster that does
+nothing to anybody and changes a battle anyway: a cloud on the ground that no eye sees
+through and no gun is laid through. `orderBarrage(u, x, y, smoke)` is the same mission with
+the flag set, K and a click on the classic bar beside F, and `barrageTick` hands the flag to
+`fireAt`, whose shell carries the cloud it will make (`smk`, off `smokeOf(def)`) and hurts
+nobody when it lands. What a piece throws is read off the same number its burst is sized
+off, so the sizes are the roster's and not a table: a mortar bomb makes a cloud of 65 that
+is gone in 29 seconds, a pack howitzer's shell 76 for 35, and a battery's 118 for 62, with a
+mission at half the rounds of the HE one because each round is a cloud rather than a
+burst. `G.smoke` is the clouds; `smokeAt` is a cloud's radius now, building over three
+seconds and thinning over its last quarter; and `smokeBlocks` is asked at the top of
+`traceClear`, which is the ONE place, because a screen that blinds the eye and leaves the
+gun laid through it is a screen that does nothing -- `sightLine`, `fireLine`, `aiSightsOn`
+and the overwatch all go through that trace. Wreck smoke stays what it was, a slowing
+through `smokeOn`, because a burning hull is a column and not a curtain. The cloud is fed
+puffs at a rate its own size sets, only while it is on screen, and drawn on the little map
+as a grey disc; the mission's ring is drawn in the smoke's own colour.
+
+Measured by the gate: a section seen across 240 units of open ground, with a line to it
+and a fire line, is behind five mortar clouds inside the zone about twelve seconds after
+the mission is laid, and then has neither line, is lost by the eye inside a few vision ticks,
+and has not lost a hit point; a second mortar laid on it over the screen still fires; the
+clouds aged out give the line back; and the card on the bar sets the mode and lays one.
+
 **Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
 (`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
 the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
@@ -4368,6 +4392,46 @@ and is gated on `aiBuys` too, or a green game froze the player's own army for th
 half minutes. A tank he is driving from its own turret is skipped (`u.manual`), because
 in the periscope he is the crew.
 
+**And the guns serve the attack he orders.** The support weapons aimed at whichever
+sector was hottest (`AI.main`), which is usually the wave's objective and was not the
+moment he tapped ATTACK on another flag: the tubes went on shelling the fight the army was
+leaving while the wave went in without them. The support aim is the wave's own objective
+now whenever there is one, and under a directed attack the tube's mission goes on the men
+holding that flag before a massing body or a heard tube gets its turn (`mortar.dir`). Then
+at the go, against a defended objective, smoke goes down: `aiSmokeScreen` lays a screen a
+third of the way from the flag back toward the forming-up point, which is the ground the
+defenders look out over and the wave walks in across, by the tube of this slot nearest to
+being able to do it -- in action, in reach, and without a mission of its own still worth
+finishing -- and one tube only, because a second screen beside the first is the same
+screen (`smoke.screen`). The opposition's brain does the same, since it is the same tick.
+
+The gate found the fault that would have made all of that decoration. The target reflex
+runs before the jobs and forced a tube onto any section it could see, and an attack order
+clears the order before it: a mortar on its post plinked at one section at its own slow
+rate while the ground the wave was about to cross went unshelled, and the smoke laid at
+the go was gone by the end of the same tick, cancelled by the reflex three hundred lines
+below it. A tube on a mission keeps it now, and one on its post is left to the support
+job, which lays the next; its own `acquire` still shoots at what is in front of it
+between missions, so nothing is silenced.
+
+And the same row found a second one, older than anything on this page: **a tube on a
+mission was turned back off its bearing every frame.** A halted section with nothing to
+shoot at turns to face the nearest enemy the side can see (`u.threatAng`), and a tube on
+a mission has no target by design, so it took that turn -- at the same 0.85 radians a
+second `barrageTick` was laying it on with, so the two cancelled to the frame and the
+crew stood with ten rounds in hand and fired none. A battery traverses at a quarter of
+that and could never have laid a mission at all with anything in sight off its line. It
+had not shown because the mortar row, the free-fire row and every hand-laid mission in a
+quiet minute had the nearest enemy on the same bearing as the beaten zone; the directed
+attack put the wave's own targets out of sight and the nearest thing in sight off to a
+flank. A tube on a mission is exempt from the turn now, and the row stands an enemy
+square off the line of fire while the preparation is spent, so that it stays measured.
+Measured by the gate under SIMPLE: ATTACK on the nearest flag that is not his, with two
+sections of theirs on it and a mortar of his in action four hundred and thirty back, lays
+the mortar on the defenders on the next tick; the mission runs down with a section in
+sight at a right angle to it; and with the preparation spent and the wave ready the go
+lays smoke short of the flag.
+
 **He steers it by the flags.** `AI.dir` is one directive per sector on the plan, set by
 `aiDirSet` from the popup and read by `aiDirOf`. ATTACK makes the flag the main effort:
 the objective list scores it 420 above everything else with a cap of four sections and no
@@ -4798,6 +4862,14 @@ shots/                         screenshot output, gitignored
   harness keeping three game frames of a page error is what named it: `drawWrecks3D`'s
   falls loop, and not any of the guarded lit-pass draws the message pointed at. The dt is
   clamped at nought now and the index with it.
+- **Two rules that turn the same thing at the same rate cancel to the frame, and what that
+  looks like is a thing that has not moved yet.** A tube on a mission was laid on its
+  beaten zone by `barrageTick` and turned toward the nearest known enemy by the
+  halted-facing rule, both at 0.85 radians a second, and the mission never fired a round:
+  ten left, cooldown at nought, nothing packed and nothing moving, which reads as a crew
+  still coming round. When a gate row says a thing has not happened yet after a minute of
+  simulation, print the bearing error and not only the count, and look for a second hand
+  on the same wheel.
 - **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
   that slot under classic, so a lock on its till read off the slot alone is invisible in
   play and cripples every card that puts a brain on both sides: the tactics card came back
