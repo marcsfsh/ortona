@@ -614,6 +614,12 @@ for (const device of TARGETS) {
     /* the tube stands on its post, aimed at the flag, so the plan finds it in position */
     m.jobX = m.x; m.jobY = m.y; m.aimX = S.x; m.aimY = S.y; m.jobT = window.G.t; m.jobAnc = 300;
     const f0 = Object.assign({}, window.AIR.fired);
+    /* and nobody answers a call for the drill's two ticks: a section of his from the
+       battle meeting a tank raises one, an answer outranks the plan, and the nearest
+       capable thing to it was one of the three put down here, dealt off the flag and sent
+       two streets away. The flag row empties the board for the same reason; this one has
+       to stop the dealing as well, because a call raised inside the tick is dealt inside it */
+    const realAns = window.aiAnswer; window.aiAnswer = function () {};
     window.simpleDir(S, 'attack');
     P.asKey = null; P.asT = -99; P.t = 0;
     const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
@@ -660,6 +666,7 @@ for (const device of TARGETS) {
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
     const kind = (q) => q ? (q.smoke ? 'smoke' : 'HE') + ' ' + q.d + ' from the flag' : 'nothing';
     /* down again */
+    window.aiAnswer = realAns;
     window.aiDirSet(own, S.id, null);
     P.asKey = null; P.asT = -99; P.asSec = null;
     raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });

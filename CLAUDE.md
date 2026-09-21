@@ -4426,6 +4426,11 @@ quiet minute had the nearest enemy on the same bearing as the beaten zone; the d
 attack put the wave's own targets out of sight and the nearest thing in sight off to a
 flank. A tube on a mission is exempt from the turn now, and the row stands an enemy
 square off the line of fire while the preparation is spent, so that it stays measured.
+The row also lets nobody answer a call for its two ticks: a section of his from the
+battle meeting a tank raises one, an answer outranks the plan, and on one phone run the
+nearest capable thing to it was one of the three sections put down beside the objective,
+dealt off the flag and sent two streets away. Emptying the board is not enough there,
+because a call raised inside the tick is dealt inside it.
 Measured by the gate under SIMPLE: ATTACK on the nearest flag that is not his, with two
 sections of theirs on it and a mortar of his in action four hundred and thirty back, lays
 the mortar on the defenders on the next tick; the mission runs down with a section in
