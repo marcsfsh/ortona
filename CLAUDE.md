@@ -4983,6 +4983,14 @@ shots/                         screenshot output, gitignored
   still coming round. When a gate row says a thing has not happened yet after a minute of
   simulation, print the bearing error and not only the count, and look for a second hand
   on the same wheel.
+- **An edit script that aborts on a later anchor writes nothing, including the edits
+  that matched.** The rewrite that gave `simpleTap` its enemy and its ground branches was
+  the first change in a script whose last change missed its anchor, so the file was never
+  written and the tap kept the two branches it had. What it looked like from the gate was
+  a pad that would not open on open ground, and two rounds were spent looking at the
+  camera, the clamp and the touch path before anybody looked at `simpleTap` itself. When
+  a thing behaves exactly as it did before a change, check that the change is in the
+  file.
 - **A tap is a point on the SCREEN, and `clampCam` will not put the camera where you
   asked.** The board row chose its piece of open ground by arithmetic in world space and
   projected it after centring: near the edge of the map the camera refuses to go there,
