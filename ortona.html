@@ -8832,8 +8832,14 @@ function aiInit(slot, soft) {
    the fittings and the upgrades it may still buy, out of what is left once a reserve is
    kept for him, since those are the digging-in that is part of fighting. */
 function aiRuns(sl) { return !!sl.ai || (CTRL.simple && sl.k === G.own); }
-function aiBuys(slot) { var sl = slotOf(slot); return !sl || !!sl.ai; }
-function aiDiffOf(slot) { var sl = slotOf(slot); return sl && !sl.ai ? DIFF[2] : diffOf(slot); }
+/* The lock on the till and the veteran brain are SIMPLE's: under it the strip buys and the
+   brain fights with the best it has. Under classic no brain runs on the player's slot in
+   a game, and the one thing that does put one there is a card -- `tools/skirmish.mjs` and
+   `tools/brain.mjs` put a brain on both sides -- so a lock read off the slot alone left
+   the Canadian side of every card unable to raise a section: eight mirror pairs came back
+   a walkover for whichever side was German, with 1,686 marks unspent on the other. */
+function aiBuys(slot) { var sl = slotOf(slot); return !sl || !!sl.ai || !CTRL.simple; }
+function aiDiffOf(slot) { var sl = slotOf(slot); return sl && !sl.ai && CTRL.simple ? DIFF[2] : diffOf(slot); }
 /* and forget the ones that are not playing this game, so a 2v2 followed by a 1v1 does not
    leave a third brain holding a plan about units that no longer exist */
 function aiSlotsInit() {

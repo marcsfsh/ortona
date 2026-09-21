@@ -4212,7 +4212,14 @@ for the best it has. And `aiBuys` locks it out of the till for units and posts, 
 strip is what those are for: every `queueUnit` and the two `placeStructure` sites in
 `aiTick` are behind `spend`, `wantMp` is nought so nothing is saved for a ladder it will
 never climb, and the works, the fittings and the upgrades it may still buy keep three
-hundred marks back for him (`keep`). The green grace in annihilation is the opposition's
+hundred marks back for him (`keep`). **Both of those are SIMPLE's and read `CTRL.simple`**,
+because under classic the only thing that ever puts a brain on the player's slot is a
+card: `tools/skirmish.mjs` and `tools/brain.mjs` run one on both sides, and a lock read
+off the slot alone left the Canadian side of every card unable to raise a section. It
+shipped that way, and what said so was the tactics card: eight mirror pairs at -578 and
++568 by side, a walkover for whichever brain was German, with 1,686 marks unspent on the
+other side against 264. Every brain-card number taken between that commit and this one
+was read off a battle with one army in it. The green grace in annihilation is the opposition's
 and is gated on `aiBuys` too, or a green game froze the player's own army for three and a
 half minutes. A tank he is driving from its own turret is skipped (`u.manual`), because
 in the periscope he is the crew.
@@ -4594,6 +4601,13 @@ shots/                         screenshot output, gitignored
   an operation carries it as the sector wrote it, so the two agree only when compared with
   `String()` on both sides; compared bare, a directed hold would match no operation and be
   raised again on every tick.
+- **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
+  that slot under classic, so a lock on its till read off the slot alone is invisible in
+  play and cripples every card that puts a brain on both sides: the tactics card came back
+  a walkover for whichever brain was German on all sixteen matches before anyone looked.
+  Gate such a rule on the scheme that wants it, and run `tools/skirmish.mjs --self` after
+  touching anything the player's slot reads, because it is the one card that cannot be
+  fooled by one side never buying.
 
 - **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
   `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the

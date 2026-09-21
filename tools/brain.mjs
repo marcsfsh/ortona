@@ -70,6 +70,10 @@ const SECS = args.t === undefined ? 300 : Number(args.t);
 const DIFF = args.diff === undefined ? 1 : Number(args.diff);
 const N = args.n === undefined ? 1 : Number(args.n);
 const BASE = args.base === undefined ? null : String(args.base);
+/* --file=<path> is a baseline that is not a revision: an older file with one thing patched
+   into it, which is the only way to fight a card against a revision whose card was broken
+   by something the working file has since fixed */
+const FILE = args.file === undefined ? null : String(args.file);
 
 /* ------------------------------------------------------------------ the page side */
 
@@ -579,7 +583,10 @@ function show(c) {
 /* ------------------------------------------------------------------ run */
 
 let older = null;
-if (BASE) {
+if (FILE) {
+  process.stderr.write(`  ${FILE} ...\n`);
+  older = await card(FILE, FILE);
+} else if (BASE) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ortona-brain-'));
   const f = path.join(dir, 'ortona.html');
   fs.writeFileSync(f, execFileSync('git', ['show', `${BASE}:ortona.html`], { encoding: 'utf8', maxBuffer: 1 << 28 }));
@@ -594,6 +601,6 @@ if (args.json) {
   console.log(JSON.stringify({ now, older }, null, 2));
 } else {
   show(now);
-  if (older) { console.log('\n\n  BEFORE   ' + BASE); show(older); }
+  if (older) { console.log('\n\n  BEFORE   ' + (FILE || BASE)); show(older); }
   console.log('');
 }
