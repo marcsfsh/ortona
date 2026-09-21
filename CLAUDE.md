@@ -4429,14 +4429,19 @@ square off the line of fire while the preparation is spent, so that it stays mea
 Measured by the gate under SIMPLE: ATTACK on the nearest flag that is not his, with two
 sections of theirs on it and a mortar of his in action four hundred and thirty back, lays
 the mortar on the defenders on the next tick; the mission runs down with a section in
-sight at a right angle to it; and with the preparation spent and the wave ready the go
-lays smoke short of the flag.
+sight at a right angle to it; every section he put beside the objective is dealt to it;
+and with the preparation spent and the wave ready the go lays smoke short of the flag.
 
 **He steers it by the flags.** `AI.dir` is one directive per sector on the plan, set by
 `aiDirSet` from the popup and read by `aiDirOf`. ATTACK makes the flag the main effort:
-the objective list scores it 420 above everything else with a cap of four sections and no
-reach limit, the wave forms against it whatever the held pick would have said
-(`aiDirAttack`), and it is done the moment the flag is his and quiet (`aiDirDone`). HOLD
+it goes to the top of the objective list whatever the scores say, with a cap of four
+sections and no reach limit, the wave forms against it whatever the held pick would have
+said (`aiDirAttack`), and it is done the moment the flag is his and quiet (`aiDirDone`).
+It was 420 points on top of the score rather than the top of the list, and 420 is not
+enough: a held victory flag with a body walking onto it is worth most of a thousand, and
+the directed-attack row watched two of the three sections the player had put beside his
+objective dealt to that flag instead, so the wave he had asked for formed with one section
+in it. The directive is a sort key now and the score decides only among the rest. HOLD
 raises a directed `hold` operation while the flag is his, which `aiOpsReview` keeps for as
 long as the directive stands rather than for the brain's own hundred and thirty seconds,
 and retakes the flag if it is lost. FEINT raises a directed `feint` the same way and
@@ -4870,6 +4875,11 @@ shots/                         screenshot output, gitignored
   still coming round. When a gate row says a thing has not happened yet after a minute of
   simulation, print the bearing error and not only the count, and look for a second hand
   on the same wheel.
+- **A bonus on a score is not a priority.** The player's ATTACK added 420 to a sector's
+  score and the doc said it outranked everything; a held victory flag with a body walking
+  onto it scores most of a thousand, so the directed flag came second and the deal gave
+  it one section of the three standing beside it. When a thing has to come first, sort
+  on it, and let the score decide only among the rest.
 - **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
   that slot under classic, so a lock on its till read off the slot alone is invisible in
   play and cripples every card that puts a brain on both sides: the tactics card came back

@@ -11388,9 +11388,13 @@ function aiTick(dt) {
     if (dir === 'attack') { sc += 420; cap = Math.max(cap, 4); maxD = 4000; aiFire('dir.attack'); }
     else if (dir === 'hold' && !held) { sc += 280; cap = Math.max(cap, 3); maxD = 4000; aiFire('dir.retake'); }
     else if (dir === 'hold') sc += 60;
-    objs.push({ s: s, sc: sc, cap: cap, th: th, maxD: maxD * maxD });
+    objs.push({ s: s, sc: sc, cap: cap, th: th, maxD: maxD * maxD, dir: dir === 'attack' ? 1 : 0 });
   }
-  objs.sort(function (a, b) { return b.sc - a.sc; });
+  /* the directed attack first whatever the scores say: 420 is not enough against a held
+     victory flag with a body walking onto it, which is worth most of a thousand, and the
+     first version dealt two of the three sections the player had put beside his objective
+     to that flag instead, so the wave he had asked for formed with one section in it */
+  objs.sort(function (a, b) { return (b.dir - a.dir) || (b.sc - a.sc); });
   /* What is already being done, and whether any of it is over. Reviewed before anything
      new is planned, so a force that has finished is back in the hand that deals. */
   aiOpsReview(W);

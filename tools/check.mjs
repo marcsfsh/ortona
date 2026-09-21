@@ -637,8 +637,15 @@ for (const device of TARGETS) {
     P.asForm = window.G.t - 200; P.asT = -99;
     tick();
     const went = P.asT >= 0, smoke = !!(m.barrage && m.barrage.smoke);
+    /* what the wave was dealt, because the go wants half of it near the forming-up point
+       and the first version of this row lost two of the three sections to a held flag
+       that outscored the directive */
+    const mo = ((window.AIOP[own] || {}).list || []).find(o => o.main) || {};
+    const secs = raised.filter(u => u.own === own && u.cat === 'inf');
+    const dealt = secs.filter(u => window.aiInWave(u, S.id, false)).length;
+    const deal = secs.map(u => `${u.job}/${u.jobSec}${u.op ? '/op' : ''}`).join(' ');
     const sD = m.barrage ? Math.round(Math.hypot(m.barrage.x - S.x, m.barrage.y - S.y)) : -1;
-    const fD = m.barrage ? Math.round(Math.hypot(m.barrage.x - P.fupX, m.barrage.y - P.fupY)) : -1;
+    const fD = m.barrage && mo.fupX ? Math.round(Math.hypot(m.barrage.x - mo.fupX, m.barrage.y - mo.fupY)) : -1;
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
     /* down again */
     window.aiDirSet(own, S.id, null);
@@ -646,13 +653,14 @@ for (const device of TARGETS) {
     raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
     window.G.smoke.length = 0; window.G.shots.length = 0;
     window.select([], false);
-    return { name: S.label || S.id, known, laid, aimD, obj, dirFired, spent, state, went, smoke, sD, fD, screenFired };
+    return { name: S.label || S.id, known, laid, aimD, obj, dirFired, spent, state, went, smoke, sD, fD, screenFired, dealt, deal, n: secs.length };
   });
   ok('simple: ATTACK with a tube in reach lays it on the men holding the flag, and the go lays smoke short of the flag',
-     !dirArty.none && dirArty.laid && dirArty.aimD <= 190 && dirArty.obj && dirArty.dirFired >= 1 && dirArty.spent && dirArty.went && dirArty.smoke &&
-     dirArty.screenFired >= 1 && dirArty.sD > 0 && dirArty.sD <= 170,
+     !dirArty.none && dirArty.laid && dirArty.aimD <= 190 && dirArty.obj && dirArty.dirFired >= 1 && dirArty.spent && dirArty.dealt === dirArty.n &&
+     dirArty.went && dirArty.smoke && dirArty.screenFired >= 1 && dirArty.sD > 0 && dirArty.sD <= 170,
      dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid HE ${dirArty.laid} ${dirArty.aimD} from the flag (objective ${dirArty.obj}, mortar.dir ${dirArty.dirFired}); ` +
-                            `spent ${dirArty.spent} (${dirArty.state}); tick 2 went ${dirArty.went}, smoke ${dirArty.smoke} ${dirArty.sD} short of the flag and ${dirArty.fD} from the fup (smoke.screen ${dirArty.screenFired})`);
+                            `spent ${dirArty.spent} (${dirArty.state}); tick 2 dealt ${dirArty.dealt} of ${dirArty.n} to it (${dirArty.deal}), went ${dirArty.went}, ` +
+                            `smoke ${dirArty.smoke} ${dirArty.sD} short of the flag and ${dirArty.fD} from the fup (smoke.screen ${dirArty.screenFired})`);
 
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */
