@@ -27419,6 +27419,18 @@ window.addEventListener('keydown', function (e) {
       return;
     }
   }
+  /* the order pad, from a keyboard. The scheme is a thumb's and the pad is a sheet, but a
+     desktop player who has chosen it should not have to reach for the mouse to say the
+     same thing: with the pad open the nine numbers are the nine orders, O opens and shuts
+     the ORDERS panel, and Escape puts any of it away. It sits above the group keys
+     because a number means an order only while the pad is up. */
+  if (CTRL.simple && SIMPLEORD && !e.ctrlKey && k >= '1' && k <= '9') {
+    simpleOrder(ORDK[+k - 1]); e.preventDefault(); return;
+  }
+  if (CTRL.simple && k === 'o') { simpleList(!simpleListOpen()); sfx('click'); return; }
+  if (CTRL.simple && k === 'escape' && (SIMPLEORD || SIMPLEUNIT || simpleListOpen())) {
+    simpleOrdOpen(null); simpleUnit(null); simpleList(false); G.place = null; syncHud(); return;
+  }
   if (e.ctrlKey && k >= '1' && k <= '5') { G.groups[k] = selectedUnits().slice(); toast('Group ' + k + ' set'); e.preventDefault(); return; }
   if (!e.ctrlKey && k >= '1' && k <= '5' && !cmdHotkey(k)) {
     if (G.groups[k]) { select(G.groups[k].filter(function (u) { return !u.dead; }), false); focusSelection(); }

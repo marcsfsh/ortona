@@ -4545,6 +4545,9 @@ ground and a tap on the verb. WHO is ANY (the brain deals it), ALL, INF, ARMOUR,
 PICKED, and the three battle groups A to C; a unit's card carries the group chips and a
 SAME chip that picks every one of its kind, because PICKED is only worth having as a force
 if a selection can be made with a thumb. Tapping the order a flag already has takes it off.
+And it answers a keyboard: with the pad open the nine numbers are the nine orders, O opens
+and shuts the ORDERS panel and Escape puts any of it away, because a desktop player who
+has chosen the thumb scheme should not have to reach for the mouse to say the same thing.
 
 **And the ORDERS panel is the half he never had.** A row per order -- what it is, what it
 is about, how many are on it, how hard it is being pressed and whether the force is his own
