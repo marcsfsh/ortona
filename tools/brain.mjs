@@ -296,7 +296,11 @@ async function install(page) {
             if (W.exch < .5) q.exchLose++; else if (W.exch > 2) q.exchWin++;
             if (W.clock) { if (W.clock.me < W.clock.him * .8 && W.clock.me < 900) q.clockLose++; else if (W.clock.him < W.clock.me * .6 && W.clock.him < 600) q.clockWin++; }
             if (W.heard && W.heard.length) { q.heardT++; q.heard += W.heard.length; }
-            for (const R of W.secs) if (!R.held && R.th > 0) { q.pinned += R.pinned; q.pinnedN++; }
+            /* on the wave's own objective and nowhere else: averaged over every enemy flag
+               it read 0.28 per cent, because most flags on most ticks have nobody firing
+               at them, and the wave reads the one it is forming against */
+            const asR = AI.asSec ? W.bySec[AI.asSec] : null;
+            if (asR && asR.th > 0) { q.pinned += asR.pinned; q.pinnedN++; }
             for (const k in IM.con) { const cc = IM.con[k]; if (G.t - cc.t < 34) { q.con++; if (Math.hypot(cc.vx || 0, cc.vy || 0) > 6) q.headed++; } }
           }
           /* and how much of the map the side has painted as dangerous to men */
@@ -554,7 +558,7 @@ function show(c) {
     console.log('  ' + pad('the clock', 22) + pad(pct(it.clockLose, it.n), 9, 1) +
                 '   of ticks losing on it, winning on it: ' + pct(it.clockWin, it.n));
     console.log('  ' + pad('defenders pinned', 22) + pad(it.pinnedN ? pct(it.pinned, it.pinnedN) : '-', 9, 1) +
-                '   of the weight on an enemy flag, mean over ' + it.pinnedN + ' sector-ticks');
+                '   of the weight on the wave\'s objective, mean over ' + it.pinnedN + ' ticks with one');
     console.log('  ' + pad('tubes heard', 22) + pad(pct(it.heardT, it.n), 9, 1) +
                 '   of ticks with one in the memory' + (it.heardT ? ', ' + (it.heard / it.heardT).toFixed(1) + ' of them' : ''));
   }

@@ -2986,8 +2986,28 @@ because a beaten zone is a place and the answer to it is to be somewhere else: u
 shellfire going flat is worth thirty less and giving ground twenty-eight more
 (`shelled.move`).
 
-What it cost: a thinking tick 0.48 ms to 0.59 on the brain card, which is the cluster over
-the contacts and the clock. `tools/skirmish.mjs` swaps the operations planner with the rest
+Measured on `tools/brain.mjs --t=300 --diff=2` over one 244-second battle with a brain on
+both sides. A thinking tick went 0.48 ms to 0.60, which is the cluster over the contacts
+and the clock. The memory holds 2.2 fresh contacts a tick and 57.5 per cent of them carry
+a heading; a body is read as massing on 54 per cent of ticks, weighing 446, and as walking
+onto a held flag on 7 per cent of them, 27 seconds out; weight is expected onto held ground
+on 21 per cent of ticks, 298 of it when it is. The exchange and the clock read
+symmetrically, because both brains are sampled and one side losing on the clock is the
+other winning on it: 31 per cent of ticks each way. Neither moved the mood in that battle.
+The side losing was in `dig`, which the clock leaves alone the way the lead does, and the
+side winning held a ratio the clock rule refuses to hold on, so `mood.clock` and
+`mood.exch` read nought where a battle that is closer would read them; an earlier cut of
+the clock rule pushed out of `dig` as well and fired on 163 ticks of 561, the same 163 the
+dig rule fired on, which is a flip-flop and not a decision. Of the rules, `obj.coming`
+fired 126 times, `wave.wait` 77, `hold.coming` 10, `veh.overwatch` 3 and `wave.break`
+once; `mood.mass`, `mortar.mass`, `mortar.counter`, `heard`, `op.counter`, `shelled.move`,
+`wave.pinned` and `wave.cohere` never fired in it, and the card lists them with the
+zeroes. Waves formed 10 and went in 3 against 7 and 3 before, and forming took 35 seconds
+against 26, which is the superiority wait, bounded at a third over the form timer. Read
+those as one battle: two runs of identical code on this card have come back with the same
+rule at thirty-four and thirteen.
+
+`tools/skirmish.mjs` swaps the operations planner with the rest
 of the bundle now and carries the new readers, with one thing worth knowing about the
 second half of that: the readers are reached through `aiLook`, which is not swapped, so
 a baseline side is handed the working file's headings and clock and what the card judges
