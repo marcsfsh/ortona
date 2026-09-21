@@ -651,7 +651,10 @@ for (const device of TARGETS) {
        that outscored the directive */
     const mo = ((window.AIOP[own] || {}).list || []).find(o => o.main) || {};
     const secs = raised.filter(u => u.own === own && u.cat === 'inf');
-    const dealt = secs.filter(u => window.aiInWave(u, S.id, false)).length;
+    /* by the job the deal gave, and not by aiInWave: an operation raised the same tick
+       borrows a section the deal had already put on the flag, which is the operations
+       outranking the plan by design, and on one run a hold took two of the three */
+    const dealt = secs.filter(u => String(u.jobSec) === String(S.id)).length;
     const deal = secs.map(u => `${u.job}/${u.jobSec}${u.op ? '/op' : ''}`).join(' ');
     const fD = sm && mo.fupX ? Math.round(Math.hypot(sm.x - mo.fupX, sm.y - mo.fupY)) : -1;
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
