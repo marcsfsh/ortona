@@ -10943,8 +10943,14 @@ function aiWeigh(u, S, W) {
      making, and a rule that overrode the weighing would be the fixed order of reflexes
      this replaced, wearing the player's coat. */
   var AG = aiAggr(u), RK = reactOf(u);
+  /* and every lean is measured FROM the default, so an army nobody has said anything to
+     weighs exactly what it weighed before there was a board: TAKE COVER is what the
+     brain already did, so it adds nothing, and the other two are the departure from it.
+     Written the other way about, with cover worth eighteen points for saying what was
+     already true, the opposition's own sections started ducking more than they had and
+     the only tool that could have seen it is the one that cannot resolve it. */
   var leanS = AG.stand + (RK === 'fight' ? 30 : RK === 'fall' ? -16 : 0);
-  var leanC = AG.cover + (RK === 'cover' ? 18 : RK === 'fight' ? -22 : 0);
+  var leanC = AG.cover + (RK === 'fight' ? -22 : RK === 'fall' ? -8 : 0);
   var leanB = (RK === 'fall' ? 34 : RK === 'fight' ? -34 : 0) - AG.stand * .5;
   /* a thing about to die is the reason to stand, whatever else is happening: it counts
      once here rather than in every option below it */

@@ -4527,7 +4527,12 @@ weighing has already had its say about whatever is in front of it and its own `a
 still firing. DIG IN goes one further and takes the heaviest thing there is to stand in.
 `REACT` is TAKE COVER, STAND FAST and FALL BACK, and it leans `aiWeigh`'s own scores --
 stand against cover against giving ground -- and moves the hit-point threshold a section
-goes home at. Both are the army's by default and either may be said of one unit or of a
+goes home at. **Every lean is measured from the default**, so an army nobody has said
+anything to weighs exactly what it weighed before there was a board: TAKE COVER is what
+the brain already did and adds nothing, and the other two are the departure from it. The
+same holds of the temper: STEADY is the old constant in every one of its five numbers
+(fear 1, odds 2, home at 0.30, break at 0.50, no lean), so the opposition is untouched by
+any of this and the tactics card has nothing to resolve. Both are the army's by default and either may be said of one unit or of a
 whole selection: `u.pose` and `u.react` undefined follow the army and anything else does
 not, which is the rule a vehicle's own word over the upgrade setting already uses.
 
