@@ -511,9 +511,22 @@ for (const device of TARGETS) {
       window.__o.camera({ x: s.x, y: s.y, dist: 560, pitch: 0.95 }); window.render();
       const p = window.w2s(s.x, s.y);
       window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
-      const box = document.getElementById('tflag');
-      return { shown: !box.classList.contains('hidden'), name: document.getElementById('tflagname').textContent,
-               btns: [...box.querySelectorAll('.tf')].map(b => { const r = b.getBoundingClientRect(); return { dir: b.dataset.dir, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
+      const box = document.getElementById('tord');
+      return { shown: !box.classList.contains('hidden'), name: document.getElementById('tordname').textContent,
+               btns: [...box.querySelectorAll('#tordbtns .tf')].map(b => { const r = b.getBoundingClientRect(); return { dir: b.dataset.ord, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
+               who: [...box.querySelectorAll('#tordwho .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.who, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }),
+               how: [...box.querySelectorAll('#tordhow .chip')].map(b => { const r = b.getBoundingClientRect(); return { k: b.dataset.how, w: r.width | 0, h: r.height | 0, on: b.classList.contains('on') }; }) };
+    };
+    /* a tap on a point of open ground, which is the thing the board added */
+    window.__tapGround = function (x, y) {
+      window.__o.camera({ x, y, dist: 560, pitch: 0.95 }); window.render();
+      const p = window.w2s(x, y);
+      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+      return !document.getElementById('tord').classList.contains('hidden');
+    };
+    window.__ordOp = function (slot, id) {
+      const o = window.aiOrdById(slot, id);
+      return o && o.opId ? window.aiOpById(slot, o.opId) : null;
     };
   });
 
@@ -553,43 +566,158 @@ for (const device of TARGETS) {
     const A = theirs.filter(s => s !== H)[0], F = theirs.filter(s => s !== H && s !== A).slice(-1)[0];
     /* ATTACK on a flag that is not his */
     const tapA = window.__tapFlag(A);
-    const small = tapA.btns.filter(b => b.w < minTap || b.h < minTap).length;
-    document.querySelector('#tflag .tf[data-dir="attack"]').click();
-    const shutA = document.getElementById('tflag').classList.contains('hidden');
+    const small = tapA.btns.concat(tapA.who, tapA.how).filter(b => b.w < minTap || b.h < minTap).length;
+    const kinds = tapA.btns.map(b => b.dir).join(',');
+    document.querySelector('#tordbtns .tf[data-ord="attack"]').click();
+    const shutA = document.getElementById('tord').classList.contains('hidden');
     const dirA = window.aiDirOf(own, A.id);
     /* HOLD on one of his, FEINT on another of theirs */
-    window.__tapFlag(H); document.querySelector('#tflag .tf[data-dir="hold"]').click();
-    window.__tapFlag(F); document.querySelector('#tflag .tf[data-dir="feint"]').click();
+    window.__tapFlag(H); document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
+    window.__tapFlag(F); document.querySelector('#tordbtns .tf[data-ord="feint"]').click();
     const tick = P.t, dirH = window.aiDirOf(own, H.id), dirF = window.aiDirOf(own, F.id);
     /* one tick of the brain, and what it made of the three */
     window.aiThink(1);
     const Q = window.AIOP[own], main = window.aiOpKind(own, 'take');
     const takers = window.G.units.filter(u => window.owned(u) && !u.dead && u.jobSec === A.id && !u.retreat).length;
-    const hold = window.aiOpDirOf(own, H.id, 'hold'), feint = window.aiOpDirOf(own, F.id, 'feint');
+    const oH = window.aiOrdAt(own, H.id), oF = window.aiOrdAt(own, F.id);
+    const hold = oH && window.__ordOp(own, oH.id), feint = oF && window.__ordOp(own, oF.id);
     const onHold = hold ? window.G.units.filter(u => window.owned(u) && !u.dead && u.op === hold.id).length : 0;
     const onFeint = feint ? window.G.units.filter(u => window.owned(u) && !u.dead && u.op === feint.id).length : 0;
     const status = document.getElementById('tselname').textContent;
-    /* the popup on the held flag shows HOLD lit and a CLEAR, and CLEAR takes it off; the
-       review then drops the operation it stood on */
+    /* the pad on the held flag shows HOLD lit, and tapping the lit one again takes it
+       off; the review then drops the operation it stood on */
     const again = window.__tapFlag(H);
-    const lit = again.btns.filter(b => b.on).map(b => b.dir).join('+'), hasClear = again.btns.some(b => b.dir === 'clear');
-    const clr = document.querySelector('#tflag .tf[data-dir="clear"]'); if (clr) clr.click();
+    const lit = again.btns.filter(b => b.on).map(b => b.dir).join('+');
+    document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
     const cleared = !window.aiDirOf(own, H.id);
     window.aiThink(1);
-    const dropped = !window.aiOpDirOf(own, H.id, 'hold');
+    const dropped = !window.aiOpById(own, hold ? hold.id : 0);
     unhide();
-    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, shutA, dirA, dirH, dirF, tick,
-             asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, hasClear, cleared, dropped, status,
+    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick,
+             asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, cleared, dropped, status,
+             who: tapA.who.length, how: tapA.how.length,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
              n: window.G.units.filter(u => window.owned(u) && !u.dead && !u.def.builder && u.cat).length };
   }, MIN_TAP);
-  ok('simple: a tap on a flag puts ATTACK, HOLD and FEINT up; ATTACK is the wave\'s objective, HOLD and FEINT raise directed operations with men on them, and CLEAR takes one off',
-     !flags.none && flags.shown && flags.name.length > 0 && flags.small === 0 && flags.shutA && flags.dirA === 'attack' && flags.dirH === 'hold' &&
+  ok('simple: a tap on a flag puts the whole order pad up; ATTACK is the wave\'s objective, HOLD and FEINT raise operations with men on them, and the lit one taps off',
+     !flags.none && flags.shown && flags.name.length > 0 && flags.small === 0 && flags.kinds.split(',').length === 9 &&
+     flags.who === 9 && flags.how === 3 && flags.shutA && flags.dirA === 'attack' && flags.dirH === 'hold' &&
      flags.dirF === 'feint' && flags.tick === 0 && flags.asSec === flags.A && flags.mainSec === flags.A && flags.takers >= 1 && flags.hold &&
-     flags.onHold >= 1 && flags.feint && flags.onFeint >= 1 && flags.lit === 'hold' && flags.hasClear && flags.cleared && flags.dropped,
+     flags.onHold >= 1 && flags.feint && flags.onFeint >= 1 && flags.lit === 'hold' && flags.cleared && flags.dropped,
      flags.none ? 'fewer than three flags that are not his' :
-     `${flags.name}: attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; hold ${flags.hold} with ${flags.onHold} on it; ` +
-     `feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; lit ${flags.lit}, clear ${flags.hasClear} -> ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
+     `${flags.name}: ${flags.kinds} with ${flags.who} who-chips and ${flags.how} tempers, none under ${MIN_TAP}px; attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; ` +
+     `hold ${flags.hold} with ${flags.onHold} on it; feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
+     `lit ${flags.lit} -> cleared ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
+
+  /* --- the rest of the board: an order about a piece of open ground with a force he
+     named himself, an order about a thing of theirs, the list of what is standing with a
+     way to take one off, and the three settings every unit not under an order runs on.
+     None of it existed: three directives on nine flags was the whole of what a player
+     could say, and there was nothing anywhere that told him which of his units were
+     carrying one out. Driven through the events a finger raises, at the canvas. --- */
+  const board = await page.evaluate(minTap => {
+    const own = window.G.own, side = window.G.side, us = side === 'us', hq = window.hqOf(own);
+    if (!window.AIP[own]) window.aiInit(own, true);
+    const P = window.AIP[own];
+    /* a clean board and a few sections of his own, away from the flags */
+    window.aiOrds(own).length = 0;
+    const raised = [];
+    for (let i = 0; i < 4; i++) {
+      const sp = window.nearestFree(hq.x + (us ? 300 : -300) + i * 30, hq.y - 160 + i * 90);
+      const u = window.spawnUnit(own, us ? 'us_rifle' : 'ger_gren', sp.x, sp.y, 0);
+      u.setup = 0; raised.push(u);
+    }
+    const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat === 'inf' && !u.def.builder);
+    /* ---- a piece of open ground, given to his infantry, pressed home */
+    const gp = window.nearestFree(hq.x + (us ? 620 : -620), hq.y + 40);
+    window.ORDWHO = 'inf'; window.ORDAGG = 2;
+    const padG = window.__tapGround(gp.x, gp.y);
+    const headG = document.getElementById('tordname').textContent;
+    document.querySelector('#tordbtns .tf[data-ord="screen"]').click();
+    const oG = window.aiOrds(own).filter(o => o.k === 'screen')[0];
+    const forceN = oG ? oG.force.length : -1, aggr = oG ? oG.aggr : -1;
+    /* ---- a thing of theirs: the pad opens on it and RAID names it */
+    const foe = window.G.units.find(u => !u.dead && u.side !== side && !u.inside);
+    let padF = false, headF = '', tid = 0;
+    if (foe) {
+      if (us) foe.vUs = true; else foe.vGer = true;
+      window.__o.camera({ x: foe.x, y: foe.y, dist: 520, pitch: 0.95 }); window.render();
+      const p = window.w2s(foe.x, foe.y);
+      window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+      padF = !document.getElementById('tord').classList.contains('hidden');
+      headF = document.getElementById('tordname').textContent;
+      window.ORDWHO = 'any';
+      const b = document.querySelector('#tordbtns .tf[data-ord="raid"]');
+      if (b) b.click();
+      const oR = window.aiOrds(own).filter(o => o.k === 'raid')[0];
+      tid = oR ? oR.tid : 0;
+    }
+    /* ---- one tick, and who is under what */
+    window.aiThink(1);
+    const onG = oG ? window.G.units.filter(u => window.owned(u) && !u.dead && u.ord === oG.id).length : 0;
+    const opG = oG && oG.opId ? window.aiOpById(own, oG.opId) : null;
+    const fearOn = oG ? window.G.units.filter(u => window.owned(u) && u.ord === oG.id && u.fear !== undefined)
+                                      .map(u => +u.fear.toFixed(2))[0] : -1;
+    /* ---- the list: the button's count, a row per order, and the cross that cancels */
+    const badge = document.getElementById('tordn').textContent;
+    document.getElementById('tOrders').click();
+    const listUp = !document.getElementById('tlist').classList.contains('hidden');
+    const rows = [...document.querySelectorAll('#tlistrows .orow')].map(r => ({
+      id: r.dataset.ord, h: r.getBoundingClientRect().height | 0, t: r.querySelector('b').textContent }));
+    const nOrd = window.aiOrds(own).length;
+    const cross = document.querySelector('.orow button');
+    if (cross) cross.click();
+    const afterX = window.aiOrds(own).length;
+    /* ---- and the army's own three, off the same panel */
+    const chips = [...document.querySelectorAll('#tarmypose .chip, #tarmyreact .chip, #tarmyhow .chip')];
+    const smallC = chips.filter(c => { const r = c.getBoundingClientRect(); return r.width < minTap || r.height < minTap; }).length;
+    document.querySelector('#tarmypose .chip[data-pose="dig"]').click();
+    document.querySelector('#tarmyreact .chip[data-react="fight"]').click();
+    document.querySelector('#tarmyhow .chip[data-how="0"]').click();
+    const army = { pose: P.pose, react: P.react, aggr: P.aggr };
+    document.getElementById('tlistx').click();
+    const listDown = document.getElementById('tlist').classList.contains('hidden');
+    /* ---- a posture on one section: the plan stops marching it, and its own weighing
+       still has it, which is the whole distinction the posture rests on */
+    const sec = mine.find(u => !u.ord);
+    let posed = null;
+    if (sec) {
+      window.select([sec], false); window.simpleUnit(sec);
+      document.querySelector('#tunitpose .chip[data-pose="hold"]').click();
+      const before = sec.jobSec;
+      window.aiThink(1);
+      posed = { pose: sec.pose, of: window.poseOf(sec), before, after: sec.jobSec, posed: window.aiPosed(sec) };
+      window.simpleUnit(null); window.select([], false);
+    }
+    /* ---- and the temper is read where it is spent: the same section under a cautious
+       order and under a press-home one pays a different price for the beaten zone */
+    const t0 = window.aiAggr({ own: own, ord: 0 });
+    P.aggr = 2; const tPress = window.aiAggr({ own: own, ord: 0 }).fear;
+    P.aggr = 0; const tCaut = window.aiAggr({ own: own, ord: 0 }).fear;
+    P.aggr = 1; P.pose = 'advance'; P.react = 'cover';
+    /* down again */
+    window.aiOrds(own).length = 0;
+    for (const u of raised) { const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); }
+    window.ORDWHO = 'any'; window.ORDAGG = null;
+    window.simpleOrdOpen(null); window.select([], false);
+    return { padG, headG, forceN, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
+             fearOn, padF, headF, tid, foeId: foe ? foe.id : -1, badge, listUp, rows, nOrd, afterX, smallC, army,
+             listDown, posed, t0: t0.fear, tPress, tCaut };
+  }, MIN_TAP);
+  ok('simple: an order on open ground with a force he named, one on a thing of theirs, the list that says what is standing, and the army\'s own posture, reaction and temper',
+     board.padG && board.headG === 'OPEN GROUND' && board.forceN === board.mine && board.aggr === 2 &&
+     board.onG === board.forceN && board.opKind === 'screen' && board.opWant === 0 && board.fearOn > 0 && board.fearOn < .6 &&
+     board.padF && board.headF.length > 0 && board.tid === board.foeId &&
+     board.badge === String(board.nOrd) && board.listUp && board.rows.length === board.nOrd &&
+     board.rows.every(r => r.h >= MIN_TAP) && board.afterX === board.nOrd - 1 && board.smallC === 0 &&
+     board.army.pose === 'dig' && board.army.react === 'fight' && board.army.aggr === 0 && board.listDown &&
+     board.posed && board.posed.pose === 'hold' && board.posed.of === 'hold' && board.posed.posed && !board.posed.after &&
+     board.tPress < board.t0 && board.tCaut > board.t0,
+     `ground pad ${board.padG} "${board.headG}" -> screen on ${board.forceN} of ${board.mine} sections at ${board.aggr}, ` +
+     `${board.onG} carrying it (op ${board.opKind} want ${board.opWant}, fear ${board.fearOn}); ` +
+     `a tap on theirs "${board.headF}" -> raid on ${board.tid}/${board.foeId}; badge ${board.badge} with ${board.rows.length} of ${board.nOrd} rows, ` +
+     `cross -> ${board.afterX}; army ${JSON.stringify(board.army)}; posture ${JSON.stringify(board.posed)}; ` +
+     `fear ${board.tCaut}/${board.t0}/${board.tPress}`);
 
   /* --- and the guns serve the attack he ordered: a tube of his in action and in reach,
      ATTACK tapped on a defended flag, and on the next tick the tube is laid on the men
