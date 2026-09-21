@@ -251,7 +251,11 @@ for (const device of TARGETS) {
     const vw = window.innerWidth, vh = window.innerHeight;
     const seen = [];
     const small = [];
-    for (const sel of ['#tools .tool', '#cmds .cmd', '#bar button', '#queue .qi']) {
+    /* under the thumb scheme the cards live in a sheet, so it is put up for the sweep and
+       taken down after; the chips and the verbs are measured with the rest */
+    const thumb = document.body.classList.contains('thumb');
+    if (thumb) window.thumbMore(true);
+    for (const sel of ['#tools .tool', '#cmds .cmd', '#bar button', '#queue .qi', '#thumb button']) {
       for (const e of document.querySelectorAll(sel)) {
         const r = e.getBoundingClientRect();
         if (!r.width || !r.height) continue;
@@ -259,7 +263,9 @@ for (const device of TARGETS) {
         if (r.width < minTap || r.height < minTap) small.push(`${sel} ${r.width | 0}x${r.height | 0}`);
       }
     }
-    const bar = document.getElementById('bar').getBoundingClientRect();
+    if (thumb) window.thumbMore(false);
+    /* the bar, or under thumb the chips that stand where it stood */
+    const bar = (thumb ? document.getElementById('tgroups') : document.getElementById('bar')).getBoundingClientRect();
     const top = document.getElementById('top').getBoundingClientRect();
     return { hScroll: document.documentElement.scrollWidth - vw,
              vScroll: document.documentElement.scrollHeight - vh,
@@ -273,6 +279,197 @@ for (const device of TARGETS) {
     ok(`touch targets are at least ${MIN_TAP}px`, hud.small.length === 0,
        hud.small.slice(0, 4).join('; ') || `${hud.controls} controls checked`);
   }
+
+  /* --- the thumb scheme. A second set of controls kept beside the classic one: a phone
+     starts on it and a desktop does not, and either may pick the other. Every row here
+     runs on both devices, because the touch handlers are one piece of code whatever the
+     pointer is, and each switches the scheme without storing it. The gestures are driven
+     through the same TouchEvents a finger raises, dispatched at the canvas, rather than
+     by calling the functions behind them: a handler that is never reached by the event
+     it is written for is a handler that is not there. --- */
+  const ctrl0 = await page.evaluate(() => ({ thumb: window.CTRL.thumb,
+    stored: (() => { try { return localStorage.getItem('ORT_CTRL'); } catch (e) { return null; } })() }));
+  ok('the control scheme starts on thumb on a phone and classic on a desktop, with nothing stored',
+     ctrl0.stored === null && ctrl0.thumb === !!DEVICES[device].hasTouch, `thumb=${ctrl0.thumb}, stored=${ctrl0.stored}`);
+  await page.evaluate(() => {
+    window.ctrlSet(true, true);
+    /* a kind of which there are at least two, so the double tap below has something to widen to */
+    const own = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat === 'inf');
+    const u = own.find(a => own.filter(b => b.key === a.key).length >= 2) || own[0];
+    window.select([u], false);
+    window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 });
+  });
+  await frames(page, 1);
+  const th = await page.evaluate(minTap => {
+    const vw = innerWidth, vh = innerHeight, inside = r => r.left >= -1 && r.top >= -1 && r.right <= vw + 1 && r.bottom <= vh + 1;
+    const rects = sel => [...document.querySelectorAll(sel)].map(e => e.getBoundingClientRect()).filter(r => r.width && r.height);
+    const chips = rects('.tchip'), verbs = rects('.tverb'), mini = document.getElementById('mini').getBoundingClientRect();
+    const small = [...chips, ...verbs].filter(r => r.width < minTap || r.height < minTap).length;
+    const off = [...chips, ...verbs, mini].filter(r => !inside(r)).length;
+    /* and nothing of the chrome lies over anything else of it, the tool strip and the
+       resource strip included, because the column and the strip share the right edge */
+    const all = [...chips, ...verbs, mini, ...rects('#tools .tool'), document.getElementById('top').getBoundingClientRect(), document.getElementById('tsel').getBoundingClientRect()];
+    let overlap = 0;
+    for (let i = 0; i < all.length; i++) for (let j = i + 1; j < all.length; j++) {
+      const a = all[i], b = all[j];
+      if (a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) overlap++;
+    }
+    return { on: document.body.classList.contains('thumb'), bar: getComputedStyle(document.getElementById('bar')).display,
+             chips: chips.length, verbs: verbs.length, small, off, overlap, miniIn: document.getElementById('mini').parentNode.id,
+             hScroll: document.documentElement.scrollWidth - vw, vScroll: document.documentElement.scrollHeight - vh,
+             label: document.getElementById('tsel').textContent.trim() };
+  }, MIN_TAP);
+  ok('thumb: chips, verbs and the little map at the edges, the bar shut, nothing small, off screen or overlapping',
+     th.on && th.bar === 'none' && th.chips === 6 && th.verbs >= 5 && th.small === 0 && th.off === 0 && th.overlap === 0 &&
+     th.miniIn === 'thumb' && th.hScroll <= 0 && th.vScroll <= 0 && th.label.length > 0,
+     `${th.chips} chips, ${th.verbs} verbs, ${th.small} small, ${th.off} off screen, ${th.overlap} overlapping, map in #${th.miniIn}, label "${th.label}"`);
+
+  /* a finger on the canvas: TouchEvents built the way a touch screen builds them */
+  await page.evaluate(() => {
+    const cv = document.getElementById('cv');
+    window.__tev = function (type, x, y) {
+      const r = cv.getBoundingClientRect();
+      const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
+      const up = type === 'touchend';
+      cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
+    };
+    /* a point of open ground on the screen with nothing of either side on it, so that a
+       tap there is an order and not a pick */
+    window.__clearPt = function (sx, sy, rad) {
+      /* out from the unit and then in, because the spawn is three sections and a
+         headquarters inside a hundred units and on a desktop a pixel is less ground */
+      for (const f of [1, 1.3, 1.6, .8, .6]) for (let k = 0; k < 24; k++) {
+        const a = k * Math.PI / 12 + .3, x = sx + Math.cos(a) * rad * f, y = sy + Math.sin(a) * rad * f;
+        if (x < 30 || y < 90 || x > innerWidth - 80 || y > innerHeight - 150) continue;
+        const w = window.s2w(x, y);
+        /* clear of every ring of his by more than the widest pick, of anything of theirs,
+           of a building and of ground a section cannot be sent to */
+        if (window.G.units.some(u => !u.dead && !u.inside && window.owned(u) && window.hitsUnit(u, w.x, w.y, 34))) continue;
+        if (window.unitsAt(w.x, w.y, 30).length || window.buildingAt(w.x, w.y) || window.bunkerAt(w.x, w.y) || !window.walkable(w.x, w.y)) continue;
+        return { x, y, w };
+      }
+      return null;
+    };
+  });
+  const tdrag = await page.evaluate(() => {
+    const u = window.G.sel[0], p = window.w2s(u.x, u.y), cam0 = [window.CAM.tx, window.CAM.ty];
+    const end = window.__clearPt(p.x, p.y, 190);
+    if (!end) return { none: true };
+    window.__tev('touchstart', p.x, p.y);
+    const armed = window.touch.tow === u;
+    window.__tev('touchmove', p.x + 12, p.y - 24); window.__tev('touchmove', end.x, end.y);
+    const drawn = window.touch.tow === u && window.touch.moved;
+    const camHeld = Math.hypot(window.CAM.tx - cam0[0], window.CAM.ty - cam0[1]) < .5;
+    window.__tev('touchend', end.x, end.y);
+    const dest = u.dest ? Math.hypot(u.dest.x - end.w.x, u.dest.y - end.w.y) : -1;
+    const order = u.order, dropped = window.touch.tow === null;
+    /* a tap on open ground still moves, as it always has */
+    const tap = window.__clearPt(p.x, p.y, 150);
+    if (!tap) return { none: true };
+    window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y);
+    const tapDest = u.dest ? Math.hypot(u.dest.x - tap.w.x, u.dest.y - tap.w.y) : -1;
+    return { armed, drawn, camHeld, order, dest: +dest.toFixed(1), dropped, tapOrder: u.order, tapDest: +tapDest.toFixed(1) };
+  });
+  ok('thumb: a drag out of the selected unit is an order at the finger, the map does not pan under it, and a tap on the ground still moves',
+     !tdrag.none && tdrag.armed && tdrag.drawn && tdrag.camHeld && tdrag.order === 'move' && tdrag.dest >= 0 && tdrag.dest < 1 && tdrag.dropped &&
+     tdrag.tapOrder === 'move' && tdrag.tapDest >= 0 && tdrag.tapDest < 1,
+     tdrag.none ? 'no open ground on screen to drag to' : `dragged: ${tdrag.order} ${tdrag.dest} from the finger; tapped: ${tdrag.tapOrder} ${tdrag.tapDest} from the finger`);
+  const dtap = await page.evaluate(() => {
+    const u = window.G.sel[0], p = window.w2s(u.x, u.y);
+    const kind = window.G.units.filter(q => window.owned(q) && !q.dead && q.key === u.key).length;
+    window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+    const once = window.G.sel.length;
+    window.__tev('touchstart', p.x + 2, p.y + 1); window.__tev('touchend', p.x + 2, p.y + 1);
+    return { kind, once, twice: window.G.sel.length, same: window.G.sel.every(s => s.key === u.key), key: u.key };
+  });
+  ok('thumb: a second tap on a unit picks every one of its kind in sight',
+     dtap.once === 1 && dtap.twice >= 2 && dtap.twice <= dtap.kind && dtap.same,
+     `${dtap.key}: ${dtap.once} after one tap, ${dtap.twice} of ${dtap.kind} after two`);
+  const chips = await page.evaluate(async () => {
+    const chip = document.querySelector('.tchip[data-g="1"]'), all = document.querySelector('.tchip[data-g="all"]');
+    const pe = (type, el) => { const r = el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent(type, { pointerId: 5, pointerType: 'touch', isPrimary: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true })); };
+    const sel = window.G.sel.slice();
+    /* held: the selection becomes the group */
+    pe('pointerdown', chip); await new Promise(r => setTimeout(r, 560)); pe('pointerup', chip);
+    const g = window.G.groups['1'] || [];
+    const set = g.length === sel.length && sel.every(u => g.indexOf(u) >= 0);
+    const label = chip.querySelector('span').textContent;
+    const stayed = window.G.sel.length === sel.length;   /* a hold is not a tap */
+    /* tapped: the group becomes the selection */
+    window.select([], false);
+    pe('pointerdown', chip); pe('pointerup', chip);
+    const picked = window.G.sel.length === sel.length && sel.every(u => window.G.sel.indexOf(u) >= 0);
+    const lit = chip.classList.contains('on');
+    /* tapped again: the camera goes to it */
+    const cx = sel.reduce((a, u) => a + u.x, 0) / sel.length, cy = sel.reduce((a, u) => a + u.y, 0) / sel.length;
+    window.__o.camera({ x: cx + 500, y: cy + 200 });
+    const far = Math.hypot(window.CAM.tx - cx, window.CAM.ty - cy);
+    pe('pointerdown', chip); pe('pointerup', chip);
+    const near = Math.hypot(window.CAM.tx - cx, window.CAM.ty - cy);
+    /* and ALL is everything of his on the field */
+    pe('pointerdown', all); pe('pointerup', all);
+    const own = window.G.units.filter(u => !u.dead && !u.inside && window.owned(u) && u.cat).length;
+    return { set, n: sel.length, label, stayed, picked, lit, far: +far.toFixed(0), near: +near.toFixed(0), allN: window.G.sel.length, own };
+  });
+  ok('thumb: a chip held takes the selection as its group, tapped gives it back, tapped again goes to it, and ALL is the army',
+     chips.set && chips.n > 0 && chips.label === String(chips.n) && chips.stayed && chips.picked && chips.lit && chips.far > 100 && chips.near < 40 &&
+     chips.allN === chips.own && chips.own > 0,
+     `group of ${chips.n} reads "${chips.label}", camera ${chips.far} away then ${chips.near}, ALL picks ${chips.allN} of ${chips.own}`);
+  const sheet = await page.evaluate(() => {
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf');
+    window.select([u], false);
+    const more = [...document.querySelectorAll('.tverb')].find(b => /more/i.test(b.textContent));
+    if (!more) return { none: true };
+    more.click();
+    const up = document.body.classList.contains('tmore'), disp = getComputedStyle(document.getElementById('bar')).display;
+    const b = document.getElementById('bar').getBoundingClientRect(), mini = document.getElementById('mini').getBoundingClientRect();
+    const clear = b.bottom <= mini.top + 1 || b.left >= mini.right - 1;
+    const inside = b.left >= -1 && b.top >= -1 && b.right <= innerWidth + 1 && b.bottom <= innerHeight + 1;
+    const cards = document.querySelectorAll('#cmds .cmd').length;
+    const small = [...document.querySelectorAll('#cmds .cmd, #tclose, #tswitch')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.width < 44 || r.height < 44); }).length;
+    const lit = [...document.querySelectorAll('.tverb')].some(v => v.classList.contains('act') && /more/i.test(v.textContent));
+    /* a card that arms the next tap shuts the sheet and lights the verb for it */
+    const atk = [...document.querySelectorAll('#cmds .cmd')].find(c => /Attack move/.test(c.textContent));
+    atk.click();
+    const shut = !document.body.classList.contains('tmore'), armed = window.G.mode === 'attack';
+    const verbLit = [...document.querySelectorAll('.tverb')].some(v => v.classList.contains('act') && /attack/i.test(v.textContent));
+    /* and the verb itself disarms it */
+    [...document.querySelectorAll('.tverb')].find(v => /attack/i.test(v.textContent)).click();
+    const disarmed = window.G.mode === null;
+    /* the close button shuts a sheet put up again */
+    more.click(); const up2 = document.body.classList.contains('tmore');
+    document.getElementById('tclose').click();
+    const closed = !document.body.classList.contains('tmore');
+    return { up, disp, clear, inside, cards, small, lit, shut, armed, verbLit, disarmed, up2, closed };
+  });
+  ok('thumb: MORE puts the cards up in a sheet clear of the little map, a card that arms a tap shuts it, and the verb disarms it',
+     !sheet.none && sheet.up && sheet.disp !== 'none' && sheet.clear && sheet.inside && sheet.cards >= 6 && sheet.small === 0 && sheet.lit &&
+     sheet.shut && sheet.armed && sheet.verbLit && sheet.disarmed && sheet.up2 && sheet.closed,
+     sheet.none ? 'no MORE verb' : `${sheet.cards} cards, ${sheet.small} small, clear of the map ${sheet.clear}, shut on attack move ${sheet.shut}`);
+  /* and the classic scheme is what it was: the bar back, the chips gone, a tap an order */
+  const classic = await page.evaluate(() => {
+    window.ctrlSet(false, true);
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf');
+    window.select([u], false);
+    window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 });
+    const p = window.w2s(u.x, u.y), tap = window.__clearPt(p.x, p.y, 150);
+    if (!tap) return { none: true };
+    window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y);
+    const dest = u.dest ? Math.hypot(u.dest.x - tap.w.x, u.dest.y - tap.w.y) : -1;
+    /* and a press on the unit is not a drag-to-order under classic: it pans */
+    const cam0 = [window.CAM.tx, window.CAM.ty];
+    window.__tev('touchstart', p.x, p.y); window.__tev('touchmove', p.x + 30, p.y + 40); window.__tev('touchmove', p.x + 90, p.y + 120); window.__tev('touchend', p.x + 90, p.y + 120);
+    const panned = Math.hypot(window.CAM.tx - cam0[0], window.CAM.ty - cam0[1]);
+    return { off: !document.body.classList.contains('thumb'), bar: getComputedStyle(document.getElementById('bar')).display,
+             thumbHidden: document.getElementById('thumb').classList.contains('hidden'), miniIn: document.getElementById('mini').parentNode.id,
+             order: u.order, dest: +dest.toFixed(1), panned: +panned.toFixed(0), tow: window.touch.tow };
+  });
+  ok('classic: the bar is back, the chips are gone, a tap on the ground orders and a drag from the unit pans',
+     !classic.none && classic.off && classic.bar !== 'none' && classic.thumbHidden && classic.miniIn === 'bar' && classic.order === 'move' &&
+     classic.dest >= 0 && classic.dest < 1 && classic.panned > 20 && !classic.tow,
+     classic.none ? 'no open ground on screen' : `tap: ${classic.order} ${classic.dest} from the finger, drag panned ${classic.panned}, map in #${classic.miniIn}`);
+  await page.evaluate(t => { window.ctrlSet(t, true); window.select([], false); }, !!DEVICES[device].hasTouch);
+  await frames(page, 1);
 
   /* --- the periscope: a look from a unit, turned by a drag, and back --- */
   const pov = await page.evaluate(() => {

@@ -168,10 +168,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    crossings to force, so each one is now fitted out once with one of five things -- a
    belt or a gun laid through its own slot, a tube dug in behind it, a workshop, or an
    aid post -- each of which is its own geometry, its own per-bunker buffer and its own
-   effect on the ground round it. Raise it deliberately, with a reason, or not at all. */
+   effect on the ground round it. It is 1680 for the thumb scheme: a second set of
+   controls for a phone, kept beside the classic one as a choice, with the chips, the
+   verb column, the sheet and the drag-to-order arrow that go with it. Raise it
+   deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1655) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1655 kB so it stays quick to load on a phone`);
+if (kb > 1680) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1680 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

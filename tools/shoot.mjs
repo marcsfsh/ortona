@@ -82,6 +82,12 @@ const SCENES = {
         syncHud();
       }, SIDE);
       await shoot(page, out('hud'), { settle: SETTLE });
+      /* under the thumb scheme the cards live in a sheet, so it is photographed up as well */
+      if (await page.evaluate(() => window.CTRL && window.CTRL.thumb)) {
+        await page.evaluate(() => window.thumbMore(true));
+        await shoot(page, out('hud-more'), { settle: SETTLE });
+        await page.evaluate(() => window.thumbMore(false));
+      }
 
       /* The build menu: select the HQ so its production cards show. */
       await page.evaluate(s => {
@@ -713,6 +719,7 @@ if (args.list || args.help) {
   console.log('\nflags: --device= --sim=<game seconds> --side=us|ger --diff=0|1|2 --bare --turn');
   console.log('       --settle=<frames> --tag=<suffix> --cam=x,y,dist,yaw,pitch --nofog --name=');
   console.log('       --dist=<units> --pitch=<radians>   (override gallery framing)');
+  console.log('       --ctrl=thumb|classic               (the control scheme, whatever the device would pick)');
   console.log('       --only=<key[,key]>                 (restrict a gallery to named units)');
   console.log('       --base=<rev>                       (photograph an older revision, -base on the name)');
   console.log('       --base=<rev> --side                (that and the working file, composited into one PNG)');
@@ -746,6 +753,10 @@ for (const pass of passes) {
        * stale one would quietly poison the next capture. */
       const { page, context, log } = await openGame(browser, DEVICE, pass.file ? { file: pass.file } : {});
       console.log(`\n[${name}] ${DEVICE}`);
+      /* --ctrl=thumb|classic picks the control scheme for the page, without storing it:
+         a phone starts on thumb and a desktop on classic, and a picture of either on the
+         other device is worth having */
+      if (args.ctrl && !pass.base) await page.evaluate(v => { if (window.ctrlSet) window.ctrlSet(v === 'thumb', true); }, String(args.ctrl));
       try {
         await SCENES[name].run(page);
       } catch (e) {

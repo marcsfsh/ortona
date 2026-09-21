@@ -810,6 +810,19 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
 
+**And it drives both control schemes on both devices.** The thumb rows switch the scheme
+without storing it, measure the chrome (six chips, the verbs, the little map, nothing
+under 44px, off screen or lying over the tool strip), and then raise the gestures as
+TouchEvents at the canvas: a drag out of the selected unit has to land its order within a
+unit of the finger with the camera held still under it, a tap on open ground has to move,
+a second tap on a unit has to pick its kind, a chip held has to take the group and tapped
+give it back, MORE has to put the sheet up clear of the little map and an attack-move card
+has to take it down. Then the classic scheme is put back and asked the same of a tap and a
+drag, because a scheme kept as an option is a scheme nobody runs. The drills want open
+ground, and `__clearPt` finds it clear of every ring of his by more than the pick -- the
+first version asked `nearestOwn` at a hundred units, which is not the pick, and found no
+ground at all on the spawn.
+
 **And two rows read the framebuffer rather than looking at it.** An effect that is drawn
 and invisible looks exactly like an effect that is not drawn, so the effects rows render
 the same scene twice, once with the thing and once without, and count the pixels that
@@ -917,7 +930,8 @@ pixels, for layout-only checks) `phoneland` `phonemin` (375x667) `tablet`.
 Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--bare` (hide all 2D UI, leaving only the 3D) `--turn` (four yaw angles)
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
-`--settle=<frames>` `--cam=x,y,dist,yaw,pitch`.
+`--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=thumb|classic` (the control
+scheme, whatever the device would pick; `hud` then photographs the sheet as well).
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
 with `--tag=after`, and compare the two PNGs side by side.
@@ -4016,6 +4030,61 @@ What to watch when touching layout or input:
   and `frame()` halves the draw rate if it measures a struggling device. Do not
   remove those paths without a reason.
 
+**There are two control schemes, and a phone starts on the second.** The classic scheme
+is a desktop's: the bar along the bottom with the cards in a strip that scrolls, and
+every order a tap on the ground. It works, and it is what a mouse expects. On a phone
+half the cards are off the end of the strip, the bar takes a fifth of the screen, and the
+one thing a thumb is good at -- dragging a thing to where it should go -- is the one thing
+it could not do. So there is a second scheme, THUMB, kept beside the first as a choice on
+the title screen (CONTROLS: CLASSIC / THUMB) and under `ORT_CTRL`. `CTRL.thumb` is the
+switch, `ctrlSet` stores and applies it, and `ctrlLoad` decides the default off `MOB` when
+nothing is stored: a phone starts on thumb and a desktop on classic, and either may pick
+the other. The classic touch path is untouched, because every branch of the new scheme is
+behind `CTRL.thumb`, and the gate measures the classic scheme on the phone as well.
+
+What thumb is: the chrome goes out to the edges a thumb rests on and the middle is left to
+the map. Group chips along the bottom-left (`#tgroups`: ALL and the five control groups
+the desktop already keeps under ctrl+1..5, which a phone had no way of reaching -- tap to
+pick, tap again to go to it, hold for half a second to set it from the selection), the
+verbs that matter in a column at the bottom-right (`#tverbs`: attack, stop, ground, run,
+retreat, a fire mission for a tube, and MORE), the little map over the chips, a one-line
+label for the selection (`#tsel`), and everything else in a sheet under MORE. The sheet
+IS the classic bar, laid out again under `body.thumb.tmore` -- the cards, the production
+list, the works, the bunker fittings -- so nothing in it is built twice, and the little map
+is one element that `ctrlApply` moves between the two hosts. A card that arms the next
+tap (attack move, a fire mission, a work to place) shuts the sheet, because the next tap
+has to land on the map; a production card leaves it up.
+
+The gestures. A press on a selected unit and a drag is an order, and the arrow is drawn on
+the overlay before the release gives it: the line from the unit to the finger, a ring
+where it lands, and the word for what it will do read off the same tests `issueOrder`
+applies, so ATTACK on an enemy, ATTACK MOVE with the verb armed, FIRE MISSION for a tube,
+and MOVE with the grade of cover at the point beside it. A second finger cancels it, the
+way it cancels a marquee. A second tap on a unit picks every one of its kind within sight,
+which is the desktop's double-click. A tap on the ground still moves, because it is the
+fastest thing there is. Everything else is the classic path: drag the ground to pan, pinch,
+twist, press and hold the ground to box-select.
+
+Four things about it are worth knowing before touching it. **A `body.mob` rule written
+after the editor's CSS beats one written before it** at the same specificity, and there
+is a second block of them there: the thumb block sits at the END of the stylesheet for
+that reason, because placed with the first block its little map came out at 104 by 72
+rather than 132 by 90, and nothing but a measurement said so. **In landscape the tool
+strip runs along the top-right and the verb column stands where its end was**, so the
+strip moves in by the column's width and the sheet stands beside the chips under it; in
+portrait the sheet stops above the little map and the label. **The chips are pointer
+events with capture and a hold timer**, and `setPointerCapture` is in a try, because a
+synthetic pointer has no capture and the gate drives them with one. And **the pick under a
+press is `hitsUnit` on the selection**, ring plus the same grab the tap uses, so a tap
+inside a selected unit's own ring narrows the selection to it rather than moving it a few
+units; the drag is the order there.
+
+The gate drives it through the TouchEvents a finger raises, dispatched at the canvas,
+rather than by calling the functions behind them: a handler that is never reached by the
+event it is written for is a handler that is not there. `node tools/shoot.mjs hud
+--device=phone` photographs it, with the sheet up as a second frame, and `--ctrl=classic`
+or `--ctrl=thumb` picks the scheme whatever the device would.
+
 ---
 
 ## Performance
@@ -4323,6 +4392,16 @@ shots/                         screenshot output, gitignored
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo
   is several of them in one frame.** Queue the rebuild and take one tile a frame; the thing
   that left the tile is drawn twice for that frame and nobody sees it.
+- **There are two blocks of `body.mob` rules and the second is after the editor's CSS.** A
+  mobile override written beside the first block loses to the second at the same
+  specificity, and the loss is a size or a position rather than an error: the thumb
+  scheme's little map read 104 by 72 against the 132 by 90 it was written at until its
+  block was moved to the end of the stylesheet. Measure the rect; do not read the rule.
+- **A press on the map has two readers in the thumb scheme and they must not both fire.**
+  A press on a selected unit arms the drag-to-order and returns before the marquee timer
+  is set, so a hold on a unit is never a box; a press on the ground sets the timer and
+  never the tow. Any new gesture goes in as a third branch of that one `touchstart`, or it
+  fights one of the two.
 
 - **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
   `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the
