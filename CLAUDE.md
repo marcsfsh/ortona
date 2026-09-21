@@ -3874,7 +3874,15 @@ added.
 **A new kind of thing is not in the editor until five places know about it**, which the
 bunker and the two anti-tank belts each had to be walked through: a tool in `ED_CATS`, a
 footprint in `edBBox` so it can be marked and picked, a line in `edMark` if it levels a
-pad the way a house does, a name in `edKindName`, and its own options in `edProps`. A
+pad the way a house does, a name in `edKindName`, and its own options in `edProps`. And a
+sixth the moment a type starts CUTTING the ground rather than standing on it: `ED_GROUND`,
+which is what `edMark` reads to set `ED.needGround`. `edRebuildNow` rebuilds the
+heightfield and the walk grid whatever the edit was and gates `buildTerrain` and
+`buildAlbedo` on that flag, so a carving type left off the list gives the editor a hole
+that can be walked into and cannot be seen until something forces a full rebuild. The
+weapon pit joined the list the day it started going through `carve`, and nothing on screen
+would have said it had not: an editor that has cut the ground and not redrawn it looks
+exactly like one that has not cut it yet. A
 line tool also has to carry its `def` onto every piece it cuts -- without that a dragon's
 teeth belt drawn with the teeth tool came out as hedgehogs, because the only thing
 separating the two is one field on the def.
