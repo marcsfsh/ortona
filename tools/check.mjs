@@ -33,7 +33,10 @@ const browser = await launch();
 
 for (const device of TARGETS) {
   console.log(`\n=== ${device} (${DEVICES[device].viewport.width}x${DEVICES[device].viewport.height} @${DEVICES[device].deviceScaleFactor ?? 1}x) ===`);
-  const { page, context, log, gl } = await openGame(browser, device, { quiet: true });
+  /* on classic whatever the device would pick, because the simple scheme's adjutant spends
+     the till and sites a post from the first frame and half the rows below read a pristine
+     deploy; the simple rows switch it on where they measure it */
+  const { page, context, log, gl } = await openGame(browser, device, { quiet: true, ctrl: 'classic' });
 
   ok('WebGL context', gl.ok, `${gl.gl2 ? 'webgl2' : 'webgl1'}, shadows ${gl.shadows ? 'on' : 'off'}`);
   /* Count what the world builder asks the material table for, before anything is built.
@@ -251,11 +254,11 @@ for (const device of TARGETS) {
     const vw = window.innerWidth, vh = window.innerHeight;
     const seen = [];
     const small = [];
-    /* under the thumb scheme the cards live in a sheet, so it is put up for the sweep and
-       taken down after; the chips and the verbs are measured with the rest */
-    const thumb = document.body.classList.contains('thumb');
-    if (thumb) window.thumbMore(true);
-    for (const sel of ['#tools .tool', '#cmds .cmd', '#bar button', '#queue .qi', '#thumb button']) {
+    /* under the simple scheme the cards live in a sheet, so it is put up for the sweep and
+       taken down after; the roster and the two verbs are measured with the rest */
+    const simple = document.body.classList.contains('simple');
+    if (simple) window.simpleMore(true);
+    for (const sel of ['#tools .tool', '#cmds .cmd', '#bar button', '#queue .qi', '#simple button']) {
       for (const e of document.querySelectorAll(sel)) {
         const r = e.getBoundingClientRect();
         if (!r.width || !r.height) continue;
@@ -263,9 +266,9 @@ for (const device of TARGETS) {
         if (r.width < minTap || r.height < minTap) small.push(`${sel} ${r.width | 0}x${r.height | 0}`);
       }
     }
-    if (thumb) window.thumbMore(false);
-    /* the bar, or under thumb the chips that stand where it stood */
-    const bar = (thumb ? document.getElementById('tgroups') : document.getElementById('bar')).getBoundingClientRect();
+    if (simple) window.simpleMore(false);
+    /* the bar, or under simple the roster that stands where it stood */
+    const bar = (simple ? document.getElementById('tgroups') : document.getElementById('bar')).getBoundingClientRect();
     const top = document.getElementById('top').getBoundingClientRect();
     return { hScroll: document.documentElement.scrollWidth - vw,
              vScroll: document.documentElement.scrollHeight - vh,
@@ -280,17 +283,32 @@ for (const device of TARGETS) {
        hud.small.slice(0, 4).join('; ') || `${hud.controls} controls checked`);
   }
 
-  /* --- the thumb scheme. A second set of controls kept beside the classic one: a phone
+  /* --- the simple scheme. A second set of controls kept beside the classic one: a phone
      starts on it and a desktop does not, and either may pick the other. Every row here
      runs on both devices, because the touch handlers are one piece of code whatever the
      pointer is, and each switches the scheme without storing it. The gestures are driven
      through the same TouchEvents a finger raises, dispatched at the canvas, rather than
      by calling the functions behind them: a handler that is never reached by the event
-     it is written for is a handler that is not there. --- */
-  const ctrl0 = await page.evaluate(() => ({ thumb: window.CTRL.thumb,
-    stored: (() => { try { return localStorage.getItem('ORT_CTRL'); } catch (e) { return null; } })() }));
-  ok('the control scheme starts on thumb on a phone and classic on a desktop, with nothing stored',
-     ctrl0.stored === null && ctrl0.thumb === !!DEVICES[device].hasTouch, `thumb=${ctrl0.thumb}, stored=${ctrl0.stored}`);
+     it is written for is a handler that is not there. The adjutant is driven the same
+     way the frame loop drives it, and the rest of the gate then runs on classic, because
+     an adjutant spending the till under rows that read the till is a gate measuring the
+     adjutant. --- */
+  const ctrl0 = await page.evaluate(() => {
+    /* the page was opened pinned to classic; the default is what ctrlLoad decides with
+       nothing stored, so it is asked that way and the pin put back */
+    localStorage.removeItem('ORT_CTRL'); window.ctrlLoad();
+    const d = window.CTRL.simple;
+    localStorage.setItem('ORT_CTRL', 'classic'); window.ctrlLoad(); window.ctrlApply();
+    return { simple: d, pinned: !window.CTRL.simple };
+  });
+  ok('the control scheme starts on simple on a phone and classic on a desktop, with nothing stored',
+     ctrl0.simple === !!DEVICES[device].hasTouch && ctrl0.pinned, `simple=${ctrl0.simple} with nothing stored`);
+  /* what the player had before the scheme, and its adjutant, was switched on */
+  const pre = await page.evaluate(() => {
+    const own = window.G.own;
+    window.__preIds = window.G.units.filter(u => window.owned(u)).map(u => u.id);
+    return { made: Object.keys(window.G.made[own]).length, posts: window.G.blds.filter(b => b.own === own && !b.def.hq).length };
+  });
   await page.evaluate(() => {
     window.ctrlSet(true, true);
     /* a kind of which there are at least two, so the double tap below has something to widen to */
@@ -314,15 +332,20 @@ for (const device of TARGETS) {
       const a = all[i], b = all[j];
       if (a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1) overlap++;
     }
-    return { on: document.body.classList.contains('thumb'), bar: getComputedStyle(document.getElementById('bar')).display,
-             chips: chips.length, verbs: verbs.length, small, off, overlap, miniIn: document.getElementById('mini').parentNode.id,
+    const kinds = new Set(window.G.units.filter(u => window.owned(u) && !u.dead && u.cat).map(u => u.key)).size;
+    return { on: document.body.classList.contains('simple'), bar: getComputedStyle(document.getElementById('bar')).display,
+             chips: chips.length, kinds, first: (document.querySelector('.tchip b') || {}).textContent,
+             verbs: [...document.querySelectorAll('.tverb .n')].map(e => e.textContent).join('+'),
+             tools: [...document.querySelectorAll('#tools .tool')].filter(e => e.getBoundingClientRect().width).map(e => e.id).join('+'),
+             small, off, overlap, miniIn: document.getElementById('mini').parentNode.id,
              hScroll: document.documentElement.scrollWidth - vw, vScroll: document.documentElement.scrollHeight - vh,
              label: document.getElementById('tsel').textContent.trim() };
   }, MIN_TAP);
-  ok('thumb: chips, verbs and the little map at the edges, the bar shut, nothing small, off screen or overlapping',
-     th.on && th.bar === 'none' && th.chips === 6 && th.verbs >= 5 && th.small === 0 && th.off === 0 && th.overlap === 0 &&
-     th.miniIn === 'thumb' && th.hScroll <= 0 && th.vScroll <= 0 && th.label.length > 0,
-     `${th.chips} chips, ${th.verbs} verbs, ${th.small} small, ${th.off} off screen, ${th.overlap} overlapping, map in #${th.miniIn}, label "${th.label}"`);
+  ok('simple: a roster of the army, FALL BACK and MENU, LOOK and PAUSE, the little map, the bar shut, nothing small, off screen or overlapping',
+     th.on && th.bar === 'none' && th.chips === th.kinds + 1 && th.first === 'ARMY' && th.verbs === 'fall back+menu' &&
+     th.tools === 'tPov+tPause' && th.small === 0 && th.off === 0 && th.overlap === 0 &&
+     th.miniIn === 'simple' && th.hScroll <= 0 && th.vScroll <= 0 && th.label.length > 0,
+     `${th.chips} chips for ${th.kinds} kinds, verbs ${th.verbs}, tools ${th.tools}, ${th.small} small, ${th.off} off screen, ${th.overlap} overlapping, map in #${th.miniIn}, label "${th.label}"`);
 
   /* a finger on the canvas: TouchEvents built the way a touch screen builds them */
   await page.evaluate(() => {
@@ -333,8 +356,8 @@ for (const device of TARGETS) {
       const up = type === 'touchend';
       cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
     };
-    /* a point of open ground on the screen with nothing of either side on it, so that a
-       tap there is an order and not a pick */
+    /* a point of open ground on the screen with nothing of either side on it and no flag
+       near it, so that a tap there is a tap on bare ground */
     window.__clearPt = function (sx, sy, rad) {
       /* out from the unit and then in, because the spawn is three sections and a
          headquarters inside a hundred units and on a desktop a pixel is less ground */
@@ -342,10 +365,9 @@ for (const device of TARGETS) {
         const a = k * Math.PI / 12 + .3, x = sx + Math.cos(a) * rad * f, y = sy + Math.sin(a) * rad * f;
         if (x < 30 || y < 90 || x > innerWidth - 80 || y > innerHeight - 150) continue;
         const w = window.s2w(x, y);
-        /* clear of every ring of his by more than the widest pick, of anything of theirs,
-           of a building and of ground a section cannot be sent to */
         if (window.G.units.some(u => !u.dead && !u.inside && window.owned(u) && window.hitsUnit(u, w.x, w.y, 34))) continue;
         if (window.unitsAt(w.x, w.y, 30).length || window.buildingAt(w.x, w.y) || window.bunkerAt(w.x, w.y) || !window.walkable(w.x, w.y)) continue;
+        if (window.blockAt(w.x, w.y) || window.simpleSectorAt(w.x, w.y)) continue;
         return { x, y, w };
       }
       return null;
@@ -363,93 +385,181 @@ for (const device of TARGETS) {
     window.__tev('touchend', end.x, end.y);
     const dest = u.dest ? Math.hypot(u.dest.x - end.w.x, u.dest.y - end.w.y) : -1;
     const order = u.order, dropped = window.touch.tow === null;
-    /* a tap on open ground still moves, as it always has */
+    /* a tap on bare ground lets go of the selection and gives no order at all */
     const tap = window.__clearPt(p.x, p.y, 150);
     if (!tap) return { none: true };
+    const d0 = u.dest && { x: u.dest.x, y: u.dest.y };
     window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y);
-    const tapDest = u.dest ? Math.hypot(u.dest.x - tap.w.x, u.dest.y - tap.w.y) : -1;
-    return { armed, drawn, camHeld, order, dest: +dest.toFixed(1), dropped, tapOrder: u.order, tapDest: +tapDest.toFixed(1) };
+    const kept = u.order === order && !!u.dest && !!d0 && u.dest.x === d0.x && u.dest.y === d0.y;
+    return { armed, drawn, camHeld, order, dest: +dest.toFixed(1), dropped, let_: window.G.sel.length, kept };
   });
-  ok('thumb: a drag out of the selected unit is an order at the finger, the map does not pan under it, and a tap on the ground still moves',
-     !tdrag.none && tdrag.armed && tdrag.drawn && tdrag.camHeld && tdrag.order === 'move' && tdrag.dest >= 0 && tdrag.dest < 1 && tdrag.dropped &&
-     tdrag.tapOrder === 'move' && tdrag.tapDest >= 0 && tdrag.tapDest < 1,
-     tdrag.none ? 'no open ground on screen to drag to' : `dragged: ${tdrag.order} ${tdrag.dest} from the finger; tapped: ${tdrag.tapOrder} ${tdrag.tapDest} from the finger`);
+  ok('simple: a drag out of the selected unit is an attack-move to the finger, the map does not pan under it, and a tap on the ground lets go',
+     !tdrag.none && tdrag.armed && tdrag.drawn && tdrag.camHeld && tdrag.order === 'attackmove' && tdrag.dest >= 0 && tdrag.dest < 1 && tdrag.dropped &&
+     tdrag.let_ === 0 && tdrag.kept,
+     tdrag.none ? 'no open ground on screen to drag to' : `dragged: ${tdrag.order} ${tdrag.dest} from the finger; the tap left ${tdrag.let_} selected and the order standing ${tdrag.kept}`);
   const dtap = await page.evaluate(() => {
-    const u = window.G.sel[0], p = window.w2s(u.x, u.y);
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && window.G.units.filter(z => window.owned(z) && !z.dead && z.key === q.key).length >= 2);
+    if (!u) return { none: true };
+    window.select([], false);
+    window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 });
+    const p = window.w2s(u.x, u.y);
     const kind = window.G.units.filter(q => window.owned(q) && !q.dead && q.key === u.key).length;
     window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
     const once = window.G.sel.length;
     window.__tev('touchstart', p.x + 2, p.y + 1); window.__tev('touchend', p.x + 2, p.y + 1);
     return { kind, once, twice: window.G.sel.length, same: window.G.sel.every(s => s.key === u.key), key: u.key };
   });
-  ok('thumb: a second tap on a unit picks every one of its kind in sight',
-     dtap.once === 1 && dtap.twice >= 2 && dtap.twice <= dtap.kind && dtap.same,
-     `${dtap.key}: ${dtap.once} after one tap, ${dtap.twice} of ${dtap.kind} after two`);
-  const chips = await page.evaluate(async () => {
-    const chip = document.querySelector('.tchip[data-g="1"]'), all = document.querySelector('.tchip[data-g="all"]');
-    const pe = (type, el) => { const r = el.getBoundingClientRect(); el.dispatchEvent(new PointerEvent(type, { pointerId: 5, pointerType: 'touch', isPrimary: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2, bubbles: true, cancelable: true })); };
-    const sel = window.G.sel.slice();
-    /* held: the selection becomes the group */
-    pe('pointerdown', chip); await new Promise(r => setTimeout(r, 560)); pe('pointerup', chip);
-    const g = window.G.groups['1'] || [];
-    const set = g.length === sel.length && sel.every(u => g.indexOf(u) >= 0);
-    const label = chip.querySelector('span').textContent;
-    const stayed = window.G.sel.length === sel.length;   /* a hold is not a tap */
-    /* tapped: the group becomes the selection */
+  ok('simple: a second tap on a unit picks every one of its kind in sight',
+     !dtap.none && dtap.once === 1 && dtap.twice >= 2 && dtap.twice <= dtap.kind && dtap.same,
+     dtap.none ? 'no kind with two on the field' : `${dtap.key}: ${dtap.once} after one tap, ${dtap.twice} of ${dtap.kind} after two`);
+  const roster = await page.evaluate(() => {
     window.select([], false);
-    pe('pointerdown', chip); pe('pointerup', chip);
-    const picked = window.G.sel.length === sel.length && sel.every(u => window.G.sel.indexOf(u) >= 0);
-    const lit = chip.classList.contains('on');
-    /* tapped again: the camera goes to it */
-    const cx = sel.reduce((a, u) => a + u.x, 0) / sel.length, cy = sel.reduce((a, u) => a + u.y, 0) / sel.length;
+    const chips = [...document.querySelectorAll('.tchip')];
+    const kind = chips.find(c => c.dataset.g !== 'all');
+    if (!kind) return { none: true };
+    const key = kind.dataset.g, list = window.G.units.filter(u => window.owned(u) && !u.dead && !u.inside && u.key === key);
+    const cx = list.reduce((a, u) => a + u.x, 0) / list.length, cy = list.reduce((a, u) => a + u.y, 0) / list.length;
     window.__o.camera({ x: cx + 500, y: cy + 200 });
     const far = Math.hypot(window.CAM.tx - cx, window.CAM.ty - cy);
-    pe('pointerdown', chip); pe('pointerup', chip);
+    kind.click();
+    const picked = window.G.sel.length === list.length && list.every(u => window.G.sel.indexOf(u) >= 0);
     const near = Math.hypot(window.CAM.tx - cx, window.CAM.ty - cy);
-    /* and ALL is everything of his on the field */
-    pe('pointerdown', all); pe('pointerup', all);
+    const lit = kind.classList.contains('on');
+    const count = kind.querySelector('span').textContent;
+    chips[0].click();
     const own = window.G.units.filter(u => !u.dead && !u.inside && window.owned(u) && u.cat).length;
-    return { set, n: sel.length, label, stayed, picked, lit, far: +far.toFixed(0), near: +near.toFixed(0), allN: window.G.sel.length, own };
+    return { key, n: list.length, count, picked, lit, far: +far.toFixed(0), near: +near.toFixed(0), allN: window.G.sel.length, own };
   });
-  ok('thumb: a chip held takes the selection as its group, tapped gives it back, tapped again goes to it, and ALL is the army',
-     chips.set && chips.n > 0 && chips.label === String(chips.n) && chips.stayed && chips.picked && chips.lit && chips.far > 100 && chips.near < 40 &&
-     chips.allN === chips.own && chips.own > 0,
-     `group of ${chips.n} reads "${chips.label}", camera ${chips.far} away then ${chips.near}, ALL picks ${chips.allN} of ${chips.own}`);
+  ok('simple: a chip picks every one of its kind and goes to them, and ARMY is everything',
+     !roster.none && roster.picked && roster.count === String(roster.n) && roster.lit && roster.far > 100 && roster.near < 40 && roster.allN === roster.own && roster.own > 0,
+     roster.none ? 'no chips' : `${roster.key} x${roster.n} reads "${roster.count}", camera ${roster.far} away then ${roster.near}, ARMY picks ${roster.allN} of ${roster.own}`);
+  const flag = await page.evaluate(() => {
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf');
+    window.select([u], false);
+    /* the nearest flag, put on the screen, and tapped at its pole */
+    const sec = window.G.sectors.slice().sort((a, b) => window.dsq(u.x, u.y, a.x, a.y) - window.dsq(u.x, u.y, b.x, b.y))[0];
+    window.__o.camera({ x: sec.x, y: sec.y, dist: 520, pitch: 0.9 }); window.updateCamera();
+    const p = window.w2s(sec.x, sec.y);
+    window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
+    const sent = u.order === 'attackmove' && !!u.dest && Math.hypot(u.dest.x - sec.x, u.dest.y - sec.y) < 60;
+    /* and a tap on an enemy in sight is an attack on it */
+    const foe = window.spawnUnit(window.foe(window.G.side), window.G.side === 'us' ? 'ger_gren' : 'us_rifle', sec.x + 120, sec.y + 40, 0);
+    foe.vUs = true; foe.vGer = true;
+    const q = window.w2s(foe.x, foe.y);
+    window.__tev('touchstart', q.x, q.y); window.__tev('touchend', q.x, q.y);
+    const attacked = u.order === 'attack' && u.forced === foe;
+    foe.dead = true; window.G.units = window.G.units.filter(z => !z.dead);
+    return { label: sec.label, sent, attacked, kept: window.G.sel.indexOf(u) >= 0 };
+  });
+  ok('simple: a tap on a flag sends the selection to it, and a tap on an enemy is an attack',
+     flag.sent && flag.attacked && flag.kept, `to ${flag.label}: ${flag.sent}; attack: ${flag.attacked}`);
   const sheet = await page.evaluate(() => {
     const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf');
     window.select([u], false);
-    const more = [...document.querySelectorAll('.tverb')].find(b => /more/i.test(b.textContent));
-    if (!more) return { none: true };
-    more.click();
+    const menu = [...document.querySelectorAll('.tverb')].find(b => /menu/i.test(b.textContent));
+    if (!menu) return { none: true };
+    menu.click();
     const up = document.body.classList.contains('tmore'), disp = getComputedStyle(document.getElementById('bar')).display;
     const b = document.getElementById('bar').getBoundingClientRect(), mini = document.getElementById('mini').getBoundingClientRect();
     const clear = b.bottom <= mini.top + 1 || b.left >= mini.right - 1;
     const inside = b.left >= -1 && b.top >= -1 && b.right <= innerWidth + 1 && b.bottom <= innerHeight + 1;
     const cards = document.querySelectorAll('#cmds .cmd').length;
     const small = [...document.querySelectorAll('#cmds .cmd, #tclose, #tswitch')].filter(e => { const r = e.getBoundingClientRect(); return r.width && (r.width < 44 || r.height < 44); }).length;
-    const lit = [...document.querySelectorAll('.tverb')].some(v => v.classList.contains('act') && /more/i.test(v.textContent));
-    /* a card that arms the next tap shuts the sheet and lights the verb for it */
+    const lit = [...document.querySelectorAll('.tverb')].some(v => v.classList.contains('act') && /menu/i.test(v.textContent));
+    /* a card that arms the next tap shuts the sheet */
     const atk = [...document.querySelectorAll('#cmds .cmd')].find(c => /Attack move/.test(c.textContent));
     atk.click();
     const shut = !document.body.classList.contains('tmore'), armed = window.G.mode === 'attack';
-    const verbLit = [...document.querySelectorAll('.tverb')].some(v => v.classList.contains('act') && /attack/i.test(v.textContent));
-    /* and the verb itself disarms it */
-    [...document.querySelectorAll('.tverb')].find(v => /attack/i.test(v.textContent)).click();
-    const disarmed = window.G.mode === null;
+    window.G.mode = null; window.syncHud();
     /* the close button shuts a sheet put up again */
-    more.click(); const up2 = document.body.classList.contains('tmore');
+    menu.click(); const up2 = document.body.classList.contains('tmore');
     document.getElementById('tclose').click();
     const closed = !document.body.classList.contains('tmore');
-    return { up, disp, clear, inside, cards, small, lit, shut, armed, verbLit, disarmed, up2, closed };
+    /* and FALL BACK sends the section home */
+    const back = [...document.querySelectorAll('.tverb')].find(v => /fall back/i.test(v.textContent));
+    back.click();
+    const ran = !!u.retreat && u.order === 'retreat';
+    u.retreat = 0; window.clearOrder(u);
+    return { up, disp, clear, inside, cards, small, lit, shut, armed, up2, closed, ran };
   });
-  ok('thumb: MORE puts the cards up in a sheet clear of the little map, a card that arms a tap shuts it, and the verb disarms it',
+  ok('simple: MENU puts the cards up in a sheet clear of the little map, a card that arms a tap shuts it, and FALL BACK sends the section home',
      !sheet.none && sheet.up && sheet.disp !== 'none' && sheet.clear && sheet.inside && sheet.cards >= 6 && sheet.small === 0 && sheet.lit &&
-     sheet.shut && sheet.armed && sheet.verbLit && sheet.disarmed && sheet.up2 && sheet.closed,
-     sheet.none ? 'no MORE verb' : `${sheet.cards} cards, ${sheet.small} small, clear of the map ${sheet.clear}, shut on attack move ${sheet.shut}`);
-  /* and the classic scheme is what it was: the bar back, the chips gone, a tap an order */
+     sheet.shut && sheet.armed && sheet.up2 && sheet.closed && sheet.ran,
+     sheet.none ? 'no MENU verb' : `${sheet.cards} cards, ${sheet.small} small, clear of the map ${sheet.clear}, shut on attack move ${sheet.shut}, fell back ${sheet.ran}`);
+
+  /* --- the adjutant: what the simple scheme takes off the player's hands. Driven the way
+     the frame loop drives it, and then measured from the field rather than from what it
+     said it did. --- */
+  const adj0 = await page.evaluate(() => {
+    const own = window.G.own;
+    /* the battle is three minutes old and the player's points are most of the way down,
+       so both sides are topped up before another minute is run: a game that ends inside
+       the minute stops the adjutant with everything else */
+    window.vpSet('us', 9000); window.vpSet('ger', 9000);
+    return { mp: Math.round(window.G.res[own].mp) };
+  });
+  await fastForward(page, 60);
+  const adj = await page.evaluate(() => {
+    const own = window.G.own, side = window.G.side, us = side === 'us';
+    const K1 = us ? 'us_bar' : 'ger_qtr';
+    const post = window.siteOf(own, K1);
+    const made = Object.keys(window.G.made[own]);
+    const queued = window.G.blds.filter(b => b.own === own).reduce((a, b) => a + b.queue.length, 0);
+    /* the drills are staged on fresh sections, because after three minutes of battle
+       the ones on the field are whatever the battle left of them */
+    const hq = window.hqOf(own), sp = window.nearestFree(hq.x + (us ? 260 : -260), hq.y + 40);
+    const secKey = us ? 'us_rifle' : 'ger_gren';
+    /* a section shot to a third falls back on its own */
+    const sec = window.spawnUnit(own, secKey, sp.x, sp.y, 0);
+    let left = sec.models.filter(m => m.alive).length;
+    for (const m of sec.models) { if (left > 1 && m.alive) { m.alive = false; m.hp = 0; left--; } }
+    window.adjTick(2);
+    const fell = !!sec.retreat;
+    /* a hull holed to a fifth drives to the yard */
+    const hull = window.spawnUnit(own, us ? 'us_sher' : 'ger_p4', sp.x + 60, sp.y, 0);
+    hull.hp = hull.maxhp * .2;
+    window.adjTick(2);
+    const yard = hull.order === 'move' && !!hull.dest && Math.hypot(hull.dest.x - hq.x, hull.dest.y - hq.y) < 260;
+    /* men crossing quiet ground run, and men caught in the open under fire go flat */
+    const runner = window.spawnUnit(own, secKey, sp.x, sp.y + 80, 0);
+    window.orderMove(runner, window.clamp(runner.x + (us ? 500 : -500), 60, window.WORLD.w - 60), runner.y, true);
+    runner.sup = 0; runner.target = null;
+    window.adjTick(2); const ran = runner.stance;
+    window.clearOrder(runner); runner.sup = .8;
+    window.adjTick(2); const flat = runner.stance;
+    /* and the howitzers fire on their own account, his and not theirs */
+    const mine = window.spawnUnit(own, us ? 'us_how' : 'ger_how', hq.x, hq.y + 200, 0);
+    const theirs = window.spawnUnit(window.foe(side), us ? 'ger_how' : 'us_how', 200, 200, 0);
+    const free = !window.onOrderOnly(mine), theirsHeld = window.onOrderOnly(theirs);
+    window.ctrlSet(false, true);
+    const heldAgain = window.onOrderOnly(mine);
+    window.ctrlSet(true, true);
+    for (const z of [sec, hull, runner, mine, theirs]) z.dead = true;
+    window.G.units = window.G.units.filter(z => !z.dead);
+    /* and what the adjutant put up comes down again, because the rows below park a tank
+       beside the headquarters on ground the armour point now stands on */
+    const raised = window.G.blds.filter(b => b.own === own && !b.def.hq).length;
+    window.G.blds = window.G.blds.filter(b => !(b.own === own && !b.def.hq));
+    /* and so does what it raised, which would otherwise stand in the yard the tank drives out of */
+    const had = new Set(window.__preIds || []);
+    window.G.units = window.G.units.filter(q => !(window.owned(q) && !had.has(q.id) && !q.inside && !q.gar));
+    window.G.units.forEach(q => { if (window.owned(q) && (q.building || q.repairing)) window.clearOrder(q); });
+    window.G.blds.forEach(b => { if (b.own === own) { b.queue.length = 0; b.qt = 0; } });
+    window.rebuildGrid(); window.select([], false);
+    return { post: post ? +post.built.toFixed(2) : -1, made: made.join(','), queued, fell, yard, ran, flat, free, theirsHeld, heldAgain, raised,
+             mp: Math.round(window.G.res[own].mp) };
+  });
+  ok('the adjutant raises the post, fills the queues, pulls the broken back, sets the stances and frees the howitzers',
+     pre.posts === 0 && adj.post > 0 && adj.made.length > 0 && adj.fell === true && adj.yard && adj.ran === 'double' && adj.flat === 'ground' &&
+     adj.free && adj.theirsHeld && adj.heldAgain,
+     `${adj.raised} posts raised from ${pre.posts}, the first at ${adj.post} built; raised ${adj.made || 'nothing'} (${adj.queued} queued) from ${pre.made} kinds; ` +
+     `a section at a third fell back ${adj.fell}; a hull at a fifth went to the yard ${adj.yard}; quiet ground ${adj.ran}, under fire ${adj.flat}; ` +
+     `his howitzer free ${adj.free}, theirs on order ${adj.theirsHeld}, his on order again under classic ${adj.heldAgain}; till ${adj0.mp} to ${adj.mp}`);
+
+  /* and the classic scheme is what it was: the bar back, the roster gone, a tap an order */
   const classic = await page.evaluate(() => {
     window.ctrlSet(false, true);
-    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf');
+    const u = window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat);
     window.select([u], false);
     window.__o.camera({ x: u.x, y: u.y, dist: 520, pitch: 0.9 });
     const p = window.w2s(u.x, u.y), tap = window.__clearPt(p.x, p.y, 150);
@@ -460,15 +570,17 @@ for (const device of TARGETS) {
     const cam0 = [window.CAM.tx, window.CAM.ty];
     window.__tev('touchstart', p.x, p.y); window.__tev('touchmove', p.x + 30, p.y + 40); window.__tev('touchmove', p.x + 90, p.y + 120); window.__tev('touchend', p.x + 90, p.y + 120);
     const panned = Math.hypot(window.CAM.tx - cam0[0], window.CAM.ty - cam0[1]);
-    return { off: !document.body.classList.contains('thumb'), bar: getComputedStyle(document.getElementById('bar')).display,
-             thumbHidden: document.getElementById('thumb').classList.contains('hidden'), miniIn: document.getElementById('mini').parentNode.id,
+    return { off: !document.body.classList.contains('simple'), bar: getComputedStyle(document.getElementById('bar')).display,
+             hidden: document.getElementById('simple').classList.contains('hidden'), miniIn: document.getElementById('mini').parentNode.id,
              order: u.order, dest: +dest.toFixed(1), panned: +panned.toFixed(0), tow: window.touch.tow };
   });
-  ok('classic: the bar is back, the chips are gone, a tap on the ground orders and a drag from the unit pans',
-     !classic.none && classic.off && classic.bar !== 'none' && classic.thumbHidden && classic.miniIn === 'bar' && classic.order === 'move' &&
+  ok('classic: the bar is back, the roster is gone, a tap on the ground orders and a drag from the unit pans',
+     !classic.none && classic.off && classic.bar !== 'none' && classic.hidden && classic.miniIn === 'bar' && classic.order === 'move' &&
      classic.dest >= 0 && classic.dest < 1 && classic.panned > 20 && !classic.tow,
      classic.none ? 'no open ground on screen' : `tap: ${classic.order} ${classic.dest} from the finger, drag panned ${classic.panned}, map in #${classic.miniIn}`);
-  await page.evaluate(t => { window.ctrlSet(t, true); window.select([], false); }, !!DEVICES[device].hasTouch);
+  /* the rest of the gate runs on classic on both devices: the adjutant spends the till and
+     the rows below read it */
+  await page.evaluate(() => { window.ctrlSet(false, true); window.select([], false); });
   await frames(page, 1);
 
   /* --- the periscope: a look from a unit, turned by a drag, and back --- */

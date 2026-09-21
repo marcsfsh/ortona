@@ -247,7 +247,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 body.mob .sttab{min-height:44px;padding:0 14px}
 body.mob .stbody table{font-size:11px}
 /* spectating: the whole of the 2D chrome goes, and the battle is left on screen */
-body.spec .screen,body.spec #top,body.spec #bar,body.spec #tools,body.spec #thumb{display:none!important}
+body.spec .screen,body.spec #top,body.spec #bar,body.spec #tools,body.spec #simple{display:none!important}
 #specbar{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(16px + var(--safeB));
   z-index:25;display:flex;gap:8px}
 #specbar button{border:1px solid var(--line2);background:#161b10e8;color:var(--ink);font-size:11px;
@@ -577,37 +577,40 @@ body.mob .cmd .ico{font-size:13px;height:13px}
 body.mob #selhead b{font-size:13px}
 body.mob #mini{width:104px;height:72px}
 #mini .mmlabel,#mini::before{display:none}
-/* ---------- thumb controls ----------
+/* ---------- the simple scheme ----------
    The second scheme, kept beside the classic one. The chrome is pushed out to the edges a
-   thumb rests on and the middle of the screen is left to the map: the group chips run
-   along the bottom-left, the verbs stand in a column at the bottom-right, the little map
-   sits over the chips, and the classic bar -- the cards, the production list, the works --
-   becomes a sheet that slides up on MORE and goes away the moment a card arms the next
+   thumb rests on and the middle of the screen is left to the map: the roster runs along
+   the bottom-left, FALL BACK and MENU stand at the bottom-right, the little map sits
+   over the roster, and the classic bar -- the cards, the production list, the works --
+   becomes a sheet that slides up on MENU and goes away the moment a card arms the next
    tap. Nothing in the bar is rebuilt for it; it is the same element laid out again. */
-body.thumb #bar{display:none;left:calc(8px + var(--safeL));right:calc(78px + var(--safeR));bottom:calc(176px + var(--safeB));top:auto;
+body.simple #bar{display:none;left:calc(8px + var(--safeL));right:calc(78px + var(--safeR));bottom:calc(176px + var(--safeB));top:auto;
   height:auto;max-height:min(62vh,520px);flex-direction:column;padding-bottom:0;overflow:hidden;
   border:1px solid rgba(108,120,101,.55);border-radius:0}
-body.thumb.tmore #bar{display:flex}
-body.thumb #bar::before,body.thumb #cmds::before{display:none}
-body.thumb #selpane{flex:none;order:0;padding:8px 58px 0 10px}
-body.thumb #seldesc{display:none}
-body.thumb #cmds{order:1;width:auto;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;border:0;border-top:1px solid var(--line);
+body.simple.tmore #bar{display:flex}
+body.simple #bar::before,body.simple #cmds::before{display:none}
+body.simple #selpane{flex:none;order:0;padding:8px 58px 0 10px}
+body.simple #seldesc{display:none}
+body.simple #cmds{order:1;width:auto;flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;border:0;border-top:1px solid var(--line);
   display:flex;flex-wrap:wrap;align-content:flex-start;gap:6px;padding:8px;background:#0c0f0c;scroll-snap-type:none}
-body.thumb .cmd{flex:1 1 calc(25% - 6px);min-width:72px;max-width:132px;height:60px;scroll-snap-align:none}
-body.thumb #tclose,body.thumb #tfoot{display:flex}
+body.simple .cmd{flex:1 1 calc(25% - 6px);min-width:72px;max-width:132px;height:60px;scroll-snap-align:none}
+body.simple #tclose,body.simple #tfoot{display:flex}
 #tclose{display:none;position:absolute;right:6px;top:6px;width:44px;height:44px;align-items:center;justify-content:center;z-index:2;
   border:1px solid var(--line);background:#161a10;color:var(--ink);font-size:16px}
 #tfoot{display:none;order:2;flex:none;border-top:1px solid var(--line);padding:6px 8px;justify-content:flex-end}
 #tswitch{border:1px solid var(--line);background:#15190f;color:var(--dim);font:10px var(--mono);letter-spacing:1.4px;padding:0 14px;min-height:44px}
-#thumb{position:absolute;inset:0;z-index:6;pointer-events:none}
-#thumb.hidden{display:none}
-#thumb>*{pointer-events:auto}
-body.thumb #mini{position:absolute;left:calc(8px + var(--safeL));bottom:calc(76px + var(--safeB));width:132px;height:90px;margin:0;
+#simple{position:absolute;inset:0;z-index:6;pointer-events:none}
+#simple.hidden{display:none}
+#simple>*{pointer-events:auto}
+body.simple #mini{position:absolute;left:calc(8px + var(--safeL));bottom:calc(76px + var(--safeB));width:132px;height:90px;margin:0;
   border:1px solid #566052;background:#070908;box-shadow:0 4px 14px #0007}
-body.thumb #mini.big{width:min(70vw,320px);height:min(46vh,220px)}
-body.thumb #mini::before{display:none}
-body.thumb #minicv{inset:3px;width:calc(100% - 6px);height:calc(100% - 6px)}
-#tgroups{position:absolute;left:calc(8px + var(--safeL));bottom:calc(8px + var(--safeB));display:flex;gap:5px}
+body.simple #mini.big{width:min(70vw,320px);height:min(46vh,220px)}
+body.simple #mini::before{display:none}
+body.simple #minicv{inset:3px;width:calc(100% - 6px);height:calc(100% - 6px)}
+#tgroups{position:absolute;left:calc(8px + var(--safeL));bottom:calc(8px + var(--safeB));display:flex;gap:5px;
+  max-width:calc(100% - 90px - var(--safeL) - var(--safeR));overflow-x:auto;scrollbar-width:none}
+#tgroups::-webkit-scrollbar{display:none}
+.tchip{flex:none}
 .tchip{width:52px;height:60px;border:1px solid #4e594a;background:linear-gradient(155deg,rgba(34,40,31,.94),rgba(13,17,13,.96));
   position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#cbc6b3;
   box-shadow:0 4px 14px #0007;touch-action:none;padding:0 0 8px}
@@ -633,23 +636,25 @@ body.thumb #minicv{inset:3px;width:calc(100% - 6px);height:calc(100% - 6px)}
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;pointer-events:none;color:var(--ink)}
 #tsel span{color:var(--bad);margin-left:6px;font:10px var(--mono)}
 #tsel.none,body.tmore #tsel{display:none}
-body.thumb #queue{right:auto;left:calc(8px + var(--safeL));bottom:auto;top:calc(52px + var(--safeT))}
+body.simple #queue{right:auto;left:calc(8px + var(--safeL));bottom:auto;top:calc(52px + var(--safeT))}
 /* in the periscope the army is not his to order, so the chips and the verbs go */
 body.pov #tgroups,body.pov #tverbs,body.pov #tsel{display:none}
+/* and the tools that select and clear are what the roster and a tap on the ground do */
+body.simple #tHQ,body.simple #tIdle,body.simple #tClear,body.simple #tMap{display:none}
 @media (max-width:400px){
   .tchip{width:44px}#tgroups{gap:4px}.tverb{width:56px}
-  body.thumb #bar{right:calc(70px + var(--safeR))}
+  body.simple #bar{right:calc(70px + var(--safeR))}
 }
 @media (max-height:520px) and (orientation:landscape){
   .tverb{height:48px;width:60px}#tverbs{gap:5px}
   .tchip{height:52px}
-  body.thumb #mini{bottom:calc(68px + var(--safeB))}
+  body.simple #mini{bottom:calc(68px + var(--safeB))}
   #tsel{bottom:calc(68px + var(--safeB))}
   /* the tool strip runs along the top here and the verb column stands where its end
      was, so the strip moves in by the column's width */
-  body.thumb #tools{right:calc(78px + var(--safeR))}
+  body.simple #tools{right:calc(78px + var(--safeR))}
   /* and the sheet stands beside the chips and under the strip, which is where the width is */
-  body.thumb #bar{left:calc(354px + var(--safeL));top:calc(94px + var(--safeT));bottom:calc(8px + var(--safeB));max-height:none}
+  body.simple #bar{left:calc(354px + var(--safeL));top:calc(94px + var(--safeT));bottom:calc(8px + var(--safeB));max-height:none}
 }
 
 </style>
@@ -741,7 +746,7 @@ body.pov #tgroups,body.pov #tverbs,body.pov #tsel{display:none}
   <button id="tclose" title="Close" aria-label="Close the orders sheet">✕</button>
   <div id="tfoot"><button id="tswitch" title="Back to the classic bar along the bottom">CLASSIC CONTROLS</button></div>
 </div>
-<div id="thumb" class="hidden">
+<div id="simple" class="hidden">
   <div id="tsel" class="none"><b id="tselname"></b><span id="tselstat"></span></div>
   <div id="tgroups"></div>
   <div id="tverbs"></div>
@@ -792,8 +797,8 @@ body.pov #tgroups,body.pov #tverbs,body.pov #tsel{display:none}
     <button class="arty on" data-arty="1" title="The opposition buys mortars and howitzers and digs a battery" aria-pressed="true">ARTILLERY</button>
     <button class="arty" data-arty="0" title="The opposition fields no indirect fire at all; yours is unaffected" aria-pressed="false">NONE</button>
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">CONTROLS</span>
-    <button class="ctrl" data-ctrl="classic" title="Tap to select, tap to order, and the command bar along the bottom" aria-pressed="false">CLASSIC</button>
-    <button class="ctrl" data-ctrl="thumb" title="Built for a phone: group chips and an order column at the edges, drag a unit to send it, and the map left clear" aria-pressed="false">THUMB</button>
+    <button class="ctrl" data-ctrl="classic" title="The whole game in your hands: tap to select, tap to order, the command bar along the bottom" aria-pressed="false">CLASSIC</button>
+    <button class="ctrl" data-ctrl="simple" title="Built for a phone and a spare thumb: tap to pick, drag to send, tap a flag to take it. Production, building and repairs run themselves" aria-pressed="false">SIMPLE</button>
     <button class="arty" id="hopen" title="Your own economy, production, construction and manpower cap" aria-expanded="false" style="margin-left:14px">HANDICAP</button>
     <button class="arty" id="aopen" title="The same settings turned on the opposition, up or down" aria-expanded="false">OPPOSITION</button>
 
@@ -6129,7 +6134,9 @@ function visibleTo(side, e) { return side === 'us' ? !!e.vUs : !!e.vGer; }
    traverse, the shell -- is where it was. The two ORDER paths deliberately do not read
    this: a right-click is a fire mission on that ground either way, because that is the
    control a howitzer wants and the setting is about initiative rather than about orders. */
-function onOrderOnly(u) { return !!u.def.barrageOnly && !hcapOf(u.own).free; }
+/* and under the simple scheme the player's own fire on their own account, because a gun
+   that waits to be laid is a gun that waits for attention */
+function onOrderOnly(u) { return !!u.def.barrageOnly && !hcapOf(u.own).free && !(CTRL.simple && u.own === G.own); }
 function acquire(u) {
   if (onOrderOnly(u)) return null;
   if (u.forced && !u.forced.dead) {
@@ -14976,9 +14983,9 @@ function povDrive(u, dt) {
 function povDriveLayout() {
   var d = el('drive'); if (!d) return;
   var barH = (el('bar') && el('bar').offsetHeight) || 0, gun = el('drivefire'), mg = el('drivemg');
-  /* under the thumb scheme the bar is a sheet that is shut, and what the pad has to
+  /* under the simple scheme the bar is a sheet that is shut, and what the pad has to
      clear at the foot of the left edge is the little map */
-  if (CTRL.thumb) barH = ((el('mini') && el('mini').offsetHeight) || 0) + 82;
+  if (CTRL.simple) barH = ((el('mini') && el('mini').offsetHeight) || 0) + 82;
   el('drivepad').style.bottom = (barH + 24) + 'px';
   var gh = gun.offsetHeight || 98, mh = mg.offsetHeight || 78;
   if (!MOB) {
@@ -24870,7 +24877,7 @@ function render() {
       ctx.closePath(); ctx.fillStyle = ok ? '#e8e2cc' : '#c95c4e'; ctx.fill();
     }
   }
-  /* an order being dragged out of a unit under the thumb scheme: the line from the unit
+  /* an order being dragged out of a unit under the simple scheme: the line from the unit
      to the finger, the ring where the release lands, and the word for what it will do --
      read off the same tests `issueOrder` will apply, so the label and the order agree.
      The word sits above the finger, because the finger is on the one spot it names. */
@@ -24879,9 +24886,10 @@ function render() {
     var hostile = unitsAt(twd.x, twd.y, 16).some(function (q) { return q.side !== G.side; });
     var teb = buildingAt(twd.x, twd.y);
     if (!hostile && teb && teb.side !== G.side) hostile = true;
-    var word = hostile ? 'ATTACK' : G.mode === 'barrage' ? 'FIRE MISSION' : G.mode === 'attack' ? 'ATTACK MOVE' : 'MOVE';
-    var tcol = hostile ? '#e0704f' : G.mode ? '#e2b25a' : '#9ecb62';
-    if (!hostile && !G.mode && tow.cat !== 'veh') {
+    var mission = G.mode === 'barrage' || (CTRL.simple && simpleAllTubes());
+    var word = hostile ? 'ATTACK' : mission ? 'FIRE MISSION' : G.mode === 'attack' ? 'ATTACK MOVE' : CTRL.simple ? 'GO' : 'MOVE';
+    var tcol = hostile ? '#e0704f' : (G.mode || mission) ? '#e2b25a' : '#9ecb62';
+    if (!hostile && !G.mode && !mission && tow.cat !== 'veh') {
       var thc = coverAt(twd.x, twd.y);
       if (thc > 0) word += ' · ' + COVER[thc].tag;
     }
@@ -25369,12 +25377,12 @@ cv.addEventListener('touchstart', function (e) {
   touch.x = p.x; touch.y = p.y; touch.sx = p.x; touch.sy = p.y;
   mouse.x = p.x; mouse.y = p.y;
   touch.t0 = performance.now(); touch.moved = false; touch.two = false; touch.box = false; touch.tow = null;
-  if (CTRL.thumb) {
-    thumbMore(false);                          /* a finger on the map closes the sheet */
+  if (CTRL.simple) {
+    simpleMore(false);                          /* a finger on the map closes the sheet */
     /* a press on a selected unit is the start of an order rather than of a pan or a
        marquee: the drag that follows draws the order and the release gives it */
     if (!G.place) {
-      var tw0 = s2w(p.x, p.y), towU = thumbTowAt(tw0.x, tw0.y, clamp(CAM.dist * .05, 26, 90));
+      var tw0 = s2w(p.x, p.y), towU = simpleTowAt(tw0.x, tw0.y, clamp(CAM.dist * .05, 26, 90));
       if (towU) { touch.tow = towU; return; }
     }
   }
@@ -25485,11 +25493,12 @@ cv.addEventListener('touchend', function (e) {
          armed, an attack-move with ATTACK armed, and otherwise `issueOrder`'s own reading
          of what is under the finger, which is an attack on an enemy and a move on ground */
       var tw = s2w(mouse.x, mouse.y);
-      if (G.mode === 'barrage') callBarrage(tw.x, tw.y); else issueOrder(tw.x, tw.y, G.mode === 'attack');
+      if (G.mode === 'barrage' || (CTRL.simple && simpleAllTubes())) callBarrage(tw.x, tw.y);
+      else issueOrder(tw.x, tw.y, G.mode === 'attack' || CTRL.simple);
       G.mode = null; syncHud(); buzz(16); return;
     }
     /* a tap on a selected unit: twice picks its kind, once narrows the selection to it */
-    if (thumbDoubleTap(tu)) return;
+    if (simpleDoubleTap(tu)) return;
     select([tu], false); buzz(8); return;
   }
 
@@ -25510,7 +25519,7 @@ cv.addEventListener('touchend', function (e) {
   /* fingers are blunt, so widen the pick radius as the map zooms out */
   var grab = clamp(CAM.dist * .05, 26, 90);
   var own = nearestOwn(w.x, w.y, grab);
-  if (own) { if (CTRL.thumb && thumbDoubleTap(own)) return; select([own], false); buzz(8); return; }
+  if (own) { if (CTRL.simple && simpleDoubleTap(own)) return; select([own], false); buzz(8); return; }
   var ob = buildingAt(w.x, w.y);
   if (ob && owned(ob)) { select([ob], false); buzz(8); return; }
   /* A tap on a bunker is two different things and which one is meant is never in doubt.
@@ -25524,6 +25533,9 @@ cv.addEventListener('touchend', function (e) {
   if (obk && !G.sel.some(function (q) { return canGarrison(q, obk); })) {
     select([obk], false); buzz(8); return;
   }
+  /* under the simple scheme a tap on a thing is an order on it and a tap on bare ground
+     lets the selection go; the classic tap-to-move is the branch below */
+  if (CTRL.simple && G.sel.length) { simpleTap(w.x, w.y); return; }
   /* with a selection live, any other tap is an order */
   if (G.sel.length) { issueOrder(w.x, w.y, false); buzz(14); return; }
   var foeU = unitsAt(w.x, w.y, grab)[0] || (ob || null);
@@ -25534,65 +25546,70 @@ cv.addEventListener('touchcancel', function () {
 });
 function buzz(ms) { if (navigator.vibrate) { try { navigator.vibrate(ms); } catch (e) {} } }
 
-/* ---- the thumb scheme.
+/* ---- the simple scheme.
    A second way of driving the game, kept beside the first as a choice on the title
    screen and under `ORT_CTRL`. The classic scheme is a desktop's: a bar along the
-   bottom, the cards in a strip that scrolls, and every order a tap on the ground. It
-   works and it is what a mouse expects; on a phone half the cards are off the end of the
-   strip, the bar takes a fifth of the screen, and the one thing a thumb is good at --
-   dragging a thing to where it should go -- is the one thing it cannot do.
-     So the chrome goes out to the edges a thumb rests on and the middle is left to the
-   map. Group chips along the bottom-left (ALL and the five control groups the desktop
-   already keeps under ctrl+1..5, which a phone had no way of reaching), the verbs that
-   matter in a column at the bottom-right, the little map over the chips, and everything
-   else in a sheet under MORE. A press on a selected unit and a drag is an order, drawn
-   under the finger before it is given; a second tap on a unit picks every one of its
-   kind in sight. A tap on the ground still moves, because it is the fastest thing there
-   is. The classic touch path is untouched: every branch is behind `CTRL.thumb`.
-     Which scheme is up is a property of the page rather than of the device: a phone
-   starts on this one and a desktop on the other, and either may pick the other. */
+   bottom, the cards in a strip, every order a tap on the ground, and the economy, the
+   building, the repairs and the stances all the player's to run. It is the whole game
+   and it wants the whole of a player's attention, which a phone does not have to give.
+     SIMPLE keeps the fighting and takes the housekeeping. What is on the screen is a
+   roster of what he has along the bottom-left (ARMY and one chip per kind on the field:
+   tap to pick it and the camera goes to it), FALL BACK and MENU at the bottom-right, the
+   little map, and a line naming the selection. What his hand does is four things: tap a
+   unit to pick it, drag it to where it should go, tap a flag to send it there, tap the
+   ground to let go. A drag is always an attack-move, because a thumb that sends men
+   somewhere means them to fight what is in the way, and a drag out of a mortar is a fire
+   mission. An adjutant (`adjTick`) runs the rest: production off a weighted ladder,
+   the company post and the armour point sited beside the headquarters, idle engineers
+   on repair, the stances, a section shot to a third falling back on its own, a broken
+   vehicle pulled back to the yard, and the howitzers firing on their own account.
+   MENU is the classic bar laid out as a sheet, for the one time in ten he wants a hand
+   on any of it himself.
+     The classic touch path is untouched: every branch is behind `CTRL.simple`. Which
+   scheme is up is a property of the page rather than of the device: a phone starts on
+   this one and a desktop on the other, and either may pick the other. */
 var CTRL_KEY = 'ORT_CTRL';
-var CTRL = { thumb: false };
+var CTRL = { simple: false };
 function ctrlLoad() {
   var v = null;
   try { v = localStorage.getItem(CTRL_KEY); } catch (e) { /* private browsing */ }
-  CTRL.thumb = v === 'thumb' ? true : v === 'classic' ? false : MOB;
+  CTRL.simple = v === 'simple' || v === 'thumb' ? true : v === 'classic' ? false : MOB;
 }
 /* `keep` leaves the stored choice alone, for a probe that switches schemes to measure
    one without deciding the player's next battle for him */
-function ctrlSet(thumb, keep) {
-  CTRL.thumb = !!thumb;
-  if (!keep) { try { localStorage.setItem(CTRL_KEY, CTRL.thumb ? 'thumb' : 'classic'); } catch (e) { /* private browsing */ } }
+function ctrlSet(simple, keep) {
+  CTRL.simple = !!simple;
+  if (!keep) { try { localStorage.setItem(CTRL_KEY, CTRL.simple ? 'simple' : 'classic'); } catch (e) { /* private browsing */ } }
   ctrlApply();
 }
 function ctrlApply() {
-  document.body.classList.toggle('thumb', CTRL.thumb);
+  document.body.classList.toggle('simple', CTRL.simple);
   document.body.classList.remove('tmore');
   /* the little map is one element and lives in whichever chrome is up */
-  var mini = el('mini'), host = CTRL.thumb ? el('thumb') : el('bar');
+  var mini = el('mini'), host = CTRL.simple ? el('simple') : el('bar');
   if (mini && host && mini.parentNode !== host) {
-    if (CTRL.thumb) host.appendChild(mini); else host.insertBefore(mini, host.firstChild);
+    if (CTRL.simple) host.appendChild(mini); else host.insertBefore(mini, host.firstChild);
   }
   document.querySelectorAll('.ctrl').forEach(function (b) {
-    var on = (b.dataset.ctrl === 'thumb') === CTRL.thumb;
+    var on = (b.dataset.ctrl === 'simple') === CTRL.simple;
     b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false');
   });
-  el('thumb').classList.toggle('hidden', !(CTRL.thumb && G.running));
+  el('simple').classList.toggle('hidden', !(CTRL.simple && G.running));
   keyHelpSync();
   if (G.running) { syncHud(); if (POV.on) povDriveLayout(); }
 }
 function keyHelpSync() {
   if (!MOB) return;
-  el('keyhelp').innerHTML = CTRL.thumb
-    ? '<b>tap</b> your unit to select &nbsp; <b>tap it twice</b> for every one of its kind in sight &nbsp; <b>drag it</b> to send it, or <b>tap</b> the ground<br>' +
-      '<b>drag</b> the ground to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist</b> to rotate &nbsp; <b>press and hold</b> the ground to box-select<br>' +
-      'Groups along the bottom: tap to pick one, tap again to go to it, hold to set it. Orders down the right; MORE for the rest.'
+  el('keyhelp').innerHTML = CTRL.simple
+    ? '<b>tap</b> a unit or a chip to pick it &nbsp; <b>drag it</b> to where it should go &nbsp; <b>tap a flag</b> to send it there &nbsp; <b>tap the ground</b> to let go<br>' +
+      '<b>drag</b> the ground to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist</b> to rotate<br>' +
+      'Production, building and repairs look after themselves, and a section shot to pieces falls back on its own. MENU for anything else.'
     : '<b>tap</b> your unit to select &nbsp; <b>tap</b> anywhere else to move or attack<br>' +
       '<b>drag</b> to pan &nbsp; <b>pinch</b> to zoom &nbsp; <b>twist two fingers</b> to rotate &nbsp; <b>press and hold</b> then drag to box-select<br>' +
       'Commands run along the bottom. The minimap sits above them.';
 }
 /* the selected unit under a press, if any: the start of a drag-to-order */
-function thumbTowAt(wx, wy, r) {
+function simpleTowAt(wx, wy, r) {
   var best = null, bd = Infinity;
   for (var i = 0; i < G.sel.length; i++) {
     var u = G.sel[i];
@@ -25602,9 +25619,16 @@ function thumbTowAt(wx, wy, r) {
   }
   return best;
 }
+/* every unit in hand is a tube, so a drag out of it is a mission and not a walk */
+function simpleAllTubes() {
+  var units = selectedUnits().filter(owned);
+  if (!units.length) return false;
+  for (var i = 0; i < units.length; i++) if (!units[i].def.barrage) return false;
+  return true;
+}
 /* two taps on the same unit inside 0.38 s pick every one of its kind within sight, which
    is the desktop's double-click and the T and Y cards, reached with one thumb */
-function thumbDoubleTap(u) {
+function simpleDoubleTap(u) {
   var now = performance.now();
   var twice = touch.tapU === u && now - touch.tapT < 380;
   touch.tapU = twice ? null : u; touch.tapT = now;
@@ -25612,17 +25636,64 @@ function thumbDoubleTap(u) {
   select([u], false); selectSame(true); buzz(12);
   return true;
 }
-/* the sheet: the classic bar, laid out again, slid up over the map on MORE */
-function thumbMore(on) {
+/* the flag under a tap: a sector is a circle of 195 and the pole stands in the middle
+   of it, so a tap within a hundred and ten of the pole is a tap on the flag */
+function simpleSectorAt(wx, wy) {
+  var best = null, bd = 110 * 110;
+  for (var i = 0; i < G.sectors.length; i++) {
+    var d = dsq(wx, wy, G.sectors[i].x, G.sectors[i].y);
+    if (d < bd) { bd = d; best = G.sectors[i]; }
+  }
+  return best;
+}
+/* A tap with something in hand. A tap on a THING is an order on it -- an enemy, a house,
+   a bunker, a carrier, a flag -- and a tap on bare ground lets the selection go, because
+   under this scheme an order is a drag and a stray finger must not march the army. The
+   building's rally point and the classic tap-to-move are deliberately not here. */
+function simpleTap(wx, wy) {
+  var units = selectedUnits().filter(owned);
+  if (!units.length) { select([], false); return; }
+  var at = unitsAt(wx, wy, 16), foe = false, lift = false;
+  for (var i = 0; i < at.length; i++) {
+    if (at[i].side !== G.side) foe = true;
+    else if (owned(at[i]) && at[i].cat === 'veh' && at[i].def.carries) lift = true;
+  }
+  var eb = buildingAt(wx, wy);
+  if (eb && eb.side !== G.side) foe = true;
+  if (foe || lift || blockAt(wx, wy) || bunkerAt(wx, wy)) { issueOrder(wx, wy, true); buzz(14); return; }
+  var sec = simpleSectorAt(wx, wy);
+  if (sec) { issueOrder(sec.x, sec.y, true); toast('To ' + (sec.label || 'the flag')); buzz(14); return; }
+  select([], false); buzz(4);
+}
+/* FALL BACK: men run home and refill there; a vehicle drives to the yard behind the
+   headquarters, where the adjutant's engineers will find it */
+function simpleBackSpot(hq) {
+  var dir = hq.side === 'us' ? 1 : -1;
+  return nearestFree(clamp(hq.x - dir * 30 + rnd(-40, 40), 40, WORLD.w - 40),
+                     clamp(hq.y + hq.def.h / 2 + 110 + rnd(-30, 30), 40, WORLD.h - 40));
+}
+function simpleFallBack(list) {
+  var hq = hqOf(G.own), n = 0;
+  for (var i = 0; i < list.length; i++) {
+    var u = list[i];
+    if (!owned(u) || u.dead) continue;
+    if (u.cat === 'veh') { if (hq) { var sp = simpleBackSpot(hq); orderMove(u, sp.x, sp.y, false); n++; } }
+    else if (u.def.speed > 0) { orderRetreat(u); n++; }
+  }
+  if (n) { toast('Falling back'); sfx('click'); }
+  syncHud();
+}
+/* the sheet: the classic bar, laid out again, slid up over the map on MENU */
+function simpleMore(on) {
   var is = document.body.classList.contains('tmore');
   var want = on === undefined ? !is : !!on;
   if (want === is) return;
   document.body.classList.toggle('tmore', want);
-  if (CTRL.thumb && G.running) thumbVerbsSync();
+  if (CTRL.simple && G.running) simpleVerbs();
 }
-var thumbArmed = false;
-function thumbSync() {
-  if (!CTRL.thumb) return;
+var simpleArmed = false;
+function simpleSync() {
+  if (!CTRL.simple) return;
   var ts = el('tsel');
   ts.classList.toggle('none', !G.sel.length);
   el('tselname').textContent = el('selname').textContent;
@@ -25631,78 +25702,78 @@ function thumbSync() {
      closes the sheet, because the next tap has to land on the map; the sheet stays up
      for anything else, so a player queueing three sections is not made to reopen it */
   var armed = !!(G.mode || G.place);
-  if (armed && !thumbArmed) document.body.classList.remove('tmore');
-  thumbArmed = armed;
-  thumbVerbsSync();
-  thumbGroups();
+  if (armed && !simpleArmed) document.body.classList.remove('tmore');
+  simpleArmed = armed;
+  simpleVerbs();
+  simpleRoster();
 }
-/* The verbs. The same functions the cards call, on the same tests, so a verb here and
-   the card in the sheet cannot disagree; only the ones a thumb reaches for in a fight
-   are out here, and MORE is the rest. */
-function thumbVerbsSync() {
+/* Two verbs, and the second is the door to everything else. FALL BACK is the one order
+   a drag cannot give, because home is usually off the screen; MENU is the classic bar. */
+function simpleVerbs() {
   var host = el('tverbs'); if (!host) return;
   host.innerHTML = '';
   var units = selectedUnits().filter(owned), b = selectedBuilding(), bk = selectedBunker();
-  function add(ico, label, enabled, fn, active) {
+  function add(ico, label, fn, active) {
     var btn = document.createElement('button');
     btn.className = 'tverb' + (active ? ' act' : '');
-    btn.disabled = !enabled;
     btn.setAttribute('aria-label', label);
     btn.innerHTML = '<span class="ico" aria-hidden="true">' + ico + '</span><span class="n">' + label + '</span>';
     btn.onclick = function () { fn(); };
     host.appendChild(btn);
   }
-  if (units.length) {
-    add('⌖', 'attack', true, function () { G.mode = G.mode === 'attack' ? null : 'attack'; cv.style.cursor = G.mode ? 'cell' : 'crosshair'; syncHud(); }, G.mode === 'attack');
-    add('■', 'stop', true, function () { units.forEach(orderStop); sfx('click'); syncHud(); });
-    var foot = units.filter(function (u) { return u.cat !== 'veh' && u.def.speed > 0; });
-    if (foot.length) {
-      var allDown = foot.every(function (u) { return u.stance === 'ground'; });
-      var allRun = foot.every(function (u) { return u.stance === 'double'; });
-      add('▂', 'ground', true, function () { setStance(foot, allDown ? '' : 'ground'); sfx('click'); syncHud(); }, allDown);
-      add('»', 'run', true, function () { setStance(foot, allRun ? '' : 'double'); sfx('click'); syncHud(); }, allRun);
-      add('⇙', 'retreat', true, function () { units.forEach(orderRetreat); sfx('click'); syncHud(); });
-    }
-    var tubes = units.filter(function (u) { return u.def.barrage; });
-    if (tubes.length) {
-      var firing = tubes.some(function (u) { return u.barrage; });
-      add('✷', firing ? 'cease' : 'mission', true, function () {
-        if (firing) { tubes.forEach(function (u) { u.barrage = null; }); toast('Mission cancelled'); sfx('click'); syncHud(); return; }
-        G.mode = G.mode === 'barrage' ? null : 'barrage'; cv.style.cursor = G.mode ? 'cell' : 'crosshair'; syncHud();
-      }, G.mode === 'barrage' || firing);
-    }
+  var back = units.filter(function (u) { return u.cat === 'veh' || u.def.speed > 0; });
+  if (back.length) add('⇙', 'fall back', function () { simpleFallBack(back); });
+  var sheet = units.length ? 'menu' : b && owned(b) ? 'build' : bk && bunkerOwner(bk) === G.own ? 'fit' : null;
+  if (sheet) add('⋯', sheet, function () { simpleMore(); sfx('click'); }, document.body.classList.contains('tmore'));
+}
+/* The roster. ARMY, and one chip per kind of thing he has on the field, in the order the
+   roster ranks them -- engineers, sections, the heavy weapons, then the vehicles by
+   weight -- with a count and a health bar on each. It is built off what is alive rather
+   than off groups he has to set, because finding a unit on a phone is harder than
+   ordering one and a chip for a group he never made is a chip that does nothing. */
+var SIMPLE_RANK = { eng: 0, inf: 1, elite: 2, mg: 3, at: 4, arty: 5, light: 6, med: 7, heavy: 8 };
+function simpleKinds() {
+  var kinds = {}, order = [];
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.inside || !owned(u) || !u.cat) continue;
+    if (!kinds[u.key]) { kinds[u.key] = []; order.push(u.key); }
+    kinds[u.key].push(u);
   }
-  var sheet = units.length ? 'more' : b && owned(b) ? 'build' : bk && bunkerOwner(bk) === G.own ? 'fit' : null;
-  if (sheet) add('⋯', sheet, true, function () { thumbMore(); sfx('click'); }, document.body.classList.contains('tmore'));
+  order.sort(function (a, c) {
+    var ra = SIMPLE_RANK[bClassOf(a)] || 0, rc = SIMPLE_RANK[bClassOf(c)] || 0;
+    return ra - rc || (a < c ? -1 : a > c ? 1 : 0);
+  });
+  return { kinds: kinds, order: order };
 }
-/* The chips. ALL is every unit of his on the field; 1 to 5 are the control groups, set
-   by holding a chip with a selection in hand and cleared by holding it with none. A tap
-   picks the group, and a tap on a group already picked goes to it, because on a phone
-   finding a unit is harder than ordering one. */
-var TGROUP = ['all', '1', '2', '3', '4', '5'];
-function thumbGroupUnits(k) {
+function simpleKindUnits(k) {
   if (k === 'all') return G.units.filter(function (u) { return !u.dead && !u.inside && owned(u) && !!u.cat; });
-  return (G.groups[k] || []).filter(function (u) { return !u.dead; });
+  return G.units.filter(function (u) { return !u.dead && !u.inside && owned(u) && u.key === k; });
 }
-function thumbGroups() {
+var simpleSig = '';
+function simpleRoster() {
   var host = el('tgroups'); if (!host) return;
-  if (!host.children.length) {
-    TGROUP.forEach(function (k) {
+  var K = simpleKinds(), sig = K.order.join(',');
+  if (sig !== simpleSig || !host.children.length) {
+    simpleSig = sig;
+    host.innerHTML = '';
+    ['all'].concat(K.order).forEach(function (k) {
       var c = document.createElement('button');
-      c.className = 'tchip none'; c.dataset.g = k;
-      c.setAttribute('aria-label', k === 'all' ? 'Select every unit' : 'Group ' + k + ': tap to select, hold to set');
-      c.innerHTML = '<b>' + (k === 'all' ? 'ALL' : k) + '</b><span>–</span><i><em></em></i>';
-      thumbChipWire(c, k);
+      c.className = 'tchip'; c.dataset.g = k;
+      var name = k === 'all' ? 'ARMY' : UNITS[k].short;
+      c.setAttribute('aria-label', k === 'all' ? 'Select the whole army' : 'Select every ' + UNITS[k].name);
+      c.innerHTML = '<b>' + name + '</b><span>–</span><i><em></em></i>';
+      c.onclick = function () { simpleChipTap(k); };
       host.appendChild(c);
     });
   }
-  thumbChipsRefresh();
+  simpleRosterRefresh();
 }
-function thumbChipsRefresh() {
+function simpleRosterRefresh() {
   var host = el('tgroups'); if (!host || !host.children.length) return;
   var sel = selectedUnits();
   for (var i = 0; i < host.children.length; i++) {
-    var c = host.children[i], list = thumbGroupUnits(c.dataset.g), n = list.length, hp = 0, j;
+    var c = host.children[i], list = simpleKindUnits(c.dataset.g), n = list.length, hp = 0, j;
     for (j = 0; j < n; j++) hp += hpFrac(list[j]);
     var on = n > 0 && sel.length === n;
     for (j = 0; on && j < n; j++) if (G.sel.indexOf(list[j]) < 0) on = false;
@@ -25714,51 +25785,167 @@ function thumbChipsRefresh() {
     c.classList.toggle('on', on);
   }
 }
-function thumbChipWire(c, k) {
-  var timer = null, held = false;
-  c.addEventListener('pointerdown', function (e) {
-    held = false; clearTimeout(timer);
-    try { c.setPointerCapture(e.pointerId); } catch (er) { /* a synthetic pointer has no capture */ }
-    e.preventDefault();
-    if (k === 'all') return;
-    timer = setTimeout(function () {
-      held = true;
-      var have = selectedUnits().filter(owned);
-      G.groups[k] = have.slice();
-      toast(have.length ? 'Group ' + k + ': ' + have.length + (have.length === 1 ? ' unit' : ' units') : 'Group ' + k + ' cleared');
-      buzz(18); sfx('click'); thumbChipsRefresh();
-    }, 450);
-  });
-  c.addEventListener('pointerup', function (e) {
-    clearTimeout(timer);
-    if (held) { held = false; return; }
-    /* a finger that slid off the chip before lifting was not a tap on it */
-    var r = c.getBoundingClientRect();
-    if (e.clientX < r.left - 6 || e.clientX > r.right + 6 || e.clientY < r.top - 6 || e.clientY > r.bottom + 6) return;
-    thumbChipTap(k);
-  });
-  c.addEventListener('pointercancel', function () { clearTimeout(timer); held = false; });
+/* a tap picks the kind and goes to it, because the unit has to be on the screen for the
+   drag that follows, and a chip for a thing he cannot see is a chip for a thing he
+   cannot order */
+function simpleChipTap(k) {
+  var list = simpleKindUnits(k);
+  if (!list.length) return;
+  select(list, false); simpleCentre(list); buzz(8); sfx('click');
 }
-function thumbChipTap(k) {
-  var list = thumbGroupUnits(k);
-  if (!list.length) { toast(k === 'all' ? 'Nothing on the field' : 'Hold to set group ' + k); return; }
-  var same = selectedUnits().length === list.length;
-  for (var j = 0; same && j < list.length; j++) if (G.sel.indexOf(list[j]) < 0) same = false;
-  if (same) { thumbCentre(list); buzz(6); return; }
-  select(list, false); buzz(8); sfx('click');
-}
-function thumbCentre(list) {
+function simpleCentre(list) {
   var x = 0, y = 0;
   for (var i = 0; i < list.length; i++) { x += list[i].x; y += list[i].y; }
   centreOn(x / list.length, y / list.length);
 }
-/* the chips count men that die and hulls that burn, so they are refreshed off the
-   strip's clock rather than only when the selection changes */
-var thumbN = 0;
-function thumbTick() {
-  if (!CTRL.thumb) return;
-  if (++thumbN % 4) return;
-  thumbChipsRefresh();
+/* the roster counts men that die, hulls that burn and sections that arrive, so it is
+   refreshed off the strip's clock rather than only when the selection changes */
+var simpleN = 0;
+function simpleTick() {
+  if (!CTRL.simple) return;
+  if (++simpleN % 4) return;
+  simpleRoster();
+}
+
+/* ---- the adjutant.
+   What the simple scheme takes off the player's hands, once a second, for his slot
+   alone. Each piece is the thing a player who has stopped paying attention would have
+   wanted done, and nothing here reaches for anything the brain would call judgement:
+   the ladder is a set of proportions, the posts go where the brain puts its own, a
+   section at a third of its men is a section that is about to be a corpse pile, and an
+   engineer with nothing to do is an engineer standing next to a tank with a hole in it.
+     It only ever fills an EMPTY queue, so an order he gives himself runs first; it never
+   spends fuel a tank is waiting on, because it buys whichever kind he has least of by
+   weight and the tanks are on the list too; and it sites the two posts on the same two
+   spots the brain uses, which are the two spots the maps were laid out for. */
+var ADJ = { t: 0, said: 0 };
+/* how many of each kind the army should carry, relative to the others: four sections to
+   an engineer, two assault groups, a machine gun and a half, a gun, a tube, a light hull
+   or so and two mediums */
+var ADJW = { eng: 1, inf: 4, elite: 2.5, mg: 1.5, at: 1, arty: 1, light: .6, med: 2, heavy: 1 };
+function adjSay(msg) {
+  if (G.t - ADJ.said < 7) return;
+  ADJ.said = G.t; toast(msg);
+}
+function adjTick(dt) {
+  if (!CTRL.simple || !G.running || G.over) return;
+  ADJ.t -= dt;
+  if (ADJ.t > 0) return;
+  ADJ.t = 1;
+  var slot = G.own, hq = hqOf(slot);
+  if (!hq) return;
+  var mine = [], engs = [], i, u;
+  for (i = 0; i < G.units.length; i++) {
+    u = G.units[i];
+    if (u.dead || u.inside || !owned(u) || !u.cat) continue;
+    mine.push(u);
+    if (u.def.builder) engs.push(u);
+  }
+  adjBuild(slot, hq, engs);
+  adjProduce(slot);
+  adjMen(mine, hq);
+}
+/* the two posts, on the brain's own spots beside the headquarters, and the engineers
+   put back on a site they walked off; then an idle engineer mends the nearest thing of
+   his that is holed, within a walk of where he stands */
+function adjBuild(slot, hq, engs) {
+  var us = hq.side === 'us', K1 = us ? 'us_bar' : 'ger_qtr', K2 = us ? 'us_mot' : 'ger_dep';
+  var b1 = siteOf(slot, K1), b2 = siteOf(slot, K2), dir = us ? 1 : -1;
+  /* only an engineer with nothing to do is the adjutant's to send: one the player has
+     just dragged somewhere is on his errand, and an adjutant that walked it straight
+     back to the site would be an adjutant he cannot overrule */
+  var idle = [], i;
+  for (i = 0; i < engs.length; i++) {
+    var e = engs[i];
+    if (!e.building && !e.repairing && !e.retreat && (!e.order || e.order === 'hold')) idle.push(e);
+  }
+  var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
+  if (stall && idle.length) {
+    var onIt = false;
+    for (i = 0; i < engs.length; i++) if (engs[i].building === stall) onIt = true;
+    if (!onIt) { resumeBuild(idle[0], stall); return; }
+  }
+  var want = !b1 ? K1 : (b1.built >= 1 && !b2) ? K2 : null;
+  if (want && idle.length && canAfford(slot, BUILDINGS[want].cost)) {
+    var d = BUILDINGS[want], bx = hq.x + dir * 190, by = hq.y + (want === K1 ? -150 : 150);
+    var spots = [[bx, by], [bx, -by + 2 * hq.y], [bx + dir * 160, by], [bx + dir * 160, -by + 2 * hq.y], [hq.x, hq.y - 190], [hq.x, hq.y + 190]];
+    for (i = 0; i < spots.length; i++) {
+      if (!siteClear(spots[i][0], spots[i][1], d.w, d.h)) continue;
+      if (placeStructure(slot, want, spots[i][0], spots[i][1], [idle[0]])) { adjSay('Engineers: ' + d.short.toLowerCase() + ' going up'); return; }
+    }
+  }
+  for (i = 0; i < idle.length; i++) {
+    var t = repairNearest(idle[i]);
+    if (t && (dist(idle[i], t) < 420 || dist(hq, t) < 320)) resumeBuild(idle[i], t);
+  }
+}
+/* one unit into every empty queue: the kind he has fewest of against its weight, out of
+   what the building makes, what is unlocked, what there is money and room for */
+function adjProduce(slot) {
+  for (var bi = 0; bi < G.blds.length; bi++) {
+    var b = G.blds[bi];
+    if (b.dead || b.own !== slot || b.built < 1 || b.queue.length || !b.def.makes) continue;
+    /* two passes: what it WANTS out of this building, and then what it can pay for. If
+       the thing it wants is waiting on fuel, nothing else that burns fuel is bought from
+       here in the meantime -- or a side saving for a tank buys an armoured car every time
+       the price of one comes round, which is the fault the brain's ladder was built
+       against */
+    var best = null, bs = Infinity, want = null, ws = Infinity, holdFuel = false, k, key, d, cls, n, sc;
+    for (k = 0; k < b.def.makes.length; k++) {
+      key = b.def.makes[k]; d = UNITS[key]; cls = bClassOf(key);
+      if (!d || d.retired || (d.cost.mp || 0) > 1000) continue;
+      if (d.req && !hasBuilding(slot, d.req)) continue;
+      if (popOf(slot) + d.pop > popCap(slot)) continue;
+      if (unitLimit(slot, d) && countOf(slot, key) >= unitLimit(slot, d)) continue;
+      n = countOf(slot, key);
+      if (cls === 'eng' && n >= 2) continue;
+      sc = (n + .001 * (d.cost.mp || 0)) / (ADJW[cls] || 1);
+      if (sc < ws) { ws = sc; want = key; }
+      if (canAfford(slot, d.cost) && sc < bs) { bs = sc; best = key; }
+    }
+    if (want && best !== want && (UNITS[want].cost.fu || 0) > 0 && G.res[slot].fu < (UNITS[want].cost.fu || 0)) holdFuel = true;
+    if (best && holdFuel && (UNITS[best].cost.fu || 0) > 0) {
+      best = null; bs = Infinity;
+      for (k = 0; k < b.def.makes.length; k++) {
+        key = b.def.makes[k]; d = UNITS[key]; cls = bClassOf(key);
+        if (!d || d.retired || (d.cost.fu || 0) > 0 || (d.cost.mp || 0) > 1000) continue;
+        if (d.req && !hasBuilding(slot, d.req)) continue;
+        if (!canAfford(slot, d.cost) || popOf(slot) + d.pop > popCap(slot)) continue;
+        if (unitLimit(slot, d) && countOf(slot, key) >= unitLimit(slot, d)) continue;
+        n = countOf(slot, key);
+        if (cls === 'eng' && n >= 2) continue;
+        sc = (n + .001 * (d.cost.mp || 0)) / (ADJW[cls] || 1);
+        if (sc < bs) { bs = sc; best = key; }
+      }
+    }
+    if (best) queueUnit(b, best);
+  }
+}
+/* the men: a section shot to a third falls back to refill, a vehicle holed to a third
+   drives to the yard, men crossing quiet ground run and men caught in the open under
+   fire go flat */
+function adjMen(mine, hq) {
+  for (var i = 0; i < mine.length; i++) {
+    var u = mine[i];
+    if (u.cat === 'veh') {
+      if (u.hp < u.maxhp * .3 && !u.adjBack && !u.manual) {
+        var sp = simpleBackSpot(hq); orderMove(u, sp.x, sp.y, false); u.adjBack = 1;
+        adjSay(u.def.short + ' pulling back for repair');
+      } else if (u.adjBack && u.hp > u.maxhp * .7) u.adjBack = 0;
+      continue;
+    }
+    if (u.retreat || u.gar || !u.def.speed) continue;
+    var men = u.def.models || 1, alive = aliveModels(u);
+    if (men >= 3 && alive <= Math.floor(men / 3) && alive > 0) {
+      orderRetreat(u); adjSay(u.def.short + ' falling back'); continue;
+    }
+    if (u.cat !== 'inf' && u.cat !== 'team') continue;
+    var moving = u.order === 'move' || u.order === 'attackmove', want = '';
+    if (u.stance === 'ground' && u.stanceT && G.t - u.stanceT < 20 && !moving) want = 'ground';
+    else if (moving && !u.target && u.sup < .3) want = 'double';
+    else if (!moving && u.sup > .45 && coverOf(u) < 2) { want = 'ground'; if (u.stance !== 'ground') u.stanceT = G.t; }
+    if (u.stance !== want) u.stance = want;
+  }
 }
 
 mm.addEventListener('pointerdown', function (e) {
@@ -25944,7 +26131,7 @@ function syncHud() {
   }
   buildCmds();
   syncQueue();
-  thumbSync();
+  simpleSync();
 }
 var cmdList = [];
 function cmdGlyph(label) {
@@ -26217,7 +26404,7 @@ function updateTop(dt) {
   syncQueue();
   if (G.sel.some(function (s) { return s.dead; })) syncHud();
   else refreshCmdState();
-  thumbTick();
+  simpleTick();
 }
 
 var DIFFNAME = ['GREEN', 'REGULAR', 'VETERAN'];
@@ -26715,7 +26902,8 @@ function startGame(side, diff, mode, arty, duo) {
   G.running = true; G.paused = false;
   el('top').classList.remove('hidden'); el('bar').classList.remove('hidden');
   el('tools').classList.remove('hidden');
-  el('thumb').classList.toggle('hidden', !CTRL.thumb); document.body.classList.remove('tmore');
+  el('simple').classList.toggle('hidden', !CTRL.simple); document.body.classList.remove('tmore');
+  ADJ.t = 0; ADJ.said = 0;
   el('start').classList.add('hidden'); el('over').classList.add('hidden');
   document.querySelectorAll('.vp span').forEach(function (sp, i) {
     var sid = i === 0 ? 'us' : 'ger';
@@ -26764,6 +26952,7 @@ function frame(now) {
     tickEconomy(dt);
     recTick(dt);
     aiThink(dt);
+    adjTick(dt);
     for (var k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
     if (G.wrecks.length > 26) G.wrecks.shift();
     if (G.corpses.length > 220) G.corpses.splice(0, 40);
@@ -26833,10 +27022,10 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
 });
 /* and how it is driven, which is kept on the device rather than decided by it */
 document.querySelectorAll('.ctrl').forEach(function (btn) {
-  btn.onclick = function () { ctrlSet(btn.dataset.ctrl === 'thumb'); sfx('click'); };
+  btn.onclick = function () { ctrlSet(btn.dataset.ctrl === 'simple'); sfx('click'); };
 });
 ctrlLoad(); ctrlApply();
-el('tclose').onclick = function () { thumbMore(false); };
+el('tclose').onclick = function () { simpleMore(false); };
 el('tswitch').onclick = function () { ctrlSet(false); toast('Classic controls'); };
 /* ---- the handicap on the title screen.
    One table drives the rows, the steppers and what the game reads, because a second list
@@ -27178,7 +27367,7 @@ el('tPause').onclick = function () {
   el('tPause').textContent = G.paused ? '▶' : 'Ⅱ';
 };
 keyHelpSync();
-el('again').onclick = function () { el('over').classList.add('hidden'); el('overedit').classList.add('hidden'); el('thumb').classList.add('hidden'); ED.fromEditor = false; el('start').classList.remove('hidden'); G.running = false; };
+el('again').onclick = function () { el('over').classList.add('hidden'); el('overedit').classList.add('hidden'); el('simple').classList.add('hidden'); ED.fromEditor = false; el('start').classList.remove('hidden'); G.running = false; };
 window.addEventListener('resize', function () {
   var m = (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) || window.innerWidth < 820;
   if (m !== MOB) { MOB = m; document.body.classList.toggle('mob', MOB); el('tools').classList.toggle('hidden', !G.running); }
@@ -27293,7 +27482,7 @@ function edOpen(data) {
   edFit(); updateCamera();                     /* the first tick reads the camera basis before the first frame draws it */
   el('start').classList.add('hidden'); el('editor').classList.remove('hidden');
   el('top').classList.add('hidden'); el('bar').classList.add('hidden'); el('tools').classList.add('hidden');
-  el('thumb').classList.add('hidden');
+  el('simple').classList.add('hidden');
   G.running = false; G.over = 'editor';
   edBuildDock(); edOpenCat('select'); edMenu(false); edPanelClose(); edProps(); edHint(); edTitle();
   if (!edStore(ED_HELPED)) edPanelHelp();

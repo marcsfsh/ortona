@@ -810,18 +810,23 @@ node tools/check.mjs --shots          # also leave PNGs in shots/check/
 Run this before calling any change done. It takes about 20 seconds per device.
 `npm run verify` runs the linter and this together.
 
-**And it drives both control schemes on both devices.** The thumb rows switch the scheme
-without storing it, measure the chrome (six chips, the verbs, the little map, nothing
-under 44px, off screen or lying over the tool strip), and then raise the gestures as
-TouchEvents at the canvas: a drag out of the selected unit has to land its order within a
-unit of the finger with the camera held still under it, a tap on open ground has to move,
-a second tap on a unit has to pick its kind, a chip held has to take the group and tapped
-give it back, MORE has to put the sheet up clear of the little map and an attack-move card
-has to take it down. Then the classic scheme is put back and asked the same of a tap and a
-drag, because a scheme kept as an option is a scheme nobody runs. The drills want open
-ground, and `__clearPt` finds it clear of every ring of his by more than the pick -- the
-first version asked `nearestOwn` at a hundred units, which is not the pick, and found no
-ground at all on the spawn.
+**And it drives both control schemes on both devices.** The simple rows switch the scheme
+without storing it, measure the chrome (a chip per kind plus ARMY, FALL BACK and MENU and
+nothing else, LOOK and PAUSE and nothing else, the little map, nothing under 44px, off
+screen or lying over the tool strip), and then raise the gestures as TouchEvents at the
+canvas: a drag out of the selected unit has to land an attack-move within a unit of the
+finger with the camera held still under it, a tap on bare ground has to let go and leave
+the order standing, a second tap on a unit has to pick its kind, a chip has to pick its
+kind and go to it, a tap on a flag has to send and a tap on an enemy has to attack, MENU
+has to put the sheet up clear of the little map and an attack-move card take it down, and
+FALL BACK has to send the section home. Then the adjutant is driven for a minute and read
+off the field -- a post raised, a queue filled, a section at a third falling back, a hull
+at a fifth in the yard, the stances, his howitzer free and theirs held -- and the classic
+scheme is put back and asked the same of a tap and a drag, because a scheme kept as an
+option is a scheme nobody runs. The drills want open ground, and `__clearPt` finds it
+clear of every ring of his by more than the pick and clear of any flag -- the first
+version asked `nearestOwn` at a hundred units, which is not the pick, and found no ground
+at all on the spawn.
 
 **And two rows read the framebuffer rather than looking at it.** An effect that is drawn
 and invisible looks exactly like an effect that is not drawn, so the effects rows render
@@ -930,7 +935,7 @@ pixels, for layout-only checks) `phoneland` `phonemin` (375x667) `tablet`.
 Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--bare` (hide all 2D UI, leaving only the 3D) `--turn` (four yaw angles)
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
-`--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=thumb|classic` (the control
+`--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=simple|classic` (the control
 scheme, whatever the device would pick; `hud` then photographs the sheet as well).
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
@@ -4031,59 +4036,85 @@ What to watch when touching layout or input:
   remove those paths without a reason.
 
 **There are two control schemes, and a phone starts on the second.** The classic scheme
-is a desktop's: the bar along the bottom with the cards in a strip that scrolls, and
-every order a tap on the ground. It works, and it is what a mouse expects. On a phone
-half the cards are off the end of the strip, the bar takes a fifth of the screen, and the
-one thing a thumb is good at -- dragging a thing to where it should go -- is the one thing
-it could not do. So there is a second scheme, THUMB, kept beside the first as a choice on
-the title screen (CONTROLS: CLASSIC / THUMB) and under `ORT_CTRL`. `CTRL.thumb` is the
-switch, `ctrlSet` stores and applies it, and `ctrlLoad` decides the default off `MOB` when
-nothing is stored: a phone starts on thumb and a desktop on classic, and either may pick
-the other. The classic touch path is untouched, because every branch of the new scheme is
-behind `CTRL.thumb`, and the gate measures the classic scheme on the phone as well.
+is a desktop's: the bar along the bottom with the cards in a strip, every order a tap on
+the ground, and the economy, the building, the repairs and the stances all the player's
+to run. It is the whole game and it wants the whole of a player's attention, which a
+phone does not have to give. So there is a second scheme, SIMPLE, kept beside the first
+as a choice on the title screen (CONTROLS: CLASSIC / SIMPLE) and under `ORT_CTRL`.
+`CTRL.simple` is the switch, `ctrlSet` stores and applies it, and `ctrlLoad` decides the
+default off `MOB` when nothing is stored: a phone starts on simple and a desktop on
+classic, and either may pick the other. The classic touch path is untouched, because
+every branch of the new scheme is behind `CTRL.simple`, and the gate measures the classic
+scheme on the phone as well.
 
-What thumb is: the chrome goes out to the edges a thumb rests on and the middle is left to
-the map. Group chips along the bottom-left (`#tgroups`: ALL and the five control groups
-the desktop already keeps under ctrl+1..5, which a phone had no way of reaching -- tap to
-pick, tap again to go to it, hold for half a second to set it from the selection), the
-verbs that matter in a column at the bottom-right (`#tverbs`: attack, stop, ground, run,
-retreat, a fire mission for a tube, and MORE), the little map over the chips, a one-line
-label for the selection (`#tsel`), and everything else in a sheet under MORE. The sheet
-IS the classic bar, laid out again under `body.thumb.tmore` -- the cards, the production
-list, the works, the bunker fittings -- so nothing in it is built twice, and the little map
-is one element that `ctrlApply` moves between the two hosts. A card that arms the next
-tap (attack move, a fire mission, a work to place) shuts the sheet, because the next tap
-has to land on the map; a production card leaves it up.
+What SIMPLE is: it keeps the fighting and takes the housekeeping. On the screen there is
+a roster of what he has along the bottom-left (`#tgroups`: ARMY and one chip per kind on
+the field, built off what is alive rather than off groups he has to set, each with a
+count and a health bar; tap one and it is picked and the camera goes to it), FALL BACK
+and MENU at the bottom-right (`#tverbs`), the little map over the roster, a one-line
+label for the selection (`#tsel`), and LOOK and PAUSE up at the right; the tools that
+select and clear are hidden, because the roster and a tap on the ground do that. MENU is
+the classic bar laid out as a sheet under `body.simple.tmore` -- the cards, the production
+list, the works, the bunker fittings -- so nothing in it is built twice, and the little
+map is one element that `ctrlApply` moves between the two hosts. A card that arms the
+next tap (attack move, a fire mission, a work to place) shuts the sheet, because the next
+tap has to land on the map; a production card leaves it up.
 
-The gestures. A press on a selected unit and a drag is an order, and the arrow is drawn on
-the overlay before the release gives it: the line from the unit to the finger, a ring
-where it lands, and the word for what it will do read off the same tests `issueOrder`
-applies, so ATTACK on an enemy, ATTACK MOVE with the verb armed, FIRE MISSION for a tube,
-and MOVE with the grade of cover at the point beside it. A second finger cancels it, the
-way it cancels a marquee. A second tap on a unit picks every one of its kind within sight,
-which is the desktop's double-click. A tap on the ground still moves, because it is the
-fastest thing there is. Everything else is the classic path: drag the ground to pan, pinch,
-twist, press and hold the ground to box-select.
+What his hand does is four things. **Tap a unit** to pick it, and twice for every one of
+its kind in sight. **Drag it** to where it should go: the arrow is drawn on the overlay
+before the release gives the order, with a ring where it lands and the word for what it
+will do read off the same tests `issueOrder` applies -- ATTACK on an enemy, FIRE MISSION
+when everything in hand is a tube, and otherwise GO with the grade of cover at the point
+beside it. Every drag is an attack-move, because a thumb that sends men somewhere means
+them to fight what is in the way. **Tap a flag** to send the selection to it
+(`simpleSectorAt`, within 110 of the pole), and a tap on any other THING in hand's reach
+-- an enemy, a house, a bunker, a carrier -- is the order `issueOrder` already gives on
+it. **Tap the ground** to let the selection go: the classic tap-to-move is deliberately
+not here, because under this scheme an order is a drag and a stray finger must not march
+the army. A second finger cancels a drag the way it cancels a marquee; pan, pinch, twist
+and hold-to-box-select are the classic path.
+
+**The adjutant is what makes it easy, and it is `adjTick`**, once a second for the
+player's slot alone. It only ever fills an EMPTY queue, so an order he gives himself runs
+first; it buys whichever kind he has fewest of against a weight (`ADJW`: four sections to
+an engineer, two assault groups, a machine gun and a half, a gun, a tube, a light hull or
+so, two mediums) out of what each building makes and what is unlocked, affordable and
+under the cap, and if the kind it wants is waiting on fuel it buys nothing else that burns
+fuel from that building in the meantime -- measured, without that rule it bought a second
+armoured car while the Sherman waited, which is the fault the brain's ladder was built
+against. It sites the company post and the armour point on the brain's own two spots
+beside the headquarters, puts an engineer back on a site that was walked off, and sends an
+idle engineer to mend the nearest holed thing of his within a walk. A section shot to a
+third of its men falls back to refill; a hull holed to a third drives to the yard behind
+the headquarters where the engineers will find it; men crossing quiet ground run and men
+caught halted in the open under fire go flat, on the brain's own thresholds. And his
+howitzers fire on their own account (`onOrderOnly` reads `CTRL.simple`), because a gun
+that waits to be laid is a gun that waits for attention. A toast says what it did, no
+more than one every seven seconds.
 
 Four things about it are worth knowing before touching it. **A `body.mob` rule written
 after the editor's CSS beats one written before it** at the same specificity, and there
-is a second block of them there: the thumb block sits at the END of the stylesheet for
+is a second block of them there: the simple block sits at the END of the stylesheet for
 that reason, because placed with the first block its little map came out at 104 by 72
 rather than 132 by 90, and nothing but a measurement said so. **In landscape the tool
 strip runs along the top-right and the verb column stands where its end was**, so the
-strip moves in by the column's width and the sheet stands beside the chips under it; in
-portrait the sheet stops above the little map and the label. **The chips are pointer
-events with capture and a hold timer**, and `setPointerCapture` is in a try, because a
-synthetic pointer has no capture and the gate drives them with one. And **the pick under a
-press is `hitsUnit` on the selection**, ring plus the same grab the tap uses, so a tap
-inside a selected unit's own ring narrows the selection to it rather than moving it a few
-units; the drag is the order there.
+strip moves in by the column's width and the sheet stands beside the roster under it; in
+portrait the sheet stops above the little map and the label. **The pick under a press is
+`hitsUnit` on the selection**, ring plus the same grab the tap uses, so a tap inside a
+selected unit's own ring narrows the selection to it rather than moving it a few units;
+the drag is the order there. And **the gate opens its page pinned to classic**
+(`openGame`'s `ctrl`, an init script that writes `ORT_CTRL` before the game reads it,
+reloads included) and switches simple on only where it measures it, because an adjutant
+spending the till and siting a post from the first frame under rows that read a pristine
+deploy is a gate measuring the adjutant: on the phone it read three buildings at the
+whistle, a handicap till 440 short, and a staging drill with a company post put down on
+top of it.
 
 The gate drives it through the TouchEvents a finger raises, dispatched at the canvas,
 rather than by calling the functions behind them: a handler that is never reached by the
 event it is written for is a handler that is not there. `node tools/shoot.mjs hud
 --device=phone` photographs it, with the sheet up as a second frame, and `--ctrl=classic`
-or `--ctrl=thumb` picks the scheme whatever the device would.
+or `--ctrl=simple` picks the scheme whatever the device would.
 
 ---
 
@@ -4394,14 +4425,19 @@ shots/                         screenshot output, gitignored
   that left the tile is drawn twice for that frame and nobody sees it.
 - **There are two blocks of `body.mob` rules and the second is after the editor's CSS.** A
   mobile override written beside the first block loses to the second at the same
-  specificity, and the loss is a size or a position rather than an error: the thumb
+  specificity, and the loss is a size or a position rather than an error: the simple
   scheme's little map read 104 by 72 against the 132 by 90 it was written at until its
   block was moved to the end of the stylesheet. Measure the rect; do not read the rule.
-- **A press on the map has two readers in the thumb scheme and they must not both fire.**
+- **A press on the map has two readers in the simple scheme and they must not both fire.**
   A press on a selected unit arms the drag-to-order and returns before the marquee timer
   is set, so a hold on a unit is never a box; a press on the ground sets the timer and
   never the tow. Any new gesture goes in as a third branch of that one `touchstart`, or it
   fights one of the two.
+- **An adjutant that buys whatever it can afford buys armoured cars with the tank's fuel.**
+  Scored by count over weight alone, the first version queued a second car every time the
+  price of one came round while the Sherman it wanted waited on fuel, which is the brain's
+  ladder fault over again. Score what it WANTS first, and if that is waiting on fuel buy
+  nothing else that burns fuel from that building until it is there.
 
 - **`G.hmap` is the sum of its own layers, and something once broke that quietly.**
   `hmap = hmap0 + cut + fill + pad` holds everywhere, which is what lets a piece of the
