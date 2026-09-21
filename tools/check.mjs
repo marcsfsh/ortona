@@ -708,8 +708,12 @@ for (const device of TARGETS) {
       const oR = window.aiOrds(own).filter(o => o.k === 'raid')[0];
       tid = oR ? oR.tid : 0;
     }
-    /* ---- one tick, and who is under what */
+    /* ---- one tick, and who is under what. The force is read again after it, because
+       the tend prunes whoever has died or is falling back and those are not carrying
+       anything: the count to check against is what the order still has, not what he
+       named a moment before. */
     window.aiThink(1);
+    const forceAfter = oG ? oG.force.length : -1;
     const onG = oG ? window.G.units.filter(u => window.owned(u) && !u.dead && u.ord === oG.id).length : 0;
     const opG = oG && oG.opId ? window.aiOpById(own, oG.opId) : null;
     const fearOn = oG ? window.G.units.filter(u => window.owned(u) && u.ord === oG.id && u.fear !== undefined)
@@ -757,13 +761,13 @@ for (const device of TARGETS) {
     window.ORDWHO = 'any'; window.ORDAGG = null;
     window.simpleOrdOpen(null); window.select([], false);
     return { padG, headG, gpAt: gp ? [Math.round(gp.x), Math.round(gp.y)] : null, foeOn: padF,
-             forceN, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
+             forceN, forceAfter, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
              fearOn, padF, headF, tid, foeId: foe ? foe.id : -1, badge, listUp, rows, nOrd, afterX, smallC, army,
              listDown, posed, t0: t0.fear, tPress, tCaut };
   }, MIN_TAP);
   ok('simple: an order on open ground with a force he named, one on a thing of theirs, the list that says what is standing, and the army\'s own posture, reaction and temper',
      board.padG && board.headG === 'OPEN GROUND' && board.forceN === board.mine && board.aggr === 2 &&
-     board.onG === board.forceN && board.opKind === 'screen' && board.opWant === 0 && board.fearOn > 0 && board.fearOn < .6 &&
+     board.onG === board.forceAfter && board.onG > 0 && board.opKind === 'screen' && board.opWant === 0 && board.fearOn > 0 && board.fearOn < .6 &&
      board.padF && board.headF.length > 0 && board.tid === board.foeId &&
      board.badge === String(board.nOrd) && board.listUp && board.rows.length === board.nOrd &&
      board.rows.every(r => r.h >= MIN_TAP) && board.afterX === board.nOrd - 1 && board.smallC === 0 &&
@@ -771,7 +775,7 @@ for (const device of TARGETS) {
      board.posed && board.posed.pose === 'hold' && board.posed.of === 'hold' && board.posed.posed && !board.posed.after &&
      board.tPress < board.t0 && board.tCaut > board.t0,
      `ground pad ${board.padG} at ${board.gpAt} "${board.headG}" -> screen on ${board.forceN} of ${board.mine} sections at ${board.aggr}, ` +
-     `${board.onG} carrying it (op ${board.opKind} want ${board.opWant}, fear ${board.fearOn}); ` +
+     `${board.onG} of the ${board.forceAfter} it still has carrying it (op ${board.opKind} want ${board.opWant}, fear ${board.fearOn}); ` +
      `a tap on theirs "${board.headF}" -> raid on ${board.tid}/${board.foeId}; badge ${board.badge} with ${board.rows.length} of ${board.nOrd} rows, ` +
      `cross -> ${board.afterX}; army ${JSON.stringify(board.army)}; posture ${JSON.stringify(board.posed)}; ` +
      `fear ${board.tCaut}/${board.t0}/${board.tPress}`);
