@@ -661,8 +661,23 @@ for (const device of TARGETS) {
       u.setup = 0; raised.push(u);
     }
     const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat === 'inf' && !u.def.builder);
-    /* ---- a piece of open ground, given to his infantry, pressed home */
-    const gp = window.nearestFree(hq.x + (us ? 620 : -620), hq.y + 40);
+    /* ---- a piece of open ground, given to his infantry, pressed home.
+       Clear of his own men and of any flag, because a tap on one of his picks it and a
+       tap near a pole is a tap on the flag: the first version put the point six hundred
+       units out toward the enemy, which after four minutes of battle is exactly where his
+       sections are, and every assertion under it read off a pad that had never opened. */
+    const clearOf = (x, y) => !window.G.units.some(u => !u.dead && !u.inside && window.owned(u) && Math.hypot(u.x - x, u.y - y) < 170) &&
+                              !window.G.sectors.some(s2 => Math.hypot(s2.x - x, s2.y - y) < 260) &&
+                              window.walkable(x, y) && !window.buildingAt(x, y);
+    let gp = null;
+    for (let d = 420; d <= 900 && !gp; d += 90)
+      for (let a = 0; a < 12 && !gp; a++) {
+        const th = a * Math.PI / 6;
+        const c = { x: hq.x + (us ? 1 : -1) * d * Math.cos(th * .5) , y: hq.y + d * Math.sin(th) * .6 };
+        if (c.x < 80 || c.y < 80 || c.x > window.WORLD.w - 80 || c.y > window.WORLD.h - 80) continue;
+        if (clearOf(c.x, c.y)) gp = c;
+      }
+    if (!gp) gp = window.nearestFree(hq.x + (us ? 620 : -620), hq.y + 40);
     window.ORDWHO = 'inf'; window.ORDAGG = 2;
     const padG = window.__tapGround(gp.x, gp.y);
     const headG = document.getElementById('tordname').textContent;
@@ -670,7 +685,10 @@ for (const device of TARGETS) {
     const oG = window.aiOrds(own).filter(o => o.k === 'screen')[0];
     const forceN = oG ? oG.force.length : -1, aggr = oG ? oG.aggr : -1;
     /* ---- a thing of theirs: the pad opens on it and RAID names it */
-    const foe = window.G.units.find(u => !u.dead && u.side !== side && !u.inside);
+    /* and a thing of theirs with nobody of his standing on top of it, for the same reason */
+    const foe = window.G.units.find(u => !u.dead && u.side !== side && !u.inside &&
+      !window.G.units.some(o => !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - u.x, o.y - u.y) < 170)) ||
+      window.G.units.find(u => !u.dead && u.side !== side && !u.inside);
     let padF = false, headF = '', tid = 0;
     if (foe) {
       if (us) foe.vUs = true; else foe.vGer = true;
@@ -733,7 +751,8 @@ for (const device of TARGETS) {
     for (const u of raised) { const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); }
     window.ORDWHO = 'any'; window.ORDAGG = null;
     window.simpleOrdOpen(null); window.select([], false);
-    return { padG, headG, forceN, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
+    return { padG, headG, gpAt: gp ? [Math.round(gp.x), Math.round(gp.y)] : null,
+             forceN, aggr, mine: mine.length, onG, opKind: opG && opG.kind, opWant: opG && opG.want,
              fearOn, padF, headF, tid, foeId: foe ? foe.id : -1, badge, listUp, rows, nOrd, afterX, smallC, army,
              listDown, posed, t0: t0.fear, tPress, tCaut };
   }, MIN_TAP);
@@ -746,7 +765,7 @@ for (const device of TARGETS) {
      board.army.pose === 'dig' && board.army.react === 'fight' && board.army.aggr === 0 && board.listDown &&
      board.posed && board.posed.pose === 'hold' && board.posed.of === 'hold' && board.posed.posed && !board.posed.after &&
      board.tPress < board.t0 && board.tCaut > board.t0,
-     `ground pad ${board.padG} "${board.headG}" -> screen on ${board.forceN} of ${board.mine} sections at ${board.aggr}, ` +
+     `ground pad ${board.padG} at ${board.gpAt} "${board.headG}" -> screen on ${board.forceN} of ${board.mine} sections at ${board.aggr}, ` +
      `${board.onG} carrying it (op ${board.opKind} want ${board.opWant}, fear ${board.fearOn}); ` +
      `a tap on theirs "${board.headF}" -> raid on ${board.tid}/${board.foeId}; badge ${board.badge} with ${board.rows.length} of ${board.nOrd} rows, ` +
      `cross -> ${board.afterX}; army ${JSON.stringify(board.army)}; posture ${JSON.stringify(board.posed)}; ` +
