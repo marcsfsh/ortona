@@ -82,6 +82,23 @@ function checkMap(map) {
   const E = map.entities;
   const of = t => E.filter(e => e.t === t);
   const houses = of('house'), farms = of('farm'), craters = of('crater');
+  /* A weapon pit is an EARTHWORK the day it starts going through `carve`, so it is
+     checked as one. Measured on the Gothic Line before this rule existed, one pit's
+     spoil stood 4.32 units up in the floor of a trench 32 units away and another's
+     BOWL reached 4.4 units into one -- which is exactly what `crater/trench` exists to
+     forbid, and nothing said so, because a pit was not an earthwork when that rule was
+     written.
+       The radius is the BOWL, `r + 8`, and not the outer edge of the spoil. The spoil
+     falls off as the square of the distance across its band, so the outer half of it
+     is under a unit high: taken at its geometric edge the rule flagged five placements
+     on the two maps whose real effect on a trench was 0.11 of a unit or nothing at all,
+     which is a rule nobody can act on. Calibrated against what each pit actually puts
+     on a trench, the bowl is the radius that separates the two that matter from the
+     ones that do not. Its margin is the trench's own half-width rather than the
+     crater's 16, because that is the thing being undercut. */
+  const digs = craters.map(c => ({ x: c.x, y: c.y, r: c.r, m: 16, what: `crater (${c.x}, ${c.y}) r${c.r}` }))
+    .concat(of('emplace').map(e => ({ x: e.x, y: e.y, r: (e.r || 22) + 8, m: 14,
+                                      what: `the weapon pit at (${e.x}, ${e.y}) r${e.r || 22}` })));
   const trenches = of('trench'), wires = of('wire'), roads = of('road');
   const trees = of('tree').concat(of('scrub'));
   const blocks = houses.concat(farms).concat(of('bunker').map(bunkerBox));
@@ -90,19 +107,19 @@ function checkMap(map) {
   function bad(rule, msg) { problems.push({ rule, msg }); }
 
   /* ---- 1. craters do not sit on trenches ---------------------------------- */
-  for (const c of craters)
+  for (const c of digs)
     for (const tr of trenches)
       for (const [x1, y1, x2, y2] of segs(tr.pts))
-        if (segDist(c.x, c.y, x1, y1, x2, y2) < c.r + 16) {
-          bad('crater/trench', `crater (${c.x}, ${c.y}) r${c.r} overlaps a ${tr.side} trench leg near (${Math.round((x1 + x2) / 2)}, ${Math.round((y1 + y2) / 2)})`);
+        if (segDist(c.x, c.y, x1, y1, x2, y2) < c.r + (c.m === undefined ? 16 : c.m)) {
+          bad('crater/trench', `${c.what} overlaps a ${tr.side} trench leg near (${Math.round((x1 + x2) / 2)}, ${Math.round((y1 + y2) / 2)})`);
           break;
         }
 
   /* ---- 2. wire is not laid through a crater or a trench ------------------- */
   for (const w of wires) {
-    for (const c of craters)
+    for (const c of digs)
       if (segDist(c.x, c.y, w.x1, w.y1, w.x2, w.y2) < c.r + 12)
-        bad('wire/crater', `wire (${w.x1},${w.y1})-(${w.x2},${w.y2}) runs through the crater at (${c.x}, ${c.y}) r${c.r}`);
+        bad('wire/crater', `wire (${w.x1},${w.y1})-(${w.x2},${w.y2}) runs through ${c.what}`);
     for (const tr of trenches)
       for (const [x1, y1, x2, y2] of segs(tr.pts)) {
         const n = 24;
@@ -119,9 +136,9 @@ function checkMap(map) {
   for (const b of blocks) {
     const bx = box(b, 10);
     for (const t of trees) if (inBox(bx, t.x, t.y)) bad('house/tree', `a tree at (${t.x}, ${t.y}) is inside the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`);
-    for (const c of craters) if (segDist(c.x, c.y, bx.x0, bx.y0, bx.x1, bx.y0) < c.r || inBox(bx, c.x, c.y) ||
+    for (const c of digs) if (segDist(c.x, c.y, bx.x0, bx.y0, bx.x1, bx.y0) < c.r || inBox(bx, c.x, c.y) ||
         Math.abs(c.x - b.x) < b.w / 2 + c.r * .7 && Math.abs(c.y - b.y) < b.h / 2 + c.r * .7)
-      bad('house/crater', `crater (${c.x}, ${c.y}) r${c.r} undercuts the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`);
+      bad('house/crater', `${c.what} undercuts the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`);
     for (const tr of trenches)
       for (const [x1, y1, x2, y2] of segs(tr.pts))
         if (segHitsBox(bx, x1, y1, x2, y2)) { bad('house/trench', `a ${tr.side} trench runs through the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`); break; }

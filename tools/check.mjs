@@ -1919,7 +1919,15 @@ for (const device of TARGETS) {
     keep.forEach(e => window.G.units.push(e));
     return out;
   });
-  /* A pit is dug about nine units deep with the spoil thrown up round it, so the crest
+  /* The one pit of tolerance on `walk` and `cov` is for BATTLE DAMAGE and not for a map
+     fault. It used to be the fault: Ortona shipped a pit at (1480, 620) standing inside
+     the ruin at (1560, 610), whose centre has been unwalkable for as long as it has
+     existed, so the row had no headroom at all and a regression that took one more pit
+     would have been the first thing it had to catch. That pit has been moved clear and
+     the row reads 11 of 11. What the tolerance covers now is that three battles are
+     fought on this map before this row runs, and a shell hole dug on a pit's own centre
+     can make it steep on its own.
+       A pit is dug about nine units deep with the spoil thrown up round it, so the crest
      stands a good way over the floor. The bar is six, well clear of the 1.2 the natural
      roll of this country gives over the same span, which the control measures rather than
      assumes. The built pit's bag ring runs six courses at 1.4 apart, so a median vertex
