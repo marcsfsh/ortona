@@ -2069,10 +2069,10 @@ function defaultMapData() {
   E.push({ t: 'emplace', x: 1216, y: 940, r: 24, s: .2, a: Math.PI });
   E.push({ t: 'emplace', x: 1604, y: 966, r: 24, s: .6, a: 0 });
   E.push({ t: 'emplace', x: 1400, y: 912, r: 22, s: .4, a: -Math.PI / 2 });
-  E.push({ t: 'emplace', x: 1400, y: 1048, r: 22, s: .8, a: Math.PI / 2 });
-  E.push({ t: 'emplace', x: 1480, y: 620, r: 20, s: .3, a: -Math.PI / 2 });
+  E.push({ t: 'emplace', x: 1418, y: 1020, r: 22, s: .8, a: Math.PI / 2 });
+  E.push({ t: 'emplace', x: 1412, y: 636, r: 20, s: .3, a: -Math.PI / 2 });
   E.push({ t: 'emplace', x: 2110, y: 880, r: 24, s: .5, a: Math.PI });
-  E.push({ t: 'emplace', x: 2360, y: 430, r: 22, s: .7, a: -2.2 });
+  E.push({ t: 'emplace', x: 2396, y: 430, r: 22, s: .7, a: -2.2 });
   E.push({ t: 'emplace', x: 2360, y: 1470, r: 22, s: .1, a: 2.2 });
   E.push({ t: 'emplace', x: 846, y: 950, r: 22, s: .9, a: 0 });
   E.push({ t: 'emplace', x: 620, y: 950, r: 20, s: .35, a: 0 });
@@ -2378,8 +2378,8 @@ function gothicMapData() {
   /* weapon pits on the forward slope beside the trench, and the anti-tank guns back on
      the crest where they have the length of the valley rather than the width of it */
   pit(634, 392, 22, .21, 0);
-  pit(646, 742, 22, .67, 0);
-  pit(656, 1182, 22, .44, 0);
+  pit(622, 742, 22, .67, 0);
+  pit(624, 1196, 22, .44, 0);
   pit(628, 1592, 22, .83, 0);
   pit(490, 636, 26, .31, .18);
   pit(478, 1298, 26, .58, -.18);
@@ -2822,7 +2822,20 @@ function buildMap(data) {
         break;
       case 'emplace':
         addCover(e.x, e.y, (e.r || 22) + 6, 3, 'pit', null, 140);
-        G.stacks.push({ x: e.x, y: e.y, r: e.r || 22, kind: 'emplace', s: e.s || 0, a: e.a || 0 }); break;
+        G.stacks.push({ x: e.x, y: e.y, r: e.r || 22, kind: 'emplace', s: e.s || 0, a: e.a || 0 });
+        /* A weapon pit is DUG, and thirty-three of them ship across the two maps with not
+           one hole under any of them. `WORKS.pit.dig` had exactly one reader, `finishWork`,
+           so a pit an engineer built during a battle was a position in the ground and a pit
+           the map was painted with was a horseshoe of bags standing on undisturbed grass.
+           From above those are the same picture, which is the whole of why it lasted --
+           the bags draw, the cover indexes, the crew stands in it, and the one thing a pit
+           IS was missing. It goes through the same door the engineer's does, at the same
+           depth with the same parapet; only the radius follows the entity, because the
+           bowl runs six units outside the bag ring and the map lays its bags at `r + 2`
+           where the engineer lays his at a flat 24. */
+        var pdg = WORKS.pit.dig;
+        carve(e.x, e.y, e.x, e.y, (e.r || 22) + 8, -pdg.depth, pdg.lip, 'bowl');
+        break;
       case 'bags': addCover(e.x, e.y, e.r || 30, 3, 'bags', e.a || 0, 120); break;
       case 'roadblock': addCover(e.x, e.y, 34, 3, 'rubble', (e.a || 0) + Math.PI / 2, 140); G.roadDebris.push({ x: e.x, y: e.y, a: e.a || 0 }); break;
       case 'cart': G.carts.push({ x: e.x, y: e.y, a: e.a || 0 }); addCover(e.x, e.y, 30, 2, 'cart', null, 70); break;
@@ -4359,11 +4372,77 @@ function menPen(V, S) {
   }
   return best;
 }
-function sepDepth(u, o) {
+/* And a section against a section is the MEN, for the passing case only. A section's
+   body is the bounding box of its whole formation -- 106 by 66 for a five-man rifle
+   section, which is nearly three times the plan area of a Sherman -- laid over three
+   files of 11-unit discs with air between them and nobody at all at the four corners.
+   Binary-searched over twelve bearings the way the vehicle gate row does it, the box
+   declares a contact with 3.0 to 43.3 units of clear ground between the nearest two men
+   of two rifle sections, 0.1 to 24.4 between an assault section and Panzergrenadiere and
+   0 to 14.1 between two machine gun teams; asked as the men the same drill reads 0.0 to
+   0.0 on all three, which is the standard the hull-against-men case already holds. That
+   is the player's complaint exactly: stuck moving past one another with daylight between
+   every model.
+     It is NOT the whole answer, and the arithmetic says so rather than taste. A
+   formation is a regular lattice, so for any man-to-man reach there is an offset that
+   slots one section's men into the other's gaps: at a reach of 22 two weapon teams
+   interleave at 22 units apart and two Fallschirmjaeger sections at 22.1, and raising
+   the reach does not close the hole, it only moves it -- 26 gives 26.0, 30 gives 30.0,
+   42 gives 42.0. Men against men can therefore never keep two formations from resting
+   inside one another, which is the one thing `unwedge` exists to prevent. So this
+   answers the passing question and the box still answers the resting one. */
+function menMen(U, O) {
+  var reach = MAN_R * 2, rr = reach * reach, best = 0, bx = 1, by = 0, i, j;
+  for (i = 0; i < U.models.length; i++) {
+    var a = U.models[i];
+    if (!a.alive) continue;
+    for (j = 0; j < O.models.length; j++) {
+      var b = O.models[j];
+      if (!b.alive) continue;
+      var dx = a.x - b.x, dy = a.y - b.y, q = dx * dx + dy * dy;
+      if (q >= rr) continue;                     /* squared until something is touching */
+      var d = Math.sqrt(q), pen = reach - d;
+      if (pen <= best) continue;
+      best = pen;
+      /* out away from the man he is standing in; two men on one spot have no bearing
+         between them, so he goes out his own front */
+      if (d > 1e-4) { bx = dx / d; by = dy / d; }
+      else { bx = Math.cos(U.facing); by = Math.sin(U.facing); }
+    }
+  }
+  if (best > 0) { _sepX = bx; _sepY = by; }
+  return best;
+}
+/* Whether a pair is two bodies of men on the march, which thread past each other, or
+   something that is simply in the way. A crew-served weapon is the second: what a
+   section walks round is the GUN, and the men are laid out on a ring round it with gaps
+   far wider than a man, so asked as the men a rifle section walks through the middle of
+   a Pak 40.
+     The test is `cat`, which is the roster's own word for it -- 'inf' is the eleven
+   sections and 'team' is every machine gun, mortar, anti-tank gun, howitzer and battery
+   on both sides -- and not `def.speed > 0`, which was the first version and is a
+   different question. Only three pieces on the roster have no speed (the eighty-eight
+   and the two heavy batteries); every other crew can be manhandled or limbered and
+   carries one, so a six-pounder at 40 and a Pak at 38 read as men on the march. Measured
+   on a clean side-by-side pass at a lateral offset of 50, a rifleman closed to 33.9
+   units of a deployed Pak's gun point where the box had held him at 48.9. */
+function bothAfoot(u, o) {
+  return u.cat === 'inf' && o.cat === 'inf' && u.models && o.models;
+}
+function sepDepth(u, o, fine) {
   unitBody(u); unitBody(o);
-  var dx = u.x - o.x, dy = u.y - o.y, reach = u.bodyL + o.bodyL + 18;
-  if (dx * dx + dy * dy > reach * reach) return 0;        /* the cheap circle first */
-  /* a vehicle against men is the men; everything else is box against box */
+  /* The cheap circle first -- and sized off the ring the men are actually bounded to
+     when the men are what is being asked about, because `updateModels` clamps a man onto
+     `selRadius` and that is wider than `bodyL`. On the box path it never once cut a real
+     overlap over four minutes of battle, but a Fallschirmjaeger pair cleared it by six
+     tenths of a unit, which is luck rather than construction. */
+  var men = fine && bothAfoot(u, o);
+  var dx = u.x - o.x, dy = u.y - o.y;
+  var reach = men ? selRadius(u) + selRadius(o) + MAN_R * 2 : u.bodyL + o.bodyL + 18;
+  if (dx * dx + dy * dy > reach * reach) return 0;
+  /* two bodies of men on the march are the men, a vehicle against men is the men, and
+     everything else is box against box */
+  if (men) return menMen(u, o);
   if (u.cat === 'veh' && o.models) return menPen(u, o);
   if (o.cat === 'veh' && u.models) {
     var mp = menPen(o, u);
@@ -4902,7 +4981,13 @@ function orderRetreat(u) {
 
 /* ---------------------------------------------------------------- movement */
 function moveUnit(u, dt) {
+  /* where it stood before the walk, kept on the unit rather than in a local, because
+     `unwedge` runs on the very next line of `updateUnit` and needs the ground this step
+     actually made good. A local written at the clamp at the foot of this function is
+     skipped by every one of the six early returns above it, and a bound that goes stale
+     is a bound the halted frames read off the last frame that moved. */
   var wantX = null, wantY = null;
+  u.stepX = u.x; u.stepY = u.y;
   /* Standing on ground that is no longer ground. A company post goes up on top of a
      section, or a wreck settles across it, and from then on every step it tries is off
      the grid, the stall timer fires, and the same path comes back: it is frozen where it
@@ -4992,7 +5077,9 @@ function moveUnit(u, dt) {
   for (var i = 0; i < G.units.length; i++) {
     var o = G.units[i];
     if (o === u || o.dead || o.inside || o.gar) continue;
-    var dep = sepDepth(u, o);
+    /* the FINE test, because this is the passing question: a section steers round the
+       men who are actually in its way and threads the gaps between them */
+    var dep = sepDepth(u, o, true);
     if (dep <= 0) continue;
     var w = Math.min(1, dep / Math.max(8, u.bodyW + o.bodyW));
     px += _sepX * w; py += _sepY * w;
@@ -5200,7 +5287,21 @@ function unwedge(u, dt) {
   if (!n) return;
   var ml = Math.hypot(px, py);
   if (ml < 1e-4) return;
-  var st = Math.min(ml * 6, 60) * dt;
+  /* The push may not out-run the walk it is being applied to. The cap was a flat 60
+     units a second against a rifle section's 64, so the moment the ground or the enemy
+     cut the walk -- 0.5 suppressed, 0.4 in wire, 0.5 on rubble, 0.55 over a field wall
+     -- the shove beat the step and the section went BACKWARDS. Counted over three battles
+     of three minutes, on the unit-frames where a unit held a path and the push fired at
+     all (31.5 to 36.2 per cent of them), it opposed the walk on 88.2 to 90.8, was bigger
+     than the walk on 22.6 to 40.9, and drove net motion backwards on 17.2 to 30.0. Half
+     of what the walk actually made good is the bound now, so a moving unit always nets
+     forward; a halted one has no step to bound it and keeps a modest push of its own,
+     because unsticking two sections standing in each other is the whole reason this
+     exists. The same three battles read 0 to 0.4 per cent bigger than the walk and 0 to
+     0.2 backwards, and the push fires on half as many frames (16.6 to 20.6), which is
+     the men-test above declaring the contacts that were never contacts. */
+  var walked = u.stepX === undefined ? 0 : Math.hypot(u.x - u.stepX, u.y - u.stepY) / Math.max(dt, 1e-4);
+  var st = Math.min(ml * 6, Math.max(walked * .5, 22)) * dt;
   var nx = u.x + px / ml * st, ny = u.y + py / ml * st;
   if (walkable(nx, ny)) { u.x = nx; u.y = ny; }
   else if (walkable(nx, u.y)) u.x = nx;
@@ -8219,6 +8320,18 @@ function bunkerRepair(dt) {
 function finishWork(s) {
   var W = WORKS[s.kind];
   if (!W) return;
+  /* Dig FIRST, and then build the model again on the ground it dug. The buffer is packed
+     in `placeWork`, which is before the hole exists, and `conformFaces` drops every face
+     to the ground under its own centre -- so the bags of a finished pit stood at the
+     height the grass had been while the parapet they are meant to be revetting stood up
+     five units under them. Measured on a battle-built pit the median bag floated 7.4
+     units clear of an 8.4-unit stack, which is most of a bag's own height of daylight.
+     One rebuild here, where the ground has just changed and the work is about to be drawn
+     off it for the rest of the battle. */
+  if (W.dig) {
+    workDig(s.x, s.y, W.dig);
+    if (GLOK) { freeBuffer(s.buf); s.buf = facesToBuffer(workFaces(s.kind, s.x, s.y, s.a || 0)); }
+  }
   G.works.push({ kind: s.kind, x: s.x, y: s.y, a: s.a || 0, own: s.own, side: s.side, buf: s.buf });
   recWork(s.side);
   if (W.cover) {
@@ -8226,7 +8339,6 @@ function finishWork(s) {
     addCover(s.x, s.y, c.r, c.type, c.kind, c.faced ? s.a + workTurn(s.kind) : null, c.hp);
   }
   if (W.slow) rebuildGrid();
-  if (W.dig) workDig(s.x, s.y, W.dig);
   if (W.unit) {
     /* The gun. Its crew are put where a crew stands: the two layers at the breech,
        the loader behind them, the ammunition numbers back on the platform. They keep
@@ -26821,7 +26933,13 @@ function edRefreshStart() {
 }
 /* what cuts or paints the ground itself, and so needs the heightfield mesh and the
    ground paint done again; everything else is a prop in a tile */
-var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1 };
+/* `emplace` is on this list because a weapon pit is DUG: it went on the moment the
+   map's own pits started going through `carve`, and it is the fourth of the five
+   places a new kind of thing has to be known about. Left off, the editor cut the
+   heightfield and rebuilt the walk grid under a pit and never rebuilt the ground
+   MESH or the paint, so the hole was there to walk into and not there to look at
+   until something else forced a full rebuild. */
+var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1, emplace: 1 };
 /* An edit rebuilds the least it can: the map's lists and the walk grid always (a
    tenth of a second), the ground mesh and paint only when something cut or painted
    it, the grass only when grass changed, and of the prop tiles only the ones the
