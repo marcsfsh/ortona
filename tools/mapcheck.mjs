@@ -23,7 +23,7 @@
  *     a vehicle is a wall with a line painted on it.
  *
  *   node tools/mapcheck.mjs            every rule, on every map the game ships
- *   node tools/mapcheck.mjs gothic     one of them
+ *   node tools/mapcheck.mjs gothic     one of them, by the key the game knows it by
  *   node tools/mapcheck.mjs --v        list every conflict rather than the first few
  *
  * It checks every shipped map rather than only the first, because a rule nobody runs on
@@ -35,13 +35,19 @@ import { launch, openGame, parseArgs } from './harness.mjs';
 const args = parseArgs(process.argv.slice(2));
 const VERBOSE = !!args.v;
 
-const WANT = args._ && args._.length ? args._ : ['ortona', 'gothic'];
+/* The maps come off the game's own MAPS table rather than a list here. Written as a
+ * ternary on 'gothic' the third map was silently checked as Ortona, and what that looks
+ * like is a new map that came back clean on the first run. */
+const WANT = args._ && args._.length ? args._ : null;
 
 const browser = await launch();
 const { page, context } = await openGame(browser, 'laptop', { quiet: true });
-const maps = await page.evaluate((want) => want.map(k => ({
-  key: k, name: k, data: k === 'gothic' ? gothicMapData() : defaultMapData()
-})), WANT);
+const maps = await page.evaluate((want) => {
+  const keys = want && want.length ? want : Object.keys(MAPS);
+  const bad = keys.filter(k => !MAPS[k]);
+  if (bad.length) throw new Error('no such map: ' + bad.join(', ') + '; the game has ' + Object.keys(MAPS).join(', '));
+  return keys.map(k => ({ key: k, name: k, data: MAPS[k].make() }));
+}, WANT);
 await context.close();
 await browser.close();
 
