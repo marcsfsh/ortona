@@ -1365,7 +1365,7 @@ var UNITS = {
     models: 4, hpPer: 94, speed: 71, sight: 310, pop: 9, cost: { mp: 340, fu: 20 }, time: 26,
     req: 'us_bar',
     w: { range: 215, dmg: 13.8, rof: 0.46, acc: .61, sup: .014, pen: 16 },
-    at: { range: 250, dmg: 86, rof: 4.6, acc: .58, pen: 150, aoe: 22, shell: 1 },
+    at: { range: 250, dmg: 86, rof: 4.6, acc: .58, pen: 150, aoe: 22, shell: 1, rocket: 1 },
     desc: 'Veterans carrying Stens, grenades and a PIAT. Built for close work through breached walls; expensive to replace.'
   },
   us_fg: {
@@ -1457,6 +1457,22 @@ var UNITS = {
     w: { range: 355, dmg: 5.0, rof: 0.10, acc: .38, sup: .068, pen: 10 },
     desc: 'The best suppression in the game. Set it behind cover facing open ground and infantry stop moving.'
   },
+  /* Asked for, and it is the one piece on either roster that is neither a machine gun
+     nor an anti-tank gun. Twenty millimetres is a shell rather than a bullet -- the round
+     bursts where it lands, which is why the thing takes a section apart at a rate no
+     rifle can answer -- and it is a shell far too small to trouble any plate above a
+     scout car. That is the whole of what it is for, and it is why the penetration is the
+     222's own 2 cm KwK 30 figure rather than a number chosen for it: the same round out
+     of very nearly the same barrel, and two lists of one gun go out of step the moment
+     somebody edits one of them. */
+  ger_flak20: {
+    side: 'ger', name: '2 cm Flak 38', short: 'FLAK 38', cat: 'team', hk: 'Z',
+    models: 4, hpPer: 58, speed: 40, sight: 360, pop: 6, cost: { mp: 240, fu: 10 }, time: 22,
+    req: 'ger_qtr', setup: 3.5, pack: 3.0, blastRes: .68, closeWeak: 2.0,
+    gunAt: 7.2, gunMuz: [19.6, 10.6], gunGrip: [-4.20, 4.20, 6.60], gunSit: 1,
+    w: { range: 340, dmg: 40, rof: 0.30, acc: .62, sup: .28, pen: 20, aoe: 24, shell: 1, auto: 1 },
+    desc: 'The anti-aircraft cannon laid flat, which is what nearly every one of them in Italy was doing by December. Four hundred and fifty rounds a minute of twenty-millimetre high explosive: it strips a section out of the open, it opens an armoured car or a carrier, and it does nothing whatever to a Sherman.'
+  },
   ger_mor: {
     side: 'ger', name: '8 cm Granatwerfer 34', short: 'GRW 34', cat: 'team', hk: 'M',
     models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 250, fu: 10 }, time: 26,
@@ -1478,6 +1494,28 @@ var UNITS = {
     w: { range: 660, dmg: 118, rof: 3.2, acc: .44, sup: .11, pen: 28, aoe: 58, shell: 1 },
     desc: 'An Italian mountain howitzer taken over wholesale, and the heaviest thing the company can put behind a street. It fires only on an order and only into an area, eight shells at a time, and its reach is short enough that it has to be sited among the houses it is shelling for rather than behind them.'
   },
+  /* Asked for. The 15 cm Nebelwerfer 41: six tubes on a Pak 36 carriage, fired as a
+     ripple and then reloaded by hand, which is the whole of what makes it a different
+     weapon from a howitzer rather than a bigger one. Everything else on this roster is
+     bounded by how fast a crew can serve it; this is bounded by the three quarters of a
+     minute after the sixth rocket has gone, during which it is a rack of empty tubes with
+     four men round it and the enemy knows exactly where it is, because nothing else on
+     the map leaves that much smoke behind it. `reload` is that clock and this is the one
+     def that carries one.
+       It throws further than either pack howitzer and lands looser than both, because a
+     rocket is steered by its own spin and by nothing else, so what it is for is ground
+     rather than a target: six bursts into a hundred and thirty units of circle is the
+     heaviest thing either company can put on a flag without digging a battery in. */
+  ger_neb: {
+    side: 'ger', name: '15 cm Nebelwerfer 41', short: 'NBW 41', cat: 'team', hk: 'N',
+    models: 4, hpPer: 56, speed: 32, sight: 250, pop: 10, cost: { mp: 380, fu: 90 }, time: 36,
+    req: 'ger_qtr', setup: 5.5, pack: 5.0, indirect: 1, barrageOnly: 1, blastRes: .55, closeWeak: 2.6,
+    reload: 44, traverse: .34, layTol: .18,
+    gunAt: 8.2, gunMuz: [12.4, 19.6], gunGrip: [-3.20, 4.60, 5.40],
+    barrage: { range: 820, r: 130, sp: 26, rof: 0.95, rounds: 6 },
+    w: { range: 820, dmg: 150, rof: 3.4, acc: .30, sup: .20, pen: 22, aoe: 72, shell: 1, rocket: 1 },
+    desc: 'Six tubes of fifteen-centimetre rocket on a towed carriage, fired as a ripple and then reloaded by hand. It reaches further than the 75/18 and scatters far wider: six bursts into a circle a hundred and thirty across, and then three quarters of a minute of nothing at all while the crew load the next six.'
+  },
   /* The German heavy, and the same four rules as the Canadian one -- see `us_how8`, where
      they are set out. The 210/22 sits on a circular steel platform it traverses on, which
      is the one thing about it that turns faster than the American gun's trail-swinging;
@@ -1497,7 +1535,7 @@ var UNITS = {
     models: 4, hpPer: 93, speed: 69, sight: 310, pop: 9, cost: { mp: 330, fu: 20 }, time: 26,
     req: 'ger_qtr',
     w: { range: 215, dmg: 14.6, rof: 0.48, acc: .58, sup: .014, pen: 16 },
-    at: { range: 250, dmg: 92, rof: 4.6, acc: .58, pen: 175, aoe: 22, shell: 1 },
+    at: { range: 250, dmg: 92, rof: 4.6, acc: .58, pen: 175, aoe: 22, shell: 1, rocket: 1 },
     desc: 'Close-assault paratroopers with MP40s, grenades and a Panzerschreck. Dangerous to armour inside the town.'
   },
   ger_pak: {
@@ -1561,6 +1599,20 @@ var UNITS = {
     req: 'ger_dep',
     w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
     desc: 'Better gun than a Sherman and thicker plate. Slower, and it hates being flanked.'
+  },
+  /* Asked for, and it is a Panzer IV underneath: the turret taken off and an open
+     nine-sided one welded onto the same ring in its place with the 2 cm Flakvierling 38
+     in it. Sixteen millimetres of plate round the fighting compartment and no roof at
+     all, which is the trade the whole vehicle is -- four automatic cannon on a medium
+     chassis, paid for by being open to anything that bursts over the top of it. That is
+     what `blastRes` above one says, and the vehicle branch of `explode` reads it for this
+     vehicle's sake. */
+  ger_wirb: {
+    side: 'ger', name: 'Flakpanzer IV Wirbelwind', short: 'WIRBEL', cat: 'veh', hk: 'W', upgrades: ['skirts'],
+    hp: 620, armor: 96, speed: 76, sight: 330, pop: 12, cost: { mp: 330, fu: 80 }, time: 30,
+    req: 'ger_dep', blastRes: 1.45,
+    w: { range: 320, dmg: 48, rof: 0.26, acc: .60, sup: .30, pen: 20, aoe: 26, shell: 1, auto: 1 },
+    desc: 'Four 2 cm cannon in an open turret on a Panzer IV chassis. Nothing on the field strips infantry out of the open faster, and nothing on the field is worse placed to meet a tank: the plate round the guns is sixteen millimetres and there is no roof over them at all.'
   },
   ger_stug: {
     side: 'ger', name: 'Sturmgeschütz IV', short: 'STUG IV', cat: 'veh', hk: 'S', upgrades: ['scope', 'mgs', 'skirts'],
@@ -1637,11 +1689,11 @@ var BUILDINGS = {
   ger_hq:  { side: 'ger', name: 'Fallschirmjäger Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['ger_pio', 'ger_gren'] },
   ger_qtr: { side: 'ger', name: 'Parachute Company Post', short: 'KOMPANIE POST', w: 112, h: 92, hp: 1500, hk: '1',
-             cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_mor', 'ger_how', 'ger_pgren'],
-             desc: 'Unlocks the MG42 team, the 8 cm mortar, the 75/18 howitzer and the Panzergrenadier group.' },
+             cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_flak20', 'ger_mor', 'ger_neb', 'ger_how', 'ger_pgren'],
+             desc: 'Unlocks the MG42 team, the 2 cm Flak 38, the 8 cm mortar, the Nebelwerfer, the 75/18 howitzer and the Panzergrenadier group.' },
   ger_dep: { side: 'ger', name: 'Armoured Support Point', short: 'PANZER SUPPORT', w: 134, h: 104, hp: 1700, hk: '2',
-             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
-             desc: 'Unlocks the Pak 40, Sd.Kfz. 222, StuG IV and Panzer IV.' }
+             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_wirb', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
+             desc: 'Unlocks the Pak 40, Sd.Kfz. 222, Wirbelwind, StuG IV and Panzer IV.' }
 };
 /* ---- field works.
    What a section of engineers can put up in a few minutes, as against a building, which
@@ -4300,7 +4352,7 @@ function spawnUnit(slot, key, x, y, facing) {
     facing: facing === undefined ? (side === 'us' ? 0 : Math.PI) : facing,
     vx: 0, vy: 0, speed: d.speed, sight: d.sight,
     order: null, path: null, pi: 0, dest: null, target: null, forced: null,
-    cd: rnd(0, .4), atcd: rnd(0, 2), sup: 0, setup: d.setup ? d.setup : 0, pack: 0, packed: false,
+    cd: rnd(0, .4), atcd: rnd(0, 2), reload: 0, sup: 0, setup: d.setup ? d.setup : 0, pack: 0, packed: false,
     moving: false, dead: false, vet: 0, kills: 0, retreat: 0, reinf: 0,
     building: null, repairing: null, hitT: 0, fireT: 0, seen: false, aim: 0, calm: 99,
     lay: 0, immob: 0, gunDmg: 0, shaken: 0, seenUs: -1, seenGer: -1, sp: 0, stance: ''
@@ -5128,7 +5180,14 @@ function barrageTick(u, dt) {
   if (u.cd <= 0) return;
   /* fireAt sets the cooldown from the weapon's own rate; a mission works faster */
   u.cd *= u.def.barrage.rof / u.def.w.rof;
-  if (--b.left <= 0) u.barrage = null;
+  if (--b.left <= 0) {
+    u.barrage = null;
+    /* a rack of tubes is reloaded by hand, and that clock is the whole of what makes a
+       projector a different weapon from a howitzer rather than a bigger one. It is its
+       own field rather than the cooldown, because the cooldown is a second between
+       rockets of the same ripple and the label would read RELOADING through all six. */
+    if (u.def.reload) u.reload = u.def.reload;
+  }
 }
 function orderStop(u) {
   if (u.retreat) return;
@@ -6519,6 +6578,7 @@ function fireAt(u, t, dt, opt) {
   if (d > maxR) return;
   if (u.def.arc && Math.abs(angDiff(u.facing, angTo(u, t))) > u.def.arc / 2) return;
   if (u.setup > 0 || u.pack > 0 || u.packed) return;   /* setting up, packing, or on the men's backs */
+  if (u.reload > 0) return;                            /* a rack of tubes being reloaded by hand */
   if (u.retreat) return;
   if (onOrderOnly(u) && !u.barrage) return;      /* only ever on an order, only ever at ground */
   if (u.lay > 0) return;                                 /* still laying on */
@@ -7397,7 +7457,7 @@ function settleChunk(c) {
   G.rubDirty = 1;
 }
 function rubCap() { return MOB ? 500 : 1400; }
-function explode(x, y, radius, dmg, owner, except, bz) {
+function explode(x, y, radius, dmg, owner, except, bz, w) {
   burstFx(x, y, radius, 0, bz);
   /* And it takes a piece of the ground away. Only a round that went off on the ground:
      one that burst against an upper storey scorches the street and does not open it.
@@ -7418,7 +7478,19 @@ function explode(x, y, radius, dmg, owner, except, bz) {
     var d = dist(e, { x: x, y: y });
     if (d > radius + 26) continue;
     var f = clamp(1 - d / (radius + 26), .15, 1);
-    if (e.cat === 'veh') { if (owner && owner.side !== e.side) damage(e, dmg * f * .35, owner); }
+    /* And a vehicle by what the burst was and by what is over it. The `.35` is what says
+       a vehicle shrugs off what a near miss does to men; an automatic cannon is the
+       exception for the same reason it is the exception for masonry, because its `dmg` is
+       five small rounds rather than one shell and five small rounds that did not get
+       through the plate did nothing at all to what is behind it. Read the usual way, a
+       Wirbelwind's splash alone took a Sherman down at thirty points a second whatever
+       its armour said, which is a quad 2 cm killing a medium tank by missing it. And
+       `blastRes` above one is an open turret, which the men's branch below has read since
+       the mortars went in and this branch never did. */
+    if (e.cat === 'veh') {
+      if (owner && owner.side !== e.side)
+        damage(e, dmg * f * (w && w.auto ? .05 : .35) * (e.def.blastRes || 1), owner);
+    }
     else {
       /* A hole in the ground is worth more against a shell than against a bullet: this
          is the whole reason men dig, and on a map fought over by artillery it should be
@@ -7450,8 +7522,16 @@ function explode(x, y, radius, dmg, owner, except, bz) {
      rather than off the burst. Below a couple of dozen points of damage nothing gets
      through a stone wall at all, which is why a grenade leaves a scorch mark and the
      eight-inch leaves daylight. */
-  if (dmg >= 22) {
-    var br = clamp(3 + dmg * .075, 4, 26), reach = clamp(12 + dmg * .2, 16, 74);
+  /* An automatic cannon is the exception, and the reason is that its damage is a BURST
+     rather than a shell. Everything else here fires one round a volley and its `dmg` is
+     what that round does, so a breach scaled off it is the breach one round cuts; a 2 cm
+     volley is five rounds walked across a few paces of ground and its `dmg` says what
+     five of them do to men. Read the usual way it took a bay out of a terrace in fifteen
+     seconds of fire. What twenty millimetres actually does to masonry is scar the
+     stucco, which is what is left once this drops it under the floor below. */
+  var mdmg = w && w.auto ? dmg * .18 : dmg;
+  if (mdmg >= 22) {
+    var br = clamp(3 + mdmg * .075, 4, 26), reach = clamp(12 + mdmg * .2, 16, 74);
     var bh = bz === undefined ? 10 : bz;
     ruinsNear(x, y, reach, function (pr) { ruinHit(pr, x, y, bh, reach, br, owner); });
     /* and the walls, which are a list of a hundred segments rather than a town of props,
@@ -7884,13 +7964,26 @@ var MUZ = {
   gun:    { r: 12,   ln: 3.1, sm: 13, dust: 30, lit: 1 },
   mortar: { r: 6,    ln: 1.1, sm: 13, dust: 0,  el: 1.7 },
   how:    { r: 15,   ln: 3.4, sm: 19, dust: 44, lit: 1 },
-  heavy:  { r: 21,   ln: 4.0, sm: 28, dust: 70, lit: 1 }
+  heavy:  { r: 21,   ln: 4.0, sm: 28, dust: 70, lit: 1 },
+  /* an automatic cannon: a small bright flash a long way down the bore, at a rate
+     nothing else on the roster fires at, and hardly any smoke because hardly any
+     propellant burns per round */
+  auto:   { r: 7,    ln: 3.2, sm: 4,  dust: 0,  lit: 1 },
+  /* and a rack of rocket tubes, which is the opposite of all of them: nothing is
+     confined, so what a bystander sees is the motors burning in the open behind the
+     round and the whole position disappearing into its own smoke */
+  werfer: { r: 17,   ln: 5.6, sm: 40, dust: 34, lit: 1, el: .8 }
 };
 /* German propellant reads paler and Commonwealth reads more orange. It is one number a
    player can pick a side out of a night-dark street by, and it costs two entries. */
 var FLASHC = { us: [1, .78, .36], ger: [1, .92, .66] };
 function muzClass(u, w) {
   if (!w.shell) return u.cat === 'veh' ? 'coax' : w.rof < .3 ? 'mg' : 'rifle';
+  /* a rocket is asked first, because a projector is also indirect and would otherwise
+     read as a howitzer, and a shoulder launcher as an anti-tank gun */
+  if (w.rocket) return 'werfer';
+  /* and an automatic cannon is neither a machine gun nor an anti-tank gun */
+  if (w.auto) return 'auto';
   if (u.def.indirect) return (w.aoe || 0) >= 100 ? 'heavy' : u.def.barrageOnly ? 'how' : 'mortar';
   if (u.cat === 'veh') return 'gun';
   return (w.aoe || 0) >= 44 ? 'how' : 'at';
@@ -7898,8 +7991,12 @@ function muzClass(u, w) {
 function muzFx(u, w, x, y, z, ang) {
   var M = MUZ[muzClass(u, w)] || MUZ.rifle, col = FLASHC[u.side] || FLASHC.us, i;
   /* the charge behind the round: a 37mm and a 128mm are both 'a tank gun' and are not
-     the same event */
-  var g = w.shell ? clamp(.65 + w.pen / 620 + (w.aoe || 0) / 320, .7, 1.9) : 1;
+     the same event. A rocket is the exception and is sized off the burst alone, because
+     there is no chamber pressure behind one at all: its penetration says nothing about
+     how much propellant burns in the open behind it, and read the usual way a fifteen-
+     centimetre projector came out smaller than the shoulder launcher beside it. */
+  var g = w.rocket ? clamp(.6 + (w.aoe || 0) / 90, .7, 2.2)
+        : w.shell ? clamp(.65 + w.pen / 620 + (w.aoe || 0) / 320, .7, 1.9) : 1;
   var f = spawnFx('flash', x, y, M.r * g, z);
   if (!f) return;
   f.a = ang; f.ln = M.ln; f.col = col; f.el = M.el || 0; f.br = w.brake ? 1 : 0; f.lit = M.lit || 0;
@@ -7965,7 +8062,7 @@ function updateShots(dt) {
         if (s.smk) smokeBurst(s.tx, s.ty, s.smk, s.side);
         else {
           if (direct) damage(direct, s.dmg, s.owner);
-          if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct, s.bz);
+          if (s.aoe) explode(s.tx, s.ty, s.aoe, s.dmg, s.owner, direct, s.bz, s.w);
           else if (s.hit) spawnFx('hit', s.tx, s.ty);
         }
         G.shots.splice(i, 1);
@@ -8779,7 +8876,19 @@ function updateUnit(u, dt) {
   if (u.fireT > 0) u.fireT -= dt;
   if (u.cd > 0) u.cd -= dt;                                /* the loader works whether or not there is a target */
   if (u.atcd > 0) u.atcd -= dt;
-  if (u.setup > 0 && !u.moving) { u.setup -= dt; if (u.setup <= 0 && u.def.pack) u.packed = false; }
+  if (u.reload > 0) u.reload -= dt;                        /* and so does the crew reloading a rack of tubes */
+  if (u.setup > 0 && !u.moving) {
+    u.setup -= dt;
+    if (u.setup <= 0) {
+      if (u.def.pack) u.packed = false;
+      /* and a mount that was carried here is laid on the bearing the crew set it down
+         on. `u.baseA` is what the platform under a two-piece gun is drawn on and it was
+         written once at spawn, which is right for a thing built where it stands and
+         wrong for a piece that packs up and walks: a Flak 38 set up again a street away
+         kept its platform pointing the way it was first put down. */
+      u.baseA = u.facing;
+    }
+  }
   if (u.pack > 0) {
     u.pack -= dt;
     if (u.pack <= 0) { u.pack = 0; u.packed = true; }
@@ -9184,7 +9293,7 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
                'bunker.reached', 'bunker.money', 'bunker.ok', 'bunker.man',
                'bunker.mg', 'bunker.at', 'bunker.mor',
                'bunker.rep', 'bunker.med',
-               'buy.inf', 'buy.mg', 'buy.mortar', 'mortar.gate.reached', 'mortar.gate.want',
+               'buy.inf', 'buy.mg', 'buy.auto', 'buy.mortar', 'buy.neb', 'mortar.gate.reached', 'mortar.gate.want',
                'mortar.gate.money', 'mortar.mission', 'buy.how', 'how.gate.reached', 'how.gate.want',
                'how.gate.money', 'how.gate.pop', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
                'buy.hurt',
@@ -11180,7 +11289,7 @@ function aiTick(dt) {
   var spend = aiBuys(slot), keep = spend ? 0 : 300, arty = G.aiArty !== false || !spend;
   var K = side === 'us'
     ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', how: 'us_how', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
-    : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', mor: 'ger_mor', how: 'ger_how', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
+    : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
 
   /* ---- what it has.
      Five lists, because the same unit is a different thing to each part of the brain.
@@ -11235,7 +11344,7 @@ function aiTick(dt) {
     ? [['us_m8', 1, 40], ['us_at', 2, 130], ['us_m3', 1, 210], ['us_stuart', 1, 270],
        ['us_sher', 2, 310], ['us_ach', 1, 580], ['us_sher', meds, 650]]
     : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210], ['ger_stug', 1, 235],
-       ['ger_p4', 2, 260], ['ger_tig', 1, 620], ['ger_p4', meds, 690]], IN, own);
+       ['ger_p4', 2, 260], ['ger_wirb', 1, 340], ['ger_tig', 1, 620], ['ger_p4', meds, 690]], IN, own);
   /* and what this player has been told to want, which multiplies what the cut just
      decided rather than replacing it.
        A heavy weight above even also opens the one rung a brain is not otherwise allowed:
@@ -11296,12 +11405,23 @@ function aiTick(dt) {
   /* What the post already has, counted once out of the picture rather than by another
      walk of the army. It is read here rather than down in the post's own block because
      the reserve below has to know whether the company still wants its gun. */
-  var mgs = 0, mors = 0, hows = 0;
+  var mgs = 0, mors = 0, hows = 0, autos = 0, nebs = 0;
   for (var mi = 0; mi < teams.length; mi++) {
     if (teams[mi].key === K.mg) mgs++;
+    else if (teams[mi].key === K.auto) autos++;
     else if (teams[mi].key === K.mor) mors++;
+    else if (teams[mi].key === K.neb) nebs++;
     else if (teams[mi].key === K.how) hows++;
   }
+  /* The automatic cannon, which only one side has. It is bought for the two things it is
+     the answer to rather than as another body: a mass of infantry, because twenty
+     millimetres of high explosive at that rate is the fastest way there is of stripping
+     one out of the open; and light armour, because nothing else in the company post will
+     open a scout car and it is a great deal cheaper than the gun that would. It is not
+     bought against a tank, and the penetration is why. One is plenty. */
+  var autoD = K.auto ? UNITS[K.auto] : null;
+  var autoWant = !!autoD && autos < 1 && skill >= 1 && mgs >= 1 &&
+                 (IN.lt >= 1 || IN.inf >= 4) && popOf(slot) + autoD.pop <= popCap(slot);
   /* One mortar, and it is bought for a reason rather than as another body: it is the
      answer to men in a house and to a gun line, both of which are things you cannot shoot
      at from in front. Skill 1 and up, because a green opponent that drops bombs on a
@@ -11316,6 +11436,14 @@ function aiTick(dt) {
   var howWant = !!howD && G.aiArty !== false && wArty > 0 && skill >= 1 && hows < 1 && mors >= 1 &&
                 men.length >= 4 && (wArty > 1 || IN.gar >= 1 || IN.mg >= 1 || IN.at >= 1);
   var howPop = !!howD && popOf(slot) + howD.pop <= popCap(slot);
+  /* And the projector, which wants what the howitzer wants and one more thing: an army
+     round it. Six rockets and then three quarters of a minute of standing still is a
+     fine trade behind a line and a poor one in front of nothing, and it is the dearest
+     thing the post sells. */
+  var nebD = K.neb ? UNITS[K.neb] : null;
+  var nebWant = !!nebD && G.aiArty !== false && wArty > 0 && skill >= 1 && nebs < 1 && mors >= 1 &&
+                men.length >= 5 && (wArty > 1 || IN.gar >= 1 || IN.mg >= 2 || IN.at >= 1) &&
+                popOf(slot) + nebD.pop <= popCap(slot);
   /* And what it is saving up for, in marks and in fuel.
 
      The population reserve above was only half of the problem. Sections are bought before
@@ -11387,8 +11515,10 @@ function aiTick(dt) {
        different questions and only the second should stop the list. */
     var shop = [];
     if (mgs < mgCap) shop.push([K.mg, 'buy.mg']);
+    if (autoWant) shop.push([K.auto, 'buy.auto']);
     if (skill >= 1 && K.mor && mors < morTubes && morWant) shop.push([K.mor, 'buy.mortar']);
     if (howWant && howPop) shop.push([K.how, 'buy.how']);
+    if (nebWant) shop.push([K.neb, 'buy.neb']);
     /* the assault group is the answer to men in a house and to a machine gun line, so
        when the enemy has either it is bought on a lower fuel floor than usual */
     if (wElite > 0 && men.length < armyCap &&
@@ -12942,7 +13072,7 @@ var AU = { ctx: null, on: true, budget: 0, noise: null, rumb: null, dry: null, s
    second are one rifle as far as the ear is concerned, and stacking them is half of why
    massed fire sounded like a rattle rather than like weight of fire. */
 var AUGAP = { rifle: .045, mg: .036, gun: .06, at: .06, mortar: .07, how: .07, heavy: .08,
-              rocket: .06, boom: .05, incoming: .09 };
+              rocket: .06, auto: .05, werfer: .14, boom: .05, incoming: .09 };
 /* ---- the voice of a gun ----------------------------------------------------------
    Read off the WEAPON rather than typed against six artillery pieces and thirty-six unit
    keys, which is the decision `muzFx` already made for the eye and for the same reason:
@@ -13174,6 +13304,30 @@ function sfx(kind, x, y, vo) {
     auHiss(t, out, AU.noise, 'bandpass', 1750 * j * v.pit * vs.pit, 720, 1.3, .5 * v.crk * vs.crk, .2, .003);
     auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 170 * v.pit, .8, .55 * v.wt * vs.bod, .4 * vs.tail, .006);
     auTone(t, out, 'sine', 112 * j * v.pit, 30, .5 * v.wt, .34 * vs.tail, 0);
+  } else if (kind === 'auto') {
+    /* An automatic cannon, which is neither of the two things either side of it in this
+       chain. Twenty millimetres is a shell out of a short barrel at four hundred and
+       fifty rounds a minute, so what reaches the ear is not one report but a hammering:
+       a hard flat crack with the breech slamming behind it and almost no tail at all,
+       because the next round is a fifth of a second away and a tail would turn a burst
+       into the porridge an MG42's would. */
+    snd.gain.value = clamp(.46 * v.wt, .2, 1);
+    auHiss(t, out, AU.noise, 'highpass', 2000 * j * v.pit * vs.pit, 800, .7, 1.1 * v.crk * vs.crk, .075, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1150 * j * v.pit * vs.pit, 480, 1.6, .7 * v.crk * vs.crk, .12, .002);
+    auTone(t, out, 'triangle', 430 * j * v.pit * vs.pit, 250 * v.pit, .3 * vs.bod, .09, .004);
+    auTone(t, out, 'sine', 150 * j * v.pit, 44, .5 * v.wt, .16 * vs.tail, 0);
+  } else if (kind === 'werfer') {
+    /* A rocket projector, and the one thing on the roster with no chamber behind the
+       round at all: there is no crack in this anywhere, because nothing is confined.
+       What leaves the tubes is propellant burning in the open, six of them inside a
+       second, so the report is long where every other one here is short and it RISES
+       rather than decaying. That is the whole of what the Allies were describing when
+       they called it the Moaning Minnie, and it is the motors rather than the shell. */
+    snd.gain.value = clamp(.8 * v.wt, .3, 1);
+    auHiss(t, out, AU.noise, 'bandpass', 620 * j * v.pit, 2200, .9, 1.0 * v.wt, .85, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 520 * v.pit, 150, .8, .9 * v.wt * vs.bod, .95 * vs.tail, .02);
+    auTone(t, out, 'sawtooth', 190 * j * v.pit, 540 * v.pit, .28 * v.wt, .7, .04);
+    auTone(t, out, 'sine', 84 * j * v.pit, 40, .55 * v.wt, .6 * vs.tail, 0);
   } else if (kind === 'mortar') {
     /* A tube. The charge is small and it burns in the open behind the bomb, so there is
        almost no crack in this at all: what you hear is gas leaving the muzzle, the tube
@@ -19387,6 +19541,61 @@ function pzivCupolaMG() {
    the turret, fitted against hollow-charge and Soviet anti-tank rifles. Panzer IVs in
    Italy were as often seen with panels missing as complete, so the hull run leaves a
    gap where one has been torn off. ---- */
+/* ================================================================ Flakpanzer IV Wirbelwind
+   The Panzer IV's turret taken off and an open nine-sided one welded to the same ring in
+   its place: 1.97 m across the flats, a metre and a sixth of plate leaning inboard, and
+   no roof. The crews called it the Keksdose, the biscuit tin, and the shape is the whole
+   of what it is -- nine plates rather than a casting, because nine flat plates could be
+   cut and welded in a field workshop and a turret casting could not.
+     Each wall is its own box rather than a loft, which is not a shortcut: the top of this
+   turret is open, and a shell of outward faces is simply not there when you look down
+   into it. A box has an inside.
+     Inside it, the 2 cm Flakvierling 38: four L/65 barrels in a square on one cradle, the
+   magazines standing off each gun, and the layer between them on his seat. */
+function wirbTurret(body, cap, sideC) {
+  var C = GUN, f = [], i, H = 13.6, R = 11.6, lean = .14;
+  /* the floor of the basket, so the ring does not read as a hole in the engine deck */
+  f = f.concat(cyl(0, 0, -.9, R - 1.2, R - 1.2, .9, 9, sideC, C.dgD, 0, true));
+  /* Plate 0 is on the bearing the guns point, and it is cut down to the height of the
+     embrasure: four barrels laid flat come out through the front of this turret, and with
+     nine full plates round it they came out through solid armour and were invisible from
+     every angle but straight down. The height the vehicle is measured to is the other
+     eight, which is right -- a gun slot is not the top of a turret. */
+  for (i = 0; i < 9; i++) {
+    var a = i / 9 * TAU, ph = i === 0 ? 7.4 : H;
+    var plate = pitch(box(0, 0, 0, 1.3, 8.9, ph, body, cap, sideC), lean, 0, 0);
+    f = f.concat(place(plate, a, Math.cos(a) * R, Math.sin(a) * R, 0));
+    /* the weld strap down each corner, which is what nine plates cut in a workshop look
+       like from outside and the one thing that says welded rather than cast */
+    var b = a + TAU / 18, bh = (i === 0 || i === 8) ? 7.4 : H;
+    f = f.concat(place(pitch(box(0, 0, 0, .5, 1.1, bh, sideC, cap, sideC), lean, 0, 0),
+                       b, Math.cos(b) * (R + .5), Math.sin(b) * (R + .5), 0));
+  }
+  /* the Flakvierling: four barrels in a square on a common cradle */
+  f = f.concat(box(-3.0, 0, 3.2, 7.4, 9.2, 6.2, C.dg, C.dgL, C.dgD));                     /* cradle */
+  f = f.concat(box(-6.6, 0, 2.4, 3.8, 5.2, .9, C.dgD, C.dg, C.dgD));                      /* the layer's seat */
+  f = f.concat(box(-8.3, 0, 3.3, .8, 5.2, 4.2, C.dgD, C.dg, C.dgD));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(box(-4.6, sd * 4.4, 5.6, 1.1, 1.1, 3.2, C.steel, C.steelL));             /* the grips */
+    f = f.concat(box(-4.6, sd * 4.4, 8.6, 2.4, .9, .9, '#3b3226', '#4a4030'));
+  });
+  [[1, 1], [1, -1], [-1, 1], [-1, -1]].forEach(function (q) {
+    var by = q[1] * 3.0, bz = q[0] > 0 ? 10.6 : 7.4;
+    f = f.concat(box(-1.0, by, bz - 1.4, 6.4, 2.8, 2.8, C.steel, C.steelL, C.steel));     /* receiver */
+    f = f.concat(tubeSmooth(2.2, 21.8, by, bz, .58, 8, C.steel, C.steel));
+    f = f.concat(tubeSmooth(21.8, 24.0, by, bz, .95, 8, '#2b2e23', '#44483a'));           /* flash hider */
+    /* the magazine lies outboard of its own gun rather than standing over it: on the real
+       mount it is angled, and drawn upright the four of them stand clean over the rim and
+       take the vehicle a foot above its published height */
+    f = f.concat(box(-.8, by + q[1] * 2.6, bz - 2.0, 2.4, 1.7, 4.0, C.dgD, C.dg, C.dgD));
+  });
+  f = f.concat(box(4.2, -5.6, 10.4, 1.2, 2.0, 1.6, '#14150f', '#14150f'));                /* the sight */
+  /* spent cases and two magazine crates on the floor, which is what an open turret has in
+     it after a minute of this */
+  f = f.concat(box(-7.4, 6.2, .1, 5.0, 3.6, 3.2, C.dgD, C.dg, C.dgD));
+  f = f.concat(box(-7.4, -6.2, .1, 5.0, 3.6, 3.2, C.dgD, C.dg, C.dgD));
+  return f;
+}
 function pzivSkirts(body) {
   var C = PZ, H = P4H, f = [], i, s2;
   for (s2 = -1; s2 <= 1; s2 += 2) {
@@ -22607,6 +22816,101 @@ function flak36Model() {
   f = f.concat(place(pitch(box(0, 0, 18, .9, 8, 3.4, C.dg, C.dgL, C.dgD), .26, 0, 0), 0, 5, 0, 9.5)); /* the strip joining the plates' top edge */
   return f;
 }
+/* ================================================================ 2 cm Flak 38
+   Two pieces, the way the eighty-eight is two pieces: the three-legged ground platform is
+   laid once on `u.baseA` and does not turn, and the gun on top of it traverses on
+   `u.facing`. The platform is 2.3 m across the outriggers with a levelling jack on each,
+   and the gun is the L/65 barrel -- 1.30 m of it -- on a cradle with the twenty-round box
+   magazine standing off the left and the layer sitting behind on a seat between the two
+   grips. That seat is why `gunSit` is declared on the def: the first man of the crew is
+   drawn sitting at the piece and the rest stand round it. */
+function flak38Base() {
+  var C = GUN, f = [], k;
+  f = f.concat(cyl(0, 0, 0, 5.0, 5.0, 1.6, 12, C.dg, C.dgL, 0, true));                    /* the hub */
+  for (k = 0; k < 3; k++) {
+    var leg = box(7.2, 0, .8, 14.4, 3.0, 1.8, C.dg, C.dgL, C.dgD)
+              .concat(box(13.8, 0, 0, 4.0, 4.8, 1.0, C.steel, C.steelL))                  /* the footplate */
+              .concat(box(12.8, 0, 2.4, 2.0, 2.0, 2.2, C.steel, C.steelL));               /* the levelling jack */
+    f = f.concat(place(leg, k * TAU / 3 + Math.PI, 0, 0, 0));
+  }
+  f = f.concat(cyl(0, 0, 1.6, 2.8, 2.8, 2.2, 10, C.dg, C.dgL, 0, true));                  /* the pivot */
+  /* the ready magazines, standing in a clip on the rear leg */
+  for (k = 0; k < 4; k++)
+    f = f.concat(box(-9.6 - (k % 2) * 2.8, -3.2 + Math.floor(k / 2) * 6.4, 1.7, 1.5, 2.4, 5.0, C.dgD, C.dg, C.dgD));
+  return f;
+}
+function flak38Model() {
+  var C = GUN, f = [];
+  f = f.concat(box(-1.6, 0, 2.2, 8.0, 7.0, 3.2, C.dg, C.dgL, C.dgD));                     /* top carriage */
+  f = f.concat(box(-7.0, 0, 3.0, 4.4, 5.0, .9, C.dgD, C.dg, C.dgD));                      /* the layer's seat */
+  f = f.concat(box(-9.0, 0, 3.9, .8, 5.0, 3.8, C.dgD, C.dg, C.dgD));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(box(-4.2, sd * 4.2, 4.8, 1.1, 1.1, 3.4, C.steel, C.steelL));             /* the grips */
+    f = f.concat(box(-4.2, sd * 4.2, 8.0, 2.4, .9, .9, '#3b3226', '#4a4030'));
+  });
+  /* the trunnion block, the receiver and the L/65 barrel with its conical flash hider */
+  f = f.concat(box(.6, 0, 5.4, 5.2, 5.2, 4.2, C.dg, C.dgL, C.dgD));
+  f = f.concat(box(-.6, 0, 9.0, 7.2, 3.8, 3.0, C.steel, C.steelL, C.steel));
+  f = f.concat(box(-4.4, 0, 9.2, 2.2, 2.0, 2.2, C.steel, C.steelL));                      /* the buffer at the back */
+  f = f.concat(box(.8, 2.6, 10.6, 2.8, 1.7, 4.4, C.dgD, C.dg, C.dgD));                    /* the box magazine */
+  f = f.concat(tubeSmooth(2.4, 17.4, 0, 10.6, .60, 10, C.steel, C.steel));
+  f = f.concat(tubeSmooth(17.4, 19.6, 0, 10.6, 1.00, 10, '#2b2e23', '#44483a'));
+  /* the shield: one low square plate across the front of the mount, which is all a light
+     flak gun in the ground role ever carried */
+  f = f.concat(place(pitch(box(0, 0, 0, .7, 15, 9.6, C.dg, C.dgL, C.dgD), .16, 0, 0), 0, 4.6, 0, 5.2));
+  f = f.concat(box(5.8, -3.2, 11.6, 1.1, 1.8, 1.5, '#14150f', '#14150f'));                /* the sight aperture */
+  f = f.concat(box(-.4, -3.4, 12.2, 2.0, 1.5, 1.8, C.steel, C.steelL));                   /* the sight on its bracket */
+  return f;
+}
+/* ================================================================ 15 cm Nebelwerfer 41
+   Six tubes welded round a hub in a hexagon, 1.30 m of them, on the same Pak 36 split
+   trail carriage the thing was actually issued on, laid up at the angle a rocket leaves
+   at. The tubes are the whole of what it looks like and the carriage under them is a
+   towed anti-tank gun's with the gun taken off, which is what it was.
+     The cluster is built along +z and then pitched forward, which is the mortar's own
+   idiom and for the mortar's reason: `pitch` swings +z toward -x, so a thing built along
+   +z leans forward with a NEGATIVE angle and a thing built along +x rises with a positive
+   one. The muzzle the def declares is measured off this rather than guessed. */
+function nebelwerferModel() {
+  var C = GUN, f = [], i;
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(at(lathe(0, 0, 0, [[0, -1.3], [1.1, -1.3], [1.1, -.6], [2.1, -1.0], [3.0, -1.3], [4.4, -1.3], [4.4, 1.3], [3.0, 1.3], [2.1, 1.0], [1.1, .6], [1.1, 1.3], [0, 1.3]], 14,
+                     [C.dgL, C.dg, C.dgD, C.dg, '#2a2b26', C.rubber, '#2a2b26', C.dg, C.dgD, C.dg, C.dgL], true), 0, sd * 9.6, 4.4));
+    for (i = 0; i < 14; i++) { var ta = i / 14 * TAU; f = f.concat(box(Math.cos(ta) * 4.3, sd * 9.6, 4.4 + Math.sin(ta) * 4.3, .45, 2.4, .45, '#2a2b26', C.rubber)); }
+  });
+  f = f.concat(box(0, 0, 3.4, 4.0, 17, 1.8, C.dg, C.dgL, C.dgD));                         /* axle */
+  [-1, 1].forEach(function (sd) {
+    var trail = box(-11, 0, 0, 22, 2.2, 3.0, C.dg, C.dgL, C.dgD)
+                .concat(box(-21.5, 0, -1.0, 2.6, 4.4, 5.0, C.steel, C.steelL));           /* the spade */
+    f = f.concat(place(trail, sd * .46, 0, 0, 2.6));
+  });
+  f = f.concat(box(-23, 0, 4.0, 3.4, 1.2, 1.2, C.steel, C.steelL));                       /* towing lunette */
+  f = f.concat(box(0, 0, 4.2, 6.4, 8.0, 4.2, C.dg, C.dgL, C.dgD));                        /* the saddle */
+  f = f.concat(cyl(-3.0, 4.6, 6.2, 1.5, 1.5, .5, 12, C.steel, C.steelL, 0, true));        /* elevating handwheel */
+  f = f.concat(cyl(-3.0, -4.6, 6.2, 1.5, 1.5, .5, 12, C.steel, C.steelL, 0, true));       /* traversing handwheel */
+  /* the cluster: six tubes on a hub, banded at each end, with the firing leads running
+     back from the breech ring */
+  var cl = [], R = 3.4, L = 15.4, a;
+  for (i = 0; i < 6; i++) {
+    a = i / 6 * TAU + TAU / 12;
+    cl = cl.concat(cyl(Math.cos(a) * R, Math.sin(a) * R, 0, 1.55, 1.55, L, 10, C.dgD, C.dg, 0, true));
+    cl = cl.concat(cyl(Math.cos(a) * R, Math.sin(a) * R, L - .7, 1.80, 1.80, .9, 10, C.steel, C.steelL, 0, true));
+    cl = cl.concat(cyl(Math.cos(a) * R, Math.sin(a) * R, -.5, 1.80, 1.80, 1.0, 10, C.steel, C.steelL, 0, true));
+  }
+  cl = cl.concat(cyl(0, 0, L * .42, 1.5, 1.5, 1.2, 8, C.steel, C.steelL, 0, true));       /* the hub band */
+  cl = cl.concat(cyl(0, 0, -1.4, 2.2, 2.2, 1.6, 8, C.steel, C.steelL, 0, true));          /* the trunnion boss */
+  f = f.concat(at(pitch(cl, -.80, 0, 0), 1.5, 0, 9.0));
+  /* the cradle arms the cluster swings in, and the firing cable drum behind them */
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(box(.6, sd * 5.4, 6.4, 5.0, 1.2, 3.6, C.dg, C.dgL, C.dgD));
+  });
+  f = f.concat(cyl(-5.0, 0, 5.2, 1.8, 1.8, 2.2, 10, C.dgD, C.dg, 0, true));
+  /* two rounds in their crate beside the trail, because a rack of empty tubes wants
+     saying that the next six are on the ground */
+  f = f.concat(box(-9.0, 10.4, -.1, 16, 5.0, 4.6, C.wood, lit(C.wood, 1.12), lit(C.wood, .82)));
+  f = f.concat(box(-9.0, -10.4, -.1, 16, 5.0, 4.6, C.wood, lit(C.wood, 1.12), lit(C.wood, .82)));
+  return f;
+}
 /* Crew-served weapons are geometry too, so a Vickers reads differently from an MG42. */
 function wheeledHull(len, wid, axles, body, cap, sideC, turretless) {
   var f = [];
@@ -23117,6 +23421,11 @@ function buildVehicleModels() {
                       bar: 43, big: 1, scale: 1, mountZ: P4H.zRoof, gunZ: 3.0, turX: 4.3, mg: pzivCupolaMG(), skirts: pzivSkirts(PZ4.body), turSkirts: pzivTurretSkirts(PZ4.body, PZ4.dark) };
   /* fixed: the gun is the only thing that turns, so the hatches and the roof fittings
      are drawn with the hull rather than with the mount */
+  /* the same chassis with a different thing bolted to the ring. `bar` under 20 is what
+     tells `insideOf` this is an open well to fight from rather than a turret with a
+     breech in it, which is exactly what it is. */
+  VMODEL.ger_wirb = { hull: pzivHull(PZ4.body, PZ4.lit, PZ4.dark), tur: wirbTurret(PZ4.body, PZ4.lit, PZ4.dark), belly: P4H.zBelly,
+                      bar: 18, big: 1, scale: 1, mountZ: P4H.zRoof, gunZ: 7.2, turX: 4.3, skirts: pzivSkirts(PZ4.body) };
   VMODEL.ger_stug = { hull: stugHull(PZ4.body, PZ4.lit, PZ4.dark), tur: stugGun(PZ4.body, PZ4.lit), belly: P4H.zBelly,
                       bar: 30.9, big: 1, fixed: 1, scale: 1, mountZ: STG.zGun, gunZ: 0, turX: STG.xFront, turY: STG.yGun,
                       skirts: pzivSkirts(PZ4.body), mgUp: { mgs: stugCoax() }, addUp: { mgs: stugRoofMG(), scope: stugScope() } };
@@ -23178,6 +23487,11 @@ function buildVehicleModels() {
   GUNMODEL.ger_mor = { mesh: mortarModel(true), bar: 6, z: 9 };
   GUNMODEL.us_t8 = { mesh: scaleFaces(gunT8Model(), .92), bar: 45 * .92, z: 15.0 * .92 };
   GUNMODEL.ger_flak88 = { mesh: flak36Model(), base: flak36Base(), bar: 47.5, z: 18.5 };
+  /* the two that walk: `bar` is measured from the LAYER rather than from the piece,
+     because the flash is spawned off the first living man and the gun is drawn gunAt
+     ahead of him */
+  GUNMODEL.ger_flak20 = { mesh: flak38Model(), base: flak38Base(), bar: 27, z: 11 };
+  GUNMODEL.ger_neb = { mesh: nebelwerferModel(), bar: 21, z: 20 };
   /* the heavy battery: the platform is laid on u.baseA and the gun turns on it, and the
      flash comes off a muzzle five metres up rather than off the end of a level barrel */
   GUNMODEL.us_how8 = { mesh: bigHowModel(false), base: bigHowBase(false), bar: 32, z: 56 };
@@ -25831,6 +26145,7 @@ function drawUnitOverlay(u, p) {
   else if (u.sup > .55) lbl = 'SUPPRESSED';
   else if (u.pack > 0) { lbl = 'PACKING'; lcol = '#9fb08a'; }
   else if (u.setup > 0 && u.def.setup && !u.moving && !u.towedBy) { lbl = 'SETTING UP'; lcol = '#9fb08a'; }
+  else if (u.reload > 0) { lbl = 'RELOADING'; lcol = '#9fb08a'; }
   else if (u.stance === 'ground' && !u.moving && u.cat !== 'veh' && !u.gar) { lbl = 'DOWN'; lcol = '#9fb08a'; }
   else if (u.stance === 'double' && u.moving) { lbl = 'DOUBLE TIME'; lcol = '#9fb08a'; }
   else if (u.def.wUp && u.def.wUp.he) { lbl = u.up && u.up.he ? 'HE' : 'AP'; lcol = '#9fb08a'; }

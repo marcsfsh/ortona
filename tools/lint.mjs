@@ -183,10 +183,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    himself, each with a temper saying what it is worth losing men over, beside a posture
    and a reaction he can set for the army or for one unit -- and the order pad, the
    battle groups and the live order list that let him say all of it with a thumb.
+   It is 1815 for three more German pieces: a 2 cm Flak 38 on its ground platform, a
+   15 cm Nebelwerfer that fires a ripple of six and then reloads by hand for the best
+   part of a minute, and a Wirbelwind, which is a Panzer IV with an open nine-sided
+   turret and four automatic cannon in it. Most of the step is the three models; the
+   rules they needed were an automatic-cannon and a rocket signature for the eye and the
+   ear, a reload clock, and the blast a vehicle takes read off what is over it.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1800) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1800 kB so it stays quick to load on a phone`);
+if (kb > 1815) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1815 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
