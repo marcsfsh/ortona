@@ -1763,13 +1763,23 @@ for (const device of TARGETS) {
      together they swung between 202 units of ground with 1.4 radians of turn and 29 units
      with 8 radians, on the same code, and the row passed or failed on where the tank
      happened to be pointing when it started. */
+  /* The tank is parked by its own headquarters while a battle runs, and a hull that is
+     being shot at does not answer its own controls: povDrive zeroes the turn outright at
+     a suppression over 1 and eases it off below that. The periscope block already gives
+     this tank a hundred thousand hit points for the same reason -- what the row is about
+     is the pad, not what the opposition is doing to it -- so it is unpinned before each
+     leg. Without it the steer leg came back at 0.22 radians of three seconds on a phone
+     run and 1.61 on the desktop beside it, on the same code. */
+  const unpin = () => page.evaluate(() => { const u = window.POV.u; if (u) { u.sup = 0; u.immob = 0; u.shaken = 0; } });
   await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = 0; });
+  await unpin();
   await fastForward(page, 3);
   const drvA = await page.evaluate(([x, y]) => {
     const u = window.POV.u;
     return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
   }, [drv0.x, drv0.y]);
   await page.evaluate(() => { window.DRV.padT = .35; window.DRV.padS = 1; });
+  await unpin();
   await fastForward(page, 3);
   const drv2 = await page.evaluate(([f]) => {
     const u = window.POV.u;
