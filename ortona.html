@@ -819,7 +819,7 @@ body:not(.simple) #tOrders{display:none}
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px">GROUND</span>
     <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true">ORTONA</button>
     <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false">GOTHIC LINE</button>
-    <button class="gmap" data-map="omaha" title="Omaha Beach, 6 June 1944: up the beach from the water, over the seawall and off it by one of three draws" aria-pressed="false">OMAHA</button>
+    <button class="gmap" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="false">OMAHA</button>
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">OPPOSITION</span>
     <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
     <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
@@ -1853,8 +1853,10 @@ function makeSectors() {
     a.nb = others.slice(0, 3).map(function (b) { return b.id; });
   });
   G.sectors.forEach(function (a) { a.nb.forEach(function (id) { var b = G.secById[id]; if (b && b.nb.indexOf(a.id) < 0) b.nb.push(a.id); }); });
-  var NAMES = {}; defs.forEach(function (d) { NAMES[d.id] = d.label || d.id; });
-  G.sectors.forEach(function (s2) { s2.label = NAMES[s2.id]; });
+  var NAMES = {}, HOME = {}; defs.forEach(function (d) { NAMES[d.id] = d.label || d.id; if (d.home) HOME[d.id] = d.home; });
+  /* a victory flag a side opens the battle standing on (`home`) does not count against
+     the other side while that side still holds it: it counts once it has been taken */
+  G.sectors.forEach(function (s2) { s2.label = NAMES[s2.id]; if (HOME[s2.id]) s2.home = HOME[s2.id]; });
   G.secById = {};
   G.sectors.forEach(function (s) { G.secById[s.id] = s; });
   /* which sectors touch each HQ */
@@ -1921,38 +1923,57 @@ function coastY(x) { return LAND.coast ? LAND.coast(x) : -4000; }
 function railY(x) { return LAND.rail ? LAND.rail(x) : WORLD.h + 4000; }
 function coastOrtona(x) { var d = Math.abs(x - WORLD.w / 2); return 170 + Math.sin(d / 290) * 16 + Math.sin(d / 83) * 5; }
 function railOrtona(x) { var d = Math.abs(x - WORLD.w / 2); return 1790 - Math.sin(d / 400) * 10; }
-/* Omaha runs the other way from everything else here. It is a corridor, tall and narrow,
-   and the Channel is along the BOTTOM of it (LAND.south): the American army comes up out
-   of the water toward the top of the screen and the German army comes down off the
-   farmland to meet it. The waterline wanders a little and no more, and everything about
-   this country is measured UP from it rather than from an edge of the map, so the whole
-   profile follows the shore. */
-function coastOmaha(x) { return 3380 + Math.sin(x / 233) * 14 + Math.sin(x / 71 + 1.3) * 4; }
-function omahaUp(x, y) { return coastOmaha(x) - y; }
-/* The lines of the country, each a distance up the beach from the water: the top of the
-   tidal flat, which is the foot of the shingle; the foot of the bluff; and how far the
-   face runs before it tops out. They are functions because the landform, the paint and
-   the map's own placement all want the same numbers, and two lists of one thing go out
-   of step the moment somebody changes one. OM_WALL is the seawall, which is the middle of
-   the map and the line the whole battle is about. */
-function omahaBeach(x) { return 1250 + Math.sin(x / 280 + .6) * 30 + (hfbm(x / 350, 0, 77, 2) - .5) * 40; }
-function omahaToe(x) { return 1700 + Math.sin(x / 190 + .8) * 22; }
-function omahaRun(x) { return 330 + (hfbm(x / 280, 0, 83, 2) - .5) * 90; }
-var OM_WALL = 1540;
-/* The three lanes the engineers blew through the obstacles, one below each draw: the
-   belts are gapped there, the shingle is bulldozed low there and the seawall is open
-   there, because that is the only way anything with wheels gets from the water to a
-   road off the beach. */
-var OMAHA_LANES = [330, 800, 1270];
-function omahaLane(x) {
-  var best = 0;
-  for (var g = 0; g < OMAHA_LANES.length; g++) {
-    var t = clamp(1 - Math.abs(x - OMAHA_LANES[g]) / 110, 0, 1);
-    t = t * t * (3 - 2 * t);
-    if (t > best) best = t;
-  }
-  return best;
+/* ---- Omaha: the lines of the country ----
+   A corridor 1500 across and 4000 deep with the Channel along its bottom edge
+   (LAND.south): the American army comes up out of the water toward the top of the screen
+   and the German army comes down off the farmland to meet it. Every line in this country
+   is laid by hand, west to east, as a list of points, and the ground is built between
+   them: where the water stands at low tide, where the shingle begins, the face of the
+   seawall, the foot and the lip of the bluff, the runnels the tide leaves in the flat,
+   and the two draws that are the only way up for anything with wheels. A line is read back
+   by interpolation (omLine), so the landform, the paint and the placing of everything on
+   the map ask the same question of the same numbers.
+   Read up the screen: the water's edge at about 3850, twelve hundred units of open flat,
+   the shingle from 2670, the seawall at 2610, a strip of dune and marsh behind it, the foot
+   of the bluff at about 2340, its lip at about 2020, and the farmland beyond it all the
+   way to the German end at the top. */
+var OM = {
+  water:   [[0, 3858], [250, 3851], [500, 3843], [750, 3847], [1000, 3856], [1250, 3862], [1500, 3855]],
+  shingle: [[0, 2676], [250, 2668], [500, 2671], [750, 2679], [1000, 2673], [1250, 2665], [1500, 2670]],
+  wall:    [[0, 2612], [250, 2606], [500, 2608], [750, 2615], [1000, 2610], [1250, 2603], [1500, 2607]],
+  toe:     [[0, 2352], [120, 2338], [250, 2356], [520, 2346], [640, 2318], [760, 2334], [880, 2350],
+            [1000, 2322], [1250, 2340], [1380, 2330], [1500, 2346]],
+  crest:   [[0, 2010], [110, 2035], [200, 2002], [520, 2028], [620, 1990], [740, 2018], [860, 2046],
+            [960, 2004], [1260, 2030], [1380, 2012], [1500, 2026]],
+  /* each runnel is a trough the ebb left along the beach, a metre or so deep, and at low
+     water it holds the sea: the one thing between the tide line and the shingle a man can
+     get down into */
+  runnels: [
+    { pts: [[0, 3590], [180, 3570], [420, 3552], [640, 3566], [900, 3548], [1150, 3572], [1500, 3560]], w: 30, d: 1.3 },
+    { pts: [[80, 3240], [300, 3226], [560, 3238], [760, 3212], [980, 3230], [1260, 3218], [1420, 3236]], w: 40, d: 1.0 },
+    { pts: [[0, 2930], [260, 2944], [520, 2926], [800, 2940], [1100, 2922], [1500, 2936]], w: 26, d: .6 }],
+  /* the two draws, each a centre line from the gap at its foot to the plateau at its head,
+     a floor and the width of the walls either side of it. Vierville is the narrower. */
+  draws: [
+    { name: 'Vierville', pts: [[400, 2372], [396, 2250], [388, 2140], [392, 2030], [404, 1930], [410, 1820]], floor: 64, wall: 110 },
+    { name: 'Les Moulins', pts: [[1100, 2360], [1106, 2240], [1116, 2130], [1112, 2020], [1100, 1920], [1094, 1820]], floor: 72, wall: 120 }]
+};
+/* a line laid west to east, read at x; off either end it holds its last value */
+function omLine(tab, x) {
+  if (x <= tab[0][0]) return tab[0][1];
+  for (var i = 1; i < tab.length; i++)
+    if (x <= tab[i][0]) return lerp(tab[i - 1][1], tab[i][1], (x - tab[i - 1][0]) / (tab[i][0] - tab[i - 1][0]));
+  return tab[tab.length - 1][1];
 }
+/* a draw's centre line, laid from its foot up the map, read at y */
+function omDrawX(pts, y) {
+  if (y >= pts[0][1]) return pts[0][0];
+  for (var i = 1; i < pts.length; i++)
+    if (y >= pts[i][1]) return lerp(pts[i - 1][0], pts[i][0], (pts[i - 1][1] - y) / (pts[i - 1][1] - pts[i][1]));
+  return pts[pts.length - 1][0];
+}
+function coastOmaha(x) { return omLine(OM.water, x); }
+function omahaUp(x, y) { return coastOmaha(x) - y; }
 function mainRoadY(x) { return 1038 - clamp((x - 350) / 2250, 0, 1) * 142 + Math.sin(x / 420) * 13; }
 /* ================================================================ the map as data
    A map is a list of entities in world units plus a height-brush list. The editor edits
@@ -2901,314 +2922,44 @@ function gothicMapData() {
 }
 
 
-/* ---- Omaha Beach, the Dog and Easy sectors, 6 June 1944 ----
-   A corridor, and the first map here that is not a field with a headquarters at either
-   end of its long axis: 1600 across and 3600 deep, with the Channel along the bottom and
-   the farmland along the top. The American army starts on the sand at the water's edge
-   and goes up the screen; the German army starts on the plateau behind the bluff and
-   comes down it. What they meet at is the middle of the map and the only built thing on
-   the whole beach: the seawall, with the Atlantic Wall dug in behind it.
-
-   It is not mirrored and cannot be. What makes it a fair fight is the walk: each
-   headquarters is about the same distance from the three flags on the wall, and those
-   three start in nobody's hands. The American side has a mile of open sand to cross and
-   the German side has a bluff to come down, and whoever holds the wall holds the flags.
-
-   Everything is placed at a distance UP from the waterline (at(x, up)), because the shore
-   wanders and a line laid at a constant y would run through the surf at one end of the
-   map and up the dunes at the other. The map is built before setWorld runs, so its size
-   is written here (MW) rather than read off WORLD. */
+/* ---- Omaha Beach, the map ----
+   Everything on it is placed by hand, one entity at a time, and nothing is mirrored: one
+   army has the sea at its back and the other has the high ground.
+   Sixteen flags in two lanes of eight, the west lane on the Vierville draw and the east
+   on Les Moulins, each linked to the flag above it, the flag below it and the one across
+   from it, so a lane can be forced and the other turned from it. The only victory flags
+   are the two at each end -- the water's edge where the craft came in and the village the
+   Germans are holding the country from -- and a side's own end does not count against
+   the other: the Americans win by taking the village and the Germans by putting them back
+   into the sea. The Americans open on the two rows at the water, the Germans on the four
+   from the crest back, and the seawall and the strip behind it are nobody's. */
 function omahaMapData() {
-  var E = [], MW = 1600;
-  /* one seed, so the map is the same on every run */
-  var _os = 6061944;
-  function r1() { _os = (_os * 1103515245 + 12345) & 0x7fffffff; return _os / 0x7fffffff; }
-  function rr(a, b) { return a + r1() * (b - a); }
-  function at(x, up) { return coastOmaha(x) - up; }
-  /* what has been placed, so that nothing scattered later lands on top of it. Everything
-     hand-placed goes down first and everything counted out goes down afterwards behind a
-     clearOf, because a rejection scatter only avoids what was placed BEFORE it. Anything
-     laid along a line is kept off along the whole of it and not only at its middle: a
-     belt of wire is a hundred and thirty units long and a crater scattered into one end
-     of it is a crater in the wire. */
-  var DUG = [], RDS = [];
-  function keepOff(x, y, r) { DUG.push([x, y, r]); }
-  function keepLine(x1, y1, x2, y2, r) {
-    var n = Math.max(1, Math.round(Math.hypot(x2 - x1, y2 - y1) / 30));
-    for (var k = 0; k <= n; k++) keepOff(lerp(x1, x2, k / n), lerp(y1, y2, k / n), r);
-  }
-  function clearOf(x, y, r) {
-    for (var i = 0; i < DUG.length; i++)
-      if (Math.hypot(x - DUG[i][0], y - DUG[i][1]) < r + DUG[i][2]) return false;
-    return true;
-  }
-  function offRoad(x, y, r) {
-    for (var i = 0; i < RDS.length; i++)
-      if (distToSeg(x, y, RDS[i][0], RDS[i][1], RDS[i][2], RDS[i][3]) < r + RDS[i][4]) return false;
-    return true;
-  }
-
-  function push(e) { E.push(e); }
-  function wall(x1, y1, x2, y2, h) { push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2, h: h }); keepLine(x1, y1, x2, y2, 12); }
-  function bank(x1, y1, x2, y2, tier) { push({ t: 'bank', x1: x1, y1: y1, x2: x2, y2: y2, tier: tier }); }
-  function wire(x1, y1, x2, y2) { push({ t: 'wire', x1: x1, y1: y1, x2: x2, y2: y2 }); keepLine(x1, y1, x2, y2, 16); }
-  function hogs(x1, y1, x2, y2, kind) { push({ t: 'hogs', x1: x1, y1: y1, x2: x2, y2: y2, kind: kind }); keepLine(x1, y1, x2, y2, 18); }
-  function road(w, pts) {
-    push({ t: 'road', width: w, pts: pts.map(function (q) { return { x: q[0], y: q[1] }; }) });
-    for (var i = 0; i < pts.length - 1; i++) RDS.push([pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], w / 2]);
-  }
-  function house(x, y, w, h, st) { push({ t: 'house', x: x, y: y, w: w, h: h, st: st }); keepOff(x, y, Math.max(w, h) * .7 + 24); }
-  function farm(x, y, w, h) { push({ t: 'farm', x: x, y: y, w: w, h: h }); keepOff(x, y, Math.max(w, h) * .7 + 28); }
-  function bunker(x, y, a) { push({ t: 'bunker', x: x, y: y, a: a, sd: 'ger', s: r1() }); keepOff(x, y, 76); }
-  function pit(x, y, a) { if (!clearOf(x, y, 44) || !offRoad(x, y, 40)) return; push({ t: 'emplace', x: x, y: y, r: 22, s: r1(), a: a }); keepOff(x, y, 40); }
-  function crater(x, y, r) { push({ t: 'crater', x: x, y: y, r: r }); keepOff(x, y, r + 16); }
-  function tree(x, y, r, lean) { push({ t: 'tree', x: x, y: y, r: r, s: r1(), lean: lean || 0 }); keepOff(x, y, 10); }
-  function scrub(x, y, r) { push({ t: 'scrub', x: x, y: y, r: r, s: r1() }); }
-  function debris(x, y, r) { push({ t: 'debris', x: x, y: y, r: r, s: r1() }); keepOff(x, y, r + 12); }
-  /* A fire trench is a zigzag and not a line: a traverse every dozen paces is what stops a
-     burst running the length of it. Every one here runs west to east and looks down the
-     beach, which is the +y side of a leg drawn that way, so the face is 1. */
-  function zig(x0, x1, up, amp) {
-    var pts = [], n = Math.max(2, Math.round((x1 - x0) / 70)), k;
-    for (k = 0; k <= n; k++) {
-      var x = lerp(x0, x1, k / n);
-      pts.push([x, at(x, up + (k % 2 ? amp : -amp))]);
-    }
-    for (k = 0; k < pts.length - 1; k++) keepLine(pts[k][0], pts[k][1], pts[k + 1][0], pts[k + 1][1], 34);
-    push({ t: 'trench', side: 'ger', face: 1, pts: pts.map(function (p) { return { x: p[0], y: p[1] }; }) });
-  }
-  /* lay a run of something across the beach at a distance up it, in pieces, leaving the
-     three lanes open: the belts, the wire and the teeth are all cut at the same three
-     places and nowhere else. The distance may be a number or a function of x, because the
-     wire behind the bank follows the bank. */
-  function alongUp(up, len, gap, jit, fn) {
-    var uf = typeof up === 'function' ? up : function () { return up; };
-    var edges = [20];
-    OMAHA_LANES.forEach(function (l) { edges.push(l - gap, l + gap); });
-    edges.push(MW - 20);
-    for (var k = 0; k < edges.length; k += 2) {
-      var a0 = edges[k], a1 = edges[k + 1], n = Math.max(1, Math.round((a1 - a0) / (len + 20)));
-      var step = (a1 - a0) / n;
-      for (var q = 0; q < n; q++) {
-        var x1 = a0 + q * step + 10, x2 = a0 + (q + 1) * step - 10;
-        if (x2 - x1 < 30) continue;
-        fn(x1, at(x1, uf(x1) + rr(-jit, jit)), x2, at(x2, uf(x2) + rr(-jit, jit)));
-      }
-    }
-  }
-  /* whether a line is clear of everything placed so far, asked along the whole of it
-     short of its two ends, which is where the last piece of the same run stopped */
-  function lineClear(x1, y1, x2, y2, r) {
-    for (var t = .2; t <= .81; t += .1) if (!clearOf(lerp(x1, x2, t), lerp(y1, y2, t), r)) return false;
-    return true;
-  }
-
-  /* ---- 1. the Atlantic Wall. Two casemates behind the seawall looking straight out
-     over the sand, and one at either end of it in front of the wall firing ALONG the beach
-     -- outPoint clamps a garrison's fire into its own arc, so a round out of the slot is
-     allowed and the same round to its rear is refused by its own concrete, and the two
-     end ones enfilade the strip between the bank and the wall from both sides. Every one
-     of them says its side outright: bunkerSide reads the side off which half of the map a
-     thing stands on, which is right for a map with a headquarters at either end. ---- */
-  bunker(560, at(560, 1568), Math.PI / 2);
-  bunker(1040, at(1040, 1568), Math.PI / 2);
-  bunker(110, at(110, 1470), 0);
-  bunker(1490, at(1490, 1470), Math.PI);
-
-  /* ---- 2. the seawall itself, which is the middle of the map. It is poured concrete a
-     man can fire over and a tank cannot climb (sea: 1), so it is a firing line to the one
-     and a barrier to the other, open at the three lanes and at the two casemates set into
-     it, with the odd breach a shell has made. ---- */
-  var WGAP = [[250, 410], [506, 614], [712, 888], [986, 1094], [1190, 1350]];
-  var wa = 20;
-  for (var wg = 0; wg <= WGAP.length; wg++) {
-    var wb = wg < WGAP.length ? WGAP[wg][0] : MW - 20, wp = wa;
-    while (wb - wp > 30) {
-      var wq = Math.min(wb, wp + rr(110, 160));
-      if (wb - wq < 40) wq = wb;
-      push({ t: 'wall', x1: wp, y1: at(wp, OM_WALL), x2: wq, y2: at(wq, OM_WALL), h: 14, sea: 1 });
-      keepLine(wp, at(wp, OM_WALL), wq, at(wq, OM_WALL), 16);
-      wp = wq + (r1() < .3 ? rr(34, 46) : 0);
-    }
-    if (wg < WGAP.length) wa = WGAP[wg][1];
-  }
-  /* the teeth behind it, in a line of their own, which is what a hull that found a breach
-     in the wall comes up against next */
-  alongUp(1610, 120, 96, 3, function (x1, y1, x2, y2) { hogs(x1, y1, x2, y2, 'teeth'); });
-
-  /* ---- 3. the fire trench along the toe, cut at the three draws ---- */
-  zig(30, 220, 1648, 12);
-  zig(445, 685, 1648, 12);
-  zig(915, 1155, 1648, 12);
-  zig(1385, 1570, 1648, 12);
-
-  /* ---- 4. the villas at the mouth of Les Moulins, which is the one thing on this beach
-     anybody has ever been able to name a place by ---- */
-  house(686, at(686, 1436), 56, 42, 1);
-  house(918, at(918, 1440), 60, 44, 1);
-  push({ t: 'smoke', x: 918, y: at(918, 1440) });
-  push({ t: 'rubble', x: 612, y: at(612, 1404), r: 28 }); keepOff(612, at(612, 1404), 36);
-
-  /* ---- 5. the roads. The beach road runs along the strip behind the bank; one goes up
-     each draw from a gap in the seawall to the coast road on the plateau; and one comes
-     down to it from the German base. Each lateral is two entities meeting at a junction,
-     because a street that runs the width of the map without one is two streets. ---- */
-  function lateral(up, x0, x1) {
-    var p = [];
-    for (var x = x0; x <= x1 + 1; x += 100) p.push([x, at(x, up)]);
-    return p;
-  }
-  road(44, lateral(1400, 0, 800));
-  road(44, lateral(1400, 800, 1600));
-  road(46, [[330, at(330, 1400)], [330, at(330, OM_WALL + 10)]].concat(OMAHA_DRAWS[0].pts.slice(1)).concat([[420, 900]]));
-  road(52, [[800, at(800, 1400)], [800, at(800, OM_WALL + 10)]].concat(OMAHA_DRAWS[1].pts.slice(1)).concat([[800, 900]]));
-  road(46, [[1270, at(1270, 1400)], [1270, at(1270, OM_WALL + 10)]].concat(OMAHA_DRAWS[2].pts.slice(1)).concat([[1190, 900]]));
-  road(48, [[0, 910], [210, 896], [420, 900], [610, 912], [800, 900]]);
-  road(48, [[800, 900], [990, 888], [1190, 900], [1400, 914], [1600, 904]]);
-  road(44, [[800, 900], [806, 720], [798, 540], [800, 400]]);
-  /* the exits were closed with concrete, and the blocks lie where the engineers blew
-     them, half across the road */
-  push({ t: 'roadblock', x: 314, y: at(314, 1690), a: 1.5 }); keepOff(314, at(314, 1690), 30);
-  push({ t: 'roadblock', x: 824, y: at(824, 1694), a: 1.6 }); keepOff(824, at(824, 1694), 30);
-  push({ t: 'roadblock', x: 1286, y: at(1286, 1690), a: 1.5 }); keepOff(1286, at(1286, 1690), 30);
-
-  /* ---- 6. the shingle bank, which is the first cover a man coming up the beach finds.
-     The bank is in the country; this is what the map says it is worth to lie behind it,
-     laid along its measured crest. It protects ACROSS its own line and not along it,
-     which is why the two end casemates were laid to fire along the beach. ---- */
-  for (var bk = 0; bk < MW; bk += 160) {
-    var bk2 = Math.min(MW, bk + 160);
-    bank(bk, at(bk, omahaBeach(bk) + 18), bk2, at(bk2, omahaBeach(bk2) + 18), 2);
-  }
-
-  /* ---- 7. the wire: an apron just behind the bank, where a man who has got over the
-     shingle stands up into it, and a second in front of the wall ---- */
-  alongUp(function (x) { return omahaBeach(x) + 88; }, 110, 70, 4, function (x1, y1, x2, y2) {
-    if (lineClear(x1, y1, x2, y2, 18)) wire(x1, y1, x2, y2);
-  });
-  /* the second apron is laid in short lengths, because it runs between the casemates and
-     the villas and a long one would find something to stand in at one end or the other */
-  alongUp(1492, 50, 70, 4, function (x1, y1, x2, y2) {
-    if (lineClear(x1, y1, x2, y2, 18)) wire(x1, y1, x2, y2);
-  });
-
-  /* ---- 8. the obstacles on the flat. Three staggered belts laid at low water so the
-     tide would cover them, gapped at the three lanes, which is where the vehicles have
-     to come ashore. A hedgehog is open steel and a man lies down among it, so a belt is a
-     line of poor cover across a beach that has none. ---- */
-  alongUp(620, 130, 80, 16, function (x1, y1, x2, y2) { hogs(x1, y1, x2, y2, 'hog'); });
-  alongUp(840, 90, 80, 16, function (x1, y1, x2, y2) { hogs(x1, y1, x2, y2, 'hog'); });
-  alongUp(1060, 130, 80, 16, function (x1, y1, x2, y2) { hogs(x1, y1, x2, y2, 'hog'); });
-
-  /* ---- 9. the crest: a second trench line just behind the lip of the bluff, cut at the
-     heads of the draws, and the weapon pits in depth behind it ---- */
-  var CREST = [[40, 240], [520, 660], [940, 1090], [1370, 1560]];
-  CREST.forEach(function (c) {
-    var cu = omahaToe((c[0] + c[1]) / 2) + omahaRun((c[0] + c[1]) / 2) + 40;
-    zig(c[0], c[1], cu, 14);
-  });
-  var PITS = [[140, 2180], [300, 2260], [580, 2200], [700, 2300], [900, 2280], [1030, 2190],
-              [1300, 2260], [1460, 2190], [460, 1760], [1140, 1760]];
-  for (var pi = 0; pi < PITS.length; pi++) pit(PITS[pi][0], at(PITS[pi][0], PITS[pi][1]), Math.PI / 2 + rr(-.4, .4));
-
-  /* ---- 10. the hamlets at the head of the west and east draws, and the German base
-     behind them ---- */
-  house(372, 610, 70, 50, 1);
-  house(520, 590, 64, 46, 1);
-  house(360, 740, 60, 44, 2);
-  farm(560, 760, 100, 72);
-  house(1080, 600, 66, 48, 1);
-  house(1236, 590, 72, 50, 1);
-  farm(1250, 760, 104, 76);
-  house(1070, 760, 58, 44, 2);
-  push({ t: 'smoke', x: 360, y: 740 });
-
-  /* ---- 11. what came ashore and did not get off the flat, and the few craters on it:
-     the bombers overshot, so the beach was very nearly untouched and the bluff and the
-     crest took what the naval guns put down ---- */
-  for (var wk = 0; wk < 22; wk++) {
-    var wkx = rr(60, MW - 60), wky = at(wkx, rr(240, 1220));
-    if (clearOf(wkx, wky, 28) && Math.hypot(wkx - 800, wky - at(800, 260)) > 300) debris(wkx, wky, rr(16, 26));
-  }
-  for (var cr = 0; cr < 520; cr++) {
-    var cx = rr(40, MW - 40), cup = rr(300, 2640), cR;
-    /* sparse on the sand, heavy on the strip, the wall and the face, thinning out over
-       the farmland as the rounds that went long came down further apart */
-    var dens = cup < 1260 ? .05 : cup < 2400 ? 1 : clamp((2700 - cup) / 300, 0, 1) * .5;
-    if (r1() > dens) continue;
-    cR = cup < 1260 ? rr(12, 20) : rr(14, 36);
-    var cy = at(cx, cup);
-    if (Math.hypot(cx - 800, cy - at(800, 260)) < 440) continue;
-    if (clearOf(cx, cy, cR + 8) && offRoad(cx, cy, cR * .6)) crater(cx, cy, cR);
-  }
-
-  /* ---- 12. the face: scrub wherever nothing has been cleared ---- */
-  for (var sb = 0; sb < 200; sb++) {
-    var sx = rr(30, MW - 30), sup = rr(omahaToe(sx) + 20, omahaToe(sx) + omahaRun(sx) - 10);
-    var sy = at(sx, sup);
-    if (clearOf(sx, sy, 20) && offRoad(sx, sy, 16)) scrub(sx, sy, rr(9, 16));
-  }
-
-  /* ---- 13. the plateau: Norman farmland, and the banks between the fields with trees
-     growing out of them, which is the bocage the whole of the rest of that summer was
-     fought through. They are LOW, which is what puts them on the going grid and the cover
-     index and on neither grid that blocks: a man gets down behind one and comes up over
-     it. Each field boundary is laid as a run of pieces that stops short of a road rather
-     than being thrown away whole where one crosses it, and none go on the German base's
-     own pad or down over the crest. ---- */
-  function onTop(x, y) { return omahaUp(x, y) > omahaToe(x) + omahaRun(x) + 60; }
-  function offBase(x, y) { return Math.abs(x - 800) > 450 || Math.abs(y - 330) > 180; }
-  function hedge(x1, y1, x2, y2) {
-    var n = Math.max(1, Math.round(Math.hypot(x2 - x1, y2 - y1) / 40)), k, run = -1;
-    function ok(t) {
-      var x = lerp(x1, x2, t), y = lerp(y1, y2, t);
-      return onTop(x, y) && offBase(x, y) && offRoad(x, y, 22) && clearOf(x, y, 16);
-    }
-    for (k = 0; k <= n + 1; k++) {
-      var good = k <= n && ok(k / n);
-      if (good && run < 0) run = k;
-      if (!good && run >= 0) {
-        if (k - 1 - run >= 2) {
-          var ax = lerp(x1, x2, run / n), ay = lerp(y1, y2, run / n);
-          var bx = lerp(x1, x2, (k - 1) / n), by = lerp(y1, y2, (k - 1) / n);
-          wall(ax, ay, bx, by, 11);
-          for (var tt = .1; tt < .95; tt += rr(.14, .26))
-            if (r1() < .65) tree(lerp(ax, bx, tt) + rr(-6, 6), lerp(ay, by, tt) + rr(-6, 6), rr(12, 18), rr(-.1, .1));
-        }
-        run = -1;
-      }
-    }
-  }
-  for (var fy = 120; fy < 1300; fy += rr(150, 200)) hedge(20, fy + rr(-10, 10), MW - 20, fy + rr(-10, 10));
-  for (var fx = 70; fx < MW - 40; fx += rr(170, 230)) {
-    for (var fy2 = 80; fy2 < 1300; fy2 += rr(260, 340)) hedge(fx + rr(-10, 10), fy2, fx + rr(-10, 10), fy2 + rr(150, 220));
-  }
-  for (var tr = 0; tr < 90; tr++) {
-    var ox = rr(40, MW - 40), oy = rr(80, 1250);
-    if (!onTop(ox, oy) || !offBase(ox, oy)) continue;
-    if (clearOf(ox, oy, 20) && offRoad(ox, oy, 20)) tree(ox, oy, rr(12, 18), rr(-.12, .12));
-  }
-
-  /* ---- 14. the sectors ----
-     Two on the sand for the American army and two in the farmland for the German one, one
-     in the middle of the beach and one on the coast road that start in nobody's hands,
-     and the three victory flags in the three gaps in the seawall. The clock does not run
-     against either side until somebody is standing on the wall, so the battle opens as a
-     race for it rather than a sentence passed on the side that starts at the bottom. */
+  var E = [];
+  var ROWS = [3600, 3170, 2700, 2300, 1880, 1450, 1020, 590];
+  var LANES = [400, 1100];
   var secs = [
-    ['A',  420, at(420, 480),   'mp',   'us',  'Dog Green',              ['B', 'C']],
-    ['B', 1180, at(1180, 480),  'fuel', 'us',  'Easy Red',               ['A', 'C']],
-    ['C',  800, at(800, 950),   'mp',   null,  'Les Moulins beach',      ['A', 'B', 'D', 'E', 'F']],
-    ['D',  330, at(330, 1600),  'vp',   null,  'The Vierville exit',     ['C', 'E', 'G']],
-    ['E',  800, at(800, 1600),  'vp',   null,  'The Les Moulins exit',   ['C', 'D', 'F', 'G']],
-    ['F', 1270, at(1270, 1600), 'vp',   null,  'The Saint-Laurent exit', ['C', 'E', 'G']],
-    ['G',  800, 1010,           'mp',   null,  'The coast road',         ['D', 'E', 'F', 'H', 'I']],
-    ['H',  450, 660,            'fuel', 'ger', 'Vierville',              ['G', 'I']],
-    ['I', 1150, 660,            'mp',   'ger', 'Saint-Laurent',          ['G', 'H']]];
-  secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
-  E.push({ t: 'hq', side: 'us', x: 800, y: at(800, 260) });
-  E.push({ t: 'hq', side: 'ger', x: 800, y: 330 });
-  return { name: 'Omaha Beach', when: 'DOG AND EASY - 6 JUNE 1944', version: 2, land: 'omaha', w: 1600, h: 3600, entities: E };
+    /* row, lane, type, owner, home, name */
+    [0, 0, 'vp', 'us', 'us', 'Dog Green'], [0, 1, 'vp', 'us', 'us', 'Dog Red'],
+    [1, 0, 'mp', 'us', null, 'Dog Green Flat'], [1, 1, 'fuel', 'us', null, 'Dog Red Flat'],
+    [2, 0, 'fuel', null, null, 'Vierville Seawall'], [2, 1, 'mp', null, null, 'Les Moulins Seawall'],
+    [3, 0, 'mp', null, null, 'Exit D-1'], [3, 1, 'fuel', null, null, 'Exit D-3'],
+    [4, 0, 'fuel', 'ger', null, 'Vierville-sur-Mer'], [4, 1, 'mp', 'ger', null, 'Saint-Laurent'],
+    [5, 0, 'mp', 'ger', null, 'Château de Vaumicel'], [5, 1, 'fuel', 'ger', null, 'Le Grand Hameau'],
+    [6, 0, 'fuel', 'ger', null, 'Louvières'], [6, 1, 'mp', 'ger', null, 'Formigny Road'],
+    [7, 0, 'vp', 'ger', 'ger', 'Trévières Church'], [7, 1, 'vp', 'ger', 'ger', 'Trévières Farm']];
+  function sid(row, lane) { return 'R' + (row + 1) + (lane ? 'E' : 'W'); }
+  secs.forEach(function (q) {
+    var nb = [sid(q[0], 1 - q[1])];
+    if (q[0] > 0) nb.push(sid(q[0] - 1, q[1]));
+    if (q[0] < ROWS.length - 1) nb.push(sid(q[0] + 1, q[1]));
+    var e = { t: 'sector', id: sid(q[0], q[1]), x: LANES[q[1]], y: ROWS[q[0]], type: q[2], owner: q[3], label: q[5], nb: nb };
+    if (q[4]) e.home = q[4];
+    E.push(e);
+  });
+  E.push({ t: 'hq', side: 'us', x: 750, y: 3650 });
+  E.push({ t: 'hq', side: 'ger', x: 750, y: 270 });
+  return { name: 'Omaha Beach', when: 'DOG AND EASY · 6 JUNE 1944', version: 3, land: 'omaha', w: 1500, h: 4000,
+           entities: E, height: [] };
 }
 /* ---- build the world from a map ---- */
 /* ---- how big the world is ----
@@ -3266,6 +3017,7 @@ function buildMap(data) {
      deploy, which is where THIS map stood its headquarters rather than where Ortona
      stood hers. Both are read before a vertex is built, since makeHeight wants them. */
   LAND = LANDS[data.land] || LANDS.ortona;
+  setAtmo(LAND.atmo);
   setWorld(data.w, data.h);
   var dep = [];
   data.entities.forEach(function (e) { if (e.t === 'hq') dep.push([e.x, e.y]); });
@@ -3531,24 +3283,6 @@ var FOGLIA = [
   { pts: [[1400, -60], [1400, 760]], d: 13, w: 58 },
   { pts: [[1400, 680], [1400, WORLD.h + 60]], d: 8, w: 74 }
 ];
-/* The three draws off Omaha, which are the whole question the map asks once the beach is
-   crossed. A draw is two things at two widths and each entry carries both: the BREAK in
-   the bluff, where the face stands further back, lower and at half the angle, which is
-   what makes it a way off the beach at all (r, read by the landform); and the drain that
-   cut it, a V a few dozen units wide in the bottom of it (d and w, cut by gullyAt the way
-   a vallone is). Used with the gully's own width the lane would come out a section wide
-   up a face a division has to climb.
-   Each runs from the gap in the seawall at its foot to the plateau at its head. Read west
-   to east: the Vierville road, narrow and under the strongest of the positions; Les
-   Moulins in the middle, the widest; and the one up to Saint-Laurent. */
-var OMAHA_DRAWS = [
-  { pts: [[330, 1830], [336, 1700], [348, 1560], [362, 1420], [376, 1280], [392, 1140], [410, 1000]],
-    d: 22, w: 56, r: 150 },
-  { pts: [[800, 1830], [800, 1700], [806, 1560], [800, 1420], [794, 1280], [800, 1140], [808, 1000]],
-    d: 24, w: 72, r: 176 },
-  { pts: [[1270, 1830], [1264, 1700], [1252, 1560], [1240, 1420], [1228, 1280], [1216, 1140], [1204, 1000]],
-    d: 22, w: 56, r: 150 }
-];
 
 /* ---- the country a map stands in ----
    Ortona's landform was never a property of its map: it was the only landform there
@@ -3598,16 +3332,52 @@ var SOILS = {
             sea: ['#233238', '#2c4046', '#42585c'] }
 };
 function soil() { return SOILS[LAND.soil] || SOILS.ortona; }
+/* Where the water stands. Ortona's sea is a bed sunk to sixty and drawn as sea wherever
+   the ground is under forty; a country with a surface at a level (LAND.sea) says so, and
+   the height of the water over a point is how far the ground is under it. It goes to the
+   shader in the v of the ground's vertex uv as that depth, the same linear function of
+   the height on both sides of the shore, so the water's edge falls where the ground
+   crosses the level rather than along whichever edge of a triangle it straddles. */
+function seaZ() { return LAND.sea === undefined ? -40 : LAND.sea; }
+/* ---- the weather a map is fought in ----
+   The light was Ortona's and nothing else's: a low December sun, warm, with a clear sky
+   filling the shadows, written into the shader as constants. A June morning in the
+   Channel under ten tenths of cloud is a different light and it is most of what makes a
+   picture of that beach read as that beach: the direct term is weak and grey, the sky
+   term does most of the work, nothing throws a hard shadow and there is no sun in the
+   sky to draw. So the sun, the colour of what it and the sky put on the ground, the haze,
+   the sky's own colour and the colour of the sea are a table, and a country names one.
+   ATMO0 is the constants as they were, to the digit, so a country that names none is
+   drawn exactly as before. `glow` scales the sun's patch in the sky and its glitter on
+   the water; `surf` turns on the shore the shader draws over a bed that shelves. */
+var ATMO0 = { sun: [0.5692, 0.7400, 0.3584], sunCol: [1.18, 1.0266, 0.8024], skyCol: [0.76, 0.84, 1.00], amb: .44,
+              fog: [.58, .60, .58], zenith: [0.38, 0.47, 0.61], glow: 1,
+              seaDeep: [0.058, 0.108, 0.116], seaSky: [0.60, 0.69, 0.82], surf: 0 };
+var ATMO_OMAHA = { sun: [0.740, 0.270, 0.616], sunCol: [0.56, 0.56, 0.55], skyCol: [0.80, 0.84, 0.88], amb: .56,
+                   fog: [.60, .63, .64], zenith: [0.55, 0.58, 0.61], glow: .1,
+                   seaDeep: [0.066, 0.098, 0.094], seaSky: [0.50, 0.55, 0.57], surf: 1 };
+var ATMO = ATMO0;
+function setAtmo(a) {
+  ATMO = a || ATMO0;
+  var l = Math.hypot(ATMO.sun[0], ATMO.sun[1], ATMO.sun[2]);
+  SUN.x = ATMO.sun[0] / l; SUN.y = ATMO.sun[1] / l; SUN.z = ATMO.sun[2] / l;
+}
 var LANDS = {
   ortona: { name: 'ortona', build: landOrtona, coast: coastOrtona, rail: railOrtona, val: VALLONI, padR: 165, padY: 165, terrace: 1, cliff: 1 },
   gothic: { name: 'gothic', build: landGothic, coast: null, rail: null, val: FOGLIA, padR: 190, padY: 430,
             wet: wetGothic, churn: churnGothic },
-  /* Omaha is a corridor, 1600 across and 3600 deep, with the sea along its bottom edge
-     and one army's ground at each end: the American on the sand at the water's edge and
-     the German on the farmland at the top. The deploy pad is a band rather than a circle,
-     because an army coming off a beach is spread along it. */
-  omaha: { name: 'omaha', build: landOmaha, at: omahaZ, coast: coastOmaha, south: 1, rail: null, val: OMAHA_DRAWS,
-           padR: 380, padY: 110, padM: 120, soil: 'norman', sand: sandOmaha, shingle: shingleOmaha, wet: wetOmaha }
+  /* Omaha: the sea along the bottom of the map, a bed that shelves rather than one sunk to
+     sixty, and a landform that is a set of hand-laid lines rather than a formula. Its own
+     paint and its own weather. The pad is small, because the beach is flat already and
+     the farmyard at the top wants levelling and nothing more; and it stops short of the
+     water, because on a beach this flat a third of a unit of levelling moves the water's
+     edge twenty-five units and the shore came out notched where the pad reached it. `hand` says that nothing
+     on it is scattered by the builder -- no limestone outcrop on a Norman bluff, and the
+     grass spread over what will hold it rather than pooled on patches the map never
+     laid -- and `skirtB` keeps the bands of the country going past the edge. */
+  omaha: { name: 'omaha', build: landOmaha, at: omahaZ, coast: coastOmaha, rail: null, val: [], south: 1, sea: 0,
+           padR: 200, padY: 80, padM: 60, soil: 'norman', sand: sandOmaha, wet: wetOmaha,
+           paint: omahaPaint, atmo: ATMO_OMAHA, hand: 1, skirtB: 3.5 }
 };
 var LAND = LANDS.ortona;
 /* Where the armies deploy, which is where their headquarters stand. This was two
@@ -3656,26 +3426,6 @@ function gullyAt(x, y) {
        and only eases over the last of its width */
     var t = dmin / v.w, cut = v.d * (1 - t * t * t) * (1 - t * .18);
     if (cut > best) best = cut;
-  }
-  return best;
-}
-/* How far into a draw a point is, taken over the BREAK in the bluff line rather than over
-   the gully in the bottom of it. Only a country that declares an r on its watercourses
-   has any, which is Omaha alone: a vallone is a ravine cut into a shelf and breaks
-   nothing, where a draw is the break and the ravine is only what drains it. */
-function drawAt(x, y) {
-  var best = 0, val = LAND.val;
-  for (var g = 0; g < val.length; g++) {
-    var v = val[g], pts = v.pts, dmin = 1e9;
-    if (!v.r) continue;
-    for (var p = 0; p < pts.length - 1; p++) {
-      var d = distToSeg(x, y, pts[p][0], pts[p][1], pts[p + 1][0], pts[p + 1][1]);
-      if (d < dmin) dmin = d;
-    }
-    if (dmin >= v.r) continue;
-    var t = 1 - dmin / v.r;
-    t = t * t * (3 - 2 * t);
-    if (t > best) best = t;
   }
   return best;
 }
@@ -3902,104 +3652,221 @@ function landGothic(h) {
   }
 }
 
-/* ---- Omaha ----
-   The Dog and Easy sectors of it, 6 June 1944, laid out as a corridor from the water to
-   the farmland. Read up the screen from the sea: the tidal flat, which is firm sand, dead
-   flat and a mile of nothing to get behind; the shingle bank, two metres of loose stone
-   and the first thing on the beach that is; a strip of dune and marsh behind it; the
-   seawall, which is the middle of the map; the positions dug in behind it; the bluff,
-   twenty-odd metres of it and too steep for anything with tracks except up a draw; the
-   crest; and the plateau, which is Norman farmland with a hamlet at the head of the west
-   and east draws and the German army's ground beyond them.
-
-   Every band is a distance UP from the waterline and not a y, so the beach keeps its
-   width where the shore wanders and the whole profile follows it.
-   It is not mirrored and cannot be: one army has the tide at its back and the other has
-   the high ground. What makes it a fight is the distance each has to walk to the wall. */
+/* ---- Omaha: the ground ----
+   Built band by band between the hand-laid lines, and the one thing about it that is not
+   laid by hand is the grain: the ripple on the sand, the gullies down the face of the
+   bluff and the long roll of the farmland are noise, at a strength that is a texture
+   rather than a shape.
+   - Seaward of the waterline the bed shelves away at a metre in thirty. It is a real
+     slope and not a step: the water is drawn over it by depth (LAND.sea), so the
+     shallows show the sand through them and the surf breaks where the depth says.
+   - The flat rises fourteen units over its twelve hundred, a little concave, with the
+     runnels let into it.
+   - The shingle is banked up against the seawall, ten units of it.
+   - Behind the wall the ground is the promenade and then dune and marsh, rising gently to
+     the foot of the bluff.
+   - The bluff is a hundred and seventy units in the three hundred between its foot and
+     its lip, steepest through the middle, which is climbable on foot and nothing a hull
+     will go up. Its gullies run down the fall line.
+   - The plateau goes on rising gently inland and rolls.
+   - And the two draws are cut into all of it last, each a floor climbing at about a third
+     from the strip to the plateau with walls either side, deepest at the lip of the bluff
+     where the stream that made it cut hardest. */
+function omRunnel(x, y) {
+  var r = 0;
+  for (var i = 0; i < OM.runnels.length; i++) {
+    var rn = OM.runnels[i], p = rn.pts;
+    var fade = clamp(1 - Math.max(p[0][0] - x, x - p[p.length - 1][0], 0) / 90, 0, 1);
+    if (fade <= 0) continue;
+    /* a runnel is not a ditch ruled across the beach: it is a chain of pools where the
+       trough is deep and plain sand where it shoals, so its depth, its width and its line
+       all wander along it */
+    var pool = clamp((hnoise(x / 120, i * 5.1, 251) - .24) / .3, 0, 1);
+    if (pool <= 0) continue;
+    var wid = rn.w * (.6 + .8 * hnoise(x / 70, i * 3.7, 253));
+    var d = Math.abs(y - omLine(p, x) - (hnoise(x / 60, i * 2.3, 255) - .5) * 20) / wid;
+    if (d >= 1) continue;
+    var b = 1 - d * d;
+    r += rn.d * b * b * fade * pool;
+  }
+  return r;
+}
+function omDraw(x, y, z) {
+  for (var i = 0; i < OM.draws.length; i++) {
+    var dw = OM.draws[i], p = dw.pts, y0 = p[0][1], y1 = p[p.length - 1][1];
+    if (y > y0 + 40 || y < y1 - 80) continue;
+    var hf = dw.floor / 2, d = Math.abs(x - omDrawX(p, y));
+    if (d > hf + dw.wall) continue;
+    var t = clamp((y0 - y) / (y0 - y1), 0, 1);
+    var fz = 28 + 174 * lerp(t, t * t * (3 - 2 * t), .3) - 2.2 * clamp(1 - d / hf, 0, 1);
+    var w = clamp((d - hf) / dw.wall, 0, 1);
+    var zc = lerp(fz, z, w * w * (3 - 2 * w));
+    if (zc < z) z = zc;
+  }
+  return z;
+}
+function omahaZ(x, y) {
+  var wy = omLine(OM.water, x), sy = omLine(OM.shingle, x), ly = omLine(OM.wall, x);
+  var ty = omLine(OM.toe, x), cy = omLine(OM.crest, x), z;
+  if (y > wy) return Math.max(-70, -(y - wy) * .034) + (hfbm(x / 160, y / 160, 71, 2) - .5) * 1.2 * clamp((y - wy) / 60, 0, 1);
+  if (y > sy) {
+    /* the ripple runs ALONG the beach, so the noise is stretched across the line of the water */
+    return 14 * Math.pow((wy - y) / (wy - sy), 1.15) - omRunnel(x, y) + (hfbm(x / 70, y / 22, 73, 2) - .5) * .6;
+  }
+  if (y > ly + 5) {
+    var s = (sy - y) / (sy - ly - 5);
+    return 14 + 10 * s * s * (3 - 2 * s) + (hfbm(x / 18, y / 18, 79, 2) - .5) * .9;
+  }
+  var m = clamp((ly - y) / Math.max(60, ly - ty), 0, 1);
+  z = 26 + m * 5 + (hfbm(x / 90, y / 90, 41, 3) - .5) * 4 * clamp((ly - 30 - y) / 60, 0, 1);
+  var f = clamp((ty - y) / (ty - cy), 0, 1);
+  if (f > 0) {
+    z += lerp(f, f * f * (3 - 2 * f), .8) * 170;
+    z += (hridge(x / 64, y / 150, 51, 3) - .5) * 14 * f * (1 - f) * 4;
+  }
+  var pl = clamp((cy - y) / 220, 0, 1);
+  if (pl > 0) {
+    z += Math.max(0, cy - y) * .011;
+    z += ((hfbm(x / 520, y / 520, 11, 3) - .5) * 22 + (hfbm(x / 140, y / 140, 13, 2) - .5) * 4) * pl;
+  }
+  return omDraw(x, y, z);
+}
 function landOmaha(h) {
   for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = omahaZ(i * HG, j * HG);
 }
-/* The same country asked at one point, which is what lets it go on past the edge of the
-   map (LAND.at, read by the skirt): the beach and the bluff carry on either side of the
-   corridor the way they did either side of Dog and Easy. */
-function omahaZ(x, y) {
-  var up = omahaUp(x, y), dp = depotAt(x, y), z;
-  if (up < -6) return -40 - 7 * hfbm(x / 280, y / 280, 71, 3);
-  var dw = drawAt(x, y), beach = omahaBeach(x), lane = omahaLane(x);
-
-  /* ---- 1. the beach. The flat is what the tide uncovers and it is DEAD flat: eleven
-     units of fall over twelve hundred and fifty, which is the whole reason there was
-     nothing to get behind between the water and the bank. The bank is the one thing on
-     it: steep on the seaward side, falling away a little behind, and bulldozed down to
-     a third of itself where the three lanes go through. ---- */
-  z = clamp(up / beach, 0, 1) * 11;
-  var bh = 15 * (1 - lane * .7);
-  var sh = clamp((up - beach) / 34, 0, 1);
-  z += sh * sh * (3 - 2 * sh) * bh;
-  var shb = clamp((up - beach - 34) / 30, 0, 1);
-  z -= shb * shb * (3 - 2 * shb) * bh * .5;
-
-  /* ---- 2. the strip behind it, dune and marsh grass, low and broken up. The seawall
-     stands on it and the beach road runs along it. ---- */
-  var strip = clamp((up - beach - 60) / 90, 0, 1);
-  z += strip * (3 + (hfbm(x / 70, y / 70, 41, 3) - .5) * 8) * (1 - dp);
-
-  /* ---- 3. the bluff. A draw is a break in it: the toe stands further back, the face
-     lies at half the angle and it does not stand as high. Those three together are the
-     whole of what makes a draw the way off a beach, and none of them can be said by
-     cutting a gully into a uniform face -- a V cut down a slope is still the slope's
-     own grade along its floor. ---- */
-  var toe = omahaToe(x) + dw * 40, run = omahaRun(x) + dw * 300;
-  var rise = 230 + (hfbm(x / 240, 0, 89, 2) - .5) * 40 - dw * 40;
-  var face = clamp((up - toe) / run, 0, 1);
-  /* steepest through the middle of its height and easing at both ends, which is what
-     a bluff cut in clay and weathered for a winter does */
-  z += lerp(face, face * face * (3 - 2 * face), .78) * rise;
-
-  /* ---- 4. spurs and re-entrants. A bluff sheds its water down the fall line, so a
-     face is cut into a comb, and the comb is what a section climbing it gets into and
-     out of. They live on the face and die at the crest and at the toe. ---- */
-  var onFace = face * (1 - face) * 4;
-  z += (hridge(x / 112, up / 330, 51, 3) - .5) * 42 * onFace * (1 - dw * .8) * (1 - dp);
-
-  /* ---- 5. the plateau, which goes on rising gently inland. That is what puts the
-     ground behind the crest out of sight from the beach once you are a hundred paces
-     over it. ---- */
-  var top = clamp((up - toe - run) / 420, 0, 1);
-  z += top * top * (3 - 2 * top) * 30;
-
-  /* ---- 6. relief, its domain warped so it does not read as noise laid over a ramp.
-     The sand is flat and IS flat; the face is broken ground; the plateau rolls. ---- */
-  var land = clamp((up - toe + 60) / 160, 0, 1);
-  var rough = land * (1 - top * .35) * (1 - dp * .94);
-  var wx = x + (hfbm(x / 400, y / 400, 83, 2) - .5) * 180;
-  var wy = y + (hfbm(x / 360, y / 360, 97, 2) - .5) * 180;
-  z += (hfbm(wx / 290, wy / 290, 11, 4) - .5) * 40 * rough;
-  z += (hridge(wx / 150, wy / 150, 23, 3) - .45) * 22 * rough;
-  z += (hfbm(x / 42, y / 42, 37, 3) - .5) * 5.5 * strip * (1 - dp * .8);
-
-  /* ---- 7. the drain in the bottom of each draw, cut as a V the way a vallone is and
-     dying out where the draw opens onto the strip ---- */
-  z -= gullyAt(x, y) * clamp(face * 2.6, 0, 1) * (1 - top * .85) * (1 - dp);
-  return z;
-}
-/* Omaha's three paint hooks. SAND is how much of the beach a point is: the flat and the
-   bank, fading out over the dunes behind. SHINGLE is the bank itself, thinner where the
-   lanes were bulldozed through it. WET is the bottom half of the flat and hardest at the
-   water, because the landings went in at low water and what they crossed was firm wet
-   sand -- which the shader darkens, takes the scatter out of and puts a sheen on, and
-   which is most of why the flat reads as a beach rather than as a field painted pale. */
-function sandOmaha(x, y) {
-  var up = omahaUp(x, y);
-  return up < -2 ? 0 : clamp(1 - (up - omahaBeach(x) - 60) / 240, 0, 1);
-}
-function shingleOmaha(x, y) {
-  var t = (omahaUp(x, y) - omahaBeach(x) + 6) / 72;
-  return t <= 0 || t >= 1 ? 0 : Math.sin(t * Math.PI) * (1 - omahaLane(x) * .6);
-}
+/* The country's hooks. SAND is how much of a point is beach, for the grass scatter, which
+   grows none on it. WET is the bottom of the flat and the runnels, which the shader
+   darkens, takes the scatter out of and puts a sheen on -- at low water the lower third of
+   the beach is running wet and the runnels are standing water. The sea itself is a
+   surface at nought (LAND.sea) over a bed that shelves, where Ortona's is a bed sunk to
+   sixty, so anything dug below the tide on the lower beach fills. */
+function sandOmaha(x, y) { return y > omLine(OM.wall, x) + 4 ? 1 : 0; }
 function wetOmaha(x, y) {
-  var up = omahaUp(x, y);
-  return up < -2 ? 0 : clamp(1 - up / 520, 0, 1) * .7;
+  var wy = omLine(OM.water, x), sy = omLine(OM.shingle, x);
+  if (y > wy || y < sy) return 0;
+  var w = clamp(1 - (wy - y) / (wy - sy) / .38, 0, 1) * .78;
+  var rn = omRunnel(x, y);
+  w = Math.max(w, clamp(rn / .9, 0, 1) * .62);
+  return w;
+}
+/* ---- Omaha: the paint ----
+   The whole natural ground in one pass, band by band between the same hand-laid lines the
+   landform is built on, so a colour cannot drift off the shape under it. It is an image at
+   half resolution and drawn once, for the churn's reason: a wash has no detail finer than
+   the noise under it, and the grit in the shader carries everything below that. It reads
+   the natural ground (hmap0) and not the worked one, so what is dug into the map later
+   paints itself over it the way it does everywhere else, and so the image depends on
+   nothing a map puts on the ground and is kept between rebuilds.
+   The palette is an overcast morning's and nothing in it is bright: grey-brown sand, dark
+   where it is wet and darker still along the high-water line, grey shingle, pale dune
+   grass behind the wall, a grass-green bluff with the clay showing where it is steepest,
+   and pasture on top. */
+function omH(x, y) {
+  var fx = clamp(x / HG, 0, HW - 1.001), fy = clamp(y / HG, 0, HH - 1.001);
+  var i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j, h = G.hmap0;
+  return (h[hidx(i, j)] * (1 - u) + h[hidx(i + 1, j)] * u) * (1 - v) +
+         (h[hidx(i, j + 1)] * (1 - u) + h[hidx(i + 1, j + 1)] * u) * v;
+}
+function omahaPaint(t) {
+  var SQ = 2, pw = Math.ceil(WORLD.w / SQ), ph = Math.ceil(WORLD.h / SQ);
+  var key = makeHeight._key;
+  if (!omahaPaint._c || omahaPaint._key !== key) {
+    var cv2 = omahaPaint._c || document.createElement('canvas');
+    cv2.width = pw; cv2.height = ph;
+    var ct = cv2.getContext('2d'), im = ct.createImageData(pw, ph), d = im.data, p = 0, i, j;
+    var WY = [], SY = [], LY = [], TY = [], CY = [];
+    for (i = 0; i < pw; i++) {
+      var cx = i * SQ + 1;
+      WY.push(omLine(OM.water, cx)); SY.push(omLine(OM.shingle, cx)); LY.push(omLine(OM.wall, cx));
+      TY.push(omLine(OM.toe, cx)); CY.push(omLine(OM.crest, cx));
+    }
+    for (j = 0; j < ph; j++) {
+      var y = j * SQ + 1;
+      for (i = 0; i < pw; i++) {
+        var x = i * SQ + 1, wy = WY[i], sy = SY[i], ly = LY[i], ty = TY[i], cy = CY[i];
+        var r, g, b, n, k, z = omH(x, y);
+        var grain = noise2(Math.floor(x / 2), Math.floor(y / 2), 211) - .5;
+        if (y > wy - 3) {
+          /* the bed under the water: wet sand, darker the deeper it lies, which is what
+             the shallows show through them */
+          k = clamp(1 - Math.max(0, -z) * .014, .62, 1);
+          n = 92 + grain * 10 + (hnoise(x / 40, y / 12, 213) - .5) * 12;
+          r = n * k; g = (n - 5) * k; b = (n - 15) * k;
+        } else if (y > sy) {
+          /* the flat. Wet at the bottom and drying up the beach, read off the same hook
+             the shader darkens by. What the eye reads a beach by from this height is not
+             the ripple, which is a hand's breadth, but the water leaving it: damp patches
+             where the sand holds it, rills running down the beach where it drains, and
+             the lighter crest of the bar on the seaward side of each runnel. */
+          var wt = clamp(wetOmaha(x, y) / .8, 0, 1);
+          var drift = (hnoise(x / 260, y / 180, 221) - .5) * 14;
+          var damp = clamp((hnoise(x / 70, y / 46, 217) - .45) / .3, 0, 1) * (1 - wt) * .55;
+          var rill = clamp((hnoise(x / 11, y / 140, 219) - .62) / .2, 0, 1) * clamp((y - sy - 200) / 500, 0, 1);
+          n = lerp(164, 104, clamp(wt + damp * .5 + rill * .22, 0, 1)) + drift + grain * 7;
+          r = n + 9; g = n; b = n - 18;
+          /* the runnels hold a film of water, which from above is the sky's grey laid over
+             the sand under it rather than anything darker, and the bar beside each is dry */
+          var rn = omRunnel(x, y), bar = omRunnel(x, y - 34);
+          if (bar > .15 && rn < .1) { k = clamp(bar / 1.2, 0, 1) * .3; r = lerp(r, 184, k); g = lerp(g, 174, k); b = lerp(b, 152, k); }
+          if (rn > .05) { k = clamp(rn / .9, 0, 1) * .5; r = lerp(r, 126, k); g = lerp(g, 128, k); b = lerp(b, 124, k); }
+          /* the high-water line: the wrack the last tide left, a broken dark band a little
+             below the shingle, and an older, fainter one above it */
+          var hw = sy + 58 + (hnoise(x / 60, 3, 223) - .5) * 26;
+          var hw2 = sy + 22 + (hnoise(x / 45, 7, 227) - .5) * 14;
+          var wr = clamp(1 - Math.abs(y - hw) / (4 + hnoise(x / 30, 9, 225) * 5), 0, 1) * (hnoise(x / 11, y / 4, 229) > .38 ? 1 : .25);
+          var wr2 = clamp(1 - Math.abs(y - hw2) / 3.5, 0, 1) * (hnoise(x / 8, y / 3, 231) > .5 ? .6 : .1);
+          k = Math.max(wr * .55, wr2 * .35);
+          if (k > 0) { r = lerp(r, 70, k); g = lerp(g, 64, k); b = lerp(b, 50, k); }
+          /* and the flat grades into the bank rather than stopping against it */
+          k = clamp(1 - (y - sy) / 14, 0, 1) * .5;
+          if (k > 0) { r = lerp(r, 130, k); g = lerp(g, 128, k); b = lerp(b, 120, k); }
+        } else if (y > ly + 5) {
+          /* the shingle: flint and chert rolled grey by the sea, sorted coarse at the top
+             of the bank, with the odd dark stone and the odd pale one */
+          var st = hnoise(x / 1.7, y / 1.7, 233), sc = hnoise(x / 9, y / 6, 235);
+          n = 116 + (st - .5) * 40 + (sc - .5) * 18 + grain * 12;
+          if (st > .78) n += 22; else if (st < .22) n -= 26;
+          /* coarser and darker where the bank meets the sand, where the sea sorts it */
+          n -= clamp(1 - (sy - y) / 12, 0, 1) * 14;
+          r = n + 3; g = n; b = n - 7;
+        } else if (y > ty) {
+          /* behind the wall: the promenade strip and then dune and marsh, pale where the
+             marram grows on the sand and a darker, wetter green lower down toward the bluff */
+          var dm = clamp((ly - y) / Math.max(40, ly - ty), 0, 1);
+          var mar = hnoise(x / 30, y / 30, 237);
+          r = lerp(138, 88, dm); g = lerp(136, 96, dm); b = lerp(104, 64, dm);
+          k = (mar - .5) * 26 + grain * 10;
+          r += k; g += k; b += k * .6;
+          if (dm > .45 && hnoise(x / 46, y / 34, 239) > .66) { r -= 14; g -= 10; b -= 8; }
+        } else {
+          /* the bluff and the farmland on top: grass everywhere the ground will hold it,
+             darker scrub in patches, and bare clay on the steepest of the face, where the
+             rain has taken the turf off and the gullies have cut back into it */
+          var gx = (omH(x + 3, y) - omH(x - 3, y)) / 6, gy = (omH(x, y + 3) - omH(x, y - 3)) / 6;
+          var sl = Math.hypot(gx, gy);
+          var pl = clamp((cy - y) / 160, 0, 1);
+          var fld = hnoise(x / 320, y / 260, 241) - .5, fn = hnoise(x / 90, y / 90, 243) - .5;
+          r = 84 + fld * 18 + fn * 8; g = 104 + fld * 14 + fn * 10; b = 58 + fld * 8 + fn * 5;
+          r += grain * 8; g += grain * 9; b += grain * 5;
+          if (pl < 1) {
+            /* bramble and gorse in clumps with an edge to them, which is what a bush is
+               from above, thinning out onto the fields */
+            var scrub = hnoise(x / 26, y / 30, 245) * .7 + hnoise(x / 8, y / 8, 246) * .3;
+            if (scrub > .64) { k = clamp((scrub - .64) / .06, 0, 1) * .5 * (1 - pl * .85); r = lerp(r, 52, k); g = lerp(g, 66, k); b = lerp(b, 40, k); }
+            /* the scars run down the fall line, because it is the rain coming off the top
+               that takes the turf */
+            var scar = clamp((sl - .62) / .3, 0, 1) * clamp((hnoise(x / 16, y / 70, 247) - .64) / .1, 0, 1);
+            if (scar > 0) { k = scar * .9; r = lerp(r, 150, k); g = lerp(g, 126, k); b = lerp(b, 94, k); }
+          }
+        }
+        d[p] = clamp(r, 0, 255); d[p + 1] = clamp(g, 0, 255); d[p + 2] = clamp(b, 0, 255); d[p + 3] = 255;
+        p += 4;
+      }
+    }
+    ct.putImageData(im, 0, 0);
+    omahaPaint._c = cv2; omahaPaint._key = key;
+  }
+  t.drawImage(omahaPaint._c, 0, 0, WORLD.w, WORLD.h);
 }
 function makeHeight() {
   /* the noise under everything never changes for a given world, and it is two thirds
@@ -8924,7 +8791,7 @@ function tickEconomy(dt) {
       if (s.owner !== side || !s.conn) return;
       var y = SEC_YIELD[s.type];
       mp += y.mp; fu += y.fu;
-      if (s.type === 'vp') vps++;
+      if (s.type === 'vp' && s.home !== side) vps++;
     });
     var ks = slotsOf(side), n = Math.max(1, ks.length);
     ks.forEach(function (slot) {
@@ -10095,7 +9962,7 @@ function aiClock(side) {
   for (i = 0; i < G.sectors.length; i++) {
     s = G.sectors[i];
     if (s.type !== 'vp' || !s.conn) continue;
-    if (s.owner === side) my++; else if (s.owner === him) his++;
+    if (s.owner === side && s.home !== side) my++; else if (s.owner === him && s.home !== him) his++;
   }
   var bleedMe = slotsOf(side).indexOf(G.own) >= 0 ? diffOf(slotsOf(him)[0]).vp : 1;
   var bleedHim = slotsOf(him).indexOf(G.own) >= 0 ? diffOf(slotsOf(side)[0]).vp : 1;
@@ -14160,6 +14027,10 @@ var FSH = [
   'uniform vec4 uLPos[NLIGHTS]; uniform vec3 uLCol[NLIGHTS];',
   'uniform float uUseTex; uniform vec2 uWorldSize; uniform vec3 uFogCol; uniform vec2 uFogRange;',
   'uniform float uSeaT; uniform vec2 uRock; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest; uniform float uInside;',
+  /* the weather, off the map's ATMO table */
+  'uniform vec3 uSunCol; uniform vec3 uSkyCol; uniform vec3 uSeaDeep; uniform vec3 uSeaSky; uniform float uSurf; uniform float uGlow;',
+  /* how far down the mip chain the paint past the edge of the map is taken (see below) */
+  'uniform float uSkirtB;',
   'uniform float uAtlasCols; uniform float uAtlasRows;',
   /* one tile of the atlas, repeating, sampled from the vertex uv */
   'vec4 tile(float m, vec2 uv) {',
@@ -14184,9 +14055,12 @@ var FSH = [
   /* past the edge of the map (the skirt) the paint is its own edge column carried
      outward, which drawn sharp is a set of stripes ruled to the horizon: it is taken
      further down the mip chain the further out it is, so what carries on is the colour
-     of the country and not its roads and walls. Inside the map the bias is nought. */
+     of the country and not its roads and walls. Inside the map the bias is nought. How
+     far down is the country's (LAND.skirtB): at the bottom of the chain the whole map is
+     one colour, which on Omaha put green fields beside the beach, and there the bands
+     running along the map are the country itself and are meant to carry on. */
   '    vec2 outW = max(max(-vWpos.xy, vWpos.xy - uWorldSize), 0.0);',
-  '    base *= texture2D(uAlbedo, uvw, min(length(outW) / 50.0, 9.0)).rgb * 1.12;',
+  '    base *= texture2D(uAlbedo, uvw, min(length(outW) / 50.0, uSkirtB)).rgb * 1.12;',
   '    base *= texture2D(uDecal, uvw).rgb;',
   /* Four scales of ground out of two fetches, and the fine ones faded by distance.
      That fade is the level of detail: below a pixel, grain is not detail, it is
@@ -14257,6 +14131,11 @@ var FSH = [
      on top of it reads as camouflage rather than as ground */
   '    float grit = (ga.r - 0.5) * 1.75 * nearD + (ga.g - 0.5) * 1.00 * midD',
   '              + (gb.g - 0.5) * 0.40 + (gb.b - 0.5) * 0.26;',
+  /* sand has no clods in it. On a country with a shelving sea the same channel is how
+     far the ground stands above the water, and the beach is the ground that stands
+     under sixteen: the flat and the foot of the shingle, fading out up the bank */
+  '    float sandy = uSurf * clamp((vUV.y + 24.0) / 8.0, 0.0, 1.0);',
+  '    grit *= 1.0 - 0.62 * sandy;',
   '    base *= 1.0 + grit * 0.80;',
   /* and the colour goes with it, because damp earth down in the grain and dry dust on
      the crowns of it is a hue and not a brightness */
@@ -14300,7 +14179,7 @@ var FSH = [
   '    if (nearD > 0.02) {',
   '      float gu = texture2D(uGrit, vWpos.xy * 0.0833 + vec2(0.0039, 0.0)).r;',
   '      float gv = texture2D(uGrit, vWpos.xy * 0.0833 + vec2(0.0, 0.0039)).r;',
-  '      n = normalize(n + vec3(gp - gu, gp - gv, 0.0) * 3.4 * nearD * (1.0 - lean));',
+  '      n = normalize(n + vec3(gp - gu, gp - gv, 0.0) * 3.4 * nearD * (1.0 - lean) * (1.0 - 0.7 * sandy));',
   /* and the face's own share of it in the face's own frame, so the clods on a cut lie
      across it and up it. A gradient has to be taken in the frame its sample came from:
      differencing a blended value against a single-frame neighbour is not a gradient, it
@@ -14367,12 +14246,13 @@ var FSH = [
      June. Warmer with it, because a low sun is warmer, and the sky term is raised and
      cooled to fill what the sun no longer reaches -- at this elevation most of the light
      on a north face is skylight. */
-  '  vec3 sky = vec3(0.76, 0.84, 1.00) * uAmb * hemi;',
-  '  vec3 sun = vec3(1.0, 0.87, 0.68) * ndotl * 1.18 * lit;',
+  '  vec3 sky = uSkyCol * uAmb * hemi;',
+  '  vec3 sun = uSunCol * ndotl * lit;',
   '  vec3 H = normalize(uSun + V);',
   '  float specP = pow(max(0.0, dot(n, H)), vSpec.y) * vSpec.x * lit;',
   '  float fres = pow(1.0 - max(0.0, dot(n, V)), 4.0) * 0.06;',
-  '  vec3 c = base * (sky + sun) + vec3(1.0, 0.96, 0.88) * specP + vec3(0.7, 0.8, 0.95) * fres * hemi;',
+  '  float glint = mix(0.35, 1.0, uGlow);',
+  '  vec3 c = base * (sky + sun) + vec3(1.0, 0.96, 0.88) * specP * glint + vec3(0.7, 0.8, 0.95) * fres * hemi;',
   /* the sheen off standing water, which is the half of wetness a colour cannot say. A
      film of water is smooth where the ground under it is not, so it is a broad highlight
      and a piece of the sky at a grazing angle, and it comes on late: ground is damp long
@@ -14381,7 +14261,7 @@ var FSH = [
   '    float pool = smoothstep(0.55, 0.95, vUV.x);',
   '    if (pool > 0.004) {',
   '      float pf = pow(1.0 - max(0.0, dot(n, V)), 4.0);',
-  '      c += (vec3(1.0, 0.97, 0.90) * pow(max(0.0, dot(n, H)), 46.0) * 0.85',
+  '      c += (vec3(1.0, 0.97, 0.90) * pow(max(0.0, dot(n, H)), 46.0) * 0.85 * glint',
   '            + vec3(0.52, 0.60, 0.74) * pf * 0.55) * pool * lit;',
   '    }',
   '  }',
@@ -14403,7 +14283,7 @@ var FSH = [
      The grain has mips, so at range the three fetches converge, the normal flattens to
      straight up and the glitter goes out on its own: level of detail for nothing, and the
      alternative is a sea that boils. */
-  '  if (uUseTex > 0.5 && vWpos.z < -40.0) {',
+  '  if (uUseTex > 0.5 && vUV.y > 0.0) {',
   '    vec2 w1 = vWpos.xy * 0.0075 + vec2(uSeaT * 0.42, uSeaT * 0.23);',
   '    vec2 w2 = vWpos.xy * 0.0190 - vec2(uSeaT * 0.64, uSeaT * 0.37);',
   '    float e = 0.012;',
@@ -14414,12 +14294,35 @@ var FSH = [
   '    vec3 wn = normalize(vec3((a0 - ax) * 2.6, (a0 - ay) * 2.6, 1.0));',
   '    vec3 wh = normalize(uSun + V);',
   '    float wf = 0.09 + 0.91 * pow(1.0 - max(0.0, dot(wn, V)), 5.0);',
-  '    vec3 refl = vec3(0.60, 0.69, 0.82) * (0.88 + 0.46 * b0);',
-  '    vec3 deep = vec3(0.058, 0.108, 0.116);',
-  '    c = mix(deep, refl, wf) * uAmb * 1.9;',
+  '    vec3 refl = uSeaSky * (0.88 + 0.46 * b0);',
+  '    vec3 wc = mix(uSeaDeep, refl, wf) * uAmb * 1.9;',
   /* the glitter, and a crest catching the light through the top of the wave */
-  '    c += vec3(1.0, 0.94, 0.82) * pow(max(0.0, dot(wn, wh)), 110.0) * 1.4 * lit;',
-  '    c += vec3(0.10, 0.20, 0.18) * max(0.0, a0 + b0 * 0.45 - 0.78) * 4.0;',
+  '    wc += vec3(1.0, 0.94, 0.82) * pow(max(0.0, dot(wn, wh)), 110.0) * 1.4 * lit * uGlow;',
+  '    wc += vec3(0.10, 0.20, 0.18) * max(0.0, a0 + b0 * 0.45 - 0.78) * 4.0;',
+  /* A sea over a bed that shelves (uSurf) is a depth rather than a place, and the depth
+     rides in the v of the vertex uv. The bed shows through the shallows, the ground under
+     it lit as it is and seen through a colour that closes in with depth; and the surf is
+     lines of foam at constant depth walking in toward the shore, broken by a slow noise
+     so they do not read as ruled, thickest where the swell stands up over the shallows,
+     with the wash running up the sand at the very edge. */
+  '    if (uSurf > 0.0) {',
+  '      float dep = vUV.y;',
+  '      float tr = exp(-dep * 0.20) * (1.0 - wf * 0.7);',
+  '      wc = mix(wc, c * vec3(0.72, 0.82, 0.80), tr);',
+  '      float brk = texture2D(uGrit, vWpos.xy * vec2(0.0024, 0.0080) + vec2(uSeaT * 0.004, 0.0)).b;',
+  /* g is how far seaward of a breaking crest a point is, as a share of the gap between
+     two: the crest is a sharp line, the foam it leaves trails out behind it and thins,
+     and on the shoreward side of the line there is none */
+  '      float g = fract(dep * 0.30 + uSeaT * 0.13 + brk * 0.55);',
+  '      float froth = texture2D(uGrit, vWpos.xy * vec2(0.012, 0.02) + vec2(0.0, uSeaT * 0.01)).b;',
+  '      float crest = exp(-g * 55.0) + exp(-g * 7.0) * 0.55 * smoothstep(0.35, 0.75, froth);',
+  '      crest *= smoothstep(1.0, 0.985, g);',
+  '      float zone = smoothstep(0.5, 2.0, dep) * smoothstep(12.0, 4.5, dep) * (0.55 + 0.45 * brk);',
+  '      float wash = smoothstep(1.0, 0.1, dep) * smoothstep(0.25, 0.6, froth + 0.25 * sin(uSeaT * 0.9 + vWpos.x * 0.013));',
+  '      float foam = clamp(crest * zone + wash * 0.8, 0.0, 1.0);',
+  '      wc = mix(wc, vec3(0.80, 0.83, 0.82) * (uAmb * 1.4 + 0.1), foam * 0.85);',
+  '    }',
+  '    c = wc;',
   '  }',
   /* Three tiers, and the ground wants to read as three different things rather than as
      one picture at three brightnesses. Ground in sight is what it is. Ground that has
@@ -14466,22 +14369,22 @@ var VSK = [
   'attribute vec2 aQuad; varying vec2 vQ;',
   'void main(){ vQ = aQuad; gl_Position = vec4(aQuad, 0.9999, 1.0); }'].join('\n');
 var FSK = [
-  'precision mediump float; varying vec2 vQ; uniform float uPitch; uniform vec3 uFogCol;',
+  'precision mediump float; varying vec2 vQ; uniform float uPitch; uniform vec3 uFogCol; uniform vec3 uZenith; uniform float uGlow;',
   /* where the sun is on the screen, projected on the CPU, with the aspect in z so the
      glow comes out round. Off the screen it is parked far enough away to vanish. */
   'uniform vec3 uSunS;',
   'vec3 aces(vec3 x) { return clamp((x * (2.51 * x + 0.03)) / (x * (2.43 * x + 0.59) + 0.14), 0.0, 1.0); }',
   'void main(){',
   '  float h = clamp(vQ.y * 0.5 + 0.5 + uPitch * 0.3, 0.0, 1.0);',
-  '  vec3 zenith = vec3(0.38, 0.47, 0.61), horizon = uFogCol * 0.95;',
+  '  vec3 zenith = uZenith, horizon = uFogCol * 0.95;',
   '  vec3 c = mix(horizon, zenith, pow(h, 0.7));',
   /* A sun twenty-one degrees up in December haze is a bright warm patch rather than a
      disc, and it is the only thing that puts a direction in a sky which otherwise looks
      the same whichever way the camera is turned. Two lobes: a wide one that warms half
      the sky and a tight one for the sun itself. */
   '  float d = length((vQ - uSunS.xy) * vec2(uSunS.z, 1.0));',
-  '  c += vec3(0.34, 0.23, 0.11) * exp(-d * d * 0.9);',
-  '  c += vec3(0.60, 0.44, 0.24) * exp(-d * d * 26.0);',
+  '  c += vec3(0.34, 0.23, 0.11) * exp(-d * d * 0.9) * uGlow;',
+  '  c += vec3(0.60, 0.44, 0.24) * exp(-d * d * 26.0) * uGlow;',
   '  c = aces(c * 0.92); c = pow(c, vec3(1.0 / 1.02));',
   '  gl_FragColor = vec4(c, 1.0);',
   '}'].join('\n');
@@ -15943,7 +15846,7 @@ function buildTerrain(only) {
        on top of those turned a fresh crater into a pit of shadow beside the map's own. */
     var sp = spoilAt(x, y);
     if (sp > 0) v *= 1 + sp * .42;
-    arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, y * .04, 9);
+    arr.push(x, y, z, n.x, n.y, n.z, v, v, v, wet, seaZ() - z, 9);
   }
   function quad(x0, y0, x1, y1, z00, z10, z01, z11) {
     vert(x0, y0, z00); vert(x1, y0, z10); vert(x0, y1, z01);
@@ -16012,7 +15915,8 @@ function buildSkirt() {
       var gx = (Z[k + 1] - Z[k - 1]) / (2 * sx), gy = (Z[k + w] - Z[k - w]) / (2 * sy), nl = Math.sqrt(gx * gx + gy * gy + 1);
       var d = Math.hypot(x - clamp(x, 0, W), y - clamp(y, 0, H));
       var c = 1 - clamp(d / S, 0, 1) * .4;
-      arr.push(x, y, Z[k], -gx / nl, -gy / nl, 1 / nl, c, c, c, LAND.wet ? LAND.wet(x, y) : 0, y * .04, 9);
+      arr.push(x, y, Z[k], -gx / nl, -gy / nl, 1 / nl, c, c, c, LAND.wet ? LAND.wet(x, y) : 0,
+               seaZ() - Z[k], 9);
     }
     for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
       v(i, j); v(i + 1, j); v(i, j + 1);
@@ -16148,7 +16052,7 @@ function sceneProps(tile) {
      heightfield's own gradient rather than scattered, so a rock is always on a face and
      never sitting in the middle of a field. ---- */
   var OG = 34, ROCK = '#948c78', ROCKD = '#7a7362', ROCKL = '#a9a189';
-  for (var oy = 140; oy < WORLD.h - 60; oy += OG) {
+  for (var oy = 140; !LAND.hand && oy < WORLD.h - 60; oy += OG) {
     for (var ox = 46; ox < WORLD.w - 46; ox += OG) {
       var oz = naturalZ(ox, oy);
       if (oz < -34 || inland(ox, oy) < 160) continue;           /* the sea cliff is its own thing */
@@ -16602,7 +16506,7 @@ function buildGrass() {
   while (placed < count && tries < count * 6) {
     tries++;
     var gp = G.grass[Math.floor(srand() * G.grass.length)];
-    var inPatch = srand() < .78, x, y;
+    var inPatch = !LAND.hand && srand() < .78, x, y;
     if (inPatch) { var a = srange(0, TAU), rr = Math.sqrt(srand()) * gp.r; x = gp.x + Math.cos(a) * rr; y = gp.y + Math.sin(a) * rr * .62; }
     else { x = srange(40, WORLD.w - 40); y = srange(220, WORLD.h - 40); }
     if (blocked(x, y)) continue;
@@ -16709,10 +16613,16 @@ function updateFog() {
 function fogUpload() {
   gl.activeTexture(gl.TEXTURE6);
   gl.bindTexture(gl.TEXTURE_2D, TEX.fog);
+  /* A row of this texture is one byte a cell, and WebGL reads rows padded to four bytes
+     unless told otherwise. Every map was a multiple of eighty units wide until Omaha,
+     whose 1500 is 75 cells: the upload read past the end of the buffer, was refused
+     without a word, and the whole map was drawn as ground nobody had ever seen. */
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
   if (TEX.fogW !== FW || TEX.fogH !== FH) {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.LUMINANCE, FW, FH, 0, gl.LUMINANCE, gl.UNSIGNED_BYTE, fogBuf);
     TEX.fogW = FW; TEX.fogH = FH;
   } else gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, FW, FH, gl.LUMINANCE, gl.UNSIGNED_BYTE, fogBuf);
+  gl.pixelStorei(gl.UNPACK_ALIGNMENT, 4);
   gl.activeTexture(gl.TEXTURE0);
 }
 
@@ -17222,8 +17132,14 @@ function paintGround(t, DET) {
   var base = t.createLinearGradient(0, 0, WORLD.w, WORLD.h);
   base.addColorStop(0, SO.g0); base.addColorStop(.5, SO.g1); base.addColorStop(1, SO.g2);
   t.fillStyle = base; t.fillRect(0, 0, WORLD.w, WORLD.h);
+  /* A country that paints its own natural ground (LAND.paint) does all of it, the sea bed
+     included, and everything down to the watercourses is skipped: the mottles, the grass
+     patches, the tufts, the geology and the sand and sea below. What a map puts on the
+     ground -- roads, craters, trenches, works -- is painted over it as on any map. */
+  var OWN = !!LAND.paint;
+  if (OWN) LAND.paint(t);
   /* large soft mottles so the earth is never one flat colour */
-  for (var mo = 0; mo < 60; mo++) {
+  for (var mo = 0; !OWN && mo < 60; mo++) {
     var mx = srange(0, WORLD.w), my = srange(220, WORLD.h), mr = srange(120, 320);
     var mg = t.createRadialGradient(mx, my, 0, mx, my, mr);
     var dark = srand() < .5;
@@ -17231,7 +17147,7 @@ function paintGround(t, DET) {
     mg.addColorStop(1, 'rgba(0,0,0,0)');
     t.fillStyle = mg; t.beginPath(); t.arc(mx, my, mr, 0, TAU); t.fill();
   }
-  G.grass.forEach(function (gp) {
+  (OWN ? [] : G.grass).forEach(function (gp) {
     var gg = t.createRadialGradient(gp.x, gp.y, 0, gp.x, gp.y, gp.r);
     gg.addColorStop(0, 'rgba(' + SO.grass + ',' + (gp.t * .5).toFixed(2) + ')');
     gg.addColorStop(.7, 'rgba(' + SO.grass + ',' + (gp.t * .22).toFixed(2) + ')');
@@ -17240,7 +17156,7 @@ function paintGround(t, DET) {
     t.fillStyle = gg; t.beginPath(); t.arc(0, 0, gp.r, 0, TAU); t.fill();
     t.restore();
   });
-  G.tufts.forEach(function (g2, gi) {
+  (OWN ? [] : G.tufts).forEach(function (g2, gi) {
     if (DET < 1 && (gi & 1)) return;
     t.globalAlpha = .14 + g2.s * .18;
     t.fillStyle = g2.s < .5 ? '#9a9070' : '#5c5a3c';
@@ -17255,7 +17171,7 @@ function paintGround(t, DET) {
      the foot of whatever is above it. Slope is the one thing that turns relief into
      geology; without it a hillside is a dune. ---- */
   var SL = 6, SH = SL * 1.35;
-  for (var sy = 0; sy < WORLD.h; sy += SL) {
+  for (var sy = 0; !OWN && sy < WORLD.h; sy += SL) {
     for (var sx = 0; sx < WORLD.w; sx += SL) {
       if (inland(sx, sy) < 0) continue;                        /* the sea is painted on its own */
       var z0 = groundZ(sx, sy);
@@ -17331,7 +17247,7 @@ function paintGround(t, DET) {
      Built as an image a quarter the size and drawn once, for the churn's reason: written
      as a quarter of a million little rectangles a wash of this size costs seconds, and a
      wash has no detail finer than the noise under it. ---- */
-  if (LAND.sand) {
+  if (LAND.sand && !OWN) {
     var SQ = 4, sw = Math.ceil(WORLD.w / SQ), shh = Math.ceil(WORLD.h / SQ);
     if (!paintGround._sc || paintGround._sc.width !== sw) {
       paintGround._sc = document.createElement('canvas');
@@ -17374,7 +17290,7 @@ function paintGround(t, DET) {
 
   /* ---- the sea: deep water, swell lines and a foam edge, and for a country with a
      cliff on it the face as well ---- */
-  if (G.coastline.length) {
+  if (G.coastline.length && !OWN) {
   t.save();
   /* the open edge is whichever one the sea is on, and the deep water is at it */
   var seaE = LAND.south ? WORLD.h : 0, seaD = LAND.south ? -1 : 1;
@@ -17512,8 +17428,8 @@ function paintGround(t, DET) {
   dg0.addColorStop(0, 'rgba(134,124,102,.40)');
   dg0.addColorStop(.5, 'rgba(118,109,89,.46)');
   dg0.addColorStop(1, 'rgba(134,124,102,.40)');
-  t.fillStyle = dg0; t.fillRect(TOWN.x, TOWN.y, TOWN.w, TOWN.h);
-  for (var du = 0; du < many(150); du++) {
+  if (!OWN) { t.fillStyle = dg0; t.fillRect(TOWN.x, TOWN.y, TOWN.w, TOWN.h); }
+  for (var du = 0; !OWN && du < many(150); du++) {
     var dx0 = TOWN.x + srange(0, TOWN.w), dy0 = TOWN.y + srange(0, TOWN.h), dr0 = srange(24, 96);
     var dgg = t.createRadialGradient(dx0, dy0, 0, dx0, dy0, dr0);
     var pale = srand();
@@ -17522,7 +17438,7 @@ function paintGround(t, DET) {
     t.fillStyle = dgg; t.beginPath(); t.arc(dx0, dy0, dr0, 0, TAU); t.fill();
   }
   /* the broken stone in it, coarse enough to see from a normal camera height */
-  for (var cs = 0; cs < many(900); cs++) {
+  for (var cs = 0; !OWN && cs < many(900); cs++) {
     var sx0 = TOWN.x + srange(0, TOWN.w), sy0 = TOWN.y + srange(0, TOWN.h), ss0 = srange(1.4, 4.6);
     var kind = srand();
     t.fillStyle = kind < .18 ? 'rgba(132,74,52,.5)' : kind < .6 ? 'rgba(196,186,160,.42)' : 'rgba(92,84,64,.36)';
@@ -26993,7 +26909,9 @@ function render() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.useProgram(SKY.p);
   gl.uniform1f(SKY.u.uPitch, POV.on ? povSkyPitch() : CAM.pitch - .9);
-  gl.uniform3f(SKY.u.uFogCol, .58, .60, .58);
+  gl.uniform3f(SKY.u.uFogCol, ATMO.fog[0], ATMO.fog[1], ATMO.fog[2]);
+  gl.uniform3f(SKY.u.uZenith, ATMO.zenith[0], ATMO.zenith[1], ATMO.zenith[2]);
+  gl.uniform1f(SKY.u.uGlow, ATMO.glow);
   /* the sun's own place on the screen: a point a long way off along SUN, put through the
      same matrix as everything else, so it holds under the orbit camera and the periscope
      alike. Behind the eye it is parked off the screen. */
@@ -27029,10 +26947,16 @@ function render() {
   gl.uniform3f(PROG.u.uSun, SUN.x, SUN.y, SUN.z);
   gatherLights(v);
   gl.uniform4fv(PROG.u.uLPos, _lpos); gl.uniform3fv(PROG.u.uLCol, _lcol);
-  gl.uniform1f(PROG.u.uAmb, .44);
+  gl.uniform1f(PROG.u.uAmb, ATMO.amb);
+  gl.uniform3f(PROG.u.uSunCol, ATMO.sunCol[0], ATMO.sunCol[1], ATMO.sunCol[2]);
+  gl.uniform3f(PROG.u.uSkyCol, ATMO.skyCol[0], ATMO.skyCol[1], ATMO.skyCol[2]);
+  gl.uniform3f(PROG.u.uSeaDeep, ATMO.seaDeep[0], ATMO.seaDeep[1], ATMO.seaDeep[2]);
+  gl.uniform3f(PROG.u.uSeaSky, ATMO.seaSky[0], ATMO.seaSky[1], ATMO.seaSky[2]);
+  gl.uniform1f(PROG.u.uSurf, ATMO.surf); gl.uniform1f(PROG.u.uGlow, ATMO.glow);
+  gl.uniform1f(PROG.u.uSkirtB, LAND.skirtB || 9);
   gl.uniform1f(PROG.u.uInside, 0);
   gl.uniform2f(PROG.u.uWorldSize, WORLD.w, WORLD.h);
-  gl.uniform3f(PROG.u.uFogCol, .58, .60, .58);
+  gl.uniform3f(PROG.u.uFogCol, ATMO.fog[0], ATMO.fog[1], ATMO.fog[2]);
   if (POV.on) gl.uniform2f(PROG.u.uFogRange, 220, 1500);   /* at helmet height the far town fades into the haze */
   else gl.uniform2f(PROG.u.uFogRange, CAM.dist * 1.1, CAM.dist * 1.1 + 2600);
   gl.uniform1f(PROG.u.uSeaT, G.t);
@@ -29547,7 +29471,7 @@ var MAPS = {
   gothic: { make: gothicMapData,
             brief: 'Force one of the three crossings of the Foglia and hold it. Cut-off sectors stop producing resources.' },
   omaha:  { make: omahaMapData,
-            brief: 'The Americans come up the beach from the water and the Germans down off the bluff. Hold the three exits in the seawall. Cut-off sectors stop producing resources.' }
+            brief: 'The Americans come ashore at the bottom of the map and the Germans hold the wall and the bluff above it. Take the village at the top, or put them back into the sea. Cut-off sectors stop producing resources.' }
 };
 var chosenMap = 'ortona';
 function chosenMapData() { return (MAPS[chosenMap] || MAPS.ortona).make(); }
@@ -31169,7 +31093,7 @@ function edPanelLoad() {
   html += '<div class="edh">THE SHIPPED MAPS</div>';
   html += '<div class="edli"><div class="t">Ortona<small>the old town, 23 December 1943</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
   html += '<div class="edli"><div class="t">The Gothic Line<small>the Foglia valley, 30 August 1944, laid out for four</small></div><button class="edb" id="edloadgothic">LOAD</button></div>';
-  html += '<div class="edli"><div class="t">Omaha Beach<small>Dog and Easy, 6 June 1944, from the water to the bluff</small></div><button class="edb" id="edloadomaha">LOAD</button></div>';
+  html += '<div class="edli"><div class="t">Omaha Beach<small>Dog and Easy, 6 June 1944, from the water to the village</small></div><button class="edb" id="edloadomaha">LOAD</button></div>';
   edPanel('LOAD A MAP', html);
   document.querySelectorAll('#edpanelbody [data-load]').forEach(function (b) { b.addEventListener('click', function () { edLoadSlot(decodeURIComponent(b.getAttribute('data-load'))); }); });
   document.querySelectorAll('#edpanelbody [data-kill]').forEach(function (b) { b.addEventListener('click', function () { edDeleteSlot(decodeURIComponent(b.getAttribute('data-kill'))); }); });
