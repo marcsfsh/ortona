@@ -1227,7 +1227,21 @@ where the pad was. `hqSpot` splits a team's allies across the axis their headqua
 not separated on, which here is x.
 
 **Measured on the going grid rather than looked at**, which is the only way any of that can
-be checked: MEASURED
+be checked. A tank asked to get from the middle of the beach to the plateau at four places
+across the corridor -- both flanks and both stretches between the draws -- takes 1,802 to
+1,929 units against a crow of 1,700, and every one of those routes passes within five units
+of a draw's own course while it is on the face. A section asked the same at the two flanks
+takes 1,759 and 1,731 and never comes within 90 of a draw. On the seawall a man pays 1.9 and
+a tank 16.2 against 1 in the lane beside it, and a round goes over it. The flat reads
+200,192,170 off the albedo against 91,99,64 on the farmland, and carries no cover where the
+lanes run; the bank and the wall carry tier 2. And the walk from each headquarters to the
+three flags on the wall is 1,320, 1,250 and 1,340 from the beach against 1,492, 1,357 and
+1,478 from the farmland, a tenth longer for the side that has the bluff to come down and
+the concrete to come down to. With the same brain on both sides (`tools/skirmish.mjs --self
+--map=omaha`, four pairs) the Americans won five matches and the Germans three, each over in
+four to eight minutes: inside the noise at eight, and the number to take again with more
+pairs once either army has a roster of its own.
+
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
 position; `updateModels` animates the individual soldiers. `tools/move.mjs` is the card
