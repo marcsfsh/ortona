@@ -190,10 +190,10 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    rules they needed were an automatic-cannon and a rocket signature for the eye and the
    ear, a reload clock, and the blast a vehicle takes read off what is over it.
    It is 1860 for a third map and the first of a second theatre: Omaha, which is a
-   country of its own -- a tidal flat, a shingle bank, a bluff with three draws cut
-   through it and the farmland behind -- laid out across the SHORT axis with the sea at
-   one army's back, plus the sand it is painted in and the bank that is the only cover
-   on the beach.
+   country of its own -- a tidal flat, a shingle bank, a seawall, a bluff with three draws
+   cut through it and the farmland behind -- laid out as a corridor with the sea along its
+   bottom edge, plus what that took: a world whose size and whose sea are the map's to
+   choose, the sand it is painted in, and the ground carried on past the edge of the map.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
