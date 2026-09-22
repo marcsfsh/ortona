@@ -194,10 +194,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    cut through it and the farmland behind -- laid out as a corridor with the sea along its
    bottom edge, plus what that took: a world whose size and whose sea are the map's to
    choose, the sand it is painted in, and the ground carried on past the edge of the map.
+   It is 1880 for Omaha laid again by hand: a weather of its own (the overcast table the
+   light, the sky and the sea read), a sea that is a depth over a shelving bed with surf
+   breaking on it, and the craft that brought the first wave in -- the LCVP and the LCT
+   Mk V, which is also what the American headquarters stands as on that beach.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1860) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1860 kB so it stays quick to load on a phone`);
+if (kb > 1880) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1880 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

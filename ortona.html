@@ -2935,6 +2935,129 @@ function gothicMapData() {
    from the crest back, and the seawall and the strip behind it are nobody's. */
 function omahaMapData() {
   var E = [];
+  function P(x, y) { return { x: x, y: y }; }
+
+  /* ---- the water's edge: the craft that brought the first wave in ----
+     An LCT beached bow on in the middle with its ramp down on the sand, which is the
+     American headquarters, and the Higgins boats either side of it where they grounded.
+     Most put their men out and stand empty with the ramp down; two are burning; one has
+     broached in the surf and lies over with the sea in it. */
+  E.push({ t: 'hq', side: 'us', x: 750, y: 3790, look: 'lct' });
+  [[178, 3838, -1.28, 1, .21], [332, 3852, -1.62, 0, .47], [566, 3858, -1.49, 0, .83], [1004, 3862, -1.67, 0, .12],
+   [1238, 3850, -1.93, 1, .66], [1392, 3902, .24, 2, .38], [462, 3920, -1.41, 2, .91]].forEach(function (c) {
+    E.push({ t: 'craft', kind: 'lcvp', x: c[0], y: c[1], a: c[2], wreck: c[3], s: c[4] });
+    if (c[3] === 1) E.push({ t: 'smoke', x: c[0], y: c[1] });
+  });
+
+  /* ---- the obstacles ----
+     Czech hedgehogs, one at a time, across the middle of the flat where the tide covers
+     them: thick in the middle of the band and thinning above and below it, with no line
+     through them that was left on purpose. Each was placed by hand; the list is the map. */
+  [[126, 2917, 3.72], [358, 2945, 2.21], [613, 2888, 3.70], [676, 2900, 5.96], [1044, 2927, 3.87], [1391, 2903, 1.13],
+   [1422, 2936, 0.58], [130, 2980, 2.41], [132, 3028, 5.23], [195, 2980, 3.58], [223, 3042, 3.61], [272, 3007, 0.06],
+   [341, 3038, 4.16], [447, 3015, 1.79], [520, 3048, 0.80], [597, 3027, 1.91], [611, 2951, 2.41], [910, 3006, 0.19],
+   [961, 3004, 1.12], [1346, 3050, 3.75], [75, 3111, 3.02], [360, 3146, 4.12], [474, 3063, 2.75], [524, 3100, 6.19],
+   [644, 3103, 2.09], [725, 3055, 0.29], [781, 3130, 1.61], [852, 3075, 1.56], [1057, 3117, 5.92], [1173, 3066, 0.25],
+   [1202, 3136, 6.13], [1437, 3071, 6.02], [158, 3169, 4.52], [293, 3201, 2.37], [433, 3176, 5.84], [437, 3229, 4.94],
+   [482, 3177, 2.46], [551, 3246, 3.30], [690, 3190, 3.26], [831, 3202, 0.71], [898, 3186, 5.48], [1046, 3222, 0.36],
+   [1079, 3183, 0.51], [1156, 3214, 4.61], [1343, 3240, 4.30], [1415, 3185, 4.32], [60, 3316, 0.30], [174, 3301, 2.43],
+   [247, 3252, 5.71], [251, 3298, 1.67], [455, 3286, 1.21], [623, 3274, 1.69], [677, 3305, 5.46], [712, 3272, 1.34],
+   [1045, 3286, 1.50], [1219, 3290, 3.11], [1298, 3298, 3.30], [1405, 3343, 2.41], [146, 3402, 0.40], [203, 3433, 3.14],
+   [236, 3401, 0.20], [281, 3400, 5.78], [341, 3374, 4.33], [430, 3374, 3.35], [594, 3409, 4.13], [672, 3397, 3.08],
+   [705, 3351, 5.74], [783, 3385, 3.28], [837, 3389, 4.97], [1318, 3419, 0.84], [1352, 3374, 2.44], [1385, 3429, 3.47],
+   [317, 3462, 4.95], [1446, 3457, 0.44]].forEach(function (h) { E.push({ t: 'hog', x: h[0], y: h[1], a: h[2] }); });
+
+  /* ---- the shingle and the seawall ----
+     The bank is the first thing a man coming up the beach can get down behind, and the
+     ground is its geometry; this is what the map says it is worth. The wall is a metre
+     and a half of concrete a man fires over and a hull does not climb, open where the
+     two exit roads go through it and where the two casemates are built into it. */
+  [[0, 2652, 250, 2644], [250, 2644, 500, 2647], [500, 2647, 750, 2655], [750, 2655, 1000, 2649],
+   [1000, 2649, 1250, 2641], [1250, 2641, 1500, 2646]].forEach(function (b) {
+    E.push({ t: 'bank', x1: b[0], y1: b[1], x2: b[2], y2: b[3], tier: 2 });
+  });
+  [[0, 2612, 250, 2606], [250, 2606, 277, 2606], [323, 2607, 378, 2607], [422, 2607, 500, 2608],
+   [500, 2608, 750, 2615], [750, 2615, 1000, 2610], [1000, 2610, 1078, 2608], [1122, 2607, 1177, 2605],
+   [1223, 2604, 1250, 2603], [1250, 2603, 1500, 2607]].forEach(function (w) {
+    E.push({ t: 'wall', x1: w[0], y1: w[1], x2: w[2], y2: w[3], h: 14, sea: 1 });
+  });
+  /* the beach road behind the wall, in three lengths between the two junctions where the
+     exit roads leave it and climb the draws */
+  E.push({ t: 'road', width: 34, pts: [P(0, 2566), P(125, 2563), P(250, 2560), P(400, 2561)] });
+  E.push({ t: 'road', width: 34, pts: [P(400, 2561), P(500, 2562), P(625, 2566), P(750, 2569), P(875, 2566), P(1000, 2564), P(1100, 2561)] });
+  E.push({ t: 'road', width: 34, pts: [P(1100, 2561), P(1250, 2557), P(1375, 2559), P(1500, 2561)] });
+  E.push({ t: 'road', width: 30, pts: [P(400, 2561), P(400, 2372), P(396, 2250), P(388, 2140), P(392, 2030), P(404, 1930), P(410, 1820)] });
+  E.push({ t: 'road', width: 30, pts: [P(1100, 2561), P(1100, 2360), P(1106, 2240), P(1116, 2130), P(1112, 2020), P(1100, 1920), P(1094, 1820)] });
+
+  /* ---- the resistance nests ----
+     Four of them, the way the defence was actually laid: one on each side of each exit
+     and the bluff between them held from above. At each exit a casemate is built into the
+     seawall and looks ALONG the beach rather than out to sea, so the two of them cross
+     their fire over the whole flat; a bunker on the lower slope covers the mouth of the
+     draw; Tobruks and machine-gun pits stand in the strip behind the wall; wire is strung
+     across the strip; and a fire trench runs along the foot of the bluff from one nest to
+     the next. Every bunker says whose it is, because this map is not two halves. */
+  [[300, 2596, 0], [1200, 2594, Math.PI]].forEach(function (b, i) {
+    E.push({ t: 'bunker', x: b[0], y: b[1], a: b[2], s: .3 + i * .4, sd: 'ger', style: 'casemate' });
+  });
+  [[296, 2292, 1.25, .62], [1196, 2284, 1.9, .17], [742, 2226, Math.PI / 2, .84], [132, 2220, Math.PI / 2, .44],
+   [1378, 2214, Math.PI / 2, .71]].forEach(function (b) {
+    E.push({ t: 'bunker', x: b[0], y: b[1], a: b[2], s: b[3], sd: 'ger' });
+  });
+  [[458, 2538, 1.3], [336, 2478, 1.6], [650, 2332, 1.57], [862, 2340, 1.57], [1042, 2536, 1.8], [1166, 2478, 1.5],
+   [192, 2332, 1.5], [1318, 2330, 1.6]].forEach(function (t) {
+    E.push({ t: 'tobruk', x: t[0], y: t[1], a: t[2], s: (t[0] % 7) / 7 });
+  });
+  [[476, 2452, 1.57], [300, 2440, 1.57], [562, 2338, 1.8], [940, 2356, 1.3], [1028, 2450, 1.57], [1214, 2450, 1.57]].forEach(function (m) {
+    E.push({ t: 'emplace', x: m[0], y: m[1], r: 22, a: m[2], s: (m[1] % 11) / 11 });
+  });
+  /* the fire trench along the foot of the bluff, facing the sea, in three legs between
+     the exits, and the communication trench up to the bunker on the bluff between them */
+  E.push({ t: 'trench', side: 'ger', face: 'L', pts: [P(52, 2398), P(104, 2384), P(160, 2402), P(214, 2386), P(262, 2400), P(318, 2392)] });
+  E.push({ t: 'trench', side: 'ger', face: 'L', pts: [P(482, 2402), P(538, 2386), P(596, 2408), P(656, 2390), P(716, 2410),
+                                                     P(776, 2392), P(836, 2412), P(896, 2394), P(958, 2410), P(1018, 2398)] });
+  E.push({ t: 'trench', side: 'ger', face: 'L', pts: [P(1182, 2398), P(1236, 2384), P(1292, 2402), P(1348, 2388), P(1404, 2402), P(1456, 2392)] });
+  E.push({ t: 'trench', side: 'ger', face: 'R', pts: [P(746, 2396), P(752, 2338), P(744, 2280)] });
+  /* wire across the strip behind the wall, in aprons with the gaps the garrison used, and
+     a second belt along the foot of the bluff in front of the fire trench */
+  [[40, 2528, 190, 2524], [230, 2530, 262, 2526], [440, 2520, 600, 2516], [650, 2524, 850, 2528], [900, 2526, 1060, 2520],
+   [1240, 2522, 1330, 2518], [1370, 2524, 1480, 2528],
+   [60, 2436, 250, 2440], [524, 2446, 700, 2440], [760, 2442, 984, 2446], [1262, 2440, 1440, 2436]].forEach(function (w) {
+    E.push({ t: 'wire', x1: w[0], y1: w[1], x2: w[2], y2: w[3] });
+  });
+
+  /* ---- the two exits ----
+     Each draw is shut where it opens onto the strip: an anti-tank ditch dug across the
+     floor and up both walls, and in front of it the road is closed -- at Vierville by a
+     concrete wall across the road, at Les Moulins by a belt of dragon's teeth -- so a hull
+     that wants to get off the beach has to have the way opened first. */
+  E.push({ t: 'ditch', w: 22, d: 20, pts: [P(318, 2336), P(398, 2330), P(482, 2338)] });
+  E.push({ t: 'ditch', w: 22, d: 20, pts: [P(1018, 2322), P(1102, 2316), P(1188, 2326)] });
+  E.push({ t: 'wall', x1: 368, y1: 2404, x2: 432, y2: 2404, h: 22, sea: 1 });
+  E.push({ t: 'hogs', kind: 'teeth', x1: 1060, y1: 2398, x2: 1142, y2: 2398 });
+
+  /* ---- what the morning has done to it ----
+     Shell holes: a few in the flat where the naval fire fell short, more in the strip and
+     on the face of the bluff where most of it landed. The ones low on the flat are under
+     the level of the sea and hold it. */
+  [[288, 3622, 13], [912, 3560, 11], [1180, 3470, 12], [604, 3510, 10],
+   [148, 2758, 14], [712, 2738, 12], [1330, 2772, 13],
+   [212, 2496, 15], [566, 2474, 13], [812, 2488, 16], [966, 2494, 14], [1300, 2482, 15], [1440, 2470, 13],
+   [80, 2300, 14], [520, 2270, 17], [620, 2196, 15], [896, 2250, 16], [990, 2170, 14], [1270, 2250, 15], [1460, 2300, 13],
+   [248, 2120, 16], [572, 2090, 15], [846, 2100, 14], [1300, 2110, 16]].forEach(function (c) {
+    E.push({ t: 'crater', x: c[0], y: c[1], r: c[2] });
+  });
+
+  /* ---- the flags ----
+     Sixteen in two lanes of eight, the west lane on the Vierville draw and the east on
+     Les Moulins, each linked to the flag above it, the flag below it and the one across
+     from it, so a lane can be forced and the other turned from it. The only victory flags
+     are the two at each end -- the water's edge where the craft came in and the village
+     the Germans are holding the country from -- and a side's own end does not count
+     against the other: the Americans win by taking the village and the Germans by putting
+     them back into the sea. The Americans open on the two rows at the water, the Germans
+     on the four from the crest back, and the seawall and the strip behind it are
+     nobody's. */
   var ROWS = [3600, 3170, 2700, 2300, 1880, 1450, 1020, 590];
   var LANES = [400, 1100];
   var secs = [
@@ -2956,7 +3079,6 @@ function omahaMapData() {
     if (q[4]) e.home = q[4];
     E.push(e);
   });
-  E.push({ t: 'hq', side: 'us', x: 750, y: 3650 });
   E.push({ t: 'hq', side: 'ger', x: 750, y: 270 });
   return { name: 'Omaha Beach', when: 'DOG AND EASY · 6 JUNE 1944', version: 3, land: 'omaha', w: 1500, h: 4000,
            entities: E, height: [] };
@@ -3037,6 +3159,7 @@ function buildMap(data) {
   G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
+  G.craft = []; G.hogpts = []; G.atDitch = [];
   wallq = null;                                    /* the standing index is rebuilt with them */
   ruinq = null;                                    /* and the index of what can be knocked down */
   /* Every prop in G.hurt is one of the objects just thrown away, so what is left of a
@@ -3152,7 +3275,7 @@ function buildMap(data) {
         var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
                     face: e.a || 0, arc: 1, s: e.s || 0, z: 0, sd: bsd };
         G.props.push(bk2); G.blocks.push(bk2); G.bunks.push(bk2);
-        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd });
+        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd, style: e.style });
         /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
            in front of it. The ground in front of a bunker is the beaten zone, and a cover
            patch laid there would be the map telling a section that walking up to the slot
@@ -3193,7 +3316,46 @@ function buildMap(data) {
       case 'grass': G.grass.push({ x: e.x, y: e.y, r: e.r, t: e.tone || .6, a: e.a || 0 }); break;
       case 'paved': G.paved.push({ x: e.x, y: e.y, w: e.w, h: e.h, kind: e.kind || 'street' }); break;
       case 'sector': G.sectorDefs.push(e); break;
-      case 'hq': G.hqPos[e.side] = { x: e.x, y: e.y }; break;
+      case 'hq': G.hqPos[e.side] = { x: e.x, y: e.y, look: e.look }; break;
+      case 'craft':
+        /* A landing craft where the tide left it. Afloat or aground it is drawn; aground
+           it is also a steel hull standing on the sand, a thing to get behind and not
+           through, and its two long sides are cover lying along it. */
+        var cr = { x: e.x, y: e.y, a: e.a || 0, kind: e.kind || 'lcvp', wreck: e.wreck || 0, s: e.s || 0 };
+        G.craft.push(cr);
+        if (inland(e.x, e.y) > -40) {
+          var cL = cr.kind === 'lct' ? 330 : 118, cB = cr.kind === 'lct' ? 100 : 36;
+          var cca = Math.abs(Math.cos(cr.a)), csa = Math.abs(Math.sin(cr.a));
+          G.props.push({ x: e.x, y: e.y, w: cL * cca + cB * csa, h: cL * csa + cB * cca, solid: 1, kind: 'craft', z: 0 });
+          addCover(e.x - Math.sin(cr.a) * (cB / 2 + 12), e.y + Math.cos(cr.a) * (cB / 2 + 12), cL * .42, 3, 'wall', cr.a, 300);
+          addCover(e.x + Math.sin(cr.a) * (cB / 2 + 12), e.y - Math.cos(cr.a) * (cB / 2 + 12), cL * .42, 3, 'wall', cr.a, 300);
+        }
+        break;
+      case 'hog':
+        /* One hedgehog where it was set down, which is how the beach obstacles stood: not
+           in a belt with a gap in it but wherever the working party left them before the
+           tide came in, so a line through them is a line somebody has to find. A man lies
+           down behind one and it holds a hull up, the way a belt does. */
+        G.hogpts.push({ x: e.x, y: e.y, a: e.a || 0, s: e.s === undefined ? noise2(e.x, e.y, 5) : e.s });
+        addCover(e.x, e.y, 16, 1, 'ditch', null, 90);
+        break;
+      case 'tobruk':
+        addCover(e.x, e.y, 18, 4, 'pit', null, 300);
+        G.stacks.push({ x: e.x, y: e.y, r: 16, kind: 'tobruk', s: e.s || 0, a: e.a || 0 });
+        carve(e.x, e.y, e.x, e.y, 9, -13, null, 'bowl');
+        break;
+      case 'ditch':
+        /* An anti-tank ditch: dug deep and square across the one way a hull can go, with
+           the spoil thrown up either side. A man gets down into it and out again; a tank
+           does not, which is the whole of what it is for. */
+        for (var dti = 0; dti < e.pts.length - 1; dti++) {
+          var da = e.pts[dti], db = e.pts[dti + 1], dax = Math.atan2(db.y - da.y, db.x - da.x);
+          carve(da.x, da.y, db.x, db.y, e.w || 24, -(e.d || 22), { w: 18, h: 6 }, 'trench');
+          G.atDitch.push({ x1: da.x, y1: da.y, x2: db.x, y2: db.y, w: e.w || 24 });
+          var dn = Math.max(2, Math.round(Math.hypot(db.x - da.x, db.y - da.y) / 34));
+          for (var dk = 0; dk <= dn; dk++) addCover(lerp(da.x, db.x, dk / dn), lerp(da.y, db.y, dk / dn), 24, 3, 'trench', dax, 220);
+        }
+        break;
     }
   });
   /* the ditch along the railway, and the sea itself, which is a wall of props rather
@@ -3205,7 +3367,9 @@ function buildMap(data) {
     else G.props.push({ x: bx, y: cyy / 2 - 10, w: 42, h: cyy + 20, solid: 1, kind: 'sea' });
   }
   applyEarthworks();
-  G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea') p.z = levelPad(p.x, p.y, p.w, p.h); });
+  /* a landing craft lies where the tide left it, on the slope of the beach, and is not
+     given a level pad: levelling a flat that falls a unit in eighty moves the water's edge */
+  G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea' && p.kind !== 'craft') p.z = levelPad(p.x, p.y, p.w, p.h); });
   makeFields();
 }
 function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = defaultMapData())); }
@@ -3746,7 +3910,7 @@ function wetOmaha(x, y) {
   if (y > wy || y < sy) return 0;
   var w = clamp(1 - (wy - y) / (wy - sy) / .38, 0, 1) * .78;
   var rn = omRunnel(x, y);
-  w = Math.max(w, clamp(rn / .9, 0, 1) * .62);
+  w = Math.max(w, clamp(rn / .9, 0, 1) * .45);
   return w;
 }
 /* ---- Omaha: the paint ----
@@ -3808,7 +3972,7 @@ function omahaPaint(t) {
              the sand under it rather than anything darker, and the bar beside each is dry */
           var rn = omRunnel(x, y), bar = omRunnel(x, y - 34);
           if (bar > .15 && rn < .1) { k = clamp(bar / 1.2, 0, 1) * .3; r = lerp(r, 184, k); g = lerp(g, 174, k); b = lerp(b, 152, k); }
-          if (rn > .05) { k = clamp(rn / .9, 0, 1) * .5; r = lerp(r, 126, k); g = lerp(g, 128, k); b = lerp(b, 124, k); }
+          if (rn > .05) { k = clamp(rn / .9, 0, 1) * .45; r = lerp(r, 140, k); g = lerp(g, 141, k); b = lerp(b, 136, k); }
           /* the high-water line: the wrack the last tide left, a broken dark band a little
              below the shingle, and an older, fainter one above it */
           var hw = sy + 58 + (hnoise(x / 60, 3, 223) - .5) * 26;
@@ -3891,6 +4055,9 @@ function makeHeight() {
      away only the holes in it, so there is no step where the pad meets the country. */
   for (var dpi = 0; dpi < DEPOT.length; dpi++) {
     var cx0 = DEPOT[dpi][0], cy0 = DEPOT[dpi][1];
+    /* A headquarters on a beach needs no levelling: the beach is as flat as it will get,
+       and a plane fitted through it moves the water's edge wherever the pad reaches. */
+    if (LAND.south && inland(cx0, cy0) < 400) continue;
     var pm = padMargin(), RX = LAND.padR + pm, RY = LAND.padY + pm;
     var i0 = Math.max(0, Math.floor((cx0 - RX) / HG)), i1 = Math.min(HW - 1, Math.ceil((cx0 + RX) / HG));
     var j0 = Math.max(0, Math.floor((cy0 - RY) / HG)), j1 = Math.min(HH - 1, Math.ceil((cy0 + RY) / HG));
@@ -4351,6 +4518,8 @@ function rebuildGrid() {
      belt is for. */
   hogg.fill(0);
   G.hogs.forEach(function (hg) { markSeg(hogg, hg.x1, hg.y1, hg.x2, hg.y2, 15); });
+  G.hogpts.forEach(function (hp) { markSeg(hogg, hp.x, hp.y, hp.x, hp.y, 12); });
+  G.atDitch.forEach(function (dt) { markSeg(hogg, dt.x1, dt.y1, dt.x2, dt.y2, dt.w); });
   /* A seawall is low enough for a man to fire over and get across, which is what its
      height already says, and it is a metre and a half of poured concrete that no hull
      climbs, which its height cannot say. So it goes on the same grid a belt of teeth does
@@ -5186,7 +5355,8 @@ function spawnBuilding(slot, key, x, y, done) {
   var mh = Math.round(d.hp * (G.win === 'anni' ? 1.8 : 1));
   var b = { id: G.uid++, own: slot, side: side, key: key, def: d, x: x, y: y,
             hp: done ? mh : mh * .18, maxhp: mh, built: done ? 1 : 0,
-            queue: [], qt: 0, rally: { x: x + (side === 'us' ? 120 : -120), y: y + 90 },
+            queue: [], qt: 0,
+            rally: LAND.south ? { x: x + 90, y: y + (side === 'us' ? -120 : 120) } : { x: x + (side === 'us' ? 120 : -120), y: y + 90 },
             dead: false, hitT: 0 };
   G.blds.push(b); rebuildGrid();
   return b;
@@ -14030,7 +14200,7 @@ var FSH = [
   /* the weather, off the map's ATMO table */
   'uniform vec3 uSunCol; uniform vec3 uSkyCol; uniform vec3 uSeaDeep; uniform vec3 uSeaSky; uniform float uSurf; uniform float uGlow;',
   /* how far down the mip chain the paint past the edge of the map is taken (see below) */
-  'uniform float uSkirtB;',
+  'uniform float uSkirtB; uniform float uSeaLvl;',
   'uniform float uAtlasCols; uniform float uAtlasRows;',
   /* one tile of the atlas, repeating, sampled from the vertex uv */
   'vec4 tile(float m, vec2 uv) {',
@@ -14269,6 +14439,16 @@ var FSH = [
      that looks up is lit and a face that looks down is not, and the shadow map, which
      cannot see in here, is ignored */
   '  if (uInside > 0.0) c = base * (0.66 + 0.36 * (n.z * 0.5 + 0.5)) * uInside + vec3(1.0, 0.96, 0.88) * specP * 0.35;',
+  /* Anything standing in a sea that has a surface -- a hull, an obstacle, a man wading --
+     is seen through the water below its level: the water's colour closes over it with
+     depth, and a band of froth marks where it meets the surface. Without it a landing
+     craft in the surf stands on the sea bed in air, because the sea here is a colour on
+     the bottom and not a sheet across the top. */
+  '  if (uSurf > 0.0 && uUseTex < 0.5 && vWpos.z < uSeaLvl) {',
+  '    float wd = uSeaLvl - vWpos.z;',
+  '    c = mix(c, uSeaDeep * uAmb * 2.2 + uSeaSky * uAmb * 0.25, clamp(0.34 + wd * 0.07, 0.0, 0.9));',
+  '    c = mix(c, vec3(0.80, 0.83, 0.82) * (uAmb * 1.4 + 0.1), smoothstep(1.1, 0.0, wd) * 0.55);',
+  '  }',
   /* The sea has no water plane: it is the sea bed, sunk to sixty units and painted blue,
      so the normal under a fragment of it is the normal of the mud at the bottom. What it
      had on top of that was a product of two sines at a hundred and twenty-six units and
@@ -14298,7 +14478,7 @@ var FSH = [
   '    vec3 wc = mix(uSeaDeep, refl, wf) * uAmb * 1.9;',
   /* the glitter, and a crest catching the light through the top of the wave */
   '    wc += vec3(1.0, 0.94, 0.82) * pow(max(0.0, dot(wn, wh)), 110.0) * 1.4 * lit * uGlow;',
-  '    wc += vec3(0.10, 0.20, 0.18) * max(0.0, a0 + b0 * 0.45 - 0.78) * 4.0;',
+  '    wc += vec3(0.10, 0.20, 0.18) * max(0.0, a0 + b0 * 0.45 - 0.78) * 4.0 * (1.0 - 0.8 * uSurf);',
   /* A sea over a bed that shelves (uSurf) is a depth rather than a place, and the depth
      rides in the v of the vertex uv. The bed shows through the shallows, the ground under
      it lit as it is and seen through a colour that closes in with depth; and the surf is
@@ -14933,6 +15113,12 @@ function registerMaterials() {
      The rest is the tail -- the room read off a shell when nobody has drawn one, the
      gun's own palette, the joists in a roof, the drums on a fuel dump. */
   tag(['#7a6e4b'], 'hessian');                              /* the sandbag shade that was missed */
+  if (typeof CRAFT !== 'undefined') {
+    tag([CRAFT.hull, CRAFT.hullL, CRAFT.hullD, CRAFT.deck, CRAFT.deckL, CRAFT.num, CRAFT.blue], 'paint');
+    tagEdges([CRAFT.hull, CRAFT.hullL, CRAFT.hullD, CRAFT.deck, CRAFT.deckL, CRAFT.num, CRAFT.blue], 'paint');
+    tag([CRAFT.steel, CRAFT.steelL, CRAFT.burnt, CRAFT.burntL], 'steel');
+    tagEdges([CRAFT.steel, CRAFT.steelL, CRAFT.burnt, CRAFT.burntL], 'steel');
+  }
   tag(['#26261f', '#33332b'], 'track');                     /* the M3's track */
   tag(['#4a3824', '#5a4530', '#3a2c1c', '#3a352a', '#4a4436', '#332f26'], 'wood');   /* joists, purlins, floors */
   tag(['#c8c1a0', '#d3d1c3', '#b0a888', '#bbb9ab', '#2f3330', '#4d524d'], 'paint');  /* the derived interior */
@@ -16316,6 +16502,17 @@ function sceneProps(tile) {
       }
     }
   });
+  /* the beach: landing craft where the tide left them, keel in the sand at the water's
+     edge or lying on the bottom in the surf, and the hedgehogs one at a time */
+  G.craft.forEach(function (cr) {
+    if (!mine(cr.x, cr.y)) return;
+    var cz = groundZ(cr.x, cr.y), keel = cr.wreck === 2 ? cz - 1 : Math.min(cz, seaZ()) - 2.5;
+    put(place(cr.kind === 'lct' ? lctModel(false) : lcvpModel(cr.wreck, cr.s), 0, 0, 0, keel - cz), cr.x, cr.y, cr.a);
+  });
+  G.hogpts.forEach(function (hp) {
+    if (!mine(hp.x, hp.y)) return;
+    put(hedgehogModel(hp.s, 1.5), hp.x, hp.y, hp.a);
+  });
   G.wire.forEach(function (wr) {
     if (!mine((wr.x1 + wr.x2) / 2, (wr.y1 + wr.y2) / 2)) return;
     seedAt(wr.x1, wr.y1, 5);
@@ -16401,7 +16598,15 @@ function sceneProps(tile) {
       put(pitch(box(0, 0, 7, 22, 2.2, 2.2, '#4e402c', '#5f4e36'), -.2, 0, 0), st.x + 6, st.y - 4, st.s * TAU + 1.2);
       put(box(0, 0, .6, 16, 8, 1.2, '#5a4a32', '#6b5a3e'), st.x - 8, st.y + 6, st.s * 5);       /* a door */
     } else if (st.kind === 'bunker') {
-      put(bunkerModel(74, 46, st.s, st.sd), st.x, st.y, st.a || 0);
+      /* a casemate is told which side of it the sea is on, in its own frame, because its
+         wing wall goes on that side whichever way along the beach it fires */
+      if (st.style === 'casemate') {
+        var sea = LAND.south ? (Math.cos(st.a || 0) >= 0 ? 1 : -1) : (Math.cos(st.a || 0) >= 0 ? -1 : 1);
+        put(casemateModel(st.s, sea), st.x, st.y, st.a || 0);
+      } else put(bunkerModel(74, 46, st.s, st.sd), st.x, st.y, st.a || 0);
+    } else if (st.kind === 'tobruk') {
+      /* the collar sits at the ground round the hole, not at the bottom of it */
+      put(place(tobrukModel(st.s), 0, 0, 0, naturalZ(st.x, st.y) - groundZ(st.x, st.y)), st.x, st.y, st.a || 0);
     } else if (st.kind === 'emplace') {
       /* a weapon pit: a horseshoe of sandbags two bags thick, six courses at the front
          falling to three at the open rear, each course laid header-and-stretcher round
@@ -17488,7 +17693,7 @@ function paintGround(t, DET) {
      same road is rolled dirt between two verges with a pair of ruts worn into it. ---- */
   G.roads.forEach(function (r) {
     var W = r.width || 48;
-    var town = r[0].x > 760 && r[0].x < 2040 && r[0].y > 560 && r[0].y < 1340;
+    var town = !LAND.hand && r[0].x > 760 && r[0].x < 2040 && r[0].y > 560 && r[0].y < 1340;
     function run(width, style, alpha) {
       t.globalAlpha = alpha === undefined ? 1 : alpha;
       t.lineCap = 'butt'; t.lineJoin = 'round';
@@ -25203,6 +25408,8 @@ function buildModels() {
     MODELS.gun[k] = facesToBuffer(GUNMODEL[k].mesh);
     if (GUNMODEL[k].base) MODELS.gunBase[k] = facesToBuffer(GUNMODEL[k].base);
   });
+  /* a headquarters a map dresses as something else (`look` on its hq entity) */
+  Object.keys(LOOKS).forEach(function (k) { MODELS.bld[k] = facesToBuffer(LOOKS[k]()); });
   Object.keys(BUILDINGS).forEach(function (k) {
     var bf = buildingModel(BUILDINGS[k], k);
     MODELS.bld[k] = facesToBuffer(bf.filter(function (q) { return !q.alpha; }));
@@ -25288,13 +25495,16 @@ function sandbagRun(x0, y0, ang, len, courses, rnd) {
    machine gun is already looking. */
 var HOGC = { steel: '#5a5348', steelL: '#6d6558', rust: '#54443a', rustL: '#6a564a',
              con: '#8a8a7e', conL: '#9a9a8e', conD: '#74746a' };
-function hedgehogModel(sv) {
-  var L = 10.5 + sv * 2.4, t = 1.7, i, j, lo = 1e9;
+/* k scales it: a belt inland is laid in the small ones, and what stood on the beach at
+   Omaha was the full-size Czech pattern, a man's height across */
+function hedgehogModel(sv, k) {
+  k = k || 1;
+  var L = (10.5 + sv * 2.4) * k, t = 1.7 * k, i, j, lo = 1e9;
   var c = sv > .55 ? HOGC.rust : HOGC.steel, cl = sv > .55 ? HOGC.rustL : HOGC.steelL;
   var f = box(0, 0, -t / 2, L, t, t, c, cl, c)
     .concat(box(0, 0, -t / 2, t, L, t, c, cl, c))
     .concat(box(0, 0, -L / 2, t, t, L, c, cl, c))
-    .concat(box(0, 0, -2.4, 4.4, 4.4, 4.8, cl, cl, c));         /* the weld at the middle */
+    .concat(box(0, 0, -2.4 * k, 4.4 * k, 4.4 * k, 4.8 * k, cl, cl, c));         /* the weld at the middle */
   /* tipped off the axes so it stands on three points rather than lying square, and then
      set down on whatever the lowest of them turns out to be: guessing the drop leaves a
      star either buried to the weld or hovering over its own shadow */
@@ -25307,6 +25517,196 @@ function dragonTooth(h, sv) {
   return frustum([[-b, -b], [b, -b], [b, b], [-b, b]], [[-t, -t], [t, -t], [t, t], [-t, t]],
                  0, h, HOGC.con, HOGC.conL, HOGC.conD);
 }
+
+/* ---- landing craft ----
+   The two that came ashore on this beach. The LCVP is the plywood Higgins boat that put a
+   section on the sand, flat-bottomed with a steel ramp for a bow; the LCT Mk V is thirty
+   odd metres of flat-bottomed steel with an open well deck behind a ramp the width of the
+   deck, and a machinery space, a deckhouse and two Oerlikons at the stern. Both are built
+   bow to +x about their own middle with the keel at nought, the way a vehicle is. Against
+   the published figures: an LCVP is 36 ft 3 in by 10 ft 10 in, which at 11.7 units the
+   metre is 129 by 39, and is drawn at that; an LCT Mk V is 114 by 32 feet, 407 by 114,
+   and is drawn at nine tenths of it, because on a beach a third of a mile long it is a
+   headquarters and not a ship.
+   `wreck` is what the morning did to it: nought is a craft that put its men ashore and
+   stands with its ramp down, one is holed and burnt out with the ramp hanging, and two is
+   broached and swamped, lying over on its side in the surf. */
+var CRAFT = { hull: '#5b6562', hullL: '#6a7470', hullD: '#454d4a', deck: '#4f5552', deckL: '#5d6360',
+              steel: '#40443f', steelL: '#555a54', burnt: '#2c2b27', burntL: '#3b3934',
+              num: '#c4c2b6', blue: '#2f3e5c' };
+function lcvpModel(wreck, sv) {
+  var L = 129, B = 39, H = 23, f = [], P = CRAFT;
+  function r(n) { var v = Math.sin(sv * 77.3 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  /* a burnt-out hull is black in patches rather than all over: the fire takes the paint
+     where the fuel ran and leaves it where it did not */
+  function bc(c, n) { return wreck === 1 && r(n) > .3 ? (r(n + 50) > .5 ? P.burnt : P.burntL) : c; }
+  f = f.concat(box(0, 0, 0, L - 8, B - 5, 4, P.hullD, P.hullD, P.hullD));
+  [-1, 1].forEach(function (sd, i) {
+    f = f.concat(box(-2, sd * (B / 2 - 1.3), 0, L - 10, 2.6, H, bc(P.hull, 2 + i), bc(P.hullL, 4 + i), P.hullD));
+    /* the rubbing strake, and the bow cheeks either side of the ramp */
+    f = f.concat(box(-4, sd * (B / 2 + .25), H * .62, L - 18, .9, 1.6, P.hullD, P.hullD));
+    f = f.concat(box(L / 2 - 8, sd * (B / 2 - 3.6), 0, 10, 7.2, H + 1, bc(P.hull, 6 + i), P.hullL, P.hullD));
+    /* the hull number stencilled on either bow */
+    f = f.concat(box(L / 2 - 28, sd * (B / 2 + .1), 11, 15, .3, 5, P.num, P.num));
+  });
+  f = f.concat(box(-L / 2 + 5, 0, 0, 3, B - 4, H - 2, bc(P.hull, 8), P.hullL, P.hullD));
+  /* the engine deck over the aft third and the well floor forward of it */
+  f = f.concat(box(-L / 2 + 21, 0, 0, 30, B - 5, 16, bc(P.deck, 9), bc(P.deckL, 10), P.deck));
+  f = f.concat(box(12, 0, 0, L - 52, B - 5, 5, bc(P.deck, 11), P.deckL, P.deck));
+  /* the coxswain's armoured box, to starboard at the stern, and a gun tub either side
+     with its .30 */
+  f = f.concat(box(-L / 2 + 12, 7, 16, 9, 11, 8, bc(P.steel, 12), P.steelL, P.steel));
+  [-1, 1].forEach(function (sd, i) {
+    f = f.concat(cyl(-L / 2 + 27, sd * (B / 2 - 7), 16, 3.8, 3.8, 5.5, 8, bc(P.steel, 13 + i), P.steelL));
+    if (wreck !== 1) f = f.concat(box(-L / 2 + 32, sd * (B / 2 - 7), 21.6, 9, 1, 1, P.steel, P.steel));
+  });
+  /* The ramp is a steel plate hinged at the foot of the bow. Down, it lies on the sand in
+     front of the boat; a burnt-out one hangs where the cable parted; a swamped one is
+     still up. It is built standing at the hinge and swung, so every angle is one number. */
+  var ramp = box(0, 0, 0, 2.2, B - 13, H - 2, bc(P.steel, 15), P.steelL, P.steel)
+    .concat(box(-1.5, 0, H - 7, 1.2, B - 15, 1.3, P.steelL, P.steelL));
+  var drop = wreck === 2 ? -.12 : wreck === 1 ? -.75 - r(16) * .5 : -1.47;
+  f = f.concat(pitch(place(ramp, 0, L / 2 - 3, 0, 3), drop, L / 2 - 3, 3));
+  if (wreck === 2) {
+    /* broached: lying over with the sea in it */
+    f = roll(f, .34 + r(17) * .1, 0, 0);
+    f = place(f, 0, 0, 0, -5);
+  } else if (wreck === 1) f = roll(f, (r(18) - .5) * .16, 0, 0);
+  return f;
+}
+function lctModel(cargo) {
+  var L = 366, B = 104, BW = 28, P = CRAFT, f = [], k;
+  f = f.concat(box(0, 0, 0, L - 16, B - 6, 7, P.hullD, P.hullD, P.hullD));
+  [-1, 1].forEach(function (sd) {
+    /* the side bulwarks that make the well, a rubbing strake along each, and the square
+       bow ends either side of the ramp */
+    f = f.concat(box(12, sd * (B / 2 - 3.5), 0, L - 40, 7, BW, P.hull, P.hullL, P.hullD));
+    f = f.concat(box(12, sd * (B / 2 + .3), BW * .55, L - 46, 1.2, 2.4, P.hullD, P.hullD));
+    f = f.concat(box(L / 2 - 10, sd * (B / 2 - 10), 0, 20, 20, BW + 4, P.hull, P.hullL, P.hullD));
+    f = f.concat(box(L / 2 - 64, sd * (B / 2 + .45), 13, 36, .4, 9, P.num, P.num));
+  });
+  f = f.concat(box(22, 0, 0, L - 100, B - 14, 9, P.deck, P.deckL, P.deck));
+  /* the stern: the machinery space under the after deck, the deckhouse on it to port
+     with the open conning position on top, a mast, and an Oerlikon in a tub at each
+     quarter */
+  f = f.concat(box(-L / 2 + 36, 0, 0, 72, B - 6, BW, P.hull, P.deckL, P.hullD));
+  f = f.concat(box(-L / 2 + 34, -20, BW, 36, 40, 15, P.hull, P.hullL, P.hullD));
+  f = f.concat(box(-L / 2 + 38, -20, BW + 15, 22, 30, 8, P.hull, P.deckL, P.hullD));
+  f = f.concat(box(-L / 2 + 49.4, -20, BW + 17, .6, 26, 3, P.steel, P.steel));
+  f = f.concat(cyl(-L / 2 + 30, -20, BW + 23, 1.2, 1.2, 40, 6, P.steel, P.steelL));
+  f = f.concat(box(-L / 2 + 30, -20, BW + 55, 1, 20, 1, P.steel, P.steel));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(cyl(-L / 2 + 14, sd * (B / 2 - 13), BW, 6, 6, 6, 10, P.steel, P.steelL));
+    f = f.concat(box(-L / 2 + 14, sd * (B / 2 - 13), BW + 5, 3, 7, 6, P.steelL, P.steelL));
+    f = f.concat(box(-L / 2 + 22, sd * (B / 2 - 13), BW + 8, 14, 1.3, 1.3, P.steel, P.steel));
+  });
+  f = f.concat(cyl(-L / 2 + 8, 22, BW, 4, 4, 7, 8, P.steel, P.steelL));
+  /* the ensign at the stern */
+  f = f.concat(cyl(-L / 2 + 3, 30, BW, .7, .7, 26, 5, P.steel, P.steel));
+  f = f.concat(box(-L / 2 + 3, 36.5, BW + 18, .4, 12, 8, '#cfccbe', '#cfccbe'));
+  f = f.concat(box(-L / 2 + 3, 36.5, BW + 18, .5, 12, 1.6, '#8e2f26', '#8e2f26'));
+  f = f.concat(box(-L / 2 + 3, 36.5, BW + 21.2, .5, 12, 1.6, '#8e2f26', '#8e2f26'));
+  f = f.concat(box(-L / 2 + 3, 33.3, BW + 22.2, .6, 5.6, 3.8, P.blue, P.blue));
+  /* the ramp, down on the sand, with the cleats across it a boot takes hold of */
+  var RW = B - 40, RH = 36, ramp = box(0, 0, 0, 3, RW, RH, P.steel, P.steelL, P.steel);
+  for (k = 1; k < 7; k++) ramp = ramp.concat(box(1.9, 0, k * RH / 7, 1, RW - 4, 1.2, P.steelL, P.steelL));
+  f = f.concat(pitch(place(ramp, 0, L / 2 - 4, 0, 5), -1.46, L / 2 - 4, 5));
+  if (cargo) {
+    /* a beach headquarters: ammunition and rations stacked on the well deck, jerrycans
+       in rows, a tarpaulin over what should not get wet, and the wireless */
+    [[70, 22, 3], [52, 24, 2], [96, -26, 3], [118, -24, 2], [18, -30, 2], [-10, 28, 3]].forEach(function (c, i) {
+      for (var h = 0; h < c[2]; h++)
+        f = f.concat(box(c[0] + (i % 2) * 1.5, c[1] - (h % 2), 9 + h * 7, 16, 11, 7, '#4d5340', '#5d6450', '#41473a'));
+    });
+    for (k = 0; k < 8; k++) f = f.concat(box(-30 + k * 4.2, -8, 9, 3.4, 8, 10, '#41473a', '#4d5340'));
+    f = f.concat(box(140, 4, 9, 30, 24, 9, '#6f6444', '#85795a', '#5f5539'));
+    f = f.concat(box(-40, 30, 9, 12, 10, 12, '#4d5340', '#5d6450'));
+    f = f.concat(cyl(-40, 30, 21, .5, .5, 40, 4, P.steel, P.steel));
+  }
+  return f;
+}
+/* A Tobruk: a concrete tub sunk in the ground with a round hole in its roof, a man in the
+   hole and a machine gun on a rail round its lip. It is the commonest thing in the
+   Atlantic Wall and the least visible: from in front it is a collar of concrete a hand
+   high with a gun barrel over it. */
+function tobrukModel(sv) {
+  var f = [], n = 10, R0 = 7.5, R1 = 16.5, i;
+  for (i = 0; i < n; i++) {
+    var am = (i + .5) / n * TAU, rm = (R0 + R1) / 2;
+    f = f.concat(place(box(0, 0, -4, R1 - R0, 2 * rm * Math.tan(Math.PI / n) + .8, 6.2, BUNK.con, BUNK.conL, BUNK.conD, .7),
+                       am, Math.cos(am) * rm, Math.sin(am) * rm, 0));
+  }
+  f = f.concat(cyl(0, 0, 1.6, R0 + .4, R0 + .4, .9, 12, '#3a3d34', '#4a4d42'));
+  /* the gun on the rail at the back of the hole, laid over the front of it */
+  f = f.concat(box(R0 - 1, 0, 3.3, 15, 1.1, 1.1, '#2b2e23', '#3d4133'));
+  f = f.concat(box(R0 - 7, 0, 2.6, 7, 2.2, 2.6, '#2b2e23', '#3d4133'));
+  return place(f, (sv - .5) * .5, 0, 0, 0);
+}
+/* ---- an Atlantic Wall casemate ----
+   The gun casemates at Omaha were built to fire ALONG the beach and not out to sea. The
+   embrasure looks sideways down the sand, and a wing of concrete stands out beside it on
+   the seaward side so that nothing afloat can put a round through the slot; that wing is
+   the one thing that says Atlantic Wall rather than field bunker, and the casemate is
+   built round it. A block of poured concrete with the roof slab standing proud of the
+   walls, a stepped slot with the gun laid through it, and the spoil heaped against the
+   back, which is the side the Germans came and went by. Built facing +x like everything
+   else; `sea` is which side of it the water is on, +1 or -1 along its own y. */
+function casemateModel(sv, sea) {
+  var C = BUNK.con, CL = BUNK.conL, CD = BUNK.conD, E = BUNK.earth, EL = BUNK.earthL, ED = BUNK.earthD;
+  var D = 46, W = 70, H = 30, ew = 18, ez = 9, eh = 8, f = [];
+  /* frustum wants its plans wound anticlockwise, and a plan mirrored to the other side
+     of the casemate is wound the other way: culled, it is a wing wall that is not there */
+  function wedge(base, top, z1, c, cl, cd) {
+    var a = 0;
+    for (var i = 0; i < base.length; i++) { var p = base[i], q = base[(i + 1) % base.length]; a += p[0] * q[1] - q[0] * p[1]; }
+    if (a < 0) { base = base.slice().reverse(); top = top.slice().reverse(); }
+    return frustum(base, top, 0, z1, c, cl, cd);
+  }
+  f = f.concat(box(-D / 2 + 6, 0, 0, 12, W, H, C, CL, CD));
+  f = f.concat(box(0, -W / 2 + 6, 0, D, 12, H, C, CL, CD));
+  f = f.concat(box(0, W / 2 - 6, 0, D, 12, H, C, CL, CD));
+  /* the front, solid either side of the slot, with a sill under it and a lintel over it */
+  var fw = (W - ew) / 2;
+  f = f.concat(box(D / 2 - 5, -(ew / 2 + fw / 2), 0, 10, fw, H, C, CL, CD));
+  f = f.concat(box(D / 2 - 5, ew / 2 + fw / 2, 0, 10, fw, H, C, CL, CD));
+  f = f.concat(box(D / 2 - 5, 0, 0, 10, ew, ez, C, CL, CD));
+  f = f.concat(box(D / 2 - 5, 0, ez + eh, 10, ew, H - ez - eh, C, CL, CD));
+  /* the reveal is stepped back into the wall, which is what keeps a round that strikes
+     the face from glancing in */
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(D / 2 + 1.5, s * (ew / 2 + 3), ez - 3, 3, 6, eh + 6, CD, C, CD));
+  });
+  f = f.concat(box(D / 2 + 1.5, 0, ez - 4, 3, ew + 12, 1.6, CD, C, CD));
+  f = f.concat(box(D / 2 + 1.5, 0, ez + eh + 2, 3, ew + 12, 2.4, CD, C, CD));
+  /* the roof slab, standing proud of the walls all round, and the dark floor inside */
+  f = f.concat(box(1, 0, H, D + 8, W + 6, 5, CL, CL, CD));
+  f = f.concat(box(-2, 0, 0, D - 22, W - 22, 1.5, BUNK.dark, BUNK.dark));
+  /* the wing wall on the seaward side of the slot, standing out along the line of fire
+     and falling away toward its end */
+  f = f.concat(wedge([[D / 2, sea * (W / 2 - 9)], [D / 2 + 30, sea * (W / 2 - 7)], [D / 2 + 30, sea * (W / 2 + 1)], [D / 2, sea * (W / 2 + 1)]],
+                     [[D / 2, sea * (W / 2 - 8)], [D / 2 + 30, sea * (W / 2 - 6)], [D / 2 + 30, sea * (W / 2)], [D / 2, sea * (W / 2)]],
+                     H - 4, C, CL, CD));
+  f = f.concat(box(D / 2 + 29, sea * (W / 2 - 3.5), 0, 4, 9, H - 10, C, CL, CD));
+  /* the gun: an 88 on its pedestal inside, the barrel laid out through the slot */
+  f = f.concat(box(D / 2 - 14, 0, ez - 1, 12, 11, 7, '#3d4133', '#4a4d42'));
+  f = f.concat(box(D / 2 + 6, 0, ez + 3.2, 30, 1.7, 1.7, '#2b2e23', '#3d4133'));
+  f = f.concat(box(D / 2 + 21, 0, ez + 3, 3.2, 2.4, 2.4, '#2b2e23', '#3d4133'));
+  /* the spoil heaped against the back and round the landward side */
+  f = f.concat(wedge([[-D / 2 - 34, -W / 2 - 8], [-D / 2, -W / 2 - 8], [-D / 2, W / 2 + 8], [-D / 2 - 34, W / 2 + 8]],
+                     [[-D / 2 - 3, -W / 2 + 2], [-D / 2, -W / 2 + 2], [-D / 2, W / 2 - 2], [-D / 2 - 3, W / 2 - 2]],
+                     H + 2, E, EL, ED));
+  f = f.concat(wedge([[-D / 2 - 6, -sea * (W / 2 + 26)], [D / 2 - 8, -sea * (W / 2 + 26)], [D / 2 - 8, -sea * W / 2], [-D / 2 - 6, -sea * W / 2]],
+                     [[-D / 2 - 4, -sea * (W / 2 + 2)], [D / 2 - 12, -sea * (W / 2 + 2)], [D / 2 - 12, -sea * W / 2], [-D / 2 - 4, -sea * W / 2]],
+                     H - 6, E, EL, ED));
+  return f;
+}
+/* What a headquarters can be dressed as, by name, for a map that stands one somewhere a
+   field headquarters would not be. The LCT is beached bow up the screen with its ramp down
+   on the sand at the headquarters' own footprint, its keel a little under the water so the
+   stern floats, and the rest of it out over the sea, which is solid ground to nobody. */
+var LOOKS = {
+  lct: function () { return place(lctModel(true), -Math.PI / 2, 0, 163, -9); }
+};
 
 /* ---- a Gothic Line bunker ----
    Reinforced concrete dug into the slope with the spoil heaped back over it. What shows
@@ -26291,12 +26691,12 @@ function drawUnits3D(v, list) {
 function drawBuildings3D() {
   G.blds.forEach(function (b) {
     if (b.side !== G.side && !visibleTo(G.side, b)) return;
-    var B = MODELS.bld[b.key]; if (!B) return;
+    var B = MODELS.bld[b.look || b.key]; if (!B) return;
     var done = b.built >= 1;
     var mm = m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
     if (!done) { mm[10] = .15 + .85 * b.built; }          /* rises as it is built */
     drawGeom(B, mm, false, done ? null : [.8, .8, .75]);
-    if (done && MODELS.bldA[b.key]) {
+    if (done && !b.look && MODELS.bldA[b.key]) {
       gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE);
       drawGeom(MODELS.bldA[b.key], mm, false, null);
       gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0);
@@ -26885,7 +27285,7 @@ function render() {
     for (var gti = 1; gti < PT_N; gti++) if (SCENE.ground[gti]) drawDepthGeom(SCENE.ground[gti], null);
     for (var sti = 0; sti < SCENE.tiles.length; sti++) if (SCENE.tiles[sti].props.n) drawDepthGeom(SCENE.tiles[sti].props, null);
     G.blds.forEach(function (b) {
-      var B = MODELS.bld[b.key]; if (!B) return;
+      var B = MODELS.bld[b.look || b.key]; if (!B) return;
       var mm = m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
       if (b.built < 1) mm[10] = .15 + .85 * b.built;
       drawDepthGeom(B, mm);
@@ -26953,7 +27353,7 @@ function render() {
   gl.uniform3f(PROG.u.uSeaDeep, ATMO.seaDeep[0], ATMO.seaDeep[1], ATMO.seaDeep[2]);
   gl.uniform3f(PROG.u.uSeaSky, ATMO.seaSky[0], ATMO.seaSky[1], ATMO.seaSky[2]);
   gl.uniform1f(PROG.u.uSurf, ATMO.surf); gl.uniform1f(PROG.u.uGlow, ATMO.glow);
-  gl.uniform1f(PROG.u.uSkirtB, LAND.skirtB || 9);
+  gl.uniform1f(PROG.u.uSkirtB, LAND.skirtB || 9); gl.uniform1f(PROG.u.uSeaLvl, seaZ());
   gl.uniform1f(PROG.u.uInside, 0);
   gl.uniform2f(PROG.u.uWorldSize, WORLD.w, WORLD.h);
   gl.uniform3f(PROG.u.uFogCol, ATMO.fog[0], ATMO.fog[1], ATMO.fog[2]);
@@ -29365,11 +29765,17 @@ function startGame(side, diff, mode, arty, duo) {
   for (si = 0; si < G.slots.length; si++) {
     sk = G.slots[si].k;
     var us = slotSide(sk) === 'us', sp = hqSpot(sk, duo), dir = us ? 1 : -1;
+    /* the opening company stands between its headquarters and the enemy: across the map
+       where the two ends are left and right, and up it on a corridor with the sea at the
+       bottom. f is toward the enemy and l is across. */
+    var fx = LAND.south ? 0 : dir, fy = LAND.south ? -dir : 0, lx = LAND.south ? 1 : 0, ly = LAND.south ? 0 : 1;
+    var fa = Math.atan2(fy, fx);
     var bh = spawnBuilding(sk, us ? 'us_hq' : 'ger_hq', sp.x, sp.y, true);
-    bh.rally = { x: sp.x + dir * 180, y: sp.y };
-    spawnUnit(sk, us ? 'us_eng' : 'ger_pio', sp.x + dir * 130, sp.y - 70, us ? 0 : Math.PI);
-    spawnUnit(sk, us ? 'us_rifle' : 'ger_gren', sp.x + dir * 140, sp.y + 40, us ? 0 : Math.PI);
-    spawnUnit(sk, us ? 'us_rifle' : 'ger_gren', sp.x + dir * 90, sp.y + 110, us ? 0 : Math.PI);
+    if (!duo && G.hqPos[slotSide(sk)] && G.hqPos[slotSide(sk)].look) bh.look = G.hqPos[slotSide(sk)].look;
+    bh.rally = { x: sp.x + fx * 180, y: sp.y + fy * 180 };
+    spawnUnit(sk, us ? 'us_eng' : 'ger_pio', sp.x + fx * 130 - lx * 70, sp.y + fy * 130 - ly * 70, fa);
+    spawnUnit(sk, us ? 'us_rifle' : 'ger_gren', sp.x + fx * 140 + lx * 40, sp.y + fy * 140 + ly * 40, fa);
+    spawnUnit(sk, us ? 'us_rifle' : 'ger_gren', sp.x + fx * 90 + lx * 110, sp.y + fy * 90 + ly * 110, fa);
   }
   rebuildGrid();
   /* Green used to hand the player three extra sections and a second engineer here, on top
