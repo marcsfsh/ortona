@@ -3142,9 +3142,12 @@ function omahaMapData() {
     ['D',  470, 1190, 'vp',   null,  'The Vierville draw',     ['A', 'E', 'G']],
     ['E', 1400, 1250, 'vp',   null,  'The Les Moulins draw',   ['B', 'D', 'F', 'H']],
     ['F', 2322, 1270, 'vp',   null,  'The Saint-Laurent draw', ['C', 'E', 'I']],
-    ['G',  640, 1440, 'fuel', 'ger', 'Vierville',              ['D', 'H']],
-    ['H', 1880, 1440, 'mp',   'ger', 'The coast road',         ['E', 'G', 'I']],
-    ['I', 2500, 1470, 'fuel', 'ger', 'Saint-Laurent',          ['F', 'H']]];
+    /* the three behind the crest sit on their hamlets rather than just over the lip of
+       it: a sector's circle is 195 and at 1440 each of them overlapped the draw flag
+       below it, which is two capture circles on one piece of ground */
+    ['G',  740, 1700, 'fuel', 'ger', 'Vierville',              ['D', 'H']],
+    ['H', 1880, 1640, 'mp',   'ger', 'The coast road',         ['E', 'G', 'I']],
+    ['I', 2380, 1720, 'fuel', 'ger', 'Saint-Laurent',          ['F', 'H']]];
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 1400, y: 630 });
   E.push({ t: 'hq', side: 'ger', x: 1400, y: 1790 });
@@ -3469,12 +3472,16 @@ var SOILS = {
      nothing like as pale. The Channel on that morning was slate. */
   norman: { g0: '#5c6440', g1: '#68704a', g2: '#586041',
             mdark: '70,78,48', mpale: '126,134,88', grass: '92,110,58',
-            hollow: '86,72,44', tuft: '66,86,44', shoulder: '172,174,152',
-            rockL: 128, rockN: 44, rockD: [6, 8, -6], joint: '40,40,32',
-            screeL: 112, screeN: 46, screeD: [4, 8, -8],
-            screeHi: '184,186,166', screeLo: '74,76,58',
-            thin: '134,136,104', thinHi: '172,174,146', blade: ['#7f9450', '#6d8748'],
-            slSoil: .42, slScree: .74, slRock: 1.08, rock0: .70, rockK: 7.4,
+            hollow: '86,72,44', tuft: '66,86,44', shoulder: '164,168,138',
+            /* what shows through a Norman bluff where the rain has taken the turf off is
+               CHALK, which is nearly white, and below that the clay it sits in. The
+               steep band is thin grass over bare earth and not a scree slope: there is
+               no face above it shedding stone. */
+            rockL: 150, rockN: 40, rockD: [6, 6, 0], joint: '58,58,52',
+            screeL: 96, screeN: 44, screeD: [22, 8, -18],
+            screeHi: '152,140,110', screeLo: '70,62,44',
+            thin: '118,126,82', thinHi: '150,158,110', blade: ['#7f9450', '#6d8748'],
+            slSoil: .42, slScree: .88, slRock: 1.18, rock0: .60, rockK: 8.0,
             sea: ['#233238', '#2c4046', '#42585c'] }
 };
 function soil() { return SOILS[LAND.soil] || SOILS.ortona; }

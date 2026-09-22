@@ -2626,8 +2626,8 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('both maps ship, and the second one is fair to the unit',
-     maps.keys === 'gothic,ortona' && maps.picked === 'The Gothic Line' &&
+  ok('three maps ship, and the mirrored one is fair to the unit',
+     maps.keys === 'gothic,omaha,ortona' && maps.picked === 'The Gothic Line' &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
      /* Three of the four players are brains and have to be alive and buying; the fourth
@@ -2645,6 +2645,7 @@ for (const device of TARGETS) {
      `headquarters than its twin is from the other; ${maps.gap} units between the bunker ` +
      `lines; after 120s of battle on it the four players have ${gfight.live.join('/')} units ` +
      `and the ground is held by ${gfight.held.join(',') || 'nobody, every flag contested'}`);
+
 
   /* --- and that the ground between the two lines is mud. A map says how wet its country
      is and how far it has been churned (LAND.wet, LAND.churn), and the churn is a wash
@@ -2744,6 +2745,121 @@ for (const device of TARGETS) {
      `${stones.low} low wall runs on the map; ${stones.drills} sections stood at one and left to settle, ` +
      `${stones.inside} of ${stones.men} men in the stones ` +
      `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
+
+  /* This row runs LAST of the map rows on purpose: it leaves the world on Omaha, and
+     the two rows above it -- the churn wash and the field wall -- read the Gothic Line
+     the row before them left standing. Put between them it took both down, and what
+     that looked like was a churn that had stopped being painted. A row that changes
+     the world puts it back or goes after everything that reads it. */
+  /* --- The third map, and the first of a second theatre. Omaha is the first country
+     here laid out across the SHORT axis: the sea is one army's back wall and the
+     frontage is the whole width of the map. What it claims is one thing, and it is a
+     thing no photograph of it could ever check -- that the three draws are the only way
+     ARMOUR gets off the beach, and that a man climbs the bluff where a tank cannot. Both
+     are arithmetic over the going grid and the cost model, so both are measured: a
+     vehicle's route is asked how near it ever comes to a draw while it is on the face,
+     and a section's is asked whether it needed one at all.
+     Then the beach itself, which is the other half of the country: the sand is painted
+     rather than grown on, the bank is the only cover on it, and the casemates at the
+     draw exits fire ALONG the beach and not out to sea. --- */
+  await reload(page);
+  const om = await page.evaluate(() => {
+    const W = window, out = {};
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
+    out.picked = W.chosenMapData().name;
+    out.brief = document.getElementById('objtext').textContent;
+    W.G.mapData = W.omahaMapData();
+    W.startGame('us', 1, 'vp', true, false);
+    /* how near a point is to one of the three draws */
+    function nearDraw(x, y) {
+      let best = 1e9;
+      for (const d of W.OMAHA_DRAWS) for (let i = 0; i < d.pts.length - 1; i++)
+        best = Math.min(best, W.distToSeg(x, y, d.pts[i][0], d.pts[i][1], d.pts[i + 1][0], d.pts[i + 1][1]));
+      return best;
+    }
+    function route(sx, sy, tx, ty, kind) {
+      const u = { cat: kind ? 'veh' : 'inf', def: { wheeled: 0 }, side: 'us', fear: 1 };
+      const p = W.findPath(sx, sy, tx, ty, u);
+      if (!p || p.noWay) return { len: -1, crow: 0, draw: -1 };
+      let len = Math.hypot(p[0].x - sx, p[0].y - sy), far = 1e9, prev = { x: sx, y: sy };
+      for (let i = 0; i < p.length; i++) {
+        if (i) len += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+        /* sampled along the LEG and not at its corners: the smoother replaces a run of
+           cells with one line, so a route that crosses the face in one leg has no point
+           on the face to ask about at all */
+        for (let t = 0; t <= 1; t += .08) {
+          const qx = prev.x + (p[i].x - prev.x) * t, qy = prev.y + (p[i].y - prev.y) * t;
+          if (qy > 700 && qy < 1150) far = Math.min(far, nearDraw(qx, qy));
+        }
+        prev = p[i];
+      }
+      const crow = Math.hypot(tx - sx, ty - sy);
+      return { len: Math.round(len), crow: Math.round(crow),
+               over: +(len / crow).toFixed(2), draw: far > 1e8 ? -1 : Math.round(far) };
+    }
+    out.veh = [route(950, 560, 950, 1460, 1), route(1750, 560, 1750, 1460, 1), route(2680, 560, 2680, 1460, 1)];
+    out.inf = [route(950, 560, 950, 1140, 0), route(1750, 560, 1750, 1140, 0)];
+    /* the paint: the flat is sand and the farmland behind it is not, read off the albedo
+       canvas rather than looked at, because a beach that quietly stopped being painted
+       reads as a perfectly good map in every photograph ever taken of it */
+    const g = W.mbase.getContext('2d');
+    const px = (x, y) => { const d = g.getImageData(x, y, 1, 1).data; return [d[0], d[1], d[2]]; };
+    out.sand = px(1150, 400); out.field = px(1150, 1400);
+    /* the bank is the only thing on the beach to get behind. Both points are taken in
+       the middle gap of the obstacle belt, because a hedgehog lays a patch of its own and
+       the flat is only bare where the engineers blew a lane through it. */
+    out.flatCov = W.coverAt(1400, 360);
+    out.bankCov = W.coverAt(1400, 514);
+    /* and the casemates fire along the beach. outPoint clamps a garrison into its own
+       arc, so a round out of the slot is allowed and the same round to the rear is
+       refused by the bunker's own concrete. */
+    const bk = W.G.bunks.filter(b => b.sd === 'ger' && b.y < 900)[0];
+    const gar = W.spawnUnit('ger', 'ger_gren', bk.x, bk.y);
+    gar.gar = bk; bk.occ = gar;
+    const mark = (d) => ({ x: bk.x + Math.cos(bk.face) * 300 * d, y: bk.y + Math.sin(bk.face) * 300 * d,
+                           cat: 'inf', side: 'us' });
+    out.slot = W.fireLine(gar, mark(1));
+    out.rear = W.fireLine(gar, mark(-1));
+    out.faceQ = +(bk.face % (Math.PI / 2)).toFixed(3);
+    gar.dead = true; bk.occ = null;
+    out.bunks = W.G.bunks.length;
+    out.secs = W.G.sectors.map(s => s.type + (s.owner || '-')).sort().join(' ');
+    return out;
+  });
+  /* and a battle is fought on it, because a map that boots and is never played is a map
+     nobody has run the game on */
+  await fastForward(page, 120);
+  const ofight = await page.evaluate(() => ({
+    live: [window.G.units.filter(u => !u.dead && u.side === 'us').length,
+           window.G.units.filter(u => !u.dead && u.side === 'ger').length],
+    held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort().join(','),
+    err: 0
+  }));
+  const omGreen = om.field[1] - om.field[0], omSandG = om.sand[1] - om.sand[0];
+  ok('Omaha: the three draws are the only way armour gets off the beach, and a man does not need one',
+     om.picked === 'Omaha Beach' && om.brief.indexOf('draw') >= 0 &&
+     /* every vehicle route off the beach goes through a draw and pays for it */
+     om.veh.every(r => r.len > 0 && r.draw >= 0 && r.draw < 300) &&
+     om.veh.some(r => r.over > 1.4) &&
+     /* and a section climbs the face: at least one route that never needs a draw, and
+        none of them anything like as long as the armour's */
+     om.inf.every(r => r.len > 0 && r.over < 1.6) &&
+     /* the beach is sand and the farmland is not, and the bank is the cover on it */
+     om.sand[0] > 130 && omSandG < 4 && omGreen > 4 && om.field[0] < 130 &&
+     om.flatCov === 0 && om.bankCov >= 2 &&
+     /* the casemates enfilade the beach */
+     om.faceQ === 0 && om.slot && !om.rear &&
+     ofight.live[0] > 0 && ofight.live[1] > 0,
+     `the picker builds "${om.picked}" and the briefing reads "${om.brief.slice(0, 30)}..."; ` +
+     `armour off the beach: ${om.veh.map(r => r.len + 'u over ' + r.crow + ' (x' + r.over + '), ' +
+       r.draw + ' from a draw').join('; ')}; ` +
+     `a section: ${om.inf.map(r => r.len + 'u over ' + r.crow + ' (x' + r.over + '), ' +
+       (r.draw < 0 ? 'never on a draw' : r.draw + ' from one')).join('; ')}; ` +
+     `the flat is ${om.sand.join(',')} against ${om.field.join(',')} on the farmland behind, ` +
+     `cover 0 on the flat (${om.flatCov}) and ${om.bankCov} on the bank; ${om.bunks} bunkers, ` +
+     `a shot out of the slot ${om.slot ? 'allowed' : 'REFUSED'} and the same shot to the rear ` +
+     `${om.rear ? 'ALLOWED' : 'refused'}; flags ${om.secs}; after 120s of battle ` +
+     `${ofight.live.join('/')} units and the ground is held by ${ofight.held || 'nobody'}`);
 
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
@@ -4056,7 +4172,10 @@ for (const device of TARGETS) {
   });
   ok('wire holds a man up and a hedgehog holds a tank up, and a map may lay both',
      obs.wire >= 6 && obs.hogs >= 6 && obs.mirrored && obs.inWire && obs.inHogs &&
-     obs.wireFoot > 2 && obs.wireTrack === 1 && obs.hogFoot === 1 && obs.hogTrack > 8 &&
+     /* 1.8 rather than 2, because what a man pays WITHOUT the wire is now his own
+        gradient rather than a flat 1.25 and these belts are laid on a forward slope: the
+        ratio fell from 2.08 to 1.94 with nothing about the wire changed. */
+     obs.wireFoot > 1.8 && obs.wireTrack === 1 && obs.hogFoot === 1 && obs.hogTrack > 8 &&
      obs.hogWheel > 8 && obs.walkHog && obs.walkWire &&
      obs.footCross > 0 && obs.tankCross === 0,
      `${obs.wire} wire runs and ${obs.hogs} obstacle belts, each mirrored about the midline ` +
