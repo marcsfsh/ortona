@@ -68,6 +68,13 @@ const REAL = {
   ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
+  ger_wirb:  { name: 'Flakpanzer IV Wirbelwind', len: 5.92, gun: 5.92, wid: 2.90,  hgt: 2.76,
+               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Panzer IV hull unchanged
+               underneath, so length, body, roof and clearance are its figures. gun equals len because
+               the Flakvierling's barrels stop well short of the nose: the turret sits 0.37 m forward
+               of centre and the muzzles reach 1.31 m past it, against 2.72 m of hull in front. hgt is
+               to the top of the open turret's plate, which is what a published height is measured to
+               on an open vehicle -- the magazines and the layer's head are not part of one */
   ger_stug:  { name: 'StuG IV (Sd.Kfz. 167)', len: 5.93, gun: 6.70,   wid: 2.95,  hgt: 2.20,
                body: 2.95, bodyZ: 1.55, roof: 2.59, clear: 0.40 },   /* the casemate stands out over the
                Panzer IV's guards at the bottom, so body is the published 2.95; but the Ausf. G compartment
@@ -127,6 +134,10 @@ const PROBE = {
   ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
                clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
                rod aerial standing off the right rear of the superstructure */
+  ger_wirb:  { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the same
+               hull as the Panzer IV, so the same two slices: the body clears the Schuerzen stanchions and
+               roofZ sits on the superstructure roof, which on this vehicle is the plate the open turret
+               is welded to rather than one under a turret */
   ger_stug:  { bodyZ: 18.0, roofZ: 23.2, xLo: -14.0, xHi: -9.0, straddle: true, hullZ: 27 },   /* the roof
                slice sits exactly on the roof plate: a slant that straddles a station reports its widest
                point, which is the base, so any station below the roof measures the bottom of the wall */   /* the slice

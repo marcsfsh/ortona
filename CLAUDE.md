@@ -3562,6 +3562,95 @@ Stuart faster; HE takes four men of a rifle section in fifteen seconds; a lone g
 elite infantry inside two hundred of it is a dead gun, which is what the men in front of
 it are for.
 
+**Three more German pieces, and the two corrections they needed.** A 2 cm Flak 38 on its
+ground platform (`ger_flak20`), a 15 cm Nebelwerfer 41 (`ger_neb`) and a Flakpanzer IV
+Wirbelwind (`ger_wirb`). None of them is a new system. The two towed pieces are crew-served
+weapons and go through the pack-and-set-up clock, the lay tolerance, the two-piece draw and
+the crew layout the eighty-eight and the batteries already use; the Wirbelwind is
+`p4Chassis` with a different thing bolted to the same turret ring, and `tools/dims.mjs`
+reads it at the Panzer IV's own figures on length, body, roof and clearance, with 2.77 m of
+height against a published 2.76. What they needed was two signatures and two arithmetic
+corrections, and the corrections are the part worth knowing.
+
+**An automatic cannon is neither a machine gun nor an anti-tank gun**, and both the eye and
+the ear were saying it was one of them. `w.auto` is declared on the two that carry one, and
+`muzClass` -- which is the one list `muzFx` and `gunVoice` both read -- gives them their own
+profile: a small bright flash a long way down the bore with hardly any smoke, and a hard flat
+crack with the breech slamming behind it and no tail at all, because at four hundred and
+fifty rounds a minute a tail is the porridge an MG42's would be. Declared rather than
+derived, for `w.brake`'s reason: nothing read off the numbers separates a 2 cm KwK 30 from a
+Universal Carrier's Bren, which carry the same burst radius between them.
+
+**And `w.dmg` on one of them is a BURST rather than a shell.** Everything else on this
+roster fires one round a volley, so `dmg` is what that round does and every reader of it is
+right. A 2 cm volley is five rounds walked across a few paces of ground and its `dmg` says
+what the five of them do to men -- so the two readers that scale a ROUND's own effect off it
+are wrong for it, and both were wrong in a way that read as a working weapon. The masonry
+breach is scaled off `dmg`, so a Flak 38 took a bay out of a terrace in fifteen seconds of
+fire. And the splash a hull takes off a near miss is scaled off `dmg` too, so at four bursts
+a second a Wirbelwind killed a Sherman by MISSING it, at thirty points a second whatever the
+plate said: on the balance card the Sherman went from winning five of six at 0.21 strength
+left to six of six at 0.86 once that was fixed. `explode` takes the weapon now and reads
+`w.auto` in both places -- a fifth of the damage against stone, which drops a 2 cm burst
+under the floor below which nothing gets through masonry at all, and a seventh of the usual
+splash against a hull, which leaves penetration to decide an armour fight.
+
+The gate asks both as an A/B against the identical burst with the flag off, staged at the
+SAME point one after the other so that the cover, the ground and the geometry are the same
+by construction. Over ten bursts a hull loses 18 against 123 and a garden wall loses nothing
+against thirteen units of run. **And the men are the control**: the rule is about stone and
+about plate, so a section takes 97 either way, to the point.
+
+**A rocket has no chamber behind it**, and that is the second signature. `w.rocket` is on
+the projector and on the two shoulder launchers that fire one, and `muzClass` is asked for
+it BEFORE the indirect test, because a projector is also indirect and read as a howitzer.
+The flash is sized off the burst alone rather than off the penetration, because there is no
+chamber pressure to read: sized the usual way, a fifteen-centimetre projector came out
+smaller than the Panzerschreck standing beside it. The voice is the one report here that
+RISES rather than decaying, which is the motors rather than the shell and is what the
+Allies were describing when they called it the Moaning Minnie.
+
+**And a rack of tubes is reloaded by hand.** `def.reload` is that clock and the Nebelwerfer
+is the only def that carries one: six rockets leave in five seconds, `barrageTick` sets
+`u.reload` when the last of them goes, and for forty-four seconds after that `fireAt`
+refuses and the overlay says RELOADING. It is its own field rather than the cooldown because
+the cooldown is the second between rockets of the same ripple and the label would have read
+RELOADING through all six. That clock is the whole of what makes a projector a different
+weapon from a howitzer rather than a bigger one, and it is what the piece is priced against:
+it throws further than either pack howitzer (820 against 660) and lands far looser (a circle
+130 across against 76), so what it is for is ground rather than a target. Measured by the
+gate: six of six rockets up, then 37.6 seconds of reload with a fresh mission standing and
+nothing leaving the tubes, then six more.
+
+**And a mount that was carried here is laid on the bearing the crew set it down on.**
+`u.baseA` is what the platform under a two-piece gun is drawn on and it was written once at
+spawn and never again, which is right for the eighty-eight and the two batteries -- those
+are built where they stand -- and wrong the moment a two-piece gun could walk. A Flak 38 set
+up again a street away kept its platform pointing the way it was first put down. It is set
+where the setup clock runs out, which is the one place that knows a piece has just come into
+action, and the gate measures it: walked 307 units and laid on 1.76 against nought at spawn.
+
+**What the three are, fought rather than reasoned about.** The Flak 38 (240 marks) beats a
+rifle section six of six at 212 units, in 13.9 seconds and with 58 per cent of its crew
+left, and LOSES six of six at 120 in 4.1 seconds, because `closeWeak` is 2.0 and the ring is
+the only thing in front of it. It splits with a Universal Carrier at 33 per cent and grinds a
+Stuart down over sixty seconds. The Wirbelwind (330 marks and 80 of fuel) takes a rifle
+section apart in 7.7 seconds without losing a hit point and beats a Stuart in 48 at 0.43
+left; a Sherman beats it six of six in 20.6 seconds at 0.86. That is the shape it was aimed
+at: a weapon that strips infantry out of the open and opens anything light, that cannot be
+walked up to, and that has no business anywhere near a medium tank. Penetration is 20 on
+both, which is what puts a carrier at the mercy of it and a Sherman out of reach -- the
+number is calibrated against that outcome rather than against a published figure, for the
+same reason the damage is: a burst's `dmg` is five rounds and its `pen` is one, and the two
+cannot both be read at face value off the same volley.
+
+**The brain buys all three.** The automatic cannon is on the company post's shopping list
+against a mass of infantry or any light armour, once and after the first machine gun; the
+projector wants what the howitzer wants plus an army round it, because six rockets and then
+three quarters of a minute of standing still is a fine trade behind a line and a poor one in
+front of nothing; and the Wirbelwind is a rung on the armour ladder after the first Panzer
+IVs, where `bClassOf` reads it as light armour off its own 96 of plate.
+
 **Artillery, and what makes it artillery.** Everything else on this roster shoots at a
 thing it can see down a line it has to have. `def.indirect` is the other kind: `acquire`
 and `fireAt` skip the line test entirely, the shell is given a long flight and a high arc
@@ -5033,6 +5122,16 @@ shots/                         screenshot output, gitignored
   onto it scores most of a thousand, so the directed flag came second and the deal gave
   it one section of the three standing beside it. When a thing has to come first, sort
   on it, and let the score decide only among the rest.
+- **`w.dmg` is what ONE ROUND does, and an automatic cannon's volley is a burst of five.**
+  Every reader of `dmg` on this roster is right about a weapon that fires one round a volley
+  and wrong about one that fires a burst, and the two that scale a ROUND's own effect off it
+  are the ones that bite: the breach a shell cuts in masonry, which had a 2 cm taking a bay
+  out of a terrace in fifteen seconds of fire, and the splash a hull takes off a near miss,
+  which at four bursts a second killed a Sherman by MISSING it whatever its plate said. Both
+  read as a working weapon from every angle -- the gun fired, the rounds landed, things
+  broke. `explode` takes the weapon and reads `w.auto`; and when a rule is about a KIND of
+  effect, the control is the reader it must NOT move, which here is what the burst does to
+  men: 97 either way, to the point.
 - **A rule about the player's slot is a rule about the cards.** In a game no brain runs on
   that slot under classic, so a lock on its till read off the slot alone is invisible in
   play and cripples every card that puts a brain on both sides: the tactics card came back
@@ -5048,6 +5147,14 @@ shots/                         screenshot output, gitignored
   crater blown beside a house recomputed the ground under the house off the parts it
   could see and put the pad back on the hillside. Anything that changes the height writes
   a layer.
+- **A gate row that digs a hole leaves it there for the next row to stand in.** The blast
+  rows for the open turret burst a 120-point shell at the shared flat spot, and a crater is
+  0.34 of the burst radius against a floor of eleven, so at a radius of sixty they cut a
+  twenty-unit hole in the ground. The smoke row stages a section on that same spot and
+  reported it as never seen at all -- which is exactly the fault this file already records
+  against a spotting drill placed on a crater field, arrived at a second time from the other
+  direction. A row that changes the world puts it back: the clock it advanced, the units it
+  raised, and above all the ground.
 - **A drill about the ground has to be staged on ground that is open, and prove it.**
   A crater drill put down in a trench measures a hole that is already deeper than the one
   the shell would cut; `G.cut` keeps the deeper of the two, and the row comes back saying

@@ -1355,6 +1355,168 @@ for (const device of TARGETS) {
                `and fired at ${pk.firedAt.toFixed(1)}s` +
                (pk.hasTow ? `; the tow hitched at ${pk.hitched.toFixed(1)}s and moved at ${pk.towMoved.toFixed(1)}s` : ''));
 
+  /* --- an automatic cannon's damage is a BURST and not a shell, which is the one
+     correction the two new 2 cm pieces needed. Everything else on this roster fires a
+     single round a volley, so `dmg` is what that round does and every reader of it is
+     right; a 2 cm volley is five rounds walked across a few paces and `dmg` says what the
+     five of them do to men. The two readers that scale a ROUND's own effect off it are
+     therefore wrong for it, and read the usual way a Flak 38 took a bay out of a terrace
+     in fifteen seconds of fire and a Wirbelwind killed a Sherman by MISSING it, at thirty
+     points a second of splash whatever the plate said.
+       Both are asked as an A/B against the identical burst with the flag off, staged at
+     the SAME point one after the other so that the cover, the ground and the geometry are
+     the same by construction rather than by hope. And the men are the control: the rule is
+     about stone and about plate, so what a burst does to a section may not move at all. --- */
+  const bst = await page.evaluate(() => {
+    const keep = window.G.units.slice(), shots = window.G.shots.slice(), t0 = window.G.t;
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const sp = window.__o.flatSpot(200);
+    const AUTO = { auto: 1 }, D = 48, R = 26, OFF = 14;
+    /* the owner is one unit of the other side, well clear, so both halves of every A/B
+       carry the same multipliers and neither is standing in its own burst */
+    const own = window.spawnUnit('us', 'us_rifle', sp.x + 900, sp.y + 900, 0);
+    const hull = () => {
+      const v = window.spawnUnit('ger', 'ger_p4', sp.x, sp.y, 0);
+      return v;
+    };
+    const blast = (w) => {
+      const v = hull();
+      for (let i = 0; i < 10; i++) window.explode(v.x + OFF, v.y, R, D, own, null, 10, w);
+      const lost = v.def.hp - v.hp;
+      v.dead = true; window.G.units.splice(window.G.units.indexOf(v), 1);
+      return Math.round(lost);
+    };
+    const r = { autoHull: blast(AUTO), shellHull: blast(null) };
+    /* the men, at the same point and with the same two bursts */
+    const men = (w) => {
+      const s = window.spawnUnit('ger', 'ger_gren', sp.x, sp.y, 0);
+      const full = s.models.reduce((a, m) => a + m.hp, 0);
+      for (let i = 0; i < 10; i++) window.explode(s.x + OFF, s.y, R, D, own, null, 10, w);
+      const lost = full - s.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0);
+      s.dead = true; window.G.units.splice(window.G.units.indexOf(s), 1);
+      return Math.round(lost);
+    };
+    r.autoMen = men(AUTO); r.shellMen = men(null);
+    /* and the masonry, on a garden wall rather than a house: a wall's damage is one field
+       and resetting it leaves the map where it was, where a terrace pulls its tile out of
+       the merged scene on the first hit */
+    const wl = window.G.walls.find(q => window.wallLen(q) > 60);
+    if (wl) {
+      const was = wl.gaps;
+      const mid = { x: (wl.x1 + wl.x2) / 2, y: (wl.y1 + wl.y2) / 2 };
+      /* driven through explode itself rather than through wallHit, because the clause under
+         test lives in explode and a probe that reproduces the arithmetic cannot see it
+         being wrong about the arithmetic */
+      wl.gaps = null;
+      for (let i = 0; i < 10; i++) window.explode(mid.x, mid.y, R, D, own, null, 10, AUTO);
+      r.autoWall = Math.round((wl.gaps || []).reduce((a, g) => a + (g[1] - g[0]), 0));
+      wl.gaps = null;
+      for (let i = 0; i < 10; i++) window.explode(mid.x, mid.y, R, D, own, null, 10, null);
+      r.shellWall = Math.round((wl.gaps || []).reduce((a, g) => a + (g[1] - g[0]), 0));
+      wl.gaps = was; r.hasWall = true;
+    } else r.hasWall = false;
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    window.G.t = t0;
+    window.rebuildGrid();
+    return r;
+  });
+  ok('an automatic cannon\'s burst is not a shell: the plate and the stone know it and the men do not',
+     bst.shellHull > 0 && bst.autoHull * 4 < bst.shellHull &&
+     bst.shellMen > 0 && bst.autoMen === bst.shellMen &&
+     (!bst.hasWall || (bst.shellWall > 0 && bst.autoWall === 0)),
+     `ten identical bursts: a hull lost ${bst.autoHull} to the burst and ${bst.shellHull} to the shell; ` +
+     `a section lost ${bst.autoMen} to both (shell ${bst.shellMen}); ` +
+     (bst.hasWall ? `a garden wall lost ${bst.autoWall} units of run to the burst and ${bst.shellWall} to the shell`
+                  : 'no wall long enough on this map'));
+
+  /* --- and the three pieces themselves. A rack of tubes fires its ripple and is then
+     reloaded by hand, which is the whole of what makes a projector a different weapon from
+     a howitzer rather than a bigger one; an open turret takes the blast the men's branch of
+     `explode` has always taken and the vehicle branch never did; a two-piece gun that can
+     walk is laid on the bearing the crew set it down on, where `u.baseA` was written once
+     at spawn and never again; and each of the three has a signature of its own, because
+     `muzClass` read an automatic cannon as a machine gun and a rocket projector as a
+     howitzer. --- */
+  const ger = await page.evaluate(async () => {
+    const keep = window.G.units.slice(), shots = window.G.shots.slice(), t0 = window.G.t;
+    window.G.units.length = 0; window.G.shots.length = 0;
+    const sp = window.__o.flatSpot(220), dt = 1 / 30;
+    const r = {};
+    const step = (units, n, fn) => {
+      for (let i = 0; i < n; i++) {
+        units.forEach(u => window.updateUnit(u, dt));
+        window.updateShots(dt); window.G.t += dt;
+        if (fn) fn(i * dt);
+      }
+    };
+    /* 1. the ripple and the reload, counted off the gun's own rounds */
+    const N = window.UNITS.ger_neb, nb = window.spawnUnit('ger', 'ger_neb', sp.x, sp.y, 0);
+    nb.setup = 0; nb.packed = false;
+    let own = 0;
+    const realRec = window.recFired;
+    window.recFired = function (u, n) { if (u === nb) own += n; return realRec(u, n); };
+    const aim = { x: sp.x + Math.round(N.barrage.range * .5), y: sp.y };
+    window.orderBarrage(nb, aim.x, aim.y);
+    step([nb], 30 * 12);
+    r.ripple = own; r.rounds = N.barrage.rounds; r.reload = N.reload;
+    r.reloading = +nb.reload.toFixed(1);
+    /* a fresh mission during the reload fires nothing at all */
+    window.orderBarrage(nb, aim.x, aim.y);
+    const before = own;
+    step([nb], 30 * (N.reload - 14));
+    r.duringReload = own - before;
+    step([nb], 30 * 18);
+    r.afterReload = own - before;
+    window.recFired = realRec;
+    /* 2. the open turret takes the blast, and a roof does not */
+    window.G.units.length = 0;
+    const foe = window.spawnUnit('us', 'us_rifle', sp.x + 900, sp.y + 900, 0);
+    const hit = (k) => {
+      const v = window.spawnUnit('ger', k, sp.x, sp.y, 0);
+      /* radius 30 rather than 60: a crater is 0.34 of the burst against a floor of 11, so
+         anything wider digs a hole at the flat spot and the next row's section lies in it.
+         A prone section in a crater is a section nothing ever sees, which is a fault this
+         file has already recorded once against a spotting drill. */
+      window.explode(v.x + 10, v.y, 30, 120, foe, null, 10, null);
+      const lost = v.def.hp - v.hp;
+      v.dead = true; window.G.units.splice(window.G.units.indexOf(v), 1);
+      return lost;
+    };
+    r.openTurret = +hit('ger_wirb').toFixed(1); r.roofed = +hit('ger_p4').toFixed(1);
+    r.blastRes = window.UNITS.ger_wirb.blastRes;
+    /* 3. a mount that walks is laid again where it stopped */
+    window.G.units.length = 0;
+    const fk = window.spawnUnit('ger', 'ger_flak20', sp.x, sp.y, 0);
+    fk.setup = 0; fk.packed = false;
+    r.baseA0 = +fk.baseA.toFixed(2);
+    window.orderMove(fk, sp.x, sp.y + 320, false);
+    step([fk], 30 * 40);
+    r.baseA1 = +fk.baseA.toFixed(2); r.facing1 = +fk.facing.toFixed(2);
+    r.walked = Math.round(Math.hypot(fk.x - sp.x, fk.y - sp.y));
+    r.inAction = !fk.packed && fk.setup <= 0;
+    /* 4. and each of the three sounds and looks like what it is */
+    const cls = (k, at) => { const d = window.UNITS[k]; return window.muzClass({ cat: d.cat, def: d, side: 'ger' }, at ? d.at : d.w); };
+    r.muz = { flak20: cls('ger_flak20'), wirb: cls('ger_wirb'), neb: cls('ger_neb'),
+              schreck: cls('ger_pgren', 1), pak: cls('ger_pak'), mg42: cls('ger_mg42') };
+    window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
+    window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    window.G.t = t0;
+    return r;
+  });
+  ok('the projector ripples and reloads, the open turret takes the blast, and the walking mount is laid again',
+     ger.ripple === ger.rounds && ger.reloading > ger.reload * .5 &&
+     ger.duringReload === 0 && ger.afterReload === ger.rounds &&
+     ger.openTurret > ger.roofed * (ger.blastRes - .15) && ger.roofed > 0 &&
+     ger.baseA1 !== ger.baseA0 && Math.abs(ger.baseA1 - ger.facing1) < .01 && ger.walked > 200 && ger.inAction &&
+     ger.muz.flak20 === 'auto' && ger.muz.wirb === 'auto' && ger.muz.neb === 'werfer' &&
+     ger.muz.schreck === 'werfer' && ger.muz.pak === 'at' && ger.muz.mg42 === 'mg',
+     `the Nebelwerfer put ${ger.ripple} of ${ger.rounds} rockets up and then reloaded for ${ger.reloading}s, ` +
+     `firing ${ger.duringReload} during it and ${ger.afterReload} after; a 120-point burst took ` +
+     `${ger.openTurret} off the open turret against ${ger.roofed} off the roofed hull beside it (blastRes ${ger.blastRes}); ` +
+     `the Flak 38 walked ${ger.walked} and laid its platform on ${ger.baseA1} against ${ger.baseA0} at spawn; ` +
+     `flash classes ${ger.muz.flak20}/${ger.muz.wirb}/${ger.muz.neb} against ${ger.muz.pak} and ${ger.muz.mg42}`);
+
   /* --- smoke. A tube throws it as a mission of its own, each round a cloud rather than a
      burst, and the cloud is a wall to the eye and to the gun until it thins: a section seen
      across open ground is lost behind it and a rifle cannot be laid through it, an indirect
