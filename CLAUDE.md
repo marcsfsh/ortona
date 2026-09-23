@@ -1299,14 +1299,14 @@ pavements and street dust round it.
 be checked. A tank asked to get from the flat to the plateau at five places across the
 corridor takes 1,759 to 2,128 units against a crow of 1,600, and every one of those routes
 passes within 22 units of a draw's own course while it is on the face; a section asked the
-same takes 1,609 to 1,620 and never comes within 160 of one. On the seawall a man pays 1.9
+same takes 1,613 to 1,620 and never comes within 160 of one. On the seawall a man pays 1.9
 and a tank 16.2 against 1.35 in the lane, and a round goes over it. The flat reads
 175,166,148 off the albedo against 79,105,66 on the farmland. Across the middle of 33
 hedgerows with no other within seventy, a round, an eye and a hull are stopped on all 33,
 and a man lying against one shoots over it on all 28 where the far field is open; 36 of 36
 straight runs of lane can be seen down; a tank sent across three fields crosses no
 hedgerow off a lane; 35 of 35 Norman houses can be held. And the walk to the enemy's
-victory flags is 3,155 and 3,145 from the beach against 3,296 and 3,329 from the bocage.
+victory flags is 3,149 and 3,145 from the beach against 3,296 and 3,329 from the bocage.
 With the same brain on both sides (`tools/skirmish.mjs --self --map=omaha`, four pairs of
 ten minutes) no match came near a victory flag: all eight ran the full ten minutes with
 both sides' points untouched, and whichever brain played German held more ground in seven
