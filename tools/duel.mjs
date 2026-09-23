@@ -97,6 +97,12 @@ const CARD = [
   ['hr_251', 'am_rifle'],
   ['hr_251', 'am_jeep'],
   ['am_sher', 'hr_251'],
+  /* and the M3A1 the Americans field in the one Italy has: against the squad it meets, the
+     251 it faces across the beach, the KS 750, and the Panzer IV that opens it */
+  ['am_m3', 'hr_gren'],
+  ['am_m3', 'hr_251'],
+  ['am_m3', 'hr_ks750'],
+  ['hr_p4', 'am_m3'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

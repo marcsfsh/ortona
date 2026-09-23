@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the grenadier squad, the pioneer team, the jeep, the M4, the
-KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+M3A1, the KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1072,7 +1072,15 @@ man is baked, a grenadier squad boards it and a second is refused, it is put dow
 vehicle, a gun asked to lay 1.2 radians off the nose comes to the edge of the pintle's arc, the
 periscope's eye is the gunner's, standing, at twenty-odd units up, forty wrecks throw nothing and
 all sit down at least 2.2 onto the belly, killed it leaves bodies of the 352nd and the squad
-aboard comes out alive, and Ortona's depot still makes the Ausf. D.
+aboard comes out alive, and Ortona's depot still makes the Ausf. D. The M3A1 is asked it in a
+tenth, on the American side: the motor pool makes the Americans' and not Italy's and queues it
+when asked for the other, the count and the order book read the two as one, it is in olive drab,
+the driver and the gunner wear the American's helmet and jacket and the seated man is baked, an
+American squad boards it and a second is refused, it is put down behind the vehicle, a gun asked
+to lay over the tail comes all the way round, the periscope's eye is the gunner's, standing in
+the pulpit, at thirty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto
+the belly, killed it leaves American bodies and the squad aboard comes out alive, and Ortona's
+motor pool still makes the old one.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3512,6 +3520,54 @@ agrees with what those numbers were already doing: over twelve runs it takes the
 every time in twenty-one seconds with 98 per cent of itself left, and the Ausf. D reads the same on
 the same afternoon, because nothing in the squad opens it. It takes the jeep twelve times in
 twelve inside eleven seconds, and the M4 takes it eight in eight inside ten.
+
+**The M3A1 is the Americans' half-track**, in the place of the one built for Italy (`us_m3` to
+`am_m3` on the army's list), and it is built from nothing rather than out of that one's parts: the
+White M3A1 in olive drab with the M49 ring raised over the co-driver on the armoured pulpit and a
+.50 on it, the unditching roller across the nose and a rack of mines down each side. Two men and
+no passengers: the driver on the left at the wheel and the gunner standing in the pulpit, with the
+co-driver's seat and the benches for ten empty. It carries one squad (`carries`), which goes out
+of sight aboard it the way the 251's does, tows the anti-tank gun (`tows`) and takes no upgrades.
+On `tools/dims.mjs` it reads 6.20 m long over the roller against 6.17, 2.21 wide over the racks
+against 2.22, 1.97 across the plates against 1.96, 2.27 to the top of the ring against 2.26 and
+0.29 of clearance under the front differential.
+
+What carries it, and each is built its own way. **A truck in front and a track behind.** The front
+axle is a banjo tube with the differential lathed on it, laid on a six-leaf spring each side with
+the track rod and the drag link running to the steering box (`mhFrontAxle`), on 8.25-20 tyres with
+two staggered rows of lugs and the bolt ring of the split rim (`mhFrontWheel`). Behind, a rubber
+band a foot wide with a chevron tread and a steel guide on its inner face (`mhBand`) runs round
+the sprocket at the front, two volute bogies of two wheels each (`mhBogie`: the arms, the bracket,
+the spring standing between the wheel tops and the skid over it), a return roller over the gap
+between them and the idler at the back on its adjuster, and `mhPulleys` is the one list of what
+the band is laid round. **The front end is pressed sheet**: a bonnet narrower than the body with a
+hinge down its middle and the armoured radiator in its face, eight pitched louvres over a dark
+backing (`mhBonnet`); flat mudguards with a lip turned down and a headlamp in its brush guard on
+each (`mhMudguards`); and the roller on its arms out ahead of the channel bumper (`mhFrame`).
+**The cab is open**: the armoured windscreen raised and leaning back with a slit for each man under
+its cover (`mhWindscreen`), and a door each side whose upper flap folds down, with the star on it
+(`mhDoors`). **The body is a plain box** (`mhHull`): the mine racks along both sides, two rows of
+seven (`mhRacks`), the pioneer tools and the sockets for a .30 aft of them (`mhKit`), and the
+door in the back (`mhRear`).
+
+**The pulpit is a drum of plate standing out of the right front of the body** (`mhPulpit`), open
+below so the gunner can climb up into it, with the ring rolled round its lip on three posts down
+to whichever floor each stands on, a grab rail on its back and the platform he stands on. The
+drum is `mhTube`, whose outer faces carry the normals of the curve and whose inner faces are
+flat. **The .50 is the jeep's gun** (`jeepGun50`, pulled out of `jeepFifty` so the two carry one
+gun) on a carriage that runs round the ring (`mhFifty`). The mount's origin is the middle of the
+ring, so the gunner turns with it (`turCrew`), and the def carries no `arc`: he stands in a drum
+of his own clear of the driver, and the gun goes all the way round. Both men are `gi_crew`, put
+on the wheel and the grips by the jeep's correction (`jeepMan`); the gunner stands with his knees
+bent on the platform, the .50 at his shoulder and his eye 33 units up, three over the bore. `VIN.am_m3` is the open vehicle's room, which is
+nothing, with the eye his.
+
+**Its numbers are the Italian M3A1's**, because it is the same vehicle, and the card agrees with
+what those numbers were already doing: over twelve runs it and the 251 win six each in 24 seconds,
+and the old pair read six each in 23 on the same afternoon. It takes the grenadier squad twelve
+times in twelve in 19 seconds with 92 per cent of itself left, which is the 251 against the
+American squad turned round, and the KS 750 twelve in twelve inside seven. The Panzer IV takes it
+twelve in twelve inside nine.
 
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the

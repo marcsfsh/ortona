@@ -110,6 +110,10 @@ const REAL = {
   us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
                body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
                7 ft 5 in to the top of the M49 ring mount, 11.25 in of clearance */
+  am_m3:     { name: 'M3A1 Half-Track (US)', len: 6.172, gun: 6.172, wid: 2.222, hgt: 2.261,
+               body: 1.96, clear: 0.286 },   /* the same White as the old model's figures: 20 ft 3 in
+               over the roller, 7 ft 3.5 in over the mine racks and 6 ft 5 in across the plates, 7 ft 5 in
+               to the top of the M49 ring, 11.25 in under the front differential */
   ger_sd222:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
                clear: 0.25 }
   /* Two heights are published for the 222 and both are right: 1.70 m to the turret rim,
@@ -153,6 +157,10 @@ const PROBE = {
   hr_ks750:  { noMount: true },   /* the mount is the gunner and his MG 34, turning on the sidecar seat */
   us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
                above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */
+  am_m3:     { noMount: true, bodyZ: 14.8, xLo: -31.5, xHi: -27.0, straddle: true },   /* the slice is
+               taken between the clips of the pioneer tools aft of the mine racks, where the plate is bare;
+               the ring is part of the hull and of the published height, and the .50 and its gunner
+               standing on it are no more part of it than the jeep's gun is */
   ger_h251:  { topZ: 0.4, hullZ: 21.0, bodyZ: 15.0, xLo: -28.0, xHi: -25.0, straddle: true },   /* the slice
                is taken aft of the last bin and forward of the rear chamfer, where the side plate is bare */   /* the shield mount, the rear pintle MG and the aerial
                socket all stand above the 1.75 m top of the compartment, and none of them is part
