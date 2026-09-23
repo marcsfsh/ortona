@@ -65,6 +65,12 @@ const CARD = [
   ['us_sher', 'ger_tig'],
   ['us_stuart', 'ger_sd222'],
   ['us_m8', 'ger_sd222'],
+  /* the jeep, which is what the Americans field in the carrier's place: against the car it
+     meets, the squad it meets and the paratroopers, and fitted with the .50 against the
+     car and the half-track */
+  ['am_jeep', 'ger_sd222'],
+  ['am_jeep', 'hr_gren'],
+  ['am_jeep', 'ger_gren'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],
@@ -94,6 +100,9 @@ const CARD = [
   ['us_m3', 'ger_p4', { a: ['how75'] }],
   ['ger_h251', 'us_stuart', { a: ['pak36'] }],
   ['us_m8', 'ger_gren', { a: ['thirty'] }],
+  ['am_jeep', 'ger_sd222', { a: ['fifty'] }],
+  ['ger_sd222', 'am_jeep', { a: ['kwk'] }],
+  ['am_jeep', 'hr_gren', { a: ['fifty'] }],
   ['ger_p4', 'us_ab', { a: ['skirts'] }],
   ['us_sher', 'ger_p4', { a: ['mg'], b: ['mg', 'skirts'] }],
   ['us_sher', 'ger_stug', { b: ['scope', 'mgs', 'skirts'] }]
@@ -113,7 +122,10 @@ if (args.base !== undefined) {
 const { page } = await openGame(browser, 'desktop', { file });
 await deploy(page, { side: 'us', diff: 1 });
 
-const pairs = positional.length >= 2 ? [[positional[0], positional[1]]] : CARD;
+/* one matchup off the command line takes its upgrades the way a card row does:
+   --ua=fifty fits A, --ub=kwk fits B */
+const cliUps = args.ua || args.ub ? { a: args.ua ? String(args.ua).split(',') : [], b: args.ub ? String(args.ub).split(',') : [] } : undefined;
+const pairs = positional.length >= 2 ? [cliUps ? [positional[0], positional[1], cliUps] : [positional[0], positional[1]]] : CARD;
 const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
   /* a wide flat patch well away from anything either side owns */
   function findField() {

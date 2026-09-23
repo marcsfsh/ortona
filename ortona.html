@@ -1192,6 +1192,8 @@ var UPGRADES = {
           desc: 'A Browning through the mantlet beside the seventeen-pounder, laid by the gunner on the same handwheels. It puts a section flat in whatever cover they are in and it will not hold them there: they can still crawl, and they will.' },
   thirty: { name: 'Swap the Bren for a .30', short: '.30 CAL', hk: 'O', cost: { mp: 70 },
             desc: 'A Browning on the pintle in place of the Bren. Belt fed, so it holds a corner instead of stopping every thirty rounds: it keeps men down without ever pinning them outright.' },
+  fifty: { name: 'Mount the .50 on the pedestal', short: '.50 CAL', hk: 'O', cost: { mp: 75, fu: 10 },
+           desc: 'An M2 heavy barrel in the M31 cradle in place of the .30. It reaches further and it goes through the side of a half-track or a scout car, which the .30 will not; against men it does what the .30 did.' },
   aid: { name: 'Convert to field ambulance', short: 'AMBULANCE', hk: 'Y', excl: 'm3', cost: { mp: 60 },
          desc: 'Litter racks in and the gun off the ring. Infantry standing near it are put back on their feet and brought back up to strength wherever they are, as long as nothing is shooting at it. Fitted once; the conversion cannot be undone.' }
 };
@@ -1236,15 +1238,15 @@ function foe(s) { return s === 'us' ? 'ger' : 'us'; }
    list does not name is still the Canadian unit. The German side works the same way from
    the paratroopers (`data.axis`): the FJ held Ortona and the Foglia, and the men behind
    the seawall on the beach were the 352nd Infantry Division, which fielded grenadiers in
-   field grey and not paratroopers in smocks. Both new lists are one entry long today and
-   grow as each army is built. */
+   field grey and not paratroopers in smocks. Both new lists are short today and grow as
+   each army is built. */
 var NATIONS = {
   can: { name: '1st Canadian Infantry Division', short: 'CAN', pick: '1ST CANADIAN INFANTRY DIVISION',
          blurb: 'Lee-Enfield rifle sections, engineers trained for mouse-holing, and Sherman support from the Three Rivers Regiment.',
          sub: {} },
   usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
          blurb: 'Rifle squads with the M1 Garand, ashore at the water with everything still to do, and the draws the only way their armour gets off the beach.',
-         sub: { us_rifle: 'am_rifle' } },
+         sub: { us_rifle: 'am_rifle', us_m8: 'am_jeep' } },
   fj:   { side: 'ger', name: '1. Fallschirmjäger-Division', short: 'FJ', pick: '1. FALLSCHIRMJÄGER-DIVISION',
           blurb: 'Compact veteran groups, prepared demolitions and MG42 positions built to dominate the narrow streets.',
           sub: {} },
@@ -1473,6 +1475,24 @@ var UNITS = {
     w: { range: 285, dmg: 12, rof: 0.48, acc: .62, sup: .022, pen: 52, aoe: 14 },
     wUp: { thirty: { range: 300, dmg: 9, rof: .20, acc: .58, sup: .055, supCap: .92, pen: 8, aoe: 0 } },
     desc: 'Small, fast tracked carrier with a Bren gun. It sees further than a section on foot and there are men in it, so it takes and holds ground the way they do. It will carry a rifle section forward, and the Bren can be swapped for a belt-fed .30. Anti-tank fire opens it like a tin.'
+  },
+  /* The jeep, in place of the carrier on a map whose army is American (`natKey`): three
+     men and a .30 on the M31 pedestal, faster than anything else on the field and made of
+     pressed sheet. Its 21 of plate is not plate: it stands for a rifle round going in one
+     side and out of the other without finding the engine or a man, which is what most of
+     them do, and against anything firing a belt it is nothing, which is right. The number
+     came off the duel card, where the jeep goes from losing every fight with a squad at
+     nought to winning every one at 26, because a squad whose fire is thinned is a squad
+     the .30 keeps down. It tows the anti-tank gun and carries nobody, because there is
+     nowhere in it to put a squad. */
+  am_jeep: {
+    side: 'us', nat: 'usa', name: 'Jeep (Willys MB)', short: 'JEEP', cat: 'veh', hk: 'V', upgrades: ['fifty'],
+    wheeled: 1,
+    hp: 270, armor: 21, speed: 150, sight: 360, pop: 5, cost: { mp: 150, fu: 15 }, time: 16,
+    req: 'us_mot', caps: 1, tows: 1,
+    w: { range: 290, dmg: 8, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
+    wUp: { fifty: { range: 320, dmg: 10, rof: .25, acc: .56, sup: .06, supCap: .92, pen: 70, aoe: 0 } },
+    desc: 'The quarter-ton truck with a .30 Browning on the pedestal behind the front seats: the fastest thing on the field, and it sees a long way. Nothing on it is armour, so rifle fire mostly goes through it and a machine gun finds everything. It tows the anti-tank gun, and the .30 can be changed for a .50.'
   },
   us_stuart: {
     side: 'us', name: 'Stuart V (M3A3)', short: 'STU V', cat: 'veh', hk: 'T', upgrades: ['mg'], tows: 1,
@@ -5857,9 +5877,13 @@ function queueUnit(b, key) {
   G.made[o][key] = (G.made[o][key] || 0) + 1;
   return true;
 }
-/* how many of a type a side has alive or on order */
+/* how many of a type a side has alive or on order. The key is read as the army this map's
+   side fields, the way `queueUnit` reads it, so a brain that asks after the carrier on the
+   beach -- one out of an older revision on the skirmish card -- counts the jeeps it was
+   given for it rather than buying them for ever against a count that never moves. */
 function countOf(slot, key) {
   var n = 0;
+  key = natKey(key);
   for (var i = 0; i < G.units.length; i++) if (!G.units[i].dead && G.units[i].own === slot && G.units[i].key === key) n++;
   for (var b = 0; b < G.blds.length; b++) if (G.blds[b].own === slot) for (var q = 0; q < G.blds[b].queue.length; q++) if (G.blds[b].queue[q] === key) n++;
   return n;
@@ -5868,6 +5892,7 @@ function countOf(slot, key) {
    walks backwards under fire -- every armoured car that burns reopens the first line of
    it -- so the list is climbed against this instead, and each rung is climbed once. */
 function madeOf(slot, key) {
+  key = natKey(key);
   return (G.made && G.made[slot] && G.made[slot][key]) || 0;
 }
 /* what a vehicle is worth buying back, fuel counted at what it is actually worth to a
@@ -7505,7 +7530,7 @@ function mountUp(u) {
    has to be left after, because a plate bought with the next section's cost is a section
    not raised. Returns the vehicle it fitted, or null. */
 function buyUpgradeAuto(slot, vehs, opt) {
-  var order = ['mg', 'mgs', 'skirts', 'scope', 'kwk', 'drill', 'quad50', 'thirty', 'coax', 'how75', 'pak36'], i, j;
+  var order = ['mg', 'mgs', 'skirts', 'scope', 'kwk', 'drill', 'quad50', 'thirty', 'fifty', 'coax', 'how75', 'pak36'], i, j;
   for (i = 0; i < order.length; i++) {
     var uk = order[i], U = UPGRADES[uk];
     if (uk === 'skirts' && !opt.foeAt) continue;          /* nothing to skirt against yet */
@@ -8787,7 +8812,9 @@ function makeWreck(u) {
      lorry are never it. The rest burn out, and one in six goes over far enough that the
      hull is plainly broken rather than merely dead. */
   var roll = Math.random();
-  var blown = !M.fixed && M.tur && roll < (heavy ? .34 : .18);
+  /* and a soft-skinned car has no magazine to lift a mount off and no weight to sit down
+     on: it burns where it stopped, on its rims */
+  var blown = !M.fixed && !M.soft && M.tur && roll < (heavy ? .34 : .18);
   var broke = !blown && roll > .84;
   var w = {
     x: u.x, y: u.y, a: u.facing, turret: u.turret,
@@ -8795,7 +8822,7 @@ function makeWreck(u) {
     t: 0, side: u.side, key: u.key,
     /* down on the belly, and over. A broken back goes a long way over; a burnt-out hull
        settles a few degrees onto whichever side let go first. */
-    sink: 2.2 + Math.random() * 2.4,
+    sink: M.soft ? .8 + Math.random() * .8 : 2.2 + Math.random() * 2.4,
     lean: (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.16, .30) : rnd(.02, .10)),
     nose: (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.08, .17) : rnd(.01, .06)),
     skirts: !blown && !broke && Math.random() < .45,     /* what is left of them */
@@ -12539,6 +12566,10 @@ function aiTick(dt) {
      minutes, which is the starvation the money reserve exists to prevent, and it is priced
      as a toy rather than as a vehicle. Only a player may have one. */
   if (side === 'ger' && bpOf(slot, 'heavy') >= 1.5) LADDER.push(['ger_kt', 1, 760]);
+  /* the list is written in the first roster and cut in it, and then it is the army this
+     map's side actually fields, so that what is saved for, what is counted and what the
+     weights read is the jeep on the beach rather than the carrier it stands in for */
+  LADDER = LADDER.map(function (e) { return [natKey(e[0]), e[1], e[2]]; });
   LADDER = aiPrefLadder(slot, LADDER);
   var gate = 2 - D.tech, li, ent, lk, ld;
   /* Population is the other thing it can run out of, and infantry is cheap enough to
@@ -15654,6 +15685,10 @@ function registerMaterials() {
     tagEdges([NORM.door, NORM.tim].concat(NORM.shut), 'wood');
     tag(NORM.oak.concat(NORM.apple, NORM.hedge, [NORM.oakCard, NORM.appleCard]), 'leaf');
     tag([NORM.bank], 'earth');
+  }
+  if (typeof JP !== 'undefined') {
+    tag([JP.canvas, JP.canvasD, JP.seat], 'canvas'); tagEdges([JP.canvas, JP.canvasD, JP.seat], 'canvas');
+    tag([JP.star, JP.red], 'paint'); tagEdges([JP.star, JP.red], 'paint');
   }
   if (typeof CRAFT !== 'undefined') {
     tag([CRAFT.hull, CRAFT.hullL, CRAFT.hullD, CRAFT.deck, CRAFT.deckL, CRAFT.num, CRAFT.blue], 'paint');
@@ -22032,6 +22067,415 @@ function sd222Turret20(body, cap) {
   });
   return f;
 }
+/* ================================================================ Willys MB
+   The quarter-ton 4x4 truck, which is what the Army called it, and the jeep, which is
+   what everybody else did. The 29th Division came ashore with one to a platoon
+   headquarters and every one it could find after that, and it is the Americans' light
+   vehicle on the beach where the Canadians have the carrier: a pedestal gun, three men
+   and nothing whatever between them and a rifle round.
+
+   It is pressed sheet over a ladder frame, and four things carry the silhouette:
+
+     1. The bonnet is flat and narrower than the body, and the wings either side of it
+        are flat too, with their outer edges turned down and their fronts falling
+        steeply to the grille.
+     2. The grille is a flat pressing with nine vertical slots and the two headlamps set
+        into its top corners.
+     3. The body is an open tub with a scoop cut down in each side where the doors would
+        be and a round arch over each rear wheel, and the windscreen folds forward flat
+        onto the bonnet, which is how it is built here: the way it went into action, with
+        a canvas cover over the glass so it did not flash.
+     4. The spare wheel and a jerrican ride on the tail.
+
+   Published: 132 1/4 in long (3.36 m), 62 in wide over the wings (1.57 m), 80 in wheel
+   base, 49 in track, 8 3/4 in of clearance under the differentials, 6.00-16 tyres, 52 in
+   to the top of the windscreen and 40 in with it folded flat. Laid out at 8.5 cm to the
+   unit, with the driver on the left, which is -y. */
+var JP = {
+  od: SHERMAN.od, odLit: SHERMAN.odLit, odDark: SHERMAN.odDark, dust: SHERMAN.odDust,
+  steel: SHERMAN.steel, bare: SHERMAN.bare, rubber: SHERMAN.rubber, tyre: SHERMAN.tyre,
+  jerry: SHERMAN.jerry, canvas: '#5d5b42', canvasD: '#4b4a35', seat: '#50503a',
+  star: '#d5d1ba', red: '#6c2b23', lens: '#cfcdb6', well: '#15170f', wood: '#5a4630'
+};
+var JPG = {
+  xAx: 11.88, yTr: 7.28, rT: 4.22, wT: .89, zAx: 4.15,      /* 80 in wheelbase, 49 in track */
+  xBump: 19.9, xGrille: 17.55, xCowl: 7.0, xDash: 6.1, xTail: -17.3,
+  half: 8.3, wing: 9.21, hood: 4.7,                          /* the tub, the wings, the bonnet */
+  zFloor: 5.85, zSill: 4.8, zSide: 10.9, zCowl: 11.35, zWing: 9.3,
+  zHoodR: 11.2, zHoodF: 10.8, rArch: 4.8,
+  zDiff: 2.6,                                                /* the belly: under the differentials */
+  xPost: -5.0, zMount: 17.0,                                 /* the M31 pedestal, and its head */
+  hub: [3.0, -4.3, 12.1], xHip: -2.5                         /* the steering wheel, and where the driver sits */
+};
+/* the top edge of the side at a station: the cowl, the scoop down to the seat, and the
+   rear body behind it */
+function jeepTop(x) {
+  var g = JPG, t;
+  if (x >= g.xDash) return g.zCowl;
+  if (x > 2.6) { t = (g.xDash - x) / (g.xDash - 2.6); return 8.0 + (g.zCowl - 8.0) * (1 + Math.cos(Math.PI * t)) / 2; }
+  if (x >= -2.4) return 8.0;
+  if (x > -5.4) { t = (-2.4 - x) / 3.0; return 8.0 + (g.zSide - 8.0) * (1 - Math.cos(Math.PI * t)) / 2; }
+  return g.zSide;
+}
+/* and the bottom edge, which is the sill everywhere but the rear wheel arch */
+function jeepBot(x) {
+  var g = JPG, dx = x + g.xAx;
+  if (Math.abs(dx) < g.rArch) return Math.max(g.zSill, g.zAx + Math.sqrt(g.rArch * g.rArch - dx * dx));
+  return g.zSill;
+}
+/* eight corners, a convex solid: four at x0 and four at x1, each as [y0, y1, z0, z1] */
+function jeepSlab(x0, a, x1, b, col, cap, side) {
+  var p = [[x0, a[0], a[2]], [x0, a[1], a[2]], [x0, a[1], a[3]], [x0, a[0], a[3]],
+           [x1, b[0], b[2]], [x1, b[1], b[2]], [x1, b[1], b[3]], [x1, b[0], b[3]]];
+  var f = [{ v: [p[0], p[1], p[2], p[3]], c: col }, { v: [p[4], p[5], p[6], p[7]], c: col },
+           { v: [p[3], p[2], p[6], p[7]], c: cap || col }, { v: [p[0], p[1], p[5], p[4]], c: col },
+           { v: [p[0], p[3], p[7], p[4]], c: side || col }, { v: [p[1], p[2], p[6], p[5]], c: side || col }];
+  return faceOut(f, (x0 + x1) / 2, (a[0] + a[1] + b[0] + b[1]) / 4, (a[2] + a[3] + b[2] + b[3]) / 4);
+}
+/* A 6.00-16 on the combat rim. The tread is the Army's non-directional bar pattern,
+   chevrons that read the same whichever way the wheel turns, and it is what makes a
+   military tyre look like one at the distance the game is played from. */
+function jeepWheel(x, y, sd, z) {
+  var C = JP, g = JPG, f, i, r = g.rT, w = g.wT, rr = r - .2, zc = z === undefined ? g.zAx : z;
+  var prof = [[0, -.55], [1.15, -.55], [1.3, -.2], [2.2, -.34], [2.4, -w], [rr - .35, -w], [rr, -w + .3],
+              [rr, w - .3], [rr - .35, w], [2.4, w], [2.2, .34], [1.3, .2], [1.15, .55], [0, .55]];
+  f = lathe(x, y, zc, prof, 16, [C.od, C.odDark, C.od, C.odDark, C.tyre, C.rubber, C.rubber,
+                                 C.rubber, C.tyre, C.odDark, C.od, C.odDark, C.od], true);
+  for (i = 0; i < 20; i++) {
+    var a = (i + (sd > 0 ? .5 : 0)) / 20 * TAU;
+    [-1, 1].forEach(function (s) {
+      var lug = place(box(0, 0, -.2, .95, .6, .36, C.tyre, C.rubber, C.tyre, 0), s * .5, 0, s * .4, 0);
+      f = f.concat(place(pitch(place(lug, 0, 0, 0, rr), a, 0, 0), 0, x, y, zc));
+    });
+  }
+  /* the five wheel nuts and the ring of bolts that holds the two halves of the rim */
+  f = f.concat(boltRing(x, y + sd * .6, zc, .72, 5, .2, .25, C.bare));
+  f = f.concat(boltRing(x, y + sd * .38, zc, 1.8, 10, .15, .2, C.odDark, .3));
+  f = f.concat(stud(x, y + sd * .62, zc, .42, .3, C.odDark));
+  return f;
+}
+/* the axle beam with its differential offset to the right, as both of the jeep's are */
+function jeepAxle(x, front) {
+  var C = JP, g = JPG, f = [];
+  f = f.concat(place(tubeSmooth(-6.6, 6.6, 0, 0, .52, 8, C.steel, C.steel), Math.PI / 2, x, 0, g.zAx));
+  f = f.concat(lathe(x, 1.5, g.zAx, [[0, -1.25], [1.1, -1.25], [g.zAx - g.zDiff, -.45], [g.zAx - g.zDiff, .45],
+                                    [1.1, 1.05], [0, 1.05]], 10, [C.steel, C.steel, C.bare, C.steel, C.steel], true));
+  f = f.concat(place(tubeSmooth(0, 1.6, 0, 0, .45, 6, C.steel, C.steel), 0, front ? x - 2.6 : x + 1.0, 1.5, g.zAx));
+  if (front) [-1, 1].forEach(function (s) {
+    /* the closed steering knuckles, and the tie rod between the two arms */
+    f = f.concat(lathe(x, s * 6.2, g.zAx, [[0, -.7], [.9, -.7], [1.05, 0], [.9, .7], [0, .7]], 8,
+                       [C.steel, C.bare, C.steel, C.steel], true));
+  });
+  if (front) f = f.concat(place(tubeSmooth(-6.0, 6.0, 0, 0, .2, 6, C.steel, C.steel), Math.PI / 2, x - 1.6, 0, g.zAx - .4));
+  /* the leaf springs under the rails, and a shock absorber off each */
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(x, s * 4.0, g.zAx + .5, 8.8, .8, .32, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(x, s * 4.0, g.zAx + .82, 6.2, .8, .22, C.steel, C.bare, C.steel, 0));
+    f = f.concat(taperLimb([x + (front ? -1.4 : 1.4), s * 5.0, g.zAx + .2], [x + (front ? -2.6 : 2.6), s * 4.8, g.zFloor - .6], .5, .5, C.steel));
+  });
+  return f;
+}
+/* the side of the tub, one band at a time between stations, because the scoop and the
+   arch make its outline concave and a concave polygon cannot be fanned */
+function jeepSide(s, body, cap, sideC) {
+  var C = JP, g = JPG, f = [], xs = [], x, i;
+  for (x = g.xCowl; x > g.xTail; x -= .6) xs.push(x);
+  xs = xs.concat([g.xDash, 2.6, -2.4, -5.4, -g.xAx - g.rArch + .02, -g.xAx + g.rArch - .02, g.xTail]);
+  xs.sort(function (a, b) { return b - a; });
+  var y0 = s * g.half, y1 = s * (g.half - .25);
+  for (i = 0; i < xs.length - 1; i++) {
+    var a = xs[i], b = xs[i + 1]; if (a - b < .05) continue;
+    var ta = jeepTop(a), tb = jeepTop(b), ba = jeepBot(a), bb = jeepBot(b);
+    f = f.concat(faceOut([{ v: [[a, y0, ba], [b, y0, bb], [b, y0, tb], [a, y0, ta]], c: sideC }], a, 0, ta));
+    f = f.concat(faceOut([{ v: [[a, y1, ba], [b, y1, bb], [b, y1, tb], [a, y1, ta]], c: C.odDark }], a, s * 30, ta));
+    f = f.concat(faceOut([{ v: [[a, y0, ta], [b, y0, tb], [b, y1, tb], [a, y1, ta]], c: cap }], a, s * g.half, ta - 5));
+    /* the rolled bead along the top edge, which is what makes it read as pressed sheet */
+    f = f.concat(faceOut([{ v: [[a, y0 + s * .12, ta - .35], [b, y0 + s * .12, tb - .35], [b, y0 + s * .12, tb - .05], [a, y0 + s * .12, ta - .05]], c: body }], a, 0, ta));
+    if (ba > g.zSill + .01 || bb > g.zSill + .01)
+      f = f.concat(faceOut([{ v: [[a, y0, ba], [b, y0, bb], [b, y1, bb], [a, y1, ba]], c: C.odDark }], a, s * g.half, ba + 5));
+  }
+  return f;
+}
+/* the rear wheelhouse: the arch pressed inboard over the tyre, and the end of it that
+   the rear seat stands against */
+function jeepHouse(s) {
+  var C = JP, g = JPG, f = [], n = 10, i, R = g.rArch + .05, yo = s * (g.half - .25), yi = s * 6.1, end = [];
+  for (i = 0; i < n; i++) {
+    var a0 = Math.PI * i / n, a1 = Math.PI * (i + 1) / n;
+    var p0 = [-g.xAx + Math.cos(a0) * R, g.zAx + Math.sin(a0) * R], p1 = [-g.xAx + Math.cos(a1) * R, g.zAx + Math.sin(a1) * R];
+    var q = [[p0[0], yo, p0[1]], [p1[0], yo, p1[1]], [p1[0], yi, p1[1]], [p0[0], yi, p0[1]]];
+    f = f.concat(faceIn([{ v: q, c: C.odDark }], -g.xAx, (yo + yi) / 2, g.zAx));
+    f = f.concat(faceOut([{ v: q.map(function (p) { return [p[0], p[1], p[2] + .2]; }), c: C.od }], -g.xAx, (yo + yi) / 2, g.zAx));
+    end.push([p0[0], yi, Math.max(g.zFloor, p0[1] + .2)]);
+  }
+  end.push([-g.xAx - R, yi, g.zFloor]);
+  f = f.concat(faceOut([{ v: end, c: C.odDark }], -g.xAx, s * 20, g.zAx + 2));
+  f = f.concat(faceOut([{ v: end.map(function (p) { return [p[0], p[1] + s * .05, p[2]]; }), c: C.odDark }], -g.xAx, 0, g.zAx + 2));
+  return f;
+}
+
+function jeepHull(body, cap, sideC) {
+  var C = JP, g = JPG, f = [], i, s;
+
+  /* ---- the running gear: four wheels on two beam axles, the frame and the springs ---- */
+  for (s = -1; s <= 1; s += 2) {
+    f = f.concat(jeepWheel(g.xAx, s * g.yTr, s));
+    f = f.concat(jeepWheel(-g.xAx, s * g.yTr, s));
+    f = f.concat(box((g.xBump - .8 + g.xTail) / 2, s * 4.0, g.zSill + .1, g.xBump - .8 - g.xTail, .6, .9, C.steel, C.bare, C.steel, 0));
+  }
+  f = f.concat(jeepAxle(g.xAx, true)).concat(jeepAxle(-g.xAx, false));
+  f = f.concat(box(g.xTail + .5, 0, g.zSill + .1, .8, 8.6, 1.0, C.steel, C.bare, C.steel, 0));
+  /* the exhaust out along the right under the body, and the silencer */
+  f = f.concat(tubeSmooth(-9.0, -3.0, 2.4, g.zSill - .2, .7, 8, C.steel, '#26251f'));
+  f = f.concat(tubeSmooth(-17.8, -13.2, 2.4, g.zSill - .2, .28, 6, C.steel, '#1d1f19'));
+
+  /* ---- the tub: floor, sides, tail, the wheelhouses and the cowl ---- */
+  f = f.concat(box((g.xTail + g.xDash) / 2, 0, g.zFloor - .3, g.xDash - g.xTail, g.half * 2 - .5, .3, C.odDark, C.od, C.odDark, 0));
+  f = f.concat(box((g.xTail + g.xDash) / 2, 0, g.zSill, g.xDash - g.xTail - .4, g.half * 2 - .5, g.zFloor - .3 - g.zSill, C.odDark, C.odDark, C.odDark, 0));
+  f = f.concat(jeepSide(-1, body, cap, sideC)).concat(jeepSide(1, body, cap, sideC));
+  f = f.concat(jeepHouse(-1)).concat(jeepHouse(1));
+  f = f.concat(box(g.xTail + .125, 0, g.zSill, .25, g.half * 2, g.zSide - g.zSill, body, cap, sideC, 0));
+  f = f.concat(box(g.xTail - .02, 0, g.zSide - .4, .3, g.half * 2 + .1, .4, body, cap, body, 0));
+  f = f.concat(box((g.xDash + g.xCowl) / 2, 0, 8.0, g.xCowl - g.xDash, g.half * 2 - .3, g.zCowl - 8.0, body, cap, C.odDark, 0));
+  /* the transmission hump down the middle, with the gear lever and the two transfer levers */
+  f = f.concat(box(1.8, 0, g.zFloor, 5.4, 2.6, 1.1, C.od, C.odLit, C.odDark, .25));
+  f = f.concat(taperLimb([3.0, -.3, g.zFloor + 1.0], [2.2, -.5, g.zFloor + 4.6], .32, .26, C.steel));
+  f = f.concat(box(2.2, -.5, g.zFloor + 4.5, .6, .6, .6, '#1d1f19', '#26251f', '#1d1f19', 0));
+  [.35, .8].forEach(function (yy, k) {
+    f = f.concat(taperLimb([2.0, yy, g.zFloor + 1.0], [1.5 - k * .3, yy + .2, g.zFloor + 3.6], .26, .22, C.steel));
+  });
+
+  /* ---- the dash: four gauges in the middle and the glove box on the passenger's side ---- */
+  for (i = 0; i < 4; i++)
+    f = f.concat(tubeSmooth(g.xDash - .25, g.xDash, -1.8 + i * 1.2, 10.0, .45, 8, '#1d1f19', '#cfcdb6'));
+  f = f.concat(box(g.xDash - .08, 4.4, 8.9, .2, 3.4, 1.8, C.odDark, C.od, C.odDark, 0));
+  f = f.concat(box(g.xDash - .06, -1.4, 8.6, .15, 1.6, .7, '#cfcdb6', '#cfcdb6', '#cfcdb6', 0));   /* the shift plate */
+
+  /* ---- the bonnet, narrower than the body, with the wings either side of it ---- */
+  f = f.concat(jeepSlab(g.xCowl, [-g.hood, g.hood, 8.6, g.zHoodR], g.xGrille, [-g.hood, g.hood, 8.6, g.zHoodF], body, cap, sideC));
+  [-1, 1].forEach(function (s2) {
+    /* the hold-down catch at each front corner and the hinge line down each side */
+    f = f.concat(box(g.xGrille - 1.0, s2 * (g.hood + .1), 9.6, .6, .3, 1.0, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box((g.xCowl + g.xGrille) / 2, s2 * (g.hood + .06), 10.35, g.xGrille - g.xCowl - .6, .14, .16, C.odDark, C.od, C.odDark, 0));
+    var w0 = s2 < 0 ? [-g.wing, -g.hood + .02] : [g.hood - .02, g.wing];
+    /* the flat top of the wing, its front falling to the grille, and the turned-down lip */
+    f = f.concat(jeepSlab(7.2, [w0[0], w0[1], g.zWing - .3, g.zWing], 16.3, [w0[0], w0[1], g.zWing - .3, g.zWing], body, cap, sideC));
+    f = f.concat(jeepSlab(16.3, [w0[0], w0[1], g.zWing - .3, g.zWing], g.xGrille + .35, [w0[0], w0[1], 7.0, 7.3], body, cap, sideC));
+    f = f.concat(box(11.75, s2 * (g.wing - .06), g.zWing - 1.2, 9.1, .12, 1.2, sideC, cap, sideC, 0));
+    f = f.concat(jeepSlab(7.2, [w0[0], w0[1], 4.9, g.zWing], 7.5, [w0[0], w0[1], 4.9, g.zWing], C.odDark, cap, sideC));
+    /* the blackout marker lamp on each wing, and the blackout driving lamp on the left */
+    f = f.concat(box(15.2, s2 * 7.6, g.zWing, 1.0, .9, .8, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(15.72, s2 * 7.6, g.zWing + .25, .08, .5, .35, '#cfcdb6', '#cfcdb6', '#cfcdb6', 0));
+    if (s2 < 0) {
+      f = f.concat(tubeSmooth(14.0, 15.4, -6.2, g.zWing + 1.3, .8, 10, C.odDark, '#cfcdb6'));
+      f = f.concat(box(14.4, -6.2, g.zWing, .5, .5, .6, C.odDark, C.od, C.odDark, 0));
+    }
+  });
+
+  /* ---- the grille: the pressing with its nine slots, the two headlamps set into its top
+     corners, and the bumper in front of it ---- */
+  f = f.concat(box(g.xGrille + .18, 0, 4.6, .36, g.hood * 2, g.zHoodF - 4.6, body, cap, body, 0));
+  for (i = 0; i < 9; i++)
+    f = f.concat(box(g.xGrille + .38, -2.4 + i * .6, 5.5, .06, .3, 4.5, JP.well, JP.well, JP.well, 0));
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(tubeSmooth(g.xGrille - .4, g.xGrille + .52, s2 * 3.55, 8.9, 1.05, 12, C.odDark, '#cfcdb6'));
+    f = f.concat(tubeSmooth(g.xGrille + .36, g.xGrille + .6, s2 * 3.55, 8.9, 1.12, 12, C.od, C.odLit));
+    f = f.concat(tubeSmooth(g.xGrille + .6, g.xGrille + .66, s2 * 3.55, 8.9, .8, 12, '#cfcdb6', '#cfcdb6'));
+  });
+  f = f.concat(box(g.xBump - .4, 0, 3.9, .8, 16.8, 2.0, body, cap, sideC, .15));
+  f = f.concat(box(g.xBump - .9, 0, 4.3, .6, 16.4, 1.2, C.odDark, C.od, C.odDark, 0));
+  [-1, 1].forEach(function (s2) {
+    /* the lifting shackles, and the unit's stencil on the face of the bumper */
+    f = f.concat(place(tubeSmooth(-.25, .25, 0, 0, .45, 8, C.steel, C.steel), Math.PI / 2, g.xBump - .45, s2 * 4.0, 6.1));
+    f = f.concat(place(tubeSmooth(-.3, .3, 0, 0, .24, 8, JP.well, JP.well), Math.PI / 2, g.xBump - .45, s2 * 4.0, 6.1));
+    for (var k = 0; k < 3; k++)
+      f = f.concat(box(g.xBump + .01, s2 * (5.6 + k * .9), 4.5, .04, .55, .8, JP.star, JP.star, JP.star, 0));
+  });
+
+  /* ---- the windscreen folded forward flat onto the bonnet under its canvas cover, the
+     hinges it folded on, and the two rubber pads it rests on ---- */
+  f = f.concat(box(g.xCowl + 2.2, 0, g.zCowl - .1, 4.5, 14.3, .7, JP.canvas, lit(JP.canvas, 1.1), JP.canvasD, .2));
+  f = f.concat(box(g.xCowl + 2.2, 0, g.zCowl - .2, 4.2, 14.0, .12, C.odDark, C.od, C.odDark, 0));
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(box(g.xCowl + .1, s2 * 6.4, g.zCowl - .2, .7, .9, .8, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(g.xCowl + 4.25, s2 * 6.6, g.zCowl - .15, .5, .6, .5, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(g.xCowl + 4.55, s2 * 2.0, g.zHoodR - .55, .7, .7, .45, C.rubber, C.tyre, C.rubber, 0));
+  });
+
+  /* ---- the white star in its ring on the bonnet, and the registration down each side ---- */
+  var st = [], ri = [], R0 = 2.55, sx = 14.3, sz = g.zHoodR + (g.zHoodF - g.zHoodR) * (sx - g.xCowl) / (g.xGrille - g.xCowl) + .03;
+  for (i = 0; i < 5; i++) {
+    var ao = i * TAU / 5, ai = ao + TAU / 10;
+    var tip = [Math.cos(ao) * R0, Math.sin(ao) * R0], i0 = [Math.cos(ai) * R0 * .38, Math.sin(ai) * R0 * .38];
+    var ip = [Math.cos(ao - TAU / 10) * R0 * .38, Math.sin(ao - TAU / 10) * R0 * .38];
+    st.push({ v: [[tip[0], tip[1], 0], [i0[0], i0[1], 0], [ip[0], ip[1], 0]], c: JP.star });
+    ri.push([i0[0], i0[1], 0]);
+  }
+  st.push({ v: ri, c: JP.star });
+  for (i = 0; i < 20; i++) {
+    var b0 = i * TAU / 20, b1 = (i + 1) * TAU / 20, r1 = 2.85, r2 = 3.1;
+    st.push({ v: [[Math.cos(b0) * r1, Math.sin(b0) * r1, 0], [Math.cos(b1) * r1, Math.sin(b1) * r1, 0],
+                  [Math.cos(b1) * r2, Math.sin(b1) * r2, 0], [Math.cos(b0) * r2, Math.sin(b0) * r2, 0]], c: JP.star });
+  }
+  st = faceOut(st, 0, 0, -5);
+  f = f.concat(place(pitch(st, -Math.atan((g.zHoodR - g.zHoodF) / (g.xGrille - g.xCowl)), 0, 0), 0, sx, 0, sz));
+  [-1, 1].forEach(function (s2) {
+    for (i = 0; i < 9; i++) if (i !== 3)
+      f = f.concat(box(9.4 + i * .78, s2 * (g.hood + .04), 9.55, .5, .06, .75, JP.star, JP.star, JP.star, 0));
+  });
+
+  /* ---- the seats: the driver's over the fuel tank and the passenger's over the tool box,
+     each a squab on a frame and a back, and the bench across the tail between the
+     wheelhouses ---- */
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(box(-1.1, s2 * 4.3, g.zFloor, 4.4, 4.6, 7.5 - g.zFloor, C.od, C.odLit, C.odDark, .2));
+    f = f.concat(box(-1.2, s2 * 4.3, 7.5, 4.9, 4.9, .95, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3));
+    f = f.concat(place(pitch(box(0, 0, 0, .8, 4.7, 3.4, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3), .14, 0, 0), 0, -3.95, s2 * 4.3, 8.2));
+    f = f.concat(place(pitch(box(0, 0, 0, .25, 4.2, 3.2, C.steel, C.bare, C.steel, 0), .14, 0, 0), 0, -4.5, s2 * 4.3, 8.0));
+  });
+  f = f.concat(box(-14.6, 0, g.zFloor, 4.0, 11.8, 7.2 - g.zFloor, C.od, C.odLit, C.odDark, .2));
+  f = f.concat(box(-14.6, 0, 7.2, 4.2, 11.8, .9, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3));
+  f = f.concat(box(-16.65, 0, 8.1, .7, 11.4, 2.5, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .25));
+
+  /* ---- the steering wheel on its column, laid back 38 degrees, with three spokes ---- */
+  var wr = 2.5, tilt = .67, hub = JPG.hub, wh = [];
+  for (i = 0; i < 16; i++) {
+    var c0 = i * TAU / 16, c1 = (i + 1) * TAU / 16;
+    wh = wh.concat(taperLimb([Math.cos(c0) * wr, Math.sin(c0) * wr, 0], [Math.cos(c1) * wr, Math.sin(c1) * wr, 0], .36, .36, '#1d1f19'));
+  }
+  [1.05, -1.05, Math.PI].forEach(function (a2) {
+    wh = wh.concat(taperLimb([0, 0, 0], [Math.cos(a2) * wr * .96, Math.sin(a2) * wr * .96, 0], .24, .2, C.steel));
+  });
+  wh = wh.concat(cyl(0, 0, -.2, .6, .6, .5, 8, '#1d1f19', '#26251f', 0, true));
+  f = f.concat(place(pitch(wh, tilt, 0, 0), 0, hub[0], hub[1], hub[2]));
+  f = f.concat(taperLimb([hub[0] + .1, hub[1], hub[2] - .2], [hub[0] + Math.sin(tilt) * 6.8, hub[1], hub[2] - Math.cos(tilt) * 6.8], .5, .5, C.steel));
+
+  /* ---- the M31 pedestal: a post from the floor behind the front seats with two braces
+     down to the floor, and the head of it on the mount ---- */
+  f = f.concat(box(g.xPost, 0, g.zFloor, 2.4, 2.4, .25, C.steel, C.bare, C.steel, 0));
+  f = f.concat(cyl(g.xPost, 0, g.zFloor, .5, .5, g.zMount - .3 - g.zFloor, 8, C.steel, C.bare, 0, true));
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(taperLimb([g.xPost, 0, 11.6], [g.xPost - 3.2, s2 * 2.8, g.zFloor], .3, .3, C.steel));
+  });
+
+  /* ---- what it carries: the spare and the jerrican on the tail, the tail lamps, the
+     pintle, the axe and the shovel along the driver's side, the grab handles, and the
+     hood and its bows folded back over the rear seat ---- */
+  f = f.concat(place(jeepWheel(0, 0, 1, 0), Math.PI / 2, g.xTail - .38 - g.wT, 2.4, g.zSill + g.rT - .1));
+  f = f.concat(box(g.xTail - .2, 2.4, g.zSill + g.rT - 1.0, .4, 1.4, 2.0, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - 1.15, -5.0, 5.5, 1.9, 4.0, 5.5, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .92), .25));
+  f = f.concat(box(g.xTail - .2, -5.0, 5.2, .4, 4.3, .4, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - 1.15, -5.0, 8.9, 2.1, 4.3, .35, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - 1.15, -5.0, 11.0, .5, 1.6, .4, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .92), 0));
+  [-1, 1].forEach(function (s2) {
+    f = f.concat(box(g.xTail - .2, s2 * 7.7, 6.6, .45, 1.1, 1.2, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(g.xTail - .44, s2 * 7.7, 6.8, .05, .7, .75, JP.red, JP.red, JP.red, 0));
+    /* the lifting handle on each side of the rear body */
+    f = f.concat(tubeSmooth(-16.2, -14.2, s2 * (g.half + .45), 9.2, .2, 6, C.steel, C.steel));
+    [-16.1, -14.3].forEach(function (xx) { f = f.concat(box(xx, s2 * (g.half + .22), 9.0, .3, .5, .4, C.steel, C.bare, C.steel, 0)); });
+    /* the two bows lying back along the top of the rear body */
+    f = f.concat(tubeSmooth(-16.2, -6.4, s2 * 7.6, g.zSide + .25, .22, 6, C.steel, C.steel));
+    f = f.concat(tubeSmooth(-16.2, -7.4, s2 * 7.1, g.zSide + .25, .22, 6, C.steel, C.steel));
+  });
+  f = f.concat(place(tubeSmooth(0, .9, 0, 0, .5, 8, C.steel, JP.well), 0, g.xTail - 1.2, 0, g.zSill + .4));
+  f = f.concat(place(rollX(13.2, .95, JP.canvasD, lit(JP.canvasD, 1.12), 0, 0, 0), Math.PI / 2, -16.4, 0, g.zSide + .85));
+  [-4.2, 0, 4.2].forEach(function (yy) {
+    f = f.concat(place(roll(cyl(0, 0, -.25, .99, .99, .5, 10, lit(JP.canvasD, .75), lit(JP.canvasD, .75), Math.PI / 10), Math.PI / 2, 0, 0), 0, -16.4, yy, g.zSide + .85));
+  });
+  /* the axe and the shovel strapped along the driver's side under the scoop */
+  f = f.concat(tubeSmooth(-4.6, 2.2, -g.half - .3, 6.3, .2, 6, JP.wood, JP.wood));
+  f = f.concat(box(2.8, -g.half - .3, 5.4, 1.4, .12, 1.8, C.steel, C.bare, C.steel, 0));
+  f = f.concat(tubeSmooth(-4.2, 1.4, -g.half - .3, 7.3, .18, 6, JP.wood, JP.wood));
+  f = f.concat(box(-4.4, -g.half - .3, 6.7, .5, .15, 1.4, C.steel, C.bare, C.steel, 0));
+  [-3.4, .6].forEach(function (xx) {
+    f = f.concat(box(xx, -g.half - .15, 6.0, .3, .3, 1.8, C.steel, C.bare, C.steel, 0));
+  });
+  return f;
+}
+
+/* The head of the M31 pedestal and a .30 Browning M1919A4 in it: the cradle, the ammunition
+   box on its tray to the left, where the belt goes in, and the gun, a perforated jacket
+   over the barrel in front of a receiver with the pistol grip on its back plate. */
+function jeepThirty() {
+  var C = JP, f = [], gz = 1.5, i;
+  f = f.concat(cyl(0, 0, -.3, .75, .75, .9, 10, C.steel, C.bare, 0, true));
+  f = f.concat(box(0, 0, .5, 1.6, 1.4, .3, C.steel, C.bare, C.steel, 0));
+  [-1, 1].forEach(function (s) { f = f.concat(box(.1, s * .62, .55, 1.0, .18, 1.2, C.steel, C.bare, C.steel, 0)); });
+  f = f.concat(box(-.2, 0, gz - .75, 4.8, .72, 1.3, C.steel, '#4a4e3e', C.steel, 0));
+  f = f.concat(box(-.6, 0, gz + .55, 3.4, .78, .18, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(-2.3, 0, gz + .5, .35, .3, .45, C.steel, C.bare, C.steel, 0));
+  f = f.concat(tubeSmooth(2.2, 7.9, 0, gz, .52, 8, C.steel, C.steel));
+  for (i = 0; i < 6; i++) f = f.concat(tubeSmooth(2.8 + i * .85, 3.1 + i * .85, 0, gz, .56, 8, '#20221a', '#20221a'));
+  f = f.concat(tubeSmooth(7.9, 8.3, 0, gz, .3, 8, C.steel, '#17190f'));
+  f = f.concat(box(7.3, 0, gz + .45, .2, .12, .45, C.steel, C.steel, C.steel, 0));
+  f = f.concat(box(-2.75, 0, gz - .75, .3, .8, 1.3, C.steel, C.bare, C.steel, 0));
+  f = f.concat(place(pitch(box(0, 0, 0, .5, .5, 1.3, '#26251f', '#3a3d34', '#26251f', 0), .3, 0, 0), 0, -2.75, 0, gz - 2.0));
+  f = f.concat(box(-.3, -1.35, gz - 2.2, 3.3, 1.2, 2.1, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .9), .15));
+  f = f.concat(box(-.3, -1.0, gz - 2.45, 3.5, 1.7, .25, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(-.3, -.7, gz - .1, .9, .9, .12, '#b8a052', '#b8a052', '#b8a052', 0));
+  return f;
+}
+/* The M2 heavy barrel in the same cradle, the one field fitting: a receiver half as long
+   again with the spade grips and the butterfly trigger behind it, the perforated
+   barrel support, and a heavy barrel reaching a metre and a quarter past it. */
+function jeepFifty() {
+  var C = JP, f = [], gz = 1.5, i;
+  f = f.concat(cyl(0, 0, -.3, .75, .75, .9, 10, C.steel, C.bare, 0, true));
+  f = f.concat(box(0, 0, .5, 1.6, 1.4, .3, C.steel, C.bare, C.steel, 0));
+  [-1, 1].forEach(function (s) { f = f.concat(box(.1, s * .78, .55, 1.0, .18, 1.2, C.steel, C.bare, C.steel, 0)); });
+  f = f.concat(box(.8, 0, gz - .95, 7.0, 1.2, 1.75, C.steel, '#4a4e3e', C.steel, .12));
+  f = f.concat(box(.4, 0, gz + .8, 4.6, 1.26, .2, C.steel, C.bare, C.steel, 0));
+  f = f.concat(tubeSmooth(4.3, 5.8, 0, gz, .62, 8, C.steel, C.steel));
+  for (i = 0; i < 3; i++) f = f.concat(tubeSmooth(4.5 + i * .45, 4.72 + i * .45, 0, gz, .66, 8, '#20221a', '#20221a'));
+  f = f.concat(tubeSmooth(5.8, 15.3, 0, gz, .36, 8, C.steel, C.steel));
+  f = f.concat(tubeSmooth(15.3, 16.0, 0, gz, .42, 8, C.steel, '#17190f'));
+  f = f.concat(box(6.6, 0, gz + .36, 1.4, .2, .7, C.steel, C.bare, C.steel, 0));      /* the carrying handle */
+  f = f.concat(box(15.6, 0, gz + .4, .2, .12, .4, C.steel, C.steel, C.steel, 0));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(-3.0, s * .95, gz - 1.1, .45, .45, 1.5, '#26251f', '#3a3d34', '#26251f', 0));   /* the spade grips */
+    f = f.concat(box(-2.75, s * .5, gz - .5, .5, 1.0, .3, C.steel, C.bare, C.steel, 0));
+  });
+  f = f.concat(box(-2.8, 0, gz - .7, .3, .5, .5, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(1.0, -1.75, gz - 2.3, 3.6, 1.8, 2.2, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .9), .15));
+  f = f.concat(box(1.0, -1.4, gz - 2.55, 3.8, 2.3, .25, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(1.0, -.9, gz - .2, 1.3, 1.1, .14, '#b8a052', '#b8a052', '#b8a052', 0));
+  return f;
+}
+/* The crew, who are the jeep's own and not part of its sheet metal: the driver at the
+   wheel and a man beside him, drawn with the hull, and the gunner standing to the
+   pedestal, drawn with the mount. They are kept apart from both because a jeep that
+   burns leaves its men on the ground beside it rather than sitting in the wreck. The
+   hands are put on the wheel and the grips the way a gunner's are put on his piece: the
+   figure is built once, read back, and built again with the grips corrected by the
+   inverse of the lean it was given. */
+function jeepMan(P0, want, x, y, zf) {
+  var P = { legs: P0.legs, lean: P0.lean, carry: 'grips', grips: P0.grips, pole: P0.pole };
+  var r = manFaces('gi_crew', P);
+  if (want) {
+    var c = Math.cos(P0.lean), sn = Math.sin(P0.lean), dz = want[2] - r.lift;
+    P = { legs: P0.legs, lean: P0.lean, carry: 'grips', pole: P0.pole, grips: [want[0] * c - dz * sn, want[1], want[0] * sn + dz * c] };
+    r = manFaces('gi_crew', P);
+  }
+  return { faces: place(r.faces, 0, x, y, zf), eye: [r.eye[0] + x, r.eye[1] + y, r.eye[2] + zf], lift: r.lift, joints: r.joints };
+}
+var JPSEAT = { legs: [[1.9, -1.65, -.25], [1.9, -1.65, -.25]], lean: .02 };
+function jeepCrew() {
+  var g = JPG, f = [], dx = g.xHip;
+  /* where the hands go, in the seated man's own frame, which stands on his soles */
+  var drv = jeepMan({ legs: JPSEAT.legs, lean: JPSEAT.lean, grips: [4.6, 2.4, 1.6], pole: [-.3, .45, -1] }, [g.hub[0] - dx, 2.45, g.hub[2] - g.zFloor], dx, g.hub[1], g.zFloor);
+  f = f.concat(drv.faces);
+  f = f.concat(jeepMan({ legs: JPSEAT.legs, lean: .08, grips: [4.2, 1.45, 2.3], pole: [-.4, .25, -1] }, null, dx - .1, 4.3, g.zFloor).faces);
+  JPG.drvLift = drv.lift;
+  return f;
+}
+function jeepGunner() {
+  var g = JPG, zf = g.zFloor - g.zMount, mx = -6.1;
+  var m = jeepMan({ legs: [[.28, -.42, .14], [-.12, -.18, .06]], lean: .2, grips: [3.0, .85, 3.0], pole: [-.2, .7, -1] },
+                  [-3.1 - mx, .85, 1.1 - zf], mx, 0, zf);
+  JPG.gEye = m.eye;
+  return m.faces;
+}
+
 /* ================================================================ crewed weapons
    Each at 8.5 cm to the unit, drawn as it stood in the line. */
 var GUN = { steel: '#34382f', steelL: '#4a4e43', brass: '#8a7a48', canvas: '#7f7654', wood: '#5a4630',
@@ -24914,6 +25358,13 @@ VIN.us_sher = function (V) {
            hole: { x: hx, y: hy, z: zr + .25, r: hr - .15 },
            dbg: { sill: sill, roof: roof, eye: eye } };
 };
+/* The jeep has no inside to draw: it is open, and the eye is the gunner's own, standing to
+   the pedestal with the gun in front of him and the two men in the seats below. The room
+   is nothing at all, and nothing is hidden but the gunner, who is the player. */
+VIN.am_jeep = function (V) {
+  var e = JPG.gEye || [-5.2, 0, 8.4], at = { x: e[0], y: 0, z: e[2] };
+  return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
+};
 function buildVehicleModels() {
   var us = '#586247', usC = '#798366', usS = '#424a35';
   var gr = '#88784e', grC = '#a18f61', grS = '#675d40';
@@ -24965,6 +25416,13 @@ function buildVehicleModels() {
                       turUp: { thirty: carrierThirty(UC.od, UC.odLit) }, barUp: { thirty: { bar: 12, gunZ: 0 } },
                       bar: 11, big: 0, scale: 1, mountZ: UCG.zSide - 4.0, gunZ: 0,
                       turX: UCG.xFront + 5.0, turY: 5.8, belly: UCG.zFloor };
+  /* crew and turCrew: the men, on the hull and on the mount, kept out of both so that a
+     jeep that burns leaves them on the ground rather than sitting in the wreck. soft: the
+     wreck neither throws a mount nor sits down a tank's depth on its belly */
+  VMODEL.am_jeep  = { hull: jeepHull(JP.od, JP.odLit, JP.odDark), tur: jeepThirty(), turUp: { fifty: jeepFifty() },
+                      barUp: { fifty: { bar: 16.0, gunZ: 1.5 } }, crew: jeepCrew(), turCrew: jeepGunner(),
+                      bar: 8.3, big: 0, soft: 1, scale: 1, mountZ: JPG.zMount, gunZ: 1.5,
+                      turX: JPG.xPost, turY: 0, belly: JPG.zDiff };
   VMODEL.ger_sd222 = { hull: sdkfz222Hull(PZ.body, PZ.lit, PZ.dark), tur: sd222TurretMG(PZ.body, PZ.lit),
                       turUp: { kwk: sd222Turret20(PZ.body, PZ.lit) }, barUp: { kwk: { bar: 27, gunZ: 3.3 } }, bar: 13,
                       big: 0, scout: 1, scale: 1, mountZ: sd222At(-1.0, 'zD'),
@@ -24983,7 +25441,7 @@ function buildVehicleModels() {
        made the whole tank darker. The mount goes where `mountPose` puts it. */
     var mz = vm.mountZ || 0, mx = vm.turX || 0, my = vm.turY || 0;
     function cut(o, key) { if (o && o[key]) o[key] = aoSplit(o[key], AOSPLIT); }
-    cut(vm, 'hull'); cut(vm, 'tur'); cut(vm, 'mg'); cut(vm, 'skirts'); cut(vm, 'turSkirts');
+    cut(vm, 'hull'); cut(vm, 'tur'); cut(vm, 'mg'); cut(vm, 'skirts'); cut(vm, 'turSkirts'); cut(vm, 'crew'); cut(vm, 'turCrew');
     if (vm.turUp) for (uk in vm.turUp) cut(vm.turUp, uk);
     if (vm.mgUp) for (uk in vm.mgUp) cut(vm.mgUp, uk);
     if (vm.addUp) for (uk in vm.addUp) cut(vm.addUp, uk);
@@ -24992,6 +25450,7 @@ function buildVehicleModels() {
     }
     put(vm.hull, 0, 1); put(vm.tur, 1, 1); put(vm.mg, 1, 1);
     put(vm.skirts, 0, 1); put(vm.turSkirts, 1, 1);
+    put(vm.crew, 0, 0); put(vm.turCrew, 1, 0);
     if (vm.turUp) for (uk in vm.turUp) put(vm.turUp[uk], 1, 0);
     if (vm.mgUp) for (uk in vm.mgUp) put(vm.mgUp[uk], 1, 0);
     if (vm.addUp) for (uk in vm.addUp) put(vm.addUp[uk], 0, 0);
@@ -25693,6 +26152,9 @@ var SOLDIER_VARIANTS = {
      straps, has hessian through his net and a field dressing tucked into it */
   gi_rifle:     { side: 'us', nat: 'usa', weapon: 'garand', set: 'field' },
   gi_rifle_b:   { side: 'us', nat: 'usa', weapon: 'garand', band: 1, nades: 1, packet: 1, scrim: 1, set: 'field' },
+  /* the American who rides: a jeep's driver, the man beside him and the gunner at the
+     pedestal, in the rifleman's kit with nothing in his hands but the vehicle */
+  gi_crew:      { side: 'us', nat: 'usa', weapon: 'none', set: 'hull' },
   /* the Heer grenadier, three ways: the rifleman in marching boots with a strap round his
      helmet and the mess tin on his bread bag; the rifleman in ankle boots and gaiters with
      chicken wire and foliage on his helmet, the assault frame on his back and two stick
@@ -26105,9 +26567,12 @@ function manFaces(variant, P) {
     anchors.muzzle = C.L.at(W.muzzle);
     anchors.bore = C.L.at([W.muzzle[0] - 3, W.muzzle[1], W.muzzle[2]]);
   } else {
-    var g = P.grips || [3.0, 1.7, 1.7];
-    arm(figArm(rS, [g[0], g[1], g[2]], [0, 1, -.6], k, coat, cmat, 1, 0, undefined, AR));
-    arm(figArm(lS, [g[0], -g[1], g[2]], [0, -1, -.6], k, coat, cmat, -1, patch, undefined, AR));
+    /* `pole` is which way the elbows go: out by default, which is right for a gunner with
+       his hands spread on a piece, and down for a man sitting with his hands in front of
+       him, whose elbows otherwise stick out past the side of the vehicle he is in */
+    var g = P.grips || [3.0, 1.7, 1.7], pl = P.pole || [0, 1, -.6];
+    arm(figArm(rS, [g[0], g[1], g[2]], [pl[0], pl[1], pl[2]], k, coat, cmat, 1, 0, undefined, AR));
+    arm(figArm(lS, [g[0], -g[1], g[2]], [pl[0], -pl[1], pl[2]], k, coat, cmat, -1, patch, undefined, AR));
   }
 
   /* The head is counter-pitched about the chin by the lean it is about to be given, so
@@ -26552,6 +27017,7 @@ function buildModels() {
     var M = { hull: facesToBuffer(V.hull), tur: facesToBuffer(V.tur),
               mg: V.mg ? facesToBuffer(V.mg) : null, skirts: V.skirts ? facesToBuffer(V.skirts) : null,
               turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, mgUp: {},
+              crew: V.crew ? facesToBuffer(V.crew) : null, turCrew: V.turCrew ? facesToBuffer(V.turCrew) : null,
               hatch: HATCHES[k] ? facesToBuffer(HATCHES[k].shut) : null,
               cmdr: HATCHES[k] ? facesToBuffer(HATCHES[k].open) : null,
               leaf: HATCHES[k] ? facesToBuffer(HATCHES[k].leaf) : null };
@@ -28041,6 +28507,8 @@ function castUnit(u) {
     var tm2 = m4model(mx, my, gz + mp0.z, u.turret, 1);
     var duk = mountUp(u), dk;
     drawDepthGeom(duk && B.turUp[duk] ? B.turUp[duk] : B.tur, tm2);
+    if (B.crew) drawDepthGeom(B.crew, m4model(u.x, u.y, gz, u.facing, 1));
+    if (B.turCrew) drawDepthGeom(B.turCrew, tm2);
     if (u.up) for (dk in u.up) if (u.up[dk] && B.addUp[dk]) drawDepthGeom(B.addUp[dk], m4model(u.x, u.y, gz, u.facing, 1));
     secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawDepthGeom(sb, tm2); });
     if (u.up && u.up.skirts) { if (B.skirts) drawDepthGeom(B.skirts, m4model(u.x, u.y, gz, u.facing, 1)); if (B.turSkirts) drawDepthGeom(B.turSkirts, tm2); }
@@ -28133,6 +28601,9 @@ function drawUnits3D(v, list) {
       var cuk = mountUp(u), ak, povHost = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
       var shut = u === povHost && !POV.hatch && M.inside && M.inside.hide;
       if (shut !== 'tur') drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
+      /* the men riding in an open vehicle; in the periscope the one at the gun is the player */
+      if (B.crew) drawGeom(B.crew, hmat, false, vt);
+      if (B.turCrew && u !== povHost) drawGeom(B.turCrew, tmat, false, vt);
       if (u === povHost && POV.hatch) drawHole(u, M.fixed ? hmat : tmat);
       /* anything bolted to the hull by a fitting: the medic's marks, an MG shield, a
          periscope. Drawn with the hull, whatever the mount is doing. */

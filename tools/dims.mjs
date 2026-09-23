@@ -84,6 +84,11 @@ const REAL = {
                whether the thing reads as a StuG or as a box. 5.93 m is the Panzer IV hull; the 6.70 m
                over the gun is what every table gives for the StuG IV */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
+  am_jeep:   { name: 'Willys MB',           len: 3.36,  gun: 3.36,   wid: 1.575, hgt: 1.016,
+               clear: 0.222 },   /* 132.25 in long, 62 in over the front wings, 8.75 in under the
+               differentials; the height is the 40 in it is reducible to with the windscreen folded
+               flat on the bonnet, which is how it is built, and the steering wheel, the pedestal
+               and the men standing up out of it are no more part of that than an aerial is */
   us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
                body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
                7 ft 5 in to the top of the M49 ring mount, 11.25 in of clearance */
@@ -122,6 +127,8 @@ const PROBE = {
                tools or fender bolts hung on the outside */
   us_m8:     { topZ: 4.0, hullZ: 18.4 },   /* an open vehicle is measured to its plate, not to
                the top of the man standing in it */
+  am_jeep:   { noMount: true, hullZ: 12.0 },   /* the mount is a gun on a post, and hullZ holds the
+               steering wheel, the rolled hood and the top of the spare out of the folded height */
   us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
                above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */
   ger_h251:  { topZ: 0.4, hullZ: 21.0, bodyZ: 15.0, xLo: -28.0, xHi: -25.0, straddle: true },   /* the slice
@@ -218,7 +225,7 @@ const measured = await page.evaluate(probe => {
        filter reliably separates the hull floor from the track running under it: on
        every one of these the track's inboard edge lies inside the hull's own width. */
     out[k] = { len: hx1 - hx0, gun: Math.max(hx1, tx + tx1) - hx0, wid: hy * 2,
-               hgt: Math.max(hz, V.mountZ + tz),
+               hgt: pr.noMount ? hz : Math.max(hz, V.mountZ + tz),
                body: pr.bodyZ ? widthAt(pr.bodyZ, 1.0) : null,
                roof: pr.roofZ ? widthAt(pr.roofZ, 0.45) : null,
                clear: V.belly === undefined ? null : V.belly };

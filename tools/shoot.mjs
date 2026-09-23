@@ -639,6 +639,9 @@ const SCENES = {
           await page.evaluate(a => {
             const v = window.G.units[0];
             v.facing = a.face; v.turret = a.face; v.recoil = 0; v.moving = false;
+            /* vehFrames keeps the matrices it built for as long as G.t stands still, and
+               the stage is paused, so without this every view is the first one again */
+            v._matT = -1;
           }, { face: CAM_YAW + turn });
           await camera(page, { x: spot.x, y: spot.y, dist, yaw: CAM_YAW, pitch });
           if ((await drawable(page)).units === 0) console.error(`  WARNING: ${key} is not in the draw list`);

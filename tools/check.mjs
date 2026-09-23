@@ -3193,6 +3193,58 @@ for (const device of TARGETS) {
      `asked for an FJ group it queues ${ng.qFj}; a man killed ${ng.fell ? 'went down' : 'DID NOT go down'} as ${ng.fellNat}, ` +
      `German bodies ${ng.bodies ? 'baked' : 'MISSING'}; Ortona's German button reads ${natB.backGer}`);
 
+  /* --- The jeep. The Americans' light vehicle on the beach is the jeep, standing in for the
+     carrier the way the squad stands in for the section: the motor pool turns it out and
+     refuses the carrier, a brain asking after the carrier -- one out of an older revision
+     on the skirmish card -- counts and orders the jeep, the men riding in it are drawn
+     with it and are not in its wreck, a wreck never throws the gun off the pedestal the
+     way a tank throws a turret, and the eye in the periscope is the gunner's, standing to
+     the gun. Forty deaths are asked for the throw, because one is a coin with the old rule
+     showing heads four times in five. The Italian table still has the carrier. --- */
+  const jp = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_jeep');
+    out.qCar = W.queueUnit(mot, 'us_m8') ? mot.queue.slice(-1)[0] : 'refused';
+    out.madeJ = W.madeOf('us', 'am_jeep') - m0;
+    out.madeAsCar = W.madeOf('us', 'us_m8') === W.madeOf('us', 'am_jeep');
+    mot.queue.length = q0;
+    const j = W.spawnUnit('us', 'am_jeep', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_m8'); out.countJ = W.countOf('us', 'am_jeep');
+    const B = W.MODELS.veh.am_jeep;
+    out.crew = B && B.crew ? B.crew.n : 0; out.gunner = B && B.turCrew ? B.turCrew.n : 0;
+    W.povOn(j);
+    const e = W.povEye();
+    out.eye = +(e.z - W.groundZ(j.x, j.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(j); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(j);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' light vehicle is the jeep, with its crew riding in it and none of them in the wreck',
+     /am_jeep/.test(jp.makes) && !/us_m8/.test(jp.makes) && jp.qCar === 'am_jeep' && jp.madeJ === 1 && jp.madeAsCar &&
+     jp.count >= 1 && jp.count === jp.countJ && jp.crew > 0 && jp.gunner > 0 && jp.eye > 22 && jp.eye < 29 &&
+     jp.blown === 0 && jp.sink < 1.7 && jp.bodies === 2 && jp.bodyNat === 'usa' && /us_m8/.test(jp.ita) && !/am_jeep/.test(jp.ita),
+     `the motor pool makes ${jp.makes}; asked for a carrier it queues ${jp.qCar}, counted as ${jp.madeJ} jeep made and the ` +
+     `carrier's count ${jp.madeAsCar ? 'the same' : 'DIFFERENT'}; ${jp.count} on the field asked as the carrier and ${jp.countJ} ` +
+     `as the jeep; crew ${jp.crew} vertices seated and ${jp.gunner} at the gun; the periscope's eye ${jp.eye} up; ` +
+     `${jp.blown} of 40 wrecks threw the gun, sat down at most ${jp.sink}; killed, it left ${jp.bodies} bodies of ${jp.bodyNat}; ` +
+     `Ortona's motor pool makes ${jp.ita}`);
+
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot

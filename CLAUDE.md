@@ -4,9 +4,9 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad and the grenadier squad are the first, and everything else either side fields
-there is still the Italian roster). Custom WebGL2 renderer, no engine, no dependencies, no
-build step.
+rifle squad, the grenadier squad and the jeep are the first, and everything else either
+side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
 **The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
@@ -99,6 +99,11 @@ node tools/dims.mjs ger_kt       # one
 node tools/dims.mjs --tol=3      # tighten the tolerance to 3 per cent
 node tools/dims.mjs --base=HEAD  # measure an older file instead
 ```
+
+**`noMount` on a probe leaves the mount out of the height altogether**, which a height cap
+cannot do: the height is the hull's or the mount's top added to `mountZ`, whichever is
+higher, so a cap that drops every face of the mount still leaves `mountZ` standing. The
+jeep's gun stands on a post two metres up and no published height is measured to it.
 
 **`--base` is there because the tool could only ever open the working file**, so it could
 say whether a model is the right size and never whether a change made it a different size.
@@ -850,7 +855,8 @@ knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitte
 became a board of orders, 1800 before three more German pieces, 1815 before a third map,
 1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
-before the American army, and 2000 before the German army on the same beach). Takes
+before the American army, 2000 before the German army on the same beach, and 2030 before
+the jeep). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1022,6 +1028,11 @@ the fire trench are grenadier squads of six in all three variants and none of th
 paratroopers, its headquarters makes the grenadier squad and queues it when asked for the FJ
 group, its brain bought grenadiers and no paratroopers in the wall row's minute of battle, a
 man of it goes down as the 352nd, and Ortona's German button reads Fallschirmjäger again.
+And the jeep is asked the same in a third: the motor pool makes it and not the carrier and
+queues it when asked for the carrier, the count and the order book read the carrier and the
+jeep as one, its crew are baked, the periscope's eye is the gunner's at twenty-odd units up,
+forty wrecks throw the gun off the pedestal none of the time and sit down under 1.7 units,
+killed it leaves two American bodies, and Ortona's motor pool still makes the carrier.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3128,6 +3139,52 @@ round and 275 of reach beat the American squad 88 per cent of the time, the Cana
 man and 250 of manpower it wins 46 per cent against the American squad over forty-eight runs,
 50 against the Canadian section and 38 against the FJ group: level with the army it meets and
 a step behind the veterans it stands in for.
+
+**The jeep is the Americans' light vehicle**, in the carrier's place (`us_m8` to `am_jeep`
+on the army's list): a Willys MB with the windscreen folded flat on the bonnet under a canvas
+cover, which is how it went into action, and a .30 on the M31 pedestal behind the front
+seats. It is pressed sheet over a ladder frame and built that way (`jeepHull`): a flat bonnet
+narrower than the body, flat wings with their outer edges turned down and their fronts
+falling to the grille, the nine-slot grille with the headlamps in its top corners, the open
+tub with a scoop cut down each side and an arch over each rear wheel, combat wheels on 6.00-16
+bar-tread tyres, the spare and a jerrican on the tail, the axe and the shovel along the
+driver's side and the hood rolled over the rear seat. **The side of the tub is laid in bands
+between stations** (`jeepSide`, off `jeepTop` and `jeepBot`), because the scoop and the arch
+make the outline concave and `facesToArray` fans a polygon from its first vertex. On
+`tools/dims.mjs` it reads 3.37 m long against 3.36, 1.57 wide against 1.57, 1.02 high against
+the 40 in it folds to, and 0.22 of clearance under the differentials.
+
+**Its men are the vehicle's own and not its sheet metal.** `VMODEL[k].crew` rides on the hull
+and `turCrew` on the mount, each a buffer of its own that `drawUnits3D` and `castUnit` draw
+for a live vehicle and `drawWrecks3D` never sees, so a jeep that burns leaves two bodies
+beside it rather than three men sitting in the wreck. The driver's hands are on the wheel
+and the gunner's on the grips by the two-pass correction `bakeGunners` uses (`jeepMan`), in
+a crewman variant of the rifleman's kit (`gi_crew`); `manFaces` takes a `pole` on a grips
+pose now, because a seated man's elbows poled outward stood out past the side of the jeep.
+The periscope's eye is the gunner's (`VIN.am_jeep`), and the gunner is not drawn for the
+player looking out of him. `VMODEL.soft` is the wreck's half: a soft-skinned car never
+throws its mount the way a tank throws a turret and sits down on its rims rather than a
+tank's depth onto its belly.
+
+**Its numbers come off the duel card, and its plate is not plate.** At no armour at all it
+lost every fight with either German squad inside nine seconds; at 26 it won every one,
+because a squad whose fire is thinned is a squad the .30 keeps down. The 21 it carries
+stands for a rifle round going in one side and out of the other without finding the engine
+or a man, and against anything firing a belt it is nothing. At 270 hit points, 150 marks and
+15 of fuel it wins 44 per cent against the grenadier squad and 25 against the FJ group over
+sixteen runs, and never against the Sd.Kfz. 222, whose plate the .30 cannot open. **The .50
+is reach and penetration and nothing more against men**: given more damage than the .30 it
+won every fight with a squad, because the whole card sits on the knife edge the .30 is
+balanced at, so it deals what the .30 deals per second at 320 of reach and 70 of
+penetration, and reads 56 per cent against the grenadiers.
+
+**And the brain's shopping list is written in the first roster and bought in the map's.**
+`LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
+weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
+`madeOf` read their key through `natKey` as well, because a brain out of an older revision on
+the skirmish card asks after the carrier: with the counts keyed on what was actually bought,
+it was given a jeep for every carrier it ordered and bought them for ever against a count
+that never moved.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -5308,6 +5365,11 @@ shots/                         screenshot output, gitignored
   hedgerow's `hogg` mark sat two blocks above `hogg.fill(0)` in `rebuildGrid` and every
   tank on Omaha drove through the bocage at the price of open ground. Read the order of a
   function before adding a mark to it.
+- **A paused stage keeps the vehicle matrices it built.** `vehFrames` caches the hull and
+  mount matrices for as long as `G.t` stands still, and a photograph stage is paused, so
+  turning a vehicle under a fixed camera turned nothing: every view of the reference sheet
+  was the first one again. Clear `u._matT` when a probe moves a vehicle that is not being
+  simulated.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

@@ -213,10 +213,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    gaiter), the M42 helmet with its chicken wire and foliage on a tile of its own, the
    Kar98k cut as a side profile the way the Garand is, and the German half of the army
    table.
+   It is 2030 for the jeep: the Willys MB pressed out of sheet a panel at a time (the bonnet
+   and wings, the nine-slot grille, the tub with its scoops and arches, the combat wheels
+   with their bar tread, the folded screen, the spare and the jerrican), the .30 and the
+   .50 on the M31 pedestal, and the three men who ride in it.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2000) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2000 kB so it stays quick to load on a phone`);
+if (kb > 2030) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2030 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
