@@ -3510,6 +3510,92 @@ for (const device of TARGETS) {
      `settled inside each other, ` +
      thread.rest.map(r => `${r.key} ends ${r.markers} off with ${r.inside} of ${r.live} men inside the other`).join(', '));
 
+  /* --- And a gun in action is not shouldered aside. It moves when its crew have packed
+     it and not before, and a push is a move: weighed like any three men, a set-up MG42 in
+     a Tobruk at the Vierville exit was carried 232 units down the draw and onto the sand
+     by a section of its own side walking through it, on one battle in six, and the manned
+     wall row failed on it. Staged here, because a battle only finds it when a route
+     happens to run through a gun: a section walked straight through a set-up MG42 at
+     three offsets and through a Pak 40, then both again down a lane, with the same walks
+     and no gun as the controls, and a section spawned standing on the gun, which still has
+     to come off it. Before the fix the gun was shoved 81, 111 and 275 units and the Pak
+     111 in the open, and 271 and 282 down the lane, still in action. The lane is also
+     where the first fix failed the other way: a gun that pushed back at full strength
+     held a section up behind it for good. --- */
+  const plant = await page.evaluate(() => {
+    const W = window, G = W.G, keep = G.units.slice();
+    G.units.length = 0;
+    let sx = 0, sy = 0, found = false;
+    for (let ty = 400; ty < W.WORLD.h - 400 && !found; ty += 40)
+      for (let tx = 400; tx < W.WORLD.w - 400 && !found; tx += 40) {
+        let good = true;
+        for (let a = -260; a <= 260 && good; a += 20)
+          for (let b = -100; b <= 100 && good; b += 20)
+            if (!W.walkable(tx + a, ty + b)) good = false;
+        if (good) { sx = tx; sy = ty; found = true; }
+      }
+    if (!found) { sx = W.WORLD.w / 2; sy = W.WORLD.h / 2; }
+    const put = (side, key, x, y, f) => {
+      const u = W.spawnUnit(side, key, x, y, f);
+      const c = Math.cos(f), s2 = Math.sin(f);
+      if (u.models) for (const m of u.models) { m.x = u.x + m.ox * c - m.oy * s2; m.y = u.y + m.ox * s2 + m.oy * c; }
+      return u;
+    };
+    const gunUp = g => { g.setup = 0; g.pack = 0; g.packed = false; };
+    /* the open ground, and a lane: sixty units of it between two solid blocks, which is
+       where the push used to win -- a section braked by its own steering to a third of
+       its pace behind a gun that would not give way stood there for good */
+    const run = (gunKey, lat, lane) => {
+      G.units.length = 0;
+      let ly = sy + lat, wy = sy;
+      if (lane) { W.blockRect(sx, sy - 60.5, 500, 79, 0); W.blockRect(sx, sy + 80, 500, 80, 0); W.buildRoom(); ly = wy = sy + 10; }
+      const g = gunKey ? put('ger', gunKey, sx, ly, Math.PI / 2) : null;
+      if (g) gunUp(g);
+      const A = put('ger', 'ger_gren', sx - 220, wy, 0), go = { x: sx + 220, y: wy };
+      A.order = 'move'; A.path = [go]; A.pi = 0; A.pathStamp = W.gridStamp;
+      let t = 0, far = 0;
+      for (let i = 0; i < 1800; i++) {
+        G.t += 1 / 60; t += 1 / 60;
+        W.updateUnit(A, 1 / 60);
+        if (g) { W.updateUnit(g, 1 / 60); far = Math.max(far, Math.hypot(g.x - sx, g.y - ly)); }
+        if (Math.hypot(A.x - go.x, A.y - go.y) < 30) break;
+      }
+      const r = { gun: gunKey, lat, lane: !!lane, secs: +t.toFixed(2), arrived: Math.hypot(A.x - go.x, A.y - go.y) < 30,
+                  shoved: +far.toFixed(1), set: g ? !g.packed && !(g.setup > 0) && !(g.pack > 0) : true,
+                  room: lane ? Math.round(W.roomAt(sx, ly) * 2) : null };
+      G.units.length = 0;
+      if (lane) W.rebuildGrid();
+      return r;
+    };
+    const solo = run(null, 0), laneSolo = run(null, 0, true);
+    const through = [0, 20, 40].map(l => run('ger_mg42', l)).concat([run('ger_pak', 0)]);
+    const lanes = [run('ger_mg42', 0, true), run('ger_pak', 0, true)];
+    G.units.length = 0;
+    const g2 = put('ger', 'ger_mg42', sx, sy, 0); gunUp(g2);
+    const B = put('ger', 'ger_gren', sx + 6, sy + 4, 0);
+    for (let i = 0; i < 480; i++) { G.t += 1 / 60; W.updateUnit(B, 1 / 60); W.updateUnit(g2, 1 / 60); }
+    const rest = { depth: +W.sepDepth(B, g2).toFixed(1), moved: +Math.hypot(g2.x - sx, g2.y - sy).toFixed(1),
+                   apart: +Math.hypot(B.x - g2.x, B.y - g2.y).toFixed(1) };
+    G.units.length = 0;
+    keep.forEach(e => G.units.push(e));
+    W.rebuildGrid();
+    return { found, solo, laneSolo, through, lanes, rest };
+  });
+  const gunName = r => `${r.gun === 'ger_pak' ? 'Pak 40' : 'MG42'}`;
+  ok('a gun in action is not shoved off its ground by men walking through it',
+     plant.found && plant.solo.arrived && plant.laneSolo.arrived &&
+     plant.through.every(r => r.arrived && r.shoved < 1 && r.set && r.secs < plant.solo.secs * 2) &&
+     plant.lanes.every(r => r.arrived && r.shoved < 1 && r.set && r.secs < plant.laneSolo.secs * 2) &&
+     plant.rest.depth === 0 && plant.rest.moved < 1,
+     (plant.found ? '' : 'NO CLEAR CORRIDOR FOUND; ') +
+     `a section walks 440 units in ${plant.solo.secs}s alone; past a set-up ` +
+     plant.through.map(r => `${gunName(r)} at ${r.lat} it takes ${r.secs}s and the gun is ` +
+       `shoved ${r.shoved} units${r.set ? '' : ' and OUT OF ACTION'}`).join(', ') +
+     `; down a lane ${plant.lanes[0].room} wide it takes ${plant.laneSolo.secs}s alone and ` +
+     plant.lanes.map(r => `${r.secs}s through a ${gunName(r)}, shoved ${r.shoved}${r.set ? '' : ' and OUT OF ACTION'}`).join(' and ') +
+     `; a section spawned standing on the gun ends ${plant.rest.apart} off it, overlapping by ${plant.rest.depth}, ` +
+     `with the gun moved ${plant.rest.moved}`);
+
   /* --- And a weapon pit is a HOLE. This is the shape of fault a photograph is worst at:
      a horseshoe of bags on flat grass and a horseshoe of bags round a pit are the same
      picture from above, so the bags drew, the cover indexed, the crew stood in it, and

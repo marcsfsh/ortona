@@ -975,7 +975,13 @@ over the same span of open ground beside it, which is the natural roll of the co
 stays flat whatever the carve does -- with the refusal that matters, which is that a pit a
 crew cannot stand in is worse than no pit. The control skips a point that has anything dug
 in it, because three battles have been fought on the map by the time the row runs and a
-shell hole read as the control says the country is as broken as the pit.
+shell hole read as the control says the country is as broken as the pit. A third walks a
+section of its own side through a set-up gun, an MG42 at three offsets and a Pak 40 in the
+open and both again down a lane sixty units wide made for the row out of two solid blocks:
+the gun has to be where it was set up and still in action, the walk has to cost under
+twice what it costs with nothing in the way, and a section spawned standing on the gun
+still has to come off it. The lane is there because the open ground passed a fix that
+stopped the traffic dead in a street.
 
 **And three rows ask the third map its own questions.** The first is the corridor: that a
 draw is the only way armour gets off the beach and a man climbs the bluff wherever he
@@ -1622,6 +1628,38 @@ On the motion drills, that section walking past a tank went from 198 reversals, 
 0.0113 on clean open ground, so the rise from meeting a tank is 1.4x rather than 19x. A
 Sherman driving through three sections went from a jerk of 0.0711 and 200 units of drift to
 0.0233 and 18.
+
+**And a gun that is out of the pack gives no ground.** `unwedge` weighed a set-up machine
+gun like any three men, so a section of its own side walking through it carried it along.
+The manned wall's gate row failed on it: replayed six times, a grenadier section walking
+down the Vierville draw took the MG42 out of its Tobruk and 232 units over the seawall onto
+the sand once in six, and on the commit before the American army the same replay read the
+same one in six at 467 units, the gun in action the whole way. A push is a move, and the
+pack rule says a piece moves when its crew have packed it, so `planted(u)` is a
+crew-served weapon that is out of the pack (in action, or being taken down) or one that
+never moves, and nothing pushes it. Staged, a section walked through a set-up MG42 at three
+offsets shoved it 81, 111 and 275 units and a Pak 40 111; down a lane sixty units wide, 271
+and 282. It is nought in all of them now.
+
+**The first version of that fix held the traffic up behind the gun.** It made the gun push
+back at full strength, and in a street that is a wall: a section braked by its own steering
+to a third of its pace was shoved back at the push's floor of twenty-two units a second,
+which is faster, and the movement card's stuck unit-frames went from 0.13 per cent to 23
+with a section, a Pak on the move and an armoured car queued behind one MG42 for the rest
+of the battle. So a unit on its way somewhere is not pushed by a planted gun at all: it
+steers round where there is room and steps through the crew where there is not, and only a
+unit that has stopped on top of a gun is put off it. Down the lane that walk takes 11.9
+seconds past the MG42 and 12.7 past the Pak, against 7.9 with nothing in the way and 16.5
+and 17.3 while it was carrying the gun. On the movement card's traffic section, over five
+battles on the fix and six on the commit before it, stuck unit-frames read 0 to 3.68 per
+cent against 0.13 to 2.90, means of 1.3 and 1.5, and the worst of both is the same section
+at the same corner of the town beside the same MG42.
+
+The same drill with a halted SECTION where the gun was carries it 175 to 277 units, on this
+file and on the one before it, and it is left as it is: that is the resting push between
+two bodies of men, the question `unwedge` exists to answer, and what a walker does to a
+halted section is a change to every contact in the game. It is the next thing to look at
+if sections are seen being walked off their ground.
 
 **A burnt-out hull is in the way.** `killUnit` puts a wreck on the movement grid as well
 as adding it as cover, so a lane blocked by a burning Panzer is blocked. It stops a boot
@@ -5397,6 +5435,14 @@ shots/                         screenshot output, gitignored
   frames where it fired. Bound any correction by what the thing being corrected actually
   managed, and read that off the unit rather than a local: six early returns sit above the
   line at the foot of `moveUnit` where a local would be written.
+- **A thing nothing can push is a wall across a lane unless it says what happens to
+  whatever is pushing on it.** A set-up gun made immovable by weight pushed back on the
+  section walking into it at the separation push's floor of twenty-two units a second,
+  while that section's own steering had braked it to a third of its pace: in a street the
+  section stood behind the gun for good, and stuck unit-frames on the movement card went
+  from 0.13 per cent to 23. The open-ground drill passed that fix, which is why the gate
+  row stages a lane as well. What is on its way somewhere passes a planted gun; what has
+  stopped on one is put off it.
 - **A body derived from a bounding box has empty corners, and a formation is nearly all
   corner.** A section's contact box is 106 by 66 laid over three files of 11-unit discs, so
   two sections whose boxes touch can have forty units of clear ground between their nearest

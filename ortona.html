@@ -5544,6 +5544,16 @@ function sepMass(u) {
   unitBody(u);
   return u.cat === 'veh' ? u.bodyL * u.bodyW : aliveModels(u) * 9;
 }
+/* And a gun that is out of the pack is not shouldered aside by anything. A tripod on
+   the ground, a trail spread and spaded in, a piece being taken down: it moves when its
+   crew have packed it and not before, which is the whole of the pack rule, and a push is
+   a move. Weighed like any three men, a set-up MG42 in a Tobruk at the Vierville exit was
+   carried 232 units down the draw, over the seawall and onto the sand by a section of its
+   own side walking through it, still in action the whole way, on one battle in six. The
+   gun is never pushed; what has stopped on top of it takes the whole of the push. */
+function planted(u) {
+  return u.cat === 'team' && (!u.def.speed || (!!u.def.pack && !u.packed && !(u.setup > 0)));
+}
 /* How far two units are inside each other, and nought when they are not. Two boxes, so
    it is the four-axis separating test: project both of them onto each box's own two
    axes, and daylight on any one axis means they are apart. The shallowest overlap is the
@@ -6580,11 +6590,22 @@ function moveUnit(u, dt) {
    of springing. A gun on its trail is not pushed anywhere: it was laid where it was
    laid. */
 function unwedge(u, dt) {
-  if (u.dead || u.inside || u.gar || u.towedBy || !u.def.speed) return;
+  if (u.dead || u.inside || u.gar || u.towedBy || !u.def.speed || planted(u)) return;
   var px = 0, py = 0, n = 0, i;
   for (i = 0; i < G.units.length; i++) {
     var o = G.units[i];
-    if (o === u || o.dead || o.inside || o.gar) continue;
+    /* a tow waiting on the crew packing the gun it has just hitched is not pushed off
+       by that gun */
+    if (o === u || o.dead || o.inside || o.gar || o === u.tow) continue;
+    /* And a planted gun gives no ground, but it does not hold up what is on its way
+       somewhere either. Pushed off one at full strength, a section in a street a crew had
+       set up in was braked by its own steering to a third of its pace and shoved back at
+       more than that, and the movement card's stuck unit-frames went from 0.13 per cent
+       to 23 with a section, a Pak and an armoured car queued behind one MG42. A man on
+       the move steers round the gun where there is room and steps through the crew where
+       there is not; one that has stopped on top of it is put off it. */
+    var pl = planted(o);
+    if (pl && u.path && u.pi < u.path.length) continue;
     var dep = sepDepth(u, o);
     if (dep <= 0) continue;
     /* The heavier thing gives way less, and how much less comes off the two bodies
@@ -6593,7 +6614,7 @@ function unwedge(u, dt) {
        what survived it was the PUSHED unit's own speed, so a Sherman backed away from a
        rifle section faster than the section backed away from the Sherman, which is the
        precise inverse of what the comment above claims. */
-    var give = sepMass(o) / (sepMass(u) + sepMass(o));
+    var give = pl ? 1 : sepMass(o) / (sepMass(u) + sepMass(o));
     /* And it is a spring rather than a switch. Normalised, a pair overlapping by a tenth
        of a unit came apart at the same rate as a pair standing on the same spot, and
        that rate fell to nothing the instant they cleared: a step at the boundary, which
