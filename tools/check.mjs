@@ -3245,6 +3245,62 @@ for (const device of TARGETS) {
      `${jp.blown} of 40 wrecks threw the gun, sat down at most ${jp.sink}; killed, it left ${jp.bodies} bodies of ${jp.bodyNat}; ` +
      `Ortona's motor pool makes ${jp.ita}`);
 
+  /* --- The M4. The Americans' tank on the beach is the M4 and not the Sherman V: the
+     motor pool turns it out and queues it when asked for the Canadian tank, the count and
+     the order book read the two as one, the man in its hatch is a tanker in the tanker's
+     helmet rather than a rifleman in an M1, the eye in the periscope drops from the hatch
+     to the seat when the lid shuts, a wreck throws the turret some of the time and not all
+     of it, and killed it leaves American bodies. The Italian table still has the Sherman V. --- */
+  const m4 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_sher');
+    out.qSher = W.queueUnit(mot, 'us_sher') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_sher') - m0;
+    out.madeAs = W.madeOf('us', 'us_sher') === W.madeOf('us', 'am_sher');
+    mot.queue.length = q0;
+    const t = W.spawnUnit('us', 'am_sher', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_sher'); out.countM = W.countOf('us', 'am_sher');
+    const B = W.MODELS.veh.am_sher, H = W.HATCHES.am_sher, A = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside);
+    out.tanker = H.open.filter(f => f.c === A.hide).length;
+    out.m1 = H.open.filter(f => f.c === A.helm || f.c === A.helmD).length;
+    out.seat = !!(W.MODELS.man.gi_tank && W.MODELS.man.gi_tank[W.POSE_SEAT]);
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' tank is the M4, with a tanker in its hatch and American bodies when it burns',
+     /am_sher/.test(m4.makes) && !/us_sher/.test(m4.makes) && m4.qSher === 'am_sher' && m4.made === 1 && m4.madeAs &&
+     m4.count >= 1 && m4.count === m4.countM && m4.bufs && m4.tanker > 0 && m4.m1 === 0 && m4.seat &&
+     m4.eyeUp > 33 && m4.eyeUp < 40 && m4.eyeIn > 26 && m4.eyeIn < m4.eyeUp - 4 &&
+     m4.blown > 2 && m4.blown < 30 && m4.bodies >= 1 && m4.bodyNat === 'usa' && /us_sher/.test(m4.ita) && !/am_sher/.test(m4.ita),
+     `the motor pool makes ${m4.makes}; asked for a Sherman V it queues ${m4.qSher}, counted as ${m4.made} M4 made and the ` +
+     `Sherman V's count ${m4.madeAs ? 'the same' : 'DIFFERENT'}; ${m4.count} on the field asked as the Sherman V and ${m4.countM} ` +
+     `as the M4; buffers ${m4.bufs ? 'all built' : 'MISSING'}; the man in the hatch has ${m4.tanker} faces of tanker's helmet ` +
+     `and ${m4.m1} of M1; the seated tanker ${m4.seat ? 'baked' : 'MISSING'}; the eye ${m4.eyeUp} up out of the hatch and ` +
+     `${m4.eyeIn} on the seat; ${m4.blown} of 40 wrecks threw the turret; killed, it left ${m4.bodies} bodies of ${m4.bodyNat}; ` +
+     `Ortona's motor pool makes ${m4.ita}`);
+
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot

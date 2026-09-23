@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the grenadier squad and the jeep are the first, and everything else either
-side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+rifle squad, the grenadier squad, the jeep and the M4 are the first, and everything else
+either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -855,8 +855,8 @@ knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitte
 became a board of orders, 1800 before three more German pieces, 1815 before a third map,
 1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
-before the American army, 2000 before the German army on the same beach, and 2030 before
-the jeep). Takes
+before the American army, 2000 before the German army on the same beach, 2030 before
+the jeep, and 2090 before the M4). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1033,6 +1033,13 @@ queues it when asked for the carrier, the count and the order book read the carr
 jeep as one, its crew are baked, the periscope's eye is the gunner's at twenty-odd units up,
 forty wrecks throw the gun off the pedestal none of the time and sit down under 1.7 units,
 killed it leaves two American bodies, and Ortona's motor pool still makes the carrier.
+The M4 is asked it in a fourth: the motor pool makes it and not the Sherman V and queues it
+when asked for the Sherman V, the count and the order book read the two as one, every buffer
+it needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1,
+the seated tanker is baked, the eye is a little over three metres up out of the hatch and
+drops to the seat when the lid shuts, forty wrecks throw the turret some of the time and not
+all of it, killed it leaves American bodies, and Ortona's motor pool still makes the Sherman
+V.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3177,6 +3184,63 @@ is reach and penetration and nothing more against men**: given more damage than 
 won every fight with a squad, because the whole card sits on the knife edge the .30 is
 balanced at, so it deals what the .30 deals per second at 320 of reach and 70 of
 penetration, and reads 56 per cent against the grenadiers.
+
+**The M4 is the Americans' tank**, in the Sherman V's place (`us_sher` to `am_sher` on the
+army's list), and it is built from nothing rather than out of the Sherman V's parts: the
+welded M4 with the 75 and the radial engine, which is the tank the 741st and 743rd took onto
+the beach and the shorter of the two by the whole of the A4's stretch. It is laid out with
+the driver at -y and the bow gunner, the gunner and the commander at +y, which the Sherman V
+beside it is not: its bow gun and its commander are both on the left as the player sees
+them. Its numbers are the Sherman V's, because the gun, the plate and the running gear are,
+and fought over eight runs it won half its fights with the Panzer IV where the Sherman V won a
+quarter on the same card, which is the swing eight runs of a near-even row carry, and every
+one with the grenadier squad inside six seconds. On `tools/dims.mjs` it reads 5.87 m long
+against 5.84, 5.93 with the gun against 5.89, 2.64 wide against 2.62 over the sand shields,
+2.74 high against 2.74, a body of 2.56 against 2.56 and 0.43 of clearance.
+
+What carries it, and each is built its own way. **The bogie housing reaches out over both
+discs** (`m4Bogie`): a vertical-volute bracket is inboard of its wheels, and built only
+inboard it sat in the shade under the sponson with nothing to read from the side, where the
+springs between the wheel tops and the skid over them are most of what says VVSS. Each road
+wheel is **two pressed discs with the gap the centre guides run in** (`m4RoadWheel`,
+`m4Disc`), the outer one lathed in full and the inner one plain because nothing sees it. The
+**T48 is its own link** (`m4Link`) laid on the kit's belt: a steel shoe with two rubber bars
+in a V on the face that meets the ground, the end connectors proud of both edges and a guide
+on every joint. **The nose is swept with the normals of its own profile** (`m4Sweep`), so the
+three-piece cover shades round, with the two flanges offset along the same normals and bolted
+through. **Everything on the glacis goes through `onM4Glacis`**, whose local z is the plate's
+normal, except what has to face the way the tank does: a headlamp laid on the plate's frame
+points at the ground. **The turret is lofted from a plan** (`m4TurretPlan`, a dozen points a
+side smoothed into forty-eight, then `m4TurRing` scales the front, the sides and the bustle
+separately at each height so the front stays near vertical where the shield sits), and
+anything fixed to its wall is put there by `m4TurAt`, which meets a ray from the centre with
+the wall's outline at that height. The first version took the nearest vertex instead: at a
+step finer than the outline's own spacing two stations landed on one vertex, and the plate
+welded over the gunner's cheek came out as a fan of zero-width faces that drew as black
+wedges on the front of the turret. **The star in its ring is on the engine deck**, where the
+aircraft were meant to see it and the player does.
+
+**The hatch periscopes are lower than the kit's**, because the M34A1 shield sweeps over the
+driver's hatches as the turret comes round and the kit's periscope stood above the shield's
+foot: at about twenty-five degrees of traverse the two were in the same place. The roof gun
+stands in front of the split hatch rather than behind it, because a man in the hatch can
+reach grips ahead of him and cannot reach them behind.
+
+**The man in the hatch is a tanker** (`gi_tank`, `V.tanker`): the fibre M1938 helmet with its
+rib over the crown, its ear flaps and the goggles pushed up on their strap (`helmetTanker`),
+the winter combat jacket that stops at a band of knit at the waist, boots rather than
+leggings, and an M3 shoulder holster (`figKitTank`). The same man sits at the gunner's and
+the loader's stations inside, because `drawInterior` now picks the crew by army. **`mgMan`**
+is the man at the roof gun: drawn with it and baked apart from it, because in the gun's own
+mesh he was an occluder and took a hull's grime, and he came out the colour of the mud on the
+tracks.
+
+**The interior is authored** (`VIN.am_sher`) on the same plan the turret is lofted from,
+drawn in wherever the casting leans in toward the roof so nothing of the room shows through
+the wall with the head out. The seats are set by the seated man rather than by eye: his eye
+is 14.75 over his soles and his hip 6.05, so the gunner's soles go 14.75 under the telescope
+and the basket floor drops to meet them. Set the other way about, as the first version was,
+the gunner's head stood in the commander's view.
 
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
@@ -5370,6 +5434,16 @@ shots/                         screenshot output, gitignored
   turning a vehicle under a fixed camera turned nothing: every view of the reference sheet
   was the first one again. Clear `u._matT` when a probe moves a vehicle that is not being
   simulated.
+- **A point on a curved wall is where a ray meets the outline, not the nearest vertex.** Take
+  the nearest vertex at a step finer than the outline's own spacing and two stations land on
+  the same vertex: a patch of plate built between them has faces of no width, `faceOut` winds
+  them whichever way its arithmetic falls, and the plate draws as black wedges.
+- **Anything in a vehicle's `mg` mesh is baked as a vehicle.** The bake treats it as an
+  occluder and gives it the grime and dust a hull collects, so a man standing to a roof gun
+  came out the colour of the mud. Put him in `mgMan`, which is drawn with the gun and baked as
+  a receiver the way `crew` is.
+- **The harness camera looks at the ground.** A close-up of a turret with only a distance and
+  a pitch photographs the running gear; pass `lift` for the height of the thing.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

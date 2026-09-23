@@ -217,10 +217,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    and wings, the nine-slot grille, the tub with its scoops and arches, the combat wheels
    with their bar tread, the folded screen, the spare and the jerrican), the .30 and the
    .50 on the M31 pedestal, and the three men who ride in it.
+   It is 2090 for the M4: the American Sherman built from nothing (the vertical-volute
+   bogies with their springs and trailing rollers, the dual pressed road wheels, the T48
+   chevron track, the three-piece nose, the hoods and hatches, the rear plate with its air
+   cleaners, the D50878 turret lofted from a plan, the M34A1 shield and the split hatch),
+   its authored interior, the .50 and the tanker who stands to it, and the tanker's kit
+   on the rig: his fibre helmet, his winter combat jacket and his shoulder holster.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2030) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2030 kB so it stays quick to load on a phone`);
+if (kb > 2090) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2090 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

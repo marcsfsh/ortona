@@ -42,6 +42,12 @@ const REAL = {
                body: 2.51, bodyZ: 1.10, roof: 2.05, clear: 0.42 },
   us_sher:   { name: 'Sherman V (M4A4)',    len: 6.06,  gun: 6.06,   wid: 2.62,  hgt: 2.97,
                body: 2.62, bodyZ: 1.20, roof: 2.62, clear: 0.43 },
+  am_sher:   { name: 'M4 (75 mm)',          len: 5.84,  gun: 5.89,   wid: 2.62,  hgt: 2.74,
+               body: 2.56, bodyZ: 1.37, roof: 2.56, clear: 0.43 },   /* 19 ft 2 in long and 19 ft 4 in with
+               the 75 forward, 8 ft 7 in over the sand shields, 9 ft to the top of the turret and 17 in of
+               clearance. The body is the hull over the sponsons: 83 in between the track centres and a
+               16.56 in track put the tracks' outer edges 2.53 m apart and the sponson sides stand just
+               outside them, which is what leaves the sand shields their two inches a side */
   us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
                body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
                widest point is not its tracks: the sponsons stand eight inches proud of them each
@@ -116,6 +122,9 @@ const REAL = {
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
+  am_sher:   { bodyZ: 16.0, roofZ: 21.8, xLo: -25.0, xHi: -21.0, straddle: true, topZ: 10.2 },   /* the slice is
+               taken halfway up the sponson, aft of the appliqué and the star; topZ holds the
+               periscope heads and the aerial out of a height measured to the top of the turret */
   us_ach:    { bodyZ: 22.0, topZ: 8.0 },   /* bodyZ is a hand's breadth under the deck, above the
                tools and the jerricans and below the lifting eyes, where the side plate is bare.
                topZ keeps the turret crew out of the height: three of them stand in an open turret
