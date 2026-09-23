@@ -157,12 +157,18 @@ function GEO(opt) {
      catch is the other end -- a forearm ending inside a blouse, which is what the figure
      before this one did -- so it is the other end that is sampled. The far cap of a
      frustum limb is its second-to-last face, `frustum` having pushed the lid and then
-     the floor after the sides. */
+     the floor after the sides. A limb that carries something -- a cargo pocket on a
+     thigh, a rolled sleeve and a bare forearm on an upper arm -- is still the frustum it
+     was built as first, so its first six faces give the root and the direction, and its
+     length is the furthest it reaches along that direction, which for a bare frustum is
+     its own tip; read whole, the engineer's thigh reported its own root in his hips. */
   function distal(faces) {
-    if (faces.length !== 6) return faces;
+    if (faces.length < 6) return faces;
     const c = f => { const q = [0, 0, 0]; f.v.forEach(p => { q[0] += p[0]; q[1] += p[1]; q[2] += p[2]; }); return q.map(v => v / f.v.length); };
     const tip = c(faces[4]), root = c(faces[5]);
-    const ax = sub(tip, root), L = len3(ax) || 1, u = ax.map(v => v / L);
+    const ax = sub(tip, root), l0 = len3(ax) || 1, u = ax.map(v => v / l0);
+    let L = l0;
+    faces.forEach(f => f.v.forEach(p => { L = Math.max(L, dot(sub(p, root), u)); }));
     const half = p => {
       const t = dot(sub(p, root), u) / L;
       if (t >= .5) return p;
@@ -396,8 +402,8 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand'].forEach(type => {
-      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger' : type === 'garand' ? 'usa' : 'us'], type);
+    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3'].forEach(type => {
+      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger' : type === 'garand' || type === 'm3' ? 'usa' : 'us'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -929,7 +935,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.88, zook: 16.12, garand: 13.02 };
+    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.88, zook: 16.12, garand: 13.02, m3: 6.81 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);

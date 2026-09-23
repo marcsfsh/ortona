@@ -81,6 +81,12 @@ const CARD = [
      on the beach and the squad */
   ['am_sher', 'hr_p4'],
   ['hr_p4', 'am_rifle'],
+  /* and the engineer squad the Americans field in the Canadian section's place: against the
+     paratroop pioneers it stands in for the calibration against, the grenadier squad it meets
+     on the beach, and the Canadian section itself */
+  ['am_eng', 'ger_pio'],
+  ['am_eng', 'hr_gren'],
+  ['am_eng', 'us_eng'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

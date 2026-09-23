@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the grenadier squad, the jeep, the M4, the KS 750 and the Panzer IV are the
-first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+rifle squad, the engineer squad, the grenadier squad, the jeep, the M4, the KS 750 and the
+Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -856,7 +856,8 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
-the jeep, 2090 before the M4, 2130 before the KS 750, and 2190 before the Panzer IV). Takes
+the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, and 2230
+before the engineer squad). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1052,7 +1053,13 @@ camouflage, the man in its cupola wears the black cap and no helmet, the seated 
 baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further than
 its guards, the eye is a little under three metres up out of the cupola and drops to the vision
 blocks when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves
-bodies of the 352nd, and Ortona's depot still makes the Italian one.
+bodies of the 352nd, and Ortona's depot still makes the Italian one. And the engineers are
+asked it in a seventh: the headquarters makes the engineer squad and not the Canadian section
+and queues it when asked for the section, the side opened with one and no Canadians, its three
+men are the three engineer variants carrying the M3, the forearm is bare and the hand gloved
+with no skin on it, the helmet carries goggles, it pegs out a sandbag wall and is sent to build
+it, a man of it killed goes down as `usa_eng` with those bodies baked, and Ortona's
+headquarters still makes the Canadian section.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3106,6 +3113,54 @@ when each rifleman hits for less than a Canadian with a Bren behind him. At 7.2 
 seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent against the
 German section and 56 against the Canadian section, which is inside what sixteen runs of two
 identical units produce.
+
+**The engineer squad is the Americans' builder**, in the Canadian section's place (`us_eng` to
+`am_eng` on the army's list, and the section the side opens with goes through `natKey` now as
+the rifle sections already did): three men of an engineer combat battalion, dressed the way the
+brief asked, after Company of Heroes. It is a fifth kit on the rig (`V.eng`), and every piece of
+it goes through a door the rig already had. **The sleeves are rolled above the elbow**, which is
+a branch in `figArm` read off the kit (`k.rolled`): the shirt down to the roll, the roll a band
+standing proud and a shade lighter where the inside of the cloth is turned out, the arm bare to
+the cuff of the glove. `engKit` builds that kit, and it is the motorcyclist's gauntlet trick
+carried one step further: the kit's skin becomes the glove, so the hand is leather wherever a
+hand is drawn, and the real skin moves to `k.bare` for the forearm. The kit is handed to the
+arms in the weapon carry as well as the grips carry now, which they were not, because nobody
+before him held a weapon in gloves. **The trousers are pale twill with a cargo pocket on each
+thigh** (`figLeg`'s `cargo`, built into the thigh so it follows the hip) **bloused over brown
+boots** (`figLeg`'s sixth anklet mode, laced to above the ankle). The shirt is the darker olive
+tucked in at the belt, so there is no skirt, with its collar open over the undershirt; over it
+the assault vest (`vest` in the record), two big pockets low and two smaller ones high under
+flaps; on his back a pack in a darker olive than the vest with a blanket rolled across the top
+(`figKitEng`), and the goggles are on the M1 on their strap over the net (`helmetM1`'s
+`V.goggles`). Three variants: `gi_eng` with a shovel down the side of the pack, `gi_eng_b` with
+the demolition chest in the pack's place and hessian in his net, and `gi_eng_c` with a coil of
+rope on the pack and a satchel charge on his hip on a strap across the vest. A dark shirt and
+pale legs is the rifleman turned upside down, which is what tells the two apart in the squad.
+
+**He falls as an engineer.** A body was the nation's rifleman whatever was killed, because
+`MODELS.fall` and `MODELS.dead` are keyed by army; `def.body` names another key, the bake builds
+those five buffers off the variant that carries the same `body`, and the corpse record takes
+`u.def.body` before the army. His prone and dead layouts carry the same colours, the rolled
+arms, the boots and, face down, the pack.
+
+**The M3 is cut as the stamped thing it is** (`weaponModel(k, 'm3')`): the receiver tube with
+the barrel collar and the barrel screwed into its front, the magazine housing and the long box
+magazine under it, the trigger housing and the pistol grip, the ejection cover and the cocking
+crank on the right, the peep and the blade, and the wire stock sliding along two guides on the
+sides of the trigger housing, in for every carry and out for the aim. It measures 6.83 units
+against a published 579 mm with the stock in. The support hand is on the magazine housing
+(`WEAP.m3`), which puts it a hand's breadth ahead of the grip rather than out under a fore-end,
+so the casual carry lays it nearer the middle of him (`readyY`): laid by the right hip the way a
+rifle is, the left arm crossed his whole chest to reach it.
+
+**Its numbers come off the duel card, and they are an SMG's.** Accuracy falls away across a
+weapon's own reach, so a gun with a short reach is worse at the edge of it than a rifle at the
+same range, and at the first numbers the squad won 38 per cent against the paratroop pioneers
+and 44 against the Canadian section at 123 units. At 5.8 a burst, 0.42 seconds a volley, 0.54
+accuracy and 150 of reach, over 24 runs it wins 46 and 38 at 123, which is 82 per cent of its
+reach, and over 16 it wins 75 and 63 at 80: a little behind at the edge of its reach and ahead
+up close. It loses every fight with the grenadier squad inside nine seconds, and so does the
+Canadian section, because that is three men of a builder against six of a line squad.
 
 **The German army on the beach.** The same table does the German side. `NATIONS` carries two
 entries with `side: 'ger'`, the paratroopers (`fj`) and the 352nd Infantry Division (`heer`); a
@@ -5579,6 +5634,12 @@ shots/                         screenshot output, gitignored
   photographs moved by a head's height and read as the same picture.
 - **The harness camera looks at the ground.** A close-up of a turret with only a distance and
   a pitch photographs the running gear; pass `lift` for the height of the thing.
+- **A limb that carries something is not six faces any more.** The men card's CLIP row reads
+  the far end of a limb off the frustum's own two caps, and it read a limb of any other face
+  count whole: the engineer's thigh with its cargo pocket on it reported its own root in his
+  hips at 1.2 units, every pose. It takes the root and the direction off the first six faces now
+  and the length off how far the limb reaches along that direction, which for a bare frustum is
+  its own tip. Anything added to a limb goes AFTER its frustum, or the probe reads the wrong axis.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

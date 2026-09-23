@@ -3425,6 +3425,59 @@ for (const device of TARGETS) {
      `up out of the cupola and ${p4.eyeIn} at the blocks; ${p4.blown} of 40 wrecks threw the turret; killed, it left ` +
      `${p4.bodies} bodies of ${p4.bodyNat}; Ortona's depot makes ${p4.ita}`);
 
+  /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
+     section the way the rifle squad does: the headquarters makes it and refuses the
+     Canadian one, the Allied side opens the battle with one, its three men are the three
+     engineer variants and carry the M3, the sleeves are rolled and the hands gloved, the
+     goggles are on the helmet, it can peg out a work and go and build it, and a man of it
+     killed goes down as an engineer rather than as a rifleman. The Italian table still has
+     the Canadians. --- */
+  const eng = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    out.makes = W.makesOf(hq).join(',');
+    const made = W.REC.us.made || {};
+    out.openAm = made.am_eng || 0; out.openCan = made.us_eng || 0;
+    G.res.us.mp += 2000;
+    const q0 = hq.queue.length;
+    out.qCan = W.queueUnit(hq, 'us_eng') ? hq.queue.slice(-1)[0] : 'refused';
+    hq.queue.length = q0;
+    const u = W.spawnUnit('us', 'am_eng', hq.x + 120, hq.y - 200, 0);
+    out.men = u.models.length; out.builder = !!u.def.builder;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.usa, r = W.manFaces('gi_eng', W.FIGPOSE.stand), P = r.parts;
+    out.bare = P.limbs[1].filter(f => f.c === K.skin).length;
+    out.gloved = P.hands[0].filter(f => f.c === K.glove).length;
+    out.skinHand = P.hands[0].filter(f => f.c === K.skin).length;
+    out.goggle = P.helmet.filter(f => f.c === K.goggle).length;
+    const site = W.placeWork('us', 'bags', hq.x + 60, hq.y - 280, 0, [u]);
+    out.site = !!site; out.building = u.building === site && u.order === 'work';
+    if (site) G.sites.splice(G.sites.indexOf(site), 1);
+    W.clearOrder(u);
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fellNat = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.usa_eng && W.MODELS.dead.usa_eng && W.MODELS.fall.usa_eng.length === 3 && W.MODELS.dead.usa_eng.length === 2);
+    W.killUnit(u);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(hq).join(',');
+    W.setNation('usa', 'heer');
+    return out;
+  });
+  ok('Omaha: the Americans\' engineers are their own squad of three, with M3s, sleeves rolled, gloves on, and bodies of their own',
+     /am_eng/.test(eng.makes) && !/us_eng/.test(eng.makes) && eng.openAm >= 1 && eng.openCan === 0 && eng.qCan === 'am_eng' &&
+     eng.men === 3 && eng.builder && eng.vars === 'gi_eng,gi_eng_b,gi_eng_c' && eng.weap === 'm3' && eng.bare > 0 &&
+     eng.gloved > 0 && eng.skinHand === 0 && eng.goggle > 0 && eng.site && eng.building && eng.fellNat === 'usa_eng' &&
+     eng.bodies && /us_eng/.test(eng.ita) && !/am_eng/.test(eng.ita),
+     `the headquarters makes ${eng.makes}; the side opened with ${eng.openAm} engineer squads and ${eng.openCan} Canadian ` +
+     `sections; asked for the Canadian section it queues ${eng.qCan}; ${eng.men} men of ${eng.vars} carrying ${eng.weap}, ` +
+     `${eng.builder ? 'a builder' : 'NOT A BUILDER'}; the forearm has ${eng.bare} bare faces, the hand ${eng.gloved} of glove ` +
+     `and ${eng.skinHand} of skin, the helmet ${eng.goggle} of goggle; a sandbag wall ${eng.site ? 'pegged out' : 'REFUSED'} ` +
+     `and the squad ${eng.building ? 'sent to build it' : 'NOT SENT'}; a man killed went down as ${eng.fellNat}, engineer ` +
+     `bodies ${eng.bodies ? 'baked' : 'MISSING'}; Ortona's headquarters makes ${eng.ita}`);
+
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot

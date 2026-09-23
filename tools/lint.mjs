@@ -237,10 +237,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the Balkenkreuze and the red 415), its cupola and turret interior, the MG 34 on the
    Fliegerbeschussgerät and the man who stands to it, and the panzer crewman on the rig:
    the black wrap, the M43 cap and the headset.
+   It is 2230 for the American engineer squad: the man on the rig in his herringbone twill
+   (the sleeves rolled above the elbow, the work gloves, the cargo pockets and the boots the
+   trousers are bloused over), the assault vest, the pack with its blanket roll and the three
+   loads it carries, the goggles on the M1, the M3 submachine gun, and his own prone and
+   dead layouts so he falls as an engineer.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2190) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2190 kB so it stays quick to load on a phone`);
+if (kb > 2230) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2230 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
