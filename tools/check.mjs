@@ -3303,7 +3303,7 @@ for (const device of TARGETS) {
 
   /* --- The KS 750. The 352nd's light vehicle on the beach is the KS 750, standing in for
      the 222 the way the jeep stands in for the carrier: the depot turns it out and refuses
-     the 222, a brain asking after the 222 counts and orders the KS 750, the three men
+     the 222, a brain asking after the 222 counts and orders the KS 750, the two men
      riding it are drawn with it and none of them is in its wreck, the gun on the sidecar
      mount comes round no further than the mount lets it, the periscope's eye is the
      gunner's, low in the sidecar, a wreck never throws the gun off, and killed it leaves

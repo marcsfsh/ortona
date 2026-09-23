@@ -1679,7 +1679,7 @@ var UNITS = {
     desc: 'Four-wheeled reconnaissance car, fast and far-seeing, lightly protected. The machine gun turret it arrives with will strip an open-topped carrier and nothing heavier; the 2 cm KwK 30 is a field upgrade, and with it the car will trade with a Stuart.'
   },
   /* The KS 750, in place of the 222 on a map whose German army is the Heer (`natKey`): a
-     sidecar combination with three men on it and an MG 34 on the sidecar mount, as fast as
+     sidecar combination with two men on it and an MG 34 on the sidecar mount, as fast as
      anything on the field over broken ground and made of nothing that stops a round. The
      gun is laid by a man sitting in a sidecar beside the rider, so it fires into a narrow
      arc ahead (`arc`) and the machine turns to bring it round, and it cannot fire across
@@ -1691,7 +1691,7 @@ var UNITS = {
     req: 'ger_dep', caps: 1,
     w: { range: 280, dmg: 8, rof: .18, acc: .55, sup: .06, supCap: .92, pen: 14, aoe: 0 },
     wUp: { mg42: { range: 280, dmg: 6, rof: .135, acc: .52, sup: .052, supCap: .92, pen: 14, aoe: 0 } },
-    desc: 'The heavy sidecar combination with its driven sidecar wheel: a rider, a man on the pillion and a gunner behind the MG 34 in the sidecar. Fast across anything, and it sees a long way. The gun fires ahead of the machine and nowhere else, so it turns to fight, and nothing on it stops a round. The MG 34 can be changed for an MG 42.'
+    desc: 'The heavy sidecar combination with its driven sidecar wheel: a rider and a gunner behind the MG 34 in the sidecar. Fast across anything, and it sees a long way. The gun fires ahead of the machine and nowhere else, so it turns to fight, and nothing on it stops a round. The MG 34 can be changed for an MG 42.'
   },
   /* Retired. No Tiger II ever reached Italy, let alone Ortona, so it is withdrawn from
      the roster: retired keeps it out of the build menu and out of the AI's hands while
@@ -15725,6 +15725,9 @@ function registerMaterials() {
     tag([M4C.shoe, M4C.shoeL], 'track'); tagEdges([M4C.shoe, M4C.shoeL], 'track');
     tag([M4C.tarp, M4C.roll], 'canvas'); tagEdges([M4C.tarp, M4C.roll], 'canvas');
   }
+  if (typeof HRG !== 'undefined') {
+    tag([HRG.body, HRG.lit, HRG.dark], 'paint'); tagEdges([HRG.body, HRG.lit, HRG.dark], 'paint');
+  }
   if (typeof KSC !== 'undefined') {
     tag([KSC.alloy, KSC.alloyD, KSC.iron, KSC.lens, KSC.well], 'steel'); tagEdges([KSC.alloy, KSC.alloyD, KSC.iron], 'steel');
     tag([KSC.seat, KSC.seatL, KSC.coam], 'leather'); tagEdges([KSC.seat, KSC.seatL, KSC.coam], 'leather');
@@ -22524,8 +22527,8 @@ function jeepGunner() {
    where the paratroopers have the Sd.Kfz. 222: a 751 cc flat twin in a frame of oval tube,
    the Steib-built BW 40 bolted to its right side, and a shaft straight across from the rear
    hub to the sidecar wheel, which is what made it a cross-country machine rather than a
-   motorcycle with a chair on it. Three men: the rider, a man on the pillion, and the gunner
-   in the sidecar behind an MG 34 on its mount.
+   motorcycle with a chair on it. Two men: the rider, and the gunner in the sidecar behind
+   an MG 34 on its mount.
 
    What says KS 750 rather than any other outfit is, from the front:
 
@@ -22548,8 +22551,14 @@ function jeepGunner() {
    BW 40, 150 mm of clearance laden, and 4.50-16 tyres on all three wheels and the spare.
    Laid out at 11.7 units to the metre with the machine on the left, which is -y, and the
    sidecar on its right. */
+
+/* The Wehrmacht's paint, which every vehicle built for the 352nd wears: the dark blue-grey
+   the army's vehicles left the factory in before dunkelgelb, and a different army's
+   vehicles from the paratroopers' sand beside it. Three values, the plate, the face the
+   light is on and the face it is not, the way every palette here is laid out. */
+var HRG = { body: '#5d6267', lit: '#6b7176', dark: '#4b4f54' };
 var KSC = {
-  body: PZ.body, lit: PZ.lit, dark: PZ.dark, steel: PZ.steel, bare: PZ.bare, rubber: PZ.rubber, tyre: PZ.tyre,
+  body: HRG.body, lit: HRG.lit, dark: HRG.dark, steel: PZ.steel, bare: PZ.bare, rubber: PZ.rubber, tyre: PZ.tyre,
   alloy: '#8f8d82', alloyD: '#737168', iron: '#2f302b', seat: '#2d2925', seatL: '#3d372f', coam: '#2a2621',
   grip: '#1e1d19', mat: '#292922', plate: '#d5d2c2', ink: '#1c1c18', lens: '#c9c6b2', well: '#15150f'
 };
@@ -22998,14 +23007,12 @@ function ksMG42() {
 }
 
 /* The crew, who are the outfit's own and not part of its sheet metal: the rider on the
-   saddle with his hands on the grips and his knees against the tank, and the man on the
-   pillion holding the bar in front of him with his rifle slung, both drawn with the
-   machine; and the gunner in the sidecar, whose legs lie in the nose with the machine and
-   whose body turns on the seat with the gun, drawn with the mount. All three in the
-   rubberised coat every man on a machine wore, goggles pushed up on the helmet and
-   gauntlets on. A man's thighs are turned out about his own hip joints (`splay`), because
-   a rider's knees go either side of the tank and a pillion's either side of the rider,
-   and the rig hangs a leg straight down its own side. The hands go on the grips by the
+   saddle with his hands on the grips and his knees against the tank, drawn with the
+   machine, and the gunner in the sidecar, whose legs lie in the nose with the machine and
+   whose body turns on the seat with the gun, drawn with the mount. Both in the rubberised
+   coat every man on a machine wore, goggles pushed up on the helmet and gauntlets on. A
+   man's thighs are turned out about his own hip joints (`splay`), because a rider's knees
+   go either side of the tank, and the rig hangs a leg straight down its own side. The hands go on the grips by the
    correction `jeepMan` makes, from a point given in the vehicle's frame. */
 function ksMan(P0, grip, x, y, hipZ, splay) {
   var P = { legs: P0.legs, lean: P0.lean, carry: 'grips', grips: [3.0, 1.7, 1.7], pole: P0.pole };
@@ -23025,19 +23032,13 @@ function ksMan(P0, grip, x, y, hipZ, splay) {
 function ksMen() {
   if (KSG.men) return KSG.men;
   var g = KSG, f = [];
-  /* the rider sits on the saddle and the pillion on his, each a hip's depth above the
-     cushion, with the feet on the footboards and on the pillion rests */
+  /* the rider sits on the saddle a hip's depth above the cushion, with his feet on the
+     footboards; the pillion behind him is empty */
   var rid = ksMan({ legs: [[1.15, -1.7, .55], [1.15, -1.7, .55]], lean: .28, pole: [-.3, 1, -.5] },
                   [6.05, 4.75, 11.48], -.75, g.yB, 10.25, .37);
-  var pil = ksMan({ legs: [[1.2, -1.93, .73], [1.2, -1.93, .73]], lean: .08, pole: [-.2, .8, -1] },
-                  [-3.15, 1.05, 10.3], -5.45, g.yB, 10.6, .55);
   var gun = ksMan({ legs: [[1.62, -.28, -.1], [1.62, -.28, -.1]], lean: .12, pole: [-1, .45, -.5] },
                   [g.xGun + 4.4, .55, g.zGun + g.gz - .75], g.xGun, g.yC, g.zGun, 0);
-  f = f.concat(rid.legs, rid.up, pil.legs, pil.up, gun.legs);
-  /* the pillion's Kar98k slung across his back, butt at his left hip and the muzzle up
-     past his right shoulder */
-  var kar = weaponModel(KIT.heer, 'kar', '');
-  f = f.concat(place(pitch(kar, Math.atan2(11.9, 5.0), 0, 0), Math.PI / 2, -7.2, g.yB - 2.6, 10.5));
+  f = f.concat(rid.legs, rid.up, gun.legs);
   g.men = { crew: f, gun: place(gun.up, 0, -g.xGun, -g.yC, -g.zGun),
             eye: [gun.eye[0] - g.xGun, gun.eye[1] - g.yC, gun.eye[2] - g.zGun] };
   return g.men;
@@ -26850,7 +26851,7 @@ function buildVehicleModels() {
                       bar: 8.3, big: 0, soft: 1, scale: 1, mountZ: JPG.zMount, gunZ: 1.5,
                       turX: JPG.xPost, turY: 0, belly: JPG.zDiff };
   /* the gunner's body and his gun are the mount, turning together about his hips on the
-     seat; his legs lie in the nose of the sidecar with the rider and the pillion */
+     seat; his legs lie in the nose of the sidecar with the rider */
   VMODEL.hr_ks750 = { hull: ksHull(), tur: ksMG34(), turUp: { mg42: ksMG42() }, barUp: { mg42: { bar: 13.9, gunZ: KSG.gz } },
                       crew: ksMen().crew, turCrew: ksMen().gun, bar: 15.0, big: 0, soft: 1, scale: 1,
                       mountZ: KSG.zGun, gunZ: KSG.gz, turX: KSG.xGun, turY: KSG.yC, belly: KSG.zBelly };
@@ -27681,8 +27682,7 @@ var SOLDIER_VARIANTS = {
   gr_rifle:     { side: 'ger', nat: 'heer', weapon: 'kar', band: 1, tin: 1, set: 'field' },
   gr_rifle_b:   { side: 'ger', nat: 'heer', weapon: 'kar', gaiters: 1, wire: 1, frame: 1, nades: 1, set: 'field' },
   gr_mp40:      { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, glass: 1, tin: 1, set: 'field' },
-  /* and the grenadier who rides: the KS 750's rider, the man on its pillion and the gunner
-     in its sidecar, in the rubberised motorcyclist's coat with goggles on the helmet */
+  /* and the grenadier who rides: the KS 750's rider and the gunner in its sidecar, in the rubberised motorcyclist's coat with goggles on the helmet */
   hr_krad:      { side: 'ger', nat: 'heer', weapon: 'none', krad: 1, goggles: 1, set: 'hull' },
   fj_rifle:     { side: 'ger', weapon: 'kar', pouch: 'leather', set: 'field' },
   fj_mp40:      { side: 'ger', weapon: 'mp40', assault: 1, pouch: 'canvas', set: 'field' },

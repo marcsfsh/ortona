@@ -3250,9 +3250,10 @@ the gunner's head stood in the commander's view.
 
 **The KS 750 is the 352nd's light vehicle**, in the 222's place (`ger_sd222` to `hr_ks750` on
 the army's list): the Zündapp with the Steib-built BW 40 on its right and the shaft straight
-across from the rear hub to the sidecar wheel, three men on it and an MG 34 on the sidecar
-mount. The 352nd had no armoured cars to speak of, and a motorcycle combination is what its
-reconnaissance rode. On `tools/dims.mjs` it reads 2.37 m long against 2.385, 1.66 wide against
+across from the rear hub to the sidecar wheel, a rider and a gunner on it and an MG 34 on the
+sidecar mount, the pillion left empty. The 352nd had no armoured cars to speak of, and a
+motorcycle combination is what its reconnaissance rode. It is in the Wehrmacht's grey (`HRG`),
+which is the paint of every vehicle built for the 352nd and of none of the paratroopers'. On `tools/dims.mjs` it reads 2.37 m long against 2.385, 1.66 wide against
 1.65, 1.01 high to the handlebars against 1.01 and 0.15 of clearance under the sump.
 
 It is built its own way at every stage (`ksBike`, `ksSidecar`), and a few of them are worth
@@ -3272,20 +3273,19 @@ cut between.
 **The gunner turns on his seat with his gun, and that is what the mount is.** A sidecar's gun
 is on a post ahead of the well and the man behind it swings round with it, so the mount's
 origin is his hips (`turX`, `turY`, `mountZ` at the gunner's seat): his body is `turCrew`, his
-legs lie in the nose in `crew` with the rider and the pillion, and the MG 34 and its post are
+legs lie in the nose in `crew` with the rider, and the MG 34 and its post are
 `tur`. It cannot fire across the man riding the machine, so the def carries `arc`, the casemate
 rule, at 0.6: the gun traverses seventeen degrees either way and the machine turns to bring it
 round. `ksMan` is `jeepMan` with one addition: the thighs are turned out about their own hip
-joints (`splay`), because a rider's knees go either side of the tank and a pillion's either side
-of the rider, and the rig hangs a leg straight down its own side.
+joints (`splay`), because a rider's knees go either side of the tank, and the rig hangs a leg
+straight down its own side.
 
 **The motorcyclist is a kit on the rig** (`hr_krad`, `V.krad`): the rubberised coat, fuller and
 greener than the wool, double-breasted with its collar faced in field-grey wool and the belt
 over it; the skirts buttoned round each leg, which `figLeg` builds as a coat thigh with its hem
 over the top of the shin; gauntlets, which is the arms drawn with a kit whose skin is leather;
 and goggles pushed up on the M42 on their strap (`V.goggles`). His kit is the belt, the pouches,
-the Y-straps and the gas-mask tin, and nothing on his hips (`figKitKrad`). The pillion carries
-his Kar98k slung across his back.
+the Y-straps and the gas-mask tin, and nothing on his hips (`figKitKrad`).
 
 **Its numbers came off the duel card.** At 230 hit points and 18 of plate it won 88 per cent
 against the American squad for a little over half the squad's price; at 200 it won a third.
