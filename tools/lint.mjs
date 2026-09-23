@@ -208,10 +208,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    jacket, the leggings, the cartridge belt and the haversack), the M1 helmet swept round a
    plan ellipse under a net of its own, the Garand, and the table that says which army the
    Allied side is on which map.
+   It is 2000 for the German army on that beach: a fourth kit on the rig (the field-grey
+   tunic, the Y-straps, the gas mask canister, the bread bag, the marching boot and the
+   gaiter), the M42 helmet with its chicken wire and foliage on a tile of its own, the
+   Kar98k cut as a side profile the way the Garand is, and the German half of the army
+   table.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1970) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1970 kB so it stays quick to load on a phone`);
+if (kb > 2000) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2000 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

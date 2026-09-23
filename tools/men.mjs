@@ -336,7 +336,7 @@ function GEO(opt) {
       cycle('crawl', CRAWLF, CRAWL_LEN);
       if (V.set === 'gunner') { out.push({ name: 'served', frame: 0 }, { name: 'sit', frame: 0 }); return out; }
       out.push({ name: 'ready', frame: 0 }, { name: 'fire', frame: 0 }, { name: 'kfire', frame: 0 });
-      if (variant === 'can_rifle' || variant === 'fj_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
+      if (variant === 'can_rifle' || variant === 'fj_rifle' || variant === 'gr_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
       return out;
     }
     const crew = V.weapon === 'none';
@@ -684,7 +684,7 @@ function GEO(opt) {
         const T = M.man[v] || {};
         Object.keys(T).forEach(p => { const s = T[p]; const run = Number(p) === POSE_RUN; (s.frames || [s]).forEach(b => add(acc, b, run)); });
         const st = T[POSE_STAND] || T[POSE_SEAT]; acc.stand = st ? st.n / 3 : 0;
-        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle')) { const s = SOLDIER_VARIANTS[v].nat || SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
+        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle' || v === 'gr_rifle')) { const s = SOLDIER_VARIANTS[v].nat || SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
       } else {
         ['sol', 'solA', 'crawl', 'crawlA'].forEach(k => (M[k][v] || []).forEach(b => add(acc, b)));
         ['prone', 'proneA', 'crouch', 'crouchA', 'fire', 'fireA', 'cfire', 'cfireA'].forEach(k => add(acc, M[k][v]));
@@ -848,7 +848,7 @@ function PIX(opt) {
     const dists = MOB ? [[600, .75], [760, 1.0], [900, .75]] : [[600, .75], [900, .75]];
     dists.forEach(dp => {
       const B = ground(dp[0], dp[1]);
-      [['us', 'can_rifle'], ['usa', 'gi_rifle'], ['ger', 'fj_rifle']].forEach(sv => {
+      [['us', 'can_rifle'], ['usa', 'gi_rifle'], ['ger', 'fj_rifle'], ['heer', 'gr_rifle']].forEach(sv => {
         ['stand', 'prone'].forEach(pose => {
           const m = row(sv[1], pose, 0, FRONT, dp[0], dp[1], B);
           R.read.push(Object.assign({ dist: dp[0], pitch: dp[1], side: sv[0], variant: sv[1], pose }, m));
@@ -918,7 +918,7 @@ function show(c, base) {
       const bc = k => (BP ? (b[k] === undefined ? null : b[k]) : undefined);
       const cells = [cell(r.stature, 20.35, .04, bc('stature')), cell(r.headH, 2.65, .08, bc('headH')), cell(r.headW, 1.82, .08, bc('headW')),
                      cell(r.plate, 5.27, .08, bc('plate')), cell(r.hips, 4.4, .08, bc('hips')), cell(r.inseam, 9.56, .06, bc('inseam')),
-                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
+                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : r.nat === 'heer' ? 3.06 : r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(r.v, 13) + cells.map(q => q.s).join('') + f2(r.apart));
     }
@@ -1204,6 +1204,21 @@ function show(c, base) {
             say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
             const da = [0, 1, 2].map(i => Math.abs(am.rgb[i] - ger.rgb[i]));
             say(Math.max.apply(null, da) >= 12, `the American and the FJ differ by ${da.map(Math.round).join(',')} levels, wants 12 in one channel`);
+          }
+        }
+        /* The grenadier is the man the American meets on the beach, so it is the American he
+           has to be told apart from: field grey and black leather against a pale jacket and
+           pale leggings, which is a mean apart and a colour apart, and a contrast to the
+           ground in the band the other three sit in. His crown is as dark as the American's
+           netted one and is not asked to differ; the skirt of the helmet is a shape, and a
+           shape is what the eye reads at the distance the mean stops working. */
+        const hr = X.read.find(r => r.dist === dist && r.side === 'heer' && r.pose === 'stand');
+        if (am && hr) {
+          say(Math.abs(hr.lumFig - am.lumFig) >= needMean, `the grenadier and the American are ${f3(Math.abs(hr.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
+          if (!phone) {
+            say(hr.contrast >= -.45 && hr.contrast <= -.10, `the grenadier's contrast to the ground is ${f3(hr.contrast)}, wants -0.45 to -0.10`);
+            const dh = [0, 1, 2].map(i => Math.abs(am.rgb[i] - hr.rgb[i]));
+            say(Math.max.apply(null, dh) >= 12, `the grenadier and the American differ by ${dh.map(Math.round).join(',')} levels, wants 12 in one channel`);
           }
         }
       });

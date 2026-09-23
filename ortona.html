@@ -1228,28 +1228,43 @@ var FACTION = {
   ger: { name: '1. Fallschirmjäger-Division', short: 'FJ', color: '#ad6957', dark: '#4b2922', hq: 'ger_hq' }
 };
 function foe(s) { return s === 'us' ? 'ger' : 'us'; }
-/* ---- the army on the Allied side is the map's.
+/* ---- the army on each side is the map's.
    The Canadians fought the Italian maps and the Americans came ashore on the beach, and
    every system in the file knows the Allied side as 'us' and should go on knowing it that
-   way. So an army is a name and a list of what it fields in place of the Canadian
-   roster, keyed by the Canadian unit it replaces: a map names its army (`data.allies`)
-   and anything the list does not name is still the Canadian unit. The American list is
-   one entry long today and grows as the American army is built. */
+   way. So an army is a name and a list of what it fields in place of the first roster,
+   keyed by the unit it replaces: a map names its army (`data.allies`) and anything the
+   list does not name is still the Canadian unit. The German side works the same way from
+   the paratroopers (`data.axis`): the FJ held Ortona and the Foglia, and the men behind
+   the seawall on the beach were the 352nd Infantry Division, which fielded grenadiers in
+   field grey and not paratroopers in smocks. Both new lists are one entry long today and
+   grow as each army is built. */
 var NATIONS = {
   can: { name: '1st Canadian Infantry Division', short: 'CAN', pick: '1ST CANADIAN INFANTRY DIVISION',
          blurb: 'Lee-Enfield rifle sections, engineers trained for mouse-holing, and Sherman support from the Three Rivers Regiment.',
          sub: {} },
   usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
          blurb: 'Rifle squads with the M1 Garand, ashore at the water with everything still to do, and the draws the only way their armour gets off the beach.',
-         sub: { us_rifle: 'am_rifle' } }
+         sub: { us_rifle: 'am_rifle' } },
+  fj:   { side: 'ger', name: '1. Fallschirmjäger-Division', short: 'FJ', pick: '1. FALLSCHIRMJÄGER-DIVISION',
+          blurb: 'Compact veteran groups, prepared demolitions and MG42 positions built to dominate the narrow streets.',
+          sub: {} },
+  heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
+          blurb: 'Grenadier squads with the Kar98k behind the seawall and along the bluff, the Atlantic Wall in front of them and the bocage at their backs.',
+          sub: { ger_gren: 'hr_gren' } }
 };
-var NAT = 'can';
-function setNation(n) {
-  NAT = NATIONS[n] ? n : 'can';
+var NAT = 'can', NAX = 'fj';
+function setNation(n, a) {
+  NAT = NATIONS[n] && NATIONS[n].side !== 'ger' ? n : 'can';
+  NAX = NATIONS[a] && NATIONS[a].side === 'ger' ? a : 'fj';
   FACTION.us.name = NATIONS[NAT].name; FACTION.us.short = NATIONS[NAT].short;
+  FACTION.ger.name = NATIONS[NAX].name; FACTION.ger.short = NATIONS[NAX].short;
 }
-/* what the Allied side fields for a unit of the Canadian roster, on this map */
-function natKey(key) { var s = NATIONS[NAT].sub[key]; return s || key; }
+/* what a side fields for a unit of its first roster, on this map: the list is the army of
+   the side the unit belongs to, so one call serves both */
+function natKey(key) {
+  var d = UNITS[key], s = NATIONS[d && d.side === 'ger' ? NAX : NAT].sub[key];
+  return s || key;
+}
 function makesOf(b) { return b.def.makes ? b.def.makes.map(natKey) : null; }
 /* The army a unit belongs to, which can differ from its side: the Allied side
    fields Canadians on the Italian maps and Americans on the beach, and what a man is
@@ -1493,6 +1508,19 @@ var UNITS = {
     models: 4, hpPer: 97, speed: 62, sight: 320, pop: 7, cost: { mp: 250 }, time: 20,
     w: { range: 285, dmg: 13.7, rof: 0.95, acc: .605, sup: .013, pen: 14 },
     desc: 'Veteran paratroopers with Kar98k rifles and an MP40. Fewer men than a Canadian section, but longer effective reach.'
+  },
+  /* The grenadier squad of the 352nd Infantry Division as it stood behind the seawall on
+     the 6th of June: six men in field grey, five with the Kar98k and the squad leader with
+     an MP40. More men than a paratroop group and less of each of them, a bolt rifle's rate
+     against the Garand's, and a little more reach than the American squad because the
+     Kar98k is laid to shoot further than the ground in front of the wall asks of it. It
+     is what the German side fields in place of the FJ group on a map whose army is the
+     352nd (`natKey`). */
+  hr_gren: {
+    side: 'ger', nat: 'heer', name: 'Grenadier Squad', short: 'GREN', cat: 'inf', hk: 'R',
+    models: 6, hpPer: 80, speed: 62, sight: 310, pop: 8, cost: { mp: 250 }, time: 20,
+    w: { range: 270, dmg: 8.0, rof: 0.92, acc: .59, sup: .013, pen: 14 },
+    desc: 'Six grenadiers of the 352nd Infantry Division with Kar98k rifles and an MP40: a bigger squad than a paratroop group, with the reach of a bolt rifle and not its veterans.'
   },
   ger_mg42: {
     side: 'ger', name: 'MG42 Team', short: 'MG42', cat: 'team', hk: 'G',
@@ -3380,7 +3408,7 @@ function omahaMapData() {
     { k: 'ger_gren', x: 190, y: 2394, a: 1.57, dig: 1 }, { k: 'ger_gren', x: 750, y: 2402, a: 1.57, dig: 1 },
     { k: 'ger_gren', x: 1320, y: 2394, a: 1.57, dig: 1 }] };
   return { name: 'Omaha Beach', when: 'DOG AND EASY · 6 JUNE 1944', version: 3, land: 'omaha', w: 1500, h: 4000,
-           allies: 'usa', craftPost: 'us', garrison: garrison, entities: E, height: [] };
+           allies: 'usa', axis: 'heer', craftPost: 'us', garrison: garrison, entities: E, height: [] };
 }
 /* ---- build the world from a map ---- */
 /* ---- how big the world is ----
@@ -3460,7 +3488,7 @@ function buildMap(data) {
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
   G.craft = []; G.hogpts = []; G.atDitch = []; G.hedges = []; G.fieldTones = [];
   G.craftPost = data.craftPost || null;            /* the side whose posts are made of craft */
-  setNation(data.allies);                            /* and the army the Allied side is */
+  setNation(data.allies, data.axis);                 /* and the army each side is */
   wallq = null;                                    /* the standing index is rebuilt with them */
   ruinq = null;                                    /* and the index of what can be knocked down */
   /* Every prop in G.hurt is one of the objects just thrown away, so what is left of a
@@ -9820,7 +9848,7 @@ function manWall() {
       if (u && !u.gar) u.pose = 'hold';                /* the tube dug in behind it */
     } else {
       var sp = nearestFree(e.x, e.y);
-      u = spawnUnit(sl, e.k, sp.x, sp.y, e.a || 0);
+      u = spawnUnit(sl, natKey(e.k), sp.x, sp.y, e.a || 0);
       u.setup = 0; u.pose = e.dig ? 'dig' : 'hold';
     }
     if (u) { u.wall = 1; u.react = 'fight'; }
@@ -12445,8 +12473,8 @@ function aiTick(dt) {
   var K = side === 'us'
     ? { eng: 'us_eng', inf: 'us_rifle', mg: 'us_mg', mor: 'us_mor', how: 'us_how', elite: 'us_ab', at: 'us_at', lt: 'us_m8', lt2: 'us_m3', lt3: 'us_stuart', tank: 'us_sher', b1: 'us_bar', b2: 'us_mot' }
     : { eng: 'ger_pio', inf: 'ger_gren', mg: 'ger_mg42', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'ger_pgren', at: 'ger_pak', lt: 'ger_sd222', lt2: 'ger_h251', tank: 'ger_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep' };
-  /* the army this map's Allied side is */
-  if (side === 'us') Object.keys(K).forEach(function (r) { K[r] = natKey(K[r]); });
+  /* the army this map's side is */
+  Object.keys(K).forEach(function (r) { K[r] = natKey(K[r]); });
 
   /* ---- what it has.
      Five lists, because the same unit is a different thing to each part of the brain.
@@ -15529,13 +15557,13 @@ function drawDepthGeom(buf, model) {
 var MATS = {
   names: ['generic', 'paint', 'steel', 'rubber', 'wood', 'hessian', 'brick', 'plaster',
           'stone', 'earth', 'canvas', 'concrete', 'track', 'tile', 'cloth', 'grass', 'leaf', 'bark',
-          'zimmerit', 'splinter', 'net', 'leather', 'ktcamo', 'p4camo', 'scrim', 'usnet'],
+          'zimmerit', 'splinter', 'net', 'leather', 'ktcamo', 'p4camo', 'scrim', 'usnet', 'hrwire'],
   /* [specular strength, shininess, uv scale] per material */
   spec: [[.08, 18, .10], [.32, 42, .08], [.55, 70, .12], [.10, 12, .16], [.14, 20, .10], [.04, 8, .12],
          [.06, 10, .05], [.05, 10, .06], [.08, 12, .06], [.03, 6, .04], [.06, 9, .12], [.09, 14, .05],
          [.40, 38, .18], [.14, 18, .08], [.05, 8, .16], [.02, 6, .25], [.06, 10, .3], [.04, 8, .14],
          [.14, 20, .05], [.05, 8, .22], [.03, 6, .5], [.30, 26, .2], [.10, 14, .018], [.11, 15, .024],
-         [.04, 8, .35], [.05, 9, .30]],
+         [.04, 8, .35], [.05, 9, .30], [.05, 8, .30]],
   byColour: {}, atlas: null, tex: null, TILE: 256, COLS: 4
 };
 function matIndex(name) { return MATS.names.indexOf(name); }
@@ -15738,6 +15766,14 @@ function tagKit() {
   tagAll([A.helm, A.helmD, A.liner], 'generic');
   tagAll([A.wood, A.helve], 'wood');
   tagAll([A.steel], 'steel');
+  /* and the grenadier's, the same way and for the same reason */
+  var H = KIT.heer;
+  tagAll([H.coat, H.coatD, H.trous, H.eagle, H.litzen, H.felt], 'cloth');
+  tagAll([H.boot, H.belt, H.tool, H.rubber], 'leather');
+  tagAll([H.web, H.webD, H.canvas, H.gaiter, H.mag], 'canvas');
+  tagAll([H.helm, H.helmD, H.liner, H.tin, H.nade, H.cup], 'paint');
+  tagAll([H.wood, H.helve, H.stick], 'wood');
+  tagAll([H.steel, H.buckle], 'steel');
   soft = false;
   tagAll(['#3b3226', '#4a4030'], 'rubber');
   tagAll([D.smock], 'splinter');
@@ -16022,6 +16058,28 @@ function buildAtlas() {
     l += (fbm(u * 40, v * 40, 50, 2) - .5) * .10;
     if (t1 < 2.2 || t2 < 2.2) { l = .30 + (noise2(Math.floor((x + y) / 7), Math.floor((x - y) / 7), 51) - .5) * .08; r = 1.06; g = .98; b = .78; }
     if (t1 < 3.4 && t2 < 3.4) { l = .24; r = 1.05; g = .96; b = .76; }                    /* the knots */
+    return [l * r, l * g, l * b, 1];
+  });
+  /* An M42 under chicken wire with the foliage worked into it, which is how Normandy saw
+     the 352nd once the bocage had taught it: a hexagonal mesh of thin galvanised wire over
+     the painted shell, and grass and leaves pushed through it in clumps. The mesh is the
+     Voronoi of a lattice of offset rows, six across and eight down so it repeats without a
+     seam, and the clumps come off the tiling noise the ground's grain uses, for the same
+     reason. Painted about the atlas mean: the value is the vertex colour's. */
+  paint(26, function (u, v, x, y) {
+    var P = 256 / 6, Q = 256 / 8, j0 = Math.floor(y / Q), d1 = 1e9, d2 = 1e9, i, j;
+    for (j = j0 - 1; j <= j0 + 1; j++) for (i = Math.floor(x / P) - 1; i <= Math.floor(x / P) + 2; i++) {
+      var cx = i * P + ((j & 1) ? P / 2 : 0), cy = j * Q + Q / 2, dd = Math.hypot(x - cx, (y - cy) * 1.25);
+      if (dd < d1) { d2 = d1; d1 = dd; } else if (dd < d2) d2 = dd;
+    }
+    var leaf = tileNoise(u, v, 61, 3, 5), kind = tileNoise(u, v, 67, 2, 3);
+    var l = .5 + (fbm(u * 30, v * 30, 60, 2) - .5) * .08, r = 1, g = 1, b = .97;
+    if (leaf > .5) {
+      /* a clump: mostly green, some of it browned, lighter at its heart than its edges */
+      var h = clamp((leaf - .5) * 5, 0, 1), vein = noise2(Math.floor(x / 5), Math.floor(y / 5), 63);
+      l = .44 + h * .16 + (vein - .5) * .10;
+      if (kind > .5) { r = .80; g = 1.10; b = .60; } else { r = 1.10; g = .98; b = .66; }
+    } else if (d2 - d1 < 2.4) { l = .68; r = .98; g = 1.0; b = 1.03; }                 /* the wire */
     return [l * r, l * g, l * b, 1];
   });
   MATS.atlas = c;
@@ -25002,7 +25060,21 @@ var KIT = {
          web: '#9b8d69', webD: '#7d7153', pack: '#8e8260', canvas: '#938763', gaiter: '#958966',
          helm: '#4d5038', helmD: '#383b2a', liner: '#2c2b22', patch: '#3f526e', patch2: '#8b8d88', band: '#6d6849', shirt: '#5e533d',
          tool: '#4a4936', helve: '#6e5a42', skin: '#c19a72', skinD: '#a88259',
-         hair: '#3b2e22', wood: '#6a4a30', steel: '#30332c' }
+         hair: '#3b2e22', wood: '#6a4a30', steel: '#30332c' },
+  /* The Heer grenadier in Normandy gets a fourth: the M43 tunic and trousers in field grey,
+     which by 1944 was a dull green-grey wool, and the whole of his equipment in black
+     leather -- belt, Y-straps, the two triple pouches and the boots -- with the canvas of
+     the bread bag, the grey-green steel of the gas-mask tin and the brown felt of the
+     canteen on top of that. He reads darker than any of the other three: field grey from
+     the collar to the ankle with black at the waist and below the knee, under a helmet
+     whose skirt is the one shape on the field nobody else wears. */
+  heer: { coat: '#5e6150', coatD: '#4a4d40', trous: '#555848', boot: '#1d1b18',
+          belt: '#221f1b', pouch: '#221f1b', buckle: '#6b6e66', web: '#5a5a46', webD: '#46473a',
+          canvas: '#6c6a52', pack: '#6c6a52', gaiter: '#5e5d49', tin: '#5b604e', felt: '#7a6446', cup: '#262521',
+          tool: '#2e2a24', helve: '#7a6448', eagle: '#9a9a8c', litzen: '#8f917f', rubber: '#3a3b33',
+          zelt: '#9c9676', mag: '#6e6b52', nade: '#4f5446', stick: '#8a6f4a',
+          helm: '#5b604f', helmD: '#43473a', liner: '#2a2822', skin: '#c19a72', skinD: '#a88259',
+          hair: '#3b2e22', wood: '#5b3d27', steel: '#2c2f2a' }
 };
 /* ---- the rig ------------------------------------------------------------------
    One figure, one set of joints, one table of poses. What was here was a stack of
@@ -25118,6 +25190,22 @@ function figLeg(R, L, y, k, trous, anklet, rec) {
                                k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
     shin = shin.concat(figPart(taperLimb([0, 0, -R.shin + 3.12], [0, 0, -R.shin + 3.72], 1.80, 1.56, trous), 'cloth',
                                lit(trous, .88), lit(trous, .78), lit(trous, .84)));
+  } else if (anklet === 3) {
+    /* the German marching boot: black leather to a hand below the knee, the shaft a
+       little wider at the top than at the ankle, and the trouser tucked into it */
+    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin - .3], [0, 0, -R.shin + 3.55], 1.62, 1.86, k.boot), 'leather',
+                               lit(k.boot, 1.34), lit(k.boot, .96), lit(k.boot, 1.16)));
+  } else if (anklet === 4) {
+    /* the ankle boot and the canvas gaiter the war put over it in place of the marching
+       boot: strapped twice, with the trouser gathered into the top of it */
+    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin - .3], [0, 0, -R.shin + 1.45], 1.66, 1.62, k.gaiter), 'canvas',
+                               k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
+    [.35, .95].forEach(function (z) {
+      shin = shin.concat(figPart(taperLimb([0, 0, -R.shin + z], [0, 0, -R.shin + z + .16], 1.72, 1.71, k.belt), 'leather',
+                                 lit(k.belt, 1.3), k.belt, lit(k.belt, 1.12)));
+    });
+    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin + 1.3], [0, 0, -R.shin + 1.82], 1.76, 1.55, trous), 'cloth',
+                               lit(trous, .88), lit(trous, .78), lit(trous, .84)));
   } else if (anklet) shin = shin.concat(figPart(box(0, 0, -R.shin, 1.5, 1.5, 1.6, k.gaiter, k.gaiter, k.gaiter, 0), 'canvas',
                                            k.gaiter, lit(k.gaiter, .9), lit(k.gaiter, .95)));
   else shin = shin.concat(figPart(box(0, 0, -R.shin, 1.5, 1.5, 2.4, k.boot, k.boot, k.boot, 0), 'leather',
@@ -25225,7 +25313,7 @@ var WEAP = {
   lee:      { butt: [-3.4, 0, -.3], grip: [-.8, 0, -.8], fore: [3.8, 0, -.9], foreMin: [2.0, 0, -.9], muzzle: [9.9, 0, .25], carryPt: [1.2, 0, -.6] },
   garand:   { butt: [-3.35, 0, -.75], grip: [-.45, 0, -.85], fore: [4.4, 0, -1.15], foreMin: [3.2, 0, -1.2], muzzle: [9.67, 0, 0], carryPt: [1.6, 0, -1.3] },
   leescope: { butt: [-3.4, 0, -.3], grip: [-.8, 0, -.8], fore: [3.8, 0, -.9], foreMin: [2.0, 0, -.9], muzzle: [9.9, 0, .25], carryPt: [1.2, 0, -.6] },
-  kar:      { butt: [-3.4, 0, -.3], grip: [-.8, 0, -.8], fore: [3.4, 0, -.9], foreMin: [1.8, 0, -.9], muzzle: [9.7, 0, .25], carryPt: [1.0, 0, -.6] },
+  kar:      { butt: [-3.40, 0, -.85], grip: [-.45, 0, -.92], fore: [4.3, 0, -1.08], foreMin: [3.0, 0, -1.19], muzzle: [9.66, 0, 0], carryPt: [1.5, 0, -1.2] },
   sten:     { butt: [-3.8, 0, -.4], grip: [-.6, 0, -1.2], fore: [2.2, 0, -.5], foreMin: [1.2, 0, -.5], muzzle: [5.4, 0, 0], carryPt: [.2, 0, -.5], sideMag: 1 },
   mp40:     { butt: [-1.8, 0, -.3], buttOut: [-3.6, 0, -.3], grip: [-.8, 0, -1.4], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, .1], carryPt: [.4, 0, -.6] },
   bren:     { butt: [-5.1, 0, -.5], grip: [-1.4, 0, -1.2], fore: [3.2, 0, -.7], foreMin: [1.2, 0, -.7], muzzle: [8.0, 0, .1], rest: [2.0, 0, -.6], carryPt: [1.5, 0, -.6], heavy: 1 },
@@ -25391,9 +25479,83 @@ function helmetM1(k, z, V) {
   }
   return f;
 }
+/* M42 Stahlhelm. It is what says German from any distance, and what says it is the skirt:
+   a dome that pulls in at a waist a third of the way up and then flares out again below
+   it, coming down to a short visor over the brow, lower over the ears and lowest over
+   the nape. Nobody else on the field wears anything with a waist in it -- the M1 is a
+   pot, the Brodie a brim and the M38 a skull cap -- so it is swept round a plan ellipse
+   the way the M1 is, with the rim dropped by angle rather than by one term: nothing at
+   the front, over a third of a unit at the ears and over half at the back. The M42 is
+   the stamped one with the raw flared edge and no rolled rim, which is most of what the
+   352nd went to war in. `band` is a strap round it at the waist for foliage and `wire`
+   is chicken wire with the foliage in it. */
+function helmetM42(k, z, V) {
+  var N = 12, A = 1.74, B = 1.52, i, j;
+  var wire = V && V.wire, sk = matIndex(wire ? 'hrwire' : 'paint'), gn = matIndex('paint');
+  var WALL = [[1, 0], [.965, .13], [.915, .31], [.885, .50], [.878, .64], [.852, .84], [.79, 1.06],
+              [.67, 1.30], [.47, 1.50], [.24, 1.62], [0, 1.66]];
+  var shade = [k.helmD, lit(k.helm, .9), k.helm, k.helm, k.helm, lit(k.helm, 1.03), lit(k.helm, 1.05),
+               lit(k.helm, 1.07), lit(k.helm, 1.08), lit(k.helm, 1.08)];
+  function drop(t) { var c = Math.cos(t), b = Math.max(0, -c); return -(.36 * (1 - c * c) + .55 * b * b); }
+  function P(t, sc, h) {
+    var f = clamp(1 - h / .92, 0, 1);
+    return [Math.cos(t) * A * sc, Math.sin(t) * B * sc, z + h + drop(t) * f];
+  }
+  function wallN(t, q) {
+    var w = WALL[q];
+    if (!w[0]) return [0, 0, 1];
+    var a = WALL[Math.max(0, q - 1)], b = WALL[Math.min(WALL.length - 1, q + 1)];
+    var kp = P(t, b[0], b[1]), km = P(t, a[0], a[1]), tp = P(t + .01, w[0], w[1]), tm = P(t - .01, w[0], w[1]);
+    var ku = [kp[0] - km[0], kp[1] - km[1], kp[2] - km[2]], tv = [tp[0] - tm[0], tp[1] - tm[1], tp[2] - tm[2]];
+    var n = [ku[1] * tv[2] - ku[2] * tv[1], ku[2] * tv[0] - ku[0] * tv[2], ku[0] * tv[1] - ku[1] * tv[0]];
+    var l = Math.hypot(n[0], n[1], n[2]) || 1, p = P(t, w[0], w[1]);
+    if (n[0] * p[0] + n[1] * p[1] + n[2] * (p[2] - z + .3) < 0) l = -l;
+    return [n[0] / l, n[1] / l, n[2] / l];
+  }
+  function face(v, want, col, m, ns) {
+    var n = faceNormal(v[0], v[1], v[2]);
+    if (n.x * want[0] + n.y * want[1] + n.z * want[2] < 0) { v = v.slice().reverse(); if (ns) ns = ns.slice().reverse(); }
+    return { v: v, c: col, m: m, n: ns };
+  }
+  var f = [], cap = [];
+  for (j = 0; j < WALL.length - 1; j++) for (i = 0; i < N; i++) {
+    var t0 = i / N * TAU, t1 = (i + 1) / N * TAU, a = WALL[j], b = WALL[j + 1];
+    var v = [P(t0, a[0], a[1]), P(t1, a[0], a[1]), P(t1, b[0], b[1])];
+    var ns = [wallN(t0, j), wallN(t1, j), wallN(t1, j + 1)];
+    if (b[0]) { v.push(P(t0, b[0], b[1])); ns.push(wallN(t0, j + 1)); }
+    var w = [ns[0][0] + ns[2][0], ns[0][1] + ns[2][1], ns[0][2] + ns[2][2]];
+    /* the wire and the foliage in it are over the dome and not down the skirt, which is
+       where a man could still get the helmet on and off */
+    f.push(face(v, w, shade[j], j >= 3 ? sk : gn, ns));
+  }
+  /* the raw edge of the skirt, its underside, and the liner across the bottom */
+  for (i = 0; i < N; i++) {
+    var s0 = i / N * TAU, s1 = (i + 1) / N * TAU, m0 = (s0 + s1) / 2;
+    var e0 = P(s0, 1, 0), e1 = P(s1, 1, 0), g0 = P(s0, .93, .04), g1 = P(s1, .93, .04);
+    f.push(face([e0, e1, g1, g0], [Math.cos(m0) * .3, Math.sin(m0) * .3, -1], k.helmD, gn));
+    cap.push(g0);
+  }
+  f.push(face(cap, [0, 0, -1], k.liner, matIndex('generic')));
+  /* the chinstrap, worn: from inside the skirt over each ear to under the jaw, which sits
+     a fixed distance under the seat of the helmet in every posture that wears it */
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(figPart(taperLimb([.15, sd * 1.22, z - .2], [.62, sd * .5, z - 1.77], .11, .1, k.belt), 'leather',
+                         lit(k.belt, 1.2), k.belt, lit(k.belt, 1.1)));
+  });
+  f = f.concat(figPart(box(.66, 0, z - 1.85, .16, 1.0, .1, k.belt, k.belt, k.belt, 0), 'leather', lit(k.belt, 1.2), k.belt, k.belt));
+  /* a strap round the waist of the shell to hold foliage, which is what most men had
+     before they had wire */
+  if (V && V.band) for (i = 0; i < N; i++) {
+    var b0 = i / N * TAU, b1 = (i + 1) / N * TAU, bm = (b0 + b1) / 2;
+    var q0 = P(b0, .905, .50), q1 = P(b1, .905, .50), r0 = P(b0, .895, .66), r1 = P(b1, .895, .66);
+    f.push(face([q0, q1, r1, r0], [Math.cos(bm), Math.sin(bm), 0], k.web, matIndex('canvas')));
+  }
+  return f;
+}
 function helmetOf(V, k, zUS, zGER) {
   var nat = V.nat || V.side;
-  return nat === 'usa' ? helmetM1(k, zUS - .35, V) : nat === 'ger' ? helmetGER(k, zGER) : helmetUS(k, zUS);
+  return nat === 'usa' ? helmetM1(k, zUS - .35, V) : nat === 'heer' ? helmetM42(k, zUS - .30, V)
+       : nat === 'ger' ? helmetGER(k, zGER) : helmetUS(k, zUS);
 }
 /* the small arms at their real lengths, along +x from the butt */
 function weaponModel(k, type, opt) {
@@ -25439,12 +25601,41 @@ function weaponModel(k, type, opt) {
     var sl = k.webD;
     f = f.concat(taperLimb([5.73, 0, -1.02], [1.9, 0, -1.92], .13, .13, sl));
     f = f.concat(taperLimb([1.9, 0, -1.92], [-1.8, 0, -1.70], .13, .13, sl));
-  } else if (type === 'kar') {                            /* Kar98k: 1.11 m */
-    f = f.concat(at(stock(3.6, 1.6), -3.4, 0, -.3));
-    f = f.concat(box(2.4, 0, -.55, 6.2, .95, 1.1, wd, lit(wd, 1.15), lit(wd, .9)));
-    f = f.concat(barrel(-1.2, 9.7, 0, .45));
-    f = f.concat(box(-.3, 0, .1, 2.6, 1.1, .9, st, lit(st, 1.2)));
-    f = f.concat(box(.3, .6, -.3, 1.0, .5, 1.2, st, lit(st, 1.2)));
+  } else if (type === 'kar') {                            /* Kar98k: 1.110 m, 13.06 units */
+    /* The Garand's treatment, for the same reason: a bolt rifle is its stock seen from the
+       side. The Kar98k's runs nearly to the muzzle, with a semi-pistol grip behind the
+       trigger, a flat underside to the forend and the wood stopping at the nose cap with
+       a hand's breadth of barrel, the bayonet lug and the hooded front sight beyond it.
+       The handguard lies on top from the rear sight to the nose cap and passes under the
+       lower band, the bolt handle is turned down against the right of the stock, and the
+       sling runs down the LEFT side, from a slot through the butt to the lower band. */
+    var kp = [[-3.40, -.42], [-3.40, -2.00], [-2.2, -1.72], [-1.15, -1.40], [-.62, -1.46], [-.42, -1.62],
+              [-.12, -1.62], [.12, -1.05], [2.30, -1.02], [3.20, -.80], [5.90, -.66], [8.35, -.52],
+              [8.35, -.20], [3.30, -.12], [2.40, -.16], [-.30, -.34], [-.90, -.50], [-1.70, -.48]];
+    var ks = roll(prism(kp, -.42, .42, wd, lit(wd, 1.12), lit(wd, .92)), Math.PI / 2, 0, 0);
+    f = f.concat(ks.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(box(-3.36, 0, -2.00, .1, .88, 1.58, st, lit(st, 1.2)));                       /* butt plate */
+    f = f.concat(box(-2.35, .43, -1.42, .46, .06, .46, st, lit(st, 1.25)));                     /* the stock disc, right */
+    f = f.concat(tubeSmooth(-.12, 2.45, 0, 0, .36, 8, st, lit(st, 1.2)));                       /* receiver */
+    f = f.concat(box(-.40, 0, -.16, .56, .40, .40, st, lit(st, 1.2)));                          /* cocking piece */
+    f = f.concat(box(-.36, 0, .22, .12, .10, .26, st, lit(st, 1.25)));                          /* and its safety wing */
+    f = f.concat(taperLimb([.12, .30, .02], [.02, .70, -.62], .15, .13, st));                   /* bolt handle, turned down */
+    f = f.concat(box(.02, .76, -.94, .36, .32, .34, st, lit(st, 1.25)));                        /* and its knob */
+    f = f.concat(box(.55, 0, -1.42, 1.1, .28, .40, st, lit(st, 1.2)));                          /* trigger guard */
+    f = f.concat(box(1.75, 0, -1.10, 1.3, .60, .10, st, lit(st, 1.2)));                         /* magazine floor plate */
+    f = f.concat(barrel(2.40, 9.66, 0, .19));
+    f = f.concat(box(2.95, 0, .10, .95, .52, .30, st, lit(st, 1.2)));                           /* rear sight, tangent leaf */
+    f = f.concat(box(5.875, 0, -.16, 4.95, .66, .44, lit(wd, 1.05), lit(wd, 1.15), lit(wd, .95)));  /* upper handguard */
+    f = f.concat(box(5.90, 0, -.72, .28, .86, 1.12, st, lit(st, 1.2)));                         /* lower band */
+    f = f.concat(box(5.90, -.49, -.82, .20, .12, .30, st, st));                                 /* its sling swivel, left */
+    f = f.concat(box(8.45, 0, -.62, .55, .80, .98, st, lit(st, 1.2)));                          /* nose cap */
+    f = f.concat(box(8.78, 0, -.60, .66, .24, .22, st, lit(st, 1.2)));                          /* bayonet lug */
+    f = f.concat(tubeSmooth(8.2, 9.2, 0, -.36, .07, 5, st, st));                                /* cleaning rod */
+    f = f.concat(tubeSmooth(9.18, 9.62, 0, .30, .20, 6, st, lit(st, 1.2)));                     /* the front sight hood */
+    f = f.concat(box(9.40, 0, .12, .16, .12, .30, st, st));                                     /* and its post */
+    var ksl = k.belt || k.webD;
+    f = f.concat(taperLimb([5.90, -.49, -.86], [2.0, -.50, -1.82], .13, .13, ksl));
+    f = f.concat(taperLimb([2.0, -.50, -1.82], [-2.2, -.46, -1.50], .13, .13, ksl));
   } else if (type === 'sten') {                           /* Sten Mk II: 0.76 m */
     f = f.concat(tubeSmooth(-1.5, 3.0, 0, 0, .55, 6, st, st));                                /* receiver tube */
     f = f.concat(barrel(3.0, 5.4, 0, .45));
@@ -25502,6 +25693,14 @@ var SOLDIER_VARIANTS = {
      straps, has hessian through his net and a field dressing tucked into it */
   gi_rifle:     { side: 'us', nat: 'usa', weapon: 'garand', set: 'field' },
   gi_rifle_b:   { side: 'us', nat: 'usa', weapon: 'garand', band: 1, nades: 1, packet: 1, scrim: 1, set: 'field' },
+  /* the Heer grenadier, three ways: the rifleman in marching boots with a strap round his
+     helmet and the mess tin on his bread bag; the rifleman in ankle boots and gaiters with
+     chicken wire and foliage on his helmet, the assault frame on his back and two stick
+     grenades in his belt; and the squad leader with the machine carbine, its pouches and
+     his field glasses */
+  gr_rifle:     { side: 'ger', nat: 'heer', weapon: 'kar', band: 1, tin: 1, set: 'field' },
+  gr_rifle_b:   { side: 'ger', nat: 'heer', weapon: 'kar', gaiters: 1, wire: 1, frame: 1, nades: 1, set: 'field' },
+  gr_mp40:      { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, glass: 1, tin: 1, set: 'field' },
   fj_rifle:     { side: 'ger', weapon: 'kar', pouch: 'leather', set: 'field' },
   fj_mp40:      { side: 'ger', weapon: 'mp40', assault: 1, pouch: 'canvas', set: 'field' },
   fj_schreck:   { side: 'ger', weapon: 'schreck', assault: 1, pouch: 'canvas', set: 'field' },
@@ -25525,6 +25724,7 @@ function variantForModel(u, i) {
     return 'can_rifle';
   }
   if (u.key === 'ger_gren') return i === 0 ? 'fj_mp40' : 'fj_rifle';
+  if (u.key === 'hr_gren') return i === 0 ? 'gr_mp40' : i % 2 ? 'gr_rifle' : 'gr_rifle_b';
   if (u.key === 'ger_pgren') return i === 0 ? 'fj_schreck' : i < 3 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pio') return i === 0 ? 'fj_mp40' : 'fj_rifle';
   /* the eighty-eight and the heavy battery are laid by their own crews and never
@@ -25553,6 +25753,7 @@ function proneModel(variant, phase) {
    the black leather belt, the pouches, the bread bag and the gas-mask tin. */
 function figKit(V, side, k, ger, rec) {
   if (V.nat === 'usa') return figKitGI(V, k, rec);
+  if (V.nat === 'heer') return figKitHeer(V, k, rec);
   var f = [], web = ger ? k.belt : k.web, wmat = ger ? 'leather' : 'canvas';
   function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
   function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
@@ -25640,6 +25841,102 @@ function figKitGI(V, k, rec) {
   });
   return f;
 }
+/* What the grenadier carries, hip-relative, and nearly all of it is black leather. The
+   belt and its buckle; the Y-straps, up the chest from the pouches, over the shoulders and
+   down the back to one strap; the two triple pouches for the Kar98k's clips either side
+   of the buckle, three lids each, which is the one thing a German waist has that nobody
+   else's does. On the left hip the spade in its carrier with the handle hanging down
+   behind and the bayonet in its frog in front of it; on the right rear the bread bag with
+   the canteen hooked to it in its brown felt and black cup; behind, the fluted tin of the
+   gas mask on its sling, which crosses the chest from the right shoulder with the gas
+   cape's pouch on it. A leader carries the machine carbine's long canvas pouches and
+   field glasses; some have the mess tin on the bread bag; the man with the assault frame
+   has it between his shoulder blades with the shelter quarter rolled over it, and two
+   stick grenades pushed behind his belt. */
+function figKitHeer(V, k, rec) {
+  var f = [], bl = k.belt;
+  function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
+  function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
+  function part(g, mat, fr, bk, sd) { f = f.concat(figPart(g, mat, fr, bk, sd)); }
+  /* black leather takes a sheen rather than a value, so its lit faces are lifted more
+     than cloth's would be */
+  function lea(g, lift) { part(g, 'leather', lit(bl, lift || 1.28), bl, lit(bl, 1.12)); }
+  function strap(y0, z0, y1, z1, x, wd, col, mat) {
+    var dy = y1 - y0, dz = z1 - z0, L = Math.hypot(dy, dz);
+    var g = at(roll(box(0, 0, -L / 2, .1, wd, L, col, col, col, 0), -Math.atan2(dy, dz), 0, 0), x, (y0 + y1) / 2, (z0 + z1) / 2);
+    part(g, mat, lit(col, mat === 'leather' ? 1.28 : 1.08), col, lit(col, mat === 'leather' ? 1.12 : .94));
+  }
+  lea(box(0, 0, 1.92, 3.28, 4.72, .6, bl, bl, bl, 0));
+  part(box(1.665, 0, 1.94, .1, .66, .56, k.buckle, k.buckle, k.buckle, 0), 'steel', lit(k.buckle, 1.2), k.buckle, k.buckle);
+  [-1, 1].forEach(function (sd) {
+    var a = mark('pouches');
+    if (V.mp) {
+      /* three magazines a pouch, standing up off the belt nearly to the hem */
+      var mc = k.mag;
+      part(box(1.86, sd * 1.42, .1, .44, 1.28, 2.38, mc, mc, mc, 0), 'canvas', lit(mc, 1.08), lit(mc, .88), mc);
+      [-1, 0, 1].forEach(function (j) {
+        part(box(2.1, sd * 1.42 + j * .41, 1.92, .06, .37, .56, mc, mc, mc, 0), 'canvas', lit(mc, 1.16), lit(mc, .9), lit(mc, 1.02));
+      });
+    } else {
+      lea(box(1.86, sd * 1.36, 1.05, .46, 1.78, 1.25, bl, bl, bl, 0), 1.18);
+      [-1, 0, 1].forEach(function (j) { lea(box(2.13, sd * 1.36 + j * .6, 1.86, .08, .54, .48, bl, bl, bl, 0), 1.42); });
+    }
+    upto('pouches', a);
+    /* the Y-straps: up the chest from the pouch, over the shoulder, and down the back to
+       where the two meet */
+    lea(box(1.6, sd * 1.36, 2.4, .1, .42, 3.6, bl, bl, bl, 0));
+    lea(box(0, sd * 1.36, 6.6, 3.1, .42, .1, bl, bl, bl, 0));
+    strap(sd * 1.36, 6.4, 0, 4.3, -1.62, .42, bl, 'leather');
+  });
+  lea(box(-1.64, 0, 2.45, .1, .45, 1.95, bl, bl, bl, 0));
+  /* the gas mask: a fluted tin hanging behind at the left of the seat, its sling across
+     the back and the chest, and the gas cape's pouch strapped to the sling */
+  var pk = mark('pack'), tn = k.tin;
+  part(cyl(-2.32, -.62, -.55, .66, .66, 2.6, 8, tn, lit(tn, 1.1), 0, true), 'paint', lit(tn, 1.06), lit(tn, .86), tn);
+  [-.2, .7, 1.6].forEach(function (z) {
+    part(cyl(-2.32, -.62, z, .71, .71, .13, 8, lit(tn, .92), lit(tn, 1.05), 0, true), 'paint', lit(tn, 1.0), lit(tn, .82), lit(tn, .92));
+  });
+  part(cyl(-2.32, -.62, 2.05, .70, .70, .24, 8, lit(tn, .9), lit(tn, 1.12), 0, true), 'paint', lit(tn, 1.0), lit(tn, .8), lit(tn, .9));
+  upto('pack', pk);
+  strap(1.9, 6.3, -2.2, 2.55, 1.69, .32, k.web, 'canvas');
+  strap(1.9, 6.3, -.62, 2.3, -1.72, .32, k.web, 'canvas');
+  part(at(roll(box(0, 0, -.55, .22, 1.28, 1.1, k.rubber, k.rubber, k.rubber, 0), -Math.atan2(-4.1, -3.75), 0, 0), 1.77, .06, 4.61),
+       'leather', lit(k.rubber, 1.12), lit(k.rubber, .9), k.rubber);
+  /* the bread bag on the right rear, its flap a shade lighter, and the canteen on it */
+  var cv = k.canvas;
+  part(box(-2.05, 1.6, -.25, .8, 2.3, 2.3, cv, cv, cv, 0), 'canvas', lit(cv, .96), lit(cv, 1.06), lit(cv, 1.0));
+  part(box(-2.47, 1.6, 1.0, .06, 2.32, 1.08, cv, cv, cv, 0), 'canvas', lit(cv, 1.0), lit(cv, 1.14), lit(cv, 1.04));
+  part(cyl(-1.45, 2.9, -.4, .52, .38, 1.8, 8, k.felt, lit(k.felt, 1.08), 0, true), 'cloth', lit(k.felt, 1.05), lit(k.felt, .88), k.felt);
+  part(cyl(-1.45, 2.9, 1.4, .44, .33, .55, 8, k.cup, lit(k.cup, 1.3), 0, true), 'paint', lit(k.cup, 1.3), k.cup, lit(k.cup, 1.15));
+  if (V.tin) part(cyl(-2.95, 1.6, .15, .5, .82, 1.6, 8, tn, lit(tn, 1.1), 0, true), 'paint', lit(tn, .94), lit(tn, 1.08), tn);
+  /* the spade in its carrier on the left hip, the handle down behind, and the bayonet in
+     its frog in front of it */
+  part(box(-.5, -2.55, .45, 1.9, .3, 1.9, k.tool, k.tool, k.tool, 0), 'leather', lit(k.tool, 1.2), k.tool, lit(k.tool, 1.1));
+  part(taperLimb([-1.05, -2.58, .55], [-1.95, -2.52, -1.65], .3, .28, k.helve), 'wood', k.helve, lit(k.helve, .85), lit(k.helve, .92));
+  part(box(.42, -2.74, 1.35, .32, .1, .8, bl, bl, bl, 0), 'leather', lit(bl, 1.3), bl, bl);
+  part(taperLimb([.42, -2.8, 1.92], [.7, -2.82, -1.55], .26, .18, k.steel), 'steel', lit(k.steel, 1.3), k.steel, lit(k.steel, 1.12));
+  part(box(.42, -2.8, 1.92, .22, .22, .85, k.wood, k.wood, k.wood, 0), 'wood', lit(k.wood, 1.1), lit(k.wood, .85), k.wood);
+  if (V.frame) {
+    /* the assault frame: its two straps in an A between the shoulder blades, the mess tin
+       strapped on it, and the shelter quarter rolled across the top */
+    [-1, 1].forEach(function (sd) { strap(sd * .95, 3.3, sd * .35, 5.95, -1.66, .3, k.web, 'canvas'); });
+    part(cyl(-2.12, 0, 3.8, .5, .82, 1.65, 8, tn, lit(tn, 1.1), 0, true), 'paint', lit(tn, .94), lit(tn, 1.08), tn);
+    var zr = at(roll(cyl(0, 0, -1.35, .42, .42, 2.7, 8, k.zelt, lit(k.zelt, 1.05), 0, true), Math.PI / 2, 0, 0), -2.05, 0, 5.95);
+    part(zr, 'splinter', lit(k.zelt, 1.04), lit(k.zelt, .9), k.zelt);
+    [-.8, .8].forEach(function (y) {
+      part(at(roll(cyl(0, 0, -.06, .455, .455, .12, 8, k.web, k.web, 0, true), Math.PI / 2, 0, 0), -2.05, y, 5.95), 'canvas', lit(k.web, 1.05), k.webD, k.web);
+    });
+  }
+  if (V.nades) [[1.1, 2.45], [.35, 2.55]].forEach(function (g) {
+    /* the head up above the belt and the long handle down behind it */
+    part(cyl(g[0], g[1], 2.52, .32, .32, .78, 8, k.nade, lit(k.nade, 1.1), 0, true), 'paint', lit(k.nade, 1.08), lit(k.nade, .86), k.nade);
+    part(cyl(g[0], g[1], .2, .13, .13, 2.32, 6, k.stick, k.stick, 0, true), 'wood', lit(k.stick, 1.05), lit(k.stick, .86), k.stick);
+  });
+  if (V.glass) [-1, 1].forEach(function (sd) {
+    part(cyl(1.88, sd * .3, 3.7, .22, .22, .78, 6, '#1d1e1b', '#2a2b27', 0, true), 'rubber', '#2a2b27', '#1d1e1b', '#232420');
+  });
+  return f;
+}
 /* A box laid along +x rather than up +z, which is the frame a man lying down is built
    in: `frustum` runs up its own axis, so a prone torso is built standing and turned. */
 function layFrustum(x0, x1, t, wA, wB, z0, col) {
@@ -25700,13 +25997,16 @@ function figCarry(P, W, w, wide) {
 function manFaces(variant, P) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[V.nat || side];
   if (P.flat) return flatFaces(V, side, k, P);
-  var ger = side === 'ger', ame = V.nat === 'usa', coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth';
+  /* `ger` is the paratrooper and his smock; the grenadier is the same side in another army
+     and wears none of it, so he is `hr` and `ger` is false for him */
+  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa';
+  var coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
   var lean = P.lean || 0, blade = P.blade || 0, J = {}, Q = {}, LR = [], AR = [];
 
   /* the legs first, and the lift that every other part is built on. They are not put
      down until the trunk has been leaned, because a fall leans far enough to take a
      shoulder through the ground and the plant has to answer for the whole man. */
-  var ank = ger ? 0 : ame ? 2 : 1;
+  var ank = ger ? 0 : ame ? 2 : hr ? (V.gaiters ? 4 : 3) : 1;
   var raw = figLeg(RIG, P.legs[0], -RIG.hipY, k, k.trous, ank, LR).concat(figLeg(RIG, P.legs[1], RIG.hipY, k, k.trous, ank, LR));
   var hipZ = -lowestZ(raw);
 
@@ -25735,6 +26035,25 @@ function manFaces(variant, P) {
                 'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
     /* the storm flap over the zip, which is what makes a flat front a jacket */
     add(figPart(box(1.56, .18, -.46, .08, .34, 6.95, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.08), k.coatD, lit(k.coatD, 1.02)));
+  } else if (hr) {
+    /* The M43 tunic: field grey wool cut to the hip and belted, so below the belt it is a
+       skirt, closer cut than the American's and a little longer. Four patch pockets with
+       straight flaps and no pleats, because the pleats were the first thing the war
+       economy took out of it: the breast pair high under the Y-straps and the skirt pair
+       below where the ammunition pouches hang. The eagle is over the right breast. */
+    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.4), -1.2, .4, k.trous), 0, 0, -.4),
+                'cloth', lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
+    add(figPart(faceOut(frustum(rect(3.3, 4.85), rect(3.0, 4.45), -.55, 2.0, coat), 0, 0, .7),
+                'cloth', lit(coat, .96), lit(coat, .86), lit(coat, .91)), 'skirt');
+    add(figPart(faceOut(frustum(rect(3.0, 4.45), rect(3.1, 5.0), 2.0, 6.0, coat), 0, 0, 4.0),
+                'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
+    [-1, 1].forEach(function (sd) {
+      add(figPart(box(1.56, sd * 1.12, 3.85, .1, 1.25, 1.2, coat, coat, coat, 0), 'cloth', lit(coat, 1.03), lit(coat, .9), lit(coat, .97)));
+      add(figPart(box(1.6, sd * 1.12, 4.72, .12, 1.32, .42, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.1), k.coatD, lit(k.coatD, 1.04)));
+      add(figPart(box(1.66, sd * 1.2, -.5, .1, 1.45, 1.45, coat, coat, coat, 0), 'cloth', lit(coat, 1.0), lit(coat, .88), lit(coat, .94)));
+      add(figPart(box(1.7, sd * 1.2, .52, .12, 1.52, .45, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.08), k.coatD, lit(k.coatD, 1.02)));
+    });
+    add(figPart(box(1.58, 1.12, 5.2, .06, .95, .32, k.eagle, k.eagle, k.eagle, 0), 'cloth', lit(k.eagle, 1.06), lit(k.eagle, .9), k.eagle));
   } else {
     add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.3), -1.2, 2.0, k.trous), 0, 0, .4),
                 'cloth', lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
@@ -25748,6 +26067,11 @@ function manFaces(variant, P) {
      is the dark ring under his chin that stops a pale jacket running into his face */
   var cc = ame ? k.shirt : coat;
   add(figPart(box(.4, 0, 6.6, 1.6, 2.4, .6, cc, cc, cc, 0), cmat, lit(cc, .95), lit(cc, .9), lit(cc, .92)), 'collar');
+  /* the grenadier's collar carries its two pale bars of braid, which are the only thing
+     on him that is not field grey, black or canvas */
+  if (hr) [-1, 1].forEach(function (sd) {
+    add(figPart(box(1.22, sd * .72, 6.7, .05, .4, .28, k.litzen, k.litzen, k.litzen, 0), 'cloth', lit(k.litzen, 1.05), k.litzen, k.litzen));
+  });
   add(figPart(cyl(0, 0, 6.4, .6, .6, .9, 6, k.skinD, k.skin, 0, true), 'generic', k.skin, k.skinD, k.skinD), 'neck');
   var KQ = {}, kitAt = up.length;
   add(figKit(V, side, k, ger, KQ), 'kit');
@@ -25760,7 +26084,7 @@ function manFaces(variant, P) {
      the same place, which is the one thing the per-gun grips exist to stop. */
   var grip = P.carry === 'grips';
   var W = grip ? null : WEAP[V.weapon], w = W ? weaponModel(k, V.weapon, P.carry === 'aim' ? 'out' : '') : null;
-  var C = W ? figCarry(P, W, w, ger ? .9 : ame ? .45 : 0) : null, anchors = {};
+  var C = W ? figCarry(P, W, w, ger ? .9 : ame ? .45 : hr ? .6 : 0) : null, anchors = {};
   var bl = blade ? Math.cos(blade) : 1, bs = blade ? Math.sin(blade) : 0;
   function shoulder(sd) {
     var x = RIG.shX, y = sd * RIG.shY;
@@ -25772,17 +26096,18 @@ function manFaces(variant, P) {
     wRange = [up.length, up.length + C.L.faces.length];
     add(C.L.faces, 'weapon');
     arm(figArm(rS, C.rHand.slice(), C.rPole, k, coat, cmat, 1, 0, undefined, AR));
-    if (C.both) arm(figArm(lS, fitHand(lS, C.L, W.foreMin, W.fore, RIG.reach).slice(), C.lPole, k, coat, cmat, -1, !ger, undefined, AR));
+    if (C.both) arm(figArm(lS, fitHand(lS, C.L, W.foreMin, W.fore, RIG.reach).slice(), C.lPole, k, coat, cmat, -1, patch, undefined, AR));
     /* the free arm swings against the legs */
     /* and it hangs outboard of him: a jump smock is 6.4 across the hem, so an arm
-       swinging at 2.6 hangs inside the man wearing it */
-    else arm(figArm(lS, [1.2 + (P.armSwing || 0), ger ? -3.9 : -3.0, 1.6], [0, -1, -.6], k, coat, cmat, -1, !ger, undefined, AR));
+       swinging at 2.6 hangs inside the man wearing it; and a grenadier's left hip carries
+       the spade and the bayonet, which an arm at 3.0 swung through */
+    else arm(figArm(lS, [1.2 + (P.armSwing || 0), ger ? -3.9 : hr ? -3.3 : -3.0, 1.6], [0, -1, -.6], k, coat, cmat, -1, patch, undefined, AR));
     anchors.muzzle = C.L.at(W.muzzle);
     anchors.bore = C.L.at([W.muzzle[0] - 3, W.muzzle[1], W.muzzle[2]]);
   } else {
     var g = P.grips || [3.0, 1.7, 1.7];
     arm(figArm(rS, [g[0], g[1], g[2]], [0, 1, -.6], k, coat, cmat, 1, 0, undefined, AR));
-    arm(figArm(lS, [g[0], -g[1], g[2]], [0, -1, -.6], k, coat, cmat, -1, !ger, undefined, AR));
+    arm(figArm(lS, [g[0], -g[1], g[2]], [0, -1, -.6], k, coat, cmat, -1, patch, undefined, AR));
   }
 
   /* The head is counter-pitched about the chin by the lean it is about to be given, so
@@ -25862,12 +26187,13 @@ function figPtAbout(p, ang, oz) {
    him is a distance along the ground rather than a height. `ph` is the crawl phase;
    with no phase it is the still prone. */
 function flatFaces(V, side, k, P) {
-  var ger = side === 'ger', ame = V.nat === 'usa', coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth';
+  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa';
+  var coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
   var f = [], Q = {}, LG = [], AR = [], AT = [];
   var ph = P.ph || 0, cw = ph ? Math.cos(ph * TAU) : 0, sw = ph ? Math.sin(ph * TAU) : 0;
   function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
   /* the American's jacket comes down over his seat, so lying down it runs further back */
-  add(figPart(layFrustum(ame ? -7.4 : -6.5, 0, 2.4, 4.6, 5.0, .4, coat), cmat, coat, lit(coat, .92), lit(coat, .95)), 'torso');
+  add(figPart(layFrustum(ame ? -7.4 : hr ? -7.2 : -6.5, 0, 2.4, 4.6, 5.0, .4, coat), cmat, coat, lit(coat, .92), lit(coat, .95)), 'torso');
   add(figPart(box(-8.3, 0, .4, 3.6, 4.4, 2.0, k.trous, k.trous, k.trous, 0), 'cloth',
               lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
   if (ame) {
@@ -25877,6 +26203,23 @@ function flatFaces(V, side, k, P) {
                 lit(k.pack, 1.10), lit(k.pack, .92), k.pack), 'pack');
     f = f.concat(figPart(box(-5.0, 0, 2.8, 1.95, 1.75, 1.45, k.canvas, 0, 0, 0), 'canvas', lit(k.canvas, 1.08), lit(k.canvas, .92), k.canvas));
     f = f.concat(figPart(box(-5.6, 0, .25, .95, 5.1, 2.75, k.web, 0, 0, 0), 'canvas', lit(k.web, 1.1), lit(k.web, .9), lit(k.web, .96)));
+  } else if (hr) {
+    /* the belt round him, the Y-straps over his shoulders into one down his back, the
+       bread bag on his right hip and the gas-mask tin lying along his seat, and the man
+       with the assault frame has it high between his shoulder blades */
+    var bl = k.belt, tn = k.tin;
+    f = f.concat(figPart(box(-6.2, 0, .3, .7, 5.0, 2.62, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
+    [-1, 1].forEach(function (sd) {
+      f = f.concat(figPart(box(-1.6, sd * 1.36, 2.8, 3.2, .42, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
+    });
+    f = f.concat(figPart(box(-4.9, 0, 2.8, 3.0, .45, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
+    add(figPart(tubeSmooth(-9.0, -6.35, -.62, 3.06, .66, 8, tn, tn), 'paint', lit(tn, 1.08), lit(tn, .86), tn), 'pack');
+    f = f.concat(figPart(box(-7.0, 1.55, 2.4, 2.1, 2.2, .8, k.canvas, 0, 0, 0), 'canvas', lit(k.canvas, 1.08), lit(k.canvas, .92), k.canvas));
+    if (V.frame) {
+      f = f.concat(figPart(box(-3.1, 0, 2.8, 1.7, 1.64, 1.0, tn, 0, 0, 0), 'paint', lit(tn, 1.08), lit(tn, .88), tn));
+      f = f.concat(figPart(at(roll(cyl(0, 0, -1.35, .42, .42, 2.7, 8, k.zelt, k.zelt, 0, true), Math.PI / 2, 0, 0), -1.1, 0, 3.25),
+                           'splinter', lit(k.zelt, 1.04), lit(k.zelt, .9), k.zelt));
+    }
   } else add(figPart(box(-3.0, 0, 2.8, 3.8, 4.0, 1.6, k.pack, 0, 0, 0), 'canvas',
               lit(k.pack, 1.10), lit(k.pack, .92), k.pack), 'pack');
   /* the legs: three boxes each, and on a crawl beat one draws up and swings out while
@@ -25891,6 +26234,11 @@ function flatFaces(V, side, k, P) {
                      lit(k.boot, 1.1), k.boot, k.boot);
     if (ame) sh = sh.concat(figPart(box(-8.5 - 2.85, 0, -.12, 3.5, 1.64, 1.56, k.gaiter, k.gaiter, k.gaiter, 0), 'canvas',
                                     k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
+    /* the marching boot to below the knee, or the gaiter over the ankle boot */
+    else if (hr && V.gaiters) sh = sh.concat(figPart(box(-8.5 - 3.55, 0, -.12, 1.35, 1.66, 1.56, k.gaiter, k.gaiter, k.gaiter, 0), 'canvas',
+                                                     k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
+    else if (hr) sh = sh.concat(figPart(box(-8.5 - 2.35, 0, -.14, 3.75, 1.74, 1.6, k.boot, k.boot, k.boot, 0), 'leather',
+                                        lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
     LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
     /* place(), because at() hands a face back without its tile: the tile then comes
        off the colour, and an American trouser shade is one the MP40's grip already owns */
@@ -25930,7 +26278,7 @@ function flatFaces(V, side, k, P) {
   if (ph) lH = [lH[0] - sw * 2.4, lH[1] - Math.abs(sw) * .6, lH[2]];
   function arm(g) { AT.push(f.length); f = f.concat(g); }
   arm(figArm(rS, rH.slice(), [0, 1, -1], k, coat, cmat, 1, 0, .55, AR));
-  arm(figArm(lS, lH.slice(), [0, -1, -1], k, coat, cmat, -1, !ger, .55, AR));
+  arm(figArm(lS, lH.slice(), [0, -1, -1], k, coat, cmat, -1, patch, .55, AR));
   mudPass(f, 4.5, .35, 0);
   var Pt = { legs: [], thighs: [], shins: [], boots: [], limbs: [], hands: [],
              skull: [], head: [], helmet: [], weapon: [] };
@@ -25962,12 +26310,13 @@ function flatFaces(V, side, k, P) {
    units, so one of the two has lost his. */
 function deadFaces(variant, kind) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[V.nat || side];
-  var ger = side === 'ger', ame = V.nat === 'usa', coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth';
+  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa';
+  var coat = ger ? k.smock : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
   var f = [], Q = {}, LG = [], AR = [], AT = [], W = WEAP[V.weapon], w = W ? weaponModel(k, V.weapon) : null;
   /* a rifle that has been dropped lies on its side; the Garand stands two and a half units
-     from its front sight to its sling, and laid the way the others are it was half in the
-     ground */
-  if (w && ame) w = roll(w, Math.PI / 2, 0, 0);
+     from its front sight to its sling and the Kar98k as much from its hood to its toe, and
+     laid the way the others are each was half in the ground */
+  if (w && (V.weapon === 'garand' || V.weapon === 'kar')) w = roll(w, Math.PI / 2, 0, 0);
   function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
   function arm(g) { AT.push(f.length); f = f.concat(g); }
   function leg(a, b, c) {
@@ -25979,6 +26328,10 @@ function deadFaces(variant, kind) {
     if (ame) sh = sh.concat(figPart(taperLimb([c[0] + (b[0] - c[0]) * .02, c[1] + (b[1] - c[1]) * .02, c[2] + (b[2] - c[2]) * .02],
                                               [c[0] + (b[0] - c[0]) * .70, c[1] + (b[1] - c[1]) * .70, c[2] + (b[2] - c[2]) * .70],
                                               1.62, 1.64, k.gaiter), 'canvas', k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
+    /* and the grenadier's marching boot over the lower three quarters of it */
+    else if (hr) sh = sh.concat(figPart(taperLimb([c[0] + (b[0] - c[0]) * .02, c[1] + (b[1] - c[1]) * .02, c[2] + (b[2] - c[2]) * .02],
+                                                  [c[0] + (b[0] - c[0]) * .76, c[1] + (b[1] - c[1]) * .76, c[2] + (b[2] - c[2]) * .76],
+                                                  1.62, 1.84, k.boot), 'leather', lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
     LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
     f = f.concat(th).concat(sh).concat(bt);
   }
@@ -25989,7 +26342,7 @@ function deadFaces(variant, kind) {
     add(figPart(box(-7.4, 0, .3, 3.2, 4.4, 2.0, k.trous, k.trous, k.trous, 0), 'cloth',
                 lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
     arm(figArm([.5, 2.4, 1.6], [0, 8.0, .5], [0, 1, 1], k, coat, cmat, 1, 0, undefined, AR));
-    arm(figArm([.5, -2.4, 1.6], [4.0, 1.0, 2.6], [0, -1, 1], k, coat, cmat, -1, !ger, undefined, AR));
+    arm(figArm([.5, -2.4, 1.6], [4.0, 1.0, 2.6], [0, -1, 1], k, coat, cmat, -1, patch, undefined, AR));
     leg([-4.5, -1.0, 1.2], [-9.0, -2.5, 1.0], [-13.5, -3.0, .8]);
     leg([-4.5, 1.2, 1.2], [-8.5, 3.2, 1.6], [-11.5, 1.5, .8]);
     var h0 = at(headModel(k, 0), 3.0, -1.0, 1.6);
@@ -26002,7 +26355,7 @@ function deadFaces(variant, kind) {
     add(figPart(layFrustum(-6.5, 0, 2.4, 4.6, 5.0, .3, coat), cmat, coat, lit(coat, .92), lit(coat, .95)), 'torso');
     add(figPart(box(-8.3, -.6, .3, 3.6, 4.4, 2.0, k.trous, k.trous, k.trous, 0), 'cloth',
                 lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
-    arm(figArm([.5, -2.4, 1.6], [6.5, -4.5, .5], [0, -1, 1], k, coat, cmat, -1, !ger, .3, AR));
+    arm(figArm([.5, -2.4, 1.6], [6.5, -4.5, .5], [0, -1, 1], k, coat, cmat, -1, patch, .3, AR));
     leg([-8.0, -1.4, 1.0], [-12.0, -2.0, .8], [-15.5, -2.2, .7]);
     leg([-8.0, 1.4, 1.0], [-11.0, 3.6, 1.2], [-14.0, 2.4, .7]);
     var h1 = place(headModel(k, 2.6), .5, 2.2, -.8, -.5);
@@ -26150,7 +26503,7 @@ function bakeMen() {
     /* a gunner serves the piece with both hands and has no aimed pose of his own */
     if (V.set === 'gunner') return;
     one(POSE_READY, FIGPOSE.ready); one(POSE_FIRE, FIGPOSE.fire); one(POSE_CFIRE, FIGPOSE.kfire);
-    if (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle') {
+    if (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle' || v === 'gr_rifle') {
       var sd = V.nat || V.side;
       MODELS.fall[sd] = [FIGPOSE.fall0, FIGPOSE.fall1, FIGPOSE.fall2].map(function (P) { return buf(manFaces(v, P)); });
       MODELS.dead[sd] = [buf(deadFaces(v, 0)), buf(deadFaces(v, 1))];
@@ -30953,8 +31306,8 @@ function startGame(side, diff, mode, arty, duo) {
     if (!duo && G.hqPos[slotSide(sk)] && G.hqPos[slotSide(sk)].look) bh.look = G.hqPos[slotSide(sk)].look;
     bh.rally = { x: sp.x + fx * 180, y: sp.y + fy * 180 };
     spawnUnit(sk, us ? 'us_eng' : 'ger_pio', sp.x + fx * 130 - lx * 70, sp.y + fy * 130 - ly * 70, fa);
-    spawnUnit(sk, us ? natKey('us_rifle') : 'ger_gren', sp.x + fx * 140 + lx * 40, sp.y + fy * 140 + ly * 40, fa);
-    spawnUnit(sk, us ? natKey('us_rifle') : 'ger_gren', sp.x + fx * 90 + lx * 110, sp.y + fy * 90 + ly * 110, fa);
+    spawnUnit(sk, natKey(us ? 'us_rifle' : 'ger_gren'), sp.x + fx * 140 + lx * 40, sp.y + fy * 140 + ly * 40, fa);
+    spawnUnit(sk, natKey(us ? 'us_rifle' : 'ger_gren'), sp.x + fx * 90 + lx * 110, sp.y + fy * 90 + ly * 110, fa);
   }
   rebuildGrid();
   /* Green used to hand the player three extra sections and a second engineer here, on top
@@ -31097,11 +31450,14 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
     wallSync(); objSync(); sideSync(); sfx('click');
   };
 });
-/* the Allied side's button names the army the chosen ground is fought by */
+/* each side's button names the army the chosen ground is fought by */
 function sideSync() {
-  var md = MAPS[chosenMap] && MAPS[chosenMap].make(), N = NATIONS[(md && md.allies) || 'can'] || NATIONS.can;
-  var b = el('pickus'); if (!b) return;
-  b.querySelector('h3').textContent = N.pick; b.querySelector('p').textContent = N.blurb; b.dataset.mark = N.short;
+  var md = MAPS[chosenMap] && MAPS[chosenMap].make();
+  [['pickus', (md && md.allies) || 'can', 'can'], ['pickger', (md && md.axis) || 'fj', 'fj']].forEach(function (q) {
+    var N = NATIONS[q[1]] || NATIONS[q[2]], b = el(q[0]);
+    if (!b) return;
+    b.querySelector('h3').textContent = N.pick; b.querySelector('p').textContent = N.blurb; b.dataset.mark = N.short;
+  });
 }
 /* whether the wall is manned when the battle starts, which is a question only a map with
    a garrison written into it can be asked, so it is shown only for one */

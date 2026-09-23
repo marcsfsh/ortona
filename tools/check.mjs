@@ -1731,10 +1731,13 @@ for (const device of TARGETS) {
     u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
     /* and it is not to be pinned by whoever is shelling the base by now: a hull over
        full suppression cannot turn (`povDrive` zeroes the turn), and the driving row is
-       about the pad and not about how the battle above happened to end up */
+       about the pad and not about how the battle above happened to end up. Nor is it to
+       lose a track to it: a track hit sets `immob` for five to nine seconds, which zeroes
+       the turn the same way, and cleared only at the top of each leg a hit inside the
+       steer leg read 0.04 radians on a phone run and 0.9 on the next, on the same code */
     const pd = window.povDrive;
     window.__povDrive0 = pd;
-    window.povDrive = function (v, dt) { if (v === u) { v.sup = 0; v.shaken = 0; } return pd(v, dt); };
+    window.povDrive = function (v, dt) { if (v === u) { v.sup = 0; v.shaken = 0; v.immob = 0; } return pd(v, dt); };
     window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
@@ -3121,6 +3124,36 @@ for (const device of TARGETS) {
       out.fell = !!rec; out.fellNat = rec ? rec.nat : '-';
     }
     out.bodies = !!(W.MODELS.fall.usa && W.MODELS.dead.usa && W.MODELS.fall.usa.length === 3 && W.MODELS.dead.usa.length === 2);
+    /* and the German side, which on the beach is the 352nd Infantry Division: its button,
+       what its headquarters makes, the sections its brain has bought in the minute of battle
+       the wall row ran, the three sections the wall row put in the fire trench, and a man of
+       it killed. This is the game the wall row started, with the brain on the German side. */
+    const G2 = { nax: W.NAX, name: W.FACTION.ger.name, pick: document.getElementById('pickger').querySelector('h3').textContent };
+    const theirs = G.units.filter(u => u.side === 'ger' && u.cat === 'inf' && !u.dead);
+    G2.hr = theirs.filter(u => u.key === 'hr_gren').length; G2.fj = theirs.filter(u => u.key === 'ger_gren').length;
+    G2.wallHr = theirs.filter(u => u.wall && u.key === 'hr_gren').length;
+    G2.wallFj = theirs.filter(u => u.wall && u.key === 'ger_gren').length;
+    const gm = G.made.ger || {};
+    G2.madeHr = gm.hr_gren || 0; G2.madeFj = gm.ger_gren || 0;
+    const gs = theirs.filter(u => u.key === 'hr_gren' && !u.wall)[0] || theirs.filter(u => u.key === 'hr_gren')[0];
+    G2.men = gs ? gs.def.models : 0;
+    G2.vars = gs ? [...new Set(gs.models.map((m, i) => W.variantForModel(gs, i)))].sort().join(',') : '-';
+    const ghq = G.blds.filter(b => b.own === 'ger' && b.def.hq)[0];
+    G2.makes = ghq ? W.makesOf(ghq).join(',') : '-';
+    if (ghq) {
+      const q0 = ghq.queue.length;
+      G.res.ger.mp += 2000;
+      G2.qFj = W.queueUnit(ghq, 'ger_gren') ? ghq.queue.slice(-1)[0] : 'refused';
+      ghq.queue.length = q0;
+    }
+    if (gs) {
+      const m = gs.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+      W.damageModel(gs, m, 1e4, null);
+      const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+      G2.fell = !!rec; G2.fellNat = rec ? rec.nat : '-';
+    }
+    G2.bodies = !!(W.MODELS.fall.heer && W.MODELS.dead.heer && W.MODELS.fall.heer.length === 3 && W.MODELS.dead.heer.length === 2);
+    out.ger = G2;
     /* and a brain on the Allied side, from the whistle */
     W.G.mapData = W.omahaMapData();
     W.startGame('ger', 1, 'vp', true, false);
@@ -3133,6 +3166,7 @@ for (const device of TARGETS) {
                   live: G.units.filter(u => u.own === 'us' && u.key === 'am_rifle' && !u.dead).length };
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'ortona') b.click(); });
     out.back = document.getElementById('pickus').querySelector('h3').textContent;
+    out.backGer = document.getElementById('pickger').querySelector('h3').textContent;
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
     return out;
   });
@@ -3147,6 +3181,17 @@ for (const device of TARGETS) {
      `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
      `a brain on the Allied side ordered ${natB.am} American squads and ${natB.can} Canadian sections in 45 s (${natB.live} standing); ` +
      `Ortona's button reads ${natB.back}`);
+  const ng = natA.ger;
+  ok('Omaha: the German side is the 352nd Infantry Division, and its headquarters, its opening, its wall and its brain field the grenadier squad',
+     ng.nax === 'heer' && /352/.test(ng.name) && /352/.test(ng.pick) && ng.hr >= 2 && ng.fj === 0 && ng.wallHr === 3 &&
+     ng.wallFj === 0 && ng.madeHr >= 1 && ng.madeFj === 0 && ng.men === 6 && ng.vars === 'gr_mp40,gr_rifle,gr_rifle_b' &&
+     /hr_gren/.test(ng.makes) && !/ger_gren/.test(ng.makes) && ng.qFj === 'hr_gren' && ng.fell && ng.fellNat === 'heer' &&
+     ng.bodies && /FALLSCHIRM/.test(natB.backGer),
+     `army ${ng.nax} (${ng.name}), the button reads ${ng.pick}; ${ng.hr} grenadier squads and ${ng.fj} FJ groups on the ` +
+     `field, ${ng.wallHr} of them in the wall and ${ng.wallFj} FJ there; its brain ordered ${ng.madeHr} grenadier squads and ` +
+     `${ng.madeFj} FJ groups in the wall row's minute; ${ng.men} men of ${ng.vars}; the headquarters makes ${ng.makes}, ` +
+     `asked for an FJ group it queues ${ng.qFj}; a man killed ${ng.fell ? 'went down' : 'DID NOT go down'} as ${ng.fellNat}, ` +
+     `German bodies ${ng.bodies ? 'baked' : 'MISSING'}; Ortona's German button reads ${natB.backGer}`);
 
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the

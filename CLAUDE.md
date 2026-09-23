@@ -1,10 +1,12 @@
 # Ortona
 
-A single-file, real-time tactical battle game: the Allies against 1. Fallschirmjäger-Division.
-The Allied side is the army of the map: the 1st Canadian Infantry Division in Italy, and the
-US 29th Infantry Division on Omaha Beach, whose army is being built a unit at a time (the
-rifle squad is the first, and everything else it fields is still Canadian). Custom WebGL2
-renderer, no engine, no dependencies, no build step.
+A single-file, real-time tactical battle game: the Allies against the Germans, and the army
+on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
+Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
+352nd Infantry Division, and both of those armies are being built a unit at a time (the
+rifle squad and the grenadier squad are the first, and everything else either side fields
+there is still the Italian roster). Custom WebGL2 renderer, no engine, no dependencies, no
+build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
 **The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
@@ -492,16 +494,17 @@ one part inside another, AIM the bore against the facing and the eye against the
 the flash against the barrel, WIND a limb built inside out. MATERIAL is the tile each face
 lands on, SIZE what the roster weighs in buffers. FOOTPRINT and READ are read off the
 framebuffer at play distance on both devices, and READ carries the one rule the figures are
-designed round: the Canadian and the FJ, and now the American and the FJ, have to be told
-apart by their top fifth and their mean.
+designed round: the Canadian and the FJ, the American and the FJ, and the American and the
+grenadier have to be told apart by their top fifth and their mean.
 
 Two things about reading it. **Stature is measured to the top of the helmet**, so a deep
 helmet counts against it: the M1 put the American at 4.5 per cent over on its first build,
 and the fix was to seat the helmet lower and make it a little flatter. And
 **READ is a budget the whole palette shares**: warming the American's jacket and lightening
 his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the FJ against a
-floor of 0.05, and it was the webbing that gave the margin back. The GRIP misses it reports on
-the Canadian and German riflemen predate the American.
+floor of 0.05, and it was the webbing that gave the margin back. The two GRIP misses it reports
+are the Canadian corpse's hands on his Lee, which lies upright; the FJ corpse had the same two
+until the Kar98k was rebuilt and laid on its side.
 
 ### `tools/terrain.mjs` - the ground, mechanically
 
@@ -839,14 +842,15 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1945 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 2000 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
 1720 before the arms had a doctrine, 1745 before three directives on nine flags
 became a board of orders, 1800 before three more German pieces, 1815 before a third map,
-1880 before that map was laid again by hand, 1925 before the bocage behind its beach, and
-1945 before a post could be made of a landing craft and the wall could be manned). Takes
+1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
+1945 before a post could be made of a landing craft and the wall could be manned, 1970
+before the American army, and 2000 before the German army on the same beach). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1012,7 +1016,12 @@ killed has to go down and lie as an American, and a brain playing the Allied sid
 whistle has to order American squads and no Canadian sections in its first 45 seconds. Then
 the Ortona button has to put the Canadians back. A nation that one door forgets is a
 Canadian section walking up an American beach, which in a photograph of a battle looks like
-nothing at all.
+nothing at all. The German side on the same beach is asked the same in a row of its own: the
+button names the 352nd, the sections it has on the field and the three the wall row put in
+the fire trench are grenadier squads of six in all three variants and none of them
+paratroopers, its headquarters makes the grenadier squad and queues it when asked for the FJ
+group, its brain bought grenadiers and no paratroopers in the wall row's minute of battle, a
+man of it goes down as the 352nd, and Ortona's German button reads Fallschirmjäger again.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1364,7 +1373,9 @@ both sides' points untouched, and whichever brain played German held more ground
 of the eight, a side average of +58 in score against -58, with 4,946 of army against the
 Americans' 4,033. That is the Germans opening on eight flags to the Americans' four and the
 income it pays. It is one run of four pairs and the thing to take again before touching the
-lever, which is the two crest villages starting in nobody's hands.
+lever, which is the two crest villages starting in nobody's hands; it was also taken with
+paratroopers on the German side and before either army on the beach was its own, so both
+halves of it want taking again.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
@@ -3064,6 +3075,59 @@ when each rifleman hits for less than a Canadian with a Bren behind him. At 7.2 
 seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent against the
 German section and 56 against the Canadian section, which is inside what sixteen runs of two
 identical units produce.
+
+**The German army on the beach.** The same table does the German side. `NATIONS` carries two
+entries with `side: 'ger'`, the paratroopers (`fj`) and the 352nd Infantry Division (`heer`); a
+map names its German army in `data.axis` (Omaha says `'heer'`) and `NAX` is the live one beside
+`NAT`. `natKey` reads the list of the side the unit it is handed belongs to, so one call
+answers for both armies, and every door already went through it: the brain's role table, the
+opening sections, `queueUnit`, `makesOf` and the wall garrison, which puts `natKey(e.k)` down
+rather than the key the map wrote, so a manned wall on the beach is grenadiers. `sideSync`
+sets both buttons.
+
+**The grenadier is a fourth kit on the rig**: `KIT.heer`, with the builders branching on
+`V.nat === 'heer'` and the paratrooper's smock path left as it was. From the top: the M42
+helmet (`helmetM42`), its flared skirt swept round a plan wider than it is deep with the rim
+dropped over the ears and the neck, either with a canvas band round it for foliage or under
+chicken wire with foliage through it, on a tile of its own (`hrwire`, a hex mesh six by eight
+to the tile); the M40 tunic in field grey, belted, with four pleated pockets, the collar
+Litzen and the breast eagle; field-grey trousers into black marching boots to a hand under
+the knee (`figLeg`'s fourth anklet mode) or into ankle boots and canvas gaiters strapped
+twice (the fifth); the black belt with three-cell rifle pouches either side of the buckle
+(the squad leader carries the canvas MP40 pouches), the Y-straps, the gas mask canister on
+its sling behind the left hip, the bread bag and the canteen with its cup on the right, the
+spade and the bayonet on the left (`figKitHeer`). Three variants make a squad of six
+(`gr_rifle`, `gr_rifle_b`, `gr_mp40`): the second in gaiters and wire with the assault frame,
+the Zeltbahn rolled on it in splinter and two stick grenades in his belt, the third the squad
+leader with the MP40 and his field glasses.
+
+**He is the darkest figure on the roster, and that is what tells him from the American.** Field
+grey and black leather against poplin and canvas: on the card at 600 units his mean luminance
+is 0.29 against the American's 0.35 and the colour 79,73,55 against 101,90,63, while the two
+top fifths are nearly level (0.38 against 0.37) because both men wear a dark helmet. His
+contrast to the ground is -0.41 against a floor of -0.45 for every figure, so the field grey
+has very little darker to go. And judge him on the ground he fights on: photographed on Ortona
+he comes out pale and his boots brown, because that December sun lifts everything, where on
+Omaha's overcast morning he is field grey with black leather.
+
+**The Kar98k is cut as a side profile** (`weaponModel(k, 'kar')`), the Garand's treatment for
+the Garand's reason. One prism of stock runs from the butt to the nose cap, with the
+semi-pistol grip and a flat underside to the fore-end; the handguard lies on top from the
+tangent sight to the nose cap and passes under the lower band; the bolt handle is turned down
+on the right, with the stock disc on the butt, the bayonet lug and cleaning rod under the
+barrel and the hooded front sight at the muzzle; and the sling runs down the LEFT side from
+the slot in the butt to the swivel on the lower band. It measures 13.07 units against a
+published 1,110 mm. The paratroopers carry the same rifle, so the new anchors (`WEAP.kar`)
+moved both armies' hands, and the GRIP misses the card had reported on the FJ rifleman went
+with the old one: four of 461 on the last commit, two of 589 now, and those two are the
+Canadian corpse. A corpse's Kar98k lies on its side, for the Garand's reason.
+
+**The squad's numbers come off the duel card as well.** Six men with bolt rifles at nine a
+round and 275 of reach beat the American squad 88 per cent of the time, the Canadian section
+63 and the FJ group 75. At 8.0 a round, 0.92 seconds a volley, 270 of reach, 80 hit points a
+man and 250 of manpower it wins 46 per cent against the American squad over forty-eight runs,
+50 against the Canadian section and 38 against the FJ group: level with the army it meets and
+a step behind the veterans it stands in for.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
