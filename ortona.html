@@ -3012,7 +3012,7 @@ function omahaMapData() {
    [1378, 2214, Math.PI / 2, .71]].forEach(function (b) {
     E.push({ t: 'bunker', x: b[0], y: b[1], a: b[2], s: b[3], sd: 'ger' });
   });
-  [[458, 2538, 1.3], [336, 2478, 1.6], [650, 2332, 1.57], [862, 2340, 1.57], [1042, 2536, 1.8], [1166, 2478, 1.5],
+  [[430, 2490, 1.3], [336, 2478, 1.6], [650, 2332, 1.57], [862, 2340, 1.57], [1060, 2490, 1.8], [1166, 2478, 1.5],
    [192, 2332, 1.5], [1318, 2330, 1.6]].forEach(function (t) {
     E.push({ t: 'tobruk', x: t[0], y: t[1], a: t[2], s: (t[0] % 7) / 7 });
   });
@@ -3089,19 +3089,22 @@ function omahaMapData() {
    [[1307, 1743], [1335, 1744]],
    [[1371, 1745], [1432, 1746], [1473, 1747]],
    [[419, 1633], [410, 1573], [405, 1545]],
-   [[399, 1509], [392, 1449], [387, 1389], [382, 1329], [386, 1268], [395, 1208], [399, 1188]],
+   [[399, 1509], [392, 1449], [387, 1389], [382, 1329], [386, 1268]],
    [[405, 1152], [414, 1091], [423, 1031], [430, 970], [437, 910], [438, 897]],
    [[442, 865], [439, 804], [436, 743], [434, 706]],
    [[375, 1635], [365, 1575], [355, 1515], [353, 1499]],
-   [[348, 1463], [344, 1403], [339, 1343], [341, 1282], [347, 1221], [358, 1160], [367, 1100]],
+   [[348, 1463], [344, 1403], [339, 1343], [341, 1282]],
+   [[347, 1221], [358, 1160], [367, 1100]],
    [[373, 1065], [381, 1005], [388, 944], [395, 883], [396, 823], [395, 803]],
    [[393, 766], [390, 706]],
    [[1127, 1634], [1135, 1573], [1144, 1513], [1149, 1476]],
-   [[1152, 1440], [1155, 1379], [1157, 1318], [1153, 1258], [1146, 1198], [1140, 1157]],
+   [[1152, 1440], [1155, 1379], [1157, 1318], [1153, 1258]],
+   [[1146, 1198], [1140, 1157]],
    [[1135, 1121], [1128, 1061], [1120, 1001], [1113, 940], [1106, 879], [1106, 819]],
    [[1108, 783], [1111, 722], [1112, 706]],
    [[1082, 1638], [1090, 1577], [1093, 1557]],
-   [[1098, 1525], [1106, 1464], [1110, 1403], [1113, 1342], [1111, 1282], [1105, 1221], [1095, 1159], [1088, 1099], [1084, 1071]],
+   [[1098, 1525], [1106, 1464], [1110, 1403], [1113, 1342], [1111, 1282]],
+   [[1105, 1221], [1095, 1159], [1088, 1099], [1084, 1071]],
    [[1080, 1035], [1073, 974], [1066, 914], [1060, 853], [1063, 792], [1066, 735]],
    [[29, 1270], [89, 1267], [121, 1265]],
    [[157, 1263], [217, 1260], [277, 1261], [338, 1262]],
@@ -3214,14 +3217,14 @@ function omahaMapData() {
      through the roof. Each is x, y, width, depth, what it is, its height to the eaves, and
      whether its street front faces down the map. */
   [[230, 1714, 100, 40, 'church', 38, 0],
-   [304, 1728, 58, 34, 'house', 42, 0],
+   [311, 1728, 58, 34, 'house', 42, 0],
    [470, 1726, 66, 36, 'house', 42, 0],
-   [548, 1718, 54, 40, 'barn', 30, 0],
+   [566, 1718, 54, 40, 'barn', 30, 0],
    [318, 1818, 56, 34, 'house', 42, 1],
    [486, 1822, 62, 36, 'house', 42, 1],
    [1004, 1726, 60, 36, 'house', 42, 0],
    [1180, 1724, 64, 36, 'house', 42, 0],
-   [1254, 1730, 52, 34, 'farm', 30, 0],
+   [1272, 1730, 52, 34, 'farm', 30, 0],
    [1030, 1818, 58, 34, 'house', 42, 1],
    [1172, 1816, 60, 38, 'barn', 30, 1],
    [262, 1418, 96, 42, 'manor', 44, 0],
@@ -3231,12 +3234,12 @@ function omahaMapData() {
    [270, 940, 62, 34, 'farm', 30, 0],
    [262, 870, 66, 38, 'barn', 30, 1],
    [1226, 930, 60, 34, 'farm', 30, 0],
-   [1228, 868, 64, 38, 'barn', 30, 1],
+   [1228, 858, 64, 38, 'barn', 30, 1],
    [452, 520, 110, 44, 'church', 38, 0],
    [584, 534, 56, 36, 'house', 42, 0],
-   [660, 528, 48, 34, 'house', 42, 0],
+   [672, 528, 48, 34, 'house', 42, 0],
    [856, 532, 58, 36, 'house', 42, 0],
-   [936, 538, 54, 34, 'house', 42, 0],
+   [948, 538, 54, 34, 'house', 42, 0],
    [474, 642, 58, 36, 'house', 42, 1],
    [582, 630, 54, 34, 'house', 42, 1],
    [690, 624, 48, 34, 'house', 42, 1],
@@ -3244,7 +3247,7 @@ function omahaMapData() {
    [920, 632, 56, 34, 'house', 42, 1],
    [1024, 640, 50, 34, 'house', 42, 1],
    [1176, 528, 64, 36, 'farm', 30, 0],
-   [1262, 520, 58, 40, 'barn', 30, 0],
+   [1273, 520, 58, 40, 'barn', 30, 0],
    [1184, 664, 62, 38, 'barn', 30, 1],
    [606, 272, 40, 92, 'barn', 30, 0],
    [894, 272, 40, 92, 'barn', 30, 0]].forEach(function (h) {
@@ -3276,7 +3279,7 @@ function omahaMapData() {
    [884, 996, 1100, 1218, 'hay'], [1120, 622, 1318, 808, 'hay'], [1318, 622, 1500, 808, 'wheat'], [1120, 808, 1296, 984, 'pasture'],
    [1296, 808, 1500, 984, 'hay'], [1120, 984, 1330, 1218, 'wheat'], [1330, 984, 1500, 1218, 'pasture'],
    [0, 0, 520, 196, 'wheat'], [980, 0, 1500, 196, 'hay'], [1318, 196, 1500, 446, 'pasture']].forEach(function (f) {
-    E.push({ t: 'field', x0: f[0], y0: f[1], x1: f[2], y1: f[3], k: f[4] });
+    E.push({ t: 'field', x: f[0], y: f[1], w: f[2] - f[0], h: f[3] - f[1], k: f[4] });
   });
   /* the second line: a fire trench along the lip of the bluff behind the draws, with its
      machine-gun pits, for a defence that has lost the foot of the bluff to fall back to */
@@ -3332,8 +3335,8 @@ function omahaMapData() {
     { fit: 'at', x: 300, y: 2596 }, { fit: 'at', x: 1200, y: 2594 },
     { fit: 'mg', x: 296, y: 2292 }, { fit: 'mg', x: 1196, y: 2284 }, { fit: 'mg', x: 132, y: 2220 },
     { fit: 'mg', x: 1378, y: 2214 }, { fit: 'mor', x: 742, y: 2226 },
-    { k: 'ger_mg42', x: 458, y: 2538, a: 1.3 }, { k: 'ger_mg42', x: 336, y: 2478, a: 1.6 },
-    { k: 'ger_mg42', x: 1042, y: 2536, a: 1.8 }, { k: 'ger_mg42', x: 1166, y: 2478, a: 1.5 },
+    { k: 'ger_mg42', x: 430, y: 2490, a: 1.3 }, { k: 'ger_mg42', x: 336, y: 2478, a: 1.6 },
+    { k: 'ger_mg42', x: 1060, y: 2490, a: 1.8 }, { k: 'ger_mg42', x: 1166, y: 2478, a: 1.5 },
     { k: 'ger_gren', x: 190, y: 2394, a: 1.57, dig: 1 }, { k: 'ger_gren', x: 750, y: 2402, a: 1.57, dig: 1 },
     { k: 'ger_gren', x: 1320, y: 2394, a: 1.57, dig: 1 }] };
   return { name: 'Omaha Beach', when: 'DOG AND EASY · 6 JUNE 1944', version: 3, land: 'omaha', w: 1500, h: 4000,
@@ -3616,7 +3619,7 @@ function buildMap(data) {
         addCover(e.x - e.w / 2 - 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', Math.PI / 2, 150);
         addCover(e.x + e.w / 2 + 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', Math.PI / 2, 150);
         break;
-      case 'field': G.fieldTones.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, k: e.k }); break;
+      case 'field': G.fieldTones.push({ x0: e.x, y0: e.y, x1: e.x + e.w, y1: e.y + e.h, k: e.k === undefined ? .5 : e.k }); break;
       case 'hog':
         /* One hedgehog where it was set down, which is how the beach obstacles stood: not
            in a belt with a gap in it but wherever the working party left them before the
@@ -4772,15 +4775,6 @@ function rebuildGrid() {
   });
   /* a hedge hides a section and does not save it */
   G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 9); });
-  /* A Norman hedgerow is a bank of earth with a hedge on it, and the bank stops a round
-     where a hedge alone does not: both grids, so a line across the country is cut by
-     every hedgerow on it, except for the men lying up against one, whom the trace's own
-     end allowance lets see and shoot out over it. A man gets over one slowly (the field
-     wall's grid) and a hull does not except at a gate (the teeth's). */
-  G.hedges.forEach(function (h) {
-    markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 6); markSeg(fblk, h.x1, h.y1, h.x2, h.y2, 5);
-    markSeg(wallg, h.x1, h.y1, h.x2, h.y2, 5); markSeg(hogg, h.x1, h.y1, h.x2, h.y2, 8);
-  });
   /* And the metalling. A street is the reason a town like this is fought street by
      street: it is the only ground a lorry or a tank can make time on, and the map has
      had a road network painted on it that meant nothing to anything driving over it. */
@@ -4815,6 +4809,40 @@ function rebuildGrid() {
   G.hogs.forEach(function (hg) { markSeg(hogg, hg.x1, hg.y1, hg.x2, hg.y2, 15); });
   G.hogpts.forEach(function (hp) { markSeg(hogg, hp.x, hp.y, hp.x, hp.y, 12); });
   G.atDitch.forEach(function (dt) { markSeg(hogg, dt.x1, dt.y1, dt.x2, dt.y2, dt.w); });
+  /* A Norman hedgerow is a bank of earth with a hedge on it, and the bank stops a round
+     where a hedge alone does not: both grids, so a line across the country is cut by
+     every hedgerow on it, except for the men lying up against one, whom the trace's own
+     end allowance lets see and shoot out over it. A man gets over one slowly (the field
+     wall's grid) and a hull does not except at a gate (the teeth's).
+     Two things about where this goes. It is below the hogg fill, because marked above it
+     the fill wiped it and every tank on the map drove through the bocage at the price of
+     open ground. And it is below the road marks and never lands on the metalling: a lane
+     is thirty units between two hedgerows on a twenty-unit grid, so a hedge's own width
+     reaches into the lane's cells wherever the two happen to line up, and marked there it
+     blocked the eye down the lane, slowed a man walking it and charged a tank twelve
+     times over to drive it. */
+  if (G.hedges.length) {
+    /* marked densely, four units a step along and across, because a hedgerow runs at any
+       angle and markSeg's half-cell step lets a diagonal line clip the corner of a cell
+       without a sample landing in it: a hole in the hedge exactly one corner wide, which a
+       hull's route and a line of sight both found */
+    var hs = new Uint8Array(GW * GH), hh = new Uint8Array(GW * GH);
+    var dense = function (arr, h, hw) {
+      var L = Math.hypot(h.x2 - h.x1, h.y2 - h.y1), n = Math.max(1, Math.ceil(L / 4)), m = Math.ceil(hw / 4);
+      var px = -(h.y2 - h.y1) / (L || 1), py = (h.x2 - h.x1) / (L || 1);
+      for (var di = 0; di <= n; di++) for (var dj = -m; dj <= m; dj++) {
+        var o = hw * dj / m, x = lerp(h.x1, h.x2, di / n) + px * o, y = lerp(h.y1, h.y2, di / n) + py * o;
+        var cx = (x / CELL) | 0, cy = (y / CELL) | 0;
+        if (cx >= 0 && cy >= 0 && cx < GW && cy < GH) arr[cidx(cx, cy)] = 1;
+      }
+    };
+    G.hedges.forEach(function (h) { dense(hs, h, 6); dense(hh, h, 8); });
+    for (var hci = 0; hci < hs.length; hci++) {
+      if (road[hci]) continue;
+      if (hs[hci]) { sblk[hci] = 1; fblk[hci] = 1; wallg[hci] = 1; }
+      if (hh[hci]) hogg[hci] = 2;
+    }
+  }
   /* A seawall is low enough for a man to fire over and get across, which is what its
      height already says, and it is a metre and a half of poured concrete that no hull
      climbs, which its height cannot say. So it goes on the same grid a belt of teeth does
@@ -5098,6 +5126,7 @@ function clearLine(x0, y0, x1, y1) {
    walking to a flag pays a lot, a wave going in pays little, because crossing the beaten
    zone is what a wave is for. Nothing is forbidden by it, for the same reason nothing
    else here is: ground the army will not cross is ground the army has given away. */
+var HEDGE_HULL = 50;
 function cellCost(ci, kind, dang, fear) {
   if (kind < 0) return 1;
   /* and how much room it leaves. Nothing here is forbidden; a gap is dear in proportion
@@ -5124,7 +5153,11 @@ function cellCost(ci, kind, dang, fear) {
     /* A collapsed house is a couple of metres of broken masonry. Men climb it, tracks
        push over it slowly and a lorry has no business on it at all. */
     if (rubg[ci]) c *= kind === 2 ? 5 : 2.4;
-    if (hogg[ci]) c *= 12;                             /* and neither goes through a hedgehog */
+    /* and neither goes through a hedgehog; a hedgerow's bank (marked 2) is worse, because
+       a hull that climbs one shows its belly and comes down the far side nose first, and
+       at the hedgehog's price a tank sent across three fields went through three of them
+       rather than round to a gate */
+    if (hogg[ci]) c *= hogg[ci] > 1 ? HEDGE_HULL : 12;
     c += tight;
   }
   if (dang) c += dang[_d2c[ci]] * fear;
@@ -5243,7 +5276,19 @@ function findPath(sx, sy, tx, ty, u) {
       if (dx && dy && (grid[cidx(cx + dx, cy)] || grid[cidx(cx, cy + dy)])) continue;
       if (_stamp[ni] !== _run) { _stamp[ni] = _run; _g[ni] = 1e9; _state[ni] = 0; _from[ni] = -1; }
       if (_state[ni] === 2) continue;
-      var ng = _g[cur] + (dx && dy ? 1.414 : 1) * cellCost(ni, kind, dang, fear);
+      var step = cellCost(ni, kind, dang, fear);
+      /* A diagonal step squeezes between its two orthogonal neighbours, and where both of
+         them are an obstacle line -- a hedgerow, a belt of teeth, wire, a field wall -- it
+         is crossing that line at a corner. Priced on the cell it lands in alone, a line
+         running at an angle is a staircase of cells a route slips through at every step
+         for nothing: a tank sent across three fields of bocage went through three
+         hedgerows without once paying for one. */
+      if (dx && dy) {
+        var oa = cidx(cx + dx, cy), ob = cidx(cx, cy + dy);
+        if ((hogg[oa] || wallg[oa] || wireg[oa]) && (hogg[ob] || wallg[ob] || wireg[ob]))
+          step = Math.max(step, Math.min(cellCost(oa, kind, dang, fear), cellCost(ob, kind, dang, fear)));
+      }
+      var ng = _g[cur] + (dx && dy ? 1.414 : 1) * step;
       if (ng < _g[ni]) {
         _g[ni] = ng; _from[ni] = cur;
         /* the heuristic is weighted a twentieth over the straight-line distance on
@@ -5825,8 +5870,11 @@ function blockAt(x, y) {
   return null;
 }
 function canGarrison(u, bk) {
+  /* a Norman house is rubble stone two feet thick however small it is, and the size test
+     below would have shut every one of them out: they are thirty-four to forty-four
+     units deep */
   return u && bk && (u.cat === 'inf' || u.cat === 'team') && u.def.speed > 0 && !u.gar && !u.retreat &&
-         !u.inside && !bk.gar && (bk.face !== undefined || (bk.w > 60 && bk.h > 60)) &&
+         !u.inside && !bk.gar && (bk.face !== undefined || bk.kind === 'nhouse' || (bk.w > 60 && bk.h > 60)) &&
          /* and it has to still be a building. A house shelled flat is a heap of its own
             masonry: there are no windows to fight out of and no storey to stand on, and
             a section sent into one would be standing in the open believing it held the
@@ -31157,7 +31205,12 @@ var ED_CATS = [
     { id: 'bunker', name: 'Bunker', glyph: '⌷', kind: 'place', t: 'bunker', def: { a: 0 } },
     { id: 'hogs', name: 'Hedgehogs (draw)', glyph: '✳', kind: 'line', t: 'hogs', def: {} },
     { id: 'teeth', name: 'Dragon\'s teeth (draw)', glyph: '◭', kind: 'line', t: 'hogs', def: { kind: 'teeth' } },
-    { id: 'roadblock', name: 'Roadblock', glyph: '▮', kind: 'place', t: 'roadblock', def: {} }] },
+    { id: 'roadblock', name: 'Roadblock', glyph: '▮', kind: 'place', t: 'roadblock', def: {} },
+    { id: 'seawall', name: 'Seawall (draw)', glyph: '▭', kind: 'line', t: 'wall', def: { h: 14, sea: 1 } },
+    { id: 'tobruk', name: 'Tobruk', glyph: '◉', kind: 'place', t: 'tobruk', def: { a: 1.57 } },
+    { id: 'hog1', name: 'Hedgehog', glyph: '✱', kind: 'place', t: 'hog', def: { a: 0 } },
+    { id: 'atditch', name: 'Anti-tank ditch (draw)', glyph: '⌴', kind: 'line', t: 'ditch', def: { w: 22, d: 20 } },
+    { id: 'bank', name: 'Shingle bank (draw)', glyph: '⁓', kind: 'line', t: 'bank', def: { tier: 2 } }] },
   { id: 'damage', name: 'DAMAGE', glyph: '✷', tools: [
     { id: 'crater', name: 'Crater', glyph: '◯', kind: 'place', t: 'crater', def: { r: 48 } },
     { id: 'craterb', name: 'Crater brush', glyph: '◌', kind: 'scatter', t: 'crater', rr: [28, 60], step: 90, def: {} },
@@ -31173,6 +31226,18 @@ var ED_CATS = [
     { id: 'grove', name: 'Olive grove (box)', glyph: '♣♣', kind: 'stamprect', stamp: 'grove' },
     { id: 'scrub', name: 'Scrub', glyph: '⁘', kind: 'place', t: 'scrub', def: { r: 12 } },
     { id: 'grass', name: 'Grass patch', glyph: '⁂', kind: 'place', t: 'grass', def: { r: 100, tone: .7 } }] },
+  /* Normandy: what the Calvados coast is built of, and what came ashore on it */
+  { id: 'normandy', name: 'NORMANDY', glyph: '⌂', tools: [
+    { id: 'nhouse', name: 'Norman house', glyph: '⌂', kind: 'place', t: 'nhouse', def: { w: 58, h: 36, style: 'house', ht: 40 } },
+    { id: 'nfarm', name: 'Norman farmhouse', glyph: '⌂', kind: 'place', t: 'nhouse', def: { w: 64, h: 36, style: 'farm', ht: 40 } },
+    { id: 'nbarn', name: 'Barn', glyph: '⌂', kind: 'place', t: 'nhouse', def: { w: 62, h: 38, style: 'barn', ht: 36 } },
+    { id: 'nchurch', name: 'Norman church', glyph: '✝', kind: 'place', t: 'nhouse', def: { w: 104, h: 42, style: 'church', ht: 48 } },
+    { id: 'hedge', name: 'Hedgerow (draw)', glyph: '≈', kind: 'line', t: 'hedge', def: {} },
+    { id: 'field', name: 'Field (box)', glyph: '▭', kind: 'rect', t: 'field', def: {} },
+    { id: 'oak', name: 'Oak', glyph: '♣', kind: 'place', t: 'tree', def: { r: 18, kind: 'oak' } },
+    { id: 'apple', name: 'Apple tree', glyph: '♧', kind: 'place', t: 'tree', def: { r: 11, kind: 'apple' } },
+    { id: 'lcvp', name: 'Landing craft (LCVP)', glyph: '◧', kind: 'place', t: 'craft', def: { kind: 'lcvp', a: -1.57, wreck: 0 } },
+    { id: 'lct', name: 'Landing craft (LCT)', glyph: '◨', kind: 'place', t: 'craft', def: { kind: 'lct', a: -1.57, wreck: 0 } }] },
   { id: 'game', name: 'FLAGS', glyph: '⚑', tools: [
     { id: 'vp', name: 'Victory flag', glyph: '⚑', kind: 'place', t: 'sector', def: { type: 'vp' } },
     { id: 'mp', name: 'Manpower flag', glyph: '⚐', kind: 'place', t: 'sector', def: { type: 'mp' } },
@@ -31182,7 +31247,7 @@ var ED_CATS = [
   { id: 'erase', name: 'ERASE', glyph: '⌫', tools: [
     { id: 'eraser', name: 'Eraser brush', glyph: '⌫', kind: 'erase' }] }
 ];
-var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1, bunker: 1 };
+var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1, bunker: 1, craft: 1, tobruk: 1, hog: 1 };
 var ED_DRAFT = 'ortona.draft', ED_LAST = 'ortona.map', ED_SLOTS = 'ortona.maps';
 
 /* ---- opening and closing ---- */
@@ -31222,7 +31287,10 @@ function edRefreshStart() {
    heightfield and rebuilt the walk grid under a pit and never rebuilt the ground
    MESH or the paint, so the hole was there to walk into and not there to look at
    until something else forced a full rebuild. */
-var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1, emplace: 1 };
+/* and the Normandy pieces: a hedgerow throws up its bank, a ditch and a Tobruk are dug,
+   and a field is paint */
+var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1, emplace: 1,
+                  hedge: 1, ditch: 1, tobruk: 1, field: 1 };
 /* An edit rebuilds the least it can: the map's lists and the walk grid always (a
    tenth of a second), the ground mesh and paint only when something cut or painted
    it, the grass only when grass changed, and of the prop tiles only the ones the
@@ -31253,7 +31321,8 @@ function edBBox(e) {
   var b;
   if (e.pts) { b = { x0: 1e9, y0: 1e9, x1: -1e9, y1: -1e9 }; e.pts.forEach(function (p) { b.x0 = Math.min(b.x0, p.x); b.y0 = Math.min(b.y0, p.y); b.x1 = Math.max(b.x1, p.x); b.y1 = Math.max(b.y1, p.y); }); var pw = (e.width || 48) / 2 + 20; b.x0 -= pw; b.y0 -= pw; b.x1 += pw; b.y1 += pw; }
   else if (e.x1 !== undefined) b = { x0: Math.min(e.x1, e.x2) - 20, y0: Math.min(e.y1, e.y2) - 20, x1: Math.max(e.x1, e.x2) + 20, y1: Math.max(e.y1, e.y2) + 20 };
-  else if (e.t === 'paved') b = { x0: e.x, y0: e.y, x1: e.x + e.w, y1: e.y + e.h };
+  else if (edBoxy(e)) b = { x0: e.x, y0: e.y, x1: e.x + e.w, y1: e.y + e.h };
+  else if (e.t === 'craft') { var cb = craftFoot(e); b = { x0: e.x - cb.w / 2, y0: e.y - cb.h / 2, x1: e.x + cb.w / 2, y1: e.y + cb.h / 2 }; }
   else if (e.w) b = { x0: e.x - e.w / 2, y0: e.y - e.h / 2, x1: e.x + e.w / 2, y1: e.y + e.h / 2 };
   /* a bunker's footprint is derived rather than stored, so the one place that derives it
      hands the number out and nothing else has to know how big one is */
@@ -31280,7 +31349,7 @@ function edMark(e) {
   if (ED_GROUND[e.t]) ED.needGround = true;
   if (e.t === 'grass') ED.needGrass = true;
   if (e.t === 'sector' || e.t === 'hq') ED.scope = 'full';
-  if (e.t === 'house' || e.t === 'farm' || e.t === 'bunker') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
+  if (e.t === 'house' || e.t === 'farm' || e.t === 'bunker' || e.t === 'nhouse') { edMarkRect(b.x0 - m, b.y0 - m, b.x1 + m, b.y1 + m, true); ED.padT = 5; }
 }
 /* what changed between two versions of the map, marked thing by thing: an undo costs
    what the edit it undoes cost, rather than the whole scene */
@@ -31324,7 +31393,7 @@ function edMirrorOf(e) {
   if (m.side) m.side = m.side === 'us' ? 'ger' : 'us';
   if (m.t === 'trench' && m.face) m.face = m.face === 'L' ? 'R' : 'L';
   if (m.t === 'sector') { m.id = edNextSectorId(); m.owner = m.owner === 'us' ? 'ger' : m.owner === 'ger' ? 'us' : null; m.label = (m.label || '') + ' (E)'; }
-  if (m.t === 'paved') m.x = WORLD.w - e.x - e.w;
+  if (edBoxy(m)) m.x = WORLD.w - e.x - e.w;
   return m;
 }
 function edNextSectorId() {
@@ -31332,7 +31401,15 @@ function edNextSectorId() {
   for (var c = 65; c < 91; c++) if (!used[String.fromCharCode(c)]) return String.fromCharCode(c);
   return 'Z' + Math.floor(Math.random() * 1000);
 }
-function edAnchorX(e) { return e.x !== undefined ? (e.t === 'paved' ? e.x + e.w / 2 : e.x) : e.pts ? e.pts[0].x : e.x1; }
+/* a thing stored as a box by its corner rather than round its middle: paving, and a
+   field's paint */
+function edBoxy(e) { return e.t === 'paved' || e.t === 'field'; }
+/* a landing craft's footprint on its own bearing, which is the box the game marks solid */
+function craftFoot(e) {
+  var L = e.kind === 'lct' ? 330 : 118, B = e.kind === 'lct' ? 100 : 36, ca = Math.abs(Math.cos(e.a || 0)), sa = Math.abs(Math.sin(e.a || 0));
+  return { w: L * ca + B * sa, h: L * sa + B * ca };
+}
+function edAnchorX(e) { return e.x !== undefined ? (edBoxy(e) ? e.x + e.w / 2 : e.x) : e.pts ? e.pts[0].x : e.x1; }
 /* one thing, or its mirror too; the snapshot is the caller's */
 function edPush(e) {
   if (e.t === 'sector' && !e.id) { e.id = edNextSectorId(); e.label = e.label || (e.type.toUpperCase() + ' ' + e.id); }
@@ -31359,7 +31436,8 @@ function edPick(wx, wy) {
     var d, area;
     if (e.pts) { d = 1e9; for (var i = 0; i < e.pts.length - 1; i++) d = Math.min(d, distToSeg(wx, wy, e.pts[i].x, e.pts[i].y, e.pts[i + 1].x, e.pts[i + 1].y)); d -= 10; area = 200; }
     else if (e.x1 !== undefined) { d = distToSeg(wx, wy, e.x1, e.y1, e.x2, e.y2) - 8; area = 160; }
-    else if (e.t === 'paved') { d = (wx > e.x && wx < e.x + e.w && wy > e.y && wy < e.y + e.h) ? -1 : 1e9; area = e.w * e.h * 4; }
+    else if (edBoxy(e)) { d = (wx > e.x && wx < e.x + e.w && wy > e.y && wy < e.y + e.h) ? -1 : 1e9; area = e.w * e.h * 4; }
+    else if (e.t === 'craft') { var cf = craftFoot(e); d = Math.max(Math.abs(wx - e.x) - cf.w / 2, Math.abs(wy - e.y) - cf.h / 2); area = cf.w * cf.h; }
     else if (e.w) { d = Math.max(Math.abs(wx - e.x) - e.w / 2, Math.abs(wy - e.y) - e.h / 2); area = e.w * e.h; }
     else { var r = e.r || 16; d = Math.hypot(wx - e.x, wy - e.y) - r; area = r * r * 3.14; }
     if (d <= 0) { if (area < insideArea) { insideArea = area; inside = e; } }
@@ -31368,7 +31446,7 @@ function edPick(wx, wy) {
   return inside || near;
 }
 function edInRect(e, x0, y0, x1, y1) {
-  var x = edAnchorX(e), y = e.y !== undefined ? (e.t === 'paved' ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
+  var x = edAnchorX(e), y = e.y !== undefined ? (edBoxy(e) ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
   return x >= x0 && x <= x1 && y >= y0 && y <= y1;
 }
 function edMoveEntity(e, base, dx, dy) {
@@ -31454,7 +31532,13 @@ function edProps() {
     html += '<div class="edtitle">' + edKindName(e) + '</div>';
     if (e.r !== undefined) html += slider('Size', 'edsr', e.r, 6, Math.max(60, Math.round(e.r * 2.2)), 1);
     if (e.a !== undefined || ED_ROT[e.t]) html += slider('Turn', 'edsa', ((e.a || 0) * 180 / Math.PI) | 0, 0, 359, 5);
-    if (e.w !== undefined && e.t !== 'paved') html += slider('Width', 'edsw', e.w, 60, 300, 2) + slider('Depth', 'edsh', e.h, 60, 240, 2);
+    /* a Norman house is smaller than anything in an Italian town: thirty-four to forty-four
+       units deep, where a town house starts at sixty */
+    if (e.t === 'nhouse') html += slider('Width', 'edsw', e.w, 36, 140, 2) + slider('Depth', 'edsh', e.h, 30, 100, 2) +
+      row('Kind', seg('edsnst', [['house', 'HOUSE'], ['farm', 'FARM'], ['barn', 'BARN'], ['church', 'CHURCH'], ['manor', 'MANOR']], e.style || 'house'));
+    else if (e.w !== undefined && !edBoxy(e)) html += slider('Width', 'edsw', e.w, 60, 300, 2) + slider('Depth', 'edsh', e.h, 60, 240, 2);
+    if (e.t === 'craft') html += row('Craft', seg('edscrk', [['lcvp', 'LCVP'], ['lct', 'LCT']], e.kind === 'lct' ? 'lct' : 'lcvp')) +
+      row('State', seg('edscrw', [['0', 'WHOLE'], ['1', 'BURNING'], ['2', 'BROACHED']], String(e.wreck || 0)));
     if (e.t === 'road') html += slider('Street width', 'edswd', e.width || 48, 24, 90, 2);
     if (e.t === 'house') html += row('Roof', seg('edsroof', [[1, 'INTACT'], [0, 'SHELLED']], e.roof ? 1 : 0)) + row('Height', seg('edstall', [[0, 'LOW'], [1, 'TALL']], e.tall ? 1 : 0)) +
       slider('Damage', 'edsdmg', Math.round((e.damage || 0) * 100), 0, 100, 5);
@@ -31524,6 +31608,9 @@ function edProps() {
     segs('edsroof', function (v) { edSnapshot(); e2.roof = +v; edTouch(e2); });
     segs('edswh', function (v) { edSnapshot(); e2.h = +v; edTouch(e2); });
     segs('edshk', function (v) { edSnapshot(); if (v === 'teeth') e2.kind = 'teeth'; else delete e2.kind; edTouch(e2); });
+    segs('edsnst', function (v) { edSnapshot(); e2.style = v; edTouch(e2); });
+    segs('edscrk', function (v) { edSnapshot(); e2.kind = v; edTouch(e2); });
+    segs('edscrw', function (v) { edSnapshot(); e2.wreck = +v; edTouch(e2); });
     segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(e2); });
     segs('edstype', function (v) { edSnapshot(); e2.type = v; edTouch(e2); });
     segs('edsown', function (v) { edSnapshot(); e2.owner = v || null; edTouch(e2); });
@@ -31538,7 +31625,9 @@ function edKindName(e) {
   var names = { house: 'House', farm: 'Farmhouse', road: 'Street', paved: 'Paving', pole: 'Lamp post', trench: 'Trench', wire: 'Wire', bags: 'Sandbags',
                 emplace: 'Weapon pit', roadblock: 'Roadblock', wall: 'Wall', crater: 'Crater', rubble: 'Rubble', debris: 'Debris', cart: 'Cart',
                 smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters',
-                bunker: 'Bunker', hogs: 'Anti-tank belt' };
+                bunker: 'Bunker', hogs: 'Anti-tank belt', hog: 'Hedgehog', tobruk: 'Tobruk', ditch: 'Anti-tank ditch', bank: 'Shingle bank',
+                hedge: 'Hedgerow', field: 'Field', craft: 'Landing craft',
+                nhouse: { house: 'Norman house', farm: 'Norman farmhouse', barn: 'Barn', church: 'Norman church', manor: 'Manor' }[e.style] || 'Norman house' };
   return (names[e.t] || e.t) + (e.id ? ' ' + e.id : '') + (e.t === 'hq' ? (e.side === 'us' ? ' (Canadian)' : ' (German)') : '');
 }
 function edDuplicate() {
@@ -31566,7 +31655,7 @@ function edNewEntity(t, wx, wy) {
   Object.keys(d).forEach(function (k) { e[k] = d[k]; });
   if (t.t === 'house') { e.s = Math.random(); e.damage = Math.random() * .8; if (e.roof === undefined) e.roof = Math.random() < .5 ? 1 : 0; }
   if (t.t === 'tree' || t.t === 'scrub') { e.s = Math.random(); e.lean = (Math.random() - .5) * .4; }
-  if (t.t === 'debris' || t.t === 'emplace' || t.t === 'grass') e.s = Math.random();
+  if (t.t === 'debris' || t.t === 'emplace' || t.t === 'grass' || t.t === 'nhouse' || t.t === 'craft' || t.t === 'tobruk' || t.t === 'hog') e.s = Math.random();
   if (t.t === 'grass' || t.t === 'cart') e.a = Math.random() * TAU;
   if (t.t === 'roadblock') e.a = 0;
   if (t.t === 'pole') e.broken = Math.random() < .3 ? 1 : 0;
@@ -31589,6 +31678,8 @@ function edLineEntity(t, pts) {
   var e = { t: t.t };
   if (t.t === 'trench') { e.pts = pts; e.side = pts[0].x < WORLD.w / 2 ? 'us' : 'ger'; if (ED.faceFlag) e.face = ED.faceFlag; return [e]; }
   if (t.t === 'road') { e.pts = pts; e.width = t.def.width; return [e]; }
+  /* a hedgerow and an anti-tank ditch are laid as one run of points, the way a trench is */
+  if (t.t === 'hedge' || t.t === 'ditch') { e.pts = pts; for (var dk in t.def) if (t.def.hasOwnProperty(dk)) e[dk] = t.def[dk]; return [e]; }
   /* Walls, wire and obstacle belts are straight pieces: a bent line becomes several, and
      each of them carries the tool's own options. Without that a dragon's-teeth belt drawn
      with the teeth tool came out as hedgehogs, because the only thing separating the two
@@ -31715,7 +31806,7 @@ function edBrushAt(wx, wy) {
     var r2 = ED.brush.r, before = ED.data.entities.length, mx2 = WORLD.w - wx;
     var keep = ED.data.entities.filter(function (e) {
       if (e.t === 'hq') return true;
-      var ex = edAnchorX(e), ey = e.y !== undefined ? (e.t === 'paved' ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
+      var ex = edAnchorX(e), ey = e.y !== undefined ? (edBoxy(e) ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
       var near = Math.hypot(ex - wx, ey - wy) < r2;
       if (e.pts) { for (var i = 0; i < e.pts.length - 1 && !near; i++) if (distToSeg(wx, wy, e.pts[i].x, e.pts[i].y, e.pts[i + 1].x, e.pts[i + 1].y) < r2) near = true; }
       else if (e.x1 !== undefined) near = distToSeg(wx, wy, e.x1, e.y1, e.x2, e.y2) < r2;
@@ -31838,6 +31929,7 @@ function edUp() {
     var x = Math.min(d.x0, d.x1), y = Math.min(d.y0, d.y1), w = Math.abs(d.x1 - d.x0), h = Math.abs(d.y1 - d.y0);
     if (w > 12 && h > 12) {
       if (t.kind === 'stamprect') edAddMany(edStampRect(t.stamp, x, y, x + w, y + h));
+      else if (t.t === 'field') edAdd({ t: 'field', x: x, y: y, w: w, h: h, k: Math.round(Math.random() * 100) / 100 });
       else edAdd({ t: t.t, x: x, y: y, w: w, h: h, kind: t.def.kind });
     }
   } else if (d.kind === 'ghost') {
@@ -31895,7 +31987,7 @@ function edOverlay() {
     ctx.lineWidth = selected ? 2.4 : 1.2;
     if (e.pts) { edPoly(e.pts.map(function (p) { return [p.x, p.y]; }), false); if (e.t === 'trench') edFacingTicks(e.pts, e.face, selected ? '#ffd76a' : '#ff9a6a'); }
     else if (e.x1 !== undefined) edPoly([[e.x1, e.y1], [e.x2, e.y2]], false);
-    else if (e.t === 'paved') edPoly([[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]], true);
+    else if (edBoxy(e)) edPoly([[e.x, e.y], [e.x + e.w, e.y], [e.x + e.w, e.y + e.h], [e.x, e.y + e.h]], true);
     else if (e.w) edPoly(edRectPts(e.x, e.y, e.w, e.h), true);
     else {
       groundRing(e.x, e.y, e.r || 16, ctx.strokeStyle, selected ? 2.2 : 1.2);
@@ -32366,7 +32458,7 @@ function edTestPlay(side, diff, mode) {
    The same rules as tools/mapcheck.mjs, run on the device, each with a place to jump to. */
 function edCheck() {
   var E = ED.data.entities, out = [];
-  var blocks = E.filter(function (e) { return (e.t === 'house' || e.t === 'farm') && e.w; });
+  var blocks = E.filter(function (e) { return (e.t === 'house' || e.t === 'farm' || e.t === 'nhouse') && e.w; });
   /* A bunker is a building for every one of these rules: nothing stands inside it, no
      street runs through it, no trench crosses it. Its footprint is derived rather than
      stored, so it is given one here out of the same function the game builds from. */
@@ -32375,7 +32467,18 @@ function edCheck() {
     var bb = bunkerBox(e);
     blocks.push({ t: 'bunker', x: e.x, y: e.y, w: bb.w, h: bb.h });
   });
-  var craters = E.filter(function (e) { return e.t === 'crater'; }), trenches = E.filter(function (e) { return e.t === 'trench' && e.pts; });
+  /* and a landing craft aground or burning is a steel hull standing on the sand */
+  E.forEach(function (e) {
+    if (e.t !== 'craft' || e.wreck === 2) return;
+    var cf = craftFoot(e);
+    blocks.push({ t: 'craft', x: e.x, y: e.y, w: cf.w, h: cf.h });
+  });
+  /* a Tobruk is dug in a bowl and an anti-tank ditch is dug the way a trench is, so the
+     rules about what is dug read them as a crater and a trench */
+  var craters = E.filter(function (e) { return e.t === 'crater'; }).concat(E.filter(function (e) { return e.t === 'tobruk'; })
+    .map(function (e) { return { x: e.x, y: e.y, r: 16 }; }));
+  var trenches = E.filter(function (e) { return (e.t === 'trench' || e.t === 'ditch') && e.pts; });
+  var hedges = E.filter(function (e) { return e.t === 'hedge' && e.pts; });
   var wires = E.filter(function (e) { return e.t === 'wire'; }), trees = E.filter(function (e) { return e.t === 'tree'; }), roads = E.filter(function (e) { return e.t === 'road' && e.pts; });
   function bad(rule, x, y, msg) { out.push({ rule: rule, x: x, y: y, msg: msg }); }
   function segsOf(pts) { var s = []; for (var i = 0; i < pts.length - 1; i++) s.push([pts[i].x, pts[i].y, pts[i + 1].x, pts[i + 1].y]); return s; }
@@ -32406,6 +32509,23 @@ function edCheck() {
     if (gx < -4 && gy < -4) { bad('houses overlap', (a.x + b.x) / 2, (a.y + b.y) / 2, 'two buildings overlap'); continue; }
     var gap = gx >= -4 && gy < 0 ? gx : gy >= -4 && gx < 0 ? gy : null;
     if (gap !== null && gap > 7 && gap < 34) bad('slot between houses', (a.x + b.x) / 2, (a.y + b.y) / 2, Math.round(gap) + ' units between buildings: too wide for a party wall, too narrow to walk');
+  }
+  /* a hedgerow is a bank a hull cannot climb: through a building it stands in somebody's
+     kitchen, and across a lane it shuts the lane to everything on tracks */
+  for (i = 0; i < hedges.length; i++) {
+    sg = segsOf(hedges[i].pts);
+    for (k = 0; k < sg.length; k++) {
+      for (j = 0; j < blocks.length; j++) if (segHitsBox(bx(blocks[j], -3), sg[k][0], sg[k][1], sg[k][2], sg[k][3]))
+        bad('hedge through house', blocks[j].x, blocks[j].y, 'a hedgerow runs through a building');
+      for (j = 0; j < roads.length; j++) {
+        var rs = segsOf(roads[j].pts), rh = (roads[j].width || 48) / 2 - 6, crossed = false;
+        for (var m2 = 0; m2 < rs.length && !crossed; m2++) for (var s3 = 0; s3 <= 24 && !crossed; s3++) {
+          var t3 = s3 / 24;
+          if (distToSeg(sg[k][0] + (sg[k][2] - sg[k][0]) * t3, sg[k][1] + (sg[k][3] - sg[k][1]) * t3, rs[m2][0], rs[m2][1], rs[m2][2], rs[m2][3]) < rh) crossed = true;
+        }
+        if (crossed) bad('hedge across lane', (sg[k][0] + sg[k][2]) / 2, (sg[k][1] + sg[k][3]) / 2, 'a hedgerow crosses a lane');
+      }
+    }
   }
   for (i = 0; i < roads.length; i++) {
     var r = roads[i], half = (r.width || 48) / 2, run = 0;

@@ -9,11 +9,12 @@ Three maps ship. **Ortona**, December 1943, is the town fought one building at a
 fourteen hundred units of no man's land between them, laid out for four players and
 mirrored about the midline to the unit. **Omaha Beach**, the Dog and Easy sectors on the
 morning of the 6th of June 1944, is the first of a second theatre and the first map that
-is not a field with a headquarters at either end: a corridor 1600 across and 3600 deep,
-the Americans starting on the sand at the bottom and the Germans on the farmland at the
-top, with the seawall and the Atlantic Wall across the middle and three draws up the bluff
-behind it that are the only way armour gets off the beach. They are picked on the title
-screen under GROUND and all three open in the editor.
+is not a field with a headquarters at either end: a corridor 1500 across and 4000 deep,
+the Americans starting on the sand at the bottom among the craft that brought them in and
+the Germans in a manor in the bocage at the top, with the seawall and the Atlantic Wall
+across the middle and two draws up the bluff behind it that are the only way armour gets
+off the beach. They are picked on the title screen under GROUND and all three open in the
+editor.
 
 **The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
@@ -786,6 +787,16 @@ the south trench clipping the corner of its own bunker. The one worth keeping is
 craters: the scatter rejects against everything already dug, so anything laid AFTER it is
 laid on top of it, and the farms were written below the shell holes in the file.
 
+**And it knows Normandy.** A Norman house is a building for every rule a house is, a landing
+craft aground is one on its own bearing's bounding box, a Tobruk is an earthwork dug in a
+bowl and an anti-tank ditch is dug the way a trench is. Two rules are new: a hedgerow does
+not run through a building, and it does not cross a lane -- a bank a hull cannot climb laid
+over a lane shuts it with nothing on the map to say so. Taught all of that, its first run
+on Omaha found thirteen faults on a map that had read clean for a whole stage: two Tobruks
+in front of their own wire, two houses overlapping, six pairs of houses leaving a slot
+too narrow to walk down, and the long hedgerows beside the two north-south lanes running
+straight through the crossroads. The editor's CHECK carries the same rules.
+
 ### `tools/lint.mjs` - the rules, mechanically
 
 Checks what a screenshot cannot: that the script still parses, that the file is
@@ -793,13 +804,15 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 1860 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 1945 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
 1720 before the arms had a doctrine, 1745 before three directives on nine flags
-became a board of orders, 1800 before three more German pieces, and 1815 before a third
-map). Takes under a second. Exits
+became a board of orders, 1800 before three more German pieces, 1815 before a third map,
+1880 before that map was laid again by hand, 1925 before the bocage behind its beach, and
+1945 before a post could be made of a landing craft and the wall could be manned). Takes
+under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
 at all.
@@ -929,21 +942,26 @@ crew cannot stand in is worse than no pit. The control skips a point that has an
 in it, because three battles have been fought on the map by the time the row runs and a
 shell hole read as the control says the country is as broken as the pit.
 
-**And one row asks the third map its own question.** Omaha claims that a draw is the only
-way armour gets off the beach, that a man climbs the bluff wherever he likes, and that the
-seawall is a firing line to him and a barrier to a hull, and all three are arithmetic over
-the going grid rather than anything a photograph could show. A vehicle's route from the
-sand to the plateau at four places across the corridor is asked how near it comes to a
-draw's own course while it is on the face, a section's at the two flanks whether it needed
-one at all, and the wall is priced for a man and for a tank on a length that is standing
-and in the lane beside it, with a round asked to go over it. Then the world is asked its
-size and which edge its sea is on, the beach is read off the albedo, the bank and the wall
-are asked for their cover, a casemate is fired along the beach and refused to its rear,
-and the walk from each headquarters to the three flags on the wall is measured, because a
-map that is not mirrored is only fair if those two walks are about the same. It runs LAST
-of the map rows because it leaves the world on Omaha: put between the two rows above it,
-which read the Gothic Line the row before them left standing, it took both down, and what
-that looked like was a churn that had stopped being painted.
+**And three rows ask the third map its own questions.** The first is the corridor: that a
+draw is the only way armour gets off the beach and a man climbs the bluff wherever he
+likes, that the seawall is a firing line to him and a barrier to a hull, the world's size
+and which edge its sea is on, the sand off the albedo, the cover on the bank and at the
+wall, a casemate fired along the beach and refused to its rear, sixteen flags tied to their
+neighbours with the victory flags only at the ends, and the walk from each headquarters to
+the other side's victory flags, because a map that is not mirrored is only fair if those
+two walks are about the same. The second is the bocage: a round, an eye and a hull stopped
+across the middle of every hedgerow with no other near it, the man lying against one
+shooting over it wherever the control says the far field is open, a lane that can be seen
+down, a tank's route across three fields that crosses no hedgerow off a lane -- counted as
+the route's legs crossing a hedge's own LINE, because sampled off the grid the smoothed
+line clipping a marked cell beside a diagonal gate read as a tank through a hedge -- and
+every Norman house one a section can hold. The third is the craft and the wall: a post
+refused on open sand and allowed on a craft for its price, the craft spent and freed again
+when the post comes down, and MANNED putting fourteen units in the wall, none of them on the
+German cap and none of them gone from its post after a minute of battle. They run LAST of
+the map rows because they leave the world on Omaha: put between the two rows above them,
+which read the Gothic Line the row before them left standing, the old single row took both
+down, and what that looked like was a churn that had stopped being painted.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1056,7 +1074,7 @@ than trusting a line number.
 is no state container and no immutability; systems mutate `G` directly.
 
 **World.** 2800 x 1900 units unless the map says otherwise (`data.w`, `data.h`; Omaha is
-1600 x 3600, and `setWorld` is the one place that follows it). `makeSectors` / `buildMap` /
+1500 x 4000, and `setWorld` is the one place that follows it). `makeSectors` / `buildMap` /
 `makeTerrain` build it from `G.mapData`, which is plain JSON the map editor also reads and
 writes (`defaultMapData()` is Ortona, `gothicMapData()` the Gothic Line and `omahaMapData()`
 Omaha; `MAPS` is the table
@@ -1136,25 +1154,62 @@ instead and came out a maze.
 
 **Omaha Beach.** The Dog and Easy sectors of it, which is 29th and 1st Division ground on
 the morning of the 6th of June 1944, and the first map here that is a CORRIDOR rather than
-a field with a headquarters at either end: 1600 across and 3600 deep, with the Channel
+a field with a headquarters at either end: 1500 across and 4000 deep, with the Channel
 along the bottom. The American army starts on the sand at the water's edge and goes up the
-screen; the German army starts on the farmland behind the bluff and comes down it; and
-what they meet at is the middle of the map and the only built thing on the whole beach,
-the seawall with the Atlantic Wall dug in behind it. The first version of this map laid
-the beach across the short axis of a 2800-wide field with the beachhead already ashore,
-and it was thrown away whole: an assault up a beach is one army coming at another from one
-end of a long piece of ground, and a map that is wide and shallow cannot say that.
+screen; the German army starts in the bocage behind the bluff and comes down it; and what
+they meet at is the seawall with the Atlantic Wall dug in behind it.
 
-Read up the screen from the water: the tidal flat, twelve hundred and fifty units of firm
-sand with three belts of hedgehogs across it and nothing else to get behind; the shingle
-bank; a strip of dune and marsh with the wire and the beach road on it; the seawall, the
-casemates and the teeth; the fire trench along the toe; the bluff, with a draw up it at each
-of the three exits; the crest trench; and the plateau, Norman bocage with a hamlet at the
-head of the west and east draws and the German base beyond them. Every band is a distance
-UP from the waterline (`omahaUp`, and `at(x, up)` in the map data) rather than a y, so the
-profile follows the shore where it wanders, and the lines of the country are functions
-(`omahaBeach`, `omahaToe`, `omahaRun`, `OM_WALL`, `OMAHA_LANES`) because the landform, the
-paint and the placement all read the same numbers.
+This is the third version. The first laid the beach across the short axis of a 2800-wide
+field with the beachhead already ashore, and was thrown away because an assault up a
+beach is one army coming at another from one end of a long piece of ground. The second
+was a corridor generated from functions and was thrown away for being generated: it read
+as a rendering of a formula. This one is LAID BY HAND, piece by piece, in three stages that
+were each photographed and signed off before the next -- the ground, then the beach and the
+wall, then the bluff top and the bocage -- and every coordinate in `omahaMapData` was put
+there on purpose.
+
+Read up the screen from the water: the sea, shelving; eleven hundred and eighty units of
+tidal flat with three runnels across it and seventy-two Czech hedgehogs placed one at a
+time, thick in the middle of the band and thinning above and below it with no line through
+them left on purpose; the shingle bank; the seawall at about y 2610, with a casemate built
+into it at each end looking ALONG the beach; the strip behind it, with the beach road, two
+belts of wire, Tobruks and machine-gun pits; the fire trench along the toe of the bluff;
+the bluff, a hundred and seventy units high, with two draws up it -- Vierville in the west
+at x 400 and Les Moulins in the east at x 1100 -- each shut where it opens onto the strip by
+an anti-tank ditch across its floor and a roadblock in front of it (a concrete wall at
+Vierville, dragon's teeth at Les Moulins); five bunkers on the bluff covering the draws and
+the flanks; the crest trench; and the plateau, Norman bocage, with Vierville and
+Saint-Laurent at the heads of the draws, the Chateau de Vaumicel, Le Grand Hameau,
+Louvieres, the Formigny farm and Trevieres, where the German headquarters is a manor in a
+walled yard.
+
+**Every line of the country is a line laid west to east.** `OM` holds them -- `water`,
+`shingle`, `wall`, `toe`, `crest`, the runnels and the draws -- and `omLine` reads one at x,
+so the waterline wanders and everything measured from it wanders with it. The landform
+(`omahaZ`), the paint (`omahaPaint`) and the placement all read the same table, which is
+the only way a hand-laid map stays consistent when one of its lines is moved.
+
+**A draw is a break in the bluff and not a gully cut into it**, and that distinction is the
+whole of why the map works. A V cut down a uniform slope still has the slope's own grade
+along its floor, so a draw drawn that way is a ravine nothing can drive up. `omDraw` lays a
+floor that climbs from 28 at the foot to 202 at the head along the draw's own centre line,
+eased, and blends the face down to it across a `wall` width either side of the `floor`:
+nothing is cut, the face is replaced there. Vierville is the narrower of the two.
+
+**A sea is a depth and not a colour.** Ortona's sea is a bed sunk to sixty and painted blue;
+Omaha's is a surface at nought (`LAND.sea`, read through `seaZ()`) over a bed that shelves
+out to seventy, so anything dug below the tide on the lower beach fills. The ground's
+vertex uv carries `seaZ() - z`, and the shader's water test and the depth that tints the
+water are that one number on either side of the shore: written as a flag and a separate
+depth, the two disagreed across the waterline and drew it as a staircase. Below the level
+of the sea the ground is tinted by how deep it is, so the shallows show the sand through
+them, and the surf is a band of foam along the line.
+
+**The weather is a table.** `ATMO` is the sun's direction and colour, the sky, the ambient,
+the fog, the zenith, the sea's two colours and the surf, and `setAtmo` puts a country's own
+in at `buildMap`. `ATMO0` is the constants every map had before, so Ortona and the Gothic
+Line render as they always did; `ATMO_OMAHA` is an overcast morning, the sun high and flat
+and the colours out of everything.
 
 **A map says how big it is now, and which edge its sea is on.** `WORLD` was a constant
 worked out once at load and every grid in the file was sized off it: the cover index, the
@@ -1163,84 +1218,102 @@ mound, the fog and the prop tiles. `data.w`/`data.h` carry the size and `setWorl
 one place that follows it, reassigning every one of those globals; it does nothing when the
 size has not changed, so Ortona and the Gothic Line are the arrays they always were. The
 prop and ground tiles stay twenty-four and are laid out whichever way keeps a tile nearest
-square (3 by 8 here), because the draw culls a tile whole. `LAND.south` puts the sea along
-the bottom, and `inland(x, y)` is the one question eight readers had each been asking as
-`y < coastY(x) + k`: how far a point is from the water, positive on land.
+square, because the draw culls a tile whole. `LAND.south` puts the sea along the bottom,
+and `inland(x, y)` is the one question eight readers had each been asking as
+`y < coastY(x) + k`: how far a point is from the water, positive on land. And the fog
+texture is uploaded with an unpack alignment of one, because a width that is not a
+multiple of four bytes shears every row after the first and the whole map comes out under a
+grey haze.
 
 **The ground goes on past the edge of the map.** What was drawn past it was the sky: on a
-map 2800 across a player seldom saw it, and on a corridor 1600 across he sees it at any zoom
-beyond the default, a cliff of earth standing over nothing on both sides of the battle.
-`buildSkirt` lays a ring of coarse ground out to 1800 units past every edge, eight units in
-under the map's own so no seam can open, dimmed as it goes out. A country that can say what
-it is at a point (`LAND.at`, which is `omahaZ` here) carries on as itself, so the beach and
-the bluff go on either side of the corridor; any other is its natural ground carried
-outward with a little relief on anything above the water. The paint past the edge is its
-own edge column stretched, which drawn sharp is a set of stripes ruled to the horizon, so
-the shader takes it further down the mip chain the further out it is. Nothing stands on the
-skirt, nobody walks on it and it casts nothing. It is on every map, and on Ortona it is what
-now lies west of the town where the sky used to be.
-
-**A draw is a break in the bluff and not a gully cut into it**, and that distinction is the
-whole of why the map works. A V cut down a uniform slope still has the slope's own grade
-along its floor, so a draw drawn that way is a ravine nothing can drive up. In `omahaZ` a
-draw pulls the toe back, lays the face at under half the angle and takes forty units off
-its height, and the drain that cut it goes in afterwards as the gully. Each entry in
-`OMAHA_DRAWS` carries two widths: `r`, the break, read by the landform, and `d`/`w`, the V,
-cut by `gullyAt` the way a vallone is. Each runs from the gap in the seawall at its foot to
-the plateau at its head, with a road up it.
+map 2800 across a player seldom saw it, and on a corridor 1500 across he sees it at any zoom
+beyond the default. `buildSkirt` lays a ring of coarse ground out to 1800 units past every
+edge, eight units in under the map's own so no seam can open, dimmed as it goes out. A
+country that can say what it is at a point (`LAND.at`, which is `omahaZ` here) carries on
+as itself, so the beach and the bluff go on either side of the corridor; any other is its
+natural ground carried outward. Nothing stands on the skirt, nobody walks on it and it
+casts nothing.
 
 **The seawall is a new kind of wall: low enough to fire over and no good to a tank.** A
 wall's height already says what it is to a man, and at 14 it is under the 16 that blocks an
 eye or a round, so he crosses it at a climb and fires over it. What its height cannot say
 is that it is a metre and a half of poured concrete no hull climbs, so a wall with `sea` on
 it is also marked on `hogg`, the grid a belt of teeth is on, wherever it is still standing.
-It is drawn poured rather than stacked, plumb in bays with a coping, and it is open at the
-three lanes and at the two casemates set into it. The lanes run all the way down the beach:
-the belts, the wire and the teeth are cut at the same three places (`alongUp`), and the
-shingle is bulldozed to a third of itself there.
+It is drawn poured rather than stacked, and it is open at the two exit lanes and at the two
+casemates set into it. The shingle bank in front of it is `bank`, a linear tier-2 `lowwall`
+run with no geometry of its own, because the ground is the geometry.
+
+**The craft that brought the first wave in are on the sand.** An LCT beached bow on in the
+middle is the American headquarters (`look: 'lct'`), two more are beached on the flanks,
+and seven Higgins boats lie between them: most whole with the ramp down, two burning, two
+broached in the surf. A craft aground is solid on its own bearing's bounding box and cover
+along both sides. And **a craft aground and whole is where the Americans build.** On a map
+that names the side that landed (`craftPost`), a company post or an armour point is not
+pegged out on open ground: an engineer turns a craft into one, for the usual price and
+time, and there are only as many posts as there are craft left -- five. The craft stays
+drawn where it lies and the post adds what is stacked in and round it (`craftPostFaces`: a
+tarpaulin over the well, the wireless, tents and stores for a company post; a gantry over
+the ramp, drums behind a berm, jerricans and spare track for an armour point), measured
+back from the bow and laid on the dry sand forward of midships, because a craft lies at the
+waterline and everything aft of it is under water. Its footprint is the craft's with room
+for that on the craft's own bearing, and it is a COPY of the building's def with the size
+changed (`craftDef`), because every reader of a building's size reads `b.def`. The classic
+bar outlines every craft still free while placing; the SIMPLE strip and the brain take the
+one nearest home; a post knocked down frees its craft.
+
+**The wall can be manned at the whistle.** ATLANTIC WALL on the title screen is shown only
+for a map with a `garrison` written into it, and MANNED puts that garrison in: a Pak in each
+casemate in the seawall, an MG42 in each of four bunkers and a mortar dug in behind the
+fifth, an MG42 in each Tobruk either side of the two exits, and a section in each leg of
+the fire trench. A fitting goes in through the bunker's own `finishBunkerUp`, so the gun in a
+casemate is a gun laid through its slot and nothing new. The garrison is over and above the
+German army: it goes to that side's first player, `popOf` does not count it (`u.wall`), and
+it is told to stay -- a held posture, which the brain's dealing, its operations and its
+retreat rule all leave alone.
 
 **And the map is not mirrored, and cannot be.** One army has the tide at its back and the
-other has the high ground. What makes it a fair fight is the walk: each headquarters is
-about the same distance from the three flags on the wall, and the gate measures it. The
-three victory sectors are the three exits and they start in nobody's hands, so the clock
-does not run against either side until somebody is standing on the wall; each side owns
-two sectors at its own end and there is one more in nobody's hands on each half, the middle
-of the beach and the coast road.
+other has the high ground. Sixteen flags stand in two lanes of eight rows, each tied to the
+one across from it and the ones above and below, and the only victory flags are the two at
+each end: Dog Green and Dog Red at the water and the church and the farm at Trevieres. A
+side's own victory flags (`home`) do not count against the other side, so the Americans win
+by taking Trevieres and the Germans by putting them back into the sea. The Americans open
+on the two rows at the water, the Germans on the four from the crest back, and the two rows
+at the wall and the exits are nobody's. What makes it fair is the walk from each
+headquarters to the OTHER side's victory flags, and the gate measures it.
 
-**Two casemates look straight out over the sand and two fire ALONG it.** The pair behind the
-wall face the sea; the pair at the two ends stand in front of the wall facing each other,
-so the strip between the bank and the wall is enfiladed from both sides. `outPoint` clamps a
-garrison's fire into its own arc, so a round out of the slot is allowed and the same round
-to its rear is refused by the bunker's own concrete. Every bunker here says `sd` outright,
-because `bunkerSide` reads the side off which half of the map a thing stands on.
-
-**The shingle bank is the first cover a man coming up the beach finds.** The bank itself is
-in the country; `bank` is what the map says it is worth to lie behind it, a linear tier-2
-`lowwall` run with no geometry of its own, because the ground is the geometry. Like a wall
-it protects across its own line and not along it.
-
-**The deploy pad is a band.** `padR`/`padY` is 380 by 110 here against Ortona's 165 circle,
-because an army coming off a beach is spread along it, and `LAND.padM` is the margin round
-it that `makeHeight`'s plane fit reaches: on the first version of this map a flat 215 fitted
-the plane through the beach, the shingle and the toe of the bluff at once and put a ramp
-where the pad was. `hqSpot` splits a team's allies across the axis their headquarters are
-not separated on, which here is x.
+**The bocage is a going grid, not scenery.** A Norman hedgerow is a bank of earth with a hedge
+on it: it stops the eye and the round of anybody not up against it (`sblk`, `fblk`), the
+man lying along it sees and shoots over it through the trace's own end allowance, a man
+gets over it slowly (`wallg`, 1.9), and a hull does not except at a gate -- `hogg` marked 2,
+which `cellCost` charges `HEDGE_HULL`, fifty times over, where a hedgehog is twelve,
+because at the hedgehog's price a tank sent across three fields went through three
+hedgerows rather than round to a gate. It is tier-3 cover to the men lying along it on
+either side. See the Movement section for the three things that had to be fixed before any
+of that was true. A Norman house is rubble stone under a steep slate roof: standing,
+garrisonable whatever its size (every one on the map is thirty-four to forty-four units
+deep, and the sixty-by-sixty size test that separates a house from a shed shut them all
+out), and not built in bays, so a shell does not take it apart. Only a ruin gets the town's
+pavements and street dust round it.
 
 **Measured on the going grid rather than looked at**, which is the only way any of that can
-be checked. A tank asked to get from the middle of the beach to the plateau at four places
-across the corridor -- both flanks and both stretches between the draws -- takes 1,802 to
-1,929 units against a crow of 1,700, and every one of those routes passes within five units
-of a draw's own course while it is on the face. A section asked the same at the two flanks
-takes 1,759 and 1,731 and never comes within 90 of a draw. On the seawall a man pays 1.9 and
-a tank 16.2 against 1 in the lane beside it, and a round goes over it. The flat reads
-200,192,170 off the albedo against 91,99,64 on the farmland, and carries no cover where the
-lanes run; the bank and the wall carry tier 2. And the walk from each headquarters to the
-three flags on the wall is 1,320, 1,250 and 1,340 from the beach against 1,492, 1,357 and
-1,478 from the farmland, a tenth longer for the side that has the bluff to come down and
-the concrete to come down to. With the same brain on both sides (`tools/skirmish.mjs --self
---map=omaha`, four pairs) the Americans won five matches and the Germans three, each over in
-four to eight minutes: inside the noise at eight, and the number to take again with more
-pairs once either army has a roster of its own.
+be checked. A tank asked to get from the flat to the plateau at five places across the
+corridor takes 1,759 to 2,128 units against a crow of 1,600, and every one of those routes
+passes within 22 units of a draw's own course while it is on the face; a section asked the
+same takes 1,609 to 1,620 and never comes within 160 of one. On the seawall a man pays 1.9
+and a tank 16.2 against 1.35 in the lane, and a round goes over it. The flat reads
+175,166,148 off the albedo against 79,105,66 on the farmland. Across the middle of 33
+hedgerows with no other within seventy, a round, an eye and a hull are stopped on all 33,
+and a man lying against one shoots over it on all 28 where the far field is open; 36 of 36
+straight runs of lane can be seen down; a tank sent across three fields crosses no
+hedgerow off a lane; 35 of 35 Norman houses can be held. And the walk to the enemy's
+victory flags is 3,155 and 3,145 from the beach against 3,296 and 3,329 from the bocage.
+With the same brain on both sides (`tools/skirmish.mjs --self --map=omaha`, four pairs of
+ten minutes) no match came near a victory flag: all eight ran the full ten minutes with
+both sides' points untouched, and whichever brain played German held more ground in seven
+of the eight, a side average of +58 in score against -58, with 4,946 of army against the
+Americans' 4,033. That is the Germans opening on eight flags to the Americans' four and the
+income it pays. It is one run of four pairs and the thing to take again before touching the
+lever, which is the two crest villages starting in nobody's hands.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
@@ -1578,6 +1651,33 @@ effect off ground that is also steep and also near something -- a man pays 2.08 
 wire where a tank pays 1, and on a hedgehog a man pays 1 where tracks and wheels pay 12.
 Asked to cross at the same place, a section goes straight through the belt and a Sherman
 goes round the end of it.
+
+**A hedgerow is three grids, and for a while it was on none of the one that mattered to a
+tank.** The bocage is marked in `rebuildGrid` on the sight and fire grids, the field wall's
+and `hogg`, and three things had to be put right before a tank noticed any of it:
+
+- **Its `hogg` mark sat above the line that fills that grid**, so it was wiped on every
+  rebuild and a hull drove through a hedgerow at the price of open ground. It is marked
+  below the fill now, with `hogg` set to 2 and priced at `HEDGE_HULL`.
+- **A lane is thirty units between two hedgerows on a twenty-unit grid**, so a hedge's own
+  width reached into the lane's cells wherever the two happened to line up: the eye was
+  blocked down the lane, a man walking it paid for a field wall and a tank paid twelve
+  times over to drive it. A hedgerow is marked after the roads and never lands on a road
+  cell. The cost is a hedge on the verge of a lane goes see-through where it shares a cell
+  with the metalling, which is the smaller fault of the two.
+- **A diagonal step in the search paid only for the cell it landed in.** A line at an angle
+  is a staircase of cells, and a route stepped diagonally between two of them at their
+  shared corner for nothing, at every step: a tank sent across three fields went through
+  three hedgerows without once paying for one. `findPath` now charges a diagonal step that
+  squeezes between two obstacle cells (`hogg`, `wallg` or `wireg` on both) the cheaper of
+  those two, which is what crossing the line there costs. It applies on every map; on
+  Ortona the movement card's route times came back identical to the second, stuck
+  unit-frames 1.36 to 0.52 per cent and overlapping models 1.99 to 0.65 over one battle
+  each, which is no regression and no more than that.
+
+And a hedgerow is marked four units a step along and across rather than through
+`markSeg`, whose half-cell step lets a diagonal line clip the corner of a cell without a
+sample landing in it.
 
 **Weight turns a hull.** Every vehicle in the game swung round at the same 2.6 radians a
 second, so a Tiger II turned as smartly as a Daimler and there was nothing to be had from
@@ -4512,6 +4612,15 @@ line tool also has to carry its `def` onto every piece it cuts -- without that a
 teeth belt drawn with the teeth tool came out as hedgehogs, because the only thing
 separating the two is one field on the def.
 
+The Normandy pieces went in the same way: a NORMANDY category (the Norman house, farmhouse,
+barn and church, the hedgerow, the field, the oak and the apple, and the two landing
+craft) and five more under DEFENCE (the seawall, the Tobruk, a single hedgehog, the
+anti-tank ditch and the shingle bank). A hedgerow and a ditch are laid as one run of points
+the way a trench is, not cut into straight pieces the way a wall is. And **a field is
+stored as a box by its corner, the way paving is** (`edBoxy`): stored as two corners it
+carried `x1`, which every piece of editor code that handles a wall reads as a line, so a
+field moved or mirrored came out as NaN.
+
 The rule of the hand is the same with a mouse and a thumb: a drag on the ground pans, a
 tap does the tool's one thing, and a press held still picks something up. Only the tools
 that draw (lines, boxes, brushes) take the drag itself, and with those two fingers still
@@ -4960,6 +5069,23 @@ shots/                         screenshot output, gitignored
 ---
 
 ## Gotchas
+
+- **A tint can land on another material's tile, and that is a different fault from the one
+  the gate counts.** `lit()` hands back a colour string and `matOf` looks the exact string
+  up before it follows the tint back to its source, so two palettes whose shades happen to
+  produce the same rgb string share whichever material registered it first. Two of the
+  Norman stone shades did exactly that with a German camouflage tint, and the manor the
+  German headquarters stands as was drawn in splinter camo. The materials row counts faces
+  on the untextured tile and cannot see this at all. Six colours were moved a unit or
+  three; a probe that asks every tint of a new palette for its material is the check.
+- **A grid filled below the line that marks it is a mark that never happened.** A
+  hedgerow's `hogg` mark sat two blocks above `hogg.fill(0)` in `rebuildGrid` and every
+  tank on Omaha drove through the bocage at the price of open ground. Read the order of a
+  function before adding a mark to it.
+- **A size test written for one country shuts out another's houses.** `canGarrison`
+  separates a strongpoint from a shed by asking for sixty units each way, and every Norman
+  house is thirty-four to forty-four deep: none of the thirty-five could be held until the
+  kind was asked instead.
 
 - `G.side` is the human player's side. `render()` and the minimap filter on it,
   so anything staged for a screenshot needs `reveal()` or it will not draw.
@@ -5418,9 +5544,9 @@ shots/                         screenshot output, gitignored
 - **A V cut down a slope has the SLOPE's own grade along its floor.** A draw drawn as a
   gully is a ravine nothing can drive up, however deep and however wide: what makes a draw
   a way off a beach is that the face is lower and laid back THERE, which is a term in the
-  landform and not a cut into it. Omaha's three carry two widths for exactly that reason,
-  and the one measured number that says whether it worked is where a vehicle's route
-  actually goes.
+  landform and not a cut into it. Omaha's two carry a floor and a wall width for exactly
+  that reason, and the one measured number that says whether it worked is where a
+  vehicle's route actually goes.
 - **`makeHeight`'s plane fit reaches about three times the pad either way.** The margin was
   a flat 215 in three places, which is about the size of Ortona's 165 circle and nearly
   four times the size of a beachhead band 58 deep: the plane came out fitted through the

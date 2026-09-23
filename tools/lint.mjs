@@ -201,10 +201,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    It is 1925 for the country behind that beach: a hundred and twenty-seven hedgerows laid
    field by field with the lanes between them, and the Norman stone and slate the villages
    there are built in, the church spires and the manor the German headquarters stands as.
+   It is 1945 for what the beach is for: a post made out of a landing craft (the tents,
+   the gantry and the stores laid in and round the hull), the garrison the wall can be
+   manned with at the whistle, and the Normandy pieces in the editor.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1925) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1925 kB so it stays quick to load on a phone`);
+if (kb > 1945) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1945 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

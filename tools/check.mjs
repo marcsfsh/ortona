@@ -2762,18 +2762,22 @@ for (const device of TARGETS) {
      that looked like was a churn that had stopped being painted. A row that changes
      the world puts it back or goes after everything that reads it. */
   /* --- The third map, and the first of a second theatre. Omaha is a corridor rather
-     than a field: 1600 across and 3600 deep, with the sea along the BOTTOM of it, the
-     American army starting on the sand and the German one on the farmland at the top,
-     and the seawall across the middle. What it claims is arithmetic over the going grid
-     and the cost model, and none of it is anything a photograph could check:
+     than a field: 1500 across and 4000 deep, with the sea along the BOTTOM of it, the
+     American army starting on the sand among the craft that brought it and the German
+     one in the bocage at the top, the seawall and the Atlantic Wall across the middle,
+     and two draws up the bluff behind it. What it claims is arithmetic over the going
+     grid and the cost model, and none of it is anything a photograph could check:
      - the world is the size the map says and the sea is at the edge the country says;
      - armour gets off the beach up a draw and nowhere else, where a section climbs the
        face wherever it likes;
      - the seawall is a firing line to a man and a barrier to a hull: he crosses it at a
-       climb and fires over it, and a tank pays for it the way it pays for teeth;
+       climb and fires over it, and a tank pays for it the way it pays for teeth, except
+       in the two lanes and the two casemate gaps;
      - the bank and the wall are the cover on a beach that has none;
      - the flank casemates fire ALONG the beach and are refused to their own rear;
-     - and the walk from each headquarters to the three flags on the wall is about the
+     - sixteen flags in two lanes of eight, each tied to its neighbours, and the only
+       victory flags the two at each end, which a side's own does not count against;
+     - and the walk from each headquarters to the OTHER side's victory flags is about the
        same, which is what makes an unmirrored map a fair one. --- */
   await reload(page);
   const om = await page.evaluate(() => {
@@ -2783,15 +2787,15 @@ for (const device of TARGETS) {
     out.brief = document.getElementById('objtext').textContent;
     W.G.mapData = W.omahaMapData();
     W.startGame('us', 1, 'vp', true, false);
-    const G = W.G, up = (x, u) => W.coastOmaha(x) - u;
+    const G = W.G, OM = W.OM, line = W.omLine;
     out.world = W.WORLD.w + 'x' + W.WORLD.h;
     out.grid = W.GW + 'x' + W.GH;
-    out.sea = +W.groundZ(800, W.WORLD.h - 10).toFixed(1);
-    out.top = +W.groundZ(800, 60).toFixed(1);
+    out.sea = +W.groundZ(750, W.WORLD.h - 10).toFixed(1);
+    out.top = +W.groundZ(750, 300).toFixed(1);
     out.hq = { us: Math.round(G.hqPos.us.y), ger: Math.round(G.hqPos.ger.y) };
     function nearDraw(x, y) {
       let best = 1e9;
-      for (const d of W.OMAHA_DRAWS) for (let i = 0; i < d.pts.length - 1; i++)
+      for (const d of OM.draws) for (let i = 0; i < d.pts.length - 1; i++)
         best = Math.min(best, W.distToSeg(x, y, d.pts[i][0], d.pts[i][1], d.pts[i + 1][0], d.pts[i + 1][1]));
       return best;
     }
@@ -2802,60 +2806,59 @@ for (const device of TARGETS) {
       let len = 0, far = 1e9, prev = { x: sx, y: sy };
       for (let i = 0; i < p.length; i++) {
         len += Math.hypot(p[i].x - prev.x, p[i].y - prev.y);
-        /* sampled along the LEG and not at its corners, and only while it is on the face:
-           the smoother replaces a run of cells with one line, so a route that crosses the
-           face in one leg has no corner on the face to ask about at all */
+        /* sampled along the LEG and not at its corners, and only while it is on the face
+           between the toe and the crest: the smoother replaces a run of cells with one
+           line, so a route that crosses the face in one leg has no corner on it at all */
         for (let t = 0; t <= 1; t += .05) {
           const qx = prev.x + (p[i].x - prev.x) * t, qy = prev.y + (p[i].y - prev.y) * t;
-          const qu = W.coastOmaha(qx) - qy;
-          if (qu > 1760 && qu < 1980) far = Math.min(far, nearDraw(qx, qy));
+          if (qy < line(OM.toe, qx) && qy > line(OM.crest, qx)) far = Math.min(far, nearDraw(qx, qy));
         }
         prev = p[i];
       }
       const crow = Math.hypot(tx - sx, ty - sy);
       return { len: Math.round(len), over: +(len / crow).toFixed(2), draw: far > 1e8 ? -1 : Math.round(far) };
     }
-    /* four places across the beach, each straight up to the plateau: between the draws
-       and at both flanks, which are the two furthest from one */
-    out.veh = [150, 560, 1040, 1450].map(x => walk(x, up(x, 900), x, up(x, 2600), 1));
-    out.inf = [150, 1450].map(x => walk(x, up(x, 900), x, up(x, 2600), 0));
-    /* the seawall, on one piece that is standing and in the lane beside it */
-    const wx = 180, wy = up(wx, W.OM_WALL), ci = W.cidx((wx / 20) | 0, (wy / 20) | 0);
-    const lx = 330, ly = up(lx, W.OM_WALL), li = W.cidx((lx / 20) | 0, (ly / 20) | 0);
+    /* five places across the beach, each straight up to the plateau: both flanks, the
+       middle, and the two stretches between the draws and the middle */
+    out.veh = [150, 560, 750, 940, 1350].map(x => walk(x, 3300, x, 1700, 1));
+    out.inf = [150, 750, 1350].map(x => walk(x, 3300, x, 1700, 0));
+    /* the seawall, on one piece that is standing and in the Vierville lane */
+    const cc = (x, y, v) => +W.cellCost(W.cidx((x / 20) | 0, (y / 20) | 0), v).toFixed(2);
     out.seaWall = G.walls.filter(w => w.sea).length;
-    out.wallMan = +W.cellCost(ci, 0).toFixed(2);
-    out.wallHull = +W.cellCost(ci, 1).toFixed(2);
-    out.laneHull = +W.cellCost(li, 1).toFixed(2);
-    out.overWall = W.traceClear(wx, wy + 60, W.groundZ(wx, wy + 60) + 12, wx, wy - 60, W.groundZ(wx, wy - 60) + 12, W.fblk);
-    /* the cover: none on the flat in a lane, the bank, and the wall */
-    out.flatCov = W.coverAt(800, up(800, 700));
-    out.bankCov = W.coverAt(560, up(560, W.omahaBeach(560) + 18));
-    out.wallCov = W.coverAt(640, up(640, W.OM_WALL - 10));
+    out.wallMan = cc(180, line(OM.wall, 180), 0);
+    out.wallHull = cc(180, line(OM.wall, 180), 1);
+    out.laneHull = cc(400, 2640, 1);
+    out.overWall = W.traceClear(180, 2680, W.groundZ(180, 2680) + 12, 180, 2540, W.groundZ(180, 2540) + 12, W.fblk);
+    /* the cover: none on the open flat, the bank, and the wall */
+    out.flatCov = W.coverAt(800, 3100);
+    out.bankCov = W.coverAt(560, 2648);
+    out.wallCov = W.coverAt(640, 2600);
     /* the paint: the flat is sand and the farmland at the top is not, read off the
        albedo canvas rather than looked at, because a beach that quietly stopped being
        painted reads as a perfectly good map in every photograph ever taken of it */
     const g = W.mbase.getContext('2d');
     const px = (x, y) => { const d = g.getImageData(x, y, 1, 1).data; return [d[0], d[1], d[2]]; };
-    out.sand = px(800, Math.round(up(800, 900))); out.field = px(200, 400);
-    /* the skirt: the ground goes on past the edge, as the country and not as a ledge */
+    out.sand = px(750, 3300); out.field = px(620, 1300);
     out.skirt = W.SCENE.skirt ? W.SCENE.skirt.n : 0;
-    /* the casemates. The two at the ends fire along the beach and the two behind the wall
-       look straight out over it; a round out of the slot is allowed and the same round to
-       the rear is refused by the bunker's own concrete. */
-    const bk = G.bunks.filter(b => b.sd === 'ger' && Math.abs(Math.cos(b.face)) > .9)[0];
+    /* the casemates in the wall look ALONG the beach; a round out of the slot is allowed
+       and the same round to the rear is refused by the bunker's own concrete */
+    const bk = G.bunks.slice().sort((p, q) => Math.hypot(p.x - 300, p.y - 2596) - Math.hypot(q.x - 300, q.y - 2596))[0];
     const gar = W.spawnUnit('ger', 'ger_gren', bk.x, bk.y);
     gar.gar = bk; bk.occ = gar;
     const mark = (d) => ({ x: bk.x + Math.cos(bk.face) * 300 * d, y: bk.y + Math.sin(bk.face) * 300 * d,
                            cat: 'inf', side: 'us' });
     out.slot = W.fireLine(gar, mark(1));
     out.rear = W.fireLine(gar, mark(-1));
+    out.along = +Math.abs(Math.cos(bk.face)).toFixed(2);
     gar.dead = true; bk.occ = null;
-    out.faces = G.bunks.map(b => +(b.face / Math.PI).toFixed(2)).sort().join(' ');
-    /* the walk to the wall from each end: infantry to each of the three flags on it */
-    const flags = G.sectors.filter(s => s.type === 'vp');
-    const hqs = { us: G.hqPos.us, ger: G.hqPos.ger };
-    out.walk = {};
-    for (const sd of ['us', 'ger']) out.walk[sd] = flags.map(f => walk(hqs[sd].x, hqs[sd].y + (sd === 'us' ? -90 : 90), f.x, f.y, 0).len);
+    /* the flags, and the walk from each headquarters to the other side's victory flags */
+    out.secN = G.sectors.length;
+    out.linked = G.sectors.filter(s => (s.nb || []).length >= 2).length;
+    const vps = side => G.sectors.filter(s => s.type === 'vp' && s.home === side);
+    out.vp = G.sectors.filter(s => s.type === 'vp').length;
+    out.vpHome = vps('us').length + vps('ger').length;
+    out.walkUs = vps('ger').map(f => walk(G.hqPos.us.x, G.hqPos.us.y - 90, f.x, f.y, 0).len);
+    out.walkGer = vps('us').map(f => walk(G.hqPos.ger.x, G.hqPos.ger.y + 90, f.x, f.y, 0).len);
     out.secs = G.sectors.map(s => s.type + (s.owner || '-')).sort().join(' ');
     return out;
   });
@@ -2868,39 +2871,225 @@ for (const device of TARGETS) {
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort().join(',')
   }));
   const omGreen = om.field[1] - om.field[0], omWarm = om.sand[0] - om.sand[2];
-  const wUs = om.walk.us.reduce((a, b) => a + b, 0), wGer = om.walk.ger.reduce((a, b) => a + b, 0);
+  const wUs = om.walkUs.reduce((a, b) => a + b, 0), wGer = om.walkGer.reduce((a, b) => a + b, 0);
   ok('Omaha: a corridor with the sea at the bottom, the wall across the middle, and a draw the only way off for armour',
-     om.picked === 'Omaha Beach' && om.brief.indexOf('seawall') >= 0 &&
-     om.world === '1600x3600' && om.grid === '80x180' && om.sea < -35 && om.top > 200 &&
-     om.hq.us > 3000 && om.hq.ger < 400 &&
+     om.picked === 'Omaha Beach' && om.brief.indexOf('wall') >= 0 &&
+     om.world === '1500x4000' && om.grid === '75x200' && om.sea < 0 && om.top > 200 &&
+     om.hq.us > 3700 && om.hq.ger < 400 &&
      /* every vehicle route off the beach passes up a draw */
      om.veh.every(r => r.len > 0 && r.draw >= 0 && r.draw < 40) &&
-     /* and a section at either flank climbs straight up the face, nowhere near one */
+     /* and a section climbs straight up the face, nowhere near one */
      om.inf.every(r => r.len > 0 && r.over < 1.15 && (r.draw < 0 || r.draw > 80)) &&
      /* the wall: a man climbs it and fires over it, a hull pays for it and the lane is open */
-     om.seaWall >= 6 && om.wallMan > 1.5 && om.wallMan < 3 && om.wallHull > 10 && om.laneHull < 3 && om.overWall &&
+     om.seaWall >= 8 && om.wallMan > 1.5 && om.wallMan < 3 && om.wallHull > 10 && om.laneHull < 3 && om.overWall &&
      om.flatCov === 0 && om.bankCov >= 2 && om.wallCov >= 2 &&
      om.sand[0] > 130 && omWarm > 12 && omGreen > 4 && om.field[0] < 130 &&
      om.skirt > 10000 &&
-     om.slot && !om.rear &&
-     om.walk.us.every(l => l > 0) && om.walk.ger.every(l => l > 0) &&
-     Math.abs(wUs - wGer) / Math.max(wUs, wGer) < .2 &&
+     om.slot && !om.rear && om.along > .9 &&
+     om.secN === 16 && om.linked === 16 && om.vp === 4 && om.vpHome === 4 &&
+     om.walkUs.every(l => l > 0) && om.walkGer.every(l => l > 0) &&
+     Math.abs(wUs - wGer) / Math.max(wUs, wGer) < .12 &&
      ofight.live[0] > 0 && ofight.live[1] > 0,
      `the picker builds "${om.picked}" and the briefing reads "${om.brief.slice(0, 30)}..."; ` +
-     `the world is ${om.world} (grid ${om.grid}), the ground ${om.sea} at the bottom edge and ${om.top} at the top, ` +
+     `the world is ${om.world} (grid ${om.grid}), the ground ${om.sea} at the bottom edge and ${om.top} on the plateau, ` +
      `headquarters at y ${om.hq.us} and ${om.hq.ger}; ` +
      `armour off the beach: ${om.veh.map(r => r.len + 'u (x' + r.over + '), ' + r.draw + ' from a draw').join('; ')}; ` +
-     `a section at each flank: ${om.inf.map(r => r.len + 'u (x' + r.over + '), ' +
+     `a section: ${om.inf.map(r => r.len + 'u (x' + r.over + '), ' +
        (r.draw < 0 ? 'never on a draw' : r.draw + ' from one')).join('; ')}; ` +
      `${om.seaWall} lengths of seawall, a man pays ${om.wallMan} on it and a tank ${om.wallHull} ` +
      `against ${om.laneHull} in the lane, and a round goes ${om.overWall ? 'over' : 'NOT over'} it; ` +
      `cover ${om.flatCov} on the flat, ${om.bankCov} on the bank and ${om.wallCov} at the wall; ` +
      `the flat is ${om.sand.join(',')} against ${om.field.join(',')} on the farmland; ` +
-     `${om.skirt} vertices of ground past the edge; bunkers facing ${om.faces} (x pi), ` +
+     `${om.skirt} vertices of ground past the edge; the casemate looks along the beach (${om.along}), ` +
      `a shot out of the slot ${om.slot ? 'allowed' : 'REFUSED'} and the same shot to the rear ` +
-     `${om.rear ? 'ALLOWED' : 'refused'}; the walk to the three flags on the wall is ` +
-     `${om.walk.us.join('/')} from the beach and ${om.walk.ger.join('/')} from the farmland; flags ${om.secs}; ` +
+     `${om.rear ? 'ALLOWED' : 'refused'}; ${om.secN} flags, ${om.linked} tied to two or more, ${om.vp} victory flags ` +
+     `(${om.vpHome} a side's own); the walk to the enemy's victory flags is ${om.walkUs.join('/')} from the beach ` +
+     `and ${om.walkGer.join('/')} from the bocage; flags ${om.secs}; ` +
      `after 120s of battle ${ofight.live.join('/')} units and the ground is held by ${ofight.held || 'nobody'}`);
+
+  /* --- The bocage. A hedgerow is a bank of earth with a hedge on it, and what it claims
+     is four things a photograph of a hedge cannot say: it stops the eye and the round of
+     anybody not up against it, the man lying along it sees and shoots over it, a man
+     gets over it slowly, and a hull does not except at a gate -- the last of which was
+     quietly wiped by a grid fill two blocks below its own mark, so every tank on the map
+     drove through the bocage at the price of open ground and the plateau read as a field
+     with hedges painted on it. And a Norman house is a strongpoint however small: every
+     one on the map is thirty-four to forty-four units deep, and the size test that says
+     a shed from a house shut them all out. --- */
+  const boc = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const cc = (x, y, v) => +W.cellCost(W.cidx((x / 20) | 0, (y / 20) | 0), v).toFixed(2);
+    const zA = (x, y) => W.groundZ(x, y) + 17;
+    out.n = G.hedges.length;
+    let blocked = 0, seen = 0, lie = 0, man = 0, hull = 0, cov = 0, n = 0;
+    /* every leg long enough to have a middle and with no other hedgerow within seventy of
+       it, asked across its middle. The second half of that is what lets the question be
+       about THIS hedge: a lane is thirty units between two of them, so a line drawn across
+       a hedge that lines a lane meets the lane's other hedge as well, and a man lying
+       against the first was reported as blind because of the second */
+    const joins = (h, o) => Math.hypot(h.x1 - o.x2, h.y1 - o.y2) < 1 || Math.hypot(h.x2 - o.x1, h.y2 - o.y1) < 1;
+    const alone = h => G.hedges.every(o => o === h || joins(h, o) ||
+      W.distToSeg((h.x1 + h.x2) / 2, (h.y1 + h.y2) / 2, o.x1, o.y1, o.x2, o.y2) > 70);
+    /* and a hedge standing on the verge of a lane is left out: where the two share a cell
+       the lane wins, on purpose, because a lane shut to the eye and the hull down its
+       length is the worse fault of the two -- see rebuildGrid */
+    const verge = (x, y) => G.roads.some(rd => { for (let i = 0; i < rd.length - 1; i++)
+      if (W.distToSeg(x, y, rd[i].x, rd[i].y, rd[i + 1].x, rd[i + 1].y) < (rd.width || 48) / 2 + 20) return true; return false; });
+    let lieOf = 0;
+    for (let i = 0; i < G.hedges.length; i++) {
+      const h = G.hedges[i], L = Math.hypot(h.x2 - h.x1, h.y2 - h.y1);
+      if (L < 60 || !alone(h)) continue;
+      const hx = (h.x1 + h.x2) / 2, hy = (h.y1 + h.y2) / 2, a = Math.atan2(h.y2 - h.y1, h.x2 - h.x1);
+      if (verge(hx, hy)) continue;
+      const nx = -Math.sin(a), ny = Math.cos(a);
+      const ax = hx + nx * 60, ay = hy + ny * 60, bx = hx - nx * 60, by = hy - ny * 60, lx = hx + nx * 14, ly = hy + ny * 14;
+      n++;
+      if (!W.traceClear(ax, ay, zA(ax, ay), bx, by, zA(bx, by), W.fblk)) blocked++;
+      if (!W.traceClear(ax, ay, zA(ax, ay), bx, by, zA(bx, by), W.sblk)) seen++;
+      /* the man lying against it, asked only where the far point can be seen from just
+         across the hedge -- the control -- because a house or a yard wall out in the next
+         field blinds him for a reason that is not the hedge he is lying against */
+      const cx = hx - nx * 14, cy = hy - ny * 14;
+      if (W.traceClear(cx, cy, zA(cx, cy), bx, by, zA(bx, by), W.fblk)) {
+        lieOf++;
+        if (W.traceClear(lx, ly, zA(lx, ly), bx, by, zA(bx, by), W.fblk)) lie++;
+      }
+      man = Math.max(man, cc(hx, hy, 0)); hull += cc(hx, hy, 1) > 10 ? 1 : 0;
+      cov += W.coverAt(lx, ly) >= 3 ? 1 : 0;
+    }
+    Object.assign(out, { legs: n, blocked, seen, lie, lieOf, man, hull, cov });
+    /* and a lane is open down its length: every straight run of lane on the plateau long
+       enough to look down, asked from one end of it to the other at a man's eye */
+    let lanes = 0, laneClear = 0, laneHull = 0;
+    for (const rd of G.roads) for (let i = 0; i < rd.length - 1; i++) {
+      const p = rd[i], q = rd[i + 1], L = Math.hypot(q.x - p.x, q.y - p.y);
+      if (L < 140 || p.y > 1900 || q.y > 1900) continue;
+      const ux = (q.x - p.x) / L, uy = (q.y - p.y) / L;
+      const x0 = p.x + ux * 20, y0 = p.y + uy * 20, x1 = q.x - ux * 20, y1 = q.y - uy * 20;
+      lanes++;
+      if (W.traceClear(x0, y0, zA(x0, y0), x1, y1, zA(x1, y1), W.sblk)) laneClear++;
+      laneHull = Math.max(laneHull, cc((x0 + x1) / 2, (y0 + y1) / 2, 1));
+    }
+    Object.assign(out, { lanes, laneClear, laneHull });
+    /* a tank asked to cross three fields goes by the lanes and the gates */
+    const u = { cat: 'veh', def: { wheeled: 0 }, side: 'us', fear: 1 };
+    const p = W.findPath(300, 1500, 1200, 1100, u);
+    /* counted as the route's legs crossing a hedgerow's own line, which is exact and is
+       what a gate saves: sampled off the grid instead, the smoothed line clipping the
+       corner of a marked cell beside a diagonal gate read as a tank through a hedge */
+    const cross = (ax, ay, bx, by, cx, cy, dx, dy) => {
+      const d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax), d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax);
+      const d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx), d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
+      return d1 * d2 < 0 && d3 * d4 < 0;
+    };
+    /* and only off the metalling: a lane is thirty units between two hedgerows on a
+       twenty-unit grid, so the hedge that lines it shares its cells, and the lane is given
+       those cells on purpose -- a route down a lane crosses its own verge hedge's line
+       inside the lane's cells, which is driving down the lane */
+    let through = 0, inLane = 0, prev = { x: 300, y: 1500 };
+    for (const q of p || []) {
+      for (const h of G.hedges) if (cross(prev.x, prev.y, q.x, q.y, h.x1, h.y1, h.x2, h.y2)) {
+        const t = ((h.x1 - prev.x) * (h.y2 - h.y1) - (h.y1 - prev.y) * (h.x2 - h.x1)) /
+                  ((q.x - prev.x) * (h.y2 - h.y1) - (q.y - prev.y) * (h.x2 - h.x1));
+        const x = prev.x + (q.x - prev.x) * t, y = prev.y + (q.y - prev.y) * t;
+        if (W.road[W.cidx((x / 20) | 0, (y / 20) | 0)]) inLane++; else through++;
+      }
+      prev = q;
+    }
+    out.inLane = inLane;
+    out.tankThrough = through;
+    /* the houses */
+    const nh = G.props.filter(q => q.kind === 'nhouse');
+    const sec = { cat: 'inf', def: { speed: 30 }, models: [] };
+    out.houses = nh.length;
+    /* one already held counts: the battle in the row above has been going two minutes and
+       the brain puts sections into houses */
+    out.holdable = nh.filter(q => q.gar || W.canGarrison(sec, q)).length;
+    const hq = nh.filter(q => q.style === 'house' && !q.gar)[0];
+    const s = W.spawnUnit('ger', 'ger_gren', hq.x, hq.y + hq.h / 2 + 30);
+    W.enterBuilding(s, hq);
+    out.held = !!s.gar;
+    W.leaveBuilding(s); s.dead = true;
+    return out;
+  });
+  ok('Omaha: a hedgerow stops the eye, the round and the hull and not the man lying up against it, and a Norman house can be held',
+     boc.n > 200 && boc.legs >= 20 && boc.blocked === boc.legs && boc.seen === boc.legs &&
+     boc.lieOf >= boc.legs * .6 && boc.lie === boc.lieOf && boc.man > 1.5 && boc.hull === boc.legs && boc.cov >= boc.legs * .9 &&
+     boc.lanes >= 20 && boc.laneClear >= boc.lanes * .9 && boc.laneHull < 3 &&
+     boc.tankThrough <= 1 && boc.houses >= 30 && boc.holdable === boc.houses && boc.held,
+     `${boc.n} hedgerow legs; across the middle of ${boc.legs} of them a round is stopped on ${boc.blocked} and an ` +
+     `eye on ${boc.seen}, a man lying against one shoots over it on ${boc.lie} of the ${boc.lieOf} where the far field is open, a man pays up to ${boc.man} ` +
+     `and a hull is held up on ${boc.hull}, tier-3 cover along ${boc.cov}; ${boc.laneClear} of ${boc.lanes} ` +
+     `straight runs of lane can be seen down, a tank paying ${boc.laneHull} in one; a tank sent across three fields ` +
+     `crosses a hedgerow ${boc.tankThrough} times off the lanes (its verge hedges ${boc.inLane} times in them); ${boc.holdable} of ${boc.houses} Norman houses ` +
+     `can be held and a section ${boc.held ? 'went into' : 'could NOT get into'} one`);
+
+  /* --- The craft and the wall. On a beach a post is a landing craft that is aground and
+     whole, turned into one for the usual price: refused on open sand, allowed on a craft,
+     the craft spent, a second post on it refused, and the craft free again once its post
+     is knocked down. And the title screen's ATLANTIC WALL puts the garrison in: a gun in
+     each casemate through the bunker's own fitting, the Tobruks and the trench manned,
+     none of it on the German cap, and all of it still where it was put after a minute of
+     battle, because a garrison the brain walks off to take a flag is not a garrison. --- */
+  const cw = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    G.res.us.mp += 2000; G.res.us.fu += 400;
+    out.free0 = G.craft.filter(W.craftFree).length;
+    out.open = !!W.placeStructure('us', 'us_bar', 750, 3300, []);
+    const cr = G.craft.filter(W.craftFree)[0];
+    const mp0 = G.res.us.mp;
+    const b = W.placeStructure('us', 'us_bar', cr.x + 30, cr.y, []);
+    out.onCraft = !!b; out.paid = Math.round(mp0 - G.res.us.mp);
+    out.buf = !!(b && b.buf); out.fp = b ? b.def.w + 'x' + b.def.h : '-';
+    out.spent = !W.craftFree(cr);
+    const b2 = W.placeStructure('us', 'us_mot', cr.x, cr.y, []);
+    out.second = !!b2 && b2.craft === cr.i;
+    if (b2) W.killBuilding(b2);
+    out.free1 = G.craft.filter(W.craftFree).length;
+    if (b) W.killBuilding(b);
+    out.freed = W.craftFree(cr);
+    return out;
+  });
+  await reload(page);
+  const man = await page.evaluate(() => {
+    const W = window;
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
+    const row = [...document.querySelectorAll('.wallrow')].every(e => !e.classList.contains('hidden'));
+    document.querySelector('.wall[data-wall="1"]').click();
+    W.G.mapData = W.omahaMapData();
+    W.startGame('us', 1, 'vp', true, false);
+    const G = W.G, wu = G.units.filter(u => u.wall);
+    W.__wall = wu.map(u => [u.id, u.x, u.y]);
+    return { row, n: wu.length, fitted: G.bunks.filter(b => b.upKind).length, gar: wu.filter(u => u.gar).length,
+             pop: W.popOf('ger'), popAll: wu.reduce((a, u) => a + u.def.pop, 0),
+             popRest: G.units.filter(u => u.own === 'ger' && !u.wall && !u.dead).reduce((a, u) => a + u.def.pop, 0) };
+  });
+  await fastForward(page, 60);
+  const man2 = await page.evaluate(() => {
+    const W = window, G = W.G;
+    let moved = 0, far = 0;
+    for (const [id, x, y] of W.__wall) {
+      const u = G.units.filter(q => q.id === id)[0];
+      if (!u || u.dead) continue;
+      const d = Math.hypot(u.x - x, u.y - y);
+      far = Math.max(far, d);
+      if (d > 60) moved++;
+    }
+    /* and the wall is empty when it is not asked for */
+    document.querySelector('.wall[data-wall="0"]').click();
+    return { moved, far: Math.round(far) };
+  });
+  ok('Omaha: a post is a landing craft, and the Atlantic Wall is manned when the title screen asks for it',
+     cw.free0 === 5 && !cw.open && cw.onCraft && cw.paid === 200 && cw.buf && cw.spent && !cw.second &&
+     cw.freed && man.row && man.n === 14 && man.fitted === 7 && man.gar >= 6 && man.pop === man.popRest &&
+     man2.moved === 0,
+     `${cw.free0} craft aground and whole; a company post on open sand ${cw.open ? 'ALLOWED' : 'refused'}, on a ` +
+     `craft ${cw.onCraft ? 'allowed' : 'REFUSED'} for ${cw.paid} with its own dressing ${cw.buf} on a ${cw.fp} ` +
+     `footprint, the craft ${cw.spent ? 'spent' : 'STILL FREE'}, a second post on it ${cw.second ? 'ALLOWED' : 'refused'}, ` +
+     `free again ${cw.freed} once the post is down; the wall row ${man.row ? 'shows' : 'is HIDDEN'} on Omaha and MANNED ` +
+     `puts ${man.n} units in, ${man.fitted} bunkers fitted and ${man.gar} garrisoned, the German cap reading ` +
+     `${man.pop} (what it raised itself: ${man.popRest}) with ${man.popAll} of wall not on it; after a minute of battle ${man2.moved} of them had left ` +
+     `their post (furthest ${man2.far})`);
 
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
