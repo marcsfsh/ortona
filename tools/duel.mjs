@@ -87,6 +87,11 @@ const CARD = [
   ['am_eng', 'ger_pio'],
   ['am_eng', 'hr_gren'],
   ['am_eng', 'us_eng'],
+  /* and the pioneer team the 352nd fields in the paratroop pioneers' place, which carries the
+     engineers' numbers to the point and is the calibration row on the beach, and against
+     the squad it meets */
+  ['am_eng', 'hr_pio'],
+  ['hr_pio', 'am_rifle'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

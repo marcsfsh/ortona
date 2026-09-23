@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the engineer squad, the grenadier squad, the jeep, the M4, the KS 750 and the
-Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+rifle squad, the engineer squad, the grenadier squad, the pioneer team, the jeep, the M4, the
+KS 750 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1059,7 +1059,12 @@ and queues it when asked for the section, the side opened with one and no Canadi
 men are the three engineer variants carrying the M3, the forearm is bare and the hand gloved
 with no skin on it, the helmet carries goggles, it pegs out a sandbag wall and is sent to build
 it, a man of it killed goes down as `usa_eng` with those bodies baked, and Ortona's
-headquarters still makes the Canadian section.
+headquarters still makes the Canadian section. The 352nd's pioneers are asked the same in an
+eighth, on the German side: the headquarters makes the pioneer team and not the paratroop
+pioneers and queues it when asked for them, the side opened with one, its three men are the
+three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown
+pack and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man
+of it killed goes down as `heer_pio`, and Ortona's headquarters still makes the paratroopers.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3214,6 +3219,40 @@ round and 275 of reach beat the American squad 88 per cent of the time, the Cana
 man and 250 of manpower it wins 46 per cent against the American squad over forty-eight runs,
 50 against the Canadian section and 38 against the FJ group: level with the army it meets and
 a step behind the veterans it stands in for.
+
+**The pioneer team is the 352nd's builder**, in the paratroop pioneers' place (`ger_pio` to
+`hr_pio` on the army's list): three men of the division's pioneer battalion, dressed after the
+Company of Heroes reference they were asked for. It is the grenadier's kit with `V.pio` on it,
+and nearly all of it was already there: the MP40 pouches (`V.mp`), the goggles on the M42
+(`V.goggles`, the motorcyclist's), the gaiters and the wire. What is new is the tunic's collar
+in the bottle green of the older pattern with the shoulder straps lying out along the shoulders,
+and **the pioneer's pack**: a big square rucksack of brown canvas high on the back with its flap
+over the top, a pocket each side and two leather straps down the back of it, over the bread bag
+and the gas-mask tin, which hang below it where they always did. On it one of three loads: a
+Zeltbahn rolled across the top (`gr_pio`), a pickaxe down the left side under a man in gaiters
+with wire on his helmet (`gr_pio_b`), and a demolition charge strapped to the back of the
+leader's, who has his field glasses (`gr_pio_c`). He falls as a pioneer (`body: 'heer_pio'`),
+with the pack on him face down. Brown on the canvas tile renders a good deal lighter than its
+colour, so the pack is written darker than it looks: at the first value it came out the tan of
+the canvas pouches and the pack did not read as a thing of its own.
+
+**It carries the engineers' numbers to the point.** The two teams carry the same sort of weapon
+and do the same job, so they are one unit on two sides, and `am_eng` against `hr_pio` is the
+beach's calibration row the way `us_eng` against `ger_pio` is Italy's: over 24 runs it reads 54
+per cent, and the Italian pair read 38 on the same afternoon, which is the spread 24 runs of two
+identical units produce. Against the American rifle squad it loses every fight inside eight
+seconds, as the engineers lose to the grenadiers.
+
+**And the MP40 is rebuilt**, because every pioneer carries one and it was four boxes: a receiver
+wider than a man's forearm with a barrel sticking out of the top of it. It is the stamped gun now
+(`weaponModel(k, 'mp40')`): the round receiver with its end cap, the barrel nut, the barrel and
+the resting bar under it, the hooded front sight, the ribbed magazine housing and the long
+straight magazine, the lower frame and the pistol grip in maroon bakelite, the cocking handle in
+its slot on the left, and the two-strut stock that folds under the frame with its butt plate
+standing behind the magazine housing and swings out for the aim. It measures 7.42 units folded
+against a published 630 mm and 9.8 with the stock out against 833 mm, which is further back than
+the old stock went, so `WEAP.mp40.buttOut` moved with it; the grenadier squad leader and the
+paratroopers carry the same gun, and all of them pass the men card as they did.
 
 **The jeep is the Americans' light vehicle**, in the carrier's place (`us_m8` to `am_jeep`
 on the army's list): a Willys MB with the windscreen folded flat on the bonnet under a canvas

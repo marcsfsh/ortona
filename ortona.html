@@ -1254,7 +1254,7 @@ var NATIONS = {
           sub: {} },
   heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
           blurb: 'Grenadier squads with the Kar98k behind the seawall and along the bluff, the Atlantic Wall in front of them and the bocage at their backs.',
-          sub: { ger_gren: 'hr_gren', ger_sd222: 'hr_ks750', ger_p4: 'hr_p4' } }
+          sub: { ger_gren: 'hr_gren', ger_pio: 'hr_pio', ger_sd222: 'hr_ks750', ger_p4: 'hr_p4' } }
 };
 var NAT = 'can', NAX = 'fj';
 function setNation(n, a) {
@@ -1549,6 +1549,18 @@ var UNITS = {
     builder: true,
     w: { range: 165, dmg: 9, rof: 0.78, acc: .55, sup: .010, pen: 12 },
     desc: 'Parachute engineers with Kar98k rifles, an MP40 and demolition equipment. Builds and repairs field positions.'
+  },
+  /* The 352nd's pioneers: a Pionier-Trupp of three with the MP40, the pioneer's big pack
+     and the charges and the tools in it. They do the paratroop pioneers' job on a map
+     whose German army is the 352nd (`natKey`) -- they build, repair and take ground -- and
+     they are the American engineers' numbers to the point, because the two carry the same
+     sort of weapon and the pair is the calibration row on the beach. */
+  hr_pio: {
+    side: 'ger', nat: 'heer', name: 'Pionier-Trupp', short: 'PIO', cat: 'inf', hk: 'E',
+    models: 3, hpPer: 76, speed: 68, sight: 250, pop: 5, cost: { mp: 170, fu: 0 }, time: 14,
+    builder: true, body: 'heer_pio',
+    w: { range: 150, dmg: 5.8, rof: 0.42, acc: .54, sup: .016, pen: 10 },
+    desc: 'Three pioneers of the 352nd Infantry Division with MP40s, demolition charges and the pioneer pack. Builds and repairs field positions and captures ground, and fights best up close.'
   },
   ger_gren: {
     side: 'ger', name: 'Fallschirmjäger Gruppe', short: 'FJ', cat: 'inf', hk: 'R',
@@ -15889,7 +15901,9 @@ function tagKit() {
   tagAll([H.goggle, H.skull, H.band], 'steel');
   tagAll([H.phone], 'rubber');
   tagAll([H.web, H.webD, H.canvas, H.gaiter, H.mag], 'canvas');
-  tagAll([H.helm, H.helmD, H.liner, H.tin, H.nade, H.cup], 'paint');
+  tagAll([H.helm, H.helmD, H.liner, H.tin, H.nade, H.cup, H.charge], 'paint');
+  tagAll([H.bottle], 'cloth');
+  tagAll([H.torn, H.tornD, H.tornL], 'canvas');
   tagAll([H.wood, H.helve, H.stick], 'wood');
   tagAll([H.steel, H.buckle], 'steel');
   soft = false;
@@ -27911,7 +27925,10 @@ var KIT = {
              pink piping of the arm round the collar and the two white metal skulls on it,
              the field-grey shirt under it, and the headset */
           pz: '#2a2b2e', pzD: '#1f2022', pzT: '#2c2d30', pipe: '#a57b85', skull: '#c8c5ba', shirt: '#6b6e62',
-          phone: '#1d1d1b', band: '#4a4b44' }
+          phone: '#1d1d1b', band: '#4a4b44',
+          /* and the pioneers': the collar in the dark bottle green of the older tunic, the big
+             pack in brown canvas with its flap a shade lighter, and the charge box in grey */
+          bottle: '#3a4334', torn: '#4a3827', tornD: '#3a2c1e', tornL: '#57432e', charge: '#5c604b' }
 };
 /* ---- the rig ------------------------------------------------------------------
    One figure, one set of joints, one table of poses. What was here was a stack of
@@ -28193,7 +28210,7 @@ var WEAP = {
   kar:      { butt: [-3.40, 0, -.85], grip: [-.45, 0, -.92], fore: [4.3, 0, -1.08], foreMin: [3.0, 0, -1.19], muzzle: [9.66, 0, 0], carryPt: [1.5, 0, -1.2] },
   m3:       { butt: [-2.31, 0, -.8], buttOut: [-4.34, 0, -.8], grip: [-1.25, 0, -1.45], fore: [.8, 0, -.95], foreMin: [.55, 0, -.9], muzzle: [4.36, 0, 0], carryPt: [.1, 0, -.6], readyY: 1.3 },
   sten:     { butt: [-3.8, 0, -.4], grip: [-.6, 0, -1.2], fore: [2.2, 0, -.5], foreMin: [1.2, 0, -.5], muzzle: [5.4, 0, 0], carryPt: [.2, 0, -.5], sideMag: 1 },
-  mp40:     { butt: [-1.8, 0, -.3], buttOut: [-3.6, 0, -.3], grip: [-.8, 0, -1.4], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, .1], carryPt: [.4, 0, -.6] },
+  mp40:     { butt: [-1.8, 0, -.3], buttOut: [-4.02, 0, -.3], grip: [-.85, 0, -1.35], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, 0], carryPt: [.4, 0, -.6] },
   bren:     { butt: [-5.1, 0, -.5], grip: [-1.4, 0, -1.2], fore: [3.2, 0, -.7], foreMin: [1.2, 0, -.7], muzzle: [8.0, 0, .1], rest: [2.0, 0, -.6], carryPt: [1.5, 0, -.6], heavy: 1 },
   piat:     { butt: [-4.8, 0, -1.0], grip: [-.5, 0, -1.2], fore: [2.4, 0, -1.0], foreMin: [1.6, 0, -1.0], muzzle: [6.6, 0, 0], rest: [0, 0, -.8], carryPt: [.5, 0, -.9], heavy: 1 },
   schreck:  { butt: [-4.0, 0, -1.0], rest: [-4.0, 0, -1.0], grip: [-1.5, 0, -1.4], fore: [2.0, 0, -.6], foreMin: [1.0, 0, -.6], muzzle: [9.5, 0, 0], carryPt: [0, 0, -.7], tube: 1 }
@@ -28676,14 +28693,40 @@ function weaponModel(k, type, opt) {
     });
     f = f.concat(box(bx - .12, 0, -1.92, .14, .8, .12, sl, sl));
   } else if (type === 'mp40') {                           /* MP40: 0.63 m folded, 0.83 out */
-    f = f.concat(box(.35, 0, -.3, 4.3, 1.1, 1.2, st, lit(st, 1.2)));
-    f = f.concat(barrel(2.5, 5.6, .1, .45));
-    f = f.concat(box(.4, 0, -2.4, .9, .7, 3.2, st, lit(st, 1.2)));                            /* vertical magazine */
-    f = f.concat(box(-.8, 0, -1.6, 1.2, .8, 1.6, '#3b3226', '#4a4030'));                     /* bakelite grip */
+    /* A round receiver with the barrel nut and the barrel ahead of it, the resting bar
+       under the barrel and the hooded sight at the muzzle; the ribbed magazine housing and
+       the long straight magazine under it; the lower frame and the pistol grip in maroon
+       bakelite; the cocking handle in its slot on the left, which is -y on the screen; and
+       a stock of two steel struts that folds under the frame, its butt plate standing
+       behind the magazine housing. */
+    var ml = lit(st, 1.18), bk = '#3b3226', bkl = '#4a4030';
+    f = f.concat(tubeSmooth(-1.72, 2.4, 0, 0, .3, 10, st, ml));                                 /* the receiver */
+    f = f.concat(tubeSmooth(-1.82, -1.72, 0, 0, .33, 10, ml, ml));                               /* its end cap */
+    f = f.concat(tubeSmooth(2.4, 2.68, 0, 0, .25, 10, ml, ml));                                  /* barrel nut */
+    f = f.concat(barrel(2.68, 5.38, 0, .15));
+    f = f.concat(tubeSmooth(5.38, 5.6, 0, 0, .19, 8, st, st));                                   /* the muzzle */
+    f = f.concat(box(3.05, 0, -.62, .55, .24, .5, bk, bkl));                                     /* resting bar */
+    f = f.concat(box(5.3, 0, .1, .28, .34, .14, st, ml));                                        /* front sight */
+    [-1, 1].forEach(function (s) { f = f.concat(box(5.3, s * .15, .22, .26, .05, .36, st, st)); });
+    f = f.concat(box(5.3, 0, .56, .26, .34, .05, st, st));
+    f = f.concat(box(1.05, 0, -1.45, .78, .56, 1.2, st, ml));                                    /* magazine housing */
+    [-1.25, -.95, -.65].forEach(function (z) { f = f.concat(box(1.05, 0, z, .82, .6, .08, ml, st)); });
+    f = f.concat(box(1.05, 0, -3.2, .5, .3, 1.8, st, ml));                                       /* the magazine */
+    f = f.concat(box(-.55, 0, -.66, 2.34, .5, .46, bk, bkl));                                    /* lower frame */
+    f = f.concat(place(pitch(box(0, 0, -1.45, .62, .5, 1.45, bk, bkl), -.22, 0, 0), 0, -.72, 0, -.6));
+    f = f.concat(box(-.2, 0, -1.2, .56, .1, .08, st, st));                                       /* trigger guard */
+    f = f.concat(box(.06, 0, -1.2, .08, .1, .55, st, st));
+    f = f.concat(box(.25, -.44, -.08, .24, .28, .18, ml, st));                                   /* cocking handle */
+    f = f.concat(box(-.35, -.29, -.04, 2.1, .03, .1, lit(st, .6), lit(st, .6)));                /* and its slot */
+    f = f.concat(box(-1.25, 0, .28, .28, .22, .18, st, st));                                     /* rear sight */
+    f = f.concat(box(-1.2, 0, .46, .08, .14, .16, st, st));
     if (opt === 'out') {
-      f = f.concat(box(-2.7, 0, -.3, 1.8, .3, .3, st, st));                                   /* the stock extended */
-      f = f.concat(box(-3.6, 0, -.3, .3, .6, 1.2, st, st));
-    } else f = f.concat(box(-.9, 0, -1.0, 1.8, .3, .3, st, st));                              /* and folded under */
+      [-1, 1].forEach(function (s) { f = f.concat(tubeSmooth(-4.02, -1.7, s * .2, -.32, .07, 5, st, st)); });
+      f = f.concat(box(-4.1, 0, -1.0, .16, .6, 1.3, st, ml));                                    /* the stock out */
+    } else {
+      [-1, 1].forEach(function (s) { f = f.concat(tubeSmooth(-1.7, .45, s * .33, -.98, .07, 5, st, st)); });
+      f = f.concat(box(.45, 0, -1.55, .14, .72, .9, st, ml));                                    /* and folded under */
+    }
   } else if (type === 'bren') {                           /* Bren Mk I: 1.15 m */
     f = f.concat(box(-3.6, 0, -.5, 3.0, 1.1, 1.7, wd, lit(wd, 1.15), lit(wd, .9)));           /* butt, plate at -5.1 */
     f = f.concat(box(0, 0, -.2, 5.5, 1.1, 1.4, st, lit(st, 1.2)));                            /* receiver */
@@ -28750,6 +28793,14 @@ var SOLDIER_VARIANTS = {
   /* and the grenadier's army's tank crews, in the black of the panzer troops under the M43
      cap and the headset: the Panzer IV's commander, and the men at its stations inside */
   hr_tank:      { side: 'ger', nat: 'heer', weapon: 'none', panzer: 1, set: 'hull' },
+  /* and the 352nd's pioneers, three ways, each with the machine carbine, the pioneer's big
+     pack and goggles on the helmet: in marching boots with a Zeltbahn rolled over the pack;
+     in gaiters with wire on his helmet and a pickaxe down the side of the pack; and the
+     leader, with his field glasses and a demolition charge strapped to his pack. The first
+     is what the team leaves where it falls (`body`). */
+  gr_pio:       { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, pio: 1, goggles: 1, roll: 1, body: 'heer_pio', set: 'field' },
+  gr_pio_b:     { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, pio: 1, goggles: 1, gaiters: 1, wire: 1, pick: 1, set: 'field' },
+  gr_pio_c:     { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, pio: 1, goggles: 1, glass: 1, charge: 1, set: 'field' },
   fj_rifle:     { side: 'ger', weapon: 'kar', pouch: 'leather', set: 'field' },
   fj_mp40:      { side: 'ger', weapon: 'mp40', assault: 1, pouch: 'canvas', set: 'field' },
   fj_schreck:   { side: 'ger', weapon: 'schreck', assault: 1, pouch: 'canvas', set: 'field' },
@@ -28777,6 +28828,7 @@ function variantForModel(u, i) {
   if (u.key === 'hr_gren') return i === 0 ? 'gr_mp40' : i % 2 ? 'gr_rifle' : 'gr_rifle_b';
   if (u.key === 'ger_pgren') return i === 0 ? 'fj_schreck' : i < 3 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pio') return i === 0 ? 'fj_mp40' : 'fj_rifle';
+  if (u.key === 'hr_pio') return i === 0 ? 'gr_pio_c' : i === 1 ? 'gr_pio' : 'gr_pio_b';
   /* the eighty-eight and the heavy battery are laid by their own crews and never
      queued, so neither has a gunAt */
   if (u.def.gunAt || u.key === 'ger_flak88' || u.key === 'ger_how210') return i < 2 ? 'fj_gunner' : 'fj_rifle';
@@ -29112,6 +29164,37 @@ function figKitHeer(V, k, rec) {
       part(at(roll(cyl(0, 0, -.06, .455, .455, .12, 8, k.web, k.web, 0, true), Math.PI / 2, 0, 0), -2.05, y, 5.95), 'canvas', lit(k.web, 1.05), k.webD, k.web);
     });
   }
+  if (V.pio) {
+    /* The pioneer's pack: a big square rucksack of brown canvas high on the back, its flap
+       over the top a shade lighter, a pocket each side and two leather straps down the back
+       of it, hooked to the Y-straps. On it one of three loads: a Zeltbahn rolled across the
+       top, a pickaxe down the left side, or a demolition charge strapped to the back. */
+    var tb = k.torn, td = k.tornD, tl = k.tornL, pp = mark('pack');
+    part(box(-2.5, 0, 2.3, 1.7, 3.2, 3.6, tb, tb, tb, 0), 'canvas', lit(tb, .95), lit(tb, 1.12), tb);
+    upto('pack', pp);
+    part(box(-2.55, 0, 5.2, 1.82, 3.28, .85, tl, tl, tl, 0), 'canvas', lit(tl, 1.0), lit(tl, 1.16), lit(tl, 1.04));
+    [-1, 1].forEach(function (sd) {
+      part(box(-2.48, sd * 1.77, 2.55, 1.15, .36, 1.6, td, td, td, 0), 'canvas', lit(td, 1.0), lit(td, 1.14), lit(td, 1.04));
+      lea(box(-3.38, sd * .85, 3.3, .06, .28, 2.75, bl, bl, bl, 0));
+    });
+    if (V.roll) {
+      var zr2 = at(roll(cyl(0, 0, -1.75, .46, .46, 3.5, 8, k.zelt, lit(k.zelt, 1.05), 0, true), Math.PI / 2, 0, 0), -2.5, 0, 6.45);
+      part(zr2, 'splinter', lit(k.zelt, 1.04), lit(k.zelt, .9), k.zelt);
+      [-1.15, 1.15].forEach(function (y) {
+        part(at(roll(cyl(0, 0, -.06, .5, .5, .12, 8, bl, bl, 0, true), Math.PI / 2, 0, 0), -2.5, y, 6.45), 'leather', lit(bl, 1.2), bl, bl);
+      });
+    }
+    if (V.pick) {
+      part(taperLimb([-2.6, -2.0, 2.1], [-2.5, -2.0, 6.6], .26, .24, k.helve), 'wood', k.helve, lit(k.helve, .85), lit(k.helve, .92));
+      part(box(-2.55, -2.0, 6.42, 1.7, .24, .28, k.steel, k.steel, k.steel, 0), 'steel', lit(k.steel, 1.3), k.steel, lit(k.steel, 1.12));
+    }
+    if (V.charge) {
+      var cg = k.charge;
+      part(box(-3.63, 0, 3.0, .56, 1.5, 1.05, cg, cg, cg, 0), 'paint', lit(cg, .96), lit(cg, 1.1), cg);
+      part(box(-3.94, 0, 4.05, .08, .9, .18, k.stick, k.stick, k.stick, 0), 'wood', lit(k.stick, 1.1), k.stick, k.stick);
+      lea(box(-3.65, 0, 3.4, .62, 1.7, .16, bl, bl, bl, 0));
+    }
+  }
   if (V.nades) [[1.1, 2.45], [.35, 2.55]].forEach(function (g) {
     /* the head up above the belt and the long handle down behind it */
     part(cyl(g[0], g[1], 2.52, .32, .32, .78, 8, k.nade, lit(k.nade, 1.1), 0, true), 'paint', lit(k.nade, 1.08), lit(k.nade, .86), k.nade);
@@ -29348,12 +29431,17 @@ function manFaces(variant, P) {
   add(figPart(box(0, 0, 5.8, 3.0, 5.4, .8, coat, coat, coat, 0), cmat, lit(coat, 1.06), lit(coat, .94), lit(coat, 1.0)), 'plate');
   /* the American's collar is his wool shirt's, worn buttoned up under the jacket, and it
      is the dark ring under his chin that stops a pale jacket running into his face */
-  var cc = tk ? k.knit : en ? coat : ame ? k.shirt : kr ? k.kradD : pz ? k.shirt : coat;
+  var cc = tk ? k.knit : en ? coat : ame ? k.shirt : kr ? k.kradD : pz ? k.shirt : hr && V.pio ? k.bottle : coat;
   add(figPart(box(.4, 0, 6.6, 1.6, 2.4, .6, cc, cc, cc, 0), cmat, lit(cc, .95), lit(cc, .9), lit(cc, .92)), 'collar');
   /* and the motorcyclist's collar is broad, lying out over his shoulders */
   if (kr) add(figPart(box(-.15, 0, 6.35, 2.6, 4.0, .45, cc, cc, cc, 0), 'cloth', lit(cc, 1.0), lit(cc, .9), lit(cc, .94)));
   /* the grenadier's collar carries its two pale bars of braid, which are the only thing
      on him that is not field grey, black or canvas */
+  /* and the pioneer's tunic is the older one with its collar in bottle green, which is what
+     carries the braid, and the shoulder straps lying out along the shoulders */
+  if (hr && V.pio) [-1, 1].forEach(function (sd) {
+    add(figPart(box(.15, sd * 1.85, 6.56, .66, 1.3, .1, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.12), k.coatD, lit(k.coatD, 1.04)));
+  });
   if (hr && !kr && !pz) [-1, 1].forEach(function (sd) {
     add(figPart(box(1.22, sd * .72, 6.7, .05, .4, .28, k.litzen, k.litzen, k.litzen, 0), 'cloth', lit(k.litzen, 1.05), k.litzen, k.litzen));
   });
@@ -29514,6 +29602,12 @@ function flatFaces(V, side, k, P) {
     f = f.concat(figPart(box(-4.9, 0, 2.8, 3.0, .45, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
     add(figPart(tubeSmooth(-9.0, -6.35, -.62, 3.06, .66, 8, tn, tn), 'paint', lit(tn, 1.08), lit(tn, .86), tn), 'pack');
     f = f.concat(figPart(box(-7.0, 1.55, 2.4, 2.1, 2.2, .8, k.canvas, 0, 0, 0), 'canvas', lit(k.canvas, 1.08), lit(k.canvas, .92), k.canvas));
+    if (V.pio) {
+      /* the pioneer's pack on his back, and the roll across the top of it toward his head */
+      f = f.concat(figPart(box(-3.0, 0, 2.8, 3.6, 3.2, 1.7, k.torn, 0, 0, 0), 'canvas', lit(k.torn, 1.1), lit(k.torn, .92), k.torn));
+      if (V.roll) f = f.concat(figPart(at(roll(cyl(0, 0, -1.75, .46, .46, 3.5, 8, k.zelt, lit(k.zelt, 1.05), 0, true), Math.PI / 2, 0, 0), -.9, 0, 3.7),
+                                       'splinter', lit(k.zelt, 1.04), lit(k.zelt, .9), k.zelt));
+    }
     if (V.frame) {
       f = f.concat(figPart(box(-3.1, 0, 2.8, 1.7, 1.64, 1.0, tn, 0, 0, 0), 'paint', lit(tn, 1.08), lit(tn, .88), tn));
       f = f.concat(figPart(at(roll(cyl(0, 0, -1.35, .42, .42, 2.7, 8, k.zelt, k.zelt, 0, true), Math.PI / 2, 0, 0), -1.1, 0, 3.25),
@@ -29666,9 +29760,9 @@ function deadFaces(variant, kind) {
     add(figPart(box(-8.3, -.6, .3, 3.6, 4.4, 2.0, trs, trs, trs, 0), 'cloth',
                 lit(trs, .90), lit(trs, .82), lit(trs, .88)), 'hips');
     arm(figArm([.5, -2.4, 1.6], [6.5, -4.5, .5], [0, -1, 1], ka, coat, cmat, -1, patch, .3, AR));
-    /* face down, an engineer still has his pack on him and the blanket across the top */
-    if (en) {
-      var ld = V.chest ? k.demo : k.epack, rl = k.roll;
+    /* face down, an engineer or a pioneer still has his pack on him and the roll across the top */
+    if (en || (hr && V.pio)) {
+      var ld = hr ? k.torn : V.chest ? k.demo : k.epack, rl = hr ? k.zelt : k.roll;
       f = f.concat(figPart(box(-3.3, -.2, 2.65, 3.3, 3.0, 1.6, ld, 0, 0, 0), V.chest ? 'paint' : 'canvas', lit(ld, 1.1), lit(ld, .92), ld));
       f = f.concat(figPart(at(roll(cyl(0, 0, -1.95, .58, .58, 3.9, 8, rl, lit(rl, 1.08), 0, true), Math.PI / 2, 0, 0), -1.25, -.2, 3.3),
                            'cloth', lit(rl, 1.06), lit(rl, .9), rl));

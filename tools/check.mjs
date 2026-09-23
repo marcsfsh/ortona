@@ -1797,12 +1797,30 @@ for (const device of TARGETS) {
     return { crept: +Math.hypot(u.x - x, u.y - y).toFixed(1), sp: +(u.sp || 0).toFixed(1) };
   }, [drv2.x, drv2.y]);
   /* --- and he shoots with it: a round goes where he points, target or no target --- */
+  /* Where the drive test left the tank decides whether anything straight ahead can be shot
+     at at all: stopped facing a house across a lane, the look meets the wall inside the
+     24-unit back-off, there is no mark on any frame, and the row failed twice on one file
+     that passed it on the run between. So he turns his head until there is something to
+     lay on, which is what a commander does, and the burst goes where he is looking. A clear
+     patch of ground is looked for first: a mark has already passed `fireLine`, where a lock
+     is taken up to four per cent past the gun's reach so that the sight can say OUT OF RANGE,
+     and is refused by the gun for that and for a wall in the way. Accepting the first lock,
+     the row locked onto somebody the gun could not reach and put nothing in the street. */
+  const bearings = [0, .5, -.5, 1, -1, 1.6, -1.6, 2.4, -2.4, Math.PI];
+  let laid = false;
+  for (const want of ['mark', 'any']) {
+    for (const dy of bearings) {
+      await page.evaluate(d => { window.POV.yaw = window.POV.u.facing + d; window.POV.pitch = -.22; }, dy);
+      await fastForward(page, .2);
+      laid = await page.evaluate(w => { const D = window.DRV; return w === 'mark' ? !!D.mark && !D.lock : !!(D.mark || D.lock); }, want);
+      if (laid) break;
+    }
+    if (laid) break;
+  }
   const shot = await page.evaluate(() => {
-    const u = window.POV.u;
     window.__booms = 0;
     const ex = window.explode;
     window.explode = function (x, y, r, d, o, e) { window.__booms++; return ex(x, y, r, d, o, e); };
-    window.POV.yaw = u.facing; window.POV.pitch = -.22;
     window.DRV.padFire = true;
     return true;
   });
@@ -3477,6 +3495,63 @@ for (const device of TARGETS) {
      `and ${eng.skinHand} of skin, the helmet ${eng.goggle} of goggle; a sandbag wall ${eng.site ? 'pegged out' : 'REFUSED'} ` +
      `and the squad ${eng.building ? 'sent to build it' : 'NOT SENT'}; a man killed went down as ${eng.fellNat}, engineer ` +
      `bodies ${eng.bodies ? 'baked' : 'MISSING'}; Ortona's headquarters makes ${eng.ita}`);
+
+  /* --- The pioneers. The 352nd's pioneer team on the beach stands in for the paratroop
+     pioneers the way the grenadier squad stands in for the FJ group: the headquarters makes
+     it and refuses the other, the German side opens the battle with one, its three men are
+     the three pioneer variants with the MP40, goggles on the helmet, the pack on the back
+     and the collar in bottle green, it can peg out a work and go and build it, and a man of
+     it killed goes down as a pioneer. The Italian table still has the paratroopers. --- */
+  const pio = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0], sl = hq.own;
+    out.makes = W.makesOf(hq).join(',');
+    const made = W.REC.ger.made || {};
+    out.openHr = made.hr_pio || 0; out.openFj = made.ger_pio || 0;
+    G.res[sl].mp += 2000;
+    const q0 = hq.queue.length;
+    out.qFj = W.queueUnit(hq, 'ger_pio') ? hq.queue.slice(-1)[0] : 'refused';
+    hq.queue.length = q0;
+    const u = W.spawnUnit(sl, 'hr_pio', hq.x - 120, hq.y + 200, 0);
+    out.men = u.models.length; out.builder = !!u.def.builder;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.heer, r = W.manFaces('gr_pio', W.FIGPOSE.stand), P = r.parts;
+    out.goggle = P.helmet.filter(f => f.c === K.goggle).length;
+    out.pack = (P.kit || []).filter(f => f.c === K.torn || f.c === W.lit(K.torn, .95) || f.c === W.lit(K.torn, 1.12)).length;
+    out.collar = (P.collar || []).filter(f => f.c === W.lit(K.bottle, .95) || f.c === W.lit(K.bottle, .9) || f.c === W.lit(K.bottle, .92)).length;
+    /* the German headquarters stands in a walled yard among the hedgerows, so the first
+       spot a wall is tried at may be refused for the ground and not for the team */
+    let site = null;
+    for (const [dx, dy] of [[-60, 280], [60, 280], [0, 200], [160, 160], [-160, 160], [220, 0], [-220, 0], [0, -220], [260, 260], [-260, 260]]) {
+      site = W.placeWork(sl, 'bags', hq.x + dx, hq.y + dy, 0, [u]);
+      if (site) break;
+    }
+    out.site = !!site; out.building = u.building === site && u.order === 'work';
+    if (site) G.sites.splice(G.sites.indexOf(site), 1);
+    W.clearOrder(u);
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fellNat = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.heer_pio && W.MODELS.dead.heer_pio && W.MODELS.fall.heer_pio.length === 3 && W.MODELS.dead.heer_pio.length === 2);
+    W.killUnit(u);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(hq).join(',');
+    W.setNation('usa', 'heer');
+    return out;
+  });
+  ok('Omaha: the 352nd\'s pioneers are their own team of three, with MP40s, goggles, the pioneer pack, and bodies of their own',
+     /hr_pio/.test(pio.makes) && !/ger_pio/.test(pio.makes) && pio.openHr >= 1 && pio.openFj === 0 && pio.qFj === 'hr_pio' &&
+     pio.men === 3 && pio.builder && pio.vars === 'gr_pio,gr_pio_b,gr_pio_c' && pio.weap === 'mp40' && pio.goggle > 0 &&
+     pio.pack > 0 && pio.collar > 0 && pio.site && pio.building && pio.fellNat === 'heer_pio' && pio.bodies &&
+     /ger_pio/.test(pio.ita) && !/hr_pio/.test(pio.ita),
+     `the headquarters makes ${pio.makes}; the side opened with ${pio.openHr} pioneer teams and ${pio.openFj} paratroop ` +
+     `pioneers; asked for the paratroopers it queues ${pio.qFj}; ${pio.men} men of ${pio.vars} carrying ${pio.weap}, ` +
+     `${pio.builder ? 'a builder' : 'NOT A BUILDER'}; the helmet has ${pio.goggle} faces of goggle, the pack ${pio.pack} of ` +
+     `its brown and the collar ${pio.collar} of bottle green; a sandbag wall ${pio.site ? 'pegged out' : 'REFUSED'} and the ` +
+     `team ${pio.building ? 'sent to build it' : 'NOT SENT'}; a man killed went down as ${pio.fellNat}, pioneer bodies ` +
+     `${pio.bodies ? 'baked' : 'MISSING'}; Ortona's headquarters makes ${pio.ita}`);
 
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
