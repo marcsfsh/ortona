@@ -178,7 +178,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .side h3{font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:5px}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
-.pill,.mode,.arty,.team,.gmap,.ctrl,.autoup{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
+.pill,.mode,.arty,.team,.gmap,.ctrl,.autoup,.wall{border:1px solid var(--line);padding:9px 18px;font-size:13px;background:#15190f;letter-spacing:.8px}
 /* the opposition panel's own two strips: which computer player is being set, and what
    that one is told to buy. `.arole` is deliberately not `.pill`, for the reason set out
    beside `.obtn`. */
@@ -202,7 +202,7 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .hrow i{font-family:var(--mono);font-style:normal;font-size:13px;color:var(--ink);min-width:88px;text-align:center}
 .hb{border:1px solid var(--line);background:#15190f;color:var(--ink);font-size:15px;line-height:1;width:34px;height:34px;box-sizing:border-box;flex:0 0 auto}
 .hb[disabled]{color:#3d4436;border-color:#2b3126}
-.pill.on,.mode.on,.arty.on,.team.on,.gmap.on,.ctrl.on,.autoup.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
+.pill.on,.mode.on,.arty.on,.team.on,.gmap.on,.ctrl.on,.autoup.on,.wall.on{background:var(--ink);color:#12150e;border-color:var(--ink)}
 /* The game-over screen's two ways on. They are deliberately NOT `.pill`: the title
    screen binds every `.pill` on the page as a side picker, by class and with a plain
    `onclick =`, and it runs after this, so a button that borrowed the look silently
@@ -315,7 +315,7 @@ body.mob .keys{font-size:11.5px;line-height:1.7}
 body.mob .go{width:100%;max-width:340px;padding:15px 0}
 /* the title screen's own option buttons were 33px on a phone, which is under the rule
    the rest of the game holds itself to; they are the first thing a thumb ever touches */
-body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .gmap,body.mob .ctrl,body.mob .autoup,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+body.mob .pill,body.mob .mode,body.mob .arty,body.mob .team,body.mob .gmap,body.mob .ctrl,body.mob .autoup,body.mob .wall,body.mob .arole{padding:10px 16px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
 body.mob .bpref .hgrid{grid-template-columns:1fr}
 body.mob .hgrid{grid-template-columns:1fr}
 body.mob .hb{width:46px;height:46px;min-width:46px;min-height:46px;font-size:17px}body.mob .hres{min-height:44px;padding:0 14px}
@@ -434,7 +434,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
 .side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
-.pill,.mode,.arty,.team,.gmap,.ctrl,.autoup{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on,.gmap.on,.ctrl.on,.autoup.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
+.pill,.mode,.arty,.team,.gmap,.ctrl,.autoup,.wall{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on,.gmap.on,.ctrl.on,.autoup.on,.wall.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
 
@@ -833,6 +833,9 @@ body:not(.simple) #tOrders{display:none}
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">ENEMY GUNS</span>
     <button class="arty on" data-arty="1" title="The opposition buys mortars and howitzers and digs a battery" aria-pressed="true">ARTILLERY</button>
     <button class="arty" data-arty="0" title="The opposition fields no indirect fire at all; yours is unaffected" aria-pressed="false">NONE</button>
+    <span class="wallrow hidden" style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">ATLANTIC WALL</span>
+    <button class="wall wallrow hidden on" data-wall="0" title="The Germans start with their army at the top of the map and the wall empty: whoever gets men into it first holds it" aria-pressed="true">EMPTY</button>
+    <button class="wall wallrow hidden" data-wall="1" title="The wall is manned at the whistle: guns in the casemates, machine guns in the bunkers and Tobruks, a mortar on the bluff and a section in each leg of the fire trench, over and above the German army" aria-pressed="false">MANNED</button>
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">CONTROLS</span>
     <button class="ctrl" data-ctrl="classic" title="The whole game in your hands: tap to select, tap to order, the command bar along the bottom" aria-pressed="false">CLASSIC</button>
     <button class="ctrl" data-ctrl="simple" title="Built for a phone and a spare thumb: tap to pick, drag to send, tap a flag to take it. Production, building and repairs run themselves" aria-pressed="false">SIMPLE</button>
@@ -3312,8 +3315,24 @@ function omahaMapData() {
     E.push(e);
   });
   E.push({ t: 'hq', side: 'ger', x: 750, y: 270, look: 'manor' });
+
+  /* ---- the wall, when the title screen asks for it manned ----
+     The garrison that was in it on the morning, laid by hand: a gun in each of the two
+     casemates in the seawall laid along the beach, a machine gun in each bunker covering
+     a draw or a flank of the bluff and a mortar dug in behind the one between the exits,
+     a machine gun in each Tobruk either side of the two exits, and a section in each leg
+     of the fire trench. `fit` is a bunker fitting and goes in the bunker standing there;
+     `k` is a unit put down where it stands. */
+  var garrison = { side: 'ger', list: [
+    { fit: 'at', x: 300, y: 2596 }, { fit: 'at', x: 1200, y: 2594 },
+    { fit: 'mg', x: 296, y: 2292 }, { fit: 'mg', x: 1196, y: 2284 }, { fit: 'mg', x: 132, y: 2220 },
+    { fit: 'mg', x: 1378, y: 2214 }, { fit: 'mor', x: 742, y: 2226 },
+    { k: 'ger_mg42', x: 458, y: 2538, a: 1.3 }, { k: 'ger_mg42', x: 336, y: 2478, a: 1.6 },
+    { k: 'ger_mg42', x: 1042, y: 2536, a: 1.8 }, { k: 'ger_mg42', x: 1166, y: 2478, a: 1.5 },
+    { k: 'ger_gren', x: 190, y: 2394, a: 1.57, dig: 1 }, { k: 'ger_gren', x: 750, y: 2402, a: 1.57, dig: 1 },
+    { k: 'ger_gren', x: 1320, y: 2394, a: 1.57, dig: 1 }] };
   return { name: 'Omaha Beach', when: 'DOG AND EASY · 6 JUNE 1944', version: 3, land: 'omaha', w: 1500, h: 4000,
-           entities: E, height: [] };
+           craftPost: 'us', garrison: garrison, entities: E, height: [] };
 }
 /* ---- build the world from a map ---- */
 /* ---- how big the world is ----
@@ -3392,6 +3411,7 @@ function buildMap(data) {
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
   G.craft = []; G.hogpts = []; G.atDitch = []; G.hedges = []; G.fieldTones = [];
+  G.craftPost = data.craftPost || null;            /* the side whose posts are made of craft */
   wallq = null;                                    /* the standing index is rebuilt with them */
   ruinq = null;                                    /* and the index of what can be knocked down */
   /* Every prop in G.hurt is one of the objects just thrown away, so what is left of a
@@ -3553,9 +3573,10 @@ function buildMap(data) {
         /* A landing craft where the tide left it. Afloat or aground it is drawn; aground
            it is also a steel hull standing on the sand, a thing to get behind and not
            through, and its two long sides are cover lying along it. */
-        var cr = { x: e.x, y: e.y, a: e.a || 0, kind: e.kind || 'lcvp', wreck: e.wreck || 0, s: e.s || 0 };
+        var cr = { i: G.craft.length, x: e.x, y: e.y, a: e.a || 0, kind: e.kind || 'lcvp', wreck: e.wreck || 0, s: e.s || 0,
+                   aground: inland(e.x, e.y) > -40 };
         G.craft.push(cr);
-        if (inland(e.x, e.y) > -40) {
+        if (cr.aground) {
           var cL = cr.kind === 'lct' ? 330 : 118, cB = cr.kind === 'lct' ? 100 : 36;
           var cca = Math.abs(Math.cos(cr.a)), csa = Math.abs(Math.sin(cr.a));
           G.props.push({ x: e.x, y: e.y, w: cL * cca + cB * csa, h: cL * csa + cB * cca, solid: 1, kind: 'craft', z: 0 });
@@ -5616,8 +5637,8 @@ function selRadius(u) {
 }
 
 /* ---------------------------------------------------------------- buildings */
-function spawnBuilding(slot, key, x, y, done) {
-  var d = BUILDINGS[key], side = slotSide(slot);
+function spawnBuilding(slot, key, x, y, done, cr) {
+  var d = cr ? craftDef(BUILDINGS[key], cr) : BUILDINGS[key], side = slotSide(slot);
   /* In annihilation the buildings are the objective rather than a hidden instant-loss
      line, so they are built to be fought over: a base that comes down in two minutes to
      the first section that walks up to it is not a siege. */
@@ -5627,6 +5648,9 @@ function spawnBuilding(slot, key, x, y, done) {
             queue: [], qt: 0,
             rally: LAND.south ? { x: x + 90, y: y + (side === 'us' ? -120 : 120) } : { x: x + (side === 'us' ? 120 : -120), y: y + 90 },
             dead: false, hitT: 0 };
+  /* a post made of a landing craft is the craft's own bearing and footprint, and what is
+     stacked in it and round it is a buffer laid on the sand it stands on */
+  if (cr) { b.craft = cr.i; if (GLOK) b.buf = facesToBuffer(craftPostFaces(key, cr)); }
   G.blds.push(b); rebuildGrid();
   return b;
 }
@@ -5668,7 +5692,7 @@ function pay(slot, cost) {
    a cap they shared would be a cap neither could plan against. */
 function popOf(slot) {
   var p = 0;
-  G.units.forEach(function (u) { if (u.own === slot && !u.dead) p += u.def.pop; });
+  G.units.forEach(function (u) { if (u.own === slot && !u.dead && !u.wall) p += u.def.pop; });
   G.blds.forEach(function (b) { if (b.own === slot) b.queue.forEach(function (k) { p += UNITS[k].pop; }); });
   /* a work that becomes a unit has its men on the way already: the site holds the
      population its gun will take, so nothing bought in the forty seconds it is being
@@ -9279,11 +9303,21 @@ function countBuildings(side) {
 
 /* ---------------------------------------------------------------- construction sites */
 function placeStructure(slot, key, x, y, engineers) {
-  var d = BUILDINGS[key], you = slot === G.own;
+  var d = BUILDINGS[key], you = slot === G.own, cr = null;
+  if (craftPosts(slot)) {
+    cr = craftNear(x, y, 170);
+    if (!cr) {
+      if (you) toast(craftLeft() ? 'On the beach a post is a landing craft: pick one that is aground and whole'
+                                 : 'Every landing craft on the beach is a post already');
+      return null;
+    }
+  }
   if (!canAfford(slot, d.cost)) { if (you) toast('Not enough resources'); return null; }
-  if (!siteClear(x, y, d.w, d.h)) { if (you) toast('No room there'); return null; }
+  if (!cr && !siteClear(x, y, d.w, d.h)) { if (you) toast('No room there'); return null; }
   pay(slot, d.cost);
-  var b = spawnBuilding(slot, key, x, y, false);
+  if (cr) { var cs = craftSpot(cr); x = cs.x; y = cs.y; }
+  var b = spawnBuilding(slot, key, x, y, false, cr);
+  d = b.def;
   /* The footprint goes solid on the movement grid the moment the site is pegged out,
      so anything standing inside it is left with nowhere legal to be: it fails every
      walkability test, repaths, and sits there for the rest of the game. Everyone in
@@ -9320,6 +9354,50 @@ function siteClear(x, y, w, h) {
     if (Math.abs(p.x - x) < (p.w + w) / 2 + 12 && Math.abs(p.y - y) < (p.h + h) / 2 + 12) return false;
   }
   return true;
+}
+/* ---- a post raised out of a landing craft ----
+   The side that came in over a beach has nothing to build on but the sand and nothing to
+   build with but what it brought ashore. So on a map that names the side that landed
+   (`craftPost`), a company post or an armour point is not pegged out on open ground: an
+   engineer section walks down to a craft that is aground and whole and turns it into
+   one, for the usual price and in the usual time, and there are only as many posts as
+   there are craft left to make them of. One burnt out or broached in the surf is no
+   use. When a post is knocked down its craft is free to be made into another.
+   The craft stays drawn where it lies; what the post adds is what is stacked in it and
+   round it (`craftPostFaces`), and its footprint is the craft's with room either side
+   for that, on the craft's own bearing. It is a copy of the building's def with the
+   footprint changed, because every reader of a building's size reads `b.def`. */
+var CRAFTPOST = { lcvp: { l: 176, b: 88, off: 22 }, lct: { l: 420, b: 150, off: 30 } };
+/* a craft lies at the water's edge with its ramp up the beach, so what the post adds is
+   on the dry sand forward of it and the post's middle is that far toward the bow */
+function craftSpot(cr) {
+  var o = (CRAFTPOST[cr.kind] || CRAFTPOST.lcvp).off;
+  return { x: cr.x + Math.cos(cr.a) * o, y: cr.y + Math.sin(cr.a) * o };
+}
+function craftPosts(slot) { return !!G.craftPost && slotSide(slot) === G.craftPost; }
+function craftFree(cr) {
+  if (cr.wreck || !cr.aground) return false;
+  for (var i = 0; i < G.blds.length; i++) if (G.blds[i].craft === cr.i) return false;
+  return true;
+}
+function craftNear(x, y, r) {
+  var best = null, bd = r * r;
+  for (var i = 0; i < G.craft.length; i++) {
+    var cr = G.craft[i], d = dsq(x, y, cr.x, cr.y);
+    if (d < bd && craftFree(cr)) { bd = d; best = cr; }
+  }
+  return best;
+}
+function craftLeft() {
+  for (var i = 0; i < G.craft.length; i++) if (craftFree(G.craft[i])) return true;
+  return false;
+}
+function craftDef(d, cr) {
+  var o = {}, k, P = CRAFTPOST[cr.kind] || CRAFTPOST.lcvp;
+  for (k in d) o[k] = d[k];
+  var ca = Math.abs(Math.cos(cr.a)), sa = Math.abs(Math.sin(cr.a));
+  o.w = Math.round(P.l * ca + P.b * sa); o.h = Math.round(P.l * sa + P.b * ca);
+  return o;
 }
 /* Work that has been pegged out but not finished is the commonest way for a base to
    stall. The section that started it gets moved off, shot off the job or killed, and
@@ -9571,7 +9649,7 @@ function orderBunkerUp(bk, kind, slot) {
    Granatwerfer. The two that fire through the slot are garrisoned, so the arc clamp in
    `outPoint` is the whole of "it fires the way it is facing"; the tube is dug in behind
    and is not. */
-function finishBunkerUp(bk) {
+function finishBunkerUp(bk, quiet) {
   var W = BUNKUP[bk.up], slot = bk.upOwn || bunkerOwner(bk), side = slotSide(slot);
   bk.upKind = bk.up; bk.up = null; bk.upT = 0;
   if (W.unit) {
@@ -9592,7 +9670,39 @@ function finishBunkerUp(bk) {
   }
   if (GLOK) bk.upBuf = facesToBuffer(conformFaces(bunkerUpFaces(bk)));
   bk.upSite = null;
-  if (slot === G.own) { toast(W.name + ' in'); sfx('click'); }
+  if (slot === G.own && !quiet) { toast(W.name + ' in'); sfx('click'); }
+}
+/* ---- the wall, manned at the whistle ----
+   A map may write down the garrison that was standing in its defences (`garrison`), and
+   the title screen asks whether to put it there. It is over and above the army the side
+   raises: it goes to that side's first player, it does not count against his cap, and
+   what it is told is to stay -- the brain holds a unit whose posture is not ADVANCE out
+   of the dealing, stands it fast rather than sending it home hurt, and never takes it for
+   an operation. A fitting goes in through the bunker's own `finishBunkerUp`, which is
+   what makes the gun in a casemate a gun laid through its slot and nothing new. */
+function manWall() {
+  var GW = G.mapData.garrison, sl = slotsOf(GW.side)[0], i, j;
+  if (!sl) return;
+  for (i = 0; i < GW.list.length; i++) {
+    var e = GW.list[i], u = null;
+    if (e.fit) {
+      var bk = null, bd = 40 * 40;
+      for (j = 0; j < G.bunks.length; j++) {
+        var q = dsq(e.x, e.y, G.bunks[j].x, G.bunks[j].y);
+        if (q < bd) { bd = q; bk = G.bunks[j]; }
+      }
+      if (!bk || bk.upKind) continue;
+      bk.own = sl; bk.up = e.fit; bk.upT = 0; bk.upOwn = sl;
+      finishBunkerUp(bk, true);
+      for (j = 0; j < G.units.length; j++) if (G.units[j].id === bk.upUid) u = G.units[j];
+      if (u && !u.gar) u.pose = 'hold';                /* the tube dug in behind it */
+    } else {
+      var sp = nearestFree(e.x, e.y);
+      u = spawnUnit(sl, e.k, sp.x, sp.y, e.a || 0);
+      u.setup = 0; u.pose = e.dig ? 'dig' : 'hold';
+    }
+    if (u) { u.wall = 1; u.react = 'fight'; }
+  }
 }
 function updateBunkers(dt) {
   for (var i = 0; i < G.bunks.length; i++) {
@@ -11918,7 +12028,7 @@ function aiOpsMan(W) {
       var pick = null, pd = 1e9;
       for (j = 0; j < W.fighters.length; j++) {
         var f = W.fighters[j];
-        if (held[f.id] || f.retreat || f.gar || f.def.builder) continue;
+        if (held[f.id] || f.retreat || f.gar || f.wall || f.def.builder) continue;
         if (f.cat === 'team') continue;                /* a gun team keeps its post */
         if (f.job === 'answer' || f.job === 'mend') continue;
         if (aiMyCall(f)) continue;                     /* it is in trouble of its own */
@@ -12513,16 +12623,18 @@ function aiTick(dt) {
 
   /* ---- construction */
   var siteBase = { x: hq.x + (side === 'us' ? 190 : -190), y: hq.y };
+  /* on a beach the side that landed makes its posts out of the craft nearest home */
+  var cpost = craftPosts(slot) ? craftNear(hq.x, hq.y, 1e5) : null;
   if (engs.length) {
     var freeEng = [];
     for (i = 0; i < engs.length; i++) if (!engs[i].building) freeEng.push(engs[i]);
     var stall = b1 && b1.built < 1 ? b1 : b2 && b2.built < 1 ? b2 : null;
     if (stall && freeEng.length) {
       resumeBuild(freeEng[0], stall);
-    } else if (spend && !b1 && G.res[slot].mp >= 200 && freeEng.length) {
-      { placeStructure(slot, K.b1, siteBase.x, siteBase.y - 150, [freeEng[0]]); aiFire('build.post'); }
-    } else if (spend && b1 && b1.built >= 1 && !b2 && G.res[slot].mp >= 240 && G.res[slot].fu >= 25 && freeEng.length) {
-      { placeStructure(slot, K.b2, siteBase.x, siteBase.y + 150, [freeEng[0]]); aiFire('build.depot'); }
+    } else if (spend && !b1 && G.res[slot].mp >= 200 && freeEng.length && (cpost || !craftPosts(slot))) {
+      { placeStructure(slot, K.b1, cpost ? cpost.x : siteBase.x, cpost ? cpost.y : siteBase.y - 150, [freeEng[0]]); aiFire('build.post'); }
+    } else if (spend && b1 && b1.built >= 1 && !b2 && G.res[slot].mp >= 240 && G.res[slot].fu >= 25 && freeEng.length && (cpost || !craftPosts(slot))) {
+      { placeStructure(slot, K.b2, cpost ? cpost.x : siteBase.x, cpost ? cpost.y : siteBase.y + 150, [freeEng[0]]); aiFire('build.depot'); }
     }
   }
 
@@ -26771,6 +26883,108 @@ function workFaces(kind, x, y, a) {
   }
   return conformFaces(f);
 }
+/* ---- a landing craft turned into a post ----
+   What an engineer section does to a Higgins boat that has put its men out and will not
+   float off again. As a company post the well is roofed with a tarpaulin on a ridge
+   pole and becomes the command post, with the wireless on the engine deck, the company
+   flag at the stern and the tents, the bagged stores and the ammunition along the sand
+   either side of it. As an armour point a gantry stands over the ramp to lift an engine
+   out, the fuel is down in the sand behind a berm on one side, the jerricans and the
+   spare track are in rows on the other, and the well is a stack of stores under a
+   sheet. Built in the craft's own frame, bow at +x with the ramp lying on the sand in
+   front of it, and handed back in the world: what stands in the craft stands on its
+   keel, which is where the scene set the hull down, and what stands on the sand is set
+   down on the sand under it. */
+function strut(a, b, r, col) {
+  var dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2], L = Math.hypot(dx, dy, dz) || 1;
+  var ux = dx / L, uy = dy / L, uz = dz / L, px = -uy, py = ux, pz = 0;
+  if (Math.abs(uz) > .9) { px = 1; py = 0; }
+  var pl = Math.hypot(px, py, pz); px /= pl; py /= pl;
+  var qx = uy * pz - uz * py, qy = uz * px - ux * pz, qz = ux * py - uy * px;
+  var ring = [[1, 1], [-1, 1], [-1, -1], [1, -1]].map(function (k) {
+    return [(k[0] * px + k[1] * qx) * r, (k[0] * py + k[1] * qy) * r, (k[0] * pz + k[1] * qz) * r];
+  });
+  var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, mz = (a[2] + b[2]) / 2, f = [];
+  for (var i = 0; i < 4; i++) {
+    var o0 = ring[i], o1 = ring[(i + 1) % 4];
+    var q = [[a[0] + o0[0], a[1] + o0[1], a[2] + o0[2]], [a[0] + o1[0], a[1] + o1[1], a[2] + o1[2]],
+             [b[0] + o1[0], b[1] + o1[1], b[2] + o1[2]], [b[0] + o0[0], b[1] + o0[1], b[2] + o0[2]]];
+    var n = faceNormal(q[0], q[1], q[2]), cx = (q[0][0] + q[2][0]) / 2, cy = (q[0][1] + q[2][1]) / 2, cz = (q[0][2] + q[2][2]) / 2;
+    if (n.x * (cx - mx) + n.y * (cy - my) + n.z * (cz - mz) < 0) q.reverse();
+    f.push({ v: q, c: i % 2 ? lit(col, .88) : col });
+  }
+  return f;
+}
+function craftPostFaces(key, cr) {
+  var bar = key === 'us_bar' || key === 'ger_qtr';
+  var lct = cr.kind === 'lct', L = lct ? 366 : 129, B = lct ? 104 : 39;
+  var cz = groundZ(cr.x, cr.y), dz = Math.min(cz, seaZ()) - 2.5 - cz;
+  var flag = (FACTION[G.craftPost] || FACTION.us).color;
+  var seed = .2911 + cr.i * .137;
+  function rnd() { seed = (seed * 97.13 + .4517) % 1; return seed; }
+  var boat = [], sand = [], k, j;
+  var wx0 = -L / 2 + 38, wx1 = L / 2 - 14, deck = 5 + dz, top = 23 + dz;
+  var kit = ['#4d5340', '#5d6450', '#41473a'], bag = ['#6f6444', '#85795a', '#5f5539'];
+  function stack(x, y, n, turn) {
+    for (var h = 0; h < n; h++)
+      sand = sand.concat(place(box(0, 0, h * 7, 16, 11, 7, kit[0], kit[1], kit[2]), (turn || 0) + (h % 2) * .12, x, y, 0));
+  }
+  if (bar) {
+    /* the tarpaulin over the well, on a ridge pole with an upright at each end, both
+       sides of it drawn so it reads from under the eaves as well as from above */
+    var rz = top + 15, ez = top + 3, ey = B / 2 + 6;
+    [[[wx0, -ey, ez], [wx1, -ey, ez], [wx1, 0, rz], [wx0, 0, rz]], [[wx1, ey, ez], [wx0, ey, ez], [wx0, 0, rz], [wx1, 0, rz]]].forEach(function (q, i) {
+      boat.push({ v: q, c: i ? BUNK.tarpL : BUNK.tarp });
+      boat.push({ v: q.slice().reverse(), c: BUNK.tarpD });
+    });
+    [wx0, wx1].forEach(function (x) { boat = boat.concat(cyl(x, 0, deck, .8, .8, rz - deck, 6, '#4a3f2e', '#5a4e3a')); });
+    /* the wireless on the engine deck and its aerial, and the company flag at the stern */
+    boat = boat.concat(box(-L / 2 + 22, -9, 16 + dz, 9, 7, 6, kit[2], kit[0]));
+    boat = boat.concat(cyl(-L / 2 + 22, -9, 22 + dz, .35, .35, 46, 4, CRAFT.steel, CRAFT.steel));
+    boat = boat.concat(cyl(-L / 2 + 6, 10, 16 + dz, .8, .8, 34, 6, '#4a3f2e', '#5a4e3a'));
+    boat = boat.concat(box(-L / 2 + 6 + 7, 10, 16 + dz + 25, 13, .5, 8, flag, lit(flag, 1.1), lit(flag, .8)));
+    /* along the port side, a traverse of bags the height of a man lying down, and inside
+       it the bagged stores */
+    sand = sand.concat(sandbagRun(-4, -B / 2 - 20, 0, L * .78, 4, rnd));
+    for (k = 0; k < 4; k++) sand = sand.concat(place(box(0, 0, 0, 9, 6, 5, bag[k % 3], bag[(k + 1) % 3], bag[2]), rnd() * .6, 8 + k * 14, -B / 2 - 9, 0));
+    /* along the starboard side the tents, the ammunition and the board with the
+       company's number on it */
+    for (k = 0; k < 2; k++) sand = sand.concat(place(ridgeTent(0, 0, 0, 24, 15, GUN.canvas), 0, 8 + k * 28, B / 2 + 18, 0));
+    stack(L / 2 + 14, B / 2 + 14, 3); stack(L / 2 + 30, B / 2 - 2, 2, .2);
+    sand = sand.concat(cyl(L / 2 + 30, -B / 2 - 2, 0, .6, .6, 16, 5, '#4a3f2e', '#5a4e3a'));
+    sand = sand.concat(cyl(L / 2 + 30, -B / 2 + 14, 0, .6, .6, 16, 5, '#4a3f2e', '#5a4e3a'));
+    sand = sand.concat(box(L / 2 + 30, -B / 2 + 6, 9, 1, 17, 7, '#cfccbe', '#cfccbe', lit('#cfccbe', .85)));
+    /* and beside the ramp, what came off it and has not been carried up yet */
+    stack(L / 2 + 12, -B / 2 - 6, 2, -.3);
+  } else {
+    /* a gantry over the ramp to lift an engine out on a chain block, the well a stack of
+       stores under a sheet */
+    var ax = L / 2 + 10, az = top + 36;
+    [-1, 1].forEach(function (sd) {
+      sand = sand.concat(strut([L / 2 + 24, sd * (B / 2 + 5), 0], [ax, sd * 2, az], 1.1, '#3f3a30'));
+    });
+    boat = boat.concat(strut([ax, -3, az], [ax, 3, az], 1.2, '#3f3a30'));
+    boat = boat.concat(strut([ax, 0, az], [wx1 - 6, 0, top], .8, '#3f3a30'));
+    boat = boat.concat(cyl(ax, 0, az - 16, .25, .25, 16, 4, CRAFT.steel, CRAFT.steel));
+    boat = boat.concat(box(ax, 0, az - 21, 3, 3, 5, '#3f3a30', CRAFT.steelL));
+    boat = boat.concat(box((wx0 + wx1) / 2, 0, deck, wx1 - wx0 - 16, B - 14, 10, kit[0], kit[1], kit[2]));
+    boat = boat.concat(box((wx0 + wx1) / 2, 0, deck + 10, wx1 - wx0 - 12, B - 10, 3, BUNK.tarp, BUNK.tarpL, BUNK.tarpD, .9));
+    boat = boat.concat(cyl(-L / 2 + 6, 10, 16 + dz, .8, .8, 34, 6, '#4a3f2e', '#5a4e3a'));
+    boat = boat.concat(box(-L / 2 + 6 + 7, 10, 16 + dz + 25, 13, .5, 8, flag, lit(flag, 1.1), lit(flag, .8)));
+    /* the fuel: two dumps of drums in the sand on the port side behind a berm */
+    for (j = 0; j < 2; j++) for (k = 0; k < 6; k++)
+      sand = sand.concat(drum(6 + j * 44 + (k % 3) * 6.2, -B / 2 - 10 - Math.floor(k / 3) * 6.2, 0, k % 2 ? '#4f5643' : '#3f3a30'));
+    sand = sand.concat(sandbagRun(-2, -B / 2 - 26, 0, 92, 2, rnd));
+    /* the jerricans in rows and the spare track on the starboard side */
+    for (k = 0; k < 16; k++) sand = sand.concat(jerrican(4 + (k % 8) * 2.4, B / 2 + 10 + Math.floor(k / 8) * 4.8, 0, 0, '#5b6243'));
+    for (k = 0; k < 5; k++) sand = sand.concat(box(46, B / 2 + 16, k * 1.8, 30, 14, 1.8, '#3f3a30', lit('#3f3a30', 1.1), '#3f3a30'));
+    stack(L / 2 + 30, B / 2 + 6, 2, .15);
+  }
+  /* into the world: the boat on the keel the scene set it on, the rest on the sand */
+  boat = place(boat, cr.a, cr.x, cr.y, cz);
+  sand = conformFaces(place(sand, cr.a, cr.x, cr.y, 0));
+  return boat.concat(sand);
+}
 function buildingModel(d, key) {
   var us = key.indexOf('us_') === 0, side = us ? 'us' : 'ger';
   var flag = us ? FACTION.us.color : FACTION.ger.color;
@@ -27234,12 +27448,15 @@ function drawUnits3D(v, list) {
 function drawBuildings3D() {
   G.blds.forEach(function (b) {
     if (b.side !== G.side && !visibleTo(G.side, b)) return;
-    var B = MODELS.bld[b.look || b.key]; if (!B) return;
+    var B = b.buf || MODELS.bld[b.look || b.key]; if (!B) return;
     var done = b.built >= 1;
-    var mm = m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
-    if (!done) { mm[10] = .15 + .85 * b.built; }          /* rises as it is built */
+    var mm = b.buf ? m4model(0, 0, 0, 0, 1) : m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
+    if (!done) {                                          /* rises as it is built */
+      mm[10] = .15 + .85 * b.built;
+      if (b.buf) mm[14] = groundZ(b.x, b.y) * (1 - mm[10]);
+    }
     drawGeom(B, mm, false, done ? null : [.8, .8, .75]);
-    if (done && !b.look && MODELS.bldA[b.key]) {
+    if (done && !b.look && !b.buf && MODELS.bldA[b.key]) {
       gl.uniform1f(PROG.u.uAlphaTest, 1); gl.disable(gl.CULL_FACE);
       drawGeom(MODELS.bldA[b.key], mm, false, null);
       gl.enable(gl.CULL_FACE); gl.uniform1f(PROG.u.uAlphaTest, 0);
@@ -27828,9 +28045,9 @@ function render() {
     for (var gti = 1; gti < PT_N; gti++) if (SCENE.ground[gti]) drawDepthGeom(SCENE.ground[gti], null);
     for (var sti = 0; sti < SCENE.tiles.length; sti++) if (SCENE.tiles[sti].props.n) drawDepthGeom(SCENE.tiles[sti].props, null);
     G.blds.forEach(function (b) {
-      var B = MODELS.bld[b.look || b.key]; if (!B) return;
-      var mm = m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
-      if (b.built < 1) mm[10] = .15 + .85 * b.built;
+      var B = b.buf || MODELS.bld[b.look || b.key]; if (!B) return;
+      var mm = b.buf ? m4model(0, 0, 0, 0, 1) : m4model(b.x, b.y, groundZ(b.x, b.y), 0, 1);
+      if (b.built < 1) { mm[10] = .15 + .85 * b.built; if (b.buf) mm[14] = groundZ(b.x, b.y) * (1 - mm[10]); }
       drawDepthGeom(B, mm);
     });
     G.works.forEach(function (w) { if (w.buf) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
@@ -28016,9 +28233,28 @@ function render() {
   if (G.place) {
     var pl = G.place, W3 = pl.work ? WORKS[pl.work] : null;
     var m = pl.aim ? { x: pl.ax, y: pl.ay } : s2w(mouse.x, mouse.y);
-    var d3 = W3 || BUILDINGS[pl.key];
-    var ok = W3 ? workRoom(m.x, m.y, W3) : siteClear(m.x, m.y, d3.w, d3.h);
-    var pa = W3 ? placeAngle(m.x, m.y) + workTurn(pl.work) : 0;
+    var d3 = W3 || BUILDINGS[pl.key], cpl = null, ok, pa;
+    if (!W3 && craftPosts(G.own)) {
+      /* on a beach a post is a craft: every one that can still be made into one is
+         outlined, and the ghost jumps onto the nearest of them under the pointer */
+      G.craft.forEach(function (cq) {
+        if (!craftFree(cq)) return;
+        var P = CRAFTPOST[cq.kind] || CRAFTPOST.lcvp, qc = Math.cos(cq.a), qs = Math.sin(cq.a), qo = craftSpot(cq);
+        ctx.strokeStyle = 'rgba(158,203,98,.55)'; ctx.lineWidth = 1.5; ctx.setLineDash([5, 5]); ctx.beginPath();
+        [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(function (q, i) {
+          var lx = q[0] * P.l / 2, ly = q[1] * P.b / 2, sp = w2s(qo.x + lx * qc - ly * qs, qo.y + lx * qs + ly * qc);
+          if (i) ctx.lineTo(sp.x, sp.y); else ctx.moveTo(sp.x, sp.y);
+        });
+        ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+      });
+      cpl = craftNear(m.x, m.y, 170);
+      if (cpl) m = craftSpot(cpl);
+      var CP = cpl ? CRAFTPOST[cpl.kind] || CRAFTPOST.lcvp : CRAFTPOST.lcvp;
+      d3 = { w: CP.l, h: CP.b }; ok = !!cpl; pa = cpl ? cpl.a : 0;
+    } else {
+      ok = W3 ? workRoom(m.x, m.y, W3) : siteClear(m.x, m.y, d3.w, d3.h);
+      pa = W3 ? placeAngle(m.x, m.y) + workTurn(pl.work) : 0;
+    }
     var ca = Math.cos(pa), sa = Math.sin(pa);
     var cc = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(function (q) {
       var lx = q[0] * d3.w / 2, ly = q[1] * d3.h / 2;
@@ -29243,7 +29479,8 @@ function simpleStripRefresh(items) {
     var txt = it.kind === 'post' ? '' : it.kind === 'work' ? String(countOf(G.own, d.unit) + siteCount(G.own, it.key) || '')
             : String(countOf(G.own, it.key) || '');
     if (c.lastChild.textContent !== txt) c.lastChild.textContent = txt;
-    c.classList.toggle('poor', !canAfford(G.own, d.cost) || (it.kind === 'work' && workFull(G.own, it.key)));
+    c.classList.toggle('poor', !canAfford(G.own, d.cost) || (it.kind === 'work' && workFull(G.own, it.key)) ||
+                               (it.kind === 'post' && craftPosts(G.own) && !craftLeft()));
     /* lit while its placement is armed, because a tap that changed nothing on screen is
        a tap the player will make again */
     c.classList.toggle('on', it.kind === 'work' && !!G.place && G.place.work === it.key);
@@ -29271,7 +29508,14 @@ function simplePost(key) {
   var slot = G.own, hq = hqOf(slot), d = BUILDINGS[key], i;
   if (!hq || !d) return;
   if (!canAfford(slot, d.cost)) { toast('Not enough ' + (G.res[slot].mp < (d.cost.mp || 0) ? 'manpower' : 'fuel')); buzz(6); return; }
+  if (craftPosts(slot) && !craftLeft()) { toast('Every landing craft on the beach is a post already'); buzz(6); return; }
   var e = simpleEngineer(); if (!e) return;
+  /* on a beach it is the craft nearest the headquarters */
+  if (craftPosts(slot)) {
+    var cn = craftNear(hq.x, hq.y, 1e5);
+    if (placeStructure(slot, key, cn.x, cn.y, [e])) { toast(d.short + ': an engineer is on the craft'); sfx('click'); buzz(10); simpleStrip(); }
+    return;
+  }
   var dir = hq.side === 'us' ? 1 : -1, first = key === 'us_bar' || key === 'ger_qtr';
   var bx = hq.x + dir * 190, by = hq.y + (first ? -150 : 150);
   var spots = [[bx, by], [bx, 2 * hq.y - by], [bx + dir * 160, by], [bx + dir * 160, 2 * hq.y - by], [hq.x, hq.y - 190], [hq.x, hq.y + 190]];
@@ -29708,10 +29952,13 @@ function buildCmds() {
         }
         addCmd(d.short, (d.cost.mp || 0) + (d.cost.fu ? ' <em>' + d.cost.fu + 'f</em>' : ''), d.hk,
           !site && canAfford(G.own, d.cost),
-          function () { G.place = { key: key, engs: engs }; toast('Click to place the ' + d.name); syncHud(); },
+          function () {
+            G.place = { key: key, engs: engs };
+            toast(craftPosts(G.own) ? 'Click a landing craft to make it the ' + d.name : 'Click to place the ' + d.name); syncHud();
+          },
           G.place && G.place.key === key);
         cmdList[cmdList.length - 1].can = function () {
-          return !siteOf(G.own, key) && canAfford(G.own, d.cost);
+          return !siteOf(G.own, key) && canAfford(G.own, d.cost) && (!craftPosts(G.own) || craftLeft());
         };
       });
       /* Repair sits with the works because it is the same arm's job, and it takes `8`
@@ -30263,6 +30510,7 @@ function startGame(side, diff, mode, arty, duo) {
   /* whether the brain is allowed indirect fire at all. Default on, because that is the
      game; off is for a player who would rather not be shelled. */
   G.aiArty = arty === undefined ? true : !!arty;
+  G.wallMan = !!chosenWall && !!(G.mapData && G.mapData.garrison);
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   missionTitle();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.smoke = []; G.sel = [];
@@ -30325,6 +30573,7 @@ function startGame(side, diff, mode, arty, duo) {
      of an economy he could not see the size of. Both are the starting-resources setting
      now: a player who wants a head start buys one, which is the same head start arriving
      in a form he chose and can count. */
+  if (G.wallMan) manWall();
 
   aiSlotsInit();
   var hq = hqOf(G.own);
@@ -30409,7 +30658,7 @@ function frame(now) {
 }
 
 /* ---------------------------------------------------------------- boot */
-var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenDuo = false;
+var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenDuo = false, chosenWall = false;
 /* The maps that ship. A map nobody can pick is a map nobody has, and the editor's PLAY
    CUSTOM MAP was the only door onto anything that was not Ortona. One table drives the
    picker, what the deploy button builds and what the briefing says, because the briefing
@@ -30457,7 +30706,20 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
     document.querySelectorAll('.gmap').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('on'); chosenMap = btn.dataset.map;
     btn.setAttribute('aria-pressed', 'true');
-    objSync(); sfx('click');
+    wallSync(); objSync(); sfx('click');
+  };
+});
+/* whether the wall is manned when the battle starts, which is a question only a map with
+   a garrison written into it can be asked, so it is shown only for one */
+function wallSync() {
+  var has = !!(MAPS[chosenMap] && MAPS[chosenMap].make().garrison);
+  document.querySelectorAll('.wallrow').forEach(function (b) { b.classList.toggle('hidden', !has); });
+}
+document.querySelectorAll('.wall').forEach(function (btn) {
+  btn.onclick = function () {
+    document.querySelectorAll('.wall').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
+    btn.classList.add('on'); chosenWall = btn.dataset.wall === '1';
+    btn.setAttribute('aria-pressed', 'true'); sfx('click');
   };
 });
 /* and how it is driven, which is kept on the device rather than decided by it */
