@@ -3361,6 +3361,70 @@ for (const device of TARGETS) {
      `${ks.blown} of 40 wrecks threw the gun, sat down at most ${ks.sink}; killed, it left ${ks.bodies} bodies of ` +
      `${ks.bodyNat}; Ortona's depot makes ${ks.ita}`);
 
+  /* --- The Panzer IV. The 352nd's tank on the beach is the Panzer IV built for it and not the
+     one built for Italy: the depot turns it out and refuses the other, the count and the
+     order book read the two as one, it wears the Wehrmacht's grey and none of the Italian
+     tank's camouflage, the man in its cupola wears the black cap and the headset and no
+     steel helmet, the seated crewman is baked, the Schürzen and their rails go on with the
+     upgrade so the bare hull stands inside its own guards, the eye is a little under three
+     metres up out of the cupola and drops to the vision blocks when the lid shuts, forty
+     wrecks throw the turret some of the time and not all of it, and killed it leaves bodies
+     of the 352nd. Ortona's depot still makes the Italian one. --- */
+  const p4 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 160, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_p4');
+    out.qP4 = W.queueUnit(dep, 'ger_p4') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_p4') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_p4') === W.madeOf(hq.own, 'hr_p4');
+    dep.queue.length = q0;
+    const t = W.spawnUnit(hq.own, 'hr_p4', hq.x - 140, hq.y + 260, 0);
+    out.count = W.countOf(hq.own, 'ger_p4'); out.countP = W.countOf(hq.own, 'hr_p4');
+    const V = W.VMODEL.hr_p4, B = W.MODELS.veh.hr_p4, H = W.HATCHES.hr_p4, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts && B.turSkirts);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.cap = H.open.filter(f => f.c === K.pz).length;
+    out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.seat = !!(W.MODELS.man.hr_tank && W.MODELS.man.hr_tank[W.POSE_SEAT]);
+    out.hullY = +Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
+    out.skirtY = +Math.max.apply(null, V.skirts.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s tank is its own Panzer IV, in the grey, with a panzer man in the cupola and its Schürzen an upgrade',
+     /hr_p4/.test(p4.makes) && !/ger_p4/.test(p4.makes) && p4.qP4 === 'hr_p4' && p4.made === 1 && p4.madeAs &&
+     p4.count >= 1 && p4.count === p4.countP && p4.bufs && p4.grey > 50 && p4.camo === 0 && p4.cap > 0 && p4.helm === 0 &&
+     p4.seat && p4.hullY < 17.6 && p4.skirtY > 19 && p4.eyeUp > 32 && p4.eyeUp < 38 && p4.eyeIn > 26 && p4.eyeIn < p4.eyeUp - 4 &&
+     p4.blown > 2 && p4.blown < 30 && p4.bodies >= 1 && p4.bodyNat === 'heer' && /ger_p4/.test(p4.ita) && !/hr_p4/.test(p4.ita),
+     `the depot makes ${p4.makes}; asked for the Italian Panzer IV it queues ${p4.qP4}, counted as ${p4.made} made and the ` +
+     `other's count ${p4.madeAs ? 'the same' : 'DIFFERENT'}; ${p4.count} on the field asked as the one and ${p4.countP} as the ` +
+     `other; buffers ${p4.bufs ? 'all built' : 'MISSING'}; ${p4.grey} hull faces in the grey and ${p4.camo} in the Italian paint; ` +
+     `the man in the cupola has ${p4.cap} faces of the black cap and ${p4.helm} of a helmet; the seated crewman ` +
+     `${p4.seat ? 'baked' : 'MISSING'}; the bare hull reaches ${p4.hullY} out and the Schürzen ${p4.skirtY}; the eye ${p4.eyeUp} ` +
+     `up out of the cupola and ${p4.eyeIn} at the blocks; ${p4.blown} of 40 wrecks threw the turret; killed, it left ` +
+     `${p4.bodies} bodies of ${p4.bodyNat}; Ortona's depot makes ${p4.ita}`);
+
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot

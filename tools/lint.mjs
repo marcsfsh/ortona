@@ -229,10 +229,18 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    sections with its well, its coaming and the spare on its tail), the MG 34 and the MG 42
    on the sidecar mount, and the motorcyclist's kit on the rig: the rubberised coat, the
    gauntlets and the goggles.
+   It is 2190 for the Panzer IV the 352nd fields: the tank built from nothing (the
+   leaf-sprung bogies with their spring stacks, the twin road wheels, the drilled sprocket
+   and the welded idler, the Kgs 61 track, the stepped nose with its spare track, the visor
+   and the ball mount, the hexagonal turret with its side doors, its bin and its drum
+   cupola, the mantlet and the L/48 with its muzzle brake, the Schürzen and their rails,
+   the Balkenkreuze and the red 415), its cupola and turret interior, the MG 34 on the
+   Fliegerbeschussgerät and the man who stands to it, and the panzer crewman on the rig:
+   the black wrap, the M43 cap and the headset.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2130) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2130 kB so it stays quick to load on a phone`);
+if (kb > 2190) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2190 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

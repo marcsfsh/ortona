@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the grenadier squad, the jeep, the M4 and the KS 750 are the first, and
-everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+rifle squad, the grenadier squad, the jeep, the M4, the KS 750 and the Panzer IV are the
+first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -856,7 +856,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
-the jeep, 2090 before the M4, and 2130 before the KS 750). Takes
+the jeep, 2090 before the M4, 2130 before the KS 750, and 2190 before the Panzer IV). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1045,7 +1045,14 @@ crew are baked on the machine and on the mount with the MG 42 built beside the M
 seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the
 mount's arc and no further, the periscope's eye is the gunner's at fourteen-odd units up,
 forty wrecks throw nothing and sit down under 1.7 units, killed it leaves two bodies of the
-352nd, and Ortona's depot still makes the 222.
+352nd, and Ortona's depot still makes the 222. The Panzer IV is asked it in a sixth: the depot
+makes the 352nd's and not the Italian one and queues it when asked for the other, the count and
+the order book read the two as one, it wears the grey and not one face of the Italian tank's
+camouflage, the man in its cupola wears the black cap and no helmet, the seated crewman is
+baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further than
+its guards, the eye is a little under three metres up out of the cupola and drops to the vision
+blocks when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves
+bodies of the 352nd, and Ortona's depot still makes the Italian one.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3297,6 +3304,63 @@ jeep's 21 goes as the cube of the ratio below a third. The MG 42 is the jeep's r
 .50 turned round: the same damage a second as the MG 34, laid half as fast again with a little
 more suppression, and it reads 58 per cent against the squad where more damage read every fight.
 
+**The Panzer IV is the 352nd's tank**, in the Italian one's place (`ger_p4` to `hr_p4` on the
+army's list), and it is built from nothing rather than out of that one's parts: the Ausf. H with
+the long 7.5 cm KwK 40 L/48, laid out with the driver on the left and the bow gunner on the
+right, which the Italian model beside it is not. **Every vehicle built for the 352nd is in the
+Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint), where the paratroopers' vehicles
+stay in their sand; the KS 750 wears it too. Its numbers are the Italian Panzer IV's, because the
+gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.96 m long against 5.92,
+7.05 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
+(the cupola lid is not in the measured mount), a body of 2.36 against 2.36 and 0.40 of clearance.
+
+What carries it, and each is built its own way. **The bogie is a bracket with the leaf spring
+laid across the top of its two swing arms** (`hp4Bogie`), clamped in the middle, five leaves with
+the longest at the bottom, so it reads as the stepped stack it is from the side; the front and
+rear bogies carry a shock absorber. **The road wheels are twin tyres with the guide horns' gap
+between them**, nearly touching within a bogie, the sprocket is drilled with eight lightening
+holes on its final drive housing and the idler is welded, open, on its spokes. **The nose is
+stepped**: the nose plate leaning back fourteen degrees with a run of spare track across it
+(`hp4NoseX`), the glacis laid back at seventy-two with the two brake hatches in it
+(`onHp4Glacis`), and the superstructure front at nine with the visor on the left and the ball
+mount on the right (`hp4FrontX`). **The turret is a plan with a lean per wall** (`HP4T.plan`,
+`HP4T.lean`, `hp4TurPlan`): each wall is moved in along its own normal by its lean and the
+corners are found again where the moved walls meet, so every plate stays a plane however far it
+leans, and the side doors are laid on the side plane by `roll` (`hp4TurSideY`). The cupola bulges
+out of the rear plate over the bin, and **the turret ring sits 66 mm left of the centreline**
+(`turY`), as the Panzer IV's did.
+
+**The Schürzen are the upgrade, rails and all** (`hp4Skirts`, `hp4TurSkirts`, `hp4Rails`): five
+plates a side hooked over the rail and a horseshoe round the turret with a two-leaf door in each
+side in line with the turret's own. The rails go on with the plates so the bare hull measures over
+its guards the way the published width does. **The markings are flat paint laid a hair off the
+plate** (`hp4Decal`): the Balkenkreuz as three bars in white and three in black because a cross
+is not a convex outline (`hp4Cross`), and the red 415 outlined in white out of a block hand of a
+few strokes a digit (`HP4DIG`, `hp4Number`), on the turret sides and the bin when the Schürzen are
+off and on the Schürzen when they are hung.
+
+**The man in the cupola is a panzer crewman** (`hr_tank`, `V.panzer`): the black wrap jacket cut
+to the waist, double-breasted with the flap closing on a slant and the broad collar open over the
+field-grey shirt, the pink piping round its edge and a white metal skull on each point; the black
+trousers gathered over the boots; the black M43 cap with its peak, its curtain buttoned twice at
+the front and the eagle over the cockade, and the headset over it (`capPanzer`); and a belt and a
+holster and nothing a hatch would catch (`figKitPanzer`). His hands rest on the rim in front of
+him (`hp4Commander`), because hanging at his sides they came out through the drum. The same man
+sits at the gunner's and loader's stations inside, and stands to the MG 34 on the
+Fliegerbeschussgerät when it is fitted (`hp4CupolaMG`, `hp4CupolaMan`).
+
+**The interior is drawn round the cupola's vision blocks** (`VIN.hr_p4`): head in, his eye is in
+the drum and what he looks out through is a band the whole way round broken by the five posts
+between the blocks, so the turret shell is left out while the lid is shut (`hide: 'tur'`). Nothing
+of the turret shows through a block from where his eye is, and drawn, its roof and the cupola's
+own caps stood between him and the room he looks down into. Head out, the hole in the cupola's top
+cap lets him look down into the turret: the rings, the seat, the breech, the gunner.
+
+**Its numbers are the Italian Panzer IV's, and the card agrees.** Over twelve runs the M4 wins a
+third of its fights with it, which is inside the swing the card has shown on the Italian one against
+the Sherman V and the M4, and it takes the American squad eight times in eight inside eight seconds,
+because nothing in that squad opens a tank.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -5497,6 +5561,17 @@ shots/                         screenshot output, gitignored
   occluder and gives it the grime and dust a hull collects, so a man standing to a roof gun
   came out the colour of the mud. Put him in `mgMan`, which is drawn with the gun and baked as
   a receiver the way `crew` is.
+- **An upgrade baked as an occluder shades its vehicle whether or not it is fitted.** The
+  Schürzen were put through the occlusion bake as occluders, so every plate that might be hung
+  shaded the hull side, the running gear and the turret sides behind it in every picture of
+  the tank without them: the new Panzer IV came out black from the guards down and grey on the
+  roof. They are baked as receivers now, the way the alternative mounts are, and the Italian
+  Panzer IV and the Wirbelwind came out lighter for it.
+- **Paint laid on a plate reads the right way round when its across-axis is the plate's
+  outward normal crossed with up.** Written as -y on the rear of the bin, the 415 came out
+  mirrored in the photograph while the two on the sides read correctly; `u = n x z` gives +x on
+  the right side, -x on the left and +y on the rear, and that is the rule `hp4Number` is called
+  with.
 - **A seated man's hip is a hip's depth above what he sits on.** The rig's seat of the
   trousers runs 1.2 units under the hip joint, 1.3 in the motorcyclist's coat, so a hip put
   at the height of a saddle puts the man most of a unit into it. Measure the figure's own

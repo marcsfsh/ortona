@@ -77,6 +77,10 @@ const CARD = [
   ['hr_ks750', 'am_jeep'],
   ['hr_ks750', 'us_rifle'],
   ['hr_ks750', 'us_m8'],
+  /* and the Panzer IV the 352nd fields in the Italian one's place: against the M4 it meets
+     on the beach and the squad */
+  ['am_sher', 'hr_p4'],
+  ['hr_p4', 'am_rifle'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

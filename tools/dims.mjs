@@ -74,6 +74,10 @@ const REAL = {
   ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
                well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
+  hr_p4:     { name: 'Panzer IV Ausf. H (Heer)', len: 5.92, gun: 7.02,  wid: 2.88,  hgt: 2.68,
+               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the same tank as the one above,
+               built again from nothing, so the same published figures: the width is over the track
+               guards, which is what it is without the Schürzen, and 3.33 m with them */
   ger_wirb:  { name: 'Flakpanzer IV Wirbelwind', len: 5.92, gun: 5.92, wid: 2.90,  hgt: 2.76,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Panzer IV hull unchanged
                underneath, so length, body, roof and clearance are its figures. gun equals len because
@@ -155,6 +159,9 @@ const PROBE = {
   ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
                clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
                rod aerial standing off the right rear of the superstructure */
+  hr_p4:     { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the slice is taken
+               between the second and third Schürzen brackets and forward of the cross, where the
+               superstructure side is bare; hullZ drops the rod aerial on the left rear of the deck */
   ger_wirb:  { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the same
                hull as the Panzer IV, so the same two slices: the body clears the Schuerzen stanchions and
                roofZ sits on the superstructure roof, which on this vehicle is the plate the open turret
