@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the grenadier squad, the pioneer team, the jeep, the M4, the
-KS 750 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -856,8 +856,8 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
-the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, and 2230
-before the engineer squad). Takes
+the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
+before the engineer squad, and 2290 before the 251). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1065,6 +1065,14 @@ pioneers and queues it when asked for them, the side opened with one, its three 
 three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown
 pack and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man
 of it killed goes down as `heer_pio`, and Ortona's headquarters still makes the paratroopers.
+The 251 is asked it in a ninth: the depot makes the 352nd's and not the Ausf. D and queues it
+when asked for the other, the count and the order book read the two as one, it wears the grey and
+not one face of the sand, the driver and the gunner wear field grey under a helmet and the seated
+man is baked, a grenadier squad boards it and a second is refused, it is put down behind the
+vehicle, a gun asked to lay 1.2 radians off the nose comes to the edge of the pintle's arc, the
+periscope's eye is the gunner's, standing, at twenty-odd units up, forty wrecks throw nothing and
+all sit down at least 2.2 onto the belly, killed it leaves bodies of the 352nd and the squad
+aboard comes out alive, and Ortona's depot still makes the Ausf. D.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3455,6 +3463,56 @@ third of its fights with it, which is inside the swing the card has shown on the
 the Sherman V and the M4, and it takes the American squad eight times in eight inside eight seconds,
 because nothing in that squad opens a tank.
 
+**The 251 is the 352nd's half-track**, in the Ausf. D's place (`ger_h251` to `hr_251` on the
+army's list), and it is built from nothing rather than out of that one's parts: the Sd.Kfz.
+251/1 Ausf. C, the Hanomag of 1940 to 1943 with the one-piece nose and the lockers standing out
+along both sides, open above, in the grey (`HKC` off `HRG`). Two men and no passengers: the
+driver on the left behind the plate and a gunner standing to the MG 34 on the pintle at the front
+of the compartment, with the commander's seat and the benches for ten empty. It carries one
+section (`carries`), which goes out of sight aboard it the way a section goes into the carrier,
+and is not drawn on the benches. On `tools/dims.mjs` it reads 5.85 m long against 5.80, 2.09
+wide over the lockers against 2.10, 1.73 across the body at the crease against 1.73, 1.75 to the
+rim against 1.75 and 0.32 of clearance.
+
+What carries it, and each is built its own way. **The running gear is interleaved** (`hkStation`):
+six stations a side on torsion arms, the first, third and fifth an outer and an inner disc and
+the others a double disc in the middle row, so from the side the wheels alternate whole and half hidden. Only
+the outer face of the outer row has the eight holes (`hkDisc`, `rich` 2); the outer face of the
+middle row, which shows between them, has the dish and the hub (1), and nobody sees the rest. No
+return rollers: the top run lies on the wheels. The spoked sprocket is at the front and the spoked
+idler at the back, and **the front axle is steered** on a transverse leaf with two 190-18 tyres
+(`hkFrontWheel`, `hkFrontAxle`) under mudguards whose outer edge is turned down (`hkMudguards`),
+each with its headlamp on top. **The body is seven rings** (`HKST`), each a bottom, a crease and a
+top point on one side, and every plate is laid between two of them, so the lower sides lean in to
+the belly, the upper sides lean in to the rim and the bonnet climbs from the nose to the driver's
+plate: a set of facets with a weld bead down the crease and round the rim. The rear plates meet
+at the crease the way the sides do, and **the two doors are bent over it** (`hkRear`), a panel on
+each plate in a frame whose x runs across the vehicle and whose y runs up the plate. Anything
+fixed to a plate is put there by `hkOn` in the plate's own frame off `hkPlate`: the visor flaps on
+the driver's plate with the cross between them, the vision flaps and the cross on the upper sides,
+the louvred hatch on each engine side, the bonnet hatches and the radiator louvres.
+
+**The compartment is furnished** (`hkCab`): the two front seats, the wheel coming back on its
+column through the firewall, the levers and the instrument panel under the plate, the socket the
+pintle drops into, a cushion and a back pad for each man on the benches with the rifle rail over
+them, and the MG's ammunition boxes by the gunner's feet. **The MG 34 is the KS 750's gun**
+(`ksGun34`, pulled out of `ksMG34` so the two carry one gun) on a post and cradle of its own
+(`hkMG34`), laid about its balance point on the pintle, with no shield, as in the photograph it
+was drawn from. **The gunner turns with the gun about the pintle** (`turCrew`), which is where the
+mount's origin is, and the gun traverses 0.3 radians either way (`arc` 0.6) with the vehicle
+turning to bring it further, because swung wider he walks into the driver. Both men are
+`hr_crew`, the grenadier in field grey under a plain helmet with nothing in his hands, put on the
+wheel and the grips by the jeep's correction (`hkMan`): the driver's eye is at the visor, 18.6
+up, and his helmet is under the top of the plate, so from outside he is seen only from above; the
+gunner stands with his knees bent and his eye a unit and a half over the bore. `VIN.hr_251` is the
+open vehicle's room, which is nothing, with the eye his.
+
+**Its numbers are the Ausf. D's**, because the plate, the gun and the engine are, and the card
+agrees with what those numbers were already doing: over twelve runs it takes the American squad
+every time in twenty-one seconds with 98 per cent of itself left, and the Ausf. D reads the same on
+the same afternoon, because nothing in the squad opens it. It takes the jeep twelve times in
+twelve inside eleven seconds, and the M4 takes it eight in eight inside ten.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -5679,6 +5737,12 @@ shots/                         screenshot output, gitignored
   hips at 1.2 units, every pose. It takes the root and the direction off the first six faces now
   and the length off how far the limb reaches along that direction, which for a bare frustum is
   its own tip. Anything added to a limb goes AFTER its frustum, or the probe reads the wrong axis.
+- **A face is oriented off its first three vertices, and three in a line have no normal.**
+  `hkFace` turns a polygon to face the way it is asked by reading `faceNormal` of its first three
+  corners, and the 251's floor was written as a hexagon whose first three corners lay along one
+  side: the normal was nought, the face was never turned, and it was culled from above. Every
+  photograph of the compartment had the ground showing through it. Drop a vertex that lies on a
+  straight edge, or start the polygon at a corner.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

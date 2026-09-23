@@ -92,6 +92,11 @@ const CARD = [
      the squad it meets */
   ['am_eng', 'hr_pio'],
   ['hr_pio', 'am_rifle'],
+  /* and the 251 the 352nd fields in the Ausf. D's place: against the squad it meets, the
+     jeep, and the M4 that opens it */
+  ['hr_251', 'am_rifle'],
+  ['hr_251', 'am_jeep'],
+  ['am_sher', 'hr_251'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

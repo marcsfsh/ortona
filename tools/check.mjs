@@ -3443,6 +3443,87 @@ for (const device of TARGETS) {
      `up out of the cupola and ${p4.eyeIn} at the blocks; ${p4.blown} of 40 wrecks threw the turret; killed, it left ` +
      `${p4.bodies} bodies of ${p4.bodyNat}; Ortona's depot makes ${p4.ita}`);
 
+  /* --- The 251. The 352nd's half-track on the beach is the Ausf. C built for it, standing in
+     for the Ausf. D built for Italy: the depot turns it out and refuses the other, the count
+     and the order book read the two as one, it wears the grey and none of the paratroopers'
+     sand, the driver rides with the hull and the gunner with the MG 34, both in field grey
+     under a helmet, and nobody else is drawn on it. It takes one squad aboard and puts it
+     down again, and a squad aboard when it burns comes out alive. The gun comes round no
+     further than the pintle lets it, the periscope's eye is the gunner's, standing, forty
+     wrecks never throw the gun off and all sit down onto the belly, and killed it leaves
+     bodies of the 352nd. Ortona's depot still makes the Ausf. D. --- */
+  const hk = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 200, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_251');
+    out.q = W.queueUnit(dep, 'ger_h251') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_251') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_h251') === W.madeOf(hq.own, 'hr_251');
+    dep.queue.length = q0;
+    const v = W.spawnUnit(hq.own, 'hr_251', hq.x - 140, hq.y + 300, 0);
+    out.count = W.countOf(hq.own, 'ger_h251'); out.countH = W.countOf(hq.own, 'hr_251');
+    const V = W.VMODEL.hr_251, B = W.MODELS.veh.hr_251, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
+    out.sand = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
+    out.helm = V.crew.concat(V.turCrew).filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.coat = V.crew.concat(V.turCrew).filter(f => f.c === K.coat || f.c === K.coatD).length;
+    out.seat = !!(W.MODELS.man.hr_crew && W.MODELS.man.hr_crew[W.POSE_SEAT]);
+    /* one squad aboard, and down again behind it */
+    const g = W.spawnUnit(hq.own, 'hr_gren', v.x - 60, v.y, 0);
+    out.can = W.canBoard(g, v);
+    W.boardVehicle(g, v);
+    out.aboard = g.inside === v && v.cargo === g;
+    const g2 = W.spawnUnit(hq.own, 'hr_gren', v.x + 60, v.y, 0);
+    out.second = W.canBoard(g2, v);
+    W.unloadVehicle(v);
+    out.down = !g.inside && !v.cargo && Math.hypot(g.x - v.x, g.y - v.y) > 20;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
+    out.arc = v.def.arc / 2;
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    /* and a squad aboard when it burns comes out of it */
+    W.boardVehicle(g, v);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.updateUnit(g, .02);
+    out.out = !g.inside && !g.dead && g.models.some(m => m.alive);
+    W.killUnit(g); W.killUnit(g2);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s half-track is its own 251, in the grey, with a driver and a gunner and room for one squad',
+     /hr_251/.test(hk.makes) && !/ger_h251/.test(hk.makes) && hk.q === 'hr_251' && hk.made === 1 && hk.madeAs &&
+     hk.count >= 1 && hk.count === hk.countH && hk.bufs && hk.grey > 50 && hk.sand === 0 && hk.helm > 0 && hk.coat > 0 &&
+     hk.seat && hk.can && hk.aboard && !hk.second && hk.down && hk.lay <= hk.arc + 1e-3 && hk.eye > 21 && hk.eye < 27 &&
+     hk.blown === 0 && hk.sink >= 2 && hk.bodies >= 1 && hk.bodyNat === 'heer' && hk.out &&
+     /ger_h251/.test(hk.ita) && !/hr_251/.test(hk.ita),
+     `the depot makes ${hk.makes}; asked for the Ausf. D it queues ${hk.q}, counted as ${hk.made} made and the other's count ` +
+     `${hk.madeAs ? 'the same' : 'DIFFERENT'}; ${hk.count} on the field asked as the one and ${hk.countH} as the other; ` +
+     `buffers ${hk.bufs ? 'all built' : 'MISSING'}; ${hk.grey} hull faces in the grey and ${hk.sand} in the sand; the crew have ` +
+     `${hk.helm} faces of helmet and ${hk.coat} of field grey, the seated man ${hk.seat ? 'baked' : 'MISSING'}; a squad ` +
+     `${hk.can ? 'may board' : 'REFUSED'}, ${hk.aboard ? 'is aboard' : 'is NOT aboard'}, a second ${hk.second ? 'MAY board too' : 'is refused'}, ` +
+     `and it is ${hk.down ? 'put down behind' : 'NOT put down'}; asked to lay 1.2 off the nose the gun came to ${hk.lay} against ` +
+     `an arc of ${hk.arc}; the periscope's eye ${hk.eye} up; ${hk.blown} of 40 wrecks threw the gun, the least sat down ${hk.sink}; ` +
+     `killed, it left ${hk.bodies} bodies of ${hk.bodyNat} and the squad aboard ${hk.out ? 'came out' : 'DID NOT come out'}; ` +
+     `Ortona's depot makes ${hk.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

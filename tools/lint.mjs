@@ -242,10 +242,17 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    trousers are bloused over), the assault vest, the pack with its blanket roll and the three
    loads it carries, the goggles on the M1, the M3 submachine gun, and his own prone and
    dead layouts so he falls as an engineer.
+   It is 2290 for the 352nd's half-track: the Sd.Kfz. 251 Ausf. C built from nothing (the
+   interleaved running gear on its torsion arms with the holed discs, the spoked sprocket
+   and the idler, the steered front axle on its leaf spring and its two tyres, the faceted
+   body in seven rings with the crease welded down both sides, the bonnet, the driver's
+   plate and its visors, the lockers, the mudguards and their lamps, the rear doors bent
+   over the crease), the open compartment with its seats, wheel, instruments and benches,
+   the MG 34 on its pintle, and the driver and the gunner.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2230) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2230 kB so it stays quick to load on a phone`);
+if (kb > 2290) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2290 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
