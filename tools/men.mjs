@@ -378,7 +378,7 @@ function GEO(opt) {
       const bootLen = P.boots && P.boots.length ? Math.max.apply(null, P.boots.map(b => { const e = ext(b); return e.x1 - e.x0; })) : null;
       const helmE = P.helmet && P.helmet.length ? ext(P.helmet) : null;
       rows.push({
-        v, side,
+        v, side, nat: SOLDIER_VARIANTS[v].nat || side,
         stature: J.crown[2] - sole, above: J.crown[2],
         headH: sk.z1 - sk.z0, headW: sk.y1 - sk.y0,
         plate: P.plate && P.plate.length ? ext(P.plate).y1 - ext(P.plate).y0 : null,
@@ -396,8 +396,8 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook'].forEach(type => {
-      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger' : 'us'], type);
+    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand'].forEach(type => {
+      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger' : type === 'garand' ? 'usa' : 'us'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -521,6 +521,8 @@ function GEO(opt) {
         if (!r.flat) {
           if (Pp.chest && Pp.chest.length) into.push(['chest', Pp.chest]);
           if (Pp.smock && Pp.smock.length) into.push(['smock', Pp.smock]);
+          /* the American's jacket stands out below his belt as a skirt of its own */
+          if (Pp.skirt && Pp.skirt.length) into.push(['skirt', Pp.skirt]);
           if (Pp.hips && Pp.hips.length) into.push(['hips', Pp.hips]);
           if (Pp.pack && Pp.pack.length) into.push(['pack', Pp.pack]);
           (Pp.pouches || []).forEach((q, i) => into.push(['pouch ' + i, q]));
@@ -537,7 +539,7 @@ function GEO(opt) {
           if (Pp.shell && Pp.shell.length) pairs.push(['weapon in helmet', Pp.weapon, Pp.shell]);
         }
         if (!r.flat && Pp.thighs && Pp.thighs.length === 2) {
-          into.filter(t => t[0] === 'hips' || t[0] === 'smock').forEach(t => { pairs.push(['left thigh in ' + t[0], distal(Pp.thighs[0]), t[1]]); pairs.push(['right thigh in ' + t[0], distal(Pp.thighs[1]), t[1]]); });
+          into.filter(t => t[0] === 'hips' || t[0] === 'smock' || t[0] === 'skirt').forEach(t => { pairs.push(['left thigh in ' + t[0], distal(Pp.thighs[0]), t[1]]); pairs.push(['right thigh in ' + t[0], distal(Pp.thighs[1]), t[1]]); });
           pairs.push(['left thigh in right thigh', Pp.thighs[0], Pp.thighs[1]]);
         }
         const out = pairs.map(p => ({ pair: p[0], d: deepest(p[1], p[2]) }));
@@ -639,8 +641,12 @@ function GEO(opt) {
   if (opt.do.material) {
     const rows = [];
     variants.forEach(v => {
-      ['stand', 'prone'].forEach(name => {
+      /* and the aimed pose, because the head is moved to the stock there: moved with at(),
+         which drops a face's tile, every helmet on the roster came out on the generic tile
+         whenever its man fired, and the two postures this read were the two that never aim */
+      ['stand', 'fire', 'prone'].forEach(name => {
         if (RIG && SOLDIER_VARIANTS[v].set === 'hull' && name !== 'seat') return;
+        if (name === 'fire' && SOLDIER_VARIANTS[v].set !== 'field') return;
         const r = rec(v, { name: RIG && SOLDIER_VARIANTS[v].set === 'hull' ? 'seat' : name, frame: 0 });
         if (!r.ok) return;
         const tiles = {}; let untagged = 0, alpha = 0, generic = 0;
@@ -678,7 +684,7 @@ function GEO(opt) {
         const T = M.man[v] || {};
         Object.keys(T).forEach(p => { const s = T[p]; const run = Number(p) === POSE_RUN; (s.frames || [s]).forEach(b => add(acc, b, run)); });
         const st = T[POSE_STAND] || T[POSE_SEAT]; acc.stand = st ? st.n / 3 : 0;
-        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle')) { const s = SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
+        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle')) { const s = SOLDIER_VARIANTS[v].nat || SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
       } else {
         ['sol', 'solA', 'crawl', 'crawlA'].forEach(k => (M[k][v] || []).forEach(b => add(acc, b)));
         ['prone', 'proneA', 'crouch', 'crouchA', 'fire', 'fireA', 'cfire', 'cfireA'].forEach(k => add(acc, M[k][v]));
@@ -842,7 +848,7 @@ function PIX(opt) {
     const dists = MOB ? [[600, .75], [760, 1.0], [900, .75]] : [[600, .75], [900, .75]];
     dists.forEach(dp => {
       const B = ground(dp[0], dp[1]);
-      [['us', 'can_rifle'], ['ger', 'fj_rifle']].forEach(sv => {
+      [['us', 'can_rifle'], ['usa', 'gi_rifle'], ['ger', 'fj_rifle']].forEach(sv => {
         ['stand', 'prone'].forEach(pose => {
           const m = row(sv[1], pose, 0, FRONT, dp[0], dp[1], B);
           R.read.push(Object.assign({ dist: dp[0], pitch: dp[1], side: sv[0], variant: sv[1], pose }, m));
@@ -912,7 +918,7 @@ function show(c, base) {
       const bc = k => (BP ? (b[k] === undefined ? null : b[k]) : undefined);
       const cells = [cell(r.stature, 20.35, .04, bc('stature')), cell(r.headH, 2.65, .08, bc('headH')), cell(r.headW, 1.82, .08, bc('headW')),
                      cell(r.plate, 5.27, .08, bc('plate')), cell(r.hips, 4.4, .08, bc('hips')), cell(r.inseam, 9.56, .06, bc('inseam')),
-                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
+                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(r.v, 13) + cells.map(q => q.s).join('') + f2(r.apart));
     }
@@ -923,7 +929,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.88, zook: 16.12 };
+    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.88, zook: 16.12, garand: 13.02 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);
@@ -1185,6 +1191,20 @@ function show(c, base) {
           say(ger.contrast >= -.45 && ger.contrast <= -.10, `the FJ's contrast to the ground is ${f3(ger.contrast)}, wants -0.45 to -0.10`);
           const dr = [0, 1, 2].map(i => Math.abs(us.rgb[i] - ger.rgb[i]));
           say(Math.max.apply(null, dr) >= 12, `the sides' mean RGB differ by ${dr.map(Math.round).join(',')} levels, wants 12 in one channel`);
+        }
+        /* The American is on the same side as the Canadian and fights the same enemy, so
+           what he has to be is told apart from the FJ: a dark netted crown
+           under the FJ's pale one, a mean apart from him, and a contrast to the ground
+           in the band both of the others sit in. */
+        const am = X.read.find(r => r.dist === dist && r.side === 'usa' && r.pose === 'stand');
+        if (am) {
+          say(ger.top - am.top >= needTop, `the FJ's top fifth is ${f3(ger.top - am.top)} above the American's, wants ${needTop}`);
+          say(Math.abs(ger.lumFig - am.lumFig) >= needMean, `the American and the FJ are ${f3(Math.abs(ger.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
+          if (!phone) {
+            say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
+            const da = [0, 1, 2].map(i => Math.abs(am.rgb[i] - ger.rgb[i]));
+            say(Math.max.apply(null, da) >= 12, `the American and the FJ differ by ${da.map(Math.round).join(',')} levels, wants 12 in one channel`);
+          }
         }
       });
       foot('read ' + dev, bad, of);

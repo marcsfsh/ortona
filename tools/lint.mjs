@@ -204,10 +204,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    It is 1945 for what the beach is for: a post made out of a landing craft (the tents,
    the gantry and the stores laid in and round the hull), the garrison the wall can be
    manned with at the whistle, and the Normandy pieces in the editor.
+   It is 1970 for the first of the American army: a third kit on the one rig (the M1941
+   jacket, the leggings, the cartridge belt and the haversack), the M1 helmet swept round a
+   plan ellipse under a net of its own, the Garand, and the table that says which army the
+   Allied side is on which map.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1945) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1945 kB so it stays quick to load on a phone`);
+if (kb > 1970) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1970 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

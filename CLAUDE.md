@@ -1,8 +1,10 @@
 # Ortona
 
-A single-file, real-time tactical battle game: 1st Canadian Infantry Division against
-1. Fallschirmjäger-Division. Custom WebGL2 renderer, no engine, no dependencies, no
-build step.
+A single-file, real-time tactical battle game: the Allies against 1. Fallschirmjäger-Division.
+The Allied side is the army of the map: the 1st Canadian Infantry Division in Italy, and the
+US 29th Infantry Division on Omaha Beach, whose army is being built a unit at a time (the
+rifle squad is the first, and everything else it fields is still Canadian). Custom WebGL2
+renderer, no engine, no dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
 **The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
@@ -467,6 +469,39 @@ and a half, and every vehicle built costs about 580 ms against 210 before.
 **SIZE** is faces and vertices per vehicle, because `aoSplit` cuts the big plates and a
 detail pass that quietly trebles the roster is a detail pass that does not run. It is
 152,000 faces over twelve vehicles and the split adds about a hundred of them.
+
+### `tools/men.mjs` - the figure, mechanically
+
+A man is judged by looking at him for the read of a side and the set of a pose, and by this
+for everything a photograph rounds to "fine": whether his feet are on the ground, whether a
+forearm runs through his jacket, whether a hand is on the rifle or a unit inside it, whether
+the flash lands on the muzzle, and which tile each face is drawn on.
+
+```sh
+node tools/men.mjs                         # the card
+node tools/men.mjs proportion clip         # two sections of it
+node tools/men.mjs --only=gi_rifle         # one variant
+node tools/men.mjs read --device=phone     # the framebuffer rows on one device
+node tools/men.mjs --base=HEAD             # the older file beside it
+```
+
+PROPORTION is the figure against a 1.73 m man in units of 8.5 cm, the helmet against its
+published shell and every weapon against its published length. CONTACT, SKATE and GRAVITY are
+the feet, the planted foot and the balance. GRIP is palm to metal, point to triangle. CLIP is
+one part inside another, AIM the bore against the facing and the eye against the bore, MUZZLE
+the flash against the barrel, WIND a limb built inside out. MATERIAL is the tile each face
+lands on, SIZE what the roster weighs in buffers. FOOTPRINT and READ are read off the
+framebuffer at play distance on both devices, and READ carries the one rule the figures are
+designed round: the Canadian and the FJ, and now the American and the FJ, have to be told
+apart by their top fifth and their mean.
+
+Two things about reading it. **Stature is measured to the top of the helmet**, so a deep
+helmet counts against it: the M1 put the American at 4.5 per cent over on its first build,
+and the fix was to seat the helmet lower and make it a little flatter. And
+**READ is a budget the whole palette shares**: warming the American's jacket and lightening
+his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the FJ against a
+floor of 0.05, and it was the webbing that gave the margin back. The GRIP misses it reports on
+the Canadian and German riflemen predate the American.
 
 ### `tools/terrain.mjs` - the ground, mechanically
 
@@ -962,6 +997,16 @@ German cap and none of them gone from its post after a minute of battle. They ru
 the map rows because they leave the world on Omaha: put between the two rows above them,
 which read the Gothic Line the row before them left standing, the old single row took both
 down, and what that looked like was a churn that had stopped being painted.
+
+**And a fourth asks the beach which army it is fought by.** The side button on the title
+screen has to name the 29th Infantry Division, the sections the Allied side opens with have
+to be American squads of six in both variants, the headquarters has to make the American
+squad and queue it when it is asked for the Canadian section, a man of the squad who is
+killed has to go down and lie as an American, and a brain playing the Allied side from the
+whistle has to order American squads and no Canadian sections in its first 45 seconds. Then
+the Ortona button has to put the Canadians back. A nation that one door forgets is a
+Canadian section walking up an American beach, which in a photograph of a battle looks like
+nothing at all.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -2917,6 +2962,70 @@ hull pivots at about a radian a second to bring it inside, `u.turret` is clamped
 the arc in `updateModels`, and `fireAt` refuses until it is inside. `VMODEL.fixed`
 draws the hatches with the hull rather than the mount, and `addUp` meshes are drawn
 for every fitted upgrade key, not only the one that swaps the gun.
+
+**The American army.** The Allied side is 'us' everywhere in the file and stays that way;
+which army it is belongs to the map. `NATIONS` is two entries, the Canadians and the 29th
+Infantry Division, each a name for the title screen, the HUD and the after-action page, and
+a substitution list keyed by the Canadian unit it replaces. A map names its army in
+`data.allies` (Omaha says `'usa'`), `buildMap` calls `setNation`, and `natKey(key)` and
+`makesOf(b)` are the only readers: the production bar, the SIMPLE strip, `queueUnit` (which
+maps whatever key it is handed, so a brain out of an older revision still buys on the
+beach), the brain's role table and the two sections each side opens with all go through
+them, so a unit added to the American list reaches every door at once and anything the list
+does not name is still the Canadian unit. The title screen's side button follows the chosen
+ground (`sideSync`), and a body keeps the army it fell in (`natOf`, `c.nat`), because the
+Canadian and the American are both 'us' and `MODELS.fall` and `MODELS.dead` are keyed by
+army.
+
+**The rifleman is a third kit on the one rig**: `KIT.usa`, with the builders branching on
+`V.nat`. What he is, from the top: the M1 helmet under its net; the M1941
+field jacket in light poplin, belted, so it stands out below the belt over the seat of the
+trousers (`skirt`) with a storm flap down the front and the dark collar of his wool shirt
+under his chin; dark wool trousers bloused over canvas M1938 leggings (`figLeg`'s third
+anklet mode) and russet shoes; the M1923 cartridge belt with ten pockets round his waist, the
+M1928 haversack high between the shoulder blades with the mess tin pouch on the flap, the
+shovel's carrier strapped under it and its handle hung down behind, the bayonet on the left
+side hilt up, the canteen on the right hip and the first-aid pouch below the buckle
+(`figKitGI`); and the 29th Division's blue and grey monad on the left shoulder. Two variants
+make a squad of six (`gi_rifle`, `gi_rifle_b`): the second wears a cloth bandolier across his
+chest and two grenades on his straps, has hessian through his net and a field dressing tucked
+into it.
+
+He reads in bands where the Canadian reads as one bolt of serge: a dark netted pot, a pale
+jacket, dark legs and pale leggings, which is what is left of him at nine hundred units. On
+the card, at 600 units his mean luminance is 0.352 against the FJ's 0.414 and the FJ's top
+fifth is 0.17 above his, with his contrast to the ground at -0.28, inside the band the other
+two sit in.
+
+**The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
+level, and what says M1 is a pot longer than it is wide whose sides come down over the ears
+lower than its front comes down over the brow, with a short flange flared most at the front and
+back. A plan ellipse 28 cm by 23 is scaled up a profile, the rim is dropped at the sides by a
+term that fades out up the wall, and every vertex carries the normal of the surface it lies on,
+so twelve segments read as a dome. The liner closes the underside, the chinstraps hang loose
+from their bails, and the net is an atlas tile of its own (`usnet`): a square mesh drawn on the
+diagonal, six cells to the tile so it repeats without a seam, painted about the atlas mean so
+the value stays in the vertex colour. `helmetOf` is the one chooser the standing, prone and
+dead builders all call.
+
+**The Garand is cut as a side profile** (`weaponModel(k, 'garand')`): one long piece of walnut
+from the butt to the lower band with a toe line that rises to a semi-pistol grip, a prism
+extruded across the rifle and rolled upright, then the butt plate, the receiver with its
+aperture sight and operating handle, the op rod beside the rear handguard, the two
+handguards, the lower band, the gas cylinder and the front sight on bare steel, and the web
+sling from swivel to swivel. It measures 13.02 units against a published 1,107 mm. Its anchors
+(`WEAP.garand`) put the butt at the shoulder with the eye 0.62 above the bore and the support
+hand under the fore-end. A corpse's Garand lies on its side, because laid upright the way the
+Lee is, its stock and sling put half of it in the ground.
+
+**The squad's numbers come off the duel card.** Six men with semi-automatic rifles on the first
+numbers won 92 per cent against the German section where the Canadian section wins 67, and a
+lower damage per round still won 94. The reason is arithmetic: each man fires one round a
+volley, so six men against five is 36 to 25 before anyone is hit, and the squad only balances
+when each rifleman hits for less than a Canadian with a Bren behind him. At 7.2 a round, 0.74
+seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent against the
+German section and 56 against the Canadian section, which is inside what sixteen runs of two
+identical units produce.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -5056,6 +5165,7 @@ tools/brain.mjs                the AI card: sight, plan, and which rules ever fi
 tools/sight.mjs                sight card: the trace, what a position commands, spotting time
 tools/model.mjs                model card: the occlusion bake, its cost, and what is in each vehicle
 tools/terrain.mjs              ground card: grain by scale and distance, and what shimmers
+tools/men.mjs                  infantry card: proportion, contact, grip, clipping, tiles, and the read at play distance
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/wreck.mjs                destruction card: the breach, the collapse, the heap, the grids
 tools/fx.mjs                   effects card: the muzzle blast, the tracer, the burst, off the framebuffer
@@ -5070,6 +5180,20 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **`at()` hands a face back without its tile.** It copies the vertices, the colour and the
+  normals and drops `m`, so a part moved with it falls back to looking its colour up. For a
+  palette tagged hard that is usually the same tile by luck; for the American's, one trouser
+  shade on a prone man came back on the rubber tile, because the MP40's bakelite grip owns that
+  string. And the head is moved to the stock in every aimed pose, so every helmet on the roster
+  (the net, the scrim, the splinter cover) was drawn on the generic tile whenever its man
+  fired, for as long as the rig has existed; the card's MATERIAL rows only looked at standing
+  and prone, and they read the fire pose now. Translate with `place(faces, 0, dx, dy, dz)`
+  when the tile matters.
+- **A third palette on the kit ladder collides with the first two.** `tagKit` registers
+  seventy-six tints of every kit colour, and the American's landed on twelve strings the
+  Canadian and German palettes already owned, one of them a German serge shade turned to steel.
+  The American palette is registered softly: it adds strings and never re-tags one. A probe
+  that registers the table with and without the new palette and diffs the two is the check.
 - **A tint can land on another material's tile, and that is a different fault from the one
   the gate counts.** `lit()` hands back a colour string and `matOf` looks the exact string
   up before it follows the tint back to its source, so two palettes whose shades happen to

@@ -3091,6 +3091,63 @@ for (const device of TARGETS) {
      `${man.pop} (what it raised itself: ${man.popRest}) with ${man.popAll} of wall not on it; after a minute of battle ${man2.moved} of them had left ` +
      `their post (furthest ${man2.far})`);
 
+  /* --- The army. The Allied side on the beach is the 29th Infantry Division and the map is
+     what says so: the side button on the title screen names it, the headquarters turns out
+     an American rifle squad where it would turn out a Canadian section and refuses the
+     Canadian one, the sections the side opens with are American, a brain playing the
+     Allied side buys the American squad, and a man of it who is killed goes down and lies
+     as an American. Then the Italian ground puts the Canadians back on the button. --- */
+  const natA = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    out.nat = W.NAT; out.name = W.FACTION.us.name;
+    out.pick = document.getElementById('pickus').querySelector('h3').textContent;
+    const mine = G.units.filter(u => u.own === 'us' && u.cat === 'inf' && !u.dead && !u.wall);
+    out.am = mine.filter(u => u.key === 'am_rifle').length; out.can = mine.filter(u => u.key === 'us_rifle').length;
+    const sq = mine.filter(u => u.key === 'am_rifle')[0];
+    out.men = sq ? sq.models.length : 0;
+    out.vars = sq ? [...new Set(sq.models.map((m, i) => W.variantForModel(sq, i)))].sort().join(',') : '-';
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    out.makes = hq ? W.makesOf(hq).join(',') : '-';
+    G.res.us.mp += 2000;
+    out.qCan = hq ? (W.queueUnit(hq, 'us_rifle') ? hq.queue.slice(-1)[0] : 'refused') : '-';
+    out.qAm = hq ? W.queueUnit(hq, 'am_rifle') : null;
+    if (hq) hq.queue.length = 0;
+    if (sq) {
+      /* the record from the list that grew: a man on his feet goes on the falls and one
+         lying down straight onto the corpses, and either may already hold older bodies */
+      const m = sq.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+      W.damageModel(sq, m, 1e4, null);
+      const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+      out.fell = !!rec; out.fellNat = rec ? rec.nat : '-';
+    }
+    out.bodies = !!(W.MODELS.fall.usa && W.MODELS.dead.usa && W.MODELS.fall.usa.length === 3 && W.MODELS.dead.usa.length === 2);
+    /* and a brain on the Allied side, from the whistle */
+    W.G.mapData = W.omahaMapData();
+    W.startGame('ger', 1, 'vp', true, false);
+    return out;
+  });
+  await fastForward(page, 45);
+  const natB = await page.evaluate(() => {
+    const W = window, G = W.G, made = G.made.us || {};
+    const out = { am: made.am_rifle || 0, can: made.us_rifle || 0,
+                  live: G.units.filter(u => u.own === 'us' && u.key === 'am_rifle' && !u.dead).length };
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'ortona') b.click(); });
+    out.back = document.getElementById('pickus').querySelector('h3').textContent;
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
+    return out;
+  });
+  ok('Omaha: the Allied side is the 29th Infantry Division, and its headquarters, its opening and its brain field the American rifle squad',
+     natA.nat === 'usa' && /29th/.test(natA.name) && /29TH/.test(natA.pick) && natA.am >= 2 && natA.can === 0 &&
+     natA.men === 6 && natA.vars === 'gi_rifle,gi_rifle_b' && /am_rifle/.test(natA.makes) && !/us_rifle/.test(natA.makes) &&
+     natA.qCan === 'am_rifle' && natA.qAm === true && natA.fell && natA.fellNat === 'usa' && natA.bodies &&
+     natB.am >= 1 && natB.can === 0 && /CANADIAN/.test(natB.back),
+     `army ${natA.nat} (${natA.name}), the button reads ${natA.pick}; ${natA.am} American squads and ${natA.can} Canadian ` +
+     `sections at the whistle, ${natA.men} men of ${natA.vars}; the headquarters makes ${natA.makes}, asked for a Canadian ` +
+     `section it queues ${natA.qCan} and an American squad ${natA.qAm ? 'queued' : 'REFUSED'}; a man killed ` +
+     `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
+     `a brain on the Allied side ordered ${natB.am} American squads and ${natB.can} Canadian sections in 45 s (${natB.live} standing); ` +
+     `Ortona's button reads ${natB.back}`);
+
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot
