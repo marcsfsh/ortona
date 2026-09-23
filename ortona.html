@@ -2942,12 +2942,17 @@ function omahaMapData() {
 
   /* ---- the water's edge: the craft that brought the first wave in ----
      An LCT beached bow on in the middle with its ramp down on the sand, which is the
-     American headquarters, and the Higgins boats either side of it where they grounded.
-     Most put their men out and stand empty with the ramp down; two are burning; one has
-     broached in the surf and lies over with the sea in it. */
+     American headquarters, two more out on the flanks that put their tanks ashore, and
+     the Higgins boats between them where they grounded. Most put their men out and stand
+     empty with the ramp down; two are burning; two have broached in the surf and lie over
+     with the sea in them. The five that are aground and whole are what the Americans
+     make their posts out of. */
   E.push({ t: 'hq', side: 'us', x: 750, y: 3790, look: 'lct' });
-  [[178, 3838, -1.28, 1, .21], [332, 3852, -1.62, 0, .47], [566, 3858, -1.49, 0, .83], [1004, 3862, -1.67, 0, .12],
-   [1238, 3850, -1.93, 1, .66], [1392, 3902, .24, 2, .38], [462, 3920, -1.41, 2, .91]].forEach(function (c) {
+  [[245, 3880, -1.60, .5], [1262, 3880, -1.54, .3]].forEach(function (c) {
+    E.push({ t: 'craft', kind: 'lct', x: c[0], y: c[1], a: c[2], wreck: 0, s: c[3] });
+  });
+  [[110, 3838, -1.28, 1, .21], [380, 3852, -1.62, 0, .47], [566, 3858, -1.49, 0, .83], [1004, 3862, -1.67, 0, .12],
+   [1120, 3850, -1.93, 1, .66], [1410, 3902, .24, 2, .38], [462, 3920, -1.41, 2, .91]].forEach(function (c) {
     E.push({ t: 'craft', kind: 'lcvp', x: c[0], y: c[1], a: c[2], wreck: c[3], s: c[4] });
     if (c[3] === 1) E.push({ t: 'smoke', x: c[0], y: c[1] });
   });
@@ -9367,7 +9372,7 @@ function siteClear(x, y, w, h) {
    round it (`craftPostFaces`), and its footprint is the craft's with room either side
    for that, on the craft's own bearing. It is a copy of the building's def with the
    footprint changed, because every reader of a building's size reads `b.def`. */
-var CRAFTPOST = { lcvp: { l: 176, b: 88, off: 22 }, lct: { l: 420, b: 150, off: 30 } };
+var CRAFTPOST = { lcvp: { l: 176, b: 88, off: 22 }, lct: { l: 300, b: 156, off: 80 } };
 /* a craft lies at the water's edge with its ramp up the beach, so what the post adds is
    on the dry sand forward of it and the post's middle is that far toward the bow */
 function craftSpot(cr) {
@@ -26917,18 +26922,26 @@ function strut(a, b, r, col) {
 }
 function craftPostFaces(key, cr) {
   var bar = key === 'us_bar' || key === 'ger_qtr';
-  var lct = cr.kind === 'lct', L = lct ? 366 : 129, B = lct ? 104 : 39;
+  var lct = cr.kind === 'lct', L = lct ? 366 : 129, B = lct ? 104 : 39, fx = L / 2;
   var cz = groundZ(cr.x, cr.y), dz = Math.min(cz, seaZ()) - 2.5 - cz;
   var flag = (FACTION[G.craftPost] || FACTION.us).color;
   var seed = .2911 + cr.i * .137;
   function rnd() { seed = (seed * 97.13 + .4517) % 1; return seed; }
   var boat = [], sand = [], k, j;
-  var wx0 = -L / 2 + 38, wx1 = L / 2 - 14, deck = 5 + dz, top = 23 + dz;
+  /* the well: aft of it an LCVP has its engine deck and an LCT its machinery space and
+     deckhouse, and a post in an LCT uses the forward half of the tank deck, which is dry.
+     What stands on the sand is measured back from the bow, because the bow is the end of
+     a craft that is on the beach. */
+  var wx0 = lct ? fx - 150 : -fx + 38, wx1 = fx - 14, deck = (lct ? 9 : 5) + dz, top = (lct ? 28 : 23) + dz;
+  var pole = lct ? { x: -fx + 52, y: 14, z: 28 + dz } : { x: -fx + 6, y: 10, z: 16 + dz };
   var kit = ['#4d5340', '#5d6450', '#41473a'], bag = ['#6f6444', '#85795a', '#5f5539'];
   function stack(x, y, n, turn) {
     for (var h = 0; h < n; h++)
       sand = sand.concat(place(box(0, 0, h * 7, 16, 11, 7, kit[0], kit[1], kit[2]), (turn || 0) + (h % 2) * .12, x, y, 0));
   }
+  /* the company or battalion flag at the stern */
+  boat = boat.concat(cyl(pole.x, pole.y, pole.z, .8, .8, 34, 6, '#4a3f2e', '#5a4e3a'));
+  boat = boat.concat(box(pole.x + 7, pole.y, pole.z + 25, 13, .5, 8, flag, lit(flag, 1.1), lit(flag, .8)));
   if (bar) {
     /* the tarpaulin over the well, on a ridge pole with an upright at each end, both
        sides of it drawn so it reads from under the eaves as well as from above */
@@ -26938,30 +26951,30 @@ function craftPostFaces(key, cr) {
       boat.push({ v: q.slice().reverse(), c: BUNK.tarpD });
     });
     [wx0, wx1].forEach(function (x) { boat = boat.concat(cyl(x, 0, deck, .8, .8, rz - deck, 6, '#4a3f2e', '#5a4e3a')); });
-    /* the wireless on the engine deck and its aerial, and the company flag at the stern */
-    boat = boat.concat(box(-L / 2 + 22, -9, 16 + dz, 9, 7, 6, kit[2], kit[0]));
-    boat = boat.concat(cyl(-L / 2 + 22, -9, 22 + dz, .35, .35, 46, 4, CRAFT.steel, CRAFT.steel));
-    boat = boat.concat(cyl(-L / 2 + 6, 10, 16 + dz, .8, .8, 34, 6, '#4a3f2e', '#5a4e3a'));
-    boat = boat.concat(box(-L / 2 + 6 + 7, 10, 16 + dz + 25, 13, .5, 8, flag, lit(flag, 1.1), lit(flag, .8)));
+    /* the wireless and its aerial: on an LCVP's engine deck; an LCT has a mast already */
+    if (!lct) {
+      boat = boat.concat(box(-fx + 22, -9, 16 + dz, 9, 7, 6, kit[2], kit[0]));
+      boat = boat.concat(cyl(-fx + 22, -9, 22 + dz, .35, .35, 46, 4, CRAFT.steel, CRAFT.steel));
+    } else boat = boat.concat(box(wx0 + 14, -B / 2 + 18, deck, 12, 9, 8, kit[2], kit[0]));
     /* along the port side, a traverse of bags the height of a man lying down, and inside
        it the bagged stores */
-    sand = sand.concat(sandbagRun(-4, -B / 2 - 20, 0, L * .78, 4, rnd));
-    for (k = 0; k < 4; k++) sand = sand.concat(place(box(0, 0, 0, 9, 6, 5, bag[k % 3], bag[(k + 1) % 3], bag[2]), rnd() * .6, 8 + k * 14, -B / 2 - 9, 0));
+    sand = sand.concat(sandbagRun(fx - 68, -B / 2 - 20, 0, 100, 4, rnd));
+    for (k = 0; k < 4; k++) sand = sand.concat(place(box(0, 0, 0, 9, 6, 5, bag[k % 3], bag[(k + 1) % 3], bag[2]), rnd() * .6, fx - 56 + k * 14, -B / 2 - 9, 0));
     /* along the starboard side the tents, the ammunition and the board with the
        company's number on it */
-    for (k = 0; k < 2; k++) sand = sand.concat(place(ridgeTent(0, 0, 0, 24, 15, GUN.canvas), 0, 8 + k * 28, B / 2 + 18, 0));
-    stack(L / 2 + 14, B / 2 + 14, 3); stack(L / 2 + 30, B / 2 - 2, 2, .2);
-    sand = sand.concat(cyl(L / 2 + 30, -B / 2 - 2, 0, .6, .6, 16, 5, '#4a3f2e', '#5a4e3a'));
-    sand = sand.concat(cyl(L / 2 + 30, -B / 2 + 14, 0, .6, .6, 16, 5, '#4a3f2e', '#5a4e3a'));
-    sand = sand.concat(box(L / 2 + 30, -B / 2 + 6, 9, 1, 17, 7, '#cfccbe', '#cfccbe', lit('#cfccbe', .85)));
+    for (k = 0; k < 2; k++) sand = sand.concat(place(ridgeTent(0, 0, 0, 24, 15, GUN.canvas), 0, fx - 56 + k * 28, B / 2 + 18, 0));
+    stack(fx + 14, B / 2 + 14, 3); stack(fx + 30, B / 2 - 2, 2, .2);
+    sand = sand.concat(cyl(fx + 30, -B / 2 - 2, 0, .6, .6, 16, 5, '#4a3f2e', '#5a4e3a'));
+    sand = sand.concat(cyl(fx + 30, -B / 2 + 14, 0, .6, .6, 16, 5, '#4a3f2e', '#5a4e3a'));
+    sand = sand.concat(box(fx + 30, -B / 2 + 6, 9, 1, 17, 7, '#cfccbe', '#cfccbe', lit('#cfccbe', .85)));
     /* and beside the ramp, what came off it and has not been carried up yet */
-    stack(L / 2 + 12, -B / 2 - 6, 2, -.3);
+    stack(fx + 12, -B / 2 - 6, 2, -.3);
   } else {
     /* a gantry over the ramp to lift an engine out on a chain block, the well a stack of
        stores under a sheet */
-    var ax = L / 2 + 10, az = top + 36;
+    var ax = fx + 10, az = top + 36;
     [-1, 1].forEach(function (sd) {
-      sand = sand.concat(strut([L / 2 + 24, sd * (B / 2 + 5), 0], [ax, sd * 2, az], 1.1, '#3f3a30'));
+      sand = sand.concat(strut([fx + 24, sd * (B / 2 + 5), 0], [ax, sd * 2, az], 1.1, '#3f3a30'));
     });
     boat = boat.concat(strut([ax, -3, az], [ax, 3, az], 1.2, '#3f3a30'));
     boat = boat.concat(strut([ax, 0, az], [wx1 - 6, 0, top], .8, '#3f3a30'));
@@ -26969,16 +26982,14 @@ function craftPostFaces(key, cr) {
     boat = boat.concat(box(ax, 0, az - 21, 3, 3, 5, '#3f3a30', CRAFT.steelL));
     boat = boat.concat(box((wx0 + wx1) / 2, 0, deck, wx1 - wx0 - 16, B - 14, 10, kit[0], kit[1], kit[2]));
     boat = boat.concat(box((wx0 + wx1) / 2, 0, deck + 10, wx1 - wx0 - 12, B - 10, 3, BUNK.tarp, BUNK.tarpL, BUNK.tarpD, .9));
-    boat = boat.concat(cyl(-L / 2 + 6, 10, 16 + dz, .8, .8, 34, 6, '#4a3f2e', '#5a4e3a'));
-    boat = boat.concat(box(-L / 2 + 6 + 7, 10, 16 + dz + 25, 13, .5, 8, flag, lit(flag, 1.1), lit(flag, .8)));
     /* the fuel: two dumps of drums in the sand on the port side behind a berm */
     for (j = 0; j < 2; j++) for (k = 0; k < 6; k++)
-      sand = sand.concat(drum(6 + j * 44 + (k % 3) * 6.2, -B / 2 - 10 - Math.floor(k / 3) * 6.2, 0, k % 2 ? '#4f5643' : '#3f3a30'));
-    sand = sand.concat(sandbagRun(-2, -B / 2 - 26, 0, 92, 2, rnd));
+      sand = sand.concat(drum(fx - 58 + j * 44 + (k % 3) * 6.2, -B / 2 - 10 - Math.floor(k / 3) * 6.2, 0, k % 2 ? '#4f5643' : '#3f3a30'));
+    sand = sand.concat(sandbagRun(fx - 66, -B / 2 - 26, 0, 92, 2, rnd));
     /* the jerricans in rows and the spare track on the starboard side */
-    for (k = 0; k < 16; k++) sand = sand.concat(jerrican(4 + (k % 8) * 2.4, B / 2 + 10 + Math.floor(k / 8) * 4.8, 0, 0, '#5b6243'));
-    for (k = 0; k < 5; k++) sand = sand.concat(box(46, B / 2 + 16, k * 1.8, 30, 14, 1.8, '#3f3a30', lit('#3f3a30', 1.1), '#3f3a30'));
-    stack(L / 2 + 30, B / 2 + 6, 2, .15);
+    for (k = 0; k < 16; k++) sand = sand.concat(jerrican(fx - 60 + (k % 8) * 2.4, B / 2 + 10 + Math.floor(k / 8) * 4.8, 0, 0, '#5b6243'));
+    for (k = 0; k < 5; k++) sand = sand.concat(box(fx - 18, B / 2 + 16, k * 1.8, 30, 14, 1.8, '#3f3a30', lit('#3f3a30', 1.1), '#3f3a30'));
+    stack(fx + 30, B / 2 + 6, 2, .15);
   }
   /* into the world: the boat on the keel the scene set it on, the rest on the sand */
   boat = place(boat, cr.a, cr.x, cr.y, cz);
