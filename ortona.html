@@ -2986,8 +2986,8 @@ function omahaMapData() {
   E.push({ t: 'road', width: 34, pts: [P(0, 2566), P(125, 2563), P(250, 2560), P(400, 2561)] });
   E.push({ t: 'road', width: 34, pts: [P(400, 2561), P(500, 2562), P(625, 2566), P(750, 2569), P(875, 2566), P(1000, 2564), P(1100, 2561)] });
   E.push({ t: 'road', width: 34, pts: [P(1100, 2561), P(1250, 2557), P(1375, 2559), P(1500, 2561)] });
-  E.push({ t: 'road', width: 30, pts: [P(400, 2561), P(400, 2372), P(396, 2250), P(388, 2140), P(392, 2030), P(404, 1930), P(410, 1820)] });
-  E.push({ t: 'road', width: 30, pts: [P(1100, 2561), P(1100, 2360), P(1106, 2240), P(1116, 2130), P(1112, 2020), P(1100, 1920), P(1094, 1820)] });
+  E.push({ t: 'road', width: 30, pts: [P(400, 2561), P(400, 2372), P(396, 2250), P(388, 2140), P(392, 2030), P(404, 1930), P(410, 1820), P(410, 1776)] });
+  E.push({ t: 'road', width: 30, pts: [P(1100, 2561), P(1100, 2360), P(1106, 2240), P(1116, 2130), P(1112, 2020), P(1100, 1920), P(1094, 1820), P(1094, 1772)] });
 
   /* ---- the resistance nests ----
      Four of them, the way the defence was actually laid: one on each side of each exit
@@ -3048,6 +3048,238 @@ function omahaMapData() {
     E.push({ t: 'crater', x: c[0], y: c[1], r: c[2] });
   });
 
+  /* ---- the plateau: the coast road, the lanes inland, and the hedgerows ----
+     The roads were there before the war and every one of them is a sunken lane between two
+     hedgerows, opened only where it meets another road or where a field has its gate onto
+     it. Between the lanes the fields are enclosed the same way, each with a gate or two and
+     no two of them the same shape: the hedges were laid one field at a time and so is this. */
+  [[[0, 1770], [140, 1762], [300, 1768], [410, 1776]],
+   [[410, 1776], [560, 1772], [750, 1758], [940, 1766], [1094, 1772]],
+   [[1094, 1772], [1250, 1764], [1500, 1770]],
+   [[410, 1776], [398, 1640], [372, 1480], [360, 1330], [366, 1240], [378, 1180], [402, 1020], [420, 860], [412, 700], [400, 600]],
+   [[1094, 1772], [1106, 1620], [1128, 1470], [1136, 1330], [1130, 1240], [1118, 1160], [1100, 1020], [1082, 860], [1090, 700], [1100, 600]],
+   [[0, 1250], [200, 1238], [366, 1240]],
+   [[366, 1240], [560, 1232], [760, 1246], [960, 1236], [1130, 1240]],
+   [[1130, 1240], [1320, 1232], [1500, 1244]],
+   [[0, 640], [200, 620], [400, 600]],
+   [[400, 600], [560, 578], [750, 566], [940, 580], [1100, 600]],
+   [[1100, 600], [1300, 618], [1500, 636]],
+   [[750, 566], [750, 380]]].forEach(function (r, i) {
+    E.push({ t: 'road', width: i === 11 ? 24 : 30, pts: r.map(function (p) { return P(p[0], p[1]); }) });
+  });
+  [[[30, 1790], [54, 1789]],
+   [[91, 1787], [152, 1784], [173, 1785]],
+   [[27, 1746], [76, 1744]],
+   [[112, 1742], [172, 1741]],
+   [[605, 1791], [666, 1786], [694, 1784]],
+   [[730, 1781], [790, 1782], [851, 1784], [911, 1787], [927, 1787]],
+   [[604, 1747], [640, 1744]],
+   [[677, 1741], [738, 1737], [799, 1738], [860, 1741]],
+   [[896, 1742], [929, 1743]],
+   [[1306, 1787], [1366, 1789], [1379, 1789]],
+   [[1415, 1790], [1471, 1791]],
+   [[1307, 1743], [1335, 1744]],
+   [[1371, 1745], [1432, 1746], [1473, 1747]],
+   [[419, 1633], [410, 1573], [405, 1545]],
+   [[399, 1509], [392, 1449], [387, 1389], [382, 1329], [386, 1268], [395, 1208], [399, 1188]],
+   [[405, 1152], [414, 1091], [423, 1031], [430, 970], [437, 910], [438, 897]],
+   [[442, 865], [439, 804], [436, 743], [434, 706]],
+   [[375, 1635], [365, 1575], [355, 1515], [353, 1499]],
+   [[348, 1463], [344, 1403], [339, 1343], [341, 1282], [347, 1221], [358, 1160], [367, 1100]],
+   [[373, 1065], [381, 1005], [388, 944], [395, 883], [396, 823], [395, 803]],
+   [[393, 766], [390, 706]],
+   [[1127, 1634], [1135, 1573], [1144, 1513], [1149, 1476]],
+   [[1152, 1440], [1155, 1379], [1157, 1318], [1153, 1258], [1146, 1198], [1140, 1157]],
+   [[1135, 1121], [1128, 1061], [1120, 1001], [1113, 940], [1106, 879], [1106, 819]],
+   [[1108, 783], [1111, 722], [1112, 706]],
+   [[1082, 1638], [1090, 1577], [1093, 1557]],
+   [[1098, 1525], [1106, 1464], [1110, 1403], [1113, 1342], [1111, 1282], [1105, 1221], [1095, 1159], [1088, 1099], [1084, 1071]],
+   [[1080, 1035], [1073, 974], [1066, 914], [1060, 853], [1063, 792], [1066, 735]],
+   [[29, 1270], [89, 1267], [121, 1265]],
+   [[157, 1263], [217, 1260], [277, 1261], [338, 1262]],
+   [[27, 1226], [87, 1223], [147, 1219], [199, 1216]],
+   [[236, 1216], [297, 1217], [337, 1218]],
+   [[395, 1261], [455, 1258], [480, 1257]],
+   [[516, 1256], [576, 1255], [636, 1259], [696, 1264], [756, 1268], [768, 1268]],
+   [[804, 1266], [864, 1263], [924, 1260], [984, 1259], [988, 1259]],
+   [[1024, 1260], [1085, 1261], [1101, 1261]],
+   [[393, 1217], [454, 1214], [515, 1212], [576, 1211], [636, 1215], [648, 1216]],
+   [[684, 1219], [744, 1223], [804, 1222], [864, 1219], [908, 1217]],
+   [[944, 1215], [1005, 1215], [1066, 1216], [1102, 1217]],
+   [[1159, 1261], [1219, 1258], [1264, 1256]],
+   [[1300, 1255], [1361, 1257], [1422, 1261], [1471, 1264]],
+   [[1157, 1217], [1218, 1214], [1279, 1212], [1340, 1211], [1352, 1212]],
+   [[1388, 1215], [1449, 1219], [1473, 1220]],
+   [[26, 615], [86, 609], [130, 605]],
+   [[166, 601], [226, 595], [286, 589], [314, 586]],
+   [[1206, 587], [1262, 592]],
+   [[1298, 596], [1358, 601], [1418, 606], [1474, 611]],
+   [[0, 1476], [62, 1470], [125, 1474], [142, 1476]],
+   [[175, 1480], [237, 1474], [299, 1472], [350, 1476]],
+   [[174, 1262], [169, 1323], [175, 1352]],
+   [[176, 1385], [172, 1447], [174, 1476]],
+   [[198, 1476], [201, 1517]],
+   [[203, 1550], [201, 1612], [198, 1636]],
+   [[401, 1522], [461, 1528], [495, 1528]],
+   [[528, 1527], [588, 1523], [624, 1522]],
+   [[624, 1480], [624, 1522]],
+   [[624, 1480], [684, 1476]],
+   [[717, 1477], [780, 1481], [842, 1482], [878, 1480]],
+   [[878, 1480], [878, 1528]],
+   [[878, 1528], [941, 1532], [992, 1529]],
+   [[1026, 1531], [1089, 1529], [1097, 1528]],
+   [[624, 1258], [624, 1318], [623, 1339]],
+   [[621, 1373], [623, 1433], [624, 1480]],
+   [[632, 1522], [630, 1582], [628, 1641]],
+   [[633, 1673], [633, 1733], [632, 1745]],
+   [[878, 1262], [882, 1325], [877, 1363]],
+   [[875, 1401], [877, 1463], [878, 1480]],
+   [[866, 1528], [870, 1589], [870, 1597]],
+   [[873, 1630], [861, 1692], [866, 1741]],
+   [[1146, 1494], [1209, 1495], [1272, 1494]],
+   [[1306, 1496], [1369, 1495], [1433, 1491], [1496, 1494], [1500, 1494]],
+   [[1334, 1255], [1331, 1315], [1338, 1370]],
+   [[1334, 1402], [1332, 1462], [1334, 1494]],
+   [[1344, 1494], [1349, 1548]],
+   [[1349, 1582], [1344, 1636]],
+   [[0, 1004], [60, 1009], [123, 1006], [175, 1006]],
+   [[207, 1006], [268, 1006], [330, 998], [382, 1004]],
+   [[0, 792], [60, 792], [121, 789], [181, 792], [221, 792]],
+   [[254, 791], [314, 789], [375, 791], [395, 792]],
+   [[180, 644], [184, 702]],
+   [[184, 734], [180, 792]],
+   [[206, 792], [211, 849]],
+   [[203, 882], [207, 943], [206, 1004]],
+   [[168, 1004], [168, 1065], [171, 1115]],
+   [[168, 1148], [168, 1210], [168, 1218]],
+   [[420, 1044], [483, 1047], [513, 1045]],
+   [[547, 1042], [610, 1042], [640, 1044]],
+   [[441, 868], [503, 864], [515, 864]],
+   [[549, 863], [611, 866], [640, 868]],
+   [[640, 595], [638, 658], [643, 712]],
+   [[644, 751], [639, 813], [640, 868]],
+   [[640, 868], [635, 931], [636, 993], [640, 1044]],
+   [[648, 1044], [652, 1105], [651, 1122]],
+   [[649, 1155], [648, 1216]],
+   [[640, 868], [694, 901], [749, 922]],
+   [[774, 943], [830, 963], [884, 996]],
+   [[884, 996], [944, 1001], [952, 1001]],
+   [[988, 1000], [1050, 997], [1075, 996]],
+   [[640, 836], [700, 838], [760, 836], [821, 834], [877, 839]],
+   [[909, 838], [969, 836], [1029, 837], [1061, 836]],
+   [[884, 836], [887, 897], [881, 959], [884, 996]],
+   [[884, 996], [886, 1059], [886, 1067]],
+   [[882, 1103], [884, 1166], [884, 1218]],
+   [[870, 597], [867, 657], [868, 699]],
+   [[871, 732], [874, 792], [870, 836]],
+   [[1118, 984], [1178, 984], [1241, 981], [1293, 979]],
+   [[1325, 980], [1386, 985], [1448, 979], [1500, 984]],
+   [[1107, 808], [1167, 811], [1227, 806], [1247, 810]],
+   [[1283, 812], [1343, 802], [1404, 805], [1464, 812], [1500, 808]],
+   [[1318, 642], [1319, 705], [1318, 717]],
+   [[1316, 749], [1318, 808]],
+   [[1296, 808], [1298, 871], [1298, 879]],
+   [[1298, 913], [1296, 976], [1296, 984]],
+   [[1330, 984], [1332, 1045], [1331, 1069]],
+   [[1330, 1105], [1328, 1166], [1330, 1211]],
+   [[0, 446], [61, 445], [122, 447], [134, 448]],
+   [[172, 450], [233, 446], [294, 446], [306, 446]],
+   [[306, 446], [309, 500]],
+   [[309, 533], [306, 587]],
+   [[1318, 446], [1379, 449], [1391, 448]],
+   [[1427, 445], [1488, 446], [1500, 446]],
+   [[1318, 446], [1321, 505]],
+   [[1313, 539], [1318, 598]],
+   [[0, 196], [62, 192], [124, 199], [140, 198]],
+   [[173, 196], [235, 198], [297, 193], [359, 195], [421, 193], [483, 199], [520, 196]],
+   [[980, 196], [1042, 190], [1104, 192], [1165, 200], [1228, 194], [1290, 200], [1327, 201]],
+   [[1360, 200], [1421, 201], [1483, 197], [1500, 196]]].forEach(function (h) {
+    E.push({ t: 'hedge', pts: h.map(function (p) { return P(p[0], p[1]); }) });
+  });
+
+  /* ---- the villages ----
+     Vierville at the head of the western draw, with its church; Saint-Laurent at the head
+     of the eastern one; the Chateau de Vaumicel in its park west of the Vierville road; a
+     farm at Le Grand Hameau, one at Louvieres and one on the Formigny road; and Trevieres
+     along its street at the far end with the church at one end and a farm at the other.
+     Standing houses in the limestone of the country under slate, a few with a shell
+     through the roof. Each is x, y, width, depth, what it is, its height to the eaves, and
+     whether its street front faces down the map. */
+  [[230, 1714, 100, 40, 'church', 38, 0],
+   [304, 1728, 58, 34, 'house', 42, 0],
+   [470, 1726, 66, 36, 'house', 42, 0],
+   [548, 1718, 54, 40, 'barn', 30, 0],
+   [318, 1818, 56, 34, 'house', 42, 1],
+   [486, 1822, 62, 36, 'house', 42, 1],
+   [1004, 1726, 60, 36, 'house', 42, 0],
+   [1180, 1724, 64, 36, 'house', 42, 0],
+   [1254, 1730, 52, 34, 'farm', 30, 0],
+   [1030, 1818, 58, 34, 'house', 42, 1],
+   [1172, 1816, 60, 38, 'barn', 30, 1],
+   [262, 1418, 96, 42, 'manor', 44, 0],
+   [1224, 1420, 62, 34, 'farm', 30, 0],
+   [1236, 1350, 70, 38, 'barn', 30, 1],
+   [1402, 1440, 56, 36, 'barn', 30, 0],
+   [270, 940, 62, 34, 'farm', 30, 0],
+   [262, 870, 66, 38, 'barn', 30, 1],
+   [1226, 930, 60, 34, 'farm', 30, 0],
+   [1228, 868, 64, 38, 'barn', 30, 1],
+   [452, 520, 110, 44, 'church', 38, 0],
+   [584, 534, 56, 36, 'house', 42, 0],
+   [660, 528, 48, 34, 'house', 42, 0],
+   [856, 532, 58, 36, 'house', 42, 0],
+   [936, 538, 54, 34, 'house', 42, 0],
+   [474, 642, 58, 36, 'house', 42, 1],
+   [582, 630, 54, 34, 'house', 42, 1],
+   [690, 624, 48, 34, 'house', 42, 1],
+   [812, 626, 58, 36, 'house', 42, 1],
+   [920, 632, 56, 34, 'house', 42, 1],
+   [1024, 640, 50, 34, 'house', 42, 1],
+   [1176, 528, 64, 36, 'farm', 30, 0],
+   [1262, 520, 58, 40, 'barn', 30, 0],
+   [1184, 664, 62, 38, 'barn', 30, 1],
+   [606, 272, 40, 92, 'barn', 30, 0],
+   [894, 272, 40, 92, 'barn', 30, 0]].forEach(function (h) {
+    E.push({ t: 'nhouse', x: h[0], y: h[1], w: h[2], h: h[3], style: h[4], ht: h[5], flip: h[6], s: ((h[0] * 13 + h[1] * 7) % 97) / 97 });
+  });
+  /* the park wall round the chateau, and the yard wall in front of the headquarters with
+     the gate the drive goes through */
+  [[198, 1374, 334, 1374], [198, 1374, 198, 1462], [334, 1374, 334, 1404], [334, 1432, 334, 1462],
+   [556, 360, 736, 360], [764, 360, 944, 360]].forEach(function (w) {
+    E.push({ t: 'wall', x1: w[0], y1: w[1], x2: w[2], y2: w[3], h: 24 });
+  });
+  /* the orchards, apple trees in rows the way a Norman farm plants them, and oaks standing
+     alone in the fields and at the gates */
+  [[201, 303], [198, 327], [204, 351], [201, 375], [198, 408], [229, 298], [226, 322], [223, 355], [229, 379], [226, 403], [248, 302], [254, 326], [251, 350], [248, 374], [254, 407], [276, 297], [282, 330], [279, 354], [276, 378], [282, 402], [304, 301], [301, 325], [307, 349], [304, 382], [301, 406], [332, 296], [329, 329], [326, 353], [332, 377], [329, 401], [1166, 302], [1172, 326], [1169, 350], [1166, 374], [1172, 407], [1194, 297], [1200, 330], [1197, 354], [1194, 378], [1200, 402], [1222, 301], [1219, 325], [1225, 349], [1222, 382], [1219, 406], [1250, 296], [1247, 329], [1244, 353], [1250, 377], [1247, 401], [1278, 300], [1275, 324], [1272, 348], [1278, 381], [1275, 405], [1297, 304], [1303, 328], [1300, 352], [1297, 376], [1303, 400], [666, 1587], [666, 1623], [666, 1650], [666, 1677], [690, 1593], [690, 1620], [690, 1647], [690, 1683], [723, 1590], [723, 1617], [723, 1653], [723, 1680], [756, 1587], [756, 1623], [756, 1650], [756, 1677], [780, 1593], [780, 1620], [780, 1647], [780, 1683], [901, 1591], [901, 1618], [901, 1654], [901, 1681], [934, 1588], [934, 1624], [934, 1651], [934, 1678], [967, 1594], [967, 1621], [967, 1648], [967, 1684], [991, 1591], [991, 1618], [991, 1654], [991, 1681], [1024, 1588], [1024, 1624], [1024, 1651], [1024, 1678]].forEach(function (a) { E.push({ t: 'tree', kind: 'apple', x: a[0], y: a[1], r: 11 }); });
+  [[88, 1580, 17], [520, 1360, 19], [742, 1120, 18], [1010, 1380, 20], [1420, 1330, 17], [96, 900, 18], [540, 720, 16],
+   [980, 700, 19], [1400, 720, 17], [760, 1650, 18], [1300, 1560, 16], [140, 530, 18], [1360, 540, 17]].forEach(function (o) {
+    E.push({ t: 'tree', kind: 'oak', x: o[0], y: o[1], r: o[2] });
+  });
+  /* what the fields are down to in June: pasture, hay, wheat standing green, and a couple
+     under roots */
+  [[0, 1262, 174, 1476, 'pasture'], [174, 1262, 350, 1476, 'park'], [0, 1476, 198, 1636, 'hay'], [198, 1476, 350, 1636, 'wheat'],
+   [420, 1262, 624, 1522, 'wheat'], [624, 1262, 878, 1480, 'pasture'], [878, 1262, 1106, 1528, 'hay'],
+   [420, 1522, 632, 1744, 'pasture'], [632, 1480, 866, 1744, 'pasture'], [866, 1528, 1084, 1744, 'wheat'],
+   [1150, 1262, 1334, 1494, 'pasture'], [1334, 1262, 1500, 1494, 'plough'], [1150, 1494, 1344, 1636, 'hay'], [1344, 1494, 1500, 1636, 'pasture'],
+   [0, 622, 180, 792, 'wheat'], [180, 622, 350, 792, 'pasture'], [0, 792, 206, 1004, 'hay'], [206, 792, 360, 1004, 'pasture'],
+   [0, 1004, 168, 1218, 'pasture'], [168, 1004, 360, 1218, 'wheat'],
+   [420, 622, 640, 868, 'pasture'], [420, 868, 640, 1044, 'hay'], [420, 1044, 648, 1218, 'wheat'], [640, 622, 870, 836, 'wheat'],
+   [870, 622, 1080, 836, 'pasture'], [640, 836, 884, 996, 'hay'], [884, 836, 1100, 996, 'plough'], [648, 996, 884, 1218, 'pasture'],
+   [884, 996, 1100, 1218, 'hay'], [1120, 622, 1318, 808, 'hay'], [1318, 622, 1500, 808, 'wheat'], [1120, 808, 1296, 984, 'pasture'],
+   [1296, 808, 1500, 984, 'hay'], [1120, 984, 1330, 1218, 'wheat'], [1330, 984, 1500, 1218, 'pasture'],
+   [0, 0, 520, 196, 'wheat'], [980, 0, 1500, 196, 'hay'], [1318, 196, 1500, 446, 'pasture']].forEach(function (f) {
+    E.push({ t: 'field', x0: f[0], y0: f[1], x1: f[2], y1: f[3], k: f[4] });
+  });
+  /* the second line: a fire trench along the lip of the bluff behind the draws, with its
+     machine-gun pits, for a defence that has lost the foot of the bluff to fall back to */
+  E.push({ t: 'trench', side: 'ger', face: 'L', pts: [P(90, 1976), P(150, 1964), P(212, 1980), P(276, 1966), P(334, 1978)] });
+  E.push({ t: 'trench', side: 'ger', face: 'L', pts: [P(476, 1984), P(540, 1970), P(604, 1988), P(668, 1972), P(732, 1990),
+                                                     P(796, 1974), P(860, 1992), P(924, 1976), P(988, 1990), P(1030, 1980)] });
+  E.push({ t: 'trench', side: 'ger', face: 'L', pts: [P(1168, 1978), P(1230, 1964), P(1292, 1980), P(1356, 1966), P(1420, 1976)] });
+  [[250, 1918, 1.57], [700, 1922, 1.57], [826, 1926, 1.57], [1296, 1916, 1.57]].forEach(function (m) {
+    E.push({ t: 'emplace', x: m[0], y: m[1], r: 22, a: m[2], s: (m[0] % 13) / 13 });
+  });
+
   /* ---- the flags ----
      Sixteen in two lanes of eight, the west lane on the Vierville draw and the east on
      Les Moulins, each linked to the flag above it, the flag below it and the one across
@@ -3079,7 +3311,7 @@ function omahaMapData() {
     if (q[4]) e.home = q[4];
     E.push(e);
   });
-  E.push({ t: 'hq', side: 'ger', x: 750, y: 270 });
+  E.push({ t: 'hq', side: 'ger', x: 750, y: 270, look: 'manor' });
   return { name: 'Omaha Beach', when: 'DOG AND EASY · 6 JUNE 1944', version: 3, land: 'omaha', w: 1500, h: 4000,
            entities: E, height: [] };
 }
@@ -3159,7 +3391,7 @@ function buildMap(data) {
   G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
   G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
-  G.craft = []; G.hogpts = []; G.atDitch = [];
+  G.craft = []; G.hogpts = []; G.atDitch = []; G.hedges = []; G.fieldTones = [];
   wallq = null;                                    /* the standing index is rebuilt with them */
   ruinq = null;                                    /* and the index of what can be knocked down */
   /* Every prop in G.hurt is one of the objects just thrown away, so what is left of a
@@ -3309,7 +3541,7 @@ function buildMap(data) {
       case 'bags': addCover(e.x, e.y, e.r || 30, 3, 'bags', e.a || 0, 120); break;
       case 'roadblock': addCover(e.x, e.y, 34, 3, 'rubble', (e.a || 0) + Math.PI / 2, 140); G.roadDebris.push({ x: e.x, y: e.y, a: e.a || 0 }); break;
       case 'cart': G.carts.push({ x: e.x, y: e.y, a: e.a || 0 }); addCover(e.x, e.y, 30, 2, 'cart', null, 70); break;
-      case 'tree': G.trees.push({ x: e.x, y: e.y, r: e.r || 15, s: e.s || 0, lean: e.lean || 0, cypress: e.cypress ? 1 : 0 }); addCover(e.x, e.y, (e.r || 15) * .9, 1, 'tree'); break;
+      case 'tree': G.trees.push({ x: e.x, y: e.y, r: e.r || 15, s: e.s || 0, lean: e.lean || 0, cypress: e.cypress ? 1 : 0, kind: e.kind }); addCover(e.x, e.y, (e.r || 15) * .9, 1, 'tree'); break;
       case 'scrub': G.trees.push({ x: e.x, y: e.y, r: e.r || 12, s: e.s || 0, lean: 0, scrub: 1 }); addCover(e.x, e.y, (e.r || 12), 1, 'tree'); break;
       case 'pole': G.poles.push({ x: e.x, y: e.y, broken: !!e.broken }); break;
       case 'smoke': G.ambientSmoke.push({ x: e.x, y: e.y, size: 34, phase: srand(), dark: 1 }); break;
@@ -3331,6 +3563,34 @@ function buildMap(data) {
           addCover(e.x + Math.sin(cr.a) * (cB / 2 + 12), e.y - Math.cos(cr.a) * (cB / 2 + 12), cL * .42, 3, 'wall', cr.a, 300);
         }
         break;
+      case 'hedge':
+        /* A hedgerow: a bank thrown up out of the ditch beside it, with the hedge on top.
+           It is cover to the men lying along it on either side, it stops the eye and the
+           round of anybody not up against it, a man gets over it slowly and a hull only
+           through a gate (see rebuildGrid). The bank is real ground, raised where it runs. */
+        for (var hdi = 0; hdi < e.pts.length - 1; hdi++) {
+          var ha = e.pts[hdi], hb = e.pts[hdi + 1], hax = Math.atan2(hb.y - ha.y, hb.x - ha.x);
+          if (Math.hypot(hb.x - ha.x, hb.y - ha.y) < 2) continue;
+          carve(ha.x, ha.y, hb.x, hb.y, 12, 8, null, 'bowl');
+          G.hedges.push({ x1: ha.x, y1: ha.y, x2: hb.x, y2: hb.y, s: noise2(ha.x, ha.y, 3),
+                          e0: hdi === 0 ? 1 : 0, e1: hdi === e.pts.length - 2 ? 1 : 0 });
+          var hn = Math.max(1, Math.round(Math.hypot(hb.x - ha.x, hb.y - ha.y) / 36));
+          for (var hk = 0; hk <= hn; hk++) addCover(lerp(ha.x, hb.x, hk / hn), lerp(ha.y, hb.y, hk / hn), 24, 3, 'lowwall', hax, 260);
+        }
+        break;
+      case 'nhouse':
+        /* a Norman house, barn, church or manor: standing, garrisonable, and not built in
+           bays round a list of openings, so a shell does not take it apart (a farm and a
+           church on the other maps are the same scope line) */
+        var nh = { x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'nhouse', style: e.style || 'house', ht: e.ht || 40,
+                   flip: e.flip ? 1 : 0, s: e.s || 0, z: 0 };
+        G.blocks.push(nh); G.props.push(nh);
+        addCover(e.x, e.y - e.h / 2 - 12, Math.max(e.w, 40) * .46, 3, 'wall', 0, 150);
+        addCover(e.x, e.y + e.h / 2 + 12, Math.max(e.w, 40) * .46, 3, 'wall', 0, 150);
+        addCover(e.x - e.w / 2 - 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', Math.PI / 2, 150);
+        addCover(e.x + e.w / 2 + 12, e.y, Math.max(e.h, 40) * .46, 3, 'wall', Math.PI / 2, 150);
+        break;
+      case 'field': G.fieldTones.push({ x0: e.x0, y0: e.y0, x1: e.x1, y1: e.y1, k: e.k }); break;
       case 'hog':
         /* One hedgehog where it was set down, which is how the beach obstacles stood: not
            in a belt with a gap in it but wherever the working party left them before the
@@ -4486,6 +4746,15 @@ function rebuildGrid() {
   });
   /* a hedge hides a section and does not save it */
   G.hedgeLines.forEach(function (h) { markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 9); });
+  /* A Norman hedgerow is a bank of earth with a hedge on it, and the bank stops a round
+     where a hedge alone does not: both grids, so a line across the country is cut by
+     every hedgerow on it, except for the men lying up against one, whom the trace's own
+     end allowance lets see and shoot out over it. A man gets over one slowly (the field
+     wall's grid) and a hull does not except at a gate (the teeth's). */
+  G.hedges.forEach(function (h) {
+    markSeg(sblk, h.x1, h.y1, h.x2, h.y2, 6); markSeg(fblk, h.x1, h.y1, h.x2, h.y2, 5);
+    markSeg(wallg, h.x1, h.y1, h.x2, h.y2, 5); markSeg(hogg, h.x1, h.y1, h.x2, h.y2, 8);
+  });
   /* And the metalling. A street is the reason a town like this is fought street by
      street: it is the only ground a lorry or a tank can make time on, and the map has
      had a road network painted on it that meant nothing to anything driving over it. */
@@ -15113,6 +15382,15 @@ function registerMaterials() {
      The rest is the tail -- the room read off a shell when nobody has drawn one, the
      gun's own palette, the joists in a roof, the drums on a fuel dump. */
   tag(['#7a6e4b'], 'hessian');                              /* the sandbag shade that was missed */
+  if (typeof NORM !== 'undefined') {
+    tag(NORM.stone.concat([NORM.quoin]), 'stone'); tagEdges(NORM.stone.concat([NORM.quoin]), 'stone');
+    tag([NORM.slate, NORM.slateL, NORM.slateD], 'tile'); tagEdges([NORM.slate, NORM.slateL, NORM.slateD], 'tile');
+    tag([NORM.glass], 'steel'); tag([NORM.frame], 'paint');
+    tag([NORM.door, NORM.tim, NORM.bark, NORM.barkL].concat(NORM.shut), 'wood');
+    tagEdges([NORM.door, NORM.tim].concat(NORM.shut), 'wood');
+    tag(NORM.oak.concat(NORM.apple, NORM.hedge, [NORM.oakCard, NORM.appleCard]), 'leaf');
+    tag([NORM.bank], 'earth');
+  }
   if (typeof CRAFT !== 'undefined') {
     tag([CRAFT.hull, CRAFT.hullL, CRAFT.hullD, CRAFT.deck, CRAFT.deckL, CRAFT.num, CRAFT.blue], 'paint');
     tagEdges([CRAFT.hull, CRAFT.hullL, CRAFT.hullD, CRAFT.deck, CRAFT.deckL, CRAFT.num, CRAFT.blue], 'paint');
@@ -16226,11 +16504,31 @@ function sceneProps(tile) {
         put(houseModel(bayW - 2, p.h - 2, hh, (p.s * 3 + bh * .41) % 1, false, wound > .45), bc, p.y, 0);
       }
     } else if (p.kind === 'farm') put(farmModel(p.w, p.h), p.x, p.y, 0);
+    else if (p.kind === 'nhouse') {
+      /* the ridge runs along the long side, whichever way round the footprint is */
+      var nrot = p.w < p.h;
+      put(normanHouse(nrot ? p.h : p.w, nrot ? p.w : p.h, p.ht, p.s, p.style), p.x, p.y, (nrot ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
+    }
+  });
+  /* the hedgerows, a leg at a time into the tile its middle is in, built in the world's
+     own coordinates; and an oak standing out of the hedge every so often along it */
+  G.hedges.forEach(function (h, hi) {
+    var mx = (h.x1 + h.x2) / 2, my = (h.y1 + h.y2) / 2;
+    if (!mine(mx, my)) return;
+    var z0 = groundZ(0, 0);
+    put(place(hedgeLeg(h.x1, h.y1, h.x2, h.y2, h.s, h.e0, h.e1), 0, 0, 0, -z0), 0, 0, 0);
+    var hl = Math.hypot(h.x2 - h.x1, h.y2 - h.y1);
+    for (var ot = 20 + h.s * 50; ot < hl - 10; ot += 70 + noise2(hi, ot, 9) * 60) {
+      if (noise2(hi, ot, 11) < .35) continue;
+      var ox = h.x1 + (h.x2 - h.x1) * ot / hl, oy = h.y1 + (h.y2 - h.y1) * ot / hl;
+      put(oakModel(15 + noise2(hi, ot, 13) * 6, noise2(hi, ot, 17)), ox, oy, noise2(ot, hi, 19) * TAU);
+    }
   });
   G.trees.forEach(function (tr) {
     if (!mine(tr.x, tr.y)) return;
     seedAt(tr.x, tr.y, 2);
-    put(tr.cypress ? cypressModel(tr.r) : tr.scrub ? bushModel(tr.r, tr.s) : treeModel(tr.r, tr.s), tr.x, tr.y, tr.s * TAU);
+    put(tr.cypress ? cypressModel(tr.r) : tr.scrub ? bushModel(tr.r, tr.s) : tr.kind === 'oak' ? oakModel(tr.r, tr.s) :
+        tr.kind === 'apple' ? appleModel(tr.r, tr.s) : treeModel(tr.r, tr.s), tr.x, tr.y, tr.s * TAU);
   });
   if (!tiled) {
   /* ---- Outcrop. Where the shelf breaks through its own soil the bedrock stands out of
@@ -16317,7 +16615,9 @@ function sceneProps(tile) {
   }
   /* pavements: a raised kerbed sidewalk round each town block, 12 units wide */
   if (!tiled) G.blocks.forEach(function (bk) {
-    if (bk.style === 'church') return;
+    /* a town block's, and nothing else's: a farm, a bunker and a Norman house are none of
+       them kerbed, and a pavement round a casemate on a beach reads as a plank */
+    if (bk.style === 'church' || bk.kind !== 'ruin') return;
     /* Narrower and dirtier than they were. A pavement twelve units wide in the palest
        stone on the map turned every frontage into a white ribbon and swallowed the
        street between them. */
@@ -17343,6 +17643,22 @@ function paintGround(t, DET) {
      ground -- roads, craters, trenches, works -- is painted over it as on any map. */
   var OWN = !!LAND.paint;
   if (OWN) LAND.paint(t);
+  /* what a field is down to, laid over the ground paint: hay paler, wheat bluer and
+     drilled in rows, roots in rows on dark earth, pasture as it is */
+  G.fieldTones.forEach(function (fd) {
+    var fw = fd.x1 - fd.x0, fh = fd.y1 - fd.y0;
+    var tone = { pasture: 'rgba(66,92,46,.22)', park: 'rgba(78,112,52,.32)', hay: 'rgba(150,152,92,.36)',
+                 wheat: 'rgba(84,116,82,.42)', plough: 'rgba(92,76,52,.62)' }[fd.k];
+    if (!tone) return;
+    t.fillStyle = tone; t.fillRect(fd.x0, fd.y0, fw, fh);
+    if (fd.k === 'wheat' || fd.k === 'plough') {
+      t.strokeStyle = fd.k === 'wheat' ? 'rgba(60,84,58,.28)' : 'rgba(84,104,58,.5)'; t.lineWidth = fd.k === 'wheat' ? 1.2 : 2.2;
+      t.beginPath();
+      if (fw > fh) for (var ry = fd.y0 + 3; ry < fd.y1; ry += 6) { t.moveTo(fd.x0, ry); t.lineTo(fd.x1, ry); }
+      else for (var rxx = fd.x0 + 3; rxx < fd.x1; rxx += 6) { t.moveTo(rxx, fd.y0); t.lineTo(rxx, fd.y1); }
+      t.stroke();
+    }
+  });
   /* large soft mottles so the earth is never one flat colour */
   for (var mo = 0; !OWN && mo < 60; mo++) {
     var mx = srange(0, WORLD.w), my = srange(220, WORLD.h), mr = srange(120, 320);
@@ -17814,7 +18130,7 @@ function paintGround(t, DET) {
      itself with its spoil thrown over whatever it landed on ---- */
   t.save();
   G.blocks.forEach(function (bk) {
-    if (bk.style === 'church') return;
+    if (bk.style === 'church' || bk.kind !== 'ruin') return;
     var half = 24, seedB = Math.floor(bk.x + bk.y);
     [[bk.x, bk.y + bk.h / 2 + half * .6, bk.w + 36, half], [bk.x, bk.y - bk.h / 2 - half * .6, bk.w + 36, half],
      [bk.x + bk.w / 2 + half * .6, bk.y, half, bk.h + 36], [bk.x - bk.w / 2 - half * .6, bk.y, half, bk.h + 36]].forEach(function (dr, di) {
@@ -25700,12 +26016,239 @@ function casemateModel(sv, sea) {
                      H - 6, E, EL, ED));
   return f;
 }
+/* ---- Normandy: stone, slate, and the hedge ----
+   The Calvados coast builds in the limestone it stands on, rubble walls with dressed
+   quoins at the corners, under slate roofs pitched steep enough to shed the weather, with
+   a chimney stack up each gable. What separates it from Ortona at a glance is the roof:
+   a Norman roof is half the height of the house again and dark, where an Abruzzo roof is
+   low and red. A house here is standing, because on the morning of the sixth the
+   villages behind the bluff had been bombed very little; a few have lost part of a roof. */
+var NORM = { stone: ['#a09984', '#97917d', '#aea48e', '#968b78'], quoin: '#bdb4a0',
+             slate: '#4b5055', slateL: '#596066', slateD: '#3d4145',
+             glass: '#262a2a', frame: '#cdc8ba', door: '#4f3f31', shut: ['#56644f', '#6a5642', '#7b8478'],
+             tim: '#473c2b',
+             oak: ['#34432a', '#3f4f2e', '#3f4f2e', '#4d5f36', '#4d5f36'], oakCard: '#4a5b34',
+             apple: ['#46562e', '#556739', '#556739', '#667a43', '#667a43'], appleCard: '#5f7340',
+             bark: '#4a4234', barkL: '#5a5143',
+             hedge: ['#34432a', '#3d4d2f', '#465734', '#51633a'], bank: '#585237' };
+/* a pitched roof whose ridge runs along x, eaves at z0, ridge rh above them, with its
+   underside closed; each face is turned out from the roof's own middle, the way box()
+   turns its own */
+function gableRoof(L, D, z0, rh, col, colL) {
+  var x0 = -L / 2, x1 = L / 2, y0 = -D / 2, y1 = D / 2, zt = z0 + rh, mz = z0 + rh / 3;
+  function face(pts, c) {
+    var n = faceNormal(pts[0], pts[1], pts[2]), fx = 0, fy = 0, fz = 0;
+    for (var i = 0; i < pts.length; i++) { fx += pts[i][0]; fy += pts[i][1]; fz += pts[i][2]; }
+    fx /= pts.length; fy /= pts.length; fz /= pts.length;
+    if (fx * n.x + fy * n.y + (fz - mz) * n.z < 0) pts = pts.slice().reverse();
+    return { v: pts, c: c };
+  }
+  return [face([[x0, y0, z0], [x1, y0, z0], [x1, 0, zt], [x0, 0, zt]], col),
+          face([[x1, y1, z0], [x0, y1, z0], [x0, 0, zt], [x1, 0, zt]], colL || col),
+          face([[x0, y0, z0], [x0, 0, zt], [x0, y1, z0]], col),
+          face([[x1, y0, z0], [x1, y1, z0], [x1, 0, zt]], col),
+          face([[x0, y0, z0], [x0, y1, z0], [x1, y1, z0], [x1, y0, z0]], NORM.slateD)];
+}
+/* the stone gable under a roof: a triangle filling the end wall up to the ridge */
+function gableEnd(x, d, z0, rh, col) {
+  var p = [[x, -d / 2, z0], [x, d / 2, z0], [x, 0, z0 + rh]];
+  var n = faceNormal(p[0], p[1], p[2]);
+  if (n.x * x < 0) p.reverse();
+  return [{ v: p, c: col }];
+}
+/* A Norman house, barn, church or manor, w along x and d along y, the street side at +y.
+   `seed` picks the stone and decides the damage. */
+function normanHouse(w, d, h, seed, style) {
+  var N = NORM, f = [], k, i;
+  function r(n) { var v = Math.sin(seed * 91.1 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  var sc = N.stone[Math.floor(r(1) * N.stone.length)], barn = style === 'barn', church = style === 'church';
+  var manor = style === 'manor', x0 = church ? -w / 2 + 30 : -w / 2, bw = church ? w - 30 : w, bx = (x0 + w / 2) / 2;
+  var rh = d * (barn ? .82 : .7), R = N.slate, RL = N.slateL;
+  var holed = !church && !manor && r(2) > .74;
+  f = f.concat(box(bx, 0, 0, bw, d, h, sc, lit(sc, 1.04), lit(sc, .9), 0));
+  /* quoins at the corners */
+  [[x0, -1], [x0, 1], [w / 2, -1], [w / 2, 1]].forEach(function (c) {
+    var cx = c[0] + (c[0] > 0 ? -2.2 : 2.2);
+    for (k = 0; k < Math.floor(h / 7); k++)
+      f = f.concat(box(cx, c[1] * (d / 2 - 2.2), k * 7 + .3, k % 2 ? 5 : 4, k % 2 ? 4 : 5, 6.4, N.quoin, N.quoin, N.quoin, 0));
+  });
+  /* windows with a pale stone surround and a shutter or two, on both long faces; a door
+     on the street side, or a barn's double doors */
+  var floors = h > 34 ? 2 : 1, step = church ? 22 : 21;
+  var nb = Math.max(1, Math.floor((bw - 12) / step)), door = Math.floor(nb * .35);
+  [-1, 1].forEach(function (sd) {
+    for (k = 0; k < nb; k++) {
+      var u = x0 + 6 + (k + .5) * (bw - 12) / nb;
+      if (barn) continue;
+      for (i = 0; i < floors; i++) {
+        if (sd > 0 && i === 0 && k === door) continue;
+        var wz = church ? 10 : 8 + i * (h - 8) / floors, wh = church ? 20 : 10;
+        f = f.concat(box(u, sd * (d / 2 + .15), wz, church ? 5 : 7, .5, wh, N.glass, N.glass, N.glass, 0));
+        f = f.concat(box(u, sd * (d / 2 + .3), wz - 1.4, church ? 7 : 9, .7, 1.4, N.frame, N.frame, N.frame, 0));
+        f = f.concat(box(u, sd * (d / 2 + .3), wz + wh, church ? 7 : 9, .7, 1.6, N.frame, N.frame, N.frame, 0));
+        if (!church && r(10 + k * 3 + i + sd) > .35) {
+          var shc = N.shut[Math.floor(r(30 + k) * N.shut.length)];
+          f = f.concat(box(u - 5.4, sd * (d / 2 + .6), wz, 3.4, .6, wh, shc, shc, shc, 0));
+          f = f.concat(box(u + 5.4, sd * (d / 2 + .6), wz, 3.4, .6, wh, shc, shc, shc, 0));
+        }
+      }
+    }
+  });
+  if (barn) {
+    f = f.concat(box(0, d / 2 + .25, 0, 22, .7, Math.min(24, h - 2), N.tim, N.tim, N.tim, 0));
+    f = f.concat(box(0, d / 2 + .5, 0, 1, .6, Math.min(24, h - 2), N.door, N.door, N.door, 0));
+  } else if (!church) {
+    var du = x0 + 6 + (door + .5) * (bw - 12) / nb;
+    f = f.concat(box(du, d / 2 + .2, 0, 9, .6, 17, N.door, N.door, N.door, 0));
+    f = f.concat(box(du, d / 2 + .35, 17, 11, .7, 1.8, N.frame, N.frame, N.frame, 0));
+  }
+  /* the roof, the stone gables under it and a stack up each gable. One house in four has
+     had a shell through the roof: the slates are off one end and the rafters show. */
+  var RD = d + 5, rhR = rh * RD / d;
+  if (holed) {
+    var keep = bw * (.45 + r(3) * .25), gone = bw - keep;
+    f = f.concat(place(gableRoof(keep + 2.5, RD, h, rhR, R, RL), 0, x0 + keep / 2 - 1.25, 0, 0));
+    var ang = Math.atan2(rh, d / 2), rl = Math.hypot(rh, d / 2);
+    for (k = 0; k < Math.floor(gone / 9); k++) {
+      var rx = x0 + keep + 4 + k * 9;
+      [-1, 1].forEach(function (s) {
+        f = f.concat(place(roll(box(0, 0, -.7, 1.4, rl, 1.4, N.tim, N.tim, N.tim, 0), -s * ang, 0, 0), 0, rx, s * d / 4, h + rh / 2));
+      });
+    }
+  } else f = f.concat(place(gableRoof(bw + 5, RD, h, rhR, R, RL), 0, bx, 0, 0));
+  f = f.concat(gableEnd(x0, d, h, rh, sc)).concat(gableEnd(w / 2, d, h, rh, sc));
+  if (!church) {
+    f = f.concat(box(x0 + 4, 0, h, 7, 9, rh + 9, sc, lit(sc, 1.05), lit(sc, .9), 0));
+    if (!barn) f = f.concat(box(w / 2 - 4, 0, h, 7, 9, rh + 9, sc, lit(sc, 1.05), lit(sc, .9), 0));
+  }
+  /* dormers on the street slope of a house of two storeys */
+  if (!barn && !church && floors > 1 && bw > 56 && !holed) {
+    for (k = -1; k <= 1; k += 2) {
+      var dx = bx + k * bw * .24;
+      f = f.concat(box(dx, d * .2, h + rh * .12, 10, 9, 11, sc, sc, sc, 0));
+      f = f.concat(box(dx, d * .2 + 4.6, h + rh * .12 + 3, 5, .5, 6, N.glass, N.glass, N.glass, 0));
+      f = f.concat(box(dx, d * .2, h + rh * .12 + 11, 12, 10.5, 2.4, R, RL, N.slateD, 0));
+    }
+  }
+  if (church) {
+    /* the tower at the west end, and the spire on it, which is what a Norman village is
+       seen by across the fields */
+    var th = h + 36, tx = -w / 2 + 15;
+    f = f.concat(box(tx, 0, 0, 30, 30, th, sc, lit(sc, 1.04), lit(sc, .9), 0));
+    [-1, 1].forEach(function (s) {
+      f = f.concat(box(tx, s * 15.3, th - 16, 5, .6, 11, N.glass, N.glass, N.glass, 0));
+      f = f.concat(box(tx + s * 15.3, 0, th - 16, .6, 5, 11, N.glass, N.glass, N.glass, 0));
+    });
+    f = f.concat(box(tx, 0, th, 33, 33, 3, N.quoin, N.quoin, N.quoin, 0));
+    var sp = 17, stop = th + 3 + 58;
+    [[[-sp, -sp], [sp, -sp]], [[sp, -sp], [sp, sp]], [[sp, sp], [-sp, sp]], [[-sp, sp], [-sp, -sp]]].forEach(function (e, ei) {
+      var p = [[tx + e[0][0], e[0][1], th + 3], [tx + e[1][0], e[1][1], th + 3], [tx, 0, stop]];
+      var n = faceNormal(p[0], p[1], p[2]);
+      if (n.x * (e[0][0] + e[1][0]) + n.y * (e[0][1] + e[1][1]) < 0) p.reverse();
+      f.push({ v: p, c: ei % 2 ? R : RL });
+    });
+    /* buttresses down the nave */
+    for (k = 0; k < 4; k++) [-1, 1].forEach(function (s) {
+      f = f.concat(box(x0 + 12 + k * (bw - 18) / 3, s * (d / 2 + 2.5), 0, 5, 5, h * .8, sc, lit(sc, 1.04), lit(sc, .9), 0));
+    });
+    f = f.concat(box(w / 2 + .3, 0, 0, .6, 10, 20, N.door, N.door, N.door, 0));
+  }
+  if (manor) {
+    /* the stair tower at the front corner and its pointed roof, which is what makes a
+       manor a chateau to anybody walking past it */
+    var mx = w / 2 - 6, my = d / 2 + 2;
+    f = f.concat(cyl(mx, my, 0, 11, 11, h + 16, 12, sc, lit(sc, 1.05)));
+    var cone = [];
+    for (k = 0; k < 12; k++) cone.push([mx + Math.cos(k / 12 * TAU) * 13, my + Math.sin(k / 12 * TAU) * 13]);
+    f = f.concat(frustum(cone, cone.map(function (p) { return [mx + (p[0] - mx) * .04, my + (p[1] - my) * .04]; }), h + 16, h + 50, R, RL, N.slateD));
+    f = f.concat(box(-w * .2, d / 2 + .2, 0, 11, .6, 20, N.door, N.door, N.door, 0));
+    f = f.concat(cyl(-w * .2 - 14, d / 2 + 8, 0, .8, .8, 52, 5, N.tim, N.tim));
+    f = f.concat(box(-w * .2 - 14 + 9, d / 2 + 8, 40, 18, .6, 11, '#8e2f26', '#8e2f26', '#8e2f26', 0));
+  }
+  return f;
+}
+/* a hedgerow oak: a straight bole and a broad crown of several masses */
+function oakModel(r, seed) {
+  var N = NORM, f = cyl(0, 0, 0, r * .13, r * .13, r * 1.7, 7, N.bark, N.barkL, 0, true);
+  for (var k = 0; k < 4; k++) {
+    var a = seed * TAU + k * 1.9, rr = k ? r * .55 : 0, R = r * (k ? .78 : 1.02);
+    f = f.concat(foliageMass(Math.cos(a) * rr, Math.sin(a) * rr, r * (k ? 1.85 : 2.3), R, seed + k * .31, N.oak));
+    for (var c = 0; c < 2; c++) {
+      var th = ((seed * 7.3 + k * 2.1 + c * .5) % 1) * TAU, ph = .4 + ((seed * 3.1 + k + c * .7) % 1) * .5;
+      f = f.concat(leafCard(Math.cos(a) * rr, Math.sin(a) * rr, r * (k ? 1.85 : 2.3), R * 1.04, th, ph, R * .42, N.oakCard));
+    }
+  }
+  return f;
+}
+/* an apple tree in an orchard: short, round and low */
+function appleModel(r, seed) {
+  var N = NORM, f = cyl(0, 0, 0, r * .12, r * .12, r * .8, 6, N.bark, N.barkL, 0, true);
+  f = f.concat(foliageMass(0, 0, r * 1.25, r * .9, seed, N.apple));
+  f = f.concat(foliageMass(r * .3, r * .15, r * 1.5, r * .6, seed + .4, N.apple));
+  f = f.concat(leafCard(0, 0, r * 1.25, r * .92, seed * TAU, .6, r * .45, N.appleCard));
+  return f;
+}
+/* A hedgerow: a bank of earth with a hedge on it as thick as a man is tall, and an oak
+   standing out of it every so often. What it is to the fight is the reason the country
+   behind this beach cost what it did: an eye does not go through it, a round does not go
+   through the bank, a man gets over it slowly and a tank does not get over it at all
+   except at a gate. The hedge is one strip whose section wanders in width and height as
+   it goes, which is what makes a line of shrubs read as a hedge rather than a wall. It is
+   built in world coordinates, a leg at a time, each leg handed to the tile it lies in. */
+function hedgeLeg(ax, ay, bx, by, seed, end0, end1) {
+  var N = NORM, len0 = Math.hypot(bx - ax, by - ay), f = [], i, k;
+  var ux = (bx - ax) / len0, uy = (by - ay) / len0, px = -uy, py = ux;
+  /* a leg that carries on into the next one runs a few units past the joint, so a bend is
+     a bend and not a notch; only the real ends of a hedge taper away */
+  if (!end0) { ax -= ux * 4; ay -= uy * 4; }
+  if (!end1) { bx += ux * 4; by += uy * 4; }
+  var len = Math.hypot(bx - ax, by - ay), n = Math.max(2, Math.ceil(len / 8));
+  function r(q) { var v = Math.sin(seed * 57.3 + q * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  var prof = [[-1, 0], [-.92, .5], [-.45, 1], [.4, .96], [.9, .48], [1, 0]], st = [];
+  for (i = 0; i <= n; i++) {
+    var t = i / n, x = ax + (bx - ax) * t, y = ay + (by - ay) * t, z = groundZ(x, y);
+    var hw = 7.5 + r(i * 3 + 1) * 3.5, hh = 20 + r(i * 3 + 2) * 8 + Math.sin(t * len / 23 + seed * 5) * 3;
+    /* the ends of a hedge taper into the gate, so a gate reads as a gate */
+    var e = Math.min(1, Math.min(end0 ? t * len : 99, end1 ? (1 - t) * len : 99) / 10 + .35);
+    st.push(prof.map(function (p) { return [x + px * p[0] * hw * e, y + py * p[0] * hw * e, z - 1 + p[1] * hh * e]; }));
+  }
+  for (i = 0; i < n; i++) {
+    for (k = 0; k < prof.length - 1; k++) {
+      var c = N.hedge[Math.floor(r(i * 7 + k) * N.hedge.length)];
+      if (k === 0 || k === prof.length - 2) c = N.hedge[0];
+      f.push({ v: [st[i][k], st[i + 1][k], st[i + 1][k + 1], st[i][k + 1]], c: c });
+    }
+  }
+  /* orient every quad outward from the line under it */
+  f = f.map(function (q) {
+    var nn = faceNormal(q.v[0], q.v[1], q.v[2]), cx = 0, cy = 0, cz = 0;
+    for (var j = 0; j < q.v.length; j++) { cx += q.v[j][0]; cy += q.v[j][1]; cz += q.v[j][2]; }
+    cx /= q.v.length; cy /= q.v.length; cz /= q.v.length;
+    var along = (cx - ax) * ux + (cy - ay) * uy, lx = ax + ux * along, ly = ay + uy * along, lz = groundZ(lx, ly) + 4;
+    return (cx - lx) * nn.x + (cy - ly) * nn.y + (cz - lz) * nn.z < 0 ? { v: q.v.slice().reverse(), c: q.c } : q;
+  });
+  /* a ragged top: leaves standing up off the crown every few units, so the skyline of a
+     hedge is a hedge's and not a moulding's */
+  for (i = 1; i < n; i += 1) {
+    var top = st[i][2], tz = top[2];
+    f = f.concat(leafCard(top[0] + px * (r(i * 5 + 3) - .5) * 6, top[1] + py * (r(i * 5 + 3) - .5) * 6, tz - 1.5, 0,
+                          r(i * 5 + 4) * TAU, .5 + r(i * 5 + 5) * .6, 5 + r(i * 5 + 6) * 3, N.oakCard));
+  }
+  /* and close the two ends, each turned to face out along the leg */
+  [[st[0], -1], [st[n], 1]].forEach(function (e) {
+    var q = e[0].slice(), nn = faceNormal(q[0], q[1], q[2]);
+    if ((nn.x * ux + nn.y * uy) * e[1] < 0) q.reverse();
+    f.push({ v: q, c: N.hedge[0] });
+  });
+  return f;
+}
 /* What a headquarters can be dressed as, by name, for a map that stands one somewhere a
    field headquarters would not be. The LCT is beached bow up the screen with its ramp down
    on the sand at the headquarters' own footprint, its keel a little under the water so the
    stern floats, and the rest of it out over the sea, which is solid ground to nobody. */
 var LOOKS = {
-  lct: function () { return place(lctModel(true), -Math.PI / 2, 0, 163, -9); }
+  lct: function () { return place(lctModel(true), -Math.PI / 2, 0, 163, -9); },
+  manor: function () { return place(normanHouse(118, 50, 44, .37, 'manor'), 0, 0, -12, 0); }
 };
 
 /* ---- a Gothic Line bunker ----
