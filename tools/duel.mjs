@@ -71,6 +71,12 @@ const CARD = [
   ['am_jeep', 'ger_sd222'],
   ['am_jeep', 'hr_gren'],
   ['am_jeep', 'ger_gren'],
+  /* and the KS 750, which the 352nd fields in the 222's place: against the squad it meets,
+     the jeep, the Canadian section and the carrier */
+  ['hr_ks750', 'am_rifle'],
+  ['hr_ks750', 'am_jeep'],
+  ['hr_ks750', 'us_rifle'],
+  ['hr_ks750', 'us_m8'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],
@@ -103,6 +109,8 @@ const CARD = [
   ['am_jeep', 'ger_sd222', { a: ['fifty'] }],
   ['ger_sd222', 'am_jeep', { a: ['kwk'] }],
   ['am_jeep', 'hr_gren', { a: ['fifty'] }],
+  ['hr_ks750', 'am_rifle', { a: ['mg42'] }],
+  ['hr_ks750', 'am_jeep', { a: ['mg42'], b: ['fifty'] }],
   ['ger_p4', 'us_ab', { a: ['skirts'] }],
   ['us_sher', 'ger_p4', { a: ['mg'], b: ['mg', 'skirts'] }],
   ['us_sher', 'ger_stug', { b: ['scope', 'mgs', 'skirts'] }]

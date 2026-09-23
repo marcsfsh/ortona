@@ -95,6 +95,10 @@ const REAL = {
                differentials; the height is the 40 in it is reducible to with the windscreen folded
                flat on the bonnet, which is how it is built, and the steering wheel, the pedestal
                and the men standing up out of it are no more part of that than an aerial is */
+  hr_ks750:  { name: 'Zündapp KS 750',      len: 2.385, gun: 2.385,  wid: 1.65,  hgt: 1.01,
+               clear: 0.15 },   /* 2,385 x 1,650 x 1,010 mm with the BW 40, and 150 mm of clearance
+               laden; the height is to the handlebars, and the men and the gun on the sidecar mount are
+               no more part of it than they are of the jeep's */
   us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
                body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
                7 ft 5 in to the top of the M49 ring mount, 11.25 in of clearance */
@@ -138,6 +142,7 @@ const PROBE = {
                the top of the man standing in it */
   am_jeep:   { noMount: true, hullZ: 12.0 },   /* the mount is a gun on a post, and hullZ holds the
                steering wheel, the rolled hood and the top of the spare out of the folded height */
+  hr_ks750:  { noMount: true },   /* the mount is the gunner and his MG 34, turning on the sidecar seat */
   us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
                above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */
   ger_h251:  { topZ: 0.4, hullZ: 21.0, bodyZ: 15.0, xLo: -28.0, xHi: -25.0, straddle: true },   /* the slice

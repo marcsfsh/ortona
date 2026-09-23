@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the grenadier squad, the jeep and the M4 are the first, and everything else
-either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+rifle squad, the grenadier squad, the jeep, the M4 and the KS 750 are the first, and
+everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -856,7 +856,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1880 before that map was laid again by hand, 1925 before the bocage behind its beach,
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
-the jeep, and 2090 before the M4). Takes
+the jeep, 2090 before the M4, and 2130 before the KS 750). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1039,7 +1039,13 @@ it needs is built, the man in its hatch has faces of the tanker's helmet and non
 the seated tanker is baked, the eye is a little over three metres up out of the hatch and
 drops to the seat when the lid shuts, forty wrecks throw the turret some of the time and not
 all of it, killed it leaves American bodies, and Ortona's motor pool still makes the Sherman
-V.
+V. The KS 750 is asked it in a fifth, on the German side: the depot makes it and not the 222
+and queues it when asked for the 222, the count and the order book read the two as one, its
+crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
+seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the
+mount's arc and no further, the periscope's eye is the gunner's at fourteen-odd units up,
+forty wrecks throw nothing and sit down under 1.7 units, killed it leaves two bodies of the
+352nd, and Ortona's depot still makes the 222.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3242,6 +3248,55 @@ is 14.75 over his soles and his hip 6.05, so the gunner's soles go 14.75 under t
 and the basket floor drops to meet them. Set the other way about, as the first version was,
 the gunner's head stood in the commander's view.
 
+**The KS 750 is the 352nd's light vehicle**, in the 222's place (`ger_sd222` to `hr_ks750` on
+the army's list): the Zündapp with the Steib-built BW 40 on its right and the shaft straight
+across from the rear hub to the sidecar wheel, three men on it and an MG 34 on the sidecar
+mount. The 352nd had no armoured cars to speak of, and a motorcycle combination is what its
+reconnaissance rode. On `tools/dims.mjs` it reads 2.37 m long against 2.385, 1.66 wide against
+1.65, 1.01 high to the handlebars against 1.01 and 0.15 of clearance under the sump.
+
+It is built its own way at every stage (`ksBike`, `ksSidecar`), and a few of them are worth
+knowing. **A tube is a tube** (`ksTube`, `ksPipe`): the frame, the fork blades, the exhausts,
+the handlebar and the sidecar chassis are round tubes between two points, shaded smooth, where
+everything else on the roster is boxes. **Each wheel is a 4.50-16 on a spoked rim**
+(`ksWheel`): the balloon section lathed, two staggered rows of block tread, thirty-six spokes
+laced tangent from the two flanges and the drum on its own side, and the spare lies on the
+sidecar's tail on the slope of it, turned by `ksRollN`, which keeps the normals `roll()` throws
+away. **The tank and the sidecar are lofted from sections** (`ksRing`, `KSBODY` smoothed through
+`ksStations`, turned outward by `ksLoft` whichever way round the rings were written), and the
+well is the faces over it taken out of the loft, a lining hung from the edge of the opening
+and a padded roll round the coaming over the join. `KSSEC` is one section written out point
+by point rather than a superellipse, because the opening needs named points on the top to
+cut between.
+
+**The gunner turns on his seat with his gun, and that is what the mount is.** A sidecar's gun
+is on a post ahead of the well and the man behind it swings round with it, so the mount's
+origin is his hips (`turX`, `turY`, `mountZ` at the gunner's seat): his body is `turCrew`, his
+legs lie in the nose in `crew` with the rider and the pillion, and the MG 34 and its post are
+`tur`. It cannot fire across the man riding the machine, so the def carries `arc`, the casemate
+rule, at 0.6: the gun traverses seventeen degrees either way and the machine turns to bring it
+round. `ksMan` is `jeepMan` with one addition: the thighs are turned out about their own hip
+joints (`splay`), because a rider's knees go either side of the tank and a pillion's either side
+of the rider, and the rig hangs a leg straight down its own side.
+
+**The motorcyclist is a kit on the rig** (`hr_krad`, `V.krad`): the rubberised coat, fuller and
+greener than the wool, double-breasted with its collar faced in field-grey wool and the belt
+over it; the skirts buttoned round each leg, which `figLeg` builds as a coat thigh with its hem
+over the top of the shin; gauntlets, which is the arms drawn with a kit whose skin is leather;
+and goggles pushed up on the M42 on their strap (`V.goggles`). His kit is the belt, the pouches,
+the Y-straps and the gas-mask tin, and nothing on his hips (`figKitKrad`). The pillion carries
+his Kar98k slung across his back.
+
+**Its numbers came off the duel card.** At 230 hit points and 18 of plate it won 88 per cent
+against the American squad for a little over half the squad's price; at 200 it won a third.
+At 215 and 14 of plate, 140 marks and 10 of fuel, over twelve runs, it wins 50 per cent against
+the squad and 50 against the jeep, a third or so against the Canadian section it never meets on
+the beach, and nothing against the carrier's plate. The MG 34's penetration of 14 is what
+decides the jeep: at 8 it won none and at 18 all of them, because `penChance` against the
+jeep's 21 goes as the cube of the ratio below a third. The MG 42 is the jeep's rule for the
+.50 turned round: the same damage a second as the MG 34, laid half as fast again with a little
+more suppression, and it reads 58 per cent against the squad where more damage read every fight.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -5442,6 +5497,11 @@ shots/                         screenshot output, gitignored
   occluder and gives it the grime and dust a hull collects, so a man standing to a roof gun
   came out the colour of the mud. Put him in `mgMan`, which is drawn with the gun and baked as
   a receiver the way `crew` is.
+- **A seated man's hip is a hip's depth above what he sits on.** The rig's seat of the
+  trousers runs 1.2 units under the hip joint, 1.3 in the motorcyclist's coat, so a hip put
+  at the height of a saddle puts the man most of a unit into it. Measure the figure's own
+  numbers (`lift`, and the extent of its faces) before trusting where a rider sits; the
+  photographs moved by a head's height and read as the same picture.
 - **The harness camera looks at the ground.** A close-up of a turret with only a distance and
   a pitch photographs the running gear; pass `lift` for the height of the thing.
 - **A size test written for one country shuts out another's houses.** `canGarrison`

@@ -223,10 +223,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    cleaners, the D50878 turret lofted from a plan, the M34A1 shield and the split hatch),
    its authored interior, the .50 and the tanker who stands to it, and the tanker's kit
    on the rig: his fibre helmet, his winter combat jacket and his shoulder holster.
+   It is 2130 for the KS 750: the Zündapp and its sidecar (the oval-tube frame, the girder
+   fork, the flat twin with its finned heads, the tank with the air cleaner on it, the
+   spoked wheels on their block tread, the saddles, the panniers, and the BW 40 lofted as
+   sections with its well, its coaming and the spare on its tail), the MG 34 and the MG 42
+   on the sidecar mount, and the motorcyclist's kit on the rig: the rubberised coat, the
+   gauntlets and the goggles.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2090) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2090 kB so it stays quick to load on a phone`);
+if (kb > 2130) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2130 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

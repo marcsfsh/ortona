@@ -3301,6 +3301,66 @@ for (const device of TARGETS) {
      `${m4.eyeIn} on the seat; ${m4.blown} of 40 wrecks threw the turret; killed, it left ${m4.bodies} bodies of ${m4.bodyNat}; ` +
      `Ortona's motor pool makes ${m4.ita}`);
 
+  /* --- The KS 750. The 352nd's light vehicle on the beach is the KS 750, standing in for
+     the 222 the way the jeep stands in for the carrier: the depot turns it out and refuses
+     the 222, a brain asking after the 222 counts and orders the KS 750, the three men
+     riding it are drawn with it and none of them is in its wreck, the gun on the sidecar
+     mount comes round no further than the mount lets it, the periscope's eye is the
+     gunner's, low in the sidecar, a wreck never throws the gun off, and killed it leaves
+     two bodies of the 352nd. The Italian table still has the 222. --- */
+  const ks = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 120, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_ks750');
+    out.qCar = W.queueUnit(dep, 'ger_sd222') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_ks750') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_sd222') === W.madeOf(hq.own, 'hr_ks750');
+    dep.queue.length = q0;
+    const k = W.spawnUnit(hq.own, 'hr_ks750', hq.x - 140, hq.y + 220, 0);
+    out.count = W.countOf(hq.own, 'ger_sd222'); out.countK = W.countOf(hq.own, 'hr_ks750');
+    const B = W.MODELS.veh.hr_ks750;
+    out.crew = B && B.crew ? B.crew.n : 0; out.gunner = B && B.turCrew ? B.turCrew.n : 0;
+    out.alt = !!(B && B.turUp && B.turUp.mg42);
+    out.seat = !!(W.MODELS.man.hr_krad && W.MODELS.man.hr_krad[W.POSE_SEAT]);
+    k.facing = 0; k.turret = 0; k.want = 1.2;
+    W.updateModels(k, 1.0);
+    out.lay = +Math.abs(W.angDiff(k.facing, k.turret)).toFixed(3);
+    out.arc = k.def.arc / 2;
+    W.povOn(k);
+    const e = W.povEye();
+    out.eye = +(e.z - W.groundZ(k.x, k.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(k); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(k);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s light vehicle is the KS 750, its crew riding it, its gun inside the mount\'s arc and none of them in the wreck',
+     /hr_ks750/.test(ks.makes) && !/ger_sd222/.test(ks.makes) && ks.qCar === 'hr_ks750' && ks.made === 1 && ks.madeAs &&
+     ks.count >= 1 && ks.count === ks.countK && ks.crew > 0 && ks.gunner > 0 && ks.alt && ks.seat &&
+     ks.lay <= ks.arc + 1e-3 && ks.eye > 12 && ks.eye < 17 &&
+     ks.blown === 0 && ks.sink < 1.7 && ks.bodies === 2 && ks.bodyNat === 'heer' && /ger_sd222/.test(ks.ita) && !/hr_ks750/.test(ks.ita),
+     `the depot makes ${ks.makes}; asked for a 222 it queues ${ks.qCar}, counted as ${ks.made} KS 750 made and the ` +
+     `222's count ${ks.madeAs ? 'the same' : 'DIFFERENT'}; ${ks.count} on the field asked as the 222 and ${ks.countK} ` +
+     `as the KS 750; crew ${ks.crew} vertices on the machine and ${ks.gunner} turning with the gun, the MG 42 ` +
+     `${ks.alt ? 'built' : 'MISSING'}, the seated rider ${ks.seat ? 'baked' : 'MISSING'}; asked to lay 1.2 off the nose ` +
+     `the gun came to ${ks.lay} against an arc of ${ks.arc}; the periscope's eye ${ks.eye} up; ` +
+     `${ks.blown} of 40 wrecks threw the gun, sat down at most ${ks.sink}; killed, it left ${ks.bodies} bodies of ` +
+     `${ks.bodyNat}; Ortona's depot makes ${ks.ita}`);
+
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot
