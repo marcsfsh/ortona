@@ -3664,11 +3664,14 @@ the army's list), and it is built from nothing: Ford's six-wheeler in olive drab
 and its coaxial .30 in an open-topped turret, which is what the cavalry reconnaissance troops
 brought ashore. Four men: the driver and the co-driver head and shoulders out of their hatches,
 and the gunner and the commander in the turret. The Stuart's gun and its job are the reason for
-the slot. On `tools/dims.mjs` it reads 4.76 m long against 4.70, 5.05 over the gun against 5.00,
-2.35 wide against 2.31, 1.93 to the top of the turret against 1.91, 2.35 across the crease
-against 2.31 and 0.29 of clearance under the axles. The other set of published figures, 100 in
-wide and 88.5 in high, is over the sand shields and over the ring mount, both of which are
-fittings here.
+the slot. On `tools/dims.mjs` it reads 4.76 m long against 4.70, 2.35 wide against 2.31, 1.93 to
+the top of the turret against 1.91, 2.35 across the crease against 2.31 and 0.29 of clearance
+under the axles, and the 37 mm ends short of the nose. The other set of published figures, 197 in
+long, 100 in wide and 88.5 in high, is over the towing fittings, the sand shields and the ring
+mount, two of which are fittings here. **The turret stands over the middle of the car**, its
+centre a little ahead of the middle axle (`M8G.xT`), with the engine deck behind it: placed off
+three-quarter photographs, whose perspective stretches whatever is nearest the camera, it went
+nine units too far forward and the gun hung past the nose, and a side elevation put it back.
 
 What carries it, and each is built its own way. **The hull is five rings** (`M8ST`), each a
 belly, a knee, a crease and a top point on one side, the way the 251's is three: the tub side
@@ -5974,6 +5977,11 @@ shots/                         screenshot output, gitignored
   `hkFace` read the normal off the three corners at the knee, which turn the other way from the
   plate: the whole of it was turned round and culled, and the car had no back. Two convex pieces
   are always right; a polygon with a bend in its outline never is.
+- **A three-quarter photograph is no measure of where anything is along a hull.** The M8's
+  turret was placed off three of them, which stretch whatever is nearest the camera, and came out
+  nine units forward of where a side elevation puts it; the dimensions card could not see it,
+  because an envelope does not care where a turret stands inside it. Take positions along the
+  length off a side view, and a published elevation where there is one.
 - **An open turret is a well to the occlusion bake.** The march reads the inside of a drum
   sixteen units across and sixteen deep as shut in on every side and blacks it out, whatever it
   is painted: the M8's turret came out as a hole into the hull from every angle and the

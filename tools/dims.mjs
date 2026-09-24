@@ -114,8 +114,8 @@ const REAL = {
                body: 1.96, clear: 0.286 },   /* the same White as the old model's figures: 20 ft 3 in
                over the roller, 7 ft 3.5 in over the mine racks and 6 ft 5 in across the plates, 7 ft 5 in
                to the top of the M49 ring, 11.25 in under the front differential */
-  am_m8:     { name: 'M8 Light Armored Car', len: 4.70, gun: 5.00, wid: 2.31, hgt: 1.91,
-               body: 2.31, clear: 0.29 },   /* 15 ft 5 in over the hull and 16 ft 5 in over the gun,
+  am_m8:     { name: 'M8 Light Armored Car', len: 4.70, gun: 4.70, wid: 2.31, hgt: 1.91,
+               body: 2.31, clear: 0.29 },   /* 15 ft 5 in long, with the 37 mm ending short of the nose,
                7 ft 7 in wide at the crease, 6 ft 3 in to the top of the turret and 11.5 in under the axles.
                The other set of figures in circulation, 100 in wide and 88.5 in high, is over the sand shields
                and over the ring mount, and both of those are fittings here */

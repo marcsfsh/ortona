@@ -25889,15 +25889,14 @@ function mhMen() {
         behind it with the driver's and the co-driver's hatches side by side, each opened
         forward onto the glacis.
      3. A round turret with no roof, low and a little wider than the ring it stands on,
-        with the gun's rotor shield standing out of its front and the 37 mm reaching past
-        the nose.
+        set back over the middle of the car with the gun's rotor shield standing out of its
+        front, and the 37 mm reaching most of the way to the nose.
      4. A stowage box on each side between the front and middle wheels, flush with the
         crease and ribbed across, and the rear two wheels close together on one bogie.
      5. Sand shields over the rear wheels, which were hung and taken off in the field:
         here they are the upgrade, and so is the .30 on the ring over the turret.
 
-   Published: 15 ft 5 in (4.70 m) long over the hull and 16 ft 5 in (5.00 m) over the gun,
-   7 ft 7 in (2.31 m) wide, 6 ft 3 in (1.91 m) to the top of the turret and 7 ft 4.5 in
+   Published: 15 ft 5 in (4.70 m) long, with the gun ending short of the nose, 7 ft 7 in (2.31 m) wide, 6 ft 3 in (1.91 m) to the top of the turret and 7 ft 4.5 in
    (2.25 m) over the ring mount, 11.5 in of clearance under the axles, 80 in from the front
    axle to the middle one and 128 in to the rear, 76 in of tread on 9.00-20 tyres, and a
    54 in turret ring. Laid out at 8.5 cm to the unit with the driver on the left, which is
@@ -25911,7 +25910,7 @@ var M8C = {
 var M8G = {
   xA: [17.05, -6.85, -21.2],                                  /* the three axles, 80 in and 128 in back */
   rT: 5.7, wT: 2.7, rRim: 3.0, yAx: 11.35, zDiff: 3.4,        /* 9.00-20 on a 76 in tread, 11.5 in under */
-  xT: 7.0, zR: 16.7, rHole: 8.1, gz: 3.0, gy: .3, muz: 24.3   /* the ring, the roof, the gun's axis and muzzle */
+  xT: -1.7, zR: 16.7, rHole: 8.1, gz: 3.0, gy: .3, muz: 25.0  /* the ring, the roof, the gun's axis and muzzle */
 };
 /* The hull as five rings, each a belly, a knee, a crease and a top point on the right side
    as [x, y, z]: the nose, the foot of the hatch plate, the top of it, the station behind
@@ -26146,24 +26145,25 @@ function m8Deck() {
   f.push(hkFace([[X0, -12.0, z], [X0, 12.0, z], [-27.2, 12.0, z], [-27.2, -12.0, z]], [0, 0, 1], C.odL));
   return f;
 }
-/* The engine deck: the two access doors on their hinges, the radiator grille behind them
-   with its louvres over the dark, the lifting eyes at the corners, and the whip aerial in
-   its base on the right. */
+/* The engine deck behind the turret: the two access doors on their hinges, the radiator
+   grille behind them with its louvres over the dark, the lifting eyes at the corners, and
+   the whip aerial in its base on the right. All of it stands clear of what the turret
+   sweeps with its kit hung on it. */
 function m8Engine() {
   var C = M8C, f = [], z = M8G.zR, sd, i;
   for (sd = -1; sd <= 1; sd += 2) {
-    f = f.concat(m4Box(sd, -14.2, -3.8, .6, 10.2, z, z + .14, C.od, C.odL, C.odD, .05));
-    [-12.4, -5.6].forEach(function (x) { f = f.concat(m4Box(sd, x - .7, x + .7, 10.2, 10.7, z, z + .45, C.odD, C.od, C.odD, 0)); });
-    f = f.concat(grabIron(-9.0, sd * 3.2, z + .14, 1.8, .3, C.steel, 'x'));
-    [-3.0, -26.2].forEach(function (x) { f = f.concat(grabIron(x, sd * 10.8, z, .9, .5, C.steel, 'y')); });
+    f = f.concat(m4Box(sd, -19.8, -13.4, .6, 10.2, z, z + .14, C.od, C.odL, C.odD, .05));
+    [-18.6, -14.6].forEach(function (x) { f = f.concat(m4Box(sd, x - .6, x + .6, 10.2, 10.7, z, z + .45, C.odD, C.od, C.odD, 0)); });
+    f = f.concat(grabIron(-16.6, sd * 3.2, z + .14, 1.8, .3, C.steel, 'x'));
+    [-12.8, -26.2].forEach(function (x) { f = f.concat(grabIron(x, sd * 10.8, z, .9, .5, C.steel, 'y')); });
   }
-  f = f.concat(box(-20.6, 0, z, 9.2, 19.4, .1, C.hole, C.hole, C.hole, 0));
-  for (i = 0; i < 11; i++) f = f.concat(place(pitch(box(0, 0, -.2, .18, 19.0, .4, C.od, C.odL, C.odD, 0), .55, 0, 0), 0, -25.0 + i * .86, 0, z + .3));
-  f = f.concat(box(-20.6, 0, z + .4, 9.6, .4, .3, C.od, C.odL, C.odD, 0));
-  [-9.9, 9.9].forEach(function (y) { f = f.concat(box(-20.6, y, z, 9.6, .5, .5, C.od, C.odL, C.odD, 0)); });
-  f = f.concat(cyl(-4.0, 9.6, z, .7, .7, 1.0, 10, C.odD, C.od, 0, true));
-  f = f.concat(cyl(-4.0, 9.6, z + 1.0, .32, .32, 1.8, 8, M8C.black, M8C.black, 0, true));
-  f = f.concat(taperLimb([-4.0, 9.6, z + 2.8], [-6.2, 9.6, z + 23.0], .12, .06, M8C.black));
+  f = f.concat(box(-23.5, 0, z, 5.4, 19.4, .1, C.hole, C.hole, C.hole, 0));
+  for (i = 0; i < 7; i++) f = f.concat(place(pitch(box(0, 0, -.2, .18, 19.0, .4, C.od, C.odL, C.odD, 0), .55, 0, 0), 0, -26.0 + i * .82, 0, z + .3));
+  f = f.concat(box(-23.5, 0, z + .4, 5.8, .4, .3, C.od, C.odL, C.odD, 0));
+  [-9.9, 9.9].forEach(function (y) { f = f.concat(box(-23.5, y, z, 5.8, .5, .5, C.od, C.odL, C.odD, 0)); });
+  f = f.concat(cyl(-12.0, 9.4, z, .7, .7, 1.0, 10, C.odD, C.od, 0, true));
+  f = f.concat(cyl(-12.0, 9.4, z + 1.0, .32, .32, 1.8, 8, M8C.black, M8C.black, 0, true));
+  f = f.concat(taperLimb([-12.0, 9.4, z + 2.8], [-14.2, 9.4, z + 23.0], .12, .06, M8C.black));
   return f;
 }
 /* The stowage box on each side between the front and middle wheels: its face flush with the
