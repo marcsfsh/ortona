@@ -3907,8 +3907,10 @@ head, and the bundle with six more heads wired round it.
 **A thing that lands on a vehicle lands on its top, and the top is read off the model.**
 `deckGrid` rasterises the hull's faces and the mount's, each in its own frame, into a height over
 the plan at two units a cell, once a model; `deckSeat` reads it where the bundle came down. One
-that comes down on the turret goes off it on the side it was thrown from, one on a sloped plate
-slides down it, and one that goes off the edge is on the ground beside the hull. The first
+that comes down on the turret rolls off the side of it that it landed on, one on a sloped plate
+slides down it, and one that goes off the edge is on the ground beside the hull. Pushed off
+toward the thrower instead, as it first was, a bundle that came down on the back of a Sherman's
+turret with the thrower in front of the tank crossed the whole turret and lay on the glacis. The first
 version aimed at the centre of the vehicle and laid the bundle at `mountZ`, which on a tank is
 the turret ring, so every bundle that hit a Sherman lay inside its turret and the close-up of it
 lodged was a picture of a Sherman: the gate row read `bOn` as the Panzer IV every time and nothing

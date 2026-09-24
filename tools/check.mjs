@@ -410,6 +410,11 @@ for (const device of TARGETS) {
     const site = window.siteOf(own, K1);
     const onIt = window.G.units.some(u => window.owned(u) && !u.dead && u.def.builder && u.building === site);
     const mp1 = Math.round(window.G.res[own].mp);
+    /* four minutes into a battle the till after the post is whatever that battle left in
+       it, so it is topped up to what a section costs, and what the tap met is written down */
+    const secDef = window.UNITS[window.natKey(secKey)];
+    window.G.res[own].mp = Math.max(window.G.res[own].mp, secDef.cost.mp + 50); window.simpleSync();
+    const mp1b = Math.round(window.G.res[own].mp), pop1 = window.popOf(own) + '+' + secDef.pop + '/' + window.popCap(own);
     const secBtn = document.querySelector(`#tbuild .tb[data-key="${secKey}"]`);
     const q0 = hq.queue.length;
     if (secBtn) secBtn.click();
@@ -460,14 +465,14 @@ for (const device of TARGETS) {
       window.G.units.forEach(u => { if (u.building === wSite) window.clearOrder(u); });
     }
     window.G.res[own].mp = keep; window.G.res[own].fu = Math.max(0, fu3 - 400); window.simpleSync();
-    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused,
+    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1b - mp2, poor, refused, mp1b, pop1, q0,
              wk, wBtn: !!wBtn, armed, wLit, gp: !!gp, wSite: !!wSite, wOn, wFar, minHq: W.minHq, wCost,
              want: [W.cost.mp || 0, W.cost.fu || 0], wFull, wCount, armed2, wAgain: wAgain - s0,
              wWhere: gp && wSite ? Math.round(Math.hypot(wSite.x - gp.x, wSite.y - gp.y)) : -1 };
   });
   ok('simple: a tap on the strip pegs the post out with an engineer, queues a section, and is refused when the till is empty',
      strip.postBtn && strip.site && strip.onIt && strip.postCost === 200 && strip.secBtn && strip.queued === 1 && strip.secCost > 0 && strip.poor && strip.refused,
-     `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost}; empty till dimmed ${strip.poor} and refused ${strip.refused}`);
+     `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost} (a till of ${strip.mp1b}, population ${strip.pop1}, ${strip.q0} in the queue); empty till dimmed ${strip.poor} and refused ${strip.refused}`);
   ok('simple: the strip arms the battery position and the player\'s own tap sites it, forward of home with an engineer; a second is refused',
      strip.wBtn && strip.armed && strip.wLit && strip.gp && strip.wSite && strip.wOn && strip.wWhere >= 0 && strip.wWhere < 40 &&
      strip.wFar >= strip.minHq && strip.wCost[0] === strip.want[0] && strip.wCost[1] === strip.want[1] &&

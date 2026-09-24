@@ -8154,13 +8154,16 @@ function deckAt(g, x, y) {
   return gx < 0 || gy < 0 || gx >= g.nx || gy >= g.ny ? -1e9 : g.h[gy * g.nx + gx];
 }
 /* Where a bundle lies on a vehicle, in the hull's frame, from the point it came down on.
-   One that comes down on the turret goes off it on the side it was thrown from, one that
-   comes down on a sloped plate slides down it, and one that goes off the edge of the hull
-   is on the ground beside it, with no height. */
+   One that comes down on the turret rolls off the side of it that it landed on (or the
+   side it was thrown from, dead in the middle), one that comes down on a sloped plate
+   slides down it, and one that goes off the edge of the hull is on the ground beside it,
+   with no height. */
 function deckSeat(t, lx, ly, fx, fy) {
   var D = deckGrid(t.key); if (!D) return null;
   var M = VMODEL[t.key], mp = mountPose(t, M), tr = (t.turret === undefined ? t.facing : t.turret) - t.facing;
-  var c = Math.cos(tr), s = Math.sin(tr), dx = fx - mp.x, dy = fy - mp.y, dl = Math.hypot(dx, dy) || 1, i, hz = -1e9;
+  var c = Math.cos(tr), s = Math.sin(tr), dx = lx - mp.x, dy = ly - mp.y, i, hz = -1e9;
+  if (Math.hypot(dx, dy) < 2) { dx = fx - mp.x; dy = fy - mp.y; }
+  var dl = Math.hypot(dx, dy) || 1;
   function h(x, y) { var z = deckAt(D.hull, x, y); return z < -1e8 ? hz : z; }
   for (i = 0; i < 32; i++) {
     hz = deckAt(D.hull, lx, ly);
