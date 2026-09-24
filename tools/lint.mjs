@@ -255,10 +255,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    helmet and the patch on the shoulder, the weapon slung on the back, six variants and their
    prone and dead layouts, the launcher fired by the two men who carry it, and the doors a
    field upgrade goes through opened to a squad.
+   It is 2400 for the M8: the boat-shaped hull laid between five rings, six wheels on three
+   axles and the bogie spring, the hatch plate with its two openings and their wells, the
+   covers opened onto the glacis, the open turret with its basket, rotor and rack of rounds,
+   the stowage boxes, the sand shields and the ring mount as fittings, and four men.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2350) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2350 kB so it stays quick to load on a phone`);
+if (kb > 2400) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2400 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

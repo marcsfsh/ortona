@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the grenadier squad, the pioneer team, the
-jeep, the M4, the M3A1, the KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+jeep, the M4, the M3A1, the M8, the KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -857,7 +857,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, and 2350 before the Rangers). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, and 2400 before the M8). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1087,7 +1087,15 @@ every variant is baked, with a vehicle in reach the two BAR men turn into the ba
 the weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the
 squad fights with what it has left, the .30 is bought through the brain's own upgrade routine and
 changes the weapon and two of the Thompson men, killed it leaves `usa_rgr` bodies with those baked,
-and Ortona's post still makes the Guards.
+and Ortona's post still makes the Guards. The M8 is asked it in a twelfth: the motor pool makes it
+and not the Stuart and queues it when asked for the Stuart, the count and the order book read the
+two as one, every buffer is built including the turret crew without the commander, it is in olive
+drab with the drivers in M1s and the turret crew in the tanker's helmet, the coaxial comes with it,
+a gun asked to lay 1.2 radians off the nose comes all the way round, the periscope's eye is the
+commander's over the rim at twenty-odd units up, the brain's own routine fits the .30 and the sand
+shields and the car is then skirted with the side plate worth more, forty wrecks throw the turret
+some of the time and keep shields some of the time while forty of a car that never had them keep
+none, killed it leaves American bodies, and Ortona's motor pool still makes the Stuart.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3244,21 +3252,26 @@ SIMPLE unit card -- and asks `upgradable(u)` now, which is whether the def lists
 **Its numbers came off the duel card, and the lever that decides a fight is suppression.**
 At a first cut the squad beat the grenadiers and the Panzergrenadiere every time and lost nine
 in ten to the 251, whose machine gun pins a squad and a pinned squad fires at a quarter of its
-accuracy, so the tubes have to do their work in the first few seconds of the fight. At 74 hit
-points a man, 420 marks and 20 of fuel, the Thompsons and BARs at 7.6 a round every 0.46
-seconds, and the tubes at 115 a round every 1.7 seconds out to 220 with a penetration of 150,
-it takes the grenadier squad sixteen times in sixteen with 89 per cent of itself left, which is
-what the Foot Guards do to it, the pioneers inside six seconds, the American rifle squad 81 per
-cent, and the Panzergrenadiere 42 per cent over 24 runs where the Guards take 38. The tubes take
-the 251 69 per cent of the time where the Guards' PIAT never does, and the KS 750 every time
-inside five seconds; the Panzer IV takes the squad every time in seven seconds and leaves with a
-quarter of itself gone. **The upgrade's suppression is the number to watch**: at 0.032 against
-the squad's 0.022 it took the Panzergrenadiere fight from half to all of it, because pinned men
-stop hitting anything; at 0.025, a reach of 225 and the same damage it takes that fight from 42
-to 67 per cent over 24 runs, staged at the same range for both, because a card that stages a
-pair at its own reach moves the upgraded fight out to where the SMGs opposite are worse. The
-Rangers lose to the Foot Guards four fights in five on the same money, which is two Brens at
-240 against Thompsons at 210, and the two never meet.
+accuracy, so the tubes have to do their work in the first few seconds of the fight: at 115 a
+round every 1.7 seconds out to 220 with a penetration of 150 they do. **The upgrade's suppression
+is the number to watch**: at 0.032 against the squad's 0.022 it took the Panzergrenadiere fight
+from half to all of it, because pinned men stop hitting anything, and a card that stages a pair
+at its own reach moves the upgraded fight out to where the SMGs opposite are worse, so an upgrade
+is compared at a fixed range.
+
+**It is an elite squad that hunts infantry and light vehicles, and the second cut says so.** At
+the first numbers it lost to the Foot Guards four fights in five and took the Panzergrenadiere 42
+per cent of the time, which is a squad that does its one job and not the one it is bought for. At
+78 hit points a man, 450 marks and 25 of fuel, and the Thompsons and BARs at 8.6 a round every
+0.44 seconds out to 215 with an accuracy of .60 and a suppression of .024 (.027 with the .30 and
+230 of reach), it takes the Foot Guards 63 per cent of the time over sixteen runs and 79 over
+twenty-four, the Panzergrenadiere 88 per cent and every time with the .30 on both at 180, and the
+grenadier squad, the pioneers, the American rifle squad and an MG42 team every time; the tubes
+take the 251 71 per cent of the time over twenty-four runs (94 and 50 on two shorter runs, which
+is the spread that row carries) and the KS 750 every time inside five seconds, and the M8,
+which is a light vehicle of its own side, 75 per cent. The Panzer IV still takes the squad every
+time in seven seconds with a quarter of itself gone, because a squad that hunts light vehicles
+is not a squad that hunts tanks.
 
 **The German army on the beach.** The same table does the German side. `NATIONS` carries two
 entries with `side: 'ger'`, the paratroopers (`fj`) and the 352nd Infantry Division (`heer`); a
@@ -3645,6 +3658,86 @@ and the old pair read six each in 23 on the same afternoon. It takes the grenadi
 times in twelve in 19 seconds with 92 per cent of itself left, which is the 251 against the
 American squad turned round, and the KS 750 twelve in twelve inside seven. The Panzer IV takes it
 twelve in twelve inside nine.
+
+**The M8 is the Americans' armoured car**, in the Stuart V's place (`us_stuart` to `am_m8` on
+the army's list), and it is built from nothing: Ford's six-wheeler in olive drab with the 37 mm
+and its coaxial .30 in an open-topped turret, which is what the cavalry reconnaissance troops
+brought ashore. Four men: the driver and the co-driver head and shoulders out of their hatches,
+and the gunner and the commander in the turret. The Stuart's gun and its job are the reason for
+the slot. On `tools/dims.mjs` it reads 4.76 m long against 4.70, 5.05 over the gun against 5.00,
+2.35 wide against 2.31, 1.93 to the top of the turret against 1.91, 2.35 across the crease
+against 2.31 and 0.29 of clearance under the axles. The other set of published figures, 100 in
+wide and 88.5 in high, is over the sand shields and over the ring mount, both of which are
+fittings here.
+
+What carries it, and each is built its own way. **The hull is five rings** (`M8ST`), each a
+belly, a knee, a crease and a top point on one side, the way the 251's is three: the tub side
+under the overhang, the plate leaning out from the knee to the crease, and the plate leaning in
+from the crease to the deck, which is the boat shape and what the six wheels tuck under. The
+rings run in from the crease toward the nose and the crease drops toward it, so the front of
+the side is a long wedge of plate that meets the glacis at the nose corners. **A panel between
+two rings is one face where its corners lie in a plane and two triangles where they do not**
+(`m8Quad`), because the plate leaning in to the deck twists between the foot of the hatch plate
+and the top of it, and a twisted quad fanned from one corner carries that corner's normal over
+all of it. **The hatch plate is laid in strips round its two openings** (`m8HatchPlate`), with
+the coaming put on in the plate's own frame by `hkOn`; under each opening is the well the man
+sits in, drawn facing inward, because without it the hole looks through the hull at the ground.
+The two covers are opened forward and lie on the glacis on their hinges (`m8Covers`).
+**The deck has the turret ring cut out of it** (`m8Deck`): radial strips from the ring out to a
+square round it, with the square's four corners put into the list of angles so no strip spans
+one, then the plate either side and the engine deck behind with its doors and the radiator's
+louvres (`m8Engine`).
+
+**The wheels are 9.00-20s on three axles** (`m8Wheel`, `m8Axle`, `m8Bogie`): 80 in from the front
+axle to the middle one and 128 in to the rear, 76 in of tread, a non-directional tread of blocks
+in two staggered rows, the split rim's ring of bolts on the outer face. The front axle steers
+and carries a semi-elliptic spring and a shock absorber each side; the rear two walk on one
+inverted spring a side, laid on a trunnion between them. **The stowage box between the front and
+middle wheels is an outline extruded along the hull** (`m8Boxes`, `m8ExtrudeX`), its face flush
+with the crease and its top the plate it stands under, ribbed across with the star on it; as a
+box it poked out through the leaning plate above it.
+
+**The turret is round and has no roof** (`m8Turret`): a loft outside and a loft in, the rim over
+the two, and a basket below it down to the floor of the fighting compartment that the crew stand
+in, because an open turret looks straight through the hull otherwise. The inside of all of it,
+and of the drivers' wells, is the white lead every American fighting compartment was painted
+(`INC`), and it is left out of the occlusion bake (`m8Lit`, below). The rotor stands out of
+its front as a boss turned about the bore in bands, with the collar and the 37 mm through it and
+the coaxial through its left; inside are the breech, the gunner's seat, nine rounds racked round
+the wall on the right and the radio across the back, and outside the bedroll strapped along the
+right and the musette bags hung on the left.
+
+**The two drivers are cut off below the hatch** (`m8Men`). A man sat so his head comes out of an
+M8's hatch where it should has his feet under the glacis and through the belly, and seated
+where his feet belong his whole chest is out; everything of him below the plate is left off,
+since nothing of it can be seen, and his arms go down into the hull to a wheel nobody sees. The
+drivers are the jeep's crewman and the turret crew are tankers (`gi_tank`). **The commander
+stands up to the .30 when it is fitted** (`mgMan`), on a seat at the height of the deck with his
+hands where the jeep's gunner has them on the same gun (`m8Thirty` lays the jeep's Browning on
+an M49 ring on three posts off the rim), so the turret then keeps only the gunner: `turCrewMg`
+is the turret crew drawn instead of `turCrew` while the roof gun is up, in the draw and in the
+shadow pass. `VIN.am_m8` is the open turret's room, which is nothing, with the eye the
+commander's over the rim.
+
+**The sand shields are a fitting of their own and skirts to a hollow charge.** `UPGRADES.fenders`
+hangs them over the rear wheels, and `skirted(u)` is the one question every reader of
+`u.up.skirts` asked before them -- the side plate's twelve per cent in `armourAt`, the hollow
+charge bursting on the sheet in `fireAt`, the draw and the shadow pass -- so the shields and the
+Schürzen are one rule on two keys. The brain fits them only once the enemy has something that
+fires a hollow charge, as it does the Schürzen. And **a wreck carries skirts only if it had
+them**: it drew them on forty-five per cent of wrecks whether or not they had ever been hung,
+which on the Panzer IV was a wreck wearing plates the tank never carried.
+
+**Its numbers came off the duel card, and the lever was what the Rangers do to it.** At the
+Stuart's 480 and 62 of plate less a little, 420 and 46, it won every fight with the KS 750, the
+grenadier squad, the FJ assault group and the 222, 92 per cent with the 251, and lost every
+fight with the Panzer IV; and it beat the Rangers 58 per cent of the time, which is the wrong
+way round for a squad meant to hunt light vehicles. At 380 and 40 of plate,
+240 marks and 35 of fuel, over sixteen runs a row, the Rangers take it 75 per cent of the time, and
+it still takes the 251 81 per cent of the time, the KS 750 and the grenadier squad every time, the
+222 94 per cent and the FJ assault group 94 per cent, whose Panzerschreck is slow enough on the
+reload that the coaxial has the four of them down first. The Panzer IV took it twelve times in
+twelve at the first numbers, and thinner plate does not change that.
 
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
@@ -5876,6 +5969,20 @@ shots/                         screenshot output, gitignored
   side: the normal was nought, the face was never turned, and it was culled from above. Every
   photograph of the compartment had the ground showing through it. Drop a vertex that lies on a
   straight edge, or start the polygon at a corner.
+- **A polygon that is not convex is fanned from its first corner, and that may be the concave one.**
+  The M8's nose and tail below the crease were one hexagon each, bent out at the knee, and
+  `hkFace` read the normal off the three corners at the knee, which turn the other way from the
+  plate: the whole of it was turned round and culled, and the car had no back. Two convex pieces
+  are always right; a polygon with a bend in its outline never is.
+- **An open turret is a well to the occlusion bake.** The march reads the inside of a drum
+  sixteen units across and sixteen deep as shut in on every side and blacks it out, whatever it
+  is painted: the M8's turret came out as a hole into the hull from every angle and the
+  commander looked down into nothing. A face marked `lit` is left out of the bake (`bakeAO`,
+  carried through `aoSplit`), which is right for the inside of anything open to the sky and
+  wrong for a joint on the outside.
+- **A wreck drew skirts nobody had hung.** The wreck kept its skirts on forty-five per cent of
+  deaths whether or not they had been fitted, so a Panzer IV that burned without its Schürzen
+  often lay there wearing them. `skirted(u)` is asked at the death now.
 - **A duel staged at a pair's own reach is staged somewhere else once an upgrade changes the
   reach.** `tools/duel.mjs` opens a fight at a fraction of the shorter reach, so the Rangers'
   .30 moved its fight with the Panzergrenadiere from 172 to 197, out to where the SMGs opposite

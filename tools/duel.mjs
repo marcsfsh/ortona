@@ -115,6 +115,16 @@ const CARD = [
   ['am_ranger', 'hr_251'],
   ['am_ranger', 'hr_ks750'],
   ['hr_p4', 'am_ranger'],
+  /* and the M8 the Americans field in the Stuart's place: against the KS 750, the 251 and the
+     grenadier squad it hunts, the FJ assault group whose Panzerschreck opens it (and with the
+     sand shields hung against it), the Rangers who are meant to beat it, and the Panzer IV */
+  ['am_m8', 'hr_ks750'],
+  ['am_m8', 'hr_251'],
+  ['am_m8', 'hr_gren'],
+  ['am_m8', 'ger_pgren'],
+  ['am_m8', 'ger_pgren', { a: ['fenders'] }],
+  ['am_ranger', 'am_m8'],
+  ['hr_p4', 'am_m8'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

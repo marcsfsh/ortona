@@ -3685,6 +3685,85 @@ for (const device of TARGETS) {
      `${rg.wUp ? 'changes the weapon' : 'does NOT change the weapon'}, the men then ${rg.up30}; killed, it left ${rg.bodies} bodies ` +
      `of ${rg.bodyNat}, the fall ${rg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${rg.ita}`);
 
+  /* --- The Greyhound. The armoured car the Americans field on the beach in the Stuart's
+     place: the motor pool makes it and queues it when asked for the Stuart, the count and
+     the order book read the two as one, it is in olive drab with the drivers in M1s and the
+     turret crew in the tanker's helmet, the coaxial comes with it, and the turret goes all
+     the way round. The sand shields and the .30 are the two fittings, bought through the
+     brain's own routine: the .30 takes the commander out of the turret to stand up to it,
+     and the shields are skirts to a hollow charge the way Schürzen are. The periscope's eye
+     is the commander's over the rim, forty wrecks throw the turret some of the time and a
+     wreck carries shields only if it had them, it leaves American bodies, and Ortona's motor
+     pool still makes the Stuart. --- */
+  const gh = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_m8');
+    out.q = W.queueUnit(mot, 'us_stuart') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_m8') - m0;
+    out.madeAs = W.madeOf('us', 'us_stuart') === W.madeOf('us', 'am_m8');
+    mot.queue.length = q0;
+    const v = W.spawnUnit('us', 'am_m8', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_stuart') === W.countOf('us', 'am_m8');
+    const V = W.VMODEL.am_m8, B = W.MODELS.veh.am_m8, K = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew && B.turCrewMg && B.mg && B.skirts);
+    out.od = V.hull.filter(f => f.c === W.M8C.od).length;
+    out.m1 = V.crew.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.tanker = V.turCrew.filter(f => f.c === K.hide).length;
+    out.mgTanker = V.mgMan.filter(f => f.c === K.hide).length;
+    out.gunner = V.turCrewMg.length < V.turCrew.length && V.turCrewMg.filter(f => f.c === K.hide).length > 0;
+    out.coax = W.secondaryKeys(v).indexOf('coax') >= 0;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    /* the two fittings, the .30 first because the routine reaches it first */
+    const side0 = W.armourAt(v, v.x, v.y + 100);
+    const a = W.buyUpgradeAuto('us', [v], { floor: 0, fuFloor: 0, foeAt: true });
+    const b = W.buyUpgradeAuto('us', [v], { floor: 0, fuFloor: 0, foeAt: true });
+    out.fit = (a === v ? 'x' : '-') + (b === v ? 'x' : '-') + ' ' + Object.keys(v.up).filter(k => v.up[k]).sort().join(',');
+    out.sec = W.secondaryKeys(v).join(',');
+    out.skirted = W.skirted(v);
+    out.side = +(W.armourAt(v, v.x, v.y + 100) / side0).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99, sk = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; if (w.skirts) sk++; sink = Math.min(sink, w.sink); }
+    const bare = W.spawnUnit('us', 'am_m8', hq.x + 180, hq.y - 260, 0);
+    let skBare = 0;
+    for (let i = 0; i < 40; i++) { if (W.makeWreck(bare).skirts) skBare++; }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2); out.sk = sk; out.skBare = skBare;
+    W.killUnit(bare);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' armoured car is the M8, with the sand shields and the .30 on the ring as its two fittings',
+     /am_m8/.test(gh.makes) && !/us_stuart/.test(gh.makes) && gh.q === 'am_m8' && gh.made === 1 && gh.madeAs && gh.count &&
+     gh.bufs && gh.od > 50 && gh.m1 > 0 && gh.tanker > 0 && gh.mgTanker > 0 && gh.gunner && gh.coax && gh.lay < .05 &&
+     gh.eye > 22 && gh.eye < 30 && gh.fit === 'xx fenders,mg' && /coax/.test(gh.sec) && /mg/.test(gh.sec) && gh.skirted &&
+     gh.side >= 1.1 && gh.blown > 0 && gh.blown < 40 && gh.sink >= 2 && gh.sk > 0 && gh.skBare === 0 &&
+     gh.bodies >= 1 && gh.bodyNat === 'usa' && /us_stuart/.test(gh.ita) && !/am_m8/.test(gh.ita),
+     `the motor pool makes ${gh.makes}; asked for the Stuart it queues ${gh.q}, counted as ${gh.made} made and the order book ` +
+     `${gh.madeAs ? 'the same' : 'DIFFERENT'}, the count ${gh.count ? 'the same' : 'DIFFERENT'}; buffers ${gh.bufs ? 'all built' : 'MISSING'}; ` +
+     `${gh.od} hull faces in olive drab; the drivers have ${gh.m1} faces of M1 and the turret ${gh.tanker} of the tanker's helmet, ` +
+     `the man at the .30 ${gh.mgTanker}, and with it fitted the turret keeps ${gh.gunner ? 'the gunner alone' : 'BOTH MEN'}; the coaxial ` +
+     `${gh.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the gun is ${gh.lay} short; the periscope's eye ${gh.eye} up; ` +
+     `the routine fitted ${gh.fit}, the guns then ${gh.sec}, ${gh.skirted ? 'skirted' : 'NOT skirted'} with the side ${gh.side}x; ` +
+     `${gh.blown} of 40 wrecks threw the turret, the least sat down ${gh.sink}, ${gh.sk} of 40 kept shields and ${gh.skBare} of 40 ` +
+     `without them; killed, it left ${gh.bodies} bodies of ${gh.bodyNat}; Ortona's motor pool makes ${gh.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three
