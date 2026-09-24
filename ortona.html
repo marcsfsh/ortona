@@ -1263,7 +1263,7 @@ var NATIONS = {
           sub: {} },
   heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
           blurb: 'Grenadier squads with the Kar98k behind the seawall and along the bluff, the Atlantic Wall in front of them and the bocage at their backs.',
-          sub: { ger_gren: 'hr_gren', ger_pio: 'hr_pio', ger_sd222: 'hr_ks750', ger_h251: 'hr_251', ger_p4: 'hr_p4', ger_wirb: 'hr_234' } }
+          sub: { ger_gren: 'hr_gren', ger_pio: 'hr_pio', ger_pgren: 'hr_kch', ger_sd222: 'hr_ks750', ger_h251: 'hr_251', ger_p4: 'hr_p4', ger_wirb: 'hr_234' } }
 };
 var NAT = 'can', NAX = 'fj';
 function setNation(n, a) {
@@ -1719,6 +1719,23 @@ var UNITS = {
     w: { range: 215, dmg: 14.6, rof: 0.48, acc: .58, sup: .014, pen: 16 },
     at: { range: 250, dmg: 92, rof: 4.6, acc: .58, pen: 175, aoe: 22, shell: 1, rocket: 1 },
     desc: 'Close-assault paratroopers with MP40s, grenades and a Panzerschreck. Dangerous to armour inside the town.'
+  },
+  /* The Knight's Cross Holders: four decorated veterans of the 352nd with StG 44s, in the
+     assault group's place on a map whose German army is the 352nd (`natKey`), bought from
+     the same post. What they have that nobody else has is two things to throw, and both are
+     orders a player gives (`ab`, `abGren`, `abBundle`): a volley of stick grenades, one
+     from every man, at whatever of the enemy is nearest inside the throw, each lying on
+     the ground three quarters of a second before it goes off; and the bundle charge, one
+     grenade with six more heads wired round it, thrown by one man at a vehicle the player
+     picks, which the squad walks up to before it throws. */
+  hr_kch: {
+    side: 'ger', nat: 'heer', name: "Knight's Cross Holders", short: 'RK', cat: 'inf', hk: 'B',
+    models: 4, hpPer: 105, speed: 68, sight: 330, pop: 10, cost: { mp: 420, fu: 30 }, time: 30,
+    req: 'ger_qtr', body: 'heer_kch', vet0: 1,
+    w: { range: 230, dmg: 12.8, rof: .47, acc: .62, sup: .022, pen: 16 },
+    ab: { gren: { range: 150, cd: 35, dmg: 46, aoe: 24, fuse: .75 },
+          bund: { range: 105, cd: 60, dmg: 240, aoe: 34, fuse: .75 } },
+    desc: 'Four decorated veterans with StG 44s, who hunt infantry. GRENADES throws one from every man at whatever of the enemy is nearest inside the throw; BUNDLE CHARGE sends them after a vehicle you pick, and one of them throws seven grenade heads wired into one at it.'
   },
   ger_pak: {
     side: 'ger', name: '7.5 cm Pak 40', short: 'PAK 40', cat: 'team', hk: 'T',
@@ -5596,6 +5613,9 @@ function spawnUnit(slot, key, x, y, facing) {
     u.up = {};                                       /* the eighty-eight keeps its round here */
   }
   u.baseA = u.facing;                                /* what a fixed mount was laid on */
+  /* a unit raised as veterans starts with the kills that earn the rank, since the rank is
+     worked out from the tally every time it moves */
+  if (d.vet0) { u.vet = d.vet0; u.kills = [0, 4, 9, 16][d.vet0]; }
   if (u.models) fitRadius(u);
   G.units.push(u);
   recBorn(u);
@@ -6104,7 +6124,7 @@ function updateBuilding(b, dt) {
 /* `coverDone` goes with the order, because a new order is the one thing that is allowed
    to make a section take cover again. Everything else -- the enemy moving round, a man
    falling, the piece being shot away -- leaves it where it chose to be. */
-function clearOrder(u) { u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; u.coverDone = 0; }
+function clearOrder(u) { u.abT = null; u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; u.coverDone = 0; }
 
 /* Holding a house. A ruin with two feet of rubble stone round it is the best cover on
    this map and the whole battle for Ortona was fought for one building at a time, so a
@@ -7261,7 +7281,8 @@ function updateModels(u, dt) {
        one, and otherwise stands on his own bearing rather than the section's, which is
        what stops eight men facing one way like a guard of honour. */
     var travel = moved > .35 ? Math.atan2(m.y - py0, m.x - px0) : u.facing;
-    var want = u.target && (!u.moving || u.gar || Math.abs(angDiff(angTo(m, u.target), travel)) < .6)
+    var want = m.thrT > 0 ? Math.atan2(m.thrY - m.y, m.thrX - m.x)
+             : u.target && (!u.moving || u.gar || Math.abs(angDiff(angTo(m, u.target), travel)) < .6)
              ? angTo(m, u.target)
              : u.moving ? travel : u.facing + (halted ? (m.jit || 0) : 0);
     if (m.f === undefined) m.f = want;
@@ -7289,7 +7310,9 @@ function updateModels(u, dt) {
        else kneels. It comes above the cover stances and below going flat, because a crew
        pinned in the open leaves the gun. */
     var atGun = u.cat === 'team' && u.def.gunAt && i < (u.def.gunSit ? 1 : 2) && gunSet(u);
-    if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
+    /* a man throwing is throwing, whatever else the section is doing */
+    if (m.thrT > 0) m.pose = m.thrB ? POSE_THROWB : POSE_THROW;
+    else if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
     else if (u.sup > .55 && !u.moving && !u.gar) m.pose = POSE_PRONE;
     else if (u.stance === 'ground' && halted && !u.gar && st !== STAND_DUG) m.pose = POSE_PRONE;
     else if (u.moving) m.pose = (u.stance === 'double' || u.retreat) ? POSE_RUN : POSE_WALK;
@@ -7850,6 +7873,394 @@ function aimAt(u, t) {
   }
   return best ? { x: best.x, y: best.y } : { x: t.x, y: t.y };
 }
+/* ---- things a squad throws --------------------------------------------------------
+   The Knight's Cross Holders have two, and both are orders rather than weapons: `acquire`
+   never picks them, nothing fires them on a cooldown of its own, and a player, the brain
+   or the balance card asks for each one by name. `u.def.ab` is what they are.
+
+   GRENADES is a volley of stick grenades, one from every man, at whatever of the enemy
+   the side can see nearest inside the throw -- infantry first, a gun crew next, a vehicle
+   only if nothing else is there. BUNDLE is the geballte Ladung: the player picks a vehicle,
+   the squad walks until it is in reach of it, and one man throws.
+
+   A throw is a man's own. He winds up, the grenade leaves his hand on the frame the throw
+   changes (`THROW_REL`), and the men of a volley follow one another a fifth of a second
+   apart, because four grenades leaving on one instant read as one grenade. A grenade flies
+   on a lob, lands, skids a little and lies where it stopped for its fuse -- three quarters
+   of a second -- before it goes off, which is the whole of what a man has to get away from
+   it. The bundle is thrown to where the vehicle will be when it lands, and if it lands on
+   the vehicle it lodges on the deck and rides with it. */
+function abDef(u, k) { return u && u.def && u.def.ab ? u.def.ab[k] : null; }
+function abLeft(u, k) { return u.abCd && u.abCd[k] > 0 ? u.abCd[k] : 0; }
+function abBusy(u) {
+  for (var i = 0; i < u.models.length; i++) if (u.models[i].thrPend || u.models[i].thrT > 0) return true;
+  return false;
+}
+/* Why a unit cannot throw this now, or null if it can. A reason rather than a yes or no,
+   because what the player is told is the reason. `order` asks whether it may be SENT to
+   throw, which a squad still finishing a volley may be: the throw waits for it. */
+function abWhy(u, k, order) {
+  if (!abDef(u, k)) return 'none';
+  if (u.dead || u.inside) return 'gone';
+  if (abLeft(u, k) > 0) return 'cooling';
+  if (u.retreat) return 'retreating';
+  if (u.sup > 1) return 'pinned';
+  if (!order && abBusy(u)) return 'busy';
+  return null;
+}
+/* the best thing of theirs in reach of a volley: the most men, a garrison over a section in
+   the open because grenades are how a house is cleared, a crew over a section because a
+   crew bunched on its gun is the best mark there is, and nearer over further */
+function abGrenTarget(u) {
+  var A = abDef(u, 'gren'), best = null, bs = -1e9, i;
+  if (!A) return null;
+  for (i = 0; i < G.units.length; i++) {
+    var e = G.units[i];
+    if (e.dead || e.inside || e.side === u.side || !visibleTo(u.side, e)) continue;
+    var d = dist(u, e);
+    if (d > A.range) continue;
+    var sc = e.cat === 'veh' ? -20 : aliveModels(e) * (e.gar ? 1.6 : 1) * (e.cat === 'team' ? 1.4 : 1);
+    sc -= d / 60;
+    if (sc > bs) { bs = sc; best = e; }
+  }
+  return best;
+}
+/* A volley. Every man who is standing throws at a man of the target, dealt round them in
+   turn, and the squad stands still while it does. */
+function abGren(u, t) {
+  var why = abWhy(u, 'gren'), A = abDef(u, 'gren');
+  if (why) return why;
+  t = t || abGrenTarget(u);
+  if (!t) return 'nothing in reach';
+  if (t.dead || dist(u, t) > A.range) return 'out of reach';
+  var tm = t.models ? t.models.filter(function (q) { return q.alive; }) : [], k = 0;
+  u.abCd = u.abCd || {}; u.abCd.gren = A.cd;
+  u.models.forEach(function (m) {
+    if (!m.alive) return;
+    abQueue(m, 'gren', t, tm.length ? tm[k % tm.length] : null, k * .2);
+    k++;
+  });
+  u.thrHold = k * .2 + .7;
+  u.abUsed = (u.abUsed || 0) + 1;
+  return null;
+}
+function abQueue(m, kind, t, tm, delay) {
+  m.thrPend = 1; m.thrD = delay; m.thrT = 0; m.thrK = kind; m.thrB = kind === 'bund' ? 1 : 0;
+  m.thrU = t; m.thrM = tm; m.thrX = tm ? tm.x : t.x; m.thrY = tm ? tm.y : t.y;
+}
+/* The bundle. An order: the squad is sent after the vehicle and throws when it is in reach
+   (`abBundleTick`), so what it costs is the walk as much as the cooldown. */
+function abBundle(u, t) {
+  var why = abWhy(u, 'bund', 1);
+  if (why) return why;
+  if (!t || t.dead || t.cat !== 'veh' || t.side === u.side) return 'not a vehicle';
+  if (!visibleTo(u.side, t)) return 'not seen';
+  if (u.gar) leaveBuilding(u);
+  clearOrder(u);
+  u.order = 'bundle'; u.abT = t; u.abT0 = G.t;
+  return null;
+}
+/* the man who throws it: the one who carries it, or whoever is left */
+function abBundleMan(u) {
+  var i, n = u.models.length;
+  for (i = n - 1; i >= 0; i--) if (u.models[i].alive && variantForModel(u, i) === 'kc_bund') return u.models[i];
+  for (i = n - 1; i >= 0; i--) if (u.models[i].alive) return u.models[i];
+  return null;
+}
+function abBundleTick(u) {
+  var t = u.abT, A = abDef(u, 'bund');
+  /* it is over when the vehicle is, when the side loses sight of it for good, or when the
+     squad has been at it for half a minute and never got there */
+  if (!t || t.dead || !A || u.retreat || G.t - u.abT0 > 30 ||
+      (!visibleTo(u.side, t) && G.t - (u.abSeenT || u.abT0) > 6)) { u.order = null; u.abT = null; u.path = null; return; }
+  if (visibleTo(u.side, t)) u.abSeenT = G.t;
+  var d = dist(u, t);
+  if (d > A.range * .9) {
+    if (!u.path || !u.dest || dsq(u.dest.x, u.dest.y, t.x, t.y) > 50 * 50) {
+      u.dest = { x: t.x, y: t.y }; u.path = findPath(u.x, u.y, t.x, t.y, u); u.pi = 0;
+    }
+    return;
+  }
+  if (abWhy(u, 'bund')) return;
+  var m = abBundleMan(u);
+  if (!m) return;
+  u.path = null; u.dest = null;
+  u.abCd = u.abCd || {}; u.abCd.bund = A.cd;
+  abQueue(m, 'bund', t, null, 0);
+  u.thrHold = .8;
+  u.order = null; u.abT = null;
+  u.abUsed = (u.abUsed || 0) + 1;
+}
+/* When the two are worth using, which is the brain's rule and the balance card's: a volley
+   at two men or more, a crew, or anyone in a house, and the bundle at a vehicle near enough
+   to be worth the walk -- a halted one before a moving one, and nearer before further. It
+   answers what it did, a bit each, so the brain can count them. */
+function abAuto(u) {
+  if (!u.def.ab || u.dead || u.inside || u.retreat) return 0;
+  var did = 0, i;
+  if (!abWhy(u, 'gren')) {
+    var t = abGrenTarget(u);
+    if (t && t.cat !== 'veh' && (aliveModels(t) >= 2 || t.gar || t.cat === 'team') && !abGren(u, t)) did |= 1;
+  }
+  if (u.order !== 'bundle' && abDef(u, 'bund') && !abWhy(u, 'bund', 1)) {
+    var best = null, bs = 1e9;
+    for (i = 0; i < G.units.length; i++) {
+      var e = G.units[i];
+      if (e.dead || e.cat !== 'veh' || e.side === u.side || !visibleTo(u.side, e)) continue;
+      var d = dist(u, e);
+      if (d > 330) continue;
+      var sc = d + (e.moving ? 120 : 0);
+      if (sc < bs) { bs = sc; best = e; }
+    }
+    if (best && !abBundle(u, best)) did |= 2;
+  }
+  return did;
+}
+/* what a card says about a throw: ready, or how long until the first of the picked squads has
+   it back */
+function abSub(list, k) {
+  var lo = 1e9;
+  list.forEach(function (u) { lo = Math.min(lo, abLeft(u, k)); });
+  return lo <= 0 ? 'ready' : Math.ceil(lo) + 's';
+}
+function abSay(why) {
+  return why === 'cooling' ? 'not ready yet' : why === 'nothing in reach' ? 'nothing in reach' : why === 'pinned' ? 'pinned down'
+       : why === 'busy' ? 'already throwing' : why === 'retreating' ? 'falling back' : why || '';
+}
+/* the volley, from every squad picked that has one */
+function orderGrenades(list) {
+  var n = 0, why = null;
+  list.forEach(function (u) { var r = abGren(u); if (!r) n++; else if (!why) why = r; });
+  toast(n ? 'Grenades!' : 'Grenades: ' + abSay(why));
+  sfx('click'); syncHud();
+  return n;
+}
+/* the thing of theirs with plate on it under the pointer, inside its own ring or near enough
+   for a thumb */
+function vehicleAt(wx, wy, side) {
+  var best = null, bd = 1e9, i;
+  for (i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.cat !== 'veh' || u.side === side || !visibleTo(side, u)) continue;
+    var r = Math.max(selRadius(u), MOB ? 46 : 34), d = dsq(wx, wy, u.x, u.y);
+    if (d > r * r || d > bd) continue;
+    bd = d; best = u;
+  }
+  return best;
+}
+/* the bundle, sent at the vehicle the player picked */
+function callBundle(wx, wy) {
+  var list = selectedUnits().filter(function (u) { return owned(u) && abDef(u, 'bund'); });
+  var t = vehicleAt(wx, wy, G.side);
+  if (!t) { toast('Bundle charge: pick a vehicle'); return 0; }
+  var n = 0, why = null;
+  list.forEach(function (u) { var r = abBundle(u, t); if (!r) n++; else if (!why) why = r; });
+  toast(n ? 'Bundle charge: going for the ' + t.def.short : 'Bundle charge: ' + abSay(why));
+  sfx('click');
+  return n;
+}
+/* The clocks: cooldowns, the delay before each man starts his throw, and the throw itself,
+   which lets the grenade go on the frame it passes the release. */
+function abTick(u, dt) {
+  var k;
+  if (u.abCd) for (k in u.abCd) if (u.abCd[k] > 0) u.abCd[k] = Math.max(0, u.abCd[k] - dt);
+  if (u.order === 'bundle') abBundleTick(u);
+  for (var i = 0; i < u.models.length; i++) {
+    var m = u.models[i];
+    if (!m.alive) { m.thrPend = 0; m.thrT = 0; continue; }
+    if (m.thrPend) { m.thrD -= dt; if (m.thrD <= 0) { m.thrPend = 0; m.thrT = .62; } continue; }
+    if (!(m.thrT > 0)) continue;
+    var was = m.thrT;
+    m.thrT = Math.max(0, m.thrT - dt);
+    if (was > THROW_REL && m.thrT <= THROW_REL) abRelease(u, m);
+  }
+}
+/* The grenade leaves his hand. It goes where the man it was meant for is now, and a bundle
+   goes where the vehicle will be when it comes down, with the error a throw has in it. It
+   is aimed at the back half of the hull, which is the engine deck on a tank and the open
+   compartment on a half-track, because the middle of a tank is its turret. */
+function abRelease(u, m) {
+  var A = abDef(u, m.thrK), t = m.thrU, tx = m.thrX, ty = m.thrY, bund = m.thrK === 'bund';
+  if (!A) return;
+  if (m.thrM && m.thrM.alive) { tx = m.thrM.x; ty = m.thrM.y; }
+  else if (t && !t.dead) {
+    var back = bund && t.cat === 'veh' ? unitBody(t).bodyL * .5 : 0;
+    tx = t.x - Math.cos(t.facing) * back; ty = t.y - Math.sin(t.facing) * back;
+  }
+  var d = Math.hypot(tx - m.x, ty - m.y), dur = bund ? .5 + d / 220 : .45 + d / 260;
+  if (bund && t && !t.dead) {
+    /* leading it by the flight, off the ground it has made good since the last frame */
+    var sp = t.moving ? (t.sp || 0) : 0;
+    tx += Math.cos(t.facing) * sp * dur; ty += Math.sin(t.facing) * sp * dur;
+    d = Math.hypot(tx - m.x, ty - m.y); dur = .5 + d / 220;
+  }
+  var er = bund ? 4 + d * .03 : 6 + d * .07, ea = Math.random() * TAU, rr = Math.random() * er;
+  tx += Math.cos(ea) * rr; ty += Math.sin(ea) * rr;
+  var sx = m.x + Math.cos(m.f) * 2, sy = m.y + Math.sin(m.f) * 2;
+  G.shots.push({ kind: 'gren', bund: bund, x: sx, y: sy, sx: sx, sy: sy, sz: groundZ(m.x, m.y) + 21,
+                 tx: tx, ty: ty, t: 0, dur: dur, arc: bund ? 12 + d * .18 : 16 + d * .22,
+                 spin: (Math.random() < .5 ? -1 : 1) * (bund ? 7 : 12), yaw: m.f,
+                 side: u.side, owner: u, target: bund ? t : null, dmg: A.dmg, aoe: A.aoe, fuse: A.fuse, rest: -1 });
+  recFired(u, 1);
+}
+/* whether a point is on a vehicle's hull, off the same measured body the collisions use */
+function onHull(t, x, y, pad) {
+  var b = unitBody(t), c = Math.cos(t.facing), s = Math.sin(t.facing), dx = x - t.x, dy = y - t.y;
+  var lx = dx * c + dy * s, ly = -dx * s + dy * c;
+  return Math.abs(lx) <= b.bodyL + (pad || 0) && Math.abs(ly) <= b.bodyW + (pad || 0);
+}
+/* The top of a vehicle over its own plan, so that a thing thrown onto one lies on what it
+   came down on: the engine deck, the track guard, the floor of an open compartment. It is
+   rasterised once a model at two units a cell off the model's own faces, the hull in the
+   hull's frame and the mount in the mount's, because the mount turns. */
+function deckGrid(k) {
+  var V = VMODEL[k];
+  if (!V || !V.hull) return null;
+  if (V.deck) return V.deck;
+  V.deck = { hull: deckRaster(V.hull), tur: V.tur ? deckRaster(V.tur) : null };
+  return V.deck;
+}
+function deckRaster(fs) {
+  var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, i, j, v, st = 2;
+  for (i = 0; i < fs.length; i++) for (j = 0, v = fs[i].v; j < v.length; j++) {
+    x0 = Math.min(x0, v[j][0]); x1 = Math.max(x1, v[j][0]);
+    y0 = Math.min(y0, v[j][1]); y1 = Math.max(y1, v[j][1]);
+  }
+  var nx = Math.ceil((x1 - x0) / st) + 1, ny = Math.ceil((y1 - y0) / st) + 1;
+  var h = new Float32Array(nx * ny), g = { x0: x0, y0: y0, st: st, nx: nx, ny: ny, h: h };
+  h.fill(-1e9);
+  for (i = 0; i < fs.length; i++) for (j = 1, v = fs[i].v; j < v.length - 1; j++) deckTri(g, v[0], v[j], v[j + 1]);
+  return g;
+}
+function deckTri(g, a, b, c) {
+  var d = (b[1] - c[1]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[1] - c[1]);
+  if (Math.abs(d) < 1e-6) return;
+  var gx0 = Math.max(0, Math.floor((Math.min(a[0], b[0], c[0]) - g.x0) / g.st));
+  var gx1 = Math.min(g.nx - 1, Math.ceil((Math.max(a[0], b[0], c[0]) - g.x0) / g.st));
+  var gy0 = Math.max(0, Math.floor((Math.min(a[1], b[1], c[1]) - g.y0) / g.st));
+  var gy1 = Math.min(g.ny - 1, Math.ceil((Math.max(a[1], b[1], c[1]) - g.y0) / g.st));
+  for (var gy = gy0; gy <= gy1; gy++) for (var gx = gx0; gx <= gx1; gx++) {
+    var px = g.x0 + gx * g.st, py = g.y0 + gy * g.st;
+    var w1 = ((b[1] - c[1]) * (px - c[0]) + (c[0] - b[0]) * (py - c[1])) / d;
+    var w2 = ((c[1] - a[1]) * (px - c[0]) + (a[0] - c[0]) * (py - c[1])) / d;
+    if (w1 < -1e-3 || w2 < -1e-3 || w1 + w2 > 1.001) continue;
+    var z = w1 * a[2] + w2 * b[2] + (1 - w1 - w2) * c[2], q = gy * g.nx + gx;
+    if (z > g.h[q]) g.h[q] = z;
+  }
+}
+function deckAt(g, x, y) {
+  if (!g) return -1e9;
+  var gx = Math.round((x - g.x0) / g.st), gy = Math.round((y - g.y0) / g.st);
+  return gx < 0 || gy < 0 || gx >= g.nx || gy >= g.ny ? -1e9 : g.h[gy * g.nx + gx];
+}
+/* Where a bundle lies on a vehicle, in the hull's frame, from the point it came down on.
+   One that comes down on the turret goes off it on the side it was thrown from, one that
+   comes down on a sloped plate slides down it, and one that goes off the edge of the hull
+   is on the ground beside it, with no height. */
+function deckSeat(t, lx, ly, fx, fy) {
+  var D = deckGrid(t.key); if (!D) return null;
+  var M = VMODEL[t.key], mp = mountPose(t, M), tr = (t.turret === undefined ? t.facing : t.turret) - t.facing;
+  var c = Math.cos(tr), s = Math.sin(tr), dx = fx - mp.x, dy = fy - mp.y, dl = Math.hypot(dx, dy) || 1, i, hz = -1e9;
+  function h(x, y) { var z = deckAt(D.hull, x, y); return z < -1e8 ? hz : z; }
+  for (i = 0; i < 32; i++) {
+    hz = deckAt(D.hull, lx, ly);
+    var qx = lx - mp.x, qy = ly - mp.y;
+    var tz = D.tur ? deckAt(D.tur, qx * c + qy * s, -qx * s + qy * c) + mp.z : -1e9;
+    if (hz < -1e8 && tz < -1e8) return { x: lx, y: ly, z: null };
+    if (tz >= hz + 1.5) { lx += dx / dl * 2; ly += dy / dl * 2; continue; }
+    var gx = (h(lx + 2, ly) - h(lx - 2, ly)) / 4, gy = (h(lx, ly + 2) - h(lx, ly - 2)) / 4, sl = Math.hypot(gx, gy);
+    if (sl < .6) return { x: lx, y: ly, z: hz };
+    lx -= gx / sl * 2; ly -= gy / sl * 2;
+  }
+  return { x: lx, y: ly, z: hz < -1e8 ? null : hz };
+}
+/* how far a point is from a vehicle's hull, nought on it */
+function hullGap(t, x, y) {
+  var b = unitBody(t), c = Math.cos(t.facing), s = Math.sin(t.facing), dx = x - t.x, dy = y - t.y;
+  var lx = Math.abs(dx * c + dy * s) - b.bodyL, ly = Math.abs(-dx * s + dy * c) - b.bodyW;
+  return Math.hypot(Math.max(0, lx), Math.max(0, ly));
+}
+/* one grenade: the flight, then lying where it stopped, then the burst. True when it is gone. */
+function grenTick(s, dt) {
+  if (s.rest < 0) {
+    var k = clamp(s.t / s.dur, 0, 1);
+    s.x = lerp(s.sx, s.tx, k); s.y = lerp(s.sy, s.ty, k);
+    if (k < 1) return false;
+    /* the fuse is counted from the moment it came down and not from the frame that noticed */
+    var over = s.t - s.dur;
+    s.rest = s.fuse - over; s.landT = G.t - over;
+    var tv = s.target;
+    var seat = null;
+    if (s.bund && tv && !tv.dead && onHull(tv, s.x, s.y, 3)) {
+      var c = Math.cos(tv.facing), sn = Math.sin(tv.facing), dx = s.x - tv.x, dy = s.y - tv.y;
+      var fx = s.sx - tv.x, fy = s.sy - tv.y;
+      seat = deckSeat(tv, dx * c + dy * sn, -dx * sn + dy * c, fx * c + fy * sn, -fx * sn + fy * c);
+    }
+    if (seat) {
+      s.x = tv.x + seat.x * c - seat.y * sn; s.y = tv.y + seat.x * sn + seat.y * c;
+      /* on the deck, and it goes where the vehicle goes; or off the side of it */
+      if (seat.z !== null) { s.on = tv; s.ox = seat.x; s.oy = seat.y; s.oz = seat.z; s.oyaw = s.yaw - tv.facing; }
+    } else {
+      /* a stick grenade skids on after it lands, the bundle much less */
+      var q = s.bund ? .08 : .22;
+      s.vx = (s.tx - s.sx) / s.dur * q; s.vy = (s.ty - s.sy) / s.dur * q;
+    }
+    return false;
+  }
+  if (s.on) {
+    var t = s.on;
+    if (!t.dead) {
+      var c2 = Math.cos(t.facing), s2 = Math.sin(t.facing);
+      s.x = t.x + s.ox * c2 - s.oy * s2; s.y = t.y + s.ox * s2 + s.oy * c2;
+    }
+  } else if (s.vx || s.vy) {
+    var nx = s.x + s.vx * dt, ny = s.y + s.vy * dt;
+    if (walkable(nx, ny)) { s.x = nx; s.y = ny; } else { s.vx = 0; s.vy = 0; }
+    var dec = Math.pow(.03, dt);
+    s.vx *= dec; s.vy *= dec;
+    if (Math.abs(s.vx) + Math.abs(s.vy) < 1.5) { s.vx = 0; s.vy = 0; }
+  }
+  s.rest -= dt;
+  /* the fuse burns with a thread of smoke off it, which is the one thing about a grenade
+     on the ground that shows at the distance a player looks from */
+  if (Math.random() < dt * 12 && onScreen(s.x, s.y)) {
+    var wz = s.on ? groundZ(s.on.x, s.on.y) + s.oz + 1.5 : groundZ(s.x, s.y) + 1.5;
+    var wp = spawnFx('smoke', s.x + rnd(-1, 1), s.y + rnd(-1, 1), 2.4, wz);
+    if (wp) { wp.c = 1; wp.rise = 14; wp.op = .34; wp.dur = .7; wp.drift = 5; }
+  }
+  if (s.rest > 0) return false;
+  grenBurst(s);
+  return true;
+}
+/* The burst. A stick grenade is a small shell and goes through `explode` like one, flagged so
+   that a wall takes a scorch from it rather than a breach and a garrison it went in among
+   gets none of the house round it. A bundle does the same to men and breaches masonry, and
+   what it does to a vehicle it does itself: its whole weight to the hull it is lying on or
+   under, falling away to nothing a couple of paces off it, with the track or the wheels the
+   likeliest thing to go, and nothing about the plate in it, because it is not a round
+   arriving at a plate but a kilogram of explosive lying against the deck or the running
+   gear. */
+function grenBurst(s) {
+  var owner = s.owner, w = { gren: 1, noVeh: s.bund ? 1 : 0 };
+  if (s.bund) {
+    for (var i = 0; i < G.units.length; i++) {
+      var e = G.units[i];
+      if (e.dead || e.cat !== 'veh' || e.side === s.side) continue;
+      var g = s.on === e ? 0 : hullGap(e, s.x, s.y);
+      if (g > 26) continue;
+      var f = clamp(1 - g / 26, 0, 1);
+      damage(e, s.dmg * f * (e.def.blastRes || 1), owner);
+      if (e.dead) continue;
+      e.shaken = Math.max(e.shaken || 0, 3); e.hitT = .2;
+      if (g < 10) {
+        var r = Math.random();
+        if (r < .5) { e.immob = Math.max(e.immob || 0, 8 + Math.random() * 6); e.path = null; if (owned(e)) toast(e.def.short + (e.def.wheeled ? ' wheels blown' : ' track blown')); }
+        else if (r < .65) { e.gunDmg = Math.max(e.gunDmg || 0, 7 + Math.random() * 5); if (owned(e)) toast(e.def.short + ' gun damaged'); }
+      }
+    }
+  }
+  explode(s.x, s.y, s.aoe, s.dmg * (s.bund ? .5 : 1), owner, null, s.on ? 30 : 0, w);
+}
 function fireAt(u, t, dt, opt) {
   var w = weaponFor(u, t);
   var isAt = (w === u.def.at);
@@ -7906,7 +8317,7 @@ function fireAt(u, t, dt, opt) {
     var k = 0;
     for (var i = 0; i < u.models.length; i++) {
       var mm2 = u.models[i];
-      if (!mm2.alive || k >= shots) continue;
+      if (!mm2.alive || k >= shots || mm2.thrT > 0 || mm2.thrPend) continue;
       if (k === 0) { mm2.fire = .085; mm2.flashed = 0; } else mm2.fireQ = k * (w.rof < .25 ? .035 : .07) * rnd(.6, 1.4);
       k++;
     }
@@ -8777,7 +9188,7 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
        `blastRes` above one is an open turret, which the men's branch below has read since
        the mortars went in and this branch never did. */
     if (e.cat === 'veh') {
-      if (owner && owner.side !== e.side)
+      if (owner && owner.side !== e.side && !(w && w.noVeh))
         damage(e, dmg * f * (w && w.auto ? .05 : .35) * (e.def.blastRes || 1), owner);
     }
     else {
@@ -8786,6 +9197,10 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
          the strongest thing cover does. */
       var bcov = e.gar ? 4 : coverOf(e);
       var SHD = [1, .86, .72, .56, .4];
+      /* a grenade that went in through the window is in the room with them, and the house
+         round them is no use at all */
+      var inRoom = e.gar && w && w.gren && Math.abs(x - e.gar.x) < e.gar.w / 2 + 8 && Math.abs(y - e.gar.y) < e.gar.h / 2 + 8;
+      if (inRoom) bcov = 0;
       for (var m = 0; m < e.models.length; m++) {
         var mo = e.models[m];
         if (!mo.alive) continue;
@@ -8793,7 +9208,7 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
         /* each man by what he is behind: the loop already has him, and the difference
            between the man in the trench and the man who did not make it there is the
            whole point of a trench */
-        var shield = SHD[e.gar ? 4 : coverAt(mo.x, mo.y, Math.atan2(mo.y - y, mo.x - x))];
+        var shield = SHD[inRoom ? 0 : e.gar ? 4 : coverAt(mo.x, mo.y, Math.atan2(mo.y - y, mo.x - x))];
         if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85 * shield * (e.def.blastRes || 1), owner);
       }
       e.sup = clamp(e.sup + .45 * f * COVER[bcov].sup / (1 + e.vet * .18), 0, 1.35);
@@ -8818,7 +9233,9 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
      five of them do to men. Read the usual way it took a bay out of a terrace in fifteen
      seconds of fire. What twenty millimetres actually does to masonry is scar the
      stucco, which is what is left once this drops it under the floor below. */
-  var mdmg = w && w.auto ? dmg * .18 : dmg;
+  /* and a grenade is not a shell either: a stick grenade scorches a wall and a bundle
+     charge opens a hole in one, which is what it was made up for */
+  var mdmg = w && w.auto ? dmg * .18 : w && w.gren ? dmg * .3 : dmg;
   if (mdmg >= 22) {
     var br = clamp(3 + mdmg * .075, 4, 26), reach = clamp(12 + mdmg * .2, 16, 74);
     var bh = bz === undefined ? 10 : bz;
@@ -9358,7 +9775,8 @@ function updateShots(dt) {
         }
         G.shots.splice(i, 1);
       }
-    } else if (s.t >= s.dur) G.shots.splice(i, 1);
+    } else if (s.kind === 'gren') { if (grenTick(s, dt)) G.shots.splice(i, 1); }
+    else if (s.t >= s.dur) G.shots.splice(i, 1);
   }
   for (var j = G.fx.length - 1; j >= 0; j--) {
     var fj = G.fx[j];
@@ -10426,7 +10844,11 @@ function updateUnit(u, dt) {
     } else if (u.dest && dist(u, u.dest) > 60) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
   }
 
-  moveUnit(u, dt);
+  /* the things a squad throws: the bundle walks it into reach, and a man winding up to
+     throw stands still to do it, and so does the rest of the squad while the volley goes */
+  if (u.def.ab) abTick(u, dt);
+  if (u.thrHold > 0) { u.thrHold -= dt; u.moving = false; }
+  else moveUnit(u, dt);
   unwedge(u, dt);
   if (u.cat === 'veh' && !u.retreat) fireSecondary(u, dt);
   if (u.cat === 'veh') mgTick(u, dt);
@@ -10654,7 +11076,7 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
   'bunker.at': 'Fitting a bunker as a gun casemate', 'bunker.mg': 'Fitting a bunker as a machine gun post', 'bunker.mor': 'Fitting a bunker with a mortar',
   'bunker.rep': 'Fitting a bunker as a workshop', 'bunker.med': 'Fitting a bunker as an aid post', 'mortar.mission': 'Mortars laying on',
   'wave.break': 'Assault broken off: too costly', 'wave.pinned': 'Defenders pinned: going in', 'hold.coming': 'Enemy closing on our flag: holding it',
-  'mood.mass': 'Enemy massing: meeting it', 'mood.clock': 'The clock decides: pushing for a flag', 'mood.exch': 'The exchange has turned',
+  'mood.mass': 'Enemy massing: meeting it', 'ab.bund': 'Knight\'s Cross Holders going for a vehicle', 'mood.clock': 'The clock decides: pushing for a flag', 'mood.exch': 'The exchange has turned',
   'mortar.mass': 'Mortars on the enemy forming up', 'mortar.counter': 'Counter-battery fire', 'op.counter': 'Task force sent after their guns',
   'shelled.move': 'Moving out of the shelling', 'mortar.dir': 'Guns laid on the objective', 'smoke.screen': 'Smoke going down for the assault',
   /* and the orders he gave, said back to him as the army takes them up */
@@ -10704,7 +11126,9 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
                'ord.shell', 'ord.smoke', 'ord.rally', 'ord.done', 'ord.force',
                'ord.shell.laid', 'ord.smoke.laid',
                'pose.hold', 'pose.dig', 'pose.house', 'react.fight', 'react.cover', 'react.fall',
-               'op.push', 'op.screen', 'op.retire'];
+               'op.push', 'op.screen', 'op.retire',
+               /* the two things a squad throws */
+               'ab.gren', 'ab.bund'];
   for (var i = 0; i < names.length; i++) aiRule(names[i]);
 })();
 
@@ -11647,6 +12071,8 @@ function aiSense(u, W) {
     var aw = weaponFor(u, S.arm);
     S.canAnswer = penChance(penAt(aw, S.armD), armourAt(S.arm, u.x, u.y)) > .12 &&
                   S.armD < aw.range ? 1 : 0;
+    /* and a squad with a bundle charge to hand can answer a vehicle close enough to walk to */
+    if (!S.canAnswer && abDef(u, 'bund') && abLeft(u, 'bund') < 6 && S.armD < 330) S.canAnswer = 1;
   }
   /* ---- its own people, and whether any of them can answer what it cannot */
   S.frW = 0; S.frN = 0; S.frD = 9999; S.escort = 0; S.frAt = null; S.frAtD = 9999;
@@ -11781,6 +12207,7 @@ function aiCanAnswer(c, th, need) {
   if (c.job === 'mend' || c.cat === 'team') return false;
   if (need === 'armour') {
     if (!th) return false;
+    if (abDef(c, 'bund') && abLeft(c, 'bund') < 8) return true;
     var d = Math.hypot(th.x - c.x, th.y - c.y), w = weaponFor(c, th);
     return penChance(penAt(w, Math.min(d, w.range * .8)), armourAt(th, c.x, c.y)) > .2;
   }
@@ -13577,6 +14004,16 @@ function aiTick(dt) {
     if (u.dead) continue;
     /* a tank the player is driving from its own turret is his, for as long as he is in it */
     if (u.manual) continue;
+    /* A squad with things to throw throws them when they are worth throwing, and a squad
+       sent after a vehicle with a bundle charge -- by the player, or by this -- is left to
+       get on with it: the order is the walk, and anything dealt it here would take it off
+       the vehicle it was sent at. */
+    if (u.def.ab && skill >= 1) {
+      var ab = abAuto(u);
+      if (ab & 1) aiFire('ab.gren');
+      if (ab & 2) aiFire('ab.bund');
+    }
+    if (u.order === 'bundle') continue;
     /* What this unit will pay to stay out of the beaten zone, which every path it asks
        for from here reads. A wave pressing home pays almost nothing, because crossing the
        beaten zone under covering fire is the whole of what a wave is: priced at what
@@ -15592,6 +16029,19 @@ function buildMarks(v) {
       markRing(u.x, u.y, barrageRange(u), markCol(G.mode === 'smoke' ? '#d9d6ca' : '#d8a334'), .42, 2, [30, 34], 0);
     });
   }
+  /* picking a vehicle for a bundle charge: the reach of the throw round each squad that
+     would go, and a ring round every vehicle of theirs it could be sent at, because a
+     vehicle out of sight cannot be picked and nothing else says which ones can */
+  if (G.mode === 'bundle') {
+    G.sel.forEach(function (u) {
+      if (u.dead || !owned(u) || !abDef(u, 'bund')) return;
+      markRing(u.x, u.y, abDef(u, 'bund').range, markCol('#e07a4a'), .42, 2, [18, 22], 0);
+    });
+    G.units.forEach(function (e) {
+      if (e.dead || e.cat !== 'veh' || e.side === G.side || !visibleTo(G.side, e)) return;
+      markRing(e.x, e.y, selRadius(e) + 6, markCol('#e07a4a'), .55, 2.4, null, 0);
+    });
+  }
   G.sel.forEach(function (u) {
     if (!u.cat) return;
     var mine = owned(u);
@@ -16019,6 +16469,10 @@ function tagKit() {
   tagAll([H.torn, H.tornD, H.tornL], 'canvas');
   tagAll([H.wood, H.helve, H.stick], 'wood');
   tagAll([H.steel, H.buckle], 'steel');
+  tagAll([H.kcap, H.scarf, H.scarfD, H.ribbon], 'cloth');
+  tagAll([H.kpeak, H.kglove, H.kgloveD], 'leather');
+  tagAll([H.kcord, H.kcross], 'steel');
+  tagAll([H.stgp, H.stgpD], 'canvas');
   soft = false;
   tagAll(['#3b3226', '#4a4030'], 'rubber');
   tagAll([D.smock], 'splinter');
@@ -30401,7 +30855,13 @@ var KIT = {
           phone: '#1d1d1b', band: '#4a4b44',
           /* and the pioneers': the collar in the dark bottle green of the older tunic, the big
              pack in brown canvas with its flap a shade lighter, and the charge box in grey */
-          bottle: '#3a4334', torn: '#4a3827', tornD: '#3a2c1e', tornL: '#57432e', charge: '#5c604b' }
+          bottle: '#3a4334', torn: '#4a3827', tornD: '#3a2c1e', tornL: '#57432e', charge: '#5c604b',
+          /* and the Knight's Cross Holders': the black of the wrap over field-grey breeches, the
+             officer's peaked cap in black with its peak in patent leather and the chin cords in
+             silver, the grey scarf, black gloves, the tan canvas of the StG 44's pouches, and
+             the cross itself in black edged in silver on its red ribbon */
+          kcap: '#1b1c1f', kpeak: '#0f1011', kcord: '#b9b6aa', scarf: '#8b8d88', scarfD: '#72746f',
+          stgp: '#7a6f51', stgpD: '#5f563f', kglove: '#1d1c1b', kgloveD: '#141413', kcross: '#161616', ribbon: '#8f2a25' }
 };
 /* ---- the rig ------------------------------------------------------------------
    One figure, one set of joints, one table of poses. What was here was a stack of
@@ -30687,6 +31147,10 @@ var WEAP = {
   m3:       { butt: [-2.31, 0, -.8], buttOut: [-4.34, 0, -.8], grip: [-1.25, 0, -1.45], fore: [.8, 0, -.95], foreMin: [.55, 0, -.9], muzzle: [4.36, 0, 0], carryPt: [.1, 0, -.6], readyY: 1.3 },
   sten:     { butt: [-3.8, 0, -.4], grip: [-.6, 0, -1.2], fore: [2.2, 0, -.5], foreMin: [1.2, 0, -.5], muzzle: [5.4, 0, 0], carryPt: [.2, 0, -.5], sideMag: 1 },
   mp40:     { butt: [-1.8, 0, -.3], buttOut: [-4.02, 0, -.3], grip: [-.85, 0, -1.35], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, 0], carryPt: [.4, 0, -.6] },
+  /* the StG 44, with the support hand under the front of the receiver ahead of the magazine,
+     which is where the gun was held: there is no handguard, and the gas tube over the barrel
+     is too hot to hold after the first magazine */
+  stg:      { butt: [-4.66, 0, -.42], grip: [-1.15, 0, -1.3], fore: [1.9, 0, -.45], foreMin: [1.0, 0, -.62], muzzle: [6.4, 0, 0], carryPt: [.5, 0, -.55] },
   bren:     { butt: [-5.1, 0, -.5], grip: [-1.4, 0, -1.2], fore: [3.2, 0, -.7], foreMin: [1.2, 0, -.7], muzzle: [8.0, 0, .1], rest: [2.0, 0, -.6], carryPt: [1.5, 0, -.6], heavy: 1 },
   piat:     { butt: [-4.8, 0, -1.0], grip: [-.5, 0, -1.2], fore: [2.4, 0, -1.0], foreMin: [1.6, 0, -1.0], muzzle: [6.6, 0, 0], rest: [0, 0, -.8], carryPt: [.5, 0, -.9], heavy: 1 },
   schreck:  { butt: [-4.0, 0, -1.0], rest: [-4.0, 0, -1.0], grip: [-1.5, 0, -1.4], fore: [2.0, 0, -.6], foreMin: [1.0, 0, -.6], muzzle: [9.5, 0, 0], carryPt: [0, 0, -.7], tube: 1 },
@@ -30712,6 +31176,13 @@ var FIGPOSE = {
   seat:   { legs: [[1.50, -1.50, 0], [1.50, -1.50, 0]], lean: .05, carry: 'tiller' },
   sit:    { legs: [[1.90, -.72, 0], [1.90, -.72, 0]], lean: .10, carry: 'grips', grips: [5.8, .9, 3.8] },
   served: { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .18, carry: 'grips', grips: [5.6, .9, 5.2] },
+  /* the overhand throw in two frames: wound up with the grenade cocked behind the head and
+     the right shoulder back, and let go with the arm over and the weight onto the left foot.
+     `hand` is where the throwing hand is and `nadeA` which way the grenade in it points. */
+  throw0: { legs: [[.45, -.45, 0], [-.25, -.10, .35]], lean: -.08, carry: 'throw', blade: .5,
+            hand: [-2.3, 1.7, 9.4], nadeA: 2.25, rPole: [-.3, 1, .2] },
+  throw1: { legs: [[.55, -.35, 0], [-.35, -.25, .35]], lean: .3, carry: 'throw', blade: -.3,
+            hand: [3.4, 1.3, 9.2], nadeA: .75, rPole: [0, 1, -.3] },
   fall0:  { legs: [[.30, -.90, 0], [-.10, -1.10, 0]], lean: .45, carry: 'drop', headLean: 0 },
   fall1:  { legs: [[.90, -1.60, 0], [.70, -1.80, 0]], lean: .90, carry: 'drop', headLean: 0 },
   fall2:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: 1.35, carry: 'drop', headLean: 0 }
@@ -31065,10 +31536,67 @@ function helmetM42(k, z, V) {
   }
   return f;
 }
+/* The officer's peaked cap, the Schirmmütze, in the black the Knight's Cross Holders wear it
+   in. A band round the head, and over it a crown wider than the band all round that is
+   pulled up high at the front into the saddle, so the top slopes down from the eagle to the
+   back of the head; a peak of patent leather dropping forward over the eyes; the silver
+   chin cords across the front of the band on a button at either side; the cockade on the
+   band and the eagle on the saddle. The saddle is the whole of it: a flat crown on a band
+   is a cook's cap, and a crown raised at the front is an officer from any distance. */
+function capOfficer(k, z, V) {
+  var N = 14, i, cm = matIndex('cloth'), c = k.kcap, lm = matIndex('leather'), sm = matIndex('steel');
+  var f = [];
+  function face(v, want, col, m) {
+    var n = faceNormal(v[0], v[1], v[2]);
+    if (n.x * want[0] + n.y * want[1] + n.z * want[2] < 0) v = v.slice().reverse();
+    return { v: v, c: col, m: m };
+  }
+  function band(t, h) { return [Math.cos(t) * 1.44, Math.sin(t) * 1.27, z + h]; }
+  function sad(t) { var cs = Math.max(0, Math.cos(t)); return .42 * cs * cs; }
+  function rim(t, lift) { return [.1 + Math.cos(t) * 1.86, Math.sin(t) * 1.62, z + .9 + sad(t) + lift]; }
+  var top = [.25, 0, z + 1.2];
+  for (i = 0; i < N; i++) {
+    var t0 = i / N * TAU, t1 = (i + 1) / N * TAU, tm = (t0 + t1) / 2, out = [Math.cos(tm), Math.sin(tm), 0];
+    f.push(face([band(t0, 0), band(t1, 0), band(t1, .52), band(t0, .52)], out, lit(c, .9), cm));
+    f.push(face([band(t0, .52), band(t1, .52), rim(t1, 0), rim(t0, 0)], [out[0], out[1], -.6], lit(c, .8), cm));
+    f.push(face([rim(t0, 0), rim(t1, 0), rim(t1, .1), rim(t0, .1)], out, lit(c, 1.05), cm));
+    f.push(face([rim(t0, .1), rim(t1, .1), top], [out[0] * .15, out[1] * .15, 1], lit(c, 1.12 + .06 * Math.cos(tm)), cm));
+  }
+  var bot = [];
+  for (i = 0; i < N; i++) bot.push(band(i / N * TAU, 0));
+  f.push(face(bot, [0, 0, -1], k.kpeak, cm));
+  /* the peak: a strip laid round the front of the band, running out and down, both faces */
+  var P = 8, pa = [], pb = [];
+  for (i = 0; i <= P; i++) {
+    var tp = -1.05 + 2.1 * i / P, e = Math.cos(tp * 1.3), o = .28 + .52 * e;
+    var ib = band(tp, .06);
+    pa.push(ib);
+    pb.push([ib[0] + Math.cos(tp) * o, ib[1] + Math.sin(tp) * o * .8, ib[2] - .34 * e - .04]);
+  }
+  for (i = 0; i < P; i++) {
+    f.push(face([pa[i], pa[i + 1], pb[i + 1], pb[i]], [.3, 0, 1], lit(k.kpeak, 1.35), lm));
+    f.push(face([pa[i], pa[i + 1], pb[i + 1], pb[i]], [-.3, 0, -1], k.kpeak, lm));
+  }
+  /* the chin cords across the front of the band, a button either end */
+  function cd(t, h) { return [Math.cos(t) * 1.49, Math.sin(t) * 1.32, z + h]; }
+  for (i = 0; i < 8; i++) {
+    var c0 = -1.15 + 2.3 * i / 8, c1 = -1.15 + 2.3 * (i + 1) / 8, cmid = (c0 + c1) / 2;
+    f.push(face([cd(c0, .13), cd(c1, .13), cd(c1, .27), cd(c0, .27)], [Math.cos(cmid), Math.sin(cmid), 0], k.kcord, sm));
+  }
+  [-1, 1].forEach(function (sd) {
+    var bp = band(sd * 1.2, .2);
+    f = f.concat(figPart(stud(bp[0], bp[1], bp[2], .1, .06, k.kcord), 'steel', lit(k.kcord, 1.1), k.kcord, k.kcord));
+  });
+  f = f.concat(figPart(studX(1.42, 0, z + .38, .15, .06, k.kcord), 'steel', lit(k.kcord, 1.1), k.kcord, k.kcord));
+  f = f.concat(figPart(studX(1.47, 0, z + .38, .07, .05, k.ribbon), 'cloth', k.ribbon, k.ribbon, k.ribbon));
+  f = f.concat(figPart(box(1.8, 0, z + .86, .06, .72, .24, k.kcord, k.kcord, k.kcord, 0), 'steel', lit(k.kcord, 1.08), k.kcord, k.kcord));
+  return f;
+}
 function helmetOf(V, k, zUS, zGER) {
   var nat = V.nat || V.side;
   if (V.tanker) return helmetTanker(k, zUS - .12, V);
   if (V.panzer) return capPanzer(k, zUS - .1, V);
+  if (V.kch) return capOfficer(k, zUS - .1, V);
   return nat === 'usa' ? helmetM1(k, zUS - .35, V) : nat === 'heer' ? helmetM42(k, zUS - .30, V)
        : nat === 'ger' ? helmetGER(k, zGER) : helmetUS(k, zUS);
 }
@@ -31221,6 +31749,42 @@ function weaponModel(k, type, opt) {
       [-1, 1].forEach(function (s) { f = f.concat(tubeSmooth(-1.7, .45, s * .33, -.98, .07, 5, st, st)); });
       f = f.concat(box(.45, 0, -1.55, .14, .72, .9, st, ml));                                    /* and folded under */
     }
+  } else if (type === 'stg') {                            /* StG 44: 0.94 m, 11.06 units */
+    /* The first assault rifle is a pressed-steel receiver with a wooden stock behind it and
+       everything else in front: the barrel with the gas tube lying over it the whole way to
+       the front sight, the rear sight standing up off the front of the receiver, and under
+       the receiver the long curved magazine ahead of the pistol grip, which is the one shape
+       on it that says StG from any distance. The magazine is cut as a side profile, the
+       stock likewise; the charging handle is on the LEFT, which is -y on the screen, with the
+       sling down the same side from the front sight to the butt. */
+    var gl2 = lit(st, 1.18), gd = lit(st, .84), gb = '#3b3226', gbl = '#4a4030';
+    var sp = [[-4.66, .04], [-4.66, -1.50], [-3.9, -1.36], [-1.82, -.66], [-1.82, .06]];
+    var ss = roll(prism(sp, -.34, .34, wd, lit(wd, 1.12), lit(wd, .92)), Math.PI / 2, 0, 0);
+    f = f.concat(ss.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(box(-4.62, 0, -1.5, .1, .7, 1.56, st, gl2));                                   /* butt plate */
+    f = f.concat(box(-.18, 0, -.5, 3.3, .62, .86, st, gl2, gd));                                /* the receiver */
+    f = f.concat(box(-.8, 0, -.78, 1.72, .5, .32, st, gl2, gd));                                /* trigger housing */
+    f = f.concat(box(1.22, 0, .36, .52, .5, .22, st, gl2));                                     /* rear sight base */
+    f = f.concat(box(1.12, 0, .58, .3, .3, .16, st, gl2));                                      /* and the leaf */
+    f = f.concat(box(1.0, -.4, .02, .5, .2, .18, gl2, st));                                     /* charging handle, left */
+    f = f.concat(box(.2, .32, -.22, 1.2, .04, .34, gd, gd));                                    /* dust cover, right */
+    f = f.concat(tubeSmooth(1.47, 1.9, 0, .1, .36, 10, st, gl2));                               /* the barrel nut */
+    f = f.concat(barrel(1.9, 6.26, 0, .14));
+    f = f.concat(tubeSmooth(1.9, 5.9, 0, .34, .18, 8, st, gl2));                                /* gas tube */
+    f = f.concat(box(6.0, 0, -.18, .26, .38, .72, st, gl2));                                    /* gas block and front sight */
+    f = f.concat(box(6.0, 0, .54, .1, .1, .26, st, st));
+    [-1, 1].forEach(function (s) { f = f.concat(box(6.0, s * .15, .5, .18, .05, .3, st, st)); });
+    f = f.concat(tubeSmooth(6.26, 6.4, 0, 0, .18, 8, st, gl2));                                 /* thread protector */
+    f = f.concat(box(.46, 0, -.72, .84, .56, .5, st, gl2));                                     /* magazine well */
+    var mp = [[.1, -.72], [.22, -1.8], [.5, -2.75], [.95, -3.45], [1.62, -3.2], [1.24, -2.52], [.98, -1.7], [.86, -.72]];
+    var ms = roll(prism(mp, -.2, .2, st, gl2, gd), Math.PI / 2, 0, 0);
+    f = f.concat(ms.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(place(pitch(box(0, 0, -1.5, .6, .5, 1.5, gb, gbl), -.3, 0, 0), 0, -1.02, 0, -.78));   /* pistol grip */
+    f = f.concat(box(-.45, 0, -1.22, .6, .1, .08, st, st));                                     /* trigger guard */
+    f = f.concat(box(-.16, 0, -1.22, .08, .1, .5, st, st));
+    var sg = k.belt || k.webD;
+    f = f.concat(taperLimb([5.8, -.26, -.2], [1.6, -.34, -1.3], .13, .13, sg));
+    f = f.concat(taperLimb([1.6, -.34, -1.3], [-4.1, -.36, -1.05], .13, .13, sg));
   } else if (type === 'bren') {                           /* Bren Mk I: 1.15 m */
     f = f.concat(box(-3.6, 0, -.5, 3.0, 1.1, 1.7, wd, lit(wd, 1.15), lit(wd, .9)));           /* butt, plate at -5.1 */
     f = f.concat(box(0, 0, -.2, 5.5, 1.1, 1.4, st, lit(st, 1.2)));                            /* receiver */
@@ -31372,6 +31936,36 @@ function weaponModel(k, type, opt) {
   }
   return f;
 }
+/* The Stielhandgranate 24, along +x with the join of head and handle at the origin: a wooden
+   handle a little over a foot long with the steel cap over its end, where the pull cord
+   lives, and the can of the head in grey-green, 36.5 cm from end to end. And the bundle
+   charge, the geballte Ladung, which is the same grenade with the heads of six more wired
+   round its own: from above a cluster of seven, and one fifth of a man's height across. It
+   is what the Knight's Cross Holders throw at armour. */
+function grenadeFaces(k, bund) {
+  var f = [], nd = k.nade, sk = k.stick, sl = k.steel, i;
+  f = f.concat(figPart(tubeSmooth(-3.1, -.1, 0, 0, .17, 8, sk, lit(sk, 1.1)), 'wood', lit(sk, 1.06), lit(sk, .9), sk));
+  f = f.concat(figPart(tubeSmooth(-3.26, -3.1, 0, 0, .2, 8, sl, lit(sl, 1.2)), 'steel', lit(sl, 1.2), sl, sl));
+  f = f.concat(figPart(tubeSmooth(-.16, 0, 0, 0, .25, 8, sl, sl), 'steel', lit(sl, 1.2), sl, sl));
+  f = f.concat(figPart(tubeSmooth(0, 1.18, 0, 0, .41, 10, nd, lit(nd, 1.12)), 'paint', lit(nd, 1.08), lit(nd, .88), nd));
+  if (bund) {
+    for (i = 0; i < 6; i++) {
+      var a = i / 6 * TAU;
+      f = f.concat(figPart(tubeSmooth(0, 1.18, Math.cos(a) * .82, Math.sin(a) * .82, .41, 10, nd, lit(nd, 1.12)),
+                           'paint', lit(nd, 1.08), lit(nd, .88), nd));
+    }
+    [.22, .9].forEach(function (x) {
+      f = f.concat(figPart(tubeSmooth(x, x + .07, 0, 0, 1.25, 12, sl, sl), 'steel', lit(sl, 1.3), sl, sl));
+    });
+  }
+  return f;
+}
+/* and the same grenade in a man's throwing hand, pointing the way the frame of the throw
+   has it: gripped a hand's breadth from the end of the handle */
+function nadeInHand(k, bund, hand, ang) {
+  var g = pitch(grenadeFaces(k, bund), ang, 0, 0), c = Math.cos(ang), s = Math.sin(ang);
+  return place(g, 0, hand[0] + 2.6 * c, hand[1], hand[2] + 2.6 * s);
+}
 var SOLDIER_VARIANTS = {
   can_rifle:    { side: 'us', weapon: 'lee', jerkin: 1, set: 'field' },
   can_rifle_bd: { side: 'us', weapon: 'lee', set: 'field' },
@@ -31436,6 +32030,16 @@ var SOLDIER_VARIANTS = {
   gr_pio:       { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, pio: 1, goggles: 1, roll: 1, body: 'heer_pio', set: 'field' },
   gr_pio_b:     { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, pio: 1, goggles: 1, gaiters: 1, wire: 1, pick: 1, set: 'field' },
   gr_pio_c:     { side: 'ger', nat: 'heer', weapon: 'mp40', mp: 1, pio: 1, goggles: 1, glass: 1, charge: 1, set: 'field' },
+  /* and the Knight's Cross Holders, four ways, every one of them in the black wrap under the
+     officer's peaked cap with the grey scarf at his throat, the cross over it, gloves, and
+     the StG 44 with its pouches: the leader with his field glasses and his pistol; a man
+     with two stick grenades behind his belt, which is what the file leaves where it falls
+     (`body`); a man with his own glasses; and the man who carries the bundle charge on his
+     hip. All four throw (`throw`), so all four are baked winding up and letting go. */
+  kc_lead:      { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, glass: 1, holster: 1, throw: 1, set: 'field' },
+  kc_stg:       { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, nades: 1, throw: 1, body: 'heer_kch', set: 'field' },
+  kc_stg_b:     { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, glass: 1, nades: 1, throw: 1, set: 'field' },
+  kc_bund:      { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, bund: 1, throw: 1, set: 'field' },
   fj_rifle:     { side: 'ger', weapon: 'kar', pouch: 'leather', set: 'field' },
   fj_mp40:      { side: 'ger', weapon: 'mp40', assault: 1, pouch: 'canvas', set: 'field' },
   fj_schreck:   { side: 'ger', weapon: 'schreck', assault: 1, pouch: 'canvas', set: 'field' },
@@ -31443,6 +32047,8 @@ var SOLDIER_VARIANTS = {
   fj_crew:      { side: 'ger', weapon: 'none', set: 'hull' }
 };
 function variantForModel(u, i) {
+  /* the Knight's Cross Holders are who they are whichever side a drill stands them on */
+  if (u.key === 'hr_kch') return i === 0 ? 'kc_lead' : i === 1 ? 'kc_stg' : i === 2 ? 'kc_stg_b' : 'kc_bund';
   if (u.side === 'us') {
     if (u.key === 'us_fg') {
       if (i < 2) return 'can_bren';
@@ -31778,9 +32384,100 @@ function figKitPanzer(k) {
   lea(box(1.0, -2.36, 1.55, 1.2, .56, .35, bl, bl, bl, 0), 1.35);
   return f;
 }
+/* What a Knight's Cross Holder carries over the wrap, hip-relative. At his throat the grey
+   scarf wound round his neck with its end tucked into the front of the jacket, and the
+   cross hanging over it on its ribbon; the black belt with its buckle, the StG 44's triple
+   magazine pouch in tan canvas on the left front of it, and a second on the right, or the
+   leader's pistol there; the sling of the bread bag across the chest from the right
+   shoulder, the fluted gas-mask tin behind on the left and the bread bag with the canteen
+   on the right. Field glasses for two of them, two stick grenades behind the belt for two,
+   and for the man who throws it the bundle charge on his hip: one grenade with six more
+   heads wired round its own. */
+function figKitKch(V, k, rec) {
+  var f = [], bl = k.belt, sc = k.scarf, tn = k.tin, cv = k.canvas, sp = k.stgp, spd = k.stgpD;
+  function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
+  function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
+  function part(g, mat, fr, bk, sd) { f = f.concat(figPart(g, mat, fr, bk, sd)); }
+  function lea(g, lift) { part(g, 'leather', lit(bl, lift || 1.28), bl, lit(bl, 1.12)); }
+  function rect(l, w) { var a = l / 2, b = w / 2; return [[-a, -b], [a, -b], [a, b], [-a, b]]; }
+  function strap(y0, z0, y1, z1, x, wd, col, mat) {
+    var dy = y1 - y0, dz = z1 - z0, L = Math.hypot(dy, dz);
+    var g = at(roll(box(0, 0, -L / 2, .1, wd, L, col, col, col, 0), -Math.atan2(dy, dz), 0, 0), x, (y0 + y1) / 2, (z0 + z1) / 2);
+    part(g, mat, lit(col, mat === 'leather' ? 1.28 : 1.08), col, lit(col, mat === 'leather' ? 1.12 : .94));
+  }
+  /* the scarf, wound twice round and standing up over the collar with its ends tucked in */
+  part(faceOut(frustum(rect(3.3, 3.4), rect(2.3, 2.5), 5.95, 7.0, sc), .3, 0, 6.5), 'cloth', lit(sc, 1.0), lit(sc, .84), lit(sc, .92));
+  /* the cross at the throat, just under the scarf: black, edged in silver, on its red ribbon */
+  part(box(1.72, 0, 5.88, .06, .14, .22, k.ribbon, k.ribbon, k.ribbon, 0), 'cloth', k.ribbon, k.ribbon, k.ribbon);
+  part(box(1.76, 0, 5.2, .05, .3, .66, k.kcord, k.kcord, k.kcord, 0), 'steel', lit(k.kcord, 1.1), k.kcord, k.kcord);
+  part(box(1.76, 0, 5.4, .05, .66, .26, k.kcord, k.kcord, k.kcord, 0), 'steel', lit(k.kcord, 1.1), k.kcord, k.kcord);
+  part(box(1.8, 0, 5.24, .05, .2, .58, k.kcross, k.kcross, k.kcross, 0), 'steel', lit(k.kcross, 1.3), k.kcross, k.kcross);
+  part(box(1.8, 0, 5.44, .05, .58, .18, k.kcross, k.kcross, k.kcross, 0), 'steel', lit(k.kcross, 1.3), k.kcross, k.kcross);
+  /* the belt, cut for the short wrap */
+  lea(box(0, 0, 1.55, 3.3, 4.75, .55, bl, bl, bl, 0));
+  part(box(1.66, 0, 1.56, .1, .62, .52, k.buckle, k.buckle, k.buckle, 0), 'steel', lit(k.buckle, 1.2), k.buckle, k.buckle);
+  [-1, 1].forEach(function (sd) {
+    if (sd > 0 && V.holster) {
+      /* the leader's pistol in its black holster, flap over */
+      lea(box(1.25, sd * 1.9, .35, 1.15, .5, 1.25, bl, bl, bl, 0), 1.2);
+      lea(box(1.25, sd * 1.96, 1.35, 1.2, .56, .38, bl, bl, bl, 0), 1.36);
+      return;
+    }
+    /* three thirty-round magazines to the pouch, the pouch standing well down off the belt */
+    var a = mark('pouches');
+    part(box(1.8, sd * 1.42, -.45, .46, 1.3, 2.45, sp, sp, sp, 0), 'canvas', lit(sp, 1.08), lit(sp, .86), sp);
+    [-1, 0, 1].forEach(function (j) {
+      part(box(2.05, sd * 1.42 + j * .42, 1.34, .06, .38, .66, sp, sp, sp, 0), 'canvas', lit(sp, 1.16), lit(sp, .9), lit(sp, 1.02));
+      part(box(2.09, sd * 1.42 + j * .42, .95, .05, .1, .6, spd, spd, spd, 0), 'leather', lit(spd, 1.2), spd, spd);
+    });
+    upto('pouches', a);
+  });
+  /* the sling of the bread bag and the gas mask, over the right shoulder and across him */
+  strap(1.9, 6.3, -2.2, 2.2, 1.66, .3, k.web, 'canvas');
+  strap(1.9, 6.3, -.62, 2.0, -1.7, .3, k.web, 'canvas');
+  var pk = mark('pack');
+  part(cyl(-2.32, -.62, -.8, .66, .66, 2.6, 8, tn, lit(tn, 1.1), 0, true), 'paint', lit(tn, 1.06), lit(tn, .86), tn);
+  [-.45, .45, 1.35].forEach(function (z) {
+    part(cyl(-2.32, -.62, z, .71, .71, .13, 8, lit(tn, .92), lit(tn, 1.05), 0, true), 'paint', lit(tn, 1.0), lit(tn, .82), lit(tn, .92));
+  });
+  upto('pack', pk);
+  part(box(-2.05, 1.6, -.6, .8, 2.3, 2.3, cv, cv, cv, 0), 'canvas', lit(cv, .96), lit(cv, 1.06), lit(cv, 1.0));
+  part(box(-2.47, 1.6, .65, .06, 2.32, 1.08, cv, cv, cv, 0), 'canvas', lit(cv, 1.0), lit(cv, 1.14), lit(cv, 1.04));
+  part(cyl(-1.45, 2.9, -.75, .52, .38, 1.8, 8, k.felt, lit(k.felt, 1.08), 0, true), 'cloth', lit(k.felt, 1.05), lit(k.felt, .88), k.felt);
+  part(cyl(-1.45, 2.9, 1.05, .44, .33, .55, 8, k.cup, lit(k.cup, 1.3), 0, true), 'paint', lit(k.cup, 1.3), k.cup, lit(k.cup, 1.15));
+  if (V.glass) {
+    /* big 6x30s on their strap, hung high on the chest over the wrap */
+    [-1, 1].forEach(function (sd) {
+      part(cyl(1.98, sd * .38, 3.55, .27, .27, 1.05, 8, '#1d1e1b', '#2a2b27', 0, true), 'rubber', '#2a2b27', '#1d1e1b', '#232420');
+      part(taperLimb([1.92, sd * .42, 4.6], [1.5, sd * .85, 6.35], .12, .12, bl), 'leather', lit(bl, 1.2), bl, bl);
+    });
+    part(box(1.98, 0, 4.2, .3, .45, .3, '#1d1e1b', '#1d1e1b', '#1d1e1b', 0), 'rubber', '#2a2b27', '#1d1e1b', '#232420');
+  }
+  if (V.nades) [[1.1, 2.45], [.35, 2.55]].forEach(function (g) {
+    /* the head up above the belt and the long handle down behind it */
+    part(cyl(g[0], g[1], 2.15, .32, .32, .78, 8, k.nade, lit(k.nade, 1.1), 0, true), 'paint', lit(k.nade, 1.08), lit(k.nade, .86), k.nade);
+    part(cyl(g[0], g[1], -.17, .13, .13, 2.32, 6, k.stick, k.stick, 0, true), 'wood', lit(k.stick, 1.05), lit(k.stick, .86), k.stick);
+  });
+  if (V.bund) {
+    /* the bundle charge hung on the right hip by its handle through the belt: the heads
+       below, wired round, and the handle standing up behind the belt */
+    part(cyl(.3, 2.95, -1.2, .33, .33, 1.05, 8, k.nade, lit(k.nade, 1.1), 0, true), 'paint', lit(k.nade, 1.08), lit(k.nade, .86), k.nade);
+    for (var bi = 0; bi < 6; bi++) {
+      var ba = bi / 6 * TAU;
+      part(cyl(.3 + Math.cos(ba) * .66, 2.95 + Math.sin(ba) * .66, -1.2, .33, .33, 1.05, 8, k.nade, lit(k.nade, 1.1), 0, true),
+           'paint', lit(k.nade, 1.08), lit(k.nade, .86), k.nade);
+    }
+    [-1.0, -.45].forEach(function (z) {
+      part(cyl(.3, 2.95, z, 1.0, 1.0, .08, 8, k.steel, k.steel, 0, true), 'steel', lit(k.steel, 1.3), k.steel, k.steel);
+    });
+    part(cyl(.3, 2.95, -.15, .13, .13, 2.5, 6, k.stick, k.stick, 0, true), 'wood', lit(k.stick, 1.05), lit(k.stick, .86), k.stick);
+  }
+  return f;
+}
 function figKitHeer(V, k, rec) {
   if (V.krad) return figKitKrad(V, k, rec);
   if (V.panzer) return figKitPanzer(k);
+  if (V.kch) return figKitKch(V, k, rec);
   var f = [], bl = k.belt;
   function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
   function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
@@ -31944,6 +32641,11 @@ function figCarry(P, W, w, wide) {
   } else if (c === 'drop') {
     L = layTo(w, W.grip, [.6, 3.0 + y, 5.2], .3, -.9, rl);
     rA = L.at(W.grip); both = 0;
+  } else if (c === 'throw') {
+    /* thrown overhand: the weapon down in the left hand by its fore-end with the muzzle
+       forward and low, and the right hand wherever the throw has got to */
+    L = layTo(w, W.fore, [2.8, -2.6 - y, 3.2], 0, -.3, rl);
+    rA = P.hand.slice(); rPole = P.rPole || rPole;
   } else {
     /* The casual carry: at the port, the butt low by the right hip and the muzzle up
        and across to his left. Held level at the waist, as it was, the whole length of
@@ -31967,12 +32669,15 @@ function figCarry(P, W, w, wide) {
    the bare forearm. Everybody else's is the kit itself. */
 function engKit(V, k) {
   var kr = V.nat === 'heer' && V.krad, en = V.nat === 'usa' && V.eng, rg = V.nat === 'usa' && V.rgr, ka, kk;
-  if (!kr && !en && !rg) return k;
+  var kc = V.nat === 'heer' && V.kch;
+  if (!kr && !en && !rg && !kc) return k;
   ka = {};
   for (kk in k) ka[kk] = k[kk];
   /* and a Ranger's patch is his battalion's rather than the division's */
   if (rg) { ka.patch = k.rblue; ka.patch2 = 0; ka.rdiam = k.rorange; return ka; }
   if (en) { ka.rolled = 1; ka.bare = k.skin; ka.bareD = k.skinD; ka.hmat = 'leather'; }
+  /* and a Knight's Cross Holder's gloves are black kid */
+  if (kc) { ka.skin = k.kglove; ka.skinD = k.kgloveD; ka.hmat = 'leather'; return ka; }
   ka.skin = k.glove; ka.skinD = k.gloveD;
   return ka;
 }
@@ -31985,7 +32690,7 @@ function manFaces(variant, P) {
   /* `ger` is the paratrooper and his smock; the grenadier is the same side in another army
      and wears none of it, so he is `hr` and `ger` is false for him */
   var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa', tk = ame && V.tanker, kr = hr && V.krad;
-  var pz = hr && V.panzer, en = ame && V.eng;
+  var kc = hr && V.kch, pz = hr && (V.panzer || kc), en = ame && V.eng;
   var coat = ger ? k.smock : tk ? k.tank : kr ? k.krad : pz ? k.pz : en ? k.hbt : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr && !tk;
   var ka = engKit(V, k);
   var lean = P.lean || 0, blade = P.blade || 0, J = {}, Q = {}, LR = [], AR = [];
@@ -31993,7 +32698,8 @@ function manFaces(variant, P) {
   /* the legs first, and the lift that every other part is built on. They are not put
      down until the trunk has been leaned, because a fall leans far enough to take a
      shoulder through the ground and the plant has to answer for the whole man. */
-  var ank = ger || tk || pz ? 0 : en ? 5 : ame ? 2 : hr ? (V.gaiters ? 4 : 3) : 1, trs = pz ? k.pzT : en ? k.khaki : k.trous;
+  /* the Knight's Cross Holder wears the wrap over field-grey breeches and the marching boot */
+  var ank = kc ? 3 : ger || tk || pz ? 0 : en ? 5 : ame ? 2 : hr ? (V.gaiters ? 4 : 3) : 1, trs = kc ? k.trous : pz ? k.pzT : en ? k.khaki : k.trous;
   var raw = figLeg(RIG, P.legs[0], -RIG.hipY, k, trs, ank, LR, kr && coat, en).concat(figLeg(RIG, P.legs[1], RIG.hipY, k, trs, ank, LR, kr && coat, en));
   var hipZ = -lowestZ(raw);
 
@@ -32089,8 +32795,8 @@ function manFaces(variant, P) {
        slant, and the broad collar lying open over the grey shirt with the pink piping of
        the arm round its edge and a white metal skull on each point. The trousers are the
        same black and gather at the ankle over the boots. */
-    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.4), -1.2, .4, k.pzT), 0, 0, -.4),
-                'cloth', lit(k.pzT, 1.02), lit(k.pzT, .9), lit(k.pzT, .96)), 'hips');
+    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.4), -1.2, .4, trs), 0, 0, -.4),
+                'cloth', lit(trs, 1.02), lit(trs, .9), lit(trs, .96)), 'hips');
     add(figPart(faceOut(frustum(rect(3.15, 4.65), rect(3.1, 4.55), -.3, .6, coat), 0, 0, .15),
                 'cloth', lit(coat, 1.04), lit(coat, .9), lit(coat, .97)), 'skirt');
     add(figPart(faceOut(frustum(rect(3.1, 4.55), rect(3.2, 5.05), .6, 6.0, coat), 0, 0, 3.3),
@@ -32201,6 +32907,8 @@ function manFaces(variant, P) {
     else arm(figArm(lS, [1.2 + (P.armSwing || 0), ger ? -3.9 : hr ? -3.3 : -3.0, 1.6], [0, -1, -.6], ka, coat, cmat, -1, patch, undefined, AR));
     anchors.muzzle = C.L.at(W.muzzle);
     anchors.bore = C.L.at([W.muzzle[0] - 3, W.muzzle[1], W.muzzle[2]]);
+    /* and in a throw, the grenade in the throwing hand, where the arm actually got to */
+    if (P.carry === 'throw') add(nadeInHand(k, P.nade === 'bund', AR[0] ? AR[0].at : C.rHand, P.nadeA || 0), 'nade');
   } else {
     /* `pole` is which way the elbows go: out by default, which is right for a gunner with
        his hands spread on a piece, and down for a man sitting with his hands in front of
@@ -32287,8 +32995,8 @@ function figPtAbout(p, ang, oz) {
    him is a distance along the ground rather than a height. `ph` is the crawl phase;
    with no phase it is the still prone. */
 function flatFaces(V, side, k, P) {
-  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa', en = ame && V.eng;
-  var coat = ger ? k.smock : en ? k.hbt : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
+  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa', en = ame && V.eng, kc = hr && V.kch;
+  var coat = ger ? k.smock : en ? k.hbt : kc ? k.pz : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
   var trs = en ? k.khaki : k.trous, ka = engKit(V, k);
   var f = [], Q = {}, LG = [], AR = [], AT = [];
   var ph = P.ph || 0, cw = ph ? Math.cos(ph * TAU) : 0, sw = ph ? Math.sin(ph * TAU) : 0;
@@ -32326,10 +33034,14 @@ function flatFaces(V, side, k, P) {
        with the assault frame has it high between his shoulder blades */
     var bl = k.belt, tn = k.tin;
     f = f.concat(figPart(box(-6.2, 0, .3, .7, 5.0, 2.62, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
-    [-1, 1].forEach(function (sd) {
-      f = f.concat(figPart(box(-1.6, sd * 1.36, 2.8, 3.2, .42, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
-    });
-    f = f.concat(figPart(box(-4.9, 0, 2.8, 3.0, .45, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
+    /* the Knight's Cross Holder has no Y-straps: the sling of his bread bag across his back */
+    if (kc) f = f.concat(figPart(box(-3.6, .3, 2.8, 5.0, .32, .1, k.web, 0, 0, 0), 'canvas', lit(k.web, 1.08), lit(k.web, .9), k.web));
+    else {
+      [-1, 1].forEach(function (sd) {
+        f = f.concat(figPart(box(-1.6, sd * 1.36, 2.8, 3.2, .42, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
+      });
+      f = f.concat(figPart(box(-4.9, 0, 2.8, 3.0, .45, .1, bl, 0, 0, 0), 'leather', lit(bl, 1.28), bl, lit(bl, 1.12)));
+    }
     add(figPart(tubeSmooth(-9.0, -6.35, -.62, 3.06, .66, 8, tn, tn), 'paint', lit(tn, 1.08), lit(tn, .86), tn), 'pack');
     f = f.concat(figPart(box(-7.0, 1.55, 2.4, 2.1, 2.2, .8, k.canvas, 0, 0, 0), 'canvas', lit(k.canvas, 1.08), lit(k.canvas, .92), k.canvas));
     if (V.pio) {
@@ -32439,14 +33151,14 @@ function flatFaces(V, side, k, P) {
    units, so one of the two has lost his. */
 function deadFaces(variant, kind) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.can_rifle, side = V.side, k = KIT[V.nat || side];
-  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa', en = ame && V.eng;
-  var coat = ger ? k.smock : en ? k.hbt : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
+  var hr = V.nat === 'heer', ger = side === 'ger' && !hr, ame = V.nat === 'usa', en = ame && V.eng, kc = hr && V.kch;
+  var coat = ger ? k.smock : en ? k.hbt : kc ? k.pz : k.coat, cmat = ger ? 'splinter' : 'cloth', patch = !ger && !hr;
   var trs = en ? k.khaki : k.trous, ka = engKit(V, k);
   var f = [], Q = {}, LG = [], AR = [], AT = [], W = WEAP[V.weapon], w = W ? weaponModel(k, V.weapon) : null;
   /* a rifle that has been dropped lies on its side; the Garand stands two and a half units
      from its front sight to its sling and the Kar98k as much from its hood to its toe, and
      laid the way the others are each was half in the ground */
-  if (w && (V.weapon === 'garand' || V.weapon === 'kar')) w = roll(w, Math.PI / 2, 0, 0);
+  if (w && (V.weapon === 'garand' || V.weapon === 'kar' || V.weapon === 'stg')) w = roll(w, Math.PI / 2, 0, 0);
   function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
   function arm(g) { AT.push(f.length); f = f.concat(g); }
   function leg(a, b, c) {
@@ -32564,7 +33276,10 @@ function crewman(side, yaw, x, y, z) {
    the builder has to change for the crouch being retired. */
 var POSE_STAND = 0, POSE_WALK = 1, POSE_CROUCH = 2, POSE_FIRE = 3, POSE_CFIRE = 4,
     POSE_PRONE = 5, POSE_CRAWL = 6, POSE_RUN = 7, POSE_READY = 8, POSE_SEAT = 9,
-    POSE_SIT = 10, POSE_SERVED = 11;
+    POSE_SIT = 10, POSE_SERVED = 11, POSE_THROW = 12, POSE_THROWB = 13;
+/* how long the second frame of a throw is held: the wind-up shows until then, and the
+   grenade leaves the hand on the frame it changes */
+var THROW_REL = .22;
 var MODELS = { man: {}, muz: {}, eye: {}, fall: {}, dead: {},
                veh: {}, team: {}, at: {}, gun: {}, gunBase: {}, bld: {}, bldA: {}, tree: [], bush: [] };
 /* A man is drawn at this over his built size. On a phone he is 12.7 CSS pixels tall at
@@ -32659,6 +33374,18 @@ function bakeMen() {
     /* a gunner serves the piece with both hands and has no aimed pose of his own */
     if (V.set === 'gunner') return;
     one(POSE_READY, FIGPOSE.ready); one(POSE_FIRE, FIGPOSE.fire); one(POSE_CFIRE, FIGPOSE.kfire);
+    /* a man who throws is baked winding up and letting go, once with a stick grenade in
+       his hand and once with the bundle charge */
+    if (V.throw) [[POSE_THROW, ''], [POSE_THROWB, 'bund']].forEach(function (tp) {
+      var fr = [], mz = [];
+      [FIGPOSE.throw0, FIGPOSE.throw1].forEach(function (P0) {
+        var P1 = {}, q;
+        for (q in P0) P1[q] = P0[q];
+        P1.nade = tp[1];
+        var r = manFaces(v, P1); fr.push(buf(r)); mz.push(r.muzzle);
+      });
+      T[tp[0]] = { frames: fr, len: 1, thr: 1 }; MZ[tp[0]] = mz; EY[tp[0]] = EY[POSE_STAND];
+    });
     if (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle' || v === 'gr_rifle' || V.body) {
       var sd = V.body || V.nat || V.side;
       MODELS.fall[sd] = [FIGPOSE.fall0, FIGPOSE.fall1, FIGPOSE.fall2].map(function (P) { return buf(manFaces(v, P)); });
@@ -32703,6 +33430,9 @@ function buildModels() {
   buildVehicleModels();
   MODELS.veh = {}; MODELS.team = {}; MODELS.at = {}; MODELS.bld = {}; MODELS.bldA = {};
   bakeMen();
+  /* the two things a squad throws, drawn one per grenade in the air or on the ground */
+  MODELS.gren = facesToBuffer(grenadeFaces(KIT.heer, false));
+  MODELS.bund = facesToBuffer(grenadeFaces(KIT.heer, true));
   Object.keys(VMODEL).forEach(function (k) {
     var V = VMODEL[k];
     var M = { hull: facesToBuffer(V.hull), tur: facesToBuffer(V.tur),
@@ -34187,6 +34917,7 @@ function poseBuffers(u, m, variant) {
   var T = MODELS.man[variant]; if (!T) return null;
   var set = T[m.pose] || (m.pose === POSE_RUN ? T[POSE_WALK] : null) || T[POSE_STAND];
   if (!set) return null;
+  if (set.thr) return set.frames[(m.thrT || 0) > THROW_REL ? 0 : 1];
   return set.frames ? set.frames[frameOf(set, m)] : set;
 }
 /* The men in a turret: the mount's own when a fitting changed the mount, and without the
@@ -34614,6 +35345,25 @@ function drawWrecks3D(v) {
     shown++;
     var a = clamp(1 - c.t / 55, .15, .55);
     drawGeom(L[(c.k || 0) % L.length], m4model(c.x, c.y, groundZ(c.x, c.y) - .3, c.a, FIG_SCALE), false, [a, a * .95, a * .9]);
+  });
+  /* The grenades: end over end on the way, and lying on their side for the fuse, on the
+     ground or on the deck of the vehicle a bundle landed on. They are small enough to be a
+     speck at the distance a player plays from and the wisp off the fuse is what he sees;
+     this is the thing itself, for anyone who looks. */
+  G.shots.forEach(function (s) {
+    if (s.kind !== 'gren' || !inView(v, s.x, s.y, 20)) return;
+    var B = s.bund ? MODELS.bund : MODELS.gren; if (!B) return;
+    var z, nose = 0;
+    if (s.rest < 0) {
+      var k = clamp(s.t / s.dur, 0, 1);
+      z = lerp(s.sz, groundZ(s.tx, s.ty) + 1, k) + Math.sin(k * Math.PI) * s.arc;
+      nose = s.t * s.spin;
+    } else if (s.on && !s.on.dead) {
+      /* in the hull's own frame, so it rides the lean and the bounce the hull is drawn with */
+      drawGeom(B, m4mul(vehFrames(s.on).hmat, m4model(s.ox, s.oy, s.oz + 1.25, s.oyaw, FIG_SCALE)), false, [1, 1, 1]);
+      return;
+    } else z = groundZ(s.x, s.y) + (s.bund ? 1.25 : .42);
+    drawGeom(B, m4lean(s.x, s.y, z, s.yaw || 0, FIG_SCALE, 0, nose), false, [1, 1, 1]);
   });
 }
 function drawParticles3D() {
@@ -35581,6 +36331,7 @@ cv.addEventListener('mousedown', function (e) {
     }
     if (G.mode === 'attack') { var w0 = s2w(mouse.x, mouse.y); issueOrder(w0.x, w0.y, true); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
     if (G.mode === 'barrage' || G.mode === 'smoke') { var wb = s2w(mouse.x, mouse.y); callBarrage(wb.x, wb.y, G.mode === 'smoke'); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
+    if (G.mode === 'bundle') { var wq = s2w(mouse.x, mouse.y); callBundle(wq.x, wq.y); G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
     drag.on = true; drag.x0 = mouse.x; drag.y0 = mouse.y; drag.moved = false;
   } else if (e.button === 1) { e.preventDefault(); drag.pan = { x: mouse.x, y: mouse.y, rotate: !e.shiftKey }; }
 });
@@ -35810,6 +36561,7 @@ cv.addEventListener('touchend', function (e) {
     issueOrder(w.x, w.y, true); G.mode = null; syncHud(); buzz(16); return;
   }
   if (G.mode === 'barrage' || G.mode === 'smoke') { callBarrage(w.x, w.y, G.mode === 'smoke'); G.mode = null; syncHud(); buzz(16); return; }
+  if (G.mode === 'bundle') { callBundle(w.x, w.y); G.mode = null; syncHud(); buzz(16); return; }
   /* under the simple scheme a tap is never an order: a flag puts its directives up, a
      unit of his is picked for LOOK, and the ground lets go */
   if (CTRL.simple) { simpleTap(w.x, w.y); return; }
@@ -36033,6 +36785,17 @@ function simpleUnitSync() {
     u.autoUp = !autoUpOf(u);
     toast(u.def.short + ': ' + (u.autoUp ? 'upgrades fitted automatically' : 'upgrades by hand')); sfx('click'); buzz(10); simpleUnitSync();
   }, autoUpOf(u), false, 'auto');
+  /* and the two things a squad throws, which are the player's to call under this scheme as
+     well as the brain's: GRENADES goes now, BUNDLE wants a vehicle tapped next */
+  if (abDef(u, 'gren')) add('✺', 'GRENADES', abSub([u], 'gren'), function () {
+    var r = abGren(u);
+    toast(r ? 'Grenades: ' + abSay(r) : 'Grenades!'); sfx('click'); buzz(r ? 6 : 12); simpleUnitSync();
+  }, false, !!abWhy(u, 'gren'), 'ab_gren');
+  if (abDef(u, 'bund')) add('✹', 'BUNDLE', abSub([u], 'bund'), function () {
+    var r = abWhy(u, 'bund', 1);
+    if (r) { toast('Bundle charge: ' + abSay(r)); buzz(6); return; }
+    select([u], false); G.mode = 'bundle'; toast('Tap a vehicle'); sfx('click'); buzz(10); simpleUnitSync(); syncHud();
+  }, G.mode === 'bundle', !!abWhy(u, 'bund', 1), 'ab_bund');
   simpleUnitRows();
 }
 /* What this one does with nothing in front of it, what it does when there is something,
@@ -36495,6 +37258,15 @@ function simpleSync() {
 var simpleN = 0;
 function simpleTick() {
   if (!CTRL.simple) return;
+  /* the throws on the unit's card count down as they go */
+  var su = SIMPLEUNIT;
+  if (su && su.def && su.def.ab && !su.dead) ['gren', 'bund'].forEach(function (k) {
+    var b = document.querySelector('#tunitbtns [data-up="ab_' + k + '"]');
+    if (!b) return;
+    var sm = b.querySelector('small'), t = abSub([su], k);
+    if (sm && sm.textContent !== t) sm.textContent = t;
+    b.classList.toggle('poor', !!abWhy(su, k, k === 'bund'));
+  });
   if (++simpleN % 4) return;
   simpleSync();
 }
@@ -36701,6 +37473,8 @@ function cmdGlyph(label) {
      post' and 'Aid post' and drew a house on each. The mortar pit is deliberately left to
      the `/Pit/` test further down, which is the better glyph for it. */
   if (/Auto upgrade/i.test(label)) return '⟳';
+  if (/Grenades/i.test(label)) return '✺';
+  if (/Bundle charge/i.test(label)) return '✹';
   if (/Smoke mission/i.test(label)) return '☁';
   if (/Machine gun post/i.test(label)) return '⊢';
   if (/Anti-tank casemate/i.test(label)) return '⌁';
@@ -36798,6 +37572,24 @@ function buildCmds() {
         function () { setStance(foot, allDown ? '' : 'ground'); sfx('click'); syncHud(); }, allDown);
       addCmd('Double time', 'run, easy to pin', 'C', true,
         function () { setStance(foot, allRun ? '' : 'double'); sfx('click'); syncHud(); }, allRun);
+    }
+    /* The two things a squad throws. GRENADES goes at once, at whatever is nearest in
+       reach; BUNDLE CHARGE wants a vehicle picked, the way a fire mission wants ground. Both
+       say how long until they are back, and they come before the cards whose keys they
+       share, because a hotkey takes the first card that carries it. */
+    var gU = units.filter(function (u) { return abDef(u, 'gren'); });
+    if (gU.length) {
+      addCmd('Grenades', abSub(gU, 'gren'), 'G', true, function () { orderGrenades(gU); });
+      cmdList[cmdList.length - 1].can = function () { return gU.some(function (u) { return !abWhy(u, 'gren'); }); };
+      cmdList[cmdList.length - 1].live = function () { return abSub(gU, 'gren'); };
+    }
+    var bU = units.filter(function (u) { return abDef(u, 'bund'); });
+    if (bU.length) {
+      addCmd('Bundle charge', abSub(bU, 'bund'), 'E', true, function () {
+        G.mode = 'bundle'; cv.style.cursor = 'cell'; toast(MOB ? 'Tap a vehicle' : 'Click a vehicle'); syncHud();
+      }, G.mode === 'bundle');
+      cmdList[cmdList.length - 1].can = function () { return bU.some(function (u) { return !abWhy(u, 'bund', 1); }); };
+      cmdList[cmdList.length - 1].live = function () { return abSub(bU, 'bund'); };
     }
     var tubes = units.filter(function (u) { return u.def.barrage; });
     if (tubes.length) {
@@ -36909,6 +37701,11 @@ function buildCmds() {
 function refreshCmdState() {
   for (var i = 0; i < cmdList.length; i++) {
     var c = cmdList[i];
+    /* a card whose line counts something down says so as it goes */
+    if (c.live) {
+      var lv = c.live();
+      if (lv !== c.lastLive) { c.lastLive = lv; var cs = c.btn.querySelector('.c'); if (cs) cs.textContent = lv; }
+    }
     if (!c.can) continue;
     var ok = c.can();
     if (ok !== c.enabled) { c.enabled = ok; c.btn.disabled = !ok; }

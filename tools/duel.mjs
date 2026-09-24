@@ -133,6 +133,13 @@ const CARD = [
   ['am_ranger', 'hr_234'],
   ['hr_234', 'am_m8', { a: ['puma'] }],
   ['hr_234', 'am_sher', { a: ['puma'] }],
+  /* the Knight's Cross Holders, whose grenades reach 150, so a row at the pair's own reach says
+     nothing about them: read these beside the same rows at --d=130 */
+  ['am_ranger', 'hr_kch'],
+  ['am_rifle', 'hr_kch'],
+  ['am_m8', 'hr_kch'],
+  ['am_m3', 'hr_kch'],
+  ['am_sher', 'hr_kch'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],
@@ -190,7 +197,8 @@ await deploy(page, { side: 'us', diff: 1 });
    --ua=fifty fits A, --ub=kwk fits B */
 const cliUps = args.ua || args.ub ? { a: args.ua ? String(args.ua).split(',') : [], b: args.ub ? String(args.ub).split(',') : [] } : undefined;
 const pairs = positional.length >= 2 ? [cliUps ? [positional[0], positional[1], cliUps] : [positional[0], positional[1]]] : CARD;
-const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
+const NOAB = !!args.noab;
+const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB }) => {
   /* a wide flat patch well away from anything either side owns */
   function findField() {
     let best = null, bestDev = 1e9;
@@ -213,10 +221,18 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
   }
   const field = findField();
 
-  /* one tick of the real game, minus everything that is not the fight */
+  /* one tick of the real game, minus everything that is not the fight -- except the
+     things a squad throws, which are orders, and in a battle the brain gives them: at the
+     rate the regular brain thinks, through the same routine it calls (`abAuto`). --noab
+     fights the card without them, which is the way to see what they are worth. */
+  let abT = 0;
   function step(dt) {
     G.t += dt;
     computeVisibility(dt);
+    if (!NOAB && typeof abAuto === 'function' && (abT -= dt) <= 0) {
+      abT = 1.1;
+      for (const u of G.units) if (u.def.ab && !u.dead) abAuto(u);
+    }
     for (let i = 0; i < G.units.length; i++) updateUnit(G.units[i], dt);
     updateShots(dt);
     for (let k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
@@ -232,6 +248,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
   }
 
   function once(ka, kb, dist, flip, ups) {
+    abT = 0;
     G.units.length = 0; G.shots.length = 0; G.fx.length = 0; G.corpses.length = 0;
     /* and the hulls of the last fight, which were left lying on the staging ground. They
        have always been on the movement grid; since a burning wreck also obscures they
@@ -329,7 +346,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
                popA: A.pop, popB: B.pop });
   }
   return out;
-}, { pairs, N, DIST, COVER, LIMIT });
+}, { pairs, N, DIST, COVER, LIMIT, NOAB });
 
 await browser.close();
 if (tmp) fs.rmSync(tmp, { recursive: true, force: true });

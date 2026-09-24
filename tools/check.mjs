@@ -3846,6 +3846,180 @@ for (const device of TARGETS) {
      `${k4.bar}, the crew ${k4.crewUp ? 'the Puma\'s' : 'NOT the Puma\'s'} and the eye ${k4.eyeP} up; ${k4.blown} of 40 wrecks threw ` +
      `the turret, the least sat down ${k4.sink}; killed, it left ${k4.bodies} bodies of ${k4.bodyNat}; Ortona's depot makes ${k4.ita}`);
 
+  /* --- The Knight's Cross Holders. The squad the 352nd fields in the paratroop assault
+     group's place: the company post makes it and queues it when asked for the assault group,
+     the count and the order book read the two as one, its four men are the four variants
+     carrying the StG 44 and every one of them is baked winding up and letting go, with a
+     stick grenade and with the bundle. Then the two throws, as the player gives them and not
+     by calling the functions behind them: the GRENADES card sends one grenade from every man
+     at a squad in reach, each lies on the ground three quarters of a second after it lands
+     before it goes off, the card then reads a cooldown and a second volley is refused, and
+     with nothing in reach it is refused for that; the BUNDLE CHARGE card arms the pick, a
+     tap on a Panzer IV sends the squad after it, one man throws, the charge lodges on the
+     hull, goes off three quarters of a second later and takes a third of the tank. The
+     brain's own routine uses both, the SIMPLE card carries both at 44px, a man killed goes
+     down as `heer_kch`, and Ortona's post still makes the assault group. The drill is
+     staged on ground of its own with the battle's units put aside, and the squad is on the
+     player's slot, because the cards are his. --- */
+  const kc = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    /* on whichever side the player is on by now, and under the classic scheme, because the
+       cards are his and the rows above leave him on either */
+    const me = G.own, foe = G.side === 'us' ? 'ger' : 'us', ctrl0 = W.CTRL.simple;
+    W.ctrlSet(false, true);
+    /* the finger is installed on the window, and the map rows above have reloaded it since */
+    if (!W.__tev) {
+      const cv = document.getElementById('cv');
+      W.__tev = function (type, x, y) {
+        const r = cv.getBoundingClientRect();
+        const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
+        const up = type === 'touchend';
+        cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
+      };
+    }
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const post = W.spawnBuilding(hq.own, 'ger_qtr', hq.x - 240, hq.y + 200, true);
+    out.makes = W.makesOf(post).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = post.queue.length, m0 = W.madeOf(hq.own, 'hr_kch');
+    out.q = W.queueUnit(post, 'ger_pgren') ? post.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_kch') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_pgren') === W.madeOf(hq.own, 'hr_kch');
+    post.queue.length = q0;
+    W.setNation('can', 'fj'); out.ita = W.makesOf(post).join(','); W.setNation('usa', 'heer');
+    W.killBuilding(post);
+    out.baked = ['kc_lead', 'kc_stg', 'kc_stg_b', 'kc_bund'].every(v => {
+      const T = W.MODELS.man[v];
+      return T && T[W.POSE_FIRE] && T[W.POSE_THROW] && T[W.POSE_THROW].frames.length === 2 &&
+             T[W.POSE_THROWB] && T[W.POSE_THROWB].frames.length === 2;
+    });
+    const keep = G.units.slice(), mode0 = G.mode;
+    G.units.length = 0;
+    const sp = W.__o.flatSpot(260), dt = 1 / 30;
+    let posed = 0;
+    const step = n => {
+      for (let i = 0; i < n; i++) {
+        G.t += dt; W.computeVisibility(dt);
+        G.units.slice().forEach(q => W.updateUnit(q, dt)); W.updateShots(dt);
+        if (G.units.some(q => q.key === 'hr_kch' && q.models.some(m => m.alive && m.pose === W.POSE_THROW))) posed++;
+      }
+    };
+    const prime = (a, b) => { for (let s = 0; s < 400; s++) { W.computeVisibility(0); if (W.visibleTo(a.side, b) && W.visibleTo(b.side, a)) break; } };
+    const menHp = e => e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    const u = W.spawnUnit(me, 'hr_kch', sp.x + 70, sp.y, Math.PI);
+    out.count = W.countOf(me, 'ger_pgren') === W.countOf(me, 'hr_kch');
+    out.men = u.models.length; out.vet = u.vet;
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    /* GRENADES, off the card */
+    const e = W.spawnUnit(foe, 'hr_gren', sp.x - 60, sp.y, 0);
+    e.order = null; e.path = null;
+    prime(u, e);
+    const land = [], b0 = W.grenBurst;
+    W.grenBurst = function (s) {
+      const h0 = menHp(e);
+      const r = b0(s);
+      /* and where it lay on the hull: on top of it, and not inside the turret */
+      let oz = null, clear = false;
+      if (s.on) {
+        const D = W.deckGrid(s.on.key), mp = W.mountPose(s.on, W.VMODEL[s.on.key]), tr = s.on.turret - s.on.facing;
+        const qx = s.ox - mp.x, qy = s.oy - mp.y;
+        const tz = D.tur ? W.deckAt(D.tur, qx * Math.cos(tr) + qy * Math.sin(tr), -qx * Math.sin(tr) + qy * Math.cos(tr)) + mp.z : -1e9;
+        oz = +s.oz.toFixed(1); clear = tz < s.oz + 1.5 && Math.abs(W.deckAt(D.hull, s.ox, s.oy) - s.oz) < .01;
+      }
+      land.push({ fuse: G.t - s.landT, bund: s.bund, on: s.on ? s.on.key : '', oz, clear, hurt: h0 - menHp(e) });
+      return r;
+    };
+    W.select([u], false); W.syncHud();
+    const card = [...document.querySelectorAll('#cmds .cmd')].find(b => /Grenades/.test(b.title));
+    out.card = card ? card.querySelector('.c').textContent : 'MISSING';
+    if (card) card.click();
+    out.cd = u.abCd && u.abCd.gren;
+    out.again = W.abGren(u);
+    const rel = new Set();
+    for (let k = 0; k < 150; k++) { step(1); G.shots.forEach(s => { if (s.kind === 'gren' && s.owner === u) rel.add(s); }); }
+    W.refreshCmdState();
+    const card2 = [...document.querySelectorAll('#cmds .cmd')].find(b => /Grenades/.test(b.title));
+    out.cardAfter = card2 ? card2.querySelector('.c').textContent + (card2.disabled ? ' (dimmed)' : '') : 'MISSING';
+    out.thrown = rel.size; out.posed = posed;
+    out.fuse = land.filter(q => !q.bund).map(q => +q.fuse.toFixed(3));
+    out.gHurt = Math.round(land.filter(q => !q.bund).reduce((s, q) => s + q.hurt, 0));
+    W.killUnit(e);
+    u.abCd.gren = 0;
+    out.none = W.abGren(u);
+    /* BUNDLE CHARGE: the card arms the pick and a finger on the tank sends them */
+    const v = W.spawnUnit(foe, 'hr_p4', sp.x - 150, sp.y, 0);
+    v.order = null; v.path = null; v.cd = 1e9; v.atcd = 1e9;
+    W.secondaryKeys(v).forEach(k => { v.cdSec[k] = 1e9; });
+    prime(u, v);
+    W.select([u], false); W.syncHud();
+    const bcard = [...document.querySelectorAll('#cmds .cmd')].find(b => /Bundle charge/.test(b.title));
+    out.bcard = !!bcard;
+    if (bcard) bcard.click();
+    out.mode = G.mode;
+    W.__o.camera({ x: v.x, y: v.y, dist: 420, pitch: 0.95 }); W.render();
+    const p = W.w2s(v.x, v.y, W.groundZ(v.x, v.y) + 10);
+    W.__tev('touchstart', p.x, p.y); W.__tev('touchend', p.x, p.y);
+    out.order = u.order; out.modeAfter = G.mode || 'none';
+    const hv0 = v.hp, x0 = u.x;
+    land.length = 0;
+    for (let k = 0; k < 30 * 25 && !land.some(q => q.bund); k++) step(1);
+    const bl = land.filter(q => q.bund)[0];
+    out.bFuse = bl ? +bl.fuse.toFixed(3) : -1; out.bOn = bl ? bl.on : '-';
+    out.bOz = bl ? bl.oz : null; out.bClear = !!(bl && bl.clear);
+    out.walked = Math.round(Math.abs(u.x - x0));
+    out.pzLost = Math.round(hv0 - v.hp); out.bcd = Math.round(u.abCd && u.abCd.bund || 0);
+    /* the brain's own routine, with both back */
+    u.abCd.gren = 0; u.abCd.bund = 0; W.clearOrder(u);
+    const e2 = W.spawnUnit(foe, 'hr_gren', u.x - 110, u.y, 0);
+    e2.order = null; e2.path = null;
+    prime(u, e2);
+    out.auto = W.abAuto(u);
+    out.autoOrder = u.order;
+    /* the SIMPLE card */
+    u.abCd.bund = 0; W.clearOrder(u); G.mode = null;
+    W.ctrlSet(true, true); W.simpleUnit(u);
+    out.simple = ['ab_gren', 'ab_bund'].map(k => {
+      const b = document.querySelector('#tunitbtns [data-up="' + k + '"]');
+      return b ? Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) | 0 : 0;
+    });
+    const sb = document.querySelector('#tunitbtns [data-up="ab_bund"]');
+    if (sb) sb.click();
+    out.simpleMode = G.mode || 'none';
+    W.simpleUnit(null); W.ctrlSet(ctrl0, true); G.mode = mode0;
+    /* a man of it goes down as the 352nd's Knight's Cross Holders */
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fellNat = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.heer_kch && W.MODELS.dead.heer_kch);
+    W.grenBurst = b0;
+    [u, v, e2].forEach(q => { if (!q.dead) W.killUnit(q); });
+    for (let k = G.shots.length - 1; k >= 0; k--) if (G.shots[k].kind === 'gren') G.shots.splice(k, 1);
+    G.units.length = 0; keep.forEach(q => G.units.push(q));
+    W.select([], false); W.syncHud();
+    return out;
+  });
+  ok('Omaha: the Knight\'s Cross Holders stand in for the assault group, and throw grenades and a bundle charge on the player\'s word',
+     /hr_kch/.test(kc.makes) && !/ger_pgren/.test(kc.makes) && kc.q === 'hr_kch' && kc.made === 1 && kc.madeAs && kc.count &&
+     kc.men === 4 && kc.vet === 1 && kc.vars === 'kc_lead,kc_stg,kc_stg_b,kc_bund' && kc.weap === 'stg' && kc.baked &&
+     kc.card === 'ready' && kc.cd > 30 && kc.again === 'cooling' && kc.thrown === 4 && kc.posed > 0 &&
+     kc.fuse.length === 4 && kc.fuse.every(f => f > .72 && f < .79) && kc.gHurt > 0 && /s \(dimmed\)$/.test(kc.cardAfter) &&
+     kc.none === 'nothing in reach' && kc.bcard && kc.mode === 'bundle' && kc.order === 'bundle' && kc.modeAfter === 'none' &&
+     kc.bFuse > .72 && kc.bFuse < .79 && kc.bOn === 'hr_p4' && kc.bClear && kc.pzLost >= 200 && kc.bcd > 40 && kc.walked > 20 &&
+     kc.auto === 3 && kc.autoOrder === 'bundle' && kc.simple.every(s => s >= 44) && kc.simpleMode === 'bundle' &&
+     kc.fellNat === 'heer_kch' && kc.bodies && /ger_pgren/.test(kc.ita) && !/hr_kch/.test(kc.ita),
+     `the company post makes ${kc.makes}; asked for the assault group it queues ${kc.q}, counted as ${kc.made} made and the ` +
+     `order book ${kc.madeAs ? 'the same' : 'DIFFERENT'}, the count ${kc.count ? 'the same' : 'DIFFERENT'}; ${kc.men} men at ` +
+     `veterancy ${kc.vet} as ${kc.vars} carrying ${kc.weap}, the throw ${kc.baked ? 'baked' : 'NOT baked'}; the GRENADES card read ` +
+     `${kc.card} and threw ${kc.thrown} (a man in the throw on ${kc.posed} frames), each going off ${kc.fuse.join(', ')} s after it ` +
+     `landed and ${kc.gHurt} off the squad between them; the cooldown ${kc.cd}, a second volley ${kc.again}, the card then ` +
+     `${kc.cardAfter}; with nothing near, ${kc.none}; the BUNDLE card ${kc.bcard ? 'armed ' + kc.mode : 'MISSING'}, a tap on the ` +
+     `tank left the squad ${kc.order} and the pick ${kc.modeAfter}; it walked ${kc.walked}, the charge went off ${kc.bFuse} s after ` +
+     `it came down on ${kc.bOn}, lying ${kc.bOz} up and ${kc.bClear ? 'clear of' : 'INSIDE'} the turret, and took ${kc.pzLost} off it, cooling ${kc.bcd}; the brain's routine answered ${kc.auto} and left ` +
+     `the squad ${kc.autoOrder}; the SIMPLE card's two are ${kc.simple.join(' and ')}px and BUNDLE armed ${kc.simpleMode}; a man ` +
+     `killed went down as ${kc.fellNat}, bodies ${kc.bodies ? 'baked' : 'MISSING'}; Ortona's post makes ${kc.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

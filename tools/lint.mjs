@@ -259,10 +259,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    axles and the bogie spring, the hatch plate with its two openings and their wells, the
    covers opened onto the glacis, the open turret with its basket, rotor and rack of rounds,
    the stowage boxes, the sand shields and the ring mount as fittings, and four men.
+   It is 2460 for the Knight's Cross Holders: the officer's peaked cap, the scarf and the
+   cross, the StG 44 cut as a side profile, the stick grenade and the bundle charge, four
+   variants and the two frames of a throw baked twice over, and the two abilities with their
+   flight, their fuse, the cards, the brain's use of them and the targeting that picks a
+   vehicle.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2400) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2400 kB so it stays quick to load on a phone`);
+if (kb > 2460) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2460 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

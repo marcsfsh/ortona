@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the grenadier squad, the pioneer team, the
-jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -197,6 +197,14 @@ Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 reinforcement left out, so it cannot drift away from the game. A third entry on a
 card row fits field upgrades before the fight, because half of what a vehicle can
 do is an upgrade.
+
+**The one piece of the brain it keeps is the routine that decides when a squad throws**
+(`abAuto`), called at the rate the regular brain thinks. A thing a squad throws is an order,
+nothing fires it on a cooldown of its own, and a card that left it out would be fighting the
+Knight's Cross Holders without the two things they are bought for. `--noab` fights without it,
+which is the way to see what the throws are worth; and because a volley only reaches 150, a
+row staged at the pair's own reach says nothing about the grenades, so the card reads those
+rows at `--d=130` as well.
 
 ### `tools/move.mjs` - movement, pathing and cover, mechanically
 
@@ -863,7 +871,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, and 2400 before the M8). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, and 2460 before the Knight's Cross Holders). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1110,7 +1118,19 @@ screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the no
 way round, the periscope's eye is the commander's over the rim, the brain's own routine fits the
 Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks throw the
 turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot still makes
-the Wirbelwind.
+the Wirbelwind. And the Knight's Cross Holders are asked it in a fourteenth, as the player gives
+the orders and not by calling what is behind them: the company post makes them and not the
+assault group and queues them when asked for it, the count and the order book read the two as
+one, the four men are the four variants carrying the StG 44 at a veteran's rank and every one is
+baked winding up and letting go; the GRENADES card reads ready, sends four grenades at a squad
+in reach, a man is in the throw while it goes, each grenade goes off three quarters of a second
+after it lands and the squad takes the bursts, the card then counts its cooldown down dimmed, a
+second volley is refused as cooling and one with nothing in reach is refused for that; the
+BUNDLE CHARGE card arms the pick, a finger on a Panzer IV sends the squad after it and puts the
+pick away, the squad walks into reach, the charge comes down on the hull, goes off three quarters
+of a second later and takes two hundred or more off it; the brain's own routine uses both at
+once; the SIMPLE card carries both at 44 pixels and its BUNDLE arms the pick; a man killed goes
+down as `heer_kch`; and Ortona's post still makes the assault group.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3823,6 +3843,110 @@ the M4 every time. The Puma, at 85 a round every 2.6 seconds and 120 of penetrat
 to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
 `SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
 
+**The Knight's Cross Holders are the 352nd's assault squad**, in the paratroop assault group's
+place (`ger_pgren` to `hr_kch` on the army's list), bought from the same post: four decorated
+veterans with StG 44s, raised at a veteran's rank (`vet0`, which starts the tally of kills that
+earns it, because the rank is worked out from the tally every time it moves). They are dressed
+after the Company of Heroes squad they were asked for, and every piece goes through a door the
+rig already had: the black wrap of the panzer troops (`V.kch` sets `pz`, with the collar's piping
+and skulls) over field-grey breeches into the marching boot, black kid gloves (`engKit`), and a
+kit of their own (`figKitKch`): the grey scarf wound twice round the neck with the cross under it
+on its ribbon, the black belt, the StG 44's triple magazine pouch in tan canvas on the left front
+and a second on the right or the leader's pistol there, the sling of the bread bag across the
+chest, the fluted gas-mask tin behind on the left and the bread bag and canteen on the right.
+Field glasses for two of them, two stick grenades behind the belt for two, and the bundle charge
+on the hip of the man who throws it. Four variants: `kc_lead`, `kc_stg` (the body), `kc_stg_b`
+and `kc_bund`.
+
+**The peaked cap is a crown pulled up at the front** (`capOfficer`): a band round the head, a crown
+wider than the band all round lofted over it with the saddle raised at the front, so the top
+slopes down from the eagle to the back of the head; the patent peak dropping forward over the
+eyes, the silver chin cords across the band on a button either side, the cockade on the band and
+the eagle on the saddle. The saddle is the whole of it: a flat crown on a band reads as a cook's
+cap, and the first one did.
+
+**The StG 44 is cut as a side profile** (`weaponModel(k, 'stg')`): the wooden stock and the
+magazine as prisms, the pressed receiver and its trigger housing, the rear sight standing off the
+front of the receiver, the barrel with the gas tube lying over it to the front sight, the pistol
+grip raked back, the charging handle on the left and the sling down the same side. It measures
+11.07 units against a published 940 mm. The support hand is under the front of the receiver
+ahead of the magazine (`WEAP.stg`), because there is no handguard and the gas tube is too hot to
+hold.
+
+**The two throws are orders, and both are the player's to give** (`u.def.ab`): nothing fires them
+on a cooldown of its own and `acquire` never picks them. GRENADES (`abGren`, the G card and the
+SIMPLE card) sends one stick grenade from every man at whatever of the enemy the side can see
+nearest inside 150 -- a garrison over a section in the open, a crew over a section, a vehicle
+only if nothing else is there (`abGrenTarget`) -- dealt round its men, the throwers a fifth of a
+second apart, and the squad stands while it goes (`u.thrHold`). BUNDLE CHARGE (`abBundle`, the E
+card) arms a pick the way a fire mission does (`G.mode = 'bundle'`, answered on the click and the
+tap paths beside the barrage), draws the reach round the squad and a ring round every vehicle of
+theirs that can be picked, and a tap on one sends the squad after it (`u.order = 'bundle'`,
+`abBundleTick`) until it is in reach, when the man who carries it throws. Each is refused with a
+reason rather than a no (`abWhy`): cooling, pinned, falling back, already throwing, or nothing in
+reach. The cards count their cooldowns down (`live` on a `cmdList` entry, read by
+`refreshCmdState`), 35 seconds and 60.
+
+**A throw is a man's own**, and it is in the pose table: `FIGPOSE.throw0` winds up with the
+grenade cocked behind his head and the right shoulder back, `throw1` lets go with the weight on
+the left foot, the rifle down in the left hand by its fore-end (`figCarry`'s `throw`), and every
+man who throws is baked in both frames twice over, with a stick grenade in his hand
+(`POSE_THROW`) and with the bundle (`POSE_THROWB`). `m.thrD` is the wait before his turn, `m.thrT`
+the throw, and the grenade leaves his hand on the frame the pose changes (`THROW_REL`).
+
+**The grenade flies, lands, lies there and goes off** (`grenTick`, a shot of kind `gren`): on a
+lob to where the man it was meant for is when it leaves the hand, skidding on a little, and lying
+still for its fuse -- three quarters of a second, counted from the moment it came down and not the
+frame that noticed -- with a thread of smoke off the fuse, because a grenade is a speck at the
+distance a player plays from and the smoke is what he sees. The bundle is thrown at the back half
+of where the vehicle will be when it lands, and if it lands on the hull it lies on whatever it came
+down on and rides with it, drawn in the hull's own frame. Both are drawn as models while they are
+about (`grenadeFaces`, `MODELS.gren` and `MODELS.bund`): the handle and cap and the grey-green
+head, and the bundle with six more heads wired round it.
+
+**A thing that lands on a vehicle lands on its top, and the top is read off the model.**
+`deckGrid` rasterises the hull's faces and the mount's, each in its own frame, into a height over
+the plan at two units a cell, once a model; `deckSeat` reads it where the bundle came down. One
+that comes down on the turret goes off it on the side it was thrown from, one on a sloped plate
+slides down it, and one that goes off the edge is on the ground beside the hull. The first
+version aimed at the centre of the vehicle and laid the bundle at `mountZ`, which on a tank is
+the turret ring, so every bundle that hit a Sherman lay inside its turret and the close-up of it
+lodged was a picture of a Sherman: the gate row read `bOn` as the Panzer IV every time and nothing
+anywhere said there was nothing to see. Aimed at the back half and seated, it lies on the engine
+deck.
+
+**The burst goes through `explode` with the grenade flagged** (`w.gren`), which changes three
+things and no more. A stick grenade scorches masonry and a bundle breaches it, because the breach
+is read off a third of the damage. A garrison a grenade went in among gets none of the house round
+it, because it is in the room with them. And a bundle does its own work on a vehicle (`w.noVeh`
+keeps the splash off it twice): its whole weight to a hull it is lying on or under, falling to
+nothing 26 units off it (`hullGap`), with the track or the wheels blown on half its bursts close
+in and the gun on a sixth, and nothing about the plate in it, because it is a kilogram of
+explosive lying against the deck and not a round arriving at a plate.
+
+**The brain uses both** (`abAuto`, at skill 1 and up, counted as `ab.gren` and `ab.bund`): a volley
+at two men or more, a crew, or anyone in a house, and the bundle at a vehicle inside 330, a halted
+one before a moving one. A squad sent after a vehicle is left alone by the rest of the tick, and a
+squad with its bundle nearly back counts as an answer to armour, both in its own situation
+(`S.canAnswer`) and to a call (`aiCanAnswer`). Under SIMPLE the brain on the player's slot uses
+them for him as well.
+
+**Its numbers came off the duel card, and the grenades are the whole of the close fight.** At a
+first StG line of 11 a round every half second and 100 hit points a man, the squad lost every
+fight with the Rangers at its own reach and won seven in eight at 130, where a volley reaches;
+at 13.5 every .46 seconds and 108 it won five in six at range, which is four men out-shooting six
+with Thompsons and BARs. At 12.8 every .47 seconds, 105 a man and a veteran's rank, 420 marks and
+30 of fuel, over twenty-four runs the Rangers win 54 per cent at 180 and 4 at 130, and with the
+throws switched off (`--noab`) they win 56 per cent at 130: the volley is what takes the close
+fight from even to nearly every time. With the .30 the Rangers win 69 per cent at range. Over
+sixteen runs a row the Knight's Cross Holders take the rifle squad every time at either range
+with 95 per cent of themselves left, the engineers every time in three seconds, the jeep every
+time in three and a half (the bundle and a few rounds), and the M3A1 seven times in eight; the M8
+takes them 69 per cent of the time and is left at a quarter, and the M4 takes them every time in
+under seven seconds with 72 per cent of itself left, the 28 it lost being one bundle. A grenade
+is 46 at the centre of 24 units: the first, at 60 over 26, took three men of an American squad in
+one volley.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -6077,6 +6201,14 @@ shots/                         screenshot output, gitignored
   .30 moved its fight with the Panzergrenadiere from 172 to 197, out to where the SMGs opposite
   are worse, and read as 50 per cent to 100. Staged at 172 both ways (`--d=172`) it was 42 to
   67. Compare an upgrade at a fixed range.
+- **`mountZ` is the height of the turret ring, and the middle of a tank is its turret.** A thing
+  put on a vehicle at its centre and `mountZ` is inside the turret and drawn nowhere, and a probe
+  that asks only whether it is on the hull reads it as correct. Ask `deckSeat` where it lies.
+- **A German unit staged on the Allied side is drawn as a Canadian unless its variant is keyed
+  off the unit.** `variantForModel` tries `u.side === 'us'` first and hands anything it does not
+  know the Canadian rifleman, so a duel row or a drill that puts the Knight's Cross Holders on
+  the player's slot got four Lee-Enfields and no throwing pose. Their line comes before the side
+  test now; anything else staged across the sides the same way needs the same.
 - **A door that fits an upgrade asks `upgradable(u)`, never the category.** Every one of them
   asked `u.cat === 'veh'` until a squad came with an upgrade, and each that still did would have
   been a place the .30 could never be bought.
