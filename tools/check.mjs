@@ -1551,7 +1551,11 @@ for (const device of TARGETS) {
     const laid = window.orderBarrage(m, mx, my, true);
     const rounds = m.barrage ? m.barrage.left : -1, isSmoke = !!(m.barrage && m.barrage.smoke);
     let t = 0;
+    /* once the mission is spent the tube is held, because the section is in sight and in its
+       reach, and a round of its own laid on it while the last cloud was still in the air put
+       HE on the men the row says nobody hurt (on one phone run, 2.2 s longer than the rest) */
     for (let f = 0; f < 60 * 30 && (m.barrage || window.G.shots.length); f++) {
+      if (!m.barrage) m.cd = 1e9;
       window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; t += 1 / 60;
     }
     const clouds = window.G.smoke.length, inZone = window.G.smoke.filter(c => Math.hypot(c.x - mx, c.y - my) <= m.def.barrage.r + 14).length;
@@ -2616,6 +2620,9 @@ for (const device of TARGETS) {
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'gothic') b.click(); });
     out.picked = window.chosenMapData().name;
     out.brief = document.getElementById('objtext').textContent;
+    /* and the page above the buttons names the ground it is going to be fought over */
+    out.head = document.getElementById('btitle').textContent;
+    out.lede = document.getElementById('bsub').textContent;
     const E = window.gothicMapData().entities;
     const key = e => e.t + '|' + Math.round(e.y !== undefined ? e.y : e.y1) +
                      '|' + Math.round((e.r || 0) + (e.w || 0) * 3);
@@ -2664,6 +2671,7 @@ for (const device of TARGETS) {
   }));
   ok('three maps ship, and the mirrored one is fair to the unit',
      maps.keys === 'gothic,omaha,ortona' && maps.picked === 'The Gothic Line' &&
+     maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
      /* Three of the four players are brains and have to be alive and buying; the fourth
@@ -2673,7 +2681,7 @@ for (const device of TARGETS) {
         a fact about the battle rather than a fault in the 2v2. */
      maps.gap > 1200 && gfight.live.filter(n => n > 0).length >= 3 && gfight.made &&
      gfight.held.filter(o => o !== 'us' && o !== 'ger').length === 0,
-     `maps ${maps.keys}; the picker on GOTHIC LINE builds "${maps.picked}" and the briefing ` +
+     `maps ${maps.keys}; the picker on GOTHIC LINE builds "${maps.picked}", heads the page "${maps.head}" and the briefing ` +
      `reads "${maps.brief.slice(0, 26)}..."; ${maps.west} entities on the west half and ${maps.east} on the ` +
      `east with ${maps.unpaired} unpaired; the ground disagrees with its own reflection by at ` +
      `most ${maps.ground} of a unit over 1750 samples; ${maps.vp} victory flags, ${maps.owned} ` +
@@ -2811,6 +2819,9 @@ for (const device of TARGETS) {
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
     out.picked = W.chosenMapData().name;
     out.brief = document.getElementById('objtext').textContent;
+    out.head = document.getElementById('btitle').textContent;
+    out.lede = document.getElementById('bsub').textContent;
+    out.cards = document.getElementById('bcard0h').textContent + '/' + document.getElementById('bcard1h').textContent;
     W.G.mapData = W.omahaMapData();
     W.startGame('us', 1, 'vp', true, false);
     const G = W.G, OM = W.OM, line = W.omLine;
@@ -2899,7 +2910,8 @@ for (const device of TARGETS) {
   const omGreen = om.field[1] - om.field[0], omWarm = om.sand[0] - om.sand[2];
   const wUs = om.walkUs.reduce((a, b) => a + b, 0), wGer = om.walkGer.reduce((a, b) => a + b, 0);
   ok('Omaha: a corridor with the sea at the bottom, the wall across the middle, and a draw the only way off for armour',
-     om.picked === 'Omaha Beach' && om.brief.indexOf('wall') >= 0 &&
+     om.picked === 'Omaha Beach' && om.brief.indexOf('wall') >= 0 && om.head === 'OMAHA' &&
+     /29th/.test(om.lede) && /352/.test(om.lede) && !/Ortona|Canadian/.test(om.lede) && om.cards === 'THE SEAWALL/THE DRAWS' &&
      om.world === '1500x4000' && om.grid === '75x200' && om.sea < 0 && om.top > 200 &&
      om.hq.us > 3700 && om.hq.ger < 400 &&
      /* every vehicle route off the beach passes up a draw */
@@ -2916,7 +2928,7 @@ for (const device of TARGETS) {
      om.walkUs.every(l => l > 0) && om.walkGer.every(l => l > 0) &&
      Math.abs(wUs - wGer) / Math.max(wUs, wGer) < .12 &&
      ofight.live[0] > 0 && ofight.live[1] > 0,
-     `the picker builds "${om.picked}" and the briefing reads "${om.brief.slice(0, 30)}..."; ` +
+     `the picker builds "${om.picked}", heads the page "${om.head}" over ${om.cards} and the briefing reads "${om.brief.slice(0, 30)}..."; ` +
      `the world is ${om.world} (grid ${om.grid}), the ground ${om.sea} at the bottom edge and ${om.top} on the plateau, ` +
      `headquarters at y ${om.hq.us} and ${om.hq.ger}; ` +
      `armour off the beach: ${om.veh.map(r => r.len + 'u (x' + r.over + '), ' + r.draw + ' from a draw').join('; ')}; ` +

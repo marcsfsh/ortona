@@ -793,15 +793,15 @@ body:not(.simple) #tOrders{display:none}
 
 <div id="start" class="screen">
   <div class="brand">
-    <div class="eyebrow">EIGHTH ARMY · ITALIAN CAMPAIGN · DECEMBER 1943</div>
-    <div class="title">ORTONA</div>
+    <div class="eyebrow" id="beyebrow">EIGHTH ARMY · ITALIAN CAMPAIGN · DECEMBER 1943</div>
+    <div class="title" id="btitle">ORTONA</div>
     <div class="rule"></div>
-    <div class="sub">Eight days of close fighting in a rain-soaked Adriatic town. Lead the
+    <div class="sub" id="bsub">Eight days of close fighting in a rain-soaked Adriatic town. Lead the
       1st Canadian Infantry Division into Ortona or hold its shattered streets with the veteran
       paratroopers of 1. Fallschirmjäger-Division.</div>
     <div class="briefgrid">
-      <div class="brief"><b>URBAN GROUND</b><span>Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.</span></div>
-      <div class="brief"><b>ENFILADE</b><span>Linear cover protects across its face. Fire down its length strips two grades of protection.</span></div>
+      <div class="brief"><b id="bcard0h">URBAN GROUND</b><span id="bcard0">Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.</span></div>
+      <div class="brief"><b id="bcard1h">ENFILADE</b><span id="bcard1">Linear cover protects across its face. Fire down its length strips two grades of protection.</span></div>
       <div class="brief"><b>OBJECTIVE</b><span id="objtext">Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.</span></div>
     </div>
   </div>
@@ -38379,12 +38379,28 @@ var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, cho
    CUSTOM MAP was the only door onto anything that was not Ortona. One table drives the
    picker, what the deploy button builds and what the briefing says, because the briefing
    named the piazza on every map there could ever be. */
+/* A ground carries its own page on the title screen as well as its objective: the line
+   over the name, the name, what the battle was and the two things about the ground worth
+   knowing before the first order. Written once for Ortona in the markup, they went on
+   naming the Adriatic town over the beach. */
 var MAPS = {
   ortona: { make: defaultMapData,
+            eyebrow: 'EIGHTH ARMY · ITALIAN CAMPAIGN · DECEMBER 1943', title: 'ORTONA',
+            sub: 'Eight days of close fighting in a rain-soaked Adriatic town. Lead the 1st Canadian Infantry Division into Ortona or hold its shattered streets with the veteran paratroopers of 1. Fallschirmjäger-Division.',
+            cards: [['URBAN GROUND', 'Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.'],
+                    ['ENFILADE', 'Linear cover protects across its face. Fire down its length strips two grades of protection.']],
             brief: 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.' },
   gothic: { make: gothicMapData,
+            eyebrow: 'EIGHTH ARMY · OPERATION OLIVE · AUGUST 1944', title: 'GOTHIC LINE',
+            sub: 'The Foglia valley at the end of August: two ridges with the river between them and a valley floor already fought over. Force a crossing with the 1st Canadian Infantry Division or hold the ridge with 1. Fallschirmjäger-Division.',
+            cards: [['DEAD GROUND', 'The folds and hollows on the valley floor are the only shelter between the belts. Move from one to the next.'],
+                    ['THREE CROSSINGS', 'The obstacle belts leave three ways over the river, and every one of them runs into a bunker\'s arc.']],
             brief: 'Force one of the three crossings of the Foglia and hold it. Cut-off sectors stop producing resources.' },
   omaha:  { make: omahaMapData,
+            eyebrow: 'US FIRST ARMY · OPERATION OVERLORD · 6 JUNE 1944', title: 'OMAHA',
+            sub: 'Dog and Easy sectors on the morning of D-Day. Bring the 29th Infantry Division up the open sand, over the seawall and through the draws, or hold the Atlantic Wall and the bocage behind it with the 352. Infanterie-Division.',
+            cards: [['THE SEAWALL', 'A man can shelter behind it and fire over it. A tank cannot climb it.'],
+                    ['THE DRAWS', 'Armour gets off the beach only up the Vierville and Les Moulins draws. Infantry can climb the bluff anywhere.']],
             brief: 'The Americans come ashore at the bottom of the map and the Germans hold the wall and the bluff above it. Take the village at the top, or put them back into the sea. Cut-off sectors stop producing resources.' }
 };
 var chosenMap = 'ortona';
@@ -38393,6 +38409,11 @@ function objSync() {
   el('objtext').textContent = chosenMode === 'anni'
     ? 'Destroy every building in the enemy base. Victory points do not run down.'
     : (MAPS[chosenMap] || MAPS.ortona).brief;
+}
+function brandSync() {
+  var M = MAPS[chosenMap] || MAPS.ortona;
+  el('beyebrow').textContent = M.eyebrow; el('btitle').textContent = M.title; el('bsub').textContent = M.sub;
+  M.cards.forEach(function (c, i) { el('bcard' + i + 'h').textContent = c[0]; el('bcard' + i).textContent = c[1]; });
 }
 document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
@@ -38422,7 +38443,7 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
     document.querySelectorAll('.gmap').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('on'); chosenMap = btn.dataset.map;
     btn.setAttribute('aria-pressed', 'true');
-    wallSync(); objSync(); sideSync(); sfx('click');
+    wallSync(); objSync(); sideSync(); brandSync(); sfx('click');
   };
 });
 /* each side's button names the army the chosen ground is fought by */

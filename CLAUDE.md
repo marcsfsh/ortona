@@ -18,7 +18,11 @@ the Americans starting on the sand at the bottom among the craft that brought th
 the Germans in a manor in the bocage at the top, with the seawall and the Atlantic Wall
 across the middle and two draws up the bluff behind it that are the only way armour gets
 off the beach. They are picked on the title screen under GROUND and all three open in the
-editor.
+editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
+line over the name, the name, what the battle was and two cards about the ground), and the two
+side buttons name the armies it is fought by, so picking OMAHA puts the 29th Infantry Division
+against the 352. Infanterie-Division on the page as well as on the field. Written once in the
+markup, the header went on naming the Adriatic town over the beach.
 
 **The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
