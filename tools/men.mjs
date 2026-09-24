@@ -321,7 +321,7 @@ function GEO(opt) {
     const legFaces = parts.legs ? cat(parts.legs) : body.filter(f => f.v.every(p => p[2] < hipZ + .3));
     const id = window.__o.poseId(P.name);
     let mz = null;
-    if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && mz[0].length) mz = mz[P.frame % mz.length]; }
+    if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && (mz[0] === null || mz[0].length)) mz = mz[P.frame % mz.length]; }
     return { faces, ok: true, logged: faces.length, parts, joints, leaves: parts.leaves || null,
              lean: pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors, handsOn: r.handsOn,
              runtimeMuzzle: mz ? mz.slice() : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none' };
@@ -338,9 +338,11 @@ function GEO(opt) {
       if (V.set === 'hull') { out.push({ name: 'seat', frame: 0 }); return out; }
       out.push({ name: 'stand', frame: 0 }, { name: 'kneel', frame: 0 }, { name: 'prone', frame: 0 });
       cycle('walk', WALKF, STRIDE_LEN);
-      if (!MOB) cycle('run', RUNF, RUN_LEN);
+      if (!MOB && !V.norun) cycle('run', RUNF, RUN_LEN);
       cycle('crawl', CRAWLF, CRAWL_LEN);
       if (V.set === 'gunner') { out.push({ name: 'served', frame: 0 }, { name: 'sit', frame: 0 }); return out; }
+      /* a man carrying the piece has nothing baked but his feet and the load's shoulder */
+      if (V.set === 'carry') return out;
       out.push({ name: 'ready', frame: 0 }, { name: 'fire', frame: 0 }, { name: 'kfire', frame: 0 });
       if (variant === 'can_rifle' || variant === 'fj_rifle' || variant === 'gr_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
       return out;
@@ -402,9 +404,9 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar'].forEach(type => {
+    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb'].forEach(type => {
       const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger'
-                               : ['garand', 'm3', 'thompson', 'bar', 'zook', 'm1919'].includes(type) ? 'usa' : 'us'], type);
+                               : ['garand', 'm3', 'thompson', 'bar', 'zook', 'm1919', 'carbine', 'a4', 'm2hb'].includes(type) ? 'usa' : 'us'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -939,7 +941,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28 };
+    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);

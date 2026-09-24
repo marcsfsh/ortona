@@ -1202,6 +1202,9 @@ var UPGRADES = {
   fifty: { name: 'Mount the .50 on the pedestal', short: '.50 CAL', hk: 'O', cost: { mp: 75, fu: 10 },
            desc: 'An M2 heavy barrel in the M31 cradle in place of the .30. It reaches further and it goes through the side of a half-track or a scout car, which the .30 will not; against men it does what the .30 did.' },
   /* and the one a squad takes: the Rangers' .30 */
+  /* and the machine gun team's .50 in place of its .30 */
+  m2hb: { name: 'Issue the .50 heavy barrel', short: '.50 CAL', hk: 'O', cost: { mp: 110, fu: 20 },
+          desc: 'The M2 heavy barrel on the M3 tripod in place of the .30. It reaches further, keeps a section flatter, and goes through the side of a half-track, a scout car or a motorcycle combination, which the .30 will not.' },
   a6: { name: 'Issue two M1919A6s', short: 'M1919A6', hk: 'O', cost: { mp: 90, fu: 10 },
         desc: 'Two of the Thompson men hand in the Thompson and take the bipod .30 with the stock on it, fired from the hip on the move. The squad reaches further and puts men down harder; it is no quicker to kill anything.' },
   aid: { name: 'Convert to field ambulance', short: 'AMBULANCE', hk: 'Y', excl: 'm3', cost: { mp: 60 },
@@ -1257,7 +1260,7 @@ var NATIONS = {
          sub: {} },
   usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
          blurb: 'Rifle squads with the M1 Garand, ashore at the water with everything still to do, and the draws the only way their armour gets off the beach.',
-         sub: { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher' } },
+         sub: { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_mg: 'am_mg', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher' } },
   fj:   { side: 'ger', name: '1. Fallschirmjäger-Division', short: 'FJ', pick: '1. FALLSCHIRMJÄGER-DIVISION',
           blurb: 'Compact veteran groups, prepared demolitions and MG42 positions built to dominate the narrow streets.',
           sub: {} },
@@ -1398,6 +1401,31 @@ var UNITS = {
     gunAt: 9.0, gunMuz: [12.24, 8.63], gunGrip: [-3.96, 1.26, 7.92], gunSit: 1,
     w: { range: 340, dmg: 8.0, rof: 0.14, acc: .46, sup: .058, pen: 10 },
     desc: 'A water-cooled .303 Vickers on its tripod. Sustained, accurate fire, but it must set up after moving.'
+  },
+  /* The American .30 and the four men who work it: the gunner and his number two, with the
+     gun and the tripod and a pistol each, and two ammunition bearers with the M1 carbine who
+     bring the belts, every one of them with two belts of it crossed over his chest. The
+     M1919A4 on the M2 tripod is air-cooled and a foot and a half off the ground, so it is
+     quicker in and out of action than the Vickers it stands in for and has not got the
+     Vickers's reach. On the march the gun and the tripod are on the two men's shoulders
+     (`carry`) and nothing is on the ground under them. The team can be issued the M2 heavy
+     barrel on its M3 tripod in the .30's place (`m2hb`), and every number the piece is laid
+     by is the fitted piece's (`gunUp`, read through `gunOf`). It is what the American side
+     fields in the Vickers team's place (`natKey`). */
+  am_mg: {
+    side: 'us', nat: 'usa', name: '.30 Cal MG Team', short: '.30 CAL', cat: 'team', hk: 'G',
+    models: 4, hpPer: 52, speed: 50, sight: 340, pop: 6, cost: { mp: 260 }, time: 22,
+    req: 'us_bar', setup: 2.5, pack: 2.0, carry: 1, gunner: 'gi_mgg', gunSit: 'sitlow', body: 'usa_mg',
+    gunAt: 9.2, gunMuz: [6.95, 3.9], gunGrip: [-4.35, .45, 3.1],
+    gunMate: { at: [-2.4, -6.2], a: Math.PI / 2, grip: [-1.35, -.55, 4.0], gripL: [-.6, -1.8, 3.3], pose: 'served' },
+    gunCrew: [[-11, -8], [-10, 8]],
+    upgrades: ['m2hb'],
+    w: { range: 330, dmg: 4.4, rof: 0.12, acc: .42, sup: .046, pen: 10 },
+    wUp: { m2hb: { range: 380, dmg: 7.0, rof: 0.17, acc: .44, sup: .055, pen: 70 } },
+    gunUp: { m2hb: { gunAt: 13.4, gunMuz: [10.45, 5.0], gunGrip: [-8.75, .82, 4.4],
+                     gunMate: { at: [-4.0, -7.4], a: Math.PI / 2, grip: [-3.3, -.75, 5.15], gripL: [-1.2, -2.6, 4.0], pose: 'served' },
+                     gunCrew: [[-15, -9], [-14, 9]] } },
+    desc: 'The Browning M1919A4 on its low tripod, and four men: the gunner and his number two with the gun and the tripod on their shoulders, and two with carbines and the belts. Quick to set up and to take down. It can be issued the .50 heavy barrel on its bigger tripod, which reaches further, puts men down harder and goes through a scout car.'
   },
   /* The first indirect weapon on the roster. A mortar does not shoot what it can see --
      it shoots what its SIDE can see, over whatever is in the way, which is why it sits
@@ -7179,8 +7207,8 @@ function updateModels(u, dt) {
     /* A gun that was built where it stands does not move to its layer, so its layer
        moves to it: man 0 stands behind the breech and man 1 beside him. */
     if (!u.def.speed && u.def.gunAt && i < 2 && gunSet(u)) {
-      tx = u.x - cs * u.def.gunAt - sn * (i ? 9 : 0);
-      ty = u.y - sn * u.def.gunAt + cs * (i ? 9 : 0);
+      tx = u.x - cs * u.def.gunAt * FIG_SCALE - sn * (i ? 9 : 0);
+      ty = u.y - sn * u.def.gunAt * FIG_SCALE + cs * (i ? 9 : 0);
     }
     if (u.coverSlots && u.coverSlots[i]) {
       tx = u.coverSlots[i].x; ty = u.coverSlots[i].y;
@@ -7205,6 +7233,29 @@ function updateModels(u, dt) {
       }
       if (!got) { tx = u.x; ty = u.y; }
     }
+    /* A team that lays its piece from a tripod has a place for each man round it: the
+       number two kneeling at the left of the gun with the belt, where a Browning feeds,
+       and the two with the ammunition a few paces back either side. They are placed off
+       the gunner, since the gun is drawn off him, and only while the piece is set up and
+       he is alive to be placed off; in cover the bearers keep the places cover gave them. */
+    var gd = u.def.gunMate ? gunOf(u) : null, crewAt = null;
+    if (gd && i > 0 && gunSet(u) && u.models[0].alive) {
+      var m0 = u.models[0], gpx = m0.x + cs * gd.gunAt * FIG_SCALE, gpy = m0.y + sn * gd.gunAt * FIG_SCALE;
+      crewAt = i === 1 ? gd.gunMate.at : (u.coverSlots && u.coverSlots[i]) ? null : gd.gunCrew[(i - 2) % gd.gunCrew.length];
+      if (crewAt) {
+        var ctx = gpx + (crewAt[0] * cs - crewAt[1] * sn) * FIG_SCALE, cty = gpy + (crewAt[0] * sn + crewAt[1] * cs) * FIG_SCALE;
+        /* A place round the gun that is inside a wall is no place, and nor is one on the far
+           side of a wall from him or outside the circle: a man walks straight at his place
+           and only slides along what is in the way, so sent to a gun across a house front
+           he stood against the house for the rest of the battle, and a place past the rim
+           is pulled back in along its bearing to somewhere that is not beside the gun. He
+           keeps the place he has, which in cover is the slot beside the gunner's. */
+        var cl = !u.gar && walkable(ctx, cty) && !inMasonry(ctx, cty) && Math.hypot(ctx - u.x, cty - u.y) < selRadius(u) - 3,
+            cd = Math.hypot(ctx - m.x, cty - m.y);
+        for (var cq = 1, cn = Math.ceil(cd / 8); cl && cq < cn; cq++) cl = walkable(m.x + (ctx - m.x) * cq / cn, m.y + (cty - m.y) * cq / cn);
+        if (u.gar || cl) { tx = ctx; ty = cty; } else crewAt = null;
+      }
+    }
     /* And nowhere outside the circle the unit is drawn in. The formation lengthens in a
        lane (`fl` runs to 1.66) and the men walk to cover, and both used to carry a man
        well past his own unit's ring: a section became a mark on the ground with its men
@@ -7213,7 +7264,7 @@ function updateModels(u, dt) {
        formation is kept and only its size is bounded, and it is walked in further if the
        ground where it lands will not take a boot. A garrison is exempt: its men stand in
        the house, and the house is where they belong. */
-    if (!u.gar) {
+    if (!u.gar && !crewAt) {
       var rdx = tx - u.x, rdy = ty - u.y, rdd = Math.hypot(rdx, rdy), rlim = selRadius(u) - 6;
       if (rdd > rlim) {
         var kf = rlim / rdd, cxr = 0, cyr = 0, okr = false;
@@ -7281,7 +7332,10 @@ function updateModels(u, dt) {
        one, and otherwise stands on his own bearing rather than the section's, which is
        what stops eight men facing one way like a guard of honour. */
     var travel = moved > .35 ? Math.atan2(m.y - py0, m.x - px0) : u.facing;
-    var want = m.thrT > 0 ? Math.atan2(m.thrY - m.y, m.thrX - m.x)
+    /* and the number two at the gun faces it, square to the belt he is feeding */
+    var mate = gd && i === 1 && crewAt && gap < 6 && !u.moving;
+    var want = mate ? u.facing + gd.gunMate.a
+             : m.thrT > 0 ? Math.atan2(m.thrY - m.y, m.thrX - m.x)
              : u.target && (!u.moving || u.gar || Math.abs(angDiff(angTo(m, u.target), travel)) < .6)
              ? angTo(m, u.target)
              : u.moving ? travel : u.facing + (halted ? (m.jit || 0) : 0);
@@ -7309,7 +7363,8 @@ function updateModels(u, dt) {
        own grips. The Vickers number one sits on the ground behind the tripod; everybody
        else kneels. It comes above the cover stances and below going flat, because a crew
        pinned in the open leaves the gun. */
-    var atGun = u.cat === 'team' && u.def.gunAt && i < (u.def.gunSit ? 1 : 2) && gunSet(u);
+    var atGun = u.cat === 'team' && u.def.gunAt && i < (u.def.gunSit && !u.def.gunMate ? 1 : 2) && gunSet(u) &&
+                (!u.def.gunMate || i === 0 || mate || !u.models[0].alive);
     /* a man throwing is throwing, whatever else the section is doing */
     if (m.thrT > 0) m.pose = m.thrB ? POSE_THROWB : POSE_THROW;
     else if (prone) m.pose = moved > .04 ? POSE_CRAWL : POSE_PRONE;
@@ -7317,7 +7372,7 @@ function updateModels(u, dt) {
     else if (u.stance === 'ground' && halted && !u.gar && st !== STAND_DUG) m.pose = POSE_PRONE;
     else if (u.moving) m.pose = (u.stance === 'double' || u.retreat) ? POSE_RUN : POSE_WALK;
     else if (m.settle > 0 || (moved > dt * 8 && !u.gar)) m.pose = POSE_WALK;   /* finishing a step, or walking to his slot */
-    else if (atGun) m.pose = i === 0 && u.def.gunSit ? POSE_SIT : POSE_SERVED;
+    else if (atGun) m.pose = (i === 0 || (u.def.gunMate && !u.models[0].alive)) && u.def.gunSit ? POSE_SIT : POSE_SERVED;
     else if (u.gar) m.pose = shooting ? POSE_FIRE : POSE_READY;   /* at a window */
     else if (st === STAND_FLAT) m.pose = POSE_PRONE;              /* a crater lip, a ditch */
     else if (st === STAND_LOW) m.pose = engaged && shooting ? POSE_CFIRE : POSE_CROUCH;   /* the kneel, under the old ids */
@@ -7329,7 +7384,10 @@ function updateModels(u, dt) {
       m.fire -= dt;
       if (!m.flashed) {
         m.flashed = 1;
-        if (onScreen(m.x, m.y)) {
+        /* the man beside the layer is serving the gun with both hands, and the flash
+           of the gun is the layer's: from him it came out of the air in front of his face */
+        var layer = i === 0 || (u.def.gunMate && i === 1 && !u.models[0].alive);
+        if (onScreen(m.x, m.y) && (layer || !(m.pose === POSE_SERVED || m.pose === POSE_SIT || (u.def.gunMate && i === 1)))) {
           var mz = muzzlePoint(u, m, i);
           muzFx(u, u.def.w, mz.x, mz.y, mz.z, m.f);
         }
@@ -7698,7 +7756,7 @@ function mountUp(u) {
    has to be left after, because a plate bought with the next section's cost is a section
    not raised. Returns the vehicle it fitted, or null. */
 function buyUpgradeAuto(slot, vehs, opt) {
-  var order = ['mg', 'mgs', 'skirts', 'fenders', 'scope', 'kwk', 'puma', 'drill', 'quad50', 'thirty', 'fifty', 'coax', 'a6', 'how75', 'pak36'], i, j;
+  var order = ['mg', 'mgs', 'skirts', 'fenders', 'scope', 'kwk', 'puma', 'drill', 'quad50', 'thirty', 'fifty', 'coax', 'a6', 'm2hb', 'how75', 'pak36'], i, j;
   for (i = 0; i < order.length; i++) {
     var uk = order[i], U = UPGRADES[uk];
     if ((uk === 'skirts' || uk === 'fenders') && !opt.foeAt) continue;   /* nothing to skirt against yet */
@@ -8391,7 +8449,7 @@ function fireAt(u, t, dt, opt) {
         if (!u.def.speed) tm2 = u;
         if (tm2) {
           var gm2 = GUNMODEL[u.key];
-          var reach = gm2 ? gm2.bar : (u.def.atOnly ? 44 : 26), lift = gm2 ? gm2.z : 13;
+          var reach = (gm2 ? gm2.bar : (u.def.atOnly ? 44 : 26)) * FIG_SCALE, lift = (gm2 ? gm2.z : 13) * FIG_SCALE;
           var bx = tm2.x + Math.cos(u.facing) * reach, by = tm2.y + Math.sin(u.facing) * reach;
           muzFx(u, w, bx, by, groundZ(tm2.x, tm2.y) + lift, u.facing);
         }
@@ -9733,8 +9791,9 @@ function muzzlePoint(u, m, i) {
   if (mz && mz.length && mz[0] && mz[0].length) mz = mz[frameOf(set, m)];
   /* the layer's round leaves the piece and not his shoulder, and the piece is ahead of
      him by the same gunAt the draw uses */
-  if (i === 0 && u.def.gunMuz && gunSet(u))
-    mz = [(u.def.speed ? u.def.gunAt : -u.def.gunAt) + u.def.gunMuz[0], 0, u.def.gunMuz[1]];
+  var gd = gunOf(u);
+  if ((i === 0 || (i === 1 && u.def.gunMate && !u.models[0].alive)) && gd.gunMuz && gunSet(u))
+    mz = [(u.def.speed ? gd.gunAt : -gd.gunAt) + gd.gunMuz[0], 0, gd.gunMuz[1]];
   if (!mz) mz = [13, 0, 16.4];
   var c = Math.cos(m.f), s2 = Math.sin(m.f), k = FIG_SCALE * (m.sc || 1);
   return { x: m.x + (mz[0] * c - mz[1] * s2) * k, y: m.y + (mz[0] * s2 + mz[1] * c) * k,
@@ -16456,6 +16515,9 @@ function tagKit() {
   tagAll([A.demo, A.demoD, A.stencil], 'paint');
   tagAll([A.rvest, A.rvestD], 'canvas');
   tagAll([A.rorange, A.rblue, A.rbar], 'paint');
+  tagAll([A.brass, A.gild], 'steel');
+  tagAll([A.mgbelt], 'canvas');
+  tagAll([A.ammo, A.ammoD, A.trip], 'paint');
   tagAll([A.web, A.webD, A.pack, A.canvas, A.gaiter, A.tool], 'canvas');
   tagAll([A.helm, A.helmD, A.liner], 'generic');
   tagAll([A.wood, A.helve], 'wood');
@@ -29588,6 +29650,180 @@ function mg42TeamModel() {
   return f;
 }
 
+/* ---- the American machine gun team ----
+   Everything here is in the rig's own units, 8.5 cm to the unit, which is what the world
+   is drawn at: the Vickers and the MG42 were set out generously and scaled down, and these
+   were set out at their published sizes and are not. */
+function withMat(faces, name) {
+  var mi = matIndex(name);
+  for (var i = 0; i < faces.length; i++) faces[i].m = mi;
+  return faces;
+}
+/* A belt of rounds laid along a path, one face thick: the brass of the case heads along
+   one edge, the khaki of the cloth over the case bodies, a line of brass where the necks
+   come out of it and the gilding of the bullets along the other edge. The heads and the
+   bullets are cut a couple of rounds at a time in two shades, which is what makes it read
+   as a belt of cartridges rather than a strip of tape. `pts` is the centre line and `nrm`
+   the way each point faces -- out of the man it is draped over, or up -- and the rounds lie
+   across the path in the plane of the face; `sgn` turns them end for end. `two` gives it a
+   back, for a belt hanging free in the air. A round is 84.8 mm, which is one unit. */
+function roundBelt(pts, nrm, k, sgn, two) {
+  var f = [], ax = [], i, j, t = 0, st = .34, mb = matIndex('steel'), mc = matIndex('canvas');
+  var head = [lit(k.brass, 1.14), lit(k.brass, .8)], tip = [lit(k.gild, 1.1), lit(k.gild, .78)];
+  function nz(v) { var l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; }
+  function mix(a, b, s) { return [a[0] + (b[0] - a[0]) * s, a[1] + (b[1] - a[1]) * s, a[2] + (b[2] - a[2]) * s]; }
+  function off(p, a, s) { return [p[0] + a[0] * s, p[1] + a[1] * s, p[2] + a[2] * s]; }
+  function quad(p0, p1, a0, a1, u0, u1, c, n, m) {
+    var q = [off(p0, a0, u0), off(p1, a1, u0), off(p1, a1, u1), off(p0, a0, u1)];
+    var fn = faceNormal(q[0], q[1], q[2]);
+    if (fn.x * n[0] + fn.y * n[1] + fn.z * n[2] < 0) q.reverse();
+    f.push({ v: q, c: c, m: m });
+    if (two) f.push({ v: q.slice().reverse(), c: c, m: m });
+  }
+  for (i = 0; i < pts.length; i++) {
+    var p = pts[Math.max(0, i - 1)], q2 = pts[Math.min(pts.length - 1, i + 1)];
+    var d = nz([q2[0] - p[0], q2[1] - p[1], q2[2] - p[2]]), n = nz(nrm[i]);
+    ax.push(nz([(n[1] * d[2] - n[2] * d[1]) * sgn, (n[2] * d[0] - n[0] * d[2]) * sgn, (n[0] * d[1] - n[1] * d[0]) * sgn]));
+  }
+  for (i = 0; i + 1 < pts.length; i++) {
+    var p0 = pts[i], p1 = pts[i + 1], nm = nz(mix(nrm[i], nrm[i + 1], .5));
+    var L = Math.hypot(p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]), ns = Math.max(1, Math.ceil(L / st));
+    quad(p0, p1, ax[i], ax[i + 1], -.28, 0, k.mgbelt, nm, mc);
+    quad(p0, p1, ax[i], ax[i + 1], 0, .2, k.brass, nm, mb);
+    for (j = 0; j < ns; j++) {
+      var q0 = mix(p0, p1, j / ns), q1 = mix(p0, p1, (j + 1) / ns);
+      var a0 = nz(mix(ax[i], ax[i + 1], j / ns)), a1 = nz(mix(ax[i], ax[i + 1], (j + 1) / ns)), s = (t++) % 2;
+      quad(q0, q1, a0, a1, -.5, -.28, head[s], nm, mb);
+      quad(q0, q1, a0, a1, .2, .5, tip[s], nm, mb);
+    }
+  }
+  return f;
+}
+/* The box a belt comes in, standing on its end on the ground: pressed steel in olive paint
+   with the lid clamped by a lever at one end and a folding wire handle across the top. The
+   .30's M1 box is 11 by 3.75 by 7.25 inches and the .50's M2 box 12 by 6 by 7.5. Its long
+   axis is x, and it stands on z 0. */
+function ammoBox(k, fifty) {
+  var f = [], l = fifty ? 3.58 : 3.27, w = fifty ? 1.79 : 1.12, h = fifty ? 2.24 : 2.16, a = k.ammo, d = k.ammoD, s = k.steel;
+  f = f.concat(box(0, 0, 0, l, w, h - .22, a, lit(a, 1.08), lit(a, .92), .06));
+  f = f.concat(box(0, 0, h - .24, l + .06, w + .06, .24, d, lit(d, 1.12), d, .04));                /* the lid */
+  f = f.concat(box(l / 2 - .12, 0, h - .7, .14, w * .6, .62, s, lit(s, 1.2), s, 0));               /* the lever */
+  f = f.concat(box(0, 0, h, l * .55, .1, .1, s, lit(s, 1.2), s, 0));                                /* the handle, lying */
+  [-1, 1].forEach(function (e) { f = f.concat(box(e * l * .28, 0, h - .02, .12, .16, .14, s, s, s, 0)); });
+  /* the lot stencilled in yellow down one side */
+  f = f.concat(box(0, w / 2 + .01, h * .45, l * .6, .02, .22, '#b8a052', '#b8a052', '#b8a052', 0));
+  return withMat(f, 'paint');
+}
+/* The M2 tripod the M1919A4 went on: a pintle head a hand over a foot off the ground, one
+   leg forward and two splayed back with the traversing bar curved between them, and on the
+   bar the traversing and elevating mechanism that takes the back of the gun, with its
+   handwheel. Folded, the rear legs close up on the front one and the three lie together
+   under the head, which is how the number two carries it. The pintle is at x 0, y 0. */
+function m2Tripod(k, folded) {
+  var f = [], s = k.trip, sl = lit(s, 1.16), sd = lit(s, .85), hz = 3.1, i;
+  function leg(a, b, t) { f = f.concat(taperLimb(a, b, t || .34, t ? t * .8 : .28, s)); }
+  if (folded) {
+    /* along x with the head at the front: the three legs gathered under it and reaching back */
+    f = f.concat(cyl(1.2, 0, -.35, .36, .36, .9, 8, s, sl, 0, true));
+    f = f.concat(box(1.2, 0, .45, .7, .5, .3, s, sl, sd, 0));
+    leg([1.0, 0, -.1], [-4.6, 0, -.1]);
+    leg([1.0, .18, -.25], [-4.9, .3, -.3]);
+    leg([1.0, -.18, -.25], [-4.9, -.3, -.3]);
+    for (i = 0; i < 3; i++) f = f.concat(box(-5.0 + i * .05, (i - 1) * .3, -.45, .5, .32, .14, sd, s, sd, 0));   /* the shoes */
+    /* the traversing bar folded along the legs, and the mechanism on it */
+    f = f.concat(box(-1.6, 0, -.62, 3.2, .16, .16, s, sl, sd, 0));
+    f = f.concat(box(-1.2, 0, -.9, .5, .4, .5, s, sl, sd, 0));
+    return withMat(f, 'paint');
+  }
+  var fr = [5.6, 0, 0], rl = [-4.4, -3.6, 0], rr = [-4.4, 3.6, 0], head = [0, 0, hz - .3];
+  f = f.concat(cyl(0, 0, hz - .75, .38, .38, .8, 8, s, sl, 0, true));                           /* the pintle sleeve */
+  f = f.concat(box(0, 0, hz - .1, .9, .7, .2, s, sl, sd, 0));
+  leg(head, fr); leg(head, rl); leg(head, rr);
+  [fr, rl, rr].forEach(function (p) { f = f.concat(box(p[0], p[1], 0, .6, .4, .14, sd, s, sd, 0)); });   /* the shoes */
+  /* the traversing bar, an arc between the rear legs well back from the head */
+  var bar = [];
+  for (i = 0; i <= 6; i++) {
+    var t = i / 6, ang = (t - .5) * 1.5;
+    bar.push([-3.1 - Math.cos(ang) * .5, Math.sin(ang) * 2.4, .9 + Math.abs(t - .5) * .12]);
+  }
+  for (i = 0; i + 1 < bar.length; i++) f = f.concat(taperLimb(bar[i], bar[i + 1], .22, .22, s));
+  /* the traversing and elevating mechanism: a clamp on the bar and the screw up to the gun */
+  f = f.concat(box(-3.6, 0, .75, .8, .6, .55, s, sl, sd, 0));
+  f = f.concat(taperLimb([-3.6, 0, 1.3], [-3.65, 0, 3.25], .28, .24, s));
+  f = f.concat(roll(cyl(-3.6, 0, -.08, .5, .5, .16, 10, sd, s, 0, true), Math.PI / 2, 0, 2.0));   /* the handwheel */
+  return withMat(f, 'paint');
+}
+/* The M3 tripod, which is the M2's big brother for the heavy barrel: the front leg long and
+   low, the rear legs splayed wide, the head higher, and the traversing bar between the rear
+   legs with the mechanism on it taking the back of the receiver. */
+function m3Tripod(k, folded) {
+  var f = [], s = k.trip, sl = lit(s, 1.16), sd = lit(s, .85), hz = 3.9, i;
+  function leg(a, b, t) { f = f.concat(taperLimb(a, b, t || .42, t ? t * .8 : .34, s)); }
+  if (folded) {
+    f = f.concat(cyl(1.6, 0, -.45, .46, .46, 1.1, 8, s, sl, 0, true));
+    f = f.concat(box(1.6, 0, .6, .9, .6, .34, s, sl, sd, 0));
+    leg([1.4, 0, -.15], [-6.4, 0, -.15]);
+    leg([1.4, .24, -.3], [-7.0, .4, -.36]);
+    leg([1.4, -.24, -.3], [-7.0, -.4, -.36]);
+    for (i = 0; i < 3; i++) f = f.concat(box(-7.1 + i * .05, (i - 1) * .4, -.55, .7, .4, .16, sd, s, sd, 0));
+    f = f.concat(box(-2.2, 0, -.78, 4.2, .2, .2, s, sl, sd, 0));
+    f = f.concat(box(-1.7, 0, -1.15, .6, .5, .6, s, sl, sd, 0));
+    return withMat(f, 'paint');
+  }
+  var fr = [7.8, 0, 0], rl = [-5.6, -4.6, 0], rr = [-5.6, 4.6, 0], head = [0, 0, hz - .35];
+  f = f.concat(cyl(0, 0, hz - .95, .48, .48, 1.0, 8, s, sl, 0, true));
+  f = f.concat(box(0, 0, hz - .1, 1.1, .9, .22, s, sl, sd, 0));
+  leg(head, fr); leg(head, rl); leg(head, rr);
+  [fr, rl, rr].forEach(function (p) { f = f.concat(box(p[0], p[1], 0, .8, .5, .16, sd, s, sd, 0)); });
+  var bar = [];
+  for (i = 0; i <= 6; i++) {
+    var t = i / 6, ang = (t - .5) * 1.5;
+    bar.push([-4.1 - Math.cos(ang) * .6, Math.sin(ang) * 3.1, 1.1 + Math.abs(t - .5) * .14]);
+  }
+  for (i = 0; i + 1 < bar.length; i++) f = f.concat(taperLimb(bar[i], bar[i + 1], .26, .26, s));
+  f = f.concat(box(-4.7, 0, .9, 1.0, .7, .65, s, sl, sd, 0));
+  f = f.concat(taperLimb([-4.7, 0, 1.55], [-5.0, 0, 3.9], .32, .28, s));
+  f = f.concat(roll(cyl(-4.75, 0, -.08, .6, .6, .16, 10, sd, s, 0, true), Math.PI / 2, 0, 2.5));
+  return withMat(f, 'paint');
+}
+/* The piece as it is set up: the tripod, the gun on the pintle with the back of it on the
+   traversing and elevating mechanism, and the box on the ground at the left of the gun with
+   the belt rising out of it into the feedway, which is on the left of a Browning. A second
+   box stands behind the first. The pintle is the origin, which is what `gunAt` is measured
+   from. */
+var MGT = {
+  a4: { hz: 3.1, trun: -.8, feed: [-1.35, -.43, .1], box: [-.9, -2.75], box2: [-2.2, -5.2] },
+  m2hb: { hz: 3.9, trun: -1.1, feed: [-3.2, -.68, .15], box: [-1.2, -3.6], box2: [-4.2, -6.2] }
+};
+function mgTeamModel(fifty) {
+  var k = KIT.usa, G = fifty ? MGT.m2hb : MGT.a4, f = [], gz = G.hz - G.trun;
+  f = f.concat(fifty ? m3Tripod(k) : m2Tripod(k));
+  f = f.concat(place(weaponModel(k, fifty ? 'm2hb' : 'a4'), 0, 0, 0, gz));
+  f = f.concat(place(ammoBox(k, fifty), 0, G.box[0], G.box[1], 0));
+  f = f.concat(place(ammoBox(k, fifty), .35, G.box2[0], G.box2[1], 0));
+  /* the belt, out of the top of the box and up into the feedway */
+  var bh = fifty ? 2.24 : 2.16, fd = [G.feed[0], G.feed[1] - .1, gz + G.feed[2]];
+  var pts = [[G.box[0], G.box[1], bh + .1], [G.box[0] + .1, G.box[1] + .1, bh + .9],
+             [fd[0], (G.box[1] + fd[1]) * .5 - .2, (bh + fd[2]) * .5 + .7], [fd[0], fd[1] - .3, fd[2]]];
+  f = f.concat(roundBelt(pts, [[0, -1, 0], [0, -1, .3], [0, -1, .5], [0, -1, .2]], k, 1, true));
+  return f;
+}
+/* And the same pieces carried: the gun on the gunner's right shoulder with the muzzle
+   forward and the hand under it in front, and the tripod folded on the number two's. The
+   origin is where the piece bears on the shoulder, on its underside; `drawUnits3D` pitches
+   it up by MG_CARRY_P off the man's own lean and puts that point on his shoulder. */
+var MG_CARRY_P = .28, MG_SHOULDER = [.05, 2.3, 6.72];
+function mgCarryModels() {
+  var k = KIT.usa;
+  return {
+    a4: place(weaponModel(k, 'a4'), 0, 1.0, 0, .8),
+    m2hb: place(weaponModel(k, 'm2hb'), 0, 2.2, 0, 1.1),
+    m2: place(m2Tripod(k, true), 0, 0, 0, .3),
+    m3: place(m3Tripod(k, true), 0, 0, 0, .4),
+    can30: ammoBox(k, false), can50: ammoBox(k, true)
+  };
+}
+
 /* the Ordnance QF 6-pounder Mk II on the Mk I carriage: a 57 mm gun with a plain
    muzzle, in a cradle under a two-piece shield with the curved top, split trails with
    their spades, and pneumatic road wheels */
@@ -30775,6 +31011,10 @@ function buildVehicleModels() {
      flash comes off a muzzle five metres up rather than off the end of a level barrel */
   GUNMODEL.us_how8 = { mesh: bigHowModel(false), base: bigHowBase(false), bar: 32, z: 56 };
   GUNMODEL.ger_how210 = { mesh: bigHowModel(true), base: bigHowBase(true), bar: 30, z: 55 };
+  /* the American .30 on its tripod, and the .50 on its own that the team can be issued in
+     its place: `teamMesh` draws whichever is fitted, keyed the way the upgrade is */
+  GUNMODEL.am_mg = { mesh: mgTeamModel(false), bar: 7, z: 3.9 };
+  GUNMODEL['am_mg:m2hb'] = { mesh: mgTeamModel(true), bar: 10.5, z: 5.0 };
 }
 
 /* dirVec is still used by a few HUD helpers */
@@ -30832,7 +31072,11 @@ var KIT = {
          /* and the Rangers': the assault vest in a darker green than the jacket it goes over,
             the orange diamond of the 2nd Battalion on the back of the helmet and round the blue
             of the patch on the shoulder, and the white bar a leader wears on his helmet */
-         rvest: '#3a4030', rvestD: '#2d3225', rorange: '#c4772d', rblue: '#2f4675', rbar: '#d6d2c2' },
+         rvest: '#3a4030', rvestD: '#2d3225', rorange: '#c4772d', rblue: '#2f4675', rbar: '#d6d2c2',
+         /* and the machine gun team's: the brass of a .30 belt and the gilding metal of the
+            bullets in it, the khaki cloth of the belt itself, and the olive paint of an
+            ammunition box and of a tripod */
+         brass: '#a88a45', gild: '#9c6444', mgbelt: '#9a8e68', ammo: '#4b5037', ammoD: '#393d2a', trip: '#3b3f33' },
   /* The Heer grenadier in Normandy gets a fourth: the M43 tunic and trousers in field grey,
      which by 1944 was a dull green-grey wool, and the whole of his equipment in black
      leather -- belt, Y-straps, the two triple pouches and the boots -- with the canvas of
@@ -31164,7 +31408,9 @@ var WEAP = {
   bar:      { butt: [-5.35, 0, -.9], grip: [-1.55, 0, -1.0], fore: [5.3, 0, -1.02], foreMin: [2.8, 0, -1.02], muzzle: [9.28, 0, 0], rest: [3.2, 0, -.7], carryPt: [2.2, 0, -.7], heavy: 1,
               carry: [2.0, 1.8, 2.3, -.6, .35] },
   zook:     { butt: [-3.3, 0, -1.0], rest: [-3.3, 0, -1.0], grip: [-.55, 0, -1.35], fore: [3.2, 0, -.4], foreMin: [1.8, 0, -.4], muzzle: [9.12, 0, 0], carryPt: [.5, 0, -.6], tube: 1 },
-  m1919:    { butt: [-5.3, 0, -.9], grip: [-2.2, 0, -1.25], fore: [4.6, 0, -.52], foreMin: [3.2, 0, -.52], muzzle: [10.54, 0, 0], rest: [2.8, 0, -.75], carryPt: [5.2, 0, 1.2], heavy: 1, hip: 1 }
+  m1919:    { butt: [-5.3, 0, -.9], grip: [-2.2, 0, -1.25], fore: [4.6, 0, -.52], foreMin: [3.2, 0, -.52], muzzle: [10.54, 0, 0], rest: [2.8, 0, -.75], carryPt: [5.2, 0, 1.2], heavy: 1, hip: 1 },
+  /* the ammunition bearers' M1 carbine, held like the Garand it is a short cousin of */
+  carbine:  { butt: [-3.8, 0, -.62], grip: [-.5, 0, -.9], fore: [3.0, 0, -.72], foreMin: [2.0, 0, -.76], muzzle: [6.75, 0, 0], carryPt: [1.0, 0, -.9] }
 };
 /* A pose is two leg triples, a lean and a carry; the aimed ones add a blade and an
    offset for the head. One table drives the builder, the bake, the muzzle table, the
@@ -31178,6 +31424,9 @@ var FIGPOSE = {
   kfire:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .10, carry: 'aim', blade: .35, head: [.4, 1.3, -.3] },
   seat:   { legs: [[1.50, -1.50, 0], [1.50, -1.50, 0]], lean: .05, carry: 'tiller' },
   sit:    { legs: [[1.90, -.72, 0], [1.90, -.72, 0]], lean: .10, carry: 'grips', grips: [5.8, .9, 3.8] },
+  /* the Browning and the fifty go on tripods a foot and a half off the ground, so the man
+     laying one sits behind it with his legs out and leans well into it */
+  sitlow: { legs: [[1.78, -.5, 0], [1.78, -.5, 0]], lean: .42, carry: 'grips', grips: [5.2, .6, 2.6] },
   served: { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .18, carry: 'grips', grips: [5.6, .9, 5.2] },
   /* the overhand throw in two frames: wound up with the grenade cocked behind the head and
      the right shoulder back, and let go with the arm over and the weight onto the left foot.
@@ -31936,6 +32185,90 @@ function weaponModel(k, type, opt) {
       f = f.concat(taperLimb([8.7, s * .32, -.4], [6.0, s * .4, -.96], .18, .16, st));          /* the bipod, folded */
       f = f.concat(box(5.9, s * .4, -1.16, .36, .2, .2, st, ml2));
     });
+  } else if (type === 'carbine') {                        /* M1 carbine: 0.904 m, 10.6 units */
+    /* A short light rifle, and the side profile is the whole of it: a straight comb, a
+       semi-pistol grip, one piece of walnut running forward to the barrel band with the
+       handguard on top of it, and the fifteen-round box standing just under the receiver.
+       The sling goes down the LEFT side through a slot in the butt, where the oiler holds
+       it, and forward to the swivel on the band. */
+    var cp = [[-3.85, -.40], [-3.85, -1.72], [-1.8, -1.28], [-.85, -1.38], [-.45, -.98], [.15, -.86],
+              [2.6, -.78], [4.15, -.62], [4.15, -.24], [1.2, -.24], [-.5, -.30], [-1.0, -.45], [-2.0, -.36]];
+    var ck = roll(prism(cp, -.36, .36, wd, lit(wd, 1.12), lit(wd, .92)), Math.PI / 2, 0, 0);
+    f = f.concat(ck.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(box(-3.8, 0, -1.72, .1, .74, 1.32, st, lit(st, 1.2)));                          /* butt plate */
+    f = f.concat(box(.35, 0, -.46, 2.1, .66, .76, st, lit(st, 1.2)));                            /* receiver */
+    f = f.concat(box(-.5, 0, .3, .3, .36, .34, st, lit(st, 1.25)));                              /* rear sight */
+    f = f.concat(box(.85, .42, -.12, .32, .22, .22, st, lit(st, 1.25)));                         /* bolt handle, right */
+    f = f.concat(place(pitch(box(0, 0, -1.02, .6, .46, 1.02, st, lit(st, 1.15)), .1, 0, 0), 0, .5, 0, -.46));   /* magazine */
+    f = f.concat(box(-.3, 0, -1.2, .82, .26, .12, st, st));                                      /* trigger guard */
+    f = f.concat(box(2.75, 0, -.24, 2.7, .6, .5, lit(wd, 1.05), lit(wd, 1.15), lit(wd, .95)));   /* handguard */
+    f = f.concat(box(4.02, 0, -.72, .28, .74, 1.02, st, lit(st, 1.2)));                          /* barrel band */
+    f = f.concat(barrel(1.4, 6.75, 0, .18));
+    f = f.concat(box(6.45, 0, .1, .22, .1, .42, st, st));                                        /* front sight */
+    [-1, 1].forEach(function (s) { f = f.concat(box(6.45, s * .15, .05, .26, .06, .5, st, st)); });   /* and its ears */
+    var csl = k.webD || st;
+    f = f.concat(taperLimb([4.0, -.34, -.76], [-2.3, -.4, -1.1], .12, .12, csl));
+    f = f.concat(box(-2.3, -.42, -1.22, .5, .1, .3, st, lit(st, 1.2)));                          /* the oiler in its slot */
+  } else if (type === 'a4') {                             /* M1919A4: 0.964 m, 11.3 units */
+    /* The Browning as it goes on a tripod: no stock, no bipod and no flash hider. A tall
+       flat-sided receiver with the feed cover along the top and the rear sight at the back
+       of it, the back plate with the pistol grip and the trigger under it, the cocking
+       handle on the right and the feedway on the left, where the belt goes in; then the
+       trunnion block and the perforated jacket over the barrel, with the front barrel
+       bearing and the sight at the end of it and the muzzle just out past that. The bore is
+       z 0 and the trunnion, which is what sits on the pintle, is under the front of the
+       receiver at x 0. */
+    var al = lit(st, 1.18), ak = lit(st, .78);
+    f = f.concat(box(-2.1, 0, -.72, 4.3, .8, 1.08, st, al, lit(st, .95)));                      /* receiver */
+    f = f.concat(box(-1.9, 0, .36, 3.3, .76, .2, al, lit(st, 1.3)));                             /* feed cover */
+    f = f.concat(box(-3.7, -.18, .36, .3, .3, .52, st, al));                                     /* rear sight leaf */
+    f = f.concat(box(-4.35, 0, -.8, .2, .88, 1.18, st, al));                                     /* back plate */
+    f = f.concat(place(pitch(box(0, 0, -1.4, .58, .5, 1.4, wd, lit(wd, 1.12), lit(wd, .92)), -.3, 0, 0), 0, -4.25, 0, -.72));
+    f = f.concat(box(-3.85, 0, -1.1, .12, .1, .42, st, st));                                     /* trigger */
+    f = f.concat(box(-2.4, .46, -.3, .7, .14, .22, st, al));                                     /* cocking handle, right */
+    f = f.concat(box(-1.35, -.43, -.1, .9, .1, .4, ak, ak));                                     /* feedway, left */
+    f = f.concat(box(-.05, 0, -.8, .6, .9, 1.22, st, al, lit(st, .95)));                         /* trunnion block */
+    f = f.concat(tubeSmooth(.25, 5.9, 0, 0, .52, 10, st, al));                                   /* barrel jacket */
+    [1.0, 1.9, 2.8, 3.7, 4.6, 5.4].forEach(function (x) {
+      [-.9, -.3, .3, .9, 2.2, 2.8].forEach(function (a) {
+        f = f.concat(roll(box(x, .515, -.12, .36, .04, .24, ak, ak), a, 0, 0));                 /* its holes */
+      });
+    });
+    f = f.concat(tubeSmooth(5.9, 6.35, 0, 0, .44, 8, st, al));                                   /* front barrel bearing */
+    f = f.concat(box(6.12, 0, .3, .12, .1, .5, st, st));                                         /* front sight */
+    f = f.concat(tubeSmooth(6.35, 6.85, 0, 0, .2, 8, st, '#17190f'));                            /* muzzle */
+  } else if (type === 'm2hb') {                           /* M2 heavy barrel: 1.654 m, 19.35 units */
+    /* The Browning scaled up half again and then some: a receiver as long as a man's
+       forearm, flat-sided and riveted, with the top cover and its rear sight, the two spade
+       grips with the butterfly trigger between them at the back, the retracting handle on
+       the right and the feedway on the left; the short perforated barrel support at the
+       front, and a heavy barrel reaching the better part of a metre past it. The bore is z
+       0 and the trunnion is under the front of the receiver at x 0. */
+    var hl = lit(st, 1.18), hk = lit(st, .78);
+    f = f.concat(box(-4.1, 0, -1.1, 8.2, 1.3, 1.62, st, hl, lit(st, .95)));                     /* receiver */
+    f = f.concat(box(-3.6, 0, .52, 6.6, 1.24, .26, hl, lit(st, 1.3)));                           /* top cover */
+    [-7.2, -5.6, -3.9, -2.2, -.6].forEach(function (x) {
+      [-1, 1].forEach(function (s) { f = f.concat(box(x, s * .67, -.55, .16, .06, .16, hl, hl)); });   /* rivets */
+    });
+    f = f.concat(box(-7.0, 0, .78, .36, .36, .62, st, hl));                                      /* rear sight leaf */
+    f = f.concat(box(-8.35, 0, -1.15, .3, 1.5, 1.6, st, hl));                                    /* back plate */
+    [-1, 1].forEach(function (s) {
+      f = f.concat(box(-8.75, s * .82, -1.05, .44, .38, 1.4, wd, lit(wd, 1.12), lit(wd, .92)));  /* the spade grips */
+      f = f.concat(box(-8.6, s * .82, .3, .6, .42, .18, st, hl));
+      f = f.concat(box(-8.6, s * .82, -1.2, .6, .42, .18, st, hl));
+    });
+    f = f.concat(box(-8.8, 0, -.45, .2, .7, .34, st, hl));                                       /* butterfly trigger */
+    f = f.concat(box(-4.2, .72, -.35, .9, .2, .34, st, hl));                                     /* retracting handle, right */
+    f = f.concat(box(-3.2, -.68, -.1, 1.3, .1, .5, hk, hk));                                     /* feedway, left */
+    f = f.concat(tubeSmooth(0, 1.55, 0, 0, .62, 10, st, hl));                                    /* barrel support */
+    [.3, .75, 1.2].forEach(function (x) {
+      [-1.05, 0, 1.05, 2.1, 3.15, 4.2].forEach(function (a) {
+        f = f.concat(roll(box(x, .625, -.16, .3, .04, .32, hk, hk), a, 0, 0));
+      });
+    });
+    f = f.concat(box(.25, 0, .55, .14, .12, .5, st, st));                                        /* front sight */
+    f = f.concat(tubeSmooth(1.55, 10.05, 0, 0, .34, 8, st, hl));                                 /* the heavy barrel */
+    f = f.concat(tubeSmooth(10.05, 10.45, 0, 0, .4, 8, st, '#17190f'));                          /* muzzle */
   }
   return f;
 }
@@ -32006,6 +32339,16 @@ var SOLDIER_VARIANTS = {
   rg_bar:       { side: 'us', nat: 'usa', weapon: 'bar', rgr: 1, back: 'zook', set: 'field' },
   rg_zook:      { side: 'us', nat: 'usa', weapon: 'zook', rgr: 1, back: 'bar', set: 'field' },
   rg_30:        { side: 'us', nat: 'usa', weapon: 'm1919', rgr: 1, set: 'field' },
+  /* and the machine gun team, every man of it in the rifleman's kit with two belts of .30
+     crossed over his chest: the gunner and his number two with a pistol on the hip and
+     nothing in their hands but the gun, as they are at it (`gi_mgg`) and as they carry it
+     and its tripod (`gi_mgc`), which is drawn at the shoulder rather than baked, so that
+     one man carries the .30 and the .50 alike; and the two who bring the ammunition, with
+     the M1 carbine and a box in the other hand (`gi_mga`), which is what the team leaves
+     where it falls (`body`). None of them is baked at the run, which a walk stands in for. */
+  gi_mgg:       { side: 'us', nat: 'usa', weapon: 'none', mgbelt: 1, holster: 1, norun: 1, set: 'gunner' },
+  gi_mgc:       { side: 'us', nat: 'usa', weapon: 'none', mgbelt: 1, holster: 1, carrier: 1, norun: 1, set: 'carry' },
+  gi_mga:       { side: 'us', nat: 'usa', weapon: 'carbine', mgbelt: 1, can: 1, norun: 1, body: 'usa_mg', set: 'field' },
   /* and the man in the tank: the tanker's helmet and jacket, boots rather than leggings,
      and nothing on him but a pistol under his arm */
   gi_tank:      { side: 'us', nat: 'usa', weapon: 'none', set: 'hull', tanker: 1 },
@@ -32061,6 +32404,9 @@ function variantForModel(u, i) {
     }
     if (u.key === 'us_rifle') return i === 0 ? 'can_bren' : i === 1 ? 'can_sten' : i === 3 ? 'can_rifle_bd' : 'can_rifle';
     if (u.key === 'am_rifle') return i % 2 ? 'gi_rifle_b' : 'gi_rifle';
+    /* the gunner and his number two are at the gun or carrying it, and the other two bring
+       the ammunition */
+    if (u.key === 'am_mg') return i > 1 ? 'gi_mga' : carried(u) && !u.gar ? 'gi_mgc' : 'gi_mgg';
     if (u.key === 'am_eng') return i === 0 ? 'gi_eng_c' : i === 1 ? 'gi_eng' : 'gi_eng_b';
     /* the two BAR men have the bazookas up while it is armour they are shooting at, and two
        of the Thompson men have the .30 once it has been issued */
@@ -32335,6 +32681,23 @@ function figKitGI(V, k, rec) {
   if (V.nades) [[1, 4.6], [-1, 3.75]].forEach(function (g) {
     part(cyl(2.02, g[0] * 1.35, g[1], .32, .32, .78, 6, k.tool, lit(k.tool, 1.1), 0, true), 'paint', lit(k.tool, 1.08), lit(k.tool, .85), k.tool);
     part(box(2.02, g[0] * 1.35, g[1] + .78, .22, .2, .3, k.steel, k.steel, k.steel, 0), 'steel', lit(k.steel, 1.3), k.steel, k.steel);
+  });
+  /* the gunner's M1911 in its holster, hung from the belt on the right hip */
+  if (V.holster) {
+    var hs = k.holster;
+    part(box(.45, 2.78, .35, .95, .42, 1.55, hs, hs, hs, 0), 'leather', lit(hs, 1.12), lit(hs, .88), hs);
+    part(box(.45, 2.8, 1.62, 1.0, .46, .34, hs, hs, hs, 0), 'leather', lit(hs, 1.2), lit(hs, .9), lit(hs, 1.05));
+  }
+  /* And the machine gun team's two belts of .30, worn crossed as bandoliers: each from over
+     one shoulder, down across the chest and round the other hip, the second lying over the
+     first where they cross. The half that goes round his back is under the haversack and
+     is not built. */
+  if (V.mgbelt) [1, -1].forEach(function (sd, n) {
+    var x = n * .09, pts = [[-1.25, -sd * 1.8, 6.72], [.4, -sd * 1.82, 6.8], [1.58 + x, -sd * 1.72, 6.25],
+                            [1.82 + x, -sd * 1.0, 5.2], [1.84 + x, sd * .3, 3.95], [1.82 + x, sd * 1.5, 3.15],
+                            [1.3, sd * 2.5, 2.95], [.1, sd * 2.66, 3.1]];
+    var nrm = [[0, 0, 1], [0, 0, 1], [.7, 0, .7], [1, 0, 0], [1, 0, 0], [1, 0, 0], [.55, sd * .83, 0], [0, sd, 0]];
+    f = f.concat(roundBelt(pts, nrm, k, sd, false));
   });
   return f;
 }
@@ -32907,18 +33270,36 @@ function manFaces(variant, P) {
     /* and it hangs outboard of him: a jump smock is 6.4 across the hem, so an arm
        swinging at 2.6 hangs inside the man wearing it; and a grenadier's left hip carries
        the spade and the bayonet, which an arm at 3.0 swung through */
+    /* a man with an ammunition box in that hand carries it at the end of a straight arm */
+    else if (V.can) arm(figArm(lS, [.5 + (P.armSwing || 0) * .5, -3.15, -.5], [0, -1, -.3], ka, coat, cmat, -1, patch, undefined, AR));
     else arm(figArm(lS, [1.2 + (P.armSwing || 0), ger ? -3.9 : hr ? -3.3 : -3.0, 1.6], [0, -1, -.6], ka, coat, cmat, -1, patch, undefined, AR));
     anchors.muzzle = C.L.at(W.muzzle);
     anchors.bore = C.L.at([W.muzzle[0] - 3, W.muzzle[1], W.muzzle[2]]);
     /* and in a throw, the grenade in the throwing hand, where the arm actually got to */
     if (P.carry === 'throw') add(nadeInHand(k, P.nade === 'bund', AR[0] ? AR[0].at : C.rHand, P.nadeA || 0), 'nade');
+  } else if (V.carrier && !grip) {
+    /* A man with a gun or a tripod on his shoulder holds it there with his right hand, just
+       in front of the shoulder and under it, with the elbow down by his side; the other arm
+       swings. What he carries is not baked into him but drawn at his shoulder (`MG_SHOULDER`),
+       so the same man carries the .30 and the .50. */
+    var cH = [MG_SHOULDER[0] + 1.85, MG_SHOULDER[1] + .1, MG_SHOULDER[2] + .75];
+    arm(figArm(rS, cH, [.2, 1, -.8], ka, coat, cmat, 1, 0, undefined, AR));
+    arm(figArm(lS, [1.2 + (P.armSwing || 0), -3.0, 1.6], [0, -1, -.6], ka, coat, cmat, -1, patch, undefined, AR));
+    anchors.hold = MG_SHOULDER;
+  } else if (V.weapon === 'none' && V.set !== 'hull' && !grip) {
+    /* and a man with nothing in his hands lets them hang, swinging as he walks */
+    var sw2 = (P.armSwing || 0) * .6;
+    arm(figArm(rS, [.4 - sw2, 2.95, -.6], [0, 1, -.3], ka, coat, cmat, 1, 0, undefined, AR));
+    arm(figArm(lS, [.4 + sw2, -2.95, -.6], [0, -1, -.3], ka, coat, cmat, -1, patch, undefined, AR));
   } else {
     /* `pole` is which way the elbows go: out by default, which is right for a gunner with
        his hands spread on a piece, and down for a man sitting with his hands in front of
        him, whose elbows otherwise stick out past the side of the vehicle he is in */
-    var g = P.grips || [3.0, 1.7, 1.7], pl = P.pole || [0, 1, -.6];
+    /* the hands are either side of one point, or each where `gripsL` puts the left one: a
+       number two feeding a belt has both of them off to one side of him */
+    var g = P.grips || [3.0, 1.7, 1.7], pl = P.pole || [0, 1, -.6], gL = P.gripsL || [g[0], -g[1], g[2]];
     arm(figArm(rS, [g[0], g[1], g[2]], [pl[0], pl[1], pl[2]], ka, coat, cmat, 1, 0, undefined, AR));
-    arm(figArm(lS, [g[0], -g[1], g[2]], [pl[0], -pl[1], pl[2]], ka, coat, cmat, -1, patch, undefined, AR));
+    arm(figArm(lS, [gL[0], gL[1], gL[2]], [pl[0], -pl[1], pl[2]], ka, coat, cmat, -1, patch, undefined, AR));
   }
 
   /* The head is counter-pitched about the chin by the lean it is about to be given, so
@@ -32973,10 +33354,13 @@ function manFaces(variant, P) {
   if (AR[1]) { J.elbowL = figPt(AR[1].elbow, lean, hipZ); J.handL = figPt(AR[1].at, lean, hipZ); }
   J.eye = figPt(eye, lean, hipZ);
   if (Pt.skull.length) { J.skull = partCentre(Pt.skull); J.crown = [J.skull[0], J.skull[1], topZ(Pt.helmet.length ? Pt.helmet : Pt.skull)]; }
+  /* and where what he carries is drawn from, with the lean it has to be drawn at: the
+     shoulder a gun rests on, or the hand a box hangs from */
+  var hold = anchors.hold ? figPt(anchors.hold, lean, hipZ).concat([lean]) : V.can && J.handL ? J.handL.concat([lean]) : null;
   return { faces: faces, joints: J, parts: Pt, lift: hipZ, anchors: anchors,
            handsOn: C ? (C.both ? 2 : 1) : 0,
            muzzle: anchors.muzzle ? figPt(anchors.muzzle, lean, hipZ) : null,
-           eye: J.eye };
+           eye: J.eye, hold: hold };
 }
 function atZ(p, dz) { return [p[0], p[1], p[2] + dz]; }
 function partCentre(f) {
@@ -33161,7 +33545,7 @@ function deadFaces(variant, kind) {
   /* a rifle that has been dropped lies on its side; the Garand stands two and a half units
      from its front sight to its sling and the Kar98k as much from its hood to its toe, and
      laid the way the others are each was half in the ground */
-  if (w && (V.weapon === 'garand' || V.weapon === 'kar' || V.weapon === 'stg')) w = roll(w, Math.PI / 2, 0, 0);
+  if (w && (V.weapon === 'garand' || V.weapon === 'kar' || V.weapon === 'stg' || V.weapon === 'carbine')) w = roll(w, Math.PI / 2, 0, 0);
   function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
   function arm(g) { AT.push(f.length); f = f.concat(g); }
   function leg(a, b, c) {
@@ -33321,9 +33705,34 @@ function figMat(m, variant) {
 /* the mesh a weapon team stands round: its own piece if it has one, otherwise the
    side's anti-tank gun or its medium machine gun */
 function teamMesh(u) {
+  var uk = gunUpOf(u);
+  if (uk && MODELS.gun[u.key + ':' + uk]) return MODELS.gun[u.key + ':' + uk];
   if (MODELS.gun[u.key]) return MODELS.gun[u.key];
   return u.def.atOnly ? MODELS.at[u.side] : MODELS.team[u.side];
 }
+/* The fitting that changed the piece, if one has: the American team's .50 is a different
+   gun on a different tripod, laid from a different place, so the numbers the piece is
+   served by (`gunAt`, `gunMuz`, `gunGrip`, `gunMate`) come off `gunUp` while it is fitted
+   and off the def otherwise. `gunOf` hands back whichever holds them, under the def's own
+   names, so a reader asks it where it used to ask the def. */
+function gunUpOf(u) {
+  var G2 = u.def.gunUp, k;
+  if (G2 && u.up) for (k in G2) if (u.up[k]) return k;
+  return null;
+}
+function gunOf(u) {
+  var k = gunUpOf(u);
+  return k ? u.def.gunUp[k] : u.def;
+}
+/* the gunner's and his number two's baked bodies, for the piece that is fitted */
+function servedOf(u) {
+  var k = gunUpOf(u);
+  return (k && MODELS.served[u.key + ':' + k]) || MODELS.served[u.key];
+}
+/* A team that carries its piece carries it: the gun on the gunner's shoulder and the
+   tripod on his number two's from the moment it is packed until it is set up again, and
+   nothing on the ground under them while it is. Every other team is drawn the old way. */
+function carried(u) { return !!(u.def.carry && u.packed && !u.towedBy); }
 /* A gun is not standing on its layer. The mesh was drawn on the first alive man, so
    every crew served their piece from inside it; `gunAt` is how far in front of him it
    sits, and which of the two moves depends on which of them can walk. A team that
@@ -33331,12 +33740,17 @@ function teamMesh(u) {
    keeps the gun on its own marker and puts the man behind the breech. Neither applies
    while the team is carrying it: then the gun is on the man's back and is drawn there. */
 function gunSet(u) { return !!(u.def.gunAt && u.setup <= 0 && !u.packed && !u.moving && aliveModels(u) > 0); }
+/* and the piece is drawn at the scale the men round it are, since they are a fifth over
+   on a phone: at the built size the layer's hands, which are baked onto the grips, came
+   out a fifth past the grips and the flash, which is spawned off his own scale, a fifth
+   past the muzzle */
 function gunPost(u) {
   var a = u.models && u.models.find(function (mm) { return mm.alive; });
   if (!u.def.speed) a = u;
   if (!a) a = u;
   if (!gunSet(u) || !u.def.speed) return { x: a.x, y: a.y };
-  return { x: a.x + Math.cos(u.facing) * u.def.gunAt, y: a.y + Math.sin(u.facing) * u.def.gunAt };
+  var ga = gunOf(u).gunAt * FIG_SCALE;
+  return { x: a.x + Math.cos(u.facing) * ga, y: a.y + Math.sin(u.facing) * ga };
 }
 /* Every pose of every variant off the one rig. A cycle is baked as its frames with the
    ground one cycle covers, so nothing downstream needs a divisor typed beside it, and
@@ -33355,7 +33769,7 @@ function bakeMen() {
   [MODELS.fall, MODELS.dead].forEach(function (T) {
     Object.keys(T).forEach(function (n) { T[n].forEach(function (bf) { freeBuffer(bf); MODELS.freed++; }); });
   });
-  MODELS.man = {}; MODELS.muz = {}; MODELS.eye = {}; MODELS.fall = {}; MODELS.dead = {}; MODELS.nan = 0;
+  MODELS.man = {}; MODELS.muz = {}; MODELS.eye = {}; MODELS.fall = {}; MODELS.dead = {}; MODELS.hold = {}; MODELS.nan = 0;
   function buf(r) {
     var arr = facesToArray(r.faces), i;
     for (i = 0; i < arr.length; i++) if (arr[i] !== arr[i]) { MODELS.nan++; break; }
@@ -33363,19 +33777,23 @@ function bakeMen() {
   }
   Object.keys(SOLDIER_VARIANTS).forEach(function (v) {
     var V = SOLDIER_VARIANTS[v], T = MODELS.man[v] = {}, MZ = MODELS.muz[v] = {}, EY = MODELS.eye[v] = {};
-    function one(pose, P) { var r = manFaces(v, P); T[pose] = buf(r); MZ[pose] = r.muzzle; EY[pose] = r.eye[2]; }
+    /* and where what he carries hangs, for a man whose load is drawn rather than baked */
+    var HD = V.carrier || V.can ? (MODELS.hold[v] = {}) : null;
+    function one(pose, P) { var r = manFaces(v, P); T[pose] = buf(r); MZ[pose] = r.muzzle; EY[pose] = r.eye[2]; if (HD) HD[pose] = r.hold; }
     function cycle(pose, G, n, len) {
-      var fr = [], mz = [], i;
-      for (i = 0; i < n; i++) { var r = manFaces(v, G(i / n)); fr.push(buf(r)); mz.push(r.muzzle); }
+      var fr = [], mz = [], hs = [], i;
+      for (i = 0; i < n; i++) { var r = manFaces(v, G(i / n)); fr.push(buf(r)); mz.push(r.muzzle); hs.push(r.hold); }
       T[pose] = { frames: fr, len: len }; MZ[pose] = mz; EY[pose] = EY[POSE_STAND];
+      if (HD) HD[pose] = { frames: hs };
     }
     if (V.set === 'hull') { one(POSE_SEAT, FIGPOSE.seat); return; }
     one(POSE_STAND, FIGPOSE.stand); one(POSE_CROUCH, FIGPOSE.kneel); one(POSE_PRONE, PRONE());
     cycle(POSE_WALK, WALK, WALKF, STRIDE_LEN);
-    if (!MOB) cycle(POSE_RUN, RUN, RUNF, RUN_LEN);
+    if (!MOB && !V.norun) cycle(POSE_RUN, RUN, RUNF, RUN_LEN);
     cycle(POSE_CRAWL, CRAWL, CRAWLF, CRAWL_LEN);
-    /* a gunner serves the piece with both hands and has no aimed pose of his own */
-    if (V.set === 'gunner') return;
+    /* a gunner serves the piece with both hands and has no aimed pose of his own, and a
+       man carrying it has his hands full */
+    if (V.set === 'gunner' || V.set === 'carry') return;
     one(POSE_READY, FIGPOSE.ready); one(POSE_FIRE, FIGPOSE.fire); one(POSE_CFIRE, FIGPOSE.kfire);
     /* a man who throws is baked winding up and letting go, once with a stick grenade in
        his hand and once with the bundle charge */
@@ -33409,23 +33827,43 @@ function bakeMen() {
    and about a fifth again on the whole roster, for men who stand and walk like anybody. */
 function bakeGunners(buf) {
   MODELS.served = {};
-  Object.keys(UNITS).forEach(function (key) {
-    var d = UNITS[key], G0 = d.gunGrip; if (!G0) return;
-    var v = d.side === 'ger' ? 'fj_gunner' : 'can_gunner';
-    var base = d.gunSit ? FIGPOSE.sit : FIGPOSE.served;
-    /* where the hands have to end up, in the man's own frame: the grips of the piece,
-       which is drawn gunAt ahead of him */
-    var want = [d.gunAt + G0[0], G0[1], G0[2]];
+  /* one body with his hands at `want`, in his own frame, in the pose `base` */
+  function served(v, base, want, wantL) {
     var P = { legs: base.legs, lean: base.lean, carry: 'grips', grips: base.grips };
     var r = manFaces(v, P), h = r.joints.handR;
     if (h) {
-      var c = Math.cos(base.lean), sn = Math.sin(base.lean), dz = want[2] - r.lift;
-      P = { legs: base.legs, lean: base.lean, carry: 'grips',
-            grips: [want[0] * c - dz * sn, want[1], want[0] * sn + dz * c] };
+      var c = Math.cos(base.lean), sn = Math.sin(base.lean), lift = r.lift;
+      var fix = function (w) { var dz = w[2] - lift; return [w[0] * c - dz * sn, w[1], w[0] * sn + dz * c]; };
+      P = { legs: base.legs, lean: base.lean, carry: 'grips', grips: fix(want), gripsL: wantL ? fix(wantL) : undefined };
       r = manFaces(v, P);
     }
-    MODELS.served[key] = { buf: buf(r), pose: d.gunSit ? POSE_SIT : POSE_SERVED,
-                           hand: r.joints.handR, want: want };
+    return r;
+  }
+  Object.keys(UNITS).forEach(function (key) {
+    var d = UNITS[key];
+    if (!d.gunGrip) return;
+    /* a team whose piece can be changed has a body for each piece, keyed the way the piece is */
+    var sets = [[key, d]];
+    if (d.gunUp) Object.keys(d.gunUp).forEach(function (uk) { sets.push([key + ':' + uk, d.gunUp[uk]]); });
+    sets.forEach(function (e) {
+      var g = e[1], G0 = g.gunGrip, v = d.gunner || (d.side === 'ger' ? 'fj_gunner' : 'can_gunner');
+      var base = d.gunSit ? (FIGPOSE[d.gunSit] || FIGPOSE.sit) : FIGPOSE.served;
+      /* where the hands have to end up, in the man's own frame: the grips of the piece,
+         which is drawn gunAt ahead of him */
+      var want = [g.gunAt + G0[0], G0[1], G0[2]];
+      var r = served(v, base, want);
+      var S = { buf: buf(r), pose: d.gunSit ? POSE_SIT : POSE_SERVED, hand: r.joints.handR, want: want };
+      /* and his number two, kneeling at the side of the gun and turned to it, with both
+         hands where the belt goes in: the feedway in the gun's frame taken into his */
+      if (g.gunMate) {
+        var M2 = g.gunMate, ca = Math.cos(-M2.a), sa = Math.sin(-M2.a);
+        var mine = function (p) { var gx = p[0] - M2.at[0], gy = p[1] - M2.at[1]; return [gx * ca - gy * sa, gx * sa + gy * ca, p[2]]; };
+        var want2 = mine(M2.grip), wantL = M2.gripL ? mine(M2.gripL) : null;
+        var r2 = served(v, FIGPOSE[M2.pose] || FIGPOSE.served, want2, wantL);
+        S.mate = buf(r2); S.mateHand = r2.joints.handR; S.mateWant = want2;
+      }
+      MODELS.served[e[0]] = S;
+    });
   });
 }
 function buildModels() {
@@ -33462,6 +33900,10 @@ function buildModels() {
     MODELS.gun[k] = facesToBuffer(GUNMODEL[k].mesh);
     if (GUNMODEL[k].base) MODELS.gunBase[k] = facesToBuffer(GUNMODEL[k].base);
   });
+  /* and the pieces as they are carried, each drawn at the man carrying it */
+  var MC = mgCarryModels();
+  MODELS.carry = {};
+  Object.keys(MC).forEach(function (k) { MODELS.carry[k] = facesToBuffer(MC[k]); });
   /* a headquarters a map dresses as something else (`look` on its hq entity) */
   Object.keys(LOOKS).forEach(function (k) { MODELS.bld[k] = facesToBuffer(LOOKS[k]()); });
   Object.keys(BUILDINGS).forEach(function (k) {
@@ -34914,14 +35356,48 @@ function poseBuffers(u, m, variant) {
   /* a man at his gun is drawn from his gun's own buffer, not from his variant's: the
      served pose is where the piece's grips are and every piece's are somewhere else */
   if (m.pose === POSE_SERVED || m.pose === POSE_SIT) {
-    var S = MODELS.served && MODELS.served[u.key];
-    if (S) return S.buf;
+    var S = MODELS.served && servedOf(u);
+    /* with the gunner down his number two lays it, from the gunner's place and in his body */
+    if (S) return S.mate && m === u.models[1] && u.models[0].alive ? S.mate : S.buf;
   }
   var T = MODELS.man[variant]; if (!T) return null;
   var set = T[m.pose] || (m.pose === POSE_RUN ? T[POSE_WALK] : null) || T[POSE_STAND];
   if (!set) return null;
   if (set.thr) return set.frames[(m.thrT || 0) > THROW_REL ? 0 : 1];
   return set.frames ? set.frames[frameOf(set, m)] : set;
+}
+/* What a man of the American gun team has with him that is not baked into him: the gun
+   or the tripod on a carrier's shoulder, or an ammunition box in a bearer's hand, set down
+   beside him when he is not walking. Each is drawn in the man's own frame, so it follows
+   his step, his lean and his height, from the point `bakeMen` read off his pose
+   (`MODELS.hold`); lying down, he has put it on the ground beside him. The gun goes to
+   the gunner and the tripod to his number two, and with the gunner down his number two
+   takes the gun. Answers in `_mgc` rather than a new object, because it is asked for every
+   man of every such team twice a frame. */
+var _mgc = { buf: null, mat: null };
+function holdAt(variant, m) {
+  var T = MODELS.hold && MODELS.hold[variant], h, set;
+  if (!T) return null;
+  h = T[m.pose] || (m.pose === POSE_RUN ? T[POSE_WALK] : null);
+  if (!h) return null;
+  if (!h.frames) return h;
+  set = MODELS.man[variant][m.pose] || MODELS.man[variant][POSE_WALK];
+  return h.frames[set && set.frames ? frameOf(set, m) : 0];
+}
+function mgCarryAt(u, m, i, variant) {
+  var V = SOLDIER_VARIANTS[variant], C = MODELS.carry, fifty = gunUpOf(u) === 'm2hb', H, M;
+  if (!C || !V || !(V.carrier || V.can)) return false;
+  M = figMat(m, variant); H = holdAt(variant, m);
+  if (V.carrier) {
+    var gun = i === 0 || !u.models[0].alive;
+    _mgc.buf = gun ? (fifty ? C.m2hb : C.a4) : (fifty ? C.m3 : C.m2);
+    _mgc.mat = m4mul(M, H ? m4lean(H[0], H[1], H[2], 0, 1, 0, MG_CARRY_P - H[3]) : m4model(.6, 3.3, 0, 0, 1));
+    return true;
+  }
+  var walk = m.pose === POSE_WALK || m.pose === POSE_RUN;
+  _mgc.buf = fifty ? C.can50 : C.can30;
+  _mgc.mat = m4mul(M, H && walk ? m4model(H[0], H[1], H[2] - (fifty ? 2.34 : 2.26), 0, 1) : m4model(1.1, -3.0, 0, .45, 1));
+  return true;
 }
 /* The men in a turret: the mount's own when a fitting changed the mount, and without the
    commander when he has stood up to a roof gun */
@@ -34952,11 +35428,12 @@ function castUnit(u) {
       var m = u.models[k]; if (!m.alive) continue;
       var variant = variantForModel(u, k), buf = poseBuffers(u, m, variant);
       if (buf) drawDepthGeom(buf, figMat(m, variant));
+      if (u.def.carry && mgCarryAt(u, m, k, variant)) drawDepthGeom(_mgc.buf, _mgc.mat);
     }
-    if (u.cat === 'team' && aliveModels(u) > 0) {
+    if (u.cat === 'team' && aliveModels(u) > 0 && !carried(u)) {
       var a = gunPost(u);
-      drawDepthGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, 1));
-      if (MODELS.gunBase[u.key]) drawDepthGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, 1));
+      drawDepthGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, FIG_SCALE));
+      if (MODELS.gunBase[u.key]) drawDepthGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE));
     }
   }
 }
@@ -35079,16 +35556,17 @@ function drawUnits3D(v, list) {
            a per-draw uniform the renderer already takes costs nothing */
         _mt[0] = tint[0] * (m.tint || 1); _mt[1] = tint[1] * (m.tint || 1); _mt[2] = tint[2] * (m.tint || 1);
         if (buf) drawGeom(buf, figMat(m, variant), false, _mt);
+        if (u.def.carry && mgCarryAt(u, m, k, variant)) drawGeom(_mgc.buf, _mgc.mat, false, tint);
         _blobs.push({ x: m.x, y: m.y, r: m.prone ? 12 : 8, a: .38 });
       }
-      if (u.cat === 'team' && aliveModels(u) > 0) {
+      if (u.cat === 'team' && aliveModels(u) > 0 && !carried(u)) {
         var a = gunPost(u);                          /* a fixed mount is drawn where it was built */
         var trec = recoilAt(u.recoil) * 7;
         drawGeom(teamMesh(u), m4model(a.x - Math.cos(u.facing) * trec, a.y - Math.sin(u.facing) * trec,
-                                      groundZ(a.x, a.y), u.facing, 1), false, tint);
+                                      groundZ(a.x, a.y), u.facing, FIG_SCALE), false, tint);
         /* and its platform, which was laid once and does not traverse with the gun */
         if (MODELS.gunBase[u.key])
-          drawGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, 1), false, tint);
+          drawGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE), false, tint);
       }
     }
   }

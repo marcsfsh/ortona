@@ -4037,6 +4037,133 @@ for (const device of TARGETS) {
      `the squad ${kc.autoOrder}; the SIMPLE card's two are ${kc.simple.join(' and ')}px and BUNDLE armed ${kc.simpleMode}; a man ` +
      `killed went down as ${kc.fellNat}, bodies ${kc.bodies ? 'baked' : 'MISSING'}; Ortona's post makes ${kc.ita}`);
 
+  /* --- The .30 cal team. The American machine gun team on the beach, in the Vickers team's
+     place: the company post makes it and queues it when asked for the Vickers, the count and
+     the order book read the two as one, and it is four men -- the gunner and his number two,
+     and two ammunition bearers with the M1 carbine -- every one of them with two belts of
+     rounds crossed on his chest. Packed, the gun is on the gunner's shoulder and the tripod on
+     his number two's, drawn at the point the bake read off each man's shoulder, and a box in
+     each bearer's hand; set up, the gunner sits behind the gun, his number two kneels at its
+     left where the belt goes in and the bearers are back either side. The .50 is a field
+     upgrade bought through the brain's own routine, and it changes the weapon, the piece, the
+     pieces carried, the men's places and the bodies at the gun. A man killed goes down as one
+     of the team, and Ortona's post still makes the Vickers. --- */
+  const mg = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(bar).join(',');
+    G.res.us.mp += 3000; G.res.us.fu += 600;
+    const q0 = bar.queue.length, m0 = W.madeOf('us', 'am_mg');
+    out.q = W.queueUnit(bar, 'us_mg') ? bar.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_mg') - m0;
+    out.madeAs = W.madeOf('us', 'us_mg') === W.madeOf('us', 'am_mg');
+    bar.queue.length = q0;
+    /* On open ground with nothing to take cover in. Four battles have been fought on this
+       beach by the time the row runs, and a halt in cover beside something solid leaves the
+       number two in his slot when the gun is across the wall from him, which is right and is
+       not what the row is asking. So the walk and the halt are both on clear sand. */
+    const openAt = (x, y) => {
+      for (let dx = -60; dx <= 360; dx += 20) for (let dy = -60; dy <= 60; dy += 20)
+        if (!W.walkable(x + dx, y + dy) || W.inMasonry(x + dx, y + dy)) return false;
+      return !G.covers.some(c => Math.hypot(c.x - x - 300, c.y - y) < c.r + 110);
+    };
+    let at = null;
+    for (let r = 0; r < 1400 && !at; r += 40)
+      for (let k = 0; k < 24 && !at; k++) {
+        const x = hq.x - 150 + r * Math.cos(k * Math.PI / 12), y = hq.y - 500 + r * Math.sin(k * Math.PI / 12);
+        if (openAt(x, y)) at = { x, y };
+      }
+    out.open = !!at; out.at = at ? Math.round(at.x - hq.x) + ',' + Math.round(at.y - hq.y) : '-';
+    if (!at) at = W.nearestFree(hq.x + 160, hq.y - 260);
+    const u = W.spawnUnit('us', 'am_mg', at.x, at.y, 0);
+    out.count = W.countOf('us', 'us_mg') === W.countOf('us', 'am_mg');
+    out.men = u.models.length;
+    out.baked = ['gi_mgg', 'gi_mgc', 'gi_mga'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!W.MODELS.man.gi_mga[W.POSE_FIRE] && !!(W.MODELS.served.am_mg && W.MODELS.served.am_mg.mate) &&
+                !!(W.MODELS.served['am_mg:m2hb'] && W.MODELS.served['am_mg:m2hb'].mate);
+    /* the belts, which are what the four of them have that the rifleman has not */
+    const K = W.KIT.usa, belt = W.manFaces('gi_mga', W.FIGPOSE.stand).faces.filter(f => f.c === K.brass || f.c === K.mgbelt).length;
+    const plain = W.manFaces('gi_rifle', W.FIGPOSE.stand).faces.filter(f => f.c === K.brass || f.c === K.mgbelt).length;
+    out.belts = belt + '/' + plain;
+    /* packed and walking: the pieces on the two men's shoulders and a box in each bearer's hand */
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.packed = true; u.setup = 0; u.pack = 0;
+    u.dest = { x: u.x + 300, y: u.y }; u.path = W.findPath(u.x, u.y, u.x + 300, u.y, u); u.pi = 0;
+    step(1.5);
+    out.walkVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.carried = W.carried(u);
+    const piece = i => { const v = W.variantForModel(u, i); return W.mgCarryAt(u, u.models[i], i, v) ? W._mgc.buf : null; };
+    const C = W.MODELS.carry;
+    out.pieces = [piece(0) === C.a4, piece(1) === C.m2, piece(2) === C.can30, piece(3) === C.can30].join(',');
+    const h = W.holdAt('gi_mgc', u.models[0]), hb = W.holdAt('gi_mga', u.models[2]);
+    out.shoulder = h ? +h[2].toFixed(1) : -1; out.hand = hb ? +hb[2].toFixed(1) : -1;
+    /* halted: set up, and each man at his place round the gun */
+    u.path = null; u.dest = null;
+    step(5);
+    out.set = W.gunSet(u);
+    out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [dx * cs + dy * sn, -dx * sn + dy * cs]; };
+    const r1 = rel(u.models[1]), r2 = rel(u.models[2]), r3 = rel(u.models[3]);
+    out.mate = r1.map(v => +v.toFixed(1)).join(','); out.mateLeft = r1[1] < -3;
+    /* the bearers are back either side of the gun, or in whatever cover the halt gave them */
+    out.bearers = (u.coverSlots && u.coverSlots[2] && u.coverSlots[3]) ? 'cover' : r2[0] < -4 && r3[0] < -4 && r2[1] * r3[1] < 0;
+    out.mateFaces = Math.abs(W.angDiff(u.models[1].f, u.facing + Math.PI / 2)) < .25;
+    /* and when he is not, where he was sent and whether he could stand there */
+    const ma = gd0 => { const a = gd0.gunMate.at, k = W.FIG_SCALE; return { x: gp.x + (a[0] * cs - a[1] * sn) * k, y: gp.y + (a[0] * sn + a[1] * cs) * k }; };
+    const mt = ma(W.gunOf(u)), g0 = u.models[0];
+    out.why = 'gunner ' + Math.hypot(g0.x - u.x, g0.y - u.y).toFixed(1) + ' off the mark of ' + W.selRadius(u).toFixed(1) +
+      ', his place ' + Math.hypot(mt.x - u.x, mt.y - u.y).toFixed(1) + ' off it ' + (W.walkable(mt.x, mt.y) ? 'walkable' : 'NOT walkable') +
+      (W.inMasonry(mt.x, mt.y) ? ' in masonry' : '') + ', ' + (u.target ? 'a target' : 'no target') + (u.moving ? ', moving' : '') +
+      (u.gar ? ', garrisoned' : '') + (u.coverSlots ? ', in cover' : '');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.am_mg;
+    /* the flash leaves the gun's muzzle, not the man */
+    const mz = W.muzzlePoint(u, u.models[0], 0), gd = W.gunOf(u);
+    out.muz = Math.abs(Math.hypot(mz.x - gp.x, mz.y - gp.y) - gd.gunMuz[0] * W.FIG_SCALE) < 1.5;
+    /* the .50 */
+    out.upg = W.upgradable(u) && !!W.UPGRADES.m2hb;
+    const w0 = W.mainW(u);
+    const got = W.buyUpgradeAuto('us', [u], { floor: 0, fuFloor: 0 });
+    out.fitted = got === u && !!u.up.m2hb;
+    out.wUp = W.mainW(u) === u.def.wUp.m2hb && w0 === u.def.w && W.mainW(u).pen > w0.pen && W.mainW(u).range > w0.range;
+    out.mesh50 = W.teamMesh(u) === W.MODELS.gun['am_mg:m2hb'] && W.gunOf(u) === u.def.gunUp.m2hb &&
+                 W.servedOf(u) === W.MODELS.served['am_mg:m2hb'];
+    u.packed = true; u.setup = 0;
+    out.pieces50 = [piece(0) === C.m2hb, piece(1) === C.m3, piece(2) === C.can50].join(',');
+    u.packed = false;
+    /* a man of it goes down as one of the team */
+    const m = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    out.fall = !!(W.MODELS.fall.usa_mg && W.MODELS.dead.usa_mg);
+    W.killUnit(u);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(bar).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(bar);
+    return out;
+  });
+  ok('Omaha: the .30 cal team stands in for the Vickers, carries its gun and tripod, and is issued the .50',
+     /am_mg/.test(mg.makes) && !/us_mg/.test(mg.makes) && mg.q === 'am_mg' && mg.made === 1 && mg.madeAs && mg.count &&
+     mg.open && mg.men === 4 && mg.baked && +mg.belts.split('/')[0] > 20 && +mg.belts.split('/')[1] === 0 &&
+     mg.walkVars === 'gi_mgc,gi_mgc,gi_mga,gi_mga' && mg.carried && mg.pieces === 'true,true,true,true' &&
+     mg.shoulder > 15 && mg.shoulder < 20 && mg.hand > 7 && mg.hand < 12 &&
+     mg.set && mg.setVars === 'gi_mgg,gi_mgg,gi_mga,gi_mga' && /^10,11,/.test(mg.poses) && mg.mateLeft && mg.mateFaces && mg.bearers &&
+     mg.mesh && mg.muz && mg.upg && mg.fitted && mg.wUp && mg.mesh50 && mg.pieces50 === 'true,true,true' &&
+     mg.bodyNat === 'usa_mg' && mg.fall && /us_mg/.test(mg.ita) && !/am_mg/.test(mg.ita),
+     (mg.open ? '' : 'NO open ground to stage on; ') + `the company post makes ${mg.makes}; asked for the Vickers it queues ${mg.q}, counted as ${mg.made} made and the order ` +
+     `book ${mg.madeAs ? 'the same' : 'DIFFERENT'}, the count ${mg.count ? 'the same' : 'DIFFERENT'}; ${mg.men} men, every variant ` +
+     `and both pieces' bodies at the gun ${mg.baked ? 'baked' : 'NOT baked'}; belt faces on a bearer against a rifleman ${mg.belts}; ` +
+     `walking ${mg.walkVars}, ${mg.carried ? 'carried' : 'NOT carried'}, gun, tripod and boxes ${mg.pieces}, the load at ${mg.shoulder} ` +
+     `on the shoulder and ${mg.hand} in the hand; halted ${mg.set ? 'set up' : 'NOT set up'} as ${mg.setVars} in poses ${mg.poses}, ` +
+     `the number two at ${mg.mate} ${mg.mateFaces ? 'facing the gun' : 'NOT facing the gun'}${mg.mateLeft && mg.mateFaces ? '' : ' (' + mg.why + ')'}, the bearers ${mg.bearers === 'cover' ? 'in cover' : mg.bearers ? 'back either side' : 'NOT in place'}, ` +
+     `the piece ${mg.mesh ? 'the .30' : 'WRONG'} and the flash ${mg.muz ? 'at the muzzle' : 'OFF the muzzle'}; the .50 ${mg.upg ? 'on offer' : 'NOT on offer'}, ` +
+     `${mg.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${mg.wUp ? 'changed' : 'NOT changed'}, the piece and bodies ${mg.mesh50 ? 'changed' : 'NOT changed'}, ` +
+     `carried ${mg.pieces50}; killed went down as ${mg.bodyNat}, bodies ${mg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${mg.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

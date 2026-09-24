@@ -140,6 +140,18 @@ const CARD = [
   ['am_m8', 'hr_kch'],
   ['am_m3', 'hr_kch'],
   ['am_sher', 'hr_kch'],
+  /* and the American .30 team in the Vickers team's place: against the MG42 across the beach,
+     the grenadier squad and the Knight's Cross Holders it is there to keep down, the KS 750
+     that can ride up on it; and with the .50 issued, against the same and against the 251
+     and the KS 750 it is issued to open */
+  ['am_mg', 'ger_mg42'],
+  ['am_mg', 'hr_gren'],
+  ['am_mg', 'hr_kch'],
+  ['hr_ks750', 'am_mg'],
+  ['am_mg', 'ger_mg42', { a: ['m2hb'] }],
+  ['am_mg', 'hr_gren', { a: ['m2hb'] }],
+  ['am_mg', 'hr_ks750', { a: ['m2hb'] }],
+  ['am_mg', 'hr_251', { a: ['m2hb'] }],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

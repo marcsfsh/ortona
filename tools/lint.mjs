@@ -264,10 +264,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    variants and the two frames of a throw baked twice over, and the two abilities with their
    flight, their fuse, the cards, the brain's use of them and the targeting that picks a
    vehicle.
+   It is 2500 for the .30 cal team: the M1919A4 and the M2HB cut as they go on a tripod, the
+   M2 and M3 tripods set up and folded, the ammunition boxes and the belt of rounds, the M1
+   carbine, three variants with the belts crossed on the chest, the gun and the tripod carried
+   on the shoulder, the number two at the side of the gun, and the .50 as a field upgrade that
+   changes the piece, the men's places and the bodies at the gun.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2460) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2460 kB so it stays quick to load on a phone`);
+if (kb > 2500) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2500 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

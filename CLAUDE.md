@@ -4,7 +4,7 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the engineer squad, the Ranger squad, the grenadier squad, the pioneer team, the
+rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the grenadier squad, the pioneer team, the
 Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
@@ -875,7 +875,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, and 2460 before the Knight's Cross Holders). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, and 2500 before the .30 cal team). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1134,7 +1134,17 @@ BUNDLE CHARGE card arms the pick, a finger on a Panzer IV sends the squad after 
 pick away, the squad walks into reach, the charge comes down on the hull, goes off three quarters
 of a second later and takes two hundred or more off it; the brain's own routine uses both at
 once; the SIMPLE card carries both at 44 pixels and its BUNDLE arms the pick; a man killed goes
-down as `heer_kch`; and Ortona's post still makes the assault group.
+down as `heer_kch`; and Ortona's post still makes the assault group. And the .30 cal team is
+asked it in a fifteenth: the company post makes it and not the Vickers team and queues it when
+asked for the Vickers, the count and the order book read the two as one, it is four men, every
+variant and both pieces' bodies at the gun are baked, a bearer carries belt faces a rifleman has
+none of, walking it is the two carriers and the two bearers with the gun, the tripod and a box
+each drawn at the point the bake read off them, on the shoulder at a man's shoulder height and
+in the hand at his hand's, halted it sets up with the gunner sitting and his number two serving,
+the number two at the gun's left facing it and the bearers back either side, the flash comes off
+the gun's muzzle, the brain's own routine issues the .50 and the weapon, the piece, the bodies at
+it and the pieces carried all change, a man killed goes down as `usa_mg`, and Ortona's post still
+makes the Vickers.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3953,6 +3963,104 @@ under seven seconds with 72 per cent of itself left, the 28 it lost being one bu
 is 46 at the centre of 24 units: the first, at 60 over 26, took three men of an American squad in
 one volley.
 
+**The .30 cal team is the Americans' machine gun team**, in the Vickers team's place (`us_mg` to
+`am_mg` on the army's list), bought from the company post: four men of a heavy weapons company
+with the M1919A4 on its M2 tripod. The gunner and his number two carry the gun and the tripod and
+a pistol each, the other two bring the ammunition with the M1 carbine, and every one of the four
+wears the rifleman's kit with two belts of .30 crossed on his chest as bandoliers.
+
+**The belt is flat and shaded a round or two at a time** (`roundBelt`): a strip one face thick
+along a path, with the brass of the case heads along one edge, the khaki of the cloth, a line of
+brass where the necks come out of it and the gilding of the bullets along the other edge, the
+heads and the bullets cut in two shades a third of a unit at a time so it reads as cartridges and
+not as a strap. The rounds lie across the path in the plane of the face (`nrm` says which way
+each point faces), and a round is 84.8 mm, which is one unit. The first cut gave the cloth
+two-fifths of the width and it read as a crossed webbing strap; the brass is most of it now.
+The part that goes round his back is under the haversack and is not built.
+
+**Three new weapons are cut as side profiles** (`weaponModel`): the M1 carbine, 10.6 units
+against a published 904 mm, with the magazine, the band, the eared front sight and the sling
+through the oiler down the left; the M1919A4 as it goes on a tripod, 11.3 against 964 mm, the
+receiver with its feed cover and rear sight, the back plate and pistol grip, the feedway on the
+left, the trunnion block and the perforated jacket; and the M2HB, 19.35 against 1,654 mm, the
+riveted receiver, the spade grips and the butterfly trigger, the perforated barrel support and
+the heavy barrel. Their bore is z 0 and the trunnion, which is what sits on the pintle, is at x 0.
+**The tripods are set up and folded** (`m2Tripod`, `m3Tripod`): the pintle, one leg forward and
+two splayed back, the traversing bar curved between the rear legs and the traversing and
+elevating mechanism taking the back of the gun; folded, the three legs close up under the head.
+The piece as it stands (`mgTeamModel`) is the tripod, the gun on the pintle, two ammunition boxes
+(`ammoBox`, the .30's M1 and the .50's M2 at their published sizes) and a belt rising out of one
+into the feedway, which is on a Browning's left. The boxes stand clear of the rear legs, which
+the first placement did not.
+
+**The team carries its piece, and nothing is on the ground under it while it does**
+(`carried(u)`, `def.carry`): from the moment it is packed until it is set up again, the gun is on
+the gunner's right shoulder and the tripod on his number two's, and every other team is still
+drawn the old way, with its piece at the first man's feet. **What they carry is drawn, not
+baked**: one carrier variant (`gi_mgc`) holds his right hand in front of the shoulder with the
+elbow down, the piece is drawn in his own frame from the point on his shoulder the bake read off
+each pose (`MODELS.hold`, `holdAt`, `MG_SHOULDER`), pitched up by `MG_CARRY_P` off the pose's own lean,
+and `mgCarryAt` picks the piece: the gun for the gunner, the tripod for his number two, and the
+gun for the number two once the gunner is down. That is why one man carries the .30 and the .50
+alike, where baking the piece in would have been two more variants of ten buffers each. The
+bearers (`gi_mga`) do the same with the box: in the hand at the end of a straight arm while they
+walk, off `J.handL`, and set down beside the left foot otherwise. Lying down a carrier has put
+his piece on the ground beside him.
+
+**Set up, each man has a place round the gun** (`gunMate`, `gunCrew`), placed off the gunner
+because the gun is drawn off him and only while he is alive to be placed off. The gunner sits
+behind it (`gunSit: 'sitlow'`, the sit with the legs out and a lean of .42, because a Browning on
+its tripod is a foot and a half off the ground); his number two kneels at the gun's left turned
+to face it, with his right hand on the feedway and his left on the belt, which is the first body
+at a gun with its hands in two places (`P.gripsL`); and the bearers are back either side of it,
+unless cover gave them somewhere better. `bakeGunners` bakes the gunner and the number two for
+each piece the team can have (`MODELS.served['am_mg']`, `['am_mg:m2hb']`) out of the def's own
+`gunner` variant, where every gun before it was served by a Canadian or a paratrooper whichever
+army the map fielded. The number two is not a layer, so his flash is not drawn: the flash of a
+team is the layer's, and from the MG42's second man it came out of the air in front of his face.
+With the gunner down the number two lays it, in the gunner's body and with the flash his.
+
+**A place at the gun is only a place if he can walk straight to it.** A man walks at his place
+and slides along whatever is in the way, so a place inside a wall, across a wall from him or
+past the rim of the circle is no place and he keeps the one he has; he kneels at the gun only
+once he is at it. In cover that is the slot beside the gunner's, which is where a number two
+behind a garden wall would be. The gunner takes cover like everybody else, as the Vickers
+layer always has: exempted from it, he stood at his formation place across the wall from the
+cover the other three had taken, and on the check's own world his number two stood against a
+house front forty units from the gun for the rest of the row. Staged at forty cover pieces on
+each map, the number two is at the gun in 38 of 40 on Omaha and 27 of 40 on Ortona, beside his
+gunner in cover in the rest, and walking into a wall in none.
+
+**The .50 is a field upgrade that changes the piece** (`UPGRADES.m2hb`): the M2HB on its M3
+tripod, a different gun laid from a different place, so every number a piece is laid by --
+`gunAt`, `gunMuz`, `gunGrip`, `gunMate` and `gunCrew` -- comes off `def.gunUp[key]` while it is
+fitted and off the def otherwise. `gunOf(u)` hands back whichever holds them under the def's own
+names, `servedOf(u)` the bodies at it and `teamMesh(u)` the piece (`GUNMODEL['am_mg:m2hb']`), and
+`gunPost`, `muzzlePoint` and `updateModels` ask `gunOf` where they asked the def.
+
+**And a team's piece is drawn at the scale its men are.** A man on a phone is a fifth over his
+built size and the guns were not, so a layer's hands, baked onto the grips, came out a fifth past
+them and the flash, spawned off the man's own scale, a fifth past the muzzle. The piece and
+`gunAt` are both scaled by `FIG_SCALE` now, for every team.
+
+**Its numbers came off the duel card, and the lever was the fourth man.** A team fires one round a
+man, so four men at the Vickers's damage is a third more fire, and four men take a third more
+killing: at the first numbers (6.0 a round every .12 seconds, a setup of 2.0) it won every fight
+with the MG42 and lost nobody, where the Vickers wins 58 per cent of the time. At 4.4 a round
+every .12 seconds with an accuracy of .42 and a suppression of .046, 52 hit points a man, the
+Vickers's setup of 2.5 and pack of 2.0, 260 marks, over sixteen runs it wins 44 per cent against
+the MG42 in 33 seconds, where the Vickers wins 63 on the same afternoon, and every fight with the
+grenadier squad in 19 seconds with 80 per cent of itself left, where the Vickers takes 15 and
+keeps 81. The Knight's Cross Holders take it two times in three at their own reach (69 per
+cent over sixteen runs) and every time at 130, where their grenades reach, in three and a half
+seconds. **The .50 is reach and penetration and a slower, heavier round**: at 7.0 a round every
+.17 seconds out to 380
+with the jeep .50's penetration of 70, for another 110 marks and 20 of fuel, over sixteen runs it
+takes the KS 750 every time in five seconds, the grenadier squad every time and the MG42 three
+times in four; the 251 takes it five times in eight, because the half-track's MG pins four men
+faster than four men can open it, and the 234/1 every time. At a penetration of 36 the 251 took
+it nearly every time and at 70 with the .30's rate it took everything in under ten seconds.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -6227,6 +6335,21 @@ shots/                         screenshot output, gitignored
   where the eye looks right comes out through a screen, a lid or a roof. The 234/1's first crew
   stood with their eyes over the rim and both heads out through the screens; they sit now, at
   14.75 to the eye, and the gate counts every point of them against the screen over it.
+- **A man with nothing in his hands still has a muzzle table, and it is a list of nulls.** The
+  bake writes `r.muzzle` for every frame of a cycle whatever the man is carrying, so a gunner with
+  no weapon has `MODELS.muz[v][POSE_WALK]` as eight nulls. `muzzlePoint` guards the first entry;
+  the men card read `mz[0].length` and threw on the first unarmed man it met.
+- **Two pages in one browser starve each other.** The men card opens the desktop page, keeps it
+  running and opens the phone beside it, and the phone deploy then takes 95 to 110 seconds where
+  it takes 11 alone, on the committed file as much as on a working one. Its click waits 180, so on
+  a busy box it times out and reads as the phone having broken. Run the geometry sections, which
+  need only the desktop page, when that happens, and the pixel sections on their own.
+- **A new global can take the name of an old one without a word.** Every `var` at the top of
+  the script is one namespace forty thousand lines long, and a second `var` of a name is
+  legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the
+  seconds of trigger a player's vehicle machine gun takes to cook: the heat went to NaN, the
+  coaxial under command never fired and never cooked, and the periscope rows failed with nothing
+  in the diff anywhere near a periscope. `grep` the name in the committed file before adding one.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the
