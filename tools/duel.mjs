@@ -125,6 +125,14 @@ const CARD = [
   ['am_m8', 'ger_pgren', { a: ['fenders'] }],
   ['am_ranger', 'am_m8'],
   ['hr_p4', 'am_m8'],
+  /* and the 234 the 352nd fields in the Wirbelwind's place: the 234/1 against the M8 it trades
+     with, the half-track it hunts and the Rangers who hunt it, and the Puma against the M8 it
+     outguns and the M4 it can open only from the flank */
+  ['hr_234', 'am_m8'],
+  ['hr_234', 'am_m3'],
+  ['am_ranger', 'hr_234'],
+  ['hr_234', 'am_m8', { a: ['puma'] }],
+  ['hr_234', 'am_sher', { a: ['puma'] }],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

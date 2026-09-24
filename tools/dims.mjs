@@ -120,7 +120,13 @@ const REAL = {
                The other set of figures in circulation, 100 in wide and 88.5 in high, is over the sand shields
                and over the ring mount, and both of those are fittings here */
   ger_sd222:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
-               clear: 0.25 }
+               clear: 0.25 },
+  hr_234:    { name: 'Sd.Kfz. 234/1',       len: 6.02,  gun: 6.02,   wid: 2.33,  hgt: 2.10,
+               clear: 0.35 },   /* 6.02 m over the bumper and 2.33 m over the crease, 350 mm under the belly,
+               and 2.10 m to the top of the 2 cm turret, which is the rim with the screens held out */
+  'hr_234:puma': { name: 'Sd.Kfz. 234/2 Puma', len: 6.02, gun: 6.80, wid: 2.33, hgt: 2.38,
+               clear: 0.35 }   /* the same hull with the Puma's turret on the ring, the 5 cm reaching 6.80 m
+               overall and the roof at 2.38 m, measured through the fitting rather than a second model */
   /* Two heights are published for the 222 and both are right: 1.70 m to the turret rim,
      2.00 m with the anti-grenade screens raised. The rim is the one that can be checked,
      so PROBE.topZ holds the screens out of the measurement. No body or deck width is
@@ -195,8 +201,12 @@ const PROBE = {
   am_m8:     { topZ: 6.0, hullZ: 24, bodyZ: 14.45, xLo: -20.0, xHi: -12.0, straddle: true },   /* the slice is
                taken at the crease over the rear bogie, behind the stowage box; topZ holds the lifting eyes on the
                rim out of the height and hullZ the whip aerial */
-  ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0, hullZ: 20 }   /* clear of the rear
+  ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0, hullZ: 20 },   /* clear of the rear
                tyre and the wing tools; hullZ drops the rod aerial on the right of the bonnet */
+  hr_234:    { topZ: 4.3, hullZ: 24 },   /* topZ holds the screens and their hinges out of the height the way the
+               222's are, and hullZ the aerial on the engine deck */
+  'hr_234:puma': { of: 'hr_234', up: 'puma', topZ: 7.7, hullZ: 24 }   /* `of` and `up` measure a vehicle with a
+               fitting that changes the mount; topZ holds the hatch lids and the ventilator out of the roof height */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
 
@@ -213,9 +223,14 @@ await deploy(page, { side: 'us' });
 
 const measured = await page.evaluate(probe => {
   const out = {};
-  Object.keys(window.VMODEL).forEach(function (k) {
-    const V = window.VMODEL[k], tx = V.turX || 0;
+  const keys = Object.keys(window.VMODEL).concat(Object.keys(probe).filter(k => probe[k].of));
+  keys.forEach(function (k) {
     const pr0 = probe[k] || {};
+    /* a fitting that swaps the mount is measured with that mount on it, placed where the fitting
+       puts it (`barUp`), because a published figure over the gun is a figure over the gun fitted */
+    let V = window.VMODEL[pr0.of || k];
+    if (pr0.of) V = Object.assign({}, V, { tur: V.turUp[pr0.up] }, (V.barUp && V.barUp[pr0.up]) || {});
+    const tx = V.turX || 0;
     const hullCap = pr0.hullZ === undefined ? 1e9 : pr0.hullZ;
     let hx0 = 1e9, hx1 = -1e9, hy = 0, hz = 0;
     /* `zt` is the top of the plate a piece was cut off, where the piece is a piece: a

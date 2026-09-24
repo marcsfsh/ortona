@@ -3764,6 +3764,88 @@ for (const device of TARGETS) {
      `${gh.blown} of 40 wrecks threw the turret, the least sat down ${gh.sink}, ${gh.sk} of 40 kept shields and ${gh.skBare} of 40 ` +
      `without them; killed, it left ${gh.bodies} bodies of ${gh.bodyNat}; Ortona's motor pool makes ${gh.ita}`);
 
+  /* --- The 234. The 352nd's armoured car on the beach stands in for the Wirbelwind: the
+     depot makes it and refuses the Wirbelwind, the count and the order book read the two as
+     one, it wears the grey and none of the paratroopers' paint, the gunner and the commander
+     are in the black of the Panzer arm and sit with their heads under the ridge of the screens,
+     the coaxial comes with it, the turret goes all the way round and the periscope's eye is the
+     commander's over the rim. The Puma's turret is the fitting, bought through the brain's own
+     routine, and it changes the weapon, the mount, the men in it and the eye together. Forty
+     wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and Ortona's
+     depot still makes the Wirbelwind. --- */
+  const k4 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 160, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_234');
+    out.q = W.queueUnit(dep, 'ger_wirb') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_234') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_wirb') === W.madeOf(hq.own, 'hr_234');
+    dep.queue.length = q0;
+    const v = W.spawnUnit(hq.own, 'hr_234', hq.x - 140, hq.y + 260, 0);
+    out.count = W.countOf(hq.own, 'ger_wirb') === W.countOf(hq.own, 'hr_234');
+    const V = W.VMODEL.hr_234, B = W.MODELS.veh.hr_234, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.turUp.puma && B.turCrew && B.turCrewUp.puma && B.inside);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
+    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.cap = V.turCrew.filter(f => f.c === K.pz).length;
+    out.pumaCap = V.turCrewUp.puma.filter(f => f.c === K.pz).length;
+    out.helm = V.turCrew.concat(V.turCrewUp.puma).filter(f => f.c === K.helm || f.c === K.helmD).length;
+    /* every point of the two men against the screen over it, which is a plane from each side
+       rim up to the ridge */
+    const T = W.K41, yh = W.k4Inset(T.plan, T.lean)[2][1];
+    out.poke = 0;
+    V.turCrew.forEach(f => f.v.forEach(p => { if (p[2] > T.h + T.hinge + (yh - Math.abs(p[1])) * Math.tan(T.close)) out.poke++; }));
+    out.coax = W.secondaryKeys(v).indexOf('coax') >= 0;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    /* the Puma's turret, through the brain's own routine */
+    const w0 = W.mainW(v), b0 = W.mountPose(v, V).bar;
+    const got = W.buyUpgradeAuto(hq.own, [v], { floor: 0, fuFloor: 0 });
+    out.fitted = got === v && !!v.up.puma && W.mountUp(v) === 'puma';
+    out.wUp = W.mainW(v) === v.def.wUp.puma && w0 === v.def.w;
+    out.bar = +b0.toFixed(1) + '>' + (+W.mountPose(v, V).bar.toFixed(1));
+    out.crewUp = W.turCrewOf(v, B) === B.turCrewUp.puma;
+    v._matT = -1;
+    W.povOn(v);
+    out.eyeP = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s armoured car is the 234, the 2 cm under its screens and the Puma\'s turret its fitting',
+     /hr_234/.test(k4.makes) && !/ger_wirb/.test(k4.makes) && k4.q === 'hr_234' && k4.made === 1 && k4.madeAs && k4.count &&
+     k4.bufs && k4.grey > 50 && k4.camo === 0 && k4.cap > 0 && k4.pumaCap > 0 && k4.helm === 0 && k4.poke === 0 && k4.coax &&
+     k4.lay < .05 && k4.eye > 22 && k4.eye < 27 && k4.fitted && k4.wUp && k4.bar === '22>37.4' && k4.crewUp &&
+     k4.eyeP > 30 && k4.eyeP < 38 && k4.blown > 0 && k4.blown < 40 && k4.sink >= 2 &&
+     k4.bodies >= 1 && k4.bodyNat === 'heer' && /ger_wirb/.test(k4.ita) && !/hr_234/.test(k4.ita),
+     `the depot makes ${k4.makes}; asked for the Wirbelwind it queues ${k4.q}, counted as ${k4.made} made and the order book ` +
+     `${k4.madeAs ? 'the same' : 'DIFFERENT'}, the count ${k4.count ? 'the same' : 'DIFFERENT'}; buffers ${k4.bufs ? 'all built' : 'MISSING'}; ` +
+     `${k4.grey} hull faces in the grey and ${k4.camo} in the paratroopers' paint; the 234/1's men have ${k4.cap} faces of the black ` +
+     `cap, the Puma's commander ${k4.pumaCap}, and ${k4.helm} of a helmet between them; ${k4.poke} points of the two men above the ` +
+     `screens; the coaxial ${k4.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the turret is ${k4.lay} short; ` +
+     `the eye ${k4.eye} up; the Puma ${k4.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${k4.wUp ? 'swapped' : 'NOT swapped'}, the muzzle ` +
+     `${k4.bar}, the crew ${k4.crewUp ? 'the Puma\'s' : 'NOT the Puma\'s'} and the eye ${k4.eyeP} up; ${k4.blown} of 40 wrecks threw ` +
+     `the turret, the least sat down ${k4.sink}; killed, it left ${k4.bodies} bodies of ${k4.bodyNat}; Ortona's depot makes ${k4.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

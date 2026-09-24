@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the grenadier squad, the pioneer team, the
-jeep, the M4, the M3A1, the M8, the KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -104,6 +104,12 @@ node tools/dims.mjs --base=HEAD  # measure an older file instead
 cannot do: the height is the hull's or the mount's top added to `mountZ`, whichever is
 higher, so a cap that drops every face of the mount still leaves `mountZ` standing. The
 jeep's gun stands on a post two metres up and no published height is measured to it.
+
+**`of` and `up` on a probe measure a vehicle with a fitting on it.** A fitting that swaps the
+mount swaps what the published figures are measured over: the 234/2's 6.80 m is over the 5 cm
+and its 2.38 m is to the roof of the Puma's turret, neither of which is on the car it arrives
+as. `'hr_234:puma': { of: 'hr_234', up: 'puma' }` measures the hull with `turUp.puma` on the
+ring, put where `barUp` puts it, rather than asking for a second model of the same vehicle.
 
 **`--base` is there because the tool could only ever open the working file**, so it could
 say whether a model is the right size and never whether a change made it a different size.
@@ -1095,7 +1101,16 @@ a gun asked to lay 1.2 radians off the nose comes all the way round, the perisco
 commander's over the rim at twenty-odd units up, the brain's own routine fits the .30 and the sand
 shields and the car is then skirted with the side plate worth more, forty wrecks throw the turret
 some of the time and keep shields some of the time while forty of a car that never had them keep
-none, killed it leaves American bodies, and Ortona's motor pool still makes the Stuart.
+none, killed it leaves American bodies, and Ortona's motor pool still makes the Stuart. And the 234
+is asked it in a thirteenth, on the German side: the depot makes it and not the Wirbelwind and
+queues it when asked for the Wirbelwind, the count and the order book read the two as one, it is
+in the grey with none of the paratroopers' paint, the 234/1's men and the Puma's commander wear
+the black cap and none of them a helmet, not one point of the 234/1's two men stands above the
+screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the nose comes all the
+way round, the periscope's eye is the commander's over the rim, the brain's own routine fits the
+Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks throw the
+turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot still makes
+the Wirbelwind.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3742,6 +3757,72 @@ it still takes the 251 81 per cent of the time, the KS 750 and the grenadier squ
 reload that the coaxial has the four of them down first. The Panzer IV took it twelve times in
 twelve at the first numbers, and thinner plate does not change that.
 
+**The 234 is the 352nd's armoured car**, in the Wirbelwind's place (`ger_wirb` to `hr_234` on the
+army's list), and it is built from nothing: the eight-wheeled heavy armoured car of a Panzer
+division's reconnaissance battalion, in the grey. It arrives as the 234/1, with the 2 cm KwK 38
+and an MG 42 in an open six-sided turret under two wire screens, and **the closed turret of the
+234/2 with the 5 cm KwK 39/1 is its field upgrade** (`UPGRADES.puma`), which swaps the gun, the
+mount and the men in it together. The two drivers, one at each end, are inside the hull and are
+not drawn. On `tools/dims.mjs` it reads 6.00 m long against 6.02, 2.36 wide against 2.33, 2.07
+to the rim of the 234/1's turret against 2.10, 2.37 to the Puma's roof against 2.38, 6.72 over
+the 5 cm against 6.80 and 0.35 of clearance.
+
+What carries it, and each is built its own way. **The body is eight rings** (`K4ST`), each a
+crease and a top edge on one side: the nose where the glacis meets the lower nose plate, two
+stations up the glacis, the top of it, the back of the fighting compartment, the front and the
+back of the engine deck, which stands lower, and the tail. The upper sides lean in hard from the
+crease to a narrow roof, and every panel between two rings goes through `m8Quad`, because the
+front of the upper side twists from a shelf at the nose to a leaning plate at the top of the
+glacis. **The lower side hangs from the crease** (`k4Lower`), leaning in toward its foot, and
+its lower edge is a line of its own (`K4EDGE`): nothing at the nose, just clear of the tyres
+over each pair, and a flat V between the pairs, which is the outline of the side in every
+photograph of the car. A strip runs back from that edge to the tub, so the wells over the wheels
+are closed, and the tub's floor ramps up under the nose and tail plates. **The eight wheels are
+270-20s** on the published 1,300, 1,400 and 1,300 mm and a 1,945 mm track (`k4Wheel`), each on
+its knuckle between two wishbones with the half-shaft through them, and each pair on a leaf
+spring run along the tub (`k4Suspension`). Anything fixed to a plate is put there in the plate's
+own frame (`k4SideFrame`, `k4GlacisFrame`, `hkOn`): the driver's visor and the access hatch on
+the glacis, the vision ports in the cheeks, a long bin on each side, the rods and the pioneer
+tools, and the cross aft. The silencer lies across the top of the rear plate.
+
+**Both turrets are plans with a lean per wall** (`k4Inset`, `k4Walls`), the Panzer IV's method:
+each wall is moved in along its own normal and the corners are found again, so every plate is a
+plane. **The 234/1's is six-sided and open** (`k41Turret`), with an inside and a basket down to
+the floor in the ivory German interiors were painted, left out of the occlusion bake, and the
+2 cm with its jacket and flash hider and the MG 42 beside it behind a shield in the front wall.
+**Its screens are closed** (`k41Screens`): each frame is cut to its half of the top, hinged on
+brackets a hand's breadth over a side rim and closed in toward the other, so the two make a low
+ridge. **The Puma's is eight-sided** (`k42Turret`), the front plate at twenty degrees, with the
+Saukopf turned about the bore in bands, the long 5 cm with its double-baffle brake, the coaxial
+over the right of the mantlet, two roof hatches, the ventilator, the periscopes and three smoke
+dischargers on each front corner.
+
+**The men in a turret are keyed by the mount** (`turCrewUp`, `turCrewOf`), the way the mount is
+keyed by the fitting: the 234/1 has its gunner and commander in it and the Puma its commander up
+in the left hatch, and the draw, the shadow pass, the bake and the buffers all read the one that
+is fitted. **The 234/1's two men sit**, because a standing figure's eye is 19.4 over his soles
+and the top of his cap 24.1, and under the screens there is no room to stand: seated on the
+floor of the basket both heads are under the ridge, and the gate counts every point of them
+against the screen over it. The eye in the periscope is the commander's as he half stands to look
+out over the rim beneath them (`VIN.hr_234`); `VIN[k].up` gives a mount its own eye, which for
+the Puma is the commander's up in the hatch, and `povEye` reads the one that is fitted.
+
+**Its numbers came off the duel card, and the two levers were the 2 cm's penetration and what the
+Rangers do to it.** A 2 cm volley does the same damage to a man and to a plate, so the gun cannot
+be tuned against infantry without moving it against armour, and the first line, at 22 a volley
+every .38 seconds and 50 of penetration, beat the rifle squad, the jeep, the M3A1 and the M8 every
+time and the Rangers five times in six: a squad built to hunt light vehicles being hunted by one.
+With the gun and the coaxial down to about what the M8 puts into infantry, the Rangers win, and
+what then decides the M8 is penetration, because every volley that gets through rolls for a gun
+or a wheel and this gun fires three times a second: at 28 the 234/1 won five in six and at 22 one
+in eight. At 12 a volley every .30 seconds and 25 of penetration, 400 hit points and 72 of plate,
+250 marks and 35 of fuel, it takes the M8 63 per cent of the time over twenty-four runs, the M3A1,
+the jeep and the rifle squad every time, and loses to the Rangers 71 per cent of the time and to
+the M4 every time. The Puma, at 85 a round every 2.6 seconds and 120 of penetration for another
+120 marks and 45 of fuel, takes the M8 and the rifle squad every time over twelve runs and loses
+to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
+`SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -5999,6 +6080,11 @@ shots/                         screenshot output, gitignored
 - **A door that fits an upgrade asks `upgradable(u)`, never the category.** Every one of them
   asked `u.cat === 'veh'` until a squad came with an upgrade, and each that still did would have
   been a place the .30 could never be bought.
+- **Measure the man before fitting him under anything.** A crewman standing on his soles has
+  his eye at 19.4 and the top of his cap at 24.1, nearly five units over the eye, so a head put
+  where the eye looks right comes out through a screen, a lid or a roof. The 234/1's first crew
+  stood with their eyes over the rim and both heads out through the screens; they sit now, at
+  14.75 to the eye, and the gate counts every point of them against the screen over it.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the
