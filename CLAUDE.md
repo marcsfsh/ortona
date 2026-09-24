@@ -6203,6 +6203,10 @@ shots/                         screenshot output, gitignored
   .30 moved its fight with the Panzergrenadiere from 172 to 197, out to where the SMGs opposite
   are worse, and read as 50 per cent to 100. Staged at 172 both ways (`--d=172`) it was 42 to
   67. Compare an upgrade at a fixed range.
+- **Anything in `G.shots` that `drawShot` does not know is drawn as a tracer.** Its last branch
+  streaks every kind that is not a belt round or an indirect shell, so the first grenades flew
+  with a tracer's orange tail behind a stick grenade drawn as a model. A new kind of shot says
+  what `drawShot` does with it.
 - **`mountZ` is the height of the turret ring, and the middle of a tank is its turret.** A thing
   put on a vehicle at its centre and `mountZ` is inside the turret and drawn nowhere, and a probe
   that asks only whether it is on the hull reads it as correct. Ask `deckSeat` where it lies.

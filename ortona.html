@@ -35534,6 +35534,7 @@ function shotPoint(s, k) {
               Math.sin(clamp(k, 0, 1) * Math.PI) * (s.arc || 0) };
 }
 function drawShot(s) {
+  if (s.kind === 'gren') return;              /* a grenade is its own model and burns nothing */
   var k1 = clamp(s.t / s.dur, 0, 1), k0 = Math.max(0, k1 - (s.tail || .22));
   var h = shotPoint(s, k1), t = shotPoint(s, k0), c = s.col || TRACER.us;
   if (s.t < 0) return;                        /* a volley is a ripple, not a salvo */
