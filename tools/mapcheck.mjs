@@ -18,12 +18,14 @@
  *     a house standing on a shell hole is a house standing on air.
  *   - two buildings either share a wall or leave room to walk between them. A gap of
  *     twelve units is neither: it reads as an alley and cannot be entered.
+ *   - a hedgerow does not run through a building or across a lane: it is a bank a hull
+ *     cannot climb, and one laid over a lane shuts it with nothing on the map to say so.
  *   - a street is not endless and it is not a thread. Streets that run the length of the
  *     map without a junction have nothing to fight over, and a carriageway narrower than
  *     a vehicle is a wall with a line painted on it.
  *
  *   node tools/mapcheck.mjs            every rule, on every map the game ships
- *   node tools/mapcheck.mjs gothic     one of them
+ *   node tools/mapcheck.mjs gothic     one of them, by the key the game knows it by
  *   node tools/mapcheck.mjs --v        list every conflict rather than the first few
  *
  * It checks every shipped map rather than only the first, because a rule nobody runs on
@@ -35,13 +37,19 @@ import { launch, openGame, parseArgs } from './harness.mjs';
 const args = parseArgs(process.argv.slice(2));
 const VERBOSE = !!args.v;
 
-const WANT = args._ && args._.length ? args._ : ['ortona', 'gothic'];
+/* The maps come off the game's own MAPS table rather than a list here. Written as a
+ * ternary on 'gothic' the third map was silently checked as Ortona, and what that looks
+ * like is a new map that came back clean on the first run. */
+const WANT = args._ && args._.length ? args._ : null;
 
 const browser = await launch();
 const { page, context } = await openGame(browser, 'laptop', { quiet: true });
-const maps = await page.evaluate((want) => want.map(k => ({
-  key: k, name: k, data: k === 'gothic' ? gothicMapData() : defaultMapData()
-})), WANT);
+const maps = await page.evaluate((want) => {
+  const keys = want && want.length ? want : Object.keys(MAPS);
+  const bad = keys.filter(k => !MAPS[k]);
+  if (bad.length) throw new Error('no such map: ' + bad.join(', ') + '; the game has ' + Object.keys(MAPS).join(', '));
+  return keys.map(k => ({ key: k, name: k, data: MAPS[k].make() }));
+}, WANT);
 await context.close();
 await browser.close();
 
@@ -78,10 +86,22 @@ function bunkerBox(e) {
   return { t: 'bunker', x: e.x, y: e.y, w: ax ? 46 : 74, h: ax ? 74 : 46 };
 }
 
+/* A landing craft aground is a steel hull standing on the sand and the game marks it
+   solid on its own bearing's bounding box, so that is the box it is checked as. One lying
+   in the surf is not solid and is not checked. */
+const CRAFT = { lcvp: [118, 36], lct: [330, 100] };
+function craftBox(e, sea) {
+  const d = CRAFT[e.kind || 'lcvp'] || CRAFT.lcvp, ca = Math.abs(Math.cos(e.a || 0)), sa = Math.abs(Math.sin(e.a || 0));
+  return { t: 'craft', x: e.x, y: e.y, w: Math.round(d[0] * ca + d[1] * sa), h: Math.round(d[0] * sa + d[1] * ca) };
+}
+
 function checkMap(map) {
   const E = map.entities;
   const of = t => E.filter(e => e.t === t);
-  const houses = of('house'), farms = of('farm'), craters = of('crater');
+  /* a Norman house is a building for every rule a house is: it stands on ground nothing
+     else is dug into, no street runs through it, and it leaves room to walk or shares a
+     wall */
+  const houses = of('house').concat(of('nhouse')), farms = of('farm'), craters = of('crater');
   /* A weapon pit is an EARTHWORK the day it starts going through `carve`, so it is
      checked as one. Measured on the Gothic Line before this rule existed, one pit's
      spoil stood 4.32 units up in the floor of a trench 32 units away and another's
@@ -98,10 +118,17 @@ function checkMap(map) {
      crater's 16, because that is the thing being undercut. */
   const digs = craters.map(c => ({ x: c.x, y: c.y, r: c.r, m: 16, what: `crater (${c.x}, ${c.y}) r${c.r}` }))
     .concat(of('emplace').map(e => ({ x: e.x, y: e.y, r: (e.r || 22) + 8, m: 14,
-                                      what: `the weapon pit at (${e.x}, ${e.y}) r${e.r || 22}` })));
-  const trenches = of('trench'), wires = of('wire'), roads = of('road');
+                                      what: `the weapon pit at (${e.x}, ${e.y}) r${e.r || 22}` })))
+    /* a Tobruk is sunk in a bowl nine units across the carve and sixteen to its collar */
+    .concat(of('tobruk').map(e => ({ x: e.x, y: e.y, r: 16, m: 14, what: `the Tobruk at (${e.x}, ${e.y})` })));
+  /* an anti-tank ditch is an earthwork dug the way a trench is, so it is one here */
+  const trenches = of('trench').concat(of('ditch').map(d => ({ side: 'anti-tank', pts: d.pts })));
+  const wires = of('wire'), roads = of('road');
   const trees = of('tree').concat(of('scrub'));
-  const blocks = houses.concat(farms).concat(of('bunker').map(bunkerBox));
+  const blocks = houses.concat(farms).concat(of('bunker').map(bunkerBox))
+    .concat(of('craft').filter(e => !e.wreck || e.wreck === 1).map(e => craftBox(e)));
+  const hedges = [];
+  for (const h of of('hedge')) for (const sg of segs(h.pts)) hedges.push(sg);
 
   const problems = [];
   function bad(rule, msg) { problems.push({ rule, msg }); }
@@ -173,6 +200,30 @@ function checkMap(map) {
     }
   }
 
+  /* ---- 4c. a hedgerow does not run through a building or across a lane --------
+     A hedgerow is a bank a hull cannot get over, so one laid across a lane shuts the lane
+     to everything on tracks and nothing on the map says so; and one through a house is a
+     bank standing in somebody's kitchen. A lane runs between two hedgerows, so the test
+     is the carriageway and not the verge. */
+  for (const [x1, y1, x2, y2] of hedges) {
+    for (const b of blocks)
+      if (segHitsBox(box(b, -3), x1, y1, x2, y2))
+        bad('house/hedge', `a hedgerow (${Math.round(x1)},${Math.round(y1)})-(${Math.round(x2)},${Math.round(y2)}) runs through the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`);
+    for (const r of roads) {
+      const half = (r.width || 48) / 2 - 6;
+      let hit = false;
+      for (const [rx1, ry1, rx2, ry2] of segs(r.pts)) {
+        const n = Math.max(2, Math.ceil(Math.hypot(x2 - x1, y2 - y1) / 6));
+        for (let i = 0; i <= n && !hit; i++) {
+          const t = i / n;
+          if (segDist(x1 + (x2 - x1) * t, y1 + (y2 - y1) * t, rx1, ry1, rx2, ry2) < half) hit = true;
+        }
+        if (hit) break;
+      }
+      if (hit) bad('hedge/street', `a hedgerow (${Math.round(x1)},${Math.round(y1)})-(${Math.round(x2)},${Math.round(y2)}) crosses the lane from (${r.pts[0].x}, ${r.pts[0].y})`);
+    }
+  }
+
   /* ---- 5. streets ---------------------------------------------------------- */
   for (const r of roads) {
     if (r.width < 24) bad('street/narrow', `a street of width ${r.width} at (${r.pts[0].x}, ${r.pts[0].y})`);
@@ -182,7 +233,8 @@ function checkMap(map) {
   }
 
   return { problems, counts: `entities: ${E.length}  buildings: ${blocks.length}  craters: ${craters.length}  ` +
-    `trenches: ${trenches.length}  wire: ${wires.length}  streets: ${roads.length}  trees: ${trees.length}` };
+    `trenches: ${trenches.length}  wire: ${wires.length}  streets: ${roads.length}  trees: ${trees.length}` +
+    (hedges.length ? `  hedgerow legs: ${hedges.length}` : '') };
 }
 
 /* ---- report -------------------------------------------------------------- */

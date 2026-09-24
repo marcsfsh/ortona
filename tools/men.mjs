@@ -157,12 +157,18 @@ function GEO(opt) {
      catch is the other end -- a forearm ending inside a blouse, which is what the figure
      before this one did -- so it is the other end that is sampled. The far cap of a
      frustum limb is its second-to-last face, `frustum` having pushed the lid and then
-     the floor after the sides. */
+     the floor after the sides. A limb that carries something -- a cargo pocket on a
+     thigh, a rolled sleeve and a bare forearm on an upper arm -- is still the frustum it
+     was built as first, so its first six faces give the root and the direction, and its
+     length is the furthest it reaches along that direction, which for a bare frustum is
+     its own tip; read whole, the engineer's thigh reported its own root in his hips. */
   function distal(faces) {
-    if (faces.length !== 6) return faces;
+    if (faces.length < 6) return faces;
     const c = f => { const q = [0, 0, 0]; f.v.forEach(p => { q[0] += p[0]; q[1] += p[1]; q[2] += p[2]; }); return q.map(v => v / f.v.length); };
     const tip = c(faces[4]), root = c(faces[5]);
-    const ax = sub(tip, root), L = len3(ax) || 1, u = ax.map(v => v / L);
+    const ax = sub(tip, root), l0 = len3(ax) || 1, u = ax.map(v => v / l0);
+    let L = l0;
+    faces.forEach(f => f.v.forEach(p => { L = Math.max(L, dot(sub(p, root), u)); }));
     const half = p => {
       const t = dot(sub(p, root), u) / L;
       if (t >= .5) return p;
@@ -336,7 +342,7 @@ function GEO(opt) {
       cycle('crawl', CRAWLF, CRAWL_LEN);
       if (V.set === 'gunner') { out.push({ name: 'served', frame: 0 }, { name: 'sit', frame: 0 }); return out; }
       out.push({ name: 'ready', frame: 0 }, { name: 'fire', frame: 0 }, { name: 'kfire', frame: 0 });
-      if (variant === 'can_rifle' || variant === 'fj_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
+      if (variant === 'can_rifle' || variant === 'fj_rifle' || variant === 'gr_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
       return out;
     }
     const crew = V.weapon === 'none';
@@ -378,7 +384,7 @@ function GEO(opt) {
       const bootLen = P.boots && P.boots.length ? Math.max.apply(null, P.boots.map(b => { const e = ext(b); return e.x1 - e.x0; })) : null;
       const helmE = P.helmet && P.helmet.length ? ext(P.helmet) : null;
       rows.push({
-        v, side,
+        v, side, nat: SOLDIER_VARIANTS[v].nat || side,
         stature: J.crown[2] - sole, above: J.crown[2],
         headH: sk.z1 - sk.z0, headW: sk.y1 - sk.y0,
         plate: P.plate && P.plate.length ? ext(P.plate).y1 - ext(P.plate).y0 : null,
@@ -396,8 +402,9 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook'].forEach(type => {
-      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger' : 'us'], type);
+    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar'].forEach(type => {
+      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger'
+                               : ['garand', 'm3', 'thompson', 'bar', 'zook', 'm1919'].includes(type) ? 'usa' : 'us'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -521,6 +528,8 @@ function GEO(opt) {
         if (!r.flat) {
           if (Pp.chest && Pp.chest.length) into.push(['chest', Pp.chest]);
           if (Pp.smock && Pp.smock.length) into.push(['smock', Pp.smock]);
+          /* the American's jacket stands out below his belt as a skirt of its own */
+          if (Pp.skirt && Pp.skirt.length) into.push(['skirt', Pp.skirt]);
           if (Pp.hips && Pp.hips.length) into.push(['hips', Pp.hips]);
           if (Pp.pack && Pp.pack.length) into.push(['pack', Pp.pack]);
           (Pp.pouches || []).forEach((q, i) => into.push(['pouch ' + i, q]));
@@ -537,7 +546,7 @@ function GEO(opt) {
           if (Pp.shell && Pp.shell.length) pairs.push(['weapon in helmet', Pp.weapon, Pp.shell]);
         }
         if (!r.flat && Pp.thighs && Pp.thighs.length === 2) {
-          into.filter(t => t[0] === 'hips' || t[0] === 'smock').forEach(t => { pairs.push(['left thigh in ' + t[0], distal(Pp.thighs[0]), t[1]]); pairs.push(['right thigh in ' + t[0], distal(Pp.thighs[1]), t[1]]); });
+          into.filter(t => t[0] === 'hips' || t[0] === 'smock' || t[0] === 'skirt').forEach(t => { pairs.push(['left thigh in ' + t[0], distal(Pp.thighs[0]), t[1]]); pairs.push(['right thigh in ' + t[0], distal(Pp.thighs[1]), t[1]]); });
           pairs.push(['left thigh in right thigh', Pp.thighs[0], Pp.thighs[1]]);
         }
         const out = pairs.map(p => ({ pair: p[0], d: deepest(p[1], p[2]) }));
@@ -576,7 +585,10 @@ function GEO(opt) {
         if (!bo || !eye) { rows.push({ v, pose: label(P), noparts: true }); return; }
         const yaw = Math.atan2(bo.dir[1], bo.dir[0]), pitch = Math.atan2(bo.dir[2], Math.hypot(bo.dir[0], bo.dir[1]));
         const e = sub(eye, bo.at), along = dot(e, bo.dir), perp = [e[0] - bo.dir[0] * along, e[1] - bo.dir[1] * along, e[2] - bo.dir[2] * along];
-        rows.push({ v, pose: label(P), yaw, pitch, up: perp[2], lat: Math.hypot(perp[0], perp[1]) });
+        /* a gun fired from the hip is not sighted, so the eye is not over its bore; the bore is
+           still judged against the facing and the level */
+        const W = WEAP[SOLDIER_VARIANTS[v].weapon];
+        rows.push({ v, pose: label(P), yaw, pitch, up: perp[2], lat: Math.hypot(perp[0], perp[1]), hip: !!(W && W.hip) });
       });
     });
     R.sections.aim = { rows };
@@ -639,8 +651,12 @@ function GEO(opt) {
   if (opt.do.material) {
     const rows = [];
     variants.forEach(v => {
-      ['stand', 'prone'].forEach(name => {
+      /* and the aimed pose, because the head is moved to the stock there: moved with at(),
+         which drops a face's tile, every helmet on the roster came out on the generic tile
+         whenever its man fired, and the two postures this read were the two that never aim */
+      ['stand', 'fire', 'prone'].forEach(name => {
         if (RIG && SOLDIER_VARIANTS[v].set === 'hull' && name !== 'seat') return;
+        if (name === 'fire' && SOLDIER_VARIANTS[v].set !== 'field') return;
         const r = rec(v, { name: RIG && SOLDIER_VARIANTS[v].set === 'hull' ? 'seat' : name, frame: 0 });
         if (!r.ok) return;
         const tiles = {}; let untagged = 0, alpha = 0, generic = 0;
@@ -678,7 +694,7 @@ function GEO(opt) {
         const T = M.man[v] || {};
         Object.keys(T).forEach(p => { const s = T[p]; const run = Number(p) === POSE_RUN; (s.frames || [s]).forEach(b => add(acc, b, run)); });
         const st = T[POSE_STAND] || T[POSE_SEAT]; acc.stand = st ? st.n / 3 : 0;
-        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle')) { const s = SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
+        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle' || v === 'gr_rifle')) { const s = SOLDIER_VARIANTS[v].nat || SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
       } else {
         ['sol', 'solA', 'crawl', 'crawlA'].forEach(k => (M[k][v] || []).forEach(b => add(acc, b)));
         ['prone', 'proneA', 'crouch', 'crouchA', 'fire', 'fireA', 'cfire', 'cfireA'].forEach(k => add(acc, M[k][v]));
@@ -842,7 +858,7 @@ function PIX(opt) {
     const dists = MOB ? [[600, .75], [760, 1.0], [900, .75]] : [[600, .75], [900, .75]];
     dists.forEach(dp => {
       const B = ground(dp[0], dp[1]);
-      [['us', 'can_rifle'], ['ger', 'fj_rifle']].forEach(sv => {
+      [['us', 'can_rifle'], ['usa', 'gi_rifle'], ['ger', 'fj_rifle'], ['heer', 'gr_rifle']].forEach(sv => {
         ['stand', 'prone'].forEach(pose => {
           const m = row(sv[1], pose, 0, FRONT, dp[0], dp[1], B);
           R.read.push(Object.assign({ dist: dp[0], pitch: dp[1], side: sv[0], variant: sv[1], pose }, m));
@@ -912,7 +928,7 @@ function show(c, base) {
       const bc = k => (BP ? (b[k] === undefined ? null : b[k]) : undefined);
       const cells = [cell(r.stature, 20.35, .04, bc('stature')), cell(r.headH, 2.65, .08, bc('headH')), cell(r.headW, 1.82, .08, bc('headW')),
                      cell(r.plate, 5.27, .08, bc('plate')), cell(r.hips, 4.4, .08, bc('hips')), cell(r.inseam, 9.56, .06, bc('inseam')),
-                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
+                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : r.nat === 'heer' ? 3.06 : r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(r.v, 13) + cells.map(q => q.s).join('') + f2(r.apart));
     }
@@ -923,7 +939,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.88, zook: 16.12 };
+    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);
@@ -1050,9 +1066,9 @@ function show(c, base) {
     for (const r of S.aim.rows) {
       if (r.noparts) { console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + 'no bore or eye on the record'); continue; }
       of++;
-      const y = Math.abs(r.yaw) > .05, p = Math.abs(r.pitch) > .05, u = r.up < .5 || r.up > 1.1, l = r.lat > .9;
+      const y = Math.abs(r.yaw) > .05, p = Math.abs(r.pitch) > .05, u = !r.hip && (r.up < .5 || r.up > 1.1), l = !r.hip && r.lat > .9;
       if (y || p || u || l) bad++;
-      console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + pad(f2(r.yaw) + (y ? '!' : ''), 9) + pad(f2(r.pitch) + (p ? '!' : ''), 9) + pad(f2(r.up) + (u ? '!' : ''), 9) + f2(r.lat) + (l ? '!' : ''));
+      console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + pad(f2(r.yaw) + (y ? '!' : ''), 9) + pad(f2(r.pitch) + (p ? '!' : ''), 9) + pad(f2(r.up) + (u ? '!' : ''), 9) + f2(r.lat) + (l ? '!' : '') + (r.hip ? '  from the hip: the eye is not judged' : ''));
     }
     foot('aim', bad, of);
   }
@@ -1185,6 +1201,35 @@ function show(c, base) {
           say(ger.contrast >= -.45 && ger.contrast <= -.10, `the FJ's contrast to the ground is ${f3(ger.contrast)}, wants -0.45 to -0.10`);
           const dr = [0, 1, 2].map(i => Math.abs(us.rgb[i] - ger.rgb[i]));
           say(Math.max.apply(null, dr) >= 12, `the sides' mean RGB differ by ${dr.map(Math.round).join(',')} levels, wants 12 in one channel`);
+        }
+        /* The American is on the same side as the Canadian and fights the same enemy, so
+           what he has to be is told apart from the FJ: a dark netted crown
+           under the FJ's pale one, a mean apart from him, and a contrast to the ground
+           in the band both of the others sit in. */
+        const am = X.read.find(r => r.dist === dist && r.side === 'usa' && r.pose === 'stand');
+        if (am) {
+          say(ger.top - am.top >= needTop, `the FJ's top fifth is ${f3(ger.top - am.top)} above the American's, wants ${needTop}`);
+          say(Math.abs(ger.lumFig - am.lumFig) >= needMean, `the American and the FJ are ${f3(Math.abs(ger.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
+          if (!phone) {
+            say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
+            const da = [0, 1, 2].map(i => Math.abs(am.rgb[i] - ger.rgb[i]));
+            say(Math.max.apply(null, da) >= 12, `the American and the FJ differ by ${da.map(Math.round).join(',')} levels, wants 12 in one channel`);
+          }
+        }
+        /* The grenadier is the man the American meets on the beach, so it is the American he
+           has to be told apart from: field grey and black leather against a pale jacket and
+           pale leggings, which is a mean apart and a colour apart, and a contrast to the
+           ground in the band the other three sit in. His crown is as dark as the American's
+           netted one and is not asked to differ; the skirt of the helmet is a shape, and a
+           shape is what the eye reads at the distance the mean stops working. */
+        const hr = X.read.find(r => r.dist === dist && r.side === 'heer' && r.pose === 'stand');
+        if (am && hr) {
+          say(Math.abs(hr.lumFig - am.lumFig) >= needMean, `the grenadier and the American are ${f3(Math.abs(hr.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
+          if (!phone) {
+            say(hr.contrast >= -.45 && hr.contrast <= -.10, `the grenadier's contrast to the ground is ${f3(hr.contrast)}, wants -0.45 to -0.10`);
+            const dh = [0, 1, 2].map(i => Math.abs(am.rgb[i] - hr.rgb[i]));
+            say(Math.max.apply(null, dh) >= 12, `the grenadier and the American differ by ${dh.map(Math.round).join(',')} levels, wants 12 in one channel`);
+          }
         }
       });
       foot('read ' + dev, bad, of);

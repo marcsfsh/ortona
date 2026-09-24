@@ -452,7 +452,9 @@ export async function installHooks(page) {
         ? { buf: list[frame % list.length], bufA: listA ? listA[frame % list.length] : null, z: z || 0, n: list.length, len } : null;
       if (M.man) {
         if (name === 'fall' || name === 'dead') {
-          const L = M[name] && M[name][side];
+          /* the game keys a body by the army he belonged to, and on the Allied side
+             two armies share the side 'us' */
+          const L = M[name] && (M[name][V && V.nat ? V.nat : side] || M[name][side]);
           return L ? { buf: L[frame % L.length], bufA: null, z: name === 'dead' ? -.3 : 0, n: L.length, len: 0 } : null;
         }
         const T = M.man[variant], id = O.poseId(name), set = T && id !== null ? T[id] : null;

@@ -410,6 +410,11 @@ for (const device of TARGETS) {
     const site = window.siteOf(own, K1);
     const onIt = window.G.units.some(u => window.owned(u) && !u.dead && u.def.builder && u.building === site);
     const mp1 = Math.round(window.G.res[own].mp);
+    /* four minutes into a battle the till after the post is whatever that battle left in
+       it, so it is topped up to what a section costs, and what the tap met is written down */
+    const secDef = window.UNITS[window.natKey(secKey)];
+    window.G.res[own].mp = Math.max(window.G.res[own].mp, secDef.cost.mp + 50); window.simpleSync();
+    const mp1b = Math.round(window.G.res[own].mp), pop1 = window.popOf(own) + '+' + secDef.pop + '/' + window.popCap(own);
     const secBtn = document.querySelector(`#tbuild .tb[data-key="${secKey}"]`);
     const q0 = hq.queue.length;
     if (secBtn) secBtn.click();
@@ -460,14 +465,14 @@ for (const device of TARGETS) {
       window.G.units.forEach(u => { if (u.building === wSite) window.clearOrder(u); });
     }
     window.G.res[own].mp = keep; window.G.res[own].fu = Math.max(0, fu3 - 400); window.simpleSync();
-    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1 - mp2, poor, refused,
+    return { postBtn: !!postBtn, postKey: postBtn && postBtn.dataset.key, site: !!site, onIt, postCost: mp0 - mp1, secBtn: !!secBtn, queued, secCost: mp1b - mp2, poor, refused, mp1b, pop1, q0,
              wk, wBtn: !!wBtn, armed, wLit, gp: !!gp, wSite: !!wSite, wOn, wFar, minHq: W.minHq, wCost,
              want: [W.cost.mp || 0, W.cost.fu || 0], wFull, wCount, armed2, wAgain: wAgain - s0,
              wWhere: gp && wSite ? Math.round(Math.hypot(wSite.x - gp.x, wSite.y - gp.y)) : -1 };
   });
   ok('simple: a tap on the strip pegs the post out with an engineer, queues a section, and is refused when the till is empty',
      strip.postBtn && strip.site && strip.onIt && strip.postCost === 200 && strip.secBtn && strip.queued === 1 && strip.secCost > 0 && strip.poor && strip.refused,
-     `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost}; empty till dimmed ${strip.poor} and refused ${strip.refused}`);
+     `post ${strip.postKey} placed ${strip.site} with an engineer ${strip.onIt} for ${strip.postCost}; section queued ${strip.queued} for ${strip.secCost} (a till of ${strip.mp1b}, population ${strip.pop1}, ${strip.q0} in the queue); empty till dimmed ${strip.poor} and refused ${strip.refused}`);
   ok('simple: the strip arms the battery position and the player\'s own tap sites it, forward of home with an engineer; a second is refused',
      strip.wBtn && strip.armed && strip.wLit && strip.gp && strip.wSite && strip.wOn && strip.wWhere >= 0 && strip.wWhere < 40 &&
      strip.wFar >= strip.minHq && strip.wCost[0] === strip.want[0] && strip.wCost[1] === strip.want[1] &&
@@ -1546,7 +1551,11 @@ for (const device of TARGETS) {
     const laid = window.orderBarrage(m, mx, my, true);
     const rounds = m.barrage ? m.barrage.left : -1, isSmoke = !!(m.barrage && m.barrage.smoke);
     let t = 0;
+    /* once the mission is spent the tube is held, because the section is in sight and in its
+       reach, and a round of its own laid on it while the last cloud was still in the air put
+       HE on the men the row says nobody hurt (on one phone run, 2.2 s longer than the rest) */
     for (let f = 0; f < 60 * 30 && (m.barrage || window.G.shots.length); f++) {
+      if (!m.barrage) m.cd = 1e9;
       window.updateUnit(m, 1 / 60); window.updateShots(1 / 60); window.G.t += 1 / 60; t += 1 / 60;
     }
     const clouds = window.G.smoke.length, inZone = window.G.smoke.filter(c => Math.hypot(c.x - mx, c.y - my) <= m.def.barrage.r + 14).length;
@@ -1731,10 +1740,13 @@ for (const device of TARGETS) {
     u.hp = u.maxhp = 9e5;                                            /* it has a minute of tests to survive */
     /* and it is not to be pinned by whoever is shelling the base by now: a hull over
        full suppression cannot turn (`povDrive` zeroes the turn), and the driving row is
-       about the pad and not about how the battle above happened to end up */
+       about the pad and not about how the battle above happened to end up. Nor is it to
+       lose a track to it: a track hit sets `immob` for five to nine seconds, which zeroes
+       the turn the same way, and cleared only at the top of each leg a hit inside the
+       steer leg read 0.04 radians on a phone run and 0.9 on the next, on the same code */
     const pd = window.povDrive;
     window.__povDrive0 = pd;
-    window.povDrive = function (v, dt) { if (v === u) { v.sup = 0; v.shaken = 0; } return pd(v, dt); };
+    window.povDrive = function (v, dt) { if (v === u) { v.sup = 0; v.shaken = 0; v.immob = 0; } return pd(v, dt); };
     window.select([u], false);
     document.getElementById('tPov').click();
     const I = window.VMODEL[key].inside, hatchBtn = document.getElementById('tHatch');
@@ -1763,13 +1775,23 @@ for (const device of TARGETS) {
      together they swung between 202 units of ground with 1.4 radians of turn and 29 units
      with 8 radians, on the same code, and the row passed or failed on where the tank
      happened to be pointing when it started. */
+  /* The tank is parked by its own headquarters while a battle runs, and a hull that is
+     being shot at does not answer its own controls: povDrive zeroes the turn outright at
+     a suppression over 1 and eases it off below that. The periscope block already gives
+     this tank a hundred thousand hit points for the same reason -- what the row is about
+     is the pad, not what the opposition is doing to it -- so it is unpinned before each
+     leg. Without it the steer leg came back at 0.22 radians of three seconds on a phone
+     run and 1.61 on the desktop beside it, on the same code. */
+  const unpin = () => page.evaluate(() => { const u = window.POV.u; if (u) { u.sup = 0; u.immob = 0; u.shaken = 0; } });
   await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = 0; });
+  await unpin();
   await fastForward(page, 3);
   const drvA = await page.evaluate(([x, y]) => {
     const u = window.POV.u;
     return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
   }, [drv0.x, drv0.y]);
   await page.evaluate(() => { window.DRV.padT = .35; window.DRV.padS = 1; });
+  await unpin();
   await fastForward(page, 3);
   const drv2 = await page.evaluate(([f]) => {
     const u = window.POV.u;
@@ -1784,12 +1806,30 @@ for (const device of TARGETS) {
     return { crept: +Math.hypot(u.x - x, u.y - y).toFixed(1), sp: +(u.sp || 0).toFixed(1) };
   }, [drv2.x, drv2.y]);
   /* --- and he shoots with it: a round goes where he points, target or no target --- */
+  /* Where the drive test left the tank decides whether anything straight ahead can be shot
+     at at all: stopped facing a house across a lane, the look meets the wall inside the
+     24-unit back-off, there is no mark on any frame, and the row failed twice on one file
+     that passed it on the run between. So he turns his head until there is something to
+     lay on, which is what a commander does, and the burst goes where he is looking. A clear
+     patch of ground is looked for first: a mark has already passed `fireLine`, where a lock
+     is taken up to four per cent past the gun's reach so that the sight can say OUT OF RANGE,
+     and is refused by the gun for that and for a wall in the way. Accepting the first lock,
+     the row locked onto somebody the gun could not reach and put nothing in the street. */
+  const bearings = [0, .5, -.5, 1, -1, 1.6, -1.6, 2.4, -2.4, Math.PI];
+  let laid = false;
+  for (const want of ['mark', 'any']) {
+    for (const dy of bearings) {
+      await page.evaluate(d => { window.POV.yaw = window.POV.u.facing + d; window.POV.pitch = -.22; }, dy);
+      await fastForward(page, .2);
+      laid = await page.evaluate(w => { const D = window.DRV; return w === 'mark' ? !!D.mark && !D.lock : !!(D.mark || D.lock); }, want);
+      if (laid) break;
+    }
+    if (laid) break;
+  }
   const shot = await page.evaluate(() => {
-    const u = window.POV.u;
     window.__booms = 0;
     const ex = window.explode;
     window.explode = function (x, y, r, d, o, e) { window.__booms++; return ex(x, y, r, d, o, e); };
-    window.POV.yaw = u.facing; window.POV.pitch = -.22;
     window.DRV.padFire = true;
     return true;
   });
@@ -2580,6 +2620,9 @@ for (const device of TARGETS) {
     document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'gothic') b.click(); });
     out.picked = window.chosenMapData().name;
     out.brief = document.getElementById('objtext').textContent;
+    /* and the page above the buttons names the ground it is going to be fought over */
+    out.head = document.getElementById('btitle').textContent;
+    out.lede = document.getElementById('bsub').textContent;
     const E = window.gothicMapData().entities;
     const key = e => e.t + '|' + Math.round(e.y !== undefined ? e.y : e.y1) +
                      '|' + Math.round((e.r || 0) + (e.w || 0) * 3);
@@ -2626,8 +2669,9 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('both maps ship, and the second one is fair to the unit',
-     maps.keys === 'gothic,ortona' && maps.picked === 'The Gothic Line' &&
+  ok('three maps ship, and the mirrored one is fair to the unit',
+     maps.keys === 'gothic,omaha,ortona' && maps.picked === 'The Gothic Line' &&
+     maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
      /* Three of the four players are brains and have to be alive and buying; the fourth
@@ -2637,7 +2681,7 @@ for (const device of TARGETS) {
         a fact about the battle rather than a fault in the 2v2. */
      maps.gap > 1200 && gfight.live.filter(n => n > 0).length >= 3 && gfight.made &&
      gfight.held.filter(o => o !== 'us' && o !== 'ger').length === 0,
-     `maps ${maps.keys}; the picker on GOTHIC LINE builds "${maps.picked}" and the briefing ` +
+     `maps ${maps.keys}; the picker on GOTHIC LINE builds "${maps.picked}", heads the page "${maps.head}" and the briefing ` +
      `reads "${maps.brief.slice(0, 26)}..."; ${maps.west} entities on the west half and ${maps.east} on the ` +
      `east with ${maps.unpaired} unpaired; the ground disagrees with its own reflection by at ` +
      `most ${maps.ground} of a unit over 1750 samples; ${maps.vp} victory flags, ${maps.owned} ` +
@@ -2645,6 +2689,7 @@ for (const device of TARGETS) {
      `headquarters than its twin is from the other; ${maps.gap} units between the bunker ` +
      `lines; after 120s of battle on it the four players have ${gfight.live.join('/')} units ` +
      `and the ground is held by ${gfight.held.join(',') || 'nobody, every flag contested'}`);
+
 
   /* --- and that the ground between the two lines is mud. A map says how wet its country
      is and how far it has been churned (LAND.wet, LAND.churn), and the churn is a wash
@@ -2744,6 +2789,1363 @@ for (const device of TARGETS) {
      `${stones.low} low wall runs on the map; ${stones.drills} sections stood at one and left to settle, ` +
      `${stones.inside} of ${stones.men} men in the stones ` +
      `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
+
+  /* This row runs LAST of the map rows on purpose: it leaves the world on Omaha, and
+     the two rows above it -- the churn wash and the field wall -- read the Gothic Line
+     the row before them left standing. Put between them it took both down, and what
+     that looked like was a churn that had stopped being painted. A row that changes
+     the world puts it back or goes after everything that reads it. */
+  /* --- The third map, and the first of a second theatre. Omaha is a corridor rather
+     than a field: 1500 across and 4000 deep, with the sea along the BOTTOM of it, the
+     American army starting on the sand among the craft that brought it and the German
+     one in the bocage at the top, the seawall and the Atlantic Wall across the middle,
+     and two draws up the bluff behind it. What it claims is arithmetic over the going
+     grid and the cost model, and none of it is anything a photograph could check:
+     - the world is the size the map says and the sea is at the edge the country says;
+     - armour gets off the beach up a draw and nowhere else, where a section climbs the
+       face wherever it likes;
+     - the seawall is a firing line to a man and a barrier to a hull: he crosses it at a
+       climb and fires over it, and a tank pays for it the way it pays for teeth, except
+       in the two lanes and the two casemate gaps;
+     - the bank and the wall are the cover on a beach that has none;
+     - the flank casemates fire ALONG the beach and are refused to their own rear;
+     - sixteen flags in two lanes of eight, each tied to its neighbours, and the only
+       victory flags the two at each end, which a side's own does not count against;
+     - and the walk from each headquarters to the OTHER side's victory flags is about the
+       same, which is what makes an unmirrored map a fair one. --- */
+  await reload(page);
+  const om = await page.evaluate(() => {
+    const W = window, out = {};
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
+    out.picked = W.chosenMapData().name;
+    out.brief = document.getElementById('objtext').textContent;
+    out.head = document.getElementById('btitle').textContent;
+    out.lede = document.getElementById('bsub').textContent;
+    out.cards = document.getElementById('bcard0h').textContent + '/' + document.getElementById('bcard1h').textContent;
+    W.G.mapData = W.omahaMapData();
+    W.startGame('us', 1, 'vp', true, false);
+    const G = W.G, OM = W.OM, line = W.omLine;
+    out.world = W.WORLD.w + 'x' + W.WORLD.h;
+    out.grid = W.GW + 'x' + W.GH;
+    out.sea = +W.groundZ(750, W.WORLD.h - 10).toFixed(1);
+    out.top = +W.groundZ(750, 300).toFixed(1);
+    out.hq = { us: Math.round(G.hqPos.us.y), ger: Math.round(G.hqPos.ger.y) };
+    function nearDraw(x, y) {
+      let best = 1e9;
+      for (const d of OM.draws) for (let i = 0; i < d.pts.length - 1; i++)
+        best = Math.min(best, W.distToSeg(x, y, d.pts[i][0], d.pts[i][1], d.pts[i + 1][0], d.pts[i + 1][1]));
+      return best;
+    }
+    function walk(sx, sy, tx, ty, veh) {
+      const u = { cat: veh ? 'veh' : 'inf', def: { wheeled: 0 }, side: 'us', fear: 1 };
+      const p = W.findPath(sx, sy, tx, ty, u);
+      if (!p || p.noWay) return { len: -1, draw: -1, over: 0 };
+      let len = 0, far = 1e9, prev = { x: sx, y: sy };
+      for (let i = 0; i < p.length; i++) {
+        len += Math.hypot(p[i].x - prev.x, p[i].y - prev.y);
+        /* sampled along the LEG and not at its corners, and only while it is on the face
+           between the toe and the crest: the smoother replaces a run of cells with one
+           line, so a route that crosses the face in one leg has no corner on it at all */
+        for (let t = 0; t <= 1; t += .05) {
+          const qx = prev.x + (p[i].x - prev.x) * t, qy = prev.y + (p[i].y - prev.y) * t;
+          if (qy < line(OM.toe, qx) && qy > line(OM.crest, qx)) far = Math.min(far, nearDraw(qx, qy));
+        }
+        prev = p[i];
+      }
+      const crow = Math.hypot(tx - sx, ty - sy);
+      return { len: Math.round(len), over: +(len / crow).toFixed(2), draw: far > 1e8 ? -1 : Math.round(far) };
+    }
+    /* five places across the beach, each straight up to the plateau: both flanks, the
+       middle, and the two stretches between the draws and the middle */
+    out.veh = [150, 560, 750, 940, 1350].map(x => walk(x, 3300, x, 1700, 1));
+    out.inf = [150, 750, 1350].map(x => walk(x, 3300, x, 1700, 0));
+    /* the seawall, on one piece that is standing and in the Vierville lane */
+    const cc = (x, y, v) => +W.cellCost(W.cidx((x / 20) | 0, (y / 20) | 0), v).toFixed(2);
+    out.seaWall = G.walls.filter(w => w.sea).length;
+    out.wallMan = cc(180, line(OM.wall, 180), 0);
+    out.wallHull = cc(180, line(OM.wall, 180), 1);
+    out.laneHull = cc(400, 2640, 1);
+    out.overWall = W.traceClear(180, 2680, W.groundZ(180, 2680) + 12, 180, 2540, W.groundZ(180, 2540) + 12, W.fblk);
+    /* the cover: none on the open flat, the bank, and the wall */
+    out.flatCov = W.coverAt(800, 3100);
+    out.bankCov = W.coverAt(560, 2648);
+    out.wallCov = W.coverAt(640, 2600);
+    /* the paint: the flat is sand and the farmland at the top is not, read off the
+       albedo canvas rather than looked at, because a beach that quietly stopped being
+       painted reads as a perfectly good map in every photograph ever taken of it */
+    const g = W.mbase.getContext('2d');
+    const px = (x, y) => { const d = g.getImageData(x, y, 1, 1).data; return [d[0], d[1], d[2]]; };
+    out.sand = px(750, 3300); out.field = px(620, 1300);
+    out.skirt = W.SCENE.skirt ? W.SCENE.skirt.n : 0;
+    /* the casemates in the wall look ALONG the beach; a round out of the slot is allowed
+       and the same round to the rear is refused by the bunker's own concrete */
+    const bk = G.bunks.slice().sort((p, q) => Math.hypot(p.x - 300, p.y - 2596) - Math.hypot(q.x - 300, q.y - 2596))[0];
+    const gar = W.spawnUnit('ger', 'ger_gren', bk.x, bk.y);
+    gar.gar = bk; bk.occ = gar;
+    const mark = (d) => ({ x: bk.x + Math.cos(bk.face) * 300 * d, y: bk.y + Math.sin(bk.face) * 300 * d,
+                           cat: 'inf', side: 'us' });
+    out.slot = W.fireLine(gar, mark(1));
+    out.rear = W.fireLine(gar, mark(-1));
+    out.along = +Math.abs(Math.cos(bk.face)).toFixed(2);
+    gar.dead = true; bk.occ = null;
+    /* the flags, and the walk from each headquarters to the other side's victory flags */
+    out.secN = G.sectors.length;
+    out.linked = G.sectors.filter(s => (s.nb || []).length >= 2).length;
+    const vps = side => G.sectors.filter(s => s.type === 'vp' && s.home === side);
+    out.vp = G.sectors.filter(s => s.type === 'vp').length;
+    out.vpHome = vps('us').length + vps('ger').length;
+    out.walkUs = vps('ger').map(f => walk(G.hqPos.us.x, G.hqPos.us.y - 90, f.x, f.y, 0).len);
+    out.walkGer = vps('us').map(f => walk(G.hqPos.ger.x, G.hqPos.ger.y + 90, f.x, f.y, 0).len);
+    out.secs = G.sectors.map(s => s.type + (s.owner || '-')).sort().join(' ');
+    return out;
+  });
+  /* and a battle is fought on it, because a map that boots and is never played is a map
+     nobody has run the game on */
+  await fastForward(page, 120);
+  const ofight = await page.evaluate(() => ({
+    live: [window.G.units.filter(u => !u.dead && u.side === 'us').length,
+           window.G.units.filter(u => !u.dead && u.side === 'ger').length],
+    held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort().join(',')
+  }));
+  const omGreen = om.field[1] - om.field[0], omWarm = om.sand[0] - om.sand[2];
+  const wUs = om.walkUs.reduce((a, b) => a + b, 0), wGer = om.walkGer.reduce((a, b) => a + b, 0);
+  ok('Omaha: a corridor with the sea at the bottom, the wall across the middle, and a draw the only way off for armour',
+     om.picked === 'Omaha Beach' && om.brief.indexOf('wall') >= 0 && om.head === 'OMAHA' &&
+     /29th/.test(om.lede) && /352/.test(om.lede) && !/Ortona|Canadian/.test(om.lede) && om.cards === 'THE SEAWALL/THE DRAWS' &&
+     om.world === '1500x4000' && om.grid === '75x200' && om.sea < 0 && om.top > 200 &&
+     om.hq.us > 3700 && om.hq.ger < 400 &&
+     /* every vehicle route off the beach passes up a draw */
+     om.veh.every(r => r.len > 0 && r.draw >= 0 && r.draw < 40) &&
+     /* and a section climbs straight up the face, nowhere near one */
+     om.inf.every(r => r.len > 0 && r.over < 1.15 && (r.draw < 0 || r.draw > 80)) &&
+     /* the wall: a man climbs it and fires over it, a hull pays for it and the lane is open */
+     om.seaWall >= 8 && om.wallMan > 1.5 && om.wallMan < 3 && om.wallHull > 10 && om.laneHull < 3 && om.overWall &&
+     om.flatCov === 0 && om.bankCov >= 2 && om.wallCov >= 2 &&
+     om.sand[0] > 130 && omWarm > 12 && omGreen > 4 && om.field[0] < 130 &&
+     om.skirt > 10000 &&
+     om.slot && !om.rear && om.along > .9 &&
+     om.secN === 16 && om.linked === 16 && om.vp === 4 && om.vpHome === 4 &&
+     om.walkUs.every(l => l > 0) && om.walkGer.every(l => l > 0) &&
+     Math.abs(wUs - wGer) / Math.max(wUs, wGer) < .12 &&
+     ofight.live[0] > 0 && ofight.live[1] > 0,
+     `the picker builds "${om.picked}", heads the page "${om.head}" over ${om.cards} and the briefing reads "${om.brief.slice(0, 30)}..."; ` +
+     `the world is ${om.world} (grid ${om.grid}), the ground ${om.sea} at the bottom edge and ${om.top} on the plateau, ` +
+     `headquarters at y ${om.hq.us} and ${om.hq.ger}; ` +
+     `armour off the beach: ${om.veh.map(r => r.len + 'u (x' + r.over + '), ' + r.draw + ' from a draw').join('; ')}; ` +
+     `a section: ${om.inf.map(r => r.len + 'u (x' + r.over + '), ' +
+       (r.draw < 0 ? 'never on a draw' : r.draw + ' from one')).join('; ')}; ` +
+     `${om.seaWall} lengths of seawall, a man pays ${om.wallMan} on it and a tank ${om.wallHull} ` +
+     `against ${om.laneHull} in the lane, and a round goes ${om.overWall ? 'over' : 'NOT over'} it; ` +
+     `cover ${om.flatCov} on the flat, ${om.bankCov} on the bank and ${om.wallCov} at the wall; ` +
+     `the flat is ${om.sand.join(',')} against ${om.field.join(',')} on the farmland; ` +
+     `${om.skirt} vertices of ground past the edge; the casemate looks along the beach (${om.along}), ` +
+     `a shot out of the slot ${om.slot ? 'allowed' : 'REFUSED'} and the same shot to the rear ` +
+     `${om.rear ? 'ALLOWED' : 'refused'}; ${om.secN} flags, ${om.linked} tied to two or more, ${om.vp} victory flags ` +
+     `(${om.vpHome} a side's own); the walk to the enemy's victory flags is ${om.walkUs.join('/')} from the beach ` +
+     `and ${om.walkGer.join('/')} from the bocage; flags ${om.secs}; ` +
+     `after 120s of battle ${ofight.live.join('/')} units and the ground is held by ${ofight.held || 'nobody'}`);
+
+  /* --- The bocage. A hedgerow is a bank of earth with a hedge on it, and what it claims
+     is four things a photograph of a hedge cannot say: it stops the eye and the round of
+     anybody not up against it, the man lying along it sees and shoots over it, a man
+     gets over it slowly, and a hull does not except at a gate -- the last of which was
+     quietly wiped by a grid fill two blocks below its own mark, so every tank on the map
+     drove through the bocage at the price of open ground and the plateau read as a field
+     with hedges painted on it. And a Norman house is a strongpoint however small: every
+     one on the map is thirty-four to forty-four units deep, and the size test that says
+     a shed from a house shut them all out. --- */
+  const boc = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const cc = (x, y, v) => +W.cellCost(W.cidx((x / 20) | 0, (y / 20) | 0), v).toFixed(2);
+    const zA = (x, y) => W.groundZ(x, y) + 17;
+    out.n = G.hedges.length;
+    let blocked = 0, seen = 0, lie = 0, man = 0, hull = 0, cov = 0, n = 0;
+    /* every leg long enough to have a middle and with no other hedgerow within seventy of
+       it, asked across its middle. The second half of that is what lets the question be
+       about THIS hedge: a lane is thirty units between two of them, so a line drawn across
+       a hedge that lines a lane meets the lane's other hedge as well, and a man lying
+       against the first was reported as blind because of the second */
+    const joins = (h, o) => Math.hypot(h.x1 - o.x2, h.y1 - o.y2) < 1 || Math.hypot(h.x2 - o.x1, h.y2 - o.y1) < 1;
+    const alone = h => G.hedges.every(o => o === h || joins(h, o) ||
+      W.distToSeg((h.x1 + h.x2) / 2, (h.y1 + h.y2) / 2, o.x1, o.y1, o.x2, o.y2) > 70);
+    /* and a hedge standing on the verge of a lane is left out: where the two share a cell
+       the lane wins, on purpose, because a lane shut to the eye and the hull down its
+       length is the worse fault of the two -- see rebuildGrid */
+    const verge = (x, y) => G.roads.some(rd => { for (let i = 0; i < rd.length - 1; i++)
+      if (W.distToSeg(x, y, rd[i].x, rd[i].y, rd[i + 1].x, rd[i + 1].y) < (rd.width || 48) / 2 + 20) return true; return false; });
+    let lieOf = 0;
+    for (let i = 0; i < G.hedges.length; i++) {
+      const h = G.hedges[i], L = Math.hypot(h.x2 - h.x1, h.y2 - h.y1);
+      if (L < 60 || !alone(h)) continue;
+      const hx = (h.x1 + h.x2) / 2, hy = (h.y1 + h.y2) / 2, a = Math.atan2(h.y2 - h.y1, h.x2 - h.x1);
+      if (verge(hx, hy)) continue;
+      const nx = -Math.sin(a), ny = Math.cos(a);
+      const ax = hx + nx * 60, ay = hy + ny * 60, bx = hx - nx * 60, by = hy - ny * 60, lx = hx + nx * 14, ly = hy + ny * 14;
+      n++;
+      if (!W.traceClear(ax, ay, zA(ax, ay), bx, by, zA(bx, by), W.fblk)) blocked++;
+      if (!W.traceClear(ax, ay, zA(ax, ay), bx, by, zA(bx, by), W.sblk)) seen++;
+      /* the man lying against it, asked only where the far point can be seen from just
+         across the hedge -- the control -- because a house or a yard wall out in the next
+         field blinds him for a reason that is not the hedge he is lying against */
+      const cx = hx - nx * 14, cy = hy - ny * 14;
+      if (W.traceClear(cx, cy, zA(cx, cy), bx, by, zA(bx, by), W.fblk)) {
+        lieOf++;
+        if (W.traceClear(lx, ly, zA(lx, ly), bx, by, zA(bx, by), W.fblk)) lie++;
+      }
+      man = Math.max(man, cc(hx, hy, 0)); hull += cc(hx, hy, 1) > 10 ? 1 : 0;
+      cov += W.coverAt(lx, ly) >= 3 ? 1 : 0;
+    }
+    Object.assign(out, { legs: n, blocked, seen, lie, lieOf, man, hull, cov });
+    /* and a lane is open down its length: every straight run of lane on the plateau long
+       enough to look down, asked from one end of it to the other at a man's eye */
+    let lanes = 0, laneClear = 0, laneHull = 0;
+    for (const rd of G.roads) for (let i = 0; i < rd.length - 1; i++) {
+      const p = rd[i], q = rd[i + 1], L = Math.hypot(q.x - p.x, q.y - p.y);
+      if (L < 140 || p.y > 1900 || q.y > 1900) continue;
+      const ux = (q.x - p.x) / L, uy = (q.y - p.y) / L;
+      const x0 = p.x + ux * 20, y0 = p.y + uy * 20, x1 = q.x - ux * 20, y1 = q.y - uy * 20;
+      lanes++;
+      if (W.traceClear(x0, y0, zA(x0, y0), x1, y1, zA(x1, y1), W.sblk)) laneClear++;
+      laneHull = Math.max(laneHull, cc((x0 + x1) / 2, (y0 + y1) / 2, 1));
+    }
+    Object.assign(out, { lanes, laneClear, laneHull });
+    /* a tank asked to cross three fields goes by the lanes and the gates */
+    const u = { cat: 'veh', def: { wheeled: 0 }, side: 'us', fear: 1 };
+    const p = W.findPath(300, 1500, 1200, 1100, u);
+    /* counted as the route's legs crossing a hedgerow's own line, which is exact and is
+       what a gate saves: sampled off the grid instead, the smoothed line clipping the
+       corner of a marked cell beside a diagonal gate read as a tank through a hedge */
+    const cross = (ax, ay, bx, by, cx, cy, dx, dy) => {
+      const d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax), d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax);
+      const d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx), d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
+      return d1 * d2 < 0 && d3 * d4 < 0;
+    };
+    /* and only off the metalling: a lane is thirty units between two hedgerows on a
+       twenty-unit grid, so the hedge that lines it shares its cells, and the lane is given
+       those cells on purpose -- a route down a lane crosses its own verge hedge's line
+       inside the lane's cells, which is driving down the lane */
+    let through = 0, inLane = 0, prev = { x: 300, y: 1500 };
+    for (const q of p || []) {
+      for (const h of G.hedges) if (cross(prev.x, prev.y, q.x, q.y, h.x1, h.y1, h.x2, h.y2)) {
+        const t = ((h.x1 - prev.x) * (h.y2 - h.y1) - (h.y1 - prev.y) * (h.x2 - h.x1)) /
+                  ((q.x - prev.x) * (h.y2 - h.y1) - (q.y - prev.y) * (h.x2 - h.x1));
+        const x = prev.x + (q.x - prev.x) * t, y = prev.y + (q.y - prev.y) * t;
+        if (W.road[W.cidx((x / 20) | 0, (y / 20) | 0)]) inLane++; else through++;
+      }
+      prev = q;
+    }
+    out.inLane = inLane;
+    out.tankThrough = through;
+    /* the houses */
+    const nh = G.props.filter(q => q.kind === 'nhouse');
+    const sec = { cat: 'inf', def: { speed: 30 }, models: [] };
+    out.houses = nh.length;
+    /* one already held counts: the battle in the row above has been going two minutes and
+       the brain puts sections into houses */
+    out.holdable = nh.filter(q => q.gar || W.canGarrison(sec, q)).length;
+    const hq = nh.filter(q => q.style === 'house' && !q.gar)[0];
+    const s = W.spawnUnit('ger', 'ger_gren', hq.x, hq.y + hq.h / 2 + 30);
+    W.enterBuilding(s, hq);
+    out.held = !!s.gar;
+    W.leaveBuilding(s); s.dead = true;
+    return out;
+  });
+  ok('Omaha: a hedgerow stops the eye, the round and the hull and not the man lying up against it, and a Norman house can be held',
+     boc.n > 200 && boc.legs >= 20 && boc.blocked === boc.legs && boc.seen === boc.legs &&
+     boc.lieOf >= boc.legs * .6 && boc.lie === boc.lieOf && boc.man > 1.5 && boc.hull === boc.legs && boc.cov >= boc.legs * .9 &&
+     boc.lanes >= 20 && boc.laneClear >= boc.lanes * .9 && boc.laneHull < 3 &&
+     boc.tankThrough <= 1 && boc.houses >= 30 && boc.holdable === boc.houses && boc.held,
+     `${boc.n} hedgerow legs; across the middle of ${boc.legs} of them a round is stopped on ${boc.blocked} and an ` +
+     `eye on ${boc.seen}, a man lying against one shoots over it on ${boc.lie} of the ${boc.lieOf} where the far field is open, a man pays up to ${boc.man} ` +
+     `and a hull is held up on ${boc.hull}, tier-3 cover along ${boc.cov}; ${boc.laneClear} of ${boc.lanes} ` +
+     `straight runs of lane can be seen down, a tank paying ${boc.laneHull} in one; a tank sent across three fields ` +
+     `crosses a hedgerow ${boc.tankThrough} times off the lanes (its verge hedges ${boc.inLane} times in them); ${boc.holdable} of ${boc.houses} Norman houses ` +
+     `can be held and a section ${boc.held ? 'went into' : 'could NOT get into'} one`);
+
+  /* --- The craft and the wall. On a beach a post is a landing craft that is aground and
+     whole, turned into one for the usual price: refused on open sand, allowed on a craft,
+     the craft spent, a second post on it refused, and the craft free again once its post
+     is knocked down. And the title screen's ATLANTIC WALL puts the garrison in: a gun in
+     each casemate through the bunker's own fitting, the Tobruks and the trench manned,
+     none of it on the German cap, and all of it still where it was put after a minute of
+     battle, because a garrison the brain walks off to take a flag is not a garrison. --- */
+  const cw = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    G.res.us.mp += 2000; G.res.us.fu += 400;
+    out.free0 = G.craft.filter(W.craftFree).length;
+    out.open = !!W.placeStructure('us', 'us_bar', 750, 3300, []);
+    const cr = G.craft.filter(W.craftFree)[0];
+    const mp0 = G.res.us.mp;
+    const b = W.placeStructure('us', 'us_bar', cr.x + 30, cr.y, []);
+    out.onCraft = !!b; out.paid = Math.round(mp0 - G.res.us.mp);
+    out.buf = !!(b && b.buf); out.fp = b ? b.def.w + 'x' + b.def.h : '-';
+    out.spent = !W.craftFree(cr);
+    const b2 = W.placeStructure('us', 'us_mot', cr.x, cr.y, []);
+    out.second = !!b2 && b2.craft === cr.i;
+    if (b2) W.killBuilding(b2);
+    out.free1 = G.craft.filter(W.craftFree).length;
+    if (b) W.killBuilding(b);
+    out.freed = W.craftFree(cr);
+    return out;
+  });
+  await reload(page);
+  const man = await page.evaluate(() => {
+    const W = window;
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
+    const row = [...document.querySelectorAll('.wallrow')].every(e => !e.classList.contains('hidden'));
+    document.querySelector('.wall[data-wall="1"]').click();
+    W.G.mapData = W.omahaMapData();
+    W.startGame('us', 1, 'vp', true, false);
+    const G = W.G, wu = G.units.filter(u => u.wall);
+    W.__wall = wu.map(u => [u.id, u.x, u.y]);
+    return { row, n: wu.length, fitted: G.bunks.filter(b => b.upKind).length, gar: wu.filter(u => u.gar).length,
+             pop: W.popOf('ger'), popAll: wu.reduce((a, u) => a + u.def.pop, 0),
+             popRest: G.units.filter(u => u.own === 'ger' && !u.wall && !u.dead).reduce((a, u) => a + u.def.pop, 0) };
+  });
+  await fastForward(page, 60);
+  const man2 = await page.evaluate(() => {
+    const W = window, G = W.G;
+    let moved = 0, far = 0;
+    for (const [id, x, y] of W.__wall) {
+      const u = G.units.filter(q => q.id === id)[0];
+      if (!u || u.dead) continue;
+      const d = Math.hypot(u.x - x, u.y - y);
+      far = Math.max(far, d);
+      if (d > 60) moved++;
+    }
+    /* and the wall is empty when it is not asked for */
+    document.querySelector('.wall[data-wall="0"]').click();
+    return { moved, far: Math.round(far) };
+  });
+  ok('Omaha: a post is a landing craft, and the Atlantic Wall is manned when the title screen asks for it',
+     cw.free0 === 5 && !cw.open && cw.onCraft && cw.paid === 200 && cw.buf && cw.spent && !cw.second &&
+     cw.freed && man.row && man.n === 14 && man.fitted === 7 && man.gar >= 6 && man.pop === man.popRest &&
+     man2.moved === 0,
+     `${cw.free0} craft aground and whole; a company post on open sand ${cw.open ? 'ALLOWED' : 'refused'}, on a ` +
+     `craft ${cw.onCraft ? 'allowed' : 'REFUSED'} for ${cw.paid} with its own dressing ${cw.buf} on a ${cw.fp} ` +
+     `footprint, the craft ${cw.spent ? 'spent' : 'STILL FREE'}, a second post on it ${cw.second ? 'ALLOWED' : 'refused'}, ` +
+     `free again ${cw.freed} once the post is down; the wall row ${man.row ? 'shows' : 'is HIDDEN'} on Omaha and MANNED ` +
+     `puts ${man.n} units in, ${man.fitted} bunkers fitted and ${man.gar} garrisoned, the German cap reading ` +
+     `${man.pop} (what it raised itself: ${man.popRest}) with ${man.popAll} of wall not on it; after a minute of battle ${man2.moved} of them had left ` +
+     `their post (furthest ${man2.far})`);
+
+  /* --- The army. The Allied side on the beach is the 29th Infantry Division and the map is
+     what says so: the side button on the title screen names it, the headquarters turns out
+     an American rifle squad where it would turn out a Canadian section and refuses the
+     Canadian one, the sections the side opens with are American, a brain playing the
+     Allied side buys the American squad, and a man of it who is killed goes down and lies
+     as an American. Then the Italian ground puts the Canadians back on the button. --- */
+  const natA = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    out.nat = W.NAT; out.name = W.FACTION.us.name;
+    out.pick = document.getElementById('pickus').querySelector('h3').textContent;
+    const mine = G.units.filter(u => u.own === 'us' && u.cat === 'inf' && !u.dead && !u.wall);
+    out.am = mine.filter(u => u.key === 'am_rifle').length; out.can = mine.filter(u => u.key === 'us_rifle').length;
+    const sq = mine.filter(u => u.key === 'am_rifle')[0];
+    out.men = sq ? sq.models.length : 0;
+    out.vars = sq ? [...new Set(sq.models.map((m, i) => W.variantForModel(sq, i)))].sort().join(',') : '-';
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    out.makes = hq ? W.makesOf(hq).join(',') : '-';
+    G.res.us.mp += 2000;
+    out.qCan = hq ? (W.queueUnit(hq, 'us_rifle') ? hq.queue.slice(-1)[0] : 'refused') : '-';
+    out.qAm = hq ? W.queueUnit(hq, 'am_rifle') : null;
+    if (hq) hq.queue.length = 0;
+    if (sq) {
+      /* the record from the list that grew: a man on his feet goes on the falls and one
+         lying down straight onto the corpses, and either may already hold older bodies */
+      const m = sq.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+      W.damageModel(sq, m, 1e4, null);
+      const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+      out.fell = !!rec; out.fellNat = rec ? rec.nat : '-';
+    }
+    out.bodies = !!(W.MODELS.fall.usa && W.MODELS.dead.usa && W.MODELS.fall.usa.length === 3 && W.MODELS.dead.usa.length === 2);
+    /* and the German side, which on the beach is the 352nd Infantry Division: its button,
+       what its headquarters makes, the sections its brain has bought in the minute of battle
+       the wall row ran, the three sections the wall row put in the fire trench, and a man of
+       it killed. This is the game the wall row started, with the brain on the German side. */
+    const G2 = { nax: W.NAX, name: W.FACTION.ger.name, pick: document.getElementById('pickger').querySelector('h3').textContent };
+    const theirs = G.units.filter(u => u.side === 'ger' && u.cat === 'inf' && !u.dead);
+    G2.hr = theirs.filter(u => u.key === 'hr_gren').length; G2.fj = theirs.filter(u => u.key === 'ger_gren').length;
+    G2.wallHr = theirs.filter(u => u.wall && u.key === 'hr_gren').length;
+    G2.wallFj = theirs.filter(u => u.wall && u.key === 'ger_gren').length;
+    const gm = G.made.ger || {};
+    G2.madeHr = gm.hr_gren || 0; G2.madeFj = gm.ger_gren || 0;
+    const gs = theirs.filter(u => u.key === 'hr_gren' && !u.wall)[0] || theirs.filter(u => u.key === 'hr_gren')[0];
+    G2.men = gs ? gs.def.models : 0;
+    G2.vars = gs ? [...new Set(gs.models.map((m, i) => W.variantForModel(gs, i)))].sort().join(',') : '-';
+    const ghq = G.blds.filter(b => b.own === 'ger' && b.def.hq)[0];
+    G2.makes = ghq ? W.makesOf(ghq).join(',') : '-';
+    if (ghq) {
+      const q0 = ghq.queue.length;
+      G.res.ger.mp += 2000;
+      G2.qFj = W.queueUnit(ghq, 'ger_gren') ? ghq.queue.slice(-1)[0] : 'refused';
+      ghq.queue.length = q0;
+    }
+    if (gs) {
+      const m = gs.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+      W.damageModel(gs, m, 1e4, null);
+      const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+      G2.fell = !!rec; G2.fellNat = rec ? rec.nat : '-';
+    }
+    G2.bodies = !!(W.MODELS.fall.heer && W.MODELS.dead.heer && W.MODELS.fall.heer.length === 3 && W.MODELS.dead.heer.length === 2);
+    out.ger = G2;
+    /* and a brain on the Allied side, from the whistle */
+    W.G.mapData = W.omahaMapData();
+    W.startGame('ger', 1, 'vp', true, false);
+    return out;
+  });
+  await fastForward(page, 45);
+  const natB = await page.evaluate(() => {
+    const W = window, G = W.G, made = G.made.us || {};
+    const out = { am: made.am_rifle || 0, can: made.us_rifle || 0,
+                  live: G.units.filter(u => u.own === 'us' && u.key === 'am_rifle' && !u.dead).length };
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'ortona') b.click(); });
+    out.back = document.getElementById('pickus').querySelector('h3').textContent;
+    out.backGer = document.getElementById('pickger').querySelector('h3').textContent;
+    document.querySelectorAll('.gmap').forEach(b => { if (b.dataset.map === 'omaha') b.click(); });
+    return out;
+  });
+  ok('Omaha: the Allied side is the 29th Infantry Division, and its headquarters, its opening and its brain field the American rifle squad',
+     natA.nat === 'usa' && /29th/.test(natA.name) && /29TH/.test(natA.pick) && natA.am >= 2 && natA.can === 0 &&
+     natA.men === 6 && natA.vars === 'gi_rifle,gi_rifle_b' && /am_rifle/.test(natA.makes) && !/us_rifle/.test(natA.makes) &&
+     natA.qCan === 'am_rifle' && natA.qAm === true && natA.fell && natA.fellNat === 'usa' && natA.bodies &&
+     natB.am >= 1 && natB.can === 0 && /CANADIAN/.test(natB.back),
+     `army ${natA.nat} (${natA.name}), the button reads ${natA.pick}; ${natA.am} American squads and ${natA.can} Canadian ` +
+     `sections at the whistle, ${natA.men} men of ${natA.vars}; the headquarters makes ${natA.makes}, asked for a Canadian ` +
+     `section it queues ${natA.qCan} and an American squad ${natA.qAm ? 'queued' : 'REFUSED'}; a man killed ` +
+     `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
+     `a brain on the Allied side ordered ${natB.am} American squads and ${natB.can} Canadian sections in 45 s (${natB.live} standing); ` +
+     `Ortona's button reads ${natB.back}`);
+  const ng = natA.ger;
+  ok('Omaha: the German side is the 352nd Infantry Division, and its headquarters, its opening, its wall and its brain field the grenadier squad',
+     ng.nax === 'heer' && /352/.test(ng.name) && /352/.test(ng.pick) && ng.hr >= 2 && ng.fj === 0 && ng.wallHr === 3 &&
+     ng.wallFj === 0 && ng.madeHr >= 1 && ng.madeFj === 0 && ng.men === 6 && ng.vars === 'gr_mp40,gr_rifle,gr_rifle_b' &&
+     /hr_gren/.test(ng.makes) && !/ger_gren/.test(ng.makes) && ng.qFj === 'hr_gren' && ng.fell && ng.fellNat === 'heer' &&
+     ng.bodies && /FALLSCHIRM/.test(natB.backGer),
+     `army ${ng.nax} (${ng.name}), the button reads ${ng.pick}; ${ng.hr} grenadier squads and ${ng.fj} FJ groups on the ` +
+     `field, ${ng.wallHr} of them in the wall and ${ng.wallFj} FJ there; its brain ordered ${ng.madeHr} grenadier squads and ` +
+     `${ng.madeFj} FJ groups in the wall row's minute; ${ng.men} men of ${ng.vars}; the headquarters makes ${ng.makes}, ` +
+     `asked for an FJ group it queues ${ng.qFj}; a man killed ${ng.fell ? 'went down' : 'DID NOT go down'} as ${ng.fellNat}, ` +
+     `German bodies ${ng.bodies ? 'baked' : 'MISSING'}; Ortona's German button reads ${natB.backGer}`);
+
+  /* --- The jeep. The Americans' light vehicle on the beach is the jeep, standing in for the
+     carrier the way the squad stands in for the section: the motor pool turns it out and
+     refuses the carrier, a brain asking after the carrier -- one out of an older revision
+     on the skirmish card -- counts and orders the jeep, the men riding in it are drawn
+     with it and are not in its wreck, a wreck never throws the gun off the pedestal the
+     way a tank throws a turret, and the eye in the periscope is the gunner's, standing to
+     the gun. Forty deaths are asked for the throw, because one is a coin with the old rule
+     showing heads four times in five. The Italian table still has the carrier. --- */
+  const jp = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_jeep');
+    out.qCar = W.queueUnit(mot, 'us_m8') ? mot.queue.slice(-1)[0] : 'refused';
+    out.madeJ = W.madeOf('us', 'am_jeep') - m0;
+    out.madeAsCar = W.madeOf('us', 'us_m8') === W.madeOf('us', 'am_jeep');
+    mot.queue.length = q0;
+    const j = W.spawnUnit('us', 'am_jeep', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_m8'); out.countJ = W.countOf('us', 'am_jeep');
+    const B = W.MODELS.veh.am_jeep;
+    out.crew = B && B.crew ? B.crew.n : 0; out.gunner = B && B.turCrew ? B.turCrew.n : 0;
+    W.povOn(j);
+    const e = W.povEye();
+    out.eye = +(e.z - W.groundZ(j.x, j.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(j); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(j);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' light vehicle is the jeep, with its crew riding in it and none of them in the wreck',
+     /am_jeep/.test(jp.makes) && !/us_m8/.test(jp.makes) && jp.qCar === 'am_jeep' && jp.madeJ === 1 && jp.madeAsCar &&
+     jp.count >= 1 && jp.count === jp.countJ && jp.crew > 0 && jp.gunner > 0 && jp.eye > 22 && jp.eye < 29 &&
+     jp.blown === 0 && jp.sink < 1.7 && jp.bodies === 2 && jp.bodyNat === 'usa' && /us_m8/.test(jp.ita) && !/am_jeep/.test(jp.ita),
+     `the motor pool makes ${jp.makes}; asked for a carrier it queues ${jp.qCar}, counted as ${jp.madeJ} jeep made and the ` +
+     `carrier's count ${jp.madeAsCar ? 'the same' : 'DIFFERENT'}; ${jp.count} on the field asked as the carrier and ${jp.countJ} ` +
+     `as the jeep; crew ${jp.crew} vertices seated and ${jp.gunner} at the gun; the periscope's eye ${jp.eye} up; ` +
+     `${jp.blown} of 40 wrecks threw the gun, sat down at most ${jp.sink}; killed, it left ${jp.bodies} bodies of ${jp.bodyNat}; ` +
+     `Ortona's motor pool makes ${jp.ita}`);
+
+  /* --- The M4. The Americans' tank on the beach is the M4 and not the Sherman V: the
+     motor pool turns it out and queues it when asked for the Canadian tank, the count and
+     the order book read the two as one, the man in its hatch is a tanker in the tanker's
+     helmet rather than a rifleman in an M1, the eye in the periscope drops from the hatch
+     to the seat when the lid shuts, a wreck throws the turret some of the time and not all
+     of it, and killed it leaves American bodies. The Italian table still has the Sherman V. --- */
+  const m4 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_sher');
+    out.qSher = W.queueUnit(mot, 'us_sher') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_sher') - m0;
+    out.madeAs = W.madeOf('us', 'us_sher') === W.madeOf('us', 'am_sher');
+    mot.queue.length = q0;
+    const t = W.spawnUnit('us', 'am_sher', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_sher'); out.countM = W.countOf('us', 'am_sher');
+    const B = W.MODELS.veh.am_sher, H = W.HATCHES.am_sher, A = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside);
+    out.tanker = H.open.filter(f => f.c === A.hide).length;
+    out.m1 = H.open.filter(f => f.c === A.helm || f.c === A.helmD).length;
+    out.seat = !!(W.MODELS.man.gi_tank && W.MODELS.man.gi_tank[W.POSE_SEAT]);
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' tank is the M4, with a tanker in its hatch and American bodies when it burns',
+     /am_sher/.test(m4.makes) && !/us_sher/.test(m4.makes) && m4.qSher === 'am_sher' && m4.made === 1 && m4.madeAs &&
+     m4.count >= 1 && m4.count === m4.countM && m4.bufs && m4.tanker > 0 && m4.m1 === 0 && m4.seat &&
+     m4.eyeUp > 33 && m4.eyeUp < 40 && m4.eyeIn > 26 && m4.eyeIn < m4.eyeUp - 4 &&
+     m4.blown > 2 && m4.blown < 30 && m4.bodies >= 1 && m4.bodyNat === 'usa' && /us_sher/.test(m4.ita) && !/am_sher/.test(m4.ita),
+     `the motor pool makes ${m4.makes}; asked for a Sherman V it queues ${m4.qSher}, counted as ${m4.made} M4 made and the ` +
+     `Sherman V's count ${m4.madeAs ? 'the same' : 'DIFFERENT'}; ${m4.count} on the field asked as the Sherman V and ${m4.countM} ` +
+     `as the M4; buffers ${m4.bufs ? 'all built' : 'MISSING'}; the man in the hatch has ${m4.tanker} faces of tanker's helmet ` +
+     `and ${m4.m1} of M1; the seated tanker ${m4.seat ? 'baked' : 'MISSING'}; the eye ${m4.eyeUp} up out of the hatch and ` +
+     `${m4.eyeIn} on the seat; ${m4.blown} of 40 wrecks threw the turret; killed, it left ${m4.bodies} bodies of ${m4.bodyNat}; ` +
+     `Ortona's motor pool makes ${m4.ita}`);
+
+  /* --- The KS 750. The 352nd's light vehicle on the beach is the KS 750, standing in for
+     the 222 the way the jeep stands in for the carrier: the depot turns it out and refuses
+     the 222, a brain asking after the 222 counts and orders the KS 750, the two men
+     riding it are drawn with it and none of them is in its wreck, the gun on the sidecar
+     mount comes round no further than the mount lets it, the periscope's eye is the
+     gunner's, low in the sidecar, a wreck never throws the gun off, and killed it leaves
+     two bodies of the 352nd. The Italian table still has the 222. --- */
+  const ks = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 120, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_ks750');
+    out.qCar = W.queueUnit(dep, 'ger_sd222') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_ks750') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_sd222') === W.madeOf(hq.own, 'hr_ks750');
+    dep.queue.length = q0;
+    const k = W.spawnUnit(hq.own, 'hr_ks750', hq.x - 140, hq.y + 220, 0);
+    out.count = W.countOf(hq.own, 'ger_sd222'); out.countK = W.countOf(hq.own, 'hr_ks750');
+    const B = W.MODELS.veh.hr_ks750;
+    out.crew = B && B.crew ? B.crew.n : 0; out.gunner = B && B.turCrew ? B.turCrew.n : 0;
+    out.alt = !!(B && B.turUp && B.turUp.mg42);
+    out.seat = !!(W.MODELS.man.hr_krad && W.MODELS.man.hr_krad[W.POSE_SEAT]);
+    k.facing = 0; k.turret = 0; k.want = 1.2;
+    W.updateModels(k, 1.0);
+    out.lay = +Math.abs(W.angDiff(k.facing, k.turret)).toFixed(3);
+    out.arc = k.def.arc / 2;
+    W.povOn(k);
+    const e = W.povEye();
+    out.eye = +(e.z - W.groundZ(k.x, k.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(k); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(k);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s light vehicle is the KS 750, its crew riding it, its gun inside the mount\'s arc and none of them in the wreck',
+     /hr_ks750/.test(ks.makes) && !/ger_sd222/.test(ks.makes) && ks.qCar === 'hr_ks750' && ks.made === 1 && ks.madeAs &&
+     ks.count >= 1 && ks.count === ks.countK && ks.crew > 0 && ks.gunner > 0 && ks.alt && ks.seat &&
+     ks.lay <= ks.arc + 1e-3 && ks.eye > 12 && ks.eye < 17 &&
+     ks.blown === 0 && ks.sink < 1.7 && ks.bodies === 2 && ks.bodyNat === 'heer' && /ger_sd222/.test(ks.ita) && !/hr_ks750/.test(ks.ita),
+     `the depot makes ${ks.makes}; asked for a 222 it queues ${ks.qCar}, counted as ${ks.made} KS 750 made and the ` +
+     `222's count ${ks.madeAs ? 'the same' : 'DIFFERENT'}; ${ks.count} on the field asked as the 222 and ${ks.countK} ` +
+     `as the KS 750; crew ${ks.crew} vertices on the machine and ${ks.gunner} turning with the gun, the MG 42 ` +
+     `${ks.alt ? 'built' : 'MISSING'}, the seated rider ${ks.seat ? 'baked' : 'MISSING'}; asked to lay 1.2 off the nose ` +
+     `the gun came to ${ks.lay} against an arc of ${ks.arc}; the periscope's eye ${ks.eye} up; ` +
+     `${ks.blown} of 40 wrecks threw the gun, sat down at most ${ks.sink}; killed, it left ${ks.bodies} bodies of ` +
+     `${ks.bodyNat}; Ortona's depot makes ${ks.ita}`);
+
+  /* --- The Panzer IV. The 352nd's tank on the beach is the Panzer IV built for it and not the
+     one built for Italy: the depot turns it out and refuses the other, the count and the
+     order book read the two as one, it wears the Wehrmacht's grey and none of the Italian
+     tank's camouflage, the man in its cupola wears the black cap and the headset and no
+     steel helmet, the seated crewman is baked, the Schürzen and their rails go on with the
+     upgrade so the bare hull stands inside its own guards, the eye is a little under three
+     metres up out of the cupola and drops to the vision blocks when the lid shuts, forty
+     wrecks throw the turret some of the time and not all of it, and killed it leaves bodies
+     of the 352nd. Ortona's depot still makes the Italian one. --- */
+  const p4 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 160, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_p4');
+    out.qP4 = W.queueUnit(dep, 'ger_p4') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_p4') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_p4') === W.madeOf(hq.own, 'hr_p4');
+    dep.queue.length = q0;
+    const t = W.spawnUnit(hq.own, 'hr_p4', hq.x - 140, hq.y + 260, 0);
+    out.count = W.countOf(hq.own, 'ger_p4'); out.countP = W.countOf(hq.own, 'hr_p4');
+    const V = W.VMODEL.hr_p4, B = W.MODELS.veh.hr_p4, H = W.HATCHES.hr_p4, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts && B.turSkirts);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.cap = H.open.filter(f => f.c === K.pz).length;
+    out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.seat = !!(W.MODELS.man.hr_tank && W.MODELS.man.hr_tank[W.POSE_SEAT]);
+    out.hullY = +Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
+    out.skirtY = +Math.max.apply(null, V.skirts.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s tank is its own Panzer IV, in the grey, with a panzer man in the cupola and its Schürzen an upgrade',
+     /hr_p4/.test(p4.makes) && !/ger_p4/.test(p4.makes) && p4.qP4 === 'hr_p4' && p4.made === 1 && p4.madeAs &&
+     p4.count >= 1 && p4.count === p4.countP && p4.bufs && p4.grey > 50 && p4.camo === 0 && p4.cap > 0 && p4.helm === 0 &&
+     p4.seat && p4.hullY < 17.6 && p4.skirtY > 19 && p4.eyeUp > 32 && p4.eyeUp < 38 && p4.eyeIn > 26 && p4.eyeIn < p4.eyeUp - 4 &&
+     p4.blown > 2 && p4.blown < 30 && p4.bodies >= 1 && p4.bodyNat === 'heer' && /ger_p4/.test(p4.ita) && !/hr_p4/.test(p4.ita),
+     `the depot makes ${p4.makes}; asked for the Italian Panzer IV it queues ${p4.qP4}, counted as ${p4.made} made and the ` +
+     `other's count ${p4.madeAs ? 'the same' : 'DIFFERENT'}; ${p4.count} on the field asked as the one and ${p4.countP} as the ` +
+     `other; buffers ${p4.bufs ? 'all built' : 'MISSING'}; ${p4.grey} hull faces in the grey and ${p4.camo} in the Italian paint; ` +
+     `the man in the cupola has ${p4.cap} faces of the black cap and ${p4.helm} of a helmet; the seated crewman ` +
+     `${p4.seat ? 'baked' : 'MISSING'}; the bare hull reaches ${p4.hullY} out and the Schürzen ${p4.skirtY}; the eye ${p4.eyeUp} ` +
+     `up out of the cupola and ${p4.eyeIn} at the blocks; ${p4.blown} of 40 wrecks threw the turret; killed, it left ` +
+     `${p4.bodies} bodies of ${p4.bodyNat}; Ortona's depot makes ${p4.ita}`);
+
+  /* --- The 251. The 352nd's half-track on the beach is the Ausf. C built for it, standing in
+     for the Ausf. D built for Italy: the depot turns it out and refuses the other, the count
+     and the order book read the two as one, it wears the grey and none of the paratroopers'
+     sand, the driver rides with the hull and the gunner with the MG 34, both in field grey
+     under a helmet, and nobody else is drawn on it. It takes one squad aboard and puts it
+     down again, and a squad aboard when it burns comes out alive. The gun comes round no
+     further than the pintle lets it, the periscope's eye is the gunner's, standing, forty
+     wrecks never throw the gun off and all sit down onto the belly, and killed it leaves
+     bodies of the 352nd. Ortona's depot still makes the Ausf. D. --- */
+  const hk = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 200, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_251');
+    out.q = W.queueUnit(dep, 'ger_h251') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_251') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_h251') === W.madeOf(hq.own, 'hr_251');
+    dep.queue.length = q0;
+    const v = W.spawnUnit(hq.own, 'hr_251', hq.x - 140, hq.y + 300, 0);
+    out.count = W.countOf(hq.own, 'ger_h251'); out.countH = W.countOf(hq.own, 'hr_251');
+    const V = W.VMODEL.hr_251, B = W.MODELS.veh.hr_251, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
+    out.sand = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
+    out.helm = V.crew.concat(V.turCrew).filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.coat = V.crew.concat(V.turCrew).filter(f => f.c === K.coat || f.c === K.coatD).length;
+    out.seat = !!(W.MODELS.man.hr_crew && W.MODELS.man.hr_crew[W.POSE_SEAT]);
+    /* one squad aboard, and down again behind it */
+    const g = W.spawnUnit(hq.own, 'hr_gren', v.x - 60, v.y, 0);
+    out.can = W.canBoard(g, v);
+    W.boardVehicle(g, v);
+    out.aboard = g.inside === v && v.cargo === g;
+    const g2 = W.spawnUnit(hq.own, 'hr_gren', v.x + 60, v.y, 0);
+    out.second = W.canBoard(g2, v);
+    W.unloadVehicle(v);
+    out.down = !g.inside && !v.cargo && Math.hypot(g.x - v.x, g.y - v.y) > 20;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
+    out.arc = v.def.arc / 2;
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    /* and a squad aboard when it burns comes out of it */
+    W.boardVehicle(g, v);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.updateUnit(g, .02);
+    out.out = !g.inside && !g.dead && g.models.some(m => m.alive);
+    W.killUnit(g); W.killUnit(g2);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s half-track is its own 251, in the grey, with a driver and a gunner and room for one squad',
+     /hr_251/.test(hk.makes) && !/ger_h251/.test(hk.makes) && hk.q === 'hr_251' && hk.made === 1 && hk.madeAs &&
+     hk.count >= 1 && hk.count === hk.countH && hk.bufs && hk.grey > 50 && hk.sand === 0 && hk.helm > 0 && hk.coat > 0 &&
+     hk.seat && hk.can && hk.aboard && !hk.second && hk.down && hk.lay <= hk.arc + 1e-3 && hk.eye > 21 && hk.eye < 27 &&
+     hk.blown === 0 && hk.sink >= 2 && hk.bodies >= 1 && hk.bodyNat === 'heer' && hk.out &&
+     /ger_h251/.test(hk.ita) && !/hr_251/.test(hk.ita),
+     `the depot makes ${hk.makes}; asked for the Ausf. D it queues ${hk.q}, counted as ${hk.made} made and the other's count ` +
+     `${hk.madeAs ? 'the same' : 'DIFFERENT'}; ${hk.count} on the field asked as the one and ${hk.countH} as the other; ` +
+     `buffers ${hk.bufs ? 'all built' : 'MISSING'}; ${hk.grey} hull faces in the grey and ${hk.sand} in the sand; the crew have ` +
+     `${hk.helm} faces of helmet and ${hk.coat} of field grey, the seated man ${hk.seat ? 'baked' : 'MISSING'}; a squad ` +
+     `${hk.can ? 'may board' : 'REFUSED'}, ${hk.aboard ? 'is aboard' : 'is NOT aboard'}, a second ${hk.second ? 'MAY board too' : 'is refused'}, ` +
+     `and it is ${hk.down ? 'put down behind' : 'NOT put down'}; asked to lay 1.2 off the nose the gun came to ${hk.lay} against ` +
+     `an arc of ${hk.arc}; the periscope's eye ${hk.eye} up; ${hk.blown} of 40 wrecks threw the gun, the least sat down ${hk.sink}; ` +
+     `killed, it left ${hk.bodies} bodies of ${hk.bodyNat} and the squad aboard ${hk.out ? 'came out' : 'DID NOT come out'}; ` +
+     `Ortona's depot makes ${hk.ita}`);
+
+  /* --- The M3A1. The Americans' half-track on the beach is the M3A1 built for it, standing in
+     for the one Italy has: the motor pool turns it out and queues it when asked for the
+     other, the count and the order book read the two as one, it is in olive drab with the
+     driver riding with the hull and the gunner with the .50, both in the American's kit, and
+     nobody else is drawn on it. It takes one squad aboard and puts it down again, and a
+     squad aboard when it burns comes out alive. The ring goes all the way round, so the gun
+     is asked to lay over the tail; the periscope's eye is the gunner's, standing in the
+     pulpit, forty wrecks never throw the gun off and all sit down onto the belly, and killed
+     it leaves American bodies. Ortona's motor pool still makes the other. --- */
+  const mh = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_m3');
+    out.q = W.queueUnit(mot, 'us_m3') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_m3') - m0;
+    out.madeAs = W.madeOf('us', 'us_m3') === W.madeOf('us', 'am_m3');
+    mot.queue.length = q0;
+    const v = W.spawnUnit('us', 'am_m3', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_m3'); out.countM = W.countOf('us', 'am_m3');
+    const V = W.VMODEL.am_m3, B = W.MODELS.veh.am_m3, K = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew);
+    out.od = V.hull.filter(f => f.c === W.MHC.od).length;
+    out.helm = V.crew.concat(V.turCrew).filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.coat = V.crew.concat(V.turCrew).filter(f => f.c === K.coat || f.c === K.coatD).length;
+    out.seat = !!(W.MODELS.man.gi_crew && W.MODELS.man.gi_crew[W.POSE_SEAT]);
+    /* one squad aboard, and down again behind it */
+    const g = W.spawnUnit('us', 'am_rifle', v.x - 60, v.y, 0);
+    out.can = W.canBoard(g, v);
+    W.boardVehicle(g, v);
+    out.aboard = g.inside === v && v.cargo === g;
+    const g2 = W.spawnUnit('us', 'am_rifle', v.x + 60, v.y, 0);
+    out.second = W.canBoard(g2, v);
+    W.unloadVehicle(v);
+    out.down = !g.inside && !v.cargo && Math.hypot(g.x - v.x, g.y - v.y) > 20;
+    v.facing = 0; v.turret = 0; v.want = Math.PI;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    /* and a squad aboard when it burns comes out of it */
+    W.boardVehicle(g, v);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.updateUnit(g, .02);
+    out.out = !g.inside && !g.dead && g.models.some(m => m.alive);
+    W.killUnit(g); W.killUnit(g2);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' half-track is its own M3A1, in olive drab, with a driver and a gunner and room for one squad',
+     /am_m3/.test(mh.makes) && !/us_m3/.test(mh.makes) && mh.q === 'am_m3' && mh.made === 1 && mh.madeAs &&
+     mh.count >= 1 && mh.count === mh.countM && mh.bufs && mh.od > 50 && mh.helm > 0 && mh.coat > 0 && mh.seat &&
+     mh.can && mh.aboard && !mh.second && mh.down && mh.lay > 3.1 && mh.eye > 30 && mh.eye < 38 &&
+     mh.blown === 0 && mh.sink >= 2 && mh.bodies >= 1 && mh.bodyNat === 'usa' && mh.out &&
+     /us_m3/.test(mh.ita) && !/am_m3/.test(mh.ita),
+     `the motor pool makes ${mh.makes}; asked for the other it queues ${mh.q}, counted as ${mh.made} made and the other's ` +
+     `count ${mh.madeAs ? 'the same' : 'DIFFERENT'}; ${mh.count} on the field asked as the one and ${mh.countM} as the other; ` +
+     `buffers ${mh.bufs ? 'all built' : 'MISSING'}; ${mh.od} hull faces in olive drab; the crew have ${mh.helm} faces of ` +
+     `helmet and ${mh.coat} of jacket, the seated man ${mh.seat ? 'baked' : 'MISSING'}; a squad ` +
+     `${mh.can ? 'may board' : 'REFUSED'}, ${mh.aboard ? 'is aboard' : 'is NOT aboard'}, a second ${mh.second ? 'MAY board too' : 'is refused'}, ` +
+     `and it is ${mh.down ? 'put down behind' : 'NOT put down'}; asked to lay over the tail the gun came round ${mh.lay}; ` +
+     `the periscope's eye ${mh.eye} up; ${mh.blown} of 40 wrecks threw the gun, the least sat down ${mh.sink}; killed, it ` +
+     `left ${mh.bodies} bodies of ${mh.bodyNat} and the squad aboard ${mh.out ? 'came out' : 'DID NOT come out'}; ` +
+     `Ortona's motor pool makes ${mh.ita}`);
+
+  /* --- The Rangers. The squad the Americans field on the beach in the Foot Guards' place:
+     the company post makes it and queues it when asked for the Guards, the count and the
+     order book read the two as one, its six men are the leader, three Thompsons and the two
+     BAR men, and the two BAR men turn into the bazooka variant when the target is a vehicle
+     and fire it turn about, each round leaving from the man who fired it. With both of them
+     dead the squad fights with what it has left. The .30 is a field upgrade a squad takes
+     through the same doors a vehicle's does, it changes the weapon and two of the Thompson
+     men, and a man killed goes down as a Ranger. Ortona's post still makes the Guards. --- */
+  const rg = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(bar).join(',');
+    G.res.us.mp += 3000; G.res.us.fu += 600;
+    const q0 = bar.queue.length, m0 = W.madeOf('us', 'am_ranger');
+    out.q = W.queueUnit(bar, 'us_fg') ? bar.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_ranger') - m0;
+    out.madeAs = W.madeOf('us', 'us_fg') === W.madeOf('us', 'am_ranger');
+    bar.queue.length = q0;
+    const u = W.spawnUnit('us', 'am_ranger', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_fg') === W.countOf('us', 'am_ranger');
+    out.men = u.models.length;
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.baked = ['rg_lead', 'rg_tommy', 'rg_tommy_b', 'rg_bar', 'rg_zook', 'rg_30']
+      .every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_FIRE]);
+    /* a vehicle in reach: the swap, the weapon and the man each round leaves from */
+    const ks = W.spawnUnit('ger', 'hr_ks750', u.x + 130, u.y, Math.PI);
+    u.target = ks;
+    out.swap = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.at = W.weaponFor(u, ks) === u.def.at;
+    const from = [];
+    for (let k = 0; k < 4; k++) {
+      u.atcd = 0; u.cd = 0; u.moving = false; u.sup = 0;
+      const n = G.shots.length;
+      W.fireAt(u, ks, .02);
+      const s = G.shots[n];
+      if (s && s.kind === 'shell') {
+        const who = u.models.findIndex(m => Math.hypot(m.x - s.sx, m.y - s.sy) < .01);
+        from.push(who);
+      } else from.push('none');
+    }
+    out.from = from.join(',');
+    u.models[1].alive = false; u.models[3].alive = false;
+    out.gone = W.weaponFor(u, ks) === W.mainW(u) && !W.launcherLive(u);
+    u.models[1].alive = true; u.models[3].alive = true;
+    u.target = null;
+    W.killUnit(ks);
+    /* the upgrade, bought through the brain's own routine and read back off the weapon */
+    out.upg = W.upgradable(u) && !!W.UPGRADES.a6;
+    const w0 = W.mainW(u);
+    const got = W.buyUpgradeAuto('us', [u], { floor: 0, fuFloor: 0 });
+    out.fitted = got === u && !!u.up.a6;
+    out.wUp = W.mainW(u) === u.def.wUp.a6 && w0 === u.def.w;
+    out.up30 = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    /* and a man of it goes down as a Ranger: a man on his feet goes on the falls and one lying
+       down straight onto the corpses */
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodies = rec ? 1 : 0; out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    out.fall = !!(W.MODELS.fall.usa_rgr && W.MODELS.dead.usa_rgr);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(bar).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(bar);
+    return out;
+  });
+  ok('Omaha: the Rangers stand in for the Foot Guards, and the BAR men take up the bazookas against armour',
+     /am_ranger/.test(rg.makes) && !/us_fg/.test(rg.makes) && rg.q === 'am_ranger' && rg.made === 1 && rg.madeAs && rg.count &&
+     rg.men === 6 && rg.vars === 'rg_lead,rg_bar,rg_tommy,rg_bar,rg_tommy_b,rg_tommy' && rg.baked &&
+     rg.swap === 'rg_lead,rg_zook,rg_tommy,rg_zook,rg_tommy_b,rg_tommy' && rg.at && rg.from === '3,1,3,1' && rg.gone &&
+     rg.upg && rg.fitted && rg.wUp && rg.up30 === 'rg_lead,rg_bar,rg_tommy,rg_bar,rg_30,rg_30' &&
+     rg.bodies >= 1 && rg.bodyNat === 'usa_rgr' && rg.fall && /us_fg/.test(rg.ita) && !/am_ranger/.test(rg.ita),
+     `the company post makes ${rg.makes}; asked for the Guards it queues ${rg.q}, counted as ${rg.made} made and the order ` +
+     `book ${rg.madeAs ? 'the same' : 'DIFFERENT'}, the count ${rg.count ? 'the same' : 'DIFFERENT'}; ${rg.men} men as ${rg.vars}, ` +
+     `every variant ${rg.baked ? 'baked' : 'NOT baked'}; with a vehicle in reach ${rg.swap}, the weapon ${rg.at ? 'the bazooka' : 'NOT the bazooka'} ` +
+     `and four rounds left from men ${rg.from}; with both BAR men dead the squad ${rg.gone ? 'fights with what it has' : 'STILL FIRES the tube'}; ` +
+     `the .30 ${rg.upg ? 'is on offer' : 'is NOT on offer'}, ${rg.fitted ? 'was fitted' : 'was NOT fitted'} and ` +
+     `${rg.wUp ? 'changes the weapon' : 'does NOT change the weapon'}, the men then ${rg.up30}; killed, it left ${rg.bodies} bodies ` +
+     `of ${rg.bodyNat}, the fall ${rg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${rg.ita}`);
+
+  /* --- The Greyhound. The armoured car the Americans field on the beach in the Stuart's
+     place: the motor pool makes it and queues it when asked for the Stuart, the count and
+     the order book read the two as one, it is in olive drab with the drivers in M1s and the
+     turret crew in the tanker's helmet, the coaxial comes with it, and the turret goes all
+     the way round. The sand shields and the .30 are the two fittings, bought through the
+     brain's own routine: the .30 takes the commander out of the turret to stand up to it,
+     and the shields are skirts to a hollow charge the way Schürzen are. The periscope's eye
+     is the commander's over the rim, forty wrecks throw the turret some of the time and a
+     wreck carries shields only if it had them, it leaves American bodies, and Ortona's motor
+     pool still makes the Stuart. --- */
+  const gh = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_m8');
+    out.q = W.queueUnit(mot, 'us_stuart') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_m8') - m0;
+    out.madeAs = W.madeOf('us', 'us_stuart') === W.madeOf('us', 'am_m8');
+    mot.queue.length = q0;
+    const v = W.spawnUnit('us', 'am_m8', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_stuart') === W.countOf('us', 'am_m8');
+    const V = W.VMODEL.am_m8, B = W.MODELS.veh.am_m8, K = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew && B.turCrewMg && B.mg && B.skirts);
+    out.od = V.hull.filter(f => f.c === W.M8C.od).length;
+    out.m1 = V.crew.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.tanker = V.turCrew.filter(f => f.c === K.hide).length;
+    out.mgTanker = V.mgMan.filter(f => f.c === K.hide).length;
+    out.gunner = V.turCrewMg.length < V.turCrew.length && V.turCrewMg.filter(f => f.c === K.hide).length > 0;
+    out.coax = W.secondaryKeys(v).indexOf('coax') >= 0;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    /* the two fittings, the .30 first because the routine reaches it first */
+    const side0 = W.armourAt(v, v.x, v.y + 100);
+    const a = W.buyUpgradeAuto('us', [v], { floor: 0, fuFloor: 0, foeAt: true });
+    const b = W.buyUpgradeAuto('us', [v], { floor: 0, fuFloor: 0, foeAt: true });
+    out.fit = (a === v ? 'x' : '-') + (b === v ? 'x' : '-') + ' ' + Object.keys(v.up).filter(k => v.up[k]).sort().join(',');
+    out.sec = W.secondaryKeys(v).join(',');
+    out.skirted = W.skirted(v);
+    out.side = +(W.armourAt(v, v.x, v.y + 100) / side0).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99, sk = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; if (w.skirts) sk++; sink = Math.min(sink, w.sink); }
+    const bare = W.spawnUnit('us', 'am_m8', hq.x + 180, hq.y - 260, 0);
+    let skBare = 0;
+    for (let i = 0; i < 40; i++) { if (W.makeWreck(bare).skirts) skBare++; }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2); out.sk = sk; out.skBare = skBare;
+    W.killUnit(bare);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the Americans\' armoured car is the M8, with the sand shields and the .30 on the ring as its two fittings',
+     /am_m8/.test(gh.makes) && !/us_stuart/.test(gh.makes) && gh.q === 'am_m8' && gh.made === 1 && gh.madeAs && gh.count &&
+     gh.bufs && gh.od > 50 && gh.m1 > 0 && gh.tanker > 0 && gh.mgTanker > 0 && gh.gunner && gh.coax && gh.lay < .05 &&
+     gh.eye > 22 && gh.eye < 30 && gh.fit === 'xx fenders,mg' && /coax/.test(gh.sec) && /mg/.test(gh.sec) && gh.skirted &&
+     gh.side >= 1.1 && gh.blown > 0 && gh.blown < 40 && gh.sink >= 2 && gh.sk > 0 && gh.skBare === 0 &&
+     gh.bodies >= 1 && gh.bodyNat === 'usa' && /us_stuart/.test(gh.ita) && !/am_m8/.test(gh.ita),
+     `the motor pool makes ${gh.makes}; asked for the Stuart it queues ${gh.q}, counted as ${gh.made} made and the order book ` +
+     `${gh.madeAs ? 'the same' : 'DIFFERENT'}, the count ${gh.count ? 'the same' : 'DIFFERENT'}; buffers ${gh.bufs ? 'all built' : 'MISSING'}; ` +
+     `${gh.od} hull faces in olive drab; the drivers have ${gh.m1} faces of M1 and the turret ${gh.tanker} of the tanker's helmet, ` +
+     `the man at the .30 ${gh.mgTanker}, and with it fitted the turret keeps ${gh.gunner ? 'the gunner alone' : 'BOTH MEN'}; the coaxial ` +
+     `${gh.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the gun is ${gh.lay} short; the periscope's eye ${gh.eye} up; ` +
+     `the routine fitted ${gh.fit}, the guns then ${gh.sec}, ${gh.skirted ? 'skirted' : 'NOT skirted'} with the side ${gh.side}x; ` +
+     `${gh.blown} of 40 wrecks threw the turret, the least sat down ${gh.sink}, ${gh.sk} of 40 kept shields and ${gh.skBare} of 40 ` +
+     `without them; killed, it left ${gh.bodies} bodies of ${gh.bodyNat}; Ortona's motor pool makes ${gh.ita}`);
+
+  /* --- The 234. The 352nd's armoured car on the beach stands in for the Wirbelwind: the
+     depot makes it and refuses the Wirbelwind, the count and the order book read the two as
+     one, it wears the grey and none of the paratroopers' paint, the gunner and the commander
+     are in the black of the Panzer arm and sit with their heads under the ridge of the screens,
+     the coaxial comes with it, the turret goes all the way round and the periscope's eye is the
+     commander's over the rim. The Puma's turret is the fitting, bought through the brain's own
+     routine, and it changes the weapon, the mount, the men in it and the eye together. Forty
+     wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and Ortona's
+     depot still makes the Wirbelwind. --- */
+  const k4 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 160, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_234');
+    out.q = W.queueUnit(dep, 'ger_wirb') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_234') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_wirb') === W.madeOf(hq.own, 'hr_234');
+    dep.queue.length = q0;
+    const v = W.spawnUnit(hq.own, 'hr_234', hq.x - 140, hq.y + 260, 0);
+    out.count = W.countOf(hq.own, 'ger_wirb') === W.countOf(hq.own, 'hr_234');
+    const V = W.VMODEL.hr_234, B = W.MODELS.veh.hr_234, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.turUp.puma && B.turCrew && B.turCrewUp.puma && B.inside);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
+    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.cap = V.turCrew.filter(f => f.c === K.pz).length;
+    out.pumaCap = V.turCrewUp.puma.filter(f => f.c === K.pz).length;
+    out.helm = V.turCrew.concat(V.turCrewUp.puma).filter(f => f.c === K.helm || f.c === K.helmD).length;
+    /* every point of the two men against the screen over it, which is a plane from each side
+       rim up to the ridge */
+    const T = W.K41, yh = W.k4Inset(T.plan, T.lean)[2][1];
+    out.poke = 0;
+    V.turCrew.forEach(f => f.v.forEach(p => { if (p[2] > T.h + T.hinge + (yh - Math.abs(p[1])) * Math.tan(T.close)) out.poke++; }));
+    out.coax = W.secondaryKeys(v).indexOf('coax') >= 0;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    /* the Puma's turret, through the brain's own routine */
+    const w0 = W.mainW(v), b0 = W.mountPose(v, V).bar;
+    const got = W.buyUpgradeAuto(hq.own, [v], { floor: 0, fuFloor: 0 });
+    out.fitted = got === v && !!v.up.puma && W.mountUp(v) === 'puma';
+    out.wUp = W.mainW(v) === v.def.wUp.puma && w0 === v.def.w;
+    out.bar = +b0.toFixed(1) + '>' + (+W.mountPose(v, V).bar.toFixed(1));
+    out.crewUp = W.turCrewOf(v, B) === B.turCrewUp.puma;
+    v._matT = -1;
+    W.povOn(v);
+    out.eyeP = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd\'s armoured car is the 234, the 2 cm under its screens and the Puma\'s turret its fitting',
+     /hr_234/.test(k4.makes) && !/ger_wirb/.test(k4.makes) && k4.q === 'hr_234' && k4.made === 1 && k4.madeAs && k4.count &&
+     k4.bufs && k4.grey > 50 && k4.camo === 0 && k4.cap > 0 && k4.pumaCap > 0 && k4.helm === 0 && k4.poke === 0 && k4.coax &&
+     k4.lay < .05 && k4.eye > 22 && k4.eye < 27 && k4.fitted && k4.wUp && k4.bar === '22>37.4' && k4.crewUp &&
+     k4.eyeP > 30 && k4.eyeP < 38 && k4.blown > 0 && k4.blown < 40 && k4.sink >= 2 &&
+     k4.bodies >= 1 && k4.bodyNat === 'heer' && /ger_wirb/.test(k4.ita) && !/hr_234/.test(k4.ita),
+     `the depot makes ${k4.makes}; asked for the Wirbelwind it queues ${k4.q}, counted as ${k4.made} made and the order book ` +
+     `${k4.madeAs ? 'the same' : 'DIFFERENT'}, the count ${k4.count ? 'the same' : 'DIFFERENT'}; buffers ${k4.bufs ? 'all built' : 'MISSING'}; ` +
+     `${k4.grey} hull faces in the grey and ${k4.camo} in the paratroopers' paint; the 234/1's men have ${k4.cap} faces of the black ` +
+     `cap, the Puma's commander ${k4.pumaCap}, and ${k4.helm} of a helmet between them; ${k4.poke} points of the two men above the ` +
+     `screens; the coaxial ${k4.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the turret is ${k4.lay} short; ` +
+     `the eye ${k4.eye} up; the Puma ${k4.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${k4.wUp ? 'swapped' : 'NOT swapped'}, the muzzle ` +
+     `${k4.bar}, the crew ${k4.crewUp ? 'the Puma\'s' : 'NOT the Puma\'s'} and the eye ${k4.eyeP} up; ${k4.blown} of 40 wrecks threw ` +
+     `the turret, the least sat down ${k4.sink}; killed, it left ${k4.bodies} bodies of ${k4.bodyNat}; Ortona's depot makes ${k4.ita}`);
+
+  /* --- The Knight's Cross Holders. The squad the 352nd fields in the paratroop assault
+     group's place: the company post makes it and queues it when asked for the assault group,
+     the count and the order book read the two as one, its four men are the four variants
+     carrying the StG 44 and every one of them is baked winding up and letting go, with a
+     stick grenade and with the bundle. Then the two throws, as the player gives them and not
+     by calling the functions behind them: the GRENADES card sends one grenade from every man
+     at a squad in reach, each lies on the ground three quarters of a second after it lands
+     before it goes off, the card then reads a cooldown and a second volley is refused, and
+     with nothing in reach it is refused for that; the BUNDLE CHARGE card arms the pick, a
+     tap on a Panzer IV sends the squad after it, one man throws, the charge lodges on the
+     hull, goes off three quarters of a second later and takes a third of the tank. The
+     brain's own routine uses both, the SIMPLE card carries both at 44px, a man killed goes
+     down as `heer_kch`, and Ortona's post still makes the assault group. The drill is
+     staged on ground of its own with the battle's units put aside, and the squad is on the
+     player's slot, because the cards are his. --- */
+  const kc = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    /* on whichever side the player is on by now, and under the classic scheme, because the
+       cards are his and the rows above leave him on either */
+    const me = G.own, foe = G.side === 'us' ? 'ger' : 'us', ctrl0 = W.CTRL.simple;
+    W.ctrlSet(false, true);
+    /* the finger is installed on the window, and the map rows above have reloaded it since */
+    if (!W.__tev) {
+      const cv = document.getElementById('cv');
+      W.__tev = function (type, x, y) {
+        const r = cv.getBoundingClientRect();
+        const t = new Touch({ identifier: 1, target: cv, clientX: r.left + x, clientY: r.top + y, pageX: r.left + x, pageY: r.top + y });
+        const up = type === 'touchend';
+        cv.dispatchEvent(new TouchEvent(type, { touches: up ? [] : [t], changedTouches: [t], targetTouches: up ? [] : [t], bubbles: true, cancelable: true }));
+      };
+    }
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const post = W.spawnBuilding(hq.own, 'ger_qtr', hq.x - 240, hq.y + 200, true);
+    out.makes = W.makesOf(post).join(',');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = post.queue.length, m0 = W.madeOf(hq.own, 'hr_kch');
+    out.q = W.queueUnit(post, 'ger_pgren') ? post.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_kch') - m0;
+    out.madeAs = W.madeOf(hq.own, 'ger_pgren') === W.madeOf(hq.own, 'hr_kch');
+    post.queue.length = q0;
+    W.setNation('can', 'fj'); out.ita = W.makesOf(post).join(','); W.setNation('usa', 'heer');
+    W.killBuilding(post);
+    out.baked = ['kc_lead', 'kc_stg', 'kc_stg_b', 'kc_bund'].every(v => {
+      const T = W.MODELS.man[v];
+      return T && T[W.POSE_FIRE] && T[W.POSE_THROW] && T[W.POSE_THROW].frames.length === 2 &&
+             T[W.POSE_THROWB] && T[W.POSE_THROWB].frames.length === 2;
+    });
+    const keep = G.units.slice(), mode0 = G.mode;
+    G.units.length = 0;
+    const sp = W.__o.flatSpot(260), dt = 1 / 30;
+    let posed = 0;
+    const step = n => {
+      for (let i = 0; i < n; i++) {
+        G.t += dt; W.computeVisibility(dt);
+        G.units.slice().forEach(q => W.updateUnit(q, dt)); W.updateShots(dt);
+        if (G.units.some(q => q.key === 'hr_kch' && q.models.some(m => m.alive && m.pose === W.POSE_THROW))) posed++;
+      }
+    };
+    const prime = (a, b) => { for (let s = 0; s < 400; s++) { W.computeVisibility(0); if (W.visibleTo(a.side, b) && W.visibleTo(b.side, a)) break; } };
+    const menHp = e => e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    const u = W.spawnUnit(me, 'hr_kch', sp.x + 70, sp.y, Math.PI);
+    out.count = W.countOf(me, 'ger_pgren') === W.countOf(me, 'hr_kch');
+    out.men = u.models.length; out.vet = u.vet;
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    /* GRENADES, off the card */
+    const e = W.spawnUnit(foe, 'hr_gren', sp.x - 60, sp.y, 0);
+    e.order = null; e.path = null;
+    prime(u, e);
+    const land = [], b0 = W.grenBurst;
+    W.grenBurst = function (s) {
+      const h0 = menHp(e);
+      const r = b0(s);
+      /* and where it lay on the hull: on top of it, and not inside the turret */
+      let oz = null, clear = false;
+      if (s.on) {
+        const D = W.deckGrid(s.on.key), mp = W.mountPose(s.on, W.VMODEL[s.on.key]), tr = s.on.turret - s.on.facing;
+        const qx = s.ox - mp.x, qy = s.oy - mp.y;
+        const tz = D.tur ? W.deckAt(D.tur, qx * Math.cos(tr) + qy * Math.sin(tr), -qx * Math.sin(tr) + qy * Math.cos(tr)) + mp.z : -1e9;
+        oz = +s.oz.toFixed(1); clear = tz < s.oz + 1.5 && Math.abs(W.deckAt(D.hull, s.ox, s.oy) - s.oz) < .01;
+      }
+      land.push({ fuse: G.t - s.landT, bund: s.bund, on: s.on ? s.on.key : '', oz, clear, hurt: h0 - menHp(e) });
+      return r;
+    };
+    W.select([u], false); W.syncHud();
+    const card = [...document.querySelectorAll('#cmds .cmd')].find(b => /Grenades/.test(b.title));
+    out.card = card ? card.querySelector('.c').textContent : 'MISSING';
+    if (card) card.click();
+    out.cd = u.abCd && u.abCd.gren;
+    out.again = W.abGren(u);
+    const rel = new Set();
+    for (let k = 0; k < 150; k++) { step(1); G.shots.forEach(s => { if (s.kind === 'gren' && s.owner === u) rel.add(s); }); }
+    W.refreshCmdState();
+    const card2 = [...document.querySelectorAll('#cmds .cmd')].find(b => /Grenades/.test(b.title));
+    out.cardAfter = card2 ? card2.querySelector('.c').textContent + (card2.disabled ? ' (dimmed)' : '') : 'MISSING';
+    out.thrown = rel.size; out.posed = posed;
+    out.fuse = land.filter(q => !q.bund).map(q => +q.fuse.toFixed(3));
+    out.gHurt = Math.round(land.filter(q => !q.bund).reduce((s, q) => s + q.hurt, 0));
+    W.killUnit(e);
+    u.abCd.gren = 0;
+    out.none = W.abGren(u);
+    /* BUNDLE CHARGE: the card arms the pick and a finger on the tank sends them */
+    const v = W.spawnUnit(foe, 'hr_p4', sp.x - 150, sp.y, 0);
+    v.order = null; v.path = null; v.cd = 1e9; v.atcd = 1e9;
+    W.secondaryKeys(v).forEach(k => { v.cdSec[k] = 1e9; });
+    prime(u, v);
+    W.select([u], false); W.syncHud();
+    const bcard = [...document.querySelectorAll('#cmds .cmd')].find(b => /Bundle charge/.test(b.title));
+    out.bcard = !!bcard;
+    if (bcard) bcard.click();
+    out.mode = G.mode;
+    W.__o.camera({ x: v.x, y: v.y, dist: 420, pitch: 0.95 }); W.render();
+    const p = W.w2s(v.x, v.y, W.groundZ(v.x, v.y) + 10);
+    W.__tev('touchstart', p.x, p.y); W.__tev('touchend', p.x, p.y);
+    out.order = u.order; out.modeAfter = G.mode || 'none';
+    const hv0 = v.hp, x0 = u.x;
+    land.length = 0;
+    for (let k = 0; k < 30 * 25 && !land.some(q => q.bund); k++) step(1);
+    const bl = land.filter(q => q.bund)[0];
+    out.bFuse = bl ? +bl.fuse.toFixed(3) : -1; out.bOn = bl ? bl.on : '-';
+    out.bOz = bl ? bl.oz : null; out.bClear = !!(bl && bl.clear);
+    out.walked = Math.round(Math.abs(u.x - x0));
+    out.pzLost = Math.round(hv0 - v.hp); out.bcd = Math.round(u.abCd && u.abCd.bund || 0);
+    /* the brain's own routine, with both back */
+    u.abCd.gren = 0; u.abCd.bund = 0; W.clearOrder(u);
+    const e2 = W.spawnUnit(foe, 'hr_gren', u.x - 110, u.y, 0);
+    e2.order = null; e2.path = null;
+    prime(u, e2);
+    out.auto = W.abAuto(u);
+    out.autoOrder = u.order;
+    /* the SIMPLE card */
+    u.abCd.bund = 0; W.clearOrder(u); G.mode = null;
+    W.ctrlSet(true, true); W.simpleUnit(u);
+    out.simple = ['ab_gren', 'ab_bund'].map(k => {
+      const b = document.querySelector('#tunitbtns [data-up="' + k + '"]');
+      return b ? Math.min(b.getBoundingClientRect().width, b.getBoundingClientRect().height) | 0 : 0;
+    });
+    const sb = document.querySelector('#tunitbtns [data-up="ab_bund"]');
+    if (sb) sb.click();
+    out.simpleMode = G.mode || 'none';
+    W.simpleUnit(null); W.ctrlSet(ctrl0, true); G.mode = mode0;
+    /* a man of it goes down as the 352nd's Knight's Cross Holders */
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fellNat = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.heer_kch && W.MODELS.dead.heer_kch);
+    W.grenBurst = b0;
+    [u, v, e2].forEach(q => { if (!q.dead) W.killUnit(q); });
+    for (let k = G.shots.length - 1; k >= 0; k--) if (G.shots[k].kind === 'gren') G.shots.splice(k, 1);
+    G.units.length = 0; keep.forEach(q => G.units.push(q));
+    W.select([], false); W.syncHud();
+    return out;
+  });
+  ok('Omaha: the Knight\'s Cross Holders stand in for the assault group, and throw grenades and a bundle charge on the player\'s word',
+     /hr_kch/.test(kc.makes) && !/ger_pgren/.test(kc.makes) && kc.q === 'hr_kch' && kc.made === 1 && kc.madeAs && kc.count &&
+     kc.men === 4 && kc.vet === 1 && kc.vars === 'kc_lead,kc_stg,kc_stg_b,kc_bund' && kc.weap === 'stg' && kc.baked &&
+     kc.card === 'ready' && kc.cd > 30 && kc.again === 'cooling' && kc.thrown === 4 && kc.posed > 0 &&
+     kc.fuse.length === 4 && kc.fuse.every(f => f > .72 && f < .79) && kc.gHurt > 0 && /s \(dimmed\)$/.test(kc.cardAfter) &&
+     kc.none === 'nothing in reach' && kc.bcard && kc.mode === 'bundle' && kc.order === 'bundle' && kc.modeAfter === 'none' &&
+     kc.bFuse > .72 && kc.bFuse < .79 && kc.bOn === 'hr_p4' && kc.bClear && kc.pzLost >= 200 && kc.bcd > 40 && kc.walked > 20 &&
+     kc.auto === 3 && kc.autoOrder === 'bundle' && kc.simple.every(s => s >= 44) && kc.simpleMode === 'bundle' &&
+     kc.fellNat === 'heer_kch' && kc.bodies && /ger_pgren/.test(kc.ita) && !/hr_kch/.test(kc.ita),
+     `the company post makes ${kc.makes}; asked for the assault group it queues ${kc.q}, counted as ${kc.made} made and the ` +
+     `order book ${kc.madeAs ? 'the same' : 'DIFFERENT'}, the count ${kc.count ? 'the same' : 'DIFFERENT'}; ${kc.men} men at ` +
+     `veterancy ${kc.vet} as ${kc.vars} carrying ${kc.weap}, the throw ${kc.baked ? 'baked' : 'NOT baked'}; the GRENADES card read ` +
+     `${kc.card} and threw ${kc.thrown} (a man in the throw on ${kc.posed} frames), each going off ${kc.fuse.join(', ')} s after it ` +
+     `landed and ${kc.gHurt} off the squad between them; the cooldown ${kc.cd}, a second volley ${kc.again}, the card then ` +
+     `${kc.cardAfter}; with nothing near, ${kc.none}; the BUNDLE card ${kc.bcard ? 'armed ' + kc.mode : 'MISSING'}, a tap on the ` +
+     `tank left the squad ${kc.order} and the pick ${kc.modeAfter}; it walked ${kc.walked}, the charge went off ${kc.bFuse} s after ` +
+     `it came down on ${kc.bOn}, lying ${kc.bOz} up and ${kc.bClear ? 'clear of' : 'INSIDE'} the turret, and took ${kc.pzLost} off it, cooling ${kc.bcd}; the brain's routine answered ${kc.auto} and left ` +
+     `the squad ${kc.autoOrder}; the SIMPLE card's two are ${kc.simple.join(' and ')}px and BUNDLE armed ${kc.simpleMode}; a man ` +
+     `killed went down as ${kc.fellNat}, bodies ${kc.bodies ? 'baked' : 'MISSING'}; Ortona's post makes ${kc.ita}`);
+
+  /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
+     section the way the rifle squad does: the headquarters makes it and refuses the
+     Canadian one, the Allied side opens the battle with one, its three men are the three
+     engineer variants and carry the M3, the sleeves are rolled and the hands gloved, the
+     goggles are on the helmet, it can peg out a work and go and build it, and a man of it
+     killed goes down as an engineer rather than as a rifleman. The Italian table still has
+     the Canadians. --- */
+  const eng = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    out.makes = W.makesOf(hq).join(',');
+    const made = W.REC.us.made || {};
+    out.openAm = made.am_eng || 0; out.openCan = made.us_eng || 0;
+    G.res.us.mp += 2000;
+    const q0 = hq.queue.length;
+    out.qCan = W.queueUnit(hq, 'us_eng') ? hq.queue.slice(-1)[0] : 'refused';
+    hq.queue.length = q0;
+    const u = W.spawnUnit('us', 'am_eng', hq.x + 120, hq.y - 200, 0);
+    out.men = u.models.length; out.builder = !!u.def.builder;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.usa, r = W.manFaces('gi_eng', W.FIGPOSE.stand), P = r.parts;
+    out.bare = P.limbs[1].filter(f => f.c === K.skin).length;
+    out.gloved = P.hands[0].filter(f => f.c === K.glove).length;
+    out.skinHand = P.hands[0].filter(f => f.c === K.skin).length;
+    out.goggle = P.helmet.filter(f => f.c === K.goggle).length;
+    const site = W.placeWork('us', 'bags', hq.x + 60, hq.y - 280, 0, [u]);
+    out.site = !!site; out.building = u.building === site && u.order === 'work';
+    if (site) G.sites.splice(G.sites.indexOf(site), 1);
+    W.clearOrder(u);
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fellNat = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.usa_eng && W.MODELS.dead.usa_eng && W.MODELS.fall.usa_eng.length === 3 && W.MODELS.dead.usa_eng.length === 2);
+    W.killUnit(u);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(hq).join(',');
+    W.setNation('usa', 'heer');
+    return out;
+  });
+  ok('Omaha: the Americans\' engineers are their own squad of three, with M3s, sleeves rolled, gloves on, and bodies of their own',
+     /am_eng/.test(eng.makes) && !/us_eng/.test(eng.makes) && eng.openAm >= 1 && eng.openCan === 0 && eng.qCan === 'am_eng' &&
+     eng.men === 3 && eng.builder && eng.vars === 'gi_eng,gi_eng_b,gi_eng_c' && eng.weap === 'm3' && eng.bare > 0 &&
+     eng.gloved > 0 && eng.skinHand === 0 && eng.goggle > 0 && eng.site && eng.building && eng.fellNat === 'usa_eng' &&
+     eng.bodies && /us_eng/.test(eng.ita) && !/am_eng/.test(eng.ita),
+     `the headquarters makes ${eng.makes}; the side opened with ${eng.openAm} engineer squads and ${eng.openCan} Canadian ` +
+     `sections; asked for the Canadian section it queues ${eng.qCan}; ${eng.men} men of ${eng.vars} carrying ${eng.weap}, ` +
+     `${eng.builder ? 'a builder' : 'NOT A BUILDER'}; the forearm has ${eng.bare} bare faces, the hand ${eng.gloved} of glove ` +
+     `and ${eng.skinHand} of skin, the helmet ${eng.goggle} of goggle; a sandbag wall ${eng.site ? 'pegged out' : 'REFUSED'} ` +
+     `and the squad ${eng.building ? 'sent to build it' : 'NOT SENT'}; a man killed went down as ${eng.fellNat}, engineer ` +
+     `bodies ${eng.bodies ? 'baked' : 'MISSING'}; Ortona's headquarters makes ${eng.ita}`);
+
+  /* --- The pioneers. The 352nd's pioneer team on the beach stands in for the paratroop
+     pioneers the way the grenadier squad stands in for the FJ group: the headquarters makes
+     it and refuses the other, the German side opens the battle with one, its three men are
+     the three pioneer variants with the MP40, goggles on the helmet, the pack on the back
+     and the collar in bottle green, it can peg out a work and go and build it, and a man of
+     it killed goes down as a pioneer. The Italian table still has the paratroopers. --- */
+  const pio = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0], sl = hq.own;
+    out.makes = W.makesOf(hq).join(',');
+    const made = W.REC.ger.made || {};
+    out.openHr = made.hr_pio || 0; out.openFj = made.ger_pio || 0;
+    G.res[sl].mp += 2000;
+    const q0 = hq.queue.length;
+    out.qFj = W.queueUnit(hq, 'ger_pio') ? hq.queue.slice(-1)[0] : 'refused';
+    hq.queue.length = q0;
+    const u = W.spawnUnit(sl, 'hr_pio', hq.x - 120, hq.y + 200, 0);
+    out.men = u.models.length; out.builder = !!u.def.builder;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.heer, r = W.manFaces('gr_pio', W.FIGPOSE.stand), P = r.parts;
+    out.goggle = P.helmet.filter(f => f.c === K.goggle).length;
+    out.pack = (P.kit || []).filter(f => f.c === K.torn || f.c === W.lit(K.torn, .95) || f.c === W.lit(K.torn, 1.12)).length;
+    out.collar = (P.collar || []).filter(f => f.c === W.lit(K.bottle, .95) || f.c === W.lit(K.bottle, .9) || f.c === W.lit(K.bottle, .92)).length;
+    /* the German headquarters stands in a walled yard among the hedgerows, so the first
+       spot a wall is tried at may be refused for the ground and not for the team */
+    let site = null;
+    for (const [dx, dy] of [[-60, 280], [60, 280], [0, 200], [160, 160], [-160, 160], [220, 0], [-220, 0], [0, -220], [260, 260], [-260, 260]]) {
+      site = W.placeWork(sl, 'bags', hq.x + dx, hq.y + dy, 0, [u]);
+      if (site) break;
+    }
+    out.site = !!site; out.building = u.building === site && u.order === 'work';
+    if (site) G.sites.splice(G.sites.indexOf(site), 1);
+    W.clearOrder(u);
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fellNat = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.heer_pio && W.MODELS.dead.heer_pio && W.MODELS.fall.heer_pio.length === 3 && W.MODELS.dead.heer_pio.length === 2);
+    W.killUnit(u);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(hq).join(',');
+    W.setNation('usa', 'heer');
+    return out;
+  });
+  ok('Omaha: the 352nd\'s pioneers are their own team of three, with MP40s, goggles, the pioneer pack, and bodies of their own',
+     /hr_pio/.test(pio.makes) && !/ger_pio/.test(pio.makes) && pio.openHr >= 1 && pio.openFj === 0 && pio.qFj === 'hr_pio' &&
+     pio.men === 3 && pio.builder && pio.vars === 'gr_pio,gr_pio_b,gr_pio_c' && pio.weap === 'mp40' && pio.goggle > 0 &&
+     pio.pack > 0 && pio.collar > 0 && pio.site && pio.building && pio.fellNat === 'heer_pio' && pio.bodies &&
+     /ger_pio/.test(pio.ita) && !/hr_pio/.test(pio.ita),
+     `the headquarters makes ${pio.makes}; the side opened with ${pio.openHr} pioneer teams and ${pio.openFj} paratroop ` +
+     `pioneers; asked for the paratroopers it queues ${pio.qFj}; ${pio.men} men of ${pio.vars} carrying ${pio.weap}, ` +
+     `${pio.builder ? 'a builder' : 'NOT A BUILDER'}; the helmet has ${pio.goggle} faces of goggle, the pack ${pio.pack} of ` +
+     `its brown and the collar ${pio.collar} of bottle green; a sandbag wall ${pio.site ? 'pegged out' : 'REFUSED'} and the ` +
+     `team ${pio.building ? 'sent to build it' : 'NOT SENT'}; a man killed went down as ${pio.fellNat}, pioneer bodies ` +
+     `${pio.bodies ? 'baked' : 'MISSING'}; Ortona's headquarters makes ${pio.ita}`);
 
   /* --- Destruction. A house knocked flat that still stops a boot and still stops an eye
      is a picture of rubble laid over a building that is, as far as everything else in the
@@ -3106,6 +4508,92 @@ for (const device of TARGETS) {
      `, and no frame of any of them goes backwards (${thread.cross.map(r => r.backPct).join('/')}%); ` +
      `settled inside each other, ` +
      thread.rest.map(r => `${r.key} ends ${r.markers} off with ${r.inside} of ${r.live} men inside the other`).join(', '));
+
+  /* --- And a gun in action is not shouldered aside. It moves when its crew have packed
+     it and not before, and a push is a move: weighed like any three men, a set-up MG42 in
+     a Tobruk at the Vierville exit was carried 232 units down the draw and onto the sand
+     by a section of its own side walking through it, on one battle in six, and the manned
+     wall row failed on it. Staged here, because a battle only finds it when a route
+     happens to run through a gun: a section walked straight through a set-up MG42 at
+     three offsets and through a Pak 40, then both again down a lane, with the same walks
+     and no gun as the controls, and a section spawned standing on the gun, which still has
+     to come off it. Before the fix the gun was shoved 81, 111 and 275 units and the Pak
+     111 in the open, and 271 and 282 down the lane, still in action. The lane is also
+     where the first fix failed the other way: a gun that pushed back at full strength
+     held a section up behind it for good. --- */
+  const plant = await page.evaluate(() => {
+    const W = window, G = W.G, keep = G.units.slice();
+    G.units.length = 0;
+    let sx = 0, sy = 0, found = false;
+    for (let ty = 400; ty < W.WORLD.h - 400 && !found; ty += 40)
+      for (let tx = 400; tx < W.WORLD.w - 400 && !found; tx += 40) {
+        let good = true;
+        for (let a = -260; a <= 260 && good; a += 20)
+          for (let b = -100; b <= 100 && good; b += 20)
+            if (!W.walkable(tx + a, ty + b)) good = false;
+        if (good) { sx = tx; sy = ty; found = true; }
+      }
+    if (!found) { sx = W.WORLD.w / 2; sy = W.WORLD.h / 2; }
+    const put = (side, key, x, y, f) => {
+      const u = W.spawnUnit(side, key, x, y, f);
+      const c = Math.cos(f), s2 = Math.sin(f);
+      if (u.models) for (const m of u.models) { m.x = u.x + m.ox * c - m.oy * s2; m.y = u.y + m.ox * s2 + m.oy * c; }
+      return u;
+    };
+    const gunUp = g => { g.setup = 0; g.pack = 0; g.packed = false; };
+    /* the open ground, and a lane: sixty units of it between two solid blocks, which is
+       where the push used to win -- a section braked by its own steering to a third of
+       its pace behind a gun that would not give way stood there for good */
+    const run = (gunKey, lat, lane) => {
+      G.units.length = 0;
+      let ly = sy + lat, wy = sy;
+      if (lane) { W.blockRect(sx, sy - 60.5, 500, 79, 0); W.blockRect(sx, sy + 80, 500, 80, 0); W.buildRoom(); ly = wy = sy + 10; }
+      const g = gunKey ? put('ger', gunKey, sx, ly, Math.PI / 2) : null;
+      if (g) gunUp(g);
+      const A = put('ger', 'ger_gren', sx - 220, wy, 0), go = { x: sx + 220, y: wy };
+      A.order = 'move'; A.path = [go]; A.pi = 0; A.pathStamp = W.gridStamp;
+      let t = 0, far = 0;
+      for (let i = 0; i < 1800; i++) {
+        G.t += 1 / 60; t += 1 / 60;
+        W.updateUnit(A, 1 / 60);
+        if (g) { W.updateUnit(g, 1 / 60); far = Math.max(far, Math.hypot(g.x - sx, g.y - ly)); }
+        if (Math.hypot(A.x - go.x, A.y - go.y) < 30) break;
+      }
+      const r = { gun: gunKey, lat, lane: !!lane, secs: +t.toFixed(2), arrived: Math.hypot(A.x - go.x, A.y - go.y) < 30,
+                  shoved: +far.toFixed(1), set: g ? !g.packed && !(g.setup > 0) && !(g.pack > 0) : true,
+                  room: lane ? Math.round(W.roomAt(sx, ly) * 2) : null };
+      G.units.length = 0;
+      if (lane) W.rebuildGrid();
+      return r;
+    };
+    const solo = run(null, 0), laneSolo = run(null, 0, true);
+    const through = [0, 20, 40].map(l => run('ger_mg42', l)).concat([run('ger_pak', 0)]);
+    const lanes = [run('ger_mg42', 0, true), run('ger_pak', 0, true)];
+    G.units.length = 0;
+    const g2 = put('ger', 'ger_mg42', sx, sy, 0); gunUp(g2);
+    const B = put('ger', 'ger_gren', sx + 6, sy + 4, 0);
+    for (let i = 0; i < 480; i++) { G.t += 1 / 60; W.updateUnit(B, 1 / 60); W.updateUnit(g2, 1 / 60); }
+    const rest = { depth: +W.sepDepth(B, g2).toFixed(1), moved: +Math.hypot(g2.x - sx, g2.y - sy).toFixed(1),
+                   apart: +Math.hypot(B.x - g2.x, B.y - g2.y).toFixed(1) };
+    G.units.length = 0;
+    keep.forEach(e => G.units.push(e));
+    W.rebuildGrid();
+    return { found, solo, laneSolo, through, lanes, rest };
+  });
+  const gunName = r => `${r.gun === 'ger_pak' ? 'Pak 40' : 'MG42'}`;
+  ok('a gun in action is not shoved off its ground by men walking through it',
+     plant.found && plant.solo.arrived && plant.laneSolo.arrived &&
+     plant.through.every(r => r.arrived && r.shoved < 1 && r.set && r.secs < plant.solo.secs * 2) &&
+     plant.lanes.every(r => r.arrived && r.shoved < 1 && r.set && r.secs < plant.laneSolo.secs * 2) &&
+     plant.rest.depth === 0 && plant.rest.moved < 1,
+     (plant.found ? '' : 'NO CLEAR CORRIDOR FOUND; ') +
+     `a section walks 440 units in ${plant.solo.secs}s alone; past a set-up ` +
+     plant.through.map(r => `${gunName(r)} at ${r.lat} it takes ${r.secs}s and the gun is ` +
+       `shoved ${r.shoved} units${r.set ? '' : ' and OUT OF ACTION'}`).join(', ') +
+     `; down a lane ${plant.lanes[0].room} wide it takes ${plant.laneSolo.secs}s alone and ` +
+     plant.lanes.map(r => `${r.secs}s through a ${gunName(r)}, shoved ${r.shoved}${r.set ? '' : ' and OUT OF ACTION'}`).join(' and ') +
+     `; a section spawned standing on the gun ends ${plant.rest.apart} off it, overlapping by ${plant.rest.depth}, ` +
+     `with the gun moved ${plant.rest.moved}`);
 
   /* --- And a weapon pit is a HOLE. This is the shape of fault a photograph is worst at:
      a horseshoe of bags on flat grass and a horseshoe of bags round a pit are the same
@@ -4056,7 +5544,10 @@ for (const device of TARGETS) {
   });
   ok('wire holds a man up and a hedgehog holds a tank up, and a map may lay both',
      obs.wire >= 6 && obs.hogs >= 6 && obs.mirrored && obs.inWire && obs.inHogs &&
-     obs.wireFoot > 2 && obs.wireTrack === 1 && obs.hogFoot === 1 && obs.hogTrack > 8 &&
+     /* 1.8 rather than 2, because what a man pays WITHOUT the wire is now his own
+        gradient rather than a flat 1.25 and these belts are laid on a forward slope: the
+        ratio fell from 2.08 to 1.94 with nothing about the wire changed. */
+     obs.wireFoot > 1.8 && obs.wireTrack === 1 && obs.hogFoot === 1 && obs.hogTrack > 8 &&
      obs.hogWheel > 8 && obs.walkHog && obs.walkWire &&
      obs.footCross > 0 && obs.tankCross === 0,
      `${obs.wire} wire runs and ${obs.hogs} obstacle belts, each mirrored about the midline ` +

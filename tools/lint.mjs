@@ -189,10 +189,85 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    turret and four automatic cannon in it. Most of the step is the three models; the
    rules they needed were an automatic-cannon and a rocket signature for the eye and the
    ear, a reload clock, and the blast a vehicle takes read off what is over it.
+   It is 1860 for a third map and the first of a second theatre: Omaha, which is a
+   country of its own -- a tidal flat, a shingle bank, a seawall, a bluff with three draws
+   cut through it and the farmland behind -- laid out as a corridor with the sea along its
+   bottom edge, plus what that took: a world whose size and whose sea are the map's to
+   choose, the sand it is painted in, and the ground carried on past the edge of the map.
+   It is 1880 for Omaha laid again by hand: a weather of its own (the overcast table the
+   light, the sky and the sea read), a sea that is a depth over a shelving bed with surf
+   breaking on it, and the craft that brought the first wave in -- the LCVP and the LCT
+   Mk V, which is also what the American headquarters stands as on that beach.
+   It is 1925 for the country behind that beach: a hundred and twenty-seven hedgerows laid
+   field by field with the lanes between them, and the Norman stone and slate the villages
+   there are built in, the church spires and the manor the German headquarters stands as.
+   It is 1945 for what the beach is for: a post made out of a landing craft (the tents,
+   the gantry and the stores laid in and round the hull), the garrison the wall can be
+   manned with at the whistle, and the Normandy pieces in the editor.
+   It is 1970 for the first of the American army: a third kit on the one rig (the M1941
+   jacket, the leggings, the cartridge belt and the haversack), the M1 helmet swept round a
+   plan ellipse under a net of its own, the Garand, and the table that says which army the
+   Allied side is on which map.
+   It is 2000 for the German army on that beach: a fourth kit on the rig (the field-grey
+   tunic, the Y-straps, the gas mask canister, the bread bag, the marching boot and the
+   gaiter), the M42 helmet with its chicken wire and foliage on a tile of its own, the
+   Kar98k cut as a side profile the way the Garand is, and the German half of the army
+   table.
+   It is 2030 for the jeep: the Willys MB pressed out of sheet a panel at a time (the bonnet
+   and wings, the nine-slot grille, the tub with its scoops and arches, the combat wheels
+   with their bar tread, the folded screen, the spare and the jerrican), the .30 and the
+   .50 on the M31 pedestal, and the three men who ride in it.
+   It is 2090 for the M4: the American Sherman built from nothing (the vertical-volute
+   bogies with their springs and trailing rollers, the dual pressed road wheels, the T48
+   chevron track, the three-piece nose, the hoods and hatches, the rear plate with its air
+   cleaners, the D50878 turret lofted from a plan, the M34A1 shield and the split hatch),
+   its authored interior, the .50 and the tanker who stands to it, and the tanker's kit
+   on the rig: his fibre helmet, his winter combat jacket and his shoulder holster.
+   It is 2130 for the KS 750: the Zündapp and its sidecar (the oval-tube frame, the girder
+   fork, the flat twin with its finned heads, the tank with the air cleaner on it, the
+   spoked wheels on their block tread, the saddles, the panniers, and the BW 40 lofted as
+   sections with its well, its coaming and the spare on its tail), the MG 34 and the MG 42
+   on the sidecar mount, and the motorcyclist's kit on the rig: the rubberised coat, the
+   gauntlets and the goggles.
+   It is 2190 for the Panzer IV the 352nd fields: the tank built from nothing (the
+   leaf-sprung bogies with their spring stacks, the twin road wheels, the drilled sprocket
+   and the welded idler, the Kgs 61 track, the stepped nose with its spare track, the visor
+   and the ball mount, the hexagonal turret with its side doors, its bin and its drum
+   cupola, the mantlet and the L/48 with its muzzle brake, the Schürzen and their rails,
+   the Balkenkreuze and the red 415), its cupola and turret interior, the MG 34 on the
+   Fliegerbeschussgerät and the man who stands to it, and the panzer crewman on the rig:
+   the black wrap, the M43 cap and the headset.
+   It is 2230 for the American engineer squad: the man on the rig in his herringbone twill
+   (the sleeves rolled above the elbow, the work gloves, the cargo pockets and the boots the
+   trousers are bloused over), the assault vest, the pack with its blanket roll and the three
+   loads it carries, the goggles on the M1, the M3 submachine gun, and his own prone and
+   dead layouts so he falls as an engineer.
+   It is 2290 for the 352nd's half-track: the Sd.Kfz. 251 Ausf. C built from nothing (the
+   interleaved running gear on its torsion arms with the holed discs, the spoked sprocket
+   and the idler, the steered front axle on its leaf spring and its two tyres, the faceted
+   body in seven rings with the crease welded down both sides, the bonnet, the driver's
+   plate and its visors, the lockers, the mudguards and their lamps, the rear doors bent
+   over the crease), the open compartment with its seats, wheel, instruments and benches,
+   the MG 34 on its pintle, and the driver and the gunner.
+   It is 2350 for the Rangers: four weapons cut as side profiles (the Thompson, the BAR, the
+   M9 bazooka and the M1919A6) with their anchors and a hip carry for the last, the assault
+   vest over the M1941 jacket with its pockets and the crossed straps, the diamond on the
+   helmet and the patch on the shoulder, the weapon slung on the back, six variants and their
+   prone and dead layouts, the launcher fired by the two men who carry it, and the doors a
+   field upgrade goes through opened to a squad.
+   It is 2400 for the M8: the boat-shaped hull laid between five rings, six wheels on three
+   axles and the bogie spring, the hatch plate with its two openings and their wells, the
+   covers opened onto the glacis, the open turret with its basket, rotor and rack of rounds,
+   the stowage boxes, the sand shields and the ring mount as fittings, and four men.
+   It is 2460 for the Knight's Cross Holders: the officer's peaked cap, the scarf and the
+   cross, the StG 44 cut as a side profile, the stick grenade and the bundle charge, four
+   variants and the two frames of a throw baked twice over, and the two abilities with their
+   flight, their fuse, the cards, the brain's use of them and the targeting that picks a
+   vehicle.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 1815) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 1815 kB so it stays quick to load on a phone`);
+if (kb > 2460) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2460 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

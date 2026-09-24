@@ -65,6 +65,81 @@ const CARD = [
   ['us_sher', 'ger_tig'],
   ['us_stuart', 'ger_sd222'],
   ['us_m8', 'ger_sd222'],
+  /* the jeep, which is what the Americans field in the carrier's place: against the car it
+     meets, the squad it meets and the paratroopers, and fitted with the .50 against the
+     car and the half-track */
+  ['am_jeep', 'ger_sd222'],
+  ['am_jeep', 'hr_gren'],
+  ['am_jeep', 'ger_gren'],
+  /* and the KS 750, which the 352nd fields in the 222's place: against the squad it meets,
+     the jeep, the Canadian section and the carrier */
+  ['hr_ks750', 'am_rifle'],
+  ['hr_ks750', 'am_jeep'],
+  ['hr_ks750', 'us_rifle'],
+  ['hr_ks750', 'us_m8'],
+  /* and the Panzer IV the 352nd fields in the Italian one's place: against the M4 it meets
+     on the beach and the squad */
+  ['am_sher', 'hr_p4'],
+  ['hr_p4', 'am_rifle'],
+  /* and the engineer squad the Americans field in the Canadian section's place: against the
+     paratroop pioneers it stands in for the calibration against, the grenadier squad it meets
+     on the beach, and the Canadian section itself */
+  ['am_eng', 'ger_pio'],
+  ['am_eng', 'hr_gren'],
+  ['am_eng', 'us_eng'],
+  /* and the pioneer team the 352nd fields in the paratroop pioneers' place, which carries the
+     engineers' numbers to the point and is the calibration row on the beach, and against
+     the squad it meets */
+  ['am_eng', 'hr_pio'],
+  ['hr_pio', 'am_rifle'],
+  /* and the 251 the 352nd fields in the Ausf. D's place: against the squad it meets, the
+     jeep, and the M4 that opens it */
+  ['hr_251', 'am_rifle'],
+  ['hr_251', 'am_jeep'],
+  ['am_sher', 'hr_251'],
+  /* and the M3A1 the Americans field in the one Italy has: against the squad it meets, the
+     251 it faces across the beach, the KS 750, and the Panzer IV that opens it */
+  ['am_m3', 'hr_gren'],
+  ['am_m3', 'hr_251'],
+  ['am_m3', 'hr_ks750'],
+  ['hr_p4', 'am_m3'],
+  /* and the Ranger squad the Americans field in the Foot Guards' place: against the grenadier
+     squad it meets, the Foot Guards it stands in for, the Panzergrenadiere that are the elite
+     it meets on the beach (and with the two .30s issued against them, because the grenadiers
+     lose every fight either way and say nothing about the upgrade), the 251 and the KS 750
+     its bazookas are for, and the Panzer IV they are a nuisance to */
+  ['am_ranger', 'hr_gren'],
+  ['am_ranger', 'us_fg'],
+  ['am_ranger', 'ger_pgren'],
+  ['am_ranger', 'ger_pgren', { a: ['a6'] }],
+  ['am_ranger', 'hr_251'],
+  ['am_ranger', 'hr_ks750'],
+  ['hr_p4', 'am_ranger'],
+  /* and the M8 the Americans field in the Stuart's place: against the KS 750, the 251 and the
+     grenadier squad it hunts, the FJ assault group whose Panzerschreck opens it (and with the
+     sand shields hung against it), the Rangers who are meant to beat it, and the Panzer IV */
+  ['am_m8', 'hr_ks750'],
+  ['am_m8', 'hr_251'],
+  ['am_m8', 'hr_gren'],
+  ['am_m8', 'ger_pgren'],
+  ['am_m8', 'ger_pgren', { a: ['fenders'] }],
+  ['am_ranger', 'am_m8'],
+  ['hr_p4', 'am_m8'],
+  /* and the 234 the 352nd fields in the Wirbelwind's place: the 234/1 against the M8 it trades
+     with, the half-track it hunts and the Rangers who hunt it, and the Puma against the M8 it
+     outguns and the M4 it can open only from the flank */
+  ['hr_234', 'am_m8'],
+  ['hr_234', 'am_m3'],
+  ['am_ranger', 'hr_234'],
+  ['hr_234', 'am_m8', { a: ['puma'] }],
+  ['hr_234', 'am_sher', { a: ['puma'] }],
+  /* the Knight's Cross Holders, whose grenades reach 150, so a row at the pair's own reach says
+     nothing about them: read these beside the same rows at --d=130 */
+  ['am_ranger', 'hr_kch'],
+  ['am_rifle', 'hr_kch'],
+  ['am_m8', 'hr_kch'],
+  ['am_m3', 'hr_kch'],
+  ['am_sher', 'hr_kch'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],
@@ -94,6 +169,11 @@ const CARD = [
   ['us_m3', 'ger_p4', { a: ['how75'] }],
   ['ger_h251', 'us_stuart', { a: ['pak36'] }],
   ['us_m8', 'ger_gren', { a: ['thirty'] }],
+  ['am_jeep', 'ger_sd222', { a: ['fifty'] }],
+  ['ger_sd222', 'am_jeep', { a: ['kwk'] }],
+  ['am_jeep', 'hr_gren', { a: ['fifty'] }],
+  ['hr_ks750', 'am_rifle', { a: ['mg42'] }],
+  ['hr_ks750', 'am_jeep', { a: ['mg42'], b: ['fifty'] }],
   ['ger_p4', 'us_ab', { a: ['skirts'] }],
   ['us_sher', 'ger_p4', { a: ['mg'], b: ['mg', 'skirts'] }],
   ['us_sher', 'ger_stug', { b: ['scope', 'mgs', 'skirts'] }]
@@ -113,8 +193,12 @@ if (args.base !== undefined) {
 const { page } = await openGame(browser, 'desktop', { file });
 await deploy(page, { side: 'us', diff: 1 });
 
-const pairs = positional.length >= 2 ? [[positional[0], positional[1]]] : CARD;
-const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
+/* one matchup off the command line takes its upgrades the way a card row does:
+   --ua=fifty fits A, --ub=kwk fits B */
+const cliUps = args.ua || args.ub ? { a: args.ua ? String(args.ua).split(',') : [], b: args.ub ? String(args.ub).split(',') : [] } : undefined;
+const pairs = positional.length >= 2 ? [cliUps ? [positional[0], positional[1], cliUps] : [positional[0], positional[1]]] : CARD;
+const NOAB = !!args.noab;
+const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB }) => {
   /* a wide flat patch well away from anything either side owns */
   function findField() {
     let best = null, bestDev = 1e9;
@@ -137,10 +221,18 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
   }
   const field = findField();
 
-  /* one tick of the real game, minus everything that is not the fight */
+  /* one tick of the real game, minus everything that is not the fight -- except the
+     things a squad throws, which are orders, and in a battle the brain gives them: at the
+     rate the regular brain thinks, through the same routine it calls (`abAuto`). --noab
+     fights the card without them, which is the way to see what they are worth. */
+  let abT = 0;
   function step(dt) {
     G.t += dt;
     computeVisibility(dt);
+    if (!NOAB && typeof abAuto === 'function' && (abT -= dt) <= 0) {
+      abT = 1.1;
+      for (const u of G.units) if (u.def.ab && !u.dead) abAuto(u);
+    }
     for (let i = 0; i < G.units.length; i++) updateUnit(G.units[i], dt);
     updateShots(dt);
     for (let k = G.units.length - 1; k >= 0; k--) if (G.units[k].dead) G.units.splice(k, 1);
@@ -156,6 +248,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
   }
 
   function once(ka, kb, dist, flip, ups) {
+    abT = 0;
     G.units.length = 0; G.shots.length = 0; G.fx.length = 0; G.corpses.length = 0;
     /* and the hulls of the last fight, which were left lying on the staging ground. They
        have always been on the movement grid; since a burning wreck also obscures they
@@ -253,7 +346,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT }) => {
                popA: A.pop, popB: B.pop });
   }
   return out;
-}, { pairs, N, DIST, COVER, LIMIT });
+}, { pairs, N, DIST, COVER, LIMIT, NOAB });
 
 await browser.close();
 if (tmp) fs.rmSync(tmp, { recursive: true, force: true });
