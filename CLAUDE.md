@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the grenadier squad, the pioneer team, the
-Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1144,7 +1144,17 @@ in the hand at his hand's, halted it sets up with the gunner sitting and his num
 the number two at the gun's left facing it and the bearers back either side, the flash comes off
 the gun's muzzle, the brain's own routine issues the .50 and the weapon, the piece, the bodies at
 it and the pieces carried all change, a man killed goes down as `usa_mg`, and Ortona's post still
-makes the Vickers.
+makes the Vickers. And the MG 34 team is asked it in a sixteenth, on the German side: the company
+post makes it and not the MG42 team and queues it when asked for the MG42 team, the count and the
+order book read the two as one, it is four men, every variant and both guns' bodies at the gun
+are baked, a bearer carries belt faces a grenadier has none of, the heel of each gun's butt, read
+off the gun's own faces and put where the cradle holds it, is within 1.3 units of the seated
+gunner's right shoulder joint, walking it is the gunner with the gun on his shoulder, the number
+two with the Lafette on his back and the two bearers with a box each, halted it sets up with the
+gunner sitting and his number two serving, the number two at the gun's left facing it and the
+bearers back either side, the flash comes off the gun's muzzle, the brain's own routine issues
+the MG 42 and the weapon, the gun in the cradle, the bodies at it and the gun carried all change,
+a man killed goes down as `heer_mg`, and Ortona's post still makes the MG42 team.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -4061,6 +4071,69 @@ times in four; the 251 takes it five times in eight, because the half-track's MG
 faster than four men can open it, and the 234/1 every time. At a penetration of 36 the 251 took
 it nearly every time and at 70 with the .30's rate it took everything in under ten seconds.
 
+**The MG 34 team is the 352nd's machine gun team**, in the MG42 team's place (`ger_mg42` to
+`hr_mg` on the army's list), bought from the company post: four men of a machine gun company with
+the MG 34 on the Lafette 34, which is the tripod every German heavy machine gun section fought
+from and which took the MG 42 as well. The gunner and his number two carry the gun and the tripod
+with a P38 and the machine gunner's tool pouch each, the other two bring the ammunition with the
+Kar98k, one of them with the spare barrel case slung across his back, and all four wear the
+grenadier's kit with two belts crossed on the chest, which are link (`roundBelt`'s `link`) where
+the American's are cloth. It is the .30 cal team's machinery on the other side of the beach, and
+three things about it are its own.
+
+**The gun has a stock, so the gunner sits beside the bore.** A Browning on its tripod has a back
+plate and spade grips and the man behind it sits on its line; a German gun on the Lafette is laid
+with the butt in his right shoulder, and a man sat on the bore takes it in the middle of his
+chest. `gunY` is how far to the left of the bore the served body is baked, `gunGripL` gives his
+left hand a place of its own on top of the butt, and `sitmg` is the sit leaned to .6 so that the
+shoulder comes down to it. `bakeGunners` moves the body and reads the grips in the body's own
+frame, and nothing else had to change, because the gun, the flash and every place round the gun
+are laid off the bore and not off the man. The Lafette stands at the sitting height (`LAF.gz`,
+7.1 units over the ground, which is sixty centimetres), and the gate measures the heel of each
+gun's butt off the gun's own faces against the seated man's shoulder joint: 0.96 units for the MG
+34 and 0.92 for the MG 42.
+
+**What a team carries is the team's to say** (`carryP`: the gun, the tripod, the box and the
+box's height), on the def and on each piece in `gunUp`, where `mgCarryAt` had the .30 and the .50
+written into it. The number two carries the Lafette folded on his back (`V.lafback`, `LAF.back`):
+drawn at the point on his back the bake read off each pose, leaned with his back rather than
+pitched off a shoulder, the pad against him and the legs gathered up past his helmet, and lying
+down he has it off beside him. The bearers carry a Patronenkasten 34 (`pk34`) in the left hand. A
+manned wall's four Tobruks are MG 34 teams now as well, since the garrison goes through `natKey`.
+
+**The two guns are cut as side profiles** (`weaponModel(k, 'mg34')`, `'mg42'`), 14.35 units each
+against a published 1,219 and 1,220 mm: the MG 34 round, with the tall feed cover, the round
+jacket pierced with holes and the booster at the muzzle; the MG 42 stamped and square, with the
+flat cover, the slotted jacket and the opening down its right side the barrel comes out of. Both
+feed from the left, both have the bipod folded back under the jacket, and the butt and grip are
+bakelite. The Lafette (`lafette34`) is the head on three legs with the leather pad on the long
+front one, the brace and the elevating screw with its handwheel, the cradle with a clamp round
+the jacket and one under the receiver, the firing handle under the back and the MGZ 34 periscope
+sight on its arm at the left, where the gunner's eye is; folded, it is a bundle a little taller
+than the man carrying it. The MG 42 goes into the same cradle, so the upgrade changes the gun and
+leaves the tripod where it was.
+
+**Its numbers are the .30's, to the point, and the pair is the beach's machine gun calibration
+row.** The two teams carry the same sort of gun on the same sort of tripod and do the same job,
+so they are one unit on two sides, the way the engineers and the pioneers are. It was written
+first with ten units more sight and reach and a little more suppression, and over forty-eight
+runs it took the .30 about two fights in three: the ten units of sight is the one that counts,
+because the side that sees first opens first. Level, over forty-eight runs split across the two
+sides of the card, it takes the .30 52 per cent of the time (58 from one side and 46 from the
+other), and the rifle squad every time in 19 seconds with 78 per cent of itself left, where the
+.30 takes the grenadiers in 19 and keeps 80.
+
+**The MG 42 is suppression and nothing else.** It fires half as fast again at two thirds of the
+round, so it does what the MG 34 does to a man a second and pins him harder. At the first cut, 3.6
+a round every .08 seconds with a suppression of .066, a quarter more fire and a third more
+suppression than the MG 34 had then, it took the .30 every time in twenty-two seconds with 98 per
+cent of itself left; at the MG 34's damage a second with a suppression of .060 it still took it 81
+per cent of the time, because pinned men stop hitting anything. At 2.9 a round every .08 seconds
+with a suppression of .054, for 90 marks and 10 of fuel, over forty-eight runs split across the
+two sides it takes the .30 81 per cent of the time and splits with the .50 at 46; it takes the rifle squad every time in 20 seconds with 84 per cent of itself
+left. The Rangers take the MG 34 team seven times in eight in 13 seconds, the jeep takes it every
+time in 15, and it takes the engineers every time in eight.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -6385,6 +6458,13 @@ shots/                         screenshot output, gitignored
   wheel and wrong for a plate facing forward: use `boltRingX()` there. Getting it
   wrong throws the ring of bolts out past the nose armour, where it quietly adds
   a quarter of a metre to the vehicle's measured length.
+- **`roll(faces, a, oy, oz)` turns about the line through (oy, oz); it does not move the part
+  there.** All three machine gun tripods built their elevating handwheel at z 0 and rolled it
+  with its height as the offset, which swung each wheel out to the side of the tripod by that
+  height: two and two and a half units beside the two American tripods and five beside the
+  Lafette. A disc hanging in the air beside a gun reads as part of the gun at play distance,
+  and it took a close-up of the Lafette with a man sitting at it to see one. Roll about the
+  origin and `place` the part where it goes.
 - `var` hoists. A hull constant referenced above its own `var` line is
   `undefined`, every vertex built from it is `NaN`, and the part vanishes without
   an error. `tools/dims.mjs` reports NaN when this happens.

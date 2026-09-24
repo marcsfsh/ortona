@@ -152,6 +152,16 @@ const CARD = [
   ['am_mg', 'hr_gren', { a: ['m2hb'] }],
   ['am_mg', 'hr_ks750', { a: ['m2hb'] }],
   ['am_mg', 'hr_251', { a: ['m2hb'] }],
+  /* and the 352nd's MG 34 team in the MG42 team's place: against the .30 across the beach, the
+     rifle squad and the engineers it is there to keep down and the jeep that can ride up on it;
+     and with the MG 42 issued, against the .30, against the .50 and against the rifle squad */
+  ['hr_mg', 'am_mg'],
+  ['hr_mg', 'am_rifle'],
+  ['hr_mg', 'am_eng'],
+  ['am_jeep', 'hr_mg'],
+  ['hr_mg', 'am_mg', { a: ['mg42t'] }],
+  ['hr_mg', 'am_mg', { a: ['mg42t'], b: ['m2hb'] }],
+  ['hr_mg', 'am_rifle', { a: ['mg42t'] }],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

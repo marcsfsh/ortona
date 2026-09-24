@@ -404,8 +404,8 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb'].forEach(type => {
-      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger'
+    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg34', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb'].forEach(type => {
+      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg34' || type === 'mg42' ? 'ger'
                                : ['garand', 'm3', 'thompson', 'bar', 'zook', 'm1919', 'carbine', 'a4', 'm2hb'].includes(type) ? 'usa' : 'us'], type);
       if (!f || !f.length) return;
       const e = ext(f);
@@ -941,7 +941,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46 };
+    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg34: 14.34, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);

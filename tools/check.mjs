@@ -4164,6 +4164,134 @@ for (const device of TARGETS) {
      `${mg.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${mg.wUp ? 'changed' : 'NOT changed'}, the piece and bodies ${mg.mesh50 ? 'changed' : 'NOT changed'}, ` +
      `carried ${mg.pieces50}; killed went down as ${mg.bodyNat}, bodies ${mg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${mg.ita}`);
 
+  /* --- The MG 34 team. The 352nd's machine gun team on the beach, in the MG42 team's place:
+     the company post makes it and queues it when asked for the MG42 team, the count and the
+     order book read the two as one, and it is four men -- the gunner and his number two, and
+     two riflemen with the Kar98k -- every one of them with two belts crossed on his chest.
+     Packed, the gun is on the gunner's right shoulder and the Lafette folded on his number
+     two's back, drawn at the points the bake read off each man, and a box in each bearer's
+     hand; set up, the gunner sits behind the gun with the butt in his right shoulder, which is
+     measured off the model, his number two kneels at its left where the belt goes in and the
+     bearers are back either side. The MG 42 is a field upgrade bought through the brain's own
+     routine, and it changes the weapon, the gun in the cradle, the gun carried and the bodies
+     at it. A man killed goes down as one of the team, and Ortona's post still makes the MG42
+     team. --- */
+  const hmg = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0], ghq = G.blds.filter(b => b.own === 'ger' && b.def.hq)[0];
+    const post = W.spawnBuilding('ger', 'ger_qtr', ghq.x - 240, ghq.y + 120, true);
+    out.makes = W.makesOf(post).join(',');
+    G.res.ger.mp += 3000; G.res.ger.fu += 600;
+    const q0 = post.queue.length, m0 = W.madeOf('ger', 'hr_mg');
+    out.q = W.queueUnit(post, 'ger_mg42') ? post.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('ger', 'hr_mg') - m0;
+    out.madeAs = W.madeOf('ger', 'ger_mg42') === W.madeOf('ger', 'hr_mg');
+    post.queue.length = q0;
+    /* staged on the open sand, for the .30 cal row's reason */
+    const openAt = (x, y) => {
+      for (let dx = -60; dx <= 360; dx += 20) for (let dy = -60; dy <= 60; dy += 20)
+        if (!W.walkable(x + dx, y + dy) || W.inMasonry(x + dx, y + dy)) return false;
+      return !G.covers.some(c => Math.hypot(c.x - x - 300, c.y - y) < c.r + 110);
+    };
+    let at = null;
+    for (let r = 0; r < 1400 && !at; r += 40)
+      for (let k = 0; k < 24 && !at; k++) {
+        const x = hq.x - 150 + r * Math.cos(k * Math.PI / 12 + .13), y = hq.y - 500 + r * Math.sin(k * Math.PI / 12 + .13);
+        if (openAt(x, y)) at = { x, y };
+      }
+    out.open = !!at;
+    if (!at) at = W.nearestFree(hq.x + 160, hq.y - 260);
+    const u = W.spawnUnit('ger', 'hr_mg', at.x, at.y, 0);
+    out.count = W.countOf('ger', 'ger_mg42') === W.countOf('ger', 'hr_mg');
+    out.men = u.models.length;
+    out.baked = ['hr_mgg', 'hr_mgc', 'hr_mgl', 'hr_mga', 'hr_mga_b'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!W.MODELS.man.hr_mga[W.POSE_FIRE] && !!(W.MODELS.served.hr_mg && W.MODELS.served.hr_mg.mate) &&
+                !!(W.MODELS.served['hr_mg:mg42t'] && W.MODELS.served['hr_mg:mg42t'].mate);
+    const K = W.KIT.heer, belt = W.manFaces('hr_mga', W.FIGPOSE.stand).faces.filter(f => f.c === K.brass || f.c === K.mgbelt).length;
+    const plain = W.manFaces('gr_rifle', W.FIGPOSE.stand).faces.filter(f => f.c === K.brass || f.c === K.mgbelt).length;
+    out.belts = belt + '/' + plain;
+    /* the butt in his right shoulder: the heel of each gun's butt, off the gun's own faces and
+       put where the cradle holds it, against the seated gunner's shoulder joint moved to the
+       side of the bore he sits on */
+    const heel = (g, gd) => {
+      const f = W.weaponModel(K, g), xs = [];
+      f.forEach(q => q.v.forEach(v => xs.push(v)));
+      const x0 = Math.min(...xs.map(v => v[0])), back = xs.filter(v => v[0] < x0 + .15);
+      const zc = back.reduce((a, v) => a + v[2], 0) / back.length;
+      return [gd.gunAt + x0 + W.LAF.gx, -gd.gunY, zc + W.LAF.gz];
+    };
+    const P = W.FIGPOSE[u.def.gunSit], sh = W.manFaces('hr_mgg', { legs: P.legs, lean: P.lean, carry: 'grips', grips: P.grips }).joints.shoulderR;
+    const gap = h => +Math.hypot(h[0] - sh[0], h[1] - sh[1], h[2] - sh[2]).toFixed(2);
+    out.butt34 = gap(heel('mg34', u.def)); out.butt42 = gap(heel('mg42', u.def.gunUp.mg42t));
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.packed = true; u.setup = 0; u.pack = 0;
+    u.dest = { x: u.x + 300, y: u.y }; u.path = W.findPath(u.x, u.y, u.x + 300, u.y, u); u.pi = 0;
+    step(1.5);
+    out.walkVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.carried = W.carried(u);
+    const piece = i => { const v = W.variantForModel(u, i); return W.mgCarryAt(u, u.models[i], i, v) ? W._mgc.buf : null; };
+    const C = W.MODELS.carry;
+    out.pieces = [piece(0) === C.mg34, piece(1) === C.laf, piece(2) === C.pk34, piece(3) === C.pk34].join(',');
+    const h = W.holdAt('hr_mgc', u.models[0]), hl = W.holdAt('hr_mgl', u.models[1]), hb = W.holdAt('hr_mga', u.models[2]);
+    out.shoulder = h ? +h[2].toFixed(1) : -1; out.hand = hb ? +hb[2].toFixed(1) : -1;
+    out.back = hl ? +hl[0].toFixed(1) + ',' + hl[2].toFixed(1) : '-';
+    u.path = null; u.dest = null;
+    step(5);
+    out.set = W.gunSet(u);
+    out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [dx * cs + dy * sn, -dx * sn + dy * cs]; };
+    const r1 = rel(u.models[1]), r2 = rel(u.models[2]), r3 = rel(u.models[3]);
+    out.mate = r1.map(v => +v.toFixed(1)).join(','); out.mateLeft = r1[1] < -3;
+    out.bearers = (u.coverSlots && u.coverSlots[2] && u.coverSlots[3]) ? 'cover' : r2[0] < -4 && r3[0] < -4 && r2[1] * r3[1] < 0;
+    out.mateFaces = Math.abs(W.angDiff(u.models[1].f, u.facing + Math.PI / 2)) < .25;
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.hr_mg;
+    const mz = W.muzzlePoint(u, u.models[0], 0), gd = W.gunOf(u);
+    out.muz = Math.abs(Math.hypot(mz.x - gp.x, mz.y - gp.y) - gd.gunMuz[0] * W.FIG_SCALE) < 1.5;
+    /* the MG 42 */
+    out.upg = W.upgradable(u) && !!W.UPGRADES.mg42t;
+    const w0 = W.mainW(u);
+    const got = W.buyUpgradeAuto('ger', [u], { floor: 0, fuFloor: 0 });
+    out.fitted = got === u && !!u.up.mg42t;
+    out.wUp = W.mainW(u) === u.def.wUp.mg42t && w0 === u.def.w && W.mainW(u).rof < w0.rof && W.mainW(u).sup > w0.sup;
+    out.mesh42 = W.teamMesh(u) === W.MODELS.gun['hr_mg:mg42t'] && W.gunOf(u) === u.def.gunUp.mg42t &&
+                 W.servedOf(u) === W.MODELS.served['hr_mg:mg42t'];
+    u.packed = true; u.setup = 0;
+    out.pieces42 = [piece(0) === C.mg42, piece(1) === C.laf, piece(2) === C.pk34].join(',');
+    u.packed = false;
+    const m = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    out.fall = !!(W.MODELS.fall.heer_mg && W.MODELS.dead.heer_mg);
+    W.killUnit(u);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(post).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(post);
+    return out;
+  });
+  ok('Omaha: the MG 34 team stands in for the MG42 team, carries its gun and Lafette, and is issued the MG 42',
+     /hr_mg/.test(hmg.makes) && !/ger_mg42/.test(hmg.makes) && hmg.q === 'hr_mg' && hmg.made === 1 && hmg.madeAs && hmg.count &&
+     hmg.open && hmg.men === 4 && hmg.baked && +hmg.belts.split('/')[0] > 20 && +hmg.belts.split('/')[1] === 0 &&
+     hmg.butt34 < 1.3 && hmg.butt42 < 1.3 &&
+     hmg.walkVars === 'hr_mgc,hr_mgl,hr_mga,hr_mga_b' && hmg.carried && hmg.pieces === 'true,true,true,true' &&
+     hmg.shoulder > 15 && hmg.shoulder < 20 && hmg.hand > 7 && hmg.hand < 12 && /^-/.test(hmg.back) &&
+     hmg.set && hmg.setVars === 'hr_mgg,hr_mgg,hr_mga,hr_mga_b' && /^10,11,/.test(hmg.poses) && hmg.mateLeft && hmg.mateFaces && hmg.bearers &&
+     hmg.mesh && hmg.muz && hmg.upg && hmg.fitted && hmg.wUp && hmg.mesh42 && hmg.pieces42 === 'true,true,true' &&
+     hmg.bodyNat === 'heer_mg' && hmg.fall && /ger_mg42/.test(hmg.ita) && !/hr_mg/.test(hmg.ita),
+     (hmg.open ? '' : 'NO open ground to stage on; ') + `the company post makes ${hmg.makes}; asked for the MG42 team it queues ${hmg.q}, counted as ${hmg.made} made and the order ` +
+     `book ${hmg.madeAs ? 'the same' : 'DIFFERENT'}, the count ${hmg.count ? 'the same' : 'DIFFERENT'}; ${hmg.men} men, every variant ` +
+     `and both guns' bodies at the gun ${hmg.baked ? 'baked' : 'NOT baked'}; belt faces on a bearer against a rifleman ${hmg.belts}; ` +
+     `the butt ${hmg.butt34} and ${hmg.butt42} off the gunner's shoulder joint; ` +
+     `walking ${hmg.walkVars}, ${hmg.carried ? 'carried' : 'NOT carried'}, gun, Lafette and boxes ${hmg.pieces}, the gun at ${hmg.shoulder} ` +
+     `on the shoulder, the Lafette at ${hmg.back} on the back and a box at ${hmg.hand} in the hand; halted ${hmg.set ? 'set up' : 'NOT set up'} as ${hmg.setVars} in poses ${hmg.poses}, ` +
+     `the number two at ${hmg.mate} ${hmg.mateFaces ? 'facing the gun' : 'NOT facing the gun'}, the bearers ${hmg.bearers === 'cover' ? 'in cover' : hmg.bearers ? 'back either side' : 'NOT in place'}, ` +
+     `the piece ${hmg.mesh ? 'the MG 34' : 'WRONG'} and the flash ${hmg.muz ? 'at the muzzle' : 'OFF the muzzle'}; the MG 42 ${hmg.upg ? 'on offer' : 'NOT on offer'}, ` +
+     `${hmg.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${hmg.wUp ? 'changed' : 'NOT changed'}, the piece and bodies ${hmg.mesh42 ? 'changed' : 'NOT changed'}, ` +
+     `carried ${hmg.pieces42}; killed went down as ${hmg.bodyNat}, bodies ${hmg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${hmg.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three
