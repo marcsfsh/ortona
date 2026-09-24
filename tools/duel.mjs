@@ -103,6 +103,18 @@ const CARD = [
   ['am_m3', 'hr_251'],
   ['am_m3', 'hr_ks750'],
   ['hr_p4', 'am_m3'],
+  /* and the Ranger squad the Americans field in the Foot Guards' place: against the grenadier
+     squad it meets, the Foot Guards it stands in for, the Panzergrenadiere that are the elite
+     it meets on the beach (and with the two .30s issued against them, because the grenadiers
+     lose every fight either way and say nothing about the upgrade), the 251 and the KS 750
+     its bazookas are for, and the Panzer IV they are a nuisance to */
+  ['am_ranger', 'hr_gren'],
+  ['am_ranger', 'us_fg'],
+  ['am_ranger', 'ger_pgren'],
+  ['am_ranger', 'ger_pgren', { a: ['a6'] }],
+  ['am_ranger', 'hr_251'],
+  ['am_ranger', 'hr_ks750'],
+  ['hr_p4', 'am_ranger'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

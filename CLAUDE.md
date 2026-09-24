@@ -4,8 +4,8 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the engineer squad, the grenadier squad, the pioneer team, the jeep, the M4, the
-M3A1, the KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+rifle squad, the engineer squad, the Ranger squad, the grenadier squad, the pioneer team, the
+jeep, the M4, the M3A1, the KS 750, the 251 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -857,7 +857,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, and 2290 before the 251). Takes
+before the engineer squad, 2290 before the 251, and 2350 before the Rangers). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1080,7 +1080,14 @@ American squad boards it and a second is refused, it is put down behind the vehi
 to lay over the tail comes all the way round, the periscope's eye is the gunner's, standing in
 the pulpit, at thirty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto
 the belly, killed it leaves American bodies and the squad aboard comes out alive, and Ortona's
-motor pool still makes the old one.
+motor pool still makes the old one. And the Rangers are asked it in an eleventh: the company post
+makes them and not the Foot Guards and queues them when asked for the Guards, the count and the
+order book read the two as one, the six men are the leader, three Thompsons and the two BAR men,
+every variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and
+the weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the
+squad fights with what it has left, the .30 is bought through the brain's own upgrade routine and
+changes the weapon and two of the Thompson men, killed it leaves `usa_rgr` bodies with those baked,
+and Ortona's post still makes the Guards.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3182,6 +3189,76 @@ accuracy and 150 of reach, over 24 runs it wins 46 and 38 at 123, which is 82 pe
 reach, and over 16 it wins 75 and 63 at 80: a little behind at the edge of its reach and ahead
 up close. It loses every fight with the grenadier squad inside nine seconds, and so does the
 Canadian section, because that is three men of a builder against six of a line squad.
+
+**The Rangers are the Americans' assault squad**, in the Foot Guards' place (`us_fg` to
+`am_ranger` on the army's list), bought from the same company post: six men with four Thompsons
+and two BARs, and a bazooka slung on each BAR man's back. It is the rifleman's rig in the
+M1941 jacket and leggings with `V.rgr` on it, and what is new is what goes over the jacket.
+**The assault vest is a darker green than the poplin** (`rvest`), from the hip to the chest and
+standing out over the jacket's skirt, open at the top so the jacket and its storm flap show
+between the fronts, with two big pockets low, two smaller ones high and a pouch across the back.
+The canvas tile renders a colour a good deal lighter than it is written, so the vest is written
+nearly black-green: at the first value it came out the bright green of a toy soldier. Over it
+(`figKitRgr`) the pistol belt round the hem with the canteen, the musette bag on the left hip,
+and **two pale straps crossing on the chest and again on the back**, which is the X in every
+photograph of the battalion. The 2nd Battalion's orange diamond is painted on the back of the
+M1 (`helmetM1` with `V.rgr`), a leader has the white bar on its front (`V.nco`) and his field
+glasses on his chest, and the patch on the left shoulder is the blue diamond edged in orange
+(`engKit` hands the arm `rdiam`). Six variants: `rg_lead`, `rg_tommy`, `rg_tommy_b` with hessian
+in his net, `rg_bar` with the bazooka on his back, `rg_zook` with the bazooka up and the BAR on
+his back in its place, and `rg_30`. **The weapon he is not firing is slung across his back**
+(`V.back`), the model turned so its top faces away from him and stood up at fifty-eight degrees
+over his left shoulder; a bazooka is nine tenths of a man's height and stands up past his
+helmet. He falls as a Ranger (`body: 'usa_rgr'`), with the vest in his prone and dead layouts.
+
+**The swap is a variant and a weapon, and nothing else.** `variantForModel` hands men 1 and 3
+the bazooka variant while the squad's target is a vehicle, and `weaponFor` hands the squad
+`def.at`. `at.men` names the two men who carry the tubes: `launcherMan` picks whichever of them
+is next and alive, turn about, the flash goes on him and the round leaves from where he stands
+rather than from the squad's marker, and `launcherLive` is false once both are dead, when the
+squad fights armour with what it has left. It needed nothing in the combat model: the Foot
+Guards' PIAT had been going the same way since the Foot Guards were written.
+
+**The four weapons are cut as side profiles** (`weaponModel`): the Thompson M1A1 with its
+horizontal fore-end and the box magazine, 9.54 units against a published 811 mm; the BAR
+M1918A2 with its twenty-round box, the handguard, the flash hider and the bipod folded back,
+14.28 against 1,214 mm; the M9 bazooka in olive drab with the wooden shoulder stock, the grip
+and the reflecting sight, 18.24 against 1,549 mm assembled; and the M1919A6 with the steel
+stock, the perforated jacket, the carrying handle and the cone of the flash hider, 15.84 against
+1,346 mm. **The .30 is fired from the hip** (`WEAP.m1919.hip`, a branch of its own in
+`figCarry`'s aim): held outboard of the right hip with the hand a little behind him, so the stock
+runs back past his side and not through him, pointing where he faces, with the left hand
+reaching across under the rear of the jacket. Laid first beside the hip and turned in so the left
+hand could reach it, the stock went straight through his trunk and the men card called it 0.91
+units into the chest. The card does not judge the eye over the bore for a hip weapon, since he is
+watching his tracer. **A BAR is carried further across him than a Bren** (`WEAP.bar.carry`),
+because its handguard is well forward of the magazine and the reach to it took the upper arm
+through the chest; and its butt sits a little behind the stock's own end, with the stock cut a
+hand shallower than it was, for the same reason in the aim.
+
+**The .30 is a field upgrade, and it is the first a squad takes.** `UPGRADES.a6` swaps the
+weapon (`wUp.a6`) and turns men 4 and 5 into `rg_30`. Every door an upgrade went through asked
+`u.cat === 'veh'` -- the brain's routine, the classic scheme's automatic tick and its cards, the
+SIMPLE unit card -- and asks `upgradable(u)` now, which is whether the def lists any.
+
+**Its numbers came off the duel card, and the lever that decides a fight is suppression.**
+At a first cut the squad beat the grenadiers and the Panzergrenadiere every time and lost nine
+in ten to the 251, whose machine gun pins a squad and a pinned squad fires at a quarter of its
+accuracy, so the tubes have to do their work in the first few seconds of the fight. At 74 hit
+points a man, 420 marks and 20 of fuel, the Thompsons and BARs at 7.6 a round every 0.46
+seconds, and the tubes at 115 a round every 1.7 seconds out to 220 with a penetration of 150,
+it takes the grenadier squad sixteen times in sixteen with 89 per cent of itself left, which is
+what the Foot Guards do to it, the pioneers inside six seconds, the American rifle squad 81 per
+cent, and the Panzergrenadiere 42 per cent over 24 runs where the Guards take 38. The tubes take
+the 251 69 per cent of the time where the Guards' PIAT never does, and the KS 750 every time
+inside five seconds; the Panzer IV takes the squad every time in seven seconds and leaves with a
+quarter of itself gone. **The upgrade's suppression is the number to watch**: at 0.032 against
+the squad's 0.022 it took the Panzergrenadiere fight from half to all of it, because pinned men
+stop hitting anything; at 0.025, a reach of 225 and the same damage it takes that fight from 42
+to 67 per cent over 24 runs, staged at the same range for both, because a card that stages a
+pair at its own reach moves the upgraded fight out to where the SMGs opposite are worse. The
+Rangers lose to the Foot Guards four fights in five on the same money, which is two Brens at
+240 against Thompsons at 210, and the two never meet.
 
 **The German army on the beach.** The same table does the German side. `NATIONS` carries two
 entries with `side: 'ger'`, the paratroopers (`fj`) and the 352nd Infantry Division (`heer`); a
@@ -5799,6 +5876,14 @@ shots/                         screenshot output, gitignored
   side: the normal was nought, the face was never turned, and it was culled from above. Every
   photograph of the compartment had the ground showing through it. Drop a vertex that lies on a
   straight edge, or start the polygon at a corner.
+- **A duel staged at a pair's own reach is staged somewhere else once an upgrade changes the
+  reach.** `tools/duel.mjs` opens a fight at a fraction of the shorter reach, so the Rangers'
+  .30 moved its fight with the Panzergrenadiere from 172 to 197, out to where the SMGs opposite
+  are worse, and read as 50 per cent to 100. Staged at 172 both ways (`--d=172`) it was 42 to
+  67. Compare an upgrade at a fixed range.
+- **A door that fits an upgrade asks `upgradable(u)`, never the category.** Every one of them
+  asked `u.cat === 'veh'` until a squad came with an upgrade, and each that still did would have
+  been a place the .30 could never be bought.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

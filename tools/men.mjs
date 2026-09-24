@@ -402,8 +402,9 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3'].forEach(type => {
-      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger' : type === 'garand' || type === 'm3' ? 'usa' : 'us'], type);
+    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar'].forEach(type => {
+      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger'
+                               : ['garand', 'm3', 'thompson', 'bar', 'zook', 'm1919'].includes(type) ? 'usa' : 'us'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -584,7 +585,10 @@ function GEO(opt) {
         if (!bo || !eye) { rows.push({ v, pose: label(P), noparts: true }); return; }
         const yaw = Math.atan2(bo.dir[1], bo.dir[0]), pitch = Math.atan2(bo.dir[2], Math.hypot(bo.dir[0], bo.dir[1]));
         const e = sub(eye, bo.at), along = dot(e, bo.dir), perp = [e[0] - bo.dir[0] * along, e[1] - bo.dir[1] * along, e[2] - bo.dir[2] * along];
-        rows.push({ v, pose: label(P), yaw, pitch, up: perp[2], lat: Math.hypot(perp[0], perp[1]) });
+        /* a gun fired from the hip is not sighted, so the eye is not over its bore; the bore is
+           still judged against the facing and the level */
+        const W = WEAP[SOLDIER_VARIANTS[v].weapon];
+        rows.push({ v, pose: label(P), yaw, pitch, up: perp[2], lat: Math.hypot(perp[0], perp[1]), hip: !!(W && W.hip) });
       });
     });
     R.sections.aim = { rows };
@@ -935,7 +939,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.88, zook: 16.12, garand: 13.02, m3: 6.81 };
+    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);
@@ -1062,9 +1066,9 @@ function show(c, base) {
     for (const r of S.aim.rows) {
       if (r.noparts) { console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + 'no bore or eye on the record'); continue; }
       of++;
-      const y = Math.abs(r.yaw) > .05, p = Math.abs(r.pitch) > .05, u = r.up < .5 || r.up > 1.1, l = r.lat > .9;
+      const y = Math.abs(r.yaw) > .05, p = Math.abs(r.pitch) > .05, u = !r.hip && (r.up < .5 || r.up > 1.1), l = !r.hip && r.lat > .9;
       if (y || p || u || l) bad++;
-      console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + pad(f2(r.yaw) + (y ? '!' : ''), 9) + pad(f2(r.pitch) + (p ? '!' : ''), 9) + pad(f2(r.up) + (u ? '!' : ''), 9) + f2(r.lat) + (l ? '!' : ''));
+      console.log('  ' + pad(r.v, 13) + pad(r.pose, 8) + pad(f2(r.yaw) + (y ? '!' : ''), 9) + pad(f2(r.pitch) + (p ? '!' : ''), 9) + pad(f2(r.up) + (u ? '!' : ''), 9) + f2(r.lat) + (l ? '!' : '') + (r.hip ? '  from the hip: the eye is not judged' : ''));
     }
     foot('aim', bad, of);
   }

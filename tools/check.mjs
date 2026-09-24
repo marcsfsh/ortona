@@ -3603,6 +3603,88 @@ for (const device of TARGETS) {
      `left ${mh.bodies} bodies of ${mh.bodyNat} and the squad aboard ${mh.out ? 'came out' : 'DID NOT come out'}; ` +
      `Ortona's motor pool makes ${mh.ita}`);
 
+  /* --- The Rangers. The squad the Americans field on the beach in the Foot Guards' place:
+     the company post makes it and queues it when asked for the Guards, the count and the
+     order book read the two as one, its six men are the leader, three Thompsons and the two
+     BAR men, and the two BAR men turn into the bazooka variant when the target is a vehicle
+     and fire it turn about, each round leaving from the man who fired it. With both of them
+     dead the squad fights with what it has left. The .30 is a field upgrade a squad takes
+     through the same doors a vehicle's does, it changes the weapon and two of the Thompson
+     men, and a man killed goes down as a Ranger. Ortona's post still makes the Guards. --- */
+  const rg = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(bar).join(',');
+    G.res.us.mp += 3000; G.res.us.fu += 600;
+    const q0 = bar.queue.length, m0 = W.madeOf('us', 'am_ranger');
+    out.q = W.queueUnit(bar, 'us_fg') ? bar.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_ranger') - m0;
+    out.madeAs = W.madeOf('us', 'us_fg') === W.madeOf('us', 'am_ranger');
+    bar.queue.length = q0;
+    const u = W.spawnUnit('us', 'am_ranger', hq.x + 140, hq.y - 220, 0);
+    out.count = W.countOf('us', 'us_fg') === W.countOf('us', 'am_ranger');
+    out.men = u.models.length;
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.baked = ['rg_lead', 'rg_tommy', 'rg_tommy_b', 'rg_bar', 'rg_zook', 'rg_30']
+      .every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_FIRE]);
+    /* a vehicle in reach: the swap, the weapon and the man each round leaves from */
+    const ks = W.spawnUnit('ger', 'hr_ks750', u.x + 130, u.y, Math.PI);
+    u.target = ks;
+    out.swap = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.at = W.weaponFor(u, ks) === u.def.at;
+    const from = [];
+    for (let k = 0; k < 4; k++) {
+      u.atcd = 0; u.cd = 0; u.moving = false; u.sup = 0;
+      const n = G.shots.length;
+      W.fireAt(u, ks, .02);
+      const s = G.shots[n];
+      if (s && s.kind === 'shell') {
+        const who = u.models.findIndex(m => Math.hypot(m.x - s.sx, m.y - s.sy) < .01);
+        from.push(who);
+      } else from.push('none');
+    }
+    out.from = from.join(',');
+    u.models[1].alive = false; u.models[3].alive = false;
+    out.gone = W.weaponFor(u, ks) === W.mainW(u) && !W.launcherLive(u);
+    u.models[1].alive = true; u.models[3].alive = true;
+    u.target = null;
+    W.killUnit(ks);
+    /* the upgrade, bought through the brain's own routine and read back off the weapon */
+    out.upg = W.upgradable(u) && !!W.UPGRADES.a6;
+    const w0 = W.mainW(u);
+    const got = W.buyUpgradeAuto('us', [u], { floor: 0, fuFloor: 0 });
+    out.fitted = got === u && !!u.up.a6;
+    out.wUp = W.mainW(u) === u.def.wUp.a6 && w0 === u.def.w;
+    out.up30 = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    /* and a man of it goes down as a Ranger: a man on his feet goes on the falls and one lying
+       down straight onto the corpses */
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodies = rec ? 1 : 0; out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    out.fall = !!(W.MODELS.fall.usa_rgr && W.MODELS.dead.usa_rgr);
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(bar).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(bar);
+    return out;
+  });
+  ok('Omaha: the Rangers stand in for the Foot Guards, and the BAR men take up the bazookas against armour',
+     /am_ranger/.test(rg.makes) && !/us_fg/.test(rg.makes) && rg.q === 'am_ranger' && rg.made === 1 && rg.madeAs && rg.count &&
+     rg.men === 6 && rg.vars === 'rg_lead,rg_bar,rg_tommy,rg_bar,rg_tommy_b,rg_tommy' && rg.baked &&
+     rg.swap === 'rg_lead,rg_zook,rg_tommy,rg_zook,rg_tommy_b,rg_tommy' && rg.at && rg.from === '3,1,3,1' && rg.gone &&
+     rg.upg && rg.fitted && rg.wUp && rg.up30 === 'rg_lead,rg_bar,rg_tommy,rg_bar,rg_30,rg_30' &&
+     rg.bodies >= 1 && rg.bodyNat === 'usa_rgr' && rg.fall && /us_fg/.test(rg.ita) && !/am_ranger/.test(rg.ita),
+     `the company post makes ${rg.makes}; asked for the Guards it queues ${rg.q}, counted as ${rg.made} made and the order ` +
+     `book ${rg.madeAs ? 'the same' : 'DIFFERENT'}, the count ${rg.count ? 'the same' : 'DIFFERENT'}; ${rg.men} men as ${rg.vars}, ` +
+     `every variant ${rg.baked ? 'baked' : 'NOT baked'}; with a vehicle in reach ${rg.swap}, the weapon ${rg.at ? 'the bazooka' : 'NOT the bazooka'} ` +
+     `and four rounds left from men ${rg.from}; with both BAR men dead the squad ${rg.gone ? 'fights with what it has' : 'STILL FIRES the tube'}; ` +
+     `the .30 ${rg.upg ? 'is on offer' : 'is NOT on offer'}, ${rg.fitted ? 'was fitted' : 'was NOT fitted'} and ` +
+     `${rg.wUp ? 'changes the weapon' : 'does NOT change the weapon'}, the men then ${rg.up30}; killed, it left ${rg.bodies} bodies ` +
+     `of ${rg.bodyNat}, the fall ${rg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${rg.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

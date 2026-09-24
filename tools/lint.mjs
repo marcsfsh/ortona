@@ -249,10 +249,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    plate and its visors, the lockers, the mudguards and their lamps, the rear doors bent
    over the crease), the open compartment with its seats, wheel, instruments and benches,
    the MG 34 on its pintle, and the driver and the gunner.
+   It is 2350 for the Rangers: four weapons cut as side profiles (the Thompson, the BAR, the
+   M9 bazooka and the M1919A6) with their anchors and a hip carry for the last, the assault
+   vest over the M1941 jacket with its pockets and the crossed straps, the diamond on the
+   helmet and the patch on the shoulder, the weapon slung on the back, six variants and their
+   prone and dead layouts, the launcher fired by the two men who carry it, and the doors a
+   field upgrade goes through opened to a squad.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2290) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2290 kB so it stays quick to load on a phone`);
+if (kb > 2350) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2350 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

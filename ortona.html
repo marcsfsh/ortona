@@ -1196,6 +1196,9 @@ var UPGRADES = {
           desc: 'The MG 42 on the sidecar mount in place of the MG 34: half as fast again on the trigger, so it puts a section down harder and holds it there, and it burns through its belt as fast.' },
   fifty: { name: 'Mount the .50 on the pedestal', short: '.50 CAL', hk: 'O', cost: { mp: 75, fu: 10 },
            desc: 'An M2 heavy barrel in the M31 cradle in place of the .30. It reaches further and it goes through the side of a half-track or a scout car, which the .30 will not; against men it does what the .30 did.' },
+  /* and the one a squad takes: the Rangers' .30 */
+  a6: { name: 'Issue two M1919A6s', short: 'M1919A6', hk: 'O', cost: { mp: 90, fu: 10 },
+        desc: 'Two of the Thompson men hand in the Thompson and take the bipod .30 with the stock on it, fired from the hip on the move. The squad reaches further and puts men down harder; it is no quicker to kill anything.' },
   aid: { name: 'Convert to field ambulance', short: 'AMBULANCE', hk: 'Y', excl: 'm3', cost: { mp: 60 },
          desc: 'Litter racks in and the gun off the ring. Infantry standing near it are put back on their feet and brought back up to strength wherever they are, as long as nothing is shooting at it. Fitted once; the conversion cannot be undone.' }
 };
@@ -1248,7 +1251,7 @@ var NATIONS = {
          sub: {} },
   usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
          blurb: 'Rifle squads with the M1 Garand, ashore at the water with everything still to do, and the draws the only way their armour gets off the beach.',
-         sub: { us_rifle: 'am_rifle', us_eng: 'am_eng', us_m8: 'am_jeep', us_m3: 'am_m3', us_sher: 'am_sher' } },
+         sub: { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_m8: 'am_jeep', us_m3: 'am_m3', us_sher: 'am_sher' } },
   fj:   { side: 'ger', name: '1. Fallschirmjäger-Division', short: 'FJ', pick: '1. FALLSCHIRMJÄGER-DIVISION',
           blurb: 'Compact veteran groups, prepared demolitions and MG42 positions built to dominate the narrow streets.',
           sub: {} },
@@ -1357,6 +1360,22 @@ var UNITS = {
     builder: true, body: 'usa_eng',
     w: { range: 150, dmg: 5.8, rof: 0.42, acc: .54, sup: .016, pen: 10 },
     desc: 'Three combat engineers of the 29th Infantry Division with M3 submachine guns, demolition kits and wire cutters. Builds cover, repairs armour and captures ground, and fights best up close.'
+  },
+  /* The Rangers, who went in at Dog White beside the 116th and up the cliffs at the Pointe:
+     six men with four Thompsons and two BARs, and a bazooka slung on each BAR man's back.
+     The squad fights close, harder than a rifle squad and dearer; when armour is in reach
+     the two BAR men swap to the bazookas and fire them turn about (`at.men` names them, and
+     a launcher is fired by whichever of them is next and alive, from where he stands). They
+     are the Foot Guards' place on a map whose army is American (`natKey`), bought from the
+     same post, and they are the one squad that takes a field upgrade. */
+  am_ranger: {
+    side: 'us', nat: 'usa', name: 'Ranger Squad', short: 'RGR', cat: 'inf', hk: 'N',
+    models: 6, hpPer: 74, speed: 68, sight: 320, pop: 12, cost: { mp: 420, fu: 20 }, time: 30,
+    req: 'us_bar', body: 'usa_rgr', upgrades: ['a6'],
+    w: { range: 210, dmg: 7.6, rof: 0.46, acc: .57, sup: .022, pen: 16 },
+    wUp: { a6: { range: 225, dmg: 7.6, rof: 0.46, acc: .57, sup: .025, pen: 18 } },
+    at: { range: 220, dmg: 115, rof: 1.7, acc: .70, sup: .02, pen: 150, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
+    desc: 'Six men of the Ranger battalions with four Thompsons and two BARs, and the BAR men sling the BAR and take the bazooka off their backs the moment anything with plate on it is in reach. Fights hardest close in. Two of the Thompson men can be issued the M1919A6 and fire it from the hip.'
   },
   /* A crew-served weapon is in action or it is on the move, and getting from one to the
      other takes time both ways. `setup` is the seconds to bring the piece into action
@@ -7621,13 +7640,13 @@ function mountUp(u) {
    has to be left after, because a plate bought with the next section's cost is a section
    not raised. Returns the vehicle it fitted, or null. */
 function buyUpgradeAuto(slot, vehs, opt) {
-  var order = ['mg', 'mgs', 'skirts', 'scope', 'kwk', 'drill', 'quad50', 'thirty', 'fifty', 'coax', 'how75', 'pak36'], i, j;
+  var order = ['mg', 'mgs', 'skirts', 'scope', 'kwk', 'drill', 'quad50', 'thirty', 'fifty', 'coax', 'a6', 'how75', 'pak36'], i, j;
   for (i = 0; i < order.length; i++) {
     var uk = order[i], U = UPGRADES[uk];
     if (uk === 'skirts' && !opt.foeAt) continue;          /* nothing to skirt against yet */
     for (j = 0; j < vehs.length; j++) {
       var u = vehs[j];
-      if (u.dead || u.cat !== 'veh' || !u.up) continue;
+      if (!upgradable(u)) continue;
       if (opt.you && !autoUpOf(u)) continue;
       if ((u.def.upgrades || []).indexOf(uk) < 0) continue;
       if (u.up[uk]) continue;
@@ -7641,6 +7660,9 @@ function buyUpgradeAuto(slot, vehs, opt) {
   }
   return null;
 }
+/* Whether a unit takes field upgrades at all. It was every vehicle and nothing else until
+   a squad came with one, so every door that fits one asks this rather than the category. */
+function upgradable(u) { return !u.dead && !!u.up && (u.def.upgrades || []).length > 0; }
 function hasExclusive(u, group) {
   var keys = Object.keys(UPGRADES), i;
   if (!group || !u.up) return false;
@@ -7665,8 +7687,27 @@ function mountPose(u, M) {
            bar: pick('bar', M.bar), gunZ: pick('gunZ', M.gunZ) };
 }
 function weaponFor(u, t) {
-  if (t && t.cat === 'veh' && u.def.at) return u.def.at;
+  if (t && t.cat === 'veh' && u.def.at && launcherLive(u)) return u.def.at;
   return mainW(u);
+}
+/* A launcher that named men carry is there while one of them is: with both dead the tubes
+   lie where they fell and the squad fights with what it has left. */
+function launcherLive(u) {
+  var L = u.def.at && u.def.at.men, i;
+  if (!L) return !!u.def.at;
+  for (i = 0; i < L.length; i++) if (u.models[L[i]] && u.models[L[i]].alive) return true;
+  return false;
+}
+/* and the one of them who fires this time: turn about, because two men with a tube each
+   are two rounds in the air for one reload apiece */
+function launcherMan(u) {
+  var L = u.def.at.men, i, n = L.length, m;
+  for (i = 0; i < n; i++) {
+    u.atTurn = ((u.atTurn || 0) + 1) % n;
+    m = u.models[L[u.atTurn]];
+    if (m && m.alive) return m;
+  }
+  return null;
 }
 function fireSecondary(u, dt) {
   var keys = secondaryKeys(u), i;
@@ -7824,7 +7865,9 @@ function fireAt(u, t, dt, opt) {
      once, and only the flashes are spread out over the fraction of a second the men
      actually take. A rifle group going off as one instant of light read as a firing
      squad. */
-  if (u.cat !== 'veh') {
+  var tube = isAt && w.men ? launcherMan(u) : null;
+  if (tube) { tube.fire = .085; tube.flashed = 0; }
+  else if (u.cat !== 'veh') {
     var k = 0;
     for (var i = 0; i < u.models.length; i++) {
       var mm2 = u.models[i];
@@ -7881,7 +7924,8 @@ function fireAt(u, t, dt, opt) {
      gunner loses his lay */
   if (bounced && t.cat === 'veh' && w.shell) { t.shaken = Math.max(t.shaken || 0, 1.6); t.hitT = .2; }
   if (hits && t.cat === 'veh' && w.shell) vehCrit(t, w, u);
-  var from = u.cat === 'veh' ? { x: u.x + Math.cos(u.turret) * 26, y: u.y + Math.sin(u.turret) * 26 } : { x: u.x, y: u.y };
+  var from = u.cat === 'veh' ? { x: u.x + Math.cos(u.turret) * 26, y: u.y + Math.sin(u.turret) * 26 }
+           : tube ? { x: tube.x, y: tube.y } : { x: u.x, y: u.y };
   var at = aimAt(u, t);
   if (w.shell) {
     if (u.cat === 'veh') {
@@ -12888,11 +12932,12 @@ function aiTick(dt) {
      skirts are the difference between a Panzer IV that survives a bazooka and one that
      does not. The player has always been able to buy these; the opposition never did,
      and half of what a vehicle can do is an upgrade. */
-  if (G.t - AI.upT > 9 && vehs.length) {
+  var upg = W.mine.filter(upgradable);
+  if (G.t - AI.upT > 9 && upg.length) {
     AI.upT = G.t;
     /* never with the manpower the next section was going to cost; and on the player's
        own slot the setting and each vehicle's word over it are read */
-    if (buyUpgradeAuto(slot, vehs, { foeAt: foeAt, floor: 150 + wantMp + keep, fuFloor: spend ? 0 : 60, you: slot === G.own })) aiFire('buy.upgrade');
+    if (buyUpgradeAuto(slot, upg, { foeAt: foeAt, floor: 150 + wantMp + keep, fuFloor: spend ? 0 : 60, you: slot === G.own })) aiFire('buy.upgrade');
   }
 
   /* ---- construction */
@@ -15921,6 +15966,8 @@ function tagKit() {
   tagAll([A.glove, A.gloveD], 'leather');
   tagAll([A.vest, A.vestD, A.rope, A.epack], 'canvas');
   tagAll([A.demo, A.demoD, A.stencil], 'paint');
+  tagAll([A.rvest, A.rvestD], 'canvas');
+  tagAll([A.rorange, A.rblue, A.rbar], 'paint');
   tagAll([A.web, A.webD, A.pack, A.canvas, A.gaiter, A.tool], 'canvas');
   tagAll([A.helm, A.helmD, A.liner], 'generic');
   tagAll([A.wood, A.helve], 'wood');
@@ -29143,7 +29190,11 @@ var KIT = {
             and on the back a pack with a blanket rolled across the top of it */
          hbt: '#434a30', hbtD: '#353a26', khaki: '#968b69', khakiD: '#7d7356', under: '#8a8264',
          vest: '#747047', vestD: '#525036', glove: '#8e6d47', gloveD: '#6d5337', epack: '#585b3c',
-         roll: '#aa9f80', rope: '#b3a077', demo: '#4f5239', demoD: '#3d4030', stencil: '#b9b39a' },
+         roll: '#aa9f80', rope: '#b3a077', demo: '#4f5239', demoD: '#3d4030', stencil: '#b9b39a',
+         /* and the Rangers': the assault vest in a darker green than the jacket it goes over,
+            the orange diamond of the 2nd Battalion on the back of the helmet and round the blue
+            of the patch on the shoulder, and the white bar a leader wears on his helmet */
+         rvest: '#3a4030', rvestD: '#2d3225', rorange: '#c4772d', rblue: '#2f4675', rbar: '#d6d2c2' },
   /* The Heer grenadier in Normandy gets a fourth: the M43 tunic and trousers in field grey,
      which by 1944 was a dull green-grey wool, and the whole of his equipment in black
      leather -- belt, Y-straps, the two triple pouches and the boots -- with the canvas of
@@ -29278,7 +29329,10 @@ function figArm(S, H, pole, k, coat, mat, sd, patch, floor, rec) {
     var px = S[0] + (E[0] - S[0]) * .4, py = S[1] + (E[1] - S[1]) * .4 + sd * .72, pz = S[2] + (E[2] - S[2]) * .4;
     /* the 29th Division's monad is blue and grey halves, and a flat blue square read as
        a sticker */
-    if (k.patch2) f = f.concat(figPart(box(px + .175, py, pz - .35, .35, .16, .7, k.patch, k.patch, k.patch, 0), 'cloth', k.patch, k.patch, lit(k.patch, 1.12)))
+    /* a Ranger's is a blue diamond edged in orange */
+    if (k.rdiam) f = f.concat(figPart(at(pitch(box(0, 0, -.4, .8, .16, .8, k.rdiam, k.rdiam, k.rdiam, 0), Math.PI / 4, 0, 0), px, py, pz), 'cloth', k.rdiam, k.rdiam, k.rdiam))
+                  .concat(figPart(at(pitch(box(0, 0, -.28, .56, .2, .56, k.patch, k.patch, k.patch, 0), Math.PI / 4, 0, 0), px, py, pz), 'cloth', k.patch, k.patch, lit(k.patch, 1.12)));
+    else if (k.patch2) f = f.concat(figPart(box(px + .175, py, pz - .35, .35, .16, .7, k.patch, k.patch, k.patch, 0), 'cloth', k.patch, k.patch, lit(k.patch, 1.12)))
                    .concat(figPart(box(px - .175, py, pz - .35, .35, .16, .7, k.patch2, k.patch2, k.patch2, 0), 'cloth', k.patch2, k.patch2, lit(k.patch2, 1.06)));
     else f = f.concat(figPart(box(px, py, pz - .35, .7, .16, .7, k.patch, k.patch, k.patch, 0), 'cloth', k.patch, k.patch, lit(k.patch, 1.12)));
   }
@@ -29454,7 +29508,15 @@ var WEAP = {
   mp40:     { butt: [-1.8, 0, -.3], buttOut: [-4.02, 0, -.3], grip: [-.85, 0, -1.35], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, 0], carryPt: [.4, 0, -.6] },
   bren:     { butt: [-5.1, 0, -.5], grip: [-1.4, 0, -1.2], fore: [3.2, 0, -.7], foreMin: [1.2, 0, -.7], muzzle: [8.0, 0, .1], rest: [2.0, 0, -.6], carryPt: [1.5, 0, -.6], heavy: 1 },
   piat:     { butt: [-4.8, 0, -1.0], grip: [-.5, 0, -1.2], fore: [2.4, 0, -1.0], foreMin: [1.6, 0, -1.0], muzzle: [6.6, 0, 0], rest: [0, 0, -.8], carryPt: [.5, 0, -.9], heavy: 1 },
-  schreck:  { butt: [-4.0, 0, -1.0], rest: [-4.0, 0, -1.0], grip: [-1.5, 0, -1.4], fore: [2.0, 0, -.6], foreMin: [1.0, 0, -.6], muzzle: [9.5, 0, 0], carryPt: [0, 0, -.7], tube: 1 }
+  schreck:  { butt: [-4.0, 0, -1.0], rest: [-4.0, 0, -1.0], grip: [-1.5, 0, -1.4], fore: [2.0, 0, -.6], foreMin: [1.0, 0, -.6], muzzle: [9.5, 0, 0], carryPt: [0, 0, -.7], tube: 1 },
+  /* the Rangers' four: the Thompson, the BAR laid in the shoulder like the Bren, the M9
+     riding on the shoulder like the Panzerschreck, and the M1919A6, which is fired from the
+     hip (`hip`) with the right hand on the pistol grip and the left under the jacket */
+  thompson: { butt: [-4.3, 0, -.6], grip: [-.55, 0, -1.3], fore: [3.6, 0, -.78], foreMin: [2.5, 0, -.78], muzzle: [5.24, 0, 0], carryPt: [.9, 0, -.7] },
+  bar:      { butt: [-5.35, 0, -.9], grip: [-1.55, 0, -1.0], fore: [5.3, 0, -1.02], foreMin: [2.8, 0, -1.02], muzzle: [9.28, 0, 0], rest: [3.2, 0, -.7], carryPt: [2.2, 0, -.7], heavy: 1,
+              carry: [2.0, 1.8, 2.3, -.6, .35] },
+  zook:     { butt: [-3.3, 0, -1.0], rest: [-3.3, 0, -1.0], grip: [-.55, 0, -1.35], fore: [3.2, 0, -.4], foreMin: [1.8, 0, -.4], muzzle: [9.12, 0, 0], carryPt: [.5, 0, -.6], tube: 1 },
+  m1919:    { butt: [-5.3, 0, -.9], grip: [-2.2, 0, -1.25], fore: [4.6, 0, -.52], foreMin: [3.2, 0, -.52], muzzle: [10.54, 0, 0], rest: [2.8, 0, -.75], carryPt: [5.2, 0, 1.2], heavy: 1, hip: 1 }
 };
 /* A pose is two leg triples, a lean and a carry; the aimed ones add a blade and an
    offset for the head. One table drives the builder, the bake, the muzzle table, the
@@ -29627,6 +29689,16 @@ function helmetM1(k, z, V) {
       f = f.concat(figPart(tubeSmooth(gp[0] + .2, gp[0] + .28, gp[1], gp[2], .28, 8, k.goggle, k.goggle), 'steel', lit(k.goggle, 1.15), k.goggle, k.goggle));
     });
     f = f.concat(figPart(box(P(0, .96, .61, .12)[0] + .05, 0, z + .5, .2, .36, .2, k.hideD, k.hideD, k.hideD, 0), 'leather', k.hideD, k.hideD, k.hideD));
+  }
+  /* and on a Ranger, the orange diamond of the 2nd Battalion painted on the back of the
+     shell, and on a leader the white bar painted on the front of it */
+  if (V && V.rgr) {
+    var dm = roll(box(0, 0, -.27, .05, .54, .54, k.rorange, k.rorange, k.rorange, 0), Math.PI / 4, 0, 0), dp = P(Math.PI, .965, .8, .035);
+    f = f.concat(figPart(place(pitch(dm, .4, 0, 0), Math.PI, dp[0], dp[1], dp[2]), 'paint', k.rorange, k.rorange, k.rorange));
+  }
+  if (V && V.nco) {
+    var nb = box(0, 0, -.11, .05, .72, .22, k.rbar, k.rbar, k.rbar, 0), np = P(0, .965, .68, .035);
+    f = f.concat(figPart(place(pitch(nb, .36, 0, 0), 0, np[0], np[1], np[2]), 'paint', k.rbar, k.rbar, k.rbar));
   }
   return f;
 }
@@ -29991,6 +30063,131 @@ function weaponModel(k, type, opt) {
     f = f.concat(box(3.9, 0, -.4, 1.0, .5, .5, st, lit(st, 1.2)));                            /* its bracket */
     f = f.concat(box(-1.5, 0, -1.6, 1.0, .6, 1.6, st, lit(st, 1.2)));
     f = f.concat(box(-4, 0, -1.4, 2.4, .7, 1.4, wd, lit(wd, 1.1)));                            /* shoulder rest */
+  } else if (type === 'thompson') {                       /* M1A1: 0.811 m, 9.54 units */
+    /* The M1A1 as it was made from 1942: a flat-sided receiver with the cocking knob on its
+       right, which is +y on the screen, and the fixed rear sight with its two protecting ears;
+       a plain barrel with no compensator and no fins; a horizontal fore-end where the older
+       gun had the vertical grip; the walnut stock and pistol grip; and the thirty-round stick
+       magazine standing straight down out of its well. */
+    var tl = lit(st, 1.18), tk = lit(st, .86);
+    var tp = [[-4.3, -.28], [-4.3, -1.98], [-2.6, -1.52], [-.7, -1.02], [-.7, -.34], [-2.4, -.34]];
+    var ts = roll(prism(tp, -.4, .4, wd, lit(wd, 1.12), lit(wd, .92)), Math.PI / 2, 0, 0);
+    f = f.concat(ts.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(box(-4.25, 0, -1.98, .1, .82, 1.7, st, tl));                                   /* butt plate */
+    f = f.concat(box(.85, 0, -.62, 3.1, .82, 1.1, st, tl));                                     /* the receiver */
+    f = f.concat(box(-.3, 0, .48, .32, .5, .2, st, tl));                                        /* rear sight */
+    [-1, 1].forEach(function (s) { f = f.concat(box(-.3, s * .2, .48, .36, .1, .46, st, tl)); });
+    f = f.concat(box(1.25, .5, -.1, .32, .22, .32, tl, st));                                    /* cocking knob, right */
+    f = f.concat(box(.95, .42, -.02, 1.7, .03, .1, tk, tk));                                    /* and its slot */
+    f = f.concat(box(.1, 0, -1.02, 1.6, .7, .4, st, tl));                                       /* the frame */
+    f = f.concat(place(pitch(box(0, 0, -1.5, .7, .6, 1.5, wd, lit(wd, 1.12), lit(wd, .92)), -.3, 0, 0), 0, -.4, 0, -.9));
+    f = f.concat(box(.02, 0, -1.34, .82, .12, .1, st, st));                                     /* trigger guard */
+    f = f.concat(box(.38, 0, -1.34, .1, .12, .34, st, st));
+    f = f.concat(box(1.62, 0, -1.04, .72, .66, .42, st, tl));                                   /* magazine well */
+    f = f.concat(box(1.64, 0, -3.5, .62, .44, 2.48, st, tl));                                   /* the thirty-round magazine */
+    f = f.concat(box(3.1, 0, -.72, 1.9, .78, .62, wd, lit(wd, 1.12), lit(wd, .92)));            /* horizontal fore-end */
+    f = f.concat(tubeSmooth(2.4, 2.72, 0, 0, .3, 8, st, tl));                                   /* barrel collar */
+    f = f.concat(barrel(2.72, 5.24, 0, .2));
+    f = f.concat(box(5.02, 0, .12, .16, .1, .3, st, st));                                       /* front blade */
+    var tsl = k.webD || st;
+    f = f.concat(taperLimb([3.4, -.44, -.5], [-.6, -.46, -1.9], .12, .12, tsl));                /* the sling, left */
+    f = f.concat(taperLimb([-.6, -.46, -1.9], [-3.9, -.44, -1.2], .12, .12, tsl));
+  } else if (type === 'bar') {                            /* M1918A2: 1.214 m, 14.28 units */
+    /* The A2 as it went ashore: a long slab of receiver with the twenty-round box magazine
+       standing out under it ahead of the trigger, the charging handle on the left, a straight
+       wooden stock and a wooden handguard over the gas cylinder, the cone of the flash hider
+       on the muzzle and the bipod on its collar behind it, its skids folded back along the
+       handguard for carrying. */
+    var bl2 = lit(st, 1.18), bk2 = lit(st, .86);
+    var bp = [[-5.0, -.25], [-5.0, -1.85], [-2.9, -1.45], [-1.3, -1.14], [-1.3, -.44], [-3.2, -.38]];
+    var bs = roll(prism(bp, -.44, .44, wd, lit(wd, 1.12), lit(wd, .92)), Math.PI / 2, 0, 0);
+    f = f.concat(bs.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(box(-4.95, 0, -1.85, .1, .9, 1.6, st, bl2));                                   /* butt plate */
+    f = f.concat(box(.65, 0, -.78, 3.9, .96, 1.3, st, bl2));                                    /* the receiver */
+    f = f.concat(box(-.85, 0, .52, .5, .44, .3, st, bl2));                                      /* rear sight base */
+    f = f.concat(box(-.9, 0, .82, .14, .3, .34, st, st));                                       /* and its leaf */
+    f = f.concat(box(1.5, -.58, -.28, .38, .22, .3, bl2, st));                                  /* charging handle, left */
+    f = f.concat(box(-.45, 0, -1.2, 1.7, .72, .42, st, bl2));                                   /* trigger housing */
+    f = f.concat(box(-.65, 0, -1.56, .9, .12, .1, st, st));                                     /* trigger guard */
+    f = f.concat(box(-.25, 0, -1.56, .1, .12, .38, st, st));
+    f = f.concat(box(1.2, 0, -2.4, 1.3, .68, 1.64, st, bl2));                                   /* the magazine */
+    f = f.concat(box(1.2, 0, -2.46, 1.36, .74, .1, bk2, bk2));                                  /* and its floor plate */
+    f = f.concat(box(4.45, 0, -1.0, 3.7, .92, .92, wd, lit(wd, 1.12), lit(wd, .92)));           /* handguard */
+    f = f.concat(tubeSmooth(6.3, 7.8, 0, -.58, .22, 8, st, bl2));                               /* gas cylinder */
+    f = f.concat(barrel(2.6, 8.5, 0, .22));
+    f = f.concat(place(lathe(0, 0, 0, [[.26, 0], [.36, .78]], 10, st, true), -Math.PI / 2, 8.5, 0, 0));   /* flash hider */
+    f = f.concat(box(8.1, 0, .18, .2, .12, .34, st, st));                                       /* front sight */
+    [-1, 1].forEach(function (s) { f = f.concat(box(8.1, s * .16, .12, .24, .06, .42, st, st)); });
+    f = f.concat(tubeSmooth(7.5, 7.85, 0, -.12, .4, 8, st, bl2));                               /* bipod collar */
+    [-1, 1].forEach(function (s) {
+      f = f.concat(taperLimb([7.68, s * .3, -.42], [5.1, s * .38, -1.12], .16, .14, st));       /* its legs, folded */
+      f = f.concat(box(5.0, s * .38, -1.32, .4, .2, .2, st, bl2));                              /* and the skids */
+    });
+    var bsl = k.webD || st;
+    f = f.concat(taperLimb([6.0, -.5, -1.0], [1.8, -.52, -2.0], .12, .12, bsl));                /* the sling, left */
+    f = f.concat(taperLimb([1.8, -.52, -2.0], [-4.4, -.5, -1.4], .12, .12, bsl));
+  } else if (type === 'zook') {                           /* M9: 1.549 m assembled, 18.2 units */
+    /* The M9 rocket launcher: two lengths of tube in olive drab joined by the coupling in the
+       middle, a collar at the breech end and one at the muzzle, the shoulder stock under the
+       rear half and the pistol grip that holds the firing generator ahead of it, the
+       reflecting sight in its box on the left of the tube, which is -y on the screen, and the
+       sling along the same side. */
+    var od = SHERMAN.odDark, odl = SHERMAN.od, bore = '#20221a';
+    f = f.concat(tubeSmooth(-9.12, 9.12, 0, 0, .37, 10, od, bore));
+    f = f.concat(tubeSmooth(.45, 1.25, 0, 0, .45, 10, odl, odl));                               /* the coupling */
+    f = f.concat(tubeSmooth(-9.12, -8.7, 0, 0, .44, 10, odl, bore));                            /* breech collar */
+    f = f.concat(tubeSmooth(8.72, 9.12, 0, 0, .43, 10, odl, bore));                             /* muzzle collar */
+    f = f.concat(box(-3.1, 0, -1.28, 2.7, .5, .92, wd, lit(wd, 1.12), lit(wd, .92)));           /* shoulder stock */
+    f = f.concat(box(-4.5, 0, -1.24, .3, .66, 1.0, st, lit(st, 1.2)));                          /* its butt plate */
+    f = f.concat(box(-2.9, 0, -.4, 1.4, .34, .1, st, st));                                      /* and its bracket */
+    f = f.concat(place(pitch(box(0, 0, -1.45, .62, .52, 1.45, od, odl), -.25, 0, 0), 0, -.35, 0, -.36));   /* pistol grip */
+    f = f.concat(box(.05, 0, -1.3, .8, .12, .1, st, st));                                       /* trigger guard */
+    f = f.concat(box(2.3, -.5, -.18, 1.0, .3, .56, od, odl));                                   /* reflecting sight, left */
+    f = f.concat(box(2.3, -.5, .38, .8, .26, .12, bore, bore));
+    f = f.concat(box(-1.2, 0, -.5, .5, .5, .18, odl, odl));                                     /* a clamp band */
+    f = f.concat(box(5.6, 0, -.52, .5, .56, .2, odl, odl));
+    var zsl = k.webD || st;
+    f = f.concat(taperLimb([5.6, -.42, -.45], [.6, -.46, -1.6], .12, .12, zsl));                /* the sling, left */
+    f = f.concat(taperLimb([.6, -.46, -1.6], [-5.8, -.42, -.5], .12, .12, zsl));
+  } else if (type === 'm1919') {                          /* M1919A6: 1.346 m, 15.84 units */
+    /* The Browning with a stock, a pistol grip and a bipod on the front of it, which is what
+       a man can carry and fire off his hip: the pressed steel stock clipped to the back plate,
+       the pistol grip under it, the tall receiver with the feed cover on top and the belt
+       coming in from the left, the perforated jacket over the barrel with the carrying handle
+       on it, the bipod folded back from the front bearing, and the big cone of the flash
+       hider that is the one shape nothing else on the field has. */
+    var ml2 = lit(st, 1.18), mk2 = lit(st, .78), web = k.web || st, brass = '#8a7a48';
+    var mp = [[-5.3, -.2], [-5.3, -1.95], [-3.5, -1.08], [-2.4, -.66], [-2.4, -.12]];
+    var mstk = roll(prism(mp, -.36, .36, st, ml2, mk2), Math.PI / 2, 0, 0);
+    f = f.concat(mstk.map(function (q) { return { v: q.v, c: q.c }; }));
+    f = f.concat(box(-2.3, 0, -.75, .25, .92, 1.4, st, ml2));                                   /* back plate */
+    f = f.concat(place(pitch(box(0, 0, -1.5, .62, .56, 1.5, wd, lit(wd, 1.12), lit(wd, .92)), -.25, 0, 0), 0, -2.0, 0, -.72));
+    f = f.concat(box(-1.72, 0, -1.2, .7, .12, .1, st, st));                                     /* trigger guard */
+    f = f.concat(box(.45, 0, -.75, 5.5, .96, 1.4, st, ml2));                                    /* the receiver */
+    f = f.concat(box(.5, 0, .65, 3.6, .9, .2, st, ml2));                                        /* feed cover */
+    f = f.concat(box(-1.4, 0, .85, .3, .5, .14, ml2, st));                                      /* and its latch */
+    f = f.concat(box(-1.85, 0, .65, .36, .3, .52, st, st));                                     /* rear sight */
+    f = f.concat(box(1.15, -.62, -.2, .9, .3, .5, st, ml2));                                    /* feedway, left */
+    f = f.concat(taperLimb([1.15, -.82, .0], [.75, -1.05, -2.3], .72, .72, web));               /* the belt hanging from it */
+    [-.35, -.9, -1.45, -2.0].forEach(function (z, j) {
+      f = f.concat(box(1.15 - (z / -2.3) * .4, -1.22, z - .08, .6, .14, .16, brass, brass));   /* its rounds */
+    });
+    f = f.concat(tubeSmooth(3.2, 8.7, 0, 0, .5, 10, st, ml2));                                  /* barrel jacket */
+    [4.0, 5.0, 6.0, 7.0, 8.0].forEach(function (x) {
+      [-.9, -.3, .3, .9, 2.2, 2.8].forEach(function (a) {
+        f = f.concat(roll(box(x, .495, -.1, .34, .04, .2, mk2, mk2), a, 0, 0));               /* its holes */
+      });
+    });
+    [-1, 1].forEach(function (s) { f = f.concat(box(5.2 + s * .65, 0, .48, .18, .16, .7, st, ml2)); });
+    f = f.concat(box(5.2, 0, 1.1, 1.6, .26, .22, wd, lit(wd, 1.12), lit(wd, .92)));             /* carrying handle */
+    f = f.concat(box(8.85, 0, -.45, .3, .9, .9, st, ml2));                                      /* front bearing */
+    f = f.concat(barrel(8.7, 9.0, 0, .22));
+    f = f.concat(place(lathe(0, 0, 0, [[.28, 0], [.62, 1.54]], 12, st, true), -Math.PI / 2, 9.0, 0, 0));   /* flash hider */
+    f = f.concat(box(8.6, 0, .5, .14, .1, .38, st, st));                                        /* front sight */
+    [-1, 1].forEach(function (s) {
+      f = f.concat(taperLimb([8.7, s * .32, -.4], [6.0, s * .4, -.96], .18, .16, st));          /* the bipod, folded */
+      f = f.concat(box(5.9, s * .4, -1.16, .36, .2, .2, st, ml2));
+    });
   }
   return f;
 }
@@ -30018,6 +30215,19 @@ var SOLDIER_VARIANTS = {
   gi_eng:       { side: 'us', nat: 'usa', weapon: 'm3', eng: 1, goggles: 1, spade: 1, body: 'usa_eng', set: 'field' },
   gi_eng_b:     { side: 'us', nat: 'usa', weapon: 'm3', eng: 1, scrim: 1, chest: 1, set: 'field' },
   gi_eng_c:     { side: 'us', nat: 'usa', weapon: 'm3', eng: 1, goggles: 1, coil: 1, satchel: 1, set: 'field' },
+  /* the Rangers, six ways, each in the M1941 jacket under the green assault vest with the
+     orange diamond on the back of his helmet: the leader with the Thompson, his glasses and
+     the white bar on the front of the helmet; two more Thompsons, the second with hessian in
+     his net; the BAR man with the bazooka slung on his back; the same man with the bazooka up
+     and the BAR slung in its place, which is what he turns into when armour is in reach; and
+     the man with the M1919A6 at the hip, which is what two of the Thompson men become with
+     the upgrade. The first is what the squad leaves where it falls (`body`). */
+  rg_lead:      { side: 'us', nat: 'usa', weapon: 'thompson', rgr: 1, nco: 1, glass: 1, body: 'usa_rgr', set: 'field' },
+  rg_tommy:     { side: 'us', nat: 'usa', weapon: 'thompson', rgr: 1, set: 'field' },
+  rg_tommy_b:   { side: 'us', nat: 'usa', weapon: 'thompson', rgr: 1, scrim: 1, packet: 1, set: 'field' },
+  rg_bar:       { side: 'us', nat: 'usa', weapon: 'bar', rgr: 1, back: 'zook', set: 'field' },
+  rg_zook:      { side: 'us', nat: 'usa', weapon: 'zook', rgr: 1, back: 'bar', set: 'field' },
+  rg_30:        { side: 'us', nat: 'usa', weapon: 'm1919', rgr: 1, set: 'field' },
   /* and the man in the tank: the tanker's helmet and jacket, boots rather than leggings,
      and nothing on him but a pistol under his arm */
   gi_tank:      { side: 'us', nat: 'usa', weapon: 'none', set: 'hull', tanker: 1 },
@@ -30062,6 +30272,13 @@ function variantForModel(u, i) {
     if (u.key === 'us_rifle') return i === 0 ? 'can_bren' : i === 1 ? 'can_sten' : i === 3 ? 'can_rifle_bd' : 'can_rifle';
     if (u.key === 'am_rifle') return i % 2 ? 'gi_rifle_b' : 'gi_rifle';
     if (u.key === 'am_eng') return i === 0 ? 'gi_eng_c' : i === 1 ? 'gi_eng' : 'gi_eng_b';
+    /* the two BAR men have the bazookas up while it is armour they are shooting at, and two
+       of the Thompson men have the .30 once it has been issued */
+    if (u.key === 'am_ranger') {
+      if (i === 1 || i === 3) return u.target && u.target.cat === 'veh' && launcherLive(u) ? 'rg_zook' : 'rg_bar';
+      if ((i === 4 || i === 5) && u.up && u.up.a6) return 'rg_30';
+      return i === 0 ? 'rg_lead' : i === 4 ? 'rg_tommy_b' : 'rg_tommy';
+    }
     if (u.key === 'us_ab') return i === 0 ? 'can_piat' : i < 3 ? 'can_sten' : 'can_rifle';
     if (u.key === 'us_eng') return i === 0 ? 'can_sten' : i === 2 ? 'can_rifle_bd' : 'can_rifle';
     /* the gun teams get their own gunner, who serves the piece with both hands */
@@ -30235,9 +30452,57 @@ function figKitEng(V, k, rec) {
   }
   return f;
 }
+/* What a Ranger carries over the vest, hip-relative, and it is light: the pistol belt round
+   the vest's hem with the canteen on the right hip, the musette bag on the left on a strap
+   from the right shoulder, and a second strap crossing it from the left, which is the pale X
+   down his front in every photograph of the battalion. On his back is the other half of the
+   squad's fire: the bazooka slung across the man with the BAR, and the BAR across the man
+   who has taken the bazooka down off his back. A leader carries field glasses on his chest. */
+function figKitRgr(V, k, rec) {
+  var f = [], web = k.web, st = k.roll, cv = k.canvas;
+  function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
+  function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
+  function part(g, mat, fr, bk, sd) { f = f.concat(figPart(g, mat, fr, bk, sd)); }
+  function strap(pts) {
+    for (var i = 0; i + 1 < pts.length; i++) part(taperLimb(pts[i], pts[i + 1], .3, .3, st), 'canvas', lit(st, 1.06), lit(st, .9), st);
+  }
+  part(box(0, 0, .72, 3.62, 5.25, .5, web, web, web, 0), 'canvas', lit(web, 1.06), lit(web, .88), web);
+  part(box(1.83, 0, .76, .1, .5, .42, k.steel, k.steel, k.steel, 0), 'steel', lit(k.steel, 1.3), k.steel, k.steel);
+  part(cyl(-.6, 2.95, -.55, .7, .4, 1.8, 8, cv, lit(cv, 1.08), 0, true), 'canvas', lit(cv, 1.05), lit(cv, .88), cv);
+  var a = mark('pouches');
+  part(box(-.7, -3.0, -.85, 1.9, .7, 1.7, cv, cv, cv, 0), 'canvas', lit(cv, 1.04), lit(cv, .88), lit(cv, .96));
+  part(box(-.7, -3.05, .55, 1.96, .76, .42, cv, cv, cv, 0), 'canvas', lit(cv, .96), lit(cv, .84), lit(cv, .92));
+  upto('pouches', a);
+  /* the two straps, crossing on his chest and again between his shoulders */
+  [-1, 1].forEach(function (sd) {
+    strap([[1.6, sd * 1.5, 6.62], [2.06, 0, 3.85], [2.14, -sd * 1.9, 2.1], [.9, -sd * 2.78, .75]]);
+    strap([[-1.6, sd * 1.5, 6.62], [-2.0, 0, 4.45], [-2.3, -sd * 1.6, 2.7], [-1.0, -sd * 2.8, .8]]);
+    part(box(0, sd * 1.5, 6.66, 3.3, .32, .12, st, st, st, 0), 'canvas', lit(st, 1.08), lit(st, .9), st);
+  });
+  if (V.glass) {
+    /* the glasses on their strap, hung at the middle of his chest */
+    [-1, 1].forEach(function (sd) {
+      part(cyl(2.25, sd * .42, 3.35, .36, .36, 1.1, 8, k.liner, lit(k.liner, 1.2), 0, true), 'leather', lit(k.liner, 1.12), k.liner, k.liner);
+    });
+    part(box(2.25, 0, 3.95, .4, .5, .35, k.liner, k.liner, k.liner, 0), 'leather', lit(k.liner, 1.1), k.liner, k.liner);
+  }
+  /* The weapon he is not firing, across his back on its sling with the muzzle over his left
+     shoulder: turned so its top faces away from him, stood up sixty-five degrees and laid
+     against the vest. A bazooka is nine tenths of a man's height and stands up past his
+     helmet. */
+  if (V.back) {
+    var bw = weaponModel(k, V.back), BW = WEAP[V.back], mid = (BW.butt[0] + BW.muzzle[0]) / 2;
+    bw = roll(place(roll(place(bw, 0, -mid, 0, 0), Math.PI / 2, 0, 0), -Math.PI / 2, 0, 0, 0), -1.01, 0, 0);
+    var pk = mark('pack');
+    f = f.concat(place(bw, 0, V.back === 'zook' ? -2.55 : -2.45, .2, V.back === 'zook' ? 4.8 : 4.0));
+    upto('pack', pk);
+  }
+  return f;
+}
 function figKitGI(V, k, rec) {
   if (V.tanker) return figKitTank(k);
   if (V.eng) return figKitEng(V, k, rec);
+  if (V.rgr) return figKitRgr(V, k, rec);
   var f = [], web = k.web;
   function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
   function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
@@ -30472,8 +30737,14 @@ function figCarry(P, W, w, wide) {
      the man's left and dragged his firing forearm across his own chest. */
   var rl = W.sideMag && c !== 'aim' ? Math.PI / 2 : 0;
   if (c === 'aim') {
+    /* A machine gun fired from the hip is held outboard of the right hip by its pistol grip,
+       the hand a little behind him so the stock runs back past his side under the forearm
+       rather than through him, and the left hand reaches across under the rear of the jacket
+       and takes the weight. It points where he faces. The head stays where it is, since he
+       is watching his tracer rather than looking down the sights. */
+    if (W.hip) { L = layTo(w, W.grip, [-.8, 2.8, 2.6], 0, lean); head = [0, 0, 0]; }
     /* a tube rides on the shoulder and the cheek goes on the tube, not behind a comb */
-    if (cls === 'tube') { L = layTo(w, W.rest, [-.3, 2.2, 6.9], 0, lean); head = [.2, 1.5, -.15]; }
+    else if (cls === 'tube') { L = layTo(w, W.rest, [-.3, 2.2, 6.9], 0, lean); head = [.2, 1.5, -.15]; }
     else L = aimLay(w, W, [.9, 2.0, 7.1], cls === 'heavy' ? .25 : 0, lean);
   } else if (c === 'lowready') {
     if (cls === 'tube') L = layTo(w, W.rest, [0, 3.6 + y, 6.9], 0, .35);
@@ -30497,7 +30768,10 @@ function figCarry(P, W, w, wide) {
        and across to his left. Held level at the waist, as it was, the whole length of
        the rifle lay through the man from one side to the other. */
     if (cls === 'tube') L = layTo(w, W.rest, [0, 3.6 + y, 6.9], 0, .35);
-    else if (cls === 'heavy') L = layWeapon(w, [2.4, 2.4 + y, 2.2], -.35, .35, rl);
+    /* a gun whose handguard is well forward of the magazine is carried further across him, or
+       the reach to it takes the upper arm through his chest (`carry`, the origin, yaw, pitch) */
+    else if (cls === 'heavy') L = W.carry ? layWeapon(w, [W.carry[0], W.carry[1] + y, W.carry[2]], W.carry[3], W.carry[4], rl)
+                                          : layWeapon(w, [2.4, 2.4 + y, 2.2], -.35, .35, rl);
     /* a weapon held by its magazine housing has its support hand a hand's breadth ahead of
        the grip, so it is carried nearer the middle of him: laid out by the right hip the way
        a rifle is, the left arm crossed his whole chest to reach it */
@@ -30511,10 +30785,12 @@ function figCarry(P, W, w, wide) {
    the glove; the engineer's is that and the sleeve rolled, which leaves the real skin to
    the bare forearm. Everybody else's is the kit itself. */
 function engKit(V, k) {
-  var kr = V.nat === 'heer' && V.krad, en = V.nat === 'usa' && V.eng, ka, kk;
-  if (!kr && !en) return k;
+  var kr = V.nat === 'heer' && V.krad, en = V.nat === 'usa' && V.eng, rg = V.nat === 'usa' && V.rgr, ka, kk;
+  if (!kr && !en && !rg) return k;
   ka = {};
   for (kk in k) ka[kk] = k[kk];
+  /* and a Ranger's patch is his battalion's rather than the division's */
+  if (rg) { ka.patch = k.rblue; ka.patch2 = 0; ka.rdiam = k.rorange; return ka; }
   if (en) { ka.rolled = 1; ka.bare = k.skin; ka.bareD = k.skinD; ka.hmat = 'leather'; }
   ka.skin = k.glove; ka.skinD = k.gloveD;
   return ka;
@@ -30603,6 +30879,29 @@ function manFaces(variant, P) {
                 'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
     /* the storm flap over the zip, which is what makes a flat front a jacket */
     add(figPart(box(1.56, .18, -.46, .08, .34, 6.95, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.08), k.coatD, lit(k.coatD, 1.02)));
+    if (V.rgr) {
+      /* The Ranger's assault vest, over the jacket rather than in its place: a darker green
+         than the poplin, from the hip to the chest, standing out over the jacket's skirt and
+         hanging open at the top so the jacket and its flap show between the fronts, with two
+         big pockets low under their flaps, two smaller ones high and a pouch across the back.
+         What shows of the jacket is the collar, the sleeves, that gap and a hand of skirt
+         under the hem. */
+      var rv = k.rvest, rd = k.rvestD;
+      add(figPart(faceOut(frustum(rect(3.5, 5.05), rect(3.4, 5.15), .85, 5.75, rv), 0, 0, 3.3),
+                  'canvas', rv, lit(rv, .9), lit(rv, .95)), 'vest');
+      add(figPart(box(1.745, .1, 4.1, .06, 1.1, 1.65, coat, coat, coat, 0), 'cloth', coat, coat, coat));
+      add(figPart(box(1.745, .1, 3.5, .06, .5, .6, coat, coat, coat, 0), 'cloth', coat, coat, coat));
+      add(figPart(box(1.78, .18, 3.5, .06, .28, 2.25, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.08), k.coatD, k.coatD));
+      [-1, 1].forEach(function (sd) {
+        add(figPart(box(1.84, sd * 1.25, .95, .36, 1.75, 1.55, rv, rv, rv, 0), 'canvas', lit(rv, 1.06), lit(rv, .86), lit(rv, .95)));
+        add(figPart(box(1.93, sd * 1.25, 2.35, .2, 1.83, .45, rd, rd, rd, 0), 'canvas', lit(rd, 1.1), rd, lit(rd, 1.02)));
+        add(figPart(box(1.8, sd * 1.45, 3.3, .28, 1.05, 1.1, rv, rv, rv, 0), 'canvas', lit(rv, 1.06), lit(rv, .86), lit(rv, .95)));
+        add(figPart(box(1.88, sd * 1.45, 4.25, .16, 1.13, .36, rd, rd, rd, 0), 'canvas', lit(rd, 1.1), rd, lit(rd, 1.02)));
+        add(figPart(box(0, sd * 1.5, 6.52, 3.36, 1.3, .14, rv, rv, rv, 0), 'canvas', lit(rv, 1.08), lit(rv, .9), rv));
+      });
+      add(figPart(box(-1.92, 0, 1.0, .5, 3.1, 2.1, rv, rv, rv, 0), 'canvas', lit(rv, .95), lit(rv, 1.08), rv));
+      add(figPart(box(-2.0, 0, 3.0, .32, 3.18, .4, rd, rd, rd, 0), 'canvas', lit(rd, .95), lit(rd, 1.1), rd));
+    }
   } else if (pz) {
     /* The black wrap jacket the panzer crews wore: cut short to the waist so that nothing
        catches in a hatch, double-breasted with its flap closing across the chest on a
@@ -30827,6 +31126,12 @@ function flatFaces(V, side, k, P) {
     f = f.concat(figPart(at(roll(cyl(0, 0, -1.95, .6, .6, 3.9, 8, rl, lit(rl, 1.08), 0, true), Math.PI / 2, 0, 0), -.95, 0, 3.55),
                          'cloth', lit(rl, 1.06), lit(rl, .9), rl));
     f = f.concat(figPart(box(-6.2, 0, .3, .8, 5.0, 2.75, k.web, 0, 0, 0), 'canvas', lit(k.web, 1.1), lit(k.web, .9), lit(k.web, .96)));
+  } else if (ame && V.rgr) {
+    /* the Ranger's vest over his back with its pouch low on it, and the pistol belt round him */
+    var rv = k.rvest;
+    f = f.concat(figPart(box(-4.6, 0, 2.5, 4.4, 5.0, .3, rv, 0, 0, 0), 'canvas', lit(rv, 1.08), lit(rv, .9), rv));
+    add(figPart(box(-5.9, 0, 2.75, 1.8, 3.1, .5, rv, 0, 0, 0), 'canvas', lit(rv, 1.1), lit(rv, .92), rv), 'pack');
+    f = f.concat(figPart(box(-6.3, 0, .3, .5, 5.2, 2.7, k.web, 0, 0, 0), 'canvas', lit(k.web, 1.1), lit(k.web, .9), lit(k.web, .96)));
   } else if (ame) {
     /* the haversack high between the shoulder blades, the belt of pockets round him and
        the shovel's carrier on the flap */
@@ -30997,6 +31302,15 @@ function deadFaces(variant, kind) {
     nsk = h0.length;
     h0 = h0.concat(place(pitch(helmetOf(V, k, 0, 0), Math.PI, 0, 0), .4, 3.5, -2.5, 1.2));
     add(h0, 'head');
+    /* on his back, a Ranger's vest and its four pockets are uppermost */
+    if (ame && V.rgr) {
+      var rv0 = k.rvest;
+      f = f.concat(figPart(box(-3.3, 0, 2.7, 5.4, 4.95, .3, rv0, 0, 0, 0), 'canvas', lit(rv0, 1.08), lit(rv0, .9), rv0));
+      [-1, 1].forEach(function (sd) {
+        f = f.concat(figPart(box(-4.9, sd * 1.25, 3.0, 1.6, 1.7, .3, rv0, 0, 0, 0), 'canvas', lit(rv0, 1.12), lit(rv0, .88), rv0));
+        f = f.concat(figPart(box(-2.4, sd * 1.4, 3.0, 1.1, 1.05, .25, rv0, 0, 0, 0), 'canvas', lit(rv0, 1.12), lit(rv0, .88), rv0));
+      });
+    }
     if (w) add(place(w, .15, -2.0, 6.0, .5), 'weapon');
   } else {
     /* on his face, a quarter roll to the left, the helmet on and askew */
@@ -31010,6 +31324,12 @@ function deadFaces(variant, kind) {
       f = f.concat(figPart(box(-3.3, -.2, 2.65, 3.3, 3.0, 1.6, ld, 0, 0, 0), V.chest ? 'paint' : 'canvas', lit(ld, 1.1), lit(ld, .92), ld));
       f = f.concat(figPart(at(roll(cyl(0, 0, -1.95, .58, .58, 3.9, 8, rl, lit(rl, 1.08), 0, true), Math.PI / 2, 0, 0), -1.25, -.2, 3.3),
                            'cloth', lit(rl, 1.06), lit(rl, .9), rl));
+    }
+    /* and face down, the vest's back and its pouch */
+    if (ame && V.rgr) {
+      var rv1 = k.rvest;
+      f = f.concat(figPart(box(-3.7, -.1, 2.5, 4.4, 4.9, .3, rv1, 0, 0, 0), 'canvas', lit(rv1, 1.08), lit(rv1, .9), rv1));
+      f = f.concat(figPart(box(-5.0, -.2, 2.75, 1.8, 3.1, .5, rv1, 0, 0, 0), 'canvas', lit(rv1, 1.1), lit(rv1, .92), rv1));
     }
     leg([-8.0, -1.4, 1.0], [-12.0, -2.0, .8], [-15.5, -2.2, .7]);
     leg([-8.0, 1.4, 1.0], [-11.0, 3.6, 1.2], [-14.0, 2.4, .7]);
@@ -34412,7 +34732,7 @@ function autoUpTick() {
   var sl = slotOf(G.own);
   if (!sl || aiRuns(sl)) return;
   var vehs = [], i;
-  for (i = 0; i < G.units.length; i++) { var u = G.units[i]; if (!u.dead && owned(u) && u.cat === 'veh') vehs.push(u); }
+  for (i = 0; i < G.units.length; i++) { var u = G.units[i]; if (owned(u) && upgradable(u)) vehs.push(u); }
   if (vehs.length) buyUpgradeAuto(G.own, vehs, { foeAt: true, floor: 150, fuFloor: 60, you: true });
 }
 function keyHelpSync() {
@@ -34497,7 +34817,7 @@ function simpleUnitSync() {
   if (u.up) for (k in u.up) if (u.up[k] && UPGRADES[k]) fitted.push(UPGRADES[k].short);
   el('tunitstat').textContent = (u.cat === 'veh' ? Math.round(hpFrac(u) * 100) + '% hull' : aliveModels(u) + ' men') +
                                 (fitted.length ? ' · ' + fitted.join(', ') : '');
-  var host = el('tunitbtns'), ups = u.cat === 'veh' && u.up ? (u.def.upgrades || []) : [];
+  var host = el('tunitbtns'), ups = upgradable(u) ? u.def.upgrades : [];
   host.innerHTML = '';
   function add(ico, label, sub, fn, on, poor, key) {
     var b = document.createElement('button');
@@ -35318,8 +35638,8 @@ function buildCmds() {
     Object.keys(UPGRADES).forEach(function (uk) {
       var U = UPGRADES[uk];
       var can = units.filter(function (u) {
-        return u.cat === 'veh' && (u.def.upgrades || []).indexOf(uk) >= 0 &&
-               !(u.up && u.up[uk]) && !hasExclusive(u, U.excl);
+        return upgradable(u) && u.def.upgrades.indexOf(uk) >= 0 &&
+               !u.up[uk] && !hasExclusive(u, U.excl);
       });
       if (!can.length) return;
       addCmd(U.short, (U.cost.mp || 0) + (can.length > 1 ? ' <em>x' + can.length + '</em>' : ''), U.hk, canAfford(G.own, U.cost),
@@ -35328,7 +35648,7 @@ function buildCmds() {
     });
     /* and whether the game fits them for him: one card for the selection, lit while it
        does, which is this vehicle's own word over the setting on the title screen */
-    var upVehs = units.filter(function (u) { return u.cat === 'veh' && (u.def.upgrades || []).length; });
+    var upVehs = units.filter(upgradable);
     if (upVehs.length) {
       var autoOn = autoUpOf(upVehs[0]);
       addCmd('Auto upgrade', autoOn ? 'on' : 'off', 'N', true, function () {
