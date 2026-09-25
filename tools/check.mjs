@@ -4292,6 +4292,93 @@ for (const device of TARGETS) {
      `${hmg.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${hmg.wUp ? 'changed' : 'NOT changed'}, the piece and bodies ${hmg.mesh42 ? 'changed' : 'NOT changed'}, ` +
      `carried ${hmg.pieces42}; killed went down as ${hmg.bodyNat}, bodies ${hmg.fall ? 'baked' : 'MISSING'}; Ortona's post makes ${hmg.ita}`);
 
+  /* --- The Wirbelwind. The 352nd fields it over and above the 234 that took the paratroopers'
+     Wirbelwind's place, so it is on the depot's list with its army written on it: the depot
+     makes it beside the 234, and in Italy lists neither it nor the rule's leak. It is the
+     Panzer IV's hull in the grey under an open turret with no roof over the middle of it,
+     four barrels out through the front plate and four men in it, three under a helmet and the
+     commander in the cap; the turret goes all the way round, the eye is the commander's over
+     the rim, a burst beside it takes more off it than off the Panzer IV, and its plate and its
+     hit points are both under the tank's. Forty wrecks throw the turret some of the time,
+     killed it leaves bodies of the 352nd, and Ortona's depot still makes the Wirbelwind. --- */
+  const wb = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 160, true);
+    out.makes = W.makesOf(dep).join(',');
+    out.fielded = W.fielded('hr_wirb');
+    G.res[hq.own].mp += 2000; G.res[hq.own].fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_wirb');
+    out.q = W.queueUnit(dep, 'hr_wirb') ? dep.queue.slice(-1)[0] : 'refused';
+    out.q234 = W.queueUnit(dep, 'ger_wirb') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_wirb') - m0;
+    dep.queue.length = q0;
+    const v = W.spawnUnit(hq.own, 'hr_wirb', hq.x - 140, hq.y + 260, 0);
+    const V = W.VMODEL.hr_wirb, B = W.MODELS.veh.hr_wirb, K = W.KIT.heer, T = W.WBT, rim = T.z0 + T.hl + T.hu;
+    out.bufs = !!(B && B.hull && B.tur && B.turCrew && B.skirts && B.inside);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
+    out.turGrey = V.tur.filter(f => f.c === W.HRG.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    /* open: nothing of the turret over the middle of it at the rim or above */
+    out.roof = V.tur.filter(f => f.v.every(p => p[2] >= rim - .1 && Math.hypot(p[0], p[1]) < 7)).length;
+    /* four muzzles, each the dark end of a flash hider out past the front plate */
+    const muz = new Set();
+    V.tur.forEach(f => { if (f.c === W.HP4C.hole && f.v.every(p => p[0] > T.muz - .2)) {
+      const c = f.v.reduce((a, p) => [a[0] + p[1], a[1] + p[2]], [0, 0]); muz.add(Math.round(c[0] / f.v.length) + ',' + Math.round(c[1] / f.v.length)); } });
+    out.muz = muz.size;
+    out.helm = V.turCrew.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.black = V.turCrew.filter(f => f.c === K.pz).length;
+    out.over = V.turCrew.filter(f => f.v.some(p => p[2] > rim + 2)).length;
+    v.facing = 0; v.turret = 0; v.want = 1.2;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    out.auto = !!v.def.w.auto;
+    const P4 = W.UNITS.hr_p4;
+    out.plate = v.def.armor + '<' + P4.armor; out.hp = v.def.hp + '<' + P4.hp;
+    /* the same burst beside each, the Panzer IV staged where the Wirbelwind stood */
+    const foe = W.spawnUnit(G.slots.filter(s => s.side === 'us')[0].k, 'am_rifle', v.x + 900, v.y + 900, 0);
+    /* burst thirty up, which is over the height a round opens the ground from, so the row
+       leaves no hole where the next one stands its men */
+    const burst = (u) => { const h0 = u.hp; W.explode(u.x + 10, u.y, 30, 120, foe, null, 30, null); return h0 - u.hp; };
+    out.lost = +burst(v).toFixed(1);
+    const p4 = W.spawnUnit(hq.own, 'hr_p4', v.x, v.y + 120, 0);
+    out.lostP4 = +burst(p4).toFixed(1);
+    [foe, p4].forEach(u => { u.dead = true; G.units.splice(G.units.indexOf(u), 1); });
+    v.hp = v.def.hp;
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    out.itaField = W.fielded('hr_wirb');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd fields the Wirbelwind beside the 234, open, with four guns and four men',
+     /hr_wirb/.test(wb.makes) && /hr_234/.test(wb.makes) && wb.fielded && wb.q === 'hr_wirb' && wb.q234 === 'hr_234' && wb.made === 1 &&
+     wb.bufs && wb.grey > 50 && wb.turGrey > 20 && wb.camo === 0 && wb.roof === 0 && wb.muz === 4 &&
+     wb.helm > 0 && wb.black > 0 && wb.over > 0 && wb.lay < .05 && wb.eye > 30 && wb.eye < 40 && wb.auto &&
+     wb.lost > wb.lostP4 * 1.3 && wb.lostP4 > 0 && wb.blown > 0 && wb.blown < 40 && wb.sink >= 2 &&
+     wb.bodies >= 1 && wb.bodyNat === 'heer' && /ger_wirb/.test(wb.ita) && !/hr_wirb/.test(wb.ita) && !wb.itaField,
+     `the depot makes ${wb.makes}; asked for the Wirbelwind by its own key it queues ${wb.q} and by the paratroopers' ${wb.q234}, ` +
+     `counted as ${wb.made} made; buffers ${wb.bufs ? 'all built' : 'MISSING'}; ${wb.grey} hull and ${wb.turGrey} turret faces in the ` +
+     `grey and ${wb.camo} in the paratroopers' paint; ${wb.roof} faces roofing it over, ${wb.muz} muzzles; the men have ${wb.helm} ` +
+     `faces of a helmet and ${wb.black} of the panzer troops' black, ${wb.over} of them more than 2 over the rim; asked to lay 1.2 off the nose the turret is ${wb.lay} ` +
+     `short; the eye ${wb.eye} up; the gun ${wb.auto ? 'automatic' : 'NOT automatic'}, plate ${wb.plate} and hit points ${wb.hp} ` +
+     `against the Panzer IV; a 120-point burst took ${wb.lost} off it and ${wb.lostP4} off the Panzer IV; ${wb.blown} of 40 wrecks ` +
+     `threw the turret, the least sat down ${wb.sink}; killed, it left ${wb.bodies} bodies of ${wb.bodyNat}; Ortona's depot makes ` +
+     `${wb.ita} and ${wb.itaField ? 'WOULD field' : 'does not field'} the 352nd's`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

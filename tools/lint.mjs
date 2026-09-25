@@ -269,10 +269,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    carbine, three variants with the belts crossed on the chest, the gun and the tripod carried
    on the shoulder, the number two at the side of the gun, and the .50 as a field upgrade that
    changes the piece, the men's places and the bodies at the gun.
+   It is 2530 for the MG 34 team and the Wirbelwind: the MG 34 and the MG 42 cut as they go
+   on the Lafette, the Lafette set up and folded and carried on a back, the box of belts,
+   four variants with the gun laid into the shoulder beside the bore; and the open turret of
+   nine plates with its two gun slots, the Flakvierling 38 with its four guns, magazines,
+   sight, seat and handwheels, the racked magazines, four men in it, and the army's own
+   unit on a depot the substitutions do not reach.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2500) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2500 kB so it stays quick to load on a phone`);
+if (kb > 2530) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2530 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

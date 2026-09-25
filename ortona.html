@@ -1284,7 +1284,17 @@ function natKey(key) {
   var d = UNITS[key], s = NATIONS[d && d.side === 'ger' ? NAX : NAT].sub[key];
   return s || key;
 }
-function makesOf(b) { return b.def.makes ? b.def.makes.map(natKey) : null; }
+/* whether the army this map's side fields has a unit at all. A unit that stands in for one of
+   the first roster is reached through `natKey`; a unit an army fields over and above its
+   substitutions is written on the maker's list with its army on it (`def.nat`), and only the
+   army it belongs to makes it. The 352nd's Wirbelwind is one: the 234 took the paratroopers'
+   Wirbelwind's place on the beach, so the 352nd's is a unit of its own, and the depot in
+   Italy never lists it. */
+function fielded(key) {
+  var d = UNITS[key];
+  return !d || !d.nat || d.nat === (d.side === 'ger' ? NAX : NAT);
+}
+function makesOf(b) { return b.def.makes ? b.def.makes.map(natKey).filter(fielded) : null; }
 /* The army a unit belongs to, which can differ from its side: the Allied side
    fields Canadians on the Italian maps and Americans on the beach, and what a man is
    drawn in, what his body looks like where he fell and whose kit he is carrying is a
@@ -1876,6 +1886,20 @@ var UNITS = {
     wUp: { puma: { range: 380, dmg: 85, rof: 2.6, acc: .70, sup: .04, pen: 120, aoe: 22, shell: 1, brake: 1 } },
     desc: 'Eight wheels, a diesel and a driver at either end: the heavy armoured car, faster than anything on the beach and quick out of a street the way it came in. It arrives with the 2 cm and an MG 42 in an open turret under two wire screens, which keeps men down and opens a half-track or a scout car. The closed turret with the 5 cm is a field upgrade, and with it the car will open a Sherman from the flank.'
   },
+  /* The Wirbelwind, which the 352nd fields over and above the 234 that stands in the
+     paratroopers' one (`nat` on a thing the depot lists, read by `fielded`): the Panzer IV's
+     hull under an open turret of nine plates with the 2 cm Flakvierling 38 in it. Four
+     automatic cannon strip men out of the open and open anything light faster than anything
+     else in the army; and four men stand behind sixteen millimetres with no roof over them,
+     so it is lighter to kill than the tank it is built on and a round that bursts over it
+     finds the crew (`blastRes`). */
+  hr_wirb: {
+    side: 'ger', nat: 'heer', name: 'Flakpanzer IV Wirbelwind', short: 'WIRBEL', cat: 'veh', hk: 'L', upgrades: ['skirts'],
+    hp: 460, armor: 104, speed: 76, sight: 340, pop: 12, cost: { mp: 320, fu: 75 }, time: 30,
+    req: 'ger_dep', blastRes: 1.8,
+    w: { range: 320, dmg: 36, rof: .26, acc: .60, sup: .025, pen: 24, aoe: 22, shell: 1, auto: 1 },
+    desc: 'The Panzer IV with its turret lifted off and an open one of nine plates in its place, with four 2 cm cannon in it. Nothing in the army clears men out of the open or opens a half-track or an armoured car faster. It is paid for in plate: the turret is sixteen millimetres with no roof, four of the crew are in it, and anything that can open a tank opens this more easily than the Panzer IV it is built on.'
+  },
   /* Retired. No Tiger II ever reached Italy, let alone Ortona, so it is withdrawn from
      the roster: retired keeps it out of the build menu and out of the AI's hands while
      leaving the unit, its model and its dimension checks intact. */
@@ -1996,7 +2020,7 @@ var BUILDINGS = {
              cost: { mp: 200 }, time: 26, makes: ['ger_mg42', 'ger_flak20', 'ger_mor', 'ger_neb', 'ger_how', 'ger_pgren'],
              desc: 'Unlocks the MG42 team, the 2 cm Flak 38, the 8 cm mortar, the Nebelwerfer, the 75/18 howitzer and the Panzergrenadier group.' },
   ger_dep: { side: 'ger', name: 'Armoured Support Point', short: 'PANZER SUPPORT', w: 134, h: 104, hp: 1700, hk: '2',
-             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_wirb', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
+             cost: { mp: 240, fu: 25 }, time: 32, makes: ['ger_pak', 'ger_sd222', 'ger_h251', 'ger_wirb', 'hr_wirb', 'ger_stug', 'ger_p4', 'ger_tig', 'ger_maus', 'ger_kt'],
              desc: 'Unlocks the Pak 40, Sd.Kfz. 222, Wirbelwind, StuG IV and Panzer IV.' }
 };
 /* ---- field works.
@@ -11184,7 +11208,7 @@ var AIVOICE = { 'wave.form': 'Forming up for an assault', 'wave.go': 'Assault go
                'buy.inf', 'buy.mg', 'buy.auto', 'buy.mortar', 'buy.neb', 'mortar.gate.reached', 'mortar.gate.want',
                'mortar.gate.money', 'mortar.mission', 'buy.how', 'how.gate.reached', 'how.gate.want',
                'how.gate.money', 'how.gate.pop', 'buy.elite', 'buy.at', 'buy.veh', 'buy.save', 'buy.upgrade',
-               'buy.hurt',
+               'buy.hurt', 'buy.flak',
                'build.post', 'build.depot', 'mood.hold', 'mood.dig', 'mood.pushVp',
                'target.seen', 'target.stale', 'approach.quiet',
                /* the situation and what is decided out of it */
@@ -11824,6 +11848,9 @@ function aiCutLadder(slot, base, IN, own) {
   var killers = side === 'us' ? { us_ach: 1, us_at: 1 } : { ger_stug: 1, ger_tig: 1, ger_pak: 1 };
   var meds = side === 'us' ? { us_sher: 1 } : { ger_p4: 1 };
   var atKey = side === 'us' ? 'us_at' : 'ger_pak';
+  /* and what is for stripping men out of the open: forward when men are all he has, back
+     when he has something heavy that it cannot scratch */
+  var flak = side === 'us' ? {} : { hr_wirb: 1 };
   var front = [], mid = [], back = [], i, e, k;
   for (i = 0; i < base.length; i++) {
     e = base[i]; k = e[0];
@@ -11834,6 +11861,8 @@ function aiCutLadder(slot, base, IN, own) {
     if (k === atKey && noArmourToAnswer) { back.push(e); continue; }
     if (k === atKey && IN.veh > ownAt) { front.push([k, Math.max(e[1], Math.min(3, IN.veh)), e[2]]); continue; }
     if (k === atKey && byArm > .5) { front.push([k, Math.max(e[1], 2), e[2]]); aiFire('buy.hurt'); continue; }
+    if (flak[k] && noArmourToAnswer) { front.push(e); aiFire('buy.flak'); continue; }
+    if (flak[k] && heavies) { back.push(e); continue; }
     if (lt[k] && pakLine) { back.push(e); continue; }
     if (heavies && killers[k]) { front.push(e); continue; }
     if (heavies && meds[k]) { back.push(e); continue; }
@@ -13239,7 +13268,7 @@ function aiTick(dt) {
     ? [['us_m8', 1, 40], ['us_at', 2, 130], ['us_m3', 1, 210], ['us_stuart', 1, 270],
        ['us_sher', 2, 310], ['us_ach', 1, 580], ['us_sher', meds, 650]]
     : [['ger_sd222', 1, 40], ['ger_pak', 2, 130], ['ger_h251', 1, 210], ['ger_stug', 1, 235],
-       ['ger_p4', 2, 260], ['ger_wirb', 1, 340], ['ger_tig', 1, 620], ['ger_p4', meds, 690]], IN, own);
+       ['ger_p4', 2, 260], ['ger_wirb', 1, 340], ['hr_wirb', 1, 380], ['ger_tig', 1, 620], ['ger_p4', meds, 690]], IN, own);
   /* and what this player has been told to want, which multiplies what the cut just
      decided rather than replacing it.
        A heavy weight above even also opens the one rung a brain is not otherwise allowed:
@@ -13251,8 +13280,10 @@ function aiTick(dt) {
   if (side === 'ger' && bpOf(slot, 'heavy') >= 1.5) LADDER.push(['ger_kt', 1, 760]);
   /* the list is written in the first roster and cut in it, and then it is the army this
      map's side actually fields, so that what is saved for, what is counted and what the
-     weights read is the jeep on the beach rather than the carrier it stands in for */
-  LADDER = LADDER.map(function (e) { return [natKey(e[0]), e[1], e[2]]; });
+     weights read is the jeep on the beach rather than the carrier it stands in for; and a
+     rung for a unit only one army fields comes off the list where that army is not fighting,
+     or the head of it is money saved for a vehicle no depot on the map will ever make */
+  LADDER = LADDER.map(function (e) { return [natKey(e[0]), e[1], e[2]]; }).filter(function (e) { return fielded(e[0]); });
   LADDER = aiPrefLadder(slot, LADDER);
   var gate = 2 - D.tech, li, ent, lk, ld;
   /* Population is the other thing it can run out of, and infantry is cheap enough to
@@ -17000,6 +17031,7 @@ function aoSplit(faces, edge) {
       made = { v: [a[0], b[0], c[0], d[0]], c: f.c, zt: zt };
       if (f.m !== undefined) made.m = f.m;
       if (f.lit) made.lit = 1;
+      if (f.thin) made.thin = 1;
       if (a[1]) made.n = [a[1], b[1], c[1], d[1]];
       out.push(made);
     }
@@ -17017,6 +17049,11 @@ function aoAt(g, x, y, z) {
   return g.d[(k * g.ny + j) * g.nx + i];
 }
 function aoMark(g, f, ox, oy, oz) {
+  /* a barrel a hand across marks a whole cell of the grid, which is a third of a metre, and
+     four of them side by side mark a slab in front of the plate they come out of: the
+     Wirbelwind's front plate came back black behind its own guns. A face marked `thin` is
+     still shaded and shades nothing */
+  if (f.thin) return;
   var v = f.v, t, a, b, c, i, j, n, u, w, q, step = AOC * .55;
   for (t = 1; t < v.length - 1; t++) {
     a = v[0]; b = v[t]; c = v[t + 1];
@@ -24549,6 +24586,216 @@ function hp4TurSkirts() {
   return f;
 }
 
+/* ================================================================ Flakpanzer IV Wirbelwind (Heer)
+   The Panzer IV with its turret lifted off and an open one of nine plates welded up on the
+   same ring, with the 2 cm Flakvierling 38 in it: four Flak 38 on one cradle, a pair either
+   side of the sight and one gun over the other in each, every gun fed from the outside by a
+   twenty-round magazine, and the gunner on the mount's own seat between them with a
+   handwheel at either hand. The hull is the Panzer IV's (`hp4Hull`) and only the turret is
+   new, in the same grey.
+
+   What says Wirbelwind rather than any other flak tank, from the top:
+
+     1. The turret: nine plates of sixteen millimetres, each bent across the middle so it
+        leans out from the collar to the bend and back in to the rim, open above. It is longer
+        than it is wide: a narrow front plate, a cheek either side of it, a long flat side, a
+        plate round each back quarter and two meeting at a point behind. The rim is at the chest
+        of a man standing inside it.
+     2. The four barrels out through two slots in the front plate, which run up through the
+        bend to the rim so the guns can be laid straight up, each ending in its flash hider.
+     3. The men in it: the gunner low between the guns, a loader at the magazines either side
+        of him and the commander behind, heads and shoulders over the rim. Four men in the
+        turret where the Panzer IV has three, behind a fifth of its armour.
+
+   Published: 5.92 m long, 2.90 m wide and 2.76 m high on the Panzer IV's running gear; the
+   Flak 38 2.25 m long with a barrel of 1.30 m. Laid out at 8.5 cm to the unit, the turret
+   built about the middle of its ring with the roof of the hull at nought. */
+var WBT = {
+  /* the plan at the bend, counter-clockwise from the left-hand end of the front plate: the
+     front, a cheek, the long flat side, a plate round the back quarter and the two that meet
+     at the back, so it is longer than it is wide and nothing like a round */
+  plan: [[13.2, -4.5], [13.2, 4.5], [7.0, 13.0], [-6.0, 13.0], [-12.0, 7.5], [-16.0, 0], [-12.0, -7.5], [-6.0, -13.0], [7.0, -13.0]],
+  dl: 1.25, du: 1.5, t: .24,                               /* how far in the foot and the rim stand from the bend, and the plate */
+  z0: .8, hl: 7.1, hu: 4.2,                                /* the collar it stands on, and the band below the bend and above it */
+  ring: 9.3, zf: -4.2,                                     /* the basket down through the ring to the floor the crew stand on */
+  xt: 3.6, zt: 8.25, gy: 2.5, gd: 1.05,                    /* the trunnion; a pair either side of the sight, a gun over a gun */
+  slot: .5, slotZ: 5.9, muz: 23.0,
+  gx: -3.4, gw: [3.5, 2.1, 8.0],                           /* the gunner's hips, and his hands on the handwheels */
+  lx: -.8, ly: 5.6, cx: -6.3                               /* where the loaders and the commander stand */
+};
+/* how far in from the plan at the bend the outside of the plates stands at a height: every
+   plate leans out from the foot to the bend and back in from the bend to the rim, so the rim
+   is about as wide as the foot. Each plate is moved in along its own normal and the corners
+   found again (`k4Inset`), so every band of every plate stays a plane. */
+function wbD(z) {
+  var T = WBT, zc = T.z0 + T.hl;
+  return z <= zc ? T.dl * clamp(1 - (z - T.z0) / T.hl, 0, 1) : T.du * clamp((z - zc) / T.hu, 0, 1);
+}
+function wbPlanAt(z, inner) { return k4Inset(WBT.plan, wbD(z) + (inner ? WBT.t : 0)); }
+function wbTurret() {
+  var C = HP4C, T = WBT, f = [], i, j, k, b, N = 36;
+  var zc = T.z0 + T.hl, z1 = zc + T.hu, Z = [T.z0, zc, z1], n = T.plan.length;
+  var P = Z.map(function (z) { return wbPlanAt(z, false); }), Q = Z.map(function (z) { return wbPlanAt(z, true); });
+  /* ---- the eight plates round the sides and the back, in two bands, inside and out ---- */
+  for (b = 0; b < 2; b++) for (i = 1; i < n; i++) {
+    j = (i + 1) % n;
+    var A = P[b], B = P[b + 1], a = Q[b], bb = Q[b + 1], ex = A[j][0] - A[i][0], ey = A[j][1] - A[i][1];
+    f.push(hkFace([[A[i][0], A[i][1], Z[b]], [A[j][0], A[j][1], Z[b]], [B[j][0], B[j][1], Z[b + 1]], [B[i][0], B[i][1], Z[b + 1]]], [ey, -ex, 0], C.body));
+    f = f.concat(m8Lit([hkFace([[a[i][0], a[i][1], Z[b]], [a[j][0], a[j][1], Z[b]], [bb[j][0], bb[j][1], Z[b + 1]], [bb[i][0], bb[i][1], Z[b + 1]]], [-ey, ex, 0], INC.white)]));
+  }
+  /* the rim, and the weld along it, down every corner and round the bend */
+  for (i = 1; i < n; i++) {
+    j = (i + 1) % n;
+    f.push(hkFace([[P[2][i][0], P[2][i][1], z1], [P[2][j][0], P[2][j][1], z1], [Q[2][j][0], Q[2][j][1], z1], [Q[2][i][0], Q[2][i][1], z1]], [0, 0, 1], C.lit));
+    f = f.concat(hkBead([P[2][i][0], P[2][i][1], z1], [P[2][j][0], P[2][j][1], z1], .12));
+    f = f.concat(hkBead([P[1][i][0], P[1][i][1], zc], [P[1][j][0], P[1][j][1], zc], .12));
+  }
+  for (i = 0; i < n; i++) for (b = 0; b < 2; b++) f = f.concat(hkBead([P[b][i][0], P[b][i][1], Z[b]], [P[b + 1][i][0], P[b + 1][i][1], Z[b + 1]], .12));
+  /* ---- the front plate, bent like the rest and cut by the two slots the guns come through,
+     which run from below the lower guns up through the bend to the rim so the guns can be laid
+     straight up. A point on it is a height and a place across it; the plate is square to the
+     bore, so across is y ---- */
+  function fp(z, y, inner) { return [wbPlanAt(z, inner)[0][0], y, z]; }
+  function edge(c, z, inner) { var pl = wbPlanAt(z, inner); return c === -1 ? pl[0][1] : c === 1 ? pl[1][1] : c; }
+  var S = [-T.gy - T.slot, -T.gy + T.slot, T.gy - T.slot, T.gy + T.slot], COLS = [[-1, S[0]], [S[1], S[2]], [S[3], 1]];
+  [false, true].forEach(function (inner) {
+    var want = inner ? [-1, 0, 0] : [1, 0, 0], col = inner ? INC.white : C.body, q = [];
+    q.push(hkFace([fp(T.z0, edge(-1, T.z0, inner), inner), fp(T.z0, edge(1, T.z0, inner), inner),
+                   fp(T.slotZ, edge(1, T.slotZ, inner), inner), fp(T.slotZ, edge(-1, T.slotZ, inner), inner)], want, col));
+    [[T.slotZ, zc], [zc, z1]].forEach(function (zz) {
+      COLS.forEach(function (c) {
+        q.push(hkFace([fp(zz[0], edge(c[0], zz[0], inner), inner), fp(zz[0], edge(c[1], zz[0], inner), inner),
+                       fp(zz[1], edge(c[1], zz[1], inner), inner), fp(zz[1], edge(c[0], zz[1], inner), inner)], want, col));
+      });
+    });
+    f = f.concat(inner ? m8Lit(q) : q);
+  });
+  S.forEach(function (y, e) {
+    [[T.slotZ, zc], [zc, z1]].forEach(function (zz) {
+      f.push(hkFace([fp(zz[0], y, false), fp(zz[0], y, true), fp(zz[1], y, true), fp(zz[1], y, false)], [0, e % 2 ? -1 : 1, 0], C.dark));
+    });
+  });
+  [0, 2].forEach(function (e) {
+    f.push(hkFace([fp(T.slotZ, S[e], false), fp(T.slotZ, S[e + 1], false), fp(T.slotZ, S[e + 1], true), fp(T.slotZ, S[e], true)], [0, 0, 1], C.dark));
+  });
+  COLS.forEach(function (c) {
+    f.push(hkFace([fp(z1, edge(c[0], z1, false), false), fp(z1, edge(c[1], z1, false), false), fp(z1, edge(c[1], z1, true), true),
+                   fp(z1, edge(c[0], z1, true), true)], [0, 0, 1], C.lit));
+    f = f.concat(hkBead(fp(z1, edge(c[0], z1, false), false), fp(z1, edge(c[1], z1, false), false), .12));
+    f = f.concat(hkBead(fp(zc, edge(c[0], zc, false), false), fp(zc, edge(c[1], zc, false), false), .12));
+  });
+  /* ---- underneath: the collar it turns on, the plate over the overhang, the ledge inside
+     the foot of the walls, and the basket down through the ring to the floor, in the ivory the
+     inside was painted ---- */
+  var rc = 1e9;
+  for (i = 0; i < n; i++) {
+    j = (i + 1) % n;
+    var ux = P[0][j][0] - P[0][i][0], uy = P[0][j][1] - P[0][i][1], ul = Math.hypot(ux, uy);
+    rc = Math.min(rc, (P[0][i][0] * uy - P[0][i][1] * ux) / ul);
+  }
+  f = f.concat(faceOut(welded(loft([m8TurRing(rc - .3, .05, N, false), m8TurRing(rc - .3, T.z0, N, false)], [C.dark])), 0, 0, T.z0 / 2));
+  for (i = 0; i < N; i++) {
+    var a0 = i / N * TAU, a1 = (i + 1) / N * TAU, o0 = k4Ray(P[0], a0), o1 = k4Ray(P[0], a1), p0 = k4Ray(Q[0], a0), p1 = k4Ray(Q[0], a1);
+    var r0 = [Math.cos(a0) * T.ring, Math.sin(a0) * T.ring], r1 = [Math.cos(a1) * T.ring, Math.sin(a1) * T.ring];
+    f.push(hkFace([[o0[0], o0[1], T.z0], [o1[0], o1[1], T.z0], [r1[0], r1[1], T.z0], [r0[0], r0[1], T.z0]], [0, 0, -1], C.dark));
+    f = f.concat(m8Lit([hkFace([[p0[0], p0[1], T.z0 + .02], [p1[0], p1[1], T.z0 + .02], [r1[0], r1[1], T.z0 + .02], [r0[0], r0[1], T.z0 + .02]], [0, 0, 1], INC.whiteD)]));
+  }
+  f = f.concat(m8Lit(faceIn(welded(loft([m8TurRing(T.ring, T.zf, N, true), m8TurRing(T.ring, T.z0, N, true)], [INC.whiteD])), 0, 0, (T.zf + T.z0) / 2)));
+  f = f.concat(m8Lit([hkFace(m8TurRing(T.ring, T.zf, N, false), [0, 0, 1], INC.whiteD)]));
+  /* ---- the magazines racked round the plates behind the guns, twenty rounds to a box, in
+     two tiers on each of the four at the back, each tier standing clear of the plate at the
+     nearer of its two ends and as many to a tier as the plate has room for ---- */
+  [3, 4, 5, 6].forEach(function (e) {
+    var a = T.plan[e], c = T.plan[(e + 1) % n], L = Math.hypot(c[0] - a[0], c[1] - a[1]);
+    var u = [(c[0] - a[0]) / L, (c[1] - a[1]) / L], nn = [u[1], -u[0]];
+    var dc = a[0] * nn[0] + a[1] * nn[1], mid = ((a[0] + c[0]) * u[0] + (a[1] + c[1]) * u[1]) / 2, rk = [];
+    [[3.6, 6.4], [7.0, 9.8]].forEach(function (tz) {
+      var xw = dc - Math.max(wbD(tz[0]), wbD(tz[1])) - T.t - .05, dp = 1.6, m = Math.min(6, Math.floor((L - 2.4) / .95));
+      for (k = 0; k < m; k++) rk = rk.concat(box(xw - dp / 2, mid + (k - (m - 1) / 2) * .95, tz[0], dp, .78, tz[1] - tz[0], INC.dark, INC.black, INC.dark, .06));
+      rk = rk.concat(box(xw - dp / 2 - .1, mid, tz[0] - .3, dp + .2, m * .95 + .3, .3, INC.steel, INC.steelL, INC.steel, 0));
+      rk = rk.concat(box(xw - dp - .1, mid, (tz[0] + tz[1]) / 2 - .2, .2, m * .95 + .3, .4, INC.steel, INC.steelL, INC.steel, 0));
+    });
+    f = f.concat(m8Lit(place(rk, Math.atan2(nn[1], nn[0]), 0, 0, 0)));
+  });
+  return f.concat(m8Lit(wbFlak()));
+}
+function wbThin(fs) { fs.forEach(function (q) { q.thin = 1; }); return fs; }
+/* The Flakvierling 38 as it stands in the turret: the pedestal off the floor and the
+   carriage on it, two cheeks and the trunnion through them, and on it a pair of Flak 38
+   either side, one over the other, each with its magazine out to the side and swept back,
+   its barrel out through the front plate and its flash hider; between the pairs the sight
+   over the guns, and behind them the gunner's seat, his two handwheels and the pedals at
+   his feet. A canvas bag under each pair takes the cases. */
+function wbFlak() {
+  var C = HP4C, T = WBT, f = [], xt = T.xt, zt = T.zt, s, u;
+  var g = INC.gun, gL = INC.gunL, st = C.steel, bare = C.bare, xp = xt + .3;
+  f = f.concat(cyl(xp, 0, T.zf, 2.4, 2.4, .4, 16, C.dark, C.body, 0, true));
+  f = f.concat(cyl(xp, 0, T.zf + .4, 1.15, 1.15, zt - 3.3 - T.zf - .4, 12, C.dark, C.body, 0, true));
+  f = f.concat(box(xp - .6, 0, zt - 3.3, 4.6, 3.4, .75, C.dark, C.body, C.dark, .08));
+  for (s = -1; s <= 1; s += 2) f = f.concat(box(xt - .4, s * 1.1, zt - 2.6, 3.8, .5, 3.9, C.dark, C.body, C.dark, .06));
+  f = f.concat(place(tubeSmooth(-3.3, 3.3, 0, 0, .42, 8, st, bare), Math.PI / 2, xt, 0, zt));
+  for (s = -1; s <= 1; s += 2) {
+    for (u = -1; u <= 1; u += 2) {
+      var y = s * T.gy, z = zt + u * T.gd;
+      f = f.concat(box(xt - 1.5, y, z - .85, 6.6, 1.3, 1.7, g, gL, g, .1));
+      f = f.concat(box(xt - 5.05, y, z - .55, .5, 1.0, 1.1, g, gL, g, .06));
+      f = f.concat(box(xt - 2.6, y + s * .75, z + .1, 1.4, .3, .35, st, bare, st, 0));
+      f = f.concat(box(xt, s * 1.45, z - .4, 1.2, .5, .8, C.dark, C.body, C.dark, 0));
+      /* the magazine, out to the side and swept back the way the rounds curve in it */
+      f = f.concat(box(xt - .5, y + s * 1.45, z - .38, 2.3, 1.6, .76, INC.dark, INC.black, INC.dark, .08));
+      f = f.concat(place(box(0, 0, z - .38, 2.2, 1.3, .76, INC.dark, INC.black, INC.dark, .08), s * .3, xt - .75, y + s * 2.8, 0));
+      /* the barrel's housing with the carrying handle on it, the barrel, and the flash hider */
+      f = f.concat(tubeSmooth(xt + 1.8, xt + 4.6, y, z, .5, 10, g, gL));
+      f = f.concat(box(xt + 3.1, y, z + .45, .5, .3, .55, st, bare, st, 0));
+      f = f.concat(wbThin(m4Taper(xt + 4.6, xt + 17.6, y, z, .27, .22, 8, st, st)
+                   .concat(m4Taper(xt + 17.6, T.muz - .1, y, z, .3, .5, 10, st, st), tubeSmooth(T.muz - .1, T.muz, y, z, .5, 10, st, C.hole))));
+    }
+    f = f.concat(box(xt - 1.8, s * T.gy, zt - T.gd - 2.45, 2.4, 1.3, 1.6, INC.canvas, lit(INC.canvas, 1.1), INC.canvas, .2));
+  }
+  /* the sight on its post between the upper guns, with the eyepiece back to the gunner */
+  f = f.concat(box(xt - 1.6, 0, zt + .2, .6, .6, T.gd + .6, st, bare, st, 0));
+  f = f.concat(box(xt - 1.8, 0, zt + T.gd + .8, 2.6, 1.1, 1.2, g, gL, g, .1));
+  f = f.concat(tubeSmooth(xt - 4.2, xt - 3.1, 0, zt + T.gd + 1.4, .3, 8, st, C.glass));
+  f = f.concat(tubeSmooth(xt - .5, xt - .3, 0, zt + T.gd + 1.4, .45, 8, st, C.glass));
+  /* the gunner's seat on its post, the back of it, and his two handwheels, each on an arm
+     off the carriage with the knob in his hand, and the pedals he fires with */
+  var gx = T.gx, zs = T.zf + .1, hx = gx + T.gw[0], hz = zs + T.gw[2];
+  f = f.concat(cyl(gx, 0, T.zf, .35, .35, .8 - T.zf, 8, st, bare, 0, true));
+  f = f.concat(box(gx - .1, 0, .8, 2.6, 2.9, .55, HKC.pad, HKC.padL, HKC.pad, .2));
+  f = f.concat(pitch(box(gx - 1.55, 0, 1.3, .45, 2.6, 4.6, HKC.pad, HKC.padL, HKC.pad, .15), -.18, gx - 1.55, 1.3));
+  for (s = -1; s <= 1; s += 2) {
+    var wy = s * (T.gw[1] + .5), wz = hz + .9;
+    f = f.concat(place(roll(cyl(0, 0, -.12, .95, .95, .24, 14, st, st, 0, true), Math.PI / 2, 0, 0), 0, hx, wy, wz));
+    f = f.concat(place(roll(cyl(0, 0, -.12, .7, .7, .26, 14, C.dark, C.dark, 0, true), Math.PI / 2, 0, 0), 0, hx, wy, wz));
+    f = f.concat(place(tubeSmooth(0, .5, 0, 0, .18, 6, C.black, C.black), -s * Math.PI / 2, hx, wy, hz));
+    f = f.concat(box(hx, s * (T.gw[1] + 1.05), wz - .45, .9, .8, .9, C.dark, C.body, C.dark, .06));
+    f = f.concat(box((hx + xp - 2.9) / 2, s * (T.gw[1] + 1.05), wz - .2, xp - 2.9 - hx, .4, .4, C.dark, C.body, C.dark, 0));
+    f = f.concat(box(xp - 2.65, s * (T.gw[1] + 1.05 + 1.7) / 2, wz - .2, .5, T.gw[1] + 1.05 - 1.7 + .4, .5, C.dark, C.body, C.dark, 0));
+    f = f.concat(pitch(box(gx + 5.3, s * .9, T.zf + .3, 1.2, .7, .2, st, bare, st, 0), -.4, gx + 5.3, T.zf + .3));
+  }
+  return f;
+}
+/* The four men in the turret. The gunner sits on the mount's seat with his hands on the
+   handwheels and his eye to the sight; a loader stands either side of him and a little
+   forward with his hands at the magazines of his pair; the commander stands behind the
+   gunner's seat with his hands on the back of it, and his is the eye in the periscope. The
+   three at the gun are in the black of the panzer troops under a steel helmet, because the
+   turret has no roof, and the commander in the cap. */
+function wbMen() {
+  if (WBT.men) return WBT.men;
+  var T = WBT, zs = T.zf + .1, f = [], s;
+  var mz = T.zt + T.gd - zs;
+  f = f.concat(k4Man({ legs: JPSEAT.legs, lean: .16, grips: T.gw, pole: [-.3, .7, -1] }, T.gw, T.gx, 0, zs, 0, 'hr_flak').faces);
+  for (s = -1; s <= 1; s += 2) {
+    var lw = [T.xt - .5 - T.lx + .6, 1.0, mz - .2];
+    f = f.concat(k4Man({ legs: FIGPOSE.stand.legs, lean: .08, grips: lw, pole: [-.3, 1, -.9] }, lw, T.lx, s * T.ly, zs, 0, 'hr_flak').faces);
+  }
+  var cw = [T.gx - 1.55 - T.cx + .2, 1.3, 1.3 + 4.6 - zs];
+  var cmd = k4Man({ legs: FIGPOSE.stand.legs, lean: .1, grips: cw, pole: [-.3, 1, -.9] }, cw, T.cx, 0, zs, 0);
+  WBT.men = { tur: f.concat(cmd.faces), eye: cmd.eye };
+  return WBT.men;
+}
+
 /* ================================================================ Sd.Kfz. 251/1 Ausf. C (Heer)
    The medium armoured personnel carrier, and the 352nd's half-track on the beach where the
    paratroopers have the Ausf. D built for Italy: the Hanomag of 1940 to 1943 with the
@@ -27355,14 +27602,15 @@ function k4WallCross(o, n, L) {
 }
 /* A panzer crewman standing to something with his hands on it, built once, read back and
    built again with the grips corrected by the lean, the way the Panzer IV's men are, and
-   handing back his eye as well as his faces. */
-function k4Man(P0, want, x, y, zf, yaw) {
+   handing back his eye as well as his faces. A variant other than the panzer crewman in
+   the cap may be named, which is how the Wirbelwind's gun crew come to wear a helmet. */
+function k4Man(P0, want, x, y, zf, yaw, v) {
   var P = { legs: P0.legs, lean: P0.lean, carry: 'grips', grips: P0.grips, pole: P0.pole };
-  var r = manFaces('hr_tank', P);
+  var r = manFaces(v || 'hr_tank', P);
   if (want) {
     var c = Math.cos(P0.lean), sn = Math.sin(P0.lean), dz = want[2] - r.lift;
     P = { legs: P0.legs, lean: P0.lean, carry: 'grips', pole: P0.pole, grips: [want[0] * c - dz * sn, want[1], want[0] * sn + dz * c] };
-    r = manFaces('hr_tank', P);
+    r = manFaces(v || 'hr_tank', P);
   }
   var ca = Math.cos(yaw || 0), sa = Math.sin(yaw || 0), e = r.eye;
   return { faces: place(r.faces, yaw || 0, x, y, zf), eye: [x + e[0] * ca - e[1] * sa, y + e[0] * sa + e[1] * ca, zf + e[2]] };
@@ -30889,6 +31137,10 @@ VIN.hr_234 = function (V) {
   var M = k4Men(), e = M.eye, p = M.pumaEye, at = { x: e[0], y: e[1], z: e[2] }, pa = { x: p[0], y: p[1], z: p[2] };
   return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at, up: { puma: { eyeUp: pa, eyeIn: pa } } };
 };
+VIN.hr_wirb = function (V) {
+  var e = wbMen().eye, at = { x: e[0], y: e[1], z: e[2] };
+  return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
+};
 VIN.hr_251 = function (V) {
   var e = (HKG.men && HKG.men.eye) || [-6.4, 0, 3.2], at = { x: e[0], y: e[1], z: e[2] };
   return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
@@ -31087,6 +31339,12 @@ function buildVehicleModels() {
   VMODEL.hr_234   = { hull: k4Hull(), tur: k41Turret(), turUp: { puma: k42Turret() }, barUp: { puma: { bar: K42.muz, gunZ: K42.gz } },
                       turCrew: k4Men().tur, turCrewUp: { puma: k4Men().puma }, bar: K41.muz, big: 0, scale: 1,
                       mountZ: K4G.zR, gunZ: K41.gz, turX: K4G.xT, turY: 0, belly: K4G.zBelly };
+  /* the Wirbelwind: the Panzer IV's hull under an open turret of nine plates, with the
+     Flakvierling in it and four men round the guns, who turn with it; the Schürzen are the
+     Panzer IV's own and hang on the hull alone */
+  VMODEL.hr_wirb  = { hull: hp4Hull(HP4C.body, HP4C.lit, HP4C.dark), tur: wbTurret(), turCrew: wbMen().tur, belly: HP4H.zBelly,
+                      bar: WBT.muz, big: 1, scale: 1, mountZ: HP4H.zRoof, gunZ: WBT.zt, turX: HP4H.turX, turY: HP4H.turY,
+                      skirts: hp4Skirts() };
   VMODEL.ger_sd222 = { hull: sdkfz222Hull(PZ.body, PZ.lit, PZ.dark), tur: sd222TurretMG(PZ.body, PZ.lit),
                       turUp: { kwk: sd222Turret20(PZ.body, PZ.lit) }, barUp: { kwk: { bar: 27, gunZ: 3.3 } }, bar: 13,
                       big: 0, scout: 1, scale: 1, mountZ: sd222At(-1.0, 'zD'),
@@ -31996,7 +32254,7 @@ function capOfficer(k, z, V) {
 function helmetOf(V, k, zUS, zGER) {
   var nat = V.nat || V.side;
   if (V.tanker) return helmetTanker(k, zUS - .12, V);
-  if (V.panzer) return capPanzer(k, zUS - .1, V);
+  if (V.panzer && !V.helm) return capPanzer(k, zUS - .1, V);
   if (V.kch) return capOfficer(k, zUS - .1, V);
   return nat === 'usa' ? helmetM1(k, zUS - .35, V) : nat === 'heer' ? helmetM42(k, zUS - .30, V)
        : nat === 'ger' ? helmetGER(k, zGER) : helmetUS(k, zUS);
@@ -32591,6 +32849,9 @@ var SOLDIER_VARIANTS = {
   /* and the grenadier's army's tank crews, in the black of the panzer troops under the M43
      cap and the headset: the Panzer IV's commander, and the men at its stations inside */
   hr_tank:      { side: 'ger', nat: 'heer', weapon: 'none', panzer: 1, set: 'hull' },
+  /* and the same man at a gun with no roof over it: the Wirbelwind's gunner and its two
+     loaders, in the black wrap under the steel helmet */
+  hr_flak:      { side: 'ger', nat: 'heer', weapon: 'none', panzer: 1, helm: 1, set: 'hull' },
   /* and the 352nd's pioneers, three ways, each with the machine carbine, the pioneer's big
      pack and goggles on the helmet: in marching boots with a Zeltbahn rolled over the pack;
      in gaiters with wire on his helmet and a pickaxe down the side of the pack; and the

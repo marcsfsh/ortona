@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV and the Wirbelwind are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -875,7 +875,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, and 2500 before the .30 cal team). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, and 2530 before the MG 34 team and the Wirbelwind). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1154,7 +1154,17 @@ two with the Lafette on his back and the two bearers with a box each, halted it 
 gunner sitting and his number two serving, the number two at the gun's left facing it and the
 bearers back either side, the flash comes off the gun's muzzle, the brain's own routine issues
 the MG 42 and the weapon, the gun in the cradle, the bodies at it and the gun carried all change,
-a man killed goes down as `heer_mg`, and Ortona's post still makes the MG42 team.
+a man killed goes down as `heer_mg`, and Ortona's post still makes the MG42 team. And the
+Wirbelwind is asked it in a seventeenth, which is the first unit an army fields over and above
+the ones it stands in for: the depot makes it beside the 234 and queues it by its own key while
+the paratroopers' Wirbelwind's key still queues the 234, it is in the grey with none of the
+paratroopers' paint, nothing of the turret roofs over the middle of it at the rim, four muzzles
+stand out past the front plate, the men in it wear the helmet and the black of the panzer troops
+with some of them more than two units over the rim, a turret asked to lay 1.2 radians off the
+nose comes all the way round, the periscope's eye is the commander's over the rim, the same
+120-point burst beside it takes more than a third again off it than off the Panzer IV, forty
+wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot
+lists the paratroopers' Wirbelwind and not this one.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -4134,13 +4144,80 @@ two sides it takes the .30 81 per cent of the time and splits with the .50 at 46
 left. The Rangers take the MG 34 team seven times in eight in 13 seconds, the jeep takes it every
 time in 15, and it takes the engineers every time in eight.
 
+**The Wirbelwind is the 352nd's flak tank**, and the first unit an army fields over and above
+the ones it stands in for. The 234 took the paratroopers' Wirbelwind's place on the beach, so
+there was no slot on the first roster for the 352nd to put one in. `hr_wirb` is written on the
+depot's own list beside `ger_wirb` with its army on it (`nat: 'heer'`), and `fielded(key)` is
+what `makesOf` filters the list through after `natKey`: a unit whose army is not the one fighting
+is not made, so Ortona's depot never offers it and the beach's offers both. The brain's ladder
+carries a rung for it (see below), and `aiCutLadder` brings it forward against an enemy that is
+all infantry and sends it back when he has something heavy (`buy.flak`). It is built from nothing
+on the Panzer IV's hull, which is the one part taken from anything already built.
+
+**The hull is the Panzer IV's** (`hp4Hull`, in the grey), with the Schürzen as its upgrade hung
+on the hull alone. **The turret is nine bent plates** (`wbTurret`, `WBT`), open above and standing
+on a collar: each leans out about ten degrees from the collar to a bend two thirds of the way up
+and back in about twenty from the bend to the rim, so the rim is about as wide as the foot and the
+bend is the widest thing on it. The first build leaned every plate in from foot to rim and read as
+a cone. **Its plan is not a round**: a narrow front plate, a cheek either side, a long flat side, a
+plate round each back quarter and two meeting at a point behind (`WBT.plan`), 2.48 m fore and aft
+at the bend and 2.2 m across. That plan is a reading of the museum vehicle at Borden in profile
+and a model of it from above, and the scale is its road wheels: the regular nonagon it replaced
+was nobody's reading of anything. Each band of each plate is the plan moved in along the plate's own
+normal (`wbPlanAt`, `k4Inset`), which keeps every face a plane. The front plate is square to the
+bore and cut by two slots from below the lower barrels up through the bend to the rim, so the guns
+could be laid straight up. Inside is the ivory (`INC`), left out of the bake (`m8Lit`): a ledge at the foot of the walls,
+the basket down through the ring to the floor the crew stand on, and magazines racked in two tiers
+on the four plates at the back.
+
+**The Flakvierling 38** (`wbFlak`) stands on a pedestal off that floor: the carriage, two cheeks
+with the trunnion through them, and a pair of Flak 38 either side, one over the other. Each is the
+receiver with its buffer and cocking handle, a twenty-round magazine out to the side and swept back,
+the barrel housing with its handle, the barrel and the flash hider. The sight is on a post between
+the upper pair with its eyepiece back to the gunner. Behind are the seat and its back, the two
+handwheels on arms off the carriage with the knob in the gunner's hand, the firing pedals, and a
+canvas bag under each pair for the cases.
+
+**Four men are in the turret** (`wbMen`), where the Panzer IV has three. The gunner sits at the sight
+with his hands on the handwheels; a loader stands either side of him with his hands at the
+magazines of his pair; the commander stands behind the gunner's seat with his hands on its back,
+and his is the eye in the periscope (`VIN.hr_wirb`). The three at the gun are `hr_flak`, the panzer
+crewman's black wrap under the M42 helmet (`V.helm` takes `helmetOf` past the cap), and the
+commander is in the cap; `k4Man` takes a variant for it.
+
+**A barrel is thin to the bake** (`thin`, `wbThin`). The occlusion grid is four units to the cell,
+a third of a metre, so a 2 cm barrel marks a whole cell, and four of them side by side are a slab in
+front of the plate they come out of: the front plate came back black behind its own guns, which in
+a photograph reads as an opening. A face marked `thin` is still shaded and shades nothing, and
+`aoSplit` carries the mark to the pieces it cuts. On `tools/dims.mjs` it reads 5.96 m long against
+5.92, 2.93 wide against 2.90, 2.72 high against 2.76, and the Panzer IV's body, roof and clearance;
+the turret that leaned in all the way up stood at 2.68, and the bend is where the missing height
+was.
+
+**Its numbers came off the duel card, and the lever was suppression.** At the first line, 44 a burst
+every .26 seconds with a suppression of .08 on 560 hit points and 104 of plate, it took everything
+in the American army but the M4 every time, the Rangers at 130 included, where the bazookas reach and
+where they take the Panzer IV 58 per cent of the time: pinned, a squad lands about one rocket in ten
+seconds. Less hit points and a bigger `blastRes` moved how much of it was left and not who won. At
+36 a burst every .26 seconds, a suppression of .025, 24 of penetration and 320 of reach, on 460 hit
+points, 104 of plate and a `blastRes` of 1.8, for 320 marks and 75 of fuel, over twelve runs a row it
+takes the rifle squad every time in 11 seconds untouched, the jeep in 6, the .30 and the .50 in 5,
+the engineers in 5, the M3A1 every time with 98 per cent of itself left and the M8 every time with
+72 per cent; the Rangers every time at 180 with half of itself left, and at 130 they win 13 per cent
+over sixteen runs. The M4 takes it every time in 15 seconds with 94 per cent of itself left, where it
+takes the Panzer IV two times in three and is left with a quarter. The anti-tank gun loses to it,
+because its crew are men in the open, and takes 38 per cent of it first.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
 `madeOf` read their key through `natKey` as well, because a brain out of an older revision on
 the skirmish card asks after the carrier: with the counts keyed on what was actually bought,
 it was given a jeep for every carrier it ordered and bought them for ever against a count
-that never moved.
+that never moved. A rung for a unit only one army fields comes off the list after the mapping
+where that army is not the one fighting (`fielded`), because the head of the list is money
+saved, and money saved for a vehicle no depot on the map will ever make is money saved for
+the rest of the battle.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -6334,6 +6411,15 @@ shots/                         screenshot output, gitignored
   occluder and gives it the grime and dust a hull collects, so a man standing to a roof gun
   came out the colour of the mud. Put him in `mgMan`, which is drawn with the gun and baked as
   a receiver the way `crew` is.
+- **Anything thin is a whole cell to the occlusion bake, and a cell is a third of a metre.** A
+  gun barrel marks a four-unit cell like a plate does, which is harmless for one barrel and is
+  a slab for four side by side: the Wirbelwind's front plate came back black behind its own
+  guns and read in the photograph as a hole in the turret. Mark a thin part `thin` (as
+  `wbThin` does) and it is shaded but shades nothing.
+- **A unit an army fields over and above its substitutions carries its army** (`def.nat`) and is
+  written on the maker's list itself; `fielded` keeps it off every other army's list and off the
+  brain's ladder where that army is not fighting. Left on the ladder, it is the head of a list the
+  brain saves for and can never buy.
 - **An upgrade baked as an occluder shades its vehicle whether or not it is fitted.** The
   Schürzen were put through the occlusion bake as occluders, so every plate that might be hung
   shaded the hull side, the running gear and the turret sides behind it in every picture of

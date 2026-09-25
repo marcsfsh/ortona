@@ -82,6 +82,10 @@ const REAL = {
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the same tank as the one above,
                built again from nothing, so the same published figures: the width is over the track
                guards, which is what it is without the Schürzen, and 3.33 m with them */
+  hr_wirb:   { name: 'Flakpanzer IV Wirbelwind (Heer)', len: 5.92, gun: 5.92, wid: 2.90, hgt: 2.76,
+               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Heer's Panzer IV hull under a
+               turret built from nothing, so the hull's figures are that tank's; gun is len because the
+               four barrels stop short of the nose */
   ger_wirb:  { name: 'Flakpanzer IV Wirbelwind', len: 5.92, gun: 5.92, wid: 2.90,  hgt: 2.76,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Panzer IV hull unchanged
                underneath, so length, body, roof and clearance are its figures. gun equals len because
@@ -189,6 +193,8 @@ const PROBE = {
   hr_p4:     { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the slice is taken
                between the second and third Schürzen brackets and forward of the cross, where the
                superstructure side is bare; hullZ drops the rod aerial on the left rear of the deck */
+  hr_wirb:   { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the Heer
+               Panzer IV's hull, so its slices */
   ger_wirb:  { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the same
                hull as the Panzer IV, so the same two slices: the body clears the Schuerzen stanchions and
                roofZ sits on the superstructure roof, which on this vehicle is the plate the open turret

@@ -133,6 +133,15 @@ const CARD = [
   ['am_ranger', 'hr_234'],
   ['hr_234', 'am_m8', { a: ['puma'] }],
   ['hr_234', 'am_sher', { a: ['puma'] }],
+  /* and the Wirbelwind the 352nd fields beside it: against the infantry and the light vehicles
+     it is for, the Rangers who can open it (read beside --d=130, where the bazookas reach), and
+     the M4 and the anti-tank gun that open it more easily than they open the Panzer IV */
+  ['hr_wirb', 'am_rifle'],
+  ['hr_wirb', 'am_ranger'],
+  ['hr_wirb', 'am_m8'],
+  ['hr_wirb', 'am_m3'],
+  ['am_sher', 'hr_wirb'],
+  ['us_at', 'hr_wirb'],
   /* the Knight's Cross Holders, whose grenades reach 150, so a row at the pair's own reach says
      nothing about them: read these beside the same rows at --d=130 */
   ['am_ranger', 'hr_kch'],
