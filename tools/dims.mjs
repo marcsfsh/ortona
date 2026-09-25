@@ -87,9 +87,10 @@ const REAL = {
                turret built from nothing, so the hull's figures are that tank's; gun is len because the
                four barrels stop short of the nose */
   hr_panther: { name: 'Panther Ausf. A (Heer)', len: 6.87, gun: 8.66, wid: 3.27, hgt: 2.99,
-               body: 3.13, bodyZ: 1.28, roof: 1.97, clear: 0.56 },   /* the envelope is Jentz's; the body is
-               over the sponsons, which stand flush with the outside of the tracks, and the roof is what is
-               left of that after the upper sides lean in forty degrees over their 0.69 m */
+               body: 3.25, bodyZ: 1.50, roof: 2.52, clear: 0.56 },   /* the envelope is Jentz's; the body
+               and the roof are read off the factory's plan and front views, the body over the sponsons,
+               which stand flush with the outside of the tracks at 1.49 m, and the roof between the upper
+               sides, which lean in forty degrees over only 0.43 m of plate */
   ger_wirb:  { name: 'Flakpanzer IV Wirbelwind', len: 5.92, gun: 5.92, wid: 2.90,  hgt: 2.76,
                body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Panzer IV hull unchanged
                underneath, so length, body, roof and clearance are its figures. gun equals len because
@@ -199,8 +200,9 @@ const PROBE = {
                superstructure side is bare; hullZ drops the rod aerial on the left rear of the deck */
   hr_wirb:   { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the Heer
                Panzer IV's hull, so its slices */
-  hr_panther: { bodyZ: 15.0, roofZ: 22.6, xLo: 0, xHi: 6.0, straddle: true },   /* the slice is taken just over
-               the sponsons' floor, forward of the cross and aft of the tools */
+  hr_panther: { bodyZ: 17.6, roofZ: 22.65, xLo: -7.0, xHi: -1.0, straddle: true },   /* the slice is taken
+               just over the sponsons' floor at the station of the cross, which is clear of the rods, the
+               tools and the jack on both sides, and the roof slice on the weld along its edge */
   ger_wirb:  { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the same
                hull as the Panzer IV, so the same two slices: the body clears the Schuerzen stanchions and
                roofZ sits on the superstructure roof, which on this vehicle is the plate the open turret

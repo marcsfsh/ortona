@@ -4237,30 +4237,43 @@ same wheels from the sprocket at the front to the idler at the back (`pvPulleys`
 hangs on a torsion arm from a housing on the tub. **The hull is long sloped plates** (`PVH`,
 `pvShell`): the lower nose and the glacis both at fifty-five degrees to a sharp edge, the upper
 sides leaning in forty over sponsons that stand flush with the outside of the tracks, and the rear
-plate laid back thirty with the top aft. Anything on a plate goes on in the plate's frame
-(`pvOnGlacis`, `pvOnRear`, `pvOnSide`): the ball mount on the right of the glacis and the headlamp
-on the left, the escape cover on the back, and the tow cables, the cleaning rods, the jack and the
-tools on the sides, laid down from the top edge with the cross above them. The deck carries the big
+plate laid back thirty with the top aft. The upper sides are only 0.43 m of plate over a sponson
+floor at 1.49 m, which puts the roof 2.52 m across, as the factory's front and plan views have it;
+the first version stood them 0.69 m over a floor at 1.23, and its roof was half a metre narrower
+than the real one, too narrow to carry a turret the drawing's width. Anything on a plate goes on in
+the plate's frame (`pvOnGlacis`, `pvOnRear`, `pvOnSide`): the ball mount on the right of the glacis
+and the headlamp on the left, the escape cover on the back, and on the sides the cleaning rods along
+the top edge, the tow cables along the foot, the jack and the tools, with the cross between them
+where the Schürzen do not reach. The deck carries the big
 hatch in the middle and the intakes and the round fan grilles either side (`pvDeck`), and the two
 exhausts stand up the back behind the plate with the bins at its corners (`pvRear`).
 
-**The turret is a plan with a lean per wall** (`PVT`, `pvTurPlan`, the Panzer IV's method): narrow
-in front and wider behind, the front leaning twelve degrees and the sides and back twenty-five,
-every plate a plane. **The mantlet is the Topfblende of the Ausf. A** (`pvMantlet`): rings of a
-rounded rectangle lofted forward off the front plate, their height the arc of a circle about the
-trunnions and their width easing in at the front, so it reads as a pot laid on its side. The KwK 42
-L/70 comes out of it with the double-baffle brake, the coaxial on the right and the sight on the
-left (`pvGun`). **The cupola stands over the left wall at the back** and the wall is bulged out under
-it, which is a vertical drum standing out of a leaning plate; it carries seven periscopes, one of
-them straight ahead, and its lid lifts on its arm and swings aside (`pvHatch`, `HATCHES.hr_panther`),
-with the commander in the cap up in the ring. The MG 34 on the ring and the man at it are the `mg`
+**The turret is a plan with a lean per wall** (`PVT`, `pvTurPlan`, the Panzer IV's method): the side
+plates widen a little from the front plate to a bend two thirds of the way back and are bent in there
+at about a third of a right angle to a rear plate a little over half the width at the bend, the front
+leaning twelve degrees and the rest twenty-five, every plate a plane. That bend is the outline of a
+Panther turret from above and from behind, and the first version did not have it: its sides widened
+all the way to the back with a small chamfer at each rear corner, which a player saw at once. It is
+laid now off the factory's side, plan and front views, by drawing the model's own faces over the
+drawing at the drawing's scale and moving plates until they land on its lines; the same overlay put
+the turret half a metre further back than it had been. **The mantlet is the Topfblende of the Ausf.
+A** (`pvMantlet`): rings of a rounded rectangle lofted forward off the front plate, their height the
+arc of a circle about the trunnions and their width easing in at the front, most of the width of the
+front plate and standing well out of it. The KwK 42 L/70 comes out of it through the bell cast round
+its root, with the double-baffle brake, the coaxial on the right and the sight on the left (`pvGun`).
+**The cupola stands on the roof on the left just behind the middle**, clear of the wall, where the
+drawing puts it; the first version had it at the back over a bulge in the left wall. It carries seven
+periscopes, one of them straight ahead, and its lid lifts on its arm and swings aside (`pvHatch`,
+`HATCHES.hr_panther`), with the commander in the cap up in the ring. The fan cover is forward on the
+right of the roof, the sides carry the 451, a small port each and the plug of the pistol port on the
+left, and the round escape hatch is in the narrow rear plate. The MG 34 on the ring and the man at it are the `mg`
 upgrade (`pvCupolaMG`, `pvCupolaMan`, the gun `ksGun34`), and the Schürzen are five plates a side on
 a rail (`pvSkirts`). The interior (`VIN.hr_panther`) is the Panzer IV's room laid out again round
 the longer breech with the cupola off the centreline, so its ring, its posts and the hole the head
-goes up through all stand at the cupola's own centre. On `tools/dims.mjs` it reads 6.88 m long
-against 6.87, 8.66 with the gun against 8.66, 3.30 wide against 3.27, 2.92 high against 2.99 (the
-lid is not in the measured mount), a body of 3.15 against 3.13, a roof of 2.01 against 1.97 and 0.56
-of clearance.
+goes up through all stand at the cupola's own centre, and its heights are read off the turret's.
+On `tools/dims.mjs` it reads 6.89 m long against 6.87, 8.67 with the gun against 8.66, 3.30 wide
+against 3.27, 3.00 high against 2.99, a body of 3.26 against the drawing's 3.25, a roof of 2.54
+against its 2.52 and 0.56 of clearance.
 
 **Its plate is two numbers, and the second one is new.** `armourAt` gave every vehicle the same
 side at .56 of its front, which on the Panther would be a side of 123 behind a front of 220, far
@@ -6533,6 +6546,16 @@ shots/                         screenshot output, gitignored
   nine units forward of where a side elevation puts it; the dimensions card could not see it,
   because an envelope does not care where a turret stands inside it. Take positions along the
   length off a side view, and a published elevation where there is one.
+- **Lay the model over the drawing, not beside it.** The Panther's turret was placed off
+  photographs and a published envelope, and every photograph of it looked like a tank; drawn
+  over the factory's plan and side views at the drawing's scale (the model's faces projected
+  onto the image, the hull lined up on the glacis joint and the road wheels), it was half a
+  metre too far forward, its rear had none of the bend that makes it a Panther's, and the hull
+  roof under it was a quarter of a metre a side too narrow. None of that is in an envelope, so
+  `tools/dims.mjs` could not see it, and the roof figure it was checking had been worked out
+  from the model's own plates. Measure a scale off two things the drawing dimensions (the width
+  over the tracks, the height), check it on a third, and read positions off the view where the
+  thing is seen square.
 - **An open turret is a well to the occlusion bake.** The march reads the inside of a drum
   sixteen units across and sixteen deep as shut in on every side and blacks it out, whatever it
   is painted: the M8's turret came out as a hole into the hull from every angle and the
