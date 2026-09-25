@@ -34,6 +34,11 @@ const N = args.n === undefined ? 12 : Number(args.n);
 const DIST = args.d === undefined ? 0 : Number(args.d);      /* 0 = each pair's own reach */
 const COVER = args.cover === undefined ? 0 : Number(args.cover);
 const LIMIT = args.limit === undefined ? 150 : Number(args.limit);
+/* --turn=<radians> stages B side-on: its hull that far off the line to A, halted, with its
+   turret laid along the hull, so what it has to do to answer is traverse and bring the
+   front round, and what A shoots at meanwhile is the plate off the front. It is the one
+   question about a vehicle whose front and sides differ that a head-on card cannot ask. */
+const TURN = args.turn === undefined ? 0 : Number(args.turn);
 const positional = args._ || [];
 
 /* The card. Each row is a question the roster has to answer. A third entry fits field
@@ -142,6 +147,14 @@ const CARD = [
   ['hr_wirb', 'am_m3'],
   ['am_sher', 'hr_wirb'],
   ['us_at', 'hr_wirb'],
+  /* and the Panther: the M4 and the anti-tank gun that cannot open its front, the Achilles
+     that can, and what it does to infantry and to a light vehicle; read the first rows again
+     beside --turn=1.57, which stages it side-on, because its sides are the whole answer */
+  ['am_sher', 'hr_panther'],
+  ['us_ach', 'hr_panther'],
+  ['us_at', 'hr_panther'],
+  ['hr_panther', 'am_rifle'],
+  ['hr_panther', 'am_m8'],
   /* the Knight's Cross Holders, whose grenades reach 150, so a row at the pair's own reach says
      nothing about them: read these beside the same rows at --d=130 */
   ['am_ranger', 'hr_kch'],
@@ -229,7 +242,7 @@ await deploy(page, { side: 'us', diff: 1 });
 const cliUps = args.ua || args.ub ? { a: args.ua ? String(args.ua).split(',') : [], b: args.ub ? String(args.ub).split(',') : [] } : undefined;
 const pairs = positional.length >= 2 ? [cliUps ? [positional[0], positional[1], cliUps] : [positional[0], positional[1]]] : CARD;
 const NOAB = !!args.noab;
-const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB }) => {
+const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB, TURN }) => {
   /* a wide flat patch well away from anything either side owns */
   function findField() {
     let best = null, bestDev = 1e9;
@@ -317,6 +330,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB }) => {
     }
     a.order = 'attackmove'; b.order = 'attackmove';
     a.dest = { x: b.x, y: b.y }; b.dest = { x: a.x, y: a.y };
+    if (TURN) { b.facing = Math.PI + TURN; b.turret = 0; b.order = null; b.dest = null; b.path = null; }
     /* Let both sides find each other before the clock starts. Being seen takes a second
        or two now and an attack-move walks the whole of it, so unprimed a pair staged at
        381 were at 71 before either could see the other and every row on the card was a
@@ -377,7 +391,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB }) => {
                popA: A.pop, popB: B.pop });
   }
   return out;
-}, { pairs, N, DIST, COVER, LIMIT, NOAB });
+}, { pairs, N, DIST, COVER, LIMIT, NOAB, TURN });
 
 await browser.close();
 if (tmp) fs.rmSync(tmp, { recursive: true, force: true });

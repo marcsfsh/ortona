@@ -26,7 +26,7 @@ const args = parseArgs(process.argv.slice(2));
 const MAP = args.map || null;      /* which shipped map the scene is shot on */
 let DEVICE = args.device || 'desktop';
 const SIM = args.sim === undefined ? 0 : Number(args.sim);
-const SIDE = args.side || 'us';
+const SIDE = typeof args.side === 'string' ? args.side : 'us';   /* --side=ger picks a side; a bare --side is the comparison below */
 const DIFF = args.diff === undefined ? 1 : Number(args.diff);
 const BARE = !!args.bare;               /* hide the flat UI, keep only the 3D */
 const TURN = !!args.turn;               /* four angles instead of one */
@@ -183,8 +183,8 @@ const SCENES = {
       await page.evaluate(() => window.povOff());
       /* and a tank: the commander up out of his hatch, then down on his seat behind the
          periscope, then looking round the turret he is sitting in */
-      await page.evaluate(() => {
-        const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
+      await page.evaluate(want => {
+        const key = want || (window.G.side === 'us' ? 'us_sher' : 'ger_kt');
         /* with its own side, or the whole town is unexplored and the view is a black wall */
         const own = window.G.units.filter(q => q.side === window.G.side && !q.dead && q.cat !== 'veh');
         own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
@@ -192,7 +192,7 @@ const SCENES = {
                               : { x: window.WORLD.w / 2 - 220, y: window.WORLD.h / 2 };
         const u = window.spawnUnit(window.G.side, key, at.x, at.y, 0);
         window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
-      });
+      }, args.key || null);
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });
       for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
                                                 ['turret', false, .7, -.75], ['crew', false, null, null],
@@ -799,7 +799,7 @@ if (args.list || args.help) {
 
 const wanted = args._.length ? args._ : ['start', 'battle', 'hud', 'closeup', 'terrain', 'editor'];
 for (const s of wanted) if (!SCENES[s]) { console.error(`unknown scene "${s}" (try --list)`); process.exit(1); }
-if (args.side && !BASE) { console.error('--side needs --base=<rev> to compare against'); process.exit(1); }
+if (args.side === true && !BASE) { console.error('--side needs --base=<rev> to compare against'); process.exit(1); }
 
 const t0 = Date.now();
 const browser = await launch();
@@ -807,7 +807,7 @@ let failed = 0;
 /* --side photographs the base revision and then the working file, and lays each pair
    side by side; --play photographs both devices, because the phone is the one that
    has to work and a picture of the desktop alone says nothing about it */
-const passes = args.side ? [{ file: revisionFile(BASE), base: true }, { file: null, base: false }]
+const passes = args.side === true ? [{ file: revisionFile(BASE), base: true }, { file: null, base: false }]
                          : [{ file: BASE ? revisionFile(BASE) : null, base: !!BASE }];
 const devices = args.play && !args.device ? ['desktop', 'phone'] : [DEVICE];
 const tagOnly = args.tag ? `-${args.tag}` : '';
@@ -816,7 +816,7 @@ for (const pass of passes) {
   TAG = tagOnly + (pass.base ? '-base' : '');
   WRITTEN = pass.written = [];
   if (pass.base) console.log(`photographing ${BASE}`);
-  else if (args.side) console.log('photographing the working file');
+  else if (args.side === true) console.log('photographing the working file');
   for (const dev of devices) {
     DEVICE = dev;
     for (const name of wanted) {
@@ -844,7 +844,7 @@ for (const pass of passes) {
   }
 }
 
-if (args.side) {
+if (args.side === true) {
   console.log('\nside by side');
   const labels = [`base ${BASE} (${shortRev(BASE)})`, `working tree (HEAD ${shortRev('HEAD')})`];
   for (const w of passes[1].written) {

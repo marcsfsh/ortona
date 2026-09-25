@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV and the Wirbelwind are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind and the Panther are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -152,6 +152,7 @@ node tools/duel.mjs --d=200              # at a chosen opening range
 node tools/duel.mjs --cover=3            # with both sides in heavy cover
 node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
 node tools/duel.mjs --file=/tmp/x.html   # or on any file
+node tools/duel.mjs --turn=1.57          # the second unit staged side-on
 ```
 
 A row reads `open` and `met`: where the pair were put down, and where they were when the
@@ -875,7 +876,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, and 2530 before the MG 34 team and the Wirbelwind). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, and 2570 before the Panther). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1164,7 +1165,16 @@ with some of them more than two units over the rim, a turret asked to lay 1.2 ra
 nose comes all the way round, the periscope's eye is the commander's over the rim, the same
 120-point burst beside it takes more than a third again off it than off the Panzer IV, forty
 wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot
-lists the paratroopers' Wirbelwind and not this one.
+lists the paratroopers' Wirbelwind and not this one. The Panther is asked it in an eighteenth, the
+second unit the 352nd fields over and above: the depot makes it beside the Panzer IV and queues it by
+its own key, it is in the grey with none of the paratroopers' paint, the man in the cupola wears the
+black cap and no helmet, the muzzle stands more than eighteen units past the nose, a turret asked to
+lay over the tail comes all the way round, and the gunner sees as far as he shoots. Most of the row
+is the plate: 220 in front and a side under two fifths of that and still over the Panzer IV's, an
+M4's round at 300 through the front 56 times in a hundred and through the side every time, and the
+side dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the
+lid shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and
+Ortona's depot does not make it.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1211,7 +1221,10 @@ Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
 `--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=simple|classic` (the control
 scheme, whatever the device would pick; `hud` then photographs the order pad, the unit's
-card and the ORDERS panel as well).
+card and the ORDERS panel as well) `--key=<unit>` (the tank `pov` sits in, where it would
+otherwise take the Sherman V or the King Tiger). `--side=ger` picks a side and a bare `--side`
+is the before-and-after comparison: the two read the same flag, and until the comparison was
+made to ask for `true` a German shoot without `--base` refused to start.
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
 with `--tag=after`, and compare the two PNGs side by side.
@@ -4208,6 +4221,66 @@ over sixteen runs. The M4 takes it every time in 15 seconds with 94 per cent of 
 takes the Panzer IV two times in three and is left with a quarter. The anti-tank gun loses to it,
 because its crew are men in the open, and takes 38 per cent of it first.
 
+**The Panther is the 352nd's second tank**, fielded over and above the rest the way the
+Wirbelwind is (`hr_panther`, `nat: 'heer'`, on the depot's list after the Panzer IV and passed
+through `fielded`): the Ausf. A with the long 7.5 cm, built from nothing in the grey. It has a
+rung on the brain's ladder after the Wirbelwind and before the Tiger, and `aiCutLadder` counts it
+among the things that kill a heavy, so it comes forward when he has one.
+
+**The running gear is eight stations a side of interleaved double wheels** (`PVG`, `pvStation`):
+860 mm wheels, each station two discs, the odd stations standing in the outer and third places
+across the track and the even ones in the second and fourth, so from the side a whole wheel
+alternates with one half hidden behind its neighbours. Only the outer face of the outer row has the
+ring of sixteen bolts (`pvDisc`); there are no return rollers, and the track (`pvTrack`, a wide
+cast link with a chevron of cleats and a guide horn the pairs straddle) rides on the tops of the
+same wheels from the sprocket at the front to the idler at the back (`pvPulleys`). Each station
+hangs on a torsion arm from a housing on the tub. **The hull is long sloped plates** (`PVH`,
+`pvShell`): the lower nose and the glacis both at fifty-five degrees to a sharp edge, the upper
+sides leaning in forty over sponsons that stand flush with the outside of the tracks, and the rear
+plate laid back thirty with the top aft. Anything on a plate goes on in the plate's frame
+(`pvOnGlacis`, `pvOnRear`, `pvOnSide`): the ball mount on the right of the glacis and the headlamp
+on the left, the escape cover on the back, and the tow cables, the cleaning rods, the jack and the
+tools on the sides, laid down from the top edge with the cross above them. The deck carries the big
+hatch in the middle and the intakes and the round fan grilles either side (`pvDeck`), and the two
+exhausts stand up the back behind the plate with the bins at its corners (`pvRear`).
+
+**The turret is a plan with a lean per wall** (`PVT`, `pvTurPlan`, the Panzer IV's method): narrow
+in front and wider behind, the front leaning twelve degrees and the sides and back twenty-five,
+every plate a plane. **The mantlet is the Topfblende of the Ausf. A** (`pvMantlet`): rings of a
+rounded rectangle lofted forward off the front plate, their height the arc of a circle about the
+trunnions and their width easing in at the front, so it reads as a pot laid on its side. The KwK 42
+L/70 comes out of it with the double-baffle brake, the coaxial on the right and the sight on the
+left (`pvGun`). **The cupola stands over the left wall at the back** and the wall is bulged out under
+it, which is a vertical drum standing out of a leaning plate; it carries seven periscopes, one of
+them straight ahead, and its lid lifts on its arm and swings aside (`pvHatch`, `HATCHES.hr_panther`),
+with the commander in the cap up in the ring. The MG 34 on the ring and the man at it are the `mg`
+upgrade (`pvCupolaMG`, `pvCupolaMan`, the gun `ksGun34`), and the Schürzen are five plates a side on
+a rail (`pvSkirts`). The interior (`VIN.hr_panther`) is the Panzer IV's room laid out again round
+the longer breech with the cupola off the centreline, so its ring, its posts and the hole the head
+goes up through all stand at the cupola's own centre. On `tools/dims.mjs` it reads 6.88 m long
+against 6.87, 8.66 with the gun against 8.66, 3.30 wide against 3.27, 2.92 high against 2.99 (the
+lid is not in the measured mount), a body of 3.15 against 3.13, a roof of 2.01 against 1.97 and 0.56
+of clearance.
+
+**Its plate is two numbers, and the second one is new.** `armourAt` gave every vehicle the same
+side at .56 of its front, which on the Panther would be a side of 123 behind a front of 220, far
+more than its forty and fifty millimetres. `def.flank` is a vehicle's own side factor, read in the
+one place the side is worked out, and the Panther's is .38: 84 in the side against the Panzer IV's
+74 and 220 in front against its 132. An M4's round at three hundred goes through the front 56 times
+in a hundred and through the side every time. It is `flank` because `def.side` is the army.
+
+**Its numbers came off the duel card, and they are the Panther's against a 75 mm Sherman.** At 900
+hit points and 220 of plate, a gun at 145 a round every 3.8 seconds with 280 of penetration out to
+460, 520 marks and 130 of fuel and 18 of population, over twenty-four runs head on the M4 wins 4 per
+cent, and the 6-pounder and the Rangers none; at 130 the M4 wins 8 per cent over twelve. The
+Achilles, whose 17-pounder opens the front, wins a third at 130 and a quarter at its own reach. It
+takes the rifle squad, the M8 and the M3A1 every time. **The card could only ever ask that head
+on**, so `tools/duel.mjs --turn=<radians>` stages the second unit side-on and halted with its turret
+along the hull; at a right angle the M4 wins 33 per cent where it wins 50 against the Panzer IV staged
+the same way, and the Rangers at 130 win a quarter. A hull comes round in a second or two, so the
+number that matters is what the flank does in a battle, where the thing has something else in front
+of it, and that is what `flank` is for.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -6509,6 +6582,12 @@ shots/                         screenshot output, gitignored
   seconds of trigger a player's vehicle machine gun takes to cook: the heat went to NaN, the
   coaxial under command never fired and never cooked, and the periscope rows failed with nothing
   in the diff anywhere near a periscope. `grep` the name in the committed file before adding one.
+- **`def.side` is the army.** A per-vehicle side-armour factor was the obvious name for the
+  Panther's thin sides and would have made it a vehicle of no army at all; it is `flank`.
+- **Put a periscope, not a post, dead ahead of the commander.** The Panther's cupola was first
+  built with its seven blocks at the half-steps, so the post between two of them stood square
+  in front of the eye and the whole shut view was a grey slab. An exterior with an odd number of
+  blocks and an interior with posts between them have to agree on which of the two is at nought.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

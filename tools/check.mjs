@@ -4379,6 +4379,92 @@ for (const device of TARGETS) {
      `threw the turret, the least sat down ${wb.sink}; killed, it left ${wb.bodies} bodies of ${wb.bodyNat}; Ortona's depot makes ` +
      `${wb.ita} and ${wb.itaField ? 'WOULD field' : 'does not field'} the 352nd's`);
 
+  /* --- The Panther. The 352nd fields it over and above everything it stands in for, the
+     way it fields the Wirbelwind: the depot lists it with its army written on it, and in
+     Italy it is on no list at all. It is in the grey with none of the paratroopers' paint,
+     the man in the cupola wears the black cap and no helmet, the long gun reaches further
+     past the nose than any gun on the beach, and the turret comes all the way round. What
+     the row is mostly about is the plate: two hundred and twenty across the front and a
+     side worth less of its front than any other tank's (`flank`), so an M4's round at three
+     hundred turns off the front more often than not and goes through the side every time,
+     and the Schürzen make the side a little dearer. The eye is up out of the cupola and
+     drops to the blocks when the lid shuts, forty wrecks throw the turret some of the time,
+     killed it leaves bodies of the 352nd, and Ortona's depot does not make it. --- */
+  const pv = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0];
+    const dep = W.spawnBuilding(hq.own, 'ger_dep', hq.x - 240, hq.y + 160, true);
+    out.makes = W.makesOf(dep).join(',');
+    out.fielded = W.fielded('hr_panther');
+    G.res[hq.own].mp += 3000; G.res[hq.own].fu += 900;
+    const q0 = dep.queue.length, m0 = W.madeOf(hq.own, 'hr_panther');
+    out.q = W.queueUnit(dep, 'hr_panther') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf(hq.own, 'hr_panther') - m0;
+    dep.queue.length = q0;
+    const v = W.spawnUnit(hq.own, 'hr_panther', hq.x - 140, hq.y + 260, 0);
+    const V = W.VMODEL.hr_panther, B = W.MODELS.veh.hr_panther, H = W.HATCHES.hr_panther, K = W.KIT.heer;
+    out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts);
+    out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
+    out.turGrey = V.tur.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.cap = H.open.filter(f => f.c === K.pz).length;
+    out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    /* the muzzle past the nose, in the hull's frame */
+    const nose = Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => p[0]))));
+    out.reach = +(V.turX + V.bar - nose).toFixed(1);
+    v.facing = 0; v.turret = 0; v.want = Math.PI - .05;
+    for (let i = 0; i < 12; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, Math.PI - .05)).toFixed(3);
+    out.sight = v.def.sight >= v.def.w.range;
+    /* the plate from the front, the side and the back, and an M4's round at three hundred
+       against the first two; then the same side with the Schürzen hung */
+    v.turret = 0; v.want = undefined;
+    const d = 300, front = W.armourAt(v, v.x + d, v.y), side = W.armourAt(v, v.x, v.y + d), rear = W.armourAt(v, v.x - d, v.y);
+    out.front = +front.toFixed(1); out.side = +side.toFixed(1); out.rear = +rear.toFixed(1);
+    const p4 = W.UNITS.hr_p4, pen = W.penAt(W.UNITS.am_sher.w, d);
+    out.p4Side = +(p4.armor * .56).toFixed(1);
+    out.pFront = +W.penChance(pen, front).toFixed(2); out.pSide = +W.penChance(pen, side).toFixed(2);
+    v.up.skirts = true;
+    out.skirted = +W.armourAt(v, v.x, v.y + d).toFixed(1);
+    v.up.skirts = false;
+    W.povOn(v);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(v.x, v.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(v.x, v.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    out.itaField = W.fielded('hr_panther');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the 352nd fields the Panther beside the Panzer IV, in the grey, hard in front and soft in the side',
+     /hr_panther/.test(pv.makes) && /hr_p4/.test(pv.makes) && pv.fielded && pv.q === 'hr_panther' && pv.made === 1 &&
+     pv.bufs && pv.grey > 50 && pv.turGrey > 50 && pv.camo === 0 && pv.cap > 0 && pv.helm === 0 && pv.reach > 18 &&
+     pv.lay < .05 && pv.sight && pv.side < pv.front * .4 && pv.side > pv.p4Side && pv.pFront < .6 && pv.pSide === 1 &&
+     pv.skirted > pv.side && pv.eyeUp > 34 && pv.eyeUp < 42 && pv.eyeIn > 28 && pv.eyeIn < pv.eyeUp - 4 &&
+     pv.blown > 2 && pv.blown < 30 && pv.bodies >= 1 && pv.bodyNat === 'heer' &&
+     !/hr_panther/.test(pv.ita) && !pv.itaField,
+     `the depot makes ${pv.makes}; asked for the Panther it queues ${pv.q}, counted as ${pv.made} made; buffers ` +
+     `${pv.bufs ? 'all built' : 'MISSING'}; ${pv.grey} hull and ${pv.turGrey} turret faces in the grey and ${pv.camo} in the ` +
+     `paratroopers' paint; the man in the cupola has ${pv.cap} faces of the black cap and ${pv.helm} of a helmet; the muzzle ` +
+     `${pv.reach} past the nose; asked to lay over the tail the turret is ${pv.lay} short; the gunner ${pv.sight ? 'sees' : 'does NOT see'} ` +
+     `as far as he shoots; plate ${pv.front} in front, ${pv.side} on the side against the Panzer IV's ${pv.p4Side}, ${pv.rear} ` +
+     `behind, and ${pv.skirted} on the side with the Schürzen; an M4's round at 300 goes through the front ${pv.pFront} and the side ` +
+     `${pv.pSide}; the eye ${pv.eyeUp} up out of the cupola and ${pv.eyeIn} at the blocks; ${pv.blown} of 40 wrecks threw the turret; ` +
+     `killed, it left ${pv.bodies} bodies of ${pv.bodyNat}; Ortona's depot makes ${pv.ita} and ` +
+     `${pv.itaField ? 'WOULD field' : 'does not field'} the Panther`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three
