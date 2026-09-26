@@ -1,0 +1,108 @@
+{
+ "image": "shots/ref/am_m3.jpg",
+ "key": "am_m3",
+ "up": [],
+ "crew": false,
+ "note": "A five-view of the M3 half-track: the plan, a side from each side, the rear and the front, the .50 on the M25 pedestal behind the front seats and no mine racks. No scale on the sheet. The sides are taken off the published 20 ft 3.5 in (6.18 m) over the roller and the pintle, 290.4 px, and the wheelbase then reads 3.46 m against the published 135.5 in (3.44 m); the plan is at the same scale along the vehicle (the roller to the rear plate is 275 px in both) and across off the 1.96 m of the body, 90 px; the front and the rear off the same body, 92.9 px and 93.6 px, and the front tread then reads 1.63 m against the published 64.5 in (1.64 m). Pinned on the front axle on the ground.",
+ "views": {
+  "side": {
+   "nose": "left",
+   "crop": [
+    0,
+    250,
+    301,
+    120
+   ],
+   "ppm": 47.0,
+   "at": [
+    21.8,
+    0,
+    0
+   ],
+   "px": [
+    54.5,
+    364
+   ],
+   "k": 5
+  },
+  "side_r": {
+   "nose": "right",
+   "crop": [
+    0,
+    125,
+    301,
+    120
+   ],
+   "ppm": 46.3,
+   "at": [
+    21.8,
+    0,
+    0
+   ],
+   "px": [
+    251,
+    235.6
+   ],
+   "k": 5
+  },
+  "plan": {
+   "nose": "right",
+   "crop": [
+    0,
+    5,
+    301,
+    110
+   ],
+   "ppm": 47.0,
+   "ppmv": 45.9,
+   "at": [
+    21.8,
+    0,
+    0
+   ],
+   "px": [
+    249.6,
+    60.7
+   ],
+   "k": 5
+  },
+  "front": {
+   "crop": [
+    185,
+    375,
+    110,
+    125
+   ],
+   "ppm": 47.1,
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "px": [
+    237.6,
+    491.4
+   ],
+   "k": 6
+  },
+  "rear": {
+   "crop": [
+    20,
+    375,
+    110,
+    125
+   ],
+   "ppm": 47.3,
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "px": [
+    73.9,
+    491.4
+   ],
+   "k": 6
+  }
+ }
+}

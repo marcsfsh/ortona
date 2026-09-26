@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1138,15 +1138,22 @@ man is baked, a grenadier squad boards it and a second is refused, it is put dow
 vehicle, a gun asked to lay 1.2 radians off the nose comes to the edge of the pintle's arc, the
 periscope's eye is the gunner's, standing, at twenty-odd units up, forty wrecks throw nothing and
 all sit down at least 2.2 onto the belly, killed it leaves bodies of the 352nd and the squad
-aboard comes out alive, and Ortona's depot still makes the Ausf. D. The M3A1 is asked it in a
-tenth, on the American side: the motor pool makes the Americans' and not Italy's and queues it
+aboard comes out alive, and Ortona's depot still makes the Ausf. D. The M3 is asked it in a
+tenth, on the American side: the motor pool makes the Americans' and not Italy's M3A1 and queues it
 when asked for the other, the count and the order book read the two as one, it is in olive drab,
 the driver and the gunner wear the American's helmet and jacket and the seated man is baked, an
 American squad boards it and a second is refused, it is put down behind the vehicle, a gun asked
-to lay over the tail comes all the way round, the periscope's eye is the gunner's, standing in
-the pulpit, at thirty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto
-the belly, killed it leaves American bodies and the squad aboard comes out alive, and Ortona's
-motor pool still makes the old one. And the Rangers are asked it in an eleventh: the company post
+to lay over the tail comes all the way round, the periscope's eye is the gunner's, standing on
+the floor behind the pedestal, at twenty-odd units up, forty wrecks throw nothing and all sit down
+at least 2.2 onto the belly, killed it leaves American bodies and the squad aboard comes out alive,
+and Ortona's motor pool still makes the M3A1. Its conversion is asked it straight after: the
+brain's own routine fits the 75 mm GMC to an M3 with a squad aboard, the mount is the gun's, the
+squad is put out and another is refused, the weapon is a shell of more than fifty at more than a
+hundred of penetration, every buffer is built with the pedestal's seats among what the fitting
+takes out, the gunner wears the M1 and the loader has brass in his hands, a gun asked to lay over
+the tail stops at the edge of the carriage's twenty degrees, the periscope's eye is the gunner's
+over the shield's roof, forty wrecks throw nothing, and killed it leaves American bodies. And the
+Rangers are asked it in an eleventh: the company post
 makes them and not the Foot Guards and queues them when asked for the Guards, the count and the
 order book read the two as one, the six men are the leader, three Thompsons and the two BAR men,
 every variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and
@@ -3788,53 +3795,90 @@ every time in twenty-one seconds with 98 per cent of itself left, and the Ausf. 
 the same afternoon, because nothing in the squad opens it. It takes the jeep twelve times in
 twelve inside eleven seconds, and the M4 takes it eight in eight inside ten.
 
-**The M3A1 is the Americans' half-track**, in the place of the one built for Italy (`us_m3` to
+**The M3 is the Americans' half-track**, in the place of the M3A1 built for Italy (`us_m3` to
 `am_m3` on the army's list), and it is built from nothing rather than out of that one's parts: the
-White M3A1 in olive drab with the M49 ring raised over the co-driver on the armoured pulpit and a
-.50 on it, the unditching roller across the nose and a rack of mines down each side. Two men and
-no passengers: the driver on the left at the wheel and the gunner standing in the pulpit, with the
-co-driver's seat and the benches for ten empty. It carries one squad (`carries`), which goes out
-of sight aboard it the way the 251's does, tows the anti-tank gun (`tows`) and takes no upgrades.
-On `tools/dims.mjs` it reads 6.20 m long over the roller against 6.17, 2.21 wide over the racks
-against 2.22, 1.97 across the plates against 1.96, 2.27 to the top of the ring against 2.26 and
-0.29 of clearance under the front differential.
+White M3 in olive drab with the .50 on the M25 pedestal behind the front seats, the unditching
+roller across the nose and the rounded commercial fenders of the early production. Two men and no
+passengers: the driver on the left at the wheel and the gunner standing on the floor behind the
+pedestal, with the seats for eleven more empty. It carries one squad (`carries`), which goes out of
+sight aboard it the way the 251's does, and tows the anti-tank gun (`tows`). On `tools/dims.mjs` it
+reads 6.17 m long over the roller against 6.18, 2.00 wide against 1.96, 1.97
+across the body against 1.96, 2.33 to the top of the .50 against 2.26 and 0.29 of clearance under
+the front differential.
+
+**It is laid over a five-view drawing of the M3** (`tools/ref/am_m3.json`, through
+`tools/overlay.mjs`), and it was an M3A1 until then, built off photographs and published figures.
+Laid over the drawing it was out in most of the places the envelope could not see. The body stood
+1.6 units low and its sides came down over the track, where the drawing stops them above it. The
+sprocket and the idler stood 2.5 units lower than the drawing's, the road wheels were 1.4 units too
+close together, and the support roller ran under the band where it carries it. The cab and the
+bonnet were a box the width of the body, where the drawing tapers them from the body to the
+radiator. The radiator, the bumper and the roller were 2 to 3 units too far forward and the roller
+was twice too wide. The windscreen was the full width of the body and stood near upright, and the
+fenders were the flat ones of the late M3A1. The drawing is an M3, so the pulpit and the mine racks
+went with it.
 
 What carries it, and each is built its own way. **A truck in front and a track behind.** The front
 axle is a banjo tube with the differential lathed on it, laid on a six-leaf spring each side with
 the track rod and the drag link running to the steering box (`mhFrontAxle`), on 8.25-20 tyres with
 two staggered rows of lugs and the bolt ring of the split rim (`mhFrontWheel`). Behind, a rubber
-band a foot wide with a chevron tread and a steel guide on its inner face (`mhBand`) runs round
-the sprocket at the front, two volute bogies of two wheels each (`mhBogie`: the arms, the bracket,
-the spring standing between the wheel tops and the skid over it), a return roller over the gap
-between them and the idler at the back on its adjuster, and `mhPulleys` is the one list of what
-the band is laid round. **The front end is pressed sheet**: a bonnet narrower than the body with a
-hinge down its middle and the armoured radiator in its face, eight pitched louvres over a dark
-backing (`mhBonnet`); flat mudguards with a lip turned down and a headlamp in its brush guard on
-each (`mhMudguards`); and the roller on its arms out ahead of the channel bumper (`mhFrame`).
-**The cab is open**: the armoured windscreen raised and leaning back with a slit for each man under
-its cover (`mhWindscreen`), and a door each side whose upper flap folds down, with the star on it
-(`mhDoors`). **The body is a plain box** (`mhHull`): the mine racks along both sides, two rows of
-seven (`mhRacks`), the pioneer tools and the sockets for a .30 aft of them (`mhKit`), and the
-door in the back (`mhRear`).
+band a foot wide with a chevron tread and a steel guide on its inner face (`mhBand`) runs round the
+sprocket at the front, a bogie of four small wheels on two rockers under one volute spring with the
+support roller on top carrying the band (`mhBogie`), and the idler at the back, the sprocket and the
+idler both well off the ground; `mhPulleys` is the one list of what the band is laid round. **The
+cab and the bonnet are one tapered plane each side** (`mhSideY`, `mhTap`), from the body's front
+corner in to the armoured radiator, whose louvres stand out of the face of the bonnet
+(`mhBonnet`). The fenders are rounded over the wheel, with a skirt and a headlamp in its brush
+guard on each (`MHF`, `mhMudguards`), and the roller is out on its arms ahead of the channel bumper
+(`mhFrame`). **The windscreen is narrower than the body** and leans back, with a slit for each man
+under its cover (`mhWindscreen`), and the doors are laid in the tapered plane with the star on them
+(`mhDoors`). **The body is a plain box with vertical sides**, standing over the tracks with its
+lower rear corners cut away on a slant and the door in the back (`mhHull`, `mhRear`), and the
+canvas hooks round its rim (`mhKit`).
 
-**The pulpit is a drum of plate standing out of the right front of the body** (`mhPulpit`), open
-below so the gunner can climb up into it, with the ring rolled round its lip on three posts down
-to whichever floor each stands on, a grab rail on its back and the platform he stands on. The
-drum is `mhTube`, whose outer faces carry the normals of the curve and whose inner faces are
-flat. **The .50 is the jeep's gun** (`jeepGun50`, pulled out of `jeepFifty` so the two carry one
-gun) on a carriage that runs round the ring (`mhFifty`). The mount's origin is the middle of the
-ring, so the gunner turns with it (`turCrew`), and the def carries no `arc`: he stands in a drum
-of his own clear of the driver, and the gun goes all the way round. Both men are `gi_crew`, put
-on the wheel and the grips by the jeep's correction (`jeepMan`); the gunner stands with his knees
-bent on the platform, the .50 at his shoulder and his eye 33 units up, three over the bore. `VIN.am_m3` is the open vehicle's room, which is
-nothing, with the eye his.
+**The .50 is the jeep's gun** (`jeepGun50`) on a pedestal standing up from the floor on the centre
+line (`mhFifty`). The mount's origin is the head the gun turns on, so the gunner turns with it
+(`turCrew`), and the def carries no `arc`: the pedestal goes all the way round. Both men are
+`gi_crew`, put on the wheel and the grips by the jeep's correction (`jeepMan`); the gunner stands on
+the floor with his hands on the spade grips and his eye 28 units up. **The compartment is
+furnished and lit**: the two seats in the cab with the wheel and the panel (`mhCab`), a seat between
+and behind them, five a side down the body with their backrests on the walls, the shelf stowage,
+the extinguisher and the .50's boxes at the pedestal (`mhBenches`). An open box is a well to the
+occlusion bake and came out black, so every face that looks into the compartment is left out of it
+(`mhLitIn`, the M8's `lit` read off the face's own normal against the middle of the room).
+`VIN.am_m3` is the open vehicle's room, which is nothing, with the eye the gunner's.
 
-**Its numbers are the Italian M3A1's**, because it is the same vehicle, and the card agrees with
-what those numbers were already doing: over twelve runs it and the 251 win six each in 24 seconds,
-and the old pair read six each in 23 on the same afternoon. It takes the grenadier squad twelve
-times in twelve in 19 seconds with 92 per cent of itself left, which is the 251 against the
-American squad turned round, and the KS 750 twelve in twelve inside seven. The Panzer IV takes it
-twelve in twelve inside nine.
+**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which Italy's M3A1 has always carried
+with the same weapon): the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
+floor at the front of the body and firing forward over the cab behind a shield, laid over a
+four-view drawing of the GMC (`tools/ref/am_m3gmc.json`). The sheet's views disagree about the
+shield until it is read as it is built: the front and the rear have its top peaked in the middle
+and the side has it rising toward the back, and a front plate in a shallow V under a roof ridged
+down the centre line, with a side plate down to the rim each side, is the one shape that does both
+(`mhGmc`). The barrel is laid where the drawing has it, the muzzle over the bonnet a little short of
+the radiator; the published tube is a fifth longer than the drawing's. The gunner sits on the left
+at the sight and the two handwheels and the loader stands on the right with a round in his hands
+(`mhGmcMen`), and the periscope's eye is the gunner's stood up to look over the shield's roof. The
+ammunition goes in down the middle, with a seat at each front corner and one at the back, lockers at
+the rear corners and a box each side of the door (`mhGmcHold`, the `addUp`).
+
+Four doors had to be opened for it, and each is general. **`downUp` is what a fitting takes out**:
+the pedestal's seats, the shelf stowage and the .50's boxes are drawn, cast and baked only while
+the conversion is not fitted. **`arcUp` gives a mount its own traverse**: the carriage went
+nineteen degrees one way and twenty-one the other, the casemate rule is symmetric, so it goes twenty
+either way where the pedestal went all the way round, and `arcOf(u)` is what every reader of a
+vehicle's `def.arc` asks now, `acquire`, the hull's turn to bring it round, the turret clamp and
+`fireAt` among them. **`fills` on a fitting takes the room for a squad away**: `fitUp(u, uk)` is the
+one place an upgrade is fitted, from the brain's routine, the SIMPLE popup and the classic card
+alike, and it puts out a squad riding in the body before the gun goes in; `carriesOf(v)` is what
+`canBoard` and the lift ask, so none may board after. The player's AUTO setting never makes such a
+conversion for him, because it changes what the vehicle is for: he converts one by hand, or turns
+that one vehicle's own AUTO on. The brain converts its own, since nothing in it ever puts a squad
+aboard. And **a fitting that moves the mount is baked
+where it stands**: `put` in the occlusion bake takes the fitting's `barUp` pose, where it had baked
+every alternative mount at the ring of the one it replaced. The GMC's gun stands 2.9 units lower
+than the pedestal's head, and Italy's M3A1 had its quad and its 75 baked where
+the ring was.
 
 **The M8 is the Americans' armoured car**, in the Stuart V's place (`us_stuart` to `am_m8` on
 the army's list), and it is built from nothing: Ford's six-wheeler in olive drab with the 37 mm

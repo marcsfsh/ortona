@@ -3569,15 +3569,15 @@ for (const device of TARGETS) {
      `killed, it left ${hk.bodies} bodies of ${hk.bodyNat} and the squad aboard ${hk.out ? 'came out' : 'DID NOT come out'}; ` +
      `Ortona's depot makes ${hk.ita}`);
 
-  /* --- The M3A1. The Americans' half-track on the beach is the M3A1 built for it, standing in
-     for the one Italy has: the motor pool turns it out and queues it when asked for the
+  /* --- The M3. The Americans' half-track on the beach is the M3 built for it, standing in
+     for the M3A1 Italy has: the motor pool turns it out and queues it when asked for the
      other, the count and the order book read the two as one, it is in olive drab with the
      driver riding with the hull and the gunner with the .50, both in the American's kit, and
      nobody else is drawn on it. It takes one squad aboard and puts it down again, and a
-     squad aboard when it burns comes out alive. The ring goes all the way round, so the gun
-     is asked to lay over the tail; the periscope's eye is the gunner's, standing in the
-     pulpit, forty wrecks never throw the gun off and all sit down onto the belly, and killed
-     it leaves American bodies. Ortona's motor pool still makes the other. --- */
+     squad aboard when it burns comes out alive. The pedestal goes all the way round, so the
+     gun is asked to lay over the tail; the periscope's eye is the gunner's, standing on the
+     floor behind the pedestal, forty wrecks never throw the gun off and all sit down onto the
+     belly, and killed it leaves American bodies. Ortona's motor pool still makes the other. --- */
   const mh = await page.evaluate(() => {
     const W = window, G = W.G, out = {};
     const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
@@ -3632,10 +3632,10 @@ for (const device of TARGETS) {
     W.killBuilding(mot);
     return out;
   });
-  ok('Omaha: the Americans\' half-track is its own M3A1, in olive drab, with a driver and a gunner and room for one squad',
+  ok('Omaha: the Americans\' half-track is its own M3, in olive drab, with a driver and a gunner and room for one squad',
      /am_m3/.test(mh.makes) && !/us_m3/.test(mh.makes) && mh.q === 'am_m3' && mh.made === 1 && mh.madeAs &&
      mh.count >= 1 && mh.count === mh.countM && mh.bufs && mh.od > 50 && mh.helm > 0 && mh.coat > 0 && mh.seat &&
-     mh.can && mh.aboard && !mh.second && mh.down && mh.lay > 3.1 && mh.eye > 30 && mh.eye < 38 &&
+     mh.can && mh.aboard && !mh.second && mh.down && mh.lay > 3.1 && mh.eye > 25 && mh.eye < 32 &&
      mh.blown === 0 && mh.sink >= 2 && mh.bodies >= 1 && mh.bodyNat === 'usa' && mh.out &&
      /us_m3/.test(mh.ita) && !/am_m3/.test(mh.ita),
      `the motor pool makes ${mh.makes}; asked for the other it queues ${mh.q}, counted as ${mh.made} made and the other's ` +
@@ -3647,6 +3647,68 @@ for (const device of TARGETS) {
      `the periscope's eye ${mh.eye} up; ${mh.blown} of 40 wrecks threw the gun, the least sat down ${mh.sink}; killed, it ` +
      `left ${mh.bodies} bodies of ${mh.bodyNat} and the squad aboard ${mh.out ? 'came out' : 'DID NOT come out'}; ` +
      `Ortona's motor pool makes ${mh.ita}`);
+
+  /* --- The 75 mm GMC. The M3's one conversion, bought through the brain's own routine: the
+     gun, its shield and its two men go on in the pedestal's place and the pedestal, the seats
+     down the sides and the .50's boxes come out, the weapon is the 75, and the carriage
+     traverses about twenty degrees either way, so a gun asked to lay over the tail stops at
+     the edge of it and the hull turns to bring it round. There is no room left for a squad: a
+     squad aboard is put out when it is fitted and none may board after. The periscope's eye is
+     the gunner's stood up behind the shield to look over its roof; the man and the round in the
+     loader's hands are drawn with the gun, forty wrecks throw nothing and sit down onto the
+     belly, and killed it leaves American bodies. --- */
+  const gm = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const v = W.spawnUnit('us', 'am_m3', hq.x + 140, hq.y - 220, 0);
+    const g = W.spawnUnit('us', 'am_rifle', v.x - 60, v.y, 0);
+    W.boardVehicle(g, v);
+    out.aboard0 = g.inside === v;
+    out.list = (v.def.upgrades || []).join(',');
+    out.fit = W.buyUpgradeAuto('us', [v], { floor: 0 }) === v && !!v.up.how75;
+    out.mount = W.mountUp(v);
+    out.put = !g.inside && !v.cargo;
+    const g2 = W.spawnUnit('us', 'am_rifle', v.x + 60, v.y, 0);
+    out.board = W.canBoard(g2, v);
+    const w = W.mainW(v);
+    out.dmg = w.dmg; out.pen = w.pen; out.shell = !!w.shell;
+    out.arc = W.arcOf(v);
+    const V = W.VMODEL.am_m3, B = W.MODELS.veh.am_m3, K = W.KIT.usa;
+    out.bufs = !!(B.turUp.how75 && B.turCrewUp.how75 && B.addUp.how75 && B.downUp.how75);
+    out.bar = V.barUp.how75.bar;
+    out.helm = V.turCrewUp.how75.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.brass = V.turCrewUp.how75.filter(f => f.c === W.M8C.brass).length;
+    v.facing = 0; v.turret = 0; v.want = Math.PI;
+    for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
+    v.turret = 0;
+    W.povOn(v);
+    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 99;
+    for (let i = 0; i < 40; i++) { const wk = W.makeWreck(v); if (wk.blown) blown++; sink = Math.min(sink, wk.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(v);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.killUnit(g); W.killUnit(g2);
+    return out;
+  });
+  ok('Omaha: the M3 converts to the 75 mm GMC, a gun behind a shield on a twenty-degree carriage with no room for a squad',
+     gm.aboard0 && gm.list === 'how75' && gm.fit && gm.mount === 'how75' && gm.put && !gm.board &&
+     gm.dmg > 50 && gm.pen > 100 && gm.shell && gm.arc > .6 && gm.arc < .8 && gm.bufs && gm.bar > 25 &&
+     gm.helm > 0 && gm.brass > 0 && gm.lay > .3 && gm.lay < .4 && gm.eye > 26 && gm.eye < 34 &&
+     gm.blown === 0 && gm.sink >= 2 && gm.bodies >= 1 && gm.bodyNat === 'usa',
+     `a squad ${gm.aboard0 ? 'aboard' : 'NOT aboard'}; the upgrades ${gm.list}; the brain's routine ${gm.fit ? 'fitted it' : 'DID NOT fit it'}, ` +
+     `the mount ${gm.mount}, the squad ${gm.put ? 'put out' : 'STILL ABOARD'} and another ${gm.board ? 'MAY board' : 'refused'}; ` +
+     `the weapon ${gm.dmg} a round at ${gm.pen} of penetration${gm.shell ? ', a shell' : ', NOT a shell'}; the arc ${gm.arc}; ` +
+     `buffers ${gm.bufs ? 'all built' : 'MISSING'}, the muzzle ${gm.bar} out; the crew ${gm.helm} faces of helmet and ${gm.brass} of brass; ` +
+     `asked to lay over the tail the gun stopped at ${gm.lay}; the periscope's eye ${gm.eye} up; ${gm.blown} of 40 wrecks threw ` +
+     `the gun, the least sat down ${gm.sink}; killed, it left ${gm.bodies} bodies of ${gm.bodyNat}`);
 
   /* --- The Rangers. The squad the Americans field on the beach in the Foot Guards' place:
      the company post makes it and queues it when asked for the Guards, the count and the

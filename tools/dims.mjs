@@ -126,10 +126,11 @@ const REAL = {
   us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
                body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
                7 ft 5 in to the top of the M49 ring mount, 11.25 in of clearance */
-  am_m3:     { name: 'M3A1 Half-Track (US)', len: 6.172, gun: 6.172, wid: 2.222, hgt: 2.261,
-               body: 1.96, clear: 0.286 },   /* the same White as the old model's figures: 20 ft 3 in
-               over the roller, 7 ft 3.5 in over the mine racks and 6 ft 5 in across the plates, 7 ft 5 in
-               to the top of the M49 ring, 11.25 in under the front differential */
+  am_m3:     { name: 'M3 Half-Track (US)', len: 6.18, gun: 6.18, wid: 1.962, hgt: 2.261,
+               body: 1.962, clear: 0.286 },   /* the M3 the drawing is of: 20 ft 3.5 in over the roller
+               and the pintle, 6 ft 5.25 in across the body, which is the widest thing on it once there
+               are no mine racks, 7 ft 5 in over the .50 on its pedestal, 11.25 in under the front
+               differential */
   am_m8:     { name: 'M8 Light Armored Car', len: 4.70, gun: 4.70, wid: 2.31, hgt: 1.91,
                body: 2.31, clear: 0.29 },   /* 15 ft 5 in long, with the 37 mm ending short of the nose,
                7 ft 7 in wide at the crease, 6 ft 3 in to the top of the turret and 11.5 in under the axles.
@@ -186,10 +187,9 @@ const PROBE = {
   hr_ks750:  { noMount: true },   /* the mount is the gunner and his MG 34, turning on the sidecar seat */
   us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
                above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */
-  am_m3:     { noMount: true, bodyZ: 14.8, xLo: -31.5, xHi: -27.0, straddle: true },   /* the slice is
-               taken between the clips of the pioneer tools aft of the mine racks, where the plate is bare;
-               the ring is part of the hull and of the published height, and the .50 and its gunner
-               standing on it are no more part of it than the jeep's gun is */
+  am_m3:     { bodyZ: 16.0, xLo: -31.5, xHi: -27.0, straddle: true },   /* the slice is taken aft of the
+               seam and forward of the rear chamfer, under the hooks for the canvas, where the plate is bare;
+               the published height is over the .50 on its pedestal, so the mount is in it */
   ger_h251:  { topZ: 0.4, hullZ: 21.0, bodyZ: 15.0, xLo: -28.0, xHi: -25.0, straddle: true },   /* the slice
                is taken aft of the last bin and forward of the rear chamfer, where the side plate is bare */   /* the shield mount, the rear pintle MG and the aerial
                socket all stand above the 1.75 m top of the compartment, and none of them is part

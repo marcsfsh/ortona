@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m3gmc.jpg", "key": "am_m3", "up": ["how75"], "crew": false,
+  "note": "A four-view of the 75 mm GMC M3: the side and the plan with the nose left, the front and the rear. No scale on the sheet. The side and the plan are taken off the published 135.5 in (3.44 m) from the front axle to the middle of the bogie, 272.75 px, and the roller to the rear plate then reads the same in both, 457.5 px and 458.3 px; across, the plan off the 1.96 m of the body, 151.7 px, and the front and the rear off the same body, 160 px and 159 px. Pinned on the front axle on the ground.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 212], "ppm": 79.3, "at": [21.8, 0, 0], "px": [81.25, 204.5], "k": 2 },
+    "plan":  { "nose": "left", "crop": [0, 238, 500, 172], "ppm": 79.3, "ppmv": 77.4, "at": [21.8, 0, 0], "px": [82.05, 321.7], "k": 2 },
+    "front": { "crop": [55, 445, 172, 210], "ppm": 81.6, "at": [0, 0, 0], "px": [141, 650], "k": 3 },
+    "rear":  { "crop": [290, 445, 172, 210], "ppm": 81.1, "at": [0, 0, 0], "px": [377.5, 650], "k": 3 } } }
