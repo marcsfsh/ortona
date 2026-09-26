@@ -17,6 +17,7 @@
  *   node tools/duel.mjs --d=200              at a chosen opening range
  *   node tools/duel.mjs --cover=3            with both sides in heavy cover
  *   node tools/duel.mjs --json               machine-readable
+ *   node tools/duel.mjs --sited am_at hr_p4  A set up and holding, as a gun meets armour
  *
  * A matchup line reads: A vs B, how often A won, how long it took, and what the winner
  * had left. Anything from about 40 to 60 per cent is a fair fight; the point of the
@@ -39,6 +40,12 @@ const LIMIT = args.limit === undefined ? 150 : Number(args.limit);
    front round, and what A shoots at meanwhile is the plate off the front. It is the one
    question about a vehicle whose front and sides differ that a head-on card cannot ask. */
 const TURN = args.turn === undefined ? 0 : Number(args.turn);
+/* --sited stages A set up and holding its ground, the way an anti-tank gun meets armour: laid
+   on the ground in front of it before anything comes up it. Staged on an attack-move a gun
+   halts when a target comes into reach and then spends its setup in the open while the tank
+   drives in, so the card measured the setup and never the reach: the 57 on an attack-move
+   against a Panzer IV staged at 520 fired its first round at 207. */
+const SITED = !!args.sited;
 const positional = args._ || [];
 
 /* The card. Each row is a question the roster has to answer. A third entry fits field
@@ -184,6 +191,15 @@ const CARD = [
   ['hr_mg', 'am_mg', { a: ['mg42t'] }],
   ['hr_mg', 'am_mg', { a: ['mg42t'], b: ['m2hb'] }],
   ['hr_mg', 'am_rifle', { a: ['mg42t'] }],
+  /* and the American 57 in the 6-pounder's place: against the Panzer IV and the Panther it is
+     there to meet, the Puma and the half-track, and the grenadier squad that kills it. A gun
+     meets armour set up, so read these beside --sited --d=520, where its reach and its eye are
+     what is being asked; staged the default way it walks into the tank and pays its setup */
+  ['am_at', 'hr_p4'],
+  ['am_at', 'hr_panther'],
+  ['am_at', 'hr_234', { b: ['puma'] }],
+  ['am_at', 'hr_251'],
+  ['am_at', 'hr_gren'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],
@@ -242,7 +258,7 @@ await deploy(page, { side: 'us', diff: 1 });
 const cliUps = args.ua || args.ub ? { a: args.ua ? String(args.ua).split(',') : [], b: args.ub ? String(args.ub).split(',') : [] } : undefined;
 const pairs = positional.length >= 2 ? [cliUps ? [positional[0], positional[1], cliUps] : [positional[0], positional[1]]] : CARD;
 const NOAB = !!args.noab;
-const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB, TURN }) => {
+const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB, TURN, SITED }) => {
   /* a wide flat patch well away from anything either side owns */
   function findField() {
     let best = null, bestDev = 1e9;
@@ -331,6 +347,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB, TURN }) 
     a.order = 'attackmove'; b.order = 'attackmove';
     a.dest = { x: b.x, y: b.y }; b.dest = { x: a.x, y: a.y };
     if (TURN) { b.facing = Math.PI + TURN; b.turret = 0; b.order = null; b.dest = null; b.path = null; }
+    if (SITED) { a.order = null; a.dest = null; a.path = null; a.setup = 0; a.packed = false; a.pack = 0; }
     /* Let both sides find each other before the clock starts. Being seen takes a second
        or two now and an attack-move walks the whole of it, so unprimed a pair staged at
        381 were at 71 before either could see the other and every row on the card was a
@@ -391,7 +408,7 @@ const rows = await page.evaluate(({ pairs, N, DIST, COVER, LIMIT, NOAB, TURN }) 
                popA: A.pop, popB: B.pop });
   }
   return out;
-}, { pairs, N, DIST, COVER, LIMIT, NOAB, TURN });
+}, { pairs, N, DIST, COVER, LIMIT, NOAB, TURN, SITED });
 
 await browser.close();
 if (tmp) fs.rmSync(tmp, { recursive: true, force: true });

@@ -1263,7 +1263,7 @@ var NATIONS = {
          sub: {} },
   usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
          blurb: 'Rifle squads with the M1 Garand, ashore at the water with everything still to do, and the draws the only way their armour gets off the beach.',
-         sub: { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_mg: 'am_mg', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher' } },
+         sub: { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_mg: 'am_mg', us_at: 'am_at', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher' } },
   fj:   { side: 'ger', name: '1. Fallschirmjäger-Division', short: 'FJ', pick: '1. FALLSCHIRMJÄGER-DIVISION',
           blurb: 'Compact veteran groups, prepared demolitions and MG42 positions built to dominate the narrow streets.',
           sub: {} },
@@ -1527,6 +1527,29 @@ var UNITS = {
     gunAt: 8.3, gunMuz: [18.79, 7.84], gunGrip: [-2.75, 3.42, 5.19],
     w: { range: 440, dmg: 92, rof: 3.8, acc: .74, sup: .02, pen: 265, aoe: 30, shell: 1 },
     desc: 'Kills tanks and nothing else. Slow to move and helpless if infantry get on top of it.'
+  },
+  /* The 57 mm Gun M1 on the M1A3 carriage, which is what the anti-tank company of an American
+     infantry regiment and the anti-tank platoons of its battalions brought ashore: the
+     6-pounder built under licence with its tube lengthened to fifty calibres. Five men: the
+     gunner kneeling at the sight and the handwheels on the left, the loader at the breech on
+     the right, and three bringing the rounds up a box at a time. It is laid to see further
+     and reach further than the armour it meets, so the first round is its own: `sight`
+     stands past every eye on the German depot and `w.range` past every gun on it but the
+     Maus's. What makes the head start worth having is the shield: the wings folded back
+     either side keep the burst of a tank's HE off the men behind it (`blastRes`), so one
+     round no longer takes a man outright and the crew outlast the tank that has found them
+     long enough to finish what the first rounds began. It is what the American side fields
+     in the 6-pounder's place (`natKey`). */
+  am_at: {
+    side: 'us', nat: 'usa', name: '57 mm Gun M1', short: '57MM', cat: 'team', hk: 'T',
+    models: 5, hpPer: 66, speed: 38, sight: 620, pop: 10, cost: { mp: 320, fu: 20 }, time: 26,
+    req: 'us_mot', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 10.8],
+    gunner: 'gi_atg', body: 'usa_at', carryP: { can: 'box57', canH: 2.45 },
+    gunAt: 11.0, gunY: -2.9, gunMuz: [22.6, 10.46], gunGrip: [-8.6, -1.17, 7.77], gunGripL: [-8.4, -5.36, 8.54],
+    gunMate: { at: [-10.2, 4.4], a: -Math.PI / 2, grip: [-9.9, 1.55, 11.6], gripL: [-12.3, 1.55, 10.9], pose: 'served' },
+    gunCrew: [[-21, -12], [-21, 12], [-30, 0]],
+    w: { range: 540, dmg: 120, rof: 3.2, acc: .80, sup: .02, pen: 245, aoe: 30, shell: 1 },
+    desc: 'The American 57 on its split trail, with a crew of five. It sees and reaches further than any tank it will meet, so laid in cover on the ground armour has to cross it has the first round off. Kills tanks and nothing else, and helpless if infantry get on top of it.'
   },
   us_t8: {
     side: 'us', name: '105 mm Gun T8', short: 'T8 105', cat: 'team', hk: 'K',
@@ -6105,7 +6128,7 @@ function popOf(slot) {
      cap with room in it and put the side over it the moment the last of them came in */
   for (var bi = 0; bi < G.bunks.length; bi++) {
     var bu = G.bunks[bi], bW = bu.up && BUNKUP[bu.up];
-    if (bu.upOwn === slot && bW && bW.unit) p += UNITS[bW.unit[slotSide(slot)]].pop || 0;
+    if (bu.upOwn === slot && bW && bW.unit) p += UNITS[natKey(bW.unit[slotSide(slot)])].pop || 0;
   }
   return p;
 }
@@ -10510,7 +10533,7 @@ function bunkerUpOK(bk, kind, slot) {
   if (bk.upKind && (kind !== bk.upKind || !W.unit || bunkerManned(bk))) return false;
   if (bunkerOwner(bk) !== slot) return false;
   if (W.unit) {
-    var d = UNITS[W.unit[slotSide(slot)]];
+    var d = UNITS[natKey(W.unit[slotSide(slot)])];
     if (!d) return false;
     /* a fitting that brings men with it is a fitting that counts against the cap, and one
        that fills the slot is refused while somebody is standing in it -- somebody ALIVE.
@@ -10540,7 +10563,7 @@ function finishBunkerUp(bk, quiet) {
   var W = BUNKUP[bk.up], slot = bk.upOwn || bunkerOwner(bk), side = slotSide(slot);
   bk.upKind = bk.up; bk.up = null; bk.upT = 0;
   if (W.unit) {
-    var key = W.unit[side], d = UNITS[key];
+    var key = natKey(W.unit[side]), d = UNITS[key];
     var sx = bk.x, sy = bk.y;
     if (W.rear) {
       /* behind it, on the reverse side of its own face, and on ground a man can stand on */
@@ -30692,7 +30715,7 @@ function mgCarryModels() {
     m2hb: place(weaponModel(k, 'm2hb'), 0, 2.2, 0, 1.1),
     m2: place(m2Tripod(k, true), 0, 0, 0, .3),
     m3: place(m3Tripod(k, true), 0, 0, 0, .4),
-    can30: ammoBox(k, false), can50: ammoBox(k, true)
+    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box()
   };
 }
 
@@ -30842,6 +30865,310 @@ function sixPounderModel() {
   f = f.concat(box(-10, 8.5, 0, 7, 3.4, 4.5, C.od, C.odL, lit(C.od, .9)));
   f = f.concat(box(-10, 8.5, 4.5, 7, 3.4, 4.5, C.od, C.odL, lit(C.od, .9)));
   return f;
+}
+
+/* ================================================================ 57 mm Gun M1
+   The American 57 on the M1A3 carriage: the 6-pounder built under licence with the tube
+   lengthened to fifty calibres. Laid off a factory drawing in side, plan and front
+   elevation, with the scale taken off the one thing on it that is a published figure, the
+   7.50-16 combat tyre: 0.79 m over the tread and 0.21 m across it. That puts the wheels on
+   a 1.34 m track, the bore 0.89 m up, the top of the shield 1.24 m up and the muzzle 1.90 m
+   ahead of the axle, and opens the trails to forty-five degrees and 3.2 m back to the
+   lifting handles, with a spade near the end of each and the lunette on the right.
+     The shield is three plates: a centre plate, narrower at its foot than at its top, and a
+   wing each side folded back along the joint, the wings stepping in over the wheels and
+   coming down between them. It leans back thirteen degrees, and the gunner's sight looks
+   out through a port in the left of the centre plate.
+     Two pieces, because a gun runs back in its cradle when it fires and the carriage does
+   not: the carriage, the shield and the cradle are the mesh, and the tube and the breech
+   ring are `rec`, which the draw puts back by the recoil. Origin at the axle on the
+   ground, x toward the muzzle, and -y is the left, the gunner's side. */
+var M1G = {
+  R: 4.66, W: 2.45, Y: 7.9, rim: 2.39,         /* 7.50-16 combat tyres on a 1.34 m track */
+  bz: 10.46, tz: 9.6,                           /* the bore, and the trunnions */
+  muz: 22.4, br: -12.6, brF: -9.4,              /* the muzzle, and the back and front of the breech ring */
+  hx: -3.2, hy: 1.6, hz: 4.9,                   /* the trail hinges */
+  ex: -35.5, ey: 14.6, ez: 1.0,                 /* the trail ends, forty-five degrees open */
+  sx: .6, sLean: .23, sBot: 6.8, sTop: 14.6,    /* the shield: its foot, its lean, its bottom and top */
+  sw0: 2.5, sw1: 5.1, sOut: 8.6, sIn: 6.45,     /* the centre plate's half-width at foot and top, the wings' */
+  sStep: 10.1, fold: .9                         /* where the wings step in over the wheels, and how far back they fold */
+};
+/* the normal of a polygon however its first three corners lie */
+function m1Newell(v) {
+  var nx = 0, ny = 0, nz = 0, i, a, b;
+  for (i = 0; i < v.length; i++) {
+    a = v[i]; b = v[(i + 1) % v.length];
+    nx += (a[1] - b[1]) * (a[2] + b[2]); ny += (a[2] - b[2]) * (a[0] + b[0]); nz += (a[0] - b[0]) * (a[1] + b[1]);
+  }
+  return [nx, ny, nz];
+}
+/* a face turned to look away from a point */
+function m1Out(v, c, col) {
+  var n = m1Newell(v), mx = 0, my = 0, mz = 0, i;
+  for (i = 0; i < v.length; i++) { mx += v[i][0]; my += v[i][1]; mz += v[i][2]; }
+  mx = mx / v.length - c[0]; my = my / v.length - c[1]; mz = mz / v.length - c[2];
+  if (n[0] * mx + n[1] * my + n[2] * mz < 0) v = v.slice().reverse();
+  return { v: v, c: col };
+}
+/* a solid between two outlines with the same number of corners: the two ends and a side
+   between each pair of edges, every face turned out from the middle of the lot */
+function m1Solid(a, b, col, cap) {
+  var f = [], c = [0, 0, 0], n = a.length, i;
+  for (i = 0; i < n; i++) { c[0] += a[i][0] + b[i][0]; c[1] += a[i][1] + b[i][1]; c[2] += a[i][2] + b[i][2]; }
+  c[0] /= 2 * n; c[1] /= 2 * n; c[2] /= 2 * n;
+  f.push(m1Out(a.slice(), c, cap || col)); f.push(m1Out(b.slice(), c, cap || col));
+  for (i = 0; i < n; i++) f.push(m1Out([a[i], a[(i + 1) % n], b[(i + 1) % n], b[i]], c, col));
+  return f;
+}
+/* a plate: a flat convex outline given a thickness back from its face, along `back` */
+function m1Plate(v, back, t, col, edge) {
+  var b = v.map(function (p) { return [p[0] + back[0] * t, p[1] + back[1] * t, p[2] + back[2] * t]; });
+  return m1Solid(v, b, edge || col, col);
+}
+/* a box-section beam from one point to another, w across and h deep at each end, with its
+   sides upright whatever its slope */
+function m1Beam(p0, p1, w0, h0, w1, h1, col) {
+  var dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy) || 1, sx = -dy / l, sy = dx / l;
+  function ring(p, w, h) {
+    return [[p[0] + sx * w / 2, p[1] + sy * w / 2, p[2] - h / 2], [p[0] - sx * w / 2, p[1] - sy * w / 2, p[2] - h / 2],
+            [p[0] - sx * w / 2, p[1] - sy * w / 2, p[2] + h / 2], [p[0] + sx * w / 2, p[1] + sy * w / 2, p[2] + h / 2]];
+  }
+  return m1Solid(ring(p0, w0, h0), ring(p1, w1, h1), col);
+}
+function m1Mix(a, b, t) { return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t]; }
+/* A 7.50-16 on the combat wheel: the tyre with its blocks of tread in two staggered rows,
+   the split rim held by its ring of bolts, the dished disc and the hub cap standing out
+   past the tyre. The axis is y. */
+function m1Wheel(sd) {
+  var C = M4C, g = M1G, y = sd * g.Y, z = g.R, w = g.W / 2, rr = g.R - .32, f, i, s;
+  var prof = [[0, -.42], [1.0, -.42], [1.3, -.22], [2.05, -.36], [g.rim, -.72], [g.rim + .08, -w + .18], [3.35, -w],
+              [rr - .42, -w + .04], [rr, -w + .42], [rr, w - .42], [rr - .42, w - .04], [3.35, w], [g.rim + .08, w - .18],
+              [g.rim, .72], [2.05, .36], [1.3, .22], [1.0, .42], [0, .42]];
+  f = lathe(0, y, z, prof, 22, [C.odL, C.od, C.od, C.odD, C.od, C.tyre, C.rubber, C.rubber, C.rubber, C.rubber, C.rubber,
+                                C.tyre, C.od, C.odD, C.od, C.od, C.odL], true);
+  /* the tread, a block at a time, the two rows half a pitch apart */
+  for (i = 0; i < 22; i++) {
+    for (s = -1; s <= 1; s += 2) {
+      var a = (i + (s > 0 ? .5 : 0)) / 22 * TAU;
+      var lug = place(box(0, 0, -.2, .95, .92, .5, C.tyre, C.rubber, C.tyre, 0), s * .3, 0, s * .55, 0);
+      f = f.concat(place(pitch(place(lug, 0, 0, 0, rr), a, 0, 0), 0, 0, y, z));
+    }
+  }
+  /* the split rim's bolts and the hub's on the outer face, and the cap over the hub */
+  f = f.concat(boltRing(0, y + sd * .74, z, 2.18, 12, .15, .2, C.steel));
+  f = f.concat(boltRing(0, y + sd * .46, z, 1.12, 6, .17, .22, C.steel));
+  f = f.concat(latheSide(0, y + sd * .42, z, [[0, 0], [.92, 0], [.92, .5], [.62, .82], [0, .82]], 10,
+                         [C.od, C.odL, C.od, C.odL], sd));
+  return f;
+}
+/* A trail: a box-section leg from the hinge to the lifting handle, the spade near its end
+   braced back to it, and on the right one the lunette out on its drawbar and the small
+   wheel the gun is run about on, stowed on top. Closed for the move, the two legs lie
+   together with the spades folded flat on them and the lunette between their ends. */
+function m1Trail(sd, closed) {
+  var C = M4C, g = M1G, f = [];
+  var p0 = [g.hx, sd * g.hy, g.hz], p1 = [g.ex, sd * (closed ? .62 : g.ey), g.ez];
+  var dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy), ax = dx / l, ay = dy / l;
+  /* across the leg, pointing out from the gun */
+  var px = -ay, py = ax;
+  if (py * sd < 0) { px = -px; py = -py; }
+  f = f.concat(m1Beam(p0, p1, 1.3, 2.1, .95, 1.05, C.od));
+  f = f.concat(m1Beam([p0[0], p0[1], p0[2] + 1.05], [p1[0], p1[1], p1[2] + .52], 1.55, .16, 1.15, .16, C.odL));
+  f = f.concat(m1Beam(p1, [p1[0] + ax * .9, p1[1] + ay * .9, p1[2]], .95, 1.05, .95, 1.05, C.odD));
+  /* the lifting handle */
+  var e = [p1[0] + ax * .9, p1[1] + ay * .9, p1[2] + .1];
+  f = f.concat(ksPipe([[e[0] + px * .45, e[1] + py * .45, e[2]], [e[0] + ax * 2.2 + px * .45, e[1] + ay * 2.2 + py * .45, e[2] - .35],
+                       [e[0] + ax * 2.2 - px * .45, e[1] + ay * 2.2 - py * .45, e[2] - .35], [e[0] - px * .45, e[1] - py * .45, e[2]]], .16, C.steel, 6));
+  /* the spade: a blade across the leg standing into the ground, braced forward to the top of
+     it, or folded flat along the top of the leg for the move */
+  var S = m1Mix(p0, p1, .86), sp = [];
+  if (closed) {
+    [[-1.7, -.25], [1.7, -.25], [1.7, .75], [-1.7, .75]].forEach(function (q) {
+      sp.push([S[0] + ax * q[0] + px * q[1], S[1] + ay * q[0] + py * q[1], S[2] + .75]);
+    });
+    f = f.concat(m1Plate(sp, [0, 0, -1], .3, C.odD, C.od));
+  } else {
+    [[2.3, 3.1], [-2.3, 3.1], [-2.3, .5], [0, -.5], [2.3, .5]].forEach(function (q) {
+      sp.push([S[0] + px * q[0], S[1] + py * q[0], q[1]]);
+    });
+    f = f.concat(m1Plate(sp, [-ax, -ay, 0], .32, C.odD, C.od));
+    var B = m1Mix(p0, p1, .7);
+    [-1, 1].forEach(function (k) {
+      f = f.concat(ksTube([S[0] + px * k * 1.9, S[1] + py * k * 1.9, 2.9], [B[0] + px * k * .5, B[1] + py * k * .5, B[2] + .7], .19, C.od, 6));
+    });
+  }
+  /* a handspike stowed along the top of the left leg */
+  if (sd < 0) {
+    var h0 = m1Mix(p0, p1, .22), h1 = m1Mix(p0, p1, .68);
+    f = f.concat(ksTube([h0[0] + px * .35, h0[1] + py * .35, h0[2] + 1.35], [h1[0] + px * .35, h1[1] + py * .35, h1[2] + 1.02], .2, GUN.wood, 6));
+  }
+  if (sd > 0) {
+    /* the lunette out on the end of its drawbar, inboard of the handle */
+    var L0 = m1Mix(p0, p1, .9), L = closed ? [p1[0] + ax * 1.9, 0, 1.25] : [p1[0] + ax * 1.6 - px * 1.3, p1[1] + ay * 1.6 - py * 1.3, 1.25];
+    f = f.concat(m1Beam([L0[0] - px * .55, L0[1] - py * .55, L0[2]], [L[0] - ax * .9, L[1] - ay * .9, L[2]], .55, .55, .5, .5, C.odD));
+    var ring = lathe(0, 0, 0, [[.62, -.26], [1.12, -.26], [1.12, .26], [.62, .26], [.62, -.26]], 14, C.steel, true);
+    f = f.concat(place(ksRollN(ring, Math.PI / 2), 0, L[0], L[1], L[2]));
+    /* and the little wheel, stowed on top of the leg with its bracket */
+    var W = m1Mix(p0, p1, .42), wz = W[2] + 2.6, yaw = Math.atan2(ay, ax);
+    var tw = lathe(0, 0, 0, [[0, -.4], [.5, -.4], [1.05, -.34], [1.62, -.26], [1.62, .26], [1.05, .34], [.5, .4], [0, .4]], 12,
+                   [C.od, C.od, C.tyre, C.rubber, C.tyre, C.od, C.od], true);
+    f = f.concat(place(tw, yaw, W[0] - px * .45, W[1] - py * .45, wz));
+    [-1, 1].forEach(function (k) {
+      f = f.concat(place(box(0, 0, 0, 1.1, .22, 2.3, C.odD, C.od, C.odD, 0), yaw, W[0] - px * (.45 + k * .52), W[1] - py * (.45 + k * .52), W[2] + .45));
+    });
+  }
+  return f;
+}
+/* the handwheel the gunner turns, its rim, three spokes and the knob, facing him along x,
+   with the knob on the side `ks` says */
+function m1Handwheel(x, y, z, r, ks) {
+  var C = M4C, f = [], i;
+  f = f.concat(lathe(0, 0, 0, [[r - .2, -.13], [r, -.13], [r, .13], [r - .2, .13], [r - .2, -.13]], 14, C.steel, true));
+  for (i = 0; i < 3; i++) f = f.concat(place(box(r / 2, 0, -.07, r, .14, .14, C.steel, C.bare, C.steel, 0), 0, 0, 0, 0).map(function (q) {
+    var a = i / 3 * TAU + .5, c = Math.cos(a), s = Math.sin(a);
+    return { v: q.v.map(function (p) { return [p[0] * c - p[2] * s, p[1], p[0] * s + p[2] * c]; }), c: q.c };
+  }));
+  f = f.concat(lathe(0, 0, 0, [[0, -.3], [.3, -.3], [.3, .3], [0, .3]], 8, C.steel, true));
+  f = f.concat(tubeSmooth(0, .75, 0, 0, .12, 6, C.bare, C.bare).map(function (q) {
+    return { v: q.v.map(function (p) { return [p[1] - ks * r * .72, -p[0], p[2] + r * .7]; }), c: q.c };
+  }));
+  /* lathe revolves about y, so turn the lot to face the gunner, who is at -x */
+  return place(f, -Math.PI / 2, x, y, z);
+}
+/* the carriage, the cradle, the shield and the sight: everything that stays where it is,
+   with the trails open and the rounds by the loader, or with the trails closed for the move */
+function m1Carriage(closed) {
+  var C = M4C, g = M1G, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(m1Wheel(sd)).concat(m1Trail(sd, closed));
+  /* the axle and the beam under it, the stub axles out to the hubs */
+  f = f.concat(place(tubeSmooth(-g.Y + .9, g.Y - .9, 0, 4.66, .5, 8, C.odD, C.od), Math.PI / 2, 0, 0, 0));
+  f = f.concat(box(0, 0, 3.6, 1.3, 12.8, 1.1, C.od, C.odL, C.odD));
+  /* the bottom carriage the trails hinge on, and its riveted front between the wheels */
+  f = f.concat(box(-.9, 0, 4.4, 6.0, 6.2, 2.2, C.od, C.odL, C.odD));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(g.hx, sd * g.hy, g.hz - 1.1, 2.3, 1.6, 2.2, C.odD, C.od, C.odD));
+    f = f.concat(place(tubeSmooth(-.95, .95, 0, 0, .34, 6, C.steel, C.bare), Math.PI / 2, g.hx, sd * g.hy, g.hz + .2));
+  }
+  f = f.concat(m1Plate([[2.15, -3.4, 4.2], [2.15, 3.4, 4.2], [2.15, 3.4, 6.9], [2.15, -3.4, 6.9]], [-1, 0, 0], .25, C.od, C.odD));
+  [-2.6, -1.3, 0, 1.3, 2.6].forEach(function (yy) {
+    [4.6, 6.5].forEach(function (zz) { f = f.concat(box(2.24, yy, zz - .12, .16, .26, .24, C.odD, C.od, C.odD, 0)); });
+  });
+  /* the top carriage turning on it: the pivot plate and two cheeks carrying the trunnions */
+  f = f.concat(cyl(-.4, 0, 6.6, 2.7, 2.7, .5, 14, C.odD, C.od, 0, true));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(-.5, sd * 2.0, 7.0, 5.0, .55, 3.2, C.od, C.odL, C.odD));
+    f = f.concat(place(tubeSmooth(-.35, .35, 0, g.tz, .72, 10, C.odD, C.od), Math.PI / 2, 0, sd * 2.45, 0));
+  }
+  /* the cradle, the recuperator slung under it with its domed front, and the bands */
+  f = f.concat(tubeSmooth(-3.4, 8.2, 0, g.bz, 1.12, 12, C.od, C.odL));
+  f = f.concat(tubeSmooth(8.2, 8.9, 0, g.bz, 1.28, 12, C.odD, C.od));
+  f = f.concat(box(-.8, 0, g.tz - 1.35, 6.2, 3.4, 1.0, C.od, C.odL, C.odD));
+  f = f.concat(tubeSmooth(-2.8, 7.9, 0, g.bz - 1.9, .74, 10, C.od, C.odL));
+  f = f.concat(place(lathe(0, 0, 0, [[.74, 0], [.66, .45], [.42, .8], [0, .92]], 10, C.od, true), -Math.PI / 2, 7.9, 0, g.bz - 1.9));
+  [1.6, 5.4].forEach(function (x) { f = f.concat(tubeSmooth(x, x + .45, 0, g.bz - 1.9, .84, 10, C.odD, C.od)); });
+  f = f.concat(box(2.6, 0, g.bz + 1.02, 7.0, .6, .35, C.odD, C.od, C.odD, 0));
+  /* the shield: the centre plate in four pieces round the opening the cradle comes
+     through, and a wing each side folded back along the joint */
+  var xs = function (z) { return g.sx - (z - g.sBot) * g.sLean; };
+  var hw = function (z) { return g.sw0 + (z - g.sBot) * (g.sw1 - g.sw0) / (g.sTop - g.sBot); };
+  var P = function (y, z) {
+    var s = Math.max(0, Math.abs(y) - hw(z));
+    return [xs(z) - s * g.fold, y, z];
+  };
+  var back = [-Math.cos(Math.atan(g.sLean)), 0, -Math.sin(Math.atan(g.sLean))], t = .26, hy = 1.5, h0 = 7.6, h1 = 12.1;
+  f = f.concat(m1Plate([P(-hw(g.sBot), g.sBot), P(-hy, g.sBot), P(-hy, g.sTop), P(-hw(g.sTop), g.sTop)], back, t, C.od, C.odD));
+  f = f.concat(m1Plate([P(hy, g.sBot), P(hw(g.sBot), g.sBot), P(hw(g.sTop), g.sTop), P(hy, g.sTop)], back, t, C.od, C.odD));
+  f = f.concat(m1Plate([P(-hy, h1), P(hy, h1), P(hy, g.sTop), P(-hy, g.sTop)], back, t, C.od, C.odD));
+  f = f.concat(m1Plate([P(-hy, g.sBot), P(hy, g.sBot), P(hy, h0), P(-hy, h0)], back, t, C.od, C.odD));
+  /* and the small shield on the cradle that closes the opening round it */
+  var cx0 = xs(g.bz) + .45;
+  [[-1.75, -1.14, 7.4, 12.4], [1.14, 1.75, 7.4, 12.4], [-1.14, 1.14, 11.6, 12.4], [-1.14, 1.14, 7.4, 7.82]].forEach(function (b) {
+    f = f.concat(m1Plate([[cx0, b[0], b[2]], [cx0, b[1], b[2]], [cx0, b[1], b[3]], [cx0, b[0], b[3]]], [-1, 0, 0], .22, C.od, C.odD));
+  });
+  for (sd = -1; sd <= 1; sd += 2) {
+    var wUp = [P(sd * hw(g.sTop), g.sTop), P(sd * g.sOut, g.sTop), P(sd * g.sOut, g.sStep), P(sd * hw(g.sStep), g.sStep)];
+    var wLo = [P(sd * hw(g.sStep), g.sStep), P(sd * g.sIn, g.sStep), P(sd * g.sIn, g.sBot), P(sd * hw(g.sBot), g.sBot)];
+    var wn = m1Newell(wUp), wl = Math.hypot(wn[0], wn[1], wn[2]), wb = [-wn[0] / wl, -wn[1] / wl, -wn[2] / wl];
+    if (wb[0] > 0) wb = [-wb[0], -wb[1], -wb[2]];
+    f = f.concat(m1Plate(wUp, wb, t, C.od, C.odD)).concat(m1Plate(wLo, wb, t, C.od, C.odD));
+    /* the rolled bead along the top and the rivets down the joint */
+    f = f.concat(m1Beam(P(sd * hw(g.sTop), g.sTop + .1), P(sd * g.sOut, g.sTop + .1), .42, .3, .42, .3, C.odL));
+    for (var r = 0; r < 7; r++) {
+      var rz = g.sBot + .5 + r * (g.sTop - g.sBot - 1) / 6, rp = P(sd * (hw(rz) + .22), rz);
+      f = f.concat(box(rp[0] + .17, rp[1], rp[2] - .12, .18, .24, .24, C.odD, C.od, C.odD, 0));
+    }
+  }
+  f = f.concat(m1Beam(P(-hw(g.sTop), g.sTop + .1), P(hw(g.sTop), g.sTop + .1), .42, .3, .42, .3, C.odL));
+  /* the port the sight looks out through, with its cover lifted on its hinge */
+  var sy0 = -2.35, sy1 = -3.75, sz0 = 10.7, sz1 = 12.2, pz = .2;
+  f = f.concat(m1Plate([P(sy1, sz0), P(sy0, sz0), P(sy0, sz1), P(sy1, sz1)].map(function (p) { return [p[0] + pz, p[1], p[2]]; }),
+                       [-1, 0, 0], .05, C.hole, C.hole));
+  [[sy1 - .2, sy0 + .2, sz1 + .1, sz1 + .3], [sy1 - .2, sy0 + .2, sz0 - .3, sz0 - .1]].forEach(function (b) {
+    f = f.concat(m1Beam(P(b[0], (b[2] + b[3]) / 2).map(function (v, k) { return k ? v : v + .2; }),
+                        P(b[1], (b[2] + b[3]) / 2).map(function (v, k) { return k ? v : v + .2; }), .3, .22, .3, .22, C.odD));
+  });
+  var hc = P(sy0 + .1, sz1 + .3), hc1 = P(sy1 - .1, sz1 + .3);
+  f = f.concat(m1Plate([[hc[0] + .3, hc[1], hc[2]], [hc1[0] + .3, hc1[1], hc1[2]], [hc1[0] + 1.6, hc1[1], hc1[2] + .75], [hc[0] + 1.6, hc[1], hc[2] + .75]],
+                       [0, 0, -1], .16, C.od, C.odD));
+  /* the stays from the top carriage up to the back of the shield */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var st = P(sd * 3.3, 12.6);
+    f = f.concat(ksTube([-1.6, sd * 2.2, 8.9], [st[0] - .35, st[1], st[2]], .2, C.odD, 6));
+    var sb = P(sd * 3.0, 7.4);
+    f = f.concat(ksTube([-.2, sd * 2.8, 6.6], [sb[0] - .3, sb[1], sb[2]], .2, C.odD, 6));
+  }
+  /* the sight: the telescope on the left of the cradle, its eyepiece and its rubber guard
+     back where the gunner's eye is, and its bracket */
+  f = f.concat(tubeSmooth(-8.6, -.9, -3.0, 11.45, .3, 8, C.steel, C.bare));
+  f = f.concat(tubeSmooth(-9.2, -8.6, -3.0, 11.45, .44, 8, C.rubber, C.rubber));
+  f = f.concat(tubeSmooth(-1.3, -.7, -3.0, 11.45, .4, 8, C.steel, C.hole));
+  f = f.concat(box(-4.6, -2.05, g.bz - .4, 1.4, 2.0, 1.2, C.odD, C.od, C.odD, 0));
+  /* the two handwheels in front of the gunner's knees: traverse to his left hand and
+     elevation to his right, each on its shaft from the gear case on the left cheek, low
+     enough that the breech ring runs back over them */
+  f = f.concat(box(-4.0, -2.9, 6.7, 3.0, 1.5, 2.4, C.od, C.odL, C.odD));
+  f = f.concat(m1Handwheel(-8.0, -4.6, 7.8, 1.05, -1)).concat(m1Handwheel(-8.2, -1.85, 7.1, .95, 1));
+  f = f.concat(ksTube([-7.8, -4.6, 7.8], [-4.8, -3.4, 7.6], .14, C.steel, 6));
+  f = f.concat(ksTube([-8.0, -1.85, 7.1], [-4.6, -2.4, 7.3], .14, C.steel, 6));
+  /* the guard that keeps the crew out of the recoil: two rails from the cradle back past
+     where the breech runs to, with the canvas deflector slung between them */
+  for (sd = -1; sd <= 1; sd += 2)
+    f = f.concat(ksPipe([[-3.4, sd * 1.9, 8.8], [-19.8, sd * 1.9, 8.5], [-20.6, sd * 1.9, 9.6]], .15, C.odD, 6));
+  f = f.concat(ksTube([-20.6, -1.9, 9.6], [-20.6, 1.9, 9.6], .15, C.odD, 6));
+  f = f.concat(box(-12.8, 0, 7.0, 6.4, 3.0, 1.35, C.roll, lit(C.roll, 1.08), lit(C.roll, .88)));
+  if (closed) return f;
+  /* a box of rounds open by the loader, three in it */
+  f = f.concat(box(-14.2, 8.4, 0, 7.2, 2.6, 1.5, GUN.wood, lit(GUN.wood, 1.1), lit(GUN.wood, .9)));
+  [-.7, 0, .7].forEach(function (yy) {
+    f = f.concat(tubeSmooth(-17.4, -12.4, 8.4 + yy, 1.8, .3, 8, GUN.brass, lit(GUN.brass, .9)));
+    f = f.concat(place(lathe(0, 0, 0, [[.27, 0], [.27, .9], [.18, 1.55], [0, 1.85]], 8, C.steel, true), -Math.PI / 2, -12.4, 8.4 + yy, 1.8));
+  });
+  return f;
+}
+/* the gun itself, which runs back: the tube from the breech ring to the muzzle, tapering,
+   with the bore dark in it, and the ring with its sliding block and the operating handle */
+function m1Tube() {
+  var C = M4C, g = M1G, f = [];
+  var prof = [[0, g.brF], [.98, g.brF], [.98, -3.6], [.9, -3.1], [.9, 8.9], [.8, 9.4], [.61, g.muz - .6], [.7, g.muz - .5],
+              [.7, g.muz], [.3, g.muz], [.3, g.muz - .6], [0, g.muz - .6]];
+  f = f.concat(place(lathe(0, 0, 0, prof, 14, [C.steel, C.steel, C.steel, C.steel, C.steel, C.steel, C.steel, C.steel, C.bare,
+                                              C.hole, C.hole], true), -Math.PI / 2, 0, 0, g.bz));
+  f = f.concat(box((g.br + g.brF) / 2, 0, g.bz - 1.55, g.brF - g.br, 3.0, 3.3, C.steel, C.bare, C.steel));
+  f = f.concat(box(g.br - .12, 0, g.bz - 1.15, .3, 1.9, 2.2, C.bare, C.bare, C.bare, 0));
+  f = f.concat(ksPipe([[-11.6, 1.5, g.bz + .6], [-12.9, 2.05, g.bz - .2], [-13.4, 2.1, g.bz - 1.0]], .15, C.steel, 6));
+  f = f.concat(box(-13.4, 2.1, g.bz - 1.4, .5, .5, .5, C.rubber, C.rubber, C.rubber, 0));
+  return f;
+}
+/* the box the rounds come up in, one to a man: a wooden case with the lid battened down, a
+   cleat across each end and a rope becket over the top to carry it by. Long axis x, on z 0. */
+function m1Box() {
+  var w = GUN.wood, l = 7.2, b = 2.4, h = 1.9, f = [];
+  f = f.concat(box(0, 0, 0, l, b, h, w, lit(w, 1.1), lit(w, .9)));
+  [-1, 1].forEach(function (e) {
+    f = f.concat(box(e * (l / 2 - .45), 0, -.03, .45, b + .12, h + .08, lit(w, .82), lit(w, .95), lit(w, .82), 0));
+  });
+  f = withMat(f, 'wood');
+  return f.concat(withMat(ksPipe([[-1.1, 0, h], [-.5, 0, h + .55], [.5, 0, h + .55], [1.1, 0, h]], .1, M4C.tarp, 5), 'canvas'));
 }
 
 /* The 105 mm Gun T8: a long piece on a split trail, sited rather than driven. Half again
@@ -32101,6 +32428,9 @@ function buildVehicleModels() {
   GUNMODEL['am_mg:m2hb'] = { mesh: mgTeamModel(true), bar: 10.5, z: 5.0 };
   /* and the 352nd's MG 34 on the Lafette, and the MG 42 in the same cradle */
   GUNMODEL.hr_mg = { mesh: lafTeamModel(false), bar: 8.45, z: 7.1 };
+  /* the American 57, whose tube runs back in its cradle and leaves the carriage where it
+     stands (`rec`); `bar` from the layer, the way the two that walk are */
+  GUNMODEL.am_at = { mesh: m1Carriage(false), pack: m1Carriage(true), rec: m1Tube(), bar: 11.0 + M1G.muz, z: M1G.bz };
   GUNMODEL['hr_mg:mg42t'] = { mesh: lafTeamModel(true), bar: 8.7, z: 7.1 };
 }
 
@@ -33506,6 +33836,12 @@ var SOLDIER_VARIANTS = {
   gi_mgg:       { side: 'us', nat: 'usa', weapon: 'none', mgbelt: 1, holster: 1, norun: 1, set: 'gunner' },
   gi_mgc:       { side: 'us', nat: 'usa', weapon: 'none', mgbelt: 1, holster: 1, carrier: 1, norun: 1, set: 'carry' },
   gi_mga:       { side: 'us', nat: 'usa', weapon: 'carbine', mgbelt: 1, can: 1, norun: 1, body: 'usa_mg', set: 'field' },
+  /* and the anti-tank gun's crew of five, in the rifleman's kit: the gunner and the loader
+     with a pistol on the hip and nothing in their hands but the gun, and the three who bring
+     the rounds up, each with the carbine and a box of them in the other hand, which is what
+     the crew leaves where it falls (`body`) */
+  gi_atg:       { side: 'us', nat: 'usa', weapon: 'none', holster: 1, norun: 1, set: 'gunner' },
+  gi_atb:       { side: 'us', nat: 'usa', weapon: 'carbine', can: 1, norun: 1, body: 'usa_at', set: 'field' },
   /* and the man in the tank: the tanker's helmet and jacket, boots rather than leggings,
      and nothing on him but a pistol under his arm */
   gi_tank:      { side: 'us', nat: 'usa', weapon: 'none', set: 'hull', tanker: 1 },
@@ -33585,6 +33921,8 @@ function variantForModel(u, i) {
        the ammunition */
     if (u.key === 'am_mg') return i > 1 ? 'gi_mga' : carried(u) && !u.gar ? 'gi_mgc' : 'gi_mgg';
     if (u.key === 'am_eng') return i === 0 ? 'gi_eng_c' : i === 1 ? 'gi_eng' : 'gi_eng_b';
+    /* the gunner and the loader serve the 57, and the other three bring the rounds up */
+    if (u.key === 'am_at') return i < 2 ? 'gi_atg' : 'gi_atb';
     /* the two BAR men have the bazookas up while it is armour they are shooting at, and two
        of the Thompson men have the .30 once it has been issued */
     if (u.key === 'am_ranger') {
@@ -34880,7 +35218,7 @@ var POSE_STAND = 0, POSE_WALK = 1, POSE_CROUCH = 2, POSE_FIRE = 3, POSE_CFIRE = 
    grenade leaves the hand on the frame it changes */
 var THROW_REL = .22;
 var MODELS = { man: {}, muz: {}, eye: {}, fall: {}, dead: {},
-               veh: {}, team: {}, at: {}, gun: {}, gunBase: {}, bld: {}, bldA: {}, tree: [], bush: [] };
+               veh: {}, team: {}, at: {}, gun: {}, gunBase: {}, gunRec: {}, gunPk: {}, bld: {}, bldA: {}, tree: [], bush: [] };
 /* A man is drawn at this over his built size. On a phone he is 12.7 CSS pixels tall at
    the camera the game opens at and every part that tells one side from the other is under
    two; a fifth over the vehicles beside him is a deliberate over-scale of the kind every
@@ -34915,10 +35253,12 @@ function figMat(m, variant) {
   return m4model(m.x, m.y, gz, m.f, k);
 }
 /* the mesh a weapon team stands round: its own piece if it has one, otherwise the
-   side's anti-tank gun or its medium machine gun */
+   side's anti-tank gun or its medium machine gun. A piece with its trails closed for the
+   move is drawn closed until it is laid again. */
 function teamMesh(u) {
   var uk = gunUpOf(u);
   if (uk && MODELS.gun[u.key + ':' + uk]) return MODELS.gun[u.key + ':' + uk];
+  if (MODELS.gunPk[u.key] && !gunSet(u)) return MODELS.gunPk[u.key];
   if (MODELS.gun[u.key]) return MODELS.gun[u.key];
   return u.def.atOnly ? MODELS.at[u.side] : MODELS.team[u.side];
 }
@@ -34960,7 +35300,14 @@ function gunPost(u) {
   var a = u.models && u.models.find(function (mm) { return mm.alive; });
   if (!u.def.speed) a = u;
   if (!a) a = u;
-  if (!gunSet(u) || !u.def.speed) return { x: a.x, y: a.y };
+  if (!u.def.speed) return { x: a.x, y: a.y };
+  /* and a piece run along on its own wheels goes beside its gunner, with him at a wheel,
+     rather than round him: `runAt` is where it rides in his frame */
+  if (!gunSet(u)) {
+    var R = u.def.runAt, rc = Math.cos(u.facing), rs = Math.sin(u.facing);
+    if (!R) return { x: a.x, y: a.y };
+    return { x: a.x + (rc * R[0] - rs * R[1]) * FIG_SCALE, y: a.y + (rs * R[0] + rc * R[1]) * FIG_SCALE };
+  }
   var ga = gunOf(u).gunAt * FIG_SCALE;
   return { x: a.x + Math.cos(u.facing) * ga, y: a.y + Math.sin(u.facing) * ga };
 }
@@ -35116,6 +35463,8 @@ function buildModels() {
   Object.keys(GUNMODEL).forEach(function (k) {
     MODELS.gun[k] = facesToBuffer(GUNMODEL[k].mesh);
     if (GUNMODEL[k].base) MODELS.gunBase[k] = facesToBuffer(GUNMODEL[k].base);
+    if (GUNMODEL[k].rec) MODELS.gunRec[k] = facesToBuffer(GUNMODEL[k].rec);
+    if (GUNMODEL[k].pack) MODELS.gunPk[k] = facesToBuffer(GUNMODEL[k].pack);
   });
   /* and the pieces as they are carried, each drawn at the man carrying it */
   var MC = mgCarryModels(), LC = lafCarryModels();
@@ -36652,11 +37001,12 @@ function castUnit(u) {
       var m = u.models[k]; if (!m.alive) continue;
       var variant = variantForModel(u, k), buf = poseBuffers(u, m, variant);
       if (buf) drawDepthGeom(buf, figMat(m, variant));
-      if (u.def.carry && mgCarryAt(u, m, k, variant)) drawDepthGeom(_mgc.buf, _mgc.mat);
+      if (u.def.carryP && mgCarryAt(u, m, k, variant)) drawDepthGeom(_mgc.buf, _mgc.mat);
     }
     if (u.cat === 'team' && aliveModels(u) > 0 && !carried(u)) {
       var a = gunPost(u);
       drawDepthGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, FIG_SCALE));
+      if (MODELS.gunRec[u.key]) drawDepthGeom(MODELS.gunRec[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, FIG_SCALE));
       if (MODELS.gunBase[u.key]) drawDepthGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE));
     }
   }
@@ -36780,12 +37130,16 @@ function drawUnits3D(v, list) {
            a per-draw uniform the renderer already takes costs nothing */
         _mt[0] = tint[0] * (m.tint || 1); _mt[1] = tint[1] * (m.tint || 1); _mt[2] = tint[2] * (m.tint || 1);
         if (buf) drawGeom(buf, figMat(m, variant), false, _mt);
-        if (u.def.carry && mgCarryAt(u, m, k, variant)) drawGeom(_mgc.buf, _mgc.mat, false, tint);
+        if (u.def.carryP && mgCarryAt(u, m, k, variant)) drawGeom(_mgc.buf, _mgc.mat, false, tint);
         _blobs.push({ x: m.x, y: m.y, r: m.prone ? 12 : 8, a: .38 });
       }
       if (u.cat === 'team' && aliveModels(u) > 0 && !carried(u)) {
         var a = gunPost(u);                          /* a fixed mount is drawn where it was built */
-        var trec = recoilAt(u.recoil) * 7;
+        var trec = recoilAt(u.recoil) * 7, rk = MODELS.gunRec[u.key];
+        /* a piece whose tube runs back in its cradle leaves its carriage where it stands on its spades */
+        if (rk) drawGeom(rk, m4model(a.x - Math.cos(u.facing) * trec, a.y - Math.sin(u.facing) * trec,
+                                     groundZ(a.x, a.y), u.facing, FIG_SCALE), false, tint);
+        if (rk) trec = 0;
         drawGeom(teamMesh(u), m4model(a.x - Math.cos(u.facing) * trec, a.y - Math.sin(u.facing) * trec,
                                       groundZ(a.x, a.y), u.facing, FIG_SCALE), false, tint);
         /* and its platform, which was laid once and does not traverse with the gun */

@@ -4465,6 +4465,166 @@ for (const device of TARGETS) {
      `killed, it left ${pv.bodies} bodies of ${pv.bodyNat}; Ortona's depot makes ${pv.ita} and ` +
      `${pv.itaField ? 'WOULD field' : 'does not field'} the Panther`);
 
+  /* --- The 57 mm Gun M1. The Americans' anti-tank gun in the 6-pounder's place: the motor pool
+     makes it and queues it when asked for the 6-pounder, the count and the order book read the
+     two as one, and it is five men -- the gunner and the loader at the gun, and three bringing
+     the rounds up a box each. Its eye stands past every eye on the German depot and its reach
+     past every gun on it but the Maus's, and sited on open sand with a Panzer IV coming at it
+     from past its own reach it has the first round off, from further out than the tank can
+     answer and before the tank has found it. Halted, the trails open and the gunner kneels at
+     the sight on the left with the loader at the breech on the right, facing it; on the move
+     the trails close and the piece rides beside the gunner, with him at the left wheel. The
+     tube runs back in its cradle and the carriage does not. The bearers carry their boxes, a
+     man killed goes down as one of the crew, an American bunker's anti-tank fitting is this
+     gun, and Ortona's motor pool still makes the 6-pounder. --- */
+  const at57 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    G.res.us.mp += 3000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_at');
+    out.q = W.queueUnit(mot, 'us_at') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_at') - m0;
+    out.madeAs = W.madeOf('us', 'us_at') === W.madeOf('us', 'am_at');
+    mot.queue.length = q0;
+    /* its eye and its reach against every vehicle the German depot makes on this beach */
+    const D = W.UNITS.am_at;
+    const vk = W.BUILDINGS.ger_dep.makes.map(k => W.natKey(k)).filter(k => W.fielded(k) && W.UNITS[k].cat === 'veh');
+    const reach = d => Math.max(d.w ? d.w.range : 0, ...Object.keys(d.wUp || {}).map(k => d.wUp[k].range || 0));
+    out.eyeBest = Math.max(...vk.map(k => W.UNITS[k].sight));
+    out.reachBest = Math.max(...vk.filter(k => k !== 'ger_maus').map(k => reach(W.UNITS[k])));
+    out.eye = D.sight; out.reach = D.w.range;
+    /* open sand long enough for the drill: the gun at one end and a Panzer IV 520 off at the
+       other, both walkable, nothing cover near either, and a clear line between them */
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    let st = null;
+    for (let r = 0; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y - 300 + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 520 * Math.cos(th), by = ay + 520 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let ok = true;
+          for (let s = 1; s < 13 && ok; s++) ok = W.walkable(ax + (bx - ax) * s / 13, ay + (by - ay) * s / 13);
+          if (ok && W.traceClear(ax, ay, W.groundZ(ax, ay) + 12, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 12, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    /* the drill: the two of them alone on the field, the gun laid toward the tank and the tank
+       driving at the gun, and who fires first, from where, and whether the tank had found it */
+    const saved = G.units.slice();
+    if (st) {
+      G.units.length = 0;
+      const a = W.spawnUnit('us', 'am_at', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('ger', 'hr_p4', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detGer || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.length = 0; saved.forEach(u => G.units.push(u));
+      G.shots.length = 0;
+    }
+    /* the five of them, set up and walking */
+    const at = W.nearestFree(hq.x + 120, hq.y - 320);
+    const u = W.spawnUnit('us', 'am_at', at.x, at.y, 0);
+    out.count = W.countOf('us', 'us_at') === W.countOf('us', 'am_at');
+    out.men = u.models.length;
+    out.baked = ['gi_atg', 'gi_atb'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!W.MODELS.man.gi_atb[W.POSE_FIRE] && !!(W.MODELS.served.am_at && W.MODELS.served.am_at.mate) &&
+                !!(W.MODELS.gunRec.am_at && W.MODELS.gunPk.am_at);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -6;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -14);
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.am_at;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.abs(Math.hypot(mz.x - gp.x, mz.y - gp.y) - D.gunMuz[0] * W.FIG_SCALE) < 1.5;
+    const box = W.mgCarryAt(u, u.models[2], 2, 'gi_atb') ? W._mgc.buf : null;
+    out.box = box === W.MODELS.carry.box57;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.am_at;
+    const gq = W.gunPost(u), g0 = u.models[0];
+    out.runs = +(Math.hypot(gq.x - g0.x, gq.y - g0.y) / W.FIG_SCALE).toFixed(1);
+    u.packed = false;
+    /* a man of it goes down as one of the crew */
+    const m = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    out.fall = !!(W.MODELS.fall.usa_at && W.MODELS.dead.usa_at);
+    W.killUnit(u);
+    /* an American bunker's anti-tank fitting is the 57 */
+    out.bunkKey = W.natKey(W.BUNKUP.at.unit.us);
+    const bk = G.bunks.filter(k => !k.up && !k.upKind && !k.gar)[0];
+    if (bk) {
+      const was = { own: bk.own, upKind: bk.upKind, upUid: bk.upUid, upBuf: bk.upBuf, upOwn: bk.upOwn };
+      const n0 = G.units.length;
+      bk.own = 'us'; bk.up = 'at'; bk.upT = 0; bk.upOwn = 'us';
+      W.finishBunkerUp(bk, true);
+      const g = G.units.slice(n0).filter(q => q.id === bk.upUid)[0];
+      out.bunkGun = g ? g.key : '-';
+      if (g) { if (g.gar) W.leaveBuilding(g); g.dead = true; G.units.splice(G.units.indexOf(g), 1); }
+      Object.keys(was).forEach(k => { bk[k] = was[k]; });
+      bk.up = null;
+    } else out.bunkGun = 'no bunker';
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  const f57 = at57.first, b57 = at57.bFirst;
+  ok('Omaha: the 57 mm Gun M1 stands in for the 6-pounder with five men, sees and reaches past the armour, and fires first',
+     /am_at/.test(at57.makes) && !/us_at/.test(at57.makes) && at57.q === 'am_at' && at57.made === 1 && at57.madeAs && at57.count &&
+     at57.eye > at57.eyeBest && at57.reach > at57.reachBest &&
+     at57.staged && !!f57 && (!b57 || b57.t >= f57.t + 1) && f57.found < 1 &&
+     at57.men === 5 && at57.baked && at57.set && at57.setVars === 'gi_atg,gi_atg,gi_atb,gi_atb,gi_atb' && /^11,11,/.test(at57.poses) &&
+     at57.loaderRight && at57.loaderFaces && at57.bearers && at57.mesh && at57.muz && at57.box && at57.packMesh &&
+     at57.runs > 9 && at57.runs < 13 && at57.bodyNat === 'usa_at' && at57.fall &&
+     at57.bunkKey === 'am_at' && (at57.bunkGun === 'am_at' || at57.bunkGun === 'no bunker') &&
+     /us_at/.test(at57.ita) && !/am_at/.test(at57.ita),
+     `the motor pool makes ${at57.makes}; asked for the 6-pounder it queues ${at57.q}, counted as ${at57.made} made and the order book ` +
+     `${at57.madeAs ? 'the same' : 'DIFFERENT'}, the count ${at57.count ? 'the same' : 'DIFFERENT'}; its eye ${at57.eye} against the ` +
+     `depot's best ${at57.eyeBest} and its reach ${at57.reach} against ${at57.reachBest} (the Maus aside); ` +
+     (at57.staged ? `sited against a Panzer IV at 520 it fired ${f57 ? 'at ' + f57.t + ' s from ' + f57.d + ' with the tank ' + (f57.found < 1 ? 'yet to find it (' + f57.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${b57 ? 'answered at ' + b57.t + ' s from ' + b57.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
+     `${at57.men} men, every variant, the served bodies and the three meshes ${at57.baked ? 'baked' : 'NOT baked'}; halted ` +
+     `${at57.set ? 'set up' : 'NOT set up'} as ${at57.setVars} in poses ${at57.poses}, the loader at ${at57.loader} ` +
+     `${at57.loaderRight ? 'on the right' : 'NOT on the right'} and ${at57.loaderFaces ? 'facing the breech' : 'NOT facing it'}, the bearers ` +
+     `${at57.bearers === 'cover' ? 'in cover' : at57.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${at57.mesh ? 'open' : 'WRONG'}, ` +
+     `the flash ${at57.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's box ${at57.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
+     `${at57.packMesh ? 'closed' : 'NOT closed'} and the piece ${at57.runs} from the gunner; killed went down as ${at57.bodyNat}, bodies ` +
+     `${at57.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${at57.bunkKey} and put in ${at57.bunkGun}; Ortona's motor pool makes ${at57.ita}`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

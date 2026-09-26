@@ -4,7 +4,7 @@ A single-file, real-time tactical battle game: the Allies against the Germans, a
 on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the grenadier squad, the pioneer team, the
+rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
 MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind and the Panther are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
@@ -153,6 +153,7 @@ node tools/duel.mjs --cover=3            # with both sides in heavy cover
 node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
 node tools/duel.mjs --file=/tmp/x.html   # or on any file
 node tools/duel.mjs --turn=1.57          # the second unit staged side-on
+node tools/duel.mjs --sited am_at hr_p4  # the first unit set up and holding, as a gun meets armour
 ```
 
 A row reads `open` and `met`: where the pair were put down, and where they were when the
@@ -171,6 +172,14 @@ lying on the staging ground and have always been on the movement grid; since a b
 wreck also obscures, they were attenuating the sight line as well, so from the second run
 of every row the pair were fighting through the smoke of the one before. It cost the card
 about half its row-to-row spread: 36 points against 19 on the same comparison.
+
+**`--sited` stages the first unit set up and holding its ground**, the way an anti-tank gun
+meets armour: laid on the ground in front of it before anything comes up it, while the other
+side attack-moves in. Without it a gun is staged on an attack-move like everything else, halts
+when a target comes into reach and then spends its whole setup in the open while the tank
+drives at it, so the row measures the setup: the 57 staged at 520 against a Panzer IV fired
+its first round at 207, and the 6-pounder at its own reach at 156, and both lost every fight.
+Sited, the 57 fires at 490 and the 6-pounder at 399, which is the question those rows ask.
 
 `--base` is there because a change that was never meant to touch the fighting still has
 to be fought, and because one row moving is not evidence of anything. A near-even matchup
@@ -876,7 +885,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, and 2570 before the Panther). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, and 2600 before the 57 mm gun). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1174,7 +1183,18 @@ is the plate: 220 in front and a side under two fifths of that and still over th
 M4's round at 300 through the front 56 times in a hundred and through the side every time, and the
 side dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the
 lid shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and
-Ortona's depot does not make it.
+Ortona's depot does not make it. The 57 mm Gun M1 is asked it in a nineteenth, on the American
+side: the motor pool makes it and not the 6-pounder and queues it when asked for the 6-pounder, the
+count and the order book read the two as one, its eye stands past every eye on the German depot and
+its reach past every gun on it but the Maus's, and sited on open sand with a Panzer IV driving at it
+from 520 it fires first, a second or more ahead of the tank and before the tank has found it: at 3.0
+seconds from 328 against the tank's answer at 5.9 from 161, because the tank drives in while the gun
+is picking it out, so the first round leaves inside the tank's reach and the tank is blind. It is five
+men with every variant, the served bodies and its three meshes baked; set up, the loader kneels at the
+right of the breech facing it and the bearers are back behind the gun, the flash comes off the muzzle
+and a bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner.
+A man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57, and Ortona's
+motor pool still makes the 6-pounder.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1479,9 +1499,9 @@ one nearest home; a post knocked down frees its craft.
 
 **The wall can be manned at the whistle.** ATLANTIC WALL on the title screen is shown only
 for a map with a `garrison` written into it, and MANNED puts that garrison in: a Pak in each
-casemate in the seawall, an MG42 in each of four bunkers and a mortar dug in behind the
-fifth, an MG42 in each Tobruk either side of the two exits, and a section in each leg of
-the fire trench. A fitting goes in through the bunker's own `finishBunkerUp`, so the gun in a
+casemate in the seawall, an MG 34 team in each of four bunkers and a mortar dug in behind
+the fifth, an MG 34 team in each Tobruk either side of the two exits, and a section in each
+leg of the fire trench. A fitting goes in through the bunker's own `finishBunkerUp`, so the gun in a
 casemate is a gun laid through its slot and nothing new. The garrison is over and above the
 German army: it goes to that side's first player, `popOf` does not count it (`u.wall`), and
 it is told to stay -- a held posture, which the brain's dealing, its operations and its
@@ -4294,6 +4314,77 @@ the same way, and the Rangers at 130 win a quarter. A hull comes round in a seco
 number that matters is what the flank does in a battle, where the thing has something else in front
 of it, and that is what `flank` is for.
 
+**The 57 mm Gun M1 is the Americans' anti-tank gun**, in the 6-pounder's place (`us_at` to
+`am_at` on the army's list): the 6-pounder built under licence with its tube lengthened to fifty
+calibres, on the M1A3 carriage, which is what an infantry regiment's anti-tank company and its
+battalions' anti-tank platoons brought ashore. Five men: the gunner kneeling at the sight and the
+handwheels on the left, the loader at the breech on the right, and three bringing the rounds up a
+box at a time.
+
+**It is laid off a factory drawing, and the scale is the tyre.** The sheet gives side, plan and
+front elevations and no dimension on any of them, so the scale comes off the one thing on it that
+is a published figure, the 7.50-16 combat tyre, 0.79 m over the tread and 0.21 m across it. That
+puts the wheels on a 1.34 m track, the bore 0.89 m up, the top of the shield 1.24 m up and the
+muzzle 1.90 m ahead of the axle, and the tube it gives from the breech ring to the muzzle is 2.93 m
+against the 2.85 m of bore fifty calibres has to hold, which is the check. The trails open to
+forty-five degrees and reach 3.2 m back to the lifting handles, with a spade near the end of each,
+the lunette out on a drawbar on the right, a handspike along the left and the little wheel the
+gun is run about on stowed on top of the right. The views are not drawn to one scale (see the
+gotcha), and the side is the one taken for positions along the gun.
+
+**The shield is three plates** (`m1Carriage`): a centre plate narrower at its foot than at its top,
+a wing each side folded back along the joint, and the wings stepping in over the wheels and coming
+down between them, the lot leaning back thirteen degrees with the sight port in the left of the
+centre plate. Every corner of it comes off one function of height and lateral offset (`P`), so the
+centre plate and the two wings are planes by construction and meet along the joint; a small plate
+on the cradle closes the opening the cradle comes through.
+
+**The tube runs back and the carriage does not.** Every team gun was drawn back whole by its
+recoil, which for a gun standing on its spades is the carriage sliding half a metre down the
+field a round. `GUNMODEL[k].rec` is the part that recoils (the tube and the breech ring), built
+into `MODELS.gunRec` and drawn back by it, while the mesh stays where it stands.
+
+**It is run along on its wheels with the trails closed.** `GUNMODEL[k].pack` is the carriage with
+the legs together, the spades folded flat on them and the lunette between their ends
+(`MODELS.gunPk`), and `teamMesh` draws it while the piece is not set up. And a piece that is not
+set up was drawn round its gunner, which with a split trail put him in the breech: `runAt` is
+where it rides in his frame instead, beside him with him at the left wheel (`gunPost`).
+
+**The crew are two variants of their own**: the gunner and the loader in the rifleman's kit with
+a pistol and nothing in their hands but the gun (`gi_atg`, the served bodies baked out of it,
+the loader kneeling at the breech facing it through `gunMate`), and the bearers with the carbine
+and a wooden box of rounds in the other hand (`gi_atb`, through the `can` machinery the .30's
+bearers use, `box57`). A team that carries its boxes and not its piece declares `carryP` and not
+`carry`, and the draw asks for `carryP`, because `carry` is what takes a piece off the ground
+while it is packed.
+
+**Its eye and its reach are past the armour it meets, and that is what it is for.** `sight` 620
+stands past every eye on the German depot (the Maus's 600 is the nearest) and `w.range` 540 past
+every gun on it but the Maus's (the King Tiger's 520 is the next). A gun that fires is found
+further off than one that does not (the loud bonus in `rate`), but a set-up gun firing in the open
+is found by a Panzer IV's eye only inside about 440, and in the traces the tank had not found it
+until it had driven in to between 230 and 120, so the whole of that drive is the gun's.
+
+**Its numbers came off the duel card, staged sited** (`--sited`), because a gun meets armour set
+up and waiting for it. At the 6-pounder's own line the first rounds were not enough: sited at 520
+against a Panzer IV it fired first, at 490, hit, and lost every fight all the same, because the tank
+drove in, found it at between 230 and 120 and took a man a round with its HE. A heavier round did
+little on its own: at 110 to 125 a round with the 6-pounder's shield it read 21 to 25 per cent over
+twenty-four runs. What turned it was the shield, which is the one thing about this gun the drawing
+says is bigger: at a blast resistance of .45 and 66 a man a burst no longer takes a man outright,
+the crew outlast the tank that has found them, and at 120 a round every 3.2 seconds with an accuracy
+of .80, for 320 marks and 20 of fuel, it takes the Panzer IV 46 per cent of the time over twenty-four
+runs, where the 6-pounder sited at its own reach takes it 4. Over twelve runs a row it takes a Panther
+head on 8 per cent of the time and one caught side-on every time, a Tiger a quarter of the time, a StuG
+17 per cent, a Puma three times in four and the 251 every time inside nine seconds; the grenadier
+squad takes it every time in seventeen seconds, and walked into a Panzer IV on an attack-move the way
+the card used to stage it, it wins a quarter.
+
+**And a bunker's fittings go through `natKey`.** `finishBunkerUp` spawned the key the fitting was
+written with, so an American bunker's anti-tank casemate was a Canadian 6-pounder and the manned
+wall's four machine gun bunkers were the paratroopers' MG42 teams on a beach the 352nd held. They
+are the 57 and the MG 34 teams now, and the cap check and the population count read the same key.
+
 **And the brain's shopping list is written in the first roster and bought in the map's.**
 `LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
 weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
@@ -6556,6 +6647,16 @@ shots/                         screenshot output, gitignored
   from the model's own plates. Measure a scale off two things the drawing dimensions (the width
   over the tracks, the height), check it on a third, and read positions off the view where the
   thing is seen square.
+- **A drawing's views are not always drawn to one scale.** The 57 mm gun's plan came out five
+  per cent bigger than its side elevation off the same sheet, and put the shield three and a half
+  units further ahead of the axle than the side view did. Take the scale off a published figure in
+  each view separately (the tyre, here, which is in all three), and take positions along the piece
+  off the view where it is seen square.
+- **A duel on an attack-move measures a gun's setup and not its reach.** A crew-served gun on an
+  attack-move halts when a target comes into reach and then sets up in the open while the tank
+  drives in: the 57 staged at 520 against a Panzer IV fired its first round at 207 and lost every
+  fight, and the 6-pounder staged at its own reach fired at 156. `--sited` stages it set up and
+  holding, which is how an anti-tank gun meets armour.
 - **An open turret is a well to the occlusion bake.** The march reads the inside of a drum
   sixteen units across and sixteen deep as shut in on every side and blacks it out, whatever it
   is painted: the M8's turret came out as a hole into the hull from every angle and the

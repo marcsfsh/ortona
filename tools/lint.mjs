@@ -280,10 +280,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    tools, the turret on a plan with the cast mantlet lofted round the trunnions, the long
    gun, the cupola in its bulge with its lid that lifts and swings, the Schürzen, the
    cupola MG, and the room under the cupola for the periscope.
+   It is 2600 for the 57 mm M1: the split-trail carriage on its combat wheels with the
+   spades, the lunette and the little wheel, the three-plate shield folded back over the
+   wheels, the cradle and its recuperator, the sight and the two handwheels, the tube that
+   runs back apart from the carriage, and five men with two variants of their own.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2570) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2570 kB so it stays quick to load on a phone`);
+if (kb > 2600) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2600 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
