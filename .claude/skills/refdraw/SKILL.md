@@ -79,7 +79,7 @@ The game is 11.7 units to the metre, so one drawing pixel is `11.7 / ppm` units.
 model is certain to have right: the nose at the centreline on the ground, the middle of the
 track on the ground line. `key` may be a `VMODEL` vehicle or a `GUNMODEL` gun (`pack: true` for
 the piece travelling). `up` names fittings to draw (a swapped mount, `skirts`, `mg`, anything in
-`addUp`); `crew: true` draws the men.
+`addUp`, and `hatch` or `open` for the lids shut or open); `crew: true` draws the men.
 
 ## 5. Lay the model over it
 
@@ -152,3 +152,9 @@ the plan.
   it as a thing the model is right to lack.
 - The drawing is somebody's drawing. Where it disagrees with a published figure by more than its
   own line weight, say so in the comment and pick one on purpose.
+- A crop can cut off what it is meant to show. The M3's front view was cropped at the height of the
+  turret roof, so the model's periscope domes stood out of the top of the frame over nothing, read
+  as a mistake and were taken off, and the side view had them all along. Before moving a part that
+  stands over nothing in one view, find it in the others.
+- A lid is part of what a plan shows of a turret. Pass `hatch` in `up` to draw the lids shut, or
+  `open` to draw them standing open.

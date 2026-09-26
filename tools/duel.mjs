@@ -210,6 +210,20 @@ const CARD = [
   ['hr_pak', 'am_m8'],
   ['hr_pak', 'am_m3'],
   ['am_rifle', 'hr_pak'],
+  /* and the M3 light tank the 29th fields over and above the Greyhound: the same 37 mm on half as
+     much plate again, so the rows ask what that plate buys against the 352nd's light things and what
+     it does not buy against a Panzer IV, the Wirbelwind, the throws and a Pak 38 laid for it */
+  ['am_stuart', 'hr_ks750'],
+  ['am_stuart', 'hr_251'],
+  ['am_stuart', 'hr_234'],
+  ['am_stuart', 'hr_234', { b: ['puma'] }],
+  ['am_stuart', 'hr_gren'],
+  ['am_stuart', 'hr_mg'],
+  ['hr_wirb', 'am_stuart'],
+  ['hr_p4', 'am_stuart'],
+  ['hr_kch', 'am_stuart'],
+  ['am_ranger', 'am_stuart'],
+  ['hr_pak', 'am_stuart'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

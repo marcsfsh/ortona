@@ -34,7 +34,8 @@
  *
  * The key may be a vehicle (`VMODEL`) or a crew-served gun (`GUNMODEL`, with `pack: true` for
  * the piece as it travels). `up` names fittings: a mount that swaps the turret, the skirts,
- * the roof gun, anything in `addUp`. `crew` draws the men.
+ * the roof gun, anything in `addUp`, and `hatch` or `open` for the lids shut or standing open
+ * (`HATCHES`, drawn with the mount unless the vehicle is a casemate). `crew` draws the men.
  *
  * What is drawn is what a draughtsman draws: the edges where two faces meet at an angle or a
  * face ends, and only where nothing nearer the viewer covers them, through a depth buffer at the
@@ -142,6 +143,9 @@ const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, fa
     if (up.includes('mg')) add(V.mg, 3, mo);
     if (up.includes('skirts') || up.includes('fenders')) { add(V.skirts, 3); add(V.turSkirts, 3, mo); }
     up.forEach(k => { if (V.addUp && V.addUp[k]) add(V.addUp[k], 3); });
+    const H = window.HATCHES && window.HATCHES[spec.key], ho = V.fixed ? null : mo;
+    if (H && up.includes('hatch')) add(H.shut, 1, ho);
+    if (H && up.includes('open')) add(H.leaf, 3, ho);
   } else {
     /* the tube is drawn with the carriage whichever way the trails are, as the game draws it */
     add(spec.pack && GM.pack ? GM.pack : GM.mesh, 0);

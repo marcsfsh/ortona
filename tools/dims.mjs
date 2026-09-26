@@ -42,6 +42,11 @@ const REAL = {
                body: 2.51, bodyZ: 1.10, roof: 2.05, clear: 0.42 },
   us_sher:   { name: 'Sherman V (M4A4)',    len: 6.06,  gun: 6.06,   wid: 2.62,  hgt: 2.97,
                body: 2.62, bodyZ: 1.20, roof: 2.62, clear: 0.43 },
+  am_stuart: { name: 'M3 light tank',       len: 4.53,  gun: 4.53,   wid: 2.24,  hgt: 2.39,
+               body: 2.24, bodyZ: 1.41, roof: 2.24, clear: 0.42 },   /* 178.4 in long with the 37 mm inside
+               it, 88 in wide, which is over the sponsons and the tracks alike, 94 in high and 16.5 in of
+               clearance (afvdatabase). The drawing puts the roof of the turret at 2.32 m and the domes of
+               the two periscopes at 2.45, either side of the published height */
   am_sher:   { name: 'M4 (75 mm)',          len: 5.84,  gun: 5.89,   wid: 2.62,  hgt: 2.74,
                body: 2.56, bodyZ: 1.37, roof: 2.56, clear: 0.43 },   /* 19 ft 2 in long and 19 ft 4 in with
                the 75 forward, 8 ft 7 in over the sand shields, 9 ft to the top of the turret and 17 in of
@@ -160,6 +165,8 @@ const REAL = {
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
+  am_stuart: { bodyZ: 16.5, roofZ: 19.0, xLo: -5.0, xHi: -1.0, straddle: true, hullZ: 21.0 },   /* the slice is
+               taken halfway up the sponson between its two seams of rivets; hullZ holds the aerial out */
   am_sher:   { bodyZ: 16.0, roofZ: 21.8, xLo: -25.0, xHi: -21.0, straddle: true, topZ: 10.2 },   /* the slice is
                taken halfway up the sponson, aft of the appliqué and the star; topZ holds the
                periscope heads and the aerial out of a height measured to the top of the turret */

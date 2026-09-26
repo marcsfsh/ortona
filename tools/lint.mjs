@@ -288,10 +288,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the spades, the handles and the lunette, the spaced shield in three facets a side with
    the lower shield hung in front of the axle, the cradle, the sight and the handwheels, the
    long tube with its brake, the steel case of rounds, and five men in field grey.
+   It is 2680 for the M3 light tank: the volute bogies on their spoked wheels, the trailing
+   idler and the T16 track, the riveted hull with its sponsons, the drivers' plate and the
+   deck over the transmission, the round welded turret with the combination mount and the
+   split hatch, the stowage and the air cleaners, and the room under the hatch.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2630) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2630 kB so it stays quick to load on a phone`);
+if (kb > 2680) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2680 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

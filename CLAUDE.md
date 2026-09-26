@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -166,7 +166,9 @@ buffer at the output's resolution, blue for the hull, red for the mount, green f
 magenta for a fitting, and it prints each view's scale and the model's span in drawing pixels and
 metres. A gun laid over a drawing of it travelling (`pack: true`) is drawn with its tube on the
 closed carriage, as the game draws it; the first version left the tube off. The first version drew every face turned toward the viewer, and in plan that put all
-twelve road wheels on top of the guards that hide them.
+twelve road wheels on top of the guards that hide them. `hatch` and `open` in `up` draw a vehicle's
+lids (`HATCHES`) shut or standing open, on the mount unless it is a casemate: the M3's doors were the
+first thing on a drawing the tool could not draw, and a hatch is most of what a plan shows of a turret.
 
 **The drawing is not in the repository and must not be.** A reference image is an image, which
 hard rule 5 keeps out, so it lives in `shots/ref/`, which is ignored; the spec is text and is
@@ -921,7 +923,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, and 2630 before the Pak 38). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, and 2680 before the M3 light tank). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1239,7 +1241,15 @@ served bodies and its three meshes baked; set up, the loader kneels at the right
 it and the bearers are back behind the gun, the flash comes off the muzzle and a bearer has his case
 in his hand; packed, the trails close and the piece rides beside the gunner. A man killed goes down as
 `heer_at`, a German bunker's anti-tank fitting is the Pak 38, and Ortona's depot still makes the Pak
-40.
+40. The M3 light tank is asked it in a twenty-first, the first unit the Americans field over and above
+the ones they stand in for: the motor pool makes it beside the M8 and queues it by its own key, it is
+in olive drab, the man in its hatch wears the tanker's helmet and no M1, the 37 mm stays inside the
+nose, a turret asked to lay over the tail comes all the way round, and the front plate is half as much
+again as the M8's, so at two hundred the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm
+opens the M8 more than twice as often, the KS 750's MG 34 never does and a Panzer IV's round always does.
+The eye is up out of the hatch and drops to the band under the roof when the lid shuts, forty wrecks
+throw the turret some of the time, killed it leaves American bodies, and Ortona's motor pool does not
+make it.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -4499,6 +4509,74 @@ guns are one gun on two sides and the two tanks are not. Over twelve runs a row 
 M3A1 and the Achilles every time; the American rifle squad takes it every time in eight seconds, and
 walked into an M4 on an attack-move it wins 17 per cent.
 
+**The M3 light tank is the 29th's second tank**, fielded over and above the rest the way the Panther is
+across the beach (`am_stuart`, `nat: 'usa'`, on the motor pool's list after the Stuart V's key and passed
+through `fielded`): the Stuart as the Americans first took it to war, riveted, with the round welded turret
+that did away with the cupola and the big idler trailing on the ground. Its 37 mm and coaxial are the
+Greyhound's; what it has that the Greyhound has not is half as much plate again, on tracks. It has a rung
+on the brain's ladder after the M8's and before the M4's, and `aiCutLadder` reads it as light armour. On
+`tools/dims.mjs` it reads 4.58 m long against 4.53, 2.26 wide against 2.24, 2.45 high to the domes of the
+periscopes against the published 2.39, a body and a roof of 2.23 and 2.26 against 2.24, and 0.42 of
+clearance.
+
+**It is laid over a four-view drawing** (`tools/ref/am_stuart.json`) with no scale on the sheet: the side
+and the plan are taken off the published length, and the plan across, the front and the rear off the
+published width, and the front view's track centres agree with the published 73 in to a per cent. The
+running gear and the turret were right on the first overlay and five other things were not. The
+mudguards stood 0.3 units low, so the top run of the track was level with their underside and showed
+through them from above. The lower rear plate stood flush with the engine compartment, where the side view
+shows nothing of the hull behind the idler: the engine compartment overhangs it by a fifth of a metre.
+The doors over the transmission were square on the centreline where they are set over to the left, because
+the bow gun's sleeve takes the right of the deck. The headlamps stood a unit and a half too far forward.
+And the hatch was an ellipse where the drawing has two doors, each cut off by the front edge of the
+opening, by the wall and by a hinge line running back and out from beside the centreline, the
+commander's the larger. The periscope domes were taken off in the same pass and put back (see the crop
+gotcha).
+
+**The running gear is two volute bogies a side** (`s3Bogie`): the cast bracket bolted to the hull side and
+reaching out over the tyres, the volute spring standing in its face, and the two arms out to the axles on
+the outside, where the drawing has them. Each road wheel is two tyres with the gap the guides run in, the
+outer one open between six spokes (`s3RoadWheel`). Three return rollers ride over them, the first on the
+back of the front bogie; the sprocket in front has two rings of thirteen teeth either side of the guides,
+and the idler behind is big, spoked and down on the ground on its trailing arm (`s3Idler`). The T16 has a
+rubber block on each shoe (`s3Link`).
+
+**The hull is riveted**, and a row of heads along every seam (`s3Rivets`) is most of what says so from
+where a player looks. The nose is a casting that rounds from the belly up to a flat deck over the
+transmission; the drivers' plate stands back from it and leans, with a vision door for each man, and the
+sponsons stand back again with their fronts angled (`s3Shell`). On the nose, the bow gun in its long
+sleeve, the siren, the headlamps in their guards and the clevis shackles; on the right mudguard the
+stowage box; on the deck behind the turret the grille, the two fuel fillers, the engine doors and their
+hinges, the aerial on its spring base raked back and a lifting eye; on the ends of the sponsons the air
+cleaners with their hoses, then the stowage boxes and the tail boxes with the X-brace and the tail
+lamps; and under the overhang the lower rear plate with its doors and the shackles hanging off its foot.
+
+**The turret is a plan with its front clamped** (`s3TurPlan`, `S3T.K`): round behind, straight in the
+sides, the cheeks swinging in, and every height is the outline scaled with the front cut off where the
+plate is at that height, so the face widens as it leans back and the roof drops in front the same way.
+The combination mount is a drum with the 37 mm through it, the coaxial on its right and the sight's port
+on its left; there is a vision port in each side and one in the back, a lifting eye on each cheek, the
+two periscopes in domed housings (the gunner's drawn out across), and the socket for the anti-aircraft
+.30 on the back, which carries no gun and is no fitting, because the commander in his opening cannot
+reach a gun there. **The two doors are hinged along their inner lines** (`s3HatchDoor`, and `s3Hinge`
+is the roll about a line at an angle across the roof), so opened they stand up side by side, and the
+commander stands in the right-hand opening a hand lower than the M4's commander, because at the M4's
+height his belt was at the roof of a turret two feet lower. The room under him (`VIN.am_stuart`) is the
+M4's arrangement in a turret a third the size and with no basket: the wall stops at his chest, the roof
+hangs over his head, the gunner sits at the telescope on the left of the breech, and a dozen ready rounds
+are racked round the back wall.
+
+**Its numbers are the Stuart V's with the price raised, and the card says the plate is the whole of
+the difference.** The 37 mm and its coaxial are the Greyhound's, and at 480 hit points and 62 of plate
+over twelve runs a row it takes the KS 750, the 251, the 234/1, the grenadier squad and the MG 34 team
+every time, the last two without losing a point, and the Knight's Cross Holders every time as well, with
+a third of itself left after their bundles. What opens it takes it: the Panzer IV every time in 12
+seconds with nine tenths of itself left, the Puma every time in 20, a Pak 38 sited at 520 every time in
+under ten seconds untouched, the Rangers 92 per cent of the time and the Wirbelwind 83, whose 2 cm seldom
+goes through the front but whose front the 37 mm seldom opens either. The Greyhound loses the 234/1 fight
+a third of the time and the 251 fight a fifth, so the M3 is priced above it, at 290 marks and 55 of fuel
+against the M8's 240 and 35, and it is slower on tracks (124 against 150) and sees a little less far.
+
 **And a bunker's fittings go through `natKey`.** `finishBunkerUp` spawned the key the fitting was
 written with, so an American bunker's anti-tank casemate was a Canadian 6-pounder and the manned
 wall's four machine gun bunkers were the paratroopers' MG42 teams on a beach the 352nd held. They
@@ -6748,7 +6826,14 @@ shots/                         screenshot output, gitignored
   corners, and the 251's floor was written as a hexagon whose first three corners lay along one
   side: the normal was nought, the face was never turned, and it was culled from above. Every
   photograph of the compartment had the ground showing through it. Drop a vertex that lies on a
-  straight edge, or start the polygon at a corner.
+  straight edge, or start the polygon at a corner. `faceOut` reads the same three, and the M3's
+  turret roof drew black for it: the outline is the plan with its front clamped to the plate, so
+  every point of the front lies on one line, and the cap started on the front.
+- **A crop can cut off what it is meant to show.** The front view's crop of the M3's sheet stops
+  at the height of the turret roof, so the model's periscope domes stood out of the top of the
+  frame over no drawing at all, read as a mistake, and were taken off; the side view had them all
+  along, and they went back. A part of the model standing over nothing in one view is looked for
+  in the others before it is moved.
 - **A polygon that is not convex is fanned from its first corner, and that may be the concave one.**
   The M8's nose and tail below the crease were one hexagon each, bent out at the knee, and
   `hkFace` read the normal off the three corners at the knee, which turn the other way from the

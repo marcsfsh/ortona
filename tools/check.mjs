@@ -4814,6 +4814,81 @@ for (const device of TARGETS) {
      `${pk38.packMesh ? 'closed' : 'NOT closed'} and the piece ${pk38.runs} from the gunner; killed went down as ${pk38.bodyNat}, bodies ` +
      `${pk38.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${pk38.bunkKey} and put in ${pk38.bunkGun}; Ortona's depot makes ${pk38.ita}`);
 
+  /* --- The M3 light tank. The 29th fields it over and above the Greyhound that stands in the
+     Stuart V's place, the way the 352nd fields the Panther: the motor pool lists it with its
+     army written on it beside the M8 and queues it by its own key, and in Italy it is on no list
+     at all. It is in olive drab, the man in its hatch is a tanker, the 37 mm stays inside the
+     nose, and the turret comes all the way round. The row is mostly the plate: an inch and a
+     half of it in front, half as much again as the Greyhound carries, which the 234/1's 2 cm and
+     the Wirbelwind's seldom open where they open the M8 more often, and which a Panzer IV's round
+     always opens. The eye is up out of the hatch and drops to the band when the lid shuts, forty
+     wrecks throw the turret some of the time, killed it leaves American bodies, and Ortona's
+     motor pool does not make it. --- */
+  const s3 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    out.fielded = W.fielded('am_stuart');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_stuart');
+    out.q = W.queueUnit(mot, 'am_stuart') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_stuart') - m0;
+    mot.queue.length = q0;
+    const t = W.spawnUnit('us', 'am_stuart', hq.x + 140, hq.y - 220, 0);
+    const V = W.VMODEL.am_stuart, B = W.MODELS.veh.am_stuart, H = W.HATCHES.am_stuart, A = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf && B.inside);
+    out.od = V.hull.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.turOd = V.tur.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.tanker = H.open.filter(f => f.c === A.hide).length;
+    out.m1 = H.open.filter(f => f.c === A.helm || f.c === A.helmD).length;
+    const nose = Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => p[0]))));
+    out.reach = +(V.turX + V.bar - nose).toFixed(1);
+    t.facing = 0; t.turret = 0; t.want = Math.PI - .05;
+    for (let i = 0; i < 12; i++) W.updateModels(t, 1.0);
+    out.lay = +Math.abs(W.angDiff(t.turret, Math.PI - .05)).toFixed(3);
+    t.turret = 0; t.want = undefined;
+    /* the plate in front against the three light guns and the Panzer IV's, at two hundred */
+    const d = 200, front = W.armourAt(t, t.x + d, t.y), m8 = W.UNITS.am_m8.armor;
+    out.front = +front.toFixed(1); out.m8 = m8;
+    const pc = (k, a) => +W.penChance(W.penAt(W.UNITS[k].w, d), a).toFixed(2);
+    out.p234 = pc('hr_234', front); out.pWirb = pc('hr_wirb', front); out.pKs = pc('hr_ks750', front); out.pP4 = pc('hr_p4', front);
+    out.p234m8 = pc('hr_234', m8);
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    out.itaField = W.fielded('am_stuart');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the 29th fields the M3 light tank beside the M8, in olive drab, on plate the light guns seldom open',
+     /am_stuart/.test(s3.makes) && /am_m8/.test(s3.makes) && s3.fielded && s3.q === 'am_stuart' && s3.made === 1 &&
+     s3.bufs && s3.od > 50 && s3.turOd > 20 && s3.tanker > 0 && s3.m1 === 0 && s3.reach < 0 && s3.lay < .05 &&
+     s3.front > s3.m8 * 1.4 && s3.p234 < .25 && s3.pWirb < .25 && s3.pKs < .05 && s3.p234m8 > s3.p234 * 2 && s3.pP4 === 1 &&
+     s3.eyeUp > 28 && s3.eyeUp < 35 && s3.eyeIn > 21 && s3.eyeIn < s3.eyeUp - 4 &&
+     s3.blown > 2 && s3.blown < 30 && s3.bodies >= 1 && s3.bodyNat === 'usa' && !/am_stuart/.test(s3.ita) && !s3.itaField,
+     `the motor pool makes ${s3.makes}; asked for the M3 it queues ${s3.q}, counted as ${s3.made} made; buffers ` +
+     `${s3.bufs ? 'all built' : 'MISSING'}; ${s3.od} hull and ${s3.turOd} turret faces in olive drab; the man in the hatch has ` +
+     `${s3.tanker} faces of tanker's helmet and ${s3.m1} of M1; the muzzle ${s3.reach} past the nose; asked to lay over the tail ` +
+     `the turret is ${s3.lay} short; plate ${s3.front} in front against the M8's ${s3.m8}; at 200 the 234/1's 2 cm goes through it ` +
+     `${s3.p234} (and the M8 ${s3.p234m8}), the Wirbelwind's ${s3.pWirb}, the KS 750's MG 34 ${s3.pKs} and the Panzer IV's ${s3.pP4}; ` +
+     `the eye ${s3.eyeUp} up out of the hatch and ${s3.eyeIn} at the band; ${s3.blown} of 40 wrecks threw the turret; killed, it ` +
+     `left ${s3.bodies} bodies of ${s3.bodyNat}; Ortona's motor pool makes ${s3.ita} and ${s3.itaField ? 'WOULD field' : 'does not field'} the M3`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three
