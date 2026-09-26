@@ -284,10 +284,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    spades, the lunette and the little wheel, the three-plate shield folded back over the
    wheels, the cradle and its recuperator, the sight and the two handwheels, the tube that
    runs back apart from the carriage, and five men with two variants of their own.
+   It is 2630 for the Pak 38: the sprung wheels on their spokes, the tubular trails with
+   the spades, the handles and the lunette, the spaced shield in three facets a side with
+   the lower shield hung in front of the axle, the cradle, the sight and the handwheels, the
+   long tube with its brake, the steel case of rounds, and five men in field grey.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2600) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2600 kB so it stays quick to load on a phone`);
+if (kb > 2630) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2630 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind and the Panther are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -164,7 +164,8 @@ way the nose points, its pixels per metre (`ppm`, and `ppmv` where a view is str
 draughtsman draws, the creases and the outlines with the hidden lines taken out through a depth
 buffer at the output's resolution, blue for the hull, red for the mount, green for the men and
 magenta for a fitting, and it prints each view's scale and the model's span in drawing pixels and
-metres. The first version drew every face turned toward the viewer, and in plan that put all
+metres. A gun laid over a drawing of it travelling (`pack: true`) is drawn with its tube on the
+closed carriage, as the game draws it; the first version left the tube off. The first version drew every face turned toward the viewer, and in plan that put all
 twelve road wheels on top of the guards that hide them.
 
 **The drawing is not in the repository and must not be.** A reference image is an image, which
@@ -920,7 +921,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, and 2600 before the 57 mm gun). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, and 2630 before the Pak 38). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1229,7 +1230,16 @@ men with every variant, the served bodies and its three meshes baked; set up, th
 right of the breech facing it and the bearers are back behind the gun, the flash comes off the muzzle
 and a bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner.
 A man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57, and Ortona's
-motor pool still makes the 6-pounder.
+motor pool still makes the 6-pounder. The 5 cm Pak 38 is asked it in a twentieth, on the German side: the
+depot makes it and not the Pak 40 and queues it when asked for the Pak 40, the count and the order
+book read the two as one, its eye stands past every eye on the American motor pool and its reach past
+every gun on it, and sited on open sand with an M4 driving at it from 520 it fires first, a second or
+more ahead of the tank and before the tank has found it. It is five men with every variant, the
+served bodies and its three meshes baked; set up, the loader kneels at the right of the breech facing
+it and the bearers are back behind the gun, the flash comes off the muzzle and a bearer has his case
+in his hand; packed, the trails close and the piece rides beside the gunner. A man killed goes down as
+`heer_at`, a German bunker's anti-tank fitting is the Pak 38, and Ortona's depot still makes the Pak
+40.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -4435,6 +4445,60 @@ head on 8 per cent of the time and one caught side-on every time, a Tiger a quar
 squad takes it every time in seventeen seconds, and walked into a Panzer IV on an attack-move the way
 the card used to stage it, it wins a quarter.
 
+**The 5 cm Pak 38 is the 352nd's anti-tank gun**, in the Pak 40's place (`ger_pak` to `hr_pak` on
+the army's list): the 5 cm L/60 on its tubular split trail, which is what an infantry division's
+anti-tank company still had in numbers in June 1944. Five men, as the 57 across the beach has: the
+gunner kneeling at the sight and the handwheels on the left, the loader at the breech on the right,
+and three bringing the rounds up a case at a time. It is the 57's machinery on the other side of the
+beach (`rec`, `pack`, `runAt`, `gunMate`, the served bodies, `carryP`) and a bunker's anti-tank
+fitting reaches it through `natKey`, so the manned wall's two casemates are Pak 38s now as well.
+
+**The drawing is at two scales, one along the gun and one across it.** A four-view with a scale bar
+in feet. Along the gun and up it, every view agrees with the published 4.75 m over the trails and
+1.105 m to the top of the shield at 84.7 and 83.5 pixels to the metre, and the tube comes out at
+3.2 m from the brake to the breech against the 2.975 m of bore sixty calibres holds, which is the
+check; across it, every view agrees with the published 1.83 m over the wheels at 71.4, which is also
+what the scale bar says, and a round barrel reads the same in the side and the plan only at those two
+scales. So the spec (`tools/ref/hr_pak.json`) gives the side and the plan the first along the gun and
+the plan, the front and the rear the second across it, and the gun has the published proportions
+where the drawing is a sixth too narrow for its own length. That puts the wheels 0.72 m over the tyre
+on a 1.68 m track, the bore 0.81 m up, the muzzle 2.31 m ahead of the axle and the breech 0.93 m
+behind it, and the spades 2.1 m behind the hinges. The drawing shows the trails closed, so what is
+laid over it is the piece as it travels.
+
+**The shield is two plates a finger apart** (`pkShieldPlate`), as the real one was two 4 mm plates
+25 mm apart, with the bolts that hold them apart in rows. It is folded back in three facets a side and
+leans back twenty-seven degrees, every corner off one function of height and lateral offset
+(`pkShieldP`) so that every facet is a plane, with a hump over the middle of its top edge, the collar
+round the tube, the small plate on the cradle under it, and the sight's slot in the left facet. The
+lower shield hangs in front of the axle between the wheels with a notch either side of the middle,
+through which the foot of the upper shield shows, as the front view has it. The sight is cranked: the
+telescope behind the slot at the height the drawing puts it and the eyepiece up at the kneeling
+gunner's eye, which is the upright the side and rear views both show. The trails are tubes, each
+with a hexagonal spade leaning back under its end, which the rear view has nearly meeting its
+neighbour when the two are closed, the lifting handle bent up behind it, the lunette on the left one
+and the handspike on the right. The wheels have twelve spokes on a solid tyre, on the torsion arms.
+
+**It is baked the way a hull is.** No gun on the roster had been through the occlusion bake, and in
+the 352nd's grey a shield leaning back under Omaha's high sun came out nearly white beside tanks in
+the same grey; olive drab carries the same light and still reads as olive, and a step darker on the
+same tile barely moved it. The carriage and the tube are baked against each other and the carriage
+closed on its own, 93 ms at boot against the 580 a tank costs.
+
+**Its numbers came off the duel card, staged sited, and the M4 is not the Panzer IV.** At the 57's
+line with a slightly lighter round (116 every 3.1 seconds) it took the M4 none of twenty-four fights,
+and the 57 itself takes the M4 13 per cent of the time on the same card where it takes the Panzer IV
+more than half. The trace says why: the gun fires first at about 360 and hits, the tank finds it
+about five seconds later at 150, and from then the M4's coaxial wears the crew down until the next HE
+burst takes the lot, where the Panzer IV has no coaxial and needs two or three bursts. A heavier
+round and a faster breech are what a 5 cm on a light carriage had, so it kills either tank in six
+hits: at 130 a round every 2.6 seconds with an accuracy of .80 and 235 of penetration, 310 marks and
+20 of fuel, its eye at 620 and its reach at 540, it takes the M4 25 per cent of the time over twenty-four
+runs where the 57 takes it 13, and the Panzer IV 42 per cent where the 57 takes it 46 to 58: the two
+guns are one gun on two sides and the two tanks are not. Over twelve runs a row it takes the M8, the
+M3A1 and the Achilles every time; the American rifle squad takes it every time in eight seconds, and
+walked into an M4 on an attack-move it wins 17 per cent.
+
 **And a bunker's fittings go through `natKey`.** `finishBunkerUp` spawned the key the fitting was
 written with, so an American bunker's anti-tank casemate was a Canadian 6-pounder and the manned
 wall's four machine gun bunkers were the paratroopers' MG42 teams on a beach the 352nd held. They
@@ -6781,6 +6845,16 @@ shots/                         screenshot output, gitignored
   the point.
 - **`def.side` is the army.** A per-vehicle side-armour factor was the obvious name for the
   Panther's thin sides and would have made it a vehicle of no army at all; it is `flank`.
+- **A gun is not put through the occlusion bake, and a pale colour shows it.** Only a `VMODEL`
+  was baked, which is right for olive drab and the paratroopers' sand, and in the 352nd's grey a
+  shield leaning back under Omaha's high sun came out nearly white beside tanks painted the same
+  grey; a step darker on the same tile barely moved it. The Pak 38 is baked the way a hull is
+  (`bakeAO` on its three meshes, 93 ms at boot). A grey gun that is not baked will look the same.
+- **The M4 carries its coaxial as standard and the Panzer IV does not**, so an anti-tank gun duel
+  against each is not the same fight. Once a tank has found a gun its coaxial wears the crew down
+  and the next HE burst finishes them: the 57 sited at 520 takes the Panzer IV more than half the
+  time and the M4 13 per cent, and the Pak 38 the other way about. Read an anti-tank row against
+  the tank's `sec` before reading it against the gun.
 - **Put a periscope, not a post, dead ahead of the commander.** The Panther's cupola was first
   built with its seven blocks at the half-steps, so the post between two of them stood square
   in front of the eye and the whole shut view was a grey slab. An exterior with an odd number of
@@ -7069,7 +7143,11 @@ shots/                         screenshot output, gitignored
   a hull parked on ground three battles have shelled looking down into a crater's rim inside
   `povGround`'s 44-unit floor, and it is not established. The commander raises his eye now when
   looking down finds nothing, and a failure prints how the ground 60 units out stands over the
-  tank, so the next one says which it was.
+  tank, so the next one says which it was. The next one said it was neither: the drive leg had
+  taken the tank to x 24, the edge of the map, and nothing on any bearing at any pitch was there
+  to lay on. The aim row puts the tank back where the drive began, turned toward the middle of
+  the map, before it looks. It is the same fault a third time after all, only in the other
+  direction: a drill that moves a unit has to check where it left it.
 - **Two background runs writing to one output file make a sparse file full of nulls**, and
   the rows that go missing look exactly like rows that never ran.
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo

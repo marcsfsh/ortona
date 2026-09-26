@@ -200,6 +200,16 @@ const CARD = [
   ['am_at', 'hr_234', { b: ['puma'] }],
   ['am_at', 'hr_251'],
   ['am_at', 'hr_gren'],
+  /* and the 352nd's Pak 38 in the Pak 40's place, asked the same the other way round: the M4 it is
+     there to meet, the Panzer IV as the 57's own row with the gun changed, the M8 and the half-track,
+     and the rifle squad that kills it. Read these sited as well, for the 57's reason; and read the M4
+     row beside the Panzer IV one, because the M4 carries its coaxial as standard and the Panzer IV
+     does not, and a coaxial on a tank that has found a gun is most of what kills the crew */
+  ['hr_pak', 'am_sher'],
+  ['hr_pak', 'hr_p4'],
+  ['hr_pak', 'am_m8'],
+  ['hr_pak', 'am_m3'],
+  ['am_rifle', 'hr_pak'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

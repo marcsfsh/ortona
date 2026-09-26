@@ -1821,6 +1821,17 @@ for (const device of TARGETS) {
      likeliest reading is a hull in a shell hole looking 0.22 radians down into the rim, which
      `povGround` meets inside its 44-unit floor; a level look over the rim ends at the gun's
      reach. The message says how the ground round the tank stands, so a failure says which. */
+  /* And he is put back where the drive began, turned toward the middle of the map. The drive
+     test takes the tank two hundred units along whatever bearing it was parked on, and on one
+     phone run that was west, to x 24: the edge of the map, where ten bearings at three pitches
+     found nothing to lay on and nothing left the barrel. The message printed the tank's place,
+     which is how that was known. */
+  await page.evaluate(([x, y]) => {
+    const u = window.POV.u, W = window;
+    u.x = x; u.y = y; u.dest = null; u.path = null; u.sp = 0; u._matT = null;
+    u.facing = Math.atan2(W.WORLD.h / 2 - y, W.WORLD.w / 2 - x); u.turret = u.facing;
+  }, [drv0.x, drv0.y]);
+  await fastForward(page, .5);
   const bearings = [0, .5, -.5, 1, -1, 1.6, -1.6, 2.4, -2.4, Math.PI];
   let laid = false;
   for (const want of ['mark', 'any']) {
@@ -4643,6 +4654,165 @@ for (const device of TARGETS) {
      `the flash ${at57.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's box ${at57.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${at57.packMesh ? 'closed' : 'NOT closed'} and the piece ${at57.runs} from the gunner; killed went down as ${at57.bodyNat}, bodies ` +
      `${at57.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${at57.bunkKey} and put in ${at57.bunkGun}; Ortona's motor pool makes ${at57.ita}`);
+
+  /* --- The 5 cm Pak 38. The 352nd's anti-tank gun in the Pak 40's place, laid the way the 57
+     across the beach is: the depot makes it and queues it when asked for the Pak 40, the count
+     and the order book read the two as one, and it is five men -- the gunner and the loader at
+     the gun, and three bringing the rounds up a case each. Its eye stands past every eye on the
+     American motor pool and its reach past every gun on it, and sited on open sand with an M4
+     coming at it from past its own reach it has the first round off before the tank has found
+     it. Halted, the trails open and the gunner kneels at the sight on the left with the loader
+     at the breech on the right, facing it; on the move the trails close and the piece rides
+     beside the gunner. The bearers carry their cases, a man killed goes down as one of the
+     crew, a German bunker's anti-tank fitting is this gun, and Ortona's depot still makes the
+     Pak 40. --- */
+  const pk38 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'ger' && b.def.hq)[0], uhq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const dep = W.spawnBuilding('ger', 'ger_dep', hq.x + 240, hq.y + 120, true);
+    out.makes = W.makesOf(dep).join(',');
+    G.res.ger.mp += 3000; G.res.ger.fu += 600;
+    const q0 = dep.queue.length, m0 = W.madeOf('ger', 'hr_pak');
+    out.q = W.queueUnit(dep, 'ger_pak') ? dep.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('ger', 'hr_pak') - m0;
+    out.madeAs = W.madeOf('ger', 'ger_pak') === W.madeOf('ger', 'hr_pak');
+    dep.queue.length = q0;
+    /* its eye and its reach against every vehicle the American motor pool makes on this beach */
+    const D = W.UNITS.hr_pak;
+    const vk = W.BUILDINGS.us_mot.makes.map(k => W.natKey(k)).filter(k => W.fielded(k) && W.UNITS[k].cat === 'veh');
+    const reach = d => Math.max(d.w ? d.w.range : 0, ...Object.keys(d.wUp || {}).map(k => d.wUp[k].range || 0));
+    out.eyeBest = Math.max(...vk.map(k => W.UNITS[k].sight));
+    out.reachBest = Math.max(...vk.map(k => reach(W.UNITS[k])));
+    out.eye = D.sight; out.reach = D.w.range;
+    /* open sand for the drill, found the way the 57's is: the bocage behind the German
+       headquarters is hedgerow and lane and has nowhere 520 across with nothing on it */
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    let st = null;
+    for (let r = 0; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = uhq.x + r * Math.cos(k * Math.PI / 8), ay = uhq.y - 300 + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 520 * Math.cos(th), by = ay + 520 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let ok = true;
+          for (let s = 1; s < 13 && ok; s++) ok = W.walkable(ax + (bx - ax) * s / 13, ay + (by - ay) * s / 13);
+          if (ok && W.traceClear(ax, ay, W.groundZ(ax, ay) + 12, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 12, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    /* the drill: the gun laid toward the tank and the tank driving at it, and who fires first,
+       from where, and whether the tank had found the gun */
+    const saved = G.units.slice();
+    if (st) {
+      G.units.length = 0;
+      const a = W.spawnUnit('ger', 'hr_pak', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('us', 'am_sher', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detUs || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.length = 0; saved.forEach(u => G.units.push(u));
+      G.shots.length = 0;
+    }
+    /* the five of them, set up and walking, on the same open sand */
+    const at = st ? { x: st.ax, y: st.ay } : W.nearestFree(uhq.x + 120, uhq.y - 320);
+    const u = W.spawnUnit('ger', 'hr_pak', at.x, at.y, 0);
+    out.count = W.countOf('ger', 'ger_pak') === W.countOf('ger', 'hr_pak');
+    out.men = u.models.length;
+    out.baked = ['hr_atg', 'hr_atb', 'hr_atb_b'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!W.MODELS.man.hr_atb[W.POSE_FIRE] && !!(W.MODELS.served.hr_pak && W.MODELS.served.hr_pak.mate) &&
+                !!(W.MODELS.gunRec.hr_pak && W.MODELS.gunPk.hr_pak);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -6;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -12);
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.hr_pak;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    const box = W.mgCarryAt(u, u.models[2], 2, 'hr_atb') ? W._mgc.buf : null;
+    out.box = box === W.MODELS.carry.box50;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.hr_pak;
+    const gq = W.gunPost(u), g0 = u.models[0];
+    out.runs = +(Math.hypot(gq.x - g0.x, gq.y - g0.y) / W.FIG_SCALE).toFixed(1);
+    u.packed = false;
+    /* a man of it goes down as one of the crew */
+    const m = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    out.fall = !!(W.MODELS.fall.heer_at && W.MODELS.dead.heer_at);
+    W.killUnit(u);
+    /* a German bunker's anti-tank fitting is the Pak 38 */
+    out.bunkKey = W.natKey(W.BUNKUP.at.unit.ger);
+    const bk = G.bunks.filter(k => !k.up && !k.upKind && !k.gar)[0];
+    if (bk) {
+      const was = { own: bk.own, upKind: bk.upKind, upUid: bk.upUid, upBuf: bk.upBuf, upOwn: bk.upOwn };
+      const n0 = G.units.length;
+      bk.own = 'ger'; bk.up = 'at'; bk.upT = 0; bk.upOwn = 'ger';
+      W.finishBunkerUp(bk, true);
+      const g = G.units.slice(n0).filter(q => q.id === bk.upUid)[0];
+      out.bunkGun = g ? g.key : '-';
+      if (g) { if (g.gar) W.leaveBuilding(g); g.dead = true; G.units.splice(G.units.indexOf(g), 1); }
+      Object.keys(was).forEach(k => { bk[k] = was[k]; });
+      bk.up = null;
+    } else out.bunkGun = 'no bunker';
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(dep).join(',');
+    W.setNation('usa', 'heer');
+    W.killBuilding(dep);
+    return out;
+  });
+  const fpk = pk38.first, bpk = pk38.bFirst;
+  ok('Omaha: the 5 cm Pak 38 stands in for the Pak 40 with five men, sees and reaches past the American armour, and fires first',
+     /hr_pak/.test(pk38.makes) && !/ger_pak/.test(pk38.makes) && pk38.q === 'hr_pak' && pk38.made === 1 && pk38.madeAs && pk38.count &&
+     pk38.eye > pk38.eyeBest && pk38.reach > pk38.reachBest &&
+     pk38.staged && !!fpk && (!bpk || bpk.t >= fpk.t + 1) && fpk.found < 1 &&
+     pk38.men === 5 && pk38.baked && pk38.set && pk38.setVars === 'hr_atg,hr_atg,hr_atb,hr_atb,hr_atb_b' && /^11,11,/.test(pk38.poses) &&
+     pk38.loaderRight && pk38.loaderFaces && pk38.bearers && pk38.mesh && pk38.muz && pk38.box && pk38.packMesh &&
+     pk38.runs > 8 && pk38.runs < 12 && pk38.bodyNat === 'heer_at' && pk38.fall &&
+     pk38.bunkKey === 'hr_pak' && (pk38.bunkGun === 'hr_pak' || pk38.bunkGun === 'no bunker') &&
+     /ger_pak/.test(pk38.ita) && !/hr_pak/.test(pk38.ita),
+     `the depot makes ${pk38.makes}; asked for the Pak 40 it queues ${pk38.q}, counted as ${pk38.made} made and the order book ` +
+     `${pk38.madeAs ? 'the same' : 'DIFFERENT'}, the count ${pk38.count ? 'the same' : 'DIFFERENT'}; its eye ${pk38.eye} against the ` +
+     `motor pool's best ${pk38.eyeBest} and its reach ${pk38.reach} against ${pk38.reachBest}; ` +
+     (pk38.staged ? `sited against an M4 at 520 it fired ${fpk ? 'at ' + fpk.t + ' s from ' + fpk.d + ' with the tank ' + (fpk.found < 1 ? 'yet to find it (' + fpk.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${bpk ? 'answered at ' + bpk.t + ' s from ' + bpk.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
+     `${pk38.men} men, every variant, the served bodies and the three meshes ${pk38.baked ? 'baked' : 'NOT baked'}; halted ` +
+     `${pk38.set ? 'set up' : 'NOT set up'} as ${pk38.setVars} in poses ${pk38.poses}, the loader at ${pk38.loader} ` +
+     `${pk38.loaderRight ? 'on the right' : 'NOT on the right'} and ${pk38.loaderFaces ? 'facing the breech' : 'NOT facing it'}, the bearers ` +
+     `${pk38.bearers === 'cover' ? 'in cover' : pk38.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${pk38.mesh ? 'open' : 'WRONG'}, ` +
+     `the flash ${pk38.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${pk38.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
+     `${pk38.packMesh ? 'closed' : 'NOT closed'} and the piece ${pk38.runs} from the gunner; killed went down as ${pk38.bodyNat}, bodies ` +
+     `${pk38.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${pk38.bunkKey} and put in ${pk38.bunkGun}; Ortona's depot makes ${pk38.ita}`);
 
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the

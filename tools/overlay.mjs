@@ -143,8 +143,10 @@ const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, fa
     if (up.includes('skirts') || up.includes('fenders')) { add(V.skirts, 3); add(V.turSkirts, 3, mo); }
     up.forEach(k => { if (V.addUp && V.addUp[k]) add(V.addUp[k], 3); });
   } else {
+    /* the tube is drawn with the carriage whichever way the trails are, as the game draws it */
     add(spec.pack && GM.pack ? GM.pack : GM.mesh, 0);
-    if (!spec.pack) { add(GM.rec, 1); add(GM.base, 0); }
+    add(GM.rec, 1);
+    if (!spec.pack) add(GM.base, 0);
   }
   function normal(v) {
     let x = 0, y = 0, z = 0;

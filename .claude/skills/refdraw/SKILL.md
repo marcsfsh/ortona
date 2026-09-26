@@ -48,7 +48,17 @@ tyre, a wheelbase, a track). The views of one sheet are often not drawn to one s
 
 - the 57 mm gun's plan came out five per cent bigger than its side elevation;
 - the 251's side view is four per cent taller than its own length says, so the side takes a
-  vertical scale of its own (`ppmv`) while its front and rear views agree with 1.75 m.
+  vertical scale of its own (`ppmv`) while its front and rear views agree with 1.75 m;
+- the Pak 38's sheet is drawn at one scale along the gun and up it and another across it, in
+  every view: the length, the height and the tube agree at 84.7 px/m and the width over the
+  wheels (and the sheet's own scale bar) at 71.4, so the side and the plan take the first as
+  `ppm`, the plan takes the second as `ppmv`, and the front and rear take them the other way
+  round. A round thing is the check on which axis is which: the barrel was 6.7 px deep in the
+  side and 5.8 px wide in the plan.
+
+A scale bar on the sheet is somebody's too. The Pak 38's agreed with the published width and
+disagreed with the published length and height by a fifth; take the figures, and use the bar
+only as a third opinion.
 
 The game is 11.7 units to the metre, so one drawing pixel is `11.7 / ppm` units.
 

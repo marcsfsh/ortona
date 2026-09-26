@@ -1269,7 +1269,7 @@ var NATIONS = {
           sub: {} },
   heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
           blurb: 'Grenadier squads with the Kar98k behind the seawall and along the bluff, the Atlantic Wall in front of them and the bocage at their backs.',
-          sub: { ger_gren: 'hr_gren', ger_pio: 'hr_pio', ger_pgren: 'hr_kch', ger_sd222: 'hr_ks750', ger_h251: 'hr_251', ger_p4: 'hr_p4', ger_wirb: 'hr_234', ger_mg42: 'hr_mg' } }
+          sub: { ger_gren: 'hr_gren', ger_pio: 'hr_pio', ger_pgren: 'hr_kch', ger_sd222: 'hr_ks750', ger_h251: 'hr_251', ger_p4: 'hr_p4', ger_wirb: 'hr_234', ger_mg42: 'hr_mg', ger_pak: 'hr_pak' } }
 };
 var NAT = 'can', NAX = 'fj';
 function setNation(n, a) {
@@ -1829,6 +1829,26 @@ var UNITS = {
     gunAt: 8.7, gunMuz: [24.65, 8.61], gunGrip: [-3.19, 3.60, 5.45],
     w: { range: 460, dmg: 112, rof: 3.9, acc: .74, sup: .02, pen: 290, aoe: 30, shell: 1, brake: 1 },
     desc: 'Longest reach on the field. Even a Sherman cannot afford to take two clean hits from it.'
+  },
+  /* The 5 cm Pak 38, in the Pak 40's place on a map whose German army is the 352nd
+     (`natKey`): the gun an infantry division's anti-tank company still had in numbers in
+     June 1944, a 5 cm L/60 on a tubular split trail behind the spaced shield. Five men: the
+     gunner kneeling at the sight and the handwheels on the left, the loader at the breech on
+     the right, and three bringing the rounds up a case at a time. It is laid the way the
+     American 57 across the beach is, to see and reach further than the armour it meets:
+     `sight` stands past every eye on the American motor pool and `w.range` past every gun on
+     it, the Achilles's 17-pounder included, and the spaced shield keeps the burst of a tank's
+     HE off the men behind it (`blastRes`). */
+  hr_pak: {
+    side: 'ger', nat: 'heer', name: '5 cm Pak 38', short: 'PAK 38', cat: 'team', hk: 'T',
+    models: 5, hpPer: 66, speed: 38, sight: 620, pop: 10, cost: { mp: 310, fu: 20 }, time: 26,
+    req: 'ger_dep', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 10.0],
+    gunner: 'hr_atg', body: 'heer_at', carryP: { can: 'box50', canH: 2.3 },
+    gunAt: 8.6, gunY: -4.9, gunMuz: [27.3, 9.53], gunGrip: [-5.66, -3.9, 7.53], gunGripL: [-6.8, -7.55, 8.13],
+    gunMate: { at: [-8.9, 4.3], a: -Math.PI / 2, grip: [-7.6, 1.15, 10.2], gripL: [-10.0, 1.15, 9.6], pose: 'served' },
+    gunCrew: [[-14, -15], [-14, 15], [-22, 0]],
+    w: { range: 540, dmg: 130, rof: 2.6, acc: .80, sup: .02, pen: 235, aoe: 26, shell: 1, brake: 1 },
+    desc: 'The 352nd\'s 5 cm on its split trail, with a crew of five. It sees and reaches further than any tank the Americans bring ashore, so laid in cover on the ground armour has to cross it has the first round off. Kills tanks and nothing else, and helpless if infantry get on top of it.'
   },
   /* Asked for, and built where it will fight. The eighty-eight was never a Pioneer's issue
      and the Fallschirmjaeger held Ortona with Pak 40s and what they carried, but the Flak
@@ -30787,7 +30807,7 @@ function mgCarryModels() {
     m2hb: place(weaponModel(k, 'm2hb'), 0, 2.2, 0, 1.1),
     m2: place(m2Tripod(k, true), 0, 0, 0, .3),
     m3: place(m3Tripod(k, true), 0, 0, 0, .4),
-    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box()
+    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box(), box50: pkBox()
   };
 }
 
@@ -31241,6 +31261,284 @@ function m1Box() {
   });
   f = withMat(f, 'wood');
   return f.concat(withMat(ksPipe([[-1.1, 0, h], [-.5, 0, h + .55], [.5, 0, h + .55], [1.1, 0, h]], .1, M4C.tarp, 5), 'canvas'));
+}
+
+/* ================================================================ 5 cm Pak 38
+   The 352nd's anti-tank gun: the 5 cm L/60 on its tubular split trail, on sprung wheels,
+   behind the spaced double shield. Laid off a four-view drawing that is not drawn to one
+   scale. Along the gun and up it the drawing agrees with the published 4.75 m over the
+   trails and 1.105 m over the shield at 84.7 pixels to the metre, and checks against the
+   3.2 m of the tube from the brake to the breech; across it, it agrees with the published
+   1.83 m over the wheels at 71.4, which is also what the sheet's own scale bar says. So each
+   axis is read at its own scale, and the gun has the published proportions where the
+   drawing is a sixth too narrow for its own length. That puts the wheels 0.72 m over the
+   tyre on a 1.68 m track, the bore 0.81 m up, the muzzle 2.31 m ahead of the axle and the
+   breech 0.93 m behind it, and the spades 2.1 m behind the hinges. The drawing shows the
+   trails closed; they open a quarter of a right angle either side.
+     The shield is two plates a finger apart, as the real one was two 4 mm plates 25 mm
+   apart, folded back in three facets a side and leaning back twenty-seven degrees, with a
+   hump over the middle of its top edge and the sight's slot on the left. The lower shield
+   hangs in front of the axle between the wheels, with two notches in its top edge through
+   which the foot of the upper shield shows.
+     Two pieces, as the 57 is: the carriage, the shield and the cradle are the mesh, and the
+   tube with its breech ring is `rec`. Origin at the axle on the ground, x toward the
+   muzzle, and -y is the left, the gunner's side. */
+/* the 352nd's grey a step darker than the vehicles are painted with: a gun is not put
+   through the occlusion bake that darkens a hull, and in the grey itself a shield leaning
+   back under a high sun came out nearly white */
+var PKC = { body: HRG.body, lit: HRG.lit, dark: HRG.dark, steel: HKC.steel, bare: HKC.bare, rubber: HKC.rubber,
+            tyre: HKC.tyre, hole: HKC.hole, wood: HKC.wood };
+var PKG = {
+  R: 4.2, W: 1.5, Y: 9.83, rim: 3.3,            /* 0.72 m wheels on a 1.68 m track */
+  bz: 9.53, tz: 8.5, tx: -1.2,                   /* the bore, and the trunnions */
+  muz: 27.1, cf: 8.7,                            /* the muzzle, and the front of the cradle */
+  brF: -6.6, br: -10.9,                          /* the front and back of the breech ring */
+  s0: 1.28, lean: .52, sB: 6.07, sTab: 4.9,      /* the upper shield: its foot at the centre, its lean, its bottom and its tabs */
+  sT: 11.95, sH: 12.86, sHw: 2.2,                /* its top, and the hump over the middle */
+  sC: 3.3, sM: 6.3, sO: 8.33, fM: .31, fO: .55,  /* the three facets a side and how far each folds back */
+  tab0: 1.0, tab1: 5.6,                          /* where the tabs are, either side */
+  lx: 2.3, lC: 4.3, lO: 7.9, lxO: -1.2, lB: .3, lHi: 2.3,  /* the lower shield: its front, its flat, its edge, its foot and its hinge */
+  hx: -2.6, hy: 5.5, hz: 5.0, ez: 3.2,           /* the trail hinges, and the height of the trail ends */
+  tl: 23.9, open: .44, shut: -.113               /* the trails, and each one's angle off the line, open and closed */
+};
+/* A 0.72 m wheel on its spokes: the solid tyre on the steel rim, twelve spokes out from the
+   hub and the cap on the outer face. The axis is y. */
+function pkWheel(sd) {
+  var C = PKC, g = PKG, y = sd * g.Y, z = g.R, f = [], i;
+  f = f.concat(lathe(0, y, z, [[3.3, -.62], [3.8, -.72], [4.08, -.62], [g.R, -.36], [g.R, .36], [4.08, .62], [3.8, .72],
+                               [3.3, .62], [3.3, -.62]], 24, [C.tyre, C.rubber, C.rubber, C.rubber, C.rubber, C.rubber, C.tyre, C.rubber], true));
+  f = f.concat(lathe(0, y, z, [[2.9, -.5], [3.32, -.56], [3.32, .56], [2.9, .5], [2.9, -.5]], 24, [C.body, C.lit, C.body, C.dark], true));
+  for (i = 0; i < 12; i++) {
+    var sp = box(1.95, 0, -.18, 2.2, .3, .36, C.body, C.lit, C.dark, 0);
+    f = f.concat(place(pitch(sp, i / 12 * TAU + .13, 0, 0), 0, 0, y - sd * .12, z));
+  }
+  f = f.concat(latheSide(0, y, z, [[0, -.62], [1.05, -.62], [1.05, .3], [.82, .55], [.5, .72], [0, .76]], 12,
+                         [C.dark, C.body, C.lit, C.body, C.lit], sd));
+  f = f.concat(boltRing(0, y + sd * .36, z, 1.35, 4, .17, .2, C.steel, .4));
+  return f;
+}
+/* A trail: a steel tube from its hinge to the spade, the spade leaning back into the ground
+   under the end of it, and the lifting handle bent up behind; on the left one the lunette on
+   its drawbar, swung in between the two ends when they are closed for the move, and on the
+   right one the handspike stowed along the top. */
+function pkTrail(sd, closed) {
+  var C = PKC, g = PKG, f = [], a = closed ? g.shut : g.open;
+  var p0 = [g.hx, sd * g.hy, g.hz], p1 = [g.hx - g.tl * Math.cos(a), sd * (g.hy + g.tl * Math.sin(a)), g.ez];
+  var dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy), ax = dx / l, ay = dy / l;
+  var px = -ay, py = ax;
+  if (py * sd < 0) { px = -px; py = -py; }
+  f = f.concat(ksTube(p0, p1, .5, C.body, 10));
+  /* the fork it hinges on, and a collar either end */
+  f = f.concat(m1Beam([p0[0] + ax * .4, p0[1] + ay * .4, p0[2]], [p0[0] + ax * 2.6, p0[1] + ay * 2.6, p0[2] - .2], 1.3, 1.5, 1.05, 1.15, C.dark));
+  f = f.concat(ksTube(m1Mix(p0, p1, .45), m1Mix(p0, p1, .47), .6, C.dark, 10));
+  f = f.concat(ksTube(m1Mix(p0, p1, .9), m1Mix(p0, p1, .93), .62, C.dark, 10));
+  /* the spade: a blade across the end, leaning back into the ground, with its brace forward
+     along the underside of the tube */
+  var E = m1Mix(p0, p1, .96), sp = [], bk = [ax * .9, ay * .9];
+  [[2.15, 3.25], [-2.15, 3.25], [-2.55, 2.0], [-1.8, .1], [1.8, .1], [2.55, 2.0]].forEach(function (q) {
+    var t = (3.25 - q[1]) / 3.15;
+    sp.push([E[0] + px * q[0] + bk[0] * t * 1.5, E[1] + py * q[0] + bk[1] * t * 1.5, q[1]]);
+  });
+  f = f.concat(m1Plate(sp, [ax * .87, ay * .87, .5], .3, C.dark, C.body));
+  f = f.concat(m1Beam([E[0] + ax * .7, E[1] + ay * .7, 1.4], [E[0] - ax * 2.8, E[1] - ay * 2.8, E[2] - .35], .5, .5, .4, .4, C.dark));
+  /* the lifting handle, bent up and back off the end */
+  var e = [p1[0], p1[1], p1[2]];
+  f = f.concat(ksPipe([[e[0] + px * .55, e[1] + py * .55, e[2] + .2], [e[0] + ax * 1.1 + px * .55, e[1] + ay * 1.1 + py * .55, 4.3],
+                       [e[0] + ax * 2.1 + px * .55, e[1] + ay * 2.1 + py * .55, 4.3], [e[0] + ax * 2.1 - px * .55, e[1] + ay * 2.1 - py * .55, 4.3],
+                       [e[0] + ax * 1.1 - px * .55, e[1] + ay * 1.1 - py * .55, 4.3], [e[0] - px * .55, e[1] - py * .55, e[2] + .2]], .17, C.steel, 6));
+  if (sd < 0) {
+    /* the lunette on its drawbar: in between the two ends when they are closed, and out
+       behind the left one's when they are open */
+    var L = closed ? [p1[0] - 1.9, 0, 4.2] : [p1[0] + ax * 2.4 - px * 1.2, p1[1] + ay * 2.4 - py * 1.2, 4.2];
+    f = f.concat(m1Beam([e[0] + ax * .6 - px * .3, e[1] + ay * .6 - py * .3, e[2] + .3], [L[0] + (closed ? 1.0 : -ax), L[1] + (closed ? 0 : -ay), L[2]],
+                        .55, .55, .5, .5, C.dark));
+    var ring = lathe(0, 0, 0, [[.6, -.24], [1.08, -.24], [1.08, .24], [.6, .24], [.6, -.24]], 14, C.steel, true);
+    f = f.concat(place(ksRollN(ring, Math.PI / 2), 0, L[0], L[1], L[2]));
+  } else {
+    /* the handspike stowed along the top, and the bracket it drops into */
+    var h0 = m1Mix(p0, p1, .3), h1 = m1Mix(p0, p1, .78);
+    f = f.concat(ksTube([h0[0] + px * .2, h0[1] + py * .2, h0[2] + .8], [h1[0] + px * .2, h1[1] + py * .2, h1[2] + .75], .2, C.wood, 6));
+    [.34, .72].forEach(function (t) {
+      var b = m1Mix(p0, p1, t);
+      f = f.concat(place(box(0, 0, 0, .45, .7, .95, C.dark, C.body, C.dark, 0), Math.atan2(ay, ax), b[0] + px * .2, b[1] + py * .2, b[2] + .25));
+    });
+  }
+  return f;
+}
+/* a handwheel turned about y, with its knob out on the side `ks` says */
+function pkWheelY(x, y, z, r, ks) {
+  var C = PKC, f = [], i;
+  f = f.concat(lathe(0, 0, 0, [[r - .2, -.13], [r, -.13], [r, .13], [r - .2, .13], [r - .2, -.13]], 14, C.steel, true));
+  for (i = 0; i < 3; i++) f = f.concat(pitch(box(r / 2, 0, -.07, r, .14, .14, C.steel, C.bare, C.steel, 0), i / 3 * TAU + .5, 0, 0));
+  f = f.concat(lathe(0, 0, 0, [[0, -.3], [.3, -.3], [.3, .3], [0, .3]], 8, C.steel, true));
+  f = f.concat(place(tubeSmooth(0, .75, 0, 0, .12, 6, C.bare, C.bare), Math.PI / 2 * ks, -r * .78, 0, -r * .2));
+  return place(f, 0, x, y, z);
+}
+/* a point on the front face of the upper shield: the centre plate leans back, and each
+   facet out from it folds further back */
+function pkShieldP(y, z) {
+  var g = PKG, a = Math.abs(y), b = 0;
+  if (a > g.sC) b += g.fM * (Math.min(a, g.sM) - g.sC);
+  if (a > g.sM) b += g.fO * (a - g.sM);
+  return [g.s0 - (z - g.sB) * g.lean - b, y, z];
+}
+/* one plate of the shield given as [y, z] corners on its front face: the front sheet and
+   the back sheet a finger behind it */
+function pkShieldPlate(yz, C) {
+  var f = [], v = yz.map(function (q) { return pkShieldP(q[0], q[1]); });
+  var n = m1Newell(v), l = Math.hypot(n[0], n[1], n[2]), bk = [-n[0] / l, -n[1] / l, -n[2] / l];
+  if (bk[0] > 0) bk = [-bk[0], -bk[1], -bk[2]];
+  f = f.concat(m1Plate(v, bk, .12, C.body, C.dark));
+  var w = v.map(function (p) { return [p[0] + bk[0] * .37, p[1] + bk[1] * .37, p[2] + bk[2] * .37]; });
+  return f.concat(m1Plate(w, bk, .12, C.body, C.dark));
+}
+/* the carriage, the cradle, the shield and the sight: everything that stays where it is,
+   with the trails open, or with them closed for the move and the spades still down */
+function pkCarriage(closed) {
+  var C = PKC, g = PKG, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(pkWheel(sd)).concat(pkTrail(sd, closed));
+  /* the axle and the arms of the torsion bars out to the hubs, and the bottom carriage the
+     trails hinge on */
+  f = f.concat(place(tubeSmooth(-g.Y + .8, g.Y - .8, 0, g.R, .42, 10, C.dark, C.body), Math.PI / 2, 0, 0, 0));
+  f = f.concat(box(-.4, 0, g.R - .5, 1.6, 15.2, 1.1, C.body, C.lit, C.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(m1Beam([-.9, sd * 7.4, g.R + .3], [0, sd * 8.9, g.R], .9, 1.1, .8, .9, C.dark));
+    f = f.concat(box(g.hx, sd * g.hy, g.hz - 1.2, 2.2, 1.5, 2.1, C.dark, C.body, C.dark));
+    f = f.concat(place(tubeSmooth(-.9, .9, 0, 0, .34, 6, C.steel, C.bare), Math.PI / 2, g.hx, sd * g.hy, g.hz + .2));
+  }
+  f = f.concat(box(-1.3, 0, g.R + .1, 4.6, 8.0, 1.6, C.body, C.lit, C.dark));
+  /* the top carriage turning on it: the pivot and two cheeks carrying the trunnions */
+  f = f.concat(cyl(-1.0, 0, g.R + 1.7, 2.4, 2.4, .5, 14, C.dark, C.body, 0, true));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(-1.4, sd * 1.9, g.R + 2.1, 4.4, .5, 2.6, C.body, C.lit, C.dark));
+    f = f.concat(place(tubeSmooth(-.35, .35, 0, g.tz, .7, 10, C.dark, C.body), Math.PI / 2, g.tx, sd * 2.3, 0));
+  }
+  /* the cradle: the sleeve the tube slides in, the recoil cylinder under it with its domed
+     front, and the band that holds the two at the front */
+  f = f.concat(tubeSmooth(-4.4, 7.0, 0, g.bz, .86, 12, C.body, C.lit));
+  f = f.concat(tubeSmooth(-4.0, g.cf - .3, 0, 7.75, .7, 10, C.body, C.lit));
+  f = f.concat(place(lathe(0, 0, 0, [[.7, 0], [.62, .35], [.4, .6], [0, .68]], 10, C.body, true), -Math.PI / 2, g.cf - .3, 0, 7.75));
+  f = f.concat(box(7.9, 0, 6.85, 1.7, 2.1, 2.2, C.body, C.lit, C.dark));
+  f = f.concat(tubeSmooth(7.05, 8.75, 0, g.bz, 1.02, 12, C.dark, C.body));
+  f = f.concat(box(-1.2, 0, 7.1, 6.0, 2.4, 1.0, C.body, C.lit, C.dark));
+  /* the upper shield: the centre plate in four pieces round the opening the cradle comes
+     through, the hump over it, and a middle and an outer facet a side */
+  var hw = 1.45, o0 = 6.4, o1 = 10.7;
+  f = f.concat(pkShieldPlate([[-g.sC, g.sTab], [-hw, g.sTab], [-hw, g.sT], [-g.sC, g.sT]], C));
+  f = f.concat(pkShieldPlate([[hw, g.sTab], [g.sC, g.sTab], [g.sC, g.sT], [hw, g.sT]], C));
+  f = f.concat(pkShieldPlate([[-hw, g.sTab], [hw, g.sTab], [hw, o0], [-hw, o0]], C));
+  f = f.concat(pkShieldPlate([[-hw, o1], [hw, o1], [hw, g.sT], [-hw, g.sT]], C));
+  f = f.concat(pkShieldPlate([[-g.sHw, g.sT], [g.sHw, g.sT], [1.6, 12.7], [.9, g.sH], [-.9, g.sH], [-1.6, 12.7]], C));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var sp = function (a, b) { return sd < 0 ? [[-b[0], b[1]], [-a[0], a[1]]] : [a, b]; };
+    var q1 = sp([g.sC, g.sTab], [g.tab1, g.sTab]), q2 = sp([g.tab1, g.sB], [g.sM, g.sB]);
+    f = f.concat(pkShieldPlate([q1[0], q1[1], [q1[1][0], g.sT], [q1[0][0], g.sT]], C));
+    f = f.concat(pkShieldPlate([q2[0], q2[1], [q2[1][0], g.sT], [q2[0][0], g.sT]], C));
+    var ou = [[g.sM, g.sB], [g.sO, g.sB], [g.sO, 10.3], [8.0, 11.0], [7.2, 11.6], [g.sM, g.sT]];
+    if (sd < 0) ou = ou.map(function (q) { return [-q[0], q[1]]; }).reverse();
+    f = f.concat(pkShieldPlate(ou, C));
+    /* the bolts that hold the two plates apart */
+    [[2.7, 11.3], [2.7, 8.8], [2.7, 6.4], [7.4, 9.7], [7.4, 8.2], [7.4, 6.7], [5.0, 11.4], [5.0, 5.4]].forEach(function (q) {
+      var p = pkShieldP(sd * q[0], q[1]);
+      f = f.concat(box(p[0] + .08, p[1], p[2] - .13, .2, .26, .26, C.dark, C.body, C.dark, 0));
+    });
+  }
+  /* the collar round the tube where it comes through, and the small shield on the cradle
+     that closes the opening under it */
+  var cp = pkShieldP(0, g.bz);
+  f = f.concat(place(lathe(0, 0, 0, [[.66, -.5], [1.2, -.5], [1.2, .25], [.66, .25], [.66, -.5]], 14, C.body, true), -Math.PI / 2, cp[0] + .15, 0, g.bz));
+  var lp = pkShieldP(0, o0);
+  f = f.concat(m1Plate([[lp[0] + .5, -1.35, o0 - .1], [lp[0] + .5, 1.35, o0 - .1], [lp[0] - .1, 1.35, 8.7], [lp[0] - .1, -1.35, 8.7]], [-1, 0, 0], .2, C.body, C.dark));
+  /* the sight's slot in the left of the centre facet's neighbour, and its cover lifted */
+  var sl = [[-4.4, 7.4], [-5.4, 7.4], [-5.4, 9.8], [-4.4, 9.8]].map(function (q) { var p = pkShieldP(q[0], q[1]); return [p[0] + .05, p[1], p[2]]; });
+  f = f.concat(m1Plate(sl, [-1, 0, 0], .05, C.hole, C.hole));
+  var sc = pkShieldP(-4.9, 9.9);
+  f = f.concat(m1Plate([[sc[0] + .15, -4.25, 9.95], [sc[0] + .15, -5.55, 9.95], [sc[0] + 1.1, -5.55, 10.5], [sc[0] + 1.1, -4.25, 10.5]], [0, 0, -1], .12, C.body, C.dark));
+  /* the lower shield, hung in front of the axle: a flat front with a notch either side of
+     the middle, and a facet a side folded back to the wheels, on a hinge along its middle */
+  var LP = function (y, z) {
+    var a = Math.abs(y);
+    return [a <= g.lC ? g.lx : g.lx + (g.lxO - g.lx) * (a - g.lC) / (g.lO - g.lC), y, z];
+  };
+  var lower = function (yz) {
+    var v = yz.map(function (q) { return LP(q[0], q[1]); });
+    return m1Plate(v, [-1, 0, 0], .16, C.body, C.dark);
+  };
+  f = f.concat(lower([[-g.tab0, g.lB], [g.tab0, g.lB], [g.tab0, g.sB], [-g.tab0, g.sB]]));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var m = function (a) { return sd < 0 ? [-a[0], a[1]] : a; };
+    var qa = [m([g.tab0, g.lB]), m([g.lC, g.lB]), m([g.lC, g.sTab]), m([g.tab0, g.sTab])];
+    var qb = [m([g.lC, g.lB]), m([g.tab1, g.lB]), m([g.tab1, g.sTab]), m([g.lC, g.sTab])];
+    var qc = [m([g.tab1, g.lB]), m([g.lO, g.lB]), m([g.lO, g.sB]), m([g.tab1, g.sB])];
+    f = f.concat(lower(qa)).concat(lower(qb)).concat(lower(qc));
+    [2.1, 6.5].forEach(function (yy) {
+      var h = LP(sd * yy, g.lHi);
+      f = f.concat(place(tubeSmooth(-.6, .6, 0, 0, .22, 8, C.dark, C.body), Math.PI / 2, h[0] + .22, h[1], h[2]));
+    });
+    /* the struts from the axle to the back of it */
+    var s1 = LP(sd * 3.4, 4.2);
+    f = f.concat(ksTube([-.2, sd * 3.4, g.R], [s1[0] - .2, s1[1], s1[2]], .16, C.dark, 6));
+  }
+  var hl = LP(0, g.lHi);
+  f = f.concat(m1Beam([hl[0] + .12, -g.lC, g.lHi], [hl[0] + .12, g.lC, g.lHi], .18, .16, .18, .16, C.dark));
+  /* the sight: the telescope on its bracket behind the slot, cranked up at the back to an
+     eyepiece where the gunner's eye is */
+  f = f.concat(tubeSmooth(-6.1, sl[0][0] - .6, -4.9, 9.3, .26, 8, C.steel, C.bare));
+  f = f.concat(cyl(-5.85, -4.9, 9.0, .36, .36, 2.1, 10, C.steel, C.bare, 0, true));
+  f = f.concat(tubeSmooth(-6.6, -5.85, -4.9, 10.8, .3, 8, C.steel, C.bare));
+  f = f.concat(tubeSmooth(-7.1, -6.6, -4.9, 10.8, .4, 8, C.rubber, C.rubber));
+  f = f.concat(box(-3.6, -3.55, 8.7, 1.2, 2.9, .5, C.dark, C.body, C.dark, 0));
+  f = f.concat(box(-3.6, -4.9, 8.95, 1.1, .6, .6, C.dark, C.body, C.dark, 0));
+  /* the two handwheels: elevation on the left cheek, turned by the gunner's right hand, and
+     traverse out to his left, facing him on its shaft from the gear case */
+  f = f.concat(box(-3.0, -2.75, g.R + 2.3, 2.4, 1.2, 1.9, C.body, C.lit, C.dark));
+  f = f.concat(pkWheelY(-5.0, -3.35, 7.7, .85, -1));
+  f = f.concat(ksTube([-5.0, -3.35, 7.7], [-3.4, -3.1, 7.4], .13, C.steel, 6));
+  f = f.concat(m1Handwheel(-6.2, -6.9, 7.5, .9, -1));
+  f = f.concat(ksTube([-6.1, -6.9, 7.5], [-3.2, -3.1, 7.0], .13, C.steel, 6));
+  f = f.concat(box(-3.0, -5.2, 6.8, 1.0, 3.8, .8, C.dark, C.body, C.dark, 0));
+  if (closed) return f;
+  /* a case of rounds open by the loader, three in it */
+  f = f.concat(place(pkBox(true), .2, -13.0, 7.2, 0));
+  [-.6, 0, .6].forEach(function (yy) {
+    f = f.concat(place(tubeSmooth(-2.3, 1.8, yy, 1.6, .26, 8, GUN.brass, lit(GUN.brass, .9)), .2, -13.0, 7.2, 0));
+    f = f.concat(place(place(lathe(0, 0, 0, [[.24, 0], [.24, .7], [.16, 1.2], [0, 1.45]], 8, C.steel, true), -Math.PI / 2, 1.8, yy, 1.6), .2, -13.0, 7.2, 0));
+  });
+  return f;
+}
+/* the gun itself, which runs back: the tube from the breech ring to the brake, tapering,
+   the two-chambered brake on the muzzle with its ports either side and the bore dark in it,
+   and the ring with its sliding block and the operating lever on the right */
+function pkTube() {
+  var C = PKC, g = PKG, f = [];
+  var prof = [[0, g.brF - .4], [.64, g.brF - .4], [.64, 7.2], [.58, 9.2], [.5, 17.0], [.46, 23.9], [.72, 23.9], [.72, 24.7],
+              [.58, 24.8], [.58, 25.3], [.8, 25.35], [.8, g.muz], [.34, g.muz], [.34, g.muz - .5], [0, g.muz - .5]];
+  f = f.concat(place(lathe(0, 0, 0, prof, 14, [C.steel, C.steel, C.steel, C.steel, C.steel, C.steel, C.bare, C.steel, C.steel,
+                                              C.steel, C.steel, C.hole, C.hole, C.hole], true), -Math.PI / 2, 0, 0, g.bz));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(box(26.2, sd * .77, g.bz - .4, 1.2, .1, .8, C.hole, C.hole, C.hole, 0));
+  });
+  f = f.concat(box((g.br + g.brF) / 2, 0, g.bz - 1.23, g.brF - g.br, 2.1, 2.2, C.steel, C.bare, C.steel));
+  f = f.concat(box(g.br - .1, 0, g.bz - .9, .3, 1.5, 1.8, C.bare, C.bare, C.bare, 0));
+  f = f.concat(box(-8.75, 1.06, g.bz - .5, 2.6, .1, 1.0, C.hole, C.hole, C.hole, 0));
+  f = f.concat(ksPipe([[-7.4, 1.15, g.bz + .6], [-9.2, 1.7, g.bz + .1], [-10.4, 1.8, g.bz - .8]], .15, C.steel, 6));
+  f = f.concat(box(-10.4, 1.8, g.bz - 1.25, .5, .5, .5, C.rubber, C.rubber, C.rubber, 0));
+  return f;
+}
+/* the case the rounds come up in, one to a man: pressed steel in the grey with the lid
+   clamped down at either end and a handle on it to carry it by, or open by the gun with the
+   lid off. Long axis x, on z 0. */
+function pkBox(open) {
+  var C = PKC, l = 6.6, b = 2.2, h = 1.7, f = [];
+  f = f.concat(box(0, 0, 0, l, b, h, C.body, C.lit, C.dark));
+  if (open) return f;
+  f = f.concat(box(0, 0, h - .05, l + .12, b + .12, .3, C.dark, C.body, C.dark, 0));
+  [-1, 1].forEach(function (e) {
+    f = f.concat(box(e * (l / 2 - .9), b / 2 + .04, h - .75, .45, .1, .8, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(e * (l / 2 - .9), -b / 2 - .04, h - .75, .45, .1, .8, C.steel, C.bare, C.steel, 0));
+  });
+  f = f.concat(ksPipe([[-1.0, 0, h + .2], [-.6, 0, h + .6], [.6, 0, h + .6], [1.0, 0, h + .2]], .1, C.steel, 5));
+  return f;
 }
 
 /* The 105 mm Gun T8: a long piece on a split trail, sited rather than driven. Half again
@@ -32503,6 +32801,16 @@ function buildVehicleModels() {
   /* the American 57, whose tube runs back in its cradle and leaves the carriage where it
      stands (`rec`); `bar` from the layer, the way the two that walk are */
   GUNMODEL.am_at = { mesh: m1Carriage(false), pack: m1Carriage(true), rec: m1Tube(), bar: 11.0 + M1G.muz, z: M1G.bz };
+  /* and the 352nd's Pak 38, laid the same way */
+  GUNMODEL.hr_pak = { mesh: pkCarriage(false), pack: pkCarriage(true), rec: pkTube(), bar: 8.6 + PKG.muz, z: PKG.bz };
+  /* and baked the way a hull is, since in the grey without it the shield under a high sun
+     came out nearly white where the tanks beside it are the grey they are painted: the
+     carriage and the tube against each other, and the carriage closed on its own */
+  (function (M) {
+    M.mesh = aoSplit(M.mesh, AOSPLIT); M.pack = aoSplit(M.pack, AOSPLIT); M.rec = aoSplit(M.rec, AOSPLIT);
+    bakeAO([{ f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }, { f: M.rec, x: 0, y: 0, z: 0, occ: 1 }]);
+    bakeAO([{ f: M.pack, x: 0, y: 0, z: 0, occ: 1 }]);
+  })(GUNMODEL.hr_pak);
   GUNMODEL['hr_mg:mg42t'] = { mesh: lafTeamModel(true), bar: 8.7, z: 7.1 };
 }
 
@@ -33938,6 +34246,14 @@ var SOLDIER_VARIANTS = {
   hr_mgl:       { side: 'ger', nat: 'heer', weapon: 'none', mgbelt: 1, mgg: 1, lafback: 1, norun: 1, set: 'carry' },
   hr_mga:       { side: 'ger', nat: 'heer', weapon: 'kar', mgbelt: 1, can: 1, tin: 1, norun: 1, body: 'heer_mg', set: 'field' },
   hr_mga_b:     { side: 'ger', nat: 'heer', weapon: 'kar', mgbelt: 1, can: 1, lauf: 1, gaiters: 1, wire: 1, norun: 1, set: 'field' },
+  /* and the anti-tank gun's crew of five, in the grenadier's kit: the gunner and the loader
+     with the pistol and the gun's tools where a rifleman has his pouches and nothing in their
+     hands but the gun, and the three who bring the rounds up, each with the Kar98k and a case
+     of them in the other hand, the third in gaiters with wire on his helmet. The first of the
+     three is what the crew leaves where it falls (`body`). */
+  hr_atg:       { side: 'ger', nat: 'heer', weapon: 'none', mgg: 1, norun: 1, set: 'gunner' },
+  hr_atb:       { side: 'ger', nat: 'heer', weapon: 'kar', can: 1, tin: 1, norun: 1, body: 'heer_at', set: 'field' },
+  hr_atb_b:     { side: 'ger', nat: 'heer', weapon: 'kar', can: 1, gaiters: 1, wire: 1, norun: 1, set: 'field' },
   /* and the grenadier who rides: the KS 750's rider and the gunner in its sidecar, in the rubberised motorcyclist's coat with goggles on the helmet */
   hr_krad:      { side: 'ger', nat: 'heer', weapon: 'none', krad: 1, goggles: 1, set: 'hull' },
   /* and the grenadier who drives: the 251's driver and the gunner at its MG 34, in field
@@ -34013,6 +34329,8 @@ function variantForModel(u, i) {
   if (u.key === 'ger_pgren') return i === 0 ? 'fj_schreck' : i < 3 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'ger_pio') return i === 0 ? 'fj_mp40' : 'fj_rifle';
   if (u.key === 'hr_pio') return i === 0 ? 'gr_pio_c' : i === 1 ? 'gr_pio' : 'gr_pio_b';
+  /* the gunner and the loader serve the Pak 38, and the other three bring the rounds up */
+  if (u.key === 'hr_pak') return i < 2 ? 'hr_atg' : i === 4 ? 'hr_atb_b' : 'hr_atb';
   /* the eighty-eight and the heavy battery are laid by their own crews and never
      queued, so neither has a gunAt */
   if (u.def.gunAt || u.key === 'ger_flak88' || u.key === 'ger_how210') return i < 2 ? 'fj_gunner' : 'fj_rifle';
