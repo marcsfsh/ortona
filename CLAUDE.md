@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1100,7 +1100,7 @@ queues it when asked for the carrier, the count and the order book read the carr
 jeep as one, its crew are baked, the periscope's eye is the gunner's at twenty-odd units up,
 forty wrecks throw the gun off the pedestal none of the time and sit down under 1.7 units,
 killed it leaves two American bodies, and Ortona's motor pool still makes the carrier.
-The M4 is asked it in a fourth: the motor pool makes it and not the Sherman V and queues it
+The M4A1 is asked it in a fourth: the motor pool makes it and not the Sherman V and queues it
 when asked for the Sherman V, the count and the order book read the two as one, every buffer
 it needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1,
 the seated tanker is baked, the eye is a little over three metres up out of the hatch and
@@ -3562,46 +3562,64 @@ won every fight with a squad, because the whole card sits on the knife edge the 
 balanced at, so it deals what the .30 deals per second at 320 of reach and 70 of
 penetration, and reads 56 per cent against the grenadiers.
 
-**The M4 is the Americans' tank**, in the Sherman V's place (`us_sher` to `am_sher` on the
-army's list), and it is built from nothing rather than out of the Sherman V's parts: the
-welded M4 with the 75 and the radial engine, which is the tank the 741st and 743rd took onto
-the beach and the shorter of the two by the whole of the A4's stretch. It is laid out with
-the driver at -y and the bow gunner, the gunner and the commander at +y, which the Sherman V
-beside it is not: its bow gun and its commander are both on the left as the player sees
-them. Its numbers are the Sherman V's, because the gun, the plate and the running gear are,
-and fought over eight runs it won half its fights with the Panzer IV where the Sherman V won a
-quarter on the same card, which is the swing eight runs of a near-even row carry, and every
-one with the grenadier squad inside six seconds. On `tools/dims.mjs` it reads 5.87 m long
-against 5.84, 5.93 with the gun against 5.89, 2.64 wide against 2.62 over the sand shields,
-2.74 high against 2.74, a body of 2.56 against 2.56 and 0.43 of clearance.
+**The M4A1 is the Americans' tank**, in the Sherman V's place (`us_sher` to `am_sher` on the
+army's list), and it is built from nothing rather than out of the Sherman V's parts: an early cast
+M4A1 with the direct-vision hull, the 75 in the M34 mount and the radial engine, the shorter of the
+two by the whole of the A4's stretch. It is laid out with the driver at -y and the bow gunner, the
+gunner and the commander at +y, which the Sherman V beside it is not. Its numbers are the Sherman
+V's, because the gun, the plate and the running gear are, and it was rebuilt in place, so the key,
+the doors and the numbers are the ones the welded M4 had. On `tools/dims.mjs` it reads 5.98 m long
+against 5.84, which is the drawing's 5.95 over the tracks and the turned-down ends of the rear
+mudguards, the same with the gun, because the drawing's 75 ends a tenth of a metre short of the
+tracks; 2.63 wide against 2.62, 2.71 to the top of the hatch against 2.74, a body of 2.62 and a
+roof across the shoulders of 2.50 against the drawing's 2.49, and 0.43 of clearance.
 
-What carries it, and each is built its own way. **The bogie housing reaches out over both
-discs** (`m4Bogie`): a vertical-volute bracket is inboard of its wheels, and built only
-inboard it sat in the shade under the sponson with nothing to read from the side, where the
-springs between the wheel tops and the skid over them are most of what says VVSS. Each road
-wheel is **two pressed discs with the gap the centre guides run in** (`m4RoadWheel`,
-`m4Disc`), the outer one lathed in full and the inner one plain because nothing sees it. The
-**T48 is its own link** (`m4Link`) laid on the kit's belt: a steel shoe with two rubber bars
-in a V on the face that meets the ground, the end connectors proud of both edges and a guide
-on every joint. **The nose is swept with the normals of its own profile** (`m4Sweep`), so the
-three-piece cover shades round, with the two flanges offset along the same normals and bolted
-through. **Everything on the glacis goes through `onM4Glacis`**, whose local z is the plate's
-normal, except what has to face the way the tank does: a headlamp laid on the plate's frame
-points at the ground. **The turret is lofted from a plan** (`m4TurretPlan`, a dozen points a
-side smoothed into forty-eight, then `m4TurRing` scales the front, the sides and the bustle
-separately at each height so the front stays near vertical where the shield sits), and
-anything fixed to its wall is put there by `m4TurAt`, which meets a ray from the centre with
-the wall's outline at that height. The first version took the nearest vertex instead: at a
-step finer than the outline's own spacing two stations landed on one vertex, and the plate
-welded over the gunner's cheek came out as a fan of zero-width faces that drew as black
-wedges on the front of the turret. **The star in its ring is on the engine deck**, where the
-aircraft were meant to see it and the player does.
+**It is laid over a four-view drawing** (`tools/ref/am_sher.json`), and the first version, the
+welded M4 built off photographs, was out along its whole length. The road wheels of each bogie
+stood 24 in apart where the drawing has them 33 in apart; the return rollers trailed their bogies
+where the early bogie carries its roller on top; the idler stood two units too far forward and
+three too low; the hull was a welded box a quarter of a metre too far forward over the running
+gear and a unit too low, with appliqué plates and sand shields the drawing does not have; and the
+turret stood 3.8 units too far forward on its ring, under the M34A1's wide rotor shield where the
+drawing has the narrow M34. Laid over it now, the side and front views agree with the drawing to
+about a line width. The plan puts the drivers' hoods 1.8 units further forward than the side does,
+and the side, which sees the hood's profile, was taken.
 
-**The hatch periscopes are lower than the kit's**, because the M34A1 shield sweeps over the
-driver's hatches as the turret comes round and the kit's periscope stood above the shield's
-foot: at about twenty-five degrees of traverse the two were in the same place. The roof gun
-stands in front of the split hatch rather than behind it, because a man in the hatch can
-reach grips ahead of him and cannot reach them behind.
+What carries it, and each is built its own way. **The cast hull is lofted** (`m4Section`,
+`m4Shell`): cross sections along the length, each a side standing up off the sponson floor, a
+shoulder turned over at the top and the roof across, following `m4TopZ` (the glacis at about
+fifty-three degrees off the vertical rolled into the roof over a fillet, the roof, the engine deck
+falling away behind the turret and rolling over into the rear plate) and `m4HalfW` (the corners
+drawn in toward the front). The normals come off the loft, so it shades as one casting, and
+anything lying on the deck goes on through `onM4Deck`, which follows the fall. **The bogie is the
+early pattern** (`m4Bogie`): the head reaches out over the track and carries the return roller on
+top, the two volute springs lean in beneath it, and the arms go from two pins low in the middle out
+to the wheels. **The road wheels and the idler are spoked** (`m4Spoked`): the outer wheel of each
+pair is built with its spokes, its hub and its cap, and the inner one is a dished disc, which is
+what shows between the spokes. The **T48 is its own link** (`m4Link`): a steel shoe with two rubber
+bars in a V on the face that meets the ground, the end connectors proud of both edges and a guide
+on every joint. **The nose is swept with the normals of its own profile** (`m4Sweep`), the outer
+castings standing a little forward of the middle one, and **everything on the glacis goes through
+`onM4Glacis`**, whose local z is the plate's normal, except what has to face the way the tank does.
+Two **direct-vision hoods** stand out of the top of the glacis, each with its visor and a round
+hatch in its top; the headlamps stand on brackets in their brush guards and the siren is on the
+plate over the left sprocket.
+
+**The turret is lofted from a plan** (`m4TurretPlan`, round in front and through the cheeks and
+drawn out into a short bustle with a flat back, smoothed; `m4TurRing` scales the front, the sides
+and the bustle separately at each height, and the front falls back hard toward the roof), and
+anything fixed to its wall is put there by `m4TurAt`, which meets a ray from the centre with the
+wall's outline at that height. The first version took the nearest vertex instead: at a step finer
+than the outline's own spacing two stations landed on one vertex, and a plate welded to the wall
+came out as a fan of zero-width faces that drew as black wedges. **The M34 mount** is a shield
+curved over the front of the turret the width of the opening and bolted down both edges, the narrow
+rotor standing out of the middle of it round the gun, the collar the gun goes through, and the
+coaxial at the shield's left end. The split hatch's right door carries a periscope, as the drawing
+has it, and the roof gun stands in front of the hatch rather than behind it, because a man in the
+hatch can reach grips ahead of him and cannot reach them behind. **`m4Sweep`'s normals want the
+profile run from the top down round the front**: the shield was first written from the bottom up,
+`faceOut` turned its faces the right way round and left the normals pointing in, and it rendered
+black from every side.
 
 **The man in the hatch is a tanker** (`gi_tank`, `V.tanker`): the fibre M1938 helmet with its
 rib over the crown, its ear flaps and the goggles pushed up on their strap (`helmetTanker`),
@@ -3614,7 +3632,8 @@ tracks.
 
 **The interior is authored** (`VIN.am_sher`) on the same plan the turret is lofted from,
 drawn in wherever the casting leans in toward the roof so nothing of the room shows through
-the wall with the head out. The seats are set by the seated man rather than by eye: his eye
+the wall with the head out, and its roof, its sill and the commander's eye are read off the
+turret's own height. The seats are set by the seated man rather than by eye: his eye
 is 14.75 over his soles and his hip 6.05, so the gunner's soles go 14.75 under the telescope
 and the basket floor drops to meet them. Set the other way about, as the first version was,
 the gunner's head stood in the commander's view.
@@ -6891,6 +6910,12 @@ shots/                         screenshot output, gitignored
   hips at 1.2 units, every pose. It takes the root and the direction off the first six faces now
   and the length off how far the limb reaches along that direction, which for a bare frustum is
   its own tip. Anything added to a limb goes AFTER its frustum, or the probe reads the wrong axis.
+- **`faceOut` turns a face and not its normals.** It reverses a face's vertices and the list of
+  its normals when the face points the wrong way, and never negates the normals themselves, so a
+  part built with normals of its own (`m4Sweep`, `loft`, a lathe with `smooth`) and built the wrong
+  way round comes out with the winding right and the normals pointing in: lit from inside, and
+  black in the occlusion bake, which marches along the normal into the part. The M4A1's gun shield
+  was a profile written from the bottom up and rendered black from every side.
 - **A face is oriented off its first three vertices, and three in a line have no normal.**
   `hkFace` turns a polygon to face the way it is asked by reading `faceNormal` of its first three
   corners, and the 251's floor was written as a hexagon whose first three corners lay along one

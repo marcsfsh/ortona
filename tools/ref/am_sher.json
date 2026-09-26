@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_sher.png", "key": "am_sher", "up": ["hatch"], "crew": false,
+  "note": "A four-view of an early M4A1 (75): the cast hull with the direct-vision hoods, the M34 mount, the three-piece differential cover, early VVSS with the return roller on top of each bogie, and spoked road wheels and idler. No scale on the sheet. The front view is taken off the published 83 in between the track centres, 389.5 px, and its own 16.56 in track, 78.5 px; the side off the turret roof over the ground, 491 px, against the front view's 488, and the ground contact between the first and last road wheel centres agrees with the published 147 in to about two per cent. The plan is drawn a little smaller: 478 px across the hull where the front view has 490. The rear view is drawn wider than it is tall: its track centres are 407.5 px apart against the front view's 389.5, so it takes a vertical scale of its own.",
+  "views": {
+    "side":  { "nose": "left", "crop": [140, 130, 1140, 550], "ppm": 186.0, "at": [0, 0, 0], "px": [671.2, 672.0], "k": 2 },
+    "plan":  { "nose": "left", "crop": [115, 1300, 1110, 510], "ppm": 182.0, "at": [-34.9, 0, 0], "px": [1170.0, 1557.0], "k": 2 },
+    "front": { "crop": [135, 715, 520, 540], "ppm": 185.0, "at": [0, 0, 0], "px": [392.25, 1244.0], "k": 2 },
+    "rear":  { "crop": [695, 725, 530, 530], "ppm": 192.5, "ppmv": 183.0, "at": [0, 0, 0], "px": [954.75, 1247.0], "k": 2 } } }

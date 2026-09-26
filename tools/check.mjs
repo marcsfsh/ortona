@@ -3352,7 +3352,7 @@ for (const device of TARGETS) {
     W.killBuilding(mot);
     return out;
   });
-  ok('Omaha: the Americans\' tank is the M4, with a tanker in its hatch and American bodies when it burns',
+  ok('Omaha: the Americans\' tank is the M4A1, with a tanker in its hatch and American bodies when it burns',
      /am_sher/.test(m4.makes) && !/us_sher/.test(m4.makes) && m4.qSher === 'am_sher' && m4.made === 1 && m4.madeAs &&
      m4.count >= 1 && m4.count === m4.countM && m4.bufs && m4.tanker > 0 && m4.m1 === 0 && m4.seat &&
      m4.eyeUp > 33 && m4.eyeUp < 40 && m4.eyeIn > 26 && m4.eyeIn < m4.eyeUp - 4 &&

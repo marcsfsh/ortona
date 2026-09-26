@@ -47,12 +47,14 @@ const REAL = {
                it, 88 in wide, which is over the sponsons and the tracks alike, 94 in high and 16.5 in of
                clearance (afvdatabase). The drawing puts the roof of the turret at 2.32 m and the domes of
                the two periscopes at 2.45, either side of the published height */
-  am_sher:   { name: 'M4 (75 mm)',          len: 5.84,  gun: 5.89,   wid: 2.62,  hgt: 2.74,
-               body: 2.56, bodyZ: 1.37, roof: 2.56, clear: 0.43 },   /* 19 ft 2 in long and 19 ft 4 in with
-               the 75 forward, 8 ft 7 in over the sand shields, 9 ft to the top of the turret and 17 in of
-               clearance. The body is the hull over the sponsons: 83 in between the track centres and a
-               16.56 in track put the tracks' outer edges 2.53 m apart and the sponson sides stand just
-               outside them, which is what leaves the sand shields their two inches a side */
+  am_sher:   { name: 'M4A1 (75 mm)',        len: 5.84,  gun: 5.84,   wid: 2.62,  hgt: 2.74,
+               body: 2.62, bodyZ: 1.37, roof: 2.49, clear: 0.43 },   /* 19 ft 2 in long, 8 ft 7 in wide,
+               9 ft to the top of the hatch and 17 in of clearance. The four-view the model is laid
+               over (tools/ref/am_sher.json) puts the muzzle of the 75 a tenth of a metre behind the front
+               of the tracks, so the length with the gun forward is the length, and it runs 5.95 m from the
+               tracks to the turned-down ends of the rear mudguards. The body is the cast hull over the
+               sponsons, 2.65 m in the front view and 2.63 in the plan; the roof is the width across the
+               rounded shoulders a hand under the top of the hull, 2.49 m in the front view */
   us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
                body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
                widest point is not its tracks: the sponsons stand eight inches proud of them each
@@ -168,9 +170,9 @@ const PROBE = {
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
   am_stuart: { bodyZ: 16.5, roofZ: 19.0, xLo: -5.0, xHi: -1.0, straddle: true, hullZ: 21.0 },   /* the slice is
                taken halfway up the sponson between its two seams of rivets; hullZ holds the aerial out */
-  am_sher:   { bodyZ: 16.0, roofZ: 21.8, xLo: -25.0, xHi: -21.0, straddle: true, topZ: 10.2 },   /* the slice is
-               taken halfway up the sponson, aft of the appliqué and the star; topZ holds the
-               periscope heads and the aerial out of a height measured to the top of the turret */
+  am_sher:   { bodyZ: 16.0, roofZ: 22.0, xLo: -5.0, xHi: -1.0, straddle: true, topZ: 9.3 },   /* the slice is
+               taken under the turret, where the roof is flat and nothing is strapped to the sides; topZ
+               holds the periscope heads out of a height measured to the top of the hatch */
   us_ach:    { bodyZ: 22.0, topZ: 8.0 },   /* bodyZ is a hand's breadth under the deck, above the
                tools and the jerricans and below the lifting eyes, where the side plate is bare.
                topZ keeps the turret crew out of the height: three of them stand in an open turret
