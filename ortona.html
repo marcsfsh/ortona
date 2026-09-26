@@ -1603,14 +1603,18 @@ var UNITS = {
      (`natKey`): the M3 it was developed from, built from nothing to a drawing of it, with a
      driver and a gunner, the seats empty and room on them for one section (`carries`), and
      the .50 on its pedestal behind the front seats, which goes all the way round. The
-     numbers are the M3A1's, because the plate, the gun and the engine are. */
+     numbers are the M3A1's, because the plate, the gun and the engine are. Its conversion
+     is the M3A1's with the round the M4's 75 fires, since the M1897 fires the same one, and
+     the French 75's rate of fire: at the M3A1's 96 a round and 150 of penetration the GMC
+     lost every fight with the Panzer IV head on and side-on alike, needing eight hits to the
+     tank's three, and at the M4's 140 every 3.2 seconds it still took one in five side-on. */
   am_m3: {
     side: 'us', nat: 'usa', name: 'M3 Half-Track', short: 'M3', cat: 'veh', hk: 'H',
     wheeled: 1, carries: 1, tows: 1, upgrades: ['how75'], arcUp: { how75: .7 },
     hp: 360, armor: 40, speed: 112, sight: 320, pop: 10, cost: { mp: 240, fu: 30 }, time: 22,
     req: 'us_mot',
     w: { range: 280, dmg: 14, rof: .22, acc: .58, sup: .05, pen: 30, aoe: 0 },
-    wUp: { how75: { range: 380, dmg: 96, rof: 3.4, acc: .68, sup: .04, pen: 150, aoe: 30, shell: 1 } },
+    wUp: { how75: { range: 440, dmg: 140, rof: 2.4, acc: .74, sup: .04, pen: 205, aoe: 30, shell: 1 } },
     desc: 'The White half-track: a driver, the .50 on its pedestal behind the front seats with the gunner standing to it, and seats down both sides for a squad, which it carries forward behind a quarter of an inch of plate. It tows the anti-tank gun. The pedestal goes all the way round, and anything heavier than a rifle round goes through the sides. It can be converted to the 75 mm GMC.'
   },
   /* The Greyhound, in place of the Stuart V on a map whose army is American (`natKey`):
@@ -2066,7 +2070,11 @@ var UNITS = {
        a weapon that sits behind a block into the best observation post on the map. */
     if (d.indirect) continue;
     far = d.w.range || 0;
-    if (d.wUp) for (u in d.wUp) far = Math.max(far, d.wUp[u].range || 0);
+    /* a conversion that fills the body is another vehicle once it is fitted and none of
+       it before, so its reach lends the eye nothing until then (`eyeOf`): read here, the
+       75 mm GMC's 440 gave every half-track waiting to be converted a better eye than an
+       armoured car's */
+    if (d.wUp) for (u in d.wUp) if (!(UPGRADES[u] && UPGRADES[u].fills)) far = Math.max(far, d.wUp[u].range || 0);
     if (d.at) far = Math.max(far, d.at.range || 0);
     if (far > d.sight) d.sight = far;
   }
@@ -7658,7 +7666,7 @@ function computeVisibility(dt) {
     /* a man on the shelf looks down into ground a man in the vallone cannot see out of,
        so height is worth a little reach as well as the dead ground it denies him */
     var uz = groundZ(u.x, u.y);
-    var r = u.sight * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
+    var r = eyeOf(u) * (u.retreat ? .7 : 1) * (u.sup > 1 ? .8 : 1) * (u.up && u.up.scope ? 1.3 : 1) *
             (u.stance === 'ground' && !u.moving ? .85 : 1) *
             hcapOf(u.own).eye;
     _eyes[u.side].push({ x: u.x, y: u.y, z: uz + eyeZ(u), r: r, ez: uz, u: u });
@@ -7909,6 +7917,13 @@ function fitUp(u, uk) {
 function arcOf(u) {
   var k = mountUp(u);
   return k && u.def.arcUp && u.def.arcUp[k] !== undefined ? u.def.arcUp[k] : u.def.arc;
+}
+/* How far a unit sees, with a conversion that fills the body fitted: its gun's reach, which the
+   sight rule at load leaves out for as long as the vehicle has not been converted. */
+function eyeOf(u) {
+  var s = u.sight, k;
+  if (u.up && u.def.wUp) for (k in u.up) if (u.up[k] && UPGRADES[k] && UPGRADES[k].fills && u.def.wUp[k]) s = Math.max(s, u.def.wUp[k].range || 0);
+  return s;
 }
 /* Whether a vehicle has room for a squad, which a conversion that fills the body takes away. */
 function carriesOf(v) {
@@ -39574,7 +39589,7 @@ function selectSame(near) {
       /* within sight of one of the units already picked, by that unit's own eye */
       var seen = false;
       for (var j = 0; j < have.length && !seen; j++)
-        if (dsq(u.x, u.y, have[j].x, have[j].y) < have[j].sight * have[j].sight) seen = true;
+        if (dsq(u.x, u.y, have[j].x, have[j].y) < eyeOf(have[j]) * eyeOf(have[j])) seen = true;
       if (!seen) continue;
     }
     out.push(u);
