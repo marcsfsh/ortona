@@ -3848,8 +3848,8 @@ occlusion bake and came out black, so every face that looks into the compartment
 (`mhLitIn`, the M8's `lit` read off the face's own normal against the middle of the room).
 `VIN.am_m3` is the open vehicle's room, which is nothing, with the eye the gunner's.
 
-**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which Italy's M3A1 has always carried
-with the same weapon): the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
+**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which Italy's M3A1 has always carried):
+the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
 floor at the front of the body and firing forward over the cab behind a shield, laid over a
 four-view drawing of the GMC (`tools/ref/am_m3gmc.json`). The sheet's views disagree about the
 shield until it is read as it is built: the front and the rear have its top peaked in the middle
@@ -3879,6 +3879,32 @@ where it stands**: `put` in the occlusion bake takes the fitting's `barUp` pose,
 every alternative mount at the ring of the one it replaced. The GMC's gun stands 2.9 units lower
 than the pedestal's head, and Italy's M3A1 had its quad and its 75 baked where
 the ring was.
+
+**A conversion's reach lends the eye nothing until it is fitted.** The sight rule at load raised
+a unit's eye to the longest reach of any weapon it could carry, fittings included, which is right
+for a turret swapped for a bigger gun and wrong for a conversion that makes it another vehicle:
+at 440 the GMC's reach gave every half-track still waiting to be converted a better eye than an
+armoured car's. The rule leaves a `fills` fitting out and `eyeOf(u)` puts its reach back once it
+is fitted, in the eye and in the selection within sight.
+
+**The M3's numbers are the M3A1's**, because it is the same vehicle, and the card agrees with
+what those numbers were already doing: over twelve runs it takes the grenadier squad and the KS 750
+every time, the 251 seven times in twelve, and the Panzer IV takes it every time in ten seconds.
+
+**The GMC's numbers are the M4's round at a quick-firer's rate.** At the M3A1's line, 96 a round
+every 3.4 seconds with 150 of penetration, it lost every fight with the Panzer IV head on and every
+fight side-on: it needed eight hits to the tank's three, and at its own 380 of reach a round 328
+out went through the front two times in three. The M1897 fires the round the M4's 75 fires, so it
+takes the M4's 140; what it has that the M4's gun has not is the French 75's rate of fire. At 140 a
+round every 2.4 seconds with an accuracy of .74, 205 of penetration and 440 of reach, over 84 runs
+head on it takes the Panzer IV a quarter of the time (33, 21 and 21 over three runs of 24 and 8 over
+12), and over 48 runs with the tank side-on 56 per cent. The M4's round every 3.2 seconds read 4
+and 21 over 24 runs a side. That is a glass cannon: 350 marks, 60 of fuel and 10 of population with
+the conversion against the tank's 345, 90 and 14, three hits to kill it and five to kill the tank.
+Over twelve runs a row it takes the 251, the 234/1, the MG 34 team and the grenadier squad every
+time, the Puma and the Wirbelwind eleven times in twelve and the Knight's Cross Holders three times
+in four; a Panther head on takes it every time and side-on eleven times in twelve, and a Pak 38
+sited at its reach takes it every time in seven seconds. Italy's M3A1 carries its own line still.
 
 **The M8 is the Americans' armoured car**, in the Stuart V's place (`us_stuart` to `am_m8` on
 the army's list), and it is built from nothing: Ford's six-wheeler in olive drab with the 37 mm
