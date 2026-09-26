@@ -66,9 +66,11 @@ const REAL = {
                tables is the Ausf. A to C. */
                clear: 0.32 },
   hr_251:    { name: 'Sd.Kfz. 251/1 Ausf. C', len: 5.80, gun: 5.80,  wid: 2.10,  hgt: 1.75,
-               body: 1.73, clear: 0.32 },   /* the Ausf. A to C, which is the 5.80 m in most tables:
-               2.10 m over the lockers and 1.73 m across the body at the crease, 1.75 m to the rim of the
-               compartment, 320 mm under the belly */
+               body: 2.00, clear: 0.32 },   /* the Ausf. A to C, which is the 5.80 m in most tables:
+               2.10 m over the lockers, 1.75 m to the rim of the compartment and 320 mm under the belly.
+               The body is read off the four-view drawing in shots/ref (tools/ref/hr_251.json): 2.00 m
+               across the crease in plan, at the scale its own 5.80 m of length gives it. The first version
+               was built to 1.73, which the drawing puts a quarter of a metre narrow. */
   ger_maus:  { name: 'Panzer VIII Maus',    len: 10.09, gun: 10.20,  wid: 3.71,  hgt: 3.63,
                body: 3.71, bodyZ: 1.71, roof: 3.47, clear: 0.50 },   /* body: the hull is full width
                above the tracks, which is the whole shape of the thing -- the crew sit over the running
@@ -185,7 +187,7 @@ const PROBE = {
                is taken aft of the last bin and forward of the rear chamfer, where the side plate is bare */   /* the shield mount, the rear pintle MG and the aerial
                socket all stand above the 1.75 m top of the compartment, and none of them is part
                of a published height */
-  hr_251:    { noMount: true, hullZ: 21.0, bodyZ: 14.8, xLo: -27.5, xHi: -25.5, straddle: true },   /* the
+  hr_251:    { noMount: true, hullZ: 21.0, bodyZ: 15.6, xLo: -28.8, xHi: -26.5, straddle: true },   /* the
                slice is taken just under the crease aft of the last locker, where the side is bare; the
                MG 34 on its pintle and the man standing to it are no more part of the published height
                than the jeep's gun is */

@@ -65,6 +65,7 @@ npm install                  # once; Chromium is already on disk
 
 npm run verify               # lint + map check + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
+node tools/overlay.mjs <spec>  # a model laid over its reference drawing, view by view
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
@@ -138,6 +139,40 @@ Ground clearance is read from a `belly` field on the model rather than measured,
 because no geometric filter reliably separates a hull floor from the track
 running under it: on every one of these the track's inboard edge lies inside the
 hull's own width. Declare it when you add a vehicle.
+
+### `tools/overlay.mjs` - a model against its drawing
+
+`dims` says whether the envelope is the right size and a photograph says whether the thing looks
+like a tank. Neither says whether a part stands where the part stands, and that is most of what
+is wrong with a model built off photographs: the Panther's turret was half a metre too far
+forward and the 251's running gear a third of a metre too far aft, with every envelope figure
+right to a per cent and every photograph reading as the vehicle. So the model's own faces are
+projected orthographically onto a reference drawing, at the drawing's own scale, view by view,
+and the two are read against each other line for line.
+
+```sh
+node tools/overlay.mjs --grid shots/ref/hr_251.jpg --k=2                   # the drawing with a pixel grid
+node tools/overlay.mjs --grid shots/ref/hr_251.jpg --crop="x,y,w,h;..." --k=6   # zoomed boxes to read positions off
+node tools/overlay.mjs tools/ref/hr_251.json --tag=v2                      # every view in the spec
+node tools/overlay.mjs tools/ref/hr_251.json --only=side --file=/tmp/old.html
+```
+
+A spec (`tools/ref/<key>.json`) names the drawing, the model (a `VMODEL` vehicle or a
+`GUNMODEL` gun), the fittings and whether to draw the men, and gives each view its crop, which
+way the nose points, its pixels per metre (`ppm`, and `ppmv` where a view is stretched) and a pin:
+`at`, a model point in model units, and `px`, the pixel it lands on. What it draws is what a
+draughtsman draws, the creases and the outlines with the hidden lines taken out through a depth
+buffer at the output's resolution, blue for the hull, red for the mount, green for the men and
+magenta for a fitting, and it prints each view's scale and the model's span in drawing pixels and
+metres. The first version drew every face turned toward the viewer, and in plan that put all
+twelve road wheels on top of the guards that hide them.
+
+**The drawing is not in the repository and must not be.** A reference image is an image, which
+hard rule 5 keeps out, so it lives in `shots/ref/`, which is ignored; the spec is text and is
+committed, and a later session needs the drawing supplied again to run it. The method round the
+tool -- saving the drawing, a scale per view off a published figure measured in that view, the
+reading at a zoom, the list of disagreements in model units before any edit, and what to check
+afterwards -- is the `refdraw` skill (`.claude/skills/refdraw/SKILL.md`).
 
 ### `tools/duel.mjs` - balance, mechanically
 
@@ -3670,9 +3705,25 @@ along both sides, open above, in the grey (`HKC` off `HRG`). Two men and no pass
 driver on the left behind the plate and a gunner standing to the MG 34 on the pintle at the front
 of the compartment, with the commander's seat and the benches for ten empty. It carries one
 section (`carries`), which goes out of sight aboard it the way a section goes into the carrier,
-and is not drawn on the benches. On `tools/dims.mjs` it reads 5.85 m long against 5.80, 2.09
-wide over the lockers against 2.10, 1.73 across the body at the crease against 1.73, 1.75 to the
-rim against 1.75 and 0.32 of clearance.
+and is not drawn on the benches. On `tools/dims.mjs` it reads 5.83 m long against 5.80, 2.14
+wide against 2.10, 2.03 across the body at the crease against the drawing's 2.00, 1.77 to the rim
+against 1.75 and 0.32 of clearance.
+
+**It is laid over a four-view drawing** (`tools/ref/hr_251.json`, through `tools/overlay.mjs`),
+and the first version, built off photographs and published figures, was out in nearly every
+place the drawing could see and in none the envelope could. The running gear stood 4.2 units too
+far aft, stations, sprocket, idler and front axle alike. The bonnet stopped at 14.6 where the
+drawing runs it to the foot of the driver's plate at 8.4, so the compartment had half a metre it
+does not have and the pintle and the driver's seat stood a metre and half a metre ahead of where
+the drawing puts them. The body was 1.73 m across the crease against the drawing's 2.00, the upper
+rear plates stood upright where they lean in to a rim short of the crease, the back corners were
+square where they are chamfered off, the headlamps were on the mudguards where they are on the
+nose, and the MG 34 had no shield. The side of the bonnet carried a flat louvred hatch on a plane
+that was mostly inside the hull; the drawing has the Ausf. C's armoured cover over the engine
+intake there (`hkEngineSides`), a box standing out past the crease with a bevelled front and the
+louvres in it, which the side view alone reads as the upper side plate and the plan and the front
+view show for what it is. Laid over the drawing now, all four views agree with it to about a line
+width.
 
 What carries it, and each is built its own way. **The running gear is interleaved** (`hkStation`):
 six stations a side on torsion arms, the first, third and fifth an outer and an inner disc and
@@ -3682,23 +3733,27 @@ middle row, which shows between them, has the dish and the hub (1), and nobody s
 return rollers: the top run lies on the wheels. The spoked sprocket is at the front and the spoked
 idler at the back, and **the front axle is steered** on a transverse leaf with two 190-18 tyres
 (`hkFrontWheel`, `hkFrontAxle`) under mudguards whose outer edge is turned down (`hkMudguards`),
-each with its headlamp on top. **The body is seven rings** (`HKST`), each a bottom, a crease and a
-top point on one side, and every plate is laid between two of them, so the lower sides lean in to
+with the width indicator on a rod at the outer edge, and the headlamps stand on the corners of
+the nose. **The body is eight rings** (`HKST`), each a bottom, a crease and a top point on one side,
+with `HKPB` the ring at the foot of the driver's plate and `HKPT` the one at its top, and every plate is laid between two of them, so the lower sides lean in to
 the belly, the upper sides lean in to the rim and the bonnet climbs from the nose to the driver's
 plate: a set of facets with a weld bead down the crease and round the rim. The rear plates meet
 at the crease the way the sides do, and **the two doors are bent over it** (`hkRear`), a panel on
 each plate in a frame whose x runs across the vehicle and whose y runs up the plate. Anything
 fixed to a plate is put there by `hkOn` in the plate's own frame off `hkPlate`: the visor flaps on
 the driver's plate with the cross between them, the vision flaps and the cross on the upper sides,
-the louvred hatch on each engine side, the bonnet hatches and the radiator louvres.
+and the bonnet hatches with the filler cap forward of them. A roof covers the two front seats from
+the top of the driver's plate back to the pintle, with a curved rail on it bowed forward about the
+gunner.
 
 **The compartment is furnished** (`hkCab`): the two front seats, the wheel coming back on its
 column through the firewall, the levers and the instrument panel under the plate, the socket the
 pintle drops into, a cushion and a back pad for each man on the benches with the rifle rail over
 them, and the MG's ammunition boxes by the gunner's feet. **The MG 34 is the KS 750's gun**
 (`ksGun34`, pulled out of `ksMG34` so the two carry one gun) on a post and cradle of its own
-(`hkMG34`), laid about its balance point on the pintle, with no shield, as in the photograph it
-was drawn from. **The gunner turns with the gun about the pintle** (`turCrew`), which is where the
+(`hkMG34`), laid about its balance point on the pintle, behind a shield of two plates meeting in
+a V on the centre line with the slot for the gun between them, as the drawing has it in all four
+views. **The gunner turns with the gun about the pintle** (`turCrew`), which is where the
 mount's origin is, and the gun traverses 0.3 radians either way (`arc` 0.6) with the vehicle
 turning to bring it further, because swung wider he walks into the driver. Both men are
 `hr_crew`, the grenadier in field grey under a plain helmet with nothing in his hands, put on the
@@ -6541,7 +6596,10 @@ tools/fx.mjs                   effects card: the muzzle blast, the tracer, the b
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
+tools/overlay.mjs              a model's faces laid over its reference drawing, view by view
+tools/ref/                     the overlay specs: scale and pin per view (the drawings are in shots/ref/)
 .claude/hooks/session-start.sh installs dev dependencies on session start
+.claude/skills/refdraw/        the method for checking and correcting a model against a drawing
 shots/                         screenshot output, gitignored
 ```
 
@@ -6646,7 +6704,14 @@ shots/                         screenshot output, gitignored
   `tools/dims.mjs` could not see it, and the roof figure it was checking had been worked out
   from the model's own plates. Measure a scale off two things the drawing dimensions (the width
   over the tracks, the height), check it on a third, and read positions off the view where the
-  thing is seen square.
+  thing is seen square. `tools/overlay.mjs` does the laying over and the `refdraw` skill is the
+  method round it.
+- **Decide what a drawn outline is from every view, not the first.** A box on the side of the
+  251's bonnet read in the side view as the upper side plate with a crease a unit lower than the
+  model's, and the first reading of it was going to move the crease. The plan showed it standing
+  out past the crease and the front view showed louvres in its face: it is the armoured cover over
+  the engine intake. And check every move on the next overlay in the direction it went: the
+  headlamps were moved a unit aft off one view and came out a unit too far aft in two.
 - **A drawing's views are not always drawn to one scale.** The 57 mm gun's plan came out five
   per cent bigger than its side elevation off the same sheet, and put the shield three and a half
   units further ahead of the axle than the side view did. Take the scale off a published figure in
@@ -6706,6 +6771,14 @@ shots/                         screenshot output, gitignored
   seconds of trigger a player's vehicle machine gun takes to cook: the heat went to NaN, the
   coaxial under command never fired and never cooked, and the periscope rows failed with nothing
   in the diff anywhere near a periscope. `grep` the name in the committed file before adding one.
+- **A point laid off a man is laid on his bearing, and a man at a gun sits off its line.** The
+  layer's muzzle flash was put ahead of the gunner on his own facing while the piece is drawn at
+  `gunPost` on the gun's, and the layer sits a tenth of a radian off it: every round the 57 fired
+  flashed 3.4 units beside its muzzle and every round of the .30 a unit beside. The gate's row
+  measured the flash's distance from the gun, which a rotation about the gunner barely moves, so it
+  passed on the desktop and failed on the phone, where the angle came out larger. `muzzlePoint`
+  lays a set piece's flash off `gunPost` on `u.facing` now, as the draw does, and the rows compare
+  the point.
 - **`def.side` is the army.** A per-vehicle side-armour factor was the obvious name for the
   Panther's thin sides and would have made it a vehicle of no army at all; it is `flank`.
 - **Put a periscope, not a post, dead ahead of the commander.** The Panther's cupola was first
@@ -6990,7 +7063,13 @@ shots/                         screenshot output, gitignored
   the same fault a second time: the throttle puts a waypoint 320 units up the hull's own
   nose and nothing else, so a tank staged on the first free SPOT beside the headquarters
   drives into whatever is in front of it. It read 33.2 units of ground in three seconds on
-  one run and 11.4 on the next, on identical code, and the bar decided which.
+  one run and 11.4 on the next, on identical code, and the bar decided which. The aim row
+  after it failed once on a phone with the file passing it on the run before: no mark on any of
+  ten bearings, looking 0.22 radians down. The likeliest reading is the same fault a third time,
+  a hull parked on ground three battles have shelled looking down into a crater's rim inside
+  `povGround`'s 44-unit floor, and it is not established. The commander raises his eye now when
+  looking down finds nothing, and a failure prints how the ground 60 units out stands over the
+  tank, so the next one says which it was.
 - **Two background runs writing to one output file make a sparse file full of nulls**, and
   the rows that go missing look exactly like rows that never ran.
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo

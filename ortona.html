@@ -9872,11 +9872,17 @@ function muzzlePoint(u, m, i) {
   var variant = variantForModel(u, i), tab = MODELS.muz[variant], mz = tab && tab[m.pose];
   var set = MODELS.man[variant] && MODELS.man[variant][m.pose];
   if (mz && mz.length && mz[0] && mz[0].length) mz = mz[frameOf(set, m)];
-  /* the layer's round leaves the piece and not his shoulder, and the piece is ahead of
-     him by the same gunAt the draw uses */
+  /* the layer's round leaves the piece and not his shoulder, and it leaves the piece where
+     the piece is drawn: at gunPost, on the gun's own bearing and at FIG_SCALE. Laid off the
+     layer on his own bearing it came out beside the muzzle whenever he sat a little off the
+     gun's line, which he always does: 3.4 units beside the 57's and a unit beside a
+     Browning's, on every round */
   var gd = gunOf(u);
-  if ((i === 0 || (i === 1 && u.def.gunMate && !u.models[0].alive)) && gd.gunMuz && gunSet(u))
-    mz = [(u.def.speed ? gd.gunAt : -gd.gunAt) + gd.gunMuz[0], 0, gd.gunMuz[1]];
+  if ((i === 0 || (i === 1 && u.def.gunMate && !u.models[0].alive)) && gd.gunMuz && gunSet(u)) {
+    var gp = gunPost(u), gc = Math.cos(u.facing), gs = Math.sin(u.facing);
+    return { x: gp.x + gc * gd.gunMuz[0] * FIG_SCALE, y: gp.y + gs * gd.gunMuz[0] * FIG_SCALE,
+             z: groundZ(gp.x, gp.y) + gd.gunMuz[1] * FIG_SCALE };
+  }
   if (!mz) mz = [13, 0, 16.4];
   var c = Math.cos(m.f), s2 = Math.sin(m.f), k = FIG_SCALE * (m.sc || 1);
   return { x: m.x + (mz[0] * c - mz[1] * s2) * k, y: m.y + (mz[0] * s2 + mz[1] * c) * k,
@@ -25456,32 +25462,42 @@ var HKC = {
 };
 var HKG = {
   R: 3.29, T: .72, TW: 3.3, LP: 1.65, TY: 9.2,         /* 560 mm wheels, 280 mm track on 140 mm pitch */
-  st: [3.0, -1.4, -5.8, -10.2, -14.6, -19.0],          /* the six stations */
+  st: [5.9, 1.7, -2.5, -6.7, -10.9, -15.1],            /* the six stations */
   WD: .7, yO: 1.28, yM: .52,                           /* a disc, the outer and inner rows, the middle pair */
-  xSp: 8.0, zSp: 5.4, rSp: 3.2,
-  xId: -25.3, zId: 5.0, rId: 2.9,
-  xAx: 23.0, rTy: 4.92, rRim: 2.69, wTy: 1.12, yAx: 9.4 /* the front axle on 190-18 tyres, 1.60 m track */
+  xSp: 13.3, zSp: 5.4, rSp: 3.2,
+  xId: -20.5, zId: 5.0, rId: 2.9,
+  xAx: 27.2, rTy: 4.92, rRim: 2.69, wTy: 1.12, yAx: 9.4 /* the front axle on 190-18 tyres, 1.60 m track */
 };
 HKG.zW = HKG.R + HKG.T;
 var HKH = {
   zBelly: 3.76, zFloor: 6.0, zRim: 20.3, t: .35,
-  xNose: 33.8, xRear: -33.8, xPlate: 12.0, xHood: 14.6, xFire: 14.1,
-  half: 9.95, guard: 11.5, lock: 12.0,                 /* 1.73 m over the body, 2.10 m over the lockers */
-  zGuard: 10.1
+  xNose: 33.8, xRear: -33.8, xPlate: 6.9, xHood: 8.4, xFire: 8.1,
+  half: 11.7, guard: 12.2, lock: 12.3,                 /* 2.00 m over the crease, 2.10 m over the lockers */
+  zGuard: 10.6
 };
-/* The body as seven rings, each a bottom, a crease and a top point on the right side as
-   [x, y, z]: the nose, the bonnet climbing to the driver's plate, the compartment, and
-   the rear plates. The bonnet is closed between the first four; from the driver's plate
-   back the top is the rim of an open compartment. */
+/* The body as eight rings, each a bottom, a crease and a top point on the right side as
+   [x, y, z]: the nose, the bonnet widening and climbing to the driver's plate, the
+   compartment, the corners chamfered off the back, and the rear plates. The bonnet is
+   closed as far as the foot of the driver's plate (`HKPB`); from its top (`HKPT`) back the
+   top is the rim of an open compartment.
+
+   They are laid off the four-view drawing in tools/ref/hr_251.json, read through
+   tools/overlay.mjs: the bonnet runs back to the foot of the driver's plate a third of the way
+   along, where the first version stopped it two metres from the nose and gave the compartment
+   half a metre it did not have; the crease is two metres across and not 1.73; and the upper
+   rear plates lean in forty degrees to a rim that ends a third of a metre short of the crease,
+   with the corners of the back chamfered off, where the first version stood them upright. */
 var HKST = [
-  [[33.8, 4.2, 6.2], [33.8, 4.9, 9.6], [33.2, 4.3, 12.2]],       /* the nose */
-  [[31.0, 5.8, 4.7], [31.0, 7.8, 12.0], [30.7, 6.6, 13.8]],
-  [[26.0, 6.9, 3.9], [26.0, 9.3, 13.7], [26.0, 7.6, 15.4]],
-  [[14.6, 7.1, 3.76], [14.6, 9.95, 14.6], [14.6, 8.2, 16.6]],    /* the back of the bonnet, under the driver's plate */
-  [[12.0, 7.1, 3.76], [12.0, 9.95, 14.9], [12.0, 8.7, 20.3]],    /* the top of the driver's plate */
-  [[-28.0, 7.1, 3.76], [-28.0, 9.95, 14.9], [-28.0, 8.7, 20.3]],
-  [[-30.3, 7.1, 5.6], [-33.8, 9.95, 14.9], [-33.0, 8.7, 20.3]]   /* the rear plates, meeting at the crease */
+  [[33.8, 4.2, 6.2], [33.8, 5.4, 10.4], [33.2, 4.3, 12.6]],      /* the nose */
+  [[31.0, 5.8, 5.2], [30.8, 5.8, 12.4], [30.6, 4.3, 14.9]],
+  [[24.0, 6.9, 4.0], [24.0, 8.2, 13.4], [24.0, 6.0, 15.6]],
+  [[15.9, 7.1, 3.76], [15.9, 11.7, 15.0], [15.9, 8.1, 16.55]],   /* where the crease reaches its full width */
+  [[8.4, 7.1, 3.76], [8.4, 11.7, 15.8], [8.4, 10.1, 17.4]],      /* the foot of the driver's plate */
+  [[6.9, 7.1, 3.76], [6.9, 11.7, 15.8], [6.9, 8.25, 20.3]],      /* the top of the driver's plate */
+  [[-24.5, 7.1, 3.76], [-29.6, 11.7, 15.8], [-29.9, 8.25, 20.3]],/* where the chamfer off the back corner begins */
+  [[-28.9, 6.1, 6.9], [-33.8, 5.6, 15.8], [-29.9, 8.25, 20.3]]   /* the rear plates, meeting at the crease */
 ];
+var HKPB = 4, HKPT = 5;
 /* a face with its vertices turned so its normal points along `want` */
 function hkFace(v, want, col) {
   var n = faceNormal(v[0], v[1], v[2]);
@@ -25631,8 +25647,8 @@ function hkIdler(sd) {
   f = f.concat(lathe(g.xId, y, g.zId, [[0, -.95], [.85, -.95], [.85, .95], [0, .95]], 10, [C.dark, C.body, C.dark], true));
   f = f.concat(latheSide(g.xId, y + sd * .95, g.zId, [[0, 0], [.7, 0], [.7, .25], [.4, .45], [0, .45]], 10, [C.body, C.lit, C.body, C.lit], sd));
   f = f.concat(place(roll(cyl(0, 0, 0, .8, .8, g.TY - 7.3, 10, C.body, C.lit, 0, true), -sd * Math.PI / 2, 0, 0), 0, g.xId, sd * 7.3, g.zId));
-  f = f.concat(m4Box(sd, -29.2, -24.6, 7.0, 7.6, 3.6, 7.6, C.dark, C.body, C.dark, .12));
-  f = f.concat(place(pitch(tubeSmooth(-2.0, 1.2, 0, 0, .3, 6, C.steel, C.bare), .35, 0, 0), 0, -27.9, sd * 7.9, 7.3));
+  f = f.concat(m4Box(sd, g.xId - 3.9, g.xId + .7, 7.0, 7.6, 3.6, 7.6, C.dark, C.body, C.dark, .12));
+  f = f.concat(place(pitch(tubeSmooth(-2.0, 1.2, 0, 0, .3, 6, C.steel, C.bare), .35, 0, 0), 0, g.xId - 2.6, sd * 7.9, 7.3));
   return f;
 }
 /* A 190-18 on the steel wheel: a deep tyre with a bar tread, the dished centre with its
@@ -25689,16 +25705,25 @@ function hkRunningGear() {
    leaning back behind it, the nose and the rear plates. From the driver's plate back the
    top is open. */
 function hkShell() {
-  var C = HKC, S = HKST, f = [], i, sd;
+  var C = HKC, S = HKST, f = [], i, sd, last = S.length - 2;
   for (i = 0; i < S.length - 1; i++) {
     var a = S[i], b = S[i + 1];
     for (sd = -1; sd <= 1; sd += 2) {
+      if (i === last) {
+        /* the chamfer off the back corner: two triangles below the crease, cut along the line
+           from the corner of the crease to the corner of the rear plate, which is the edge
+           the drawing's rear view has, and one above it, where the rim has already ended */
+        f.push(hkFace([hkM(a[0], sd), hkM(b[0], sd), hkM(a[1], sd)], [0, sd, -.4], C.body));
+        f.push(hkFace([hkM(b[0], sd), hkM(b[1], sd), hkM(a[1], sd)], [-.5, sd, 0], C.body));
+        f.push(hkFace([hkM(a[1], sd), hkM(b[1], sd), hkM(a[2], sd)], [-.3, sd, .5], C.body));
+        continue;
+      }
       f.push(hkFace([hkM(a[0], sd), hkM(b[0], sd), hkM(b[1], sd), hkM(a[1], sd)], [0, sd, -.4], C.body));
       f.push(hkFace([hkM(a[1], sd), hkM(b[1], sd), hkM(b[2], sd), hkM(a[2], sd)], [0, sd, .5], C.body));
     }
     f.push(hkFace([hkM(a[0], -1), hkM(a[0], 1), hkM(b[0], 1), hkM(b[0], -1)], [0, 0, -1], C.dark));
-    if (i < 3) f.push(hkFace([hkM(a[2], -1), hkM(a[2], 1), hkM(b[2], 1), hkM(b[2], -1)], [0, 0, 1], C.lit));
-    else if (i === 3) f.push(hkFace([hkM(a[2], -1), hkM(a[2], 1), hkM(b[2], 1), hkM(b[2], -1)], [1, 0, .8], C.body));
+    if (i < HKPB) f.push(hkFace([hkM(a[2], -1), hkM(a[2], 1), hkM(b[2], 1), hkM(b[2], -1)], [0, 0, 1], C.lit));
+    else if (i === HKPB) f.push(hkFace([hkM(a[2], -1), hkM(a[2], 1), hkM(b[2], 1), hkM(b[2], -1)], [1, 0, .8], C.body));
   }
   var n = S[0], r = S[S.length - 1];
   f.push(hkFace([hkM(n[0], -1), hkM(n[1], -1), hkM(n[1], 1), hkM(n[0], 1)], [1, 0, 0], C.body));
@@ -25708,7 +25733,7 @@ function hkShell() {
   /* a weld bead down the crease and round the rim, which is what gives the facets an edge */
   for (sd = -1; sd <= 1; sd += 2) {
     for (i = 0; i < S.length - 1; i++) f = f.concat(hkBead(hkM(S[i][1], sd), hkM(S[i + 1][1], sd), .16));
-    for (i = 3; i < S.length - 1; i++) f = f.concat(hkBead(hkM(S[i][2], sd), hkM(S[i + 1][2], sd), .18));
+    for (i = HKPB; i < S.length - 1; i++) f = f.concat(hkBead(hkM(S[i][2], sd), hkM(S[i + 1][2], sd), .18));
   }
   return f;
 }
@@ -25721,33 +25746,42 @@ function hkBead(a, b, r) {
    bent at the crease; the floor; the firewall under the driver's plate and the inside of
    that plate; the inside of the rear plates; and the rim along the top of all of it. */
 function hkInner() {
-  var C = HKC, H = HKH, t = H.t, f = [], sd;
-  var yT = 8.7 - t, yC = H.half - t - .03, yF = 7.41, zC = 14.9, zF = H.zFloor, zR = H.zRim;
-  var A = { top: [14.1, 7.95, 17.1], ch: [14.1, yC, 14.66], fl: [14.1, yF, zF] };
-  var B = { top: [11.65, yT, zR], ch: [11.65, yC, zC] };
-  var M = { top: [-28.0, yT, zR], ch: [-28.0, yC, zC], fl: [-28.0, yF, zF] };
-  var R = { top: [-32.65, yT, zR], ch: [-33.44, yC, zC], fl: [-30.08, yF, zF] };
+  var C = HKC, H = HKH, S = HKST, t = H.t, f = [], sd, x;
+  var zF = H.zFloor, P = S[HKPB], Q = S[HKPT], K = S[HKPT + 1], E = S[HKPT + 2];
+  /* the lower side where it meets the floor, a plate's thickness in */
+  var yF = Q[0][1] + (zF - Q[0][2]) / (Q[1][2] - Q[0][2]) * (Q[1][1] - Q[0][1]) - t;
+  var A = { top: [P[2][0] - .3, P[2][1] - .5, P[2][2] - .3], ch: [P[1][0] - .3, P[1][1] - t - .03, P[1][2] - .05], fl: [P[1][0] - .3, yF, zF] };
+  var B = { top: [Q[2][0] - .35, Q[2][1] - t, Q[2][2]], ch: [Q[1][0] - .35, Q[1][1] - t - .03, Q[1][2]] };
+  var M = { top: [K[2][0] + .35, K[2][1] - t, K[2][2]], ch: [K[1][0] + .3, K[1][1] - t - .03, K[1][2]], fl: [K[0][0] - 3.1, yF, zF] };
+  var R = { ch: [E[1][0] + t, E[1][1] - t, E[1][2]], fl: [K[0][0] - 3.8, E[0][1] - .5, zF] };
   for (sd = -1; sd <= 1; sd += 2) {
     var w = [0, -sd, 0];
     f.push(hkFace([hkM(A.top, sd), hkM(B.top, sd), hkM(B.ch, sd), hkM(A.ch, sd)], w, C.inner));
     f.push(hkFace([hkM(B.top, sd), hkM(M.top, sd), hkM(M.ch, sd), hkM(B.ch, sd)], w, C.inner));
-    f.push(hkFace([hkM(M.top, sd), hkM(R.top, sd), hkM(R.ch, sd), hkM(M.ch, sd)], w, C.inner));
+    f.push(hkFace([hkM(M.ch, sd), hkM(R.ch, sd), hkM(M.top, sd)], [.4, -sd, 0], C.inner));
     f.push(hkFace([hkM(A.ch, sd), hkM(M.ch, sd), hkM(M.fl, sd), hkM(A.fl, sd)], [0, -sd, .3], C.innerD));
-    f.push(hkFace([hkM(M.ch, sd), hkM(R.ch, sd), hkM(R.fl, sd), hkM(M.fl, sd)], [0, -sd, .3], C.innerD));
+    f.push(hkFace([hkM(M.ch, sd), hkM(R.ch, sd), hkM(R.fl, sd), hkM(M.fl, sd)], [.4, -sd, .3], C.innerD));
     /* the rim */
-    f.push(hkFace([hkM(HKST[4][2], sd), hkM(HKST[5][2], sd), hkM(M.top, sd), hkM(B.top, sd)], [0, 0, 1], C.lit));
-    f.push(hkFace([hkM(HKST[5][2], sd), hkM(HKST[6][2], sd), hkM(R.top, sd), hkM(M.top, sd)], [0, 0, 1], C.lit));
+    f.push(hkFace([hkM(Q[2], sd), hkM(K[2], sd), hkM(M.top, sd), hkM(B.top, sd)], [0, 0, 1], C.lit));
   }
-  f.push(hkFace([hkM(A.fl, -1), hkM(R.fl, -1), hkM(R.fl, 1), hkM(A.fl, 1)], [0, 0, 1], C.floor));
+  f.push(hkFace([hkM(A.fl, -1), hkM(M.fl, -1), hkM(R.fl, -1), hkM(R.fl, 1), hkM(M.fl, 1), hkM(A.fl, 1)], [0, 0, 1], C.floor));
   f.push(hkFace([hkM(A.fl, -1), hkM(A.ch, -1), hkM(A.top, -1), hkM(A.top, 1), hkM(A.ch, 1), hkM(A.fl, 1)], [-1, 0, 0], C.innerD));
   f.push(hkFace([hkM(A.top, -1), hkM(A.top, 1), hkM(B.top, 1), hkM(B.top, -1)], [-1, 0, .6], C.inner));
-  f.push(hkFace([hkM(R.ch, -1), hkM(R.top, -1), hkM(R.top, 1), hkM(R.ch, 1)], [1, 0, 0], C.inner));
+  /* the inside of the rear plates, up to the rim across the back, and down to the floor */
+  f.push(hkFace([hkM(R.ch, -1), hkM(M.top, -1), hkM(M.top, 1), hkM(R.ch, 1)], [1, 0, -.3], C.inner));
   f.push(hkFace([hkM(R.fl, -1), hkM(R.ch, -1), hkM(R.ch, 1), hkM(R.fl, 1)], [1, 0, .4], C.innerD));
-  f.push(hkFace([hkM(HKST[4][2], -1), hkM(HKST[4][2], 1), hkM(B.top, 1), hkM(B.top, -1)], [0, 0, 1], C.lit));
-  f.push(hkFace([hkM(HKST[6][2], -1), hkM(HKST[6][2], 1), hkM(R.top, 1), hkM(R.top, -1)], [0, 0, 1], C.lit));
+  f.push(hkFace([hkM(Q[2], -1), hkM(Q[2], 1), hkM(B.top, 1), hkM(B.top, -1)], [0, 0, 1], C.lit));
+  f.push(hkFace([hkM(K[2], -1), hkM(K[2], 1), hkM(M.top, 1), hkM(M.top, -1)], [0, 0, 1], C.lit));
   /* floor plates, ribbed across */
-  var x;
-  for (x = 11.0; x > -29; x -= 5.0) f = f.concat(box(x, 0, zF, .3, 13.4, .12, C.innerD, C.inner, C.innerD, 0));
+  for (x = P[1][0] - 1.4; x > R.fl[0] + 1; x -= 5.0) f = f.concat(box(x, 0, zF, .3, 2 * yF - .8, .12, C.innerD, C.inner, C.innerD, 0));
+  /* The roof over the driver and the commander, from the top of the driver's plate back to
+     the MG's mount, and the curved rail on it that the drawing's plan shows standing a
+     hand's breadth in front of the shield, bowed forward on a circle about the gunner. */
+  f = f.concat(box((Q[2][0] + HKG.xRoof) / 2 - .2, 0, H.zRim - .3, Q[2][0] - HKG.xRoof - .4, 2 * (Q[2][1] - t) - .1, .3,
+                   C.body, C.lit, C.inner, 0));
+  var arc = [], k, n = 9, cx = HKG.tx - 5.3, rr = 10.9, a1 = Math.asin(7.2 / rr);
+  for (k = 0; k <= n; k++) { var an = -a1 + 2 * a1 * k / n; arc.push([cx + Math.cos(an) * rr, Math.sin(an) * rr, H.zRim + .22]); }
+  for (k = 0; k < n; k++) f = f.concat(hkBead(arc[k], arc[k + 1], .2));
   return f;
 }
 /* the surface of the bonnet at a station, and the direction it runs */
@@ -25765,10 +25799,10 @@ function hkHoodU(x0, x1) { return hkNorm([x1 - x0, 0, hkHoodZ(x1) - hkHoodZ(x0)]
 function hkGuards() {
   var C = HKC, H = HKH, f = [], sd;
   for (sd = -1; sd <= 1; sd += 2) {
-    f = f.concat(m4Box(sd, -29.6, 17.0, 8.6, H.guard, H.zGuard, H.zGuard + .25, C.body, C.lit, C.dark, 0));
-    f = f.concat(m4Box(sd, -29.6, 17.0, H.guard - .22, H.guard, H.zGuard - .5, H.zGuard + .25, C.body, C.lit, C.dark, 0));
+    f = f.concat(m4Box(sd, -28.4, 17.0, 8.6, H.guard, H.zGuard, H.zGuard + .25, C.body, C.lit, C.dark, 0));
+    f = f.concat(m4Box(sd, -28.4, 17.0, H.guard - .22, H.guard, H.zGuard - .5, H.zGuard + .25, C.body, C.lit, C.dark, 0));
     /* the brackets under it, off the hull side */
-    [12.0, 2.0, -9.0, -20.0, -28.6].forEach(function (x) {
+    [15.0, 5.0, -6.0, -17.0, -27.6].forEach(function (x) {
       f = f.concat(m4Box(sd, x - .3, x + .3, 8.4, H.guard - .3, H.zGuard - 1.2, H.zGuard, C.dark, C.body, C.dark, 0));
     });
   }
@@ -25778,7 +25812,7 @@ function hkGuards() {
    face, the door's raised edge, two catches and a hinge along the bottom. */
 function hkLockers() {
   var C = HKC, H = HKH, f = [], sd, z0 = H.zGuard + .25, z1 = 14.4;
-  [[-1.2, -7.6], [-8.2, -14.6], [-15.2, -21.6]].forEach(function (p) {
+  [[-2.2, -9.9], [-10.1, -17.8], [-18.0, -25.7]].forEach(function (p) {
     var x1 = p[0], x0 = p[1], xm = (x0 + x1) / 2;
     for (sd = -1; sd <= 1; sd += 2) {
       f = f.concat(m4Box(sd, x0, x1, 8.9, H.lock, z0, z1, C.body, C.lit, C.body, .12));
@@ -25793,67 +25827,88 @@ function hkLockers() {
   return f;
 }
 /* the front mudguards: a strip of plate over each tyre, turned down at the front, flat
-   over the top and dropping back to meet the guard */
+   over the top and dropping steeply behind the tyre, with the width indicator on its rod at
+   the outer edge. The headlamps are on the corners of the nose, where the drawing's front and
+   plan views put them, and not on the guards. */
 function hkMudguards() {
-  var C = HKC, f = [], sd, i;
-  var P = [[30.0, 6.2], [29.2, 8.9], [27.7, 10.5], [25.2, 11.05], [20.8, 11.05], [18.5, 10.7], [17.0, 10.35]];
+  var C = HKC, g = HKG, f = [], sd, i, xa = g.xAx;
+  var P = [[xa + 5.6, 8.2], [xa + 4.8, 10.3], [xa + 3.6, 11.7], [xa + 2.4, 12.1], [xa - 3.0, 12.1], [xa - 4.3, 11.4],
+           [xa - 5.1, 9.8], [xa - 5.4, 8.2]];
   for (sd = -1; sd <= 1; sd += 2) {
     for (i = 0; i < P.length - 1; i++) {
       var a = P[i], b = P[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]) + .05;
-      var sl = box(0, 0, -.11, L, 3.5, .22, C.body, C.lit, C.dark, 0);
-      sl = sl.concat(box(0, sd * 1.64, -.95, L, .22, .95, C.body, C.body, C.body, 0));
-      f = f.concat(place(pitch(sl, Math.atan2(b[1] - a[1], b[0] - a[0]), 0, 0), 0, (a[0] + b[0]) / 2, sd * 9.5, (a[1] + b[1]) / 2));
+      var sl = box(0, 0, -.11, L, 4.8, .22, C.body, C.lit, C.dark, 0);
+      sl = sl.concat(box(0, sd * 2.29, -.95, L, .22, .95, C.body, C.body, C.body, 0));
+      f = f.concat(place(pitch(sl, Math.atan2(b[1] - a[1], b[0] - a[0]), 0, 0), 0, (a[0] + b[0]) / 2, sd * 9.9, (a[1] + b[1]) / 2));
     }
     /* the bead rolled along its outer edge, and the stay down to the body */
-    for (i = 0; i < P.length - 1; i++) f = f.concat(hkBead([P[i][0], sd * 11.25, P[i][1]], [P[i + 1][0], sd * 11.25, P[i + 1][1]], .13));
-    f = f.concat(hkBead([26.0, sd * 8.2, 11.0], [24.5, sd * 7.7, 12.5], .16));
-    /* the headlamp on its stalk, a pot with the glass to the front and a cowl over it */
-    f = f.concat(tubeSmooth(25.2, 26.9, sd * 9.8, 12.35, .72, 10, C.body, C.lit));
-    f = f.concat(tubeSmooth(26.9, 27.05, sd * 9.8, 12.35, .6, 10, C.lamp, C.lamp));
-    f = f.concat(place(roll(tubeSmooth(-.7, .7, 0, 0, .2, 6, C.dark, C.dark), 0, 0, 0), 0, 25.9, sd * 9.8, 11.4));
-    f = f.concat(box(26.2, sd * 9.8, 12.95, 1.6, 1.3, .2, C.body, C.lit, C.body, 0));
+    for (i = 0; i < P.length - 1; i++) f = f.concat(hkBead([P[i][0], sd * 12.3, P[i][1]], [P[i + 1][0], sd * 12.3, P[i + 1][1]], .13));
+    f = f.concat(hkBead([xa + 2.0, sd * 7.9, 12.0], [xa + .5, sd * 7.3, 13.2], .16));
+    /* the width indicator, a rod standing off the outer edge with a ball on its top */
+    f = f.concat(taperLimb([xa + 2.1, sd * 11.9, 12.2], [xa + 2.1, sd * 11.9, 16.2], .22, .16, C.dark));
+    f = f.concat(tubeSmooth(-.3, .3, 0, 0, .3, 8, C.body, C.lit).map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0] + xa + 2.1, p[1] + sd * 11.9, p[2] + 16.4]; }), c: q.c, n: q.n };
+    }));
+    /* the headlamp on the nose corner, a pot with the glass to the front and a cowl over it */
+    f = f.concat(tubeSmooth(30.9, 32.7, sd * 6.8, 13.0, 1.0, 12, C.body, C.lit));
+    f = f.concat(tubeSmooth(32.7, 32.9, sd * 6.8, 13.0, .86, 12, C.lamp, C.lamp));
+    f = f.concat(hkBead([31.8, sd * 6.7, 12.1], [31.8, sd * 5.6, 11.2], .24));
+    f = f.concat(box(31.8, sd * 5.75, 10.9, 1.2, .3, .9, C.dark, C.body, C.dark, 0));
+    f = f.concat(box(31.4, sd * 6.8, 13.95, 1.9, 1.9, .7, C.body, C.lit, C.dark, .1));
   }
   /* the blackout lamp on the left guard, and the horn */
-  f = f.concat(box(27.9, -9.8, 11.05, .9, .9, .7, C.body, C.lit, C.body, .1));
-  f = f.concat(box(28.36, -9.8, 11.2, .06, .5, .1, C.lamp, C.lamp, C.lamp, 0));
-  f = f.concat(tubeSmooth(28.0, 29.2, 7.3, 12.3, .38, 8, C.body, C.dark));
+  f = f.concat(box(xa + 2.8, -9.9, 12.1, .9, .9, .7, C.body, C.lit, C.body, .1));
+  f = f.concat(box(xa + 3.26, -9.9, 12.25, .06, .5, .1, C.lamp, C.lamp, C.lamp, 0));
+  f = f.concat(tubeSmooth(30.4, 31.6, 6.4, 12.3, .38, 8, C.body, C.dark));
   return f;
 }
 /* the bonnet: the two access hatches meeting on the centreline with their hinges along
-   the outer edges and a handle each, and the armoured louvres over the radiator on the
-   front of the deck */
+   the outer edges and a handle each, and the filler cap forward of them on a plain deck */
 function hkBonnet() {
-  var C = HKC, f = [], sd, i;
-  var x0 = 16.2, x1 = 25.2, xm = (x0 + x1) / 2, u = hkHoodU(xm + 1, xm - 1), n = hkNorm(hkCross(u, [0, 1, 0]));
+  var C = HKC, f = [], sd;
+  var x0 = 14.4, x1 = 24.9, xm = (x0 + x1) / 2, u = hkHoodU(xm + 1, xm - 1), n = hkNorm(hkCross(u, [0, 1, 0]));
   if (n[2] < 0) n = [-n[0], -n[1], -n[2]];
   for (sd = -1; sd <= 1; sd += 2) {
     var hp = [];
-    hp = hp.concat(box(0, sd * 3.7, 0, x1 - x0, 7.0, .18, C.lit, C.lit, C.body, .08));
-    hp = hp.concat(tubeSmooth(-(x1 - x0) / 2 + .4, (x1 - x0) / 2 - .4, sd * 7.25, .1, .2, 6, C.dark, C.body));
+    hp = hp.concat(box(0, sd * 3.0, 0, x1 - x0, 5.8, .18, C.lit, C.lit, C.body, .08));
+    hp = hp.concat(tubeSmooth(-(x1 - x0) / 2 + .4, (x1 - x0) / 2 - .4, sd * 5.95, .1, .2, 6, C.dark, C.body));
     hp = hp.concat(box(-1.5, sd * 1.6, .18, .8, .4, .18, C.steel, C.bare, C.steel, 0));
     f = f.concat(hkOn(hp, [xm, 0, hkHoodZ(xm)], [-u[0], 0, -u[2]], n));
   }
-  var lx0 = 26.6, lx1 = 30.3, lm = (lx0 + lx1) / 2, lu = hkHoodU(lm + .5, lm - .5), ln = hkNorm(hkCross(lu, [0, 1, 0]));
+  var lx0 = 26.0, lx1 = 29.7, lm = (lx0 + lx1) / 2, lu = hkHoodU(lm + .5, lm - .5), ln = hkNorm(hkCross(lu, [0, 1, 0]));
   if (ln[2] < 0) ln = [-ln[0], -ln[1], -ln[2]];
-  var lv = box(0, 0, 0, lx1 - lx0, 10.4, .12, C.dark, C.body, C.dark, 0);
-  for (i = 0; i < 6; i++) {
-    lv = lv.concat(place(roll(box(0, 0, 0, .55, 9.8, .16, C.lit, C.lit, C.body, 0), 0, 0, 0), 0, -(lx1 - lx0) / 2 + .4 + i * .6, 0, .12));
-  }
-  f = f.concat(hkOn(lv, [lm, 0, hkHoodZ(lm)], [-lu[0], 0, -lu[2]], ln));
+  /* the filler cap forward of the hatches */
+  f = f.concat(hkOn(latheSide(0, 0, 0, [[0, 0], [1.3, 0], [1.3, .2], [1.0, .32], [0, .32]], 12, [C.body, C.lit, C.body, C.lit], 1)
+                      .map(function (q) { return { v: q.v.map(function (p) { return [p[0], p[2], p[1]]; }), c: q.c }; }),
+                    [27.2, 0, hkHoodZ(27.2)], [-lu[0], 0, -lu[2]], ln));
   return f;
 }
-/* the louvred hatch in each engine side plate, the plate being the one between the back
-   of the bonnet and the second ring */
+/* the armoured cover over the engine's air intake on each side of the bonnet: a box
+   standing out from the upper side plate with a bevelled front, the intake louvres showing
+   in that front face and a weld along its top edges. It is read off the drawing, where the
+   side view has the outer face from 21.8 to 15.8 over a bevel reaching forward to 24.8 and
+   the plan has it standing out to 12 units at its rear. The first version laid a flat
+   louvred hatch on a plane through three corners of the body, most of which was inside the
+   hull, and a plate further aft than the drawing's box. */
 function hkEngineSides() {
-  var C = HKC, S = HKST, f = [], sd, i;
+  var C = HKC, f = [], sd, i;
   for (sd = -1; sd <= 1; sd += 2) {
-    var a = hkM(S[3][1], sd), b = hkM(S[2][1], sd), c = hkM(S[3][2], sd);
-    var pl = hkPlate(a, b, c, sd), o = hkMix(hkMix(a, b, .5), hkMix(c, hkM(S[2][2], sd), .5), .5);
-    var hh = box(0, 0, 0, 7.4, 1.5, .16, C.body, C.body, C.dark, .06);
-    hh = hh.concat(box(0, 0, .16, 6.2, 1.0, .04, C.dark, C.dark, C.dark, 0));
-    for (i = 0; i < 11; i++) hh = hh.concat(box(-2.9 + i * .58, 0, .16, .26, 1.0, .12, C.body, C.body, C.dark, 0));
-    [-2.6, 2.6].forEach(function (x) { hh = hh.concat(box(x, 0, .16, .5, .3, .2, C.steel, C.bare, C.steel, 0)); });
-    f = f.concat(hkOn(hh, [o[0], o[1], o[2]], pl.u, pl.n));
+    var E = hkM([24.75, 7.4, 15.4], sd), F = hkM([24.75, 7.4, 12.9], sd);
+    var A = hkM([22.1, 10.15, 15.55], sd), D = hkM([22.1, 10.15, 12.85], sd);
+    var B = hkM([15.8, 11.95, 16.1], sd), Cc = hkM([15.8, 11.95, 13.85], sd);
+    var G = hkM([15.85, 10.3, 16.05], sd), Gb = hkM([15.85, 10.3, 13.9], sd);
+    f.push(hkFace([A, B, Cc, D], [.27, sd * .96, 0], C.body));
+    f.push(hkFace([E, A, D, F], [.72, sd * .69, 0], C.hole));
+    f.push(hkFace([E, A, B, G], [0, 0, 1], C.lit));
+    f.push(hkFace([B, G, Gb, Cc], [-1, 0, 0], C.body));
+    f.push(hkFace([E, G, Gb, F], [-.31, -sd * .95, 0], C.dark));
+    f.push(hkFace([F, D, Cc, Gb], [0, 0, -1], C.dark));
+    /* the louvres in the open front, sloped down and out so the rain runs off them */
+    for (i = 0; i < 6; i++) {
+      var t = .12 + i * .15;
+      f = f.concat(hkBead(hkMix(hkMix(E, F, t), A, .06), hkMix(hkMix(A, D, t + .05), E, .06), .14));
+    }
+    f = f.concat(hkBead(A, B, .1)).concat(hkBead(E, A, .1)).concat(hkBead(A, D, .08));
   }
   return f;
 }
@@ -25862,7 +25917,7 @@ function hkEngineSides() {
    cross between them. */
 function hkDriverPlate() {
   var C = HKC, S = HKST, f = [], sd;
-  var a = S[3][2], b = S[4][2], u = hkNorm([b[0] - a[0], 0, b[2] - a[2]]), n = hkNorm(hkCross([0, 1, 0], u));
+  var a = S[HKPB][2], b = S[HKPT][2], u = hkNorm([b[0] - a[0], 0, b[2] - a[2]]), n = hkNorm(hkCross([0, 1, 0], u));
   if (n[0] < 0) n = [-n[0], -n[1], -n[2]];
   for (sd = -1; sd <= 1; sd += 2) {
     var o = [hkMix(a, b, .52)[0], sd * 4.6, hkMix(a, b, .52)[2]];
@@ -25881,19 +25936,20 @@ function hkDriverPlate() {
 function hkSideFlaps() {
   var C = HKC, S = HKST, f = [], sd;
   for (sd = -1; sd <= 1; sd += 2) {
-    var pl = hkPlate(hkM(S[4][1], sd), hkM(S[5][1], sd), hkM(S[4][2], sd), sd);
+    var i0 = HKPT, i1 = HKPT + 1;
+    var pl = hkPlate(hkM(S[i0][1], sd), hkM(S[i1][1], sd), hkM(S[i0][2], sd), sd);
     var v = hkCross(pl.n, pl.u);
-    [[7.6, 2.6, 1.1], [-23.2, 1.1, .5], [-26.6, 1.1, .5]].forEach(function (q) {
-      var t = (q[0] - S[4][1][0]) / (S[5][1][0] - S[4][1][0]);
-      var base = hkMix(hkMix(hkM(S[4][1], sd), hkM(S[5][1], sd), t), hkMix(hkM(S[4][2], sd), hkM(S[5][2], sd), t), .62);
+    [[4.3, 3.2, 1.1], [-12.3, 1.1, .5], [-27.4, 1.1, .5]].forEach(function (q) {
+      var t = (q[0] - S[i0][1][0]) / (S[i1][1][0] - S[i0][1][0]);
+      var base = hkMix(hkMix(hkM(S[i0][1], sd), hkM(S[i1][1], sd), t), hkMix(hkM(S[i0][2], sd), hkM(S[i1][2], sd), t), .62);
       var fl = box(0, 0, 0, q[1], q[2], .18, C.body, C.lit, C.dark, .06);
       fl = fl.concat(box(0, 0, .18, q[1] * .72, .12, .06, C.hole, C.hole, C.hole, 0));
       fl = fl.concat(place(tubeSmooth(-q[1] / 2, q[1] / 2, 0, 0, .12, 5, C.dark, C.dark), 0, 0, q[2] / 2, .12));
       f = f.concat(hkOn(fl, base, pl.u, pl.n));
     });
     /* the cross on the upper side, between the driver's flap and the lockers */
-    var t2 = (-4.5 - S[4][1][0]) / (S[5][1][0] - S[4][1][0]);
-    var co = hkMix(hkMix(hkM(S[4][1], sd), hkM(S[5][1], sd), t2), hkMix(hkM(S[4][2], sd), hkM(S[5][2], sd), t2), .5);
+    var t2 = (-6.0 - S[i0][1][0]) / (S[i1][1][0] - S[i0][1][0]);
+    var co = hkMix(hkMix(hkM(S[i0][1], sd), hkM(S[i1][1], sd), t2), hkMix(hkM(S[i0][2], sd), hkM(S[i1][2], sd), t2), .5);
     f = f.concat(hp4Cross(co, pl.u, v, pl.n, 3.4, .52, .24));
   }
   return f;
@@ -25903,7 +25959,7 @@ function hkSideFlaps() {
    lamp, and the tow coupling low on the lower plate. A panel is laid on each plate in a
    frame whose x runs across the vehicle and whose y runs up the plate from the crease. */
 function hkRear() {
-  var C = HKC, r = HKST[6], f = [], sd;
+  var C = HKC, r = HKST[HKST.length - 1], f = [], sd;
   function onPlate(faces, p0, p1) {
     var up = hkNorm([p1[0] - p0[0], 0, p1[2] - p0[2]]);
     return hkOn(faces, [r[1][0], 0, r[1][2]], [0, -1, 0], hkCross([0, -1, 0], up));
@@ -25922,10 +25978,11 @@ function hkRear() {
   /* the seam between the doors, down both plates */
   f = f.concat(onPlate(box(0, -(lo - 2.7) / 2, 0, .22, lo - 2.7, .34, C.hole, C.hole, C.hole, 0), r[0], r[1]));
   f = f.concat(onPlate(box(0, (hi - .6) / 2, 0, .22, hi - .6, .34, C.hole, C.hole, C.hole, 0), r[1], r[2]));
-  f = f.concat(box(-33.85, -7.4, 16.0, .5, .9, .7, C.body, C.lit, C.body, .08));
-  f = f.concat(box(-34.13, -7.4, 16.15, .06, .6, .4, '#8a2a22', '#8a2a22', '#8a2a22', 0));
-  f = f.concat(place(roll(tubeSmooth(-.9, .9, 0, 0, .35, 8, C.steel, C.bare), 0, 0, 0), Math.PI / 2, -31.3, 0, 6.2));
-  f = f.concat(box(-31.0, 0, 5.8, 1.4, 1.4, .9, C.dark, C.body, C.dark, .1));
+  /* the tail lamp on the left chamfer, and the tow coupling standing out of the lower plate */
+  f = f.concat(box(-31.6, -7.3, 14.3, .9, .9, .7, C.body, C.lit, C.body, .08));
+  f = f.concat(box(-32.08, -7.3, 14.45, .06, .6, .4, '#8a2a22', '#8a2a22', '#8a2a22', 0));
+  f = f.concat(place(roll(tubeSmooth(-.9, .9, 0, 0, .35, 8, C.steel, C.bare), 0, 0, 0), Math.PI / 2, -30.9, 0, 7.6));
+  f = f.concat(box(-29.9, 0, 7.1, 1.6, 1.4, .9, C.dark, C.body, C.dark, .1));
   return f;
 }
 /* the nose: the number plate, the two towing eyes under it and the starting-handle boss */
@@ -25944,20 +26001,22 @@ function hkNose() {
 /* the silencer under the left mudguard behind the tyre, and its tail pipe */
 function hkExhaust() {
   var C = HKC, f = [];
-  f = f.concat(tubeSmooth(13.2, 17.6, -9.1, 7.4, .78, 10, C.dark, C.body));
-  f = f.concat(tubeSmooth(12.0, 13.2, -9.1, 7.1, .22, 6, C.steel, C.steel));
-  f = f.concat(box(15.4, -8.2, 7.8, .5, 1.6, .5, C.dark, C.body, C.dark, 0));
+  f = f.concat(tubeSmooth(17.8, 21.6, -9.1, 7.4, .78, 10, C.dark, C.body));
+  f = f.concat(tubeSmooth(16.8, 17.8, -9.1, 7.1, .22, 6, C.steel, C.steel));
+  f = f.concat(box(19.6, -8.2, 7.8, .5, 1.6, .5, C.dark, C.body, C.dark, 0));
   return f;
 }
 
 /* ---- the fighting compartment ---- */
 
 /* the pintle, the wheel, the driver's seat and the gunner's place, which the crew are built
-   round: the pintle at the top of the driver's plate on the centre line with the bore 1.9
-   over it, the wheel ahead of the driver on its column, and the gunner standing between
-   the two front seats with the butt in his shoulder */
-HKG.tx = 11.2; HKG.mz = 20.6; HKG.gz = 2.3;
-HKG.hub = [10.8, -4.6, 12.3]; HKG.xHip = 5.8; HKG.xGun = 3.0; HKG.gripX = 9.6;
+   round: the pintle at the back edge of the roof over the front seats, on the centre line
+   with the bore 1.9 over it, where the drawing puts the gun; the wheel ahead of the driver
+   on its column; and the gunner standing in the aisle between the benches with the butt in
+   his shoulder. The first version stood the pintle on the top of the driver's plate, a metre
+   ahead of where the drawing has it, and the driver's seat half a metre ahead of his visor. */
+HKG.tx = .2; HKG.mz = 20.6; HKG.gz = 2.3; HKG.xRoof = 1.0;
+HKG.hub = [6.8, -4.6, 12.3]; HKG.xHip = 1.8; HKG.xGun = -8.0; HKG.gripX = -1.4;
 
 /* A seat in the front of the compartment: the pan on its frame, the cushion and the
    backrest, which leans back a little on its own bracket. */
@@ -25987,35 +26046,35 @@ function hkCab() {
   f = f.concat(place(pitch(wh, tilt, 0, 0), 0, g.hub[0], g.hub[1], g.hub[2]));
   f = f.concat(place(pitch(tubeSmooth(0, 3.2, 0, 0, .3, 8, C.dark, C.body), -(Math.PI / 2 - tilt), 0, 0), 0, g.hub[0], g.hub[1], g.hub[2]));
   /* the gear lever and the brake lever beside it, off the floor on the driver's right */
-  f = f.concat(taperLimb([10.0, -2.3, H.zFloor], [9.3, -2.5, 12.4], .32, .2, C.steel));
-  f = f.concat(box(9.25, -2.5, 12.3, .6, .6, .5, C.black, C.black, C.black, .15));
-  f = f.concat(taperLimb([9.4, -1.7, H.zFloor], [8.4, -1.8, 10.9], .3, .2, C.steel));
+  var dx = g.hub[0] - 10.8;
+  f = f.concat(taperLimb([10.0 + dx, -2.3, H.zFloor], [9.3 + dx, -2.5, 12.4], .32, .2, C.steel));
+  f = f.concat(box(9.25 + dx, -2.5, 12.3, .6, .6, .5, C.black, C.black, C.black, .15));
+  f = f.concat(taperLimb([9.4 + dx, -1.7, H.zFloor], [8.4 + dx, -1.8, 10.9], .3, .2, C.steel));
   /* the instrument panel under the plate, and its dials */
-  f = f.concat(box(13.55, -3.6, 14.4, .7, 6.4, 2.3, C.innerD, C.inner, C.innerD, .08));
+  f = f.concat(box(H.xFire - .55, -3.6, 14.4, .7, 6.4, 2.3, C.innerD, C.inner, C.innerD, .08));
   [[-5.4, 15.6], [-4.0, 15.6], [-2.6, 15.6], [-1.6, 15.0]].forEach(function (p) {
-    f = f.concat(tubeSmooth(13.08, 13.22, p[0], p[1], .42, 10, C.steel, C.black));
+    f = f.concat(tubeSmooth(H.xFire - 1.02, H.xFire - .88, p[0], p[1], .42, 10, C.steel, C.black));
   });
-  /* the pintle's socket: a sleeve on a bracket welded to the inside of the plate */
-  f = f.concat(box(11.75, 0, 18.3, .9, 1.6, 2.0, C.inner, C.lit, C.innerD, .06));
+  /* the pintle's socket: a sleeve under the back edge of the roof, on a bracket to it */
+  f = f.concat(box(g.xRoof - .2, 0, 18.9, 1.4, 1.6, 1.4, C.inner, C.lit, C.innerD, .06));
   f = f.concat(cyl(g.tx, 0, 19.1, .55, .55, 1.35, 10, C.steel, C.bare, 0, true));
-  f = f.concat(box(11.5, 0, 18.9, .8, .4, .6, C.inner, C.lit, C.innerD, 0));
   /* the benches, a cushion and a back pad to each man, and the rifle rail */
   for (sd = -1; sd <= 1; sd += 2) {
-    f = f.concat(m4Box(sd, -28.8, -.3, 5.3, 8.4, 9.2, 9.9, C.inner, C.lit, C.innerD, .06));
-    f = f.concat(m4Box(sd, -28.8, -.3, 5.3, 5.6, 7.4, 9.9, C.innerD, C.inner, C.innerD, 0));
-    [-1.0, -27.6].forEach(function (x) { f = f.concat(m4Box(sd, x - .3, x + .3, 5.4, 5.8, H.zFloor, 9.2, C.innerD, C.inner, C.innerD, 0)); });
+    f = f.concat(m4Box(sd, -28.4, -2.4, 5.3, 8.4, 9.2, 9.9, C.inner, C.lit, C.innerD, .06));
+    f = f.concat(m4Box(sd, -28.4, -2.4, 5.3, 5.6, 7.4, 9.9, C.innerD, C.inner, C.innerD, 0));
+    [-3.0, -27.8].forEach(function (x) { f = f.concat(m4Box(sd, x - .3, x + .3, 5.4, 5.8, H.zFloor, 9.2, C.innerD, C.inner, C.innerD, 0)); });
     for (i = 0; i < 5; i++) {
-      var x1 = -.7 - i * 5.5, x0 = x1 - 5.2;
+      var x1 = -2.6 - i * 5.15, x0 = x1 - 4.95;
       f = f.concat(m4Box(sd, x0, x1, 5.5, 8.3, 9.9, 10.75, C.pad, C.padL, C.pad, .25));
       f = f.concat(m4Box(sd, x0 + .2, x1 - .2, 8.55, 9.15, 12.4, 16.1, C.pad, C.padL, C.pad, .2));
     }
-    f = f.concat(tubeSmooth(-27.8, -1.0, sd * 8.9, 17.7, .13, 6, C.steel, C.steel));
-    [-4.0, -9.5, -15.0, -20.5, -26.0].forEach(function (x) {
+    f = f.concat(tubeSmooth(-27.6, -3.0, sd * 8.9, 17.7, .13, 6, C.steel, C.steel));
+    [-5.6, -10.8, -15.9, -21.1, -26.2].forEach(function (x) {
       f = f.concat(m4Box(sd, x - .2, x + .2, 8.75, 9.15, 17.3, 18.1, C.steel, C.bare, C.steel, 0));
     });
   }
   /* the MG's ammunition boxes on the floor to the gunner's right, one on top of two */
-  [[2.6, 3.3, 0], [2.6, 5.0, 0], [2.6, 4.15, 1]].forEach(function (p) {
+  [[-4.6, 3.3, 0], [-4.6, 5.0, 0], [-4.6, 4.15, 1]].forEach(function (p) {
     var z = H.zFloor + p[2] * 1.75;
     f = f.concat(box(p[0], p[1], z, 2.6, 1.55, 1.7, C.dark, C.body, C.dark, .08));
     f = f.concat(box(p[0], p[1], z + 1.7, 1.1, .5, .18, C.steel, C.bare, C.steel, 0));
@@ -26030,15 +26089,28 @@ function hkHull() {
 }
 
 /* The MG 34 on the pintle at the front of the compartment, built in the mount's own frame
-   about the pintle: the post, the cradle and its yoke, and the gun, which is the one the KS
-   750 carries with its drum hung on the left, laid on its balance a little behind the
-   jacket. There is no shield, as there is none on the vehicle it was drawn from. */
+   about the pintle: the post, the cradle and its yoke, the gun, which is the one the KS 750
+   carries with its drum hung on the left, laid on its balance a little behind the jacket,
+   and the shield. The shield is two plates meeting in a V on the centre line with the slot
+   for the gun between them, the apex forward, leaning back about thirteen degrees, which is how
+   the drawing has it in all four views; the first version left it off after the photograph it
+   was drawn from. */
 function hkMG34() {
-  var C = HKC, gz = HKG.gz, f = [];
+  var C = HKC, gz = HKG.gz, f = [], s;
   f = f.concat(cyl(0, 0, -.6, .34, .34, gz - .35, 8, C.steel, C.bare, 0, true));
   f = f.concat(box(0, 0, gz - .95, 1.3, 1.0, .28, C.steel, C.bare, C.steel, 0));
   [-1, 1].forEach(function (s) { f = f.concat(box(0, s * .46, gz - .8, .55, .12, .62, C.steel, C.bare, C.steel, 0)); });
-  return f.concat(place(ksGun34(gz), 0, -6.2, 0, 0));
+  f = f.concat(place(ksGun34(gz), 0, -6.2, 0, 0));
+  for (s = -1; s <= 1; s += 2) {
+    var zb = -.4, zt = 3.3, back = .85;
+    var q = [[2.4, s * .32, zb], [-.2, s * 4.0, zb], [-.2 - back, s * 4.0, zt], [2.4 - back, s * .32, zt]];
+    var fr = hkFace(q, [1, s * .6, .6], C.body), bk = hkFace(q.map(function (p) { return [p[0] - .18, p[1], p[2]]; }), [-1, -s * .6, -.6], C.dark);
+    f.push(fr); f.push(bk);
+    f = f.concat(hkBead(q[1], q[2], .1)).concat(hkBead(q[2], q[3], .1));
+  }
+  /* the bracket from the shield down to the cradle */
+  f = f.concat(box(.7, 0, gz - 1.1, 1.8, .7, .3, C.steel, C.bare, C.steel, 0));
+  return f;
 }
 
 /* The crew, who are the vehicle's own and not part of its plate: the driver at the wheel

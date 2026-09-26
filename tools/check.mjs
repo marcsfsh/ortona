@@ -1815,17 +1815,33 @@ for (const device of TARGETS) {
      is taken up to four per cent past the gun's reach so that the sight can say OUT OF RANGE,
      and is refused by the gun for that and for a wall in the way. Accepting the first lock,
      the row locked onto somebody the gun could not reach and put nothing in the street. */
+  /* And he raises his eye if looking down finds nothing. The row failed on one phone run with
+     no mark on any of the ten bearings and the same file passing it on the run before. By this
+     row three battles have been fought round the headquarters the tank is parked by, and the
+     likeliest reading is a hull in a shell hole looking 0.22 radians down into the rim, which
+     `povGround` meets inside its 44-unit floor; a level look over the rim ends at the gun's
+     reach. The message says how the ground round the tank stands, so a failure says which. */
   const bearings = [0, .5, -.5, 1, -1, 1.6, -1.6, 2.4, -2.4, Math.PI];
   let laid = false;
   for (const want of ['mark', 'any']) {
-    for (const dy of bearings) {
-      await page.evaluate(d => { window.POV.yaw = window.POV.u.facing + d; window.POV.pitch = -.22; }, dy);
-      await fastForward(page, .2);
-      laid = await page.evaluate(w => { const D = window.DRV; return w === 'mark' ? !!D.mark && !D.lock : !!(D.mark || D.lock); }, want);
+    for (const pitch of [-.22, -.08, 0]) {
+      for (const dy of bearings) {
+        await page.evaluate(([d, p]) => { window.POV.yaw = window.POV.u.facing + d; window.POV.pitch = p; }, [dy, pitch]);
+        await fastForward(page, .2);
+        laid = await page.evaluate(w => { const D = window.DRV; return w === 'mark' ? !!D.mark && !D.lock : !!(D.mark || D.lock); }, want);
+        if (laid) break;
+      }
       if (laid) break;
     }
     if (laid) break;
   }
+  /* what the ground round the tank is doing, for the message if it fails */
+  const lie = await page.evaluate(() => {
+    const u = window.POV.u, gz = window.groundZ(u.x, u.y);
+    let rim = 0;
+    for (let k = 0; k < 8; k++) rim += window.groundZ(u.x + Math.cos(k * Math.PI / 4) * 60, u.y + Math.sin(k * Math.PI / 4) * 60) - gz;
+    return { x: Math.round(u.x), y: Math.round(u.y), rim: +(rim / 8).toFixed(1), gun: u.gunDmg > 0 };
+  });
   const shot = await page.evaluate(() => {
     window.__booms = 0;
     const ex = window.explode;
@@ -1861,7 +1877,8 @@ for (const device of TARGETS) {
      three rounds beside it. */
   ok('a round goes where the commander points, target or none', shot && aim.mark && fired > 0,
      `${fired} rounds into the street in nine seconds` +
-     (aim.mark ? ', laid on ' + aim.how : ', but nothing under the crosshair at any point'));
+     (aim.mark ? ', laid on ' + aim.how : ', but nothing under the crosshair at any point, with the tank at ' +
+      lie.x + ',' + lie.y + ', the ground 60 out standing ' + lie.rim + ' over it on average' + (lie.gun ? ' and its gun OUT' : '')));
 
   /* --- the coaxial: its own trigger, no reload, and a barrel that will only take so much --- */
   const mg0 = await page.evaluate(() => {
@@ -4119,9 +4136,11 @@ for (const device of TARGETS) {
       (W.inMasonry(mt.x, mt.y) ? ' in masonry' : '') + ', ' + (u.target ? 'a target' : 'no target') + (u.moving ? ', moving' : '') +
       (u.gar ? ', garrisoned' : '') + (u.coverSlots ? ', in cover' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.am_mg;
-    /* the flash leaves the gun's muzzle, not the man */
+    /* the flash leaves the gun's muzzle, not the man: the point, and not only its distance from
+       the gun, because the layer sits a little off the gun's line and a flash laid off him came
+       out beside the muzzle at the right distance from the gun */
     const mz = W.muzzlePoint(u, u.models[0], 0), gd = W.gunOf(u);
-    out.muz = Math.abs(Math.hypot(mz.x - gp.x, mz.y - gp.y) - gd.gunMuz[0] * W.FIG_SCALE) < 1.5;
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * gd.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * gd.gunMuz[0] * W.FIG_SCALE) < 1;
     /* the .50 */
     out.upg = W.upgradable(u) && !!W.UPGRADES.m2hb;
     const w0 = W.mainW(u);
@@ -4248,7 +4267,7 @@ for (const device of TARGETS) {
     out.mateFaces = Math.abs(W.angDiff(u.models[1].f, u.facing + Math.PI / 2)) < .25;
     out.mesh = W.teamMesh(u) === W.MODELS.gun.hr_mg;
     const mz = W.muzzlePoint(u, u.models[0], 0), gd = W.gunOf(u);
-    out.muz = Math.abs(Math.hypot(mz.x - gp.x, mz.y - gp.y) - gd.gunMuz[0] * W.FIG_SCALE) < 1.5;
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * gd.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * gd.gunMuz[0] * W.FIG_SCALE) < 1;
     /* the MG 42 */
     out.upg = W.upgradable(u) && !!W.UPGRADES.mg42t;
     const w0 = W.mainW(u);
@@ -4567,7 +4586,7 @@ for (const device of TARGETS) {
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -14);
     out.mesh = W.teamMesh(u) === W.MODELS.gun.am_at;
     const mz = W.muzzlePoint(u, u.models[0], 0);
-    out.muz = Math.abs(Math.hypot(mz.x - gp.x, mz.y - gp.y) - D.gunMuz[0] * W.FIG_SCALE) < 1.5;
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
     const box = W.mgCarryAt(u, u.models[2], 2, 'gi_atb') ? W._mgc.buf : null;
     out.box = box === W.MODELS.carry.box57;
     u.packed = true;

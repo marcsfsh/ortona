@@ -1,0 +1,88 @@
+{
+  "image": "shots/ref/hr_251.jpg",
+  "key": "hr_251",
+  "up": [],
+  "crew": false,
+  "note": "four views of the Sd.Kfz. 251/1 Ausf. C on one sheet, 500 x 570 px. Scales per view off the published 5.80 m, 2.10 m and 1.75 m: plan 468 px nose to tail and 171 px across; side 470 px nose to crease; front 174 px over the mudguards and 145 px to the rim; rear 169 px over the lockers and 142 px to the rim. Each view is pinned where the model is surest of itself. The side view is pinned at the nose and carries a vertical scale of its own (85.2): read at its length scale the rim stands at 1.83 m against the published 1.75, which the front and rear views agree with, and at 85.2 the 190-18 tyre is its published 0.84 m.",
+  "views": {
+    "side": {
+      "nose": "left",
+      "crop": [
+        0,
+        0,
+        500,
+        190
+      ],
+      "ppm": 81.0,
+      "at": [
+        33.8,
+        0,
+        0
+      ],
+      "px": [
+        20.75,
+        182.5
+      ],
+      "k": 3,
+      "ppmv": 85.2
+    },
+    "plan": {
+      "nose": "left",
+      "crop": [
+        0,
+        372,
+        500,
+        190
+      ],
+      "ppm": 80.7,
+      "at": [
+        33.8,
+        0,
+        0
+      ],
+      "px": [
+        18.75,
+        466.6
+      ],
+      "k": 3
+    },
+    "front": {
+      "crop": [
+        30,
+        190,
+        210,
+        180
+      ],
+      "ppm": 82.9,
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "px": [
+        131.5,
+        365
+      ],
+      "k": 4
+    },
+    "rear": {
+      "crop": [
+        270,
+        190,
+        215,
+        180
+      ],
+      "ppm": 80.8,
+      "at": [
+        0,
+        0,
+        0
+      ],
+      "px": [
+        374.5,
+        363.75
+      ],
+      "k": 4
+    }
+  }
+}
