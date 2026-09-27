@@ -1,0 +1,5 @@
+{ "image": "shots/ref/heer_a.jpg", "man": "gr_rifle", "vary": { "weapon": "none" },
+  "views": {
+    "front": {"crop": [520, 180, 190, 504], "ppm": 272, "at": [0, 0, 0], "px": [614, 682], "k": 3, "pose": {"base": "stand", "legs": [[0, -0.2, 0.2, 0.14], [0, -0.2, 0.2, 0.18]], "lean": 0.05}},
+    "front_b": {"kind": "front", "crop": [255, 200, 220, 484], "ppm": 304, "at": "crown", "px": [365, 221], "k": 3, "pose": {"base": "stand", "legs": [[0, -0.3, 0.3, 0.12], [0, -0.3, 0.3, 0.12]], "lean": 0.1}}
+  } }

@@ -18,6 +18,12 @@
  *   node tools/skirmish.mjs --diff=2         at veteran settings
  *   node tools/skirmish.mjs --json
  *
+ * A baseline from before the Canadian and paratroop armies were retired is a brain
+ * written against a roster that is not there any more. What it buys and counts goes
+ * through natKey, which still hands a retired key the unit that took its place, so most
+ * of it runs; anything it reads off UNITS by a retired key directly comes back empty, and
+ * it fights handicapped by that. Take --base at or after that commit, or fight --self.
+ *
  * Nothing here reimplements the game. The two brains are driven by intercepting the
  * aiTick call that frame() already makes, each with its own saved state, so both sides
  * think on the game's own cadence and every other system runs exactly as it ships.
@@ -196,8 +202,8 @@ await deploy(page, { side: 'us', diff: DIFF, map: MAP });
 await install(page, baseSrc);
 
 /* Ortona is not a symmetric map and the two rosters are not the same army: with the same
-   brain on both sides the Canadians take thirteen points of ground to the Germans' four,
-   every time. So a single match cannot measure a brain. Each pair below is the same
+   brain on both sides, when the Canadians held this side of it, they took thirteen points
+   of ground to the Germans' four, every time. So a single match cannot measure a brain. Each pair below is the same
    match played twice with the brains swapped, and the brains are compared to each other
    on the same side of the map, which is the only comparison the ground does not skew. */
 const matches = [];

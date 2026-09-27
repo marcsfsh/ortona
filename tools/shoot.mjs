@@ -6,8 +6,8 @@
  *   node tools/shoot.mjs start hud --device=phone
  *   node tools/shoot.mjs armour --turn         every vehicle, four angles each
  *   node tools/shoot.mjs free --cam=1400,950,700,1.57,0.9 --sim=30 --bare
- *   node tools/shoot.mjs vehicle --only=ger_p4 --up=skirts   with its field upgrades on
- *   node tools/shoot.mjs man --play --only=us_rifle,ger_gren  one man at play distance, both devices
+ *   node tools/shoot.mjs vehicle --only=hr_p4 --up=skirts    with its field upgrades on
+ *   node tools/shoot.mjs man --play --only=am_rifle,hr_gren   one man at play distance, both devices
  *   node tools/shoot.mjs man --base=HEAD --side --turn        before and after in one picture
  *
  * Output lands in shots/<device>/. Read the PNGs back to judge the visuals.
@@ -26,7 +26,7 @@ const args = parseArgs(process.argv.slice(2));
 const MAP = args.map || null;      /* which shipped map the scene is shot on */
 let DEVICE = args.device || 'desktop';
 const SIM = args.sim === undefined ? 0 : Number(args.sim);
-const SIDE = args.side || 'us';
+const SIDE = typeof args.side === 'string' ? args.side : 'us';   /* --side=ger picks a side; a bare --side is the comparison below */
 const DIFF = args.diff === undefined ? 1 : Number(args.diff);
 const BARE = !!args.bare;               /* hide the flat UI, keep only the 3D */
 const TURN = !!args.turn;               /* four angles instead of one */
@@ -99,7 +99,7 @@ const SCENES = {
           let v = window.G.units.find(u => !u.dead && window.owned(u) && u.cat === 'veh' && (u.def.upgrades || []).some(k => !(u.up && u.up[k])));
           if (!v) {
             const sp = window.nearestFree(hq.x + (s === 'us' ? 220 : -220), hq.y + 90);
-            v = window.spawnUnit(own, s === 'us' ? 'us_m8' : 'ger_sd222', sp.x, sp.y, 0);
+            v = window.spawnUnit(own, s === 'us' ? 'am_jeep' : 'hr_ks750', sp.x, sp.y, 0);
           }
           window.__o.camera({ x: v.x, y: v.y, dist: 420, pitch: 0.9 }); window.simpleTap(v.x, v.y);
         }, SIDE);
@@ -183,16 +183,18 @@ const SCENES = {
       await page.evaluate(() => window.povOff());
       /* and a tank: the commander up out of his hatch, then down on his seat behind the
          periscope, then looking round the turret he is sitting in */
-      await page.evaluate(() => {
-        const key = window.G.side === 'us' ? 'us_sher' : 'ger_kt';
+      await page.evaluate(([want, ups]) => {
+        const key = want || (window.G.side === 'us' ? 'am_sher' : 'ger_kt');
         /* with its own side, or the whole town is unexplored and the view is a black wall */
         const own = window.G.units.filter(q => q.side === window.G.side && !q.dead && q.cat !== 'veh');
         own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
         const at = own.length ? window.nearestFree(own[0].x - 70, own[0].y + 40)
                               : { x: window.WORLD.w / 2 - 220, y: window.WORLD.h / 2 };
         const u = window.spawnUnit(window.G.side, key, at.x, at.y, 0);
+        /* --up fits upgrades first, and one that rebuilds the vehicle is sat in as what it is rebuilt as */
+        ups.forEach(k => { if (u.up) u.up[k] = true; });
         window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
-      });
+      }, [args.key || null, UP]);
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });
       for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
                                                 ['turret', false, .7, -.75], ['crew', false, null, null],
@@ -212,7 +214,7 @@ const SCENES = {
                them: the gunner is all but straight down from the commander's eye, at the
                pitch limit. Take whichever station stands furthest off in plan, which is
                the one there is room to see. */
-            const I = window.VMODEL[u.key].inside, e = I.eyeIn;
+            const I = window.VMODEL[window.vkey ? window.vkey(u) : u.key].inside, e = I.eyeIn;
             let best = null, far = -1;
             I.crew.forEach(c => {
               const d = Math.hypot(c.x - e.x, c.y - e.y);
@@ -235,7 +237,7 @@ const SCENES = {
           if (window.fireLine(u, q) && window.dist(u, q) > 150) best = { q, ang };
         }
         if (!best) return;
-        const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'ger_p4' : 'us_sher',
+        const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'hr_p4' : 'am_sher',
                                    best.q.x, best.q.y, best.ang + Math.PI);
         window.povHatch(true); window.POV.yaw = best.ang; window.POV.pitch = -.06;
         window.DRV.took = 1; window.DRV.padFire = true;
@@ -300,7 +302,7 @@ const SCENES = {
      time, from lower than a player looks, in each posture it can hold, and against the
      distance the player really sees it from. */
   man: {
-    help: 'One soldier, one posture, turned under a fixed light: --only=us_rifle --man=0 --pose=fire --turn [--strip --frame=n --dirty --play --noshadow --shadowonly --variant=v --sheet --stage=trench|wall|window --side]',
+    help: 'One soldier, one posture, turned under a fixed light: --only=am_rifle --man=0 --pose=fire --turn [--strip --frame=n --dirty --play --noshadow --shadowonly --variant=v --sheet --stage=trench|wall|window --side]',
     async run(page) {
       await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       /* --play is the picture the player sees and the one the READ row of the men card
@@ -312,7 +314,7 @@ const SCENES = {
       if (!play) await unlockCamera(page, 12, 0.02);
       const spot = await flatSpot(page, args.stage ? 60 : 90);
       const cat = await catalog(page);
-      const keys = (args.only ? String(args.only).split(',') : ['us_rifle', 'ger_gren'])
+      const keys = (args.only ? String(args.only).split(',') : ['am_rifle', 'hr_gren'])
         .filter(k => cat.units.some(u => u.key === k && (u.cat === 'inf' || u.cat === 'team')));
       const poses = (args.pose ? String(args.pose).split(',') : ['stand', 'ready', 'walk', 'run', 'fire', 'kneel', 'kfire', 'prone', 'crawl']);
       const men = args.man === undefined ? [0] : String(args.man).split(',').map(Number);
@@ -353,7 +355,7 @@ const SCENES = {
           const got = await page.evaluate(o => {
             window.__o.pose([{ key: o.key, x: 0, y: 0, facing: 0 }], o.spot);
             const u = window.G.units[0], side = u.side, enemy = side === 'us' ? 'ger' : 'us';
-            const e = spawnUnit(enemy, enemy === 'us' ? 'us_rifle' : 'ger_gren', o.spot.x + 300, o.spot.y, 0);
+            const e = spawnUnit(enemy, enemy === 'us' ? 'am_rifle' : 'hr_gren', o.spot.x + 300, o.spot.y, 0);
             e.order = null; e.path = null; e.dest = null;
             const mid = c => dsq(c.x, c.y, WORLD.w / 2, WORLD.h / 2);
             /* the enemy is put where the threat is, the section is given it as a target,
@@ -444,7 +446,7 @@ const SCENES = {
           await shoot(page, out(name), { settle: SETTLE });
           await unstage(page);
         }
-        const rowVariants = args.variant ? String(args.variant).split(',') : ['can_rifle', 'fj_rifle'];
+        const rowVariants = args.variant ? String(args.variant).split(',') : ['gi_rifle', 'gr_rifle'];
         const rowPoses = ['stand', 'ready', 'walk', 'run', 'fire', 'kneel', 'kfire', 'prone', 'crawl', 'seat', 'sit', 'served', 'fall', 'dead'];
         for (const v of rowVariants) {
           /* only the postures this file has for him, a cycle at its mid-stride frame */
@@ -664,7 +666,7 @@ const SCENES = {
         /* on ground it can stand on, because a tube that walks out of a wall drops its mission on the way */
         const m = window.spawnUnit(window.G.own, s === 'us' ? 'us_mor' : 'ger_mor', mp.x, mp.y, 0);
         m.setup = 0; m.packed = false;
-        const e = window.spawnUnit(s === 'us' ? 'ger' : 'us', s === 'us' ? 'ger_gren' : 'us_rifle', ep.x, ep.y, Math.PI);
+        const e = window.spawnUnit(s === 'us' ? 'ger' : 'us', s === 'us' ? 'hr_gren' : 'am_rifle', ep.x, ep.y, Math.PI);
         e.setup = 0;
         window.orderBarrage(m, sp.x + 40, sp.y, true);
         window.__o.camera({ x: sp.x + 20, y: sp.y, dist: 520, pitch: 0.9 });
@@ -799,7 +801,7 @@ if (args.list || args.help) {
 
 const wanted = args._.length ? args._ : ['start', 'battle', 'hud', 'closeup', 'terrain', 'editor'];
 for (const s of wanted) if (!SCENES[s]) { console.error(`unknown scene "${s}" (try --list)`); process.exit(1); }
-if (args.side && !BASE) { console.error('--side needs --base=<rev> to compare against'); process.exit(1); }
+if (args.side === true && !BASE) { console.error('--side needs --base=<rev> to compare against'); process.exit(1); }
 
 const t0 = Date.now();
 const browser = await launch();
@@ -807,7 +809,7 @@ let failed = 0;
 /* --side photographs the base revision and then the working file, and lays each pair
    side by side; --play photographs both devices, because the phone is the one that
    has to work and a picture of the desktop alone says nothing about it */
-const passes = args.side ? [{ file: revisionFile(BASE), base: true }, { file: null, base: false }]
+const passes = args.side === true ? [{ file: revisionFile(BASE), base: true }, { file: null, base: false }]
                          : [{ file: BASE ? revisionFile(BASE) : null, base: !!BASE }];
 const devices = args.play && !args.device ? ['desktop', 'phone'] : [DEVICE];
 const tagOnly = args.tag ? `-${args.tag}` : '';
@@ -816,7 +818,7 @@ for (const pass of passes) {
   TAG = tagOnly + (pass.base ? '-base' : '');
   WRITTEN = pass.written = [];
   if (pass.base) console.log(`photographing ${BASE}`);
-  else if (args.side) console.log('photographing the working file');
+  else if (args.side === true) console.log('photographing the working file');
   for (const dev of devices) {
     DEVICE = dev;
     for (const name of wanted) {
@@ -844,7 +846,7 @@ for (const pass of passes) {
   }
 }
 
-if (args.side) {
+if (args.side === true) {
   console.log('\nside by side');
   const labels = [`base ${BASE} (${shortRev(BASE)})`, `working tree (HEAD ${shortRev('HEAD')})`];
   for (const w of passes[1].written) {

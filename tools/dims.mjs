@@ -38,16 +38,34 @@ const ONLY = args._.length ? args._ : null;
    tracks it stands on, because the eye reads the body against the track, not against
    a tape measure. `clear` is the ground clearance under the belly. */
 const REAL = {
-  us_stuart: { name: 'Stuart V (M3A3)',     len: 5.03,  gun: 5.03,   wid: 2.51,  hgt: 2.64,
-               body: 2.51, bodyZ: 1.10, roof: 2.05, clear: 0.42 },
-  us_sher:   { name: 'Sherman V (M4A4)',    len: 6.06,  gun: 6.06,   wid: 2.62,  hgt: 2.97,
-               body: 2.62, bodyZ: 1.20, roof: 2.62, clear: 0.43 },
-  am_sher:   { name: 'M4 (75 mm)',          len: 5.84,  gun: 5.89,   wid: 2.62,  hgt: 2.74,
-               body: 2.56, bodyZ: 1.37, roof: 2.56, clear: 0.43 },   /* 19 ft 2 in long and 19 ft 4 in with
-               the 75 forward, 8 ft 7 in over the sand shields, 9 ft to the top of the turret and 17 in of
-               clearance. The body is the hull over the sponsons: 83 in between the track centres and a
-               16.56 in track put the tracks' outer edges 2.53 m apart and the sponson sides stand just
-               outside them, which is what leaves the sand shields their two inches a side */
+  am_stuart: { name: 'M3 light tank',       len: 4.53,  gun: 4.53,   wid: 2.24,  hgt: 2.39,
+               body: 2.24, bodyZ: 1.41, roof: 2.24, clear: 0.42 },   /* 178.4 in long with the 37 mm inside
+               it, 88 in wide, which is over the sponsons and the tracks alike, 94 in high and 16.5 in of
+               clearance (afvdatabase). The drawing puts the roof of the turret at 2.32 m and the domes of
+               the two periscopes at 2.45, either side of the published height */
+  am_sher:   { name: 'M4A1 (75 mm)',        len: 5.84,  gun: 5.84,   wid: 2.62,  hgt: 2.74,
+               body: 2.62, bodyZ: 1.37, roof: 2.49, clear: 0.43 },   /* 19 ft 2 in long, 8 ft 7 in wide,
+               9 ft to the top of the hatch and 17 in of clearance. The four-view the model is laid
+               over (tools/ref/am_sher.json) puts the muzzle of the 75 a tenth of a metre behind the front
+               of the tracks, so the length with the gun forward is the length, and it runs 5.95 m from the
+               tracks to the turned-down ends of the rear mudguards. The body is the cast hull over the
+               sponsons, 2.65 m in the front view and 2.63 in the plan; the roof is the width across the
+               rounded shoulders a hand under the top of the hull, 2.49 m in the front view */
+  am_e8:     { name: 'M4A3E8 (76 mm)',      len: 6.27,  gun: 7.54,   wid: 2.99,  hgt: 2.97,
+               body: 2.62, bodyZ: 1.54, roof: 2.62, clear: 0.44 },   /* the Easy Eight an M4A1 is rebuilt as:
+               20 ft 7 in long over the fenders, 24 ft 8 in with the 76 mm forward, 9 ft 10 in over the
+               tracks, 2.97 m to the cupola and 17.5 in of clearance. The four-view it is laid over
+               (tools/ref/am_e8.json) puts the top of the cupola at 2.91 m, which is the height taken, and
+               the brake a few centimetres past 7.54. The welded hull is the full width of the sponsons from
+               the fenders to the roof, 2.61 m in the plan */
+  am_m26:    { name: 'M26 Pershing (90 mm)', len: 6.34,  gun: 8.65,   wid: 3.51,  hgt: 2.78,
+               body: 3.43, bodyZ: 1.44, roof: 2.18, clear: 0.44 },   /* 20 ft 9.5 in long over the fenders,
+               28 ft 4.5 in with the 90 mm forward, 11 ft 6 in wide over the fenders, 9 ft 1.5 in to the cupola
+               and 17.2 in of clearance. The two sheets it is laid over (tools/ref/am_m26.json and am_m26_b.json)
+               draw the cupola at 2.66 and 2.72 m against their own lengths, which is the height taken off the
+               published figure rather than off them. The body is over the stowage bins on the fenders, 3.43 m
+               in the plan of the T26E4; the roof is the upper hull between them, 2.24 m in that plan and 2.12 in
+               the T26E5's */
   us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
                body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
                widest point is not its tracks: the sponsons stand eight inches proud of them each
@@ -59,36 +77,31 @@ const REAL = {
   ger_tig:   { name: 'Tiger I Ausf. E',     len: 6.316, gun: 8.45,   wid: 3.56,  hgt: 3.00,
                body: 2.97, bodyZ: 1.55, roof: 2.97, clear: 0.47 },   /* body and roof are the same
                number: the Tiger's hull sides are one vertical plate from the sponson to the roof */
-  ger_h251:  { name: 'Sd.Kfz. 251 Ausf. D', len: 5.98,  gun: 5.98,   wid: 2.10,  hgt: 1.75,
-               body: 1.73,   /* the armoured body is 1.73 m across and the track guards
-               take it out to 2.10. Getting that step wrong is what made the first attempt look like
-               a box on tracks rather than a Hanomag. 5.98 m is the Ausf. D; the 5.80 m in most
-               tables is the Ausf. A to C. */
-               clear: 0.32 },
   hr_251:    { name: 'Sd.Kfz. 251/1 Ausf. C', len: 5.80, gun: 5.80,  wid: 2.10,  hgt: 1.75,
-               body: 1.73, clear: 0.32 },   /* the Ausf. A to C, which is the 5.80 m in most tables:
-               2.10 m over the lockers and 1.73 m across the body at the crease, 1.75 m to the rim of the
-               compartment, 320 mm under the belly */
+               body: 2.00, clear: 0.32 },   /* the Ausf. A to C, which is the 5.80 m in most tables:
+               2.10 m over the lockers, 1.75 m to the rim of the compartment and 320 mm under the belly.
+               The body is read off the four-view drawing in shots/ref (tools/ref/hr_251.json): 2.00 m
+               across the crease in plan, at the scale its own 5.80 m of length gives it. The first version
+               was built to 1.73, which the drawing puts a quarter of a metre narrow. */
   ger_maus:  { name: 'Panzer VIII Maus',    len: 10.09, gun: 10.20,  wid: 3.71,  hgt: 3.63,
                body: 3.71, bodyZ: 1.71, roof: 3.47, clear: 0.50 },   /* body: the hull is full width
                above the tracks, which is the whole shape of the thing -- the crew sit over the running
                gear because two 1.1 m tracks leave only 1.51 m between them. roof is that 3.71 taken in
                by the small lean on the last half metre, and is derived rather than published. 10.2 m
                over the gun against 10.09 m of hull: the muzzle clears the nose by 110 mm */
-  ger_p4:    { name: 'Panzer IV Ausf. H',   len: 5.92,  gun: 7.02,   wid: 2.88,  hgt: 2.68,
-               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* body: the superstructure sits
-               well inboard of the 2.88 m over the guards, which is what leaves the walkable shelf */
   hr_p4:     { name: 'Panzer IV Ausf. H (Heer)', len: 5.92, gun: 7.02,  wid: 2.88,  hgt: 2.68,
-               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the same tank as the one above,
-               built again from nothing, so the same published figures: the width is over the track
-               guards, which is what it is without the Schürzen, and 3.33 m with them */
-  ger_wirb:  { name: 'Flakpanzer IV Wirbelwind', len: 5.92, gun: 5.92, wid: 2.90,  hgt: 2.76,
-               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Panzer IV hull unchanged
-               underneath, so length, body, roof and clearance are its figures. gun equals len because
-               the Flakvierling's barrels stop well short of the nose: the turret sits 0.37 m forward
-               of centre and the muzzles reach 1.31 m past it, against 2.72 m of hull in front. hgt is
-               to the top of the open turret's plate, which is what a published height is measured to
-               on an open vehicle -- the magazines and the layer's head are not part of one */
+               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the width is over the track
+               guards, which is what it is without the Schürzen, and 3.33 m with them; the body is the
+               superstructure, which sits well inboard of the guards and leaves the walkable shelf */
+  hr_wirb:   { name: 'Flakpanzer IV Wirbelwind (Heer)', len: 5.92, gun: 5.92, wid: 2.90, hgt: 2.76,
+               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Heer's Panzer IV hull under a
+               turret built from nothing, so the hull's figures are that tank's; gun is len because the
+               four barrels stop short of the nose */
+  hr_panther: { name: 'Panther Ausf. A (Heer)', len: 6.87, gun: 8.66, wid: 3.27, hgt: 2.99,
+               body: 3.25, bodyZ: 1.50, roof: 2.52, clear: 0.56 },   /* the envelope is Jentz's; the body
+               and the roof are read off the factory's plan and front views, the body over the sponsons,
+               which stand flush with the outside of the tracks at 1.49 m, and the roof between the upper
+               sides, which lean in forty degrees over only 0.43 m of plate */
   ger_stug:  { name: 'StuG IV (Sd.Kfz. 167)', len: 5.93, gun: 6.70,   wid: 2.95,  hgt: 2.20,
                body: 2.95, bodyZ: 1.55, roof: 2.59, clear: 0.40 },   /* the casemate stands out over the
                Panzer IV's guards at the bottom, so body is the published 2.95; but the Ausf. G compartment
@@ -97,42 +110,36 @@ const REAL = {
                photographs show; it is derived rather than published, and it is the number that decides
                whether the thing reads as a StuG or as a box. 5.93 m is the Panzer IV hull; the 6.70 m
                over the gun is what every table gives for the StuG IV */
-  us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
-  am_jeep:   { name: 'Willys MB',           len: 3.36,  gun: 3.36,   wid: 1.575, hgt: 1.016,
-               clear: 0.222 },   /* 132.25 in long, 62 in over the front wings, 8.75 in under the
-               differentials; the height is the 40 in it is reducible to with the windscreen folded
-               flat on the bonnet, which is how it is built, and the steering wheel, the pedestal
-               and the men standing up out of it are no more part of that than an aerial is */
-  hr_ks750:  { name: 'Zündapp KS 750',      len: 2.385, gun: 2.385,  wid: 1.65,  hgt: 1.01,
-               clear: 0.15 },   /* 2,385 x 1,650 x 1,010 mm with the BW 40, and 150 mm of clearance
-               laden; the height is to the handlebars, and the men and the gun on the sidecar mount are
-               no more part of it than they are of the jeep's */
-  us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
-               body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
-               7 ft 5 in to the top of the M49 ring mount, 11.25 in of clearance */
-  am_m3:     { name: 'M3A1 Half-Track (US)', len: 6.172, gun: 6.172, wid: 2.222, hgt: 2.261,
-               body: 1.96, clear: 0.286 },   /* the same White as the old model's figures: 20 ft 3 in
-               over the roller, 7 ft 3.5 in over the mine racks and 6 ft 5 in across the plates, 7 ft 5 in
-               to the top of the M49 ring, 11.25 in under the front differential */
+  am_jeep:   { name: 'Willys MB',           len: 3.36,  gun: 3.36,   wid: 1.575, hgt: 1.321,
+               clear: 0.222 },   /* 132.25 in long, 62 in over the grab handles on the rear body,
+               8.75 in under the differentials, and 52 in to the top of the steering wheel, which is
+               the height it is reducible to with the windscreen folded flat, which is how it is
+               built. The drawing it is laid over agrees with all four; it was 62 in over the wings
+               and 40 in folded until then, and the drawing has neither. The pedestal and the men
+               standing up out of it are no more part of that height than an aerial is */
+  hr_ks750:  { name: 'Zündapp KS 750',      len: 2.49,  gun: 2.49,   wid: 1.65,  hgt: 1.01,
+               clear: 0.15 },   /* 1,650 x 1,010 mm with the BW 40, and 150 mm of clearance laden; the
+               height is to the handlebars, and the men and the gun on the sidecar mount are no more part
+               of it than they are of the jeep's. The published length is 2,385 mm; the drawing it is laid
+               over agrees with the wheelbase, the height and the width and puts it at 2.25 m to the spare
+               on the tail and 2.49 m over the trailer coupling behind that, which the model carries, so
+               the length is the drawing's */
+  am_m3:     { name: 'M3 Half-Track (US)', len: 6.18, gun: 6.18, wid: 1.962, hgt: 2.261,
+               body: 1.962, clear: 0.286 },   /* the M3 the drawing is of: 20 ft 3.5 in over the roller
+               and the pintle, 6 ft 5.25 in across the body, which is the widest thing on it once there
+               are no mine racks, 7 ft 5 in over the .50 on its pedestal, 11.25 in under the front
+               differential */
   am_m8:     { name: 'M8 Light Armored Car', len: 4.70, gun: 4.70, wid: 2.31, hgt: 1.91,
                body: 2.31, clear: 0.29 },   /* 15 ft 5 in long, with the 37 mm ending short of the nose,
                7 ft 7 in wide at the crease, 6 ft 3 in to the top of the turret and 11.5 in under the axles.
                The other set of figures in circulation, 100 in wide and 88.5 in high, is over the sand shields
                and over the ring mount, and both of those are fittings here */
-  ger_sd222:  { name: 'Sd.Kfz. 222',         len: 4.80,  gun: 4.80,   wid: 1.95,  hgt: 1.70,
-               clear: 0.25 },
   hr_234:    { name: 'Sd.Kfz. 234/1',       len: 6.02,  gun: 6.02,   wid: 2.33,  hgt: 2.10,
                clear: 0.35 },   /* 6.02 m over the bumper and 2.33 m over the crease, 350 mm under the belly,
                and 2.10 m to the top of the 2 cm turret, which is the rim with the screens held out */
   'hr_234:puma': { name: 'Sd.Kfz. 234/2 Puma', len: 6.02, gun: 6.80, wid: 2.33, hgt: 2.38,
                clear: 0.35 }   /* the same hull with the Puma's turret on the ring, the 5 cm reaching 6.80 m
                overall and the roof at 2.38 m, measured through the fitting rather than a second model */
-  /* Two heights are published for the 222 and both are right: 1.70 m to the turret rim,
-     2.00 m with the anti-grenade screens raised. The rim is the one that can be checked,
-     so PROBE.topZ holds the screens out of the measurement. No body or deck width is
-     given for it anywhere I can find, and a target invented from the model it is meant
-     to be checking is worth nothing, so this one is checked on its envelope and its
-     published 254 mm of clearance alone. */
 };
 
 /* Where to slice each hull, in model units: the sponson lip and the roof plate.
@@ -147,11 +154,15 @@ const REAL = {
    published height, and half the fleet mounts its aerial on the hull rather than on
    the turret, so the cap has to be available on both. */
 const PROBE = {
-  us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
-  us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
-  am_sher:   { bodyZ: 16.0, roofZ: 21.8, xLo: -25.0, xHi: -21.0, straddle: true, topZ: 10.2 },   /* the slice is
-               taken halfway up the sponson, aft of the appliqué and the star; topZ holds the
-               periscope heads and the aerial out of a height measured to the top of the turret */
+  am_e8:     { bodyZ: 18.0, roofZ: 22.0, xLo: 8.0, xHi: 16.0, straddle: true, topZ: 12.0 },   /* the slice is taken
+               ahead of the racks of spare shoes on the sponsons; topZ keeps the lid's periscope and the aerial out */
+  am_stuart: { bodyZ: 16.5, roofZ: 19.0, xLo: -5.0, xHi: -1.0, straddle: true, hullZ: 21.0 },   /* the slice is
+               taken halfway up the sponson between its two seams of rivets; hullZ holds the aerial out */
+  am_sher:   { bodyZ: 16.0, roofZ: 22.0, xLo: -5.0, xHi: -1.0, straddle: true, topZ: 9.3 },   /* the slice is
+               taken under the turret, where the roof is flat and nothing is strapped to the sides; topZ
+               holds the periscope heads out of a height measured to the top of the hatch */
+  am_m26:    { bodyZ: 16.8, roofZ: 18.7, xLo: 1.0, xHi: 4.0, straddle: true, topZ: 13.8 },   /* the slice is taken
+               through the second bin on each fender; topZ holds the lid's periscope and the aerial out */
   us_ach:    { bodyZ: 22.0, topZ: 8.0 },   /* bodyZ is a hand's breadth under the deck, above the
                tools and the jerricans and below the lifting eyes, where the side plate is bare.
                topZ keeps the turret crew out of the height: three of them stand in an open turret
@@ -161,38 +172,28 @@ const PROBE = {
   ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
                tools or fender bolts hung on the outside */
-  us_m8:     { topZ: 4.0, hullZ: 18.4 },   /* an open vehicle is measured to its plate, not to
-               the top of the man standing in it */
-  am_jeep:   { noMount: true, hullZ: 12.0 },   /* the mount is a gun on a post, and hullZ holds the
-               steering wheel, the rolled hood and the top of the spare out of the folded height */
+  am_jeep:   { noMount: true, hullZ: 15.6 },   /* the mount is a gun on a post, and hullZ holds the
+               post and the top of the spare, which stands a little over the steering wheel on the
+               tail, out of the folded height */
   hr_ks750:  { noMount: true },   /* the mount is the gunner and his MG 34, turning on the sidecar seat */
-  us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
-               above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */
-  am_m3:     { noMount: true, bodyZ: 14.8, xLo: -31.5, xHi: -27.0, straddle: true },   /* the slice is
-               taken between the clips of the pioneer tools aft of the mine racks, where the plate is bare;
-               the ring is part of the hull and of the published height, and the .50 and its gunner
-               standing on it are no more part of it than the jeep's gun is */
-  ger_h251:  { topZ: 0.4, hullZ: 21.0, bodyZ: 15.0, xLo: -28.0, xHi: -25.0, straddle: true },   /* the slice
-               is taken aft of the last bin and forward of the rear chamfer, where the side plate is bare */   /* the shield mount, the rear pintle MG and the aerial
-               socket all stand above the 1.75 m top of the compartment, and none of them is part
-               of a published height */
-  hr_251:    { noMount: true, hullZ: 21.0, bodyZ: 14.8, xLo: -27.5, xHi: -25.5, straddle: true },   /* the
+  am_m3:     { bodyZ: 16.0, xLo: -31.5, xHi: -27.0, straddle: true },   /* the slice is taken aft of the
+               seam and forward of the rear chamfer, under the hooks for the canvas, where the plate is bare;
+               the published height is over the .50 on its pedestal, so the mount is in it */
+  hr_251:    { noMount: true, hullZ: 21.0, bodyZ: 15.6, xLo: -28.8, xHi: -26.5, straddle: true },   /* the
                slice is taken just under the crease aft of the last locker, where the side is bare; the
                MG 34 on its pintle and the man standing to it are no more part of the published height
                than the jeep's gun is */
   ger_maus:  { bodyZ: 20.0, roofZ: 28.0, xLo: -20.0, xHi: 20.0, straddle: true },   /* roofZ sits on the
                roof plate itself: the leaning side straddles every station below it and would report the
                full width of the base */
-  ger_p4:    { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the body slice
-               clears the Schuerzen stanchions on the guard, which top out at 15.2, and hullZ drops the
-               rod aerial standing off the right rear of the superstructure */
   hr_p4:     { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the slice is taken
                between the second and third Schürzen brackets and forward of the cross, where the
                superstructure side is bare; hullZ drops the rod aerial on the left rear of the deck */
-  ger_wirb:  { bodyZ: 16.6, roofZ: 18.4, xLo: -8.0, xHi: -2.0, straddle: true, hullZ: 24 },   /* the same
-               hull as the Panzer IV, so the same two slices: the body clears the Schuerzen stanchions and
-               roofZ sits on the superstructure roof, which on this vehicle is the plate the open turret
-               is welded to rather than one under a turret */
+  hr_wirb:   { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the Heer
+               Panzer IV's hull, so its slices */
+  hr_panther: { bodyZ: 17.6, roofZ: 22.65, xLo: -7.0, xHi: -1.0, straddle: true },   /* the slice is taken
+               just over the sponsons' floor at the station of the cross, which is clear of the rods, the
+               tools and the jack on both sides, and the roof slice on the weld along its edge */
   ger_stug:  { bodyZ: 18.0, roofZ: 23.2, xLo: -14.0, xHi: -9.0, straddle: true, hullZ: 27 },   /* the roof
                slice sits exactly on the roof plate: a slant that straddles a station reports its widest
                point, which is the base, so any station below the roof measures the bottom of the wall */   /* the slice
@@ -201,10 +202,8 @@ const PROBE = {
   am_m8:     { topZ: 6.0, hullZ: 24, bodyZ: 14.45, xLo: -20.0, xHi: -12.0, straddle: true },   /* the slice is
                taken at the crease over the rear bogie, behind the stowage box; topZ holds the lifting eyes on the
                rim out of the height and hullZ the whip aerial */
-  ger_sd222:  { bodyZ: 3.0, roofZ: 14.7, xLo: -10.5, xHi: -9.0, topZ: 6.0, hullZ: 20 },   /* clear of the rear
-               tyre and the wing tools; hullZ drops the rod aerial on the right of the bonnet */
-  hr_234:    { topZ: 4.3, hullZ: 24 },   /* topZ holds the screens and their hinges out of the height the way the
-               222's are, and hullZ the aerial on the engine deck */
+  hr_234:    { topZ: 4.3, hullZ: 24 },   /* topZ holds the screens and their hinges out of the height, which is
+               published to the rim with the screens held out, and hullZ the aerial on the engine deck */
   'hr_234:puma': { of: 'hr_234', up: 'puma', topZ: 7.7, hullZ: 24 }   /* `of` and `up` measure a vehicle with a
                fitting that changes the mount; topZ holds the hatch lids and the ventilator out of the roof height */
 };

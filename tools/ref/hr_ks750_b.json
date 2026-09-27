@@ -1,0 +1,6 @@
+{ "image": "shots/ref/hr_ks750_b.png", "key": "hr_ks750", "up": [], "crew": false,
+  "note": "The Hum3D render sheet of the same model, 770 by 520 px, with a scale bar of 116 px to the metre that agrees with the 1,410 mm wheelbase in the side view to a pixel. The left side is at the middle left, the right side under it, the front at the middle right and the rear under it. A second opinion on the line drawing, and the one to read shapes off where the lines run together.",
+  "views": {
+    "side": {"nose": "left", "crop": [85, 180, 305, 140], "ppm": 116.0, "at": [10.24, 0, 0], "px": [130.0, 313.5], "k": 4},
+    "front": {"crop": [435, 190, 210, 130], "ppm": 116.0, "at": [0, -4.38, 0], "px": [586.5, 313.5], "k": 4},
+    "rear": {"crop": [435, 350, 210, 130], "ppm": 116.0, "at": [0, -4.38, 0], "px": [492.5, 473.5], "k": 4} } }

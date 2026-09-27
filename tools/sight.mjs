@@ -185,8 +185,8 @@ async function install(page) {
          crater field. `coverOf` reading 4 at both ends is why a prone section came back
          as never spotted -- it was dug in, not flat in a field. */
       let wx = 520, wy = 950;
-      const watcher = spawnUnit('ger', 'ger_gren', wx, wy, 0);
-      const t = spawnUnit('us', 'us_rifle', wx + 260, wy, Math.PI);
+      const watcher = spawnUnit('ger', 'hr_gren', wx, wy, 0);
+      const t = spawnUnit('us', 'am_rifle', wx + 260, wy, Math.PI);
       let found = false;
       for (let gy = 150; gy < WORLD.h - 150 && !found; gy += 40)
         for (let gx = 150; gx < WORLD.w - 500 && !found; gx += 40) {
@@ -215,7 +215,7 @@ async function install(page) {
         ['flat, eye looking away', u => { u.moving = false; u.stance = 'ground'; u.fireT = 0; u.sup = 0; watcher.facing = Math.PI; G.wrecks.length = 0; }],
         ['walking, behind smoke', u => { u.moving = true; u.stance = ''; u.fireT = 0; u.sup = 0; watcher.facing = 0;
                                          G.wrecks.length = 0;
-                                         G.wrecks.push({ x: (wx + u.x) / 2, y: wy, a: 0, turret: 0, w: 82, h: 38, t: 5, side: 'ger', key: 'ger_p4' }); }]
+                                         G.wrecks.push({ x: (wx + u.x) / 2, y: wy, a: 0, turret: 0, w: 82, h: 38, t: 5, side: 'ger', key: 'hr_p4' }); }]
       ];
       const RANGES = [150, 260, 360];
       const out = [];

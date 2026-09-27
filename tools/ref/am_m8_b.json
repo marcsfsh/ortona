@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m8_b.jpg", "key": "am_m8", "up": ["fenders", "mg"], "crew": false,
+  "note": "A second four-view of the M8, 500 by 392 px, with the front and the rear on the left and the right side and the plan on the right; it has the sand shields hung and draws the stowage racks between the front and middle wheels open. The side and the plan are taken off the 128 in from the front axle to the rear one, the front and the rear off the 76 in tread. Pinned at the middle axle on the ground.",
+  "views": {
+    "side":  { "nose": "left", "crop": [175, 0, 325, 200], "ppm": 63.7, "at": [-6.85, 0, 0], "px": [361.0, 193.5], "k": 4 },
+    "plan":  { "nose": "left", "crop": [175, 210, 325, 182], "ppm": 63.7, "at": [-6.85, 0, 0], "px": [361.0, 303.5], "k": 4 },
+    "front": { "crop": [0, 20, 170, 178], "ppm": 61.3, "at": [0, 0, 0], "px": [85.0, 193.3], "k": 5 },
+    "rear":  { "crop": [0, 200, 170, 165], "ppm": 62.2, "at": [0, 0, 0], "px": [85.8, 360.0], "k": 5 } } }

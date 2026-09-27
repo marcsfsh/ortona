@@ -12,7 +12,7 @@
  *
  *   node tools/men.mjs                   the card
  *   node tools/men.mjs contact grip      two sections of it
- *   node tools/men.mjs --only=can_rifle  one variant
+ *   node tools/men.mjs --only=gi_rifle   one variant
  *   node tools/men.mjs --base=HEAD       the older file beside it: PROPORTION dims-style, the rest as a BEFORE block
  *   node tools/men.mjs --device=phone    READ and FOOTPRINT on one device (both otherwise)
  *   node tools/men.mjs --tol=4 --v       tighten every proportion row to 4 per cent; every clip pair rather than the worst
@@ -187,6 +187,9 @@ function GEO(opt) {
      other way. */
   function capture(build) {
     const LOG = [], stack = [], orig = {};
+    /* the names are the old builders', which is all this path ever reads: the two helmets
+       are the Canadian's and the paratrooper's, and a file old enough to come through
+       here has no other; the list skips a name the file does not have */
     ['box', 'cyl', 'lathe', 'tubeSmooth', 'frustum', 'limb', 'taperLimb', 'headModel', 'helmetUS', 'helmetGER', 'weaponModel'].forEach(name => {
       if (typeof window[name] !== 'function') return;
       orig[name] = window[name];
@@ -301,27 +304,30 @@ function GEO(opt) {
   /* ---------------- rig: the record manFaces hands over ----------------
      The rig returns faces, joints, muzzle, eye and anchors; the sections that need a
      part by name read `parts` off the same record, and say so when it is not there. */
-  function rigPose(P) {
-    if (P.name === 'walk') return WALK(P.frame / P.cycle.n);
-    if (P.name === 'run') return RUN(P.frame / P.cycle.n);
+  /* a variant's own stances and gaits where the file gives it some (`stanceOf`, `gaitOf`),
+     and the shared table on a file from before there were any */
+  function rigPose(P, variant) {
+    const own = typeof window.stanceOf === 'function';
+    if (P.name === 'walk') return (own ? gaitOf(variant) : WALK)(P.frame / P.cycle.n);
+    if (P.name === 'run') return (own ? gaitOf(variant, true) : RUN)(P.frame / P.cycle.n);
     if (P.name === 'prone') return PRONE();
     if (P.name === 'crawl') return CRAWL(P.frame / P.cycle.n);
     if (P.name === 'fall') return FIGPOSE['fall' + P.frame];
-    return FIGPOSE[P.name];
+    return own ? stanceOf(variant, P.name) : FIGPOSE[P.name];
   }
   function rig(variant, P) {
     const V = SOLDIER_VARIANTS[variant];
-    const r = P.name === 'dead' ? deadFaces(variant, P.frame) : manFaces(variant, rigPose(P));
+    const r = P.name === 'dead' ? deadFaces(variant, P.frame) : manFaces(variant, rigPose(P, variant));
     const faces = r.faces || r, joints = r.joints || {}, parts = r.parts || {};
     const flat = P.name === 'prone' || P.name === 'crawl' || P.name === 'dead';
-    const pose = rigPose(P) || {};
+    const pose = rigPose(P, variant) || {};
     const weapon = parts.weapon || [];
     const body = faces.filter(f => weapon.indexOf(f) < 0);
     const hipZ = joints.hipL ? Math.min(joints.hipL[2], joints.hipR[2]) : 0;
     const legFaces = parts.legs ? cat(parts.legs) : body.filter(f => f.v.every(p => p[2] < hipZ + .3));
     const id = window.__o.poseId(P.name);
     let mz = null;
-    if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && mz[0].length) mz = mz[P.frame % mz.length]; }
+    if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && (mz[0] === null || mz[0].length)) mz = mz[P.frame % mz.length]; }
     return { faces, ok: true, logged: faces.length, parts, joints, leaves: parts.leaves || null,
              lean: pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors, handsOn: r.handsOn,
              runtimeMuzzle: mz ? mz.slice() : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none' };
@@ -338,11 +344,13 @@ function GEO(opt) {
       if (V.set === 'hull') { out.push({ name: 'seat', frame: 0 }); return out; }
       out.push({ name: 'stand', frame: 0 }, { name: 'kneel', frame: 0 }, { name: 'prone', frame: 0 });
       cycle('walk', WALKF, STRIDE_LEN);
-      if (!MOB) cycle('run', RUNF, RUN_LEN);
+      if (!MOB && !V.norun) cycle('run', RUNF, RUN_LEN);
       cycle('crawl', CRAWLF, CRAWL_LEN);
       if (V.set === 'gunner') { out.push({ name: 'served', frame: 0 }, { name: 'sit', frame: 0 }); return out; }
+      /* a man carrying the piece has nothing baked but his feet and the load's shoulder */
+      if (V.set === 'carry') return out;
       out.push({ name: 'ready', frame: 0 }, { name: 'fire', frame: 0 }, { name: 'kfire', frame: 0 });
-      if (variant === 'can_rifle' || variant === 'fj_rifle' || variant === 'gr_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
+      if (variant === 'gi_rifle' || variant === 'gr_rifle') { for (let i = 0; i < 3; i++) out.push({ name: 'fall', frame: i }); for (let i = 0; i < 2; i++) out.push({ name: 'dead', frame: i }); }
       return out;
     }
     const crew = V.weapon === 'none';
@@ -402,9 +410,8 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['lee', 'leescope', 'kar', 'sten', 'mp40', 'bren', 'piat', 'schreck', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar'].forEach(type => {
-      const f = weaponModel(KIT[type === 'kar' || type === 'mp40' || type === 'schreck' || type === 'mg42' ? 'ger'
-                               : ['garand', 'm3', 'thompson', 'bar', 'zook', 'm1919'].includes(type) ? 'usa' : 'us'], type);
+    ['kar', 'mp40', 'mg34', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb'].forEach(type => {
+      const f = weaponModel(KIT[['kar', 'mp40', 'mg34', 'mg42'].includes(type) ? 'heer' : 'usa'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -694,7 +701,7 @@ function GEO(opt) {
         const T = M.man[v] || {};
         Object.keys(T).forEach(p => { const s = T[p]; const run = Number(p) === POSE_RUN; (s.frames || [s]).forEach(b => add(acc, b, run)); });
         const st = T[POSE_STAND] || T[POSE_SEAT]; acc.stand = st ? st.n / 3 : 0;
-        if (M.fall && (v === 'can_rifle' || v === 'fj_rifle' || v === 'gi_rifle' || v === 'gr_rifle')) { const s = SOLDIER_VARIANTS[v].nat || SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
+        if (M.fall && (v === 'gi_rifle' || v === 'gr_rifle')) { const s = SOLDIER_VARIANTS[v].nat || SOLDIER_VARIANTS[v].side; (M.fall[s] || []).forEach(b => add(acc, b)); (M.dead[s] || []).forEach(b => add(acc, b)); }
       } else {
         ['sol', 'solA', 'crawl', 'crawlA'].forEach(k => (M[k][v] || []).forEach(b => add(acc, b)));
         ['prone', 'proneA', 'crouch', 'crouchA', 'fire', 'fireA', 'cfire', 'cfireA'].forEach(k => add(acc, M[k][v]));
@@ -750,8 +757,8 @@ function GEO(opt) {
    window round him, because a smoke column at the edge of the frame is not the man. */
 function PIX(opt) {
   /* the stage is the one the readability critique measured on, so its rows and these
-     agree: a spot picked with more room round it lands on brighter ground and reads
-     the Canadian four levels lighter, which is a fact about the ground */
+     agree: a spot picked with more room round it lands on brighter ground and read the
+     Canadian of the time four levels lighter, which is a fact about the ground */
   /* The bench stands on one named patch of ground, not on wherever flatSpot happens to
      land. FOOTPRINT judges pose pairs against thresholds of four to six framebuffer
      pixels and READ judges a figure's contrast against the earth it replaced: both are
@@ -767,7 +774,7 @@ function PIX(opt) {
   const realCast = window.castUnit;
   function grab() { render(); const b = new Uint8Array(W * H * 4); gl.readPixels(0, 0, W, H, gl.RGBA, gl.UNSIGNED_BYTE, b); return b; }
   function stageMan(variant, pose, frame, f) {
-    const key = variant.indexOf('fj') === 0 ? 'ger_gren' : 'us_rifle';
+    const key = SOLDIER_VARIANTS[variant].side === 'ger' ? 'hr_gren' : 'am_rifle';
     O.pose([{ key, x: 0, y: 0, facing: f }], spot);
     const u = window.G.units[0];
     window.variantForModel = function () { return variant; };
@@ -817,7 +824,7 @@ function PIX(opt) {
              pxPerUnit: Math.abs(up.y - foot.y) / 10 * H / VIEW.h };
   }
   function ground(dist, pitch) {
-    const s = stageMan('can_rifle', 'stand', 0, Math.PI / 2);
+    const s = stageMan('gi_rifle', 'stand', 0, Math.PI / 2);
     s.u.models.forEach(m => { m.alive = false; });
     O.camera({ x: spot.x, y: spot.y, dist, pitch, yaw: Math.PI / 2 });
     return grab();
@@ -847,7 +854,7 @@ function PIX(opt) {
       const B = ground(dist, .75);
       [['front34', FRONT], ['side', SIDE]].forEach(a => {
         poses.forEach(pose => {
-          const m = row('can_rifle', pose, mid('can_rifle', pose), a[1], dist, .75, B);
+          const m = row('gi_rifle', pose, mid('gi_rifle', pose), a[1], dist, .75, B);
           R.footprint.push(Object.assign({ dist, angle: a[0], pose }, m));
         });
       });
@@ -858,7 +865,7 @@ function PIX(opt) {
     const dists = MOB ? [[600, .75], [760, 1.0], [900, .75]] : [[600, .75], [900, .75]];
     dists.forEach(dp => {
       const B = ground(dp[0], dp[1]);
-      [['us', 'can_rifle'], ['usa', 'gi_rifle'], ['ger', 'fj_rifle'], ['heer', 'gr_rifle']].forEach(sv => {
+      [['usa', 'gi_rifle'], ['heer', 'gr_rifle']].forEach(sv => {
         ['stand', 'prone'].forEach(pose => {
           const m = row(sv[1], pose, 0, FRONT, dp[0], dp[1], B);
           R.read.push(Object.assign({ dist: dp[0], pitch: dp[1], side: sv[0], variant: sv[1], pose }, m));
@@ -928,7 +935,7 @@ function show(c, base) {
       const bc = k => (BP ? (b[k] === undefined ? null : b[k]) : undefined);
       const cells = [cell(r.stature, 20.35, .04, bc('stature')), cell(r.headH, 2.65, .08, bc('headH')), cell(r.headW, 1.82, .08, bc('headW')),
                      cell(r.plate, 5.27, .08, bc('plate')), cell(r.hips, 4.4, .08, bc('hips')), cell(r.inseam, 9.56, .06, bc('inseam')),
-                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : r.nat === 'heer' ? 3.06 : r.side === 'ger' ? 2.94 : 3.53, .10, bc('helmet'))];
+                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : 3.06, .10, bc('helmet'))];
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(r.v, 13) + cells.map(q => q.s).join('') + f2(r.apart));
     }
@@ -939,7 +946,7 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { lee: 13.29, leescope: 13.29, kar: 13.06, sten: 8.94, mp40: 7.41, bren: 13.6, piat: 11.65, schreck: 19.29, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28 };
+    const PUB = { kar: 13.06, mp40: 7.41, mg34: 14.34, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);
@@ -1101,8 +1108,8 @@ function show(c, base) {
       console.log('  ' + pad(r.v, 13) + lpad(r.inside, 4) + ' inside out of ' + r.parts + ' parts in ' + r.poses + ' poses' + (r.inside ? ' ! ' + r.named.join(', ') : '') +
                   '   (' + r.inward + ' of ' + r.faces + ' faces look at their part\'s centroid: a concave part has some)');
     }
-    console.log('\n  the face count is not the test: the Mk II brim top faces the crown its centroid sits in, and counted that way');
-    console.log('  eighteen correct faces a pose were reported on every Canadian.');
+    console.log('\n  the face count is not the test: a helmet is a concave shell whose inside faces the crown its centroid sits in,');
+    console.log('  and counted that way the first version reported eighteen correct faces a pose on every Canadian of the time.');
     foot('wind', bad, of);
   }
 
@@ -1129,7 +1136,7 @@ function show(c, base) {
     console.log(`\n  SIZE   the roster as baked, from ${Z.table}${Z.mob ? ' (phone setting)' : ''}\n`);
     console.log('  ' + pad('variant', 13) + lpad('buffers', 8) + lpad('stand tris', 11) + lpad('alpha', 7) + lpad('tris', 9) + lpad('MB', 7));
     for (const r of Z.rows) console.log('  ' + pad(r.v, 13) + lpad(r.bufs, 8) + lpad(r.stand, 11) + lpad(r.alpha, 7) + lpad(r.tris, 9) + lpad(r.mb.toFixed(2), 7));
-    console.log('  ' + pad('roster', 13) + lpad(Z.bufs, 8) + lpad('', 11) + lpad('', 7) + lpad(Z.tris, 9) + lpad(Z.mb.toFixed(2), 7) + '   today: 276760 triangles, 289 buffers, 39.85 MB');
+    console.log('  ' + pad('roster', 13) + lpad(Z.bufs, 8) + lpad('', 11) + lpad('', 7) + lpad(Z.tris, 9) + lpad(Z.mb.toFixed(2), 7) + '   with the Canadians and the FJ still on it: 276760 triangles, 289 buffers, 39.85 MB');
     console.log('  ' + pad('phone', 13) + lpad('', 8) + lpad('', 11) + lpad('', 7) + lpad(Z.phoneTris, 9) + lpad(Z.phoneMb.toFixed(2), 7) + '   the same table less the run cycles');
     console.log(`\n  bake ${Z.bakeMs.toFixed(0)} ms, ${Z.nan} buffer${Z.nan === 1 ? '' : 's'} with NaN in ${Z.nan ? 'them' : 'it'}`);
     console.log('\n  a section on screen: colour triangles and draws, and the shadow pass on top\n');
@@ -1186,43 +1193,25 @@ function show(c, base) {
       X.read.forEach(r => console.log('  ' + pad(r.dist, 6) + pad(r.side, 5) + pad(r.pose, 6) + pad(r.px, 6) + pad(`${r.w}x${r.h}`, 9) + pad(f3(r.lumFig), 7) + pad(f3(r.lumGnd), 7) + pad((r.contrast >= 0 ? '+' : '') + f3(r.contrast), 10) + pad(f3(r.rms), 7) +
                                        pad(r.rgb.map(v => Math.round(v)).join(','), 14) + pad(f3(r.top), 7) + pad(f3(r.bot), 7) + (r.px ? (r.shadowPx / r.px).toFixed(2) : '-')));
       let bad = 0, of = 0;
-      const phone = X.mob, needTop = phone ? .06 : .10, needMean = phone ? .04 : .05;
+      const phone = X.mob, needMean = phone ? .04 : .05;
       const dists = [...new Set(X.read.map(r => r.dist))];
       dists.forEach(dist => {
-        const us = X.read.find(r => r.dist === dist && r.side === 'us' && r.pose === 'stand'), ger = X.read.find(r => r.dist === dist && r.side === 'ger' && r.pose === 'stand');
-        if (!us || !ger) return;
         const say = (ok, s) => { of++; if (!ok) { bad++; console.log(`  ! ${dist}: ${s}`); } };
-        say(ger.top - us.top >= needTop, `the FJ's top fifth is ${f3(ger.top - us.top)} above the Canadian's, wants ${needTop}`);
-        say(Math.abs(ger.lumFig - us.lumFig) >= needMean, `the mean luminance gap is ${f3(Math.abs(ger.lumFig - us.lumFig))}, wants ${needMean}`);
-        if (!phone) {
-          say(us.top - us.bot >= .04, `the Canadian's top fifth is ${f3(us.top - us.bot)} above his bottom fifth, wants 0.04`);
-          say(ger.top - ger.bot >= .18, `the FJ's top fifth is ${f3(ger.top - ger.bot)} above his bottom fifth, wants 0.18`);
-          say(us.contrast >= -.45 && us.contrast <= -.10, `the Canadian's contrast to the ground is ${f3(us.contrast)}, wants -0.45 to -0.10`);
-          say(ger.contrast >= -.45 && ger.contrast <= -.10, `the FJ's contrast to the ground is ${f3(ger.contrast)}, wants -0.45 to -0.10`);
-          const dr = [0, 1, 2].map(i => Math.abs(us.rgb[i] - ger.rgb[i]));
-          say(Math.max.apply(null, dr) >= 12, `the sides' mean RGB differ by ${dr.map(Math.round).join(',')} levels, wants 12 in one channel`);
-        }
-        /* The American is on the same side as the Canadian and fights the same enemy, so
-           what he has to be is told apart from the FJ: a dark netted crown
-           under the FJ's pale one, a mean apart from him, and a contrast to the ground
-           in the band both of the others sit in. */
         const am = X.read.find(r => r.dist === dist && r.side === 'usa' && r.pose === 'stand');
-        if (am) {
-          say(ger.top - am.top >= needTop, `the FJ's top fifth is ${f3(ger.top - am.top)} above the American's, wants ${needTop}`);
-          say(Math.abs(ger.lumFig - am.lumFig) >= needMean, `the American and the FJ are ${f3(Math.abs(ger.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
-          if (!phone) {
-            say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
-            const da = [0, 1, 2].map(i => Math.abs(am.rgb[i] - ger.rgb[i]));
-            say(Math.max.apply(null, da) >= 12, `the American and the FJ differ by ${da.map(Math.round).join(',')} levels, wants 12 in one channel`);
-          }
-        }
+        const hr = X.read.find(r => r.dist === dist && r.side === 'heer' && r.pose === 'stand');
+        /* a row that is not there is a miss, not a pass: this block once returned early for
+           want of two rows and every assertion under it went unasked */
+        say(!!am, 'no standing row for the American');
+        say(!!hr, 'no standing row for the grenadier');
+        /* The American's own: a contrast to the ground in the band every figure is held to,
+           which is what keeps him from reading as a hole in the ground or a ghost on it. */
+        if (am && !phone) say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
         /* The grenadier is the man the American meets on the beach, so it is the American he
            has to be told apart from: field grey and black leather against a pale jacket and
            pale leggings, which is a mean apart and a colour apart, and a contrast to the
-           ground in the band the other three sit in. His crown is as dark as the American's
+           ground in the band the American sits in. His crown is as dark as the American's
            netted one and is not asked to differ; the skirt of the helmet is a shape, and a
            shape is what the eye reads at the distance the mean stops working. */
-        const hr = X.read.find(r => r.dist === dist && r.side === 'heer' && r.pose === 'stand');
         if (am && hr) {
           say(Math.abs(hr.lumFig - am.lumFig) >= needMean, `the grenadier and the American are ${f3(Math.abs(hr.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
           if (!phone) {

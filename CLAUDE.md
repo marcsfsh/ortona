@@ -1,11 +1,11 @@
 # Ortona
 
-A single-file, real-time tactical battle game: the Allies against the Germans, and the army
-on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
-Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
-352nd Infantry Division, and both of those armies are being built a unit at a time (the
-rifle squad, the engineer squad, the Ranger squad, the grenadier squad, the pioneer team, the
-Knight's Cross Holders, the jeep, the M4, the M3A1, the M8, the KS 750, the 251, the 234 and the Panzer IV are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+A single-file, real-time tactical battle game: the Allies against the Germans, which on
+every map is the US 29th Infantry Division against the 352nd Infantry Division. The 1st
+Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
+are retired (see *The two armies*). Both armies are being built a unit at a time: the
+rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the heavy batteries, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -20,11 +20,10 @@ across the middle and two draws up the bluff behind it that are the only way arm
 off the beach. They are picked on the title screen under GROUND and all three open in the
 editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
 line over the name, the name, what the battle was and two cards about the ground), and the two
-side buttons name the armies it is fought by, so picking OMAHA puts the 29th Infantry Division
-against the 352. Infanterie-Division on the page as well as on the field. Written once in the
-markup, the header went on naming the Adriatic town over the beach.
+side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
+ground. Written once in the markup, the header went on naming the Adriatic town over the beach.
 
-**The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
+**The whole game is `ortona.html`.** Some 42,000 lines and 2.6 megabytes: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
 and it runs.
 
@@ -65,6 +64,7 @@ npm install                  # once; Chromium is already on disk
 
 npm run verify               # lint + map check + smoke test, the gate before calling work done
 node tools/dims.mjs          # proportion against published dimensions
+node tools/overlay.mjs <spec>  # a model laid over its reference drawing, view by view
 node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
@@ -139,6 +139,57 @@ because no geometric filter reliably separates a hull floor from the track
 running under it: on every one of these the track's inboard edge lies inside the
 hull's own width. Declare it when you add a vehicle.
 
+### `tools/overlay.mjs` - a model against its drawing
+
+`dims` says whether the envelope is the right size and a photograph says whether the thing looks
+like a tank. Neither says whether a part stands where the part stands, and that is most of what
+is wrong with a model built off photographs: the Panther's turret was half a metre too far
+forward and the 251's running gear a third of a metre too far aft, with every envelope figure
+right to a per cent and every photograph reading as the vehicle. So the model's own faces are
+projected orthographically onto a reference drawing, at the drawing's own scale, view by view,
+and the two are read against each other line for line.
+
+```sh
+node tools/overlay.mjs --grid shots/ref/hr_251.jpg --k=2                   # the drawing with a pixel grid
+node tools/overlay.mjs --grid shots/ref/hr_251.jpg --crop="x,y,w,h;..." --k=6   # zoomed boxes to read positions off
+node tools/overlay.mjs tools/ref/hr_251.json --tag=v2                      # every view in the spec
+node tools/overlay.mjs tools/ref/hr_251.json --only=side --file=/tmp/old.html
+```
+
+A spec (`tools/ref/<key>.json`) names the drawing, the model (a `VMODEL` vehicle, a
+`GUNMODEL` gun, or a prop's builder, `"prop": "lcvpModel"` with the `args` it is handed, whose
+faces are drawn as the hull), the fittings and whether to draw the men, and gives each view its crop, which
+way the nose points, its pixels per metre (`ppm`, and `ppmv` where a view is stretched) and a pin:
+`at`, a model point in model units, and `px`, the pixel it lands on. What it draws is what a
+draughtsman draws, the creases and the outlines with the hidden lines taken out through a depth
+buffer at the output's resolution, blue for the hull, red for the mount, green for the men and
+magenta for a fitting, and it prints each view's scale and the model's span in drawing pixels and
+metres. A gun laid over a drawing of it travelling (`pack: true`) is drawn with its tube on the
+closed carriage, as the game draws it; the first version left the tube off. The first version drew every face turned toward the viewer, and in plan that put all
+twelve road wheels on top of the guards that hide them. `hatch` and `open` in `up` draw a vehicle's
+lids (`HATCHES`) shut or standing open, on the mount unless it is a casemate: the M3's doors were the
+first thing on a drawing the tool could not draw, and a hatch is most of what a plan shows of a turret.
+
+**A man can be laid over a photograph the same way** (`"man": "gi_rifle"` in place of `key`,
+`tools/ref/gi_rifle.json`). A photograph of a reenactor is not a drawing: no two figures on
+a sheet stand alike, so each view carries the pose its figure stands in (`pose`, a stance's
+name or an object laid over one), `yaw` where he is turned off square, `vary` to override the
+variant (`weapon: none` lets both arms hang), and `at` may name one of his joints
+(`"at": "ankleR"`), since where a joint lands depends on the pose. The helmet is drawn red,
+the kit green, the weapon magenta and the man blue, and his joints are dotted and printed.
+Take the scale off the head and the helmet, which are the rigid things on him: the eye to
+the chin is 1.7 units on the rig, and a helmet's width is published. Read clothing off it
+and not the rig's lengths: a man in a wide stance with his knees bent puts his hip wherever
+the pose does, and the rig is measured against a 1.73 m man by the men card, which is where
+a length belongs.
+
+**The drawing is not in the repository and must not be.** A reference image is an image, which
+hard rule 5 keeps out, so it lives in `shots/ref/`, which is ignored; the spec is text and is
+committed, and a later session needs the drawing supplied again to run it. The method round the
+tool -- saving the drawing, a scale per view off a published figure measured in that view, the
+reading at a zoom, the list of disagreements in model units before any edit, and what to check
+afterwards -- is the `refdraw` skill (`.claude/skills/refdraw/SKILL.md`).
+
 ### `tools/duel.mjs` - balance, mechanically
 
 Stages matchups on clean flat ground and fights them, then prints how often each
@@ -147,11 +198,13 @@ side won, how long it took and what the winner had left.
 ```sh
 node tools/duel.mjs                      # the standard card
 node tools/duel.mjs --n=24               # more repeats, tighter numbers
-node tools/duel.mjs us_rifle ger_gren    # one matchup
+node tools/duel.mjs am_rifle hr_gren     # one matchup
 node tools/duel.mjs --d=200              # at a chosen opening range
 node tools/duel.mjs --cover=3            # with both sides in heavy cover
 node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
 node tools/duel.mjs --file=/tmp/x.html   # or on any file
+node tools/duel.mjs --turn=1.57          # the second unit staged side-on
+node tools/duel.mjs --sited am_at hr_p4  # the first unit set up and holding, as a gun meets armour
 ```
 
 A row reads `open` and `met`: where the pair were put down, and where they were when the
@@ -170,6 +223,14 @@ lying on the staging ground and have always been on the movement grid; since a b
 wreck also obscures, they were attenuating the sight line as well, so from the second run
 of every row the pair were fighting through the smoke of the one before. It cost the card
 about half its row-to-row spread: 36 points against 19 on the same comparison.
+
+**`--sited` stages the first unit set up and holding its ground**, the way an anti-tank gun
+meets armour: laid on the ground in front of it before anything comes up it, while the other
+side attack-moves in. Without it a gun is staged on an attack-move like everything else, halts
+when a target comes into reach and then spends its whole setup in the open while the tank
+drives at it, so the row measures the setup: the 57 staged at 520 against a Panzer IV fired
+its first round at 207, and the 6-pounder at its own reach at 156, and both lost every fight.
+Sited, the 57 fires at 490 and the 6-pounder at 399, which is the question those rows ask.
 
 `--base` is there because a change that was never meant to touch the fighting still has
 to be fought, and because one row moving is not evidence of anything. A near-even matchup
@@ -192,9 +253,10 @@ fire, penetration interacts with facing and range, and the whole thing compounds
 a side that gets a little ahead gets further ahead. A vehicle duel amplifies a
 ten per cent edge into an eighty per cent win rate, because the loser starts
 collecting track and gun hits. So a stat change has to be fought rather than
-reasoned about, and `us_eng vs ger_pio` is on the card as the calibration row:
-those two are identical, so anything other than about fifty per cent means the
-tool has developed a bias and not the roster.
+reasoned about, and `am_eng vs hr_pio` is on the card as the calibration row, with
+`am_mg vs hr_mg` beside it for the teams: each pair is one unit on two sides, so
+anything other than about fifty per cent means the tool has developed a bias and not
+the roster.
 
 Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 `computeVisibility` exactly as the frame loop does, with the economy, the AI and
@@ -517,17 +579,16 @@ one part inside another, AIM the bore against the facing and the eye against the
 the flash against the barrel, WIND a limb built inside out. MATERIAL is the tile each face
 lands on, SIZE what the roster weighs in buffers. FOOTPRINT and READ are read off the
 framebuffer at play distance on both devices, and READ carries the one rule the figures are
-designed round: the Canadian and the FJ, the American and the FJ, and the American and the
-grenadier have to be told apart by their top fifth and their mean.
+designed round: the American and the grenadier have to be told apart by their top fifth and
+their mean. Until the retirement the Canadian and the paratrooper were on it as well, and the
+American had to be told from the paratrooper too.
 
 Two things about reading it. **Stature is measured to the top of the helmet**, so a deep
 helmet counts against it: the M1 put the American at 4.5 per cent over on its first build,
 and the fix was to seat the helmet lower and make it a little flatter. And
 **READ is a budget the whole palette shares**: warming the American's jacket and lightening
-his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the FJ against a
-floor of 0.05, and it was the webbing that gave the margin back. The two GRIP misses it reports
-are the Canadian corpse's hands on his Lee, which lies upright; the FJ corpse had the same two
-until the Kar98k was rebuilt and laid on its side.
+his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the paratrooper
+against a floor of 0.05, and it was the webbing that gave the margin back.
 
 ### `tools/terrain.mjs` - the ground, mechanically
 
@@ -875,7 +936,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, and 2460 before the Knight's Cross Holders). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, and 2830 before the LCVP was laid to its drawing). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1005,8 +1066,8 @@ stays flat whatever the carve does -- with the refusal that matters, which is th
 crew cannot stand in is worse than no pit. The control skips a point that has anything dug
 in it, because three battles have been fought on the map by the time the row runs and a
 shell hole read as the control says the country is as broken as the pit. A third walks a
-section of its own side through a set-up gun, an MG42 at three offsets and a Pak 40 in the
-open and both again down a lane sixty units wide made for the row out of two solid blocks:
+section of its own side through a set-up gun, an MG 34 team at three offsets and a Pak 38 in
+the open and both again down a lane sixty units wide made for the row out of two solid blocks:
 the gun has to be where it was set up and still in action, the walk has to cost under
 twice what it costs with nothing in the way, and a section spawned standing on the gun
 still has to come off it. The lane is there because the open ground passed a fix that
@@ -1033,108 +1094,166 @@ the map rows because they leave the world on Omaha: put between the two rows abo
 which read the Gothic Line the row before them left standing, the old single row took both
 down, and what that looked like was a churn that had stopped being painted.
 
-**And a fourth asks the beach which army it is fought by.** The side button on the title
-screen has to name the 29th Infantry Division, the sections the Allied side opens with have
-to be American squads of six in both variants, the headquarters has to make the American
-squad and queue it when it is asked for the Canadian section, a man of the squad who is
-killed has to go down and lie as an American, and a brain playing the Allied side from the
-whistle has to order American squads and no Canadian sections in its first 45 seconds. Then
-the Ortona button has to put the Canadians back. A nation that one door forgets is a
-Canadian section walking up an American beach, which in a photograph of a battle looks like
-nothing at all. The German side on the same beach is asked the same in a row of its own: the
-button names the 352nd, the sections it has on the field and the three the wall row put in
-the fire trench are grenadier squads of six in all three variants and none of them
-paratroopers, its headquarters makes the grenadier squad and queues it when asked for the FJ
-group, its brain bought grenadiers and no paratroopers in the wall row's minute of battle, a
-man of it goes down as the 352nd, and Ortona's German button reads Fallschirmjäger again.
-And the jeep is asked the same in a third: the motor pool makes it and not the carrier and
-queues it when asked for the carrier, the count and the order book read the carrier and the
-jeep as one, its crew are baked, the periscope's eye is the gunner's at twenty-odd units up,
-forty wrecks throw the gun off the pedestal none of the time and sit down under 1.7 units,
-killed it leaves two American bodies, and Ortona's motor pool still makes the carrier.
-The M4 is asked it in a fourth: the motor pool makes it and not the Sherman V and queues it
-when asked for the Sherman V, the count and the order book read the two as one, every buffer
-it needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1,
-the seated tanker is baked, the eye is a little over three metres up out of the hatch and
-drops to the seat when the lid shuts, forty wrecks throw the turret some of the time and not
-all of it, killed it leaves American bodies, and Ortona's motor pool still makes the Sherman
-V. The KS 750 is asked it in a fifth, on the German side: the depot makes it and not the 222
-and queues it when asked for the 222, the count and the order book read the two as one, its
-crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
-seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the
-mount's arc and no further, the periscope's eye is the gunner's at fourteen-odd units up,
-forty wrecks throw nothing and sit down under 1.7 units, killed it leaves two bodies of the
-352nd, and Ortona's depot still makes the 222. The Panzer IV is asked it in a sixth: the depot
-makes the 352nd's and not the Italian one and queues it when asked for the other, the count and
-the order book read the two as one, it wears the grey and not one face of the Italian tank's
-camouflage, the man in its cupola wears the black cap and no helmet, the seated crewman is
-baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further than
-its guards, the eye is a little under three metres up out of the cupola and drops to the vision
-blocks when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves
-bodies of the 352nd, and Ortona's depot still makes the Italian one. And the engineers are
-asked it in a seventh: the headquarters makes the engineer squad and not the Canadian section
-and queues it when asked for the section, the side opened with one and no Canadians, its three
-men are the three engineer variants carrying the M3, the forearm is bare and the hand gloved
-with no skin on it, the helmet carries goggles, it pegs out a sandbag wall and is sent to build
-it, a man of it killed goes down as `usa_eng` with those bodies baked, and Ortona's
-headquarters still makes the Canadian section. The 352nd's pioneers are asked the same in an
-eighth, on the German side: the headquarters makes the pioneer team and not the paratroop
-pioneers and queues it when asked for them, the side opened with one, its three men are the
-three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown
-pack and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man
-of it killed goes down as `heer_pio`, and Ortona's headquarters still makes the paratroopers.
-The 251 is asked it in a ninth: the depot makes the 352nd's and not the Ausf. D and queues it
-when asked for the other, the count and the order book read the two as one, it wears the grey and
-not one face of the sand, the driver and the gunner wear field grey under a helmet and the seated
-man is baked, a grenadier squad boards it and a second is refused, it is put down behind the
-vehicle, a gun asked to lay 1.2 radians off the nose comes to the edge of the pintle's arc, the
-periscope's eye is the gunner's, standing, at twenty-odd units up, forty wrecks throw nothing and
-all sit down at least 2.2 onto the belly, killed it leaves bodies of the 352nd and the squad
-aboard comes out alive, and Ortona's depot still makes the Ausf. D. The M3A1 is asked it in a
-tenth, on the American side: the motor pool makes the Americans' and not Italy's and queues it
-when asked for the other, the count and the order book read the two as one, it is in olive drab,
-the driver and the gunner wear the American's helmet and jacket and the seated man is baked, an
-American squad boards it and a second is refused, it is put down behind the vehicle, a gun asked
-to lay over the tail comes all the way round, the periscope's eye is the gunner's, standing in
-the pulpit, at thirty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto
-the belly, killed it leaves American bodies and the squad aboard comes out alive, and Ortona's
-motor pool still makes the old one. And the Rangers are asked it in an eleventh: the company post
-makes them and not the Foot Guards and queues them when asked for the Guards, the count and the
-order book read the two as one, the six men are the leader, three Thompsons and the two BAR men,
-every variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and
-the weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the
-squad fights with what it has left, the .30 is bought through the brain's own upgrade routine and
-changes the weapon and two of the Thompson men, killed it leaves `usa_rgr` bodies with those baked,
-and Ortona's post still makes the Guards. The M8 is asked it in a twelfth: the motor pool makes it
-and not the Stuart and queues it when asked for the Stuart, the count and the order book read the
-two as one, every buffer is built including the turret crew without the commander, it is in olive
-drab with the drivers in M1s and the turret crew in the tanker's helmet, the coaxial comes with it,
-a gun asked to lay 1.2 radians off the nose comes all the way round, the periscope's eye is the
-commander's over the rim at twenty-odd units up, the brain's own routine fits the .30 and the sand
-shields and the car is then skirted with the side plate worth more, forty wrecks throw the turret
-some of the time and keep shields some of the time while forty of a car that never had them keep
-none, killed it leaves American bodies, and Ortona's motor pool still makes the Stuart. And the 234
-is asked it in a thirteenth, on the German side: the depot makes it and not the Wirbelwind and
-queues it when asked for the Wirbelwind, the count and the order book read the two as one, it is
-in the grey with none of the paratroopers' paint, the 234/1's men and the Puma's commander wear
-the black cap and none of them a helmet, not one point of the 234/1's two men stands above the
-screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the nose comes all the
-way round, the periscope's eye is the commander's over the rim, the brain's own routine fits the
-Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks throw the
-turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot still makes
-the Wirbelwind. And the Knight's Cross Holders are asked it in a fourteenth, as the player gives
-the orders and not by calling what is behind them: the company post makes them and not the
-assault group and queues them when asked for it, the count and the order book read the two as
-one, the four men are the four variants carrying the StG 44 at a veteran's rank and every one is
-baked winding up and letting go; the GRENADES card reads ready, sends four grenades at a squad
-in reach, a man is in the throw while it goes, each grenade goes off three quarters of a second
-after it lands and the squad takes the bursts, the card then counts its cooldown down dimmed, a
-second volley is refused as cooling and one with nothing in reach is refused for that; the
-BUNDLE CHARGE card arms the pick, a finger on a Panzer IV sends the squad after it and puts the
-pick away, the squad walks into reach, the charge comes down on the hull, goes off three quarters
-of a second later and takes two hundred or more off it; the brain's own routine uses both at
-once; the SIMPLE card carries both at 44 pixels and its BUNDLE arms the pick; a man killed goes
-down as `heer_kch`; and Ortona's post still makes the assault group.
+**And a fourth asks the beach which army it is fought by.** The side button on the title screen has
+to name the 29th Infantry Division, the sections the Allied side opens with have to be American
+squads of six in both variants, the headquarters has to make the American squad and queue it, a man
+of the squad who is killed has to go down and lie as an American, and a brain playing the Allied
+side from the whistle has to order American squads in its first 45 seconds. Then the Ortona button
+has to name the 29th as well, because the army is the same on every ground. An army that one door
+forgets is a Canadian section walking up an American beach, which in a photograph of a battle looks
+like nothing at all. The German side on the same beach is asked the same in a row of its own: the
+button names the 352nd, the sections it has on the field and the three the wall row put in the fire
+trench are grenadier squads of six in all three variants, its headquarters makes the grenadier squad
+and queues it, its brain bought grenadiers in the wall row's minute of battle, a man of it goes down
+as the 352nd, and Ortona's German button names the 352nd as well. And the jeep is asked the same in
+a third: the motor pool makes it and queues it, the count reads it, its crew are baked, the
+periscope's eye is the gunner's at twenty-odd units up, forty wrecks throw the gun off the pedestal
+none of the time and sit down under 1.7 units, killed it leaves two American bodies. The M4A1 is
+asked it in a fourth: the motor pool makes it and queues it, the count reads it, every buffer it
+needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1, the seated
+tanker is baked, the eye is a little over three metres up out of the hatch and drops to the seat
+when the lid shuts, forty wrecks throw the turret some of the time and not all of it, killed it
+leaves American bodies. The Easy Eight is asked it straight after: the brain's own routine rebuilds
+an M4A1 for 160 marks, and the tank is then drawn from a model of its own with the 76's 250 of
+penetration at 420 and a brake, its card names it the M4A3E8 Sherman, its eye is the M4A1's 380
+before the rebuild and 420 after it, the body it is kept out of things by is measured again over the
+wider track, every buffer is built, the eye stands in the cupola and drops to the seat when the lid
+shuts, and forty wrecks throw the turret some of the time and are all of them the Easy Eight. The KS
+750 is asked it in a fifth, on the German side: the depot makes it and queues it, the count reads
+it, its crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
+seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the mount's
+arc and no further, the periscope's eye is the gunner's at fourteen-odd units up, forty wrecks throw
+nothing and sit down under 1.7 units, killed it leaves two bodies of the 352nd. The Panzer IV is
+asked it in a sixth: the depot makes it and queues it, the count reads it, it wears the grey and not
+one face of the sand camouflage, the man in its cupola wears the black cap and no helmet, the seated
+crewman is baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further
+than its guards, the eye is a little under three metres up out of the cupola and drops to the vision
+blocks when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves bodies
+of the 352nd. And the engineers are asked it in a seventh: the headquarters makes the engineer squad
+and queues it, the side opened with one, its three men are the three engineer variants carrying the
+M3, the forearm is bare and the hand gloved with no skin on it, the helmet carries goggles, it pegs
+out a sandbag wall and is sent to build it, a man of it killed goes down as `usa_eng` with those
+bodies baked. The 352nd's pioneers are asked the same in an eighth, on the German side: the
+headquarters makes the pioneer team and queues it, the side opened with one, its three men are the
+three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown pack
+and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man of it
+killed goes down as `heer_pio`. The 251 is asked it in a ninth: the depot makes it and queues it,
+the count reads it, it wears the grey and not one face of the sand, the driver and the gunner wear
+field grey under a helmet and the seated man is baked, a grenadier squad boards it and a second is
+refused, it is put down behind the vehicle, a gun asked to lay 1.2 radians off the nose comes to the
+edge of the pintle's arc, the periscope's eye is the gunner's, standing, at twenty-odd units up,
+forty wrecks throw nothing and all sit down at least 2.2 onto the belly, killed it leaves bodies of
+the 352nd and the squad aboard comes out alive. The M3 is asked it in a tenth, on the American side:
+the motor pool makes it and queues it, the count reads it, it is in olive drab, the driver and the
+gunner wear the American's helmet and jacket and the seated man is baked, an American squad boards
+it and a second is refused, it is put down behind the vehicle, a gun asked to lay over the tail
+comes all the way round, the periscope's eye is the gunner's, standing on the floor behind the
+pedestal, at twenty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto the
+belly, killed it leaves American bodies and the squad aboard comes out alive. Its conversion is
+asked it straight after: the brain's own routine fits the 75 mm GMC to an M3 with a squad aboard,
+the mount is the gun's, the squad is put out and another is refused, the weapon is a shell of more
+than fifty at more than a hundred of penetration, every buffer is built with the pedestal's seats
+among what the fitting takes out, the gunner wears the M1 and the loader has brass in his hands, a
+gun asked to lay over the tail stops at the edge of the carriage's twenty degrees, the periscope's
+eye is the gunner's over the shield's roof, forty wrecks throw nothing, and killed it leaves
+American bodies. And the Rangers are asked it in an eleventh: the company post makes them and queues
+them, the count reads it, the six men are the leader, three Thompsons and the two BAR men, every
+variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and the
+weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the squad
+fights with what it has left, the .30 is bought through the brain's own upgrade routine and changes
+the weapon and two of the Thompson men, killed it leaves `usa_rgr` bodies with those baked. The M8
+is asked it in a twelfth: the motor pool makes it and queues it, the count reads it, every buffer is
+built including the turret crew without the commander, it is in olive drab with the drivers in M1s
+and the turret crew in the tanker's helmet, the coaxial comes with it, a gun asked to lay 1.2
+radians off the nose comes all the way round, the periscope's eye is the commander's over the rim at
+twenty-odd units up, the brain's own routine fits the .30 and the sand shields and the car is then
+skirted with the side plate worth more, forty wrecks throw the turret some of the time and keep
+shields some of the time while forty of a car that never had them keep none, killed it leaves
+American bodies. And the 234 is asked it in a thirteenth, on the German side: the depot makes it and
+queues it, the count reads it, it is in the grey with none of the sand paint, the 234/1's men and
+the Puma's commander wear the black cap and none of them a helmet, not one point of the 234/1's two
+men stands above the screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the
+nose comes all the way round, the periscope's eye is the commander's over the rim, the brain's own
+routine fits the Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks
+throw the turret some of the time, killed it leaves bodies of the 352nd. And the Knight's Cross
+Holders are asked it in a fourteenth, as the player gives the orders and not by calling what is
+behind them: the company post makes them and queues them, the count reads it, the four men are the
+four variants carrying the StG 44 at a veteran's rank and every one is baked winding up and letting
+go; the GRENADES card reads ready, sends four grenades at a squad in reach, a man is in the throw
+while it goes, each grenade goes off three quarters of a second after it lands and the squad takes
+the bursts, the card then counts its cooldown down dimmed, a second volley is refused as cooling and
+one with nothing in reach is refused for that; the BUNDLE CHARGE card arms the pick, a finger on a
+Panzer IV sends the squad after it and puts the pick away, the squad walks into reach, the charge
+comes down on the hull, goes off three quarters of a second later and takes two hundred or more off
+it; the brain's own routine uses both at once; the SIMPLE card carries both at 44 pixels and its
+BUNDLE arms the pick; a man killed goes down as `heer_kch`. And the .30 cal team is asked it in a
+fifteenth: the company post makes it and queues it, the count reads it, it is four men, every
+variant and both pieces' bodies at the gun are baked, a bearer carries belt faces a rifleman has
+none of, walking it is the two carriers and the two bearers with the gun, the tripod and a box each
+drawn at the point the bake read off them, on the shoulder at a man's shoulder height and in the
+hand at his hand's, halted it sets up with the gunner sitting and his number two serving, the number
+two at the gun's left facing it and the bearers back either side, the flash comes off the gun's
+muzzle, the brain's own routine issues the .50 and the weapon, the piece, the bodies at it and the
+pieces carried all change, a man killed goes down as `usa_mg`. And the MG 34 team is asked it in a
+sixteenth, on the German side: the company post makes it and queues it, the count reads it, it is
+four men, every variant and both guns' bodies at the gun are baked, a bearer carries belt faces a
+grenadier has none of, the heel of each gun's butt, read off the gun's own faces and put where the
+cradle holds it, is within 1.3 units of the seated gunner's right shoulder joint, walking it is the
+gunner with the gun on his shoulder, the number two with the Lafette on his back and the two bearers
+with a box each, halted it sets up with the gunner sitting and his number two serving, the number
+two at the gun's left facing it and the bearers back either side, the flash comes off the gun's
+muzzle, the brain's own routine issues the MG 42 and the weapon, the gun in the cradle, the bodies
+at it and the gun carried all change, a man killed goes down as `heer_mg`. And the Wirbelwind is
+asked it in a seventeenth, which is the first unit an army fielded over and above the ones it stood
+in for: the depot makes it beside the 234 and queues it by its own key, it is in the grey with none
+of the sand paint, nothing of the turret roofs over the middle of it at the rim, four muzzles stand
+out past the front plate, the men in it wear the helmet and the black of the panzer troops with some
+of them more than two units over the rim, a turret asked to lay 1.2 radians off the nose comes all
+the way round, the periscope's eye is the commander's over the rim, the same 120-point burst beside
+it takes more than a third again off it than off the Panzer IV, forty wrecks throw the turret some
+of the time, killed it leaves bodies of the 352nd. The Panther is asked it in an eighteenth, the
+second unit the 352nd fielded over and above: the depot makes it beside the Panzer IV and queues it
+by its own key, it is in the grey with none of the sand paint, the man in the cupola wears the black
+cap and no helmet, the muzzle stands more than eighteen units past the nose, a turret asked to lay
+over the tail comes all the way round, and the gunner sees as far as he shoots. Most of the row is
+the plate: 220 in front and a side under two fifths of that and still over the Panzer IV's, an M4's
+round at 300 through the front 56 times in a hundred and through the side every time, and the side
+dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the lid
+shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd. The 57
+mm Gun M1 is asked it in a nineteenth, on the American side: the motor pool makes it and queues it,
+the count reads it, its eye stands past every eye on the German depot and its reach past every gun
+on it but the Maus's, and sited on open sand with a Panzer IV driving at it from 520 it fires first,
+a second or more ahead of the tank and before the tank has found it: at 3.0 seconds from 328 against
+the tank's answer at 5.9 from 161, because the tank drives in while the gun is picking it out, so
+the first round leaves inside the tank's reach and the tank is blind. It is five men with every
+variant, the served bodies and its three meshes baked; set up, the loader kneels at the right of the
+breech facing it and the bearers are back behind the gun, the flash comes off the muzzle and a
+bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner. A
+man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57. The 5 cm Pak 38
+is asked it in a twentieth, on the German side: the depot makes it and queues it, the count reads
+it, its eye stands past every eye on the American motor pool and its reach past every gun on it, and
+sited on open sand with an M4 driving at it from 520 it fires first, a second or more ahead of the
+tank and before the tank has found it. It is five men with every variant, the served bodies and its
+three meshes baked; set up, the loader kneels at the right of the breech facing it and the bearers
+are back behind the gun, the flash comes off the muzzle and a bearer has his case in his hand;
+packed, the trails close and the piece rides beside the gunner. A man killed goes down as `heer_at`,
+a German bunker's anti-tank fitting is the Pak 38. The M3 light tank is asked it in a twenty-first,
+the first unit the Americans fielded over and above the ones they stood in for: the motor pool makes
+it beside the M8 and queues it by its own key, it is in olive drab, the man in its hatch wears the
+tanker's helmet and no M1, the 37 mm stays inside the nose, a turret asked to lay over the tail
+comes all the way round, and the front plate is half as much again as the M8's, so at two hundred
+the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm opens the M8 more than twice as
+often, the KS 750's MG 34 never does and a Panzer IV's round always does. The eye is up out of the
+hatch and drops to the band under the roof when the lid shuts, forty wrecks throw the turret some of
+the time, killed it leaves American bodies. The M26 is asked it in a twenty-second, the second unit
+the Americans fielded over and above: the motor pool makes it beside the M4A1 and queues it by its
+own key, it is in olive drab, the man in its cupola wears the tanker's helmet and no M1, the 90 mm
+stands more than twenty units past the nose, and a turret asked to lay over the tail comes all the
+way round. Most of the row is the plate and the gun at three hundred: a Panzer IV's round goes
+through its front between one time in five and two in three and through its side every time, and its
+90 mm goes through a Panther's front more than three times in five, more often than the M4A1's 75
+does, and a Panzer IV's every time. The eye is up out of the cupola and drops when the lid shuts,
+forty wrecks throw the turret some of the time, killed it leaves American bodies.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1181,7 +1300,10 @@ Useful flags: `--sim=<game seconds>` `--side=us|ger` `--diff=0|1|2`
 `--dist=` `--pitch=` (override gallery framing) `--nofog` `--tag=<suffix>`
 `--settle=<frames>` `--cam=x,y,dist,yaw,pitch` `--ctrl=simple|classic` (the control
 scheme, whatever the device would pick; `hud` then photographs the order pad, the unit's
-card and the ORDERS panel as well).
+card and the ORDERS panel as well) `--key=<unit>` (the tank `pov` sits in, where it would
+otherwise take the Sherman V or the King Tiger). `--side=ger` picks a side and a bare `--side`
+is the before-and-after comparison: the two read the same flag, and until the comparison was
+made to ask for `true` a German shoot without `--base` refused to start.
 
 **Workflow for a visual change:** shoot the relevant scene, edit, shoot again
 with `--tag=after`, and compare the two PNGs side by side.
@@ -1434,11 +1556,40 @@ changed (`craftDef`), because every reader of a building's size reads `b.def`. T
 bar outlines every craft still free while placing; the SIMPLE strip and the brain take the
 one nearest home; a post knocked down frees its craft.
 
+**The Higgins boat is laid over a four-view drawing** (`tools/ref/lcvp.json` for the port side
+with the ramp down, `lcvp_b.json` for the starboard side, the bow and the stern with it up) of
+boat 19 of the Samuel Chase. The sheet has no scale; the side views take theirs off the
+published 36 ft 3 in with the ramp up, 38.3 px/m, and the heights off the end views, whose
+10 ft 10 in over the rubbing strakes puts them at 40.9. The box it replaced was 23 units to the
+top of its sides and had none of what the drawing is about. `lcvpModel(wreck, sv, o)` builds it
+the way the drawing has it, afloat and level on its boot top with the keel falling away aft,
+off tables of stations along the boat (`LCVP`): a V bottom that sweeps up to the ramp's hinge
+at the bow, the keel ending in the semi-tunnel over the screw with the skeg under it to the
+heel of the rudder; narrow side decks with the armoured walls of the well standing up off
+them to a peak either side of the ramp, the two riveted plates a side under the rubbing
+strake; the ramp on the same raked line as the cheeks, with the shallow pyramid over its
+outer face and the two stiffeners every view of the drawing has; the engine under a louvred
+hatch aft of the well; two gun tubs with an M1919A4 each, the coxswain's wheel low between
+them where neither side view sees it, the drum for the kedge's cable and the ensign on its
+staff. Then it puts the boat down on its keel, trimmed eight hundredths of a radian by the bow
+about the forward end of the skeg (`LCVP.trim`), which is how a boat lies that has run in, and
+lowers the ramp until its lip is in the sand. Each boat is numbered in the stencil the ships
+painted them in (`LCVPGL`, `lcvpText`), the transport's hull number off one of the four that
+landed the Dog and Easy waves and its own number off the craft's seed, and carries the wave's
+diamond; `o.level` and `o.ramp` are the drawing's attitude, for the overlay. The overlay agreed
+with the drawing about the hull number, the diamond, the armour seams and the ramp's stiffeners
+on the first run and found five things: a cable run over the coaming that the drawing does not
+show, the pyramid's apex a third too high, the tubs two units too tall for the side views, a
+screen at the coxswain's station neither side view has, and the lifting eye two units high.
+The two side views disagree with the rear about the tubs' height (22.6 against 27.2), and the
+tubs stand at 24 between them. `craftPostFaces` stands the post's wireless aft of the port tub
+and its tarpaulin over the well at the new wall height.
+
 **The wall can be manned at the whistle.** ATLANTIC WALL on the title screen is shown only
 for a map with a `garrison` written into it, and MANNED puts that garrison in: a Pak in each
-casemate in the seawall, an MG42 in each of four bunkers and a mortar dug in behind the
-fifth, an MG42 in each Tobruk either side of the two exits, and a section in each leg of
-the fire trench. A fitting goes in through the bunker's own `finishBunkerUp`, so the gun in a
+casemate in the seawall, an MG 34 team in each of four bunkers and a mortar dug in behind
+the fifth, an MG 34 team in each Tobruk either side of the two exits, and a section in each
+leg of the fire trench. A fitting goes in through the bunker's own `finishBunkerUp`, so the gun in a
 casemate is a gun laid through its slot and nothing new. The garrison is over and above the
 German army: it goes to that side's first player, `popOf` does not count it (`u.wall`), and
 it is told to stay -- a held posture, which the brain's dealing, its operations and its
@@ -1613,6 +1764,13 @@ out of step; the mount is left out, since a gun barrel is not a body anybody wal
 section's come off the offsets it was actually dealt, plus `MAN_R` -- the eleven units
 `hitsUnit` already picks a man by -- so the body a tank is kept out of is the body the
 player's own finger goes through.
+
+**And the box is about the unit's own origin, which is not always the middle of its hull.**
+`vehBody` takes the largest reach either way along each axis, so a hull that stands off its
+origin carries a body longer at its short end than the hull is: the M4A1 runs from -37.2 to
+32.8 and stops 4.4 units short of anything in front of it, and the M3 and the M26 are the
+same by 4.4 and 3.5. The contact row is staged on the Panzer IV, which runs -35.1 to 34.6,
+for that reason. A body with an offset along the hull is the fix, and it is not done.
 
 **`sepDepth` is the four-axis separating test on two boxes**, and the shallowest overlap
 is the depth and its axis the way out, which is what a box does: it puts a thing out the
@@ -1840,9 +1998,16 @@ per cent to 0.14 and halted men behind something 43.9 to 54.8, because a man who
 the masonry now stands beside it.
 
 **And the other way about from wire: a hedgehog holds a tank up and lets a man walk
-between.** A Czech hedgehog is three lengths of angle iron welded through each other at
+between.** A Czech hedgehog is three lengths of angle iron crossed through each other at
 their centres, which makes a star that stands on three points whichever way up it lands;
-it cannot be pushed flat and what it fouls is a belly rather than a track. A dragon's
+it cannot be pushed flat and what it fouls is a belly rather than a track. It is built to
+the Czechoslovak army's drawing of 1937 (`hedgehogModel`): three angles of 140 by 140 by 13 mm
+and 1.8 m long, each laid with its two legs into a different octant so that from any side one of
+them reads as the L it is, and six octagonal gusset plates 550 mm across with their corners cut
+205 mm back, one either side of the two flanges lying in each of the three planes, with the bolts
+through them. Before that it was three square bars and a cube. The full-size one stands on the
+beach; the belts inland are laid in a smaller one without the bolts, because a belt runs to
+hundreds of them and a bolt head there is a pixel. A dragon's
 tooth is a metre of concrete laid in ranks that step up toward the enemy, so a hull that
 climbs the first rank grounds itself on the second. `hogg` is the grid for both: free to
 anything on foot and twelve times over to anything driving, and a hull that takes the
@@ -2220,7 +2385,7 @@ pointed at whoever paid for it, an MG post finishing under an enemy garrison wou
 its crew, throw that garrison out and hand the position back for nothing. The fitting goes with the concrete: an aid post overrun is an
 aid post patching up the men who took it, which is the whole of why walking round the
 side of one is worth doing. What does NOT change is the geometry -- a Normandy casemate
-does not become a sandbag sangar because the men in it are Canadian, and the buffer is
+does not become a sandbag sangar because the men in it are American, and the buffer is
 built once for that reason.
 
 **The brain fits them, and it is deliberately NOT on the works ladder.** That ladder is
@@ -2704,7 +2869,7 @@ cross product of the two, so a round crossing the view is a bar and one coming a
 camera is a point.
 
 **A belt is one round in four or five, not every round**, and the two armies' tracer burned
-different colours: Commonwealth ran red-orange and German a pale yellow-white. The tail
+different colours: the Allied side's runs red-orange and the German a pale yellow-white. The tail
 carries the side's colour and the head is nearly white on both, because the element burning
 is white-hot -- and because a red trace drawn flat over pale dry ground disappears into a
 red channel that is already at the top of its range. Measured on this map before that fix
@@ -3093,15 +3258,16 @@ a combed Zimmerit tile has large ones and bumps a lot, so the material's own tex
 it. At five it is corrugated iron; it is 1.1.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
-helmets and weapons. Vehicles get individual builders (`shermanHull`,
+helmets and weapons. Vehicles get individual builders (`m4Shell`,
 `ktTurret`, `pzivSkirts`, and so on) assembled in `buildVehicleModels`. Every
 face carries a material index into the atlas. If a model looks wrong, the fix
-is in one of these builders, not in a mesh file. Two vehicles share a chassis:
-`p4Chassis(body, cap, sideC, stug)` is the Panzer IV's running gear, tub, glacis,
-deck and tail, and `stugHull` builds the Sturmgeschütz IV casemate on it with the
-flag set, which leaves off the fighting-compartment box, the driver's plate and the
-guard stowage the casemate overhangs. With the flag off the face list is the Panzer
-IV's in the same order.
+is in one of these builders, not in a mesh file. `p4Chassis(body, cap, sideC, stug)`
+is the running gear, tub, glacis, deck and tail of the Panzer IV the paratroopers
+fielded, and `stugHull` builds the Sturmgeschütz IV casemate on it with the flag set,
+which leaves off the fighting-compartment box, the driver's plate and the guard stowage
+the casemate overhangs. The Panzer IV and the Wirbelwind it was written for are retired,
+so the StuG is the one vehicle still built on it; with the flag off the face list is the
+old Panzer IV's in the same order.
 
 The StuG's compartment is a `frustum` and not a `prism`: the Ausf. G superstructure the StuG IV
 inherited stands out over the track guards at the bottom and slants inboard about eleven
@@ -3125,39 +3291,150 @@ the arc in `updateModels`, and `fireAt` refuses until it is inside. `VMODEL.fixe
 draws the hatches with the hull rather than the mount, and `addUp` meshes are drawn
 for every fitted upgrade key, not only the one that swaps the gun.
 
-**The American army.** The Allied side is 'us' everywhere in the file and stays that way;
-which army it is belongs to the map. `NATIONS` is two entries, the Canadians and the 29th
-Infantry Division, each a name for the title screen, the HUD and the after-action page, and
-a substitution list keyed by the Canadian unit it replaces. A map names its army in
-`data.allies` (Omaha says `'usa'`), `buildMap` calls `setNation`, and `natKey(key)` and
-`makesOf(b)` are the only readers: the production bar, the SIMPLE strip, `queueUnit` (which
-maps whatever key it is handed, so a brain out of an older revision still buys on the
-beach), the brain's role table and the two sections each side opens with all go through
-them, so a unit added to the American list reaches every door at once and anything the list
-does not name is still the Canadian unit. The title screen's side button follows the chosen
-ground (`sideSync`), and a body keeps the army it fell in (`natOf`, `c.nat`), because the
-Canadian and the American are both 'us' and `MODELS.fall` and `MODELS.dead` are keyed by
-army.
+**The two armies.** The Allied side is 'us' everywhere in the file and the German side 'ger',
+and both stay that way. On every map the Allied side is the 29th Infantry Division and the
+German side the 352. Infanterie-Division: `NATIONS` is those two entries (`usa` and `heer`),
+each a name, a short name and a line for the title screen, the HUD and the after-action page,
+and `FACTION` carries the same names. The side buttons (`sideSync`) and the victory-point
+labels say so on every ground.
+
+The game was first built with the 1st Canadian Infantry Division and 1. Fallschirmjäger-Division
+on the Italian maps, and each unit of the two new armies was added in the place of one of
+theirs through a substitution table keyed by the map. The Canadians and the paratroopers are
+retired: their nineteen units are gone from `UNITS` (the rifle and engineer sections, the Foot
+Guards, the Mousehole Assault Section, the Vickers, the 6-pounder, the Universal Carrier, the
+M3A1, the Stuart V and the Sherman V; the FJ group, the paratroop pioneers, the assault group,
+the MG42 team, the Pak 40, the 222, the 251 Ausf. D, the Italian Panzer IV and the FJ
+Wirbelwind), with their models, their interiors and hatches, the seven upgrades only they took
+(the 222's 2 cm turret, the 251 Ausf. D's three conversions, the M3A1's quad .50 and ambulance,
+and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
+(`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
+the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
+own for yet: the two mortars, the two pack howitzers, the two heavy batteries, the T8, the
+Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger
+and the Maus. They are fielded by whichever side they belong to on every map and crewed by
+that side's men: `variantForModel` keys every unit's men off the unit first and then off the
+side, so a first-roster gun is served by `gi_atg` with the carbine men of `gi_art` behind it
+(or `hr_atg` and grenadiers), and a hatch or a station on a first-roster vehicle holds a tanker
+(`commander`, `crewman`: `gi_tank` or `hr_tank`).
+
+The production lists, the brain's role table, its shopping ladder, the bunker fittings, the
+wall's garrison and the sections each side opens with are all written in the live keys.
+`RETIRED` maps each retired key to the unit that stands in its place and `natKey` reads it,
+because `queueUnit`, `countOf` and `madeOf` still pass a key through it: a brain out of an
+older revision on the skirmish card buys in the first roster's keys, and this way it is handed
+the unit that stands in its place and counts what it was given. `fielded(key)` is whether the
+roster has the unit at all and `makesOf(b)` is the building's list. `natOf(u)` is the army a
+unit is dressed in and falls in, `def.nat` where a unit says so and its side's army otherwise,
+so a man killed at any gun goes down as an American or a grenadier (`MODELS.fall` and
+`MODELS.dead` are keyed `usa` and `heer`, and by `def.body` for the squads that carry one).
+
+Read every figure below that names a Canadian or a paratroop unit as history. Those were
+measured while the unit was on the roster, most of them as the thing a new unit was set
+against, and they are kept because they say how the live unit's numbers were arrived at. None
+of them can be fought again: the keys are gone, and `tools/duel.mjs` reports a key it cannot
+find as no such unit.
 
 **The rifleman is a third kit on the one rig**: `KIT.usa`, with the builders branching on
 `V.nat`. What he is, from the top: the M1 helmet under its net; the M1941
 field jacket in light poplin, belted, so it stands out below the belt over the seat of the
-trousers (`skirt`) with a storm flap down the front and the dark collar of his wool shirt
-under his chin; dark wool trousers bloused over canvas M1938 leggings (`figLeg`'s third
-anklet mode) and russet shoes; the M1923 cartridge belt with ten pockets round his waist, the
-M1928 haversack high between the shoulder blades with the mess tin pouch on the flap, the
-shovel's carrier strapped under it and its handle hung down behind, the bayonet on the left
-side hilt up, the canteen on the right hip and the first-aid pouch below the buckle
-(`figKitGI`); and the 29th Division's blue and grey monad on the left shoulder. Two variants
-make a squad of six (`gi_rifle`, `gi_rifle_b`): the second wears a cloth bandolier across his
-chest and two grenades on his straps, has hessian through his net and a field dressing tucked
-into it.
+trousers (`skirt`), with a storm flap down the front stopping where the collar is worn open
+over the mustard wool shirt, the collar standing round the back of the neck, and the slash
+pockets under slanted flaps below the belt; the sleeves and the trousers cut full (`k.sleeve`,
+and the thigh and shin a size up in `figLeg` for the legging's anklet mode); the wool
+trousers bloused over canvas M1938 leggings laced up the outside of the leg over a row of
+hooks (`figLeg`'s third anklet mode), and russet service shoes rough side out on a dark sole;
+the M1923 cartridge belt with ten pockets round his waist, the M1928 haversack from the belt
+to the shoulders with the meat can pouch on its flap, the shovel's carrier under that and
+the T-handle of the M1910 shovel hanging straight down behind the seat, the bayonet on the
+left side of the pack hilt up, the canteen on the right hip and the first-aid pouch below the
+buckle (`figKitGI`); the lightweight service gas mask in its olive bag on the left hip on a
+strap across the chest from the right shoulder (`V.gas`); and the 29th Division's blue and
+grey monad on the left shoulder. Three variants make a squad of six (`gi_sgt`, `gi_rifle`,
+`gi_rifle_b`): the leader wears a sergeant's three chevrons, khaki on a dark backing, on both
+sleeves below the patch (`figChev`, built in the arm's own frame so they stay on the sleeve
+when he aims), and the second rifleman wears a cloth bandolier across his chest and two
+grenades on his straps, has hessian through his net and a field dressing tucked into it. The
+count of stripes is `stripes` on the arm's kit and not `chev`, because `KIT.usa.chev` is the
+stripes' colour: written as one field, the copy `engKit` hands the arm put a 3 where the
+colour was and the page threw in `hexRGB` on the first sergeant built.
 
-He reads in bands where the Canadian reads as one bolt of serge: a dark netted pot, a pale
-jacket, dark legs and pale leggings, which is what is left of him at nine hundred units. On
-the card, at 600 units his mean luminance is 0.352 against the FJ's 0.414 and the FJ's top
-fifth is 0.17 above his, with his contrast to the ground at -0.28, inside the band the other
-two sit in.
+**The palette is read off a studio photograph of the kit, and the order of values is the
+point.** The first cut had the jacket pale and green and the trousers a dark grey, which is
+the Canadian's order turned upside down; laid against the photograph it was out on both.
+What the photograph has is a warm mid-tan jacket, olive-brown trousers well darker than it,
+leggings and webbing the palest things on him, and light russet shoes. The hexes are set to
+land there after the render has done its work, sampled off the frame on Omaha's overcast
+rather than guessed: the jacket about 1.25 red over green against the photograph's 1.27, the
+leggings a fifth brighter than the jacket as they are in the photograph, and the trousers 1.30
+red over green against 1.37. A tint probe over the whole
+roster found one colour on untagged faces that moved tile, and it moved the right way: a
+sandbag shade the old American ladder had been holding on canvas is back on hessian.
+
+He reads in bands where the Canadian he replaced read as one bolt of serge: a dark netted pot, a
+tan jacket, darker legs and pale leggings, which is what is left of him at nine hundred units. On
+the card before the retirement, at 600 units his mean luminance was 0.359 against the
+paratrooper's 0.425 on the desktop and the paratrooper's top fifth was 0.15 above his, with his
+contrast to the ground at -0.26, inside the band the other two sat in; on the phone the gap is 0.057 to 0.066 at 600, 760 and 900. The wider
+stance below showed more of the leggings and took the desktop's gap at 900 to 0.047, under the
+floor, and the jacket, the trousers and the leggings were each taken down a few per cent to
+buy it back: the margin is 0.055 there now, and it is the number to watch before lightening
+anything on him.
+
+**He stands, fights and moves the way the photograph has him** (`FIGPOSE_USA`, read through
+`stanceOf(v, name)` and `gaitOf(v, run)`, which `bakeMen`, `soldierModel` and the men card all
+ask, so an American variant is baked in his own stances and everybody else in the shared ones).
+Standing, his feet are apart. At the ready he is down in a crouch with his knees well bent, his
+weight over the front foot and the rifle low, where the shared pose stands nearly upright. He
+fires braced with the left foot ahead and the right well back, knees bent and leaning into the
+rifle, and he walks and runs leaning further forward. Each pair of legs is matched so both
+feet are on the ground: a leg's height is its thigh's length times the cosine of the thigh's
+angle plus its shin's likewise, and the ankle is the rest of the turn so the sole lies flat.
+The width is a fourth number on a pose's leg, how far it is swung out from the hip
+(`splayLeg`), and the foot is turned back the other way about its own ankle first, because
+swung out with the leg a sole stands on its inside edge. The knee's bend in the two gaits is
+left as everybody's: bent harder to kick the back foot up the way the photograph's runner
+does, the foot coming through was still in the air on the frame the other army's is down,
+the plant moved to the other foot a frame late, and the SKATE row read the run at 0.37 of the
+ground a frame stands for against a ceiling of 0.30. The walk reads 0.15 against the
+Canadian's 0.25.
+
+**And he is traced over the photographs** (`tools/ref/gi_rifle.json`: the front of the man with
+the pistol, the front of the man with the carbine, the back of the man with the grenade and the
+side of the runner, at 190 px/m off the head and the helmet, each in his own pose). The
+envelope and the heights agreed with the photographs and six things did not, all of them
+cloth. The thigh was 2.14 across at the fork and 1.7 at the knee against 2.5 and 2.1; the leg
+of the trouser below the knee is as full as the knee is down to where it is bloused, and it
+was the shin's 1.7; the blousing hangs a hand over the legging's mouth at 2.5 where it was
+2.06; the seat was 4.6 against 5.0; the sleeve was 1.43 at the shoulder against about 1.8; and
+the haversack was 2.55 across against 3.1, with the meat can pouch high on it where the
+photographs have it low, from the bottom of the pack to a hand and a half under its top, and
+the shovel's T at the seat where it hangs at the fork. And from the front and the back the
+line from the collar to the point of the shoulder falls about twenty degrees, where the chest
+stopped in a flat top with the collar standing on it and the sleeves hanging from its
+corners, which is what made him a box: the plate across the top of the chest (`'plate'`)
+stands level at the shoulder's own width for a sliver and then slopes up to the base of the
+neck, with its front kept upright where the collar points lie, and what goes over his
+shoulders (the haversack's straps, the gas mask's, the MG team's belts, the Ranger's vest and
+straps) is laid on its slope. The first cut of this was a yoke built under the old level
+plate, which stood to 6.6 and swallowed it: for one commit every one of those shoulders was
+exactly as flat as before, the straps laid on the slope were inside the plate, and the
+photographs of it were read as sloped. And a strap laid on it is rolled `-sd` times the
+slope, because `roll` raises +y as the angle grows: rolled `sd` times, as the first cut had
+them, every one of them stood up off the shoulder at its outer end, which the level plate had
+been hiding too.
+
+Three things held some of that back, each a gate. The seat is 4.75 rather than 5.0, because
+the men card's hips row holds every figure within eight per cent of a 1.73 m man's hip breadth
+and the photographs' 5.0 is cloth over a belt of kit. The sleeve is 1.25 of the rig's arm
+rather than 1.3, and the .30 is carried across him the way the BAR is (`WEAP.m1919.carry`),
+because the fuller sleeve put the Ranger's left upper arm 0.38 into his chest reaching for the
+.30's fore-end. And the trouser below the knee and the blousing are wider than they are deep
+(`legTube`), as the side view has them: square, as wide as they are across, a kneeling man's
+shin hung 0.41 under the ground his knee was on and lifted his front foot off it. The READ gap
+at 900 on the desktop is 0.063 against the 0.055 it was, because the trousers are the darkest
+thing on him and there is more of them.
+
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
 level, and what says M1 is a pot longer than it is wide whose sides come down over the ears
@@ -3189,9 +3466,8 @@ seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent ag
 German section and 56 against the Canadian section, which is inside what sixteen runs of two
 identical units produce.
 
-**The engineer squad is the Americans' builder**, in the Canadian section's place (`us_eng` to
-`am_eng` on the army's list, and the section the side opens with goes through `natKey` now as
-the rifle sections already did): three men of an engineer combat battalion, dressed the way the
+**The engineer squad is the Americans' builder**, and one of the three units the side opens
+with: three men of an engineer combat battalion, dressed the way the
 brief asked, after Company of Heroes. It is a fifth kit on the rig (`V.eng`), and every piece of
 it goes through a door the rig already had. **The sleeves are rolled above the elbow**, which is
 a branch in `figArm` read off the kit (`k.rolled`): the shirt down to the roll, the roll a band
@@ -3202,7 +3478,9 @@ hand is drawn, and the real skin moves to `k.bare` for the forearm. The kit is h
 arms in the weapon carry as well as the grips carry now, which they were not, because nobody
 before him held a weapon in gloves. **The trousers are pale twill with a cargo pocket on each
 thigh** (`figLeg`'s `cargo`, built into the thigh so it follows the hip) **bloused over brown
-boots** (`figLeg`'s sixth anklet mode, laced to above the ankle). The shirt is the darker olive
+boots** (`figLeg`'s sixth anklet mode, laced to above the ankle), and cut as full as the
+rifleman's wool: 2.55 across at the fork, tapering from the knee to where it is bloused, and
+the blousing half as wide again as the boot. The shirt is the darker olive
 tucked in at the belt, so there is no skirt, with its collar open over the undershirt; over it
 the assault vest (`vest` in the record), two big pockets low and two smaller ones high under
 flaps; on his back a pack in a darker olive than the vest with a blanket rolled across the top
@@ -3237,8 +3515,7 @@ reach, and over 16 it wins 75 and 63 at 80: a little behind at the edge of its r
 up close. It loses every fight with the grenadier squad inside nine seconds, and so does the
 Canadian section, because that is three men of a builder against six of a line squad.
 
-**The Rangers are the Americans' assault squad**, in the Foot Guards' place (`us_fg` to
-`am_ranger` on the army's list), bought from the same company post: six men with four Thompsons
+**The Rangers are the Americans' assault squad**, bought from the company post: six men with four Thompsons
 and two BARs, and a bazooka slung on each BAR man's back. It is the rifleman's rig in the
 M1941 jacket and leggings with `V.rgr` on it, and what is new is what goes over the jacket.
 **The assault vest is a darker green than the poplin** (`rvest`), from the hip to the chest and
@@ -3312,17 +3589,11 @@ which is a light vehicle of its own side, 75 per cent. The Panzer IV still takes
 time in seven seconds with a quarter of itself gone, because a squad that hunts light vehicles
 is not a squad that hunts tanks.
 
-**The German army on the beach.** The same table does the German side. `NATIONS` carries two
-entries with `side: 'ger'`, the paratroopers (`fj`) and the 352nd Infantry Division (`heer`); a
-map names its German army in `data.axis` (Omaha says `'heer'`) and `NAX` is the live one beside
-`NAT`. `natKey` reads the list of the side the unit it is handed belongs to, so one call
-answers for both armies, and every door already went through it: the brain's role table, the
-opening sections, `queueUnit`, `makesOf` and the wall garrison, which puts `natKey(e.k)` down
-rather than the key the map wrote, so a manned wall on the beach is grenadiers. `sideSync`
-sets both buttons.
+**The German army.** The 352nd is the German side on every map, and the manned wall's
+garrison is written in its keys, so a manned wall is grenadiers and MG 34 teams.
 
 **The grenadier is a fourth kit on the rig**: `KIT.heer`, with the builders branching on
-`V.nat === 'heer'` and the paratrooper's smock path left as it was. From the top: the M42
+`V.nat === 'heer'`. From the top: the M42
 helmet (`helmetM42`), its flared skirt swept round a plan wider than it is deep with the rim
 dropped over the ears and the neck, either with a canvas band round it for foliage or under
 chicken wire with foliage through it, on a tile of its own (`hrwire`, a hex mesh six by eight
@@ -3353,10 +3624,32 @@ tangent sight to the nose cap and passes under the lower band; the bolt handle i
 on the right, with the stock disc on the butt, the bayonet lug and cleaning rod under the
 barrel and the hooded front sight at the muzzle; and the sling runs down the LEFT side from
 the slot in the butt to the swivel on the lower band. It measures 13.07 units against a
-published 1,110 mm. The paratroopers carry the same rifle, so the new anchors (`WEAP.kar`)
-moved both armies' hands, and the GRIP misses the card had reported on the FJ rifleman went
-with the old one: four of 461 on the last commit, two of 589 now, and those two are the
-Canadian corpse. A corpse's Kar98k lies on its side, for the Garand's reason.
+published 1,110 mm. The paratroopers carried the same rifle, so the new anchors (`WEAP.kar`)
+moved both armies' hands, and the GRIP misses the card had reported on the paratrooper went
+with the old one. A corpse's Kar98k lies on its side, for the Garand's reason.
+
+**And he is traced over photographs of men in field grey** (`tools/ref/gr_rifle.json`, two men
+walking at the camera, `shots/ref/heer_a.jpg`, which is a CC BY-SA photograph of a reenactment
+and lives outside the repository like every reference). The scale is the stature and the
+helmet together, 272 and 304 px/m, and the helmet agrees with the rig's M42 within a line. What
+was out was the cloth. The trousers were 2.0 across at the fork and 1.5 at the knee where the
+photographs have 2.6 and 2.3, and the one shape a German leg is known by from the front, the
+cloth bagging out over the top of the marching boot to 2.4, was not there at all: the leg was a
+stick into a bucket. They are cut like the American's now (`figLeg`'s `full`, on the marching
+boot, the gaiter and the engineer's boot), with the bag hung a tenth outboard so a man standing
+with his feet together does not come out as one column of cloth from the belt to the boots;
+over a gaiter the leg tapers down to the blousing instead, which is how the M43 trousers were
+cut. The boot is 1.5 at the ankle and 1.82 at the top where it was 1.62 and 1.86, the sleeve a
+twelfth fuller (`KIT.heer.sleeve`), the seat 4.75 under the fuller thighs and the skirt 5.0
+over it, and the shoulders slope as the American's do, off the same plate. The pioneers, the
+two crews and the Knight's Cross Holders go through the same builders and take all of it; the
+motorcyclist's legs are his coat's and are left alone.
+
+**A walking man is a source of widths and not of heights.** Both photographs put the shoulders
+a unit nearer the helmet than the rig has them, and an upright American laid the same way
+agrees with the rig to a line: the two men are looking down at the path in front of them, and
+a head bowed that far brings the helmet down onto the shoulders. The torso was left as the men
+card has it.
 
 **The squad's numbers come off the duel card as well.** Six men with bolt rifles at nine a
 round and 275 of reach beat the American squad 88 per cent of the time, the Canadian section
@@ -3365,8 +3658,7 @@ man and 250 of manpower it wins 46 per cent against the American squad over fort
 50 against the Canadian section and 38 against the FJ group: level with the army it meets and
 a step behind the veterans it stands in for.
 
-**The pioneer team is the 352nd's builder**, in the paratroop pioneers' place (`ger_pio` to
-`hr_pio` on the army's list): three men of the division's pioneer battalion, dressed after the
+**The pioneer team is the 352nd's builder**: three men of the division's pioneer battalion, dressed after the
 Company of Heroes reference they were asked for. It is the grenadier's kit with `V.pio` on it,
 and nearly all of it was already there: the MP40 pouches (`V.mp`), the goggles on the M42
 (`V.goggles`, the motorcyclist's), the gaiters and the wire. What is new is the tunic's collar
@@ -3383,9 +3675,9 @@ the canvas pouches and the pack did not read as a thing of its own.
 
 **It carries the engineers' numbers to the point.** The two teams carry the same sort of weapon
 and do the same job, so they are one unit on two sides, and `am_eng` against `hr_pio` is the
-beach's calibration row the way `us_eng` against `ger_pio` is Italy's: over 24 runs it reads 54
-per cent, and the Italian pair read 38 on the same afternoon, which is the spread 24 runs of two
-identical units produce. Against the American rifle squad it loses every fight inside eight
+card's calibration row: over 24 runs it read 54 per cent, and the Canadian and paratroop pair it
+replaced read 38 on the same afternoon, which is the spread 24 runs of two identical units
+produce. Against the American rifle squad it loses every fight inside eight
 seconds, as the engineers lose to the grenadiers.
 
 **And the MP40 is rebuilt**, because every pioneer carries one and it was four boxes: a receiver
@@ -3396,22 +3688,41 @@ straight magazine, the lower frame and the pistol grip in maroon bakelite, the c
 its slot on the left, and the two-strut stock that folds under the frame with its butt plate
 standing behind the magazine housing and swings out for the aim. It measures 7.42 units folded
 against a published 630 mm and 9.8 with the stock out against 833 mm, which is further back than
-the old stock went, so `WEAP.mp40.buttOut` moved with it; the grenadier squad leader and the
-paratroopers carry the same gun, and all of them pass the men card as they did.
+the old stock went, so `WEAP.mp40.buttOut` moved with it; the grenadier squad leader carries the
+same gun, and passes the men card as he did.
 
-**The jeep is the Americans' light vehicle**, in the carrier's place (`us_m8` to `am_jeep`
-on the army's list): a Willys MB with the windscreen folded flat on the bonnet under a canvas
+**The jeep is the Americans' light vehicle**: a Willys MB with the windscreen folded flat on the bonnet under a canvas
 cover, which is how it went into action, and a .30 on the M31 pedestal behind the front
-seats. It is pressed sheet over a ladder frame and built that way (`jeepHull`): a flat bonnet
-narrower than the body, flat wings with their outer edges turned down and their fronts
-falling to the grille, the nine-slot grille with the headlamps in its top corners, the open
-tub with a scoop cut down each side and an arch over each rear wheel, combat wheels on 6.00-16
-bar-tread tyres, the spare and a jerrican on the tail, the axe and the shovel along the
-driver's side and the hood rolled over the rear seat. **The side of the tub is laid in bands
-between stations** (`jeepSide`, off `jeepTop` and `jeepBot`), because the scoop and the arch
-make the outline concave and `facesToArray` fans a polygon from its first vertex. On
-`tools/dims.mjs` it reads 3.37 m long against 3.36, 1.57 wide against 1.57, 1.02 high against
-the 40 in it folds to, and 0.22 of clearance under the differentials.
+seats. It is pressed sheet over a ladder frame and built that way (`jeepHull`): a flat, level
+bonnet narrower than the body, flat wings well below it with their outer edges turned down and
+their backs falling away to the step, the grille wide at the top and drawn in below with its nine
+slots, the headlamps in its top corners and the parking lamps under them, the open tub with a
+scoop cut down each side behind the dash and an arch over each rear wheel, combat wheels on
+6.00-16 bar-tread tyres, the spare and a jerrican high on the tail, the shovel and the axe along
+the driver's side and the top's bows folded back along the rear body. **The side of the tub is
+laid in bands between stations** (`jeepSide`, off `jeepTop` and `jeepBot`), because the scoop and
+the arch make the outline concave and `facesToArray` fans a polygon from its first vertex. On
+`tools/dims.mjs` it reads 3.32 m long against 3.36, 1.56 wide over the grab handles against 1.57,
+1.33 high to the top of the steering wheel against the 52 in it is reducible to, and 0.22 of
+clearance under the differentials.
+
+**It is laid over a three-view drawing** (`tools/ref/am_jeep.json`) whose scale bar agrees with
+the wheelbase in the side view, and whose front and rear views agree with the track and with the
+62 in over the grab handles, which is where that published width is measured and not over the
+wings. The first version, built off photographs and those figures, was out along most of its
+length and none of it showed in a photograph. The body stood a tenth of a metre too low on its
+wheels, the sill, the wings, the bonnet and the rear body alike, with the frame at the height of
+the axles it is sprung over. The nose was two units too long and the tail a unit short, so the
+body stood forward over its axles: the grille 2.45 units ahead of the drawing's and the bumper
+1.8. The cowl was a unit long where the drawing has three and a half of it between the bonnet and
+the dash, so the dash, the scoop, the seats, the steering wheel and the pedestal all stood 3 to 4
+units too far forward. The grille and the bonnet were a fifth too narrow, the headlamps 1.8 units
+lower and 0.9 closer together, the wings 0.8 too wide and the bumper wider and lower than the
+frame's horns carry it, and the spare and the jerrican rode 3 units too low. Laid over it now, all
+three views agree with the drawing to about a line width. Two things on the sheet are left: its
+tyres are 30 in over the tread where a 6.00-16 is about 28, and the published size is kept; and
+its windscreen is up, where this one's is folded as it went into action, with the .30 on the
+pedestal the drawing does not have.
 
 **Its men are the vehicle's own and not its sheet metal.** `VMODEL[k].crew` rides on the hull
 and `turCrew` on the mount, each a buffer of its own that `drawUnits3D` and `castUnit` draw
@@ -3437,46 +3748,64 @@ won every fight with a squad, because the whole card sits on the knife edge the 
 balanced at, so it deals what the .30 deals per second at 320 of reach and 70 of
 penetration, and reads 56 per cent against the grenadiers.
 
-**The M4 is the Americans' tank**, in the Sherman V's place (`us_sher` to `am_sher` on the
-army's list), and it is built from nothing rather than out of the Sherman V's parts: the
-welded M4 with the 75 and the radial engine, which is the tank the 741st and 743rd took onto
-the beach and the shorter of the two by the whole of the A4's stretch. It is laid out with
-the driver at -y and the bow gunner, the gunner and the commander at +y, which the Sherman V
-beside it is not: its bow gun and its commander are both on the left as the player sees
-them. Its numbers are the Sherman V's, because the gun, the plate and the running gear are,
-and fought over eight runs it won half its fights with the Panzer IV where the Sherman V won a
-quarter on the same card, which is the swing eight runs of a near-even row carry, and every
-one with the grenadier squad inside six seconds. On `tools/dims.mjs` it reads 5.87 m long
-against 5.84, 5.93 with the gun against 5.89, 2.64 wide against 2.62 over the sand shields,
-2.74 high against 2.74, a body of 2.56 against 2.56 and 0.43 of clearance.
+**The M4A1 is the Americans' tank**, and it was built from nothing rather than out of the
+Sherman V's parts: an early cast
+M4A1 with the direct-vision hull, the 75 in the M34 mount and the radial engine, the shorter of the
+two by the whole of the A4's stretch. It is laid out with the driver at -y and the bow gunner, the
+gunner and the commander at +y, which the Sherman V beside it is not. Its numbers are the Sherman
+V's, because the gun, the plate and the running gear are, and it was rebuilt in place, so the key,
+the doors and the numbers are the ones the welded M4 had. On `tools/dims.mjs` it reads 5.98 m long
+against 5.84, which is the drawing's 5.95 over the tracks and the turned-down ends of the rear
+mudguards, the same with the gun, because the drawing's 75 ends a tenth of a metre short of the
+tracks; 2.63 wide against 2.62, 2.71 to the top of the hatch against 2.74, a body of 2.62 and a
+roof across the shoulders of 2.50 against the drawing's 2.49, and 0.43 of clearance.
 
-What carries it, and each is built its own way. **The bogie housing reaches out over both
-discs** (`m4Bogie`): a vertical-volute bracket is inboard of its wheels, and built only
-inboard it sat in the shade under the sponson with nothing to read from the side, where the
-springs between the wheel tops and the skid over them are most of what says VVSS. Each road
-wheel is **two pressed discs with the gap the centre guides run in** (`m4RoadWheel`,
-`m4Disc`), the outer one lathed in full and the inner one plain because nothing sees it. The
-**T48 is its own link** (`m4Link`) laid on the kit's belt: a steel shoe with two rubber bars
-in a V on the face that meets the ground, the end connectors proud of both edges and a guide
-on every joint. **The nose is swept with the normals of its own profile** (`m4Sweep`), so the
-three-piece cover shades round, with the two flanges offset along the same normals and bolted
-through. **Everything on the glacis goes through `onM4Glacis`**, whose local z is the plate's
-normal, except what has to face the way the tank does: a headlamp laid on the plate's frame
-points at the ground. **The turret is lofted from a plan** (`m4TurretPlan`, a dozen points a
-side smoothed into forty-eight, then `m4TurRing` scales the front, the sides and the bustle
-separately at each height so the front stays near vertical where the shield sits), and
-anything fixed to its wall is put there by `m4TurAt`, which meets a ray from the centre with
-the wall's outline at that height. The first version took the nearest vertex instead: at a
-step finer than the outline's own spacing two stations landed on one vertex, and the plate
-welded over the gunner's cheek came out as a fan of zero-width faces that drew as black
-wedges on the front of the turret. **The star in its ring is on the engine deck**, where the
-aircraft were meant to see it and the player does.
+**It is laid over a four-view drawing** (`tools/ref/am_sher.json`), and the first version, the
+welded M4 built off photographs, was out along its whole length. The road wheels of each bogie
+stood 24 in apart where the drawing has them 33 in apart; the return rollers trailed their bogies
+where the early bogie carries its roller on top; the idler stood two units too far forward and
+three too low; the hull was a welded box a quarter of a metre too far forward over the running
+gear and a unit too low, with appliqué plates and sand shields the drawing does not have; and the
+turret stood 3.8 units too far forward on its ring, under the M34A1's wide rotor shield where the
+drawing has the narrow M34. Laid over it now, the side and front views agree with the drawing to
+about a line width. The plan puts the drivers' hoods 1.8 units further forward than the side does,
+and the side, which sees the hood's profile, was taken.
 
-**The hatch periscopes are lower than the kit's**, because the M34A1 shield sweeps over the
-driver's hatches as the turret comes round and the kit's periscope stood above the shield's
-foot: at about twenty-five degrees of traverse the two were in the same place. The roof gun
-stands in front of the split hatch rather than behind it, because a man in the hatch can
-reach grips ahead of him and cannot reach them behind.
+What carries it, and each is built its own way. **The cast hull is lofted** (`m4Section`,
+`m4Shell`): cross sections along the length, each a side standing up off the sponson floor, a
+shoulder turned over at the top and the roof across, following `m4TopZ` (the glacis at about
+fifty-three degrees off the vertical rolled into the roof over a fillet, the roof, the engine deck
+falling away behind the turret and rolling over into the rear plate) and `m4HalfW` (the corners
+drawn in toward the front). The normals come off the loft, so it shades as one casting, and
+anything lying on the deck goes on through `onM4Deck`, which follows the fall. **The bogie is the
+early pattern** (`m4Bogie`): the head reaches out over the track and carries the return roller on
+top, the two volute springs lean in beneath it, and the arms go from two pins low in the middle out
+to the wheels. **The road wheels and the idler are spoked** (`m4Spoked`): the outer wheel of each
+pair is built with its spokes, its hub and its cap, and the inner one is a dished disc, which is
+what shows between the spokes. The **T48 is its own link** (`m4Link`): a steel shoe with two rubber
+bars in a V on the face that meets the ground, the end connectors proud of both edges and a guide
+on every joint. **The nose is swept with the normals of its own profile** (`m4Sweep`), the outer
+castings standing a little forward of the middle one, and **everything on the glacis goes through
+`onM4Glacis`**, whose local z is the plate's normal, except what has to face the way the tank does.
+Two **direct-vision hoods** stand out of the top of the glacis, each with its visor and a round
+hatch in its top; the headlamps stand on brackets in their brush guards and the siren is on the
+plate over the left sprocket.
+
+**The turret is lofted from a plan** (`m4TurretPlan`, round in front and through the cheeks and
+drawn out into a short bustle with a flat back, smoothed; `m4TurRing` scales the front, the sides
+and the bustle separately at each height, and the front falls back hard toward the roof), and
+anything fixed to its wall is put there by `m4TurAt`, which meets a ray from the centre with the
+wall's outline at that height. The first version took the nearest vertex instead: at a step finer
+than the outline's own spacing two stations landed on one vertex, and a plate welded to the wall
+came out as a fan of zero-width faces that drew as black wedges. **The M34 mount** is a shield
+curved over the front of the turret the width of the opening and bolted down both edges, the narrow
+rotor standing out of the middle of it round the gun, the collar the gun goes through, and the
+coaxial at the shield's left end. The split hatch's right door carries a periscope, as the drawing
+has it, and the roof gun stands in front of the hatch rather than behind it, because a man in the
+hatch can reach grips ahead of him and cannot reach them behind. **`m4Sweep`'s normals want the
+profile run from the top down round the front**: the shield was first written from the bottom up,
+`faceOut` turned its faces the right way round and left the normals pointing in, and it rendered
+black from every side.
 
 **The man in the hatch is a tanker** (`gi_tank`, `V.tanker`): the fibre M1938 helmet with its
 rib over the crown, its ear flaps and the goggles pushed up on their strap (`helmetTanker`),
@@ -3489,18 +3818,94 @@ tracks.
 
 **The interior is authored** (`VIN.am_sher`) on the same plan the turret is lofted from,
 drawn in wherever the casting leans in toward the roof so nothing of the room shows through
-the wall with the head out. The seats are set by the seated man rather than by eye: his eye
+the wall with the head out, and its roof, its sill and the commander's eye are read off the
+turret's own height. The seats are set by the seated man rather than by eye: his eye
 is 14.75 over his soles and his hip 6.05, so the gunner's soles go 14.75 under the telescope
 and the basket floor drops to meet them. Set the other way about, as the first version was,
 the gunner's head stood in the commander's view.
 
-**The KS 750 is the 352nd's light vehicle**, in the 222's place (`ger_sd222` to `hr_ks750` on
-the army's list): the Zündapp with the Steib-built BW 40 on its right and the shaft straight
-across from the rear hub to the sidecar wheel, a rider and a gunner on it and an MG 34 on the
-sidecar mount, the pillion left empty. The 352nd had no armoured cars to speak of, and a
+**The M4A1 can be rebuilt as the Easy Eight** (`UPGRADES.e8`, 160 marks and 60 of fuel, fitted
+once): the M4A3E8, which is the M4A3's welded hull with the forty-seven degree glacis and the big
+drivers' hatches, on the horizontal volute suspension and its wide track, under the T23 turret with
+the 76 mm M1A2 and its muzzle brake, the vision cupola and the .50 on its post behind it. Nothing of
+the M4A1's shape carries over, so it is a model of its own (`VMODEL.am_e8`), and the tank stays the unit it
+was: `u.key` is still `am_sher`, so the count, the order book and the brain read it as the M4A1
+they bought. **`def.modelUp` names the fitting that rebuilds a vehicle and the model it is then drawn
+from, and `vkey(u)` is the one reader of it**: the draw, the shadow pass, the interior, the hole the
+eye looks down through, the periscope's eye and whether it is shut, the body the tank is kept out of
+things by (`fitUp` throws the old one away), the deck a bundle charge lands on, the muzzle and the
+tracer, the paint and the wreck, which keeps the model it died as (`w.vk`). `def.nameUp` is what it is
+called afterwards, and `nameOf`, `shortOf` and `descOf` are what the selection card, the periscope's
+label, the SIMPLE card and the toasts read, because a card reading M4A1 over a tank with a 76 and a
+muzzle brake is a card about the wrong tank. The toast for a fitting names the vehicle as it was.
+
+**A rebuild lends the eye nothing until it is on** (`lateEye`), which is the rule a conversion's
+reach already had: the sight rule at load would otherwise have given every M4A1 on the field the 76's
+420 of eye. It sees 380 before and 420 after. The gun (`wUp.e8`) is 125 a round at 420 with 250 of
+penetration and a brake; the plate and the hit points are the M4A1's, because two and a half inches
+at forty-seven degrees is about the same plate as two inches of casting at fifty-six. Those numbers are
+set off the M4A1's and the Panther's and have not been fought on the duel card.
+
+**It is laid over a four-view drawing** (`tools/ref/am_e8.json`) with no scale on the sheet: the side
+is taken off the published hull length and agrees with the length over the gun and the height to the
+cupola to a per cent or so, and the plan and the front off the width over the tracks. The front and
+rear views are drawn about three per cent taller than the side, so they take a vertical scale of
+their own (`ppmv`), and where the front view still disagrees with the side about a height, the side
+was taken. On `tools/dims.mjs` it reads 6.27 m long against 6.27, 7.58 with the gun against 7.54, 3.00
+wide against 2.99, 2.90 high against 2.97, a body and a roof of 2.62 and 0.44 of clearance.
+
+What carries it, and each is built its own way. **The bogie is the horizontal volute** (`e8Bogie`): a
+bracket bolted to the hull side, two arms turning on pins low in its face and running out between
+the wheels of each pair, two volute springs lying on their sides across the head between the levers
+the arms carry up to it, a shock absorber leaning across between the wheels and a small roller on a
+post on the head for the top run; three a side, with a return roller between each pair (`E8G`). **The
+track is the wide one** (`e8Link`): two blocks pinned side by side with a steel chevron across the
+face that meets the ground, an end connector at each edge and the guide in the middle, standing out
+past the hull under a fender that scoops down over the sprocket and falls away over the idler
+(`e8Fenders`). **The hull is flat welded plate** (`e8Shell`), the glacis laid back onto a cast
+differential housing (`e8Nose`) with everything on it put there by `onE8Glacis`, the two big drivers'
+hatches in the roof, the engine deck falling away behind the turret to the grille and the fillers
+(`e8Deck`, `onE8Deck`), and the exhaust deflector across the lower rear plate (`e8Rear`). **The T23 is
+lofted from a plan** (`e8TurretPlan`, round in front with a long bustle behind, through the M4A1's own
+`m4TurRing`, with a scale table of its own that `m4TurAt` now takes), with the broad mantlet of the M62
+mount, the vision cupola on the right with its lid hinged at the back (`e8Hatch`), the loader's hatch
+on the left and the .50 on its post behind the cupola (`e8Fifty`), which the commander works up in
+the cupola. **The interior is the M4A1's** (`m4Room`, which is what `VIN.am_sher` became) laid out
+again round the cupola in the T23's plan: `o` says how high the hatch stands off the roof, a split lid
+or a single one, where the periscopes and the ventilator come through and how far forward the gunner
+sits, because the cupola stands two units further forward than the M4A1's hatch and at the M4A1's
+station the gunner's helmet was under the commander's eye and filled the view down into the turret.
+`tools/shoot.mjs pov --key=am_sher --up=e8` photographs it from there.
+
+**The KS 750 is the 352nd's light vehicle**: the Zündapp with the Steib-built BW 40 on its right and a shaft across from
+the rear hub to the sidecar wheel, a rider and a gunner on it and an MG 34 on the sidecar mount,
+the pillion left empty. The 352nd had no armoured cars to speak of, and a
 motorcycle combination is what its reconnaissance rode. It is in the Wehrmacht's grey (`HRG`),
-which is the paint of every vehicle built for the 352nd and of none of the paratroopers'. On `tools/dims.mjs` it reads 2.37 m long against 2.385, 1.66 wide against
-1.65, 1.01 high to the handlebars against 1.01 and 0.15 of clearance under the sump.
+which is the paint of every vehicle built for the 352nd and of none of the paratroopers'. On
+`tools/dims.mjs` it reads 2.50 m long against the drawing's 2.49 over the trailer coupling, 1.68
+wide against 1.65, 1.01 high to the handlebars against 1.01 and 0.15 of clearance under the sump.
+
+**It is laid over two Hum3D sheets of one model** (`tools/ref/hr_ks750.json`, `hr_ks750_r.json`
+for the right side on the same sheet, and `hr_ks750_b.json`), a line drawing and a render, both
+scaled off the 1,410 mm wheelbase, which puts the height and the width on the published figures;
+the render's own scale bar agrees to a pixel. The first version, built off photographs and those
+figures, was out mostly in the sidecar. Its wheel stood on the rear axle's line where both
+sheets put it 1.75 units ahead (`KSG.xS`), with the shaft running forward across to it. The tub
+was 0.60 m across where the drawing has 0.51, its centre line 0.6 units further out, its nose
+pointed where the drawing's is bluff, and its top fell away behind the well, where the drawing
+has a low deck forward and the tail raised behind the gunner. The spare hung down the slope of
+that tail 1.7 units too far aft and 2 too low, where the drawing lays it nearly flat on the
+raised tail on a frame whose front posts are the gunner's handholds, and the drawing carries a
+trailer coupling out behind it. On the machine the cylinders stood 1.4 units too far forward,
+with the exhaust and the footboards, the grips 1.4 units too far forward, and both mudguards
+were shallower than the drawing's, the front one stopping well short of where it wraps down
+behind the wheel. The sidecar's mudguard wraps from the axle's height in front round to behind
+it, with the side lamp on its crown and the tail lamp on its back, and a panel is pressed into
+the tub's outboard flank. The drawing carries no gun, no panniers and no plate on the front
+mudguard, and the model keeps all three. Where it disagrees with a published figure the figure
+is kept: its tyres are 0.61 m over the tread against a 4.50-16's 0.635, and its sidecar wheel
+1.14 m off the machine's line against 1,105 mm. The length is the drawing's, 2.25 m to the spare
+and 2.49 m over the coupling, against a published 2,385 mm that neither agrees with.
 
 It is built its own way at every stage (`ksBike`, `ksSidecar`), and a few of them are worth
 knowing. **A tube is a tube** (`ksTube`, `ksPipe`): the frame, the fork blades, the exhausts,
@@ -3508,8 +3913,7 @@ the handlebar and the sidecar chassis are round tubes between two points, shaded
 everything else on the roster is boxes. **Each wheel is a 4.50-16 on a spoked rim**
 (`ksWheel`): the balloon section lathed, two staggered rows of block tread, thirty-six spokes
 laced tangent from the two flanges and the drum on its own side, and the spare lies on the
-sidecar's tail on the slope of it, turned by `ksRollN`, which keeps the normals `roll()` throws
-away. **The tank and the sidecar are lofted from sections** (`ksRing`, `KSBODY` smoothed through
+sidecar's tail, turned by `ksRollN`, which keeps the normals `roll()` throws away. **The tank and the sidecar are lofted from sections** (`ksRing`, `KSBODY` smoothed through
 `ksStations`, turned outward by `ksLoft` whichever way round the rings were written), and the
 well is the faces over it taken out of the loft, a lining hung from the edge of the opening
 and a padded roll round the coaming over the join. `KSSEC` is one section written out point
@@ -3543,12 +3947,12 @@ jeep's 21 goes as the cube of the ratio below a third. The MG 42 is the jeep's r
 .50 turned round: the same damage a second as the MG 34, laid half as fast again with a little
 more suppression, and it reads 58 per cent against the squad where more damage read every fight.
 
-**The Panzer IV is the 352nd's tank**, in the Italian one's place (`ger_p4` to `hr_p4` on the
-army's list), and it is built from nothing rather than out of that one's parts: the Ausf. H with
-the long 7.5 cm KwK 40 L/48, laid out with the driver on the left and the bow gunner on the
-right, which the Italian model beside it is not. **Every vehicle built for the 352nd is in the
-Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint), where the paratroopers' vehicles
-stay in their sand; the KS 750 wears it too. Its numbers are the Italian Panzer IV's, because the
+**The Panzer IV is the 352nd's tank**, built from nothing rather than out of the parts of the
+Panzer IV the paratroopers fielded in Italy: the Ausf. H with the long 7.5 cm KwK 40 L/48, laid out
+with the driver on the left and the bow gunner on the right, which that model was not. **Every
+vehicle built for the 352nd is in the Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint),
+where the first roster's German vehicles that are still fielded (the StuG, the Tigers and the Maus)
+stay in their sand; the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
 gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.96 m long against 5.92,
 7.05 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
 (the cupola lid is not in the measured mount), a body of 2.36 against 2.36 and 0.40 of clearance.
@@ -3595,21 +3999,37 @@ of the turret shows through a block from where his eye is, and drawn, its roof a
 own caps stood between him and the room he looks down into. Head out, the hole in the cupola's top
 cap lets him look down into the turret: the rings, the seat, the breech, the gunner.
 
-**Its numbers are the Italian Panzer IV's, and the card agrees.** Over twelve runs the M4 wins a
-third of its fights with it, which is inside the swing the card has shown on the Italian one against
+**Its numbers are the old Panzer IV's, and the card agrees.** Over twelve runs the M4 wins a
+third of its fights with it, which is inside the swing the card showed on the old one against
 the Sherman V and the M4, and it takes the American squad eight times in eight inside eight seconds,
 because nothing in that squad opens a tank.
 
-**The 251 is the 352nd's half-track**, in the Ausf. D's place (`ger_h251` to `hr_251` on the
-army's list), and it is built from nothing rather than out of that one's parts: the Sd.Kfz.
+**The 251 is the 352nd's half-track**, built from nothing rather than out of the Ausf. D's
+parts: the Sd.Kfz.
 251/1 Ausf. C, the Hanomag of 1940 to 1943 with the one-piece nose and the lockers standing out
 along both sides, open above, in the grey (`HKC` off `HRG`). Two men and no passengers: the
 driver on the left behind the plate and a gunner standing to the MG 34 on the pintle at the front
 of the compartment, with the commander's seat and the benches for ten empty. It carries one
 section (`carries`), which goes out of sight aboard it the way a section goes into the carrier,
-and is not drawn on the benches. On `tools/dims.mjs` it reads 5.85 m long against 5.80, 2.09
-wide over the lockers against 2.10, 1.73 across the body at the crease against 1.73, 1.75 to the
-rim against 1.75 and 0.32 of clearance.
+and is not drawn on the benches. On `tools/dims.mjs` it reads 5.83 m long against 5.80, 2.14
+wide against 2.10, 2.03 across the body at the crease against the drawing's 2.00, 1.77 to the rim
+against 1.75 and 0.32 of clearance.
+
+**It is laid over a four-view drawing** (`tools/ref/hr_251.json`, through `tools/overlay.mjs`),
+and the first version, built off photographs and published figures, was out in nearly every
+place the drawing could see and in none the envelope could. The running gear stood 4.2 units too
+far aft, stations, sprocket, idler and front axle alike. The bonnet stopped at 14.6 where the
+drawing runs it to the foot of the driver's plate at 8.4, so the compartment had half a metre it
+does not have and the pintle and the driver's seat stood a metre and half a metre ahead of where
+the drawing puts them. The body was 1.73 m across the crease against the drawing's 2.00, the upper
+rear plates stood upright where they lean in to a rim short of the crease, the back corners were
+square where they are chamfered off, the headlamps were on the mudguards where they are on the
+nose, and the MG 34 had no shield. The side of the bonnet carried a flat louvred hatch on a plane
+that was mostly inside the hull; the drawing has the Ausf. C's armoured cover over the engine
+intake there (`hkEngineSides`), a box standing out past the crease with a bevelled front and the
+louvres in it, which the side view alone reads as the upper side plate and the plan and the front
+view show for what it is. Laid over the drawing now, all four views agree with it to about a line
+width.
 
 What carries it, and each is built its own way. **The running gear is interleaved** (`hkStation`):
 six stations a side on torsion arms, the first, third and fifth an outer and an inner disc and
@@ -3619,23 +4039,27 @@ middle row, which shows between them, has the dish and the hub (1), and nobody s
 return rollers: the top run lies on the wheels. The spoked sprocket is at the front and the spoked
 idler at the back, and **the front axle is steered** on a transverse leaf with two 190-18 tyres
 (`hkFrontWheel`, `hkFrontAxle`) under mudguards whose outer edge is turned down (`hkMudguards`),
-each with its headlamp on top. **The body is seven rings** (`HKST`), each a bottom, a crease and a
-top point on one side, and every plate is laid between two of them, so the lower sides lean in to
+with the width indicator on a rod at the outer edge, and the headlamps stand on the corners of
+the nose. **The body is eight rings** (`HKST`), each a bottom, a crease and a top point on one side,
+with `HKPB` the ring at the foot of the driver's plate and `HKPT` the one at its top, and every plate is laid between two of them, so the lower sides lean in to
 the belly, the upper sides lean in to the rim and the bonnet climbs from the nose to the driver's
 plate: a set of facets with a weld bead down the crease and round the rim. The rear plates meet
 at the crease the way the sides do, and **the two doors are bent over it** (`hkRear`), a panel on
 each plate in a frame whose x runs across the vehicle and whose y runs up the plate. Anything
 fixed to a plate is put there by `hkOn` in the plate's own frame off `hkPlate`: the visor flaps on
 the driver's plate with the cross between them, the vision flaps and the cross on the upper sides,
-the louvred hatch on each engine side, the bonnet hatches and the radiator louvres.
+and the bonnet hatches with the filler cap forward of them. A roof covers the two front seats from
+the top of the driver's plate back to the pintle, with a curved rail on it bowed forward about the
+gunner.
 
 **The compartment is furnished** (`hkCab`): the two front seats, the wheel coming back on its
 column through the firewall, the levers and the instrument panel under the plate, the socket the
 pintle drops into, a cushion and a back pad for each man on the benches with the rifle rail over
 them, and the MG's ammunition boxes by the gunner's feet. **The MG 34 is the KS 750's gun**
 (`ksGun34`, pulled out of `ksMG34` so the two carry one gun) on a post and cradle of its own
-(`hkMG34`), laid about its balance point on the pintle, with no shield, as in the photograph it
-was drawn from. **The gunner turns with the gun about the pintle** (`turCrew`), which is where the
+(`hkMG34`), laid about its balance point on the pintle, behind a shield of two plates meeting in
+a V on the centre line with the slot for the gun between them, as the drawing has it in all four
+views. **The gunner turns with the gun about the pintle** (`turCrew`), which is where the
 mount's origin is, and the gun traverses 0.3 radians either way (`arc` 0.6) with the vehicle
 turning to bring it further, because swung wider he walks into the driver. Both men are
 `hr_crew`, the grenadier in field grey under a plain helmet with nothing in his hands, put on the
@@ -3650,60 +4074,122 @@ every time in twenty-one seconds with 98 per cent of itself left, and the Ausf. 
 the same afternoon, because nothing in the squad opens it. It takes the jeep twelve times in
 twelve inside eleven seconds, and the M4 takes it eight in eight inside ten.
 
-**The M3A1 is the Americans' half-track**, in the place of the one built for Italy (`us_m3` to
-`am_m3` on the army's list), and it is built from nothing rather than out of that one's parts: the
-White M3A1 in olive drab with the M49 ring raised over the co-driver on the armoured pulpit and a
-.50 on it, the unditching roller across the nose and a rack of mines down each side. Two men and
-no passengers: the driver on the left at the wheel and the gunner standing in the pulpit, with the
-co-driver's seat and the benches for ten empty. It carries one squad (`carries`), which goes out
-of sight aboard it the way the 251's does, tows the anti-tank gun (`tows`) and takes no upgrades.
-On `tools/dims.mjs` it reads 6.20 m long over the roller against 6.17, 2.21 wide over the racks
-against 2.22, 1.97 across the plates against 1.96, 2.27 to the top of the ring against 2.26 and
-0.29 of clearance under the front differential.
+**The M3 is the Americans' half-track**, built from nothing rather than out of the parts of the
+M3A1 built for Italy: the
+White M3 in olive drab with the .50 on the M25 pedestal behind the front seats, the unditching
+roller across the nose and the rounded commercial fenders of the early production. Two men and no
+passengers: the driver on the left at the wheel and the gunner standing on the floor behind the
+pedestal, with the seats for eleven more empty. It carries one squad (`carries`), which goes out of
+sight aboard it the way the 251's does, and tows the anti-tank gun (`tows`). On `tools/dims.mjs` it
+reads 6.17 m long over the roller against 6.18, 2.00 wide against 1.96, 1.97
+across the body against 1.96, 2.33 to the top of the .50 against 2.26 and 0.29 of clearance under
+the front differential.
+
+**It is laid over a five-view drawing of the M3** (`tools/ref/am_m3.json`, through
+`tools/overlay.mjs`), and it was an M3A1 until then, built off photographs and published figures.
+Laid over the drawing it was out in most of the places the envelope could not see. The body stood
+1.6 units low and its sides came down over the track, where the drawing stops them above it. The
+sprocket and the idler stood 2.5 units lower than the drawing's, the road wheels were 1.4 units too
+close together, and the support roller ran under the band where it carries it. The cab and the
+bonnet were a box the width of the body, where the drawing tapers them from the body to the
+radiator. The radiator, the bumper and the roller were 2 to 3 units too far forward and the roller
+was twice too wide. The windscreen was the full width of the body and stood near upright, and the
+fenders were the flat ones of the late M3A1. The drawing is an M3, so the pulpit and the mine racks
+went with it.
 
 What carries it, and each is built its own way. **A truck in front and a track behind.** The front
 axle is a banjo tube with the differential lathed on it, laid on a six-leaf spring each side with
 the track rod and the drag link running to the steering box (`mhFrontAxle`), on 8.25-20 tyres with
 two staggered rows of lugs and the bolt ring of the split rim (`mhFrontWheel`). Behind, a rubber
-band a foot wide with a chevron tread and a steel guide on its inner face (`mhBand`) runs round
-the sprocket at the front, two volute bogies of two wheels each (`mhBogie`: the arms, the bracket,
-the spring standing between the wheel tops and the skid over it), a return roller over the gap
-between them and the idler at the back on its adjuster, and `mhPulleys` is the one list of what
-the band is laid round. **The front end is pressed sheet**: a bonnet narrower than the body with a
-hinge down its middle and the armoured radiator in its face, eight pitched louvres over a dark
-backing (`mhBonnet`); flat mudguards with a lip turned down and a headlamp in its brush guard on
-each (`mhMudguards`); and the roller on its arms out ahead of the channel bumper (`mhFrame`).
-**The cab is open**: the armoured windscreen raised and leaning back with a slit for each man under
-its cover (`mhWindscreen`), and a door each side whose upper flap folds down, with the star on it
-(`mhDoors`). **The body is a plain box** (`mhHull`): the mine racks along both sides, two rows of
-seven (`mhRacks`), the pioneer tools and the sockets for a .30 aft of them (`mhKit`), and the
-door in the back (`mhRear`).
+band a foot wide with a chevron tread and a steel guide on its inner face (`mhBand`) runs round the
+sprocket at the front, a bogie of four small wheels on two rockers under one volute spring with the
+support roller on top carrying the band (`mhBogie`), and the idler at the back, the sprocket and the
+idler both well off the ground; `mhPulleys` is the one list of what the band is laid round. **The
+cab and the bonnet are one tapered plane each side** (`mhSideY`, `mhTap`), from the body's front
+corner in to the armoured radiator, whose louvres stand out of the face of the bonnet
+(`mhBonnet`). The fenders are rounded over the wheel, with a skirt and a headlamp in its brush
+guard on each (`MHF`, `mhMudguards`), and the roller is out on its arms ahead of the channel bumper
+(`mhFrame`). **The windscreen is narrower than the body** and leans back, with a slit for each man
+under its cover (`mhWindscreen`), and the doors are laid in the tapered plane with the star on them
+(`mhDoors`). **The body is a plain box with vertical sides**, standing over the tracks with its
+lower rear corners cut away on a slant and the door in the back (`mhHull`, `mhRear`), and the
+canvas hooks round its rim (`mhKit`).
 
-**The pulpit is a drum of plate standing out of the right front of the body** (`mhPulpit`), open
-below so the gunner can climb up into it, with the ring rolled round its lip on three posts down
-to whichever floor each stands on, a grab rail on its back and the platform he stands on. The
-drum is `mhTube`, whose outer faces carry the normals of the curve and whose inner faces are
-flat. **The .50 is the jeep's gun** (`jeepGun50`, pulled out of `jeepFifty` so the two carry one
-gun) on a carriage that runs round the ring (`mhFifty`). The mount's origin is the middle of the
-ring, so the gunner turns with it (`turCrew`), and the def carries no `arc`: he stands in a drum
-of his own clear of the driver, and the gun goes all the way round. Both men are `gi_crew`, put
-on the wheel and the grips by the jeep's correction (`jeepMan`); the gunner stands with his knees
-bent on the platform, the .50 at his shoulder and his eye 33 units up, three over the bore. `VIN.am_m3` is the open vehicle's room, which is
-nothing, with the eye his.
+**The .50 is the jeep's gun** (`jeepGun50`) on a pedestal standing up from the floor on the centre
+line (`mhFifty`). The mount's origin is the head the gun turns on, so the gunner turns with it
+(`turCrew`), and the def carries no `arc`: the pedestal goes all the way round. Both men are
+`gi_crew`, put on the wheel and the grips by the jeep's correction (`jeepMan`); the gunner stands on
+the floor with his hands on the spade grips and his eye 28 units up. **The compartment is
+furnished and lit**: the two seats in the cab with the wheel and the panel (`mhCab`), a seat between
+and behind them, five a side down the body with their backrests on the walls, the shelf stowage,
+the extinguisher and the .50's boxes at the pedestal (`mhBenches`). An open box is a well to the
+occlusion bake and came out black, so every face that looks into the compartment is left out of it
+(`mhLitIn`, the M8's `lit` read off the face's own normal against the middle of the room).
+`VIN.am_m3` is the open vehicle's room, which is nothing, with the eye the gunner's.
 
-**Its numbers are the Italian M3A1's**, because it is the same vehicle, and the card agrees with
-what those numbers were already doing: over twelve runs it and the 251 win six each in 24 seconds,
-and the old pair read six each in 23 on the same afternoon. It takes the grenadier squad twelve
-times in twelve in 19 seconds with 92 per cent of itself left, which is the 251 against the
-American squad turned round, and the KS 750 twelve in twelve inside seven. The Panzer IV takes it
-twelve in twelve inside nine.
+**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which the M3A1 built for Italy carried):
+the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
+floor at the front of the body and firing forward over the cab behind a shield, laid over a
+four-view drawing of the GMC (`tools/ref/am_m3gmc.json`). The sheet's views disagree about the
+shield until it is read as it is built: the front and the rear have its top peaked in the middle
+and the side has it rising toward the back, and a front plate in a shallow V under a roof ridged
+down the centre line, with a side plate down to the rim each side, is the one shape that does both
+(`mhGmc`). The barrel is laid where the drawing has it, the muzzle over the bonnet a little short of
+the radiator; the published tube is a fifth longer than the drawing's. The gunner sits on the left
+at the sight and the two handwheels and the loader stands on the right with a round in his hands
+(`mhGmcMen`), and the periscope's eye is the gunner's stood up to look over the shield's roof. The
+ammunition goes in down the middle, with a seat at each front corner and one at the back, lockers at
+the rear corners and a box each side of the door (`mhGmcHold`, the `addUp`).
 
-**The M8 is the Americans' armoured car**, in the Stuart V's place (`us_stuart` to `am_m8` on
-the army's list), and it is built from nothing: Ford's six-wheeler in olive drab with the 37 mm
+Four doors had to be opened for it, and each is general. **`downUp` is what a fitting takes out**:
+the pedestal's seats, the shelf stowage and the .50's boxes are drawn, cast and baked only while
+the conversion is not fitted. **`arcUp` gives a mount its own traverse**: the carriage went
+nineteen degrees one way and twenty-one the other, the casemate rule is symmetric, so it goes twenty
+either way where the pedestal went all the way round, and `arcOf(u)` is what every reader of a
+vehicle's `def.arc` asks now, `acquire`, the hull's turn to bring it round, the turret clamp and
+`fireAt` among them. **`fills` on a fitting takes the room for a squad away**: `fitUp(u, uk)` is the
+one place an upgrade is fitted, from the brain's routine, the SIMPLE popup and the classic card
+alike, and it puts out a squad riding in the body before the gun goes in; `carriesOf(v)` is what
+`canBoard` and the lift ask, so none may board after. The player's AUTO setting never makes such a
+conversion for him, because it changes what the vehicle is for: he converts one by hand, or turns
+that one vehicle's own AUTO on. The brain converts its own, since nothing in it ever puts a squad
+aboard. And **a fitting that moves the mount is baked
+where it stands**: `put` in the occlusion bake takes the fitting's `barUp` pose, where it had baked
+every alternative mount at the ring of the one it replaced. The GMC's gun stands 2.9 units lower
+than the pedestal's head, and the M3A1 built for Italy had its quad and its 75 baked where
+the ring was.
+
+**A conversion's reach lends the eye nothing until it is fitted.** The sight rule at load raised
+a unit's eye to the longest reach of any weapon it could carry, fittings included, which is right
+for a turret swapped for a bigger gun and wrong for a conversion that makes it another vehicle:
+at 440 the GMC's reach gave every half-track still waiting to be converted a better eye than an
+armoured car's. The rule leaves a `fills` fitting out and `eyeOf(u)` puts its reach back once it
+is fitted, in the eye and in the selection within sight.
+
+**The M3's numbers are the M3A1's**, because it is the same vehicle, and the card agrees with
+what those numbers were already doing: over twelve runs it takes the grenadier squad and the KS 750
+every time, the 251 seven times in twelve, and the Panzer IV takes it every time in ten seconds.
+
+**The GMC's numbers are the M4's round at a quick-firer's rate.** At the M3A1's line, 96 a round
+every 3.4 seconds with 150 of penetration, it lost every fight with the Panzer IV head on and every
+fight side-on: it needed eight hits to the tank's three, and at its own 380 of reach a round 328
+out went through the front two times in three. The M1897 fires the round the M4's 75 fires, so it
+takes the M4's 140; what it has that the M4's gun has not is the French 75's rate of fire. At 140 a
+round every 2.4 seconds with an accuracy of .74, 205 of penetration and 440 of reach, over 84 runs
+head on it takes the Panzer IV a quarter of the time (33, 21 and 21 over three runs of 24 and 8 over
+12), and over 48 runs with the tank side-on 56 per cent. The M4's round every 3.2 seconds read 4
+and 21 over 24 runs a side. That is a glass cannon: 350 marks, 60 of fuel and 10 of population with
+the conversion against the tank's 345, 90 and 14, three hits to kill it and five to kill the tank.
+Over twelve runs a row it takes the 251, the 234/1, the MG 34 team and the grenadier squad every
+time, the Puma and the Wirbelwind eleven times in twelve and the Knight's Cross Holders three times
+in four; a Panther head on takes it every time and side-on eleven times in twelve, and a Pak 38
+sited at its reach takes it every time in seven seconds.
+
+**The M8 is the Americans' armoured car**, built from nothing: Ford's six-wheeler in olive drab with the 37 mm
 and its coaxial .30 in an open-topped turret, which is what the cavalry reconnaissance troops
 brought ashore. Four men: the driver and the co-driver head and shoulders out of their hatches,
 and the gunner and the commander in the turret. The Stuart's gun and its job are the reason for
-the slot. On `tools/dims.mjs` it reads 4.76 m long against 4.70, 2.35 wide against 2.31, 1.93 to
+the slot. On `tools/dims.mjs` it reads 4.68 m long against 4.70, 2.36 wide against 2.31, 1.93 to
 the top of the turret against 1.91, 2.35 across the crease against 2.31 and 0.29 of clearance
 under the axles, and the 37 mm ends short of the nose. The other set of published figures, 197 in
 long, 100 in wide and 88.5 in high, is over the towing fittings, the sand shields and the ring
@@ -3712,12 +4198,26 @@ centre a little ahead of the middle axle (`M8G.xT`), with the engine deck behind
 three-quarter photographs, whose perspective stretches whatever is nearest the camera, it went
 nine units too far forward and the gun hung past the nose, and a side elevation put it back.
 
+**It is laid over two four-view drawings** (`tools/ref/am_m8.json` and `tools/ref/am_m8_b.json`),
+both with the sand shields hung and the .30 on its ring, and both scaled off the 128 in from the
+front axle to the rear one in the side and the plan and off the 76 in tread in the front and the
+rear. Against them the car was out in four places. The nose stood 1.1 units too far forward and
+0.6 too high, with its lower plate stopping short of the belly. The crease ran in toward the nose
+from the middle of the car, where both drawings carry it at its full width as far forward as the
+foot of the hatch plate and turn it in across the nose there. The shields stopped a unit and a
+tenth short at the foot with their ends square, where the drawings rake both ends and turn them
+in. And the .30's ring stood on posts nearly a foot tall, three units over where both drawings put
+the gun. The two drawings disagree about the width over the shields by about a unit a side in their
+front and rear views; both plans and drawing A's front and rear put them where they are, which is
+narrower than the published 100 in, and that figure was left alone.
+
 What carries it, and each is built its own way. **The hull is five rings** (`M8ST`), each a
 belly, a knee, a crease and a top point on one side, the way the 251's is three: the tub side
 under the overhang, the plate leaning out from the knee to the crease, and the plate leaning in
 from the crease to the deck, which is the boat shape and what the six wheels tuck under. The
-rings run in from the crease toward the nose and the crease drops toward it, so the front of
-the side is a long wedge of plate that meets the glacis at the nose corners. **A panel between
+crease holds its full width as far forward as the foot of the hatch plate and turns in across
+the nose from there, dropping as it goes, and the nose's lower plate runs down from it to the
+front of the belly. **A panel between
 two rings is one face where its corners lie in a plane and two triangles where they do not**
 (`m8Quad`), because the plate leaning in to the deck twists between the foot of the hatch plate
 and the top of it, and a twisted quad fanned from one corner carries that corner's normal over
@@ -3762,7 +4262,9 @@ shadow pass. `VIN.am_m8` is the open turret's room, which is nothing, with the e
 commander's over the rim.
 
 **The sand shields are a fitting of their own and skirts to a hollow charge.** `UPGRADES.fenders`
-hangs them over the rear wheels, and `skirted(u)` is the one question every reader of
+hangs them over the rear wheels (`m8Skirts`): a plate on each side from under the crease to past
+the middle of the tyres, longer at its foot than its head, with a stiffener along the top, two
+ribs pressed into it, five brackets and both ends turned in. And `skirted(u)` is the one question every reader of
 `u.up.skirts` asked before them -- the side plate's twelve per cent in `armourAt`, the hollow
 charge bursting on the sheet in `fireAt`, the draw and the shadow pass -- so the shields and the
 Schürzen are one rule on two keys. The brain fits them only once the enemy has something that
@@ -3781,8 +4283,7 @@ it still takes the 251 81 per cent of the time, the KS 750 and the grenadier squ
 reload that the coaxial has the four of them down first. The Panzer IV took it twelve times in
 twelve at the first numbers, and thinner plate does not change that.
 
-**The 234 is the 352nd's armoured car**, in the Wirbelwind's place (`ger_wirb` to `hr_234` on the
-army's list), and it is built from nothing: the eight-wheeled heavy armoured car of a Panzer
+**The 234 is the 352nd's armoured car**, built from nothing: the eight-wheeled heavy armoured car of a Panzer
 division's reconnaissance battalion, in the grey. It arrives as the 234/1, with the 2 cm KwK 38
 and an MG 42 in an open six-sided turret under two wire screens, and **the closed turret of the
 234/2 with the 5 cm KwK 39/1 is its field upgrade** (`UPGRADES.puma`), which swaps the gun, the
@@ -3847,8 +4348,8 @@ the M4 every time. The Puma, at 85 a round every 2.6 seconds and 120 of penetrat
 to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
 `SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
 
-**The Knight's Cross Holders are the 352nd's assault squad**, in the paratroop assault group's
-place (`ger_pgren` to `hr_kch` on the army's list), bought from the same post: four decorated
+**The Knight's Cross Holders are the 352nd's assault squad**, bought from the company post:
+four decorated
 veterans with StG 44s, raised at a veteran's rank (`vet0`, which starts the tally of kills that
 earns it, because the rank is worked out from the tally every time it moves). They are dressed
 after the Company of Heroes squad they were asked for, and every piece goes through a door the
@@ -3953,13 +4454,554 @@ under seven seconds with 72 per cent of itself left, the 28 it lost being one bu
 is 46 at the centre of 24 units: the first, at 60 over 26, took three men of an American squad in
 one volley.
 
-**And the brain's shopping list is written in the first roster and bought in the map's.**
-`LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
-weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
-`madeOf` read their key through `natKey` as well, because a brain out of an older revision on
-the skirmish card asks after the carrier: with the counts keyed on what was actually bought,
-it was given a jeep for every carrier it ordered and bought them for ever against a count
-that never moved.
+**The .30 cal team is the Americans' machine gun team**, bought from the company post: four men of a heavy weapons company
+with the M1919A4 on its M2 tripod. The gunner and his number two carry the gun and the tripod and
+a pistol each, the other two bring the ammunition with the M1 carbine, and every one of the four
+wears the rifleman's kit with two belts of .30 crossed on his chest as bandoliers.
+
+**The belt is flat and shaded a round or two at a time** (`roundBelt`): a strip one face thick
+along a path, with the brass of the case heads along one edge, the khaki of the cloth, a line of
+brass where the necks come out of it and the gilding of the bullets along the other edge, the
+heads and the bullets cut in two shades a third of a unit at a time so it reads as cartridges and
+not as a strap. The rounds lie across the path in the plane of the face (`nrm` says which way
+each point faces), and a round is 84.8 mm, which is one unit. The first cut gave the cloth
+two-fifths of the width and it read as a crossed webbing strap; the brass is most of it now.
+The part that goes round his back is under the haversack and is not built.
+
+**Three new weapons are cut as side profiles** (`weaponModel`): the M1 carbine, 10.6 units
+against a published 904 mm, with the magazine, the band, the eared front sight and the sling
+through the oiler down the left; the M1919A4 as it goes on a tripod, 11.3 against 964 mm, the
+receiver with its feed cover and rear sight, the back plate and pistol grip, the feedway on the
+left, the trunnion block and the perforated jacket; and the M2HB, 19.35 against 1,654 mm, the
+riveted receiver, the spade grips and the butterfly trigger, the perforated barrel support and
+the heavy barrel. Their bore is z 0 and the trunnion, which is what sits on the pintle, is at x 0.
+**The tripods are set up and folded** (`m2Tripod`, `m3Tripod`): the pintle, one leg forward and
+two splayed back, the traversing bar curved between the rear legs and the traversing and
+elevating mechanism taking the back of the gun; folded, the three legs close up under the head.
+The piece as it stands (`mgTeamModel`) is the tripod, the gun on the pintle, two ammunition boxes
+(`ammoBox`, the .30's M1 and the .50's M2 at their published sizes) and a belt rising out of one
+into the feedway, which is on a Browning's left. The boxes stand clear of the rear legs, which
+the first placement did not.
+
+**The team carries its piece, and nothing is on the ground under it while it does**
+(`carried(u)`, `def.carry`): from the moment it is packed until it is set up again, the gun is on
+the gunner's right shoulder and the tripod on his number two's, and every other team is still
+drawn the old way, with its piece at the first man's feet. **What they carry is drawn, not
+baked**: one carrier variant (`gi_mgc`) holds his right hand in front of the shoulder with the
+elbow down, the piece is drawn in his own frame from the point on his shoulder the bake read off
+each pose (`MODELS.hold`, `holdAt`, `MG_SHOULDER`), pitched up by `MG_CARRY_P` off the pose's own lean,
+and `mgCarryAt` picks the piece: the gun for the gunner, the tripod for his number two, and the
+gun for the number two once the gunner is down. That is why one man carries the .30 and the .50
+alike, where baking the piece in would have been two more variants of ten buffers each. The
+bearers (`gi_mga`) do the same with the box: in the hand at the end of a straight arm while they
+walk, off `J.handL`, and set down beside the left foot otherwise. Lying down a carrier has put
+his piece on the ground beside him.
+
+**Set up, each man has a place round the gun** (`gunMate`, `gunCrew`), placed off the gunner
+because the gun is drawn off him and only while he is alive to be placed off. The gunner sits
+behind it (`gunSit: 'sitlow'`, the sit with the legs out and a lean of .42, because a Browning on
+its tripod is a foot and a half off the ground); his number two kneels at the gun's left turned
+to face it, with his right hand on the feedway and his left on the belt, which is the first body
+at a gun with its hands in two places (`P.gripsL`); and the bearers are back either side of it,
+unless cover gave them somewhere better. `bakeGunners` bakes the gunner and the number two for
+each piece the team can have (`MODELS.served['am_mg']`, `['am_mg:m2hb']`) out of the def's own
+`gunner` variant, where every gun before it was served by a Canadian or a paratrooper whichever
+army the map fielded. The number two is not a layer, so his flash is not drawn: the flash of a
+team is the layer's, and from the MG42's second man it came out of the air in front of his face.
+With the gunner down the number two lays it, in the gunner's body and with the flash his.
+
+**A place at the gun is only a place if he can walk straight to it.** A man walks at his place
+and slides along whatever is in the way, so a place inside a wall, across a wall from him or
+past the rim of the circle is no place and he keeps the one he has; he kneels at the gun only
+once he is at it. In cover that is the slot beside the gunner's, which is where a number two
+behind a garden wall would be. The gunner takes cover like everybody else, as the Vickers
+layer always has: exempted from it, he stood at his formation place across the wall from the
+cover the other three had taken, and on the check's own world his number two stood against a
+house front forty units from the gun for the rest of the row. Staged at forty cover pieces on
+each map, the number two is at the gun in 38 of 40 on Omaha and 27 of 40 on Ortona, beside his
+gunner in cover in the rest, and walking into a wall in none.
+
+**The .50 is a field upgrade that changes the piece** (`UPGRADES.m2hb`): the M2HB on its M3
+tripod, a different gun laid from a different place, so every number a piece is laid by --
+`gunAt`, `gunMuz`, `gunGrip`, `gunMate` and `gunCrew` -- comes off `def.gunUp[key]` while it is
+fitted and off the def otherwise. `gunOf(u)` hands back whichever holds them under the def's own
+names, `servedOf(u)` the bodies at it and `teamMesh(u)` the piece (`GUNMODEL['am_mg:m2hb']`), and
+`gunPost`, `muzzlePoint` and `updateModels` ask `gunOf` where they asked the def.
+
+**And a team's piece is drawn at the scale its men are.** A man on a phone is a fifth over his
+built size and the guns were not, so a layer's hands, baked onto the grips, came out a fifth past
+them and the flash, spawned off the man's own scale, a fifth past the muzzle. The piece and
+`gunAt` are both scaled by `FIG_SCALE` now, for every team.
+
+**Its numbers came off the duel card, and the lever was the fourth man.** A team fires one round a
+man, so four men at the Vickers's damage is a third more fire, and four men take a third more
+killing: at the first numbers (6.0 a round every .12 seconds, a setup of 2.0) it won every fight
+with the MG42 and lost nobody, where the Vickers wins 58 per cent of the time. At 4.4 a round
+every .12 seconds with an accuracy of .42 and a suppression of .046, 52 hit points a man, the
+Vickers's setup of 2.5 and pack of 2.0, 260 marks, over sixteen runs it wins 44 per cent against
+the MG42 in 33 seconds, where the Vickers wins 63 on the same afternoon, and every fight with the
+grenadier squad in 19 seconds with 80 per cent of itself left, where the Vickers takes 15 and
+keeps 81. The Knight's Cross Holders take it two times in three at their own reach (69 per
+cent over sixteen runs) and every time at 130, where their grenades reach, in three and a half
+seconds. **The .50 is reach and penetration and a slower, heavier round**: at 7.0 a round every
+.17 seconds out to 380
+with the jeep .50's penetration of 70, for another 110 marks and 20 of fuel, over sixteen runs it
+takes the KS 750 every time in five seconds, the grenadier squad every time and the MG42 three
+times in four; the 251 takes it five times in eight, because the half-track's MG pins four men
+faster than four men can open it, and the 234/1 every time. At a penetration of 36 the 251 took
+it nearly every time and at 70 with the .30's rate it took everything in under ten seconds.
+
+**The MG 34 team is the 352nd's machine gun team**, bought from the company post: four men of a machine gun company with
+the MG 34 on the Lafette 34, which is the tripod every German heavy machine gun section fought
+from and which took the MG 42 as well. The gunner and his number two carry the gun and the tripod
+with a P38 and the machine gunner's tool pouch each, the other two bring the ammunition with the
+Kar98k, one of them with the spare barrel case slung across his back, and all four wear the
+grenadier's kit with two belts crossed on the chest, which are link (`roundBelt`'s `link`) where
+the American's are cloth. It is the .30 cal team's machinery on the other side of the beach, and
+three things about it are its own.
+
+**The gun has a stock, so the gunner sits beside the bore.** A Browning on its tripod has a back
+plate and spade grips and the man behind it sits on its line; a German gun on the Lafette is laid
+with the butt in his right shoulder, and a man sat on the bore takes it in the middle of his
+chest. `gunY` is how far to the left of the bore the served body is baked, `gunGripL` gives his
+left hand a place of its own on top of the butt, and `sitmg` is the sit leaned to .6 so that the
+shoulder comes down to it. `bakeGunners` moves the body and reads the grips in the body's own
+frame, and nothing else had to change, because the gun, the flash and every place round the gun
+are laid off the bore and not off the man. The Lafette stands at the sitting height (`LAF.gz`,
+7.1 units over the ground, which is sixty centimetres), and the gate measures the heel of each
+gun's butt off the gun's own faces against the seated man's shoulder joint: 0.96 units for the MG
+34 and 0.92 for the MG 42.
+
+**What a team carries is the team's to say** (`carryP`: the gun, the tripod, the box and the
+box's height), on the def and on each piece in `gunUp`, where `mgCarryAt` had the .30 and the .50
+written into it. The number two carries the Lafette folded on his back (`V.lafback`, `LAF.back`):
+drawn at the point on his back the bake read off each pose, leaned with his back rather than
+pitched off a shoulder, the pad against him and the legs gathered up past his helmet, and lying
+down he has it off beside him. The bearers carry a Patronenkasten 34 (`pk34`) in the left hand. A
+manned wall's four Tobruks are MG 34 teams as well.
+
+**The two guns are cut as side profiles** (`weaponModel(k, 'mg34')`, `'mg42'`), 14.35 units each
+against a published 1,219 and 1,220 mm: the MG 34 round, with the tall feed cover, the round
+jacket pierced with holes and the booster at the muzzle; the MG 42 stamped and square, with the
+flat cover, the slotted jacket and the opening down its right side the barrel comes out of. Both
+feed from the left, both have the bipod folded back under the jacket, and the butt and grip are
+bakelite. The Lafette (`lafette34`) is the head on three legs with the leather pad on the long
+front one, the brace and the elevating screw with its handwheel, the cradle with a clamp round
+the jacket and one under the receiver, the firing handle under the back and the MGZ 34 periscope
+sight on its arm at the left, where the gunner's eye is; folded, it is a bundle a little taller
+than the man carrying it. The MG 42 goes into the same cradle, so the upgrade changes the gun and
+leaves the tripod where it was.
+
+**Its numbers are the .30's, to the point, and the pair is the beach's machine gun calibration
+row.** The two teams carry the same sort of gun on the same sort of tripod and do the same job,
+so they are one unit on two sides, the way the engineers and the pioneers are. It was written
+first with ten units more sight and reach and a little more suppression, and over forty-eight
+runs it took the .30 about two fights in three: the ten units of sight is the one that counts,
+because the side that sees first opens first. Level, over forty-eight runs split across the two
+sides of the card, it takes the .30 52 per cent of the time (58 from one side and 46 from the
+other), and the rifle squad every time in 19 seconds with 78 per cent of itself left, where the
+.30 takes the grenadiers in 19 and keeps 80.
+
+**The MG 42 is suppression and nothing else.** It fires half as fast again at two thirds of the
+round, so it does what the MG 34 does to a man a second and pins him harder. At the first cut, 3.6
+a round every .08 seconds with a suppression of .066, a quarter more fire and a third more
+suppression than the MG 34 had then, it took the .30 every time in twenty-two seconds with 98 per
+cent of itself left; at the MG 34's damage a second with a suppression of .060 it still took it 81
+per cent of the time, because pinned men stop hitting anything. At 2.9 a round every .08 seconds
+with a suppression of .054, for 90 marks and 10 of fuel, over forty-eight runs split across the
+two sides it takes the .30 81 per cent of the time and splits with the .50 at 46; it takes the rifle squad every time in 20 seconds with 84 per cent of itself
+left. The Rangers take the MG 34 team seven times in eight in 13 seconds, the jeep takes it every
+time in 15, and it takes the engineers every time in eight.
+
+**The Wirbelwind is the 352nd's flak tank**, on the depot beside the 234. The brain's ladder
+carries a rung for it (see below), and `aiCutLadder` brings it forward against an enemy that is
+all infantry and sends it back when he has something heavy (`buy.flak`). It is built from nothing
+on the Panzer IV's hull, which is the one part taken from anything already built.
+
+**The hull is the Panzer IV's** (`hp4Hull`, in the grey), with the Schürzen as its upgrade hung
+on the hull alone. **The turret is nine bent plates** (`wbTurret`, `WBT`), open above and standing
+on a collar: each leans out about ten degrees from the collar to a bend two thirds of the way up
+and back in about twenty from the bend to the rim, so the rim is about as wide as the foot and the
+bend is the widest thing on it. The first build leaned every plate in from foot to rim and read as
+a cone. **Its plan is not a round**: a narrow front plate, a cheek either side, a long flat side, a
+plate round each back quarter and two meeting at a point behind (`WBT.plan`), 2.48 m fore and aft
+at the bend and 2.2 m across. That plan is a reading of the museum vehicle at Borden in profile
+and a model of it from above, and the scale is its road wheels: the regular nonagon it replaced
+was nobody's reading of anything. Each band of each plate is the plan moved in along the plate's own
+normal (`wbPlanAt`, `k4Inset`), which keeps every face a plane. The front plate is square to the
+bore and cut by two slots from below the lower barrels up through the bend to the rim, so the guns
+could be laid straight up. Inside is the ivory (`INC`), left out of the bake (`m8Lit`): a ledge at the foot of the walls,
+the basket down through the ring to the floor the crew stand on, and magazines racked in two tiers
+on the four plates at the back.
+
+**The Flakvierling 38** (`wbFlak`) stands on a pedestal off that floor: the carriage, two cheeks
+with the trunnion through them, and a pair of Flak 38 either side, one over the other. Each is the
+receiver with its buffer and cocking handle, a twenty-round magazine out to the side and swept back,
+the barrel housing with its handle, the barrel and the flash hider. The sight is on a post between
+the upper pair with its eyepiece back to the gunner. Behind are the seat and its back, the two
+handwheels on arms off the carriage with the knob in the gunner's hand, the firing pedals, and a
+canvas bag under each pair for the cases.
+
+**Four men are in the turret** (`wbMen`), where the Panzer IV has three. The gunner sits at the sight
+with his hands on the handwheels; a loader stands either side of him with his hands at the
+magazines of his pair; the commander stands behind the gunner's seat with his hands on its back,
+and his is the eye in the periscope (`VIN.hr_wirb`). The three at the gun are `hr_flak`, the panzer
+crewman's black wrap under the M42 helmet (`V.helm` takes `helmetOf` past the cap), and the
+commander is in the cap; `k4Man` takes a variant for it.
+
+**A barrel is thin to the bake** (`thin`, `wbThin`). The occlusion grid is four units to the cell,
+a third of a metre, so a 2 cm barrel marks a whole cell, and four of them side by side are a slab in
+front of the plate they come out of: the front plate came back black behind its own guns, which in
+a photograph reads as an opening. A face marked `thin` is still shaded and shades nothing, and
+`aoSplit` carries the mark to the pieces it cuts. On `tools/dims.mjs` it reads 5.96 m long against
+5.92, 2.93 wide against 2.90, 2.72 high against 2.76, and the Panzer IV's body, roof and clearance;
+the turret that leaned in all the way up stood at 2.68, and the bend is where the missing height
+was.
+
+**Its numbers came off the duel card, and the lever was suppression.** At the first line, 44 a burst
+every .26 seconds with a suppression of .08 on 560 hit points and 104 of plate, it took everything
+in the American army but the M4 every time, the Rangers at 130 included, where the bazookas reach and
+where they take the Panzer IV 58 per cent of the time: pinned, a squad lands about one rocket in ten
+seconds. Less hit points and a bigger `blastRes` moved how much of it was left and not who won. At
+36 a burst every .26 seconds, a suppression of .025, 24 of penetration and 320 of reach, on 460 hit
+points, 104 of plate and a `blastRes` of 1.8, for 320 marks and 75 of fuel, over twelve runs a row it
+takes the rifle squad every time in 11 seconds untouched, the jeep in 6, the .30 and the .50 in 5,
+the engineers in 5, the M3A1 every time with 98 per cent of itself left and the M8 every time with
+72 per cent; the Rangers every time at 180 with half of itself left, and at 130 they win 13 per cent
+over sixteen runs. The M4 takes it every time in 15 seconds with 94 per cent of itself left, where it
+takes the Panzer IV two times in three and is left with a quarter. The anti-tank gun loses to it,
+because its crew are men in the open, and takes 38 per cent of it first.
+
+**The Panther is the 352nd's second tank** (`hr_panther`, on the depot's list after the Panzer
+IV): the Ausf. A with the long 7.5 cm, built from nothing in the grey. It has a
+rung on the brain's ladder after the Wirbelwind and before the Tiger, and `aiCutLadder` counts it
+among the things that kill a heavy, so it comes forward when he has one.
+
+**The running gear is eight stations a side of interleaved double wheels** (`PVG`, `pvStation`):
+860 mm wheels, each station two discs, the odd stations standing in the outer and third places
+across the track and the even ones in the second and fourth, so from the side a whole wheel
+alternates with one half hidden behind its neighbours. Only the outer face of the outer row has the
+ring of sixteen bolts (`pvDisc`); there are no return rollers, and the track (`pvTrack`, a wide
+cast link with a chevron of cleats and a guide horn the pairs straddle) rides on the tops of the
+same wheels from the sprocket at the front to the idler at the back (`pvPulleys`). Each station
+hangs on a torsion arm from a housing on the tub. **The hull is long sloped plates** (`PVH`,
+`pvShell`): the lower nose and the glacis both at fifty-five degrees to a sharp edge, the upper
+sides leaning in forty over sponsons that stand flush with the outside of the tracks, and the rear
+plate laid back thirty with the top aft. The upper sides are only 0.43 m of plate over a sponson
+floor at 1.49 m, which puts the roof 2.52 m across, as the factory's front and plan views have it;
+the first version stood them 0.69 m over a floor at 1.23, and its roof was half a metre narrower
+than the real one, too narrow to carry a turret the drawing's width. Anything on a plate goes on in
+the plate's frame (`pvOnGlacis`, `pvOnRear`, `pvOnSide`): the ball mount on the right of the glacis
+and the headlamp on the left, the escape cover on the back, and on the sides the cleaning rods along
+the top edge, the tow cables along the foot, the jack and the tools, with the cross between them
+where the Schürzen do not reach. The deck carries the big
+hatch in the middle and the intakes and the round fan grilles either side (`pvDeck`), and the two
+exhausts stand up the back behind the plate with the bins at its corners (`pvRear`).
+
+**The turret is a plan with a lean per wall** (`PVT`, `pvTurPlan`, the Panzer IV's method): the side
+plates widen a little from the front plate to a bend two thirds of the way back and are bent in there
+at about a third of a right angle to a rear plate a little over half the width at the bend, the front
+leaning twelve degrees and the rest twenty-five, every plate a plane. That bend is the outline of a
+Panther turret from above and from behind, and the first version did not have it: its sides widened
+all the way to the back with a small chamfer at each rear corner, which a player saw at once. It is
+laid now off the factory's side, plan and front views, by drawing the model's own faces over the
+drawing at the drawing's scale and moving plates until they land on its lines; the same overlay put
+the turret half a metre further back than it had been. **The mantlet is the Topfblende of the Ausf.
+A** (`pvMantlet`): rings of a rounded rectangle lofted forward off the front plate, their height the
+arc of a circle about the trunnions and their width easing in at the front, most of the width of the
+front plate and standing well out of it. The KwK 42 L/70 comes out of it through the bell cast round
+its root, with the double-baffle brake, the coaxial on the right and the sight on the left (`pvGun`).
+**The cupola stands on the roof on the left just behind the middle**, clear of the wall, where the
+drawing puts it; the first version had it at the back over a bulge in the left wall. It carries seven
+periscopes, one of them straight ahead, and its lid lifts on its arm and swings aside (`pvHatch`,
+`HATCHES.hr_panther`), with the commander in the cap up in the ring. The fan cover is forward on the
+right of the roof, the sides carry the 451, a small port each and the plug of the pistol port on the
+left, and the round escape hatch is in the narrow rear plate. The MG 34 on the ring and the man at it are the `mg`
+upgrade (`pvCupolaMG`, `pvCupolaMan`, the gun `ksGun34`), and the Schürzen are five plates a side on
+a rail (`pvSkirts`). The interior (`VIN.hr_panther`) is the Panzer IV's room laid out again round
+the longer breech with the cupola off the centreline, so its ring, its posts and the hole the head
+goes up through all stand at the cupola's own centre, and its heights are read off the turret's.
+On `tools/dims.mjs` it reads 6.89 m long against 6.87, 8.67 with the gun against 8.66, 3.30 wide
+against 3.27, 3.00 high against 2.99, a body of 3.26 against the drawing's 3.25, a roof of 2.54
+against its 2.52 and 0.56 of clearance.
+
+**Its plate is two numbers, and the second one is new.** `armourAt` gave every vehicle the same
+side at .56 of its front, which on the Panther would be a side of 123 behind a front of 220, far
+more than its forty and fifty millimetres. `def.flank` is a vehicle's own side factor, read in the
+one place the side is worked out, and the Panther's is .38: 84 in the side against the Panzer IV's
+74 and 220 in front against its 132. An M4's round at three hundred goes through the front 56 times
+in a hundred and through the side every time. It is `flank` because `def.side` is the army.
+
+**Its numbers came off the duel card, and they are the Panther's against a 75 mm Sherman.** At 900
+hit points and 220 of plate, a gun at 145 a round every 3.8 seconds with 280 of penetration out to
+460, 520 marks and 130 of fuel and 18 of population, over twenty-four runs head on the M4 wins 4 per
+cent, and the 6-pounder and the Rangers none; at 130 the M4 wins 8 per cent over twelve. The
+Achilles, whose 17-pounder opens the front, wins a third at 130 and a quarter at its own reach. It
+takes the rifle squad, the M8 and the M3A1 every time. **The card could only ever ask that head
+on**, so `tools/duel.mjs --turn=<radians>` stages the second unit side-on and halted with its turret
+along the hull; at a right angle the M4 wins 33 per cent where it wins 50 against the Panzer IV staged
+the same way, and the Rangers at 130 win a quarter. A hull comes round in a second or two, so the
+number that matters is what the flank does in a battle, where the thing has something else in front
+of it, and that is what `flank` is for.
+
+**The 57 mm Gun M1 is the Americans' anti-tank gun**: the 6-pounder built under licence with its tube lengthened to fifty
+calibres, on the M1A3 carriage, which is what an infantry regiment's anti-tank company and its
+battalions' anti-tank platoons brought ashore. Five men: the gunner kneeling at the sight and the
+handwheels on the left, the loader at the breech on the right, and three bringing the rounds up a
+box at a time.
+
+**It is laid off a factory drawing, and the scale is the tyre.** The sheet gives side, plan and
+front elevations and no dimension on any of them, so the scale comes off the one thing on it that
+is a published figure, the 7.50-16 combat tyre, 0.79 m over the tread and 0.21 m across it. That
+puts the wheels on a 1.34 m track, the bore 0.89 m up, the top of the shield 1.24 m up and the
+muzzle 1.90 m ahead of the axle, and the tube it gives from the breech ring to the muzzle is 2.93 m
+against the 2.85 m of bore fifty calibres has to hold, which is the check. The trails open to
+forty-five degrees and reach 3.2 m back to the lifting handles, with a spade near the end of each,
+the lunette out on a drawbar on the right, a handspike along the left and the little wheel the
+gun is run about on stowed on top of the right. The views are not drawn to one scale (see the
+gotcha), and the side is the one taken for positions along the gun.
+
+**The shield is three plates** (`m1Carriage`): a centre plate narrower at its foot than at its top,
+a wing each side folded back along the joint, and the wings stepping in over the wheels and coming
+down between them, the lot leaning back thirteen degrees with the sight port in the left of the
+centre plate. Every corner of it comes off one function of height and lateral offset (`P`), so the
+centre plate and the two wings are planes by construction and meet along the joint; a small plate
+on the cradle closes the opening the cradle comes through.
+
+**The tube runs back and the carriage does not.** Every team gun was drawn back whole by its
+recoil, which for a gun standing on its spades is the carriage sliding half a metre down the
+field a round. `GUNMODEL[k].rec` is the part that recoils (the tube and the breech ring), built
+into `MODELS.gunRec` and drawn back by it, while the mesh stays where it stands.
+
+**It is run along on its wheels with the trails closed.** `GUNMODEL[k].pack` is the carriage with
+the legs together, the spades folded flat on them and the lunette between their ends
+(`MODELS.gunPk`), and `teamMesh` draws it while the piece is not set up. And a piece that is not
+set up was drawn round its gunner, which with a split trail put him in the breech: `runAt` is
+where it rides in his frame instead, beside him with him at the left wheel (`gunPost`).
+
+**The crew are two variants of their own**: the gunner and the loader in the rifleman's kit with
+a pistol and nothing in their hands but the gun (`gi_atg`, the served bodies baked out of it,
+the loader kneeling at the breech facing it through `gunMate`), and the bearers with the carbine
+and a wooden box of rounds in the other hand (`gi_atb`, through the `can` machinery the .30's
+bearers use, `box57`). A team that carries its boxes and not its piece declares `carryP` and not
+`carry`, and the draw asks for `carryP`, because `carry` is what takes a piece off the ground
+while it is packed.
+
+**Its eye and its reach are past the armour it meets, and that is what it is for.** `sight` 620
+stands past every eye on the German depot (the Maus's 600 is the nearest) and `w.range` 540 past
+every gun on it but the Maus's (the King Tiger's 520 is the next). A gun that fires is found
+further off than one that does not (the loud bonus in `rate`), but a set-up gun firing in the open
+is found by a Panzer IV's eye only inside about 440, and in the traces the tank had not found it
+until it had driven in to between 230 and 120, so the whole of that drive is the gun's.
+
+**Its numbers came off the duel card, staged sited** (`--sited`), because a gun meets armour set
+up and waiting for it. At the 6-pounder's own line the first rounds were not enough: sited at 520
+against a Panzer IV it fired first, at 490, hit, and lost every fight all the same, because the tank
+drove in, found it at between 230 and 120 and took a man a round with its HE. A heavier round did
+little on its own: at 110 to 125 a round with the 6-pounder's shield it read 21 to 25 per cent over
+twenty-four runs. What turned it was the shield, which is the one thing about this gun the drawing
+says is bigger: at a blast resistance of .45 and 66 a man a burst no longer takes a man outright,
+the crew outlast the tank that has found them, and at 120 a round every 3.2 seconds with an accuracy
+of .80, for 320 marks and 20 of fuel, it takes the Panzer IV 46 per cent of the time over twenty-four
+runs, where the 6-pounder sited at its own reach takes it 4. Over twelve runs a row it takes a Panther
+head on 8 per cent of the time and one caught side-on every time, a Tiger a quarter of the time, a StuG
+17 per cent, a Puma three times in four and the 251 every time inside nine seconds; the grenadier
+squad takes it every time in seventeen seconds, and walked into a Panzer IV on an attack-move the way
+the card used to stage it, it wins a quarter.
+
+**The 5 cm Pak 38 is the 352nd's anti-tank gun**: the 5 cm L/60 on its tubular split trail, which is what an infantry division's
+anti-tank company still had in numbers in June 1944. Five men, as the 57 across the beach has: the
+gunner kneeling at the sight and the handwheels on the left, the loader at the breech on the right,
+and three bringing the rounds up a case at a time. It is the 57's machinery on the other side of the
+beach (`rec`, `pack`, `runAt`, `gunMate`, the served bodies, `carryP`) and a bunker's anti-tank
+fitting is the Pak 38, so the manned wall's two casemates are Pak 38s as well.
+
+**The drawing is at two scales, one along the gun and one across it.** A four-view with a scale bar
+in feet. Along the gun and up it, every view agrees with the published 4.75 m over the trails and
+1.105 m to the top of the shield at 84.7 and 83.5 pixels to the metre, and the tube comes out at
+3.2 m from the brake to the breech against the 2.975 m of bore sixty calibres holds, which is the
+check; across it, every view agrees with the published 1.83 m over the wheels at 71.4, which is also
+what the scale bar says, and a round barrel reads the same in the side and the plan only at those two
+scales. So the spec (`tools/ref/hr_pak.json`) gives the side and the plan the first along the gun and
+the plan, the front and the rear the second across it, and the gun has the published proportions
+where the drawing is a sixth too narrow for its own length. That puts the wheels 0.72 m over the tyre
+on a 1.68 m track, the bore 0.81 m up, the muzzle 2.31 m ahead of the axle and the breech 0.93 m
+behind it, and the spades 2.1 m behind the hinges. The drawing shows the trails closed, so what is
+laid over it is the piece as it travels.
+
+**The shield is two plates a finger apart** (`pkShieldPlate`), as the real one was two 4 mm plates
+25 mm apart, with the bolts that hold them apart in rows. It is folded back in three facets a side and
+leans back twenty-seven degrees, every corner off one function of height and lateral offset
+(`pkShieldP`) so that every facet is a plane, with a hump over the middle of its top edge, the collar
+round the tube, the small plate on the cradle under it, and the sight's slot in the left facet. The
+lower shield hangs in front of the axle between the wheels with a notch either side of the middle,
+through which the foot of the upper shield shows, as the front view has it. The sight is cranked: the
+telescope behind the slot at the height the drawing puts it and the eyepiece up at the kneeling
+gunner's eye, which is the upright the side and rear views both show. The trails are tubes, each
+with a hexagonal spade leaning back under its end, which the rear view has nearly meeting its
+neighbour when the two are closed, the lifting handle bent up behind it, the lunette on the left one
+and the handspike on the right. The wheels have twelve spokes on a solid tyre, on the torsion arms.
+
+**It is baked the way a hull is.** No gun on the roster had been through the occlusion bake, and in
+the 352nd's grey a shield leaning back under Omaha's high sun came out nearly white beside tanks in
+the same grey; olive drab carries the same light and still reads as olive, and a step darker on the
+same tile barely moved it. The carriage and the tube are baked against each other and the carriage
+closed on its own, 93 ms at boot against the 580 a tank costs.
+
+**Its numbers came off the duel card, staged sited, and the M4 is not the Panzer IV.** At the 57's
+line with a slightly lighter round (116 every 3.1 seconds) it took the M4 none of twenty-four fights,
+and the 57 itself takes the M4 13 per cent of the time on the same card where it takes the Panzer IV
+more than half. The trace says why: the gun fires first at about 360 and hits, the tank finds it
+about five seconds later at 150, and from then the M4's coaxial wears the crew down until the next HE
+burst takes the lot, where the Panzer IV has no coaxial and needs two or three bursts. A heavier
+round and a faster breech are what a 5 cm on a light carriage had, so it kills either tank in six
+hits: at 130 a round every 2.6 seconds with an accuracy of .80 and 235 of penetration, 310 marks and
+20 of fuel, its eye at 620 and its reach at 540, it takes the M4 25 per cent of the time over twenty-four
+runs where the 57 takes it 13, and the Panzer IV 42 per cent where the 57 takes it 46 to 58: the two
+guns are one gun on two sides and the two tanks are not. Over twelve runs a row it takes the M8, the
+M3A1 and the Achilles every time; the American rifle squad takes it every time in eight seconds, and
+walked into an M4 on an attack-move it wins 17 per cent.
+
+**The M3 light tank is the 29th's second tank** (`am_stuart`, on the motor pool's list after the
+M8): the Stuart as the Americans first took it to war, riveted, with the round welded turret
+that did away with the cupola and the big idler trailing on the ground. Its 37 mm and coaxial are the
+Greyhound's; what it has that the Greyhound has not is half as much plate again, on tracks. It has a rung
+on the brain's ladder after the M8's and before the M4's, and `aiCutLadder` reads it as light armour. On
+`tools/dims.mjs` it reads 4.58 m long against 4.53, 2.26 wide against 2.24, 2.45 high to the domes of the
+periscopes against the published 2.39, a body and a roof of 2.23 and 2.26 against 2.24, and 0.42 of
+clearance.
+
+**It is laid over a four-view drawing** (`tools/ref/am_stuart.json`) with no scale on the sheet: the side
+and the plan are taken off the published length, and the plan across, the front and the rear off the
+published width, and the front view's track centres agree with the published 73 in to a per cent. The
+running gear and the turret were right on the first overlay and five other things were not. The
+mudguards stood 0.3 units low, so the top run of the track was level with their underside and showed
+through them from above. The lower rear plate stood flush with the engine compartment, where the side view
+shows nothing of the hull behind the idler: the engine compartment overhangs it by a fifth of a metre.
+The doors over the transmission were square on the centreline where they are set over to the left, because
+the bow gun's sleeve takes the right of the deck. The headlamps stood a unit and a half too far forward.
+And the hatch was an ellipse where the drawing has two doors, each cut off by the front edge of the
+opening, by the wall and by a hinge line running back and out from beside the centreline, the
+commander's the larger. The periscope domes were taken off in the same pass and put back (see the crop
+gotcha).
+
+**The running gear is two volute bogies a side** (`s3Bogie`): the cast bracket bolted to the hull side and
+reaching out over the tyres, the volute spring standing in its face, and the two arms out to the axles on
+the outside, where the drawing has them. Each road wheel is two tyres with the gap the guides run in, the
+outer one open between six spokes (`s3RoadWheel`). Three return rollers ride over them, the first on the
+back of the front bogie; the sprocket in front has two rings of thirteen teeth either side of the guides,
+and the idler behind is big, spoked and down on the ground on its trailing arm (`s3Idler`). The T16 has a
+rubber block on each shoe (`s3Link`).
+
+**The hull is riveted**, and a row of heads along every seam (`s3Rivets`) is most of what says so from
+where a player looks. The nose is a casting that rounds from the belly up to a flat deck over the
+transmission; the drivers' plate stands back from it and leans, with a vision door for each man, and the
+sponsons stand back again with their fronts angled (`s3Shell`). On the nose, the bow gun in its long
+sleeve, the siren, the headlamps in their guards and the clevis shackles; on the right mudguard the
+stowage box; on the deck behind the turret the grille, the two fuel fillers, the engine doors and their
+hinges, the aerial on its spring base raked back and a lifting eye; on the ends of the sponsons the air
+cleaners with their hoses, then the stowage boxes and the tail boxes with the X-brace and the tail
+lamps; and under the overhang the lower rear plate with its doors and the shackles hanging off its foot.
+
+**The turret is a plan with its front clamped** (`s3TurPlan`, `S3T.K`): round behind, straight in the
+sides, the cheeks swinging in, and every height is the outline scaled with the front cut off where the
+plate is at that height, so the face widens as it leans back and the roof drops in front the same way.
+The combination mount is a drum with the 37 mm through it, the coaxial on its right and the sight's port
+on its left; there is a vision port in each side and one in the back, a lifting eye on each cheek, the
+two periscopes in domed housings (the gunner's drawn out across), and the socket for the anti-aircraft
+.30 on the back, which carries no gun and is no fitting, because the commander in his opening cannot
+reach a gun there. **The two doors are hinged along their inner lines** (`s3HatchDoor`, and `s3Hinge`
+is the roll about a line at an angle across the roof), so opened they stand up side by side, and the
+commander stands in the right-hand opening a hand lower than the M4's commander, because at the M4's
+height his belt was at the roof of a turret two feet lower. The room under him (`VIN.am_stuart`) is the
+M4's arrangement in a turret a third the size and with no basket: the wall stops at his chest, the roof
+hangs over his head, the gunner sits at the telescope on the left of the breech, and a dozen ready rounds
+are racked round the back wall.
+
+**Its numbers are the Stuart V's with the price raised, and the card says the plate is the whole of
+the difference.** The 37 mm and its coaxial are the Greyhound's, and at 480 hit points and 62 of plate
+over twelve runs a row it takes the KS 750, the 251, the 234/1, the grenadier squad and the MG 34 team
+every time, the last two without losing a point, and the Knight's Cross Holders every time as well, with
+a third of itself left after their bundles. What opens it takes it: the Panzer IV every time in 12
+seconds with nine tenths of itself left, the Puma every time in 20, a Pak 38 sited at 520 every time in
+under ten seconds untouched, the Rangers 92 per cent of the time and the Wirbelwind 83, whose 2 cm seldom
+goes through the front but whose front the 37 mm seldom opens either. The Greyhound loses the 234/1 fight
+a third of the time and the 251 fight a fifth, so the M3 is priced above it, at 290 marks and 55 of fuel
+against the M8's 240 and 35, and it is slower on tracks (124 against 150) and sees a little less far.
+
+**The M26 Pershing is the 29th's heavy tank** (`am_m26`, on the motor pool's list after the M4A1):
+the 90 mm M3 in the M67 mount on a welded hull with four inches of plate at forty-six degrees
+in front, six stations a side on torsion bars. It has a rung on the brain's ladder after the M4A1s and
+before the Achilles, and `aiCutLadder` counts it among the things that kill a heavy, so it comes forward
+when the 352nd has a Panther. On `tools/dims.mjs` it reads 6.39 m long against 6.34, 8.63 with the gun
+against 8.65, 3.50 wide over the fenders against 3.51, 2.73 to the cupola's ring against 2.78 to its lid,
+3.43 over the bins, 2.26 across the roof and 0.44 of clearance.
+
+**It is laid over two sheets** (`tools/ref/am_m26.json` and `am_m26_b.json`): a four-view of the T26E4
+and a side and plan of the T26E5. Both are the M26 in the hull, the running gear and the turret casting,
+and neither is the M26 at the front: the T26E4 is the Super Pershing, with the long T15 gun, its two
+spring equilibrators over the mantlet, a counterweight on the back of the turret, no front fenders and a
+box of appliqué armour on the glacis that the plan shows as a slab a metre long, and the T26E5 has the
+thicker mantlet. So the running gear, the hull height and the turret are taken off the T26E4, the nose,
+the glacis and the front fenders off the T26E5, and the gun is the M3 at the published 8.65 m. Neither
+sheet carries a scale. Each is taken off the 3.84 m of track on the ground along the hull, and off the
+110 in between the track centres across it, which puts the width over the fenders at 3.51 m in all four
+of its views. Both sheets draw the cupola short against their own lengths, at 2.66 and 2.72 m where the
+published figure is 2.78, with round road wheels, so their views take a vertical scale of their own off
+that height. The first draft, off photographs and those figures, was out in six places the drawings
+could see. The hull roof stood a unit low at 1.50 m where both sheets have it at 1.60. The glacis was
+set three units too far forward, and the upper hull was two units a side too wide for the roof the plan
+draws. The return rollers stood a unit low. The turret was half a unit short with its cupola half a unit
+low, and the bow gun sat a unit and a half too near the centre line.
+
+What carries it, and each is built its own way. **The running gear is six stations a side on torsion
+arms** (`m26Station`), each a pair of pressed discs with the track's guides running between them
+(`m26Pair`, the Easy Eight's `e8Wheel`), the arm trailing from a housing on the hull side with a bump
+stop over it and a shock absorber on the first two stations and the last, five return rollers over them
+(`m26Roller`), the idler in front on its crank (`m26Idler`) and the sprocket behind with two rings of
+thirteen teeth (`m26Sprocket`), and the T80E1's steel shoe with its rubber chevron (`m26Link`). **The
+hull is two prisms** (`m26Shell`): the upper hull the width of the roof from the top of the glacis to the
+rear plate, flat to the engine deck and falling a tenth of a metre from there to the tail (`m26DeckZ`,
+`onM26Deck`), and the lower hull between the tracks carrying the glacis down to the nose and the lower
+plate back from it at fifty-three degrees to the belly; anything on the glacis goes on through
+`onM26Glacis`. **The fenders are a plate at the top of the track with a lip down its edge and the bins
+standing on it** (`m26Fenders`), four a side with their lids and hasps, and over each idler a deep guard
+whose side is a panel running down from the fender to a point over the front of the idler and back along
+its foot to the lip, which is the T26E5's outline. The glacis carries the bow gun's ball on the right,
+the two headlamps in their guards, two spare shoes and the shackles on the nose, and the roof behind it
+the two drivers' hatches (`m26Front`); the deck the radiator grilles, the engine hatches and the grille
+across the tail (`m26Deck`); the rear plate the two silencers under their guards (`m26Rear`). **The
+turret is a casting lofted from a plan** (`m26TurretPlan`, through the M4A1's `m4TurRing` with a scale
+table of its own, `M26T.K`) with a long bustle, the broad flat mantlet of the M67 mount, the 90 mm with its
+double-baffle brake, the vision cupola on the right with its six blocks and a round lid hinged at the back
+(`m26Hatch`), the loader's hatch on the left, spare shoes hung on the sides, and the .50 on a pintle
+between the hatches as its fitting (`m26Fifty`, thin to the bake for the Easy Eight's reason). The room
+under the cupola (`VIN.am_m26`) is the M4A1's `m4Room` laid out again in the longer casting.
+
+**Its numbers are the Panther's answer, and the card says it is a coin flip.** At 920 hit points and
+230 of plate, a little over the Panther's 220 as four inches at forty-six degrees is a little over
+eighty millimetres at fifty-five, a side of half that (`flank` .5), and the 90 mm at 150 a round every
+4.0 seconds with 270 of penetration out to 460, 540 marks and 140 of fuel and 18 of population, over
+twenty-four runs head on it takes the Panther 46 per cent of the time, and with itself caught side-on
+the Panther takes it half the time, because a hull comes round in a second or two. At 160 a round it
+took the Panther two times in three, because a Panther then fell to six hits where it needs seven to
+kill an M26. Over twelve runs a row it takes the Panzer IV, the Puma, the 234/1, the Wirbelwind, the
+251, the grenadier squad and the Knight's Cross Holders every time, the last with a quarter of itself
+gone to their bundles, and a Pak 38 sited at 520 takes it 8 per cent of the time where it takes an M4 a
+quarter of the time.
+
+**And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
+team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
+the same key. Before the retirement they went through `natKey`, and before that an American
+bunker's anti-tank casemate was a Canadian 6-pounder.
+
+**And the brain's shopping list is written in the live keys.** `LADDER`, the role table and
+`aiCutLadder`'s sets name the jeep, the 57, the M4A1 and the rest directly. `countOf` and
+`madeOf` still read their key through `natKey`, because a brain out of an older revision on the
+skirmish card asks after the carrier: with the counts keyed on what was actually bought, it is
+given a jeep for every carrier it orders and counts them, where a count keyed on the carrier
+never moved and it bought them for ever. A rung for a unit the roster does not have is money
+saved for nothing, which is why the head of the list is only ever a live key.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -4634,7 +5676,7 @@ what each is for and what talks it out of firing.
   three hundred back looking at it answers nothing, so it raises a call and the flag becomes
   somebody's job rather than nobody's.
 - *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
-  airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
+  Rangers carry, with the bazooka) inside a hundred and ninety
   when no friendly section is within a hundred and fifty, opening the range two hundred and
   firing as it goes (`u.backT`, nine seconds between), and asking for men while it does. A
   launcher section at a quarter strength is a section to shoot rather than to reverse from, and
@@ -4866,7 +5908,7 @@ rounds: `def.w` is AP and `def.wUp.he` is HE, `u.up.he` picks, `setRound` costs 
 reload to change, and because `mainW` hands back whichever is up, range, target choice,
 the shot and the AI's reading of it all follow the switch with nothing else to tell. The
 cards are J and L; the brain's crews pick AP while armour is in reach and HE otherwise.
-The Canadians have no equivalent, on purpose. `placeWork` now checks a unit-work's
+The Americans have no equivalent, on purpose. `placeWork` now checks a unit-work's
 `limit` (two) and the population cap, which no wall of bags ever needed, and `popOf`
 counts a pegged-out gun's men while the ring is still being built. The brain chooses
 the round at the top of its per-unit loop, before the retreat rule and the target
@@ -4882,7 +5924,8 @@ it are for.
 
 **Three more German pieces, and the two corrections they needed.** A 2 cm Flak 38 on its
 ground platform (`ger_flak20`), a 15 cm Nebelwerfer 41 (`ger_neb`) and a Flakpanzer IV
-Wirbelwind (`ger_wirb`). None of them is a new system. The two towed pieces are crew-served
+Wirbelwind (`ger_wirb`, retired with the paratroopers: the 352nd's own is `hr_wirb`, below). None
+of them is a new system. The two towed pieces are crew-served
 weapons and go through the pack-and-set-up clock, the lay tolerance, the two-piece draw and
 the crew layout the eighty-eight and the batteries already use; the Wirbelwind is
 `p4Chassis` with a different thing bolted to the same turret ring, and `tools/dims.mjs`
@@ -5053,7 +6096,7 @@ The reaches are chosen against this map rather than by feel. A headquarters stan
 from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
 it has to come four hundred forward, which puts it among the town's approaches, in front
 of its own infantry, where a section working round the flank will find it. That exposure is
-the price of the shell and it is the reason the reach stops where it does. The Canadian gun
+the price of the shell and it is the reason the reach stops where it does. The American gun
 reaches further and hits softer and the Italian one is the other way round, so the German
 side has to come further forward for the same ground.
 
@@ -5094,7 +6137,7 @@ has instead is the shell -- three hundred damage over a hundred and thirty of bu
 is the heaviest thing either side can put on the ground.
 
 **The two rules meet in the middle, and that is the finding worth keeping.** Dug on the
-first legal patch beyond `minHq`, the Canadian gun is 1575 from the German headquarters
+first legal patch beyond `minHq`, the American gun is 1575 from the German headquarters
 and its reach is 1250: the range and the minimum distance from home already keep it off
 the enemy base without `safe` ever being consulted. The no-fire zone is what stops a
 player walking the battery forward until it can. The check row had to stand the gun
@@ -5405,7 +6448,7 @@ takes the unit's own headquarters rather than the team's first. And `placeWork`,
 out of one till and counts against one limit.
 
 **Each computer player is set on its own, and the settings are stored against a ROLE.** A
-slot key depends on which side the player picked -- his ally is `us2` playing Canadian and
+slot key depends on which side the player picked -- his ally is `us2` playing American and
 `ger2` playing German -- so a panel storing its settings under the slot would move them to
 a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2` and `ally`;
 `ADS[role]` is that one's handicap row, `ABUY[role]` is what it is told to buy, and
@@ -5453,9 +6496,9 @@ Measured by the gate on the shipped map: four headquarters on four owners, the t
 580 apart and all four with walkable ground to march out of; three brains, one plan each;
 the player's till at 904 against his ally's 159 with the strip reading his; four
 populations counted separately; and an ally's section selected gives nothing at all to the
-command bar. The ladder under the weights reads `ger_sd222x1@40 ger_pakx2@130 ger_p4x2@260
+command bar. The ladder under the weights reads `hr_ks750x1@40 hr_pakx2@130 hr_p4x2@260
 ger_tigx1@620` at even, and with light at NEVER, medium at 2x and heavy at 3x it reads
-`ger_pakx2@130 ger_p4x4@130 ger_tigx3@207`.
+`hr_pakx2@130 hr_p4x4@130 ger_tigx3@207`.
 
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
@@ -5807,7 +6850,7 @@ never climb, and the works, the fittings and the upgrades it may still buy keep 
 hundred marks back for him (`keep`). **Both of those are SIMPLE's and read `CTRL.simple`**,
 because under classic the only thing that ever puts a brain on the player's slot is a
 card: `tools/skirmish.mjs` and `tools/brain.mjs` run one on both sides, and a lock read
-off the slot alone left the Canadian side of every card unable to raise a section. It
+off the slot alone left the Allied side of every card unable to raise a section. It
 shipped that way, and what said so was the tactics card: eight mirror pairs at -578 and
 +568 by side, a walkover for whichever brain was German, with 1,686 marks unspent on the
 other side against 264. Every brain-card number taken between that commit and this one
@@ -6106,7 +7149,10 @@ tools/fx.mjs                   effects card: the muzzle blast, the tracer, the b
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
+tools/overlay.mjs              a model's faces laid over its reference drawing, view by view
+tools/ref/                     the overlay specs: scale and pin per view (the drawings are in shots/ref/)
 .claude/hooks/session-start.sh installs dev dependencies on session start
+.claude/skills/refdraw/        the method for checking and correcting a model against a drawing
 shots/                         screenshot output, gitignored
 ```
 
@@ -6153,12 +7199,25 @@ shots/                         screenshot output, gitignored
   occluder and gives it the grime and dust a hull collects, so a man standing to a roof gun
   came out the colour of the mud. Put him in `mgMan`, which is drawn with the gun and baked as
   a receiver the way `crew` is.
+- **Anything thin is a whole cell to the occlusion bake, and a cell is a third of a metre.** A
+  gun barrel marks a four-unit cell like a plate does, which is harmless for one barrel and is
+  a slab for four side by side: the Wirbelwind's front plate came back black behind its own
+  guns and read in the photograph as a hole in the turret. Mark a thin part `thin` (as
+  `wbThin` does) and it is shaded but shades nothing.
+- **A key on the brain's ladder that the roster does not have is money saved for ever.** The head
+  of the list is reserved in marks and fuel before anything is bought, so a rung for a unit no
+  building makes starves the army for the rest of the battle. Write the ladder in live keys.
 - **An upgrade baked as an occluder shades its vehicle whether or not it is fitted.** The
   Schürzen were put through the occlusion bake as occluders, so every plate that might be hung
   shaded the hull side, the running gear and the turret sides behind it in every picture of
   the tank without them: the new Panzer IV came out black from the guards down and grey on the
   roof. They are baked as receivers now, the way the alternative mounts are, and the Italian
-  Panzer IV and the Wirbelwind came out lighter for it.
+  Panzer IV and the Wirbelwind came out lighter for it. A roof gun is the same fault from above:
+  the Easy Eight's .50 stands two thirds of a metre over the turret on its post, and as an
+  occluder its receiver and box put a dark crescent across the back of the roof of every Easy
+  Eight, the ones without the gun as well. Turning the roof's faces and cutting the roof into
+  rings changed nothing; marking the gun `thin` (`wbThin`) took it off. Look for the occluder
+  before touching the thing that is shaded.
 - **Paint laid on a plate reads the right way round when its across-axis is the plate's
   outward normal crossed with up.** Written as -y on the rear of the bin, the 415 came out
   mirrored in the photograph while the two on the sides read correctly; `u = n x z` gives +x on
@@ -6177,12 +7236,27 @@ shots/                         screenshot output, gitignored
   hips at 1.2 units, every pose. It takes the root and the direction off the first six faces now
   and the length off how far the limb reaches along that direction, which for a bare frustum is
   its own tip. Anything added to a limb goes AFTER its frustum, or the probe reads the wrong axis.
+- **`faceOut` turns a face and not its normals.** It reverses a face's vertices and the list of
+  its normals when the face points the wrong way, and never negates the normals themselves, so a
+  part built with normals of its own (`m4Sweep`, `loft`, a lathe with `smooth`) and built the wrong
+  way round comes out with the winding right and the normals pointing in: lit from inside, and
+  black in the occlusion bake, which marches along the normal into the part. The M4A1's gun shield
+  was a profile written from the bottom up and rendered black from every side.
 - **A face is oriented off its first three vertices, and three in a line have no normal.**
   `hkFace` turns a polygon to face the way it is asked by reading `faceNormal` of its first three
   corners, and the 251's floor was written as a hexagon whose first three corners lay along one
   side: the normal was nought, the face was never turned, and it was culled from above. Every
   photograph of the compartment had the ground showing through it. Drop a vertex that lies on a
-  straight edge, or start the polygon at a corner.
+  straight edge, or start the polygon at a corner. `faceOut` reads the same three, and the M3's
+  turret roof drew black for it: the outline is the plan with its front clamped to the plate, so
+  every point of the front lies on one line, and the cap started on the front. Three corners
+  nearly in line are as bad: the Easy Eight's front skirt started on a sliver, took its normal
+  off it, and drew black until it was started at a corner.
+- **A crop can cut off what it is meant to show.** The front view's crop of the M3's sheet stops
+  at the height of the turret roof, so the model's periscope domes stood out of the top of the
+  frame over no drawing at all, read as a mistake, and were taken off; the side view had them all
+  along, and they went back. A part of the model standing over nothing in one view is looked for
+  in the others before it is moved.
 - **A polygon that is not convex is fanned from its first corner, and that may be the concave one.**
   The M8's nose and tail below the crease were one hexagon each, bent out at the knee, and
   `hkFace` read the normal off the three corners at the knee, which turn the other way from the
@@ -6193,6 +7267,33 @@ shots/                         screenshot output, gitignored
   nine units forward of where a side elevation puts it; the dimensions card could not see it,
   because an envelope does not care where a turret stands inside it. Take positions along the
   length off a side view, and a published elevation where there is one.
+- **Lay the model over the drawing, not beside it.** The Panther's turret was placed off
+  photographs and a published envelope, and every photograph of it looked like a tank; drawn
+  over the factory's plan and side views at the drawing's scale (the model's faces projected
+  onto the image, the hull lined up on the glacis joint and the road wheels), it was half a
+  metre too far forward, its rear had none of the bend that makes it a Panther's, and the hull
+  roof under it was a quarter of a metre a side too narrow. None of that is in an envelope, so
+  `tools/dims.mjs` could not see it, and the roof figure it was checking had been worked out
+  from the model's own plates. Measure a scale off two things the drawing dimensions (the width
+  over the tracks, the height), check it on a third, and read positions off the view where the
+  thing is seen square. `tools/overlay.mjs` does the laying over and the `refdraw` skill is the
+  method round it.
+- **Decide what a drawn outline is from every view, not the first.** A box on the side of the
+  251's bonnet read in the side view as the upper side plate with a crease a unit lower than the
+  model's, and the first reading of it was going to move the crease. The plan showed it standing
+  out past the crease and the front view showed louvres in its face: it is the armoured cover over
+  the engine intake. And check every move on the next overlay in the direction it went: the
+  headlamps were moved a unit aft off one view and came out a unit too far aft in two.
+- **A drawing's views are not always drawn to one scale.** The 57 mm gun's plan came out five
+  per cent bigger than its side elevation off the same sheet, and put the shield three and a half
+  units further ahead of the axle than the side view did. Take the scale off a published figure in
+  each view separately (the tyre, here, which is in all three), and take positions along the piece
+  off the view where it is seen square.
+- **A duel on an attack-move measures a gun's setup and not its reach.** A crew-served gun on an
+  attack-move halts when a target comes into reach and then sets up in the open while the tank
+  drives in: the 57 staged at 520 against a Panzer IV fired its first round at 207 and lost every
+  fight, and the 6-pounder staged at its own reach fired at 156. `--sited` stages it set up and
+  holding, which is how an anti-tank gun meets armour.
 - **An open turret is a well to the occlusion bake.** The march reads the inside of a drum
   sixteen units across and sixteen deep as shut in on every side and blacks it out, whatever it
   is painted: the M8's turret came out as a hole into the hull from every angle and the
@@ -6214,11 +7315,12 @@ shots/                         screenshot output, gitignored
 - **`mountZ` is the height of the turret ring, and the middle of a tank is its turret.** A thing
   put on a vehicle at its centre and `mountZ` is inside the turret and drawn nowhere, and a probe
   that asks only whether it is on the hull reads it as correct. Ask `deckSeat` where it lies.
-- **A German unit staged on the Allied side is drawn as a Canadian unless its variant is keyed
-  off the unit.** `variantForModel` tries `u.side === 'us'` first and hands anything it does not
-  know the Canadian rifleman, so a duel row or a drill that puts the Knight's Cross Holders on
-  the player's slot got four Lee-Enfields and no throwing pose. Their line comes before the side
-  test now; anything else staged across the sides the same way needs the same.
+- **A unit's men are keyed off the unit, and the side is only the fallback.** `variantForModel`
+  used to try `u.side === 'us'` first and hand anything it did not know the Canadian rifleman, so
+  a duel row or a drill that put the Knight's Cross Holders on the player's slot got four
+  Lee-Enfields and no throwing pose. Every unit on the roster has a line of its own above the
+  side test now, and the side test gives the American or the grenadier rifleman. A unit added
+  without its own line is drawn as its side's rifleman wherever it is staged.
 - **A door that fits an upgrade asks `upgradable(u)`, never the category.** Every one of them
   asked `u.cat === 'veh'` until a squad came with an upgrade, and each that still did would have
   been a place the .30 could never be bought.
@@ -6227,6 +7329,48 @@ shots/                         screenshot output, gitignored
   where the eye looks right comes out through a screen, a lid or a roof. The 234/1's first crew
   stood with their eyes over the rim and both heads out through the screens; they sit now, at
   14.75 to the eye, and the gate counts every point of them against the screen over it.
+- **A man with nothing in his hands still has a muzzle table, and it is a list of nulls.** The
+  bake writes `r.muzzle` for every frame of a cycle whatever the man is carrying, so a gunner with
+  no weapon has `MODELS.muz[v][POSE_WALK]` as eight nulls. `muzzlePoint` guards the first entry;
+  the men card read `mz[0].length` and threw on the first unarmed man it met.
+- **Two pages in one browser starve each other.** The men card opens the desktop page, keeps it
+  running and opens the phone beside it, and the phone deploy then takes 95 to 110 seconds where
+  it takes 11 alone, on the committed file as much as on a working one. Its click waits 180, so on
+  a busy box it times out and reads as the phone having broken. Run the geometry sections, which
+  need only the desktop page, when that happens, and the pixel sections on their own.
+- **A new global can take the name of an old one without a word.** Every `var` at the top of
+  the script is one namespace forty thousand lines long, and a second `var` of a name is
+  legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the
+  seconds of trigger a player's vehicle machine gun takes to cook: the heat went to NaN, the
+  coaxial under command never fired and never cooked, and the periscope rows failed with nothing
+  in the diff anywhere near a periscope. The American's stances were first read through a
+  function named `poseOf`, which was already the brain's reading of a unit's posture; the gate's
+  first battle then stood still for three minutes with its money unspent and its victory points
+  untouched, and nothing threw. `grep` the name in the committed file before adding one.
+- **A point laid off a man is laid on his bearing, and a man at a gun sits off its line.** The
+  layer's muzzle flash was put ahead of the gunner on his own facing while the piece is drawn at
+  `gunPost` on the gun's, and the layer sits a tenth of a radian off it: every round the 57 fired
+  flashed 3.4 units beside its muzzle and every round of the .30 a unit beside. The gate's row
+  measured the flash's distance from the gun, which a rotation about the gunner barely moves, so it
+  passed on the desktop and failed on the phone, where the angle came out larger. `muzzlePoint`
+  lays a set piece's flash off `gunPost` on `u.facing` now, as the draw does, and the rows compare
+  the point.
+- **`def.side` is the army.** A per-vehicle side-armour factor was the obvious name for the
+  Panther's thin sides and would have made it a vehicle of no army at all; it is `flank`.
+- **A gun is not put through the occlusion bake, and a pale colour shows it.** Only a `VMODEL`
+  was baked, which is right for olive drab and the old German sand, and in the 352nd's grey a
+  shield leaning back under Omaha's high sun came out nearly white beside tanks painted the same
+  grey; a step darker on the same tile barely moved it. The Pak 38 is baked the way a hull is
+  (`bakeAO` on its three meshes, 93 ms at boot). A grey gun that is not baked will look the same.
+- **The M4 carries its coaxial as standard and the Panzer IV does not**, so an anti-tank gun duel
+  against each is not the same fight. Once a tank has found a gun its coaxial wears the crew down
+  and the next HE burst finishes them: the 57 sited at 520 takes the Panzer IV more than half the
+  time and the M4 13 per cent, and the Pak 38 the other way about. Read an anti-tank row against
+  the tank's `sec` before reading it against the gun.
+- **Put a periscope, not a post, dead ahead of the commander.** The Panther's cupola was first
+  built with its seven blocks at the half-steps, so the post between two of them stood square
+  in front of the eye and the whole shut view was a grey slab. An exterior with an odd number of
+  blocks and an interior with posts between them have to agree on which of the two is at nought.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the
@@ -6262,6 +7406,13 @@ shots/                         screenshot output, gitignored
   wheel and wrong for a plate facing forward: use `boltRingX()` there. Getting it
   wrong throws the ring of bolts out past the nose armour, where it quietly adds
   a quarter of a metre to the vehicle's measured length.
+- **`roll(faces, a, oy, oz)` turns about the line through (oy, oz); it does not move the part
+  there.** All three machine gun tripods built their elevating handwheel at z 0 and rolled it
+  with its height as the offset, which swung each wheel out to the side of the tripod by that
+  height: two and two and a half units beside the two American tripods and five beside the
+  Lafette. A disc hanging in the air beside a gun reads as part of the gun at play distance,
+  and it took a close-up of the Lafette with a man sitting at it to see one. Roll about the
+  origin and `place` the part where it goes.
 - `var` hoists. A hull constant referenced above its own `var` line is
   `undefined`, every vertex built from it is `NaN`, and the part vanishes without
   an error. `tools/dims.mjs` reports NaN when this happens.
@@ -6373,7 +7524,7 @@ shots/                         screenshot output, gitignored
   placed on a circle with their long axis pointing whichever way the bunker does read as
   two dozen stones scattered in a circle; the ring only closes when each is rotated to its
   own tangent.
-- **`BUNK.canv` is tagged to the camouflage NET**, because that is what the Canadian
+- **`BUNK.canv` is tagged to the camouflage NET**, because that is what the Allied
   emplacement uses it for. Anything else drawn in it -- an awning over a workshop, a screen
   round a dressing station, a stretcher -- comes out as a piece of scrim, which reads as a
   fault in a photograph and is a fault in the palette. `BUNK.tarp` is the proofed
@@ -6498,7 +7649,17 @@ shots/                         screenshot output, gitignored
   the same fault a second time: the throttle puts a waypoint 320 units up the hull's own
   nose and nothing else, so a tank staged on the first free SPOT beside the headquarters
   drives into whatever is in front of it. It read 33.2 units of ground in three seconds on
-  one run and 11.4 on the next, on identical code, and the bar decided which.
+  one run and 11.4 on the next, on identical code, and the bar decided which. The aim row
+  after it failed once on a phone with the file passing it on the run before: no mark on any of
+  ten bearings, looking 0.22 radians down. The likeliest reading is the same fault a third time,
+  a hull parked on ground three battles have shelled looking down into a crater's rim inside
+  `povGround`'s 44-unit floor, and it is not established. The commander raises his eye now when
+  looking down finds nothing, and a failure prints how the ground 60 units out stands over the
+  tank, so the next one says which it was. The next one said it was neither: the drive leg had
+  taken the tank to x 24, the edge of the map, and nothing on any bearing at any pitch was there
+  to lay on. The aim row puts the tank back where the drive began, turned toward the middle of
+  the map, before it looks. It is the same fault a third time after all, only in the other
+  direction: a drill that moves a unit has to check where it left it.
 - **Two background runs writing to one output file make a sparse file full of nulls**, and
   the rows that go missing look exactly like rows that never ran.
 - **A first hit that re-meshes a tile is a hundred and ten millisecond hitch, and a salvo

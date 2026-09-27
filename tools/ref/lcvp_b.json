@@ -1,0 +1,5 @@
+{ "image": "shots/ref/lcvp.jpg", "key": "lcvp", "prop": "lcvpModel", "args": [0, 0, { "level": 1, "ramp": "up" }],
+  "views": {
+    "side_s": { "nose": "right", "crop": [0, 250, 500, 139], "ppm": 38.76, "ppmv": 40.9, "at": [0, 0, 0], "px": [243.3, 382.2], "k": 3 },
+    "rear": { "crop": [75, 125, 150, 135], "ppm": 40.9, "at": [0, 0, 19.7], "px": [150, 181], "k": 5 },
+    "front": { "crop": [310, 125, 150, 135], "ppm": 40.9, "at": [0, 0, 25.9], "px": [384.5, 169], "k": 5 } } }

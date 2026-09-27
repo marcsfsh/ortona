@@ -1,0 +1,4 @@
+{ "image": "shots/ref/hr_ks750.png", "key": "hr_ks750", "up": [], "crew": false,
+  "note": "The right side from the bottom of the same sheet as hr_ks750.json, at the same scale, pinned at the front wheel on the ground. Run it with its own --tag, since both write hr_ks750-side.",
+  "views": {
+    "side":  { "nose": "right", "crop": [195, 300, 285, 125], "ppm": 101.4, "at": [10.24, 0, 0], "px": [431.5, 418.5], "k": 4 } } }

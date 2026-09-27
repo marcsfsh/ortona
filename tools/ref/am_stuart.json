@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_stuart.jpg", "key": "am_stuart", "up": ["hatch"], "crew": false,
+  "note": "A four-view of the M3 light tank, late production: riveted hull, the rounded welded turret without a cupola, the trailing idler on the ground. No scale on the sheet. The side is taken off the published 178.4 in (4.53 m) over its own length, 464.5 px, and the plan off the same length, 470.8 px, across the published 88.0 in (2.24 m), 234.5 px; the front and rear views off the same width, 234.7 px. The front view's track centres agree with the published 73 in tread to a per cent. Heights in the front view come out about 2 per cent under the side view's.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 268], "ppm": 102.5, "at": [0, 0, 0], "px": [241.95, 260.0], "k": 3 },
+    "plan":  { "nose": "left", "crop": [0, 275, 500, 250], "ppm": 103.9, "ppmv": 104.9, "at": [0, 0, 0], "px": [242.9, 398.25], "k": 3 },
+    "front": { "crop": [0, 525, 250, 262], "ppm": 105.0, "at": [0, 0, 0], "px": [125.65, 780.8], "k": 4 },
+    "rear":  { "crop": [250, 525, 250, 262], "ppm": 105.0, "at": [0, 0, 0], "px": [376.5, 781.0], "k": 4 } } }

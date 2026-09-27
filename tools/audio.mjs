@@ -320,8 +320,8 @@ if (wantKinds.length === KINDS.length) {
      to it. Every sound in the mix below is one the game really played. */
   await page.evaluate(() => {
     const mx = WORLD.w * .5, my = WORLD.h * .5;
-    const line = [['us_rifle', 'ger_gren', 5], ['us_mg', 'ger_mg42', 2], ['us_at', 'ger_pak', 1],
-                  ['us_sher', 'ger_p4', 2], ['us_ab', 'ger_pgren', 2]];
+    const line = [['am_rifle', 'hr_gren', 5], ['am_mg', 'hr_mg', 2], ['am_at', 'hr_pak', 1],
+                  ['am_sher', 'hr_p4', 2], ['am_ranger', 'hr_kch', 2]];
     let n = 0;
     line.forEach(([uk, gk, count]) => {
       for (let k = 0; k < count; k++) {

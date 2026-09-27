@@ -264,10 +264,54 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    variants and the two frames of a throw baked twice over, and the two abilities with their
    flight, their fuse, the cards, the brain's use of them and the targeting that picks a
    vehicle.
+   It is 2500 for the .30 cal team: the M1919A4 and the M2HB cut as they go on a tripod, the
+   M2 and M3 tripods set up and folded, the ammunition boxes and the belt of rounds, the M1
+   carbine, three variants with the belts crossed on the chest, the gun and the tripod carried
+   on the shoulder, the number two at the side of the gun, and the .50 as a field upgrade that
+   changes the piece, the men's places and the bodies at the gun.
+   It is 2530 for the MG 34 team and the Wirbelwind: the MG 34 and the MG 42 cut as they go
+   on the Lafette, the Lafette set up and folded and carried on a back, the box of belts,
+   four variants with the gun laid into the shoulder beside the bore; and the open turret of
+   nine plates with its two gun slots, the Flakvierling 38 with its four guns, magazines,
+   sight, seat and handwheels, the racked magazines, four men in it, and the army's own
+   unit on a depot the substitutions do not reach.
+   It is 2570 for the Panther: eight stations a side of interleaved double wheels and a
+   track of its own, the hull of long sloped plates with its deck, its exhausts and its
+   tools, the turret on a plan with the cast mantlet lofted round the trunnions, the long
+   gun, the cupola in its bulge with its lid that lifts and swings, the Schürzen, the
+   cupola MG, and the room under the cupola for the periscope.
+   It is 2600 for the 57 mm M1: the split-trail carriage on its combat wheels with the
+   spades, the lunette and the little wheel, the three-plate shield folded back over the
+   wheels, the cradle and its recuperator, the sight and the two handwheels, the tube that
+   runs back apart from the carriage, and five men with two variants of their own.
+   It is 2630 for the Pak 38: the sprung wheels on their spokes, the tubular trails with
+   the spades, the handles and the lunette, the spaced shield in three facets a side with
+   the lower shield hung in front of the axle, the cradle, the sight and the handwheels, the
+   long tube with its brake, the steel case of rounds, and five men in field grey.
+   It is 2680 for the M3 light tank: the volute bogies on their spoked wheels, the trailing
+   idler and the T16 track, the riveted hull with its sponsons, the drivers' plate and the
+   deck over the transmission, the round welded turret with the combination mount and the
+   split hatch, the stowage and the air cleaners, and the room under the hatch.
+   It is 2750 for the Easy Eight an M4A1 is rebuilt as: the horizontal volute bogies with
+   their springs, shock absorbers and rollers, the pressed road wheels, the wide track, the
+   welded hull with the scooped fenders, the drivers' hatches and the exhaust deflector, the
+   T23 turret with the M62 mount, the 76 mm and its brake, the vision cupola and the .50 on
+   its post, and the vehicle-swap plumbing that draws it.
+   It is 2800 for the M26 Pershing: the six stations a side on torsion arms with their
+   housings, bump stops and shock absorbers, the return rollers, the idler in front and the
+   sprocket behind, the T80E1 track, the welded hull with its fenders and bins, the cast
+   turret with the M67 mount, the 90 mm and its double-baffle brake, the vision cupola, the
+   loader's hatch and the .50 on its pintle, and the room under the cupola.
+   It is 2830 for the LCVP rebuilt to its drawing: the V bottom lofted from the forefoot to
+   the semi-tunnel with its keel, skeg, rudder and screw, the side decks and the armoured
+   walls of the well with their plates and rivets, the ramp with its pyramid and cables,
+   the gun tubs with their .30s, the stencil the boats were numbered in, and the ensign.
+   Retiring the Canadians and the paratroopers took the file from 2812 to 2611 and the
+   ceiling was left where it was.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2460) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2460 kB so it stays quick to load on a phone`);
+if (kb > 2830) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2830 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

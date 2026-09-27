@@ -1,0 +1,7 @@
+{ "image": "shots/ref/hr_pak.png", "key": "hr_pak", "pack": true, "up": [], "crew": false,
+  "note": "Along the gun and up it the sheet is 84.7 and 83.5 px/m (the published 4.75 m and 1.105 m, checked on the 3.2 m tube); across it 71.4 px/m (the published 1.83 m over the wheels, which the scale bar agrees with). The trails are drawn closed.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 425, 98], "ppm": 84.7, "ppmv": 83.5, "at": [0, 0, 0], "px": [208.5, 93.3], "k": 3 },
+    "plan":  { "nose": "left", "crop": [0, 165, 425, 150], "ppm": 84.7, "ppmv": 71.4, "at": [0, 0, 0], "px": [209.2, 238.3], "k": 3 },
+    "front": { "crop": [420, 0, 187, 98], "ppm": 71.4, "ppmv": 83.5, "at": [0, 0, 0], "px": [498.4, 93.3], "k": 5 },
+    "rear":  { "crop": [415, 180, 192, 108], "ppm": 71.4, "ppmv": 83.5, "at": [0, 0, 0], "px": [498.4, 282.5], "k": 5 } } }

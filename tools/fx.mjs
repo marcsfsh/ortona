@@ -21,7 +21,7 @@
  *
  * MUZZLE is every weapon on the roster fired once from the same spot with the same
  * camera on it. A flash has to be visible, it has to lie along the bore, and a 210mm
- * howitzer has to be a different event from a Lee-Enfield -- which is the whole claim,
+ * howitzer has to be a different event from a Garand -- which is the whole claim,
  * since every gun in the game used to spawn the same disc at two sizes. `lift` is the
  * mean change over the window and `px` how much of it changed at all; `spread` is the
  * ratio of the biggest to the smallest lift on the card, which is the number that says
@@ -168,10 +168,10 @@ async function run(file, label) {
         u.setup = 0; u.lay = 0; u.turret = 0; u.facing = 0; u.cd = 0; u.atcd = 0;
         /* inside the weapon's own reach, measured from the FIRER and not from the stage
            point it is standing sixty units short of: written the other way about, the
-           two 165-reach engineer sections were staged at 175 and fired nothing at all,
-           and the row read as a weapon with no muzzle flash */
+           two engineer sections the roster had then, at 165 of reach, were staged at 175
+           and fired nothing at all, and the row read as a weapon with no muzzle flash */
         const e = spawnUnit(def.side === 'us' ? 'ger' : 'us',
-                            def.side === 'us' ? 'ger_gren' : 'us_rifle',
+                            def.side === 'us' ? 'hr_gren' : 'am_rifle',
                             u.x + Math.min(240, (def.w.range || 300) * .7), F.y, Math.PI);
         G.paused = true;
         const ref = grab();
@@ -238,8 +238,8 @@ async function run(file, label) {
       const rows = [];
       for (const side of ['us', 'ger']) {
         clear(); G.paused = false;
-        const u = spawnUnit(side, side === 'us' ? 'us_rifle' : 'ger_gren', F.x - 100, F.y, 0);
-        const e = spawnUnit(side === 'us' ? 'ger' : 'us', side === 'us' ? 'ger_gren' : 'us_rifle',
+        const u = spawnUnit(side, side === 'us' ? 'am_rifle' : 'hr_gren', F.x - 100, F.y, 0);
+        const e = spawnUnit(side === 'us' ? 'ger' : 'us', side === 'us' ? 'hr_gren' : 'am_rifle',
                             F.x + 100, F.y, Math.PI);
         look({ x: F.x, y: F.y, dist: 300, yaw: -1.1, pitch: .30 });
         G.paused = true;

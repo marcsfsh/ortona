@@ -453,7 +453,7 @@ async function run(file, label) {
       /* how far the body moved: the cant it settled at, how far it went down, and
          whether the turret is still on the hull it was bolted to */
       H.out = [];
-      for (const key of ['us_sher', 'ger_tig', 'ger_stug', 'us_stuart']) {
+      for (const key of ['am_sher', 'ger_tig', 'ger_stug', 'am_stuart']) {
         let off = 0, broke = 0, burn = 0, cant = 0, sink = 0, chunks = 0, n = 0;
         for (let i = 0; i < 40; i++) {
           clear();
@@ -480,7 +480,7 @@ async function run(file, label) {
         let tries = 0, w = null;
         while (tries++ < 60 && (!w || !w.fly)) {
           clear();
-          const u = spawnUnit('us', 'us_sher', fx0, fy0, 0);
+          const u = spawnUnit('us', 'am_sher', fx0, fy0, 0);
           makeWreck(u);
           w = G.wrecks[G.wrecks.length - 1];
         }
@@ -510,7 +510,7 @@ async function run(file, label) {
          rendered twice, which is what says the number is the wreck and not the renderer. */
       clear();
       {
-        const u = spawnUnit('us', 'us_sher', fx0, fy0, .7);
+        const u = spawnUnit('us', 'am_sher', fx0, fy0, .7);
         CAM.tx = fx0; CAM.ty = fy0; CAM.dist = 240; CAM.yaw = 1.1; CAM.pitch = .62;
         reveal();
         /* and the frame is warmed before anything is measured. A camera moved to a new

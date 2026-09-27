@@ -309,10 +309,10 @@ async function install(page) {
         AI.t = 1e9;
         const s = nearestFree(spots[i].x, spots[i].y);
         const ang = spots[i].a;
-        const u = spawnUnit('us', 'us_rifle', s.x, s.y, ang + Math.PI);
+        const u = spawnUnit('us', 'am_rifle', s.x, s.y, ang + Math.PI);
         /* something to take cover from, close enough to be seen and far enough to be a
            bearing rather than a brawl */
-        const e = spawnUnit('ger', 'ger_gren', s.x + Math.cos(ang) * 420, s.y + Math.sin(ang) * 420, ang + Math.PI);
+        const e = spawnUnit('ger', 'hr_gren', s.x + Math.cos(ang) * 420, s.y + Math.sin(ang) * 420, ang + Math.PI);
         e.hp = e.maxhp = 9e5;
         const dt = 1 / 30;
         for (let t = 0; t < secs; t += dt) {
@@ -679,21 +679,21 @@ async function install(page) {
         for (let tx = 600; tx < 1400 && !ax; tx += 40)
           if (walkable(tx, ty) && walkable(tx + 520, ty)) { ax = tx; ay = ty; }
       const rows = [], add = (d, r) => rows.push(Object.assign({ drill: d }, r));
-      add('section, open 400', M.trace('us_rifle', [ax, ay], [ax + 400, ay], 20));
-      add('section, past a tank', M.trace('us_rifle', [ax, ay], [ax + 400, ay], 20,
-        [{ k: 'us_sher', x: ax + 200, y: ay + 20 }]));
-      add('sherman, open 500', M.trace('us_sher', [ax, ay], [ax + 500, ay], 20));
-      add('sherman, past a section', M.trace('us_sher', [ax, ay], [ax + 500, ay], 20,
-        [{ k: 'us_rifle', x: ax + 250, y: ay + 18 }]));
-      add('sherman, through 3 sections', M.trace('us_sher', [ax, ay], [ax + 500, ay], 20,
-        [{ k: 'us_rifle', x: ax + 180, y: ay + 16 }, { k: 'us_rifle', x: ax + 300, y: ay - 16 },
-         { k: 'us_rifle', x: ax + 420, y: ay + 10 }]));
-      add('sherman, 180 (tracks)', M.trace('us_sher', [ax + 300, ay], [ax - 120, ay], 20));
+      add('section, open 400', M.trace('am_rifle', [ax, ay], [ax + 400, ay], 20));
+      add('section, past a tank', M.trace('am_rifle', [ax, ay], [ax + 400, ay], 20,
+        [{ k: 'am_sher', x: ax + 200, y: ay + 20 }]));
+      add('sherman, open 500', M.trace('am_sher', [ax, ay], [ax + 500, ay], 20));
+      add('sherman, past a section', M.trace('am_sher', [ax, ay], [ax + 500, ay], 20,
+        [{ k: 'am_rifle', x: ax + 250, y: ay + 18 }]));
+      add('sherman, through 3 sections', M.trace('am_sher', [ax, ay], [ax + 500, ay], 20,
+        [{ k: 'am_rifle', x: ax + 180, y: ay + 16 }, { k: 'am_rifle', x: ax + 300, y: ay - 16 },
+         { k: 'am_rifle', x: ax + 420, y: ay + 10 }]));
+      add('sherman, 180 (tracks)', M.trace('am_sher', [ax + 300, ay], [ax - 120, ay], 20));
       add('tiger II, 180 (tracks)', M.trace('ger_kt', [ax + 300, ay], [ax - 120, ay], 25));
-      add('stuart, 180 (tracks)', M.trace('us_stuart', [ax + 300, ay], [ax - 120, ay], 20));
-      add('carrier, 180 (tracks)', M.trace('us_m8', [ax + 300, ay], [ax - 120, ay], 20));
-      add('half-track, 180 (wheels)', M.trace('us_m3', [ax + 300, ay], [ax - 120, ay], 20));
-      add('car, 180 (wheels)', M.trace('ger_sd222', [ax + 300, ay], [ax - 120, ay], 20));
+      add('stuart, 180 (tracks)', M.trace('am_stuart', [ax + 300, ay], [ax - 120, ay], 20));
+      add('jeep, 180 (wheels)', M.trace('am_jeep', [ax + 300, ay], [ax - 120, ay], 20));
+      add('half-track, 180 (wheels)', M.trace('am_m3', [ax + 300, ay], [ax - 120, ay], 20));
+      add('car, 180 (wheels)', M.trace('hr_234', [ax + 300, ay], [ax - 120, ay], 20));
       return rows;
     };
   });
@@ -713,9 +713,9 @@ const ROUTES = [
 /* foot, tracks, wheels, and the heaviest thing on the roster, which is the one that
    finds out how wide a street is */
 const MOVERS = [
-  ['foot', 'us', 'us_rifle'],
-  ['tracks', 'us', 'us_sher'],
-  ['wheels', 'us', 'us_m3'],
+  ['foot', 'us', 'am_rifle'],
+  ['tracks', 'us', 'am_sher'],
+  ['wheels', 'us', 'am_m3'],
   ['heavy', 'ger', 'ger_tig']
 ];
 
@@ -723,10 +723,10 @@ const MOVERS = [
    thing on the roster doing the same, a car, and two tanks. Eight bearings, because the
    whole point is that one circle gives a different answer on every one of them. */
 const PAIRS = [
-  ['us_sher', 'us', 'us_rifle', 'us'],
-  ['ger_kt', 'ger', 'us_rifle', 'us'],
-  ['us_m8', 'us', 'us_rifle', 'us'],
-  ['us_sher', 'us', 'us_sher', 'us']
+  ['am_sher', 'us', 'am_rifle', 'us'],
+  ['ger_kt', 'ger', 'am_rifle', 'us'],
+  ['am_jeep', 'us', 'am_rifle', 'us'],
+  ['am_sher', 'us', 'am_sher', 'us']
 ];
 const BEARINGS = [0, Math.PI / 4, Math.PI / 2, Math.PI * 3 / 4, Math.PI,
                   Math.PI * 5 / 4, Math.PI * 3 / 2, Math.PI * 7 / 4];
