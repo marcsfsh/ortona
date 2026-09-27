@@ -120,14 +120,19 @@ if (!spec) {
 const only = args.only ? String(args.only).split(',') : null;
 const views = Object.keys(spec.views).filter(v => !only || only.includes(v));
 const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, faces }) => {
-  if (!window.VMODEL[spec.key] && !window.GUNMODEL[spec.key]) buildVehicleModels();
-  const V = window.VMODEL[spec.key], GM = window.GUNMODEL[spec.key];
-  if (!V && !GM) return { err: 'no model called ' + spec.key };
+  /* a prop is no unit's model: the spec names the builder and what to hand it, and its faces
+     are drawn as the hull */
+  const PB = spec.prop ? window[spec.prop] : null;
+  if (spec.prop && typeof PB !== 'function') return { err: 'no builder called ' + spec.prop };
+  if (!PB && !window.VMODEL[spec.key] && !window.GUNMODEL[spec.key]) buildVehicleModels();
+  const V = PB ? null : window.VMODEL[spec.key], GM = PB ? null : window.GUNMODEL[spec.key];
+  if (!PB && !V && !GM) return { err: 'no model called ' + spec.key };
   const up = spec.up || [], parts = [];
   function add(faces, t, off) {
     (faces || []).forEach(f => parts.push({ v: off ? f.v.map(p => [p[0] + off[0], p[1] + off[1], p[2] + off[2]]) : f.v, t }));
   }
-  if (V) {
+  if (PB) add(PB.apply(null, spec.args || []), 0);
+  else if (V) {
     /* the mount goes where mountPose puts it, with the fitting's own placement if one swaps it */
     const uk = up.find(k => V.turUp && V.turUp[k]), o = uk && V.barUp ? V.barUp[uk] || {} : {};
     const pick = (n, d) => (o[n] !== undefined ? o[n] : d);

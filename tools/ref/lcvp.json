@@ -1,0 +1,3 @@
+{ "image": "shots/ref/lcvp.jpg", "key": "lcvp", "prop": "lcvpModel", "args": [0, 0, { "level": 1, "ramp": 0.25 }],
+  "views": {
+    "side": { "nose": "left", "crop": [0, 0, 500, 130], "ppm": 38.3, "ppmv": 40.9, "at": [0, 0, 0], "px": [259.1, 123], "k": 3 } } }

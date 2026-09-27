@@ -16615,6 +16615,14 @@ function registerMaterials() {
     tagEdges([CRAFT.hull, CRAFT.hullL, CRAFT.hullD, CRAFT.deck, CRAFT.deckL, CRAFT.num, CRAFT.blue], 'paint');
     tag([CRAFT.steel, CRAFT.steelL, CRAFT.burnt, CRAFT.burntL], 'steel');
     tagEdges([CRAFT.steel, CRAFT.steelL, CRAFT.burnt, CRAFT.burntL], 'steel');
+    tag([CRAFT.bot, CRAFT.botL, CRAFT.arm, CRAFT.armL, CRAFT.armD, CRAFT.rivet, CRAFT.well, CRAFT.white, CRAFT.pit], 'paint');
+    tagEdges([CRAFT.bot, CRAFT.botL, CRAFT.arm, CRAFT.armL, CRAFT.armD, CRAFT.rivet, CRAFT.well, CRAFT.white, CRAFT.pit], 'paint');
+    tag([CRAFT.floor, CRAFT.floorL, CRAFT.slat], 'wood');
+    tagEdges([CRAFT.floor, CRAFT.floorL, CRAFT.slat], 'wood');
+    tag([CRAFT.red, CRAFT.navy, CRAFT.rope, CRAFT.ropeL], 'canvas');
+    tagEdges([CRAFT.red, CRAFT.navy, CRAFT.rope, CRAFT.ropeL], 'canvas');
+    tag([CRAFT.cable, CRAFT.bronze, CRAFT.bronzeL, CRAFT.wheel, CRAFT.wheelL, CRAFT.bore], 'steel');
+    tagEdges([CRAFT.cable, CRAFT.bronze, CRAFT.bronzeL, CRAFT.wheel, CRAFT.wheelL, CRAFT.bore], 'steel');
   }
   tag(['#26261f', '#33332b'], 'track');                     /* the M3's track */
   tag(['#4a3824', '#5a4530', '#3a2c1c', '#3a352a', '#4a4436', '#332f26'], 'wood');   /* joists, purlins, floors */
@@ -38417,40 +38425,406 @@ function dragonTooth(h, sv) {
    broached and swamped, lying over on its side in the surf. */
 var CRAFT = { hull: '#5b6562', hullL: '#6a7470', hullD: '#454d4a', deck: '#4f5552', deckL: '#5d6360',
               steel: '#40443f', steelL: '#555a54', burnt: '#2c2b27', burntL: '#3b3934',
-              num: '#c4c2b6', blue: '#2f3e5c' };
-function lcvpModel(wreck, sv) {
-  var L = 129, B = 39, H = 23, f = [], P = CRAFT;
+              num: '#c4c2b6', blue: '#2f3e5c',
+              bot: '#242628', botL: '#303335', arm: '#56605f', armL: '#636d6c', armD: '#464e4d',
+              rivet: '#373d3c', well: '#666e6a', floor: '#4b4740', floorL: '#58534a',
+              red: '#8d2b2a', white: '#d6d3c7', navy: '#262f58', slat: '#34312c', pit: '#2a2d2c',
+              cable: '#26292a', bronze: '#6e5a3c', bronzeL: '#7d6848', rope: '#4c4636', ropeL: '#5a5342',
+              wheel: '#29262a', wheelL: '#35312c', bore: '#1c1d1b', staff: '#4a3f2e', staffL: '#5a4e3a' };
+
+/* The LCVP, laid over a four-view drawing of boat 19 of the Samuel Chase (tools/ref/lcvp.json
+   and lcvp_b.json), both side views, the bow with the ramp up and the stern. The scale is the
+   published 36 ft 3 in overall with the ramp up, and the heights are read off the end views,
+   whose 10 ft 10 in over the rubbing strakes put them at 40.9 px/m against the side views'
+   38.3 along the boat. It is built the way the drawing has it, afloat and level on its boot
+   top with the keel falling away aft, and `lcvpModel` puts it down on the sand afterwards.
+   Every number here is model units, bow to +x, the bottom of the skeg at nought.
+
+   Read along the boat: a ramp that is the bow, hinged at the foot of the well; a well
+   seventeen feet long between armoured walls that stand up off narrow side decks and rise to
+   a peak at the bow either side of the ramp; the engine under a raised hatch aft of the well;
+   two gun tubs with a .30 each and the coxswain between them; a drum for the kedge anchor's
+   cable on the stern and the ensign on a staff at the transom. Under it, a V bottom that
+   sweeps up to the hinge line at the bow, and aft of the keel the semi-tunnel over the
+   propeller with a skeg under it and the rudder behind. */
+var LCVP = {
+  xB: 64.5, xT: -63.2,                        /* the ramp's top edge standing, and the transom */
+  hx: 59.8, hz: 15.2, rl: 21.0, rw: 14.0,     /* the hinge, the ramp's length and half its width */
+  lean: Math.atan(.229),                      /* the ramp and the cheeks lean forward thirteen degrees */
+  wi: 13.8, wo: 15.7,                         /* the well walls, inside and out */
+  boot: 10.9, xWell: -21, xCoam: -36,         /* the boot top, the well's aft end, the walls' aft end */
+  xTun: -30, eng: 22.4, trim: .08,            /* where the keel ends, the engine hatch, the trim on the sand */
+  X:     [59.8, 57, 53, 47, 40, 30, 15, 0, -15, -30, -34, -41, -48, -56, -63.2],
+  keel:  [[59.8, 15.2], [57, 13.2], [53, 11.3], [47, 9.4], [40, 8.0], [30, 6.8], [15, 5.7], [0, 4.6],
+          [-15, 3.5], [-30, 1.9], [-34, 4.7], [-41, 5.0], [-48, 5.3], [-63.2, 5.7]],
+  chz:   [[59.8, 15.2], [57, 14.3], [53, 13.2], [47, 12.0], [40, 11.1], [30, 10.2], [15, 9.3], [0, 8.4],
+          [-15, 7.4], [-30, 6.2], [-34, 5.9], [-48, 5.2], [-63.2, 4.8]],
+  chw:   [[59.8, 16.6], [57, 16.9], [53, 17.2], [47, 17.5], [40, 17.8], [30, 18.0], [15, 18.1], [0, 18.2], [-63.2, 18.1]],
+  gz:    [[62.3, 25.8], [57, 25.7], [53, 25.5], [47, 25.2], [40, 24.8], [30, 24.3], [15, 23.6], [0, 22.8],
+          [-15, 22.0], [-30, 21.2], [-34, 21.0], [-48, 20.4], [-63.2, 19.7]],
+  gw:    [[62.3, 17.0], [53, 17.5], [40, 18.1], [30, 18.4], [15, 18.5], [0, 18.6], [-63.2, 18.5]],
+  wt:    [[64.15, 34.0], [60.2, 34.0], [54.2, 30.3], [39.4, 29.0], [2.8, 26.6], [-20, 24.6], [-36, 23.2]],
+  floor: [[59.8, 15.2], [30, 10.6], [-21, 6.9]],
+  arm:   [[62, 17.2], [57, 15.0], [33, 14.2], [12, 13.0], [-20, 11.3]]
+};
+/* a value off one of those tables, which run bow first */
+function lcvpAt(t, x) {
+  if (x >= t[0][0]) return t[0][1];
+  for (var i = 0; i < t.length - 1; i++) {
+    var a = t[i], b = t[i + 1];
+    if (x >= b[0]) return a[1] + (b[1] - a[1]) * (a[0] - x) / (a[0] - b[0]);
+  }
+  return t[t.length - 1][1];
+}
+/* the line the ramp stands on and the cheeks are cut to, at a height */
+function lcvpRampX(z) { return LCVP.hx + (z - LCVP.hz) * Math.tan(LCVP.lean); }
+/* the stencil the ship painted its boats' numbers in: each glyph a few strokes in a box
+   .56 wide and 1 tall, every stroke a convex outline */
+var LCVPGL = (function () {
+  var w = .56, s = .15, R = hp4Rect, m0 = .5 - s / 2, m1 = .5 + s / 2;
+  return {
+    '0': [R(0, 0, s, 1), R(w - s, 0, w, 1), R(0, 1 - s, w, 1), R(0, 0, w, s)],
+    '1': [R(.22, 0, .22 + s, 1), [[.06, .8], [.22, 1], [.22, .8], [.12, .7]]],
+    '2': [R(0, 1 - s, w, 1), R(w - s, .5, w, 1), R(0, m0, w, m1), R(0, 0, s, .5), R(0, 0, w, s)],
+    '3': [R(0, 1 - s, w, 1), R(.12, m0, w, m1), R(0, 0, w, s), R(w - s, 0, w, 1)],
+    '4': [R(w - s, 0, w, 1), R(0, .36, w, .36 + s), [[.2, 1], [.2 + s, 1], [s, .36 + s], [0, .36 + s]]],
+    '5': [R(0, 1 - s, w, 1), R(0, .5, s, 1), R(0, m0, w, m1), R(w - s, 0, w, .5), R(0, 0, w, s)],
+    '6': [R(0, 0, s, 1), R(0, 1 - s, w, 1), R(0, m0, w, m1), R(0, 0, w, s), R(w - s, 0, w, .5)],
+    '7': [R(0, 1 - s, w, 1), [[w - s, 1 - s], [w, 1 - s], [.24 + s, 0], [.24, 0]]],
+    '8': [R(0, 0, s, 1), R(w - s, 0, w, 1), R(0, 1 - s, w, 1), R(0, m0, w, m1), R(0, 0, w, s)],
+    '9': [R(w - s, 0, w, 1), R(0, 1 - s, w, 1), R(0, m0, w, m1), R(0, .5, s, 1), R(0, 0, w, s)],
+    'P': [R(0, 0, s, 1), R(0, 1 - s, w, 1), R(0, m0, w, m1), R(w - s, .5, w, 1)],
+    'A': [R(0, 0, s, 1), R(w - s, 0, w, 1), R(0, 1 - s, w, 1), R(0, .42, w, .42 + s)],
+    '-': [R(.06, .44, w - .06, .56)]
+  };
+})();
+/* A line of that stencil laid on a surface: `at(u, v)` is the point on the surface that
+   far along the line and that far up it, and `want` the way the paint faces. */
+function lcvpText(txt, h, at, want, col) {
+  var f = [], adv = .7 * h, x0 = -(txt.length * adv - .14 * h) / 2;
+  for (var i = 0; i < txt.length; i++) {
+    (LCVPGL[txt.charAt(i)] || []).forEach(function (p) {
+      f.push(hkFace(p.map(function (q) { return at(x0 + i * adv + q[0] * h, (q[1] - .5) * h); }), want, col));
+    });
+  }
+  return f;
+}
+
+/* ---- the hull ---- */
+function lcvpHull(C) {
+  var H = LCVP, f = [], X = H.X, i;
+  function P(x, y, z) { return [x, y, z]; }
+  function mix(p, q, z) { var t = (z - p[2]) / ((q[2] - p[2]) || 1); return P(p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t, z); }
+  [-1, 1].forEach(function (sd) {
+    for (i = 0; i < X.length - 1; i++) {
+      var a = X[i], b = X[i + 1];
+      var ka = lcvpAt(H.keel, a), kb = lcvpAt(H.keel, b), ca = lcvpAt(H.chz, a), cb = lcvpAt(H.chz, b);
+      var wa = lcvpAt(H.chw, a) * sd, wb = lcvpAt(H.chw, b) * sd;
+      /* the side stands on the chine and runs up to the gunwale; at the bow its top corner
+         is out on the raked line the ramp stands on */
+      var ga = lcvpAt(H.gz, a), gb = lcvpAt(H.gz, b), xa = i ? a : lcvpRampX(ga);
+      var ha = lcvpAt(H.gw, xa) * sd, hb = lcvpAt(H.gw, b) * sd;
+      /* the bottom, black under the boot top and grey where it sweeps up out of the water */
+      var bz = (ka + kb + ca + cb) / 4;
+      f = f.concat(m8Quad(P(a, 0, ka), P(a, wa, ca), P(b, wb, cb), P(b, 0, kb), [0, sd * .3, -1],
+                          bz < H.boot + .6 ? C.bot : C.hullD));
+      /* the side, cut at the boot top so the line of the paint is level on the water */
+      var ta = Math.max(ca, Math.min(ga, H.boot)), tb = Math.max(cb, Math.min(gb, H.boot));
+      var A0 = P(a, wa, ca), A1 = P(xa, ha, ga), B0 = P(b, wb, cb), B1 = P(b, hb, gb);
+      var Am = mix(A0, A1, ta), Bm = mix(B0, B1, tb);
+      f = f.concat(m8Quad(A0, Am, Bm, B0, [0, sd, -.1], C.bot));
+      f = f.concat(m8Quad(Am, A1, B1, Bm, [0, sd, 0], C.hull));
+    }
+    /* the transom, black to the boot top */
+    var T = H.xT, tk = lcvpAt(H.keel, T), tc = lcvpAt(H.chz, T), tw = lcvpAt(H.chw, T) * sd;
+    var tg = lcvpAt(H.gz, T), th = lcvpAt(H.gw, T) * sd, tbw = tw + (th - tw) * (H.boot - tc) / (tg - tc);
+    f = f.concat(m8Quad(P(T, 0, tk), P(T, tw, tc), P(T, tbw, H.boot), P(T, 0, H.boot), [-1, 0, 0], C.bot));
+    f = f.concat(m8Quad(P(T, 0, H.boot), P(T, tbw, H.boot), P(T, th, tg), P(T, 0, tg), [-1, 0, 0], C.hull));
+    /* the bow either side of the ramp, on the ramp's own line: below the gunwale out to the
+       side, and above it the cheek, which is the forward end of the well wall */
+    var zg = lcvpAt(H.gz, 70), g0 = lcvpAt(H.gw, 70), c0 = lcvpAt(H.chw, 70);
+    f.push(hkFace([P(lcvpRampX(H.hz), H.wi * sd, H.hz), P(lcvpRampX(H.hz), c0 * sd, H.hz),
+                   P(lcvpRampX(zg), g0 * sd, zg), P(lcvpRampX(zg), H.wi * sd, zg)], [1, 0, -.23], C.hull));
+    f.push(hkFace([P(lcvpRampX(zg), H.wi * sd, zg), P(lcvpRampX(zg), H.wo * sd, zg),
+                   P(lcvpRampX(34), H.wo * sd, 34), P(lcvpRampX(34), H.wi * sd, 34)], [1, 0, -.23], C.hull));
+  });
+  /* the keel, a bar under the V from the forefoot to where the tunnel begins, and the skeg
+     that carries on under the tunnel to the heel of the rudder */
+  for (i = 0; i < X.length - 1 && X[i] > H.xTun; i++) {
+    f = f.concat(strut([X[i], 0, lcvpAt(H.keel, X[i]) - .35], [X[i + 1], 0, lcvpAt(H.keel, X[i + 1]) - .35], .45, C.botL));
+  }
+  f = f.concat(box(-46.2, 0, 0, 33.4, 1.1, 1.9, C.bot, C.botL, C.bot, 0));
+  /* the rudder behind the propeller, down to the skeg, its trailing edge rounded */
+  var rud = [[-57.8, 5.7], [-62.2, 5.7], [-63.3, 4.8], [-63.7, 3.0], [-63.3, 1.2], [-62.3, .1], [-57.8, .1]];
+  f = f.concat(roll(prism(rud, -.45, .45, C.bot, C.botL, C.bot), Math.PI / 2, 0, 0));
+  f = f.concat(cyl(-58.4, 0, 5.4, .45, .45, 3.2, 6, C.steel, C.steelL));
+  /* the shaft out of the tunnel roof, its bracket, and the three-bladed screw */
+  f = f.concat(strut([-40, 0, 4.7], [-55.2, 0, 3.4], .32, C.steel));
+  f = f.concat(strut([-52.6, 0, 5.3], [-52.6, 0, 3.5], .28, C.steel));
+  f = f.concat(place(pitch(cyl(0, 0, -.7, .62, .62, 1.4, 8, C.bronzeL, C.bronze), Math.PI / 2, 0, 0), 0, -56, 0, 3.4));
+  for (i = 0; i < 3; i++) {
+    var bl = place(box(0, 0, .4, .24, 1.2, 2.2, C.bronze, C.bronzeL, C.bronze, 0), .6, 0, 0, 0);
+    f = f.concat(roll(bl, i * 2.094, 0, 0).map(function (q) {
+      return { v: q.v.map(function (p) { return [p[0] - 56, p[1], p[2] + 3.4]; }), c: q.c };
+    }));
+  }
+  return f;
+}
+/* the armour hung on the sides of the well: two riveted plates a side a hair proud of the
+   hull, from under the rubbing strake down to a line that falls away aft */
+function lcvpArmour(C, sd) {
+  var H = LCVP, f = [], k, x;
+  function top(x) { return lcvpAt(H.gz, x) - 1.5; }
+  function y(x) { return (lcvpAt(H.gw, x) + .35) * sd; }
+  [[61.4, 11], [11, -20]].forEach(function (pl) {
+    var xs = [], a = pl[0], b = pl[1];
+    for (x = a; x > b; x -= 6) xs.push(x);
+    xs.push(b);
+    for (k = 0; k < xs.length - 1; k++) {
+      var p = xs[k], q = xs[k + 1], lp = lcvpAt(H.arm, p), lq = lcvpAt(H.arm, q);
+      f.push(hkFace([[p, y(p), lp], [p, y(p), top(p)], [q, y(q), top(q)], [q, y(q), lq]], [0, sd, 0], C.arm));
+      /* the plate's lower edge, which is what gives it a thickness from below */
+      f.push(hkFace([[p, y(p), lp], [q, y(q), lq], [q, y(q) - .35 * sd, lq], [p, y(p) - .35 * sd, lp]], [0, 0, -1], C.armD));
+    }
+    /* the rivets round the edge of each plate */
+    function rivet(x, z) {
+      var e = .18, yy = y(x) + .06 * sd;
+      f.push(hkFace([[x - e, yy, z - e], [x + e, yy, z - e], [x + e, yy, z + e], [x - e, yy, z + e]], [0, sd, 0], C.rivet));
+    }
+    for (x = a - .8; x > b + .5; x -= 1.9) { rivet(x, top(x) - .45); rivet(x, lcvpAt(H.arm, x) + .45); }
+    [a - .6, b + .6].forEach(function (xe) {
+      for (var z = lcvpAt(H.arm, xe) + 1.9; z < top(xe) - 1; z += 1.9) rivet(xe, z);
+    });
+  });
+  return f;
+}
+/* the deck, the side decks and the rubbing strake, the well and its walls, and the engine
+   hatch at the after end of the well */
+function lcvpDeck(C, sd) {
+  var H = LCVP, f = [], X = [64.15, 62.3, 60.2, 57, 54.2, 50, 45, 39.4, 30, 20, 10, 2.8, -10, -20, -21, -28, -36], i;
+  function P(x, y, z) { return [x, y, z]; }
+  function wt(x) { return lcvpAt(H.wt, x); }
+  function fl(x) { return x >= H.xWell ? lcvpAt(H.floor, Math.min(x, H.hx)) : H.eng; }
+  for (i = 0; i < X.length - 1; i++) {
+    var a = X[i], b = X[i + 1], ga = lcvpAt(H.gz, a), gb = lcvpAt(H.gz, b);
+    /* the inside of the wall from the floor to its top, cut back to the ramp's line at the
+       bow, and the cap over the wall */
+    var well = b >= H.xWell, fa = well ? fl(a) : H.eng, fb = well ? fl(b) : H.eng;
+    var ia = Math.min(a, lcvpRampX(fa)), ib = Math.min(b, lcvpRampX(fb));
+    if (well) f.push.apply(f, m8Quad(P(ia, H.wi * sd, fa), P(Math.min(a, lcvpRampX(wt(a))), H.wi * sd, wt(a)),
+                                                          P(b, H.wi * sd, wt(b)), P(ib, H.wi * sd, fb), [0, -sd, 0], C.well));
+    else f.push.apply(f, m8Quad(P(a, H.wi * sd, H.eng), P(a, H.wi * sd, wt(a)), P(b, H.wi * sd, wt(b)), P(b, H.wi * sd, H.eng), [0, -sd, 0], C.well));
+    f.push.apply(f, m8Quad(P(a, H.wi * sd, wt(a)), P(a, H.wo * sd, wt(a)), P(b, H.wo * sd, wt(b)), P(b, H.wi * sd, wt(b)), [0, 0, 1], C.hullL));
+    /* the outside of the wall above the side deck */
+    var oa = Math.min(a, lcvpRampX(ga));
+    f.push.apply(f, m8Quad(P(oa, H.wo * sd, ga), P(a, H.wo * sd, wt(a)), P(b, H.wo * sd, wt(b)), P(b, H.wo * sd, gb), [0, sd, 0], C.hull));
+    /* the side deck from the wall out to the gunwale */
+    if (a <= lcvpRampX(ga) + .01 || i) {
+      var sa = Math.min(a, lcvpRampX(ga));
+      f.push.apply(f, m8Quad(P(sa, H.wo * sd, ga), P(sa, lcvpAt(H.gw, sa) * sd, ga), P(b, lcvpAt(H.gw, b) * sd, gb),
+                             P(b, H.wo * sd, gb), [0, 0, 1], C.deck));
+    }
+  }
+  /* the wall ends where the aft deck starts */
+  var xe = H.xCoam, ge = lcvpAt(H.gz, xe);
+  f.push(hkFace([P(xe, H.wi * sd, H.eng), P(xe, H.wo * sd, ge), P(xe, H.wo * sd, wt(xe)), P(xe, H.wi * sd, wt(xe))], [-1, 0, 0], C.hull));
+  /* the aft deck, the full width of the boat from the walls to the transom */
+  var AX = [-36, -48, -56, -63.2];
+  for (i = 0; i < AX.length - 1; i++) {
+    var p = AX[i], q = AX[i + 1];
+    f.push.apply(f, m8Quad(P(p, 0, lcvpAt(H.gz, p)), P(p, lcvpAt(H.gw, p) * sd, lcvpAt(H.gz, p)),
+                           P(q, lcvpAt(H.gw, q) * sd, lcvpAt(H.gz, q)), P(q, 0, lcvpAt(H.gz, q)), [0, 0, 1], C.deck));
+  }
+  /* the rubbing strake along the gunwale and round the stern, and a lower one along the
+     engine room aft of the armour */
+  var RX = [62.3, 57, 53, 47, 40, 30, 15, 0, -15, -30, -48, -63.2];
+  for (i = 0; i < RX.length - 1; i++) {
+    var r0 = RX[i], r1 = RX[i + 1], z0 = lcvpAt(H.gz, r0), z1 = lcvpAt(H.gz, r1);
+    var y0 = lcvpAt(H.gw, r0) * sd, y1 = lcvpAt(H.gw, r1) * sd, e = .9 * sd;
+    f.push(hkFace([P(r0, y0 + e, z0 - 1.3), P(r0, y0 + e, z0), P(r1, y1 + e, z1), P(r1, y1 + e, z1 - 1.3)], [0, sd, 0], C.hullD));
+    f.push(hkFace([P(r0, y0, z0), P(r0, y0 + e, z0), P(r1, y1 + e, z1), P(r1, y1, z1)], [0, 0, 1], C.hullL));
+    f.push(hkFace([P(r0, y0, z0 - 1.3), P(r0, y0 + e, z0 - 1.3), P(r1, y1 + e, z1 - 1.3), P(r1, y1, z1 - 1.3)], [0, 0, -1], C.hullD));
+    if (r1 < -19) {
+      var l0 = Math.max(r1, -20);
+      f = f.concat(strut([l0, (lcvpAt(H.gw, l0) + .2) * sd, 16.7], [r1, (lcvpAt(H.gw, r1) + .2) * sd, 16.7], .42, C.hullD));
+    }
+  }
+  var tz = lcvpAt(H.gz, H.xT), tw = lcvpAt(H.gw, H.xT) + .9;
+  if (sd > 0) f = f.concat(box(H.xT - .75, 0, tz - 1.3, 1.5, tw * 2, 1.3, C.hullD, C.hullL, C.hullD, 0));
+  /* frames up the inside of the wall, and the cleats on the side deck */
+  [50, 40, 30, 20, 10, 0, -10].forEach(function (x) {
+    f = f.concat(box(x, (H.wi - .25) * sd, fl(x), .7, .5, wt(x) - fl(x) - .05, C.well, lit(C.well, 1.1), C.well, 0));
+  });
+  [53, 37.6, 17.2, -1.2, -18.3].forEach(function (x) {
+    f = f.concat(box(x, (H.wo + .2) * sd, lcvpAt(H.gz, x), .6, .4, wt(x) - lcvpAt(H.gz, x) + .1, C.hull, C.hullL, C.hullD, 0));
+  });
+  [29.5, -10].forEach(function (x) {
+    var g = lcvpAt(H.gz, x);
+    f = f.concat(box(x, 17 * sd, g, 3.2, .7, .5, C.steel, C.steelL, C.steel, 0));
+    f = f.concat(box(x, 17 * sd, g + .5, .6, .6, .5, C.steel, C.steelL, C.steel, 0));
+  });
+  /* the lifting eye at the chine forward, and the exhaust out of the side aft */
+  f = f.concat(box(39, (lcvpAt(H.gw, 39) + .1) * sd, 10.8, 1.2, .5, 2.7, C.steel, C.steelL, C.steel, 0));
+  /* the oval plate on the after armour, which is a drain for the well */
+  [[1.4, .8, C.rivet, .42], [.95, .45, C.arm, .5]].forEach(function (e) {
+    var pts = [];
+    for (var k = 0; k < 12; k++) pts.push([-6.7 + Math.cos(k * Math.PI / 6) * e[0], (lcvpAt(H.gw, -6.7) + e[3]) * sd, 17.3 + Math.sin(k * Math.PI / 6) * e[1]]);
+    f.push(hkFace(pts, [0, sd, 0], e[2]));
+  });
+  f = f.concat(place(roll(cyl(-28, 0, 0, .9, .9, 1.2, 8, C.steel, C.bore), -Math.PI / 2 * sd, 0, 0), 0, 0, lcvpAt(H.gw, -28) * sd, 17.3));
+  return f;
+}
+/* the well floor, the bulkhead at its after end, the engine hatch over the engine */
+function lcvpWell(C) {
+  var H = LCVP, f = [], i, FX = [H.hx, 50, 40, 30, 15, 0, -10, H.xWell];
+  for (i = 0; i < FX.length - 1; i++) {
+    var a = FX[i], b = FX[i + 1], za = lcvpAt(H.floor, a), zb = lcvpAt(H.floor, b);
+    f.push(hkFace([[a, -H.wi, za], [a, H.wi, za], [b, H.wi, zb], [b, -H.wi, zb]], [0, 0, 1], i % 2 ? C.floor : C.floorL));
+    /* the slats of the floor boards */
+    [-8, -2.7, 2.7, 8].forEach(function (y) {
+      f.push(hkFace([[a, y - .2, za + .04], [a, y + .2, za + .04], [b, y + .2, zb + .04], [b, y - .2, zb + .04]], [0, 0, 1], C.slat));
+    });
+  }
+  var zw = lcvpAt(H.floor, H.xWell);
+  f.push(hkFace([[H.xWell, -H.wi, zw], [H.xWell, H.wi, zw], [H.xWell, H.wi, H.eng], [H.xWell, -H.wi, H.eng]], [1, 0, 0], C.well));
+  f.push(hkFace([[H.xWell, -H.wi, H.eng], [H.xWell, H.wi, H.eng], [H.xCoam, H.wi, H.eng], [H.xCoam, -H.wi, H.eng]], [0, 0, 1], C.deck));
+  var ge = lcvpAt(H.gz, H.xCoam);
+  f.push(hkFace([[H.xCoam, -H.wi, ge], [H.xCoam, H.wi, ge], [H.xCoam, H.wi, H.eng], [H.xCoam, -H.wi, H.eng]], [-1, 0, 0], C.hullD));
+  /* the hatch over the engine, louvred, and the ramp winch at the forward edge of it */
+  f = f.concat(box(-29.5, 0, H.eng, 11, 17, 1.1, C.deck, C.deckL, C.hullD, 0));
+  for (i = 0; i < 6; i++) f = f.concat(box(-33.8 + i * 1.5, 0, H.eng + 1.1, .5, 12, .25, C.pit, C.pit));
+  f = f.concat(place(roll(cyl(-22.6, 0, -4.2, 1.1, 1.1, 8.4, 8, C.steel, C.steelL), Math.PI / 2, 0, 0), 0, 0, 0, H.eng + 1.3));
+  [-1, 1].forEach(function (sd) { f = f.concat(box(-22.6, sd * 4.5, H.eng, 1.6, .6, 2.6, C.steel, C.steelL, C.steel, 0)); });
+  return f;
+}
+/* A gun tub: an open box of plate standing off the aft deck, with the .30 on a pintle at the
+   front of it. The drawing puts its front against the after end of the wall and the gun's
+   trunnion over the front plate. */
+function lcvpTub(C, sd, gun) {
+  var H = LCVP, f = [], cx = -42.8, cy = 13 * sd, L = 9.5, W = 8.6, g = lcvpAt(H.gz, cx), top = 24, t = .5;
+  f = f.concat(box(cx + L / 2 - t / 2, cy, g, t, W, top - g, C.arm, C.armL, C.armD, 0));
+  f = f.concat(box(cx - L / 2 + t / 2, cy, g, t, W, top - g, C.arm, C.armL, C.armD, 0));
+  f = f.concat(box(cx, cy + (W / 2 - t / 2), g, L - 2 * t, t, top - g, C.arm, C.armL, C.armD, 0));
+  f = f.concat(box(cx, cy - (W / 2 - t / 2), g, L - 2 * t, t, top - g, C.arm, C.armL, C.armD, 0));
+  f.push(hkFace([[cx - L / 2 + t, cy - W / 2 + t, g + .05], [cx + L / 2 - t, cy - W / 2 + t, g + .05],
+                 [cx + L / 2 - t, cy + W / 2 - t, g + .05], [cx - L / 2 + t, cy + W / 2 - t, g + .05]], [0, 0, 1], C.pit));
+  if (gun) {
+    var px = cx + L / 2 - .3, gz = top + 1.1;
+    f = f.concat(cyl(px, cy, top - 1.2, .28, .28, 1.9, 6, C.steel, C.steelL));
+    f = f.concat(box(px, cy, top + .5, .9, .6, .5, C.steel, C.steelL, C.steel, 0));
+    f = f.concat(place(pitch(weaponModel(KIT.usa, 'a4'), .05, 0, 0), sd * .12, px, cy, gz));
+    f = f.concat(place(ammoBox(KIT.usa, false), sd * .12, px - 1.6, cy - .9, top - .3));
+  }
+  return f;
+}
+/* the coxswain's station between the tubs, low enough that neither side view of the drawing
+   sees it over them: the wheel on its column facing aft to the man who steers, and the
+   throttles beside it */
+function lcvpCox(C) {
+  var H = LCVP, f = [], x = -44, g = lcvpAt(H.gz, x);
+  f = f.concat(box(x + .8, 0, g, 1.2, 1.2, 1.6, C.steel, C.steelL, C.steel, 0));
+  f = f.concat(place(pitch(cyl(0, 0, -.15, 1.3, 1.3, .3, 10, C.wheel, C.wheelL), Math.PI / 2, 0, 0), 0, x, 0, g + 2.2));
+  f = f.concat(box(x + .8, 2.2, g, 1.1, 1.2, 1.9, C.steel, C.steelL, C.steel, 0));
+  f = f.concat(box(x + .8, 2.2, g + 1.9, .3, .3, 1.0, C.steelL, C.steelL));
+  /* the drum the kedge anchor's cable is wound on, across the stern */
+  var dz = lcvpAt(H.gz, -58) + .7;
+  [-2.6, 2.3].forEach(function (y0) {
+    f = f.concat(place(roll(cyl(-58, 0, y0, 2.4, 2.4, .3, 10, C.steel, C.steelL), Math.PI / 2, 0, 0), 0, 0, 0, dz));
+  });
+  f = f.concat(place(roll(cyl(-58, 0, -2.3, 1.9, 1.9, 4.6, 10, C.rope, C.ropeL), Math.PI / 2, 0, 0), 0, 0, 0, dz));
+  [-1, 1].forEach(function (sd) { f = f.concat(box(-58, sd * 2.95, dz - 2.5, 1.6, .5, 3.4, C.steel, C.steelL, C.steel, 0)); });
+  return f;
+}
+/* The ramp, built standing about its own hinge: local x out through the plate, y across,
+   z up it. The outer face carries a shallow pyramid over its lower two thirds, which is
+   what the drawing puts on it in every view, two stiffeners down to that and a flat bar
+   across the top; the inner face has cleats across it to walk down on. */
+function lcvpRamp(C) {
+  var H = LCVP, f = [], w = H.rw, L = H.rl, t = .9, col = C.arm;
+  f = f.concat(box(t / 2, 0, 0, t, w * 2, L, col, C.armL, C.armD, 0));
+  var ap = [t, 0, L * .55], pk = [t + 2.0, 0, L * .15], cl = [t, -w + .8, .6], cr = [t, w - .8, .6];
+  f.push(hkFace([ap, cl, pk], [1, -.3, .3], C.armL));
+  f.push(hkFace([ap, pk, cr], [1, .3, .3], C.armL));
+  f.push(hkFace([cl, cr, pk], [1, 0, -.6], C.armD));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(box(t + .2, sd * 9.6, L * .27, .4, .5, L * .73, col, C.armL, C.armD, 0));
+  });
+  f = f.concat(box(t + .2, 0, L * .69, .4, 19, .5, col, C.armL, C.armD, 0));
+  f = f.concat(box(t + .15, 0, L - 1.1, .3, w * 2, 1.1, col, C.armL, C.armD, 0));
+  for (var z = 2.5; z < L - 2; z += 3.1) f = f.concat(box(-.2, 0, z, .4, w * 2 - 3, .5, C.armD, C.arm, C.armD, 0));
+  /* the hinge: a pin along the foot of the plate in its knuckles */
+  f = f.concat(roll(cyl(0, 0, -w, .55, .55, w * 2, 8, C.steel, C.steelL), Math.PI / 2, 0, 0));
+  return f;
+}
+function lcvpModel(wreck, sv, o) {
+  var H = LCVP, P = CRAFT, f = [], k;
+  o = o || {};
   function r(n) { var v = Math.sin(sv * 77.3 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
-  /* a burnt-out hull is black in patches rather than all over: the fire takes the paint
-     where the fuel ran and leaves it where it did not */
-  function bc(c, n) { return wreck === 1 && r(n) > .3 ? (r(n + 50) > .5 ? P.burnt : P.burntL) : c; }
-  f = f.concat(box(0, 0, 0, L - 8, B - 5, 4, P.hullD, P.hullD, P.hullD));
-  [-1, 1].forEach(function (sd, i) {
-    f = f.concat(box(-2, sd * (B / 2 - 1.3), 0, L - 10, 2.6, H, bc(P.hull, 2 + i), bc(P.hullL, 4 + i), P.hullD));
-    /* the rubbing strake, and the bow cheeks either side of the ramp */
-    f = f.concat(box(-4, sd * (B / 2 + .25), H * .62, L - 18, .9, 1.6, P.hullD, P.hullD));
-    f = f.concat(box(L / 2 - 8, sd * (B / 2 - 3.6), 0, 10, 7.2, H + 1, bc(P.hull, 6 + i), P.hullL, P.hullD));
-    /* the hull number stencilled on either bow */
-    f = f.concat(box(L / 2 - 28, sd * (B / 2 + .1), 11, 15, .3, 5, P.num, P.num));
+  f = f.concat(lcvpHull(P), lcvpWell(P), lcvpCox(P));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(lcvpArmour(P, sd), lcvpDeck(P, sd), lcvpTub(P, sd, wreck !== 1));
+    /* the sheave on each cheek that the ramp's cable runs over */
+    f = f.concat(box(lcvpRampX(34) - .9, sd * 14.8, 34, 1.3, 1.1, 1.8, P.steel, P.steelL, P.steel, 0));
+    f = f.concat(place(roll(cyl(lcvpRampX(34) - .6, 0, -.3, .8, .8, .6, 8, P.steel, P.steelL), Math.PI / 2, 0, 0), 0, 0, sd * 14.8, 36.1));
   });
-  f = f.concat(box(-L / 2 + 5, 0, 0, 3, B - 4, H - 2, bc(P.hull, 8), P.hullL, P.hullD));
-  /* the engine deck over the aft third and the well floor forward of it */
-  f = f.concat(box(-L / 2 + 21, 0, 0, 30, B - 5, 16, bc(P.deck, 9), bc(P.deckL, 10), P.deck));
-  f = f.concat(box(12, 0, 0, L - 52, B - 5, 5, bc(P.deck, 11), P.deckL, P.deck));
-  /* the coxswain's armoured box, to starboard at the stern, and a gun tub either side
-     with its .30 */
-  f = f.concat(box(-L / 2 + 12, 7, 16, 9, 11, 8, bc(P.steel, 12), P.steelL, P.steel));
-  [-1, 1].forEach(function (sd, i) {
-    f = f.concat(cyl(-L / 2 + 27, sd * (B / 2 - 7), 16, 3.8, 3.8, 5.5, 8, bc(P.steel, 13 + i), P.steelL));
-    if (wreck !== 1) f = f.concat(box(-L / 2 + 32, sd * (B / 2 - 7), 21.6, 9, 1, 1, P.steel, P.steel));
+  /* the boat's number, the ship's and then its own, on either bow; the wave's diamond on
+     the plate aft of it; the number again on the transom */
+  function hr(k) { var v = Math.sin(Math.round(sv * 1000) * k + 78.233) * 43758.5453; return v - Math.floor(v); }
+  var ship = [26, 28, 30, 45][Math.floor(hr(12.9898) * 4)], boat = 1 + Math.floor(hr(39.3468) * 30);
+  if (o.level) { ship = 26; boat = 19; }
+  var nm = 'PA ' + ship + ' ' + boat;
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(lcvpText(nm, 3.7, function (u, v) {
+      var x = 46.5 + u * sd;
+      return [x, (lcvpAt(H.gw, x) + .45) * sd, 20.8 + v];
+    }, [0, sd, 0], P.white));
+    var dx = 5.2, dz = 17.9, a = 4.6, b = 3.7, e = .75;
+    [[1, 1], [1, -1], [-1, -1], [-1, 1]].forEach(function (q) {
+      var p0 = [dx + q[0] * a, dz], p1 = [dx, dz + q[1] * b];
+      var p2 = [dx, dz + q[1] * (b - e * 1.6)], p3 = [dx + q[0] * (a - e * 2), dz];
+      f.push(hkFace([p0, p1, p2, p3].map(function (p) { return [p[0], (18.6 + .45) * sd, p[1]]; }), [0, sd, 0], P.white));
+    });
   });
-  /* The ramp is a steel plate hinged at the foot of the bow. Down, it lies on the sand in
-     front of the boat; a burnt-out one hangs where the cable parted; a swamped one is
-     still up. It is built standing at the hinge and swung, so every angle is one number. */
-  var ramp = box(0, 0, 0, 2.2, B - 13, H - 2, bc(P.steel, 15), P.steelL, P.steel)
-    .concat(box(-1.5, 0, H - 7, 1.2, B - 15, 1.3, P.steelL, P.steelL));
-  var drop = wreck === 2 ? -.12 : wreck === 1 ? -.75 - r(16) * .5 : -1.47;
-  f = f.concat(pitch(place(ramp, 0, L / 2 - 3, 0, 3), drop, L / 2 - 3, 3));
+  f = f.concat(lcvpText(String(boat), 5.4, function (u, v) { return [H.xT - .06, u, 14.6 + v]; }, [-1, 0, 0], P.white));
+  /* the ensign on its staff at the transom, flying aft; a burnt-out boat has lost it */
+  var fx = H.xT - .7, ft = 33.9;
+  f = f.concat(cyl(fx, 0, 12, .3, .3, ft - 12, 5, P.staff, P.staffL));
+  if (wreck !== 1) {
+    var FL = 9.8, FH = 5.1, sh = FH / 7;
+    for (k = 0; k < 7; k++) f = f.concat(box(fx - FL / 2, 0, ft - (k + 1) * sh, FL, .12, sh, k % 2 ? P.white : P.red, k % 2 ? P.white : P.red));
+    f = f.concat(box(fx - FL * .2, 0, ft - sh * 4, FL * .4, .16, sh * 4, P.navy, P.navy));
+  }
+  /* The ramp. Up, it stands on its hinge against the cheeks; down, it lies forward off the
+     bow at the angle the drawing has it, which on the sand puts its lip in the beach; a
+     burnt-out one hangs where the cable parted, and a swamped one is still up. */
+  var rp = lcvpRamp(P), down;
+  if (o.ramp !== undefined) down = o.ramp === 'up' ? null : o.ramp;
+  else down = wreck === 2 ? null : wreck === 1 ? -.55 - r(16) * .45 : .22;
+  var ang = down === null ? H.lean : Math.PI / 2 + down;
+  f = f.concat(place(pitch(rp, -ang, 0, 0), 0, H.hx, 0, H.hz));
+  /* the cables from the top of the ramp to the sheaves; from there they go down inside the
+     wall to the winch, where nothing outside the boat sees them */
+  [-1, 1].forEach(function (sd) {
+    var tx = H.hx + Math.sin(ang) * H.rl, tz = H.hz + Math.cos(ang) * H.rl;
+    f = f.concat(strut([tx, sd * (H.rw - 1), tz], [lcvpRampX(34) - .6, sd * 14.8, 36.1], .12, P.cable));
+  });
+  /* A burnt-out hull is black in patches rather than all over: the fire takes the paint
+     where the fuel ran and leaves it where it did not. */
+  if (wreck === 1) {
+    var paintK = [P.hull, P.hullL, P.hullD, P.deck, P.deckL, P.well, P.floor, P.floorL, P.arm, P.armL, P.armD];
+    f.forEach(function (q) {
+      if (paintK.indexOf(q.c) < 0) return;
+      var cx = 0, cy = 0, cz = 0;
+      q.v.forEach(function (p) { cx += p[0]; cy += p[1]; cz += p[2]; });
+      cx /= q.v.length; cy /= q.v.length; cz /= q.v.length;
+      var n = Math.sin(cx * .09 + sv * 37) + Math.sin(cz * .21 + cy * .06 + sv * 11) + Math.sin(cx * .031 - cy * .12);
+      if (n > -.3) q.c = n > .9 ? P.burnt : P.burntL;
+    });
+  }
+  if (o.level) return f;
+  /* on the sand: down by the bow on its keel, as a boat lies that has run in and put its men
+     ashore, turned about the forward end of the skeg */
+  f = pitch(f, -H.trim, H.xTun, .3);
   if (wreck === 2) {
     /* broached: lying over with the sea in it */
     f = roll(f, .34 + r(17) * .1, 0, 0);
@@ -39383,7 +39757,7 @@ function craftPostFaces(key, cr) {
      deckhouse, and a post in an LCT uses the forward half of the tank deck, which is dry.
      What stands on the sand is measured back from the bow, because the bow is the end of
      a craft that is on the beach. */
-  var wx0 = lct ? fx - 150 : -fx + 38, wx1 = fx - 14, deck = (lct ? 9 : 5) + dz, top = (lct ? 28 : 23) + dz;
+  var wx0 = lct ? fx - 150 : LCVP.xWell, wx1 = fx - 14, deck = (lct ? 9 : 6.5) + dz, top = (lct ? 28 : 24) + dz;
   var pole = lct ? { x: -fx + 52, y: 14, z: 28 + dz } : { x: -fx + 6, y: 10, z: 16 + dz };
   var kit = ['#4d5340', '#5d6450', '#41473a'], bag = ['#6f6444', '#85795a', '#5f5539'];
   function stack(x, y, n, turn) {
@@ -39402,10 +39776,11 @@ function craftPostFaces(key, cr) {
       boat.push({ v: q.slice().reverse(), c: BUNK.tarpD });
     });
     [wx0, wx1].forEach(function (x) { boat = boat.concat(cyl(x, 0, deck, .8, .8, rz - deck, 6, '#4a3f2e', '#5a4e3a')); });
-    /* the wireless and its aerial: on an LCVP's engine deck; an LCT has a mast already */
+    /* the wireless and its aerial: on an LCVP's after deck behind the port gun tub; an LCT
+       has a mast already */
     if (!lct) {
-      boat = boat.concat(box(-fx + 22, -9, 16 + dz, 9, 7, 6, kit[2], kit[0]));
-      boat = boat.concat(cyl(-fx + 22, -9, 22 + dz, .35, .35, 46, 4, CRAFT.steel, CRAFT.steel));
+      boat = boat.concat(box(-fx + 9.5, -9, 22 + dz, 9, 7, 6, kit[2], kit[0]));
+      boat = boat.concat(cyl(-fx + 9.5, -9, 28 + dz, .35, .35, 46, 4, CRAFT.steel, CRAFT.steel));
     } else boat = boat.concat(box(wx0 + 14, -B / 2 + 18, deck, 12, 9, 8, kit[2], kit[0]));
     /* along the port side, a traverse of bags the height of a man lying down, and inside
        it the bagged stores */

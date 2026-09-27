@@ -78,7 +78,8 @@ The game is 11.7 units to the metre, so one drawing pixel is `11.7 / ppm` units.
 `at` is a model point in model units and `px` the drawing pixel it lands on. Pin something the
 model is certain to have right: the nose at the centreline on the ground, the middle of the
 track on the ground line. `key` may be a `VMODEL` vehicle or a `GUNMODEL` gun (`pack: true` for
-the piece travelling). `up` names fittings to draw (a swapped mount, `skirts`, `mg`, anything in
+the piece travelling). A prop that is no unit's model names its builder instead, `"prop":
+"lcvpModel"` with the `args` to hand it, and its faces are drawn as the hull. `up` names fittings to draw (a swapped mount, `skirts`, `mg`, anything in
 `addUp`, and `hatch` or `open` for the lids shut or open); `crew: true` draws the men.
 
 ## 5. Lay the model over it

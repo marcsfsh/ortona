@@ -302,10 +302,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    sprocket behind, the T80E1 track, the welded hull with its fenders and bins, the cast
    turret with the M67 mount, the 90 mm and its double-baffle brake, the vision cupola, the
    loader's hatch and the .50 on its pintle, and the room under the cupola.
+   It is 2830 for the LCVP rebuilt to its drawing: the V bottom lofted from the forefoot to
+   the semi-tunnel with its keel, skeg, rudder and screw, the side decks and the armoured
+   walls of the well with their plates and rivets, the ramp with its pyramid and cables,
+   the gun tubs with their .30s, the stencil the boats were numbered in, and the ensign.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2800) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2800 kB so it stays quick to load on a phone`);
+if (kb > 2830) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2830 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

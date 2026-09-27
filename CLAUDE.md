@@ -157,8 +157,9 @@ node tools/overlay.mjs tools/ref/hr_251.json --tag=v2                      # eve
 node tools/overlay.mjs tools/ref/hr_251.json --only=side --file=/tmp/old.html
 ```
 
-A spec (`tools/ref/<key>.json`) names the drawing, the model (a `VMODEL` vehicle or a
-`GUNMODEL` gun), the fittings and whether to draw the men, and gives each view its crop, which
+A spec (`tools/ref/<key>.json`) names the drawing, the model (a `VMODEL` vehicle, a
+`GUNMODEL` gun, or a prop's builder, `"prop": "lcvpModel"` with the `args` it is handed, whose
+faces are drawn as the hull), the fittings and whether to draw the men, and gives each view its crop, which
 way the nose points, its pixels per metre (`ppm`, and `ppmv` where a view is stretched) and a pin:
 `at`, a model point in model units, and `px`, the pixel it lands on. What it draws is what a
 draughtsman draws, the creases and the outlines with the hidden lines taken out through a depth
@@ -923,7 +924,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, and 2800 before the M26 Pershing). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, and 2830 before the LCVP was laid to its drawing). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1572,6 +1573,35 @@ for that on the craft's own bearing, and it is a COPY of the building's def with
 changed (`craftDef`), because every reader of a building's size reads `b.def`. The classic
 bar outlines every craft still free while placing; the SIMPLE strip and the brain take the
 one nearest home; a post knocked down frees its craft.
+
+**The Higgins boat is laid over a four-view drawing** (`tools/ref/lcvp.json` for the port side
+with the ramp down, `lcvp_b.json` for the starboard side, the bow and the stern with it up) of
+boat 19 of the Samuel Chase. The sheet has no scale; the side views take theirs off the
+published 36 ft 3 in with the ramp up, 38.3 px/m, and the heights off the end views, whose
+10 ft 10 in over the rubbing strakes puts them at 40.9. The box it replaced was 23 units to the
+top of its sides and had none of what the drawing is about. `lcvpModel(wreck, sv, o)` builds it
+the way the drawing has it, afloat and level on its boot top with the keel falling away aft,
+off tables of stations along the boat (`LCVP`): a V bottom that sweeps up to the ramp's hinge
+at the bow, the keel ending in the semi-tunnel over the screw with the skeg under it to the
+heel of the rudder; narrow side decks with the armoured walls of the well standing up off
+them to a peak either side of the ramp, the two riveted plates a side under the rubbing
+strake; the ramp on the same raked line as the cheeks, with the shallow pyramid over its
+outer face and the two stiffeners every view of the drawing has; the engine under a louvred
+hatch aft of the well; two gun tubs with an M1919A4 each, the coxswain's wheel low between
+them where neither side view sees it, the drum for the kedge's cable and the ensign on its
+staff. Then it puts the boat down on its keel, trimmed eight hundredths of a radian by the bow
+about the forward end of the skeg (`LCVP.trim`), which is how a boat lies that has run in, and
+lowers the ramp until its lip is in the sand. Each boat is numbered in the stencil the ships
+painted them in (`LCVPGL`, `lcvpText`), the transport's hull number off one of the four that
+landed the Dog and Easy waves and its own number off the craft's seed, and carries the wave's
+diamond; `o.level` and `o.ramp` are the drawing's attitude, for the overlay. The overlay agreed
+with the drawing about the hull number, the diamond, the armour seams and the ramp's stiffeners
+on the first run and found five things: a cable run over the coaming that the drawing does not
+show, the pyramid's apex a third too high, the tubs two units too tall for the side views, a
+screen at the coxswain's station neither side view has, and the lifting eye two units high.
+The two side views disagree with the rear about the tubs' height (22.6 against 27.2), and the
+tubs stand at 24 between them. `craftPostFaces` stands the post's wireless aft of the port tub
+and its tarpaulin over the well at the new wall height.
 
 **The wall can be manned at the whistle.** ATLANTIC WALL on the title screen is shown only
 for a map with a `garrison` written into it, and MANNED puts that garrison in: a Pak in each
