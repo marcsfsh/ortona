@@ -5001,6 +5001,87 @@ for (const device of TARGETS) {
      `the eye ${s3.eyeUp} up out of the hatch and ${s3.eyeIn} at the band; ${s3.blown} of 40 wrecks threw the turret; killed, it ` +
      `left ${s3.bodies} bodies of ${s3.bodyNat}; Ortona's motor pool makes ${s3.ita} and ${s3.itaField ? 'WOULD field' : 'does not field'} the M3`);
 
+  /* --- The M26 Pershing. The 29th fields it over and above the M4A1, the way the 352nd fields
+     the Panther: the motor pool lists it beside the M4A1 with its army written on it and queues
+     it by its own key, and Italy's motor pool does not make it. It is in olive drab, the man in
+     its cupola is a tanker, the 90 mm stands well out past the nose, and the turret comes all
+     the way round. Most of the row is the plate and the gun against the two German tanks on
+     the beach: four inches at forty-six degrees in front that a Panzer IV's round opens less
+     than two times in three and a side it opens every time, and a 90 mm that goes through a
+     Panther's front most of the time and a Panzer IV's every time. The eye is up out of the
+     cupola and drops when the lid shuts, forty wrecks throw the turret some of the time, and
+     killed it leaves American bodies. --- */
+  const m26 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(mot).join(',');
+    out.fielded = W.fielded('am_m26');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = mot.queue.length, m0 = W.madeOf('us', 'am_m26');
+    out.q = W.queueUnit(mot, 'am_m26') ? mot.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_m26') - m0;
+    mot.queue.length = q0;
+    const t = W.spawnUnit('us', 'am_m26', hq.x + 140, hq.y - 220, 0);
+    const V = W.VMODEL.am_m26, B = W.MODELS.veh.am_m26, H = W.HATCHES.am_m26, A = W.KIT.usa;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf && B.inside);
+    out.od = V.hull.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.turOd = V.tur.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.tanker = H.open.filter(f => f.c === A.hide).length;
+    out.m1 = H.open.filter(f => f.c === A.helm || f.c === A.helmD).length;
+    const nose = Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => p[0]))));
+    out.reach = +(V.turX + V.bar - nose).toFixed(1);
+    t.facing = 0; t.turret = 0; t.want = Math.PI - .05;
+    for (let i = 0; i < 14; i++) W.updateModels(t, 1.0);
+    out.lay = +Math.abs(W.angDiff(t.turret, Math.PI - .05)).toFixed(3);
+    t.turret = 0; t.want = undefined;
+    /* the plate and the gun against the two German tanks, at three hundred */
+    const d = 300, front = W.armourAt(t, t.x + d, t.y), side = W.armourAt(t, t.x, t.y + d);
+    out.front = +front.toFixed(1); out.side = +side.toFixed(1);
+    const pc = (w, a) => +W.penChance(W.penAt(w, d), a).toFixed(2);
+    out.pP4 = pc(W.UNITS.hr_p4.w, front); out.pP4S = pc(W.UNITS.hr_p4.w, side);
+    const pan = W.spawnUnit('ger', 'hr_panther', hq.x + 400, hq.y - 220, 0);
+    const p4 = W.spawnUnit('ger', 'hr_p4', hq.x + 400, hq.y - 340, 0);
+    out.onPan = pc(t.def.w, W.armourAt(pan, pan.x + d, pan.y));
+    out.onP4 = pc(t.def.w, W.armourAt(p4, p4.x + d, p4.y));
+    out.m4OnPan = pc(W.UNITS.am_sher.w, W.armourAt(pan, pan.x + d, pan.y));
+    W.killUnit(pan); W.killUnit(p4);
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.setNation('can', 'fj');
+    out.ita = W.makesOf(mot).join(',');
+    out.itaField = W.fielded('am_m26');
+    W.setNation('usa', 'heer');
+    W.killBuilding(mot);
+    return out;
+  });
+  ok('Omaha: the 29th fields the M26 beside the M4A1, in olive drab, its 90 mm through a Panther\'s front',
+     /am_m26/.test(m26.makes) && /am_sher/.test(m26.makes) && m26.fielded && m26.q === 'am_m26' && m26.made === 1 &&
+     m26.bufs && m26.od > 80 && m26.turOd > 20 && m26.tanker > 0 && m26.m1 === 0 && m26.reach > 20 && m26.lay < .05 &&
+     m26.pP4 > .2 && m26.pP4 < .7 && m26.pP4S === 1 && m26.onPan > .6 && m26.onP4 === 1 && m26.onPan > m26.m4OnPan &&
+     m26.eyeUp > 30 && m26.eyeUp < 40 && m26.eyeIn > 22 && m26.eyeIn < m26.eyeUp - 4 &&
+     m26.blown > 2 && m26.blown < 30 && m26.bodies >= 1 && m26.bodyNat === 'usa' && !/am_m26/.test(m26.ita) && !m26.itaField,
+     `the motor pool makes ${m26.makes}; asked for the M26 it queues ${m26.q}, counted as ${m26.made} made; buffers ` +
+     `${m26.bufs ? 'all built' : 'MISSING'}; ${m26.od} hull and ${m26.turOd} turret faces in olive drab; the man in the cupola has ` +
+     `${m26.tanker} faces of tanker's helmet and ${m26.m1} of M1; the muzzle ${m26.reach} past the nose; asked to lay over the tail ` +
+     `the turret is ${m26.lay} short; plate ${m26.front} in front and ${m26.side} on the side; at 300 the Panzer IV's round goes through ` +
+     `the front ${m26.pP4} and the side ${m26.pP4S}; the 90 mm goes through a Panther's front ${m26.onPan} (the M4A1's 75 ${m26.m4OnPan}) ` +
+     `and a Panzer IV's ${m26.onP4}; the eye ${m26.eyeUp} up out of the cupola and ${m26.eyeIn} with the lid shut; ${m26.blown} of 40 ` +
+     `wrecks threw the turret; killed, it left ${m26.bodies} bodies of ${m26.bodyNat}; Ortona's motor pool makes ${m26.ita} and ` +
+     `${m26.itaField ? 'WOULD field' : 'does not field'} the M26`);
+
   /* --- The engineers. The Americans' engineer squad on the beach stands in for the Canadian
      section the way the rifle squad does: the headquarters makes it and refuses the
      Canadian one, the Allied side opens the battle with one, its three men are the three

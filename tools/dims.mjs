@@ -62,6 +62,14 @@ const REAL = {
                (tools/ref/am_e8.json) puts the top of the cupola at 2.91 m, which is the height taken, and
                the brake a few centimetres past 7.54. The welded hull is the full width of the sponsons from
                the fenders to the roof, 2.61 m in the plan */
+  am_m26:    { name: 'M26 Pershing (90 mm)', len: 6.34,  gun: 8.65,   wid: 3.51,  hgt: 2.78,
+               body: 3.43, bodyZ: 1.44, roof: 2.18, clear: 0.44 },   /* 20 ft 9.5 in long over the fenders,
+               28 ft 4.5 in with the 90 mm forward, 11 ft 6 in wide over the fenders, 9 ft 1.5 in to the cupola
+               and 17.2 in of clearance. The two sheets it is laid over (tools/ref/am_m26.json and am_m26_b.json)
+               draw the cupola at 2.66 and 2.72 m against their own lengths, which is the height taken off the
+               published figure rather than off them. The body is over the stowage bins on the fenders, 3.43 m
+               in the plan of the T26E4; the roof is the upper hull between them, 2.24 m in that plan and 2.12 in
+               the T26E5's */
   us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
                body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
                widest point is not its tracks: the sponsons stand eight inches proud of them each
@@ -187,6 +195,8 @@ const PROBE = {
   am_sher:   { bodyZ: 16.0, roofZ: 22.0, xLo: -5.0, xHi: -1.0, straddle: true, topZ: 9.3 },   /* the slice is
                taken under the turret, where the roof is flat and nothing is strapped to the sides; topZ
                holds the periscope heads out of a height measured to the top of the hatch */
+  am_m26:    { bodyZ: 16.8, roofZ: 18.7, xLo: 1.0, xHi: 4.0, straddle: true, topZ: 13.8 },   /* the slice is taken
+               through the second bin on each fender; topZ holds the lid's periscope and the aerial out */
   us_ach:    { bodyZ: 22.0, topZ: 8.0 },   /* bodyZ is a hand's breadth under the deck, above the
                tools and the jerricans and below the lifting eyes, where the side plate is bare.
                topZ keeps the turret crew out of the height: three of them stand in an open turret

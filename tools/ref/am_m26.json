@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m26.png", "key": "am_m26", "up": ["hatch", "mg"], "crew": false,
+  "note": "A four-view of the T26E4, 935 by 1024 px with no scale on the sheet: the M26's hull, running gear and turret casting with the long T15 gun, its two spring equilibrators over the mantlet and a counterweight on the back of the turret, none of which the model carries. The side is taken off the 3.84 m of track on the ground, 331.6 px between the first and last road wheel centres, which puts the hull at the published 6.34 m; the plan off the 3.51 m over the fenders, 305 px; the front and rear off the 110 in between the track centres, 248 and 244 px, which agrees with the width over the fenders in the front view. Every view is drawn about four per cent short in height against its own width: the cupola stands 228 px over the ground in all three, which at the horizontal scale is 2.66 m against the published 2.78 m, so the three take a vertical scale of their own off that height.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 935, 305], "ppm": 86.5, "ppmv": 82.4, "at": [0, 0, 0], "px": [642.1, 301.0], "k": 2 },
+    "plan":  { "nose": "left", "crop": [0, 700, 935, 324], "ppm": 86.5, "ppmv": 87.0, "at": [0, 0, 0], "px": [642.1, 866.0], "k": 2 },
+    "front": { "crop": [160, 300, 335, 330], "ppm": 88.7, "ppmv": 82.4, "at": [0, 0, 0], "px": [330.4, 620.5], "k": 3 },
+    "rear":  { "crop": [580, 300, 340, 330], "ppm": 87.5, "ppmv": 82.4, "at": [0, 0, 0], "px": [745.3, 618.8], "k": 3 } } }

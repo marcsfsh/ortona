@@ -297,10 +297,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    welded hull with the scooped fenders, the drivers' hatches and the exhaust deflector, the
    T23 turret with the M62 mount, the 76 mm and its brake, the vision cupola and the .50 on
    its post, and the vehicle-swap plumbing that draws it.
+   It is 2800 for the M26 Pershing: the six stations a side on torsion arms with their
+   housings, bump stops and shock absorbers, the return rollers, the idler in front and the
+   sprocket behind, the T80E1 track, the welded hull with its fenders and bins, the cast
+   turret with the M67 mount, the 90 mm and its double-baffle brake, the vision cupola, the
+   loader's hatch and the .50 on its pintle, and the room under the cupola.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2750) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2750 kB so it stays quick to load on a phone`);
+if (kb > 2800) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2800 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

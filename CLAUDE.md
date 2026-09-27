@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -923,7 +923,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, and 2750 before the Easy Eight). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, and 2800 before the M26 Pershing). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1262,7 +1262,15 @@ again as the M8's, so at two hundred the 234/1's 2 cm and the Wirbelwind's seldo
 opens the M8 more than twice as often, the KS 750's MG 34 never does and a Panzer IV's round always does.
 The eye is up out of the hatch and drops to the band under the roof when the lid shuts, forty wrecks
 throw the turret some of the time, killed it leaves American bodies, and Ortona's motor pool does not
-make it.
+make it. The M26 is asked it in a twenty-second, the second unit the Americans field over and above:
+the motor pool makes it beside the M4A1 and queues it by its own key, it is in olive drab, the man in its
+cupola wears the tanker's helmet and no M1, the 90 mm stands more than twenty units past the nose, and a
+turret asked to lay over the tail comes all the way round. Most of the row is the plate and the gun at
+three hundred: a Panzer IV's round goes through its front between one time in five and two in three and
+through its side every time, and its 90 mm goes through a Panther's front more than three times in five,
+more often than the M4A1's 75 does, and a Panzer IV's every time. The eye is up out of the cupola and drops
+when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves American bodies, and
+Ortona's motor pool does not make it.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1971,9 +1979,16 @@ per cent to 0.14 and halted men behind something 43.9 to 54.8, because a man who
 the masonry now stands beside it.
 
 **And the other way about from wire: a hedgehog holds a tank up and lets a man walk
-between.** A Czech hedgehog is three lengths of angle iron welded through each other at
+between.** A Czech hedgehog is three lengths of angle iron crossed through each other at
 their centres, which makes a star that stands on three points whichever way up it lands;
-it cannot be pushed flat and what it fouls is a belly rather than a track. A dragon's
+it cannot be pushed flat and what it fouls is a belly rather than a track. It is built to
+the Czechoslovak army's drawing of 1937 (`hedgehogModel`): three angles of 140 by 140 by 13 mm
+and 1.8 m long, each laid with its two legs into a different octant so that from any side one of
+them reads as the L it is, and six octagonal gusset plates 550 mm across with their corners cut
+205 mm back, one either side of the two flanges lying in each of the three planes, with the bolts
+through them. Before that it was three square bars and a cube. The full-size one stands on the
+beach; the belts inland are laid in a smaller one without the bolts, because a belt runs to
+hundreds of them and a bolt head there is a pixel. A dragon's
 tooth is a metre of concrete laid in ranks that step up toward the enemy, so a hull that
 climbs the first rank grounds itself on the second. `hogg` is the grid for both: free to
 anything on foot and twelve times over to anything driving, and a hull that takes the
@@ -4782,6 +4797,68 @@ under ten seconds untouched, the Rangers 92 per cent of the time and the Wirbelw
 goes through the front but whose front the 37 mm seldom opens either. The Greyhound loses the 234/1 fight
 a third of the time and the 251 fight a fifth, so the M3 is priced above it, at 290 marks and 55 of fuel
 against the M8's 240 and 35, and it is slower on tracks (124 against 150) and sees a little less far.
+
+**The M26 Pershing is the 29th's heavy tank**, fielded over and above the rest the way the Panther is
+across the beach (`am_m26`, `nat: 'usa'`, on the motor pool's list after the M4A1 and passed through
+`fielded`): the 90 mm M3 in the M67 mount on a welded hull with four inches of plate at forty-six degrees
+in front, six stations a side on torsion bars. It has a rung on the brain's ladder after the M4A1s and
+before the Achilles, and `aiCutLadder` counts it among the things that kill a heavy, so it comes forward
+when the 352nd has a Panther. On `tools/dims.mjs` it reads 6.39 m long against 6.34, 8.63 with the gun
+against 8.65, 3.50 wide over the fenders against 3.51, 2.73 to the cupola's ring against 2.78 to its lid,
+3.43 over the bins, 2.26 across the roof and 0.44 of clearance.
+
+**It is laid over two sheets** (`tools/ref/am_m26.json` and `am_m26_b.json`): a four-view of the T26E4
+and a side and plan of the T26E5. Both are the M26 in the hull, the running gear and the turret casting,
+and neither is the M26 at the front: the T26E4 is the Super Pershing, with the long T15 gun, its two
+spring equilibrators over the mantlet, a counterweight on the back of the turret, no front fenders and a
+box of appliqué armour on the glacis that the plan shows as a slab a metre long, and the T26E5 has the
+thicker mantlet. So the running gear, the hull height and the turret are taken off the T26E4, the nose,
+the glacis and the front fenders off the T26E5, and the gun is the M3 at the published 8.65 m. Neither
+sheet carries a scale. Each is taken off the 3.84 m of track on the ground along the hull, and off the
+110 in between the track centres across it, which puts the width over the fenders at 3.51 m in all four
+of its views. Both sheets draw the cupola short against their own lengths, at 2.66 and 2.72 m where the
+published figure is 2.78, with round road wheels, so their views take a vertical scale of their own off
+that height. The first draft, off photographs and those figures, was out in six places the drawings
+could see. The hull roof stood a unit low at 1.50 m where both sheets have it at 1.60. The glacis was
+set three units too far forward, and the upper hull was two units a side too wide for the roof the plan
+draws. The return rollers stood a unit low. The turret was half a unit short with its cupola half a unit
+low, and the bow gun sat a unit and a half too near the centre line.
+
+What carries it, and each is built its own way. **The running gear is six stations a side on torsion
+arms** (`m26Station`), each a pair of pressed discs with the track's guides running between them
+(`m26Pair`, the Easy Eight's `e8Wheel`), the arm trailing from a housing on the hull side with a bump
+stop over it and a shock absorber on the first two stations and the last, five return rollers over them
+(`m26Roller`), the idler in front on its crank (`m26Idler`) and the sprocket behind with two rings of
+thirteen teeth (`m26Sprocket`), and the T80E1's steel shoe with its rubber chevron (`m26Link`). **The
+hull is two prisms** (`m26Shell`): the upper hull the width of the roof from the top of the glacis to the
+rear plate, flat to the engine deck and falling a tenth of a metre from there to the tail (`m26DeckZ`,
+`onM26Deck`), and the lower hull between the tracks carrying the glacis down to the nose and the lower
+plate back from it at fifty-three degrees to the belly; anything on the glacis goes on through
+`onM26Glacis`. **The fenders are a plate at the top of the track with a lip down its edge and the bins
+standing on it** (`m26Fenders`), four a side with their lids and hasps, and over each idler a deep guard
+whose side is a panel running down from the fender to a point over the front of the idler and back along
+its foot to the lip, which is the T26E5's outline. The glacis carries the bow gun's ball on the right,
+the two headlamps in their guards, two spare shoes and the shackles on the nose, and the roof behind it
+the two drivers' hatches (`m26Front`); the deck the radiator grilles, the engine hatches and the grille
+across the tail (`m26Deck`); the rear plate the two silencers under their guards (`m26Rear`). **The
+turret is a casting lofted from a plan** (`m26TurretPlan`, through the M4A1's `m4TurRing` with a scale
+table of its own, `M26T.K`) with a long bustle, the broad flat mantlet of the M67 mount, the 90 mm with its
+double-baffle brake, the vision cupola on the right with its six blocks and a round lid hinged at the back
+(`m26Hatch`), the loader's hatch on the left, spare shoes hung on the sides, and the .50 on a pintle
+between the hatches as its fitting (`m26Fifty`, thin to the bake for the Easy Eight's reason). The room
+under the cupola (`VIN.am_m26`) is the M4A1's `m4Room` laid out again in the longer casting.
+
+**Its numbers are the Panther's answer, and the card says it is a coin flip.** At 920 hit points and
+230 of plate, a little over the Panther's 220 as four inches at forty-six degrees is a little over
+eighty millimetres at fifty-five, a side of half that (`flank` .5), and the 90 mm at 150 a round every
+4.0 seconds with 270 of penetration out to 460, 540 marks and 140 of fuel and 18 of population, over
+twenty-four runs head on it takes the Panther 46 per cent of the time, and with itself caught side-on
+the Panther takes it half the time, because a hull comes round in a second or two. At 160 a round it
+took the Panther two times in three, because a Panther then fell to six hits where it needs seven to
+kill an M26. Over twelve runs a row it takes the Panzer IV, the Puma, the 234/1, the Wirbelwind, the
+251, the grenadier squad and the Knight's Cross Holders every time, the last with a quarter of itself
+gone to their bundles, and a Pak 38 sited at 520 takes it 8 per cent of the time where it takes an M4 a
+quarter of the time.
 
 **And a bunker's fittings go through `natKey`.** `finishBunkerUp` spawned the key the fitting was
 written with, so an American bunker's anti-tank casemate was a Canadian 6-pounder and the manned

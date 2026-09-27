@@ -224,6 +224,13 @@ const CARD = [
   ['hr_kch', 'am_stuart'],
   ['am_ranger', 'am_stuart'],
   ['hr_pak', 'am_stuart'],
+  /* the M26, which the 29th fields over and above the M4A1: the Panther is the row it is for,
+     and the Panzer IV, the Puma and the Knight's Cross Holders are what it meets on the way */
+  ['am_m26', 'hr_panther'],
+  ['am_m26', 'hr_p4'],
+  ['am_m26', 'hr_234', { b: ['puma'] }],
+  ['am_m26', 'hr_kch'],
+  ['am_ranger', 'am_m26'],
   ['us_m3', 'ger_h251'],
   ['us_rifle', 'ger_sd222'],
   ['us_ab', 'ger_p4'],

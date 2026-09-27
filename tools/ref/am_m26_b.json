@@ -1,0 +1,5 @@
+{ "image": "shots/ref/am_m26_b.png", "key": "am_m26", "up": ["hatch"], "crew": false,
+  "note": "A side and plan of the T26E5, 736 by 886 px with no scale on the sheet: the M26 with a thicker mantlet and the M3 90 mm. The side is taken off the 3.84 m of track on the ground, 304.5 px between the first and last road wheel centres, and the plan off the same scale along the hull; the height to the cupola is 215.6 px, which is the published 2.78 m at 77.6 px/m.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 736, 260], "ppm": 79.4, "ppmv": 77.6, "at": [0, 0, 0], "px": [455.2, 249.6], "k": 2 },
+    "plan":  { "nose": "left", "crop": [0, 290, 736, 320], "ppm": 79.4, "at": [0, 0, 0], "px": [455.2, 440.0], "k": 2 } } }
