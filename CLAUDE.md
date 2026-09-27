@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the heavy batteries, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 105 mm howitzer, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -353,7 +353,7 @@ prints what a sound actually is.
 ```sh
 node tools/audio.mjs                 every sound, the roster, a montage, a firefight
 node tools/audio.mjs rifle mg        two of them
-node tools/audio.mjs us_how8         one piece off the roster, in its own voice
+node tools/audio.mjs am_105          one piece off the roster, in its own voice
 node tools/audio.mjs --tag=before    keep a set to compare against
 ```
 
@@ -3315,7 +3315,7 @@ Wirbelwind), with their models, their interiors and hatches, the seven upgrades 
 and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
-own for yet: the two mortars, the two pack howitzers, the two heavy batteries, the T8, the
+own for yet: the two mortars, the two pack howitzers, the 210/22, the T8, the
 Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
@@ -6117,8 +6117,9 @@ second in the turn-to-target is the mortar's, and the only two pieces that carry
 `layTol`, which until now only `barrageTick` ever read. With free fire they do pick
 targets, and an eight-inch howitzer that came round at 0.85 on a target it chose and 0.20
 on a mission it was given would be a different gun depending on who laid it. Measured by
-the gate: laid the other way about it takes 15.4 seconds to come round against the 15.7
-its own traverse says, where a mortar takes 3.5.
+the gate on the eight-inch the 105 replaced, laid the other way about it took 15.4 seconds
+to come round against the 15.7 its own traverse said, where a mortar takes 3.5. Every turn
+goes through `layOn` now, which reads the same numbers whoever laid the gun.
 
 The reaches are chosen against this map rather than by feel. A headquarters stands 1150
 from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
@@ -6136,12 +6137,15 @@ brake. Both are laid up at the elevation a gun that only fires indirect sits at,
 what tells the class from the anti-tank guns at a glance: those have long thin barrels held
 level on the same sort of carriage.
 
-**And the heavy battery, which is a position rather than a unit.** `us_how8` (the M1
-8-inch) and `ger_how210` (the Obice da 210/22 mod. 35) are never queued: `WORKS.how8` and
-`WORKS.how210` are how they arrive, the engineers spend eighty seconds and a lorry-load of
-fuel bedding one in, and it stands where it was bedded for the rest of the battle. Four
-rules make it a decision rather than a bigger pack howitzer, and each of them is a refusal
-that has to be counted rather than assumed:
+**And the heavy battery, which is a position rather than a unit.** `am_105` (the 105 mm
+M2A1 on the M2A2 carriage) and `ger_how210` (the Obice da 210/22 mod. 35) are never queued:
+`WORKS.how105` and `WORKS.how210` are how they arrive, the engineers spend a minute or more
+and a lorry-load of fuel digging one in, and it stands where it was dug for the rest of the
+battle. The American one was the M1 8-inch until it was rebuilt to a drawing as the 29th
+Division's own field howitzer (below); `RETIRED` hands `us_how8` to `am_105` and `WRETIRED`
+hands the old `how8` work to the new one, so a brain out of an older revision still digs a
+battery. Four rules make it a decision rather than a bigger pack howitzer, and each of them
+is a refusal that has to be counted rather than assumed:
 
 - **One a side** (`limit: 1` on the unit, which `placeWork` already enforced for the
   eighty-eight). A second battery is not a second decision.
@@ -6153,21 +6157,65 @@ that has to be counted rather than assumed:
   two-hundred-kilogram shells into a headquarters wins an annihilation match without an
   infantryman leaving home. Guns of this weight fired on map references onto ground
   somebody was fighting over; they did not break up a rear area on a whim.
-- **Slow onto a bearing** (`def.traverse`, a fifth of a radian a second against the
-  mortar's 0.85, with `def.layTol` for how close it has to be before it will fire). Laid
-  behind itself the gun takes fifteen seconds before the first round leaves, which the
-  check row measures against the arithmetic rather than trusting.
+- **Slow onto a bearing** (`def.traverse`, a quarter of a radian a second against the
+  mortar's 0.85, with `def.layTol` for how close it has to be before it will fire). The 105
+  has a carriage as well (`def.carr`, below). Laid behind itself the gun takes ten to twelve
+  seconds before the first round leaves, which the check row measures against the
+  arithmetic rather than trusting.
 
-And it is the least accurate weapon in the game by a long way: a hundred and ninety units
-of beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that
-so the round-to-round scatter is the gun's own rather than the mortar's flat ten. What it
-has instead is the shell -- three hundred damage over a hundred and thirty of burst, which
-is the heaviest thing either side can put on the ground.
+The 210/22 is the least accurate weapon in the game by a long way: two hundred units of
+beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that so
+the round-to-round scatter is the gun's own rather than the mortar's flat ten. What it has
+instead is the shell -- 335 damage over a hundred and forty of burst, which is the heaviest
+thing either side can put on the ground. The 105 is a field howitzer and not a heavy one:
+160 over eighty, eight rounds to a mission against five, a circle of a hundred and ten, a
+reach of 950 against 1150, and 400 marks and 120 of fuel against 450 and 175. So the two
+batteries are the two ends of a trade, which the eight-inch and the 210 never were: the
+American gun is the rate and the pattern, and the Italian one the weight.
+
+**A split trail traverses twice** (`layOn`). The M2A2's top carriage turns on the bottom one
+twenty-three degrees either way (`def.carr`, .40) at `def.carrRate`, and only past that are
+the trails heaved round at `def.traverse`, carrying the arc with them. So a mission inside
+the arc the trails were dug in on is laid in well under a second, and one behind the gun
+pays the trails' rate for the half turn less the arc. `u.baseA` is the trails and `u.facing`
+the top carriage: the bottom carriage, the wheels and the trails are drawn on the first and
+the shield, the cradle and the tube on the second, which is the eighty-eight's and the
+210's two-piece draw with a rule between the two pieces. Every turn a crew-served piece
+makes goes through `layOn` -- onto a mission, onto a target it chose under free fire, and
+onto the known threat while it is idle -- so a piece with no `carr` turns whole at its own
+`traverse` in all three, and the Nebelwerfer and the 210 now face a threat at their own rate
+where they used to take the mortar's.
+
+**The 105 is laid over a four-view drawing of the M2A1 firing** (`tools/ref/am_105.json`,
+with the trails spread and the tube at about twelve degrees). The sheet has no scale; every
+view agrees with the published 2.21 m over the wheels and the 1.73 m to the top of the
+shield at 48.3 pixels to the metre, and the tube it gives from the breech to the muzzle is
+2.63 m against the published 2.574, which is the check. Three builders for the three
+pieces (`h105Bottom`, `h105Top(el)`, `h105Tube(el)`, and `h105Show` for the overlay, which
+draws the lot at the drawing's elevation): the 9.00-20s on their disc wheels, the axle and
+the body between them, the box trails tapering from the hinge with the spade leaning back
+into the ground, the lunette on its bracket on the right and the handspike in the left;
+the lower shield hung in front of the axle; the top carriage open in the middle so the
+breech has somewhere to go when the tube is up; the cradle with its elevating arc, the two
+equilibrators standing in front of the shield, the shield as an outer wing over each wheel
+and a lower inner panel either side of the cradle, the traverse and elevation handwheels on
+the side of the top carriage, and the panoramic telescope on the gunner's side standing
+level whatever the tube does; and the tube with its breech ring, the sleigh closed over its
+back half with two bands at the front, and the recoil cylinder under it. The first overlay
+had the tube, the wheels, the trails and the shield on the drawing's lines, and three
+things off it: the sleigh was a pair of cylinders side by side under a bare tube where the
+drawing has one cylinder under a body that stands 0.11 m over the tube, the lunette stood
+half a metre too far out, and the handspike lay along the top of the trail where the front
+and rear views have it standing up out of the end. In the game the tube is laid at 0.45
+radians (`H105.el`), and it recoils down the line of its own bore (`GUNMODEL.recEl`) rather
+than straight back along the ground, which a tube laid up at twenty-six degrees and run back
+level would do through its own cradle.
 
 **The two rules meet in the middle, and that is the finding worth keeping.** Dug on the
-first legal patch beyond `minHq`, the American gun is 1575 from the German headquarters
-and its reach is 1250: the range and the minimum distance from home already keep it off
-the enemy base without `safe` ever being consulted. The no-fire zone is what stops a
+first legal patch beyond `minHq`, the eight-inch was 1575 from the German headquarters
+and its reach was 1250: the range and the minimum distance from home already kept it off
+the enemy base without `safe` ever being consulted, and the 105's shorter reach keeps it
+further off still. The no-fire zone is what stops a
 player walking the battery forward until it can. The check row had to stand the gun
 forward deliberately to ask the question at all, because from where it is dug the answer
 is 'out of range' and the rule under test is never reached.
@@ -6194,10 +6242,11 @@ battery is near certain.
 
 Three smaller things about the emplacement. The **crew are laid out by the work**
 (`WORKS[].lay`, the eighty-eight's own list generalised) rather than walking to cover,
-because the pit is the cover. The **gun is two pieces the way the eighty-eight is**: the
-platform is drawn once on `u.baseA` and does not turn, the gun on top of it is drawn on
-`u.facing` and does, and that is the only thing on screen that shows a battery taking a
-minute to come round -- with an arc drawn on the ground from the present lay to the
+because the pit is the cover; the 105's are round the breech and between the trails, with
+the two bringing rounds up outside the right trail by the boxes. The **gun is two pieces
+the way the eighty-eight is**: the platform (or the trails) is drawn on `u.baseA` and the
+gun on top of it on `u.facing`, and that is the only thing on screen that shows a battery
+taking its time to come round -- with an arc drawn on the ground from the present lay to the
 mission's bearing, because a battery that has been given an order otherwise looks exactly
 like a battery that has ignored one. And **the position is not a ring of bags built
 bigger**: that was tried, and a bag laid on an arc at about five units means a ring of
@@ -7090,8 +7139,8 @@ is the held flag nearest the enemy's headquarters. Every refusal on the way (the
 limit, the exclusion round home, the population, the room) is `placeWork`'s own and it says
 so itself; `workFull` is the limit, asked by the strip to dim the button and by `placeWork`
 to refuse, so there are not two readings of it. Measured by the gate: the button arms and
-lights, his tap sites the eight-inch position where his finger went, 790 from home against
-a floor of 700, with an engineer on it, for 460 and 170; the button then reads 1 and dims,
+lights, his tap sites the 105's position where his finger went, 790 from home against
+a floor of 700, with an engineer on it, for 400 and 120; the button then reads 1 and dims,
 and tapping it again arms nothing and leaves the one site.
 
 **Field upgrades are fitted for the player by a setting, and each vehicle has its own word
