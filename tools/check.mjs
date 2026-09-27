@@ -1790,6 +1790,16 @@ for (const device of TARGETS) {
     const u = window.POV.u;
     return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
   }, [drv0.x, drv0.y]);
+  /* And the steer leg starts where the drive leg did, on the heading the drive left it on.
+     The drive takes the tank a hundred and eighty units or more along whatever bearing it
+     was parked on, which is most of the clear going the staging asked for, and on one phone
+     run the steer that followed turned 0.14 radians of three seconds against 0.42 and 1.77
+     on the runs either side of it on the same file: a hull pressed against whatever ended
+     its drive. The aim row below puts it back for the same reason. */
+  await page.evaluate(([x, y, f]) => {
+    const u = window.POV.u;
+    u.x = x; u.y = y; u.facing = f; u.turret = f; u.dest = null; u.path = null; u.sp = 0; u._matT = null;
+  }, [drv0.x, drv0.y, drvA.f]);
   await page.evaluate(() => { window.DRV.padT = .35; window.DRV.padS = 1; });
   await unpin();
   await fastForward(page, 3);

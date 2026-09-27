@@ -301,20 +301,23 @@ function GEO(opt) {
   /* ---------------- rig: the record manFaces hands over ----------------
      The rig returns faces, joints, muzzle, eye and anchors; the sections that need a
      part by name read `parts` off the same record, and say so when it is not there. */
-  function rigPose(P) {
-    if (P.name === 'walk') return WALK(P.frame / P.cycle.n);
-    if (P.name === 'run') return RUN(P.frame / P.cycle.n);
+  /* a variant's own stances and gaits where the file gives it some (`stanceOf`, `gaitOf`),
+     and the shared table on a file from before there were any */
+  function rigPose(P, variant) {
+    const own = typeof window.stanceOf === 'function';
+    if (P.name === 'walk') return (own ? gaitOf(variant) : WALK)(P.frame / P.cycle.n);
+    if (P.name === 'run') return (own ? gaitOf(variant, true) : RUN)(P.frame / P.cycle.n);
     if (P.name === 'prone') return PRONE();
     if (P.name === 'crawl') return CRAWL(P.frame / P.cycle.n);
     if (P.name === 'fall') return FIGPOSE['fall' + P.frame];
-    return FIGPOSE[P.name];
+    return own ? stanceOf(variant, P.name) : FIGPOSE[P.name];
   }
   function rig(variant, P) {
     const V = SOLDIER_VARIANTS[variant];
-    const r = P.name === 'dead' ? deadFaces(variant, P.frame) : manFaces(variant, rigPose(P));
+    const r = P.name === 'dead' ? deadFaces(variant, P.frame) : manFaces(variant, rigPose(P, variant));
     const faces = r.faces || r, joints = r.joints || {}, parts = r.parts || {};
     const flat = P.name === 'prone' || P.name === 'crawl' || P.name === 'dead';
-    const pose = rigPose(P) || {};
+    const pose = rigPose(P, variant) || {};
     const weapon = parts.weapon || [];
     const body = faces.filter(f => weapon.indexOf(f) < 0);
     const hipZ = joints.hipL ? Math.min(joints.hipL[2], joints.hipR[2]) : 0;

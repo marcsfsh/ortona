@@ -35268,8 +35268,8 @@ var KIT = {
      poplin, the trousers a mustard olive-brown well darker than it, the leggings and the
      web the palest khaki on him, and the shoes a light russet rough-out on a dark sole.
      `sleeve` is how much fuller than the rig's own arm the jacket's sleeve is cut. */
-  usa: { coat: '#7a5d40', coatD: '#5e4731', trous: '#705322', boot: '#b8663a', sole: '#2e251c', sleeve: 1.1,
-         web: '#b4966a', webD: '#8e744e', pack: '#a8885a', canvas: '#b8955e', gaiter: '#cca66a', lace: '#453a2b',
+  usa: { coat: '#73573a', coatD: '#5a432e', trous: '#6a4f20', boot: '#b8663a', sole: '#2e251c', sleeve: 1.1,
+         web: '#b4966a', webD: '#8e744e', pack: '#a8885a', canvas: '#b8955e', gaiter: '#c6a165', lace: '#453a2b',
          gas: '#665838', gasD: '#50452d', chev: '#c4b68a', chevB: '#2c3040',
          helm: '#4d5038', helmD: '#383b2a', liner: '#2c2b22', patch: '#3f526e', patch2: '#8b8d88', band: '#6d6849', shirt: '#76603a',
          tool: '#4a4936', helve: '#6e5a42', skin: '#c19a72', skinD: '#a88259',
@@ -35563,6 +35563,16 @@ function figLeg(R, L, y, k, trous, anklet, rec, coat, cargo) {
   var nt = thigh.length, ns = shin.length;
   var lower = place(pitch(shin.concat(foot), L[1], 0, 0), 0, 0, 0, -R.thigh);
   var all = place(pitch(thigh.concat(lower), L[0], 0, 0), 0, 0, y, 0);
+  /* and a stance wider than the hips: the whole leg swung out about the hip joint by the
+     fourth number of the pose's leg, which is nought on every pose that does not give one.
+     The foot is turned back the other way about its own ankle first, so the sole stays flat
+     on the ground rather than standing on its inside edge. */
+  var sp = L[3] ? (y < 0 ? -1 : 1) * L[3] : 0, cs = Math.cos(sp), ss = Math.sin(sp);
+  if (sp) {
+    var ap = pitchPt([0, 0, -R.shin], L[1]);
+    ap = pitchPt([ap[0], ap[1], ap[2] - R.thigh], L[0]);
+    all = splayLeg(all.slice(0, nt + ns).concat(splayLeg(all.slice(nt + ns), -sp, y, ap[2])), sp, y, 0);
+  }
   /* Counts and not face lists, because every transform after this rebuilds the objects
      and a range survives where a reference does not; and the two joints put through the
      same transforms the faces were. Read off the geometry instead, the knee came back
@@ -35572,9 +35582,24 @@ function figLeg(R, L, y, k, trous, anklet, rec, coat, cargo) {
     var kn = pitchPt([0, 0, -R.thigh], L[0]);
     var an = pitchPt([0, 0, -R.shin], L[1]);
     an = pitchPt([an[0], an[1], an[2] - R.thigh], L[0]);
-    rec.push({ n: all.length, nt: nt, ns: ns, knee: [kn[0], y, kn[2]], ankle: [an[0], y, an[2]] });
+    rec.push({ n: all.length, nt: nt, ns: ns, knee: [kn[0], y - kn[2] * ss, kn[2] * cs], ankle: [an[0], y - an[2] * ss, an[2] * cs] });
   }
   return all;
+}
+/* a leg turned about the fore-and-aft line through (y0, z0), its own hip or its own ankle,
+   keeping its tiles and turning its normals with it, which `roll` does not */
+function splayLeg(faces, a, y0, z0) {
+  var ca = Math.cos(a), sa = Math.sin(a), out = [], i, k;
+  for (i = 0; i < faces.length; i++) {
+    var f = faces[i], nv = [];
+    for (k = 0; k < f.v.length; k++) {
+      var p = f.v[k], y = p[1] - y0, z = p[2] - z0;
+      nv.push([p[0], y * ca - z * sa + y0, y * sa + z * ca + z0]);
+    }
+    var nn = f.n ? f.n.map(function (n) { return [n[0], n[1] * ca - n[2] * sa, n[1] * sa + n[2] * ca]; }) : undefined;
+    out.push({ v: nv, c: f.c, n: nn, m: f.m, alpha: f.alpha });
+  }
+  return out;
 }
 function lowestZ(faces) {
   var z = 1e9, i, j;
@@ -35729,6 +35754,35 @@ function gaitPose(ph, A, KB, KS, lean, carry, swing) {
 }
 function WALK(ph) { return gaitPose(ph, .60, 1.2, 0, .10, 'trail', 2.4); }
 function RUN(ph) { return gaitPose(ph, .75, 1.7, .35, .28, 'port', 3.0); }
+/* The American's own stances, off the studio photographs of his kit: he stands with his
+   feet apart, holds his ground in a crouch with his knees well bent and his weight over the
+   front foot, fires braced with the left foot ahead of him and the right well back, and walks
+   and runs leaning into it, with his feet a little apart. The knee's bend in the two gaits is
+   everybody's: bent harder, the foot coming through is still in the air on the frame the
+   other army's is down, and the planted foot slides. The fourth number of a leg is how far
+   it is swung out from the hip. A leg's height is its thigh's length times the cosine of the
+   thigh's angle and its shin's likewise, so the two legs of a pose are matched to a tenth of
+   a unit and both feet are on the ground, and the ankle is the rest of the turn so each sole
+   lies flat. Nobody else's are touched. */
+var FIGPOSE_USA = {
+  stand: { legs: [[.12, -.18, .06, .13], [-.08, -.12, .20, .13]], lean: .06, carry: 'ready' },
+  ready: { legs: [[.80, -1.20, .40, .14], [-.10, -.82, .92, .14]], lean: .32, carry: 'lowready', blade: .3 },
+  fire:  { legs: [[.50, -.80, .30, .12], [-.30, -.20, .50, .12]], lean: .16, carry: 'aim', blade: .4, head: [.4, 1.3, -.3] }
+};
+function WALK_USA(ph) { var P = gaitPose(ph, .60, 1.2, 0, .14, 'trail', 2.4); P.legs[0][3] = P.legs[1][3] = .05; return P; }
+function RUN_USA(ph) { var P = gaitPose(ph, .75, 1.7, .35, .38, 'port', 3.0); P.legs[0][3] = P.legs[1][3] = .06; return P; }
+/* the pose a variant is baked in under a name, and its two gaits: the American's own where
+   he has one, and everybody else's otherwise. Not `poseOf`, which is the brain's reading of a
+   unit's posture: a second function of that name replaced it without a word and the army on
+   the gate's first battle stood still for three minutes. */
+function stanceOf(v, name) {
+  var V = SOLDIER_VARIANTS[v];
+  return V && V.nat === 'usa' && FIGPOSE_USA[name] || FIGPOSE[name];
+}
+function gaitOf(v, run) {
+  var V = SOLDIER_VARIANTS[v], us = V && V.nat === 'usa';
+  return run ? (us ? RUN_USA : RUN) : (us ? WALK_USA : WALK);
+}
 /* Eight frames of walk over a stride of 28 units, which is 2.3 cycles a second for a
    section covering 64 units of ground a second. A stride that matched the ground would
    turn at 3.2 and read as a jog for a section that is walking, so the planted foot
@@ -36811,8 +36865,8 @@ function variantForModel(u, i) {
    0..1 over a stride and -1 is standing still; `pose` is what he is doing with himself.
    Everything they answer now comes off `manFaces`. */
 function soldierModel(variant, phase, pose) {
-  var P = pose === 'fire' ? FIGPOSE.fire : pose === 'crouchfire' ? FIGPOSE.kfire
-        : pose === 'crouch' ? FIGPOSE.kneel : phase < 0 ? FIGPOSE.stand : WALK(phase);
+  var P = pose === 'fire' ? stanceOf(variant, 'fire') : pose === 'crouchfire' ? stanceOf(variant, 'kfire')
+        : pose === 'crouch' ? stanceOf(variant, 'kneel') : phase < 0 ? stanceOf(variant, 'stand') : gaitOf(variant)(phase);
   var r = manFaces(variant, P), f = r.faces;
   f.muzzle = r.muzzle; f.eye = r.eye; f.lift = r.lift; f.joints = r.joints;
   return f;
@@ -38254,14 +38308,14 @@ function bakeMen() {
       if (HD) HD[pose] = { frames: hs };
     }
     if (V.set === 'hull') { one(POSE_SEAT, FIGPOSE.seat); return; }
-    one(POSE_STAND, FIGPOSE.stand); one(POSE_CROUCH, FIGPOSE.kneel); one(POSE_PRONE, PRONE());
-    cycle(POSE_WALK, WALK, WALKF, STRIDE_LEN);
-    if (!MOB && !V.norun) cycle(POSE_RUN, RUN, RUNF, RUN_LEN);
+    one(POSE_STAND, stanceOf(v, 'stand')); one(POSE_CROUCH, stanceOf(v, 'kneel')); one(POSE_PRONE, PRONE());
+    cycle(POSE_WALK, gaitOf(v), WALKF, STRIDE_LEN);
+    if (!MOB && !V.norun) cycle(POSE_RUN, gaitOf(v, true), RUNF, RUN_LEN);
     cycle(POSE_CRAWL, CRAWL, CRAWLF, CRAWL_LEN);
     /* a gunner serves the piece with both hands and has no aimed pose of his own, and a
        man carrying it has his hands full */
     if (V.set === 'gunner' || V.set === 'carry') return;
-    one(POSE_READY, FIGPOSE.ready); one(POSE_FIRE, FIGPOSE.fire); one(POSE_CFIRE, FIGPOSE.kfire);
+    one(POSE_READY, stanceOf(v, 'ready')); one(POSE_FIRE, stanceOf(v, 'fire')); one(POSE_CFIRE, stanceOf(v, 'kfire'));
     /* a man who throws is baked winding up and letting go, once with a stick grenade in
        his hand and once with the bundle charge */
     if (V.throw) [[POSE_THROW, ''], [POSE_THROWB, 'bund']].forEach(function (tp) {

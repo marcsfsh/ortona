@@ -3345,17 +3345,40 @@ the Canadian's order turned upside down; laid against the photograph it was out 
 What the photograph has is a warm mid-tan jacket, olive-brown trousers well darker than it,
 leggings and webbing the palest things on him, and light russet shoes. The hexes are set to
 land there after the render has done its work, sampled off the frame on Omaha's overcast
-rather than guessed: the jacket reads 116,93,64 against the photograph's 140,110,74 (red over
-green 1.25 against 1.27), the leggings a fifth brighter than the jacket as they are in the
-photograph, and the trousers 1.30 red over green against 1.37. A tint probe over the whole
+rather than guessed: the jacket about 1.25 red over green against the photograph's 1.27, the
+leggings a fifth brighter than the jacket as they are in the photograph, and the trousers 1.30
+red over green against 1.37. A tint probe over the whole
 roster found one colour on untagged faces that moved tile, and it moved the right way: a
 sandbag shade the old American ladder had been holding on canvas is back on hessian.
 
 He reads in bands where the Canadian reads as one bolt of serge: a dark netted pot, a tan
 jacket, darker legs and pale leggings, which is what is left of him at nine hundred units. On
-the card, at 600 units his mean luminance is 0.365 against the FJ's 0.425 on the desktop and
-the FJ's top fifth is 0.15 above his, with his contrast to the ground at -0.25, inside the band
-the other two sit in; on the phone the gap is 0.053 to 0.060 at 600, 760 and 900.
+the card, at 600 units his mean luminance is 0.359 against the FJ's 0.425 on the desktop and
+the FJ's top fifth is 0.15 above his, with his contrast to the ground at -0.26, inside the band
+the other two sit in; on the phone the gap is 0.057 to 0.066 at 600, 760 and 900. The wider
+stance below showed more of the leggings and took the desktop's gap at 900 to 0.047, under the
+floor, and the jacket, the trousers and the leggings were each taken down a few per cent to
+buy it back: the margin is 0.055 there now, and it is the number to watch before lightening
+anything on him.
+
+**He stands, fights and moves the way the photograph has him** (`FIGPOSE_USA`, read through
+`stanceOf(v, name)` and `gaitOf(v, run)`, which `bakeMen`, `soldierModel` and the men card all
+ask, so an American variant is baked in his own stances and everybody else in the shared ones).
+Standing, his feet are apart. At the ready he is down in a crouch with his knees well bent, his
+weight over the front foot and the rifle low, where the shared pose stands nearly upright. He
+fires braced with the left foot ahead and the right well back, knees bent and leaning into the
+rifle, and he walks and runs leaning further forward. Each pair of legs is matched so both
+feet are on the ground: a leg's height is its thigh's length times the cosine of the thigh's
+angle plus its shin's likewise, and the ankle is the rest of the turn so the sole lies flat.
+The width is a fourth number on a pose's leg, how far it is swung out from the hip
+(`splayLeg`), and the foot is turned back the other way about its own ankle first, because
+swung out with the leg a sole stands on its inside edge. The knee's bend in the two gaits is
+left as everybody's: bent harder to kick the back foot up the way the photograph's runner
+does, the foot coming through was still in the air on the frame the other army's is down,
+the plant moved to the other foot a frame late, and the SKATE row read the run at 0.37 of the
+ground a frame stands for against a ceiling of 0.30. The walk reads 0.15 against the
+Canadian's 0.25.
+
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
 level, and what says M1 is a pot longer than it is wide whose sides come down over the ears
@@ -7267,7 +7290,10 @@ shots/                         screenshot output, gitignored
   legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the
   seconds of trigger a player's vehicle machine gun takes to cook: the heat went to NaN, the
   coaxial under command never fired and never cooked, and the periscope rows failed with nothing
-  in the diff anywhere near a periscope. `grep` the name in the committed file before adding one.
+  in the diff anywhere near a periscope. The American's stances were first read through a
+  function named `poseOf`, which was already the brain's reading of a unit's posture; the gate's
+  first battle then stood still for three minutes with its money unspent and its victory points
+  untouched, and nothing threw. `grep` the name in the committed file before adding one.
 - **A point laid off a man is laid on his bearing, and a man at a gun sits off its line.** The
   layer's muzzle flash was put ahead of the gunner on his own facing while the piece is drawn at
   `gunPost` on the gun's, and the layer sits a tenth of a radian off it: every round the 57 fired
