@@ -1765,12 +1765,17 @@ section's come off the offsets it was actually dealt, plus `MAN_R` -- the eleven
 `hitsUnit` already picks a man by -- so the body a tank is kept out of is the body the
 player's own finger goes through.
 
-**And the box is about the unit's own origin, which is not always the middle of its hull.**
-`vehBody` takes the largest reach either way along each axis, so a hull that stands off its
-origin carries a body longer at its short end than the hull is: the M4A1 runs from -37.2 to
-32.8 and stops 4.4 units short of anything in front of it, and the M3 and the M26 are the
-same by 4.4 and 3.5. The contact row is staged on the Panzer IV, which runs -35.1 to 34.6,
-for that reason. A body with an offset along the hull is the fix, and it is not done.
+**And the box stands on the middle of the hull, which is not always the unit's own origin.**
+`vehBody` took the largest reach either way along each axis, so a hull that stands off its
+origin carried a body longer at its short end than the hull is: the M4A1 runs from -37.2 to
+32.8 and stopped 4.4 units short of anything in front of it, and the M3, the M26 and the
+Panzer IV laid over its drawings were the same by 4.4, 3.5 and 2.6. It hands back the hull's
+own middle along its length (`cx`), which `unitBody` keeps as `u.bodyX`, and every reader of
+the box puts it there: `sepDepth` and `menPen`, where a bundle comes down on a hull (`onHull`,
+`hullGap`, `abRelease`), and a wreck on the movement grid (`w.bx`). On the movement card's
+contact section the M4A1 meets a rifle squad and another M4A1 at 0.0 over every bearing, and
+the gate's contact row is staged on it again and measures the body's two ends against the
+hull's rather than its length against the longer reach.
 
 **`sepDepth` is the four-axis separating test on two boxes**, and the shallowest overlap
 is the depth and its axis the way out, which is what a box does: it puts a thing out the
@@ -3953,9 +3958,29 @@ with the driver on the left and the bow gunner on the right, which that model wa
 vehicle built for the 352nd is in the Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint),
 where the first roster's German vehicles that are still fielded (the StuG, the Tigers and the Maus)
 stay in their sand; the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
-gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.96 m long against 5.92,
-7.05 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
-(the cupola lid is not in the measured mount), a body of 2.36 against 2.36 and 0.40 of clearance.
+gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.97 m long against 5.92,
+7.07 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
+(the cupola lid is not in the measured mount), a body of 2.36 against 2.36, a roof of 2.38 and
+0.40 of clearance.
+
+**It is laid over two drawings** (`tools/ref/hr_p4.json` and `hr_p4_s.json`, the bare and the
+skirted views of one four-view, and `hr_p4_b.json`, a four-view at 1:35 without the Schürzen),
+and the first version, built off photographs and published figures, had every envelope figure
+right and half of its layout wrong. The superstructure front stood 0.53 m too far forward, so
+the glacis was half as long as both drawings have it, and the turret and its cupola stood 0.5 m
+forward with it, with the gun half a metre short to make the length over the gun come out right.
+The track guards were 0.2 m too low, which is 0.2 m of superstructure side the tank does not
+have. The superstructure's front corners were square where both plans cut them back to the full
+width 0.9 m aft of the front plate, and the cut plates carry a vision port each. The return
+rollers stood a third of a metre forward and 0.13 m low and the sprocket 0.1 m low. The turret's
+rear corners were square where the drawings chamfer them, the cupola was a sixth too small, the
+bin half as deep and a fifth too wide, and the big silencer hung on the left of the tail 0.2 m
+too high where the first drawing lays it across the whole of it with the outlet just right of the
+middle. The Schürzen ran 0.3 m short at the front and hung plumb, where the first drawing's front
+and rear views tuck them in at the foot, and the turret's were square behind where both plans
+run them round the bin in two long diagonals. The 1:35 sheet draws the gun at the L/43's length,
+so the gun is read off the first. Moving the ring half a metre aft moved the Wirbelwind's turret
+with it, which stands on the same ring.
 
 What carries it, and each is built its own way. **The bogie is a bracket with the leaf spring
 laid across the top of its two swing arms** (`hp4Bogie`), clamped in the middle, five leaves with
@@ -3964,7 +3989,7 @@ rear bogies carry a shock absorber. **The road wheels are twin tyres with the gu
 between them**, nearly touching within a bogie, the sprocket is drilled with eight lightening
 holes on its final drive housing and the idler is welded, open, on its spokes. **The nose is
 stepped**: the nose plate leaning back fourteen degrees with a run of spare track across it
-(`hp4NoseX`), the glacis laid back at seventy-two with the two brake hatches in it
+(`hp4NoseX`), the glacis laid back at seventy-eight with the two brake hatches in it
 (`onHp4Glacis`), and the superstructure front at nine with the visor on the left and the ball
 mount on the right (`hp4FrontX`). **The turret is a plan with a lean per wall** (`HP4T.plan`,
 `HP4T.lean`, `hp4TurPlan`): each wall is moved in along its own normal by its lean and the
@@ -3974,8 +3999,11 @@ out of the rear plate over the bin, and **the turret ring sits 66 mm left of the
 (`turY`), as the Panzer IV's did.
 
 **The Schürzen are the upgrade, rails and all** (`hp4Skirts`, `hp4TurSkirts`, `hp4Rails`): five
-plates a side hooked over the rail and a horseshoe round the turret with a two-leaf door in each
-side in line with the turret's own. The rails go on with the plates so the bare hull measures over
+plates a side hooked over the rail, the end plates cut up at the foot over the sprocket and the
+idler, the whole side leaning in about nine degrees below its top edge as the
+first drawing's front and rear views have it (built flat and rolled about the top edge); and a
+plate round the turret, straight along the sides and closing round the bin in two long
+diagonals, with a two-leaf door in each side in line with the turret's own. The rails go on with the plates so the bare hull measures over
 its guards the way the published width does. **The markings are flat paint laid a hair off the
 plate** (`hp4Decal`): the Balkenkreuz as three bars in white and three in black because a cross
 is not a convex outline (`hp4Cross`), and the red 415 outlined in white out of a block hand of a
@@ -4653,7 +4681,7 @@ commander is in the cap; `k4Man` takes a variant for it.
 a third of a metre, so a 2 cm barrel marks a whole cell, and four of them side by side are a slab in
 front of the plate they come out of: the front plate came back black behind its own guns, which in
 a photograph reads as an opening. A face marked `thin` is still shaded and shades nothing, and
-`aoSplit` carries the mark to the pieces it cuts. On `tools/dims.mjs` it reads 5.96 m long against
+`aoSplit` carries the mark to the pieces it cuts. On `tools/dims.mjs` it reads 5.97 m long against
 5.92, 2.93 wide against 2.90, 2.72 high against 2.76, and the Panzer IV's body, roof and clearance;
 the turret that leaned in all the way up stood at 2.68, and the bend is where the missing height
 was.

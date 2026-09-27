@@ -4936,9 +4936,9 @@ function rebuildGrid() {
        is a pad rather than an angle, so the bearing a wreck has always carried was
        stored and never read: a tank that burned across a street was blocked as a box
        square to the map, which is the wrong sixty units of it. */
-    var e = Math.max(0, w.w * .35 - w.h * .39);
-    markSeg(grid, w.x - Math.cos(w.a) * e, w.y - Math.sin(w.a) * e,
-            w.x + Math.cos(w.a) * e, w.y + Math.sin(w.a) * e, w.h * .39);
+    var e = Math.max(0, w.w * .35 - w.h * .39), wx = w.x + Math.cos(w.a) * (w.bx || 0), wy = w.y + Math.sin(w.a) * (w.bx || 0);
+    markSeg(grid, wx - Math.cos(w.a) * e, wy - Math.sin(w.a) * e,
+            wx + Math.cos(w.a) * e, wy + Math.sin(w.a) * e, w.h * .39);
   });
   /* the same world read for sight and for fire */
   sblk.fill(0); fblk.fill(0);
@@ -5643,26 +5643,32 @@ function unitRadius(u) {
    plate; the mount is left out of it, since a gun barrel is not a body anybody walks
    into. A section's come off the offsets the unit was actually given, plus a man's own
    width -- the radius `hitsUnit` already picks him by, so the body a tank is kept out of
-   is the body the player can click on. */
+   is the body the player can click on.
+     And the box is centred where the hull is and not on the unit's origin, which is the
+   middle of the running gear and not always the middle of the hull: the M4A1 runs from
+   -37.2 to 32.8 and the Panzer IV from -36.2 to 33.6, so a box half the larger reach long
+   either way stood 4.4 and 2.6 units proud of their noses. `cx` is how far along the hull
+   the middle of it is, and every reader of the box takes it off before measuring. */
 var MAN_R = 11;                     /* a man's own body, and the one number for it */
 function vehBody(k) {
   var V = VMODEL[k];
   if (!V) return null;
   if (V.body) return V.body;
-  var x = 0, y = 0;
+  var x0 = 0, x1 = 0, y = 0;
   function eat(fs) {
     if (!fs) return;
     for (var i = 0; i < fs.length; i++) {
       var v = fs[i].v;
       for (var j = 0; j < v.length; j++) {
-        var ax = Math.abs(v[j][0]), ay = Math.abs(v[j][1]);
-        if (ax > x) x = ax;
+        var ay = Math.abs(v[j][1]);
+        if (v[j][0] < x0) x0 = v[j][0];
+        if (v[j][0] > x1) x1 = v[j][0];
         if (ay > y) y = ay;
       }
     }
   }
   eat(V.hull); eat(V.skirts);
-  V.body = { hl: x, hw: y };
+  V.body = { hl: (x1 - x0) / 2, hw: y, cx: (x1 + x0) / 2 };
   return V.body;
 }
 function unitBody(u) {
@@ -5673,6 +5679,7 @@ function unitBody(u) {
        is built, or a page with no WebGL behind it -- so it falls back to the circle */
     u.bodyL = B ? B.hl : unitRadius(u);
     u.bodyW = B ? B.hw : unitRadius(u);
+    u.bodyX = B ? B.cx : 0;
   } else {
     /* `ox` runs along the unit's facing and `oy` across it, which is the pair
        `updateModels` scales by the lane and the frontage */
@@ -5682,7 +5689,7 @@ function unitBody(u) {
       if (qx > ax) ax = qx;
       if (qy > ay) ay = qy;
     }
-    u.bodyL = ax + MAN_R; u.bodyW = ay + MAN_R;
+    u.bodyL = ax + MAN_R; u.bodyW = ay + MAN_R; u.bodyX = 0;
   }
   return u;
 }
@@ -5733,7 +5740,7 @@ function menPen(V, S) {
     var m = S.models[i];
     if (!m.alive) continue;
     var dx = m.x - V.x, dy = m.y - V.y;
-    var lx = dx * c + dy * s, ly = dy * c - dx * s;
+    var lx = dx * c + dy * s - V.bodyX, ly = dy * c - dx * s;
     var qx = clamp(lx, -V.bodyL, V.bodyL), qy = clamp(ly, -V.bodyW, V.bodyW);
     var ex = lx - qx, ey = ly - qy, d = Math.hypot(ex, ey), pen, nx, ny;
     if (d > 1e-4) {
@@ -5819,7 +5826,10 @@ function sepDepth(u, o, fine) {
      overlap over four minutes of battle, but a Fallschirmjaeger pair cleared it by six
      tenths of a unit, which is luck rather than construction. */
   var men = fine && bothAfoot(u, o);
-  var dx = u.x - o.x, dy = u.y - o.y;
+  var ca = Math.cos(u.facing), sa = Math.sin(u.facing);
+  var cb = Math.cos(o.facing), sb = Math.sin(o.facing);
+  /* between the middles of the two boxes, which is the origin for a section */
+  var dx = u.x + ca * u.bodyX - o.x - cb * o.bodyX, dy = u.y + sa * u.bodyX - o.y - sb * o.bodyX;
   var reach = men ? selRadius(u) + selRadius(o) + MAN_R * 2 : u.bodyL + o.bodyL + 18;
   if (dx * dx + dy * dy > reach * reach) return 0;
   /* two bodies of men on the march are the men, a vehicle against men is the men, and
@@ -5831,8 +5841,6 @@ function sepDepth(u, o, fine) {
     if (mp > 0) { _sepX = -_sepX; _sepY = -_sepY; }
     return mp;
   }
-  var ca = Math.cos(u.facing), sa = Math.sin(u.facing);
-  var cb = Math.cos(o.facing), sb = Math.sin(o.facing);
   var best = 1e9, bx = 1, by = 0, k, nx, ny, pa, pb, dn, ov;
   for (k = 0; k < 4; k++) {
     if (k === 0) { nx = ca; ny = sa; }
@@ -8103,7 +8111,7 @@ function abRelease(u, m) {
   if (!A) return;
   if (m.thrM && m.thrM.alive) { tx = m.thrM.x; ty = m.thrM.y; }
   else if (t && !t.dead) {
-    var back = bund && t.cat === 'veh' ? unitBody(t).bodyL * .5 : 0;
+    var back = bund && t.cat === 'veh' ? unitBody(t).bodyL * .5 - t.bodyX : 0;
     tx = t.x - Math.cos(t.facing) * back; ty = t.y - Math.sin(t.facing) * back;
   }
   var d = Math.hypot(tx - m.x, ty - m.y), dur = bund ? .5 + d / 220 : .45 + d / 260;
@@ -8125,7 +8133,7 @@ function abRelease(u, m) {
 /* whether a point is on a vehicle's hull, off the same measured body the collisions use */
 function onHull(t, x, y, pad) {
   var b = unitBody(t), c = Math.cos(t.facing), s = Math.sin(t.facing), dx = x - t.x, dy = y - t.y;
-  var lx = dx * c + dy * s, ly = -dx * s + dy * c;
+  var lx = dx * c + dy * s - b.bodyX, ly = -dx * s + dy * c;
   return Math.abs(lx) <= b.bodyL + (pad || 0) && Math.abs(ly) <= b.bodyW + (pad || 0);
 }
 /* The top of a vehicle over its own plan, so that a thing thrown onto one lies on what it
@@ -8199,7 +8207,7 @@ function deckSeat(t, lx, ly, fx, fy) {
 /* how far a point is from a vehicle's hull, nought on it */
 function hullGap(t, x, y) {
   var b = unitBody(t), c = Math.cos(t.facing), s = Math.sin(t.facing), dx = x - t.x, dy = y - t.y;
-  var lx = Math.abs(dx * c + dy * s) - b.bodyL, ly = Math.abs(-dx * s + dy * c) - b.bodyW;
+  var lx = Math.abs(dx * c + dy * s - b.bodyX) - b.bodyL, ly = Math.abs(-dx * s + dy * c) - b.bodyW;
   return Math.hypot(Math.max(0, lx), Math.max(0, ly));
 }
 /* one grenade: the flight, then lying where it stopped, then the burst. True when it is gone. */
@@ -9427,7 +9435,7 @@ function makeWreck(u) {
   var broke = !blown && roll > .84;
   var w = {
     x: u.x, y: u.y, a: u.facing, turret: u.turret,
-    w: u.bodyL * 2, h: u.bodyW * 2,
+    w: u.bodyL * 2, h: u.bodyW * 2, bx: u.bodyX || 0,
     t: 0, side: u.side, key: u.key, vk: vkey(u),
     /* down on the belly, and over. A broken back goes a long way over; a burnt-out hull
        settles a few degrees onto whichever side let go first. */
@@ -22283,7 +22291,7 @@ function ksMen() {
      2. The drive sprocket high at the front on its final drive housing, and the welded
         idler at the rear, open, with its spokes.
      3. The nose: a near-vertical plate with spare track hung across it, the glacis laid
-        back above it at seventy-two degrees with the two brake hatches in it, and the
+        back above it at seventy-eight degrees with the two brake hatches in it, and the
         superstructure front standing up behind that with the driver's visor on the left
         and the ball-mounted MG 34 on the right.
      4. A superstructure a good step inboard of the track guards, with the guards running
@@ -22299,7 +22307,24 @@ function ksMen() {
    Published: 5.92 m long, 7.02 m with the gun forward, 2.88 m over the track guards and
    3.33 m over the Schürzen, 2.68 m to the top of the cupola, 0.40 m of clearance, 2.45 m
    between the track centres and 3.52 m of track on the ground. Laid out at 11.7 units to
-   the metre with the driver on the left, which is -y. */
+   the metre with the driver on the left, which is -y.
+
+   Laid over two drawings (tools/ref/hr_p4.json and hr_p4_b.json), a four-view with and
+   without the Schürzen and a four-view at M1:35 without them. Built first off photographs
+   and those figures, it had every envelope figure right and half of its layout wrong. The
+   superstructure front stood 0.53 m too far forward, so the glacis was half as long as the
+   drawings have it; the turret and its cupola stood 0.5 m forward with them, and the gun
+   was half a metre short to make the length with the gun come out right. The track guards
+   were 0.2 m too low, which is 0.2 m of superstructure side the Panzer IV does not have.
+   The superstructure had square front corners where both plans cut them back to the full
+   width 0.9 m aft of the front plate; the return rollers stood a third of a metre forward
+   and 0.13 m low, and the sprocket 0.1 m low. The turret's rear corners were square where
+   the drawings chamfer them, the cupola was a sixth too small, the bin was half as deep and
+   a fifth too wide, and the big silencer hung on the left of the tail 0.2 m too high where
+   the drawing lays it across the whole of it. The Schürzen ran 0.3 m short at the front
+   and hung upright where the front and rear views of the first drawing tuck them in at
+   the foot, and the turret's were square behind where the plans run them round the bin
+   in two long diagonals. */
 var HP4C = {
   body: HRG.body, lit: HRG.lit, dark: HRG.dark,
   steel: '#383a37', bare: '#6b6d67', rubber: '#1a1b19', tyre: '#292a27',
@@ -22309,19 +22334,21 @@ var HP4C = {
 var HP4G = {
   R: 2.75, T: .62, TW: 4.68, LP: 1.40, TY: 14.33,     /* 470 mm wheels, 400 mm track on 120 mm pitch, 2.45 m between centres */
   WD: 1.55, WG: 1.1,                                   /* each tyre of a twin wheel, and the gap the guide horns run in */
-  bog: [17.9, 5.97, -5.97, -17.9], ws: 2.85,           /* bogie centres, and the wheels either side of each */
-  roll: [19.6, 7.9, -3.8, -15.5], zRoll: 9.9, rRoll: 1.5,
-  xSp: 28.4, zSp: 7.6, rSp: 4.0,                       /* the sprocket, to the middle of the track */
-  xId: -27.9, zId: 6.9, rId: 3.3
+  bog: [17.9, 5.97, -5.97, -17.9], ws: 2.95,           /* bogie centres, and the wheels either side of each */
+  roll: [16.0, 5.25, -6.8, -18.75], zRoll: 11.4, rRoll: 1.5,
+  xSp: 27.1, zSp: 8.9, rSp: 4.0,                       /* the sprocket, to the middle of the track */
+  xId: -29.0, zId: 6.9, rId: 3.8
 };
 HP4G.zW = HP4G.R + HP4G.T;
 HP4G.off = (HP4G.WG + HP4G.WD) / 2;
 var HP4H = {
-  tub: 9.7, sup: 13.8, fend: 16.85, skirt: 19.25,      /* the tub, the superstructure, the guards, the Schürzen */
-  zBelly: 4.7, zTub: 12.5, zRoof: 19.6, zDeck: 18.5,   /* 0.40 m under the belly, the guard line, the roof, the deck */
-  xNoseB: 33.6, zNoseB: 7.4, xNoseT: 32.35, zNoseT: 12.4,
-  xSupF: 25.2, zGlT: 14.6, xBulk: -13.6, xRear: -30.9,
-  turX: 4.4, turY: -.77                                /* the turret ring sits 66 mm left of the centreline */
+  tub: 9.7, nose: 11.1, sup: 13.8, fend: 16.85,        /* the tub, the nose and glacis, the superstructure, the guards */
+  skirt: 19.2, skirtL: .164,                           /* the top of the Schürzen, and how far they lean in below it */
+  zBelly: 4.7, zTub: 14.9, zRoof: 19.6, zDeck: 19.1,   /* 0.40 m under the belly, the guard line, the roof, the deck */
+  xNoseB: 32.6, zNoseB: 6.0, xNoseT: 31.0, zNoseT: 12.4,
+  xSupF: 19.0, zGlT: 14.9, xCut: 8.0,                  /* the front plate's foot, and where the cut corners reach the sides */
+  xBulk: -12.3, xDeck: -29.0, xRear: -30.5,
+  turX: -1.5, turY: -.77                               /* the turret ring sits 66 mm left of the centreline */
 };
 HP4H.fAng = 9 * Math.PI / 180;                          /* the superstructure front leans back nine degrees */
 HP4H.gAng = Math.atan2(HP4H.zGlT - HP4H.zNoseT, HP4H.xNoseT - HP4H.xSupF);
@@ -22330,6 +22357,12 @@ function hp4FrontX(z) { return HP4H.xSupF - (z - HP4H.zTub) * Math.tan(9 * Math.
 function hp4GlacisZ(x) { return HP4H.zNoseT + (HP4H.xNoseT - x) * Math.tan(HP4H.gAng); }
 function onHp4Glacis(faces, x, y, up) {
   return place(pitch(faces, -HP4H.gAng, 0, 0), 0, x, y, hp4GlacisZ(x) + (up || 0));
+}
+/* the superstructure's half-width at a station: the side plate aft of xCut, and forward of it
+   the plate that cuts the corner back to the front plate */
+function hp4SupY(x) {
+  var H = HP4H;
+  return x <= H.xCut ? H.sup : H.nose + (H.xSupF - x) / (H.xSupF - H.xCut) * (H.sup - H.nose);
 }
 /* the nose plate at a height: it leans back fourteen degrees from its foot */
 function hp4NoseX(z) { return HP4H.xNoseB - (z - HP4H.zNoseB) * (HP4H.xNoseB - HP4H.xNoseT) / (HP4H.zNoseT - HP4H.zNoseB); }
@@ -22553,10 +22586,10 @@ function hp4Idler(sd) {
   f = f.concat(latheSide(g.xId, y + sd * 1.9, g.zId, [[0, 0], [.8, 0], [.8, .3], [.45, .55], [0, .55]], 10, [C.body, C.lit, C.body, C.lit], sd));
   /* the crank and its housing on the rear corner of the hull, and the adjuster */
   var yb = H.tub + .4;
-  f = f.concat(m4Box(sd, -31.1, -26.2, H.tub - .05, H.tub + .6, 5.2, 10.2, C.dark, C.body, C.dark, .15));
+  f = f.concat(m4Box(sd, -31.2, -27.3, H.tub - .05, H.tub + .6, 5.2, 10.2, C.dark, C.body, C.dark, .15));
   f = f.concat(place(roll(cyl(0, 0, 0, 1.2, 1.2, g.TY - H.tub - 1.9, 12, C.body, C.lit, 0, true), -sd * Math.PI / 2, 0, 0),
                      0, g.xId, sd * yb, g.zId));
-  f = f.concat(place(pitch(tubeSmooth(-2.2, 1.4, 0, 0, .4, 8, C.steel, C.bare), .55, 0, 0), 0, -29.8, sd * (H.tub + .9), 9.6));
+  f = f.concat(place(pitch(tubeSmooth(-2.2, 1.4, 0, 0, .4, 8, C.steel, C.bare), .55, 0, 0), 0, -30.6, sd * (H.tub + .9), 9.6));
   return f;
 }
 
@@ -22579,40 +22612,57 @@ function hp4Extrude(prof, y0, y1, cols, capC) {
    the fighting compartment out to the superstructure's width with the front plate leaning
    back nine degrees, and the engine compartment behind it a step lower. */
 function hp4Shell(body, cap, sideC) {
-  var C = HP4C, H = HP4H, f = [], t = H.tub, s = H.sup, zT = H.zTub, zR = H.zRoof, zD = H.zDeck;
-  var xR = H.xRear, fT = hp4FrontX(zR);
-  f = f.concat(hp4Extrude([[H.xNoseB, H.zNoseB], [H.xNoseT, H.zNoseT], [xR, zT], [xR, 9.2], [-28.2, H.zBelly], [28.4, H.zBelly]],
-                          -t, t, [body, C.dark, C.dark, C.dark, C.dark, C.dark], sideC));
-  f = f.concat(hp4Extrude([[H.xNoseT, H.zNoseT], [hp4FrontX(H.zGlT), H.zGlT], [H.xSupF, zT - .1]], -t, t, [cap, C.dark, C.dark], sideC));
-  f = f.concat(hp4Extrude([[H.xSupF, zT], [fT, zR], [H.xBulk, zR], [H.xBulk - 1.4, zD], [H.xBulk - 1.4, zT]], -s, s,
-                          [body, cap, body, C.dark, C.dark], sideC));
-  f = f.concat(hp4Extrude([[H.xBulk - 1.4, zT], [H.xBulk - 1.4, zD], [xR + .55, zD], [xR, zT]], -s, s,
-                          [C.dark, cap, C.dark, C.dark], sideC));
-  /* weld beads down the edges of the upper hull, and across the foot of the front plate */
+  var C = HP4C, H = HP4H, f = [], t = H.tub, n = H.nose, s = H.sup, zT = H.zTub, zR = H.zRoof, zD = H.zDeck;
+  var xR = H.xRear, fT = hp4FrontX(zR), i;
+  /* the tub between the tracks */
+  f = f.concat(hp4Extrude([[H.xNoseB, H.zNoseB], [H.xNoseT, H.zNoseT], [H.xSupF, zT], [xR, zT], [xR, 9.2], [-28.2, H.zBelly], [28.4, H.zBelly]],
+                          -t, t, [body, C.dark, C.dark, C.dark, C.dark, C.dark, C.dark], sideC));
+  /* the nose plate and the glacis over it, wider than the tub because they close over the
+     final drives */
+  f = f.concat(hp4Extrude([[H.xNoseB, H.zNoseB], [H.xNoseT, H.zNoseT], [H.xSupF, zT], [H.xSupF, zT - 2.5], [29.6, H.zBelly + .5]],
+                          -n, n, [body, cap, C.dark, C.dark, C.dark], sideC));
+  /* the fighting compartment: the front plate across the glacis leaning back nine degrees,
+     the corners either side of it cut back to the full width, the sides and the roof. The
+     cut plates stand upright, so they meet the leaning front plate further in at the roof. */
+  function ring(z) {
+    var fx = hp4FrontX(z), c = hp4SupY(fx);
+    return [[fx, c, z], [H.xCut, s, z], [H.xBulk, s, z], [H.xBulk, -s, z], [H.xCut, -s, z], [fx, -c, z]];
+  }
+  var lo = ring(zT - .05), hi = ring(zR), mx = (H.xSupF + H.xBulk) / 2;
+  f = f.concat(welded(faceOut(loft([lo, hi], [body]), mx, 0, (zT + zR) / 2)));
+  f = f.concat(faceOut([{ v: hi.slice(), c: cap }], mx, 0, zT));
+  /* the engine compartment behind the bulkhead, its deck a step lower, and the upper rear
+     plate laid back from the deck to the guard line */
+  f = f.concat(hp4Extrude([[H.xBulk + .3, zT], [H.xBulk + .3, zD], [H.xDeck, zD], [xR, zT]], -s, s,
+                          [C.dark, cap, body, C.dark], sideC));
+  /* weld beads round the roof, along the deck edges, and across the glacis at both ends */
+  for (i = 0; i < hi.length; i++) {
+    var p0 = hi[i], p1 = hi[(i + 1) % hi.length], dl = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
+    if (Math.abs(p0[0] - H.xBulk) < .01 && Math.abs(p1[0] - H.xBulk) < .01) continue;
+    f = f.concat(place(tubeSmooth(0, dl, 0, 0, .18, 5, C.lit, C.lit), Math.atan2(p1[1] - p0[1], p1[0] - p0[0]), p0[0], p0[1], zR - .1));
+  }
   [-1, 1].forEach(function (sd) {
-    f = f.concat(tubeSmooth(H.xBulk + .2, fT - .2, sd * (s - .1), zR - .1, .18, 5, C.lit, C.lit));
-    f = f.concat(tubeSmooth(xR + .7, H.xBulk - 1.6, sd * (s - .1), zD - .1, .18, 5, C.lit, C.lit));
-    f = f.concat(place(pitch(tubeSmooth(0, zR - zT, 0, 0, .18, 5, C.lit, C.lit), Math.PI / 2 + 9 * Math.PI / 180, 0, 0),
-                       0, H.xSupF - .1, sd * (s - .1), zT));
+    f = f.concat(tubeSmooth(H.xDeck + .3, H.xBulk - .2, sd * (s - .1), zD - .1, .18, 5, C.lit, C.lit));
   });
-  f = f.concat(place(tubeSmooth(-t + .2, t - .2, 0, 0, .2, 5, C.lit, C.lit), Math.PI / 2, H.xSupF + .1, 0, H.zGlT + .05));
-  f = f.concat(place(tubeSmooth(-t + .2, t - .2, 0, 0, .2, 5, C.lit, C.lit), Math.PI / 2, H.xNoseT, 0, H.zNoseT + .05));
+  f = f.concat(place(tubeSmooth(-n + .2, n - .2, 0, 0, .2, 5, C.lit, C.lit), Math.PI / 2, H.xSupF + .1, 0, H.zGlT + .05));
+  f = f.concat(place(tubeSmooth(-n + .2, n - .2, 0, 0, .2, 5, C.lit, C.lit), Math.PI / 2, H.xNoseT, 0, H.zNoseT + .05));
   return f;
 }
 /* the track guards: a shelf down both sides outboard of the superstructure, running on
    forward over the sprockets and aft over the idlers, with the flaps at the ends turned
    down, and a lip along the outer edge */
 function hp4Guards(cap) {
-  var C = HP4C, H = HP4H, f = [], sd, zT = H.zTub;
+  var C = HP4C, H = HP4H, f = [], sd, zT = H.zTub, xF = 30.8, xB = H.xRear, w = H.fend - 11.9;
   for (sd = -1; sd <= 1; sd += 2) {
-    f = f.concat(m4Box(sd, H.xRear - 1.4, H.xSupF, H.sup - .05, H.fend, zT, zT + .3, C.body, cap, C.dark, 0));
-    f = f.concat(m4Box(sd, H.xSupF, 32.1, H.tub, H.fend, zT, zT + .3, C.body, cap, C.dark, 0));
-    f = f.concat(m4Box(sd, H.xRear - 1.4, H.xRear + .1, H.tub, H.sup, zT, zT + .3, C.body, cap, C.dark, 0));
-    f = f.concat(m4Box(sd, H.xRear - 1.4, 32.1, H.fend - .28, H.fend, zT - .55, zT + .3, C.body, cap, C.dark, 0));
-    /* the front flap, hinged down over the sprocket, and the rear one over the idler */
-    var fl = box(0, 0, -.15, 2.6, H.fend - 11.9, .3, C.body, cap, C.dark, 0);
-    f = f.concat(place(pitch(fl, -.52, 0, 0), 0, 33.2, sd * (11.9 + (H.fend - 11.9) / 2), zT - .5));
-    f = f.concat(place(pitch(fl, .55, 0, 0), 0, H.xRear - 2.6, sd * (11.9 + (H.fend - 11.9) / 2), zT - .45));
+    f = f.concat(m4Box(sd, xB, H.xCut, H.sup - .05, H.fend, zT, zT + .3, C.body, cap, C.dark, 0));
+    f = f.concat(m4Box(sd, H.xCut, xF, H.nose, H.fend, zT, zT + .3, C.body, cap, C.dark, 0));
+    f = f.concat(m4Box(sd, xB, xF, H.fend - .28, H.fend, zT - .55, zT + .3, C.body, cap, C.dark, 0));
+    /* the front flap, hinged down over the sprocket to a hand above its hub, and the rear
+       guard, a wedge boxed in underneath that runs back over the idler to a point */
+    var ff = box(0, 0, -.15, 4.9, w, .3, C.body, cap, C.dark, 0);
+    f = f.concat(place(pitch(ff, -.99, 0, 0), 0, xF + 1.35, sd * (11.9 + w / 2), zT - 1.85));
+    f = f.concat(hp4Extrude([[xB, zT + .3], [xB - 5.7, zT - 3.5], [xB - .2, zT - 4.0]], sd * 11.9, sd * H.fend,
+                            [cap, C.dark, C.dark], C.body));
     /* the brackets under the shelf, one a bogie */
     HP4G.bog.forEach(function (bx) {
       f = f.concat(m4Box(sd, bx - .25, bx + .25, H.sup - .05, H.fend - .3, zT - 1.1, zT, C.dark, C.body, C.dark, 0));
@@ -22628,64 +22678,78 @@ function hp4Front(cap) {
   var C = HP4C, H = HP4H, f = [], s, i, fa = 9 * Math.PI / 180;
   function onFront(faces, y, z) { return place(pitch(faces, fa, 0, 0), 0, hp4FrontX(z), y, z); }
   /* the Fahrersehklappe 80: a thick block with a slit in it, and the rain strip over it */
-  f = f.concat(onFront(box(.35, 0, -.85, .7, 3.6, 1.7, C.body, cap, C.dark, .15), -7.3, 16.9));
-  f = f.concat(onFront(box(.72, 0, -.14, .12, 2.5, .3, C.hole, C.hole, C.hole, 0), -7.3, 16.9));
-  f = f.concat(onFront(box(.3, 0, 0, .6, 4.4, .22, C.dark, cap, C.dark, 0), -7.3, 18.2));
-  f = f.concat(onFront(box(.2, 0, 0, .4, 1.6, .5, C.dark, C.body, C.dark, 0), -7.3, 15.7));
+  f = f.concat(onFront(box(.35, 0, -1.3, .7, 5.6, 2.6, C.body, cap, C.dark, .15), -4.0, 16.6));
+  f = f.concat(onFront(box(.72, 0, -.14, .12, 3.6, .3, C.hole, C.hole, C.hole, 0), -4.0, 16.8));
+  f = f.concat(onFront(box(.3, 0, 0, .6, 6.4, .22, C.dark, cap, C.dark, 0), -4.0, 18.3));
+  f = f.concat(onFront(box(.2, 0, 0, .4, 1.6, .5, C.dark, C.body, C.dark, 0), -4.0, 15.1));
   /* the Kugelblende 50: its flange, the ball, and the MG 34 in its armoured sleeve */
-  var bz = 16.6, bxF = hp4FrontX(bz);
-  f = f.concat(onFront(place(roll(cyl(0, 0, 0, 2.2, 2.2, .5, 16, C.dark, C.body, 0, true), -Math.PI / 2, 0, 0), -Math.PI / 2, 0, 0, 0), 7.1, bz));
-  f = f.concat(faceOut(lathe(bxF + .5, 7.1, bz, [[0, -1.5], [.9, -1.45], [1.4, -.8], [1.55, 0], [1.4, .8], [.9, 1.45], [0, 1.5]], 12,
+  var by = 7.1, bz = 17.0, bxF = hp4FrontX(bz);
+  f = f.concat(onFront(place(roll(cyl(0, 0, 0, 2.2, 2.2, .5, 16, C.dark, C.body, 0, true), -Math.PI / 2, 0, 0), -Math.PI / 2, 0, 0, 0), by, bz));
+  f = f.concat(faceOut(lathe(bxF + .5, by, bz, [[0, -1.5], [.9, -1.45], [1.4, -.8], [1.55, 0], [1.4, .8], [.9, 1.45], [0, 1.5]], 12,
                              [C.dark, C.body, C.body, cap, C.body, C.dark], true).map(function (q) {
-    return { v: q.v.map(function (p) { return [bxF + .5 + (p[1] - 7.1), 7.1 + (p[0] - bxF - .5), p[2]]; }), c: q.c,
+    return { v: q.v.map(function (p) { return [bxF + .5 + (p[1] - by), by + (p[0] - bxF - .5), p[2]]; }), c: q.c,
              n: q.n && q.n.map(function (n) { return [n[1], n[0], n[2]]; }) };
-  }), bxF + .5, 7.1, bz));
-  f = f.concat(m4Taper(bxF + 1.6, bxF + 3.6, 7.1, bz, .5, .44, 10, C.dark, C.dark));
-  f = f.concat(tubeSmooth(bxF + 3.6, bxF + 4.3, 7.1, bz, .22, 6, C.steel, C.hole));
-  /* the two brake hatches in the glacis, hinged at the front, each with its cowl */
+  }), bxF + .5, by, bz));
+  f = f.concat(m4Taper(bxF + 1.6, bxF + 3.6, by, bz, .5, .44, 10, C.dark, C.dark));
+  f = f.concat(tubeSmooth(bxF + 3.6, bxF + 4.3, by, bz, .22, 6, C.steel, C.hole));
+  /* the glacis: a brake hatch each side, hinged at the front with its cowl, and inboard of
+     each a bolted plate over the steering brakes */
   for (s = -1; s <= 1; s += 2) {
-    var hy = s * 4.75;
-    f = f.concat(onHp4Glacis(box(0, 0, 0, 5.9, 7.2, .45, C.body, cap, C.dark, .14), 28.8, hy, 0));
-    f = f.concat(onHp4Glacis(box(0, 0, .45, 2.4, 3.6, .75, C.dark, C.body, C.dark, .15), 27.9, hy, 0));
-    f = f.concat(onHp4Glacis(box(-1.2, 0, .5, .3, 3.0, .45, C.hole, C.hole, C.hole, 0), 27.9, hy, 0));
-    [-2.4, 2.4].forEach(function (dy) {
-      f = f.concat(onHp4Glacis(place(tubeSmooth(-.8, .8, 0, 0, .38, 8, C.steel, C.bare), Math.PI / 2, 0, 0, .3), 31.6, hy + dy, 0));
+    var hy = s * 7.45, py = s * 3.1;
+    f = f.concat(onHp4Glacis(box(0, 0, 0, 7.5, 5.1, .45, C.body, cap, C.dark, .14), 26.85, hy, 0));
+    f = f.concat(onHp4Glacis(box(0, 0, .45, 2.6, 3.2, .75, C.dark, C.body, C.dark, .15), 25.3, hy, 0));
+    f = f.concat(onHp4Glacis(box(-1.3, 0, .5, .3, 2.6, .45, C.hole, C.hole, C.hole, 0), 25.3, hy, 0));
+    [-1.8, 1.8].forEach(function (dy) {
+      f = f.concat(onHp4Glacis(place(tubeSmooth(-.8, .8, 0, 0, .38, 8, C.steel, C.bare), Math.PI / 2, 0, 0, .3), 30.3, hy + dy, 0));
     });
-    f = f.concat(onHp4Glacis(grabIron(0, 0, 0, 1.6, .35, C.steel, 'y'), 26.4, hy, .45));
+    f = f.concat(onHp4Glacis(grabIron(0, 0, 0, 1.6, .35, C.steel, 'y'), 23.8, hy, .45));
+    f = f.concat(onHp4Glacis(box(0, 0, 0, 8.5, 3.9, .3, C.body, cap, C.dark, .12), 25.75, py, 0));
+    for (i = 0; i < 5; i++) {
+      [-1.6, 1.6].forEach(function (dy) {
+        f = f.concat(onHp4Glacis(cyl(0, 0, .3, .22, .22, .18, 6, C.steel, C.bare, 0, true), 22.3 + i * 1.72, py + dy, 0));
+      });
+    }
   }
   /* the nose plate: spare track on a bar across it, and the towing brackets at its foot */
   var L = hp4Link(HP4G.LP);
   for (i = 0; i < 11; i++) {
-    var ly = -7.6 + i * 1.52, lz = 10.1;
+    var ly = -7.6 + i * 1.52, lz = 9.4;
     f = f.concat(place(pitch(place(L, Math.PI / 2, 0, 0, 0), -Math.PI / 2 + HP4H.nAng, 0, 0),
                        0, hp4NoseX(lz) + .55, ly, lz));
   }
-  f = f.concat(place(pitch(box(0, 0, -.25, .5, 17.4, .5, C.steel, C.bare, C.steel, 0), HP4H.nAng, 0, 0), 0, hp4NoseX(12.0) + .35, 0, 12.0));
-  f = f.concat(place(pitch(box(0, 0, -.25, .5, 17.4, .5, C.steel, C.bare, C.steel, 0), HP4H.nAng, 0, 0), 0, hp4NoseX(8.7) + .35, 0, 8.7));
+  f = f.concat(place(pitch(box(0, 0, -.25, .5, 17.4, .5, C.steel, C.bare, C.steel, 0), HP4H.nAng, 0, 0), 0, hp4NoseX(11.3) + .35, 0, 11.3));
+  f = f.concat(place(pitch(box(0, 0, -.25, .5, 17.4, .5, C.steel, C.bare, C.steel, 0), HP4H.nAng, 0, 0), 0, hp4NoseX(8.0) + .35, 0, 8.0));
   for (s = -1; s <= 1; s += 2) {
-    f = f.concat(hp4Extrude([[31.0, 5.3], [34.0, 5.8], [34.6, 7.0], [34.3, 8.4], [31.6, 9.4]], s * H.tub - .55, s * H.tub + .55,
+    f = f.concat(hp4Extrude([[30.0, 4.4], [33.0, 4.9], [33.6, 6.1], [33.3, 7.5], [30.6, 8.5]], s * 8.8 - .55, s * 8.8 + .55,
                             [C.dark, C.body, cap, C.body, C.dark], C.body));
-    f = f.concat(place(roll(cyl(0, 0, 0, .75, .75, 1.3, 10, C.hole, C.hole, 0, true), -Math.PI / 2, 0, 0), 0, 33.2, s * H.tub - .65, 7.2));
+    f = f.concat(place(roll(cyl(0, 0, 0, .75, .75, 1.3, 10, C.hole, C.hole, 0, true), -Math.PI / 2, 0, 0), 0, 32.2, s * 8.8 - .65, 6.3));
   }
-  /* the Bosch headlamp on the left guard and the Notek convoy lamp beside it */
-  f = f.concat(headLamp(28.6, -12.3, H.zTub + 2.0, C.dark, '#cfcdb6'));
-  f = f.concat(box(29.6, -12.3, H.zTub + .3, 1.0, 1.0, .8, C.dark, C.body, C.dark, 0));
-  f = f.concat(box(27.2, -15.3, H.zTub + .3, 1.3, 1.3, 1.1, C.dark, C.body, C.dark, 0));
-  f = f.concat(box(27.9, -15.3, H.zTub + .7, .2, .9, .3, C.glass, C.glass, C.glass, 0));
+  /* the Bosch headlamp on its stalk on the left guard, and the horn on the right */
+  f = f.concat(headLamp(23.2, -14.8, H.zTub + 3.2, C.dark, '#cfcdb6'));
+  f = f.concat(box(25.4, -14.8, H.zTub + .3, .6, .6, 1.4, C.dark, C.body, C.dark, 0));
+  f = f.concat(box(25.4, -14.8, H.zTub + .3, 1.4, 1.4, .3, C.dark, C.body, C.dark, 0));
+  f = f.concat(box(24.4, 15.2, H.zTub + .3, 1.4, 1.3, 2.2, C.dark, C.body, C.dark, .2));
+  f = f.concat(box(25.15, 15.2, H.zTub + 1.0, .2, .9, .9, C.hole, C.hole, C.hole, 0));
   /* the lifting eyes at the corners of the front plate */
-  for (s = -1; s <= 1; s += 2) f = f.concat(box(hp4FrontX(H.zRoof) - .9, s * 12.6, H.zRoof, 1.4, .6, 1.3, C.dark, C.body, C.dark, 0));
+  for (s = -1; s <= 1; s += 2) f = f.concat(box(hp4FrontX(H.zRoof) - .9, s * 10.2, H.zRoof, 1.4, .6, 1.3, C.dark, C.body, C.dark, 0));
   return f;
 }
 /* the roof: the driver's hatch and the radio operator's in front of the turret, each
    hinged on its outer edge, and the ring the turret turns on */
 function hp4Roof(cap) {
-  var C = HP4C, H = HP4H, f = [], s, zR = H.zRoof;
+  var C = HP4C, H = HP4H, f = [], s, zR = H.zRoof, zT = H.zTub;
   for (s = -1; s <= 1; s += 2) {
-    var hy = s * 7.1;
-    f = f.concat(faceOut(prism(roundRectPlan(20.9, hy, 2.3, 2.55, .9, 2), zR, zR + .45, C.body, cap, C.dark), 20.9, hy, zR + .2));
-    f = f.concat(tubeSmooth(19.0, 22.8, hy + s * 2.75, zR + .3, .32, 6, C.steel, C.bare));
-    f = f.concat(grabIron(20.9, hy - s * 1.4, zR + .45, 1.6, .32, C.steel, 'x'));
-    f = f.concat(cyl(21.9, hy, zR + .45, .55, .55, .3, 8, C.dark, C.body, 0, true));
+    var hy = s * 7.6;
+    f = f.concat(faceOut(prism(roundRectPlan(14.2, hy, 3.0, 3.2, 1.0, 2), zR, zR + .45, C.body, cap, C.dark), 14.2, hy, zR + .2));
+    f = f.concat(tubeSmooth(11.6, 16.8, hy + s * 3.45, zR + .3, .32, 6, C.steel, C.bare));
+    f = f.concat(grabIron(14.2, hy - s * 1.9, zR + .45, 2.0, .32, C.steel, 'x'));
+    f = f.concat(cyl(15.6, hy + s * .5, zR + .45, .7, .7, .35, 8, C.dark, C.body, 0, true));
+    /* the driver's and the radio operator's side vision ports, in the plates that cut the
+       corners: a block with its visor, and the slit in it */
+    var vx = 14.5, vy = hp4SupY(vx), va = -Math.atan2(H.sup - H.nose, H.xSupF - H.xCut) * s;
+    f = f.concat(place(box(0, 0, 16.6, 3.0, 1.0, 2.0, C.body, cap, C.dark, .15), va, vx, s * (vy + .45), 0));
+    f = f.concat(place(box(0, 0, 17.35, 1.9, .12, .3, C.hole, C.hole, C.hole, 0), va, vx, s * (vy + .98), 0));
+    f = f.concat(place(box(0, 0, 18.75, 3.6, .7, .22, C.dark, cap, C.dark, 0), va, vx, s * (vy + .35), 0));
   }
   f = f.concat(cyl(H.turX, H.turY, zR, 10.3, 10.3, .35, 28, C.dark, C.body, 0, true));
   return f;
@@ -22700,16 +22764,16 @@ function hp4Deck(cap) {
     f = f.concat(m4Box(s, -18.8, -16.8, 2.6, 7.6, zD + .4, zD + 1.25, C.dark, C.body, C.dark, .15));
     f = f.concat(m4Box(s, -18.85, -18.75, 3.0, 7.2, zD + .5, zD + 1.05, C.hole, C.hole, C.hole, 0));
     f = f.concat(grabIron(-22.4, s * 5.4, zD + .4, 1.6, .35, C.steel, 'x'));
-    f = f.concat(cyl(-28.2, s * 8.2, zD, .95, .95, .32, 10, C.dark, C.body, 0, true));
+    f = f.concat(cyl(-27.6, s * 8.2, zD, .95, .95, .32, 10, C.dark, C.body, 0, true));
     /* the louvres: an armoured box on the side plate with its slats open downward */
-    f = f.concat(m4Box(s, -28.4, -17.6, H.sup - .05, H.sup + .9, 13.4, 17.8, C.body, cap, C.dark, .15));
+    f = f.concat(m4Box(s, -28.2, -15.0, H.sup - .05, H.sup + .9, H.zTub + .4, zD - .4, C.body, cap, C.dark, .15));
     for (i = 0; i < 6; i++) {
-      f = f.concat(m4Box(s, -27.8 + i * 1.72, -26.8 + i * 1.72, H.sup + .9, H.sup + 1.0, 13.8, 17.2, C.hole, C.hole, C.hole, 0));
+      f = f.concat(m4Box(s, -27.6 + i * 2.1, -26.4 + i * 2.1, H.sup + .9, H.sup + 1.0, H.zTub + .8, zD - .8, C.hole, C.hole, C.hole, 0));
     }
   }
   /* the tow cable along the back of the deck, and the aerial on the left rear corner */
-  f = f.concat(place(tubeSmooth(-11.5, 11.5, 0, 0, .4, 6, C.steel, C.steel), Math.PI / 2, -29.4, 0, zD + .4));
-  [-11.8, 11.8].forEach(function (y) { f = f.concat(box(-29.4, y, zD, 1.4, 1.0, .9, C.dark, C.body, C.dark, 0)); });
+  f = f.concat(place(tubeSmooth(-11.5, 11.5, 0, 0, .4, 6, C.steel, C.steel), Math.PI / 2, -28.4, 0, zD + .4));
+  [-11.8, 11.8].forEach(function (y) { f = f.concat(box(-28.4, y, zD, 1.2, 1.0, .9, C.dark, C.body, C.dark, 0)); });
   f = f.concat(cyl(-27.0, -12.4, zD, .8, .8, .9, 10, C.dark, C.body, 0, true));
   f = f.concat(place(pitch(cyl(0, 0, 0, .12, .12, 23.4, 4, C.steel, C.steel), .06, 0, 0), 0, -27.0, -12.4, zD + .9));
   return f;
@@ -22718,18 +22782,20 @@ function hp4Deck(cap) {
    two small ones for the generator, the tow coupling and the Notek tail lamp. */
 function hp4Rear(cap) {
   var C = HP4C, H = HP4H, f = [], xr = H.xRear;
-  var mz = 14.8, mx = xr - .25 - 2.0 + (mz - H.zTub) * .09;
-  f = f.concat(place(tubeSmooth(-11.8, 3.6, 0, 0, 2.0, 14, C.muff, C.muffD), Math.PI / 2, mx, 0, mz));
-  [-11.3, 3.1].forEach(function (y) {
-    f = f.concat(place(tubeSmooth(-.4, .4, 0, 0, 2.15, 14, C.muffD, C.muffD), Math.PI / 2, mx, y, mz));
-    f = f.concat(box(xr - .8, y, mz - .3, 1.7, .8, .6, C.dark, C.body, C.dark, 0));
+  /* the big silencer lies across nearly the whole of the lower rear plate under the guard
+     line, strapped to it, with its outlet up out of the top just right of the middle */
+  var mz = 12.6, mr = 2.1, mx = xr - mr;
+  f = f.concat(place(tubeSmooth(-10.7, 10.0, 0, 0, mr, 14, C.muff, C.muffD), Math.PI / 2, mx, 0, mz));
+  [-10.2, -4.9, 5.6, 9.5].forEach(function (y, j) {
+    f = f.concat(place(tubeSmooth(-.3, .3, 0, 0, mr + .15, 14, C.muffD, C.muffD), Math.PI / 2, mx, y, mz));
+    if (j === 0 || j === 3) f = f.concat(box(xr - .8, y, mz - .3, 1.7, .8, .6, C.dark, C.body, C.dark, 0));
   });
-  f = f.concat(cyl(mx + .2, -12.2, mz + 1.0, .55, .55, 3.0, 8, C.muffD, C.hole, 0, true));
-  f = f.concat(place(pitch(tubeSmooth(0, 1.6, 0, 0, .55, 8, C.muffD, C.hole), Math.PI * .75, 0, 0), 0, mx + .2, -12.2, mz + 4.0));
-  [7.0, 10.0].forEach(function (y) {
-    f = f.concat(cyl(xr - 1.3, y, 10.4, 1.0, 1.0, 4.4, 10, C.muff, C.muffD, 0, true));
-    f = f.concat(tubeSmooth(xr - 1.9, xr - 1.3, y, 14.6, .3, 6, C.muffD, C.hole));
-  });
+  f = f.concat(cyl(mx - .3, 1.0, mz + mr - .4, .6, .6, 1.5, 8, C.muffD, C.hole, 0, true));
+  f = f.concat(place(pitch(tubeSmooth(0, 1.2, 0, 0, .6, 8, C.muffD, C.hole), Math.PI * .7, 0, 0), 0, mx - .3, 1.0, mz + mr + 1.0));
+  /* the generator's small silencer on the upper rear plate, on the right */
+  var gz = 16.2, gx = xr + (gz - H.zTub) / (H.zDeck - H.zTub) * (H.xDeck - xr) - 1.1;
+  f = f.concat(place(tubeSmooth(5.8, 8.4, 0, 0, 1.0, 10, C.muff, C.muffD), Math.PI / 2, gx, 0, gz));
+  f = f.concat(box(gx + .6, 7.1, gz - 1.0, 1.0, .5, .4, C.dark, C.body, C.dark, 0));
   /* the coupling, and the lamp on the left guard */
   f = f.concat(box(xr - .8, 0, 8.6, 1.6, 2.4, 1.8, C.dark, C.body, C.dark, .15));
   f = f.concat(place(tubeSmooth(-.7, .7, 0, 0, .75, 8, C.steel, C.steel), Math.PI / 2, xr - 1.7, 0, 9.5));
@@ -22759,14 +22825,18 @@ function hp4Tools() {
    the plates hook onto. They go on with the plates, so the bare hull measures over its
    guards the way the published width does. */
 function hp4Rails() {
-  var C = HP4C, H = HP4H, f = [], s;
+  var C = HP4C, H = HP4H, f = [], s, yr = H.skirt - .35;
   for (s = -1; s <= 1; s += 2) {
-    [20.4, 6.2, -7.8, -16.6, -29.3].forEach(function (x) {
-      f = f.concat(m4Box(s, x - .35, x + .35, H.sup - .05, H.skirt - .35, 18.3, 18.95, C.dark, C.body, C.dark, 0));
-      var br = place(box(0, 0, -.25, 5.06, .45, .5, C.dark, C.body, C.dark, 0), Math.PI / 2, 0, 0, 0);
-      f = f.concat(place(roll(br, s * .66, 0, 0), 0, x, s * (H.sup + 2.0), 16.75));
+    [16.0, 5.5, -6.0, -17.0, -28.0].forEach(function (x) {
+      var y0 = hp4SupY(x) - .05;
+      f = f.concat(m4Box(s, x - .35, x + .35, y0, yr, 18.3, 18.95, C.dark, C.body, C.dark, 0));
+      var bl = Math.hypot(yr - y0, 2.2), br = place(box(0, 0, -.25, bl, .45, .5, C.dark, C.body, C.dark, 0), Math.PI / 2, 0, 0, 0);
+      f = f.concat(place(roll(br, s * Math.atan2(2.2, yr - y0), 0, 0), 0, x, s * (y0 + yr) / 2, 17.55));
     });
-    f = f.concat(m4Box(s, -29.8, 24.6, H.skirt - .45, H.skirt - .15, 18.4, 19.4, C.dark, C.body, C.dark, 0));
+    f = f.concat(m4Box(s, -29.8, 15.0, yr - .3, yr, 18.4, 19.4, C.dark, C.body, C.dark, 0));
+    var dl = Math.hypot(13.0, 1.2);
+    f = f.concat(place(pitch(box(dl / 2, 0, -.5, dl, .3, 1.0, C.dark, C.body, C.dark, 0), -Math.atan2(1.2, 13.0), 0, 0),
+                       0, 15.0, s * (yr - .15), 18.9));
   }
   return f;
 }
@@ -22792,21 +22862,21 @@ function hp4Hull(body, cap, sideC) {
   f = f.concat(hp4Tools());
   /* the cross on each side of the superstructure, which the Schürzen cover when they hang */
   for (sd = -1; sd <= 1; sd += 2) {
-    f = f.concat(hp4Cross([-3.0, sd * HP4H.sup, 16.2], [sd, 0, 0], [0, 0, 1], [0, sd, 0], 5.2, 1.2, .38));
+    f = f.concat(hp4Cross([-3.0, sd * HP4H.sup, 17.25], [sd, 0, 0], [0, 0, 1], [0, sd, 0], 3.9, 1.0, .3));
   }
-  f = f.concat(hp4Cross([HP4H.xRear - .05, -4.2, 10.8], [0, -1, 0], [0, 0, 1], [-1, 0, 0], 3.2, .75, .25));
   return f;
 }
 
 /* ---- the turret ---- */
 
 /* The turret in plan at the foot of its walls, counter-clockwise from the right-hand end
-   of the front plate: the narrow front, the cheeks angled out to the widest point, sides
-   running back near enough parallel, and the flat rear. `lean` is how far each wall leans
-   in, in degrees: the front ten, the cheeks and the sides twenty-five, the rear twelve. */
-var HP4T = { z0: .4, z1: 8.0, gz: 3.9, muz: 43.0, cx: -8.3, cr: 3.8,
-             plan: [[10.3, 6.2], [4.6, 10.55], [-11.3, 10.65], [-11.3, -10.65], [4.6, -10.55], [10.3, -6.2]],
-             lean: [25, 25, 12, 25, 25, 10] };
+   of the front plate: the front, short cheeks angled out to the widest point, sides running
+   back parallel, the rear corners cut off, and the rear plate. `lean` is how far each wall
+   leans in, in degrees: the front ten, the cheeks and the sides twenty-five, the cut corners
+   twenty, the rear twelve. */
+var HP4T = { z0: .4, z1: 8.0, gz: 3.9, muz: 48.0, cx: -8.3, cr: 4.2,
+             plan: [[10.0, 8.9], [5.4, 10.65], [-8.8, 10.65], [-11.3, 7.2], [-11.3, -7.2], [-8.8, -10.65], [5.4, -10.65], [10.0, -8.9]],
+             lean: [25, 25, 20, 12, 20, 25, 25, 10] };
 /* the same outline at a height: every wall moved in along its own normal by its lean and
    the corners found again where the moved walls meet, so a plate stays a plane */
 function hp4TurPlan(z) {
@@ -22841,23 +22911,23 @@ function hp4Turret(body, cap) {
   /* ---- the mantlet: a thick cast plate across the front, flat in the face and rounded
      away top and bottom on the arc it swings through, with the gun through the middle of
      it, the coaxial on the right and the sight on the left ---- */
-  f = f.concat(m4Sweep([[9.3, gz - 2.6], [11.3, gz - 2.6], [12.35, gz - 2.0], [12.8, gz - 1.1], [12.8, gz + 1.2],
-                        [12.35, gz + 2.1], [11.3, gz + 2.7], [9.3, gz + 2.7]], -4.3, 4.3,
+  f = f.concat(m4Sweep([[8.9, gz - 2.6], [10.2, gz - 2.6], [11.25, gz - 2.0], [11.7, gz - 1.1], [11.7, gz + 1.2],
+                        [11.25, gz + 2.1], [10.2, gz + 2.7], [8.9, gz + 2.7]], -4.6, 4.6,
                        [C.dark, C.body, C.body, cap, C.body, C.body, cap], C.dark));
   [-1, 1].forEach(function (k) {
-    [gz - 1.6, gz + 1.7].forEach(function (z) { f = f.concat(studX(12.8, k * 3.7, z, .26, .25, C.steel)); });
+    [gz - 1.6, gz + 1.7].forEach(function (z) { f = f.concat(studX(11.7, k * 4.0, z, .26, .25, C.steel)); });
   });
-  f = f.concat(m4Taper(12.7, 13.6, 2.9, gz - .05, .72, .62, 10, C.dark, C.body));
-  f = f.concat(tubeSmooth(13.6, 14.3, 2.9, gz - .05, .3, 6, C.steel, C.hole));
-  f = f.concat(tubeSmooth(12.75, 12.95, -2.8, gz + .7, .5, 8, C.hole, C.hole));
+  f = f.concat(m4Taper(11.6, 12.5, 2.9, gz - .05, .72, .62, 10, C.dark, C.body));
+  f = f.concat(tubeSmooth(12.5, 13.2, 2.9, gz - .05, .3, 6, C.steel, C.hole));
+  f = f.concat(tubeSmooth(11.65, 11.85, -2.8, gz + .7, .5, 8, C.hole, C.hole));
   /* the KwK 40 L/48: the recoil sleeve out of the mantlet, the tube, and the double-baffle
      muzzle brake with its two pairs of windows */
-  f = f.concat(m4Taper(12.7, 14.3, 0, gz, 1.6, 1.48, 14, C.body, cap));
-  f = f.concat(m4Taper(14.3, 16.4, 0, gz, 1.16, 1.1, 14, C.dark, C.body));
-  f = f.concat(m4Taper(16.4, 39.2, 0, gz, 1.0, .82, 14, C.dark, C.dark));
-  f = f.concat(tubeSmooth(39.2, 39.7, 0, gz, 1.08, 14, C.dark, C.dark));
-  f = f.concat(tubeSmooth(39.7, T.muz, 0, gz, 1.36, 14, C.body, C.dark));
-  [[40.0, 41.0], [41.6, 42.6]].forEach(function (w) {
+  f = f.concat(box(13.35, 0, gz - 1.75, 4.3, 5.6, 3.5, C.body, cap, C.dark, .35));
+  f = f.concat(m4Taper(15.5, 22.0, 0, gz, 1.34, 1.3, 14, C.body, cap));
+  f = f.concat(m4Taper(22.0, 44.2, 0, gz, .95, .82, 14, C.dark, C.dark));
+  f = f.concat(tubeSmooth(44.2, 44.7, 0, gz, 1.08, 14, C.dark, C.dark));
+  f = f.concat(tubeSmooth(44.7, T.muz, 0, gz, 1.36, 14, C.body, C.dark));
+  [[45.0, 46.0], [46.6, 47.6]].forEach(function (w) {
     [-1, 1].forEach(function (k) {
       f = f.concat(box((w[0] + w[1]) / 2, k * 1.33, gz - .6, w[1] - w[0], .14, 1.2, C.hole, C.hole, C.hole, 0));
     });
@@ -22875,23 +22945,23 @@ function hp4Turret(body, cap) {
 
   /* ---- the cupola, bulging out of the rear plate: the drum with its five vision blocks,
      each with its armoured shutter slid down under it, and the ring the lid lies on ---- */
-  var cx = T.cx;
-  f = f.concat(cyl(cx, 0, 6.4, 3.7, 3.7, zr - 6.35, 20, body, body, 0, true));
-  f = f.concat(cyl(cx, 0, zr, 4.05, 4.05, .6, 20, C.dark, body, 0, true));
-  f = f.concat(cyl(cx, 0, zr + .6, 3.8, 3.8, 1.8, 20, body, body, 0, true));
+  var cx = T.cx, cr = T.cr;
+  f = f.concat(cyl(cx, 0, 6.4, cr, cr, zr - 6.35, 20, body, body, 0, true));
+  f = f.concat(cyl(cx, 0, zr, cr + .35, cr + .35, .6, 20, C.dark, body, 0, true));
+  f = f.concat(cyl(cx, 0, zr + .6, cr + .1, cr + .1, 1.8, 20, body, body, 0, true));
   for (i = 0; i < 5; i++) {
     var va = i / 5 * TAU;
-    f = f.concat(place(box(3.72, 0, zr + 1.55, .3, 1.5, .62, C.glass, C.glass, C.glass, 0), va, cx, 0, 0));
-    f = f.concat(place(box(3.95, 0, zr + .7, .3, 1.8, .78, C.dark, C.body, C.dark, 0), va, cx, 0, 0));
+    f = f.concat(place(box(cr + .02, 0, zr + 1.55, .3, 1.6, .62, C.glass, C.glass, C.glass, 0), va, cx, 0, 0));
+    f = f.concat(place(box(cr + .25, 0, zr + .7, .3, 1.9, .78, C.dark, C.body, C.dark, 0), va, cx, 0, 0));
   }
-  f = f.concat(cyl(cx, 0, zr + 2.4, 4.1, 4.1, .55, 20, C.dark, cap, 0, true));
+  f = f.concat(cyl(cx, 0, zr + 2.4, cr + .4, cr + .4, .55, 20, C.dark, cap, 0, true));
   hp4Hatch(cap);
 
   /* ---- the side doors: two leaves in each side, hinged at their outer edges, each with
      a vision block, and the rain strip over them ---- */
   for (s = -1; s <= 1; s += 2) {
     var dr = [], z0 = 1.2;
-    [[-4.85, -1.75], [-1.65, 1.45]].forEach(function (u, j) {
+    [[-8.0, -4.95], [-4.85, -1.8]].forEach(function (u, j) {
       var uc = (u[0] + u[1]) / 2;
       dr = dr.concat(m4Box(s, u[0], u[1], -.05, .38, 0, 6.1, body, cap, C.dark, .12));
       dr = dr.concat(m4Box(s, uc - .8, uc + .8, .38, .78, 3.9, 4.9, C.dark, C.body, C.dark, .1));
@@ -22900,30 +22970,31 @@ function hp4Turret(body, cap) {
       [1.0, 5.1].forEach(function (v) { dr = dr.concat(m4Box(s, hx - .25, hx + .25, 0, .6, v, v + 1.0, C.steel, C.bare, C.steel, 0)); });
       dr = dr.concat(m4Box(s, uc + (j ? -1.0 : 1.0) - .2, uc + (j ? -1.0 : 1.0) + .2, .38, .62, 2.4, 3.1, C.steel, C.bare, C.steel, 0));
     });
-    dr = dr.concat(m4Box(s, -5.4, 2.0, 0, .55, 6.35, 6.65, C.dark, cap, C.dark, 0));
+    dr = dr.concat(m4Box(s, -8.5, -1.3, 0, .55, 6.35, 6.65, C.dark, cap, C.dark, 0));
     f = f.concat(place(roll(dr, s * sl, 0, 0), 0, 0, s * hp4TurSideY(z0), z0));
-    /* the number behind the doors, which the turret Schürzen cover when they hang */
+    /* the number forward of the doors, which the turret Schürzen cover when they hang */
     var nz = 4.3, ny = hp4TurSideY(nz);
-    f = f.concat(hp4Number('415', [-7.65, s * ny, nz], [s, 0, 0], [0, -s * Math.sin(sl), Math.cos(sl)],
+    f = f.concat(hp4Number('415', [2.2, s * ny, nz], [s, 0, 0], [0, -s * Math.sin(sl), Math.cos(sl)],
                            [0, s * Math.cos(sl), Math.sin(sl)], 2.3));
   }
 
-  /* ---- the stowage bin across the rear, on two brackets, its lid hinged at the front ---- */
-  f = f.concat(faceOut(prism(roundRectPlan(-12.9, 0, 2.7, 8.2, 1.1, 3), .9, 6.0, C.dark, cap, body), -12.9, 0, 3.4));
-  f = f.concat(faceOut(prism(roundRectPlan(-12.95, 0, 2.85, 8.35, 1.2, 3), 6.0, 6.4, body, cap, C.dark), -12.95, 0, 6.2));
+  /* ---- the stowage bin across the rear, deep and round behind, on two brackets, its lid
+     hinged at the front ---- */
+  f = f.concat(faceOut(prism(roundRectPlan(-15.0, 0, 4.6, 6.8, 3.0, 4), .9, 6.0, C.dark, cap, body), -15.0, 0, 3.4));
+  f = f.concat(faceOut(prism(roundRectPlan(-15.05, 0, 4.75, 6.95, 3.1, 4), 6.0, 6.4, body, cap, C.dark), -15.05, 0, 6.2));
   [-1, 1].forEach(function (k) {
-    f = f.concat(box(-15.72, k * 5.2, 4.3, .3, 1.2, 1.4, C.steel, C.bare, C.steel, 0));
-    f = f.concat(box(-11.2, k * 6.0, .3, 2.4, 1.0, .6, C.dark, C.body, C.dark, 0));
+    f = f.concat(box(-19.62, k * 2.2, 4.3, .3, 1.2, 1.4, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(-11.4, k * 5.0, .3, 2.4, 1.0, .6, C.dark, C.body, C.dark, 0));
   });
-  f = f.concat(place(tubeSmooth(-7.4, 7.4, 0, 0, .28, 6, C.steel, C.bare), Math.PI / 2, -10.35, 0, 6.3));
-  f = f.concat(hp4Number('415', [-15.66, 0, 3.4], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 2.0));
+  f = f.concat(place(tubeSmooth(-6.0, 6.0, 0, 0, .28, 6, C.steel, C.bare), Math.PI / 2, -10.6, 0, 6.3));
+  f = f.concat(hp4Number('415', [-19.62, 0, 3.4], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 2.0));
   return f;
 }
 /* The cupola lid: one round casting, domed, on its arm at the back of the ring, built lying
    shut and standing up open with the commander in the ring in front of it. The roof keeps
    only the ring, because only one of the two is ever drawn. */
 function hp4Hatch(cap) {
-  var C = HP4C, T = HP4T, cx = T.cx, zl = T.z1 + 2.95, r = 3.15, lid = [];
+  var C = HP4C, T = HP4T, cx = T.cx, zl = T.z1 + 2.95, r = T.cr - .8, lid = [];
   lid = lid.concat(cyl(cx, 0, zl, r, r, .4, 18, C.dark, C.body, 0, true));
   lid = lid.concat(cyl(cx, 0, zl + .4, r - .7, r - .7, .22, 16, C.body, cap, 0, true));
   lid = lid.concat(box(cx - r + .2, 0, zl, 1.2, 1.6, .75, C.steel, C.bare, C.steel, 0));
@@ -22953,13 +23024,13 @@ function hp4Man(P0, want, x, y, zf, yaw) {
 /* The MG 34 on the Fliegerbeschussgerät 42: a ring round the top of the cupola on four
    stand-offs, the carriage that runs round it, and the gun on its cradle with the belt drum
    on its left. The commander stands to it, so a tank carrying one keeps the lid up. */
-var HP4MG = { a: .25, r: 4.5 };
+var HP4MG = { a: .25, r: 4.9 };
 function hp4CupolaMG() {
   var C = HP4C, T = HP4T, f = [], cx = T.cx, zr = T.z1 + 2.95, i;
   f = f.concat(cyl(cx, 0, zr - .15, HP4MG.r, HP4MG.r, .3, 24, C.steel, C.bare, 0, true));
   for (i = 0; i < 4; i++) {
     var a = (i + .5) / 4 * TAU;
-    f = f.concat(box(cx + Math.cos(a) * 4.3, Math.sin(a) * 4.3, zr - .5, .5, .5, .5, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(cx + Math.cos(a) * 4.7, Math.sin(a) * 4.7, zr - .5, .5, .5, .5, C.steel, C.bare, C.steel, 0));
   }
   var px = cx + Math.cos(HP4MG.a) * HP4MG.r, py = Math.sin(HP4MG.a) * HP4MG.r, gz = zr + 2.4;
   f = f.concat(box(px, py, zr + .1, 1.4, 1.0, .6, C.steel, C.bare, C.steel, 0));
@@ -22995,50 +23066,56 @@ function hp4Panel(a, b, z0, z1, t, col, cap, side) {
 /* The hull Schürzen: five plates a side hung on the rail, the leading one cut back at its
    foot, each hooked over the bar at the top, and the Balkenkreuz on the middle one. */
 function hp4Skirts() {
-  var C = HP4C, H = HP4H, f = [], s, j, zt = 19.5, zb = 7.4;
-  var P = [[24.0, 13.1], [13.3, 2.6], [2.8, -7.9], [-7.7, -18.4], [-18.2, -29.6]];
+  var C = HP4C, H = HP4H, f = [], s, j, zt = 19.3, zb = 6.2, a = Math.atan(H.skirtL);
+  var P = [[28.0, 17.4], [17.6, 6.1], [6.3, -5.4], [-5.2, -16.9], [-16.7, -29.2]];
   f = f.concat(hp4Rails());
   for (s = -1; s <= 1; s += 2) {
+    var side = [];
     P.forEach(function (p, i) {
       var y0 = H.skirt + (i % 2) * .2, y1 = y0 + .3;
-      if (i === 0) f = f.concat(hp4Extrude([[p[0], zt], [p[1], zt], [p[1], zb], [p[0] - 3.4, zb]], s * y0, s * y1,
-                                           [C.lit, C.body, C.dark, C.body], s > 0 ? C.body : C.body));
-      else f = f.concat(m4Box(s, p[1], p[0], y0, y1, zb, zt, C.body, C.lit, C.body, 0));
+      if (i === 0) side = side.concat(hp4Extrude([[p[0], 18.4], [p[1], zt], [p[1], zb], [p[0], 8.5]], s * y0, s * y1,
+                                                  [C.lit, C.body, C.dark, C.body], C.body));
+      else if (i === 4) side = side.concat(hp4Extrude([[p[0], zt], [p[1], zt], [p[1], 8.0], [p[0], zb]], s * y0, s * y1,
+                                                       [C.lit, C.body, C.dark, C.body], C.body));
+      else side = side.concat(m4Box(s, p[1], p[0], y0, y1, zb, zt, C.body, C.lit, C.body, 0));
       for (j = 0; j < 2; j++) {
-        var hx = j ? p[1] + 1.4 : p[0] - 1.4 - (i === 0 ? .3 : 0);
-        f = f.concat(m4Box(s, hx - .5, hx + .5, H.skirt - .5, y1, zt - .05, zt + .25, C.dark, C.body, C.dark, 0));
+        var hx = j ? p[1] + 1.4 : p[0] - 1.4;
+        side = side.concat(m4Box(s, hx - .5, hx + .5, H.skirt - .5, y1, zt - .05, zt + .25, C.dark, C.body, C.dark, 0));
       }
     });
-    f = f.concat(hp4Cross([-2.55, s * (H.skirt + .3), 13.4], [s, 0, 0], [0, 0, 1], [0, s, 0], 6.4, 1.5, .45));
+    side = side.concat(hp4Cross([.45, s * (H.skirt + .3), 12.9], [s, 0, 0], [0, 0, 1], [0, s, 0], 6.4, 1.5, .45));
+    /* hung on the rail, each plate swings in at its foot toward the track */
+    f = f.concat(roll(side, -s * a, s * H.skirt, zt));
   }
   return f;
 }
 /* The turret Schürzen: a horseshoe of plate round the sides and back of the turret on
-   brackets off its walls, angled in at the front and round the bin at the back, with a
-   two-leaf door in each side in line with the turret's own, and the number across it. */
+   brackets off its walls, angled in at the front to the cheeks, run round the bin behind in
+   a long diagonal each side to a short plate across the back, with a two-leaf door in each
+   side in line with the turret's own and the number across it. */
 function hp4TurSkirts() {
-  var C = HP4C, T = HP4T, f = [], s, z0 = .9, z1 = 8.3, t = .3;
-  var A = [9.2, 10.9], B = [6.4, 14.4], Cc = [-13.9, 14.4], D = [-18.6, 10.8];
+  var C = HP4C, T = HP4T, f = [], s, z0 = .9, z1 = 8.3, t = .3, ys = 14.4;
+  var A = [11.5, 9.5], B = [4.6, ys], Cc = [-8.5, ys], D = [-20.5, 4.6];
   for (s = -1; s <= 1; s += 2) {
     f = f.concat(hp4Panel([A[0], s * A[1]], [B[0], s * B[1]], z0, z1, t, C.body, C.lit, C.dark));
     f = f.concat(hp4Panel([B[0], s * B[1]], [Cc[0], s * Cc[1]], z0, z1, t, C.body, C.lit, C.dark));
     f = f.concat(hp4Panel([Cc[0], s * Cc[1]], [D[0], s * D[1]], z0, z1, t, C.body, C.lit, C.dark));
     /* the door, its hinges and its latch */
-    [[-5.0, -1.72], [-1.62, 1.6]].forEach(function (u, j) {
-      f = f.concat(m4Box(s, u[0], u[1], 14.4 + t / 2 - .02, 14.4 + t / 2 + .12, z0 + .4, z1 - .4, C.body, C.lit, C.body, 0));
+    [[-8.4, -5.1], [-4.9, -1.6]].forEach(function (u, j) {
+      f = f.concat(m4Box(s, u[0], u[1], ys + t / 2 - .02, ys + t / 2 + .12, z0 + .4, z1 - .4, C.body, C.lit, C.body, 0));
       var hx = j ? u[1] + .1 : u[0] - .1;
       [z0 + 1.2, z1 - 2.0].forEach(function (z) {
-        f = f.concat(cyl(hx, s * (14.4 + t / 2 + .15), z, .22, .22, .8, 6, C.steel, C.bare, 0, true));
+        f = f.concat(cyl(hx, s * (ys + t / 2 + .15), z, .22, .22, .8, 6, C.steel, C.bare, 0, true));
       });
     });
-    f = f.concat(m4Box(s, -2.05, -1.3, 14.4 + t / 2 + .1, 14.4 + t / 2 + .38, 4.4, 5.0, C.steel, C.bare, C.steel, 0));
+    f = f.concat(m4Box(s, -5.4, -4.6, ys + t / 2 + .1, ys + t / 2 + .38, 4.4, 5.0, C.steel, C.bare, C.steel, 0));
     /* the brackets out from the walls, at the roof edge and near the foot */
-    [2.6, -7.6, -12.8].forEach(function (x) {
-      f = f.concat(m4Box(s, x - .3, x + .3, hp4TurSideY(7.4) - .3, 14.4 - t / 2, 7.1, 7.6, C.dark, C.body, C.dark, 0));
-      f = f.concat(m4Box(s, x - .3, x + .3, hp4TurSideY(2.0) - .3, 14.4 - t / 2, 1.8, 2.3, C.dark, C.body, C.dark, 0));
+    [2.6, -3.5, -7.8].forEach(function (x) {
+      f = f.concat(m4Box(s, x - .3, x + .3, hp4TurSideY(7.4) - .3, ys - t / 2, 7.1, 7.6, C.dark, C.body, C.dark, 0));
+      f = f.concat(m4Box(s, x - .3, x + .3, hp4TurSideY(2.0) - .3, ys - t / 2, 1.8, 2.3, C.dark, C.body, C.dark, 0));
     });
-    f = f.concat(m4Box(s, -18.6 + t / 2, -15.5, 5.2, 5.8, 3.2, 3.8, C.dark, C.body, C.dark, 0));
-    f = f.concat(hp4Number('415', [-1.7, s * (14.4 + t / 2 + .12), 4.7], [s, 0, 0], [0, 0, 1], [0, s, 0], 3.4));
+    f = f.concat(m4Box(s, D[0] + t / 2, -19.5, 1.6, 2.2, 3.2, 3.8, C.dark, C.body, C.dark, 0));
+    f = f.concat(hp4Number('415', [-5.0, s * (ys + t / 2 + .12), 4.7], [s, 0, 0], [0, 0, 1], [0, s, 0], 3.4));
   }
   f = f.concat(hp4Panel([D[0], -D[1]], [D[0], D[1]], z0, z1, t, C.body, C.lit, C.dark));
   f = f.concat(hp4Number('415', [D[0] - t / 2, 0, 4.7], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 2.6));
@@ -31872,7 +31949,7 @@ VIN.hr_251 = function (V) {
    cupola's own caps stood between him and the room he looks down into. ---- */
 VIN.hr_p4 = function (V) {
   var C = INC, T = HP4T, f = [], lid = [], crew = [], i, ang;
-  var cx = T.cx, zl = T.z1 + 2.95, gz = T.gz, cr = 3.55;
+  var cx = T.cx, zl = T.z1 + 2.95, gz = T.gz, cr = T.cr - .15;
   var roof = T.z1 - .5, flr = -10.3, eye = 9.7;
   var gy = -4.3, ly = 5.0;                                 /* the gunner's station, and the loader's */
   function shrink(pl, k) { return pl.map(function (p) { return [-.5 + (p[0] + .5) * k, p[1] * k, p[2]]; }); }
@@ -31956,10 +32033,10 @@ VIN.hr_p4 = function (V) {
   crew.push({ x: -.6 - 1.1, y: gy, z: gSole, yaw: 0 });
   crew.push({ x: -2.2, y: ly + .3 + 1.1, z: flr, yaw: -Math.PI / 2 });
   return { frame: 'tur', closed: true, hide: 'tur', crew: crew, faces: f, lid: lid,
-           cup: { x: cx, y: 0, z: zl, r: 3.15 },
+           cup: { x: cx, y: 0, z: zl, r: T.cr - .8 },
            eyeUp: { x: cx, y: 0, z: zl + 3.9 },
            eyeIn: { x: cx + .3, y: 0, z: eye },
-           hole: { x: cx, y: 0, z: zl + .05, r: 3.05 },
+           hole: { x: cx, y: 0, z: zl + .05, r: T.cr - .9 },
            dbg: { roof: roof, eye: eye } };
 };
 /* The Panther's turret from the commander's seat: the Panzer IV's room laid out again round

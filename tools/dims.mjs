@@ -90,11 +90,11 @@ const REAL = {
                by the small lean on the last half metre, and is derived rather than published. 10.2 m
                over the gun against 10.09 m of hull: the muzzle clears the nose by 110 mm */
   hr_p4:     { name: 'Panzer IV Ausf. H (Heer)', len: 5.92, gun: 7.02,  wid: 2.88,  hgt: 2.68,
-               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the width is over the track
+               body: 2.36, bodyZ: 1.45, roof: 2.36, clear: 0.40 },   /* the width is over the track
                guards, which is what it is without the Schürzen, and 3.33 m with them; the body is the
                superstructure, which sits well inboard of the guards and leaves the walkable shelf */
   hr_wirb:   { name: 'Flakpanzer IV Wirbelwind (Heer)', len: 5.92, gun: 5.92, wid: 2.90, hgt: 2.76,
-               body: 2.36, bodyZ: 1.10, roof: 2.36, clear: 0.40 },   /* the Heer's Panzer IV hull under a
+               body: 2.36, bodyZ: 1.45, roof: 2.36, clear: 0.40 },   /* the Heer's Panzer IV hull under a
                turret built from nothing, so the hull's figures are that tank's; gun is len because the
                four barrels stop short of the nose */
   hr_panther: { name: 'Panther Ausf. A (Heer)', len: 6.87, gun: 8.66, wid: 3.27, hgt: 2.99,
@@ -186,10 +186,11 @@ const PROBE = {
   ger_maus:  { bodyZ: 20.0, roofZ: 28.0, xLo: -20.0, xHi: 20.0, straddle: true },   /* roofZ sits on the
                roof plate itself: the leaning side straddles every station below it and would report the
                full width of the base */
-  hr_p4:     { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the slice is taken
-               between the second and third Schürzen brackets and forward of the cross, where the
-               superstructure side is bare; hullZ drops the rod aerial on the left rear of the deck */
-  hr_wirb:   { bodyZ: 16.0, roofZ: 19.6, xLo: 8.0, xHi: 12.0, straddle: true, hullZ: 24 },   /* the Heer
+  hr_p4:     { bodyZ: 17.0, roofZ: 19.6, xLo: -10.0, xHi: -5.2, straddle: true, hullZ: 24 },   /* the slice is
+               taken aft of the cross and ahead of the louvres, where the superstructure side is bare, and
+               clear of the guard under it: the guards are 0.4 m below the roof, so a slice any lower
+               reads them; hullZ drops the rod aerial on the left rear of the deck */
+  hr_wirb:   { bodyZ: 17.0, roofZ: 19.6, xLo: -10.0, xHi: -5.2, straddle: true, hullZ: 24 },   /* the Heer
                Panzer IV's hull, so its slices */
   hr_panther: { bodyZ: 17.6, roofZ: 22.65, xLo: -7.0, xHi: -1.0, straddle: true },   /* the slice is taken
                just over the sponsons' floor at the station of the cross, which is clear of the rods, the

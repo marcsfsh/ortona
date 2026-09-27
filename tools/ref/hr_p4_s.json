@@ -1,0 +1,7 @@
+{ "image": "shots/ref/hr_p4.png", "key": "hr_p4", "up": ["hatch", "skirts"], "crew": false,
+  "note": "The skirted views of the same sheet as hr_p4.json: the right side with the nose right, the front and the rear, and the plan, which carries the turret Schurzen and the rails. Scales as there.",
+  "views": {
+    "side":  { "nose": "right", "crop": [100, 172, 360, 160], "ppm": 54.2, "ppmv": 53.6, "at": [0, 0, 0], "px": [275.1, 327.2], "k": 3 },
+    "front": { "crop": [20, 335, 200, 162], "ppm": 54.1, "ppmv": 53.0, "at": [0, 0, 0], "px": [121.6, 493.0], "k": 4 },
+    "rear":  { "crop": [290, 335, 200, 162], "ppm": 54.1, "ppmv": 52.5, "at": [0, 0, 0], "px": [387.5, 490.5], "k": 4 },
+    "plan":  { "nose": "left", "crop": [40, 505, 420, 184], "ppm": 54.2, "at": [0, 0, 0], "px": [270.0, 597.1], "k": 3 } } }

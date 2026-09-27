@@ -5245,17 +5245,21 @@ for (const device of TARGETS) {
       if (d.cat !== 'veh' || !window.VMODEL[k]) continue;
       const b = hullBox(k), u = window.spawnUnit(d.side, k, sx, sy, 0);
       window.unitBody(u);
-      worstL = Math.max(worstL, u.bodyL / Math.max(b.x1, -b.x0));
+      /* the body's two ends against the hull's, because the box stands on the hull's own
+         middle and not on the unit's origin */
+      worstL = Math.max(worstL, Math.abs((u.bodyX || 0) + u.bodyL - b.x1),
+                        Math.abs((u.bodyX || 0) - u.bodyL - b.x0));
       worstW = Math.max(worstW, u.bodyW / Math.max(b.y1, -b.y0));
       n++; drop(u);
     }
     /* and the gap at contact, over eight bearings */
     const rows = [];
-    /* on a hull whose box is centred on its own origin, because the body is a box about the
-       origin: the M4A1's hull runs from -37.2 to 32.8, so its body stands 4.4 units proud of
-       its nose and a pair of them met with 4.4 to 8.7 units between the models. The Panzer IV's
-       runs -35.1 to 34.6. */
-    for (const [ak, as, bk, bs] of [['hr_p4', 'ger', 'hr_gren', 'ger'],
+    /* on the M4A1, whose hull stands furthest off its own origin (-37.2 to 32.8): while the
+       body was a box about the origin it stood 4.4 units proud of the nose and a pair of them
+       met with 4.4 to 8.7 units between the models. And on the Panzer IV, which is off it the
+       other way by less (-36.2 to 33.6). */
+    for (const [ak, as, bk, bs] of [['am_sher', 'us', 'am_rifle', 'us'],
+                                    ['am_sher', 'us', 'am_sher', 'us'],
                                     ['hr_p4', 'ger', 'hr_p4', 'ger']]) {
       const A = window.spawnUnit(as, ak, sx, sy, 0), B = window.spawnUnit(bs, bk, sx + 700, sy, Math.PI);
       const ab = hullBox(ak), bb = window.VMODEL[bk] ? hullBox(bk) : null;
@@ -5329,9 +5333,9 @@ for (const device of TARGETS) {
     return { n, worstL: +worstL.toFixed(2), worstW: +worstW.toFixed(2), rows, turns, sx, sy, found };
   });
   ok('a hull is the shape of a hull, and what it is kept off is the men',
-     bodies.n >= 10 && bodies.worstL < 1.02 && bodies.worstW < 1.02 &&
+     bodies.n >= 10 && bodies.worstL < .5 && bodies.worstW < 1.02 &&
      bodies.rows.every(r => r.lo > -3 && r.hi < 6),
-     `${bodies.n} vehicles, the collision body at most ${bodies.worstL}x their own half-length and ` +
+     `${bodies.n} vehicles, the collision body's ends within ${bodies.worstL} units of the hull's and ` +
      `${bodies.worstW}x their half-beam; ` +
      bodies.rows.map(r => `${r.pair} meet with ${r.lo} to ${r.hi} units between the models over 8 bearings`).join('; '));
   ok('tracks turn where they stand and wheels have to drive the turn',
