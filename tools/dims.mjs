@@ -123,11 +123,13 @@ const REAL = {
                whether the thing reads as a StuG or as a box. 5.93 m is the Panzer IV hull; the 6.70 m
                over the gun is what every table gives for the StuG IV */
   us_m8:     { name: 'Universal Carrier',   len: 3.65,  gun: 3.65,   wid: 2.06,  hgt: 1.57 },
-  am_jeep:   { name: 'Willys MB',           len: 3.36,  gun: 3.36,   wid: 1.575, hgt: 1.016,
-               clear: 0.222 },   /* 132.25 in long, 62 in over the front wings, 8.75 in under the
-               differentials; the height is the 40 in it is reducible to with the windscreen folded
-               flat on the bonnet, which is how it is built, and the steering wheel, the pedestal
-               and the men standing up out of it are no more part of that than an aerial is */
+  am_jeep:   { name: 'Willys MB',           len: 3.36,  gun: 3.36,   wid: 1.575, hgt: 1.321,
+               clear: 0.222 },   /* 132.25 in long, 62 in over the grab handles on the rear body,
+               8.75 in under the differentials, and 52 in to the top of the steering wheel, which is
+               the height it is reducible to with the windscreen folded flat, which is how it is
+               built. The drawing it is laid over agrees with all four; it was 62 in over the wings
+               and 40 in folded until then, and the drawing has neither. The pedestal and the men
+               standing up out of it are no more part of that height than an aerial is */
   hr_ks750:  { name: 'Zündapp KS 750',      len: 2.385, gun: 2.385,  wid: 1.65,  hgt: 1.01,
                clear: 0.15 },   /* 2,385 x 1,650 x 1,010 mm with the BW 40, and 150 mm of clearance
                laden; the height is to the handlebars, and the men and the gun on the sidecar mount are
@@ -193,8 +195,9 @@ const PROBE = {
                tools or fender bolts hung on the outside */
   us_m8:     { topZ: 4.0, hullZ: 18.4 },   /* an open vehicle is measured to its plate, not to
                the top of the man standing in it */
-  am_jeep:   { noMount: true, hullZ: 12.0 },   /* the mount is a gun on a post, and hullZ holds the
-               steering wheel, the rolled hood and the top of the spare out of the folded height */
+  am_jeep:   { noMount: true, hullZ: 15.6 },   /* the mount is a gun on a post, and hullZ holds the
+               post and the top of the spare, which stands a little over the steering wheel on the
+               tail, out of the folded height */
   hr_ks750:  { noMount: true },   /* the mount is the gunner and his MG 34, turning on the sidecar seat */
   us_m3:     { topZ: 0.4, bodyZ: 17.0, xLo: -22.0, xHi: -19.0, straddle: true, hullZ: 24.0 },   /* the .50 stands
                above the 7 ft 5 in the ring mount tops out at, so the mount is held out of it */

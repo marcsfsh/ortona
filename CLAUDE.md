@@ -3533,16 +3533,36 @@ paratroopers carry the same gun, and all of them pass the men card as they did.
 **The jeep is the Americans' light vehicle**, in the carrier's place (`us_m8` to `am_jeep`
 on the army's list): a Willys MB with the windscreen folded flat on the bonnet under a canvas
 cover, which is how it went into action, and a .30 on the M31 pedestal behind the front
-seats. It is pressed sheet over a ladder frame and built that way (`jeepHull`): a flat bonnet
-narrower than the body, flat wings with their outer edges turned down and their fronts
-falling to the grille, the nine-slot grille with the headlamps in its top corners, the open
-tub with a scoop cut down each side and an arch over each rear wheel, combat wheels on 6.00-16
-bar-tread tyres, the spare and a jerrican on the tail, the axe and the shovel along the
-driver's side and the hood rolled over the rear seat. **The side of the tub is laid in bands
-between stations** (`jeepSide`, off `jeepTop` and `jeepBot`), because the scoop and the arch
-make the outline concave and `facesToArray` fans a polygon from its first vertex. On
-`tools/dims.mjs` it reads 3.37 m long against 3.36, 1.57 wide against 1.57, 1.02 high against
-the 40 in it folds to, and 0.22 of clearance under the differentials.
+seats. It is pressed sheet over a ladder frame and built that way (`jeepHull`): a flat, level
+bonnet narrower than the body, flat wings well below it with their outer edges turned down and
+their backs falling away to the step, the grille wide at the top and drawn in below with its nine
+slots, the headlamps in its top corners and the parking lamps under them, the open tub with a
+scoop cut down each side behind the dash and an arch over each rear wheel, combat wheels on
+6.00-16 bar-tread tyres, the spare and a jerrican high on the tail, the shovel and the axe along
+the driver's side and the top's bows folded back along the rear body. **The side of the tub is
+laid in bands between stations** (`jeepSide`, off `jeepTop` and `jeepBot`), because the scoop and
+the arch make the outline concave and `facesToArray` fans a polygon from its first vertex. On
+`tools/dims.mjs` it reads 3.32 m long against 3.36, 1.56 wide over the grab handles against 1.57,
+1.33 high to the top of the steering wheel against the 52 in it is reducible to, and 0.22 of
+clearance under the differentials.
+
+**It is laid over a three-view drawing** (`tools/ref/am_jeep.json`) whose scale bar agrees with
+the wheelbase in the side view, and whose front and rear views agree with the track and with the
+62 in over the grab handles, which is where that published width is measured and not over the
+wings. The first version, built off photographs and those figures, was out along most of its
+length and none of it showed in a photograph. The body stood a tenth of a metre too low on its
+wheels, the sill, the wings, the bonnet and the rear body alike, with the frame at the height of
+the axles it is sprung over. The nose was two units too long and the tail a unit short, so the
+body stood forward over its axles: the grille 2.45 units ahead of the drawing's and the bumper
+1.8. The cowl was a unit long where the drawing has three and a half of it between the bonnet and
+the dash, so the dash, the scoop, the seats, the steering wheel and the pedestal all stood 3 to 4
+units too far forward. The grille and the bonnet were a fifth too narrow, the headlamps 1.8 units
+lower and 0.9 closer together, the wings 0.8 too wide and the bumper wider and lower than the
+frame's horns carry it, and the spare and the jerrican rode 3 units too low. Laid over it now, all
+three views agree with the drawing to about a line width. Two things on the sheet are left: its
+tyres are 30 in over the tread where a 6.00-16 is about 28, and the published size is kept; and
+its windscreen is up, where this one's is folded as it went into action, with the .30 on the
+pedestal the drawing does not have.
 
 **Its men are the vehicle's own and not its sheet metal.** `VMODEL[k].crew` rides on the hull
 and `turCrew` on the mount, each a buffer of its own that `drawUnits3D` and `castUnit` draw

@@ -1,0 +1,6 @@
+{ "image": "shots/ref/am_jeep.jpg", "key": "am_jeep", "up": [], "crew": false,
+  "note": "A three-view of the Willys MB with its windscreen up and a metric scale bar, 500 by 481 px. The side view agrees with the bar and with the published 80 in wheelbase at 147.5 px to the metre; the front and rear views with the published 49 in track and 62 in over the rear body's handles at about 145.5. The model is pinned at the middle of the wheelbase on the ground, because the wheelbase is the one length on it that is published and right. The drawing has no gun on the pedestal and its windscreen is up; the model's is folded flat onto the bonnet and it carries the .30, which is how it went into action.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 240], "ppm": 147.5, "at": [0, 0, 0], "px": [231.1, 236.4], "k": 3 },
+    "front": { "crop": [0, 240, 250, 241], "ppm": 145.5, "at": [0, 0, 0], "px": [125.75, 476.0], "k": 4 },
+    "rear":  { "crop": [250, 240, 250, 241], "ppm": 145.5, "at": [0, 0, 0], "px": [378.75, 476.0], "k": 4 } } }

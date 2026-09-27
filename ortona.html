@@ -23019,21 +23019,36 @@ function sd222Turret20(body, cap) {
 
    It is pressed sheet over a ladder frame, and four things carry the silhouette:
 
-     1. The bonnet is flat and narrower than the body, and the wings either side of it
-        are flat too, with their outer edges turned down and their fronts falling
-        steeply to the grille.
-     2. The grille is a flat pressing with nine vertical slots and the two headlamps set
-        into its top corners.
-     3. The body is an open tub with a scoop cut down in each side where the doors would
-        be and a round arch over each rear wheel, and the windscreen folds forward flat
-        onto the bonnet, which is how it is built here: the way it went into action, with
-        a canvas cover over the glass so it did not flash.
-     4. The spare wheel and a jerrican ride on the tail.
+     1. The bonnet is flat, level and narrower than the body, and the wings either side of
+        it are flat shelves a good deal lower, with their outer edges turned down and their
+        backs falling away to the step.
+     2. The grille is a flat pressing, wide at the top and drawn in below, with nine
+        vertical slots, the two headlamps set into its top corners and the parking lamps
+        under them.
+     3. The body is an open tub with a scoop cut down in each side behind the dash and a
+        round arch over each rear wheel, and the windscreen folds forward flat onto the
+        cowl and the bonnet, which is how it is built here: the way it went into action,
+        with a canvas cover over the glass so it did not flash.
+     4. The spare wheel and a jerrican ride high on the tail, standing over the body.
 
-   Published: 132 1/4 in long (3.36 m), 62 in wide over the wings (1.57 m), 80 in wheel
-   base, 49 in track, 8 3/4 in of clearance under the differentials, 6.00-16 tyres, 52 in
-   to the top of the windscreen and 40 in with it folded flat. Laid out at 8.5 cm to the
-   unit, with the driver on the left, which is -y. */
+   Published: 132 1/4 in long (3.36 m), 62 in wide over the grab handles on the rear body
+   (1.57 m), 80 in wheel base, 49 in track, 8 3/4 in of clearance under the differentials,
+   6.00-16 tyres, and 52 in to the top of the steering wheel with the windscreen folded.
+   Laid out at 8.5 cm to the unit, with the driver on the left, which is -y.
+
+   It is laid over a three-view drawing with a scale bar (tools/ref/am_jeep.json), which
+   agrees with the wheelbase, the track and the width over the handles, and the first
+   version, built off photographs and those figures, was out along most of its length. The
+   body stood a tenth of a metre too low on its wheels, sill, wings, bonnet and rear body
+   alike. The nose was two units too long: the grille stood 2.45 ahead of where the drawing
+   has it and the bumper 1.8, while the tail and the spare were a unit short, so the body
+   stood forward over its axles. The cowl was a unit long where the drawing has three and a
+   half of it between the bonnet and the dash, so the dash, the scoop, the seats and the
+   steering wheel all stood 3 to 4 units too far forward. The grille and the bonnet were a
+   fifth too narrow, with the headlamps 1.8 units lower and 0.9 closer together than the
+   drawing's, the wings 0.8 too wide and the bumper wider and lower than the frame carries
+   it. The spare and the jerrican rode 3 units too low. The drawing's tyres are 30 in over
+   the tread against the 28 or so a 6.00-16 is, and the published size is kept. */
 var JP = {
   od: SHERMAN.od, odLit: SHERMAN.odLit, odDark: SHERMAN.odDark, dust: SHERMAN.odDust,
   steel: SHERMAN.steel, bare: SHERMAN.bare, rubber: SHERMAN.rubber, tyre: SHERMAN.tyre,
@@ -23042,28 +23057,35 @@ var JP = {
 };
 var JPG = {
   xAx: 11.88, yTr: 7.28, rT: 4.22, wT: .89, zAx: 4.15,      /* 80 in wheelbase, 49 in track */
-  xBump: 19.9, xGrille: 17.55, xCowl: 7.0, xDash: 6.1, xTail: -17.3,
-  half: 8.3, wing: 9.21, hood: 4.7,                          /* the tub, the wings, the bonnet */
-  zFloor: 5.85, zSill: 4.8, zSide: 10.9, zCowl: 11.35, zWing: 9.3,
-  zHoodR: 11.2, zHoodF: 10.8, rArch: 4.8,
+  xBump: 18.1, xGrille: 15.1, xWingR: 7.15, xCowl: 5.4, xStep: 5.1, xDash: 2.12, xTail: -18.3,
+  half: 8.5, wing: 8.4, hood: 6.0,                           /* the tub, the wings, the bonnet */
+  zFrame: 5.0, zFloor: 6.55, zSill: 6.05, zSide: 12.0, zCowl: 12.45, zWing: 10.15,
+  zHood: 12.47, zHoodE: 10.3, zGrille: 12.1,                 /* the bonnet's top and the foot of its side */
+  xScoop: 1.0, zScoop: 8.75,                                 /* the bottom of the scoop behind the dash */
+  rArch: 5.65, zArch: 4.75,                                  /* the rear arch, about a point a little over the axle */
   zDiff: 2.6,                                                /* the belly: under the differentials */
-  xPost: -5.0, zMount: 17.0,                                 /* the M31 pedestal, and its head */
-  hub: [3.0, -4.3, 12.1], xHip: -2.5                         /* the steering wheel, and where the driver sits */
+  xPost: -7.4, zMount: 17.7,                                 /* the M31 pedestal, and its head */
+  xSeat: -3.6, hub: [-1.3, -4.3, 13.4], xHip: -5.0           /* the front seats, the steering wheel, and the driver */
 };
-/* the top edge of the side at a station: the cowl, the scoop down to the seat, and the
-   rear body behind it */
+/* the top edge of the side at a station: under the bonnet, the cowl, the scoop behind the
+   dash, which drops straight and turns in a quarter round to its floor, and the rear body
+   it climbs back up to */
 function jeepTop(x) {
   var g = JPG, t;
+  if (x > g.xCowl) return g.zHoodE;
   if (x >= g.xDash) return g.zCowl;
-  if (x > 2.6) { t = (g.xDash - x) / (g.xDash - 2.6); return 8.0 + (g.zCowl - 8.0) * (1 + Math.cos(Math.PI * t)) / 2; }
-  if (x >= -2.4) return 8.0;
-  if (x > -5.4) { t = (-2.4 - x) / 3.0; return 8.0 + (g.zSide - 8.0) * (1 - Math.cos(Math.PI * t)) / 2; }
+  if (x > g.xDash - .1) return g.zCowl + (10.0 - g.zCowl) * (g.xDash - x) / .1;
+  if (x > g.xScoop) { t = (x - g.xScoop) / (g.xDash - .1 - g.xScoop); return 10.0 - (10.0 - g.zScoop) * Math.sqrt(Math.max(0, 1 - t * t)); }
+  if (x >= -3.9) return g.zScoop;
+  if (x > -7.8) { t = (-3.9 - x) / 3.9; return g.zScoop + (g.zSide - g.zScoop) * (1 - Math.cos(Math.PI * t)) / 2; }
   return g.zSide;
 }
-/* and the bottom edge, which is the sill everywhere but the rear wheel arch */
+/* and the bottom edge: the back of the wing falling to the step, the sill, and the rear
+   wheel arch */
 function jeepBot(x) {
   var g = JPG, dx = x + g.xAx;
-  if (Math.abs(dx) < g.rArch) return Math.max(g.zSill, g.zAx + Math.sqrt(g.rArch * g.rArch - dx * dx));
+  if (x > g.xStep) return Math.min(g.zWing, g.zSill + (x - g.xStep) / (g.xWingR - g.xStep) * (g.zWing - g.zSill));
+  if (Math.abs(dx) < g.rArch) return Math.max(g.zSill, g.zArch + Math.sqrt(g.rArch * g.rArch - dx * dx));
   return g.zSill;
 }
 /* eight corners, a convex solid: four at x0 and four at x1, each as [y0, y1, z0, z1] */
@@ -23122,8 +23144,9 @@ function jeepAxle(x, front) {
    arch make its outline concave and a concave polygon cannot be fanned */
 function jeepSide(s, body, cap, sideC) {
   var C = JP, g = JPG, f = [], xs = [], x, i;
-  for (x = g.xCowl; x > g.xTail; x -= .6) xs.push(x);
-  xs = xs.concat([g.xDash, 2.6, -2.4, -5.4, -g.xAx - g.rArch + .02, -g.xAx + g.rArch - .02, g.xTail]);
+  for (x = g.xWingR; x > g.xTail; x -= .6) xs.push(x);
+  xs = xs.concat([g.xCowl, g.xStep, g.xDash, g.xDash - .1, 1.95, 1.8, 1.6, 1.3, g.xScoop, -3.9, -7.8,
+                  -g.xAx - g.rArch + .02, -g.xAx + g.rArch - .02, g.xTail]);
   xs.sort(function (a, b) { return b - a; });
   var y0 = s * g.half, y1 = s * (g.half - .25);
   for (i = 0; i < xs.length - 1; i++) {
@@ -23143,17 +23166,19 @@ function jeepSide(s, body, cap, sideC) {
    the rear seat stands against */
 function jeepHouse(s) {
   var C = JP, g = JPG, f = [], n = 10, i, R = g.rArch + .05, yo = s * (g.half - .25), yi = s * 6.1, end = [];
+  /* the arch from where it leaves the sill round to where it comes back to it */
+  var a00 = Math.asin(Math.min(1, (g.zSill - g.zArch) / R)), span = Math.PI - 2 * a00;
   for (i = 0; i < n; i++) {
-    var a0 = Math.PI * i / n, a1 = Math.PI * (i + 1) / n;
-    var p0 = [-g.xAx + Math.cos(a0) * R, g.zAx + Math.sin(a0) * R], p1 = [-g.xAx + Math.cos(a1) * R, g.zAx + Math.sin(a1) * R];
+    var a0 = a00 + span * i / n, a1 = a00 + span * (i + 1) / n;
+    var p0 = [-g.xAx + Math.cos(a0) * R, g.zArch + Math.sin(a0) * R], p1 = [-g.xAx + Math.cos(a1) * R, g.zArch + Math.sin(a1) * R];
     var q = [[p0[0], yo, p0[1]], [p1[0], yo, p1[1]], [p1[0], yi, p1[1]], [p0[0], yi, p0[1]]];
-    f = f.concat(faceIn([{ v: q, c: C.odDark }], -g.xAx, (yo + yi) / 2, g.zAx));
-    f = f.concat(faceOut([{ v: q.map(function (p) { return [p[0], p[1], p[2] + .2]; }), c: C.od }], -g.xAx, (yo + yi) / 2, g.zAx));
+    f = f.concat(faceIn([{ v: q, c: C.odDark }], -g.xAx, (yo + yi) / 2, g.zArch));
+    f = f.concat(faceOut([{ v: q.map(function (p) { return [p[0], p[1], p[2] + .2]; }), c: C.od }], -g.xAx, (yo + yi) / 2, g.zArch));
     end.push([p0[0], yi, Math.max(g.zFloor, p0[1] + .2)]);
   }
-  end.push([-g.xAx - R, yi, g.zFloor]);
-  f = f.concat(faceOut([{ v: end, c: C.odDark }], -g.xAx, s * 20, g.zAx + 2));
-  f = f.concat(faceOut([{ v: end.map(function (p) { return [p[0], p[1] + s * .05, p[2]]; }), c: C.odDark }], -g.xAx, 0, g.zAx + 2));
+  end.push([-g.xAx - Math.cos(a00) * R, yi, g.zFloor]);
+  f = f.concat(faceOut([{ v: end, c: C.odDark }], -g.xAx, s * 20, g.zArch + 2));
+  f = f.concat(faceOut([{ v: end.map(function (p) { return [p[0], p[1] + s * .05, p[2]]; }), c: C.odDark }], -g.xAx, 0, g.zArch + 2));
   return f;
 }
 
@@ -23164,13 +23189,17 @@ function jeepHull(body, cap, sideC) {
   for (s = -1; s <= 1; s += 2) {
     f = f.concat(jeepWheel(g.xAx, s * g.yTr, s));
     f = f.concat(jeepWheel(-g.xAx, s * g.yTr, s));
-    f = f.concat(box((g.xBump - .8 + g.xTail) / 2, s * 4.0, g.zSill + .1, g.xBump - .8 - g.xTail, .6, .9, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box((g.xBump - .9 + g.xTail) / 2, s * 4.0, g.zFrame, g.xBump - .9 - g.xTail, .6, 1.0, C.steel, C.bare, C.steel, 0));
+    /* the frame's horns forward to the bumper */
+    f = f.concat(box(g.xGrille + .8, s * 4.0, g.zFrame + .1, 2.0, .5, .8, C.steel, C.bare, C.steel, 0));
   }
   f = f.concat(jeepAxle(g.xAx, true)).concat(jeepAxle(-g.xAx, false));
-  f = f.concat(box(g.xTail + .5, 0, g.zSill + .1, .8, 8.6, 1.0, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - .1, 0, g.zFrame + .3, .8, 13.8, 1.2, C.steel, C.bare, C.steel, 0));
+  /* the transfer case's skid plate under the middle, the lowest thing between the axles */
+  f = f.concat(box(-.4, .6, 3.5, 4.2, 3.0, g.zFrame - 3.5, C.steel, C.bare, C.steel, .2));
   /* the exhaust out along the right under the body, and the silencer */
-  f = f.concat(tubeSmooth(-9.0, -3.0, 2.4, g.zSill - .2, .7, 8, C.steel, '#26251f'));
-  f = f.concat(tubeSmooth(-17.8, -13.2, 2.4, g.zSill - .2, .28, 6, C.steel, '#1d1f19'));
+  f = f.concat(tubeSmooth(-9.0, -3.0, 2.4, g.zFrame - .1, .6, 8, C.steel, '#26251f'));
+  f = f.concat(tubeSmooth(-18.6, -13.2, 2.4, g.zFrame - .2, .26, 6, C.steel, '#1d1f19'));
 
   /* ---- the tub: floor, sides, tail, the wheelhouses and the cowl ---- */
   f = f.concat(box((g.xTail + g.xDash) / 2, 0, g.zFloor - .3, g.xDash - g.xTail, g.half * 2 - .5, .3, C.odDark, C.od, C.odDark, 0));
@@ -23179,74 +23208,92 @@ function jeepHull(body, cap, sideC) {
   f = f.concat(jeepHouse(-1)).concat(jeepHouse(1));
   f = f.concat(box(g.xTail + .125, 0, g.zSill, .25, g.half * 2, g.zSide - g.zSill, body, cap, sideC, 0));
   f = f.concat(box(g.xTail - .02, 0, g.zSide - .4, .3, g.half * 2 + .1, .4, body, cap, body, 0));
-  f = f.concat(box((g.xDash + g.xCowl) / 2, 0, 8.0, g.xCowl - g.xDash, g.half * 2 - .3, g.zCowl - 8.0, body, cap, C.odDark, 0));
+  /* the cowl: the whole width of the body from the dash to the back of the bonnet, its top
+     level with the bonnet's, and under the bonnet the shoulder either side of it */
+  f = f.concat(box((g.xDash + g.xCowl) / 2, 0, 8.6, g.xCowl - g.xDash, g.half * 2 - .3, g.zCowl - 8.6, body, cap, C.odDark, 0));
+  [-1, 1].forEach(function (s2) {
+    var w1 = s2 < 0 ? [-g.half + .15, -g.hood + .02] : [g.hood - .02, g.half - .15];
+    f = f.concat(jeepSlab(g.xCowl, [w1[0], w1[1], g.zHoodE - .25, g.zHoodE], g.xWingR, [w1[0], w1[1], g.zHoodE - .25, g.zHoodE], C.odDark, C.od, C.odDark));
+  });
   /* the transmission hump down the middle, with the gear lever and the two transfer levers */
-  f = f.concat(box(1.8, 0, g.zFloor, 5.4, 2.6, 1.1, C.od, C.odLit, C.odDark, .25));
-  f = f.concat(taperLimb([3.0, -.3, g.zFloor + 1.0], [2.2, -.5, g.zFloor + 4.6], .32, .26, C.steel));
-  f = f.concat(box(2.2, -.5, g.zFloor + 4.5, .6, .6, .6, '#1d1f19', '#26251f', '#1d1f19', 0));
+  f = f.concat(box(-.2, 0, g.zFloor, 4.4, 2.6, 1.1, C.od, C.odLit, C.odDark, .25));
+  f = f.concat(taperLimb([.6, -.3, g.zFloor + 1.0], [-.2, -.5, g.zFloor + 4.6], .32, .26, C.steel));
+  f = f.concat(box(-.2, -.5, g.zFloor + 4.5, .6, .6, .6, '#1d1f19', '#26251f', '#1d1f19', 0));
   [.35, .8].forEach(function (yy, k) {
-    f = f.concat(taperLimb([2.0, yy, g.zFloor + 1.0], [1.5 - k * .3, yy + .2, g.zFloor + 3.6], .26, .22, C.steel));
+    f = f.concat(taperLimb([.2, yy, g.zFloor + 1.0], [-.3 - k * .3, yy + .2, g.zFloor + 3.6], .26, .22, C.steel));
   });
 
   /* ---- the dash: four gauges in the middle and the glove box on the passenger's side ---- */
   for (i = 0; i < 4; i++)
-    f = f.concat(tubeSmooth(g.xDash - .25, g.xDash, -1.8 + i * 1.2, 10.0, .45, 8, '#1d1f19', '#cfcdb6'));
-  f = f.concat(box(g.xDash - .08, 4.4, 8.9, .2, 3.4, 1.8, C.odDark, C.od, C.odDark, 0));
-  f = f.concat(box(g.xDash - .06, -1.4, 8.6, .15, 1.6, .7, '#cfcdb6', '#cfcdb6', '#cfcdb6', 0));   /* the shift plate */
+    f = f.concat(tubeSmooth(g.xDash - .25, g.xDash, -1.8 + i * 1.2, 11.1, .45, 8, '#1d1f19', '#cfcdb6'));
+  f = f.concat(box(g.xDash - .08, 4.4, 10.0, .2, 3.4, 1.8, C.odDark, C.od, C.odDark, 0));
+  f = f.concat(box(g.xDash - .06, -1.4, 9.7, .15, 1.6, .7, '#cfcdb6', '#cfcdb6', '#cfcdb6', 0));   /* the shift plate */
 
-  /* ---- the bonnet, narrower than the body, with the wings either side of it ---- */
-  f = f.concat(jeepSlab(g.xCowl, [-g.hood, g.hood, 8.6, g.zHoodR], g.xGrille, [-g.hood, g.hood, 8.6, g.zHoodF], body, cap, sideC));
+  /* ---- the bonnet, flat and level, with the wings either side of it lower down ---- */
+  f = f.concat(jeepSlab(g.xCowl, [-g.hood, g.hood, g.zHoodE, g.zHood], g.xGrille - .25, [-g.hood, g.hood, g.zHoodE, g.zHood], body, cap, sideC));
+  f = f.concat(jeepSlab(g.xGrille - .25, [-g.hood, g.hood, g.zGrille, g.zHood], g.xGrille + .05, [-g.hood, g.hood, g.zGrille, g.zHood], body, cap, sideC));
   [-1, 1].forEach(function (s2) {
-    /* the hold-down catch at each front corner and the hinge line down each side */
-    f = f.concat(box(g.xGrille - 1.0, s2 * (g.hood + .1), 9.6, .6, .3, 1.0, C.steel, C.bare, C.steel, 0));
-    f = f.concat(box((g.xCowl + g.xGrille) / 2, s2 * (g.hood + .06), 10.35, g.xGrille - g.xCowl - .6, .14, .16, C.odDark, C.od, C.odDark, 0));
+    /* the hold-down catch at each front corner and the crease along each top edge */
+    f = f.concat(box(g.xGrille - 1.0, s2 * (g.hood + .1), 10.9, .6, .3, 1.0, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box((g.xCowl + g.xGrille) / 2, s2 * (g.hood + .06), g.zHood - .5, g.xGrille - g.xCowl - .6, .14, .16, C.odDark, C.od, C.odDark, 0));
     var w0 = s2 < 0 ? [-g.wing, -g.hood + .02] : [g.hood - .02, g.wing];
-    /* the flat top of the wing, its front falling to the grille, and the turned-down lip */
-    f = f.concat(jeepSlab(7.2, [w0[0], w0[1], g.zWing - .3, g.zWing], 16.3, [w0[0], w0[1], g.zWing - .3, g.zWing], body, cap, sideC));
-    f = f.concat(jeepSlab(16.3, [w0[0], w0[1], g.zWing - .3, g.zWing], g.xGrille + .35, [w0[0], w0[1], 7.0, 7.3], body, cap, sideC));
-    f = f.concat(box(11.75, s2 * (g.wing - .06), g.zWing - 1.2, 9.1, .12, 1.2, sideC, cap, sideC, 0));
-    f = f.concat(jeepSlab(7.2, [w0[0], w0[1], 4.9, g.zWing], 7.5, [w0[0], w0[1], 4.9, g.zWing], C.odDark, cap, sideC));
-    /* the blackout marker lamp on each wing, and the blackout driving lamp on the left */
-    f = f.concat(box(15.2, s2 * 7.6, g.zWing, 1.0, .9, .8, C.odDark, C.od, C.odDark, 0));
-    f = f.concat(box(15.72, s2 * 7.6, g.zWing + .25, .08, .5, .35, '#cfcdb6', '#cfcdb6', '#cfcdb6', 0));
+    /* the flat top of the wing, the lip turned down along its outer edge and across its
+       front, and its back falling away to the step */
+    f = f.concat(jeepSlab(g.xWingR, [w0[0], w0[1], g.zWing - .3, g.zWing], g.xGrille, [w0[0], w0[1], g.zWing - .3, g.zWing], body, cap, sideC));
+    f = f.concat(box((g.xWingR + g.xGrille) / 2, s2 * (g.wing - .06), g.zWing - 1.0, g.xGrille - g.xWingR, .12, 1.0, sideC, cap, sideC, 0));
+    f = f.concat(jeepSlab(g.xGrille - .12, [w0[0], w0[1], g.zWing - 1.2, g.zWing], g.xGrille, [w0[0], w0[1], g.zWing - 1.2, g.zWing], body, cap, sideC));
+    f = f.concat(jeepSlab(g.xStep, [w0[0], w0[1], g.zSill, g.zSill + .3], g.xWingR, [w0[0], w0[1], g.zWing - .3, g.zWing], body, cap, sideC));
+    /* the blackout marker lamp on each wing, on its post by the front */
+    f = f.concat(box(14.1, s2 * 7.3, g.zWing, .35, .35, 1.0, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(14.1, s2 * 7.3, g.zWing + 1.0, .9, .8, .75, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(14.57, s2 * 7.3, g.zWing + 1.2, .06, .5, .35, '#cfcdb6', '#cfcdb6', '#cfcdb6', 0));
     if (s2 < 0) {
-      f = f.concat(tubeSmooth(14.0, 15.4, -6.2, g.zWing + 1.3, .8, 10, C.odDark, '#cfcdb6'));
-      f = f.concat(box(14.4, -6.2, g.zWing, .5, .5, .6, C.odDark, C.od, C.odDark, 0));
+      /* and the blackout driving lamp behind it on the left */
+      f = f.concat(tubeSmooth(11.4, 13.4, -7.1, g.zWing + 1.25, .9, 10, C.odDark, '#cfcdb6'));
+      f = f.concat(box(12.0, -7.1, g.zWing, .5, .5, .45, C.odDark, C.od, C.odDark, 0));
     }
   });
 
-  /* ---- the grille: the pressing with its nine slots, the two headlamps set into its top
-     corners, and the bumper in front of it ---- */
-  f = f.concat(box(g.xGrille + .18, 0, 4.6, .36, g.hood * 2, g.zHoodF - 4.6, body, cap, body, 0));
+  /* ---- the grille: a flat pressing wide at the top and drawn in below, with nine slots,
+     the headlamps in its top corners and the parking lamps under them; the bumper out in
+     front on the frame's horns ---- */
+  var GR = [[-4.68, 6.7], [4.68, 6.7], [4.68, 8.5], [5.63, 10.0], [5.63, 11.5], [5.3, 11.95], [4.8, g.zGrille],
+            [-4.8, g.zGrille], [-5.3, 11.95], [-5.63, 11.5], [-5.63, 10.0], [-4.68, 8.5]];
+  f = f.concat(m8ExtrudeX(GR, g.xGrille - .35, g.xGrille, body, body));
+  /* the engine bay's dark behind the gap between the grille's sides and the wheels */
+  f = f.concat(box(g.xGrille - .5, 0, 6.7, .1, 12.2, g.zWing - 6.8, JP.well, JP.well, JP.well, 0));
   for (i = 0; i < 9; i++)
-    f = f.concat(box(g.xGrille + .38, -2.4 + i * .6, 5.5, .06, .3, 4.5, JP.well, JP.well, JP.well, 0));
+    f = f.concat(box(g.xGrille + .02, (i - 4) * .78, 6.85, .06, .5, 4.7, JP.well, JP.well, JP.well, 0));
   [-1, 1].forEach(function (s2) {
-    f = f.concat(tubeSmooth(g.xGrille - .4, g.xGrille + .52, s2 * 3.55, 8.9, 1.05, 12, C.odDark, '#cfcdb6'));
-    f = f.concat(tubeSmooth(g.xGrille + .36, g.xGrille + .6, s2 * 3.55, 8.9, 1.12, 12, C.od, C.odLit));
-    f = f.concat(tubeSmooth(g.xGrille + .6, g.xGrille + .66, s2 * 3.55, 8.9, .8, 12, '#cfcdb6', '#cfcdb6'));
+    f = f.concat(tubeSmooth(g.xGrille - .3, g.xGrille + .4, s2 * 4.47, 10.73, .9, 12, C.odDark, '#cfcdb6'));
+    f = f.concat(tubeSmooth(g.xGrille, g.xGrille + .22, s2 * 4.47, 10.73, .98, 12, C.od, C.odLit));
+    f = f.concat(tubeSmooth(g.xGrille + .22, g.xGrille + .3, s2 * 4.47, 10.73, .7, 12, '#cfcdb6', '#cfcdb6'));
+    f = f.concat(tubeSmooth(g.xGrille, g.xGrille + .25, s2 * 4.0, 9.0, .36, 8, C.odDark, '#cfcdb6'));
   });
-  f = f.concat(box(g.xBump - .4, 0, 3.9, .8, 16.8, 2.0, body, cap, sideC, .15));
-  f = f.concat(box(g.xBump - .9, 0, 4.3, .6, 16.4, 1.2, C.odDark, C.od, C.odDark, 0));
+  f = f.concat(box(g.xBump - .45, 0, 5.1, .9, 14.3, 1.5, body, cap, sideC, .15));
+  f = f.concat(box(g.xBump - 1.0, 0, 5.4, .5, 13.9, .9, C.odDark, C.od, C.odDark, 0));
   [-1, 1].forEach(function (s2) {
     /* the lifting shackles, and the unit's stencil on the face of the bumper */
-    f = f.concat(place(tubeSmooth(-.25, .25, 0, 0, .45, 8, C.steel, C.steel), Math.PI / 2, g.xBump - .45, s2 * 4.0, 6.1));
-    f = f.concat(place(tubeSmooth(-.3, .3, 0, 0, .24, 8, JP.well, JP.well), Math.PI / 2, g.xBump - .45, s2 * 4.0, 6.1));
+    f = f.concat(place(tubeSmooth(-.25, .25, 0, 0, .45, 8, C.steel, C.steel), Math.PI / 2, g.xBump - .45, s2 * 4.0, 5.0));
+    f = f.concat(place(tubeSmooth(-.3, .3, 0, 0, .24, 8, JP.well, JP.well), Math.PI / 2, g.xBump - .45, s2 * 4.0, 5.0));
     for (var k = 0; k < 3; k++)
-      f = f.concat(box(g.xBump + .01, s2 * (5.6 + k * .9), 4.5, .04, .55, .8, JP.star, JP.star, JP.star, 0));
+      f = f.concat(box(g.xBump + .01, s2 * (5.0 + k * .7), 5.5, .04, .45, .7, JP.star, JP.star, JP.star, 0));
   });
 
-  /* ---- the windscreen folded forward flat onto the bonnet under its canvas cover, the
-     hinges it folded on, and the two rubber pads it rests on ---- */
-  f = f.concat(box(g.xCowl + 2.2, 0, g.zCowl - .1, 4.5, 14.3, .7, JP.canvas, lit(JP.canvas, 1.1), JP.canvasD, .2));
-  f = f.concat(box(g.xCowl + 2.2, 0, g.zCowl - .2, 4.2, 14.0, .12, C.odDark, C.od, C.odDark, 0));
+  /* ---- the windscreen folded forward flat onto the cowl and the bonnet under its canvas
+     cover, the hinges it folded on at the back of the cowl, and the two rubber pads it
+     rests on ---- */
+  var zw = g.zHood + .05;
+  f = f.concat(box(g.xDash + 2.4, 0, zw + .1, 4.5, 14.3, .7, JP.canvas, lit(JP.canvas, 1.1), JP.canvasD, .2));
+  f = f.concat(box(g.xDash + 2.4, 0, zw, 4.2, 14.0, .12, C.odDark, C.od, C.odDark, 0));
   [-1, 1].forEach(function (s2) {
-    f = f.concat(box(g.xCowl + .1, s2 * 6.4, g.zCowl - .2, .7, .9, .8, C.steel, C.bare, C.steel, 0));
-    f = f.concat(box(g.xCowl + 4.25, s2 * 6.6, g.zCowl - .15, .5, .6, .5, C.steel, C.bare, C.steel, 0));
-    f = f.concat(box(g.xCowl + 4.55, s2 * 2.0, g.zHoodR - .55, .7, .7, .45, C.rubber, C.tyre, C.rubber, 0));
+    f = f.concat(box(g.xDash + .25, s2 * 6.4, zw - .2, .7, .9, .8, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(g.xDash + 4.45, s2 * 6.6, zw, .5, .6, .5, C.steel, C.bare, C.steel, 0));
+    f = f.concat(box(g.xDash + 4.75, s2 * 2.0, g.zHood - .02, .7, .7, .12, C.rubber, C.tyre, C.rubber, 0));
   });
 
   /* ---- the white star in its ring on the bonnet, and the registration down each side ---- */
-  var st = [], ri = [], R0 = 2.55, sx = 14.3, sz = g.zHoodR + (g.zHoodF - g.zHoodR) * (sx - g.xCowl) / (g.xGrille - g.xCowl) + .03;
+  var st = [], ri = [], R0 = 2.55, sx = 11.9;
   for (i = 0; i < 5; i++) {
     var ao = i * TAU / 5, ai = ao + TAU / 10;
     var tip = [Math.cos(ao) * R0, Math.sin(ao) * R0], i0 = [Math.cos(ai) * R0 * .38, Math.sin(ai) * R0 * .38];
@@ -23261,27 +23308,28 @@ function jeepHull(body, cap, sideC) {
                   [Math.cos(b1) * r2, Math.sin(b1) * r2, 0], [Math.cos(b0) * r2, Math.sin(b0) * r2, 0]], c: JP.star });
   }
   st = faceOut(st, 0, 0, -5);
-  f = f.concat(place(pitch(st, -Math.atan((g.zHoodR - g.zHoodF) / (g.xGrille - g.xCowl)), 0, 0), 0, sx, 0, sz));
+  f = f.concat(place(st, 0, sx, 0, g.zHood + .03));
   [-1, 1].forEach(function (s2) {
     for (i = 0; i < 9; i++) if (i !== 3)
-      f = f.concat(box(9.4 + i * .78, s2 * (g.hood + .04), 9.55, .5, .06, .75, JP.star, JP.star, JP.star, 0));
+      f = f.concat(box(7.4 + i * .78, s2 * (g.hood + .04), 11.0, .5, .06, .75, JP.star, JP.star, JP.star, 0));
   });
 
   /* ---- the seats: the driver's over the fuel tank and the passenger's over the tool box,
      each a squab on a frame and a back, and the bench across the tail between the
      wheelhouses ---- */
+  var zs = g.zFloor, sq = g.xSeat;
   [-1, 1].forEach(function (s2) {
-    f = f.concat(box(-1.1, s2 * 4.3, g.zFloor, 4.4, 4.6, 7.5 - g.zFloor, C.od, C.odLit, C.odDark, .2));
-    f = f.concat(box(-1.2, s2 * 4.3, 7.5, 4.9, 4.9, .95, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3));
-    f = f.concat(place(pitch(box(0, 0, 0, .8, 4.7, 3.4, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3), .14, 0, 0), 0, -3.95, s2 * 4.3, 8.2));
-    f = f.concat(place(pitch(box(0, 0, 0, .25, 4.2, 3.2, C.steel, C.bare, C.steel, 0), .14, 0, 0), 0, -4.5, s2 * 4.3, 8.0));
+    f = f.concat(box(sq, s2 * 4.3, zs, 4.4, 4.6, 1.65, C.od, C.odLit, C.odDark, .2));
+    f = f.concat(box(sq - .1, s2 * 4.3, zs + 1.65, 4.9, 4.9, .95, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3));
+    f = f.concat(place(pitch(box(0, 0, 0, .8, 4.7, 3.4, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3), .14, 0, 0), 0, sq - 2.85, s2 * 4.3, zs + 2.35));
+    f = f.concat(place(pitch(box(0, 0, 0, .25, 4.2, 3.2, C.steel, C.bare, C.steel, 0), .14, 0, 0), 0, sq - 3.4, s2 * 4.3, zs + 2.15));
   });
-  f = f.concat(box(-14.6, 0, g.zFloor, 4.0, 11.8, 7.2 - g.zFloor, C.od, C.odLit, C.odDark, .2));
-  f = f.concat(box(-14.6, 0, 7.2, 4.2, 11.8, .9, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3));
-  f = f.concat(box(-16.65, 0, 8.1, .7, 11.4, 2.5, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .25));
+  f = f.concat(box(-16.2, 0, zs, 3.4, 11.8, 1.35, C.od, C.odLit, C.odDark, .2));
+  f = f.concat(box(-16.2, 0, zs + 1.35, 3.6, 11.8, .9, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .3));
+  f = f.concat(box(-17.75, 0, zs + 2.25, .6, 11.4, 2.5, JP.seat, lit(JP.seat, 1.12), lit(JP.seat, .9), .25));
 
-  /* ---- the steering wheel on its column, laid back 38 degrees, with three spokes ---- */
-  var wr = 2.5, tilt = .67, hub = JPG.hub, wh = [];
+  /* ---- the steering wheel on its column, laid back fifty degrees, with three spokes ---- */
+  var wr = 2.5, tilt = .87, hub = JPG.hub, wh = [];
   for (i = 0; i < 16; i++) {
     var c0 = i * TAU / 16, c1 = (i + 1) * TAU / 16;
     wh = wh.concat(taperLimb([Math.cos(c0) * wr, Math.sin(c0) * wr, 0], [Math.cos(c1) * wr, Math.sin(c1) * wr, 0], .36, .36, '#1d1f19'));
@@ -23291,47 +23339,54 @@ function jeepHull(body, cap, sideC) {
   });
   wh = wh.concat(cyl(0, 0, -.2, .6, .6, .5, 8, '#1d1f19', '#26251f', 0, true));
   f = f.concat(place(pitch(wh, tilt, 0, 0), 0, hub[0], hub[1], hub[2]));
-  f = f.concat(taperLimb([hub[0] + .1, hub[1], hub[2] - .2], [hub[0] + Math.sin(tilt) * 6.8, hub[1], hub[2] - Math.cos(tilt) * 6.8], .5, .5, C.steel));
+  f = f.concat(taperLimb([hub[0] + .1, hub[1], hub[2] - .2], [hub[0] + Math.sin(tilt) * 5.2, hub[1], hub[2] - Math.cos(tilt) * 5.2], .5, .5, C.steel));
 
   /* ---- the M31 pedestal: a post from the floor behind the front seats with two braces
      down to the floor, and the head of it on the mount ---- */
   f = f.concat(box(g.xPost, 0, g.zFloor, 2.4, 2.4, .25, C.steel, C.bare, C.steel, 0));
   f = f.concat(cyl(g.xPost, 0, g.zFloor, .5, .5, g.zMount - .3 - g.zFloor, 8, C.steel, C.bare, 0, true));
   [-1, 1].forEach(function (s2) {
-    f = f.concat(taperLimb([g.xPost, 0, 11.6], [g.xPost - 3.2, s2 * 2.8, g.zFloor], .3, .3, C.steel));
+    f = f.concat(taperLimb([g.xPost, 0, g.zFloor + 5.75], [g.xPost - 3.2, s2 * 2.8, g.zFloor], .3, .3, C.steel));
   });
 
-  /* ---- what it carries: the spare and the jerrican on the tail, the tail lamps, the
-     pintle, the axe and the shovel along the driver's side, the grab handles, and the
-     hood and its bows folded back over the rear seat ---- */
-  f = f.concat(place(jeepWheel(0, 0, 1, 0), Math.PI / 2, g.xTail - .38 - g.wT, 2.4, g.zSill + g.rT - .1));
-  f = f.concat(box(g.xTail - .2, 2.4, g.zSill + g.rT - 1.0, .4, 1.4, 2.0, C.steel, C.bare, C.steel, 0));
-  f = f.concat(box(g.xTail - 1.15, -5.0, 5.5, 1.9, 4.0, 5.5, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .92), .25));
-  f = f.concat(box(g.xTail - .2, -5.0, 5.2, .4, 4.3, .4, C.steel, C.bare, C.steel, 0));
-  f = f.concat(box(g.xTail - 1.15, -5.0, 8.9, 2.1, 4.3, .35, C.steel, C.bare, C.steel, 0));
-  f = f.concat(box(g.xTail - 1.15, -5.0, 11.0, .5, 1.6, .4, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .92), 0));
+  /* ---- what it carries: the spare and the jerrican high on the tail, the tail lamps, the
+     pintle, the axe and the shovel along the driver's side, the grab handles, and the top's
+     bows folded back along the rear body with the canvas rolled across the tail ---- */
+  var ys = 3.3, zsp = 11.9, xs0 = g.xTail - .4;
+  f = f.concat(place(jeepWheel(0, 0, 1, 0), Math.PI / 2, xs0 - g.wT, ys, zsp));
+  f = f.concat(box(g.xTail - .2, ys, zsp - 1.0, .4, 1.4, 2.0, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - .2, ys, zsp - 4.6, .4, 2.6, .45, C.steel, C.bare, C.steel, 0));
+  var yj = -4.4, zj = 9.7;
+  f = f.concat(box(g.xTail - 1.3, yj, zj, 1.9, 4.0, 5.1, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .92), .25));
+  f = f.concat(box(g.xTail - .2, yj, zj - .4, .4, 4.4, .4, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - 1.3, yj, zj - .4, 2.3, 4.4, .4, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - 1.3, yj, zj + 3.4, 2.1, 4.3, .35, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(g.xTail - 1.3, yj, zj + 5.1, .5, 1.6, .4, C.jerry, lit(C.jerry, 1.1), lit(C.jerry, .92), 0));
   [-1, 1].forEach(function (s2) {
-    f = f.concat(box(g.xTail - .2, s2 * 7.7, 6.6, .45, 1.1, 1.2, C.odDark, C.od, C.odDark, 0));
-    f = f.concat(box(g.xTail - .44, s2 * 7.7, 6.8, .05, .7, .75, JP.red, JP.red, JP.red, 0));
-    /* the lifting handle on each side of the rear body */
-    f = f.concat(tubeSmooth(-16.2, -14.2, s2 * (g.half + .45), 9.2, .2, 6, C.steel, C.steel));
-    [-16.1, -14.3].forEach(function (xx) { f = f.concat(box(xx, s2 * (g.half + .22), 9.0, .3, .5, .4, C.steel, C.bare, C.steel, 0)); });
-    /* the two bows lying back along the top of the rear body */
-    f = f.concat(tubeSmooth(-16.2, -6.4, s2 * 7.6, g.zSide + .25, .22, 6, C.steel, C.steel));
-    f = f.concat(tubeSmooth(-16.2, -7.4, s2 * 7.1, g.zSide + .25, .22, 6, C.steel, C.steel));
+    f = f.concat(box(g.xTail - .2, s2 * 7.7, 7.0, .45, 1.1, 1.2, C.odDark, C.od, C.odDark, 0));
+    f = f.concat(box(g.xTail - .44, s2 * 7.7, 7.2, .05, .7, .75, JP.red, JP.red, JP.red, 0));
+    /* the grab handle at each back corner */
+    f = f.concat(tubeSmooth(-18.1, -16.3, s2 * (g.half + .45), 9.6, .2, 6, C.steel, C.steel));
+    [-18.0, -16.4].forEach(function (xx) { f = f.concat(box(xx, s2 * (g.half + .22), 9.4, .3, .5, .4, C.steel, C.bare, C.steel, 0)); });
+    /* the bracket the bows pivot on, and the two bows lying back along the rear body */
+    f = f.concat(box(-7.8, s2 * 7.9, g.zSide - .6, .9, .45, 2.6, C.steel, C.bare, C.steel, .1));
+    f = f.concat(tubeSmooth(-18.2, -7.8, s2 * 7.7, g.zSide + 1.4, .22, 6, C.steel, C.steel));
+    f = f.concat(tubeSmooth(-18.2, -8.3, s2 * 7.3, g.zSide + .85, .22, 6, C.steel, C.steel));
   });
-  f = f.concat(place(tubeSmooth(0, .9, 0, 0, .5, 8, C.steel, JP.well), 0, g.xTail - 1.2, 0, g.zSill + .4));
-  f = f.concat(place(rollX(13.2, .95, JP.canvasD, lit(JP.canvasD, 1.12), 0, 0, 0), Math.PI / 2, -16.4, 0, g.zSide + .85));
+  f = f.concat(place(tubeSmooth(0, .9, 0, 0, .5, 8, C.steel, JP.well), 0, g.xTail - 1.2, 0, g.zFrame + .6));
+  f = f.concat(place(rollX(13.2, .95, JP.canvasD, lit(JP.canvasD, 1.12), 0, 0, 0), Math.PI / 2, -17.3, 0, g.zSide + .85));
   [-4.2, 0, 4.2].forEach(function (yy) {
-    f = f.concat(place(roll(cyl(0, 0, -.25, .99, .99, .5, 10, lit(JP.canvasD, .75), lit(JP.canvasD, .75), Math.PI / 10), Math.PI / 2, 0, 0), 0, -16.4, yy, g.zSide + .85));
+    f = f.concat(place(roll(cyl(0, 0, -.25, .99, .99, .5, 10, lit(JP.canvasD, .75), lit(JP.canvasD, .75), Math.PI / 10), Math.PI / 2, 0, 0), 0, -17.3, yy, g.zSide + .85));
   });
-  /* the axe and the shovel strapped along the driver's side under the scoop */
-  f = f.concat(tubeSmooth(-4.6, 2.2, -g.half - .3, 6.3, .2, 6, JP.wood, JP.wood));
-  f = f.concat(box(2.8, -g.half - .3, 5.4, 1.4, .12, 1.8, C.steel, C.bare, C.steel, 0));
-  f = f.concat(tubeSmooth(-4.2, 1.4, -g.half - .3, 7.3, .18, 6, JP.wood, JP.wood));
-  f = f.concat(box(-4.4, -g.half - .3, 6.7, .5, .15, 1.4, C.steel, C.bare, C.steel, 0));
-  [-3.4, .6].forEach(function (xx) {
-    f = f.concat(box(xx, -g.half - .15, 6.0, .3, .3, 1.8, C.steel, C.bare, C.steel, 0));
+  /* the shovel and the axe strapped along the driver's side: the shovel's blade forward
+     under the cowl and its handle back along the scoop, the axe's head at the back */
+  var yt = -g.half - .3;
+  f = f.concat(box(3.7, yt, 7.1, 2.6, .12, 1.7, C.steel, C.bare, C.steel, 0));
+  f = f.concat(tubeSmooth(-5.9, 2.4, yt, 7.95, .2, 6, JP.wood, JP.wood));
+  f = f.concat(tubeSmooth(-5.8, 1.2, yt, 7.2, .18, 6, JP.wood, JP.wood));
+  f = f.concat(box(-6.4, yt, 6.4, .6, .15, 2.4, C.steel, C.bare, C.steel, 0));
+  [-4.6, -.6, 3.0].forEach(function (xx) {
+    f = f.concat(box(xx, -g.half - .15, 6.8, .3, .3, 1.8, C.steel, C.bare, C.steel, 0));
   });
   return f;
 }
