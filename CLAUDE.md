@@ -4009,7 +4009,7 @@ the army's list), and it is built from nothing: Ford's six-wheeler in olive drab
 and its coaxial .30 in an open-topped turret, which is what the cavalry reconnaissance troops
 brought ashore. Four men: the driver and the co-driver head and shoulders out of their hatches,
 and the gunner and the commander in the turret. The Stuart's gun and its job are the reason for
-the slot. On `tools/dims.mjs` it reads 4.76 m long against 4.70, 2.35 wide against 2.31, 1.93 to
+the slot. On `tools/dims.mjs` it reads 4.68 m long against 4.70, 2.36 wide against 2.31, 1.93 to
 the top of the turret against 1.91, 2.35 across the crease against 2.31 and 0.29 of clearance
 under the axles, and the 37 mm ends short of the nose. The other set of published figures, 197 in
 long, 100 in wide and 88.5 in high, is over the towing fittings, the sand shields and the ring
@@ -4018,12 +4018,26 @@ centre a little ahead of the middle axle (`M8G.xT`), with the engine deck behind
 three-quarter photographs, whose perspective stretches whatever is nearest the camera, it went
 nine units too far forward and the gun hung past the nose, and a side elevation put it back.
 
+**It is laid over two four-view drawings** (`tools/ref/am_m8.json` and `tools/ref/am_m8_b.json`),
+both with the sand shields hung and the .30 on its ring, and both scaled off the 128 in from the
+front axle to the rear one in the side and the plan and off the 76 in tread in the front and the
+rear. Against them the car was out in four places. The nose stood 1.1 units too far forward and
+0.6 too high, with its lower plate stopping short of the belly. The crease ran in toward the nose
+from the middle of the car, where both drawings carry it at its full width as far forward as the
+foot of the hatch plate and turn it in across the nose there. The shields stopped a unit and a
+tenth short at the foot with their ends square, where the drawings rake both ends and turn them
+in. And the .30's ring stood on posts nearly a foot tall, three units over where both drawings put
+the gun. The two drawings disagree about the width over the shields by about a unit a side in their
+front and rear views; both plans and drawing A's front and rear put them where they are, which is
+narrower than the published 100 in, and that figure was left alone.
+
 What carries it, and each is built its own way. **The hull is five rings** (`M8ST`), each a
 belly, a knee, a crease and a top point on one side, the way the 251's is three: the tub side
 under the overhang, the plate leaning out from the knee to the crease, and the plate leaning in
 from the crease to the deck, which is the boat shape and what the six wheels tuck under. The
-rings run in from the crease toward the nose and the crease drops toward it, so the front of
-the side is a long wedge of plate that meets the glacis at the nose corners. **A panel between
+crease holds its full width as far forward as the foot of the hatch plate and turns in across
+the nose from there, dropping as it goes, and the nose's lower plate runs down from it to the
+front of the belly. **A panel between
 two rings is one face where its corners lie in a plane and two triangles where they do not**
 (`m8Quad`), because the plate leaning in to the deck twists between the foot of the hatch plate
 and the top of it, and a twisted quad fanned from one corner carries that corner's normal over
@@ -4068,7 +4082,9 @@ shadow pass. `VIN.am_m8` is the open turret's room, which is nothing, with the e
 commander's over the rim.
 
 **The sand shields are a fitting of their own and skirts to a hollow charge.** `UPGRADES.fenders`
-hangs them over the rear wheels, and `skirted(u)` is the one question every reader of
+hangs them over the rear wheels (`m8Skirts`): a plate on each side from under the crease to past
+the middle of the tyres, longer at its foot than its head, with a stiffener along the top, two
+ribs pressed into it, five brackets and both ends turned in. And `skirted(u)` is the one question every reader of
 `u.up.skirts` asked before them -- the side plate's twelve per cent in `armourAt`, the hollow
 charge bursting on the sheet in `fireAt`, the draw and the shadow pass -- so the shields and the
 Schürzen are one rule on two keys. The brain fits them only once the enemy has something that

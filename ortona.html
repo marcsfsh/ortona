@@ -29130,11 +29130,22 @@ var M8G = {
 /* The hull as five rings, each a belly, a knee, a crease and a top point on the right side
    as [x, y, z]: the nose, the foot of the hatch plate, the top of it, the station behind
    which the sides run straight, and the tail. The knee is where the tub side under the
-   overhang meets the plate leaning out to the crease, which is what the wheels tuck under. */
+   overhang meets the plate leaning out to the crease, which is what the wheels tuck under.
+
+   The hull is laid over two four-view drawings (tools/ref/am_m8.json and am_m8_b.json), both
+   taken off the 128 in from the front axle to the rear one in the side and the plan and off
+   the 76 in tread in the front and the rear. Built off photographs, the nose stood a unit
+   and a tenth too far forward and six tenths too high, and the crease ran in toward the nose
+   from the middle of the car, where both drawings carry it at its full width as far forward
+   as the foot of the hatch plate and turn it in across the nose there. The knee is at the
+   drawings' 11.3 and the nose's lower plate reaches down to 5.4 at the front of the belly.
+   The two drawings disagree about the width over the sand shields by about a unit a side in
+   their front and rear views; both plans and drawing A's front and rear put them where
+   they are, and the published 100 in over the shields is wider than either. */
 var M8ST = [
-  [[25.3, 7.4, 6.8], [27.04, 9.2, 10.2], [27.65, 10.4, 11.4], [27.65, 10.4, 11.4]],
-  [[21.5, 8.8, 6.8], [21.5, 9.2, 11.8], [21.5, 12.7, 12.4], [21.5, 10.9, 13.2]],
-  [[16.0, 9.0, 6.8], [16.0, 9.0, 11.6], [16.0, 13.5, 13.9], [16.0, 11.6, 16.7]],
+  [[23.3, 7.4, 5.4], [26.0, 9.0, 9.8], [26.55, 9.4, 10.8], [26.55, 9.4, 10.8]],
+  [[21.5, 8.8, 6.8], [21.5, 9.2, 11.3], [21.5, 13.6, 14.2], [21.5, 10.5, 13.9]],
+  [[16.0, 9.0, 6.8], [16.0, 9.0, 11.3], [16.0, 13.6, 14.3], [16.0, 11.6, 16.7]],
   [[12.0, 9.0, 6.8], [12.0, 9.0, 11.2], [12.0, 13.6, 14.4], [12.0, 12.0, 16.7]],
   [[-25.8, 9.0, 6.8], [-26.86, 9.0, 11.2], [-27.65, 13.6, 14.5], [-27.2, 12.0, 16.7]]
 ];
@@ -29278,7 +29289,7 @@ function m8Shell() {
    on the left and the co-driver on the right. It is laid out in strips round the two holes
    on the plate's own lines; under each hole is the well a man sits in, drawn facing in, or
    the hole would look through the hull at the ground. */
-function m8HatchAt(s, v) { return [21.5 - 5.5 * s, v, 13.2 + 3.5 * s]; }
+function m8HatchAt(s, v) { return [21.5 - 5.5 * s, v, 13.9 + 2.8 * s]; }
 function m8HatchHalf(s) { return 10.9 + .7 * s; }
 function m8HatchPlate() {
   var C = M8C, f = [], si, vi, sd;
@@ -29289,10 +29300,10 @@ function m8HatchPlate() {
       if (si === 1 && (vi === 1 || vi === 3)) continue;
       var s0 = sb[si], s1 = sb[si + 1];
       f.push(hkFace([m8HatchAt(s0, vAt(vi, s0)), m8HatchAt(s1, vAt(vi, s1)), m8HatchAt(s1, vAt(vi + 1, s1)), m8HatchAt(s0, vAt(vi + 1, s0))],
-                    [3.5, 0, 5.5], C.od));
+                    [2.8, 0, 5.5], C.od));
     }
   }
-  var u = [-5.5, 0, 3.5], nn = [3.5, 0, 5.5], o = m8HatchAt(0, 0), zb = 8.2;
+  var u = [-5.5, 0, 2.8], nn = [2.8, 0, 5.5], o = m8HatchAt(0, 0), zb = 8.2;
   function dn(p) { return [p[0], p[1], zb]; }
   for (sd = -1; sd <= 1; sd += 2) {
     var v0 = sd * 1.0, v1 = sd * 7.6, vm = (v0 + v1) / 2;
@@ -29303,7 +29314,7 @@ function m8HatchPlate() {
     f = f.concat(m8Lit(faceIn(well, (A[0] + B[0]) / 2, vm, (A[2] + zb) / 2)));
     /* the coaming round the hole, in the plate's own frame: local x up the plate and local
        y across it the other way about, because n x u points to -y */
-    var L = 6.52, a0 = .12 * L, a1 = .82 * L, b0 = -v0, b1 = -v1, bm = -vm, bw = Math.abs(b1 - b0);
+    var L = 6.17, a0 = .12 * L, a1 = .82 * L, b0 = -v0, b1 = -v1, bm = -vm, bw = Math.abs(b1 - b0);
     var cm = [];
     cm = cm.concat(box((a0 + a1) / 2, b0 + (b0 > b1 ? .15 : -.15), 0, a1 - a0 + .3, .3, .35, C.od, C.odL, C.odD, .05));
     cm = cm.concat(box((a0 + a1) / 2, b1 + (b1 > b0 ? .15 : -.15), 0, a1 - a0 + .3, .3, .35, C.od, C.odL, C.odD, .05));
@@ -29397,18 +29408,35 @@ function m8Boxes() {
   }
   return f;
 }
-/* The sand shields, the upgrade: a plate hung from the crease over the two rear wheels on
-   each side, down to a little below the tops of the tyres, stiffened across twice and
-   turned in at both ends. */
+/* The sand shields, the upgrade: a plate hung from under the crease over the two rear wheels
+   on each side, down past the middle of the tyres, with its ends raked so the plate is longer
+   at its foot than at its head, a stiffener across the top and two ribs pressed into it, the
+   five brackets it hangs from, and turned in at both ends. Both drawings have it (see
+   `M8ST`): at the first build it stopped a unit and a tenth short at the foot and its ends
+   stood square. */
 function m8Skirts() {
-  var C = M8C, f = [], sd;
-  var x0 = -26.8, x1 = -1.2, yo = 13.78, zt = 14.42, zb = 9.1;
+  var C = M8C, f = [], sd, i;
+  var zt = 14.0, zb = 8.0, xf = [-1.85, -1.06], xr = [-27.4, -28.6], yo = 13.85, t = .22;
+  function xAt(e, z) { var k = (zt - z) / (zt - zb); return e[0] + (e[1] - e[0]) * k; }
   for (sd = -1; sd <= 1; sd += 2) {
-    f = f.concat(m4Box(sd, x0, x1, yo - .22, yo, zb, zt, C.od, C.odL, C.odD, .04));
-    [10.9, 12.8].forEach(function (z) { f = f.concat(m4Box(sd, x0 + .6, x1 - .6, yo, yo + .15, z - .14, z + .14, C.od, C.odL, C.odD, 0)); });
-    f = f.concat(m4Box(sd, x0, x1, yo - .1, yo + .12, zb - .1, zb + .25, C.odD, C.od, C.odD, 0));
-    [x0, x1].forEach(function (x) { f = f.concat(m4Box(sd, x - .12, x + .12, yo - 1.6, yo, zb + .2, zt - .1, C.odD, C.od, C.odD, 0)); });
-    [-21.0, -8.0].forEach(function (x) { f = f.concat(m4Box(sd, x - .5, x + .5, yo - .05, yo + .25, zt - .9, zt - .2, C.steel, C.bare, C.steel, 0)); });
+    var plate = [[xf[0], zt], [xr[0], zt], [xr[1], zb], [xf[1], zb]], outer = [], inner = [], side = [];
+    plate.forEach(function (q) { outer.push([q[0], sd * yo, q[1]]); inner.push([q[0], sd * (yo - t), q[1]]); });
+    side.push({ v: outer, c: C.od });
+    side.push({ v: inner, c: C.odD });
+    for (i = 0; i < 4; i++) {
+      var a = plate[i], b = plate[(i + 1) % 4];
+      side.push({ v: [[a[0], sd * yo, a[1]], [b[0], sd * yo, b[1]], [b[0], sd * (yo - t), b[1]], [a[0], sd * (yo - t), a[1]]], c: i === 0 ? C.odL : C.odD });
+    }
+    f = f.concat(faceOut(side, -14.5, sd * (yo - t / 2), 11.0));
+    /* the stiffener along the head and the two ribs pressed into the plate */
+    f = f.concat(m4Box(sd, xf[0] - .5, xr[0] + .5, yo, yo + .16, 12.0 - .15, 12.0 + .15, C.od, C.odL, C.odD, 0));
+    [10.6, 9.0].forEach(function (z) { f = f.concat(m4Box(sd, xAt(xr, z) + 1.0, xAt(xf, z) - 1.0, yo, yo + .12, z - .18, z + .18, C.od, C.odL, C.odD, .05)); });
+    /* the ends turned in toward the hull */
+    [xf, xr].forEach(function (e) {
+      var zm = (zt + zb) / 2, xm = xAt(e, zm);
+      f = f.concat(m4Box(sd, xm - .12, xm + .12, yo - 1.4, yo, zb + .3, zt - .2, C.odD, C.od, C.odD, 0));
+    });
+    [-3.3, -8.8, -14.35, -19.9, -25.5].forEach(function (x) { f = f.concat(m4Box(sd, x - .45, x + .45, yo, yo + .3, 13.2, 14.1, C.steel, C.bare, C.steel, .05)); });
   }
   return f;
 }
@@ -29432,11 +29460,11 @@ function m8Front() {
     f = f.concat(taperLimb([gx, ly - .9, top], [gx, ly + .9, top], .2, .2, C.steel));
     f = f.concat(taperLimb([gx, ly + .9, top], [gx, ly + 1.5, top - .6], .2, .2, C.steel));
     /* the blackout marker outboard of it */
-    var bx = 26.3, by = sd * 9.3, bz = m8GlacisZ(bx);
+    var bx = 25.7, by = sd * 8.6, bz = m8GlacisZ(bx);
     f = f.concat(box(bx, by, bz - .1, .7, .7, .75, C.od, C.odL, C.odD, .08));
     f = f.concat(box(bx + .37, by, bz + .2, .05, .4, .3, C.lens, C.lens, C.lens, 0));
     /* the clevises on the nose plate, each a pair of jaws and its pin */
-    var cz = 8.0, cx = 25.3 + (cz - 6.8) * .511;
+    var cz = 8.0, cx = 23.3 + (cz - 5.4) * .606;
     [-.55, .55].forEach(function (k) { f = f.concat(box(cx + .45, sd * 5.4 + k, cz - .5, 1.3, .3, 1.0, C.odD, C.od, C.odD, .05)); });
     f = f.concat(place(tubeSmooth(-.8, .8, 0, 0, .22, 6, C.steel, C.bare), Math.PI / 2, cx + .8, sd * 5.4, cz));
   }
@@ -29447,12 +29475,12 @@ function m8Front() {
   f = f.concat(tubeSmooth(sx + .7, sx + .78, 4.6, sz + 1.1, .58, 10, C.black, C.black));
   f = f.concat(faceOut(m4Star([23.9, 0, m8GlacisZ(23.9) + .05], [0, 1, 0], [-.96, 0, .28], 2.4, C.star), 23.9, 0, 0));
   /* the lifting eye in the middle of the nose plate, over the clevises */
-  var ez = 9.6, ex = 25.3 + (ez - 6.8) * .511;
+  var ez = 9.6, ex = 23.3 + (ez - 5.4) * .606;
   f = f.concat(place(lathe(0, 0, 0, [[.4, -.16], [.75, -.16], [.75, .16], [.4, .16], [.4, -.16]], 10, [C.steel, C.bare, C.steel, C.bare], true), 0, ex + .3, 0, ez));
   /* the mirror on its stalk off the left front corner */
-  f = f.concat(taperLimb([21.2, -11.2, 13.0], [21.8, -12.3, 17.2], .16, .12, C.steel));
-  f = f.concat(box(21.8, -12.4, 17.1, .26, 1.1, 1.5, C.od, C.odL, C.odD, .05));
-  f = f.concat(box(21.65, -12.4, 17.25, .06, .85, 1.2, C.glass, C.glass, C.glass, 0));
+  f = f.concat(taperLimb([21.0, -12.4, 14.1], [21.8, -12.9, 17.2], .16, .12, C.steel));
+  f = f.concat(box(21.8, -12.9, 17.1, .26, 1.1, 1.5, C.od, C.odL, C.odD, .05));
+  f = f.concat(box(21.65, -12.9, 17.25, .06, .85, 1.2, C.glass, C.glass, C.glass, 0));
   return f;
 }
 /* The tail: the tail lamps on the corners, the towing pintle, the two shackles and the
@@ -29560,8 +29588,10 @@ function m8Turret() {
 /* The .30 on the ring over the turret, the one field fitting besides the shields: the M49
    ring on three posts off the rim, rolled round a little behind the middle of the turret,
    the carriage that runs round it and the jeep's Browning in its cradle. It comes with the
-   commander standing to it, who is `mgMan`. */
-M8G.ring = { x: -2.0, r: 6.0, z: 9.3 };
+   commander standing to it, who is `mgMan`. Both drawings (see `M8ST`) put the ring just
+   over the rim and the gun about two feet above the turret: at the first build it stood
+   three units higher than that, on posts nearly a foot tall. */
+M8G.ring = { x: -2.0, r: 6.0, z: 6.4 };
 function m8Thirty() {
   var C = M8C, R = M8G.ring, f = [], rh = M8T.h;
   f = f.concat(place(roll(lathe(0, 0, 0, [[R.r - .3, -.22], [R.r + .3, -.22], [R.r + .38, 0], [R.r + .3, .22], [R.r - .3, .22], [R.r - .3, -.22]], 32,

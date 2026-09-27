@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m8_a.jpg", "key": "am_m8", "up": ["fenders", "mg"], "crew": false,
+  "note": "A four-view of the M8 with the sand shields hung and the .30 on its ring, 500 by 1014 px with no scale on the sheet: the right side at the top with the plan under it, the rear and the front side by side, and the left side at the bottom. The side and the plan are taken off the 128 in from the front axle to the rear one, and agree with the published 15 ft 5 in over the hull to a per cent; the front and the rear are taken off the 76 in tread, which puts them about five per cent bigger than the side. Pinned at the middle axle on the ground.",
+  "views": {
+    "side":  { "nose": "left", "crop": [20, 0, 470, 210], "ppm": 88.9, "at": [-6.85, 0, 0], "px": [293.0, 204.0], "k": 3 },
+    "plan":  { "nose": "left", "crop": [30, 235, 460, 230], "ppm": 88.9, "at": [-6.85, 0, 0], "px": [293.0, 350.5], "k": 3 },
+    "front": { "crop": [255, 530, 235, 225], "ppm": 93.3, "at": [0, 0, 0], "px": [373.75, 751.0], "k": 3 },
+    "rear":  { "crop": [10, 530, 235, 225], "ppm": 93.3, "at": [0, 0, 0], "px": [125.0, 751.0], "k": 3 } } }
