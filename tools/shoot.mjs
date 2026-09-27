@@ -6,8 +6,8 @@
  *   node tools/shoot.mjs start hud --device=phone
  *   node tools/shoot.mjs armour --turn         every vehicle, four angles each
  *   node tools/shoot.mjs free --cam=1400,950,700,1.57,0.9 --sim=30 --bare
- *   node tools/shoot.mjs vehicle --only=ger_p4 --up=skirts   with its field upgrades on
- *   node tools/shoot.mjs man --play --only=us_rifle,ger_gren  one man at play distance, both devices
+ *   node tools/shoot.mjs vehicle --only=hr_p4 --up=skirts    with its field upgrades on
+ *   node tools/shoot.mjs man --play --only=am_rifle,hr_gren   one man at play distance, both devices
  *   node tools/shoot.mjs man --base=HEAD --side --turn        before and after in one picture
  *
  * Output lands in shots/<device>/. Read the PNGs back to judge the visuals.
@@ -99,7 +99,7 @@ const SCENES = {
           let v = window.G.units.find(u => !u.dead && window.owned(u) && u.cat === 'veh' && (u.def.upgrades || []).some(k => !(u.up && u.up[k])));
           if (!v) {
             const sp = window.nearestFree(hq.x + (s === 'us' ? 220 : -220), hq.y + 90);
-            v = window.spawnUnit(own, s === 'us' ? 'us_m8' : 'ger_sd222', sp.x, sp.y, 0);
+            v = window.spawnUnit(own, s === 'us' ? 'am_jeep' : 'hr_ks750', sp.x, sp.y, 0);
           }
           window.__o.camera({ x: v.x, y: v.y, dist: 420, pitch: 0.9 }); window.simpleTap(v.x, v.y);
         }, SIDE);
@@ -184,7 +184,7 @@ const SCENES = {
       /* and a tank: the commander up out of his hatch, then down on his seat behind the
          periscope, then looking round the turret he is sitting in */
       await page.evaluate(([want, ups]) => {
-        const key = want || (window.G.side === 'us' ? 'us_sher' : 'ger_kt');
+        const key = want || (window.G.side === 'us' ? 'am_sher' : 'ger_kt');
         /* with its own side, or the whole town is unexplored and the view is a black wall */
         const own = window.G.units.filter(q => q.side === window.G.side && !q.dead && q.cat !== 'veh');
         own.sort((a, b) => Math.abs(a.x - window.WORLD.w / 2) - Math.abs(b.x - window.WORLD.w / 2));
@@ -237,7 +237,7 @@ const SCENES = {
           if (window.fireLine(u, q) && window.dist(u, q) > 150) best = { q, ang };
         }
         if (!best) return;
-        const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'ger_p4' : 'us_sher',
+        const e = window.spawnUnit(u.side === 'us' ? 'ger' : 'us', u.side === 'us' ? 'hr_p4' : 'am_sher',
                                    best.q.x, best.q.y, best.ang + Math.PI);
         window.povHatch(true); window.POV.yaw = best.ang; window.POV.pitch = -.06;
         window.DRV.took = 1; window.DRV.padFire = true;
@@ -302,7 +302,7 @@ const SCENES = {
      time, from lower than a player looks, in each posture it can hold, and against the
      distance the player really sees it from. */
   man: {
-    help: 'One soldier, one posture, turned under a fixed light: --only=us_rifle --man=0 --pose=fire --turn [--strip --frame=n --dirty --play --noshadow --shadowonly --variant=v --sheet --stage=trench|wall|window --side]',
+    help: 'One soldier, one posture, turned under a fixed light: --only=am_rifle --man=0 --pose=fire --turn [--strip --frame=n --dirty --play --noshadow --shadowonly --variant=v --sheet --stage=trench|wall|window --side]',
     async run(page) {
       await deploy(page, { side: SIDE, diff: DIFF, map: MAP });
       /* --play is the picture the player sees and the one the READ row of the men card
@@ -314,7 +314,7 @@ const SCENES = {
       if (!play) await unlockCamera(page, 12, 0.02);
       const spot = await flatSpot(page, args.stage ? 60 : 90);
       const cat = await catalog(page);
-      const keys = (args.only ? String(args.only).split(',') : ['us_rifle', 'ger_gren'])
+      const keys = (args.only ? String(args.only).split(',') : ['am_rifle', 'hr_gren'])
         .filter(k => cat.units.some(u => u.key === k && (u.cat === 'inf' || u.cat === 'team')));
       const poses = (args.pose ? String(args.pose).split(',') : ['stand', 'ready', 'walk', 'run', 'fire', 'kneel', 'kfire', 'prone', 'crawl']);
       const men = args.man === undefined ? [0] : String(args.man).split(',').map(Number);
@@ -355,7 +355,7 @@ const SCENES = {
           const got = await page.evaluate(o => {
             window.__o.pose([{ key: o.key, x: 0, y: 0, facing: 0 }], o.spot);
             const u = window.G.units[0], side = u.side, enemy = side === 'us' ? 'ger' : 'us';
-            const e = spawnUnit(enemy, enemy === 'us' ? 'us_rifle' : 'ger_gren', o.spot.x + 300, o.spot.y, 0);
+            const e = spawnUnit(enemy, enemy === 'us' ? 'am_rifle' : 'hr_gren', o.spot.x + 300, o.spot.y, 0);
             e.order = null; e.path = null; e.dest = null;
             const mid = c => dsq(c.x, c.y, WORLD.w / 2, WORLD.h / 2);
             /* the enemy is put where the threat is, the section is given it as a target,
@@ -446,7 +446,7 @@ const SCENES = {
           await shoot(page, out(name), { settle: SETTLE });
           await unstage(page);
         }
-        const rowVariants = args.variant ? String(args.variant).split(',') : ['can_rifle', 'fj_rifle'];
+        const rowVariants = args.variant ? String(args.variant).split(',') : ['gi_rifle', 'gr_rifle'];
         const rowPoses = ['stand', 'ready', 'walk', 'run', 'fire', 'kneel', 'kfire', 'prone', 'crawl', 'seat', 'sit', 'served', 'fall', 'dead'];
         for (const v of rowVariants) {
           /* only the postures this file has for him, a cycle at its mid-stride frame */
@@ -666,7 +666,7 @@ const SCENES = {
         /* on ground it can stand on, because a tube that walks out of a wall drops its mission on the way */
         const m = window.spawnUnit(window.G.own, s === 'us' ? 'us_mor' : 'ger_mor', mp.x, mp.y, 0);
         m.setup = 0; m.packed = false;
-        const e = window.spawnUnit(s === 'us' ? 'ger' : 'us', s === 'us' ? 'ger_gren' : 'us_rifle', ep.x, ep.y, Math.PI);
+        const e = window.spawnUnit(s === 'us' ? 'ger' : 'us', s === 'us' ? 'hr_gren' : 'am_rifle', ep.x, ep.y, Math.PI);
         e.setup = 0;
         window.orderBarrage(m, sp.x + 40, sp.y, true);
         window.__o.camera({ x: sp.x + 20, y: sp.y, dist: 520, pitch: 0.9 });

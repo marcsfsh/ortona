@@ -452,9 +452,9 @@ export async function installHooks(page) {
         ? { buf: list[frame % list.length], bufA: listA ? listA[frame % list.length] : null, z: z || 0, n: list.length, len } : null;
       if (M.man) {
         if (name === 'fall' || name === 'dead') {
-          /* the game keys a body by the army he belonged to, and on the Allied side
-             two armies share the side 'us' */
-          const L = M[name] && (M[name][V && V.nat ? V.nat : side] || M[name][side]);
+          /* the game keys a body by the one his variant names (an engineer falls as an
+             engineer), and failing that by the army he belonged to */
+          const L = M[name] && V && (M[name][V.body] || M[name][V.nat] || M[name][side]);
           return L ? { buf: L[frame % L.length], bufA: null, z: name === 'dead' ? -.3 : 0, n: L.length, len: 0 } : null;
         }
         const T = M.man[variant], id = O.poseId(name), set = T && id !== null ? T[id] : null;
@@ -470,8 +470,11 @@ export async function installHooks(page) {
         case 'cfire':  case 'kfire': return one(M.cfire[variant], M.cfireA[variant]);
         case 'prone':  return one(M.prone[variant], M.proneA[variant]);
         case 'crawl':  return cyc(M.crawl[variant], M.crawlA[variant], CRAWL_LEN);
-        /* a corpse is the side's rifleman lying prone, sunk half a unit */
-        case 'dead':   return one(M.prone[side === 'ger' ? 'fj_rifle' : 'can_rifle'], null, -.5);
+        /* a corpse is the side's rifleman lying prone, sunk half a unit. This path only
+           serves a file older than the baked table, and every one of those had only the
+           Canadian and the paratrooper, so their two names are asked after the live ones */
+        case 'dead':   return one(M.prone[side === 'ger' ? 'gr_rifle' : 'gi_rifle'] ||
+                                  M.prone[side === 'ger' ? 'fj_rifle' : 'can_rifle'], null, -.5);
       }
       return null;
     };

@@ -1066,8 +1066,8 @@ stays flat whatever the carve does -- with the refusal that matters, which is th
 crew cannot stand in is worse than no pit. The control skips a point that has anything dug
 in it, because three battles have been fought on the map by the time the row runs and a
 shell hole read as the control says the country is as broken as the pit. A third walks a
-section of its own side through a set-up gun, an MG42 at three offsets and a Pak 40 in the
-open and both again down a lane sixty units wide made for the row out of two solid blocks:
+section of its own side through a set-up gun, an MG 34 team at three offsets and a Pak 38 in
+the open and both again down a lane sixty units wide made for the row out of two solid blocks:
 the gun has to be where it was set up and still in action, the walk has to cost under
 twice what it costs with nothing in the way, and a section spawned standing on the gun
 still has to come off it. The lane is there because the open ground passed a fix that
@@ -1094,196 +1094,166 @@ the map rows because they leave the world on Omaha: put between the two rows abo
 which read the Gothic Line the row before them left standing, the old single row took both
 down, and what that looked like was a churn that had stopped being painted.
 
-**And a fourth asks the beach which army it is fought by.** The side button on the title
-screen has to name the 29th Infantry Division, the sections the Allied side opens with have
-to be American squads of six in both variants, the headquarters has to make the American
-squad and queue it when it is asked for the Canadian section, a man of the squad who is
-killed has to go down and lie as an American, and a brain playing the Allied side from the
-whistle has to order American squads and no Canadian sections in its first 45 seconds. Then
-the Ortona button has to put the Canadians back. A nation that one door forgets is a
-Canadian section walking up an American beach, which in a photograph of a battle looks like
-nothing at all. The German side on the same beach is asked the same in a row of its own: the
-button names the 352nd, the sections it has on the field and the three the wall row put in
-the fire trench are grenadier squads of six in all three variants and none of them
-paratroopers, its headquarters makes the grenadier squad and queues it when asked for the FJ
-group, its brain bought grenadiers and no paratroopers in the wall row's minute of battle, a
-man of it goes down as the 352nd, and Ortona's German button reads Fallschirmjäger again.
-And the jeep is asked the same in a third: the motor pool makes it and not the carrier and
-queues it when asked for the carrier, the count and the order book read the carrier and the
-jeep as one, its crew are baked, the periscope's eye is the gunner's at twenty-odd units up,
-forty wrecks throw the gun off the pedestal none of the time and sit down under 1.7 units,
-killed it leaves two American bodies, and Ortona's motor pool still makes the carrier.
-The M4A1 is asked it in a fourth: the motor pool makes it and not the Sherman V and queues it
-when asked for the Sherman V, the count and the order book read the two as one, every buffer
-it needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1,
-the seated tanker is baked, the eye is a little over three metres up out of the hatch and
-drops to the seat when the lid shuts, forty wrecks throw the turret some of the time and not
-all of it, killed it leaves American bodies, and Ortona's motor pool still makes the Sherman
-V. The Easy Eight is asked it straight after: the brain's own routine rebuilds an M4A1 for 160
-marks, and the tank is then drawn from a model of its own with the 76's 250 of penetration at
-420 and a brake, its card names it the M4A3E8 Sherman, its eye is the M4A1's 380 before the
-rebuild and 420 after it, the body it is kept out of things by is measured again over the wider
-track, every buffer is built, the eye stands in the cupola and drops to the seat when the lid
-shuts, and forty wrecks throw the turret some of the time and are all of them the Easy Eight.
-The KS 750 is asked it in a fifth, on the German side: the depot makes it and not the 222
-and queues it when asked for the 222, the count and the order book read the two as one, its
-crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
-seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the
-mount's arc and no further, the periscope's eye is the gunner's at fourteen-odd units up,
-forty wrecks throw nothing and sit down under 1.7 units, killed it leaves two bodies of the
-352nd, and Ortona's depot still makes the 222. The Panzer IV is asked it in a sixth: the depot
-makes the 352nd's and not the Italian one and queues it when asked for the other, the count and
-the order book read the two as one, it wears the grey and not one face of the Italian tank's
-camouflage, the man in its cupola wears the black cap and no helmet, the seated crewman is
-baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further than
-its guards, the eye is a little under three metres up out of the cupola and drops to the vision
-blocks when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves
-bodies of the 352nd, and Ortona's depot still makes the Italian one. And the engineers are
-asked it in a seventh: the headquarters makes the engineer squad and not the Canadian section
-and queues it when asked for the section, the side opened with one and no Canadians, its three
-men are the three engineer variants carrying the M3, the forearm is bare and the hand gloved
-with no skin on it, the helmet carries goggles, it pegs out a sandbag wall and is sent to build
-it, a man of it killed goes down as `usa_eng` with those bodies baked, and Ortona's
-headquarters still makes the Canadian section. The 352nd's pioneers are asked the same in an
-eighth, on the German side: the headquarters makes the pioneer team and not the paratroop
-pioneers and queues it when asked for them, the side opened with one, its three men are the
-three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown
-pack and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man
-of it killed goes down as `heer_pio`, and Ortona's headquarters still makes the paratroopers.
-The 251 is asked it in a ninth: the depot makes the 352nd's and not the Ausf. D and queues it
-when asked for the other, the count and the order book read the two as one, it wears the grey and
-not one face of the sand, the driver and the gunner wear field grey under a helmet and the seated
-man is baked, a grenadier squad boards it and a second is refused, it is put down behind the
-vehicle, a gun asked to lay 1.2 radians off the nose comes to the edge of the pintle's arc, the
-periscope's eye is the gunner's, standing, at twenty-odd units up, forty wrecks throw nothing and
-all sit down at least 2.2 onto the belly, killed it leaves bodies of the 352nd and the squad
-aboard comes out alive, and Ortona's depot still makes the Ausf. D. The M3 is asked it in a
-tenth, on the American side: the motor pool makes the Americans' and not Italy's M3A1 and queues it
-when asked for the other, the count and the order book read the two as one, it is in olive drab,
-the driver and the gunner wear the American's helmet and jacket and the seated man is baked, an
-American squad boards it and a second is refused, it is put down behind the vehicle, a gun asked
-to lay over the tail comes all the way round, the periscope's eye is the gunner's, standing on
-the floor behind the pedestal, at twenty-odd units up, forty wrecks throw nothing and all sit down
-at least 2.2 onto the belly, killed it leaves American bodies and the squad aboard comes out alive,
-and Ortona's motor pool still makes the M3A1. Its conversion is asked it straight after: the
-brain's own routine fits the 75 mm GMC to an M3 with a squad aboard, the mount is the gun's, the
-squad is put out and another is refused, the weapon is a shell of more than fifty at more than a
-hundred of penetration, every buffer is built with the pedestal's seats among what the fitting
-takes out, the gunner wears the M1 and the loader has brass in his hands, a gun asked to lay over
-the tail stops at the edge of the carriage's twenty degrees, the periscope's eye is the gunner's
-over the shield's roof, forty wrecks throw nothing, and killed it leaves American bodies. And the
-Rangers are asked it in an eleventh: the company post
-makes them and not the Foot Guards and queues them when asked for the Guards, the count and the
-order book read the two as one, the six men are the leader, three Thompsons and the two BAR men,
-every variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and
-the weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the
-squad fights with what it has left, the .30 is bought through the brain's own upgrade routine and
-changes the weapon and two of the Thompson men, killed it leaves `usa_rgr` bodies with those baked,
-and Ortona's post still makes the Guards. The M8 is asked it in a twelfth: the motor pool makes it
-and not the Stuart and queues it when asked for the Stuart, the count and the order book read the
-two as one, every buffer is built including the turret crew without the commander, it is in olive
-drab with the drivers in M1s and the turret crew in the tanker's helmet, the coaxial comes with it,
-a gun asked to lay 1.2 radians off the nose comes all the way round, the periscope's eye is the
-commander's over the rim at twenty-odd units up, the brain's own routine fits the .30 and the sand
-shields and the car is then skirted with the side plate worth more, forty wrecks throw the turret
-some of the time and keep shields some of the time while forty of a car that never had them keep
-none, killed it leaves American bodies, and Ortona's motor pool still makes the Stuart. And the 234
-is asked it in a thirteenth, on the German side: the depot makes it and not the Wirbelwind and
-queues it when asked for the Wirbelwind, the count and the order book read the two as one, it is
-in the grey with none of the paratroopers' paint, the 234/1's men and the Puma's commander wear
-the black cap and none of them a helmet, not one point of the 234/1's two men stands above the
-screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the nose comes all the
-way round, the periscope's eye is the commander's over the rim, the brain's own routine fits the
-Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks throw the
-turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot still makes
-the Wirbelwind. And the Knight's Cross Holders are asked it in a fourteenth, as the player gives
-the orders and not by calling what is behind them: the company post makes them and not the
-assault group and queues them when asked for it, the count and the order book read the two as
-one, the four men are the four variants carrying the StG 44 at a veteran's rank and every one is
-baked winding up and letting go; the GRENADES card reads ready, sends four grenades at a squad
-in reach, a man is in the throw while it goes, each grenade goes off three quarters of a second
-after it lands and the squad takes the bursts, the card then counts its cooldown down dimmed, a
-second volley is refused as cooling and one with nothing in reach is refused for that; the
-BUNDLE CHARGE card arms the pick, a finger on a Panzer IV sends the squad after it and puts the
-pick away, the squad walks into reach, the charge comes down on the hull, goes off three quarters
-of a second later and takes two hundred or more off it; the brain's own routine uses both at
-once; the SIMPLE card carries both at 44 pixels and its BUNDLE arms the pick; a man killed goes
-down as `heer_kch`; and Ortona's post still makes the assault group. And the .30 cal team is
-asked it in a fifteenth: the company post makes it and not the Vickers team and queues it when
-asked for the Vickers, the count and the order book read the two as one, it is four men, every
+**And a fourth asks the beach which army it is fought by.** The side button on the title screen has
+to name the 29th Infantry Division, the sections the Allied side opens with have to be American
+squads of six in both variants, the headquarters has to make the American squad and queue it, a man
+of the squad who is killed has to go down and lie as an American, and a brain playing the Allied
+side from the whistle has to order American squads in its first 45 seconds. Then the Ortona button
+has to name the 29th as well, because the army is the same on every ground. An army that one door
+forgets is a Canadian section walking up an American beach, which in a photograph of a battle looks
+like nothing at all. The German side on the same beach is asked the same in a row of its own: the
+button names the 352nd, the sections it has on the field and the three the wall row put in the fire
+trench are grenadier squads of six in all three variants, its headquarters makes the grenadier squad
+and queues it, its brain bought grenadiers in the wall row's minute of battle, a man of it goes down
+as the 352nd, and Ortona's German button names the 352nd as well. And the jeep is asked the same in
+a third: the motor pool makes it and queues it, the count reads it, its crew are baked, the
+periscope's eye is the gunner's at twenty-odd units up, forty wrecks throw the gun off the pedestal
+none of the time and sit down under 1.7 units, killed it leaves two American bodies. The M4A1 is
+asked it in a fourth: the motor pool makes it and queues it, the count reads it, every buffer it
+needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1, the seated
+tanker is baked, the eye is a little over three metres up out of the hatch and drops to the seat
+when the lid shuts, forty wrecks throw the turret some of the time and not all of it, killed it
+leaves American bodies. The Easy Eight is asked it straight after: the brain's own routine rebuilds
+an M4A1 for 160 marks, and the tank is then drawn from a model of its own with the 76's 250 of
+penetration at 420 and a brake, its card names it the M4A3E8 Sherman, its eye is the M4A1's 380
+before the rebuild and 420 after it, the body it is kept out of things by is measured again over the
+wider track, every buffer is built, the eye stands in the cupola and drops to the seat when the lid
+shuts, and forty wrecks throw the turret some of the time and are all of them the Easy Eight. The KS
+750 is asked it in a fifth, on the German side: the depot makes it and queues it, the count reads
+it, its crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
+seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the mount's
+arc and no further, the periscope's eye is the gunner's at fourteen-odd units up, forty wrecks throw
+nothing and sit down under 1.7 units, killed it leaves two bodies of the 352nd. The Panzer IV is
+asked it in a sixth: the depot makes it and queues it, the count reads it, it wears the grey and not
+one face of the sand camouflage, the man in its cupola wears the black cap and no helmet, the seated
+crewman is baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further
+than its guards, the eye is a little under three metres up out of the cupola and drops to the vision
+blocks when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves bodies
+of the 352nd. And the engineers are asked it in a seventh: the headquarters makes the engineer squad
+and queues it, the side opened with one, its three men are the three engineer variants carrying the
+M3, the forearm is bare and the hand gloved with no skin on it, the helmet carries goggles, it pegs
+out a sandbag wall and is sent to build it, a man of it killed goes down as `usa_eng` with those
+bodies baked. The 352nd's pioneers are asked the same in an eighth, on the German side: the
+headquarters makes the pioneer team and queues it, the side opened with one, its three men are the
+three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown pack
+and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man of it
+killed goes down as `heer_pio`. The 251 is asked it in a ninth: the depot makes it and queues it,
+the count reads it, it wears the grey and not one face of the sand, the driver and the gunner wear
+field grey under a helmet and the seated man is baked, a grenadier squad boards it and a second is
+refused, it is put down behind the vehicle, a gun asked to lay 1.2 radians off the nose comes to the
+edge of the pintle's arc, the periscope's eye is the gunner's, standing, at twenty-odd units up,
+forty wrecks throw nothing and all sit down at least 2.2 onto the belly, killed it leaves bodies of
+the 352nd and the squad aboard comes out alive. The M3 is asked it in a tenth, on the American side:
+the motor pool makes it and queues it, the count reads it, it is in olive drab, the driver and the
+gunner wear the American's helmet and jacket and the seated man is baked, an American squad boards
+it and a second is refused, it is put down behind the vehicle, a gun asked to lay over the tail
+comes all the way round, the periscope's eye is the gunner's, standing on the floor behind the
+pedestal, at twenty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto the
+belly, killed it leaves American bodies and the squad aboard comes out alive. Its conversion is
+asked it straight after: the brain's own routine fits the 75 mm GMC to an M3 with a squad aboard,
+the mount is the gun's, the squad is put out and another is refused, the weapon is a shell of more
+than fifty at more than a hundred of penetration, every buffer is built with the pedestal's seats
+among what the fitting takes out, the gunner wears the M1 and the loader has brass in his hands, a
+gun asked to lay over the tail stops at the edge of the carriage's twenty degrees, the periscope's
+eye is the gunner's over the shield's roof, forty wrecks throw nothing, and killed it leaves
+American bodies. And the Rangers are asked it in an eleventh: the company post makes them and queues
+them, the count reads it, the six men are the leader, three Thompsons and the two BAR men, every
+variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and the
+weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the squad
+fights with what it has left, the .30 is bought through the brain's own upgrade routine and changes
+the weapon and two of the Thompson men, killed it leaves `usa_rgr` bodies with those baked. The M8
+is asked it in a twelfth: the motor pool makes it and queues it, the count reads it, every buffer is
+built including the turret crew without the commander, it is in olive drab with the drivers in M1s
+and the turret crew in the tanker's helmet, the coaxial comes with it, a gun asked to lay 1.2
+radians off the nose comes all the way round, the periscope's eye is the commander's over the rim at
+twenty-odd units up, the brain's own routine fits the .30 and the sand shields and the car is then
+skirted with the side plate worth more, forty wrecks throw the turret some of the time and keep
+shields some of the time while forty of a car that never had them keep none, killed it leaves
+American bodies. And the 234 is asked it in a thirteenth, on the German side: the depot makes it and
+queues it, the count reads it, it is in the grey with none of the sand paint, the 234/1's men and
+the Puma's commander wear the black cap and none of them a helmet, not one point of the 234/1's two
+men stands above the screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the
+nose comes all the way round, the periscope's eye is the commander's over the rim, the brain's own
+routine fits the Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks
+throw the turret some of the time, killed it leaves bodies of the 352nd. And the Knight's Cross
+Holders are asked it in a fourteenth, as the player gives the orders and not by calling what is
+behind them: the company post makes them and queues them, the count reads it, the four men are the
+four variants carrying the StG 44 at a veteran's rank and every one is baked winding up and letting
+go; the GRENADES card reads ready, sends four grenades at a squad in reach, a man is in the throw
+while it goes, each grenade goes off three quarters of a second after it lands and the squad takes
+the bursts, the card then counts its cooldown down dimmed, a second volley is refused as cooling and
+one with nothing in reach is refused for that; the BUNDLE CHARGE card arms the pick, a finger on a
+Panzer IV sends the squad after it and puts the pick away, the squad walks into reach, the charge
+comes down on the hull, goes off three quarters of a second later and takes two hundred or more off
+it; the brain's own routine uses both at once; the SIMPLE card carries both at 44 pixels and its
+BUNDLE arms the pick; a man killed goes down as `heer_kch`. And the .30 cal team is asked it in a
+fifteenth: the company post makes it and queues it, the count reads it, it is four men, every
 variant and both pieces' bodies at the gun are baked, a bearer carries belt faces a rifleman has
-none of, walking it is the two carriers and the two bearers with the gun, the tripod and a box
-each drawn at the point the bake read off them, on the shoulder at a man's shoulder height and
-in the hand at his hand's, halted it sets up with the gunner sitting and his number two serving,
-the number two at the gun's left facing it and the bearers back either side, the flash comes off
-the gun's muzzle, the brain's own routine issues the .50 and the weapon, the piece, the bodies at
-it and the pieces carried all change, a man killed goes down as `usa_mg`, and Ortona's post still
-makes the Vickers. And the MG 34 team is asked it in a sixteenth, on the German side: the company
-post makes it and not the MG42 team and queues it when asked for the MG42 team, the count and the
-order book read the two as one, it is four men, every variant and both guns' bodies at the gun
-are baked, a bearer carries belt faces a grenadier has none of, the heel of each gun's butt, read
-off the gun's own faces and put where the cradle holds it, is within 1.3 units of the seated
-gunner's right shoulder joint, walking it is the gunner with the gun on his shoulder, the number
-two with the Lafette on his back and the two bearers with a box each, halted it sets up with the
-gunner sitting and his number two serving, the number two at the gun's left facing it and the
-bearers back either side, the flash comes off the gun's muzzle, the brain's own routine issues
-the MG 42 and the weapon, the gun in the cradle, the bodies at it and the gun carried all change,
-a man killed goes down as `heer_mg`, and Ortona's post still makes the MG42 team. And the
-Wirbelwind is asked it in a seventeenth, which is the first unit an army fields over and above
-the ones it stands in for: the depot makes it beside the 234 and queues it by its own key while
-the paratroopers' Wirbelwind's key still queues the 234, it is in the grey with none of the
-paratroopers' paint, nothing of the turret roofs over the middle of it at the rim, four muzzles
-stand out past the front plate, the men in it wear the helmet and the black of the panzer troops
-with some of them more than two units over the rim, a turret asked to lay 1.2 radians off the
-nose comes all the way round, the periscope's eye is the commander's over the rim, the same
-120-point burst beside it takes more than a third again off it than off the Panzer IV, forty
-wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and Ortona's depot
-lists the paratroopers' Wirbelwind and not this one. The Panther is asked it in an eighteenth, the
-second unit the 352nd fields over and above: the depot makes it beside the Panzer IV and queues it by
-its own key, it is in the grey with none of the paratroopers' paint, the man in the cupola wears the
-black cap and no helmet, the muzzle stands more than eighteen units past the nose, a turret asked to
-lay over the tail comes all the way round, and the gunner sees as far as he shoots. Most of the row
-is the plate: 220 in front and a side under two fifths of that and still over the Panzer IV's, an
-M4's round at 300 through the front 56 times in a hundred and through the side every time, and the
-side dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the
-lid shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd, and
-Ortona's depot does not make it. The 57 mm Gun M1 is asked it in a nineteenth, on the American
-side: the motor pool makes it and not the 6-pounder and queues it when asked for the 6-pounder, the
-count and the order book read the two as one, its eye stands past every eye on the German depot and
-its reach past every gun on it but the Maus's, and sited on open sand with a Panzer IV driving at it
-from 520 it fires first, a second or more ahead of the tank and before the tank has found it: at 3.0
-seconds from 328 against the tank's answer at 5.9 from 161, because the tank drives in while the gun
-is picking it out, so the first round leaves inside the tank's reach and the tank is blind. It is five
-men with every variant, the served bodies and its three meshes baked; set up, the loader kneels at the
-right of the breech facing it and the bearers are back behind the gun, the flash comes off the muzzle
-and a bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner.
-A man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57, and Ortona's
-motor pool still makes the 6-pounder. The 5 cm Pak 38 is asked it in a twentieth, on the German side: the
-depot makes it and not the Pak 40 and queues it when asked for the Pak 40, the count and the order
-book read the two as one, its eye stands past every eye on the American motor pool and its reach past
-every gun on it, and sited on open sand with an M4 driving at it from 520 it fires first, a second or
-more ahead of the tank and before the tank has found it. It is five men with every variant, the
-served bodies and its three meshes baked; set up, the loader kneels at the right of the breech facing
-it and the bearers are back behind the gun, the flash comes off the muzzle and a bearer has his case
-in his hand; packed, the trails close and the piece rides beside the gunner. A man killed goes down as
-`heer_at`, a German bunker's anti-tank fitting is the Pak 38, and Ortona's depot still makes the Pak
-40. The M3 light tank is asked it in a twenty-first, the first unit the Americans field over and above
-the ones they stand in for: the motor pool makes it beside the M8 and queues it by its own key, it is
-in olive drab, the man in its hatch wears the tanker's helmet and no M1, the 37 mm stays inside the
-nose, a turret asked to lay over the tail comes all the way round, and the front plate is half as much
-again as the M8's, so at two hundred the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm
-opens the M8 more than twice as often, the KS 750's MG 34 never does and a Panzer IV's round always does.
-The eye is up out of the hatch and drops to the band under the roof when the lid shuts, forty wrecks
-throw the turret some of the time, killed it leaves American bodies, and Ortona's motor pool does not
-make it. The M26 is asked it in a twenty-second, the second unit the Americans field over and above:
-the motor pool makes it beside the M4A1 and queues it by its own key, it is in olive drab, the man in its
-cupola wears the tanker's helmet and no M1, the 90 mm stands more than twenty units past the nose, and a
-turret asked to lay over the tail comes all the way round. Most of the row is the plate and the gun at
-three hundred: a Panzer IV's round goes through its front between one time in five and two in three and
-through its side every time, and its 90 mm goes through a Panther's front more than three times in five,
-more often than the M4A1's 75 does, and a Panzer IV's every time. The eye is up out of the cupola and drops
-when the lid shuts, forty wrecks throw the turret some of the time, killed it leaves American bodies, and
-Ortona's motor pool does not make it.
+none of, walking it is the two carriers and the two bearers with the gun, the tripod and a box each
+drawn at the point the bake read off them, on the shoulder at a man's shoulder height and in the
+hand at his hand's, halted it sets up with the gunner sitting and his number two serving, the number
+two at the gun's left facing it and the bearers back either side, the flash comes off the gun's
+muzzle, the brain's own routine issues the .50 and the weapon, the piece, the bodies at it and the
+pieces carried all change, a man killed goes down as `usa_mg`. And the MG 34 team is asked it in a
+sixteenth, on the German side: the company post makes it and queues it, the count reads it, it is
+four men, every variant and both guns' bodies at the gun are baked, a bearer carries belt faces a
+grenadier has none of, the heel of each gun's butt, read off the gun's own faces and put where the
+cradle holds it, is within 1.3 units of the seated gunner's right shoulder joint, walking it is the
+gunner with the gun on his shoulder, the number two with the Lafette on his back and the two bearers
+with a box each, halted it sets up with the gunner sitting and his number two serving, the number
+two at the gun's left facing it and the bearers back either side, the flash comes off the gun's
+muzzle, the brain's own routine issues the MG 42 and the weapon, the gun in the cradle, the bodies
+at it and the gun carried all change, a man killed goes down as `heer_mg`. And the Wirbelwind is
+asked it in a seventeenth, which is the first unit an army fielded over and above the ones it stood
+in for: the depot makes it beside the 234 and queues it by its own key, it is in the grey with none
+of the sand paint, nothing of the turret roofs over the middle of it at the rim, four muzzles stand
+out past the front plate, the men in it wear the helmet and the black of the panzer troops with some
+of them more than two units over the rim, a turret asked to lay 1.2 radians off the nose comes all
+the way round, the periscope's eye is the commander's over the rim, the same 120-point burst beside
+it takes more than a third again off it than off the Panzer IV, forty wrecks throw the turret some
+of the time, killed it leaves bodies of the 352nd. The Panther is asked it in an eighteenth, the
+second unit the 352nd fielded over and above: the depot makes it beside the Panzer IV and queues it
+by its own key, it is in the grey with none of the sand paint, the man in the cupola wears the black
+cap and no helmet, the muzzle stands more than eighteen units past the nose, a turret asked to lay
+over the tail comes all the way round, and the gunner sees as far as he shoots. Most of the row is
+the plate: 220 in front and a side under two fifths of that and still over the Panzer IV's, an M4's
+round at 300 through the front 56 times in a hundred and through the side every time, and the side
+dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the lid
+shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd. The 57
+mm Gun M1 is asked it in a nineteenth, on the American side: the motor pool makes it and queues it,
+the count reads it, its eye stands past every eye on the German depot and its reach past every gun
+on it but the Maus's, and sited on open sand with a Panzer IV driving at it from 520 it fires first,
+a second or more ahead of the tank and before the tank has found it: at 3.0 seconds from 328 against
+the tank's answer at 5.9 from 161, because the tank drives in while the gun is picking it out, so
+the first round leaves inside the tank's reach and the tank is blind. It is five men with every
+variant, the served bodies and its three meshes baked; set up, the loader kneels at the right of the
+breech facing it and the bearers are back behind the gun, the flash comes off the muzzle and a
+bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner. A
+man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57. The 5 cm Pak 38
+is asked it in a twentieth, on the German side: the depot makes it and queues it, the count reads
+it, its eye stands past every eye on the American motor pool and its reach past every gun on it, and
+sited on open sand with an M4 driving at it from 520 it fires first, a second or more ahead of the
+tank and before the tank has found it. It is five men with every variant, the served bodies and its
+three meshes baked; set up, the loader kneels at the right of the breech facing it and the bearers
+are back behind the gun, the flash comes off the muzzle and a bearer has his case in his hand;
+packed, the trails close and the piece rides beside the gunner. A man killed goes down as `heer_at`,
+a German bunker's anti-tank fitting is the Pak 38. The M3 light tank is asked it in a twenty-first,
+the first unit the Americans fielded over and above the ones they stood in for: the motor pool makes
+it beside the M8 and queues it by its own key, it is in olive drab, the man in its hatch wears the
+tanker's helmet and no M1, the 37 mm stays inside the nose, a turret asked to lay over the tail
+comes all the way round, and the front plate is half as much again as the M8's, so at two hundred
+the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm opens the M8 more than twice as
+often, the KS 750's MG 34 never does and a Panzer IV's round always does. The eye is up out of the
+hatch and drops to the band under the roof when the lid shuts, forty wrecks throw the turret some of
+the time, killed it leaves American bodies. The M26 is asked it in a twenty-second, the second unit
+the Americans fielded over and above: the motor pool makes it beside the M4A1 and queues it by its
+own key, it is in olive drab, the man in its cupola wears the tanker's helmet and no M1, the 90 mm
+stands more than twenty units past the nose, and a turret asked to lay over the tail comes all the
+way round. Most of the row is the plate and the gun at three hundred: a Panzer IV's round goes
+through its front between one time in five and two in three and through its side every time, and its
+90 mm goes through a Panther's front more than three times in five, more often than the M4A1's 75
+does, and a Panzer IV's every time. The eye is up out of the cupola and drops when the lid shuts,
+forty wrecks throw the turret some of the time, killed it leaves American bodies.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -6519,9 +6489,9 @@ Measured by the gate on the shipped map: four headquarters on four owners, the t
 580 apart and all four with walkable ground to march out of; three brains, one plan each;
 the player's till at 904 against his ally's 159 with the strip reading his; four
 populations counted separately; and an ally's section selected gives nothing at all to the
-command bar. The ladder under the weights reads `ger_sd222x1@40 ger_pakx2@130 ger_p4x2@260
+command bar. The ladder under the weights reads `hr_ks750x1@40 hr_pakx2@130 hr_p4x2@260
 ger_tigx1@620` at even, and with light at NEVER, medium at 2x and heavy at 3x it reads
-`ger_pakx2@130 ger_p4x4@130 ger_tigx3@207`.
+`hr_pakx2@130 hr_p4x4@130 ger_tigx3@207`.
 
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and

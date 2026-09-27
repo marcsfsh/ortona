@@ -13,7 +13,7 @@
  *
  *   node tools/duel.mjs                      the standard card
  *   node tools/duel.mjs --n=24               more repeats, tighter numbers
- *   node tools/duel.mjs us_rifle ger_gren    one matchup
+ *   node tools/duel.mjs am_rifle hr_gren     one matchup
  *   node tools/duel.mjs --d=200              at a chosen opening range
  *   node tools/duel.mjs --cover=3            with both sides in heavy cover
  *   node tools/duel.mjs --json               machine-readable
@@ -52,94 +52,68 @@ const positional = args._ || [];
    upgrades before the fight, because half of what a vehicle can do is an upgrade and a
    roster is not balanced until those are too. */
 const CARD = [
-  ['us_rifle', 'ger_gren'],
-  ['us_ab', 'ger_pgren'],
-  ['us_fg', 'ger_pgren'],
-  ['us_fg', 'ger_gren'],
-  ['us_mg', 'ger_mg42'],
-  ['us_mg', 'ger_gren'],
-  ['ger_mg42', 'us_rifle'],
-  /* The mortars. A tube against a section is the row the roster is judged on -- what a
+  ['am_rifle', 'hr_gren'],
+  /* The mortars. A tube against a squad is the row the roster is judged on -- what a
      mortar is for is men in the open and men behind something -- and tube against tube is
-     the calibration row for the pair, the way us_eng against ger_pio is for the rifles.
+     the calibration row for the pair, the way am_eng against hr_pio is for the squads.
      Note what a duel cannot show about one: it stages both sides in sight of each other,
      so a mortar here is firing at what it can see itself, which is the half of its job it
      is worst at. What it does to ground nobody can see into is not a duel question. */
-  ['us_mor', 'ger_gren'],
-  ['ger_mor', 'us_rifle'],
+  ['us_mor', 'hr_gren'],
+  ['ger_mor', 'am_rifle'],
   ['us_mor', 'ger_mor'],
-  ['us_eng', 'ger_pio'],
-  ['us_at', 'ger_p4'],
-  ['ger_pak', 'us_sher'],
-  ['us_sher', 'ger_p4'],
-  ['us_ach', 'ger_p4'],
+  ['us_ach', 'hr_p4'],
   ['us_ach', 'ger_tig'],
-  ['us_sher', 'ger_tig'],
-  ['us_stuart', 'ger_sd222'],
-  ['us_m8', 'ger_sd222'],
-  /* the jeep, which is what the Americans field in the carrier's place: against the car it
-     meets, the squad it meets and the paratroopers, and fitted with the .50 against the
-     car and the half-track */
-  ['am_jeep', 'ger_sd222'],
+  ['am_sher', 'ger_tig'],
+  /* the jeep, the Americans' light vehicle: against the KS 750 it meets and the grenadier
+     squad, and fitted with the .50 against the same two further down */
+  ['am_jeep', 'hr_ks750'],
   ['am_jeep', 'hr_gren'],
-  ['am_jeep', 'ger_gren'],
-  /* and the KS 750, which the 352nd fields in the 222's place: against the squad it meets,
-     the jeep, the Canadian section and the carrier */
+  /* and the KS 750, the 352nd's light vehicle: against the squad it meets and the jeep */
   ['hr_ks750', 'am_rifle'],
   ['hr_ks750', 'am_jeep'],
-  ['hr_ks750', 'us_rifle'],
-  ['hr_ks750', 'us_m8'],
-  /* and the Panzer IV the 352nd fields in the Italian one's place: against the M4 it meets
-     on the beach and the squad */
+  /* and the 352nd's Panzer IV: against the M4 it meets on the beach and the squad */
   ['am_sher', 'hr_p4'],
   ['hr_p4', 'am_rifle'],
-  /* and the engineer squad the Americans field in the Canadian section's place: against the
-     paratroop pioneers it stands in for the calibration against, the grenadier squad it meets
-     on the beach, and the Canadian section itself */
-  ['am_eng', 'ger_pio'],
+  /* and the engineer squad, the Americans' builder: against the grenadier squad it meets on
+     the beach */
   ['am_eng', 'hr_gren'],
-  ['am_eng', 'us_eng'],
-  /* and the pioneer team the 352nd fields in the paratroop pioneers' place, which carries the
-     engineers' numbers to the point and is the calibration row on the beach, and against
-     the squad it meets */
+  /* and the pioneer team, the 352nd's builder, which carries the engineers' numbers to the
+     point: the two are one unit on two sides, so this is the calibration row, and anything
+     but about fifty per cent on it says the tool has developed a bias and not the roster;
+     and against the squad it meets */
   ['am_eng', 'hr_pio'],
   ['hr_pio', 'am_rifle'],
-  /* and the 251 the 352nd fields in the Ausf. D's place: against the squad it meets, the
-     jeep, and the M4 that opens it */
+  /* and the 352nd's 251: against the squad it meets, the jeep, and the M4 that opens it */
   ['hr_251', 'am_rifle'],
   ['hr_251', 'am_jeep'],
   ['am_sher', 'hr_251'],
-  /* and the M3A1 the Americans field in the one Italy has: against the squad it meets, the
-     251 it faces across the beach, the KS 750, and the Panzer IV that opens it */
+  /* and the Americans' M3: against the squad it meets, the 251 it faces across the beach,
+     the KS 750, and the Panzer IV that opens it */
   ['am_m3', 'hr_gren'],
   ['am_m3', 'hr_251'],
   ['am_m3', 'hr_ks750'],
   ['hr_p4', 'am_m3'],
-  /* and the Ranger squad the Americans field in the Foot Guards' place: against the grenadier
-     squad it meets, the Foot Guards it stands in for, the Panzergrenadiere that are the elite
-     it meets on the beach (and with the two .30s issued against them, because the grenadiers
-     lose every fight either way and say nothing about the upgrade), the 251 and the KS 750
-     its bazookas are for, and the Panzer IV they are a nuisance to */
+  /* and the Ranger squad, the Americans' assault squad: against the grenadier squad it meets,
+     the Knight's Cross Holders with the two .30s issued against them (the row without them is
+     with the Knight's Cross Holders' own below, and the grenadiers lose every fight either way
+     and say nothing about the upgrade), the 251 and the KS 750 its bazookas are for, and the
+     Panzer IV they are a nuisance to */
   ['am_ranger', 'hr_gren'],
-  ['am_ranger', 'us_fg'],
-  ['am_ranger', 'ger_pgren'],
-  ['am_ranger', 'ger_pgren', { a: ['a6'] }],
+  ['am_ranger', 'hr_kch', { a: ['a6'] }],
   ['am_ranger', 'hr_251'],
   ['am_ranger', 'hr_ks750'],
   ['hr_p4', 'am_ranger'],
-  /* and the M8 the Americans field in the Stuart's place: against the KS 750, the 251 and the
-     grenadier squad it hunts, the FJ assault group whose Panzerschreck opens it (and with the
-     sand shields hung against it), the Rangers who are meant to beat it, and the Panzer IV */
+  /* and the Americans' M8: against the KS 750, the 251 and the grenadier squad it hunts, the
+     Rangers who are meant to beat it, and the Panzer IV */
   ['am_m8', 'hr_ks750'],
   ['am_m8', 'hr_251'],
   ['am_m8', 'hr_gren'],
-  ['am_m8', 'ger_pgren'],
-  ['am_m8', 'ger_pgren', { a: ['fenders'] }],
   ['am_ranger', 'am_m8'],
   ['hr_p4', 'am_m8'],
-  /* and the 234 the 352nd fields in the Wirbelwind's place: the 234/1 against the M8 it trades
-     with, the half-track it hunts and the Rangers who hunt it, and the Puma against the M8 it
-     outguns and the M4 it can open only from the flank */
+  /* and the 352nd's 234: the 234/1 against the M8 it trades with, the half-track it hunts and
+     the Rangers who hunt it, and the Puma against the M8 it outguns and the M4 it can open only
+     from the flank */
   ['hr_234', 'am_m8'],
   ['hr_234', 'am_m3'],
   ['am_ranger', 'hr_234'],
@@ -153,13 +127,13 @@ const CARD = [
   ['hr_wirb', 'am_m8'],
   ['hr_wirb', 'am_m3'],
   ['am_sher', 'hr_wirb'],
-  ['us_at', 'hr_wirb'],
-  /* and the Panther: the M4 and the anti-tank gun that cannot open its front, the Achilles
-     that can, and what it does to infantry and to a light vehicle; read the first rows again
-     beside --turn=1.57, which stages it side-on, because its sides are the whole answer */
+  ['am_at', 'hr_wirb'],
+  /* and the Panther: the M4 that cannot open its front (the anti-tank gun's row is with the
+     57's below), the Achilles that can, and what it does to infantry and to a light vehicle;
+     read the first rows again beside --turn=1.57, which stages it side-on, because its sides
+     are the whole answer */
   ['am_sher', 'hr_panther'],
   ['us_ach', 'hr_panther'],
-  ['us_at', 'hr_panther'],
   ['hr_panther', 'am_rifle'],
   ['hr_panther', 'am_m8'],
   /* the Knight's Cross Holders, whose grenades reach 150, so a row at the pair's own reach says
@@ -169,21 +143,22 @@ const CARD = [
   ['am_m8', 'hr_kch'],
   ['am_m3', 'hr_kch'],
   ['am_sher', 'hr_kch'],
-  /* and the American .30 team in the Vickers team's place: against the MG42 across the beach,
-     the grenadier squad and the Knight's Cross Holders it is there to keep down, the KS 750
-     that can ride up on it; and with the .50 issued, against the same and against the 251
-     and the KS 750 it is issued to open */
-  ['am_mg', 'ger_mg42'],
+  /* and the American .30 team: against the MG 34 team across the beach, which is the machine
+     guns' calibration row, the two being one unit on two sides, and is fought from the other side
+     of the card in the MG 34's rows below; against the grenadier squad and the Knight's Cross
+     Holders it is there to keep down, and the KS 750 that can ride up on it; and with the .50
+     issued, against the same and against the 251 and the KS 750 it is issued to open */
+  ['am_mg', 'hr_mg'],
   ['am_mg', 'hr_gren'],
   ['am_mg', 'hr_kch'],
   ['hr_ks750', 'am_mg'],
-  ['am_mg', 'ger_mg42', { a: ['m2hb'] }],
+  ['am_mg', 'hr_mg', { a: ['m2hb'] }],
   ['am_mg', 'hr_gren', { a: ['m2hb'] }],
   ['am_mg', 'hr_ks750', { a: ['m2hb'] }],
   ['am_mg', 'hr_251', { a: ['m2hb'] }],
-  /* and the 352nd's MG 34 team in the MG42 team's place: against the .30 across the beach, the
-     rifle squad and the engineers it is there to keep down and the jeep that can ride up on it;
-     and with the MG 42 issued, against the .30, against the .50 and against the rifle squad */
+  /* and the 352nd's MG 34 team: against the .30 across the beach, the rifle squad and the
+     engineers it is there to keep down and the jeep that can ride up on it; and with the MG 42
+     issued, against the .30, against the .50 and against the rifle squad */
   ['hr_mg', 'am_mg'],
   ['hr_mg', 'am_rifle'],
   ['hr_mg', 'am_eng'],
@@ -191,20 +166,20 @@ const CARD = [
   ['hr_mg', 'am_mg', { a: ['mg42t'] }],
   ['hr_mg', 'am_mg', { a: ['mg42t'], b: ['m2hb'] }],
   ['hr_mg', 'am_rifle', { a: ['mg42t'] }],
-  /* and the American 57 in the 6-pounder's place: against the Panzer IV and the Panther it is
-     there to meet, the Puma and the half-track, and the grenadier squad that kills it. A gun
-     meets armour set up, so read these beside --sited --d=520, where its reach and its eye are
-     what is being asked; staged the default way it walks into the tank and pays its setup */
+  /* and the American 57: against the Panzer IV and the Panther it is there to meet, the Puma and
+     the half-track, and the grenadier squad that kills it. A gun meets armour set up, so read
+     these beside --sited --d=520, where its reach and its eye are what is being asked; staged the
+     default way it walks into the tank and pays its setup */
   ['am_at', 'hr_p4'],
   ['am_at', 'hr_panther'],
   ['am_at', 'hr_234', { b: ['puma'] }],
   ['am_at', 'hr_251'],
   ['am_at', 'hr_gren'],
-  /* and the 352nd's Pak 38 in the Pak 40's place, asked the same the other way round: the M4 it is
-     there to meet, the Panzer IV as the 57's own row with the gun changed, the M8 and the half-track,
-     and the rifle squad that kills it. Read these sited as well, for the 57's reason; and read the M4
-     row beside the Panzer IV one, because the M4 carries its coaxial as standard and the Panzer IV
-     does not, and a coaxial on a tank that has found a gun is most of what kills the crew */
+  /* and the 352nd's Pak 38, asked the same the other way round: the M4 it is there to meet, the
+     Panzer IV as the 57's own row with the gun changed, the M8 and the half-track, and the rifle
+     squad that kills it. Read these sited as well, for the 57's reason; and read the M4 row beside
+     the Panzer IV one, because the M4 carries its coaxial as standard and the Panzer IV does not,
+     and a coaxial on a tank that has found a gun is most of what kills the crew */
   ['hr_pak', 'am_sher'],
   ['hr_pak', 'hr_p4'],
   ['hr_pak', 'am_m8'],
@@ -231,43 +206,33 @@ const CARD = [
   ['am_m26', 'hr_234', { b: ['puma'] }],
   ['am_m26', 'hr_kch'],
   ['am_ranger', 'am_m26'],
-  ['us_m3', 'ger_h251'],
-  ['us_rifle', 'ger_sd222'],
-  ['us_ab', 'ger_p4'],
-  ['ger_pgren', 'us_sher'],
-  ['us_t8', 'ger_p4'],
-  ['ger_tig', 'us_at'],
-  ['us_sher', 'ger_stug'],
-  ['us_at', 'ger_stug'],
-  ['us_ab', 'ger_stug'],
-  /* the eighty-eight, which the Pioneers dig in: AP against what it is for, and HE
+  ['am_ranger', 'hr_p4'],
+  ['hr_kch', 'am_sher'],
+  ['us_t8', 'hr_p4'],
+  ['ger_tig', 'am_at'],
+  ['am_sher', 'ger_stug'],
+  ['am_at', 'ger_stug'],
+  ['am_ranger', 'ger_stug'],
+  /* the eighty-eight, which the pioneers dig in: AP against what it is for, and HE
      against men. It fights here in the open, without the ring of bags it is built in,
      so its crew are worse off than in a battle. */
-  ['ger_flak88', 'us_sher'],
+  ['ger_flak88', 'am_sher'],
   ['ger_flak88', 'us_ach'],
-  ['ger_flak88', 'us_rifle', { a: ['he'] }],
-  ['ger_flak88', 'us_ab', { a: ['he'] }],
+  ['ger_flak88', 'am_rifle', { a: ['he'] }],
+  ['ger_flak88', 'am_ranger', { a: ['he'] }],
   /* the Maus against everything that might be asked to stop one */
   ['us_ach', 'ger_maus'],
-  ['us_sher', 'ger_maus'],
-  ['us_at', 'ger_maus'],
+  ['am_sher', 'ger_maus'],
+  ['am_at', 'ger_maus'],
   /* and the field upgrades */
-  ['ger_sd222', 'us_m8', { a: ['kwk'] }],
-  ['ger_sd222', 'us_stuart', { a: ['kwk'] }],
-  ['us_m3', 'ger_h251', { a: ['quad50'], b: ['drill'] }],
-  ['us_m3', 'ger_gren', { a: ['quad50'] }],
-  ['ger_h251', 'us_rifle', { a: ['drill'] }],
-  ['us_m3', 'ger_p4', { a: ['how75'] }],
-  ['ger_h251', 'us_stuart', { a: ['pak36'] }],
-  ['us_m8', 'ger_gren', { a: ['thirty'] }],
-  ['am_jeep', 'ger_sd222', { a: ['fifty'] }],
-  ['ger_sd222', 'am_jeep', { a: ['kwk'] }],
+  ['am_m3', 'hr_p4', { a: ['how75'] }],
+  ['am_jeep', 'hr_ks750', { a: ['fifty'] }],
   ['am_jeep', 'hr_gren', { a: ['fifty'] }],
   ['hr_ks750', 'am_rifle', { a: ['mg42'] }],
   ['hr_ks750', 'am_jeep', { a: ['mg42'], b: ['fifty'] }],
-  ['ger_p4', 'us_ab', { a: ['skirts'] }],
-  ['us_sher', 'ger_p4', { a: ['mg'], b: ['mg', 'skirts'] }],
-  ['us_sher', 'ger_stug', { b: ['scope', 'mgs', 'skirts'] }]
+  ['hr_p4', 'am_ranger', { a: ['skirts'] }],
+  ['am_sher', 'hr_p4', { a: ['mg'], b: ['mg', 'skirts'] }],
+  ['am_sher', 'ger_stug', { b: ['scope', 'mgs', 'skirts'] }]
 ];
 
 const browser = await launch();
@@ -285,7 +250,7 @@ const { page } = await openGame(browser, 'desktop', { file });
 await deploy(page, { side: 'us', diff: 1 });
 
 /* one matchup off the command line takes its upgrades the way a card row does:
-   --ua=fifty fits A, --ub=kwk fits B */
+   --ua=fifty fits A, --ub=mg42 fits B */
 const cliUps = args.ua || args.ub ? { a: args.ua ? String(args.ua).split(',') : [], b: args.ub ? String(args.ub).split(',') : [] } : undefined;
 const pairs = positional.length >= 2 ? [cliUps ? [positional[0], positional[1], cliUps] : [positional[0], positional[1]]] : CARD;
 const NOAB = !!args.noab;
