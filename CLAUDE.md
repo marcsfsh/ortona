@@ -3405,10 +3405,17 @@ photographs have it low, from the bottom of the pack to a hand and a half under 
 the shovel's T at the seat where it hangs at the fork. And from the front and the back the
 line from the collar to the point of the shoulder falls about twenty degrees, where the chest
 stopped in a flat top with the collar standing on it and the sleeves hanging from its
-corners, which is what made him a box: a yoke slopes up from the chest's top edge to the base
-of the neck (`'yoke'`), with its front kept upright where the collar points lie, and what
-went over his shoulders (the haversack's straps, the gas mask's, the MG team's belts, the
-Ranger's vest and straps) is laid on its slope.
+corners, which is what made him a box: the plate across the top of the chest (`'plate'`)
+stands level at the shoulder's own width for a sliver and then slopes up to the base of the
+neck, with its front kept upright where the collar points lie, and what goes over his
+shoulders (the haversack's straps, the gas mask's, the MG team's belts, the Ranger's vest and
+straps) is laid on its slope. The first cut of this was a yoke built under the old level
+plate, which stood to 6.6 and swallowed it: for one commit every one of those shoulders was
+exactly as flat as before, the straps laid on the slope were inside the plate, and the
+photographs of it were read as sloped. And a strap laid on it is rolled `-sd` times the
+slope, because `roll` raises +y as the angle grows: rolled `sd` times, as the first cut had
+them, every one of them stood up off the shoulder at its outer end, which the level plate had
+been hiding too.
 
 Three things held some of that back, each a gate. The seat is 4.75 rather than 5.0, because
 the men card's hips row holds every figure within eight per cent of a 1.73 m man's hip breadth
@@ -3465,7 +3472,9 @@ hand is drawn, and the real skin moves to `k.bare` for the forearm. The kit is h
 arms in the weapon carry as well as the grips carry now, which they were not, because nobody
 before him held a weapon in gloves. **The trousers are pale twill with a cargo pocket on each
 thigh** (`figLeg`'s `cargo`, built into the thigh so it follows the hip) **bloused over brown
-boots** (`figLeg`'s sixth anklet mode, laced to above the ankle). The shirt is the darker olive
+boots** (`figLeg`'s sixth anklet mode, laced to above the ankle), and cut as full as the
+rifleman's wool: 2.55 across at the fork, tapering from the knee to where it is bloused, and
+the blousing half as wide again as the boot. The shirt is the darker olive
 tucked in at the belt, so there is no skirt, with its collar open over the undershirt; over it
 the assault vest (`vest` in the record), two big pockets low and two smaller ones high under
 flaps; on his back a pack in a darker olive than the vest with a blanket rolled across the top
@@ -3620,6 +3629,29 @@ published 1,110 mm. The paratroopers carry the same rifle, so the new anchors (`
 moved both armies' hands, and the GRIP misses the card had reported on the FJ rifleman went
 with the old one: four of 461 on the last commit, two of 589 now, and those two are the
 Canadian corpse. A corpse's Kar98k lies on its side, for the Garand's reason.
+
+**And he is traced over photographs of men in field grey** (`tools/ref/gr_rifle.json`, two men
+walking at the camera, `shots/ref/heer_a.jpg`, which is a CC BY-SA photograph of a reenactment
+and lives outside the repository like every reference). The scale is the stature and the
+helmet together, 272 and 304 px/m, and the helmet agrees with the rig's M42 within a line. What
+was out was the cloth. The trousers were 2.0 across at the fork and 1.5 at the knee where the
+photographs have 2.6 and 2.3, and the one shape a German leg is known by from the front, the
+cloth bagging out over the top of the marching boot to 2.4, was not there at all: the leg was a
+stick into a bucket. They are cut like the American's now (`figLeg`'s `full`, on the marching
+boot, the gaiter and the engineer's boot), with the bag hung a tenth outboard so a man standing
+with his feet together does not come out as one column of cloth from the belt to the boots;
+over a gaiter the leg tapers down to the blousing instead, which is how the M43 trousers were
+cut. The boot is 1.5 at the ankle and 1.82 at the top where it was 1.62 and 1.86, the sleeve a
+twelfth fuller (`KIT.heer.sleeve`), the seat 4.75 under the fuller thighs and the skirt 5.0
+over it, and the shoulders slope as the American's do, off the same plate. The pioneers, the
+two crews and the Knight's Cross Holders go through the same builders and take all of it; the
+motorcyclist's legs are his coat's and are left alone.
+
+**A walking man is a source of widths and not of heights.** Both photographs put the shoulders
+a unit nearer the helmet than the rig has them, and an upright American laid the same way
+agrees with the rig to a line: the two men are looking down at the path in front of them, and
+a head bowed that far brings the helmet down onto the shoulders. The torso was left as the men
+card has it.
 
 **The squad's numbers come off the duel card as well.** Six men with bolt rifles at nine a
 round and 275 of reach beat the American squad 88 per cent of the time, the Canadian section

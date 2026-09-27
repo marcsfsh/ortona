@@ -90,6 +90,11 @@ variant (`{ "weapon": "none" }` for arms that hang), and `at` may be a joint's n
 the knees and the head until the joints (dotted and printed) sit on the photograph's. Take the
 scale off the head (the rig's eye to chin is 1.7 units) and the helmet, and read clothing off
 the result, not the rig's lengths, which the men card holds to an anthropometric man.
+A man walking at the camera looking at the ground is a source of widths only: his bowed head
+brings the helmet a unit down onto his shoulders, so the eye to the chin reads short and every
+height under the helmet reads wrong. Take his scale off the helmet's width and his stature
+together, and check it on an upright man before believing a height (`tools/ref/gr_rifle.json`
+is two men like that).
 
 ## 5. Lay the model over it
 

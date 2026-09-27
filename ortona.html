@@ -35300,7 +35300,7 @@ var KIT = {
      canteen on top of that. He reads darker than any of the other three: field grey from
      the collar to the ankle with black at the waist and below the knee, under a helmet
      whose skirt is the one shape on the field nobody else wears. */
-  heer: { coat: '#5e6150', coatD: '#4a4d40', trous: '#555848', boot: '#1d1b18',
+  heer: { coat: '#5e6150', coatD: '#4a4d40', trous: '#555848', boot: '#1d1b18', sleeve: 1.12,
           belt: '#221f1b', pouch: '#221f1b', buckle: '#6b6e66', web: '#5a5a46', webD: '#46473a',
           canvas: '#6c6a52', pack: '#6c6a52', gaiter: '#5e5d49', tin: '#5b604e', felt: '#7a6446', cup: '#262521',
           tool: '#2e2a24', helve: '#7a6448', eagle: '#9a9a8c', litzen: '#8f917f', rubber: '#3a3b33',
@@ -35492,11 +35492,29 @@ function figLeg(R, L, y, k, trous, anklet, rec, coat, cargo) {
      and below the knee the leg of the trouser is as full as the knee is down to where it
      is bloused, so it is built in two: that length, and inside the legging a leg no wider
      than the legging's own mouth */
-  var tc = coat || trous, bag = anklet === 2 ? 1 : 0;
-  var thigh = figPart(taperLimb([0, 0, 0], [0, 0, -R.thigh - .5], coat ? 2.2 : bag ? 2.5 : 2.0, coat ? 1.7 : bag ? 2.05 : 1.5, tc), 'cloth',
+  /* and the grenadier's are no thinner, whether they go into the marching boot or the
+     gaiter, nor the engineer's twill: laid over photographs of men in field grey walking
+     at the camera, at the scale of the helmet and the stature, the thigh is 2.6 across at
+     the fork and 2.3 at the knee, and below the knee the cloth bags out to 2.4 where it is
+     pushed down into the top of the boot, which is the one shape the German leg is known
+     by from the front. So the three are cut like the American's, with the bag over the top
+     of whatever the leg goes into. The motorcyclist's coat has its own. */
+  /* the marching boot comes up to a hand under the knee and the bag hangs over its top; the
+     gaiter and the engineer's boot stop at the ankle, and the leg tapers down to where it is
+     bloused over them */
+  var tc = coat || trous, bag = anklet === 2 ? 1 : 0, full = !coat && (anklet === 3 || anklet === 4 || anklet === 5);
+  /* The bag hangs to the outside of the leg a little, which keeps a man standing with his
+     feet together from coming out as one column of cloth from the belt to the boots */
+  var lz = -R.shin + (anklet === 4 ? 1.6 : 2.3);
+  var thigh = figPart(taperLimb([0, 0, 0], [0, 0, -R.thigh - .5], coat ? 2.2 : bag ? 2.5 : full ? 2.55 : 2.0,
+                                coat ? 1.7 : bag ? 2.05 : full ? 2.05 : 1.5, tc), 'cloth',
                       lit(tc, .92), lit(tc, .82), lit(tc, .88));
   var shin = bag ? figPart(legTube(0, -1.2, 1.9, 2.15, 1.85, 2.1, trous), 'cloth', lit(trous, .85), lit(trous, .74), lit(trous, .80))
                      .concat(figPart(taperLimb([0, 0, -1.2], [0, 0, -R.shin], 1.55, 1.35, trous), 'cloth', lit(trous, .85), lit(trous, .74), lit(trous, .80)))
+             : full ? figPart(place(anklet === 3 ? legTube(0, -1.45, 1.95, 2.35, 1.85, 2.2, trous) : legTube(0, lz, 1.9, 2.1, 1.7, 1.95, trous),
+                                    0, 0, (y < 0 ? -1 : 1) * .1, 0), 'cloth', lit(trous, .85), lit(trous, .74), lit(trous, .80))
+                        .concat(figPart(taperLimb([0, 0, anklet === 3 ? -1.45 : lz], [0, 0, -R.shin], anklet === 3 ? 1.75 : 1.6, 1.3, trous), 'cloth',
+                                        lit(trous, .85), lit(trous, .74), lit(trous, .80)))
                  : figPart(taperLimb([0, 0, 0], [0, 0, -R.shin], 1.6, 1.15, trous), 'cloth',
                            lit(trous, .85), lit(trous, .74), lit(trous, .80));
   if (coat) shin = shin.concat(figPart(taperLimb([0, 0, .3], [0, 0, -1.1], 1.85, 1.72, coat), 'cloth',
@@ -35540,7 +35558,7 @@ function figLeg(R, L, y, k, trous, anklet, rec, coat, cargo) {
   } else if (anklet === 3) {
     /* the German marching boot: black leather to a hand below the knee, the shaft a
        little wider at the top than at the ankle, and the trouser tucked into it */
-    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin - .3], [0, 0, -R.shin + 3.55], 1.62, 1.86, k.boot), 'leather',
+    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin - .3], [0, 0, -R.shin + 3.55], 1.5, 1.82, k.boot), 'leather',
                                lit(k.boot, 1.34), lit(k.boot, .96), lit(k.boot, 1.16)));
   } else if (anklet === 4) {
     /* the ankle boot and the canvas gaiter the war put over it in place of the marching
@@ -35551,7 +35569,7 @@ function figLeg(R, L, y, k, trous, anklet, rec, coat, cargo) {
       shin = shin.concat(figPart(taperLimb([0, 0, -R.shin + z], [0, 0, -R.shin + z + .16], 1.72, 1.71, k.belt), 'leather',
                                  lit(k.belt, 1.3), k.belt, lit(k.belt, 1.12)));
     });
-    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin + 1.3], [0, 0, -R.shin + 1.82], 1.76, 1.55, trous), 'cloth',
+    shin = shin.concat(figPart(legTube(-R.shin + 1.95, -R.shin + 1.25, 1.75, 2.0, 1.8, 2.1, trous), 'cloth',
                                lit(trous, .88), lit(trous, .78), lit(trous, .84)));
   } else if (anklet === 5) {
     /* a brown boot laced to above the ankle, and the trouser bloused over the top of it,
@@ -35561,7 +35579,7 @@ function figLeg(R, L, y, k, trous, anklet, rec, coat, cargo) {
                                lit(bk, 1.16), lit(bk, .9), lit(bk, 1.06)));
     shin = shin.concat(figPart(box(.8, 0, -R.shin - .2, .08, .34, 2.05, lit(bk, .8), lit(bk, .8), lit(bk, .8), 0), 'leather',
                                lit(bk, .86), lit(bk, .74), lit(bk, .8)));
-    shin = shin.concat(figPart(taperLimb([0, 0, -R.shin + 1.75], [0, 0, -R.shin + 2.6], 1.9, 1.62, trous), 'cloth',
+    shin = shin.concat(figPart(legTube(-R.shin + 2.7, -R.shin + 1.75, 1.85, 2.1, 1.95, 2.3, trous), 'cloth',
                                lit(trous, .9), lit(trous, .8), lit(trous, .86)));
   } else if (anklet) shin = shin.concat(figPart(box(0, 0, -R.shin, 1.5, 1.5, 1.6, k.gaiter, k.gaiter, k.gaiter, 0), 'canvas',
                                            k.gaiter, lit(k.gaiter, .9), lit(k.gaiter, .95)));
@@ -36986,7 +37004,7 @@ function figKitEng(V, k, rec) {
   /* the pack's straps: down the front to the top of the vest, and over the shoulders */
   [-1, 1].forEach(function (sd) {
     part(box(1.66, sd * 1.42, 5.25, .12, .55, 1.32, web, web, web, 0), 'canvas', lit(web, 1.08), lit(web, .9), web);
-    part(box(0, sd * 1.42, 6.66, 3.36, .55, .1, web, web, web, 0), 'canvas', lit(web, 1.1), lit(web, .9), web);
+    part(at(roll(box(0, 0, 0, 3.36, .55, .1, web, web, web, 0), -sd * .25, 0, 0), 0, sd * 1.42, 6.6), 'canvas', lit(web, 1.1), lit(web, .9), web);
   });
   var pk = mark('pack');
   if (V.chest) {
@@ -37060,7 +37078,7 @@ function figKitRgr(V, k, rec) {
   [-1, 1].forEach(function (sd) {
     strap([[1.6, sd * 1.5, 6.62], [2.06, 0, 3.85], [2.14, -sd * 1.9, 2.1], [.9, -sd * 2.78, .75]]);
     strap([[-1.6, sd * 1.5, 6.62], [-2.0, 0, 4.45], [-2.3, -sd * 1.6, 2.7], [-1.0, -sd * 2.8, .8]]);
-    part(at(roll(box(0, 0, 0, 3.3, .32, .12, st, st, st, 0), sd * .3, 0, 0), .08, sd * 1.5, 6.52), 'canvas', lit(st, 1.08), lit(st, .9), st);
+    part(at(roll(box(0, 0, 0, 3.3, .32, .12, st, st, st, 0), -sd * .3, 0, 0), .08, sd * 1.5, 6.55), 'canvas', lit(st, 1.08), lit(st, .9), st);
   });
   if (V.glass) {
     /* the glasses on their strap, hung at the middle of his chest */
@@ -37104,9 +37122,9 @@ function figKitGI(V, k, rec) {
       upto('pouches', a);
     });
     /* the haversack's straps, down the chest to the belt and over the shoulder, lying on
-       the slope of the yoke */
+       the slope of the shoulder */
     part(box(1.6, sd * 1.35, 2.9, .2, .72, 3.55, web, web, web, 0), 'canvas', lit(web, 1.08), lit(web, .9), web);
-    part(at(roll(box(0, 0, 0, 3.0, .72, .12, web, web, web, 0), sd * .2, 0, 0), .12, sd * 1.35, 6.42), 'canvas', lit(web, 1.08), lit(web, .9), web);
+    part(at(roll(box(0, 0, 0, 3.0, .72, .12, web, web, web, 0), -sd * .2, 0, 0), .12, sd * 1.35, 6.54), 'canvas', lit(web, 1.08), lit(web, .9), web);
   });
   /* The M1928 haversack, packed and worn high: its body from the belt to the top of the
      shoulders, the flap down over it with the meat can pouch buttoned on -- a square of
@@ -37148,7 +37166,7 @@ function figKitGI(V, k, rec) {
     /* a cloth bandolier of six more clips, from the left shoulder to the right of the belt */
     var bd = roll(box(0, 0, -2.51, .26, .95, 5.02, k.band, k.band, k.band, 0), .829, 0, 0);
     part(at(bd, 1.83, .1, 4.7), 'cloth', lit(k.band, 1.08), lit(k.band, .88), k.band);
-    part(box(-.05, -1.75, 6.68, 3.1, .95, .14, k.band, k.band, k.band, 0), 'cloth', lit(k.band, 1.1), lit(k.band, .88), k.band);
+    part(at(roll(box(0, 0, 0, 3.1, .95, .14, k.band, k.band, k.band, 0), .43, 0, 0), -.05, -1.75, 6.41), 'cloth', lit(k.band, 1.1), lit(k.band, .88), k.band);
   }
   if (V.nades) [[1, 4.6], [-1, 3.75]].forEach(function (g) {
     part(cyl(2.02, g[0] * 1.35, g[1], .32, .32, .78, 6, k.tool, lit(k.tool, 1.1), 0, true), 'paint', lit(k.tool, 1.08), lit(k.tool, .85), k.tool);
@@ -37165,10 +37183,11 @@ function figKitGI(V, k, rec) {
      first where they cross. The half that goes round his back is under the haversack and
      is not built. */
   if (V.mgbelt) [1, -1].forEach(function (sd, n) {
-    var x = n * .09, pts = [[-1.25, -sd * 1.8, 6.46], [.4, -sd * 1.82, 6.5], [1.58 + x, -sd * 1.72, 6.2],
+    /* over the shoulder it lies on the slope, facing up it and out */
+    var x = n * .09, pts = [[-1.25, -sd * 1.8, 6.43], [.4, -sd * 1.82, 6.45], [1.58 + x, -sd * 1.72, 6.2],
                             [1.82 + x, -sd * 1.0, 5.2], [1.84 + x, sd * .3, 3.95], [1.82 + x, sd * 1.5, 3.15],
                             [1.3, sd * 2.5, 2.95], [.1, sd * 2.66, 3.1]];
-    var nrm = [[0, 0, 1], [0, 0, 1], [.7, 0, .7], [1, 0, 0], [1, 0, 0], [1, 0, 0], [.55, sd * .83, 0], [0, sd, 0]];
+    var nrm = [[0, -sd * .42, .91], [0, -sd * .42, .91], [.7, 0, .7], [1, 0, 0], [1, 0, 0], [1, 0, 0], [.55, sd * .83, 0], [0, sd, 0]];
     f = f.concat(roundBelt(pts, nrm, k, sd, false));
   });
   return f;
@@ -37201,7 +37220,7 @@ function figKitKrad(V, k, rec) {
     [-1, 0, 1].forEach(function (j) { lea(box(2.25, sd * 1.4 + j * .6, 1.86, .08, .54, .48, bl, bl, bl, 0), 1.42); });
     upto('pouches', a);
     lea(box(1.72, sd * 1.4, 2.4, .1, .42, 3.6, bl, bl, bl, 0));
-    lea(box(0, sd * 1.4, 6.62, 3.3, .42, .1, bl, bl, bl, 0));
+    lea(box(0, sd * 1.4, 6.56, 3.3, .42, .1, bl, bl, bl, 0));
     lea(box(-1.72, sd * 1.4, 2.4, .1, .42, 4.2, bl, bl, bl, 0));
   });
   var pk = mark('pack'), tn = k.tin;
@@ -37448,17 +37467,17 @@ function figKitHeer(V, k, rec) {
     part(taperLimb(la, lb, .9, .9, lg), 'paint', lit(lg, 1.12), lit(lg, .86), lg);
     part(taperLimb(la, [la[0], la[1] - .16, la[2] + .28], 1.02, 1.02, k.ammoD), 'paint', lit(k.ammoD, 1.12), k.ammoD, k.ammoD);
     part(taperLimb(lb, [lb[0], lb[1] + .16, lb[2] - .28], 1.02, 1.02, k.ammoD), 'paint', lit(k.ammoD, 1.12), k.ammoD, k.ammoD);
-    lea(box(-1.3, -1.55, 6.66, 3.3, .3, .12, bl, bl, bl, 0));                                    /* its sling over the shoulder */
+    lea(at(roll(box(0, 0, 0, 3.3, .3, .12, bl, bl, bl, 0), .3, 0, 0), -1.3, -1.55, 6.5));                                    /* its sling over the shoulder */
   }
   /* And the machine gun team's two belts of 7.92, worn crossed the way the Americans wear
      theirs: steel links, the brass of the cases and the copper of the bullets, from over
      each shoulder down across the chest and round the other hip, standing a little proud of
      the Y-straps and the gas cape's pouch that lie under them. */
   if (V.mgbelt) [1, -1].forEach(function (sd, n) {
-    var x = n * .09 + .12, pts = [[-1.25, -sd * 1.8, 6.74], [.4, -sd * 1.82, 6.82], [1.58 + x, -sd * 1.72, 6.25],
+    var x = n * .09 + .12, pts = [[-1.25, -sd * 1.8, 6.46], [.4, -sd * 1.82, 6.49], [1.58 + x, -sd * 1.72, 6.25],
                                   [1.82 + x, -sd * 1.0, 5.2], [1.84 + x, sd * .3, 3.95], [1.82 + x, sd * 1.5, 3.15],
                                   [1.3, sd * 2.5, 2.95], [.1, sd * 2.66, 3.1]];
-    var nrm = [[0, 0, 1], [0, 0, 1], [.7, 0, .7], [1, 0, 0], [1, 0, 0], [1, 0, 0], [.55, sd * .83, 0], [0, sd, 0]];
+    var nrm = [[0, -sd * .42, .91], [0, -sd * .42, .91], [.7, 0, .7], [1, 0, 0], [1, 0, 0], [1, 0, 0], [.55, sd * .83, 0], [0, sd, 0]];
     f = f.concat(roundBelt(pts, nrm, k, sd, false, true));
   });
   return f;
@@ -37608,7 +37627,7 @@ function manFaces(variant, P) {
        shirt from the belt to the chest, with two big pockets low and two smaller ones high,
        each under its flap, and closed down the middle. What shows of the shirt is the
        shoulders, the sleeves and the collar lying open over the undershirt. */
-    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.05, 4.45), -1.2, 2.0, trs), 0, 0, .4),
+    add(figPart(faceOut(frustum(rect(3.1, 4.75), rect(3.05, 4.45), -1.2, 2.0, trs), 0, 0, .4),
                 'cloth', lit(trs, .92), lit(trs, .82), lit(trs, .88)), 'hips');
     add(figPart(faceOut(frustum(rect(3.05, 4.45), rect(3.1, 5.0), 2.0, 6.0, coat), 0, 0, 4.0),
                 'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
@@ -37621,7 +37640,7 @@ function manFaces(variant, P) {
       add(figPart(box(1.85, sd * 1.02, 3.3, .14, 1.48, .4, vd, vd, vd, 0), 'canvas', lit(vd, 1.1), vd, lit(vd, 1.02)));
       add(figPart(box(1.78, sd * 1.02, 3.95, .24, 1.28, 1.15, vs, vs, vs, 0), 'canvas', lit(vs, 1.06), lit(vs, .88), lit(vs, .96)));
       add(figPart(box(1.85, sd * 1.02, 4.78, .14, 1.36, .36, vd, vd, vd, 0), 'canvas', lit(vd, 1.1), vd, lit(vd, 1.02)));
-      add(figPart(box(0, sd * 1.5, 6.52, 3.36, 1.3, .14, vs, vs, vs, 0), 'canvas', lit(vs, 1.08), lit(vs, .9), vs));
+      add(figPart(at(roll(box(0, 0, 0, 3.36, 1.3, .14, vs, vs, vs, 0), -sd * .43, 0, 0), 0, sd * 1.62, 6.46), 'canvas', lit(vs, 1.08), lit(vs, .9), vs));
       add(figPart(at(roll(box(0, 0, -.55, .08, .6, 1.1, coat, coat, coat, 0), sd * .5, 0, 0), 1.58, sd * .5, 6.55),
                   'cloth', lit(coat, 1.12), coat, lit(coat, 1.02)));
     });
@@ -37639,13 +37658,6 @@ function manFaces(variant, P) {
                 'cloth', lit(coat, .96), lit(coat, .86), lit(coat, .91)), 'skirt');
     add(figPart(faceOut(frustum(rect(3.05, 4.45), rect(3.1, 5.0), 2.0, 6.0, coat), 0, 0, 4.0),
                 'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
-    /* The shoulders. Laid over the photographs, the line from the collar out to the point
-       of the shoulder falls about twenty degrees, and the chest stopped in a flat top at
-       6.0 with the collar standing on it and the sleeves hanging from its corners, which is
-       the one thing that made him a box. The yoke slopes from the chest's top edge up to
-       the base of the neck; its front is kept upright, where the collar points lie. */
-    add(figPart(faceOut(frustum(rect(3.1, 5.0), [[-1.3, -1.35], [1.55, -1.35], [1.55, 1.35], [-1.3, 1.35]], 6.0, 6.5, coat), 0, 0, 6.2),
-                'cloth', coat, lit(coat, .9), lit(coat, 1.04)), 'yoke');
     /* the storm flap over the zip, which is what makes a flat front a jacket, stopping
        where the collar is worn open over the wool shirt */
     add(figPart(box(1.56, .18, -.46, .08, .34, 6.0, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.08), k.coatD, lit(k.coatD, 1.02)));
@@ -37679,7 +37691,7 @@ function manFaces(variant, P) {
         add(figPart(box(1.93, sd * 1.25, 2.35, .2, 1.83, .45, rd, rd, rd, 0), 'canvas', lit(rd, 1.1), rd, lit(rd, 1.02)));
         add(figPart(box(1.8, sd * 1.45, 3.3, .28, 1.05, 1.1, rv, rv, rv, 0), 'canvas', lit(rv, 1.06), lit(rv, .86), lit(rv, .95)));
         add(figPart(box(1.88, sd * 1.45, 4.25, .16, 1.13, .36, rd, rd, rd, 0), 'canvas', lit(rd, 1.1), rd, lit(rd, 1.02)));
-        add(figPart(at(roll(box(0, 0, 0, 3.36, 1.3, .14, rv, rv, rv, 0), sd * .38, 0, 0), .08, sd * 1.62, 6.34), 'canvas', lit(rv, 1.08), lit(rv, .9), rv));
+        add(figPart(at(roll(box(0, 0, 0, 3.36, 1.3, .14, rv, rv, rv, 0), -sd * .43, 0, 0), .08, sd * 1.62, 6.46), 'canvas', lit(rv, 1.08), lit(rv, .9), rv));
       });
       add(figPart(box(-1.92, 0, 1.0, .5, 3.1, 2.1, rv, rv, rv, 0), 'canvas', lit(rv, .95), lit(rv, 1.08), rv));
       add(figPart(box(-2.0, 0, 3.0, .32, 3.18, .4, rd, rd, rd, 0), 'canvas', lit(rd, .95), lit(rd, 1.1), rd));
@@ -37690,7 +37702,7 @@ function manFaces(variant, P) {
        slant, and the broad collar lying open over the grey shirt with the pink piping of
        the arm round its edge and a white metal skull on each point. The trousers are the
        same black and gather at the ankle over the boots. */
-    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.4), -1.2, .4, trs), 0, 0, -.4),
+    add(figPart(faceOut(frustum(rect(3.0, kc ? 4.75 : 4.6), rect(3.0, 4.4), -1.2, .4, trs), 0, 0, -.4),
                 'cloth', lit(trs, 1.02), lit(trs, .9), lit(trs, .96)), 'hips');
     add(figPart(faceOut(frustum(rect(3.15, 4.65), rect(3.1, 4.55), -.3, .6, coat), 0, 0, .15),
                 'cloth', lit(coat, 1.04), lit(coat, .9), lit(coat, .97)), 'skirt');
@@ -37732,9 +37744,9 @@ function manFaces(variant, P) {
        straight flaps and no pleats, because the pleats were the first thing the war
        economy took out of it: the breast pair high under the Y-straps and the skirt pair
        below where the ammunition pouches hang. The eagle is over the right breast. */
-    add(figPart(faceOut(frustum(rect(3.0, 4.6), rect(3.0, 4.4), -1.2, .4, k.trous), 0, 0, -.4),
+    add(figPart(faceOut(frustum(rect(3.1, 4.75), rect(3.0, 4.4), -1.2, .4, k.trous), 0, 0, -.4),
                 'cloth', lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
-    add(figPart(faceOut(frustum(rect(3.3, 4.85), rect(3.0, 4.45), -.55, 2.0, coat), 0, 0, .7),
+    add(figPart(faceOut(frustum(rect(3.4, 5.0), rect(3.0, 4.45), -.55, 2.0, coat), 0, 0, .7),
                 'cloth', lit(coat, .96), lit(coat, .86), lit(coat, .91)), 'skirt');
     add(figPart(faceOut(frustum(rect(3.0, 4.45), rect(3.1, 5.0), 2.0, 6.0, coat), 0, 0, 4.0),
                 'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
@@ -37753,7 +37765,17 @@ function manFaces(variant, P) {
     if (V.jerkin) add(figPart(faceOut(frustum(rect(3.3, 4.7), rect(3.3, 5.2), 1.2, 5.4, k.jerkin), 0, 0, 3.3),
                               'leather', k.jerkin, lit(k.jerkin, .9), lit(k.jerkin, .94)), 'jerkin');
   }
-  add(figPart(box(0, 0, 5.8, 3.0, 5.4, .8, coat, coat, coat, 0), cmat, lit(coat, 1.06), lit(coat, .94), lit(coat, 1.0)), 'plate');
+  /* The shoulders. Laid over the photographs of both armies, the line from the collar out
+     to the point of the shoulder falls twenty to twenty-five degrees, where the plate across
+     the top of the chest stood level to 6.6 with the collar on it and the sleeves hanging
+     from its corners, which is the one thing that made a man a box. For the two armies on
+     the beach it is a level band at the shoulder's own width and then a slope up to the
+     base of the neck, its front kept upright where the collar points lie. The width it
+     stands at is the shoulder breadth the card measures, and is what it was. */
+  if (ame || hr) add(figPart(box(0, 0, 5.8, 3.0, 5.4, .15, coat, coat, coat, 0)
+                               .concat(faceOut(frustum(rect(3.0, 5.4), [[-1.25, -1.4], [1.5, -1.4], [1.5, 1.4], [-1.25, 1.4]], 5.95, 6.55, coat), 0, 0, 6.2)),
+                             cmat, lit(coat, 1.06), lit(coat, .94), lit(coat, 1.0)), 'plate');
+  else add(figPart(box(0, 0, 5.8, 3.0, 5.4, .8, coat, coat, coat, 0), cmat, lit(coat, 1.06), lit(coat, .94), lit(coat, 1.0)), 'plate');
   /* the American's collar is his wool shirt's, worn buttoned up under the jacket, and it
      is the dark ring under his chin that stops a pale jacket running into his face */
   var cc = tk ? k.knit : en ? coat : ame ? k.shirt : kr ? k.kradD : pz ? k.shirt : hr && V.pio ? k.bottle : coat;
@@ -37765,7 +37787,7 @@ function manFaces(variant, P) {
   /* and the pioneer's tunic is the older one with its collar in bottle green, which is what
      carries the braid, and the shoulder straps lying out along the shoulders */
   if (hr && V.pio) [-1, 1].forEach(function (sd) {
-    add(figPart(box(.15, sd * 1.85, 6.56, .66, 1.3, .1, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.12), k.coatD, lit(k.coatD, 1.04)));
+    add(figPart(at(roll(box(0, 0, 0, .66, 1.3, .1, k.coatD, k.coatD, k.coatD, 0), -sd * .43, 0, 0), .15, sd * 1.95, 6.31), 'cloth', lit(k.coatD, 1.12), k.coatD, lit(k.coatD, 1.04)));
   });
   if (hr && !kr && !pz) [-1, 1].forEach(function (sd) {
     add(figPart(box(1.22, sd * .72, 6.7, .05, .4, .28, k.litzen, k.litzen, k.litzen, 0), 'cloth', lit(k.litzen, 1.05), k.litzen, k.litzen));
@@ -37984,7 +38006,7 @@ function flatFaces(V, side, k, P) {
      the other trails straight */
   [[-1, -2.4], [1, 2.4]].forEach(function (p) {
     var draw = Math.max(0, cw * p[0]), yaw = draw * .6, fwd = draw * 2.0;
-    var th = figPart(box(-8.5 + 2.3, 0, 0, 4.6, ame && !en ? 2.2 : 1.8, ame && !en ? 1.75 : 1.5, trs, trs, trs, 0), 'cloth',
+    var th = figPart(box(-8.5 + 2.3, 0, 0, 4.6, ame || hr ? 2.2 : 1.8, ame || hr ? 1.75 : 1.5, trs, trs, trs, 0), 'cloth',
                      lit(trs, .92), lit(trs, .82), lit(trs, .88));
     var sh = figPart(box(-8.5 - 2.1, 0, 0, 4.2, 1.5, 1.3, trs, trs, trs, 0), 'cloth',
                      lit(trs, .85), lit(trs, .74), lit(trs, .80));
@@ -38085,7 +38107,7 @@ function deadFaces(variant, kind) {
   function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
   function arm(g) { AT.push(f.length); f = f.concat(g); }
   function leg(a, b, c) {
-    var bg = ame && !en;
+    var bg = ame || hr;
     var th = figPart(taperLimb(a, b, bg ? 2.45 : 2.0, bg ? 2.0 : 1.5, trs), 'cloth', lit(trs, .92), lit(trs, .82), lit(trs, .88));
     var sh = figPart(taperLimb(b, c, bg ? 1.95 : 1.6, bg ? 1.45 : 1.15, trs), 'cloth', lit(trs, .85), lit(trs, .74), lit(trs, .80));
     var bt = figPart(box(c[0] - 1.2, c[1], c[2] - .5, 3.2, 1.3, 1.0, k.boot, k.boot, k.boot, 0), 'leather',
@@ -38101,7 +38123,7 @@ function deadFaces(variant, kind) {
     /* and the grenadier's marching boot over the lower three quarters of it */
     else if (hr) sh = sh.concat(figPart(taperLimb([c[0] + (b[0] - c[0]) * .02, c[1] + (b[1] - c[1]) * .02, c[2] + (b[2] - c[2]) * .02],
                                                   [c[0] + (b[0] - c[0]) * .76, c[1] + (b[1] - c[1]) * .76, c[2] + (b[2] - c[2]) * .76],
-                                                  1.62, 1.84, k.boot), 'leather', lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
+                                                  1.52, 1.86, k.boot), 'leather', lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
     LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
     f = f.concat(th).concat(sh).concat(bt);
   }
