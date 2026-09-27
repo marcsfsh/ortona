@@ -171,6 +171,19 @@ twelve road wheels on top of the guards that hide them. `hatch` and `open` in `u
 lids (`HATCHES`) shut or standing open, on the mount unless it is a casemate: the M3's doors were the
 first thing on a drawing the tool could not draw, and a hatch is most of what a plan shows of a turret.
 
+**A man can be laid over a photograph the same way** (`"man": "gi_rifle"` in place of `key`,
+`tools/ref/gi_rifle.json`). A photograph of a reenactor is not a drawing: no two figures on
+a sheet stand alike, so each view carries the pose its figure stands in (`pose`, a stance's
+name or an object laid over one), `yaw` where he is turned off square, `vary` to override the
+variant (`weapon: none` lets both arms hang), and `at` may name one of his joints
+(`"at": "ankleR"`), since where a joint lands depends on the pose. The helmet is drawn red,
+the kit green, the weapon magenta and the man blue, and his joints are dotted and printed.
+Take the scale off the head and the helmet, which are the rigid things on him: the eye to
+the chin is 1.7 units on the rig, and a helmet's width is published. Read clothing off it
+and not the rig's lengths: a man in a wide stance with his knees bent puts his hip wherever
+the pose does, and the rig is measured against a 1.73 m man by the men card, which is where
+a length belongs.
+
 **The drawing is not in the repository and must not be.** A reference image is an image, which
 hard rule 5 keeps out, so it lives in `shots/ref/`, which is ignored; the spec is text and is
 committed, and a later session needs the drawing supplied again to run it. The method round the
@@ -3378,6 +3391,35 @@ does, the foot coming through was still in the air on the frame the other army's
 the plant moved to the other foot a frame late, and the SKATE row read the run at 0.37 of the
 ground a frame stands for against a ceiling of 0.30. The walk reads 0.15 against the
 Canadian's 0.25.
+
+**And he is traced over the photographs** (`tools/ref/gi_rifle.json`: the front of the man with
+the pistol, the front of the man with the carbine, the back of the man with the grenade and the
+side of the runner, at 190 px/m off the head and the helmet, each in his own pose). The
+envelope and the heights agreed with the photographs and six things did not, all of them
+cloth. The thigh was 2.14 across at the fork and 1.7 at the knee against 2.5 and 2.1; the leg
+of the trouser below the knee is as full as the knee is down to where it is bloused, and it
+was the shin's 1.7; the blousing hangs a hand over the legging's mouth at 2.5 where it was
+2.06; the seat was 4.6 against 5.0; the sleeve was 1.43 at the shoulder against about 1.8; and
+the haversack was 2.55 across against 3.1, with the meat can pouch high on it where the
+photographs have it low, from the bottom of the pack to a hand and a half under its top, and
+the shovel's T at the seat where it hangs at the fork. And from the front and the back the
+line from the collar to the point of the shoulder falls about twenty degrees, where the chest
+stopped in a flat top with the collar standing on it and the sleeves hanging from its
+corners, which is what made him a box: a yoke slopes up from the chest's top edge to the base
+of the neck (`'yoke'`), with its front kept upright where the collar points lie, and what
+went over his shoulders (the haversack's straps, the gas mask's, the MG team's belts, the
+Ranger's vest and straps) is laid on its slope.
+
+Three things held some of that back, each a gate. The seat is 4.75 rather than 5.0, because
+the men card's hips row holds every figure within eight per cent of a 1.73 m man's hip breadth
+and the photographs' 5.0 is cloth over a belt of kit. The sleeve is 1.25 of the rig's arm
+rather than 1.3, and the .30 is carried across him the way the BAR is (`WEAP.m1919.carry`),
+because the fuller sleeve put the Ranger's left upper arm 0.38 into his chest reaching for the
+.30's fore-end. And the trouser below the knee and the blousing are wider than they are deep
+(`legTube`), as the side view has them: square, as wide as they are across, a kneeling man's
+shin hung 0.41 under the ground his knee was on and lifted his front foot off it. The READ gap
+at 900 on the desktop is 0.063 against the 0.055 it was, because the trousers are the darkest
+thing on him and there is more of them.
 
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is

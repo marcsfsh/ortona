@@ -33,7 +33,14 @@
  * way the vehicle points in a side or plan view. `k` magnifies the output.
  *
  * The key may be a vehicle (`VMODEL`) or a crew-served gun (`GUNMODEL`, with `pack: true` for
- * the piece as it travels). `up` names fittings: a mount that swaps the turret, the skirts,
+ * the piece as it travels). Or it may be a man: `"man": "gi_rifle"` names a soldier variant,
+ * `vary` overrides fields of it (`{ "weapon": "none" }` lets both arms hang), and each view
+ * carries the pose the man in the photograph is standing in, because no two figures on a
+ * sheet of a reenactor stand alike: `pose` is a stance's name or an object laid over one
+ * (`{ "base": "stand", "legs": [[swing, knee, ankle, splay], ...], "lean": .1 }`), and `yaw`
+ * turns him about his own vertical where the photograph has him a little off square. A man
+ * faces +x with his right at +y, so a photograph of his front is a `front` view. The helmet
+ * is red, the kit green, the weapon magenta and the man himself blue. `up` names fittings: a mount that swaps the turret, the skirts,
  * the roof gun, anything in `addUp`, and `hatch` or `open` for the lids shut or standing open
  * (`HATCHES`, drawn with the mount unless the vehicle is a casemate). `crew` draws the men.
  *
@@ -118,20 +125,42 @@ if (!spec) {
 }
 
 const only = args.only ? String(args.only).split(',') : null;
+spec.key = spec.key || spec.man;
 const views = Object.keys(spec.views).filter(v => !only || only.includes(v));
 const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, faces }) => {
   /* a prop is no unit's model: the spec names the builder and what to hand it, and its faces
      are drawn as the hull */
-  const PB = spec.prop ? window[spec.prop] : null;
+  const PB = spec.prop ? window[spec.prop] : null, MAN = spec.man || null;
   if (spec.prop && typeof PB !== 'function') return { err: 'no builder called ' + spec.prop };
-  if (!PB && !window.VMODEL[spec.key] && !window.GUNMODEL[spec.key]) buildVehicleModels();
-  const V = PB ? null : window.VMODEL[spec.key], GM = PB ? null : window.GUNMODEL[spec.key];
-  if (!PB && !V && !GM) return { err: 'no model called ' + spec.key };
-  const up = spec.up || [], parts = [];
+  if (MAN && !window.SOLDIER_VARIANTS[MAN]) return { err: 'no soldier variant called ' + MAN };
+  if (!PB && !MAN && !window.VMODEL[spec.key] && !window.GUNMODEL[spec.key]) buildVehicleModels();
+  const V = PB || MAN ? null : window.VMODEL[spec.key], GM = PB || MAN ? null : window.GUNMODEL[spec.key];
+  if (!PB && !MAN && !V && !GM) return { err: 'no model called ' + spec.key };
+  let up = spec.up || [], parts = [];
   function add(faces, t, off) {
     (faces || []).forEach(f => parts.push({ v: off ? f.v.map(p => [p[0] + off[0], p[1] + off[1], p[2] + off[2]]) : f.v, t }));
   }
+  /* a man is built afresh for each view in the pose that view's figure stands in, with his
+     parts sorted by what they are: the helmet red, the kit green, the weapon magenta */
+  const manKey = MAN ? '__ovl' : null;
+  if (MAN) window.SOLDIER_VARIANTS[manKey] = Object.assign({}, window.SOLDIER_VARIANTS[MAN], spec.vary || {});
+  function manParts(s) {
+    window.SOLDIER_VARIANTS[manKey] = Object.assign({}, window.SOLDIER_VARIANTS[MAN], spec.vary || {}, s.vary || {});
+    let P = s.pose || 'stand';
+    if (typeof P === 'string') P = window.stanceOf(manKey, P);
+    else { const b = window.stanceOf(manKey, P.base || 'stand'); P = Object.assign({}, b, P); }
+    const r = window.manFaces(manKey, P), kind = new Map();
+    const mark = (list, t) => (list || []).forEach(f => { if (Array.isArray(f)) mark(f, t); else if (f && f.v) kind.set(f, t); });
+    ['legs', 'limbs', 'hands', 'hips', 'skirt', 'chest', 'skull', 'head'].forEach(n => mark(r.parts[n], 0));
+    mark(r.parts.helmet, 1); mark(r.parts.weapon, 3);
+    const c = Math.cos(s.yaw || 0), sn = Math.sin(s.yaw || 0);
+    const out = [], rot = p => [p[0] * c - p[1] * sn, p[0] * sn + p[1] * c, p[2]], J = {};
+    r.faces.forEach(f => out.push({ v: f.v.map(rot), t: kind.has(f) ? kind.get(f) : 2 }));
+    Object.keys(r.joints).forEach(n => { if (r.joints[n] && r.joints[n].length >= 3) J[n] = rot(r.joints[n]); });
+    return { parts: out, J };
+  }
   if (PB) add(PB.apply(null, spec.args || []), 0);
+  else if (MAN) { /* built per view below */ }
   else if (V) {
     /* the mount goes where mountPose puts it, with the fitting's own placement if one swaps it */
     const uk = up.find(k => V.turUp && V.turUp[k]), o = uk && V.barUp ? V.barUp[uk] || {} : {};
@@ -185,6 +214,7 @@ const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, fa
      or where a face ends. An edge between two faces in one plane is how the model happens to be
      cut up (a lathe's segments, a plate split for the occlusion bake) and is left out. */
   const key = p => p.map(q => Math.round(q * 50)).join(',');
+  function featOf(parts) {
   const edges = new Map();
   parts.forEach(f => {
     const n = normal(f.v);
@@ -201,19 +231,29 @@ const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, fa
     if (e.n.length === 2 && Math.abs(e.n[0][0] * e.n[1][0] + e.n[0][1] * e.n[1][1] + e.n[0][2] * e.n[1][2]) > .996) return;
     feat.push(e);
   });
+  return feat;
+  }
+  let feat = MAN ? null : featOf(parts);
   const im = new Image(); await new Promise(r => { im.onload = r; im.src = 'data:' + mime + ';base64,' + img; });
   const out = [];
   const COL = ['rgba(0,90,255,.55)', 'rgba(225,0,0,.7)', 'rgba(0,150,40,.7)', 'rgba(200,0,200,.7)'];
   views.forEach(name => {
     const s = spec.views[name], kind = s.kind || name.replace(/[-_]\w*$/, ''), P = PROJ[kind] && PROJ[kind](s);
     if (!P) { out.push({ name, err: 'no such view ' + kind }); return; }
-    const ph = s.ppm / SCALE, pv = (s.ppmv || s.ppm) / SCALE, at = s.at || [0, 0, 0];
+    let J = null;
+    if (MAN) { const m = manParts(s); parts = m.parts; J = m.J; feat = featOf(parts); }
+    /* on a man the pin may be one of his joints by name, `"at": "ankleR"`, since where a joint
+       lands depends on the pose; with `atOff` added in model units */
+    let at = s.at || [0, 0, 0];
+    if (typeof at === 'string') { if (!J || !J[at]) { out.push({ name, err: 'no joint called ' + at }); return; }
+      const o = s.atOff || [0, 0, 0]; at = [J[at][0] + o[0], J[at][1] + o[1], J[at][2] + o[2]]; }
+    const ph = s.ppm / SCALE, pv = (s.ppmv || s.ppm) / SCALE;
     const [cx, cy, cw, ch] = s.crop || [0, 0, im.width, im.height], k = s.k || 2;
     const c = document.createElement('canvas'); c.width = cw * k; c.height = ch * k;
     const g = c.getContext('2d'); g.drawImage(im, cx, cy, cw, ch, 0, 0, cw * k, ch * k);
     const X = p => s.px[0] + (P.h(p) - P.h(at)) * ph, Y = p => s.px[1] + (P.v(p) - P.v(at)) * pv;
     let x0 = 1e9, x1 = -1e9, y0 = 1e9, y1 = -1e9;
-    parts.forEach(f => f.v.forEach(p => { if (f.t < 2) { const a = X(p), b = Y(p);
+    parts.forEach(f => f.v.forEach(p => { if (MAN ? f.t !== 3 : f.t < 2) { const a = X(p), b = Y(p);
       x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b); } }));
     const sx = p => (X(p) - cx) * k, sy = p => (Y(p) - cy) * k;
     g.lineWidth = 1;
@@ -285,7 +325,13 @@ const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, fa
     if (grid) window.__grid(g, cx, cy, cw, ch, k);
     g.fillStyle = '#000'; g.font = '14px sans-serif';
     g.fillText(`${spec.key} ${name}: ${s.ppm} px/m`, 6, 16);
-    out.push({ name, url: c.toDataURL('image/png'), ppm: s.ppm, ppmv: s.ppmv || s.ppm,
+    /* for a man, where his joints land, so a reading can be put against the rig's own numbers */
+    const jp = J ? Object.keys(J).reduce((o, n) => { if (J[n] && J[n].length >= 3) o[n] = [+X(J[n]).toFixed(1), +Y(J[n]).toFixed(1)]; return o; }, {}) : null;
+    if (J) {
+      g.fillStyle = 'rgba(0,120,0,.9)';
+      Object.keys(jp).forEach(n => { g.beginPath(); g.arc((jp[n][0] - cx) * k, (jp[n][1] - cy) * k, 2.5, 0, Math.PI * 2); g.fill(); });
+    }
+    out.push({ name, url: c.toDataURL('image/png'), ppm: s.ppm, ppmv: s.ppmv || s.ppm, jp,
                span: [x0, x1, y0, y1].map(q => +q.toFixed(1)),
                m: [((x1 - x0) / s.ppm).toFixed(3), ((y1 - y0) / (s.ppmv || s.ppm)).toFixed(3)] });
   });
@@ -300,5 +346,6 @@ res.out.forEach(o => {
   fs.writeFileSync(name, Buffer.from(o.url.split(',')[1], 'base64'));
   console.log(`  ${o.name.padEnd(8)} ${String(o.ppm).padStart(6)} px/m   model spans x ${o.span[0]}..${o.span[1]}  y ${o.span[2]}..${o.span[3]} px` +
               `  (${o.m[0]} x ${o.m[1]} m)   ${path.relative(ROOT, name)}`);
+  if (o.jp) console.log('           joints ' + Object.keys(o.jp).map(n => n + ' ' + o.jp[n].join(',')).join('  '));
 });
 await browser.close();

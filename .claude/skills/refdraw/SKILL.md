@@ -82,6 +82,15 @@ the piece travelling). A prop that is no unit's model names its builder instead,
 "lcvpModel"` with the `args` to hand it, and its faces are drawn as the hull. `up` names fittings to draw (a swapped mount, `skirts`, `mg`, anything in
 `addUp`, and `hatch` or `open` for the lids shut or open); `crew: true` draws the men.
 
+A man is `"man": "<variant>"` in place of `key`, laid over a photograph rather than a drawing.
+Each view then carries its figure's pose (`pose`, a stance's name or `{ "base": "stand",
+"legs": [...], "lean": ..., "head": [...] }`), `yaw` if he is turned, `vary` to override the
+variant (`{ "weapon": "none" }` for arms that hang), and `at` may be a joint's name
+(`"ankleR"`). Fit the pose before reading anything: pin the planted foot, then move the lean,
+the knees and the head until the joints (dotted and printed) sit on the photograph's. Take the
+scale off the head (the rig's eye to chin is 1.7 units) and the helmet, and read clothing off
+the result, not the rig's lengths, which the men card holds to an anthropometric man.
+
 ## 5. Lay the model over it
 
 ```sh
