@@ -1,11 +1,11 @@
 # Ortona
 
-A single-file, real-time tactical battle game: the Allies against the Germans, and the army
-on each side is the map's. In Italy it is the 1st Canadian Infantry Division against 1.
-Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
-352nd Infantry Division, and both of those armies are being built a unit at a time (the
+A single-file, real-time tactical battle game: the Allies against the Germans, which on
+every map is the US 29th Infantry Division against the 352nd Infantry Division. The 1st
+Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
+are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the heavy batteries, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -20,11 +20,10 @@ across the middle and two draws up the bluff behind it that are the only way arm
 off the beach. They are picked on the title screen under GROUND and all three open in the
 editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
 line over the name, the name, what the battle was and two cards about the ground), and the two
-side buttons name the armies it is fought by, so picking OMAHA puts the 29th Infantry Division
-against the 352. Infanterie-Division on the page as well as on the field. Written once in the
-markup, the header went on naming the Adriatic town over the beach.
+side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
+ground. Written once in the markup, the header went on naming the Adriatic town over the beach.
 
-**The whole game is `ortona.html`.** Some 18,000 lines and a megabyte: CSS in one
+**The whole game is `ortona.html`.** Some 42,000 lines and 2.6 megabytes: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
 and it runs.
 
@@ -199,7 +198,7 @@ side won, how long it took and what the winner had left.
 ```sh
 node tools/duel.mjs                      # the standard card
 node tools/duel.mjs --n=24               # more repeats, tighter numbers
-node tools/duel.mjs us_rifle ger_gren    # one matchup
+node tools/duel.mjs am_rifle hr_gren     # one matchup
 node tools/duel.mjs --d=200              # at a chosen opening range
 node tools/duel.mjs --cover=3            # with both sides in heavy cover
 node tools/duel.mjs --base=HEAD          # fight the whole card on an older file
@@ -254,9 +253,10 @@ fire, penetration interacts with facing and range, and the whole thing compounds
 a side that gets a little ahead gets further ahead. A vehicle duel amplifies a
 ten per cent edge into an eighty per cent win rate, because the loser starts
 collecting track and gun hits. So a stat change has to be fought rather than
-reasoned about, and `us_eng vs ger_pio` is on the card as the calibration row:
-those two are identical, so anything other than about fifty per cent means the
-tool has developed a bias and not the roster.
+reasoned about, and `am_eng vs hr_pio` is on the card as the calibration row, with
+`am_mg vs hr_mg` beside it for the teams: each pair is one unit on two sides, so
+anything other than about fifty per cent means the tool has developed a bias and not
+the roster.
 
 Nothing in it is a reimplementation. It calls `updateUnit`, `fireAt` and
 `computeVisibility` exactly as the frame loop does, with the economy, the AI and
@@ -579,17 +579,16 @@ one part inside another, AIM the bore against the facing and the eye against the
 the flash against the barrel, WIND a limb built inside out. MATERIAL is the tile each face
 lands on, SIZE what the roster weighs in buffers. FOOTPRINT and READ are read off the
 framebuffer at play distance on both devices, and READ carries the one rule the figures are
-designed round: the Canadian and the FJ, the American and the FJ, and the American and the
-grenadier have to be told apart by their top fifth and their mean.
+designed round: the American and the grenadier have to be told apart by their top fifth and
+their mean. Until the retirement the Canadian and the paratrooper were on it as well, and the
+American had to be told from the paratrooper too.
 
 Two things about reading it. **Stature is measured to the top of the helmet**, so a deep
 helmet counts against it: the M1 put the American at 4.5 per cent over on its first build,
 and the fix was to seat the helmet lower and make it a little flatter. And
 **READ is a budget the whole palette shares**: warming the American's jacket and lightening
-his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the FJ against a
-floor of 0.05, and it was the webbing that gave the margin back. The two GRIP misses it reports
-are the Canadian corpse's hands on his Lee, which lies upright; the FJ corpse had the same two
-until the Kar98k was rebuilt and laid on its side.
+his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the paratrooper
+against a floor of 0.05, and it was the webbing that gave the margin back.
 
 ### `tools/terrain.mjs` - the ground, mechanically
 
@@ -2409,7 +2408,7 @@ pointed at whoever paid for it, an MG post finishing under an enemy garrison wou
 its crew, throw that garrison out and hand the position back for nothing. The fitting goes with the concrete: an aid post overrun is an
 aid post patching up the men who took it, which is the whole of why walking round the
 side of one is worth doing. What does NOT change is the geometry -- a Normandy casemate
-does not become a sandbag sangar because the men in it are Canadian, and the buffer is
+does not become a sandbag sangar because the men in it are American, and the buffer is
 built once for that reason.
 
 **The brain fits them, and it is deliberately NOT on the works ladder.** That ladder is
@@ -2893,7 +2892,7 @@ cross product of the two, so a round crossing the view is a bar and one coming a
 camera is a point.
 
 **A belt is one round in four or five, not every round**, and the two armies' tracer burned
-different colours: Commonwealth ran red-orange and German a pale yellow-white. The tail
+different colours: the Allied side's runs red-orange and the German a pale yellow-white. The tail
 carries the side's colour and the head is nearly white on both, because the element burning
 is white-hot -- and because a red trace drawn flat over pale dry ground disappears into a
 red channel that is already at the top of its range. Measured on this map before that fix
@@ -3282,15 +3281,16 @@ a combed Zimmerit tile has large ones and bumps a lot, so the material's own tex
 it. At five it is corrugated iron; it is 1.1.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
-helmets and weapons. Vehicles get individual builders (`shermanHull`,
+helmets and weapons. Vehicles get individual builders (`m4Shell`,
 `ktTurret`, `pzivSkirts`, and so on) assembled in `buildVehicleModels`. Every
 face carries a material index into the atlas. If a model looks wrong, the fix
-is in one of these builders, not in a mesh file. Two vehicles share a chassis:
-`p4Chassis(body, cap, sideC, stug)` is the Panzer IV's running gear, tub, glacis,
-deck and tail, and `stugHull` builds the Sturmgeschütz IV casemate on it with the
-flag set, which leaves off the fighting-compartment box, the driver's plate and the
-guard stowage the casemate overhangs. With the flag off the face list is the Panzer
-IV's in the same order.
+is in one of these builders, not in a mesh file. `p4Chassis(body, cap, sideC, stug)`
+is the running gear, tub, glacis, deck and tail of the Panzer IV the paratroopers
+fielded, and `stugHull` builds the Sturmgeschütz IV casemate on it with the flag set,
+which leaves off the fighting-compartment box, the driver's plate and the guard stowage
+the casemate overhangs. The Panzer IV and the Wirbelwind it was written for are retired,
+so the StuG is the one vehicle still built on it; with the flag off the face list is the
+old Panzer IV's in the same order.
 
 The StuG's compartment is a `frustum` and not a `prism`: the Ausf. G superstructure the StuG IV
 inherited stands out over the track guards at the bottom and slants inboard about eleven
@@ -3314,19 +3314,49 @@ the arc in `updateModels`, and `fireAt` refuses until it is inside. `VMODEL.fixe
 draws the hatches with the hull rather than the mount, and `addUp` meshes are drawn
 for every fitted upgrade key, not only the one that swaps the gun.
 
-**The American army.** The Allied side is 'us' everywhere in the file and stays that way;
-which army it is belongs to the map. `NATIONS` is two entries, the Canadians and the 29th
-Infantry Division, each a name for the title screen, the HUD and the after-action page, and
-a substitution list keyed by the Canadian unit it replaces. A map names its army in
-`data.allies` (Omaha says `'usa'`), `buildMap` calls `setNation`, and `natKey(key)` and
-`makesOf(b)` are the only readers: the production bar, the SIMPLE strip, `queueUnit` (which
-maps whatever key it is handed, so a brain out of an older revision still buys on the
-beach), the brain's role table and the two sections each side opens with all go through
-them, so a unit added to the American list reaches every door at once and anything the list
-does not name is still the Canadian unit. The title screen's side button follows the chosen
-ground (`sideSync`), and a body keeps the army it fell in (`natOf`, `c.nat`), because the
-Canadian and the American are both 'us' and `MODELS.fall` and `MODELS.dead` are keyed by
-army.
+**The two armies.** The Allied side is 'us' everywhere in the file and the German side 'ger',
+and both stay that way. On every map the Allied side is the 29th Infantry Division and the
+German side the 352. Infanterie-Division: `NATIONS` is those two entries (`usa` and `heer`),
+each a name, a short name and a line for the title screen, the HUD and the after-action page,
+and `FACTION` carries the same names. The side buttons (`sideSync`) and the victory-point
+labels say so on every ground.
+
+The game was first built with the 1st Canadian Infantry Division and 1. Fallschirmjäger-Division
+on the Italian maps, and each unit of the two new armies was added in the place of one of
+theirs through a substitution table keyed by the map. The Canadians and the paratroopers are
+retired: their nineteen units are gone from `UNITS` (the rifle and engineer sections, the Foot
+Guards, the Mousehole Assault Section, the Vickers, the 6-pounder, the Universal Carrier, the
+M3A1, the Stuart V and the Sherman V; the FJ group, the paratroop pioneers, the assault group,
+the MG42 team, the Pak 40, the 222, the 251 Ausf. D, the Italian Panzer IV and the FJ
+Wirbelwind), with their models, their interiors and hatches, the seven upgrades only they took
+(the 222's 2 cm turret, the 251 Ausf. D's three conversions, the M3A1's quad .50 and ambulance,
+and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
+(`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
+the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
+own for yet: the two mortars, the two pack howitzers, the two heavy batteries, the T8, the
+Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger
+and the Maus. They are fielded by whichever side they belong to on every map and crewed by
+that side's men: `variantForModel` keys every unit's men off the unit first and then off the
+side, so a first-roster gun is served by `gi_atg` with the carbine men of `gi_art` behind it
+(or `hr_atg` and grenadiers), and a hatch or a station on a first-roster vehicle holds a tanker
+(`commander`, `crewman`: `gi_tank` or `hr_tank`).
+
+The production lists, the brain's role table, its shopping ladder, the bunker fittings, the
+wall's garrison and the sections each side opens with are all written in the live keys.
+`RETIRED` maps each retired key to the unit that stands in its place and `natKey` reads it,
+because `queueUnit`, `countOf` and `madeOf` still pass a key through it: a brain out of an
+older revision on the skirmish card buys in the first roster's keys, and this way it is handed
+the unit that stands in its place and counts what it was given. `fielded(key)` is whether the
+roster has the unit at all and `makesOf(b)` is the building's list. `natOf(u)` is the army a
+unit is dressed in and falls in, `def.nat` where a unit says so and its side's army otherwise,
+so a man killed at any gun goes down as an American or a grenadier (`MODELS.fall` and
+`MODELS.dead` are keyed `usa` and `heer`, and by `def.body` for the squads that carry one).
+
+Read every figure below that names a Canadian or a paratroop unit as history. Those were
+measured while the unit was on the roster, most of them as the thing a new unit was set
+against, and they are kept because they say how the live unit's numbers were arrived at. None
+of them can be fought again: the keys are gone, and `tools/duel.mjs` reports a key it cannot
+find as no such unit.
 
 **The rifleman is a third kit on the one rig**: `KIT.usa`, with the builders branching on
 `V.nat`. What he is, from the top: the M1 helmet under its net; the M1941
@@ -3364,11 +3394,11 @@ red over green against 1.37. A tint probe over the whole
 roster found one colour on untagged faces that moved tile, and it moved the right way: a
 sandbag shade the old American ladder had been holding on canvas is back on hessian.
 
-He reads in bands where the Canadian reads as one bolt of serge: a dark netted pot, a tan
-jacket, darker legs and pale leggings, which is what is left of him at nine hundred units. On
-the card, at 600 units his mean luminance is 0.359 against the FJ's 0.425 on the desktop and
-the FJ's top fifth is 0.15 above his, with his contrast to the ground at -0.26, inside the band
-the other two sit in; on the phone the gap is 0.057 to 0.066 at 600, 760 and 900. The wider
+He reads in bands where the Canadian he replaced read as one bolt of serge: a dark netted pot, a
+tan jacket, darker legs and pale leggings, which is what is left of him at nine hundred units. On
+the card before the retirement, at 600 units his mean luminance was 0.359 against the
+paratrooper's 0.425 on the desktop and the paratrooper's top fifth was 0.15 above his, with his
+contrast to the ground at -0.26, inside the band the other two sat in; on the phone the gap is 0.057 to 0.066 at 600, 760 and 900. The wider
 stance below showed more of the leggings and took the desktop's gap at 900 to 0.047, under the
 floor, and the jacket, the trousers and the leggings were each taken down a few per cent to
 buy it back: the margin is 0.055 there now, and it is the number to watch before lightening
@@ -3459,9 +3489,8 @@ seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent ag
 German section and 56 against the Canadian section, which is inside what sixteen runs of two
 identical units produce.
 
-**The engineer squad is the Americans' builder**, in the Canadian section's place (`us_eng` to
-`am_eng` on the army's list, and the section the side opens with goes through `natKey` now as
-the rifle sections already did): three men of an engineer combat battalion, dressed the way the
+**The engineer squad is the Americans' builder**, and one of the three units the side opens
+with: three men of an engineer combat battalion, dressed the way the
 brief asked, after Company of Heroes. It is a fifth kit on the rig (`V.eng`), and every piece of
 it goes through a door the rig already had. **The sleeves are rolled above the elbow**, which is
 a branch in `figArm` read off the kit (`k.rolled`): the shirt down to the roll, the roll a band
@@ -3509,8 +3538,7 @@ reach, and over 16 it wins 75 and 63 at 80: a little behind at the edge of its r
 up close. It loses every fight with the grenadier squad inside nine seconds, and so does the
 Canadian section, because that is three men of a builder against six of a line squad.
 
-**The Rangers are the Americans' assault squad**, in the Foot Guards' place (`us_fg` to
-`am_ranger` on the army's list), bought from the same company post: six men with four Thompsons
+**The Rangers are the Americans' assault squad**, bought from the company post: six men with four Thompsons
 and two BARs, and a bazooka slung on each BAR man's back. It is the rifleman's rig in the
 M1941 jacket and leggings with `V.rgr` on it, and what is new is what goes over the jacket.
 **The assault vest is a darker green than the poplin** (`rvest`), from the hip to the chest and
@@ -3584,17 +3612,11 @@ which is a light vehicle of its own side, 75 per cent. The Panzer IV still takes
 time in seven seconds with a quarter of itself gone, because a squad that hunts light vehicles
 is not a squad that hunts tanks.
 
-**The German army on the beach.** The same table does the German side. `NATIONS` carries two
-entries with `side: 'ger'`, the paratroopers (`fj`) and the 352nd Infantry Division (`heer`); a
-map names its German army in `data.axis` (Omaha says `'heer'`) and `NAX` is the live one beside
-`NAT`. `natKey` reads the list of the side the unit it is handed belongs to, so one call
-answers for both armies, and every door already went through it: the brain's role table, the
-opening sections, `queueUnit`, `makesOf` and the wall garrison, which puts `natKey(e.k)` down
-rather than the key the map wrote, so a manned wall on the beach is grenadiers. `sideSync`
-sets both buttons.
+**The German army.** The 352nd is the German side on every map, and the manned wall's
+garrison is written in its keys, so a manned wall is grenadiers and MG 34 teams.
 
 **The grenadier is a fourth kit on the rig**: `KIT.heer`, with the builders branching on
-`V.nat === 'heer'` and the paratrooper's smock path left as it was. From the top: the M42
+`V.nat === 'heer'`. From the top: the M42
 helmet (`helmetM42`), its flared skirt swept round a plan wider than it is deep with the rim
 dropped over the ears and the neck, either with a canvas band round it for foliage or under
 chicken wire with foliage through it, on a tile of its own (`hrwire`, a hex mesh six by eight
@@ -3625,10 +3647,9 @@ tangent sight to the nose cap and passes under the lower band; the bolt handle i
 on the right, with the stock disc on the butt, the bayonet lug and cleaning rod under the
 barrel and the hooded front sight at the muzzle; and the sling runs down the LEFT side from
 the slot in the butt to the swivel on the lower band. It measures 13.07 units against a
-published 1,110 mm. The paratroopers carry the same rifle, so the new anchors (`WEAP.kar`)
-moved both armies' hands, and the GRIP misses the card had reported on the FJ rifleman went
-with the old one: four of 461 on the last commit, two of 589 now, and those two are the
-Canadian corpse. A corpse's Kar98k lies on its side, for the Garand's reason.
+published 1,110 mm. The paratroopers carried the same rifle, so the new anchors (`WEAP.kar`)
+moved both armies' hands, and the GRIP misses the card had reported on the paratrooper went
+with the old one. A corpse's Kar98k lies on its side, for the Garand's reason.
 
 **And he is traced over photographs of men in field grey** (`tools/ref/gr_rifle.json`, two men
 walking at the camera, `shots/ref/heer_a.jpg`, which is a CC BY-SA photograph of a reenactment
@@ -3660,8 +3681,7 @@ man and 250 of manpower it wins 46 per cent against the American squad over fort
 50 against the Canadian section and 38 against the FJ group: level with the army it meets and
 a step behind the veterans it stands in for.
 
-**The pioneer team is the 352nd's builder**, in the paratroop pioneers' place (`ger_pio` to
-`hr_pio` on the army's list): three men of the division's pioneer battalion, dressed after the
+**The pioneer team is the 352nd's builder**: three men of the division's pioneer battalion, dressed after the
 Company of Heroes reference they were asked for. It is the grenadier's kit with `V.pio` on it,
 and nearly all of it was already there: the MP40 pouches (`V.mp`), the goggles on the M42
 (`V.goggles`, the motorcyclist's), the gaiters and the wire. What is new is the tunic's collar
@@ -3678,9 +3698,9 @@ the canvas pouches and the pack did not read as a thing of its own.
 
 **It carries the engineers' numbers to the point.** The two teams carry the same sort of weapon
 and do the same job, so they are one unit on two sides, and `am_eng` against `hr_pio` is the
-beach's calibration row the way `us_eng` against `ger_pio` is Italy's: over 24 runs it reads 54
-per cent, and the Italian pair read 38 on the same afternoon, which is the spread 24 runs of two
-identical units produce. Against the American rifle squad it loses every fight inside eight
+card's calibration row: over 24 runs it read 54 per cent, and the Canadian and paratroop pair it
+replaced read 38 on the same afternoon, which is the spread 24 runs of two identical units
+produce. Against the American rifle squad it loses every fight inside eight
 seconds, as the engineers lose to the grenadiers.
 
 **And the MP40 is rebuilt**, because every pioneer carries one and it was four boxes: a receiver
@@ -3691,11 +3711,10 @@ straight magazine, the lower frame and the pistol grip in maroon bakelite, the c
 its slot on the left, and the two-strut stock that folds under the frame with its butt plate
 standing behind the magazine housing and swings out for the aim. It measures 7.42 units folded
 against a published 630 mm and 9.8 with the stock out against 833 mm, which is further back than
-the old stock went, so `WEAP.mp40.buttOut` moved with it; the grenadier squad leader and the
-paratroopers carry the same gun, and all of them pass the men card as they did.
+the old stock went, so `WEAP.mp40.buttOut` moved with it; the grenadier squad leader carries the
+same gun, and passes the men card as he did.
 
-**The jeep is the Americans' light vehicle**, in the carrier's place (`us_m8` to `am_jeep`
-on the army's list): a Willys MB with the windscreen folded flat on the bonnet under a canvas
+**The jeep is the Americans' light vehicle**: a Willys MB with the windscreen folded flat on the bonnet under a canvas
 cover, which is how it went into action, and a .30 on the M31 pedestal behind the front
 seats. It is pressed sheet over a ladder frame and built that way (`jeepHull`): a flat, level
 bonnet narrower than the body, flat wings well below it with their outer edges turned down and
@@ -3752,8 +3771,8 @@ won every fight with a squad, because the whole card sits on the knife edge the 
 balanced at, so it deals what the .30 deals per second at 320 of reach and 70 of
 penetration, and reads 56 per cent against the grenadiers.
 
-**The M4A1 is the Americans' tank**, in the Sherman V's place (`us_sher` to `am_sher` on the
-army's list), and it is built from nothing rather than out of the Sherman V's parts: an early cast
+**The M4A1 is the Americans' tank**, and it was built from nothing rather than out of the
+Sherman V's parts: an early cast
 M4A1 with the direct-vision hull, the 75 in the M34 mount and the radial engine, the shorter of the
 two by the whole of the A4's stretch. It is laid out with the driver at -y and the bow gunner, the
 gunner and the commander at +y, which the Sherman V beside it is not. Its numbers are the Sherman
@@ -3881,8 +3900,7 @@ sits, because the cupola stands two units further forward than the M4A1's hatch 
 station the gunner's helmet was under the commander's eye and filled the view down into the turret.
 `tools/shoot.mjs pov --key=am_sher --up=e8` photographs it from there.
 
-**The KS 750 is the 352nd's light vehicle**, in the 222's place (`ger_sd222` to `hr_ks750` on
-the army's list): the Zündapp with the Steib-built BW 40 on its right and a shaft across from
+**The KS 750 is the 352nd's light vehicle**: the Zündapp with the Steib-built BW 40 on its right and a shaft across from
 the rear hub to the sidecar wheel, a rider and a gunner on it and an MG 34 on the sidecar mount,
 the pillion left empty. The 352nd had no armoured cars to speak of, and a
 motorcycle combination is what its reconnaissance rode. It is in the Wehrmacht's grey (`HRG`),
@@ -3952,12 +3970,12 @@ jeep's 21 goes as the cube of the ratio below a third. The MG 42 is the jeep's r
 .50 turned round: the same damage a second as the MG 34, laid half as fast again with a little
 more suppression, and it reads 58 per cent against the squad where more damage read every fight.
 
-**The Panzer IV is the 352nd's tank**, in the Italian one's place (`ger_p4` to `hr_p4` on the
-army's list), and it is built from nothing rather than out of that one's parts: the Ausf. H with
-the long 7.5 cm KwK 40 L/48, laid out with the driver on the left and the bow gunner on the
-right, which the Italian model beside it is not. **Every vehicle built for the 352nd is in the
-Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint), where the paratroopers' vehicles
-stay in their sand; the KS 750 wears it too. Its numbers are the Italian Panzer IV's, because the
+**The Panzer IV is the 352nd's tank**, built from nothing rather than out of the parts of the
+Panzer IV the paratroopers fielded in Italy: the Ausf. H with the long 7.5 cm KwK 40 L/48, laid out
+with the driver on the left and the bow gunner on the right, which that model was not. **Every
+vehicle built for the 352nd is in the Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint),
+where the first roster's German vehicles that are still fielded (the StuG, the Tigers and the Maus)
+stay in their sand; the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
 gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.96 m long against 5.92,
 7.05 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
 (the cupola lid is not in the measured mount), a body of 2.36 against 2.36 and 0.40 of clearance.
@@ -4004,13 +4022,13 @@ of the turret shows through a block from where his eye is, and drawn, its roof a
 own caps stood between him and the room he looks down into. Head out, the hole in the cupola's top
 cap lets him look down into the turret: the rings, the seat, the breech, the gunner.
 
-**Its numbers are the Italian Panzer IV's, and the card agrees.** Over twelve runs the M4 wins a
-third of its fights with it, which is inside the swing the card has shown on the Italian one against
+**Its numbers are the old Panzer IV's, and the card agrees.** Over twelve runs the M4 wins a
+third of its fights with it, which is inside the swing the card showed on the old one against
 the Sherman V and the M4, and it takes the American squad eight times in eight inside eight seconds,
 because nothing in that squad opens a tank.
 
-**The 251 is the 352nd's half-track**, in the Ausf. D's place (`ger_h251` to `hr_251` on the
-army's list), and it is built from nothing rather than out of that one's parts: the Sd.Kfz.
+**The 251 is the 352nd's half-track**, built from nothing rather than out of the Ausf. D's
+parts: the Sd.Kfz.
 251/1 Ausf. C, the Hanomag of 1940 to 1943 with the one-piece nose and the lockers standing out
 along both sides, open above, in the grey (`HKC` off `HRG`). Two men and no passengers: the
 driver on the left behind the plate and a gunner standing to the MG 34 on the pintle at the front
@@ -4079,8 +4097,8 @@ every time in twenty-one seconds with 98 per cent of itself left, and the Ausf. 
 the same afternoon, because nothing in the squad opens it. It takes the jeep twelve times in
 twelve inside eleven seconds, and the M4 takes it eight in eight inside ten.
 
-**The M3 is the Americans' half-track**, in the place of the M3A1 built for Italy (`us_m3` to
-`am_m3` on the army's list), and it is built from nothing rather than out of that one's parts: the
+**The M3 is the Americans' half-track**, built from nothing rather than out of the parts of the
+M3A1 built for Italy: the
 White M3 in olive drab with the .50 on the M25 pedestal behind the front seats, the unditching
 roller across the nose and the rounded commercial fenders of the early production. Two men and no
 passengers: the driver on the left at the wheel and the gunner standing on the floor behind the
@@ -4132,7 +4150,7 @@ occlusion bake and came out black, so every face that looks into the compartment
 (`mhLitIn`, the M8's `lit` read off the face's own normal against the middle of the room).
 `VIN.am_m3` is the open vehicle's room, which is nothing, with the eye the gunner's.
 
-**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which Italy's M3A1 has always carried):
+**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which the M3A1 built for Italy carried):
 the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
 floor at the front of the body and firing forward over the cab behind a shield, laid over a
 four-view drawing of the GMC (`tools/ref/am_m3gmc.json`). The sheet's views disagree about the
@@ -4161,7 +4179,7 @@ that one vehicle's own AUTO on. The brain converts its own, since nothing in it 
 aboard. And **a fitting that moves the mount is baked
 where it stands**: `put` in the occlusion bake takes the fitting's `barUp` pose, where it had baked
 every alternative mount at the ring of the one it replaced. The GMC's gun stands 2.9 units lower
-than the pedestal's head, and Italy's M3A1 had its quad and its 75 baked where
+than the pedestal's head, and the M3A1 built for Italy had its quad and its 75 baked where
 the ring was.
 
 **A conversion's reach lends the eye nothing until it is fitted.** The sight rule at load raised
@@ -4188,10 +4206,9 @@ the conversion against the tank's 345, 90 and 14, three hits to kill it and five
 Over twelve runs a row it takes the 251, the 234/1, the MG 34 team and the grenadier squad every
 time, the Puma and the Wirbelwind eleven times in twelve and the Knight's Cross Holders three times
 in four; a Panther head on takes it every time and side-on eleven times in twelve, and a Pak 38
-sited at its reach takes it every time in seven seconds. Italy's M3A1 carries its own line still.
+sited at its reach takes it every time in seven seconds.
 
-**The M8 is the Americans' armoured car**, in the Stuart V's place (`us_stuart` to `am_m8` on
-the army's list), and it is built from nothing: Ford's six-wheeler in olive drab with the 37 mm
+**The M8 is the Americans' armoured car**, built from nothing: Ford's six-wheeler in olive drab with the 37 mm
 and its coaxial .30 in an open-topped turret, which is what the cavalry reconnaissance troops
 brought ashore. Four men: the driver and the co-driver head and shoulders out of their hatches,
 and the gunner and the commander in the turret. The Stuart's gun and its job are the reason for
@@ -4289,8 +4306,7 @@ it still takes the 251 81 per cent of the time, the KS 750 and the grenadier squ
 reload that the coaxial has the four of them down first. The Panzer IV took it twelve times in
 twelve at the first numbers, and thinner plate does not change that.
 
-**The 234 is the 352nd's armoured car**, in the Wirbelwind's place (`ger_wirb` to `hr_234` on the
-army's list), and it is built from nothing: the eight-wheeled heavy armoured car of a Panzer
+**The 234 is the 352nd's armoured car**, built from nothing: the eight-wheeled heavy armoured car of a Panzer
 division's reconnaissance battalion, in the grey. It arrives as the 234/1, with the 2 cm KwK 38
 and an MG 42 in an open six-sided turret under two wire screens, and **the closed turret of the
 234/2 with the 5 cm KwK 39/1 is its field upgrade** (`UPGRADES.puma`), which swaps the gun, the
@@ -4355,8 +4371,8 @@ the M4 every time. The Puma, at 85 a round every 2.6 seconds and 120 of penetrat
 to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
 `SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
 
-**The Knight's Cross Holders are the 352nd's assault squad**, in the paratroop assault group's
-place (`ger_pgren` to `hr_kch` on the army's list), bought from the same post: four decorated
+**The Knight's Cross Holders are the 352nd's assault squad**, bought from the company post:
+four decorated
 veterans with StG 44s, raised at a veteran's rank (`vet0`, which starts the tally of kills that
 earns it, because the rank is worked out from the tally every time it moves). They are dressed
 after the Company of Heroes squad they were asked for, and every piece goes through a door the
@@ -4461,8 +4477,7 @@ under seven seconds with 72 per cent of itself left, the 28 it lost being one bu
 is 46 at the centre of 24 units: the first, at 60 over 26, took three men of an American squad in
 one volley.
 
-**The .30 cal team is the Americans' machine gun team**, in the Vickers team's place (`us_mg` to
-`am_mg` on the army's list), bought from the company post: four men of a heavy weapons company
+**The .30 cal team is the Americans' machine gun team**, bought from the company post: four men of a heavy weapons company
 with the M1919A4 on its M2 tripod. The gunner and his number two carry the gun and the tripod and
 a pistol each, the other two bring the ammunition with the M1 carbine, and every one of the four
 wears the rifleman's kit with two belts of .30 crossed on his chest as bandoliers.
@@ -4559,8 +4574,7 @@ times in four; the 251 takes it five times in eight, because the half-track's MG
 faster than four men can open it, and the 234/1 every time. At a penetration of 36 the 251 took
 it nearly every time and at 70 with the .30's rate it took everything in under ten seconds.
 
-**The MG 34 team is the 352nd's machine gun team**, in the MG42 team's place (`ger_mg42` to
-`hr_mg` on the army's list), bought from the company post: four men of a machine gun company with
+**The MG 34 team is the 352nd's machine gun team**, bought from the company post: four men of a machine gun company with
 the MG 34 on the Lafette 34, which is the tripod every German heavy machine gun section fought
 from and which took the MG 42 as well. The gunner and his number two carry the gun and the tripod
 with a P38 and the machine gunner's tool pouch each, the other two bring the ammunition with the
@@ -4587,7 +4601,7 @@ written into it. The number two carries the Lafette folded on his back (`V.lafba
 drawn at the point on his back the bake read off each pose, leaned with his back rather than
 pitched off a shoulder, the pad against him and the legs gathered up past his helmet, and lying
 down he has it off beside him. The bearers carry a Patronenkasten 34 (`pk34`) in the left hand. A
-manned wall's four Tobruks are MG 34 teams now as well, since the garrison goes through `natKey`.
+manned wall's four Tobruks are MG 34 teams as well.
 
 **The two guns are cut as side profiles** (`weaponModel(k, 'mg34')`, `'mg42'`), 14.35 units each
 against a published 1,219 and 1,220 mm: the MG 34 round, with the tall feed cover, the round
@@ -4622,12 +4636,7 @@ two sides it takes the .30 81 per cent of the time and splits with the .50 at 46
 left. The Rangers take the MG 34 team seven times in eight in 13 seconds, the jeep takes it every
 time in 15, and it takes the engineers every time in eight.
 
-**The Wirbelwind is the 352nd's flak tank**, and the first unit an army fields over and above
-the ones it stands in for. The 234 took the paratroopers' Wirbelwind's place on the beach, so
-there was no slot on the first roster for the 352nd to put one in. `hr_wirb` is written on the
-depot's own list beside `ger_wirb` with its army on it (`nat: 'heer'`), and `fielded(key)` is
-what `makesOf` filters the list through after `natKey`: a unit whose army is not the one fighting
-is not made, so Ortona's depot never offers it and the beach's offers both. The brain's ladder
+**The Wirbelwind is the 352nd's flak tank**, on the depot beside the 234. The brain's ladder
 carries a rung for it (see below), and `aiCutLadder` brings it forward against an enemy that is
 all infantry and sends it back when he has something heavy (`buy.flak`). It is built from nothing
 on the Panzer IV's hull, which is the one part taken from anything already built.
@@ -4686,9 +4695,8 @@ over sixteen runs. The M4 takes it every time in 15 seconds with 94 per cent of 
 takes the Panzer IV two times in three and is left with a quarter. The anti-tank gun loses to it,
 because its crew are men in the open, and takes 38 per cent of it first.
 
-**The Panther is the 352nd's second tank**, fielded over and above the rest the way the
-Wirbelwind is (`hr_panther`, `nat: 'heer'`, on the depot's list after the Panzer IV and passed
-through `fielded`): the Ausf. A with the long 7.5 cm, built from nothing in the grey. It has a
+**The Panther is the 352nd's second tank** (`hr_panther`, on the depot's list after the Panzer
+IV): the Ausf. A with the long 7.5 cm, built from nothing in the grey. It has a
 rung on the brain's ladder after the Wirbelwind and before the Tiger, and `aiCutLadder` counts it
 among the things that kill a heavy, so it comes forward when he has one.
 
@@ -4759,8 +4767,7 @@ the same way, and the Rangers at 130 win a quarter. A hull comes round in a seco
 number that matters is what the flank does in a battle, where the thing has something else in front
 of it, and that is what `flank` is for.
 
-**The 57 mm Gun M1 is the Americans' anti-tank gun**, in the 6-pounder's place (`us_at` to
-`am_at` on the army's list): the 6-pounder built under licence with its tube lengthened to fifty
+**The 57 mm Gun M1 is the Americans' anti-tank gun**: the 6-pounder built under licence with its tube lengthened to fifty
 calibres, on the M1A3 carriage, which is what an infantry regiment's anti-tank company and its
 battalions' anti-tank platoons brought ashore. Five men: the gunner kneeling at the sight and the
 handwheels on the left, the loader at the breech on the right, and three bringing the rounds up a
@@ -4825,13 +4832,12 @@ head on 8 per cent of the time and one caught side-on every time, a Tiger a quar
 squad takes it every time in seventeen seconds, and walked into a Panzer IV on an attack-move the way
 the card used to stage it, it wins a quarter.
 
-**The 5 cm Pak 38 is the 352nd's anti-tank gun**, in the Pak 40's place (`ger_pak` to `hr_pak` on
-the army's list): the 5 cm L/60 on its tubular split trail, which is what an infantry division's
+**The 5 cm Pak 38 is the 352nd's anti-tank gun**: the 5 cm L/60 on its tubular split trail, which is what an infantry division's
 anti-tank company still had in numbers in June 1944. Five men, as the 57 across the beach has: the
 gunner kneeling at the sight and the handwheels on the left, the loader at the breech on the right,
 and three bringing the rounds up a case at a time. It is the 57's machinery on the other side of the
 beach (`rec`, `pack`, `runAt`, `gunMate`, the served bodies, `carryP`) and a bunker's anti-tank
-fitting reaches it through `natKey`, so the manned wall's two casemates are Pak 38s now as well.
+fitting is the Pak 38, so the manned wall's two casemates are Pak 38s as well.
 
 **The drawing is at two scales, one along the gun and one across it.** A four-view with a scale bar
 in feet. Along the gun and up it, every view agrees with the published 4.75 m over the trails and
@@ -4879,9 +4885,8 @@ guns are one gun on two sides and the two tanks are not. Over twelve runs a row 
 M3A1 and the Achilles every time; the American rifle squad takes it every time in eight seconds, and
 walked into an M4 on an attack-move it wins 17 per cent.
 
-**The M3 light tank is the 29th's second tank**, fielded over and above the rest the way the Panther is
-across the beach (`am_stuart`, `nat: 'usa'`, on the motor pool's list after the Stuart V's key and passed
-through `fielded`): the Stuart as the Americans first took it to war, riveted, with the round welded turret
+**The M3 light tank is the 29th's second tank** (`am_stuart`, on the motor pool's list after the
+M8): the Stuart as the Americans first took it to war, riveted, with the round welded turret
 that did away with the cupola and the big idler trailing on the ground. Its 37 mm and coaxial are the
 Greyhound's; what it has that the Greyhound has not is half as much plate again, on tracks. It has a rung
 on the brain's ladder after the M8's and before the M4's, and `aiCutLadder` reads it as light armour. On
@@ -4947,9 +4952,8 @@ goes through the front but whose front the 37 mm seldom opens either. The Greyho
 a third of the time and the 251 fight a fifth, so the M3 is priced above it, at 290 marks and 55 of fuel
 against the M8's 240 and 35, and it is slower on tracks (124 against 150) and sees a little less far.
 
-**The M26 Pershing is the 29th's heavy tank**, fielded over and above the rest the way the Panther is
-across the beach (`am_m26`, `nat: 'usa'`, on the motor pool's list after the M4A1 and passed through
-`fielded`): the 90 mm M3 in the M67 mount on a welded hull with four inches of plate at forty-six degrees
+**The M26 Pershing is the 29th's heavy tank** (`am_m26`, on the motor pool's list after the M4A1):
+the 90 mm M3 in the M67 mount on a welded hull with four inches of plate at forty-six degrees
 in front, six stations a side on torsion bars. It has a rung on the brain's ladder after the M4A1s and
 before the Achilles, and `aiCutLadder` counts it among the things that kill a heavy, so it comes forward
 when the 352nd has a Panther. On `tools/dims.mjs` it reads 6.39 m long against 6.34, 8.63 with the gun
@@ -5009,21 +5013,18 @@ kill an M26. Over twelve runs a row it takes the Panzer IV, the Puma, the 234/1,
 gone to their bundles, and a Pak 38 sited at 520 takes it 8 per cent of the time where it takes an M4 a
 quarter of the time.
 
-**And a bunker's fittings go through `natKey`.** `finishBunkerUp` spawned the key the fitting was
-written with, so an American bunker's anti-tank casemate was a Canadian 6-pounder and the manned
-wall's four machine gun bunkers were the paratroopers' MG42 teams on a beach the 352nd held. They
-are the 57 and the MG 34 teams now, and the cap check and the population count read the same key.
+**And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
+team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
+the same key. Before the retirement they went through `natKey`, and before that an American
+bunker's anti-tank casemate was a Canadian 6-pounder.
 
-**And the brain's shopping list is written in the first roster and bought in the map's.**
-`LADDER` is cut by `aiCutLadder` in Canadian keys and then mapped through `natKey` before the
-weights read it, so what is saved for and counted on the beach is the jeep. `countOf` and
-`madeOf` read their key through `natKey` as well, because a brain out of an older revision on
-the skirmish card asks after the carrier: with the counts keyed on what was actually bought,
-it was given a jeep for every carrier it ordered and bought them for ever against a count
-that never moved. A rung for a unit only one army fields comes off the list after the mapping
-where that army is not the one fighting (`fielded`), because the head of the list is money
-saved, and money saved for a vehicle no depot on the map will ever make is money saved for
-the rest of the battle.
+**And the brain's shopping list is written in the live keys.** `LADDER`, the role table and
+`aiCutLadder`'s sets name the jeep, the 57, the M4A1 and the rest directly. `countOf` and
+`madeOf` still read their key through `natKey`, because a brain out of an older revision on the
+skirmish card asks after the carrier: with the counts keyed on what was actually bought, it is
+given a jeep for every carrier it orders and counts them, where a count keyed on the carrier
+never moved and it bought them for ever. A rung for a unit the roster does not have is money
+saved for nothing, which is why the head of the list is only ever a live key.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -5698,7 +5699,7 @@ what each is for and what talks it out of firing.
   three hundred back looking at it answers nothing, so it raises a call and the flag becomes
   somebody's job rather than nobody's.
 - *Armour on its own backs away from infantry with a launcher* (`u.def.at`, which only the
-  airborne, the Fallschirmjaeger and the Panzergrenadiere carry) inside a hundred and ninety
+  Rangers carry, with the bazooka) inside a hundred and ninety
   when no friendly section is within a hundred and fifty, opening the range two hundred and
   firing as it goes (`u.backT`, nine seconds between), and asking for men while it does. A
   launcher section at a quarter strength is a section to shoot rather than to reverse from, and
@@ -5930,7 +5931,7 @@ rounds: `def.w` is AP and `def.wUp.he` is HE, `u.up.he` picks, `setRound` costs 
 reload to change, and because `mainW` hands back whichever is up, range, target choice,
 the shot and the AI's reading of it all follow the switch with nothing else to tell. The
 cards are J and L; the brain's crews pick AP while armour is in reach and HE otherwise.
-The Canadians have no equivalent, on purpose. `placeWork` now checks a unit-work's
+The Americans have no equivalent, on purpose. `placeWork` now checks a unit-work's
 `limit` (two) and the population cap, which no wall of bags ever needed, and `popOf`
 counts a pegged-out gun's men while the ring is still being built. The brain chooses
 the round at the top of its per-unit loop, before the retreat rule and the target
@@ -5946,7 +5947,8 @@ it are for.
 
 **Three more German pieces, and the two corrections they needed.** A 2 cm Flak 38 on its
 ground platform (`ger_flak20`), a 15 cm Nebelwerfer 41 (`ger_neb`) and a Flakpanzer IV
-Wirbelwind (`ger_wirb`). None of them is a new system. The two towed pieces are crew-served
+Wirbelwind (`ger_wirb`, retired with the paratroopers: the 352nd's own is `hr_wirb`, below). None
+of them is a new system. The two towed pieces are crew-served
 weapons and go through the pack-and-set-up clock, the lay tolerance, the two-piece draw and
 the crew layout the eighty-eight and the batteries already use; the Wirbelwind is
 `p4Chassis` with a different thing bolted to the same turret ring, and `tools/dims.mjs`
@@ -6117,7 +6119,7 @@ The reaches are chosen against this map rather than by feel. A headquarters stan
 from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
 it has to come four hundred forward, which puts it among the town's approaches, in front
 of its own infantry, where a section working round the flank will find it. That exposure is
-the price of the shell and it is the reason the reach stops where it does. The Canadian gun
+the price of the shell and it is the reason the reach stops where it does. The American gun
 reaches further and hits softer and the Italian one is the other way round, so the German
 side has to come further forward for the same ground.
 
@@ -6158,7 +6160,7 @@ has instead is the shell -- three hundred damage over a hundred and thirty of bu
 is the heaviest thing either side can put on the ground.
 
 **The two rules meet in the middle, and that is the finding worth keeping.** Dug on the
-first legal patch beyond `minHq`, the Canadian gun is 1575 from the German headquarters
+first legal patch beyond `minHq`, the American gun is 1575 from the German headquarters
 and its reach is 1250: the range and the minimum distance from home already keep it off
 the enemy base without `safe` ever being consulted. The no-fire zone is what stops a
 player walking the battery forward until it can. The check row had to stand the gun
@@ -6469,7 +6471,7 @@ takes the unit's own headquarters rather than the team's first. And `placeWork`,
 out of one till and counts against one limit.
 
 **Each computer player is set on its own, and the settings are stored against a ROLE.** A
-slot key depends on which side the player picked -- his ally is `us2` playing Canadian and
+slot key depends on which side the player picked -- his ally is `us2` playing American and
 `ger2` playing German -- so a panel storing its settings under the slot would move them to
 a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2` and `ally`;
 `ADS[role]` is that one's handicap row, `ABUY[role]` is what it is told to buy, and
@@ -6871,7 +6873,7 @@ never climb, and the works, the fittings and the upgrades it may still buy keep 
 hundred marks back for him (`keep`). **Both of those are SIMPLE's and read `CTRL.simple`**,
 because under classic the only thing that ever puts a brain on the player's slot is a
 card: `tools/skirmish.mjs` and `tools/brain.mjs` run one on both sides, and a lock read
-off the slot alone left the Canadian side of every card unable to raise a section. It
+off the slot alone left the Allied side of every card unable to raise a section. It
 shipped that way, and what said so was the tactics card: eight mirror pairs at -578 and
 +568 by side, a walkover for whichever brain was German, with 1,686 marks unspent on the
 other side against 264. Every brain-card number taken between that commit and this one
@@ -7225,10 +7227,9 @@ shots/                         screenshot output, gitignored
   a slab for four side by side: the Wirbelwind's front plate came back black behind its own
   guns and read in the photograph as a hole in the turret. Mark a thin part `thin` (as
   `wbThin` does) and it is shaded but shades nothing.
-- **A unit an army fields over and above its substitutions carries its army** (`def.nat`) and is
-  written on the maker's list itself; `fielded` keeps it off every other army's list and off the
-  brain's ladder where that army is not fighting. Left on the ladder, it is the head of a list the
-  brain saves for and can never buy.
+- **A key on the brain's ladder that the roster does not have is money saved for ever.** The head
+  of the list is reserved in marks and fuel before anything is bought, so a rung for a unit no
+  building makes starves the army for the rest of the battle. Write the ladder in live keys.
 - **An upgrade baked as an occluder shades its vehicle whether or not it is fitted.** The
   Schürzen were put through the occlusion bake as occluders, so every plate that might be hung
   shaded the hull side, the running gear and the turret sides behind it in every picture of
@@ -7337,11 +7338,12 @@ shots/                         screenshot output, gitignored
 - **`mountZ` is the height of the turret ring, and the middle of a tank is its turret.** A thing
   put on a vehicle at its centre and `mountZ` is inside the turret and drawn nowhere, and a probe
   that asks only whether it is on the hull reads it as correct. Ask `deckSeat` where it lies.
-- **A German unit staged on the Allied side is drawn as a Canadian unless its variant is keyed
-  off the unit.** `variantForModel` tries `u.side === 'us'` first and hands anything it does not
-  know the Canadian rifleman, so a duel row or a drill that puts the Knight's Cross Holders on
-  the player's slot got four Lee-Enfields and no throwing pose. Their line comes before the side
-  test now; anything else staged across the sides the same way needs the same.
+- **A unit's men are keyed off the unit, and the side is only the fallback.** `variantForModel`
+  used to try `u.side === 'us'` first and hand anything it did not know the Canadian rifleman, so
+  a duel row or a drill that put the Knight's Cross Holders on the player's slot got four
+  Lee-Enfields and no throwing pose. Every unit on the roster has a line of its own above the
+  side test now, and the side test gives the American or the grenadier rifleman. A unit added
+  without its own line is drawn as its side's rifleman wherever it is staged.
 - **A door that fits an upgrade asks `upgradable(u)`, never the category.** Every one of them
   asked `u.cat === 'veh'` until a squad came with an upgrade, and each that still did would have
   been a place the .30 could never be bought.
@@ -7379,7 +7381,7 @@ shots/                         screenshot output, gitignored
 - **`def.side` is the army.** A per-vehicle side-armour factor was the obvious name for the
   Panther's thin sides and would have made it a vehicle of no army at all; it is `flank`.
 - **A gun is not put through the occlusion bake, and a pale colour shows it.** Only a `VMODEL`
-  was baked, which is right for olive drab and the paratroopers' sand, and in the 352nd's grey a
+  was baked, which is right for olive drab and the old German sand, and in the 352nd's grey a
   shield leaning back under Omaha's high sun came out nearly white beside tanks painted the same
   grey; a step darker on the same tile barely moved it. The Pak 38 is baked the way a hull is
   (`bakeAO` on its three meshes, 93 ms at boot). A grey gun that is not baked will look the same.
@@ -7545,7 +7547,7 @@ shots/                         screenshot output, gitignored
   placed on a circle with their long axis pointing whichever way the bunker does read as
   two dozen stones scattered in a circle; the ring only closes when each is rotated to its
   own tangent.
-- **`BUNK.canv` is tagged to the camouflage NET**, because that is what the Canadian
+- **`BUNK.canv` is tagged to the camouflage NET**, because that is what the Allied
   emplacement uses it for. Anything else drawn in it -- an awning over a workshop, a screen
   round a dressing station, a stretcher -- comes out as a piece of scrim, which reads as a
   fault in a photograph and is a fault in the palette. `BUNK.tarp` is the proofed

@@ -306,6 +306,8 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the semi-tunnel with its keel, skeg, rudder and screw, the side decks and the armoured
    walls of the well with their plates and rivets, the ramp with its pyramid and cables,
    the gun tubs with their .30s, the stencil the boats were numbered in, and the ensign.
+   Retiring the Canadians and the paratroopers took the file from 2812 to 2611 and the
+   ceiling was left where it was.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
