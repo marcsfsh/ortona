@@ -3235,7 +3235,7 @@ for (const device of TARGETS) {
   });
   ok('Omaha: the Allied side is the 29th Infantry Division, and its headquarters, its opening and its brain field the American rifle squad',
      natA.nat === 'usa' && /29th/.test(natA.name) && /29TH/.test(natA.pick) && natA.am >= 2 && natA.can === 0 &&
-     natA.men === 6 && natA.vars === 'gi_rifle,gi_rifle_b' && /am_rifle/.test(natA.makes) && !/us_rifle/.test(natA.makes) &&
+     natA.men === 6 && natA.vars === 'gi_rifle,gi_rifle_b,gi_sgt' && /am_rifle/.test(natA.makes) && !/us_rifle/.test(natA.makes) &&
      natA.qCan === 'am_rifle' && natA.qAm === true && natA.fell && natA.fellNat === 'usa' && natA.bodies &&
      natB.am >= 1 && natB.can === 0 && /CANADIAN/.test(natB.back),
      `army ${natA.nat} (${natA.name}), the button reads ${natA.pick}; ${natA.am} American squads and ${natA.can} Canadian ` +

@@ -3318,22 +3318,44 @@ army.
 **The rifleman is a third kit on the one rig**: `KIT.usa`, with the builders branching on
 `V.nat`. What he is, from the top: the M1 helmet under its net; the M1941
 field jacket in light poplin, belted, so it stands out below the belt over the seat of the
-trousers (`skirt`) with a storm flap down the front and the dark collar of his wool shirt
-under his chin; dark wool trousers bloused over canvas M1938 leggings (`figLeg`'s third
-anklet mode) and russet shoes; the M1923 cartridge belt with ten pockets round his waist, the
-M1928 haversack high between the shoulder blades with the mess tin pouch on the flap, the
-shovel's carrier strapped under it and its handle hung down behind, the bayonet on the left
-side hilt up, the canteen on the right hip and the first-aid pouch below the buckle
-(`figKitGI`); and the 29th Division's blue and grey monad on the left shoulder. Two variants
-make a squad of six (`gi_rifle`, `gi_rifle_b`): the second wears a cloth bandolier across his
-chest and two grenades on his straps, has hessian through his net and a field dressing tucked
-into it.
+trousers (`skirt`), with a storm flap down the front stopping where the collar is worn open
+over the mustard wool shirt, the collar standing round the back of the neck, and the slash
+pockets under slanted flaps below the belt; the sleeves and the trousers cut full (`k.sleeve`,
+and the thigh and shin a size up in `figLeg` for the legging's anklet mode); the wool
+trousers bloused over canvas M1938 leggings laced up the outside of the leg over a row of
+hooks (`figLeg`'s third anklet mode), and russet service shoes rough side out on a dark sole;
+the M1923 cartridge belt with ten pockets round his waist, the M1928 haversack from the belt
+to the shoulders with the meat can pouch on its flap, the shovel's carrier under that and
+the T-handle of the M1910 shovel hanging straight down behind the seat, the bayonet on the
+left side of the pack hilt up, the canteen on the right hip and the first-aid pouch below the
+buckle (`figKitGI`); the lightweight service gas mask in its olive bag on the left hip on a
+strap across the chest from the right shoulder (`V.gas`); and the 29th Division's blue and
+grey monad on the left shoulder. Three variants make a squad of six (`gi_sgt`, `gi_rifle`,
+`gi_rifle_b`): the leader wears a sergeant's three chevrons, khaki on a dark backing, on both
+sleeves below the patch (`figChev`, built in the arm's own frame so they stay on the sleeve
+when he aims), and the second rifleman wears a cloth bandolier across his chest and two
+grenades on his straps, has hessian through his net and a field dressing tucked into it. The
+count of stripes is `stripes` on the arm's kit and not `chev`, because `KIT.usa.chev` is the
+stripes' colour: written as one field, the copy `engKit` hands the arm put a 3 where the
+colour was and the page threw in `hexRGB` on the first sergeant built.
 
-He reads in bands where the Canadian reads as one bolt of serge: a dark netted pot, a pale
-jacket, dark legs and pale leggings, which is what is left of him at nine hundred units. On
-the card, at 600 units his mean luminance is 0.352 against the FJ's 0.414 and the FJ's top
-fifth is 0.17 above his, with his contrast to the ground at -0.28, inside the band the other
-two sit in.
+**The palette is read off a studio photograph of the kit, and the order of values is the
+point.** The first cut had the jacket pale and green and the trousers a dark grey, which is
+the Canadian's order turned upside down; laid against the photograph it was out on both.
+What the photograph has is a warm mid-tan jacket, olive-brown trousers well darker than it,
+leggings and webbing the palest things on him, and light russet shoes. The hexes are set to
+land there after the render has done its work, sampled off the frame on Omaha's overcast
+rather than guessed: the jacket reads 116,93,64 against the photograph's 140,110,74 (red over
+green 1.25 against 1.27), the leggings a fifth brighter than the jacket as they are in the
+photograph, and the trousers 1.30 red over green against 1.37. A tint probe over the whole
+roster found one colour on untagged faces that moved tile, and it moved the right way: a
+sandbag shade the old American ladder had been holding on canvas is back on hessian.
+
+He reads in bands where the Canadian reads as one bolt of serge: a dark netted pot, a tan
+jacket, darker legs and pale leggings, which is what is left of him at nine hundred units. On
+the card, at 600 units his mean luminance is 0.365 against the FJ's 0.425 on the desktop and
+the FJ's top fifth is 0.15 above his, with his contrast to the ground at -0.25, inside the band
+the other two sit in; on the phone the gap is 0.053 to 0.060 at 600, 760 and 900.
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
 level, and what says M1 is a pot longer than it is wide whose sides come down over the ears
