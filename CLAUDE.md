@@ -1765,6 +1765,13 @@ section's come off the offsets it was actually dealt, plus `MAN_R` -- the eleven
 `hitsUnit` already picks a man by -- so the body a tank is kept out of is the body the
 player's own finger goes through.
 
+**And the box is about the unit's own origin, which is not always the middle of its hull.**
+`vehBody` takes the largest reach either way along each axis, so a hull that stands off its
+origin carries a body longer at its short end than the hull is: the M4A1 runs from -37.2 to
+32.8 and stops 4.4 units short of anything in front of it, and the M3 and the M26 are the
+same by 4.4 and 3.5. The contact row is staged on the Panzer IV, which runs -35.1 to 34.6,
+for that reason. A body with an offset along the hull is the fix, and it is not done.
+
 **`sepDepth` is the four-axis separating test on two boxes**, and the shallowest overlap
 is the depth and its axis the way out, which is what a box does: it puts a thing out the
 near side rather than away from a centre. A capsule was tried first and is the wrong shape
