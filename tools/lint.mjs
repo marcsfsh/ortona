@@ -292,10 +292,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    idler and the T16 track, the riveted hull with its sponsons, the drivers' plate and the
    deck over the transmission, the round welded turret with the combination mount and the
    split hatch, the stowage and the air cleaners, and the room under the hatch.
+   It is 2750 for the Easy Eight an M4A1 is rebuilt as: the horizontal volute bogies with
+   their springs, shock absorbers and rollers, the pressed road wheels, the wide track, the
+   welded hull with the scooped fenders, the drivers' hatches and the exhaust deflector, the
+   T23 turret with the M62 mount, the 76 mm and its brake, the vision cupola and the .50 on
+   its post, and the vehicle-swap plumbing that draws it.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2680) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2680 kB so it stays quick to load on a phone`);
+if (kb > 2750) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2750 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

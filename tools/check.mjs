@@ -3364,6 +3364,56 @@ for (const device of TARGETS) {
      `${m4.eyeIn} on the seat; ${m4.blown} of 40 wrecks threw the turret; killed, it left ${m4.bodies} bodies of ${m4.bodyNat}; ` +
      `Ortona's motor pool makes ${m4.ita}`);
 
+  /* --- The Easy Eight. An M4A1 can be rebuilt as an M4A3E8, which is another hull on other
+     running gear under another turret, so it is drawn from a model of its own while the M4A1
+     stays the unit it was: the brain's own routine fits it, the model, the weapon and the name
+     on its card change with it, the 76 mm's reach lends the eye nothing until it is on, the body the tank is kept
+     out of things by is measured again, the eye in the periscope stands in the cupola and drops
+     to the seat, and a wreck of one is a wreck of the Easy Eight. --- */
+  const e8 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const t = W.spawnUnit('us', 'am_sher', hq.x + 140, hq.y - 220, 0);
+    out.eye0 = W.eyeOf(t); out.k0 = W.vkey(t); out.w0 = W.mainW(t).pen; out.n0 = W.nameOf(t);
+    W.unitBody(t); out.wid0 = +t.bodyW.toFixed(1);
+    t.up.mg = true;
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const mp0 = G.res.us.mp;
+    W.buyUpgradeAuto('us', [t], { floor: 0 });
+    out.fitted = !!t.up.e8; out.paid = mp0 - G.res.us.mp;
+    out.k1 = W.vkey(t); out.n1 = W.nameOf(t); out.s1 = W.shortOf(t);
+    const w = W.mainW(t); out.pen = w.pen; out.range = w.range; out.brake = !!w.brake;
+    out.eye1 = W.eyeOf(t);
+    W.unitBody(t); out.wid1 = +t.bodyW.toFixed(1);
+    const B = W.MODELS.veh.am_e8;
+    out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside);
+    const mz = W.gunMuzzle(t); out.muz = +Math.hypot(mz.x - t.x, mz.y - t.y).toFixed(1);
+    t._matT = -1;
+    W.povOn(t);
+    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povOff();
+    out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
+    const nw = G.wrecks.length;
+    let blown = 0, vk = 0;
+    for (let i = 0; i < 40; i++) { const wr = W.makeWreck(t); if (wr.blown) blown++; if (wr.vk === 'am_e8') vk++; }
+    G.wrecks.length = nw;
+    out.blown = blown; out.vk = vk;
+    out.sight = W.UNITS.am_sher.sight;
+    W.killUnit(t);
+    return out;
+  });
+  ok('Omaha: an M4A1 rebuilt as the Easy Eight is drawn, armed and wrecked as one, and sees further only once it is',
+     e8.k0 === 'am_sher' && e8.w0 === 210 && e8.eye0 === e8.sight && e8.fitted && e8.paid === 160 && e8.k1 === 'am_e8' &&
+     e8.pen === 250 && e8.range === 420 && e8.brake && e8.eye1 === 420 && e8.eye0 < e8.eye1 && e8.wid1 > e8.wid0 + 1 &&
+     e8.bufs && e8.muz > 50 && e8.eyeUp > 34 && e8.eyeUp < 42 && e8.eyeIn > 26 && e8.eyeIn < e8.eyeUp - 4 &&
+     e8.blown > 2 && e8.blown < 30 && e8.vk === 40 && e8.n0 === 'M4A1 Sherman' && e8.n1 === 'M4A3E8 Sherman' && e8.s1 === 'EASY 8',
+     `before, the ${e8.n0} drawn from ${e8.k0} with ${e8.w0} of penetration and an eye of ${e8.eye0} (the M4A1's own ${e8.sight}); the brain's ` +
+     `routine ${e8.fitted ? 'fitted it' : 'DID NOT fit it'} for ${e8.paid}, the ${e8.n1} (${e8.s1}) drawn from ${e8.k1}, the gun ${e8.pen} of penetration at ` +
+     `${e8.range} ${e8.brake ? 'with' : 'WITHOUT'} a brake and an eye of ${e8.eye1}; its body ${e8.wid0} half-wide before and ` +
+     `${e8.wid1} after, over the wider track; buffers ${e8.bufs ? 'all built' : 'MISSING'}; the muzzle ${e8.muz} out; the eye ${e8.eyeUp} up out of the ` +
+     `cupola and ${e8.eyeIn} on the seat; ${e8.blown} of 40 wrecks threw the turret and ${e8.vk} of them were the Easy Eight`);
+
   /* --- The KS 750. The 352nd's light vehicle on the beach is the KS 750, standing in for
      the 222 the way the jeep stands in for the carrier: the depot turns it out and refuses
      the 222, a brain asking after the 222 counts and orders the KS 750, the two men

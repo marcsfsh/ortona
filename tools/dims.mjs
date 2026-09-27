@@ -55,6 +55,13 @@ const REAL = {
                tracks to the turned-down ends of the rear mudguards. The body is the cast hull over the
                sponsons, 2.65 m in the front view and 2.63 in the plan; the roof is the width across the
                rounded shoulders a hand under the top of the hull, 2.49 m in the front view */
+  am_e8:     { name: 'M4A3E8 (76 mm)',      len: 6.27,  gun: 7.54,   wid: 2.99,  hgt: 2.97,
+               body: 2.62, bodyZ: 1.54, roof: 2.62, clear: 0.44 },   /* the Easy Eight an M4A1 is rebuilt as:
+               20 ft 7 in long over the fenders, 24 ft 8 in with the 76 mm forward, 9 ft 10 in over the
+               tracks, 2.97 m to the cupola and 17.5 in of clearance. The four-view it is laid over
+               (tools/ref/am_e8.json) puts the top of the cupola at 2.91 m, which is the height taken, and
+               the brake a few centimetres past 7.54. The welded hull is the full width of the sponsons from
+               the fenders to the roof, 2.61 m in the plan */
   us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
                body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
                widest point is not its tracks: the sponsons stand eight inches proud of them each
@@ -168,6 +175,8 @@ const REAL = {
 const PROBE = {
   us_stuart: { bodyZ: 13.5, roofZ: 19.6 },
   us_sher:   { bodyZ: 14.5, roofZ: 21.6 },
+  am_e8:     { bodyZ: 18.0, roofZ: 22.0, xLo: 8.0, xHi: 16.0, straddle: true, topZ: 12.0 },   /* the slice is taken
+               ahead of the racks of spare shoes on the sponsons; topZ keeps the lid's periscope and the aerial out */
   am_stuart: { bodyZ: 16.5, roofZ: 19.0, xLo: -5.0, xHi: -1.0, straddle: true, hullZ: 21.0 },   /* the slice is
                taken halfway up the sponson between its two seams of rivets; hullZ holds the aerial out */
   am_sher:   { bodyZ: 16.0, roofZ: 22.0, xLo: -5.0, xHi: -1.0, straddle: true, topZ: 9.3 },   /* the slice is

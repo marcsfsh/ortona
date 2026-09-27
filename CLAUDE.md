@@ -5,7 +5,7 @@ on each side is the map's. In Italy it is the 1st Canadian Infantry Division aga
 Fallschirmjäger-Division; on Omaha Beach it is the US 29th Infantry Division against the
 352nd Infantry Division, and both of those armies are being built a unit at a time (the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are the first, and everything else either side fields there is still the Italian roster). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -923,7 +923,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, and 2680 before the M3 light tank). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, and 2750 before the Easy Eight). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1106,7 +1106,13 @@ it needs is built, the man in its hatch has faces of the tanker's helmet and non
 the seated tanker is baked, the eye is a little over three metres up out of the hatch and
 drops to the seat when the lid shuts, forty wrecks throw the turret some of the time and not
 all of it, killed it leaves American bodies, and Ortona's motor pool still makes the Sherman
-V. The KS 750 is asked it in a fifth, on the German side: the depot makes it and not the 222
+V. The Easy Eight is asked it straight after: the brain's own routine rebuilds an M4A1 for 160
+marks, and the tank is then drawn from a model of its own with the 76's 250 of penetration at
+420 and a brake, its card names it the M4A3E8 Sherman, its eye is the M4A1's 380 before the
+rebuild and 420 after it, the body it is kept out of things by is measured again over the wider
+track, every buffer is built, the eye stands in the cupola and drops to the seat when the lid
+shuts, and forty wrecks throw the turret some of the time and are all of them the Easy Eight.
+The KS 750 is asked it in a fifth, on the German side: the depot makes it and not the 222
 and queues it when asked for the 222, the count and the order book read the two as one, its
 crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
 seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the
@@ -3637,6 +3643,59 @@ turret's own height. The seats are set by the seated man rather than by eye: his
 is 14.75 over his soles and his hip 6.05, so the gunner's soles go 14.75 under the telescope
 and the basket floor drops to meet them. Set the other way about, as the first version was,
 the gunner's head stood in the commander's view.
+
+**The M4A1 can be rebuilt as the Easy Eight** (`UPGRADES.e8`, 160 marks and 60 of fuel, fitted
+once): the M4A3E8, which is the M4A3's welded hull with the forty-seven degree glacis and the big
+drivers' hatches, on the horizontal volute suspension and its wide track, under the T23 turret with
+the 76 mm M1A2 and its muzzle brake, the vision cupola and the .50 on its post behind it. Nothing of
+the M4A1's shape carries over, so it is a model of its own (`VMODEL.am_e8`), and the tank stays the unit it
+was: `u.key` is still `am_sher`, so the count, the order book and the brain read it as the M4A1
+they bought. **`def.modelUp` names the fitting that rebuilds a vehicle and the model it is then drawn
+from, and `vkey(u)` is the one reader of it**: the draw, the shadow pass, the interior, the hole the
+eye looks down through, the periscope's eye and whether it is shut, the body the tank is kept out of
+things by (`fitUp` throws the old one away), the deck a bundle charge lands on, the muzzle and the
+tracer, the paint and the wreck, which keeps the model it died as (`w.vk`). `def.nameUp` is what it is
+called afterwards, and `nameOf`, `shortOf` and `descOf` are what the selection card, the periscope's
+label, the SIMPLE card and the toasts read, because a card reading M4A1 over a tank with a 76 and a
+muzzle brake is a card about the wrong tank. The toast for a fitting names the vehicle as it was.
+
+**A rebuild lends the eye nothing until it is on** (`lateEye`), which is the rule a conversion's
+reach already had: the sight rule at load would otherwise have given every M4A1 on the field the 76's
+420 of eye. It sees 380 before and 420 after. The gun (`wUp.e8`) is 125 a round at 420 with 250 of
+penetration and a brake; the plate and the hit points are the M4A1's, because two and a half inches
+at forty-seven degrees is about the same plate as two inches of casting at fifty-six. Those numbers are
+set off the M4A1's and the Panther's and have not been fought on the duel card.
+
+**It is laid over a four-view drawing** (`tools/ref/am_e8.json`) with no scale on the sheet: the side
+is taken off the published hull length and agrees with the length over the gun and the height to the
+cupola to a per cent or so, and the plan and the front off the width over the tracks. The front and
+rear views are drawn about three per cent taller than the side, so they take a vertical scale of
+their own (`ppmv`), and where the front view still disagrees with the side about a height, the side
+was taken. On `tools/dims.mjs` it reads 6.27 m long against 6.27, 7.58 with the gun against 7.54, 3.00
+wide against 2.99, 2.90 high against 2.97, a body and a roof of 2.62 and 0.44 of clearance.
+
+What carries it, and each is built its own way. **The bogie is the horizontal volute** (`e8Bogie`): a
+bracket bolted to the hull side, two arms turning on pins low in its face and running out between
+the wheels of each pair, two volute springs lying on their sides across the head between the levers
+the arms carry up to it, a shock absorber leaning across between the wheels and a small roller on a
+post on the head for the top run; three a side, with a return roller between each pair (`E8G`). **The
+track is the wide one** (`e8Link`): two blocks pinned side by side with a steel chevron across the
+face that meets the ground, an end connector at each edge and the guide in the middle, standing out
+past the hull under a fender that scoops down over the sprocket and falls away over the idler
+(`e8Fenders`). **The hull is flat welded plate** (`e8Shell`), the glacis laid back onto a cast
+differential housing (`e8Nose`) with everything on it put there by `onE8Glacis`, the two big drivers'
+hatches in the roof, the engine deck falling away behind the turret to the grille and the fillers
+(`e8Deck`, `onE8Deck`), and the exhaust deflector across the lower rear plate (`e8Rear`). **The T23 is
+lofted from a plan** (`e8TurretPlan`, round in front with a long bustle behind, through the M4A1's own
+`m4TurRing`, with a scale table of its own that `m4TurAt` now takes), with the broad mantlet of the M62
+mount, the vision cupola on the right with its lid hinged at the back (`e8Hatch`), the loader's hatch
+on the left and the .50 on its post behind the cupola (`e8Fifty`), which the commander works up in
+the cupola. **The interior is the M4A1's** (`m4Room`, which is what `VIN.am_sher` became) laid out
+again round the cupola in the T23's plan: `o` says how high the hatch stands off the roof, a split lid
+or a single one, where the periscopes and the ventilator come through and how far forward the gunner
+sits, because the cupola stands two units further forward than the M4A1's hatch and at the M4A1's
+station the gunner's helmet was under the commander's eye and filled the view down into the turret.
+`tools/shoot.mjs pov --key=am_sher --up=e8` photographs it from there.
 
 **The KS 750 is the 352nd's light vehicle**, in the 222's place (`ger_sd222` to `hr_ks750` on
 the army's list): the Zündapp with the Steib-built BW 40 on its right and the shaft straight
@@ -6891,7 +6950,12 @@ shots/                         screenshot output, gitignored
   shaded the hull side, the running gear and the turret sides behind it in every picture of
   the tank without them: the new Panzer IV came out black from the guards down and grey on the
   roof. They are baked as receivers now, the way the alternative mounts are, and the Italian
-  Panzer IV and the Wirbelwind came out lighter for it.
+  Panzer IV and the Wirbelwind came out lighter for it. A roof gun is the same fault from above:
+  the Easy Eight's .50 stands two thirds of a metre over the turret on its post, and as an
+  occluder its receiver and box put a dark crescent across the back of the roof of every Easy
+  Eight, the ones without the gun as well. Turning the roof's faces and cutting the roof into
+  rings changed nothing; marking the gun `thin` (`wbThin`) took it off. Look for the occluder
+  before touching the thing that is shaded.
 - **Paint laid on a plate reads the right way round when its across-axis is the plate's
   outward normal crossed with up.** Written as -y on the rear of the bin, the 415 came out
   mirrored in the photograph while the two on the sides read correctly; `u = n x z` gives +x on
@@ -6923,7 +6987,9 @@ shots/                         screenshot output, gitignored
   photograph of the compartment had the ground showing through it. Drop a vertex that lies on a
   straight edge, or start the polygon at a corner. `faceOut` reads the same three, and the M3's
   turret roof drew black for it: the outline is the plan with its front clamped to the plate, so
-  every point of the front lies on one line, and the cap started on the front.
+  every point of the front lies on one line, and the cap started on the front. Three corners
+  nearly in line are as bad: the Easy Eight's front skirt started on a sliver, took its normal
+  off it, and drew black until it was started at a corner.
 - **A crop can cut off what it is meant to show.** The front view's crop of the M3's sheet stops
   at the height of the turret roof, so the model's periscope domes stood out of the top of the
   frame over no drawing at all, read as a mistake, and were taken off; the side view had them all

@@ -183,7 +183,7 @@ const SCENES = {
       await page.evaluate(() => window.povOff());
       /* and a tank: the commander up out of his hatch, then down on his seat behind the
          periscope, then looking round the turret he is sitting in */
-      await page.evaluate(want => {
+      await page.evaluate(([want, ups]) => {
         const key = want || (window.G.side === 'us' ? 'us_sher' : 'ger_kt');
         /* with its own side, or the whole town is unexplored and the view is a black wall */
         const own = window.G.units.filter(q => q.side === window.G.side && !q.dead && q.cat !== 'veh');
@@ -191,8 +191,10 @@ const SCENES = {
         const at = own.length ? window.nearestFree(own[0].x - 70, own[0].y + 40)
                               : { x: window.WORLD.w / 2 - 220, y: window.WORLD.h / 2 };
         const u = window.spawnUnit(window.G.side, key, at.x, at.y, 0);
+        /* --up fits upgrades first, and one that rebuilds the vehicle is sat in as what it is rebuilt as */
+        ups.forEach(k => { if (u.up) u.up[k] = true; });
         window.select([u], false); window.povOn(u); window.povHatch(true); window.POV.pitch = -.12;
-      }, args.key || null);
+      }, [args.key || null, UP]);
       await shoot(page, out('pov-tank-up'), { settle: SETTLE });
       for (const [name, hatch, turn, pitch] of [['shut', false, 0, 0], ['shut-left', false, -.8, 0],
                                                 ['turret', false, .7, -.75], ['crew', false, null, null],
@@ -212,7 +214,7 @@ const SCENES = {
                them: the gunner is all but straight down from the commander's eye, at the
                pitch limit. Take whichever station stands furthest off in plan, which is
                the one there is room to see. */
-            const I = window.VMODEL[u.key].inside, e = I.eyeIn;
+            const I = window.VMODEL[window.vkey ? window.vkey(u) : u.key].inside, e = I.eyeIn;
             let best = null, far = -1;
             I.crew.forEach(c => {
               const d = Math.hypot(c.x - e.x, c.y - e.y);

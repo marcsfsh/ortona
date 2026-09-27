@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_sher_e8.jpg", "key": "am_e8", "up": ["hatch"], "crew": false,
+  "note": "A four-view of the M4A3E8: HVSS, the welded 47-degree large-hatch hull, the T23 turret with the 76 mm M1A2 and its brake, the vision cupola and the .50 on its post. 500 by 692 px with no scale on the sheet. The side is taken off the published hull length of 6.27 m, 397 px from the fender's tip to the tail, and agrees with the 7.54 m over the gun and the 2.97 m to the cupola to a per cent or so; the front and the plan are taken off the 2.99 m over the tracks, 189 px in both. The front and rear views are drawn about three per cent taller than the side, so they take a vertical scale of their own. The drawing shows the .50 laid forward on its post; the spec leaves it out.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 235], "ppm": 63.3, "at": [0, 0, 0], "px": [295.5, 226.0], "k": 3 },
+    "plan":  { "nose": "left", "crop": [0, 490, 500, 202], "ppm": 63.0, "at": [0, 0, 0], "px": [294.5, 596.0], "k": 3 },
+    "front": { "crop": [0, 280, 235, 212], "ppm": 63.2, "ppmv": 65.0, "at": [0, 0, 0], "px": [111.5, 488.0], "k": 4 },
+    "rear":  { "crop": [235, 280, 205, 212], "ppm": 62.5, "ppmv": 65.0, "at": [0, 0, 0], "px": [340.5, 488.0], "k": 4 } } }
