@@ -1,0 +1,6 @@
+{ "image": "shots/ref/hr_ks750.png", "key": "hr_ks750", "up": [], "crew": false,
+  "note": "A Hum3D line drawing of the KS 750 with the BW 40, 674 by 455 px with a scale bar too faint to read: the left side at the top, the front and the rear side by side under it, and the right side at the bottom (hr_ks750_r.json). Scaled off the 1,410 mm wheelbase in the side, which puts the height to the handlebars at the published 1,010 mm in the side and the front alike. The machine carries no gun. The tyres come out 0.61 m over the tread against a 4.50-16's 0.635, and the sidecar wheel stands 1.14 m off the machine's line in both end views against the published 1,105 mm; the published figures are kept. Pinned at the front wheel on the ground, and in the end views at the machine's own wheel.",
+  "views": {
+    "side":  { "nose": "left", "crop": [195, 0, 285, 120], "ppm": 101.4, "at": [10.24, 0, 0], "px": [242.0, 112.5], "k": 4 },
+    "front": { "crop": [100, 150, 190, 125], "ppm": 101.4, "at": [0, -4.38, 0], "px": [242.0, 265.5], "k": 5 },
+    "rear":  { "crop": [370, 150, 200, 125], "ppm": 101.4, "at": [0, -4.38, 0], "px": [431.0, 265.5], "k": 5 } } }

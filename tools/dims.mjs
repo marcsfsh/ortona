@@ -130,10 +130,13 @@ const REAL = {
                built. The drawing it is laid over agrees with all four; it was 62 in over the wings
                and 40 in folded until then, and the drawing has neither. The pedestal and the men
                standing up out of it are no more part of that height than an aerial is */
-  hr_ks750:  { name: 'Zündapp KS 750',      len: 2.385, gun: 2.385,  wid: 1.65,  hgt: 1.01,
-               clear: 0.15 },   /* 2,385 x 1,650 x 1,010 mm with the BW 40, and 150 mm of clearance
-               laden; the height is to the handlebars, and the men and the gun on the sidecar mount are
-               no more part of it than they are of the jeep's */
+  hr_ks750:  { name: 'Zündapp KS 750',      len: 2.49,  gun: 2.49,   wid: 1.65,  hgt: 1.01,
+               clear: 0.15 },   /* 1,650 x 1,010 mm with the BW 40, and 150 mm of clearance laden; the
+               height is to the handlebars, and the men and the gun on the sidecar mount are no more part
+               of it than they are of the jeep's. The published length is 2,385 mm; the drawing it is laid
+               over agrees with the wheelbase, the height and the width and puts it at 2.25 m to the spare
+               on the tail and 2.49 m over the trailer coupling behind that, which the model carries, so
+               the length is the drawing's */
   us_m3:     { name: 'M3A1 Half-Track',     len: 6.172, gun: 6.172,  wid: 2.222, hgt: 2.261,
                body: 2.222, clear: 0.286 },   /* 20 ft 3 in over the roller, 7 ft 3.5 in wide,
                7 ft 5 in to the top of the M49 ring mount, 11.25 in of clearance */

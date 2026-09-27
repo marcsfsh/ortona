@@ -23482,9 +23482,9 @@ function jeepGunner() {
 /* ================================================================ Zündapp KS 750
    The Wehrmacht's heavy sidecar combination, and the 352nd's light vehicle on the beach
    where the paratroopers have the Sd.Kfz. 222: a 751 cc flat twin in a frame of oval tube,
-   the Steib-built BW 40 bolted to its right side, and a shaft straight across from the rear
-   hub to the sidecar wheel, which is what made it a cross-country machine rather than a
-   motorcycle with a chair on it. Two men: the rider, and the gunner in the sidecar behind
+   the Steib-built BW 40 bolted to its right side, and a shaft across from the rear hub to
+   the sidecar wheel, which is what made it a cross-country machine rather than a motorcycle
+   with a chair on it. Two men: the rider, and the gunner in the sidecar behind
    an MG 34 on its mount.
 
    What says KS 750 rather than any other outfit is, from the front:
@@ -23498,16 +23498,33 @@ function jeepGunner() {
         of it, which is where Zündapp put it to keep it out of the dust.
      4. A sprung saddle, a pillion on the carrier over the rear mudguard, and the steel
         panniers either side of the rear wheel.
-     5. The sidecar: a pressed-steel tub with a round nose, the coaming padded round the
-        well, the spare wheel on the tail, and its own wheel outboard under a mudguard on
-        the same axis as the rear wheel, because the shaft that drives it runs straight
-        across.
+     5. The sidecar: a pressed-steel tub with a bluff round nose, a low deck forward, the
+        coaming padded round the well and the tail raised behind it, the spare lying on the
+        tail, and its own wheel outboard under a wrapped mudguard a little ahead of the rear
+        wheel, driven by a shaft across from the rear hub.
 
    Published: 2,385 mm long, 1,650 mm wide, 1,010 mm to the handlebars, 1,410 mm between
    the axles, 1,105 mm between the tracks of the machine and the sidecar wheel with the
    BW 40, 150 mm of clearance laden, and 4.50-16 tyres on all three wheels and the spare.
    Laid out at 11.7 units to the metre with the machine on the left, which is -y, and the
-   sidecar on its right. */
+   sidecar on its right.
+
+   It is laid over two Hum3D sheets of one model (tools/ref/hr_ks750.json, hr_ks750_r.json and
+   hr_ks750_b.json), a line drawing and a render, both scaled off the wheelbase, which puts
+   the height and the width on the published figures. Built off photographs and those figures,
+   the first version was out mostly in the sidecar. Its wheel stood on the rear axle's line
+   where both sheets have it 1.75 units ahead. The tub was 0.60 m across where the drawing
+   has 0.51, with its centre line 0.6 units further out, a pointed nose where the drawing's is
+   bluff, and a top that fell away behind the well, where the drawing has a low deck forward
+   and the tail raised behind the gunner. The spare hung down the slope of that tail 1.7
+   units too far aft and 2 too low, where the drawing lays it nearly flat on the raised tail,
+   and the drawing carries a trailer coupling out behind it. On the machine the cylinders
+   stood 1.4 units too far forward with the exhaust and the footboards, the grips 1.4 units
+   too far forward, and both mudguards were shallower than the drawing's, the front one
+   stopping well short of where it wraps down behind the wheel. The drawing carries no gun,
+   no panniers and no plate on the front mudguard, and the model keeps all three. Its tyres
+   are 0.61 m over the tread against a 4.50-16's 0.635, and its sidecar wheel 1.14 m off the
+   machine's line against the published 1,105 mm; the published figures are kept. */
 
 /* The Wehrmacht's paint, which every vehicle built for the 352nd wears: the dark blue-grey
    the army's vehicles left the factory in before dunkelgelb, and a different army's
@@ -23523,10 +23540,11 @@ var KSG = {
   R: 3.71, Rc: 3.5, W: .67, rim: 2.36,        /* 4.50-16: 635 mm over the tread, 114 mm across it */
   xF: 10.24, xR: -6.26,                       /* 1,410 mm between the axles */
   yB: -4.38, yS: 8.55,                        /* the machine's centre line, and the sidecar wheel 1,105 mm off it */
+  xS: -4.51,                                  /* the sidecar wheel's axle, 150 mm ahead of the rear one */
   zBelly: 1.76,                               /* 150 mm under the sump */
-  xE: 4.0, zE: 4.35,                          /* the crankshaft, and the axis of the cylinders */
+  xE: 2.6, zE: 4.35,                          /* the crankshaft, and the axis of the cylinders */
   zFoot: 3.2,
-  yC: 4.05,                                   /* the sidecar body's centre line */
+  yC: 3.48,                                   /* the sidecar body's centre line */
   xGun: -3.1, zGun: 5.5, gz: 6.3              /* the gunner's hips, and his bore above them */
 };
 /* a round tube from one point to another, shaded smooth */
@@ -23646,7 +23664,7 @@ function ksBike() {
   /* ---- the wheels, the front one in its fork and mudguard ---- */
   f = f.concat(place(ksWheel(-1), 0, g.xF, yB, g.R));
   f = f.concat(place(ksWheel(1), 0, g.xR, yB, g.R));
-  f = f.concat(ksGuard(g.xF, yB, g.R, 4.02, 1.9, .55, 2.3, 12, .75, C.body));
+  f = f.concat(ksGuard(g.xF, yB, g.R, 4.02, 1.9, .8, 3.35, 16, .75, C.body));
   /* the front plate standing up along the crown, the way a German machine carried it */
   f = f.concat(place(ksPlate(2.5, 1.0, 8), Math.PI / 2, g.xF + .15, yB, g.R + 4.02 + .56));
   /* the girder fork: a tapered blade either side from the axle up to the two links at the
@@ -23674,10 +23692,10 @@ function ksBike() {
   f = f.concat(box(11.0, yB - 1.62, 6.72, .06, .5, .12, C.lens, C.lens, C.lens, 0));
   /* the handlebar, wide and swept back, the rubber grips on its ends and the two levers */
   [-1, 1].forEach(function (s) {
-    f = f.concat(ksPipe([B(7.3, 0, 10.45), B(7.25, s * 1.6, 10.7), B(6.85, s * 3.2, 11.12), B(6.3, s * 4.15, 11.42)], .21, C.steel));
-    f = f.concat(ksTube(B(6.22, s * 4.3, 11.43), B(6.0, s * 5.21, 11.54), .28, C.grip));
-    f = f.concat(ksTube(B(6.55, s * 3.85, 11.35), B(6.95, s * 4.95, 11.2), .1, C.steel));
-    f = f.concat(box(6.5, yB + s * 3.85, 11.15, .5, .4, .4, C.steel, C.bare, C.steel, 0));
+    f = f.concat(ksPipe([B(7.3, 0, 10.45), B(7.1, s * 1.6, 10.75), B(6.2, s * 3.15, 11.15), B(5.25, s * 4.05, 11.4)], .21, C.steel));
+    f = f.concat(ksTube(B(5.12, s * 4.2, 11.42), B(4.6, s * 5.15, 11.52), .28, C.grip));
+    f = f.concat(ksTube(B(5.55, s * 3.8, 11.35), B(5.55, s * 4.95, 11.2), .1, C.steel));
+    f = f.concat(box(5.5, yB + s * 3.8, 11.15, .5, .4, .4, C.steel, C.bare, C.steel, 0));
   });
   f = f.concat(box(7.3, yB, 10.3, .6, 1.2, .4, C.steel, C.bare, C.steel, 0));
 
@@ -23697,8 +23715,8 @@ function ksBike() {
      turned up a few degrees, and the dynamo on top at the front ---- */
   f = f.concat(box(g.xE, yB, g.zBelly + .5, 3.4, 2.5, 3.9, C.alloy, lit(C.alloy, 1.08), C.alloyD, .35));
   f = f.concat(box(g.xE - .1, yB, g.zBelly, 2.2, 1.6, .55, C.alloyD, C.alloy, C.alloyD, 0));
-  f = f.concat(box(1.55, yB, 2.5, 2.4, 2.05, 3.3, C.alloy, lit(C.alloy, 1.08), C.alloyD, .3));
-  f = f.concat(tubeSmooth(4.3, 5.75, yB, 6.55, .55, 10, C.body, C.dark));
+  f = f.concat(box(.35, yB, 2.5, 2.4, 2.05, 3.3, C.alloy, lit(C.alloy, 1.08), C.alloyD, .3));
+  f = f.concat(tubeSmooth(2.9, 4.35, yB, 6.55, .55, 10, C.body, C.dark));
   [-1, 1].forEach(function (s) {
     var cyl1 = [], k;
     cyl1 = cyl1.concat(tubeSmooth(1.2, 3.1, 0, 0, .72, 12, C.iron, C.iron));
@@ -23713,21 +23731,21 @@ function ksBike() {
   });
   /* the exhausts: down off each head and back, the right one across under the gearbox,
      into one silencer along the left side */
-  f = f.concat(ksPipe([B(4.9, -3.2, 3.6), B(4.1, -3.0, 2.55), B(2.4, -2.55, 2.45), B(-1.4, -2.6, 3.3)], .3, C.steel));
-  f = f.concat(ksPipe([B(4.9, 3.2, 3.6), B(4.1, 3.0, 2.55), B(2.6, 1.3, 2.25), B(.4, -1.6, 2.35), B(-1.4, -2.6, 3.3)], .3, C.steel));
+  f = f.concat(ksPipe([B(3.5, -3.2, 3.6), B(2.7, -3.0, 2.3), B(1.4, -2.7, 2.2), B(-1.9, -2.7, 2.4), B(-2.6, -2.6, 3.3)], .3, C.steel));
+  f = f.concat(ksPipe([B(3.5, 3.2, 3.6), B(2.7, 3.0, 2.3), B(1.6, 1.3, 2.2), B(-.4, -1.6, 2.3), B(-1.9, -2.55, 2.4)], .3, C.steel));
   f = f.concat(tubeSmooth(-7.4, -1.4, yB - 2.6, 3.35, .68, 12, C.steel, C.iron));
   f = f.concat(tubeSmooth(-8.25, -7.4, yB - 2.6, 3.35, .26, 8, C.steel, C.well));
   /* the footboards behind the cylinders, their rubber mats, the brake pedal on the right
      and the rocking gear pedal and the kickstart on the left */
   [-1, 1].forEach(function (s) {
-    f = f.concat(box(.75, yB + s * 2.6, g.zFoot - .3, 3.3, 2.0, .3, C.body, C.lit, C.dark, 0));
-    for (i = 0; i < 6; i++) f = f.concat(box(-.6 + i * .55, yB + s * 2.6, g.zFoot, .28, 1.8, .12, C.mat, C.mat, C.mat, 0));
-    f = f.concat(ksTube(B(.8, s * 1.1, g.zFoot - .2), B(.8, s * 1.7, g.zFoot - .2), .2, C.body));
+    f = f.concat(box(-.2, yB + s * 2.6, g.zFoot - .3, 3.3, 2.0, .3, C.body, C.lit, C.dark, 0));
+    for (i = 0; i < 6; i++) f = f.concat(box(-1.55 + i * .55, yB + s * 2.6, g.zFoot, .28, 1.8, .12, C.mat, C.mat, C.mat, 0));
+    f = f.concat(ksTube(B(-.15, s * 1.1, g.zFoot - .2), B(-.15, s * 1.7, g.zFoot - .2), .2, C.body));
   });
-  f = f.concat(ksTube(B(-.3, 1.7, 3.6), B(2.4, 2.2, 3.7), .16, C.steel));
-  f = f.concat(box(2.5, yB + 2.2, 3.6, .7, .6, .25, C.mat, C.mat, C.mat, 0));
-  f = f.concat(ksTube(B(1.3, -1.7, 3.8), B(2.9, -2.1, 3.9), .16, C.steel));
-  f = f.concat(ksTube(B(.6, -1.45, 5.0), B(-1.3, -1.6, 3.9), .18, C.steel));
+  f = f.concat(ksTube(B(-1.25, 1.7, 3.6), B(1.45, 2.2, 3.7), .16, C.steel));
+  f = f.concat(box(1.55, yB + 2.2, 3.6, .7, .6, .25, C.mat, C.mat, C.mat, 0));
+  f = f.concat(ksTube(B(.35, -1.7, 3.8), B(1.95, -2.1, 3.9), .16, C.steel));
+  f = f.concat(ksTube(B(-.8, -1.45, 5.0), B(-2.7, -1.6, 3.9), .18, C.steel));
   /* the shaft to the rear wheel down the right, and its bevel box on the hub */
   f = f.concat(tubeSmooth(g.xR + .9, .5, yB + 1.2, 3.35, .42, 10, C.body, C.dark));
   f = f.concat(place(lathe(0, 0, 0, [[0, .6], [1.05, .62], [1.15, 1.0], [1.0, 1.55], [0, 1.6]], 12, [C.body, C.lit, C.body, C.dark], true), 0, g.xR, yB, g.R));
@@ -23746,7 +23764,7 @@ function ksBike() {
   });
   f = f.concat(cyl(5.95, yB - .8, 9.98, .38, .38, .26, 10, C.steel, C.bare, 0, true));
   f = f.concat(box(3.35, yB + 1.84, 8.6, 1.5, .1, .7, C.steel, C.bare, C.steel, 0));
-  f = f.concat(ksTube(B(3.0, 1.9, 5.8), B(3.55, 2.05, 9.95), .14, C.steel));
+  f = f.concat(ksTube(B(1.6, 1.9, 5.8), B(3.55, 2.05, 9.95), .14, C.steel));
   f = f.concat(cyl(3.55, yB + 2.05, 9.95, .28, .28, .45, 8, C.grip, C.grip, 0, true));
   f = f.concat(cyl(4.4, yB, 10.05, .98, .98, .62, 14, C.body, C.lit, 0, true));
   f = f.concat(cyl(4.4, yB, 10.65, 1.04, 1.04, .14, 14, C.dark, C.lit, 0, true));
@@ -23763,14 +23781,14 @@ function ksBike() {
     for (i = 0; i < 8; i++) f = f.concat(cyl(-1.95, yB + s * 1.0, 6.5 + i * .22, .42, .42, .1, 8, C.iron, C.iron, 0, true));
   });
   f = f.concat(box(.75, yB, 7.95, .5, .6, .4, C.steel, C.bare, C.steel, 0));
-  f = f.concat(ksGuard(g.xR, yB, g.R, 4.05, 2.05, .95, 3.55, 16, .85, C.body));
+  f = f.concat(ksGuard(g.xR, yB, g.R, 4.25, 2.05, .95, 3.4, 16, .85, C.body));
   [-1, 1].forEach(function (s) {
-    f = f.concat(ksPipe([B(-3.5, s * 1.15, 7.95), B(-8.6, s * 1.15, 7.95), B(-9.2, s * 1.0, 6.6)], .17, C.body));
+    f = f.concat(ksPipe([B(-3.5, s * 1.15, 8.15), B(-8.6, s * 1.15, 8.15), B(-9.4, s * 1.0, 6.6)], .17, C.body));
   });
-  for (i = 0; i < 4; i++) f = f.concat(box(-4.0 - i * 1.4, yB, 7.87, .22, 2.4, .16, C.body, C.lit, C.dark, 0));
+  for (i = 0; i < 4; i++) f = f.concat(box(-4.0 - i * 1.4, yB, 8.07, .22, 2.4, .16, C.body, C.lit, C.dark, 0));
   var pil = [[-3.9, 0], [-4.1, 1.05], [-5.5, 1.3], [-7.0, 1.2], [-7.3, 0], [-7.0, -1.2], [-5.5, -1.3], [-4.1, -1.05]];
-  f = f.concat(faceOut(prism(pil.map(function (p) { return [p[0], yB + p[1]]; }), 8.55, 9.3, C.seat, C.seatL, C.seat), -5.6, yB, 8.9));
-  f = f.concat(box(-5.6, yB, 8.0, 2.4, 1.6, .55, C.steel, C.bare, C.steel, 0));
+  f = f.concat(faceOut(prism(pil.map(function (p) { return [p[0], yB + p[1]]; }), 8.75, 9.5, C.seat, C.seatL, C.seat), -5.6, yB, 9.1));
+  f = f.concat(box(-5.6, yB, 8.2, 2.4, 1.6, .55, C.steel, C.bare, C.steel, 0));
   f = f.concat(ksPipe([B(-3.55, -1.05, 8.3), B(-3.15, -1.05, 10.3), B(-3.15, 1.05, 10.3), B(-3.55, 1.05, 8.3)], .18, C.steel));
   [-1, 1].forEach(function (s) {
     f = f.concat(ksTube(B(-3.9, s * 1.2, 4.3), B(-3.9, s * 2.4, 4.3), .2, C.steel));
@@ -23788,9 +23806,9 @@ function ksBike() {
     f = f.concat(ksTube(B(-9.0, s * 1.2, 5.2), B(-9.0, s * 1.85, 5.2), .15, C.body));
   });
   /* the rear plate and the lamp over it, on the tail of the mudguard */
-  f = f.concat(place(pitch(ksPlate(2.6, 1.3, 7), -.35, 0, 0), 0, -9.7, yB, 5.9));
-  f = f.concat(box(-9.25, yB, 6.9, .6, .9, .55, C.body, C.lit, C.dark, 0));
-  f = f.concat(box(-9.56, yB, 7.0, .04, .5, .3, JP.red, JP.red, JP.red, 0));
+  f = f.concat(place(pitch(ksPlate(2.6, 1.3, 7), -.35, 0, 0), 0, -10.2, yB, 5.9));
+  f = f.concat(box(-9.55, yB, 6.95, .6, .9, .55, C.body, C.lit, C.dark, 0));
+  f = f.concat(box(-9.86, yB, 7.05, .04, .5, .3, JP.red, JP.red, JP.red, 0));
   return f;
 }
 
@@ -23800,10 +23818,10 @@ function ksBike() {
 var KSSEC = [[1, 0], [1, .45], [.97, .72], [.9, .88], [.78, .97], [.62, 1], [.3, 1.02], [0, 1.03], [-.3, 1.02],
              [-.62, 1], [-.78, .97], [-.9, .88], [-.97, .72], [-1, .45], [-1, 0], [-1, -.4], [-.97, -.66],
              [-.88, -.84], [-.72, -.95], [-.45, -1], [0, -1], [.45, -1], [.72, -.95], [.88, -.84], [.97, -.66], [1, -.4]];
-var KSBODY = [[9.95, .45, 5.55, 6.3], [9.72, 1.55, 4.8, 7.1], [9.2, 2.35, 4.3, 7.72], [8.3, 3.0, 3.95, 8.2],
-              [7.0, 3.35, 3.75, 8.5], [5.2, 3.5, 3.62, 8.72], [2.5, 3.53, 3.58, 8.85], [-1.0, 3.53, 3.58, 8.95],
-              [-4.5, 3.5, 3.6, 8.95], [-7.5, 3.44, 3.65, 8.8], [-9.6, 3.25, 3.8, 8.2], [-11.0, 2.9, 4.1, 7.4],
-              [-11.9, 2.3, 4.6, 6.5], [-12.3, 1.3, 5.1, 5.9]];
+var KSBODY = [[10.62, 1.3, 5.0, 6.8], [10.4, 2.2, 4.0, 7.55], [9.9, 2.7, 3.5, 7.88], [8.9, 2.94, 3.35, 8.0],
+              [7.2, 3.0, 3.3, 8.05], [4.0, 3.0, 3.3, 8.1], [.5, 3.0, 3.3, 8.15], [-2.6, 3.0, 3.3, 8.25],
+              [-3.9, 3.0, 3.32, 9.0], [-5.0, 3.0, 3.35, 9.35], [-8.2, 3.0, 3.45, 9.4], [-9.9, 2.94, 3.8, 9.2],
+              [-10.8, 2.7, 4.3, 8.9], [-11.2, 2.0, 5.2, 8.3]];
 function ksCR(a, b, c, d, t) {
   return .5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t * t + (-a + 3 * b - 3 * c + d) * t * t * t);
 }
@@ -23828,7 +23846,7 @@ function ksSidecar() {
   var i0 = 0, i1 = 0;
   for (i = 0; i < st.length; i++) {
     if (Math.abs(st[i][0] - 1.3) < Math.abs(st[i0][0] - 1.3)) i0 = i;
-    if (Math.abs(st[i][0] + 6.4) < Math.abs(st[i1][0] + 6.4)) i1 = i;
+    if (Math.abs(st[i][0] + 4.5) < Math.abs(st[i1][0] + 4.5)) i1 = i;
   }
   var shell = ksLoft(rings, C.body), N = KSSEC.length, kept = [];
   for (i = 0; i < shell.length; i++) {
@@ -23865,42 +23883,54 @@ function ksSidecar() {
   loop = loop.map(function (p) { return [p[0], p[1], p[2] + .12]; });
   f = f.concat(ksPipe(loop, .3, C.coam, 8));
   /* the back of the seat, padded, standing up behind the gunner */
-  f = f.concat(box(st[i1][0] + .55, yc, zf, .9, 4.6, 4.5, C.seat, C.seatL, C.seat, .25));
-  f = f.concat(box(g.xGun - .2, yc, zf, 3.0, 4.6, .2, C.seat, C.seatL, C.seat, 0));
-  /* the bead pressed along each side */
-  for (i = 1; i < st.length - 2; i++) {
-    var s0 = st[i], s1 = st[i + 1];
-    [-1, 1].forEach(function (sd) {
-      var y0 = yc + sd * (s0[1] + .03), y1 = yc + sd * (s1[1] + .03);
-      var z0 = s0[2] + (s0[3] - s0[2]) * .7, z1 = s1[2] + (s1[3] - s1[2]) * .7;
-      f = f.concat(faceOut([{ v: [[s0[0], y0, z0], [s1[0], y1, z1], [s1[0], y1, z1 + .22], [s0[0], y0, z0 + .22]], c: C.dark }], s0[0], yc, z0));
-    });
-  }
+  f = f.concat(box(st[i1][0] + .55, yc, zf, .9, 4.4, 4.95, C.seat, C.seatL, C.seat, .25));
+  f = f.concat(box(g.xGun - .2, yc, zf, 3.0, 4.4, .2, C.seat, C.seatL, C.seat, 0));
+  /* the panel pressed into the outboard flank forward of the wheel, a bead round a
+     rectangle with its corners rounded */
+  var pb = yc + 3.0, pr = .45;
+  f = f.concat(ksPipe([[.2 + pr, pb, 4.95], [4.7 - pr, pb, 4.95], [4.7, pb, 4.95 + pr], [4.7, pb, 7.2 - pr], [4.7 - pr, pb, 7.2],
+                       [.2 + pr, pb, 7.2], [.2, pb, 7.2 - pr], [.2, pb, 4.95 + pr], [.2 + pr, pb, 4.95]], .09, C.lit, 6));
   /* the chassis under it: two rails, the cross tubes to the machine at the front and at
      the rear, and the strut up from the saddle tube */
   f = f.concat(ksTube([8.2, 1.2, 3.1], [-10.2, 1.2, 3.1], .36, C.body));
-  f = f.concat(ksTube([7.4, 7.0, 3.1], [-5.3, 7.0, 3.1], .36, C.body));
-  f = f.concat(ksTube([6.4, g.yB + 1.05, 2.35], [7.6, 7.1, 3.1], .36, C.body));
-  f = f.concat(ksTube([-5.3, g.yB + 1.2, 3.1], [-5.3, 7.3, 3.0], .38, C.body));
+  f = f.concat(ksTube([7.4, 6.0, 3.1], [-9.0, 6.0, 3.1], .36, C.body));
+  f = f.concat(ksTube([6.4, g.yB + 1.05, 2.35], [7.6, 6.1, 3.1], .36, C.body));
+  f = f.concat(ksTube([-5.3, g.yB + 1.2, 3.1], [-5.3, 6.3, 3.05], .38, C.body));
   f = f.concat(ksTube([.3, g.yB + .5, 6.9], [.3, .9, 6.6], .3, C.body));
   f = f.concat(ksTube([.3, 1.2, 3.1], [.3, .9, 6.6], .3, C.body));
-  /* the drive across to the sidecar wheel on the axle line, the swinging arm it runs in,
-     the wheel itself, and its mudguard on stays off the side of the body */
-  f = f.concat(place(tubeSmooth(-(g.yS - .85 - g.yB - 1.6) / 2, (g.yS - .85 - g.yB - 1.6) / 2, 0, 0, .42, 10, C.body, C.dark), Math.PI / 2, g.xR, (g.yS - .85 + g.yB + 1.6) / 2, g.R));
-  f = f.concat(box((g.xR - 4.2) / 2 + .6, g.yS - 1.0, g.R - .55, 3.2, .7, 1.1, C.body, C.lit, C.dark, .15));
-  f = f.concat(place(ksWheel(1), 0, g.xR, g.yS, g.R));
-  f = f.concat(ksGuard(g.xR, g.yS + .1, g.R, 4.08, 2.0, .3, 2.75, 12, .8, C.body, 1));
-  [-3.4, -9.2].forEach(function (x) {
-    f = f.concat(ksTube([x, 7.4, 6.3], [x + (x > g.xR ? .3 : -.3), g.yS + .9, 6.2], .16, C.body));
+  /* the drive across from the bevel box on the rear hub to the sidecar wheel, which stands
+     a little ahead of it, the swinging arm the wheel runs in, the wheel itself, and its
+     mudguard wrapped from the axle's height in front round to behind it, on two stays off
+     the foot of the body, with the side lamp on its crown and the tail lamp on its back */
+  var xs = g.xS;
+  f = f.concat(ksTube([g.xR, g.yB + 1.6, g.R], [xs, g.yS - .85, g.R], .42, C.body, 10));
+  f = f.concat(box(xs + 1.5, g.yS - 1.0, g.R - .55, 3.2, .7, 1.1, C.body, C.lit, C.dark, .15));
+  f = f.concat(place(ksWheel(1), 0, xs, g.yS, g.R));
+  f = f.concat(ksGuard(xs, g.yS + .1, g.R, 4.45, 2.4, .05, 3.25, 16, 1.0, C.body));
+  [2.2, -2.2].forEach(function (dx) {
+    f = f.concat(ksTube([xs + dx, yc + 2.85, 4.4], [xs + dx, g.yS - 1.05, 7.5], .16, C.body));
   });
-  /* the spare on the tail, laid on the slope of it, its carrier, and the lamp and the
-     grab rail on the outboard side */
-  var slope = Math.atan2(8.8 - 6.5, 11.9 - 7.5);
-  f = f.concat(place(pitch(ksRollN(ksWheel(1), Math.PI / 2), slope, 0, 0), 0, -10.46, yc - .2, 8.5));
-  f = f.concat(cyl(-10.3 + .4, yc - .2, 6.7, .5, .5, 1.5, 8, C.steel, C.bare, 0, true));
-  f = f.concat(tubeSmooth(8.3, 9.0, yc + 3.05, 7.9, .38, 10, C.body, C.dark));
-  f = f.concat(tubeSmooth(9.0, 9.06, yc + 3.05, 7.9, .3, 10, C.lens, C.lens));
-  f = f.concat(ksPipe([[-7.2, yc + 3.4, 8.2], [-7.4, yc + 3.75, 8.3], [-9.3, yc + 3.6, 8.1], [-9.5, yc + 3.2, 7.9]], .16, C.steel));
+  f = f.concat(box(xs + 2.55, g.yS + .1, 7.35, .6, .3, .5, C.steel, C.bare, C.steel, 0));
+  f = f.concat(tubeSmooth(xs + 2.2, xs + 2.95, g.yS + .1, 8.2, .36, 10, C.body, C.dark));
+  f = f.concat(tubeSmooth(xs + 2.95, xs + 3.01, g.yS + .1, 8.2, .28, 10, C.lens, C.lens));
+  f = f.concat(box(xs - 4.05, g.yS + .1, 5.75, .45, .55, .45, C.body, C.lit, C.dark, 0));
+  f = f.concat(box(xs - 4.29, g.yS + .1, 5.82, .04, .36, .3, JP.red, JP.red, JP.red, 0));
+  /* the spare lies on a frame over the raised tail, a little up at its front, held down by
+     the bolt through its hub; two posts at the front of the frame stand up behind the
+     gunner's back as his handholds */
+  var sx = -8.8, sy = yc - .24, sz = 10.4, rail = 9.55;
+  f = f.concat(place(pitch(ksRollN(ksWheel(1), Math.PI / 2), .1, 0, 0), 0, sx, sy, sz));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(ksTube([-11.6, sy + s * 2.3, rail], [-4.8, sy + s * 2.3, rail], .14, C.steel));
+    f = f.concat(ksPipe([[-4.8, sy + s * 2.3, 9.0], [-4.8, sy + s * 2.3, 10.95], [-5.3, sy + s * 2.0, 11.2]], .15, C.steel));
+  });
+  [-11.2, -8.8, -6.4].forEach(function (x) { f = f.concat(ksTube([x, sy - 2.3, rail], [x, sy + 2.3, rail], .13, C.steel)); });
+  f = f.concat(cyl(sx, sy, rail, .22, .22, sz - rail + 1.15, 8, C.steel, C.bare, 0, true));
+  f = f.concat(box(sx, sy, sz + 1.1, .2, 1.4, .22, C.steel, C.bare, C.steel, 0));
+  /* the trailer coupling on a bar out behind the tail */
+  f = f.concat(ksTube([-10.4, yc, 6.95], [-14.8, yc, 6.95], .3, C.body, 8));
+  f = f.concat(box(-15.05, yc, 5.9, .5, .5, 1.75, C.steel, C.bare, C.steel, .1));
+  f = f.concat(ksPipe([[-14.95, yc, 6.2], [-14.55, yc, 5.85], [-14.3, yc, 6.25]], .12, C.steel, 6));
   return f;
 }
 function ksHull() {
@@ -23996,7 +24026,7 @@ function ksMen() {
   /* the rider sits on the saddle a hip's depth above the cushion, with his feet on the
      footboards; the pillion behind him is empty */
   var rid = ksMan({ legs: [[1.15, -1.7, .55], [1.15, -1.7, .55]], lean: .28, pole: [-.3, 1, -.5] },
-                  [6.05, 4.75, 11.48], -.75, g.yB, 10.25, .37);
+                  [4.86, 4.68, 11.47], -.75, g.yB, 10.25, .37);
   var gun = ksMan({ legs: [[1.62, -.28, -.1], [1.62, -.28, -.1]], lean: .12, pole: [-1, .45, -.5] },
                   [g.xGun + 4.4, .55, g.zGun + g.gz - .75], g.xGun, g.yC, g.zGun, 0);
   f = f.concat(rid.legs, rid.up, gun.legs);

@@ -3718,12 +3718,35 @@ station the gunner's helmet was under the commander's eye and filled the view do
 `tools/shoot.mjs pov --key=am_sher --up=e8` photographs it from there.
 
 **The KS 750 is the 352nd's light vehicle**, in the 222's place (`ger_sd222` to `hr_ks750` on
-the army's list): the Zündapp with the Steib-built BW 40 on its right and the shaft straight
-across from the rear hub to the sidecar wheel, a rider and a gunner on it and an MG 34 on the
-sidecar mount, the pillion left empty. The 352nd had no armoured cars to speak of, and a
+the army's list): the Zündapp with the Steib-built BW 40 on its right and a shaft across from
+the rear hub to the sidecar wheel, a rider and a gunner on it and an MG 34 on the sidecar mount,
+the pillion left empty. The 352nd had no armoured cars to speak of, and a
 motorcycle combination is what its reconnaissance rode. It is in the Wehrmacht's grey (`HRG`),
-which is the paint of every vehicle built for the 352nd and of none of the paratroopers'. On `tools/dims.mjs` it reads 2.37 m long against 2.385, 1.66 wide against
-1.65, 1.01 high to the handlebars against 1.01 and 0.15 of clearance under the sump.
+which is the paint of every vehicle built for the 352nd and of none of the paratroopers'. On
+`tools/dims.mjs` it reads 2.50 m long against the drawing's 2.49 over the trailer coupling, 1.68
+wide against 1.65, 1.01 high to the handlebars against 1.01 and 0.15 of clearance under the sump.
+
+**It is laid over two Hum3D sheets of one model** (`tools/ref/hr_ks750.json`, `hr_ks750_r.json`
+for the right side on the same sheet, and `hr_ks750_b.json`), a line drawing and a render, both
+scaled off the 1,410 mm wheelbase, which puts the height and the width on the published figures;
+the render's own scale bar agrees to a pixel. The first version, built off photographs and those
+figures, was out mostly in the sidecar. Its wheel stood on the rear axle's line where both
+sheets put it 1.75 units ahead (`KSG.xS`), with the shaft running forward across to it. The tub
+was 0.60 m across where the drawing has 0.51, its centre line 0.6 units further out, its nose
+pointed where the drawing's is bluff, and its top fell away behind the well, where the drawing
+has a low deck forward and the tail raised behind the gunner. The spare hung down the slope of
+that tail 1.7 units too far aft and 2 too low, where the drawing lays it nearly flat on the
+raised tail on a frame whose front posts are the gunner's handholds, and the drawing carries a
+trailer coupling out behind it. On the machine the cylinders stood 1.4 units too far forward,
+with the exhaust and the footboards, the grips 1.4 units too far forward, and both mudguards
+were shallower than the drawing's, the front one stopping well short of where it wraps down
+behind the wheel. The sidecar's mudguard wraps from the axle's height in front round to behind
+it, with the side lamp on its crown and the tail lamp on its back, and a panel is pressed into
+the tub's outboard flank. The drawing carries no gun, no panniers and no plate on the front
+mudguard, and the model keeps all three. Where it disagrees with a published figure the figure
+is kept: its tyres are 0.61 m over the tread against a 4.50-16's 0.635, and its sidecar wheel
+1.14 m off the machine's line against 1,105 mm. The length is the drawing's, 2.25 m to the spare
+and 2.49 m over the coupling, against a published 2,385 mm that neither agrees with.
 
 It is built its own way at every stage (`ksBike`, `ksSidecar`), and a few of them are worth
 knowing. **A tube is a tube** (`ksTube`, `ksPipe`): the frame, the fork blades, the exhausts,
@@ -3731,8 +3754,7 @@ the handlebar and the sidecar chassis are round tubes between two points, shaded
 everything else on the roster is boxes. **Each wheel is a 4.50-16 on a spoked rim**
 (`ksWheel`): the balloon section lathed, two staggered rows of block tread, thirty-six spokes
 laced tangent from the two flanges and the drum on its own side, and the spare lies on the
-sidecar's tail on the slope of it, turned by `ksRollN`, which keeps the normals `roll()` throws
-away. **The tank and the sidecar are lofted from sections** (`ksRing`, `KSBODY` smoothed through
+sidecar's tail, turned by `ksRollN`, which keeps the normals `roll()` throws away. **The tank and the sidecar are lofted from sections** (`ksRing`, `KSBODY` smoothed through
 `ksStations`, turned outward by `ksLoft` whichever way round the rings were written), and the
 well is the faces over it taken out of the loft, a lining hung from the edge of the opening
 and a padded roll round the coaming over the join. `KSSEC` is one section written out point
