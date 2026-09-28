@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -3264,30 +3264,89 @@ it. At five it is corrugated iron; it is 1.1.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
 helmets and weapons. Vehicles get individual builders (`m4Shell`,
-`ktTurret`, `pzivSkirts`, and so on) assembled in `buildVehicleModels`. Every
+`ktTurret`, `suSkirts`, and so on) assembled in `buildVehicleModels`. Every
 face carries a material index into the atlas. If a model looks wrong, the fix
-is in one of these builders, not in a mesh file. `p4Chassis(body, cap, sideC, stug)`
-is the running gear, tub, glacis, deck and tail of the Panzer IV the paratroopers
-fielded, and `stugHull` builds the Sturmgeschütz IV casemate on it with the flag set,
-which leaves off the fighting-compartment box, the driver's plate and the guard stowage
-the casemate overhangs. The Panzer IV and the Wirbelwind it was written for are retired,
-so the StuG is the one vehicle still built on it; with the flag off the face list is the
-old Panzer IV's in the same order.
+is in one of these builders, not in a mesh file.
 
-The StuG's compartment is a `frustum` and not a `prism`: the Ausf. G superstructure the StuG IV
-inherited stands out over the track guards at the bottom and slants inboard about eleven
-degrees on its way up, so the roof comes out a third of a metre narrower than the base. That
-slant is the single thing that most says StuG from the angle a player actually looks from,
-and it is why the compartment stopped reading as a box. It also breaks `dims`: a slanted wall
-straddles every station between its ends, and `widthAt` gives a straddling face its widest
-point, so any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_stug.roofZ`
-sits exactly on the roof for that reason.
+**The StuH 42 stands where the StuG IV stood** (`ger_stug`, the key kept so that everything
+that reads it still does): the Sturmgeschütz III Ausf. G with the 10.5 cm StuH 42 L/28 in place of
+the long 7.5 cm, on a Panzer III chassis built from nothing (`PZ3G`, `PZ3H`, `suHull`, the casemate
+in `SU`), because the Panzer IV chassis under the StuG IV was the last thing standing on the
+paratroopers' Panzer IV and went with it. It is laid over a four-view of the StuG III Ausf. G
+(`tools/ref/ger_stug.json`), which is the same vehicle up to the gun and carries the L/48; the
+howitzer is built to the published figures, a tube of twenty-eight calibres ending in the big
+double-baffle brake just past the nose. The sheet is 500 px across, so it is read at six and eight
+times, and its side, its front and its plan come out at one scale, 72.4 px/m, off the published 5.40
+m of hull and 2.95 m over the fenders; at that scale the track centres are 2.49 m apart against 2.51
+and the cupola 2.14 m up against 2.15.
+
+What the drawing says a Panzer III is, against the StuG IV that stood here: a hull only 2.0 m across
+between the tracks, with the fenders running out over them the whole length at 1.31 m to 2.95 m; six
+road wheels a side on torsion arms, three return rollers, the sprocket in front and a spoked idler
+behind; a steep nose with the two transmission hatches on the deck behind it; and the engine deck a
+step above the fenders, with its two hatches, an armoured intake on each fender alongside it and two
+spare road wheels on the back. The casemate stands on the front half, 2.31 m across at its foot, over
+the hull and out onto the fenders, where the StuG IV's was the full 2.95, and leans in ten degrees to
+2.17 at the roof. It is a loft of three plans (`SU.base`, `SU.mid`, `SU.roof`): the front is upright
+to the height of the gun and laid back from there, and the plate the mantlet swings in stands up to
+the roof where the cheeks either side of it are laid back, which is the StuG III's front from every
+angle. The cupola is a metre and a half further forward than the StuG IV's and the loader's hatch with
+it. On `tools/dims.mjs` it reads 5.44 m long against 5.40, 6.18 over the brake against 6.14, 2.98 wide
+against 2.95, 2.09 high to the cupola without its lid against 2.15, a casemate of 2.36 at the foot and
+2.15 at the roof, and 0.38 of clearance.
+
+Two things about building it. **The roof is one face fanned from its first corner, so its plan is
+kept convex**: laid back at the cheeks first, the corner where a cheek met the side was a reflex
+corner, and a fan from the front of the gun plate drew a sliver of roof outside the casemate. And
+**a return roller has to stand above the line from the idler to the sprocket**: below it `trackBelt`
+finds a pulley with nothing to wrap and takes the belt the whole way round it, which the overlay
+showed as a ring of track links round the rearmost roller and no photograph would have.
+
+The casemate's walls still lean, so the `dims` warning the StuG IV left stands: a slanted wall
+straddles every station between its ends, and `widthAt` gives a straddling face its widest point, so
+any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_stug.roofZ` sits on
+the roof for that reason, and its body slice at the front of the casemate, ahead of the spare links,
+the tow cable on the left wall and the cables on the fenders.
 
 The Maus is the one vehicle on the roster with no claim on Ortona at all. It is built
 because it was asked for, it is priced like a toy (2200 marks and 700 of fuel, 44 of a
 175 population cap, one per army), and it is deliberately **off the AI's shopping
 ladder**: a brain saving that much buys nothing else for four minutes, which is the
 starvation the money reserve exists to prevent. Only the player may have one.
+
+**The Tiger I, the King Tiger and the Maus are laid over drawings** (`tools/ref/ger_tig.json`,
+`ger_kt.json` and `ger_maus.json`), and all three were wrong in ways `tools/dims.mjs` had never seen.
+
+- **The Tiger I.** The superstructure is 3.15 m across, the published width on transport tracks,
+  where it was 2.97; the side plate runs from 1.37 m to 1.96 where it ran from 1.62 to 2.03, and the
+  driver's plate spans the full width. The tracks stand on their published 2.82 m centres with the
+  fenders a hand outside them. The visor and the ball mount, the cupola and the loader's hatch, and
+  the coaxial and the sight were each on the wrong side. The turret (`TIGT`) is a unit wider at its
+  widest, three units further aft, its front plate two units further back, and its roof bends down over
+  the front third to the mantlet; the exhausts stand close together over the jack and the forward
+  radiator openings are louvred grilles. The drawing's height is short of the published figures by
+  four and a half per cent, so its views take a vertical scale of their own.
+- **The King Tiger**, off two sheets of one drawing. The nose is 0.35 m further back over the sprocket
+  and the rear plate 0.45 m further back behind the idler, the stations 526 mm apart where they were
+  513, and the roof a twelfth of a metre higher. The Henschel turret is rebuilt to it (`KTT`): a long
+  hexagon in plan, flaring from a 1.77 m front plate to its widest a third of the way back and running
+  in over the bustle, a roof in three plates (`ktRoofZ`), the Saukopf 0.68 m across where it was a
+  metre, and the cupola 5.6 units further forward. The ball mount and the driver's periscope were on
+  the wrong sides of the glacis. The gun comes out at the drawing's length, the published 10.29 m over
+  the gun. **And it is back on the depot**: it was withdrawn while the maps were Italian, where it was
+  never fielded, and the 503rd's were in Normandy in July. Its hotkey is B, because the Tiger has K on
+  the same depot, and it is among what `aiCutLadder` brings forward against a heavy.
+- **The Maus** had been built to a hull of 10.09 m, which is its length over the gun. The drawing is
+  at one scale in every view once the hull is taken as the 9.03 m it is, and at that scale it agrees
+  with the gun at 10.1 m, the width at 3.67 and the top of the commander's periscope at 3.63, so
+  everything along the old model was a ninth too long. Rebuilt to it: the hull is one slab extruded off
+  the drawing's side outline (`MSH`), with the nose plate, the glacis and the two rear plates where the
+  drawing has them and the deck a quarter of a metre lower; the turret (`MST`) nearly twice as long as
+  the box it replaced, over the back two thirds of the hull, with its sides leaning in thirty degrees,
+  the mantlet a collar lying across the front with the casting that carries both guns on it, and the
+  hatches and periscopes where the plan has them; the intakes, grilles and engine hatch on the deck,
+  and the jettison tank across the tail, which stands half a metre past the published hull and is in
+  the card's length for that reason.
 
 A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
 outside the arc (at a penalty) so the hull has something to turn toward, the halted
@@ -3316,7 +3375,7 @@ and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
 own for yet: the two mortars, the two pack howitzers, the 210/22, the T8, the
-Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger
+Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
 side, so a first-roster gun is served by `gi_atg` with the carbine men of `gi_art` behind it
@@ -3956,7 +4015,7 @@ more suppression, and it reads 58 per cent against the squad where more damage r
 Panzer IV the paratroopers fielded in Italy: the Ausf. H with the long 7.5 cm KwK 40 L/48, laid out
 with the driver on the left and the bow gunner on the right, which that model was not. **Every
 vehicle built for the 352nd is in the Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint),
-where the first roster's German vehicles that are still fielded (the StuG, the Tigers and the Maus)
+where the first roster's German vehicles that are still fielded (the StuH 42, the Tigers and the Maus)
 stay in their sand; the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
 gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.97 m long against 5.92,
 7.07 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
@@ -7574,9 +7633,10 @@ shots/                         screenshot output, gitignored
   a fitting placed at +y comes out on the right-hand side of the vehicle as the
   player sees it. Verified head-on with the Panzer IV: its driver's visor is at
   +6.6 and appears on the vehicle's right, which is the wrong side for a Panzer IV.
-  The Tiger II and the StuG IV were laid out with this in mind (left-hand fittings
-  at -y); the Panzer IV, and possibly others, were laid out as if +y were left and
-  are mirrored. Check the screen, not the axis, before calling a side correct.
+  The Tiger I and the Tiger II were laid out as if +y were left as well, with the visor, the
+  bow gun and the cupola on the wrong sides, until they were laid over their drawings, which is
+  how it was found; the StuH 42 was laid out with it in mind. Check the screen, not the axis,
+  before calling a side correct.
 - `lathe()` revolves about the **y** axis, so it builds a wheel whose axle points
   across the tank. It is the wrong tool for anything that stands out of a plate
   facing fore or aft: a ball mount built with it faces out of the side of the

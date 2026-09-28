@@ -1,0 +1,7 @@
+{ "image": "shots/ref/ger_stuh.jpg", "key": "ger_stug", "up": ["hatch"], "crew": false,
+  "note": "A four-view of the StuG III Ausf. G with the 7.5 cm StuK 40 L/48, 500 by 587 px with no scale: the left side with the nose left at the top, the front under it on the left and the rear on the right, and the plan at the bottom with the nose left. The StuH 42 is the same vehicle up to the gun. The side is taken off the published 5.40 m of hull, 391 px from the towing brackets to the tail, and the front and the plan off the 2.95 m over the fenders, 214 and 213 px, which is the same 72.4 px/m; at that scale the track centres are 2.49 m apart against 2.51 and the top of the cupola 2.14 m up against 2.15. The gun on the drawing is the L/48 and not the model's howitzer. Pinned at the middle of the hull on the ground in the side and on the centreline in the plan, and at the middle of the tracks on the ground in the front and the rear.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 182], "ppm": 72.4, "at": [0, 0, 0], "px": [297.2, 175], "k": 3 },
+    "plan":  { "nose": "left", "crop": [95, 360, 405, 227], "ppm": 72.4, "at": [0, 0, 0], "px": [297.2, 475.4], "k": 3 },
+    "front": { "crop": [10, 190, 230, 175], "ppm": 72.4, "at": [0, 0, 0], "px": [124.2, 364.8], "k": 4 },
+    "rear":  { "crop": [262, 190, 238, 175], "ppm": 72.4, "at": [0, 0, 0], "px": [379.4, 364.8], "k": 4 } } }

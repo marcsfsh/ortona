@@ -110,14 +110,12 @@ const REAL = {
                and the roof are read off the factory's plan and front views, the body over the sponsons,
                which stand flush with the outside of the tracks at 1.49 m, and the roof between the upper
                sides, which lean in forty degrees over only 0.43 m of plate */
-  ger_stug:  { name: 'StuG IV (Sd.Kfz. 167)', len: 5.93, gun: 6.70,   wid: 2.95,  hgt: 2.20,
-               body: 2.95, bodyZ: 1.55, roof: 2.59, clear: 0.40 },   /* the casemate stands out over the
-               Panzer IV's guards at the bottom, so body is the published 2.95; but the Ausf. G compartment
-               slants inboard on its way up, so the roof is a third of a metre narrower. 2.59 is that
-               2.95 taken in at eleven degrees over the compartment's height, which is the slant the
-               photographs show; it is derived rather than published, and it is the number that decides
-               whether the thing reads as a StuG or as a box. 5.93 m is the Panzer IV hull; the 6.70 m
-               over the gun is what every table gives for the StuG IV */
+  ger_stug:  { name: 'StuH 42 (Sd.Kfz. 142/2)', len: 5.40, gun: 6.14,   wid: 2.95,  hgt: 2.15,
+               body: 2.33, bodyZ: 1.39, roof: 2.16, clear: 0.39 },   /* the StuG III Ausf. G hull with the
+               10.5 cm howitzer: 5.40 m of hull, 6.14 m over the brake, 2.95 m over the fenders, 2.15 m to
+               the cupola and 390 mm of clearance. The body and the roof are the casemate at the foot and at
+               the roof, read off the four-view it is laid over (tools/ref/ger_stug.json): 2.31 m and 2.17 m
+               in the front view, leaning in ten degrees between them, with the fenders running out past it */
   am_jeep:   { name: 'Willys MB',           len: 3.36,  gun: 3.36,   wid: 1.575, hgt: 1.321,
                clear: 0.222 },   /* 132.25 in long, 62 in over the grab handles on the rear body,
                8.75 in under the differentials, and 52 in to the top of the steering wheel, which is
@@ -202,11 +200,10 @@ const PROBE = {
   hr_panther: { bodyZ: 17.6, roofZ: 22.65, xLo: -7.0, xHi: -1.0, straddle: true },   /* the slice is taken
                just over the sponsons' floor at the station of the cross, which is clear of the rods, the
                tools and the jack on both sides, and the roof slice on the weld along its edge */
-  ger_stug:  { bodyZ: 18.0, roofZ: 23.2, xLo: -14.0, xHi: -9.0, straddle: true, hullZ: 27 },   /* the roof
-               slice sits exactly on the roof plate: a slant that straddles a station reports its widest
-               point, which is the base, so any station below the roof measures the bottom of the wall */   /* the slice
-               is taken through the casemate wall aft of the spare-link rack and forward of the rear
-               bins, where the plate is bare; hullZ drops the rod aerial on the right rear */
+  ger_stug:  { bodyZ: 17.0, roofZ: 22.75, xLo: 14.5, xHi: 18.0, straddle: true, hullZ: 27 },   /* the slice is
+               taken at the front of the casemate, ahead of the spare links on its right and the tow cable on
+               its left and over the cables on the fenders; the roof slice sits on the roof plate, because the
+               leaning wall under it would report its foot; hullZ drops the rod aerial on the engine deck */
   am_m8:     { topZ: 6.0, hullZ: 24, bodyZ: 14.45, xLo: -20.0, xHi: -12.0, straddle: true },   /* the slice is
                taken at the crease over the rear bogie, behind the stowage box; topZ holds the lifting eyes on the
                rim out of the height and hullZ the whip aerial */
