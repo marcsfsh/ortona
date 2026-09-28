@@ -29844,30 +29844,35 @@ function tigIdler(y, sd) {
   return f;
 }
 
-/* Every number below is off the published figures or off a walkaround of Tiger 131,
-   and everything bolted to the hull is placed from them. */
+/* Every number below is off the published figures or off a walkaround of Tiger 131, and
+   everything bolted to the hull is placed from them; then the whole was laid over the four-view
+   drawing (tools/ref/ger_tig.json), which put the superstructure 3.15 m across where it was 2.97
+   (3.14 m is the published width on transport tracks, which is the hull with the outer wheels
+   off), the side plate from 1.37 m to 1.96 m where it ran from 1.62 m to 2.03, the driver's plate
+   the full width of the superstructure, the tracks on their published 2.82 m centres and the
+   fenders a hand outside them. */
 var TIGH = {
   xFend: 37.0,      /* the front mudguard, and the foremost point of the tank */
-  xNose: 33.0,      /* the nose lip, where the lower plate meets the glacis shelf */
-  xFoot: 27.0,      /* the foot of the lower nose plate, down at the belly */
+  xNose: 35.0,      /* the nose lip, where the lower plate meets the glacis shelf */
+  xFoot: 29.0,      /* the foot of the lower nose plate, down at the belly */
   xDriver: 23.6,    /* the driver's plate */
   xTail: -31.8,     /* the rear plate; the exhausts and the mudguard hang behind it */
   xMud: -36.9,      /* the rear mudguard, hanging behind the idler */
   zBelly: 5.50,
-  zSpon: 19.0,      /* the fender line, the sponson top and the glacis shelf, all one level */
-  zFend: 15.4,      /* the underside of the fender: it is a shallow box, not a sheet, and it
-                       sits close down on the track */
-  zRoof: 23.80,     /* 2.03 m. The hull side above the fender is only 0.41 m of plate, which is
-                       what makes a Tiger's body look shallow on top of all that suspension */
+  zSpon: 16.0,      /* the sponson floor and the glacis shelf, one level */
+  zFend: 15.2,      /* the underside of the fender, which is a sheet on the sponson floor */
+  zRoof: 22.90,     /* 1.96 m. The side plate stands 0.59 m over the fenders, the height of the
+                       visor and the ball mount in the driver's plate */
   tubHalf: 11.35,   /* the hull tub between the tracks: 1.94 m */
-  sponHalf: 17.4,   /* the hull sides over the tracks: 2.97 m */
-  drvHalf: 15.2,    /* the driver's plate, stepped in from the sponsons: 2.60 m */
-  fendHalf: 20.30   /* the fenders finish flush with the outside of the track */
+  sponHalf: 18.4,   /* the hull sides over the tracks: 3.15 m */
+  drvHalf: 18.4,    /* the driver's plate runs the full width of them */
+  trackHalf: 16.5,  /* the track centres, 2.82 m apart */
+  fendHalf: 21.7    /* 3.71 m over the fenders, which stand a hand outside the track */
 };
 
 function tigerHull(body, cap, sideC) {
   var C = TIG, H = TIGH, g = TIGG, f = [], i, w, sd, q;
-  var trackY = H.fendHalf - g.TW / 2;
+  var trackY = H.trackHalf;
   var sp = H.sponHalf, dv = H.drvHalf, zs = H.zSpon, zr = H.zRoof;
   var xDrvTop = H.xDriver - (zr - zs) * Math.tan(9 * Math.PI / 180);     /* the plate leans back 9 degrees */
   for (sd = -1; sd <= 1; sd += 2) {
@@ -29894,48 +29899,46 @@ function tigerHull(body, cap, sideC) {
   f = f.concat(box((H.xFoot + H.xTail) / 2, 0, H.zBelly, H.xFoot - H.xTail, H.tubHalf * 2, zs - H.zBelly, body, cap, sideC));
   f = f.concat(welded([
     /* the lower nose, leaning forward off the belly up to the nose lip */
-    { v: [[H.xNose, sp, zs], [H.xNose, -sp, zs], [H.xFoot, -H.tubHalf, H.zBelly], [H.xFoot, H.tubHalf, H.zBelly]], c: C.lit },
-    /* the glacis shelf: near flat, and wider than the plate that stands on it */
-    { v: [[H.xNose, -sp, zs], [H.xNose, sp, zs], [H.xDriver, sp, zs], [H.xDriver, -sp, zs]], c: cap },
-    /* the driver's plate, stepped in from the sponsons on both sides */
+    { v: [[H.xNose, H.tubHalf, zs], [H.xNose, -H.tubHalf, zs], [H.xFoot, -H.tubHalf, H.zBelly], [H.xFoot, H.tubHalf, H.zBelly]], c: C.lit },
+    /* the glacis shelf between the tracks, near flat */
+    { v: [[H.xNose, -H.tubHalf, zs], [H.xNose, H.tubHalf, zs], [H.xDriver, H.tubHalf, zs], [H.xDriver, -H.tubHalf, zs]], c: cap },
+    /* the driver's plate, the full width of the superstructure and leaning back */
     { v: [[H.xDriver, -dv, zs], [H.xDriver, dv, zs], [xDrvTop, dv, zr], [xDrvTop, -dv, zr]], c: C.lit },
-    { v: [[H.xDriver, dv, zs], [H.xDriver, sp, zs], [H.xDriver, sp, zr], [xDrvTop, dv, zr]], c: sideC },
-    { v: [[H.xDriver, -sp, zs], [H.xDriver, -dv, zs], [xDrvTop, -dv, zr], [H.xDriver, -sp, zr]], c: sideC },
-    /* the hull sides, dead vertical the whole way back */
-    { v: [[H.xTail, sp, zr], [H.xDriver, sp, zr], [H.xDriver, sp, zs], [H.xTail, sp, zs]], c: sideC },
-    { v: [[H.xTail, -sp, zs], [H.xDriver, -sp, zs], [H.xDriver, -sp, zr], [H.xTail, -sp, zr]], c: sideC },
+    /* the hull sides, dead vertical the whole way back, their front edge following the plate */
+    { v: [[H.xTail, sp, zr], [xDrvTop, sp, zr], [H.xDriver, sp, zs], [H.xTail, sp, zs]], c: sideC },
+    { v: [[H.xTail, -sp, zs], [H.xDriver, -sp, zs], [xDrvTop, -sp, zr], [H.xTail, -sp, zr]], c: sideC },
     /* the roof */
     { v: [[xDrvTop, -sp, zr], [xDrvTop, sp, zr], [H.xTail, sp, zr], [H.xTail, -sp, zr]], c: cap },
     /* the tail, and the belly plate sloping up under the idler */
     { v: [[H.xTail, sp, zr], [H.xTail, sp, zs], [H.xTail, -sp, zs], [H.xTail, -sp, zr]], c: C.dark },
     { v: [[H.xTail, H.tubHalf, zs], [H.xTail + 4.6, H.tubHalf, H.zBelly], [H.xTail + 4.6, -H.tubHalf, H.zBelly], [H.xTail, -H.tubHalf, zs]], c: C.dark },
     /* the sponson floors, hanging out over the tracks */
-    { v: [[H.xNose, sp, zs], [H.xNose, -sp, zs], [H.xTail, -sp, zs], [H.xTail, sp, zs]], c: C.dark }
+    { v: [[H.xDriver, sp, zs], [H.xDriver, -sp, zs], [H.xTail, -sp, zs], [H.xTail, sp, zs]], c: C.dark }
   ]));
   /* welded seams. Tiger plates were cut to interlock and then run with a bead, and on a
      hull with this many square corners the beads are half of what you read. */
-  f = f.concat(place(tubeSmooth(-sp, sp, 0, 0, .5, 8, C.dark, C.dark), Math.PI / 2, H.xNose, 0, zs));
+  f = f.concat(place(tubeSmooth(-H.tubHalf, H.tubHalf, 0, 0, .5, 8, C.dark, C.dark), Math.PI / 2, H.xNose, 0, zs));
   f = f.concat(place(tubeSmooth(-sp, sp, 0, 0, .45, 8, C.dark, C.dark), Math.PI / 2, H.xDriver, 0, zs));
   f = f.concat(place(tubeSmooth(-dv, dv, 0, 0, .45, 8, C.dark, C.dark), Math.PI / 2, xDrvTop, 0, zr));
   f = f.concat(place(tubeSmooth(-sp, sp, 0, 0, .45, 8, C.dark, C.dark), Math.PI / 2, H.xTail, 0, zr));
   [-1, 1].forEach(function (s) {
     f = f.concat(tubeSmooth(H.xTail, H.xDriver, s * sp, zr, .45, 6, C.dark, C.dark));
-    f = f.concat(tubeSmooth(H.xTail, H.xNose, s * sp, zs, .45, 6, C.dark, C.dark));
+    f = f.concat(tubeSmooth(H.xTail, H.xDriver, s * sp, zs, .45, 6, C.dark, C.dark));
   });
   /* ---- the driver's plate: the visor on his side, the ball mount on the operator's ---- */
   var zp = (zs + zr) / 2;
-  f = f.concat(box(H.xDriver + .35, 7.2, zp - .9, 1.0, 6.0, 2.1, C.dark, C.lit, C.dark));             /* the Fahrersehklappe */
-  f = f.concat(box(H.xDriver + .9, 7.2, zp - .45, .5, 4.6, .75, '#1a1d18', '#23261f', '#23261f', 0));
-  f = f.concat(box(H.xDriver + .55, 7.2, zp + 1.2, .8, 6.6, .7, C.dgD, C.dg, C.dgD, 0));              /* its rain lip */
+  f = f.concat(box(H.xDriver + .35, -7.2, zp - .9, 1.0, 6.0, 2.1, C.dark, C.lit, C.dark));             /* the Fahrersehklappe */
+  f = f.concat(box(H.xDriver + .9, -7.2, zp - .45, .5, 4.6, .75, '#1a1d18', '#23261f', '#23261f', 0));
+  f = f.concat(box(H.xDriver + .55, -7.2, zp + 1.2, .8, 6.6, .7, C.dgD, C.dg, C.dgD, 0));              /* its rain lip */
   /* the Kugelblende 50: a rounded boss in a raised frame, the MG34 low and outboard */
-  f = f.concat(box(H.xDriver + .3, -7.4, zp - 2.2, .7, 5.6, 4.4, C.dark, C.lit, C.dark));
-  f = f.concat(place(tubeSmooth(0, 1.5, 0, 0, 1.95, 14, C.dark, C.lit), 0, H.xDriver + .45, -7.4, zp - .1));
-  f = f.concat(place(tubeSmooth(1.5, 2.2, 0, 0, 1.5, 14, C.lit, C.lit), 0, H.xDriver + .45, -7.4, zp - .1));
-  f = f.concat(tubeSmooth(H.xDriver + 1.0, H.xDriver + 4.8, -7.4, zp - .5, .45, 8, C.steel, '#1a1b16'));
-  [-1, 1].forEach(function (s) { f = f.concat(box(H.xDriver + .5, -7.4 + s * 2.6, zp - .1, .6, .8, 1.5, C.steel, C.bare, C.steel, 0)); });
+  f = f.concat(box(H.xDriver + .3, 7.4, zp - 2.2, .7, 5.6, 4.4, C.dark, C.lit, C.dark));
+  f = f.concat(place(tubeSmooth(0, 1.5, 0, 0, 1.95, 14, C.dark, C.lit), 0, H.xDriver + .45, 7.4, zp - .1));
+  f = f.concat(place(tubeSmooth(1.5, 2.2, 0, 0, 1.5, 14, C.lit, C.lit), 0, H.xDriver + .45, 7.4, zp - .1));
+  f = f.concat(tubeSmooth(H.xDriver + 1.0, H.xDriver + 4.8, 7.4, zp - .5, .45, 8, C.steel, '#1a1b16'));
+  [-1, 1].forEach(function (s) { f = f.concat(box(H.xDriver + .5, 7.4 + s * 2.6, zp - .1, .6, .8, 1.5, C.steel, C.bare, C.steel, 0)); });
   /* ---- the glacis shelf: the headlamp, the tow bar and the shovel clamped across ---- */
-  f = f.concat(headLamp(H.xDriver - 1.4, 10.6, zs + 2.4, C.dgD, '#cfcdb6'));
-  f = f.concat(box(H.xDriver - 2.0, 10.6, zs, 1.5, 1.5, 2.4, C.dgD, C.dg));
+  f = f.concat(headLamp(xDrvTop + .2, .9, zr - 1.1, C.dgD, '#cfcdb6'));
+  f = f.concat(box(xDrvTop + .5, .9, zr - 2.9, 1.1, 1.1, 1.2, C.dgD, C.dg));
   f = f.concat(place(tubeSmooth(-5.8, 5.8, 0, 0, .55, 8, C.steel, C.bare), .30, H.xNose - 4.8, 1.2, zs + .8));
   [-1, 1].forEach(function (s) { f = f.concat(box(H.xNose - 4.8 + s * 4.4, 1.2 + s * 1.3, zs, 1.0, 2.0, 1.0, C.dgD, C.dg, C.dgD, 0)); });
   f = f.concat(place(box(0, 0, 0, 8.6, 1.0, .9, C.wood, lit(C.wood, 1.2)), -.20, H.xNose - 3.6, -9.6, zs + .6));
@@ -29964,7 +29967,7 @@ function tigerHull(body, cap, sideC) {
   });
   /* ---- the roof forward of the turret: the driver's and operator's hatches, round
      with domed covers, a periscope ahead of each and the crew fan between ---- */
-  [7.6, -7.6].forEach(function (hy) {
+  [11.0, -11.0].forEach(function (hy) {
     /* 0.63 m across, and there is only 0.67 m of roof between the driver's plate and the
        turret to put them in. That is the Tiger: the hatches are jammed in the gap. */
     f = f.concat(cyl(19.6, hy, zr, 3.7, 3.7, .5, 18, C.dgD, C.dg, 0, true));
@@ -29972,9 +29975,9 @@ function tigerHull(body, cap, sideC) {
     f = f.concat(cyl(19.6, hy, zr + 1.55, 2.7, 2.7, .4, 18, C.dg, cap, 0, true));
     f = f.concat(boltRing(19.6, hy, zr + .5, 3.05, 10, .28, .32, C.bare));
     f = f.concat(box(19.6, hy, zr + 1.95, .5, 4.6, .45, C.steel, C.bare));
-    f = f.concat(box(19.6, hy * 1.56, zr, 2.2, 1.8, 1.0, C.dgD, C.dg, C.dgD));                        /* the hinge block */
+    f = f.concat(box(19.6, hy * 1.4, zr, 2.2, 1.8, 1.0, C.dgD, C.dg, C.dgD));                        /* the hinge block */
   });
-  f = f.concat(periscope(22.6, 11.6, zr, .3, C.dgD));                                                 /* the driver's periscope */
+  f = f.concat(periscope(21.6, -6.0, zr, -.3, C.dgD));                                                 /* the driver's periscope */
   f = f.concat(cyl(19.6, 0, zr, 2.1, 2.1, .8, 14, C.dgD, C.dg, 0, true));                             /* the crew fan */
   f = f.concat(cyl(19.6, 0, zr + .8, 1.7, 1.7, .3, 14, C.bare, C.bare, 0, true));
   /* ---- the engine deck: the hatch over the Maybach in the middle, a radiator fan
@@ -29985,9 +29988,8 @@ function tigerHull(body, cap, sideC) {
   f = f.concat(boltRow(-23.0, -11.0, -6.0, zr + 1.35, 6, .3, .32, C.bare));
   f = f.concat(box(-10.2, 0, zr + 1.35, .6, 5.0, .5, C.steel, C.bare));
   [-12.6, 12.6].forEach(function (fy) {
-    f = f.concat(cyl(-13.5, fy, zr, 4.9, 4.9, .65, 18, C.dgD, C.dg, 0, true));
-    f = f.concat(cyl(-13.5, fy, zr + .32, 4.2, 4.2, .3, 18, C.bare, C.bare, 0, true));
-    for (q = -2; q <= 2; q++) f = f.concat(box(-13.5 + q * 1.7, fy, zr + .58, .75, 2 * Math.sqrt(Math.max(0, 16 - q * q * 2.9)), .16, C.steel, C.steel, C.steel, 0));
+    /* the radiator's intake grille ahead of its fan, louvred across */
+    f = f.concat(louvrePanel(-17.4, fy * .97, zr, 6.2, 10.4, 7, C.dgD, C.steel));
     f = f.concat(cyl(-25.6, fy, zr, 4.6, 4.6, .6, 18, C.dgD, C.dg, 0, true));
     f = f.concat(cyl(-25.6, fy, zr + .3, 3.9, 3.9, .28, 18, C.bare, C.bare, 0, true));
     for (q = -2; q <= 2; q++) f = f.concat(box(-25.6 + q * 1.75, fy, zr + .54, .8, 2 * Math.sqrt(Math.max(0, 13.7 - q * q * 3.06)), .16, C.steel, C.steel, C.steel, 0));
@@ -30000,15 +30002,16 @@ function tigerHull(body, cap, sideC) {
   });
   /* ---- the tail: two exhaust silencers standing on the rear plate under their
      armoured guards, the towing clevises, the jack and the crank ---- */
-  [-7.4, 7.4].forEach(function (ey) {
-    f = f.concat(cyl(H.xTail - 2.2, ey, H.zBelly + 1.4, 2.9, 2.9, 2.0, 14, body, C.lit, 0, true));
-    f = f.concat(cyl(H.xTail - 2.2, ey, H.zBelly + 3.4, 2.6, 2.6, 2.2, 14, body, C.lit, 0, true));
-    f = f.concat(cyl(H.xTail - 2.2, ey, H.zBelly + 5.6, 2.3, 2.3, 9.2, 14, body, C.lit, 0, true));
-    f = f.concat(cyl(H.xTail - 2.2, ey, H.zBelly + 14.8, 2.7, 2.7, 1.1, 14, C.dark, C.lit, 0, true));
-    f = f.concat(cyl(H.xTail - 2.2, ey, H.zBelly + 15.9, 1.4, 1.4, .9, 10, '#26251f', '#1a1b16', 0, true));
-    f = f.concat(box(H.xTail - .6, ey, H.zBelly + 8.0, 1.4, 6.6, 1.0, C.dgD, C.dg, C.dgD, 0));        /* its strap */
+  /* the drawing stands them close together either side of the middle, from over the jack up
+     to the roof line */
+  [-4.8, 4.8].forEach(function (ey) {
+    f = f.concat(cyl(H.xTail - 2.2, ey, 10.4, 2.5, 2.5, 1.6, 14, body, C.lit, 0, true));
+    f = f.concat(cyl(H.xTail - 2.2, ey, 12.0, 2.3, 2.3, 9.4, 14, body, C.lit, 0, true));
+    f = f.concat(cyl(H.xTail - 2.2, ey, 21.4, 2.6, 2.6, 1.0, 14, C.dark, C.lit, 0, true));
+    f = f.concat(cyl(H.xTail - 2.2, ey, 22.4, 1.3, 1.3, .8, 10, '#26251f', '#1a1b16', 0, true));
+    f = f.concat(box(H.xTail - .6, ey, 16.0, 1.4, 5.8, 1.0, C.dgD, C.dg, C.dgD, 0));                /* its strap */
   });
-  [-13.6, 13.6].forEach(function (ty) {
+  [-10.9, 10.9].forEach(function (ty) {
     f = f.concat(box(H.xTail - 1.2, ty, 11.6, 2.4, 3.0, 3.4, C.dark, C.lit, C.dark));                 /* the towing clevises */
     f = f.concat(place(tubeSmooth(-.7, .7, 0, 0, 1.4, 10, C.steel, C.steel), Math.PI / 2, H.xTail - 2.5, ty, 13.3));
   });
@@ -30037,25 +30040,49 @@ function tigerHull(body, cap, sideC) {
   return f;
 }
 
-/* The turret. In plan a plain horseshoe: a flat front plate a metre and a half across,
-   sides that swell to their widest a third of the way back and then run parallel, and a
-   flat rear plate with the round escape hatch in it. The sides are dead vertical, 82 mm
-   of rolled plate, and the roof is flat. The bin bolted across the back is the only
-   thing on it that is not armour. */
+/* The turret. In plan a horseshoe: a flat front plate, sides that swell to their widest two
+   thirds of the way back and a round back with the escape hatch in it. The sides are dead
+   vertical, 82 mm of rolled plate, the roof is flat behind the hatches and bent down over the
+   front third to the mantlet, and the bin bolted across the back is the only thing on it that
+   is not armour. Laid over the four-view drawing (tools/ref/ger_tig.json), which moved the front
+   plate back two units, put the widest point a unit further out and three further aft, bent the
+   roof, and put the cupola on the commander's left and the loader's hatch on the right, where
+   they had been the other way round. */
+var TIGT = {
+  H: 9.5,           /* 810 mm of turret side, to the flat of the roof */
+  xBend: 3.4,       /* where the roof bends down toward the mantlet */
+  hFront: 8.2,      /* and how high it is at the front plate */
+  gz: 4.6,          /* the bore over the ring */
+  cup: { x: -7.0, y: -6.4 }   /* the commander's cupola, at the left rear */
+};
 function tigerTurret(body, cap, sideC) {
-  var C = TIG, f = [], i, H = 9.2;                     /* 790 mm of turret side */
+  var C = TIG, T = TIGT, f = [], i, H = T.H, gz = T.gz;
   var plan = [
-    [14.8, -8.6], [14.8, 8.6],
-    [14.0, 10.0], [12.2, 11.2], [7.0, 12.3], [-6.0, 12.4], [-11.6, 12.0],
-    [-14.2, 10.2], [-14.9, 8.4],
-    [-14.9, -8.4], [-14.2, -10.2],
-    [-11.6, -12.0], [-6.0, -12.4], [7.0, -12.3], [12.2, -11.2], [14.0, -10.0]
+    [12.7, -8.4], [12.7, 8.4],
+    [12.1, 9.9], [10.6, 11.2], [6.0, 12.5], [-3.0, 13.2], [-9.0, 13.3], [-12.2, 12.6],
+    [-14.3, 10.6], [-14.9, 8.4],
+    [-14.9, -8.4], [-14.3, -10.6],
+    [-12.2, -12.6], [-9.0, -13.3], [-3.0, -13.2], [6.0, -12.5], [10.6, -11.2], [12.1, -9.9]
   ];
+  /* the height of the roof over a point of the plan: flat behind the bend and falling to the front */
+  function roofZ(x) { return x <= T.xBend ? H : H - (x - T.xBend) / (plan[0][0] - T.xBend) * (H - T.hFront); }
   var fr = plan.map(function (p) { return [p[0], p[1], 0]; });
-  var rr = plan.map(function (p) { return [p[0], p[1], H]; });
+  var rr = plan.map(function (p) { return [p[0], p[1], roofZ(p[0])]; });
   f = f.concat(welded(loft([fr, rr], [body])));
-  f.push({ v: rr.slice(), c: cap });
   f.push({ v: fr.slice().reverse(), c: C.dark });
+  /* the roof in two plates either side of the bend, each a plane: the outline split where it
+     crosses the bend, the flat part behind and the sloped part in front */
+  var flat = [], slope = [];
+  for (i = 0; i < rr.length; i++) {
+    var a = rr[i], b = rr[(i + 1) % rr.length];
+    (a[0] <= T.xBend ? flat : slope).push(a);
+    if ((a[0] - T.xBend) * (b[0] - T.xBend) < 0) {
+      var t = (T.xBend - a[0]) / (b[0] - a[0]), m = [T.xBend, a[1] + (b[1] - a[1]) * t, H];
+      flat.push(m); slope.push(m);
+    }
+  }
+  f.push({ v: flat, c: cap });
+  f.push({ v: slope, c: cap });
   for (i = 0; i < rr.length; i++) {
     var p0 = rr[i], p1 = rr[(i + 1) % rr.length], dl = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]);
     if (dl < 1) continue;
@@ -30063,42 +30090,44 @@ function tigerTurret(body, cap, sideC) {
   }
   /* ---- the mantlet. On a Tiger it is a slab and not a casting: one wide plate lying
      across the whole turret front with its top and bottom edges taken off, and the gun
-     coming out of a collar in the middle of it. ---- */
-  var gz = H * .46;
-  f = f.concat(welded(extrudeY([[14.6, 4.9], [17.2, 4.3], [18.2, 1.9], [18.2, -1.9], [17.2, -4.3], [14.6, -4.9]],
+     coming out of a collar in the middle of it. It stands taller under the gun than over it. ---- */
+  f = f.concat(welded(extrudeY([[12.5, 3.1], [15.1, 2.6], [16.1, 1.2], [16.1, -1.9], [15.1, -4.1], [12.5, -4.5]],
                                -8.7, 8.7, body, C.lit, C.lit).map(function (q) {
     return { v: q.v.map(function (p) { return [p[0], p[1], p[2] + gz]; }), c: q.c };
   })));
-  f = f.concat(place(tubeSmooth(0, 2.6, 0, 0, 2.55, 16, C.dark, C.lit), 0, 18.0, 0, gz));
-  [-1, 1].forEach(function (s) { f = f.concat(box(16.4, s * 7.5, gz + 4.4, 2.2, 1.8, 1.4, C.dark, body)); });   /* the lifting lugs */
-  f = f.concat(tubeSmooth(15.2, 18.4, -3.2, gz - .4, .55, 8, C.steel, C.steel));                      /* the coaxial MG34 */
-  f = f.concat(box(17.6, 3.0, gz + 1.6, 1.2, 1.6, 1.2, '#1a1d18', '#23261f', '#23261f', 0));           /* the gunner's sight */
+  f = f.concat(place(tubeSmooth(0, 2.6, 0, 0, 2.55, 16, C.dark, C.lit), 0, 15.9, 0, gz));
+  [-1, 1].forEach(function (s) { f = f.concat(box(14.3, s * 7.5, gz + 2.8, 2.2, 1.8, 1.4, C.dark, body)); });   /* the lifting lugs */
+  f = f.concat(tubeSmooth(13.1, 16.4, 5.0, gz - .4, .55, 8, C.steel, C.steel));                        /* the coaxial MG34 */
+  f = f.concat(box(15.6, -5.5, gz + 1.0, 1.2, 2.6, 1.2, '#1a1d18', '#23261f', '#23261f', 0));           /* the gunner's binocular sight */
   /* ---- the 8.8 cm KwK 36 L/56: a straight tube out to a double-baffle brake ---- */
-  f = f.concat(tubeSmooth(18.4, 22.4, 0, gz, 2.3, 16, body, C.lit));
-  f = f.concat(tubeSmooth(22.4, 23.6, 0, gz, 2.5, 14, C.dark, C.lit));
-  f = f.concat(tubeSmooth(23.6, 53.6, 0, gz, 1.55, 16, body, C.lit));
+  f = f.concat(tubeSmooth(16.3, 20.4, 0, gz, 2.3, 16, body, C.lit));
+  f = f.concat(tubeSmooth(20.4, 21.6, 0, gz, 2.5, 14, C.dark, C.lit));
+  f = f.concat(tubeSmooth(21.6, 53.6, 0, gz, 1.55, 16, body, C.lit));
   f = f.concat(tubeSmooth(53.6, 55.0, 0, gz, 1.8, 14, C.dark, C.lit));
   f = f.concat(tubeSmooth(55.0, 60.2, 0, gz, 2.1, 14, body, C.lit));
   f = f.concat(box(56.6, 0, gz - 2.3, 1.0, 4.9, 4.6, C.dark, C.lit, C.lit));
   f = f.concat(box(59.0, 0, gz - 2.3, 1.0, 4.9, 4.6, C.dark, C.lit, C.lit));
   f = f.concat(tubeSmooth(60.2, 61.0, 0, gz, 1.35, 12, C.dark, '#1a1b16'));
-  /* ---- the roof: the cast cupola at the commander's left rear with its six
-     periscopes, the loader's hatch opposite, the close-defence weapon, the fan ---- */
-  f = f.concat(cyl(-7.4, 6.6, H, 5.1, 5.1, .8, 18, C.dg, C.dg, 0, true));
-  f = f.concat(cyl(-7.4, 6.6, H + .8, 4.5, 4.5, .85, 18, C.dg, C.dg, 0, true));
+  /* ---- the roof: the cast cupola at the commander's left rear with its six periscopes,
+     the loader's hatch on the right with his periscope ahead of it, the close-defence
+     weapon behind it, and the fan in the middle ---- */
+  var cu = T.cup;
+  f = f.concat(cyl(cu.x, cu.y, H, 5.1, 5.1, .8, 18, C.dg, C.dg, 0, true));
+  f = f.concat(cyl(cu.x, cu.y, H + .8, 4.5, 4.5, 1.3, 18, C.dg, C.dg, 0, true));
   for (i = 0; i < 6; i++) {
     var va = i / 6 * TAU + .5;
-    f = f.concat(box(-7.4 + Math.cos(va) * 4.4, 6.6 + Math.sin(va) * 4.4, H + .95, 1.1, 1.6, .95, C.steel, '#1a1b16'));
+    f = f.concat(box(cu.x + Math.cos(va) * 4.4, cu.y + Math.sin(va) * 4.4, H + 1.1, 1.1, 1.6, 1.0, C.steel, '#1a1b16'));
   }
-  var tgLeaf = hatchLeaf(-7.4, 6.6, H + 1.65, 4.8, Math.PI, C.dgD, C.dg);
-  HATCHES.ger_tig = { shut: hatchShut(-7.4, 6.6, H + 1.65, 4.8, C.dgD, C.dg), leaf: tgLeaf,
-                      open: tgLeaf.concat(commander('ger', -7.4, 6.6, H + 1.65)) };
-  f = f.concat(cyl(-4.0, -6.8, H, 3.5, 3.5, .65, 16, C.dgD, C.dg, 0, true));                           /* the loader's hatch */
-  f = f.concat(box(-4.0, -6.8, H + .65, .5, 6.8, .5, C.steel, C.bare));
-  f = f.concat(cyl(-11.2, -3.4, H, 1.3, 1.3, 1.5, 10, C.dgD, C.dg, 0, true));                          /* Nahverteidigungswaffe */
-  f = f.concat(cyl(2.0, -4.8, H, 2.0, 2.0, 1.0, 12, C.dgD, C.dg, 0, true));                            /* the ventilator */
-  f = f.concat(periscope(6.4, 4.8, H, 1.3, C.dgD));
-  /* ---- the rear plate: the round escape hatch, and the bin bolted across behind it ---- */
+  var tgLeaf = hatchLeaf(cu.x, cu.y, H + 2.1, 4.8, Math.PI, C.dgD, C.dg);
+  HATCHES.ger_tig = { shut: hatchShut(cu.x, cu.y, H + 2.1, 4.8, C.dgD, C.dg), leaf: tgLeaf,
+                      open: tgLeaf.concat(commander('ger', cu.x, cu.y, H + 2.1)) };
+  f = f.concat(prism(roundRectPlan(-3.4, 8.0, 3.1, 3.1, 1.0, 3), H, H + .6, C.dgD, C.dg, C.dgD));       /* the loader's hatch */
+  f = f.concat(box(-3.4, 8.0, H + .6, 4.4, .5, .5, C.steel, C.bare));
+  [6.3, 9.7].forEach(function (hy) { f = f.concat(box(-5.9, hy, H + .6, 1.6, .7, .5, C.steel, C.bare, C.steel, 0)); });
+  f = f.concat(periscope(2.8, 7.8, roofZ(2.8), 0, C.dgD));
+  f = f.concat(cyl(-10.8, 3.6, H, 1.3, 1.3, 1.5, 10, C.dgD, C.dg, 0, true));                             /* Nahverteidigungswaffe */
+  f = f.concat(cyl(-2.3, .3, H, 2.1, 2.1, 1.0, 12, C.dgD, C.dg, 0, true));                               /* the ventilator */
+  /* ---- the rear: the round escape hatch, and the bin bolted across behind it ---- */
   f = f.concat(place(tubeSmooth(0, 1.0, 0, 0, 4.4, 18, C.dgD, C.dg), 0, -15.8, 0, H * .5));
   f = f.concat(boltRingX(-16.1, 0, H * .5, 3.5, 10, .32, .55, C.bare));
   f = f.concat(box(-16.4, 0, H * .5, .6, 1.2, 6.6, C.steel, C.bare));
@@ -30108,9 +30137,9 @@ function tigerTurret(body, cap, sideC) {
   /* ---- the side fittings: the pistol port at the back, the vision slot up by the
      front corner, and a lifting eye on the roof edge ---- */
   [-1, 1].forEach(function (s) {
-    f = f.concat(place(tubeSmooth(0, .8, 0, 0, 2.1, 12, C.dgD, C.dg), Math.PI / 2, -9.6, s * 12.2, H * .5));
-    f = f.concat(boltRing(-9.6, s * 12.9, H * .5, 1.6, 8, .28, .4, C.bare));
-    f = f.concat(box(10.6, s * 11.5, H * .58, 1.5, .8, 2.6, C.dgD, C.dg, C.dgD, 0));
+    f = f.concat(place(tubeSmooth(0, .8, 0, 0, 2.1, 12, C.dgD, C.dg), Math.PI / 2, -9.6, s * 13.0, H * .5));
+    f = f.concat(boltRing(-9.6, s * 13.7, H * .5, 1.6, 8, .28, .4, C.bare));
+    f = f.concat(box(9.4, s * 12.0, H * .58, 1.5, .8, 2.6, C.dgD, C.dg, C.dgD, 0));
     f = f.concat(box(-13.2, s * 10.6, H - .2, 1.6, 1.4, 1.8, C.dgD, C.dg));                            /* the lifting eyes */
   });
   return f;
@@ -30118,14 +30147,14 @@ function tigerTurret(body, cap, sideC) {
 
 /* the MG34 on the cupola ring, when the commander has been given one */
 function tigCupolaMG() {
-  var C = TIG, f = [], H = 9.2;
-  f = f.concat(cyl(-7.4, 6.6, H + 2.4, 5.3, 5.3, .4, 18, C.steel, C.bare, 0, true));
-  f = f.concat(cyl(-3.8, 9.6, H + 2.8, .5, .5, 3.0, 6, C.steel, C.bare, 0, true));
-  f = f.concat(place(pitch(box(4.5, 0, 0, 10, 1.1, 1.6, C.steel, C.bare), -.25, 0, 0), .45, -3.8, 9.6, H + 5.8));
-  f = f.concat(place(pitch(tubeSmooth(0, 5, 0, 0, .45, 8, C.steel, C.steel), -.25, 0, 0), .45,
-                     -3.8 + 9 * Math.cos(.45), 9.6 + 9 * Math.sin(.45), H + 5.8 + 9 * .247));
-  f = f.concat(box(-5.3, 9.8, H + 6.2, 2.4, 1.8, 2.0, C.steel, '#3d4133'));
-  f = f.concat(crewman('ger', .40, -7.0, 7.0, H - 7.6));
+  var C = TIG, f = [], H = TIGT.H, cu = TIGT.cup;
+  f = f.concat(cyl(cu.x, cu.y, H + 2.4, 5.3, 5.3, .4, 18, C.steel, C.bare, 0, true));
+  f = f.concat(cyl(cu.x + 3.6, cu.y - 3.0, H + 2.8, .5, .5, 3.0, 6, C.steel, C.bare, 0, true));
+  f = f.concat(place(pitch(box(4.5, 0, 0, 10, 1.1, 1.6, C.steel, C.bare), -.25, 0, 0), -.45, cu.x + 3.6, cu.y - 3.0, H + 5.8));
+  f = f.concat(place(pitch(tubeSmooth(0, 5, 0, 0, .45, 8, C.steel, C.steel), -.25, 0, 0), -.45,
+                     cu.x + 3.6 + 9 * Math.cos(.45), cu.y - 3.0 - 9 * Math.sin(.45), H + 5.8 + 9 * .247));
+  f = f.concat(box(cu.x + 2.1, cu.y - 3.2, H + 6.2, 2.4, 1.8, 2.0, C.steel, '#3d4133'));
+  f = f.concat(crewman('ger', -.40, cu.x + .4, cu.y - .4, H - 7.6));
   return f;
 }
 
@@ -32621,7 +32650,7 @@ function buildVehicleModels() {
                       belly: MSG.zBelly, bar: 84, big: 1, heavy: 1, scale: 1,
                       mountZ: MSH.zRoof, gunZ: 6.0, turX: MSH.turX, mg: mausCupolaMG() };
   VMODEL.ger_tig  = { hull: tigerHull(TIG.body, TIG.lit, TIG.dark), tur: tigerTurret(TIG.body, TIG.lit, TIG.dark), belly: TIGG.zBelly,
-                      bar: 61, big: 1, heavy: 1, scale: 1, mountZ: TIGH.zRoof, gunZ: 9.2 * .46, turX: 1.0, mg: tigCupolaMG() };
+                      bar: 61, big: 1, heavy: 1, scale: 1, mountZ: TIGH.zRoof, gunZ: TIGT.gz, turX: 1.0, mg: tigCupolaMG() };
   /* fixed: the gun is the only thing that turns, so the hatches and the roof fittings
      are drawn with the hull rather than with the mount */
   VMODEL.ger_stug = { hull: stugHull(PZ4.body, PZ4.lit, PZ4.dark), tur: stugGun(PZ4.body, PZ4.lit), belly: P4H.zBelly,

@@ -74,9 +74,13 @@ const REAL = {
                in most tables is the 3-inch M10 with a bit added for the 17-pounder. */
   ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.27,
                body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },
-  ger_tig:   { name: 'Tiger I Ausf. E',     len: 6.316, gun: 8.45,   wid: 3.56,  hgt: 3.00,
-               body: 2.97, bodyZ: 1.55, roof: 2.97, clear: 0.47 },   /* body and roof are the same
-               number: the Tiger's hull sides are one vertical plate from the sponson to the roof */
+  ger_tig:   { name: 'Tiger I Ausf. E',     len: 6.316, gun: 8.45,   wid: 3.705, hgt: 3.00,
+               body: 3.14, bodyZ: 1.60, roof: 3.14, clear: 0.47 },   /* body and roof are the same
+               number: the Tiger's hull sides are one vertical plate from the sponson to the roof.
+               3.14 m is the published width on transport tracks, which is that plate with the outer
+               wheels off, and it is what the four-view drawing (tools/ref/ger_tig.json) measures the
+               superstructure at in plan and in front; the 2.97 m it was built to was a quarter of a
+               metre narrow. 3.705 m is over the fenders, which stand a hand outside the tracks */
   hr_251:    { name: 'Sd.Kfz. 251/1 Ausf. C', len: 5.80, gun: 5.80,  wid: 2.10,  hgt: 1.75,
                body: 2.00, clear: 0.32 },   /* the Ausf. A to C, which is the 5.80 m in most tables:
                2.10 m over the lockers, 1.75 m to the rim of the compartment and 320 mm under the belly.
@@ -169,7 +173,7 @@ const PROBE = {
                with their heads over the rim, and a man is no more part of a vehicle's height than
                an aerial is */
   ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
-  ger_tig:   { bodyZ: 21.0, roofZ: 22.8, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
+  ger_tig:   { bodyZ: 18.5, roofZ: 22.0, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
                tools or fender bolts hung on the outside */
   am_jeep:   { noMount: true, hullZ: 15.6 },   /* the mount is a gun on a post, and hullZ holds the
