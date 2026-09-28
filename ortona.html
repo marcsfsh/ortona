@@ -827,6 +827,7 @@ body:not(.simple) #tOrders{display:none}
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">SIDES</span>
     <button class="team on" data-team="1" title="You against one opponent" aria-pressed="true">1 v 1</button>
     <button class="team" data-team="2" title="You and an ally against two opponents, each of the three set on its own" aria-pressed="false">2 v 2</button>
+    <button class="team" data-team="3" title="You and two allies against three opponents, three headquarters a side" aria-pressed="false">3 v 3</button>
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">VICTORY</span>
     <button class="mode on" data-mode="vp" title="Hold the victory sectors until the enemy runs out" aria-pressed="true">SECTORS</button>
     <button class="mode" data-mode="anni" title="Level every building in the enemy base" aria-pressed="false">ANNIHILATION</button>
@@ -856,7 +857,7 @@ body:not(.simple) #tOrders{display:none}
   <div class="hcap hidden" id="acap">
     <div class="hcaph">OPPOSITION<span>the same settings turned on each computer player, up or down, on top of whatever
       GREEN, REGULAR or VETERAN already says. A veteran brain on half an economy, or a green one with a real army.
-      In a 2v2 there are three of them and each is set on its own.</span><button class="hres" id="aeven">EVEN</button></div>
+      In a 2v2 there are three of them and in a 3v3 five, and each is set on its own.</span><button class="hres" id="aeven">EVEN</button></div>
     <div class="arow" id="arole"></div>
     <div class="hgrid" id="agrid"></div>
     <div class="bpref" id="bpref"></div>
@@ -1060,9 +1061,10 @@ var AD_EVEN = { inc: 4, incf: 4, prod: 4, cons: 4, pop: 4, smp: 2, sfu: 2, take:
    A slot key depends on which side the player picked -- his ally is `us2` playing
    American and `ger2` playing German -- so a panel that stored its settings under the
    slot would move them to a different AI the moment he changed sides. A role does not
-   move: `foe1` is the opponent he has in every game, `foe2` is the second one and `ally`
-   is his team-mate, and `startGame` is the one place that says which slot is which. */
-var AD_ROLES = ['foe1', 'foe2', 'ally'];
+   move: `foe1` is the opponent he has in every game, `foe2` and `foe3` the second and
+   third, `ally` his team-mate and `ally2` the second one in a 3v3, and `startGame` is the
+   one place that says which slot is which. */
+var AD_ROLES = ['foe1', 'foe2', 'foe3', 'ally', 'ally2'];
 var ADS = {};
 (function () {
   for (var i = 0; i < AD_ROLES.length; i++) {
@@ -1286,11 +1288,12 @@ function natOf(u) { return (u.def && u.def.nat) || (u.side === 'ger' ? 'heer' : 
      A slot key is a STRING, chosen so that everything already keyed by side takes it with
    no change at all: the purse, the income, the population, what has been ordered, the call
    board and the operations are `[slot]` where they were `[side]`, and in a 1v1 the slots
-   are 'us' and 'ger', which is exactly what they were. A 2v2 adds 'us2' and 'ger2'.
+   are 'us' and 'ger', which is exactly what they were. A 2v2 adds 'us2' and 'ger2' and a
+   3v3 'us3' and 'ger3', on the end of the list so that a 2v2's four keep their places.
      The victory points stay on a team's FIRST slot, because a team wins or loses together
    and `G.res.us.vp` is what every reader of them already asks for. */
-var SLOTS = ['us', 'us2', 'ger', 'ger2'];
-var SLOTSIDE = { us: 'us', us2: 'us', ger: 'ger', ger2: 'ger' };
+var SLOTS = ['us', 'us2', 'ger', 'ger2', 'us3', 'ger3'];
+var SLOTSIDE = { us: 'us', us2: 'us', ger: 'ger', ger2: 'ger', us3: 'us', ger3: 'ger' };
 function slotSide(k) { return SLOTSIDE[k] || 'us'; }
 /* the live slots on a team, in order; the first of them is the one that holds the team's
    victory points and the one a lone reader of `G.res[side]` gets */
@@ -2082,14 +2085,15 @@ function siteCount(slot, kind) {
 /* ---------------------------------------------------------------- state */
 var G = {
   t: 0, running: false, paused: false, over: null, side: 'us', own: 'us', diff: 1, win: 'vp',
-  /* four purses always, so nothing has to ask whether a slot exists before reading one;
+  /* six purses always, so nothing has to ask whether a slot exists before reading one;
      `G.slots` is what is actually being played and is the only list that is walked */
-  slots: [{ k: 'us', side: 'us', ai: 0 }, { k: 'ger', side: 'ger', ai: 1 }],
-  res: { us: { mp: 400, fu: 20, vp: VP_START }, us2: { mp: 400, fu: 20, vp: 0 },
-         ger: { mp: 400, fu: 20, vp: VP_START }, ger2: { mp: 400, fu: 20, vp: 0 } },
-  inc: { us: { mp: 0, fu: 0 }, us2: { mp: 0, fu: 0 }, ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 } },
-  pop: { us: 0, us2: 0, ger: 0, ger2: 0 },
-  made: { us: {}, us2: {}, ger: {}, ger2: {} },
+  slots: [{ k: 'us', side: 'us', ai: 0 }, { k: 'ger', side: 'ger', ai: 1 }], team: 1,
+  res: { us: { mp: 400, fu: 20, vp: VP_START }, us2: { mp: 400, fu: 20, vp: 0 }, us3: { mp: 400, fu: 20, vp: 0 },
+         ger: { mp: 400, fu: 20, vp: VP_START }, ger2: { mp: 400, fu: 20, vp: 0 }, ger3: { mp: 400, fu: 20, vp: 0 } },
+  inc: { us: { mp: 0, fu: 0 }, us2: { mp: 0, fu: 0 }, us3: { mp: 0, fu: 0 },
+         ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 }, ger3: { mp: 0, fu: 0 } },
+  pop: { us: 0, us2: 0, us3: 0, ger: 0, ger2: 0, ger3: 0 },
+  made: { us: {}, us2: {}, us3: {}, ger: {}, ger2: {}, ger3: {} },
   units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], smoke: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
   sites: [], works: [], props: [], bunks: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
@@ -2736,7 +2740,7 @@ function defaultMapData() {
     ['I', 2300, 1480, 'mp', 'ger', 'Santa Caterina', ['F', 'G']]];
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
-  E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
+  E.push({ t: 'hq', side: 'ger', x: 2800 - 250, y: 950 });
   return { name: 'Ortona', when: 'ADRIATIC FRONT · 23 DEC 1943', version: 1, entities: E, height: HB };
 }
 
@@ -2759,7 +2763,10 @@ function defaultMapData() {
    where it is infantry country, and open water meadow at the bottom, where armour can
    get across. */
 function gothicMapData() {
-  var E = [], HB = [];
+  /* The width is this map's and is written out, because the data is built before
+     `buildMap` calls `setWorld`: read off WORLD, a Gothic Line picked after a game on a
+     narrower map was mirrored about the middle of THAT map. */
+  var E = [], HB = [], MW = 2800;
 
   /* Everything on this map is laid on the west half and mirrored to the east, because
      the one thing it may not do is give either side the better of the ground. push()
@@ -2767,13 +2774,13 @@ function gothicMapData() {
      changes hands, and anything already on the midline is placed once. */
   function push(e) {
     E.push(e);
-    if (Math.abs(e.x - WORLD.w / 2) < 1 && e.x1 === undefined && !e.pts) return;
+    if (Math.abs(e.x - MW / 2) < 1 && e.x1 === undefined && !e.pts) return;
     var m = {}, k;
     for (k in e) if (e.hasOwnProperty(k)) m[k] = e[k];
-    if (e.x !== undefined) m.x = WORLD.w - e.x;
+    if (e.x !== undefined) m.x = MW - e.x;
     if (e.a !== undefined) m.a = Math.PI - e.a;
-    if (e.x1 !== undefined) { m.x1 = WORLD.w - e.x1; m.x2 = WORLD.w - e.x2; }
-    if (e.pts) m.pts = e.pts.map(function (q) { return { x: WORLD.w - q.x, y: q.y }; });
+    if (e.x1 !== undefined) { m.x1 = MW - e.x1; m.x2 = MW - e.x2; }
+    if (e.pts) m.pts = e.pts.map(function (q) { return { x: MW - q.x, y: q.y }; });
     if (e.side) m.side = e.side === 'us' ? 'ger' : 'us';
     E.push(m);
   }
@@ -2827,7 +2834,7 @@ function gothicMapData() {
     HB.push(o);
     var m = {}, k;
     for (k in o) if (o.hasOwnProperty(k)) m[k] = o[k];
-    m.x = WORLD.w - o.x; HB.push(m);
+    m.x = MW - o.x; HB.push(m);
   }
   /* A wall run, broken. Two feet of dry stone stops a bullet and an eye and not a boot,
      which makes a run of it a LANE rather than a fence, and the shelling has been through
@@ -3182,7 +3189,7 @@ function gothicMapData() {
     ['I', 2450, 1340, 'mp', 'ger', 'Borgo Santa Maria', ['F', 'G']]];
   secs.forEach(function (q) { E.push({ t: 'sector', id: q[0], x: q[1], y: q[2], type: q[3], owner: q[4], label: q[5], nb: q[6] }); });
   E.push({ t: 'hq', side: 'us', x: 250, y: 950 });
-  E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 });
+  E.push({ t: 'hq', side: 'ger', x: MW - 250, y: 950 });
   return { name: 'The Gothic Line', when: 'FOGLIA VALLEY · 30 AUG 1944', version: 1, land: 'gothic', entities: E, height: HB };
 }
 
@@ -3663,7 +3670,11 @@ function buildMap(data) {
   setAtmo(LAND.atmo);
   setWorld(data.w, data.h);
   var dep = [];
+  G.hqMap = hqSpotsOf(data);
   data.entities.forEach(function (e) { if (e.t === 'hq') dep.push([e.x, e.y]); });
+  ['us', 'ger'].forEach(function (sd) {
+    G.hqMap[sd].forEach(function (p) { if (!p.named) dep.push([p.x, p.y]); });
+  });
   DEPOT = dep.length ? dep : [[250, 950], [WORLD.w - 250, 950]];
   makeHeight();
   /* height brushes over the natural ground */
@@ -3838,7 +3849,7 @@ function buildMap(data) {
       case 'grass': G.grass.push({ x: e.x, y: e.y, r: e.r, t: e.tone || .6, a: e.a || 0 }); break;
       case 'paved': G.paved.push({ x: e.x, y: e.y, w: e.w, h: e.h, kind: e.kind || 'street' }); break;
       case 'sector': G.sectorDefs.push(e); break;
-      case 'hq': G.hqPos[e.side] = { x: e.x, y: e.y, look: e.look }; break;
+      case 'hq': if (!(e.n > 1)) G.hqPos[e.side] = { x: e.x, y: e.y, look: e.look }; break;
       case 'craft':
         /* A landing craft where the tide left it. Afloat or aground it is drawn; aground
            it is also a steel hull standing on the sand, a thing to get behind and not
@@ -5965,7 +5976,7 @@ function spawnBuilding(slot, key, x, y, done, cr) {
   var b = { id: G.uid++, own: slot, side: side, key: key, def: d, x: x, y: y,
             hp: done ? mh : mh * .18, maxhp: mh, built: done ? 1 : 0,
             queue: [], qt: 0,
-            rally: LAND.south ? { x: x + 90, y: y + (side === 'us' ? -120 : 120) } : { x: x + (side === 'us' ? 120 : -120), y: y + 90 },
+            rally: (function (f) { return { x: x + f.x * 120 + Math.abs(f.y) * 90, y: y + f.y * 120 + Math.abs(f.x) * 90 }; })(frontOf(side)),
             dead: false, hitT: 0 };
   /* a post made of a landing craft is the craft's own bearing and footprint, and what is
      stacked in it and round it is a buffer laid on the sand it stands on */
@@ -9690,8 +9701,16 @@ function killBuilding(b) {
   var i = G.blds.indexOf(b); if (i >= 0) G.blds.splice(i, 1);
   rebuildGrid();
   /* In annihilation the headquarters is one building among several: losing it is not
-     the end, and a side with a company post still standing fights on. */
-  if (b.def.hq && G.win !== 'anni') endGame(foe(b.side), 'headquarters destroyed');
+     the end, and a side with a company post still standing fights on. In a team game a
+     side has one headquarters a player, and it is the LAST of them that ends it: a player
+     whose headquarters has gone is out of production, and his allies are not out of the
+     battle. */
+  if (b.def.hq && G.win !== 'anni') {
+    var left = 0;
+    for (var bi = 0; bi < G.blds.length; bi++) if (G.blds[bi].side === b.side && G.blds[bi].def.hq && !G.blds[bi].dead) left++;
+    if (!left) endGame(foe(b.side), 'headquarters destroyed');
+    else if (typeof toast === 'function') toast((b.side === G.side ? 'An allied' : 'An enemy') + ' headquarters is destroyed');
+  }
 }
 
 /* ---------------------------------------------------------------- effects */
@@ -9991,7 +10010,7 @@ function recArmy() {
 function recInit() {
   /* the armies' names are copied for the units' reason: the Allied side is whichever army
      the map says, and the page it is read on may be on another map */
-  REC = { when: Date.now(), side: G.side, own: G.own, duo: !!G.duo, diff: G.diff, win: G.win, t: 0, over: null, why: '',
+  REC = { when: Date.now(), side: G.side, own: G.own, duo: !!G.duo, team: G.team || 1, diff: G.diff, win: G.win, t: 0, over: null, why: '',
           names: { us: FACTION.us.name, ger: FACTION.ger.name },
           us: recArmy(), ger: recArmy(), units: {}, line: [], lineT: 0 };
 }
@@ -10930,8 +10949,11 @@ function updateUnit(u, dt) {
            brain in the last commit went from level to four hundred points behind, with a
            third less army and forty per cent less ground. A side that cannot refill its
            sections loses them outright, and a tank does not hold a street on its own. */
-        if (u.reinf > 3.0 && G.res[u.side].mp >= costPer) {
-          u.reinf = 0; G.res[u.side].mp -= costPer;
+        /* out of the till of the player whose section it is: charged to the team's first
+           slot, an ally's refills in a team game came out of the player's own purse */
+        var rk = G.res[u.own] ? u.own : u.side;
+        if (u.reinf > 3.0 && G.res[rk].mp >= costPer) {
+          u.reinf = 0; G.res[rk].mp -= costPer;
           for (var m = 0; m < u.models.length; m++) if (!u.models[m].alive) {
             u.models[m].alive = true; u.models[m].hp = u.def.hpPer;
             u.models[m].x = u.x + rnd(-14, 14); u.models[m].y = u.y + rnd(-14, 14);
@@ -40665,9 +40687,13 @@ function stWho(R, sd) { return sd === R.side ? 'YOU' : 'THEM'; }
 /* Who on that team. A 1v1 has one player a side and the answer adds nothing, so it is
    left off; a 2v2 has two, and a report that cannot tell an ally's Sherman from your own
    is a report of one army that was really two. */
+/* whose a unit was, in a team game: the player, his allies in order, the opponents in
+   order. A 1v1 says nothing, because there is nobody to tell apart. */
 function stOwn(R, r) {
-  if (!r.own || r.own === r.side) return '';
-  return ' \u00b7 ' + (r.own === R.own ? 'YOU' : 'ALLY');
+  if (!r.own || !((R.team || (R.duo ? 2 : 1)) > 1)) return '';
+  var n = r.own.length > r.side.length ? +r.own.slice(r.side.length) : 1;
+  if (r.side === R.side) return ' \u00b7 ' + (r.own === R.own ? 'YOU' : n > 2 ? 'SECOND ALLY' : 'ALLY');
+  return ' \u00b7 OPPONENT ' + n;
 }
 function stRows(R) {
   var out = [], k;
@@ -41000,41 +41026,75 @@ function endGame(winner, why) {
     histSave(REC);
   }
 }
-/* Lay out the game's players. `duo` is the 2v2: four slots rather than two, the player
-   and an ally against two opponents, each of the three AIs on its own handicap row, its
-   own difficulty and its own brain.
+/* Lay out the game's players. `n` is how many a side: one, two or three, the player and
+   his allies against as many opponents, each AI on its own handicap row, its own
+   difficulty and its own brain.
      A slot's key is a string chosen so that everything already keyed by side takes it
    unchanged; the roles are what the title screen's panels are stored against, because a
    role does not move when the player changes sides and a slot key does. */
-function buildSlots(side, diff, duo) {
-  var him = foe(side), out = [];
+var ALLY_ROLES = ['ally', 'ally2'], FOE_ROLES = ['foe1', 'foe2', 'foe3'];
+function buildSlots(side, diff, n) {
+  var him = foe(side), out = [], i;
   out.push({ k: side, side: side, ai: 0, role: 'you', diff: diff });
-  if (duo) out.push({ k: side + '2', side: side, ai: 1, role: 'ally', diff: adDiff('ally', diff) });
-  out.push({ k: him, side: him, ai: 1, role: 'foe1', diff: adDiff('foe1', diff) });
-  if (duo) out.push({ k: him + '2', side: him, ai: 1, role: 'foe2', diff: adDiff('foe2', diff) });
+  for (i = 1; i < n; i++) out.push({ k: side + (i + 1), side: side, ai: 1, role: ALLY_ROLES[i - 1], diff: adDiff(ALLY_ROLES[i - 1], diff) });
+  for (i = 0; i < n; i++) out.push({ k: him + (i ? i + 1 : ''), side: him, ai: 1, role: FOE_ROLES[i], diff: adDiff(FOE_ROLES[i], diff) });
   return out;
 }
+/* a boolean was the 2v2 switch before there was a 3v3, and the gate still passes one */
+function teamSize(t) { return t === true ? 2 : clamp((t | 0) || 1, 1, 3); }
 function roleSlot(role) {
   for (var i = 0; i < G.slots.length; i++) if (G.slots[i].role === role) return G.slots[i].k;
   return null;
 }
-/* Where a player's headquarters stands. A 1v1 puts it where the map says; a 2v2 splits
-   the two allies either side of that point, far enough apart that neither is inside the
-   other's footprint and near enough that they share a front. */
-function hqSpot(slot, duo) {
-  var side = slotSide(slot), p = G.hqPos[side];
-  if (!duo) return { x: p.x, y: p.y };
-  /* the second slot on a team is the one whose key is longer than its side's -- `us2`
-     against `us` -- rather than a fixed length, which reads as true for `ger` */
-  var second = slot.length > side.length, off = second ? 290 : -290;
-  /* and they split across the axis the two headquarters are NOT separated on. Ortona and
-     the Gothic Line stand theirs at either end of x, so the allies stand either side of
-     one another in y; Omaha faces its two armies across the short axis, and splitting in
-     y there put one ally in the sea and the other up the bluff. */
-  var q = G.hqPos[foe(side)] || p;
-  if (Math.abs(q.y - p.y) > Math.abs(q.x - p.x))
-    return { x: clamp(p.x + off, 160, WORLD.w - 160), y: p.y };
-  return { x: p.x, y: clamp(p.y + off, 160, WORLD.h - 160) };
+/* Where each player on a side stands his headquarters. A map may name as many spots as
+   it was laid for (`n` on its `hq` entities, the first being the one a 1v1 uses), and a
+   game takes them in order. Where it names fewer than the game has players, the rest are
+   split either side of its first, far enough apart that none is inside another's
+   footprint and near enough that they share a front, and across the axis the two armies
+   are NOT separated on: Ortona and the Gothic Line stand theirs at either end of x, so
+   allies stand either side of one another in y; Omaha faces its armies across the short
+   axis, and splitting in y there put one ally in the sea and the other up the bluff.
+     Worked out in buildMap, once, because every spot wants its own level ground and
+   makeHeight is about to be asked for it. The editor lays one a side, since there is no
+   game to say how many. */
+var HQ_OFF = { 2: [-290, 290], 3: [0, -290, 290] };
+function hqSpotsOf(data) {
+  var out = { us: [], ger: [] }, named = { us: [], ger: [] }, sd, i;
+  var n = (typeof ED !== 'undefined' && ED.on) ? 1 : (G.team || 1);
+  data.entities.forEach(function (e) { if (e.t === 'hq' && named[e.side]) named[e.side].push(e); });
+  for (sd in named) named[sd].sort(function (a, b) { return (a.n || 1) - (b.n || 1); });
+  for (sd in named) {
+    var L = named[sd], p = L[0] || (sd === 'us' ? { x: 250, y: 950 } : { x: WORLD.w - 250, y: 950 });
+    var q = named[foe(sd)][0] || p, alongY = Math.abs(q.y - p.y) > Math.abs(q.x - p.x);
+    if (L.length >= n || n === 1) {
+      for (i = 0; i < n; i++) out[sd].push({ x: L[i].x, y: L[i].y, look: L[i].look, named: 1 });
+    } else {
+      for (i = 0; i < n; i++) {
+        if (L.length > 1 && i < L.length) { out[sd].push({ x: L[i].x, y: L[i].y, look: L[i].look, named: 1 }); continue; }
+        var off = HQ_OFF[n][i];
+        if (!off) { out[sd].push({ x: p.x, y: p.y, look: p.look, named: 1 }); continue; }
+        out[sd].push(alongY ? { x: clamp(p.x + off, 160, WORLD.w - 160), y: p.y }
+                            : { x: p.x, y: clamp(p.y + off, 160, WORLD.h - 160) });
+      }
+    }
+  }
+  return out;
+}
+/* this slot's spot: its place among its side's slots is its place on the map's list */
+function hqSpot(slot) {
+  var side = slotSide(slot), L = (G.hqMap && G.hqMap[side]) || [], i = slotsOf(side).indexOf(slot);
+  var p = L[i] || L[0] || G.hqPos[side];
+  return { x: p.x, y: p.y, look: p.look };
+}
+/* Which way the armies face one another, off where the map stands their headquarters
+   rather than off whether it has a sea: a unit vector toward the enemy along the axis the
+   two are separated on. Omaha's is up the screen for the Americans because its sea is at
+   the bottom; Saint-Lo's is the same with no sea anywhere. */
+function frontOf(side) {
+  var p = G.hqPos[side], q = G.hqPos[foe(side)];
+  if (!p || !q) return side === 'us' ? { x: 1, y: 0 } : { x: -1, y: 0 };
+  if (Math.abs(q.y - p.y) > Math.abs(q.x - p.x)) return { x: 0, y: q.y > p.y ? 1 : -1 };
+  return { x: q.x > p.x ? 1 : -1, y: 0 };
 }
 /* The strip names the map rather than naming Ortona. A map carries its own place and its
    own date; an imported one carries whatever the editor called it, which is why the two
@@ -41044,10 +41104,11 @@ function missionTitle() {
   m.children[0].textContent = (d.name || 'Custom map').toUpperCase();
   m.children[1].textContent = d.when || 'CUSTOM MAP';
 }
-function startGame(side, diff, mode, arty, duo) {
+function startGame(side, diff, mode, arty, team) {
   G.side = side; G.own = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
-  G.duo = !!duo;
-  G.slots = buildSlots(side, diff, duo);
+  G.team = teamSize(team);
+  G.duo = G.team > 1;
+  G.slots = buildSlots(side, diff, G.team);
   /* whether the brain is allowed indirect fire at all. Default on, because that is the
      game; off is for a player who would rather not be shelled. */
   G.aiArty = arty === undefined ? true : !!arty;
@@ -41096,14 +41157,14 @@ function startGame(side, diff, mode, arty, duo) {
      armies a side rather than one army with twice the money. */
   for (si = 0; si < G.slots.length; si++) {
     sk = G.slots[si].k;
-    var us = slotSide(sk) === 'us', sp = hqSpot(sk, duo), dir = us ? 1 : -1;
-    /* the opening company stands between its headquarters and the enemy: across the map
-       where the two ends are left and right, and up it on a corridor with the sea at the
-       bottom. f is toward the enemy and l is across. */
-    var fx = LAND.south ? 0 : dir, fy = LAND.south ? -dir : 0, lx = LAND.south ? 1 : 0, ly = LAND.south ? 0 : 1;
+    var us = slotSide(sk) === 'us', sp = hqSpot(sk), fr = frontOf(slotSide(sk));
+    /* the opening company stands between its headquarters and the enemy, whichever axis
+       the map faces the armies on. f is toward the enemy and l is across. */
+    var fx = fr.x, fy = fr.y, lx = Math.abs(fr.y), ly = Math.abs(fr.x);
     var fa = Math.atan2(fy, fx);
     var bh = spawnBuilding(sk, us ? 'us_hq' : 'ger_hq', sp.x, sp.y, true);
-    if (!duo && G.hqPos[slotSide(sk)] && G.hqPos[slotSide(sk)].look) bh.look = G.hqPos[slotSide(sk)].look;
+    /* a headquarters stands as the map drew it only on the spot the map drew it on */
+    if (sp.look) bh.look = sp.look;
     bh.rally = { x: sp.x + fx * 180, y: sp.y + fy * 180 };
     spawnUnit(sk, us ? 'am_eng' : 'hr_pio', sp.x + fx * 130 - lx * 70, sp.y + fy * 130 - ly * 70, fa);
     spawnUnit(sk, us ? 'am_rifle' : 'hr_gren', sp.x + fx * 140 + lx * 40, sp.y + fy * 140 + ly * 40, fa);
@@ -41199,7 +41260,7 @@ function frame(now) {
 }
 
 /* ---------------------------------------------------------------- boot */
-var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenDuo = false, chosenWall = false;
+var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenTeam = 1, chosenWall = false;
 /* The maps that ship. A map nobody can pick is a map nobody has, and the editor's PLAY
    CUSTOM MAP was the only door onto anything that was not Ortona. One table drives the
    picker, what the deploy button builds and what the briefing says, because the briefing
@@ -41416,11 +41477,16 @@ function hcapLoad(rows) {
   } catch (e) { /* a stored setting that will not parse is no setting */ }
 }
 /* ---- which computer player the panel is setting.
-   Three of them in a 2v2 and one in a 1v1, so the strip is drawn either way and the two
-   that are not playing are marked as such rather than hidden: a player who sets his
-   ally's economy and then switches to 1v1 should be able to see that the setting is still
-   there and is not being used. */
-var AD_ROLENAME = { foe1: 'OPPONENT 1', foe2: 'OPPONENT 2', ally: 'YOUR ALLY' };
+   Five of them in a 3v3, three in a 2v2 and one in a 1v1, so the strip is drawn every way
+   and the ones that are not playing are marked as such rather than hidden: a player who
+   sets his ally's economy and then switches to 1v1 should be able to see that the setting
+   is still there and is not being used. */
+var AD_ROLENAME = { foe1: 'OPPONENT 1', foe2: 'OPPONENT 2', foe3: 'OPPONENT 3', ally: 'YOUR ALLY', ally2: 'SECOND ALLY' };
+var AD_ROLETIP = { foe1: 'The opponent you have in every game.',
+  foe2: 'In the 2v2 and the 3v3. Set here and kept for when you play one.',
+  ally: 'In the 2v2 and the 3v3. Set here and kept for when you play one.',
+  foe3: 'In the 3v3 only. Set here and kept for when you play one.',
+  ally2: 'In the 3v3 only. Set here and kept for when you play one.' };
 function aroleBuild() {
   var host = el('arole');
   if (!host) return;
@@ -41429,8 +41495,7 @@ function aroleBuild() {
     var b = document.createElement('button');
     b.className = 'arole' + (r === ACAP_ROLE ? ' on' : '');
     b.textContent = AD_ROLENAME[r];
-    b.title = r === 'foe1' ? 'The opponent you have in every game.'
-                           : 'In the 2v2 only. Set here and kept for when you play one.';
+    b.title = AD_ROLETIP[r];
     b.onclick = function () { ACAP_ROLE = r; aroleBuild(); hcapSync(ACAP); bprefSync(); sfx('click'); };
     host.appendChild(b);
   });
@@ -41586,12 +41651,12 @@ el('aeven').onclick = function () {
 };
 hcapLoad(); hcapBuild();
 hcapLoad(ACAP); aroleBuild(); hcapBuild(ACAP); bprefBuild();
-/* one against one or two against two, decided here because it changes how many brains are
-   raised, how many headquarters go up and how the ground's income is split */
+/* one, two or three a side, decided here because it changes how many brains are raised,
+   how many headquarters go up and how the ground's income is split */
 document.querySelectorAll('.team').forEach(function (btn) {
   btn.onclick = function () {
     document.querySelectorAll('.team').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
-    btn.classList.add('on'); chosenDuo = btn.dataset.team === '2';
+    btn.classList.add('on'); chosenTeam = teamSize(+btn.dataset.team);
     btn.setAttribute('aria-pressed', 'true');
     sfx('click');
   };
@@ -41600,7 +41665,7 @@ document.querySelectorAll('.team').forEach(function (btn) {
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
 if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
-el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); };
+el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.own); if (!hq) return;
   select([hq], false); focusSelection();
@@ -43151,7 +43216,7 @@ function edPanelCheck() {
   el('edmexit').addEventListener('click', function () { edMenu(false); edClose(); });
   el('overedit').addEventListener('click', function () { el('over').classList.add('hidden'); el('overedit').classList.add('hidden'); ED.fromEditor = false; G.running = false; edOpen(ED.data); });
   el('openeditor').addEventListener('click', function () { edOpen(null); });
-  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenDuo); } });
+  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam); } });
   edRefreshStart();
 })();
 

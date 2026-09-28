@@ -6677,8 +6677,10 @@ the file. What moved to `own` is money, command, population, production and the 
 **A slot key is a STRING, chosen so that everything already keyed by side takes it with no
 change at all.** The purse, the income, the population, what has been ordered, the call
 board and the operations are `[slot]` where they were `[side]`, and in a 1v1 the slots are
-`'us'` and `'ger'`, which is exactly what they were. A 2v2 adds `'us2'` and `'ger2'`.
-`G.slots` is what is actually being played, `G.own` is the player's own slot and
+`'us'` and `'ger'`, which is exactly what they were. A 2v2 adds `'us2'` and `'ger2'`, and a
+3v3 `'us3'` and `'ger3'`, on the END of `SLOTS` so that a 2v2's four keep their places
+(the 2v2 gate row indexes the list). `G.team` is how many a side and `G.duo` is still
+whether it is more than one. `G.slots` is what is actually being played, `G.own` is the player's own slot and
 `owned(x)` is whether a thing is his. The victory points stay on a team's FIRST slot,
 because a team wins or loses together and `G.res.us.vp` is what every reader of them
 already asks for; `vpOf(side)` and `vpSet` are the two that know it.
@@ -6724,10 +6726,11 @@ out of one till and counts against one limit.
 **Each computer player is set on its own, and the settings are stored against a ROLE.** A
 slot key depends on which side the player picked -- his ally is `us2` playing American and
 `ger2` playing German -- so a panel storing its settings under the slot would move them to
-a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2` and `ally`;
+a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2`, `foe3`, `ally` and
+`ally2`;
 `ADS[role]` is that one's handicap row, `ABUY[role]` is what it is told to buy, and
 `startGame` is the one place that says which slot is playing which role. The OPPOSITION
-panel carries a strip of three and edits one at a time; the two that a 1v1 does not use
+panel carries a strip of five and edits one at a time; the ones a smaller game does not use
 are shown rather than hidden, because a player who sets his ally's economy and then
 switches back should be able to see the setting is still there and is not being used.
 
@@ -6773,6 +6776,46 @@ populations counted separately; and an ally's section selected gives nothing at 
 command bar. The ladder under the weights reads `hr_ks750x1@40 hr_pakx2@130 hr_p4x2@260
 ger_tigx1@620` at even, and with light at NEVER, medium at 2x and heavy at 3x it reads
 `hr_pakx2@130 hr_p4x4@130 ger_tigx3@207`.
+
+**Three a side.** SIDES on the title screen is 1 v 1, 2 v 2 or 3 v 3 (`chosenTeam`), and
+`startGame`'s last argument is the number, with `true` still read as a 2v2 because the gate
+passes one (`teamSize`). `buildSlots(side, diff, n)` lays the player and his allies in
+`ally` and `ally2` against `foe1` to `foe3`.
+
+**Where each headquarters stands is worked out once, in `buildMap`, by `hqSpotsOf`.** A map
+may name as many spots as it was laid for -- `hq` entities carry `n`, the first being the
+one a 1v1 uses -- and a game takes them in slot order. Where it names fewer than the game
+has players, the rest split either side of its first across the axis the two armies are
+NOT separated on (`HQ_OFF`: 2 a side at -290 and +290, 3 a side at 0, -290 and +290). It is
+done in `buildMap` because every one of those spots is a pad in `DEPOT` now, and the
+landform is levelled under each: the old 2v2 put its allies 290 either side of the map's
+one pad, where Ortona's circle of 165 barely reached them. Measured as the worst departure
+of the ground from a plane over the footprint and a margin, an Ortona 2v2 ally stood on 18
+to 24 units of it and stands on 6 to 9, against 4.9 under the map's own. `frontOf(side)` is
+which way the armies face, read off the two headquarters rather than off `LAND.south`, and
+the opening company and a building's rally point both ask it. A headquarters wears the
+map's `look` only on the spot the map drew it on.
+
+**A team is out when its LAST headquarters falls.** With one a side the first was the
+last; with three, losing any one of them lost the battle for the two players still
+fighting it. A player whose headquarters has gone has lost his production and not his
+army. And a section's reinforcements are paid for out of its own player's till
+(`u.own`): charged to the team's first slot, an ally's refills in a team game came out of
+the player's purse. The stats page labels every unit in a team game by whose it was
+(`stOwn`: YOU, ALLY, SECOND ALLY, OPPONENT 1 to 3), where it used to call the enemy's second
+player an ally.
+
+**And a map's data may not read `WORLD`.** It is built before `buildMap` calls
+`setWorld`, and FIGHT AGAIN goes back to the title screen without a reload, so Ortona picked
+after a game on Omaha put the German headquarters at 1250 and the Gothic Line was mirrored
+about the middle of a map 1500 across. Both write their width out now.
+
+Measured by the gate row for it on Ortona: the three buttons and five roles on the panel;
+six headquarters on six owners, the nearest two allies 290 apart, all six with walkable
+ground to march out of and none standing on more than 9.4 units off its plane; five
+brains, the points on the first slots only, every AI raising something in two minutes;
+the labels; and the battle going on after an ally's headquarters and the second one fall
+and ending on the last.
 
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and

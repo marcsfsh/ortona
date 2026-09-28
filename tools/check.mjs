@@ -2588,6 +2588,76 @@ for (const device of TARGETS) {
      `the ground has ${duo.secOwners} on it and the points are ${duo0.vp.join('/')} a team; ` +
      `an ally's section gives ${duo.allyCmd} of his own units to order`);
 
+  /* --- 3v3. Three players a side, three headquarters, three purses and five brains: the
+     2v2's machinery with a third slot on each team. Ortona names one headquarters a side,
+     so the three stand either side of it across the line the two armies are separated on,
+     and every one of them has its own level pad to march out of. The same row takes the
+     rule that a team is out when its LAST headquarters falls and not its first: with
+     three a side, losing one used to lose the battle for the two players still fighting,
+     and the rule is asked both ways round, an ally's going and then the last. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  const tri0 = await page.evaluate(() => {
+    const btns = [...document.querySelectorAll('.team')].map(b => b.textContent.trim());
+    document.querySelector('.team[data-team="3"]').click();
+    const roles = [...document.querySelectorAll('#arole .arole')].map(b => b.textContent.trim());
+    return { btns, chosen: window.chosenTeam, roles };
+  });
+  await page.evaluate(() => window.startGame('us', 1, 'vp', true, 3));
+  await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
+  const tri = await page.evaluate(() => {
+    const G = window.G, hq = G.blds.filter(b => b.def.hq);
+    const sep = side => { const h = hq.filter(b => b.side === side); let m = 1e9;
+      for (let i = 0; i < h.length; i++) for (let j = i + 1; j < h.length; j++) m = Math.min(m, Math.hypot(h[i].x - h[j].x, h[i].y - h[j].y));
+      return Math.round(m); };
+    /* the ground under each: a pad is a PLANE fitted through the country, which keeps the
+       shelf's own fall and takes out the relief, so what is read is the worst departure
+       from the least-squares plane over the footprint and a margin, and not the spread of
+       the heights, which on Ortona's shelf is thirty units of fall that is meant to be there */
+    const flat = hq.map(b => { const P = [];
+      for (let dx = -80; dx <= 80; dx += 20) for (let dy = -60; dy <= 60; dy += 20) P.push([dx, dy, window.groundZ(b.x + dx, b.y + dy)]);
+      const n = P.length, mz = P.reduce((a, p) => a + p[2], 0) / n;
+      const sxx = P.reduce((a, p) => a + p[0] * p[0], 0), syy = P.reduce((a, p) => a + p[1] * p[1], 0);
+      const bx = P.reduce((a, p) => a + p[0] * (p[2] - mz), 0) / sxx, by = P.reduce((a, p) => a + p[1] * (p[2] - mz), 0) / syy;
+      return Math.round(Math.max(...P.map(p => Math.abs(p[2] - mz - bx * p[0] - by * p[1]))) * 10) / 10; });
+    return {
+      slots: G.slots.map(s => s.k + ':' + s.role).join(' '), team: G.team,
+      hqs: hq.map(b => b.own).sort().join(','), sepUs: sep('us'), sepGer: sep('ger'),
+      hqWalk: hq.filter(b => { const f = window.frontOf(b.side); return window.walkable(b.x + f.x * 130, b.y + f.y * 130); }).length,
+      flat, brains: Object.keys(window.AIP).sort().join(','),
+      vp: [Math.round(window.vpOf('us')), Math.round(window.vpOf('ger'))],
+      vpOthers: ['us2', 'us3', 'ger2', 'ger3'].map(k => Math.round(G.res[k].vp))
+    };
+  });
+  await fastForward(page, 120);
+  const tri2 = await page.evaluate(() => {
+    const G = window.G, ai = G.slots.filter(s => s.ai);
+    const out = {
+      raised: ai.map(s => Object.keys(G.made[s.k]).length),
+      queues: ai.map(s => G.blds.filter(b => b.own === s.k).length),
+      units: G.slots.map(s => s.k + ':' + G.units.filter(u => !u.dead && u.own === s.k).length).join(' '),
+      labels: ['us', 'us2', 'us3', 'ger', 'ger2', 'ger3'].map(k => window.stOwn(window.REC, { own: k, side: window.slotSide(k) }).replace(/^ \u00b7 /, '')).join('|')
+    };
+    /* an ally's headquarters and then the second: the battle goes on; then the player's own,
+       which is the last, and it is over */
+    const kill = k => { const b = G.blds.filter(q => q.def.hq && q.own === k)[0]; if (b) window.killBuilding(b); };
+    kill('us2'); out.after1 = G.over; kill('us3'); out.after2 = G.over; kill('us'); out.after3 = !!G.over;
+    return out;
+  });
+  ok('a 3v3 is six players on two teams: six headquarters on their own ground, six purses, five brains, and out on the last headquarters',
+     tri0.btns.join(',') === '1 v 1,2 v 2,3 v 3' && tri0.chosen === 3 && tri0.roles.length === 5 &&
+     tri.team === 3 && tri.hqs === 'ger,ger2,ger3,us,us2,us3' && tri.sepUs >= 280 && tri.sepGer >= 280 &&
+     tri.hqWalk === 6 && tri.flat.every(f => f < 12) && tri.brains === 'ger,ger2,ger3,us2,us3' &&
+     tri.vp[0] === 420 && tri.vp[1] === 420 && tri.vpOthers.every(v => v === 0) &&
+     tri2.raised.every(n => n > 0) && tri2.queues.every(n => n >= 1) &&
+     tri2.labels === 'YOU|ALLY|SECOND ALLY|OPPONENT 1|OPPONENT 2|OPPONENT 3' &&
+     !tri2.after1 && !tri2.after2 && tri2.after3,
+     `buttons ${tri0.btns.join('/')}, ${tri0.roles.length} roles on the panel; ${tri.slots}; headquarters ${tri.hqs}, ` +
+     `allies ${tri.sepUs} and ${tri.sepGer} apart at the nearest, ${tri.hqWalk} of 6 with room to march out, ` +
+     `the ground under them ${tri.flat.join('/')} from high to low; brains ${tri.brains}; points ${tri.vp.join('/')} ` +
+     `and ${tri.vpOthers.join('/')} on the other slots; after 120s ${tri2.units}; raised ${tri2.raised.join('/')}; ` +
+     `labelled ${tri2.labels}; over after an ally's headquarters ${tri2.after1}, after the second ${tri2.after2}, after the last ${tri2.after3}`);
+
   /* --- the one-a-side vehicles. `limit: 1` on the Maus, the Tiger II and the King Tiger,
      and two on the eighty-eight, is a rule about the game rather than a fact about the
      vehicle, so it is a setting rather than an edit to the roster. Measured through
