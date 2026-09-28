@@ -3557,7 +3557,7 @@ for (const device of TARGETS) {
     const V = W.VMODEL.hr_p4, B = W.MODELS.veh.hr_p4, H = W.HATCHES.hr_p4, K = W.KIT.heer;
     out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts && B.turSkirts);
     out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
     out.cap = H.open.filter(f => f.c === K.pz).length;
     out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
     out.seat = !!(W.MODELS.man.hr_tank && W.MODELS.man.hr_tank[W.POSE_SEAT]);
@@ -3973,7 +3973,7 @@ for (const device of TARGETS) {
     const V = W.VMODEL.hr_234, B = W.MODELS.veh.hr_234, K = W.KIT.heer;
     out.bufs = !!(B && B.hull && B.tur && B.turUp.puma && B.turCrew && B.turCrewUp.puma && B.inside);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
-    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.PZ.body).length;
     out.cap = V.turCrew.filter(f => f.c === K.pz).length;
     out.pumaCap = V.turCrewUp.puma.filter(f => f.c === K.pz).length;
     out.helm = V.turCrew.concat(V.turCrewUp.puma).filter(f => f.c === K.helm || f.c === K.helmD).length;
@@ -4467,7 +4467,7 @@ for (const device of TARGETS) {
     out.bufs = !!(B && B.hull && B.tur && B.turCrew && B.skirts && B.inside);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
     out.turGrey = V.tur.filter(f => f.c === W.HRG.body).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
     /* open: nothing of the turret over the middle of it at the rim or above */
     out.roof = V.tur.filter(f => f.v.every(p => p[2] >= rim - .1 && Math.hypot(p[0], p[1]) < 7)).length;
     /* four muzzles, each the dark end of a flash hider out past the front plate */
@@ -4549,7 +4549,7 @@ for (const device of TARGETS) {
     out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
     out.turGrey = V.tur.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
     out.cap = H.open.filter(f => f.c === K.pz).length;
     out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
     /* the muzzle past the nose, in the hull's frame */
@@ -4601,6 +4601,49 @@ for (const device of TARGETS) {
      `behind, and ${pv.skirted} on the side with the Schürzen; an M4's round at 300 goes through the front ${pv.pFront} and the side ` +
      `${pv.pSide}; the eye ${pv.eyeUp} up out of the cupola and ${pv.eyeIn} at the blocks; ${pv.blown} of 40 wrecks threw the turret; ` +
      `killed, it left ${pv.bodies} bodies of ${pv.bodyNat}`);
+
+  /* --- The four the first roster left on the German depot, the Tiger, the King Tiger, the Maus
+     and the StuH 42, wear the 352nd's grey. Not one face of any of them is the sand, and the two
+     Zimmerit tiles carry no colour of their own, which they did while they held the first
+     roster's three-tone; the plate under Zimmerit finds the ridged or the combed tile, the Maus's
+     finds the plain paint, and the wheels, the hatches and the fittings of all four are the plain
+     paint too. Each has the cross in black and white on both sides, and the two Tigers the
+     number in red on both sides of the turret. --- */
+  const heavy = await page.evaluate(() => {
+    const W = window, out = { tiles: {} };
+    const T = W.MATS.TILE, C = W.MATS.COLS, g = W.MATS.atlas.getContext('2d');
+    ['zimrow', 'zimsq', 'paint'].forEach(nm => {
+      const mi = W.matIndex(nm), d = g.getImageData((mi % C) * T, Math.floor(mi / C) * T, T, T).data;
+      let cr = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { cr += Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]); n++; }
+      out.tiles[nm] = +(cr / n).toFixed(1);
+    });
+    const plate = { ger_tig: [W.TIG.body, 'zimrow'], ger_kt: [W.KT.body, 'zimrow'], ger_stug: [W.SUC.body, 'zimsq'], ger_maus: [W.MSC.body, 'paint'] };
+    const sand = [W.PZ.body, W.PZ.lit, W.PZ.dark], mat = c => W.MATS.names[W.matOf(c)];
+    const vals = o => Object.keys(o || {}).reduce((a, u) => a.concat(o[u]), []);
+    Object.keys(plate).forEach(k => {
+      const V = W.VMODEL[k], H = W.HATCHES[k] || {};
+      const all = V.hull.concat(V.tur, V.skirts || [], V.mg || [], H.shut || [], H.leaf || [], vals(V.addUp), vals(V.mgUp));
+      out[k] = {
+        sand: all.filter(f => sand.indexOf(f.c) >= 0).length,
+        plate: all.filter(f => f.c === plate[k][0]).length, tile: mat(plate[k][0]), want: plate[k][1],
+        paint: all.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit || f.c === W.HRG.dark).length, paintTile: mat(W.HRG.body),
+        white: V.hull.filter(f => f.c === W.HP4C.white).length, black: V.hull.filter(f => f.c === W.HP4C.black).length,
+        red: V.tur.filter(f => f.c === W.HP4C.red).length
+      };
+    });
+    return out;
+  });
+  const hvk = ['ger_tig', 'ger_kt', 'ger_stug', 'ger_maus'];
+  ok('The Tiger, the King Tiger, the Maus and the StuH 42 are in the 352nd\'s grey, with the cross and the numbers',
+     heavy.tiles.zimrow < 8 && heavy.tiles.zimsq < 8 &&
+     hvk.every(k => { const h = heavy[k]; return h.sand === 0 && h.plate > 50 && h.tile === h.want && h.paintTile === 'paint' &&
+                                                 h.paint > 50 && h.white > 0 && h.black > 0; }) &&
+     heavy.ger_tig.red > 0 && heavy.ger_kt.red > 0 && heavy.ger_stug.red === 0 && heavy.ger_maus.red === 0,
+     `the Zimmerit tiles carry ${heavy.tiles.zimrow} and ${heavy.tiles.zimsq} of colour against the paint tile's ` +
+     `${heavy.tiles.paint}; ` + hvk.map(k => { const h = heavy[k]; return `${k}: ${h.sand} faces of sand, ${h.plate} of plate ` +
+       `on ${h.tile} (want ${h.want}), ${h.paint} of plain paint on ${h.paintTile}, the cross in ${h.white} white and ` +
+       `${h.black} black faces, ${h.red} red on the turret`; }).join('; '));
 
   /* --- The 57 mm Gun M1. The Americans' anti-tank gun: the motor pool makes it and queues
      it, the count and the order book read it, and it is five men -- the gunner and the

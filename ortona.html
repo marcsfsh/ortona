@@ -16348,7 +16348,7 @@ function drawDepthGeom(buf, model) {
 var MATS = {
   names: ['generic', 'paint', 'steel', 'rubber', 'wood', 'hessian', 'brick', 'plaster',
           'stone', 'earth', 'canvas', 'concrete', 'track', 'tile', 'cloth', 'grass', 'leaf', 'bark',
-          'zimmerit', 'splinter', 'net', 'leather', 'ktcamo', 'p4camo', 'scrim', 'usnet', 'hrwire'],
+          'zimmerit', 'splinter', 'net', 'leather', 'zimrow', 'zimsq', 'scrim', 'usnet', 'hrwire'],
   /* [specular strength, shininess, uv scale] per material */
   spec: [[.08, 18, .10], [.32, 42, .08], [.55, 70, .12], [.10, 12, .16], [.14, 20, .10], [.04, 8, .12],
          [.06, 10, .05], [.05, 10, .06], [.08, 12, .06], [.03, 6, .04], [.06, 9, .12], [.09, 14, .05],
@@ -16386,19 +16386,18 @@ function registerMaterials() {
     tag([INC.canvas], 'canvas'); tagEdges([INC.canvas], 'canvas');
   }
   if (typeof SUC !== 'undefined') {
-    tag([SUC.body, SUC.lit, SUC.dark], 'p4camo');
-    tagEdges([SUC.body, SUC.lit, SUC.dark], 'p4camo');
-    /* the plates were five millimetres of painted sheet hung on hooks: no Zimmerit was ever
-       applied to a Schürze, so they take the plain paint rather than the combed tile */
-    tag([SUC.skirt, SUC.skirtLit], 'paint');
-    tagEdges([SUC.skirt, SUC.skirtLit], 'paint');
+    /* the StuH's casemate and hull, under Zimmerit combed into squares. The Schürzen were five
+       millimetres of painted sheet hung on hooks and never had any, so they are SUG's plain
+       paint, which is the 352nd's grey and is tagged with it */
+    tag([SUC.body, SUC.lit, SUC.dark], 'zimsq');
+    tagEdges([SUC.body, SUC.lit, SUC.dark], 'zimsq');
   }
   if (typeof KT !== 'undefined') {
-    tag([KT.body, KT.lit, KT.dark], 'ktcamo'); tagEdges([KT.body, KT.lit, KT.dark], 'ktcamo');
+    tag([KT.body, KT.lit, KT.dark], 'zimrow'); tagEdges([KT.body, KT.lit, KT.dark], 'zimrow');
     tag([KT.dg, KT.dgD], 'paint'); tagEdges([KT.dg, KT.dgD], 'paint');
   }
   if (typeof TIG !== 'undefined') {
-    tag([TIG.body, TIG.lit, TIG.dark], 'ktcamo'); tagEdges([TIG.body, TIG.lit, TIG.dark], 'ktcamo');
+    tag([TIG.body, TIG.lit, TIG.dark], 'zimrow'); tagEdges([TIG.body, TIG.lit, TIG.dark], 'zimrow');
     tag([TIG.dg, TIG.dgD], 'paint'); tagEdges([TIG.dg, TIG.dgD], 'paint');
     tag([TIG.steel, TIG.bare], 'steel'); tagEdges([TIG.steel, TIG.bare], 'steel');
     tag([TIG.rubber, TIG.tyre], 'rubber'); tag([TIG.track, TIG.trackLit], 'track');
@@ -16861,32 +16860,25 @@ function buildAtlas() {
   });
   /* leather: smooth with a faint grain and creases */
   paint(21, function (u, v) { var l = .48 + (fbm(u * 14, v * 14, 40, 3) - .5) * .12 + (fbm(u * 2, v * 6, 41, 2) - .5) * .1; return [l * 1.04, l * .94, l * .84, 1]; });
-  /* the Tiger II's finish: Zimmerit ridges under a soft three-tone of dunkelgelb,
-     olivgrün and rotbraun, the colour baked into the tile over a neutral grey */
+  /* the two Tigers' Zimmerit: the paste laid on in long horizontal ridges with the trowel's
+     breaks through them. The tile carries no colour of its own, the way the paint tile carries
+     none: it held the first roster's three-tone of dunkelgelb, olivgrün and rotbraun, and a tank
+     of the 352nd is in the grey, which is the vertex's */
   paint(22, function (u, v, x, y) {
-    /* one tile covers 4.7 m of plate: ridges every 9 cm, patches a metre or two across */
+    /* one tile covers 4.7 m of plate: ridges every 9 cm, and the weathering a metre or two across */
     var row = Math.floor(v * 56), ridge = Math.sin(v * 56 * TAU) * .5 + .5;
     var l = .5 + (ridge - .5) * .13 + (noise2(Math.floor(u * 40 + (row % 2) * .5), row, 42) - .5) * .07;
     if (((u * 40 + (row % 2) * .5) % 1) < .07) l -= .08;
-    var p = fbm(u * 3.0, v * 3.0, 43, 3), q = fbm(u * 2.6 + 5, v * 2.6, 44, 3);
-    var col = [1.12, 1.0, .68];                                                        /* dunkelgelb */
-    if (p > .56) col = [.70, .78, .50];                                                /* olivgrün */
-    else if (q > .60) col = [.80, .60, .46];                                            /* rotbraun */
-    l += (fbm(u * 14, v * 14, 45, 2) - .5) * .05;
-    return [l * col[0], l * col[1], l * col[2], 1];
+    l += (fbm(u * 3.0, v * 3.0, 43, 3) - .5) * .06 + (fbm(u * 14, v * 14, 45, 2) - .5) * .05;
+    return [l, l * 1.01, l * .99, 1];
   });
-  /* Panzer IV: Zimmerit combed into small squares rather than the Tiger's long
-     horizontal ridges, under the same three colours sprayed in bigger, softer
-     patches. One tile covers about three and a half metres of plate. */
+  /* the StuH's Zimmerit, combed into small squares rather than the Tigers' long ridges, and
+     in no colour either. One tile covers about three and a half metres of plate. */
   paint(23, function (u, v) {
     var wx = Math.sin(u * 74 * TAU) * .5 + .5, wy = Math.sin(v * 74 * TAU) * .5 + .5;
     var l = .5 + ((wx + wy) * .5 - .5) * .11 + (fbm(u * 34, v * 34, 46, 3) - .5) * .06;
-    var p = fbm(u * 6.2, v * 6.2, 47, 3), q = fbm(u * 5.4 + 7, v * 5.4, 48, 3);
-    var col = [1.02, .92, .60];                                                        /* dunkelgelb */
-    if (p > .58) col = [.56, .64, .39];                                                /* olivgrün */
-    else if (q > .61) col = [.72, .50, .37];                                           /* rotbraun */
-    l += (fbm(u * 12, v * 12, 49, 2) - .5) * .07;
-    return [l * col[0], l * col[1], l * col[2], 1];
+    l += (fbm(u * 6.2, v * 6.2, 47, 3) - .5) * .06 + (fbm(u * 12, v * 12, 49, 2) - .5) * .07;
+    return [l, l * 1.01, l * .99, 1];
   });
   /* A helmet under scrim: the net, the hessian knotted through it and the shell showing
      between, in one opaque tile. It is a new tile rather than a repaint of 20, because
@@ -20723,6 +20715,13 @@ var PZ = { body: '#9c8b5c', lit: '#b09f6c', dark: '#7d6f4a', olive: '#5f6842', o
   rubber: '#1c1d19', tyre: '#2a2b26', steel: '#3a3d34', track: '#4a4842', trackLit: '#5b5952', bare: '#6d6e62',
   tarp: '#7f7150', jerry: '#8a7a4e', wood: '#5a4630' };
 
+/* The Wehrmacht's paint, which every vehicle built for the 352nd wears: the dark blue-grey
+   the army's vehicles left the factory in before dunkelgelb, and a different army's
+   vehicles from the sand of the first roster's beside it. The four the first roster left on
+   the depot (the StuH 42, the two Tigers and the Maus) wear it too. Three values, the plate,
+   the face the light is on and the face it is not, the way every palette here is laid out. */
+var HRG = { body: '#5d6267', lit: '#6b7176', dark: '#4b4f54' };
+
 /* ---- Hatches. A tank commander rides with his head out of the cupola because buttoned
    up he can see almost nothing, and he drops in and pulls the lid down the moment
    anything is shooting at him. Both states have to exist as geometry, so the lid comes
@@ -20794,8 +20793,13 @@ function ktCupolaMG() {
    The gun is built to the published figures, because the drawing carries the L/48: a
    barrel of twenty-eight calibres ending in the big double-baffle brake just past the
    nose, 6.14 m over the gun, in the box mantlet of the early production. */
-var SUC = { body: '#7e7e7e', lit: '#8a8a8a', dark: '#6c6c6c',   /* neutral: the camo tile supplies the colour */
-            skirt: '#9a8a58', skirtLit: '#aa9a66' };             /* dunkelgelb: the skirts are plain paint */
+/* It is in the 352nd's grey. The casemate, the hull and the mantlet are under Zimmerit combed
+   into squares, so they are the grey a hair off the plain paint's, which is what finds the combed
+   tile rather than the paint one; the running gear, the fittings, the gun and the Schürzen had
+   none and are the plain paint (SUG). */
+var SUC = { body: '#5d6467', lit: '#6b7376', dark: '#4b5154' };
+var SUG = { body: HRG.body, lit: HRG.lit, dark: HRG.dark, steel: PZ.steel, bare: PZ.bare, rubber: PZ.rubber,
+            tyre: PZ.tyre, track: PZ.track, trackLit: PZ.trackLit };
 var PZ3G = {
   R: 2.73,          /* the road wheel, 470 mm on the drawing */
   T: 0.96,          /* Kgs 61/400/120 */
@@ -20824,7 +20828,7 @@ function pz3Pulleys() {
   return w;
 }
 function pz3Track(y) {
-  var C = PZ, g = PZ3G;
+  var C = SUG, g = PZ3G;
   return trackBelt(y, pz3Pulleys(), {
     w: g.TW, thick: g.T, pitch: g.LP,
     col: C.track, lit: C.trackLit, steel: C.steel,
@@ -20834,7 +20838,7 @@ function pz3Track(y) {
 /* a road wheel: two rubber-tyred discs with the track's guide horns running between them,
    on one hub */
 function pz3RoadWheel(x, y, sd) {
-  var C = PZ, r = PZ3G.R, hw = .42, f = [];
+  var C = SUG, r = PZ3G.R, hw = .42, f = [];
   var prof = [[0, -hw], [.7, -hw], [.7, -.2], [1.55, -.28], [2.05, -hw], [r, -hw],
               [r, hw], [2.05, hw], [1.55, .28], [.7, .2], [.7, hw], [0, hw]];
   var cols = [C.dark, C.body, C.dark, C.body, C.tyre, C.rubber, C.tyre, C.body, C.dark, C.body, C.dark];
@@ -20846,7 +20850,7 @@ function pz3RoadWheel(x, y, sd) {
 /* the torsion-bar arm trailing up and back from the hub to where the bar comes out of the
    hull side, and the bump stop over the wheel */
 function pz3Arm(x, y, sd) {
-  var C = PZ, g = PZ3G, f = [];
+  var C = SUG, g = PZ3G, f = [];
   var px = x - 3.2, pz = g.zWheel + 1.6, dx = x - px, dz = g.zWheel - pz;
   f = f.concat(place(pitch(box(dx / 2, 0, -.6, Math.hypot(dx, dz) + .8, 1.1, 1.2, C.dark, C.body, C.dark, 0), Math.atan2(dz, dx), 0, 0),
                      0, px, y - sd * 1.6, pz));
@@ -20856,7 +20860,7 @@ function pz3Arm(x, y, sd) {
 }
 /* the drive sprocket: a dished disc with its lightening holes and a double ring of teeth */
 function pz3Sprocket(y, sd) {
-  var C = PZ, g = PZ3G, f = [], t, r = g.rSprk;
+  var C = SUG, g = PZ3G, f = [], t, r = g.rSprk;
   f = f.concat(lathe(g.xSprk, y, g.zSprk, [[0, -1.6], [1.2, -1.6], [1.2, -1.0], [r - .8, -.8], [r - .8, .8], [1.2, 1.0], [1.2, 1.6], [0, 1.6]], 16,
                      [C.dark, C.body, C.body, C.dark, C.body, C.body, C.dark], true));
   for (t = 0; t < 7; t++) {
@@ -20880,7 +20884,7 @@ function pz3Sprocket(y, sd) {
 }
 /* the rear idler: a rim on eight spokes, on its adjuster crank */
 function pz3Idler(y, sd) {
-  var C = PZ, g = PZ3G, f = [], sp, r = g.rIdl;
+  var C = SUG, g = PZ3G, f = [], sp, r = g.rIdl;
   f = f.concat(lathe(g.xIdl, y, g.zIdl, [[r - .7, -1.5], [r, -1.5], [r, 1.5], [r - .7, 1.5], [r - .7, -1.5]], 18,
                      [C.dark, C.body, C.dark, C.body], true));
   f = f.concat(lathe(g.xIdl, y, g.zIdl, [[0, -1.6], [1.2, -1.6], [1.2, 1.6], [0, 1.6]], 10, [C.dark, C.body, C.dark], true));
@@ -20894,7 +20898,7 @@ function pz3Idler(y, sd) {
 }
 /* a return roller, rubber-tyred, on a stub bracket off the hull side */
 function pz3Roller(x, y, sd) {
-  var C = PZ, g = PZ3G, f;
+  var C = SUG, g = PZ3G, f;
   f = box(x, y - sd * 2.0, g.zRoll - .8, 1.6, 2.0, 1.6, C.dark, C.body, C.dark, 0);
   f = f.concat(lathe(x, y, g.zRoll, [[0, -1.0], [.55, -1.0], [.55, -.45], [g.rRoll, -.8], [g.rRoll, .8], [.55, .45], [.55, 1.0], [0, 1.0]],
                      12, [C.body, C.dark, C.rubber, C.rubber, C.dark, C.body, C.body], true));
@@ -20928,7 +20932,7 @@ var SU = {
 };
 
 function suHull(body, cap, sideC) {
-  var C = PZ, g = PZ3G, H = PZ3H, S = SU, f = [], sd, i;
+  var C = SUG, g = PZ3G, H = PZ3H, S = SU, f = [], sd, i;
   /* ---- running gear ---- */
   for (sd = -1; sd <= 1; sd += 2) {
     var y = sd * g.TY;
@@ -21050,6 +21054,11 @@ function suHull(body, cap, sideC) {
     var zb2 = zr - 5.0, yb2 = sideY(zb2);
     f = f.concat(roll(box(cx2, -yb2 - .1, zb2, 1.0, .5, 1.4, C.steel, C.bare, C.steel, 0), -slant, -yb2, zb2));
   });
+  /* the cross on each side, ahead of the links and the cable's last bracket */
+  [-1, 1].forEach(function (s) {
+    var cz = 18.4, n = [0, s * Math.cos(slant), Math.sin(slant)], P = paintAxes(n);
+    f = f.concat(hp4Cross([15.0, s * sideY(cz), cz], P.u, P.v, n, 3.6, .8, .26));
+  });
 
   /* ---- the engine deck: the two big hatches, the armoured intakes on the fenders along
      both sides of it, the box on the back of it, and the two spare road wheels ---- */
@@ -21090,7 +21099,7 @@ function suHull(body, cap, sideC) {
    frame on the casemate front and traverses ten degrees either way; the hull turns for
    the rest, which is the other half of what a Sturmgeschütz is. */
 function suGun(body, cap) {
-  var C = PZ, f = [];
+  var C = SUG, f = [];
   f = f.concat(box(3.25, 0, -1.9, 6.5, 6.2, 3.8, body, cap, C.dark, .4));
   [[-2.3, -1.2], [2.3, -1.2], [-2.3, 1.2], [2.3, 1.2]].forEach(function (b) {
     f = f.concat(studX(6.5, b[0], b[1], .32, .35, C.bare));
@@ -21111,7 +21120,7 @@ function suGun(body, cap) {
 /* the coaxial MG34 through the mantlet beside the gun. The StuH 42 had none until the
    last months; it is a field fitting here, and the text on the button says so. */
 function suCoax() {
-  var C = PZ, f = [];
+  var C = SUG, f = [];
   f = f.concat(place(tubeSmooth(0, 1.0, 0, 0, .62, 10, C.dark, '#17190f'), 0, 5.8, 2.3, .8));
   f = f.concat(place(tubeSmooth(0, 2.6, 0, 0, .28, 8, C.steel, '#17190f'), 0, 6.8, 2.3, .8));
   return f;
@@ -21119,7 +21128,7 @@ function suCoax() {
 /* the MG34 behind its shield, stood up ahead of the loader's hatch, and the loader
    working it with the hatch open behind him */
 function suRoofMG() {
-  var C = PZ, f = [], zr = SU.zRoof, lx = SU.ld.x, ly = SU.ld.y;
+  var C = SUG, f = [], zr = SU.zRoof, lx = SU.ld.x, ly = SU.ld.y;
   f = f.concat(place(pitch(box(0, 0, 0, .5, 6.8, 5.2, C.dark, C.body, C.dark, 0), -.18, 0, 0), 0, lx + 7.4, ly, zr + .4));
   f = f.concat(box(lx + 7.4, ly, zr + 5.5, .9, 3.6, .9, C.dark, C.body, C.dark, 0));
   f = f.concat(cyl(lx + 4.8, ly, zr + .5, .5, .5, 3.0, 6, C.steel, C.bare, 0, true));
@@ -21136,7 +21145,7 @@ function suRoofMG() {
 /* the Scherenfernrohr 14 Z: the scissors periscope stood up through the cupola, its two
    arms opened out, the eyepiece housing between them at the rim */
 function suScope() {
-  var C = PZ, f = [], cu = SU.cup, zt = SU.zRoof + cu.h + .8, sx = cu.x + 2.4;
+  var C = SUG, f = [], cu = SU.cup, zt = SU.zRoof + cu.h + .8, sx = cu.x + 2.4;
   f = f.concat(box(sx, cu.y, zt, .9, 1.4, 2.6, C.steel, C.bare, C.steel, 0));
   f = f.concat(box(sx, cu.y, zt + 2.4, 2.2, 3.0, 1.8, C.dark, C.body, C.dark, .2));
   [-1, 1].forEach(function (s3) {
@@ -21149,12 +21158,12 @@ function suScope() {
 /* the Schürzen: five plates a side hung on a rail along the fender edge, from the fender
    down past the return rollers */
 function suSkirts() {
-  var C = PZ, H = PZ3H, f = [], i, s2, zT = H.zFender + .4, zB = 6.0;
+  var C = SUG, H = PZ3H, f = [], i, s2, zT = H.zFender + .4, zB = 6.0;
   for (s2 = -1; s2 <= 1; s2 += 2) {
     var sy = s2 * (H.fenderHalf + .7);
     for (i = 0; i < 5; i++) {
       var px = 22.4 - i * 11.4, yaw = i === 0 ? -s2 * .14 : (i === 4 ? s2 * .14 : 0);
-      f = f.concat(place(box(0, 0, zB, 11.0, .4, zT - zB, SUC.skirt, SUC.skirtLit, SUC.dark, 0), yaw, px, sy, 0));
+      f = f.concat(place(box(0, 0, zB, 11.0, .4, zT - zB, C.body, C.lit, C.dark, 0), yaw, px, sy, 0));
       f = f.concat(place(box(0, 0, zT, 11.0, .9, .4, C.steel, C.bare, C.steel, 0), yaw, px, sy - s2 * .25, 0));
     }
     f = f.concat(tubeSmooth(-24.0, 27.0, s2 * (H.fenderHalf + .35), zT + .2, .25, 5, C.steel, C.steel));
@@ -21679,11 +21688,6 @@ function jeepGunner() {
    are 0.61 m over the tread against a 4.50-16's 0.635, and its sidecar wheel 1.14 m off the
    machine's line against the published 1,105 mm; the published figures are kept. */
 
-/* The Wehrmacht's paint, which every vehicle built for the 352nd wears: the dark blue-grey
-   the army's vehicles left the factory in before dunkelgelb, and a different army's
-   vehicles from the sand of the first roster's beside it. Three values, the plate, the face the
-   light is on and the face it is not, the way every palette here is laid out. */
-var HRG = { body: '#5d6267', lit: '#6b7176', dark: '#4b4f54' };
 var KSC = {
   body: HRG.body, lit: HRG.lit, dark: HRG.dark, steel: PZ.steel, bare: PZ.bare, rubber: PZ.rubber, tyre: PZ.tyre,
   alloy: '#8f8d82', alloyD: '#737168', iron: '#2f302b', seat: '#2d2925', seatL: '#3d372f', coam: '#2a2621',
@@ -22315,8 +22319,18 @@ var HP4DIG = {
   '1': [hp4Rect(.30, 0, .46, 1), [[.10, .80], [.30, 1], [.30, .84], [.16, .70]]],
   '4': [hp4Rect(.38, 0, .54, 1), hp4Rect(0, .30, .60, .45), [[.28, 1], [.44, 1], [.16, .45], [0, .45]]],
   '5': [hp4Rect(.04, .86, .56, 1), hp4Rect(.04, .50, .20, 1), hp4Rect(.04, .50, .52, .64),
-        hp4Rect(.40, .08, .56, .58), hp4Rect(.04, 0, .52, .14)]
+        hp4Rect(.40, .08, .56, .58), hp4Rect(.04, 0, .52, .14)],
+  '0': [hp4Rect(.04, 0, .20, 1), hp4Rect(.40, 0, .56, 1), hp4Rect(.20, .86, .40, 1), hp4Rect(.20, 0, .40, .14)],
+  '2': [hp4Rect(.04, .86, .56, 1), hp4Rect(.40, .60, .56, .86), [[.04, .14], [.22, .14], [.56, .62], [.38, .62]],
+        hp4Rect(.04, 0, .56, .14)],
+  '3': [hp4Rect(.04, .86, .40, 1), hp4Rect(.14, .43, .40, .57), hp4Rect(.04, 0, .40, .14), hp4Rect(.40, 0, .56, 1)]
 };
+/* the two axes paint is laid along on a plate whose outward normal is `n`: level across it and
+   reading the right way round from outside (n x z), and up it (u x n) */
+function paintAxes(n) {
+  var l = Math.hypot(n[0], n[1]) || 1, u = [n[1] / l, -n[0] / l, 0];
+  return { u: u, v: [u[1] * n[2] - u[2] * n[1], u[2] * n[0] - u[0] * n[2], u[0] * n[1] - u[1] * n[0]] };
+}
 function hp4Number(txt, o, u, v, n, h) {
   var f = [], i, x0 = -(txt.length * .78 - .18) * h / 2;
   for (i = 0; i < txt.length; i++) {
@@ -28965,11 +28979,15 @@ var GUN = { steel: '#34382f', steelL: '#4a4e43', brass: '#8a7a48', canvas: '#7f7
    unit. Every plate is at its real slope: the glacis and lower nose at 50 degrees meet
    in a forward edge, the upper hull sides lean in at 25, the turret front stands at 10,
    its sides at 21. Nine overlapping 800 mm road wheels a side in two rows on torsion
-   bars, the big front sprocket, the rear idler. Zimmerit under a three-tone scheme,
-   spare track on the turret sides, tools and cables on the hull. */
-var KT = { body: '#8f8f8f', lit: '#9d9d9d', dark: '#7c7c7c',                    /* neutral: the camo tile supplies the colour */
+   bars, the big front sprocket, the rear idler. Zimmerit under the 352nd's grey, spare
+   track on the turret sides, tools and cables on the hull.
+
+   The plate under Zimmerit is the grey a hair off the plain paint's, which is what finds the
+   ridged tile rather than the paint one; `dg` and `dgD` are the plain paint on what had none
+   (the wheels, the hatches, the fittings), and keep the names of the dunkelgelb they were. */
+var KT = { body: '#5f6267', lit: '#6d7176', dark: '#4d4f54',
            steel: '#34382f', bare: '#6d6e62', rubber: '#1c1d19', tyre: '#2a2b26', track: '#4a4842', trackLit: '#5b5952',
-           dg: '#9c8b5c', dgD: '#7d6f4a', wood: '#5a4630', jerry: '#8a7a4e', tarp: '#7f7150' };
+           dg: HRG.body, dgD: HRG.dark, dgL: HRG.lit, wood: '#5a4630', jerry: '#8a7a4e', tarp: '#7f7150' };
 
 /* the Tiger II's running gear. Nine 800 mm steel-tyred wheels a side, overlapping in
    two rows, and no return rollers at all: the top run of the track rides on the tops
@@ -29197,6 +29215,12 @@ function ktHull(body, cap, sideC) {
   });
   /* fire extinguisher, headlight with its cable, the Bosch horn */
   f = f.concat(cyl(-13, -sideTop + 2, zRoof, 1.15, 1.15, 3.0, 8, '#6e3029', '#7d3c33', 0, true));
+  /* the cross on each side behind the cables, on the plate leaning in */
+  var lean = Math.atan2(spon - sideTop, zRoof - zSponFloor);
+  [-1, 1].forEach(function (s) {
+    var cz = 16.0, n = [0, s * Math.cos(lean), Math.sin(lean)], P = paintAxes(n);
+    f = f.concat(hp4Cross([-37.0, s * (spon - (cz - zSponFloor) * Math.tan(lean)), cz], P.u, P.v, n, 5.4, 1.2, .38));
+  });
   return f;
 }
 /* ---- the Henschel production turret, laid over the four-view drawing (tools/ref/ger_kt.json).
@@ -29308,6 +29332,16 @@ function ktTurret(body, cap, sideC) {
   });
   /* lifting eyes and the aerial base on the bustle */
   [[6.5, -7.6], [6.5, 7.6], [-26, -5.2], [-26, 5.2]].forEach(function (p) { f = f.concat(box(p[0], p[1], ktRoofZ(p[0]) - .2, 1.6, 1.6, 2.2, C.dgD, C.dg)); });
+  /* the number on each side, on the face that flares out from the front plate, ahead of the
+     links. That face is two triangles and not a plane: the roof's front corner stands 0.46 u
+     proud of the plane its foot and its back edge lie in, so the paint is laid on that plane a
+     quarter of a unit out, which clears the proud triangle and is a hair off the other */
+  var tl = 21 * Math.PI / 180, pl = Math.hypot(14.9, 4.25);
+  [-1, 1].forEach(function (s) {
+    var n = [4.25 / pl * Math.cos(tl), s * 14.9 / pl * Math.cos(tl), Math.sin(tl)], P = paintAxes(n);
+    var ox = -.3, oz = 4.4, oy = s * ktTurSide(ox, oz);
+    f = f.concat(hp4Number('314', [ox + n[0] * .25, oy + n[1] * .25, oz + n[2] * .25], P.u, P.v, n, 2.9));
+  });
   f = f.concat(cyl(-24, 0, ktRoofZ(-24), 1.2, 1.2, 1.8, 8, C.dgD, C.dg, 0, true));
   f = f.concat(cyl(-24, 0, ktRoofZ(-24) + 1.8, .3, .3, 30, 4, C.steel, C.steel));
   return f;
@@ -29366,7 +29400,7 @@ function mausPulleys() {
   return w;
 }
 function mausTrack(y) {
-  var C = KT, g = MSG;
+  var C = MSC, g = MSG;
   return trackBelt(y, mausPulleys(), {
     w: g.TW, thick: g.T, pitch: g.LP,
     col: C.track, lit: C.trackLit, steel: C.steel,
@@ -29377,7 +29411,7 @@ function mausTrack(y) {
    the side plate hides all but the bottom of it, and built at all because a shed track
    has to have something behind it. */
 function mausRoadWheel(x, y) {
-  var C = KT, r = MSG.R, hw = 1.45;
+  var C = MSC, r = MSG.R, hw = 1.45;
   var prof = [[0, -hw], [1.1, -hw], [1.1, -.7], [2.4, -1.0], [r, -1.15],
               [r, 1.15], [2.4, 1.0], [1.1, .7], [1.1, hw], [0, hw]];
   var cols = [C.dg, C.dgD, C.dg, C.bare, C.steel, C.bare, C.dg, C.dgD, C.dg];
@@ -29386,7 +29420,7 @@ function mausRoadWheel(x, y) {
 /* sprocket and idler on the one pattern: a dished disc with a ring of teeth round it,
    which at this size is everything that reads */
 function mausPulley(x, z, r, y, sd, teeth) {
-  var C = KT, hw = 2.9, f, t;
+  var C = MSC, hw = 2.9, f, t;
   var prof = [[0, -hw], [r * .3, -hw], [r * .3, -1.1], [r * .55, -1.5], [r - .6, -2.0], [r, -2.1],
               [r, 2.1], [r - .6, 2.0], [r * .55, 1.5], [r * .3, 1.1], [r * .3, hw], [0, hw]];
   var cols = [C.dg, C.dgD, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dgD, C.dg];
@@ -29400,6 +29434,9 @@ function mausPulley(x, z, r, y, sd, teeth) {
   return f;
 }
 
+/* The Maus is in the plain grey and nothing else: neither prototype was ever given Zimmerit */
+var MSC = { body: HRG.body, lit: HRG.lit, dark: HRG.dark, steel: KT.steel, bare: KT.bare, rubber: KT.rubber, tyre: KT.tyre,
+            track: KT.track, trackLit: KT.trackLit, dg: HRG.body, dgD: HRG.dark, wood: KT.wood, jerry: KT.jerry, tarp: KT.tarp };
 var MSH = {
   halfW: 21.5,      /* 3.67 m over the side plates, which stand a hand outside the tracks */
   lowHalf: 7.0,     /* 1.2 m: all the hull there is between the tracks */
@@ -29429,7 +29466,7 @@ function mausSideDisc(x, sd, z, r, col, cap) {
 }
 
 function mausHull(body, cap, sideC) {
-  var C = KT, H = MSH, g = MSG, f = [], sd, i;
+  var C = MSC, H = MSH, g = MSG, f = [], sd, i;
   for (sd = -1; sd <= 1; sd += 2) {
     var y = sd * g.TY;
     f = f.concat(mausTrack(y));
@@ -29466,6 +29503,8 @@ function mausHull(body, cap, sideC) {
        over the track adjuster */
     f = f.concat(mausSideDisc(-38.7, s2, 19.9, 1.6, C.dgD, C.dg));
     f = f.concat(mausSideDisc(g.xSprk, s2, g.zSprk, 1.6, C.dgD, C.dg));
+    /* the cross, a little behind the middle of the side plate */
+    f = f.concat(hp4Cross([-2.0, s2 * H.halfW, 16.5], [s2, 0, 0], [0, 0, 1], [0, s2, 0], 6.2, 1.4, .45));
   });
   /* ---- the nose: headlamps on the glacis at its outer edges, and the two towing
      shackles on the knuckle under the nose plate either side of the middle ---- */
@@ -29545,7 +29584,7 @@ var MST = {
   lean: 28 * Math.PI / 180    /* the sides, off the vertical */
 };
 function mausTurret(body, cap, sideC) {
-  var C = KT, T = MST, f = [], i, H = T.H, gz = T.gz;
+  var C = MSC, T = MST, f = [], i, H = T.H, gz = T.gz;
   var fr = T.base.map(function (p) { return [p[0], p[1], 0]; });
   var rr = T.roof.map(function (p) { return [p[0], p[1], H]; });
   var shell = welded(loft([fr, rr], [body]));
@@ -29626,7 +29665,7 @@ function mausTurret(body, cap, sideC) {
 /* the MG34 the commander works off his hatch ring, with him up behind it. Laid out on the
    Tiger II's pattern because it is the same drill, but on this hatch. */
 function mausCupolaMG() {
-  var C = KT, f = [], zr = MST.H, cx = MST.cmd.x, cy = MST.cmd.y;
+  var C = MSC, f = [], zr = MST.H, cx = MST.cmd.x, cy = MST.cmd.y;
   f = f.concat(cyl(cx, cy, zr + .4, 3.6, 3.6, .5, 18, C.steel, C.bare, 0, true));
   f = f.concat(cyl(cx + 2.6, cy + 2.4, zr + .9, .5, .5, 3.2, 6, C.steel, C.bare, 0, true));
   f = f.concat(place(pitch(box(4.5, 0, 0, 10, 1.1, 1.6, C.steel, C.bare), -.25, 0, 0), -.4, cx + 2.6, cy + 2.4, zr + 4.1));
@@ -29661,12 +29700,12 @@ function mausCupolaMG() {
 
    Laid out at 8.5 cm to the unit from the published figures: 6.316 m over the hull,
    8.45 m with the gun forward, 3.56 m over the 725 mm combat tracks, 3.00 m to the top
-   of the cupola, 470 mm of clearance. Zimmerit under a three-tone scheme, which is what
-   a Tiger built in the autumn of 1943 wore into an Italian winter. */
-var TIG = { body: '#8e8e8e', lit: '#9b9b9b', dark: '#7b7b7b',    /* neutral: the camo tile supplies the colour */
+   of the cupola, 470 mm of clearance. Zimmerit, which a Tiger built in the autumn of 1943
+   carried, under the 352nd's grey, laid out as the King Tiger's is. */
+var TIG = { body: KT.body, lit: KT.lit, dark: KT.dark,
             steel: '#34382f', bare: '#6d6e62', rubber: '#1c1d19', tyre: '#2a2b26',
             track: '#4a4842', trackLit: '#5b5952',
-            dg: '#9c8b5c', dgD: '#7d6f4a', wood: '#5a4630', tarp: '#7f7150' };
+            dg: HRG.body, dgD: HRG.dark, dgL: HRG.lit, wood: '#5a4630', tarp: '#7f7150' };
 
 /* Eight axles a side, 800 mm wheels overlapping in two rows, and nothing carrying the
    top run of the track but the tops of the wheels themselves. */
@@ -29946,6 +29985,11 @@ function tigerHull(body, cap, sideC) {
     f = f.concat(box(-22.0, sy, zs, 4.6, 1.0, 1.8, C.dgD, C.dg));                                      /* the jack block */
   });
   f = f.concat(cyl(-28.0, -(sp + 1.3), zs, .95, .95, 2.5, 8, '#6e3029', '#7d3c33', 0, true));            /* the extinguisher */
+  /* the cross on each side, on the stretch of plate behind where the cables and the rod tube end:
+     laid between the axe and the shovel, the cables and the tube hid all of it but the upright */
+  [-1, 1].forEach(function (s) {
+    f = f.concat(hp4Cross([-29.4, s * sp, (zs + zr) / 2], [s, 0, 0], [0, 0, 1], [0, s, 0], 4.4, 1.0, .32));
+  });
   return f;
 }
 
@@ -30009,13 +30053,13 @@ function tigerTurret(body, cap, sideC) {
   f = f.concat(tubeSmooth(13.1, 16.4, 5.0, gz - .4, .55, 8, C.steel, C.steel));                        /* the coaxial MG34 */
   f = f.concat(box(15.6, -5.5, gz + 1.0, 1.2, 2.6, 1.2, '#1a1d18', '#23261f', '#23261f', 0));           /* the gunner's binocular sight */
   /* ---- the 8.8 cm KwK 36 L/56: a straight tube out to a double-baffle brake ---- */
-  f = f.concat(tubeSmooth(16.3, 20.4, 0, gz, 2.3, 16, body, C.lit));
-  f = f.concat(tubeSmooth(20.4, 21.6, 0, gz, 2.5, 14, C.dark, C.lit));
-  f = f.concat(tubeSmooth(21.6, 53.6, 0, gz, 1.55, 16, body, C.lit));
-  f = f.concat(tubeSmooth(53.6, 55.0, 0, gz, 1.8, 14, C.dark, C.lit));
-  f = f.concat(tubeSmooth(55.0, 60.2, 0, gz, 2.1, 14, body, C.lit));
-  f = f.concat(box(56.6, 0, gz - 2.3, 1.0, 4.9, 4.6, C.dark, C.lit, C.lit));
-  f = f.concat(box(59.0, 0, gz - 2.3, 1.0, 4.9, 4.6, C.dark, C.lit, C.lit));
+  f = f.concat(tubeSmooth(16.3, 20.4, 0, gz, 2.3, 16, C.dg, C.dgL));
+  f = f.concat(tubeSmooth(20.4, 21.6, 0, gz, 2.5, 14, C.dgD, C.dgL));
+  f = f.concat(tubeSmooth(21.6, 53.6, 0, gz, 1.55, 16, C.dg, C.dgL));
+  f = f.concat(tubeSmooth(53.6, 55.0, 0, gz, 1.8, 14, C.dgD, C.dgL));
+  f = f.concat(tubeSmooth(55.0, 60.2, 0, gz, 2.1, 14, C.dg, C.dgL));
+  f = f.concat(box(56.6, 0, gz - 2.3, 1.0, 4.9, 4.6, C.dgD, C.dgL, C.dgL));
+  f = f.concat(box(59.0, 0, gz - 2.3, 1.0, 4.9, 4.6, C.dgD, C.dgL, C.dgL));
   f = f.concat(tubeSmooth(60.2, 61.0, 0, gz, 1.35, 12, C.dark, '#1a1b16'));
   /* ---- the roof: the cast cupola at the commander's left rear with its six periscopes,
      the loader's hatch on the right with his periscope ahead of it, the close-defence
@@ -30051,6 +30095,14 @@ function tigerTurret(body, cap, sideC) {
     f = f.concat(box(9.4, s * 12.0, H * .58, 1.5, .8, 2.6, C.dgD, C.dg, C.dgD, 0));
     f = f.concat(box(-13.2, s * 10.6, H - .2, 1.6, 1.4, 1.8, C.dgD, C.dg));                            /* the lifting eyes */
   });
+  /* the number on each side, between the vision slot and the pistol port on the face that runs
+     back from the front corner, and again across the back of the bin */
+  [-1, 1].forEach(function (s) {
+    var ax = plan[4][0], ay = s * plan[4][1], bx = plan[5][0], by = s * plan[5][1], dl = Math.hypot(bx - ax, by - ay);
+    var n = [s * (by - ay) / dl, -s * (bx - ax) / dl, 0], P = paintAxes(n);
+    f = f.concat(hp4Number('213', [(ax + bx) / 2, (ay + by) / 2, 5.0], P.u, P.v, n, 3.6));
+  });
+  f = f.concat(hp4Number('213', [-21.0, 0, 4.3], [0, 1, 0], [0, 0, 1], [-1, 0, 0], 2.4));
   return f;
 }
 
@@ -32555,14 +32607,14 @@ function buildVehicleModels() {
                       gunZ: 4.4, turX: 2.0, mg: m10Fifty(), mgUp: { coax: m10Coax() } };
   VMODEL.ger_kt   = { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
                       bar: 69, big: 1, heavy: 1, scale: 1, mountZ: 22.8, gunZ: KTT.gz, turX: 4, mg: ktCupolaMG() };
-  VMODEL.ger_maus = { hull: mausHull(KT.body, KT.lit, KT.dark), tur: mausTurret(KT.body, KT.lit, KT.dark),
+  VMODEL.ger_maus = { hull: mausHull(MSC.body, MSC.lit, MSC.dark), tur: mausTurret(MSC.body, MSC.lit, MSC.dark),
                       belly: MSG.zBelly, bar: 83.7, big: 1, heavy: 1, scale: 1,
                       mountZ: MSH.zRoof, gunZ: MST.gz, turX: MSH.turX, mg: mausCupolaMG() };
   VMODEL.ger_tig  = { hull: tigerHull(TIG.body, TIG.lit, TIG.dark), tur: tigerTurret(TIG.body, TIG.lit, TIG.dark), belly: TIGG.zBelly,
                       bar: 61, big: 1, heavy: 1, scale: 1, mountZ: TIGH.zRoof, gunZ: TIGT.gz, turX: 1.0, mg: tigCupolaMG() };
   /* fixed: the gun is the only thing that turns, so the hatches and the roof fittings
      are drawn with the hull rather than with the mount */
-  VMODEL.ger_stug = { hull: suHull(SUC.body, SUC.lit, SUC.dark), tur: suGun(SUC.body, SUC.lit), belly: PZ3H.zBelly,
+  VMODEL.ger_stug = { hull: suHull(SUC.body, SUC.lit, SUC.dark), tur: suGun(SUG.body, SUG.lit), belly: PZ3H.zBelly,
                       bar: 21.5, big: 1, fixed: 1, scale: 1, mountZ: SU.zGun, gunZ: 0, turX: SU.xFront, turY: SU.yGun,
                       skirts: suSkirts(), mgUp: { mgs: suCoax() }, addUp: { mgs: suRoofMG(), scope: suScope() } };
   /* mgMan: the man who works the roof gun, drawn with it and baked apart from it. In the

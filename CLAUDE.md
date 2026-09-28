@@ -1253,7 +1253,11 @@ way round. Most of the row is the plate and the gun at three hundred: a Panzer I
 through its front between one time in five and two in three and through its side every time, and its
 90 mm goes through a Panther's front more than three times in five, more often than the M4A1's 75
 does, and a Panzer IV's every time. The eye is up out of the cupola and drops when the lid shuts,
-forty wrecks throw the turret some of the time, killed it leaves American bodies.
+forty wrecks throw the turret some of the time, killed it leaves American bodies. And the four the
+first roster left on the German depot, the Tiger, the King Tiger, the Maus and the StuH 42, are asked
+what they wear: not one face of the sand, the two Zimmerit tiles with no colour of their own in them,
+the plate under Zimmerit on the ridged or the combed tile and the Maus's on the paint, and the cross on
+all four and the number on the turrets of the two Tigers.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -3358,6 +3362,31 @@ starvation the money reserve exists to prevent. Only the player may have one.
   and the jettison tank across the tail, which stands half a metre past the published hull and is in
   the card's length for that reason.
 
+**And all four are in the 352nd's grey now**, with the StuH 42: they were the last things on the German
+depot in the first roster's sand three-tone. The three-tone was never in their palettes. The Tigers'
+Zimmerit tile and the StuH's combed one carried it, painted into the tile over a neutral grey vertex
+colour, so the repaint is the tiles losing their colour (they are `zimrow` and `zimsq` now, where they
+were `ktcamo` and `p4camo`, and carry the ridges and the combing and nothing else) and the plate under
+them taking the grey. The grey on Zimmerit is `HRG` a hair off (`KT`, `TIG`, `SUC`), because a colour
+string finds its tile and the plain grey's finds the paint tile: two units in one channel, where one
+unit put six of their `lit()` tints on the same string as a tint of the plain grey and on the other's
+tile. What had no Zimmerit is the plain grey: the wheels, the hatches and the fittings (`dg` and `dgD`,
+which keep the names of the dunkelgelb they were), the Tiger's gun, the StuH's running gear, gun and
+Schürzen (`SUG`, where they read the sand `PZ` direct), and the whole of the Maus (`MSC`), because
+neither prototype ever carried Zimmerit. `HRG` moved up the file to beside `PZ` for that, since `SUG`
+is built before where it was.
+
+The markings are the Panzer IV's (`hp4Cross`, `hp4Number`), laid with `paintAxes(n)`, which gives the
+two axes paint lies along on a plate with any outward normal. The block hand has a 0, a 2 and a 3 now.
+The Tiger carries the cross on each side of the hull aft of where the cables and the rod tube end
+(laid between the axe and the shovel, they hid all of it but the upright) and 213 on both sides of the
+turret and across the bin; the King Tiger the cross on each side toward the tail and 314 on the faces
+that flare out from the front plate, laid a quarter of a unit off, because that face is two triangles
+and its roof corner stands 0.46 u proud of the plane its foot lies in; the Maus and the StuH a cross on
+each side. The gate asks all of it of the four: not one face of sand, the two Zimmerit tiles with under
+8 of colour in them against the paint tile's 3.7 and the sand tiles' 50-odd, the plate on the tile it
+wants, and the cross and the numbers where they go.
+
 A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
 outside the arc (at a penalty) so the hull has something to turn toward, the halted
 hull pivots at about a radian a second to bring it inside, `u.turret` is clamped to
@@ -4025,8 +4054,8 @@ more suppression, and it reads 58 per cent against the squad where more damage r
 Panzer IV the paratroopers fielded in Italy: the Ausf. H with the long 7.5 cm KwK 40 L/48, laid out
 with the driver on the left and the bow gunner on the right, which that model was not. **Every
 vehicle built for the 352nd is in the Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint),
-where the first roster's German vehicles that are still fielded (the StuH 42, the Tigers and the Maus)
-stay in their sand; the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
+and the four the first roster left on the depot (the StuH 42, the Tigers and the Maus) have been
+repainted in it (see *The Tiger I, the King Tiger and the Maus*); the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
 gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.97 m long against 5.92,
 7.07 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
 (the cupola lid is not in the measured mount), a body of 2.36 against 2.36, a roof of 2.38 and
@@ -7425,7 +7454,10 @@ shots/                         screenshot output, gitignored
   Norman stone shades did exactly that with a German camouflage tint, and the manor the
   German headquarters stands as was drawn in splinter camo. The materials row counts faces
   on the untextured tile and cannot see this at all. Six colours were moved a unit or
-  three; a probe that asks every tint of a new palette for its material is the check.
+  three; a probe that asks every tint of a new palette for its material is the check. A
+  grey kept a hair off another on purpose, so that it finds a different tile, needs two
+  units in a channel and not one: at one, `lit(c, .92)` of the Tigers' Zimmerit grey rounded
+  to the same string as the same tint of the plain grey.
 - **A grid filled below the line that marks it is a mark that never happened.** A
   hedgerow's `hogg` mark sat two blocks above `hogg.fill(0)` in `rebuildGrid` and every
   tank on Omaha drove through the bocage at the price of open ground. Read the order of a
