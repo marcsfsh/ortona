@@ -4203,7 +4203,7 @@ var LANDS = {
      level is the river's surface; nothing else on the map is below it but a hole dug next
      to the water. The pads are a band across each headquarters, since three stand along
      each end of the map a lane apart. */
-  stlo: { name: 'stlo', build: landStlo, at: stloZ, coast: null, rail: null, val: [], sea: 0, river: stloRiver,
+  stlo: { name: 'stlo', build: landStlo, at: stloZ, coast: null, rail: null, val: [], sea: 0, river: stloRiver, noPad: stloOnWay,
           padR: 210, padY: 150, padM: 120, soil: 'stlo', atmo: ATMO_STLO, hand: 1, mirrorY: 1400 }
 };
 var LAND = LANDS.ortona;
@@ -4687,8 +4687,8 @@ function stloMapData() {
   pair('setts', 46, BRK);
   /* the ramp up to the Porte au Lait and the Porte Dollee: over the brook and up the scarp,
      and the street through the rock from gate to gate */
-  pair('setts', 40, [[1762, 990], [1790, 1046], [1950, 1110], [2080, 1178], [2084, 1196]]);
-  both('setts', 40, [[2084, 1196], [2088, 1300], [2088, 1400]]);
+  pair('setts', 40, [[1762, 990], [1790, 1046], [1950, 1110], [2050, 1134], [2073, 1160], [2074, 1196]]);
+  both('setts', 40, [[2074, 1196], [2086, 1300], [2088, 1400]]);
   /* inside the rock: the Rue Notre-Dame from the east gate to the Place, the Place in front
      of the church's east end, and the street along either side of the church from the Place
      to the parvis over the point */
@@ -5052,6 +5052,25 @@ function stloMapData() {
     both2({ t: 'pole', x: px, y: r1(py), broken: pk % 3 === 1 ? 1 : 0 });
   }
   [[1900, 1330], [1341, 1336], [2830, 1010], [3020, 1120]].forEach(function (p) { both2({ t: 'smoke', x: p[0], y: p[1] }); });
+  /* the level crossing on each forward row across the river, which is the flag there: the
+     keeper's cottage on the corner with its garden walled in dry stone, the two gates
+     rolled back off the road along the line, and a van the fighter-bombers caught on the
+     running line, burnt out where it stopped. The flag stands on the road, and this is
+     what there is to hold it from. */
+  E.push({ t: 'nhouse', style: 'house', x: 3096, y: 846, w: 44, h: 34, ht: 34, s: .52, flip: 1 });
+  E.push({ t: 'nhouse', style: 'house', x: 3096, y: my(846), w: 44, h: 34, ht: 34, s: .18 });
+  wpair(3118, 826, 3164, 826, 11); wpair(3164, 826, 3164, 880, 11); wpair(3164, 880, 3118, 880, 11);
+  both2({ t: 'feature', look: 'crossgate', x: 3040, y: 712, w: 6, h: 64, a: Math.PI / 2, solid: 0 });
+  both2({ t: 'feature', look: 'crossgate', x: 2966, y: 828, w: 6, h: 64, a: Math.PI / 2, solid: 0 });
+  both2({ t: 'feature', look: 'wreckcar', x: 3016, y: 900, w: 32, h: 104, a: Math.PI / 2 + .05 });
+  /* what rolling stock was left in the yard: a van against the buffers, a flat on the other
+     siding, and a tank wagon on the loop by the signal box */
+  both2({ t: 'feature', look: 'boxcar', x: 3190, y: 1055, w: 32, h: 104, a: Math.PI / 2 });
+  both2({ t: 'feature', look: 'flatcar', x: 3216, y: 1160, w: 32, h: 104, a: Math.PI / 2 });
+  both2({ t: 'feature', look: 'tankcar', x: 3130, y: 1155, w: 32, h: 104, a: Math.PI / 2 });
+  /* the Champ de Mars: a pit each side of the flag, dug in the gravel between the planes
+     and the memorial, which is the only thing on the square short of its terraces */
+  both2({ t: 'emplace', x: 690, y: 1364, r: 22, a: 0 });
   /* and a tree that stood where a bomb fell or a pit was dug is not there any more */
   var holes = E.filter(function (e) { return e.t === 'crater' || e.t === 'emplace'; });
   for (var ti = E.length - 1; ti >= 0; ti--) {
@@ -5182,6 +5201,8 @@ function stloMapData() {
 
 
 
+
+
 function landOmaha(h) {
   for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = omahaZ(i * HG, j * HG);
 }
@@ -5213,7 +5234,7 @@ var STLO = {
      at, the half-width of its level and the margin it blends back over. The ramp is the
      road up the scarp to the Porte au Lait; the stair is the Escalier down the point to
      the quay beside the town bridge, a man's way and no hull's */
-  ways: [{ pts: [[1790, 1046], [1950, 1110], [2080, 1178], [2084, 1196]], z1: 96, w: 24, m: 16 },
+  ways: [{ pts: [[1790, 1046], [1950, 1110], [2050, 1134], [2073, 1160], [2074, 1200]], z1: 96, w: 24, m: 16 },
          { pts: [[2432, 1336], [2482, 1270], [2528, 1212]], z1: 8, z0: 96, w: 18, m: 12 }],
   top: 96,
   /* where the wall stands open, as a point on its line on the German side and the half-
@@ -5260,6 +5281,20 @@ function stloEncSD(x, y) {
   }
   best = Math.sqrt(best);
   return inside ? best : -best;
+}
+/* whether a point is on one of the ways onto the rock, its level and the margin it blends
+   over, folded onto the German side the way stloZ reads them */
+function stloOnWay(x, y) {
+  var yy = STLO.mid - Math.abs(y - STLO.mid), wi, pi;
+  for (wi = 0; wi < STLO.ways.length; wi++) {
+    var W = STLO.ways[wi], P = W.pts;
+    for (pi = 1; pi < P.length; pi++) {
+      var ax = P[pi - 1][0], ay = P[pi - 1][1], bx = P[pi][0], by = P[pi][1], ll = Math.hypot(bx - ax, by - ay);
+      var tt = clamp(((x - ax) * (bx - ax) + (yy - ay) * (by - ay)) / (ll * ll), 0, 1);
+      if (Math.hypot(ax + (bx - ax) * tt - x, ay + (by - ay) * tt - yy) < W.w + W.m) return true;
+    }
+  }
+  return false;
 }
 function stloZ(x, y) {
   var dy = Math.abs(y - STLO.mid), sm = function (t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
@@ -5629,6 +5664,9 @@ function levelPad(cx, cy, w, hgt) {
       var ox = Math.max(0, Math.abs(px - cx) - w / 2), oy = Math.max(0, Math.abs(py - cy) - hgt / 2);
       var d = Math.hypot(ox, oy);
       var f = clamp(1 - d / 40, 0, 1);
+      /* a way the country has cut into a slope is built ground with a wall along it, and a
+         house beside it levels its own plot and not the road behind the wall */
+      if (f > 0 && LAND.noPad && LAND.noPad(px, py)) continue;
       var k = hidx(i, j);
       var base = G.hmap0[k] + G.cut[k] + G.fill[k];
       G.pad[k] = (base + G.pad[k]) * (1 - f) + z * f - base;
@@ -17419,6 +17457,7 @@ function registerMaterials() {
     var RW = [RAIL.door, RAIL.wagon, RAIL.wagonD, RAIL.wagonL, RAIL.cabin, RAIL.cabinD].concat(RAIL.crate);
     tag(RS, 'stone'); tagEdges(RS, 'stone'); tag(RB, 'brick'); tagEdges(RB, 'brick'); tag(RM, 'steel'); tagEdges(RM, 'steel');
     tag(RW, 'wood'); tagEdges(RW, 'wood'); tag(RAIL.tarp, 'canvas'); tagEdges(RAIL.tarp, 'canvas'); tag([RAIL.face], 'plaster');
+    tag([RAIL.gate, RAIL.red], 'paint'); tagEdges([RAIL.gate, RAIL.red], 'paint');
   }
   if (typeof BRIDGE !== 'undefined') {
     tag([BRIDGE.stone, BRIDGE.stoneL, BRIDGE.stoneD], 'stone'); tagEdges([BRIDGE.stone, BRIDGE.stoneL, BRIDGE.stoneD], 'stone');
@@ -38122,7 +38161,7 @@ var RAIL = { ballast: '#6f6a58', ballastL: '#847e69', sleeper: '#4a3f2c', rail: 
              dark: '#23272a', door: '#3b2f25', face: '#e2dccb', iron: '#2e302e', zinc: '#55595b', glass: '#394349',
              wagon: '#6a3a2c', wagonD: '#552e24', wagonL: '#7a4636', grey: '#5d6160', tank: '#3a3c3a', char: '#2a2320',
              crate: ['#7c6a4f', '#8e7a5b', '#6d5d45'], tarp: ['#6a6a55', '#78785f', '#5c5c4a'], cabin: '#8a8577', cabinD: '#7a7568',
-             cope: '#d8d2bf' };
+             cope: '#d8d2bf', gate: '#d9d4c5', red: '#a3342a' };
 /* a hipped roof over a rectangle len x wid, its eaves at z0 and its ridge rise over them,
    the ridge along x (or a point where the rectangle is square), each face turned out from
    the middle of the roof and its underside closed */
@@ -38533,6 +38572,32 @@ function bufferStopModel() {
   f = f.concat(box(1, 0, 8, 3, 26, 4, '#6a3a2c', '#6a3a2c', '#552e24', 0));
   return f;
 }
+/* ---- a level crossing's gate, rolled back off the road along the line: a low lattice of
+   white-painted iron on two rollers running on a rail laid in the verge, with the red disc
+   in the middle that faces the road when it is shut, and a post at each end of its run.
+   The keeper lived in the cottage beside it. x along it, standing at y 0 ---- */
+function crossGateModel() {
+  var R = RAIL, f = [], L = 52, k;
+  /* a disc facing along y, centred on y 0 whichever way `roll` turns it */
+  function yDisc(r, t, col) {
+    var d = roll(cyl(0, 0, 0, r, r, t, 14, col, col), Math.PI / 2, 0, 0), y0 = 1e9, y1 = -1e9;
+    d.forEach(function (q) { q.v.forEach(function (v) { y0 = Math.min(y0, v[1]); y1 = Math.max(y1, v[1]); }); });
+    return place(d, 0, 0, -(y0 + y1) / 2, 0);
+  }
+  f = f.concat(box(0, 0, 0, L + 12, 1.6, .6, R.rail, R.railT, R.rail, 0));
+  [-L * .32, L * .32].forEach(function (ax) { f = f.concat(box(ax, 0, .6, 4, 1.4, 2.4, R.iron, R.iron, R.iron, 0)); });
+  f = f.concat(box(0, 0, 2.6, L, 1.2, 1.4, R.gate, R.gate, lit(R.gate, .9), 0));
+  f = f.concat(box(0, 0, 11.6, L, 1.4, 1.6, R.gate, R.gate, lit(R.gate, .9), 0));
+  for (k = -6; k <= 6; k++) f = f.concat(box(k * L / 13, 0, 4, .6, .6, 7.6, R.gate, R.gate, R.gate, 0));
+  [-1, 1].forEach(function (sg) { f = f.concat(ndBeam([sg * L / 2, 0, 3.4], [sg * L * .12, 0, 11.8], .7, .7, R.gate)); });
+  f = f.concat(place(yDisc(4.4, .4, R.gate), 0, 0, 0, 7.6));
+  f = f.concat(place(yDisc(3.5, .9, R.red), 0, 0, 0, 7.6));
+  [-1, 1].forEach(function (se) {
+    f = f.concat(box(se * (L / 2 + 4), 0, 0, 2.2, 2.2, 14, R.gate, R.gate, lit(R.gate, .9), 0));
+    f = f.concat(box(se * (L / 2 + 4), 0, 14, 2.6, 2.6, 1.2, R.iron, R.iron, R.iron, 0));
+  });
+  return f;
+}
 /* the buildings that are drawn by a builder of their own rather than as a Norman house,
    long along x with the front at +y, and the features: wagons, a water tower */
 var NSTYLE = { station: stationModel, goods: goodsShedModel, signalbox: signalBoxModel };
@@ -38543,7 +38608,7 @@ var FEATURE = {
   lamp: function () { return lampPostModel(); }, column: function (p) { return morrisModel(p.s); },
   bandstand: function (p) { return bandstandModel(p); }, memorial: function () { return memorialModel(); },
   cemetery: function (p) { return cemeteryModel(p); }, gasholder: function (p) { return gasholderModel(p); },
-  bufferstop: function () { return bufferStopModel(); }
+  bufferstop: function () { return bufferStopModel(); }, crossgate: function () { return crossGateModel(); }
 };
 /* ---- the bridges over the Vire ----
    A deck is the ground to anything standing on it and nothing to the ground under it.
