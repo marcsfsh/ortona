@@ -3693,7 +3693,7 @@ function buildMap(data) {
   });
   G.covers = []; G.coverIdx = []; G.props = []; G.roads = []; G.trees = [];
   G.hedgeLines = []; G.fences = []; G.stacks = []; G.carts = [];
-  G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = [];
+  G.ditches = []; G.poles = []; G.trenches = []; G.wire = []; G.walls = []; G.hogs = []; G.stairs = []; G.bridges = []; G.deck = null; G.tracks = []; G.platforms = [];
   G.craft = []; G.hogpts = []; G.atDitch = []; G.hedges = []; G.fieldTones = [];
   G.craftPost = data.craftPost || null;            /* the side whose posts are made of craft */
   wallq = null;                                    /* the standing index is rebuilt with them */
@@ -3718,13 +3718,17 @@ function buildMap(data) {
      sight line. Drawn at 24 out in open country a field wall reads as a prefabricated
      barrier, and enough of them read as a maze -- which is what the first pass at the
      Gothic Line's enclosures came out as. */
-  function wallRun(x1, y1, x2, y2, h, sea) {
+  function wallRun(x1, y1, x2, y2, h, sea, ramp) {
     h = h || 24;
     var wr = { x1: x1, y1: y1, x2: x2, y2: y2, h: h };
     if (sea) wr.sea = 1;
+    /* a rampart's parapet is two metres of masonry at a man's chest, so it is heavy cover,
+       and all of it is on the inside: the outside is the face of the rock */
+    if (ramp) wr.ramp = 1;
     G.walls.push(wr);
     var ax = Math.atan2(y2 - y1, x2 - x1), n = Math.max(2, Math.round(Math.hypot(x2 - x1, y2 - y1) / 40));
-    for (var i = 0; i <= n; i++) addCover(lerp(x1, x2, i / n), lerp(y1, y2, i / n), 26, 2, 'lowwall', ax, 90);
+    var ix = ramp ? -Math.sin(ax) * 10 : 0, iy = ramp ? Math.cos(ax) * 10 : 0;
+    for (var i = 0; i <= n; i++) addCover(lerp(x1, x2, i / n) + ix, lerp(y1, y2, i / n) + iy, 26, ramp ? 3 : 2, 'lowwall', ax, 90);
   }
   function trenchRun(pts, side, faceFlag) {
     for (var i = 0; i < pts.length - 1; i++) {
@@ -3748,6 +3752,12 @@ function buildMap(data) {
         break;
       case 'house':
         var b = { x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'ruin', tall: e.tall, style: e.style || 'row', s: e.s || 0, damage: e.damage || 0, roof: !!e.roof, z: 0 };
+        /* a Norman town house carries which face is its street, its stone, its storeys and
+           its roof, and whether the June raids gutted it */
+        if (b.style === 'norman') {
+          b.front = e.front || 0; b.nk = e.nk || 'stone'; b.storeys = e.storeys || 2; b.ht = e.ht;
+          b.shop = e.shop ? 1 : 0; b.gut = e.gut ? 1 : 0; b.pitch = e.pitch; b.dormer = e.dormer;
+        }
         G.blocks.push(b); G.props.push(b);
         /* The four faces of the house, each a piece of cover lying ALONG its own wall.
            The two axes were the other way round, which is not a detail: a patch's axis
@@ -3766,7 +3776,53 @@ function buildMap(data) {
         G.props.push(fm); G.blocks.push(fm);
         addCover(e.x - e.w / 2 - 18, e.y + e.h / 2 + 14, 36, 3, 'rubble'); addCover(e.x + e.w / 2 + 18, e.y + e.h / 2 + 14, 36, 3, 'rubble');
         break;
-      case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2, e.h, e.sea); break;
+      case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2, e.h, e.sea, e.ramp); break;
+      case 'stair': G.stairs.push({ w: e.w || 16, pts: e.pts }); break;
+      case 'track': G.tracks.push(e.pts); break;
+      case 'platform':
+        /* a platform is ground a man stands on, and its edge is a step he lies behind with
+           his rifle on the stone and the track bed in front of him */
+        G.platforms.push({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2, w: e.w || 36, canopy: e.canopy ? 1 : 0 });
+        var pfa = Math.atan2(e.y2 - e.y1, e.x2 - e.x1), pfn = Math.max(2, Math.round(Math.hypot(e.x2 - e.x1, e.y2 - e.y1) / 40));
+        for (var pfi = 0; pfi <= pfn; pfi++) [-1, 1].forEach(function (sg) {
+          var po = (e.w || 36) / 2 - 6;
+          addCover(lerp(e.x1, e.x2, pfi / pfn) - Math.sin(pfa) * po * sg, lerp(e.y1, e.y2, pfi / pfn) + Math.cos(pfa) * po * sg, 22, 2, 'lowwall', pfa, 90);
+        });
+        break;
+      case 'feature':
+        /* a thing standing on the map that is drawn by a builder of its own: a wagon on a
+           siding, a water tower. Solid unless it says otherwise, and a solid one is hard
+           cover along its sides */
+        var fsol = e.solid === 0 ? 0 : 1, fw = e.w || 20, fh = e.h || 20;
+        G.props.push({ x: e.x, y: e.y, w: fw, h: fh, a: e.a || 0, look: e.look, solid: fsol, kind: 'feature', s: e.s === undefined ? ((e.x * 13 + e.y * 7) % 97) / 97 : e.s });
+        if (e.look === 'cemetery') for (var cgx = -fw / 2 + 20; cgx < fw / 2 - 10; cgx += 36) for (var cgy = -fh / 2 + 20; cgy < fh / 2 - 10; cgy += 32)
+          addCover(e.x + cgx, e.y + cgy, 18, 2, 'lowwall', 0, 60);
+        if (fsol) {
+          addCover(e.x, e.y - fh / 2 - 10, Math.max(fw, 20) * .46, 3, 'wall', 0, 120);
+          addCover(e.x, e.y + fh / 2 + 10, Math.max(fw, 20) * .46, 3, 'wall', 0, 120);
+          addCover(e.x - fw / 2 - 10, e.y, Math.max(fh, 20) * .46, 3, 'wall', Math.PI / 2, 120);
+          addCover(e.x + fw / 2 + 10, e.y, Math.max(fh, 20) * .46, 3, 'wall', Math.PI / 2, 120);
+        }
+        break;
+      case 'bridge':
+        /* a bridge over water: its deck is laid once the ground is finished (buildDecks),
+           and the parapets or the girders along it are cover to a man on it */
+        G.bridges.push({ kind: e.kind || 'stone', x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2, hw: e.hw || 28,
+                         hump: e.kind === 'steel' ? 3 : 4.5, lamps: e.lamps ? 1 : 0 });
+        if (e.kind !== 'foot') {
+          var bga = Math.atan2(e.y2 - e.y1, e.x2 - e.x1), bgn = Math.max(2, Math.round(Math.hypot(e.x2 - e.x1, e.y2 - e.y1) / 40));
+          for (var bgi = 0; bgi <= bgn; bgi++) [-1, 1].forEach(function (sg) {
+            var io = (e.hw || 28) - 6;
+            addCover(lerp(e.x1, e.x2, bgi / bgn) - Math.sin(bga) * io * sg, lerp(e.y1, e.y2, bgi / bgn) + Math.cos(bga) * io * sg, 18,
+                     e.kind === 'steel' ? 3 : 2, 'lowwall', bga, 90);
+          });
+        }
+        break;
+      case 'rtower':
+        /* a tower of the ramparts: solid, and standing on the edge of the rock with half of
+           it over the drop, so it is not given a level pad */
+        G.props.push({ x: e.x, y: e.y, w: e.r * 2, h: e.r * 2, r: e.r, roof: e.roof ? 1 : 0, a: e.a || 0, solid: 1, kind: 'rtower' });
+        break;
       case 'bank':
         /* A bank of shingle or of earth: a line a man gets down behind, with no geometry
            of its own, because the ground IS the geometry. Omaha's shingle is part of the
@@ -3888,7 +3944,7 @@ function buildMap(data) {
            bays round a list of openings, so a shell does not take it apart (a farm and a
            church on the other maps are the same scope line) */
         var nh = { x: e.x, y: e.y, w: e.w, h: e.h, solid: 1, kind: 'nhouse', style: e.style || 'house', ht: e.ht || 40,
-                   flip: e.flip ? 1 : 0, s: e.s || 0, z: 0 };
+                   flip: e.flip ? 1 : 0, whole: e.whole ? 1 : 0, s: e.s || 0, z: 0 };
         G.blocks.push(nh); G.props.push(nh);
         addCover(e.x, e.y - e.h / 2 - 12, Math.max(e.w, 40) * .46, 3, 'wall', 0, 150);
         addCover(e.x, e.y + e.h / 2 + 12, Math.max(e.w, 40) * .46, 3, 'wall', 0, 150);
@@ -3934,7 +3990,8 @@ function buildMap(data) {
   applyEarthworks();
   /* a landing craft lies where the tide left it, on the slope of the beach, and is not
      given a level pad: levelling a flat that falls a unit in eighty moves the water's edge */
-  G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea' && p.kind !== 'craft') p.z = levelPad(p.x, p.y, p.w, p.h); });
+  G.props.forEach(function (p) { if (p.solid && p.kind !== 'sea' && p.kind !== 'craft' && p.kind !== 'rtower') p.z = levelPad(p.x, p.y, p.w, p.h); });
+  buildDecks();
   makeFields();
 }
 function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = defaultMapData())); }
@@ -3946,6 +4003,15 @@ function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = defaultM
 var HG = 4, HW = Math.floor(WORLD.w / HG) + 2, HH = Math.floor(WORLD.h / HG) + 2;
 function hidx(i, j) { return j * HW + i; }
 function groundZ(x, y) {
+  /* a bridge's deck is the ground to anything standing on it (see the bridges) */
+  if (G.deck) {
+    var dk = G.deck[hidx(clamp(Math.round(x / HG), 0, HW - 1), clamp(Math.round(y / HG), 0, HH - 1))];
+    if (dk > -1e8) return dk;
+  }
+  return bareZ(x, y);
+}
+/* the ground itself, with no deck over it, which is what the mesher lays */
+function bareZ(x, y) {
   if (!G.hmap) return 0;
   var fx = clamp(x / HG, 0, HW - 1.001), fy = clamp(y / HG, 0, HH - 1.001);
   var i = fx | 0, j = fy | 0, tx = fx - i, ty = fy - j;
@@ -3966,10 +4032,10 @@ function naturalZ(x, y) {
   return (a0 + (b0 - a0) * tx) * (1 - ty) + (a1 + (b1 - a1) * tx) * ty;
 }
 /* the surface normal, used for lighting the mesh */
-function groundNormal(x, y) {
-  var e = HG * .8;
-  var dx = (groundZ(x + e, y) - groundZ(x - e, y)) / (2 * e);
-  var dy = (groundZ(x, y + e) - groundZ(x, y - e)) / (2 * e);
+function groundNormal(x, y, bare) {
+  var e = HG * .8, Z = bare ? bareZ : groundZ;
+  var dx = (Z(x + e, y) - Z(x - e, y)) / (2 * e);
+  var dy = (Z(x, y + e) - Z(x, y - e)) / (2 * e);
   var l = Math.sqrt(dx * dx + dy * dy + 1);
   return { x: -dx / l, y: -dy / l, z: 1 / l };
 }
@@ -4539,7 +4605,7 @@ function stloMapData() {
      from the centre headquarters comes down onto it. */
   pair('tar', 52, [[0, 790], [620, 800], [1050, 805]]);
   pair('tar', 52, [[1050, 805], [1350, 742], [1800, 722], [1990, 730]]);
-  pair('tar', 52, [[1990, 730], [2250, 740], [2600, 768]]);
+  pair('tar', 52, [[1990, 730], [2250, 740], [2631, 769]]);
   pair('tar', 52, [[2790, 770], [3100, 770], [3420, 780], [3800, 800]]);
   /* the brook road along each valley floor, down to the quay */
   pair('setts', 46, [[1180, 918], [1400, 966], [1700, 988], [2000, 998], [2300, 992], [2480, 980], [2600, 972]]);
@@ -4603,6 +4669,95 @@ function stloMapData() {
     E.push({ t: 'sector', id: US[f[0]][0], x: f[1], y: my(f[2]), type: f[3], owner: f[4] ? 'us' : null,
              label: US[f[0]][1], nb: f[6].map(twin) });
   });
+  /* ---- the ramparts, off the rock's own outline so the wall and the cliff under it are
+     one fact. The outline is walked with the outside on the right; each edge is opened
+     at the gates and what is left is cut into runs of fifty units or less, so that each
+     stands on the ground at its own foot. */
+  var RG = [];
+  STLO.gates.forEach(function (g) { RG.push([g[0], MID - g[1], g[2]]); if (g[1]) RG.push([g[0], MID + g[1], g[2]]); });
+  var RP = STLO.encP;
+  for (var ri = 0; ri < RP.length; ri++) {
+    var ra = RP[ri], rb = RP[(ri + 1) % RP.length], rdx = rb[0] - ra[0], rdy = rb[1] - ra[1], rl = Math.hypot(rdx, rdy);
+    if (rl < 1) continue;
+    var cut = [];
+    RG.forEach(function (g) {
+      var t0 = ((g[0] - ra[0]) * rdx + (g[1] - ra[1]) * rdy) / (rl * rl), dd = Math.abs((g[0] - ra[0]) * rdy - (g[1] - ra[1]) * rdx) / rl;
+      if (dd < g[2]) { var hh = Math.sqrt(g[2] * g[2] - dd * dd) / rl; cut.push([t0 - hh, t0 + hh]); }
+    });
+    cut.sort(function (u, v) { return u[0] - v[0]; });
+    var keep = [], at = 0;
+    cut.forEach(function (c) { if (c[0] > at) keep.push([at, Math.min(1, c[0])]); at = Math.max(at, c[1]); });
+    if (at < 1) keep.push([at, 1]);
+    keep.forEach(function (k) {
+      var kl = (k[1] - k[0]) * rl, kn = Math.max(1, Math.ceil(kl / 50)), j;
+      if (kl < 4) return;
+      for (j = 0; j < kn; j++) {
+        var s0 = k[0] + (k[1] - k[0]) * j / kn, s1 = k[0] + (k[1] - k[0]) * (j + 1) / kn;
+        E.push({ t: 'wall', ramp: 1, h: 14, x1: Math.round((ra[0] + rdx * s0) * 10) / 10, y1: Math.round((ra[1] + rdy * s0) * 10) / 10,
+                 x2: Math.round((ra[0] + rdx * s1) * 10) / 10, y2: Math.round((ra[1] + rdy * s1) * 10) / 10 });
+      }
+    });
+  }
+  /* a tower faces out along the nearest edge's outward side */
+  function outA(x, y) {
+    var best = 1e9, ang = 0;
+    for (var i = 0; i < RP.length; i++) {
+      var a0 = RP[i], b0 = RP[(i + 1) % RP.length], ex = b0[0] - a0[0], ey = b0[1] - a0[1], el = Math.hypot(ex, ey);
+      if (el < 1) continue;
+      var tt = clamp(((x - a0[0]) * ex + (y - a0[1]) * ey) / (el * el), 0, 1), dd = Math.hypot(a0[0] + ex * tt - x, a0[1] + ey * tt - y);
+      if (dd < best) { best = dd; ang = Math.atan2(-ex / el, ey / el); }
+    }
+    return Math.round(ang * 1000) / 1000;
+  }
+  STLO.towers.forEach(function (tw) {
+    [MID - tw[1], MID + tw[1]].forEach(function (ty, ti) {
+      if (ti && !tw[1]) return;
+      E.push({ t: 'rtower', x: tw[0], y: ty, r: tw[2], roof: tw[3], a: outA(tw[0], ty) });
+    });
+  });
+  /* ---- the ways through the scarp are built rather than dug. A wall runs down each side,
+     laid so that its lower side is its outward side, which makes it a retaining wall
+     where the hill stands over the way and a parapet where the ground falls away from it;
+     nothing is laid where the two are level or inside a gate. A stair has its flight. */
+  function r1(v) { return Math.round(v * 10) / 10; }
+  /* ---- the crossings of the Vire: the town bridge on the midline from the quay under the
+     point to the station, a road bridge on each forward row where the rocade crosses, the
+     German one stone and the American one a girder bridge, and a footbridge by each brook
+     mouth that no hull can take ---- */
+  E.push({ t: 'bridge', kind: 'stone', lamps: 1, x1: 2543, y1: MID, x2: 2716, y2: MID, hw: 30 });
+  E.push({ t: 'bridge', kind: 'stone', x1: 2631, y1: 770, x2: 2790, y2: 770, hw: 28 });
+  E.push({ t: 'bridge', kind: 'steel', x1: 2631, y1: my(770), x2: 2790, y2: my(770), hw: 28 });
+  [1040, my(1040)].forEach(function (fy) {
+    E.push({ t: 'bridge', kind: 'foot', x1: Math.round(stloRiverX(fy) - stloRiverHW(fy) - 35), y1: fy,
+             x2: Math.round(stloRiverX(fy) + stloRiverHW(fy) + 22), y2: fy, hw: 9 });
+  });
+  STLO.ways.forEach(function (W) {
+    [0, 1].forEach(function (half) {
+      var WP = W.pts.map(function (q) { return [q[0], half ? my(q[1]) : q[1]]; });
+      if (W.z0 !== undefined) E.push({ t: 'stair', w: W.w, pts: WP });
+      for (var i = 1; i < WP.length; i++) {
+        var a0 = WP[i - 1], b0 = WP[i], ux = b0[0] - a0[0], uy = b0[1] - a0[1], L = Math.hypot(ux, uy);
+        if (L < 8) continue;
+        ux /= L; uy /= L;
+        var lx = -uy, ly = ux, n = Math.max(1, Math.ceil(L / 36));
+        for (var k = 0; k < n; k++) {
+          var s0 = L * k / n, s1 = L * (k + 1) / n, mx = a0[0] + ux * (s0 + s1) / 2, mmy = a0[1] + uy * (s0 + s1) / 2;
+          if (RG.some(function (g) { return Math.hypot(mx - g[0], mmy - g[1]) < g[2] + 6; })) continue;
+          [-1, 1].forEach(function (sd) {
+            var zWay = stloZ(mx, mmy), zSide = stloZ(mx + lx * sd * (W.w + W.m + 8), mmy + ly * sd * (W.w + W.m + 8));
+            if (Math.abs(zSide - zWay) < 5) return;
+            var ox = lx * sd * (W.w + 3), oy = ly * sd * (W.w + 3), up = zSide > zWay;
+            var outx = up ? -lx * sd : lx * sd, outy = up ? -ly * sd : ly * sd;
+            var p1 = [a0[0] + ux * s0 + ox, a0[1] + uy * s0 + oy], p2 = [a0[0] + ux * s1 + ox, a0[1] + uy * s1 + oy];
+            /* the right of a walk along the way is its left normal turned round */
+            if (outx * -lx + outy * -ly < 0) { var sw = p1; p1 = p2; p2 = sw; }
+            E.push({ t: 'wall', ramp: 1, h: up ? 5 : 12, x1: r1(p1[0]), y1: r1(p1[1]), x2: r1(p2[0]), y2: r1(p2[1]) });
+          });
+        }
+      }
+    });
+  });
+
   E.push({ t: 'sector', id: 'm1', x: 760, y: MID, type: 'vp', owner: null, label: 'Champ de Mars', nb: ['g4', 'a4', 'm2'] });
   E.push({ t: 'sector', id: 'm2', x: 1470, y: MID, type: 'fuel', owner: null, label: 'Neuf-Bourg', nb: ['m1', 'm3', 'g5', 'a5'] });
   E.push({ t: 'sector', id: 'm3', x: 2250, y: MID, type: 'vp', owner: null, label: 'Notre-Dame', nb: ['m2', 'm4', 'g5', 'a5'] });
@@ -4644,7 +4799,17 @@ var STLO = {
      the quay beside the town bridge, a man's way and no hull's */
   ways: [{ pts: [[1790, 1046], [1950, 1110], [2080, 1178], [2084, 1196]], z1: 96, w: 24, m: 16 },
          { pts: [[2432, 1336], [2482, 1270], [2528, 1212]], z1: 8, z0: 96, w: 18, m: 12 }],
-  top: 96
+  top: 96,
+  /* where the wall stands open, as a point on its line on the German side and the half-
+     width of the gap: the east gate on the causeway, the Porte au Lait where the ramp
+     comes through it (the Porte Dollee opposite), and the postern the stair goes down by */
+  gates: [[1760, 0, 34], [2073, 225, 30], [2458, 98, 20]],
+  /* the towers standing out of it, the same way, with a radius and whether each carries a
+     slate cone or stands open inside its battlements: two at the east gate, the corners of
+     the neck, two at each side gate, one on each flank, the Beaux-Regards over the river
+     and the great tower on the point */
+  towers: [[1760, 58, 16, 1], [1762, 162, 20, 0], [2030, 225, 16, 1], [2116, 223.5, 16, 1], [2250, 214, 18, 0],
+           [2430, 140, 22, 1], [2485, 0, 25, 0]]
 };
 /* the Enclos as one closed polygon with both halves, for the signed distance */
 STLO.encP = (function () {
@@ -4705,9 +4870,11 @@ function stloZ(x, y) {
     var sd = stloEncSD(x, y), top = STLO.top + (hfbm(x / 90, dy / 90, 337, 2) - .5) * 1.5;
     if (sd >= 0) z = top;
     else {
+      /* sheer for the width of the wall, which stands on the edge and hides the cut, and a
+         talus from its foot: the rampart is the face the valley sees */
       var t = -sd;
-      if (t < 40) z = Math.max(z, top - t * 1.5);
-      else z = Math.max(z, lerp(top - 60, z, sm((t - 40) / 70)));
+      if (t < 8) z = Math.max(z, top - t * 5.5);
+      else z = Math.max(z, lerp(top - 44, z, sm((t - 8) / 90)));
     }
   }
   /* the dry ditch across the neck in front of the east wall, with the causeway at the gate */
@@ -5268,6 +5435,7 @@ function buildTerrGrid() {
   for (cx = 0; cx < GW; cx++) { terrg[cidx(cx, 0)] = 1; terrg[cidx(cx, GH - 1)] = 1; }
   for (var gy = 0; gy < GH; gy++) for (var gx = 0; gx < GW; gx++) {
     var wx = gx * CELL + CELL / 2, wy = gy * CELL + CELL / 2;
+    if (G.deck && onDeck(wx, wy)) continue;
     if (inland(wx, wy) < (LAND.river ? 6 : 24)) { terrg[cidx(gx, gy)] = 1; continue; }
     var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
     var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
@@ -5422,7 +5590,27 @@ function rebuildGrid() {
      climbs, which its height cannot say. So it goes on the same grid a belt of teeth does
      wherever it is still standing: free to a man and dear to anything driving. */
   G.walls.forEach(function (w) {
-    if (w.sea) wallSpans(w, function (x1, y1, x2, y2) { markSeg(hogg, x1, y1, x2, y2, 8); });
+    if (w.sea || w.ramp) wallSpans(w, function (x1, y1, x2, y2) { markSeg(hogg, x1, y1, x2, y2, 8); });
+  });
+  /* a road bridge is metalling like the street either end of it, and a footbridge is a
+     man's way and no hull's */
+  (G.bridges || []).forEach(function (bg) {
+    if (bg.kind !== 'foot') { markSeg(road, bg.x1, bg.y1, bg.x2, bg.y2, bg.hw - 8); return; }
+    var bgt = new Uint8Array(GW * GH);
+    markSeg(bgt, bg.x1, bg.y1, bg.x2, bg.y2, bg.hw + 4);
+    for (var bgi = 0; bgi < bgt.length; bgi++) if (bgt[bgi]) hogg[bgi] = 2;
+  });
+  /* and a flight of steps is a man's way and no hull's, at the hedgerow's price */
+  (G.stairs || []).forEach(function (st) {
+    for (var si = 1; si < st.pts.length; si++) {
+      var sa = st.pts[si - 1], sb = st.pts[si], sl = Math.hypot(sb[0] - sa[0], sb[1] - sa[1]), sn = Math.ceil(sl / 4), sm2 = Math.ceil(st.w / 4);
+      var spx = -(sb[1] - sa[1]) / sl, spy = (sb[0] - sa[0]) / sl;
+      for (var sk = 0; sk <= sn; sk++) for (var sj = -sm2; sj <= sm2; sj++) {
+        var sx = lerp(sa[0], sb[0], sk / sn) + spx * st.w * sj / sm2, sy = lerp(sa[1], sb[1], sk / sn) + spy * st.w * sj / sm2;
+        var scx = (sx / CELL) | 0, scy = (sy / CELL) | 0;
+        if (scx >= 0 && scy >= 0 && scx < GW && scy < GH) hogg[cidx(scx, scy)] = 2;
+      }
+    }
   });
   buildRoom();
 }
@@ -6464,7 +6652,7 @@ function canGarrison(u, bk) {
      below would have shut every one of them out: they are thirty-four to forty-four
      units deep */
   return u && bk && (u.cat === 'inf' || u.cat === 'team') && u.def.speed > 0 && !u.gar && !u.retreat &&
-         !u.inside && !bk.gar && (bk.face !== undefined || bk.kind === 'nhouse' || (bk.w > 60 && bk.h > 60)) &&
+         !u.inside && !bk.gar && (bk.face !== undefined || bk.kind === 'nhouse' || bk.style === 'norman' || (bk.w > 60 && bk.h > 60)) &&
          /* and it has to still be a building. A house shelled flat is a heap of its own
             masonry: there are no windows to fight out of and no storey to stand on, and
             a section sent into one would be standing in the open believing it held the
@@ -8916,7 +9104,21 @@ function fireAt(u, t, dt, opt) {
    why a round that grazes a wall takes a bite out of it and one that hits it square
    takes a hole the width of the burst. */
 var RUIN_T = 4.5, RUIN_CH = 7.0;                   /* the wall thickness and the course */
-function ruinBays(p) { return Math.max(1, Math.round(p.w / 70)); }
+/* A Norman house fronting a street that runs along y is one bay, because a bay is split
+   along x and splitting that house along x would cut it front from back. */
+function ruinBays(p) { return p.style === 'norman' && p.front >= 2 ? 1 : Math.max(1, Math.round(p.w / 70)); }
+/* What a Norman bay is told about itself: which face is the street, which ends of the
+   house it stands at (as the ends of the street face, left and right looking at it), and
+   the house's own stone, shop, storeys and pitch. */
+function ntOptsOf(p, i, n) {
+  var fr = p.front || 0, first = i === 0, last = i === n - 1, ends;
+  if (fr >= 2) ends = [1, 1];
+  else if (fr === 0) ends = [first ? 1 : 0, last ? 1 : 0];
+  else ends = [last ? 1 : 0, first ? 1 : 0];
+  return { front: fr, ends: ends, kind: p.nk || 'stone', shop: !!p.shop, gut: !!p.gut, storeys: p.storeys || 2,
+           hh: 33, pitch: p.pitch || .62, dormer: p.dormer };
+}
+function ntHeight(p) { return p.ht || (p.storeys || 2) * 33 + 6; }
 /* The bays, worked out once and kept on the prop. It is the same arithmetic sceneProps
    does when it meshes one, and it is here rather than there because the mesher runs on a
    tile rebuild and this has to survive one. */
@@ -8924,8 +9126,10 @@ function ruinState(p) {
   if (p.bay) return p.bay;
   var n = ruinBays(p), bw = p.w / n, i, b = [];
   for (i = 0; i < n; i++) {
+    var norm = p.style === 'norman';
     b.push({ x: p.x - p.w / 2 + bw * (i + .5), y: p.y, w: bw - 2, d: p.h - 2,
-             h: (p.tall || p.style === 'civic' ? 84 : 66) + ((i % 3) - 1) * 6,
+             h: norm ? ntHeight(p) : (p.tall || p.style === 'civic' ? 84 : 66) + ((i % 3) - 1) * 6,
+             nt: norm ? ntOptsOf(p, i, n) : null,
              seed: (p.s * 3 + i * .41) % 1, dmg: ((p.damage * 9.7 + i * .317) % 1) > .45,
              brk: [[], [], [], []],               /* the breaches cut in each wall */
              gone: [0, 0, 0, 0],                  /* the share of each wall that is out */
@@ -9151,6 +9355,9 @@ function wallHit(w, sx, sy, sz, r, br, owner) {
   if (len < 6) return 0;
   var wh = w.h || 24;
   if (sz > wh + 22) return 0;                        /* the round went over the top of it */
+  /* a rampart is two and a half metres of masonry backed by the rock: a field gun scars
+     it, and it takes a heavy battery to bring a length of it down */
+  if (w.ramp && br < 16) return 0;
   var ux = (w.x2 - w.x1) / len, uy = (w.y2 - w.y1) / len;
   var t = clamp((sx - w.x1) * ux + (sy - w.y1) * uy, 0, len);
   var px = w.x1 + ux * t, py = w.y1 + uy * t, d = Math.hypot(sx - px, sy - py);
@@ -9198,6 +9405,9 @@ function wallHit(w, sx, sy, sz, r, br, owner) {
    and the heap at the foot is mottled rather than one colour. Both come off the bay's own
    seed, which is what the mesher built the wall out of. */
 function ruinStone(b) {
+  /* a Norman house's is its own granite and schist, with the render over it if it had any */
+  if (b.nt) return b.nt.kind === 'render' && Math.random() < .45 ? ntWallC(b.seed, 'render') :
+                   Math.random() < .6 ? ntWallC(b.seed, 'stone') : NTOWN.stone[(Math.random() * NTOWN.stone.length) | 0];
   if (Math.random() < .45) return PLASTER[Math.floor(((b.seed * 7.3) % 1) * PLASTER.length)];
   return STONE[Math.floor(clamp(b.seed, 0, .999) * STONE.length)];
 }
@@ -16768,6 +16978,44 @@ function registerMaterials() {
     tag(NORM.oak.concat(NORM.apple, NORM.hedge, [NORM.oakCard, NORM.appleCard]), 'leaf');
     tag([NORM.bank], 'earth');
   }
+  if (typeof NTOWN !== 'undefined') {
+    tag(NTOWN.stone.concat([NTOWN.dress, NTOWN.dressD, NTOWN.stack]), 'stone');
+    tagEdges(NTOWN.stone.concat([NTOWN.dress, NTOWN.dressD, NTOWN.stack]), 'stone');
+    tag(NTOWN.render.concat(NTOWN.infill), 'plaster'); tagEdges(NTOWN.render.concat(NTOWN.infill), 'plaster');
+    tag([NTOWN.slate, NTOWN.slateL, NTOWN.slateD], 'tile'); tagEdges([NTOWN.slate, NTOWN.slateL, NTOWN.slateD], 'tile');
+    tag(NTOWN.shut.concat(NTOWN.door, [NTOWN.timber, NTOWN.floor, NTOWN.joist, NTOWN.char]), 'wood');
+    tagEdges(NTOWN.shut.concat(NTOWN.door, [NTOWN.timber, NTOWN.floor, NTOWN.joist, NTOWN.char]), 'wood');
+    tag(NTOWN.shop, 'paint'); tagEdges(NTOWN.shop, 'paint');
+    tag([NTOWN.glass, NTOWN.dark], 'steel'); tag([NTOWN.pot], 'brick'); tagEdges([NTOWN.pot], 'brick');
+  }
+  if (typeof TOWNF !== 'undefined') {
+    tag(TOWNF.plane.concat([TOWNF.planeCard]), 'leaf'); tag([TOWNF.bark, TOWNF.barkL, TOWNF.barkD], 'bark'); tagEdges([TOWNF.bark, TOWNF.barkL, TOWNF.barkD], 'bark');
+    tag([TOWNF.iron, TOWNF.ironG, TOWNF.zinc, TOWNF.gas, TOWNF.gasL], 'steel'); tagEdges([TOWNF.iron, TOWNF.ironG, TOWNF.zinc, TOWNF.gas, TOWNF.gasL], 'steel');
+    tag([TOWNF.lamp].concat(TOWNF.poster), 'paint'); tag([TOWNF.stone, TOWNF.stoneD].concat(TOWNF.grave), 'stone');
+    tagEdges([TOWNF.stone, TOWNF.stoneD].concat(TOWNF.grave), 'stone'); tag([TOWNF.bronze], 'steel');
+  }
+  if (typeof RAIL !== 'undefined') {
+    var RS = [RAIL.stone, RAIL.stoneL, RAIL.stoneD, RAIL.cope], RB = [RAIL.brick, RAIL.brickD];
+    var RM = [RAIL.dark, RAIL.glass, RAIL.iron, RAIL.zinc, RAIL.rail, RAIL.railT, RAIL.tank, RAIL.grey, RAIL.char];
+    var RW = [RAIL.door, RAIL.wagon, RAIL.wagonD, RAIL.wagonL, RAIL.cabin, RAIL.cabinD].concat(RAIL.crate);
+    tag(RS, 'stone'); tagEdges(RS, 'stone'); tag(RB, 'brick'); tagEdges(RB, 'brick'); tag(RM, 'steel'); tagEdges(RM, 'steel');
+    tag(RW, 'wood'); tagEdges(RW, 'wood'); tag(RAIL.tarp, 'canvas'); tagEdges(RAIL.tarp, 'canvas'); tag([RAIL.face], 'plaster');
+  }
+  if (typeof BRIDGE !== 'undefined') {
+    tag([BRIDGE.stone, BRIDGE.stoneL, BRIDGE.stoneD], 'stone'); tagEdges([BRIDGE.stone, BRIDGE.stoneL, BRIDGE.stoneD], 'stone');
+    tag([BRIDGE.setts, BRIDGE.tar], 'concrete'); tagEdges([BRIDGE.setts, BRIDGE.tar], 'concrete');
+    tag([BRIDGE.steel, BRIDGE.steelD, BRIDGE.rust, BRIDGE.iron], 'steel'); tagEdges([BRIDGE.steel, BRIDGE.steelD, BRIDGE.rust, BRIDGE.iron], 'steel');
+    tag([BRIDGE.plank], 'wood'); tagEdges([BRIDGE.plank], 'wood'); tag([BRIDGE.lamp], 'steel');
+  }
+  if (typeof RAMP !== 'undefined') {
+    tag(RAMP.stone.concat([RAMP.stoneL, RAMP.stoneD, RAMP.cap]), 'stone'); tagEdges(RAMP.stone.concat([RAMP.stoneL, RAMP.stoneD, RAMP.cap]), 'stone');
+    tag([RAMP.slit], 'steel'); tag([RAMP.ivy, RAMP.ivyD], 'leaf'); tagEdges([RAMP.ivy, RAMP.ivyD], 'leaf');
+  }
+  if (typeof NDAME !== 'undefined') {
+    tag([NDAME.stone, NDAME.stoneL, NDAME.stoneD, NDAME.scar, NDAME.bruise], 'stone'); tagEdges([NDAME.stone, NDAME.stoneL, NDAME.stoneD, NDAME.scar, NDAME.bruise], 'stone');
+    tag([NDAME.door, NDAME.louvre], 'wood'); tagEdges([NDAME.door, NDAME.louvre], 'wood');
+    tag([NDAME.glass, NDAME.dark, NDAME.iron], 'steel'); tagEdges([NDAME.glass, NDAME.dark, NDAME.iron], 'steel');
+  }
   if (typeof JP !== 'undefined') {
     tag([JP.canvas, JP.canvasD, JP.seat], 'canvas'); tagEdges([JP.canvas, JP.canvasD, JP.seat], 'canvas');
     tag([JP.star, JP.red], 'paint'); tagEdges([JP.star, JP.red], 'paint');
@@ -17725,8 +17973,8 @@ function buildTerrain(only) {
     for (var fj = sr0; fj <= sr1; fj++) for (var fi = sc0; fi <= sc1; fi++) {
       if (fine[fj * cols + fi]) continue;
       var fx = fi * TG + TG / 2, fy = fj * TG + TG / 2;
-      var fgx = (groundZ(fx + TG, fy) - groundZ(fx - TG, fy)) / (2 * TG);
-      var fgy = (groundZ(fx, fy + TG) - groundZ(fx, fy - TG)) / (2 * TG);
+      var fgx = (bareZ(fx + TG, fy) - bareZ(fx - TG, fy)) / (2 * TG);
+      var fgy = (bareZ(fx, fy + TG) - bareZ(fx, fy - TG)) / (2 * TG);
       if (Math.hypot(fgx, fgy) > .9) fine[fj * cols + fi] = 1;
     }
   }
@@ -17793,9 +18041,9 @@ function buildTerrain(only) {
 
   var lastCol = [], lastVal = [];
   function vert(x, y, zOverride) {
-    var z = zOverride === undefined ? groundZ(x, y) : zOverride, n = groundNormal(x, y);
+    var z = zOverride === undefined ? bareZ(x, y) : zOverride, n = groundNormal(x, y, 1);
     var v = .94 + .06 * Math.sin(x * .037) * Math.cos(y * .029);
-    var ring = (groundZ(x + 24, y) + groundZ(x - 24, y) + groundZ(x, y + 24) + groundZ(x, y - 24)) / 4;
+    var ring = (bareZ(x + 24, y) + bareZ(x - 24, y) + bareZ(x, y + 24) + bareZ(x, y - 24)) / 4;
     var ao = clamp((ring - z) / 22, 0, 1);
     v *= 1 - ao * .42;
     /* How wet a piece of ground is, is how well it drains, and what decides that is
@@ -17833,12 +18081,12 @@ function buildTerrain(only) {
       if (!fine[j * cols + i]) { quad(x0, y0, x1, y1); continue; }
       var xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
       /* corner heights, and edge midpoints pinned when the neighbour is coarse */
-      var z00 = groundZ(x0, y0), z10 = groundZ(x1, y0), z01 = groundZ(x0, y1), z11 = groundZ(x1, y1);
+      var z00 = bareZ(x0, y0), z10 = bareZ(x1, y0), z01 = bareZ(x0, y1), z11 = bareZ(x1, y1);
       var coarseN = j > 0 && !fine[(j - 1) * cols + i], coarseS = j < rows - 1 && !fine[(j + 1) * cols + i];
       var coarseW = i > 0 && !fine[j * cols + i - 1], coarseE = i < cols - 1 && !fine[j * cols + i + 1];
-      var zN = coarseN ? (z00 + z10) / 2 : groundZ(xm, y0), zS = coarseS ? (z01 + z11) / 2 : groundZ(xm, y1);
-      var zW = coarseW ? (z00 + z01) / 2 : groundZ(x0, ym), zE = coarseE ? (z10 + z11) / 2 : groundZ(x1, ym);
-      var zC = groundZ(xm, ym);
+      var zN = coarseN ? (z00 + z10) / 2 : bareZ(xm, y0), zS = coarseS ? (z01 + z11) / 2 : bareZ(xm, y1);
+      var zW = coarseW ? (z00 + z01) / 2 : bareZ(x0, ym), zE = coarseE ? (z10 + z11) / 2 : bareZ(x1, ym);
+      var zC = bareZ(xm, ym);
       quad(x0, y0, xm, ym, z00, zN, zW, zC);
       quad(xm, y0, x1, ym, zN, z10, zC, zE);
       quad(x0, ym, xm, y1, zW, zC, z01, zS);
@@ -18002,7 +18250,13 @@ function sceneProps(tile) {
          this one: the merged tile cannot be edited and this house is going to change */
       if (p.hurt) return;
       if (p.style === 'church') { put(churchModel(p.w, p.h), p.x, p.y, 0); return; }
-      var bays = Math.max(1, Math.round(p.w / 70)), bayW = p.w / bays;
+      var bays = ruinBays(p), bayW = p.w / bays;
+      if (p.style === 'norman') {
+        for (var nb = 0; nb < bays; nb++)
+          put(ntBay(bayW - 2, p.h - 2, ntHeight(p), (p.s * 3 + nb * .41) % 1, null, ntOptsOf(p, nb, bays)),
+              p.x - p.w / 2 + bayW * (nb + .5), p.y, 0);
+        return;
+      }
       for (var bh = 0; bh < bays; bh++) {
         var bc = p.x - p.w / 2 + bayW * (bh + .5);
         var wound = (p.damage * 9.7 + bh * .317) % 1;
@@ -18010,6 +18264,22 @@ function sceneProps(tile) {
         put(houseModel(bayW - 2, p.h - 2, hh, (p.s * 3 + bh * .41) % 1, false, wound > .45), bc, p.y, 0);
       }
     } else if (p.kind === 'farm') put(farmModel(p.w, p.h), p.x, p.y, 0);
+    else if (p.kind === 'rtower') {
+      /* a tower of the ramparts: the rock's level inside it, the lowest ground round its
+         outer half, and its door on the town side */
+      var tz = groundZ(p.x, p.y), tzf = 1e9;
+      for (var tk = -2; tk <= 2; tk++) {
+        var ta = p.a + tk * .45;
+        tzf = Math.min(tzf, groundZ(p.x + Math.cos(ta) * (p.r + 12), p.y + Math.sin(ta) * (p.r + 12)));
+      }
+      put(rampartTower(p.r, p.a, groundZ(p.x - Math.cos(p.a) * (p.r + 6), p.y - Math.sin(p.a) * (p.r + 6)) - tz, tzf - tz, p.roof, srand), p.x, p.y, 0);
+    }
+    else if (p.kind === 'feature' && FEATURE[p.look]) put(FEATURE[p.look](p), p.x, p.y, p.a || 0);
+    else if (p.kind === 'nhouse' && NSTYLE[p.style]) {
+      var nsr = p.w < p.h;
+      put(NSTYLE[p.style](nsr ? p.h : p.w, nsr ? p.w : p.h, p), p.x, p.y, (nsr ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
+    }
+    else if (p.kind === 'nhouse' && p.style === 'notredame') put(notreDame(p.w, p.h, !p.whole), p.x, p.y, p.flip ? Math.PI : 0);
     else if (p.kind === 'nhouse') {
       /* the ridge runs along the long side, whichever way round the footprint is */
       var nrot = p.w < p.h;
@@ -18034,7 +18304,7 @@ function sceneProps(tile) {
     if (!mine(tr.x, tr.y)) return;
     seedAt(tr.x, tr.y, 2);
     put(tr.cypress ? cypressModel(tr.r) : tr.scrub ? bushModel(tr.r, tr.s) : tr.kind === 'oak' ? oakModel(tr.r, tr.s) :
-        tr.kind === 'apple' ? appleModel(tr.r, tr.s) : treeModel(tr.r, tr.s), tr.x, tr.y, tr.s * TAU);
+        tr.kind === 'apple' ? appleModel(tr.r, tr.s) : tr.kind === 'plane' ? planeModel(tr.r, tr.s) : treeModel(tr.r, tr.s), tr.x, tr.y, tr.s * TAU);
   });
   if (!tiled) {
   /* ---- Outcrop. Where the shelf breaks through its own soil the bedrock stands out of
@@ -18145,12 +18415,82 @@ function sceneProps(tile) {
      depth wanders, the line wanders off its own axis by a foot or so, and one course in
      eight is down to a tumble. Nothing about the cover, the grid or the sight line
      changes -- those come off G.walls, which is still the straight line it always was. */
+  /* the rails on every track, a length at a time, standing on the ballast painted under
+     them; and the platforms, following the ground from end to end */
+  (G.tracks || []).forEach(function (pts) {
+    for (var ti = 1; ti < pts.length; ti++) {
+      var ta = pts[ti - 1], tb = pts[ti], tl = Math.hypot(tb[0] - ta[0], tb[1] - ta[1]), tn = Math.max(1, Math.ceil(tl / 110));
+      for (var tk = 0; tk < tn; tk++) {
+        var t0 = tk / tn, t1 = (tk + 1) / tn, tmx = lerp(ta[0], tb[0], (t0 + t1) / 2), tmy = lerp(ta[1], tb[1], (t0 + t1) / 2);
+        if (!mine(tmx, tmy)) continue;
+        var tz = groundZ(tmx, tmy), sl2 = tl * (t1 - t0), zA = groundZ(lerp(ta[0], tb[0], t0), lerp(ta[1], tb[1], t0)) - tz, zB = groundZ(lerp(ta[0], tb[0], t1), lerp(ta[1], tb[1], t1)) - tz, rf = [];
+        [-1, 1].forEach(function (sg) {
+          rf = rf.concat(ndSlab(-sl2 / 2, sl2 / 2, sg * 8.4 - .5, sg * 8.4 + .5, zA - .5, zB - .5, zA + 1.3, zB + 1.3, RAIL.rail, RAIL.railT, RAIL.rail));
+        });
+        put(rf, tmx, tmy, Math.atan2(tb[1] - ta[1], tb[0] - ta[0]));
+      }
+    }
+  });
+  (G.platforms || []).forEach(function (pf) {
+    var pmx = (pf.x1 + pf.x2) / 2, pmy = (pf.y1 + pf.y2) / 2;
+    if (!mine(pmx, pmy)) return;
+    var pz = groundZ(pmx, pmy);
+    put(platformModel(Math.hypot(pf.x2 - pf.x1, pf.y2 - pf.y1), pf.w, pf.canopy, groundZ(pf.x1, pf.y1) - pz, groundZ(pf.x2, pf.y2) - pz), pmx, pmy, Math.atan2(pf.y2 - pf.y1, pf.x2 - pf.x1));
+  });
+  /* the bridges, set down on the middle of their decks: where the water begins and ends
+     along each is read off the river itself, and the bed off the bare ground */
+  (G.bridges || []).forEach(function (bg) {
+    var bmx = (bg.x1 + bg.x2) / 2, bmy = (bg.y1 + bg.y2) / 2;
+    if (!mine(bmx, bmy) || !bg.len) return;
+    var bz0 = groundZ(bmx, bmy), bwa = null, bwb = null;
+    for (var bt = 0; bt <= 1.0001; bt += .01) {
+      if (inland(lerp(bg.x1, bg.x2, bt), lerp(bg.y1, bg.y2, bt)) < 0) { if (bwa === null) bwa = bt; bwb = bt; }
+    }
+    if (bwa === null) { bwa = .3; bwb = .7; }
+    put(bridgeModel(bg, (bwa - .5) * bg.len, (bwb - .5) * bg.len, function (x) { return deckZ(bg, x / bg.len + .5) - bz0; },
+                    seaZ() - bz0, bareZ(bmx, bmy) - 2 - bz0), bmx, bmy, Math.atan2(bg.y2 - bg.y1, bg.x2 - bg.x1));
+  });
+  /* a flight of steps cut down the rock: one tread every few units along each leg, level,
+     standing on the graded ground under it with its riser facing downhill */
+  (G.stairs || []).forEach(function (st) {
+    for (var si = 1; si < st.pts.length; si++) {
+      var sa = st.pts[si - 1], sb = st.pts[si], smx = (sa[0] + sb[0]) / 2, smy = (sa[1] + sb[1]) / 2;
+      if (!mine(smx, smy)) continue;
+      var sl = Math.hypot(sb[0] - sa[0], sb[1] - sa[1]), sang = Math.atan2(sb[1] - sa[1], sb[0] - sa[0]), sn = Math.max(1, Math.round(sl / 4.5)), sz = groundZ(smx, smy), sf = [];
+      for (var sk = 0; sk < sn; sk++) {
+        var z0 = groundZ(lerp(sa[0], sb[0], sk / sn), lerp(sa[1], sb[1], sk / sn)), z1 = groundZ(lerp(sa[0], sb[0], (sk + 1) / sn), lerp(sa[1], sb[1], (sk + 1) / sn));
+        var tz = Math.max(z0, z1) + .3, bz = Math.min(z0, z1) - 3;
+        sf = sf.concat(box(sl * ((sk + .5) / sn - .5), 0, bz - sz, sl / sn + .3, st.w * 2, tz - bz, RAMP.stone[sk % 4], RAMP.cap, RAMP.stoneD, 0));
+      }
+      put(sf, smx, smy, sang);
+    }
+  });
   G.walls.forEach(function (wl) {
     if (!mine((wl.x1 + wl.x2) / 2, (wl.y1 + wl.y2) / 2)) return;
     seedAt(wl.x1, wl.y1, 4);
     var len = Math.hypot(wl.x2 - wl.x1, wl.y2 - wl.y1), a = Math.atan2(wl.y2 - wl.y1, wl.x2 - wl.x1);
     var wh = wl.h || 24, town = wh > 16;
     var nx = Math.cos(a + Math.PI / 2), ny = Math.sin(a + Math.PI / 2), i, cx, cy;
+    if (wl.ramp) {
+      /* a run of the ramparts, set down on the ground at its middle, which is the edge of
+         the rock: the rock's own level just inside it, the lowest ground at its foot, and
+         turned so that its outward side is the right of the way it was laid. A length a
+         heavy shell has brought down is a gap from the parapet to the foot. */
+      var rox = Math.sin(a), roy = -Math.cos(a);
+      wallSpans(wl, function (x1, y1, x2, y2) {
+        var sl = Math.hypot(x2 - x1, y2 - y1), smx = (x1 + x2) / 2, smy = (y1 + y2) / 2, sz0 = groundZ(smx, smy), szf = 1e9;
+        if (sl < 3) return;
+        for (var q = -1; q <= 1; q++) for (var qo = 16; qo <= 30; qo += 14)
+          szf = Math.min(szf, groundZ(smx + (x2 - x1) * q * .4 + rox * qo, smy + (y2 - y1) * q * .4 + roy * qo));
+        /* the run is turned end for end to put its outward side on the right, so its
+           near end in its own frame is the far end of the way it was laid; the ground
+           inside is read a little short of each end, clear of a gate beside it */
+        var zA = groundZ(lerp(x1, x2, .85) - rox * 8, lerp(y1, y2, .85) - roy * 8) - sz0;
+        var zB = groundZ(lerp(x1, x2, .15) - rox * 8, lerp(y1, y2, .15) - roy * 8) - sz0;
+        put(rampartRun(sl, zA, zB, szf - sz0, wl.h || 14, srand), smx, smy, a + Math.PI);
+      });
+      return;
+    }
     if (wl.sea) {
       /* a seawall is poured rather than stacked: plumb concrete in bays with a coping
          along the top, low and thick */
@@ -19443,6 +19783,38 @@ function paintGround(t, DET) {
     t.beginPath(); G.rail.forEach(function (p, n) { if (!n) t.moveTo(p.x, p.y + off); else t.lineTo(p.x, p.y + off); }); t.stroke();
   });
   t.restore();
+  }
+
+  /* ---- the tracks a map lays: ballast, sleepers and paired rails, as above ---- */
+  if (G.tracks && G.tracks.length) {
+    t.save(); t.lineCap = 'butt'; t.lineJoin = 'round';
+    var trk = function (pts, off) {
+      t.beginPath();
+      pts.forEach(function (q, n) {
+        var a2 = n < pts.length - 1 ? Math.atan2(pts[n + 1][1] - q[1], pts[n + 1][0] - q[0]) : Math.atan2(q[1] - pts[n - 1][1], q[0] - pts[n - 1][0]);
+        var x = q[0] - Math.sin(a2) * off, y = q[1] + Math.cos(a2) * off;
+        if (!n) t.moveTo(x, y); else t.lineTo(x, y);
+      });
+      t.stroke();
+    };
+    G.tracks.forEach(function (pts) { t.strokeStyle = '#6f6a58'; t.lineWidth = 36; trk(pts, 0); });
+    G.tracks.forEach(function (pts) { t.strokeStyle = '#847e69'; t.lineWidth = 26; trk(pts, 0); });
+    t.strokeStyle = '#4a3f2c'; t.lineWidth = 22; t.setLineDash([3, 5]);
+    G.tracks.forEach(function (pts) { trk(pts, 0); });
+    t.setLineDash([]); t.strokeStyle = '#3a3d38'; t.lineWidth = 1.6;
+    G.tracks.forEach(function (pts) { trk(pts, -8.4); trk(pts, 8.4); });
+    t.restore();
+  }
+
+  /* ---- a bridge's deck painted under it, so that the little map, which is this paint,
+     shows where the river can be crossed ---- */
+  if (G.bridges && G.bridges.length) {
+    t.save(); t.lineCap = 'butt';
+    G.bridges.forEach(function (b) {
+      t.strokeStyle = b.kind === 'foot' ? '#5d4c38' : '#6d665c'; t.lineWidth = b.hw * 2;
+      t.beginPath(); t.moveTo(b.x1, b.y1); t.lineTo(b.x2, b.y2); t.stroke();
+    });
+    t.restore();
   }
 
   /* ---- paving: the town streets and the piazza ---- */
@@ -36901,6 +37273,1309 @@ var NORM = { stone: ['#a09984', '#97917d', '#aea48e', '#968b78'], quoin: '#bdb4a
              apple: ['#46562e', '#556739', '#556739', '#667a43', '#667a43'], appleCard: '#5f7340',
              bark: '#4a4234', barkL: '#5a5143',
              hedge: ['#34432a', '#3d4d2f', '#465734', '#51633a'], bank: '#585237' };
+/* ---- the Norman town house ----
+   Saint-Lo's houses before the June raids: two or three storeys of granite and schist
+   rubble, or of stone rendered over, under a steep slate roof with its ridge along the
+   street; the gable ends are the party walls, with the chimney stacks standing up them,
+   a dormer or two in the street slope, tall windows in dressed stone with the shutters
+   folded back against the wall, and on the main streets a shop on the ground floor. In
+   the old town a few are still timber-framed over a stone ground floor.
+     It is built in bays, the Italian house's way, because a bay is what the destruction is
+   written against: `st` is the bay's state out of ruinState, its breaches are cut out of
+   its walls the way its windows are, and a storey that has come down takes the roof with
+   it. What is new is that a Norman house STANDS until something knocks it about: the
+   Italian house was a ruin on the day it was built, and this one has glass in its windows
+   and slates on its roof, or has been gutted by fire in the June raids (`o.gut`) and is a
+   shell with its chimney stacks standing up out of it, which is the picture of Saint-Lo
+   everybody who was there remembers.
+     The walls are cut round their openings in BANDS rather than in courses: a band is the
+   height between two edges of openings, so a wall with nine windows in it is two dozen
+   boxes rather than a hundred and forty. Only where a wall has been breached is it laid
+   in the seven-unit courses, because a breach's ragged edge is the course ends and a
+   clean window's edge is not. `o` is { front, ends: [-u end, +u end], kind: 'stone' |
+   'render' | 'timber', shop, gut, storeys, hh, pitch } and w runs along x, d along y, the
+   bay's middle at the origin, faces numbered as ruinFace numbers them. */
+var NTOWN = {
+  stone: ['#8f897c', '#9a9282', '#86847c', '#a19886', '#7e7b73'],
+  render: ['#c9bea4', '#bdb298', '#d2c7ad', '#c2b8a2', '#b7ab93'],
+  infill: ['#cdbf9c', '#c4b48e', '#d6c9a8'], timber: '#3b3024',
+  dress: '#c2baa6', dressD: '#a9a08e',
+  shut: ['#5d6f78', '#6f7d62', '#7a5a40', '#b9b5a4', '#4f5a52'],
+  glass: '#23282a', dark: '#1b1d1c', floor: '#3e372b', joist: '#4a3a28', char: '#2a2520',
+  door: ['#4a3a2b', '#3d4a52', '#5a3d2e'],
+  shop: ['#3c4a3c', '#5a2f2a', '#2f3d4f', '#6a5236'],
+  slate: '#474d53', slateL: '#555c63', slateD: '#393d42', stack: '#8a7f70', pot: '#8a5a44'
+};
+var NT_T = 4.5;
+/* a bay's own dice, and the stone its walls are laid in, which the masonry that comes out
+   of a breach is read off as well */
+function ntR(seed, n) { var v = Math.sin(seed * 91.1 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+function ntWallC(seed, kind) {
+  var L = kind === 'render' ? NTOWN.render : NTOWN.stone;
+  return L[Math.floor(ntR(seed, 1) * L.length)];
+}
+/* where a point on a face is: u along it, n out from the middle of the wall, z up */
+function ntFp(w, d, fi, u, n, z) {
+  var o = d / 2 - NT_T / 2, q = w / 2 - NT_T / 2;
+  if (fi === 0) return [u, o + n, z];
+  if (fi === 1) return [-u, -o - n, z];
+  if (fi === 2) return [q + n, u, z];
+  return [-q - n, -u, z];
+}
+var NT_OUT = [[0, 1, 0], [0, -1, 0], [1, 0, 0], [-1, 0, 0]];
+/* a flat panel lying on a face, turned to look out of it */
+function ntQuad(w, d, fi, u0, u1, z0, z1, n, col) {
+  var p = [ntFp(w, d, fi, u0, n, z0), ntFp(w, d, fi, u1, n, z0), ntFp(w, d, fi, u1, n, z1), ntFp(w, d, fi, u0, n, z1)];
+  var nn = faceNormal(p[0], p[1], p[2]), o = NT_OUT[fi];
+  if (nn.x * o[0] + nn.y * o[1] < 0) p.reverse();
+  return { v: p, c: col };
+}
+/* a ledge standing out of a face: its top and its front, which is all anybody sees */
+function ntLedge(w, d, fi, u0, u1, z, dep, th, col) {
+  var t = [ntFp(w, d, fi, u0, NT_T / 2, z), ntFp(w, d, fi, u1, NT_T / 2, z),
+           ntFp(w, d, fi, u1, NT_T / 2 + dep, z), ntFp(w, d, fi, u0, NT_T / 2 + dep, z)];
+  var nn = faceNormal(t[0], t[1], t[2]);
+  if (nn.z < 0) t.reverse();
+  return [{ v: t, c: lit(col, 1.08) }, ntQuad(w, d, fi, u0, u1, z - th, z, NT_T / 2 + dep, col)];
+}
+/* One wall, round its openings. Bands between the heights where an opening starts or
+   stops, a box for each run between openings in a band; and across the height of any
+   ragged hole the bands are cut again at every course, so a breach steps. */
+function ntWall(len, top, holes, seed, col, cap, side, zSplit, col2) {
+  var f = [], zs = [0, top], k, i, CH = 7;
+  for (k = 0; k < holes.length; k++) {
+    var h = holes[k];
+    if (h.z0 > 0 && h.z0 < top) zs.push(h.z0);
+    if (h.z1 > 0 && h.z1 < top) zs.push(h.z1);
+    if ((h.rag || 0) > 1.5) for (var cz = Math.ceil(Math.max(0, h.z0 - CH) / CH) * CH; cz < Math.min(top, h.z1 + CH); cz += CH) zs.push(cz);
+  }
+  if (zSplit > 0 && zSplit < top) zs.push(zSplit);
+  zs.sort(function (a, b) { return a - b; });
+  var zz = [];
+  for (k = 0; k < zs.length; k++) if (!zz.length || zs[k] - zz[zz.length - 1] > .6) zz.push(zs[k]);
+  for (i = 0; i < zz.length - 1; i++) {
+    var z0 = zz[i], z1 = zz[i + 1], zm = (z0 + z1) / 2, ci = Math.floor(zm / CH), cuts = [];
+    for (k = 0; k < holes.length; k++) {
+      var hl = holes[k];
+      if (zm <= hl.z0 || zm >= hl.z1) continue;
+      var wob = (hl.rag || 0) > 1.5 ? (noise2(ci, k, seed * 97 + 3) - .5) * hl.rag : 0;
+      cuts.push([hl.u - hl.hw - wob, hl.u + hl.hw + wob * .7]);
+    }
+    cuts.sort(function (a, b) { return a[0] - b[0]; });
+    var u0 = -len / 2, c = zSplit && z0 >= zSplit - .01 ? col2 : col;
+    for (k = 0; k <= cuts.length; k++) {
+      var u1 = k < cuts.length ? Math.max(u0, Math.min(len / 2, cuts[k][0])) : len / 2;
+      if (u1 - u0 > 1.2) f = f.concat(box((u0 + u1) / 2, 0, z0, u1 - u0, NT_T, z1 - z0, c, cap, side, 0));
+      if (k < cuts.length) u0 = Math.max(u0, cuts[k][1]);
+    }
+  }
+  return f;
+}
+function ntBay(w, d, h, seed, st, o) {
+  function r(n) { return ntR(seed, n); }
+  var N = NTOWN, f = [], k, s, i, T = NT_T;
+  var kind = o.kind || 'stone', hh = o.hh || 33, full = o.storeys || 2;
+  var wallC = ntWallC(seed, kind);
+  var upC = kind === 'timber' ? N.infill[Math.floor(r(2) * N.infill.length)] : wallC;
+  var shutC = N.shut[Math.floor(r(3) * N.shut.length)], dress = N.dress;
+  var fr = o.front, back = fr ^ 1, ridgeX = fr < 2;
+  var gut = !!o.gut, broke = st && (st.down > 0 || st.brk[0].length + st.brk[1].length + st.brk[2].length + st.brk[3].length > 0);
+  var roofed = !gut && !(st && st.down > 0);
+  /* how many storeys are still there to put windows in */
+  var storeys = Math.max(1, Math.min(full, Math.ceil((h - 12) / hh)));
+  var LEN = [w, w, d, d];
+  function faceHoles(fi) {
+    var len = LEN[fi], hs = [], street = fi === fr, rear = fi === back;
+    if (st && st.brk[fi]) hs = hs.concat(st.brk[fi]);
+    if (street || rear) {
+      var cols = clamp(Math.round((len - 6) / 22), 1, 4), door = street ? Math.floor(r(5) * cols) : -1;
+      for (s = 0; s < storeys; s++) {
+        var fz = 4 + s * hh;
+        if (s === 0 && street && o.shop) {
+          hs.push({ u: 0, hw: len / 2 - 6.5, z0: 3, z1: 25, shop: 1 });
+          continue;
+        }
+        for (k = 0; k < cols; k++) {
+          var u = -len / 2 + len * (k + .5) / cols;
+          if (s === 0 && k === door) { hs.push({ u: u, hw: 5.2, z0: 1, z1: 26, door: 1 }); continue; }
+          var top = s === full - 1 && full > 2 ? 16 : 20;
+          hs.push({ u: u, hw: 4.6, z0: fz + 8, z1: fz + 8 + top, win: 1, fl: s });
+        }
+      }
+    } else if (o.ends && o.ends[fi === [3, 2, 1, 0][fr] ? 0 : 1]) {
+      /* an end of a terrace, which is a gable a lane can see: a window a floor up it */
+      for (s = 1; s < storeys; s++) hs.push({ u: 0, hw: 3.8, z0: 4 + s * hh + 9, z1: 4 + s * hh + 25, win: 1, fl: s });
+    }
+    if (gut) {
+      /* The fire took the roof and the floors and left the walls standing to the eaves
+         with their openings empty, which is what Saint-Lo was after the June raids. Where
+         the top of a wall has come down it has come down across a stretch of it: either a
+         ragged dip over the heads of the top windows, or a fall through the whole of the
+         top storey, cut below its sills. Cut between the two, a dip leaves the piers
+         between the windows standing up out of it in a row and the house reads as a
+         castle. */
+      var tfz = full > 1 ? 4 + (full - 1) * hh : 4, sill = tfz + 8, head = tfz + 8 + (full > 2 ? 16 : 20);
+      if (r(40 + fi) > .35) {
+        var deep = r(45 + fi) > .5 && full > 1;
+        hs.push({ u: (r(41 + fi * 3) - .5) * len * .6, hw: len * (deep ? .12 + r(44 + fi) * .16 : .16 + r(44 + fi) * .2),
+                  z0: deep ? sill - 3 - r(47 + fi) * 8 : Math.min(h - 2, head + 1.5 + r(47 + fi) * (h - head) * .5),
+                  z1: 999, rag: deep ? 5 : 3.2 });
+      }
+    }
+    return hs;
+  }
+  /* ---- the four walls ---- */
+  var at = [[0, 0, d / 2 - T / 2], [Math.PI, 0, -(d / 2 - T / 2)], [Math.PI / 2, w / 2 - T / 2, 0], [-Math.PI / 2, -(w / 2 - T / 2), 0]];
+  var HS = [];
+  for (var fi = 0; fi < 4; fi++) {
+    var hs = faceHoles(fi);
+    HS.push(hs);
+    var cap = lit(wallC, 1.08);
+    f = f.concat(place(ntWall(LEN[fi], h, hs, seed + fi, wallC, cap, lit(wallC, .93), kind === 'timber' ? 4 + hh : 0, upC),
+                       at[fi][0], at[fi][1], at[fi][2], 0));
+  }
+  /* ---- the openings, dressed ---- */
+  function breached(fi, hl) {
+    var b = st ? st.brk[fi] : [];
+    for (var q = 0; q < b.length; q++)
+      if (Math.abs(b[q].u - hl.u) < b[q].hw + hl.hw && b[q].z0 < hl.z1 && b[q].z1 > hl.z0) return true;
+    return false;
+  }
+  for (fi = 0; fi < 4; fi++) {
+    HS[fi].forEach(function (hl, hi) {
+      if (!(hl.win || hl.door || hl.shop) || breached(fi, hl) || hl.z1 > h) return;
+      var u0 = hl.u - hl.hw, u1 = hl.u + hl.hw;
+      if (hl.win) {
+        if (!gut) f.push(ntQuad(w, d, fi, u0, u1, hl.z0, hl.z1, .6, N.glass));
+        f = f.concat(ntLedge(w, d, fi, u0 - 1.4, u1 + 1.4, hl.z0, 1.6, 1.4, dress));
+        f.push(ntQuad(w, d, fi, u0 - 1, u1 + 1, hl.z1, hl.z1 + 2.4, T / 2 + .15, kind === 'render' ? dress : lit(dress, .96)));
+        if (!gut && r(60 + fi * 17 + hi) > .18) {
+          var sc = r(90 + hi) > .85 ? N.shut[Math.floor(r(91 + hi) * N.shut.length)] : shutC;
+          if (r(70 + fi * 13 + hi) > .82)
+            f.push(ntQuad(w, d, fi, u0 + .2, u1 - .2, hl.z0 + .2, hl.z1 - .2, T / 2 - .6, sc));         /* shut */
+          else {
+            f.push(ntQuad(w, d, fi, u0 - hl.hw * 1.02, u0 - .4, hl.z0 + .3, hl.z1 - .3, T / 2 + .35, sc));
+            f.push(ntQuad(w, d, fi, u1 + .4, u1 + hl.hw * 1.02, hl.z0 + .3, hl.z1 - .3, T / 2 + .35, sc));
+          }
+        }
+      } else if (hl.door) {
+        if (!gut) f.push(ntQuad(w, d, fi, u0, u1, hl.z0, hl.z1 - 5, .4, N.door[Math.floor(r(6) * N.door.length)]));
+        if (!gut) f.push(ntQuad(w, d, fi, u0, u1, hl.z1 - 5, hl.z1, .5, N.glass));
+        f.push(ntQuad(w, d, fi, u0 - 1.6, u1 + 1.6, hl.z1, hl.z1 + 3, T / 2 + .2, dress));
+        f.push(ntQuad(w, d, fi, u0 - 1.6, u0, hl.z0, hl.z1, T / 2 + .2, dress));
+        f.push(ntQuad(w, d, fi, u1, u1 + 1.6, hl.z0, hl.z1, T / 2 + .2, dress));
+      } else if (hl.shop) {
+        var shc = N.shop[Math.floor(r(7) * N.shop.length)];
+        if (!gut) {
+          f.push(ntQuad(w, d, fi, u0, u1 - 11, hl.z0 + 5, hl.z1 - 2, .4, N.glass));
+          f.push(ntQuad(w, d, fi, u0, u1 - 11, hl.z0, hl.z0 + 5, .5, shc));
+          f.push(ntQuad(w, d, fi, u1 - 11, u1, hl.z0 - 2, hl.z1 - 2, .4, lit(shc, .8)));
+        }
+        /* the fascia over it and the pilasters either side, in the shop's paint */
+        f.push(ntQuad(w, d, fi, u0 - 3, u1 + 3, hl.z1 - 2, hl.z1 + 5, T / 2 + .9, shc));
+        f.push(ntQuad(w, d, fi, u0 - 3, u0 + .5, 1, hl.z1 - 2, T / 2 + .9, lit(shc, .9)));
+        f.push(ntQuad(w, d, fi, u1 - .5, u1 + 3, 1, hl.z1 - 2, T / 2 + .9, lit(shc, .9)));
+      }
+    });
+  }
+  /* ---- the frame of a timber house, laid on its upper floors front and back ---- */
+  if (kind === 'timber') {
+    [fr, back].forEach(function (fi) {
+      var len = LEN[fi], cols = clamp(Math.round((len - 6) / 22), 1, 4);
+      for (s = 1; s < storeys; s++) {
+        var fz = 4 + s * hh, fz1 = Math.min(h, fz + hh);
+        f.push(ntQuad(w, d, fi, -len / 2, len / 2, fz - 1.4, fz + 1.4, T / 2 + .3, N.timber));
+        for (k = 0; k <= cols; k++) {
+          var pu = -len / 2 + len * k / cols;
+          f.push(ntQuad(w, d, fi, pu - 1.3, pu + 1.3, fz, fz1, T / 2 + .3, N.timber));
+          /* the braces in the panel under each window, crossed */
+          if (k < cols && fz + 8 < fz1) {
+            var cu = -len / 2 + len * (k + .5) / cols, hw2 = len / cols / 2 - 1.3;
+            [-1, 1].forEach(function (sg) {
+              var a = ntFp(w, d, fi, cu - hw2 * sg, T / 2 + .35, fz + 1.4), b = ntFp(w, d, fi, cu + hw2 * sg, T / 2 + .35, fz + 7.6);
+              var a2 = ntFp(w, d, fi, cu - hw2 * sg + 1.4 * sg, T / 2 + .35, fz + 1.4), b2 = ntFp(w, d, fi, cu + hw2 * sg + 1.4 * sg, T / 2 + .35, fz + 7.6);
+              var p = [a, a2, b2, b], nn = faceNormal(p[0], p[1], p[2]), ou = NT_OUT[fi];
+              if (nn.x * ou[0] + nn.y * ou[1] < 0) p.reverse();
+              f.push({ v: p, c: N.timber });
+            });
+          }
+        }
+      }
+    });
+  }
+  /* ---- the plinth, the string courses and the cornice ---- */
+  f = f.concat(box(0, 0, 0, w + 1.2, d + 1.2, 4, N.dressD, lit(N.dressD, 1.06), lit(N.dressD, .94), 0));
+  if (kind !== 'timber') for (s = 1; s < storeys; s++) f.push(ntQuad(w, d, fr, -LEN[fr] / 2, LEN[fr] / 2, 4 + s * hh - 1.2, 4 + s * hh + .6, T / 2 + .25, dress));
+  if (roofed) [fr, back].forEach(function (fi) { f = f.concat(ntLedge(w, d, fi, -LEN[fi] / 2, LEN[fi] / 2, h, 2.4, 2.2, dress)); });
+  /* the dressed quoins up the two ends of the house on the street face */
+  if (kind !== 'timber' && o.ends) [0, 1].forEach(function (e) {
+    if (!o.ends[e]) return;
+    var len = LEN[fr], eu = e ? len / 2 : -len / 2, sg = e ? -1 : 1;
+    for (var qz = 4, qi = 0; qz < h - 2; qz += 7, qi++)
+      f.push(ntQuad(w, d, fr, Math.min(eu, eu + sg * (qi % 2 ? 7 : 4.5)), Math.max(eu, eu + sg * (qi % 2 ? 7 : 4.5)), qz + .3, Math.min(h, qz + 6.7), T / 2 + .2, qi % 2 ? dress : lit(dress, .95)));
+  });
+  /* ---- the roof: its ridge along the street, gables at the ends, stacks up them ---- */
+  var L = ridgeX ? w : d, D = ridgeX ? d : w, rh = D * (o.pitch || .62);
+  var rot = ridgeX ? 0 : Math.PI / 2;
+  if (roofed) {
+    f = f.concat(place(gableRoof(L + .2, D + 6, h, rh * (D + 6) / D, N.slate, N.slateL), rot, 0, 0, 0));
+    /* dormers in the street slope. The roof is built with its ridge along its own x and
+       turned a quarter for a street that runs along y, which puts the street side at +y of
+       its frame for faces 0 and 3 and at -y for faces 1 and 2 (the faces are numbered as
+       ruinFace numbers them, and 0 and 2 are not a quarter turn apart) */
+    var sgn = (fr === 0 || fr === 3) ? 1 : -1;
+    if (o.dormer !== 0 && r(9) > .25) {
+      var dm = [], dz = h + rh * .16, dy0 = D / 2 - D * .16;
+      dm = dm.concat(box(0, dy0, dz - 4, 12, 10, 18, wallC, lit(wallC, 1.05), lit(wallC, .92), 0));
+      var dg = [[-5, dy0 + 5.1, dz + 1], [5, dy0 + 5.1, dz + 1], [5, dy0 + 5.1, dz + 12], [-5, dy0 + 5.1, dz + 12]];
+      if (faceNormal(dg[0], dg[1], dg[2]).y < 0) dg.reverse();
+      dm.push({ v: dg, c: N.glass });
+      dm = dm.concat(place(gableRoof(12, 16, dz + 14, 7, N.slate, N.slateL), Math.PI / 2, 0, dy0 - 2, 0));
+      if (sgn < 0) dm = place(dm, Math.PI, 0, 0, 0);
+      f = f.concat(place(dm, rot, 0, 0, 0));
+    }
+  }
+  /* the gable walls at the ends of the house, and a stack up each, which the fire leaves
+     standing when it takes the roof */
+  var endSg = (fr === 0 || fr === 2) ? 1 : -1;       /* which way the street face's u runs in the roof's frame */
+  [0, 1].forEach(function (e) {
+    if (!o.ends || !o.ends[e]) return;
+    var ex = (e ? 1 : -1) * endSg * L / 2, ge = [];
+    if (roofed) ge = ge.concat(gableEnd(ex, D, h, rh, wallC));
+    var sx = ex - (ex > 0 ? 5.5 : -5.5);
+    ge = ge.concat(box(sx, 0, h, 7, 13, rh + 12 + (gut ? -6 : 0), N.stack, lit(N.stack, 1.06), lit(N.stack, .92), 0));
+    if (!gut) ge = ge.concat(box(sx, 0, h + rh + 12, 8.2, 14.2, 1.4, N.dressD, N.dressD, N.dressD, 0));
+    for (var pp = -1; pp <= 1; pp += 2) if (!gut) ge = ge.concat(cyl(sx, pp * 3.4, h + rh + 13.4, 1.3, 1.1, 3.4, 6, N.pot, lit(N.pot, 1.1)));
+    f = f.concat(place(ge, rot, 0, 0, 0));
+  });
+  /* ---- inside, where it can be seen: the floors, whole where the house stands and
+     half gone where it does not, and what came down piled against the ground floor ---- */
+  if (gut || broke) {
+    for (s = 1; s < storeys + (roofed ? 0 : 1) && 4 + s * hh < h; s++) {
+      var nb2 = 4;
+      for (i = 0; i < nb2; i++) {
+        var bx = -w / 2 + T + (w - T * 2) * (i + .5) / nb2;
+        if (gut && r(100 + s * 7 + i) < .55) continue;
+        f = f.concat(box(bx, 0, 4 + s * hh - 1.5, (w - T * 2) / nb2 - .6, d - T * 2, 1.6, N.floor, lit(N.floor, 1.1), N.floor, 0));
+      }
+    }
+    f = f.concat(box(0, 0, 4, w - T * 2, d - T * 2, 1, N.dark, N.floor, N.dark, 0));
+    if (gut) {
+      /* the charred ends of the roof timbers, standing up out of the walls */
+      for (k = 0; k < 3; k++) {
+        var ra = place(pitch(box(0, 0, 0, 3, 2.2, 2.2 + D * .45, N.char, N.char, N.char, 0), .5 - k * .2, 0, 0),
+                       rot + (k - 1) * .15, (r(120 + k) - .5) * L * .7, (k - 1) * D * .2, h - 6);
+        f = f.concat(ra);
+      }
+    }
+  }
+  return f;
+}
+/* ---- the station and the railway ----
+   The lines run along the west bank the whole height of the map, four running lines past
+   the station on the midline and the sidings of the goods yard beyond them. A track is
+   painted into the ground the way Ortona's railway always was (the ballast, the sleepers)
+   and carries its two rails as geometry, because at a player's angle a painted rail is a
+   line and a real one catches the light. Everything built for the railway is here: the
+   platforms and their canopies, the wagons, the station, the goods shed, the signal box
+   and the water tower. The buildings are drawn the way a Norman house is, long along x
+   with the front at +y, and set down by the same rule. */
+var RAIL = { ballast: '#6f6a58', ballastL: '#847e69', sleeper: '#4a3f2c', rail: '#4b4a47', railT: '#8a857c',
+             stone: '#b5aa90', stoneL: '#c9bfa7', stoneD: '#9d937b', brick: '#8a5a44', brickD: '#6f4636',
+             dark: '#23272a', door: '#3b2f25', face: '#e2dccb', iron: '#2e302e', zinc: '#55595b', glass: '#394349',
+             wagon: '#6a3a2c', wagonD: '#552e24', wagonL: '#7a4636', grey: '#5d6160', tank: '#3a3c3a', char: '#2a2320',
+             crate: ['#7c6a4f', '#8e7a5b', '#6d5d45'], tarp: ['#6a6a55', '#78785f', '#5c5c4a'], cabin: '#8a8577', cabinD: '#7a7568',
+             cope: '#d8d2bf' };
+/* a hipped roof over a rectangle len x wid, its eaves at z0 and its ridge rise over them,
+   the ridge along x (or a point where the rectangle is square), each face turned out from
+   the middle of the roof and its underside closed */
+function ndHip(cx, cy, len, wid, z0, rise, col, colL) {
+  var hl = len / 2 + 3, hw = wid / 2 + 3, rl = Math.max(0, hl - hw), zr = z0 + rise, f = [];
+  var c = [cx, cy, z0 - 20];
+  f.push(ndFace([[cx - hl, cy - hw, z0], [cx + hl, cy - hw, z0], [cx + rl, cy, zr], [cx - rl, cy, zr]], col, c[0], c[1], c[2]));
+  f.push(ndFace([[cx + hl, cy + hw, z0], [cx - hl, cy + hw, z0], [cx - rl, cy, zr], [cx + rl, cy, zr]], colL || col, c[0], c[1], c[2]));
+  f.push(ndFace([[cx + hl, cy - hw, z0], [cx + hl, cy + hw, z0], [cx + rl, cy, zr]], col, c[0], c[1], c[2]));
+  f.push(ndFace([[cx - hl, cy + hw, z0], [cx - hl, cy - hw, z0], [cx - rl, cy, zr]], colL || col, c[0], c[1], c[2]));
+  f.push(ndFace([[cx - hl, cy - hw, z0], [cx + hl, cy - hw, z0], [cx + hl, cy + hw, z0], [cx - hl, cy + hw, z0]], NTOWN.slateD, cx, cy, z0 + 10));
+  return f;
+}
+/* a window or a door set in a wall that faces along y: the dark opening, its sill and
+   its head, and on a round-headed one the keystone */
+function railOpening(x, y, sg, z0, w, h, col, arch) {
+  var R = RAIL, f = [ndFace([[x - w / 2, y, z0], [x + w / 2, y, z0], [x + w / 2, y, z0 + h], [x - w / 2, y, z0 + h]], col, x, y - sg, z0)];
+  if (arch) f.push(ndFace([[x - w / 2, y, z0 + h], [x + w / 2, y, z0 + h], [x + w * .35, y, z0 + h + w * .3], [x, y, z0 + h + w * .42], [x - w * .35, y, z0 + h + w * .3]], col, x, y - sg, z0 + h));
+  f = f.concat(box(x, y + sg * .6, z0 - 1.4, w + 3, 1.4, 1.4, R.stoneL, R.stoneL, R.stoneD, 0));
+  f = f.concat(box(x, y + sg * .5, z0 + h + (arch ? w * .42 : 0), arch ? 2.4 : w + 2, 1.2, arch ? 3 : 1.6, R.stoneL, R.stoneL, R.stoneD, 0));
+  return f;
+}
+/* ---- a wagon on its own two axles, x along it, standing on the rail at z 0 ---- */
+function wagonModel(look, seed) {
+  var R = RAIL, f = [], L = 100, W = 30, k;
+  function r(n) { var v = Math.sin(seed * 71.3 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  /* the underframe, the two wheelsets in their axleboxes, and the buffers and hooks */
+  f = f.concat(box(0, 0, 9, L - 6, W - 6, 4, R.iron, R.iron, R.iron, 0));
+  [-L * .3, L * .3].forEach(function (ax) {
+    [-1, 1].forEach(function (sg) {
+      f = f.concat(roll(cyl(ax, 0, 0, 5.2, 5.2, 1.6, 12, R.iron, R.rail), Math.PI / 2, 0, 0).map(function (q) {
+        return { v: q.v.map(function (v) { return [v[0], v[1] + sg * 8.4 - .8, v[2] + 5.2]; }), c: q.c };
+      }));
+      f = f.concat(box(ax, sg * 11, 4, 5, 3, 6, R.iron, R.iron, R.iron, 0));
+    });
+  });
+  [-1, 1].forEach(function (se) {
+    [-1, 1].forEach(function (sg) {
+      f = f.concat(box(se * (L / 2 - .5), sg * 10, 9.8, 5, 2.2, 2.2, R.iron, R.iron, R.iron, 0));
+      f = f.concat(box(se * (L / 2 + 2.3), sg * 10, 8.9, .8, 4, 4, R.railT, R.railT, R.railT, 0));
+    });
+    f = f.concat(box(se * (L / 2 + .5), 0, 9.5, 4, 1.6, 2.6, R.iron, R.iron, R.iron, 0));
+  });
+  var burnt = look === 'wreckcar', body = r(1) < .5 ? R.wagon : R.wagonD;
+  if (look === 'boxcar' || burnt) {
+    /* a covered van: planked sides with their iron bracing, a door on each side, and the
+       roof rounded over */
+    if (!burnt) {
+      f = f.concat(box(0, 0, 13, L - 4, W, 30, body, body, lit(body, .9), 0));
+      for (k = 0; k < 7; k++) {
+        var ra = -Math.PI / 2 + k * Math.PI / 6, rb = -Math.PI / 2 + (k + 1) * Math.PI / 6;
+        f.push(ndFace([[-L / 2 + 2, Math.sin(ra) * (W / 2 + 1), 43 + Math.cos(ra) * 4], [L / 2 - 2, Math.sin(ra) * (W / 2 + 1), 43 + Math.cos(ra) * 4],
+                       [L / 2 - 2, Math.sin(rb) * (W / 2 + 1), 43 + Math.cos(rb) * 4], [-L / 2 + 2, Math.sin(rb) * (W / 2 + 1), 43 + Math.cos(rb) * 4]], R.grey, 0, 0, 20));
+      }
+      [-1, 1].forEach(function (sg) {
+        f = f.concat(box(0, sg * (W / 2 + .3), 14, 24, .8, 27, lit(body, .88), lit(body, .88), lit(body, .88), 0));
+        for (k = -2; k <= 2; k++) if (k) f = f.concat(box(k * L / 5.4, sg * (W / 2 + .3), 13, 1.2, .9, 30, R.iron, R.iron, R.iron, 0));
+        f = f.concat(ndBeam([-L / 2 + 6, sg * (W / 2 + .5), 14], [-L / 5.4 + 2, sg * (W / 2 + .5), 42], .5, .5, R.iron));
+        f = f.concat(ndBeam([L / 2 - 6, sg * (W / 2 + .5), 14], [L / 5.4 - 2, sg * (W / 2 + .5), 42], .5, .5, R.iron));
+      });
+    } else {
+      /* burnt out: the floor and the iron frame of the body standing, the planking gone */
+      f = f.concat(box(0, 0, 13, L - 4, W, 1.5, R.char, R.char, R.char, 0));
+      for (k = -5; k <= 5; k++) [-1, 1].forEach(function (sg) {
+        if (r(k + 9 + sg) < .2) return;
+        f = f.concat(box(k * (L - 8) / 10, sg * (W / 2 - .5), 14, 1.3, 1.3, 20 + r(k + 20) * 10, R.iron, R.iron, R.iron, 0));
+      });
+      [-1, 1].forEach(function (sg) { f = f.concat(ndSlab(-L / 2 + 3, L / 2 - 3, sg * (W / 2 - .8), sg * (W / 2 - .2), 38, 42, 39.3, 43.3, R.iron, R.iron, R.iron)); });
+      for (k = 0; k < 6; k++) f = f.concat(place(box(0, 0, 0, 7 + r(k) * 9, 2.5, 1.2, R.char, R.char, R.char, 0), r(k + 30) * TAU, (r(k + 40) - .5) * L * .8, (r(k + 50) - .5) * W * .6, 14.5));
+    }
+  } else if (look === 'flatcar') {
+    /* a flat wagon with its stanchions, carrying stacked timber or a crate */
+    f = f.concat(box(0, 0, 13, L - 4, W, 3, R.door, lit(R.door, 1.1), R.door, 0));
+    for (k = -3; k <= 3; k++) [-1, 1].forEach(function (sg) { f = f.concat(box(k * L / 7, sg * (W / 2 - .5), 16, 1.2, 1.2, 12, R.iron, R.iron, R.iron, 0)); });
+    if (r(3) < .5) for (k = 0; k < 3; k++) f = f.concat(box((k - 1) * 30, 0, 16, 26, W - 6, 14 - k * 2, R.crate[0], R.crate[1], R.crate[2], 0));
+    else f = f.concat(box(0, 0, 16, 60, W - 8, 20, R.tarp[0], R.tarp[1], R.tarp[2], 0));
+  } else {
+    /* a tank wagon: the barrel on its cradles with a dome on top and a ladder */
+    /* the barrel is a cylinder stood up and laid down along x, then centred on the wagon */
+    var bar = pitch(cyl(0, 0, 0, 12, 12, L - 16, 14, R.tank, lit(R.tank, 1.1)), Math.PI / 2, 0, 0), bx0 = 1e9, bx1 = -1e9;
+    bar.forEach(function (q) { q.v.forEach(function (v) { bx0 = Math.min(bx0, v[0]); bx1 = Math.max(bx1, v[0]); }); });
+    f = f.concat(place(bar, 0, -(bx0 + bx1) / 2, 0, 27));
+    f = f.concat(cyl(0, 0, 38, 4.5, 4.5, 5, 10, R.tank, R.tank));
+    f = f.concat(box(-20, 0, 13, 4, W - 8, 6, R.iron, R.iron, R.iron, 0));
+    f = f.concat(box(20, 0, 13, 4, W - 8, 6, R.iron, R.iron, R.iron, 0));
+  }
+  return f;
+}
+/* ---- the station: a pavilion of two storeys between two wings of one, under slate, with
+   the booking hall's doors and the clock on the town side and the canopy along the
+   platform behind. w is its length and d its depth, the town side at +y ---- */
+function stationModel(w, d, p) {
+  var R = RAIL, f = [], k, pw = 90, broken = !p || !p.whole;
+  var S = R.stone, SL = R.stoneL, SD = R.stoneD;
+  /* the pavilion */
+  f = f.concat(box(0, 0, 0, pw, d, 72, S, SL, SD, 0));
+  f = f.concat(box(0, 0, 70, pw + 3, d + 3, 3, SL, SL, SD, 0));
+  f = f.concat(ndHip(0, 0, pw, d, 73, 28, NTOWN.slate, NTOWN.slateL));
+  /* the wings, their fronts set back from the pavilion's */
+  var wl = (w - pw) / 2;
+  [-1, 1].forEach(function (sg) {
+    var wx = sg * (pw / 2 + wl / 2);
+    f = f.concat(box(wx, -4, 0, wl, d - 8, 44, S, broken && sg < 0 ? R.char : SL, SD, 0));
+    f = f.concat(box(wx, -4, 42, wl + 2, d - 5, 2.5, SL, SL, SD, 0));
+    if (broken && sg < 0) {
+      /* the west wing's roof burnt off: the rafters over it and the walls standing */
+      for (k = 0; k < 9; k++) {
+        var rx = wx - wl / 2 + 5 + k * (wl - 10) / 8;
+        f = f.concat(ndBeam([rx, -d / 2 + 2, 44.5], [rx, -4, 60], .8, 1, NTOWN.char));
+        if (k % 3) f = f.concat(ndBeam([rx, d / 2 - 10, 44.5], [rx, -4, 60], .8, 1, NTOWN.char));
+      }
+    } else f = f.concat(ndHip(wx, -4, wl, d - 8, 44.5, 18, NTOWN.slate, NTOWN.slateL));
+    /* the windows along both faces, round-headed on the ground floor */
+    for (k = 0; k < Math.floor(wl / 20); k++) {
+      var ox = wx - wl / 2 + 10 + k * 20;
+      f = f.concat(railOpening(ox, d / 2 - 8 + .3, 1, 8, 8, 20, R.dark, true));
+      f = f.concat(railOpening(ox, -d / 2 - .3, -1, 8, 8, 20, k % 3 === 1 ? R.door : R.dark, true));
+    }
+    /* the quoins down each corner */
+    f = f.concat(box(sg * (w / 2 - 1.5), d / 2 - 9.5, 0, 3.4, 3.4, 44, SL, SL, SL, 0));
+  });
+  /* the town face of the pavilion: three doors to the booking hall under round heads,
+     three windows over them, the clock in the pediment and the name board */
+  for (k = -1; k <= 1; k++) {
+    f = f.concat(railOpening(k * 24, d / 2 + .3, 1, 0, 12, 30, R.door, true));
+    f = f.concat(railOpening(k * 24, d / 2 + .3, 1, 44, 9, 16, R.dark, false));
+  }
+  f.push(ndFace([[-24, d / 2 + .02, 73], [24, d / 2 + .02, 73], [0, d / 2 + .02, 88]], SL, 0, 0, 73));
+  var dial = [], ring = [];
+  for (k = 0; k < 16; k++) {
+    var a = k / 16 * TAU;
+    dial.push([Math.cos(a) * 5.4, d / 2 + .5, 79 + Math.sin(a) * 5.4]);
+    ring.push([Math.cos(a) * 6.6, d / 2 + .35, 79 + Math.sin(a) * 6.6]);
+  }
+  f.push(ndFace(ring, R.iron, 0, 0, 79)); f.push(ndFace(dial, R.face, 0, 0, 79));
+  f = f.concat(ndBeam([0, d / 2 + .7, 79], [0, d / 2 + .7, 83.2], .35, .2, R.iron));
+  f = f.concat(ndBeam([0, d / 2 + .7, 79], [3, d / 2 + .7, 80.2], .35, .2, R.iron));
+  f = f.concat(box(0, d / 2 + .6, 62, 60, 1, 7, R.iron, R.iron, R.iron, 0));
+  f = f.concat(box(0, d / 2 + 1.1, 63.4, 54, .3, 4.2, R.face, R.face, R.face, 0));
+  f = f.concat(box(-pw / 2 + 1.5, d / 2 - 1.5, 0, 3.4, 3.4, 72, SL, SL, SL, 0));
+  f = f.concat(box(pw / 2 - 1.5, d / 2 - 1.5, 0, 3.4, 3.4, 72, SL, SL, SL, 0));
+  /* the platform face of the pavilion, and the canopy the whole length of the building
+     on its columns, glazed, with the valance along its edge */
+  for (k = -1; k <= 1; k++) {
+    f = f.concat(railOpening(k * 26, -d / 2 - .3, -1, 0, 11, 28, R.door, true));
+    f = f.concat(railOpening(k * 26, -d / 2 - .3, -1, 44, 9, 16, R.dark, false));
+  }
+  var cy0 = -d / 2 - 8, cy1 = -d / 2 - 46;
+  for (k = 0; k <= Math.floor(w / 30); k++) {
+    var cx = -w / 2 + 8 + k * (w - 16) / Math.floor(w / 30);
+    f = f.concat(cyl(cx, cy1 + 4, 0, 1.2, 1.2, 34, 8, R.iron, R.iron, 0, true));
+    f = f.concat(ndBeam([cx, cy1 + 4, 30], [cx, cy0 + 8, 38], .6, .8, R.iron));
+  }
+  f = f.concat(ndSlab(-w / 2, w / 2, cy1, cy0 + 8, 34, 34, 35, 35, R.zinc, R.glass, R.zinc).map(function (q) {
+    return { v: q.v.map(function (v) { return [v[0], v[1], v[2] + (v[1] - cy1) / (cy0 + 8 - cy1) * 5]; }), c: q.c };
+  }));
+  f = f.concat(box(0, cy1, 30, w, .8, 4.5, R.stoneL, R.stoneL, R.stoneL, 0));
+  return f;
+}
+/* ---- the goods shed: a long masonry shed under a slate roof, a door every bay on both
+   sides, and a loading dock along the track side under the eaves carried out over it ---- */
+function goodsShedModel(w, d, p) {
+  var R = RAIL, f = [], k, n = Math.max(3, Math.round(w / 30));
+  f = f.concat(box(0, 0, 0, w, d, 36, R.brick, R.stoneL, R.brickD, 0));
+  f = f.concat(place(gableRoof(w + 2, d + 18, 36, d * .38, NTOWN.slate, NTOWN.slateL), 0, 0, -4, 0));
+  [-1, 1].forEach(function (sg) {
+    f.push(ndFace([[sg * (w / 2 + .02), -d / 2, 36], [sg * (w / 2 + .02), d / 2, 36], [sg * (w / 2 + .02), -4, 36 + d * .38]], R.brick, 0, 0, 40));
+    var rw = [];
+    for (k = 0; k < 12; k++) { var a = k / 12 * TAU; rw.push([sg * (w / 2 + .3), -2 + Math.cos(a) * 5, 44 + Math.sin(a) * 5]); }
+    f.push(ndFace(rw, R.dark, 0, -2, 44));
+    for (k = 0; k < n; k++) {
+      var dx = -w / 2 + (k + .5) * w / n;
+      f = f.concat(box(dx, sg * (d / 2 + .3), 10, w / n * .55, .8, 22, R.door, R.door, R.door, 0));
+      f = f.concat(box(dx, sg * (d / 2 + .6), 32, w / n * .62, 1.2, 1.6, R.iron, R.iron, R.iron, 0));
+      f = f.concat(box(-w / 2 + k * w / n, sg * (d / 2 + .8), 0, 3, 1.6, 36, R.brickD, R.brickD, R.brickD, 0));
+    }
+  });
+  f = f.concat(box(0, -d / 2 - 9, 0, w + 10, 18, 10, R.stoneD, R.stone, R.stoneD, 0));
+  for (k = 0; k < 6; k++) f = f.concat(box((k - 2.5) * w / 6.5, -d / 2 - 7, 10, 10, 8, 8 + (k % 3) * 3, R.crate[0], R.crate[1], R.crate[2], 0));
+  return f;
+}
+/* ---- the signal box: a brick storey with the locking frame in it, the glazed cabin over
+   it with windows the whole way round, a hipped roof and the stair up the end ---- */
+function signalBoxModel(w, d, p) {
+  var R = RAIL, f = [], k;
+  f = f.concat(box(0, 0, 0, w, d, 24, R.brick, R.brick, R.brickD, 0));
+  f = f.concat(box(0, 0, 24, w + 2, d + 2, 20, R.cabin, R.cabin, R.cabinD, 0));
+  [-1, 1].forEach(function (sg) {
+    for (k = 0; k < 5; k++) f = f.concat(box(-w / 2 + 5 + k * (w - 10) / 4, sg * (d / 2 + 1.2), 28, (w - 14) / 4.4, .5, 12, R.glass, R.glass, R.glass, 0));
+    f = f.concat(box(sg * (w / 2 + 1.2), 0, 28, .5, d - 8, 12, R.glass, R.glass, R.glass, 0));
+    f = f.concat(railOpening(sg * 10, d / 2 + .3, 1, 8, 5, 8, R.dark, false));
+  });
+  f = f.concat(ndHip(0, 0, w + 2, d + 2, 44, 10, NTOWN.slate, NTOWN.slateL));
+  for (k = 0; k < 8; k++) f = f.concat(box(w / 2 + 5, -d / 2 + 3 + k * 2.6, k * 3, 8, 3, 1, R.iron, R.iron, R.iron, 0));
+  f = f.concat(box(w / 2 + 5, 0, 22, 9, d, 1.4, R.iron, R.iron, R.iron, 0));
+  return f;
+}
+/* ---- the water tower: a masonry shaft carrying the iron tank, a ladder up it, and the
+   water crane that fills a tender beside the line ---- */
+function waterTowerModel(p) {
+  var R = RAIL, f = [], s = (p.w || 28) / 2;
+  f = f.concat(box(0, 0, 0, s * 1.5, s * 1.5, 46, R.brick, R.stoneL, R.brickD, 0));
+  f = f.concat(box(0, 0, 44, s * 1.7, s * 1.7, 3, R.stoneL, R.stoneL, R.stoneD, 0));
+  f = f.concat(cyl(0, 0, 47, s, s, 20, 16, R.tank, R.tank, 0, true));
+  f = f.concat(cyl(0, 0, 67, s + .6, s + .6, 1.2, 16, R.iron, R.iron, 0, true));
+  var base = [], tip = [];
+  for (var k = 0; k < 16; k++) { var a = (k + .5) / 16 * TAU; base.push([Math.cos(a) * (s + 1), Math.sin(a) * (s + 1)]); tip.push([Math.cos(a) * .6, Math.sin(a) * .6]); }
+  f = f.concat(faceOut(frustum(base, tip, 68, 76, R.zinc, R.zinc, R.zinc), 0, 0, 70));
+  for (k = 0; k < 22; k++) f = f.concat(box(s * .75 + .6, 0, 3 + k * 3, .5, 4, .5, R.iron, R.iron, R.iron, 0));
+  f = f.concat(box(s * .75 + .6, -2, 0, .5, .5, 68, R.iron, R.iron, R.iron, 0));
+  f = f.concat(box(s * .75 + .6, 2, 0, .5, .5, 68, R.iron, R.iron, R.iron, 0));
+  /* the crane, out at the side of the line, which is the tower's -x side */
+  f = f.concat(cyl(-s - 14, 0, 0, 2, 2, 28, 10, R.iron, R.iron, 0, true));
+  f = f.concat(ndBeam([-s - 14, 0, 27], [-s - 32, 0, 27], 1.3, 1.3, R.iron));
+  f = f.concat(ndBeam([-s - 32, 0, 27], [-s - 33, 0, 15], .9, .9, R.char));
+  return f;
+}
+/* a platform: a slab of stone at the height of a carriage's step, its coping along both
+   edges, and optionally a canopy on columns down the middle of it */
+function platformModel(len, w, canopy, zsA, zsB) {
+  var R = RAIL, f = [], k;
+  f = f.concat(ndSlab(-len / 2, len / 2, -w / 2, w / 2, Math.min(zsA, zsB) - 4, Math.min(zsA, zsB) - 4, zsA + 7, zsB + 7, R.stoneD, R.stone, R.stoneD));
+  [-1, 1].forEach(function (sg) {
+    f = f.concat(ndSlab(-len / 2, len / 2, sg * w / 2 - (sg > 0 ? 3 : 0), sg * w / 2 + (sg < 0 ? 3 : 0), zsA + 7, zsB + 7, zsA + 7.4, zsB + 7.4, R.stoneL, R.cope, R.stoneL));
+  });
+  if (canopy) {
+    var n = Math.max(2, Math.round(len / 34));
+    for (k = 0; k <= n; k++) {
+      var x = -len / 2 + 6 + k * (len - 12) / n, zb = lerp(zsA, zsB, (x + len / 2) / len) + 7;
+      f = f.concat(cyl(x, 0, zb, 1.1, 1.1, 30, 8, R.iron, R.iron, 0, true));
+      f = f.concat(ndBeam([x, -w / 2 + 3, zb + 33], [x, 0, zb + 29], .5, .6, R.iron));
+      f = f.concat(ndBeam([x, w / 2 - 3, zb + 33], [x, 0, zb + 29], .5, .6, R.iron));
+    }
+    [-1, 1].forEach(function (sg) {
+      f = f.concat(ndSlab(-len / 2 + 2, len / 2 - 2, sg > 0 ? 0 : -w / 2 + 2, sg > 0 ? w / 2 - 2 : 0, zsA + 36, zsB + 36, zsA + 37, zsB + 37, R.zinc, R.glass, R.zinc).map(function (q) {
+        return { v: q.v.map(function (v) { return [v[0], v[1], v[2] + Math.abs(v[1]) / (w / 2) * 4]; }), c: q.c };
+      }));
+    });
+  }
+  return f;
+}
+/* ---- the town's furniture ----
+   What a Norman town of 1944 has standing in its streets and squares besides its houses:
+   the plane trees down the avenues and round the Champ de Mars, cast-iron lamps, the
+   Morris column with its posters, the bandstand, the memorial to the last war, the
+   cemetery, and at the gasworks the gasholder in its frame. Each is drawn in its own
+   frame about its centre, x along it, and set down by the feature table. */
+var TOWNF = { plane: ['#4d6a33', '#5a7a3a', '#5a7a3a', '#6b8c44', '#6b8c44'], planeCard: '#628240',
+              bark: '#8b8a78', barkL: '#b5b199', barkD: '#6c6b5d', iron: '#2c302d', ironG: '#34443a', lamp: '#d8d0ae',
+              poster: ['#c9b98f', '#9b3b2f', '#3b5271', '#d6cfb4', '#b88a3a'], zinc: '#5a5f60',
+              stone: '#bdb49f', stoneD: '#a39a86', bronze: '#4f5b44', grave: ['#9d9a90', '#b4b0a4', '#86847b'], gas: '#4a5249', gasL: '#58615a' };
+/* a plane tree in an avenue: a clean trunk mottled where the bark has flaked, forking at
+   about twice the crown's radius into four limbs that climb and spread, and a broad crown
+   in full leaf. The crown is several masses rather than one, each flattened a little and
+   set at its own height round the limbs, because a single round mass on a straight pole is
+   a lollipop and the eye reads it as a toy before it reads it as a tree. */
+function planeModel(r, seed) {
+  var T = TOWNF, f = [], k, tH = r * 2, fr = ((seed * 7.13) % 1 + 1) % 1;
+  function q(n) { var v = Math.sin(seed * 91.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  /* a mass squashed toward its own middle, so a crown is wider than it is tall */
+  function mass(cx, cy, cz, rr, n, sq) {
+    return foliageMass(cx, cy, cz, rr, seed + n * .23, T.plane).map(function (g) {
+      return { v: g.v.map(function (p) { return [p[0], p[1], cz + (p[2] - cz) * sq]; }), c: g.c };
+    });
+  }
+  /* the trunk: a flare at the foot, then a slow taper to the fork */
+  f = f.concat(cyl(0, 0, 0, r * .22, r * .17, r * .25, 9, T.bark, T.bark, 0, true));
+  f = f.concat(cyl(0, 0, r * .25, r * .17, r * .13, tH - r * .2, 9, T.bark, T.bark, fr, true));
+  /* the flakes: pale where the old bark has come away and dark where it has not yet */
+  for (k = 0; k < 10; k++) {
+    var pa = q(k) * TAU, pz = r * .3 + q(k + 20) * (tH - r * .6), pr = r * (.17 - pz / tH * .04) + .1;
+    var pc = k % 3 ? T.barkL : T.barkD;
+    f = f.concat(place(box(pr, 0, pz, .25, r * (.05 + q(k + 40) * .05), r * (.1 + q(k + 60) * .12), pc, pc, pc, 0), pa, 0, 0, 0));
+  }
+  /* four limbs out of the head, each climbing to where a mass of the crown hangs on it */
+  var tips = [];
+  for (k = 0; k < 4; k++) {
+    var la = seed * TAU + k * TAU / 4 + (q(k + 80) - .5) * .7, lr = r * (.55 + q(k + 90) * .3), lz = tH + r * (.95 + q(k + 100) * .45);
+    var tx = Math.cos(la) * lr, ty = Math.sin(la) * lr;
+    f = f.concat(ndBeam([0, 0, tH - r * .15], [tx, ty, lz], r * .075, r * .075, T.bark));
+    f = f.concat(ndBeam([tx * .6, ty * .6, lz - r * .45], [tx * 1.25 - ty * .25, ty * 1.25 + tx * .25, lz + r * .2], r * .04, r * .04, T.bark));
+    tips.push([tx, ty, lz]);
+  }
+  /* the crown: a mass on each limb, one over the middle and one on top, each leaf card
+     standing just clear of the upper half of its mass */
+  for (k = 0; k < 4; k++) {
+    var t = tips[k], mr = r * (.72 + q(k + 110) * .22);
+    f = f.concat(mass(t[0] * 1.15, t[1] * 1.15, t[2] + r * .25, mr, k, .78));
+    for (var c = 0; c < 2; c++) {
+      var th = Math.atan2(t[1], t[0]) + (q(k * 3 + c + 120) - .5) * 1.4, ph = .45 + q(k * 3 + c + 130) * .5;
+      f = f.concat(leafCard(t[0] * 1.15, t[1] * 1.15, t[2] + r * .25, mr * .82, th, ph, mr * .5, T.planeCard));
+    }
+  }
+  f = f.concat(mass(0, 0, tH + r * 1.55, r * .95, 5, .8));
+  f = f.concat(mass((q(140) - .5) * r * .5, (q(141) - .5) * r * .5, tH + r * 2.15, r * .62, 6, .85));
+  f = f.concat(leafCard(0, 0, tH + r * 1.55, r * .8, seed * TAU, .2, r * .5, T.planeCard));
+  return f;
+}
+/* a street lamp: a fluted iron post on its base, the arm and the lantern */
+function lampPostModel() {
+  var T = TOWNF, f = [];
+  f = f.concat(cyl(0, 0, 0, 1.6, 1.6, 4, 8, T.iron, T.iron, 0, true));
+  f = f.concat(cyl(0, 0, 4, .8, .7, 30, 8, T.iron, T.iron, 0, true));
+  f = f.concat(box(0, 0, 34, 3.4, 3.4, 5, T.iron, T.iron, T.lamp, 0));
+  var base = [], tip = [];
+  for (var k = 0; k < 4; k++) { var a = (k + .5) / 4 * TAU; base.push([Math.cos(a) * 2.8, Math.sin(a) * 2.8]); tip.push([Math.cos(a) * .3, Math.sin(a) * .3]); }
+  f = f.concat(faceOut(frustum(base, tip, 39, 41.5, T.iron, T.iron, T.iron), 0, 0, 40));
+  return f;
+}
+/* a Morris column: the drum pasted with posters, the fluted cap and the little dome */
+function morrisModel(seed) {
+  var T = TOWNF, f = [], k, R = 5.5;
+  f = f.concat(cyl(0, 0, 0, R + .8, R + .8, 2.5, 14, T.ironG, T.ironG, 0, true));
+  f = f.concat(cyl(0, 0, 2.5, R, R, 24, 14, T.ironG, T.ironG, 0, true));
+  for (k = 0; k < 5; k++) {
+    var a0 = k / 5 * TAU + .1, a1 = a0 + TAU / 5 - .2, z0 = 5 + (k % 2) * 2, z1 = 24 - (k % 3) * 2, col = T.poster[(k + Math.floor(seed * 5)) % 5], pv = [];
+    for (var q = 0; q <= 3; q++) { var aq = lerp(a0, a1, q / 3); pv.push([Math.cos(aq) * (R + .12), Math.sin(aq) * (R + .12)]); }
+    for (q = 0; q < 3; q++) f.push(ndFace([[pv[q][0], pv[q][1], z0], [pv[q + 1][0], pv[q + 1][1], z0], [pv[q + 1][0], pv[q + 1][1], z1], [pv[q][0], pv[q][1], z1]], col, 0, 0, (z0 + z1) / 2));
+  }
+  f = f.concat(cyl(0, 0, 26.5, R + 1.2, R + 1.2, 2, 14, T.ironG, T.ironG, 0, true));
+  var base = [], tip = [];
+  for (k = 0; k < 14; k++) { var b = (k + .5) / 14 * TAU; base.push([Math.cos(b) * (R + .8), Math.sin(b) * (R + .8)]); tip.push([Math.cos(b) * 1, Math.sin(b) * 1]); }
+  f = f.concat(faceOut(frustum(base, tip, 28.5, 33, T.ironG, T.ironG, T.ironG), 0, 0, 29));
+  return f;
+}
+/* the bandstand on the Champ de Mars: an octagonal platform with its balustrade, eight
+   iron columns and a zinc roof with a finial; a man walks under it */
+function bandstandModel(p) {
+  var T = TOWNF, f = [], k, R = Math.min(p.w, p.h) / 2 - 2, ring = [], top = [];
+  for (k = 0; k < 8; k++) { var a = (k + .5) / 8 * TAU; ring.push([Math.cos(a) * R, Math.sin(a) * R]); top.push([Math.cos(a) * .6, Math.sin(a) * .6]); }
+  f = f.concat(faceOut(frustum(ring, ring, 0, 8, T.stone, T.stone, T.stoneD), 0, 0, 4));
+  for (k = 0; k < 8; k++) {
+    var p0 = ring[k], p1 = ring[(k + 1) % 8];
+    f = f.concat(cyl(p0[0] * .96, p0[1] * .96, 8, .8, .8, 30, 8, T.ironG, T.ironG, 0, true));
+    if (k) f = f.concat(ndSlab(0, Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), -.3, .3, 8, 8, 13, 13, T.ironG, T.ironG, T.ironG).map(function (q) {
+      var ang = Math.atan2(p1[1] - p0[1], p1[0] - p0[0]);
+      return { v: q.v.map(function (v) { return [p0[0] * .96 + Math.cos(ang) * v[0] - Math.sin(ang) * v[1], p0[1] * .96 + Math.sin(ang) * v[0] + Math.cos(ang) * v[1], v[2]]; }), c: q.c };
+    }));
+  }
+  var eave = ring.map(function (q) { return [q[0] * 1.12, q[1] * 1.12]; });
+  f = f.concat(faceOut(frustum(eave, top, 38, 52, T.zinc, T.zinc, T.zinc), 0, 0, 42));
+  f = f.concat(box(0, 0, 52, 1, 1, 7, T.iron, T.iron, T.iron, 0));
+  return f;
+}
+/* the memorial to the dead of the last war: three steps, a plinth with its bronze palm,
+   and an obelisk */
+function memorialModel() {
+  var T = TOWNF, f = [];
+  f = f.concat(box(0, 0, 0, 24, 24, 2.5, T.stoneD, T.stone, T.stoneD, 0));
+  f = f.concat(box(0, 0, 2.5, 19, 19, 2.5, T.stoneD, T.stone, T.stoneD, 0));
+  f = f.concat(box(0, 0, 5, 12, 12, 16, T.stone, T.stone, T.stoneD, 0));
+  [-1, 1].forEach(function (sg) { f = f.concat(box(0, sg * 6.2, 9, 5, .5, 8, T.bronze, T.bronze, T.bronze, 0)); });
+  f = f.concat(box(0, 0, 21, 14, 14, 2, T.stone, T.stone, T.stoneD, 0));
+  f = f.concat(faceOut(frustum([[-4.5, -4.5], [4.5, -4.5], [4.5, 4.5], [-4.5, 4.5]], [[-2.4, -2.4], [2.4, -2.4], [2.4, 2.4], [-2.4, 2.4]], 23, 58, T.stone, T.stone, T.stoneD), 0, 0, 30));
+  f = f.concat(faceOut(frustum([[-2.4, -2.4], [2.4, -2.4], [2.4, 2.4], [-2.4, 2.4]], [[-.2, -.2], [.2, -.2], [.2, .2], [-.2, .2]], 58, 63, T.stone, T.stone, T.stoneD), 0, 0, 59));
+  return f;
+}
+/* a cemetery's graves, row on row across its ground: crosses, headstones and the odd
+   family tomb, every one a little different and none quite plumb */
+function cemeteryModel(p) {
+  var T = TOWNF, f = [], w = p.w, h = p.h, i, j;
+  function r(n) { var v = Math.sin(p.s * 91.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  for (j = 0; j < Math.floor((h - 20) / 16); j++) for (i = 0; i < Math.floor((w - 20) / 12); i++) {
+    var gx = -w / 2 + 14 + i * 12, gy = -h / 2 + 14 + j * 16, n = j * 97 + i, col = T.grave[Math.floor(r(n) * 3)], g = [];
+    if (i === Math.floor((w - 20) / 24)) continue;                /* the path down the middle */
+    if (r(n + 1) < .12) continue;
+    g = g.concat(box(0, 0, 0, 7, 11, 1.4, col, col, lit(col, .9), 0));
+    var kind = r(n + 2);
+    if (kind < .45) { g = g.concat(box(0, -4.5, 1.4, 1.2, 1.2, 10, col, col, col, 0)); g = g.concat(box(0, -4.5, 7.5, 5, 1.2, 1.2, col, col, col, 0)); }
+    else if (kind < .85) g = g.concat(box(0, -4.8, 1.4, 6, 1.4, 7 + r(n + 3) * 3, col, col, lit(col, .9), 0));
+    else g = g.concat(box(0, 0, 1.4, 7, 10, 5, col, lit(col, 1.06), lit(col, .9), 0));
+    if (r(n + 4) < .15) g = roll(g, (r(n + 5) - .5) * .5, 0, 0);
+    f = f.concat(place(g, (r(n + 6) - .5) * .08, gx, gy, 0));
+  }
+  return f;
+}
+/* the gasholder: the bell rising in its guide frame, a lattice column at each of twelve
+   stations tied together by ring girders at three heights */
+function gasholderModel(p) {
+  var T = TOWNF, f = [], R = Math.min(p.w, p.h) / 2 - 4, k, ht = 88;
+  f = f.concat(cyl(0, 0, 0, R + 2, R + 2, 8, 24, T.stoneD, T.stone, 0, true));
+  f = f.concat(cyl(0, 0, 8, R - 3, R - 3, ht * .78, 24, T.gas, T.gasL, 0, true));
+  var dome = [], tip = [];
+  for (k = 0; k < 24; k++) { var a = (k + .5) / 24 * TAU; dome.push([Math.cos(a) * (R - 3), Math.sin(a) * (R - 3)]); tip.push([Math.cos(a) * R * .3, Math.sin(a) * R * .3]); }
+  f = f.concat(faceOut(frustum(dome, tip, 8 + ht * .78, 8 + ht * .78 + 7, T.gasL, T.gasL, T.gas), 0, 0, ht * .7));
+  for (k = 0; k < 12; k++) {
+    var ca = k / 12 * TAU, cx = Math.cos(ca) * R, cy = Math.sin(ca) * R;
+    f = f.concat(place(box(0, 0, 8, 3, 3, ht, T.iron, T.iron, T.iron, 0), ca, cx, cy, 0));
+    f = f.concat(ndBeam([cx, cy, 10], [Math.cos(ca + TAU / 12) * R, Math.sin(ca + TAU / 12) * R, ht * .5], .4, .4, T.iron));
+    f = f.concat(ndBeam([cx, cy, ht * .5], [Math.cos(ca + TAU / 12) * R, Math.sin(ca + TAU / 12) * R, ht], .4, .4, T.iron));
+  }
+  [ht * .5, ht, 8 + ht - 1].forEach(function (z, zi) {
+    if (zi === 2) return;
+    for (k = 0; k < 12; k++) {
+      var a0 = k / 12 * TAU, a1 = (k + 1) / 12 * TAU;
+      f = f.concat(ndBeam([Math.cos(a0) * R, Math.sin(a0) * R, z + 7], [Math.cos(a1) * R, Math.sin(a1) * R, z + 7], .7, 1.2, T.iron));
+    }
+  });
+  return f;
+}
+/* a buffer stop at the end of a siding */
+function bufferStopModel() {
+  var T = TOWNF, f = [];
+  [-1, 1].forEach(function (sg) {
+    f = f.concat(ndBeam([-10, sg * 8.4, 0], [0, sg * 8.4, 12], .8, .8, T.iron));
+    f = f.concat(box(0, sg * 8.4, 0, 2, 2, 12, T.iron, T.iron, T.iron, 0));
+  });
+  f = f.concat(box(1, 0, 8, 3, 26, 4, '#6a3a2c', '#6a3a2c', '#552e24', 0));
+  return f;
+}
+/* the buildings that are drawn by a builder of their own rather than as a Norman house,
+   long along x with the front at +y, and the features: wagons, a water tower */
+var NSTYLE = { station: stationModel, goods: goodsShedModel, signalbox: signalBoxModel };
+var FEATURE = {
+  boxcar: function (p) { return wagonModel('boxcar', p.s); }, flatcar: function (p) { return wagonModel('flatcar', p.s); },
+  tankcar: function (p) { return wagonModel('tankcar', p.s); }, wreckcar: function (p) { return wagonModel('wreckcar', p.s); },
+  watertower: function (p) { return waterTowerModel(p); },
+  lamp: function () { return lampPostModel(); }, column: function (p) { return morrisModel(p.s); },
+  bandstand: function (p) { return bandstandModel(p); }, memorial: function () { return memorialModel(); },
+  cemetery: function (p) { return cemeteryModel(p); }, gasholder: function (p) { return gasholderModel(p); },
+  bufferstop: function () { return bufferStopModel(); }
+};
+/* ---- the bridges over the Vire ----
+   A deck is the ground to anything standing on it and nothing to the ground under it.
+   `groundZ` reads it, so a man, a tank, a shell and the walk grid all find the deck, and
+   `bareZ` does not, so the mesher still lays the river and its banks under the arches and
+   the water is drawn through them. G.deck is the height of a deck at every point of the
+   height grid it covers and -1e9 everywhere else, or nothing at all on a map with no
+   bridge; a deck runs from one bank to the other along its line, rising `hump` in the
+   middle over the ground at its two ends. */
+var BRIDGE = { stone: '#9a9384', stoneL: '#aca596', stoneD: '#857f72', setts: '#6f685d', tar: '#4c4a47',
+               steel: '#5a615c', steelD: '#474d49', rust: '#6d5140', plank: '#6e5b43', iron: '#2e302e', lamp: '#c9c2a4' };
+function deckZ(b, t) { return lerp(b.za, b.zb, t) + b.hump * Math.sin(Math.PI * clamp(t, 0, 1)); }
+function buildDecks() {
+  G.deck = null;
+  if (!G.bridges || !G.bridges.length) return;
+  var d = new Float32Array(HW * HH), k;
+  for (k = 0; k < d.length; k++) d[k] = -1e9;
+  /* marked at least thirteen either side of its line, so that a footbridge narrower than a
+     cell of the walk grid still lands on the centre of every cell it crosses */
+  G.bridges.forEach(function (b) {
+    var dx = b.x2 - b.x1, dy = b.y2 - b.y1, L = Math.hypot(dx, dy), ux = dx / L, uy = dy / L, hw = Math.max(b.hw + 2, 13);
+    b.za = bareZ(b.x1, b.y1); b.zb = bareZ(b.x2, b.y2); b.len = L;
+    var i0 = Math.max(0, Math.floor((Math.min(b.x1, b.x2) - hw) / HG)), i1 = Math.min(HW - 1, Math.ceil((Math.max(b.x1, b.x2) + hw) / HG));
+    var j0 = Math.max(0, Math.floor((Math.min(b.y1, b.y2) - hw) / HG)), j1 = Math.min(HH - 1, Math.ceil((Math.max(b.y1, b.y2) + hw) / HG));
+    for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+      var px = i * HG - b.x1, py = j * HG - b.y1, t = (px * ux + py * uy) / L;
+      if (t < 0 || t > 1 || Math.abs(px * uy - py * ux) > hw) continue;
+      var idx = hidx(i, j);
+      d[idx] = Math.max(d[idx], deckZ(b, t));
+    }
+  });
+  G.deck = d;
+}
+function onDeck(x, y) {
+  return !!G.deck && G.deck[hidx(clamp(Math.round(x / HG), 0, HW - 1), clamp(Math.round(y / HG), 0, HH - 1))] > -1e8;
+}
+/* a bridge in its own frame: x along it from end to end, y across, z from the deck at its
+   middle. `wa` and `wb` are where the water begins and ends along it, the deck is `deck`
+   at any x, and everything under the deck stands on the river bed at `bed`. */
+function bridgeModel(b, wa, wb, deck, water, bed) {
+  var B = BRIDGE, f = [], L = b.len, hw = b.hw, k, i, st = 3;
+  var x0 = -L / 2, x1 = L / 2, n = Math.max(8, Math.round(L / st));
+  function xs(q) { return x0 + (x1 - x0) * q / n; }
+  /* the supports: piers standing in the water at even spacing between the banks */
+  var np = b.kind === 'steel' ? 1 : 2, sup = [wa - 6];
+  for (k = 1; k <= np; k++) sup.push(lerp(wa, wb, k / (np + 1)));
+  sup.push(wb + 6);
+  var pw = b.kind === 'foot' ? 3 : 9;
+  /* under each span, how high the soffit stands: a flat segmental arch in stone, the
+     underside of the girders in steel, the stringers of a footbridge */
+  function soffit(x) {
+    for (var q = 0; q < sup.length - 1; q++) {
+      var a = sup[q] + (q ? pw / 2 : 0), c = sup[q + 1] - (q < sup.length - 2 ? pw / 2 : 0);
+      if (x >= a && x <= c) {
+        if (b.kind !== 'stone') return deck(x) - (b.kind === 'steel' ? 7 : 3);
+        var m = (a + c) / 2, hl = (c - a) / 2, u = (x - m) / hl, spring = water + 1.5, crown = deck(m) - 3.5;
+        return spring + (crown - spring) * Math.sqrt(Math.max(0, 1 - u * u * .92));
+      }
+    }
+    return null;
+  }
+  if (b.kind === 'stone') {
+    /* the spandrels either side, a strip at a time from the soffit or the bed up to the
+       deck, and the ring of voussoirs standing proud round each arch */
+    for (i = 0; i < n; i++) {
+      var xa = xs(i), xb = xs(i + 1), sa = soffit(xa), sb2 = soffit(xb), za = sa === null ? bed : sa, zb = sb2 === null ? bed : sb2;
+      [-1, 1].forEach(function (sg) {
+        var y = sg * hw;
+        f.push(ndFace([[xa, y, za], [xb, y, zb], [xb, y, deck(xb) + .5], [xa, y, deck(xa) + .5]], i % 7 ? B.stone : B.stoneL, (xa + xb) / 2, 0, (za + zb) / 2));
+        if (sa !== null && sb2 !== null)
+          f.push(ndFace([[xa, y + sg * .3, za], [xb, y + sg * .3, zb], [xb, y + sg * .3, zb + 3.2], [xa, y + sg * .3, za + 3.2]], B.stoneL, (xa + xb) / 2, 0, za + 1.6));
+      });
+      /* the soffit, turned down to the water */
+      if (sa !== null && sb2 !== null)
+        f.push(ndFace([[xa, -hw, sa], [xb, -hw, sb2], [xb, hw, sb2], [xa, hw, sa]], B.stoneD, (xa + xb) / 2, 0, (sa + sb2) / 2 + 20));
+    }
+    /* the piers, each with a cutwater at both faces and a cap over it */
+    for (k = 1; k < sup.length - 1; k++) {
+      var px = sup[k], ps = water + 1.5;
+      f = f.concat(box(px, 0, bed, pw, hw * 2, ps - bed, B.stoneD, B.stone, B.stoneD, 0));
+      [-1, 1].forEach(function (sg) {
+        var cw = [[px - pw / 2, sg * hw], [px + pw / 2, sg * hw], [px, sg * (hw + 9)]];
+        f = f.concat(faceOut(frustum(cw, cw, bed, ps + 1.5, B.stoneD, B.stoneL, B.stoneD), px, sg * (hw + 3), ps));
+        f = f.concat(faceOut(frustum(cw, [[px - .5, sg * hw], [px + .5, sg * hw], [px, sg * (hw + 1)]], ps + 1.5, ps + 5, B.stoneL, B.stoneL, B.stoneL), px, sg * (hw + 2), ps + 3));
+      });
+    }
+  } else if (b.kind === 'steel') {
+    /* stone abutments and a stone pier with its cutwaters; two plate girders along the
+       sides with their stiffeners, flanges top and bottom, and the floor between them */
+    for (k = 1; k < sup.length - 1; k++) {
+      var qx = sup[k];
+      f = f.concat(box(qx, 0, bed, pw, hw * 2 + 2, deck(qx) - 7 - bed, B.stoneD, B.stone, B.stoneD, 0));
+      [-1, 1].forEach(function (sg) {
+        var cw2 = [[qx - pw / 2, sg * (hw + 1)], [qx + pw / 2, sg * (hw + 1)], [qx, sg * (hw + 9)]];
+        f = f.concat(faceOut(frustum(cw2, cw2, bed, water + 6, B.stoneD, B.stoneL, B.stoneD), qx, sg * (hw + 3), water));
+      });
+    }
+    [wa - 14, wb + 14].forEach(function (ax) {
+      f = f.concat(box(ax, 0, bed, 18, hw * 2 + 6, deck(ax) - 6 - bed, B.stone, B.stoneL, B.stoneD, 0));
+    });
+    for (i = 0; i < n; i++) {
+      var ga = xs(i), gb = xs(i + 1);
+      [-1, 1].forEach(function (sg) {
+        f = f.concat(ndSlab(ga, gb, sg * hw - 1, sg * hw + 1, deck(ga) - 7, deck(gb) - 7, deck(ga) + 9, deck(gb) + 9, i % 5 === 2 ? B.rust : B.steel, B.steelD, B.steelD));
+        f = f.concat(ndSlab(ga, gb, sg * hw - 2.4, sg * hw + 2.4, deck(ga) + 9, deck(gb) + 9, deck(ga) + 10, deck(gb) + 10, B.steelD, B.steelD, B.steelD));
+        if (i % 3 === 0) f = f.concat(box(ga, sg * (hw + 1.4), deck(ga) - 7, 1, .9, 16, B.steelD, B.steelD, B.steelD, 0));
+      });
+      f = f.concat(ndSlab(ga, gb, -hw + 1, hw - 1, deck(ga) - 6, deck(gb) - 6, deck(ga), deck(gb), B.steelD, B.tar, B.steelD));
+    }
+  } else {
+    /* a footbridge: two cast-iron columns in the water, the stringers, a deck of planks
+       and a railing of posts and rails with a cross in every bay */
+    for (k = 1; k < sup.length - 1; k++) {
+      [-1, 1].forEach(function (sg) {
+        f = f.concat(cyl(sup[k], sg * (hw - 2), bed, 1.6, 1.6, deck(sup[k]) - 2 - bed, 8, B.iron, B.iron, 0, true));
+      });
+    }
+    for (i = 0; i < n; i++) {
+      var fa = xs(i), fb = xs(i + 1);
+      [-1, 1].forEach(function (sg) {
+        f = f.concat(ndSlab(fa, fb, sg * (hw - 2) - .8, sg * (hw - 2) + .8, deck(fa) - 3.5, deck(fb) - 3.5, deck(fa) - 1, deck(fb) - 1, B.iron, B.iron, B.iron));
+      });
+      f = f.concat(ndSlab(fa, fb, -hw, hw, deck(fa) - 1, deck(fb) - 1, deck(fa), deck(fb), B.plank, i % 2 ? B.plank : lit(B.plank, 1.08), B.plank));
+    }
+  }
+  /* the carriageway and the parapets, or on a footbridge the railings */
+  for (i = 0; i < n; i++) {
+    var ra = xs(i), rb = xs(i + 1);
+    if (b.kind === 'stone') {
+      f.push(ndFace([[ra, -hw + 3, deck(ra) + .6], [rb, -hw + 3, deck(rb) + .6], [rb, hw - 3, deck(rb) + .6], [ra, hw - 3, deck(ra) + .6]], B.setts, (ra + rb) / 2, 0, deck(ra) - 10));
+      [-1, 1].forEach(function (sg) {
+        f = f.concat(ndSlab(ra, rb, sg * hw - 3 * (sg > 0 ? 1 : 0), sg * hw + 3 * (sg < 0 ? 1 : 0), deck(ra), deck(rb), deck(ra) + 8, deck(rb) + 8, B.stone, B.stoneL, B.stone));
+      });
+    } else if (b.kind === 'foot') {
+      if (i % 2 === 0) [-1, 1].forEach(function (sg) {
+        f = f.concat(box(ra, sg * (hw - .6), deck(ra), .8, .8, 9, B.iron, B.iron, B.iron, 0));
+        f = f.concat(ndBeam([ra, sg * (hw - .6), deck(ra) + 1], [Math.min(rb + (rb - ra), x1), sg * (hw - .6), deck(Math.min(rb + (rb - ra), x1)) + 8], .25, .25, B.iron));
+      });
+      [-1, 1].forEach(function (sg) {
+        f = f.concat(ndSlab(ra, rb, sg * (hw - .6) - .4, sg * (hw - .6) + .4, deck(ra) + 8.4, deck(rb) + 8.4, deck(ra) + 9.2, deck(rb) + 9.2, B.iron, B.iron, B.iron));
+        f = f.concat(ndSlab(ra, rb, sg * (hw - .6) - .25, sg * (hw - .6) + .25, deck(ra) + 4.5, deck(rb) + 4.5, deck(ra) + 5, deck(rb) + 5, B.iron, B.iron, B.iron));
+      });
+    }
+  }
+  /* on the town bridge, a lamp over each pier on either side */
+  if (b.kind === 'stone' && b.lamps) for (k = 1; k < sup.length - 1; k++) [-1, 1].forEach(function (sg) {
+    var lx = sup[k], lz = deck(lx) + 8, ly = sg * (hw - 1.5);
+    f = f.concat(cyl(lx, ly, lz, 1, 1, 22, 8, B.iron, B.iron, 0, true));
+    f = f.concat(box(lx, ly, lz + 22, 3.2, 3.2, 4.4, B.iron, B.iron, B.lamp, 0));
+    f = f.concat(box(lx, ly, lz + 26.4, 4, 4, .8, B.iron, B.iron, B.iron, 0));
+  });
+  return f;
+}
+/* ---- the ramparts of the Enclos ----
+   A curtain of schist and granite standing on the edge of the rock: from outside it is a
+   wall rising sheer from the talus with a cordon at the level of the rock and a parapet
+   over it; from inside it is a parapet at a man's chest that he fires over. Round towers
+   stand out of it, and the gates are gaps with a tower either side. The rock's own face
+   is cut sheer under it (stloZ), so what the valley sees is masonry and not a slope of
+   ground with a wall along the top. Everything here is laid in a run's own frame: x along
+   it, y outward, z from the ground at its middle, which is what put() sets it down on. */
+var RAMP = { stone: ['#8e887c', '#878175', '#958e80', '#83796d'], stoneL: '#a39c8e', stoneD: '#77726a', cap: '#aea696',
+             slit: '#2a2724', ivy: '#4f6232', ivyD: '#43572b' };
+/* a slab whose bottom and top may each slope along x: every face of it is still flat,
+   because the slope is only ever along the one axis */
+function ndSlab(x0, x1, y0, y1, zb0, zb1, zt0, zt1, col, cap, side) {
+  var P = [[x0, y0, zb0], [x1, y0, zb1], [x1, y1, zb1], [x0, y1, zb0], [x0, y0, zt0], [x1, y0, zt1], [x1, y1, zt1], [x0, y1, zt0]];
+  var cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, cz = (zb0 + zb1 + zt0 + zt1) / 4, sd = side || col;
+  return [ndFace([P[0], P[1], P[2], P[3]], col, cx, cy, cz), ndFace([P[4], P[5], P[6], P[7]], cap, cx, cy, cz),
+          ndFace([P[0], P[1], P[5], P[4]], col, cx, cy, cz), ndFace([P[3], P[2], P[6], P[7]], col, cx, cy, cz),
+          ndFace([P[0], P[3], P[7], P[4]], sd, cx, cy, cz), ndFace([P[1], P[2], P[6], P[5]], sd, cx, cy, cz)];
+}
+/* one run of the curtain, `len` long: ziA and ziB the ground just inside it at its two
+   ends, zf the lowest ground at its foot outside, all measured from the ground under its
+   middle; `h` the parapet over the inside. The top follows the ground inside, so where a
+   run climbs a ramp its parapet climbs with it rather than stepping up in blocks. */
+function rampartRun(len, ziA, ziB, zf, h, r) {
+  var R = RAMP, f = [], T = 9, st = R.stone[(r() * R.stone.length) | 0], k;
+  var zi = Math.min(ziA, ziB), zm = (ziA + ziB) / 2, zb = Math.min(zf, zi - 6) - 4, tall = zm - zf > 16;
+  var x0 = -len / 2 - .3, x1 = len / 2 + .3;
+  function zin(x) { return lerp(ziA, ziB, clamp((x + len / 2) / len, 0, 1)); }
+  /* the wall, from under the ground at its foot to the top of the parapet, and the coping */
+  f = f.concat(ndSlab(x0, x1, -1, T - 1, zb, zb, zin(x0) + h, zin(x1) + h, st, R.cap, lit(st, .94)));
+  f = f.concat(ndSlab(x0 - .2, x1 + .2, -1.6, T - .4, zin(x0) + h, zin(x1) + h, zin(x0) + h + 1.8, zin(x1) + h + 1.8, R.cap, R.cap, R.stoneL));
+  if (tall) {
+    /* the batter at the foot, and the cordon run along the face at the level of the rock */
+    f = f.concat(box(0, T + .8, zb, len + .6, 3.6, Math.max(6, zf - zb + 10), R.stoneD, R.stoneD, R.stoneD, 0));
+    f = f.concat(ndSlab(x0, x1, T - 1.3, T + .9, zin(x0) - 3.5, zin(x1) - 3.5, zin(x0) - 1.3, zin(x1) - 1.3, R.stoneL, R.stoneL, R.stoneD));
+    /* a counterfort in the middle of a long run, stepped back once under the cordon */
+    if (len > 34) {
+      var cfx = (r() - .5) * len * .3, cfz = zin(cfx) - 4;
+      f = f.concat(box(cfx, T + 2.5, zb, 8, 7, (cfz - zb) * .65, st, R.stoneL, lit(st, .9), 0));
+      f = f.concat(box(cfx, T + 1.5, zb + (cfz - zb) * .65, 6.5, 5, (cfz - zb) * .35, st, R.stoneL, lit(st, .9), 0));
+    }
+    /* the rain comes off the walk through spouts in the face, and has streaked it */
+    for (k = -len / 2 + 9; k < len / 2 - 4; k += 22) {
+      var sz0 = zin(k);
+      f = f.concat(box(k, T + .5, sz0 + 1, 1.8, 3, 1.6, R.stoneD, R.stoneD, R.stoneD, 0));
+      f.push(ndFace([[k - 1.1, T - .7, sz0 - 1], [k + 1.1, T - .7, sz0 - 1], [k + .8, T - .7, sz0 - 1 - (sz0 - zb) * .35], [k - .9, T - .7, sz0 - 1 - (sz0 - zb) * .3]],
+                    R.stoneD, k, 0, sz0 - 10));
+    }
+  }
+  /* and it is July: ivy has the face in places, in ragged clumps hanging from the top of
+     it or climbing from the foot, each a little in front of the last so none of them
+     flickers through another */
+  var nb = !tall ? 0 : len < 30 ? (r() < .25 ? 1 : 0) : (r() < .6 ? 2 + ((r() * 3) | 0) : 0);
+  if (nb) {
+    var hang = r() < .55, ix = (r() - .5) * len * .5;
+    for (k = 0; k < nb; k++) {
+      var bx = ix + (r() - .5) * 16, bz = hang ? zin(bx) - 4 - k * (4 + r() * 5) : Math.max(zb + 4, zf + 11) + k * (4 + r() * 5);
+      var rr = 3.5 + r() * 5, by = T - .6 + k * .06, blob = [];
+      for (var q = 0; q < 9; q++) {
+        var qa = q / 9 * TAU, qr = rr * (.6 + r() * .6);
+        blob.push([bx + Math.cos(qa) * qr, by, bz + Math.sin(qa) * qr * 1.25]);
+      }
+      for (q = 0; q < 9; q++) f.push(ndFace([[bx, by, bz], blob[q], blob[(q + 1) % 9]], (q + k) % 3 ? R.ivy : R.ivyD, bx, 0, bz));
+    }
+  }
+  return f;
+}
+/* a round tower standing out of the curtain: `a` is the bearing outward, zi the ground
+   inside and zf the lowest ground at its foot, both from the ground at its centre */
+function rampartTower(rad, a, zi, zf, roofed, r) {
+  var R = RAMP, f = [], st = R.stone[(r() * R.stone.length) | 0], k;
+  var zb = Math.min(zf, zi - 6) - 4, zt = zi + 26;
+  f = f.concat(cyl(0, 0, zb, rad, rad, zt - 6 - zb, 18, st, R.cap, 0, true));
+  /* the batter, the cordon at the level of the rock, and a doorway into it from inside */
+  f = f.concat(cyl(0, 0, zb, rad + 2.6, rad + 2.6, Math.max(6, zf - zb + 12), 18, R.stoneD, R.stoneD, 0, true));
+  f = f.concat(cyl(0, 0, zi - 3.5, rad + 1.1, rad + 1.1, 2.2, 18, R.stoneL, R.stoneL, 0, true));
+  var ia = a + Math.PI, dx = Math.cos(ia) * (rad + .15), dy = Math.sin(ia) * (rad + .15), tx = -Math.sin(ia), ty = Math.cos(ia);
+  f.push(ndFace([[dx - tx * 4, dy - ty * 4, zi], [dx + tx * 4, dy + ty * 4, zi], [dx + tx * 4, dy + ty * 4, zi + 13],
+                 [dx, dy, zi + 17], [dx - tx * 4, dy - ty * 4, zi + 13]], R.slit, 0, 0, zi + 8));
+  /* slits in the outer half at two heights, set in the face on its own bearing */
+  for (k = 0; k < 5; k++) {
+    var sa = a + (k - 2) * .62, z0 = k % 2 ? zi - 22 : zi + 6;
+    if (z0 < zb + 6) continue;
+    f = f.concat(place(box(rad - .2, 0, z0, 1.2, 1.6, 8, R.slit, R.slit, R.slit, 0), sa, 0, 0, 0));
+  }
+  /* the corbels under the parapet, the parapet standing out on them */
+  for (k = 0; k < 16; k++) {
+    var ca = k / 16 * TAU;
+    f = f.concat(place(box(rad + .6, 0, zt - 9, 2.4, 2.4, 3, R.stoneD, R.stoneD, R.stoneD, 0), ca, 0, 0, 0));
+  }
+  f = f.concat(cyl(0, 0, zt - 6, rad + 1.8, rad + 1.8, 6, 18, st, R.cap, 0, true));
+  if (roofed) {
+    /* a slate cone over it, the eave a little out past the parapet, and a finial */
+    var base = [], tip = [];
+    for (k = 0; k < 18; k++) {
+      var b = (k + .5) / 18 * TAU;
+      base.push([Math.cos(b) * (rad + 3.2), Math.sin(b) * (rad + 3.2)]);
+      tip.push([Math.cos(b) * .5, Math.sin(b) * .5]);
+    }
+    f = f.concat(faceOut(frustum(base, tip, zt, zt + rad * 1.9, NTOWN.slate, NTOWN.slate, NTOWN.slateL), 0, 0, zt + 4));
+    f = f.concat(box(0, 0, zt + rad * 1.9 - 1, 1, 1, 7, NDAME.iron, NDAME.iron, NDAME.iron, 0));
+  } else {
+    /* open: a leaded platform inside the battlements */
+    for (k = 0; k < 12; k++) {
+      var m = (k + .5) / 12 * TAU;
+      f = f.concat(place(box(rad + .3, 0, zt, 3, 5, 5, st, R.cap, lit(st, .9), 0), m, 0, 0, 0));
+    }
+  }
+  return f;
+}
+/* ---- Notre-Dame de Saint-Lo ----
+   The church on the rock: a Gothic nave with an aisle either side, stepped buttresses
+   down the aisles and a flier from each to the clerestory, a polygonal apse at the east
+   end, and the west front between two square towers with the stone spires on them that
+   the whole valley took its bearings from. The long axis is x, the west front at +x
+   toward the Vire and the apse at -x toward the east gate; w is the length over the
+   towers and the apse and d the width over the aisles, and the north side is +y, because
+   real north is the bottom of this map.
+     The footprint is the town's four-to-one plan and the heights are the houses' own
+   scale, so the nave stands a storey over a three-storey house and the spires more than
+   three times over it: from anywhere in the valley they are the one thing on the skyline.
+   `broken` is the church as the 29th found it: the southern spire shot off above the
+   lucarnes, a bay and a half of the nave roof burnt through to the rafters on the south
+   slope, shell scars on the south tower and its fallen stone at the foot. */
+var NDAME = { stone: '#b1aa9a', stoneL: '#c2bbaa', stoneD: '#9b9485', glass: '#2f3a41', door: '#3e342a',
+              louvre: '#3a342d', dark: '#262320', iron: '#2c2b29', scar: '#6b665d', bruise: '#cdc6b6' };
+/* a face turned away from a point: every hand-laid face here is oriented by what it is
+   the outside of, because the winding it was written in is whatever came to hand */
+function ndFace(p, col, ox, oy, oz) {
+  var n = faceNormal(p[0], p[1], p[2]), cx = 0, cy = 0, cz = 0, i;
+  for (i = 0; i < p.length; i++) { cx += p[i][0]; cy += p[i][1]; cz += p[i][2]; }
+  cx /= p.length; cy /= p.length; cz /= p.length;
+  if ((cx - ox) * n.x + (cy - oy) * n.y + (cz - oz) * n.z < 0) p = p.slice().reverse();
+  return { v: p, c: col };
+}
+/* a lancet laid on a wall that faces along y (sg the side it faces): a pentagon, pointed */
+function ndLancet(x0, x1, z0, z1, y, sg, col) {
+  var xm = (x0 + x1) / 2, pk = z1 + (x1 - x0) * .62;
+  return ndFace([[x0, y, z0], [x1, y, z0], [x1, y, z1], [xm, y, pk], [x0, y, z1]], col, xm, y - sg, z0);
+}
+/* and on a wall that faces along x */
+function ndLancetX(y0, y1, z0, z1, x, sg, col) {
+  var ym = (y0 + y1) / 2, pk = z1 + (y1 - y0) * .62;
+  return ndFace([[x, y0, z0], [x, y1, z0], [x, y1, z1], [x, ym, pk], [x, y0, z1]], col, x - sg, ym, z0);
+}
+/* a straight member between two points, `hw` either side of it across and `th` either
+   side of it up: a flier, a rafter, a purlin */
+function ndBeam(a, b, hw, th, col) {
+  var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], L = Math.hypot(ux, uy, uz);
+  ux /= L; uy /= L; uz /= L;
+  var hx = uy, hy = -ux, hl = Math.hypot(hx, hy);
+  if (hl < 1e-4) { hx = 1; hy = 0; hl = 1; }
+  hx /= hl; hy /= hl;
+  var vx = hy * uz, vy = -hx * uz, vz = hx * uy - hy * ux;
+  function c(p, s, t) { return [p[0] + hx * hw * s + vx * th * t, p[1] + hy * hw * s + vy * th * t, p[2] + vz * th * t]; }
+  var A = [c(a, -1, -1), c(a, 1, -1), c(a, 1, 1), c(a, -1, 1)], B = [c(b, -1, -1), c(b, 1, -1), c(b, 1, 1), c(b, -1, 1)];
+  var mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, mz = (a[2] + b[2]) / 2, f = [], k;
+  for (k = 0; k < 4; k++) f.push(ndFace([A[k], A[(k + 1) % 4], B[(k + 1) % 4], B[k]], col, mx, my, mz));
+  f.push(ndFace(A, col, mx, my, mz)); f.push(ndFace(B, col, mx, my, mz));
+  return f;
+}
+/* a small gabled lucarne standing out of a face, built looking along +x and turned */
+function ndGablet(cx, cy, z0, ang, wd, dep, h, rh) {
+  var N = NDAME, f = [];
+  f = f.concat(box(dep / 2, 0, 0, dep, wd, h, N.stoneL, N.stoneL, N.stone, 0));
+  f = f.concat(gableRoof(dep + 1, wd + 1.4, h, rh, N.stoneD, N.stone));
+  f.push(ndFace([[dep + .02, -wd / 2, h], [dep + .02, wd / 2, h], [dep + .02, 0, h + rh]], N.stoneL, 0, 0, h));
+  f.push(ndLancetX(-wd * .22, wd * .22, 1.5, h - 2.5, dep + .3, 1, N.louvre));
+  return place(f, ang, cx, cy, z0);
+}
+function notreDame(w, d, broken) {
+  var N = NDAME, S = N.stone, SL = N.stoneL, SD = N.stoneD, R = NTOWN.slate, RL = NTOWN.slateL, CH = NTOWN.char;
+  var f = [], k, i;
+  function r(n) { var v = Math.sin(n * 12.9898 + 4.1) * 43758.5453; return v - Math.floor(v); }
+  var tw = Math.round(d * .31), nw = d * .42, aw = (d - nw) / 2;
+  var nh = 118, ah = 66, rh = 48, th = 200, sp = 160;
+  var ar = nw / 2 + aw * .55, xE = -w / 2 + ar * 1.1 + 2, xW = w / 2 - tw, gx = w / 2 - 4, ox = xE + 2;
+  var bays = 6, bl = (xW - ox) / bays, rise = nh - 34;
+  /* ---- the nave: its walls to the cornice, dark inside where the roof is open ---- */
+  f = f.concat(box((xE + xW) / 2, 0, 0, xW - xE, nw, nh, S, N.dark, SD, 0));
+  [-1, 1].forEach(function (sg) {
+    f = f.concat(box((xE + xW) / 2, sg * (nw / 2 + .8), nh - 3, xW - xE, 1.6, 3, SL, SL, SD, 0));
+  });
+  /* the roof, a slope at a time, so the south slope can be open over a bay and a half:
+     slate either side of the hole and the burnt rafters across it */
+  var hx0 = ox + bl * 2.3, hx1 = ox + bl * 3.8, ey = nw / 2 + 3, zr = nh + rh;
+  function slope(x0, x1, sg) {
+    return ndFace([[x0, sg * ey, nh], [x1, sg * ey, nh], [x1, 0, zr], [x0, 0, zr]], sg > 0 ? RL : R, (x0 + x1) / 2, 0, nh);
+  }
+  f.push(slope(xE, gx, 1));
+  if (broken) {
+    f.push(slope(xE, hx0, -1)); f.push(slope(hx1, gx, -1));
+    /* the edges of the hole are torn rather than ruled: slate hanging into it in tongues */
+    [[hx0, 1], [hx1, -1]].forEach(function (e, ei) {
+      for (var tq = 0; tq < 4; tq++) {
+        var t0 = tq / 4 + .02, t1 = (tq + 1) / 4 - .02, tm = (t0 + t1) / 2, dx = e[1] * (3 + r(ei * 7 + tq) * 8);
+        f.push(ndFace([[e[0], -ey * (1 - t0), nh + rh * t0], [e[0], -ey * (1 - t1), nh + rh * t1],
+                       [e[0] + dx, -ey * (1 - tm), nh + rh * tm]], R, e[0] + dx / 2, 0, nh));
+      }
+    });
+    for (var rx = hx0 + 3; rx < hx1 - 1; rx += 7)
+      f = f.concat(ndBeam([rx, -ey + 1, nh + .5], [rx, -.5, zr - .8], .9, 1.1, CH));
+    /* a purlin half way up, burnt through in the middle, and the ridge piece */
+    f = f.concat(ndBeam([hx0, -ey * .5, nh + rh * .5 + 1], [hx0 + (hx1 - hx0) * .42, -ey * .5, nh + rh * .5 + 1], 1, 1.2, CH));
+    f = f.concat(ndBeam([hx1 - (hx1 - hx0) * .3, -ey * .5, nh + rh * .5 + 1], [hx1, -ey * .5, nh + rh * .5 + 1], 1, 1.2, CH));
+    f = f.concat(ndBeam([hx0, -.6, zr - 1], [hx1, -.6, zr - 1], 1.1, 1.1, CH));
+  } else f.push(slope(xE, gx, -1));
+  /* the gable over the east end, behind the apse roof */
+  f.push(ndFace([[xE, -ey, nh], [xE, ey, nh], [xE, 0, zr]], S, xE + 10, 0, nh + 10));
+  /* the ridge's cresting, and the underside of the eaves */
+  f = f.concat(box((xE + gx) / 2, 0, zr - 1, gx - xE, 1.6, 2.4, NTOWN.slateD, NTOWN.slateD, NTOWN.slateD, 0));
+  /* ---- the aisles ---- */
+  [-1, 1].forEach(function (sg) {
+    var ay = sg * (nw / 2 + aw / 2);
+    f = f.concat(box((ox + xW) / 2, ay, 0, xW - ox, aw, ah, S, SL, SD, 0));
+    /* the plinth and the cornice along the outside wall */
+    f = f.concat(box((ox + xW) / 2, sg * (d / 2 + .6), 0, xW - ox, 1.2, 7, SD, SD, SD, 0));
+    f = f.concat(box((ox + xW) / 2, sg * (d / 2 + .7), ah - 3, xW - ox, 1.4, 3, SL, SL, SD, 0));
+    /* the lean-to roof from the aisle wall up to the nave, and its east end closed */
+    f.push(ndFace([[ox, sg * (d / 2 + 2), ah], [xW, sg * (d / 2 + 2), ah], [xW, sg * nw / 2, rise], [ox, sg * nw / 2, rise]],
+                  sg > 0 ? RL : R, (ox + xW) / 2, sg * nw / 2, 0));
+    f.push(ndFace([[ox, sg * d / 2, ah], [ox, sg * nw / 2, ah], [ox, sg * nw / 2, rise]], S, ox + 10, ay, ah));
+    for (k = 0; k < bays; k++) {
+      var bx = ox + bl * (k + .5);
+      /* the aisle's tall window, and the clerestory's over the lean-to */
+      if (!(sg > 0 && k === 1)) {
+        f.push(ndLancet(bx - 5.5, bx + 5.5, 14, ah - 20, sg * (d / 2 + .3), sg, N.glass));
+        f = f.concat(box(bx, sg * (d / 2 + .5), 14, 1.1, .6, ah - 34 + 5, SL, SL, SL, 0));
+      }
+      f.push(ndLancet(bx - 4.5, bx + 4.5, rise + 6, nh - 16, sg * (nw / 2 + .3), sg, N.glass));
+      /* the pier between the bays: stepped back twice, a pinnacle on it, and the flier
+         leaping from it to the nave wall under the cornice */
+      if (k > 0) {
+        var ux = ox + bl * k, py = sg * (d / 2 + 5);
+        f = f.concat(box(ux, py, 0, 7, 10, ah * .55, SD, SL, SD, 0));
+        f = f.concat(box(ux, sg * (d / 2 + 4), ah * .55, 6, 8, ah * .4, SD, SL, SD, 0));
+        f = f.concat(box(ux, sg * (d / 2 + 3), ah * .95, 5, 6, ah * .3, SD, SL, SD, 0));
+        var pz = ah * 1.25;
+        f = f.concat(faceOut(frustum([[ux - 2.5, sg * (d / 2)], [ux + 2.5, sg * (d / 2)], [ux + 2.5, sg * (d / 2 + 6)], [ux - 2.5, sg * (d / 2 + 6)]],
+                                     [[ux - .2, sg * (d / 2 + 2.8)], [ux + .2, sg * (d / 2 + 2.8)], [ux + .2, sg * (d / 2 + 3.2)], [ux - .2, sg * (d / 2 + 3.2)]],
+                                     pz, pz + 16, SL, SL, SD), ux, sg * (d / 2 + 3), pz + 4));
+        f = f.concat(ndBeam([ux, sg * (d / 2 + 1), pz - 4], [ux, sg * (nw / 2 + 1), nh - 22], 2.4, 3, SD));
+        f = f.concat(ndBeam([ux, sg * (d / 2 + 1), pz - 10], [ux, sg * (nw / 2 + 1), nh - 30], 1.6, 1.4, SD));
+      }
+    }
+  });
+  /* ---- the apse: half an octagon on the east end, under a half-cone of slate ---- */
+  var ap = [];
+  for (k = 0; k <= 4; k++) {
+    var a = Math.PI / 2 + k * Math.PI / 4;
+    ap.push([xE + Math.cos(a) * ar * 1.1, Math.sin(a) * ar]);
+  }
+  for (k = 0; k < 4; k++) {
+    var p0 = ap[k], p1 = ap[k + 1], cx = (p0[0] + p1[0]) / 2, cy = (p0[1] + p1[1]) / 2;
+    f.push(ndFace([[p0[0], p0[1], 0], [p1[0], p1[1], 0], [p1[0], p1[1], nh - 8], [p0[0], p0[1], nh - 8]], S, xE, 0, 40));
+    f.push(ndFace([[p0[0], p0[1], nh - 8], [p1[0], p1[1], nh - 8], [xE, 0, zr - 4]], k % 2 ? R : RL, xE, 0, 0));
+    var len = Math.hypot(p1[0] - p0[0], p1[1] - p0[1]), tx = (p1[0] - p0[0]) / len, ty = (p1[1] - p0[1]) / len;
+    var nx = -ty, ny = tx;
+    if (nx * (cx - xE) + ny * cy < 0) { nx = -nx; ny = -ny; }
+    /* two tiers of lancets in each face, the choir's over the ambulatory's */
+    [[14, 44, 5], [58, nh - 24, 4]].forEach(function (t) {
+      var lp = [[cx - tx * t[2] + nx * .3, cy - ty * t[2] + ny * .3, t[0]], [cx + tx * t[2] + nx * .3, cy + ty * t[2] + ny * .3, t[0]],
+                [cx + tx * t[2] + nx * .3, cy + ty * t[2] + ny * .3, t[1]], [cx + nx * .3, cy + ny * .3, t[1] + t[2] * 1.25],
+                [cx - tx * t[2] + nx * .3, cy - ty * t[2] + ny * .3, t[1]]];
+      f.push(ndFace(lp, N.glass, cx - nx, cy - ny, t[0]));
+    });
+    /* a buttress at each angle, stepped once */
+    if (k > 0) {
+      var bxA = p0[0] + (p0[0] - xE) * .04, byA = p0[1] * 1.04;
+      f = f.concat(place(box(3, 0, 0, 10, 7, nh * .5, SD, SL, SD, 0), Math.atan2(p0[1], p0[0] - xE), bxA, byA, 0));
+      f = f.concat(place(box(2, 0, nh * .5, 7, 5.5, nh * .32, SD, SL, SD, 0), Math.atan2(p0[1], p0[0] - xE), bxA, byA, 0));
+    }
+  }
+  var pl = ap.map(function (q) { return [xE + (q[0] - xE) * 1.03, q[1] * 1.03]; });
+  f = f.concat(faceOut(frustum(pl, pl, 0, 7, SD, SD, SD), xE - ar * .5, 0, 3));
+  /* ---- the west front: two towers ---- */
+  [-1, 1].forEach(function (sg) {
+    var ty0 = sg * (d / 2 - tw / 2), tx0 = xW + tw / 2, cut = broken && sg < 0;
+    f = f.concat(box(tx0, ty0, 0, tw + 4, tw + 4, 12, SD, SD, SD, 0));
+    f = f.concat(box(tx0, ty0, 12, tw, tw, th - 12, S, SL, SD, 0));
+    /* the string courses, and the buttresses clasping each corner, set back twice */
+    [th * .34, th * .66].forEach(function (z) { f = f.concat(box(tx0, ty0, z, tw + 2.4, tw + 2.4, 2.6, SL, SL, SD, 0)); });
+    [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(function (c) {
+      var bx2 = tx0 + c[0] * (tw / 2), by2 = ty0 + c[1] * (tw / 2);
+      f = f.concat(box(bx2, by2, 0, 9, 9, th * .4, SD, SL, SD, 0));
+      f = f.concat(box(bx2 - c[0] * .6, by2 - c[1] * .6, th * .4, 7.4, 7.4, th * .34, SD, SL, SD, 0));
+      f = f.concat(box(bx2 - c[0] * 1.2, by2 - c[1] * 1.2, th * .74, 6, 6, th * .23, SD, SL, SD, 0));
+    });
+    /* a window at mid height on the two outer faces, and the belfry's two openings a face,
+       louvred, over the upper course */
+    f.push(ndLancetX(ty0 - 4, ty0 + 4, th * .42, th * .58, tx0 + tw / 2 + .3, 1, N.glass));
+    f.push(ndLancet(tx0 - 4, tx0 + 4, th * .42, th * .58, ty0 + sg * (tw / 2 + .3), sg, N.glass));
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(function (o) {
+      for (i = -1; i <= 1; i += 2) {
+        var z0 = th - 50, z1 = th - 24, fx = tx0 + o[0] * (tw / 2 + .3), fy = ty0 + o[1] * (tw / 2 + .3);
+        if (o[0]) f.push(ndLancetX(ty0 + i * 9 - 5, ty0 + i * 9 + 5, z0, z1, fx, o[0], N.louvre));
+        else f.push(ndLancet(tx0 + i * 9 - 5, tx0 + i * 9 + 5, z0, z1, fy, o[1], N.louvre));
+        for (var sl = z0 + 3; sl < z1; sl += 4.2) {
+          if (o[0]) f = f.concat(box(fx + o[0] * .4, ty0 + i * 9, sl, .8, 9.4, .9, N.iron, N.iron, N.iron, 0));
+          else f = f.concat(box(tx0 + i * 9, fy + o[1] * .4, sl, 9.4, .8, .9, N.iron, N.iron, N.iron, 0));
+        }
+      }
+    });
+    /* shell scars on the south tower's south face and its front */
+    if (cut) {
+      [[.3, .5, 8], [-.25, .3, 6], [.12, .27, 7], [-.3, .62, 5]].forEach(function (s, si) {
+        /* fresh-broken stone is paler than weathered, so a hit is a pale bruise with a
+           dark hole in the middle of it, and never a round one */
+        var sx = tx0 + s[0] * tw, sz = th * s[1], rr = s[2], sc = [], ho = [];
+        for (var q = 0; q < 9; q++) {
+          var aa = q / 9 * TAU, k1 = .45 + r(si * 13 + q) * .8, k2 = .2 + r(si * 13 + q + 5) * .3;
+          sc.push([sx + Math.cos(aa) * rr * k1, ty0 - tw / 2 - .3, sz + Math.sin(aa) * rr * k1 * .85]);
+          ho.push([sx + Math.cos(aa) * rr * k2, ty0 - tw / 2 - .55, sz + Math.sin(aa) * rr * k2 * .85]);
+        }
+        f.push(ndFace(sc, N.bruise, sx, ty0, sz));
+        f.push(ndFace(ho, N.dark, sx, ty0, sz));
+      });
+    }
+    /* the parapet, a pinnacle at each corner, and the spire: an octagon of stone from a
+       little inside the parapet, with a lucarne on each of its four cardinal faces */
+    f = f.concat(box(tx0, ty0, th, tw + 3, tw + 3, 6, SL, SL, SD, 0));
+    [[-1, -1], [-1, 1], [1, -1], [1, 1]].forEach(function (c) {
+      var px = tx0 + c[0] * (tw / 2 - 2.5), py = ty0 + c[1] * (tw / 2 - 2.5);
+      f = f.concat(faceOut(frustum([[px - 3, py - 3], [px + 3, py - 3], [px + 3, py + 3], [px - 3, py + 3]],
+                                   [[px - .3, py - .3], [px + .3, py - .3], [px + .3, py + .3], [px - .3, py + .3]], th + 6, th + 34, SL, SL, SD), px, py, th + 12));
+    });
+    var r0 = tw * .4, zTop = cut ? th + 58 : th + 6 + sp, rTop = cut ? r0 * (1 - 52 / sp) : .5, base = [], top = [];
+    for (k = 0; k < 8; k++) {
+      var a2 = (k + .5) / 8 * TAU;
+      base.push([tx0 + Math.cos(a2) * r0, ty0 + Math.sin(a2) * r0]);
+      top.push([tx0 + Math.cos(a2) * rTop, ty0 + Math.sin(a2) * rTop]);
+    }
+    if (!cut) f = f.concat(faceOut(frustum(base, top, th + 6, zTop, SL, SL, S), tx0, ty0, th + 20));
+    else {
+      /* shot through: the cut is ragged, each angle of the octagon standing to its own
+         height, and the stump is a shell of stone with the dark inside it showing. A
+         point on each edge of a face of the spire is still in the plane of that face, so
+         the ragged faces stay flat. */
+      var zc = [], zl = 1e9;
+      for (k = 0; k < 8; k++) { zc.push(zTop + (r(k + 60) - .6) * 22 - (k === 2 || k === 5 ? 12 : 0)); zl = Math.min(zl, zc[k]); }
+      var edge = function (kk, z) {
+        var q = base[kk], sh = 1 - (z - th - 6) / sp;
+        return [tx0 + (q[0] - tx0) * sh, ty0 + (q[1] - ty0) * sh, z];
+      };
+      for (k = 0; k < 8; k++) {
+        var k2 = (k + 1) % 8, fp = [[base[k][0], base[k][1], th + 6], [base[k2][0], base[k2][1], th + 6], edge(k2, zc[k2]), edge(k, zc[k])];
+        f.push(ndFace(fp, k % 2 ? SL : S, tx0, ty0, th + 20));
+        f.push(ndFace(fp.map(function (v) { return [tx0 + (v[0] - tx0) * .9, ty0 + (v[1] - ty0) * .9, v[2]]; }), N.dark, tx0 + (fp[0][0] - tx0) * 3, ty0 + (fp[0][1] - ty0) * 3, th + 20));
+        /* the thickness of the stone along the top of the break */
+        var a0 = edge(k, zc[k]), a1 = edge(k2, zc[k2]);
+        f.push(ndFace([a0, a1, [tx0 + (a1[0] - tx0) * .9, ty0 + (a1[1] - ty0) * .9, a1[2]], [tx0 + (a0[0] - tx0) * .9, ty0 + (a0[1] - ty0) * .9, a0[2]]],
+                      SD, tx0, ty0, Math.min(a0[2], a1[2]) - 20));
+      }
+      var fl = [];
+      for (k = 0; k < 8; k++) fl.push([tx0 + (base[k][0] - tx0) * .85, ty0 + (base[k][1] - ty0) * .85, th + 9]);
+      f.push(ndFace(fl, N.dark, tx0, ty0, th - 20));
+    }
+    /* the ribs up the angles of the spire */
+    for (k = 0; k < 8; k += 2)
+      f = f.concat(ndBeam([base[k][0], base[k][1], th + 6], [top[k][0] + (base[k][0] - tx0) * .02, top[k][1] + (base[k][1] - ty0) * .02, zTop - (cut ? 0 : 6)], .7, .7, SD));
+    for (k = 0; k < 4; k++) f = f.concat(ndGablet(tx0 + Math.cos(k * TAU / 4) * r0 * .72, ty0 + Math.sin(k * TAU / 4) * r0 * .72,
+                                                  th + 10, k * TAU / 4, 7, 8, 12, 6));
+    if (cut) {
+      /* what came down: a heap against the foot of the tower and the blocks on it and
+         round it, lying every way */
+      var hy = ty0 - tw / 2 - 5, hp = [], ht = [];
+      for (k = 0; k < 7; k++) {
+        var a5 = k / 7 * TAU, rr5 = .8 + r(k + 70) * .4;
+        hp.push([tx0 + 4 + Math.cos(a5) * 26 * rr5, hy + Math.sin(a5) * 11 * rr5]);
+        ht.push([tx0 + 2 + Math.cos(a5) * 11 * rr5, hy + 3 + Math.sin(a5) * 4 * rr5]);
+      }
+      f = f.concat(faceOut(frustum(hp, ht, 0, 6, SD, S, SD), tx0 + 4, hy, 1));
+      for (k = 0; k < 14; k++) {
+        var fx2 = tx0 + 4 + (r(k + 20) - .5) * 58, fy2 = hy + (r(k + 30) - .5) * 20, s2 = 2.5 + r(k + 40) * 5;
+        var blk = box(0, 0, -s2 * .4, s2 * 1.5, s2, s2 * .8, k % 3 ? SD : S, SL, SD, 0);
+        blk = roll(pitch(blk, (r(k + 80) - .5) * 1.2, 0, 0), (r(k + 90) - .5) * 1.2, 0, 0);
+        f = f.concat(place(blk, r(k + 50) * TAU, fx2, fy2, 6 * Math.max(0, 1 - Math.hypot((fx2 - tx0 - 4) / 26, (fy2 - hy) / 11))));
+      }
+    } else {
+      /* the ball and the iron cross on the point */
+      f = f.concat(box(tx0, ty0, zTop - 1, 2.6, 2.6, 2.6, N.iron, N.iron, N.iron, 0));
+      f = f.concat(box(tx0, ty0, zTop + 1.5, 1, 1, 13, N.iron, N.iron, N.iron, 0));
+      f = f.concat(box(tx0, ty0, zTop + 9, 1, 7, 1, N.iron, N.iron, N.iron, 0));
+    }
+  });
+  /* ---- between the towers: the portal, the gallery, the great window and the gable ---- */
+  var gw = d - tw * 2;
+  f = f.concat(box(xW + tw / 2 - 2, 0, 0, tw - 4, gw + 2, nh + 6, S, SL, SD, 0));
+  f.push(ndFace([[gx, -gw / 2 - 1, nh + 6], [gx, gw / 2 + 1, nh + 6], [gx, 0, zr + 6]], S, gx - 10, 0, nh + 10));
+  /* the portal's orders stepping in, the tympanum and the doors */
+  [[15, 0, SD], [12.5, .35, S], [10, .7, SD], [7.5, 1.05, N.door]].forEach(function (o) {
+    f.push(ndLancetX(-o[0], o[0], 0, 22 + o[0] * .4, gx + .3 + o[1], 1, o[2]));
+  });
+  f = f.concat(box(gx + 2, 0, 50, 3, gw, 3, SL, SL, SD, 0));
+  for (i = -gw / 2 + 3; i <= gw / 2 - 3; i += 4) f = f.concat(box(gx + 2.5, i, 53, 1.4, 1.4, 5, SL, SL, SD, 0));
+  f = f.concat(box(gx + 2, 0, 58, 3, gw, 1.4, SL, SL, SD, 0));
+  f.push(ndLancetX(-12, 12, 64, 96, gx + .3, 1, SD));
+  f.push(ndLancetX(-10, 10, 66, 96, gx + .6, 1, N.glass));
+  /* its tracery: two lights and a rose in the head */
+  f = f.concat(box(gx + .8, 0, 66, .6, 1.4, 40, SL, SL, SL, 0));
+  var rose = [];
+  for (k = 0; k < 12; k++) { var a4 = k / 12 * TAU; rose.push([gx + .5, Math.cos(a4) * 7, 136 + Math.sin(a4) * 7]); }
+  f.push(ndFace(rose.map(function (q) { return [q[0] - .2, q[1] * 1.3, 136 + (q[2] - 136) * 1.3]; }), SD, gx - 10, 0, 136));
+  f.push(ndFace(rose, N.glass, gx - 10, 0, 136));
+  /* ---- the outside pulpit on the north aisle, which Saint-Lo was known for ---- */
+  var ppx = ox + bl * 1.5, ppy = d / 2;
+  f.push(ndLancet(ppx - 3.5, ppx + 3.5, 26, 38, ppy + .3, 1, N.door));
+  f = f.concat(faceOut(frustum([[ppx - 2, ppy], [ppx + 2, ppy], [ppx + 2, ppy + 2], [ppx - 2, ppy + 2]],
+                               [[ppx - 7, ppy], [ppx + 7, ppy], [ppx + 7, ppy + 10], [ppx - 7, ppy + 10]], 14, 26, SD, SD, SD), ppx, ppy + 3, 20));
+  f = f.concat(box(ppx, ppy + 5, 26, 14, 10, 11, SL, SD, SL, 0));
+  f = f.concat(box(ppx - 6, ppy + 9.4, 37, 1, 1, 7, SD, SD, SD, 0));
+  f = f.concat(box(ppx + 6, ppy + 9.4, 37, 1, 1, 7, SD, SD, SD, 0));
+  f = f.concat(faceOut(frustum([[ppx - 8, ppy], [ppx + 8, ppy], [ppx + 8, ppy + 11], [ppx - 8, ppy + 11]],
+                               [[ppx - .4, ppy + 1], [ppx + .4, ppy + 1], [ppx + .4, ppy + 1.8], [ppx - .4, ppy + 1.8]], 44, 58, SD, SD, SD), ppx, ppy + 4, 48));
+  return f;
+}
 /* a pitched roof whose ridge runs along x, eaves at z0, ridge rh above them, with its
    underside closed; each face is turned out from the roof's own middle, the way box()
    turns its own */
@@ -38314,8 +39989,8 @@ function drawBuildings3D() {
    whole frame, on a frame where a house was hit, and a barrage hits houses constantly.
    Meshing a bay is not the expensive half; packing it into the vertex stream is. */
 function ruinBayArray(b) {
-  return new Float32Array(facesToArray(place(houseModel(b.w, b.d, ruinHeight(b), b.seed, false, b.dmg, b),
-                                             0, b.x, b.y, groundZ(b.x, b.y))));
+  var f = b.nt ? ntBay(b.w, b.d, ruinHeight(b), b.seed, b, b.nt) : houseModel(b.w, b.d, ruinHeight(b), b.seed, false, b.dmg, b);
+  return new Float32Array(facesToArray(place(f, 0, b.x, b.y, groundZ(b.x, b.y))));
 }
 function ruinRebuild(p) {
   var B = ruinState(p), i, tot = 0;
