@@ -8,7 +8,7 @@ rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm g
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
-Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
+Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
 **The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
 fourteen hundred units of no man's land between them, laid out for four players and
 mirrored about the midline to the unit. **Omaha Beach**, the Dog and Easy sectors on the
@@ -17,8 +17,11 @@ is not a field with a headquarters at either end: a corridor 1500 across and 400
 the Americans starting on the sand at the bottom among the craft that brought them in and
 the Germans in a manor in the bocage at the top, with the seawall and the Atlantic Wall
 across the middle and two draws up the bluff behind it that are the only way armour gets
-off the beach. They are picked on the title screen under GROUND and all three open in the
-editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
+off the beach. **Saint-Lô**, the 18th of July 1944, is the town on the Vire the 29th came
+into that evening, laid for three a side: 3800 by 2800, the old town walled on its rock in
+the middle, the river and the station on the right and the faubourgs on the left, and it is
+being laid in stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
+all four open in the editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
 line over the name, the name, what the battle was and two cards about the ground), and the two
 side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
 ground. Written once in the markup, the header went on naming the Adriatic town over the beach.
@@ -79,7 +82,7 @@ node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
 
-**`--map=gothic` or `--map=omaha` runs a card on the other ground.** `harness.deploy` clicks the title
+**`--map=gothic`, `--map=omaha` or `--map=stlo` runs a card on the other ground.** `harness.deploy` clicks the title
 screen's own GROUND control, which is the one path that also decides what a later
 `startGame()` inside a probe keeps, so `shoot`, `move`, `brain` and `skirmish` all take
 it and nothing else had to change. A card run only on Ortona is a card that has never
@@ -1647,6 +1650,71 @@ income it pays. It is one run of four pairs and the thing to take again before t
 lever, which is the two crest villages starting in nobody's hands; it was also taken with
 paratroopers on the German side and before either army on the beach was its own, so both
 halves of it want taking again.
+
+**Saint-Lô.** The fourth map, and the first laid for three a side. The design is on paper
+before any of it is built and it is built in stages, each photographed on both devices and
+through the gate before the next: the ground and the street plan, then the town's own
+assets (the Norman town house, Notre-Dame, the ramparts, the bridges, the station), then the
+town laid house by house, then what the June raids and the battle left of it, then the flags
+and the balance. The ground and the street plan are in.
+
+Read across the screen from the left: the faubourgs, where the road to Torigni (the 352nd's)
+and the Bayeux road (the 29th's) are one road through the Champ de Mars, which is the
+armour's lane; the old town on its rock in the middle, with a valley under it on either
+side, the Torteron on the German half and the Dollée on the American; and the Vire on the
+right, with the quay along its near bank and the station and the goods yard on the far one.
+Three headquarters stand at either end, one at the head of each lane (`hq` entities with an
+`n`, which is the order a game takes them in, so a 1v1 fights for the centre), and the three
+victory flags are on the midline: the Champ de Mars, Notre-Dame and the station. Real north
+is the bottom of the screen, which puts the river on the right where it is on a map of the
+town held upside down.
+
+**Everything that plays is mirrored about y 1400**: every landform term reads its distance
+from the midline, and `stloMapData` lays a road with `pair` (a twin on the other half) or
+`both` (one road through the midline, whose last German point has to be on it). The dressing
+will not be mirrored. The mirror is exact, and it took one change outside the map to make it
+so: a pad's plane is fitted over a window that the edge of the height grid clips, and it is
+clipped differently at the top of the map from the bottom, so two pads laid as twins came out
+tilted differently and the ground disagreed with its own reflection by two and a half units.
+`LAND.mirrorY` has `makeHeight` copy one half onto the other after the smoothing, and 2,000
+samples read 0.
+
+**The rock is a polygon and every edge of it is a signed distance.** `STLO.enc` is its
+outline on the German half; `stloEncSD` is how far a point is inside it, and the profile
+comes off that one number: level at the top, sheer for forty units and a talus below. The
+first version tested inside or outside and blended the valleys by the branch it was on, and
+every branch switch was a straight contour line across the ground. The valleys run from their
+heads at x 1120 to the Vire, and where they pass under the rock their inner side is held
+fifty-eight units under its top, because at first it rose nearly to the top and the rock's
+own face read as a gradient of 0.76, which a section walks up. It reads blocked for the whole
+of the face now. A dry ditch cuts the neck in front of the east gate with a causeway on the
+midline, and two ways up are cut into the ground (`STLO.ways`): the ramp from each valley to
+its gate, which a tank drives, and the stair from the quay to the Place, eighteen wide,
+because at twelve the walk grid's ±20 sample caught the cliff beside it and it read blocked.
+The ways are laid after the river's terms, which is the order that matters: laid before, the
+quay's slope ran over the foot of the stair.
+
+**A river is the sea's rules applied to a line.** `LAND.river(x, y)` is the signed distance
+from the nearer bank, and `inland` takes the smaller of that and the coast, so everything
+that asks how near the water a point is keeps out of the Vire with no second test; the walk
+grid's shore margin is six units for a river and twenty-four for a sea. The water is the sea
+shader's own, at `LAND.sea` 0 over a channel twenty-six deep. The quay is at 5.5 and walkable
+on both banks, the river is not, and the east bank under the rock is sheer.
+
+**A road says what it is made of.** `style` on a road is `setts` or `tar`, and the painter
+reads it before it reads Ortona's own rectangle of town (`tar` is macadam with chippings,
+patches and the two bands the wheels have worn). And Ortona's town floor, the brick dust and
+broken stone painted over its quarter, is Ortona's: it was painted at the same coordinates on
+any map without a paint of its own, which on Saint-Lô was a pale rectangle on the grass beside
+the Champ de Mars. A map laid by hand (`LAND.hand`) has none of it, and Ortona and the Gothic
+Line paint exactly what they did. The map check's street rule counts one road entity as one
+street, so a road is laid from junction to junction: the rocade on each forward row is three
+pieces and the quay three.
+
+Measured on the ground: the German shelf 66 to 70, the Torteron's floor about 16, the rock 93
+to 96, the quay 5.5, the river bed -26, the far bank 10 to 14 rising to 48 at the right edge;
+the ramp walkable its whole length from 26 to 90 and the stair from 93 down to 8.5; the cliff
+and the ditch's walls blocked, the causeway open; 6.3 per cent of the map blocked.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit

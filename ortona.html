@@ -706,6 +706,7 @@ body:not(.simple) #tOrders{display:none}
     <button class="edb wide" id="edmortona">RELOAD ORTONA</button>
     <button class="edb wide" id="edmgothic">RELOAD GOTHIC LINE</button>
     <button class="edb wide" id="edmomaha">RELOAD OMAHA BEACH</button>
+    <button class="edb wide" id="edmstlo">RELOAD SAINT-LÔ</button>
     <div class="edh">FILES</div>
     <button class="edb wide" id="edmexport">EXPORT FILE</button>
     <button class="edb wide" id="edmsharefile">SHARE…</button>
@@ -819,6 +820,7 @@ body:not(.simple) #tOrders{display:none}
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px">GROUND</span>
     <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true">ORTONA</button>
     <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false">GOTHIC LINE</button>
+    <button class="gmap" data-map="stlo" title="Saint-Lô, 18 July 1944: three a side through the capital of ruins, the old town on its rock over the Vire, the station across the river and the Bayeux road up the left" aria-pressed="false">SAINT-LÔ</button>
     <button class="gmap" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="false">OMAHA</button>
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">OPPOSITION</span>
     <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
@@ -3658,8 +3660,9 @@ function setWorld(w, h) {
    the same question the other way up, and one with no sea answers that everything is a
    long way from it -- which is the answer a landlocked coastY was already giving. */
 function inland(x, y) {
-  if (!LAND.coast) return 1e5;
-  return LAND.south ? coastY(x) - y : y - coastY(x);
+  var c = !LAND.coast ? 1e5 : LAND.south ? coastY(x) - y : y - coastY(x);
+  /* a river is water too, and a point is as far inland as the nearer of the two */
+  return LAND.river ? Math.min(c, LAND.river(x, y)) : c;
 }
 function buildMap(data) {
   G.earthworksApplied = false;
@@ -3740,7 +3743,7 @@ function buildMap(data) {
   data.entities.forEach(function (e) {
     switch (e.t) {
       case 'road':
-        var r = e.pts.map(function (p) { return { x: p.x, y: p.y }; }); r.width = e.width || 48; G.roads.push(r);
+        var r = e.pts.map(function (p) { return { x: p.x, y: p.y }; }); r.width = e.width || 48; r.style = e.style; G.roads.push(r);
         for (var i = 0; i < r.length - 1; i++) carve(r[i].x, r[i].y, r[i + 1].x, r[i + 1].y, r.width * .5, -2.5, null, 'trench');
         break;
       case 'house':
@@ -4055,7 +4058,21 @@ var SOILS = {
             screeHi: '152,140,110', screeLo: '70,62,44',
             thin: '118,126,82', thinHi: '150,158,110', blade: ['#7f9450', '#6d8748'],
             slSoil: .42, slScree: 1.0, slRock: 1.24, rock0: .60, rockK: 8.0,
-            sea: ['#233238', '#2c4046', '#42585c'] }
+            sea: ['#233238', '#2c4046', '#42585c'] },
+  /* Saint-Lo in July: the same loam as the coast, greener and warmer in a summer sun,
+     and the rock is SCHIST -- the spur the old town stands on is a dark blue-grey stone
+     that splits in plates, and it shows on the faces of the rock and nowhere else, since
+     everything gentler than a cliff here is turf, garden or street. The Vire's bed is mud
+     under green-brown water. */
+  stlo: { g0: '#5d6a3c', g1: '#687446', g2: '#5a663b',
+          mdark: '66,78,44', mpale: '128,138,86', grass: '88,112,54',
+          hollow: '84,72,44', tuft: '62,88,42', shoulder: '150,150,128',
+          rockL: 96, rockN: 34, rockD: [-6, -2, 8], joint: '38,40,46',
+          screeL: 92, screeN: 40, screeD: [8, 6, -4],
+          screeHi: '138,136,120', screeLo: '62,60,52',
+          thin: '112,124,76', thinHi: '146,156,104', blade: ['#7a9a48', '#688a42'],
+          slSoil: .5, slScree: .95, slRock: 1.2, rock0: .64, rockK: 8.0,
+          sea: ['#2a3024', '#343c2a', '#46503a'] }
 };
 function soil() { return SOILS[LAND.soil] || SOILS.ortona; }
 /* Where the water stands. Ortona's sea is a bed sunk to sixty and drawn as sea wherever
@@ -4082,6 +4099,13 @@ var ATMO0 = { sun: [0.5692, 0.7400, 0.3584], sunCol: [1.18, 1.0266, 0.8024], sky
 var ATMO_OMAHA = { sun: [0.740, 0.270, 0.616], sunCol: [0.56, 0.56, 0.55], skyCol: [0.80, 0.84, 0.88], amb: .56,
                    fog: [.60, .63, .64], zenith: [0.55, 0.58, 0.61], glow: .1,
                    seaDeep: [0.066, 0.098, 0.094], seaSky: [0.50, 0.55, 0.57], surf: 1 };
+/* Saint-Lo on the evening of the 18th of July: the sun in the west-south-west at about
+   thirty degrees, which is to the right of the screen and a little up it, warm, with a
+   clear summer sky and a haze of brick and plaster dust over the ruins. The Vire is a
+   green-brown river and not a sea. */
+var ATMO_STLO = { sun: [0.829, -0.176, 0.530], sunCol: [1.16, 1.02, 0.84], skyCol: [0.74, 0.83, 1.00], amb: .46,
+                  fog: [.66, .66, .62], zenith: [0.36, 0.49, 0.70], glow: .9,
+                  seaDeep: [0.050, 0.075, 0.052], seaSky: [0.56, 0.64, 0.68], surf: 0 };
 var ATMO = ATMO0;
 function setAtmo(a) {
   ATMO = a || ATMO0;
@@ -4103,7 +4127,14 @@ var LANDS = {
      laid -- and `skirtB` keeps the bands of the country going past the edge. */
   omaha: { name: 'omaha', build: landOmaha, at: omahaZ, coast: coastOmaha, rail: null, val: [], south: 1, sea: 0,
            padR: 200, padY: 80, padM: 60, soil: 'norman', sand: sandOmaha, wet: wetOmaha,
-           paint: omahaPaint, atmo: ATMO_OMAHA, hand: 1, skirtB: 3.5 }
+           paint: omahaPaint, atmo: ATMO_OMAHA, hand: 1, skirtB: 3.5 },
+  /* Saint-Lo: landlocked, with a RIVER, which `inland` reads the way it reads a coast so
+     that everything the sea's rules keep out of the water keeps out of the Vire. The sea
+     level is the river's surface; nothing else on the map is below it but a hole dug next
+     to the water. The pads are a band across each headquarters, since three stand along
+     each end of the map a lane apart. */
+  stlo: { name: 'stlo', build: landStlo, at: stloZ, coast: null, rail: null, val: [], sea: 0, river: stloRiver,
+          padR: 210, padY: 150, padM: 120, soil: 'stlo', atmo: ATMO_STLO, hand: 1, mirrorY: 1400 }
 };
 var LAND = LANDS.ortona;
 /* Where the armies deploy, which is where their headquarters stand. This was two
@@ -4457,8 +4488,269 @@ function omahaZ(x, y) {
   }
   return omDraw(x, y, z);
 }
+/* ---- Saint-Lo, 18 July 1944 ----
+   The town the Americans called the capital of ruins, on the evening the 29th came into
+   it. A map for three a side: three lanes, each with a headquarters at either end of it,
+   and the three victory flags on the midline between them -- the Champ de Mars, Notre-Dame
+   on the rock, and the station over the river. The ground is LANDS.stlo and everything that
+   plays is mirrored about y = 1400: pair() lays a thing on the German half and its twin on
+   the American, both() lays a road that runs from one end of the map to the other through
+   the midline, and the dressing that is not mirrored is written out on each half by hand.
+   The size is written out rather than read off WORLD, because this is built before
+   buildMap has called setWorld. */
+function stloMapData() {
+  var E = [], MID = 1400;
+  function my(y) { return 2 * MID - y; }
+  function P(pts) { return pts.map(function (p) { return { x: p[0], y: p[1] }; }); }
+  function road(style, w, pts) { E.push({ t: 'road', style: style, width: w, pts: P(pts) }); }
+  /* a road laid on the German half and its twin on the American */
+  function pair(style, w, pts) {
+    road(style, w, pts);
+    road(style, w, pts.map(function (p) { return [p[0], my(p[1])]; }));
+  }
+  /* a road from the German half through the midline to its twin: the German points are
+     given down to the midline, and the American half is the same line coming back */
+  function both(style, w, pts) {
+    var back = pts.slice(0, pts.length - 1).reverse().map(function (p) { return [p[0], my(p[1])]; });
+    road(style, w, pts.concat(back));
+  }
+
+  /* ---- the headquarters: three a side, a lane apart. `n` is the order a game takes them
+     in, so a 1v1 fights for the centre and a 2v2 adds the faubourgs on the left. */
+  E.push({ t: 'hq', side: 'ger', n: 1, x: 1960, y: 210 });
+  E.push({ t: 'hq', side: 'ger', n: 2, x: 620, y: 210 });
+  E.push({ t: 'hq', side: 'ger', n: 3, x: 3430, y: 210 });
+  E.push({ t: 'hq', side: 'us', n: 1, x: 1960, y: my(210) });
+  E.push({ t: 'hq', side: 'us', n: 2, x: 620, y: my(210) });
+  E.push({ t: 'hq', side: 'us', n: 3, x: 3430, y: my(210) });
+
+  /* ---- the roads that make the plan. The town's own streets are laid block by block
+     further down; these are the ones every lane is read off. */
+  /* the road to Torigni and the Bayeux road, which are one road through the Champ de Mars */
+  pair('tar', 60, [[470, 0], [540, 380], [600, 650], [620, 800], [660, 1040], [696, 1244]]);
+  /* the spine along the ridge: from the left edge to the square, and from the square
+     through the Neuf-Bourg to the causeway at the east gate */
+  road('setts', 54, [[0, 1400], [560, 1400]]);
+  road('setts', 54, [[960, 1400], [1300, 1400], [1744, 1400]]);
+  /* the rocade on each forward row, from the edge through Sainte-Croix and along the rim
+     of the valley and down to the quay, and on the far bank from the bridge to the edge.
+     A street runs from one junction to the next, so it is laid in the pieces its cross
+     streets cut it into: at the cross streets beyond Sainte-Croix, and where the road
+     from the centre headquarters comes down onto it. */
+  pair('tar', 52, [[0, 790], [620, 800], [1050, 805]]);
+  pair('tar', 52, [[1050, 805], [1350, 742], [1800, 722], [1990, 730]]);
+  pair('tar', 52, [[1990, 730], [2250, 740], [2600, 768]]);
+  pair('tar', 52, [[2790, 770], [3100, 770], [3420, 780], [3800, 800]]);
+  /* the brook road along each valley floor, down to the quay */
+  pair('setts', 46, [[1180, 918], [1400, 966], [1700, 988], [2000, 998], [2300, 992], [2480, 980], [2600, 972]]);
+  /* the ramp up to the Porte au Lait and the Porte Dollee: over the brook and up the scarp,
+     and the street through the rock from gate to gate */
+  pair('setts', 40, [[1762, 990], [1790, 1046], [1950, 1110], [2080, 1178], [2084, 1196]]);
+  both('setts', 40, [[2084, 1196], [2096, 1300], [2100, 1400]]);
+  /* inside the rock: the Rue Notre-Dame from the east gate to the church, and round it */
+  road('setts', 40, [[1760, 1400], [2110, 1400]]);
+  pair('setts', 36, [[2110, 1400], [2130, 1310], [2420, 1318], [2446, 1352]]);
+  /* the quay along the east bank, the whole height of the map, in three lengths: from the
+     top of the map to where the rocade comes down onto it, from there through the midline
+     past the stair and the town bridge, and the American length of the first */
+  function quay(y0, y1) {
+    var q = [], qy;
+    for (qy = y0; qy <= y1; qy += 100) q.push([Math.round(stloRiverX(qy) - stloRiverHW(qy) - 35), qy]);
+    return q;
+  }
+  pair('setts', 46, quay(0, 800));
+  both('setts', 46, quay(800, 1400));
+  /* the far bank: the west quay from bridge to bridge past the station forecourt */
+  both('setts', 44, [[2790, 770], [2760, 1000], [2744, 1200], [2742, 1400]]);
+  road('setts', 50, [[2742, 1400], [2890, 1400]]);
+  /* the level crossings at either end of the platforms, and the Rue de la Gare */
+  pair('setts', 40, [[2760, 1230], [3180, 1230], [3420, 1240]]);
+  both('tar', 48, [[3420, 780], [3430, 1240], [3440, 1400]]);
+  /* each headquarters to its own front */
+  pair('tar', 48, [[1960, 210], [1975, 470], [1990, 730]]);
+  pair('tar', 48, [[3430, 210], [3420, 500], [3420, 780]]);
+  pair('tar', 48, [[620, 210], [560, 420]]);
+  /* the quarter between each base and its valley: streets down to the brook road, and the
+     cross street along the shelf */
+  pair('setts', 42, [[1500, 736], [1480, 900], [1440, 960]]);
+  pair('setts', 40, [[1990, 730], [2020, 880], [2000, 996]]);
+  pair('setts', 40, [[2300, 742], [2320, 900], [2300, 990]]);
+  pair('setts', 42, [[1100, 400], [1500, 420], [1975, 470], [2500, 500]]);
+  pair('setts', 40, [[1100, 400], [1050, 805]]);
+  pair('setts', 40, [[2500, 500], [2600, 768]]);
+  /* the left lane: Sainte-Croix and La Bascule's cross streets, and the bocage lane */
+  pair('setts', 40, [[620, 800], [300, 640], [120, 400]]);
+  pair('setts', 40, [[260, 1400], [300, 1100], [360, 802]]);
+  pair('setts', 40, [[960, 1400], [1000, 1100], [1050, 805]]);
+  /* the Champ de Mars, a square of beaten gravel on the crest of the ridge */
+  E.push({ t: 'paved', kind: 'piazza', x: 560, y: 1250, w: 400, h: 300 });
+
+  /* ---- the flags. Sixteen: three a side by the headquarters, three a side on the forward
+     row, and four on the midline, three of them the victory flags. */
+  var F = [
+    ['g1', 620, 470, 'mp', 'ger', 'Route de Torigni', ['g2', 'g4']],
+    ['g2', 1975, 480, 'mp', 'ger', 'Le Bouloir', ['g1', 'g3', 'g5']],
+    ['g3', 3400, 480, 'fuel', 'ger', 'The gasworks', ['g2', 'g6']],
+    ['g4', 620, 790, 'mp', null, 'Place Sainte-Croix', ['g1', 'g5', 'm1']],
+    ['g5', 1990, 1010, 'fuel', null, 'The Torteron mill', ['g2', 'g4', 'g6', 'm2', 'm3']],
+    ['g6', 3080, 790, 'mp', null, 'The south crossing', ['g3', 'g5', 'm4']]
+  ];
+  var US = { g1: ['a1', 'The Bayeux road'], g2: ['a2', 'Rue de la Marne'], g3: ['a3', 'The goods depot'],
+             g4: ['a4', 'La Bascule'], g5: ['a5', 'The Dollee mill'], g6: ['a6', 'The north crossing'] };
+  function twin(id) { return US[id] ? US[id][0] : id; }
+  F.forEach(function (f) {
+    E.push({ t: 'sector', id: f[0], x: f[1], y: f[2], type: f[3], owner: f[4], label: f[5], nb: f[6] });
+    E.push({ t: 'sector', id: US[f[0]][0], x: f[1], y: my(f[2]), type: f[3], owner: f[4] ? 'us' : null,
+             label: US[f[0]][1], nb: f[6].map(twin) });
+  });
+  E.push({ t: 'sector', id: 'm1', x: 760, y: MID, type: 'vp', owner: null, label: 'Champ de Mars', nb: ['g4', 'a4', 'm2'] });
+  E.push({ t: 'sector', id: 'm2', x: 1470, y: MID, type: 'fuel', owner: null, label: 'Neuf-Bourg', nb: ['m1', 'm3', 'g5', 'a5'] });
+  E.push({ t: 'sector', id: 'm3', x: 2250, y: MID, type: 'vp', owner: null, label: 'Notre-Dame', nb: ['m2', 'm4', 'g5', 'a5'] });
+  E.push({ t: 'sector', id: 'm4', x: 3000, y: MID, type: 'vp', owner: null, label: 'The station', nb: ['m3', 'g6', 'a6'] });
+
+  return { name: 'Saint-Lô', when: 'NORMANDY · 18 JUL 1944', version: 1, land: 'stlo', w: 3800, h: 2800,
+           entities: E, height: [] };
+}
 function landOmaha(h) {
   for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = omahaZ(i * HG, j * HG);
+}
+/* ---- Saint-Lo: the ground ----
+   The old town stands on a spur of schist over the Vire, walled, with the Dollee on one
+   side of it and the Torteron on the other where they come down to the river. The map is
+   3800 across and 2800 deep, the 352nd at the top and the 29th at the bottom, and it is
+   mirrored about y = 1400 in everything that plays: every term below reads the distance
+   from the midline and never y itself, the noise included, so the two halves are the same
+   ground by construction and not by care. Real north is the bottom of the screen, which
+   puts the Vire on the right and the Bayeux road on the left.
+     The pieces, from the country up: a ridge along the midline from the left edge to the
+   rock, falling to a shelf at either end where the headquarters stand; the rock itself,
+   level on top and sheer for forty units and then a talus, joined to the ridge at grade on
+   the east across a neck with a dry ditch cut through it; the two brook valleys cut in
+   from their heads under the ridge down to the river; the Vire in its channel, with a quay
+   along the east bank and a flood plain on the west for the station; and the ways onto the
+   rock that are part of the ground and not of anything standing on it -- the two ramps up
+   the scarp to the side gates and the two stairs down the point to the quay. */
+var STLO = {
+  w: 3800, h: 2800, mid: 1400,
+  /* the rampart's line on the German side, as distance from the midline against x, from
+     the east gate round to the point of the rock over the river */
+  enc: [[1760, 150], [1762, 162], [1800, 208], [1900, 222], [2080, 226], [2250, 214], [2360, 186],
+        [2430, 140], [2470, 80], [2485, 0]],
+  /* the Torteron's line, the same way; the Dollee is the same line read on the other side */
+  brook: [[1120, 470], [1300, 420], [1520, 392], [1760, 382], [2000, 372], [2250, 376], [2450, 390], [2660, 400]],
+  /* the ways onto the rock: a polyline on the German side, the height it starts and ends
+     at, the half-width of its level and the margin it blends back over. The ramp is the
+     road up the scarp to the Porte au Lait; the stair is the Escalier down the point to
+     the quay beside the town bridge, a man's way and no hull's */
+  ways: [{ pts: [[1790, 1046], [1950, 1110], [2080, 1178], [2084, 1196]], z1: 96, w: 24, m: 16 },
+         { pts: [[2432, 1336], [2482, 1270], [2528, 1212]], z1: 8, z0: 96, w: 18, m: 12 }],
+  top: 96
+};
+/* the Enclos as one closed polygon with both halves, for the signed distance */
+STLO.encP = (function () {
+  var up = STLO.enc.map(function (p) { return [p[0], STLO.mid - p[1]]; });
+  var dn = STLO.enc.slice(1, STLO.enc.length - 1).reverse().map(function (p) { return [p[0], STLO.mid + p[1]]; });
+  return up.concat(dn);
+})();
+/* the Vire: its line bends toward the point of the rock at the midline and away from it
+   at either end, and it is a little wider where it bends */
+function stloRiverX(y) {
+  var d = (y - STLO.mid) / 380, e = Math.PI * (y - STLO.mid) / 1400;
+  return 2700 - 72 * Math.exp(-d * d) + 22 * (1 - Math.cos(e));
+}
+function stloRiverHW(y) { return 50 + 4 * Math.sin(Math.abs(y - STLO.mid) / 170); }
+/* how far a point is from the water, positive on land, which is what `inland` asks */
+function stloRiver(x, y) { return Math.abs(x - stloRiverX(y)) - stloRiverHW(y); }
+function stloLine(p, x) {
+  if (x <= p[0][0]) return p[0][1];
+  for (var i = 1; i < p.length; i++) if (x <= p[i][0]) return lerp(p[i - 1][1], p[i][1], (x - p[i - 1][0]) / (p[i][0] - p[i - 1][0]));
+  return p[p.length - 1][1];
+}
+function stloBrookZ(x) { return lerp(46, 6, Math.pow(clamp((x - 1120) / 1540, 0, 1), .85)); }
+/* signed distance to the rampart line, positive inside; only asked near the rock */
+function stloEncSD(x, y) {
+  var P = STLO.encP, n = P.length, best = 1e9, inside = false, i, j;
+  for (i = 0, j = n - 1; i < n; j = i++) {
+    var ax = P[j][0], ay = P[j][1], bx = P[i][0], by = P[i][1];
+    if (((by > y) !== (ay > y)) && (x < (ax - bx) * (y - by) / (ay - by) + bx)) inside = !inside;
+    var dx = bx - ax, dy = by - ay, t = clamp(((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy), 0, 1);
+    var ex = ax + dx * t - x, ey = ay + dy * t - y, dd = ex * ex + ey * ey;
+    if (dd < best) best = dd;
+  }
+  best = Math.sqrt(best);
+  return inside ? best : -best;
+}
+function stloZ(x, y) {
+  var dy = Math.abs(y - STLO.mid), sm = function (t) { t = clamp(t, 0, 1); return t * t * (3 - 2 * t); };
+  /* the country: the ridge along the midline, the two shelves, lower toward the left */
+  var z = 66 + 20 * (1 - sm(dy / 1150)) - 8 * (1 - sm(x / 700));
+  z += (hfbm(x / 260, dy / 260, 331, 3) - .5) * 7;
+  /* the neck: the Neuf-Bourg rises to meet the rock it joins */
+  z = lerp(z, 95, sm((x - 1250) / 520) * (1 - sm((dy - 80) / 140)));
+  /* the brook valleys, the side under the rock steeper than the side under the ridge */
+  var head = sm((x - 1080) / 220);
+  if (head > 0) {
+    var e = dy - stloLine(STLO.brook, x), bz = stloBrookZ(x);
+    var inner = lerp(210, 110, sm((x - 1600) / 300));
+    var wv = e > 0 ? sm((e - 46) / 300) : sm((-e - 46) / inner);
+    /* under the rock the valley's side climbs only to the foot of the talus, and the rock
+       stands up out of it; under the ridge it climbs to the ridge */
+    var zIn = e < 0 ? lerp(z, STLO.top - 58, sm((x - 1760) / 60) * (1 - sm((x - 2560) / 60))) : z;
+    z = lerp(z, Math.min(z, lerp(bz, zIn, wv)), head);
+    var bw = Math.abs(e);
+    if (bw < 9) z -= 5 * (1 - bw / 9) * head;
+  }
+  /* the rock */
+  if (x > 1500 && x < 2700 && dy < 520) {
+    var sd = stloEncSD(x, y), top = STLO.top + (hfbm(x / 90, dy / 90, 337, 2) - .5) * 1.5;
+    if (sd >= 0) z = top;
+    else {
+      var t = -sd;
+      if (t < 40) z = Math.max(z, top - t * 1.5);
+      else z = Math.max(z, lerp(top - 60, z, sm((t - 40) / 70)));
+    }
+  }
+  /* the dry ditch across the neck in front of the east wall, with the causeway at the gate */
+  z -= 20 * sm((26 - Math.abs(x - 1728)) / 12) * sm((dy - 34) / 8) * (1 - sm((dy - 150) / 30));
+  /* the Vire: the east bank comes down to the quay, sheer under the point of the rock and
+     gently elsewhere; the west is a flood plain and then climbs to the edge of the map */
+  var ex = x - stloRiverX(y), hw = stloRiverHW(y);
+  if (ex < 0) {
+    var quay = -ex - hw, rise = lerp(26, 230, sm((dy - 170) / 160));
+    z = lerp(8, z, sm((quay - 70) / rise));
+  } else {
+    var west = ex - hw;
+    z = 10 + sm((west - 40) / 120) * 4 + sm((x - 3420) / 380) * 34;
+    z += (hfbm(x / 200, dy / 200, 341, 2) - .5) * 3 * sm((x - 3380) / 200);
+  }
+  /* the ways onto the rock, cut into the scarp: level across, graded along */
+  for (var wi = 0; wi < STLO.ways.length; wi++) {
+    var W = STLO.ways[wi], P = W.pts, best = 1e9, sAt = 0, tot = 0, run = 0, pi;
+    for (pi = 1; pi < P.length; pi++) tot += Math.hypot(P[pi][0] - P[pi - 1][0], P[pi][1] - P[pi - 1][1]);
+    var yy = STLO.mid - dy;                            /* folded onto the German side */
+    for (pi = 1; pi < P.length; pi++) {
+      var ax = P[pi - 1][0], ay = P[pi - 1][1], bx = P[pi][0], by = P[pi][1], ll = Math.hypot(bx - ax, by - ay);
+      var tt = clamp(((x - ax) * (bx - ax) + (yy - ay) * (by - ay)) / (ll * ll), 0, 1);
+      var dd = Math.hypot(ax + (bx - ax) * tt - x, ay + (by - ay) * tt - yy);
+      if (dd < best) { best = dd; sAt = (run + tt * ll) / tot; }
+      run += ll;
+    }
+    if (best >= W.w + W.m) continue;
+    var z0 = W.z0 !== undefined ? W.z0 : stloBrookZ(P[0][0]) + 2;
+    var zr = lerp(z0, W.z1, sAt);
+    z = best <= W.w ? zr : lerp(zr, z, sm((best - W.w) / W.m));
+  }
+  /* and its channel, with a bank that stands a little proud of the water */
+  var ax2 = Math.abs(ex);
+  if (ax2 < hw + 6) {
+    var r2 = ax2 / (hw + 6);
+    z = Math.min(z, -26 * (1 - r2 * r2) + 3);
+    if (ax2 < hw) z = Math.min(z, -2 - 24 * (1 - (ax2 / hw) * (ax2 / hw)));
+  }
+  return z;
+}
+function landStlo(h) {
+  for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = stloZ(i * HG, j * HG);
 }
 /* The country's hooks. SAND is how much of a point is beach, for the grass scatter, which
    grows none on it. WET is the bottom of the flat and the runnels, which the shader
@@ -4654,6 +4946,15 @@ function makeHeight() {
     var i0 = Math.max(0, i - 1), i1 = Math.min(HW - 1, i + 1);
     var j0 = Math.max(0, j - 1), j1 = Math.min(HH - 1, j + 1);
     sm[hidx(i, j)] = (h[hidx(i0, j)] + h[hidx(i1, j)] + h[hidx(i, j0)] + h[hidx(i, j1)] + h[hidx(i, j)] * 2) / 6;
+  }
+  /* A country mirrored about a line across the map (LAND.mirrorY) is made exactly so: the
+     pads are fitted over a window clipped at the grid's edge, and the grid runs a cell past
+     the far edge of the map and not past the near one, so two pads that are each other's
+     reflection are fitted over windows that are not. The half nearer the top is copied
+     over the other. */
+  if (LAND.mirrorY) {
+    var mj = Math.round(LAND.mirrorY / HG);
+    for (j = mj + 1; j < HH; j++) { var sj = 2 * mj - j; if (sj < 0) break; for (i = 0; i < HW; i++) sm[hidx(i, j)] = sm[hidx(i, sj)]; }
   }
   makeHeight._key = key; makeHeight._base = new Float32Array(sm);
   G.hmap0 = sm; G.hmap = new Float32Array(sm);
@@ -4967,7 +5268,7 @@ function buildTerrGrid() {
   for (cx = 0; cx < GW; cx++) { terrg[cidx(cx, 0)] = 1; terrg[cidx(cx, GH - 1)] = 1; }
   for (var gy = 0; gy < GH; gy++) for (var gx = 0; gx < GW; gx++) {
     var wx = gx * CELL + CELL / 2, wy = gy * CELL + CELL / 2;
-    if (inland(wx, wy) < 24) { terrg[cidx(gx, gy)] = 1; continue; }
+    if (inland(wx, wy) < (LAND.river ? 6 : 24)) { terrg[cidx(gx, gy)] = 1; continue; }
     var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
     var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
     var sg = Math.hypot(sgx, sgy);
@@ -19149,15 +19450,18 @@ function paintGround(t, DET) {
      between the two there is no paving at all: yards, courtyards and the ground the
      houses stand on, which after a month of shelling is crushed stone and brick dust
      over whatever was underneath. Painting the whole quarter as one flagstone field is
-     what made every street read as the same pale grey as every other surface here. ---- */
+     what made every street read as the same pale grey as every other surface here.
+     It is Ortona's quarter, laid where Ortona's town stands, so a map laid by hand has
+     none of it: on Saint-Lo it came out as a pale rectangle on the grass beside the Champ
+     de Mars with nothing standing on it. ---- */
   t.save();
-  var TOWN = { x: 786, y: 586, w: 1228, h: 728 };
+  var TOWN = { x: 786, y: 586, w: 1228, h: 728 }, OWNT = OWN || !!LAND.hand;
   var dg0 = t.createLinearGradient(TOWN.x, TOWN.y, TOWN.x + TOWN.w, TOWN.y + TOWN.h);
   dg0.addColorStop(0, 'rgba(134,124,102,.40)');
   dg0.addColorStop(.5, 'rgba(118,109,89,.46)');
   dg0.addColorStop(1, 'rgba(134,124,102,.40)');
-  if (!OWN) { t.fillStyle = dg0; t.fillRect(TOWN.x, TOWN.y, TOWN.w, TOWN.h); }
-  for (var du = 0; !OWN && du < many(150); du++) {
+  if (!OWNT) { t.fillStyle = dg0; t.fillRect(TOWN.x, TOWN.y, TOWN.w, TOWN.h); }
+  for (var du = 0; !OWNT && du < many(150); du++) {
     var dx0 = TOWN.x + srange(0, TOWN.w), dy0 = TOWN.y + srange(0, TOWN.h), dr0 = srange(24, 96);
     var dgg = t.createRadialGradient(dx0, dy0, 0, dx0, dy0, dr0);
     var pale = srand();
@@ -19166,7 +19470,7 @@ function paintGround(t, DET) {
     t.fillStyle = dgg; t.beginPath(); t.arc(dx0, dy0, dr0, 0, TAU); t.fill();
   }
   /* the broken stone in it, coarse enough to see from a normal camera height */
-  for (var cs = 0; !OWN && cs < many(900); cs++) {
+  for (var cs = 0; !OWNT && cs < many(900); cs++) {
     var sx0 = TOWN.x + srange(0, TOWN.w), sy0 = TOWN.y + srange(0, TOWN.h), ss0 = srange(1.4, 4.6);
     var kind = srand();
     t.fillStyle = kind < .18 ? 'rgba(132,74,52,.5)' : kind < .6 ? 'rgba(196,186,160,.42)' : 'rgba(92,84,64,.36)';
@@ -19216,7 +19520,10 @@ function paintGround(t, DET) {
      same road is rolled dirt between two verges with a pair of ruts worn into it. ---- */
   G.roads.forEach(function (r) {
     var W = r.width || 48;
-    var town = !LAND.hand && r[0].x > 760 && r[0].x < 2040 && r[0].y > 560 && r[0].y < 1340;
+    /* A road says what it is surfaced with. One that does not is Ortona's, where a street
+       was setts if it began inside the town and rolled dirt if it did not. */
+    var town = r.style ? r.style === 'setts' : !LAND.hand && r[0].x > 760 && r[0].x < 2040 && r[0].y > 560 && r[0].y < 1340;
+    var tar = r.style === 'tar';
     function run(width, style, alpha) {
       t.globalAlpha = alpha === undefined ? 1 : alpha;
       t.lineCap = 'butt'; t.lineJoin = 'round';
@@ -19281,6 +19588,40 @@ function paintGround(t, DET) {
         t.fillStyle = srand() < .24 ? 'rgba(128,72,50,.6)' : 'rgba(198,188,162,.55)';
         t.fillRect(rx, ry, rs, rs * srange(.55, .95));
       }
+    } else if (tar) {
+      /* A route nationale in 1944: tarred macadam, dark and nearly smooth, with the
+         chippings showing pale through the binder, a gravel shoulder, patches where it
+         has been made good, and the two bands the traffic has polished. Grass on the
+         verge, because it is summer and nobody has been cutting it. */
+      run(W + 18, '#4d5634', .78);                                /* the verge */
+      run(W + 6, '#6d6a5c');                                      /* the gravel shoulder */
+      run(W, '#403f3b');                                          /* the carriageway */
+      for (var i4 = 0; i4 < r.length - 1; i4++) {
+        var a4 = r[i4], b4 = r[i4 + 1];
+        var l4 = Math.hypot(b4.x - a4.x, b4.y - a4.y), g4 = Math.atan2(b4.y - a4.y, b4.x - a4.x);
+        t.save(); t.translate(a4.x, a4.y); t.rotate(g4);
+        var half4 = W / 2 - 1.5;
+        for (var d4 = 0; d4 < l4; d4 += 2.6) {
+          for (var q4 = -half4; q4 < half4; q4 += 2.6) {
+            var nz4 = noise2(Math.floor(a4.x + d4), Math.floor(a4.y + q4), 67);
+            if (nz4 < .74) continue;
+            var sh4 = Math.round(84 + (nz4 - .74) * 150);
+            t.fillStyle = 'rgba(' + sh4 + ',' + (sh4 - 2) + ',' + (sh4 - 8) + ',.55)';
+            t.fillRect(d4, q4, 1.6, 1.6);
+          }
+        }
+        /* made good: a patch every so often, a shade darker or a shade greyer */
+        for (var pt4 = 30; pt4 < l4 - 20; pt4 += 70 + noise2(Math.floor(a4.x), Math.floor(a4.y + pt4), 69) * 90) {
+          var pw4 = 14 + noise2(Math.floor(a4.x + pt4), 3, 71) * 26, ph4 = 10 + noise2(Math.floor(a4.y + pt4), 5, 73) * (W * .45);
+          var po4 = (noise2(Math.floor(a4.x + pt4), 7, 75) - .5) * (W - ph4);
+          t.fillStyle = noise2(Math.floor(a4.x + pt4), 9, 77) < .5 ? 'rgba(40,38,36,.5)' : 'rgba(96,94,88,.35)';
+          t.fillRect(pt4, po4 - ph4 / 2, pw4, ph4);
+        }
+        t.restore();
+      }
+      rail(W * .2, 8, 'rgba(26,25,24,.26)');                      /* the polished wheel bands */
+      rail(W / 2 - 1, 3, 'rgba(150,146,130,.3)');                 /* the broken edge of the tar */
+      run(W - 18, 'rgba(120,116,104,.08)');                       /* dust along the crown */
     } else {
       run(W + 20, '#4f4a37', .72);                                /* the verge, darker and greener */
       run(W + 7, '#6a6046');
@@ -41287,7 +41628,13 @@ var MAPS = {
             sub: 'Dog and Easy sectors on the morning of D-Day. Bring the 29th Infantry Division up the open sand, over the seawall and through the draws, or hold the Atlantic Wall and the bocage behind it with the 352. Infanterie-Division.',
             cards: [['THE SEAWALL', 'A man can shelter behind it and fire over it. A tank cannot climb it.'],
                     ['THE DRAWS', 'Armour gets off the beach only up the Vierville and Les Moulins draws. Infantry can climb the bluff anywhere.']],
-            brief: 'The Americans come ashore at the bottom of the map and the Germans hold the wall and the bluff above it. Take the village at the top, or put them back into the sea. Cut-off sectors stop producing resources.' }
+            brief: 'The Americans come ashore at the bottom of the map and the Germans hold the wall and the bluff above it. Take the village at the top, or put them back into the sea. Cut-off sectors stop producing resources.' },
+  stlo:   { make: stloMapData,
+            eyebrow: 'US FIRST ARMY · NORMANDY · 18 JULY 1944', title: 'SAINT-LÔ',
+            sub: 'The capital of ruins on the evening the 29th Infantry Division came into it. Three a side: fight up the Bayeux road, over the rock the old town stands on, and across the Vire to the station, or hold it with the 352. Infanterie-Division.',
+            cards: [['THE ENCLOS', 'The old town stands walled on its rock. A vehicle gets onto it by three gates; a man by the stairs from the quay as well.'],
+                    ['THE VIRE', 'The river is crossed at three bridges and two footbridges. The station and the yards are on the far bank.']],
+            brief: 'Three lanes and three victory flags on the midline: the Champ de Mars, Notre-Dame and the station. Cut-off sectors stop producing resources.' }
 };
 var chosenMap = 'ortona';
 function chosenMapData() { return (MAPS[chosenMap] || MAPS.ortona).make(); }
@@ -42984,6 +43331,7 @@ function edPanelLoad() {
   html += '<div class="edli"><div class="t">Ortona<small>the old town, 23 December 1943</small></div><button class="edb" id="edloadortona">LOAD</button></div>';
   html += '<div class="edli"><div class="t">The Gothic Line<small>the Foglia valley, 30 August 1944, laid out for four</small></div><button class="edb" id="edloadgothic">LOAD</button></div>';
   html += '<div class="edli"><div class="t">Omaha Beach<small>Dog and Easy, 6 June 1944, from the water to the village</small></div><button class="edb" id="edloadomaha">LOAD</button></div>';
+  html += '<div class="edli"><div class="t">Saint-L\u00f4<small>18 July 1944, three a side through the old town and over the Vire</small></div><button class="edb" id="edloadstlo">LOAD</button></div>';
   edPanel('LOAD A MAP', html);
   document.querySelectorAll('#edpanelbody [data-load]').forEach(function (b) { b.addEventListener('click', function () { edLoadSlot(decodeURIComponent(b.getAttribute('data-load'))); }); });
   document.querySelectorAll('#edpanelbody [data-kill]').forEach(function (b) { b.addEventListener('click', function () { edDeleteSlot(decodeURIComponent(b.getAttribute('data-kill'))); }); });
@@ -42996,6 +43344,7 @@ function edPanelLoad() {
   el('edloadortona').addEventListener('click', function () { edLoadShipped('ortona', 'Ortona'); });
   el('edloadgothic').addEventListener('click', function () { edLoadShipped('gothic', 'The Gothic Line'); });
   el('edloadomaha').addEventListener('click', function () { edLoadShipped('omaha', 'Omaha Beach'); });
+  el('edloadstlo').addEventListener('click', function () { edLoadShipped('stlo', 'Saint-L\u00f4'); });
 }
 function edPanelName(title, label, value, onok) {
   edPanel(title, '<div class="edh">' + label + '</div><input type="text" id="edpname" value="' + value.replace(/"/g, '') + '" maxlength="40"><div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edpok" style="flex:1;min-height:44px">OK</button><button class="edb warn" id="edpcancel" style="flex:1;min-height:44px">CANCEL</button></div>');
@@ -43204,6 +43553,7 @@ function edPanelCheck() {
   el('edmortona').addEventListener('click', function () { edReload('ortona', 'Ortona'); });
   el('edmgothic').addEventListener('click', function () { edReload('gothic', 'The Gothic Line'); });
   el('edmomaha').addEventListener('click', function () { edReload('omaha', 'Omaha Beach'); });
+  el('edmstlo').addEventListener('click', function () { edReload('stlo', 'Saint-L\u00f4'); });
   el('edmexport').addEventListener('click', function () { edExport(); edMenu(false); });
   el('edmimport').addEventListener('click', function () { el('edfile').click(); edMenu(false); });
   el('edfile').addEventListener('change', function (ev) { if (ev.target.files[0]) edImportFile(ev.target.files[0]); ev.target.value = ''; });

@@ -2852,8 +2852,8 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('three maps ship, and the mirrored one is fair to the unit',
-     maps.keys === 'gothic,omaha,ortona' && maps.picked === 'The Gothic Line' &&
+  ok('four maps ship, and the mirrored one is fair to the unit',
+     maps.keys === 'gothic,omaha,ortona,stlo' && maps.picked === 'The Gothic Line' &&
      maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
