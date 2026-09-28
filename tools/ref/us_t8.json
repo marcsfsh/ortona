@@ -1,0 +1,8 @@
+{ "image": "shots/ref/am_3in.png", "key": "us_t8", "prop": "m5Show", "args": [0.239, true], "up": [], "crew": false,
+  "note": "3-inch Gun M5 on the M6 carriage, the four views of it closed with the tube raised about 13.7 degrees (the top half of the sheet). No scale on the sheet; the side and the plan agree with the 9.00-20 tyre and the 105's 1.87 m track at 47.8 px/m, and the front and rear are drawn wider than tall, at 50.8 across. The drawing rests the closed trails on their spades, where the game folds them. The whole piece is drawn as the hull.",
+  "views": {
+    "side":   { "nose": "left",  "crop": [0, 0, 370, 115],   "ppm": 47.8, "at": [0, 0, 0], "px": [160.6, 108.5], "k": 3 },
+    "side-r": { "nose": "right", "crop": [0, 110, 370, 120], "ppm": 47.8, "at": [0, 0, 0], "px": [213.3, 221.3], "k": 3 },
+    "plan":   { "nose": "left",  "crop": [80, 228, 370, 120], "ppm": 47.8, "at": [0, 0, 0], "px": [235.9, 287.8], "k": 3 },
+    "front":  { "crop": [360, 0, 140, 112],   "ppm": 50.8, "ppmv": 47.8, "at": [0, 0, 0], "px": [427.5, 108.3], "k": 5 },
+    "rear":   { "crop": [360, 110, 140, 120], "ppm": 50.8, "ppmv": 47.8, "at": [0, 0, 0], "px": [427.0, 221.25], "k": 5 } } }
