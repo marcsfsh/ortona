@@ -1,0 +1,4 @@
+{ "image": "shots/ref/hr_p4.png", "key": "hr_p4", "up": ["hatch"], "crew": false,
+  "note": "A four-view of the Panzer IV Ausf. H, 500 by 689 px: the left side bare at the top with the nose left, the right side with the Schurzen hung under it with the nose right, the front and the rear with the Schurzen, and the plan at the foot. No scale on the sheet. The side is taken off the published 5.92 m over the guards, 321 px from the front flap to the rear one, and checks against 2.68 m to the top of the cupola at 53.6 px/m; the front and rear views off the 2.45 m between the track centres, 132.5 px in both, and their heights come out about 2 per cent under, so they take a vertical scale of their own. Pinned at the middle of the eight road wheels on the ground. This spec is the bare views; hr_p4_s.json is the skirted ones.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 10, 400, 160], "ppm": 54.2, "ppmv": 53.6, "at": [0, 0, 0], "px": [225.1, 163.2], "k": 3 } } }

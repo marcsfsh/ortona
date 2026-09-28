@@ -430,7 +430,7 @@ for (const device of TARGETS) {
        that it is armed and lit, then taps a piece of ground forward of home. A second is
        refused by the limit and the button says so. Put back afterwards, because the rows
        below count his men and his sites. */
-    const wk = us ? 'how8' : 'how210', W = window.WORKS[wk];
+    const wk = us ? 'how240' : 'how210', W = window.WORKS[wk];
     window.G.res[own].mp = 5000; window.G.res[own].fu = 2000; window.simpleSync();
     const wBtn = document.querySelector(`#tbuild .tb.work[data-key="${wk}"]`);
     const s0 = window.siteCount(own, wk), mp3 = window.G.res[own].mp, fu3 = window.G.res[own].fu;
@@ -1532,7 +1532,7 @@ for (const device of TARGETS) {
      laid. Everything is put back afterwards. --- */
   const smk = await page.evaluate(() => {
     const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
-    const mk = side === 'us' ? 'us_mor' : 'ger_mor', hk = side === 'us' ? 'us_how' : 'ger_how', bk = side === 'us' ? 'us_how8' : 'ger_how210';
+    const mk = side === 'us' ? 'us_mor' : 'ger_mor', hk = side === 'us' ? 'us_how' : 'ger_how', bk = side === 'us' ? 'am_240' : 'ger_how210';
     const S = k => window.smokeOf(window.UNITS[k]);
     if (!S(mk)) return { has: false };
     const sizes = { mor: S(mk), how: S(hk), bat: S(bk) };
@@ -1608,7 +1608,7 @@ for (const device of TARGETS) {
      bearing behind it. Each of those is a refusal, and a refusal that has quietly stopped
      working looks exactly like one that never fires. --- */
   const bat = await page.evaluate(() => {
-    const side = window.G.side, kind = side === 'us' ? 'how8' : 'how210';
+    const side = window.G.side, kind = side === 'us' ? 'how240' : 'how210';
     const W = window.WORKS[kind];
     if (!W || !W.minHq) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
@@ -1636,12 +1636,11 @@ for (const device of TARGETS) {
     window.G.res[side].mp = mp; window.G.res[side].fu = fu;
     const B = g.def.barrage;
     /* The enemy's own base is out of bounds, and asking that question needs a gun that
-       can reach it. Dug on the first legal patch the American eight-inch is 1275 from a
-       point 300 short of the German headquarters and its reach is 1250, so from there the
-       answer is 'out of range' and the rule under test is never consulted -- which is the
-       two rules doing the same job from opposite ends and is worth knowing, but it is not
-       a test of either. `homeReach` records it; the gun is then stood forward for the
-       question itself and put back. The control is the same range on a bearing with
+       can reach it. Dug on the first legal patch the American 240 is 1275 from a point 300
+       short of the German headquarters and its reach is 1350, so from there `safe` is what
+       answers; the eight-inch before it reached 1250 and was out of range there, which
+       asked neither rule. `homeReach` records it; the gun is then stood forward for the
+       question itself and put back, so every battery is asked the same thing. The control is the same range on a bearing with
        nothing of the enemy's on it. */
     const homeReach = Math.round(Math.hypot(foeHq.x - g.x, foeHq.y - g.y));
     const gx0 = g.x, gy0 = g.y, hA = Math.atan2(hq.y - foeHq.y, hq.x - foeHq.x);
@@ -1653,10 +1652,12 @@ for (const device of TARGETS) {
     const cA = Math.atan2(by0 - g.y, bx0 - g.x) + 1.4;
     const clear = window.barrageWhy(g, g.x + Math.cos(cA) * dd0, g.y + Math.sin(cA) * dd0);
     g.barrage = null; g.x = gx0; g.y = gy0;
-    /* a mission behind the gun, so the whole of the traverse has to be paid for */
+    /* a mission behind the gun, so the whole of the traverse has to be paid for. A piece
+       whose top carriage turns on its trails (`carr`) is laid across that arc for next to
+       nothing and pays the trails' rate for the rest of the half turn. */
     const tx = g.x - Math.cos(g.facing) * 700, ty = g.y - Math.sin(g.facing) * 700;
     const laid = window.orderBarrage(g, tx, ty);
-    const slew = (Math.PI - (g.def.layTol || .35)) / g.def.traverse;
+    const slew = (Math.PI - (g.def.carr || 0) - (g.def.layTol || .35)) / g.def.traverse;
     let first = -1, out = [], quiet = 0;
     for (let f = 0; f < 60 * 260 && quiet < 40; f++) {
       const before = window.G.shots.slice();
@@ -1692,6 +1693,76 @@ for (const device of TARGETS) {
                 `${bat.clear === null ? 'taken' : 'NO (' + bat.clear + ')'}; ` +
                 `laid behind itself the first round left at ${bat.first}s against ${bat.slew}s of traverse, ` +
                 `${bat.rounds} of ${bat.want} rounds, ${bat.inBound} inside ${bat.bound} on a circle of ${bat.r}`);
+
+  /* --- and the 240 rebuilt as Little David, the 36-inch mortar, which is another piece
+     altogether and the player's decision alone: nothing offers him AUTO for it and the brain's
+     own routine never fits it; fitted by hand it costs its price, draws as the mortar, carries
+     the mortar's weapon and reach, puts the crew where the mortar is served from and leaves the
+     240's own def as it was, and then it waits out the change-over before three rounds go into
+     its circle. The rounds are taken off the list as they leave the tube, because a ton and
+     three quarters of shell digs a hole seventy units in radius and the rows below stage on the
+     ground this one would leave. --- */
+  const dav = await page.evaluate(() => {
+    const W = window, U = W.UNITS.am_240, D = U && U.defUp && U.defUp.david;
+    if (!D) return { has: false };
+    const keep = W.G.units.slice(), shots = W.G.shots.slice(), mp = W.G.res.us.mp, fu = W.G.res.us.fu;
+    const sp = W.__o.flatSpot(160), p = W.nearestFree(sp.x, sp.y);
+    const g = W.spawnUnit('us', 'am_240', p.x, p.y, 0); g.setup = 0;
+    const before = { piece: W.gmKey(g), reach: Math.round(W.barrageRange(g)), auto: W.autoFits(g), up: W.upgradable(g) };
+    W.G.res.us.mp = 9000; W.G.res.us.fu = 9000;
+    const autoGot = W.buyUpgradeAuto('us', [g], { floor: 0 }), autoFitted = !!g.up.david;
+    const mp0 = W.G.res.us.mp, fu0 = W.G.res.us.fu;
+    W.pay('us', W.UPGRADES.david.cost); W.fitUp(g, 'david');
+    const k = W.gmKey(g);
+    const after = { piece: k, built: !!(W.MODELS.gun[k] && W.MODELS.gunBase[k] && W.MODELS.gunRec[k]),
+                    cost: [mp0 - W.G.res.us.mp, fu0 - W.G.res.us.fu], name: W.nameOf(g), reach: Math.round(W.barrageRange(g)),
+                    dmg: W.mainW(g).dmg, aoe: W.mainW(g).aoe, setup: g.setup,
+                    lay: g.models.every((m, i) => !D.lay[i] || (m.ox === D.lay[i][0] && m.oy === D.lay[i][1])),
+                    base: U.w.dmg, baseKey: W.gmKey({ def: U, key: 'am_240' }) };
+    /* a mission on clear ground six hundred off, on a bearing the no-fire zone leaves alone */
+    let bear = null, tx = 0, ty = 0;
+    for (let a = 0; a < Math.PI * 2 && bear === null; a += .2) {
+      const x = g.x + Math.cos(a) * 600, y = g.y + Math.sin(a) * 600;
+      if (x < 60 || y < 60 || x > W.WORLD.w - 60 || y > W.WORLD.h - 60) continue;
+      if (W.barrageWhy(g, x, y) === null) { bear = a; tx = x; ty = y; }
+    }
+    let laid = false, first = -1, t = 0;
+    const out = [];
+    if (bear !== null) {
+      g.facing = g.baseA = bear;
+      laid = !!W.orderBarrage(g, tx, ty);
+      for (let f = 0; f < 60 * 170 && out.length < D.barrage.rounds; f++) {
+        const n0 = W.G.shots.length;
+        W.updateUnit(g, 1 / 60); W.G.t += 1 / 60; t += 1 / 60;
+        for (let i = W.G.shots.length - 1; i >= n0; i--) {
+          const sh = W.G.shots[i];
+          if (sh.kind === 'shell') { out.push(Math.hypot(sh.tx - tx, sh.ty - ty)); if (first < 0) first = t; }
+          W.G.shots.splice(i, 1);
+        }
+      }
+    }
+    W.G.units.length = 0; keep.forEach(q => W.G.units.push(q));
+    W.G.shots.length = 0; shots.forEach(q => W.G.shots.push(q));
+    W.G.res.us.mp = mp; W.G.res.us.fu = fu;
+    const bound = D.barrage.r + D.barrage.sp * 1.6;
+    return { has: true, before, autoGot: !!autoGot, autoFitted, after, want: [W.UPGRADES.david.cost.mp || 0, W.UPGRADES.david.cost.fu || 0],
+             D: { dmg: D.w.dmg, aoe: D.w.aoe, setup: D.setup, rounds: D.barrage.rounds, piece: D.piece }, bear: bear !== null, laid,
+             first: +first.toFixed(1), rounds: out.length, inBound: out.filter(d => d <= bound).length, bound: Math.round(bound) };
+  });
+  ok('the 240 is rebuilt as Little David by hand and by nothing else, and becomes the mortar whole',
+     !dav.has || (dav.before.piece === 'am_240' && dav.before.up && !dav.before.auto && !dav.autoGot && !dav.autoFitted &&
+                  dav.after.cost[0] === dav.want[0] && dav.after.cost[1] === dav.want[1] &&
+                  dav.after.piece === dav.D.piece && dav.after.built && /Little David/.test(dav.after.name) &&
+                  dav.after.reach < dav.before.reach && dav.after.dmg === dav.D.dmg && dav.after.aoe === dav.D.aoe &&
+                  dav.after.setup === dav.D.setup && dav.after.lay && dav.after.base !== dav.D.dmg && dav.after.baseKey === 'am_240' &&
+                  dav.bear && dav.laid && dav.first >= dav.D.setup * .95 && dav.rounds === dav.D.rounds && dav.inBound === dav.rounds),
+     !dav.has ? 'no Little David in this file'
+              : `AUTO offered ${dav.before.auto ? 'YES' : 'no'}, the routine fitted it ${dav.autoGot || dav.autoFitted ? 'YES' : 'no'}; ` +
+                `by hand for ${dav.after.cost.join('/')} of ${dav.want.join('/')}: drawn as ${dav.after.piece} (buffers ${dav.after.built}), ` +
+                `"${dav.after.name}", reach ${dav.before.reach} to ${dav.after.reach}, a round of ${dav.after.dmg} over ${dav.after.aoe}, ` +
+                `crew laid ${dav.after.lay}, the 240 itself still ${dav.after.base} as ${dav.after.baseKey}; ` +
+                `change-over ${dav.after.setup}s and the first round at ${dav.first}s, ${dav.rounds} of ${dav.D.rounds} rounds, ` +
+                `${dav.inBound} inside ${dav.bound}`);
 
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
@@ -2206,7 +2277,7 @@ for (const device of TARGETS) {
      till. --- */
   const arty = await page.evaluate(() => {
     const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
-    const WK = side === 'us' ? 'how8' : 'how210', WKF = foe === 'us' ? 'how8' : 'how210';
+    const WK = side === 'us' ? 'how240' : 'how210', WKF = foe === 'us' ? 'how240' : 'how210';
     const WB = window.WORKS[WK], WBF = window.WORKS[WKF];
     const hq = window.hqOf(side), fhq = window.hqOf(foe);
     window.G.res[side].mp = window.G.res[foe].mp = 9000;
@@ -2237,7 +2308,7 @@ for (const device of TARGETS) {
     const fTwo = f3 ? window.placeWork(foe, WKF, f3.x, f3.y, 0, []) : 'nospot';
     /* the no-fire zone, from a tube standing close enough to reach the base it may not
        shell. His mission is taken; the same mission the other way round is refused. */
-    const key = side === 'us' ? 'us_how8' : 'ger_how210', keyF = foe === 'us' ? 'us_how8' : 'ger_how210';
+    const key = side === 'us' ? 'am_240' : 'ger_how210', keyF = foe === 'us' ? 'am_240' : 'ger_how210';
     const bA = Math.atan2(hq.y - fhq.y, hq.x - fhq.x);
     const mine = window.spawnUnit(side, key, fhq.x + Math.cos(bA) * 420, fhq.y + Math.sin(bA) * 420, 0);
     const bB = Math.atan2(fhq.y - hq.y, fhq.x - hq.x);
@@ -2294,9 +2365,10 @@ for (const device of TARGETS) {
      or the row is measuring something other than the switch.
        And the battery keeps its own traverse. The flat 0.85 in the turn-to-target was
      never wrong before, because the only two pieces that carry a `traverse` of their own
-     were the two that never picked a target; laid the other way about, an eight-inch
-     howitzer has to take its own fifteen seconds to come round on a target it chose, the
-     same fifteen it takes on a mission it was given. --- */
+     were the two that never picked a target; laid the other way about, a battery has to take
+     its own time to come round on a target it chose, the same time it takes on a mission it
+     was given -- the trails' rate for the half turn less the arc its carriage swings through
+     (`layOn`). --- */
   const freeFire = await page.evaluate(() => {
     const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
     const keep = window.G.units.slice();
@@ -2321,7 +2393,7 @@ for (const device of TARGETS) {
       return { rounds, first: first < 0 ? null : +first.toFixed(1) };
     }
     const K = s => ({ how: s === 'us' ? 'us_how' : 'ger_how',
-                      bat: s === 'us' ? 'us_how8' : 'ger_how210',
+                      bat: s === 'us' ? 'am_240' : 'ger_how210',
                       mor: s === 'us' ? 'us_mor' : 'ger_mor' });
     const me = K(side), them = K(foe);
     const out = {
@@ -2330,13 +2402,14 @@ for (const device of TARGETS) {
       howFoe: drill(foe, them.how), batFoe: drill(foe, them.bat),
       morYou: drill(side, me.mor), morFoe: drill(foe, them.mor),
       batBehind: drill(side, me.bat, 1), morBehind: drill(side, me.mor, 1),
-      traverse: window.UNITS[me.bat].traverse
+      traverse: window.UNITS[me.bat].traverse, carr: window.UNITS[me.bat].carr || 0,
+      layTol: window.UNITS[me.bat].layTol || .35
     };
     window.G.units.length = 0;
     keep.forEach(u => window.G.units.push(u));
     return out;
   });
-  const swing = Math.PI / freeFire.traverse;
+  const swing = (Math.PI - freeFire.carr - freeFire.layTol) / freeFire.traverse;
   ok('free fire is the howitzers\' initiative, for the player and for nobody else',
      freeFire.onYou === true && freeFire.onFoe === false &&
      freeFire.howYou.rounds > 0 && freeFire.batYou.rounds > 0 &&
@@ -2540,13 +2613,13 @@ for (const device of TARGETS) {
     }
     const you = window.G.own, ai = 'us';
     const byRule = tryTwo(you, 'ger_tig');
-    const aiRule = window.unitLimit(ai, window.UNITS.us_how8);
+    const aiRule = window.unitLimit(ai, window.UNITS.am_240);
     window.G.hc[you].noLimit = true;
     const free = tryTwo(you, 'ger_tig');
-    const aiStill = window.unitLimit(ai, window.UNITS.us_how8);
+    const aiStill = window.unitLimit(ai, window.UNITS.am_240);
     window.G.hc[you].noLimit = false;
     window.G.hc[ai].noLimit = true;
-    const aiFree = window.unitLimit(ai, window.UNITS.us_how8);
+    const aiFree = window.unitLimit(ai, window.UNITS.am_240);
     const backByRule = tryTwo(you, 'ger_tig');
     window.G.hc[ai].noLimit = false;
     return { byRule, free, backByRule, aiRule, aiStill, aiFree,
@@ -3484,7 +3557,7 @@ for (const device of TARGETS) {
     const V = W.VMODEL.hr_p4, B = W.MODELS.veh.hr_p4, H = W.HATCHES.hr_p4, K = W.KIT.heer;
     out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts && B.turSkirts);
     out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
     out.cap = H.open.filter(f => f.c === K.pz).length;
     out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
     out.seat = !!(W.MODELS.man.hr_tank && W.MODELS.man.hr_tank[W.POSE_SEAT]);
@@ -3900,7 +3973,7 @@ for (const device of TARGETS) {
     const V = W.VMODEL.hr_234, B = W.MODELS.veh.hr_234, K = W.KIT.heer;
     out.bufs = !!(B && B.hull && B.tur && B.turUp.puma && B.turCrew && B.turCrewUp.puma && B.inside);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
-    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.PZ.body).length;
     out.cap = V.turCrew.filter(f => f.c === K.pz).length;
     out.pumaCap = V.turCrewUp.puma.filter(f => f.c === K.pz).length;
     out.helm = V.turCrew.concat(V.turCrewUp.puma).filter(f => f.c === K.helm || f.c === K.helmD).length;
@@ -4394,7 +4467,7 @@ for (const device of TARGETS) {
     out.bufs = !!(B && B.hull && B.tur && B.turCrew && B.skirts && B.inside);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
     out.turGrey = V.tur.filter(f => f.c === W.HRG.body).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
     /* open: nothing of the turret over the middle of it at the rim or above */
     out.roof = V.tur.filter(f => f.v.every(p => p[2] >= rim - .1 && Math.hypot(p[0], p[1]) < 7)).length;
     /* four muzzles, each the dark end of a flash hider out past the front plate */
@@ -4476,7 +4549,7 @@ for (const device of TARGETS) {
     out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
     out.turGrey = V.tur.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ.body).length;
     out.cap = H.open.filter(f => f.c === K.pz).length;
     out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
     /* the muzzle past the nose, in the hull's frame */
@@ -4528,6 +4601,49 @@ for (const device of TARGETS) {
      `behind, and ${pv.skirted} on the side with the Schürzen; an M4's round at 300 goes through the front ${pv.pFront} and the side ` +
      `${pv.pSide}; the eye ${pv.eyeUp} up out of the cupola and ${pv.eyeIn} at the blocks; ${pv.blown} of 40 wrecks threw the turret; ` +
      `killed, it left ${pv.bodies} bodies of ${pv.bodyNat}`);
+
+  /* --- The four the first roster left on the German depot, the Tiger, the King Tiger, the Maus
+     and the StuH 42, wear the 352nd's grey. Not one face of any of them is the sand, and the two
+     Zimmerit tiles carry no colour of their own, which they did while they held the first
+     roster's three-tone; the plate under Zimmerit finds the ridged or the combed tile, the Maus's
+     finds the plain paint, and the wheels, the hatches and the fittings of all four are the plain
+     paint too. Each has the cross in black and white on both sides, and the two Tigers the
+     number in red on both sides of the turret. --- */
+  const heavy = await page.evaluate(() => {
+    const W = window, out = { tiles: {} };
+    const T = W.MATS.TILE, C = W.MATS.COLS, g = W.MATS.atlas.getContext('2d');
+    ['zimrow', 'zimsq', 'paint'].forEach(nm => {
+      const mi = W.matIndex(nm), d = g.getImageData((mi % C) * T, Math.floor(mi / C) * T, T, T).data;
+      let cr = 0, n = 0;
+      for (let i = 0; i < d.length; i += 4) { cr += Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]); n++; }
+      out.tiles[nm] = +(cr / n).toFixed(1);
+    });
+    const plate = { ger_tig: [W.TIG.body, 'zimrow'], ger_kt: [W.KT.body, 'zimrow'], ger_stug: [W.SUC.body, 'zimsq'], ger_maus: [W.MSC.body, 'paint'] };
+    const sand = [W.PZ.body, W.PZ.lit, W.PZ.dark], mat = c => W.MATS.names[W.matOf(c)];
+    const vals = o => Object.keys(o || {}).reduce((a, u) => a.concat(o[u]), []);
+    Object.keys(plate).forEach(k => {
+      const V = W.VMODEL[k], H = W.HATCHES[k] || {};
+      const all = V.hull.concat(V.tur, V.skirts || [], V.mg || [], H.shut || [], H.leaf || [], vals(V.addUp), vals(V.mgUp));
+      out[k] = {
+        sand: all.filter(f => sand.indexOf(f.c) >= 0).length,
+        plate: all.filter(f => f.c === plate[k][0]).length, tile: mat(plate[k][0]), want: plate[k][1],
+        paint: all.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit || f.c === W.HRG.dark).length, paintTile: mat(W.HRG.body),
+        white: V.hull.filter(f => f.c === W.HP4C.white).length, black: V.hull.filter(f => f.c === W.HP4C.black).length,
+        red: V.tur.filter(f => f.c === W.HP4C.red).length
+      };
+    });
+    return out;
+  });
+  const hvk = ['ger_tig', 'ger_kt', 'ger_stug', 'ger_maus'];
+  ok('The Tiger, the King Tiger, the Maus and the StuH 42 are in the 352nd\'s grey, with the cross and the numbers',
+     heavy.tiles.zimrow < 8 && heavy.tiles.zimsq < 8 &&
+     hvk.every(k => { const h = heavy[k]; return h.sand === 0 && h.plate > 50 && h.tile === h.want && h.paintTile === 'paint' &&
+                                                 h.paint > 50 && h.white > 0 && h.black > 0; }) &&
+     heavy.ger_tig.red > 0 && heavy.ger_kt.red > 0 && heavy.ger_stug.red === 0 && heavy.ger_maus.red === 0,
+     `the Zimmerit tiles carry ${heavy.tiles.zimrow} and ${heavy.tiles.zimsq} of colour against the paint tile's ` +
+     `${heavy.tiles.paint}; ` + hvk.map(k => { const h = heavy[k]; return `${k}: ${h.sand} faces of sand, ${h.plate} of plate ` +
+       `on ${h.tile} (want ${h.want}), ${h.paint} of plain paint on ${h.paintTile}, the cross in ${h.white} white and ` +
+       `${h.black} black faces, ${h.red} red on the turret`; }).join('; '));
 
   /* --- The 57 mm Gun M1. The Americans' anti-tank gun: the motor pool makes it and queues
      it, the count and the order book read it, and it is five men -- the gunner and the
@@ -5245,17 +5361,21 @@ for (const device of TARGETS) {
       if (d.cat !== 'veh' || !window.VMODEL[k]) continue;
       const b = hullBox(k), u = window.spawnUnit(d.side, k, sx, sy, 0);
       window.unitBody(u);
-      worstL = Math.max(worstL, u.bodyL / Math.max(b.x1, -b.x0));
+      /* the body's two ends against the hull's, because the box stands on the hull's own
+         middle and not on the unit's origin */
+      worstL = Math.max(worstL, Math.abs((u.bodyX || 0) + u.bodyL - b.x1),
+                        Math.abs((u.bodyX || 0) - u.bodyL - b.x0));
       worstW = Math.max(worstW, u.bodyW / Math.max(b.y1, -b.y0));
       n++; drop(u);
     }
     /* and the gap at contact, over eight bearings */
     const rows = [];
-    /* on a hull whose box is centred on its own origin, because the body is a box about the
-       origin: the M4A1's hull runs from -37.2 to 32.8, so its body stands 4.4 units proud of
-       its nose and a pair of them met with 4.4 to 8.7 units between the models. The Panzer IV's
-       runs -35.1 to 34.6. */
-    for (const [ak, as, bk, bs] of [['hr_p4', 'ger', 'hr_gren', 'ger'],
+    /* on the M4A1, whose hull stands furthest off its own origin (-37.2 to 32.8): while the
+       body was a box about the origin it stood 4.4 units proud of the nose and a pair of them
+       met with 4.4 to 8.7 units between the models. And on the Panzer IV, which is off it the
+       other way by less (-36.2 to 33.6). */
+    for (const [ak, as, bk, bs] of [['am_sher', 'us', 'am_rifle', 'us'],
+                                    ['am_sher', 'us', 'am_sher', 'us'],
                                     ['hr_p4', 'ger', 'hr_p4', 'ger']]) {
       const A = window.spawnUnit(as, ak, sx, sy, 0), B = window.spawnUnit(bs, bk, sx + 700, sy, Math.PI);
       const ab = hullBox(ak), bb = window.VMODEL[bk] ? hullBox(bk) : null;
@@ -5329,9 +5449,9 @@ for (const device of TARGETS) {
     return { n, worstL: +worstL.toFixed(2), worstW: +worstW.toFixed(2), rows, turns, sx, sy, found };
   });
   ok('a hull is the shape of a hull, and what it is kept off is the men',
-     bodies.n >= 10 && bodies.worstL < 1.02 && bodies.worstW < 1.02 &&
+     bodies.n >= 10 && bodies.worstL < .5 && bodies.worstW < 1.02 &&
      bodies.rows.every(r => r.lo > -3 && r.hi < 6),
-     `${bodies.n} vehicles, the collision body at most ${bodies.worstL}x their own half-length and ` +
+     `${bodies.n} vehicles, the collision body's ends within ${bodies.worstL} units of the hull's and ` +
      `${bodies.worstW}x their half-beam; ` +
      bodies.rows.map(r => `${r.pair} meet with ${r.lo} to ${r.hi} units between the models over 8 bearings`).join('; '));
   ok('tracks turn where they stand and wheels have to drive the turn',
@@ -6132,7 +6252,7 @@ for (const device of TARGETS) {
       a.cls = cls;
       return a;
     }
-    const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['us_how8', 'ger_how210']];
+    const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['am_240', 'ger_how210']];
     const six = [].concat.apply([], PAIRS);
     const shells = Object.keys(UNITS).filter(k => UNITS[k].w && UNITS[k].w.shell && UNITS[k].cat !== 'inf');
     const rows = {}, silent = [];
@@ -6191,7 +6311,7 @@ for (const device of TARGETS) {
     }
     /* and the three classes are three shapes: a tube is short and a battery is long */
     const shape = { mortar: +rows.us_mor.dur.toFixed(2), how: +rows.us_how.dur.toFixed(2),
-                    heavy: +rows.us_how8.dur.toFixed(2) };
+                    heavy: +rows.ger_how210.dur.toFixed(2) };
     return { n: shells.length, silent: silent,
              lvl: +(Math.max.apply(null, lv) / Math.min.apply(null, lv)).toFixed(1),
              brt: +(Math.max.apply(null, br) / Math.min.apply(null, br)).toFixed(1),

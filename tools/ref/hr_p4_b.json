@@ -1,0 +1,7 @@
+{ "image": "shots/ref/hr_p4_b.png", "key": "hr_p4", "up": ["hatch"], "crew": false,
+  "note": "A four-view at M1:35, 1200 by 1593 px, without the Schurzen: the left side at the top with the nose left, the plan under it, and the front and the rear at the foot, the front cut off at the bottom of the tracks. The side is taken off the road wheels, whose centres span 626.75 px against the 192.4 px of hr_p4.json's side, and checks against 2.68 m to the cupola at 175 px/m; the front off the 2.45 m between the track centres, 439.5 px, and the rear likewise off 434.3 px. Its gun is drawn 0.4 m short of the L/48's, which is the L/43's length, and is not the one to read the gun off. Pinned at the middle of the road wheels on the ground.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 1200, 500], "ppm": 176.5, "ppmv": 175.0, "at": [0, 0, 0], "px": [641.7, 489.0], "k": 1 },
+    "plan":  { "nose": "left", "crop": [0, 515, 1200, 545], "ppm": 176.5, "at": [0, 0, 0], "px": [641.7, 787.0], "k": 1 },
+    "front": { "crop": [0, 1080, 560, 513], "ppm": 179.4, "at": [0, 0, 0], "px": [265.75, 1575.0], "k": 2 },
+    "rear":  { "crop": [650, 1080, 550, 513], "ppm": 177.3, "at": [0, 0, 0], "px": [927.85, 1577.0], "k": 2 } } }

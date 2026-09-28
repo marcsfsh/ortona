@@ -1,0 +1,6 @@
+{ "image": "shots/ref/am_240.jpg",
+  "note": "240 mm Howitzer M1 on the M1 carriage in firing position, from its left, a halftone photograph with the tube at 15.2 degrees. No scale on it: the tube from the muzzle to the back of the breech ring is 8.41 m (L/35), which is 379.2 px along the bore and 45.09 px/m. The pin is the pivot the top carriage turns on, on the ground under the middle of the bottom carriage.",
+  "key": "am_240", "prop": "h240Show", "args": [0.2646], "up": [], "crew": false,
+  "views": {
+    "side": { "nose": "left", "crop": [0, 0, 597, 187], "ppm": 45.09, "at": [0, 0, 0], "px": [264.9, 181.5], "k": 3 }
+  } }

@@ -1,0 +1,7 @@
+{ "image": "shots/ref/ger_maus.png", "key": "ger_maus", "up": ["hatch"], "crew": false,
+  "note": "A four-view of the Maus, 1800 by 1800 px: the left side with the nose left at the top left, the plan under it with the nose left, the front at the top right and the rear under it. It has no scale on it and is drawn at one scale in every view: the hull is 1050 px from the nose to the tail in the side, which at the published 9.03 m is 116.3 px/m, and at that scale the gun is 10.13 m over the hull against 10.085, the width over the side plates is 3.64 m in the plan and 3.73 in the front against 3.67, and the top of the commander's periscope is 3.63 m up against 3.63. The fuel drum across the tail is outside all three. Pinned at the nose on the ground in the side, the nose on the centreline in the plan, and the middle of the tracks on the ground in the front and the rear.",
+  "views": {
+    "side":  { "nose": "left", "crop": [20, 330, 1280, 500], "ppm": 116.3, "at": [52.8, 0, 0], "px": [166.7, 815], "k": 1.2 },
+    "plan":  { "nose": "left", "crop": [20, 820, 1280, 480], "ppm": 116.3, "at": [52.8, 0, 0], "px": [172, 1064.4], "k": 1.2 },
+    "front": { "crop": [1280, 330, 470, 500], "ppm": 116.3, "at": [0, 0, 0], "px": [1513.5, 814], "k": 1.5 },
+    "rear":  { "crop": [1280, 860, 470, 480], "ppm": 116.3, "at": [0, 0, 0], "px": [1512.5, 1313.5], "k": 1.5 } } }

@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the heavy batteries, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -353,7 +353,7 @@ prints what a sound actually is.
 ```sh
 node tools/audio.mjs                 every sound, the roster, a montage, a firefight
 node tools/audio.mjs rifle mg        two of them
-node tools/audio.mjs us_how8         one piece off the roster, in its own voice
+node tools/audio.mjs am_240          one piece off the roster, in its own voice
 node tools/audio.mjs --tag=before    keep a set to compare against
 ```
 
@@ -375,7 +375,7 @@ any sound with a thump in it as ninety-nine per cent bass with no crack at all.
 weapon. Over eighteen guns it is about 8.9x in level (rms, because the bus ends in a
 compressor and peak reads 2.2x), 10x in centroid and 3x in length:
 a mortar is 523 ms with a crest of 12, a pack howitzer 835 ms at 6.2 and a heavy battery
-1,513 ms at 4.6, and the Pak 40's onset sits at about 1,840 Hz against the eight-inch's
+1,513 ms at 4.6, and the Pak 40's onset sits at about 1,840 Hz against the heavy battery's
 210. A row is the mean of ten takes, because every layer of every report is jittered per
 shot and one take says nothing: measured once, the Pak's centroid came back at 776 Hz and
 then at 1,050 on the same file. Even at ten takes the lengths and the class order hold to
@@ -1253,7 +1253,11 @@ way round. Most of the row is the plate and the gun at three hundred: a Panzer I
 through its front between one time in five and two in three and through its side every time, and its
 90 mm goes through a Panther's front more than three times in five, more often than the M4A1's 75
 does, and a Panzer IV's every time. The eye is up out of the cupola and drops when the lid shuts,
-forty wrecks throw the turret some of the time, killed it leaves American bodies.
+forty wrecks throw the turret some of the time, killed it leaves American bodies. And the four the
+first roster left on the German depot, the Tiger, the King Tiger, the Maus and the StuH 42, are asked
+what they wear: not one face of the sand, the two Zimmerit tiles with no colour of their own in them,
+the plate under Zimmerit on the ridged or the combed tile and the Maus's on the paint, and the cross on
+all four and the number on the turrets of the two Tigers.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
@@ -1765,12 +1769,17 @@ section's come off the offsets it was actually dealt, plus `MAN_R` -- the eleven
 `hitsUnit` already picks a man by -- so the body a tank is kept out of is the body the
 player's own finger goes through.
 
-**And the box is about the unit's own origin, which is not always the middle of its hull.**
-`vehBody` takes the largest reach either way along each axis, so a hull that stands off its
-origin carries a body longer at its short end than the hull is: the M4A1 runs from -37.2 to
-32.8 and stops 4.4 units short of anything in front of it, and the M3 and the M26 are the
-same by 4.4 and 3.5. The contact row is staged on the Panzer IV, which runs -35.1 to 34.6,
-for that reason. A body with an offset along the hull is the fix, and it is not done.
+**And the box stands on the middle of the hull, which is not always the unit's own origin.**
+`vehBody` took the largest reach either way along each axis, so a hull that stands off its
+origin carried a body longer at its short end than the hull is: the M4A1 runs from -37.2 to
+32.8 and stopped 4.4 units short of anything in front of it, and the M3, the M26 and the
+Panzer IV laid over its drawings were the same by 4.4, 3.5 and 2.6. It hands back the hull's
+own middle along its length (`cx`), which `unitBody` keeps as `u.bodyX`, and every reader of
+the box puts it there: `sepDepth` and `menPen`, where a bundle comes down on a hull (`onHull`,
+`hullGap`, `abRelease`), and a wreck on the movement grid (`w.bx`). On the movement card's
+contact section the M4A1 meets a rifle squad and another M4A1 at 0.0 over every bearing, and
+the gate's contact row is staged on it again and measures the body's two ends against the
+hull's rather than its length against the longer reach.
 
 **`sepDepth` is the four-axis separating test on two boxes**, and the shallowest overlap
 is the depth and its axis the way out, which is what a box does: it puts a thing out the
@@ -3259,30 +3268,125 @@ it. At five it is corrugated iron; it is 1.1.
 
 **Models.** `soldierModel` and `proneModel` build infantry from limb segments,
 helmets and weapons. Vehicles get individual builders (`m4Shell`,
-`ktTurret`, `pzivSkirts`, and so on) assembled in `buildVehicleModels`. Every
+`ktTurret`, `suSkirts`, and so on) assembled in `buildVehicleModels`. Every
 face carries a material index into the atlas. If a model looks wrong, the fix
-is in one of these builders, not in a mesh file. `p4Chassis(body, cap, sideC, stug)`
-is the running gear, tub, glacis, deck and tail of the Panzer IV the paratroopers
-fielded, and `stugHull` builds the Sturmgeschütz IV casemate on it with the flag set,
-which leaves off the fighting-compartment box, the driver's plate and the guard stowage
-the casemate overhangs. The Panzer IV and the Wirbelwind it was written for are retired,
-so the StuG is the one vehicle still built on it; with the flag off the face list is the
-old Panzer IV's in the same order.
+is in one of these builders, not in a mesh file.
 
-The StuG's compartment is a `frustum` and not a `prism`: the Ausf. G superstructure the StuG IV
-inherited stands out over the track guards at the bottom and slants inboard about eleven
-degrees on its way up, so the roof comes out a third of a metre narrower than the base. That
-slant is the single thing that most says StuG from the angle a player actually looks from,
-and it is why the compartment stopped reading as a box. It also breaks `dims`: a slanted wall
-straddles every station between its ends, and `widthAt` gives a straddling face its widest
-point, so any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_stug.roofZ`
-sits exactly on the roof for that reason.
+**The StuH 42 stands where the StuG IV stood** (`ger_stug`, the key kept so that everything
+that reads it still does): the Sturmgeschütz III Ausf. G with the 10.5 cm StuH 42 L/28 in place of
+the long 7.5 cm, on a Panzer III chassis built from nothing (`PZ3G`, `PZ3H`, `suHull`, the casemate
+in `SU`), because the Panzer IV chassis under the StuG IV was the last thing standing on the
+paratroopers' Panzer IV and went with it. It is laid over a four-view of the StuG III Ausf. G
+(`tools/ref/ger_stug.json`), which is the same vehicle up to the gun and carries the L/48; the
+howitzer is built to the published figures, a tube of twenty-eight calibres ending in the big
+double-baffle brake just past the nose. The sheet is 500 px across, so it is read at six and eight
+times, and its side, its front and its plan come out at one scale, 72.4 px/m, off the published 5.40
+m of hull and 2.95 m over the fenders; at that scale the track centres are 2.49 m apart against 2.51
+and the cupola 2.14 m up against 2.15.
+
+What the drawing says a Panzer III is, against the StuG IV that stood here: a hull only 2.0 m across
+between the tracks, with the fenders running out over them the whole length at 1.31 m to 2.95 m; six
+road wheels a side on torsion arms, three return rollers, the sprocket in front and a spoked idler
+behind; a steep nose with the two transmission hatches on the deck behind it; and the engine deck a
+step above the fenders, with its two hatches, an armoured intake on each fender alongside it and two
+spare road wheels on the back. The casemate stands on the front half, 2.31 m across at its foot, over
+the hull and out onto the fenders, where the StuG IV's was the full 2.95, and leans in ten degrees to
+2.17 at the roof. It is a loft of three plans (`SU.base`, `SU.mid`, `SU.roof`): the front is upright
+to the height of the gun and laid back from there, and the plate the mantlet swings in stands up to
+the roof where the cheeks either side of it are laid back, which is the StuG III's front from every
+angle. The cupola is a metre and a half further forward than the StuG IV's and the loader's hatch with
+it. On `tools/dims.mjs` it reads 5.44 m long against 5.40, 6.18 over the brake against 6.14, 2.98 wide
+against 2.95, 2.09 high to the cupola without its lid against 2.15, a casemate of 2.36 at the foot and
+2.15 at the roof, and 0.38 of clearance.
+
+Two things about building it. **The roof is one face fanned from its first corner, so its plan is
+kept convex**: laid back at the cheeks first, the corner where a cheek met the side was a reflex
+corner, and a fan from the front of the gun plate drew a sliver of roof outside the casemate. And
+**a return roller has to stand above the line from the idler to the sprocket**: below it `trackBelt`
+finds a pulley with nothing to wrap and takes the belt the whole way round it, which the overlay
+showed as a ring of track links round the rearmost roller and no photograph would have.
+
+The casemate's walls still lean, so the `dims` warning the StuG IV left stands: a slanted wall
+straddles every station between its ends, and `widthAt` gives a straddling face its widest point, so
+any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_stug.roofZ` sits on
+the roof for that reason, and its body slice at the front of the casemate, ahead of the spare links,
+the tow cable on the left wall and the cables on the fenders.
+
+**Its numbers are a howitzer's, and the shell sits between the pack howitzers and the 240.** The
+StuG IV's long gun is gone, so the weapon is the StuH's: a heavy shell every 5.0 seconds out to 400
+with a hollow charge of 150, on the StuG IV's 640 hit points, 134 of plate and ten degrees of arc,
+for 300 marks and 75 of fuel. At a first line of 200 a round over 70 of burst it took the rifle squad
+with one round in four seconds and the engineers in under one, which is a 240's shell out of a
+105. At 170 over 62, over eight runs a row, it takes the rifle squad every time in six seconds
+untouched and the engineers every time in under three; the M4 takes it 75 per cent of the time and is
+left at a third, and the Rangers 38 per cent, leaving it at a quarter. The M8 took it none of eight
+at the first line, which the lighter shell does not change, because the 37 mm seldom opens its front.
 
 The Maus is the one vehicle on the roster with no claim on Ortona at all. It is built
 because it was asked for, it is priced like a toy (2200 marks and 700 of fuel, 44 of a
 175 population cap, one per army), and it is deliberately **off the AI's shopping
 ladder**: a brain saving that much buys nothing else for four minutes, which is the
 starvation the money reserve exists to prevent. Only the player may have one.
+
+**The Tiger I, the King Tiger and the Maus are laid over drawings** (`tools/ref/ger_tig.json`,
+`ger_kt.json` and `ger_maus.json`), and all three were wrong in ways `tools/dims.mjs` had never seen.
+
+- **The Tiger I.** The superstructure is 3.15 m across, the published width on transport tracks,
+  where it was 2.97; the side plate runs from 1.37 m to 1.96 where it ran from 1.62 to 2.03, and the
+  driver's plate spans the full width. The tracks stand on their published 2.82 m centres with the
+  fenders a hand outside them. The visor and the ball mount, the cupola and the loader's hatch, and
+  the coaxial and the sight were each on the wrong side. The turret (`TIGT`) is a unit wider at its
+  widest, three units further aft, its front plate two units further back, and its roof bends down over
+  the front third to the mantlet; the exhausts stand close together over the jack and the forward
+  radiator openings are louvred grilles. The drawing's height is short of the published figures by
+  four and a half per cent, so its views take a vertical scale of their own.
+- **The King Tiger**, off two sheets of one drawing. The nose is 0.35 m further back over the sprocket
+  and the rear plate 0.45 m further back behind the idler, the stations 526 mm apart where they were
+  513, and the roof a twelfth of a metre higher. The Henschel turret is rebuilt to it (`KTT`): a long
+  hexagon in plan, flaring from a 1.77 m front plate to its widest a third of the way back and running
+  in over the bustle, a roof in three plates (`ktRoofZ`), the Saukopf 0.68 m across where it was a
+  metre, and the cupola 5.6 units further forward. The ball mount and the driver's periscope were on
+  the wrong sides of the glacis. The gun comes out at the drawing's length, the published 10.29 m over
+  the gun. **And it is back on the depot**: it was withdrawn while the maps were Italian, where it was
+  never fielded, and the 503rd's were in Normandy in July. Its hotkey is B, because the Tiger has K on
+  the same depot, and it is among what `aiCutLadder` brings forward against a heavy.
+- **The Maus** had been built to a hull of 10.09 m, which is its length over the gun. The drawing is
+  at one scale in every view once the hull is taken as the 9.03 m it is, and at that scale it agrees
+  with the gun at 10.1 m, the width at 3.67 and the top of the commander's periscope at 3.63, so
+  everything along the old model was a ninth too long. Rebuilt to it: the hull is one slab extruded off
+  the drawing's side outline (`MSH`), with the nose plate, the glacis and the two rear plates where the
+  drawing has them and the deck a quarter of a metre lower; the turret (`MST`) nearly twice as long as
+  the box it replaced, over the back two thirds of the hull, with its sides leaning in thirty degrees,
+  the mantlet a collar lying across the front with the casting that carries both guns on it, and the
+  hatches and periscopes where the plan has them; the intakes, grilles and engine hatch on the deck,
+  and the jettison tank across the tail, which stands half a metre past the published hull and is in
+  the card's length for that reason.
+
+**And all four are in the 352nd's grey now**, with the StuH 42: they were the last things on the German
+depot in the first roster's sand three-tone. The three-tone was never in their palettes. The Tigers'
+Zimmerit tile and the StuH's combed one carried it, painted into the tile over a neutral grey vertex
+colour, so the repaint is the tiles losing their colour (they are `zimrow` and `zimsq` now, where they
+were `ktcamo` and `p4camo`, and carry the ridges and the combing and nothing else) and the plate under
+them taking the grey. The grey on Zimmerit is `HRG` a hair off (`KT`, `TIG`, `SUC`), because a colour
+string finds its tile and the plain grey's finds the paint tile: two units in one channel, where one
+unit put six of their `lit()` tints on the same string as a tint of the plain grey and on the other's
+tile. What had no Zimmerit is the plain grey: the wheels, the hatches and the fittings (`dg` and `dgD`,
+which keep the names of the dunkelgelb they were), the Tiger's gun, the StuH's running gear, gun and
+Schürzen (`SUG`, where they read the sand `PZ` direct), and the whole of the Maus (`MSC`), because
+neither prototype ever carried Zimmerit. `HRG` moved up the file to beside `PZ` for that, since `SUG`
+is built before where it was.
+
+The markings are the Panzer IV's (`hp4Cross`, `hp4Number`), laid with `paintAxes(n)`, which gives the
+two axes paint lies along on a plate with any outward normal. The block hand has a 0, a 2 and a 3 now.
+The Tiger carries the cross on each side of the hull aft of where the cables and the rod tube end
+(laid between the axe and the shovel, they hid all of it but the upright) and 213 on both sides of the
+turret and across the bin; the King Tiger the cross on each side toward the tail and 314 on the faces
+that flare out from the front plate, laid a quarter of a unit off, because that face is two triangles
+and its roof corner stands 0.46 u proud of the plane its foot lies in; the Maus and the StuH a cross on
+each side. The gate asks all of it of the four: not one face of sand, the two Zimmerit tiles with under
+8 of colour in them (2.5 each, against the paint tile's 3.5, where the old tile's dunkelgelb alone put
+56 into every pixel it covered), the plate on the tile it wants, and the cross and the numbers where
+they go.
 
 A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
 outside the arc (at a penalty) so the hull has something to turn toward, the halted
@@ -3310,8 +3414,8 @@ Wirbelwind), with their models, their interiors and hatches, the seven upgrades 
 and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
-own for yet: the two mortars, the two pack howitzers, the two heavy batteries, the T8, the
-Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger
+own for yet: the two mortars, the two pack howitzers, the 210/22, the T8, the
+Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
 side, so a first-roster gun is served by `gi_atg` with the carbine men of `gi_art` behind it
@@ -3951,11 +4055,31 @@ more suppression, and it reads 58 per cent against the squad where more damage r
 Panzer IV the paratroopers fielded in Italy: the Ausf. H with the long 7.5 cm KwK 40 L/48, laid out
 with the driver on the left and the bow gunner on the right, which that model was not. **Every
 vehicle built for the 352nd is in the Wehrmacht's grey** (`HRG`, a dark blue-grey tagged as paint),
-where the first roster's German vehicles that are still fielded (the StuG, the Tigers and the Maus)
-stay in their sand; the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
-gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.96 m long against 5.92,
-7.05 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
-(the cupola lid is not in the measured mount), a body of 2.36 against 2.36 and 0.40 of clearance.
+and the four the first roster left on the depot (the StuH 42, the Tigers and the Maus) have been
+repainted in it (see *The Tiger I, the King Tiger and the Maus*); the KS 750 wears it too. Its numbers are the old Panzer IV's, because the
+gun, the plate and the running gear are. On `tools/dims.mjs` it reads 5.97 m long against 5.92,
+7.07 with the gun against 7.02, 2.93 wide against 2.88 over the guards, 2.61 high against 2.68
+(the cupola lid is not in the measured mount), a body of 2.36 against 2.36, a roof of 2.38 and
+0.40 of clearance.
+
+**It is laid over two drawings** (`tools/ref/hr_p4.json` and `hr_p4_s.json`, the bare and the
+skirted views of one four-view, and `hr_p4_b.json`, a four-view at 1:35 without the Schürzen),
+and the first version, built off photographs and published figures, had every envelope figure
+right and half of its layout wrong. The superstructure front stood 0.53 m too far forward, so
+the glacis was half as long as both drawings have it, and the turret and its cupola stood 0.5 m
+forward with it, with the gun half a metre short to make the length over the gun come out right.
+The track guards were 0.2 m too low, which is 0.2 m of superstructure side the tank does not
+have. The superstructure's front corners were square where both plans cut them back to the full
+width 0.9 m aft of the front plate, and the cut plates carry a vision port each. The return
+rollers stood a third of a metre forward and 0.13 m low and the sprocket 0.1 m low. The turret's
+rear corners were square where the drawings chamfer them, the cupola was a sixth too small, the
+bin half as deep and a fifth too wide, and the big silencer hung on the left of the tail 0.2 m
+too high where the first drawing lays it across the whole of it with the outlet just right of the
+middle. The Schürzen ran 0.3 m short at the front and hung plumb, where the first drawing's front
+and rear views tuck them in at the foot, and the turret's were square behind where both plans
+run them round the bin in two long diagonals. The 1:35 sheet draws the gun at the L/43's length,
+so the gun is read off the first. Moving the ring half a metre aft moved the Wirbelwind's turret
+with it, which stands on the same ring.
 
 What carries it, and each is built its own way. **The bogie is a bracket with the leaf spring
 laid across the top of its two swing arms** (`hp4Bogie`), clamped in the middle, five leaves with
@@ -3964,7 +4088,7 @@ rear bogies carry a shock absorber. **The road wheels are twin tyres with the gu
 between them**, nearly touching within a bogie, the sprocket is drilled with eight lightening
 holes on its final drive housing and the idler is welded, open, on its spokes. **The nose is
 stepped**: the nose plate leaning back fourteen degrees with a run of spare track across it
-(`hp4NoseX`), the glacis laid back at seventy-two with the two brake hatches in it
+(`hp4NoseX`), the glacis laid back at seventy-eight with the two brake hatches in it
 (`onHp4Glacis`), and the superstructure front at nine with the visor on the left and the ball
 mount on the right (`hp4FrontX`). **The turret is a plan with a lean per wall** (`HP4T.plan`,
 `HP4T.lean`, `hp4TurPlan`): each wall is moved in along its own normal by its lean and the
@@ -3974,8 +4098,11 @@ out of the rear plate over the bin, and **the turret ring sits 66 mm left of the
 (`turY`), as the Panzer IV's did.
 
 **The Schürzen are the upgrade, rails and all** (`hp4Skirts`, `hp4TurSkirts`, `hp4Rails`): five
-plates a side hooked over the rail and a horseshoe round the turret with a two-leaf door in each
-side in line with the turret's own. The rails go on with the plates so the bare hull measures over
+plates a side hooked over the rail, the end plates cut up at the foot over the sprocket and the
+idler, the whole side leaning in about nine degrees below its top edge as the
+first drawing's front and rear views have it (built flat and rolled about the top edge); and a
+plate round the turret, straight along the sides and closing round the bin in two long
+diagonals, with a two-leaf door in each side in line with the turret's own. The rails go on with the plates so the bare hull measures over
 its guards the way the published width does. **The markings are flat paint laid a hair off the
 plate** (`hp4Decal`): the Balkenkreuz as three bars in white and three in black because a cross
 is not a convex outline (`hp4Cross`), and the red 415 outlined in white out of a block hand of a
@@ -4653,7 +4780,7 @@ commander is in the cap; `k4Man` takes a variant for it.
 a third of a metre, so a 2 cm barrel marks a whole cell, and four of them side by side are a slab in
 front of the plate they come out of: the front plate came back black behind its own guns, which in
 a photograph reads as an opening. A face marked `thin` is still shaded and shades nothing, and
-`aoSplit` carries the mark to the pieces it cuts. On `tools/dims.mjs` it reads 5.96 m long against
+`aoSplit` carries the mark to the pieces it cuts. On `tools/dims.mjs` it reads 5.97 m long against
 5.92, 2.93 wide against 2.90, 2.72 high against 2.76, and the Panzer IV's body, roof and clearance;
 the turret that leaned in all the way up stood at 2.68, and the bend is where the missing height
 was.
@@ -6087,10 +6214,12 @@ Two numbers had to follow it, and neither was wrong before. The flat 0.85 radian
 second in the turn-to-target is the mortar's, and the only two pieces that carry a
 `traverse` of their own are the two that never picked a target; the same goes for
 `layTol`, which until now only `barrageTick` ever read. With free fire they do pick
-targets, and an eight-inch howitzer that came round at 0.85 on a target it chose and 0.20
+targets, and a 240 mm howitzer that came round at 0.85 on a target it chose and 0.12
 on a mission it was given would be a different gun depending on who laid it. Measured by
-the gate: laid the other way about it takes 15.4 seconds to come round against the 15.7
-its own traverse says, where a mortar takes 3.5.
+the gate on the 240 on its own carriage, laid the other way about it took 22.3
+seconds to come round against the 22.1 its carriage and its trails said, where a mortar
+takes 3.5. Every turn goes through `layOn` now, which reads the same numbers whoever laid
+the gun.
 
 The reaches are chosen against this map rather than by feel. A headquarters stands 1150
 from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
@@ -6108,12 +6237,17 @@ brake. Both are laid up at the elevation a gun that only fires indirect sits at,
 what tells the class from the anti-tank guns at a glance: those have long thin barrels held
 level on the same sort of carriage.
 
-**And the heavy battery, which is a position rather than a unit.** `us_how8` (the M1
-8-inch) and `ger_how210` (the Obice da 210/22 mod. 35) are never queued: `WORKS.how8` and
-`WORKS.how210` are how they arrive, the engineers spend eighty seconds and a lorry-load of
-fuel bedding one in, and it stands where it was bedded for the rest of the battle. Four
-rules make it a decision rather than a bigger pack howitzer, and each of them is a refusal
-that has to be counted rather than assumed:
+**And the heavy battery, which is a position rather than a unit.** `am_240` (the 240 mm
+Howitzer M1 on the M1 carriage) and `ger_how210` (the Obice da 210/22 mod. 35) are never
+queued: `WORKS.how240` and `WORKS.how210` are how they arrive, the engineers spend a minute or
+more and a lorry-load of fuel digging one in, and it stands where it was dug for the rest of
+the battle. The American one was an eight-inch on a platform first, then for one commit each
+the 105 mm M2A1 on the M2A2 carriage and the 8-inch Howitzer M1 on its own carriage, and is
+now the 240, built to a photograph of it firing (below); `RETIRED` hands `us_how8`, `am_105`
+and `am_how8` to `am_240` and `WRETIRED` hands the `how105` and `how8` works to `how240`, so a
+brain out of an older revision still digs a battery. Four rules make it a decision rather
+than a bigger pack howitzer, and each of them is a refusal that has to be counted rather
+than assumed:
 
 - **One a side** (`limit: 1` on the unit, which `placeWork` already enforced for the
   eighty-eight). A second battery is not a second decision.
@@ -6122,27 +6256,165 @@ that has to be counted rather than assumed:
   of home, which puts it somewhere a flanking section can walk to. The rule is on the work
   rather than on the player's judgement.
 - **Not into the enemy's base** (`barrage.safe`, 600 round any enemy building). Five
-  two-hundred-kilogram shells into a headquarters wins an annihilation match without an
-  infantryman leaving home. Guns of this weight fired on map references onto ground
-  somebody was fighting over; they did not break up a rear area on a whim.
-- **Slow onto a bearing** (`def.traverse`, a fifth of a radian a second against the
-  mortar's 0.85, with `def.layTol` for how close it has to be before it will fire). Laid
-  behind itself the gun takes fifteen seconds before the first round leaves, which the
-  check row measures against the arithmetic rather than trusting.
+  heavy shells into a headquarters wins an annihilation match without an infantryman
+  leaving home. Guns of this weight fired on map references onto ground somebody was
+  fighting over; they did not break up a rear area on a whim.
+- **Slow onto a bearing** (`def.traverse`, an eighth of a radian a second for the 240 and
+  a quarter for the 210 against the mortar's 0.85, with `def.layTol` for how close it has to
+  be before it will fire). The 240 has a carriage as well (`def.carr`, below). Laid behind
+  itself the gun takes about twenty-two seconds before the first round leaves, which the check row
+  measures against the arithmetic rather than trusting.
 
-And it is the least accurate weapon in the game by a long way: a hundred and ninety units
-of beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that
-so the round-to-round scatter is the gun's own rather than the mortar's flat ten. What it
-has instead is the shell -- three hundred damage over a hundred and thirty of burst, which
-is the heaviest thing either side can put on the ground.
+The 210/22 is the least accurate weapon in the game by a long way: two hundred units of
+beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that so
+the round-to-round scatter is the gun's own rather than the mortar's flat ten. The 240
+throws a shell of a hundred and sixty kilograms where the 210's is a hundred, and fell as
+tightly as the American heavy pieces did: 380 over a hundred and fifty of burst against 335
+over a hundred and forty, a circle of a hundred and fifty with a round-to-round scatter of
+twenty against two hundred and twenty-eight, and a reach of 1350 against 1150. What the 210
+has in their place is the turn, the rate and the price: it comes round the whole way on
+its platform at twice the 240's rate of heave, fires every 8.4 seconds where the 240 takes
+eleven, and costs 450 marks and 175 of fuel against 500 and 190. The platform eight-inch the
+battery began as carried the 210's own two hundred of beaten zone, which made the two
+batteries the same gun twice.
 
-**The two rules meet in the middle, and that is the finding worth keeping.** Dug on the
-first legal patch beyond `minHq`, the American gun is 1575 from the German headquarters
-and its reach is 1250: the range and the minimum distance from home already keep it off
-the enemy base without `safe` ever being consulted. The no-fire zone is what stops a
-player walking the battery forward until it can. The check row had to stand the gun
-forward deliberately to ask the question at all, because from where it is dug the answer
-is 'out of range' and the rule under test is never reached.
+**A split trail traverses twice** (`layOn`). The M1 carriage's top carriage turns on the
+bottom one twenty-two and a half degrees either way (`def.carr`, .39) at `def.carrRate`, and
+only past that are the trails heaved round at `def.traverse`, carrying the arc with them. So
+a mission inside the arc the trails were dug in on is laid in a few seconds, and one behind
+the gun pays the trails' rate for the half turn less the arc. `u.baseA` is the trails and
+`u.facing` the top carriage: the firing base, the bottom carriage and the trails are drawn on
+the first and the top carriage, the cradle and the tube on the second, which is the
+eighty-eight's and the 210's two-piece draw with a rule between the two pieces. Every turn a
+crew-served piece makes goes through `layOn` -- onto a mission, onto a target it chose under
+free fire, and onto the known threat while it is idle -- so a piece with no `carr` turns
+whole at its own `traverse` in all three, and the Nebelwerfer and the 210 face a threat at
+their own rate where they used to take the mortar's.
+
+**The 240 is laid over a photograph of it firing** (`tools/ref/am_240.json`), a halftone from
+its left with the tube at fifteen degrees and the carriage down on its firing base, which is
+the one view of it to be had. It has no scale. The tube from the muzzle to the back of the
+breech ring is 8.41 m at thirty-five calibres, which is 379 pixels along the bore and puts it
+at 45.1 to the metre; the muzzle then comes out 0.43 m across and the ring 0.66 m, which is a
+240 mm bore with the wall a gun of that pressure carries, and that is the check. A halftone at
+that scale holds a part to about a quarter of a metre. With no plan and no end view the widths
+are what one side view allows: the trails are spread 0.40 radians either side of the line,
+which makes each 7.2 m long for the 6.6 m of it the photograph shows. The trunnions stand on
+the line of the bore 1.95 m up and a metre and a tenth behind the pivot, near the back of the
+carriage, which is why the equilibrators are at the front: nearly all of the tube is forward
+of its trunnions. Three builders for the three pieces (`h240Bottom`, `h240Top(el)`,
+`h240Tube(el)`, and `h240Show` for the overlay):
+
+- **the firing base and the bottom carriage**: the frame on its feet with the brace up its
+  front end, the bottom carriage over it with the frame let into its side and the trail
+  hinges on its back corners, the pedestal at its front, the pivot, and the girder back
+  between the hinges carrying the racer the top carriage's rollers run on;
+- **the trails**: box girders as deep as the bottom carriage at the hinge and a third of that
+  at the end, their bottoms level a hand off the ground and their top plates standing proud,
+  with the lugs under the top plate, the handspike and the rammer staff in its clips on the
+  outer face, the rounded toe with the jack's crank standing short of it, and the float
+  bedded under it and out past it;
+- **the top carriage**: the two side frames rising to the trunnion bosses at their backs, the
+  two equilibrators standing at the front with the cranks and links up to the lugs under the
+  cradle, the gear cases and the two shafts back along each frame to the elevating gear, a
+  loaders' platform along each frame, and the platform behind the breech whose deck falls
+  away as a ramp under the recoil, with its rails;
+- **the cradle**: the sleeve with its bands, the canvas gathered over the slide in front of
+  it, the block round the trunnions, the recuperator lying over the tube with its clamp and
+  the guide it rides back on, and the elevating arcs under the trunnions;
+- **the tube**: tapering from the breech ring to the muzzle, the ring rounded at its back with
+  the block's carrier and lever, and the yoke standing on the ring with a window in each side
+  and the recoil rod out of its front into the recuperator.
+
+The first overlay had the tube, the cradle, the recuperator, the equilibrators, the side
+frames and the platforms on the photograph's lines, and two things off it: the trail's own
+end stood 2.9 units too far aft, where the photograph has the float running out past a
+rounded toe and the jack's crank standing short of it, and the last two lugs under the top
+plate were at the wrong stations. In the game the tube is laid at 0.30 radians (`H240.el`),
+steep enough to read as a howitzer and shallow enough that the breech ring clears the
+platform behind it, and it recoils down the line of its own bore (`GUNMODEL.recEl`). **Its
+position is bigger than the 210's**: the trails reach ninety-five units back from the pivot
+and are heaved round inside the banks, so the ring stands at a radius of 106 where the
+210's is 62, and the work's footprint is 230 against 150.
+
+**The two rules meet in the middle, and the 240 is the first battery to reach across it.**
+Dug on the first legal patch beyond `minHq`, the eight-inch was 1575 from the German
+headquarters with a reach of 1250, so the range and the minimum distance from home kept it
+off the enemy base without `safe` ever being consulted, and the check row had to stand the
+gun forward to ask the question at all. The 240 is dug at the same 1575 with a reach of 1350:
+the headquarters itself is still out of range, and a point 300 short of it, 1275 away, is
+not. So from where it is dug it reaches 225 units into the no-fire zone round that
+headquarters, and `safe` is the rule that says no there. The row still stands the gun
+forward for its question, so it asks the same one of every battery.
+
+**The 240 can be rebuilt as Little David** (`UPGRADES.david`, 420 marks and 200 of fuel, fitted
+once): the 36-inch Mortar T1, the 240 lifted out of its position and the mortar set in a steel
+box sunk to its rim in its place. Nothing of the 240 carries over, so it is a piece of its own,
+and it is the first fitting that makes a crew-served piece another piece rather than swapping
+its weapon. **`def.defUp` names the new piece's numbers**, and at load each entry is made a def
+of its own with `Object.create` on top of the unit's, so anything it does not name (the men,
+the price, the limit, the eye) stays the 240's. `fitUp` hands the unit that def whole: every
+reader of `u.def` then reads the mortar's mission, its weapon, its carriage, its name and its
+change-over without one of them being told there was a fitting, and `u.key` is still `am_240`,
+so the count, the limit and the record read the battery they bought. `def.piece` is the model
+it is drawn as and `gmKey(u)` its one reader, at every place the draw, the shadow pass, the
+muzzle flash and the gun wreck used to ask `GUNMODEL[u.key]`. The crew go where the mortar is
+served from (`lay` on the new def), the body and the ring are measured again, and the
+change-over is `setup` (forty-five seconds) in which it lays nothing and fires nothing.
+
+**It is the player's decision and nobody else's.** A fitting marked `hand` is never fitted by
+the AUTO setting or by the brain's routine, on either scheme, and `autoFits(u)` is what the
+classic card and the SIMPLE popup ask before offering AUTO at all, so the 240, which has
+nothing else to take, has no AUTO button. The brain never rebuilds one of its own either,
+because the trade is a battery that reaches across the map for one that reaches half as far.
+
+The numbers are that trade. A ton and three quarters of shell is 1100 over a burst of 210,
+which digs a hole seventy units in radius (`craterR`), twelve metres across and the size the
+Aberdeen trials reported. Three rounds to a mission a round every thirty seconds, into a circle
+of 190 with a round-to-round scatter of 40, out to 760 against the 240's 1350. The steel box
+turns six degrees either way (`carr` .11) and the box itself is turned at a third of the 240's
+rate of heave (`traverse` .04), so a mission behind it is most of a minute and a half of
+laying. `safe` is the 240's 600. It is not balanced against anything on the duel card, because
+nothing on the roster fights a battery there; what it is priced against is the 240 it replaces.
+
+**It is laid over two photographs from Aberdeen** of July 1945 (`tools/ref/am_david.json`): the
+right side of the tube at sixty-five degrees in its box with the trunnion bracket and its bolted
+cap, and a three-quarter view from its left rear with the tube at nought, which is a perspective
+and is read rather than laid over. Neither has a scale. The tube is taken as 1.30 m across, a
+914 mm bore in walls of nineteen centimetres, which puts the first photograph at 68.2 pixels to
+the metre and the muzzle 6.6 m from the trunnions against the published 6.7 m of barrel; that
+tube over the 7.6 m the two views show is the forty tonnes the barrel weighed, and that is the
+check. Three builders for the three pieces, the 240's three so it goes into the same position
+and is drawn by the same code (`ldBase`, `ldTop(el)`, `ldTube(el)`, and `ldShow` for the
+overlay):
+
+- **the box**: the rim a hand proud of the ground, the plates across its top with their
+  stiffeners and the dark mouth the tube stands in, the plank decking laid along both sides,
+  and the shed on its pallet on the far plate, a tarpaulin over a frame, with the pole beside
+  it;
+- **the brackets and the cradle**: the two trunnion brackets on the rim with the caps bolted
+  over the trunnions and the blocks under them, and, laid up with the tube, the cradle's sleeve
+  and its bands, the housing behind the trunnions down to its flange and its end, and the three
+  elevating arcs standing back off the housing with the racks round their edges;
+- **the tube**: plain from the cradle to the lip at the muzzle, with the 36-inch bore dark
+  inside it.
+
+The arcs turn with the tube, so at sixty-five degrees they are down in the box with the breech,
+which is why the photograph at that elevation shows nothing of them and the one at nought shows
+all of them; they are built and stay under the ground in the game. The first overlay had the
+tube, the cradle and the bracket on the photograph's lines and the box short and the shed out:
+the box stood four units short at the back and twelve at the front, and the shed five units too
+far forward and on the ground where the photograph has it on a pallet on the far plate. In the
+game the tube is laid at the photograph's own 65.4 degrees (`LD.el`).
+
+Measured by the gate: AUTO is not offered on a 240 and the brain's routine does not fit it with
+nine thousand in the till; fitted by hand it costs its 420 and 200, is drawn as
+`am_240:david` with all three buffers built, is called Little David, reaches 760 against the
+240's 1350 with a round of 1100 over 210, puts its crew where the mortar is served from and
+leaves the 240's own def and piece as they were; and laid on clear ground six hundred off, the
+first round leaves after the forty-five seconds of change-over and all three land inside the
+circle and its scatter. The rounds are taken off the list as they leave the tube, because a
+hole seventy units in radius is ground every row below would otherwise stand on.
 
 **Whether the brain ever digs one was the hard part, and it took four measurements.** The
 rule lives on the engineer, and the first version sat inside the works ladder -- one work
@@ -6166,17 +6438,19 @@ battery is near certain.
 
 Three smaller things about the emplacement. The **crew are laid out by the work**
 (`WORKS[].lay`, the eighty-eight's own list generalised) rather than walking to cover,
-because the pit is the cover. The **gun is two pieces the way the eighty-eight is**: the
-platform is drawn once on `u.baseA` and does not turn, the gun on top of it is drawn on
-`u.facing` and does, and that is the only thing on screen that shows a battery taking a
-minute to come round -- with an arc drawn on the ground from the present lay to the
+because the pit is the cover; the 240's are the two layers beside the frames at the
+elevating gear, the loader and the rammer either side of the platform behind the breech,
+and two bringing the rounds and the charges up between the trails. The **gun is two pieces
+the way the eighty-eight is**: the platform (or the trails) is drawn on `u.baseA` and the
+gun on top of it on `u.facing`, and that is the only thing on screen that shows a battery
+taking its time to come round -- with an arc drawn on the ground from the present lay to the
 mission's bearing, because a battery that has been given an order otherwise looks exactly
 like a battery that has ignored one. And **the position is not a ring of bags built
 bigger**: that was tried, and a bag laid on an arc at about five units means a ring of
 sixty-two at six courses and three deep is fourteen hundred bags and twenty thousand faces
 for one object, four times the whole German roster. It is two stepped banks of revetted
-earth in forty-six segments, which is six hundred faces and is also what a battery
-position actually looks like.
+earth in forty-six segments (seventy round the 240), which is six hundred faces and is also
+what a battery position actually looks like.
 
 **The opposition's guns can be switched off before the battle.** `G.aiArty`, set from the
 title screen beside the difficulty and passed through `startGame(side, diff, mode, arty)`,
@@ -6344,7 +6618,7 @@ that waits to be laid, and it is worth knowing that the rest of the piece is unt
 the beaten zone is the same seventy-six or hundred and ninety, the rate is the same, and
 the battery still takes most of a minute to come onto a new bearing. What the player buys
 is initiative and nothing else. Measured by the gate over seventy seconds with nothing
-ordered: his howitzer fires 22 rounds and his battery 9, where the opposition's fire none
+ordered: his howitzer fires 22 rounds and his battery 7, where the opposition's fire none
 at all, with the mortar as the control at 16 on both sides -- because a mortar always had
 the initiative and a row where it moved would be measuring something other than the
 switch.
@@ -6371,7 +6645,7 @@ opens at 15,011 marks and 6,001 of fuel, income is 85 marks and 11 fuel against 
 0.57, a second of wall clock buys ten seconds of queue against one, and a second of
 digging puts up 0.3846 of a building against 0.0385. A hundred-point round takes 10 off
 one of his and 400 off one of theirs, and 100 between two of theirs. His eye reaches 1520
-off a 380 sight where the opposition's reaches 400 off its own 400. He digs a battery 130
+off a 380 sight where the opposition's reaches 400 off its own 400. He digs a battery 170
 units from his own headquarters inside a 700 exclusion and then a second one, where the
 opposition is refused both; a mission onto the enemy headquarters is allowed for him and
 refused against him. The production and construction figures are timed rather than read
@@ -7062,8 +7336,8 @@ is the held flag nearest the enemy's headquarters. Every refusal on the way (the
 limit, the exclusion round home, the population, the room) is `placeWork`'s own and it says
 so itself; `workFull` is the limit, asked by the strip to dim the button and by `placeWork`
 to refuse, so there are not two readings of it. Measured by the gate: the button arms and
-lights, his tap sites the eight-inch position where his finger went, 790 from home against
-a floor of 700, with an engineer on it, for 460 and 170; the button then reads 1 and dims,
+lights, his tap sites the 240's position where his finger went, 850 from home against
+a floor of 700, with an engineer on it, for 500 and 190; the button then reads 1 and dims,
 and tapping it again arms nothing and leaves the one site.
 
 **Field upgrades are fitted for the player by a setting, and each vehicle has its own word
@@ -7181,7 +7455,10 @@ shots/                         screenshot output, gitignored
   Norman stone shades did exactly that with a German camouflage tint, and the manor the
   German headquarters stands as was drawn in splinter camo. The materials row counts faces
   on the untextured tile and cannot see this at all. Six colours were moved a unit or
-  three; a probe that asks every tint of a new palette for its material is the check.
+  three; a probe that asks every tint of a new palette for its material is the check. A
+  grey kept a hair off another on purpose, so that it finds a different tile, needs two
+  units in a channel and not one: at one, `lit(c, .92)` of the Tigers' Zimmerit grey rounded
+  to the same string as the same tint of the plain grey.
 - **A grid filled below the line that marks it is a mark that never happened.** A
   hedgerow's `hogg` mark sat two blocks above `hogg.fill(0)` in `rebuildGrid` and every
   tank on Omaha drove through the bocage at the price of open ground. Read the order of a
@@ -7371,6 +7648,11 @@ shots/                         screenshot output, gitignored
   built with its seven blocks at the half-steps, so the post between two of them stood square
   in front of the eye and the whole shut view was a grey slab. An exterior with an odd number of
   blocks and an interior with posts between them have to agree on which of the two is at nought.
+- **A piece that becomes another piece is found by `gmKey(u)`, never by `u.key`.** Little David
+  keeps the 240's key so the count, the limit and the record read the battery that was bought,
+  so a lookup of `GUNMODEL[u.key]` draws the 240 over the mortar's numbers. The draw, the shadow
+  pass, the flash and the gun wreck ask `gmKey`; anything new that asks for a unit's piece has
+  to as well.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the
@@ -7394,9 +7676,10 @@ shots/                         screenshot output, gitignored
   a fitting placed at +y comes out on the right-hand side of the vehicle as the
   player sees it. Verified head-on with the Panzer IV: its driver's visor is at
   +6.6 and appears on the vehicle's right, which is the wrong side for a Panzer IV.
-  The Tiger II and the StuG IV were laid out with this in mind (left-hand fittings
-  at -y); the Panzer IV, and possibly others, were laid out as if +y were left and
-  are mirrored. Check the screen, not the axis, before calling a side correct.
+  The Tiger I and the Tiger II were laid out as if +y were left as well, with the visor, the
+  bow gun and the cupola on the wrong sides, until they were laid over their drawings, which is
+  how it was found; the StuH 42 was laid out with it in mind. Check the screen, not the axis,
+  before calling a side correct.
 - `lathe()` revolves about the **y** axis, so it builds a wheel whose axle points
   across the tank. It is the wrong tool for anything that stands out of a plate
   facing fore or aft: a ball mount built with it faces out of the side of the

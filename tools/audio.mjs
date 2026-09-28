@@ -9,7 +9,7 @@
  *
  *   node tools/audio.mjs                 every sound, the roster, a montage, a firefight
  *   node tools/audio.mjs rifle mg        two of them
- *   node tools/audio.mjs us_how8         one piece off the roster, in its own voice
+ *   node tools/audio.mjs am_240         one piece off the roster, in its own voice
  *   node tools/audio.mjs --tag=before    keep a set to compare against
  *
  * Nothing is reimplemented. The page's own auAttach() builds the graph on the offline
@@ -220,7 +220,7 @@ for (const kind of wantKinds) {
    off the weapon, so six artillery pieces with six different shells behind them are six
    different sounds without anybody typing one. Each row is the game's own gunVoice
    against that unit's own def, played through the game's own sfx. */
-const ART_KEYS = ['us_mor', 'ger_mor', 'us_how', 'ger_how', 'us_how8', 'ger_how210'];
+const ART_KEYS = ['us_mor', 'ger_mor', 'us_how', 'ger_how', 'am_240', 'ger_how210'];
 /* Every layer of every report is jittered on purpose, so one take of a gun says almost
    nothing: measured once, the Pak 40's centroid came back at 776 Hz and then at 1050 on
    the same file. A row here is the mean of several, which is the difference between a
@@ -264,7 +264,7 @@ for (const key of rosterWant) {
    pairs is measured against ITS OWN first piece rendered a second time, which is the
    duel card's identical row and nothing more. */
 const selfCtrl = {};
-for (const key of ['us_mor', 'us_how', 'us_how8']) {
+for (const key of ['us_mor', 'us_how', 'am_240']) {
   const row = pieces.filter(p => p[0] === key)[0];
   if (!row) continue;
   const secs = row[1].cls === 'heavy' ? 2.6 : 1.8, ms = [];
@@ -477,7 +477,7 @@ if (pieces.length) {
      the side timbre were doing nothing these three would read 1.00x across the board. */
   const by = {};
   pieces.forEach(p => { by[p[0]] = p; });
-  const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['us_how8', 'ger_how210']];
+  const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['am_240', 'ger_how210']];
   const rat = (x, y) => (Math.max(x, y) / Math.max(1e-9, Math.min(x, y))).toFixed(2);
   /* `level` is rms for the reason above: read as peak the heavy pair comes out 1.03x
      apart, which is the compressor's answer and not the guns'. */
