@@ -3557,7 +3557,7 @@ for (const device of TARGETS) {
     const V = W.VMODEL.hr_p4, B = W.MODELS.veh.hr_p4, H = W.HATCHES.hr_p4, K = W.KIT.heer;
     out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts && B.turSkirts);
     out.grey = V.hull.filter(f => f.c === W.HRG.body).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
     out.cap = H.open.filter(f => f.c === K.pz).length;
     out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
     out.seat = !!(W.MODELS.man.hr_tank && W.MODELS.man.hr_tank[W.POSE_SEAT]);
@@ -3973,7 +3973,7 @@ for (const device of TARGETS) {
     const V = W.VMODEL.hr_234, B = W.MODELS.veh.hr_234, K = W.KIT.heer;
     out.bufs = !!(B && B.hull && B.tur && B.turUp.puma && B.turCrew && B.turCrewUp.puma && B.inside);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
-    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur, V.turUp.puma).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
     out.cap = V.turCrew.filter(f => f.c === K.pz).length;
     out.pumaCap = V.turCrewUp.puma.filter(f => f.c === K.pz).length;
     out.helm = V.turCrew.concat(V.turCrewUp.puma).filter(f => f.c === K.helm || f.c === K.helmD).length;
@@ -4467,7 +4467,7 @@ for (const device of TARGETS) {
     out.bufs = !!(B && B.hull && B.tur && B.turCrew && B.skirts && B.inside);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
     out.turGrey = V.tur.filter(f => f.c === W.HRG.body).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
     /* open: nothing of the turret over the middle of it at the rim or above */
     out.roof = V.tur.filter(f => f.v.every(p => p[2] >= rim - .1 && Math.hypot(p[0], p[1]) < 7)).length;
     /* four muzzles, each the dark end of a flash hider out past the front plate */
@@ -4549,7 +4549,7 @@ for (const device of TARGETS) {
     out.bufs = !!(B && B.hull && B.tur && B.mg && B.hatch && B.cmdr && B.leaf && B.inside && B.skirts);
     out.grey = V.hull.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
     out.turGrey = V.tur.filter(f => f.c === W.HRG.body || f.c === W.HRG.lit).length;
-    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.PZ4.body || f.c === W.PZ.body).length;
+    out.camo = V.hull.concat(V.tur).filter(f => f.c === W.SUC.body || f.c === W.PZ.body).length;
     out.cap = H.open.filter(f => f.c === K.pz).length;
     out.helm = H.open.filter(f => f.c === K.helm || f.c === K.helmD).length;
     /* the muzzle past the nose, in the hull's frame */
