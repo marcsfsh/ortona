@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and pack howitzer, the 210/22, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -2281,7 +2281,8 @@ separates a team from a section is that it cannot do that.
 or an MG42 at 2.0 s, a mortar at 3.0, a Pak or a six-pounder at 5.0, a pack howitzer at
 6.0, the T8 at 4.0 paid to the tow that hitches it) beside a `setup` raised to match (2.5,
 3.5, 4.5, 5.0 and 4.0). The eighty-eight and the two batteries carry none, because they
-never move. Two fields on the unit carry the state: `u.pack` is the seconds left taking it
+never move. (The T8 is the 3-inch gun now, which packs in 6.5 and its crew can run along by
+hand as well as a tow can hitch it; see *The 3-inch Gun M5*.) Two fields on the unit carry the state: `u.pack` is the seconds left taking it
 down, and `u.packed` is whether it is on the men's backs. In action is `!packed` with the
 setup run out. Four rules, and each is one place:
 
@@ -3558,7 +3559,7 @@ Wirbelwind), with their models, their interiors and hatches, the seven upgrades 
 and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
-own for yet: the two mortars, the two pack howitzers, the 210/22, the T8, the
+own for yet: the German mortar and pack howitzer, the 210/22, the
 Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
@@ -5130,6 +5131,42 @@ guns are one gun on two sides and the two tanks are not. Over twelve runs a row 
 M3A1 and the Achilles every time; the American rifle squad takes it every time in eight seconds, and
 walked into an M4 on an attack-move it wins 17 per cent.
 
+**The 3-inch Gun M5 stands where the T8 stood** (`us_t8`, the key kept): the towed gun of an
+American tank destroyer battalion, which is the tube of the 3-inch anti-aircraft gun and the breech
+ring of the 105 on the 105's own carriage (the M6), behind a shield of its own. It is laid over a
+drawing of eight views (`tools/ref/us_t8.json` for the four of it closed with the tube raised about
+fourteen degrees, and `us_t8_f.json` for the three of it firing). The sheet has no scale; the side
+and the plan agree with the 9.00-20 tyre and the 105's 1.87 m track at 47.8 px/m, which also puts
+the top of the shield at the published 1.62 m, and the tube from the breech ring to the muzzle
+comes out at 3.89 m against the 3.81 m of bore fifty calibres holds. The front and rear views are
+drawn wider than they are tall and take 50.8 across, and the firing pair of them are drawn smaller
+again (49.5). All eight agreed with the model on the first overlay to about a line width; the
+drawing rests the closed trails on their spades, where the game folds them.
+
+The carriage is the 105's (`h105Bottom` with `gun`, which leaves off the lower shield the drawing's
+front views do not have). What is its own is in `m5Top` and `m5Tube`: the trunnions stand 7.3 units
+behind the axle, because nearly all of the tube is forward of them, so the girders and the cheeks
+run back to them; the cradle carries the recuperator over the tube and the recoil cylinder under
+it, with the telescope on the left; and the shield is two wings meeting in a V ahead of the cradle,
+each a plane swept back forty-two degrees and laid back twenty-two (`m5Wing`), with its outer corner
+standing over the wheel and cut in under it, a bead along the top and down the outer edge, rivets
+along the foot, the sight port's shutter on the right and a round cover on the left. The breech ring
+is the 105's square one.
+
+The T8 was sited and could only be towed. The 3-inch is crew-portable: seven men (the gunner and his
+assistant at the two handwheels in the 105's `laying` pose, and five bringing the rounds up), run
+along at 22 with the trails closed and the tube level (`pack`, `pkAll`), 6.0 seconds into action and
+6.5 out of it, and turning whole at `traverse` .5. It is still `towable`, and `towAt` says where its
+lunette is, so the towed block puts it at the tow's tail (the tow's `bodyL` less its `bodyX`, and the
+lunette behind that) rather than eighty units behind the tow's middle, and `gunPost` draws a piece on
+the hook where the tow put it.
+
+**Its numbers are the 57's made heavier, staged sited.** It sees as far as the 57 (620) and reaches
+further (560 against 540), with 140 a round every 3.6 seconds at an accuracy of .80 and 265 of
+penetration, for 420 marks, 30 of fuel and 14 of population. Over twelve runs a row it takes the
+Panzer IV three times in four where the 57 takes it about half the time, a Panther head on a third of
+the time where the 57 took none of the same twelve, and a Tiger 17 per cent.
+
 **The M3 light tank is the 29th's second tank** (`am_stuart`, on the motor pool's list after the
 M8): the Stuart as the Americans first took it to war, riveted, with the round welded turret
 that did away with the cupola and the big idler trailing on the ground. Its 37 mm and coaxial are the
@@ -5257,6 +5294,30 @@ kill an M26. Over twelve runs a row it takes the Panzer IV, the Puma, the 234/1,
 251, the grenadier squad and the Knight's Cross Holders every time, the last with a quarter of itself
 gone to their bundles, and a Pak 38 sited at 520 takes it 8 per cent of the time where it takes an M4 a
 quarter of the time.
+
+**The M16 multiple gun motor carriage is the 29th's flak half-track** (`am_m16`, on the motor pool's
+list after the M3), and the Wirbelwind's opposite number: the M3's hull (`mhHullAll`) with the M45
+quad mount standing in the body in the place of the pedestal and the seats, four .50s that go the
+whole way round with the gunner sitting between them. The mount is laid off a side view, a plan and
+the two ends of the M16, read against the M3's hull rather than against a scale of their own, since
+the M3 was laid over its own drawing already: the pivot a third of the way up the body from the tail
+(`M45G.x`), the inboard guns riding higher and reaching further than the outboard ones, two
+ammunition chests a side outboard of the cradles with a chute into each gun, and a curved plate in
+front of the gunner leaning back from under the rim to a foot and a half over it with the reflex
+sight on its top edge (`m45Mount`). The guns are the jeep's .50 without the spade grips, because the
+M45's were fired by solenoid (`m45Gun`). The gunner is the jeep's crewman sitting on the mount's seat
+with his hands on the two handles (`m45Men`), turning with it; the driver is the M3's, and the
+periscope's eye is the gunner's (`VIN.am_m16`). It carries nobody and tows nothing. It has a rung on
+the brain's ladder after the M3 light tank, and `aiCutLadder` reads it the way it reads the
+Wirbelwind: forward against an enemy that is all infantry and back when he has something heavy.
+
+**Its numbers are the Wirbelwind's turned round.** Its weapon is a burst of four .50 rounds a volley
+with no shell in it: 30 every .22 seconds at an accuracy of .56 out to 340, with a suppression of .10
+capped at .95 and the jeep .50's penetration of 70, on the M3's 360 hit points and 40 of plate, for
+300 marks and 45 of fuel. Over eight runs a row it takes the grenadier squad every time in ten seconds
+untouched, the MG 34 team, the KS 750 and the 251 every time in under six, the 234/1 every time with
+nearly two thirds of itself left, and the Knight's Cross Holders every time with a fifth of itself
+left after their bundles; the Wirbelwind takes it every time and so does the Panzer IV.
 
 **And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
 team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
@@ -6246,7 +6307,7 @@ refuses and the overlay says RELOADING. It is its own field rather than the cool
 the cooldown is the second between rockets of the same ripple and the label would have read
 RELOADING through all six. That clock is the whole of what makes a projector a different
 weapon from a howitzer rather than a bigger one, and it is what the piece is priced against:
-it throws further than either pack howitzer (820 against 660) and lands far looser (a circle
+it throws further than the 75/18 and not quite as far as the 105 (820 against 660 and 860) and lands far looser (a circle
 130 across against 76), so what it is for is ground rather than a target. Measured by the
 gate: six of six rockets up, then 37.6 seconds of reload with a fresh mission standing and
 nothing leaving the tubes, then six more.
@@ -6315,7 +6376,7 @@ the flag set, K and a click on the classic bar beside F, and `barrageTick` hands
 `fireAt`, whose shell carries the cloud it will make (`smk`, off `smokeOf(def)`) and hurts
 nobody when it lands. What a piece throws is read off the same number its burst is sized
 off, so the sizes are the roster's and not a table: a mortar bomb makes a cloud of 65 that
-is gone in 29 seconds, a pack howitzer's shell 76 for 35, and a battery's 118 for 62, with a
+is gone in 29 seconds, the 75/18's shell 76 for 35 and the 105's 80 for 37, and a battery's 118 for 62, with a
 mission at half the rounds of the HE one because each round is a cloud rather than a
 burst. `G.smoke` is the clouds; `smokeAt` is a cloud's radius now, building over three
 seconds and thinning over its last quarter; and `smokeBlocks` is asked at the top of
@@ -6335,8 +6396,8 @@ clouds aged out give the line back; and the card on the bar sets the mode and la
 **Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
 (`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
 the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
-pack howitzers (`us_how`, the M1, and `ger_how`, the Italian 75/18 the Germans in Italy
-used every one of they could recover) are `barrageOnly`, which is the whole of what they
+field and pack howitzers (`us_how`, the 105 mm M2A1, and `ger_how`, the Italian 75/18 the
+Germans in Italy used every one of they could recover) are `barrageOnly`, which is the whole of what they
 are: `acquire` returns null for them and `fireAt` refuses without a mission, because a gun
 this size is laid by somebody else's map and fired on somebody else's order. A right-click
 on an enemy is a mission on the ground he is standing on, and out of reach it is nothing
@@ -6344,7 +6405,7 @@ at all rather than an attack order that walks a five-man crew and its howitzer t
 enemy to get inside a range the gun will never use.
 
 **And `barrageOnly` is a rule a player may turn off.** HOWITZER FIRE on the handicap is
-the switch: at ON ORDER the pack howitzer and the dug battery fire only on a mission,
+the switch: at ON ORDER the howitzers and the dug battery fire only on a mission,
 which is what separates them from a mortar, and at FREE FIRE they engage what their own
 side can see on their own account as well. `onOrderOnly(u)` is the one reader, and
 `acquire` and `fireAt` are its two callers; the two ORDER paths deliberately keep reading
@@ -6363,20 +6424,49 @@ takes 3.5. Every turn goes through `layOn` now, which reads the same numbers who
 the gun.
 
 The reaches are chosen against this map rather than by feel. A headquarters stands 1150
-from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
-it has to come four hundred forward, which puts it among the town's approaches, in front
-of its own infantry, where a section working round the flank will find it. That exposure is
-the price of the shell and it is the reason the reach stops where it does. The American gun
-reaches further and hits softer and the Italian one is the other way round, so the German
-side has to come further forward for the same ground.
+from every victory flag, so at 860 and 660 neither gun touches a victory sector from home:
+the 105 has to come three hundred forward and the 75/18 five hundred, which puts it among
+the town's approaches, in front of its own infantry, where a section working round the
+flank will find it. That exposure is the price of the shell and it is the reason the reach
+stops where it does. The American gun reaches further and hits harder, and pays for both in
+weight: it is slower to walk, to bring into action and to bring round.
 
-On the models, the trail is what tells the two apart: the M1 sits on a box trail, one beam
-under the breech with a single spade on the end of it, and the 75/18 mod. 34 on split ones
-that open out to either side. The 75/18 is the longer barrel of the pair at eighteen
-calibres against the M1's sixteen and carries the taller shield. Neither has a muzzle
-brake. Both are laid up at the elevation a gun that only fires indirect sits at, which is
-what tells the class from the anti-tank guns at a glance: those have long thin barrels held
-level on the same sort of carriage.
+**The 105 is laid over a four-view drawing of it firing** (`tools/ref/us_how.json`), in the
+M1 75 mm pack howitzer's place: the 105 mm M2A1 on the M2A2 carriage, which is what the
+29th's field artillery battalions fired, still run about by its crew of five. The sheet has no
+scale; every view agrees with the published 2.21 m over the wheels and 1.73 m to the top of
+the shield at 48.3 px/m, and the tube it gives from the breech to the muzzle is 2.63 m
+against the published 2.574, which is the check. It is three builders: `h105Bottom` (the
+9.00-20 wheels on their axle, the body the trails hinge on, the trails and spades, the lower
+shield in front of the axle and the loader's rounds), `h105Top` (the top carriage, the cradle
+at its elevation, the two equilibrators, the shield in three pieces a side, the handwheels and
+the panoramic telescope) and `h105Tube` (the tube and the sleigh, which run back together).
+It fires with the trails spread and the tube at `H105.el`, and its crew run it along as one
+piece with the trails closed and the tube level: `pack` on the GUNMODEL is that closed piece,
+and `pkAll` says it carries its own tube, so `gunRecOf` leaves the recoiling one out while the
+piece is out of action. It turns whole at `traverse` .45, a little over half a mortar's rate,
+rather than on a top carriage the way the 240 does, because `gunPost` lays a set piece off its
+layer along the unit's facing and a top carriage turning on its trails would swing the trails
+round the man. The gunner and his assistant stand bent over the two handwheels (`laying`, the
+served pose for a handwheel at a standing man's waist) and the other three bring the rounds up.
+It puts 150 a round every 3.8 seconds into a circle of 84, eight rounds a mission out to 860,
+for 440 marks and 60 of fuel, where the 75 put 102 into 76 out to 760 for 380 and 45.
+
+The 75/18 is still the first roster's, on split trails with the taller shield. Both are laid up
+at the elevation a gun that only fires indirect sits at, which is what tells the class from the
+anti-tank guns at a glance: those have long thin barrels held level on the same sort of
+carriage. Neither has a muzzle brake.
+
+**The American 81 is built to its published figures** (`mo81Model`, in place of the first
+roster's `mortarModel`, which is the German one's now): the tube of 49.5 inches on its ball in
+the socket of a rectangular baseplate ribbed out from the socket, the M4 bipod clamped round the
+tube a little over half way up with the shock absorber's two springs under the collar, the
+traversing screw across below them with its handwheel, the elevating screw down the middle to
+the hinge the legs turn on, the cross-levelling slide and the chain between the legs, and the
+sight on the left; three bombs stand in a rack beside the plate with their containers. The
+drawing it was asked from is a three-quarter view of the M252 that came after it, which is a
+guide to proportion and no measure of position, and the finned breech, the blast attenuator
+and the round baseplate on it are that mortar's and are left off.
 
 **And the heavy battery, which is a position rather than a unit.** `am_240` (the 240 mm
 Howitzer M1 on the M1 carriage) and `ger_how210` (the Obice da 210/22 mod. 35) are never

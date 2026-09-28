@@ -5243,6 +5243,85 @@ for (const device of TARGETS) {
      `and a Panzer IV's ${m26.onP4}; the eye ${m26.eyeUp} up out of the cupola and ${m26.eyeIn} with the lid shut; ${m26.blown} of 40 ` +
      `wrecks threw the turret; killed, it left ${m26.bodies} bodies of ${m26.bodyNat}`);
 
+  /* --- The 29th's second batch. The motor pool makes the M16 beside the M3 and the 3-inch gun,
+     and the company post the 105 and the 81. The M16's buffers are built and its quad mount
+     goes the whole way round; the 3-inch is seven men who run it along with the trails closed,
+     and a half-track can still hitch it and draws it at its own tail; the 105 is five and
+     fires only on an order; the 81 is its own mortar and not the German one's. The rifle
+     squad takes both its fittings at once, which put the BAR in two men's hands and the
+     launcher on two men's Garands, and the grenadiers' launcher goes off on a clock of its
+     own at the section the squad is shooting at. --- */
+  const us2 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {}, dt = 1 / 30;
+    const keep = G.units.slice(), shots = G.shots.slice();
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x - 240, hq.y - 120, true);
+    out.mot = W.makesOf(mot).join(','); out.bar = W.makesOf(bar).join(',');
+    G.res.us.mp += 3000; G.res.us.fu += 600;
+    const q0 = mot.queue.length;
+    out.q = W.queueUnit(mot, 'am_m16') ? mot.queue.slice(-1)[0] : 'refused';
+    mot.queue.length = q0;
+    const B = W.MODELS.veh.am_m16;
+    out.bufs = !!(B && B.hull && B.tur && B.turCrew);
+    const v = W.spawnUnit('us', 'am_m16', hq.x + 140, hq.y - 220, 0);
+    v.facing = 0; v.turret = 0; v.want = Math.PI - .05;
+    for (let i = 0; i < 12; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, Math.PI - .05)).toFixed(3);
+    out.carries = W.carriesOf(v); out.tows = !!v.def.tows;
+    /* the two guns and the mortar */
+    const g = W.spawnUnit('us', 'us_t8', hq.x + 200, hq.y - 320, 0), h = W.spawnUnit('us', 'us_how', hq.x - 200, hq.y - 320, 0);
+    out.t8 = g.models.length; out.t8speed = g.def.speed; out.t8tow = !!(g.def.towable && g.def.towAt);
+    out.t8pk = !!(W.MODELS.gunPk.us_t8 && W.MODELS.gunRec.us_t8 && W.MODELS.served.us_t8);
+    out.how = h.models.length; out.howOrder = !!W.onOrderOnly(h); out.howPk = !!(W.MODELS.gunPk.us_how && W.MODELS.served.us_how);
+    out.mor = W.GUNMODEL.us_mor.mesh.length; out.morGer = W.GUNMODEL.ger_mor.mesh.length;
+    /* hitched, the 3-inch rides at the tow's tail */
+    const ht = W.spawnUnit('us', 'am_m3', g.x, g.y - 150, Math.PI / 2);
+    g.setup = 0; g.packed = true; g.pack = 0;
+    W.hitchGun(ht, g);
+    W.updateUnit(g, dt);
+    const back = Math.hypot(g.x - ht.x, g.y - ht.y);
+    out.towBack = +(back - (ht.bodyL - (ht.bodyX || 0))).toFixed(1);
+    out.towed = g.towedBy === ht;
+    /* the rifle squad with both fittings */
+    const sp = window.__o.flatSpot(260);
+    G.units.length = 0; G.shots.length = 0;
+    const u = W.spawnUnit('us', 'am_rifle', sp.x, sp.y, 0);
+    W.fitUp(u, 'bar2'); W.fitUp(u, 'rgren');
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.baked = !!(W.MODELS.man.gi_bar && W.MODELS.man.gi_rgren);
+    out.bar2 = W.mainW(u) === W.UNITS.am_rifle.wUp.bar2;
+    out.gl = !!W.glOf(u);
+    const e = W.spawnUnit('ger', 'hr_gren', sp.x + 170, sp.y, Math.PI);
+    let gl = 0;
+    const real = W.fireAt;
+    W.fireAt = function (a, b, c, o) { const was = a.glcd || 0, r = real(a, b, c, o); if (o && o.gl && (a.glcd || 0) > was + .5) gl++; return r; };
+    for (let i = 0; i < 30 * 20; i++) {
+      if (i % 3 === 0) W.computeVisibility();
+      [u, e].forEach(q => { if (!q.dead) W.updateUnit(q, dt); });
+      W.updateShots(dt); G.t += dt;
+    }
+    W.fireAt = real;
+    out.glFired = gl;
+    G.units.length = 0; keep.forEach(q => G.units.push(q));
+    G.shots.length = 0; shots.forEach(q => G.shots.push(q));
+    W.killBuilding(mot); W.killBuilding(bar);
+    return out;
+  });
+  ok('Omaha: the 29th fields the M16, the 3-inch gun, the 105 and its own 81, and the rifle squad takes the BAR and rifle grenades together',
+     /am_m16/.test(us2.mot) && /us_t8/.test(us2.mot) && /us_how/.test(us2.bar) && /us_mor/.test(us2.bar) && us2.q === 'am_m16' &&
+     us2.bufs && us2.lay < .05 && !us2.carries && !us2.tows &&
+     us2.t8 === 7 && us2.t8speed > 0 && us2.t8tow && us2.t8pk && us2.towed && Math.abs(us2.towBack - 47) < 20 &&
+     us2.how === 5 && us2.howOrder && us2.howPk && us2.mor > us2.morGer &&
+     us2.vars === 'gi_sgt,gi_rifle_b,gi_rgren,gi_rgren,gi_bar,gi_bar' && us2.baked && us2.bar2 && us2.gl && us2.glFired > 0,
+     `the motor pool makes ${us2.mot} and the company post ${us2.bar}; asked for the M16 it queues ${us2.q}; its buffers ` +
+     `${us2.bufs ? 'all built' : 'MISSING'}, the mount laid over the tail ${us2.lay} short, carrying ${us2.carries} and ` +
+     `${us2.tows ? 'TOWING' : 'towing nothing'}; the 3-inch is ${us2.t8} men at ${us2.t8speed} with the closed piece and the served ` +
+     `bodies ${us2.t8pk ? 'built' : 'MISSING'}, ${us2.towed ? 'hitched' : 'NOT hitched'} and riding ${us2.towBack} past the tow's tail; ` +
+     `the 105 is ${us2.how} men, ${us2.howOrder ? 'on order only' : 'FIRING FREE'}; the 81 is ${us2.mor} faces against the German's ` +
+     `${us2.morGer}; the rifle squad with both fittings is ${us2.vars} (${us2.baked ? 'baked' : 'NOT BAKED'}), the BARs ` +
+     `${us2.bar2 ? 'in' : 'NOT in'} its line, the launcher ${us2.gl ? 'issued' : 'MISSING'}, ${us2.glFired} grenades in twenty seconds`);
+
   /* --- The engineers. The Americans' engineer squad: the headquarters makes it and queues
      it, the Allied side opens the battle with one, its three men are the three engineer
      variants and carry the M3, the sleeves are rolled and the hands gloved, the goggles are

@@ -1211,7 +1211,12 @@ var UPGRADES = {
   david: { name: 'Rebuild as Little David', short: 'LITTLE DAVID', hk: 'O', cost: { mp: 420, fu: 200 }, hand: 1,
            desc: 'The 240 lifted out and the 36-inch mortar T1 set in a steel box in its place: a ton and three quarters of shell, the biggest thing either side can put on the ground, three times to a mission a minute and a half long. It reaches not much over half as far and turns six degrees either way in its box, and the change-over is three quarters of a minute in which the position is silent.' },
   a6: { name: 'Issue two M1919A6s', short: 'M1919A6', hk: 'O', cost: { mp: 90, fu: 10 },
-        desc: 'Two of the Thompson men hand in the Thompson and take the bipod .30 with the stock on it, fired from the hip on the move. The squad reaches further and puts men down harder; it is no quicker to kill anything.' }
+        desc: 'Two of the Thompson men hand in the Thompson and take the bipod .30 with the stock on it, fired from the hip on the move. The squad reaches further and puts men down harder; it is no quicker to kill anything.' },
+  /* and the rifle squad's two, which are not either-or: a squad can have both */
+  bar2: { name: 'Issue two BARs', short: 'TWO BARS', hk: 'O', cost: { mp: 90, fu: 10 },
+          desc: 'Two of the riflemen hand in the Garand and take the Browning Automatic Rifle. The squad fires faster and heavier and keeps a section down harder at the same reach.' },
+  rgren: { name: 'Issue rifle grenades', short: 'RIFLE GREN', hk: 'I', cost: { mp: 70, fu: 10 },
+           desc: 'Two of the riflemen fit the M7 launcher to the muzzle of the Garand and carry grenades for it: a burst lobbed at men behind a wall or in a hole every few seconds, turn about, and a hollow charge that opens a half-track or an armoured car.' }
 };
 /* Secondary machine guns. A roof MG or a coaxial fires on its own cooldown at whatever
    infantry is nearest, whatever the main gun happens to be doing. supCap is the ceiling
@@ -1329,9 +1334,15 @@ var UNITS = {
      with, so it suppresses less than its weight of fire says. */
   am_rifle: {
     side: 'us', nat: 'usa', name: 'Rifle Squad', short: 'RIF', cat: 'inf', hk: 'R',
-    models: 6, hpPer: 78, speed: 64, sight: 300, pop: 8, cost: { mp: 260 }, time: 21,
+    models: 6, hpPer: 78, speed: 64, sight: 300, pop: 8, cost: { mp: 260 }, time: 21, upgrades: ['bar2', 'rgren'],
     w: { range: 262, dmg: 7.2, rof: 0.74, acc: .60, sup: .013, pen: 14 },
-    desc: 'Six riflemen of the 29th Infantry Division with M1 Garands: more men and a faster rate of aimed fire than a bolt-action section, and no light machine gun among them.'
+    /* two of the men with a BAR each: the squad's volley comes faster and each is heavier,
+       which is four rifles and two automatics averaged into one line (`bar2`), and two
+       with the grenade launcher on the Garand, which is a second weapon on a clock of its
+       own fired turn about by the two of them (`glUp`); either, both or neither */
+    wUp: { bar2: { range: 262, dmg: 7.4, rof: 0.59, acc: .60, sup: .016, pen: 15 } },
+    glUp: { rgren: { range: 220, dmg: 44, rof: 4.0, acc: .45, sup: .06, pen: 90, aoe: 20, shell: 1, men: [2, 3] } },
+    desc: 'Six riflemen of the 29th Infantry Division with M1 Garands: more men and a faster rate of aimed fire than a bolt-action section, and no light machine gun among them. Two of them can be issued the BAR, and two can be issued the grenade launcher for their rifles, which throws a grenade at men behind cover or at a light vehicle.'
   },
   /* The engineers who went in with the first wave: three men of an engineer combat
      battalion with the M3 submachine gun, which is what a man carried whose hands were
@@ -1351,14 +1362,19 @@ var UNITS = {
      The squad fights close, harder than a rifle squad and dearer; when armour is in reach
      the two BAR men swap to the bazookas and fire them turn about (`at.men` names them, and
      a launcher is fired by whichever of them is next and alive, from where he stands). They
-     are bought from the company post, and they are the one squad that takes a field
-     upgrade. */
+     are bought from the company post. Every man of them carries an automatic weapon, so
+     the squad fires as automatics fire: a light round in short bursts several times a
+     second, where a rifle squad puts a heavier round out every three quarters of a second.
+     What a man does to men in a second is the same at either rate, and so is how hard he
+     pins them. A cooldown is reset and not carried, so a weapon fires on the first frame
+     after its `rof` runs out: .15 is three frames of the duel card's twentieth of a second
+     exactly, where .16 was four and lost a fifth of the squad's fire on the card alone. */
   am_ranger: {
     side: 'us', nat: 'usa', name: 'Ranger Squad', short: 'RGR', cat: 'inf', hk: 'N',
     models: 6, hpPer: 78, speed: 68, sight: 320, pop: 12, cost: { mp: 450, fu: 25 }, time: 30,
     req: 'us_bar', body: 'usa_rgr', upgrades: ['a6'],
-    w: { range: 215, dmg: 8.6, rof: 0.44, acc: .60, sup: .024, pen: 16 },
-    wUp: { a6: { range: 230, dmg: 8.6, rof: 0.44, acc: .60, sup: .027, pen: 18 } },
+    w: { range: 215, dmg: 3.0, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
+    wUp: { a6: { range: 230, dmg: 3.0, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
     at: { range: 220, dmg: 115, rof: 1.7, acc: .70, sup: .02, pen: 150, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
     desc: 'Six men of the Ranger battalions with four Thompsons and two BARs, and the BAR men sling the BAR and take the bazooka off their backs the moment anything with plate on it is in reach. Fights hardest close in. Two of the Thompson men can be issued the M1919A6 and fire it from the hip.'
   },
@@ -1564,6 +1580,21 @@ var UNITS = {
     w: { range: 280, dmg: 14, rof: .22, acc: .58, sup: .05, pen: 30, aoe: 0 },
     wUp: { how75: { range: 440, dmg: 140, rof: 2.4, acc: .74, sup: .04, pen: 205, aoe: 30, shell: 1 } },
     desc: 'The White half-track: a driver, the .50 on its pedestal behind the front seats with the gunner standing to it, and seats down both sides for a squad, which it carries forward behind a quarter of an inch of plate. It tows the anti-tank gun. The pedestal goes all the way round, and anything heavier than a rifle round goes through the sides. It can be converted to the 75 mm GMC.'
+  },
+  /* The M16 multiple gun motor carriage: the M3 with the M45 quad mount in its body, four
+     .50s that go the whole way round with the gunner sitting between them, which is what the
+     29th's anti-aircraft battalion brought ashore and turned on anything on the ground. It
+     is the Wirbelwind's opposite number: a burst of four rounds a volley with no shell in it,
+     so it strips men out of the open and opens anything with a light vehicle's plate, and
+     it is on a half-track's hit points and plate, so anything that opens a half-track opens
+     it. There is no room in the body for a squad and nothing to tow with. */
+  am_m16: {
+    side: 'us', nat: 'usa', name: 'M16 Multiple Gun Motor Carriage', short: 'M16', cat: 'veh', hk: 'Q',
+    wheeled: 1,
+    hp: 360, armor: 40, speed: 108, sight: 350, pop: 10, cost: { mp: 300, fu: 45 }, time: 24,
+    req: 'us_mot',
+    w: { range: 340, dmg: 30, rof: .22, acc: .56, sup: .10, supCap: .95, pen: 70, aoe: 0 },
+    desc: 'The M3 half-track with the M45 quad mount in its body: four .50s on one mount that goes the whole way round, with the gunner sitting between them behind a curved plate. Nothing in the army clears men out of the open faster, and it opens a motorcycle, a half-track or an armoured car. It is a half-track underneath, so anything heavier than a rifle round goes through the sides, and it carries nobody.'
   },
   /* The Greyhound, the Americans' armoured car: a 37 mm in an open turret on six wheels, with the coaxial .30 beside it
      (`sec`), a good deal faster on anything firm and a good deal thinner. The sand shields
@@ -1961,7 +1992,7 @@ var BUILDINGS = {
             cost: { mp: 200 }, time: 26, makes: ['am_mg', 'us_mor', 'us_how', 'am_ranger'],
             desc: 'Unlocks the .30 cal team, the 81 mm mortar, the 75 mm pack howitzer and the Rangers.' },
   us_mot: { side: 'us', name: 'Armour Support Point', short: 'ARMOUR POINT', w: 134, h: 104, hp: 1700, hk: '2',
-            cost: { mp: 240, fu: 25 }, time: 32, makes: ['am_at', 'us_t8', 'am_jeep', 'am_m3', 'am_m8', 'am_stuart', 'am_sher', 'am_m26', 'us_ach'],
+            cost: { mp: 240, fu: 25 }, time: 32, makes: ['am_at', 'us_t8', 'am_jeep', 'am_m3', 'am_m16', 'am_m8', 'am_stuart', 'am_sher', 'am_m26', 'us_ach'],
             desc: 'Unlocks the 57 mm gun, the jeep, the half-track, the M8, the M3, the M4A1 and the Pershing.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren'] },
@@ -8751,7 +8782,7 @@ function mountUp(u) {
    has to be left after, because a plate bought with the next section's cost is a section
    not raised. Returns the vehicle it fitted, or null. */
 function buyUpgradeAuto(slot, vehs, opt) {
-  var order = ['mg', 'mgs', 'skirts', 'fenders', 'scope', 'puma', 'e8', 'fifty', 'coax', 'a6', 'm2hb', 'mg42t', 'how75'], i, j;
+  var order = ['mg', 'mgs', 'skirts', 'fenders', 'scope', 'puma', 'e8', 'fifty', 'coax', 'a6', 'bar2', 'rgren', 'm2hb', 'mg42t', 'how75'], i, j;
   for (i = 0; i < order.length; i++) {
     var uk = order[i], U = UPGRADES[uk];
     if ((uk === 'skirts' || uk === 'fenders') && !opt.foeAt) continue;   /* nothing to skirt against yet */
@@ -8850,6 +8881,14 @@ function weaponFor(u, t) {
   if (t && t.cat === 'veh' && u.def.at && launcherLive(u)) return u.def.at;
   return mainW(u);
 }
+/* A second launcher a fitting issues to named men of a squad (`glUp`): the rifle grenades,
+   fired on their own clock (`glcd`) alongside the rifles at whatever the squad is shooting
+   at, turn about by the men who carry them, and gone with them */
+function glOf(u) {
+  var G2 = u.def.glUp, k;
+  if (G2 && u.up) for (k in G2) if (u.up[k]) return G2[k];
+  return null;
+}
 /* A launcher that named men carry is there while one of them is: with both dead the tubes
    lie where they fell and the squad fights with what it has left. */
 function launcherLive(u) {
@@ -8860,11 +8899,11 @@ function launcherLive(u) {
 }
 /* and the one of them who fires this time: turn about, because two men with a tube each
    are two rounds in the air for one reload apiece */
-function launcherMan(u) {
-  var L = u.def.at.men, i, n = L.length, m;
+function launcherMan(u, w) {
+  var L = (w || u.def.at).men, tk = w && w !== u.def.at ? 'glTurn' : 'atTurn', i, n = L.length, m;
   for (i = 0; i < n; i++) {
-    u.atTurn = ((u.atTurn || 0) + 1) % n;
-    m = u.models[L[u.atTurn]];
+    u[tk] = ((u[tk] || 0) + 1) % n;
+    m = u.models[L[u[tk]]];
     if (m && m.alive) return m;
   }
   return null;
@@ -9367,10 +9406,12 @@ function grenBurst(s) {
   explode(s.x, s.y, s.aoe, s.dmg * (s.bund ? .5 : 1), owner, null, s.on ? 30 : 0, w);
 }
 function fireAt(u, t, dt, opt) {
-  var w = weaponFor(u, t);
-  var isAt = (w === u.def.at);
-  var cdKey = isAt ? 'atcd' : 'cd';
+  var gl = opt && opt.gl ? glOf(u) : null;
+  var w = gl || weaponFor(u, t);
+  var isAt = !!gl || (w === u.def.at);
+  var cdKey = gl ? 'glcd' : isAt ? 'atcd' : 'cd';
   if (u[cdKey] > 0) return;                              /* the loader works in updateUnit */
+  if (gl && !gl.men.some(function (i) { return u.models[i] && u.models[i].alive; })) return;
   var d = dist(u, t);
   /* A tube on a fire mission reaches further than the same tube picking its own targets.
      Laying on a known patch of ground at a bearing somebody has worked out is a longer
@@ -9416,7 +9457,7 @@ function fireAt(u, t, dt, opt) {
      once, and only the flashes are spread out over the fraction of a second the men
      actually take. A rifle group going off as one instant of light read as a firing
      squad. */
-  var tube = isAt && w.men ? launcherMan(u) : null;
+  var tube = isAt && w.men ? launcherMan(u, w) : null;
   if (tube) { tube.fire = .085; tube.flashed = 0; }
   else if (u.cat !== 'veh') {
     var k = 0;
@@ -11778,6 +11819,7 @@ function updateUnit(u, dt) {
          clear of the tow. The mesh is drawn at the first man, so he stands on the gun
          and the rest of the crew close up round him rather than trailing across it. */
       /* a piece that says where its lunette is (`towAt`) rides with it at the tow's tail */
+      if (u.def.towAt) unitBody(tw);          /* a tow that has not moved yet has not been measured */
       var ta = tw.facing + Math.PI, td = u.def.towAt ? tw.bodyL - (tw.bodyX || 0) + u.def.towAt * FIG_SCALE : 80;
       u.x = tw.x + Math.cos(ta) * td; u.y = tw.y + Math.sin(ta) * td;
       u.facing = ta; u.target = null; u.setup = u.def.setup || 0; u.packed = true;
@@ -11821,6 +11863,7 @@ function updateUnit(u, dt) {
   if (u.fireT > 0) u.fireT -= dt;
   if (u.cd > 0) u.cd -= dt;                                /* the loader works whether or not there is a target */
   if (u.atcd > 0) u.atcd -= dt;
+  if (u.glcd > 0) u.glcd -= dt;
   if (u.reload > 0) u.reload -= dt;                        /* and so does the crew reloading a rack of tubes */
   if (u.setup > 0 && !u.moving) {
     u.setup -= dt;
@@ -12004,6 +12047,7 @@ function updateUnit(u, dt) {
   if (u.cat === 'veh') mgTick(u, dt);
   if (u.target && !u.target.dead) {
     if (!u.moving || u.cat === 'veh') fireAt(u, u.target, dt);
+    if (!u.moving && glOf(u)) fireAt(u, u.target, dt, { gl: 1 });
     /* A section turns to face what it is shooting at; a gun on a split trail has to be
        heaved round on its trail and takes its time about it, which is the whole reason
        a flanking move works against one. */
@@ -12891,7 +12935,7 @@ function aiCutLadder(slot, base, IN, own) {
   var atKey = side === 'us' ? 'am_at' : 'hr_pak';
   /* and what is for stripping men out of the open: forward when men are all he has, back
      when he has something heavy that it cannot scratch */
-  var flak = side === 'us' ? {} : { hr_wirb: 1 };
+  var flak = side === 'us' ? { am_m16: 1 } : { hr_wirb: 1 };
   var front = [], mid = [], back = [], i, e, k;
   for (i = 0; i < base.length; i++) {
     e = base[i]; k = e[0];
@@ -14304,7 +14348,7 @@ function aiTick(dt) {
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
   var LADDER = aiCutLadder(slot, side === 'us'
-    ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290],
+    ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m26', 1, 500], ['us_ach', 1, 580], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
        ['hr_p4', 2, 260], ['hr_234', 1, 340], ['hr_wirb', 1, 380], ['hr_panther', 1, 480], ['ger_tig', 1, 620],
@@ -29090,6 +29134,94 @@ function mhMen() {
   return g.men;
 }
 
+/* ================================================================ M16 MGMC
+   The M16 multiple gun motor carriage: the M3 half-track with the M45 quad mount standing
+   in the body in the place of the pedestal and the seats, four .50s that go the whole way
+   round, with the gunner sitting between them behind a curved plate. The hull is the M3's
+   own (`mhHullAll`). The mount is laid off a side view, a plan and the two ends of the M16,
+   read against that hull rather than against a scale of their own, since the M3 was laid
+   over its drawing already: the gunner sits a third of the way up the body from the tail,
+   the inboard guns ride higher and reach further than the outboard ones, the ammunition
+   chests stand outboard of them two a side, and the shield leans back from the rim to a
+   foot and a half over it. Built in the frame of the mount, origin on the pivot under the
+   gunner's seat at the height of the rim, x forward. */
+var M45G = {
+  x: -24.7,                                     /* the pivot, a third of the way up the body */
+  yU: 6.6, zU: 8.96, rU: -3.2,                  /* the inboard guns: out, up, where the receiver ends */
+  yL: 7.8, zL: 5.46, rL: -6.1,                  /* and the outboard ones */
+  yC: 10.3                                      /* the ammunition chests */
+};
+/* a .50 as the mount carries it, fired by solenoid, so no spade grips: the receiver with its
+   feed cover, the barrel's jacket and the heavy barrel, from the back of the receiver */
+function m45Gun(x0, y, z) {
+  var C = JP, f = [], i;
+  f = f.concat(box(x0 + 3.5, y, z - .95, 7.0, 1.2, 1.75, C.steel, '#4a4e3e', C.steel, .12));
+  f = f.concat(box(x0 + 3.1, y, z + .8, 4.6, 1.26, .2, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(x0 + .3, y, z - .6, .6, .9, 1.1, C.steel, C.bare, C.steel, 0));
+  f = f.concat(tubeSmooth(x0 + 7.0, x0 + 8.5, y, z, .62, 8, C.steel, C.steel));
+  for (i = 0; i < 3; i++) f = f.concat(tubeSmooth(x0 + 7.2 + i * .45, x0 + 7.42 + i * .45, y, z, .66, 8, C.steel, C.steel));
+  f = f.concat(tubeSmooth(x0 + 8.5, x0 + 18.0, y, z, .36, 8, C.steel, C.steel));
+  f = f.concat(tubeSmooth(x0 + 18.0, x0 + 18.7, y, z, .42, 8, C.steel, M4C.hole));
+  return f;
+}
+/* The mount: the turntable on the floor and the column up to the seat; the carriage across
+   under the guns with a trunnion arm out to each cradle; the four guns, the inboard pair over
+   and inside the outboard; the chests outboard of the cradles with the chutes into the guns;
+   the curved plate in front of the gunner with the reflex sight on its top edge; his seat and
+   backrest, his footrest and the two handles he lays it with. */
+function m45Mount() {
+  var C = MHC, g = M45G, H = MHH, f = [], zf = H.zFloor - H.zRim, sd, i;
+  f = f.concat(cyl(0, 0, zf, 5.2, 5.2, .5, 16, C.odD, C.od, 0, true));
+  f = f.concat(cyl(0, 0, zf + .5, 1.4, 1.4, -zf - .5, 12, C.od, C.odL, 0, true));
+  f = f.concat(box(0, 0, -.3, 3.2, 3.2, .6, C.odD, C.od, C.odD));
+  /* the seat, its back, the footrest and the handles */
+  f = f.concat(box(0, 0, .8, 2.4, 2.6, .5, C.seat, lit(C.seat, 1.1), C.seat, .2));
+  f = f.concat(box(-1.4, 0, 1.3, .4, 2.6, 3.4, C.seat, lit(C.seat, 1.1), C.seat, .2));
+  f = f.concat(box(2.2, 0, -3.8, 2.0, 3.0, .25, C.odD, C.od, C.odD));
+  f = f.concat(ksTube([1.2, 0, 0], [2.2, 0, -3.6], .25, C.od, 6));
+  f = f.concat(ksPipe([[1.2, -1.0, 6.2], [1.2, -1.0, 4.9], [2.4, -1.0, 3.6], [2.4, 1.0, 3.6], [1.2, 1.0, 4.9], [1.2, 1.0, 6.2]], .12, C.steel, 6));
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(ksTube([1.2, sd * 1.0, 5.0], [1.2, sd * 1.0, 6.2], .2, C.rubber, 6));
+  /* the carriage across under the guns, and the arm out to each cradle */
+  f = f.concat(box(1.5, 0, 2.6, 3.0, 17.6, 1.4, C.od, C.odL, C.odD));
+  f = f.concat(box(1.5, 0, 1.2, 1.6, 3.0, 1.4, C.odD, C.od, C.odD));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(-.5, sd * 8.95, 3.2, 6.2, .45, 7.4, C.od, C.odL, C.odD));
+    f = f.concat(box(-.5, sd * 7.2, 6.6, 5.0, 3.0, .7, C.odD, C.od, C.odD));
+    f = f.concat(cyl(-.5, sd * 8.95, 6.2, .7, .7, 1.0, 10, C.steel, C.bare, 0, true));
+    f = f.concat(m45Gun(g.rU, sd * g.yU, g.zU)).concat(m45Gun(g.rL, sd * g.yL, g.zL));
+    /* the chests, two a side, and the chutes from them into the feedways */
+    [-1.3, 1.5].forEach(function (x) {
+      f = f.concat(box(x, sd * g.yC, 2.6, 2.6, 1.8, 6.9, C.od, C.odL, C.odD, .15));
+      f = f.concat(box(x, sd * g.yC, 9.5, 2.8, 2.0, .3, C.odD, C.od, C.odD, 0));
+      f = f.concat(box(x + .9, sd * (g.yC + .95), 5.2, .6, .1, .9, C.steel, C.bare, C.steel, 0));
+    });
+    f = f.concat(m1Beam([-1.3, sd * (g.yC - .9), 8.6], [g.rU + 3.0, sd * (g.yU + .6), g.zU + .2], .9, .25, .9, .25, C.steel));
+    f = f.concat(m1Beam([1.5, sd * (g.yC - .9), 6.6], [g.rL + 4.0, sd * (g.yL + .6), g.zL + .2], .9, .25, .9, .25, C.steel));
+  }
+  /* the plate in front of the gunner: five facets round an arc, leaning back from under the
+     rim to a foot and a half over it, a bead along its top, and the reflex sight on it */
+  var ys = [-5.2, -3.1, -1.0, 1.0, 3.1, 5.2];
+  function sx(y, z) { return 11.0 - .08 * y * y - .55 * z; }
+  for (i = 0; i + 1 < ys.length; i++) {
+    var a = ys[i], b = ys[i + 1], mid = (a + b) / 2;
+    var nx = 1, ny = .16 * mid, nz = .55, nl = Math.hypot(nx, ny, nz);
+    f = f.concat(m1Plate([[sx(a, -1), a, -1], [sx(b, -1), b, -1], [sx(b, 10), b, 10], [sx(a, 10), a, 10]],
+                         [-nx / nl, -ny / nl, -nz / nl], .3, C.od, C.odD));
+  }
+  f = f.concat(ksPipe(ys.map(function (y) { return [sx(y, 10) + .1, y, 10.1]; }), .18, C.odL, 6));
+  f = f.concat(box(sx(0, 10) - .8, 0, 10.2, 1.2, .9, 1.3, C.steel, C.bare, C.steel));
+  f = f.concat(box(sx(0, 10) - .2, 0, 11.0, .1, .7, .5, C.glass, C.glass, C.glass, 0));
+  return f;
+}
+/* the gunner, sitting between the guns with his hands on the two handles, who turns with
+   the mount; the driver is the M3's */
+function m45Men() {
+  if (M45G.men) return M45G.men;
+  var gun = jeepMan({ legs: JPSEAT.legs, lean: .1, grips: [3.2, 1.0, 3.2], pole: [-.2, .7, -1] }, [1.2, 1.0, 9.3], 0, 0, -3.55);
+  M45G.men = { gun: gun.faces, eye: gun.eye };
+  return M45G.men;
+}
+
 /* ================================================================ M8 Light Armored Car (US Army)
    The Greyhound, the cavalry's armoured car: Ford's six-wheeler in olive drab with the 37 mm and its coaxial .30 in an
    open-topped turret. It is built from nothing here. Four men are drawn, the driver and
@@ -34091,6 +34223,11 @@ VIN.am_m3 = function (V) {
   var p = mhGmcMen().eye, gm = { x: p[0], y: p[1], z: p[2] };
   return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at, up: { how75: { eyeUp: gm, eyeIn: gm } } };
 };
+/* nor has the M16, whose eye is the gunner's, sitting between the guns */
+VIN.am_m16 = function (V) {
+  var e = m45Men().eye, at = { x: e[0], y: e[1], z: e[2] };
+  return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
+};
 /* nor has the Greyhound, whose turret has no roof: the eye is the commander's, standing on
    the right of the gun with his head over the rim */
 VIN.am_m8 = function (V) {
@@ -34358,6 +34495,11 @@ function buildVehicleModels() {
                       turUp: { how75: mhGmc() }, turCrewUp: { how75: mhGmcMen().faces },
                       barUp: { how75: { bar: MHM.muz, gunZ: MHM.gz, turX: MHM.x, turY: 0, mountZ: MHH.zRim } },
                       addUp: { how75: mhGmcHold() }, downUp: { how75: mhBenches() } };
+  /* the M16: the M3's hull, and the quad mount in its body with the gunner sitting in it and
+     turning with it; the driver is the M3's. fixed: the mount stays on its pivot when the
+     hull burns */
+  VMODEL.am_m16   = { hull: mhHullAll(), tur: m45Mount(), crew: mhMen().crew, turCrew: m45Men().gun, bar: M45G.rU + 18.7, big: 0,
+                      fixed: 1, scale: 1, mountZ: MHH.zRim, gunZ: M45G.zU, turX: M45G.x, turY: 0, belly: MHH.zBelly };
   /* the turret with the gunner and the commander in it; with the .30 on the ring the
      commander stands up to it (`mgMan`) and the turret keeps only the gunner (`turCrewMg`).
      The sand shields are `skirts`, drawn for either key that hangs them (`skirted`) */
@@ -34955,6 +35097,8 @@ function figPt(p, lean, dz) {
    about the weapon; the builder never types a hand for an armed pose again. */
 var WEAP = {
   garand:   { butt: [-3.35, 0, -.75], grip: [-.45, 0, -.85], fore: [4.4, 0, -1.15], foreMin: [3.2, 0, -1.2], muzzle: [9.67, 0, 0], carryPt: [1.6, 0, -1.3] },
+  /* and with the M7 launcher on its muzzle, which is where the flash leaves it */
+  garandgl: { butt: [-3.35, 0, -.75], grip: [-.45, 0, -.85], fore: [4.4, 0, -1.15], foreMin: [3.2, 0, -1.2], muzzle: [11.2, 0, 0], carryPt: [1.6, 0, -1.3] },
   kar:      { butt: [-3.40, 0, -.85], grip: [-.45, 0, -.92], fore: [4.3, 0, -1.08], foreMin: [3.0, 0, -1.19], muzzle: [9.66, 0, 0], carryPt: [1.5, 0, -1.2] },
   m3:       { butt: [-2.31, 0, -.8], buttOut: [-4.34, 0, -.8], grip: [-1.25, 0, -1.45], fore: [.8, 0, -.95], foreMin: [.55, 0, -.9], muzzle: [4.36, 0, 0], carryPt: [.1, 0, -.6], readyY: 1.3 },
   mp40:     { butt: [-1.8, 0, -.3], buttOut: [-4.02, 0, -.3], grip: [-.85, 0, -1.35], fore: [3.0, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [5.6, 0, 0], carryPt: [.4, 0, -.6] },
@@ -35421,7 +35565,7 @@ function weaponModel(k, type, opt) {
   var f = [], st = k.steel, wd = k.wood;
   function stock(len, h) { return box(len / 2, 0, -h / 2, len, 1.0, h, wd, lit(wd, 1.15), lit(wd, .9)); }
   function barrel(x0, x1, z, r) { return tubeSmooth(x0, x1, 0, z, r, 6, st, st); }
-  if (type === 'garand') {                                /* M1: 1.107 m, 13.0 units */
+  if (type === 'garand' || type === 'garandgl') {        /* M1: 1.107 m, 13.0 units */
     /* The one thing on it that says Garand from any distance is the stock: one long
        piece of walnut from the butt to the lower band, with a toe line that rises to a
        semi-pistol grip where a bolt rifle has a straight wrist, and the wood stopping
@@ -35447,6 +35591,17 @@ function weaponModel(k, type, opt) {
     var sl = k.webD;
     f = f.concat(taperLimb([5.73, 0, -1.02], [1.9, 0, -1.92], .13, .13, sl));
     f = f.concat(taperLimb([1.9, 0, -1.92], [-1.8, 0, -1.70], .13, .13, sl));
+    if (type === 'garandgl') {
+      /* the M7 launcher clamped over the muzzle, and an M9A1 seated on it with its fins back
+         and its nose out: 0.28 m of grenade on 0.19 m of launcher */
+      f = f.concat(tubeSmooth(8.9, 11.2, 0, 0, .19, 8, st, lit(st, 1.2)));
+      f = f.concat(box(9.25, 0, -.45, .4, .3, .3, st, lit(st, 1.2)));
+      f = f.concat(tubeSmooth(11.2, 12.4, 0, 0, .13, 6, st, st));
+      [0, 1, 2, 3].forEach(function (q) { f = f.concat(roll(box(11.75, 0, .1, .8, .05, .3, st, st), q * Math.PI / 2 + .6, 0, 0)); });
+      f = f.concat(tubeSmooth(12.4, 13.9, 0, 0, .3, 8, M4C.od, M4C.odL));
+      f = f.concat(tubeSmooth(13.9, 14.3, 0, 0, .2, 8, M4C.od, M4C.odL));
+      f = f.concat(tubeSmooth(12.9, 13.1, 0, 0, .31, 8, '#b8a052', '#b8a052'));
+    }
   } else if (type === 'kar') {                            /* Kar98k: 1.110 m, 13.06 units */
     /* The Garand's treatment, for the same reason: a bolt rifle is its stock seen from the
        side. The Kar98k's runs nearly to the muzzle, with a semi-pistol grip behind the
@@ -35891,6 +36046,10 @@ var SOLDIER_VARIANTS = {
   gi_rifle_b:   { side: 'us', nat: 'usa', weapon: 'garand', gas: 1, band: 1, nades: 1, packet: 1, scrim: 1, set: 'field' },
   /* and the squad's sergeant, who is the rifleman with his three stripes on both sleeves */
   gi_sgt:       { side: 'us', nat: 'usa', weapon: 'garand', gas: 1, chev: 3, set: 'field' },
+  /* the rifleman with the BAR the squad was issued, and the one with the M7 launcher on his
+     Garand and a grenade on it */
+  gi_bar:       { side: 'us', nat: 'usa', weapon: 'bar', gas: 1, set: 'field' },
+  gi_rgren:     { side: 'us', nat: 'usa', weapon: 'garandgl', gas: 1, nades: 1, set: 'field' },
   /* the American who rides: a jeep's driver, the man beside him and the gunner at the
      pedestal, in the rifleman's kit with nothing in his hands but the vehicle */
   gi_crew:      { side: 'us', nat: 'usa', weapon: 'none', set: 'hull' },
@@ -36002,7 +36161,12 @@ function variantForModel(u, i) {
      his number two the Lafette, and with the gunner down his number two takes the gun */
   if (u.key === 'hr_mg') return i > 1 ? (i === 3 ? 'hr_mga_b' : 'hr_mga')
     : carried(u) && !u.gar ? (i === 0 || !u.models[0].alive ? 'hr_mgc' : 'hr_mgl') : 'hr_mgg';
-  if (u.key === 'am_rifle') return i === 0 ? 'gi_sgt' : i % 2 ? 'gi_rifle_b' : 'gi_rifle';
+  /* the rifle squad's two BAR men and its two grenadiers, when they have been issued */
+  if (u.key === 'am_rifle') {
+    if ((i === 4 || i === 5) && u.up && u.up.bar2) return 'gi_bar';
+    if ((i === 2 || i === 3) && u.up && u.up.rgren) return 'gi_rgren';
+    return i === 0 ? 'gi_sgt' : i % 2 ? 'gi_rifle_b' : 'gi_rifle';
+  }
   /* the gunner and his number two are at the gun or carrying it, and the other two bring
      the ammunition */
   if (u.key === 'am_mg') return i > 1 ? 'gi_mga' : carried(u) && !u.gar ? 'gi_mgc' : 'gi_mgg';
@@ -37184,7 +37348,7 @@ function deadFaces(variant, kind) {
   /* a rifle that has been dropped lies on its side; the Garand stands two and a half units
      from its front sight to its sling and the Kar98k as much from its hood to its toe, and
      laid the way the others are each was half in the ground */
-  if (w && (V.weapon === 'garand' || V.weapon === 'kar' || V.weapon === 'stg' || V.weapon === 'carbine')) w = roll(w, Math.PI / 2, 0, 0);
+  if (w && (V.weapon === 'garand' || V.weapon === 'garandgl' || V.weapon === 'kar' || V.weapon === 'stg' || V.weapon === 'carbine')) w = roll(w, Math.PI / 2, 0, 0);
   function add(g, name) { if (name) Q[name] = [f.length, f.length + g.length]; f = f.concat(g); return g; }
   function arm(g) { AT.push(f.length); f = f.concat(g); }
   function leg(a, b, c) {
