@@ -72,8 +72,10 @@ const REAL = {
                side, so body is checked at the deck to confirm the flare is carrying the width.
                7.85 m over the gun is off the La Roche car, scaled on its bogie centres; the 7.5 m
                in most tables is the 3-inch M10 with a bit added for the 17-pounder. */
-  ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.27,
-               body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },
+  ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.09,
+               body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },   /* 3.09 m to the top of the cupola
+               is Jentz's, and what the four-view drawing (tools/ref/ger_kt.json) stands the cupola at;
+               3.27 was over the anti-aircraft ring */
   ger_tig:   { name: 'Tiger I Ausf. E',     len: 6.316, gun: 8.45,   wid: 3.705, hgt: 3.00,
                body: 3.14, bodyZ: 1.60, roof: 3.14, clear: 0.47 },   /* body and roof are the same
                number: the Tiger's hull sides are one vertical plate from the sponson to the roof.
@@ -172,7 +174,7 @@ const PROBE = {
                topZ keeps the turret crew out of the height: three of them stand in an open turret
                with their heads over the rim, and a man is no more part of a vehicle's height than
                an aerial is */
-  ger_kt:    { bodyZ: 13.5, roofZ: 21.8 },
+  ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },
   ger_tig:   { bodyZ: 18.5, roofZ: 22.0, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
                tools or fender bolts hung on the outside */
