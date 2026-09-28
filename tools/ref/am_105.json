@@ -1,7 +1,0 @@
-{ "image": "shots/ref/am_105.png", "key": "am_105", "prop": "h105Show", "args": [0.204], "up": [], "crew": false,
-  "note": "105 mm M2A1 on the M2A2 carriage, firing, tube at about 11.7 degrees. No scale on the sheet; every view agrees with the published 2.21 m over the wheels and 1.73 m to the shield at 48.3 px/m, checked on the 2.574 m tube. The whole piece is drawn as the hull.",
-  "views": {
-    "side":  { "nose": "left", "crop": [40, 110, 310, 125], "ppm": 48.3, "at": [0, 0, 0], "px": [155.6, 230.6], "k": 4 },
-    "plan":  { "nose": "left", "crop": [20, 280, 330, 230], "ppm": 48.3, "at": [0, 0, 0], "px": [156, 390.5], "k": 4 },
-    "front": { "crop": [300, 330, 210, 120], "ppm": 48.3, "at": [0, 0, 0], "px": [412.1, 441.25], "k": 5 },
-    "rear":  { "crop": [500, 330, 215, 120], "ppm": 48.3, "at": [0, 0, 0], "px": [607.5, 443], "k": 5 } } }

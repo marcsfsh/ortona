@@ -1,0 +1,4 @@
+{ "image": "shots/ref/am_how8.png", "key": "am_how8", "prop": "h8Show", "args": [0], "up": [], "crew": false,
+  "note": "The lower view of the same sheet, nose right, which is the gun's right side, at the upper view's scale. Pinned on the ground under the trunnions.",
+  "views": {
+    "side": { "nose": "right", "crop": [140, 320, 470, 150], "ppm": 64.2, "at": [0, 0, 0], "px": [292.5, 460.5], "k": 3 } } }
