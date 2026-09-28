@@ -19,8 +19,8 @@ the Germans in a manor in the bocage at the top, with the seawall and the Atlant
 across the middle and two draws up the bluff behind it that are the only way armour gets
 off the beach. **Saint-Lô**, the 18th of July 1944, is the town on the Vire the 29th came
 into that evening, laid for three a side: 3800 by 2800, the old town walled on its rock in
-the middle, the river and the station on the right and the faubourgs on the left, and it is
-being laid in stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
+the middle, the river and the station on the right and the faubourgs on the left, laid in
+five stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
 all four open in the editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
 line over the name, the name, what the battle was and two cards about the ground), and the two
 side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
@@ -925,6 +925,14 @@ in front of their own wire, two houses overlapping, six pairs of houses leaving 
 too narrow to walk down, and the long hedgerows beside the two north-south lanes running
 straight through the crossroads. The editor's CHECK carries the same rules.
 
+**And the map check knows what is solid that is not a house.** A wagon, a water tower, a
+gasholder, a memorial and a rampart tower are checked for trees and craters inside them,
+for standing in a building and for standing in a street, and a bridge for a building or a
+tree on its deck. They are not buildings for the gap rule, because a van stands a loading
+bay's width off its goods shed and that is a real place and not a slot. Calibrated by planting a tree in the gasholder, a crater under a
+wagon and a tree on a bridge in a scratch copy: all three came back, and the shipped maps
+read clean.
+
 ### `tools/lint.mjs` - the rules, mechanically
 
 Checks what a screenshot cannot: that the script still parses, that the file is
@@ -942,7 +950,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, and 2830 before the LCVP was laid to its drawing). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, and 2900 before Saint-Lô). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1099,6 +1107,15 @@ German cap and none of them gone from its post after a minute of battle. They ru
 the map rows because they leave the world on Omaha: put between the two rows above them,
 which read the Gothic Line the row before them left standing, the old single row took both
 down, and what that looked like was a churn that had stopped being painted.
+
+**And one asks the fourth map what a mirror has to be.** Saint-Lô is loaded for three a side
+and read as arithmetic: the ground against its own reflection over 2,000 samples (with
+`bareZ`, because the two forward bridges are one stone and one girder and hump differently),
+six headquarters on the map's own spots in the map's own order with ground to march out
+onto, a twin on the same footprint for every solid thing however each half dresses it, tier-3
+cover inside 110 of every flag, every one of the 96 walks from a headquarters to a flag
+arriving and the two halves' walks within two per cent, and ninety seconds of battle with
+every brain raising something. It runs before the Omaha rows, which reload.
 
 **And a fourth asks the beach which army it is fought by.** The side button on the title screen has
 to name the 29th Infantry Division, the sections the Allied side opens with have to be American
@@ -1656,7 +1673,7 @@ before any of it is built and it is built in stages, each photographed on both d
 through the gate before the next: the ground and the street plan, then the town's own
 assets (the Norman town house, Notre-Dame, the ramparts, the bridges, the station), then the
 town laid house by house, then what the June raids and the battle left of it, then the flags
-and the balance. The ground and the street plan are in.
+and the balance. All five are in.
 
 Read across the screen from the left: the faubourgs, where the road to Torigni (the 352nd's)
 and the Bayeux road (the 29th's) are one road through the Champ de Mars, which is the
@@ -1715,6 +1732,62 @@ Measured on the ground: the German shelf 66 to 70, the Torteron's floor about 16
 to 96, the quay 5.5, the river bed -26, the far bank 10 to 14 rising to 48 at the right edge;
 the ramp walkable its whole length from 26 to 90 and the stair from 93 down to 8.5; the cliff
 and the ditch's walls blocked, the causeway open; 6.3 per cent of the map blocked.
+
+**The town's own assets.** Nothing Ortona was built of is a Norman town, so the pieces were
+built first and the town laid out of them after. A Norman town house (`house` with `style:
+'norman'`) is built in bays like an Italian one, so a shell takes it apart the same way, and
+says what its walls are (`nk`: stone, render, or timber over a stone ground floor), how many
+storeys, whether the ground floor is a shop, whether the June raids gutted it (`gut`) and
+which side its street is on (`front`). Notre-Dame is a builder of its own, with the spire
+shot off. The ramparts are round towers (`rtower`) standing half over the drop, and walls
+laid along the ways onto the rock (`wall` with `ramp`) that are a retaining wall where the
+hill stands over the way and a parapet where it falls away. A bridge is a deck (`G.deck`):
+`groundZ` reads it and `bareZ` does not, so a man, a tank, a shell and the walk grid find the
+deck while the mesher lays the river under the arches. The station, the goods shed and the
+signal box are `nhouse` styles drawn by their own builders (`NSTYLE`), and everything else
+that stands in the town is a `feature` drawn off the `FEATURE` table: wagons whole and burnt,
+a water tower, lamps, a Morris column, the bandstand, the memorial, the cemetery, the
+gasholder, a buffer stop and a level crossing's gate.
+
+**Laid a house at a time, twice.** `row` lays a frontage along its street, party wall against
+party wall, and lays every house again on the other half on the same footprint, dressed from
+a list of its own, so the two halves play the same and are not the same town. 390 buildings
+and 305 trees at stage 3, 1.47 million vertices against Ortona's 2.03.
+
+**What the raids left.** A house razed to its footings (`x` in a row's dressing) is a heap of
+its own stone (`ntHeap`, a `debris` with `nt`), following the ground under it, with the quoins,
+the slates, the charred joists and often a chimney breast standing out of it; it is on `rubg`
+the way a bay a shell brings down is, dear to cross and nothing to hide behind. Ortona's
+rubble draws brick, which on a Norman plot read as a thin red scatter. The farm cart is a
+two-wheeled charrette now (`cartModel`) on every map. And five colours had to move a unit or
+two, because their tints landed on kit tiles: a render shade and the pavement flag drew as
+splinter camouflage, the charred timber as leather, and the pole and roof timber as rubber.
+The Ortona outcrop shade was on splinter too, on the two maps that have had it all along.
+
+**Every flag has something to hold it from.** Measured with a probe that lists the cover
+within 110 of each flag point and walks from every headquarters to every flag for a man, a
+track and a wheel: two flags had none. The south crossing, where the rocade crosses the
+running lines on the far bank, is a crossing keeper's cottage now, with its garden walled in
+dry stone, the two gates rolled back along the line and a van burnt out on the running line;
+the Champ de Mars has a weapon pit either side of the flag. Every flag reads tier 3 inside
+110, every walk arrives, and the 96 walks of the American half against the German come out
+at 101,057 units for a man against 101,126, and within half a per cent for a hull.
+
+**A cut into the ground is not a plot to be levelled.** The flag at Notre-Dame could not be
+reached: `levelPad` blends a house's plot flat for forty units round it, and the mill beside
+the ramp dropped the ramp into a trough a man could not walk out of, while the ramp's last leg
+scraped the tower at the gate. `LAND.noPad(x, y)` is a hook a country can answer, and
+Saint-Lô answers it with `stloOnWay`, the ways' own cut plus its margin, so a pad never
+reaches into a way; the ramp's last leg is laid clear of the tower. The cells reachable from
+the flag went from 70 to 19,016.
+
+Two battles with a brain on all six slots (a probe gives the player's slot one after the
+deploy, `slotOf(G.own).ai = true` and `aiInit(G.own)`), the second with the armies swapped
+end for end by flipping `side` and `owner` on the map's headquarters and flags: the 352nd won
+the first at 6:24 and the 29th the second at 7:18, the army at the top end both times, and the
+Germans led on points early in both. Two battles are two coins; the ground is its own mirror
+and the walks agree, so what is left is the armies and the brains, and it wants more runs than
+there was time for to say anything about either. All three lanes were fought over in both.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
@@ -7092,6 +7165,21 @@ stored as a box by its corner, the way paving is** (`edBoxy`): stored as two cor
 carried `x1`, which every piece of editor code that handles a wall reads as a line, so a
 field moved or mirrored came out as NaN.
 
+**The editor knows which way a map is mirrored.** It was written for Ortona, whose midline
+runs down the map, and every place it mirrors (placing, a brush, the eraser, the ghost of
+what a tap would put down, COPY ACROSS, the copy of one half over the other and the balance
+table's halves) reflected x. On Saint-Lô that copied a house across the town onto the same
+army's half. `edMY()` is the y of the line a map is mirrored across (`LAND.mirrorY`), or
+nought for the old kind, and `edMirPt`, `edOffMid` and `edFirstHalf` are what those places
+ask. A side may have three headquarters now: a new one takes the first order (`n`) its side
+has free, the sheet sets the order, and with three standing a fourth replaces the nearest.
+The town's pieces are under NORMANDY (a town house with its walls, storeys, shop, gutted
+state and street, a rampart tower, the three bridges, a stair, and the square's furniture)
+and the railway has a category of its own (track, platform, station, goods shed, signal box,
+water tower, the four wagons, a buffer stop and a crossing gate). A track and a stair drawn
+in the editor are lists of `{x, y}` like a street, and the game reads either form
+(`xyArr`).
+
 The rule of the hand is the same with a mouse and a thumb: a drag on the ground pans, a
 tap does the tool's one thing, and a press held still picks something up. Only the tools
 that draw (lines, boxes, brushes) take the drag itself, and with those two fingers still
@@ -7764,6 +7852,13 @@ shots/                         screenshot output, gitignored
   so a lookup of `GUNMODEL[u.key]` draws the 240 over the mortar's numbers. The draw, the shadow
   pass, the flash and the gun wreck ask `gmKey`; anything new that asks for a unit's piece has
   to as well.
+- **A plot's pad reaches forty units past its walls, and a way cut into the ground is not a
+  plot.** `levelPad` blends each house's footprint flat and fades the blend out over forty
+  units, so a house beside a ramp or a stair pulls the cut toward its own floor: on Saint-Lô
+  the mill beside Notre-Dame's ramp sank it into a trough nobody could walk out of, and the
+  flag on the rock could not be reached. It looks like a ramp in every photograph. A country
+  whose ground has cuts in it answers `LAND.noPad(x, y)`, and the flood fill from a flag is the
+  check: 70 cells reachable before, 19,016 after.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

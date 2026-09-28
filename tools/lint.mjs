@@ -308,10 +308,16 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the gun tubs with their .30s, the stencil the boats were numbered in, and the ensign.
    Retiring the Canadians and the paratroopers took the file from 2812 to 2611 and the
    ceiling was left where it was.
+   It is 2900 for Saint-Lo: the Norman town house in its bays, Notre-Dame with its spire
+   shot off, the ramparts and their towers, the three bridges and their decks, the station,
+   the goods shed, the signal box, the wagons and the crossing gate, the town's furniture,
+   the heap a razed house comes down into and the charrette, the landform with its rock,
+   its valleys and the Vire, the map itself laid a house at a time on both halves, and the
+   editor taught which way a map is mirrored and what the town and the railway are made of.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2830) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2830 kB so it stays quick to load on a phone`);
+if (kb > 2900) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2900 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

@@ -3777,8 +3777,10 @@ function buildMap(data) {
         addCover(e.x - e.w / 2 - 18, e.y + e.h / 2 + 14, 36, 3, 'rubble'); addCover(e.x + e.w / 2 + 18, e.y + e.h / 2 + 14, 36, 3, 'rubble');
         break;
       case 'wall': wallRun(e.x1, e.y1, e.x2, e.y2, e.h, e.sea, e.ramp); break;
-      case 'stair': G.stairs.push({ w: e.w || 16, pts: e.pts }); break;
-      case 'track': G.tracks.push(e.pts); break;
+      /* a line laid by hand in the map's own code is a list of [x, y]; one drawn in the
+         editor is a list of {x, y}, the way a street is, and the game reads either */
+      case 'stair': G.stairs.push({ w: e.w || 16, pts: e.pts.map(xyArr) }); break;
+      case 'track': G.tracks.push(e.pts.map(xyArr)); break;
       case 'platform':
         /* a platform is ground a man stands on, and its edge is a step he lies behind with
            his rifle on the stone and the track bed in front of him */
@@ -4864,12 +4866,12 @@ function stloMapData() {
      serve the island platform either side of the station, and the goods yard's sidings,
      ended at buffer stops, on the far side of them */
   var TA = 2990, TB = 3016, TC = 3104, TD = 3130;
-  [TA, TB].forEach(function (x) { E.push({ t: 'track', pts: [[x, 0], [x, 2800]] }); });
-  E.push({ t: 'track', pts: [[TB, 980], [TC, 1110], [TC, 1690], [TB, 1820]] });
-  E.push({ t: 'track', pts: [[TC, 1040], [TD, 1120], [TD, 1680], [TC, 1760]] });
+  [TA, TB].forEach(function (x) { E.push({ t: 'track', pts: P([[x, 0], [x, 2800]]) }); });
+  E.push({ t: 'track', pts: P([[TB, 980], [TC, 1110], [TC, 1690], [TB, 1820]]) });
+  E.push({ t: 'track', pts: P([[TC, 1040], [TD, 1120], [TD, 1680], [TC, 1760]]) });
   [3190, 3216].forEach(function (x, i) {
-    E.push({ t: 'track', pts: [[x, 1010 + i * 30], [x, 1196]] });
-    E.push({ t: 'track', pts: [[x, my(1010 + i * 30)], [x, my(1196)]] });
+    E.push({ t: 'track', pts: P([[x, 1010 + i * 30], [x, 1196]]) });
+    E.push({ t: 'track', pts: P([[x, my(1010 + i * 30)], [x, my(1196)]]) });
     E.push({ t: 'feature', look: 'bufferstop', x: x, y: 1000 + i * 30, w: 26, h: 12, a: Math.PI / 2, solid: 0 });
     E.push({ t: 'feature', look: 'bufferstop', x: x, y: my(1000 + i * 30), w: 26, h: 12, a: -Math.PI / 2, solid: 0 });
   });
@@ -5163,7 +5165,7 @@ function stloMapData() {
   STLO.ways.forEach(function (W) {
     [0, 1].forEach(function (half) {
       var WP = W.pts.map(function (q) { return [q[0], half ? my(q[1]) : q[1]]; });
-      if (W.z0 !== undefined) E.push({ t: 'stair', w: W.w, pts: WP });
+      if (W.z0 !== undefined) E.push({ t: 'stair', w: W.w, pts: P(WP) });
       for (var i = 1; i < WP.length; i++) {
         var a0 = WP[i - 1], b0 = WP[i], ux = b0[0] - a0[0], uy = b0[1] - a0[1], L = Math.hypot(ux, uy);
         if (L < 8) continue;
@@ -5195,6 +5197,7 @@ function stloMapData() {
   return { name: 'Saint-Lô', when: 'NORMANDY · 18 JUL 1944', version: 1, land: 'stlo', w: 3800, h: 2800,
            entities: E, height: [] };
 }
+
 
 
 
@@ -44437,7 +44440,36 @@ var ED_CATS = [
     { id: 'oak', name: 'Oak', glyph: '♣', kind: 'place', t: 'tree', def: { r: 18, kind: 'oak' } },
     { id: 'apple', name: 'Apple tree', glyph: '♧', kind: 'place', t: 'tree', def: { r: 11, kind: 'apple' } },
     { id: 'lcvp', name: 'Landing craft (LCVP)', glyph: '◧', kind: 'place', t: 'craft', def: { kind: 'lcvp', a: -1.57, wreck: 0 } },
-    { id: 'lct', name: 'Landing craft (LCT)', glyph: '◨', kind: 'place', t: 'craft', def: { kind: 'lct', a: -1.57, wreck: 0 } }] },
+    { id: 'lct', name: 'Landing craft (LCT)', glyph: '◨', kind: 'place', t: 'craft', def: { kind: 'lct', a: -1.57, wreck: 0 } },
+    /* and a Norman town: its houses in stone, render or timber by the storey, the ramparts,
+       the bridges over the river, and what stands in its squares */
+    { id: 'nth', name: 'Town house', glyph: '⌂', kind: 'place', t: 'house', def: { w: 50, h: 64, style: 'norman', nk: 'stone', storeys: 3, front: 0 } },
+    { id: 'rtower', name: 'Rampart tower', glyph: '◘', kind: 'place', t: 'rtower', def: { r: 26, a: 0, roof: 1 } },
+    { id: 'sbridge', name: 'Stone bridge (draw)', glyph: '⌒', kind: 'line', t: 'bridge', def: { kind: 'stone', hw: 28 } },
+    { id: 'gbridge', name: 'Girder bridge (draw)', glyph: '⊓', kind: 'line', t: 'bridge', def: { kind: 'steel', hw: 28 } },
+    { id: 'fbridge', name: 'Footbridge (draw)', glyph: '⌓', kind: 'line', t: 'bridge', def: { kind: 'foot', hw: 9 } },
+    { id: 'stair', name: 'Stair (draw)', glyph: '≣', kind: 'line', t: 'stair', def: { w: 18 } },
+    { id: 'lamp', name: 'Lamp standard', glyph: '¡', kind: 'place', t: 'feature', def: { look: 'lamp', w: 6, h: 6, solid: 0 } },
+    { id: 'column', name: 'Advertising column', glyph: '▯', kind: 'place', t: 'feature', def: { look: 'column', w: 14, h: 14 } },
+    { id: 'bandstand', name: 'Bandstand', glyph: '⌓', kind: 'place', t: 'feature', def: { look: 'bandstand', w: 60, h: 60, solid: 0 } },
+    { id: 'memorial', name: 'War memorial', glyph: '▲', kind: 'place', t: 'feature', def: { look: 'memorial', w: 24, h: 24 } },
+    { id: 'cemetery', name: 'Cemetery', glyph: '✝', kind: 'place', t: 'feature', def: { look: 'cemetery', w: 220, h: 180, solid: 0 } },
+    { id: 'gasholder', name: 'Gasholder', glyph: '◎', kind: 'place', t: 'feature', def: { look: 'gasholder', w: 110, h: 110 } }] },
+  /* the railway: the line and what stands on it and beside it. A wagon and a gate are drawn
+     along x, so one laid along a line running up the map is turned a quarter */
+  { id: 'rail', name: 'RAILWAY', glyph: '╫', tools: [
+    { id: 'track', name: 'Track (draw)', glyph: '╫', kind: 'line', t: 'track', def: {} },
+    { id: 'platform', name: 'Platform (draw)', glyph: '▭', kind: 'line', t: 'platform', def: { w: 50, canopy: 1 } },
+    { id: 'station', name: 'Station', glyph: '⌂', kind: 'place', t: 'nhouse', def: { w: 80, h: 280, style: 'station', ht: 72 } },
+    { id: 'goods', name: 'Goods shed', glyph: '▤', kind: 'place', t: 'nhouse', def: { w: 70, h: 170, style: 'goods', ht: 36 } },
+    { id: 'sigbox', name: 'Signal box', glyph: '▣', kind: 'place', t: 'nhouse', def: { w: 26, h: 40, style: 'signalbox', ht: 44 } },
+    { id: 'wtower', name: 'Water tower', glyph: '⊤', kind: 'place', t: 'feature', def: { look: 'watertower', w: 28, h: 28 } },
+    { id: 'boxcar', name: 'Van', glyph: '▬', kind: 'place', t: 'feature', def: { look: 'boxcar', w: 32, h: 104, a: 1.5708 } },
+    { id: 'flatcar', name: 'Flat wagon', glyph: '▭', kind: 'place', t: 'feature', def: { look: 'flatcar', w: 32, h: 104, a: 1.5708 } },
+    { id: 'tankcar', name: 'Tank wagon', glyph: '◫', kind: 'place', t: 'feature', def: { look: 'tankcar', w: 32, h: 104, a: 1.5708 } },
+    { id: 'wreckcar', name: 'Burnt van', glyph: '▒', kind: 'place', t: 'feature', def: { look: 'wreckcar', w: 32, h: 104, a: 1.5708 } },
+    { id: 'bufferstop', name: 'Buffer stop', glyph: '⊥', kind: 'place', t: 'feature', def: { look: 'bufferstop', w: 26, h: 12, a: 1.5708, solid: 0 } },
+    { id: 'crossgate', name: 'Crossing gate', glyph: '⊞', kind: 'place', t: 'feature', def: { look: 'crossgate', w: 6, h: 64, a: 1.5708, solid: 0 } }] },
   { id: 'game', name: 'FLAGS', glyph: '⚑', tools: [
     { id: 'vp', name: 'Victory flag', glyph: '⚑', kind: 'place', t: 'sector', def: { type: 'vp' } },
     { id: 'mp', name: 'Manpower flag', glyph: '⚐', kind: 'place', t: 'sector', def: { type: 'mp' } },
@@ -44447,7 +44479,7 @@ var ED_CATS = [
   { id: 'erase', name: 'ERASE', glyph: '⌫', tools: [
     { id: 'eraser', name: 'Eraser brush', glyph: '⌫', kind: 'erase' }] }
 ];
-var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1, bunker: 1, craft: 1, tobruk: 1, hog: 1 };
+var ED_ROT = { cart: 1, roadblock: 1, bags: 1, grass: 1, emplace: 1, bunker: 1, craft: 1, tobruk: 1, hog: 1, rtower: 1, feature: 1 };
 var ED_DRAFT = 'ortona.draft', ED_LAST = 'ortona.map', ED_SLOTS = 'ortona.maps';
 
 /* ---- opening and closing ---- */
@@ -44489,8 +44521,10 @@ function edRefreshStart() {
    until something else forced a full rebuild. */
 /* and the Normandy pieces: a hedgerow throws up its bank, a ditch and a Tobruk are dug,
    and a field is paint */
+/* and a Norman town's: the ballast of a track is painted, and a bridge's deck and a stair's
+   flight are ground a man stands on */
 var ED_GROUND = { crater: 1, trench: 1, road: 1, paved: 1, rubble: 1, debris: 1, grass: 1, scrub: 1, sector: 1, hq: 1, wall: 1, emplace: 1,
-                  hedge: 1, ditch: 1, tobruk: 1, field: 1 };
+                  hedge: 1, ditch: 1, tobruk: 1, field: 1, track: 1, bridge: 1, stair: 1 };
 /* An edit rebuilds the least it can: the map's lists and the walk grid always (a
    tenth of a second), the ground mesh and paint only when something cut or painted
    it, the grass only when grass changed, and of the prop tiles only the ones the
@@ -44584,16 +44618,25 @@ function edSnap(v) { return ED.snap ? Math.round(v / ED.snap) * ED.snap : v; }
 
 /* ---- the data ---- */
 function edMirrorOf(e) {
-  var m = JSON.parse(JSON.stringify(e));
-  if (m.x !== undefined) m.x = WORLD.w - m.x;
-  if (m.x1 !== undefined) { m.x1 = WORLD.w - m.x1; m.x2 = WORLD.w - m.x2; }
-  if (m.pts) m.pts = m.pts.map(function (p) { return { x: WORLD.w - p.x, y: p.y }; });
-  if (m.a !== undefined) m.a = Math.PI - m.a;
+  var m = JSON.parse(JSON.stringify(e)), my = edMY();
+  if (my) {
+    if (m.y !== undefined) m.y = 2 * my - m.y;
+    if (m.y1 !== undefined) { m.y1 = 2 * my - m.y1; m.y2 = 2 * my - m.y2; }
+    if (m.pts) m.pts = m.pts.map(function (p) { var q = p.x === undefined ? { x: p[0], y: p[1] } : p; return { x: q.x, y: 2 * my - q.y }; });
+    if (m.a !== undefined) m.a = -m.a;
+    /* a town house's front: a street below the line is a street above it on the other half */
+    if (m.t === 'house' && m.front !== undefined && m.front < 2) m.front = 1 - m.front;
+  } else {
+    if (m.x !== undefined) m.x = WORLD.w - m.x;
+    if (m.x1 !== undefined) { m.x1 = WORLD.w - m.x1; m.x2 = WORLD.w - m.x2; }
+    if (m.pts) m.pts = m.pts.map(function (p) { var q = p.x === undefined ? { x: p[0], y: p[1] } : p; return { x: WORLD.w - q.x, y: q.y }; });
+    if (m.a !== undefined) m.a = Math.PI - m.a;
+  }
   if (m.lean !== undefined) m.lean = -m.lean;
   if (m.side) m.side = m.side === 'us' ? 'ger' : 'us';
   if (m.t === 'trench' && m.face) m.face = m.face === 'L' ? 'R' : 'L';
   if (m.t === 'sector') { m.id = edNextSectorId(); m.owner = m.owner === 'us' ? 'ger' : m.owner === 'ger' ? 'us' : null; m.label = (m.label || '') + ' (E)'; }
-  if (edBoxy(m)) m.x = WORLD.w - e.x - e.w;
+  if (edBoxy(m)) { if (my) m.y = 2 * my - e.y - e.h; else m.x = WORLD.w - e.x - e.w; }
   return m;
 }
 function edNextSectorId() {
@@ -44604,18 +44647,41 @@ function edNextSectorId() {
 /* a thing stored as a box by its corner rather than round its middle: paving, and a
    field's paint */
 function edBoxy(e) { return e.t === 'paved' || e.t === 'field'; }
+function xyArr(p) { return p.x === undefined ? p : [p.x, p.y]; }
 /* a landing craft's footprint on its own bearing, which is the box the game marks solid */
 function craftFoot(e) {
   var L = e.kind === 'lct' ? 330 : 118, B = e.kind === 'lct' ? 100 : 36, ca = Math.abs(Math.cos(e.a || 0)), sa = Math.abs(Math.sin(e.a || 0));
   return { w: L * ca + B * sa, h: L * sa + B * ca };
 }
 function edAnchorX(e) { return e.x !== undefined ? (edBoxy(e) ? e.x + e.w / 2 : e.x) : e.pts ? e.pts[0].x : e.x1; }
+function edAnchorY(e) { return e.y !== undefined ? (edBoxy(e) ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1; }
+/* The line a map is mirrored about. Ortona and the Gothic Line are mirrored across a line
+   down the middle; Saint-Lo is mirrored across one along it, and says so (LAND.mirrorY),
+   so a house put down there is copied onto the other army's half and not across the town
+   onto the same one. edMY is the y of that line, or nought for the old kind. */
+function edMY() { var L = ED.data && LANDS[ED.data.land]; return L && L.mirrorY ? L.mirrorY : 0; }
+function edOffMid(e) { var my = edMY(); return my ? Math.abs(edAnchorY(e) - my) : Math.abs(edAnchorX(e) - WORLD.w / 2); }
+function edMirPt(x, y) { var my = edMY(); return my ? { x: x, y: 2 * my - y } : { x: WORLD.w - x, y: y }; }
+/* which half a thing is on: the first is the American half on either kind of map */
+function edFirstHalf(e) { var my = edMY(); return my ? edAnchorY(e) > my : edAnchorX(e) < WORLD.w / 2; }
 /* one thing, or its mirror too; the snapshot is the caller's */
 function edPush(e) {
   if (e.t === 'sector' && !e.id) { e.id = edNextSectorId(); e.label = e.label || (e.type.toUpperCase() + ' ' + e.id); }
-  if (e.t === 'hq') ED.data.entities = ED.data.entities.filter(function (q) { return !(q.t === 'hq' && q.side === e.side); });
+  /* A side may have three headquarters (`n`, the order a game takes them in). A new one
+     takes the first order its side has free, and with all three standing it replaces the
+     nearest of them. */
+  if (e.t === 'hq') {
+    var mine = ED.data.entities.filter(function (q) { return q.t === 'hq' && q.side === e.side; }), used = {};
+    mine.forEach(function (q) { used[q.n || 1] = q; });
+    e.n = !used[1] ? 1 : !used[2] ? 2 : !used[3] ? 3 : 0;
+    if (!e.n) {
+      var near = mine.slice().sort(function (a, b) { return Math.hypot(a.x - e.x, a.y - e.y) - Math.hypot(b.x - e.x, b.y - e.y); })[0];
+      e.n = near.n || 1;
+      ED.data.entities = ED.data.entities.filter(function (q) { return q !== near; });
+    }
+  }
   ED.data.entities.push(e); edMark(e);
-  if (ED.mirror && e.t !== 'hq' && Math.abs(edAnchorX(e) - WORLD.w / 2) > 6) { var m = edMirrorOf(e); ED.data.entities.push(m); edMark(m); }
+  if (ED.mirror && e.t !== 'hq' && edOffMid(e) > 6) { var m = edMirrorOf(e); ED.data.entities.push(m); edMark(m); }
 }
 function edAdd(e) { edSnapshot(); edPush(e); edTouch(e); }
 function edAddMany(list) { if (!list.length) return; edSnapshot(); for (var i = 0; i < list.length; i++) edPush(list[i]); edTouch(list); }
@@ -44734,13 +44800,27 @@ function edProps() {
     if (e.a !== undefined || ED_ROT[e.t]) html += slider('Turn', 'edsa', ((e.a || 0) * 180 / Math.PI) | 0, 0, 359, 5);
     /* a Norman house is smaller than anything in an Italian town: thirty-four to forty-four
        units deep, where a town house starts at sixty */
-    if (e.t === 'nhouse') html += slider('Width', 'edsw', e.w, 36, 140, 2) + slider('Depth', 'edsh', e.h, 30, 100, 2) +
+    if (e.t === 'nhouse' && NSTYLE[e.style]) html += slider('Width', 'edsw', e.w, 20, 300, 2) + slider('Depth', 'edsh', e.h, 20, 300, 2);
+    else if (e.t === 'nhouse') html += slider('Width', 'edsw', e.w, 36, 140, 2) + slider('Depth', 'edsh', e.h, 30, 100, 2) +
       row('Kind', seg('edsnst', [['house', 'HOUSE'], ['farm', 'FARM'], ['barn', 'BARN'], ['church', 'CHURCH'], ['manor', 'MANOR']], e.style || 'house'));
-    else if (e.w !== undefined && !edBoxy(e)) html += slider('Width', 'edsw', e.w, 60, 300, 2) + slider('Depth', 'edsh', e.h, 60, 240, 2);
+    /* a Norman town house: what its walls are, how many storeys, a shop on the ground
+       floor, whether the raids gutted it, and which side its street is on */
+    else if (e.t === 'house' && e.style === 'norman') html += slider('Width', 'edsw', e.w, 30, 90, 2) + slider('Depth', 'edsh', e.h, 40, 90, 2) +
+      row('Walls', seg('edsnk', [['stone', 'STONE'], ['render', 'RENDER'], ['timber', 'TIMBER']], e.nk || 'stone')) +
+      row('Storeys', seg('edssto', [[1, '1'], [2, '2'], [3, '3'], [4, '4']], e.storeys || 2)) +
+      row('Ground floor', seg('edsshop', [[0, 'HOUSE'], [1, 'SHOP']], e.shop ? 1 : 0)) +
+      row('State', seg('edsgut', [[0, 'STANDING'], [1, 'GUTTED']], e.gut ? 1 : 0)) +
+      row('Street', seg('edsfr', [[0, 'BELOW'], [1, 'ABOVE'], [2, 'RIGHT'], [3, 'LEFT']], e.front || 0));
+    else if (e.t === 'feature' && /car$/.test(e.look)) html += row('Wagon', seg('edslook', [['boxcar', 'VAN'], ['flatcar', 'FLAT'], ['tankcar', 'TANK'], ['wreckcar', 'BURNT']], e.look));
+    else if (e.t === 'feature' && e.look === 'cemetery') html += slider('Width', 'edsw', e.w, 80, 400, 2) + slider('Depth', 'edsh', e.h, 80, 400, 2);
+    else if (e.t === 'bridge') html += row('Bridge', seg('edsbk', [['stone', 'STONE'], ['steel', 'GIRDER'], ['foot', 'FOOT']], e.kind || 'stone'));
+    else if (e.t === 'rtower') html += row('Roof', seg('edsrr', [[1, 'ROOFED'], [0, 'OPEN']], e.roof ? 1 : 0));
+    else if (e.t === 'hq') html += row('Order', seg('edshqn', [[1, 'FIRST'], [2, 'SECOND'], [3, 'THIRD']], e.n || 1));
+    else if (e.w !== undefined && !edBoxy(e) && e.t !== 'feature') html += slider('Width', 'edsw', e.w, 60, 300, 2) + slider('Depth', 'edsh', e.h, 60, 240, 2);
     if (e.t === 'craft') html += row('Craft', seg('edscrk', [['lcvp', 'LCVP'], ['lct', 'LCT']], e.kind === 'lct' ? 'lct' : 'lcvp')) +
       row('State', seg('edscrw', [['0', 'WHOLE'], ['1', 'BURNING'], ['2', 'BROACHED']], String(e.wreck || 0)));
     if (e.t === 'road') html += slider('Street width', 'edswd', e.width || 48, 24, 90, 2);
-    if (e.t === 'house') html += row('Roof', seg('edsroof', [[1, 'INTACT'], [0, 'SHELLED']], e.roof ? 1 : 0)) + row('Height', seg('edstall', [[0, 'LOW'], [1, 'TALL']], e.tall ? 1 : 0)) +
+    if (e.t === 'house' && e.style !== 'norman') html += row('Roof', seg('edsroof', [[1, 'INTACT'], [0, 'SHELLED']], e.roof ? 1 : 0)) + row('Height', seg('edstall', [[0, 'LOW'], [1, 'TALL']], e.tall ? 1 : 0)) +
       slider('Damage', 'edsdmg', Math.round((e.damage || 0) * 100), 0, 100, 5);
     if (e.t === 'sector') html += row('Type', seg('edstype', [['vp', 'VICTORY'], ['mp', 'MANPOWER'], ['fuel', 'FUEL']], e.type)) +
       row('Owner', seg('edsown', [['', 'NEUTRAL'], ['us', 'AMERICAN'], ['ger', 'GERMAN']], e.owner || '')) +
@@ -44809,6 +44889,15 @@ function edProps() {
     segs('edswh', function (v) { edSnapshot(); e2.h = +v; edTouch(e2); });
     segs('edshk', function (v) { edSnapshot(); if (v === 'teeth') e2.kind = 'teeth'; else delete e2.kind; edTouch(e2); });
     segs('edsnst', function (v) { edSnapshot(); e2.style = v; edTouch(e2); });
+    segs('edsnk', function (v) { edSnapshot(); e2.nk = v; edTouch(e2); });
+    segs('edssto', function (v) { edSnapshot(); e2.storeys = +v; edTouch(e2); });
+    segs('edsshop', function (v) { edSnapshot(); if (+v) e2.shop = 1; else delete e2.shop; edTouch(e2); });
+    segs('edsgut', function (v) { edSnapshot(); if (+v) e2.gut = 1; else delete e2.gut; edTouch(e2); });
+    segs('edsfr', function (v) { edSnapshot(); e2.front = +v; edTouch(e2); });
+    segs('edslook', function (v) { edSnapshot(); e2.look = v; edTouch(e2); });
+    segs('edsbk', function (v) { edSnapshot(); e2.kind = v; e2.hw = v === 'foot' ? 9 : 28; edTouch(e2); });
+    segs('edsrr', function (v) { edSnapshot(); e2.roof = +v; edTouch(e2); });
+    segs('edshqn', function (v) { edSnapshot(); e2.n = +v; edTouch(e2); });
     segs('edscrk', function (v) { edSnapshot(); e2.kind = v; edTouch(e2); });
     segs('edscrw', function (v) { edSnapshot(); e2.wreck = +v; edTouch(e2); });
     segs('edstall', function (v) { edSnapshot(); e2.tall = +v; if (e2.tall && e2.style === 'row') e2.style = 'civic'; if (!e2.tall && e2.style === 'civic') e2.style = 'row'; edTouch(e2); });
@@ -44826,9 +44915,15 @@ function edKindName(e) {
                 emplace: 'Weapon pit', roadblock: 'Roadblock', wall: 'Wall', crater: 'Crater', rubble: 'Rubble', debris: 'Debris', cart: 'Cart',
                 smoke: 'Smoke', tree: 'Tree', scrub: 'Scrub', grass: 'Grass', sector: 'Flag', hq: 'Headquarters',
                 bunker: 'Bunker', hogs: 'Anti-tank belt', hog: 'Hedgehog', tobruk: 'Tobruk', ditch: 'Anti-tank ditch', bank: 'Shingle bank',
-                hedge: 'Hedgerow', field: 'Field', craft: 'Landing craft',
-                nhouse: { house: 'Norman house', farm: 'Norman farmhouse', barn: 'Barn', church: 'Norman church', manor: 'Manor' }[e.style] || 'Norman house' };
-  return (names[e.t] || e.t) + (e.id ? ' ' + e.id : '') + (e.t === 'hq' ? (e.side === 'us' ? ' (American)' : ' (German)') : '');
+                hedge: 'Hedgerow', field: 'Field', craft: 'Landing craft', rtower: 'Rampart tower', stair: 'Stair', track: 'Track',
+                platform: 'Platform', bridge: { stone: 'Stone bridge', steel: 'Girder bridge', foot: 'Footbridge' }[e.kind] || 'Bridge',
+                feature: { lamp: 'Lamp standard', column: 'Advertising column', bandstand: 'Bandstand', memorial: 'War memorial',
+                           cemetery: 'Cemetery', gasholder: 'Gasholder', watertower: 'Water tower', boxcar: 'Van', flatcar: 'Flat wagon',
+                           tankcar: 'Tank wagon', wreckcar: 'Burnt van', bufferstop: 'Buffer stop', crossgate: 'Crossing gate' }[e.look] || 'Feature',
+                nhouse: { house: 'Norman house', farm: 'Norman farmhouse', barn: 'Barn', church: 'Norman church', manor: 'Manor',
+                          station: 'Station', goods: 'Goods shed', signalbox: 'Signal box', notredame: 'Notre-Dame' }[e.style] || 'Norman house' };
+  if (e.t === 'house' && e.style === 'norman') names.house = 'Town house';
+  return (names[e.t] || e.t) + (e.id ? ' ' + e.id : '') + (e.t === 'hq' ? (e.side === 'us' ? ' (American' : ' (German') + (e.n > 1 ? ', ' + ['', '', 'second', 'third'][e.n] : '') + ')' : '');
 }
 function edDuplicate() {
   if (!ED.sel.length) return;
@@ -44853,7 +44948,10 @@ function edCopyAcross() {
 function edNewEntity(t, wx, wy) {
   var d = t.def || {}, e = { t: t.t, x: wx, y: wy };
   Object.keys(d).forEach(function (k) { e[k] = d[k]; });
-  if (t.t === 'house') { e.s = Math.random(); e.damage = Math.random() * .8; if (e.roof === undefined) e.roof = Math.random() < .5 ? 1 : 0; }
+  /* an Italian house comes with a random amount of shelling; a Norman town house is standing
+     or gutted, which is its sheet's to say */
+  if (t.t === 'house') { e.s = Math.random(); if (e.style !== 'norman') { e.damage = Math.random() * .8; if (e.roof === undefined) e.roof = Math.random() < .5 ? 1 : 0; } }
+  if (t.t === 'rtower' || t.t === 'feature') e.s = Math.random();
   if (t.t === 'tree' || t.t === 'scrub') { e.s = Math.random(); e.lean = (Math.random() - .5) * .4; }
   if (t.t === 'debris' || t.t === 'emplace' || t.t === 'grass' || t.t === 'nhouse' || t.t === 'craft' || t.t === 'tobruk' || t.t === 'hog') e.s = Math.random();
   if (t.t === 'grass' || t.t === 'cart') e.a = Math.random() * TAU;
@@ -44879,7 +44977,7 @@ function edLineEntity(t, pts) {
   if (t.t === 'trench') { e.pts = pts; e.side = pts[0].x < WORLD.w / 2 ? 'us' : 'ger'; if (ED.faceFlag) e.face = ED.faceFlag; return [e]; }
   if (t.t === 'road') { e.pts = pts; e.width = t.def.width; return [e]; }
   /* a hedgerow and an anti-tank ditch are laid as one run of points, the way a trench is */
-  if (t.t === 'hedge' || t.t === 'ditch') { e.pts = pts; for (var dk in t.def) if (t.def.hasOwnProperty(dk)) e[dk] = t.def[dk]; return [e]; }
+  if (t.t === 'hedge' || t.t === 'ditch' || t.t === 'track' || t.t === 'stair') { e.pts = pts; for (var dk in t.def) if (t.def.hasOwnProperty(dk)) e[dk] = t.def[dk]; return [e]; }
   /* Walls, wire and obstacle belts are straight pieces: a bent line becomes several, and
      each of them carries the tool's own options. Without that a dragon's-teeth belt drawn
      with the teeth tool came out as hedgehogs, because the only thing separating the two
@@ -44992,9 +45090,10 @@ function edBrushAt(wx, wy) {
     if (d.last && Math.hypot(d.last.x - wx, d.last.y - wy) < b.r * .3) return;
     if (!d.snapped) { edSnapshot(); d.snapped = true; }
     ED.data.height.push(stroke);
-    if (ED.mirror) { var m = JSON.parse(JSON.stringify(stroke)); m.x = WORLD.w - m.x; ED.data.height.push(m); }
+    var hm = edMirPt(wx, wy);
+    if (ED.mirror) { var m = JSON.parse(JSON.stringify(stroke)); m.x = hm.x; m.y = hm.y; ED.data.height.push(m); }
     d.last = { x: wx, y: wy }; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5;
-    edMarkRect(wx - b.r - 90, wy - b.r - 90, wx + b.r + 90, wy + b.r + 90); if (ED.mirror) edMarkRect(WORLD.w - wx - b.r - 90, wy - b.r - 90, WORLD.w - wx + b.r + 90, wy + b.r + 90);
+    edMarkRect(wx - b.r - 90, wy - b.r - 90, wx + b.r + 90, wy + b.r + 90); if (ED.mirror) edMarkRect(hm.x - b.r - 90, hm.y - b.r - 90, hm.x + b.r + 90, hm.y + b.r + 90);
     ED.needGround = true;
   } else if (t.kind === 'scatter') {
     if (d.last && Math.hypot(d.last.x - wx, d.last.y - wy) < t.step) return;
@@ -45003,14 +45102,14 @@ function edBrushAt(wx, wy) {
     var e = edNewEntity({ t: t.t, def: t.def }, wx + jx, wy + jy); e.r = r;
     edPush(e); d.last = { x: wx, y: wy }; ED.dirty = 1; ED.rebuildT = .35; ED.saveT = 2.5;
   } else if (t.kind === 'erase') {
-    var r2 = ED.brush.r, before = ED.data.entities.length, mx2 = WORLD.w - wx;
+    var r2 = ED.brush.r, before = ED.data.entities.length, emp = edMirPt(wx, wy);
     var keep = ED.data.entities.filter(function (e) {
       if (e.t === 'hq') return true;
-      var ex = edAnchorX(e), ey = e.y !== undefined ? (edBoxy(e) ? e.y + e.h / 2 : e.y) : e.pts ? e.pts[0].y : e.y1;
+      var ex = edAnchorX(e), ey = edAnchorY(e);
       var near = Math.hypot(ex - wx, ey - wy) < r2;
       if (e.pts) { for (var i = 0; i < e.pts.length - 1 && !near; i++) if (distToSeg(wx, wy, e.pts[i].x, e.pts[i].y, e.pts[i + 1].x, e.pts[i + 1].y) < r2) near = true; }
       else if (e.x1 !== undefined) near = distToSeg(wx, wy, e.x1, e.y1, e.x2, e.y2) < r2;
-      if (!near && ED.mirror) near = Math.hypot(ex - mx2, ey - wy) < r2;
+      if (!near && ED.mirror) near = Math.hypot(ex - emp.x, ey - emp.y) < r2;
       return !near;
     });
     if (keep.length !== before) {
@@ -45215,8 +45314,8 @@ function edOverlay() {
     if (gd.w) edPoly(edRectPts(hx, hy, gd.w, gd.h), true); else groundRing(hx, hy, gd.r || (t.kind === 'stamp' ? 90 : 16), '#9ecb62', 2);
     if (d && d.kind === 'ghost') { var gp = w2s(hx, hy); ctx.beginPath(); ctx.moveTo(gp.x - 12, gp.y); ctx.lineTo(gp.x + 12, gp.y); ctx.moveTo(gp.x, gp.y - 12); ctx.lineTo(gp.x, gp.y + 12); ctx.stroke(); }
     if (ED.mirror && t.t !== 'hq') {
-      var mx = WORLD.w - hx; ctx.strokeStyle = 'rgba(158,203,98,.45)';
-      if (gd.w) edPoly(edRectPts(mx, hy, gd.w, gd.h), true); else groundRing(mx, hy, gd.r || (t.kind === 'stamp' ? 90 : 16), 'rgba(158,203,98,.45)', 1.5);
+      var gm = edMirPt(hx, hy); ctx.strokeStyle = 'rgba(158,203,98,.45)';
+      if (gd.w) edPoly(edRectPts(gm.x, gm.y, gd.w, gd.h), true); else groundRing(gm.x, gm.y, gd.r || (t.kind === 'stamp' ? 90 : 16), 'rgba(158,203,98,.45)', 1.5);
     }
   }
 }
@@ -45541,15 +45640,18 @@ function edPanelNew() {
   show();
 }
 /* one half copied over the other, everything but the headquarters */
+/* `fromWest` is the first half on the map's own axis: the west on a map mirrored down the
+   middle, the top (the German half) on one mirrored across it */
 function edMirrorAll(fromWest) {
   edSnapshot();
-  var MX = WORLD.w / 2;
-  var keep = ED.data.entities.filter(function (e) { var x = edAnchorX(e); return e.t === 'hq' || Math.abs(x - MX) <= 6 || (fromWest ? x < MX : x > MX); });
-  var src = keep.filter(function (e) { var x = edAnchorX(e); return e.t !== 'hq' && Math.abs(x - MX) > 6; });
+  var my = edMY(), names = my ? ['Top', 'Bottom'] : ['West', 'East'];
+  function first(e) { return my ? edAnchorY(e) < my : edAnchorX(e) < WORLD.w / 2; }
+  var keep = ED.data.entities.filter(function (e) { return e.t === 'hq' || edOffMid(e) <= 6 || (fromWest ? first(e) : !first(e)); });
+  var src = keep.filter(function (e) { return e.t !== 'hq' && edOffMid(e) > 6; });
   ED.data.entities = keep;
-  src.forEach(function (e) { var m = edMirrorOf(e); if (m.t === 'sector') m.label = (e.label || '').replace(fromWest ? 'West' : 'East', fromWest ? 'East' : 'West'); ED.data.entities.push(m); });
+  src.forEach(function (e) { var m = edMirrorOf(e); if (m.t === 'sector') m.label = (e.label || '').replace(fromWest ? names[0] : names[1], fromWest ? names[1] : names[0]); ED.data.entities.push(m); });
   ED.sel = []; edTouch(); edProps();
-  toast((fromWest ? 'West' : 'East') + ' half copied across');
+  toast((fromWest ? names[0] : names[1]) + ' half copied across');
 }
 /* the file through the share sheet where there is one (a phone), else as a download */
 function edShareFile() {
@@ -45752,12 +45854,12 @@ function edCheck() {
 function edBalance() {
   var E = ED.data.entities, hq = { us: null, ger: null };
   E.forEach(function (e) { if (e.t === 'hq') hq[e.side] = e; });
-  function half(side) { return function (e) { var x = edAnchorX(e); return side === 'us' ? x < WORLD.w / 2 : x > WORLD.w / 2; }; }
+  function half(side) { return function (e) { return edOffMid(e) > 6 && (side === 'us' ? edFirstHalf(e) : !edFirstHalf(e)); }; }
   var out = {};
   ['us', 'ger'].forEach(function (side) {
     var h = hq[side], mine = E.filter(half(side)), o = { houses: 0, cover: 0, craters: 0, trees: 0, trenches: 0, wire: 0, flags: [] };
     mine.forEach(function (e) {
-      if (e.t === 'house' || e.t === 'farm') o.houses++;
+      if (e.t === 'house' || e.t === 'farm' || e.t === 'nhouse') o.houses++;
       if (e.t === 'rubble' || e.t === 'bags' || e.t === 'emplace' || e.t === 'wall' || e.t === 'debris' || e.t === 'cart') o.cover++;
       if (e.t === 'crater') o.craters++;
       if (e.t === 'tree' || e.t === 'scrub') o.trees++;
@@ -45791,7 +45893,7 @@ function edPanelCheck() {
   bal.ger.flags.forEach(function (f) { byId[f.id] = byId[f.id] || { f: f }; byId[f.id].ger = f.d; });
   Object.keys(byId).sort().forEach(function (id) { var q = byId[id]; html += '<tr><td>' + id + ' ' + (q.f.type === 'vp' ? 'victory' : q.f.type) + '</td><td>' + (q.us === undefined ? '-' : q.us) + '</td><td>' + (q.ger === undefined ? '-' : q.ger) + '</td></tr>'; });
   html += '</table><div class="edh">A FAIR MAP GIVES BOTH SIDES THE SAME DISTANCES TO THE SAME KINDS OF FLAG. MIRROR IS THE QUICK WAY THERE.</div>' +
-          '<div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edmirwe" style="flex:1;min-height:44px">COPY WEST OVER EAST</button><button class="edb" id="edmirew" style="flex:1;min-height:44px">COPY EAST OVER WEST</button></div>';
+          '<div class="edbtns" style="display:flex;gap:6px;margin-top:8px"><button class="edb" id="edmirwe" style="flex:1;min-height:44px">' + (edMY() ? 'COPY TOP OVER BOTTOM' : 'COPY WEST OVER EAST') + '</button><button class="edb" id="edmirew" style="flex:1;min-height:44px">' + (edMY() ? 'COPY BOTTOM OVER TOP' : 'COPY EAST OVER WEST') + '</button></div>';
   edPanel('CHECK', html);
   el('edmirwe').addEventListener('click', function () { edMirrorAll(true); edPanelClose(); });
   el('edmirew').addEventListener('click', function () { edMirrorAll(false); edPanelClose(); });

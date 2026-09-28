@@ -129,6 +129,14 @@ function checkMap(map) {
     .concat(of('craft').filter(e => !e.wreck || e.wreck === 1).map(e => craftBox(e)));
   const hedges = [];
   for (const h of of('hedge')) for (const sg of segs(h.pts)) hedges.push(sg);
+  /* What a Norman town and its railway are built of that is not a house: a wagon, a water
+     tower, a gasholder, a memorial and a tower of the ramparts are solid, and a bridge is a
+     deck over the water. They are not buildings for the gap rule, because a van stands a
+     loading bay's width off its goods shed and that is a real place and not a slot; they are
+     for everything that cannot stand inside a solid thing. */
+  const solids = of('feature').filter(e => e.solid !== 0).map(e => ({ x: e.x, y: e.y, w: e.w || 20, h: e.h || 20, what: e.look }))
+    .concat(of('rtower').map(e => ({ x: e.x, y: e.y, w: e.r * 2, h: e.r * 2, what: 'rampart tower' })));
+  const decks = of('bridge').map(e => ({ x1: e.x1, y1: e.y1, x2: e.x2, y2: e.y2, hw: e.hw || 28, what: (e.kind || 'stone') + ' bridge' }));
 
   const problems = [];
   function bad(rule, msg) { problems.push({ rule, msg }); }
@@ -171,6 +179,32 @@ function checkMap(map) {
         if (segHitsBox(bx, x1, y1, x2, y2)) { bad('house/trench', `a ${tr.side} trench runs through the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`); break; }
     for (const w of wires)
       if (segHitsBox(bx, w.x1, w.y1, w.x2, w.y2)) bad('house/wire', `wire (${w.x1},${w.y1})-(${w.x2},${w.y2}) runs through the building at (${b.x}, ${b.y}) ${b.w}x${b.h}`);
+  }
+
+  /* ---- 3b. nothing stands inside a solid thing, and nothing on a bridge --- */
+  for (const f of solids) {
+    const fx = box(f, 2);
+    for (const t of trees) if (inBox(fx, t.x, t.y)) bad('solid/tree', `a tree at (${t.x}, ${t.y}) is inside the ${f.what} at (${f.x}, ${f.y})`);
+    for (const c of digs) if (Math.abs(c.x - f.x) < f.w / 2 + c.r * .7 && Math.abs(c.y - f.y) < f.h / 2 + c.r * .7)
+      bad('solid/crater', `${c.what} undercuts the ${f.what} at (${f.x}, ${f.y})`);
+    for (const b of blocks) if (Math.abs(b.x - f.x) < (b.w + f.w) / 2 - 4 && Math.abs(b.y - f.y) < (b.h + f.h) / 2 - 4)
+      bad('solid/house', `the ${f.what} at (${f.x}, ${f.y}) stands in the building at (${b.x}, ${b.y})`);
+    for (const r of roads) {
+      const half = (r.width || 48) / 2 - 8;
+      if (segs(r.pts).some(([x1, y1, x2, y2]) => segHitsBox(box(f, half > 0 ? -2 : 0), x1, y1, x2, y2) &&
+          segDist(f.x, f.y, x1, y1, x2, y2) < half + Math.min(f.w, f.h) / 2))
+        bad('solid/street', `the ${f.what} at (${f.x}, ${f.y}) stands in the street from (${r.pts[0].x}, ${r.pts[0].y})`);
+    }
+  }
+  for (const d of decks) {
+    for (const b of blocks.concat(solids)) {
+      const n = 12;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, px = d.x1 + (d.x2 - d.x1) * t, py = d.y1 + (d.y2 - d.y1) * t;
+        if (inBox(box(b, d.hw - 4), px, py)) { bad('bridge/house', `the ${d.what} from (${d.x1}, ${d.y1}) runs into the ${b.what || 'building'} at (${b.x}, ${b.y})`); break; }
+      }
+    }
+    for (const t of trees) if (segDist(t.x, t.y, d.x1, d.y1, d.x2, d.y2) < d.hw) bad('bridge/tree', `a tree at (${t.x}, ${t.y}) stands on the ${d.what} from (${d.x1}, ${d.y1})`);
   }
 
   /* ---- 4. buildings share a wall or leave room to walk between ------------ */
@@ -233,6 +267,7 @@ function checkMap(map) {
   }
 
   return { problems, counts: `entities: ${E.length}  buildings: ${blocks.length}  craters: ${craters.length}  ` +
+    (solids.length ? `solid things: ${solids.length}  bridges: ${decks.length}  ` : '') +
     `trenches: ${trenches.length}  wire: ${wires.length}  streets: ${roads.length}  trees: ${trees.length}` +
     (hedges.length ? `  hedgerow legs: ${hedges.length}` : '') };
 }

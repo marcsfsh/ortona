@@ -2973,6 +2973,79 @@ for (const device of TARGETS) {
      `${stones.inside} of ${stones.men} men in the stones ` +
      `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
 
+  /* --- The fourth map, and the first laid for three a side. Saint-Lo is mirrored about
+     y 1400 in everything that plays and dressed differently on each half, and what it
+     claims is arithmetic a photograph cannot check:
+     - the ground is its own reflection (read with `bareZ`, because the two bridges on the
+       forward rows are one stone and one girder and their decks hump differently);
+     - six headquarters stand on the map's own spots in the map's own order;
+     - every solid thing has a twin on the same footprint, however each half dresses it --
+       a gasholder on one side is a goods shed on the other and stops the same boot;
+     - every flag has tier-3 cover inside 110 of its point, which two did not until the
+       crossing got its cottage and the Champ de Mars its pits;
+     - a man gets from every headquarters to every flag, Notre-Dame included, which a
+       house's pad dropping the ramp into a trough once made impossible, and the two halves
+       walk the same to a per cent;
+     - and a battle is fought on it with every brain raising something.
+     It runs before the Omaha rows, which reload. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  await page.evaluate(() => { window.G.mapData = window.MAPS.stlo.make(); window.startGame('us', 1, 'vp', true, 3); });
+  await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
+  const stlo = await page.evaluate(() => {
+    const G = window.G, MY = 1400, out = {};
+    let worst = 0;
+    for (let i = 0; i < 2000; i++) {
+      const x = 30 + (i * 137.71) % 3740, y = 30 + (i * 71.37) % 1340;
+      worst = Math.max(worst, Math.abs(window.bareZ(x, y) - window.bareZ(x, 2 * MY - y)));
+    }
+    out.ground = Math.round(worst * 100) / 100;
+    const ents = G.mapData.entities.filter(e => e.t === 'hq'), hq = G.blds.filter(b => b.def.hq);
+    out.hqs = hq.length;
+    out.spots = ents.filter(e => hq.some(b => b.side === e.side && b.own === (e.side + ((e.n || 1) > 1 ? e.n : '')) &&
+                                        Math.hypot(b.x - e.x, b.y - e.y) < 8)).length;
+    out.hqWalk = hq.filter(b => { const f = window.frontOf(b.side); return window.walkable(b.x + f.x * 130, b.y + f.y * 130); }).length;
+    const sol = G.props.filter(p => p.solid && p.kind !== 'sea');
+    out.solids = sol.length;
+    out.unpaired = sol.filter(p => Math.abs(p.y - MY) > 1 &&
+      !sol.some(q => q !== p && Math.abs(q.x - p.x) < 1 && Math.abs(q.y - (2 * MY - p.y)) < 1 && Math.abs(q.w - p.w) < 1 && Math.abs(q.h - p.h) < 1))
+      .slice(0, 4).map(p => (p.look || p.style || p.kind) + '@' + Math.round(p.x) + ',' + Math.round(p.y));
+    out.bare = G.sectors.filter(sc => !G.covers.some(c => c.type >= 3 && Math.hypot(c.x - sc.x, c.y - sc.y) < 110)).map(sc => sc.id);
+    out.flags = G.sectors.length;
+    const man = { cat: 'inf', def: {} }, walk = {};
+    let noWay = [], lost = 0;
+    for (const b of hq) for (const sc of G.sectors) {
+      const f = window.frontOf(b.side), p = window.findPath(b.x + f.x * 110, b.y + f.y * 110, sc.x, sc.y, man);
+      let L = 0, px = b.x + f.x * 110, py = b.y + f.y * 110;
+      for (const q of p) { L += Math.hypot(q.x - px, q.y - py); px = q.x; py = q.y; }
+      if (p.noWay || Math.hypot(px - sc.x, py - sc.y) > 60) noWay.push(b.own + '>' + sc.id);
+      walk[b.own + '>' + sc.id] = L;
+    }
+    const twin = id => id[0] === 'g' ? 'a' + id.slice(1) : id[0] === 'a' ? 'g' + id.slice(1) : id;
+    let us = 0, ger = 0;
+    for (const k in walk) if (k.indexOf('us') === 0) { const [o, id] = k.split('>'); us += walk[k]; ger += walk[o.replace('us', 'ger') + '>' + twin(id)]; }
+    out.noWay = noWay.slice(0, 4); out.walks = Object.keys(walk).length;
+    out.walkUs = Math.round(us); out.walkGer = Math.round(ger);
+    return out;
+  });
+  await fastForward(page, 90);
+  const stloFight = await page.evaluate(() => {
+    const G = window.G, ai = G.slots.filter(s => s.ai);
+    return { raised: ai.filter(s => Object.keys(G.made[s.k]).length > 0).length, brains: ai.length,
+             held: [...new Set(G.sectors.map(x => x.owner).filter(Boolean))].filter(o => o !== 'us' && o !== 'ger').length };
+  });
+  const walkSkew = Math.abs(stlo.walkUs - stlo.walkGer) / Math.max(1, stlo.walkGer);
+  ok('Saint-Lô: the ground is its own reflection, every solid thing has a twin, every flag has cover and every walk arrives, the same both ways',
+     stlo.ground < .5 && stlo.hqs === 6 && stlo.spots === 6 && stlo.hqWalk === 6 && stlo.unpaired.length === 0 &&
+     stlo.flags === 16 && stlo.bare.length === 0 && stlo.noWay.length === 0 && stlo.walks === 96 && walkSkew < .02 &&
+     stloFight.raised === stloFight.brains && stloFight.brains === 5 && stloFight.held === 0,
+     `the ground disagrees with its reflection by ${stlo.ground} at most over 2000 samples; ${stlo.hqs} headquarters, ` +
+     `${stlo.spots} on the map's own spots and ${stlo.hqWalk} with ground to march out onto; ${stlo.solids} solid things, ` +
+     `unpaired: ${stlo.unpaired.join(' ') || 'none'}; flags without cover: ${stlo.bare.join(' ') || 'none'} of ${stlo.flags}; ` +
+     `${stlo.walks} walks, no way: ${stlo.noWay.join(' ') || 'none'}; ${stlo.walkUs} units from the American ` +
+     `headquarters against ${stlo.walkGer} from the German (${(walkSkew * 100).toFixed(2)}%); ` +
+     `${stloFight.raised} of ${stloFight.brains} brains raised something in 90 s`);
+
   /* This row runs LAST of the map rows on purpose: it leaves the world on Omaha, and
      the two rows above it -- the churn wash and the field wall -- read the Gothic Line
      the row before them left standing. Put between them it took both down, and what
