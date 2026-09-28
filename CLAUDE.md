@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuG, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -6248,6 +6248,75 @@ not. So from where it is dug it reaches 225 units into the no-fire zone round th
 headquarters, and `safe` is the rule that says no there. The row still stands the gun
 forward for its question, so it asks the same one of every battery.
 
+**The 240 can be rebuilt as Little David** (`UPGRADES.david`, 420 marks and 200 of fuel, fitted
+once): the 36-inch Mortar T1, the 240 lifted out of its position and the mortar set in a steel
+box sunk to its rim in its place. Nothing of the 240 carries over, so it is a piece of its own,
+and it is the first fitting that makes a crew-served piece another piece rather than swapping
+its weapon. **`def.defUp` names the new piece's numbers**, and at load each entry is made a def
+of its own with `Object.create` on top of the unit's, so anything it does not name (the men,
+the price, the limit, the eye) stays the 240's. `fitUp` hands the unit that def whole: every
+reader of `u.def` then reads the mortar's mission, its weapon, its carriage, its name and its
+change-over without one of them being told there was a fitting, and `u.key` is still `am_240`,
+so the count, the limit and the record read the battery they bought. `def.piece` is the model
+it is drawn as and `gmKey(u)` its one reader, at every place the draw, the shadow pass, the
+muzzle flash and the gun wreck used to ask `GUNMODEL[u.key]`. The crew go where the mortar is
+served from (`lay` on the new def), the body and the ring are measured again, and the
+change-over is `setup` (forty-five seconds) in which it lays nothing and fires nothing.
+
+**It is the player's decision and nobody else's.** A fitting marked `hand` is never fitted by
+the AUTO setting or by the brain's routine, on either scheme, and `autoFits(u)` is what the
+classic card and the SIMPLE popup ask before offering AUTO at all, so the 240, which has
+nothing else to take, has no AUTO button. The brain never rebuilds one of its own either,
+because the trade is a battery that reaches across the map for one that reaches half as far.
+
+The numbers are that trade. A ton and three quarters of shell is 1100 over a burst of 210,
+which digs a hole seventy units in radius (`craterR`), twelve metres across and the size the
+Aberdeen trials reported. Three rounds to a mission a round every thirty seconds, into a circle
+of 190 with a round-to-round scatter of 40, out to 760 against the 240's 1350. The steel box
+turns six degrees either way (`carr` .11) and the box itself is turned at a third of the 240's
+rate of heave (`traverse` .04), so a mission behind it is most of a minute and a half of
+laying. `safe` is the 240's 600. It is not balanced against anything on the duel card, because
+nothing on the roster fights a battery there; what it is priced against is the 240 it replaces.
+
+**It is laid over two photographs from Aberdeen** of July 1945 (`tools/ref/am_david.json`): the
+right side of the tube at sixty-five degrees in its box with the trunnion bracket and its bolted
+cap, and a three-quarter view from its left rear with the tube at nought, which is a perspective
+and is read rather than laid over. Neither has a scale. The tube is taken as 1.30 m across, a
+914 mm bore in walls of nineteen centimetres, which puts the first photograph at 68.2 pixels to
+the metre and the muzzle 6.6 m from the trunnions against the published 6.7 m of barrel; that
+tube over the 7.6 m the two views show is the forty tonnes the barrel weighed, and that is the
+check. Three builders for the three pieces, the 240's three so it goes into the same position
+and is drawn by the same code (`ldBase`, `ldTop(el)`, `ldTube(el)`, and `ldShow` for the
+overlay):
+
+- **the box**: the rim a hand proud of the ground, the plates across its top with their
+  stiffeners and the dark mouth the tube stands in, the plank decking laid along both sides,
+  and the shed on its pallet on the far plate, a tarpaulin over a frame, with the pole beside
+  it;
+- **the brackets and the cradle**: the two trunnion brackets on the rim with the caps bolted
+  over the trunnions and the blocks under them, and, laid up with the tube, the cradle's sleeve
+  and its bands, the housing behind the trunnions down to its flange and its end, and the three
+  elevating arcs standing back off the housing with the racks round their edges;
+- **the tube**: plain from the cradle to the lip at the muzzle, with the 36-inch bore dark
+  inside it.
+
+The arcs turn with the tube, so at sixty-five degrees they are down in the box with the breech,
+which is why the photograph at that elevation shows nothing of them and the one at nought shows
+all of them; they are built and stay under the ground in the game. The first overlay had the
+tube, the cradle and the bracket on the photograph's lines and the box short and the shed out:
+the box stood four units short at the back and twelve at the front, and the shed five units too
+far forward and on the ground where the photograph has it on a pallet on the far plate. In the
+game the tube is laid at the photograph's own 65.4 degrees (`LD.el`).
+
+Measured by the gate: AUTO is not offered on a 240 and the brain's routine does not fit it with
+nine thousand in the till; fitted by hand it costs its 420 and 200, is drawn as
+`am_240:david` with all three buffers built, is called Little David, reaches 760 against the
+240's 1350 with a round of 1100 over 210, puts its crew where the mortar is served from and
+leaves the 240's own def and piece as they were; and laid on clear ground six hundred off, the
+first round leaves after the forty-five seconds of change-over and all three land inside the
+circle and its scatter. The rounds are taken off the list as they leave the tube, because a
+hole seventy units in radius is ground every row below would otherwise stand on.
+
 **Whether the brain ever digs one was the hard part, and it took four measurements.** The
 rule lives on the engineer, and the first version sat inside the works ladder -- one work
 every fifty-two seconds, and only with fewer than nine standing -- so it was consulted
@@ -7477,6 +7546,11 @@ shots/                         screenshot output, gitignored
   built with its seven blocks at the half-steps, so the post between two of them stood square
   in front of the eye and the whole shut view was a grey slab. An exterior with an odd number of
   blocks and an interior with posts between them have to agree on which of the two is at nought.
+- **A piece that becomes another piece is found by `gmKey(u)`, never by `u.key`.** Little David
+  keeps the 240's key so the count, the limit and the record read the battery that was bought,
+  so a lookup of `GUNMODEL[u.key]` draws the 240 over the mortar's numbers. The draw, the shadow
+  pass, the flash and the gun wreck ask `gmKey`; anything new that asks for a unit's piece has
+  to as well.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

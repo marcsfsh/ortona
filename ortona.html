@@ -1201,6 +1201,11 @@ var UPGRADES = {
   /* and the German team's MG 42 in the MG 34's place, in the same cradle */
   mg42t: { name: 'Issue the MG 42', short: 'MG 42', hk: 'O', cost: { mp: 90, fu: 10 },
            desc: 'The MG 42 in the Lafette\'s cradle in place of the MG 34. It fires half as fast again, so it puts a section down harder and keeps it there; it does no more to anything with plate on it.' },
+  /* and the 240's, fitted once: the 36-inch mortar set in a steel box in its place, which is
+     another piece altogether (`defUp`), so it is the player's decision and nothing fits it for
+     him (`hand`), whatever AUTO says */
+  david: { name: 'Rebuild as Little David', short: 'LITTLE DAVID', hk: 'O', cost: { mp: 420, fu: 200 }, hand: 1,
+           desc: 'The 240 lifted out and the 36-inch mortar T1 set in a steel box in its place: a ton and three quarters of shell, the biggest thing either side can put on the ground, three times to a mission a minute and a half long. It reaches not much over half as far and turns six degrees either way in its box, and the change-over is three quarters of a minute in which the position is silent.' },
   a6: { name: 'Issue two M1919A6s', short: 'M1919A6', hk: 'O', cost: { mp: 90, fu: 10 },
         desc: 'Two of the Thompson men hand in the Thompson and take the bipod .30 with the stock on it, fired from the hip on the move. The squad reaches further and puts men down harder; it is no quicker to kill anything.' }
 };
@@ -1450,10 +1455,27 @@ var UNITS = {
     side: 'us', nat: 'usa', name: '240 mm Howitzer M1', short: '240 MM', cat: 'team',
     models: 6, hpPer: 62, speed: 0, sight: 300, pop: 14, cost: { mp: 500, fu: 190 }, time: 90,
     setup: 0, indirect: 1, barrageOnly: 1, blastRes: .62, closeWeak: 3.0, limit: 1,
-    traverse: .12, carr: .39, carrRate: .25, layTol: .10,
+    traverse: .12, carr: .39, carrRate: .25, layTol: .10, upgrades: ['david'],
     barrage: { range: 1350, r: 150, sp: 20, rof: 11.0, rounds: 5, safe: 600 },
     w: { range: 1350, dmg: 380, rof: 11.0, acc: .30, sup: .34, pen: 70, aoe: 150, shell: 1 },
     desc: 'Two hundred and forty millimetres on a firing base and a pair of trails seven metres long, dug in by the engineers where it will stay. Five rounds to a mission into a circle a hundred and fifty units across: it throws the heaviest shell on the field, further and tighter than the German 210, and slower. It swings twenty-two degrees either way on its carriage and has to have its trails heaved round for anything further, which takes most of half a minute. It cannot be dug near your own headquarters and it will not fire into the enemy base.'
+,
+    /* Little David, the 36-inch mortar T1 the position can be rebuilt as (`UPGRADES.david`):
+       another piece altogether, so `fitUp` hands the unit this def whole, made at load on top of
+       the 240's so the crew, the men and the limit stay what they were. It throws a ton and three
+       quarters of shell, which is a hole twelve metres across, three rounds to a mission a round
+       every half minute into a circle a good deal wider than the 240's, and it reaches not much
+       over half as far. It sits in a steel box and turns six degrees either way in it (`carr`);
+       past that the box is turned, which is slow enough to be a decision of its own, and the
+       change-over itself is three quarters of a minute of silence (`setup`). */
+    defUp: { david: {
+      name: '36-inch Mortar T1 "Little David"', short: 'DAVID',
+      traverse: .04, carr: .11, carrRate: .08, layTol: .08, setup: 45, blastRes: .70,
+      piece: 'am_240:david', lay: [[2, -24], [2, 24], [-20, -24], [-20, 24], [16, 24], [-32, -24]],
+      barrage: { range: 760, r: 190, sp: 40, rof: 30, rounds: 3, safe: 600 },
+      w: { range: 760, dmg: 1100, rof: 30, acc: .20, sup: .80, pen: 200, aoe: 210, shell: 1 },
+      desc: 'Thirty-six inches of mortar in a steel box sunk to its rim where the 240 stood. Three rounds to a mission, a round every half minute, into a circle nearly two hundred units across: each is a ton and three quarters of shell and a hole twelve metres across, and nothing on the field stands up to one. It reaches not much over half as far as the 240, turns six degrees either way in its box and very slowly past that, and it will not fire into the enemy base.'
+    } }
   },
   /* The 57 mm Gun M1 on the M1A3 carriage, which is what the anti-tank company of an American
      infantry regiment and the anti-tank platoons of its battalions brought ashore: the
@@ -1888,6 +1910,23 @@ var UNITS = {
     if (d.wUp) for (u in d.wUp) if (!lateEye(u)) far = Math.max(far, d.wUp[u].range || 0);
     if (d.at) far = Math.max(far, d.at.range || 0);
     if (far > d.sight) d.sight = far;
+  }
+})();
+/* A fitting that makes a unit another piece altogether names that piece's numbers in `defUp`,
+   and each is made a def of its own here, on top of the unit's: anything it does not name is the
+   unit's, so the men, the price and the limit stay what they were, and `fitUp` hands the unit the
+   new def whole. Every reader of `u.def` then reads the new piece -- its weapon, its mission, its
+   carriage, its name and the model it is drawn as (`def.piece`) -- without one of them being told
+   there was a fitting. The one on the roster is the 240's Little David. */
+(function () {
+  for (var k in UNITS) {
+    var d = UNITS[k], u, o, f;
+    if (!d.defUp) continue;
+    for (u in d.defUp) {
+      o = Object.create(d);
+      for (f in d.defUp[u]) o[f] = d.defUp[u][f];
+      d.defUp[u] = o;
+    }
   }
 })();
 
@@ -7767,6 +7806,21 @@ function fitUp(u, uk) {
   u.up[uk] = true;
   /* a rebuild changes the body it is kept out of things by, so it is measured again */
   if (u.def.modelUp && u.def.modelUp[uk]) u.bodyW = undefined;
+  /* and a fitting that makes a crew-served piece another piece altogether (`defUp`) hands the
+     unit that piece's def; the crew go where the new piece is served from, and the change-over
+     is time in which it does not fire */
+  var nd = u.def.defUp && u.def.defUp[uk], i;
+  if (nd && u.def !== nd) {
+    u.def = nd; u.barrage = null; u.target = null;
+    if (nd.lay) for (i = 0; i < u.models.length && i < nd.lay.length; i++) { u.models[i].ox = nd.lay[i][0]; u.models[i].oy = nd.lay[i][1]; }
+    u.bodyW = undefined; fitRadius(u);
+    u.setup = nd.setup || 0;
+  }
+}
+/* Whether any fitting a unit takes is one the game may fit for him: one marked `hand` is his
+   decision alone, and a unit with nothing else to take has no AUTO to offer */
+function autoFits(u) {
+  return upgradable(u) && u.def.upgrades.some(function (k) { return UPGRADES[k] && !UPGRADES[k].hand; });
 }
 /* How far a casemate gun traverses either side of the nose, all of it. A fitting that swaps the
    mount can bring its own (`arcUp`): the 75 mm GMC's carriage goes about twenty degrees either
@@ -8459,7 +8513,7 @@ function fireAt(u, t, dt, opt) {
         var tm2 = u.models.find(function (q) { return q.alive; });
         if (!u.def.speed) tm2 = u;
         if (tm2) {
-          var gm2 = GUNMODEL[u.key];
+          var gm2 = GUNMODEL[gmKey(u)];
           var reach = (gm2 ? gm2.bar : (u.def.atOnly ? 44 : 26)) * FIG_SCALE, lift = (gm2 ? gm2.z : 13) * FIG_SCALE;
           var bx = tm2.x + Math.cos(u.facing) * reach, by = tm2.y + Math.sin(u.facing) * reach;
           muzFx(u, w, bx, by, groundZ(tm2.x, tm2.y) + lift, u.facing);
@@ -9580,7 +9634,7 @@ function killUnit(u, src) {
     /* and the piece stays where it stood, drawn with the works: a dead unit is gone from
        the list the frame after, and an empty ring of bags is not what a knocked-out gun
        looks like */
-    var gmW = GUNMODEL[u.key];
+    var gmW = GUNMODEL[gmKey(u)];
     if (GLOK && gmW) {
       var gzW = groundZ(u.x, u.y), gbA = u.baseA === undefined ? u.facing : u.baseA;
       G.works.push({ kind: 'gunwreck', x: u.x, y: u.y, a: u.facing, side: null,
@@ -30476,6 +30530,132 @@ function h240Tube(el) {
 }
 /* the whole piece at one elevation, for the overlay against the photograph */
 function h240Show(el) { return h240Bottom().concat(h240Top(el)).concat(h240Tube(el)); }
+/* ================================================================ Little David
+   The 36-inch mortar T1, which is what the 240 can be rebuilt as (`UPGRADES.david`): the
+   Aberdeen piece, laid off its two photographs of July 1945, the right side of the tube at
+   sixty-five degrees and a three-quarter view from its left rear at nought. There is no scale
+   on either. The tube is taken as 1.30 m across, a 914 mm bore in walls of nineteen
+   centimetres, which is 88.6 pixels in the first photograph and puts it at 68.2 to the metre;
+   the muzzle then stands 6.6 m from the trunnions, which is the published 6.7 m of barrel, and
+   the forty tonnes the barrel weighed is that tube over the 7.6 m the two views show between
+   them. The photograph is taken close enough that the tube is about seven per cent wider at
+   its foot than at its muzzle, and the mean is taken.
+     The same three pieces as the 240, so it goes into the same position and is drawn by the
+   same code: the steel box it stands in, sunk to its rim with the decking round it and the
+   shed beside it, on `u.baseA`; the trunnion brackets, the cradle and the elevating arcs on
+   `u.facing`; and the tube, which runs back along its bore. The box is nearly seven metres by
+   three and a half and deep enough to take the breech and the arcs when the tube is up, which
+   is why nothing of them shows in the photograph at sixty-five degrees and all of them does at
+   nought. Laid over the first photograph, the box first stood four units short at the back and
+   twelve at the front, and the shed five units too far forward and standing on the ground where
+   the photograph has it on a pallet on the far plate. Origin on the ground under the trunnions. */
+var LD = {
+  tz: 7.3,                                     /* the trunnions, 0.62 m over the rim of the box */
+  R: 7.6, bore: 5.35, muz: 77.3,               /* the tube, the 36-inch bore, and the muzzle along it */
+  cR: 8.0, cF: 14.0, cB: -6.0,                 /* the cradle round it, and its two ends */
+  hR: 8.6, hB: -18.0,                          /* the housing behind the trunnions, down to its end */
+  fR: 27.7,                                    /* the elevating arcs, about the trunnions */
+  x0: -44, x1: 36, hw: 20, ow: 9,              /* the box: its ends, its half width, the mouth's */
+  el: 1.141                                    /* where the tube is laid in the game: the photograph's 65.4 degrees */
+};
+/* a point given along the bore (s) and up off it (n), at an elevation, about the trunnions */
+function ldBore(s, y, n, el) {
+  var c = Math.cos(el), sn = Math.sin(el);
+  return [s * c - n * sn, y, LD.tz + s * sn + n * c];
+}
+function ldLay(faces, el) { return at(pitch(faces, el, 0, 0), 0, 0, LD.tz); }
+/* The box and what is round it: the rim flush with the ground, the plates of its top with the
+   mouth the tube stands in dark below them, the decking laid round it, and the shed on its
+   pallet beside it. Laid once and not turned. */
+function ldBase() {
+  var C = M4C, g = LD, f = [], sd, x;
+  var L = g.x1 - g.x0, xm = (g.x0 + g.x1) / 2;
+  /* the rim, standing a hand proud of the ground */
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(xm, sd * (g.hw - 1.2), 0, L, 2.4, 1.2, C.od, C.odL, C.odD));
+    f = f.concat(box(sd > 0 ? g.x1 - 1.2 : g.x0 + 1.2, 0, 0, 2.4, g.hw * 2 - 4.8, 1.2, C.od, C.odL, C.odD));
+    /* the top plates between the rim and the mouth, and the stiffeners across them */
+    f = f.concat(box(xm, sd * (g.ow + (g.hw - 2.4 - g.ow) / 2), 0, L - 4.8, g.hw - 2.4 - g.ow, .6, C.odL, C.odL, C.odD));
+    for (x = g.x0 + 8; x < g.x1 - 4; x += 8)
+      f = f.concat(box(x, sd * (g.ow + (g.hw - 2.4 - g.ow) / 2), .6, .8, g.hw - 2.4 - g.ow, .45, C.odD, C.od, C.odD));
+    /* the decking along the side, plank by plank */
+    for (x = g.x0 - 3; x < g.x1 + 3; x += 2.9)
+      f = f.concat(box(x + 1.25, sd * (g.hw + 6.5), 0, 2.5, 12.0 - Math.abs((x * 7) % 3) * .5, .55, GUN.wood, lit(GUN.wood, 1.1), lit(GUN.wood, .85)));
+    [g.hw + 1.4, g.hw + 11.6].forEach(function (y) {
+      f = f.concat(box(xm, sd * y, 0, L + 7, 1.0, .35, lit(GUN.wood, .8), lit(GUN.wood, .9), lit(GUN.wood, .75)));
+    });
+  }
+  /* the plates across the ends of the mouth, and the mouth itself, dark */
+  f = f.concat(box(g.x0 + 3.4, 0, 0, 2.2, g.ow * 2, .6, C.odL, C.odL, C.odD));
+  f = f.concat(box(g.x1 - 6.0, 0, 0, 7.6, g.ow * 2, .6, C.odL, C.odL, C.odD));
+  f = f.concat(box((g.x0 + 4.5 + g.x1 - 9.8) / 2, 0, .1, g.x1 - 9.8 - g.x0 - 4.5, g.ow * 2, .12, C.hole, C.hole, C.hole));
+  /* the shed on its pallet on the far plate, a tarpaulin over a frame, with the pole beside it */
+  var sx = 25.8, sy = -12.8;
+  f = f.concat(box(sx + 1.0, sy, .6, 14, 7.2, .9, GUN.wood, lit(GUN.wood, 1.1), lit(GUN.wood, .85)));
+  f = f.concat(box(sx, sy, 1.5, 9.6, 6.4, 9.0, C.tarp, lit(C.tarp, 1.08), lit(C.tarp, .86)));
+  f = f.concat(m1Solid([[sx - 4.8, sy - 3.2, 10.5], [sx + 4.8, sy - 3.2, 10.5], [sx + 4.8, sy + 3.2, 10.5], [sx - 4.8, sy + 3.2, 10.5]],
+                       [[sx - 2.8, sy - 1.6, 12.8], [sx + 2.8, sy - 1.6, 12.8], [sx + 2.8, sy + 1.6, 12.8], [sx - 2.8, sy + 1.6, 12.8]], C.tarp, lit(C.tarp, 1.1)));
+  f = f.concat(cyl(23.1, sy - 3.4, 1.5, .25, .25, 18.2, 5, C.steel, C.bare, 0, true));
+  return f;
+}
+/* The cradle and what stands with it: the two trunnion brackets on the rim of the box with the
+   bolted caps over the trunnions and the blocks under them, the trunnion pins, and, laid up at
+   `el`, the cradle's sleeve with its bands at the front, the housing behind the trunnions with
+   its flange and its end, and the three elevating arcs standing back off the housing with the
+   racks round their edges. */
+function ldTop(el) {
+  var C = M4C, g = LD, f = [], cr = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var yo = sd * 9.0, O = [0, sd, 0];
+    f = f.concat(m1Plate([[-5.1, yo, 0], [5.0, yo, 0], [5.0, yo, 13.2], [-5.1, yo, 13.2]], O, 1.3, C.od, C.odD));
+    f = f.concat(m1Plate([[-5.1, yo, 0], [-5.1, yo, 13.2], [-5.9, yo, 12.4], [-5.9, yo, 0]], [0, -sd, 0], .8, C.odD, C.od));
+    var cy = sd * 10.3;
+    f = f.concat(place(tubeSmooth(0, .7, 0, g.tz, 3.35, 18, C.od, C.odL), sd * Math.PI / 2, 0, cy, 0));
+    f = f.concat(place(tubeSmooth(0, 1.1, 0, g.tz, 1.7, 12, C.odD, C.od), sd * Math.PI / 2, 0, cy, 0));
+    for (i = 0; i < 8; i++) {
+      var a = i / 8 * TAU + .2;
+      f = f.concat(place(tubeSmooth(0, 1.0, 0, 0, .32, 6, C.steel, C.bare), sd * Math.PI / 2, Math.cos(a) * 2.45, cy, g.tz + Math.sin(a) * 2.45));
+    }
+    f = f.concat(box(-.1, sd * 10.6, 0, 3.6, .7, 3.8, C.odD, C.od, C.odD));
+  }
+  /* the cradle, in the bore's own frame */
+  cr = cr.concat(tubeSmooth(g.cB, g.cF, 0, 0, g.cR, 20, C.od, C.odL));
+  cr = cr.concat(tubeSmooth(10.4, 11.4, 0, 0, g.cR + .35, 20, C.odD, C.od));
+  cr = cr.concat(tubeSmooth(g.cF - .5, g.cF, 0, 0, g.cR + .25, 20, C.odL, C.odL));
+  cr = cr.concat(place(tubeSmooth(-9.6, 9.6, 0, 0, 1.6, 12, C.steel, C.bare), Math.PI / 2, 0, 0, 0));
+  cr = cr.concat(tubeSmooth(g.hB + 1.0, g.cB, 0, 0, g.hR, 20, C.od, C.odL));
+  cr = cr.concat(tubeSmooth(g.cB - 1.0, g.cB, 0, 0, g.hR + .7, 20, C.odD, C.od));
+  cr = cr.concat(tubeSmooth(g.hB + 1.0, g.hB + 2.5, 0, 0, g.hR + .4, 20, C.odD, C.od));
+  cr = cr.concat(tubeSmooth(g.hB, g.hB + 1.0, 0, 0, g.hR - 1.4, 16, C.odD, C.od));
+  /* the arcs: three plates standing back off the end of the housing, each bounded by its front
+     edge square to the bore, the arc about the trunnions and a foot, with the rack round the arc */
+  var a0 = Math.atan2(21, g.hB), a1 = 205 * Math.PI / 180, n = 10, k;
+  [-5, 0, 5].forEach(function (y) {
+    var prev = null;
+    for (k = 0; k <= n; k++) {
+      var t = a0 + (a1 - a0) * k / n, p = [Math.cos(t) * g.fR, Math.sin(t) * g.fR];
+      if (prev) {
+        cr = cr.concat(m1Plate([[g.hB, y - .7, prev[1]], [prev[0], y - .7, prev[1]], [p[0], y - .7, p[1]], [g.hB, y - .7, p[1]]],
+                               [0, 1, 0], 1.4, C.od, C.odD));
+        cr = cr.concat(m1Plate([[prev[0], y - 1.4, prev[1]], [p[0], y - 1.4, p[1]], [p[0] * .9, y - 1.4, p[1] * .9], [prev[0] * .9, y - 1.4, prev[1] * .9]],
+                               [0, 1, 0], 2.8, C.odD, C.od));
+      }
+      prev = p;
+    }
+  });
+  f = f.concat(ldLay(cr, el));
+  return f;
+}
+/* The tube, which runs back along its bore: plain from the cradle to the lip at the muzzle,
+   with the 36-inch bore dark inside it. */
+function ldTube(el) {
+  var C = M4C, g = LD;
+  var prof = [[0, g.cB + 1], [g.R, g.cB + 1], [g.R, g.muz - 1.5], [g.R + .7, g.muz - 1.5], [g.R + .7, g.muz],
+              [g.bore, g.muz], [g.bore, g.muz - 4.0], [0, g.muz - 4.0]];
+  return ldLay(place(lathe(0, 0, 0, prof, 24, [C.od, C.od, C.odD, C.odL, C.hole, C.hole, C.hole], true), -Math.PI / 2, 0, 0, 0), el);
+}
+/* the whole piece at one elevation, for the overlay against the photographs */
+function ldShow(el) { return ldBase().concat(ldTop(el)).concat(ldTube(el)); }
 /* A battalion mortar: baseplate, tube and bipod, with a few bombs laid out beside it.
    Three loads a crew carries between them and puts down in about that order -- the plate
    first, the tube on it, the bipod last -- and it is the one weapon here whose barrel is
@@ -32561,6 +32741,9 @@ function buildVehicleModels() {
      flash comes off a muzzle five metres up rather than off the end of a level barrel */
   GUNMODEL.am_240 = { mesh: h240Top(H240.el), base: h240Bottom(), rec: h240Tube(H240.el), recEl: H240.el,
                       bar: H240.tx + H240.muz * Math.cos(H240.el), z: H240.tz + H240.muz * Math.sin(H240.el) };
+  /* and the Little David the 240 can be rebuilt as, drawn in its place once it is (`gmKey`) */
+  GUNMODEL['am_240:david'] = { mesh: ldTop(LD.el), base: ldBase(), rec: ldTube(LD.el), recEl: LD.el,
+                               bar: LD.muz * Math.cos(LD.el), z: LD.tz + LD.muz * Math.sin(LD.el) };
   GUNMODEL.ger_how210 = { mesh: bigHowModel(), base: bigHowBase(), bar: 30, z: 55 };
   /* the American .30 on its tripod, and the .50 on its own that the team can be issued in
      its place: `teamMesh` draws whichever is fitted, keyed the way the upgrade is */
@@ -35448,8 +35631,11 @@ function teamMesh(u) {
   var uk = gunUpOf(u);
   if (uk && MODELS.gun[u.key + ':' + uk]) return MODELS.gun[u.key + ':' + uk];
   if (MODELS.gunPk[u.key] && !gunSet(u)) return MODELS.gunPk[u.key];
-  return MODELS.gun[u.key] || null;
+  return MODELS.gun[gmKey(u)] || null;
 }
+/* The piece a crew-served weapon is drawn as: its own, or the one a fitting made it into
+   (`def.piece`, which the Little David's def names) */
+function gmKey(u) { return u.def.piece || u.key; }
 /* The fitting that changed the piece, if one has: the American team's .50 is a different
    gun on a different tripod, laid from a different place, so the numbers the piece is
    served by (`gunAt`, `gunMuz`, `gunGrip`, `gunMate`) come off `gunUp` while it is fitted
@@ -37591,8 +37777,8 @@ function castUnit(u) {
     if (u.cat === 'team' && aliveModels(u) > 0 && !carried(u)) {
       var a = gunPost(u);
       drawDepthGeom(teamMesh(u), m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, FIG_SCALE));
-      if (MODELS.gunRec[u.key]) drawDepthGeom(MODELS.gunRec[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, FIG_SCALE));
-      if (MODELS.gunBase[u.key]) drawDepthGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE));
+      if (MODELS.gunRec[gmKey(u)]) drawDepthGeom(MODELS.gunRec[gmKey(u)], m4model(a.x, a.y, groundZ(a.x, a.y), u.facing, FIG_SCALE));
+      if (MODELS.gunBase[gmKey(u)]) drawDepthGeom(MODELS.gunBase[gmKey(u)], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE));
     }
   }
 }
@@ -37722,7 +37908,7 @@ function drawUnits3D(v, list) {
       }
       if (u.cat === 'team' && aliveModels(u) > 0 && !carried(u)) {
         var a = gunPost(u);                          /* a fixed mount is drawn where it was built */
-        var trec = recoilAt(u.recoil) * 7, rk = MODELS.gunRec[u.key], rel = GUNMODEL[u.key] && GUNMODEL[u.key].recEl || 0;
+        var trec = recoilAt(u.recoil) * 7, rk = MODELS.gunRec[gmKey(u)], rel = GUNMODEL[gmKey(u)] && GUNMODEL[gmKey(u)].recEl || 0;
         /* a piece whose tube runs back in its cradle leaves its carriage where it stands on its
            spades, and a howitzer's runs back down the line of its own bore */
         if (rk) drawGeom(rk, m4model(a.x - Math.cos(u.facing) * trec * Math.cos(rel), a.y - Math.sin(u.facing) * trec * Math.cos(rel),
@@ -37731,8 +37917,8 @@ function drawUnits3D(v, list) {
         drawGeom(teamMesh(u), m4model(a.x - Math.cos(u.facing) * trec, a.y - Math.sin(u.facing) * trec,
                                       groundZ(a.x, a.y), u.facing, FIG_SCALE), false, tint);
         /* and its platform, which was laid once and does not traverse with the gun */
-        if (MODELS.gunBase[u.key])
-          drawGeom(MODELS.gunBase[u.key], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE), false, tint);
+        if (MODELS.gunBase[gmKey(u)])
+          drawGeom(MODELS.gunBase[gmKey(u)], m4model(a.x, a.y, groundZ(a.x, a.y), u.baseA === undefined ? u.facing : u.baseA, FIG_SCALE), false, tint);
       }
     }
   }
@@ -39430,7 +39616,7 @@ function simpleUnitSync() {
       toast(U.name + ': ' + was); sfx('click'); buzz(10); simpleUnitSync(); syncHud();
     }, false, !canAfford(G.own, U.cost), uk);
   });
-  if (ups.length) add('⟳', 'AUTO', autoUpOf(u) ? 'fitting them' : 'by hand', function () {
+  if (autoFits(u)) add('⟳', 'AUTO', autoUpOf(u) ? 'fitting them' : 'by hand', function () {
     u.autoUp = !autoUpOf(u);
     toast(shortOf(u) + ': ' + (u.autoUp ? 'upgrades fitted automatically' : 'upgrades by hand')); sfx('click'); buzz(10); simpleUnitSync();
   }, autoUpOf(u), false, 'auto');
@@ -40282,7 +40468,7 @@ function buildCmds() {
     });
     /* and whether the game fits them for him: one card for the selection, lit while it
        does, which is this vehicle's own word over the setting on the title screen */
-    var upVehs = units.filter(upgradable);
+    var upVehs = units.filter(autoFits);
     if (upVehs.length) {
       var autoOn = autoUpOf(upVehs[0]);
       addCmd('Auto upgrade', autoOn ? 'on' : 'off', 'N', true, function () {

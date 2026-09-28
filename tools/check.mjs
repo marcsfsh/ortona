@@ -1694,6 +1694,76 @@ for (const device of TARGETS) {
                 `laid behind itself the first round left at ${bat.first}s against ${bat.slew}s of traverse, ` +
                 `${bat.rounds} of ${bat.want} rounds, ${bat.inBound} inside ${bat.bound} on a circle of ${bat.r}`);
 
+  /* --- and the 240 rebuilt as Little David, the 36-inch mortar, which is another piece
+     altogether and the player's decision alone: nothing offers him AUTO for it and the brain's
+     own routine never fits it; fitted by hand it costs its price, draws as the mortar, carries
+     the mortar's weapon and reach, puts the crew where the mortar is served from and leaves the
+     240's own def as it was, and then it waits out the change-over before three rounds go into
+     its circle. The rounds are taken off the list as they leave the tube, because a ton and
+     three quarters of shell digs a hole seventy units in radius and the rows below stage on the
+     ground this one would leave. --- */
+  const dav = await page.evaluate(() => {
+    const W = window, U = W.UNITS.am_240, D = U && U.defUp && U.defUp.david;
+    if (!D) return { has: false };
+    const keep = W.G.units.slice(), shots = W.G.shots.slice(), mp = W.G.res.us.mp, fu = W.G.res.us.fu;
+    const sp = W.__o.flatSpot(160), p = W.nearestFree(sp.x, sp.y);
+    const g = W.spawnUnit('us', 'am_240', p.x, p.y, 0); g.setup = 0;
+    const before = { piece: W.gmKey(g), reach: Math.round(W.barrageRange(g)), auto: W.autoFits(g), up: W.upgradable(g) };
+    W.G.res.us.mp = 9000; W.G.res.us.fu = 9000;
+    const autoGot = W.buyUpgradeAuto('us', [g], { floor: 0 }), autoFitted = !!g.up.david;
+    const mp0 = W.G.res.us.mp, fu0 = W.G.res.us.fu;
+    W.pay('us', W.UPGRADES.david.cost); W.fitUp(g, 'david');
+    const k = W.gmKey(g);
+    const after = { piece: k, built: !!(W.MODELS.gun[k] && W.MODELS.gunBase[k] && W.MODELS.gunRec[k]),
+                    cost: [mp0 - W.G.res.us.mp, fu0 - W.G.res.us.fu], name: W.nameOf(g), reach: Math.round(W.barrageRange(g)),
+                    dmg: W.mainW(g).dmg, aoe: W.mainW(g).aoe, setup: g.setup,
+                    lay: g.models.every((m, i) => !D.lay[i] || (m.ox === D.lay[i][0] && m.oy === D.lay[i][1])),
+                    base: U.w.dmg, baseKey: W.gmKey({ def: U, key: 'am_240' }) };
+    /* a mission on clear ground six hundred off, on a bearing the no-fire zone leaves alone */
+    let bear = null, tx = 0, ty = 0;
+    for (let a = 0; a < Math.PI * 2 && bear === null; a += .2) {
+      const x = g.x + Math.cos(a) * 600, y = g.y + Math.sin(a) * 600;
+      if (x < 60 || y < 60 || x > W.WORLD.w - 60 || y > W.WORLD.h - 60) continue;
+      if (W.barrageWhy(g, x, y) === null) { bear = a; tx = x; ty = y; }
+    }
+    let laid = false, first = -1, t = 0;
+    const out = [];
+    if (bear !== null) {
+      g.facing = g.baseA = bear;
+      laid = !!W.orderBarrage(g, tx, ty);
+      for (let f = 0; f < 60 * 170 && out.length < D.barrage.rounds; f++) {
+        const n0 = W.G.shots.length;
+        W.updateUnit(g, 1 / 60); W.G.t += 1 / 60; t += 1 / 60;
+        for (let i = W.G.shots.length - 1; i >= n0; i--) {
+          const sh = W.G.shots[i];
+          if (sh.kind === 'shell') { out.push(Math.hypot(sh.tx - tx, sh.ty - ty)); if (first < 0) first = t; }
+          W.G.shots.splice(i, 1);
+        }
+      }
+    }
+    W.G.units.length = 0; keep.forEach(q => W.G.units.push(q));
+    W.G.shots.length = 0; shots.forEach(q => W.G.shots.push(q));
+    W.G.res.us.mp = mp; W.G.res.us.fu = fu;
+    const bound = D.barrage.r + D.barrage.sp * 1.6;
+    return { has: true, before, autoGot: !!autoGot, autoFitted, after, want: [W.UPGRADES.david.cost.mp || 0, W.UPGRADES.david.cost.fu || 0],
+             D: { dmg: D.w.dmg, aoe: D.w.aoe, setup: D.setup, rounds: D.barrage.rounds, piece: D.piece }, bear: bear !== null, laid,
+             first: +first.toFixed(1), rounds: out.length, inBound: out.filter(d => d <= bound).length, bound: Math.round(bound) };
+  });
+  ok('the 240 is rebuilt as Little David by hand and by nothing else, and becomes the mortar whole',
+     !dav.has || (dav.before.piece === 'am_240' && dav.before.up && !dav.before.auto && !dav.autoGot && !dav.autoFitted &&
+                  dav.after.cost[0] === dav.want[0] && dav.after.cost[1] === dav.want[1] &&
+                  dav.after.piece === dav.D.piece && dav.after.built && /Little David/.test(dav.after.name) &&
+                  dav.after.reach < dav.before.reach && dav.after.dmg === dav.D.dmg && dav.after.aoe === dav.D.aoe &&
+                  dav.after.setup === dav.D.setup && dav.after.lay && dav.after.base !== dav.D.dmg && dav.after.baseKey === 'am_240' &&
+                  dav.bear && dav.laid && dav.first >= dav.D.setup * .95 && dav.rounds === dav.D.rounds && dav.inBound === dav.rounds),
+     !dav.has ? 'no Little David in this file'
+              : `AUTO offered ${dav.before.auto ? 'YES' : 'no'}, the routine fitted it ${dav.autoGot || dav.autoFitted ? 'YES' : 'no'}; ` +
+                `by hand for ${dav.after.cost.join('/')} of ${dav.want.join('/')}: drawn as ${dav.after.piece} (buffers ${dav.after.built}), ` +
+                `"${dav.after.name}", reach ${dav.before.reach} to ${dav.after.reach}, a round of ${dav.after.dmg} over ${dav.after.aoe}, ` +
+                `crew laid ${dav.after.lay}, the 240 itself still ${dav.after.base} as ${dav.after.baseKey}; ` +
+                `change-over ${dav.after.setup}s and the first round at ${dav.first}s, ${dav.rounds} of ${dav.D.rounds} rounds, ` +
+                `${dav.inBound} inside ${dav.bound}`);
+
   /* --- and from inside a tank: the commander's eye in his cupola, the lid up and shut --- */
   const tank = await page.evaluate(() => {
     /* the gun and barrel tests run another minute of battle on top of the one already

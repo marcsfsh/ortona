@@ -1,0 +1,5 @@
+{ "image": "shots/ref/am_david_b.jpg", "key": "am_240:david", "prop": "ldShow", "args": [1.141], "up": [], "crew": false,
+  "note": "36-inch Mortar T1 (Little David), Aberdeen Proving Ground, 6 July 1945: the right side of the tube at 65 degrees firing elevation, a photograph taken close enough that the tube reads about seven per cent wider at its foot than at its muzzle. No scale: the tube is taken as 1.30 m across (a 914 mm bore in 19 cm walls), 88.6 px, which is 68.2 px/m and puts the muzzle 6.6 m from the trunnions. Pinned on the trunnion cap. The three-quarter view at 0 degrees (shots/ref/am_david_a.jpg) is a perspective and is read, not laid over.",
+  "views": {
+    "side": { "nose": "right", "crop": [0, 0, 640, 580], "ppm": 68.2, "at": [0, 0, 7.3], "px": [302.4, 457.5], "k": 2 }
+  } }
