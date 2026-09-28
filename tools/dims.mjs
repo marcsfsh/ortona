@@ -89,12 +89,14 @@ const REAL = {
                The body is read off the four-view drawing in shots/ref (tools/ref/hr_251.json): 2.00 m
                across the crease in plan, at the scale its own 5.80 m of length gives it. The first version
                was built to 1.73, which the drawing puts a quarter of a metre narrow. */
-  ger_maus:  { name: 'Panzer VIII Maus',    len: 10.09, gun: 10.20,  wid: 3.71,  hgt: 3.63,
-               body: 3.71, bodyZ: 1.71, roof: 3.47, clear: 0.50 },   /* body: the hull is full width
-               above the tracks, which is the whole shape of the thing -- the crew sit over the running
-               gear because two 1.1 m tracks leave only 1.51 m between them. roof is that 3.71 taken in
-               by the small lean on the last half metre, and is derived rather than published. 10.2 m
-               over the gun against 10.09 m of hull: the muzzle clears the nose by 110 mm */
+  ger_maus:  { name: 'Panzer VIII Maus',    len: 9.52, gun: 10.61,  wid: 3.67,  hgt: 3.63,
+               body: 3.67, bodyZ: 1.71, roof: 3.67, clear: 0.50 },   /* Jentz's 9.03 m of hull, 10.085 m
+               over the gun, 3.67 m wide and 3.63 m high, and the four-view drawing it is laid over
+               (tools/ref/ger_maus.json) agrees with all four at one scale, the height being to the top of
+               the commander's periscope. The hull and the gun are measured here with the jettison tank
+               across the tail, which stands 0.49 m behind the rear plate and is in neither published
+               figure: 9.03 and 10.12 without it. The body and the roof are the full width, because the
+               hull is one slab over the tracks and the deck runs out to the side plates */
   hr_p4:     { name: 'Panzer IV Ausf. H (Heer)', len: 5.92, gun: 7.02,  wid: 2.88,  hgt: 2.68,
                body: 2.36, bodyZ: 1.45, roof: 2.36, clear: 0.40 },   /* the width is over the track
                guards, which is what it is without the Schürzen, and 3.33 m with them; the body is the
@@ -189,9 +191,8 @@ const PROBE = {
                slice is taken just under the crease aft of the last locker, where the side is bare; the
                MG 34 on its pintle and the man standing to it are no more part of the published height
                than the jeep's gun is */
-  ger_maus:  { bodyZ: 20.0, roofZ: 28.0, xLo: -20.0, xHi: 20.0, straddle: true },   /* roofZ sits on the
-               roof plate itself: the leaning side straddles every station below it and would report the
-               full width of the base */
+  ger_maus:  { bodyZ: 20.0, roofZ: 24.6, xLo: -20.0, xHi: 0.0, straddle: true, hullZ: 30 },   /* roofZ sits just
+               under the deck, where the side plate runs up to it; hullZ drops the two rod aerials */
   hr_p4:     { bodyZ: 17.0, roofZ: 19.6, xLo: -10.0, xHi: -5.2, straddle: true, hullZ: 24 },   /* the slice is
                taken aft of the cross and ahead of the louvres, where the superstructure side is bare, and
                clear of the guard under it: the guards are 0.4 m below the roof, so a slice any lower
