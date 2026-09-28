@@ -3308,6 +3308,16 @@ any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_
 the roof for that reason, and its body slice at the front of the casemate, ahead of the spare links,
 the tow cable on the left wall and the cables on the fenders.
 
+**Its numbers are a howitzer's, and the shell sits between the pack howitzers and the 240.** The
+StuG IV's long gun is gone, so the weapon is the StuH's: a heavy shell every 5.0 seconds out to 400
+with a hollow charge of 150, on the StuG IV's 640 hit points, 134 of plate and ten degrees of arc,
+for 300 marks and 75 of fuel. At a first line of 200 a round over 70 of burst it took the rifle squad
+with one round in four seconds and the engineers in under one, which is a 240's shell out of a
+105. At 170 over 62, over eight runs a row, it takes the rifle squad every time in six seconds
+untouched and the engineers every time in under three; the M4 takes it 75 per cent of the time and is
+left at a third, and the Rangers 38 per cent, leaving it at a quarter. The M8 took it none of eight
+at the first line, which the lighter shell does not change, because the 37 mm seldom opens its front.
+
 The Maus is the one vehicle on the roster with no claim on Ortona at all. It is built
 because it was asked for, it is priced like a toy (2200 marks and 700 of fuel, 44 of a
 175 population cap, one per army), and it is deliberately **off the AI's shopping
