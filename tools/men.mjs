@@ -879,7 +879,8 @@ function PIX(opt) {
 /* ================================================================ run */
 async function run(file, label) {
   const browser = await launch();
-  const { page } = await openGame(browser, 'desktop', { file, quiet: true });
+  const first = await openGame(browser, 'desktop', { file, quiet: true });
+  const page = first.page;
   await deploy(page, { side: 'us', diff: 1 });
   const doGeo = {};
   SECTIONS.filter(s => s !== 'footprint' && s !== 'read').forEach(s => { doGeo[s] = want(s); });
@@ -889,7 +890,9 @@ async function run(file, label) {
   if (doPix.footprint || doPix.read) {
     for (const dev of DEVICES) {
       let p = page;
-      if (dev !== 'desktop') { p = (await openGame(browser, dev, { file, quiet: true })).page; await deploy(p, { side: 'us', diff: 1 }); }
+      /* the desktop page is done with by now, and left running beside the phone it starves it:
+         the phone's deploy took 95 to 110 seconds against 11 alone and timed out on a busy box */
+      if (dev !== 'desktop') { if (first.context) { await first.context.close(); first.context = null; } p = (await openGame(browser, dev, { file, quiet: true })).page; await deploy(p, { side: 'us', diff: 1 }); }
       out.pix[dev] = await p.evaluate(PIX, { do: doPix });
     }
   }

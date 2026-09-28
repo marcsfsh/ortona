@@ -588,7 +588,10 @@ helmet counts against it: the M1 put the American at 4.5 per cent over on its fi
 and the fix was to seat the helmet lower and make it a little flatter. And
 **READ is a budget the whole palette shares**: warming the American's jacket and lightening
 his webbing moved his mean from 0.342 to 0.362 at 900 units, within 0.048 of the paratrooper
-against a floor of 0.05, and it was the webbing that gave the margin back.
+against a floor of 0.05, and it was the webbing that gave the margin back. Putting the olive
+back over the geometry the tan had been laid on came in at 0.047 against the grenadier, and
+the webbing alone, eight per cent lighter, bought 0.002 of it: what moves the mean is the
+jacket and the trousers, because they are most of him.
 
 ### `tools/terrain.mjs` - the ground, mechanically
 
@@ -3443,11 +3446,11 @@ find as no such unit.
 `V.nat`. What he is, from the top: the M1 helmet under its net; the M1941
 field jacket in light poplin, belted, so it stands out below the belt over the seat of the
 trousers (`skirt`), with a storm flap down the front stopping where the collar is worn open
-over the mustard wool shirt, the collar standing round the back of the neck, and the slash
+over the wool shirt, the collar standing round the back of the neck, and the slash
 pockets under slanted flaps below the belt; the sleeves and the trousers cut full (`k.sleeve`,
 and the thigh and shin a size up in `figLeg` for the legging's anklet mode); the wool
 trousers bloused over canvas M1938 leggings laced up the outside of the leg over a row of
-hooks (`figLeg`'s third anklet mode), and russet service shoes rough side out on a dark sole;
+hooks (`figLeg`'s third anklet mode), and brown service shoes on a darker sole;
 the M1923 cartridge belt with ten pockets round his waist, the M1928 haversack from the belt
 to the shoulders with the meat can pouch on its flap, the shovel's carrier under that and
 the T-handle of the M1910 shovel hanging straight down behind the seat, the bayonet on the
@@ -3463,27 +3466,24 @@ count of stripes is `stripes` on the arm's kit and not `chev`, because `KIT.usa.
 stripes' colour: written as one field, the copy `engKit` hands the arm put a 3 where the
 colour was and the page threw in `hexRGB` on the first sergeant built.
 
-**The palette is read off a studio photograph of the kit, and the order of values is the
-point.** The first cut had the jacket pale and green and the trousers a dark grey, which is
-the Canadian's order turned upside down; laid against the photograph it was out on both.
-What the photograph has is a warm mid-tan jacket, olive-brown trousers well darker than it,
-leggings and webbing the palest things on him, and light russet shoes. The hexes are set to
-land there after the render has done its work, sampled off the frame on Omaha's overcast
-rather than guessed: the jacket about 1.25 red over green against the photograph's 1.27, the
-leggings a fifth brighter than the jacket as they are in the photograph, and the trousers 1.30
-red over green against 1.37. A tint probe over the whole
-roster found one colour on untagged faces that moved tile, and it moved the right way: a
-sandbag shade the old American ladder had been holding on canvas is back on hessian.
+**The palette is the olive of the first cut: a green-grey jacket, dark olive-brown trousers,
+the web and the leggings a khaki a shade paler than the jacket, and dark brown shoes.** For a
+while it was a warm tan read off a studio photograph of the kit (a mid-tan jacket, mustard
+olive-brown trousers, pale leggings and light russet shoes), and that was taken back because
+the olive was liked better. Everything else that went in with the tan stayed: the chevrons,
+the gas mask, the laced leggings, the fuller cut and the stances. Three things are not quite
+the first cut's. The gas mask's bag came in with the tan and is an olive to go with the jacket
+(`gas`); the web, the pack and the leggings are eight per cent lighter; and the jacket is four
+per cent and the trousers six per cent lighter. Those last two are what the READ row asked for
+(below): laid over the fuller cut, the first cut's own colours read 0.047 from the grenadier at
+900 on the desktop, under the floor.
 
 He reads in bands where the Canadian he replaced read as one bolt of serge: a dark netted pot, a
-tan jacket, darker legs and pale leggings, which is what is left of him at nine hundred units. On
-the card before the retirement, at 600 units his mean luminance was 0.359 against the
-paratrooper's 0.425 on the desktop and the paratrooper's top fifth was 0.15 above his, with his
-contrast to the ground at -0.26, inside the band the other two sat in; on the phone the gap is 0.057 to 0.066 at 600, 760 and 900. The wider
-stance below showed more of the leggings and took the desktop's gap at 900 to 0.047, under the
-floor, and the jacket, the trousers and the leggings were each taken down a few per cent to
-buy it back: the margin is 0.055 there now, and it is the number to watch before lightening
-anything on him.
+green-grey jacket, darker legs and pale leggings, which is what is left of him at nine hundred
+units. On the card at 600 units his mean luminance is 0.360 against the grenadier's 0.289 on the
+desktop, with his contrast to the ground at -0.26, and at 900 the gap is 0.057; on the phone it
+is 0.073, 0.077 and 0.069 at 600, 760 and 900. The desktop's 900 is the number to watch before
+darkening anything on him.
 
 **He stands, fights and moves the way the photograph has him** (`FIGPOSE_USA`, read through
 `stanceOf(v, name)` and `gaitOf(v, run)`, which `bakeMen`, `soldierModel` and the men card all
@@ -3535,9 +3535,9 @@ rather than 1.3, and the .30 is carried across him the way the BAR is (`WEAP.m19
 because the fuller sleeve put the Ranger's left upper arm 0.38 into his chest reaching for the
 .30's fore-end. And the trouser below the knee and the blousing are wider than they are deep
 (`legTube`), as the side view has them: square, as wide as they are across, a kneeling man's
-shin hung 0.41 under the ground his knee was on and lifted his front foot off it. The READ gap
-at 900 on the desktop is 0.063 against the 0.055 it was, because the trousers are the darkest
-thing on him and there is more of them.
+shin hung 0.41 under the ground his knee was on and lifted his front foot off it. In the tan
+the READ gap at 900 on the desktop went from 0.055 to 0.063 on these changes, because the
+trousers were the darkest thing on him and there was more of them.
 
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
@@ -3714,8 +3714,8 @@ leader with the MP40 and his field glasses.
 
 **He is the darkest figure on the roster, and that is what tells him from the American.** Field
 grey and black leather against poplin and canvas: on the card at 600 units his mean luminance
-is 0.29 against the American's 0.35 and the colour 79,73,55 against 101,90,63, while the two
-top fifths are nearly level (0.38 against 0.37) because both men wear a dark helmet. His
+is 0.29 against the American's 0.36 and the colour 80,74,56 against 102,92,65, while the two
+top fifths are level (0.37 against 0.37) because both men wear a dark helmet. His
 contrast to the ground is -0.41 against a floor of -0.45 for every figure, so the field grey
 has very little darker to go. And judge him on the ground he fights on: photographed on Ortona
 he comes out pale and his boots brown, because that December sun lifts everything, where on
@@ -7610,11 +7610,11 @@ shots/                         screenshot output, gitignored
   bake writes `r.muzzle` for every frame of a cycle whatever the man is carrying, so a gunner with
   no weapon has `MODELS.muz[v][POSE_WALK]` as eight nulls. `muzzlePoint` guards the first entry;
   the men card read `mz[0].length` and threw on the first unarmed man it met.
-- **Two pages in one browser starve each other.** The men card opens the desktop page, keeps it
-  running and opens the phone beside it, and the phone deploy then takes 95 to 110 seconds where
+- **Two pages in one browser starve each other.** The men card opened the desktop page, kept it
+  running and opened the phone beside it, and the phone deploy then took 95 to 110 seconds where
   it takes 11 alone, on the committed file as much as on a working one. Its click waits 180, so on
-  a busy box it times out and reads as the phone having broken. Run the geometry sections, which
-  need only the desktop page, when that happens, and the pixel sections on their own.
+  a busy box it timed out and read as the phone having broken. The card closes the desktop page's
+  context before it opens the phone now; a tool that opens a second page wants the same.
 - **A new global can take the name of an old one without a word.** Every `var` at the top of
   the script is one namespace forty thousand lines long, and a second `var` of a name is
   legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the
