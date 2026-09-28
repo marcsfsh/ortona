@@ -1,4 +1,0 @@
-{ "image": "shots/ref/am_how8.png", "key": "am_how8", "prop": "h8Show", "args": [0], "up": [], "crew": false,
-  "note": "8 INCH HOWITZER M1 ON M1 CARRIAGE (FIRING), the upper view, nose left, which is the gun's left side. No scale on the sheet: 64.2 px/m off the tube's 5.25 m from the muzzle to the back of the breech ring, which gives 0.98 m wheels, a 9.00-20. Pinned on the ground under the trunnions.",
-  "views": {
-    "side": { "nose": "left", "crop": [90, 100, 540, 155], "ppm": 64.2, "at": [0, 0, 0], "px": [396.1, 247.8], "k": 3 } } }

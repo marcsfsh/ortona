@@ -430,7 +430,7 @@ for (const device of TARGETS) {
        that it is armed and lit, then taps a piece of ground forward of home. A second is
        refused by the limit and the button says so. Put back afterwards, because the rows
        below count his men and his sites. */
-    const wk = us ? 'how8' : 'how210', W = window.WORKS[wk];
+    const wk = us ? 'how240' : 'how210', W = window.WORKS[wk];
     window.G.res[own].mp = 5000; window.G.res[own].fu = 2000; window.simpleSync();
     const wBtn = document.querySelector(`#tbuild .tb.work[data-key="${wk}"]`);
     const s0 = window.siteCount(own, wk), mp3 = window.G.res[own].mp, fu3 = window.G.res[own].fu;
@@ -1532,7 +1532,7 @@ for (const device of TARGETS) {
      laid. Everything is put back afterwards. --- */
   const smk = await page.evaluate(() => {
     const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
-    const mk = side === 'us' ? 'us_mor' : 'ger_mor', hk = side === 'us' ? 'us_how' : 'ger_how', bk = side === 'us' ? 'am_how8' : 'ger_how210';
+    const mk = side === 'us' ? 'us_mor' : 'ger_mor', hk = side === 'us' ? 'us_how' : 'ger_how', bk = side === 'us' ? 'am_240' : 'ger_how210';
     const S = k => window.smokeOf(window.UNITS[k]);
     if (!S(mk)) return { has: false };
     const sizes = { mor: S(mk), how: S(hk), bat: S(bk) };
@@ -1608,7 +1608,7 @@ for (const device of TARGETS) {
      bearing behind it. Each of those is a refusal, and a refusal that has quietly stopped
      working looks exactly like one that never fires. --- */
   const bat = await page.evaluate(() => {
-    const side = window.G.side, kind = side === 'us' ? 'how8' : 'how210';
+    const side = window.G.side, kind = side === 'us' ? 'how240' : 'how210';
     const W = window.WORKS[kind];
     if (!W || !W.minHq) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
@@ -1636,12 +1636,11 @@ for (const device of TARGETS) {
     window.G.res[side].mp = mp; window.G.res[side].fu = fu;
     const B = g.def.barrage;
     /* The enemy's own base is out of bounds, and asking that question needs a gun that
-       can reach it. Dug on the first legal patch the American eight-inch is 1275 from a
-       point 300 short of the German headquarters and its reach is 1250, so from there the
-       answer is 'out of range' and the rule under test is never consulted -- which is the
-       two rules doing the same job from opposite ends and is worth knowing, but it is not
-       a test of either. `homeReach` records it; the gun is then stood forward for the
-       question itself and put back. The control is the same range on a bearing with
+       can reach it. Dug on the first legal patch the American 240 is 1275 from a point 300
+       short of the German headquarters and its reach is 1350, so from there `safe` is what
+       answers; the eight-inch before it reached 1250 and was out of range there, which
+       asked neither rule. `homeReach` records it; the gun is then stood forward for the
+       question itself and put back, so every battery is asked the same thing. The control is the same range on a bearing with
        nothing of the enemy's on it. */
     const homeReach = Math.round(Math.hypot(foeHq.x - g.x, foeHq.y - g.y));
     const gx0 = g.x, gy0 = g.y, hA = Math.atan2(hq.y - foeHq.y, hq.x - foeHq.x);
@@ -2208,7 +2207,7 @@ for (const device of TARGETS) {
      till. --- */
   const arty = await page.evaluate(() => {
     const side = window.G.side, foe = side === 'us' ? 'ger' : 'us';
-    const WK = side === 'us' ? 'how8' : 'how210', WKF = foe === 'us' ? 'how8' : 'how210';
+    const WK = side === 'us' ? 'how240' : 'how210', WKF = foe === 'us' ? 'how240' : 'how210';
     const WB = window.WORKS[WK], WBF = window.WORKS[WKF];
     const hq = window.hqOf(side), fhq = window.hqOf(foe);
     window.G.res[side].mp = window.G.res[foe].mp = 9000;
@@ -2239,7 +2238,7 @@ for (const device of TARGETS) {
     const fTwo = f3 ? window.placeWork(foe, WKF, f3.x, f3.y, 0, []) : 'nospot';
     /* the no-fire zone, from a tube standing close enough to reach the base it may not
        shell. His mission is taken; the same mission the other way round is refused. */
-    const key = side === 'us' ? 'am_how8' : 'ger_how210', keyF = foe === 'us' ? 'am_how8' : 'ger_how210';
+    const key = side === 'us' ? 'am_240' : 'ger_how210', keyF = foe === 'us' ? 'am_240' : 'ger_how210';
     const bA = Math.atan2(hq.y - fhq.y, hq.x - fhq.x);
     const mine = window.spawnUnit(side, key, fhq.x + Math.cos(bA) * 420, fhq.y + Math.sin(bA) * 420, 0);
     const bB = Math.atan2(fhq.y - hq.y, fhq.x - hq.x);
@@ -2324,7 +2323,7 @@ for (const device of TARGETS) {
       return { rounds, first: first < 0 ? null : +first.toFixed(1) };
     }
     const K = s => ({ how: s === 'us' ? 'us_how' : 'ger_how',
-                      bat: s === 'us' ? 'am_how8' : 'ger_how210',
+                      bat: s === 'us' ? 'am_240' : 'ger_how210',
                       mor: s === 'us' ? 'us_mor' : 'ger_mor' });
     const me = K(side), them = K(foe);
     const out = {
@@ -2544,13 +2543,13 @@ for (const device of TARGETS) {
     }
     const you = window.G.own, ai = 'us';
     const byRule = tryTwo(you, 'ger_tig');
-    const aiRule = window.unitLimit(ai, window.UNITS.am_how8);
+    const aiRule = window.unitLimit(ai, window.UNITS.am_240);
     window.G.hc[you].noLimit = true;
     const free = tryTwo(you, 'ger_tig');
-    const aiStill = window.unitLimit(ai, window.UNITS.am_how8);
+    const aiStill = window.unitLimit(ai, window.UNITS.am_240);
     window.G.hc[you].noLimit = false;
     window.G.hc[ai].noLimit = true;
-    const aiFree = window.unitLimit(ai, window.UNITS.am_how8);
+    const aiFree = window.unitLimit(ai, window.UNITS.am_240);
     const backByRule = tryTwo(you, 'ger_tig');
     window.G.hc[ai].noLimit = false;
     return { byRule, free, backByRule, aiRule, aiStill, aiFree,
@@ -6140,7 +6139,7 @@ for (const device of TARGETS) {
       a.cls = cls;
       return a;
     }
-    const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['am_how8', 'ger_how210']];
+    const PAIRS = [['us_mor', 'ger_mor'], ['us_how', 'ger_how'], ['am_240', 'ger_how210']];
     const six = [].concat.apply([], PAIRS);
     const shells = Object.keys(UNITS).filter(k => UNITS[k].w && UNITS[k].w.shell && UNITS[k].cat !== 'inf');
     const rows = {}, silent = [];
