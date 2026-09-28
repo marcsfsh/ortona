@@ -3859,8 +3859,12 @@ function buildMap(data) {
         G.craters.push({ x: e.x, y: e.y, r: e.r });
         carve(e.x, e.y, e.x, e.y, e.r * .78, -(2.6 + e.r * .15), { w: e.r * .55, h: 2 + e.r * .055 }, 'bowl');
         break;
-      case 'rubble': addCover(e.x, e.y, e.r, 2, 'rubble', null, 80); break;
-      case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0 }); break;
+      case 'rubble':
+        addCover(e.x, e.y, e.r, 2, 'rubble', null, 80);
+        /* a Norman house's heap is drawn with its debris, in the stone it was built of */
+        if (e.nt) G.covers[G.covers.length - 1].nt = 1;
+        break;
+      case 'debris': G.stacks.push({ x: e.x, y: e.y, r: e.r, kind: 'debris', s: e.s || 0, nt: e.nt ? 1 : 0, w: e.w, h: e.h }); break;
       case 'bunker':
         var bb2 = bunkerBox(e);
         var bsd = bunkerSide(e);
@@ -4614,12 +4618,14 @@ function stloMapData() {
       else g = { x: fr === 2 ? ln - dp / 2 : ln + dp / 2, y: p + w / 2, w: dp, h: w };
       var sd = ((g.x * .0137 + g.y * .0071) % 1 + 1) % 1;
       if ((q[2] + (q[3] || '')).indexOf('x') >= 0) {
-        /* what is left of a house the bombs took: the heap it came down into, the cover of
-           its footings and a scatter of what the fire did not burn */
-        var rr = r1(Math.min(g.w, g.h) / 2 + 4);
+        /* what is left of a house the bombs took: the heap it came down into, in the
+           town's own stone and not Ortona's brick (nt), laid over the plot the house stood
+           on and spilling onto the pavement, which is cover and is dear to cross; the
+           mirror's is another heap and not the same one again */
         [g.y, my(g.y)].forEach(function (yy) {
-          E.push({ t: 'rubble', x: r1(g.x), y: r1(yy), r: rr });
-          E.push({ t: 'debris', x: r1(g.x), y: r1(yy), r: rr, s: r1(sd * 100) / 100 });
+          E.push({ t: 'rubble', x: r1(g.x), y: r1(yy), r: r1(Math.min(g.w, g.h) / 2 + 4), nt: 1 });
+          E.push({ t: 'debris', x: r1(g.x), y: r1(yy), r: r1(Math.min(g.w, g.h) / 2 + 4), nt: 1, w: r1(g.w), h: r1(g.h),
+                   s: Math.round(((yy === g.y ? sd : sd + .37) % 1) * 100) / 100 });
         });
         p += w + (q[4] || 0);
         return;
@@ -4735,12 +4741,12 @@ function stloMapData() {
      and the long front of the prison (the Hotel-Dieu on the American side) along the north
      rampart. The walk inside the rampart is left clear the whole way round, because the
      parapet is where the rock is held from. */
-  row('x', 1800, 1378, 0, [[52, 72, 's3', 'r3'], [44, 72, 'r2h', 's2', 36], [68, 76, 's3h', 't3']]);
-  row('x', 2000, 1298, 0, [[66, 70, 's4', 's3']]);
-  row('x', 1830, 1266, 0, [[80, 50, 's3', 'r3'], [90, 50, 's3', 's3']]);
+  row('x', 1800, 1378, 0, [[52, 72, 's3g', 'r3'], [44, 72, 'x', 'x', 36], [68, 76, 's3h', 't3g']]);
+  row('x', 2000, 1298, 0, [[66, 70, 's4g', 's3']]);
+  row('x', 1830, 1266, 0, [[80, 50, 's3g', 'r3g'], [90, 50, 's3', 's3g']]);
   /* east of the street from the side gate, fronting the street along the church, each
      house as deep as the walk behind it allows, with a passage through to the walk */
-  row('x', 2108, 1298, 0, [[56, 84, 's3', 's3'], [48, 80, 'r3h', 's2'], [60, 76, 't3', 'r3', 36], [52, 56, 's2', 'r2']]);
+  row('x', 2108, 1298, 0, [[56, 84, 's3', 's3g'], [48, 80, 'r3hg', 's2'], [60, 76, 't3', 'r3g', 36], [52, 56, 'x', 'x']]);
   /* Notre-Dame, its apse on the Place and its west front over the point */
   E.push({ t: 'nhouse', style: 'notredame', x: 2290, y: MID, w: 280, h: 116, s: .3 });
   E.push({ t: 'paved', kind: 'piazza', x: 2430, y: 1330, w: 40, h: 140 });
@@ -4748,9 +4754,9 @@ function stloMapData() {
   /* ---- the Neuf-Bourg: the street along the neck from the Champ de Mars to the east gate,
      in three terraces between the two streets that go down to the valley, the eastern one
      from the flag at the junction */
-  row('x', 995, 1372, 0, [[48, 80, 's2h', 'r2'], [44, 76, 'r2h', 's3h'], [52, 84, 's3', 's3'], [46, 80, 't2h', 'r2h'], [45, 76, 's3', 't3']]);
-  row('x', 1270, 1372, 0, [[50, 86, 's3h', 's3'], [42, 80, 'r3h', 'r2'], [46, 80, 's2', 's2h'], [42, 76, 'r2', 's3']]);
-  row('x', 1490, 1372, 0, [[54, 80, 's3h', 'r3h'], [48, 82, 't3', 's3'], [40, 76, 'r2h', 'r2'], [58, 84, 's3', 's3h']]);
+  row('x', 995, 1372, 0, [[48, 80, 's2h', 'r2g'], [44, 76, 'r2hg', 's3h'], [52, 84, 's3', 's3g'], [46, 80, 'x', 'x'], [45, 76, 's3g', 't3']]);
+  row('x', 1270, 1372, 0, [[50, 86, 's3hg', 's3'], [42, 80, 'x', 'x'], [46, 80, 's2', 's2hg'], [42, 76, 'r2g', 's3']]);
+  row('x', 1490, 1372, 0, [[54, 80, 's3h', 'r3hg'], [48, 82, 't3g', 's3'], [40, 76, 'x', 'x'], [58, 84, 's3g', 's3h']]);
   pair('setts', 40, [[1250, 1400], [1250, 1200], [1215, 1080], [1190, 920]]);
   pair('setts', 40, [[1470, 1400], [1470, 1220], [1450, 1100], [1440, 962]]);
 
@@ -4761,28 +4767,28 @@ function stloMapData() {
   var brkN = kerb(BRK, 0, -26), rocS1 = kerb(ROC1, 0, 29), rocS2 = kerb(ROC2, 0, 29);
   /* the valley head, west of the first street down: the rue Torteron's first houses, and
      two on the rocade where the block is deep enough to hold both */
-  row('x', 1210, brkN, 0, [[50, 60, 's2', 'r2'], [40, 56, 'r2h', 's2h'], [46, 48, 's2', 's3'], [47, 48, 't2', 'r2']]);
-  row('x', 1300, rocS1, 1, [[50, 50, 's2', 'r2'], [47, 50, 'r2', 's2']]);
-  row('y', 769, 1457, 2, [[44, 60, 's2', 'r2'], [40, 58, 'r2h', 's2'], [44, 60, 's2', 's3'], [42, 58, 's2', 't2']]);
+  row('x', 1210, brkN, 0, [[50, 60, 's2', 'r2'], [40, 56, 'r2h', 's2hg'], [46, 48, 'x', 'x'], [47, 48, 't2g', 'r2']]);
+  row('x', 1300, rocS1, 1, [[50, 50, 's2', 'r2'], [47, 50, 'r2g', 's2']]);
+  row('y', 769, 1457, 2, [[44, 60, 's2', 'r2g'], [40, 58, 'r2h', 's2'], [44, 60, 's2g', 's3'], [42, 58, 's2', 't2']]);
   /* between the first and second streets down: the street sides full height, the rocade
      and the rue Torteron between them, and a footpath through the gardens in the middle */
-  row('y', 765, 1503, 3, [[48, 60, 's2', 'r2'], [44, 60, 'r2h', 's2'], [46, 60, 's2', 's3'], [44, 60, 's2h', 'r2']]);
-  row('y', 759, 1978, 2, [[54, 60, 's3h', 's2'], [50, 60, 'r2', 'r2h'], [52, 60, 's2', 's2'], [54, 60, 't2', 's3h']]);
-  row('x', 1563, rocS1, 1, [[52, 58, 's2', 'r2'], [46, 56, 'r2h', 's2'], [48, 58, 's2', 's2'], [44, 56, 's3', 't2', 36],
-                            [42, 56, 'r2', 's2'], [44, 58, 's2', 'r2'], [43, 56, 't2', 's2']]);
-  row('x', 1563, brkN, 0, [[50, 62, 's2h', 'r2'], [44, 60, 'r2', 's2'], [48, 62, 's3', 's3h'], [48, 60, 's2', 't2', 36],
-                           [46, 60, 'r2', 's2'], [40, 58, 's2h', 'r2h'], [43, 62, 't2', 's2']]);
+  row('y', 765, 1503, 3, [[48, 60, 's2', 'r2'], [44, 60, 'r2hg', 's2'], [46, 60, 'x', 'x'], [44, 60, 's2h', 'r2g']]);
+  row('y', 759, 1978, 2, [[54, 60, 's3h', 's2g'], [50, 60, 'r2g', 'r2h'], [52, 60, 's2', 's2'], [54, 60, 't2', 's3hg']]);
+  row('x', 1563, rocS1, 1, [[52, 58, 's2', 'r2'], [46, 56, 'r2h', 's2g'], [48, 58, 's2g', 's2'], [44, 56, 's3', 't2', 36],
+                            [42, 56, 'r2', 's2'], [44, 58, 'x', 'x'], [43, 56, 't2g', 's2']]);
+  row('x', 1563, brkN, 0, [[50, 62, 's2h', 'r2g'], [44, 60, 'r2g', 's2'], [48, 62, 'x', 'x'], [48, 60, 's2', 't2', 36],
+                           [46, 60, 'r2', 's2g'], [40, 58, 's2hg', 'r2h'], [43, 62, 't2', 's2']]);
   /* between the second and third, the street from the Bouloir down to the mill */
-  row('y', 763, 2022, 3, [[52, 60, 's3', 's2'], [50, 60, 'r2h', 's2'], [53, 60, 's2', 'r2'], [52, 60, 's2', 't2']]);
-  row('y', 772, 2278, 2, [[50, 60, 'r2', 's2'], [48, 60, 's2', 'r2h'], [46, 60, 's2', 's2'], [50, 60, 's3', 'r2']]);
-  row('x', 2082, rocS2, 1, [[46, 56, 's2h', 's2'], [44, 58, 'r2', 'r2h'], [46, 56, 's2', 's2']]);
-  row('x', 2082, brkN, 0, [[48, 60, 's3h', 's3'], [40, 58, 'r2', 'r3h'], [48, 62, 's2', 's2']]);
+  row('y', 763, 2022, 3, [[52, 60, 's3g', 's2'], [50, 60, 'r2h', 's2g'], [53, 60, 's2', 'r2'], [52, 60, 's2g', 't2']]);
+  row('y', 772, 2278, 2, [[50, 60, 'r2', 's2'], [48, 60, 'x', 'x'], [46, 60, 's2g', 's2'], [50, 60, 's3', 'r2g']]);
+  row('x', 2082, rocS2, 1, [[46, 56, 's2h', 's2g'], [44, 58, 'r2g', 'r2h'], [46, 56, 's2', 's2']]);
+  row('x', 2082, brkN, 0, [[48, 60, 's3hg', 's3'], [40, 58, 'x', 'x'], [48, 62, 's2', 's2g']]);
   /* and down to the quay, where the bank falls to the river */
-  row('y', 779, 2322, 3, [[46, 60, 's2', 'r2'], [44, 60, 'r2', 's2'], [45, 60, 's2h', 's2'], [46, 60, 's2', 'r2']]);
-  row('x', 2382, rocS2, 1, [[50, 56, 's2', 'r2'], [52, 58, 's2', 's2'], [52, 56, 'r3h', 's2']]);
-  row('x', 2382, brkN, 0, [[48, 58, 'r2', 's2'], [54, 60, 's2h', 't2'], [52, 58, 's3', 's3h']]);
+  row('y', 779, 2322, 3, [[46, 60, 's2', 'r2g'], [44, 60, 'r2g', 's2'], [45, 60, 's2h', 's2'], [46, 60, 's2', 'r2']]);
+  row('x', 2382, rocS2, 1, [[50, 56, 's2g', 'r2'], [52, 58, 's2', 's2g'], [52, 56, 'r3h', 's2']]);
+  row('x', 2382, brkN, 0, [[48, 58, 'r2g', 's2'], [54, 60, 'x', 'x'], [52, 58, 's3', 's3hg']]);
   /* the mill on the south bank, the tanneries downstream of it */
-  row('x', 1996, 1040, 1, [[80, 56, 's3', 's3']]);
+  row('x', 1996, 1040, 1, [[80, 56, 's3g', 's3']]);
   E.push({ t: 'nhouse', style: 'barn', x: 2210, y: 1066, w: 110, h: 44, s: .41 });
   E.push({ t: 'nhouse', style: 'barn', x: 2210, y: my(1066), w: 110, h: 44, s: .63 });
   E.push({ t: 'nhouse', style: 'barn', x: 2380, y: 1062, w: 120, h: 44, s: .17 });
@@ -4794,46 +4800,46 @@ function stloMapData() {
      down, which runs from the bocage lane to the street over the valley head */
   var torW = kerb(TOR, 1, -33), torE = kerb(TOR, 1, 33);
   pair('setts', 40, [[308, 1060], [664, 1060], [1007, 1060]]);
-  row('y', 500, torW, 2, [[56, 60, 's2h', 'r2'], [50, 58, 'r2', 's2'], [54, 62, 's2', 's2h']]);
-  row('y', 500, torE, 3, [[60, 62, 'r2', 's2h'], [52, 60, 's2h', 'r2', 40], [48, 58, 's2', 's2']]);
-  row('y', 880, torW, 2, [[52, 60, 's2', 'r2h'], [50, 58, 'r2h', 's2'], [52, 62, 's2', 's2']]);
+  row('y', 500, torW, 2, [[56, 60, 's2h', 'r2'], [50, 58, 'r2', 's2g'], [54, 62, 's2', 's2h']]);
+  row('y', 500, torE, 3, [[60, 62, 'r2', 's2h'], [52, 60, 'x', 'x', 40], [48, 58, 's2', 's2']]);
+  row('y', 880, torW, 2, [[52, 60, 's2g', 'r2h'], [50, 58, 'x', 'x'], [52, 62, 's2', 's2g']]);
   row('y', 880, torE, 3, [[54, 62, 's3h', 'r2'], [46, 58, 'r2', 's2'], [54, 60, 's2', 's2h']]);
-  row('y', 1086, torW, 2, [[44, 58, 's2h', 'r2'], [42, 58, 'r2', 's2']]);
-  row('y', 1086, torE, 3, [[46, 60, 'r2h', 's3'], [40, 58, 's2', 'r2']]);
+  row('y', 1086, torW, 2, [[44, 58, 's2h', 'r2g'], [42, 58, 'r2', 's2']]);
+  row('y', 1086, torE, 3, [[46, 60, 'r2hg', 's3'], [40, 58, 's2', 'r2']]);
   /* Place Sainte-Croix, where the rocade crosses the road: the abbey church of Sainte-Croix
      on its north-east corner on the German side, the school opposite it on the American,
      and the rocade built up either side of the crossing */
   E.push({ t: 'paved', kind: 'piazza', x: 600, y: 700, w: 140, h: 160 });
   E.push({ t: 'nhouse', style: 'church', x: 815, y: 722, w: 150, h: 56, ht: 56, flip: 1, s: .52 });
   var rocN0 = kerb([[0, 790], [620, 800], [1050, 805]], 0, -29), rocS0 = kerb([[0, 790], [620, 800], [1050, 805]], 0, 29);
-  row('x', 924, rocN0, 0, [[48, 62, 's2h', 'r2'], [48, 60, 'r2', 's2']]);
-  row('x', 772, rocS0, 1, [[52, 60, 's2h', 'r3'], [46, 58, 'r2', 's2'], [50, 62, 's2', 's2h', 36], [50, 60, 'r2h', 's2']]);
-  row('x', 386, rocS0, 1, [[52, 60, 's2h', 's2'], [46, 58, 's2', 'r2h'], [50, 60, 'r2', 's2']]);
+  row('x', 924, rocN0, 0, [[48, 62, 's2h', 'r2'], [48, 60, 'r2g', 's2']]);
+  row('x', 772, rocS0, 1, [[52, 60, 's2h', 'r3g'], [46, 58, 'x', 'x'], [50, 62, 's2', 's2h', 36], [50, 60, 'r2h', 's2']]);
+  row('x', 386, rocS0, 1, [[52, 60, 's2h', 's2'], [46, 58, 's2', 'r2h'], [50, 60, 'r2g', 's2']]);
   /* the street along the valley head from the rocade to the Champ de Mars, built up on the
      side toward the Route de Torigni and open on the side over the valley, where the
      gardens drop away */
   var estW = kerb(EST, 1, -23);
-  row('y', 895, estW, 2, [[46, 56, 'r2h', 's2'], [52, 60, 's2', 's2h']]);
-  row('y', 1086, estW, 2, [[48, 58, 'r2', 's2']]);
+  row('y', 895, estW, 2, [[46, 56, 'r2h', 's2'], [52, 60, 's2g', 's2h']]);
+  row('y', 1086, estW, 2, [[48, 58, 'r2', 's2g']]);
   /* the Champ de Mars: the parade ground on the crest of the ridge, framed on the German
      side by a terrace on either side of where the Route de Torigni comes into it */
-  row('x', 572, 1248, 0, [[48, 70, 's3', 'r3'], [40, 72, 'r3h', 's3h']]);
-  row('x', 730, 1248, 0, [[54, 72, 's3h', 's3'], [48, 68, 's3', 'r3h'], [52, 70, 'r3', 's3'], [46, 66, 's3h', 't3']]);
+  row('x', 572, 1248, 0, [[48, 70, 's3', 'r3g'], [40, 72, 'r3h', 's3h']]);
+  row('x', 730, 1248, 0, [[54, 72, 's3h', 's3g'], [48, 68, 's3g', 'r3h'], [52, 70, 'x', 'x'], [46, 66, 's3h', 't3']]);
 
   /* ---- the Bouloir: the quarter on the crest between the cross street the headquarters'
      roads come in by and the rocade, built up along both and broken by gardens; north of
      the cross street, where the headquarters stand, only a few houses and the cemetery */
   var bouS = kerb(BOU, 0, 24), bouN = kerb(BOU, 0, -24), rocN1 = kerb(ROC1, 0, -29), rocN2 = kerb(ROC2, 0, -29);
-  row('x', 1130, bouS, 1, [[50, 62, 's2', 'r2'], [46, 60, 'r2h', 's2'], [52, 64, 's2', 's3', 40], [48, 60, 's2h', 'r2'], [46, 62, 'r2', 's2'], [46, 60, 's2', 't2']]);
-  row('x', 1512, bouS, 1, [[52, 64, 's2h', 's2'], [48, 60, 'r2', 'r2h'], [50, 62, 's3', 's2', 44], [46, 60, 's2', 'r2'], [52, 64, 't2', 's2h'],
-                           [48, 62, 's2', 's2', 36], [48, 60, 'r2h', 's3']]);
-  row('x', 2004, bouS, 1, [[50, 62, 's3h', 'r2'], [46, 60, 's2', 's2'], [48, 64, 'r2', 's2h', 36], [48, 60, 's2', 'r2'], [46, 60, 's2h', 's2']]);
+  row('x', 1130, bouS, 1, [[50, 62, 's2', 'r2'], [46, 60, 'r2h', 's2g'], [52, 64, 's2', 's3', 40], [48, 60, 's2h', 'r2'], [46, 62, 'r2g', 's2'], [46, 60, 's2', 't2']]);
+  row('x', 1512, bouS, 1, [[52, 64, 's2h', 's2'], [48, 60, 'r2', 'r2h'], [50, 62, 's3g', 's2', 44], [46, 60, 's2', 'r2'], [52, 64, 'x', 'x'],
+                           [48, 62, 's2', 's2g', 36], [48, 60, 'r2h', 's3']]);
+  row('x', 2004, bouS, 1, [[50, 62, 's3h', 'r2'], [46, 60, 's2', 's2g'], [48, 64, 'r2', 's2h', 36], [48, 60, 's2g', 'r2'], [46, 60, 's2h', 's2']]);
   row('x', 2322, bouS, 1, [[50, 62, 'r2', 's2'], [48, 60, 's2', 'r2h'], [52, 62, 's2h', 's2']]);
-  row('x', 1082, rocN1, 0, [[48, 60, 's2', 'r2'], [50, 62, 'r2', 's2h'], [46, 60, 's2h', 's2', 40], [52, 62, 's2', 'r2'], [48, 60, 't2', 's2'],
-                            [46, 62, 's2', 's3'], [48, 60, 'r2h', 's2']]);
-  row('x', 1512, rocN1, 0, [[50, 60, 's2', 's2h'], [48, 62, 'r2h', 's2'], [46, 60, 's2', 'r2', 40], [52, 64, 's3', 's2'], [48, 60, 's2', 't2', 36],
+  row('x', 1082, rocN1, 0, [[48, 60, 's2', 'r2'], [50, 62, 'r2', 's2h'], [46, 60, 's2h', 's2', 40], [52, 62, 'x', 'x'], [48, 60, 't2', 's2g'],
+                            [46, 62, 's2', 's3'], [48, 60, 'r2hg', 's2']]);
+  row('x', 1512, rocN1, 0, [[50, 60, 's2', 's2h'], [48, 62, 'r2hg', 's2'], [46, 60, 's2', 'r2', 40], [52, 64, 's3', 's2g'], [48, 60, 's2', 't2', 36],
                             [50, 62, 'r2', 's2'], [52, 60, 's2h', 'r2h']]);
-  row('x', 2014, rocN2, 0, [[48, 62, 's2', 'r2'], [46, 60, 'r2h', 's2'], [50, 62, 's2', 's2', 36], [44, 60, 's2', 'r2'], [40, 62, 's2h', 's2']]);
+  row('x', 2014, rocN2, 0, [[48, 62, 's2g', 'r2'], [46, 60, 'r2h', 's2'], [50, 62, 's2', 's2', 36], [44, 60, 's2', 'r2g'], [40, 62, 's2h', 's2']]);
   row('x', 2322, rocN2, 0, [[48, 60, 'r2', 's2'], [50, 62, 's2h', 'r2'], [46, 60, 's2', 's2']]);
   row('x', 1420, bouN, 0, [[54, 60, 's2', 'r2'], [50, 58, 'r2', 's2', 60], [52, 62, 's2h', 's2']]);
   row('x', 2330, bouN, 0, [[50, 60, 's2', 'r2'], [48, 60, 'r2', 's2'], [52, 62, 's2', 's2h']]);
@@ -4883,12 +4889,12 @@ function stloMapData() {
   /* La Vaucelle: the west quay built up between the rocade and the level crossing, and the
      Rue de la Gare on both sides */
   var qwE = kerb(QW, 1, 25), gare = kerb([[3420, 780], [3430, 1240], [3440, 1400]], 1, 0);
-  row('y', 800, qwE, 3, [[52, 60, 's2h', 'r2'], [46, 58, 'r2', 's2'], [50, 62, 's3', 's2h', 40], [48, 60, 's2', 'r2'],
-                         [44, 58, 'r2h', 's2'], [50, 60, 's2', 't2', 36], [44, 58, 's2', 's2']]);
-  row('y', 806, function (y) { return gare(y) - 27; }, 2, [[48, 60, 's2', 'r2'], [50, 62, 'r2h', 's2'], [46, 60, 's2', 's2', 40],
-                                                         [52, 60, 's3h', 'r2'], [48, 58, 's2', 's2h']]);
-  row('y', 806, function (y) { return gare(y) + 27; }, 3, [[54, 62, 'r2', 's2'], [46, 60, 's2h', 'r2'], [50, 62, 's2', 's3', 44],
-                                                         [48, 60, 'r2', 's2'], [50, 62, 's2h', 's2']]);
+  row('y', 800, qwE, 3, [[52, 60, 's2hg', 'r2'], [46, 58, 'r2', 's2g'], [50, 62, 's3', 's2h', 40], [48, 60, 'x', 'x'],
+                         [44, 58, 'r2hg', 's2'], [50, 60, 's2', 't2g', 36], [44, 58, 's2g', 's2']]);
+  row('y', 806, function (y) { return gare(y) - 27; }, 2, [[48, 60, 's2', 'r2'], [50, 62, 'x', 'x'], [46, 60, 's2g', 's2', 40],
+                                                         [52, 60, 's3h', 'r2g'], [48, 58, 's2', 's2h']]);
+  row('y', 806, function (y) { return gare(y) + 27; }, 3, [[54, 62, 'r2g', 's2'], [46, 60, 's2h', 'r2'], [50, 62, 's2', 's3', 44],
+                                                         [48, 60, 'r2', 's2g'], [50, 62, 's2h', 's2']]);
   /* the road up from the rocade to the right-hand headquarters, built up on its east side
      below the gasworks */
   row('y', 520, 3451, 3, [[50, 60, 's2', 'r2'], [46, 58, 'r2h', 's2'], [52, 60, 's2', 's2h', 36], [48, 58, 'r2', 's2']]);
@@ -4989,6 +4995,72 @@ function stloMapData() {
   /* a school on Place Sainte-Croix's American corner where the abbey church stands on the
      German one: the same footprint, three storeys of rendered stone on the square */
   E.push(dress({ t: 'house', style: 'norman', x: 815, y: my(722), w: 150, h: 56, front: 1, s: .44 }, 'r3'));
+
+  /* ---- what six weeks of it have left. The bombers of the 6th and 7th of June put the
+     centre of the town into craters and the station yard with it; since then it has been
+     shelled from both sides. Everything here plays, so every piece of it is on both halves:
+     a crater is a hole a section lies in and a hull climbs out of slowly, a roadblock is a
+     street shut to a tank, a pit or a sandbag wall is somewhere a gun was sited, and the
+     wire is where the ground was meant to be crossed slowly. */
+  function both2(e) {
+    E.push(e);
+    var t = {}, k;
+    for (k in e) t[k] = e[k];
+    if (t.y !== undefined) t.y = my(t.y);
+    if (t.y1 !== undefined) { t.y1 = my(t.y1); t.y2 = my(t.y2); }
+    if (t.a !== undefined) t.a = -t.a;
+    if (t.y !== MID || t.y1 !== undefined) E.push(t);
+  }
+  /* the craters: in the Champ de Mars short of the flag, in the gardens under the neck and
+     behind the Neuf-Bourg, in the Bouloir's gardens, all over the station yard and its
+     running lines, on the forecourt, in the water meadow, in the Haras's yard, and one in
+     the Place in front of the church */
+  [[820, 1360, 24], [1600, 1110, 30], [1380, 1188, 24], [1100, 1236, 26], [1700, 580, 28], [2160, 610, 20],
+   [3016, 1004, 30], [3150, 960, 32], [3210, 860, 26], [2990, 700, 28], [3160, 1272, 22], [2800, 1336, 20],
+   [2900, 500, 34], [2862, 320, 28], [175, 652, 16], [420, 1000, 28], [3560, 980, 26]].forEach(function (c) {
+    both2({ t: 'crater', x: c[0], y: c[1], r: c[2] });
+  });
+  E.push({ t: 'crater', x: 2125, y: MID, r: 18 });
+  /* the barricades: the causeway to the east gate, the street through the side gates, the
+     Route de Torigni where it comes onto the Champ de Mars, the rue Torteron at the valley
+     head, and the west quay below the rocade */
+  E.push({ t: 'roadblock', x: 1710, y: MID, a: 0 });
+  both2({ t: 'roadblock', x: 2086, y: 1214, a: Math.PI / 2 });
+  both2({ t: 'roadblock', x: 690, y: 1200, a: 1.4 });
+  both2({ t: 'roadblock', x: 1214, y: 926, a: .21 });
+  both2({ t: 'roadblock', x: 2768, y: 860, a: 1.7 });
+  /* sandbagged positions at the corners that command a street, and weapon pits dug where a
+     garden looks out over open ground */
+  [[2040, 1320, 0], [2440, 1296, .6], [2960, 1266, 0], [610, 1270, 0], [1512, 1190, Math.PI / 2],
+   [2560, 1022, Math.PI / 2], [3370, 1206, 0]].forEach(function (b) { both2({ t: 'bags', x: b[0], y: b[1], r: b[0] === 2960 ? 20 : 26, a: b[2] }); });
+  [[1640, 1188, 24], [2900, 620, 22], [300, 960, 22], [3560, 560, 22], [1120, 1150, 22]].forEach(function (p) {
+    both2({ t: 'emplace', x: p[0], y: p[1], r: p[2], a: 0 });
+  });
+  /* wire across the neck in front of the dry ditch, and across the water meadow */
+  both2({ t: 'wire', x1: 1718, y1: 1250, x2: 1718, y2: 1356 });
+  both2({ t: 'wire', x1: 2830, y1: 262, x2: 2960, y2: 262 });
+  both2({ t: 'wire', x1: 1250, y1: 1260, x2: 1250, y2: 1290 });
+  /* what was left in the streets: carts, and the telegraph poles along the rocade, half of
+     them down; and the smoke of what is still burning */
+  [[1106, 424], [2300, 862], [684, 1150], [3432, 1000], [2088, 1350]].forEach(function (c, i) {
+    both2({ t: 'cart', x: c[0], y: c[1], a: r1((i + 1) * 1.3) });
+  });
+  /* and one abandoned on the midline in the Neuf-Bourg, which is its own reflection */
+  E.push({ t: 'cart', x: 1640, y: MID, a: 0 });
+  for (var pk = 0; pk < 12; pk++) {
+    var px = 1120 + pk * 124, py = (px < 1990 ? kerb(ROC1, 0, -22)(px) : kerb(ROC2, 0, -22)(px));
+    both2({ t: 'pole', x: px, y: r1(py), broken: pk % 3 === 1 ? 1 : 0 });
+  }
+  [[1900, 1330], [1341, 1336], [2830, 1010], [3020, 1120]].forEach(function (p) { both2({ t: 'smoke', x: p[0], y: p[1] }); });
+  /* and a tree that stood where a bomb fell or a pit was dug is not there any more */
+  var holes = E.filter(function (e) { return e.t === 'crater' || e.t === 'emplace'; });
+  for (var ti = E.length - 1; ti >= 0; ti--) {
+    if (E[ti].t !== 'tree') continue;
+    for (var hi = 0; hi < holes.length; hi++) {
+      var ho = holes[hi], hr = ho.t === 'emplace' ? (ho.r || 22) + 12 : ho.r + 6;
+      if (Math.hypot(ho.x - E[ti].x, ho.y - E[ti].y) < hr) { E.splice(ti, 1); break; }
+    }
+  }
 
   /* ---- the flags. Sixteen: three a side by the headquarters, three a side on the forward
      row, and four on the midline, three of them the victory flags. */
@@ -5104,6 +5176,11 @@ function stloMapData() {
   return { name: 'Saint-Lô', when: 'NORMANDY · 18 JUL 1944', version: 1, land: 'stlo', w: 3800, h: 2800,
            entities: E, height: [] };
 }
+
+
+
+
+
 
 function landOmaha(h) {
   for (var j = 0; j < HH; j++) for (var i = 0; i < HW; i++) h[hidx(i, j)] = omahaZ(i * HG, j * HG);
@@ -5806,6 +5883,9 @@ function rebuildGrid() {
     }); return; }
     blockRect(p.x, p.y, p.w, p.h, 6);
   });
+  /* and a house the raids took down before the battle is the same masonry as one a shell
+     takes down during it */
+  G.stacks.forEach(function (st) { if (st.kind === 'debris' && st.nt) markRect(rubg, st.x, st.y, st.w || st.r * 2, st.h || st.r * 2, 0); });
   G.blds.forEach(function (b) { blockRect(b.x, b.y, b.def.w, b.def.h, 6); });
   /* Hulls that burned where they stopped. Marked a little inside their own length, so
      that the cover a section takes behind one is still ground it can stand on, and they
@@ -17282,7 +17362,7 @@ function registerMaterials() {
     tag([PZ.track, PZ.trackLit], 'track'); tag([PZ.tarp], 'canvas'); tag([PZ.wood], 'wood');
   }
   tag(['#5e4a2f', '#75603f', '#4a3924', '#5a4630', '#6b5438', '#4e402c', '#5f4e36', '#4d4130', '#6b5c44',
-       '#5a4a32', '#6e5c40', '#4c3f2b', '#4c3e2a', '#40341f', '#4e4128', '#5b4930', '#6b5738', '#3a3226', '#4a4030',
+       '#5a4a32', '#6e5c40', '#4c3f2b', '#4c3e2a', '#40341f', '#4e4128', '#5b4930', '#6b5738', '#373226', '#4a4032',
        '#4b4434', '#635944', '#5d5136', '#4a3a26', '#5c4a32'], 'wood');
   tag(['#6f6444', '#85795a', '#5f5539', '#766b4a', '#8d815a', '#66593c', '#736846', '#655c40', '#7a7050', '#57503a'], 'hessian');
   if (typeof BRICK !== 'undefined') tag(BRICK.concat(['#b3a892']), 'brick');
@@ -17292,9 +17372,9 @@ function registerMaterials() {
   if (typeof SHUTTER !== 'undefined') tag(SHUTTER, 'wood');
   if (typeof TILE !== 'undefined') tag(TILE.concat(['#7d4a35', '#8f5740', '#7a4634', '#8a5236', '#6e4030']), 'tile');
   tag(['#a19680', '#b8ad95', '#8f836a', '#a89b80', '#8b8067', '#a2977c', '#7d7460', '#c9bd9f', '#d7ccae', '#655c40'], 'stone');
-  tag(['#6a6a60', '#8a8a7e', '#7a7a6e', '#74746a'], 'concrete'); tag(['#8e8770', '#a29b83', '#7c7562', '#8b846f'], 'stone');
-  tag(['#948c78', '#7a7362', '#a9a189'], 'stone');
-  tagEdges(['#948c78', '#7a7362', '#a9a189'], 'stone');
+  tag(['#6a6a60', '#8a8a7e', '#7a7a6e', '#74746a'], 'concrete'); tag(['#8e8770', '#a29b83', '#7c7562', '#8b846e'], 'stone');
+  tag(['#948c78', '#7a7364', '#a9a189'], 'stone');
+  tagEdges(['#948c78', '#7a7364', '#a9a189'], 'stone');
   tag(['#3f3b30', '#57513f', '#6a6350', '#3a3d34', '#4a4d42', '#55584c', '#2b2e23', '#44483a', '#1a1b16', '#26251f', '#35392f', '#3d4133', '#33362a', '#2a2d24', '#20231a', '#2e3226', '#c9c7b0'], 'steel');
   tag(['#4d5340', '#5d6450', '#41473a', '#4f5643', '#8a7a4e'], 'paint');
   tag(['#cfccbe', '#dcd9cb', '#8e2f26', '#a03a30', '#6b5a3c', '#7d6a48', '#3c3a2e'], 'paint');
@@ -18540,6 +18620,57 @@ function buildAlbedo(rect) {
 }
 
 /* ---- every fixed thing on the map, merged into one buffer ---- */
+/* ---- a farm cart ----
+   The two-wheeled charrette of the Norman country, left in the street where the people
+   who were loading it gave up: two tall spoked wheels with iron tyres, a bed with ladder
+   sides leaning out from it, and the shafts down on the road, because a cart with no horse
+   in it tips forward onto them. Some still carry what was being got out of the house, and
+   some were turned over by the blast of the shell that ended it. x runs along it with the
+   shafts forward, and it stands on the ground at its axle. */
+function cartModel(seed) {
+  var n = 0, f = [], k, R = 8.6, WD = ['#5a4a32', '#6e5c40', '#4c3f2b', '#5b4930', '#6b5738'];
+  function r() { n++; return ntR(seed, n); }
+  var wd = WD[Math.floor(r() * WD.length)], wdD = '#40341f', iron = NDAME.iron, zb = R + 1.4, over = r() < .22;
+  function wheel(yc) {
+    var w = [];
+    for (k = 0; k < 14; k++)
+      w = w.concat(pitch(box(0, 0, R - .9, 2 * R * Math.sin(Math.PI / 14) + .3, 1.8, .9, iron, iron, iron, 0), (k + .5) / 14 * TAU, 0, 0));
+    for (k = 0; k < 12; k++) w = w.concat(pitch(box(0, 0, 1.2, 1.1, 1.1, R - 2.1, wd, wd, wdD, 0), k / 12 * TAU, 0, 0));
+    w = w.concat(roll(cyl(0, 0, -1.7, 1.7, 1.7, 3.4, 10, wdD, iron), Math.PI / 2, 0, 0));
+    return place(w, 0, 0, yc, R);
+  }
+  f = f.concat(over ? [] : wheel(-9.4), wheel(9.4));
+  f = f.concat(box(0, 0, R - .8, 2.2, 21, 1.6, iron, iron, iron, 0));
+  /* the bed, the tailboard and the ladder sides, and the shafts that are its frame */
+  f = f.concat(box(-1, 0, zb, 34, 14.4, 1.2, wd, lit(wd, 1.06), wdD, 0));
+  f = f.concat(box(-17.6, 0, zb + 1.2, 1, 14.4, 5, wd, lit(wd, 1.06), wdD, 0));
+  [-1, 1].forEach(function (sg) {
+    var side = box(-1, sg * 7.2, zb + 6, 34, .9, 1, wd, lit(wd, 1.06), wdD, 0)
+      .concat(box(-1, sg * 7.2, zb + 11.5, 35, 1, 1.1, wd, lit(wd, 1.06), wdD, 0));
+    for (var sx = -16; sx <= 15; sx += 5.1) side = side.concat(box(sx, sg * 7.2, zb + 1.2, .8, .8, 11.4, wdD, wd, wdD, 0));
+    f = f.concat(roll(side, sg * .24, sg * 7.2, zb + 1.2));
+    f = f.concat(box(16, sg * 5.6, zb - 1.7, 62, 1.7, 1.7, wd, lit(wd, 1.06), wdD, 0));
+  });
+  /* what was being got away: a mattress, a trunk, a chair and a sack or two */
+  if (r() < .5) {
+    f = f.concat(box(-3, 0, zb + 1.2, 22, 12, 3.2, RAIL.tarp[Math.floor(r() * 3)], RAIL.tarp[0], RAIL.tarp[2], 0));
+    f = f.concat(place(box(0, 0, zb + 4.4, 9, 6, 5.5, RAIL.crate[0], RAIL.crate[1], RAIL.crate[2], 0), r() - .5, -9, 1.5, 0));
+    f = f.concat(place(box(0, 0, zb + 4.4, 5, 5, 4, RAIL.tarp[1], RAIL.tarp[1], RAIL.tarp[2], 0), r(), 4, -2, 0));
+    f = f.concat(place(box(0, 0, zb + 4.4, 5.5, 5.5, 1, wd, wd, wdD, 0).concat(box(-2.4, 0, zb + 5.4, .9, 5.5, 7, wd, wd, wdD, 0)), r() * TAU, 7, 2.5, 0));
+  }
+  /* no horse, so it has come down onto its shafts */
+  f = pitch(f, -.18, 0, R);
+  if (over) {
+    /* turned over by a blast onto the side whose wheel came off, and that wheel lying
+       flat in the road beside it */
+    f = roll(f, 1.42, 0, 0);
+    var lo = 1e9;
+    f.forEach(function (fc) { fc.v.forEach(function (p) { if (p[2] < lo) lo = p[2]; }); });
+    f = place(f, 0, 0, 0, -lo - .4);
+    f = f.concat(place(roll(wheel(0), Math.PI / 2, 0, R), 0, 22 + r() * 8, -18 - r() * 6, -R + 1));
+  }
+  return f;
+}
 function sceneProps(tile) {
   var out = [], outA = [], outC = [], outAC = [], tiled = tile > 0, onlyStatic = tile === 0;
   function mine(x, y) { return !onlyStatic && (!tiled || tileOf(x, y) === tile); }
@@ -18650,7 +18781,7 @@ function sceneProps(tile) {
      the slope in slabs, and what it sheds collects at the foot. Placed off the
      heightfield's own gradient rather than scattered, so a rock is always on a face and
      never sitting in the middle of a field. ---- */
-  var OG = 34, ROCK = '#948c78', ROCKD = '#7a7362', ROCKL = '#a9a189';
+  var OG = 34, ROCK = '#948c78', ROCKD = '#7a7364', ROCKL = '#a9a189';
   for (var oy = 140; !LAND.hand && oy < WORLD.h - 60; oy += OG) {
     for (var ox = 46; ox < WORLD.w - 46; ox += OG) {
       var oz = naturalZ(ox, oy);
@@ -18736,7 +18867,7 @@ function sceneProps(tile) {
     /* Narrower and dirtier than they were. A pavement twelve units wide in the palest
        stone on the map turned every frontage into a white ribbon and swallowed the
        street between them. */
-    var pw = 8.5, kerb = '#7c7562', flag = '#8b846f';
+    var pw = 8.5, kerb = '#7c7562', flag = '#8b846e';
     [[bk.x, bk.y + bk.h / 2 + pw / 2 + 1, bk.w + 2 * pw + 2, pw], [bk.x, bk.y - bk.h / 2 - pw / 2 - 1, bk.w + 2 * pw + 2, pw],
      [bk.x + bk.w / 2 + pw / 2 + 1, bk.y, pw, bk.h + 2], [bk.x - bk.w / 2 - pw / 2 - 1, bk.y, pw, bk.h + 2]].forEach(function (sw) {
       put(box(0, 0, 0, sw[2], sw[3], 1.6, flag, lit(flag, 1.06), kerb, .3), sw[0], sw[1], 0);
@@ -19045,7 +19176,7 @@ function sceneProps(tile) {
   G.covers.forEach(function (c) {
     if (!mine(c.x, c.y)) return;
     seedAt(c.x, c.y, 6);
-    if (c.kind === 'rubble') {
+    if (c.kind === 'rubble' && !c.nt) {
       for (var k2 = 0; k2 < 4; k2++) {
         var sl = slab(srange(14, 28), srange(8, 18), srange(5, 8), srand());
         var tilt = pitch(roll(sl, srange(-.5, .5), 0, 0), srange(-.7, .7), 0, 0);
@@ -19071,7 +19202,11 @@ function sceneProps(tile) {
   G.stacks.forEach(function (st) {
     if (!mine(st.x, st.y)) return;
     seedAt(st.x, st.y, 7);
-    if (st.kind === 'debris') {
+    if (st.kind === 'debris' && st.nt) {
+      var hz = groundZ(st.x, st.y);
+      put(ntHeap(st.w || st.r * 2, st.h || st.r * 2, Math.floor(st.s * 1000) + 7,
+                 function (u, v) { return groundZ(st.x + u, st.y + v) - hz; }), st.x, st.y, 0);
+    } else if (st.kind === 'debris') {
       /* a house's worth of debris: slabs, tiles, a beam or two, a door */
       for (var d = 0; d < 3; d++) {
         var sl2 = slab(srange(12, 22), srange(6, 14), srange(5, 7), srand());
@@ -19125,17 +19260,12 @@ function sceneProps(tile) {
   });
   G.carts.forEach(function (ct) {
     if (!mine(ct.x, ct.y)) return;
-    var f = box(0, 0, 9, 44, 20, 9, '#5a4a32', '#6e5c40', '#4c3f2b')
-      .concat(box(0, 0, 18, 44, 4, 10, '#4c3e2a', '#5f4e36'))
-      .concat(box(0, -11, 3, 14, 3, 14, '#40341f', '#4e4128'))
-      .concat(box(0, 11, 3, 14, 3, 14, '#40341f', '#4e4128'))
-      .concat(pitch(box(30, 0, 5, 30, 2.6, 2.6, '#5b4930', '#6b5738'), -.2, 15, 5));
-    put(f, ct.x, ct.y, ct.a);
+    put(cartModel(Math.floor(ct.x * 7 + ct.y * 13)), ct.x, ct.y, ct.a);
   });
   G.poles.forEach(function (pl) {
     if (!mine(pl.x, pl.y)) return;
     var f = cyl(0, 0, 0, 3, 3, 84, 6, '#4d4130', '#6b5c44');
-    f = f.concat(pitch(box(9, 0, 82, 18, 2.4, 2.4, '#3a3226', '#4a4030'), pl.broken ? -.9 : -.15, 0, 82));
+    f = f.concat(pitch(box(9, 0, 82, 18, 2.4, 2.4, '#373226', '#4a4032'), pl.broken ? -.9 : -.15, 0, 82));
     put(f, pl.x, pl.y, 0);
   });
   /* ---- roadblocks at the four street mouths into the town: a demolished house's
@@ -19162,7 +19292,7 @@ function sceneProps(tile) {
   });
   /* game buildings are dynamic; sector flag poles are static */
   if (!tiled) G.sectors.forEach(function (sc) {
-    put(cyl(0, 0, 0, 1.8, 1.8, 46, 6, '#2a2418', '#4a4030'), sc.x, sc.y, 0);
+    put(cyl(0, 0, 0, 1.8, 1.8, 46, 6, '#2a2418', '#4a4032'), sc.x, sc.y, 0);
   });
   return { opaque: joined(out, outC), alpha: joined(outA, outAC) };
 }
@@ -20842,7 +20972,7 @@ function tileRoof(cx, cy, z0, len, wid, rise, col) {
     { v: [[hl, -hw, z0], [hl, hw, z0], [hl, 0, z0 + rise]], c: lit('#b8a888', .95) },
     { v: [[-hl, hw, z0], [-hl, -hw, z0], [-hl, 0, z0 + rise]], c: lit('#b8a888', .95) },
     /* underside so nothing shows through from below the eaves */
-    { v: [[-hl, hw, z0], [hl, hw, z0], [hl, -hw, z0], [-hl, -hw, z0]], c: '#3a3226' }
+    { v: [[-hl, hw, z0], [hl, hw, z0], [hl, -hw, z0], [-hl, -hw, z0]], c: '#373226' }
   ];
   f = f.concat(box(0, 0, z0 + rise - .6, len + 8, 3.2, 1.6, lit(col, .7), lit(col, .6)));
   return place(f, 0, cx, cy, 0);
@@ -37636,11 +37766,11 @@ var NORM = { stone: ['#a09984', '#97917d', '#aea48e', '#968b78'], quoin: '#bdb4a
    bay's middle at the origin, faces numbered as ruinFace numbers them. */
 var NTOWN = {
   stone: ['#8f897c', '#9a9282', '#86847c', '#a19886', '#7e7b73'],
-  render: ['#c9bea4', '#bdb298', '#d2c7ad', '#c2b8a2', '#b7ab93'],
+  render: ['#c9bea4', '#bdb199', '#d2c7ad', '#c2b8a2', '#b7ab93'],
   infill: ['#cdbf9c', '#c4b48e', '#d6c9a8'], timber: '#3b3024',
   dress: '#c2baa6', dressD: '#a9a08e',
   shut: ['#5d6f78', '#6f7d62', '#7a5a40', '#b9b5a4', '#4f5a52'],
-  glass: '#23282a', dark: '#1b1d1c', floor: '#3e372b', joist: '#4a3a28', char: '#2a2520',
+  glass: '#23282a', dark: '#1b1d1c', floor: '#3e372b', joist: '#4a3a28', char: '#2a2220',
   door: ['#4a3a2b', '#3d4a52', '#5a3d2e'],
   shop: ['#3c4a3c', '#5a2f2a', '#2f3d4f', '#6a5236'],
   slate: '#474d53', slateL: '#555c63', slateD: '#393d42', stack: '#8a7f70', pot: '#8a5a44'
@@ -37907,6 +38037,74 @@ function ntBay(w, d, h, seed, st, o) {
         f = f.concat(ra);
       }
     }
+  }
+  return f;
+}
+/* ---- a house the June raids brought down ----
+   Most of the old town was a field of these by July: the walls gone down into their own
+   cellars and out across the pavement, a mound of the stone they were built of with the
+   slates and the charred floors through it, and here and there a chimney breast still
+   standing out of it, because a stack is the last thing in a house to fall. w runs along
+   x and d along y, which is the plot the house stood on, and the mound spills a little
+   past it on every side. `gz(u, v)` is how far the ground at a point of it stands above
+   the ground at its middle, because on a street that climbs the rock a mound laid level
+   floats at its low end and is buried at its high one. */
+function ntHeap(w, d, seed, gz) {
+  var N = NTOWN, f = [], k, n = 0, ax = w / 2 + 5, ay = d / 2 + 5, hm = Math.min(24, Math.min(w, d) * .42);
+  function r() { n++; return ntR(seed, n); }
+  function g(u, v) { return gz ? gz(u, v) : 0; }
+  /* how high the heap stands at a point of it, from the ground there */
+  function hAt(rho) { return hm * Math.max(0, 1 - Math.pow(rho, 1.6)); }
+  /* the body of the mound, laid in a ring from the ground up to a ragged crest, so no
+     ground shows between the stones on it */
+  var m = 12, base = [], top = [], dust = N.stone[2], lid = [];
+  for (k = 0; k < m; k++) {
+    var a = (k + .5) / m * TAU, j = .86 + r() * .2, bx0 = Math.cos(a) * ax * j, by0 = Math.sin(a) * ay * j;
+    var tx0 = Math.cos(a) * ax * .3 * j + (r() - .5) * 3, ty0 = Math.sin(a) * ay * .26 * j + (r() - .5) * 3;
+    base.push([bx0, by0, g(bx0, by0) - .6]);
+    top.push([tx0, ty0, g(tx0, ty0) + hm * .78]);
+  }
+  for (k = 0; k < m; k++) {
+    var k1 = (k + 1) % m;
+    f.push({ v: [base[k], base[k1], top[k1]], c: lit(dust, .92) }, { v: [base[k], top[k1], top[k]], c: lit(dust, .92) });
+    lid.push(top[k]);
+  }
+  f.push({ v: lid, c: dust });
+  f = faceOut(f, 0, 0, hm * .3);
+  /* the stone, most of it the rubble the walls were built of, some of it the dressed
+     quoins and sills, and a little of it the render off the front */
+  var nb = clamp(Math.round(w * d / 45), 32, 96);
+  for (k = 0; k < nb; k++) {
+    var rho = Math.sqrt(r()), th = r() * TAU, bx = Math.cos(th) * rho * ax, by = Math.sin(th) * rho * ay;
+    var l = 4 + r() * 6, bw = 3 + r() * 4, bh = 2.4 + r() * 3, pick = r();
+    var col = pick < .62 ? N.stone[Math.floor(r() * N.stone.length)] : pick < .8 ? N.dress : pick < .9 ? N.dressD
+      : N.render[Math.floor(r() * N.render.length)];
+    var b = pitch(roll(box(0, 0, -bh / 2, l, bw, bh, col, lit(col, 1.06), lit(col, .92), 0), (r() - .5) * .9, 0, 0), (r() - .5) * .9, 0, 0);
+    f = f.concat(place(b, r() * TAU, bx, by, g(bx, by) + Math.max(bh * .3, hAt(rho) - bh * .15)));
+  }
+  /* the slates that were on it, broken across the top and thrown out round its foot */
+  for (k = 0; k < 16; k++) {
+    var sr = Math.sqrt(r()) * 1.08, sa = r() * TAU, sx = Math.cos(sa) * sr * ax, sy = Math.sin(sa) * sr * ay;
+    var sc = k % 3 ? N.slate : N.slateL;
+    f = f.concat(place(pitch(box(0, 0, 0, 5, 3.4, .5, sc, N.slateL, N.slateD, 0), (r() - .5) * .8, 0, 0), r() * TAU, sx, sy,
+                       g(sx, sy) + hAt(Math.min(1, sr)) + .3));
+  }
+  /* the floors: charred joists run into the heap at one end and standing up out of it
+     at the other */
+  for (k = 0; k < 3; k++) {
+    var bl = 18 + r() * 16, jx = (r() - .5) * ax * .8, jy = (r() - .5) * ay * .8;
+    f = f.concat(place(pitch(box(0, 0, -1.1, bl, 2.2, 2.2, k ? N.char : N.joist, N.char, N.char, 0), .2 + r() * .35, -bl / 2, 0),
+                       r() * TAU, jx, jy, g(jx, jy) + hm * .45));
+  }
+  /* a door or a shutter, lying on the slope where it came down */
+  var dx = (r() - .5) * ax, dy = (r() - .5) * ay * .6, dc = N.door[Math.floor(r() * N.door.length)];
+  f = f.concat(place(roll(box(0, 0, 0, 13, 8, 1, dc, lit(dc, 1.06), dc, 0), (r() - .5) * .5, 0, 0), r() * TAU, dx, dy,
+                     g(dx, dy) + hAt(Math.min(1, Math.sqrt(dx * dx / (ax * ax) + dy * dy / (ay * ay)))) + .4));
+  /* and a chimney breast on the gable, which is the last of a house to come down */
+  if (r() < .55) {
+    var cx = (r() < .5 ? -1 : 1) * (w / 2 - 5), cy = (r() - .5) * d * .4, ch = 16 + r() * 18;
+    f = f.concat(box(cx, cy, g(cx, cy) - 1, 7, 13, ch + 1, N.stack, lit(N.stack, 1.06), lit(N.stack, .92), 0));
+    f = f.concat(box(cx + (r() - .5) * 1.5, cy + (r() - .5) * 4, g(cx, cy) + ch, 7, 6.5, 3 + r() * 5, N.stack, lit(N.stack, 1.06), lit(N.stack, .92), 0));
   }
   return f;
 }
