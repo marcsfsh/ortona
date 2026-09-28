@@ -3384,8 +3384,9 @@ turret and across the bin; the King Tiger the cross on each side toward the tail
 that flare out from the front plate, laid a quarter of a unit off, because that face is two triangles
 and its roof corner stands 0.46 u proud of the plane its foot lies in; the Maus and the StuH a cross on
 each side. The gate asks all of it of the four: not one face of sand, the two Zimmerit tiles with under
-8 of colour in them against the paint tile's 3.7 and the sand tiles' 50-odd, the plate on the tile it
-wants, and the cross and the numbers where they go.
+8 of colour in them (2.5 each, against the paint tile's 3.5, where the old tile's dunkelgelb alone put
+56 into every pixel it covered), the plate on the tile it wants, and the cross and the numbers where
+they go.
 
 A vehicle with `arc` on its def is a casemate gun: `acquire` will still pick a target
 outside the arc (at a penalty) so the hull has something to turn toward, the halted
