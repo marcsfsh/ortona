@@ -3403,7 +3403,13 @@ for (const device of TARGETS) {
     out.am = mine.filter(u => u.key === 'am_rifle').length;
     const sq = mine.filter(u => u.key === 'am_rifle')[0];
     out.men = sq ? sq.models.length : 0;
+    /* read as the squad was raised: with a till this far into the gate the AUTO setting has
+       fitted it its BARs or its grenades, and those men are the fittings' and not the squad's */
+    const up0 = sq ? sq.up : null;
+    out.fitted = up0 ? Object.keys(up0).filter(k => up0[k]).join(',') : '';
+    if (sq) sq.up = {};
     out.vars = sq ? [...new Set(sq.models.map((m, i) => W.variantForModel(sq, i)))].sort().join(',') : '-';
+    if (sq) sq.up = up0;
     const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
     out.makes = hq ? W.makesOf(hq).join(',') : '-';
     G.res.us.mp += 2000;
@@ -3469,7 +3475,7 @@ for (const device of TARGETS) {
      natA.qAm === true && natA.fell && natA.fellNat === 'usa' && natA.bodies &&
      natB.am >= 1 && /29TH/.test(natB.back),
      `army ${natA.name}, the button reads ${natA.pick}; ${natA.am} rifle squads at the whistle, ${natA.men} men of ` +
-     `${natA.vars}; the headquarters makes ${natA.makes}, and asked for the squad ${natA.qAm ? 'queued it' : 'REFUSED it'}; a man killed ` +
+     `${natA.vars}${natA.fitted ? ' (fitted ' + natA.fitted + ')' : ''}; the headquarters makes ${natA.makes}, and asked for the squad ${natA.qAm ? 'queued it' : 'REFUSED it'}; a man killed ` +
      `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
      `a brain on the Allied side ordered ${natB.am} rifle squads in 45 s (${natB.live} standing); ` +
      `Ortona's button reads ${natB.back}`);
