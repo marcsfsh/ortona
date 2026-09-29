@@ -1365,16 +1365,18 @@ var UNITS = {
      are bought from the company post. Every man of them carries an automatic weapon, so
      the squad fires as automatics fire: a light round in short bursts several times a
      second, where a rifle squad puts a heavier round out every three quarters of a second.
-     What a man does to men in a second is the same at either rate, and so is how hard he
-     pins them. A cooldown is reset and not carried, so a weapon fires on the first frame
-     after its `rof` runs out: .15 is three frames of the duel card's twentieth of a second
-     exactly, where .16 was four and lost a fifth of the squad's fire on the card alone. */
+     How hard he pins them in a second is the old line's; what he does to them is a tenth
+     more, because a volley's hits all go onto one man and three times as many lighter
+     volleys spread the same damage over the squad. A cooldown is reset and not carried, so
+     a weapon fires on the first frame after its `rof` runs out: .15 is three frames of the
+     duel card's twentieth of a second exactly, where .16 was four and lost a fifth of the
+     squad's fire on the card alone. */
   am_ranger: {
     side: 'us', nat: 'usa', name: 'Ranger Squad', short: 'RGR', cat: 'inf', hk: 'N',
     models: 6, hpPer: 78, speed: 68, sight: 320, pop: 12, cost: { mp: 450, fu: 25 }, time: 30,
     req: 'us_bar', body: 'usa_rgr', upgrades: ['a6'],
-    w: { range: 215, dmg: 3.3, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
-    wUp: { a6: { range: 230, dmg: 3.3, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
+    w: { range: 215, dmg: 3.2, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
+    wUp: { a6: { range: 230, dmg: 3.2, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
     at: { range: 220, dmg: 115, rof: 1.7, acc: .70, sup: .02, pen: 150, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
     desc: 'Six men of the Ranger battalions with four Thompsons and two BARs, and the BAR men sling the BAR and take the bazooka off their backs the moment anything with plate on it is in reach. Fights hardest close in. Two of the Thompson men can be issued the M1919A6 and fire it from the hip.'
   },

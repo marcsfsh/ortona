@@ -3712,6 +3712,28 @@ seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent ag
 German section and 56 against the Canadian section, which is inside what sixteen runs of two
 identical units produce.
 
+**Two fittings, and a squad may have both.** `bar2` (TWO BARS, 90 marks and 10 of fuel) hands the
+fifth and sixth men the BAR in the Garand's place (`gi_bar`), and it is a weapon swap like the
+Rangers' .30: the squad's line (`wUp.bar2`) is four rifles and two automatics averaged into one, 7.4
+a round every .59 seconds with a suppression of .016 against 7.2 every .74 and .013, which is about
+a quarter more fire and half as much again of pinning. `rgren` (RIFLE GREN, 70 and 10) hands the
+second and third men the M7 launcher on the Garand's muzzle with an M9A1 seated on it
+(`gi_rgren`, `weaponModel(k, 'garandgl')`), and that is a second weapon on a clock of its own:
+`def.glUp` is a launcher a fitting issues to named men, `glOf(u)` hands it back while it is fitted,
+and `fireAt` takes it through an option (`{ gl: 1 }`) with its own cooldown (`glcd`), fired turn
+about by the two of them (`launcherMan` with `glTurn`) at whatever the squad is shooting at while the
+rifles go on firing, and gone with them. A grenade is 44 over a burst of 20 every four seconds out to
+220 with 90 of penetration, which is a thing to put over a wall or into a light vehicle. Neither
+excludes the other, and both are on the brain's list after the Rangers' .30, so the AI and the
+player's AUTO setting buy them.
+
+Over twelve runs a row against the grenadier squad, where the bare squad wins 58 per cent: two
+BARs win 92 (the first line, 8.4 every .52 with .021 of suppression, won every fight with 0.88 of
+the squad left, which is the Rangers' fight at two thirds of their price), the grenades 75 and both
+together every one in 14 seconds with 0.89 left. Against the MG 34 team the bare squad wins none
+and both fittings 83 per cent, because a crew bunched round its gun is what a rifle grenade is for.
+Against the KS 750 the grenades take it 92 per cent of the time where the bare squad takes it 67, and against the 251 they do nothing: 44 a grenade against its 340 is eight grenades, and its machine gun has the squad first.
+
 **The engineer squad is the Americans' builder**, and one of the three units the side opens
 with: three men of an engineer combat battalion, dressed the way the
 brief asked, after Company of Heroes. It is a fifth kit on the rig (`V.eng`), and every piece of
@@ -3834,6 +3856,17 @@ is the spread that row carries) and the KS 750 every time inside five seconds, a
 which is a light vehicle of its own side, 75 per cent. The Panzer IV still takes the squad every
 time in seven seconds with a quarter of itself gone, because a squad that hunts light vehicles
 is not a squad that hunts tanks.
+
+**And it fires as automatic weapons fire.** Every man of it carries a Thompson or a BAR, and at a
+volley every .44 seconds it fired and sounded like a rifle squad. It is 3.2 a round every .15
+seconds now with a suppression of .0085 (.0096 with the .30), in bursts at three times the old rate,
+and a rate under a fifth of a second plays the machine gun's report. The suppression a second is
+the old line's; the damage is not, and the reason is how a volley lands: all of a volley's hits go
+onto one man picked at random (`damage`), so the same damage a second in three times as many
+volleys is spread evenly over the squad it hits, the first man falls later and the squad opposite
+keeps its whole fire for longer. At 3.0 a round, which is the old damage a second, the Knight's
+Cross Holders' four men of 105 took the Rangers 71 per cent of the time at 180 where the old line
+lost 46. At 3.2 over twenty-four runs they take the Knight's Cross Holders 63 per cent of the time at 180 (3.5 read 71 and 4.0 read 92) and 8 at 130, where the grenades reach. Over twelve runs a row, fought at 3.3, they take the grenadier squad and the KS 750 every time, the MG 34 team 92 per cent and the 251 75, and the Panzer IV takes them every time in seven and a half seconds.
 
 **The German army.** The 352nd is the German side on every map, and the manned wall's
 garrison is written in its keys, so a manned wall is grenadiers and MG 34 teams.
@@ -7904,6 +7937,18 @@ shots/                         screenshot output, gitignored
   it takes 11 alone, on the committed file as much as on a working one. Its click waits 180, so on
   a busy box it timed out and read as the phone having broken. The card closes the desktop page's
   context before it opens the phone now; a tool that opens a second page wants the same.
+- **All of a volley's hits land on one man, so a faster, lighter rate of fire is a weaker one.**
+  `damage` hands the whole of `w.dmg * hits` to a man picked at random, so the same damage a second
+  cut into three times as many volleys spreads evenly over the squad it hits and kills its first
+  man later, and a squad of few heavy men (the Knight's Cross Holders' four of 105) punishes it
+  most. A rate of fire changed without the damage moving the other way is a balance change.
+- **A cooldown is reset, not carried, so a rate of fire is rounded up to the frame.** `fireAt` sets
+  the cooldown to `rof` and `updateUnit` takes `dt` off it, so a weapon fires on the first frame
+  after its `rof` has run out and the overshoot is thrown away. On the duel card's twentieth of a
+  second a `rof` of .16 fires every .2 and loses a fifth of its fire where .44 fires every .45 and
+  loses two per cent; at sixty frames a second the same .16 fires every .167. Every fast weapon on
+  the roster carries it (an MG 42 at .08 fires every .1 on the card), so a rate under a fifth of a
+  second is picked as a multiple of the card's step, or its row is read knowing it is short.
 - **A new global can take the name of an old one without a word.** Every `var` at the top of
   the script is one namespace forty thousand lines long, and a second `var` of a name is
   legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the
