@@ -1859,10 +1859,22 @@ for (const device of TARGETS) {
   await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = 0; });
   await unpin();
   await fastForward(page, 3);
-  const drvA = await page.evaluate(([x, y]) => {
+  const drvA = await page.evaluate(([x, y, f0]) => {
     const u = window.POV.u;
-    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
-  }, [drv0.x, drv0.y]);
+    /* and what stopped it, if something did: the pace it ended at, how far it swung off the
+       bearing it was parked on, and the nearest thing standing in front of it */
+    let near = '', nd = 1e9;
+    for (const o of window.G.units) {
+      if (o === u || o.dead) continue;
+      const d = Math.hypot(o.x - u.x, o.y - u.y);
+      if (d < 90 && d < nd && Math.cos(Math.atan2(o.y - u.y, o.x - u.x) - u.facing) > .3) { nd = d; near = o.key + '@' + Math.round(d); }
+    }
+    const ax = u.x + Math.cos(u.facing) * 40, ay = u.y + Math.sin(u.facing) * 40;
+    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing,
+             sp: +(u.sp || 0).toFixed(1), swung: +Math.abs(window.angDiff(u.facing, f0)).toFixed(2), near: near || 'nothing',
+             ahead: window.walkable(ax, ay) && !window.blockAt(ax, ay) && !window.buildingAt(ax, ay) ? 'open' : 'blocked',
+             up: Object.keys(u.up || {}).filter(k => u.up[k]).join(',') || 'none' };
+  }, [drv0.x, drv0.y, drv0.facing]);
   /* And the steer leg starts where the drive leg did, on the heading the drive left it on.
      The drive takes the tank a hundred and eighty units or more along whatever bearing it
      was parked on, which is most of the clear going the staging asked for, and on one phone
@@ -1880,7 +1892,7 @@ for (const device of TARGETS) {
     const u = window.POV.u;
     return { turned: +Math.abs(window.angDiff(u.facing, f)).toFixed(2), x: u.x, y: u.y };
   }, [drvA.f]);
-  drv2.moved = drvA.moved; drv2.took = drvA.took;
+  drv2.moved = drvA.moved; drv2.took = drvA.took; drv2.why = drvA;
   await page.evaluate(() => { window.DRV.padT = 0; window.DRV.padS = 0; });
   await fastForward(page, 3);
   const drv3 = await page.evaluate(([x, y]) => {
@@ -2003,7 +2015,8 @@ for (const device of TARGETS) {
 
   ok('the commander drives his tank from the periscope',
      tank.staged && drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 60 && drv2.turned > .35 && drv2.took === 1 && drv3.sp < 1,
-     tank.staged ? `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped`
+     tank.staged ? `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped` +
+       (drv2.moved > 60 ? '' : ` (the drive ended at ${drv2.why.sp} a second, ${drv2.why.swung} rad off its bearing, the ground 40 ahead ${drv2.why.ahead}, in front of it ${drv2.why.near}, fitted ${drv2.why.up})`)
                  : 'nowhere round the headquarters with 300 units of clear going in front of it');
 
   const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
