@@ -3732,7 +3732,9 @@ BARs win 92 (the first line, 8.4 every .52 with .021 of suppression, won every f
 the squad left, which is the Rangers' fight at two thirds of their price), the grenades 75 and both
 together every one in 14 seconds with 0.89 left. Against the MG 34 team the bare squad wins none
 and both fittings 83 per cent, because a crew bunched round its gun is what a rifle grenade is for.
-Against the KS 750 the grenades take it 92 per cent of the time where the bare squad takes it 67, and against the 251 they do nothing: 44 a grenade against its 340 is eight grenades, and its machine gun has the squad first.
+Against the KS 750 the grenades take it 92 per cent of the time where the bare squad takes it 67,
+and against the 251 they do nothing: 44 a grenade against its 340 is eight grenades, and its machine
+gun has the squad first.
 
 **The engineer squad is the Americans' builder**, and one of the three units the side opens
 with: three men of an engineer combat battalion, dressed the way the
@@ -3866,7 +3868,10 @@ onto one man picked at random (`damage`), so the same damage a second in three t
 volleys is spread evenly over the squad it hits, the first man falls later and the squad opposite
 keeps its whole fire for longer. At 3.0 a round, which is the old damage a second, the Knight's
 Cross Holders' four men of 105 took the Rangers 71 per cent of the time at 180 where the old line
-lost 46. At 3.2 over twenty-four runs they take the Knight's Cross Holders 63 per cent of the time at 180 (3.5 read 71 and 4.0 read 92) and 8 at 130, where the grenades reach. Over twelve runs a row, fought at 3.3, they take the grenadier squad and the KS 750 every time, the MG 34 team 92 per cent and the 251 75, and the Panzer IV takes them every time in seven and a half seconds.
+lost 46. At 3.2 over twenty-four runs they take the Knight's Cross Holders 63 per cent of the time
+at 180 (3.5 read 71 and 4.0 read 92) and 8 at 130, where the grenades reach. Over twelve runs a row,
+fought at 3.3, they take the grenadier squad and the KS 750 every time, the MG 34 team 92 per cent
+and the 251 75, and the Panzer IV takes them every time in seven and a half seconds.
 
 **The German army.** The 352nd is the German side on every map, and the manned wall's
 garrison is written in its keys, so a manned wall is grenadiers and MG 34 teams.
