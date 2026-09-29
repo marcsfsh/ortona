@@ -2243,6 +2243,10 @@ for (const device of TARGETS) {
     return { pd, diff: window.G.diff,
              popYou: window.popCap(side), popFoe: window.popCap(foe),
              mp: Math.round(window.G.res[side].mp), fu: Math.round(window.G.res[side].fu),
+             /* what went out of the till since the whistle, because with a till this size the
+                AUTO setting fits the rifle squad its BARs before the row reads it */
+             spMp: Math.round(window.REC && window.REC[side] ? window.REC[side].spendMp : 0),
+             spFu: Math.round(window.REC && window.REC[side] ? window.REC[side].spendFu : 0),
              incYou: +window.G.inc[side].mp.toFixed(2), incFoe: +window.G.inc[foe].mp.toFixed(2),
              incFuYou: +window.G.inc[side].fu.toFixed(2), incFuFoe: +window.G.inc[foe].fu.toFixed(2),
              prodYou, prodFoe, consYou, consFoe, took, dealt, neither,
@@ -2252,7 +2256,7 @@ for (const device of TARGETS) {
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
      hcap.rows === 13 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
-     hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
+     hcap.popFoe === 175 && hcap.mp + hcap.spMp >= hcap.pd.mp && hcap.fu + hcap.spFu >= hcap.pd.fu &&
      hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
      hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
      hcap.consYou > hcap.consFoe * 9 && hcap.consFoe > 0 &&
@@ -2261,7 +2265,7 @@ for (const device of TARGETS) {
      Math.abs(hcap.neither - 100) < 1 &&
      Math.abs(hcap.eyeYou - hcap.eyeDef * hcap.pd.eye) < 2 && hcap.eyeFoe === hcap.eyeFoeDef,
      `${hcap.rows} settings, all off even; on GREEN the player's cap is ${hcap.popYou} and the opposition's ${hcap.popFoe}; ` +
-     `the till opened at ${hcap.mp}/${hcap.fu}f; income ${hcap.incYou}mp ${hcap.incFuYou}f against ` +
+     `the till opened at ${hcap.mp + hcap.spMp}/${hcap.fu + hcap.spFu}f (${hcap.spMp}/${hcap.spFu}f spent since); income ${hcap.incYou}mp ${hcap.incFuYou}f against ` +
      `${hcap.incFoe}mp ${hcap.incFuFoe}f; a second of queue buys ${hcap.prodYou}s against ${hcap.prodFoe}s ` +
      `and a second of digging ${hcap.consYou} of a building against ${hcap.consFoe}; ` +
      `a hundred-point round took ${hcap.took} off one of his and ${hcap.dealt} off one of theirs, ` +
