@@ -1,0 +1,6 @@
+{ "image": "shots/ref/am_3in.png", "key": "us_t8", "prop": "m5Show", "args": [0.02, false], "up": [], "crew": false,
+  "note": "3-inch Gun M5 on the M6 carriage, the three views of it firing with the trails spread and the tube near level (the bottom half of the sheet). Scales as in us_t8.json; the firing front and rear are drawn two and a half per cent smaller than the closed ones, and the rear is cut off at the foot of the sheet, so its ground line is taken off the wheel's top and radius.",
+  "views": {
+    "plan":  { "nose": "left", "crop": [0, 330, 340, 235], "ppm": 47.8, "at": [0, 0, 0], "px": [157.5, 420.5], "k": 3 },
+    "front": { "crop": [295, 350, 205, 92], "ppm": 49.5, "ppmv": 46.6, "at": [0, 0, 0], "px": [393.9, 435.5], "k": 4 },
+    "rear":  { "crop": [295, 470, 205, 95], "ppm": 49.5, "ppmv": 46.6, "at": [0, 0, 0], "px": [394.0, 562.3], "k": 4 } } }

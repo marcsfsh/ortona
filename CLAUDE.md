@@ -5,10 +5,10 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the mortars, the pack howitzers, the 210/22, the T8, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and pack howitzer, the 210/22, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
-Three maps ship. **Ortona**, December 1943, is the town fought one building at a time.
+Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
 **The Gothic Line**, the Foglia valley at the end of August 1944, is two ridges with
 fourteen hundred units of no man's land between them, laid out for four players and
 mirrored about the midline to the unit. **Omaha Beach**, the Dog and Easy sectors on the
@@ -17,8 +17,11 @@ is not a field with a headquarters at either end: a corridor 1500 across and 400
 the Americans starting on the sand at the bottom among the craft that brought them in and
 the Germans in a manor in the bocage at the top, with the seawall and the Atlantic Wall
 across the middle and two draws up the bluff behind it that are the only way armour gets
-off the beach. They are picked on the title screen under GROUND and all three open in the
-editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
+off the beach. **Saint-Lô**, the 18th of July 1944, is the town on the Vire the 29th came
+into that evening, laid for three a side: 3800 by 2800, the old town walled on its rock in
+the middle, the river and the station on the right and the faubourgs on the left, laid in
+five stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
+all four open in the editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
 line over the name, the name, what the battle was and two cards about the ground), and the two
 side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
 ground. Written once in the markup, the header went on naming the Adriatic town over the beach.
@@ -79,7 +82,7 @@ node tools/shoot.mjs --list  # what can be photographed
 node tools/shoot.mjs         # the default scene set, desktop
 ```
 
-**`--map=gothic` or `--map=omaha` runs a card on the other ground.** `harness.deploy` clicks the title
+**`--map=gothic`, `--map=omaha` or `--map=stlo` runs a card on the other ground.** `harness.deploy` clicks the title
 screen's own GROUND control, which is the one path that also decides what a later
 `startGame()` inside a probe keeps, so `shoot`, `move`, `brain` and `skirmish` all take
 it and nothing else had to change. A card run only on Ortona is a card that has never
@@ -922,6 +925,14 @@ in front of their own wire, two houses overlapping, six pairs of houses leaving 
 too narrow to walk down, and the long hedgerows beside the two north-south lanes running
 straight through the crossroads. The editor's CHECK carries the same rules.
 
+**And the map check knows what is solid that is not a house.** A wagon, a water tower, a
+gasholder, a memorial and a rampart tower are checked for trees and craters inside them,
+for standing in a building and for standing in a street, and a bridge for a building or a
+tree on its deck. They are not buildings for the gap rule, because a van stands a loading
+bay's width off its goods shed and that is a real place and not a slot. Calibrated by planting a tree in the gasholder, a crater under a
+wagon and a tree on a bridge in a scratch copy: all three came back, and the shipped maps
+read clean.
+
 ### `tools/lint.mjs` - the rules, mechanically
 
 Checks what a screenshot cannot: that the script still parses, that the file is
@@ -939,7 +950,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, and 2830 before the LCVP was laid to its drawing). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, and 2900 before Saint-Lô). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1096,6 +1107,15 @@ German cap and none of them gone from its post after a minute of battle. They ru
 the map rows because they leave the world on Omaha: put between the two rows above them,
 which read the Gothic Line the row before them left standing, the old single row took both
 down, and what that looked like was a churn that had stopped being painted.
+
+**And one asks the fourth map what a mirror has to be.** Saint-Lô is loaded for three a side
+and read as arithmetic: the ground against its own reflection over 2,000 samples (with
+`bareZ`, because the two forward bridges are one stone and one girder and hump differently),
+six headquarters on the map's own spots in the map's own order with ground to march out
+onto, a twin on the same footprint for every solid thing however each half dresses it, tier-3
+cover inside 110 of every flag, every one of the 96 walks from a headquarters to a flag
+arriving and the two halves' walks within two per cent, and ninety seconds of battle with
+every brain raising something. It runs before the Omaha rows, which reload.
 
 **And a fourth asks the beach which army it is fought by.** The side button on the title screen has
 to name the 29th Infantry Division, the sections the Allied side opens with have to be American
@@ -1648,6 +1668,127 @@ lever, which is the two crest villages starting in nobody's hands; it was also t
 paratroopers on the German side and before either army on the beach was its own, so both
 halves of it want taking again.
 
+**Saint-Lô.** The fourth map, and the first laid for three a side. The design is on paper
+before any of it is built and it is built in stages, each photographed on both devices and
+through the gate before the next: the ground and the street plan, then the town's own
+assets (the Norman town house, Notre-Dame, the ramparts, the bridges, the station), then the
+town laid house by house, then what the June raids and the battle left of it, then the flags
+and the balance. All five are in.
+
+Read across the screen from the left: the faubourgs, where the road to Torigni (the 352nd's)
+and the Bayeux road (the 29th's) are one road through the Champ de Mars, which is the
+armour's lane; the old town on its rock in the middle, with a valley under it on either
+side, the Torteron on the German half and the Dollée on the American; and the Vire on the
+right, with the quay along its near bank and the station and the goods yard on the far one.
+Three headquarters stand at either end, one at the head of each lane (`hq` entities with an
+`n`, which is the order a game takes them in, so a 1v1 fights for the centre), and the three
+victory flags are on the midline: the Champ de Mars, Notre-Dame and the station. Real north
+is the bottom of the screen, which puts the river on the right where it is on a map of the
+town held upside down.
+
+**Everything that plays is mirrored about y 1400**: every landform term reads its distance
+from the midline, and `stloMapData` lays a road with `pair` (a twin on the other half) or
+`both` (one road through the midline, whose last German point has to be on it). The dressing
+will not be mirrored. The mirror is exact, and it took one change outside the map to make it
+so: a pad's plane is fitted over a window that the edge of the height grid clips, and it is
+clipped differently at the top of the map from the bottom, so two pads laid as twins came out
+tilted differently and the ground disagreed with its own reflection by two and a half units.
+`LAND.mirrorY` has `makeHeight` copy one half onto the other after the smoothing, and 2,000
+samples read 0.
+
+**The rock is a polygon and every edge of it is a signed distance.** `STLO.enc` is its
+outline on the German half; `stloEncSD` is how far a point is inside it, and the profile
+comes off that one number: level at the top, sheer for forty units and a talus below. The
+first version tested inside or outside and blended the valleys by the branch it was on, and
+every branch switch was a straight contour line across the ground. The valleys run from their
+heads at x 1120 to the Vire, and where they pass under the rock their inner side is held
+fifty-eight units under its top, because at first it rose nearly to the top and the rock's
+own face read as a gradient of 0.76, which a section walks up. It reads blocked for the whole
+of the face now. A dry ditch cuts the neck in front of the east gate with a causeway on the
+midline, and two ways up are cut into the ground (`STLO.ways`): the ramp from each valley to
+its gate, which a tank drives, and the stair from the quay to the Place, eighteen wide,
+because at twelve the walk grid's ±20 sample caught the cliff beside it and it read blocked.
+The ways are laid after the river's terms, which is the order that matters: laid before, the
+quay's slope ran over the foot of the stair.
+
+**A river is the sea's rules applied to a line.** `LAND.river(x, y)` is the signed distance
+from the nearer bank, and `inland` takes the smaller of that and the coast, so everything
+that asks how near the water a point is keeps out of the Vire with no second test; the walk
+grid's shore margin is six units for a river and twenty-four for a sea. The water is the sea
+shader's own, at `LAND.sea` 0 over a channel twenty-six deep. The quay is at 5.5 and walkable
+on both banks, the river is not, and the east bank under the rock is sheer.
+
+**A road says what it is made of.** `style` on a road is `setts` or `tar`, and the painter
+reads it before it reads Ortona's own rectangle of town (`tar` is macadam with chippings,
+patches and the two bands the wheels have worn). And Ortona's town floor, the brick dust and
+broken stone painted over its quarter, is Ortona's: it was painted at the same coordinates on
+any map without a paint of its own, which on Saint-Lô was a pale rectangle on the grass beside
+the Champ de Mars. A map laid by hand (`LAND.hand`) has none of it, and Ortona and the Gothic
+Line paint exactly what they did. The map check's street rule counts one road entity as one
+street, so a road is laid from junction to junction: the rocade on each forward row is three
+pieces and the quay three.
+
+Measured on the ground: the German shelf 66 to 70, the Torteron's floor about 16, the rock 93
+to 96, the quay 5.5, the river bed -26, the far bank 10 to 14 rising to 48 at the right edge;
+the ramp walkable its whole length from 26 to 90 and the stair from 93 down to 8.5; the cliff
+and the ditch's walls blocked, the causeway open; 6.3 per cent of the map blocked.
+
+**The town's own assets.** Nothing Ortona was built of is a Norman town, so the pieces were
+built first and the town laid out of them after. A Norman town house (`house` with `style:
+'norman'`) is built in bays like an Italian one, so a shell takes it apart the same way, and
+says what its walls are (`nk`: stone, render, or timber over a stone ground floor), how many
+storeys, whether the ground floor is a shop, whether the June raids gutted it (`gut`) and
+which side its street is on (`front`). Notre-Dame is a builder of its own, with the spire
+shot off. The ramparts are round towers (`rtower`) standing half over the drop, and walls
+laid along the ways onto the rock (`wall` with `ramp`) that are a retaining wall where the
+hill stands over the way and a parapet where it falls away. A bridge is a deck (`G.deck`):
+`groundZ` reads it and `bareZ` does not, so a man, a tank, a shell and the walk grid find the
+deck while the mesher lays the river under the arches. The station, the goods shed and the
+signal box are `nhouse` styles drawn by their own builders (`NSTYLE`), and everything else
+that stands in the town is a `feature` drawn off the `FEATURE` table: wagons whole and burnt,
+a water tower, lamps, a Morris column, the bandstand, the memorial, the cemetery, the
+gasholder, a buffer stop and a level crossing's gate.
+
+**Laid a house at a time, twice.** `row` lays a frontage along its street, party wall against
+party wall, and lays every house again on the other half on the same footprint, dressed from
+a list of its own, so the two halves play the same and are not the same town. 390 buildings
+and 305 trees at stage 3, 1.47 million vertices against Ortona's 2.03.
+
+**What the raids left.** A house razed to its footings (`x` in a row's dressing) is a heap of
+its own stone (`ntHeap`, a `debris` with `nt`), following the ground under it, with the quoins,
+the slates, the charred joists and often a chimney breast standing out of it; it is on `rubg`
+the way a bay a shell brings down is, dear to cross and nothing to hide behind. Ortona's
+rubble draws brick, which on a Norman plot read as a thin red scatter. The farm cart is a
+two-wheeled charrette now (`cartModel`) on every map. And five colours had to move a unit or
+two, because their tints landed on kit tiles: a render shade and the pavement flag drew as
+splinter camouflage, the charred timber as leather, and the pole and roof timber as rubber.
+The Ortona outcrop shade was on splinter too, on the two maps that have had it all along.
+
+**Every flag has something to hold it from.** Measured with a probe that lists the cover
+within 110 of each flag point and walks from every headquarters to every flag for a man, a
+track and a wheel: two flags had none. The south crossing, where the rocade crosses the
+running lines on the far bank, is a crossing keeper's cottage now, with its garden walled in
+dry stone, the two gates rolled back along the line and a van burnt out on the running line;
+the Champ de Mars has a weapon pit either side of the flag. Every flag reads tier 3 inside
+110, every walk arrives, and the 96 walks of the American half against the German come out
+at 101,057 units for a man against 101,126, and within half a per cent for a hull.
+
+**A cut into the ground is not a plot to be levelled.** The flag at Notre-Dame could not be
+reached: `levelPad` blends a house's plot flat for forty units round it, and the mill beside
+the ramp dropped the ramp into a trough a man could not walk out of, while the ramp's last leg
+scraped the tower at the gate. `LAND.noPad(x, y)` is a hook a country can answer, and
+Saint-Lô answers it with `stloOnWay`, the ways' own cut plus its margin, so a pad never
+reaches into a way; the ramp's last leg is laid clear of the tower. The cells reachable from
+the flag went from 70 to 19,016.
+
+Two battles with a brain on all six slots (a probe gives the player's slot one after the
+deploy, `slotOf(G.own).ai = true` and `aiInit(G.own)`), the second with the armies swapped
+end for end by flipping `side` and `owner` on the map's headquarters and flags: the 352nd won
+the first at 6:24 and the 29th the second at 7:18, the army at the top end both times, and the
+Germans led on points early in both. Two battles are two coins; the ground is its own mirror
+and the walks agree, so what is left is the armies and the brains, and it wants more runs than
+there was time for to say anything about either. All three lanes were fought over in both.
+
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
 position; `updateModels` animates the individual soldiers. `tools/move.mjs` is the card
@@ -2140,7 +2281,8 @@ separates a team from a section is that it cannot do that.
 or an MG42 at 2.0 s, a mortar at 3.0, a Pak or a six-pounder at 5.0, a pack howitzer at
 6.0, the T8 at 4.0 paid to the tow that hitches it) beside a `setup` raised to match (2.5,
 3.5, 4.5, 5.0 and 4.0). The eighty-eight and the two batteries carry none, because they
-never move. Two fields on the unit carry the state: `u.pack` is the seconds left taking it
+never move. (The T8 is the 3-inch gun now, which packs in 6.5 and its crew can run along by
+hand as well as a tow can hitch it; see *The 3-inch Gun M5*.) Two fields on the unit carry the state: `u.pack` is the seconds left taking it
 down, and `u.packed` is whether it is on the men's backs. In action is `!packed` with the
 setup run out. Four rules, and each is one place:
 
@@ -3417,7 +3559,7 @@ Wirbelwind), with their models, their interiors and hatches, the seven upgrades 
 and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
-own for yet: the two mortars, the two pack howitzers, the 210/22, the T8, the
+own for yet: the German mortar and pack howitzer, the 210/22, the
 Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
@@ -3570,6 +3712,30 @@ seconds a volley, 78 hit points a man and 260 of manpower it wins 69 per cent ag
 German section and 56 against the Canadian section, which is inside what sixteen runs of two
 identical units produce.
 
+**Two fittings, and a squad may have both.** `bar2` (TWO BARS, 90 marks and 10 of fuel) hands the
+fifth and sixth men the BAR in the Garand's place (`gi_bar`), and it is a weapon swap like the
+Rangers' .30: the squad's line (`wUp.bar2`) is four rifles and two automatics averaged into one, 7.4
+a round every .59 seconds with a suppression of .016 against 7.2 every .74 and .013, which is about
+a quarter more fire and half as much again of pinning. `rgren` (RIFLE GREN, 70 and 10) hands the
+second and third men the M7 launcher on the Garand's muzzle with an M9A1 seated on it
+(`gi_rgren`, `weaponModel(k, 'garandgl')`), and that is a second weapon on a clock of its own:
+`def.glUp` is a launcher a fitting issues to named men, `glOf(u)` hands it back while it is fitted,
+and `fireAt` takes it through an option (`{ gl: 1 }`) with its own cooldown (`glcd`), fired turn
+about by the two of them (`launcherMan` with `glTurn`) at whatever the squad is shooting at while the
+rifles go on firing, and gone with them. A grenade is 44 over a burst of 20 every four seconds out to
+220 with 90 of penetration, which is a thing to put over a wall or into a light vehicle. Neither
+excludes the other, and both are on the brain's list after the Rangers' .30, so the AI and the
+player's AUTO setting buy them.
+
+Over twelve runs a row against the grenadier squad, where the bare squad wins 58 per cent: two
+BARs win 92 (the first line, 8.4 every .52 with .021 of suppression, won every fight with 0.88 of
+the squad left, which is the Rangers' fight at two thirds of their price), the grenades 75 and both
+together every one in 14 seconds with 0.89 left. Against the MG 34 team the bare squad wins none
+and both fittings 83 per cent, because a crew bunched round its gun is what a rifle grenade is for.
+Against the KS 750 the grenades take it 92 per cent of the time where the bare squad takes it 67,
+and against the 251 they do nothing: 44 a grenade against its 340 is eight grenades, and its machine
+gun has the squad first.
+
 **The engineer squad is the Americans' builder**, and one of the three units the side opens
 with: three men of an engineer combat battalion, dressed the way the
 brief asked, after Company of Heroes. It is a fifth kit on the rig (`V.eng`), and every piece of
@@ -3692,6 +3858,20 @@ is the spread that row carries) and the KS 750 every time inside five seconds, a
 which is a light vehicle of its own side, 75 per cent. The Panzer IV still takes the squad every
 time in seven seconds with a quarter of itself gone, because a squad that hunts light vehicles
 is not a squad that hunts tanks.
+
+**And it fires as automatic weapons fire.** Every man of it carries a Thompson or a BAR, and at a
+volley every .44 seconds it fired and sounded like a rifle squad. It is 3.2 a round every .15
+seconds now with a suppression of .0085 (.0096 with the .30), in bursts at three times the old rate,
+and a rate under a fifth of a second plays the machine gun's report. The suppression a second is
+the old line's; the damage is not, and the reason is how a volley lands: all of a volley's hits go
+onto one man picked at random (`damage`), so the same damage a second in three times as many
+volleys is spread evenly over the squad it hits, the first man falls later and the squad opposite
+keeps its whole fire for longer. At 3.0 a round, which is the old damage a second, the Knight's
+Cross Holders' four men of 105 took the Rangers 71 per cent of the time at 180 where the old line
+lost 46. At 3.2 over twenty-four runs they take the Knight's Cross Holders 63 per cent of the time
+at 180 (3.5 read 71 and 4.0 read 92) and 8 at 130, where the grenades reach. Over twelve runs a row,
+fought at 3.3, they take the grenadier squad and the KS 750 every time, the MG 34 team 92 per cent
+and the 251 75, and the Panzer IV takes them every time in seven and a half seconds.
 
 **The German army.** The 352nd is the German side on every map, and the manned wall's
 garrison is written in its keys, so a manned wall is grenadiers and MG 34 teams.
@@ -4989,6 +5169,42 @@ guns are one gun on two sides and the two tanks are not. Over twelve runs a row 
 M3A1 and the Achilles every time; the American rifle squad takes it every time in eight seconds, and
 walked into an M4 on an attack-move it wins 17 per cent.
 
+**The 3-inch Gun M5 stands where the T8 stood** (`us_t8`, the key kept): the towed gun of an
+American tank destroyer battalion, which is the tube of the 3-inch anti-aircraft gun and the breech
+ring of the 105 on the 105's own carriage (the M6), behind a shield of its own. It is laid over a
+drawing of eight views (`tools/ref/us_t8.json` for the four of it closed with the tube raised about
+fourteen degrees, and `us_t8_f.json` for the three of it firing). The sheet has no scale; the side
+and the plan agree with the 9.00-20 tyre and the 105's 1.87 m track at 47.8 px/m, which also puts
+the top of the shield at the published 1.62 m, and the tube from the breech ring to the muzzle
+comes out at 3.89 m against the 3.81 m of bore fifty calibres holds. The front and rear views are
+drawn wider than they are tall and take 50.8 across, and the firing pair of them are drawn smaller
+again (49.5). All eight agreed with the model on the first overlay to about a line width; the
+drawing rests the closed trails on their spades, where the game folds them.
+
+The carriage is the 105's (`h105Bottom` with `gun`, which leaves off the lower shield the drawing's
+front views do not have). What is its own is in `m5Top` and `m5Tube`: the trunnions stand 7.3 units
+behind the axle, because nearly all of the tube is forward of them, so the girders and the cheeks
+run back to them; the cradle carries the recuperator over the tube and the recoil cylinder under
+it, with the telescope on the left; and the shield is two wings meeting in a V ahead of the cradle,
+each a plane swept back forty-two degrees and laid back twenty-two (`m5Wing`), with its outer corner
+standing over the wheel and cut in under it, a bead along the top and down the outer edge, rivets
+along the foot, the sight port's shutter on the right and a round cover on the left. The breech ring
+is the 105's square one.
+
+The T8 was sited and could only be towed. The 3-inch is crew-portable: seven men (the gunner and his
+assistant at the two handwheels in the 105's `laying` pose, and five bringing the rounds up), run
+along at 22 with the trails closed and the tube level (`pack`, `pkAll`), 6.0 seconds into action and
+6.5 out of it, and turning whole at `traverse` .5. It is still `towable`, and `towAt` says where its
+lunette is, so the towed block puts it at the tow's tail (the tow's `bodyL` less its `bodyX`, and the
+lunette behind that) rather than eighty units behind the tow's middle, and `gunPost` draws a piece on
+the hook where the tow put it.
+
+**Its numbers are the 57's made heavier, staged sited.** It sees as far as the 57 (620) and reaches
+further (560 against 540), with 140 a round every 3.6 seconds at an accuracy of .80 and 265 of
+penetration, for 420 marks, 30 of fuel and 14 of population. Over twelve runs a row it takes the
+Panzer IV three times in four where the 57 takes it about half the time, a Panther head on a third of
+the time where the 57 took none of the same twelve, and a Tiger 17 per cent.
+
 **The M3 light tank is the 29th's second tank** (`am_stuart`, on the motor pool's list after the
 M8): the Stuart as the Americans first took it to war, riveted, with the round welded turret
 that did away with the cupola and the big idler trailing on the ground. Its 37 mm and coaxial are the
@@ -5116,6 +5332,30 @@ kill an M26. Over twelve runs a row it takes the Panzer IV, the Puma, the 234/1,
 251, the grenadier squad and the Knight's Cross Holders every time, the last with a quarter of itself
 gone to their bundles, and a Pak 38 sited at 520 takes it 8 per cent of the time where it takes an M4 a
 quarter of the time.
+
+**The M16 multiple gun motor carriage is the 29th's flak half-track** (`am_m16`, on the motor pool's
+list after the M3), and the Wirbelwind's opposite number: the M3's hull (`mhHullAll`) with the M45
+quad mount standing in the body in the place of the pedestal and the seats, four .50s that go the
+whole way round with the gunner sitting between them. The mount is laid off a side view, a plan and
+the two ends of the M16, read against the M3's hull rather than against a scale of their own, since
+the M3 was laid over its own drawing already: the pivot a third of the way up the body from the tail
+(`M45G.x`), the inboard guns riding higher and reaching further than the outboard ones, two
+ammunition chests a side outboard of the cradles with a chute into each gun, and a curved plate in
+front of the gunner leaning back from under the rim to a foot and a half over it with the reflex
+sight on its top edge (`m45Mount`). The guns are the jeep's .50 without the spade grips, because the
+M45's were fired by solenoid (`m45Gun`). The gunner is the jeep's crewman sitting on the mount's seat
+with his hands on the two handles (`m45Men`), turning with it; the driver is the M3's, and the
+periscope's eye is the gunner's (`VIN.am_m16`). It carries nobody and tows nothing. It has a rung on
+the brain's ladder after the M3 light tank, and `aiCutLadder` reads it the way it reads the
+Wirbelwind: forward against an enemy that is all infantry and back when he has something heavy.
+
+**Its numbers are the Wirbelwind's turned round.** Its weapon is a burst of four .50 rounds a volley
+with no shell in it: 30 every .22 seconds at an accuracy of .56 out to 340, with a suppression of .10
+capped at .95 and the jeep .50's penetration of 70, on the M3's 360 hit points and 40 of plate, for
+300 marks and 45 of fuel. Over eight runs a row it takes the grenadier squad every time in ten seconds
+untouched, the MG 34 team, the KS 750 and the 251 every time in under six, the 234/1 every time with
+nearly two thirds of itself left, and the Knight's Cross Holders every time with a fifth of itself
+left after their bundles; the Wirbelwind takes it every time and so does the Panzer IV.
 
 **And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
 team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
@@ -6105,7 +6345,7 @@ refuses and the overlay says RELOADING. It is its own field rather than the cool
 the cooldown is the second between rockets of the same ripple and the label would have read
 RELOADING through all six. That clock is the whole of what makes a projector a different
 weapon from a howitzer rather than a bigger one, and it is what the piece is priced against:
-it throws further than either pack howitzer (820 against 660) and lands far looser (a circle
+it throws further than the 75/18 and not quite as far as the 105 (820 against 660 and 860) and lands far looser (a circle
 130 across against 76), so what it is for is ground rather than a target. Measured by the
 gate: six of six rockets up, then 37.6 seconds of reload with a fresh mission standing and
 nothing leaving the tubes, then six more.
@@ -6174,7 +6414,7 @@ the flag set, K and a click on the classic bar beside F, and `barrageTick` hands
 `fireAt`, whose shell carries the cloud it will make (`smk`, off `smokeOf(def)`) and hurts
 nobody when it lands. What a piece throws is read off the same number its burst is sized
 off, so the sizes are the roster's and not a table: a mortar bomb makes a cloud of 65 that
-is gone in 29 seconds, a pack howitzer's shell 76 for 35, and a battery's 118 for 62, with a
+is gone in 29 seconds, the 75/18's shell 76 for 35 and the 105's 80 for 37, and a battery's 118 for 62, with a
 mission at half the rounds of the HE one because each round is a cloud rather than a
 burst. `G.smoke` is the clouds; `smokeAt` is a cloud's radius now, building over three
 seconds and thinning over its last quarter; and `smokeBlocks` is asked at the top of
@@ -6194,8 +6434,8 @@ clouds aged out give the line back; and the card on the bar sets the mode and la
 **Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
 (`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
 the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
-pack howitzers (`us_how`, the M1, and `ger_how`, the Italian 75/18 the Germans in Italy
-used every one of they could recover) are `barrageOnly`, which is the whole of what they
+field and pack howitzers (`us_how`, the 105 mm M2A1, and `ger_how`, the Italian 75/18 the
+Germans in Italy used every one of they could recover) are `barrageOnly`, which is the whole of what they
 are: `acquire` returns null for them and `fireAt` refuses without a mission, because a gun
 this size is laid by somebody else's map and fired on somebody else's order. A right-click
 on an enemy is a mission on the ground he is standing on, and out of reach it is nothing
@@ -6203,7 +6443,7 @@ at all rather than an attack order that walks a five-man crew and its howitzer t
 enemy to get inside a range the gun will never use.
 
 **And `barrageOnly` is a rule a player may turn off.** HOWITZER FIRE on the handicap is
-the switch: at ON ORDER the pack howitzer and the dug battery fire only on a mission,
+the switch: at ON ORDER the howitzers and the dug battery fire only on a mission,
 which is what separates them from a mortar, and at FREE FIRE they engage what their own
 side can see on their own account as well. `onOrderOnly(u)` is the one reader, and
 `acquire` and `fireAt` are its two callers; the two ORDER paths deliberately keep reading
@@ -6222,20 +6462,49 @@ takes 3.5. Every turn goes through `layOn` now, which reads the same numbers who
 the gun.
 
 The reaches are chosen against this map rather than by feel. A headquarters stands 1150
-from every victory flag, so at 760 and 660 neither gun touches a victory sector from home:
-it has to come four hundred forward, which puts it among the town's approaches, in front
-of its own infantry, where a section working round the flank will find it. That exposure is
-the price of the shell and it is the reason the reach stops where it does. The American gun
-reaches further and hits softer and the Italian one is the other way round, so the German
-side has to come further forward for the same ground.
+from every victory flag, so at 860 and 660 neither gun touches a victory sector from home:
+the 105 has to come three hundred forward and the 75/18 five hundred, which puts it among
+the town's approaches, in front of its own infantry, where a section working round the
+flank will find it. That exposure is the price of the shell and it is the reason the reach
+stops where it does. The American gun reaches further and hits harder, and pays for both in
+weight: it is slower to walk, to bring into action and to bring round.
 
-On the models, the trail is what tells the two apart: the M1 sits on a box trail, one beam
-under the breech with a single spade on the end of it, and the 75/18 mod. 34 on split ones
-that open out to either side. The 75/18 is the longer barrel of the pair at eighteen
-calibres against the M1's sixteen and carries the taller shield. Neither has a muzzle
-brake. Both are laid up at the elevation a gun that only fires indirect sits at, which is
-what tells the class from the anti-tank guns at a glance: those have long thin barrels held
-level on the same sort of carriage.
+**The 105 is laid over a four-view drawing of it firing** (`tools/ref/us_how.json`), in the
+M1 75 mm pack howitzer's place: the 105 mm M2A1 on the M2A2 carriage, which is what the
+29th's field artillery battalions fired, still run about by its crew of five. The sheet has no
+scale; every view agrees with the published 2.21 m over the wheels and 1.73 m to the top of
+the shield at 48.3 px/m, and the tube it gives from the breech to the muzzle is 2.63 m
+against the published 2.574, which is the check. It is three builders: `h105Bottom` (the
+9.00-20 wheels on their axle, the body the trails hinge on, the trails and spades, the lower
+shield in front of the axle and the loader's rounds), `h105Top` (the top carriage, the cradle
+at its elevation, the two equilibrators, the shield in three pieces a side, the handwheels and
+the panoramic telescope) and `h105Tube` (the tube and the sleigh, which run back together).
+It fires with the trails spread and the tube at `H105.el`, and its crew run it along as one
+piece with the trails closed and the tube level: `pack` on the GUNMODEL is that closed piece,
+and `pkAll` says it carries its own tube, so `gunRecOf` leaves the recoiling one out while the
+piece is out of action. It turns whole at `traverse` .45, a little over half a mortar's rate,
+rather than on a top carriage the way the 240 does, because `gunPost` lays a set piece off its
+layer along the unit's facing and a top carriage turning on its trails would swing the trails
+round the man. The gunner and his assistant stand bent over the two handwheels (`laying`, the
+served pose for a handwheel at a standing man's waist) and the other three bring the rounds up.
+It puts 150 a round every 3.8 seconds into a circle of 84, eight rounds a mission out to 860,
+for 440 marks and 60 of fuel, where the 75 put 102 into 76 out to 760 for 380 and 45.
+
+The 75/18 is still the first roster's, on split trails with the taller shield. Both are laid up
+at the elevation a gun that only fires indirect sits at, which is what tells the class from the
+anti-tank guns at a glance: those have long thin barrels held level on the same sort of
+carriage. Neither has a muzzle brake.
+
+**The American 81 is built to its published figures** (`mo81Model`, in place of the first
+roster's `mortarModel`, which is the German one's now): the tube of 49.5 inches on its ball in
+the socket of a rectangular baseplate ribbed out from the socket, the M4 bipod clamped round the
+tube a little over half way up with the shock absorber's two springs under the collar, the
+traversing screw across below them with its handwheel, the elevating screw down the middle to
+the hinge the legs turn on, the cross-levelling slide and the chain between the legs, and the
+sight on the left; three bombs stand in a rack beside the plate with their containers. The
+drawing it was asked from is a three-quarter view of the M252 that came after it, which is a
+guide to proportion and no measure of position, and the finned breech, the blast attenuator
+and the round baseplate on it are that mortar's and are left off.
 
 **And the heavy battery, which is a position rather than a unit.** `am_240` (the 240 mm
 Howitzer M1 on the M1 carriage) and `ger_how210` (the Obice da 210/22 mod. 35) are never
@@ -6677,8 +6946,10 @@ the file. What moved to `own` is money, command, population, production and the 
 **A slot key is a STRING, chosen so that everything already keyed by side takes it with no
 change at all.** The purse, the income, the population, what has been ordered, the call
 board and the operations are `[slot]` where they were `[side]`, and in a 1v1 the slots are
-`'us'` and `'ger'`, which is exactly what they were. A 2v2 adds `'us2'` and `'ger2'`.
-`G.slots` is what is actually being played, `G.own` is the player's own slot and
+`'us'` and `'ger'`, which is exactly what they were. A 2v2 adds `'us2'` and `'ger2'`, and a
+3v3 `'us3'` and `'ger3'`, on the END of `SLOTS` so that a 2v2's four keep their places
+(the 2v2 gate row indexes the list). `G.team` is how many a side and `G.duo` is still
+whether it is more than one. `G.slots` is what is actually being played, `G.own` is the player's own slot and
 `owned(x)` is whether a thing is his. The victory points stay on a team's FIRST slot,
 because a team wins or loses together and `G.res.us.vp` is what every reader of them
 already asks for; `vpOf(side)` and `vpSet` are the two that know it.
@@ -6724,10 +6995,11 @@ out of one till and counts against one limit.
 **Each computer player is set on its own, and the settings are stored against a ROLE.** A
 slot key depends on which side the player picked -- his ally is `us2` playing American and
 `ger2` playing German -- so a panel storing its settings under the slot would move them to
-a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2` and `ally`;
+a different AI the moment he changed sides. `AD_ROLES` is `foe1`, `foe2`, `foe3`, `ally` and
+`ally2`;
 `ADS[role]` is that one's handicap row, `ABUY[role]` is what it is told to buy, and
 `startGame` is the one place that says which slot is playing which role. The OPPOSITION
-panel carries a strip of three and edits one at a time; the two that a 1v1 does not use
+panel carries a strip of five and edits one at a time; the ones a smaller game does not use
 are shown rather than hidden, because a player who sets his ally's economy and then
 switches back should be able to see the setting is still there and is not being used.
 
@@ -6773,6 +7045,46 @@ populations counted separately; and an ally's section selected gives nothing at 
 command bar. The ladder under the weights reads `hr_ks750x1@40 hr_pakx2@130 hr_p4x2@260
 ger_tigx1@620` at even, and with light at NEVER, medium at 2x and heavy at 3x it reads
 `hr_pakx2@130 hr_p4x4@130 ger_tigx3@207`.
+
+**Three a side.** SIDES on the title screen is 1 v 1, 2 v 2 or 3 v 3 (`chosenTeam`), and
+`startGame`'s last argument is the number, with `true` still read as a 2v2 because the gate
+passes one (`teamSize`). `buildSlots(side, diff, n)` lays the player and his allies in
+`ally` and `ally2` against `foe1` to `foe3`.
+
+**Where each headquarters stands is worked out once, in `buildMap`, by `hqSpotsOf`.** A map
+may name as many spots as it was laid for -- `hq` entities carry `n`, the first being the
+one a 1v1 uses -- and a game takes them in slot order. Where it names fewer than the game
+has players, the rest split either side of its first across the axis the two armies are
+NOT separated on (`HQ_OFF`: 2 a side at -290 and +290, 3 a side at 0, -290 and +290). It is
+done in `buildMap` because every one of those spots is a pad in `DEPOT` now, and the
+landform is levelled under each: the old 2v2 put its allies 290 either side of the map's
+one pad, where Ortona's circle of 165 barely reached them. Measured as the worst departure
+of the ground from a plane over the footprint and a margin, an Ortona 2v2 ally stood on 18
+to 24 units of it and stands on 6 to 9, against 4.9 under the map's own. `frontOf(side)` is
+which way the armies face, read off the two headquarters rather than off `LAND.south`, and
+the opening company and a building's rally point both ask it. A headquarters wears the
+map's `look` only on the spot the map drew it on.
+
+**A team is out when its LAST headquarters falls.** With one a side the first was the
+last; with three, losing any one of them lost the battle for the two players still
+fighting it. A player whose headquarters has gone has lost his production and not his
+army. And a section's reinforcements are paid for out of its own player's till
+(`u.own`): charged to the team's first slot, an ally's refills in a team game came out of
+the player's purse. The stats page labels every unit in a team game by whose it was
+(`stOwn`: YOU, ALLY, SECOND ALLY, OPPONENT 1 to 3), where it used to call the enemy's second
+player an ally.
+
+**And a map's data may not read `WORLD`.** It is built before `buildMap` calls
+`setWorld`, and FIGHT AGAIN goes back to the title screen without a reload, so Ortona picked
+after a game on Omaha put the German headquarters at 1250 and the Gothic Line was mirrored
+about the middle of a map 1500 across. Both write their width out now.
+
+Measured by the gate row for it on Ortona: the three buttons and five roles on the panel;
+six headquarters on six owners, the nearest two allies 290 apart, all six with walkable
+ground to march out of and none standing on more than 9.4 units off its plane; five
+brains, the points on the first slots only, every AI raising something in two minutes;
+the labels; and the battle going on after an ally's headquarters and the second one fall
+and ending on the last.
 
 **The periscope.** `POV` is a first-person look from a unit: the LOOK button (V) puts the
 eye where the section leader's helmet is (`povEye`, 15.5 units up, 26 on a vehicle) and
@@ -6980,6 +7292,21 @@ the way a trench is, not cut into straight pieces the way a wall is. And **a fie
 stored as a box by its corner, the way paving is** (`edBoxy`): stored as two corners it
 carried `x1`, which every piece of editor code that handles a wall reads as a line, so a
 field moved or mirrored came out as NaN.
+
+**The editor knows which way a map is mirrored.** It was written for Ortona, whose midline
+runs down the map, and every place it mirrors (placing, a brush, the eraser, the ghost of
+what a tap would put down, COPY ACROSS, the copy of one half over the other and the balance
+table's halves) reflected x. On Saint-Lô that copied a house across the town onto the same
+army's half. `edMY()` is the y of the line a map is mirrored across (`LAND.mirrorY`), or
+nought for the old kind, and `edMirPt`, `edOffMid` and `edFirstHalf` are what those places
+ask. A side may have three headquarters now: a new one takes the first order (`n`) its side
+has free, the sheet sets the order, and with three standing a fourth replaces the nearest.
+The town's pieces are under NORMANDY (a town house with its walls, storeys, shop, gutted
+state and street, a rampart tower, the three bridges, a stair, and the square's furniture)
+and the railway has a category of its own (track, platform, station, goods shed, signal box,
+water tower, the four wagons, a buffer stop and a crossing gate). A track and a stair drawn
+in the editor are lists of `{x, y}` like a street, and the game reads either form
+(`xyArr`).
 
 The rule of the hand is the same with a mouse and a thumb: a drag on the ground pans, a
 tap does the tool's one thing, and a press held still picks something up. Only the tools
@@ -7615,6 +7942,18 @@ shots/                         screenshot output, gitignored
   it takes 11 alone, on the committed file as much as on a working one. Its click waits 180, so on
   a busy box it timed out and read as the phone having broken. The card closes the desktop page's
   context before it opens the phone now; a tool that opens a second page wants the same.
+- **All of a volley's hits land on one man, so a faster, lighter rate of fire is a weaker one.**
+  `damage` hands the whole of `w.dmg * hits` to a man picked at random, so the same damage a second
+  cut into three times as many volleys spreads evenly over the squad it hits and kills its first
+  man later, and a squad of few heavy men (the Knight's Cross Holders' four of 105) punishes it
+  most. A rate of fire changed without the damage moving the other way is a balance change.
+- **A cooldown is reset, not carried, so a rate of fire is rounded up to the frame.** `fireAt` sets
+  the cooldown to `rof` and `updateUnit` takes `dt` off it, so a weapon fires on the first frame
+  after its `rof` has run out and the overshoot is thrown away. On the duel card's twentieth of a
+  second a `rof` of .16 fires every .2 and loses a fifth of its fire where .44 fires every .45 and
+  loses two per cent; at sixty frames a second the same .16 fires every .167. Every fast weapon on
+  the roster carries it (an MG 42 at .08 fires every .1 on the card), so a rate under a fifth of a
+  second is picked as a multiple of the card's step, or its row is read knowing it is short.
 - **A new global can take the name of an old one without a word.** Every `var` at the top of
   the script is one namespace forty thousand lines long, and a second `var` of a name is
   legal and wins. The carry anchor was first written as `MG_HOLD`, which was already the
@@ -7653,6 +7992,13 @@ shots/                         screenshot output, gitignored
   so a lookup of `GUNMODEL[u.key]` draws the 240 over the mortar's numbers. The draw, the shadow
   pass, the flash and the gun wreck ask `gmKey`; anything new that asks for a unit's piece has
   to as well.
+- **A plot's pad reaches forty units past its walls, and a way cut into the ground is not a
+  plot.** `levelPad` blends each house's footprint flat and fades the blend out over forty
+  units, so a house beside a ramp or a stair pulls the cut toward its own floor: on Saint-Lô
+  the mill beside Notre-Dame's ramp sank it into a trough nobody could walk out of, and the
+  flag on the rock could not be reached. It looks like a ramp in every photograph. A country
+  whose ground has cuts in it answers `LAND.noPad(x, y)`, and the flood fill from a flag is the
+  check: 70 cells reachable before, 19,016 after.
 - **A size test written for one country shuts out another's houses.** `canGarrison`
   separates a strongpoint from a shed by asking for sixty units each way, and every Norman
   house is thirty-four to forty-four deep: none of the thirty-five could be held until the

@@ -553,10 +553,15 @@ for (const device of TARGETS) {
         window.__tev('touchstart', x, y); window.__tev('touchend', x, y);
         return !!(window.SIMPLEORD && window.SIMPLEORD.sec === s);
       };
-      if (!tryAt(p.x, p.y)) {
-        for (let k = 0; k < 8; k++) {
-          const a = k * Math.PI / 4;
-          if (tryAt(p.x + Math.cos(a) * 46, p.y + Math.sin(a) * 46)) break;
+      /* two rings, because on one desktop run his own men stood thick enough round the
+         pole of the flag he was told to hold that all eight taps of the first one picked a
+         man, the HOLD went nowhere, and the row read a hold order the brain had never
+         been given */
+      let got = tryAt(p.x, p.y);
+      for (const rr of [46, 92]) {
+        for (let k = 0; k < 8 && !got; k++) {
+          const a = (k + (rr > 46 ? .5 : 0)) * Math.PI / 4;
+          got = tryAt(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
         }
       }
       const box = document.getElementById('tord');
@@ -629,8 +634,8 @@ for (const device of TARGETS) {
     const shutA = document.getElementById('tord').classList.contains('hidden');
     const dirA = window.aiDirOf(own, A.id);
     /* HOLD on one of his, FEINT on another of theirs */
-    window.__tapFlag(H); document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
-    window.__tapFlag(F); document.querySelector('#tordbtns .tf[data-ord="feint"]').click();
+    const onH = window.__tapFlag(H).on; document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
+    const onF = window.__tapFlag(F).on; document.querySelector('#tordbtns .tf[data-ord="feint"]').click();
     const tick = P.t, dirH = window.aiDirOf(own, H.id), dirF = window.aiDirOf(own, F.id);
     /* one tick of the brain, and what it made of the three */
     window.aiThink(1);
@@ -650,7 +655,7 @@ for (const device of TARGETS) {
     window.aiThink(1);
     const dropped = !window.aiOpById(own, hold ? hold.id : 0);
     unhide();
-    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick, onA: tapA.on,
+    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick, onA: tapA.on, onH, onF,
              asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, cleared, dropped, status,
              who: tapA.who.length, how: tapA.how.length,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
@@ -664,7 +669,7 @@ for (const device of TARGETS) {
      flags.none ? 'fewer than three flags that are not his' :
      `${flags.name} (on the flag ${flags.onA}, wanted ${flags.A}): ${flags.kinds} with ${flags.who} who-chips and ${flags.how} tempers, none under ${MIN_TAP}px; ` +
      `attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; ` +
-     `hold ${flags.hold} with ${flags.onHold} on it; feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
+     `hold (pad on it ${flags.onH}, order ${flags.dirH}) ${flags.hold} with ${flags.onHold} on it; feint (pad ${flags.onF}, order ${flags.dirF}) ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
      `lit ${flags.lit} -> cleared ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
 
   /* --- the rest of the board: an order about a piece of open ground with a force he
@@ -1859,10 +1864,22 @@ for (const device of TARGETS) {
   await page.evaluate(() => { window.DRV.padT = 1; window.DRV.padS = 0; });
   await unpin();
   await fastForward(page, 3);
-  const drvA = await page.evaluate(([x, y]) => {
+  const drvA = await page.evaluate(([x, y, f0]) => {
     const u = window.POV.u;
-    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing };
-  }, [drv0.x, drv0.y]);
+    /* and what stopped it, if something did: the pace it ended at, how far it swung off the
+       bearing it was parked on, and the nearest thing standing in front of it */
+    let near = '', nd = 1e9;
+    for (const o of window.G.units) {
+      if (o === u || o.dead) continue;
+      const d = Math.hypot(o.x - u.x, o.y - u.y);
+      if (d < 90 && d < nd && Math.cos(Math.atan2(o.y - u.y, o.x - u.x) - u.facing) > .3) { nd = d; near = o.key + '@' + Math.round(d); }
+    }
+    const ax = u.x + Math.cos(u.facing) * 40, ay = u.y + Math.sin(u.facing) * 40;
+    return { moved: +Math.hypot(u.x - x, u.y - y).toFixed(1), took: window.DRV.took, f: u.facing,
+             sp: +(u.sp || 0).toFixed(1), swung: +Math.abs(window.angDiff(u.facing, f0)).toFixed(2), near: near || 'nothing',
+             ahead: window.walkable(ax, ay) && !window.blockAt(ax, ay) && !window.buildingAt(ax, ay) ? 'open' : 'blocked',
+             up: Object.keys(u.up || {}).filter(k => u.up[k]).join(',') || 'none' };
+  }, [drv0.x, drv0.y, drv0.facing]);
   /* And the steer leg starts where the drive leg did, on the heading the drive left it on.
      The drive takes the tank a hundred and eighty units or more along whatever bearing it
      was parked on, which is most of the clear going the staging asked for, and on one phone
@@ -1880,7 +1897,7 @@ for (const device of TARGETS) {
     const u = window.POV.u;
     return { turned: +Math.abs(window.angDiff(u.facing, f)).toFixed(2), x: u.x, y: u.y };
   }, [drvA.f]);
-  drv2.moved = drvA.moved; drv2.took = drvA.took;
+  drv2.moved = drvA.moved; drv2.took = drvA.took; drv2.why = drvA;
   await page.evaluate(() => { window.DRV.padT = 0; window.DRV.padS = 0; });
   await fastForward(page, 3);
   const drv3 = await page.evaluate(([x, y]) => {
@@ -2003,7 +2020,8 @@ for (const device of TARGETS) {
 
   ok('the commander drives his tank from the periscope',
      tank.staged && drv0.shown && drv0.padOk && drv0.fireOk && drv0.clear && drv2.moved > 60 && drv2.turned > .35 && drv2.took === 1 && drv3.sp < 1,
-     tank.staged ? `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped`
+     tank.staged ? `drove ${drv2.moved} straight in three seconds, then turned ${drv2.turned} rad on the steer, then stopped` +
+       (drv2.moved > 60 ? '' : ` (the drive ended at ${drv2.why.sp} a second, ${drv2.why.swung} rad off its bearing, the ground 40 ahead ${drv2.why.ahead}, in front of it ${drv2.why.near}, fitted ${drv2.why.up})`)
                  : 'nowhere round the headquarters with 300 units of clear going in front of it');
 
   const tankOff = await page.evaluate(() => { window.povOff(); return !window.POV.on && document.getElementById('tHatch').classList.contains('hidden') && !document.getElementById('drive').classList.contains('on') && !window.POV.u; });
@@ -2243,6 +2261,10 @@ for (const device of TARGETS) {
     return { pd, diff: window.G.diff,
              popYou: window.popCap(side), popFoe: window.popCap(foe),
              mp: Math.round(window.G.res[side].mp), fu: Math.round(window.G.res[side].fu),
+             /* what went out of the till since the whistle, because with a till this size the
+                AUTO setting fits the rifle squad its BARs before the row reads it */
+             spMp: Math.round(window.REC && window.REC[side] ? window.REC[side].spendMp : 0),
+             spFu: Math.round(window.REC && window.REC[side] ? window.REC[side].spendFu : 0),
              incYou: +window.G.inc[side].mp.toFixed(2), incFoe: +window.G.inc[foe].mp.toFixed(2),
              incFuYou: +window.G.inc[side].fu.toFixed(2), incFuFoe: +window.G.inc[foe].fu.toFixed(2),
              prodYou, prodFoe, consYou, consFoe, took, dealt, neither,
@@ -2252,7 +2274,7 @@ for (const device of TARGETS) {
   });
   ok('the handicap is the player\'s half of the difficulty, and the opposition keeps its own',
      hcap.rows === 13 && !hcap.even && hcap.pd.pop === 1000 && hcap.popYou === 1000 &&
-     hcap.popFoe === 175 && hcap.mp >= hcap.pd.mp && hcap.fu >= hcap.pd.fu &&
+     hcap.popFoe === 175 && hcap.mp + hcap.spMp >= hcap.pd.mp && hcap.fu + hcap.spFu >= hcap.pd.fu &&
      hcap.incYou > hcap.incFoe * 6 && hcap.incFuYou > hcap.incFuFoe * 6 &&
      hcap.prodYou > hcap.prodFoe * 9 && hcap.prodFoe > 0 &&
      hcap.consYou > hcap.consFoe * 9 && hcap.consFoe > 0 &&
@@ -2261,7 +2283,7 @@ for (const device of TARGETS) {
      Math.abs(hcap.neither - 100) < 1 &&
      Math.abs(hcap.eyeYou - hcap.eyeDef * hcap.pd.eye) < 2 && hcap.eyeFoe === hcap.eyeFoeDef,
      `${hcap.rows} settings, all off even; on GREEN the player's cap is ${hcap.popYou} and the opposition's ${hcap.popFoe}; ` +
-     `the till opened at ${hcap.mp}/${hcap.fu}f; income ${hcap.incYou}mp ${hcap.incFuYou}f against ` +
+     `the till opened at ${hcap.mp + hcap.spMp}/${hcap.fu + hcap.spFu}f (${hcap.spMp}/${hcap.spFu}f spent since); income ${hcap.incYou}mp ${hcap.incFuYou}f against ` +
      `${hcap.incFoe}mp ${hcap.incFuFoe}f; a second of queue buys ${hcap.prodYou}s against ${hcap.prodFoe}s ` +
      `and a second of digging ${hcap.consYou} of a building against ${hcap.consFoe}; ` +
      `a hundred-point round took ${hcap.took} off one of his and ${hcap.dealt} off one of theirs, ` +
@@ -2588,6 +2610,76 @@ for (const device of TARGETS) {
      `the ground has ${duo.secOwners} on it and the points are ${duo0.vp.join('/')} a team; ` +
      `an ally's section gives ${duo.allyCmd} of his own units to order`);
 
+  /* --- 3v3. Three players a side, three headquarters, three purses and five brains: the
+     2v2's machinery with a third slot on each team. Ortona names one headquarters a side,
+     so the three stand either side of it across the line the two armies are separated on,
+     and every one of them has its own level pad to march out of. The same row takes the
+     rule that a team is out when its LAST headquarters falls and not its first: with
+     three a side, losing one used to lose the battle for the two players still fighting,
+     and the rule is asked both ways round, an ally's going and then the last. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  const tri0 = await page.evaluate(() => {
+    const btns = [...document.querySelectorAll('.team')].map(b => b.textContent.trim());
+    document.querySelector('.team[data-team="3"]').click();
+    const roles = [...document.querySelectorAll('#arole .arole')].map(b => b.textContent.trim());
+    return { btns, chosen: window.chosenTeam, roles };
+  });
+  await page.evaluate(() => window.startGame('us', 1, 'vp', true, 3));
+  await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
+  const tri = await page.evaluate(() => {
+    const G = window.G, hq = G.blds.filter(b => b.def.hq);
+    const sep = side => { const h = hq.filter(b => b.side === side); let m = 1e9;
+      for (let i = 0; i < h.length; i++) for (let j = i + 1; j < h.length; j++) m = Math.min(m, Math.hypot(h[i].x - h[j].x, h[i].y - h[j].y));
+      return Math.round(m); };
+    /* the ground under each: a pad is a PLANE fitted through the country, which keeps the
+       shelf's own fall and takes out the relief, so what is read is the worst departure
+       from the least-squares plane over the footprint and a margin, and not the spread of
+       the heights, which on Ortona's shelf is thirty units of fall that is meant to be there */
+    const flat = hq.map(b => { const P = [];
+      for (let dx = -80; dx <= 80; dx += 20) for (let dy = -60; dy <= 60; dy += 20) P.push([dx, dy, window.groundZ(b.x + dx, b.y + dy)]);
+      const n = P.length, mz = P.reduce((a, p) => a + p[2], 0) / n;
+      const sxx = P.reduce((a, p) => a + p[0] * p[0], 0), syy = P.reduce((a, p) => a + p[1] * p[1], 0);
+      const bx = P.reduce((a, p) => a + p[0] * (p[2] - mz), 0) / sxx, by = P.reduce((a, p) => a + p[1] * (p[2] - mz), 0) / syy;
+      return Math.round(Math.max(...P.map(p => Math.abs(p[2] - mz - bx * p[0] - by * p[1]))) * 10) / 10; });
+    return {
+      slots: G.slots.map(s => s.k + ':' + s.role).join(' '), team: G.team,
+      hqs: hq.map(b => b.own).sort().join(','), sepUs: sep('us'), sepGer: sep('ger'),
+      hqWalk: hq.filter(b => { const f = window.frontOf(b.side); return window.walkable(b.x + f.x * 130, b.y + f.y * 130); }).length,
+      flat, brains: Object.keys(window.AIP).sort().join(','),
+      vp: [Math.round(window.vpOf('us')), Math.round(window.vpOf('ger'))],
+      vpOthers: ['us2', 'us3', 'ger2', 'ger3'].map(k => Math.round(G.res[k].vp))
+    };
+  });
+  await fastForward(page, 120);
+  const tri2 = await page.evaluate(() => {
+    const G = window.G, ai = G.slots.filter(s => s.ai);
+    const out = {
+      raised: ai.map(s => Object.keys(G.made[s.k]).length),
+      queues: ai.map(s => G.blds.filter(b => b.own === s.k).length),
+      units: G.slots.map(s => s.k + ':' + G.units.filter(u => !u.dead && u.own === s.k).length).join(' '),
+      labels: ['us', 'us2', 'us3', 'ger', 'ger2', 'ger3'].map(k => window.stOwn(window.REC, { own: k, side: window.slotSide(k) }).replace(/^ \u00b7 /, '')).join('|')
+    };
+    /* an ally's headquarters and then the second: the battle goes on; then the player's own,
+       which is the last, and it is over */
+    const kill = k => { const b = G.blds.filter(q => q.def.hq && q.own === k)[0]; if (b) window.killBuilding(b); };
+    kill('us2'); out.after1 = G.over; kill('us3'); out.after2 = G.over; kill('us'); out.after3 = !!G.over;
+    return out;
+  });
+  ok('a 3v3 is six players on two teams: six headquarters on their own ground, six purses, five brains, and out on the last headquarters',
+     tri0.btns.join(',') === '1 v 1,2 v 2,3 v 3' && tri0.chosen === 3 && tri0.roles.length === 5 &&
+     tri.team === 3 && tri.hqs === 'ger,ger2,ger3,us,us2,us3' && tri.sepUs >= 280 && tri.sepGer >= 280 &&
+     tri.hqWalk === 6 && tri.flat.every(f => f < 12) && tri.brains === 'ger,ger2,ger3,us2,us3' &&
+     tri.vp[0] === 420 && tri.vp[1] === 420 && tri.vpOthers.every(v => v === 0) &&
+     tri2.raised.every(n => n > 0) && tri2.queues.every(n => n >= 1) &&
+     tri2.labels === 'YOU|ALLY|SECOND ALLY|OPPONENT 1|OPPONENT 2|OPPONENT 3' &&
+     !tri2.after1 && !tri2.after2 && tri2.after3,
+     `buttons ${tri0.btns.join('/')}, ${tri0.roles.length} roles on the panel; ${tri.slots}; headquarters ${tri.hqs}, ` +
+     `allies ${tri.sepUs} and ${tri.sepGer} apart at the nearest, ${tri.hqWalk} of 6 with room to march out, ` +
+     `the ground under them ${tri.flat.join('/')} from high to low; brains ${tri.brains}; points ${tri.vp.join('/')} ` +
+     `and ${tri.vpOthers.join('/')} on the other slots; after 120s ${tri2.units}; raised ${tri2.raised.join('/')}; ` +
+     `labelled ${tri2.labels}; over after an ally's headquarters ${tri2.after1}, after the second ${tri2.after2}, after the last ${tri2.after3}`);
+
   /* --- the one-a-side vehicles. `limit: 1` on the Maus, the Tiger II and the King Tiger,
      and two on the eighty-eight, is a rule about the game rather than a fact about the
      vehicle, so it is a setting rather than an edit to the roster. Measured through
@@ -2782,8 +2874,8 @@ for (const device of TARGETS) {
     made: window.G.slots.filter(s => s.ai).every(s => Object.keys(window.G.made[s.k]).length > 0),
     held: [...new Set(window.G.sectors.map(x => x.owner).filter(Boolean))].sort()
   }));
-  ok('three maps ship, and the mirrored one is fair to the unit',
-     maps.keys === 'gothic,omaha,ortona' && maps.picked === 'The Gothic Line' &&
+  ok('four maps ship, and the mirrored one is fair to the unit',
+     maps.keys === 'gothic,omaha,ortona,stlo' && maps.picked === 'The Gothic Line' &&
      maps.head === 'GOTHIC LINE' && maps.lede.indexOf('Foglia') >= 0 &&
      maps.brief.indexOf('Foglia') >= 0 && maps.unpaired === 0 && maps.west === maps.east &&
      maps.ground < 1 && maps.flagSkew === 0 && maps.vp === 3 && maps.owned === '2:2' &&
@@ -2902,6 +2994,79 @@ for (const device of TARGETS) {
      `${stones.low} low wall runs on the map; ${stones.drills} sections stood at one and left to settle, ` +
      `${stones.inside} of ${stones.men} men in the stones ` +
      `(${(100 * stones.inside / stones.men).toFixed(1)}%), ${stones.covered} of them behind something`);
+
+  /* --- The fourth map, and the first laid for three a side. Saint-Lo is mirrored about
+     y 1400 in everything that plays and dressed differently on each half, and what it
+     claims is arithmetic a photograph cannot check:
+     - the ground is its own reflection (read with `bareZ`, because the two bridges on the
+       forward rows are one stone and one girder and their decks hump differently);
+     - six headquarters stand on the map's own spots in the map's own order;
+     - every solid thing has a twin on the same footprint, however each half dresses it --
+       a gasholder on one side is a goods shed on the other and stops the same boot;
+     - every flag has tier-3 cover inside 110 of its point, which two did not until the
+       crossing got its cottage and the Champ de Mars its pits;
+     - a man gets from every headquarters to every flag, Notre-Dame included, which a
+       house's pad dropping the ramp into a trough once made impossible, and the two halves
+       walk the same to a per cent;
+     - and a battle is fought on it with every brain raising something.
+     It runs before the Omaha rows, which reload. --- */
+  await reload(page);
+  await page.evaluate(() => { document.getElementById('heven').click(); document.getElementById('aeven').click(); });
+  await page.evaluate(() => { window.G.mapData = window.MAPS.stlo.make(); window.startGame('us', 1, 'vp', true, 3); });
+  await page.waitForFunction(() => window.SCENE && window.SCENE.ready);
+  const stlo = await page.evaluate(() => {
+    const G = window.G, MY = 1400, out = {};
+    let worst = 0;
+    for (let i = 0; i < 2000; i++) {
+      const x = 30 + (i * 137.71) % 3740, y = 30 + (i * 71.37) % 1340;
+      worst = Math.max(worst, Math.abs(window.bareZ(x, y) - window.bareZ(x, 2 * MY - y)));
+    }
+    out.ground = Math.round(worst * 100) / 100;
+    const ents = G.mapData.entities.filter(e => e.t === 'hq'), hq = G.blds.filter(b => b.def.hq);
+    out.hqs = hq.length;
+    out.spots = ents.filter(e => hq.some(b => b.side === e.side && b.own === (e.side + ((e.n || 1) > 1 ? e.n : '')) &&
+                                        Math.hypot(b.x - e.x, b.y - e.y) < 8)).length;
+    out.hqWalk = hq.filter(b => { const f = window.frontOf(b.side); return window.walkable(b.x + f.x * 130, b.y + f.y * 130); }).length;
+    const sol = G.props.filter(p => p.solid && p.kind !== 'sea');
+    out.solids = sol.length;
+    out.unpaired = sol.filter(p => Math.abs(p.y - MY) > 1 &&
+      !sol.some(q => q !== p && Math.abs(q.x - p.x) < 1 && Math.abs(q.y - (2 * MY - p.y)) < 1 && Math.abs(q.w - p.w) < 1 && Math.abs(q.h - p.h) < 1))
+      .slice(0, 4).map(p => (p.look || p.style || p.kind) + '@' + Math.round(p.x) + ',' + Math.round(p.y));
+    out.bare = G.sectors.filter(sc => !G.covers.some(c => c.type >= 3 && Math.hypot(c.x - sc.x, c.y - sc.y) < 110)).map(sc => sc.id);
+    out.flags = G.sectors.length;
+    const man = { cat: 'inf', def: {} }, walk = {};
+    let noWay = [], lost = 0;
+    for (const b of hq) for (const sc of G.sectors) {
+      const f = window.frontOf(b.side), p = window.findPath(b.x + f.x * 110, b.y + f.y * 110, sc.x, sc.y, man);
+      let L = 0, px = b.x + f.x * 110, py = b.y + f.y * 110;
+      for (const q of p) { L += Math.hypot(q.x - px, q.y - py); px = q.x; py = q.y; }
+      if (p.noWay || Math.hypot(px - sc.x, py - sc.y) > 60) noWay.push(b.own + '>' + sc.id);
+      walk[b.own + '>' + sc.id] = L;
+    }
+    const twin = id => id[0] === 'g' ? 'a' + id.slice(1) : id[0] === 'a' ? 'g' + id.slice(1) : id;
+    let us = 0, ger = 0;
+    for (const k in walk) if (k.indexOf('us') === 0) { const [o, id] = k.split('>'); us += walk[k]; ger += walk[o.replace('us', 'ger') + '>' + twin(id)]; }
+    out.noWay = noWay.slice(0, 4); out.walks = Object.keys(walk).length;
+    out.walkUs = Math.round(us); out.walkGer = Math.round(ger);
+    return out;
+  });
+  await fastForward(page, 90);
+  const stloFight = await page.evaluate(() => {
+    const G = window.G, ai = G.slots.filter(s => s.ai);
+    return { raised: ai.filter(s => Object.keys(G.made[s.k]).length > 0).length, brains: ai.length,
+             held: [...new Set(G.sectors.map(x => x.owner).filter(Boolean))].filter(o => o !== 'us' && o !== 'ger').length };
+  });
+  const walkSkew = Math.abs(stlo.walkUs - stlo.walkGer) / Math.max(1, stlo.walkGer);
+  ok('Saint-Lô: the ground is its own reflection, every solid thing has a twin, every flag has cover and every walk arrives, the same both ways',
+     stlo.ground < .5 && stlo.hqs === 6 && stlo.spots === 6 && stlo.hqWalk === 6 && stlo.unpaired.length === 0 &&
+     stlo.flags === 16 && stlo.bare.length === 0 && stlo.noWay.length === 0 && stlo.walks === 96 && walkSkew < .02 &&
+     stloFight.raised === stloFight.brains && stloFight.brains === 5 && stloFight.held === 0,
+     `the ground disagrees with its reflection by ${stlo.ground} at most over 2000 samples; ${stlo.hqs} headquarters, ` +
+     `${stlo.spots} on the map's own spots and ${stlo.hqWalk} with ground to march out onto; ${stlo.solids} solid things, ` +
+     `unpaired: ${stlo.unpaired.join(' ') || 'none'}; flags without cover: ${stlo.bare.join(' ') || 'none'} of ${stlo.flags}; ` +
+     `${stlo.walks} walks, no way: ${stlo.noWay.join(' ') || 'none'}; ${stlo.walkUs} units from the American ` +
+     `headquarters against ${stlo.walkGer} from the German (${(walkSkew * 100).toFixed(2)}%); ` +
+     `${stloFight.raised} of ${stloFight.brains} brains raised something in 90 s`);
 
   /* This row runs LAST of the map rows on purpose: it leaves the world on Omaha, and
      the two rows above it -- the churn wash and the field wall -- read the Gothic Line
@@ -3256,7 +3421,13 @@ for (const device of TARGETS) {
     out.am = mine.filter(u => u.key === 'am_rifle').length;
     const sq = mine.filter(u => u.key === 'am_rifle')[0];
     out.men = sq ? sq.models.length : 0;
+    /* read as the squad was raised: with a till this far into the gate the AUTO setting has
+       fitted it its BARs or its grenades, and those men are the fittings' and not the squad's */
+    const up0 = sq ? sq.up : null;
+    out.fitted = up0 ? Object.keys(up0).filter(k => up0[k]).join(',') : '';
+    if (sq) sq.up = {};
     out.vars = sq ? [...new Set(sq.models.map((m, i) => W.variantForModel(sq, i)))].sort().join(',') : '-';
+    if (sq) sq.up = up0;
     const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
     out.makes = hq ? W.makesOf(hq).join(',') : '-';
     G.res.us.mp += 2000;
@@ -3322,7 +3493,7 @@ for (const device of TARGETS) {
      natA.qAm === true && natA.fell && natA.fellNat === 'usa' && natA.bodies &&
      natB.am >= 1 && /29TH/.test(natB.back),
      `army ${natA.name}, the button reads ${natA.pick}; ${natA.am} rifle squads at the whistle, ${natA.men} men of ` +
-     `${natA.vars}; the headquarters makes ${natA.makes}, and asked for the squad ${natA.qAm ? 'queued it' : 'REFUSED it'}; a man killed ` +
+     `${natA.vars}${natA.fitted ? ' (fitted ' + natA.fitted + ')' : ''}; the headquarters makes ${natA.makes}, and asked for the squad ${natA.qAm ? 'queued it' : 'REFUSED it'}; a man killed ` +
      `${natA.fell ? 'went down' : 'DID NOT go down'} as ${natA.fellNat}, American bodies ${natA.bodies ? 'baked' : 'MISSING'}; ` +
      `a brain on the Allied side ordered ${natB.am} rifle squads in 45 s (${natB.live} standing); ` +
      `Ortona's button reads ${natB.back}`);
@@ -5099,6 +5270,85 @@ for (const device of TARGETS) {
      `the front ${m26.pP4} and the side ${m26.pP4S}; the 90 mm goes through a Panther's front ${m26.onPan} (the M4A1's 75 ${m26.m4OnPan}) ` +
      `and a Panzer IV's ${m26.onP4}; the eye ${m26.eyeUp} up out of the cupola and ${m26.eyeIn} with the lid shut; ${m26.blown} of 40 ` +
      `wrecks threw the turret; killed, it left ${m26.bodies} bodies of ${m26.bodyNat}`);
+
+  /* --- The 29th's second batch. The motor pool makes the M16 beside the M3 and the 3-inch gun,
+     and the company post the 105 and the 81. The M16's buffers are built and its quad mount
+     goes the whole way round; the 3-inch is seven men who run it along with the trails closed,
+     and a half-track can still hitch it and draws it at its own tail; the 105 is five and
+     fires only on an order; the 81 is its own mortar and not the German one's. The rifle
+     squad takes both its fittings at once, which put the BAR in two men's hands and the
+     launcher on two men's Garands, and the grenadiers' launcher goes off on a clock of its
+     own at the section the squad is shooting at. --- */
+  const us2 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {}, dt = 1 / 30;
+    const keep = G.units.slice(), shots = G.shots.slice();
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x - 240, hq.y - 120, true);
+    out.mot = W.makesOf(mot).join(','); out.bar = W.makesOf(bar).join(',');
+    G.res.us.mp += 3000; G.res.us.fu += 600;
+    const q0 = mot.queue.length;
+    out.q = W.queueUnit(mot, 'am_m16') ? mot.queue.slice(-1)[0] : 'refused';
+    mot.queue.length = q0;
+    const B = W.MODELS.veh.am_m16;
+    out.bufs = !!(B && B.hull && B.tur && B.turCrew);
+    const v = W.spawnUnit('us', 'am_m16', hq.x + 140, hq.y - 220, 0);
+    v.facing = 0; v.turret = 0; v.want = Math.PI - .05;
+    for (let i = 0; i < 12; i++) W.updateModels(v, 1.0);
+    out.lay = +Math.abs(W.angDiff(v.turret, Math.PI - .05)).toFixed(3);
+    out.carries = W.carriesOf(v); out.tows = !!v.def.tows;
+    /* the two guns and the mortar */
+    const g = W.spawnUnit('us', 'us_t8', hq.x + 200, hq.y - 320, 0), h = W.spawnUnit('us', 'us_how', hq.x - 200, hq.y - 320, 0);
+    out.t8 = g.models.length; out.t8speed = g.def.speed; out.t8tow = !!(g.def.towable && g.def.towAt);
+    out.t8pk = !!(W.MODELS.gunPk.us_t8 && W.MODELS.gunRec.us_t8 && W.MODELS.served.us_t8);
+    out.how = h.models.length; out.howOrder = !!W.onOrderOnly(h); out.howPk = !!(W.MODELS.gunPk.us_how && W.MODELS.served.us_how);
+    out.mor = W.GUNMODEL.us_mor.mesh.length; out.morGer = W.GUNMODEL.ger_mor.mesh.length;
+    /* hitched, the 3-inch rides at the tow's tail */
+    const ht = W.spawnUnit('us', 'am_m3', g.x, g.y - 150, Math.PI / 2);
+    g.setup = 0; g.packed = true; g.pack = 0;
+    W.hitchGun(ht, g);
+    W.updateUnit(g, dt);
+    const back = Math.hypot(g.x - ht.x, g.y - ht.y);
+    out.towBack = +(back - (ht.bodyL - (ht.bodyX || 0))).toFixed(1);
+    out.towed = g.towedBy === ht;
+    /* the rifle squad with both fittings */
+    const sp = window.__o.flatSpot(260);
+    G.units.length = 0; G.shots.length = 0;
+    const u = W.spawnUnit('us', 'am_rifle', sp.x, sp.y, 0);
+    W.fitUp(u, 'bar2'); W.fitUp(u, 'rgren');
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.baked = !!(W.MODELS.man.gi_bar && W.MODELS.man.gi_rgren);
+    out.bar2 = W.mainW(u) === W.UNITS.am_rifle.wUp.bar2;
+    out.gl = !!W.glOf(u);
+    const e = W.spawnUnit('ger', 'hr_gren', sp.x + 170, sp.y, Math.PI);
+    let gl = 0;
+    const real = W.fireAt;
+    W.fireAt = function (a, b, c, o) { const was = a.glcd || 0, r = real(a, b, c, o); if (o && o.gl && (a.glcd || 0) > was + .5) gl++; return r; };
+    for (let i = 0; i < 30 * 20; i++) {
+      if (i % 3 === 0) W.computeVisibility();
+      [u, e].forEach(q => { if (!q.dead) W.updateUnit(q, dt); });
+      W.updateShots(dt); G.t += dt;
+    }
+    W.fireAt = real;
+    out.glFired = gl;
+    G.units.length = 0; keep.forEach(q => G.units.push(q));
+    G.shots.length = 0; shots.forEach(q => G.shots.push(q));
+    W.killBuilding(mot); W.killBuilding(bar);
+    return out;
+  });
+  ok('Omaha: the 29th fields the M16, the 3-inch gun, the 105 and its own 81, and the rifle squad takes the BAR and rifle grenades together',
+     /am_m16/.test(us2.mot) && /us_t8/.test(us2.mot) && /us_how/.test(us2.bar) && /us_mor/.test(us2.bar) && us2.q === 'am_m16' &&
+     us2.bufs && us2.lay < .05 && !us2.carries && !us2.tows &&
+     us2.t8 === 7 && us2.t8speed > 0 && us2.t8tow && us2.t8pk && us2.towed && Math.abs(us2.towBack - 47) < 20 &&
+     us2.how === 5 && us2.howOrder && us2.howPk && us2.mor > us2.morGer &&
+     us2.vars === 'gi_sgt,gi_rifle_b,gi_rgren,gi_rgren,gi_bar,gi_bar' && us2.baked && us2.bar2 && us2.gl && us2.glFired > 0,
+     `the motor pool makes ${us2.mot} and the company post ${us2.bar}; asked for the M16 it queues ${us2.q}; its buffers ` +
+     `${us2.bufs ? 'all built' : 'MISSING'}, the mount laid over the tail ${us2.lay} short, carrying ${us2.carries} and ` +
+     `${us2.tows ? 'TOWING' : 'towing nothing'}; the 3-inch is ${us2.t8} men at ${us2.t8speed} with the closed piece and the served ` +
+     `bodies ${us2.t8pk ? 'built' : 'MISSING'}, ${us2.towed ? 'hitched' : 'NOT hitched'} and riding ${us2.towBack} past the tow's tail; ` +
+     `the 105 is ${us2.how} men, ${us2.howOrder ? 'on order only' : 'FIRING FREE'}; the 81 is ${us2.mor} faces against the German's ` +
+     `${us2.morGer}; the rifle squad with both fittings is ${us2.vars} (${us2.baked ? 'baked' : 'NOT BAKED'}), the BARs ` +
+     `${us2.bar2 ? 'in' : 'NOT in'} its line, the launcher ${us2.gl ? 'issued' : 'MISSING'}, ${us2.glFired} grenades in twenty seconds`);
 
   /* --- The engineers. The Americans' engineer squad: the headquarters makes it and queues
      it, the Allied side opens the battle with one, its three men are the three engineer
