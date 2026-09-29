@@ -553,10 +553,15 @@ for (const device of TARGETS) {
         window.__tev('touchstart', x, y); window.__tev('touchend', x, y);
         return !!(window.SIMPLEORD && window.SIMPLEORD.sec === s);
       };
-      if (!tryAt(p.x, p.y)) {
-        for (let k = 0; k < 8; k++) {
-          const a = k * Math.PI / 4;
-          if (tryAt(p.x + Math.cos(a) * 46, p.y + Math.sin(a) * 46)) break;
+      /* two rings, because on one desktop run his own men stood thick enough round the
+         pole of the flag he was told to hold that all eight taps of the first one picked a
+         man, the HOLD went nowhere, and the row read a hold order the brain had never
+         been given */
+      let got = tryAt(p.x, p.y);
+      for (const rr of [46, 92]) {
+        for (let k = 0; k < 8 && !got; k++) {
+          const a = (k + (rr > 46 ? .5 : 0)) * Math.PI / 4;
+          got = tryAt(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
         }
       }
       const box = document.getElementById('tord');
@@ -629,8 +634,8 @@ for (const device of TARGETS) {
     const shutA = document.getElementById('tord').classList.contains('hidden');
     const dirA = window.aiDirOf(own, A.id);
     /* HOLD on one of his, FEINT on another of theirs */
-    window.__tapFlag(H); document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
-    window.__tapFlag(F); document.querySelector('#tordbtns .tf[data-ord="feint"]').click();
+    const onH = window.__tapFlag(H).on; document.querySelector('#tordbtns .tf[data-ord="hold"]').click();
+    const onF = window.__tapFlag(F).on; document.querySelector('#tordbtns .tf[data-ord="feint"]').click();
     const tick = P.t, dirH = window.aiDirOf(own, H.id), dirF = window.aiDirOf(own, F.id);
     /* one tick of the brain, and what it made of the three */
     window.aiThink(1);
@@ -650,7 +655,7 @@ for (const device of TARGETS) {
     window.aiThink(1);
     const dropped = !window.aiOpById(own, hold ? hold.id : 0);
     unhide();
-    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick, onA: tapA.on,
+    return { A: A.id, F: F.id, H: H.id, name: tapA.name, shown: tapA.shown, small, kinds, shutA, dirA, dirH, dirF, tick, onA: tapA.on, onH, onF,
              asSec: P.asSec, mainSec: main && main.sec, takers, hold: !!hold, onHold, feint: !!feint, onFeint, lit, cleared, dropped, status,
              who: tapA.who.length, how: tapA.how.length,
              ops: Q ? Q.list.map(o => o.kind + (o.dir ? '!' : '')).join('+') : '',
@@ -664,7 +669,7 @@ for (const device of TARGETS) {
      flags.none ? 'fewer than three flags that are not his' :
      `${flags.name} (on the flag ${flags.onA}, wanted ${flags.A}): ${flags.kinds} with ${flags.who} who-chips and ${flags.how} tempers, none under ${MIN_TAP}px; ` +
      `attack -> wave on ${flags.asSec} (main ${flags.mainSec}) with ${flags.takers} sent; ` +
-     `hold ${flags.hold} with ${flags.onHold} on it; feint ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
+     `hold (pad on it ${flags.onH}, order ${flags.dirH}) ${flags.hold} with ${flags.onHold} on it; feint (pad ${flags.onF}, order ${flags.dirF}) ${flags.feint} with ${flags.onFeint} on it, out of ${flags.n} fighters; ` +
      `lit ${flags.lit} -> cleared ${flags.cleared}, dropped ${flags.dropped}; ops ${flags.ops}; line "${flags.status}"`);
 
   /* --- the rest of the board: an order about a piece of open ground with a force he
