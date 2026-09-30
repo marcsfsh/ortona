@@ -3879,6 +3879,21 @@ at 180 (3.5 read 71 and 4.0 read 92) and 8 at 130, where the grenades reach. Ove
 fought at 3.3, they take the grenadier squad and the KS 750 every time, the MG 34 team 92 per cent
 and the 251 75, and the Panzer IV takes them every time in seven and a half seconds.
 
+**And the bazookas were raised to be a match for a tank, with the squad's reach beside them.** A
+player found them too weak against most vehicles and the squad too short-ranged, and the card
+agreed: at 115 a round out to 220 the Rangers took the Panzer IV a third of the time at their own
+reach and 8 per cent at 250, and the StuH, the Panther and the Wirbelwind almost never. The tubes
+are 130 a round every 1.6 seconds at an accuracy of .72 with 175 of penetration out to 270, and
+the automatics reach 250 (270 with the .30). A first cut at 175 a round with 195 of penetration
+took the Panzer IV every time, which is a squad that has stopped needing tanks of its own. Against
+the same file with only the two changed, over twelve runs a row the 251 went 58 to 94 per cent over
+sixteen, the 234/1 75 to every time, the Wirbelwind none to a quarter, the Panzer IV 33 to 44 at
+their own opening range and 8 to 69 at 250, and the StuH and the Panther each 8 to 44. The infantry
+rows barely moved: the grenadier squad every time before and after, the Knight's Cross Holders 67
+to 83. Read the Panther's 44 against the Panzer IV's as the noise sixteen runs carry: the
+bazooka's 175 at that range is two chances in five on a Panther's front and three in four on a
+Panzer IV's.
+
 **The German army.** The 352nd is the German side on every map, and the manned wall's
 garrison is written in its keys, so a manned wall is grenadiers and MG 34 teams.
 
@@ -5216,11 +5231,16 @@ lunette is, so the towed block puts it at the tow's tail (the tow's `bodyL` less
 lunette behind that) rather than eighty units behind the tow's middle, and `gunPost` draws a piece on
 the hook where the tow put it.
 
-**Its numbers are the 57's made heavier, staged sited.** It sees as far as the 57 (620) and reaches
-further (560 against 540), with 140 a round every 3.6 seconds at an accuracy of .80 and 265 of
-penetration, for 420 marks, 30 of fuel and 14 of population. Over twelve runs a row it takes the
-Panzer IV three times in four where the 57 takes it about half the time, a Panther head on a third of
-the time where the 57 took none of the same twelve, and a Tiger 17 per cent.
+**Its numbers are a tank destroyer's, staged sited.** It sees further than the 57 (680 against 620)
+and reaches further (640 against 540), with 175 a round every 3.5 seconds at an accuracy of .80 and
+280 of penetration, for 420 marks, 30 of fuel and 14 of population. It began as the 57 made heavier,
+at 140 a round with 265 of penetration out to 560, and a player found it too short in reach and too
+light in the hit; sited at 600 on the card it took the Panzer IV 83 per cent of the time, the Panther
+half the time, the Tiger 17 and the King Tiger 8. At 240 a round with 320 of penetration out to 660
+it took all four every time, which is past a threat, and at 190 with 290 it still took the King
+Tiger three times in four. Now, over sixteen runs a row sited at 600, it takes the Panzer IV and the
+Panther every time, the Tiger 75 per cent and the King Tiger half the time, and the grenadier squad
+still takes it every time, because a crew of seven in the open is a crew of seven in the open.
 
 **The M3 light tank is the 29th's second tank** (`am_stuart`, on the motor pool's list after the
 M8): the Stuart as the Americans first took it to war, riveted, with the round welded turret

@@ -1375,10 +1375,10 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'Ranger Squad', short: 'RGR', cat: 'inf', hk: 'N',
     models: 6, hpPer: 78, speed: 68, sight: 320, pop: 12, cost: { mp: 450, fu: 25 }, time: 30,
     req: 'us_bar', body: 'usa_rgr', upgrades: ['a6'],
-    w: { range: 215, dmg: 3.2, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
-    wUp: { a6: { range: 230, dmg: 3.2, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
-    at: { range: 220, dmg: 115, rof: 1.7, acc: .70, sup: .02, pen: 150, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
-    desc: 'Six men of the Ranger battalions with four Thompsons and two BARs, and the BAR men sling the BAR and take the bazooka off their backs the moment anything with plate on it is in reach. Fights hardest close in. Two of the Thompson men can be issued the M1919A6 and fire it from the hip.'
+    w: { range: 250, dmg: 3.2, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
+    wUp: { a6: { range: 270, dmg: 3.2, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
+    at: { range: 270, dmg: 130, rof: 1.6, acc: .72, sup: .02, pen: 175, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
+    desc: 'Six men of the Ranger battalions with four Thompsons and two BARs, and the BAR men sling the BAR and take the bazooka off their backs the moment anything with plate on it is in reach, and two bazookas are a match for a Panzer IV. Fights hardest close in. Two of the Thompson men can be issued the M1919A6 and fire it from the hip.'
   },
   /* A crew-served weapon is in action or it is on the move, and getting from one to the
      other takes time both ways. `setup` is the seconds to bring the piece into action
@@ -1535,19 +1535,21 @@ var UNITS = {
      destroyer battalion, which is the tube of the 3-inch anti-aircraft gun and the breech
      ring of the 105 on the 105's own carriage, behind a shield of its own. Seven men, and it
      is run about by them like the 105 or hitched to a half-track (`towable`, with the
-     lunette `towAt` behind the axle). It is the 57 made heavier: it sees as far, reaches a
-     little further and hits harder, it is slower to move, to bring round (`traverse`) and to
-     get into and out of action, and its bigger shield keeps more of a burst off the crew. */
+     lunette `towAt` behind the axle). It is the tank destroyers' gun and it hits like one: it
+     sees and reaches further than the 57, opens a Panzer IV or a Panther in a few rounds and
+     is a threat to a King Tiger, and it pays for that in being slower to move, to bring round
+     (`traverse`) and to get into and out of action. Its bigger shield keeps more of a burst
+     off the crew. */
   us_t8: {
     side: 'us', nat: 'usa', name: '3-inch Gun M5', short: '3-INCH', cat: 'team', hk: 'K',
-    models: 7, hpPer: 66, speed: 22, sight: 620, pop: 14, cost: { mp: 420, fu: 30 }, time: 38,
+    models: 7, hpPer: 66, speed: 22, sight: 680, pop: 14, cost: { mp: 420, fu: 30 }, time: 38,
     req: 'us_mot', setup: 6.0, pack: 6.5, towable: 1, towAt: 47, blastRes: .55, closeWeak: 2.4, traverse: .5,
     runAt: [1.0, 14.8], gunner: 'gi_atg', body: 'usa_at', carryP: { can: 'box57', canH: 2.45 }, gunSit: 'laying',
     gunAt: 9.6, gunY: -5.6, gunMuz: [37.69, 15.4], gunGrip: [-8.4, -5.0, 11.1], gunGripL: [-8.4, -5.0, 9.3],
     gunMate: { at: [-9.6, 5.6], a: 0, grip: [-8.4, 5.0, 11.1], gripL: [-8.4, 5.0, 9.3], pose: 'laying' },
     gunCrew: [[-18, -17], [-18, 17], [-30, 0], [-26, -28], [-26, 28]],
-    w: { range: 560, dmg: 140, rof: 3.6, acc: .80, sup: .03, pen: 265, aoe: 34, shell: 1 },
-    desc: 'The tank destroyer battalion\'s towed gun: a 3-inch anti-aircraft tube on the 105\'s carriage, behind a shield that sweeps back over the wheels, with a crew of seven. It sees as far as the 57 and reaches further, and hits harder, but it is slow to move and slow to bring round; its crew run it about by hand, or a half-track hitches it. Laid in cover on the ground armour has to cross, it has the first round off. Anything that gets in among the crew kills them.'
+    w: { range: 640, dmg: 175, rof: 3.5, acc: .80, sup: .03, pen: 280, aoe: 34, shell: 1 },
+    desc: 'The tank destroyer battalion\'s towed gun: a 3-inch anti-aircraft tube on the 105\'s carriage, behind a shield that sweeps back over the wheels, with a crew of seven. It sees and reaches further than the 57 and hits far harder: a Panzer IV or a Panther goes in a few rounds, and even a King Tiger is in danger from it. It is slow to move and slow to bring round; its crew run it about by hand, or a half-track hitches it. Laid in cover on the ground armour has to cross, it has the first round off. Anything that gets in among the crew kills them.'
   },
   /* The jeep, the Americans' light vehicle: three
      men and a .30 on the M31 pedestal, faster than anything else on the field and made of
