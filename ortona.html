@@ -37705,6 +37705,9 @@ function scPose(V, P) {
   if (q.carry === 'ready') {
     q.carry = 'aim';
     q.head = [.4, 1.3, -.3];
+    /* leaned into the rifle at least as far as the shared firing stance is: stood as upright
+       as the stance it was converted from, the German eye came out 0.49 over the bore */
+    q.lean = Math.max(P.lean || 0, .08);
     /* the standing firing step; a kneel already has a planted front foot */
     if (P.legs && Math.abs(P.legs[0][0]) < .4)
       q.legs = V.nat === 'usa' ? [[.50, -.65, .18, .16], [-.28, -.18, .30, .16]]
@@ -37736,14 +37739,13 @@ function scTurn(r, V, P) {
     if (f.n) f.n = f.n.map(function (n) { return [ca * n[0] - sa * n[1], sa * n[0] + ca * n[1], n[2]]; });
   });
   J.shoulderR = R(J.shoulderR); J.shoulderL = R(J.shoulderL);
-  /* the right elbow stays under the stock rather than flaring out of the silhouette, and
-     the left supports the weapon from below */
-  function elbow(S, H, right) {
-    var E = m1Mix(S, H, right ? .42 : .48);
-    return scAdd(E, right ? [0, 1.43, -1.28] : [.18, -.88, -.78]);
-  }
-  if (J.handR) J.elbowR = elbow(J.shoulderR, J.handR, true);
-  if (J.handL) J.elbowL = elbow(J.shoulderL, J.handL, false);
+  /* The elbows are solved again from the turned shoulders to the hands that did not move,
+     with the rig's own arm (`elbowFor`): the right poled down and out so it stays under the
+     stock, the left down and in under the weapon. The sculpt put each elbow a fixed share
+     of the way to the hand and pushed it off the line, which made the upper arm a third
+     short in every aimed pose and is what read as a man with tubes for arms. */
+  if (J.handR) J.elbowR = elbowFor(J.shoulderR, J.handR.slice(), RIG.arm, RIG.fore, [0, 1.43, -1.28]);
+  if (J.handL) J.elbowL = elbowFor(J.shoulderL, J.handL.slice(), RIG.arm, RIG.fore, [.18, -.88, -.78]);
   return r;
 }
 /* A tapered, gently uneven elliptical tube in a frame given by an axis and two
@@ -37871,7 +37873,7 @@ function scLeg(H, K, A, k, V, fa) {
      ground and a running man's planted foot a unit and a half. */
   var fw = [Math.cos(fa), 0, Math.sin(fa)], upv = [-Math.sin(fa), 0, Math.cos(fa)], A0 = scSub(A, scMul(scNorm(scSub(A, K)), .3));
   function F(x, z) { return scAdd(A0, scAdd(scMul(fw, x), scMul(upv, z))); }
-  var boot = scTube(F(-1.0, -.6), F(2.25, -.66), [[0, .52, .40], [.15, .70, .46], [.38, .72, .48], [.66, .68, .42], [.88, .55, .34], [1, .19, .22]], dark, SC_MAT.leather, 8, 0);
+  var boot = scTube(F(-1.0, -.5), F(2.25, -.58), [[0, .52, .40], [.15, .70, .46], [.38, .72, .48], [.66, .68, .42], [.88, .55, .34], [1, .19, .22]], dark, SC_MAT.leather, 8, 0);
   boot = boot.concat(scTube(F(-1.02, -.9), F(2.3, -.9), [[0, .53, .10], [.17, .72, .10], [.65, .69, .10], [.88, .54, .09], [1, .20, .07]],
                             k.sole || lit(dark, .58), SC_MAT.leather, 10, 0));
   return { thigh: thigh, shin: shin, boot: boot };

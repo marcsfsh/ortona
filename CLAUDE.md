@@ -3687,6 +3687,52 @@ shin hung 0.41 under the ground his knee was on and lifted his front foot off it
 the READ gap at 900 on the desktop went from 0.055 to 0.063 on these changes, because the
 trousers were the darkest thing on him and there was more of them.
 
+**And every man is sculpted over the rig.** `manRig` is the rig as it was, frusta and boxes, and
+it is what settles every joint, hand, eye, muzzle and hold point; `manFaces` hands its record to
+the sculpt (`scRefine`), which takes the boxes out and lofts anatomy in their place. The trunk is
+lofted from rings along the body's own axis (`scTorso`: the tunic from the seat to the collar,
+the skirt of a belted jacket, the vest over it), each arm and leg is a tube through a profile of
+rings smoothed into one another (`scTube`, `scArm`, `scLeg`), a palm is an ellipsoid (`scEgg`),
+and a boot has a toe, a heel and a sole. It came from a sculpt a player supplied (ChatGPT's
+Ortona Infantry Sculpt 1.3), written as a wrapper to paste into the script, and it was ported to
+the file's own terms instead: ES5, the file's materials and kits, and a record the bake and the
+men card read exactly as they read the rig's. Nothing it builds moves a joint the rig worked
+out, so the weapon, the grips, the flash, the eye, the served bodies and what a man carries are
+where they were. The corpses keep the rig.
+
+It changes two things about the poses. **A rifleman standing or kneeling still shoulders his
+weapon** (`scPose`, for the weapons in `SC_ARMS`: the Garand, the Kar98k, the carbine, the M3,
+the MP40, the Thompson, the BAR and the StG 44): the ready carry becomes the aim, standing he
+takes the firing step his army's stance has, and he leans into the rifle at least as far as the
+shared firing stance does. **In the aim and at the low ready his trunk is bladed** (`scTurn`):
+everything above the hips is turned about the hip, .52 in the aim and .32 at the low ready,
+with the legs planted and the hands, the head and the weapon left where the rig put them, and
+the elbows are solved again from the turned shoulders to the hands with the rig's own arm
+(`elbowFor`). A man on the march, a runner, a machine gun from the hip, an anti-tank tube and a
+gun crew are left as they were. Lying down (`scProne`) his chest is raised and braced on the
+right elbow, the right knee drawn up and swung out, the left leg straight and the head beside
+the stock.
+
+Four things differ from the sculpt as it came, and each was measured.
+
+- **The mirror is gone.** The sculpt reflected the whole finished figure because it read +y as
+  the man's left. On screen +y is his right (from behind, the rifle and the sergeant's chevron
+  sleeve are on the image's right), so the reflection would have put every rifle in his left
+  shoulder and every anchor, flash and hold point on the wrong side of him.
+- **The elbows are the rig's.** The sculpt put each elbow a fixed share of the way from the
+  shoulder to the hand and pushed it off the line, which made the upper arm a third short in
+  every aimed pose and read as a man with tubes for arms; the arms row read 32 per cent short.
+- **The boot is built in the rig's own foot frame**, pitched by the sum of the leg's three
+  angles about the ankle, with the shin run 0.3 units into it. Built along a fixed frame the
+  feet floated off the ground in every stride, 650 frames of them on the contact row; laid a
+  shade low under the sole it put the stature four per cent over.
+- **A tube's two end caps are its fifth and sixth faces** (`scTube`), and the skirt and the vest
+  are closed lofts, because the men card's `distal` reads a limb's root and tip off those two
+  faces and an open loft has no inside. Built the sculpt's way the clip row read 880 pairs.
+
+On the men card against the commit before it (`--base=a44b720`), contact, skate, gravity, grip,
+clip, material, size and the read on both devices all come back clean, proportion has one miss
+against the base's two (the tanker's cap, which the base has too), and aim is clean.
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
 level, and what says M1 is a pot longer than it is wide whose sides come down over the ears
