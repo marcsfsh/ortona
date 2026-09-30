@@ -207,9 +207,10 @@ const PROBE = {
   am_m8:     { topZ: 6.0, hullZ: 24, bodyZ: 14.45, xLo: -20.0, xHi: -12.0, straddle: true },   /* the slice is
                taken at the crease over the rear bogie, behind the stowage box; topZ holds the lifting eyes on the
                rim out of the height and hullZ the whip aerial */
-  hr_234:    { topZ: 4.3, hullZ: 24 },   /* topZ holds the screens and their hinges out of the height, which is
-               published to the rim with the screens held out, and hullZ the aerial on the engine deck */
-  'hr_234:puma': { of: 'hr_234', up: 'puma', topZ: 7.7, hullZ: 24 }   /* `of` and `up` measure a vehicle with a
+  hr_234:    { topZ: 4.3, hullZ: 24, tailX: -34.2 },   /* topZ holds the screens and their hinges out of the
+               height, which is published to the rim with the screens held out, hullZ the aerial on the engine
+               deck, and tailX the spare wheel hung on the lower rear plate out of the length */
+  'hr_234:puma': { of: 'hr_234', up: 'puma', topZ: 7.7, hullZ: 24, tailX: -34.2 }   /* `of` and `up` measure a vehicle with a
                fitting that changes the mount; topZ holds the hatch lids and the ventilator out of the roof height */
 };
 const SCALE = 11.7;   /* units per metre: 8.5 cm to the unit, the scale the fleet is built at */
@@ -241,10 +242,17 @@ const measured = await page.evaluate(probe => {
        face that reaches above the cap is dropped whole, and a cut one has to be dropped
        on its parent's extent or the filter is only a filter on tessellation */
     const topOf = f => (f.zt === undefined ? Math.max.apply(null, f.v.map(p => p[2])) : f.zt);
+    /* `tailX` leaves out of the length a face whose middle lies aft of it: a spare wheel hung on
+       the tail plate is on every drawing of the vehicle and in no published length of its hull */
+    const tailX = pr0.tailX === undefined ? -1e9 : pr0.tailX;
     V.hull.forEach(function (f) {
       const tall = topOf(f) > hullCap;
+      let mx = 0;
+      f.v.forEach(p => { mx += p[0] / f.v.length; });
+      const aft = mx < tailX;
       f.v.forEach(p => {
-        hx0 = Math.min(hx0, p[0]); hx1 = Math.max(hx1, p[0]); hy = Math.max(hy, Math.abs(p[1]));
+        if (!aft) { hx0 = Math.min(hx0, p[0]); hx1 = Math.max(hx1, p[0]); }
+        hy = Math.max(hy, Math.abs(p[1]));
         if (!tall) hz = Math.max(hz, p[2]);
       });
     });

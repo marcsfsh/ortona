@@ -30099,14 +30099,19 @@ function k4Rear() {
     f = f.concat(box(-33.58, sd * 7.6, 13.0, .06, .9, .45, C.red, C.red, C.red, 0));
   }
   f = f.concat(box(-16.6, 0, z, 15.0, 1.2, .3, C.dark, C.body, C.dark, 0));
-  /* the silencer: a drum across the rear plate, rusted, on two straps */
-  var sx = -30.4, sz = 17.0;
-  f = f.concat(place(tubeSmooth(-7.4, 7.4, 0, 0, 1.55, 14, C.muff, C.muffD), Math.PI / 2, sx, 0, sz));
+  /* the silencer: a drum across the top of the rear plate, rusted, on two straps */
+  var sx = -30.4, sz = 17.0, sr = 1.55;
+  f = f.concat(place(tubeSmooth(-7.4, 7.4, 0, 0, sr, 16, C.muff, C.muffD), Math.PI / 2, sx, 0, sz));
   [-4.6, 4.6].forEach(function (y) {
-    f = f.concat(place(tubeSmooth(-.25, .25, 0, 0, 1.68, 14, C.dark, C.dark), Math.PI / 2, sx, y, sz));
-    f = f.concat(box(sx + .6, y, 14.8, .5, .5, 1.6, C.steel, C.bare, C.steel, 0));
+    f = f.concat(place(tubeSmooth(-.25, .25, 0, 0, sr + .13, 16, C.dark, C.dark), Math.PI / 2, sx, y, sz));
+    f = f.concat(box(sx + 1.2, y, sz - sr - .6, .5, .5, 1.2, C.steel, C.bare, C.steel, 0));
   });
   f = f.concat(ksTube([sx, 7.4, sz], [sx - 1.6, 8.6, sz - .6], .5, C.muffD, 8));
+  /* the spare wheel hung on the lower rear plate, leaning back with it the way both drawings
+     have it, on its bracket */
+  var sp = at(k4Wheel(0, 1), 0, -K4G.yAx, -K4G.rT);
+  f = f.concat(at(pitch(place(sp, Math.PI / 2, 0, 0, 0), .66, 0, 0), -34.3, 0, 8.9));
+  f = f.concat(m1Beam([-32.6, 0, 7.9], [-33.4, 0, 8.5], 1.4, 1.4, 1.4, 1.4, C.dark));
   /* the rear driver's vision slit in the lower rear plate, and the towing pintle under it */
   f = f.concat(box(-33.1, 0, 11.0, 1.0, 4.4, .9, C.body, C.lit, C.dark, .08));
   f = f.concat(box(-33.62, 0, 11.3, .06, 3.2, .26, C.hole, C.hole, C.hole, 0));
