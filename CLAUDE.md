@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar, now the GrW 34, and pack howitzer, the Mörser 18 in the 210/22's place, the Achilles, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the Achilles, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -956,7 +956,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, and 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, and 2980 before the leFH 18). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -3463,7 +3463,7 @@ any roof probe below the roof plate measures the bottom of the wall. `PROBE.ger_
 the roof for that reason, and its body slice at the front of the casemate, ahead of the spare links,
 the tow cable on the left wall and the cables on the fenders.
 
-**Its numbers are a howitzer's, and the shell sits between the pack howitzers and the 240.** The
+**Its numbers are a howitzer's, and the shell sits between the field howitzers and the 240.** The
 StuG IV's long gun is gone, so the weapon is the StuH's: a heavy shell every 5.0 seconds out to 400
 with a hollow charge of 150, on the StuG IV's 640 hit points, 134 of plate and ten degrees of arc,
 for 300 marks and 75 of fuel. At a first line of 200 a round over 70 of burst it took the rifle squad
@@ -3565,7 +3565,7 @@ Wirbelwind), with their models, their interiors and hatches, the seven upgrades 
 and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
-own for yet: the German mortar (the GrW 34 now) and pack howitzer, the heavy battery (the
+own for yet: the German mortar (the GrW 34 now) and howitzer (the leFH 18 now), the heavy battery (the
 Mörser 18 now), the Achilles, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
@@ -6437,8 +6437,8 @@ refuses and the overlay says RELOADING. It is its own field rather than the cool
 the cooldown is the second between rockets of the same ripple and the label would have read
 RELOADING through all six. That clock is the whole of what makes a projector a different
 weapon from a howitzer rather than a bigger one, and it is what the piece is priced against:
-it throws further than the 75/18 and not quite as far as the 105 (820 against 660 and 860) and lands far looser (a circle
-130 across against 76), so what it is for is ground rather than a target. Measured by the
+it throws as far as the leFH 18 and not quite as far as the 105 (820 against 820 and 860) and lands far looser (a circle
+130 across against 84), so what it is for is ground rather than a target. Measured by the
 gate: six of six rockets up, then 37.6 seconds of reload with a fresh mission standing and
 nothing leaving the tubes, then six more.
 
@@ -6527,7 +6527,7 @@ the flag set, K and a click on the classic bar beside F, and `barrageTick` hands
 `fireAt`, whose shell carries the cloud it will make (`smk`, off `smokeOf(def)`) and hurts
 nobody when it lands. What a piece throws is read off the same number its burst is sized
 off, so the sizes are the roster's and not a table: a mortar bomb makes a cloud of 65 that
-is gone in 29 seconds, the 75/18's shell 76 for 35 and the 105's 80 for 37, and a battery's 118 for 62, with a
+is gone in 29 seconds, the leFH 18's shell and the 105's 80 for 37, and a battery's 118 for 62, with a
 mission at half the rounds of the HE one because each round is a cloud rather than a
 burst. `G.smoke` is the clouds; `smokeAt` is a cloud's radius now, building over three
 seconds and thinning over its last quarter; and `smokeBlocks` is asked at the top of
@@ -6547,8 +6547,8 @@ clouds aged out give the line back; and the card on the bar sets the mode and la
 **Six pieces, in three pairs, and each pair cannot do the one above it's job.** The mortars
 (`us_mor`, `ger_mor`) are man-portable, set up in a couple of seconds, and will engage what
 the battalion can see inside 470 at their own slow rate or take a mission out to 560. The
-field and pack howitzers (`us_how`, the 105 mm M2A1, and `ger_how`, the Italian 75/18 the
-Germans in Italy used every one of they could recover) are `barrageOnly`, which is the whole of what they
+field howitzers (`us_how`, the 105 mm M2A1, and `ger_how`, the 10.5 cm leFH 18, which stands
+where the Italian 75/18 stood) are `barrageOnly`, which is the whole of what they
 are: `acquire` returns null for them and `fireAt` refuses without a mission, because a gun
 this size is laid by somebody else's map and fired on somebody else's order. A right-click
 on an enemy is a mission on the ground he is standing on, and out of reach it is nothing
@@ -6575,12 +6575,12 @@ takes 3.5. Every turn goes through `layOn` now, which reads the same numbers who
 the gun.
 
 The reaches are chosen against this map rather than by feel. A headquarters stands 1150
-from every victory flag, so at 860 and 660 neither gun touches a victory sector from home:
-the 105 has to come three hundred forward and the 75/18 five hundred, which puts it among
+from every victory flag, so at 860 and 820 neither gun touches a victory sector from home:
+the 105 has to come three hundred forward and the leFH 18 a little more, which puts it among
 the town's approaches, in front of its own infantry, where a section working round the
 flank will find it. That exposure is the price of the shell and it is the reason the reach
-stops where it does. The American gun reaches further and hits harder, and pays for both in
-weight: it is slower to walk, to bring into action and to bring round.
+stops where it does. The American gun reaches a little further and hits a little harder, and pays
+for both in weight: it is slower to bring into action and to bring round, and dearer.
 
 **The 105 is laid over a four-view drawing of it firing** (`tools/ref/us_how.json`), in the
 M1 75 mm pack howitzer's place: the 105 mm M2A1 on the M2A2 carriage, which is what the
@@ -6603,10 +6603,38 @@ served pose for a handwheel at a standing man's waist) and the other three bring
 It puts 150 a round every 3.8 seconds into a circle of 84, eight rounds a mission out to 860,
 for 440 marks and 60 of fuel, where the 75 put 102 into 76 out to 760 for 380 and 45.
 
-The 75/18 is still the first roster's, on split trails with the taller shield. Both are laid up
-at the elevation a gun that only fires indirect sits at, which is what tells the class from the
-anti-tank guns at a glance: those have long thin barrels held level on the same sort of
-carriage. Neither has a muzzle brake.
+**The leFH 18 stands where the Italian 75/18 stood** (`ger_how`, the key kept): the 10.5 cm
+leichte Feldhaubitze 18 of the 352nd's artillery regiment, on its riveted box trails and the cast
+light-metal wheels of the motorised batteries, laid over a three-view drawing of it closed for the
+move (`tools/ref/ger_how.json` for the side and the plan, `ger_how_f.json` for the front). The sheet
+has no scale. The side agrees with the published 1.30 m wheel at 76 px/m, and the plan and the
+front with the wheel, the 1.977 m over the hubs and the 1.88 m to the top of the shield at 78; at
+those scales the tube from the back of the breech ring to the muzzle is 3.1 m, which is the 2.941 m
+of barrel and the ring behind it, and that is the check. Four photographs of the one at the Polish
+Army Museum were read to say which line on the drawing is which part, and for nothing else. It is
+three builders, the 105's three: `lfBottom` (the wheels with eight spokes and a solid tyre, the
+trails with the spades stowed on them for the move and folded down under their ends in action,
+the axle, the springs and the lower shield), `lfTop` (the top carriage, the shield leaning back
+with its wings folded and the hood over the slot, the cradle with the recuperator over the tube,
+the two handwheels and the panoramic sight on the left) and `lfTube` (the tube and the breech
+ring, which run back along the bore); `lfShow` lays them together for the overlay, closed or
+spread. The overlay agreed with all three views to about a line width once the stowed spades and
+the shield's hood were drawn; the plan puts the stowed spades a little further forward than the
+side does, and the side was taken.
+
+It is baked the way the Pak 38 is, because it is grey, with the shield left out of the bake
+altogether (`m8Lit` over `wbThin`, see Gotchas). Its crew are the Pak 38's (`hr_atg` at the
+handwheels in the 105's `laying` pose, `hr_atb` bringing the rounds), and it is run along closed
+with the tube level, as the 105 is. Its numbers are the 105's turned a little, because the shell
+and the tube are much the same on a carriage a quarter of a ton lighter: 144 a round every 3.6
+seconds into a circle of 84, eight rounds a mission out to 820, setup 5.5 and pack 6.5, `traverse`
+.48, for 420 marks and 55 of fuel against the 105's 150 every 3.8 out to 860 for 440 and 60. Its
+smoke is the 105's, 80 for 37 seconds, because `smokeOf` reads the same circle. On the audio card
+the pair of them is 1.30x apart in level against a floor of 1.01x for the 105 rendered twice.
+
+Both are laid up at the elevation a gun that only fires indirect sits at, which is what tells the
+class from the anti-tank guns at a glance: those have long thin barrels held level on the same
+sort of carriage. Neither has a muzzle brake.
 
 **The American 81 is built to its published figures** (`mo81Model`, in place of the first
 roster's `mortarModel`): the tube of 49.5 inches on its ball in
@@ -6641,7 +6669,7 @@ the 105 mm M2A1 on the M2A2 carriage and the 8-inch Howitzer M1 on its own carri
 now the 240, built to a photograph of it firing (below); `RETIRED` hands `us_how8`, `am_105`
 and `am_how8` to `am_240` and `WRETIRED` hands the `how105` and `how8` works to `how240`, so a
 brain out of an older revision still digs a battery. Four rules make it a decision rather
-than a bigger pack howitzer, and each of them is a refusal that has to be counted rather
+than a bigger field howitzer, and each of them is a refusal that has to be counted rather
 than assumed:
 
 - **One a side** (`limit: 1` on the unit, which `placeWork` already enforced for the
@@ -6872,7 +6900,7 @@ what a battery position actually looks like.
 **The opposition's guns can be switched off before the battle.** `G.aiArty`, set from the
 title screen beside the difficulty and passed through `startGame(side, diff, mode, arty)`,
 gates `morWant`, `howWant` and the battery dig. It gates the enemy only: the player's own
-mortars, pack howitzers and battery are there either way. Artillery is the one arm a player
+mortars, field howitzers and battery are there either way. Artillery is the one arm a player
 cannot answer in kind on the spot -- a battery is eighty seconds of engineer work away and
 the shells are already falling -- so whether the other side has any is a decision about
 what sort of game this is rather than a difficulty setting. `check.mjs` asserts the
@@ -7956,6 +7984,13 @@ shots/                         screenshot output, gitignored
   a slab for four side by side: the Wirbelwind's front plate came back black behind its own
   guns and read in the photograph as a hole in the turret. Mark a thin part `thin` (as
   `wbThin` does) and it is shaded but shades nothing.
+- **A thin plate leaning across the bake's cells shades itself, and `thin` does not stop it.**
+  The leFH 18's shield is a fifth of a unit thick and leans back forty degrees, wrapped round the
+  cradle, the tube and its own stays: its front face came back at a third of open sky and the grey
+  shield read black. Marked `thin` it still read 0.40, because it is a receiver as well as an
+  occluder and what it wraps round marks the cells in front of it. It is `m8Lit(wbThin(...))` now,
+  out of the bake both ways, which is right for a plate standing clear of everything but its own
+  mount and wrong for a joint.
 - **A key on the brain's ladder that the roster does not have is money saved for ever.** The head
   of the list is reserved in marks and fuel before anything is bought, so a rung for a unit no
   building makes starves the army for the rest of the battle. Write the ladder in live keys.
