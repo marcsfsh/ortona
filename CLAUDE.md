@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and pack howitzer, the 210/22, the Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar, now the GrW 34, and pack howitzer, the Mörser 18 in the 210/22's place, the Achilles, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -117,6 +117,12 @@ mount swaps what the published figures are measured over: the 234/2's 6.80 m is 
 and its 2.38 m is to the roof of the Puma's turret, neither of which is on the car it arrives
 as. `'hr_234:puma': { of: 'hr_234', up: 'puma' }` measures the hull with `turUp.puma` on the
 ring, put where `barUp` puts it, rather than asking for a second model of the same vehicle.
+
+**`tailX` on a probe leaves a spare wheel out of the length.** A face whose middle lies aft of
+it is not counted in the length or the length over the gun. Both drawings of the 234 hang the
+spare on the lower rear plate, leaning back, and it is four units past the tail; no published
+length of the hull is measured over it. The faces of the tyre that straddle the line are still
+counted, so the 234 reads 6.07 m where the bare hull read 6.00.
 
 **`--base` is there because the tool could only ever open the working file**, so it could
 say whether a model is the right size and never whether a change made it a different size.
@@ -950,7 +956,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, and 2900 before Saint-Lô). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, and 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -3559,8 +3565,8 @@ Wirbelwind), with their models, their interiors and hatches, the seven upgrades 
 and the carrier's .30), every `can_` and `fj_` soldier variant, the Canadian and FJ kits
 (`KIT.us`, `KIT.ger`), the Mk II and M38 helmets and the Lee, the Sten, the Bren, the PIAT and
 the Panzerschreck. What is left of the first roster is the pieces neither army has one of its
-own for yet: the German mortar and pack howitzer, the 210/22, the
-Achilles, the eighty-eight, the Nebelwerfer, the Flak 38, the StuH 42, the Tiger, the King Tiger
+own for yet: the German mortar (the GrW 34 now) and pack howitzer, the heavy battery (the
+Mörser 18 now), the Achilles, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger
 and the Maus. They are fielded by whichever side they belong to on every map and crewed by
 that side's men: `variantForModel` keys every unit's men off the unit first and then off the
 side, so a first-roster gun is served by `gi_atg` with the carbine men of `gi_art` behind it
@@ -4595,9 +4601,20 @@ division's reconnaissance battalion, in the grey. It arrives as the 234/1, with 
 and an MG 42 in an open six-sided turret under two wire screens, and **the closed turret of the
 234/2 with the 5 cm KwK 39/1 is its field upgrade** (`UPGRADES.puma`), which swaps the gun, the
 mount and the men in it together. The two drivers, one at each end, are inside the hull and are
-not drawn. On `tools/dims.mjs` it reads 6.00 m long against 6.02, 2.36 wide against 2.33, 2.07
-to the rim of the 234/1's turret against 2.10, 2.37 to the Puma's roof against 2.38, 6.72 over
+not drawn. On `tools/dims.mjs` it reads 6.07 m long against 6.02 (`tailX` holds the spare wheel
+out of it, and the tyre's faces that straddle the tail are the 0.07), 2.36 wide against 2.33, 2.07
+to the rim of the 234/1's turret against 2.10, 2.37 to the Puma's roof against 2.38, 6.79 over
 the 5 cm against 6.80 and 0.35 of clearance.
+
+**It is laid over two drawings** (`tools/ref/hr_234.json`, a four-view of the 234/1 with the
+screens drawn open, and `hr_234_2.json`, a four-view of the Puma). Neither has a scale on the
+sheet; the 234/1's front view carries its own 2360 across the crease, which is 83.1 px/m, and
+along the side its axles are 77.2 off the published 1,300 + 1,400 + 1,300 mm; the Puma's are 70.
+The hull, the eight wheels and both turrets agreed with them to about a line width, and the one
+thing the model lacked was the spare wheel both drawings hang on the lower rear plate, leaning
+back with it on a bracket under the silencer. Three things on the sheets are left: the Puma's
+star aerial on the engine deck, a round fitting on its hull side aft, and the 234/1's screens,
+which the sheet draws folded open and the game draws closed.
 
 What carries it, and each is built its own way. **The body is eight rings** (`K4ST`), each a
 crease and a top edge on one side: the nose where the glacis meets the lower nose plate, two
@@ -6379,6 +6396,27 @@ three quarters of a minute of standing still is a fine trade behind a line and a
 front of nothing; and the Wirbelwind is a rung on the armour ladder after the first Panzer
 IVs, where `bClassOf` reads it as light armour off its own 96 of plate.
 
+**The Flak 38 is the Gebirgsflak 38 now** (`ger_flak20`, the key kept): the mountain troops'
+Flak 38 L/65 on a tripod that breaks down into man loads, which is what an infantry division got
+when it got any, laid over a 1:35 sheet of two side views, a plan and the two ends in firing
+position (`tools/ref/ger_flak20.json`). Printed on an A4 page it is 79.4 px/m, and the gun from
+the flash hider to the back of the receiver comes out at the published 2.25 m; the plan and the
+two ends agree with the side at that scale. The tripod is three legs off a hub, two splayed
+forward and one straight back, each on a foot with a levelling screw (`flak38Base`, on
+`u.baseA`); the top carriage turns on the hub with the layer on a seat on an arm behind it, his
+hands on the two handwheels and his feet on a rest, and the shield is a sheet curved about the
+trunnions in two wings with the slot the barrel elevates in between them (`flak38Model`, on
+`u.facing`, with `GBF` its table). The first overlay had the gun standing 1.1 units too far
+forward over the hub against the drawing; `GBF.ox` moves it back on the top carriage.
+It is baked the way the Pak 38 is, and nothing about its numbers moved.
+
+**A served body can sit on a seat** (`gunSitZ`). Every body at a gun before it sat or knelt on
+the ground; the Gebirgsflak's layer sits a seat's height up on an arm behind the hub. `sitflak`
+is the stance (knees bent, the feet on the rest and the hands forward to the handwheels), and
+`bakeMen` lowers the grips the body is fitted to by `gunSitZ` and then lifts the baked faces by
+the same amount, the way `gunY` already moves a body sideways, so the correction that puts his
+hands on the wheels is solved on the ground and the man is put on the seat afterwards.
+
 **Artillery, and what makes it artillery.** Everything else on this roster shoots at a
 thing it can see down a line it has to have. `def.indirect` is the other kind: `acquire`
 and `fireAt` skip the line test entirely, the shell is given a long flight and a high arc
@@ -6496,7 +6534,7 @@ anti-tank guns at a glance: those have long thin barrels held level on the same 
 carriage. Neither has a muzzle brake.
 
 **The American 81 is built to its published figures** (`mo81Model`, in place of the first
-roster's `mortarModel`, which is the German one's now): the tube of 49.5 inches on its ball in
+roster's `mortarModel`): the tube of 49.5 inches on its ball in
 the socket of a rectangular baseplate ribbed out from the socket, the M4 bipod clamped round the
 tube a little over half way up with the shock absorber's two springs under the collar, the
 traversing screw across below them with its handwheel, the elevating screw down the middle to
@@ -6506,8 +6544,21 @@ drawing it was asked from is a three-quarter view of the M252 that came after it
 guide to proportion and no measure of position, and the finned breech, the blast attenuator
 and the round baseplate on it are that mortar's and are left off.
 
+**The German 8 cm is built to its published figures and a photograph** (`gw34Model`, `GW34`):
+the Granatwerfer 34's 1,143 mm of tube and 81.4 mm of bore, and a three-quarter photograph of
+it for what stands where, which is a guide to proportion and no measure of position. What tells
+it from the American 81 at a glance is the bipod: two tall legs meeting high up under a short
+head, where the M1's meet low down under a long screw. The head carries the traversing mechanism
+across in front of the tube with the sight on its left end, the elevating column runs down from
+it to the hinge the legs turn on, the tube is held by a collar near its top with the locking
+lever out to the right, the nearer leg carries the cross-levelling sleeve, and each foot is a
+shoe with a spike. The baseplate is square with its edge turned down, a raised rim, the boss
+the ball turns in and a carrying handle, and the bombs stand beside it in their crates. It is
+baked, and its numbers are the ones it had.
+
 **And the heavy battery, which is a position rather than a unit.** `am_240` (the 240 mm
-Howitzer M1 on the M1 carriage) and `ger_how210` (the Obice da 210/22 mod. 35) are never
+Howitzer M1 on the M1 carriage) and `ger_how210` (the 21 cm Mörser 18, where the Italian Obice
+da 210/22 mod. 35 stood until it was rebuilt, the key kept) are never
 queued: `WORKS.how240` and `WORKS.how210` are how they arrive, the engineers spend a minute or
 more and a lorry-load of fuel digging one in, and it stands where it was dug for the rest of
 the battle. The American one was an eight-inch on a platform first, then for one commit each
@@ -6529,23 +6580,42 @@ than assumed:
   leaving home. Guns of this weight fired on map references onto ground somebody was
   fighting over; they did not break up a rear area on a whim.
 - **Slow onto a bearing** (`def.traverse`, an eighth of a radian a second for the 240 and
-  a quarter for the 210 against the mortar's 0.85, with `def.layTol` for how close it has to
-  be before it will fire). The 240 has a carriage as well (`def.carr`, below). Laid behind
+  a quarter for the Mörser against the mortar's 0.85, with `def.layTol` for how close it has to
+  be before it will fire). Both have a top carriage as well (`def.carr`, below). Laid behind
   itself the gun takes about twenty-two seconds before the first round leaves, which the check row
   measures against the arithmetic rather than trusting.
 
-The 210/22 is the least accurate weapon in the game by a long way: two hundred units of
-beaten zone against the pack howitzer's seventy-six, with `barrage.sp` on top of that so
-the round-to-round scatter is the gun's own rather than the mortar's flat ten. The 240
-throws a shell of a hundred and sixty kilograms where the 210's is a hundred, and fell as
-tightly as the American heavy pieces did: 380 over a hundred and fifty of burst against 335
-over a hundred and forty, a circle of a hundred and fifty with a round-to-round scatter of
-twenty against two hundred and twenty-eight, and a reach of 1350 against 1150. What the 210
-has in their place is the turn, the rate and the price: it comes round the whole way on
-its platform at twice the 240's rate of heave, fires every 8.4 seconds where the 240 takes
-eleven, and costs 450 marks and 175 of fuel against 500 and 190. The platform eight-inch the
-battery began as carried the 210's own two hundred of beaten zone, which made the two
-batteries the same gun twice.
+The 240 throws a shell of a hundred and sixty kilograms where the Mörser's is 113, and falls
+tighter: 380 over a hundred and fifty of burst against 345 over a hundred and forty, a circle
+of a hundred and fifty with a round-to-round scatter of twenty against a hundred and seventy
+with twenty-four, and a reach of 1350 against 1150. What the Mörser has in their place is the
+turn, the rate and the price: past its top carriage it is run round its platform at twice the
+240's rate of heave, it fires every 8.4 seconds where the 240 takes eleven, and it costs 450
+marks and 175 of fuel against 500 and 190. The Italian 210/22 that stood here first was the
+least accurate weapon in the game by a long way, two hundred units of beaten zone and 335 a
+round; the platform eight-inch the American battery began as carried the same two hundred,
+which made the two batteries the same gun twice.
+
+**The Mörser 18 is laid over a four-view drawing of it firing** (`tools/ref/ger_how210.json`),
+with the platform let down under the middle of the carriage and the tail on its jacks. The
+sheet has no scale. The side view puts the bore 1.78 m over the ground at 48 px/m, and at that
+scale the published 6.51 m of barrel runs from the muzzle to the back of the block's carrier the
+plan draws behind the breech ring, the muzzle is 0.31 m across over a 211 mm bore and the wheels
+are 1.42 m over their solid tyres; the front view agrees with the side on the height of the bore.
+The side view draws the ring only as far as its own back, which is why the length of the tube
+reads 5.9 m there and 6.51 in the plan. What makes it a Mörser 18 is the carriage: the tube
+recoils in its cradle and the whole top carriage recoils again along the bottom one, so the top
+carriage is a pair of long triangular plates on a slide, with the two equilibrators at its front
+and the recuperator over the tube, and the bottom carriage is a girder most of ten metres long
+with the wheels lifted clear, walkways either side and the castor under the tail. Three pieces,
+as the 240 is: the platform and the bottom carriage on `u.baseA`, the top carriage on
+`u.facing`, and the tube with its ring recoiling along the bore (`m18Bottom`, `m18Top`,
+`m18Tube`, and `m18Show` for the overlay). It is put through the occlusion bake the way the Pak
+38 is, because it is grey. It is built from the drawing, and the overlay agrees with all four
+views to about a line width. In the game the tube is laid at 0.42 radians (`M18.el`). Its crew
+of six are laid by the work (`WORKS.how210.lay`): the layer at the handwheels on the left of the
+top carriage and a man opposite him, two either side of the breech, and two bringing the rounds
+up from behind.
 
 **A split trail traverses twice** (`layOn`). The M1 carriage's top carriage turns on the
 bottom one twenty-two and a half degrees either way (`def.carr`, .39) at `def.carrRate`, and
@@ -6554,11 +6624,13 @@ a mission inside the arc the trails were dug in on is laid in a few seconds, and
 the gun pays the trails' rate for the half turn less the arc. `u.baseA` is the trails and
 `u.facing` the top carriage: the firing base, the bottom carriage and the trails are drawn on
 the first and the top carriage, the cradle and the tube on the second, which is the
-eighty-eight's and the 210's two-piece draw with a rule between the two pieces. Every turn a
+eighty-eight's two-piece draw with a rule between the two pieces. Every turn a
 crew-served piece makes goes through `layOn` -- onto a mission, onto a target it chose under
 free fire, and onto the known threat while it is idle -- so a piece with no `carr` turns
-whole at its own `traverse` in all three, and the Nebelwerfer and the 210 face a threat at
-their own rate where they used to take the mortar's.
+whole at its own `traverse` in all three, and the Nebelwerfer faces a threat at its own rate
+where it used to take the mortar's. The Mörser 18 lays the same way on a narrower arc: its top
+carriage turns eight degrees either way (`carr` .14 at `carrRate` .22) and past that the crew
+run the carriage round the platform on the castor at `traverse` .26.
 
 **The 240 is laid over a photograph of it firing** (`tools/ref/am_240.json`), a halftone from
 its left with the tube at fifteen degrees and the carriage down on its firing base, which is
@@ -6602,9 +6674,10 @@ rounded toe and the jack's crank standing short of it, and the last two lugs und
 plate were at the wrong stations. In the game the tube is laid at 0.30 radians (`H240.el`),
 steep enough to read as a howitzer and shallow enough that the breech ring clears the
 platform behind it, and it recoils down the line of its own bore (`GUNMODEL.recEl`). **Its
-position is bigger than the 210's**: the trails reach ninety-five units back from the pivot
+position is bigger than the Mörser's**: the trails reach ninety-five units back from the pivot
 and are heaved round inside the banks, so the ring stands at a radius of 106 where the
-210's is 62, and the work's footprint is 230 against 150.
+Mörser's is 80 (its tail reaches sixty-five units back to the castor, where the 210/22's
+platform needed 62), and the work's footprint is 230 against 190.
 
 **The two rules meet in the middle, and the 240 is the first battery to reach across it.**
 Dug on the first legal patch beyond `minHq`, the eight-inch was 1575 from the German
