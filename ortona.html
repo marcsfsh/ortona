@@ -1706,12 +1706,12 @@ var UNITS = {
      of very nearly the same barrel, and two lists of one gun go out of step the moment
      somebody edits one of them. */
   ger_flak20: {
-    side: 'ger', name: '2 cm Flak 38', short: 'FLAK 38', cat: 'team', hk: 'Z',
+    side: 'ger', name: '2 cm Gebirgsflak 38', short: 'FLAK 38', cat: 'team', hk: 'Z',
     models: 4, hpPer: 58, speed: 40, sight: 360, pop: 6, cost: { mp: 240, fu: 10 }, time: 22,
     req: 'ger_qtr', setup: 3.5, pack: 3.0, blastRes: .68, closeWeak: 2.0,
-    gunAt: 7.2, gunMuz: [19.6, 10.6], gunGrip: [-4.20, 4.20, 6.60], gunSit: 1,
+    gunAt: 8.75, gunMuz: [24.4, 13.65], gunGrip: [-5.5, 3.45, 10.3], gunSit: 'sitflak', gunSitZ: 4.23,
     w: { range: 340, dmg: 40, rof: 0.30, acc: .62, sup: .28, pen: 20, aoe: 24, shell: 1, auto: 1 },
-    desc: 'The anti-aircraft cannon laid flat, which is what nearly every one of them in Italy was doing by December. Four hundred and fifty rounds a minute of twenty-millimetre high explosive: it strips a section out of the open, it opens an armoured car or a carrier, and it does nothing whatever to a Sherman.'
+    desc: 'The mountain troops\' anti-aircraft cannon on its tripod, laid flat, which is what most of them were doing by the summer of 1944. Four hundred and fifty rounds a minute of twenty-millimetre high explosive from behind a curved shield: it strips a squad out of the open, it opens a jeep or a half-track, and it does nothing whatever to a Sherman.'
   },
   ger_mor: {
     side: 'ger', name: '8 cm Granatwerfer 34', short: 'GRW 34', cat: 'team', hk: 'M',
@@ -33696,51 +33696,121 @@ function flak36Model() {
   f = f.concat(place(pitch(box(0, 0, 18, .9, 8, 3.4, C.dg, C.dgL, C.dgD), .26, 0, 0), 0, 5, 0, 9.5)); /* the strip joining the plates' top edge */
   return f;
 }
-/* ================================================================ 2 cm Flak 38
-   Two pieces, the way the eighty-eight is two pieces: the three-legged ground platform is
-   laid once on `u.baseA` and does not turn, and the gun on top of it traverses on
-   `u.facing`. The platform is 2.3 m across the outriggers with a levelling jack on each,
-   and the gun is the L/65 barrel -- 1.30 m of it -- on a cradle with the twenty-round box
-   magazine standing off the left and the layer sitting behind on a seat between the two
-   grips. That seat is why `gunSit` is declared on the def: the first man of the crew is
-   drawn sitting at the piece and the rest stand round it. */
+/* ================================================================ 2 cm Gebirgsflak 38
+   The 352nd's light flak gun: the 2 cm Gebirgsflak 38 L/65, the mountain troops' Flak 38 on
+   a tripod that breaks down into man loads, which is what an infantry division got when it
+   got any. Laid off a 1:35 sheet of two side views, a plan and the two ends, in firing
+   position. Printed on an A4 page that is 79.4 px/m, and the gun from the flash hider to
+   the back of the receiver comes out at the published 2.25 m; the plan and the two ends
+   agree with the side at that scale. The tripod is three legs
+   off a hub, two splayed forward and one straight back, each on a foot with a levelling
+   screw; the top carriage turns on the hub with the layer on a seat on an arm behind it,
+   his hands on the traversing wheel on the left and the elevating wheel on the right and
+   his feet on a rest; and the shield is a sheet curved about the trunnions in two wings
+   with the slot the barrel elevates in between them, which is what the side views are
+   drawn round.
+     Two pieces, the way the eighty-eight is two pieces: the tripod is laid once on
+   `u.baseA` and does not turn, and the gun and everything on the top carriage traverses
+   on `u.facing`. Origin on the ground under the hub; -y is the left. The layer sits `gunAt`
+   behind the hub, a seat's height up (`gunSitZ`), which is why his body is baked on the
+   seat and not on the ground. */
+var GBF = {
+  tx: 1.3, tz: 13.65,                     /* the trunnions, on the bore */
+  muz: 25.5, shR: 8.1, shA0: -.94, shA1: 1.08, shY: 7.8, slot: 2.2,
+  hubZ: 7.4, seatX: -7.65, seatZ: 9.2,
+  ox: -1.1                                /* the gun is read off the side view about a point this far
+                                             ahead of the hub, and moved back onto it */
+};
+/* the tripod, the hub it turns on, and the ready magazines by the rear leg */
 function flak38Base() {
-  var C = GUN, f = [], k;
-  f = f.concat(cyl(0, 0, 0, 5.0, 5.0, 1.6, 12, C.dg, C.dgL, 0, true));                    /* the hub */
-  for (k = 0; k < 3; k++) {
-    var leg = box(7.2, 0, .8, 14.4, 3.0, 1.8, C.dg, C.dgL, C.dgD)
-              .concat(box(13.8, 0, 0, 4.0, 4.8, 1.0, C.steel, C.steelL))                  /* the footplate */
-              .concat(box(12.8, 0, 2.4, 2.0, 2.0, 2.2, C.steel, C.steelL));               /* the levelling jack */
-    f = f.concat(place(leg, k * TAU / 3 + Math.PI, 0, 0, 0));
-  }
-  f = f.concat(cyl(0, 0, 1.6, 2.8, 2.8, 2.2, 10, C.dg, C.dgL, 0, true));                  /* the pivot */
-  /* the ready magazines, standing in a clip on the rear leg */
-  for (k = 0; k < 4; k++)
-    f = f.concat(box(-9.6 - (k % 2) * 2.8, -3.2 + Math.floor(k / 2) * 6.4, 1.7, 1.5, 2.4, 5.0, C.dgD, C.dg, C.dgD));
+  var C = PKC, g = GBF, f = [];
+  f = f.concat(box(0, 0, 3.4, 6.4, 5.0, g.hubZ - 3.4, C.body, C.lit, C.dark));
+  f = f.concat(cyl(0, 0, g.hubZ - .6, 2.6, 2.6, .6, 16, C.dark, C.body, 0, true));
+  [[1.09, 12.6], [-1.09, 12.6], [Math.PI, 13.6]].forEach(function (lg) {
+    var a = lg[0], R = lg[1], c = Math.cos(a), s = Math.sin(a);
+    var p0 = [c * 2.9, s * 2.4, 5.2], pm = [c * R * .58, s * R * .58, 5.2 - (5.2 - 1.0) * .58], p1 = [c * (R - .4), s * (R - .4), 1.0];
+    f = f.concat(m1Beam(p0, pm, 1.6, 1.4, 1.4, 1.2, C.body));
+    f = f.concat(m1Beam(pm, p1, 1.05, .85, 1.0, .8, C.lit));
+    f = f.concat(m1Beam([pm[0] - c * .5, pm[1] - s * .5, pm[2] + .15], [pm[0] + c * .5, pm[1] + s * .5, pm[2] - .1], 1.8, 1.6, 1.8, 1.6, C.dark));
+    /* the foot: a pad on the ground and the levelling screw with its handle */
+    f = f.concat(cyl(c * R, s * R, 0, 1.25, 1.25, .35, 12, C.dark, C.body, 0, true));
+    f = f.concat(cyl(c * R, s * R, .35, .32, .32, 1.9, 8, C.steel, C.bare, 0, true));
+    f = f.concat(ksTube([c * R - s * .9, s * R + c * .9, 2.2], [c * R + s * .9, s * R - c * .9, 2.2], .14, C.steel, 5));
+  });
+  /* two spare magazines standing in a clip on the rear leg */
+  [-.9, .9].forEach(function (yy) { f = f.concat(box(-7.0, yy, 3.2, 1.1, 1.3, 3.2, C.dark, C.body, C.dark)); });
   return f;
 }
+/* The top carriage and the gun on it: the turntable, the two cheeks the cradle hangs in, the
+   seat on its arm with the backrest, the footrest, the two handwheels; the curved shield in
+   two wings with the plate under the barrel; the cradle, the receiver with the magazine in
+   its left side and the buffer at its back, the jacket and the L/65 barrel with its flash
+   hider; and the sight on its post over the layer's right shoulder with the arm curving down
+   behind it to the carriage. */
 function flak38Model() {
-  var C = GUN, f = [];
-  f = f.concat(box(-1.6, 0, 2.2, 8.0, 7.0, 3.2, C.dg, C.dgL, C.dgD));                     /* top carriage */
-  f = f.concat(box(-7.0, 0, 3.0, 4.4, 5.0, .9, C.dgD, C.dg, C.dgD));                      /* the layer's seat */
-  f = f.concat(box(-9.0, 0, 3.9, .8, 5.0, 3.8, C.dgD, C.dg, C.dgD));
-  [-1, 1].forEach(function (sd) {
-    f = f.concat(box(-4.2, sd * 4.2, 4.8, 1.1, 1.1, 3.4, C.steel, C.steelL));             /* the grips */
-    f = f.concat(box(-4.2, sd * 4.2, 8.0, 2.4, .9, .9, '#3b3226', '#4a4030'));
-  });
-  /* the trunnion block, the receiver and the L/65 barrel with its conical flash hider */
-  f = f.concat(box(.6, 0, 5.4, 5.2, 5.2, 4.2, C.dg, C.dgL, C.dgD));
-  f = f.concat(box(-.6, 0, 9.0, 7.2, 3.8, 3.0, C.steel, C.steelL, C.steel));
-  f = f.concat(box(-4.4, 0, 9.2, 2.2, 2.0, 2.2, C.steel, C.steelL));                      /* the buffer at the back */
-  f = f.concat(box(.8, 2.6, 10.6, 2.8, 1.7, 4.4, C.dgD, C.dg, C.dgD));                    /* the box magazine */
-  f = f.concat(tubeSmooth(2.4, 17.4, 0, 10.6, .60, 10, C.steel, C.steel));
-  f = f.concat(tubeSmooth(17.4, 19.6, 0, 10.6, 1.00, 10, '#2b2e23', '#44483a'));
-  /* the shield: one low square plate across the front of the mount, which is all a light
-     flak gun in the ground role ever carried */
-  f = f.concat(place(pitch(box(0, 0, 0, .7, 15, 9.6, C.dg, C.dgL, C.dgD), .16, 0, 0), 0, 4.6, 0, 5.2));
-  f = f.concat(box(5.8, -3.2, 11.6, 1.1, 1.8, 1.5, '#14150f', '#14150f'));                /* the sight aperture */
-  f = f.concat(box(-.4, -3.4, 12.2, 2.0, 1.5, 1.8, C.steel, C.steelL));                   /* the sight on its bracket */
-  return f;
+  var C = PKC, g = GBF, f = [], sd, k;
+  f = f.concat(box(1.3, 0, 7.9, 7.0, 4.4, 1.3, C.body, C.lit, C.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(m1Plate([[4.6, sd * 1.9, 9.2], [3.0, sd * 1.9, 15.2], [-.6, sd * 1.9, 15.2], [-2.0, sd * 1.9, 9.2]], [0, sd, 0], .35, C.body, C.dark));
+    f = f.concat(place(tubeSmooth(-.3, .3, 0, g.tz, .75, 10, C.dark, C.body), Math.PI / 2, g.tx, sd * 2.4, 0));
+    /* the shield's brackets out from the cheeks to its wings */
+    f = f.concat(m1Beam([3.4, sd * 2.0, 10.4], [7.6, sd * 4.2, 9.2], .5, .6, .5, .6, C.dark));
+    f = f.concat(m1Beam([3.0, sd * 2.0, 14.6], [7.6, sd * 4.2, 17.4], .5, .6, .5, .6, C.dark));
+    /* the footrest */
+    f = f.concat(m1Beam([-1.6, sd * 2.0, 7.9], [-2.9, sd * 2.3, 4.0], .5, .5, .5, .5, C.dark));
+    f = f.concat(box(-2.9, sd * 2.1, 3.9, 1.6, 2.2, .33, C.dark, C.body, C.dark));
+  }
+  /* the seat on its arm, and the backrest on its post */
+  f = f.concat(box(-6.6, 0, 8.0, 9.2, 1.1, .7, C.body, C.lit, C.dark));
+  f = f.concat(box(g.seatX, 0, 8.7, 3.8, 3.4, .5, C.dark, C.body, C.dark));
+  f = f.concat(ksTube([-10.25, 0, 8.4], [-10.25, 0, 12.9], .3, C.body, 8));
+  f = f.concat(box(-10.35, 0, 11.6, .6, 3.0, 1.7, C.dark, C.body, C.dark));
+  /* the traversing wheel on the left, flat, and the elevating wheel on the right, upright */
+  f = f.concat(ksTube([-1.0, -2.0, 9.6], [-4.3, -3.4, 9.6], .22, C.steel, 6));
+  f = f.concat(cyl(-4.3, -3.4, 9.45, 1.35, 1.35, .3, 14, C.steel, C.bare, 0, true));
+  f = f.concat(cyl(-4.3 - 1.1, -3.4, 9.75, .16, .16, 1.0, 6, C.dark, C.dark, 0, true));
+  f = f.concat(ksTube([-1.0, 2.0, 11.2], [-3.9, 3.5, 11.2], .22, C.steel, 6));
+  f = f.concat(lathe(-3.9, 3.5, 11.2, [[0, -.15], [1.35, -.15], [1.35, .15], [0, .15]], 14, C.steel, true));
+  f = f.concat(ksTube([-3.9, 3.65, 12.3], [-3.9, 4.6, 12.3], .16, C.dark, 6));
+  /* the shield: a sheet curved about the trunnions, in two wings with the slot between them,
+     and the plate across the slot below the barrel */
+  var N = 10, a0, a1, yo0, yo1;
+  function p(a, y) { return [g.tx + Math.cos(a) * g.shR, y, g.tz + Math.sin(a) * g.shR]; }
+  for (k = 0; k < N; k++) {
+    a0 = g.shA0 + (g.shA1 - g.shA0) * k / N; a1 = g.shA0 + (g.shA1 - g.shA0) * (k + 1) / N;
+    yo0 = k === 0 ? 5.4 : k === N - 1 ? g.shY - .4 : g.shY; yo1 = k === N - 1 ? 6.9 : k === 0 ? g.shY - .3 : g.shY;
+    var am = (a0 + a1) / 2, back = [-Math.cos(am), 0, -Math.sin(am)];
+    for (sd = -1; sd <= 1; sd += 2) {
+      f = f.concat(m1Plate([p(a0, sd * g.slot), p(a1, sd * g.slot), p(a1, sd * yo1), p(a0, sd * yo0)], back, .28, C.body, C.dark));
+    }
+    if (a1 < -.16) f = f.concat(m1Plate([p(a0, -g.slot), p(a1, -g.slot), p(a1, g.slot), p(a0, g.slot)], back, .28, C.body, C.dark));
+  }
+  /* the edge of each wing along the slot, turned back */
+  for (sd = -1; sd <= 1; sd += 2) {
+    for (k = 0; k < N; k++) {
+      a0 = g.shA0 + (g.shA1 - g.shA0) * k / N; a1 = g.shA0 + (g.shA1 - g.shA0) * (k + 1) / N;
+      f = f.concat(m1Plate([p(a0, sd * g.slot), p(a1, sd * g.slot), [g.tx + Math.cos(a1) * (g.shR - .9), sd * g.slot, g.tz + Math.sin(a1) * (g.shR - .9)],
+                            [g.tx + Math.cos(a0) * (g.shR - .9), sd * g.slot, g.tz + Math.sin(a0) * (g.shR - .9)]], [0, sd, 0], .2, C.dark, C.body));
+    }
+  }
+  /* the gun: the cradle, the receiver, the buffer at its back and the magazine in its left
+     side, the jacket, the barrel with its two bands and the flash hider */
+  f = f.concat(box(3.3, 0, 11.0, 9.8, 2.8, 1.2, C.body, C.lit, C.dark));
+  f = f.concat(box(3.3, 0, 12.2, 11.0, 2.2, 2.8, C.steel, C.bare, C.steel));
+  f = f.concat(box(-2.8, 0, 12.4, 1.2, 1.8, 2.2, C.dark, C.body, C.dark));
+  f = f.concat(box(2.95, -2.65, 12.9, 3.9, 3.1, 1.4, C.dark, C.body, C.dark));
+  f = f.concat(tubeSmooth(8.8, 12.8, 0, g.tz, .95, 12, C.steel, C.bare));
+  f = f.concat(tubeSmooth(12.8, 24.2, 0, g.tz, .42, 10, C.steel, C.bare));
+  [15.7, 19.0].forEach(function (x) { f = f.concat(tubeSmooth(x, x + .8, 0, g.tz, .52, 10, C.steel, C.bare)); });
+  f = f.concat(place(lathe(0, 0, 0, [[0, 24.2], [.46, 24.2], [.62, g.muz - .15], [.62, g.muz], [.24, g.muz], [.24, g.muz - .6], [0, g.muz - .6]], 10,
+                           [C.steel, C.steel, C.bare, C.hole, C.hole, C.hole], true), -Math.PI / 2, 0, 0, g.tz));
+  /* the sight: the post on the right, the head at the layer's eye, and the arm curving down
+     behind to the carriage with the grip ring at its top */
+  f = f.concat(ksTube([-2.8, 2.2, 9.2], [-2.8, 2.2, 18.4], .32, C.body, 8));
+  f = f.concat(box(-5.7, 2.2, 17.7, 3.8, 1.2, 1.2, C.dark, C.body, C.dark));
+  f = f.concat(ksPipe([[-4.0, 2.4, 18.3], [-8.2, 2.4, 18.0], [-9.6, 2.4, 16.4], [-9.3, 2.4, 13.8], [-7.8, 2.4, 11.6], [-5.4, 2.4, 10.0], [-2.4, 2.4, 9.3]], .42, C.body, 8));
+  f = f.concat(lathe(-9.0, 2.4, 17.2, [[.35, -.25], [.8, -.25], [.8, .25], [.35, .25], [.35, -.25]], 12, C.dark, true));
+  return at(f, g.ox, 0, 0).concat(cyl(0, 0, g.hubZ, 2.7, 2.7, .5, 16, C.dark, C.body, 0, true));
 }
 /* ================================================================ 15 cm Nebelwerfer 41
    Six tubes welded round a hub in a hexagon, 1.30 m of them, on the same Pak 36 split
@@ -34776,7 +34846,12 @@ function buildVehicleModels() {
   /* the two that walk: `bar` is measured from the LAYER rather than from the piece,
      because the flash is spawned off the first living man and the gun is drawn gunAt
      ahead of him */
-  GUNMODEL.ger_flak20 = { mesh: flak38Model(), base: flak38Base(), bar: 27, z: 11 };
+  GUNMODEL.ger_flak20 = { mesh: flak38Model(), base: flak38Base(), bar: 8.75 + GBF.muz + GBF.ox, z: GBF.tz };
+  /* baked the way the Pak 38 is, since it is the same grey */
+  (function (M) {
+    M.mesh = aoSplit(M.mesh, AOSPLIT); M.base = aoSplit(M.base, AOSPLIT);
+    bakeAO([{ f: M.base, x: 0, y: 0, z: 0, occ: 1 }, { f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }]);
+  })(GUNMODEL.ger_flak20);
   GUNMODEL.ger_neb = { mesh: nebelwerferModel(), bar: 21, z: 20 };
   /* the heavy battery: the platform is laid on u.baseA and the gun turns on it, and the
      flash comes off a muzzle five metres up rather than off the end of a level barrel */
@@ -35326,6 +35401,9 @@ var FIGPOSE = {
   /* and a German gun on the Lafette in the sitting position has its butt in the man's
      shoulder, so he leans further into it to get the shoulder down to it */
   sitmg:  { legs: [[1.78, -.5, 0], [1.78, -.5, 0]], lean: .6, carry: 'grips', grips: [5.2, .6, 4.0] },
+  /* and the Gebirgsflak's layer sits on a seat on an arm behind the gun with his feet on a
+     rest, so he is baked seated as a driver is and lifted onto the seat (`gunSitZ`) */
+  sitflak: { legs: [[1.5, -1.5, .12], [1.5, -1.5, .12]], lean: .15, carry: 'grips', grips: [4.0, 3.4, 6.0] },
   served: { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .18, carry: 'grips', grips: [5.6, .9, 5.2] },
   /* and a field howitzer's handwheels are at a standing man's waist, so the two who lay it
      stand bent over them */
@@ -37870,13 +37948,14 @@ function bakeGunners(buf) {
       var base = d.gunSit ? (FIGPOSE[d.gunSit] || FIGPOSE.sit) : FIGPOSE.served;
       /* where the hands have to end up, in the man's own frame: the grips of the piece,
          which is drawn gunAt ahead of him */
-      var want = [g.gunAt + G0[0], G0[1], G0[2]], gy = g.gunY || 0;
+      var want = [g.gunAt + G0[0], G0[1], G0[2]], gy = g.gunY || 0, gz = g.gunSitZ || 0;
       /* a gun with a stock is laid from the right shoulder, so the man sits `gunY` to the
-         left of the bore rather than on it, and his left hand may have a place of its own */
-      want[1] -= gy;
-      var wantG = g.gunGripL ? [g.gunAt + g.gunGripL[0], g.gunGripL[1] - gy, g.gunGripL[2]] : null;
+         left of the bore rather than on it, and his left hand may have a place of its own;
+         and a man on a seat is baked off the ground and lifted `gunSitZ` onto it */
+      want[1] -= gy; want[2] -= gz;
+      var wantG = g.gunGripL ? [g.gunAt + g.gunGripL[0], g.gunGripL[1] - gy, g.gunGripL[2] - gz] : null;
       var r = served(v, base, want, wantG);
-      if (gy) r.faces = place(r.faces, 0, 0, gy, 0);
+      if (gy || gz) r.faces = place(r.faces, 0, 0, gy, gz);
       var S = { buf: buf(r), pose: d.gunSit ? POSE_SIT : POSE_SERVED, hand: r.joints.handR, want: want };
       /* and his number two, kneeling at the side of the gun and turned to it, with both
          hands where the belt goes in: the feedway in the gun's frame taken into his */

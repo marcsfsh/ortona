@@ -314,10 +314,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the heap a razed house comes down into and the charrette, the landform with its rock,
    its valleys and the Vire, the map itself laid a house at a time on both halves, and the
    editor taught which way a map is mirrored and what the town and the railway are made of.
+   It is 2950 for the German pieces rebuilt to their drawings: the 21 cm Morser 18 in the
+   210/22's place with its platform, its two carriages, its walkways, jacks and castor, the
+   2 cm Gebirgsflak 38 on its tripod with the curved shield and the seat, and the 8 cm
+   GrW 34 on its bipod and baseplate.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2900) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2900 kB so it stays quick to load on a phone`);
+if (kb > 2950) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2950 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);
