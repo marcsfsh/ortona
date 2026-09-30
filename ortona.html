@@ -1476,12 +1476,13 @@ var UNITS = {
      `traverse`, an eighth of a radian a second (`layOn`). A mission inside the arc the trails
      were dug in on is laid in a few seconds; one behind the gun is a decision taken most of
      half a minute before it lands.
-     It throws a shell of a hundred and sixty kilograms where the 210/22's is a hundred, and
-     it was an American heavy piece and fell as tightly as they did: a beaten zone of a
-     hundred and fifty units where the Italian gun's is two hundred, and two hundred units
-     more reach. What the 210 has in their place is the turn and the rate: it comes round
-     the whole way on its platform at twice the 240's speed and fires a round in eight and a
-     half seconds where the 240 takes eleven, and it costs less. */
+     It throws a shell of a hundred and sixty kilograms where the Mörser 18's is a hundred and
+     thirteen, and it was an American heavy piece and fell as tightly as they did: a beaten
+     zone of a hundred and fifty units where the German gun's is a hundred and seventy, and
+     two hundred units more reach. What the Mörser has in their place is the turn and the
+     rate: its carriage is run round its platform at twice the speed the 240's trails are
+     heaved and it fires a round in eight and a half seconds where the 240 takes eleven, and
+     it costs less. */
   am_240: {
     side: 'us', nat: 'usa', name: '240 mm Howitzer M1', short: '240 MM', cat: 'team',
     models: 6, hpPer: 62, speed: 0, sight: 300, pop: 14, cost: { mp: 500, fu: 190 }, time: 90,
@@ -1489,7 +1490,7 @@ var UNITS = {
     traverse: .12, carr: .39, carrRate: .25, layTol: .10, upgrades: ['david'],
     barrage: { range: 1350, r: 150, sp: 20, rof: 11.0, rounds: 5, safe: 600 },
     w: { range: 1350, dmg: 380, rof: 11.0, acc: .30, sup: .34, pen: 70, aoe: 150, shell: 1 },
-    desc: 'Two hundred and forty millimetres on a firing base and a pair of trails seven metres long, dug in by the engineers where it will stay. Five rounds to a mission into a circle a hundred and fifty units across: it throws the heaviest shell on the field, further and tighter than the German 210, and slower. It swings twenty-two degrees either way on its carriage and has to have its trails heaved round for anything further, which takes most of half a minute. It cannot be dug near your own headquarters and it will not fire into the enemy base.'
+    desc: 'Two hundred and forty millimetres on a firing base and a pair of trails seven metres long, dug in by the engineers where it will stay. Five rounds to a mission into a circle a hundred and fifty units across: it throws the heaviest shell on the field, further and tighter than the German Mörser 18, and slower. It swings twenty-two degrees either way on its carriage and has to have its trails heaved round for anything further, which takes most of half a minute. It cannot be dug near your own headquarters and it will not fire into the enemy base.'
 ,
     /* Little David, the 36-inch mortar T1 the position can be rebuilt as (`UPGRADES.david`):
        another piece altogether, so `fitUp` hands the unit this def whole, made at load on top of
@@ -1756,18 +1757,20 @@ var UNITS = {
     desc: 'Six tubes of fifteen-centimetre rocket on a towed carriage, fired as a ripple and then reloaded by hand. It reaches further than the 75/18 and scatters far wider: six bursts into a circle a hundred and thirty across, and then three quarters of a minute of nothing at all while the crew load the next six.'
   },
   /* The German heavy, and the same four rules as the American battery -- see `am_240`,
-     where they are set out. The 210/22 sits on a circular steel platform it traverses on
-     bodily, so it has no carriage arc and comes round the whole way at one rate; it is the
-     lighter shell of the two and the looser pattern, and two hundred units shorter in reach,
-     and it fires faster, turns faster and costs less. */
+     where they are set out. The 21 cm Mörser 18 fires off a platform let down under the
+     middle of its carriage: the top carriage traverses eight degrees either way on the
+     bottom one (`carr`) and past that the whole carriage is run round the platform on the
+     castor under its tail, which is quicker than heaving the 240's trails. It throws a shell
+     of 113 kg to the 240's 160, two hundred units less far and a little looser, and it fires
+     faster and costs less. The key is the 210/22's, which stood here first. */
   ger_how210: {
-    side: 'ger', name: 'Obice da 210/22 mod. 35', short: '210/22', cat: 'team',
+    side: 'ger', name: '21 cm Mörser 18', short: 'MRS 18', cat: 'team',
     models: 6, hpPer: 62, speed: 0, sight: 300, pop: 14, cost: { mp: 450, fu: 175 }, time: 80,
     setup: 0, indirect: 1, barrageOnly: 1, blastRes: .62, closeWeak: 3.0, limit: 1,
-    traverse: .26, layTol: .10,
-    barrage: { range: 1150, r: 200, sp: 28, rof: 8.4, rounds: 5, safe: 600 },
-    w: { range: 1150, dmg: 335, rof: 8.4, acc: .28, sup: .32, pen: 64, aoe: 140, shell: 1 },
-    desc: 'Two hundred and ten millimetres of Italian heavy howitzer on a circular firing platform, dug in by the Pioneers where it will stay. The heaviest shell the German side can put on the ground and the least accurate thing that fires it: five rounds into a circle two hundred units across. It falls wider than the American 240 and not as far, and it fires faster and comes round the whole way on its platform where the 240 has to have its trails heaved.'
+    traverse: .26, carr: .14, carrRate: .22, layTol: .10,
+    barrage: { range: 1150, r: 170, sp: 24, rof: 8.4, rounds: 5, safe: 600 },
+    w: { range: 1150, dmg: 345, rof: 8.4, acc: .29, sup: .32, pen: 64, aoe: 140, shell: 1 },
+    desc: 'The German army\'s heavy howitzer, twenty-one centimetres on a carriage ten metres long, dug in by the Pioneers where it will stay. Five rounds to a mission into a circle a hundred and seventy units across, of a shell a third lighter than the American 240\'s and not quite as far. It swings eight degrees either way on its carriage and past that the crew run the whole carriage round its platform, which is quicker than the 240\'s trails. It cannot be dug near your own headquarters and it will not fire into the enemy base.'
   },
   /* The Knight's Cross Holders: four decorated veterans of the 352nd with StG 44s, bought
      from the company post. What they have that nobody else has is two things to throw, and both are
@@ -2042,7 +2045,7 @@ var WORKS = {
      put a battery somewhere it can be walked to. The 240's crew are laid where a section
      serves the gun: the two layers beside the frames at the elevating gear, the loader and
      the rammer either side of the platform behind the breech, and two bringing the rounds
-     and the charges up between the trails. Its position is bigger than the 210's, because
+     and the charges up between the trails. Its position is bigger than the Mörser 18's, because
      its trails reach seven metres back from the pivot and have to be heaved round inside
      the banks. */
   how240: { name: '240 mm Howitzer M1 position', short: '240 MM', hk: '7', side: 'us',
@@ -2051,12 +2054,12 @@ var WORKS = {
            cover: { r: 80, type: 3, kind: 'pit', hp: 300 },
            lay: [[-10, -12], [-10, 12], [-33, -11], [-33, 11], [-43, 20], [-47, -21]],
            desc: 'A battery position for the 240: the gun on its firing base with its trails spread, in a pit with the spoil banked round it, dug by the engineers and never moved. It cannot be dug near your own headquarters and it will not fire into the enemy base; it swings twenty-two degrees either way on its carriage and has to have its trails heaved round for more.' },
-  how210: { name: 'Obice da 210/22 position', short: '210/22', hk: '7', side: 'ger',
+  how210: { name: 'Mörser 18 position', short: 'MRS 18', hk: '7', side: 'ger',
            cost: { mp: 450, fu: 175 }, time: 80, minHq: 700,
-           w: 150, h: 150, len: 150, unit: 'ger_how210',
-           cover: { r: 54, type: 3, kind: 'pit', hp: 260 },
-           lay: [[-30, -13], [-30, 13], [-46, 0], [-40, -30], [-40, 30], [-58, -16]],
-           desc: 'A battery position for the 210/22: the gun on its circular firing platform inside a ring of bags, built by the Pioneers and never moved. It cannot be dug near your own headquarters, it will not fire into the enemy base, and it is most of a minute coming round onto a new bearing.' }
+           w: 190, h: 190, len: 190, unit: 'ger_how210',
+           cover: { r: 64, type: 3, kind: 'pit', hp: 280 },
+           lay: [[-15, -13.5], [-12, 13.5], [-25, -13.5], [-25, 13.5], [-45, 23], [-44, -17]],
+           desc: 'A battery position for the Mörser 18: the gun on its platform with the tail on its jacks, in a pit with the spoil banked round it, dug by the Pioneers and never moved. It cannot be dug near your own headquarters and it will not fire into the enemy base; it swings eight degrees either way on its carriage and past that the crew run the whole carriage round its platform.' }
 };
 /* The work a retired one stands for now, the way RETIRED does it for a unit: a brain out of
    an older revision on the skirmish card may still ask for the 105's position or the
@@ -31575,83 +31578,260 @@ function packHowModel(ital) {
   f = f.concat(box(-9.6, 9.0, -.1, 7.8, 6.2, .5, C.canvas, lit(C.canvas, 1.1)));
   return f;
 }
-/* The Italian 210/22, the 352nd's heavy battery. An army piece, and the thing that says so
-   at a glance is not the barrel -- an anti-tank gun has a long barrel too -- it is that the
-   whole gun stands on a platform of its own bedded into the ground, with its wheels jacked
-   off the earth, and that the tube is up at forty-five degrees instead of laid flat. A gun
-   pointing at the sky is a gun shooting at something it cannot see, which is the whole of
-   what these are for.
-     Two pieces, the way the eighty-eight is two pieces: the platform is laid once on
-   `u.baseA` and does not turn, and the gun on top of it is drawn on `u.facing` and does.
-   It is a circular steel platform the gun traverses on bodily, which is why it comes round
-   the whole way at one rate where the American 240 has its carriage's arc and then its
-   trails to heave. */
-function bigHowBase() {
-  var C = GUN, f = [], i;
-  /* the circular firing platform: a steel disc bedded flush, a raised race the carriage
-     rides on, and anchor spades driven through the rim */
-  f = f.concat(cyl(0, 0, 0, 33, 33, 2.6, 22, C.dgD, C.dg, 0, true));
-  f = f.concat(cyl(0, 0, 2.6, 26, 26, 1.8, 22, C.dg, C.dgL, 0, true));
-  f = f.concat(cyl(0, 0, 4.4, 8.5, 8.5, 2.0, 12, C.steel, C.steelL, 0, true));   /* the pivot */
-  for (i = 0; i < 8; i++) {
-    var sa = i / 8 * TAU;
-    f = f.concat(place(box(0, 0, 0, 7, 4.5, 5.2, C.steel, C.steelL, C.dgD), sa,
-                       Math.cos(sa) * 30.5, Math.sin(sa) * 30.5, 1.4));
-  }
-  /* the ready rounds, standing on their bases under a tarpaulin, and the charge boxes */
-  for (i = 0; i < 5; i++) {
-    var rx = -18 - (i % 2) * 9, ry = 44 + Math.floor(i / 2) * 9;
-    f = f.concat(cyl(rx, ry, 0, 3.1, 3.1, 13, 10, C.brass, C.copper, 0, true));
-    f = f.concat(cyl(rx, ry, 13, 3.1, .6, 5.4, 10, C.steel, C.steelL, 0, true));
-  }
-  f = f.concat(box(-40, 46, 0, 20, 13, 7, C.wood, lit(C.wood, 1.1), lit(C.wood, .8)));
-  f = f.concat(box(-4, -46, 0, 34, 15, 8, C.canvas, lit(C.canvas, 1.08), lit(C.canvas, .84)));
+/* ================================================================ 21 cm Mörser 18
+   The 352nd's heavy battery: the 21 cm Mörser 18 on its own carriage, the heavy howitzer of
+   the army's artillery battalions, one gun standing for the battery. Laid off a four-view
+   drawing of it in firing position, with the platform lowered under the middle of the
+   carriage and the tail on its jacks. The sheet has no scale. Its side view puts the bore
+   1.78 m over the ground at 48 px/m, and at that scale the published 6.51 m of barrel runs
+   from the muzzle to the back of the block's carrier the plan draws behind the breech ring,
+   the muzzle is 0.31 m across over a 211 mm bore and the wheels are 1.42 m over solid
+   tyres; the tube from the muzzle to the back of the ring, which is as far as the side view
+   draws it, is 5.9 m. The front view agrees with the side on the height of the bore.
+     What makes it a Mörser 18 is the carriage. The tube recoils in its cradle and the whole
+   top carriage recoils again along the bottom one, which is why the top carriage is a pair
+   of long triangular plates on a slide and the bottom carriage is a girder most of ten
+   metres long; for firing the wheels are lifted, the platform is let down under the pivot
+   and the tail goes onto its jacks, and then the top carriage traverses eight degrees
+   either way on the bottom one and the whole carriage is run round the platform on the
+   castor under its tail for anything more.
+     Three pieces, as the 240 is: the platform, the bottom carriage with its wheels,
+   walkways, jacks and tail are laid on `u.baseA`, which is what the crew heave round the
+   platform; the top carriage with the cradle on its trunnions, the recuperator over the
+   tube, the two equilibrators at its front and the two recoil cylinders along its plates
+   turns on `u.facing`; and the tube with its breech ring runs back along the bore. Origin
+   on the ground at the middle of the platform, -y the left, where the layer's wheels are. */
+var M18 = {
+  tx: -11.5, tz: 20.8,                          /* the trunnions */
+  muz: 59.0, st: 34.2, r0: 1.8, r1: 2.2, bo: 1.23,  /* along the bore: the muzzle, the step, the radii, the bore */
+  brF: -4.4, brB: -9.7, brY: 3.5, brN: 2.1, bkB: -16.5,  /* the breech ring, and the back of the block's carrier */
+  cF: 16.0, cB: -2.9, cr: 2.75,                 /* the cradle */
+  rn: 6.1, rr: 1.8, rF: 11.5, rB: -3.3,         /* the recuperator over the tube */
+  wx: 14.9, wz: 8.8, wR: 8.3, wr: 6.9, wy: 10.45, ww: 2.05,  /* the wheels, lifted off the ground */
+  lw: 8.0, lz0: 3.6, lz1: 10.3, lF: 6.6, lB: -49.2, tl: -64.2,  /* the bottom carriage and its tail */
+  el: .42                                       /* where the tube is laid in the game */
+};
+/* faces built in the bore's own frame, origin on the trunnions, laid up at an elevation */
+function m18Lay(faces, el) { return at(pitch(faces, el, 0, 0), M18.tx, 0, M18.tz); }
+function m18Bore(s, y, n, el) {
+  var c = Math.cos(el), sn = Math.sin(el);
+  return [M18.tx + s * c - n * sn, y, M18.tz + s * sn + n * c];
+}
+/* A road wheel: a cast disc with twelve windows between its spokes, the hub standing out on
+   both faces, and the solid tyre in two treads with a groove between. The axis is y. */
+function m18Wheel(sd) {
+  var C = PKC, g = M18, y = sd * g.wy, w = g.ww, R = g.wR, r = g.wr, f, k;
+  var prof = [[0, -2.7], [1.3, -2.7], [1.55, -2.2], [1.9, -.55], [r - .8, -.55], [r - .55, -1.8], [r, -w],
+              [R - .35, -w], [R, -w + .35], [R, -.35], [R - .3, 0], [R, .35], [R, w - .35], [R - .35, w],
+              [r, w], [r - .55, 1.8], [r - .8, .55], [1.9, .55], [1.55, 2.2], [1.3, 2.7], [0, 2.7]];
+  f = lathe(g.wx, y, g.wz, prof, 24, [C.dark, C.body, C.body, C.body, C.lit, C.body, C.tyre, C.rubber, C.rubber,
+                                      C.tyre, C.tyre, C.rubber, C.rubber, C.tyre, C.body, C.lit, C.body, C.body,
+                                      C.body, C.dark], true);
+  /* the windows, dark on each face of the disc */
+  [-1, 1].forEach(function (fc) {
+    var yy = y + fc * .6;
+    for (k = 0; k < 12; k++) {
+      var a = (k + .5) / 12 * TAU, p = [];
+      [[2.9, -.09], [5.7, -.2], [5.7, .2], [2.9, .09]].forEach(function (q) {
+        p.push([g.wx + Math.cos(a + q[1]) * q[0], yy, g.wz + Math.sin(a + q[1]) * q[0]]);
+      });
+      f = f.concat(m1Plate(p, [0, -fc, 0], .06, C.hole));
+    }
+  });
   return f;
 }
-function bigHowModel() {
-  var C = GUN, f = [], i;
-  var up = .82;                                    /* forty-five degrees and a little over */
-  var tube = 40, bore = 3.5, trunZ = 24;
-  /* the bottom carriage standing on the platform, and the top carriage that traverses */
-  f = f.concat(box(-2, 0, 0, 40, 30, 9, C.od, C.odL, lit(C.od, .9)));
-  f = f.concat(box(0, 0, 9, 30, 25, 8, C.od, C.odL, lit(C.od, .9)));
-  /* the trunnion cheeks, the elevating arc between them and the layer's handwheels */
-  [-1, 1].forEach(function (sd) {
-    f = f.concat(box(0, sd * 10, 17, 16, 5, trunZ - 15, C.od, C.odL, lit(C.od, .9)));
-    f = f.concat(lathe(-9, sd * 13.5, trunZ - 7, [[0, -.5], [4.4, -.5], [4.4, .5], [0, .5]], 12, C.steel, true));
-    f = f.concat(box(-14, sd * 13.5, 12, 7, 7, 1.6, C.dgD, C.dg, C.dgD));
-  });
-  f = f.concat(place(lathe(0, 0, 0, [[9, -1.2], [15, -1.2], [15, 1.2], [9, 1.2]], 14, C.steel, true), 0, -6, 0, trunZ));
-  /* a short box body behind, because the platform under it does the traversing */
-  f = f.concat(box(-30, 0, 2, 34, 22, 8, C.od, C.odL, lit(C.od, .9)));
-  f = f.concat(box(-48, 0, 1, 10, 30, 6, C.dgD, C.dg, C.dgD));
-  /* the road wheels, jacked clear of the ground because the gun is in action */
-  var hubX = 12, hubY = 17, hubR = 6.2;
-  [-1, 1].forEach(function (sd) {
-    var wy = sd * hubY;
-    f = f.concat(at(lathe(0, 0, 0, [[0, -2.6], [2.2, -2.6], [2.2, -1.3], [hubR - 1.4, -2.2], [hubR, -2.6], [hubR, 2.6], [hubR - 1.4, 2.2], [2.2, 1.3], [2.2, 2.6], [0, 2.6]], 14,
-                     [C.dgD, C.dg, C.dgD, '#2a2b26', C.rubber, '#2a2b26', C.dg, C.dgD, C.dgD], true), hubX, wy, hubR + 3.2));
-    f = f.concat(box(hubX, sd * (hubY - 2), hubR + 3.2, 6, 5, 3, C.od, C.odL, lit(C.od, .9)));
-  });
-  /* the gun itself, built about its trunnions and then swung up on them: breech, cradle,
-     tube, and the recuperator over it with the buffer under */
-  var g = box(-16, 0, 0, 17, 15.5, 15.5, C.steel, C.steelL, C.steel);
-  g = g.concat(box(-25, 0, 0, 5, 12, 12, C.dgD, C.dg, C.dgD));                      /* the breech ring */
-  g = g.concat(box(4, 0, 0, 30, 13, 11, C.od, C.odL, lit(C.od, .9)));               /* the cradle */
-  g = g.concat(tubeSmooth(7, tube, 0, 0, bore, 12, C.steel, C.steelL));
-  g = g.concat(tubeSmooth(tube, tube + 2.2, 0, 0, bore + .5, 12, '#4a4e43', '#1a1b16'));
-  g = g.concat(tubeSmooth(3, 26, 0, bore + 3.4, 2.4, 10, C.dg, C.dgL));
-  g = g.concat(tubeSmooth(3, 26, 0, -bore - 3.0, 2.2, 10, C.dg, C.dgL));
-  g = g.concat(box(-13, 9.5, 0, 8, 4, 4, C.brass, C.copper));                       /* the firing gear */
-  /* Up on its trunnions at the elevation a howitzer shoots at. The sign is the pack
-     howitzer's: pitch swings +z toward -x, so a thing built along +x rises with a
-     positive angle. */
-  f = f.concat(at(pitch(g, up, 0, 0), 0, 0, trunZ));
-  /* the loading tray on its rail behind the breech, where the crew ram from */
-  f = f.concat(at(pitch(box(-34, 0, 0, 22, 11, 2.4, C.steel, C.steelL, C.dgD), up, 0, 0), 0, 0, trunZ));
-  f = f.concat(box(-30, 0, 9, 16, 20, 5, C.dgD, C.dg, C.dgD));                      /* the crew's step */
+/* The mudguard over a wheel: a sheet bent over the tyre from low in front round to well
+   behind the top, with a lip turned down along each edge. */
+function m18Guard(sd) {
+  var C = PKC, g = M18, f = [], k, N = 14, a0 = .21, a1 = 2.53, R = 10.2, yi = sd * 7.6, yo = sd * 12.8;
+  function p(a, rr, y) { return [g.wx + Math.cos(a) * rr, y, g.wz + Math.sin(a) * rr]; }
+  for (k = 0; k < N; k++) {
+    var b0 = a0 + (a1 - a0) * k / N, b1 = a0 + (a1 - a0) * (k + 1) / N, bm = (b0 + b1) / 2;
+    f = f.concat(m1Plate([p(b0, R, yi), p(b1, R, yi), p(b1, R, yo), p(b0, R, yo)], [Math.cos(bm), 0, Math.sin(bm)], .3, C.body, C.dark));
+    f = f.concat(m1Plate([p(b0, R - 1.2, yo), p(b1, R - 1.2, yo), p(b1, R + .3, yo), p(b0, R + .3, yo)], [0, sd, 0], .25, C.lit, C.dark));
+    f = f.concat(m1Plate([p(b0, R - .8, yi), p(b1, R - .8, yi), p(b1, R + .3, yi), p(b0, R + .3, yi)], [0, -sd, 0], .25, C.body, C.dark));
+  }
+  /* the stay from the axle to the back of the guard */
+  f = f.concat(ksTube([g.wx - 1.2, sd * 8.2, g.wz + 1.0], p(2.2, R - .2, sd * 8.2), .35, C.dark, 6));
   return f;
 }
+/* A walkway along the bottom carriage: two rails and the rungs between, on brackets. */
+function m18Walk(sd) {
+  var C = PKC, f = [], x, yi = sd * 8.3, yo = sd * 11.5, z = 9.3;
+  f = f.concat(box(-35.4, yi, z, 53.2, .5, .9, C.body, C.lit, C.dark));
+  f = f.concat(box(-35.4, yo, z, 53.2, .5, .9, C.body, C.lit, C.dark));
+  for (x = -9.4; x > -61.8; x -= 1.55) f = f.concat(box(x, (yi + yo) / 2, z + .25, .45, 3.2, .45, C.dark, C.body, C.dark));
+  [-12, -30, -48].forEach(function (x2) {
+    f = f.concat(m1Beam([x2, sd * 8.0, z - 1.8], [x2, sd * 11.3, z + .1], .6, .6, .6, .6, C.dark));
+  });
+  return f;
+}
+/* The platform, the bottom carriage and everything on it: the ring of ribs the gun turns on,
+   the girder from the axle to the tail, the axle and its arms, the two wheels under their
+   guards, the walkways either side, the jacks under the tail and the castor it is run round
+   on, the traversing gear at the tail and the lever beside it, and the rounds and cases by
+   the loaders. It is laid once and heaved round with the tail. */
+function m18Bottom() {
+  var C = PKC, g = M18, f = [], sd, k;
+  /* the platform: a ring of plate on the ground with its ribs, and the pivot up into the
+     bottom carriage */
+  f = f.concat(cyl(0, 0, 0, 11, 11, .45, 28, C.dark, C.body, 0, true));
+  f = f.concat(cyl(0, 0, .45, 7.0, 7.0, 1.6, 22, C.body, C.lit, 0, true));
+  f = f.concat(cyl(0, 0, 2.05, 3.0, 3.0, 1.6, 16, C.dark, C.body, 0, true));
+  for (k = 0; k < 24; k++) {
+    var a = (k + .5) / 24 * TAU, c = Math.cos(a), s = Math.sin(a);
+    f = f.concat(m1Plate([[c * 6.9, s * 6.9, 2.05], [c * 10.8, s * 10.8, .45], [c * 6.9, s * 6.9, .45]],
+                         [-s, c, 0], .35, C.body, C.dark));
+  }
+  /* the girder, with its flanges and the line of rivets along it */
+  f = f.concat(box((g.lF + g.lB) / 2, 0, g.lz0, g.lF - g.lB, g.lw * 2, g.lz1 - g.lz0, C.body, C.lit, C.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box((g.lF + g.lB) / 2, sd * (g.lw + .15), g.lz1 - .6, g.lF - g.lB, .3, .6, C.lit, C.lit, C.dark));
+    f = f.concat(box((g.lF + g.lB) / 2, sd * (g.lw + .15), g.lz0, g.lF - g.lB, .3, .6, C.dark, C.body, C.dark));
+    for (k = 0; k < 18; k++) f = f.concat(box(g.lF - 1.6 - k * 3.0, sd * (g.lw + .12), 7.9, .8, .24, 1.6, C.dark, C.body, C.dark));
+  }
+  /* the tail, drawn in to a point, and the housing at its end */
+  f = f.concat(m1Beam([g.lB, 0, (g.lz0 + g.lz1) / 2], [g.tl, 0, 5.4], g.lw * 2, g.lz1 - g.lz0, 5.6, 5.4, C.body));
+  f = f.concat(box(-60.2, 0, 3.3, 7.2, 5.6, 5.3, C.body, C.lit, C.dark));
+  /* the traversing gear at the tail: the drum, the cover plate with its crank */
+  f = f.concat(lathe(-54.1, -4.4, 6.5, [[0, -.6], [2.2, -.6], [2.2, .6], [0, .6]], 16, C.dark, true));
+  f = f.concat(lathe(-54.1, -4.4, 6.5, [[0, -.9], [.7, -.9], [.7, .9], [0, .9]], 8, C.steel, true));
+  f = f.concat(m1Plate([[-55.0, -3.2, 7.8], [-56.8, -3.2, 11.3], [-60.4, -3.2, 11.3], [-61.8, -3.2, 9.4], [-60.4, -3.2, 7.8]],
+                       [0, 1, 0], .5, C.body, C.dark));
+  f = f.concat(ksPipe([[-58.3, -3.5, 9.6], [-58.3, -4.6, 9.6], [-57.4, -4.6, 10.7], [-57.4, -5.8, 10.7]], .22, C.steel, 6));
+  /* the castor under the tail, on its fork */
+  f = f.concat(lathe(-57.8, 0, 2.3, [[0, -.5], [.4, -.5], [1.0, -.4], [1.0, .4], [.4, .5], [0, .5]], 12, [C.body, C.tyre, C.rubber, C.tyre, C.body], true));
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(m1Plate([[-57.8, sd * .75, 2.3], [-56.6, sd * .75, 3.8], [-59.0, sd * .75, 3.8]], [0, sd, 0], .25, C.body, C.dark));
+  /* the axle, its arms from the girder's front, the wheels and their guards */
+  f = f.concat(place(tubeSmooth(-12.6, 12.6, 0, g.wz, 1.05, 12, C.dark, C.body), Math.PI / 2, g.wx, 0, 0));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(m1Beam([g.lF - 1.0, sd * 6.2, 7.2], [g.wx, sd * 6.2, g.wz], 1.8, 3.0, 1.8, 2.4, C.body));
+    f = f.concat(m18Wheel(sd));
+    f = f.concat(m18Guard(sd));
+    f = f.concat(m18Walk(sd));
+    /* the jack under the tail: the cross tube, the screw and its pad on the ground */
+    f = f.concat(cyl(-47.8, sd * 10.8, 1.0, .75, .75, 7.0, 10, C.steel, C.bare, 0, true));
+    f = f.concat(cyl(-47.8, sd * 10.8, 1.0, 1.4, 1.4, 2.4, 10, C.body, C.lit, 0, true));
+    f = f.concat(box(-47.8, sd * 9.4, 6.2, 2.2, 2.8, 2.4, C.body, C.lit, C.dark));
+    f = f.concat(box(-47.8, sd * 10.8, 0, 7.6, 4.4, 1.0, C.dark, C.body, C.dark));
+  }
+  f = f.concat(place(tubeSmooth(-14.2, 14.2, 0, 2.6, .75, 12, C.body, C.lit), Math.PI / 2, -47.8, 0, 0));
+  /* the lever leaning against the girder by the jacks */
+  f = f.concat(ksTube([-44.4, -12.4, .8], [-50.6, -12.6, 12.6], .32, C.steel, 6));
+  /* the rounds by the loaders: three shells on a skid, and the cases standing in a row */
+  f = f.concat(box(-36.0, 17.5, 0, 9.6, 9.0, .8, C.wood, lit(C.wood, 1.1), lit(C.wood, .9)));
+  [-3.0, 0, 3.0].forEach(function (yy) {
+    f = f.concat(tubeSmooth(-40.4, -34.0, 17.5 + yy, 2.1, 1.23, 12, C.body, C.lit));
+    f = f.concat(place(lathe(0, 0, 0, [[1.23, 0], [1.23, .5], [.95, 1.6], [.45, 2.6], [0, 2.9]], 12, C.body, true), -Math.PI / 2, -34.0, 17.5 + yy, 2.1));
+    f = f.concat(tubeSmooth(-40.9, -40.4, 17.5 + yy, 2.1, 1.1, 12, GUN.brass, GUN.brass));
+  });
+  [[-44.8, 13.8], [-44.8, 16.4], [-44.8, 19.0], [-47.4, 15.1]].forEach(function (p) {
+    f = f.concat(cyl(p[0], p[1], 0, 1.2, 1.2, 5.6, 10, GUN.brass, lit(GUN.brass, .8), 0, true));
+  });
+  return f;
+}
+/* The top carriage and all it carries: the two long plates on the slide, the deck between
+   them over the pivot, the bearings the trunnions stand in and their caps, the two carriage
+   recoil cylinders along the tops of the plates, the equilibrators at the front with their
+   brackets, the layer's handwheel and the gear cover on the left plate; and the cradle on
+   its trunnions at the elevation `el`, with the recuperator over the tube, the yoke round
+   both at the trunnions, the elevating arcs under it and the layer's sight on its left. */
+function m18Top(el) {
+  var C = PKC, g = M18, f = [], sd, cr = [];
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y = sd * 6.4, O = [0, sd, 0];
+    f = f.concat(m1Plate([[3.2, y, 10.36], [-9.2, y, 17.6], [-14.8, y, 17.6], [-32.9, y, 11.0], [-32.9, y, 10.36]],
+                         O, .55, C.body, C.dark));
+    /* the flange along the plate's foot, the slide it runs on, and the line of rivets */
+    f = f.concat(box(-14.85, sd * 6.95, 10.36, 36.1, .6, .7, C.lit, C.lit, C.dark));
+    f = f.concat(box(-14.85, sd * 6.0, 10.3, 38.0, 1.6, .4, C.steel, C.bare, C.steel));
+    /* the bearing the trunnion stands in, and its cap */
+    f = f.concat(box(g.tx, sd * 6.25, 17.4, 4.8, 1.9, 5.0, C.body, C.lit, C.dark));
+    f = f.concat(place(tubeSmooth(-.35, .35, 0, g.tz, 1.6, 14, C.dark, C.body), Math.PI / 2, g.tx, sd * 7.5, 0));
+    f = f.concat(place(tubeSmooth(-.3, .3, 0, g.tz, .6, 8, C.steel, C.bare), Math.PI / 2, g.tx, sd * 8.1, 0));
+    /* the carriage recoil cylinder, its rod forward to the bracket and its end cap */
+    var cy = sd * 4.9;
+    f = f.concat(tubeSmooth(-29.0, -16.3, cy, 16.8, 1.3, 14, C.body, C.lit));
+    f = f.concat(tubeSmooth(-29.6, -29.0, cy, 16.8, 1.0, 12, C.dark, C.body));
+    f = f.concat(tubeSmooth(-16.6, -16.0, cy, 16.8, 1.5, 14, C.dark, C.body));
+    f = f.concat(tubeSmooth(-16.0, -2.0, cy, 16.8, .55, 10, C.bare, C.steel));
+    f = f.concat(box(-1.6, cy, 13.4, 1.4, 1.4, 4.0, C.dark, C.body, C.dark));
+    f = f.concat(box(-27.4, cy, 12.4, 1.6, 1.4, 3.6, C.dark, C.body, C.dark));
+    /* the equilibrator: the spring case from its bracket at the front of the carriage, and
+       the rod up to the lug under the cradle's front */
+    var lo = [5.6, sd * 5.1, 13.4], hi = m18Bore(7.0, sd * 5.1, 2.6, el);
+    var ex = hi[0] - lo[0], ez = hi[2] - lo[2], el2 = Math.hypot(ex, ez), mid = [lo[0] + ex * 14.5 / el2, lo[1], lo[2] + ez * 14.5 / el2];
+    f = f.concat(ksTube(lo, mid, 1.6, C.body, 14));
+    f = f.concat(ksTube([mid[0] - ex * .8 / el2, mid[1], mid[2] - ez * .8 / el2], mid, 1.8, C.dark, 14));
+    f = f.concat(ksTube([lo[0] + ex * 2.0 / el2, lo[1], lo[2] + ez * 2.0 / el2], [lo[0] + ex * 2.6 / el2, lo[1], lo[2] + ez * 2.6 / el2], 1.95, C.dark, 14));
+    f = f.concat(ksTube(mid, hi, .8, C.bare, 10));
+    f = f.concat(box(4.9, sd * 5.1, 10.36, 3.2, 2.2, 3.6, C.body, C.lit, C.dark));
+    f = f.concat(place(tubeSmooth(-1.3, 1.3, 0, 13.4, .7, 8, C.steel, C.bare), Math.PI / 2, 5.6, sd * 5.1, 0));
+  }
+  /* the deck between the plates over the pivot, open behind it for the breech */
+  f = f.concat(box(-2.9, 0, 10.36, 12.2, 12.8, .7, C.body, C.lit, C.dark));
+  f = f.concat(box(-30.8, 0, 10.36, 4.2, 12.8, .7, C.body, C.lit, C.dark));
+  /* on the left plate: the gear cover, and the layer's handwheel on its shaft */
+  f = f.concat(lathe(-11.7, -7.05, 14.5, [[0, -.25], [2.4, -.25], [2.4, .25], [0, .25]], 18, C.body, true));
+  f = f.concat(lathe(-11.7, -7.4, 14.5, [[0, -.25], [.8, -.25], [.8, .25], [0, .25]], 10, C.dark, true));
+  f = f.concat(lathe(-17.3, -8.4, 13.8, [[1.6, -.2], [1.95, -.2], [1.95, .2], [1.6, .2], [1.6, -.2]], 16, C.steel, true));
+  f = f.concat(place(tubeSmooth(-1.5, 0, 0, 13.8, .3, 6, C.steel, C.bare), Math.PI / 2, -17.3, -6.9, 0));
+  [0, 1, 2].forEach(function (i) {
+    var a = i / 3 * TAU;
+    f = f.concat(ksTube([-17.3, -8.4, 13.8], [-17.3 + Math.cos(a) * 1.7, -8.4, 13.8 + Math.sin(a) * 1.7], .18, C.steel, 5));
+  });
+  f = f.concat(ksTube([-17.3 + 1.95, -8.4, 13.8], [-17.3 + 1.95, -9.3, 13.8], .22, C.dark, 6));
+  /* the cradle: the sleeve with its bands, the yoke round it and the recuperator at the
+     trunnions and the pins through it, the web up to the recuperator, the recuperator with
+     its front cap and bands, the lugs the equilibrators take, and the elevating arcs */
+  cr = cr.concat(tubeSmooth(g.cB, g.cF - .8, 0, 0, g.cr, 18, C.body, C.lit));
+  cr = cr.concat(tubeSmooth(g.cF - .8, g.cF, 0, 0, g.cr + .4, 18, C.dark, C.body));
+  cr = cr.concat(tubeSmooth(g.cB, g.cB + .8, 0, 0, g.cr + .3, 18, C.dark, C.body));
+  cr = cr.concat(tubeSmooth(7.0, 7.8, 0, 0, g.cr + .25, 18, C.dark, C.body));
+  cr = cr.concat(box(.25, 0, -3.2, 2.9, 7.0, 11.4, C.body, C.lit, C.dark));
+  cr = cr.concat(place(tubeSmooth(-7.6, 7.6, 0, 0, .9, 12, C.steel, C.bare), Math.PI / 2, 0, 0, 0));
+  cr = cr.concat(box(6.5, 0, g.cr - .3, 11.0, 1.6, g.rn - g.rr - g.cr + .6, C.body, C.lit, C.dark));
+  cr = cr.concat(tubeSmooth(g.rB, g.rF, 0, g.rn, g.rr, 18, C.body, C.lit));
+  cr = cr.concat(tubeSmooth(g.rF, g.rF + 1.6, 0, g.rn, 1.2, 14, C.dark, C.body));
+  cr = cr.concat(tubeSmooth(g.rF + 1.6, g.rF + 1.9, 0, g.rn, .7, 10, C.steel, C.bare));
+  cr = cr.concat(tubeSmooth(g.rF - 1.4, g.rF, 0, g.rn, g.rr + .25, 18, C.dark, C.body));
+  cr = cr.concat(tubeSmooth(g.rB, g.rB + 1.0, 0, g.rn, g.rr + .25, 18, C.dark, C.body));
+  for (sd = -1; sd <= 1; sd += 2) cr = cr.concat(box(7.0, sd * 3.6, 1.6, 1.6, 2.0, 2.0, C.dark, C.body, C.dark));
+  var a, q0, q1;
+  for (sd = -1; sd <= 1; sd += 2) {
+    for (a = -100; a > -172; a -= 12) {
+      q0 = a * Math.PI / 180; q1 = (a - 12) * Math.PI / 180;
+      cr = cr.concat(m1Plate([[Math.cos(q0) * 3.9, sd * 3.3, Math.sin(q0) * 3.9], [Math.cos(q0) * 5.3, sd * 3.3, Math.sin(q0) * 5.3],
+                              [Math.cos(q1) * 5.3, sd * 3.3, Math.sin(q1) * 5.3], [Math.cos(q1) * 3.9, sd * 3.3, Math.sin(q1) * 3.9]],
+                             [0, -sd, 0], .45, C.dark, C.body));
+    }
+  }
+  /* the layer's sight on its bracket on the left of the cradle's back */
+  cr = cr.concat(box(-4.3, -3.8, 1.6, 1.4, 1.2, 2.6, C.dark, C.body, C.dark));
+  cr = cr.concat(box(-6.2, -4.3, 3.6, 5.0, 1.6, 2.2, C.body, C.lit, C.dark));
+  cr = cr.concat(tubeSmooth(-9.2, -8.7, -4.3, 4.7, .55, 8, C.steel, C.glass || C.hole));
+  f = f.concat(m18Lay(cr, el));
+  return f;
+}
+/* The tube and what runs back with it: the tube in two diameters with the bore dark at the
+   muzzle, the square breech ring, the block's carrier behind it with the lever on its
+   right, and the lug on the ring's top that takes the recuperator's rod. */
+function m18Tube(el) {
+  var C = PKC, g = M18, f = [];
+  var prof = [[0, g.brF - .2], [g.r1, g.brF - .2], [g.r1, g.st - .5], [g.r1 + .15, g.st - .5], [g.r1 + .15, g.st],
+              [g.r0, g.st], [g.r0, g.muz], [g.bo, g.muz], [g.bo, g.muz - 1.4], [0, g.muz - 1.4]];
+  f = f.concat(place(lathe(0, 0, 0, prof, 18, [C.body, C.lit, C.dark, C.body, C.body, C.lit, C.hole, C.hole, C.hole], true),
+                     -Math.PI / 2, 0, 0, 0));
+  f = f.concat(box((g.brF + g.brB) / 2, 0, -g.brN, g.brF - g.brB, g.brY * 2, g.brN * 2, C.body, C.lit, C.dark));
+  f = f.concat(box((g.brB + g.bkB) / 2, 0, -2.7, g.brB - g.bkB, g.brY * 1.7, 1.5, C.dark, C.body, C.dark));
+  f = f.concat(box(g.brB - .25, 0, -g.brN + .6, .5, g.brY * 1.2, g.brN * 1.4, C.steel, C.bare, C.steel));
+  f = f.concat(ksPipe([[-10.4, 3.1, -1.3], [-12.4, 3.4, -1.3], [-14.6, 3.4, -2.3]], .22, C.steel, 6));
+  f = f.concat(box(-7.2, 0, g.brN, 2.2, 1.6, g.rn - g.brN - .3, C.body, C.lit, C.dark));
+  f = f.concat(tubeSmooth(-7.0, -2.6, 0, g.rn, .5, 10, C.bare, C.bare));
+  return m18Lay(f, el);
+}
+/* the whole piece at one elevation, for the overlay against the drawing */
+function m18Show(el) { return m18Bottom().concat(m18Top(el)).concat(m18Tube(el)); }
 /* ================================================================ 240 mm Howitzer M1
    The 29th's heavy battery: the 240 mm Howitzer M1 on the M1 carriage, the heaviest piece
    the American army had in the field, one gun standing for the battery. Laid off the one
@@ -34605,7 +34785,15 @@ function buildVehicleModels() {
   /* and the Little David the 240 can be rebuilt as, drawn in its place once it is (`gmKey`) */
   GUNMODEL['am_240:david'] = { mesh: ldTop(LD.el), base: ldBase(), rec: ldTube(LD.el), recEl: LD.el,
                                bar: LD.muz * Math.cos(LD.el), z: LD.tz + LD.muz * Math.sin(LD.el) };
-  GUNMODEL.ger_how210 = { mesh: bigHowModel(), base: bigHowBase(), bar: 30, z: 55 };
+  /* and the 352nd's Mörser 18, laid the same way: the bottom carriage on u.baseA, the top
+     carriage on u.facing, and the tube running back down its bore; baked the way the Pak 38
+     is, since it is in the same grey */
+  GUNMODEL.ger_how210 = { mesh: m18Top(M18.el), base: m18Bottom(), rec: m18Tube(M18.el), recEl: M18.el,
+                          bar: M18.tx + M18.muz * Math.cos(M18.el), z: M18.tz + M18.muz * Math.sin(M18.el) };
+  (function (M) {
+    M.mesh = aoSplit(M.mesh, AOSPLIT); M.base = aoSplit(M.base, AOSPLIT); M.rec = aoSplit(M.rec, AOSPLIT);
+    bakeAO([{ f: M.base, x: 0, y: 0, z: 0, occ: 1 }, { f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }, { f: M.rec, x: 0, y: 0, z: 0, occ: 1 }]);
+  })(GUNMODEL.ger_how210);
   /* the American .30 on its tripod, and the .50 on its own that the team can be issued in
      its place: `teamMesh` draws whichever is fitted, keyed the way the upgrade is */
   GUNMODEL.am_mg = { mesh: mgTeamModel(false), bar: 7, z: 3.9 };
@@ -40487,9 +40675,10 @@ function workFaces(kind, x, y, a) {
        over the whole of it -- which is what a battery position on an open field actually
        looks like from anywhere a player's camera can get to. Six hundred faces. */
     /* The 240's trails reach seven metres back from the pivot and are heaved round inside
-       the banks, so its ring stands clear of their ends whichever way they lie. */
+       the banks, and the Mörser 18's tail five and a half on the castor it is run round on,
+       so each ring stands clear of the ends whichever way they lie. */
     var big = kind === 'how240';
-    var hvR = big ? 106 : 62, hvN = big ? 70 : 46, hvArc = Math.PI * .80, hvStep = hvArc * 2 / hvN;
+    var hvR = big ? 106 : 80, hvN = big ? 70 : 54, hvArc = Math.PI * .80, hvStep = hvArc * 2 / hvN;
     for (i = 0; i < hvN; i++) {
       var ha = a - hvArc + (i + .5) * hvStep, hf = 1 - Math.abs(i - (hvN - 1) / 2) / hvN * .9;
       var seg = box(0, 0, 0, hvStep * hvR * 1.30, 17, 9 + hf * 5, '#6f6444', '#85795a', '#5f5539')
@@ -40503,8 +40692,8 @@ function workFaces(kind, x, y, a) {
     /* the charge and ammunition boxes stacked in the opening at the rear */
     for (i = -1; i <= 1; i += 2) for (c = 0; c < 2; c++)
       f = f.concat(place(box(0, 0, c * 7.4, 22, 13, 7, '#4d5340', '#5d6450', '#41473a'), a + i * .3,
-                         x + bx * (big ? 70 : 54) + Math.cos(a + Math.PI / 2) * i * (big ? 56 : 26),
-                         y + by * (big ? 70 : 54) + Math.sin(a + Math.PI / 2) * i * (big ? 56 : 26), 0));
+                         x + bx * 70 + Math.cos(a + Math.PI / 2) * i * (big ? 56 : 34),
+                         y + by * 70 + Math.sin(a + Math.PI / 2) * i * (big ? 56 : 34), 0));
     /* netting on poles over the pit */
     for (i = 0; i < 7; i++) {
       var na = a + Math.PI / 2 + i / 7 * TAU;
