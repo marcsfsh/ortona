@@ -330,7 +330,8 @@ function GEO(opt) {
     if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && (mz[0] === null || mz[0].length)) mz = mz[P.frame % mz.length]; }
     return { faces, ok: true, logged: faces.length, parts, joints, leaves: parts.leaves || null,
              lean: pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors, handsOn: r.handsOn,
-             runtimeMuzzle: mz ? mz.slice() : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none' };
+             runtimeMuzzle: mz ? mz.slice() : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none',
+             aimed: !!(AIMED[P.name] || (r.built && r.built.carry === 'aim')) };
   }
   const RIG = typeof window.manFaces === 'function' && !!window.FIGPOSE;
   R.builder = RIG ? 'manFaces' : 'legacy partition';
@@ -549,7 +550,7 @@ function GEO(opt) {
           /* not in an aimed pose, where the comb of the stock is meant to be against the
              cheek: a head 1.87 across and a receiver 1.1 across cannot both sit within
              0.9 of the bore without overlapping, and AIM governs that geometry instead */
-          if (Pp.skull && Pp.skull.length && !AIMED[P.name]) pairs.push(['weapon in skull', Pp.weapon, Pp.skull]);
+          if (Pp.skull && Pp.skull.length && !r.aimed) pairs.push(['weapon in skull', Pp.weapon, Pp.skull]);
           if (Pp.shell && Pp.shell.length) pairs.push(['weapon in helmet', Pp.weapon, Pp.shell]);
         }
         if (!r.flat && Pp.thighs && Pp.thighs.length === 2) {
@@ -585,9 +586,11 @@ function GEO(opt) {
   if (opt.do.aim) {
     const rows = [];
     variants.forEach(v => {
-      posesOf(v).filter(P => AIMED[P.name]).forEach(P => {
+      /* aimed by name, or built aiming: the sculpt shoulders a rifleman's weapon at the ready,
+         so his stand and his kneel are aimed poses too and are judged as one (`built`) */
+      posesOf(v).forEach(P => {
         const r = rec(v, P);
-        if (!r.ok || !r.hasWeapon) return;
+        if (!r.ok || !r.hasWeapon || !r.aimed) return;
         const bo = bore(r), eye = r.eye || r.joints.eye;
         if (!bo || !eye) { rows.push({ v, pose: label(P), noparts: true }); return; }
         const yaw = Math.atan2(bo.dir[1], bo.dir[0]), pitch = Math.atan2(bo.dir[2], Math.hypot(bo.dir[0], bo.dir[1]));

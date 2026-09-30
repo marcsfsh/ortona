@@ -37782,10 +37782,14 @@ function scFrame(s, e) {
   var r = scNorm(scCross(a, g));
   return { a: a, r: r, f: scNorm(scCross(r, a)) };
 }
-/* a tube from a to b through a profile of [t, radius forward, radius right] */
+/* a tube from a to b through a profile of [t, radius forward, radius right]. Its two end
+   caps go fifth and sixth, where a frustum has them, the far one first: the men card reads
+   a limb's axis off those two faces (`distal`), and with the caps last it read the thigh
+   across its own ring and called it a thigh through the skirt. */
 function scTube(a, b, prof, col, mat, sides, fold) {
   var B = scFrame(a, b), rr = prof.map(function (p) { return [m1Mix(a, b, p[0]), p[1], p[2]]; });
-  return scLoft(rr, B.a, B.r, B.f, sides || 10, col, mat, fold || 0, true);
+  var f = scLoft(rr, B.a, B.r, B.f, sides || 10, col, mat, fold || 0, true), n = f.length;
+  return f.slice(0, 4).concat([f[n - 1], f[n - 2]], f.slice(4, n - 2));
 }
 function scEgg(c, rad, axis, col, mat) {
   var b = scNorm(axis || [0, 0, 1]), fr = scFrame(c, scAdd(c, b));
@@ -37811,11 +37815,13 @@ function scTorso(B, k, V) {
   if (!V.tanker && !V.panzer) {
     var sc = V.eng ? k.hbt : V.krad ? k.krad : V.kch ? k.pz : k.coat;
     skirt = scLoft([R(-.19, 1.60, 2.36), R(-.14, 1.69, 2.53), R(-.04, 1.62, 2.46), R(.15, 1.51, 2.23)],
-                   a, B.right, B.front, 12, sc, SC_MAT.cloth, .025, false);
+                   a, B.right, B.front, 12, sc, SC_MAT.cloth, .025, true);
   }
   if (V.eng || V.rgr)
     vest = scLoft([R(.20, 1.68, 2.50), R(.36, 1.72, 2.57), R(.65, 1.75, 2.67), R(.89, 1.41, 2.52)],
-                  a, B.right, B.front, 12, V.eng ? k.vest : k.rvest, SC_MAT.canvas, .014, false);
+                  a, B.right, B.front, 12, V.eng ? k.vest : k.rvest, SC_MAT.canvas, .014, true);
+  /* the skirt and the vest are closed at both ends, as the rig's were: an open ring has no
+     inside, and the men card's test of a thigh against the skirt needs one */
   return { chest: chest, skirt: skirt, vest: vest };
 }
 /* an arm from the shoulder through the elbow to the hand: the sleeve, the forearm (bare
@@ -37840,8 +37846,11 @@ function scArm(S, E, H, k, V) {
 /* a leg: the trouser over the thigh and the shin, laid over at the bottom by whatever he
    wears on it (the American's canvas legging, the marching boot, the gaiter, the
    engineer's laced boot), and a boot with a toe, a heel and a raised sole */
-function scLeg(H, K, A, k, V) {
+function scLeg(H, K, A, k, V, fa) {
   var pants = V.eng ? k.khaki : V.panzer ? k.pzT : k.trous, dark = k.boot;
+  /* the ankle is the top of the rig's foot, and the shin is carried a little past it into
+     the boot so no daylight shows between the two when the foot turns */
+  A = scAdd(A, scMul(scNorm(scSub(A, K)), .3));
   var thigh = scTube(H, K, [[0, 1.27, 1.18], [.20, 1.30, 1.22], [.50, 1.18, 1.15], [.78, 1.08, 1.05], [1, 1.02, 1.01]], pants, SC_MAT.cloth, 8, .025);
   var shin = scTube(K, A, [[0, 1.08, 1.04], [.18, 1.14, 1.07], [.43, 1.16, 1.10], [.70, .94, .93], [1, .78, .79]], pants, SC_MAT.cloth, 8, .023);
   var heer = V.nat === 'heer';
@@ -37854,10 +37863,16 @@ function scLeg(H, K, A, k, V) {
     shin = shin.concat(scTube(m1Mix(K, A, from), A, [[0, 1.005, .98], [.16, 1.00, .97], [.86, .82, .82], [1, .79, .79]],
                               V.gaiters ? k.gaiter : dark, V.gaiters ? SC_MAT.canvas : SC_MAT.leather, 8, 0));
   }
-  var base = scAdd(A, [0, 0, -.28]), heel = scAdd(base, [-.48, 0, 0]), toe = scAdd(base, [1.65, 0, -.11]);
-  var boot = scTube(heel, toe, [[0, .52, .40], [.15, .72, .43], [.38, .75, .45], [.66, .69, .40], [.88, .55, .34], [1, .19, .22]], dark, SC_MAT.leather, 8, 0);
-  boot = boot.concat(scTube(scAdd(heel, [0, 0, -.19]), scAdd(toe, [0, 0, -.19]),
-                            [[0, .53, .12], [.17, .74, .14], [.65, .70, .14], [.88, .54, .12], [1, .20, .09]],
+  /* The boot is laid in the foot's own frame, which is the rig's: the foot is turned by the
+     sum of the leg's three pitches (the thigh's, the shin's and the ankle's; the splay is
+     taken back off the foot about its own ankle), it runs a unit behind the ankle to two
+     and a quarter in front of it, and its sole is a unit under the ankle. Laid level at a
+     fixed depth instead, as it came, every foot on the roster stood half a unit off the
+     ground and a running man's planted foot a unit and a half. */
+  var fw = [Math.cos(fa), 0, Math.sin(fa)], upv = [-Math.sin(fa), 0, Math.cos(fa)], A0 = scSub(A, scMul(scNorm(scSub(A, K)), .3));
+  function F(x, z) { return scAdd(A0, scAdd(scMul(fw, x), scMul(upv, z))); }
+  var boot = scTube(F(-1.0, -.6), F(2.25, -.66), [[0, .52, .40], [.15, .70, .46], [.38, .72, .48], [.66, .68, .42], [.88, .55, .34], [1, .19, .22]], dark, SC_MAT.leather, 8, 0);
+  boot = boot.concat(scTube(F(-1.02, -.9), F(2.3, -.9), [[0, .53, .10], [.17, .72, .10], [.65, .69, .10], [.88, .54, .09], [1, .20, .07]],
                             k.sole || lit(dark, .58), SC_MAT.leather, 10, 0));
   return { thigh: thigh, shin: shin, boot: boot };
 }
@@ -37905,7 +37920,10 @@ function scSwap(r, remove, patch) {
 function scProne(r, P, k, V) {
   var J = r.joints, p = r.parts, ph = (P.ph || 0) * TAU, s = Math.sin(ph), c = Math.cos(ph);
   if (!J || !J.shoulderR || !J.handR || !J.handL || !p.torso || !p.legs) return r;
-  var hd = [-.18, .75, .31], st = ++SC_STAMP;
+  /* the head goes over toward the stock and up with the chest; the sculpt moved it 0.75
+     across, which put the cheek 0.4 to 0.5 into the stock on every prone and crawling man; at 0.45 it
+     lies against it */
+  var hd = [-.18, .45, .31], st = ++SC_STAMP;
   scMark([(p.head || []).concat(p.helmet || [])], st);
   r.faces.forEach(function (f) { if (f._sc === st) f.v = f.v.map(function (v) { return scAdd(v, hd); }); });
   ['skull', 'crown', 'eye'].forEach(function (key) { if (J[key]) J[key] = scAdd(J[key], hd); });
@@ -37956,7 +37974,9 @@ function scRefine(r, V, P, k) {
     if (arms.length !== 4) return r;
     return scSwap(r, ['limbs', 'hands'], { limbs: arms, hands: palms });
   }
-  var B = scBasis(J), b = scTorso(B, k, V), l = scLeg(J.hipL, J.kneeL, J.ankleL, k, V), q = scLeg(J.hipR, J.kneeR, J.ankleR, k, V);
+  function fa(L) { return L ? L[0] + L[1] + (L[2] || 0) : 0; }
+  var B = scBasis(J), b = scTorso(B, k, V), lg = P.legs || [];
+  var l = scLeg(J.hipL, J.kneeL, J.ankleL, k, V, fa(lg[0])), q = scLeg(J.hipR, J.kneeR, J.ankleR, k, V, fa(lg[1]));
   return scSwap(r, ['hips', 'plate', 'chest', 'skirt', 'vest', 'legs', 'thighs', 'shins', 'boots', 'limbs', 'hands'],
                 { hips: [], plate: [], chest: b.chest, skirt: b.skirt, vest: b.vest,
                   thighs: [l.thigh, q.thigh], shins: [l.shin, q.shin], boots: [l.boot, q.boot],
@@ -37964,10 +37984,14 @@ function scRefine(r, V, P, k) {
                   limbs: arms, hands: palms });
 }
 /* A man, built by the rig and then sculpted. Every caller asks this and none of them
-   asks the rig. */
+   asks the rig. The record carries the pose he was actually built in (`built`), because a
+   rifleman asked to stand at the ready is built aiming, and a probe that judges a pose by
+   its name would judge him as a man with his stock at his hip. */
 function manFaces(variant, P) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.gi_rifle, Q = scPose(V, P), r = manRig(variant, Q);
-  return scRefine(scTurn(r, V, Q), V, Q, KIT[V.nat]);
+  r = scRefine(scTurn(r, V, Q), V, Q, KIT[V.nat]);
+  r.built = Q;
+  return r;
 }
 /* The two dead men a side, built from the side's rifleman kit and drawn a little into
    the ground. The loose helmet is the one corpse cue that survives at nine hundred
