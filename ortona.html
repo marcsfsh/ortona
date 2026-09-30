@@ -1717,7 +1717,7 @@ var UNITS = {
     side: 'ger', name: '8 cm Granatwerfer 34', short: 'GRW 34', cat: 'team', hk: 'M',
     models: 3, hpPer: 54, speed: 44, sight: 260, pop: 6, cost: { mp: 250, fu: 10 }, time: 26,
     req: 'ger_qtr', setup: 3.5, pack: 3.0, indirect: 1, blastRes: .5,
-    gunAt: 4.7, gunMuz: [1.73, 13.63], gunGrip: [0.90, 1.80, 7.60],
+    gunAt: 4.7, gunMuz: [3.96, 14.1], gunGrip: [0.90, 1.80, 7.60],
     barrage: { range: 560, r: 54, rof: 2.4, rounds: 10 },
     w: { range: 470, dmg: 60, rof: 4.4, acc: .41, sup: .054, pen: 12, aoe: 34, shell: 1 },
     desc: 'The German battalion mortar, and the reason a street in Ortona is not a safe street. It shells what the company can see, over the roofs, or it is laid on a patch of ground and puts ten bombs into it faster than it fires on its own. Set it behind a block and it reaches most of the way across the town.'
@@ -32621,46 +32621,96 @@ function m5Tube(el) {
 /* the whole piece at one elevation with its trails spread or closed, for the overlay against
    the drawing and for the closed piece its crew run along */
 function m5Show(el, closed) { return h105Bottom(closed, true).concat(m5Top(el)).concat(m5Tube(el)); }
-/* A battalion mortar: baseplate, tube and bipod, with a few bombs laid out beside it. It is
-   the German one's now (`ger`); the American 81 is `mo81Model`.
-   Three loads a crew carries between them and puts down in about that order -- the plate
-   first, the tube on it, the bipod last -- and it is the one weapon here whose barrel is
-   pointed at the sky rather than at anything. `lean` is how far off vertical the tube
-   sits: a mortar at maximum range is nearly at forty-five degrees and at minimum nearly
-   straight up, and a little over seventy from the horizontal is what one laid on a town
-   at medium range looks like. */
-function mortarModel(ger) {
-  var C = GUN, f = [], lean = ger ? .30 : .27;
-  var tube = ger ? 13.4 : 14.8, bore = ger ? 1.35 : 1.45;
-  /* the baseplate: a pressed dish bedded into the ground, canted back under the tube */
-  f = f.concat(cyl(-1.6, 0, .1, 4.6, 4.2, 1.1, 10, C.dgD, C.dg, 0, true));
-  f = f.concat(box(-1.6, 0, 1.0, 5.6, 5.0, .5, C.dgD, C.dg, C.dgD));
-  f = f.concat(box(.2, 0, 1.4, 2.0, 1.6, 1.4, C.steel, C.steelL));                    /* the socket the ball sits in */
-  /* the tube, leaned forward off the plate, with a collar and the muzzle ring */
-  var t = cyl(0, 0, 0, bore + .5, bore + .35, tube, 10, C.steel, C.steelL, 0, true);
-  t = t.concat(cyl(0, 0, tube - .5, bore + .55, bore + .55, .7, 10, C.steelL, C.steelL, 0, true));
-  t = t.concat(cyl(0, 0, tube * .42, bore + .8, bore + .8, 1.1, 10, C.steelL, C.steel, 0, true));
-  t = t.concat(cyl(0, 0, -.2, bore + .7, bore + .7, .9, 10, C.steel, C.steel, 0, true));   /* the ball at the foot */
-  f = f.concat(pitch(t, -lean, 0, 1.6));
-  /* the bipod: two legs out to the front, a cross-level screw between them, and the
-     elevating screw up to the collar */
-  [-1, 1].forEach(function (sd) {
-    var leg = pitch(box(0, 0, 4.6, .8, .8, 9.2, C.dgD, C.dg), .42, 0, 0);
-    f = f.concat(place(leg, sd * .40, 2.6, 0, .2));
-    f = f.concat(box(2.6 + Math.cos(sd * .40) * 7.4, Math.sin(sd * .40) * 7.4, .2, 1.8, 1.2, .5, C.dgD, C.dg));
+/* ================================================================ 8 cm Granatwerfer 34
+   The 352nd's battalion mortar: the tube on its ball in the socket of a square baseplate,
+   and a tall bipod whose two legs meet high up under a short head, where the American M1's
+   meet low down under a long screw. Built to the published 1,143 mm of tube and 81.4 mm of
+   bore and to the proportions of a photograph of it in a three-quarter view, which is a
+   guide to what stands where and no measure of it: the head carries the traversing
+   mechanism across in front of the tube with the sight on its left end, the elevating
+   column runs down from it to the hinge the legs turn on, the tube is held by a collar near
+   its top with the locking lever out to the right and a band a little below it, the nearer
+   leg has the cross-levelling sleeve on it and each foot is a shoe with a spike. The plate
+   has its edge turned down, a raised rim, the round boss the ball turns in and a carrying
+   handle on its right. `lean` is how far off vertical the tube is laid. Origin on the
+   ground under the ball; -y is the left. */
+var GW34 = { L: 13.4, r: .56, lean: .30, bz: 1.3, clamp: 10.1, band: 7.9 };
+function gw34Axis(s) { return [s * Math.sin(GW34.lean), 0, GW34.bz + s * Math.cos(GW34.lean)]; }
+function gw34Fwd(s, k) {
+  var p = gw34Axis(s);
+  return [p[0] + k * Math.cos(GW34.lean), 0, p[2] - k * Math.sin(GW34.lean)];
+}
+function gw34Model() {
+  var C = PKC, g = GW34, f = [], t = [], sd, i;
+  /* the plate: turned down at its edge, the raised rim round the top, the boss and its cup,
+     a lug at each corner and the carrying handle on the right */
+  f = f.concat(box(-.4, 0, 0, 6.0, 5.4, .45, C.dark, C.body, C.dark));
+  f = f.concat(box(-.4, 0, .45, 5.6, 5.0, .2, C.body, C.lit, C.dark));
+  [[-2.7, 0, .15, 5.0], [2.3 - .4, 0, .15, 5.0]].forEach(function (q) { f = f.concat(box(q[0] + .0, 0, .65, .3, q[3], .25, C.lit, C.lit, C.dark)); });
+  [[-.4, -2.4], [-.4, 2.4]].forEach(function (q) { f = f.concat(box(q[0], q[1], .65, 5.6, .3, .25, C.lit, C.lit, C.dark)); });
+  f = f.concat(cyl(0, 0, .65, 1.25, 1.25, .55, 16, C.dark, C.body, 0, true));
+  f = f.concat(cyl(0, 0, 1.2, .95, .95, .12, 14, C.steel, C.bare, 0, true));
+  [[-2.9, -2.2], [-2.9, 2.2], [2.1, -2.2], [2.1, 2.2]].forEach(function (q) { f = f.concat(box(q[0], q[1], .65, .7, .7, .35, C.dark, C.body, C.dark)); });
+  f = f.concat(ksPipe([[-1.4, 2.7, .5], [-1.2, 3.25, .9], [.6, 3.25, .9], [.8, 2.7, .5]], .13, C.steel, 6));
+  /* the tube, built standing up and laid over: the ball, the breech piece with its ring, the
+     plain tube, the muzzle band and the bore, and the collar with its lever and the band */
+  t = t.concat(cyl(0, 0, -.55, .45, .45, .5, 12, C.steel, C.bare, 0, true));
+  t = t.concat(cyl(0, 0, -.2, .66, .66, 1.5, 14, C.dark, C.body, 0, true));
+  t = t.concat(cyl(0, 0, 1.2, .72, .72, .25, 14, C.body, C.lit, 0, true));
+  t = t.concat(cyl(0, 0, 1.3, g.r, g.r, g.L - 1.3, 14, C.body, C.lit, 0, true));
+  t = t.concat(cyl(0, 0, g.L - .6, g.r + .1, g.r + .1, .6, 14, C.dark, C.body, 0, true));
+  t = t.concat(cyl(0, 0, g.L - .02, g.r - .13, g.r - .13, .04, 12, C.hole, C.hole, 0, true));
+  t = t.concat(cyl(0, 0, g.clamp - .6, g.r + .26, g.r + .26, 1.2, 14, C.dark, C.body, 0, true));
+  t = t.concat(cyl(0, 0, g.band - .2, g.r + .12, g.r + .12, .4, 14, C.dark, C.body, 0, true));
+  t = t.concat(ksPipe([[0, g.r + .2, g.clamp], [0, g.r + .9, g.clamp + .2], [-.2, g.r + 1.2, g.clamp - 1.0]], .12, C.steel, 6));
+  f = f.concat(at(pitch(t, -g.lean, 0, 0), 0, 0, g.bz));
+  /* the head: the traversing housing across in front of the collar with its handwheel on
+     the right, the elevating column down to the hinge with its crank, and the knob that
+     locks the hinge */
+  var T = gw34Fwd(g.clamp - .3, g.r + 1.0), H = [T[0] + .6, 0, T[2] - 2.8], F = [];
+  f = f.concat(ksTube(gw34Fwd(g.clamp - .3, g.r + .1), T, .3, C.dark, 8));
+  f = f.concat(place(tubeSmooth(-1.9, 1.9, 0, T[2], .36, 10, C.body, C.lit), Math.PI / 2, T[0], 0, 0));
+  f = f.concat(ksTube([T[0], 1.9, T[2]], [T[0], 2.4, T[2]], .12, C.steel, 6));
+  f = f.concat(lathe(T[0], 2.45, T[2], [[0, -.1], [.7, -.1], [.7, .1], [0, .1]], 12, C.steel, true));
+  f = f.concat(ksTube(T, H, .38, C.body, 10));
+  f = f.concat(box(H[0], 0, H[2] - .5, 1.3, 1.6, 1.0, C.dark, C.body, C.dark));
+  f = f.concat(ksPipe([[H[0] - .3, -.6, H[2] + 1.1], [H[0] - .9, -.9, H[2] + .9], [H[0] - 1.3, -.9, H[2] + .2]], .1, C.steel, 6));
+  f = f.concat(ksTube([H[0] - 1.3, -.9, H[2] + .2], [H[0] - 1.3, -1.4, H[2] + .2], .15, C.dark, 6));
+  f = f.concat(ksTube([H[0] + .2, .8, H[2] - .1], [H[0] + .2, 1.3, H[2] - .1], .2, C.dark, 6));
+  /* the legs, splayed forward from the hinge to their feet, each a shoe with a spike under
+     it; the cross-levelling sleeve on the left leg, and the chain slung between the legs */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var ft = [H[0] + 5.4, sd * 5.0, .35];
+    F.push(ft);
+    f = f.concat(ksTube([H[0], sd * .5, H[2] - .3], ft, .28, C.body, 8));
+    f = f.concat(place(box(0, 0, 0, 1.6, .8, .3, C.dark, C.body, C.dark), Math.atan2(sd * 5.0, 5.4), ft[0], ft[1], 0));
+    f = f.concat(cyl(ft[0], ft[1], -.6, .14, .02, .6, 6, C.steel, C.steel, 0, true));
+  }
+  var S0 = m1Mix([H[0], -.5, H[2] - .3], F[0], .5);
+  f = f.concat(ksTube(m1Mix([H[0], -.5, H[2] - .3], F[0], .44), m1Mix([H[0], -.5, H[2] - .3], F[0], .56), .42, C.dark, 10));
+  f = f.concat(ksTube(S0, [S0[0] - .1, S0[1] - .6, S0[2]], .14, C.dark, 6));
+  for (i = 0; i < 8; i++) {
+    var c0 = m1Mix(m1Mix([H[0], -.5, H[2]], F[0], .7), m1Mix([H[0], .5, H[2]], F[1], .7), i / 8);
+    var c1 = m1Mix(m1Mix([H[0], -.5, H[2]], F[0], .7), m1Mix([H[0], .5, H[2]], F[1], .7), (i + 1) / 8);
+    f = f.concat(ksTube(c0, [c1[0], c1[1], c1[2] - .3 * Math.sin((i + .5) / 8 * Math.PI)], .07, C.steel, 4));
+  }
+  /* the sight on the left end of the traversing housing: the body, the elbow back to the
+     layer and the eyepiece */
+  var X = T[0], Z = T[2];
+  f = f.concat(box(X, -2.3, Z - .2, .7, .6, 1.0, C.dark, C.body, C.dark));
+  f = f.concat(box(X - .1, -2.4, Z + .8, 1.4, .9, .9, C.body, C.lit, C.dark));
+  f = f.concat(ksTube([X - .8, -2.4, Z + 1.25], [X - 1.5, -2.4, Z + 1.25], .2, C.dark, 6));
+  /* bombs, fins down, in their three-round cases to the right of the plate */
+  [0, 1].forEach(function (k) {
+    var bx = -5.8, by = 4.4 + k * 2.2;
+    f = f.concat(box(bx, by, 0, 5.2, 1.9, 1.5, C.wood, lit(C.wood, 1.1), lit(C.wood, .85)));
   });
-  f = f.concat(box(3.0, 0, 7.0, 1.4, 4.6, 1.0, C.dgD, C.dg));                          /* the cross-level yoke */
-  f = f.concat(cyl(2.2, 0, 3.2, .45, .45, 5.2, 8, C.brass, C.brass, 0, true));          /* elevating screw */
-  f = f.concat(box(2.0, -2.4, 6.6, .7, .7, 1.2, C.steel, C.steelL));                    /* the sight bracket */
-  f = f.concat(box(2.0, -3.0, 7.6, 1.0, 1.4, 1.6, C.dgD, C.dg));                        /* and the sight on it */
-  /* bombs, fins up, in a shallow rack to the right of the plate */
-  [0, 1, 2, 3].forEach(function (i) {
-    var bx = -5.4 + (i % 2) * 2.2, by = 5.4 + Math.floor(i / 2) * 2.3;
-    f = f.concat(cyl(bx, by, .3, .95, .95, 3.4, 8, C.od, C.odL, 0, true));
-    f = f.concat(cyl(bx, by, 3.7, .95, .35, 1.6, 8, C.od, C.odL, 0, true));
-    f = f.concat(cyl(bx, by, -.4, .55, .55, .8, 6, C.steel, C.steelL, 0, true));
+  [0, 1, 2].forEach(function (k) {
+    var by = 3.9 + k * .95, p = [-8.2, by, 1.5 + .45];
+    f = f.concat(place(tubeSmooth(0, 2.4, 0, 0, .45, 8, C.body, C.lit), 0, p[0], p[1], p[2]));
+    f = f.concat(place(lathe(0, 0, 0, [[.45, 0], [.3, .7], [0, 1.0]], 8, C.body, true), -Math.PI / 2, p[0] + 2.4, p[1], p[2]));
+    f = f.concat(place(tubeSmooth(-1.0, 0, 0, 0, .25, 6, C.dark, C.dark), 0, p[0], p[1], p[2]));
   });
-  f = f.concat(box(-5.0, 5.9, -.1, 5.6, 5.4, .5, C.canvas, lit(C.canvas, 1.1)));        /* the rack they stand in */
   return f;
 }
 
@@ -34838,7 +34888,11 @@ function buildVehicleModels() {
                       recEl: H105.el, pkAll: 1, bar: 9.6 + 20.67, z: 25.93 };
   GUNMODEL.ger_how = { mesh: packHowModel(true), bar: 19, z: 13 };
   GUNMODEL.us_mor = { mesh: mo81Model(), bar: 4.7 + 3.92, z: 15.52 };
-  GUNMODEL.ger_mor = { mesh: mortarModel(true), bar: 6, z: 9 };
+  GUNMODEL.ger_mor = { mesh: gw34Model(), bar: 4.7 + GW34.L * Math.sin(GW34.lean), z: GW34.bz + GW34.L * Math.cos(GW34.lean) };
+  (function (M) {
+    M.mesh = aoSplit(M.mesh, AOSPLIT);
+    bakeAO([{ f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }]);
+  })(GUNMODEL.ger_mor);
   /* the 3-inch gun on the same carriage, closed for the move with the tube level */
   GUNMODEL.us_t8 = { mesh: h105Bottom(false, true).concat(m5Top(M5G.el)), pack: m5Show(0, true), rec: m5Tube(M5G.el),
                      recEl: M5G.el, pkAll: 1, bar: 9.6 + 37.69, z: 15.4 };
