@@ -329,7 +329,7 @@ function GEO(opt) {
     let mz = null;
     if (MODELS.muz && MODELS.muz[variant] && id !== null) { mz = MODELS.muz[variant][id]; if (mz && mz.length && (mz[0] === null || mz[0].length)) mz = mz[P.frame % mz.length]; }
     return { faces, ok: true, logged: faces.length, parts, joints, leaves: parts.leaves || null,
-             lean: pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors, handsOn: r.handsOn,
+             lean: r.built && r.built.lean !== undefined ? r.built.lean : pose.lean, flat, body, legFaces, eye: r.eye, muzzle: r.muzzle, anchors: r.anchors, handsOn: r.handsOn,
              runtimeMuzzle: mz ? mz.slice() : null, weapon: V.weapon, hasWeapon: V.weapon !== 'none',
              aimed: !!(AIMED[P.name] || (r.built && r.built.carry === 'aim')) };
   }
@@ -852,6 +852,10 @@ function PIX(opt) {
   const mid = (variant, pose) => { const fg = O.figure(variant, pose, 0); return fg ? Math.floor(fg.n / 4) : 0; };
   if (opt.do.footprint) {
     R.footprint = [];
+    /* whether the rifleman's stand is built aiming: the sculpt shoulders a rifleman's weapon at
+       a halt, so his stand IS his firing stance and the fire-against-stand width pair asks a
+       question the figure answers the same way on purpose */
+    try { const sr = window.manFaces('gi_rifle', window.stanceOf('gi_rifle', 'stand')); R.standAims = !!(sr.built && sr.built.carry === 'aim'); } catch (e) { R.standAims = false; }
     const poses = ['stand', 'walk', 'run', 'kneel', 'prone', 'fire'];
     [600, 900].forEach(dist => {
       const B = ground(dist, .75);
@@ -1188,7 +1192,8 @@ function show(c, base) {
           }
         }
         const s = at('stand'), f = at('fire');
-        if (s && f) { of++; if (Math.abs(s.w - f.w) < need) { bad++; console.log(`  ! ${dist} ${angle}: fire and stand differ by ${Math.abs(s.w - f.w)} px in width`); } }
+        if (s && f && X.standAims) console.log(`  ~ ${dist} ${angle}: fire and stand differ by ${Math.abs(s.w - f.w)} px in width (the stand is built aiming, so the two are one stance)`);
+        else if (s && f) { of++; if (Math.abs(s.w - f.w) < need) { bad++; console.log(`  ! ${dist} ${angle}: fire and stand differ by ${Math.abs(s.w - f.w)} px in width`); } }
       }));
       console.log('\n  * a posture this file has no buffer of its own for, drawn from another one the way the draw path does it; ~ is a comparison against such a posture, reported and not counted');
       foot('footprint ' + dev, bad, of);

@@ -3731,8 +3731,17 @@ Four things differ from the sculpt as it came, and each was measured.
   faces and an open loft has no inside. Built the sculpt's way the clip row read 880 pairs.
 
 On the men card against the commit before it (`--base=a44b720`), contact, skate, gravity, grip,
-clip, material, size and the read on both devices all come back clean, proportion has one miss
-against the base's two (the tanker's cap, which the base has too), and aim is clean.
+clip, aim, material, size and the read on both devices all come back clean, proportion has one
+miss against the base's two (the tanker's cap, which the base has too), and the muzzle row's 26 are
+the base's 26. The card reads a pose's lean and whether it aims off the pose the figure was built
+in (`r.built`, which `manFaces` hands back), because a German standing at the ready is built in the
+firing step leaned .08 where the stance he came from says .04, and read off the stance his spine
+came out off the lean on fourteen rows. The footprint is where it moved: a rifleman's stand is his
+firing stance now, so the fire-against-stand width pair is reported and not counted when the stand
+is built aiming, and what is left is four desktop misses against the base's two, the stand against
+the walk at the front angle (3 px apart at both distances, 31 wide where the base's stand was 21)
+and the run against the kneel from the side (1 and 2 px), with the phone clean. Those four are the
+price of the shouldered stand and kneel and are left as the card says them.
 
 **The M1 helmet is swept round a plan ellipse** (`helmetM1`). A lathe is round and its rim is
 level, and what says M1 is a pot longer than it is wide whose sides come down over the ears
