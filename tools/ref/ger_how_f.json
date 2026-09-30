@@ -1,0 +1,4 @@
+{ "image": "shots/ref/ger_how.png", "key": "ger_how_f", "prop": "lfShow", "args": [0, true], "up": [], "crew": false,
+  "note": "The leFH 18's front view, with the tube level: the published 1.977 m over the hubs and 1.88 m to the top of the shield put it at 78 px/m.",
+  "views": {
+    "front": { "crop": [335, 70, 165, 165], "ppm": 78.0, "at": [0, 0, 0], "px": [418.05, 227.5], "k": 4 } } }

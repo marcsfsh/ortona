@@ -1,0 +1,5 @@
+{ "image": "shots/ref/ger_how.png", "key": "ger_how", "prop": "lfShow", "args": [0.188, true], "up": [], "crew": false,
+  "note": "10.5 cm leFH 18 closed for the move, spades stowed on the trails, tube at about 10.8 degrees in the side view. No scale on the sheet: the side agrees with the published 1.30 m wheel at 76 px/m; the plan with the wheel and the published 1.977 m over the hubs at 77.7. The front view has the tube level and is in ger_how_f.json. The whole piece is drawn as the hull.",
+  "views": {
+    "side": { "nose": "right", "crop": [0, 0, 470, 150], "ppm": 76.0, "at": [0, 0, 0], "px": [273.3, 145.8], "k": 3 },
+    "plan": { "nose": "right", "crop": [0, 185, 470, 164], "ppm": 77.7, "at": [0, 0, 0], "px": [273.4, 268.5], "k": 3 } } }
