@@ -1,0 +1,8 @@
+{ "image": "shots/ref/hr_234_2.png",
+  "note": "Sd.Kfz. 234/2 Puma, a four-view with no scale on it; along the side its axles are 280 px apart, which the published 1,300 + 1,400 + 1,300 mm makes 70 px/m. The pin is the middle of the wheelbase on the ground.",
+  "key": "hr_234", "up": ["puma"], "crew": false,
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 240], "ppm": 70, "at": [0, 0, 0], "px": [265, 231.7], "k": 3 },
+    "front": { "crop": [0, 240, 250, 240], "ppm": 70, "at": [0, 0, 0], "px": [110, 470], "k": 3 },
+    "rear":  { "crop": [250, 240, 250, 240], "ppm": 70, "at": [0, 0, 0], "px": [362, 470], "k": 3 },
+    "plan":  { "nose": "left", "crop": [0, 480, 500, 182], "ppm": 70, "at": [0, 0, 0], "px": [265, 570], "k": 3 } } }
