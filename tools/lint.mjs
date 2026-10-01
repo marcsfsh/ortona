@@ -322,10 +322,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    the riveted box trails with the spades stowed on them and folded down in action, the shield
    with its folded wings and the hood over the slot, the cradle and the recuperator, the sight
    and the handwheels, and the tube with its breech ring.
+   It is 3020 for every building on the map made breakable: the cut of a building's own
+   faces into cells, the solver that says what each cell carries and what it can, the
+   blast through masonry, and the falling pieces that hinge, drop and break where they land.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 2980) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 2980 kB so it stays quick to load on a phone`);
+if (kb > 3020) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3020 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

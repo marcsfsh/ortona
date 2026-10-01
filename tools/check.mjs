@@ -5454,9 +5454,11 @@ for (const device of TARGETS) {
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot
      would call a success. So the row asks the SAME CELL the same four questions with the
-     bay standing and with the bay down, puts a section in the house first to see it put
-     out, and counts the stone: what settles has to be what came out of the walls, because
-     masonry that vanishes on landing is a collapse nobody can stand in. --- */
+     house standing and with the house down, puts a section in it first to see it put out,
+     and counts the stone: everything the cells threw has to be lying on the ground or in
+     the heap at the end, because masonry that vanishes on landing is a collapse nobody can
+     stand in. Before any of that one field-gun round goes against the face, because a
+     building that comes down on the first hole in it is as wrong as one that never does. --- */
   const wreck = await (async () => {
     /* on Ortona, because a terrace is what this is about and the Gothic Line is a valley
        floor with two farms on it */
@@ -5475,82 +5477,108 @@ for (const device of TARGETS) {
                                   Math.hypot(r.x - q.x, r.y - q.y) < 150))
         .sort((a, b) => b.w * b.h - a.w * a.h)[0];
       if (!p) return null;
+      window.__wreckH = p;
       window.__keep = window.G.units.slice();
       window.G.units.length = 0;
       const u = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'am_rifle' : 'hr_gren',
                                  p.x, p.y + p.h / 2 + 40);
       window.enterBuilding(u, p);
       window.rebuildGrid();
-      const B = window.ruinState(p), b = B[Math.floor(B.length / 2)];
-      const ci = window.cidx((b.x / window.CELL) | 0, (p.y / window.CELL) | 0);
-      return { up: { walk: window.walkable(b.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+      window.G.frStat = { made: 0, bodies: 0, lost: 0 };
+      const ci = window.cidx((p.x / window.CELL) | 0, (p.y / window.CELL) | 0);
+      return { up: { walk: window.walkable(p.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
                      fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
-                     gar: !!u.gar, hurt: !!p.hurt },
-               bays: B.length, x: b.x, y: p.y, w: Math.round(p.w), h: Math.round(p.h) };
+                     gar: !!u.gar, hurt: !!p.hurt, can: window.frBreakable(p) },
+               x: p.x, y: p.y, w: Math.round(p.w), h: Math.round(p.h) };
     });
     if (!put) return null;
-    /* a battery on it, which is the one thing on the roster that brings a house down */
-    const shot = await page.evaluate(a => {
-      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
-                                           Math.abs(q.y - a.y) < a.h)[0];
-      let n = 0;
-      for (let i = 0; i < 14; i++) {
-        window.explode(a.x + (i % 5 - 2) * 11, a.y - a.h / 2 - 2, 130, 300, null, null, 22);
-        n++;
-      }
-      let vol = 0;
-      for (const c of window.G.debris) vol += c.l * c.w * c.h;
-      return { rounds: n, air: window.G.debris.length, vol: Math.round(vol),
-               queued: Object.keys(window.G.tileQ).length, bays: (p.bay || []).filter(b => b.down > 0).length };
-    }, put);
-    await fastForward(page, 14);
-    /* and one drawn frame, because the house's own buffer is built in the draw: fast
-       forward stubs render() out, so without this the row asks whether a thing that has
-       not been drawn yet has been drawn */
+    /* a 105's round twelve units off the middle of the face: a hole, and the house still a
+       house with the section still in it */
+    const hole = await page.evaluate(() => {
+      const p = window.__wreckH;
+      window.explode(p.x, p.y + p.h / 2 + 12, 40, 150, null, null, 14);
+      const R = p.fr;
+      return { cut: !!R, cells: R ? R.orig.reduce((n, v) => n + v, 0) : 0,
+               gone: R ? R.orig.reduce((n, v, i) => n + (v && !R.alive[i] ? 1 : 0), 0) : 0 };
+    });
+    await fastForward(page, 3);
+    Object.assign(hole, await page.evaluate(() => {
+      const p = window.__wreckH, R = p.fr;
+      return { left: R ? Math.round(R.mAlive / R.m0 * 1000) / 10 : 100, hold: window.frHoldable(p),
+               held: window.G.units.some(u => !u.dead && u.gar === p) };
+    }));
+    /* then the battery: five salvos of three 240 rounds down through the roof */
+    let air = 0;
+    for (let s = 0; s < 5; s++) {
+      air = Math.max(air, await page.evaluate(s => {
+        const p = window.__wreckH, pts = [[-.3, -.25], [.3, .25], [.3, -.25], [-.3, .25], [0, 0]];
+        for (let i = 0; i < 3; i++) {
+          const q = pts[(s * 3 + i) % pts.length];
+          window.explode(p.x + q[0] * p.w, p.y + q[1] * p.h, 150, 380, null, null, 0);
+        }
+        return window.G.debris.length;
+      }, s));
+      await fastForward(page, 2.5);
+    }
+    await fastForward(page, 12);
+    /* and one drawn frame, because the house's own buffer is uploaded in the draw: fast
+       forward stubs render() out */
     await frames(page, 2);
-    const down = await page.evaluate(a => {
-      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
-                                           Math.abs(q.y - a.y) < a.h)[0];
-      const ci = window.cidx((a.x / window.CELL) | 0, (a.y / window.CELL) | 0);
+    const down = await page.evaluate(() => {
+      const p = window.__wreckH, R = p.fr;
+      const ci = window.cidx((p.x / window.CELL) | 0, (p.y / window.CELL) | 0);
       const u = window.G.units.filter(e => !e.dead)[0];
       let vol = 0;
-      for (const r of window.G.rub) vol += r.l * r.w * r.h;
+      for (const r of window.G.rub) vol += r.l * r.w * r.h + (r.e || 0);
       let mound = 0;
       for (let dx = -60; dx <= 60; dx += 14) for (let dy = -40; dy <= 40; dy += 14)
-        mound = Math.max(mound, window.moundAt(a.x + dx, a.y + dy));
-      const st = { walk: window.walkable(a.x, a.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+        mound = Math.max(mound, window.moundAt(p.x + dx, p.y + dy));
+      const st = { walk: window.walkable(p.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
                    fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
                    gar: !!(u && u.gar), hurt: !!p.hurt, standing: Math.round(window.ruinStanding(p)),
+                   left: R ? Math.round(R.mAlive / R.m0 * 100) : 100,
                    canGar: window.canGarrison({ cat: 'inf', def: { speed: 30 }, models: [] }, p),
-                   settled: window.G.rub.length, vol: Math.round(vol), mound: +mound.toFixed(1),
-                   air: window.G.debris.length, buf: !!p.buf };
+                   settled: window.G.rub.length, vol: Math.round(vol), made: Math.round(window.G.frStat.made),
+                   lost: Math.round(window.G.frStat.lost), bodies: window.G.frStat.bodies,
+                   mound: +mound.toFixed(1), stand: +(window.groundZ(p.x, p.y) - window.floorZ(p.x, p.y)).toFixed(1),
+                   air: window.G.debris.length, fall: window.G.fall.length, buf: !!(R && R.buf),
+                   heap: window.HEAPBUF ? window.HEAPBUF.n : 0 };
       window.G.units.length = 0;
       window.__keep.forEach(e => window.G.units.push(e));
       window.rebuildGrid();
       return st;
-    }, put);
-    return { ...put, ...shot, down };
+    });
+    return { ...put, hole, air, down };
   })();
+  ok('a field-gun round against a house opens a hole in it and leaves it a house',
+     !!wreck && wreck.up.can && wreck.hole.cut && wreck.hole.gone >= 1 && wreck.hole.left > 90 &&
+     wreck.hole.hold && wreck.hole.held,
+     wreck ? `${wreck.w}x${wreck.h}, cut into ${wreck.hole.cells} cells: one 150-point round took ${wreck.hole.gone} out, ` +
+             `${wreck.hole.left}% of it standing three seconds later, ` +
+             `${wreck.hole.hold ? 'still holdable' : 'NOT HOLDABLE'} and the section ${wreck.hole.held ? 'still in it' : 'PUT OUT'}`
+           : 'no isolated terrace on the map to shell');
   ok('a house shelled flat stops being a house on every grid that reads one',
      !!wreck && wreck.up.walk === 0 && wreck.up.sight === 1 && wreck.up.fire === 1 &&
      wreck.up.rub === 0 && wreck.up.gar === true && wreck.up.hurt === false &&
      wreck.down.walk === 1 && wreck.down.sight === 0 && wreck.down.fire === 0 &&
      wreck.down.rub === 1 && wreck.down.gar === false && wreck.down.canGar === false &&
      wreck.down.standing < 34 && wreck.down.buf === true,
-     wreck ? `${wreck.w}x${wreck.h} in ${wreck.bays} bays, ${wreck.rounds} heavy rounds: ` +
+     wreck ? `fifteen heavy rounds: ${wreck.down.left}% of it left; ` +
              `walkable ${wreck.up.walk}->${wreck.down.walk}, stops an eye ${wreck.up.sight}->${wreck.down.sight}, ` +
              `stops a round ${wreck.up.fire}->${wreck.down.fire}, rubble ${wreck.up.rub}->${wreck.down.rub}, ` +
              `garrison ${wreck.up.gar ? 'held' : 'none'}->${wreck.down.gar ? 'held' : 'put out'}, ` +
              `${wreck.down.standing} units left standing, ` +
              `holdable ${wreck.down.canGar ? 'still' : 'no'}, own buffer ${wreck.down.buf ? 'yes' : 'no'}`
-           : 'no isolated terrace on the map to shell');
-  ok('the masonry that comes out of it is the masonry that lands',
-     !!wreck && wreck.air > 40 && wreck.down.air === 0 && wreck.down.settled > 40 &&
-     wreck.down.vol > wreck.vol * 0.75 && wreck.down.mound > 3,
-     wreck ? `${wreck.air} chunks in the air and ${wreck.down.settled} settled, ` +
-             `${wreck.down.vol} of ${wreck.vol} units of stone kept, heap ${wreck.down.mound} deep`
            : '');
-
+  ok('the masonry that comes out of it is the masonry that lands, and the heap is ground',
+     !!wreck && wreck.air > 40 && wreck.down.air === 0 && wreck.down.fall === 0 && wreck.down.bodies >= 1 &&
+     wreck.down.settled > 40 && wreck.down.vol + wreck.down.lost >= wreck.down.made * .97 &&
+     wreck.down.mound > 3 && wreck.down.stand > 1 && wreck.down.heap > 0,
+     wreck ? `${wreck.air} stones in the air at once and ${wreck.down.bodies} pieces fell whole; ` +
+             `${wreck.down.settled} stones settled, ${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
+             `let go by the ring against ${wreck.down.made} thrown; heap ${wreck.down.mound} deep, ` +
+             `a man in the middle of it stands ${wreck.down.stand} over the floor, the heap drawn in ${wreck.down.heap} vertices`
+           : '');
 
   /* --- Bodies. Every collision in the game was one circle on two markers, sized at half
      a vehicle's LENGTH off its hit points -- so a Sherman carried a metre and a half of

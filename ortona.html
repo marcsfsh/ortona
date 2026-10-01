@@ -2158,7 +2158,7 @@ var G = {
          ger: { mp: 0, fu: 0 }, ger2: { mp: 0, fu: 0 }, ger3: { mp: 0, fu: 0 } },
   pop: { us: 0, us2: 0, us3: 0, ger: 0, ger2: 0, ger3: 0 },
   made: { us: {}, us2: {}, us3: {}, ger: {}, ger2: {}, ger3: {} },
-  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], smoke: [], covers: [], sectors: [], debris: [], hurt: [], rub: [], tileQ: {},
+  units: [], blds: [], shots: [], fx: [], wrecks: [], corpses: [], falls: [], smoke: [], covers: [], sectors: [], debris: [], hurt: [], fall: [], frStat: { made: 0, bodies: 0, lost: 0 }, rub: [], tileQ: {},
   sites: [], works: [], props: [], bunks: [], trees: [], roads: [], craters: [], puddles: [], ambientSmoke: [], roadDebris: [], hogs: [],
   secById: {}, hqLink: { us: [], ger: [] },
   sel: [], groups: {}, cam: { x: 0, y: 0, z: 1 }, mode: null, place: null, uid: 1
@@ -3764,7 +3764,9 @@ function buildMap(data) {
      shelled house is thrown away with it -- otherwise the editor rebuilds its scene and
      the last battle's rubble is still drawn over the top of it from a buffer pointing at
      props that no longer exist. */
-  G.hurt.length = 0; G.rub.length = 0; G.rubDirty = 1; MND = null;
+  frFree();
+  G.hurt.length = 0; G.fall = []; G.rub.length = 0; G.rubDirty = 1; MND = null; G.heapDirty = 1;
+  G.frStat = { made: 0, bodies: 0, lost: 0 };
   G.tileQ = {}; G.groundQ = {};
   G.blocks = []; G.craterFx = []; G.craters = []; G.cratersDug = 0; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.bunks = [];
@@ -3935,7 +3937,8 @@ function buildMap(data) {
         var bk2 = { x: e.x, y: e.y, w: bb2.w, h: bb2.h, solid: 1, kind: 'bunker',
                     face: e.a || 0, arc: 1, s: e.s || 0, z: 0, sd: bsd };
         G.props.push(bk2); G.blocks.push(bk2); G.bunks.push(bk2);
-        G.stacks.push({ x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd, style: e.style });
+        bk2.st = { x: e.x, y: e.y, r: 37, kind: 'bunker', s: e.s || 0, a: e.a || 0, sd: bsd, style: e.style };
+        G.stacks.push(bk2.st);
         /* The concrete is the heaviest cover on this map and it is BEHIND the thing, not
            in front of it. The ground in front of a bunker is the beaten zone, and a cover
            patch laid there would be the map telling a section that walking up to the slot
@@ -4071,6 +4074,17 @@ function makeTerrain() { terrOk = 0; buildMap(G.mapData || (G.mapData = defaultM
 var HG = 4, HW = Math.floor(WORLD.w / HG) + 2, HH = Math.floor(WORLD.h / HG) + 2;
 function hidx(i, j) { return j * HW + i; }
 function groundZ(x, y) {
+  var z = floorZ(x, y);
+  return MND && !HEAPOFF ? z + heapZ(x, y) : z;
+}
+/* The ground under the rubble: what the map laid, with a bridge's deck over it. A heap of
+   masonry is ground to a man climbing it, a tank grinding over it and a shell landing on
+   it, so `groundZ` stands everything on the heap; what was built before any of it came
+   down (a tile of props rebuilt mid-battle, the faces of a building being cut) and what
+   reads the slope of the country (the going grid) is laid on this instead. `HEAPOFF` says
+   the same to every `groundZ` in a builder that cannot be told one call at a time. */
+var HEAPOFF = 0;
+function floorZ(x, y) {
   /* a bridge's deck is the ground to anything standing on it (see the bridges) */
   if (G.deck) {
     var dk = G.deck[hidx(clamp(Math.round(x / HG), 0, HW - 1), clamp(Math.round(y / HG), 0, HH - 1))];
@@ -6057,8 +6071,8 @@ function buildTerrGrid() {
     var wx = gx * CELL + CELL / 2, wy = gy * CELL + CELL / 2;
     if (G.deck && onDeck(wx, wy)) continue;
     if (inland(wx, wy) < (LAND.river ? 6 : 24)) { terrg[cidx(gx, gy)] = 1; continue; }
-    var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
-    var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
+    var sgx = (floorZ(wx + 20, wy) - floorZ(wx - 20, wy)) / 40;
+    var sgy = (floorZ(wx, wy + 20) - floorZ(wx, wy - 20)) / 40;
     var sg = Math.hypot(sgx, sgy);
     if (sg > 1) terrg[cidx(gx, gy)] = 1;
     /* and what is merely hard going: a bank a section walks up slowly and a lorry would
@@ -7280,7 +7294,7 @@ function canGarrison(u, bk) {
             masonry: there are no windows to fight out of and no storey to stand on, and
             a section sent into one would be standing in the open believing it held the
             strongest cover on the map. */
-         (!bk.hurt || ruinStanding(bk) >= 34);
+         frHoldable(bk);
 }
 /* where the men stand: spread along the inside of the four walls, facing out */
 function garrisonSlots(bk, count) {
@@ -8150,7 +8164,11 @@ function slotClear(x, y) {
   for (var i = 0; i < G.props.length; i++) {
     var p = G.props[i];
     if (!p.solid || p.kind === 'sea') continue;
-    if (Math.abs(x - p.x) < p.w / 2 + 4 && Math.abs(y - p.y) < p.h / 2 + 4) return false;
+    if (Math.abs(x - p.x) < p.w / 2 + 4 && Math.abs(y - p.y) < p.h / 2 + 4) {
+      /* where a building has come down a man stands on its rubble */
+      if (p.fr) { var fc = frCol(p.fr, x, y); if (fc < 0 || !p.fr.up[fc]) continue; }
+      return false;
+    }
   }
   return !inMasonry(x, y);
 }
@@ -9723,20 +9741,10 @@ function fireAt(u, t, dt, opt) {
   }
 }
 /* ---- masonry, and what is left of it -------------------------------------------
-   A town house here is a set of BAYS and each bay is four walls built up in seven-unit
-   courses round a list of openings -- the windows, the door, the shell holes the map was
-   born with. `wallCourses` already cuts those holes out of the courses, which means the
-   openings are DATA rather than geometry, and that is the whole reason a building here
-   can be knocked down at all: a shell adds a hole to the list and the wall is rebuilt
-   round it. Nothing had to be modelled twice.
-
-   A bay's four walls run, in order, along +y, -y, +x and -x of the bay's own frame; the
-   builder places each of them with a yaw, so a hit has to be turned into the wall's own
-   `u` along its length and a normal distance out of its plane. The chord the shell cuts
-   through the plane is `sqrt(r^2 - nd^2)`, which is the hole's half-width, and that is
-   why a round that grazes a wall takes a bite out of it and one that hits it square
-   takes a hole the width of the burst. */
-var RUIN_T = 4.5, RUIN_CH = 7.0;                   /* the wall thickness and the course */
+   A town house here is built in BAYS and each bay is four walls in seven-unit courses
+   round a list of openings, which `wallCourses` cuts out of the courses. What a shell does
+   to any building is further down (`frBuild`): the faces the tile drew are cut into cells
+   and the cells carry each other. */
 /* A Norman house fronting a street that runs along y is one bay, because a bay is split
    along x and splitting that house along x would cut it front from back. */
 function ruinBays(p) { return p.style === 'norman' && p.front >= 2 ? 1 : Math.max(1, Math.round(p.w / 70)); }
@@ -9752,45 +9760,6 @@ function ntOptsOf(p, i, n) {
            hh: 33, pitch: p.pitch || .62, dormer: p.dormer };
 }
 function ntHeight(p) { return p.ht || (p.storeys || 2) * 33 + 6; }
-/* The bays, worked out once and kept on the prop. It is the same arithmetic sceneProps
-   does when it meshes one, and it is here rather than there because the mesher runs on a
-   tile rebuild and this has to survive one. */
-function ruinState(p) {
-  if (p.bay) return p.bay;
-  var n = ruinBays(p), bw = p.w / n, i, b = [];
-  for (i = 0; i < n; i++) {
-    var norm = p.style === 'norman';
-    b.push({ x: p.x - p.w / 2 + bw * (i + .5), y: p.y, w: bw - 2, d: p.h - 2,
-             h: norm ? ntHeight(p) : (p.tall || p.style === 'civic' ? 84 : 66) + ((i % 3) - 1) * 6,
-             nt: norm ? ntOptsOf(p, i, n) : null,
-             seed: (p.s * 3 + i * .41) % 1, dmg: ((p.damage * 9.7 + i * .317) % 1) > .45,
-             brk: [[], [], [], []],               /* the breaches cut in each wall */
-             gone: [0, 0, 0, 0],                  /* the share of each wall that is out */
-             down: 0, fell: 0 });                 /* storeys lost, and when the last went */
-  }
-  p.bay = b;
-  return b;
-}
-/* Where a bay's four walls stand in its own frame: how far off the plane a point is,
-   which way `u` runs along the wall, and how long it is. `nd` is measured ALONG THE
-   OUTWARD NORMAL, so it is positive in the street and negative in the room whichever of
-   the four it is -- which nothing needed while every reader took its absolute value, and
-   which is the whole question the moment one of them asks which side the blast is on. */
-function ruinFace(b, fi, lx, ly) {
-  var o = b.d / 2 - RUIN_T / 2, q = b.w / 2 - RUIN_T / 2;
-  if (fi === 0) return { nd: ly - o, u: lx, len: b.w, nx: 0, ny: 1 };
-  if (fi === 1) return { nd: -(ly + o), u: -lx, len: b.w, nx: 0, ny: -1 };
-  if (fi === 2) return { nd: lx - q, u: ly, len: b.d, nx: 1, ny: 0 };
-  return { nd: -(lx + q), u: -ly, len: b.d, nx: -1, ny: 0 };
-}
-/* and the other way about, for putting the masonry that came out back in the world */
-function ruinWorld(b, fi, u, off) {
-  var o = b.d / 2 - RUIN_T / 2, q = b.w / 2 - RUIN_T / 2;
-  if (fi === 0) return [b.x + u, b.y + o + off];
-  if (fi === 1) return [b.x - u, b.y - o - off];
-  if (fi === 2) return [b.x + q + off, b.y + u];
-  return [b.x - q - off, b.y - u];
-}
 /* ---- the masonry in the air ----
    What a breach removes is not a puff of particles: it is the courses that were standing
    there, and they come out at their own size, in their own colour, from their own place
@@ -9813,45 +9782,13 @@ function debrisCap() { return MOB ? 90 : DEB_CAP; }
    measures it and there has to be something to measure it against. */
 var RUIN_KEEP = .78;
 /* one piece of wall, thrown */
-function spawnChunk(x, y, z, l, w, h, col, vx, vy, vz) {
+function spawnChunk(x, y, z, l, w, h, col, vx, vy, vz, e) {
   if (G.debris.length >= debrisCap()) return;
-  G.debris.push({ x: x, y: y, z: z, l: l, w: w, h: h, c: col,
+  G.debris.push({ x: x, y: y, z: z, l: l, w: w, h: h, c: col, e: e || 0,
                   vx: vx, vy: vy, vz: vz,
                   rx: rnd(0, TAU), ry: rnd(0, TAU), rz: rnd(0, TAU),
                   wx: rnd(-7, 7), wy: rnd(-7, 7), wz: rnd(-5, 5),
                   rest: 0, t: 0 });
-}
-/* A breach, turned into the courses it took out. The hole spans whole courses, so the
-   chunks are the courses: one per course, cut to the width of the hole and split when
-   that is wider than it is tall, because a slab eight times longer than it is deep reads
-   as a plank rather than as masonry. */
-function breachChunks(b, fi, hole, away, blast) {
-  var z, z0 = Math.max(0, hole.z0), z1 = Math.min(b.h, hole.z1), nrm = ruinFace(b, fi, 0, 0);
-  for (z = Math.floor(z0 / RUIN_CH) * RUIN_CH; z < z1; z += RUIN_CH) {
-    var cz = Math.max(z, z0), ct = Math.min(z + RUIN_CH, z1);
-    if (ct - cz < 1.4) continue;
-    var full = hole.hw * 2, np = Math.max(1, Math.min(4, Math.round(full / 11)));
-    for (var k = 0; k < np; k++) {
-      var cw = full / np, cu = hole.u - hole.hw + cw * (k + .5);
-      var wp = ruinWorld(b, fi, cu, 0);
-      /* A shell THROWS masonry and a collapse DROPS it, and that is not a detail: given
-         a blast's speed, the perimeter of a bay ended up scattered a hundred and twenty
-         units into the street, four fifths of it too far from the house to be its
-         rubble at all. Out of the wall on the side the round came from, up a little, and
-         faster the higher it was standing; or, coming down under its own weight, a
-         shrug outward and a fall. */
-      var sp = blast ? 26 + Math.random() * 46 + cz * .35 : 7 + Math.random() * 13;
-      var up = blast ? rnd(14, 52) + cz * .25 : rnd(-6, 6);
-      var sd2 = blast ? 16 : 7;
-      /* each dimension jittered about one, so no block is the same as the last and the
-         three of them together still average the fraction the wall is meant to keep */
-      spawnChunk(wp[0], wp[1], groundZ(wp[0], wp[1]) + cz + (ct - cz) / 2,
-                 cw * RUIN_KEEP * rnd(.82, 1.18), RUIN_T * rnd(.85, 1.15), (ct - cz) * rnd(.84, 1.16),
-                 ruinStone(b),
-                 nrm.nx * sp * away + rnd(-sd2, sd2), nrm.ny * sp * away + rnd(-sd2, sd2),
-                 up);
-    }
-  }
 }
 /* ---- finding the masonry a shell is standing in ----
    A burst is a small circle and the town is two thousand props, so the walk has to be
@@ -9865,7 +9802,7 @@ function buildRuinQ() {
   ruinq = [];
   for (var i = 0; i < G.props.length; i++) {
     var p = G.props[i];
-    if (p.kind !== 'ruin') continue;
+    if (!frBreakable(p)) continue;
     var i0 = Math.max(0, ((p.x - p.w / 2) / RQ) | 0), i1 = Math.min(ruinqW - 1, ((p.x + p.w / 2) / RQ) | 0);
     var j0 = Math.max(0, ((p.y - p.h / 2) / RQ) | 0), j1 = Math.min(ruinqH - 1, ((p.y + p.h / 2) / RQ) | 0);
     for (var j = j0; j <= j1; j++) for (var ii = i0; ii <= i1; ii++) {
@@ -9892,64 +9829,20 @@ function ruinsNear(x, y, r, fn) {
   RQSTAMP++;
 }
 var RQSTAMP = 1;
-/* ---- a shell against a wall ----
-   Every face within the burst is asked, because a round into the corner of a house takes
-   a bite out of two walls and that is what a corner looks like afterwards. What is
-   recorded is the hole, and what is counted is the share of the wall that is now out of
-   it: a wall is not a pool of hit points, it is an area, and the area is what decides
-   whether it is still carrying anything. */
-function ruinHit(p, sx, sy, sz, r, br, owner) {
-  if (p.kind !== 'ruin' || p.style === 'church') return 0;
-  var B = ruinState(p), fi, i, any = 0;
-  for (i = 0; i < B.length; i++) {
-    var b = B[i];
-    if (b.down >= 2) continue;
-    if (Math.abs(sx - b.x) > b.w / 2 + r + 10 || Math.abs(sy - b.y) > b.d / 2 + r + 10) continue;
-    var lx = sx - b.x, ly = sy - b.y;
-    /* A round bursting in the street outside one wall does not take a bite out of the
-       wall on the far side of the room, and at a battery's reach it was taking one out
-       of all four: the signed distance to a face says how far off the blast is and says
-       nothing about whether there is a building in between. A burst INSIDE the bay is
-       the other case and blows all four out, which is what a round through a window
-       does. */
-    var inside = Math.abs(lx) < b.w / 2 && Math.abs(ly) < b.d / 2;
-    for (fi = 0; fi < 4; fi++) {
-      var F = ruinFace(b, fi, lx, ly);
-      if (Math.abs(F.nd) >= r || Math.abs(F.u) > F.len / 2 + r) continue;
-      if (!inside && F.nd <= 0) continue;
-      /* How far the blast REACHES masonry and how big a hole it makes when it gets
-         there are two numbers, and written as one they fought each other. A hole scaled
-         off the weight of the shell is a metre across for a tank round, so a round that
-         burst a metre and a half from the wall -- which is where a man taking cover at a
-         house is standing, and therefore where most rounds in a town actually land --
-         took nothing out of it at all. The reach is the weight of the shell too, but it
-         is several times the hole: at the edge of it the wall is scarred and at the
-         middle of it the hole is the full breach.
-           And the distance is to the WALL and not to its plane. A terrace is meshed in
-         bays and a heavy round reaches past the end of the one it burst against, so with
-         only the perpendicular in it a shell on one bay cut a full-width breach in the
-         next bay's frontage sixty units away, at exactly the size it cut in the bay it
-         hit. */
-      var du = Math.abs(F.u) - F.len / 2;
-      var dd = du > 0 ? Math.sqrt(F.nd * F.nd + du * du) : Math.abs(F.nd);
-      var fall = 1 - (dd / r) * (dd / r);
-      var hw = br * Math.sqrt(fall > 0 ? fall : 0);
-      if (hw < 2) continue;
-      var z0 = clamp(sz - hw * .85, 0, b.h), z1 = clamp(sz + hw * .85, 0, b.h);
-      if (z1 - z0 < 2) continue;
-      var u = clamp(F.u, -F.len / 2, F.len / 2);
-      b.brk[fi].push({ u: u, hw: hw, z0: z0, z1: z1, rag: 3.2 });
-      b.dirty = 1;
-      b.gone[fi] = clamp(b.gone[fi] + (2 * hw * (z1 - z0)) / (F.len * b.h), 0, 1);
-      /* and the stone goes the way the blast went, which is through the wall and away
-         from the round rather than back at it */
-      breachChunks(b, fi, { u: u, hw: hw, z0: z0, z1: z1 }, F.nd > 0 ? -1 : 1, 1);
-      any = 1;
-    }
-    if (any) ruinCollapse(p, b, owner);
+/* whether a point is inside a building nothing has touched yet. A point is in one bucket and
+   a building is filed in every bucket it covers, so the one bucket answers it, and with no
+   stamp: this is asked from inside a round's own walk over the buildings it reaches. */
+function uncutAt(x, y) {
+  if (!ruinq) buildRuinQ();
+  var i = (x / RQ) | 0, j = (y / RQ) | 0;
+  if (i < 0 || j < 0 || i >= ruinqW || j >= ruinqH) return false;
+  var list = ruinq[j * ruinqW + i];
+  if (!list) return false;
+  for (var k = 0; k < list.length; k++) {
+    var p = list[k];
+    if (!p.fr && Math.abs(x - p.x) < p.w / 2 - 2 && Math.abs(y - p.y) < p.h / 2 - 2) return true;
   }
-  if (any) ruinTouch(p);
-  return any;
+  return false;
 }
 /* ---- a wall is an object, and objects break too ----
    A garden wall does not need a structure. It is a LINE, and what a shell does to one is
@@ -10033,122 +9926,869 @@ function wallHit(w, sx, sy, sz, r, br, owner) {
   G.gridDirty = 1;
   return 1;
 }
-/* what a broken wall is made of, and it is two things. The face was rendered and the
-   core behind it is rubble stone, so a fresh breach is a pale scar with dark stone in it
-   and the heap at the foot is mottled rather than one colour. Both come off the bay's own
-   seed, which is what the mesher built the wall out of. */
-function ruinStone(b) {
-  /* a Norman house's is its own granite and schist, with the render over it if it had any */
-  if (b.nt) return b.nt.kind === 'render' && Math.random() < .45 ? ntWallC(b.seed, 'render') :
-                   Math.random() < .6 ? ntWallC(b.seed, 'stone') : NTOWN.stone[(Math.random() * NTOWN.stone.length) | 0];
-  if (Math.random() < .45) return PLASTER[Math.floor(((b.seed * 7.3) % 1) * PLASTER.length)];
-  return STONE[Math.floor(clamp(b.seed, 0, .999) * STONE.length)];
+/* ---- a building is a structure, and a structure is cells ----
+   Every building on a map can be brought down, and how it comes down is read off the
+   building itself rather than off a set of bays laid out for one kind of house. The faces
+   the tile drew are cut into cells (`frBuild`), a metre along the ground and a course of
+   masonry high, and the joints between them wander a little from one course to the next,
+   so a breach comes out stepped the way coursed stone breaks. Each cell is a range of the
+   building's own vertex buffer: taking one out is zeroing that range, and nothing is
+   meshed again.
+
+   What holds a cell up is asked of the cells (`frSolve`). A cell stands on the cell under
+   it; it leans on one diagonally below where there was never anything under it, which is
+   a roof or a gable; and it is carried sideways by its neighbour across a span a wall of
+   that stuff can bridge, two cells of masonry and three or four of a frame or of concrete.
+   Every standing cell has a path of those down to the ground, and the weight of everything
+   above it goes down that path, so a cell knows what it is carrying. It will carry a
+   little over twice what it carried when the building was whole, less what the shelling
+   has cracked out of it, and past that it gives (`frStep`). What nothing carries falls
+   (`frFall`): as one piece if it is one piece, hinging on the last thing it was joined to
+   and then dropping, and it breaks up where it lands (`frShatter`). */
+var FR_C = 14, FR_Z = 9, FR_J = 3.6;                /* a cell along the ground, a course, and how far a joint wanders */
+var FR_ATT = .32;                                    /* what one cell of wall lets through of a blast */
+var FR_SAFE = 3.2;                                   /* what a cell will carry against what it carried standing */
+var FR_T = 4.5;                                      /* the thickness the stone in a cell is taken to have */
+function frHash(a, b, s) { var h = Math.sin(a * 127.1 + b * 311.7 + s * 74.7) * 43758.5453; return h - Math.floor(h); }
+/* what a building is made of: how much of a shell it takes to open it (`str`, which
+   divides the breach a round cuts), and how far a piece of it will stand out over nothing
+   (`span`, in cells). Rubble stone two feet thick, a cathedral's dressed stone, a rampart
+   tower backed by the rock, a casemate's reinforced concrete, and a shed's timber and a
+   gasholder's plate. */
+function frSpec(p) {
+  if (p.kind === 'bunker') return { str: 4.2, span: 4, hard: 1 };
+  if (p.kind === 'rtower') return { str: 2.6, span: 2 };
+  if (p.style === 'church' || p.style === 'notredame') return { str: 1.7, span: 2 };
+  if (p.kind === 'feature') return p.look === 'watertower' ? { str: 1.3, span: 3 } :
+                                   p.look === 'gasholder' ? { str: .8, span: 4 } : { str: .8, span: 3 };
+  if (p.style === 'goods' || p.style === 'signalbox' || p.style === 'barn') return { str: .8, span: 3 };
+  if (p.style === 'station' || p.style === 'manor') return { str: 1.2, span: 3 };
+  if (p.kind === 'farm') return { str: .9, span: 2 };
+  return { str: p.style === 'norman' || p.kind === 'nhouse' ? 1.1 : 1, span: 2 };
 }
-/* ---- what a wall was carrying ----
-   A storey stands on the walls under it, so the test is not how much punishment a
-   building has taken in total but whether any one wall has stopped being a wall. One
-   face past three quarters is a wall that has fallen out; two faces past a half is a box
-   that is no longer a box. Either takes the storey above it, and what comes down is the
-   masonry that was up there: the whole of the bay's perimeter above the new height,
-   thrown outward and turning.
-     Note that this is checked per bay. A terrace does not come down all at once, which
-   is the entire reason a town house is meshed in bays in the first place. */
-function ruinCollapse(p, b, owner) {
-  var worst = Math.max(b.gone[0], b.gone[1], b.gone[2], b.gone[3]);
-  var spread = 0, fi;
-  for (fi = 0; fi < 4; fi++) if (b.gone[fi] > .45) spread++;
-  if (!(worst > .75 || spread >= 2)) return;
-  if (b.down >= 2) return;
-  var was = ruinHeight(b);
-  b.down++;
-  var now = ruinHeight(b);
-  if (now >= was - 2) return;
-  b.fell = G.t;
-  b.dirty = 1;
-  ruinTouch(p);                        /* whatever brought it down, it is out of the tile now */
-  /* the perimeter above the new height, coming off all four faces at once */
-  for (fi = 0; fi < 4; fi++) {
-    var F = ruinFace(b, fi, 0, 0), step = 11, uu;
-    for (uu = -F.len / 2 + step / 2; uu < F.len / 2; uu += step)
-      breachChunks(b, fi, { u: uu, hw: step / 2, z0: now, z1: was }, 1, 0);
-    /* and the wall it was standing on is written off along with it */
-    b.gone[fi] = clamp(b.gone[fi] * .6, 0, 1);
-    b.brk[fi] = b.brk[fi].filter(function (hl) { return hl.z0 < now; });
+function frBreakable(p) {
+  return !!p.solid && (p.kind === 'ruin' || p.kind === 'farm' || p.kind === 'rtower' || p.kind === 'nhouse' ||
+                       p.kind === 'bunker' || (p.kind === 'feature' && !!FEATURE[p.look]));
+}
+/* the faces of one building in the world, exactly as the tile drew them */
+function frFaces(p) {
+  var out = [], keep = _s;
+  propParts(p, function (faces, x, y, yaw, sc) {
+    var z = floorZ(x, y), placed = place(faces, yaw || 0, 0, 0, 0), k = sc && sc !== 1 ? sc : 1;
+    for (var i = 0; i < placed.length; i++) {
+      var f = placed[i], v = f.v, nv = new Array(v.length);
+      for (var j = 0; j < v.length; j++) nv[j] = [v[j][0] * k + x, v[j][1] * k + y, v[j][2] * k + z];
+      out.push({ v: nv, c: f.c, n: f.n, m: f.m, alpha: f.alpha });
+    }
+  });
+  _s = keep;
+  return out;
+}
+function frArea(v) {
+  var ax = 0, ay = 0, az = 0, a = v[0], i;
+  for (i = 1; i < v.length - 1; i++) {
+    var b = v[i], c = v[i + 1];
+    var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], wx = c[0] - a[0], wy = c[1] - a[1], wz = c[2] - a[2];
+    ax += uy * wz - uz * wy; ay += uz * wx - ux * wz; az += ux * wy - uy * wx;
   }
-  /* pale, not sooty: what comes off a storey falling in is plaster and stone dust */
-  var cr = Math.max(40, Math.min(b.w, b.d) * .5);
-  burstFx(b.x, b.y, cr, 1, 12);
-  sfx('boom', b.x, b.y, burstVoice(cr));
-  if (onScreen(b.x, b.y)) addShake(7);
-  /* What was a wall is now a heap of what the wall was made of. The four patches ringing
-     a house are tier 3 lying along its four faces, and a face that has come down cannot
-     go on sheltering anybody from fire across it: the patch is written off, which drops
-     it a tier the same way a shelled sandbag wall drops one, and its axis goes with it
-     because a mound of masonry is the same from every bearing. That is the whole of the
-     cover change -- nothing new is added, because a patch laid on ground that is now
-     rubble is a patch the index and `aiFirePost` would read as somewhere to stand. */
-  if (!ruinUp(b)) {
-    var near = coversNear(b.x, b.y, Math.max(b.w, b.d) * .6);
-    for (var ci = 0; ci < near.length; ci++) {
-      var cv = near[ci];
-      if (cv.kind !== 'wall') continue;
-      if (Math.abs(cv.x - b.x) > b.w / 2 + 26 || Math.abs(cv.y - b.y) > b.d / 2 + 26) continue;
-      cv.hp = 0; cv.axis = null; cv.kind = 'lowwall';
+  return Math.sqrt(ax * ax + ay * ay + az * az) * .5;
+}
+/* a face cut by a plane square to one axis: what lies on either side of it, with the
+   normals carried across the cut. Either half is null when nothing of the face is there. */
+function frSplit(f, ax, at) {
+  var v = f.v, nn = f.n, n = v.length, L = [], R = [], Ln = nn ? [] : null, Rn = nn ? [] : null, i;
+  for (i = 0; i < n; i++) {
+    var a = v[i], i2 = i + 1 < n ? i + 1 : 0, b = v[i2], da = a[ax] - at, db = b[ax] - at;
+    if (da <= 0) { L.push(a); if (nn) Ln.push(nn[i]); }
+    if (da >= 0) { R.push(a); if (nn) Rn.push(nn[i]); }
+    if ((da < 0 && db > 0) || (da > 0 && db < 0)) {
+      var t = da / (da - db), q = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+      q[ax] = at;
+      L.push(q); R.push(q);
+      if (nn) {
+        var na = nn[i], nb = nn[i2], mx = na[0] + (nb[0] - na[0]) * t, my = na[1] + (nb[1] - na[1]) * t, mz = na[2] + (nb[2] - na[2]) * t;
+        var ml = Math.sqrt(mx * mx + my * my + mz * mz) || 1, m = [mx / ml, my / ml, mz / ml];
+        Ln.push(m); Rn.push(m);
+      }
     }
   }
-  /* and whoever was holding it. A storey coming down on a section is the heaviest thing
-     that happens to men in this game, and the ones still inside are put out only when
-     there is no house left to hold: a section in a three-bay terrace with one bay down
-     is still in the building. */
-  for (var i = 0; i < G.units.length; i++) {
-    var u = G.units[i];
-    if (u.dead || !u.gar || u.gar !== p) continue;
-    damage(u, 140 + Math.random() * 90, owner || null);
-    if (!u.dead && ruinStanding(p) < 34) leaveBuilding(u);
+  return [L.length > 2 ? { v: L, c: f.c, n: Ln, m: f.m, alpha: f.alpha } : null,
+          R.length > 2 ? { v: R, c: f.c, n: Rn, m: f.m, alpha: f.alpha } : null];
+}
+/* A face is lit and textured off its first three corners, and a cut can leave those three
+   in a line, which has no normal. The corners are turned round to start where they make
+   the widest triangle, which keeps the winding and so the side the face looks out of. */
+function frFirm(f) {
+  var v = f.v, n = v.length, best = -1, bi = 0, i;
+  for (i = 0; i < n; i++) {
+    var a = v[i], b = v[(i + 1) % n], c = v[(i + 2) % n];
+    var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], wx = c[0] - a[0], wy = c[1] - a[1], wz = c[2] - a[2];
+    var cx = uy * wz - uz * wy, cy = uz * wx - ux * wz, cz = ux * wy - uy * wx, m = cx * cx + cy * cy + cz * cz;
+    if (i === 0 && m > 1e-4) return;
+    if (m > best) { best = m; bi = i; }
+  }
+  f.v = v.slice(bi).concat(v.slice(0, bi));
+  if (f.n) f.n = f.n.slice(bi).concat(f.n.slice(0, bi));
+}
+/* which of `n` slabs the planes P[o .. o + n] put a coordinate in */
+function frIx(P, o, n, v) {
+  var i = Math.floor((v - P[o]) / FR_C);
+  if (i < 0) i = 0; if (i > n - 1) i = n - 1;
+  while (i > 0 && v < P[o + i]) i--;
+  while (i < n - 1 && v >= P[o + i + 1]) i++;
+  return i;
+}
+function frCellC(R, c) {
+  var NC = R.nx * R.ny, k = (c / NC) | 0, r = c - k * NC, j = (r / R.nx) | 0, i = r - j * R.nx;
+  return [R.x0 + (i + .5) * FR_C, R.y0 + (j + .5) * FR_C, R.z0 + (k + .5) * FR_Z];
+}
+function frCol(R, x, y) {
+  var i = Math.floor((x - R.x0) / FR_C), j = Math.floor((y - R.y0) / FR_C);
+  return i < 0 || j < 0 || i >= R.nx || j >= R.ny ? -1 : j * R.nx + i;
+}
+function frCellAt(R, x, y, z) {
+  var i = Math.floor((x - R.x0) / FR_C), j = Math.floor((y - R.y0) / FR_C), k = Math.floor((z - R.z0) / FR_Z);
+  return i < 0 || j < 0 || k < 0 || i >= R.nx || j >= R.ny || k >= R.nz ? -1 : (k * R.ny + j) * R.nx + i;
+}
+function frBuffer(A) {
+  var b = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, b);
+  gl.bufferData(gl.ARRAY_BUFFER, A, gl.DYNAMIC_DRAW);
+  return { vbo: b, n: A.length / 12 };
+}
+/* ---- the cut ---- */
+function frBuild(p) {
+  var F0 = frFaces(p), F = [], i, j, k, c, q, f;
+  /* A face of more than four corners is fanned from its first corner when it is drawn,
+     whatever shape it is, so it is cut as those triangles: the pieces then draw exactly
+     what the whole drew, a concave outline included. */
+  for (i = 0; i < F0.length; i++) {
+    f = F0[i];
+    if (f.v.length < 3) continue;
+    if (f.v.length <= 4) { F.push(f); continue; }
+    for (j = 1; j < f.v.length - 1; j++)
+      F.push({ v: [f.v[0], f.v[j], f.v[j + 1]], c: f.c, n: f.n ? [f.n[0], f.n[j], f.n[j + 1]] : null, m: f.m, alpha: f.alpha });
+  }
+  if (!F.length) return null;
+  var x0 = 1e9, y0 = 1e9, z0 = 1e9, x1 = -1e9, y1 = -1e9, z1 = -1e9;
+  for (i = 0; i < F.length; i++) for (j = 0; j < F[i].v.length; j++) {
+    var w = F[i].v[j];
+    if (w[0] < x0) x0 = w[0]; if (w[0] > x1) x1 = w[0];
+    if (w[1] < y0) y0 = w[1]; if (w[1] > y1) y1 = w[1];
+    if (w[2] < z0) z0 = w[2]; if (w[2] > z1) z1 = w[2];
+  }
+  x0 -= .5; y0 -= .5; z0 -= .5;
+  var nx = Math.max(1, Math.ceil((x1 + .5 - x0) / FR_C)), ny = Math.max(1, Math.ceil((y1 + .5 - y0) / FR_C));
+  var nz = Math.max(1, Math.ceil((z1 + .5 - z0) / FR_Z)), NC = nx * ny, N = NC * nz;
+  /* the joints: straight courses, and the upright joints moved a little per course */
+  var XP = new Float32Array((nx + 1) * nz), YP = new Float32Array((ny + 1) * nx * nz), sd = ((p.x * 7.13 + p.y * 3.71) % 97) / 97;
+  for (k = 0; k < nz; k++) for (i = 0; i <= nx; i++)
+    XP[k * (nx + 1) + i] = x0 + i * FR_C + (i > 0 && i < nx ? (frHash(i, k, sd) - .5) * 2 * FR_J : 0);
+  for (k = 0; k < nz; k++) for (i = 0; i < nx; i++) for (j = 0; j <= ny; j++)
+    YP[(k * nx + i) * (ny + 1) + j] = y0 + j * FR_C + (j > 0 && j < ny ? (frHash(j + 91, k * 31 + i, sd) - .5) * 2 * FR_J : 0);
+  var cells = new Array(N), mass = new Float32Array(N), best = new Float32Array(N), col = new Array(N), flat = new Float32Array(N);
+  function add(cc, g) {
+    var a = frArea(g.v);
+    if (a < .02) return;
+    (cells[cc] || (cells[cc] = [])).push(g);
+    if (!g.alpha) {
+      var fn = faceNormal(g.v[0], g.v[1], g.v[2]);
+      mass[cc] += a; flat[cc] += a * Math.abs(fn.z);
+      if (a > best[cc]) { best[cc] = a; col[cc] = g.c; }
+    }
+  }
+  function span(g, ax) {
+    var lo = 1e9, hi = -1e9, t;
+    for (t = 0; t < g.v.length; t++) { var e = g.v[t][ax]; if (e < lo) lo = e; if (e > hi) hi = e; }
+    return [lo + 1e-3, hi - 1e-3];
+  }
+  /* A piece much smaller than a cell is not cut but given whole to the cell its middle is
+     in: a stone of a course, a slate, a sill or a shutter breaks out of a wall whole, and
+     cutting every one of them at every joint was most of the vertices a cut building cost. */
+  function cutY(g, kk, ii) {
+    var o = (kk * nx + ii) * (ny + 1), s = span(g, 1), j0 = frIx(YP, o, ny, s[0]), j1 = frIx(YP, o, ny, s[1]);
+    if (j1 > j0 && s[1] - s[0] < FR_C * .55) j0 = j1 = frIx(YP, o, ny, (s[0] + s[1]) / 2);
+    if (j1 > j0) { var sp = frSplit(g, 1, YP[o + j0 + 1]); if (sp[0]) cutY(sp[0], kk, ii); if (sp[1]) cutY(sp[1], kk, ii); return; }
+    add((kk * ny + Math.min(j0, j1)) * nx + ii, g);
+  }
+  function cutX(g, kk) {
+    var o = kk * (nx + 1), s = span(g, 0), i0 = frIx(XP, o, nx, s[0]), i1 = frIx(XP, o, nx, s[1]);
+    if (i1 > i0 && s[1] - s[0] < FR_C * .55) i0 = i1 = frIx(XP, o, nx, (s[0] + s[1]) / 2);
+    if (i1 > i0) { var sp = frSplit(g, 0, XP[o + i0 + 1]); if (sp[0]) cutX(sp[0], kk); if (sp[1]) cutX(sp[1], kk); return; }
+    cutY(g, kk, Math.min(i0, i1));
+  }
+  function cutZ(g) {
+    var s = span(g, 2), k0 = clamp(Math.floor((s[0] - z0) / FR_Z), 0, nz - 1), k1 = clamp(Math.floor((s[1] - z0) / FR_Z), 0, nz - 1);
+    if (k1 > k0 && s[1] - s[0] < FR_Z * .55) k0 = k1 = clamp(Math.floor(((s[0] + s[1]) / 2 - z0) / FR_Z), 0, nz - 1);
+    if (k1 > k0) { var sp = frSplit(g, 2, z0 + (k0 + 1) * FR_Z); if (sp[0]) cutZ(sp[0]); if (sp[1]) cutZ(sp[1]); return; }
+    cutX(g, Math.min(k0, k1));
+  }
+  for (i = 0; i < F.length; i++) cutZ(F[i]);
+  /* packed a cell at a time, so that a cell is a range */
+  var A = [], B = [], s0 = new Int32Array(N), s1 = new Int32Array(N), a0 = new Int32Array(N), a1 = new Int32Array(N);
+  var alive = new Uint8Array(N), op = [], al = [];
+  for (c = 0; c < N; c++) {
+    s0[c] = A.length / 12; a0[c] = B.length / 12;
+    var L = cells[c];
+    if (!L) continue;
+    op.length = 0; al.length = 0;
+    for (q = 0; q < L.length; q++) { frFirm(L[q]); (L[q].alpha ? al : op).push(L[q]); }
+    if (op.length) facesToArray(op, A);
+    if (al.length) facesToArray(al, B);
+    s1[c] = A.length / 12 - s0[c]; a1[c] = B.length / 12 - a0[c];
+    alive[c] = 1;
+    flat[c] = mass[c] > 0 ? flat[c] / mass[c] : 0;
+    if (mass[c] < 1) mass[c] = 1;
+  }
+  var spec = frSpec(p);
+  var R = { nx: nx, ny: ny, nz: nz, x0: x0, y0: y0, z0: z0, A: new Float32Array(A), B: B.length ? new Float32Array(B) : null,
+            s0: s0, s1: s1, a0: a0, a1: a1, alive: alive, orig: new Uint8Array(alive), mass: mass, dmg: new Float32Array(N),
+            col: col, flat: flat, tol: new Uint8Array(N), glue: new Uint8Array(N), cap: new Float32Array(N), nglue: 0,
+            kG: new Int16Array(NC), gz: new Float32Array(NC), top: new Float32Array(NC), stand: new Uint8Array(NC),
+            wall: new Uint8Array(NC), up: new Uint8Array(NC), foot: new Uint8Array(NC),
+            spec: spec, m0: 0, mAlive: 0, tall: 0, thr: 34, nWall: 0, wallUp: 0, dirty: 0, t: 0, lo: 1e9, hi: -1, loB: 1e9, hiB: -1, buf: null, bufB: null };
+  /* the ground under each column, and which columns are the building's own footprint */
+  for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
+    var cx = x0 + (i + .5) * FR_C, cy = y0 + (j + .5) * FR_C, gz = floorZ(cx, cy), cl = j * nx + i;
+    R.gz[cl] = gz; R.kG[cl] = Math.floor((gz + 1 - z0) / FR_Z);
+    R.foot[cl] = Math.abs(cx - p.x) < p.w / 2 && Math.abs(cy - p.y) < p.h / 2 ? 1 : 0;
+  }
+  for (c = 0; c < N; c++) if (alive[c]) R.m0 += mass[c];
+  R.mAlive = R.m0;
+  /* What it stands on whole. A piece nothing reaches from the ground by the four ways a
+     cell is carried (a lamp on a bracket, the cross on a gable) is glued to whatever it
+     touches; one that touches nothing is held where it is. Then each cell may stand out
+     as far as the stuff it is made of allows, or as far as it already did. */
+  R.tol.fill(254);
+  frSolve(R);
+  for (c = 0; c < N; c++) if (alive[c] && R._d[c] === 255) { R.glue[c] = 1; R.nglue++; }
+  if (R.nglue) {
+    frSolve(R);
+    for (c = 0; c < N; c++) if (alive[c] && R._d[c] === 255) R.glue[c] = 2;
+    frSolve(R);
+  }
+  for (c = 0; c < N; c++) if (alive[c]) R.tol[c] = Math.max(spec.span, Math.min(254, R._d[c]));
+  frSolve(R);
+  for (c = 0; c < N; c++) R.cap[c] = R._l[c] * FR_SAFE + mass[c] * 2;
+  frTops(R);
+  var h0 = 0;
+  for (c = 0; c < NC; c++) if (R.foot[c]) h0 = Math.max(h0, R.top[c] - R.gz[c]);
+  /* a column counts as standing above a man's eye, or above two thirds of the building
+     where the building was never that tall (a wagon, a signal box, a memorial) */
+  R.thr = Math.min(34, h0 * .66);
+  for (c = 0; c < NC; c++) { R.wall[c] = R.top[c] - R.gz[c] >= R.thr ? 1 : 0; if (R.wall[c] && R.foot[c]) R.nWall++; }
+  if (GLOK) { R.buf = frBuffer(R.A); if (R.B) R.bufB = frBuffer(R.B); }
+  p.fr = R;
+  frAfter(p, 1);
+  return R;
+}
+/* a building is cut the first time a round would take something out of it */
+function frMake(p) {
+  if (p.fr) return true;
+  if (p.frNo) return false;
+  if (!frBuild(p)) { p.frNo = 1; return false; }
+  ruinTouch(p);
+  return true;
+}
+/* ---- what holds it up ----
+   A breadth-first walk out of the ground, cheapest first, where going up costs nothing,
+   leaning on a slope costs nothing, and every cell of span or of corbel costs one. A cell
+   is carried while its cost is within its tolerance; the cell it was reached from is the
+   one it bears on, and that is the path its weight goes down. */
+function frSolve(R) {
+  var nx = R.nx, ny = R.ny, nz = R.nz, NC = nx * ny, N = NC * nz, c, k, j, i, d, li, no = 0;
+  if (!R._d) { R._d = new Uint8Array(N); R._p = new Int32Array(N); R._dn = new Uint8Array(N); R._l = new Float32Array(N); R._o = new Int32Array(N); }
+  var dist = R._d, par = R._p, done = R._dn, al = R.alive, tol = R.tol, glue = R.glue, orig = R.orig, bk = [[]], from = 0, at = 0;
+  dist.fill(255); par.fill(-1); done.fill(0);
+  for (c = 0; c < N; c++) {
+    if (!al[c]) continue;
+    k = (c / NC) | 0;
+    if (k <= R.kG[c - k * NC] || glue[c] === 2) { dist[c] = 0; bk[0].push(c); }
+  }
+  function relax(n, nd) {
+    if (!al[n] || done[n] || nd > tol[n] || nd >= dist[n]) return;
+    dist[n] = nd; par[n] = from;
+    (bk[nd] || (bk[nd] = [])).push(n);
+  }
+  for (d = 0; d < bk.length; d++) {
+    var L = bk[d];
+    if (!L) continue;
+    for (li = 0; li < L.length; li++) {
+      c = L[li];
+      if (done[c] || dist[c] !== d) continue;
+      done[c] = 1; R._o[no++] = c; from = c;
+      k = (c / NC) | 0; var r = c - k * NC; j = (r / nx) | 0; i = r - j * nx;
+      if (k + 1 < nz) {
+        at = c + NC;
+        relax(at, d);
+        /* diagonally up: free where there was never anything under it, which is a slope,
+           and a step of span where there was, which is a corbel over a hole */
+        if (i > 0) relax(at - 1, d + orig[c - 1]);
+        if (i + 1 < nx) relax(at + 1, d + orig[c + 1]);
+        if (j > 0) relax(at - nx, d + orig[c - nx]);
+        if (j + 1 < ny) relax(at + nx, d + orig[c + nx]);
+      }
+      if (i > 0) relax(c - 1, d + 1);
+      if (i + 1 < nx) relax(c + 1, d + 1);
+      if (j > 0) relax(c - nx, d + 1);
+      if (j + 1 < ny) relax(c + nx, d + 1);
+      if (R.nglue) {
+        /* a glued piece hangs off whatever it touches, from any side */
+        for (var dk = -1; dk <= 1; dk++) for (var dj = -1; dj <= 1; dj++) for (var di = -1; di <= 1; di++) {
+          var kk = k + dk, jj = j + dj, ii = i + di;
+          if (kk < 0 || jj < 0 || ii < 0 || kk >= nz || jj >= ny || ii >= nx) continue;
+          var g = (kk * ny + jj) * nx + ii;
+          if (glue[g] === 1) relax(g, d);
+        }
+      }
+    }
+  }
+  R.nord = no;
+  /* The weight goes down every shortest way at once and not down one of them: a cell with
+     two equally good supports shares what it carries between them, which is how a roof
+     sits on both its eaves and how a lintel puts its load into the piers either side. Sent
+     down a single tree, a hole in a front wall moved the whole front slope of the roof onto
+     the back wall, and the back wall's top courses gave under a roof they had never carried.
+     The cells are taken from the top course down, and in a course from the furthest out of
+     a span inward, so that nothing is handed on before everything it carries has come in. */
+  var load = R._l, lay = R._ly || (R._ly = []), q, o2, n2, ns = [0, 0, 0, 0, 0, 0, 0, 0, 0];
+  load.fill(0);
+  for (k = 0; k < nz; k++) { if (lay[k]) lay[k].length = 0; else lay[k] = []; }
+  for (li = 0; li < no; li++) { c = R._o[li]; lay[(c / NC) | 0].push(c); }
+  function deeper(a, b) { return dist[b] - dist[a]; }
+  for (k = nz - 1; k >= 0; k--) {
+    var Ly = lay[k];
+    if (Ly.length > 1) Ly.sort(deeper);
+    for (li = 0; li < Ly.length; li++) {
+      c = Ly[li];
+      var tot = load[c] + R.mass[c], dc = dist[c], m = 0;
+      load[c] = tot;
+      var r2 = c - k * NC; j = (r2 / nx) | 0; i = r2 - j * nx;
+      if (k > 0) {
+        var bl = c - NC, dg = orig[bl];
+        if (al[bl] && done[bl] && dist[bl] === dc) ns[m++] = bl;
+        if (i > 0 && al[bl - 1] && done[bl - 1] && dist[bl - 1] + dg === dc) ns[m++] = bl - 1;
+        if (i + 1 < nx && al[bl + 1] && done[bl + 1] && dist[bl + 1] + dg === dc) ns[m++] = bl + 1;
+        if (j > 0 && al[bl - nx] && done[bl - nx] && dist[bl - nx] + dg === dc) ns[m++] = bl - nx;
+        if (j + 1 < ny && al[bl + nx] && done[bl + nx] && dist[bl + nx] + dg === dc) ns[m++] = bl + nx;
+      }
+      if (dc > 0) {
+        if (i > 0 && done[c - 1] && dist[c - 1] + 1 === dc) ns[m++] = c - 1;
+        if (i + 1 < nx && done[c + 1] && dist[c + 1] + 1 === dc) ns[m++] = c + 1;
+        if (j > 0 && done[c - nx] && dist[c - nx] + 1 === dc) ns[m++] = c - nx;
+        if (j + 1 < ny && done[c + nx] && dist[c + nx] + 1 === dc) ns[m++] = c + nx;
+      }
+      for (q = 0; q < m; q++) load[ns[q]] += tot / m;
+    }
   }
 }
-/* how tall a bay still stands: a storey is most of what it had, and what is left after
-   two is a stump a man can stand behind and not in */
-function ruinHeight(b) {
-  if (b.down <= 0) return b.h;
-  if (b.down === 1) return Math.max(26, b.h * .52);
-  return 16;
+/* the highest cell still standing in each column */
+function frTops(R) {
+  var NC = R.nx * R.ny, k, cl;
+  for (cl = 0; cl < NC; cl++) {
+    var t = -1;
+    for (k = R.nz - 1; k >= 0; k--) if (R.alive[k * NC + cl]) { t = k; break; }
+    R.top[cl] = t < 0 ? -1e9 : R.z0 + (t + 1) * FR_Z;
+  }
 }
-/* A man's eye is at seventeen, so a bay that still stands above about that is a wall he
-   is stopped by and one below it is a heap he steps over. The threshold is a little
-   above his eye because a storey does not end level. */
-function ruinUp(b) { return ruinHeight(b) >= 34; }
-/* the tallest thing a house has left, which is what says whether it is still a house */
+/* A cell out of the building: its range of the buffer is zeroed, which draws nothing, and
+   the stone in it goes where `how` says: 1 is thrown by a blast and 2 drops where it gave. */
+function frZero(R, c) {
+  if (R.s1[c]) { R.A.fill(0, R.s0[c] * 12, (R.s0[c] + R.s1[c]) * 12); R.lo = Math.min(R.lo, R.s0[c]); R.hi = Math.max(R.hi, R.s0[c] + R.s1[c]); }
+  if (R.a1[c]) { R.B.fill(0, R.a0[c] * 12, (R.a0[c] + R.a1[c]) * 12); R.loB = Math.min(R.loB, R.a0[c]); R.hiB = Math.max(R.hiB, R.a0[c] + R.a1[c]); }
+}
+function frKill(p, c, how, sx, sy, sz) {
+  var R = p.fr;
+  if (!R.alive[c]) return;
+  R.alive[c] = 0; R.mAlive -= R.mass[c];
+  frZero(R, c);
+  var q = frCellC(R, c), vx = 0, vy = 0, vz = 0;
+  if (how === 1) {
+    /* out of the wall on the far side from the round and away from it, up a little, and
+       faster the nearer it was */
+    var dx = q[0] - sx, dy = q[1] - sy, dz = q[2] - sz, dl = Math.sqrt(dx * dx + dy * dy + dz * dz) || 1;
+    var sp = 26 + Math.random() * 46 + Math.max(0, 40 - dl) * .8;
+    vx = dx / dl * sp; vy = dy / dl * sp; vz = Math.max(0, dz / dl) * sp * .5 + rnd(12, 44);
+  }
+  frStone(R.col[c], R.mass[c], q[0], q[1], q[2], vx, vy, vz, how === 1 ? 10 : 7, R.flat[c]);
+}
+/* The stone a cell held, as the pieces it breaks into. Not all of it: a shell turns a good
+   share of what it takes out into dust and chips, which the burst and the smoke draw, and
+   the share that stays as stone is the declared fraction RUIN_KEEP. Most of that is not a
+   block either. Rubble stone set in lime comes apart into its stones and a great deal of
+   broken mortar and fill, so a cell of wall (taken as wall FR_T thick over its faces)
+   throws one block of about a quarter of it, and one cell in two a smaller stone as well,
+   and the rest goes with the block as fill (`e`) and is laid into the heap wherever the
+   block comes to rest. A cell of roof or floor (`flat`, how much of its face looks up or down)
+   is a skin and not a wall, and breaks into slabs a hand thick. Never more than half the
+   cell. */
+function frStone(col, mass, x, y, z, vx, vy, vz, sd, flat) {
+  var vol = Math.min(mass * FR_T * .5, FR_C * FR_C * FR_Z * .5) * RUIN_KEEP, l, w, h, v, put;
+  col = col || '#8a8172';
+  if (flat > .5) {
+    vol = Math.min(vol, mass * 1.6 * RUIN_KEEP);
+    l = rnd(4.5, 8.5); h = rnd(1, 1.8); w = clamp(vol * .5 / (l * h), 2.5, 8); put = l * w * h;
+    frChunk(x + rnd(-4, 4), y + rnd(-4, 4), z + rnd(-2, 2), l, w, h, col,
+            vx + rnd(-sd, sd), vy + rnd(-sd, sd), vz + rnd(-sd * .4, sd * .4), Math.max(0, vol - put));
+    return;
+  }
+  /* and the smaller stone one cell in two, so a wall comes apart into stones of more than
+     one size rather than into pairs */
+  var two = Math.random() < .5;
+  v = vol * .28;
+  h = rnd(3.6, 6.4); w = FR_T * rnd(.7, 1.05); l = clamp(v / (w * h), 2.5, 9); put = l * w * h;
+  frChunk(x + rnd(-3, 3), y + rnd(-3, 3), z + rnd(-2, 2), l, w, h, col,
+          vx + rnd(-sd, sd), vy + rnd(-sd, sd), vz + rnd(-sd * .4, sd * .4), Math.max(0, vol * (two ? .88 : 1) - put));
+  if (!two) return;
+  v = vol * .12;
+  h = rnd(2, 3.4); w = rnd(2.2, 3.6); l = clamp(v / (w * h), 2, 6);
+  frChunk(x + rnd(-3, 3), y + rnd(-3, 3), z + rnd(-2, 2), l, w, h, col,
+          vx + rnd(-sd, sd), vy + rnd(-sd, sd), vz + rnd(-sd * .4, sd * .4), Math.max(0, vol * .12 - l * w * h));
+}
+/* past what the device can integrate, a block lands where it was, which keeps the stone
+   that came down in the heap rather than throwing it away */
+function frChunk(x, y, z, l, w, h, col, vx, vy, vz, e) {
+  G.frStat.made += l * w * h + (e || 0);
+  if (G.debris.length < debrisCap()) { spawnChunk(x, y, z, l, w, h, col, vx, vy, vz, e); return; }
+  var px = x + vx * .25, py = y + vy * .25;
+  settleChunk({ x: px, y: py, z: groundZ(px, py) + h * .5, l: l, w: w, h: h, c: col, e: e || 0,
+                rx: rnd(-.3, .3), ry: rnd(-.3, .3), rz: rnd(0, TAU) });
+}
+/* ---- a round against a building ----
+   Every cell in reach is asked, and what reaches it is the blast less what the masonry in
+   between took out of it: a cell of wall lets a third through (FR_ATT), so a round in the
+   street opens the wall it burst against and barely marks the one across the room, and a
+   round that came in through a window takes the room apart from inside. A cell the blast
+   reaches at full strength is gone; one it reaches more weakly is cracked, and cracks add
+   up, so the wall round a breach goes after a few more rounds and a cracked pier carries
+   less. How far a round reaches and how big a hole it cuts are explode's two numbers; the
+   building's own `str` divides the second, which is why a field gun scars a casemate and
+   the 240 opens one. */
+function frHit(p, sx, sy, bh, r, br, owner) {
+  if (!frBreakable(p)) return 0;
+  var sp = frSpec(p), brE = br / sp.str;
+  if (brE < 3) return 0;
+  var inside = Math.abs(sx - p.x) < p.w / 2 && Math.abs(sy - p.y) < p.h / 2, R = p.fr;
+  if (!R) {
+    var ex = Math.max(Math.abs(sx - p.x) - p.w / 2, 0), ey = Math.max(Math.abs(sy - p.y) - p.h / 2, 0);
+    var e2 = ex * ex + ey * ey;
+    if (e2 >= r * r || brE * Math.sqrt(1 - e2 / (r * r)) < 5) return 0;
+    if (!frMake(p)) return 0;
+    R = p.fr;
+  }
+  var sz = groundZ(sx, sy) + bh, cl = frCol(R, sx, sy);
+  /* What falls out of the sky onto a building goes through the slates and off in the top
+     floor, and a round that bursts inside a building bursts in a room: the walls round it
+     hold the gas in, and a confined burst does to masonry about what a burst half again as
+     big does in the open. That, and not the free-field rule, is why the shell that came
+     down through the roof is the one that brought the house down. */
+  var conf = inside && cl >= 0 && R.top[cl] > sz;
+  /* a concrete roof is not slates: what comes down on a casemate goes off on top of it */
+  if (conf && bh < 2 && sp.hard) { sz = R.top[cl] + 1; conf = false; }
+  if (conf) {
+    if (bh < 2) sz = Math.max(sz, R.top[cl] - FR_Z * 1.5);
+    brE *= 1.6; r *= 1.25;
+  }
+  var nx = R.nx, ny = R.ny, nz = R.nz, r2 = r * r, i, j, k, kill = [], any = 0, sMin = 1e9, Dh = 1;
+  var i0 = clamp(Math.floor((sx - r - R.x0) / FR_C), 0, nx - 1), i1 = clamp(Math.floor((sx + r - R.x0) / FR_C), 0, nx - 1);
+  var j0 = clamp(Math.floor((sy - r - R.y0) / FR_C), 0, ny - 1), j1 = clamp(Math.floor((sy + r - R.y0) / FR_C), 0, ny - 1);
+  var k0 = clamp(Math.floor((sz - r - R.z0) / FR_Z), 0, nz - 1), k1 = clamp(Math.floor((sz + r - R.z0) / FR_Z), 0, nz - 1);
+  if (sx + r < R.x0 || sx - r > R.x0 + nx * FR_C || sy + r < R.y0 || sy - r > R.y0 + ny * FR_C) return 0;
+  /* Two passes. The first finds how far the round burst from the building, because a
+     burst off the face of a wall loads more of it, less hard, than one against it: the
+     hole it cuts in the face is the breach scaled by sqrt(1 - (off / reach)^2), which is
+     the rule the bays were cut by, and the cells it takes are the ones within the
+     distance that makes that hole. The second deals the blast. */
+  function each(fn) {
+    for (k = k0; k <= k1; k++) for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
+      var c = (k * ny + j) * nx + i;
+      if (!R.alive[c]) continue;
+      var bx = R.x0 + i * FR_C, by = R.y0 + j * FR_C, bz = R.z0 + k * FR_Z;
+      var dx = sx < bx ? bx - sx : sx > bx + FR_C ? sx - bx - FR_C : 0;
+      var dy = sy < by ? by - sy : sy > by + FR_C ? sy - by - FR_C : 0;
+      var dz = sz < bz ? bz - sz : sz > bz + FR_Z ? sz - bz - FR_Z : 0;
+      var d2 = dx * dx + dy * dy + dz * dz;
+      if (d2 < r2) fn(c, d2, bx, by, bz);
+    }
+  }
+  each(function (c, d2) { if (d2 < sMin) sMin = d2; });
+  if (sMin >= r2) return 0;
+  /* and a hole under a stone's width across is a scar: it cracks what it reaches and
+     takes nothing out */
+  Dh = brE * Math.sqrt(1 - sMin / r2) < 5 ? 1 : 1 - Math.min(.95, (brE * brE + sMin * (1 - brE * brE / r2)) / r2);
+  each(function (c, d2, bx, by, bz) {
+    var D = 1 - d2 / r2;
+    if (D < Dh * .5) return;
+    /* in a room the gas is everywhere the room is, and nothing in it is in the lee of
+       anything; outside, a wall stands in front of what is behind it */
+    if (!conf) D *= frAtten(R, sx, sy, sz, clamp(sx, bx, bx + FR_C), clamp(sy, by, by + FR_C), clamp(sz, bz, bz + FR_Z), c);
+    var dealt = D >= Dh ? 1 : Math.pow(D / Dh, 4) * .6;
+    if (dealt < .03) return;
+    R.dmg[c] += dealt; any = 1;
+    if (R.dmg[c] >= 1) kill.push(c);
+  });
+  for (i = 0; i < kill.length; i++) frKill(p, kill[i], 1, sx, sy, sz);
+  if (any) { R.dirty = 1; if (!(R.t > G.t)) R.t = G.t; }
+  return kill.length;
+}
+/* what is left of a blast once the cells standing between the burst and this one have
+   taken their share. The cell the round burst in and the cell asked about are not in
+   between, and the line is drawn to the nearest point of the cell and not to its middle:
+   drawn to the middle, every cell of a face hit at an angle was in the lee of its own
+   neighbours along the same wall, so a heavy round and a light one took the same two or
+   three cells square to the burst out of it and nothing else. */
+function frAtten(R, sx, sy, sz, tx, ty, tz, tc) {
+  var dx = tx - sx, dy = ty - sy, dz = tz - sz, L = Math.sqrt(dx * dx + dy * dy + dz * dz), n = Math.ceil(L / 4), last = -1, a = 1;
+  var sc = frCellAt(R, sx, sy, sz);
+  for (var s = 1; s < n; s++) {
+    var t = s / n, c = frCellAt(R, sx + dx * t, sy + dy * t, sz + dz * t);
+    if (c < 0 || c === last || c === tc || c === sc) continue;
+    last = c;
+    if (R.alive[c]) { a *= FR_ATT; if (a < .02) return 0; }
+  }
+  return a;
+}
+/* ---- the structure, after anything has changed in it ----
+   What nothing carries is let go at once. What is carrying more than it can gives, the
+   worst first and a few at a time a seventh of a second apart, because a wall that is
+   overloaded goes at its foot and what it was carrying comes down after it: all at once,
+   a whole terrace went in a frame. */
+function frStep(p) {
+  var R = p.fr, N = R.alive.length, c, fall = [], crush = [];
+  R.dirty = 0;
+  frSolve(R);
+  var dist = R._d, load = R._l;
+  for (c = 0; c < N; c++) {
+    if (!R.alive[c]) continue;
+    if (dist[c] === 255) { fall.push(c); continue; }
+    if (load[c] > R.cap[c] * (1 - .4 * Math.min(1, R.dmg[c]))) crush.push(c);
+  }
+  if (fall.length) frFall(p, fall);
+  if (crush.length) {
+    crush.sort(function (a, b) { return load[b] / R.cap[b] - load[a] / R.cap[a]; });
+    for (var q = 0; q < Math.min(crush.length, 6); q++) frKill(p, crush[q], 2);
+    R.dirty = 1; R.t = G.t + .14;
+  }
+  frAfter(p);
+}
+/* ---- what falls ----
+   The cells nothing carries, sorted into the pieces they make: cells that touch are one
+   piece and go down together. A piece of a cell or two is stone falling and is let go as
+   blocks; anything bigger is a body. */
+function frFall(p, cells) {
+  var R = p.fr, nx = R.nx, ny = R.ny, nz = R.nz, NC = nx * ny, N = R.alive.length, i, q, fell = 0;
+  var mark = R._m || (R._m = new Uint8Array(N));
+  mark.fill(0);
+  for (i = 0; i < cells.length; i++) mark[cells[i]] = 1;
+  for (i = 0; i < cells.length; i++) {
+    var s = cells[i];
+    if (mark[s] !== 1) continue;
+    var comp = [s];
+    mark[s] = 2;
+    for (q = 0; q < comp.length; q++) {
+      var c = comp[q], k = (c / NC) | 0, r = c - k * NC, j = (r / nx) | 0, ii = r - j * nx;
+      if (ii > 0 && mark[c - 1] === 1) { mark[c - 1] = 2; comp.push(c - 1); }
+      if (ii + 1 < nx && mark[c + 1] === 1) { mark[c + 1] = 2; comp.push(c + 1); }
+      if (j > 0 && mark[c - nx] === 1) { mark[c - nx] = 2; comp.push(c - nx); }
+      if (j + 1 < ny && mark[c + nx] === 1) { mark[c + nx] = 2; comp.push(c + nx); }
+      if (k > 0 && mark[c - NC] === 1) { mark[c - NC] = 2; comp.push(c - NC); }
+      if (k + 1 < nz && mark[c + NC] === 1) { mark[c + NC] = 2; comp.push(c + NC); }
+    }
+    for (q = 0; q < comp.length; q++) fell += R.mass[comp[q]];
+    frBody(p, comp);
+  }
+  /* and whoever was holding it. A storey coming down on a section is the heaviest thing
+     that happens to men in this game. */
+  var share = fell / (R.m0 || 1);
+  if (share > .04) for (i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.gar !== p) continue;
+    var blows = Math.min(6, Math.ceil(share * 12));
+    for (q = 0; q < blows && !u.dead; q++) damage(u, 60 + Math.random() * 60, null);
+  }
+}
+function frBodyCap() { return MOB ? 5 : 14; }
+function frBody(p, comp) {
+  var R = p.fr, nx = R.nx, NC = nx * R.ny, i, c, M = 0, cx = 0, cy = 0, cz = 0, nv = 0, q;
+  for (i = 0; i < comp.length; i++) {
+    c = comp[i]; q = frCellC(R, c);
+    var m = R.mass[c];
+    M += m; cx += q[0] * m; cy += q[1] * m; cz += q[2] * m; nv += R.s1[c];
+  }
+  cx /= M; cy /= M; cz /= M;
+  if (comp.length < 3 || !GLOK || G.fall.length >= frBodyCap()) {
+    for (i = 0; i < comp.length; i++) frKill(p, comp[i], 2);
+    return;
+  }
+  var V = new Float32Array(nv * 12), o = 0, lc = new Float32Array(comp.length * 3), lm = new Float32Array(comp.length), cols = [], fl = [];
+  var bx0 = 1e9, bx1 = -1e9, by0 = 1e9, by1 = -1e9, bz0 = 1e9, bz1 = -1e9, hx = 0, hy = 0, hz = 0, hn = 0, t;
+  for (i = 0; i < comp.length; i++) {
+    c = comp[i]; q = frCellC(R, c);
+    var a = R.s0[c] * 12, e = (R.s0[c] + R.s1[c]) * 12;
+    V.set(R.A.subarray(a, e), o);
+    for (t = o; t < o + e - a; t += 12) { V[t] -= cx; V[t + 1] -= cy; V[t + 2] -= cz; }
+    o += e - a;
+    lc[i * 3] = q[0] - cx; lc[i * 3 + 1] = q[1] - cy; lc[i * 3 + 2] = q[2] - cz;
+    lm[i] = R.mass[c]; cols.push(R.col[c]); fl.push(R.flat[c]);
+    bx0 = Math.min(bx0, lc[i * 3] - FR_C / 2); bx1 = Math.max(bx1, lc[i * 3] + FR_C / 2);
+    by0 = Math.min(by0, lc[i * 3 + 1] - FR_C / 2); by1 = Math.max(by1, lc[i * 3 + 1] + FR_C / 2);
+    bz0 = Math.min(bz0, lc[i * 3 + 2] - FR_Z / 2); bz1 = Math.max(bz1, lc[i * 3 + 2] + FR_Z / 2);
+    R.alive[c] = 0; R.mAlive -= R.mass[c];
+    frZero(R, c);
+  }
+  /* the last thing it was joined to: the faces it shares with cells still standing */
+  for (i = 0; i < comp.length; i++) {
+    c = comp[i];
+    var k = (c / NC) | 0, r = c - k * NC, j = (r / nx) | 0, ii = r - j * nx, nb = [];
+    if (ii > 0) nb.push(c - 1); if (ii + 1 < nx) nb.push(c + 1);
+    if (j > 0) nb.push(c - nx); if (j + 1 < R.ny) nb.push(c + nx);
+    if (k > 0) nb.push(c - NC); if (k + 1 < R.nz) nb.push(c + NC);
+    for (t = 0; t < nb.length; t++) if (R.alive[nb[t]]) {
+      var w2 = frCellC(R, nb[t]);
+      hx += (w2[0] + lc[i * 3] + cx) / 2; hy += (w2[1] + lc[i * 3 + 1] + cy) / 2; hz += (w2[2] + lc[i * 3 + 2] + cz) / 2; hn++;
+    }
+  }
+  var ex = (bx1 - bx0) / 2, ey = (by1 - by0) / 2, ez = (bz1 - bz0) / 2;
+  var b = { p: p, buf: frBuffer(V), x: cx, y: cy, z: cz, vx: 0, vy: 0, vz: 0, R: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+            w: [rnd(-.12, .12), rnd(-.12, .12), rnd(-.08, .08)], M: M, lc: lc, lm: lm, cols: cols, fl: fl,
+            bb: [bx0, bx1, by0, by1, bz0, bz1], k2: (ex * ex + ey * ey + ez * ez) / 3,
+            hinge: null, hold: rnd(.35, .8), tilt: 0, t: 0, hitCol: -1 };
+  /* A piece still joined at one side swings down about the joint before it tears free,
+     which is what a wall does when its foot goes on one side: it leans out and comes over.
+     Joined straight under its middle it has nothing to turn it, and it drops. */
+  if (hn) {
+    var px = hx / hn, py = hy / hn, pz = hz / hn;
+    if (Math.hypot(cx - px, cy - py) > 4) b.hinge = [px, py, pz];
+  }
+  G.fall.push(b);
+  G.frStat.bodies++;
+}
+/* Rotating a body by its angular velocity over a step, about its own middle: the body's
+   own frame turned by the rotation, and the vector handed in turned with it. */
+function frTurn(b, dt, rx, ry, rz) {
+  var wx = b.w[0], wy = b.w[1], wz = b.w[2], om = Math.sqrt(wx * wx + wy * wy + wz * wz), a = om * dt;
+  if (a < 1e-7) return [rx, ry, rz];
+  var kx = wx / om, ky = wy / om, kz = wz / om, co = Math.cos(a), si = Math.sin(a), t = 1 - co;
+  var Q = [t * kx * kx + co, t * kx * ky - si * kz, t * kx * kz + si * ky,
+           t * kx * ky + si * kz, t * ky * ky + co, t * ky * kz - si * kx,
+           t * kx * kz - si * ky, t * ky * kz + si * kx, t * kz * kz + co];
+  var R = b.R, N = new Array(9), r, cc;
+  for (r = 0; r < 3; r++) for (cc = 0; cc < 3; cc++) N[r * 3 + cc] = Q[r * 3] * R[cc] + Q[r * 3 + 1] * R[3 + cc] + Q[r * 3 + 2] * R[6 + cc];
+  b.R = N;
+  return [Q[0] * rx + Q[1] * ry + Q[2] * rz, Q[3] * rx + Q[4] * ry + Q[5] * rz, Q[6] * rx + Q[7] * ry + Q[8] * rz];
+}
+/* ---- the integrator for a falling piece ----
+   On its joint, it is a body turning about a fixed line under gravity's torque, with the
+   moment of inertia of a slab of its own size about that line; the joint tears at about
+   thirty degrees or half a second. Free, it is the masonry integrator's semi-implicit
+   Euler with a turn on top. It falls until any of its corners, or the middle of any of
+   its cells, comes down onto the ground, the heap, or what is still standing of the
+   building under it. */
+function frBodies(dt) {
+  var L = G.fall, i;
+  for (i = L.length - 1; i >= 0; i--) {
+    var b = L[i];
+    b.t += dt;
+    if (b.hinge) {
+      var h = b.hinge, rx = b.x - h[0], ry = b.y - h[1], rz = b.z - h[2];
+      var I = rx * rx + ry * ry + rz * rz + b.k2;
+      b.w[0] += -RUIN_G * ry / I * dt; b.w[1] += RUIN_G * rx / I * dt;
+      var r2 = frTurn(b, dt, rx, ry, rz);
+      b.x = h[0] + r2[0]; b.y = h[1] + r2[1]; b.z = h[2] + r2[2];
+      b.vx = b.w[1] * r2[2] - b.w[2] * r2[1]; b.vy = b.w[2] * r2[0] - b.w[0] * r2[2]; b.vz = b.w[0] * r2[1] - b.w[1] * r2[0];
+      b.tilt += Math.sqrt(b.w[0] * b.w[0] + b.w[1] * b.w[1] + b.w[2] * b.w[2]) * dt;
+      if (b.tilt > .55 || b.t > b.hold) b.hinge = null;
+    } else {
+      b.vz -= RUIN_G * dt;
+      b.x += b.vx * dt; b.y += b.vy * dt; b.z += b.vz * dt;
+      frTurn(b, dt, 0, 0, 0);
+    }
+    if (frLanded(b) || b.t > 7) { frShatter(b); L.splice(i, 1); }
+  }
+}
+function frLanded(b) {
+  var R = b.R, P = b.p.fr, bb = b.bb, n = b.lm.length, step = Math.max(1, Math.floor(n / 40)), s, cnt = 8 + Math.ceil(n / step);
+  for (s = 0; s < cnt; s++) {
+    var lx, ly, lz;
+    if (s < 8) { lx = bb[s & 1 ? 1 : 0]; ly = bb[s & 2 ? 3 : 2]; lz = bb[s & 4 ? 5 : 4]; }
+    else { var ci = (s - 8) * step; if (ci >= n) break; lx = b.lc[ci * 3]; ly = b.lc[ci * 3 + 1]; lz = b.lc[ci * 3 + 2] - FR_Z / 2; }
+    var wx = b.x + R[0] * lx + R[1] * ly + R[2] * lz, wy = b.y + R[3] * lx + R[4] * ly + R[5] * lz, wz = b.z + R[6] * lx + R[7] * ly + R[8] * lz;
+    if (b.hinge && Math.hypot(wx - b.hinge[0], wy - b.hinge[1], wz - b.hinge[2]) < 9) continue;
+    var sup = groundZ(wx, wy), on = -1;
+    if (P && !b.hinge) {
+      var cl = frCol(P, wx, wy);
+      if (cl >= 0 && P.top[cl] > sup && P.top[cl] < wz + 14) { sup = P.top[cl]; on = cl; }
+    }
+    if (wz <= sup) { b.hitCol = on; return true; }
+  }
+  return false;
+}
+/* Masonry does not survive a fall as a piece: where it lands it breaks into the blocks it
+   was made of, each going on with the velocity its own part of the body had, less what
+   the ground took out of it. It lands in a cloud of its own dust, on whoever was under it,
+   and on what is left of the building if that is what it came down on. */
+function frShatter(b) {
+  var p = b.p, R = b.R, n = b.lm.length, i, sp = Math.sqrt(b.vx * b.vx + b.vy * b.vy + b.vz * b.vz);
+  for (i = 0; i < n; i++) {
+    var lx = b.lc[i * 3], ly = b.lc[i * 3 + 1], lz = b.lc[i * 3 + 2];
+    var rx = R[0] * lx + R[1] * ly + R[2] * lz, ry = R[3] * lx + R[4] * ly + R[5] * lz, rz = R[6] * lx + R[7] * ly + R[8] * lz;
+    var vx = b.vx + b.w[1] * rz - b.w[2] * ry, vy = b.vy + b.w[2] * rx - b.w[0] * rz, vz = b.vz + b.w[0] * ry - b.w[1] * rx;
+    frStone(b.cols[i], b.lm[i], b.x + rx, b.y + ry, b.z + rz, vx * .3, vy * .3, Math.abs(vz) * .12 + rnd(2, 14), 9, b.fl[i]);
+  }
+  if (b.buf) freeBuffer(b.buf);
+  var cr = clamp(Math.sqrt(b.M) * 1.6, 22, 95);
+  burstFx(b.x, b.y, cr, 1, 12);
+  sfx('boom', b.x, b.y, burstVoice(cr));
+  if (onScreen(b.x, b.y)) addShake(Math.min(10, 3 + b.M / 500));
+  frCrush(b, sp);
+  /* a floor coming down onto the floor under it: what it lands on takes the blow, and a
+     terrace pancakes one storey onto the next when what it lands on gives as well */
+  var P = p.fr;
+  if (P && b.hitCol >= 0) {
+    var hit = 0;
+    for (i = 0; i < n; i++) {
+      var wx = b.x + R[0] * b.lc[i * 3] + R[1] * b.lc[i * 3 + 1] + R[2] * b.lc[i * 3 + 2];
+      var wy = b.y + R[3] * b.lc[i * 3] + R[4] * b.lc[i * 3 + 1] + R[5] * b.lc[i * 3 + 2];
+      var cl = frCol(P, wx, wy);
+      if (cl < 0) continue;
+      for (var k = P.nz - 1; k >= 0; k--) {
+        var c = k * P.nx * P.ny + cl;
+        if (!P.alive[c]) continue;
+        P.dmg[c] += (b.lm[i] * Math.max(sp, 20) / 50) / (P.cap[c] / FR_SAFE + P.mass[c]);
+        if (P.dmg[c] >= 1) frKill(p, c, 2);
+        hit = 1;
+        break;
+      }
+    }
+    if (hit) { P.dirty = 1; if (!(P.t > G.t)) P.t = G.t; }
+  }
+}
+/* whoever it came down on, by how much of it came down and how near the middle of it he was */
+function frCrush(b, sp) {
+  var rad = Math.max(b.bb[1] - b.bb[0], b.bb[3] - b.bb[2]) * .55 + 6, hurt = clamp(b.M / 22, 25, 320) * clamp(sp / 60, .4, 1.3);
+  for (var i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.inside || u.gar) continue;
+    var d = Math.hypot(u.x - b.x, u.y - b.y);
+    if (d > rad + 30) continue;
+    if (u.cat === 'veh') { if (d < rad) damage(u, hurt * .6, null); continue; }
+    for (var m = 0; m < u.models.length && !u.dead; m++) {
+      var mm = u.models[m];
+      if (mm.alive && Math.hypot(mm.x - b.x, mm.y - b.y) < rad) damage(u, hurt * (1 - .5 * Math.hypot(mm.x - b.x, mm.y - b.y) / rad), null);
+    }
+  }
+}
+/* the buffers of every building cut and every piece in the air, given back with the map */
+function frFree() {
+  var i;
+  if (typeof gl === 'undefined' || !gl) return;
+  for (i = 0; G.hurt && i < G.hurt.length; i++) {
+    var R = G.hurt[i].fr;
+    if (R) { freeBuffer(R.buf); freeBuffer(R.bufB); }
+  }
+  for (i = 0; G.fall && i < G.fall.length; i++) freeBuffer(G.fall[i].buf);
+}
+function frTick(dt) {
+  if (G.fall.length) frBodies(dt);
+  for (var i = 0; i < G.hurt.length; i++) {
+    var p = G.hurt[i];
+    if (p.fr && p.fr.dirty && G.t >= p.fr.t) frStep(p);
+  }
+}
+/* ---- the world follows the cells ----
+   A column of cells is standing while it reaches above a man's eye; a column of the
+   building's own floor is shut in while there is a standing column across it every way.
+   Standing and shut-in columns are the building, to a boot and an eye; the rest of the
+   footprint is the building's rubble. Then the four tier-3 faces ringing it are written
+   off where the wall behind them is down, and a garrison is put out of a building with
+   nothing left to hold. */
+function frAfter(p, quiet) {
+  var R = p.fr, NC = R.nx * R.ny, cl, tall = 0;
+  frTops(R);
+  for (cl = 0; cl < NC; cl++) {
+    var h = R.top[cl] - R.gz[cl];
+    R.stand[cl] = h >= R.thr ? 1 : 0;
+    if (R.foot[cl] && h > tall) tall = h;
+  }
+  R.wallUp = 0;
+  for (cl = 0; cl < NC; cl++) {
+    R.up[cl] = !R.foot[cl] ? 0 : R.stand[cl] ? 1 : frShut(R, cl) ? 1 : 0;
+    if (R.foot[cl] && R.wall[cl] && R.stand[cl]) R.wallUp++;
+  }
+  R.tall = tall;
+  if (quiet) return;
+  G.gridDirty = 1;
+  var near = coversNear(p.x, p.y, Math.max(p.w, p.h) * .6 + 30);
+  for (var ci = 0; ci < near.length; ci++) {
+    var cv = near[ci];
+    if (cv.kind !== 'wall') continue;
+    if (Math.abs(cv.x - p.x) > p.w / 2 + 26 || Math.abs(cv.y - p.y) > p.h / 2 + 26) continue;
+    var c2 = frCol(R, clamp(cv.x, p.x - p.w / 2 + 4, p.x + p.w / 2 - 4), clamp(cv.y, p.y - p.h / 2 + 4, p.y + p.h / 2 - 4));
+    if (c2 >= 0 && !R.stand[c2]) { cv.hp = 0; cv.axis = null; cv.kind = 'lowwall'; }
+  }
+  if (!frHoldable(p)) {
+    for (var i = 0; i < G.units.length; i++) {
+      var u = G.units[i];
+      if (!u.dead && u.gar === p) leaveBuilding(u);
+    }
+    /* and what a bunker was fitted out with goes with the concrete: an aid post or a
+       workshop under a heap of its own roof is neither */
+    if (p.kind === 'bunker' && (p.upKind || p.up)) {
+      if (p.upBuf) freeBuffer(p.upBuf);
+      p.up = null; p.upKind = null; p.upBuf = null; p.upSite = null;
+    }
+  }
+}
+function frShut(R, cl) {
+  var nx = R.nx, ny = R.ny, j = (cl / nx) | 0, i = cl - j * nx, q;
+  for (q = i + 1; q < nx && !R.wall[j * nx + q]; q++);
+  if (q >= nx || !R.stand[j * nx + q]) return false;
+  for (q = i - 1; q >= 0 && !R.wall[j * nx + q]; q--);
+  if (q < 0 || !R.stand[j * nx + q]) return false;
+  for (q = j + 1; q < ny && !R.wall[q * nx + i]; q++);
+  if (q >= ny || !R.stand[q * nx + i]) return false;
+  for (q = j - 1; q >= 0 && !R.wall[q * nx + i]; q--);
+  if (q < 0 || !R.stand[q * nx + i]) return false;
+  return true;
+}
+/* The tallest thing a building has left, which is what says whether it is still a
+   building; and a building whose walls are mostly down is not one to hold, however tall a
+   chimney is still standing out of it. It is the walls that are counted and not the
+   stone: a house with its roof and floors fallen in and its walls standing is the shell
+   every street in a shelled town is fought from, and counted by the stone it read as a
+   ruin as soon as the roof was in. */
 function ruinStanding(p) {
-  var B = p.bay, i, top = 0;
-  if (!B) return p.tall ? 90 : 66;
-  for (i = 0; i < B.length; i++) top = Math.max(top, ruinHeight(B[i]));
-  return top;
+  var R = p.fr;
+  if (!R) return p.tall ? 90 : 66;
+  return R.wallUp < R.nWall * .5 ? Math.min(R.tall, 20) : R.tall;
 }
-/* the footprint of each bay and whether it is still standing, for the three grids that
-   have to know the difference */
+/* whether a section may still hold it: half its walls standing above a man's eye */
+function frHoldable(p) {
+  var R = p.fr;
+  return !R || (R.wallUp >= R.nWall * .5 && R.tall >= R.thr);
+}
+/* the footprint, a column at a time, and whether each is still the building */
 function ruinBlocks(p, fn) {
-  var B = p.bay, i;
-  if (!B) { fn(p.x, p.y, p.w, p.h, 1); return; }
-  var bw = p.w / B.length;
-  for (i = 0; i < B.length; i++) fn(B[i].x, p.y, bw, p.h, ruinUp(B[i]) ? 1 : 0);
+  var R = p.fr;
+  if (!R) { fn(p.x, p.y, p.w, p.h, 1); return; }
+  var NC = R.nx * R.ny, cl;
+  for (cl = 0; cl < NC; cl++) {
+    if (!R.foot[cl]) continue;
+    var j = (cl / R.nx) | 0, i = cl - j * R.nx;
+    fn(R.x0 + (i + .5) * FR_C, R.y0 + (j + .5) * FR_C, FR_C, FR_C, R.up[cl]);
+  }
 }
 /* A hit building leaves the merged tile and draws from its own buffer: the tile is a
-   megabyte of merged geometry and cannot be edited, and re-meshing one house is a
-   thousandth of re-meshing the tile it sits in. The grid follows on the next frame,
-   through the same deferred flag a burning hull uses. */
+   megabyte of merged geometry and cannot be edited. The tile has to lose it, and that is a
+   re-mesh of everything else in the tile, about a hundred milliseconds; queued, it is one
+   tile a frame however many buildings were in the salvo, and the building is drawn twice
+   for that one frame, which nobody sees. */
 function ruinTouch(p) {
   if (!p.hurt) {
     p.hurt = 1;
     G.hurt.push(p);
-    /* The tile it was merged into has to lose it, and that is a re-mesh of everything
-       else in the tile with it -- about ninety milliseconds here. Done inside the burst
-       that is the hitch once per house, which in a barrage is several of them in one
-       frame; queued instead it is at most one tile a frame however many houses were in
-       the salvo, and the house is drawn twice for that one frame, which nobody sees. */
     if (SCENE && SCENE.tiles) G.tileQ[tileOf(p.x, p.y)] = 1;
   }
-  p.rebuild = 1;
   G.gridDirty = 1;
 }
 /* one of them, on the frames there are any */
@@ -10309,8 +10949,8 @@ function carveRefresh(x, y, r) {
   var h0 = Math.max(1, Math.floor((y - cr) / CELL)), h1 = Math.min(GH - 2, Math.ceil((y + cr) / CELL));
   for (j = h0; j <= h1; j++) for (i = g0; i <= g1; i++) {
     var wx = i * CELL + CELL / 2, wy = j * CELL + CELL / 2;
-    var sgx = (groundZ(wx + 20, wy) - groundZ(wx - 20, wy)) / 40;
-    var sgy = (groundZ(wx, wy + 20) - groundZ(wx, wy - 20)) / 40;
+    var sgx = (floorZ(wx + 20, wy) - floorZ(wx - 20, wy)) / 40;
+    var sgy = (floorZ(wx, wy + 20) - floorZ(wx, wy - 20)) / 40;
     var sg = Math.hypot(sgx, sgy);
     if (inland(wx, wy) < 24) continue;  /* the sea is not the hole's to say */
     terrg[cidx(i, j)] = sg > 1 ? 1 : 0;
@@ -10358,6 +10998,28 @@ var MNDW = Math.ceil(WORLD.w / MC), MNDH = Math.ceil(WORLD.h / MC), MND = null;
    was thrown away -- and a garden wall blown apart in open country belongs to no
    building at all, so every stone of it vanished on landing. Where masonry lies is a
    fact about the ground, not about who owned it. */
+/* The heap's surface, which is the same grid read between the middles of its cells, so a
+   man walking over it climbs a slope and not a flight of fourteen-unit steps. */
+function heapZ(x, y) {
+  var fx = x / MC - .5, fy = y / MC - .5, i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+  if (i < -1 || j < -1 || i >= MNDW || j >= MNDH) return 0;
+  var i1 = i + 1, j1 = j + 1;
+  if (i < 0) i = 0; if (j < 0) j = 0; if (i1 >= MNDW) i1 = MNDW - 1; if (j1 >= MNDH) j1 = MNDH - 1;
+  var a = MND[j * MNDW + i], b = MND[j * MNDW + i1], c = MND[j1 * MNDW + i], d = MND[j1 * MNDW + i1];
+  if (!(a || b || c || d)) return 0;
+  return (a + (b - a) * tx) * (1 - ty) + (c + (d - c) * tx) * ty;
+}
+/* what the heap is made of, cell by cell: the stone that last landed there, as an index
+   into the handful of shades a town's masonry comes in */
+var MNDC = null, HEAPP = [], HEAPI = {}, HEAPBB = null;
+function heapCol(col) {
+  var k = HEAPI[col];
+  if (k === undefined) {
+    if (HEAPP.length >= 250) return 1;
+    HEAPP.push(col); k = HEAPI[col] = HEAPP.length;
+  }
+  return k;
+}
 function moundAt(x, y) {
   if (!MND) return 0;
   var ci = (x / MC) | 0, cj = (y / MC) | 0;
@@ -10368,16 +11030,30 @@ function moundAt(x, y) {
    on the ground is about half again what it took up in the wall; most of that goes into
    the cell it landed in and the rest spreads to the eight round it, which is what keeps
    a pile a pile rather than a column. */
-function moundAdd(x, y, vol) {
-  if (!MND) MND = new Float32Array(MNDW * MNDH);
+function moundAdd(x, y, vol, col) {
+  if (!MND) { MND = new Float32Array(MNDW * MNDH); MNDC = new Uint8Array(MNDW * MNDH); HEAPBB = null; }
   var ci = (x / MC) | 0, cj = (y / MC) | 0;
   if (ci < 0 || cj < 0 || ci >= MNDW || cj >= MNDH) return;
+  if (!HEAPBB) HEAPBB = [ci, cj, ci, cj];
+  else { if (ci < HEAPBB[0]) HEAPBB[0] = ci; if (cj < HEAPBB[1]) HEAPBB[1] = cj; if (ci > HEAPBB[2]) HEAPBB[2] = ci; if (cj > HEAPBB[3]) HEAPBB[3] = cj; }
+  if (col) MNDC[cj * MNDW + ci] = heapCol(col);
+  G.heapDirty = 1;
   var rise = vol * 1.5 / (MC * MC), di, dj;
   for (dj = -1; dj <= 1; dj++) for (di = -1; di <= 1; di++) {
     var ii = ci + di, jj = cj + dj;
     if (ii < 0 || jj < 0 || ii >= MNDW || jj >= MNDH) continue;
     var k = jj * MNDW + ii;
     MND[k] = Math.min(MCAP, MND[k] + rise * (di || dj ? .069 : .45));
+  }
+  /* and broken stone will not stand steeper than about thirty-five degrees: what piles
+     higher than that over a neighbour runs down onto it, so a heap has a slope and not a
+     step at its edge */
+  var c0 = cj * MNDW + ci, rep = MC * .7;
+  for (dj = -1; dj <= 1; dj++) for (di = -1; di <= 1; di++) {
+    var i2 = ci + di, j2 = cj + dj;
+    if ((!di && !dj) || i2 < 0 || j2 < 0 || i2 >= MNDW || j2 >= MNDH) continue;
+    var k2 = j2 * MNDW + i2, ex = MND[c0] - MND[k2] - rep * (di && dj ? 1.41 : 1);
+    if (ex > 0) { MND[c0] -= ex * .25; MND[k2] += ex * .25; }
   }
 }
 /* ---- the integrator ----
@@ -10401,7 +11077,7 @@ function stepDebris(dt) {
     c.vz -= RUIN_G * dt;
     c.x += c.vx * dt; c.y += c.vy * dt; c.z += c.vz * dt;
     c.rx += c.wx * dt; c.ry += c.wy * dt; c.rz += c.wz * dt;
-    gz = groundZ(c.x, c.y) + moundAt(c.x, c.y) + c.h * .5;
+    gz = groundZ(c.x, c.y) + c.h * .5;
     if (c.z > gz) continue;
     imp = -c.vz;
     c.z = gz;
@@ -10426,19 +11102,26 @@ function stepDebris(dt) {
    A chunk that came down too far from any building is dropped: it is a stone in a field
    and the scene has plenty. */
 function settleChunk(c) {
+  /* Nothing in the air collides with a building, so a block thrown at a neighbour that has
+     not been hit goes in through its wall and would lie on its floor, raising a heap inside
+     a house that is standing. It went onto the roof or against the wall and is counted as
+     the dust it would have become. */
+  var vol = c.l * c.w * c.h + (c.e || 0);
+  if (uncutAt(c.x, c.y)) { G.frStat.lost += vol; return; }
   /* A stone that comes to rest on bare ground lies flat; one that comes to rest on other
      stones lies at whatever angle they left it, and that angle is most of what tells a
      heap of rubble from a pavement of blocks. */
   if (moundAt(c.x, c.y) > 5) { c.rx += rnd(-.42, .42); c.ry += rnd(-.42, .42); }
   /* Oldest out when the yard is full, rather than refusing what lands: a battle that
      goes on long enough should show the last house that came down and not the first. */
-  if (G.rub.length >= rubCap()) G.rub.shift();
-  G.rub.push({ x: c.x, y: c.y, z: c.z, l: c.l, w: c.w, h: c.h, c: c.c,
+  if (G.rub.length >= rubCap()) { var old = G.rub.shift(); G.frStat.lost += old.l * old.w * old.h + old.e; }
+  G.rub.push({ x: c.x, y: c.y, z: c.z, l: c.l, w: c.w, h: c.h, c: c.c, e: c.e || 0,
                rx: c.rx, ry: c.ry, rz: c.rz });
-  moundAdd(c.x, c.y, c.l * c.w * c.h);
-  G.rubDirty = 1;
+  moundAdd(c.x, c.y, vol, c.c);
+  rubSlot(G.rub[G.rub.length - 1]);
+  if (G.rubDirty !== 2) G.rubDirty = 1;
 }
-function rubCap() { return MOB ? 500 : 1400; }
+function rubCap() { return MOB ? 900 : 2600; }
 function explode(x, y, radius, dmg, owner, except, bz, w) {
   burstFx(x, y, radius, 0, bz);
   /* And it takes a piece of the ground away. Only a round that went off on the ground:
@@ -10519,9 +11202,12 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
      charge opens a hole in one, which is what it was made up for */
   var mdmg = w && w.auto ? dmg * .18 : w && w.gren ? dmg * .3 : dmg;
   if (mdmg >= 22) {
-    var br = clamp(3 + mdmg * .075, 4, 26), reach = clamp(12 + mdmg * .2, 16, 74);
+    /* Capped where a Little David's ton and three quarters of shell brings down a house
+       of three storeys and a heavy battery's opens most of a wall: at 26 and 74, the
+       caps the bays were built round, the 240 and the 36-inch cut the same hole. */
+    var br = clamp(3 + mdmg * .075, 4, 70), reach = clamp(12 + mdmg * .2, 16, 160);
     var bh = bz === undefined ? 10 : bz;
-    ruinsNear(x, y, reach, function (pr) { ruinHit(pr, x, y, bh, reach, br, owner); });
+    ruinsNear(x, y, reach, function (pr) { frHit(pr, x, y, bh, reach, br, owner); });
     /* and the walls, which are a list of a hundred segments rather than a town of props,
        so a bounding test and a straight walk is cheaper than an index of them */
     for (var wi = 0; wi < G.walls.length; wi++) {
@@ -16677,7 +17363,7 @@ var FSH = [
   'uniform sampler2D uGrit;',
   'uniform vec4 uLPos[NLIGHTS]; uniform vec3 uLCol[NLIGHTS];',
   'uniform float uUseTex; uniform vec2 uWorldSize; uniform vec3 uFogCol; uniform vec2 uFogRange;',
-  'uniform float uSeaT; uniform vec2 uRock; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest; uniform float uInside;',
+  'uniform float uSeaT; uniform vec2 uRock; uniform float uShadowTexel; uniform vec3 uEye; uniform vec3 uSun; uniform float uAmb; uniform float uAlphaTest; uniform float uInside; uniform float uBack;',
   /* the weather, off the map's ATMO table */
   'uniform vec3 uSunCol; uniform vec3 uSkyCol; uniform vec3 uSeaDeep; uniform vec3 uSeaSky; uniform float uSurf; uniform float uGlow;',
   /* how far down the mip chain the paint past the edge of the map is taken (see below) */
@@ -16696,6 +17382,7 @@ var FSH = [
   '  vec3 base = vCol;',
   '  vec2 uvw = vWpos.xy / uWorldSize;',
   '  vec3 n = normalize(vNrm);',
+  '  if (uBack > 0.5 && !gl_FrontFacing) { n = -n; base = mix(base, vec3(0.36, 0.33, 0.29), 0.55) * 0.72; }',
   '  float m = floor(vMat + 0.5);',
   '  vec4 det = tile(m, vUV);',
   '  if (uAlphaTest > 0.5 && det.a < 0.5) discard;',
@@ -18511,7 +19198,9 @@ function facesToBuffer(faces) { return makeBuffer(facesToArray(faces)); }
 function freeBuffer(b) { if (b && b.vbo) gl.deleteBuffer(b.vbo); }
 /* one tile of props, freeing what it replaces so the editor does not fill the card */
 function buildTile(ti) {
+  HEAPOFF++;
   var pf = sceneProps(ti), old = SCENE.tiles[ti];
+  HEAPOFF--;
   if (old) { freeBuffer(old.props); freeBuffer(old.leaves); }
   SCENE.tiles[ti] = { props: makeBuffer(pf.opaque), leaves: makeBuffer(pf.alpha) };
 }
@@ -18890,6 +19579,67 @@ function cartModel(seed) {
   }
   return f;
 }
+/* ---- what a building is made of ----
+   Every building on a map is built by one of these, and it is pulled out of the tile
+   builder so that the same faces can be asked for again on their own: the tile merges
+   them for the life of the battle, and a building a shell has been into is cut into
+   cells out of exactly the faces the tile drew (`frBuild`). `put` is handed the faces
+   in the building's own frame and where they go. */
+function propParts(p, put) {
+  seedAt(p.x, p.y, 1);
+  if (p.kind === 'ruin') {
+    if (p.style === 'church') { put(churchModel(p.w, p.h), p.x, p.y, 0); return; }
+    var bays = ruinBays(p), bayW = p.w / bays;
+    if (p.style === 'norman') {
+      for (var nb = 0; nb < bays; nb++)
+        put(ntBay(bayW - 2, p.h - 2, ntHeight(p), (p.s * 3 + nb * .41) % 1, null, ntOptsOf(p, nb, bays)),
+            p.x - p.w / 2 + bayW * (nb + .5), p.y, 0);
+      return;
+    }
+    for (var bh = 0; bh < bays; bh++) {
+      var bc = p.x - p.w / 2 + bayW * (bh + .5);
+      var wound = (p.damage * 9.7 + bh * .317) % 1;
+      var hh = (p.tall || p.style === 'civic' ? 84 : 66) + ((bh % 3) - 1) * 6;
+      put(houseModel(bayW - 2, p.h - 2, hh, (p.s * 3 + bh * .41) % 1, false, wound > .45), bc, p.y, 0);
+    }
+  } else if (p.kind === 'farm') put(farmModel(p.w, p.h), p.x, p.y, 0);
+  else if (p.kind === 'rtower') {
+    /* a tower of the ramparts: the rock's level inside it, the lowest ground round its
+       outer half, and its door on the town side */
+    var tz = groundZ(p.x, p.y), tzf = 1e9;
+    for (var tk = -2; tk <= 2; tk++) {
+      var ta = p.a + tk * .45;
+      tzf = Math.min(tzf, groundZ(p.x + Math.cos(ta) * (p.r + 12), p.y + Math.sin(ta) * (p.r + 12)));
+    }
+    put(rampartTower(p.r, p.a, groundZ(p.x - Math.cos(p.a) * (p.r + 6), p.y - Math.sin(p.a) * (p.r + 6)) - tz, tzf - tz, p.roof, srand), p.x, p.y, 0);
+  }
+  else if (p.kind === 'feature' && FEATURE[p.look]) put(FEATURE[p.look](p), p.x, p.y, p.a || 0);
+  else if (p.kind === 'nhouse' && NSTYLE[p.style]) {
+    var nsr = p.w < p.h;
+    put(NSTYLE[p.style](nsr ? p.h : p.w, nsr ? p.w : p.h, p), p.x, p.y, (nsr ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
+  }
+  else if (p.kind === 'nhouse' && p.style === 'notredame') {
+    /* built at the builder's own size and scaled by k, so the towers and the spires grow
+       with the plan rather than standing at the height they had on a smaller church */
+    var ndk = p.k || 1;
+    put(scaleFaces(notreDame(p.w / ndk, p.h / ndk, !p.whole), ndk), p.x, p.y, p.flip ? Math.PI : 0);
+  }
+  else if (p.kind === 'nhouse') {
+    /* the ridge runs along the long side, whichever way round the footprint is */
+    var nrot = p.w < p.h;
+    put(normanHouse(nrot ? p.h : p.w, nrot ? p.w : p.h, p.ht, p.s, p.style), p.x, p.y, (nrot ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
+  }
+  else if (p.kind === 'bunker' && p.st) {
+    /* a casemate is told which side of it the sea is on, in its own frame, because its
+       wing wall goes on that side whichever way along the beach it fires */
+    var st = p.st;
+    seedAt(st.x, st.y, 7);
+    if (st.style === 'casemate') {
+      var sea = LAND.south ? (Math.cos(st.a || 0) >= 0 ? 1 : -1) : (Math.cos(st.a || 0) >= 0 ? -1 : 1);
+      put(casemateModel(st.s, sea), st.x, st.y, st.a || 0);
+    } else put(bunkerModel(74, 46, st.s, st.sd), st.x, st.y, st.a || 0);
+  }
+}
 function sceneProps(tile) {
   var out = [], outA = [], outC = [], outAC = [], tiled = tile > 0, onlyStatic = tile === 0;
   function mine(x, y) { return !onlyStatic && (!tiled || tileOf(x, y) === tile); }
@@ -18933,52 +19683,10 @@ function sceneProps(tile) {
   _s = 4242;
   G.props.forEach(function (p) {
     if (!mine(p.x, p.y)) return;
-    seedAt(p.x, p.y, 1);
-    if (p.kind === 'ruin') {
-      /* once a shell has been into it, it draws from its own buffer rather than out of
-         this one: the merged tile cannot be edited and this house is going to change */
-      if (p.hurt) return;
-      if (p.style === 'church') { put(churchModel(p.w, p.h), p.x, p.y, 0); return; }
-      var bays = ruinBays(p), bayW = p.w / bays;
-      if (p.style === 'norman') {
-        for (var nb = 0; nb < bays; nb++)
-          put(ntBay(bayW - 2, p.h - 2, ntHeight(p), (p.s * 3 + nb * .41) % 1, null, ntOptsOf(p, nb, bays)),
-              p.x - p.w / 2 + bayW * (nb + .5), p.y, 0);
-        return;
-      }
-      for (var bh = 0; bh < bays; bh++) {
-        var bc = p.x - p.w / 2 + bayW * (bh + .5);
-        var wound = (p.damage * 9.7 + bh * .317) % 1;
-        var hh = (p.tall || p.style === 'civic' ? 84 : 66) + ((bh % 3) - 1) * 6;
-        put(houseModel(bayW - 2, p.h - 2, hh, (p.s * 3 + bh * .41) % 1, false, wound > .45), bc, p.y, 0);
-      }
-    } else if (p.kind === 'farm') put(farmModel(p.w, p.h), p.x, p.y, 0);
-    else if (p.kind === 'rtower') {
-      /* a tower of the ramparts: the rock's level inside it, the lowest ground round its
-         outer half, and its door on the town side */
-      var tz = groundZ(p.x, p.y), tzf = 1e9;
-      for (var tk = -2; tk <= 2; tk++) {
-        var ta = p.a + tk * .45;
-        tzf = Math.min(tzf, groundZ(p.x + Math.cos(ta) * (p.r + 12), p.y + Math.sin(ta) * (p.r + 12)));
-      }
-      put(rampartTower(p.r, p.a, groundZ(p.x - Math.cos(p.a) * (p.r + 6), p.y - Math.sin(p.a) * (p.r + 6)) - tz, tzf - tz, p.roof, srand), p.x, p.y, 0);
-    }
-    else if (p.kind === 'feature' && FEATURE[p.look]) put(FEATURE[p.look](p), p.x, p.y, p.a || 0);
-    else if (p.kind === 'nhouse' && NSTYLE[p.style]) {
-      var nsr = p.w < p.h;
-      put(NSTYLE[p.style](nsr ? p.h : p.w, nsr ? p.w : p.h, p), p.x, p.y, (nsr ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
-    }
-    else if (p.kind === 'nhouse' && p.style === 'notredame') {
-      /* built at the builder's own size and scaled by k, so the towers and the spires grow
-         with the plan rather than standing at the height they had on a smaller church */
-      var ndk = p.k || 1;
-      put(scaleFaces(notreDame(p.w / ndk, p.h / ndk, !p.whole), ndk), p.x, p.y, p.flip ? Math.PI : 0);
-    }
-    else if (p.kind === 'nhouse') {
-      /* the ridge runs along the long side, whichever way round the footprint is */
-      var nrot = p.w < p.h;
-      put(normanHouse(nrot ? p.h : p.w, nrot ? p.w : p.h, p.ht, p.s, p.style), p.x, p.y, (nrot ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
-    }
+    /* once a shell has been into it, it draws from its own buffer rather than out of
+       this one: the merged tile cannot be edited and this building is going to change */
+    if (p.hurt) return;
+    propParts(p, put);
   });
   /* the hedgerows, a leg at a time into the tile its middle is in, built in the world's
      own coordinates; and an oak standing out of the hedge every so often along it */
@@ -19442,12 +20150,7 @@ function sceneProps(tile) {
       put(pitch(box(0, 0, 7, 22, 2.2, 2.2, '#4e402c', '#5f4e36'), -.2, 0, 0), st.x + 6, st.y - 4, st.s * TAU + 1.2);
       put(box(0, 0, .6, 16, 8, 1.2, '#5a4a32', '#6b5a3e'), st.x - 8, st.y + 6, st.s * 5);       /* a door */
     } else if (st.kind === 'bunker') {
-      /* a casemate is told which side of it the sea is on, in its own frame, because its
-         wing wall goes on that side whichever way along the beach it fires */
-      if (st.style === 'casemate') {
-        var sea = LAND.south ? (Math.cos(st.a || 0) >= 0 ? 1 : -1) : (Math.cos(st.a || 0) >= 0 ? -1 : 1);
-        put(casemateModel(st.s, sea), st.x, st.y, st.a || 0);
-      } else put(bunkerModel(74, 46, st.s, st.sd), st.x, st.y, st.a || 0);
+      /* drawn with its prop (propParts), so that it can be broken like any building */
     } else if (st.kind === 'tobruk') {
       /* the collar sits at the ground round the hole, not at the bottom of it */
       put(place(tobrukModel(st.s), 0, 0, 0, naturalZ(st.x, st.y) - groundZ(st.x, st.y)), st.x, st.y, st.a || 0);
@@ -19592,6 +20295,9 @@ function buildScene() {
   fogUpload();
   TEX.decal = makeTexture(dcv.width, dcv.height, true);
   uploadDecals();
+  /* the rubble's ring is allocated here and not in the middle of a collapse: a buffer of
+     several megabytes made while the battle is running is a stall on the frame it is made */
+  G.rubDirty = 2; buildRubBuf();
   SCENE.ready = true;
 }
 
@@ -21290,10 +21996,8 @@ function houseModel(w, d, h, seed, roofed, damaged, st) {
 
   function holesFor(len, fs, street, fi) {
     var hs = [], bays = Math.max(2, Math.round(len / 26)), b, fl, u;
-    /* and every breach a shell has put in this wall since the battle started. They are
-       the same shape of thing the windows are -- a `u` along the wall and a band of
-       height -- which is why a building here can be knocked about without a second
-       geometry path: wallCourses cuts them out of the courses the same way. */
+    /* and any breach handed in, which is the same shape of thing a window is: a `u`
+       along the wall and a band of height, cut out of the courses by wallCourses */
     if (st && st.brk[fi]) hs = hs.concat(st.brk[fi]);
     for (fl = 0; fl < floors; fl++) {
       var wz = 13 + fl * (h - 30) * .55;
@@ -39507,10 +40211,10 @@ var NORM = { stone: ['#a09984', '#97917d', '#aea48e', '#968b78'], quoin: '#bdb4a
    a dormer or two in the street slope, tall windows in dressed stone with the shutters
    folded back against the wall, and on the main streets a shop on the ground floor. In
    the old town a few are still timber-framed over a stone ground floor.
-     It is built in bays, the Italian house's way, because a bay is what the destruction is
-   written against: `st` is the bay's state out of ruinState, its breaches are cut out of
-   its walls the way its windows are, and a storey that has come down takes the roof with
-   it. What is new is that a Norman house STANDS until something knocks it about: the
+     It is built in bays, the Italian house's way. `st`, where one is handed in, is a list
+   of breaches cut out of its walls the way its windows are; the game hands in none,
+   because a building is broken by cutting what this draws into cells (`frBuild`). What is
+   new is that a Norman house STANDS until something knocks it about: the
    Italian house was a ruin on the day it was built, and this one has glass in its windows
    and slates on its roof, or has been gutted by fire in the June raids (`o.gut`) and is a
    shell with its chimney stacks standing up out of it, which is the picture of Saint-Lo
@@ -39521,7 +40225,7 @@ var NORM = { stone: ['#a09984', '#97917d', '#aea48e', '#968b78'], quoin: '#bdb4a
    in the seven-unit courses, because a breach's ragged edge is the course ends and a
    clean window's edge is not. `o` is { front, ends: [-u end, +u end], kind: 'stone' |
    'render' | 'timber', shop, gut, storeys, hh, pitch } and w runs along x, d along y, the
-   bay's middle at the origin, faces numbered as ruinFace numbers them. */
+   bay's middle at the origin, faces numbered +y, -y, +x, -x. */
 var NTOWN = {
   stone: ['#8f897c', '#9a9282', '#86847c', '#a19886', '#7e7b73'],
   render: ['#c9bea4', '#bdb199', '#d2c7ad', '#c2b8a2', '#b7ab93'],
@@ -39748,8 +40452,8 @@ function ntBay(w, d, h, seed, st, o) {
     f = f.concat(place(gableRoof(L + .2, D + 6, h, rh * (D + 6) / D, N.slate, N.slateL), rot, 0, 0, 0));
     /* dormers in the street slope. The roof is built with its ridge along its own x and
        turned a quarter for a street that runs along y, which puts the street side at +y of
-       its frame for faces 0 and 3 and at -y for faces 1 and 2 (the faces are numbered as
-       ruinFace numbers them, and 0 and 2 are not a quarter turn apart) */
+       its frame for faces 0 and 3 and at -y for faces 1 and 2 (the faces are numbered +y,
+       -y, +x, -x, and 0 and 2 are not a quarter turn apart) */
     var sgn = (fr === 0 || fr === 3) ? 1 : -1;
     if (o.dormer !== 0 && r(9) > .25) {
       var dm = [], dz = h + rh * .16, dy0 = D / 2 - D * .16;
@@ -42300,31 +43004,29 @@ function drawBuildings3D() {
    scene is built once at the start of a battle and these go up during it. A site under
    construction rises out of the ground as the engineers work, which is the only way the
    player can see that anything is happening. */
-/* ---- a hurt building, meshed on its own ----
-   Every bay is rebuilt at the height it still stands to and round the holes it has
-   collected, and the rubble that has settled against it is laid on top. It is one
-   building's worth of geometry rather than a tile's, which is the whole reason it leaves
-   the merged buffer the moment it is first hit. */
-/* One bay's vertices, kept on the bay. A shell changes one wall of one bay, and the
-   whole house was being re-meshed and re-packed for it: three bays of a terrace is six
-   thousand faces and nineteen thousand vertices, which is eighteen milliseconds -- a
-   whole frame, on a frame where a house was hit, and a barrage hits houses constantly.
-   Meshing a bay is not the expensive half; packing it into the vertex stream is. */
-function ruinBayArray(b) {
-  var f = b.nt ? ntBay(b.w, b.d, ruinHeight(b), b.seed, b, b.nt) : houseModel(b.w, b.d, ruinHeight(b), b.seed, false, b.dmg, b);
-  return new Float32Array(facesToArray(place(f, 0, b.x, b.y, groundZ(b.x, b.y))));
-}
-function ruinRebuild(p) {
-  var B = ruinState(p), i, tot = 0;
-  for (i = 0; i < B.length; i++) {
-    if (!B[i].arr || B[i].dirty) { B[i].arr = ruinBayArray(B[i]); B[i].dirty = 0; }
-    tot += B[i].arr.length;
+/* ---- a hurt building, drawn on its own ----
+   One buffer per building out of `frBuild`, a range of it per cell; a cell that has gone
+   is a range of zeros, uploaded on the frame it went. Only the span between the first and
+   the last range that changed goes up. */
+function frUpload(R) {
+  if (R.buf && R.hi > R.lo) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, R.buf.vbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, R.lo * STRIDE, R.A, R.lo * 12, (R.hi - R.lo) * 12);
   }
-  var A = new Float32Array(tot), o = 0;
-  for (i = 0; i < B.length; i++) { A.set(B[i].arr, o); o += B[i].arr.length; }
-  if (p.buf) freeBuffer(p.buf);
-  p.buf = makeBuffer(A);
-  p.rebuild = 0;
+  if (R.bufB && R.hiB > R.loB) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, R.bufB.vbo);
+    gl.bufferSubData(gl.ARRAY_BUFFER, R.loB * STRIDE, R.B, R.loB * 12, (R.hiB - R.loB) * 12);
+  }
+  R.lo = R.loB = 1e9; R.hi = R.hiB = -1;
+}
+/* a falling piece's frame, which is its own rotation and where its middle is */
+function frMat(b) {
+  var m = b.mat || (b.mat = new Float32Array(16)), R = b.R;
+  m[0] = R[0]; m[1] = R[3]; m[2] = R[6]; m[3] = 0;
+  m[4] = R[1]; m[5] = R[4]; m[6] = R[7]; m[7] = 0;
+  m[8] = R[2]; m[9] = R[5]; m[10] = R[8]; m[11] = 0;
+  m[12] = b.x; m[13] = b.y; m[14] = b.z; m[15] = 1;
+  return m;
 }
 /* ---- the debris buffer ----
    This is the one buffer in the file that is rebuilt while the game is running, and that
@@ -42433,30 +43135,151 @@ function buildDebrisBuf() {
 }
 /* and all the masonry that has come to rest, which is one buffer for the whole map: it
    changes on every frame of a collapse while the walls above it do not, so it is not in
-   with them. */
-var RUBBUF = null, RUBARR = null;
+   with them. It is a ring of `rubCap()` slots of one block each, allocated once: a block
+   that settles is packed into the next slot and only that slot goes up, and when the ring
+   is full the newest overwrites the oldest, which is the block `settleChunk` has just
+   taken off the front of the list. Repacked whole and uploaded whole on every frame a
+   block landed, a heap of two thousand cost two seconds of a collapse on this machine. */
+var RUBBUF = null, RUBARR = null, RUBHEAD = 0, RUBN = 0, RUBLO = 1e9, RUBHI = -1, _rubOne = [null];
+var RUBSLOT = 36 * 12;
+function rubSlot(c) {
+  var cap = rubCap();
+  if (!RUBARR || RUBARR.length !== cap * RUBSLOT || G.rubDirty === 2 || G.rub.length !== Math.min(cap, RUBN + 1)) { G.rubDirty = 2; return; }
+  var s = RUBHEAD;
+  RUBHEAD = (RUBHEAD + 1) % cap; RUBN = Math.min(cap, RUBN + 1);
+  _rubOne[0] = c;
+  packChunks(_rubOne, RUBARR, s * RUBSLOT);
+  if (s < RUBLO) RUBLO = s;
+  if (s + 1 > RUBHI) RUBHI = s + 1;
+  G.rubDirty = 1;
+}
 function buildRubBuf() {
+  var cap = rubCap(), full = G.rubDirty === 2 || G.rub.length !== RUBN;
   G.rubDirty = 0;
-  if (!G.rub.length) { if (RUBBUF) RUBBUF.n = 0; return; }
-  /* the same persistent buffer the airborne masonry uses, and for the same reason: a
-     stone lands on most frames of a collapse, and a fresh GL buffer on each of them is
-     the churn the hand-written packer exists to avoid */
-  var need = G.rub.length * 36 * 12;
-  if (!RUBARR || RUBARR.length < need) RUBARR = new Float32Array(Math.ceil(need * 1.3));
-  var A = RUBARR, o = packChunks(G.rub, A, 0);
+  if (!RUBARR || RUBARR.length !== cap * RUBSLOT) { RUBARR = new Float32Array(cap * RUBSLOT); full = true; }
   if (!RUBBUF) RUBBUF = { vbo: gl.createBuffer(), n: 0, cap: -1 };
   gl.bindBuffer(gl.ARRAY_BUFFER, RUBBUF.vbo);
-  if (RUBBUF.cap !== A.length) { gl.bufferData(gl.ARRAY_BUFFER, A, gl.DYNAMIC_DRAW); RUBBUF.cap = A.length; }
-  else gl.bufferSubData(gl.ARRAY_BUFFER, 0, A, 0, o);
-  RUBBUF.n = o / 12;
+  if (RUBBUF.cap !== RUBARR.length) { gl.bufferData(gl.ARRAY_BUFFER, RUBARR.byteLength, gl.DYNAMIC_DRAW); RUBBUF.cap = RUBARR.length; full = true; }
+  if (full) {
+    /* the list read again from the top: the ring is the list, oldest first */
+    var o = packChunks(G.rub, RUBARR, 0);
+    RUBN = G.rub.length; RUBHEAD = RUBN % cap;
+    if (o) gl.bufferSubData(gl.ARRAY_BUFFER, 0, RUBARR, 0, o);
+  } else if (RUBHI > RUBLO) {
+    gl.bufferSubData(gl.ARRAY_BUFFER, RUBLO * RUBSLOT * 4, RUBARR, RUBLO * RUBSLOT, (RUBHI - RUBLO) * RUBSLOT);
+  }
+  RUBLO = 1e9; RUBHI = -1;
+  RUBBUF.n = RUBN * 36;
+}
+/* ---- the heap itself ----
+   The stones are what a heap looks like close to and the grid is what it is: drawn as a
+   surface over the ground, coloured by the stone that landed in each cell, the mound a
+   house came down into reads as one pile with blocks lying on it rather than as two
+   thousand boxes on a lawn, and a block the ring has had to let go of is buried in it
+   rather than gone. The surface runs between the middles of the cells, which is where
+   `heapZ` puts a man standing on it, and is tucked under the ground where the heap runs
+   out, so its edge goes into the soil and not into the air. Rebuilt whole, at most a few
+   times a second while stone is landing: a whole town knocked down is a few thousand
+   quads, and a scan of the grid is a fraction of a millisecond. */
+var HEAPBUF = null, HEAPARR = null, _heapT = -9, _hmat = {}, _hU = null, _hZ = null, _hC = null;
+/* broken masonry is the colour of what it was and the grain of nothing in particular: a
+   slate roof that came down is grey and not a lattice of slates, so the heap takes the
+   stone's colour, a shade dustier, on the earth tile */
+function heapMat(col) {
+  var m = _hmat[col];
+  if (!m) {
+    var c = hexRGB(lit(col, .86)), g = (c[0] + c[1] + c[2]) / 3, mi = matIndex('earth');
+    m = _hmat[col] = [c[0] * .8 + g * .2, c[1] * .8 + g * .2, c[2] * .8 + g * .2, mi, MATS.spec[mi][2] * 2.5];
+  }
+  return m;
+}
+function buildHeapBuf() {
+  G.heapDirty = 0; _heapT = G.t;
+  if (!MND || !HEAPBB) { if (HEAPBUF) HEAPBUF.n = 0; return; }
+  var W = MNDW, H = MNDH, i, j, k, n = 0, o = 0;
+  /* only the box the heap has reached is scanned, and the scratch is kept */
+  var i0 = Math.max(0, HEAPBB[0] - 2), j0 = Math.max(0, HEAPBB[1] - 2), i1 = Math.min(W - 1, HEAPBB[2] + 2), j1 = Math.min(H - 1, HEAPBB[3] + 2);
+  if (!_hU || _hU.length !== W * H) { _hU = new Uint8Array(W * H); _hZ = new Float32Array(W * H); _hC = new Int16Array(W * H); }
+  var Z = _hZ, C = _hC, used = _hU;
+  for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) used[j * W + i] = 0;
+  for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
+    if (!(MND[j * W + i] > .5)) continue;
+    for (var dj = -1; dj <= 0; dj++) for (var di = -1; di <= 0; di++) {
+      var qi = i + di, qj = j + dj;
+      if (qi >= 0 && qj >= 0 && qi < W - 1 && qj < H - 1 && !used[qj * W + qi]) { used[qj * W + qi] = 1; n++; }
+    }
+  }
+  if (!n) { if (HEAPBUF) HEAPBUF.n = 0; return; }
+  /* the height and the stone at each cell's middle, for the cells a quad touches */
+  for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
+    k = j * W + i;
+    if (!(used[k] || (i && used[k - 1]) || (j && used[k - W]) || (i && j && used[k - W - 1]))) continue;
+    var m = MND[k];
+    Z[k] = floorZ((i + .5) * MC, (j + .5) * MC) + (m > .3 ? m : m - .8);
+    C[k] = MNDC[k] ? MNDC[k] : -1;
+  }
+  var need = n * 6 * 12;
+  if (!HEAPARR || HEAPARR.length < need) HEAPARR = new Float32Array(Math.ceil(need * 1.5));
+  var A = HEAPARR;
+  function shade(kk) {
+    /* the stone of the cell, or of a neighbour where nothing has landed in it yet */
+    var c = C[kk];
+    if (c < 1) { var ii = kk % W, jj = (kk / W) | 0, d, e;
+      for (d = -1; d <= 1 && c < 1; d++) for (e = -1; e <= 1 && c < 1; e++) {
+        var a2 = ii + e, b2 = jj + d;
+        if (a2 >= 0 && b2 >= 0 && a2 < W && b2 < H && C[b2 * W + a2] > 0 && MND[b2 * W + a2] > 0) c = C[b2 * W + a2];
+      } }
+    return heapMat(HEAPP[(c < 1 ? 1 : c) - 1] || '#8a8172');
+  }
+  function vert(kk, ii, jj) {
+    var zl = Z[ii > 0 ? kk - 1 : kk], zr = Z[ii < W - 1 ? kk + 1 : kk], zd = Z[jj > 0 ? kk - W : kk], zu = Z[jj < H - 1 ? kk + W : kk];
+    var nx = -(zr - zl) / (2 * MC), ny = -(zu - zd) / (2 * MC), nl = Math.sqrt(nx * nx + ny * ny + 1);
+    var M = shade(kk), x = (ii + .5) * MC, y = (jj + .5) * MC;
+    A[o] = x; A[o + 1] = y; A[o + 2] = Z[kk];
+    A[o + 3] = nx / nl; A[o + 4] = ny / nl; A[o + 5] = 1 / nl;
+    A[o + 6] = M[0]; A[o + 7] = M[1]; A[o + 8] = M[2];
+    A[o + 9] = x * M[4]; A[o + 10] = y * M[4]; A[o + 11] = M[3];
+    o += 12;
+  }
+  for (j = j0; j <= j1; j++) for (i = i0; i <= i1; i++) {
+    k = j * W + i;
+    if (!used[k]) continue;
+    /* two triangles wound the way a chunk's top is, so it faces up under the culling */
+    var a = k, b = k + 1, c = k + W, d = k + W + 1;
+    vert(a, i, j); vert(b, i + 1, j); vert(c, i, j + 1);
+    vert(b, i + 1, j); vert(d, i + 1, j + 1); vert(c, i, j + 1);
+  }
+  if (!HEAPBUF) HEAPBUF = { vbo: gl.createBuffer(), n: 0, cap: -1 };
+  gl.bindBuffer(gl.ARRAY_BUFFER, HEAPBUF.vbo);
+  if (HEAPBUF.cap !== A.length) { gl.bufferData(gl.ARRAY_BUFFER, A.byteLength, gl.DYNAMIC_DRAW); HEAPBUF.cap = A.length; }
+  gl.bufferSubData(gl.ARRAY_BUFFER, 0, A, 0, o);
+  HEAPBUF.n = o / 12;
 }
 function drawRuins3D() {
-  var i, p;
+  var i, p, alpha = 0;
+  /* A wall cut open shows the inside of its own faces, which the culling would throw
+     away and leave a hole through to the street behind. Drawn both ways round, with the
+     back of a face lit as the broken core of the wall (`uBack`), a breach reads as stone
+     the whole way through. */
+  gl.disable(gl.CULL_FACE);
+  gl.uniform1f(PROG.u.uBack, 1);
   for (i = 0; i < G.hurt.length; i++) {
     p = G.hurt[i];
-    if (p.rebuild) ruinRebuild(p);
-    if (p.buf) drawGeom(p.buf, m4model(0, 0, 0, 0, 1), false, null);
+    if (!p.fr) continue;
+    frUpload(p.fr);
+    if (p.fr.buf) drawGeom(p.fr.buf, _ident, false, null);
+    if (p.fr.bufB) alpha = 1;
   }
+  for (i = 0; i < G.fall.length; i++) if (G.fall[i].buf) drawGeom(G.fall[i].buf, frMat(G.fall[i]), false, null);
+  gl.uniform1f(PROG.u.uBack, 0);
+  if (alpha) {
+    gl.uniform1f(PROG.u.uAlphaTest, 1);
+    for (i = 0; i < G.hurt.length; i++) { p = G.hurt[i]; if (p.fr && p.fr.bufB) drawGeom(p.fr.bufB, _ident, false, null); }
+    gl.uniform1f(PROG.u.uAlphaTest, 0);
+  }
+  gl.enable(gl.CULL_FACE);
+  if (G.heapDirty && (G.t - _heapT > .3 || G.t < _heapT || (!G.debris.length && !G.fall.length))) buildHeapBuf();
+  if (HEAPBUF && HEAPBUF.n) drawGeom(HEAPBUF, _ident, false, null);
   if (G.rubDirty) buildRubBuf();
   if (RUBBUF && RUBBUF.n) drawGeom(RUBBUF, m4model(0, 0, 0, 0, 1), false, null);
   if (G.debris.length) { buildDebrisBuf(); if (DEBN) drawGeom(DEBBUF, m4model(0, 0, 0, 0, 1), false, null); }
@@ -42907,10 +43730,12 @@ function render() {
     /* a house that has left the merged tile still has to throw the shadow it threw
        before it was hit, or a shelled street lights up as the walls come off it */
     for (var hri = 0; hri < G.hurt.length; hri++) {
-      if (G.hurt[hri].buf) drawDepthGeom(G.hurt[hri].buf, m4model(0, 0, 0, 0, 1));
+      if (G.hurt[hri].fr && G.hurt[hri].fr.buf) drawDepthGeom(G.hurt[hri].fr.buf, _ident);
     }
+    for (var fli = 0; fli < G.fall.length; fli++) if (G.fall[fli].buf) drawDepthGeom(G.fall[fli].buf, frMat(G.fall[fli]));
     if (DEBBUF && DEBN) drawDepthGeom(DEBBUF, m4model(0, 0, 0, 0, 1));
     if (RUBBUF && RUBBUF.n) drawDepthGeom(RUBBUF, m4model(0, 0, 0, 0, 1));
+    if (HEAPBUF && HEAPBUF.n) drawDepthGeom(HEAPBUF, _ident);
     list.forEach(function (u) { castUnit(u); });
     gl.cullFace(gl.BACK);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -45454,9 +46279,12 @@ function startGame(side, diff, mode, arty, team) {
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   missionTitle();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.smoke = []; G.sel = [];
-  G.debris = []; G.hurt = []; G.rub = []; G.tileQ = {}; G.rubDirty = 1;
+  frFree();
+  G.debris = []; G.hurt = []; G.fall = []; G.rub = []; G.tileQ = {}; G.rubDirty = 1;
+  G.frStat = { made: 0, bodies: 0, lost: 0 };
   MND = null;
   if (RUBBUF) RUBBUF.n = 0;
+  if (HEAPBUF) HEAPBUF.n = 0;
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
@@ -45570,6 +46398,7 @@ function frame(now) {
     for (var j = 0; j < G.blds.length; j++) updateBuilding(G.blds[j], dt);
     updateShots(dt);
     stepDebris(dt);
+    frTick(dt);
     flushTileQ();
     flushGroundQ();
     updateSectors(dt);
