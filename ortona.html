@@ -1877,7 +1877,9 @@ var UNITS = {
     wheeled: 1, sec: ['coax'],
     hp: 400, armor: 72, speed: 140, sight: 370, pop: 10, cost: { mp: 250, fu: 35 }, time: 26,
     req: 'ger_dep',
-    w: { range: 300, dmg: 12, rof: .30, acc: .58, sup: .03, pen: 25, aoe: 14, shell: 1, auto: 1 },
+    /* the burst is 9 and not 14: when a burst on a man at the edge of his section began to
+       reach him, at 14 the Rangers beat it half the time where they had beaten it 92 per cent */
+    w: { range: 300, dmg: 12, rof: .30, acc: .58, sup: .03, pen: 25, aoe: 9, shell: 1, auto: 1 },
     wUp: { puma: { range: 380, dmg: 85, rof: 2.6, acc: .70, sup: .04, pen: 120, aoe: 22, shell: 1, brake: 1 } },
     desc: 'Eight wheels, a diesel and a driver at either end: the heavy armoured car, faster than anything on the beach and quick out of a street the way it came in. It arrives with the 2 cm and an MG 42 in an open turret under two wire screens, which keeps men down and opens a half-track or a scout car. The closed turret with the 5 cm is a field upgrade, and with it the car will open a Sherman from the flank.'
   },
@@ -3922,7 +3924,8 @@ function buildMap(data) {
         break;
       case 'crater':
         addCover(e.x, e.y, e.r, 1, 'crater');
-        G.craters.push({ x: e.x, y: e.y, r: e.r });
+        /* with its cover, so a shell that widens it widens the cover with it (`digCrater`) */
+        G.craters.push({ x: e.x, y: e.y, r: e.r, cov: G.covers[G.covers.length - 1] });
         carve(e.x, e.y, e.x, e.y, e.r * .78, -(2.6 + e.r * .15), { w: e.r * .55, h: 2 + e.r * .055 }, 'bowl');
         break;
       case 'rubble':
@@ -7294,7 +7297,9 @@ function canGarrison(u, bk) {
             masonry: there are no windows to fight out of and no storey to stand on, and
             a section sent into one would be standing in the open believing it held the
             strongest cover on the map. */
-         frHoldable(bk);
+         frHoldable(bk) &&
+         /* nor is a house on fire somewhere to go */
+         !(bk.fr && bk.fr.sumH > 2);
 }
 /* where the men stand: spread along the inside of the four walls, facing out */
 function garrisonSlots(bk, count) {
@@ -8655,6 +8660,11 @@ function smokeColumns() {
     var k = w.t < 30 ? 1 : clamp(1 - (w.t - 30) / 90, 0, 1);
     _smoke.push({ x: w.x, y: w.y, r: 52, k: k * .8 });
   }
+  /* and a house on fire, which smokes harder than a tank and for longer */
+  for (var h = 0; h < G.hurt.length; h++) {
+    var R = G.hurt[h].fr;
+    if (R && R.fire.length && R.sumH > .5) _smoke.push({ x: R.fx, y: R.fy, r: 60 + Math.min(60, R.sumH * 5), k: Math.min(.85, R.sumH * .07) });
+  }
 }
 function smokeOn(x0, y0, x1, y1) {
   if (!_smoke.length) return 1;
@@ -9949,6 +9959,22 @@ var FR_C = 14, FR_Z = 9, FR_J = 3.6;                /* a cell along the ground, 
 var FR_ATT = .32;                                    /* what one cell of wall lets through of a blast */
 var FR_SAFE = 3.2;                                   /* what a cell will carry against what it carried standing */
 var FR_T = 4.5;                                      /* the thickness the stone in a cell is taken to have */
+var FR_IGN = .3;                                     /* how readily a shell sets alight what it cracks */
+var FR_SOOT = [.075, .065, .055];                   /* what fire and a burst leave on a wall */
+/* What will burn, by the material a face is drawn in. A wall of rubble stone does not
+   burn and a roof does, because a roof is slates on rafters; a floor is boards on joists,
+   a shed is planks, a shop front is painted timber and the inside of a house is lath and
+   plaster. Read off the tile each face already carries, so nothing had to be authored. */
+var FR_FUEL = null;
+function frFuelOf(m) {
+  if (!FR_FUEL) {
+    var F = { wood: 1, canvas: 1.1, cloth: 1.1, hessian: 1, scrim: 1, net: .8, leaf: .7, grass: .7, bark: .8,
+              tile: .6, plaster: .3, paint: .35, leather: .6, generic: .1 };
+    FR_FUEL = [];
+    for (var i = 0; i < MATS.names.length; i++) FR_FUEL.push(F[MATS.names[i]] || 0);
+  }
+  return FR_FUEL[m] || 0;
+}
 function frHash(a, b, s) { var h = Math.sin(a * 127.1 + b * 311.7 + s * 74.7) * 43758.5453; return h - Math.floor(h); }
 /* what a building is made of: how much of a shell it takes to open it (`str`, which
    divides the breach a round cuts), and how far a piece of it will stand out over nothing
@@ -10087,6 +10113,7 @@ function frBuild(p) {
   for (k = 0; k < nz; k++) for (i = 0; i < nx; i++) for (j = 0; j <= ny; j++)
     YP[(k * nx + i) * (ny + 1) + j] = y0 + j * FR_C + (j > 0 && j < ny ? (frHash(j + 91, k * 31 + i, sd) - .5) * 2 * FR_J : 0);
   var cells = new Array(N), mass = new Float32Array(N), best = new Float32Array(N), col = new Array(N), flat = new Float32Array(N);
+  var fuel = new Float32Array(N);
   function add(cc, g) {
     var a = frArea(g.v);
     if (a < .02) return;
@@ -10094,6 +10121,7 @@ function frBuild(p) {
     if (!g.alpha) {
       var fn = faceNormal(g.v[0], g.v[1], g.v[2]);
       mass[cc] += a; flat[cc] += a * Math.abs(fn.z);
+      fuel[cc] += a * frFuelOf(g.m !== undefined ? g.m : matOf(g.c));
       if (a > best[cc]) { best[cc] = a; col[cc] = g.c; }
     }
   }
@@ -10138,6 +10166,7 @@ function frBuild(p) {
     s1[c] = A.length / 12 - s0[c]; a1[c] = B.length / 12 - a0[c];
     alive[c] = 1;
     flat[c] = mass[c] > 0 ? flat[c] / mass[c] : 0;
+    fuel[c] = mass[c] > 0 ? fuel[c] / mass[c] : 0;
     if (mass[c] < 1) mass[c] = 1;
   }
   var spec = frSpec(p);
@@ -10146,6 +10175,8 @@ function frBuild(p) {
             col: col, flat: flat, tol: new Uint8Array(N), glue: new Uint8Array(N), cap: new Float32Array(N), nglue: 0,
             kG: new Int16Array(NC), gz: new Float32Array(NC), top: new Float32Array(NC), stand: new Uint8Array(NC),
             wall: new Uint8Array(NC), up: new Uint8Array(NC), foot: new Uint8Array(NC),
+            fuel: fuel, heat: new Float32Array(N), burn: new Float32Array(N), char: new Float32Array(N), m1: null,
+            fire: [], fireT: 0, ck: 0, sumH: 0, fx: 0, fy: 0, fz: 0,
             spec: spec, m0: 0, mAlive: 0, tall: 0, thr: 34, nWall: 0, wallUp: 0, dirty: 0, t: 0, lo: 1e9, hi: -1, loB: 1e9, hiB: -1, buf: null, bufB: null };
   /* the ground under each column, and which columns are the building's own footprint */
   for (j = 0; j < ny; j++) for (i = 0; i < nx; i++) {
@@ -10155,6 +10186,20 @@ function frBuild(p) {
   }
   for (c = 0; c < N; c++) if (alive[c]) R.m0 += mass[c];
   R.mAlive = R.m0;
+  R.m1 = new Float32Array(mass);
+  /* A cell of floor or roof above the ground storey is boards on joists or slates on
+     rafters whatever its faces are drawn in (a Norman roof is drawn in the stone tile,
+     because slate is stone), and a cell of wall above the ground has its lintels, its
+     window frames and the ends of the joists let into it. The upper storeys of a house
+     framed in timber are the timber. A casemate has none of that, and a rampart tower
+     backed by the rock very little. */
+  for (c = 0; c < N; c++) {
+    if (!alive[c]) continue;
+    var kc = (c / NC) | 0, clc = c - kc * NC;
+    if (kc > R.kG[clc] + 1) fuel[c] = Math.max(fuel[c], flat[c] > .3 ? .55 : .06);
+    if (p.nk === 'timber' && z0 + (kc + .5) * FR_Z - R.gz[clc] > 30) fuel[c] = Math.max(fuel[c], .5);
+    if (spec.hard) fuel[c] = 0; else if (p.kind === 'rtower') fuel[c] *= .3;
+  }
   /* What it stands on whole. A piece nothing reaches from the ground by the four ways a
      cell is carried (a lamp on a bracket, the cross on a gable) is glued to whatever it
      touches; one that touches nothing is held where it is. Then each cell may stand out
@@ -10291,6 +10336,44 @@ function frTops(R) {
     R.top[cl] = t < 0 ? -1e9 : R.z0 + (t + 1) * FR_Z;
   }
 }
+/* What fire and a burst leave on a wall, written into the cell's own range of the buffer:
+   the colours are moved toward soot by `to`, worked back from where they were so nothing
+   has to keep the colours the cell was built with. A burst blackens what it cracks, a
+   fire chars what it burns and smokes the stone over it, and a cell that is cracked
+   through reads darker than the wall round it before it goes. */
+function frTint(R, c, to) {
+  var a = R.char[c];
+  if (to > .92) to = .92;
+  if (to - a < .025) return;
+  R.char[c] = to;
+  if (!R.s1[c]) return;
+  /* not evenly over the cell, which drew a burnt roof as a chessboard of black squares:
+     each vertex takes it by a factor off where it stands, so the edge of a scorch wanders
+     across the cells the way smoke does */
+  var A = R.A, S = FR_SOOT, i = R.s0[c] * 12 + 6, e = (R.s0[c] + R.s1[c]) * 12;
+  for (; i < e; i += 12) {
+    var h = Math.sin(A[i - 6] * .37 + A[i - 5] * .29 + A[i - 4] * .53) * 43758.5453, m = .45 + (h - Math.floor(h)) * 1.1;
+    var av = Math.min(.95, a * m), tv = Math.min(.95, to * m), k0 = 1 - av;
+    var r0 = (A[i] - S[0] * av) / k0, g0 = (A[i + 1] - S[1] * av) / k0, b0 = (A[i + 2] - S[2] * av) / k0;
+    A[i] = r0 + (S[0] - r0) * tv; A[i + 1] = g0 + (S[1] - g0) * tv; A[i + 2] = b0 + (S[2] - b0) * tv;
+  }
+  R.lo = Math.min(R.lo, R.s0[c]); R.hi = Math.max(R.hi, R.s0[c] + R.s1[c]);
+}
+/* and the stone out of a charred cell is charred: a few shades, so the heap's palette of
+   colours does not fill with every step between */
+var FRSOOTC = {};
+function frSootCol(col, k) {
+  col = col || '#8a8172';
+  if (k < .4) return col;
+  var q = k < .65 ? 1 : 2, key = col + q, out = FRSOOTC[key];
+  if (out) return out;
+  var c = hexRGB(col), f = q === 1 ? .3 : .5, S = FR_SOOT, h = '#';
+  for (var i = 0; i < 3; i++) {
+    var v = Math.round((c[i] + (S[i] - c[i]) * f) * 255);
+    h += (v < 16 ? '0' : '') + v.toString(16);
+  }
+  return (FRSOOTC[key] = h);
+}
 /* A cell out of the building: its range of the buffer is zeroed, which draws nothing, and
    the stone in it goes where `how` says: 1 is thrown by a blast and 2 drops where it gave. */
 function frZero(R, c) {
@@ -10310,7 +10393,8 @@ function frKill(p, c, how, sx, sy, sz) {
     var sp = 26 + Math.random() * 46 + Math.max(0, 40 - dl) * .8;
     vx = dx / dl * sp; vy = dy / dl * sp; vz = Math.max(0, dz / dl) * sp * .5 + rnd(12, 44);
   }
-  frStone(R.col[c], R.mass[c], q[0], q[1], q[2], vx, vy, vz, how === 1 ? 10 : 7, R.flat[c]);
+  frStone(frSootCol(R.col[c], R.char[c]), R.mass[c], q[0], q[1], q[2], vx, vy, vz, how === 1 ? 10 : 7, R.flat[c]);
+  if (R.heat[c] > 0) R.heat[c] = 0;
 }
 /* The stone a cell held, as the pieces it breaks into. Not all of it: a shell turns a good
    share of what it takes out into dust and chips, which the burst and the smoke draw, and
@@ -10416,6 +10500,9 @@ function frHit(p, sx, sy, bh, r, br, owner) {
   /* and a hole under a stone's width across is a scar: it cracks what it reaches and
      takes nothing out */
   Dh = brE * Math.sqrt(1 - sMin / r2) < 5 ? 1 : 1 - Math.min(.95, (brE * brE + sMin * (1 - brE * brE / r2)) / r2);
+  /* and what it sets alight: a shell is a fire as well as a blast, more so in a room, and
+     what catches is what it cracked and did not take away */
+  var ign = FR_IGN * (conf ? 2.2 : 1) * clamp(brE / 14, .4, 1.8), burn = [];
   each(function (c, d2, bx, by, bz) {
     var D = 1 - d2 / r2;
     if (D < Dh * .5) return;
@@ -10426,8 +10513,33 @@ function frHit(p, sx, sy, bh, r, br, owner) {
     if (dealt < .03) return;
     R.dmg[c] += dealt; any = 1;
     if (R.dmg[c] >= 1) kill.push(c);
+    else {
+      frTint(R, c, R.char[c] + dealt * .4 + R.dmg[c] * .12);
+      if (R.fuel[c] >= .15 && Math.random() < dealt * R.fuel[c] * ign) burn.push(c);
+    }
   });
   for (i = 0; i < kill.length; i++) frKill(p, kill[i], 1, sx, sy, sz);
+  for (i = 0; i < burn.length; i++) frIgnite(p, burn[i], .3);
+  /* What the eye sees of a wall coming apart is not the blocks, which are few, but the
+     cloud of lime and brick dust it goes up in and the spray of small stuff ahead of it:
+     a cloud off each cell it took out and a handful of pieces thrown out of the breach,
+     in the masonry's own pale colour. */
+  if (kill.length && onScreen(sx, sy)) {
+    var np = Math.min(kill.length, MOB ? 3 : 8), nc = Math.min(kill.length * 2, MOB ? 6 : 16);
+    for (i = 0; i < np; i++) {
+      var q = frCellC(R, kill[(i * kill.length / np) | 0]);
+      var dc = spawnFx('smoke', q[0] + rnd(-5, 5), q[1] + rnd(-5, 5), 10 + rnd(0, 8) + Math.min(14, kill.length), q[2] - 6);
+      if (dc) { dc.c = 3; dc.rise = 18 + Math.random() * 30; dc.op = .55; dc.dur = 2.6 + Math.random() * 2; dc.drift = 26; }
+    }
+    for (i = 0; i < nc; i++) {
+      var q2 = frCellC(R, kill[(Math.random() * kill.length) | 0]);
+      var ox = q2[0] - sx, oy = q2[1] - sy, ol = Math.hypot(ox, oy) || 1, spd = rnd(60, 160);
+      var ej = spawnFx('ejecta', q2[0], q2[1], rnd(1.2, 2.8), q2[2]);
+      if (!ej) break;
+      ej.vx = ox / ol * spd + rnd(-30, 30); ej.vy = oy / ol * spd + rnd(-30, 30); ej.vz = rnd(20, 110);
+      ej.c = 3; ej.dur = rnd(.8, 1.8);
+    }
+  }
   if (any) { R.dirty = 1; if (!(R.t > G.t)) R.t = G.t; }
   return kill.length;
 }
@@ -10529,7 +10641,7 @@ function frBody(p, comp) {
     for (t = o; t < o + e - a; t += 12) { V[t] -= cx; V[t + 1] -= cy; V[t + 2] -= cz; }
     o += e - a;
     lc[i * 3] = q[0] - cx; lc[i * 3 + 1] = q[1] - cy; lc[i * 3 + 2] = q[2] - cz;
-    lm[i] = R.mass[c]; cols.push(R.col[c]); fl.push(R.flat[c]);
+    lm[i] = R.mass[c]; cols.push(frSootCol(R.col[c], R.char[c])); fl.push(R.flat[c]); R.heat[c] = 0;
     bx0 = Math.min(bx0, lc[i * 3] - FR_C / 2); bx1 = Math.max(bx1, lc[i * 3] + FR_C / 2);
     by0 = Math.min(by0, lc[i * 3 + 1] - FR_C / 2); by1 = Math.max(by1, lc[i * 3 + 1] + FR_C / 2);
     bz0 = Math.min(bz0, lc[i * 3 + 2] - FR_Z / 2); bz1 = Math.max(bz1, lc[i * 3 + 2] + FR_Z / 2);
@@ -10691,9 +10803,164 @@ function frFree() {
 function frTick(dt) {
   if (G.fall.length) frBodies(dt);
   for (var i = 0; i < G.hurt.length; i++) {
-    var p = G.hurt[i];
-    if (p.fr && p.fr.dirty && G.t >= p.fr.t) frStep(p);
+    var p = G.hurt[i], R = p.fr;
+    if (!R) continue;
+    if (R.fire.length) { frFire(p, dt); frFireFx(p, dt); }
+    frCrumble(p, dt);
+    if (R.dirty && G.t >= R.t) frStep(p);
   }
+}
+/* ---- fire ----
+   A cell catches when a shell cracks it and there is something in it to burn, or when the
+   cell beside it is burning: upward most readily, because fire climbs, sideways less and
+   downward hardly at all, and from the end of a terrace into the next house. A burning
+   cell comes up to a heat its fuel allows and dies away as the fuel goes, and while it
+   burns it weakens, which is the half of a fire that brings a house down: a roof or a
+   floor that has burnt through drops into the storey under it, charred, and the stone
+   round it is left standing black, smoked over every opening. The men in a building on
+   fire are hurt by it and got out of it, and nobody goes into one. */
+function frIgnite(p, c, h) {
+  var R = p.fr;
+  if (!R || !R.alive[c] || R.heat[c] > 0 || R.burn[c] >= 1 || R.fuel[c] < .15) return false;
+  R.heat[c] = h || .2;
+  R.fire.push(c);
+  return true;
+}
+function frCatch(p, n, chance, up) {
+  var R = p.fr;
+  if (!R.alive[n] || R.heat[n] > 0 || R.burn[n] >= 1) return;
+  /* stone does not catch; the smoke out of the window under it blackens it */
+  if (R.fuel[n] < .15) { if (up) frTint(R, n, Math.min(.6, R.char[n] + chance * .8)); return; }
+  if (Math.random() < chance * R.fuel[n] * 4) frIgnite(p, n, .15);
+}
+/* the next house along, through a party wall or across a lane a few feet wide */
+function frLeap(p, c) {
+  var R = p.fr, q = frCellC(R, c), to = null;
+  ruinsNear(q[0], q[1], FR_C * 1.3, function (o) { if (!to && o !== p && !o.dead) to = o; });
+  if (!to || !frMake(to)) return;
+  var T = to.fr, best = -1, bd = 1e9, i, j, k;
+  var ci = Math.floor((q[0] - T.x0) / FR_C), cj = Math.floor((q[1] - T.y0) / FR_C), ck = Math.floor((q[2] - T.z0) / FR_Z);
+  for (k = ck - 1; k <= ck + 1; k++) for (j = cj - 2; j <= cj + 2; j++) for (i = ci - 2; i <= ci + 2; i++) {
+    if (i < 0 || j < 0 || k < 0 || i >= T.nx || j >= T.ny || k >= T.nz) continue;
+    var n = (k * T.ny + j) * T.nx + i;
+    if (!T.alive[n] || T.fuel[n] < .15) continue;
+    var d = Math.abs(i - ci) + Math.abs(j - cj) + Math.abs(k - ck);
+    if (d < bd) { bd = d; best = n; }
+  }
+  if (best >= 0) frIgnite(to, best, .2);
+}
+function frFire(p, dt) {
+  var R = p.fr, L = R.fire, nx = R.nx, ny = R.ny, NC = nx * ny, i, sum = 0, die = 0, wx = 0, wy = 0, wz = 0;
+  R.fireT += dt;
+  if (R.fireT < .25) return;
+  dt = R.fireT; R.fireT = 0;
+  for (i = L.length - 1; i >= 0; i--) {
+    var c = L[i];
+    if (!R.alive[c]) { R.heat[c] = 0; L.splice(i, 1); continue; }
+    var f = R.fuel[c], h = R.heat[c], b = R.burn[c];
+    var hot = Math.min(1, .3 + f * .7);
+    h += ((b < .75 ? hot : hot * Math.max(0, (1 - b) * 4)) - h) * Math.min(1, dt * .3);
+    R.heat[c] = h;
+    /* a cell of timber burns for most of a minute, a cell of slates on rafters for about
+       half that, and it is weaker every second it burns; what is left at the end smoulders
+       out rather than burning for ever at nothing */
+    R.burn[c] = b = b + dt * (h * .024 / Math.max(.35, f) + .005);
+    R.dmg[c] += dt * h * .018 * Math.min(1, f + .1);
+    frTint(R, c, Math.min(.9, .1 + b * .95));
+    var q = frCellC(R, c);
+    sum += h; wx += q[0] * h; wy += q[1] * h; wz += q[2] * h;
+    if (b >= 1) {
+      R.heat[c] = 0; L.splice(i, 1);
+      /* what was mostly timber is gone and comes down; what was stone with timber in it
+         stands, black and cracked through */
+      if (f >= .45) { frKill(p, c, 2); die = 1; }
+      continue;
+    }
+    if (h < .25) continue;
+    var k = (c / NC) | 0, r = c - k * NC, j = (r / nx) | 0, ii = r - j * nx;
+    if (k + 1 < R.nz) frCatch(p, c + NC, h * .18 * dt, 1);
+    if (k > 0) frCatch(p, c - NC, h * .015 * dt, 0);
+    if (ii > 0) frCatch(p, c - 1, h * .06 * dt, 0);
+    if (ii + 1 < nx) frCatch(p, c + 1, h * .06 * dt, 0);
+    if (j > 0) frCatch(p, c - nx, h * .06 * dt, 0);
+    if (j + 1 < ny) frCatch(p, c + nx, h * .06 * dt, 0);
+    if (h > .55 && (ii === 0 || ii === nx - 1 || j === 0 || j === ny - 1) && Math.random() < dt * .02 * h) frLeap(p, c);
+  }
+  R.sumH = sum;
+  if (sum > 0) { R.fx = wx / sum; R.fy = wy / sum; R.fz = wz / sum; }
+  /* a fire weakens what it burns slowly, so the structure is asked again every second
+     and a half while there is one, and at once when something has burnt through */
+  if (die || (sum > 0 && G.t - (R.fs || 0) > 1.5)) { R.fs = G.t; R.dirty = 1; if (!(R.t > G.t)) R.t = G.t; }
+  if (sum > 1.5) for (i = 0; i < G.units.length; i++) {
+    var u = G.units[i];
+    if (u.dead || u.gar !== p) continue;
+    if (sum > 5) { leaveBuilding(u); if (owned(u)) toast(nameOf(u) + ' are burnt out of their house'); continue; }
+    damage(u, dt * sum * 2.2, null);
+    u.sup = clamp(u.sup + dt * .15, 0, 1.35);
+  }
+}
+/* and what a fire looks and sounds like: flame licking out of the cells that are
+   burning, as hot as they are; a column of black smoke off the whole of it that the
+   sight line is slowed by; sparks going up; a light in the street; and a roar with the
+   timber cracking in it */
+function frFireFx(p, dt) {
+  var R = p.fr, L = R.fire, n = L.length, sum = R.sumH || 0, i;
+  if (!n || sum < .05 || !onScreen(p.x, p.y)) return;
+  var cnt = Math.min(MOB ? 12 : 40, sum * 2.4) * dt;
+  cnt = Math.floor(cnt) + (Math.random() < cnt % 1 ? 1 : 0);
+  for (i = 0; i < cnt; i++) {
+    var c = L[(Math.random() * n) | 0], h = R.heat[c];
+    if (h < .15) continue;
+    var q = frCellC(R, c);
+    var fl = spawnFx('flame', q[0] + rnd(-6, 6), q[1] + rnd(-6, 6), (6 + h * 10) * rnd(.8, 1.2), q[2] - 8 + rnd(-3, 3));
+    if (fl) { fl.rise = 12 + h * 24; fl.drift = 6; fl.dur = rnd(.45, .8); }
+  }
+  if (Math.random() < dt * Math.min(MOB ? 1.4 : 3.6, sum * .6)) {
+    var q2 = frCellC(R, L[(Math.random() * n) | 0]);
+    var sm = spawnFx('smoke', q2[0] + rnd(-8, 8), q2[1] + rnd(-8, 8), 14 + Math.min(16, sum * 1.4) * rnd(.7, 1.2), q2[2] + 4);
+    if (sm) { sm.c = 2; sm.rise = 170 + Math.random() * 150; sm.op = .52; sm.dur = rnd(5, 8); sm.drift = 70; }
+  }
+  if (Math.random() < dt * Math.min(MOB ? 2 : 6, sum)) {
+    var q3 = frCellC(R, L[(Math.random() * n) | 0]);
+    var em = spawnFx('ember', q3[0] + rnd(-6, 6), q3[1] + rnd(-6, 6), 1, q3[2]);
+    if (em) { em.rise = rnd(60, 150); em.drift = rnd(14, 40); em.dur = rnd(1.4, 2.6); }
+  }
+  if (Math.random() < dt * 2) sfx('fire', R.fx, R.fy, { wt: clamp(sum / 6, .3, 1.6) });
+}
+/* ---- what goes on crumbling ----
+   A wall a shell has cracked does not stand as it was until the next shell. A cracked pier
+   carrying its share goes on cracking under it, so a building can come down a minute after
+   the barrage has lifted; and a cracked face sheds its stones a few at a time, which is
+   the dribble of masonry off every shelled frontage. What it sheds is taken out of the cell,
+   so a cell that has shed enough of itself is gone. Asked once a second. */
+function frCrumble(p, dt) {
+  var R = p.fr;
+  R.ck += dt;
+  if (R.ck < 1) return;
+  dt = R.ck; R.ck = 0;
+  var load = R._l, N = R.alive.length, c, gone = 0, see = onScreen(p.x, p.y), puffs = 0;
+  if (!load) return;
+  for (c = 0; c < N; c++) {
+    if (!R.alive[c]) continue;
+    var d = R.dmg[c];
+    if (d < .3) continue;
+    var lr = load[c] / (R.cap[c] || 1);
+    if (lr > .3) R.dmg[c] = d = d + dt * .006 * lr * d;
+    if (d >= 1) { frKill(p, c, 2); gone = 1; continue; }
+    frTint(R, c, R.char[c] < d * .3 ? d * .3 : 0);
+    if (Math.random() < dt * .05 * d) {
+      var dm = R.m1[c] * rnd(.04, .1);
+      if (R.mass[c] - dm < R.m1[c] * .4) { frKill(p, c, 2); gone = 1; continue; }
+      R.mass[c] -= dm; R.mAlive -= dm;
+      var q = frCellC(R, c);
+      frStone(frSootCol(R.col[c], R.char[c]), dm, q[0], q[1], q[2], rnd(-8, 8), rnd(-8, 8), rnd(0, 6), 3, R.flat[c]);
+      if (see && puffs < 3) {
+        var dp = spawnFx('smoke', q[0], q[1], 6 + rnd(0, 5), q[2] - 8);
+        if (dp) { dp.c = 3; dp.rise = 10; dp.op = .4; dp.dur = 1.6 + Math.random(); dp.drift = 14; puffs++; }
+      }
+    }
+  }
+  if (gone) { R.dirty = 1; if (!(R.t > G.t)) R.t = G.t; }
 }
 /* ---- the world follows the cells ----
    A column of cells is standing while it reaches above a man's eye; a column of the
@@ -11117,11 +11384,72 @@ function settleChunk(c) {
   if (G.rub.length >= rubCap()) { var old = G.rub.shift(); G.frStat.lost += old.l * old.w * old.h + old.e; }
   G.rub.push({ x: c.x, y: c.y, z: c.z, l: c.l, w: c.w, h: c.h, c: c.c, e: c.e || 0,
                rx: c.rx, ry: c.ry, rz: c.rz });
-  moundAdd(c.x, c.y, vol, c.c);
+  /* a block a burst threw out of the heap is already in the heap, as the hole it left */
+  if (!c.kick) moundAdd(c.x, c.y, vol, c.c);
   rubSlot(G.rub[G.rub.length - 1]);
   if (G.rubDirty !== 2) G.rubDirty = 1;
 }
 function rubCap() { return MOB ? 900 : 2600; }
+/* ---- a burst, as a blast and as splinters ----
+   A shell does two things to a man and they reach differently. The blast is a pressure
+   wave that falls off much faster than the distance does, so it kills close and only
+   close. The splinters are the casing going out in every direction at a few thousand feet
+   a second: each one either finds a man or it does not, the chance of one finding him
+   falls with the square of how far off he is, and they go on a good deal further than
+   the blast does. The first version of this was one linear falloff to the burst radius
+   and nothing past it, so a man standing up thirty metres from a 105 was as safe as a man
+   lying down.
+     Two things follow that the old one could not say. A man lying flat is under most of
+   the splinters, which go out low and outward, and takes a fifth less of the blast; a man
+   standing up takes all of both. And what stands between the burst and a man takes the
+   splinters and most of the blast off him: a house, a town wall or the lip of the ground
+   (`blastLee`), which the cover tier he is standing in says only for the piece of cover
+   he is pressed against. */
+var FRAG_K = 2.4;
+/* whether the burst can see the man: a wall or a house between them, or the ground
+   rising across the line, puts him in its lee. The burst's own cell is not in between
+   (a round that went off against a wall is in the wall's cell), and the last stretch of
+   the line is left to the cover tier, which is the piece of cover he is lying behind. */
+function blastLee(x, y, bz, tx, ty) {
+  var dx = tx - x, dy = ty - y, d = Math.hypot(dx, dy);
+  if (d < 16) return 1;
+  var n = Math.ceil(d / 8), c0 = cidx(clamp((x / CELL) | 0, 0, GW - 1), clamp((y / CELL) | 0, 0, GH - 1));
+  var z0 = groundZ(x, y) + (bz || 2) + 2, z1 = groundZ(tx, ty) + 9;
+  for (var s2 = 1; s2 < n; s2++) {
+    var t = s2 / n, px = x + dx * t, py = y + dy * t, cx = (px / CELL) | 0, cy = (py / CELL) | 0;
+    if (t * d < 6 || cx < 0 || cy < 0 || cx >= GW || cy >= GH) continue;
+    var ci = cidx(cx, cy);
+    if ((1 - t) * d > 7 && ci !== c0 && fblk[ci]) return .3;
+    if ((1 - t) * d > 22 && groundZ(px, py) > z0 + (z1 - z0) * t + 4) return .3;
+  }
+  return 1;
+}
+/* And it throws what is lying about. A block of masonry already in the air is shoved
+   along by the pressure, and blocks lying in the heap close to the burst are thrown out
+   of it again: the rubble of a house that has been fought over goes on moving every time
+   a shell lands in it. The hole they leave in the heap is the heap; what they land on is
+   not added to again. */
+function blastRubble(x, y, r) {
+  var i, n = 0, cap = MOB ? 4 : 10, R2 = r * .55;
+  for (i = 0; i < G.debris.length; i++) {
+    var c = G.debris[i], dx = c.x - x, dy = c.y - y, d = Math.hypot(dx, dy);
+    if (d > r || d < 1) continue;
+    var k = (1 - d / r) * 60;
+    c.vx += dx / d * k; c.vy += dy / d * k; c.vz += k * .5;
+  }
+  if (r < 24) return;
+  for (i = G.rub.length - 1; i >= 0 && n < cap; i--) {
+    var o = G.rub[i], ex = o.x - x, ey = o.y - y, e = Math.hypot(ex, ey);
+    if (e > R2 || G.debris.length >= debrisCap()) continue;
+    G.rub.splice(i, 1); n++;
+    var sp = (1 - e / R2) * Math.sqrt(98 * r) * rnd(.45, .95), a = e > 1 ? Math.atan2(ey, ex) + rnd(-.4, .4) : rnd(TAU);
+    G.debris.push({ x: o.x, y: o.y, z: o.z + 2, l: o.l, w: o.w, h: o.h, c: o.c, e: o.e,
+                    vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, vz: sp * rnd(.6, 1.1),
+                    rx: o.rx, ry: o.ry, rz: o.rz, wx: rnd(-7, 7), wy: rnd(-7, 7), wz: rnd(-5, 5),
+                    rest: 0, t: 0, kick: 1 });
+  }
+  if (n) G.rubDirty = 2;
+}
 function explode(x, y, radius, dmg, owner, except, bz, w) {
   burstFx(x, y, radius, 0, bz);
   /* And it takes a piece of the ground away. Only a round that went off on the ground:
@@ -11137,11 +11465,23 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
   damageCover(x, y, radius * .6, dmg * .5);
   if (onScreen(x, y)) addShake(clamp(radius * .10, 1.5, 9));
   sfx('boom', x, y, burstVoice(radius));
+  if ((bz || 0) < 26) blastRubble(x, y, radius);
+  /* a stick grenade is mostly blast and a little casing; a shell is a casing */
+  var fragR = radius * (w && w.gren ? 1.3 : FRAG_K);
+  /* the splinters kick up the ground where they land, which is the only part of them
+     anybody sees */
+  if (radius >= 25 && onScreen(x, y)) for (var fk = 0; fk < (MOB ? 2 : 5); fk++) {
+    var fa = rnd(TAU), fd = radius * rnd(.8, FRAG_K * .8);
+    spawnFx('hit', x + Math.cos(fa) * fd, y + Math.sin(fa) * fd);
+  }
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e === except || e.inside) continue;
     var d = dist(e, { x: x, y: y });
-    if (d > radius + 26) continue;
+    /* the men stand anywhere inside the unit's own circle, and the round was laid on one
+       of them: gated on the marker at the blast's reach, a burst on a man at the edge of
+       his section hurt nobody in it */
+    if (d > fragR + (e.cat === 'veh' ? 26 : selRadius(e))) continue;
     var f = clamp(1 - d / (radius + 26), .15, 1);
     /* And a vehicle by what the burst was and by what is over it. The `.35` is what says
        a vehicle shrugs off what a near miss does to men; an automatic cannon is the
@@ -11153,8 +11493,8 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
        `blastRes` above one is an open turret, which the men's branch below has read since
        the mortars went in and this branch never did. */
     if (e.cat === 'veh') {
-      if (owner && owner.side !== e.side && !(w && w.noVeh))
-        damage(e, dmg * f * (w && w.auto ? .05 : .35) * (e.def.blastRes || 1), owner);
+      if (d <= radius + 26 && owner && owner.side !== e.side && !(w && w.noVeh))
+        damage(e, dmg * f * (w && w.auto ? .05 : .35) * (e.def.blastRes || 1) * blastLee(x, y, bz, e.x, e.y), owner);
     }
     else {
       /* A hole in the ground is worth more against a shell than against a bullet: this
@@ -11162,6 +11502,9 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
          the strongest thing cover does. */
       var bcov = e.gar ? 4 : coverOf(e);
       var SHD = [1, .86, .72, .56, .4];
+      /* and what a piece of cover is worth against the splinters, which is a good deal
+         more than against the blast: a man in a hole is under nearly all of them */
+      var FSH = [1, .62, .38, .2, .08];
       /* a grenade that went in through the window is in the room with them, and the house
          round them is no use at all */
       var inRoom = e.gar && w && w.gren && Math.abs(x - e.gar.x) < e.gar.w / 2 + 8 && Math.abs(y - e.gar.y) < e.gar.h / 2 + 8;
@@ -11170,13 +11513,25 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
         var mo = e.models[m];
         if (!mo.alive) continue;
         var md = Math.hypot(mo.x - x, mo.y - y);
+        if (md > fragR) continue;
         /* each man by what he is behind: the loop already has him, and the difference
            between the man in the trench and the man who did not make it there is the
            whole point of a trench */
-        var shield = SHD[inRoom ? 0 : e.gar ? 4 : coverAt(mo.x, mo.y, Math.atan2(mo.y - y, mo.x - x))];
-        if (md < radius) damageModel(e, mo, dmg * clamp(1 - md / radius, .2, 1) * .85 * shield * (e.def.blastRes || 1), owner);
+        var tier = inRoom ? 0 : e.gar ? 4 : coverAt(mo.x, mo.y, Math.atan2(mo.y - y, mo.x - x));
+        var lee = e.gar ? 1 : blastLee(x, y, bz, mo.x, mo.y);
+        var down = mo.pose === POSE_PRONE || mo.pose === POSE_CRAWL, hurt = 0;
+        if (md < radius) hurt += dmg * Math.pow(1 - md / radius, 1.25) * .8 * SHD[tier] * (lee < 1 ? .4 : 1) * (down ? .8 : 1);
+        /* the splinters, which a garrison is behind its walls from and a man in the lee of
+           something is behind as well */
+        if (lee >= 1 && (!e.gar || inRoom)) {
+          var ph = .45 * Math.min(1, Math.pow(radius * .55 / Math.max(1, md), 2)) * FSH[tier] * (down ? .3 : 1);
+          if (Math.random() < ph) hurt += dmg * rnd(.15, .29);
+        }
+        if (hurt > 0) damageModel(e, mo, hurt * (e.def.blastRes || 1), owner);
       }
-      e.sup = clamp(e.sup + .45 * f * COVER[bcov].sup / (1 + e.vet * .18), 0, 1.35);
+      /* and pinned by it out to where the splinters reach, more weakly past the blast */
+      var sf = d <= radius + 26 ? f : .12 * clamp(1 - (d - radius - 26) / Math.max(1, fragR - radius), 0, 1);
+      e.sup = clamp(e.sup + .45 * sf * COVER[bcov].sup / (1 + e.vet * .18), 0, 1.35);
     }
   }
   var blist = G.blds.slice();
@@ -11545,7 +11900,7 @@ function killBuilding(b) {
 
 /* ---------------------------------------------------------------- effects */
 var FXDUR = { boom: .62, hit: .34, spark: .5, smoke: 3.4, dust: 1.1, exhaust: 1.3, brass: .9,
-              flash: .075, gunsmoke: 1.6, ring: .6, ejecta: 1.4 };
+              flash: .075, gunsmoke: 1.6, ring: .6, ejecta: 1.4, flame: .6, ember: 2 };
 /* The cap is what one heavy burst can want between its fireball, its clods, its ring and
    its column, times a few of them falling at once. It could be 260 when every particle
    was a draw call of its own; they go out as one buffer and one draw a blend pass now. */
@@ -16893,7 +17248,7 @@ var AU = { ctx: null, on: true, budget: 0, noise: null, rumb: null, dry: null, s
    second are one rifle as far as the ear is concerned, and stacking them is half of why
    massed fire sounded like a rattle rather than like weight of fire. */
 var AUGAP = { rifle: .045, mg: .036, gun: .06, at: .06, mortar: .07, how: .07, heavy: .08,
-              rocket: .06, auto: .05, werfer: .14, boom: .05, incoming: .09 };
+              rocket: .06, auto: .05, werfer: .14, boom: .05, incoming: .09, fire: .3 };
 /* ---- the voice of a gun ----------------------------------------------------------
    Read off the WEAPON rather than typed against six artillery pieces and thirty-six unit
    keys, which is the decision `muzFx` already made for the eye and for the same reason:
@@ -17039,16 +17394,82 @@ function auHiss(t, dest, buf, type, f0, f1, q, vol, dur, at) {
   src.stop(t + at + dur + .03);
 }
 /* and one layer of pitch, which is the thump: a sine falling away under everything else */
-function auTone(t, dest, type, f0, f1, vol, dur, at) {
+function auTone(t, dest, type, f0, f1, vol, dur, at, rise) {
   var c = AU.ctx, o = c.createOscillator(), g = c.createGain();
   o.type = type;
   o.frequency.setValueAtTime(f0, t + at);
   o.frequency.exponentialRampToValueAtTime(Math.max(18, f1), t + at + dur);
   g.gain.setValueAtTime(.0001, t + at);
-  g.gain.linearRampToValueAtTime(vol, t + at + Math.min(.006, dur * .1));
-  g.gain.exponentialRampToValueAtTime(.0004, t + at + dur);
+  if (rise) auSwell(g.gain, t + at, vol, dur);
+  else {
+    g.gain.linearRampToValueAtTime(vol, t + at + Math.min(.006, dur * .1));
+    g.gain.exponentialRampToValueAtTime(.0004, t + at + dur);
+  }
   o.connect(g); g.connect(dest);
   o.start(t + at); o.stop(t + at + dur + .03);
+}
+/* the envelope of something on its way in, which is the decay turned round: it is louder
+   every tenth of a second until it arrives, steepest at the end the way one over the range
+   is, and stops dead where the round does */
+function auSwell(p, t0, vol, dur) {
+  p.exponentialRampToValueAtTime(vol * .1, t0 + dur * .55);
+  p.exponentialRampToValueAtTime(vol, t0 + dur * .97);
+  p.linearRampToValueAtTime(.0001, t0 + dur);
+}
+/* A round coming in through the air: a rush of noise that swells and drops a little in
+   pitch as it comes over, beaten at `am` times a second, which is the flutter of a bomb's
+   fins and the churn of a big shell's driving band. The beat is an oscillator on the gain
+   rather than anything written into the noise, so it costs two nodes. */
+function auRush(t, dest, buf, f0, f1, q, vol, dur, at, am) {
+  var c = AU.ctx, src = c.createBufferSource(), f = c.createBiquadFilter(), g = c.createGain(), m = c.createGain();
+  src.buffer = buf; src.loop = true; src.loopEnd = buf.duration;
+  src.playbackRate.value = rnd(.94, 1.06);
+  f.type = 'bandpass'; f.Q.value = q;
+  f.frequency.setValueAtTime(f0, t + at);
+  f.frequency.exponentialRampToValueAtTime(f1, t + at + dur);
+  g.gain.setValueAtTime(.0001, t + at);
+  auSwell(g.gain, t + at, vol, dur);
+  m.gain.value = am ? .6 : 1;
+  if (am) {
+    var o = c.createOscillator(), d = c.createGain();
+    o.frequency.setValueAtTime(am, t + at);
+    o.frequency.linearRampToValueAtTime(am * 1.5, t + at + dur);
+    d.gain.value = .4;
+    o.connect(d); d.connect(m.gain);
+    o.start(t + at); o.stop(t + at + dur + .03);
+  }
+  src.connect(f); f.connect(g); g.connect(m); m.connect(dest);
+  src.start(t + at, Math.random() * Math.max(0, buf.duration - .2));
+  src.stop(t + at + dur + .03);
+}
+/* The kick under a heavy report: a sine that starts in the low hundreds and falls to the
+   bottom of hearing inside a few tenths of a second, with an octave under it. It is the one
+   layer of a big gun a telephone can carry, because what its speaker plays of a falling sine
+   is the top of it, and the saturation on the bus hands the rest harmonics it can sound. */
+function auThump(t, dest, f0, f1, vol, dur, at) {
+  auTone(t, dest, 'sine', f0, f1, vol, dur, at);
+  auTone(t, dest, 'triangle', f0 * .5, Math.max(18, f1 * .7), vol * .45, dur * 1.35, at + .003);
+}
+/* And the ground and the walls giving a big report back. A battery is not one sound and
+   then silence: the blast comes back off every house front and fold of ground in turn,
+   later and lower and softer each time, and that roll is most of what tells a listener a
+   heavy gun fired rather than a tank. A run of rumbles laid out behind the report, each gap
+   a little longer than the one before it. */
+function auRoll(t, dest, p, vol, n, at) {
+  var i, a = at;
+  for (i = 0; i < n; i++) {
+    auHiss(t, dest, AU.rumb, 'lowpass', Math.max(90, (380 - i * 70) * p), 60, .9,
+           vol * Math.pow(.62, i), .5 + i * .42, a);
+    a += at * (1 + i * .8) + rnd(0, .07);
+  }
+}
+/* and what a burst throws: earth and stone coming back down for a second after it, a
+   patter of small dry ticks, which is the half of a big shell landing that happens after
+   the bang */
+function auPatter(t, dest, n, spread, vol, at) {
+  for (var i = 0; i < n; i++)
+    auHiss(t, dest, AU.noise, 'bandpass', rnd(1800, 4200), 0, rnd(1.5, 3), vol * rnd(.4, 1), rnd(.012, .03),
+           at + spread * Math.pow(Math.random(), .7));
 }
 function sfx(kind, x, y, vo) {
   if (!AU.on || !AU.ctx || AU.budget <= 0) return;
@@ -17150,61 +17571,76 @@ function sfx(kind, x, y, vo) {
     auTone(t, out, 'sawtooth', 190 * j * v.pit, 540 * v.pit, .28 * v.wt, .7, .04);
     auTone(t, out, 'sine', 84 * j * v.pit, 40, .55 * v.wt, .6 * vs.tail, 0);
   } else if (kind === 'mortar') {
-    /* A tube. The charge is small and it burns in the open behind the bomb, so there is
-       almost no crack in this at all: what you hear is gas leaving the muzzle, the tube
-       itself ringing, and a soft thump under both. Then the bomb is in the air for three
-       seconds. It is the one report on the roster a player picks out of a firefight by
-       its lack of an edge rather than by having one. */
-    snd.gain.value = .42;
-    auHiss(t, out, AU.noise, 'bandpass', 700 * j * v.pit * vs.pit, 300 * v.pit, 2.6, .8 * vs.crk, .085, 0);
-    auTone(t, out, 'sine', 176 * j * v.pit, 62, .5 * v.wt * vs.bod, .2 * vs.tail, 0);
-    /* The tube: a short metallic ring, and the whole of what says mortar rather than gun,
-       so it carries rather than sits under the thump. It is also where the two mortars
-       are told apart -- an M1 81 mm and an 8 cm GrW 34 throw nearly the same bomb on
-       nearly the same charge, so nothing read off the weapon will ever separate them and
-       what is left is the colour of the tube. Written at a fifth of the thump it was
-       inaudible in the measurement as well as in the ear: the pair read 1.03x in onset
-       colour against a control -- the same piece rendered twice -- of 1.01x, which is no
-       difference at all. At two fifths they read 1.12x against 1.01x. */
-    auTone(t, out, 'triangle', 340 * j * v.pit * vs.pit, 305 * v.pit, .42 * vs.bod, .24 * vs.tail, .006);
-    auHiss(t, out, AU.rumb, 'lowpass', 380 * v.pit, 130, .9, .42 * v.wt * vs.bod, .26 * vs.tail, 0);
-    auHiss(t, out, AU.noise, 'highpass', 2100 * j * vs.pit, 0, .6, .2 * v.crk * vs.crk, .03, 0);
+    /* A tube. The charge is small and burns behind the bomb, so the edge is a pop rather
+       than a crack, but what follows it is the same family as the guns: a hollow thump of
+       gas leaving the tube, a body under it, a short ring of the barrel and the street
+       giving it back. The first version had almost no body and a triangle wave holding at
+       three hundred and forty hertz for a quarter of a second for the ring, which is a
+       pitch and not a tube: it read as a toy beside the howitzers, at a third of their level
+       and with a crest of twelve against their six.
+         The two mortars throw nearly the same bomb on nearly the same charge, so nothing
+       read off the weapon separates them; the side's propellant does, through the body
+       (`bod`) and the tail, and the colour of the ring through `pit`. */
+    snd.gain.value = .6;
+    /* the pop, and the hollow 'thoomp' of the gas out of the tube: a resonance that falls
+       as the bomb clears the muzzle */
+    auHiss(t, out, AU.noise, 'highpass', 1500 * j * vs.pit, 520, .6, .5 * vs.crk, .055, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 1100 * j * v.pit * vs.pit, 170 * v.pit, 1.4, .95 * vs.crk, .12, 0);
+    /* the body, which is what it lacked */
+    auThump(t, out, 150 * j * v.pit, 40, .9 * v.wt * vs.bod, .3 * vs.tail, 0);
+    /* the tube: two inharmonic partials over in a tenth of a second, which is metal rather
+       than a note */
+    auTone(t, out, 'sine', 560 * j * v.pit * vs.pit, 520 * v.pit * vs.pit, .17 * vs.bod, .13 * vs.tail, .004);
+    auTone(t, out, 'sine', 1470 * j * v.pit * vs.pit, 1400 * v.pit * vs.pit, .07, .07, .004);
+    /* and the weight, which carries further than the edge does */
+    auHiss(t, out, AU.rumb, 'lowpass', 560 * v.pit, 110, .85, .7 * v.wt * vs.bod, .42 * vs.tail, 0);
   } else if (kind === 'how') {
-    /* A pack howitzer: a short barrel and a big shell, so it barks rather than cracks.
-       Most of the report is over in a fifth of a second with the ground still moving. */
-    snd.gain.value = clamp(.62 * v.wt, .2, 1);
+    /* A field howitzer: a short barrel and a big shell, so it barks rather than cracks.
+       Under the bark is a kick a telephone can carry and a sub a desk can, and behind it the
+       street rolls the report back twice: a hundred and five millimetres of shell leaving a
+       tube is a thing the ground answers, and the first version was over in a fifth of a
+       second with nothing to say the ground had moved. */
+    snd.gain.value = clamp(.66 * v.wt, .2, 1);
     auHiss(t, out, AU.noise, 'highpass', 1250 * j * v.pit * vs.pit, 480, .6, 1.5 * v.crk * vs.crk, .17, 0);
     auHiss(t, out, AU.noise, 'bandpass', 900 * j * v.pit * vs.pit, 380, 1.1, .7 * vs.crk, .3, .005);
-    auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 160 * v.pit, .85, v.wt * vs.bod, .7 * vs.tail, 0);
-    auTone(t, out, 'sine', 104 * j * v.pit, 30, .85 * v.wt, .6 * vs.tail, 0);
-    auTone(t, out, 'triangle', 52 * j * v.pit, 26, .42 * v.wt * vs.bod, .46, .014);
+    auThump(t, out, 165 * j * v.pit, 42, .8 * v.wt, .24, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 700 * v.pit, 160 * v.pit, .85, v.wt * vs.bod, .8 * vs.tail, 0);
+    auTone(t, out, 'sine', 104 * j * v.pit, 30, .85 * v.wt, .7 * vs.tail, 0);
+    auTone(t, out, 'sine', 56 * j * v.pit, 24, .5 * v.wt * vs.bod, .9 * vs.tail, .01);
+    auRoll(t, out, v.pit, .45 * v.wt * vs.bod, 2, .2 * vs.tail);
   } else if (kind === 'heavy') {
     /* A heavy battery, and the crack is there without being what the event is: a
-       hundred and sixty kilograms leaving a tube nine inches across is a blow rather than a bang,
-       and what carries is the body and the tail behind it. It is the loudest thing either
-       army owns and it ought to be the loudest thing on the map. */
+       hundred and sixty kilograms leaving a tube nine inches across is a blow rather than
+       a bang, and what carries is the body, the kick that goes through the chest, and the
+       roll of it coming back off the country for two seconds after. It is the loudest thing
+       either army owns and it ought to be the loudest thing on the map by a long way. */
     snd.gain.value = 1;
     auHiss(t, out, AU.noise, 'highpass', 900 * j * v.pit * vs.pit, 340, .6, 1.1 * v.crk * vs.crk, .24, 0);
     auHiss(t, out, AU.noise, 'bandpass', 620 * j * v.pit * vs.pit, 250, 1.1, .75 * vs.crk, .5, .006);
-    auHiss(t, out, AU.rumb, 'lowpass', 520 * v.pit, 90, .9, 1.25 * v.wt * vs.bod, 1.3 * vs.tail, 0);
-    auTone(t, out, 'sine', 96 * j * v.pit, 22, 1.05 * v.wt, 1.05 * vs.tail, 0);
-    auTone(t, out, 'triangle', 46 * j * v.pit, 20, .5 * v.wt * vs.bod, .8, .016);
-    /* and the ground comes back at you a beat later, which is the half of a heavy report
-       that happens where you are standing rather than where the gun is */
-    auHiss(t, out, AU.rumb, 'lowpass', 300, 70, .9, .5 * v.wt, .9 * vs.tail, .1);
+    /* the shove of air, which a man beside the gun feels before he hears the rest */
+    auHiss(t, out, AU.rumb, 'lowpass', 240, 90, .7, 1.1 * v.wt, .32, 0);
+    auThump(t, out, 225 * j * v.pit, 30, 1.3 * v.wt * vs.bod, .42, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 520 * v.pit, 90, .9, 1.25 * v.wt * vs.bod, 1.4 * vs.tail, 0);
+    auTone(t, out, 'sine', 96 * j * v.pit, 22, 1.05 * v.wt, 1.2 * vs.tail, 0);
+    auTone(t, out, 'sine', 50 * j, 21, .9 * v.wt * vs.bod, 1.5 * vs.tail, .012);
+    /* and the ground comes back at you a beat later and keeps coming, which is the half of a
+       heavy report that happens where you are standing rather than where the gun is */
+    auRoll(t, out, .8, .7 * v.wt * vs.bod, 3, .16 + .1 * vs.tail);
+    /* a slap off the nearest wall, which is the one high thing in the tail */
+    auHiss(t, out, AU.noise, 'bandpass', 1100 * vs.pit, 500, .9, .22 * v.crk * vs.crk, .2, .11 + .05 * vs.tail);
   } else if (kind === 'incoming') {
     /* The round on its way down, and the only warning there is that a mission is landing
-       where you are standing. An indirect round made no sound at all between the tube and
-       the ground, which is a strange thing for the one weapon on this roster you are
-       meant to move out from under. It is pitched off the same burst the landing is, so a
-       bomb comes in as a thin whistle and a two-hundred-kilogram shell as a freight
-       train, and it is timed to finish where the shell does. */
-    snd.gain.value = .5;
+       where you are standing. It is pitched off the same burst the landing is and timed to
+       finish where the shell does. It used to be a falling sine that started loud and died
+       away, which is the cartoon of a falling bomb and is backwards besides: a round coming
+       at you is louder every tenth of a second until it arrives. It is mostly air now, a
+       rush that swells and drops as it comes over, beaten by the fins of a bomb or churned
+       by the band of a big shell, with the whistle under it rather than on top. */
+    snd.gain.value = .55;
     wd = v.lead || .5;
-    auTone(t, out, 'sine', 900 * v.pit, 210 * v.pit, .3 * v.wt, wd, 0);
-    auTone(t, out, 'triangle', 1350 * v.pit, 300 * v.pit, .12 * v.wt, wd, 0);
-    auHiss(t, out, AU.noise, 'bandpass', 1500 * v.pit, 380 * v.pit, 3.2, .3 * v.wt, wd, 0);
-    auHiss(t, out, AU.rumb, 'lowpass', 400 * v.pit, 200 * v.pit, .8, .3 * v.wt, wd, .05);
+    auRush(t, out, AU.noise, 1800 * v.pit, 950 * v.pit, 1.5, .55 * v.wt, wd, 0, 18 * v.pit);
+    auRush(t, out, AU.rumb, 560 * v.pit, 260 * v.pit, .9, .6 * v.wt, wd, 0, 0);
+    auTone(t, out, 'sine', 1150 * v.pit, 760 * v.pit, .08 * v.wt, wd, 0, 1);
   } else if (kind === 'rocket') {
     /* A bazooka: not a bang but a shove, with the back-blast behind it */
     snd.gain.value = .62;
@@ -17215,13 +17651,26 @@ function sfx(kind, x, y, vo) {
     /* A shell landing. Most of it is under a hundred hertz, some of it is the crack of
        the burst, and the rest is the street coming down for the best part of a second.
        Sized off the hole the shell dug, because a mortar bomb at thirty-four of burst and
-       a 210's shell at a hundred and forty are not the same event on the ground either,
-       and every one of them used to be this one. */
+       a 210's shell at a hundred and forty are not the same event on the ground either.
+       A big one kicks, rolls off the country behind it and rains earth for a second after,
+       which a small one does less of and a grenade not at all. */
     snd.gain.value = 1;
     auHiss(t, out, AU.noise, 'highpass', 1100 * j * v.pit, 400 * v.pit, .6, .85, .18 * v.wt, 0);
-    auHiss(t, out, AU.rumb, 'lowpass', 620 * v.pit, 120 * v.pit, .9, v.wt, .95 * v.wt, 0);
-    auTone(t, out, 'sine', 88 * j * v.pit, 26, .8 * v.wt, .8 * v.wt, 0);
+    auThump(t, out, 150 * j * v.pit, 34, .95 * v.wt, .2 + .12 * v.wt, 0);
+    auHiss(t, out, AU.rumb, 'lowpass', 620 * v.pit, 120 * v.pit, .9, v.wt, 1.05 * v.wt, 0);
+    auTone(t, out, 'sine', 88 * j * v.pit, 26, .8 * v.wt, .9 * v.wt, 0);
     auHiss(t, out, AU.noise, 'bandpass', 2400 * j * v.pit, 900, 1.1, .38, .55 * v.wt, .06);
+    if (v.wt > .8) auPatter(t, out, Math.round(4 * v.wt), .8 * v.wt, .09, .2);
+    if (v.wt > 1.05) auRoll(t, out, v.pit, .5 * (v.wt - .45), v.wt > 1.35 ? 3 : 2, .15 + .05 * v.wt);
+    if (v.wt > 1.25) auTone(t, out, 'sine', 48 * j, 21, .8 * (v.wt - .9), 1.3 * v.wt, .01);
+  } else if (kind === 'fire') {
+    /* a house on fire: a low roar under it, the draught through it, and the timber
+       cracking, now and then a beam going */
+    snd.gain.value = .3 * clamp(v.wt, .3, 1.6);
+    auHiss(t, out, AU.rumb, 'lowpass', 420, 260, .7, .5, .9, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 900, 600, .8, .12, .8, 0);
+    auPatter(t, out, 3 + Math.round(Math.random() * 4), .7, .32, 0);
+    if (Math.random() < .2) auTone(t, out, 'sine', 120, 50, .25, .2, rnd(.1, .5));
   } else if (kind === 'cap') {
     /* ground taken. A pair of notes rather than a hiss, because it is the one sound in
        the game that is telling you something rather than depicting something. */
@@ -18143,6 +18592,13 @@ function gatherLights(v) {
     var k = w.t < 24 ? 1 : clamp(1 - (w.t - 24) / 66, 0, 1);
     var fl = k * (.78 + .22 * Math.sin(G.t * 9 + w.x * .07) * Math.sin(G.t * 13 + w.y * .05));
     litPut(w.x, w.y, groundZ(w.x, w.y) + 14, 148, 1.22 * fl, .49 * fl, .14 * fl, dsq(cx, cy, w.x, w.y));
+  }
+  /* a house on fire lights the street round it, flickering, as bright as it is burning */
+  for (i = 0; i < G.hurt.length; i++) {
+    var HR = G.hurt[i].fr;
+    if (!HR || !HR.fire.length || !(HR.sumH > .3)) continue;
+    var hs = Math.min(1.35, .25 + HR.sumH * .12) * (.74 + .26 * Math.sin(G.t * 8.3 + HR.fx * .05) * Math.sin(G.t * 11.9 + HR.fy * .04));
+    litPut(HR.fx, HR.fy, HR.fz, 130 + Math.min(120, HR.sumH * 10), 1.25 * hs, .52 * hs, .15 * hs, dsq(cx, cy, HR.fx, HR.fy));
   }
   for (i = 0; i < G.fx.length; i++) {
     var f = G.fx[i];
@@ -43451,6 +43907,15 @@ function drawParticles3D() {
                             1, .86, .55, (1 - k * 2.2) * .7, 0, 0, 1);
     } else if (f.kind === 'flash') {
       muzzleDraw(f, k, z);
+    } else if (f.kind === 'flame') {
+      /* a tongue of fire out of a burning cell: a hot core that goes from yellow to red as
+         it climbs and shrinks, inside a dull red glow */
+      var fk = 1 - k, fw = (f.r || 6) * (.55 + fk * .5);
+      partBill(f.x, f.y, z, fw * 1.7, fw * 2.1, f.sd || 0, 1, .34, .08, fk * fk * .3, 0, 0, 1);
+      partBill(f.x, f.y, z, fw, fw * 1.55, f.sd || 0, 1, lerp(.42, .9, fk), lerp(.08, .42, fk),
+               fk * .85, 1, f.sd || 0, 1);
+    } else if (f.kind === 'ember') {
+      partBill(f.x, f.y, z, 1.2, 1.2, 0, 1, .66, .26, (1 - k) * .95, 0, 0, 1);
     }
   }
 }

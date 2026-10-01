@@ -956,7 +956,7 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 2000 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 3060 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
@@ -966,7 +966,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, and 3020 before every building on the map could be brought down). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, and 3060 before a building could burn and a burst had splinters). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1310,7 +1310,27 @@ knocked flat that still stops a boot and still stops an eye is the one fault her
 screenshot would call a success. The third counts the stone: everything the cells threw has
 to be lying in blocks and fill or let go by the ring, nothing may still be moving, at least
 one piece has to have fallen whole, the heap has to be deep, a man in the middle of it has to
-stand on it, and it has to be drawn.
+stand on it, and it has to be drawn. Then four more. A burst is fired at men on open ground at
+half its radius and one and a half, standing and lying down, past the splinters' reach, and
+across a house against the same distance in the open: the near men take more than the far, the
+far men something, the men lying down under seven tenths of it, nobody past the reach anything,
+and the men in the house's lee under six tenths of the open. It goes first of the four, and it
+takes the open ground with the least cover where the men stand, because the first version found
+ground open to an eye and a round and put the far section in cover, where it read next to
+nothing, and asked for none at all it found nowhere once the fire rows had been through the
+town. A burst in the first house's heap has to throw its blocks out again without building the
+heap twice, read over the ground round the burst with the battle off the map; it goes before the
+fire as well, because a phone keeps 900 blocks lying and a burning house that comes down pushes
+the first house's heap off the list. A second house with a section in it has four cells of an
+upstairs room set alight, as a shell through a window would: a minute on the fire has to have
+spread and charred the cells, put the section out, shut the door and be smoking on the sight
+line, and three minutes on cells have to have burnt through and come down. Lit at the corner of
+the roof instead, the fire on Ortona's biggest house took most of a minute to find its feet on
+the desktop and went out on the phone, which is a fire on a roof edge and not the one the row
+is about. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
+it: in a minute and a half they have to have shed stone. That last row puts the army back, every
+fire out and the cracked wall at rest, because a house left burning goes on spreading down the
+street through every row below it.
 
 Two things the periscope block has to do to itself: it tops both sides' victory points up
 to nine thousand and gives its test tank a hundred thousand hit points. A minute of
@@ -2520,6 +2540,38 @@ to be re-dug. And every shell used to be charged against medium cover twice -- o
 through the index and once by a linear walk of all two thousand patches at the foot of
 `explode`, which was also a scan of the whole list on every explosion.
 
+**A burst is a blast and a spray of splinters, and they reach differently.** It was one linear
+falloff out to the burst radius and nothing past it, so a man standing thirty metres from a 105
+was as safe as a man lying down beside it, and a man on the far side of a house from a shell
+took what a man in the street took. The blast is a pressure wave that falls off much faster
+than the distance does, so it kills close and only close (`(1 - d/r)^1.25`); the splinters are
+the casing going out every way, each one either finds a man or does not, the chance of one
+finding him falls with the square of the distance past about half the radius, and they reach
+out to 2.4 radii (`FRAG_K`, 1.3 for a stick grenade). A man lying flat is under most of the
+splinters and a fifth of the blast; a man standing up takes all of both. Cover is worth more
+against splinters than against blast (`FSH` beside `SHD`): a man in a hole is under nearly all
+of them. And what stands between the burst and a man takes the splinters and most of the blast
+off him (`blastLee`): a house, a town wall, or the ground rising across the line, read off the
+fire grid and the heightfield with the last stretch left to the cover tier he is pressed
+against. Suppression follows the splinters out past the blast, more weakly. The splinters kick
+up the ground where they land, which is the only part of them anybody sees.
+
+**And a burst reaches the men where it lands, and asks them and not the marker.** A unit was
+skipped whole when its MARKER stood further from the burst than the blast reached, and a round is
+laid on the man nearest the firer (`aimAt`), who may stand anywhere inside his section's circle,
+so a burst on a man at the edge of his section hurt nobody in it. The smaller the shell the worse
+it was, and every small-shell weapon on the roster had been tuned on it. The gate is the unit's
+own circle now (`selRadius`). Fought against the committed file at sixteen runs a row, the M8 and
+the M3 light tank take a grenadier squad in 26 and 27 seconds where they took 34 and 33, every
+time either way, and the Puma, the Gebirgsflak, the rifle grenade, the Wirbelwind against the
+Rangers and the Knight's Cross Holders at grenade range read inside their noise, and so do the
+big shells against a standing rifle squad: the Panzer IV takes it in 9.5 seconds against 8.6 and
+the StuH in 4.6 against a committed file that read 5.9 and 7.2 on two runs. The 234/1, whose
+2 cm burst was the smallest on the roster, went from losing to the Rangers 92 per cent of the time
+to half, and its burst is 9 where it was 14 (see the 234). An automatic cannon's burst does to
+men what a shell of the same damage does, splinters and all, because its `dmg` already says what
+the five rounds of it do to men; the line `w.auto` draws is plate and stone.
+
 **A bunker has a front and a back, and that is the whole of what makes it one.** A house
 is fought out of on every side. A bunker has a fighting slot and a back wall, so
 `outPoint` clamps a garrison's firing point -- and the point a round arrives at -- into
@@ -3032,6 +3084,70 @@ Panzer's cousin threw a third of them. And a wreck is marked on the movement gri
 OWN hull now -- `blockRect`'s fifth argument is a pad rather than an angle, so the bearing a
 wreck has always carried was stored and never read, and a tank that burned across a street
 was blocked as a box square to the map.
+
+**A building burns.** A shell is a fire as well as a blast, and a house hit by one used to
+stand in the sun with a hole in it however long it was shelled. Each cell carries what there
+is in it to burn (`R.fuel`), read off the tiles its faces are drawn in (`frFuelOf`: timber 1,
+canvas 1.1, roof tile .6, lath and plaster .3, stone and brick nothing), with two things the
+faces cannot say: a cell of floor or roof above the ground storey is boards on joists or
+slates on rafters whatever it is drawn in (a Norman roof is drawn in the stone tile, because
+slate is stone, and read off its tiles it would not burn at all), and the upper storeys of a
+house framed in timber are the timber. Measured on a Saint-Lô stone house of 453 cells, 97
+could burn off the tiles and 174 with the roof read as a roof. A casemate has none, a rampart
+tower a third.
+
+**A cell catches when a shell cracks it and there is something in it to burn** (`frHit`,
+`FR_IGN`, twice as readily in a room and more for a heavier shell), **or when the cell beside
+it is burning** (`frFire`, `frCatch`): upward most readily because fire climbs, sideways less,
+downward hardly at all, and from the end of a terrace into the next house through the party
+wall (`frLeap`, which cuts the neighbour the way a round would). A burning cell comes up to the
+heat its fuel allows, holds it while the fuel lasts and dies away at the end, and smoulders out
+rather than burning for ever at nothing: written as a heat that fell with the square of what
+had burnt, no cell ever burnt through and every fire went out with its roof still on.
+
+**And a fire weakens what it burns, which is the half of a fire that brings a house down.**
+Every second a cell burns adds to its damage, so its capacity falls and the structure is asked
+again every second and a half while there is a fire (`frStep` reads it); a cell that was mostly
+timber and has burnt through is gone (`frKill`, dropping as charred stone), and what was stone
+with timber in it stands, black and cracked. So the roof of a stone house burns through and
+falls into its storeys and the shell is left standing, smoked black, which is the burnt-out
+house of every photograph of the town, and a timber-framed house goes down to its stone ground
+floor. The men in a house on fire are hurt by it and are put out of it when it is well alight,
+and `canGarrison` refuses a building with a fire of any size in it. On the probe a 105 through
+a stone house's roof lit six cells; 30 seconds on 45 were burning, two minutes on 61 had burnt
+through, the roof was down with 74 per cent of the house still standing, the section was out of
+it inside 15 seconds and the fire had jumped to the next house along.
+
+**A fire is drawn, lit and smelt.** Charring is written into the cell's own range of the
+buffer (`frTint`), moved toward soot by an amount worked back from where the colour was so
+nothing keeps the colours a cell was built with, and by a factor per vertex off where it
+stands, because laid evenly over the cell it drew a burnt roof as a chessboard of black
+squares. Flame comes out of the burning cells as hot as they are (`flame`, a hot core going
+from yellow to red inside a dull red glow), sparks go up (`ember`), a column of oily black
+smoke comes off the whole of it and is on the sight line (`smokeColumns`), the house is a light
+in the street flickering as bright as it burns (`gatherLights`), and it roars with the timber
+cracking in it (`sfx('fire')`). The stone out of a charred cell is charred, in two shades, so
+the heap's palette does not fill with every step between (`frSootCol`).
+
+**And a cracked wall goes on crumbling.** A wall a shell has cracked did not change until the
+next shell. Now a cracked pier carrying its share goes on cracking under it (`frCrumble`, once
+a second), so a building can come down a minute after the barrage has lifted, and a cracked
+face sheds its stones a few at a time in a puff of its own dust, which is the dribble of
+masonry off every shelled frontage. What it sheds is taken out of the cell's mass, so a cell
+that has shed six tenths of itself is gone, and the stone is counted like any other.
+
+**What a wall coming apart looks like is the dust.** The blocks a breach throws are few; what
+the eye takes in is the cloud of lime and brick dust a wall goes up in and the spray of small
+stuff ahead of it. A cell a round takes out sends up a pale cloud of the masonry's own colour
+and a handful of small pieces thrown out of the breach, and what a round cracks it blackens,
+so a shelled frontage is scorched round every hole in it before anything falls.
+
+**And the rubble a burst lands in is thrown again** (`blastRubble`). A block already in the air
+is shoved along by the pressure, and blocks lying in the heap close to a burst are thrown out
+of it on a fresh arc: the rubble of a house that has been fought over goes on moving every time
+a shell lands in it. A block thrown out of the heap is already in the heap as the hole it left,
+so where it lands it is not added again (`c.kick`); written the other way, every shell into a
+ruin would have built the heap up by what it threw.
 
 **The one-off costs, measured.** Cutting a house into 223 cells is about 10 ms of geometry,
 once, the first time a round reaches it, and 13 ms is the mean over every building on Ortona
@@ -4804,7 +4920,11 @@ or a wheel and this gun fires three times a second: at 28 the 234/1 won five in 
 in eight. At 12 a volley every .30 seconds and 25 of penetration, 400 hit points and 72 of plate,
 250 marks and 35 of fuel, it takes the M8 63 per cent of the time over twenty-four runs, the M3A1,
 the jeep and the rifle squad every time, and loses to the Rangers 71 per cent of the time and to
-the M4 every time. The Puma, at 85 a round every 2.6 seconds and 120 of penetration for another
+the M4 every time. Its burst is 9 where it was 14: once a burst on a man at the edge of his
+section reached him (see *A burst is a blast and a spray of splinters*), at 14 the Rangers beat it
+half the time where they had beaten it 92 per cent of the time on the same afternoon, and at 9
+they beat it 87 per cent of the time over twenty-four runs, with the M8 fight at 69 per cent and
+a rifle squad taken in 31.5 seconds against 34. The Puma, at 85 a round every 2.6 seconds and 120 of penetration for another
 120 marks and 45 of fuel, takes the M8 and the rifle squad every time over twelve runs and loses
 to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
 `SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
@@ -6317,10 +6437,45 @@ in it, because a burst has no propellant.
 **And a round in the air makes a sound now.** An indirect round was silent between the
 tube and the ground, which is a strange thing for the one weapon on this roster a player
 is meant to move out from under: the incoming is the only warning there is. It is pitched
-off the same burst the landing is -- a bomb comes in as a thin whistle and a
-two-hundred-kilogram shell as a freight train -- it is played at the ground it is coming
-at rather than at the tube, and it is timed to FINISH where the shell does rather than to
-start there (`burstVoice().lead`, half a second for a bomb and most of two for a heavy).
+off the same burst the landing is, it is played at the ground it is coming at rather than
+at the tube, and it is timed to FINISH where the shell does rather than to start there
+(`burstVoice().lead`, half a second for a bomb and most of two for a heavy). It was first
+a falling sine that started loud and died away, which is the cartoon of a falling bomb and
+backwards besides: a round coming at you is louder every tenth of a second until it lands.
+It is mostly air now (`auRush`), a rush of noise that swells (`auSwell`, steepest at the
+end the way one over the range is) and drops a little in pitch as it comes over, beaten by
+an oscillator on its gain at eighteen times the burst's pitch, so a bomb's fins flutter and
+a heavy shell churns, with a faint whistle under it rather than on top.
+
+**The mortar is one of the family now.** A player heard it as a different kind of thing
+from every other piece of artillery, and the numbers said why: at a third of a howitzer's
+level and a crest of twelve against their six, a tube was a nasal pop and a triangle wave
+holding at three hundred and forty hertz for a quarter of a second, which is a note and not
+a tube. Its spectrogram had a horizontal line across it and nothing else on the roster did.
+It is a pop, a hollow thump of gas leaving the tube that falls as the bomb clears the
+muzzle, a body under it (`auThump`), two inharmonic partials of ring that are over in a
+tenth of a second, and the weight of the street giving it back. Measured over ten takes a
+piece: the 81 mm went from a crest of 12.1 to 8.4 and the class from an rms of .022 to .042,
+still the smallest report of the three as a mortar should be, and the two mortars still
+separate (1.35x in level against a floor of 1.04x on the gate's desktop run, 1.89x in
+brightness against 1.01x on the phone).
+
+**And the big guns have weight.** What a howitzer or a battery lacked was the part a man
+feels rather than hears. Three things carry it. The KICK (`auThump`): a sine that starts in
+the low hundreds and falls to the bottom of hearing inside a few tenths of a second, with an
+octave under it, which is the one layer of a heavy report a telephone speaker can carry,
+because what it plays of a falling sine is the top of it and the saturation on the bus hands
+the rest harmonics it can sound. A SUB at fifty hertz for a desk's speakers. And the ROLL
+(`auRoll`): the blast coming back off every house front and fold of ground in turn, later and
+lower and softer each time, two rumbles behind a field howitzer and three behind a battery,
+with a slap off the nearest wall in the battery's. A heavy shell landing kicks and rolls the
+same way and rains earth for a second after (`auPatter`), which a mortar bomb does less of.
+Off the audio card: the 105 went from 836 ms to 1,396 and the 240 from 1,502 ms to 2,409, the
+battery class from an rms of .096 to .120 and the 240's landing from 1,487 ms to 2,251. The
+kick, the roll and the sub are scaled by the side's body (`vs.bod`), because written flat they
+were most of the battery's level and the two batteries came out 1.13x apart in rms where they
+had been 1.24x; the gate row's three classes still read three lengths (.62, 1.41 and 2.18 s on
+the desktop, the battery truncated at the row's 2.2 s buffer).
 
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
@@ -6486,7 +6641,8 @@ The gate asks both as an A/B against the identical burst with the flag off, stag
 SAME point one after the other so that the cover, the ground and the geometry are the same
 by construction. Over ten bursts a hull loses 18 against 123 and a garden wall loses nothing
 against thirteen units of run. **And the men are the control**: the rule is about stone and
-about plate, so a section takes 97 either way, to the point.
+about plate, so a section takes the same either way, to the point. Whether a splinter finds a
+man is a roll, so both halves are thrown with the same seeded rolls.
 
 **A rocket has no chamber behind it**, and that is the second signature. `w.rocket` is on
 the projector and on the two shoulder launchers that fire one, and `muzClass` is asked for
@@ -8794,3 +8950,23 @@ shots/                         screenshot output, gitignored
   inside it: asked whether it was clear at its own ends, every belt but the first in each
   stretch was thrown away and the beach came out with a quarter of its wire. Ask a piece
   about the ground short of its two ends, which is where the last one stopped.
+- **A unit's marker is not where its men are, and a burst asked the marker.** `explode` skipped
+  a unit whole when its marker stood further from the burst than the blast reached, and a round
+  is laid on the man nearest the firer, anywhere inside his section's circle: a burst on a man
+  at the edge of his section hurt nobody in it. It is the fault the selection ring and `aimAt`
+  each had in their turn, a third time. The smaller the shell the worse it was, so every
+  small-shell weapon had been tuned on it, and the fix moved the 234/1 against the Rangers from
+  8 per cent to half until its burst came down. Gate anything about men on the unit's own
+  circle (`selRadius`) and then ask the men.
+- **A new hole inside three quarters of an old one's reach widens the old one about its own
+  centre.** That is the merge rule, and it is right, and a drill that digs beside an old hole
+  measures a hole dug somewhere else: the crater row read 5 units of depth against 13.4 when
+  its spot came to lie 28 units from a crater the map had laid, and no new cover, because the
+  map's craters were pushed without the link to their cover patch that a shell's carries. They
+  carry it now, so a shell that widens a laid crater widens its cover, and the row keeps clear
+  of every crater on the list.
+- **A row that compares two halves to the point cannot have a dice roll in it.** Whether a
+  splinter finds a man is `Math.random`, so the automatic cannon row's two identical bursts
+  came out 186 and 160 against men; each half is thrown with the same seeded rolls now. And a
+  row that sets houses alight puts them out again: left burning, a fire spreads down the street
+  through every row under it.
