@@ -236,12 +236,14 @@ async function run(file, label) {
     }
 
     if (doPaint) {
-      /* the albedo canvas itself, sampled the same way */
-      const cw = mbase ? mbase.width : 0, ch = mbase ? mbase.height : 0;
+      /* the albedo canvas itself, sampled the same way; the game keeps only a small copy of
+         it for the minimap once it is uploaded, so the whole of it is painted again here */
+      const al = typeof albedoFull === 'function' ? albedoFull() : mbase;
+      const cw = al ? al.width : 0, ch = al ? al.height : 0;
       let paint = null;
-      if (mbase) {
+      if (al) {
         const s = document.createElement('canvas'); s.width = N; s.height = N;
-        s.getContext('2d').drawImage(mbase, F.x - N / 2, F.y - N / 2, N, N, 0, 0, N, N);
+        s.getContext('2d').drawImage(al, F.x - N / 2, F.y - N / 2, N, N, 0, 0, N, N);
         const d = s.getContext('2d').getImageData(0, 0, N, N).data;
         const l = new Float64Array(N * N);
         for (let i = 0; i < N * N; i++)
@@ -268,7 +270,7 @@ async function run(file, label) {
       let tris = 0;
       for (let i = 1; i < PT_N; i++) if (SCENE.ground[i]) tris += SCENE.ground[i].n / 3;
       R.cost = { groundTris: Math.round(tris), tileGrid: TG, heightGrid: HG,
-                 albedoMB: mbase ? (mbase.width * mbase.height * 3) / 1048576 : 0,
+                 albedoMB: TEX.albedo ? (WORLD.w * WORLD.h * 3) / 1048576 : 0,
                  atlasPx: MATS.TILE * MATS.COLS };
     }
     return R;

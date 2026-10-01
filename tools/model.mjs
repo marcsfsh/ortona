@@ -128,7 +128,9 @@ async function run(file, label) {
     if (doCost) {
       AOSTAT.marched = 0;
       const t0 = performance.now();
+      /* a vehicle is built the first time it is asked for, so every one is asked for here */
       buildVehicleModels();
+      for (const k in VMODEL) VMODEL[k];
       const t1 = performance.now();
       let verts = 0;
       for (const k in VMODEL) {
