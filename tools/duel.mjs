@@ -62,8 +62,8 @@ const CARD = [
   ['us_mor', 'hr_gren'],
   ['ger_mor', 'am_rifle'],
   ['us_mor', 'ger_mor'],
-  ['us_ach', 'hr_p4'],
-  ['us_ach', 'ger_tig'],
+  ['am_e8', 'hr_p4'],
+  ['am_e8', 'ger_tig'],
   ['am_sher', 'ger_tig'],
   /* the jeep, the Americans' light vehicle: against the KS 750 it meets and the grenadier
      squad, and fitted with the .50 against the same two further down */
@@ -117,8 +117,8 @@ const CARD = [
   ['hr_234', 'am_m8'],
   ['hr_234', 'am_m3'],
   ['am_ranger', 'hr_234'],
-  ['hr_234', 'am_m8', { a: ['puma'] }],
-  ['hr_234', 'am_sher', { a: ['puma'] }],
+  ['hr_puma', 'am_m8'],
+  ['hr_puma', 'am_sher'],
   /* and the Wirbelwind the 352nd fields beside it: against the infantry and the light vehicles
      it is for, the Rangers who can open it (read beside --d=130, where the bazookas reach), and
      the M4 and the anti-tank gun that open it more easily than they open the Panzer IV */
@@ -129,11 +129,11 @@ const CARD = [
   ['am_sher', 'hr_wirb'],
   ['am_at', 'hr_wirb'],
   /* and the Panther: the M4 that cannot open its front (the anti-tank gun's row is with the
-     57's below), the Achilles that can, and what it does to infantry and to a light vehicle;
+     57's below), the Easy Eight that can from the flank, and what it does to infantry and to a light vehicle;
      read the first rows again beside --turn=1.57, which stages it side-on, because its sides
      are the whole answer */
   ['am_sher', 'hr_panther'],
-  ['us_ach', 'hr_panther'],
+  ['am_e8', 'hr_panther'],
   ['hr_panther', 'am_rifle'],
   ['hr_panther', 'am_m8'],
   /* the Knight's Cross Holders, whose grenades reach 150, so a row at the pair's own reach says
@@ -172,7 +172,7 @@ const CARD = [
      default way it walks into the tank and pays its setup */
   ['am_at', 'hr_p4'],
   ['am_at', 'hr_panther'],
-  ['am_at', 'hr_234', { b: ['puma'] }],
+  ['am_at', 'hr_puma'],
   ['am_at', 'hr_251'],
   ['am_at', 'hr_gren'],
   /* and the 352nd's Pak 38, asked the same the other way round: the M4 it is there to meet, the
@@ -191,7 +191,7 @@ const CARD = [
   ['am_stuart', 'hr_ks750'],
   ['am_stuart', 'hr_251'],
   ['am_stuart', 'hr_234'],
-  ['am_stuart', 'hr_234', { b: ['puma'] }],
+  ['am_stuart', 'hr_puma'],
   ['am_stuart', 'hr_gren'],
   ['am_stuart', 'hr_mg'],
   ['hr_wirb', 'am_stuart'],
@@ -203,7 +203,7 @@ const CARD = [
      and the Panzer IV, the Puma and the Knight's Cross Holders are what it meets on the way */
   ['am_m26', 'hr_panther'],
   ['am_m26', 'hr_p4'],
-  ['am_m26', 'hr_234', { b: ['puma'] }],
+  ['am_m26', 'hr_puma'],
   ['am_m26', 'hr_kch'],
   ['am_ranger', 'am_m26'],
   ['am_ranger', 'hr_p4'],
@@ -217,15 +217,15 @@ const CARD = [
      against men. It fights here in the open, without the ring of bags it is built in,
      so its crew are worse off than in a battle. */
   ['ger_flak88', 'am_sher'],
-  ['ger_flak88', 'us_ach'],
+  ['ger_flak88', 'am_e8'],
   ['ger_flak88', 'am_rifle', { a: ['he'] }],
   ['ger_flak88', 'am_ranger', { a: ['he'] }],
   /* the Maus against everything that might be asked to stop one */
-  ['us_ach', 'ger_maus'],
+  ['am_e8', 'ger_maus'],
   ['am_sher', 'ger_maus'],
   ['am_at', 'ger_maus'],
   /* and the field upgrades */
-  ['am_m3', 'hr_p4', { a: ['how75'] }],
+  ['am_gmc', 'hr_p4'],
   ['am_jeep', 'hr_ks750', { a: ['fifty'] }],
   ['am_jeep', 'hr_gren', { a: ['fifty'] }],
   ['hr_ks750', 'am_rifle', { a: ['mg42'] }],

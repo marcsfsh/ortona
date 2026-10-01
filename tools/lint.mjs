@@ -328,10 +328,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    It is 3060 for a building that burns, chars, smokes and goes on crumbling after the shelling
    stops, for a burst that is a blast and a spray of splinters with a lee behind a wall, and
    for the mortar and the heavy guns given a body and a roll.
+   It is 3100 for the four tiers of base building a side, each built to its army (tents and
+   canvas for the Americans, concrete for the 352nd), the base areas cleared and levelled on
+   three maps, and the Easy Eight, the 75 mm GMC and the Puma made vehicles of their own.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 3060) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3060 kB so it stays quick to load on a phone`);
+if (kb > 3100) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3100 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

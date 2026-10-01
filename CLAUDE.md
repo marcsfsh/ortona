@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1 and the Easy Eight it can be rebuilt as, the M26, the M3 and its 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the Achilles, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Easy Eight, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -956,7 +956,7 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 3060 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 3100 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
@@ -966,7 +966,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, and 3060 before a building could burn and a burst had splinters). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, and 3100 before the four tiers of base building). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1148,22 +1148,22 @@ as the 352nd, and Ortona's German button names the 352nd as well. And the jeep i
 a third: the motor pool makes it and queues it, the count reads it, its crew are baked, the
 periscope's eye is the gunner's at twenty-odd units up, forty wrecks throw the gun off the pedestal
 none of the time and sit down under 1.7 units, killed it leaves two American bodies. The M4A1 is
-asked it in a fourth: the motor pool makes it and queues it, the count reads it, every buffer it
+asked it in a fourth: the tank yard makes it and queues it, the count reads it, every buffer it
 needs is built, the man in its hatch has faces of the tanker's helmet and none of an M1, the seated
 tanker is baked, the eye is a little over three metres up out of the hatch and drops to the seat
 when the lid shuts, forty wrecks throw the turret some of the time and not all of it, killed it
-leaves American bodies. The Easy Eight is asked it straight after: the brain's own routine rebuilds
-an M4A1 for 160 marks, and the tank is then drawn from a model of its own with the 76's 250 of
-penetration at 420 and a brake, its card names it the M4A3E8 Sherman, its eye is the M4A1's 380
-before the rebuild and 420 after it, the body it is kept out of things by is measured again over the
-wider track, every buffer is built, the eye stands in the cupola and drops to the seat when the lid
+leaves American bodies. The Easy Eight is asked it straight after: the tank yard makes it by its
+own key and the M4A1 has no rebuild left on it, and the tank is drawn from a model of its own with
+the 76's 250 of penetration at 420 and a brake, its card names it the M4A3E8 Sherman, its eye is 420
+against the M4A1's 380, the body it is kept out of things by is wider than the M4A1's over the wider
+track, every buffer is built, the eye stands in the cupola and drops to the seat when the lid
 shuts, and forty wrecks throw the turret some of the time and are all of them the Easy Eight. The KS
-750 is asked it in a fifth, on the German side: the depot makes it and queues it, the count reads
+750 is asked it in a fifth, on the German side: the Kaserne makes it and queues it, the count reads
 it, its crew are baked on the machine and on the mount with the MG 42 built beside the MG 34, the
 seated rider is baked, a gun asked to lay 1.2 radians off the nose comes to the edge of the mount's
 arc and no further, the periscope's eye is the gunner's at fourteen-odd units up, forty wrecks throw
 nothing and sit down under 1.7 units, killed it leaves two bodies of the 352nd. The Panzer IV is
-asked it in a sixth: the depot makes it and queues it, the count reads it, it wears the grey and not
+asked it in a sixth: the Panzerpark makes it and queues it, the count reads it, it wears the grey and not
 one face of the sand camouflage, the man in its cupola wears the black cap and no helmet, the seated
 crewman is baked, the Schürzen and their rails are the upgrade's so the bare hull reaches no further
 than its guards, the eye is a little under three metres up out of the cupola and drops to the vision
@@ -1176,7 +1176,7 @@ bodies baked. The 352nd's pioneers are asked the same in an eighth, on the Germa
 headquarters makes the pioneer team and queues it, the side opened with one, its three men are the
 three pioneer variants carrying the MP40, the helmet carries goggles, the kit carries the brown pack
 and the collar is bottle green, it pegs out a sandbag wall and is sent to build it, a man of it
-killed goes down as `heer_pio`. The 251 is asked it in a ninth: the depot makes it and queues it,
+killed goes down as `heer_pio`. The 251 is asked it in a ninth: the Kraftfahrpark makes it and queues it,
 the count reads it, it wears the grey and not one face of the sand, the driver and the gunner wear
 field grey under a helmet and the seated man is baked, a grenadier squad boards it and a second is
 refused, it is put down behind the vehicle, a gun asked to lay 1.2 radians off the nose comes to the
@@ -1188,14 +1188,14 @@ gunner wear the American's helmet and jacket and the seated man is baked, an Ame
 it and a second is refused, it is put down behind the vehicle, a gun asked to lay over the tail
 comes all the way round, the periscope's eye is the gunner's, standing on the floor behind the
 pedestal, at twenty-odd units up, forty wrecks throw nothing and all sit down at least 2.2 onto the
-belly, killed it leaves American bodies and the squad aboard comes out alive. Its conversion is
-asked it straight after: the brain's own routine fits the 75 mm GMC to an M3 with a squad aboard,
-the mount is the gun's, the squad is put out and another is refused, the weapon is a shell of more
+belly, killed it leaves American bodies and the squad aboard comes out alive. The 75 mm GMC is
+asked it straight after: the motor pool makes it by its own key and the M3 has no conversion left on
+it, the mount is the gun's from the first, a squad is refused, the weapon is a shell of more
 than fifty at more than a hundred of penetration, every buffer is built with the pedestal's seats
 among what the fitting takes out, the gunner wears the M1 and the loader has brass in his hands, a
 gun asked to lay over the tail stops at the edge of the carriage's twenty degrees, the periscope's
 eye is the gunner's over the shield's roof, forty wrecks throw nothing, and killed it leaves
-American bodies. And the Rangers are asked it in an eleventh: the company post makes them and queues
+American bodies. And the Rangers are asked it in an eleventh: the barracks makes them and queues
 them, the count reads it, the six men are the leader, three Thompsons and the two BAR men, every
 variant is baked, with a vehicle in reach the two BAR men turn into the bazooka variant and the
 weapon is the bazooka, four rounds leave from the two of them turn about, with both dead the squad
@@ -1208,15 +1208,16 @@ radians off the nose comes all the way round, the periscope's eye is the command
 twenty-odd units up, the brain's own routine fits the .30 and the sand shields and the car is then
 skirted with the side plate worth more, eighty wrecks throw the turret some of the time and keep
 shields some of the time while forty of a car that never had them keep none, killed it leaves
-American bodies. And the 234 is asked it in a thirteenth, on the German side: the depot makes it and
+American bodies. And the 234 is asked it in a thirteenth, on the German side: the Kraftfahrpark makes it and
 queues it, the count reads it, it is in the grey with none of the sand paint, the 234/1's men and
 the Puma's commander wear the black cap and none of them a helmet, not one point of the 234/1's two
 men stands above the screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the
-nose comes all the way round, the periscope's eye is the commander's over the rim, the brain's own
-routine fits the Puma and the weapon, the muzzle, the men and the eye change with it, eighty wrecks
+nose comes all the way round, the periscope's eye is the commander's over the rim, the 234/1 has no
+turret swap left and the Puma is queued by its own key and born with the 5 cm, the muzzle, the men and
+the eye of its turret, eighty wrecks
 throw the turret some of the time, killed it leaves bodies of the 352nd. And the Knight's Cross
 Holders are asked it in a fourteenth, as the player gives the orders and not by calling what is
-behind them: the company post makes them and queues them, the count reads it, the four men are the
+behind them: the Kaserne makes them and queues them, the count reads it, the four men are the
 four variants carrying the StG 44 at a veteran's rank and every one is baked winding up and letting
 go; the GRENADES card reads ready, sends four grenades at a squad in reach, a man is in the throw
 while it goes, each grenade goes off three quarters of a second after it lands and the squad takes
@@ -1226,7 +1227,7 @@ Panzer IV sends the squad after it and puts the pick away, the squad walks into 
 comes down on the hull, goes off three quarters of a second later and takes two hundred or more off
 it; the brain's own routine uses both at once; the SIMPLE card carries both at 44 pixels and its
 BUNDLE arms the pick; a man killed goes down as `heer_kch`. And the .30 cal team is asked it in a
-fifteenth: the company post makes it and queues it, the count reads it, it is four men, every
+fifteenth: the barracks makes it and queues it, the count reads it, it is four men, every
 variant and both pieces' bodies at the gun are baked, a bearer carries belt faces a rifleman has
 none of, walking it is the two carriers and the two bearers with the gun, the tripod and a box each
 drawn at the point the bake read off them, on the shoulder at a man's shoulder height and in the
@@ -1234,7 +1235,7 @@ hand at his hand's, halted it sets up with the gunner sitting and his number two
 two at the gun's left facing it and the bearers back either side, the flash comes off the gun's
 muzzle, the brain's own routine issues the .50 and the weapon, the piece, the bodies at it and the
 pieces carried all change, a man killed goes down as `usa_mg`. And the MG 34 team is asked it in a
-sixteenth, on the German side: the company post makes it and queues it, the count reads it, it is
+sixteenth, on the German side: the Kaserne makes it and queues it, the count reads it, it is
 four men, every variant and both guns' bodies at the gun are baked, a bearer carries belt faces a
 grenadier has none of, the heel of each gun's butt, read off the gun's own faces and put where the
 cradle holds it, is within 1.3 units of the seated gunner's right shoulder joint, walking it is the
@@ -1244,14 +1245,14 @@ two at the gun's left facing it and the bearers back either side, the flash come
 muzzle, the brain's own routine issues the MG 42 and the weapon, the gun in the cradle, the bodies
 at it and the gun carried all change, a man killed goes down as `heer_mg`. And the Wirbelwind is
 asked it in a seventeenth, which is the first unit an army fielded over and above the ones it stood
-in for: the depot makes it beside the 234 and queues it by its own key, it is in the grey with none
+in for: the Kraftfahrpark makes it beside the 234 and queues it by its own key, it is in the grey with none
 of the sand paint, nothing of the turret roofs over the middle of it at the rim, four muzzles stand
 out past the front plate, the men in it wear the helmet and the black of the panzer troops with some
 of them more than two units over the rim, a turret asked to lay 1.2 radians off the nose comes all
 the way round, the periscope's eye is the commander's over the rim, the same 120-point burst beside
 it takes more than a third again off it than off the Panzer IV, eighty wrecks throw the turret some
 of the time, killed it leaves bodies of the 352nd. The Panther is asked it in an eighteenth, the
-second unit the 352nd fielded over and above: the depot makes it beside the Panzer IV and queues it
+second unit the 352nd fielded over and above: the Panzerpark makes it beside the Panzer IV and queues it
 by its own key, it is in the grey with none of the sand paint, the man in the cupola wears the black
 cap and no helmet, the muzzle stands more than eighteen units past the nose, a turret asked to lay
 over the tail comes all the way round, and the gunner sees as far as he shoots. Most of the row is
@@ -1259,8 +1260,8 @@ the plate: 220 in front and a side under two fifths of that and still over the P
 round at 300 through the front 56 times in a hundred and through the side every time, and the side
 dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the lid
 shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd. The 57
-mm Gun M1 is asked it in a nineteenth, on the American side: the motor pool makes it and queues it,
-the count reads it, its eye stands past every eye on the German depot and its reach past every gun
+mm Gun M1 is asked it in a nineteenth, on the American side: the barracks makes it and queues it,
+the count reads it, its eye stands past every eye on the German vehicles and its reach past every gun
 on it but the Maus's, and sited on open sand with a Panzer IV driving at it from 520 it fires first,
 a second or more ahead of the tank and before the tank has found it: at 3.0 seconds from 328 against
 the tank's answer at 5.9 from 161, because the tank drives in while the gun is picking it out, so
@@ -1269,16 +1270,16 @@ variant, the served bodies and its three meshes baked; set up, the loader kneels
 breech facing it and the bearers are back behind the gun, the flash comes off the muzzle and a
 bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner. A
 man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57. The 5 cm Pak 38
-is asked it in a twentieth, on the German side: the depot makes it and queues it, the count reads
-it, its eye stands past every eye on the American motor pool and its reach past every gun on it, and
+is asked it in a twentieth, on the German side: the Kaserne makes it and queues it, the count reads
+it, its eye stands past every eye on the American vehicles and its reach past every gun among them, and
 sited on open sand with an M4 driving at it from 520 it fires first, a second or more ahead of the
 tank and before the tank has found it. It is five men with every variant, the served bodies and its
 three meshes baked; set up, the loader kneels at the right of the breech facing it and the bearers
 are back behind the gun, the flash comes off the muzzle and a bearer has his case in his hand;
 packed, the trails close and the piece rides beside the gunner. A man killed goes down as `heer_at`,
 a German bunker's anti-tank fitting is the Pak 38. The M3 light tank is asked it in a twenty-first,
-the first unit the Americans fielded over and above the ones they stood in for: the motor pool makes
-it beside the M8 and queues it by its own key, it is in olive drab, the man in its hatch wears the
+the first unit the Americans fielded over and above the ones they stood in for: the tank yard makes
+it and queues it by its own key, it is in olive drab, the man in its hatch wears the
 tanker's helmet and no M1, the 37 mm stays inside the nose, a turret asked to lay over the tail
 comes all the way round, and the front plate is half as much again as the M8's, so at two hundred
 the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm opens the M8 more than twice as
@@ -1288,7 +1289,7 @@ the time, killed it leaves American bodies. The four light hulls (the M8, the 23
 this) are asked over eighty wrecks where the rest are asked over forty, because a light hull throws
 its turret on eighteen deaths in a hundred and forty of them throw none once in 2,800 runs, which one
 desktop run did. The M26 is asked it in a twenty-second, the second unit the Americans fielded over
-and above: the motor pool makes it beside the M4A1 and queues it by its
+and above: the tank yard makes it beside the M4A1 and queues it by its
 own key, it is in olive drab, the man in its cupola wears the tanker's helmet and no M1, the 90 mm
 stands more than twenty units past the nose, and a turret asked to lay over the tail comes all the
 way round. Most of the row is the plate and the gun at three hundred: a Panzer IV's round goes
@@ -1628,23 +1629,28 @@ It is drawn poured rather than stacked, and it is open at the two exit lanes and
 casemates set into it. The shingle bank in front of it is `bank`, a linear tier-2 `lowwall`
 run with no geometry of its own, because the ground is the geometry.
 
-**The craft that brought the first wave in are on the sand.** An LCT beached bow on in the
-middle is the American headquarters (`look: 'lct'`), two more are beached on the flanks,
-and seven Higgins boats lie between them: most whole with the ramp down, two burning, two
-broached in the surf. A craft aground is solid on its own bearing's bounding box and cover
+**The craft that brought the first wave in are on the sand.** Sixteen Higgins boats lie along
+the water's edge a boat's width apart, bow on up the beach: twelve whole with the ramp down,
+two burning and two broached in the surf. The two LCTs that stood here, one of them the
+American headquarters, are gone from the map: the headquarters is the tent on the sand above
+the boats (y 3700), and in a 3v3 the allies stand either side of it 520 apart (`LAND.hqOff`,
+which scales `HQ_OFF` for a country), so the two home flags at the water stand between them
+rather than under one. A craft aground is solid on its own bearing's bounding box and cover
 along both sides. And **a craft aground and whole is where the Americans build.** On a map
-that names the side that landed (`craftPost`), a company post or an armour point is not
-pegged out on open ground: an engineer turns a craft into one, for the usual price and
-time, and there are only as many posts as there are craft left -- five. The craft stays
-drawn where it lies and the post adds what is stacked in and round it (`craftPostFaces`: a
-tarpaulin over the well, the wireless, tents and stores for a company post; a gantry over
-the ramp, drums behind a berm, jerricans and spare track for an armour point), measured
-back from the bow and laid on the dry sand forward of midships, because a craft lies at the
-waterline and everything aft of it is under water. Its footprint is the craft's with room
-for that on the craft's own bearing, and it is a COPY of the building's def with the size
-changed (`craftDef`), because every reader of a building's size reads `b.def`. The classic
-bar outlines every craft still free while placing; the SIMPLE strip and the brain take the
-one nearest home; a post knocked down frees its craft.
+that names the side that landed (`craftPost`), a barracks, a motor pool or a tank yard is not
+pegged out on open ground: an engineer turns a craft into one, for the usual price and time,
+and there are only as many buildings as there are craft left -- twelve, which is three each
+for three players and three to spare. The craft stays drawn where it lies and the building
+adds what is stacked in and round it (`craftPostFaces`: a tarpaulin over the well, the
+wireless, tents and stores for a barracks; stores under a sheet in the well, fuel drums behind
+a berm, jerricans in rows and tyres for a motor pool; a gantry over the ramp, drums behind a
+berm, jerricans and spare track for a tank yard), measured back from the bow and laid on the dry
+sand forward of midships, because a craft lies at the waterline and everything aft of it is
+under water. Its footprint is the craft's with room for that on the craft's own bearing, and
+it is a COPY of the building's def with the size changed (`craftDef`), because every reader of
+a building's size reads `b.def`. The classic bar outlines every craft still free while
+placing; the SIMPLE strip and the brain take the one nearest home; a building knocked down
+frees its craft.
 
 **The Higgins boat is laid over a four-view drawing** (`tools/ref/lcvp.json` for the port side
 with the ramp down, `lcvp_b.json` for the starboard side, the bow and the stern with it up) of
@@ -4389,27 +4395,27 @@ is 14.75 over his soles and his hip 6.05, so the gunner's soles go 14.75 under t
 and the basket floor drops to meet them. Set the other way about, as the first version was,
 the gunner's head stood in the commander's view.
 
-**The M4A1 can be rebuilt as the Easy Eight** (`UPGRADES.e8`, 160 marks and 60 of fuel, fitted
-once): the M4A3E8, which is the M4A3's welded hull with the forty-seven degree glacis and the big
-drivers' hatches, on the horizontal volute suspension and its wide track, under the T23 turret with
-the 76 mm M1A2 and its muzzle brake, the vision cupola and the .50 on its post behind it. Nothing of
-the M4A1's shape carries over, so it is a model of its own (`VMODEL.am_e8`), and the tank stays the unit it
-was: `u.key` is still `am_sher`, so the count, the order book and the brain read it as the M4A1
-they bought. **`def.modelUp` names the fitting that rebuilds a vehicle and the model it is then drawn
-from, and `vkey(u)` is the one reader of it**: the draw, the shadow pass, the interior, the hole the
-eye looks down through, the periscope's eye and whether it is shut, the body the tank is kept out of
-things by (`fitUp` throws the old one away), the deck a bundle charge lands on, the muzzle and the
-tracer, the paint and the wreck, which keeps the model it died as (`w.vk`). `def.nameUp` is what it is
-called afterwards, and `nameOf`, `shortOf` and `descOf` are what the selection card, the periscope's
-label, the SIMPLE card and the toasts read, because a card reading M4A1 over a tank with a 76 and a
-muzzle brake is a card about the wrong tank. The toast for a fitting names the vehicle as it was.
+**The Easy Eight is a tank of its own** (`am_e8`, made at the tank yard beside the M4A1, 440 marks
+and 115 of fuel): the M4A3E8, which is the M4A3's welded hull with the forty-seven degree glacis and
+the big drivers' hatches, on the horizontal volute suspension and its wide track, under the T23 turret
+with the 76 mm M1A2 and its muzzle brake, the vision cupola and the .50 on its post behind it. It
+was a rebuild of the M4A1 for 160 marks and 60 of fuel and is not any more: the M4A1 has no rebuild
+on it. It is still drawn and armed through the rebuild's machinery, because it is the M4A1's def
+with its own fields laid over it and born with the rebuild on (`base` and `fit`, see *The bases*).
+Nothing of the M4A1's shape carries over, so it is a model of its own (`VMODEL.am_e8`). **`def.modelUp`
+names the fitting that rebuilds a vehicle and the model it is then drawn from, and `vkey(u)` is the
+one reader of it**: the draw, the shadow pass, the interior, the hole the eye looks down through, the
+periscope's eye and whether it is shut, the body the tank is kept out of things by, the deck a bundle
+charge lands on, the muzzle and the tracer, the paint and the wreck, which keeps the model it died as
+(`w.vk`). `defVm(d, key)` is the same answer read off a def, for a vehicle still in a queue. A vehicle
+made that way has a name of its own, which `nameOf`, `shortOf` and `descOf` read.
 
 **A rebuild lends the eye nothing until it is on** (`lateEye`), which is the rule a conversion's
-reach already had: the sight rule at load would otherwise have given every M4A1 on the field the 76's
-420 of eye. It sees 380 before and 420 after. The gun (`wUp.e8`) is 125 a round at 420 with 250 of
-penetration and a brake; the plate and the hit points are the M4A1's, because two and a half inches
-at forty-seven degrees is about the same plate as two inches of casting at fifty-six. Those numbers are
-set off the M4A1's and the Panther's and have not been fought on the duel card.
+reach already had; the Easy Eight is born with it on and sees 420 where the M4A1 sees 380. The gun
+(`wUp.e8`) is 125 a round at 420 with 250 of penetration and a brake; the plate and the hit points are
+the M4A1's, because two and a half inches at forty-seven degrees is about the same plate as two
+inches of casting at fifty-six. Those numbers are set off the M4A1's and the Panther's and have not
+been fought on the duel card.
 
 **It is laid over a four-view drawing** (`tools/ref/am_e8.json`) with no scale on the sheet: the side
 is taken off the published hull length and agrees with the length over the gun and the height to the
@@ -4715,8 +4721,11 @@ occlusion bake and came out black, so every face that looks into the compartment
 (`mhLitIn`, the M8's `lit` read off the face's own normal against the middle of the room).
 `VIN.am_m3` is the open vehicle's room, which is nothing, with the eye the gunner's.
 
-**The 75 mm GMC is its one conversion** (`UPGRADES.how75`, which the M3A1 built for Italy carried):
-the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
+**The 75 mm GMC is a vehicle of its own** (`am_gmc`, made at the motor pool beside the M3, 350
+marks and 60 of fuel). It was the M3's conversion (`UPGRADES.how75`, which the M3A1 built for Italy
+carried) and is now the half-track's def with the conversion laid over it and born fitted (`base`
+and `fit`), so the half-track has no conversion left on it and everything below is still how the
+gun is drawn, laid and crewed: the 75 mm M1897A4 on the top carriage of the M2A3, on a pintle bolted to the
 floor at the front of the body and firing forward over the cab behind a shield, laid over a
 four-view drawing of the GMC (`tools/ref/am_m3gmc.json`). The sheet's views disagree about the
 shield until it is read as it is built: the front and the rear have its top peaked in the middle
@@ -4738,10 +4747,8 @@ vehicle's `def.arc` asks now, `acquire`, the hull's turn to bring it round, the 
 `fireAt` among them. **`fills` on a fitting takes the room for a squad away**: `fitUp(u, uk)` is the
 one place an upgrade is fitted, from the brain's routine, the SIMPLE popup and the classic card
 alike, and it puts out a squad riding in the body before the gun goes in; `carriesOf(v)` is what
-`canBoard` and the lift ask, so none may board after. The player's AUTO setting never makes such a
-conversion for him, because it changes what the vehicle is for: he converts one by hand, or turns
-that one vehicle's own AUTO on. The brain converts its own, since nothing in it ever puts a squad
-aboard. And **a fitting that moves the mount is baked
+`canBoard` and the lift ask, so none may board after; a GMC is born with it and never carries
+anybody. And **a fitting that moves the mount is baked
 where it stands**: `put` in the occlusion bake takes the fitting's `barUp` pose, where it had baked
 every alternative mount at the ring of the one it replaced. The GMC's gun stands 2.9 units lower
 than the pedestal's head, and the M3A1 built for Italy had its quad and its 75 baked where
@@ -4750,9 +4757,9 @@ the ring was.
 **A conversion's reach lends the eye nothing until it is fitted.** The sight rule at load raised
 a unit's eye to the longest reach of any weapon it could carry, fittings included, which is right
 for a turret swapped for a bigger gun and wrong for a conversion that makes it another vehicle:
-at 440 the GMC's reach gave every half-track still waiting to be converted a better eye than an
-armoured car's. The rule leaves a `fills` fitting out and `eyeOf(u)` puts its reach back once it
-is fitted, in the eye and in the selection within sight.
+at 440 the GMC's reach gave every half-track a better eye than an armoured car's. The rule leaves a
+`fills` fitting out and `eyeOf(u)` puts its reach back once it is fitted, in the eye and in the
+selection within sight; the GMC is born fitted and sees its 440 from the first.
 
 **The M3's numbers are the M3A1's**, because it is the same vehicle, and the card agrees with
 what those numbers were already doing: over twelve runs it takes the grenadier squad and the KS 750
@@ -4873,9 +4880,11 @@ twelve at the first numbers, and thinner plate does not change that.
 
 **The 234 is the 352nd's armoured car**, built from nothing: the eight-wheeled heavy armoured car of a Panzer
 division's reconnaissance battalion, in the grey. It arrives as the 234/1, with the 2 cm KwK 38
-and an MG 42 in an open six-sided turret under two wire screens, and **the closed turret of the
-234/2 with the 5 cm KwK 39/1 is its field upgrade** (`UPGRADES.puma`), which swaps the gun, the
-mount and the men in it together. The two drivers, one at each end, are inside the hull and are
+and an MG 42 in an open six-sided turret under two wire screens, and **the 234/2 Puma, the same car
+under the closed turret with the 5 cm KwK 39/1, is a car of its own** (`hr_puma`, off the same
+Kraftfahrpark for 360 marks and 75 of fuel). It was the 234's field upgrade (`UPGRADES.puma`) and is
+now the 234's def with that fitting laid over it and born on (`base` and `fit`), so the gun, the
+mount and the men in it are the turret's, and the 234/1 has no turret swap left on it. The two drivers, one at each end, are inside the hull and are
 not drawn. On `tools/dims.mjs` it reads 6.07 m long against 6.02 (`tailX` holds the spare wheel
 out of it, and the tyre's faces that straddle the tail are the 0.07), 2.36 wide against 2.33, 2.07
 to the rim of the 234/1's turret against 2.10, 2.37 to the Puma's roof against 2.38, 6.79 over
@@ -4946,8 +4955,8 @@ the M4 every time. Its burst is 9 where it was 14: once a burst on a man at the 
 section reached him (see *A burst is a blast and a spray of splinters*), at 14 the Rangers beat it
 half the time where they had beaten it 92 per cent of the time on the same afternoon, and at 9
 they beat it 87 per cent of the time over twenty-four runs, with the M8 fight at 69 per cent and
-a rifle squad taken in 31.5 seconds against 34. The Puma, at 85 a round every 2.6 seconds and 120 of penetration for another
-120 marks and 45 of fuel, takes the M8 and the rifle squad every time over twelve runs and loses
+a rifle squad taken in 31.5 seconds against 34. The Puma, at 85 a round every 2.6 seconds and 120 of penetration (then for another
+120 marks and 45 of fuel on top of the 234/1, now 360 and 75 as a car of its own), takes the M8 and the rifle squad every time over twelve runs and loses
 to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
 `SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
 
@@ -6554,6 +6563,101 @@ One thing caught by the gate and by nothing else: **the game-over buttons are `.
 not `.pill`**. The title screen binds every `.pill` on the page as a side picker, by class
 and with a plain `onclick =`, and it runs after the wiring here -- so a button that borrowed
 the look silently borrowed the handler with it and did nothing at all when pressed.
+
+**The bases.** Each army builds a base of four buildings in tiers, and each but the first needs
+the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
+
+| tier | 29th | 352nd | makes |
+|---|---|---|---|
+| 0 | Regimental Headquarters (`us_hq`) | Gefechtsstand (`ger_hq`) | the engineers or pioneers, the rifle or grenadier squad, the jeep or KS 750 |
+| 1 | Barracks (`us_bar`, 200) | Kaserne (`ger_qtr`, 200) | Rangers / Knight's Cross Holders, the mortar, the machine gun team, the jeep / KS 750, the 57 / Pak 38, and the Gebirgsflak |
+| 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, leFH 18, Nebelwerfer |
+| 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
+
+A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
+motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
+building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
+order sent to the wrong building of an AI to the right one, because a brain out of an older revision
+on the skirmish card asks the motor pool for a tank. The hotkeys are 1 to 3 for the buildings, 4 to 7
+and 9 for the works, and 8 for repair. Older passages in this file call the barracks the company
+post and the motor pool the armour point or the depot, and the German Kraftfahrpark the depot; read
+them as the building that makes the unit now.
+
+**Three vehicles that were fittings are vehicles of their own** (the Easy Eight, the 75 mm GMC and
+the Puma), and **the Achilles is retired** (`RETIRED.us_ach` is the Easy Eight). Each of the three is
+written as `base` and `fit` on its def, and at load the base's def and its own fields are merged into
+a plain object with `vm` naming the model it is drawn from, so a tool reading `UNITS[k]` off the page
+gets the whole of it. `spawnUnit` puts the fitting on, so the mount, the gun, the traverse, the men,
+the eye and the room for a squad are the ones the fitting always had, and `vkey(u)` and
+`defVm(d, key)` are where the model is read. The base unit has the fitting taken off its list.
+
+**A building faces the enemy.** Every building is laid out with its front along +x and turned to
+face the other army where it stands (`bldYaw`, off `frontOf`), so on a map whose armies face each
+other along y its footprint is swapped (`bldDims`, and `bldDef` is a copy of the def with the swap)
+and it is drawn at its yaw and at the mean height of the ground under its middle and its corners
+(`b.z`, `bldZ`). A headquarters with a map's own `look` (Omaha's manor) keeps its own bearing and
+footprint. **Where one may stand** is `bldSiteOk`: clear of everything (`siteClear`), dry walkable
+ground under all nine points of it, and no more than 12 units from its lowest point to its highest
+(`BLD_RELIEF`), because every model goes nine units into the ground and that hides a fall of about
+that much. **Where one goes when nobody has pointed** is `baseSite`: rings round the player's own
+headquarters from 150 to 560 out on 24 bearings, beside or behind before in front, never nearer
+another player's headquarters than his own, and inside a base area before outside one. The brain
+and SIMPLE both use it; it replaced two to six fixed offsets that on a crowded map found none clear.
+
+**The models are the two armies' own** (`BLDMODEL`, `buildingModel`, the palette `BASE`). The 29th
+lives under canvas, after the Company of Heroes base the brief asked for: wall tents and squad tents
+in olive drab duck on timber platforms, the HQ's fly over a map table with the wireless and the
+signallers' mast, the barracks' squad tents with a mess fly and a field range, the motor pool's
+workshop of duck on a timber frame with its bench, its hoist and the fuel behind bags, and the tank
+yard's hangar of duck stretched over hoops with a gantry, a crated engine and spare track, sandbags
+round the lot. The 352nd lives in poured concrete: a command bunker, a personnel bunker, a garage of
+open bays and a tank shelter, each with the earth banked up its back and sides, turf on the roof
+(on the earth tile, because on the grass tile its blades came out as rows of green stripes from
+above), the board marks of the shuttering printed in the walls and the field company's paint over
+them. `tools/shoot.mjs buildings` stood them on Ortona's cliff, so they are photographed on Omaha's
+sand by a script of the session's own.
+
+**The brain builds in order and saves for the next one.** `aiTick` raises the barracks, the motor
+pool and the tank yard in that order (`K.b1`, `K.b2`, `K.b3`), each where `baseSite` says or out of
+the craft nearest home, and counts `build.post`, `build.depot`, `build.yard` and `build.noroom`.
+Once one is standing, the next is saved for the way the head of the shopping list is (`nextT` in
+`aiTick`): after ninety seconds and with three sections for the motor pool, after two hundred for
+the tank yard, or the units already on offer spend what it costs as fast as it comes in. A rung on
+the ladder whose building is not up is not saved for (`wants` is filtered on `aiMaker`). Measured
+with a brain on every slot, one battle a map: in a 1v1 on Ortona and the Gothic Line both armies had
+the barracks up inside the first minute and the motor pool between three and six; the 352nd had its
+Panzerpark at five minutes on Ortona and was building one at seven on the Gothic Line, and the 29th
+had no tank yard by seven on either. In a 3v3, where the income is split three ways, every player had
+his motor pool by four minutes on Ortona, the Gothic Line and Saint-Lo and none had a tank yard in
+five or six; on Omaha the three German players had their Panzerparks by six minutes and the
+Americans none in eight. On the commit before, a 3v3 had one motor pool a side in six minutes.
+SIMPLE's strip offers the next building he has not got, dimmed until the one before it stands, and
+each unit once however many of his buildings make it; the classic engineer's card says what a
+building needs when it cannot be built yet.
+
+**The base areas.** A country may give each side ground to build on (`LAND.base`: `a` either way
+along the allies' line, `f` in front, `g` the steepest grade the ground under it keeps). `baseZones`
+puts a rectangle round each headquarters spot of the full three a side, from the edge of the map
+behind it to `f` in front of it, and merges the ones that touch, so Ortona and the Gothic Line have
+one band down each end and Saint-Lo three a side, one at the head of each lane. `BASEZ` is those
+rectangles for the map being played, worked out in `buildMap` beside `DEPOT`. `makeHeight` levels
+each one with a plane fitted over it whose grade is held under `g` and blends it out over the margin
+(`padMargin`), in place of the pads round each headquarters; `depotAt` reads the same distance, so
+the landform's own damping (the terraces and the valloni on Ortona, the relief on the Gothic Line)
+stops at the same line. It goes all the way onto the plane, where a depot keeps three hundredths of
+the ground under it, and a map's height brushes are faded out over the areas the same way, because
+both left a coastal rise standing twelve units proud inside the German area on Ortona. And `baseOpen` takes out of a shipped map's own entity list everything whose
+footprint reaches into one, except its roads, railway, bridges, flags, headquarters, grass, paving
+and fields (`BASE_KEEP`), and any height brush whose middle is in one; it is done at the end of the
+map's builder, so the editor shows the map as it is played and a map made in the editor keeps
+whatever is put in its base. Omaha's is the Germans' alone (`only`), in the bocage behind Trevieres,
+because the Americans build out of the craft on the sand and a beach levelled by a third of a unit
+moves the water's edge. On the gate row for it, the ground in every area on the four maps stands no
+more than two and a half units off the plane fitted through it, the plane's own grade is about two
+in a hundred at most (which across an area a thousand units long is twenty units from one end to the other,
+so the row does not ask how far the ground rises from its lowest point to its highest), the steepest
+step between two points twenty apart is under 0.15, nothing solid stands in an area, and a 3v3 sites
+all eighteen of its buildings, each inside its own side's areas or on a craft.
 
 **Field works.** `WORKS` is what a section of engineers can put up during a battle:
 sandbag wall, weapon pit, wire. Placement is `placeWork`, which pegs a site out on a
