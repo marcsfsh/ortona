@@ -66,12 +66,6 @@ const REAL = {
                published figure rather than off them. The body is over the stowage bins on the fenders, 3.43 m
                in the plan of the T26E4; the roof is the upper hull between them, 2.24 m in that plan and 2.12 in
                the T26E5's */
-  us_ach:    { name: '17pdr SP Achilles',   len: 5.97,  gun: 7.85,   wid: 3.05,  hgt: 2.57,
-               body: 3.05, bodyZ: 1.88, clear: 0.43 },   /* the M10 is the one vehicle here whose
-               widest point is not its tracks: the sponsons stand eight inches proud of them each
-               side, so body is checked at the deck to confirm the flare is carrying the width.
-               7.85 m over the gun is off the La Roche car, scaled on its bogie centres; the 7.5 m
-               in most tables is the 3-inch M10 with a bit added for the 17-pounder. */
   ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.09,
                body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },   /* 3.09 m to the top of the cupola
                is Jentz's, and what the four-view drawing (tools/ref/ger_kt.json) stands the cupola at;
@@ -169,11 +163,6 @@ const PROBE = {
                holds the periscope heads out of a height measured to the top of the hatch */
   am_m26:    { bodyZ: 16.8, roofZ: 18.7, xLo: 1.0, xHi: 4.0, straddle: true, topZ: 13.8 },   /* the slice is taken
                through the second bin on each fender; topZ holds the lid's periscope and the aerial out */
-  us_ach:    { bodyZ: 22.0, topZ: 8.0 },   /* bodyZ is a hand's breadth under the deck, above the
-               tools and the jerricans and below the lifting eyes, where the side plate is bare.
-               topZ keeps the turret crew out of the height: three of them stand in an open turret
-               with their heads over the rim, and a man is no more part of a vehicle's height than
-               an aerial is */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },
   ger_tig:   { bodyZ: 18.5, roofZ: 22.0, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,
