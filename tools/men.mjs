@@ -697,7 +697,8 @@ function GEO(opt) {
   if (opt.do.size) {
     const rows = []; let bufs = 0, tris = 0, bytes = 0, runTris = 0;
     const M = MODELS;
-    const add = (acc, b, run) => { if (!b) return; acc.bufs++; acc.tris += b.n / 3; acc.bytes += b.n * STRIDE; if (run) acc.run += b.n / 3; };
+    const vb = b => b.pk ? PK_STRIDE : STRIDE;
+    const add = (acc, b, run) => { if (!b) return; acc.bufs++; acc.tris += b.n / 3; acc.bytes += b.n * vb(b); if (run) acc.run += b.n / 3; };
     Object.keys(SOLDIER_VARIANTS).forEach(v => {
       const acc = { bufs: 0, tris: 0, bytes: 0, run: 0, stand: 0, alpha: 0 };
       if (M.man) {
@@ -715,7 +716,9 @@ function GEO(opt) {
     });
     /* what the bake costs, and whether anything in it is NaN */
     let ms = 0, nan = 0;
-    if (typeof bakeMen === 'function') { const t = performance.now(); bakeMen(); ms = performance.now() - t; nan = MODELS.nan || 0; }
+    /* the bake is lazy now (a pose is baked the first time it is read), so what it costs is the
+       table set up and then every pose of it read */
+    if (typeof bakeMen === 'function') { const t = performance.now(); bakeMen(); if (typeof manBakeAll === 'function') manBakeAll(); ms = performance.now() - t; nan = MODELS.nan || 0; }
     else {
       const t = performance.now(), tmp = [];
       Object.keys(SOLDIER_VARIANTS).forEach(v => {
@@ -745,7 +748,7 @@ function GEO(opt) {
       }
       sections.push({ key: k, men: d.models, tris: Math.round(t), draws, depthTris: Math.round(t), depthDraws: d.models });
     });
-    R.sections.size = { rows, bufs, tris: Math.round(tris), mb: bytes / 1e6, phoneTris: Math.round(tris - runTris), phoneMb: (bytes - runTris * 3 * STRIDE) / 1e6,
+    R.sections.size = { rows, bufs, tris: Math.round(tris), mb: bytes / 1e6, phoneTris: Math.round(tris - runTris), phoneMb: (bytes - runTris * 3 * (typeof PK_STRIDE === 'number' ? PK_STRIDE : STRIDE)) / 1e6,
                         bakeMs: ms, nan, freed: MODELS.freed === undefined ? null : MODELS.freed,
                         sections, table: M.man ? 'MODELS.man' : 'MODELS.sol/prone/crouch/fire/cfire/crawl', mob: !!MOB };
   }

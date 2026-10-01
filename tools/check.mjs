@@ -5717,8 +5717,14 @@ for (const device of TARGETS) {
       const room = [];
       for (let k = 1; k < R.nz && !room.length; k++)
         for (let c = k * NC; c < (k + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) room.push(c);
+      /* and the room is the one with something round it to burn, the middle of the house only
+         breaking a tie: the four cells nearest the middle of Ortona's biggest house sit among
+         empty cells and stone, and from them the fire took or died out about as often as a
+         coin comes down heads, on the commit before as on this one. A fire that dies in the
+         first room says nothing about how a fire behaves in a house. */
       const mid = c => { const q = window.frCellC(R, c); return Math.hypot(q[0] - p.x, q[1] - p.y); };
-      room.sort((a, b) => mid(a) - mid(b));
+      const round = c => { let f = 0; [NC, -NC, 1, -1, R.nx, -R.nx].forEach(d => { const n = c + d; if (n >= 0 && n < R.alive.length && R.alive[n]) f += R.fuel[n]; }); return f; };
+      room.sort((a, b) => round(b) - round(a) || mid(a) - mid(b));
       for (let i = 0; i < room.length && lit < 4; i++) if (window.frIgnite(p, room[i], .6)) lit++;
       return { lit, fuel, cells: R.orig.reduce((a, v) => a + v, 0), gar: !!u.gar };
     });
@@ -7249,6 +7255,46 @@ for (const device of TARGETS) {
      noArty.off && noArty.reached > 0 && noArty.bought === 0 && noArty.onField === 0 && noArty.sites === 0,
      `G.aiArty ${noArty.off ? 'off' : 'STILL ON'}; over 480s the post block was reached ${noArty.reached} times, ` +
      `artillery rules fired ${noArty.bought} times, and an army of ${noArty.army} has ${noArty.onField} tubes and ${noArty.sites} positions going up`);
+
+  /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
+     on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were
+     550 MB at the whistle, every infantry pose on the roster was baked whether or not anybody
+     fielded it, the occlusion bake's arrays stayed on every vehicle face after they had been
+     packed, and a second battle in the same page put another 135 MB on top of the first. So
+     the bytes are counted as they are uploaded and freed, on the heaviest map, and a second
+     battle has to come out no bigger than the first. The hook goes in before the deploy and
+     counts only what is made after it, which is the whole of a battle. --- */
+  await reload(page);
+  await page.evaluate(() => {
+    const P = window.WebGL2RenderingContext.prototype, sz = new WeakMap();
+    const M = window.__mem = { bytes: 0, live: 0 };
+    const bd = P.bufferData, db = P.deleteBuffer;
+    M.restore = () => { P.bufferData = bd; P.deleteBuffer = db; };
+    P.bufferData = function (t, d, u) {
+      const b = this.getParameter(t === this.ELEMENT_ARRAY_BUFFER ? this.ELEMENT_ARRAY_BUFFER_BINDING : this.ARRAY_BUFFER_BINDING);
+      const n = typeof d === 'number' ? d : (d ? d.byteLength : 0);
+      if (b) { if (!sz.has(b)) M.live++; M.bytes += n - (sz.get(b) || 0); sz.set(b, n); }
+      return bd.apply(this, arguments);
+    };
+    P.deleteBuffer = function (b) { if (b && sz.has(b)) { M.bytes -= sz.get(b); M.live--; sz.delete(b); } return db.call(this, b); };
+  });
+  await deploy(page, { side: args.side || 'us', diff: 1, map: 'stlo' });
+  const memRead = () => page.evaluate(() => {
+    let ao = 0, faces = 0;
+    Object.keys(window.VMODEL).forEach(k => ['hull', 'tur', 'crew', 'turCrew'].forEach(p => (window.VMODEL[k][p] || []).forEach(f => { faces++; if (f.ao) ao++; })));
+    return { mb: window.__mem.bytes / 1048576, live: window.__mem.live, ao, faces, baked: window.MANBUF ? window.MANBUF.length : -1, packed: window.SCENE.tiles[1] && window.SCENE.tiles[1].props.pk ? 1 : 0 };
+  });
+  const mem1 = await memRead();
+  await page.evaluate(() => window.startGame(window.G.side, window.G.diff));
+  await page.waitForFunction(() => window.G.running && window.SCENE.ready, null, { timeout: 180000 });
+  await frames(page, 1);
+  const mem2 = await memRead();
+  await page.evaluate(() => window.__mem.restore());
+  const memCap = DEVICES[device].hasTouch ? 230 : 330;
+  ok('a battle on the heaviest map holds its buffers to a budget, and a second battle frees the first',
+     mem1.mb < memCap && mem2.mb <= mem1.mb * 1.06 + 2 && mem1.ao === 0 && mem1.packed && mem1.baked < 400,
+     `Saint-Lô ${mem1.mb.toFixed(0)} MB in ${mem1.live} buffers against ${memCap}, then ${mem2.mb.toFixed(0)} MB in ${mem2.live} after a second deploy; ` +
+     `${mem1.ao} of ${mem1.faces} vehicle faces still carry the bake; ${mem1.baked} men's buffers baked at the whistle; tiles ${mem1.packed ? 'packed' : 'NOT packed'}`);
 
   /* --- the map editor --- */
   await reload(page);

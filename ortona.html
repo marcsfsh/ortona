@@ -6742,6 +6742,7 @@ function findPath(sx, sy, tx, ty, u) {
    fights for. In a 1v1 they are the same string, which is what they have always been. */
 function spawnUnit(slot, key, x, y, facing) {
   var d = UNITS[key], side = slotSide(slot);
+  if (d.models) manWarm(key);
   var u = {
     id: G.uid++, own: slot, side: side, key: key, def: d, cat: d.cat, x: x, y: y,
     facing: facing === undefined ? (side === 'us' ? 0 : Math.PI) : facing,
@@ -7185,6 +7186,8 @@ function queueUnit(b, key) {
   if (unitLimit(o, d) && countOf(o, key) >= unitLimit(o, d)) { if (you) toast('Only ' + unitLimit(o, d) + ' ' + d.name + ' may be fielded'); return false; }
   pay(o, d.cost); b.queue.push(key);
   G.made[o][key] = (G.made[o][key] || 0) + 1;
+  /* and its men are baked while it is being raised, a few milliseconds a frame */
+  manWarm(key);
   return true;
 }
 /* how many of a type a side has alive or on order. The key is read as the army this map's
@@ -10791,6 +10794,16 @@ function frCrush(b, sp) {
   }
 }
 /* the buffers of every building cut and every piece in the air, given back with the map */
+/* What the last battle's own objects hold on the card, which the lists below are emptied of
+   without a word: every field work and site, a gun's wreck in its ring, a craft made into a
+   post and a bunker's fitting. Each is a buffer of its own, and FIGHT AGAIN left them all. */
+function battleFree() {
+  if (typeof gl === 'undefined' || !gl) return;
+  (G.works || []).forEach(function (w) { freeBuffer(w.buf); });
+  (G.sites || []).forEach(function (q) { freeBuffer(q.buf); });
+  (G.blds || []).forEach(function (b) { freeBuffer(b.buf); });
+  (G.bunks || []).forEach(function (bk) { freeBuffer(bk.upBuf); freeBuffer(bk.upSite); });
+}
 function frFree() {
   var i;
   if (typeof gl === 'undefined' || !gl) return;
@@ -17786,7 +17799,7 @@ var FOGDIV = 2;
 
 var VSH = [
   '#define SHADOWS 0',
-  'attribute vec3 aPos; attribute vec3 aNrm; attribute vec3 aCol; attribute vec2 aUV; attribute float aMat;',
+  'attribute vec3 aPos; attribute vec3 aNrm; attribute vec4 aCol; attribute vec2 aUV; attribute float aMat;',
   'uniform mat4 uMVP; uniform mat4 uModel; uniform mat4 uSunVP; uniform vec3 uSun; uniform float uAmb; uniform vec3 uTint;',
   'uniform vec2 uSpecTab[24];',
   'varying vec3 vCol; varying vec3 vNrm; varying vec3 vWpos; varying vec2 vUV; varying float vMat; varying vec2 vSpec;',
@@ -17794,9 +17807,12 @@ var VSH = [
   'void main(){',
   '  vec4 wp = uModel * vec4(aPos, 1.0);',
   '  vNrm = normalize(mat3(uModel) * aNrm);',
-  '  vCol = aCol * uTint;',
-  '  vWpos = wp.xyz; vUV = aUV; vMat = aMat;',
-  '  vSpec = uSpecTab[int(aMat + 0.5)];',
+  '  vCol = aCol.rgb * uTint;',
+  /* a packed buffer carries the material in the colour's fourth byte and leaves aMat at
+     its constant -1 (see packVerts) */
+  '  float mat = aMat < -0.5 ? floor(aCol.a * 255.0 + 0.5) : aMat;',
+  '  vWpos = wp.xyz; vUV = aUV; vMat = mat;',
+  '  vSpec = uSpecTab[int(mat + 0.5)];',
   '  vSunPos = uSunVP * wp;',
   '  gl_Position = uMVP * wp;',
   '  vDist = gl_Position.w;',
@@ -18648,7 +18664,7 @@ function sunMatrix(v) {
 function drawDepthGeom(buf, model) {
   gl.uniformMatrix4fv(DEPTHP.u.uModel, false, model || _ident);
   gl.bindBuffer(gl.ARRAY_BUFFER, buf.vbo);
-  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE, 0);
+  gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, buf.pk ? PK_STRIDE : STRIDE, 0);
   gl.drawArrays(gl.TRIANGLES, 0, buf.n);
 }
 
@@ -19650,7 +19666,42 @@ function makeBuffer(arr) {
   gl.bufferData(gl.ARRAY_BUFFER, arr instanceof Float32Array ? arr : new Float32Array(arr), gl.STATIC_DRAW);
   return { vbo: b, n: arr.length / 12 };
 }
-function facesToBuffer(faces) { return makeBuffer(facesToArray(faces)); }
+/* ---- a vertex in 28 bytes ----
+   The twelve floats a vertex is built in are 48 bytes, and every buffer that never changes
+   after it is made was uploaded like that: 550 MB of them on a phone after a deploy, which
+   is most of what an iPhone tab is killed for. A normal is a direction and a byte a
+   component holds it to a hundred and twenty-seventh; a colour came out of an eight-bit hex
+   and goes back into eight bits; the material is an index under 256 and rides in the
+   colour's fourth byte. The position and the texture coordinate stay floats, because the
+   one is the model and the other runs to hundreds in world units. Every offset is a
+   multiple of four, because a vertex attribute off that is a copy of the buffer on a
+   Metal device. What is written into in place (a cut building, the debris, the heap, the
+   ground the shells dig into) keeps the floats. */
+var PK_STRIDE = 28;
+function packVerts(src) {
+  var n = (src.length / 12) | 0, ab = new ArrayBuffer(n * PK_STRIDE);
+  var F = new Float32Array(ab), B = new Int8Array(ab), U = new Uint8Array(ab), i, s, f, b, x;
+  for (i = 0; i < n; i++) {
+    s = i * 12; f = i * 7; b = i * PK_STRIDE;
+    F[f] = src[s]; F[f + 1] = src[s + 1]; F[f + 2] = src[s + 2];
+    x = src[s + 3]; B[b + 12] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+    x = src[s + 4]; B[b + 13] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+    x = src[s + 5]; B[b + 14] = Math.round((x > 1 ? 1 : x < -1 ? -1 : x) * 127);
+    x = src[s + 6]; U[b + 16] = Math.round((x > 1 ? 1 : x < 0 ? 0 : x) * 255);
+    x = src[s + 7]; U[b + 17] = Math.round((x > 1 ? 1 : x < 0 ? 0 : x) * 255);
+    x = src[s + 8]; U[b + 18] = Math.round((x > 1 ? 1 : x < 0 ? 0 : x) * 255);
+    U[b + 19] = src[s + 11];
+    F[f + 5] = src[s + 9]; F[f + 6] = src[s + 10];
+  }
+  return ab;
+}
+function makePacked(arr) {
+  var b = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, b);
+  gl.bufferData(gl.ARRAY_BUFFER, packVerts(arr), gl.STATIC_DRAW);
+  return { vbo: b, n: (arr.length / 12) | 0, pk: 1 };
+}
+function facesToBuffer(faces) { return makePacked(facesToArray(faces)); }
 function freeBuffer(b) { if (b && b.vbo) gl.deleteBuffer(b.vbo); }
 /* one tile of props, freeing what it replaces so the editor does not fill the card */
 function buildTile(ti) {
@@ -19658,11 +19709,19 @@ function buildTile(ti) {
   var pf = sceneProps(ti), old = SCENE.tiles[ti];
   HEAPOFF--;
   if (old) { freeBuffer(old.props); freeBuffer(old.leaves); }
-  SCENE.tiles[ti] = { props: makeBuffer(pf.opaque), leaves: makeBuffer(pf.alpha) };
+  SCENE.tiles[ti] = { props: makePacked(pf.opaque), leaves: makePacked(pf.alpha) };
 }
 function buildTiles() { for (var ti = 0; ti < PT_N; ti++) buildTile(ti); }
 function bindGeom(buf) {
   gl.bindBuffer(gl.ARRAY_BUFFER, buf.vbo);
+  if (buf.pk) {
+    gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, PK_STRIDE, 0);
+    gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 4, gl.BYTE, true, PK_STRIDE, 12);
+    gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 4, gl.UNSIGNED_BYTE, true, PK_STRIDE, 16);
+    gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 2, gl.FLOAT, false, PK_STRIDE, 20);
+    gl.disableVertexAttribArray(4); gl.vertexAttrib1f(4, -1);
+    return;
+  }
   gl.enableVertexAttribArray(0); gl.vertexAttribPointer(0, 3, gl.FLOAT, false, STRIDE, 0);
   gl.enableVertexAttribArray(1); gl.vertexAttribPointer(1, 3, gl.FLOAT, false, STRIDE, 12);
   gl.enableVertexAttribArray(2); gl.vertexAttribPointer(2, 3, gl.FLOAT, false, STRIDE, 24);
@@ -36301,7 +36360,7 @@ VIN.hr_panther = function (V) {
            hole: { x: cx, y: cy, z: zl + .05, r: T.cr - .6 },
            dbg: { roof: roof, eye: eye } };
 };
-function buildVehicleModels() {
+function buildVehicleModels(up) {
   var us = '#586247', usC = '#798366', usS = '#424a35';
   var gr = '#88784e', grC = '#a18f61', grS = '#675d40';
   /* belly: ground clearance, declared because no geometric filter reliably tells the
@@ -36436,6 +36495,8 @@ function buildVehicleModels() {
     if (vm.addUp) for (uk in vm.addUp) put(vm.addUp[uk], 0, 0);
     if (vm.downUp) for (uk in vm.downUp) put(vm.downUp[uk], 0, 0);
     bakeAO(parts);
+    /* and buffered at once, with its bake let go, when the game is building them */
+    if (up) up(vk);
   }
 
   /* the 29th's 105, whose tube runs back down its own bore on the spread trails, and which
@@ -39804,36 +39865,61 @@ function gunPost(u) {
    ground one cycle covers, so nothing downstream needs a divisor typed beside it, and
    the previous buffers are freed first: a restart used to leak every man on the roster.
    `MODELS.nan` is the NaN count, because a part built from an undefined constant
-   vanishes without an error and this is the only thing that says so. */
-function bakeMen() {
-  var old = MODELS.man;
-  MODELS.freed = 0;
-  Object.keys(old).forEach(function (v) {
-    Object.keys(old[v]).forEach(function (pz) {
-      var set = old[v][pz];
-      (set.frames || [set]).forEach(function (bf) { freeBuffer(bf); MODELS.freed++; });
-    });
-  });
-  [MODELS.fall, MODELS.dead].forEach(function (T) {
-    Object.keys(T).forEach(function (n) { T[n].forEach(function (bf) { freeBuffer(bf); MODELS.freed++; }); });
-  });
-  MODELS.man = {}; MODELS.muz = {}; MODELS.eye = {}; MODELS.fall = {}; MODELS.dead = {}; MODELS.hold = {}; MODELS.nan = 0;
-  function buf(r) {
-    var arr = facesToArray(r.faces), i;
-    for (i = 0; i < arr.length; i++) if (arr[i] !== arr[i]) { MODELS.nan++; break; }
-    return makeBuffer(arr);
+   vanishes without an error and this is the only thing that says so.
+     And a pose is baked the first time something asks for it, not at the whistle. The
+   whole roster baked up front was 44 variants, 685 buffers, 290 MB of vertex buffers on a
+   phone and a fifth of the load, for men most battles never field: an iPhone tab is
+   killed for less, and was. Every pose of every variant is still in the tables, as a
+   getter that bakes it and puts the buffer in its place (`manLazy`), so a reader cannot
+   tell a baked pose from one that was not; `manWarm` queues a unit's men while it is
+   being raised and `manWarmTick` bakes the queue a few milliseconds a frame, so the
+   first sight of a section costs nothing. `MANBUF` is every buffer baked, which is what
+   a rebuild frees. */
+var MANBUF = [], MANQ = [];
+function manBuf(r) {
+  var arr = facesToArray(r.faces), i;
+  for (i = 0; i < arr.length; i++) if (arr[i] !== arr[i]) { MODELS.nan++; break; }
+  var b = makePacked(arr);
+  MANBUF.push(b);
+  return b;
+}
+/* one entry on each table it lands in, baked by `bake` on the first read of any of them */
+function manLazy(tabs, key, bake) {
+  var done = false;
+  function run() {
+    if (done) return;
+    done = true;
+    tabs.forEach(function (t) { Object.defineProperty(t, key, { value: undefined, writable: true, enumerable: true, configurable: true }); });
+    bake();
   }
+  tabs.forEach(function (t) {
+    Object.defineProperty(t, key, { get: function () { run(); return t[key]; },
+                                    set: function (v) { run(); t[key] = v; }, enumerable: true, configurable: true });
+  });
+}
+function bakeMen() {
+  MODELS.freed = 0;
+  MANBUF.forEach(function (bf) { freeBuffer(bf); MODELS.freed++; });
+  MANBUF = []; MANQ = [];
+  MODELS.man = {}; MODELS.muz = {}; MODELS.eye = {}; MODELS.fall = {}; MODELS.dead = {}; MODELS.hold = {}; MODELS.nan = 0;
+  var buf = manBuf, body = {};
   Object.keys(SOLDIER_VARIANTS).forEach(function (v) {
     var V = SOLDIER_VARIANTS[v], T = MODELS.man[v] = {}, MZ = MODELS.muz[v] = {}, EY = MODELS.eye[v] = {};
     /* and where what he carries hangs, for a man whose load is drawn rather than baked */
     var HD = V.carrier || V.can || V.lafback ? (MODELS.hold[v] = {}) : null;
-    function one(pose, P) { var r = manFaces(v, P); T[pose] = buf(r); MZ[pose] = r.muzzle; EY[pose] = r.eye[2]; if (HD) HD[pose] = r.hold; }
-    function cycle(pose, G, n, len) {
-      var fr = [], mz = [], hs = [], i;
-      for (i = 0; i < n; i++) { var r = manFaces(v, G(i / n)); fr.push(buf(r)); mz.push(r.muzzle); hs.push(r.hold); }
-      T[pose] = { frames: fr, len: len }; MZ[pose] = mz; EY[pose] = EY[POSE_STAND];
-      if (HD) HD[pose] = { frames: hs };
+    var tabs = HD ? [T, MZ, EY, HD] : [T, MZ, EY];
+    function one(pose, P) {
+      manLazy(tabs, pose, function () { var r = manFaces(v, P); T[pose] = buf(r); MZ[pose] = r.muzzle; EY[pose] = r.eye[2]; if (HD) HD[pose] = r.hold; });
     }
+    function cycle(pose, G, n, len) {
+      manLazy(tabs, pose, function () {
+        var fr = [], mz = [], hs = [], i;
+        for (i = 0; i < n; i++) { var r = manFaces(v, G(i / n)); fr.push(buf(r)); mz.push(r.muzzle); hs.push(r.hold); }
+        T[pose] = { frames: fr, len: len }; MZ[pose] = mz; EY[pose] = EY[POSE_STAND];
+        if (HD) HD[pose] = { frames: hs };
+      });
+    }
+    if (v === 'gi_rifle' || v === 'gr_rifle' || V.body) body[V.body || V.nat || V.side] = v;
     if (V.set === 'hull') { one(POSE_SEAT, FIGPOSE.seat); return; }
     one(POSE_STAND, stanceOf(v, 'stand')); one(POSE_CROUCH, stanceOf(v, 'kneel')); one(POSE_PRONE, PRONE());
     cycle(POSE_WALK, gaitOf(v), WALKF, STRIDE_LEN);
@@ -39846,22 +39932,87 @@ function bakeMen() {
     /* a man who throws is baked winding up and letting go, once with a stick grenade in
        his hand and once with the bundle charge */
     if (V.throw) [[POSE_THROW, ''], [POSE_THROWB, 'bund']].forEach(function (tp) {
-      var fr = [], mz = [];
-      [FIGPOSE.throw0, FIGPOSE.throw1].forEach(function (P0) {
-        var P1 = {}, q;
-        for (q in P0) P1[q] = P0[q];
-        P1.nade = tp[1];
-        var r = manFaces(v, P1); fr.push(buf(r)); mz.push(r.muzzle);
+      manLazy([T, MZ, EY], tp[0], function () {
+        var fr = [], mz = [];
+        [FIGPOSE.throw0, FIGPOSE.throw1].forEach(function (P0) {
+          var P1 = {}, q;
+          for (q in P0) P1[q] = P0[q];
+          P1.nade = tp[1];
+          var r = manFaces(v, P1); fr.push(buf(r)); mz.push(r.muzzle);
+        });
+        T[tp[0]] = { frames: fr, len: 1, thr: 1 }; MZ[tp[0]] = mz; EY[tp[0]] = EY[POSE_STAND];
       });
-      T[tp[0]] = { frames: fr, len: 1, thr: 1 }; MZ[tp[0]] = mz; EY[tp[0]] = EY[POSE_STAND];
     });
-    if (v === 'gi_rifle' || v === 'gr_rifle' || V.body) {
-      var sd = V.body || V.nat || V.side;
+  });
+  /* the man falling and lying dead, one pair a body, off the last variant in the table that
+     carries it, which is the one the bake ended on when it baked them all */
+  Object.keys(body).forEach(function (sd) {
+    var v = body[sd];
+    manLazy([MODELS.fall, MODELS.dead], sd, function () {
       MODELS.fall[sd] = [FIGPOSE.fall0, FIGPOSE.fall1, FIGPOSE.fall2].map(function (P) { return buf(manFaces(v, P)); });
       MODELS.dead[sd] = [buf(deadFaces(v, 0)), buf(deadFaces(v, 1))];
-    }
+    });
   });
   bakeGunners(buf);
+}
+/* every pose of every man, for a tool that wants the whole table at once; it hands back
+   how many entries it read */
+function manBakeAll() {
+  var n = 0;
+  Object.keys(MODELS.man).forEach(function (v) {
+    var T = MODELS.man[v];
+    Object.keys(T).forEach(function (p) { if (T[p]) n++; });
+  });
+  [MODELS.fall, MODELS.served].forEach(function (T) { Object.keys(T).forEach(function (k) { if (T[k]) n++; }); });
+  return n;
+}
+/* The men a unit of this kind can put on the field, read off `variantForModel` with a
+   stand-in for the unit: every man of it, packed and set up, bare and with each of its
+   fittings, and with a vehicle in front of it, because the Rangers' bazooka men and a
+   machine gun's carriers are other variants. And the body a man of it goes down as. */
+function variantsOf(key) {
+  var d = UNITS[key], out = [], seen = {};
+  if (!d || !d.models) return out;
+  var ups = [null].concat(d.upgrades || []);
+  [false, true].forEach(function (pk) {
+    [null, { cat: 'veh' }].forEach(function (tg) {
+      ups.forEach(function (uk) {
+        var u = { key: key, side: d.side, def: d, up: {}, models: [], packed: pk, target: tg, towedBy: null, gar: null };
+        for (var i = 0; i < d.models; i++) u.models.push({ alive: true });
+        if (uk) u.up[uk] = 1;
+        for (i = 0; i < d.models; i++) {
+          var v = null;
+          try { v = variantForModel(u, i); } catch (e) { v = null; }
+          if (v && SOLDIER_VARIANTS[v] && !seen[v]) { seen[v] = 1; out.push(v); }
+        }
+      });
+    });
+  });
+  return out;
+}
+/* queue a unit's men, its served bodies and its dead, to be baked a few milliseconds a frame */
+function manWarm(key) {
+  if (!GLOK || !UNITS[key]) return;
+  var d = UNITS[key];
+  variantsOf(key).forEach(function (v) {
+    var T = MODELS.man[v];
+    if (T) Object.keys(T).forEach(function (p) { MANQ.push([T, p]); });
+  });
+  [key].concat(Object.keys(d.gunUp || {}).map(function (uk) { return key + ':' + uk; })).forEach(function (k) {
+    if (MODELS.served && Object.prototype.hasOwnProperty.call(MODELS.served, k)) MANQ.push([MODELS.served, k]);
+  });
+  var sd = d.body || (d.nat || (d.side === 'ger' ? 'heer' : 'usa'));
+  if (Object.prototype.hasOwnProperty.call(MODELS.fall, sd)) MANQ.push([MODELS.fall, sd]);
+}
+/* A pose read is a pose baked, so working the queue is reading it. A cycle of eight frames
+   is a few tens of milliseconds and is taken whole, so the budget is a floor and not a cap. */
+function manWarmTick(ms) {
+  var t0 = performance.now(), n = 0;
+  while (MANQ.length && performance.now() - t0 < (ms || 4)) {
+    var q = MANQ.shift();
+    if (q[0][q[1]]) n++;
+  }
+  return n;
 }
 /* The layer, one per gun, with his hands on that gun's own grips.
      A single served pose cannot fit five pieces: the handwheels of a 6-pounder are 5.2
@@ -39893,7 +40044,7 @@ function bakeGunners(buf) {
     /* a team whose piece can be changed has a body for each piece, keyed the way the piece is */
     var sets = [[key, d]];
     if (d.gunUp) Object.keys(d.gunUp).forEach(function (uk) { sets.push([key + ':' + uk, d.gunUp[uk]]); });
-    sets.forEach(function (e) {
+    sets.forEach(function (e) { manLazy([MODELS.served], e[0], function () {
       var g = e[1], G0 = g.gunGrip, v = d.gunner || (d.side === 'ger' ? 'hr_atg' : 'gi_atg');
       var base = d.gunSit ? (FIGPOSE[d.gunSit] || FIGPOSE.sit) : FIGPOSE.served;
       /* where the hands have to end up, in the man's own frame: the grips of the piece,
@@ -39917,43 +40068,83 @@ function bakeGunners(buf) {
         S.mate = buf(r2); S.mateHand = r2.joints.handR; S.mateWant = want2;
       }
       MODELS.served[e[0]] = S;
-    });
+    }); });
   });
+}
+/* Everything `buildModels` made for the last battle, which nothing freed: a second battle
+   in the same page put 135 MB of vehicles, guns and buildings on top of the first one's and
+   a third another 135. The men are freed by `bakeMen` and the scene by its own builders. */
+function modelsFreeOne(o, d) {
+  d = d || 0;
+  if (!o || typeof o !== 'object' || d > 3) return;
+  if (o.vbo) { freeBuffer(o); return; }
+  Object.keys(o).forEach(function (k) { modelsFreeOne(o[k], d + 1); });
+}
+function modelsFree() {
+  var walk = modelsFreeOne;
+  ['veh', 'gun', 'gunBase', 'gunRec', 'gunPk', 'carry', 'bld', 'bldA', 'flag'].forEach(function (k) { walk(MODELS[k], 0); });
+  ['gren', 'bund', 'disc'].forEach(function (k) { freeBuffer(MODELS[k]); });
+  MODELS.gun = {}; MODELS.gunBase = {}; MODELS.gunRec = {}; MODELS.gunPk = {};
+}
+/* The occlusion bake leaves three numbers a vertex on every face (`f.ao`, `f.wear`,
+   `f.dust`), which `facesToArray` reads once to colour the buffer. The faces stay, for the
+   bodies, the decks, the paint and the tools, and the three arrays stayed with them: 155 MB
+   of a 366 MB heap after a deploy. They go once the buffers are made. */
+function bakeDrop(list) {
+  if (!list || !list.length) return;
+  for (var i = 0; i < list.length; i++) { var f = list[i]; if (f && f.ao) { f.ao = null; f.wear = null; f.dust = null; f.mud = null; } }
+}
+function bakeDropModel(M) {
+  Object.keys(M).forEach(function (k) {
+    var o = M[k];
+    if (Array.isArray(o)) bakeDrop(o);
+    else if (o && typeof o === 'object' && k !== 'inside') Object.keys(o).forEach(function (q) { if (Array.isArray(o[q])) bakeDrop(o[q]); });
+  });
+}
+/* One vehicle's buffers, made the moment its bake is done and with the bake's arrays let
+   go behind them, so that nineteen vehicles' worth of them are never alive at once: made at
+   the end, they were 155 MB at the top of the load. */
+function vehUpload(k) {
+  var V = VMODEL[k];
+  if (MODELS.veh[k]) { modelsFreeOne(MODELS.veh[k]); }
+  var M = { hull: facesToBuffer(V.hull), tur: facesToBuffer(V.tur),
+            mg: V.mg ? facesToBuffer(V.mgMan ? V.mg.concat(V.mgMan) : V.mg) : null, skirts: V.skirts ? facesToBuffer(V.skirts) : null,
+            turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, downUp: {}, mgUp: {},
+            crew: V.crew ? facesToBuffer(V.crew) : null, turCrew: V.turCrew ? facesToBuffer(V.turCrew) : null,
+            turCrewMg: V.turCrewMg ? facesToBuffer(V.turCrewMg) : null, turCrewUp: {},
+            hatch: HATCHES[k] ? facesToBuffer(HATCHES[k].shut) : null,
+            cmdr: HATCHES[k] ? facesToBuffer(HATCHES[k].open) : null,
+            leaf: HATCHES[k] ? facesToBuffer(HATCHES[k].leaf) : null };
+  if (V.turUp) Object.keys(V.turUp).forEach(function (uk) { M.turUp[uk] = facesToBuffer(V.turUp[uk]); });
+  if (V.turCrewUp) Object.keys(V.turCrewUp).forEach(function (uk) { M.turCrewUp[uk] = facesToBuffer(V.turCrewUp[uk]); });
+  if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
+  if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
+  if (V.downUp) Object.keys(V.downUp).forEach(function (uk) { M.downUp[uk] = facesToBuffer(V.downUp[uk]); });
+  V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces);
+  M.inlid = V.inside.lid ? facesToBuffer(V.inside.lid) : null;
+  M.hood = V.inside.hood ? facesToBuffer(V.inside.hood) : null;
+  V.inside.faces = V.inside.lid = V.inside.hood = null;
+  MODELS.veh[k] = M;
+  bakeDropModel(V);
 }
 function buildModels() {
   if (!GLOK) return;
-  buildVehicleModels();
-  MODELS.veh = {}; MODELS.bld = {}; MODELS.bldA = {};
+  modelsFree();
+  MODELS.veh = {};
+  buildVehicleModels(vehUpload);
+  MODELS.bld = {}; MODELS.bldA = {};
   bakeMen();
   /* the two things a squad throws, drawn one per grenade in the air or on the ground */
   MODELS.gren = facesToBuffer(grenadeFaces(KIT.heer, false));
   MODELS.bund = facesToBuffer(grenadeFaces(KIT.heer, true));
-  Object.keys(VMODEL).forEach(function (k) {
-    var V = VMODEL[k];
-    var M = { hull: facesToBuffer(V.hull), tur: facesToBuffer(V.tur),
-              mg: V.mg ? facesToBuffer(V.mgMan ? V.mg.concat(V.mgMan) : V.mg) : null, skirts: V.skirts ? facesToBuffer(V.skirts) : null,
-              turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, downUp: {}, mgUp: {},
-              crew: V.crew ? facesToBuffer(V.crew) : null, turCrew: V.turCrew ? facesToBuffer(V.turCrew) : null,
-              turCrewMg: V.turCrewMg ? facesToBuffer(V.turCrewMg) : null, turCrewUp: {},
-              hatch: HATCHES[k] ? facesToBuffer(HATCHES[k].shut) : null,
-              cmdr: HATCHES[k] ? facesToBuffer(HATCHES[k].open) : null,
-              leaf: HATCHES[k] ? facesToBuffer(HATCHES[k].leaf) : null };
-    if (V.turUp) Object.keys(V.turUp).forEach(function (uk) { M.turUp[uk] = facesToBuffer(V.turUp[uk]); });
-    if (V.turCrewUp) Object.keys(V.turCrewUp).forEach(function (uk) { M.turCrewUp[uk] = facesToBuffer(V.turCrewUp[uk]); });
-    if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
-    if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
-    if (V.downUp) Object.keys(V.downUp).forEach(function (uk) { M.downUp[uk] = facesToBuffer(V.downUp[uk]); });
-    V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces);
-    M.inlid = V.inside.lid ? facesToBuffer(V.inside.lid) : null;
-    M.hood = V.inside.hood ? facesToBuffer(V.inside.hood) : null;
-    V.inside.faces = V.inside.lid = V.inside.hood = null;
-    MODELS.veh[k] = M;
-  });
+  /* a vehicle the bake loop did not hand over, which is none of them when it ran here */
+  Object.keys(VMODEL).forEach(function (k) { if (!MODELS.veh[k]) vehUpload(k); });
   Object.keys(GUNMODEL).forEach(function (k) {
     MODELS.gun[k] = facesToBuffer(GUNMODEL[k].mesh);
     if (GUNMODEL[k].base) MODELS.gunBase[k] = facesToBuffer(GUNMODEL[k].base);
     if (GUNMODEL[k].rec) MODELS.gunRec[k] = facesToBuffer(GUNMODEL[k].rec);
     if (GUNMODEL[k].pack) MODELS.gunPk[k] = facesToBuffer(GUNMODEL[k].pack);
+    bakeDropModel(GUNMODEL[k]);
   });
   /* and the pieces as they are carried, each drawn at the man carrying it */
   var MC = mgCarryModels(), LC = lafCarryModels();
@@ -46743,6 +46934,7 @@ function startGame(side, diff, mode, arty, team) {
   G.wallMan = !!chosenWall && !!(G.mapData && G.mapData.garrison);
   el('vpwrap').title = G.win === 'anni' ? 'Buildings left standing' : 'Victory points';
   missionTitle();
+  battleFree();
   G.units = []; G.blds = []; G.shots = []; G.fx = []; G.wrecks = []; G.corpses = []; G.falls = []; G.smoke = []; G.sel = [];
   frFree();
   G.debris = []; G.hurt = []; G.fall = []; G.rub = []; G.tileQ = {}; G.rubDirty = 1;
@@ -46866,6 +47058,7 @@ function frame(now) {
     frTick(dt);
     flushTileQ();
     flushGroundQ();
+    manWarmTick(MOB ? 3 : 4);
     updateSectors(dt);
     updateSites(dt);
     updateBunkers(dt);

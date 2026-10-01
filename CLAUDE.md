@@ -1327,7 +1327,11 @@ spread and charred the cells, put the section out, shut the door and be smoking 
 line, and three minutes on cells have to have burnt through and come down. Lit at the corner of
 the roof instead, the fire on Ortona's biggest house took most of a minute to find its feet on
 the desktop and went out on the phone, which is a fire on a roof edge and not the one the row
-is about. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
+is about. And the room is the one with the most round it to burn, the middle of the house only
+breaking a tie: the four cells nearest the middle sit among empty cells and stone, and from them
+the fire took or died out about as often as a coin comes down, on the committed file as on the
+working one, which read as two devices failing the row with the same numbers. Lit where there is
+timber round it, it caught five times in five. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
 it: in a minute and a half they have to have shed stone. That last row puts the army back, every
 fire out and the cracked wall at rest, because a house left burning goes on spreading down the
 street through every row below it.
@@ -1338,6 +1342,15 @@ simulated battle for the gun and barrel tests on top of the three already fought
 enough for the game to end, and a game-over screen sits over everything the rest of the
 check wants to click; and a tank parked by its own headquarters for a minute of that is a
 tank that can be killed, which closes the periscope and takes `POV.u` with it.
+
+**And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
+a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
+Saint-Lô, the heaviest map, and reads the vertex buffer bytes the battle made: under 230 MB on the
+phone and 330 on the desktop, not one vehicle face still carrying the occlusion bake's arrays, the
+tiles packed, and fewer than 400 men's buffers baked at the whistle. Then it deploys again in the
+same page, and the second battle has to come out no bigger than the first, because that is the
+leak that put another 135 MB on a phone at every FIGHT AGAIN. It runs last before the editor, since
+a deploy resets the battle every row above it reads.
 
 ### `tools/shoot.mjs` - looking at it
 
@@ -8126,6 +8139,50 @@ software rasteriser with no GPU behind it. They are useful for spotting a
 change that makes rendering dramatically more expensive, and useless as an
 absolute FPS figure.
 
+**And it has to fit in a phone's memory, which is a different budget from its frame rate.** A
+phone opened Saint-Lô and the tab was killed four seconds later. Nothing threw: an iPhone kills a
+tab for memory without a word on the console, and what the phone profile held after a deploy was
+550 MB of vertex buffers and a 366 MB heap, with the page process at 1.15 GB and the GPU process
+at 1.2 GB at the top of the load. The infantry sculpt alone had added 137 MB of buffers and
+doubled the load. Five things were wrong, and four of them were fixes of their own:
+
+- **Every pose of every infantry variant was baked at the whistle**: 44 variants, 685 buffers, 290
+  MB, for men most battles never field. A pose is baked the first time something reads it now
+  (`manLazy`): every entry of `MODELS.man`, `muz`, `eye`, `hold`, `fall`, `dead` and `served` is a
+  getter that bakes it and puts the value in its place, so no reader can tell a baked pose from one
+  that was not. `manWarm(key)` queues a unit's men (every variant `variantsOf` reads off
+  `variantForModel` with a stand-in for the unit, packed and set up, bare and fitted, with a vehicle
+  in front of it), its served bodies and its dead, from `queueUnit` and `spawnUnit`, and
+  `manWarmTick` bakes the queue a few milliseconds a frame, so a section is baked while it is being
+  raised. `MANBUF` is every buffer baked, which is what a rebuild frees; `manBakeAll` reads the
+  whole table for a tool that wants it. It took five and a half seconds off a Saint-Lô load.
+- **The occlusion bake's three arrays a vertex stayed on every vehicle face** after `facesToArray`
+  had read them once: 155 MB of the 366 MB heap. `vehUpload` buffers each vehicle the moment its
+  bake is done (`buildVehicleModels(up)`), and `bakeDrop` lets the arrays go behind it, so
+  nineteen vehicles' worth never exist at once. The faces stay, for the bodies, the decks, the
+  paint and the tools.
+- **A static vertex was 48 bytes.** `makePacked` uploads 28 (`packVerts`, `PK_STRIDE`): the
+  position and the texture coordinate as floats, the normal as four signed bytes, and the colour as
+  four unsigned ones with the material in the fourth, which the shader reads back when `aMat`
+  stands at its constant -1. Every offset is a multiple of four, because an attribute off that is
+  a converted copy of the buffer on a Metal device. Everything built once goes through it: the
+  tiles, the vehicles, the guns, the buildings and the men. What is written into in place keeps
+  the floats (`makeBuffer`): a cut building's cells, the debris, the heap, the ground the shells
+  dig into and the grass. The before-and-after photographs are the same picture.
+- **A second battle in the same page leaked the first one's models**: 135 MB of vehicles, guns
+  and buildings a time, because `buildModels` refilled the tables without freeing them
+  (`modelsFree`), and every field work, site, craft post and bunker fitting kept its own buffer
+  through `startGame` (`battleFree`).
+- What is left is garbage from the vehicle builders, which the browser collects on its own
+  schedule.
+
+Measured on the phone profile on Saint-Lô: 172 MB of vertex buffers at the whistle (221 once the
+opening units' men are warmed) against 523, a 208 MB heap against 366, the page process at 913 MB
+and the GPU process at 847 at the top of the load against 1,147 and 1,200, a load of 21.6 s
+against 28.5 under SwiftShader, and a second battle in the same page adding nothing where it
+added 135 MB. The gate's memory row holds the buffers to a budget and the second battle to the
+first.
+
 ---
 
 ## Repo layout
@@ -8160,6 +8217,23 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A table refilled without freeing what was in it leaks the card.** `buildModels` set
+  `MODELS.veh = {}` and built nineteen vehicles' buffers into it again, so every FIGHT AGAIN put
+  another 135 MB of vertex buffers on a phone that already held the last battle's. Nothing showed:
+  the old buffers were simply never drawn again. A builder that refills a table frees the table
+  first (`modelsFree`, `battleFree`, `MANBUF`), and the gate's memory row deploys twice to prove it.
+- **The men tables are getters.** Reading `MODELS.man[v][pose]` bakes it, so `Object.keys` on them
+  lists everything and a walk over them bakes the roster. Free them through `MANBUF`, never by
+  walking the tables, and a new table of baked men goes through `manLazy` or the first reader to
+  find it missing draws nothing.
+- **A packed buffer cannot be written into in place.** It is 28 bytes a vertex with the normal
+  and the colour in bytes, so `bufferSubData` with the float layout corrupts it. Anything a later
+  frame writes into (a cut building's cells, the debris, the heap) is made with `makeBuffer`, which
+  keeps the twelve floats, and `bindGeom` and `drawDepthGeom` read `buf.pk` to know which it has.
+- **Inside the harness's fast forward `performance.now()` stands still.** It is replaced by the
+  virtual clock, which only moves between frames, so a loop that works until a few milliseconds
+  have passed runs to the end of its queue: the men's warm queue bakes everything it holds in the
+  first step of a fast forward. That is harmless there, and a loop that has to stop needs a count.
 - **`at()` hands a face back without its tile.** It copies the vertices, the colour and the
   normals and drops `m`, so a part moved with it falls back to looking its colour up. For a
   palette tagged hard that is usually the same tile by luck; for the American's, one trouser
