@@ -1397,13 +1397,19 @@ for (const device of TARGETS) {
       return Math.round(lost);
     };
     const r = { autoHull: blast(AUTO), shellHull: blast(null) };
-    /* the men, at the same point and with the same two bursts */
+    /* the men, at the same point and with the same two bursts, and the same dice: whether a
+       splinter finds a man is a roll, so each half is thrown with the same seeded rolls and
+       the two have to agree to the point */
     const men = (w) => {
+      const rand = Math.random;
+      let seed = 2024;
+      Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       const s = window.spawnUnit('ger', 'hr_gren', sp.x, sp.y, 0);
       const full = s.models.reduce((a, m) => a + m.hp, 0);
       for (let i = 0; i < 10; i++) window.explode(s.x + OFF, s.y, R, D, own, null, 10, w);
       const lost = full - s.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0);
       s.dead = true; window.G.units.splice(window.G.units.indexOf(s), 1);
+      Math.random = rand;
       return Math.round(lost);
     };
     r.autoMen = men(AUTO); r.shellMen = men(null);
@@ -1617,6 +1623,9 @@ for (const device of TARGETS) {
     const W = window.WORKS[kind];
     if (!W || !W.minHq) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    /* and the sky cleared, because the row counts every shell that lands while it runs and a
+       round the battle left in the air was one more of its five */
+    window.G.shots.length = 0;
     const sites = window.G.sites.slice(), works = window.G.works.slice();
     const mp = window.G.res[side].mp, fu = window.G.res[side].fu;
     window.G.res[side].mp = 9000; window.G.res[side].fu = 9000;
@@ -5454,9 +5463,11 @@ for (const device of TARGETS) {
      is a picture of rubble laid over a building that is, as far as everything else in the
      game is concerned, exactly where it was -- and it is the one fault here a screenshot
      would call a success. So the row asks the SAME CELL the same four questions with the
-     bay standing and with the bay down, puts a section in the house first to see it put
-     out, and counts the stone: what settles has to be what came out of the walls, because
-     masonry that vanishes on landing is a collapse nobody can stand in. --- */
+     house standing and with the house down, puts a section in it first to see it put out,
+     and counts the stone: everything the cells threw has to be lying on the ground or in
+     the heap at the end, because masonry that vanishes on landing is a collapse nobody can
+     stand in. Before any of that one field-gun round goes against the face, because a
+     building that comes down on the first hole in it is as wrong as one that never does. --- */
   const wreck = await (async () => {
     /* on Ortona, because a terrace is what this is about and the Gothic Line is a valley
        floor with two farms on it */
@@ -5475,81 +5486,315 @@ for (const device of TARGETS) {
                                   Math.hypot(r.x - q.x, r.y - q.y) < 150))
         .sort((a, b) => b.w * b.h - a.w * a.h)[0];
       if (!p) return null;
+      window.__wreckH = p;
       window.__keep = window.G.units.slice();
       window.G.units.length = 0;
       const u = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'am_rifle' : 'hr_gren',
                                  p.x, p.y + p.h / 2 + 40);
       window.enterBuilding(u, p);
       window.rebuildGrid();
-      const B = window.ruinState(p), b = B[Math.floor(B.length / 2)];
-      const ci = window.cidx((b.x / window.CELL) | 0, (p.y / window.CELL) | 0);
-      return { up: { walk: window.walkable(b.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+      window.G.frStat = { made: 0, bodies: 0, lost: 0 };
+      const ci = window.cidx((p.x / window.CELL) | 0, (p.y / window.CELL) | 0);
+      return { up: { walk: window.walkable(p.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
                      fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
-                     gar: !!u.gar, hurt: !!p.hurt },
-               bays: B.length, x: b.x, y: p.y, w: Math.round(p.w), h: Math.round(p.h) };
+                     gar: !!u.gar, hurt: !!p.hurt, can: window.frBreakable(p) },
+               x: p.x, y: p.y, w: Math.round(p.w), h: Math.round(p.h) };
     });
     if (!put) return null;
-    /* a battery on it, which is the one thing on the roster that brings a house down */
-    const shot = await page.evaluate(a => {
-      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
-                                           Math.abs(q.y - a.y) < a.h)[0];
-      let n = 0;
-      for (let i = 0; i < 14; i++) {
-        window.explode(a.x + (i % 5 - 2) * 11, a.y - a.h / 2 - 2, 130, 300, null, null, 22);
-        n++;
-      }
-      let vol = 0;
-      for (const c of window.G.debris) vol += c.l * c.w * c.h;
-      return { rounds: n, air: window.G.debris.length, vol: Math.round(vol),
-               queued: Object.keys(window.G.tileQ).length, bays: (p.bay || []).filter(b => b.down > 0).length };
-    }, put);
-    await fastForward(page, 14);
-    /* and one drawn frame, because the house's own buffer is built in the draw: fast
-       forward stubs render() out, so without this the row asks whether a thing that has
-       not been drawn yet has been drawn */
+    /* a 105's round twelve units off the middle of the face: a hole, and the house still a
+       house with the section still in it */
+    const hole = await page.evaluate(() => {
+      const p = window.__wreckH;
+      window.explode(p.x, p.y + p.h / 2 + 12, 40, 150, null, null, 14);
+      const R = p.fr;
+      return { cut: !!R, cells: R ? R.orig.reduce((n, v) => n + v, 0) : 0,
+               gone: R ? R.orig.reduce((n, v, i) => n + (v && !R.alive[i] ? 1 : 0), 0) : 0 };
+    });
+    await fastForward(page, 3);
+    Object.assign(hole, await page.evaluate(() => {
+      const p = window.__wreckH, R = p.fr;
+      return { left: R ? Math.round(R.mAlive / R.m0 * 1000) / 10 : 100, hold: window.frHoldable(p),
+               held: window.G.units.some(u => !u.dead && u.gar === p) };
+    }));
+    /* then the battery: five salvos of three 240 rounds down through the roof */
+    let air = 0;
+    for (let s = 0; s < 5; s++) {
+      air = Math.max(air, await page.evaluate(s => {
+        const p = window.__wreckH, pts = [[-.3, -.25], [.3, .25], [.3, -.25], [-.3, .25], [0, 0]];
+        for (let i = 0; i < 3; i++) {
+          const q = pts[(s * 3 + i) % pts.length];
+          window.explode(p.x + q[0] * p.w, p.y + q[1] * p.h, 150, 380, null, null, 0);
+        }
+        return window.G.debris.length;
+      }, s));
+      await fastForward(page, 2.5);
+    }
+    await fastForward(page, 12);
+    /* and one drawn frame, because the house's own buffer is uploaded in the draw: fast
+       forward stubs render() out */
     await frames(page, 2);
-    const down = await page.evaluate(a => {
-      const p = window.G.props.filter(q => q.kind === 'ruin' && Math.abs(q.x - a.x) < a.w &&
-                                           Math.abs(q.y - a.y) < a.h)[0];
-      const ci = window.cidx((a.x / window.CELL) | 0, (a.y / window.CELL) | 0);
+    const down = await page.evaluate(() => {
+      const p = window.__wreckH, R = p.fr;
+      const ci = window.cidx((p.x / window.CELL) | 0, (p.y / window.CELL) | 0);
       const u = window.G.units.filter(e => !e.dead)[0];
       let vol = 0;
-      for (const r of window.G.rub) vol += r.l * r.w * r.h;
+      for (const r of window.G.rub) vol += r.l * r.w * r.h + (r.e || 0);
       let mound = 0;
       for (let dx = -60; dx <= 60; dx += 14) for (let dy = -40; dy <= 40; dy += 14)
-        mound = Math.max(mound, window.moundAt(a.x + dx, a.y + dy));
-      const st = { walk: window.walkable(a.x, a.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
+        mound = Math.max(mound, window.moundAt(p.x + dx, p.y + dy));
+      const st = { walk: window.walkable(p.x, p.y) ? 1 : 0, sight: window.sblk[ci] ? 1 : 0,
                    fire: window.fblk[ci] ? 1 : 0, rub: window.rubg[ci] ? 1 : 0,
                    gar: !!(u && u.gar), hurt: !!p.hurt, standing: Math.round(window.ruinStanding(p)),
+                   left: R ? Math.round(R.mAlive / R.m0 * 100) : 100,
                    canGar: window.canGarrison({ cat: 'inf', def: { speed: 30 }, models: [] }, p),
-                   settled: window.G.rub.length, vol: Math.round(vol), mound: +mound.toFixed(1),
-                   air: window.G.debris.length, buf: !!p.buf };
+                   settled: window.G.rub.length, vol: Math.round(vol), made: Math.round(window.G.frStat.made),
+                   lost: Math.round(window.G.frStat.lost), bodies: window.G.frStat.bodies,
+                   mound: +mound.toFixed(1), stand: +(window.groundZ(p.x, p.y) - window.floorZ(p.x, p.y)).toFixed(1),
+                   air: window.G.debris.length, fall: window.G.fall.length, buf: !!(R && R.buf),
+                   heap: window.HEAPBUF ? window.HEAPBUF.n : 0 };
       window.G.units.length = 0;
       window.__keep.forEach(e => window.G.units.push(e));
       window.rebuildGrid();
       return st;
-    }, put);
-    return { ...put, ...shot, down };
+    });
+    return { ...put, hole, air, down };
   })();
+  ok('a field-gun round against a house opens a hole in it and leaves it a house',
+     !!wreck && wreck.up.can && wreck.hole.cut && wreck.hole.gone >= 1 && wreck.hole.left > 90 &&
+     wreck.hole.hold && wreck.hole.held,
+     wreck ? `${wreck.w}x${wreck.h}, cut into ${wreck.hole.cells} cells: one 150-point round took ${wreck.hole.gone} out, ` +
+             `${wreck.hole.left}% of it standing three seconds later, ` +
+             `${wreck.hole.hold ? 'still holdable' : 'NOT HOLDABLE'} and the section ${wreck.hole.held ? 'still in it' : 'PUT OUT'}`
+           : 'no isolated terrace on the map to shell');
   ok('a house shelled flat stops being a house on every grid that reads one',
      !!wreck && wreck.up.walk === 0 && wreck.up.sight === 1 && wreck.up.fire === 1 &&
      wreck.up.rub === 0 && wreck.up.gar === true && wreck.up.hurt === false &&
      wreck.down.walk === 1 && wreck.down.sight === 0 && wreck.down.fire === 0 &&
      wreck.down.rub === 1 && wreck.down.gar === false && wreck.down.canGar === false &&
      wreck.down.standing < 34 && wreck.down.buf === true,
-     wreck ? `${wreck.w}x${wreck.h} in ${wreck.bays} bays, ${wreck.rounds} heavy rounds: ` +
+     wreck ? `fifteen heavy rounds: ${wreck.down.left}% of it left; ` +
              `walkable ${wreck.up.walk}->${wreck.down.walk}, stops an eye ${wreck.up.sight}->${wreck.down.sight}, ` +
              `stops a round ${wreck.up.fire}->${wreck.down.fire}, rubble ${wreck.up.rub}->${wreck.down.rub}, ` +
              `garrison ${wreck.up.gar ? 'held' : 'none'}->${wreck.down.gar ? 'held' : 'put out'}, ` +
              `${wreck.down.standing} units left standing, ` +
              `holdable ${wreck.down.canGar ? 'still' : 'no'}, own buffer ${wreck.down.buf ? 'yes' : 'no'}`
-           : 'no isolated terrace on the map to shell');
-  ok('the masonry that comes out of it is the masonry that lands',
-     !!wreck && wreck.air > 40 && wreck.down.air === 0 && wreck.down.settled > 40 &&
-     wreck.down.vol > wreck.vol * 0.75 && wreck.down.mound > 3,
-     wreck ? `${wreck.air} chunks in the air and ${wreck.down.settled} settled, ` +
-             `${wreck.down.vol} of ${wreck.vol} units of stone kept, heap ${wreck.down.mound} deep`
            : '');
+  ok('the masonry that comes out of it is the masonry that lands, and the heap is ground',
+     !!wreck && wreck.air > 40 && wreck.down.air === 0 && wreck.down.fall === 0 && wreck.down.bodies >= 1 &&
+     wreck.down.settled > 40 && wreck.down.vol + wreck.down.lost >= wreck.down.made * .97 &&
+     wreck.down.mound > 3 && wreck.down.stand > 1 && wreck.down.heap > 0,
+     wreck ? `${wreck.air} stones in the air at once and ${wreck.down.bodies} pieces fell whole; ` +
+             `${wreck.down.settled} stones settled, ${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
+             `let go by the ring against ${wreck.down.made} thrown; heap ${wreck.down.mound} deep, ` +
+             `a man in the middle of it stands ${wreck.down.stand} over the floor, the heap drawn in ${wreck.down.heap} vertices`
+           : '');
+
+  /* --- Fire, crumbling, and what a burst does to the men round it. A house on fire and a
+     house standing in the sun are the same picture from above until the roof goes; a wall
+     that goes on shedding stone after the barrage has lifted and one that stands as it was
+     are the same picture as well; and a burst whose splinters reach out past its blast
+     reads like one that stops at it until somebody counts. So the rows count: what caught
+     and what burnt through, who was put out of it and whether anybody may go in; what a
+     cracked wall sheds with nothing firing at it; whether rubble a burst throws is counted
+     twice; and the same burst at the same place against men standing, men lying down and
+     men in the lee of a house. Still on Ortona, beside the house the row above shelled
+     flat. --- */
+  const frag = await page.evaluate(() => {
+    const keep = window.G.units.slice();
+    /* open ground, a hundred and sixty units of it every way with nothing that stops a round,
+       level, and with as little as there is of anything a man lies behind where the men of the
+       four sections stand, or the far reading is a reading of the cover */
+    let ox = -1, oy = -1, best = 1e9;
+    for (let y = 300; y < window.WORLD.h - 300 && best > 0; y += 20) for (let x = 300; x < window.WORLD.w - 300 && best > 0; x += 20) {
+      let clear = Math.abs(window.groundZ(x - 150, y) - window.groundZ(x + 150, y)) < 6;
+      for (let dy = -160; dy <= 160 && clear; dy += 20) for (let dx = -160; dx <= 160 && clear; dx += 20) {
+        const cx = ((x + dx) / window.CELL) | 0, cy = ((y + dy) / window.CELL) | 0;
+        if (window.fblk[window.cidx(cx, cy)] || !window.walkable(x + dx, y + dy)) clear = false;
+      }
+      if (!clear) continue;
+      let cov = 0;
+      for (const dx of [36, 45, 54, 80, 90, 100, 110, 120, 126, 135, 144, 150, 231, 240, 249])
+        for (const dy of [-6, 0, 6]) cov += window.coverAt(x + dx, y + dy);
+      if (cov < best) { best = cov; ox = x; oy = y; }
+    }
+    /* and a house with open ground either side of it, for the lee */
+    const h = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && !q.hurt && q.h > 50 && q.h < 110 &&
+      window.walkable(q.x, q.y - q.h / 2 - 16) && window.walkable(q.x, q.y + q.h / 2 + 16))[0];
+    function trial(x, y, bx, by, prone, n, r) {
+      const u = window.spawnUnit(window.G.side, 'am_rifle', x, y);
+      let lost = 0;
+      for (let i = 0; i < n; i++) {
+        u.models.forEach((m, k) => { m.x = x + (k % 3 - 1) * 9; m.y = y + ((k / 3) | 0) * 9 - 4; m.hp = 1e6; m.alive = true;
+                                     m.pose = prone ? window.POSE_PRONE : 0; });
+        u.dead = false;
+        /* twenty, which is under what a wall notices, so the house standing in the way is the
+           house that stood there for every burst */
+        window.explode(bx, by, r || 90, 20, null, null, 30);
+        u.models.forEach(m => { lost += 1e6 - m.hp; });
+      }
+      const i2 = window.G.units.indexOf(u); if (i2 >= 0) window.G.units.splice(i2, 1);
+      return +(lost / n).toFixed(2);
+    }
+    if (ox < 0 || !h) return { none: ox < 0 ? 'no open ground' : 'no house with open ground either side of it' };
+    const out = { at: ox + ',' + oy, cover: best, house: Math.round(h.x) + ',' + Math.round(h.y) };
+    out.near = trial(ox + 45, oy, ox, oy, false, 40);
+    out.far = trial(ox + 135, oy, ox, oy, false, 60);
+    out.farDown = trial(ox + 135, oy, ox, oy, true, 60);
+    out.beyond = trial(ox + 240, oy, ox, oy, false, 40);
+    const d = h.h + 30, by = h.y - h.h / 2 - 12;
+    out.leeD = d;
+    /* a burst big enough that the men across the house are well inside its blast */
+    out.leeR = Math.round(d * 1.6);
+    out.lee = trial(h.x, h.y + h.h / 2 + 18, h.x, by, false, 40, out.leeR);
+    out.open = trial(ox + d, oy, ox, oy, false, 40, out.leeR);
+    window.G.units.length = 0; keep.forEach(e => window.G.units.push(e));
+    return out;
+  });
+  ok('a burst kills by blast close and by splinters past it, less for men lying down and little for men in the lee of a house',
+     !!frag && !frag.none && frag.near > frag.far && frag.far > 0 && frag.farDown < frag.far * .7 && frag.beyond === 0 &&
+     frag.lee < frag.open * .6,
+     frag && !frag.none ? `a 90-unit burst on open ground at ${frag.at} (cover ${frag.cover} summed where the men stand): a section at half the radius takes ${frag.near} a burst, at one and a ` +
+            `half ${frag.far} standing and ${frag.farDown} lying down, at ${240} ${frag.beyond}; across the house at ${frag.house} ` +
+            `${frag.lee} against ${frag.open} at the same ${frag.leeD} in the open, under a ${frag.leeR}-unit burst`
+          : frag ? frag.none : 'no answer');
+
+  /* a burst in what the first row shelled flat throws the heap's blocks out again, and the
+     heap is not built up twice by them */
+  /* the heap is read over the ground round the burst only, and the battle is taken off the
+     map for the ten seconds, so nothing else lands in it. It goes before the fire: a phone
+     keeps 900 blocks lying, and a burning house that comes down pushes the first house's
+     heap off the list */
+  const kick = await page.evaluate(async () => {
+    const p = window.__wreckH, near = window.G.rub.filter(r => Math.hypot(r.x - p.x, r.y - p.y) < 36).length;
+    window.__kickHeap = () => {
+      let m = 0;
+      for (let j = 0; j < window.MNDH; j++) for (let i = 0; i < window.MNDW; i++)
+        if (Math.hypot((i + .5) * 14 - p.x, (j + .5) * 14 - p.y) < 160) m += window.MND[j * window.MNDW + i];
+      return m;
+    };
+    window.__kickM = window.__kickHeap();
+    window.__keepK = window.G.units.slice(); window.G.units.length = 0;
+    window.explode(p.x, p.y, 70, 20, null, null, 0);
+    return { near, thrown: window.G.debris.filter(d => d.kick).length };
+  });
+  await fastForward(page, 10);
+  const kicked = await page.evaluate(() => {
+    const p = window.__wreckH;
+    const out = { heap: +(window.__kickHeap() / window.__kickM).toFixed(4),
+                  air: window.G.debris.filter(d => Math.hypot(d.x - p.x, d.y - p.y) < 300).length };
+    window.G.units.length = 0; window.__keepK.forEach(e => window.G.units.push(e));
+    return out;
+  });
+  ok('a burst throws the rubble lying round it out again without building the heap twice',
+     kick.thrown > 0 && kicked.air === 0 && Math.abs(kicked.heap - 1) < .01,
+     `${kick.near} blocks lying within 36 of the burst, ${kick.thrown} thrown out again; ten seconds on ` +
+     `${kicked.air} still in the air and the heap ${kicked.heap} of what it was`);
+
+  const burn = await (async () => {
+    const put = await page.evaluate(() => {
+      const p = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 70 && q !== window.__wreckH &&
+        !q.hurt && !window.G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300) &&
+        Math.hypot(q.x - window.__wreckH.x, q.y - window.__wreckH.y) > 260)
+        .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      if (!p) return null;
+      window.__fireH = p;
+      /* five minutes of fire and crumbling with the battle taken off the map: the points are
+         topped up so the clock cannot end the game under the rows below */
+      window.vpSet('us', 9000); window.vpSet('ger', 9000);
+      window.__keep = window.G.units.slice();
+      window.G.units.length = 0;
+      const u = window.spawnUnit(window.G.side, window.G.side === 'us' ? 'am_rifle' : 'hr_gren', p.x, p.y + p.h / 2 + 40);
+      window.enterBuilding(u, p);
+      window.frMake(p);
+      const R = p.fr, NC = R.nx * R.ny;
+      let fuel = 0, lit = 0;
+      for (let c = 0; c < R.alive.length; c++) if (R.alive[c] && R.fuel[c] >= .15) fuel++;
+      /* a shell through an upper window: four cells of the first floor up nearest the middle
+         of the house with something in them to burn, alight, which is what `frHit` does to a
+         room it bursts in. Lit at the corner of the roof instead, the fire on Ortona's
+         biggest house took most of a minute to find its feet, which is a fire on a roof edge
+         and not the one the row is about. */
+      const room = [];
+      for (let k = 1; k < R.nz && !room.length; k++)
+        for (let c = k * NC; c < (k + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) room.push(c);
+      const mid = c => { const q = window.frCellC(R, c); return Math.hypot(q[0] - p.x, q[1] - p.y); };
+      room.sort((a, b) => mid(a) - mid(b));
+      for (let i = 0; i < room.length && lit < 4; i++) if (window.frIgnite(p, room[i], .6)) lit++;
+      return { lit, fuel, cells: R.orig.reduce((a, v) => a + v, 0), gar: !!u.gar };
+    });
+    if (!put) return null;
+    await fastForward(page, 60);
+    const mid = await page.evaluate(() => {
+      const p = window.__fireH, R = p.fr;
+      let ch = 0;
+      for (let c = 0; c < R.char.length; c++) if (R.alive[c] && R.char[c] > .4) ch++;
+      window.smokeColumns();
+      return { burning: R.fire.length, sumH: +R.sumH.toFixed(1), ch,
+               gar: window.G.units.some(u => !u.dead && u.gar === p),
+               canGar: window.canGarrison({ cat: 'inf', def: { speed: 30 }, models: [] }, p),
+               smoke: window._smoke.some(m => Math.hypot(m.x - p.x, m.y - p.y) < Math.max(p.w, p.h)) };
+    });
+    await fastForward(page, 120);
+    const end = await page.evaluate(() => {
+      const p = window.__fireH, R = p.fr;
+      let burnt = 0, alive = 0;
+      for (let c = 0; c < R.alive.length; c++) { if (R.burn[c] >= 1) burnt++; if (R.alive[c]) alive++; }
+      return { burning: R.fire.length, burnt, alive, left: Math.round(R.mAlive / R.m0 * 100) };
+    });
+    return { put, mid, end };
+  })();
+  ok('a house catches from a shell, burns, chars, smokes, puts out its garrison and lets its roof down',
+     !!burn && burn.put.lit >= 1 && burn.put.gar && burn.mid.burning >= 4 && burn.mid.ch >= 4 &&
+     !burn.mid.gar && !burn.mid.canGar && burn.mid.smoke && burn.end.burnt >= 4 && burn.end.alive < burn.put.cells,
+     burn ? `${burn.put.cells} cells, ${burn.put.fuel} with something in them to burn; ${burn.put.lit} lit in a room upstairs; ` +
+            `a minute on ${burn.mid.burning} burning at a heat of ${burn.mid.sumH}, ${burn.mid.ch} charred, the section ` +
+            `${burn.mid.gar ? 'STILL IN IT' : 'put out'}, ${burn.mid.canGar ? 'STILL ENTERABLE' : 'nobody may go in'}, ` +
+            `smoke ${burn.mid.smoke ? 'on the sight line' : 'NOT ON THE SIGHT LINE'}; three minutes on ${burn.end.burning} ` +
+            `still burning, ${burn.end.burnt} burnt through and ${burn.put.cells - burn.end.alive} cells come down, ` +
+            `${burn.end.left}% of it standing`
+          : 'no isolated house on the map to set alight');
+
+  const crumble = await page.evaluate(async () => {
+    const p = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 70 && !q.hurt &&
+      q !== window.__fireH && q !== window.__wreckH && Math.hypot(q.x - window.__fireH.x, q.y - window.__fireH.y) > 300 &&
+      Math.hypot(q.x - window.__wreckH.x, q.y - window.__wreckH.y) > 300)
+      .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+    if (!p) return null;
+    window.__crumH = p;
+    window.frMake(p);
+    const R = p.fr, cells = [];
+    /* ten cells of wall cracked through half and more, as a breach leaves the stone round it */
+    for (let c = 0; c < R.alive.length && cells.length < 10; c++)
+      if (R.alive[c] && R.fuel[c] < .15 && R.flat[c] < .3 && R.mass[c] > 20) { R.dmg[c] = .7; cells.push(c); }
+    const m0 = cells.reduce((a, c) => a + R.mass[c], 0);
+    window.__crumC = cells; window.__crumM = m0; window.__crumMade = window.G.frStat.made;
+    return { n: cells.length };
+  });
+  await fastForward(page, 90);
+  const crum = crumble && await page.evaluate(() => {
+    const R = window.__crumH.fr, cells = window.__crumC;
+    const m1 = cells.reduce((a, c) => a + (R.alive[c] ? R.mass[c] : 0), 0);
+    const out = { n: cells.length, gone: cells.filter(c => !R.alive[c]).length, shed: +(1 - m1 / window.__crumM).toFixed(2),
+                  made: Math.round(window.G.frStat.made - window.__crumMade) };
+    /* and the town put back for the rows below: the army back on the map, every fire out and
+       the cracked wall at rest, because a house left burning goes on spreading down the
+       street through every row after this one */
+    window.G.units.length = 0; window.__keep.forEach(e => window.G.units.push(e));
+    for (const q of window.G.props) {
+      const Q = q.fr;
+      if (!Q) continue;
+      for (const c of Q.fire) Q.heat[c] = 0;
+      Q.fire.length = 0; Q.sumH = 0;
+    }
+    for (const c of cells) R.dmg[c] = 0;
+    return out;
+  });
+  ok('a cracked wall goes on shedding its stone with nothing firing at it',
+     !!crum && crum.n >= 6 && crum.shed > .05 && crum.made > 0,
+     crum ? `${crum.n} cells of wall cracked to seven tenths: in a minute and a half they shed ${Math.round(crum.shed * 100)}% ` +
+            `of their stone as ${crum.made} units of rubble, ${crum.gone} of them gone altogether`
+          : 'no third house to crack');
+
 
 
   /* --- Bodies. Every collision in the game was one circle on two markers, sized at half
@@ -6304,6 +6549,10 @@ for (const device of TARGETS) {
       for (const q of G.blds) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
       for (const q of G.props) near = Math.min(near, Math.hypot(q.x - x, q.y - y));
       if (near < 130) continue;
+      /* and no hole already there: a new one inside three quarters of an old one's reach
+         widens the old one about its own centre, and the row then measures a hole dug
+         somewhere else */
+      if (G.craters.some(e => Math.hypot(e.x - x, e.y - y) < Math.max(e.r, 50) * .75 + 50)) continue;
       const sc = Math.min(near, 600) - worst * 20;
       if (sc > bs) { bs = sc; P = { x, y }; }
     }
@@ -6357,7 +6606,7 @@ for (const device of TARGETS) {
              cover: up.cover, cover2: window.coverAt(P.x, P.y),
              walk: up.walk, walk2: window.walkable(P.x, P.y) ? 1 : 0,
              px: moved(before, after), noise, flushes, layers: +worstK.toFixed(3),
-             onBld, small };
+             onBld, small, at: P.x + ',' + P.y };
   });
   ok('a shell landing on open ground leaves a hole in it and not a stain on it',
      !!hole && Math.abs(hole.deep - hole.want) < 1.2 && hole.lip > 2 &&
@@ -6371,7 +6620,7 @@ for (const device of TARGETS) {
              `against ${hole.noise} between two identical frames, ` +
              `over ${hole.flushes} tile rebuild(s), the height is its own layers to ${hole.layers}, ` +
              `and a round on a headquarters ${hole.onBld ? '! DUG' : 'was refused'} and one under the ` +
-             `floor ${hole.small ? '! DUG' : 'was refused'}`);
+             `floor ${hole.small ? '! DUG' : 'was refused'}, at ${hole.at}`);
 
   /* --- Repair, and what a builder is allowed to stand near. There are three kinds of job
      an engineer can be put on -- a building going up, a pegged-out field work, and a thing

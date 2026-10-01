@@ -755,38 +755,48 @@ two large numbers and moves ten per cent on nothing.
 
 A building coming down is the one change in this file that looks convincing whatever is
 wrong underneath it. A hole in the wrong place is a hole. Stone that vanishes on the way
-out is stone nobody counted. A chunk that falls at the wrong rate falls. A bay that comes
-down on the second round instead of the eighteenth still comes down, and the photograph of
-it is the same photograph. The grids are worse than that: a house knocked flat that still
-stops a boot and still stops an eye is a picture of rubble laid over a building that is, as
-far as everything else in the game is concerned, exactly where it was.
+out is stone nobody counted. A storey that falls at the wrong rate falls. A house that
+comes down on the second round instead of the eighteenth still comes down, and the
+photograph of it is the same photograph. The grids are worse than that: a house knocked
+flat that still stops a boot and still stops an eye is a picture of rubble laid over a
+building that is, as far as everything else in the game is concerned, exactly where it was.
 
 ```sh
 node tools/wreck.mjs                 # the card
 node tools/wreck.mjs shell           # one section of it
+node tools/wreck.mjs --map=stlo      # on another map
 node tools/wreck.mjs --base=HEAD     # the same card on an older file, side by side
 ```
 
-**SHELL** is a round against a wall: the hole it cuts against the hole the burst says it
-should cut, and the masonry that comes out against the masonry that left the wall. The
-second is the conservation check and it is the one that matters -- the area a wall has lost
-is bookkeeping until the stone it lost is in the air at the right size. It reads `kept` at
-0.76 to 0.79 against a declared `RUIN_KEEP` of 0.78, averaged over twenty-four rounds a row
-because two chunks with three jitters each have a spread that swamps the number.
+**SHELL** is a round against the face of a house, eight rounds a row: the cells it takes out,
+how wide and how tall the hole is against the breach the burst says it should cut, what it
+cracks round it, and how much of the house has gone three seconds later. Then the same round
+further and further off the wall, one too far away to touch it, one with no weight behind it,
+and the 240 at the face against the 240 down through the roof. The row that matters is the
+hole growing with the weight: it read the same three cells at 90 points and at 380 until the
+blast was traced to the nearest point of each cell rather than its middle.
 
-**FALL** is the structural rule, staged by writing the damage on the walls directly rather
-than by shelling until something happens: one face three quarters out takes the storey, two
-faces half out take it, and one face half out does not. Underneath it is what it costs in
-rounds on one wall -- 49 mortar bombs, 18 rounds of 105, or 3 out of a heavy battery.
+**STRUCTURE** is what holds a building up, staged by taking cells out directly rather than by
+shelling until something happens, because the question is what the structure does and not how
+many rounds a particular wall takes: a doorway, a breach two cells wide, a shop front, a third
+of the face, its ground storey, the whole face to the eaves, and every pier of the ground floor
+but the corners. Then every building on the map cut and left alone, which must lose nothing,
+and the rounds it takes of three weights, fired at it and dropped through the roof, to make a
+house nobody can hold. The fire at it is walked in from the street to the first cell standing,
+because a round fired at a house strikes what is in its way, and fired at the same spot every
+time the rounds landed in the air where the face had been and the house read as unbreakable.
 
-**DEBRIS** is the integrator against arithmetic that was true before the game was written.
-A 197-unit fall takes 2.000 seconds against the 2.005 that `sqrt(2h/g)` says. It bounces
-back to 0.038 of the drop against the 0.04 its restitution squared gives. Everything is
-lying still inside three seconds, everything that came off a collapse settles, and the heap
-it builds is measured against the stone that came down.
+**DEBRIS** is the integrators against arithmetic that was true before the game was written. A
+197-unit fall takes 2.000 seconds against the 2.005 that `sqrt(2h/g)` says, and bounces back
+to 0.038 of the drop against the 0.04 its restitution squared gives. A storey of 34 cells let
+go with nothing to hinge on drops 32 units in 0.82 seconds against 0.81, with its spin taken
+off, because the spin a piece is given at birth tips a corner down and lands it early. Then a
+house shelled down from above: everything thrown lying in blocks and fill at the end, none of
+it moving, the heap's depth and how much of it is on the house, and how high a man stands on it.
 
-**WORLD** is the part a screenshot cannot see at all: the same cell asked the same
-questions with the bay standing and with the bay down.
+**WORLD** is the part a screenshot cannot see at all: the same cell asked the same questions
+with the house standing and with the house down, its cost to a man and to tracks, and the heap
+under his feet.
 
 **WALL** is the same question asked of an object rather than a building.
 
@@ -946,7 +956,7 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 2000 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 3060 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
@@ -956,7 +966,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, and 2980 before the leFH 18). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, and 3060 before a building could burn and a burst had splinters). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1289,13 +1299,38 @@ the plate under Zimmerit on the ridged or the combed tile and the Maus's on the 
 all four and the number on the turrets of the two Tigers.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
-about and the Gothic Line is a valley floor with two farms on it. They shell an isolated
-house flat with a battery and ask the SAME CELL the same questions before and after -- can
-a man walk here, does it stop an eye, does it stop a round, is it rubble, may a section
-hold it -- because a house knocked flat that still stops a boot and still stops an eye is
-the one fault here a screenshot would call a success. The second row counts the stone: what
-settles has to be what came out of the walls, since masonry that vanishes on landing is a
-collapse nobody can stand in.
+about and the Gothic Line is a valley floor with two farms on it. The first puts a section
+in an isolated house and fires one 105 round twelve units off its face: the house has to be
+cut, a hole has to open, and three seconds later the house has to be standing, holdable and
+still held, because a building that comes down on the first hole in it is as wrong as one
+that never does. The second shells it flat with fifteen rounds of the 240 down through the
+roof and asks the SAME CELL the same questions before and after (can a man walk here, does
+it stop an eye, does it stop a round, is it rubble, may a section hold it), because a house
+knocked flat that still stops a boot and still stops an eye is the one fault here a
+screenshot would call a success. The third counts the stone: everything the cells threw has
+to be lying in blocks and fill or let go by the ring, nothing may still be moving, at least
+one piece has to have fallen whole, the heap has to be deep, a man in the middle of it has to
+stand on it, and it has to be drawn. Then four more. A burst is fired at men on open ground at
+half its radius and one and a half, standing and lying down, past the splinters' reach, and
+across a house against the same distance in the open: the near men take more than the far, the
+far men something, the men lying down under seven tenths of it, nobody past the reach anything,
+and the men in the house's lee under six tenths of the open. It goes first of the four, and it
+takes the open ground with the least cover where the men stand, because the first version found
+ground open to an eye and a round and put the far section in cover, where it read next to
+nothing, and asked for none at all it found nowhere once the fire rows had been through the
+town. A burst in the first house's heap has to throw its blocks out again without building the
+heap twice, read over the ground round the burst with the battle off the map; it goes before the
+fire as well, because a phone keeps 900 blocks lying and a burning house that comes down pushes
+the first house's heap off the list. A second house with a section in it has four cells of an
+upstairs room set alight, as a shell through a window would: a minute on the fire has to have
+spread and charred the cells, put the section out, shut the door and be smoking on the sight
+line, and three minutes on cells have to have burnt through and come down. Lit at the corner of
+the roof instead, the fire on Ortona's biggest house took most of a minute to find its feet on
+the desktop and went out on the phone, which is a fire on a roof edge and not the one the row
+is about. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
+it: in a minute and a half they have to have shed stone. That last row puts the army back, every
+fire out and the cracked wall at rest, because a house left burning goes on spreading down the
+street through every row below it.
 
 Two things the periscope block has to do to itself: it tops both sides' victory points up
 to nine thousand and gives its test tank a hundred thousand hit points. A minute of
@@ -1649,7 +1684,7 @@ either side. See the Movement section for the three things that had to be fixed 
 of that was true. A Norman house is rubble stone under a steep slate roof: standing,
 garrisonable whatever its size (every one on the map is thirty-four to forty-four units
 deep, and the sixty-by-sixty size test that separates a house from a shed shut them all
-out), and not built in bays, so a shell does not take it apart. Only a ruin gets the town's
+out), and like every building on the map it can be brought down (see *Destruction*). Only a ruin gets the town's
 pavements and street dust round it.
 
 **Measured on the going grid rather than looked at**, which is the only way any of that can
@@ -1741,7 +1776,7 @@ and the ditch's walls blocked, the causeway open; 6.3 per cent of the map blocke
 
 **The town's own assets.** Nothing Ortona was built of is a Norman town, so the pieces were
 built first and the town laid out of them after. A Norman town house (`house` with `style:
-'norman'`) is built in bays like an Italian one, so a shell takes it apart the same way, and
+'norman'`) is built in bays like an Italian one, is brought down the way every building is, and
 says what its walls are (`nk`: stone, render, or timber over a stone ground floor), how many
 storeys, whether the ground floor is a shop, whether the June raids gutted it (`gut`) and
 which side its street is on (`front`). Notre-Dame is a builder of its own, with the spire
@@ -1760,6 +1795,31 @@ party wall, and lays every house again on the other half on the same footprint, 
 a list of its own, so the two halves play the same and are not the same town. 390 buildings
 and 305 trees at stage 3, 1.47 million vertices against Ortona's 2.03.
 
+**And then laid again at the scale of the things standing in it.** The first town was 329
+houses a median 48 units along their street and 60 deep, every one of them two storeys, on
+streets whose clear width from front to front was 58 units at the lower quartile and 112 at
+the median: half of 222 samples along the roads were under 110, which is narrower than a
+Sherman's turning circle and, from the camera, a slot between two rows of roofs with nothing
+in it to be seen. Measured off the same probe now: 111 houses a median 94 along the street
+and 98 deep (seven to nine metres and eight to ten), two to four storeys with a median of
+three, and street clearances of 118 at the lower quartile and 175 at the median, with 31 of
+194 samples under 110. A street in the town carries a pavement each side (`pave` on a road,
+painted as flags along its edges and counted in the clearance `fits` holds a plot to). What
+the plots are tested against is written down: `fits` refuses a plot for one of sixteen
+reasons and `STLO.miss` keeps each refusal with its code, because a layout that drops a house
+without saying why reads as a gap somebody meant. The houses read their size now as well: a
+bay's window columns come off its length at one for every 27 units (`ntBay`), Notre-Dame is
+built at the size of its own plan and scaled by `k` (`scaleFaces`), and the gasholder stands
+at least 88 units tall.
+
+**The three lanes are the axes of three roads**, each with a headquarters at either end: the
+Route de Torigni on the left, the road from the centre headquarters through the Bouloir and
+down to the mill on the rock's ramp, and the Rue de la Gare over the Vire on the right.
+Between them the town thins out (the cemetery, the walled orchard and the gardens at the
+valley's head between the left lane and the centre, the river between the centre and the
+right), and four cross streets run over the seams: the Bouloir's, the rocade, the brook road
+and the spine on the midline. A fight can move from one lane to the next along any of them.
+
 **What the raids left.** A house razed to its footings (`x` in a row's dressing) is a heap of
 its own stone (`ntHeap`, a `debris` with `nt`), following the ground under it, with the quoins,
 the slates, the charred joists and often a chimney breast standing out of it; it is on `rubg`
@@ -1777,7 +1837,8 @@ running lines on the far bank, is a crossing keeper's cottage now, with its gard
 dry stone, the two gates rolled back along the line and a van burnt out on the running line;
 the Champ de Mars has a weapon pit either side of the flag. Every flag reads tier 3 inside
 110, every walk arrives, and the 96 walks of the American half against the German come out
-at 101,057 units for a man against 101,126, and within half a per cent for a hull.
+at 101,057 units for a man against 101,126, and within half a per cent for a hull. Laid again,
+they come out at 97,317 against 97,375.
 
 **A cut into the ground is not a plot to be levelled.** The flag at Notre-Dame could not be
 reached: `levelPad` blends a house's plot flat for forty units round it, and the mill beside
@@ -2479,6 +2540,38 @@ to be re-dug. And every shell used to be charged against medium cover twice -- o
 through the index and once by a linear walk of all two thousand patches at the foot of
 `explode`, which was also a scan of the whole list on every explosion.
 
+**A burst is a blast and a spray of splinters, and they reach differently.** It was one linear
+falloff out to the burst radius and nothing past it, so a man standing thirty metres from a 105
+was as safe as a man lying down beside it, and a man on the far side of a house from a shell
+took what a man in the street took. The blast is a pressure wave that falls off much faster
+than the distance does, so it kills close and only close (`(1 - d/r)^1.25`); the splinters are
+the casing going out every way, each one either finds a man or does not, the chance of one
+finding him falls with the square of the distance past about half the radius, and they reach
+out to 2.4 radii (`FRAG_K`, 1.3 for a stick grenade). A man lying flat is under most of the
+splinters and a fifth of the blast; a man standing up takes all of both. Cover is worth more
+against splinters than against blast (`FSH` beside `SHD`): a man in a hole is under nearly all
+of them. And what stands between the burst and a man takes the splinters and most of the blast
+off him (`blastLee`): a house, a town wall, or the ground rising across the line, read off the
+fire grid and the heightfield with the last stretch left to the cover tier he is pressed
+against. Suppression follows the splinters out past the blast, more weakly. The splinters kick
+up the ground where they land, which is the only part of them anybody sees.
+
+**And a burst reaches the men where it lands, and asks them and not the marker.** A unit was
+skipped whole when its MARKER stood further from the burst than the blast reached, and a round is
+laid on the man nearest the firer (`aimAt`), who may stand anywhere inside his section's circle,
+so a burst on a man at the edge of his section hurt nobody in it. The smaller the shell the worse
+it was, and every small-shell weapon on the roster had been tuned on it. The gate is the unit's
+own circle now (`selRadius`). Fought against the committed file at sixteen runs a row, the M8 and
+the M3 light tank take a grenadier squad in 26 and 27 seconds where they took 34 and 33, every
+time either way, and the Puma, the Gebirgsflak, the rifle grenade, the Wirbelwind against the
+Rangers and the Knight's Cross Holders at grenade range read inside their noise, and so do the
+big shells against a standing rifle squad: the Panzer IV takes it in 9.5 seconds against 8.6 and
+the StuH in 4.6 against a committed file that read 5.9 and 7.2 on two runs. The 234/1, whose
+2 cm burst was the smallest on the roster, went from losing to the Rangers 92 per cent of the time
+to half, and its burst is 9 where it was 14 (see the 234). An automatic cannon's burst does to
+men what a shell of the same damage does, splinters and all, because its `dmg` already says what
+the five rounds of it do to men; the line `w.auto` draws is plate and stone.
+
 **A bunker has a front and a back, and that is the whole of what makes it one.** A house
 is fought out of on every side. A bunker has a fighting slot and a back wall, so
 `outPoint` clamps a garrison's firing point -- and the point a round arrives at -- into
@@ -2815,70 +2908,115 @@ with its clods, and the bowl last and hardest-edged, because it is a hole rather
 stain. The shipped map has a crater field west of the town and the whole of it used to read
 as weather.
 
-**Destruction.** A town house is a set of bays and each bay is four walls built in
-seven-unit courses round a list of holes, and that list being DATA is the whole of why any
-of this is possible without a second geometry path. A shell records where it struck in the
-wall's own frame, `holesFor` concatenates the record onto the windows and the doors, and
-`wallCourses` cuts the breach out of the courses the same way it cuts out a window. Nothing
-new draws a damaged building; the thing that drew the building draws it.
+**Destruction.** Every building on a map can be brought down: a town house, a farm,
+Notre-Dame, a rampart tower, the station and its goods shed, a wagon, a water tower, the
+gasholder and a bunker (`frBreakable`). How one comes down is read off the building itself
+and not off a structure written for one kind of house. The first round that would take
+something out of it cuts it into cells (`frBuild`): the faces the tile drew, exactly as
+drawn (`frFaces`, through the same `propParts` the tile meshes them with), cut by a grid
+fourteen units along the ground (`FR_C`) and a nine-unit course high (`FR_Z`), with each
+upright joint moved up to three and a half units off true per course so that a breach comes
+out stepped the way coursed stone breaks. A piece much smaller than a cell (a slate, a sill,
+a shutter) goes whole to the cell its middle is in, because cutting every one of them at
+every joint was most of the vertices a cut building cost. The building's buffer is packed a
+cell at a time, so a cell is a range of it, and taking a cell out is zeroing that range and
+uploading the span that changed (`frZero`, `frUpload`): nothing is meshed again. A wall cut
+open shows the inside of its faces, so a cut building is drawn with culling off and the back
+of a face lit as the broken core of the wall (`uBack`).
 
-**What breaks is a town house and a wall.** `ruinHit` refuses anything that is not
-`kind: 'ruin'`, so a bunker stands: it is reinforced concrete and a field gun was not going
-to open one, which is the whole reason the Gothic Line is a question about which crossing
-to force. A farm and a church stand too, and those are a scope line rather than a claim --
-neither is built in bays round a list of openings, so neither has a structure to break, and
-giving them one is the same work again on two more builders.
+**What holds it up is asked of the cells** (`frSolve`): a breadth-first walk out of the
+ground in which going up costs nothing, leaning diagonally up costs nothing where there was
+never anything under the cell (a roof, a gable) and one where there was (a corbel over a
+hole), and every cell carried sideways costs one. A cell stands while its cost is within its
+tolerance, which is the stuff it is made of (`span` in `frSpec`: two cells for rubble
+masonry, three for a frame or a cathedral's dressed stone, four for a casemate's concrete)
+or how far it already stood out over nothing when the building was whole, whichever is more.
+So nothing an architect built falls the moment it is cut, and the card cuts every building
+on the map and leaves it alone to prove it. A piece the four ways never reach (a lamp on a
+bracket, a cross on a gable) is glued to whatever it touches.
 
-`ruinState(p)` is the structure, worked out once and kept on the prop, and it is the same
-arithmetic `sceneProps` does when it meshes one -- here rather than there because the
-mesher runs on a tile rebuild and this has to survive one. Per bay: the breaches cut in
-each of its four walls, the share of each wall that is now out of it, and how many storeys
-it has lost.
+The weight goes down every shortest support at once, which is how a roof sits on both its
+eaves. Sent down a single tree, a hole in a front wall moved the whole front slope of the
+roof onto the back wall, and the back wall's top courses gave under a load they had never
+carried. A cell carries `FR_SAFE` (3.2) times what it carried whole, plus twice its own
+weight, less up to two fifths for what the shelling has cracked out of it. Past that it
+gives, the worst six first and a seventh of a second apart (`frStep`), because a wall goes
+at its foot and what it was carrying comes down after it. All at once, a terrace went in a
+frame.
 
-**A wall is an area rather than a pool of hit points.** `ruinHit` records the hole and adds
-`2*hw*(z1-z0) / (len*h)` to that wall's `gone`. One face past three quarters is a wall that
-has fallen out; two faces past a half is a box that is no longer a box. Either takes the
-storey standing on them, and what comes down is the bay's whole perimeter above the new
-height. It is checked per bay, which is the entire reason a town house is meshed in bays: a
-terrace does not come down all at once.
+**What nothing carries falls** (`frFall`). Cells that touch are one piece. A piece of a cell
+or two is let go as stone and anything bigger is a rigid body (`frBody`, `G.fall`): its mesh
+is the building's own vertices for those cells, and it has a mass and a moment of inertia
+off them. Still joined at one side it swings down about the joint under gravity's torque
+until it is thirty degrees over or half a second has gone, which is a wall leaning out and
+coming over; joined under its middle it drops. It falls until a corner or a cell meets the
+ground, the heap or what is left of the building under it, and there it breaks into the
+blocks it was made of, each going on with its own part of the body's velocity (`frShatter`).
+It lands on whoever was under it (`frCrush`, up to 320 a man by its mass and its speed), and
+if it came down on a floor it lands on that floor, so a terrace pancakes one storey onto the
+next when what it lands on gives as well. A section holding the building takes up to six
+blows when a twenty-fifth of it or more comes down at once.
 
-**How far a blast REACHES masonry and how big a hole it makes when it gets there are two
-numbers**, and written as one they fought each other. A hole scaled off the weight of the
-shell is a metre across for a tank round, so a round bursting a metre and a half from a
-wall -- which is where a man taking cover at a house stands, and therefore where most
-rounds in a town actually land -- took nothing out of it at all. The reach is the weight of
-the shell too and it is several times the hole: `hw = br * sqrt(1 - (d/reach)^2)`, so the
-wall is scarred at the edge of it and breached in the middle. Two things had to be got
-right with it. **The distance is to the WALL and not to its plane**: a heavy round reaches
-past the end of the bay it burst against, so with only the perpendicular in it a shell on
-one bay cut a full-width breach in the next bay's frontage sixty units away at exactly the
-size it cut in the one it hit. And **a round in the street outside one wall does not take a
-bite out of the wall on the far side of the room**: `ruinFace` measures `nd` along the
-OUTWARD normal, which nothing needed while every reader took its absolute value and which
-is the whole question the moment one of them asks which side the blast is on. A burst
-INSIDE the bay is the other case and blows all four out, which is what a round through a
-window does.
+**A round reaches masonry by explode's two numbers and opens it by the stone's strength.**
+`explode` gives how far a blast reaches (`12 + dmg/5`) and how big a hole it cuts against a
+wall (`3 + dmg * .075`), and `frSpec`'s `str` divides the second: a field gun scars a
+casemate and the 240 opens one. A burst off the face cuts a hole scaled by
+`sqrt(1 - (off/reach)^2)`, which is the rule the old bays were cut by, and every cell inside
+the distance that makes that hole goes; a cell further into the reach is cracked, cracks add
+up, and a cracked cell carries less. A cell of wall lets a third of a blast through
+(`FR_ATT`), traced from the burst to the nearest point of each cell (`frAtten`). Traced to the
+middle, every cell of a face hit at an angle sat in the lee of its own neighbours along the
+same wall, and a 240 and a 105 took the same two or three cells out of it. A round that comes
+down through the slates bursts in a room, where the walls hold the gas in: it does what a
+burst half again as big does in the open and nothing in the room is in anybody's lee, which
+is why the shell through the roof is the one that brings a house down. A concrete roof takes
+the burst on top.
 
-**The masonry that comes out is a rigid body.** No solver is possible here and none is
-wanted: what `G.debris` carries is a position, a velocity, an orientation and an angular
-velocity per chunk, integrated with semi-implicit Euler under gravity at 98 units a second
-squared, with the ground as the only collider. Stone does not bounce, so the restitution is
-a fifth and the friction takes most of the rest; below the speed one frame of gravity gives
-it there is nothing left to model and it is lying on the ground. A shell THROWS masonry and
-a collapse DROPS it, and that is not a detail: given a blast's speed, the perimeter of a
-bay ended up scattered a hundred and twenty units into the street, four fifths of it too
-far from the house to be its rubble at all.
+On the card, against an 82 by 78 row house on Ortona: a round twelve units off the face takes
+nothing out at 18 or 40 points, 6.5 cells at 90 (a hole 31 wide and 29 tall), 11 at 150, 21
+at 300 and 27 at the 240's 380 (75 by 54), with the house still holdable after every one of
+them; forty units off the face a 105 takes nothing. Through the roof the 240 takes 84 per cent
+of the house in one round. Making it a house nobody can hold takes ten or so mortar bombs, 7.5
+rounds of 105 or three of the 240 fired into it, and 12, 5.5 or one down through the roof.
 
-**The one thing a solver would give that a heap actually needs is that masonry lands ON
-masonry, and that is a height field rather than a solver.** `MND` is one coarse grid over
-the whole map at fourteen units: a falling chunk collides against the ground plus whatever
-is already lying there, and what settles raises it. Dropped into the same yard, a hundred
-and fifty stones then build a mound where most of the wall came down and thin out at the
-edges. Without it every chunk rests on bare ground and a collapsed house is a carpet of
-separate blocks that reads as spilt cargo. It is one grid for the map and not one per
-building, because a chunk that lands clear of a building has nowhere to go and was thrown
-away -- and a garden wall blown apart in open country belongs to no building at all, so
-every stone of it vanished on landing.
+**A house is held by its walls.** A column of cells is standing while it reaches above a
+man's eye (34, or two thirds of a building that was never that tall), and a column of the
+building's own floor is shut in while a standing column closes it off every way (`frShut`).
+Standing and shut-in columns are the building to a boot and an eye, and the rest of the
+footprint is its rubble: on `rubg`, dear to cross (2.3 to a man, 2.4 times to tracks and five
+times to a lorry) and on neither of the two grids that stop sight or fire (`ruinBlocks`,
+`frAfter`). A section may hold it while half the columns that stood whole still stand
+(`frHoldable`) and is put out when they do not. Counted by the stone instead, a house read as
+a ruin as soon as its roof and floors were in, and a roofless shell is what every street in a
+shelled town is fought from. The tier-3 patches lying along a fallen face are written off, and
+a bunker's fitting goes with its concrete.
+
+**The stone is counted.** What a cell held comes out as `RUIN_KEEP` (0.78) of its faces taken
+as a wall four and a half units thick (the rest is dust, which the burst and the smoke draw):
+one block of about a quarter of that, one cell in two a smaller stone as well, or a slab a
+hand thick for a cell of roof or floor (`frStone`). The rest rides on the block as fill (`e`)
+and goes into the heap where the block comes to rest, because rubble stone set in lime comes
+apart into its stones and a great deal of broken mortar, and two drawn blocks a cell made a
+flattened house two thousand boxes on a lawn. The blocks fly the way masonry always has
+(`spawnChunk`, `stepDebris`) and settle into one ring of `rubCap()` slots for the whole map,
+2,600 on a desktop and 900 on a phone, the oldest let go when it is full. A block that comes to
+rest inside a building nothing has hit went onto its roof or against its wall and is counted
+as dust (`uncutAt`), because nothing in the air collides with a building and its heap would
+otherwise rise inside a house that is standing. `G.frStat` keeps what was thrown, how many
+pieces fell whole and what was let go, and the gate asks that what is lying and what was let
+go come to what was thrown.
+
+**And the heap is ground.** `MND` is the heap's height field at fourteen units, and it is drawn
+(`buildHeapBuf`): a surface between the middles of its cells, coloured by the stone that last
+landed in each (`MNDC`) on the earth tile, tucked under the ground where it runs out, rebuilt a
+few times a second while stone is landing and scanned only over the box it has reached
+(`HEAPBB`). A house that came down is one pile with blocks lying on it, and a block the ring has
+let go of is buried in it rather than gone. `groundZ` stands everything on it (`heapZ`, the grid
+read between the middles of its cells), so a man climbs a heap, a tank grinds over it and a
+shell bursts on it. `floorZ` is the ground under it, and what was laid before any of it came
+down (a tile of props rebuilt mid-battle, the faces of a building being cut) and what reads the
+slope of the country (the going grid) is laid on that; `HEAPOFF` says the same to every
+`groundZ` inside `buildTile`.
 
 **A hit building leaves the merged tile and draws from its own buffer.** The tile is a
 megabyte of merged geometry and cannot be edited; re-meshing one house is a thousandth of
@@ -2889,14 +3027,6 @@ several of them in one frame, so it is queued in `G.tileQ` and `flushTileQ` take
 frame however many houses were in the salvo. The house is drawn twice for that one frame,
 which nobody sees.
 
-**Two buffers rather than one, because the heap changes and the walls do not.** A bay's
-packed vertices are cached on the bay and only the bay a round changed is re-packed: three
-bays of a terrace is six thousand faces and nineteen thousand vertices, which is eighteen
-milliseconds -- a whole frame, on a frame where a house was hit, and a barrage hits houses
-constantly. It is five milliseconds for one bay. The settled rubble is one buffer for the
-whole map, rebuilt on the frames a stone lands, and it goes through the same hand-written
-packer the airborne debris uses.
-
 **`packChunks` is written by hand and it is the only vertex packer in the file that is.**
 `buildDebrisBuf` is rebuilt while the game is running, which nothing else here is. Built
 the way everything else is built -- `box()`, `roll()`, `pitch()`, `place()`,
@@ -2906,20 +3036,6 @@ per chunk, three hundred times over, on every frame. A chunk is an axis-aligned 
 one rotation, so its eight corners are the centre plus and minus three half-axes and those
 half-axes are the columns of the rotation scaled by the half-extents. Written straight into
 one array that is allocated once and re-uploaded it is 0.5 ms and allocates nothing.
-
-**And the world follows the storey down.** This is the half a screenshot cannot review at
-all, and it is where a destruction feature is usually a lie: a house knocked flat that goes
-on stopping a boot and an eye is rubble painted over a building that has not moved. A bay
-still standing blocks what a house blocks; a bay that is down is marked on `rubg` instead
--- dear to cross (2.3 to a man, 2.4 times to tracks and five times to a lorry), crossed at
-half pace, and on NEITHER of the two grids that stop sight or fire, which is the same rule
-a field wall under sixteen units already gets. `canGarrison` refuses a house with nothing
-standing above 34, the four tier-3 patches lying along a fallen face are written off (which
-drops them a tier, the way a shelled sandbag wall drops one) and their axis goes with them
-because a mound of masonry is the same from every bearing, and a garrison is damaged by
-every storey that comes down and put out when the last of the house goes. Nothing new is
-added to the cover index, because a patch laid on ground that is now rubble is a patch
-`aiFirePost` would read as somewhere to site a machine gun.
 
 **A wall is an object, and objects break too.** A garden wall does not need a structure: it
 is a LINE, and what a shell does to one is take a length out of the middle. A gap is a span
@@ -2969,10 +3085,77 @@ OWN hull now -- `blockRect`'s fifth argument is a pad rather than an angle, so t
 wreck has always carried was stored and never read, and a tank that burned across a street
 was blocked as a box square to the map.
 
-**The one-off costs, measured.** Recording a hit is 0.01 ms. Re-meshing the bay it changed
-is 5.2 ms. Freeing the tile is 110 ms of geometry, once per house and queued one a frame.
-Stepping 280 chunks is 0.013 ms and their buffer 0.5 ms. `tools/wreck.mjs` is the card for
-all of it.
+**A building burns.** A shell is a fire as well as a blast, and a house hit by one used to
+stand in the sun with a hole in it however long it was shelled. Each cell carries what there
+is in it to burn (`R.fuel`), read off the tiles its faces are drawn in (`frFuelOf`: timber 1,
+canvas 1.1, roof tile .6, lath and plaster .3, stone and brick nothing), with two things the
+faces cannot say: a cell of floor or roof above the ground storey is boards on joists or
+slates on rafters whatever it is drawn in (a Norman roof is drawn in the stone tile, because
+slate is stone, and read off its tiles it would not burn at all), and the upper storeys of a
+house framed in timber are the timber. Measured on a Saint-Lô stone house of 453 cells, 97
+could burn off the tiles and 174 with the roof read as a roof. A casemate has none, a rampart
+tower a third.
+
+**A cell catches when a shell cracks it and there is something in it to burn** (`frHit`,
+`FR_IGN`, twice as readily in a room and more for a heavier shell), **or when the cell beside
+it is burning** (`frFire`, `frCatch`): upward most readily because fire climbs, sideways less,
+downward hardly at all, and from the end of a terrace into the next house through the party
+wall (`frLeap`, which cuts the neighbour the way a round would). A burning cell comes up to the
+heat its fuel allows, holds it while the fuel lasts and dies away at the end, and smoulders out
+rather than burning for ever at nothing: written as a heat that fell with the square of what
+had burnt, no cell ever burnt through and every fire went out with its roof still on.
+
+**And a fire weakens what it burns, which is the half of a fire that brings a house down.**
+Every second a cell burns adds to its damage, so its capacity falls and the structure is asked
+again every second and a half while there is a fire (`frStep` reads it); a cell that was mostly
+timber and has burnt through is gone (`frKill`, dropping as charred stone), and what was stone
+with timber in it stands, black and cracked. So the roof of a stone house burns through and
+falls into its storeys and the shell is left standing, smoked black, which is the burnt-out
+house of every photograph of the town, and a timber-framed house goes down to its stone ground
+floor. The men in a house on fire are hurt by it and are put out of it when it is well alight,
+and `canGarrison` refuses a building with a fire of any size in it. On the probe a 105 through
+a stone house's roof lit six cells; 30 seconds on 45 were burning, two minutes on 61 had burnt
+through, the roof was down with 74 per cent of the house still standing, the section was out of
+it inside 15 seconds and the fire had jumped to the next house along.
+
+**A fire is drawn, lit and smelt.** Charring is written into the cell's own range of the
+buffer (`frTint`), moved toward soot by an amount worked back from where the colour was so
+nothing keeps the colours a cell was built with, and by a factor per vertex off where it
+stands, because laid evenly over the cell it drew a burnt roof as a chessboard of black
+squares. Flame comes out of the burning cells as hot as they are (`flame`, a hot core going
+from yellow to red inside a dull red glow), sparks go up (`ember`), a column of oily black
+smoke comes off the whole of it and is on the sight line (`smokeColumns`), the house is a light
+in the street flickering as bright as it burns (`gatherLights`), and it roars with the timber
+cracking in it (`sfx('fire')`). The stone out of a charred cell is charred, in two shades, so
+the heap's palette does not fill with every step between (`frSootCol`).
+
+**And a cracked wall goes on crumbling.** A wall a shell has cracked did not change until the
+next shell. Now a cracked pier carrying its share goes on cracking under it (`frCrumble`, once
+a second), so a building can come down a minute after the barrage has lifted, and a cracked
+face sheds its stones a few at a time in a puff of its own dust, which is the dribble of
+masonry off every shelled frontage. What it sheds is taken out of the cell's mass, so a cell
+that has shed six tenths of itself is gone, and the stone is counted like any other.
+
+**What a wall coming apart looks like is the dust.** The blocks a breach throws are few; what
+the eye takes in is the cloud of lime and brick dust a wall goes up in and the spray of small
+stuff ahead of it. A cell a round takes out sends up a pale cloud of the masonry's own colour
+and a handful of small pieces thrown out of the breach, and what a round cracks it blackens,
+so a shelled frontage is scorched round every hole in it before anything falls.
+
+**And the rubble a burst lands in is thrown again** (`blastRubble`). A block already in the air
+is shoved along by the pressure, and blocks lying in the heap close to a burst are thrown out
+of it on a fresh arc: the rubble of a house that has been fought over goes on moving every time
+a shell lands in it. A block thrown out of the heap is already in the heap as the hole it left,
+so where it lands it is not added again (`c.kick`); written the other way, every shell into a
+ruin would have built the heap up by what it threw.
+
+**The one-off costs, measured.** Cutting a house into 223 cells is about 10 ms of geometry,
+once, the first time a round reaches it, and 13 ms is the mean over every building on Ortona
+with 59 ms for the slowest. A solve of its structure is 0.04 ms and a round against it 0.05.
+Freeing the tile it was merged into is the 17 to 110 ms it always was, queued a tile a frame.
+The worst frame of a house coming down is under a millisecond, the heap's mesh two, and
+stepping 280 stones 0.01 ms with their buffer under one. `tools/wreck.mjs` is the card for all
+of it.
 
 **Effects.** Every particle in the game was one `drawArrays` of one uniform-driven quad
 running one fragment shader with exactly one shape in it -- `smoothstep(1.0, 0.25, d)`, a
@@ -4737,7 +4920,11 @@ or a wheel and this gun fires three times a second: at 28 the 234/1 won five in 
 in eight. At 12 a volley every .30 seconds and 25 of penetration, 400 hit points and 72 of plate,
 250 marks and 35 of fuel, it takes the M8 63 per cent of the time over twenty-four runs, the M3A1,
 the jeep and the rifle squad every time, and loses to the Rangers 71 per cent of the time and to
-the M4 every time. The Puma, at 85 a round every 2.6 seconds and 120 of penetration for another
+the M4 every time. Its burst is 9 where it was 14: once a burst on a man at the edge of his
+section reached him (see *A burst is a blast and a spray of splinters*), at 14 the Rangers beat it
+half the time where they had beaten it 92 per cent of the time on the same afternoon, and at 9
+they beat it 87 per cent of the time over twenty-four runs, with the M8 fight at 69 per cent and
+a rifle squad taken in 31.5 seconds against 34. The Puma, at 85 a round every 2.6 seconds and 120 of penetration for another
 120 marks and 45 of fuel, takes the M8 and the rifle squad every time over twelve runs and loses
 to the M4 head on every time; the Rangers take it five times in six. The coaxial MG 42 is
 `SECW.coax.ger`, which the German side had no entry for until a German vehicle carried one.
@@ -6250,10 +6437,45 @@ in it, because a burst has no propellant.
 **And a round in the air makes a sound now.** An indirect round was silent between the
 tube and the ground, which is a strange thing for the one weapon on this roster a player
 is meant to move out from under: the incoming is the only warning there is. It is pitched
-off the same burst the landing is -- a bomb comes in as a thin whistle and a
-two-hundred-kilogram shell as a freight train -- it is played at the ground it is coming
-at rather than at the tube, and it is timed to FINISH where the shell does rather than to
-start there (`burstVoice().lead`, half a second for a bomb and most of two for a heavy).
+off the same burst the landing is, it is played at the ground it is coming at rather than
+at the tube, and it is timed to FINISH where the shell does rather than to start there
+(`burstVoice().lead`, half a second for a bomb and most of two for a heavy). It was first
+a falling sine that started loud and died away, which is the cartoon of a falling bomb and
+backwards besides: a round coming at you is louder every tenth of a second until it lands.
+It is mostly air now (`auRush`), a rush of noise that swells (`auSwell`, steepest at the
+end the way one over the range is) and drops a little in pitch as it comes over, beaten by
+an oscillator on its gain at eighteen times the burst's pitch, so a bomb's fins flutter and
+a heavy shell churns, with a faint whistle under it rather than on top.
+
+**The mortar is one of the family now.** A player heard it as a different kind of thing
+from every other piece of artillery, and the numbers said why: at a third of a howitzer's
+level and a crest of twelve against their six, a tube was a nasal pop and a triangle wave
+holding at three hundred and forty hertz for a quarter of a second, which is a note and not
+a tube. Its spectrogram had a horizontal line across it and nothing else on the roster did.
+It is a pop, a hollow thump of gas leaving the tube that falls as the bomb clears the
+muzzle, a body under it (`auThump`), two inharmonic partials of ring that are over in a
+tenth of a second, and the weight of the street giving it back. Measured over ten takes a
+piece: the 81 mm went from a crest of 12.1 to 8.4 and the class from an rms of .022 to .042,
+still the smallest report of the three as a mortar should be, and the two mortars still
+separate (1.35x in level against a floor of 1.04x on the gate's desktop run, 1.89x in
+brightness against 1.01x on the phone).
+
+**And the big guns have weight.** What a howitzer or a battery lacked was the part a man
+feels rather than hears. Three things carry it. The KICK (`auThump`): a sine that starts in
+the low hundreds and falls to the bottom of hearing inside a few tenths of a second, with an
+octave under it, which is the one layer of a heavy report a telephone speaker can carry,
+because what it plays of a falling sine is the top of it and the saturation on the bus hands
+the rest harmonics it can sound. A SUB at fifty hertz for a desk's speakers. And the ROLL
+(`auRoll`): the blast coming back off every house front and fold of ground in turn, later and
+lower and softer each time, two rumbles behind a field howitzer and three behind a battery,
+with a slap off the nearest wall in the battery's. A heavy shell landing kicks and rolls the
+same way and rains earth for a second after (`auPatter`), which a mortar bomb does less of.
+Off the audio card: the 105 went from 836 ms to 1,396 and the 240 from 1,502 ms to 2,409, the
+battery class from an rms of .096 to .120 and the 240's landing from 1,487 ms to 2,251. The
+kick, the roll and the sub are scaled by the side's body (`vs.bod`), because written flat they
+were most of the battery's level and the two batteries came out 1.13x apart in rms where they
+had been 1.24x; the gate row's three classes still read three lengths (.62, 1.41 and 2.18 s on
+the desktop, the battery truncated at the row's 2.2 s buffer).
 
 **Loop.** A single `frame(now)` in the last section steps every system with one
 `dt` (clamped to 50ms) and then calls `render()`. There is no fixed timestep
@@ -6419,7 +6641,8 @@ The gate asks both as an A/B against the identical burst with the flag off, stag
 SAME point one after the other so that the cover, the ground and the geometry are the same
 by construction. Over ten bursts a hull loses 18 against 123 and a garden wall loses nothing
 against thirteen units of run. **And the men are the control**: the rule is about stone and
-about plate, so a section takes 97 either way, to the point.
+about plate, so a section takes the same either way, to the point. Whether a splinter finds a
+man is a roll, so both halves are thrown with the same seeded rolls.
 
 **A rocket has no chamber behind it**, and that is the second signature. `w.rocket` is on
 the projector and on the two shoulder launchers that fire one, and `muzClass` is asked for
@@ -8352,7 +8575,7 @@ shots/                         screenshot output, gitignored
   than counting it out: a scatter that MUST place N will keep trying until it puts one
   somewhere it does not belong.
 - **A signed distance is only signed if every case signs it the same way.** `ruinFace`
-  handed back `ly - o` for one wall of a bay and `ly + o` for the opposite one, which is
+  (gone with the bays it measured) handed back `ly - o` for one wall of a bay and `ly + o` for the opposite one, which is
   correct for the absolute value every reader took and is opposite in sign. The moment one
   reader asked WHICH SIDE the blast was on -- the one thing that decides whether a round in
   the street takes a bite out of the far wall of the room -- half the walls in the town
@@ -8364,6 +8587,21 @@ shots/                         screenshot output, gitignored
   whatever is already lying there and what settles raises it. Without it every stone rests
   on bare ground and a collapsed house is a flat carpet of blocks that reads as spilt
   cargo rather than as a building that fell over.
+- **`groundZ` stands on the rubble heap; `floorZ` is the ground under it.** Anything laid
+  before the heap was there reads the floor: a tile of props rebuilt in the middle of a
+  battle (it runs under `HEAPOFF`), the faces of a building being cut, and the going grid,
+  whose slope test reads a heap's edge as a cliff. Laid on `groundZ`, a tree beside a house
+  that came down is lifted onto the heap with daylight under its roots, and a building cut
+  after its neighbour fell is cut a metre and a half up in the air.
+- **A ray traced to the middle of a box crosses the boxes beside it.** The blast through the
+  cells was traced from the burst to each cell's middle, which on a wall hit at any angle
+  passes through the cells either side along the same wall: every cell of the face sat in the
+  lee of its own neighbours and a 240 and a 105 took the same three cells out. Trace to the
+  nearest point of the box, which still puts a cell behind a wall in its lee.
+- **A drill that fires at a fixed point is firing into air once the first round has done its
+  work.** The card's rounds at a face kept landing where the face had been, the house never
+  came down to sixty rounds of 105, and that read as a building that could not be broken.
+  A round fired at a house strikes the first thing standing; walk it in from the street.
 - **The one buffer rebuilt while the game is running is worth writing by hand.** Falling
   masonry cost 2.8 ms a frame built the way everything else here is built, and nearly all
   of it was garbage rather than arithmetic: four arrays of six faces and thirty-six vertex
@@ -8712,3 +8950,23 @@ shots/                         screenshot output, gitignored
   inside it: asked whether it was clear at its own ends, every belt but the first in each
   stretch was thrown away and the beach came out with a quarter of its wire. Ask a piece
   about the ground short of its two ends, which is where the last one stopped.
+- **A unit's marker is not where its men are, and a burst asked the marker.** `explode` skipped
+  a unit whole when its marker stood further from the burst than the blast reached, and a round
+  is laid on the man nearest the firer, anywhere inside his section's circle: a burst on a man
+  at the edge of his section hurt nobody in it. It is the fault the selection ring and `aimAt`
+  each had in their turn, a third time. The smaller the shell the worse it was, so every
+  small-shell weapon had been tuned on it, and the fix moved the 234/1 against the Rangers from
+  8 per cent to half until its burst came down. Gate anything about men on the unit's own
+  circle (`selRadius`) and then ask the men.
+- **A new hole inside three quarters of an old one's reach widens the old one about its own
+  centre.** That is the merge rule, and it is right, and a drill that digs beside an old hole
+  measures a hole dug somewhere else: the crater row read 5 units of depth against 13.4 when
+  its spot came to lie 28 units from a crater the map had laid, and no new cover, because the
+  map's craters were pushed without the link to their cover patch that a shell's carries. They
+  carry it now, so a shell that widens a laid crater widens its cover, and the row keeps clear
+  of every crater on the list.
+- **A row that compares two halves to the point cannot have a dice roll in it.** Whether a
+  splinter finds a man is `Math.random`, so the automatic cannon row's two identical bursts
+  came out 186 and 160 against men; each half is thrown with the same seeded rolls now. And a
+  row that sets houses alight puts them out again: left burning, a fire spreads down the street
+  through every row under it.
