@@ -1760,6 +1760,31 @@ party wall, and lays every house again on the other half on the same footprint, 
 a list of its own, so the two halves play the same and are not the same town. 390 buildings
 and 305 trees at stage 3, 1.47 million vertices against Ortona's 2.03.
 
+**And then laid again at the scale of the things standing in it.** The first town was 329
+houses a median 48 units along their street and 60 deep, every one of them two storeys, on
+streets whose clear width from front to front was 58 units at the lower quartile and 112 at
+the median: half of 222 samples along the roads were under 110, which is narrower than a
+Sherman's turning circle and, from the camera, a slot between two rows of roofs with nothing
+in it to be seen. Measured off the same probe now: 111 houses a median 94 along the street
+and 98 deep (seven to nine metres and eight to ten), two to four storeys with a median of
+three, and street clearances of 118 at the lower quartile and 175 at the median, with 31 of
+194 samples under 110. A street in the town carries a pavement each side (`pave` on a road,
+painted as flags along its edges and counted in the clearance `fits` holds a plot to). What
+the plots are tested against is written down: `fits` refuses a plot for one of sixteen
+reasons and `STLO.miss` keeps each refusal with its code, because a layout that drops a house
+without saying why reads as a gap somebody meant. The houses read their size now as well: a
+bay's window columns come off its length at one for every 27 units (`ntBay`), Notre-Dame is
+built at the size of its own plan and scaled by `k` (`scaleFaces`), and the gasholder stands
+at least 88 units tall.
+
+**The three lanes are the axes of three roads**, each with a headquarters at either end: the
+Route de Torigni on the left, the road from the centre headquarters through the Bouloir and
+down to the mill on the rock's ramp, and the Rue de la Gare over the Vire on the right.
+Between them the town thins out (the cemetery, the walled orchard and the gardens at the
+valley's head between the left lane and the centre, the river between the centre and the
+right), and four cross streets run over the seams: the Bouloir's, the rocade, the brook road
+and the spine on the midline. A fight can move from one lane to the next along any of them.
+
 **What the raids left.** A house razed to its footings (`x` in a row's dressing) is a heap of
 its own stone (`ntHeap`, a `debris` with `nt`), following the ground under it, with the quoins,
 the slates, the charred joists and often a chimney breast standing out of it; it is on `rubg`
@@ -1777,7 +1802,8 @@ running lines on the far bank, is a crossing keeper's cottage now, with its gard
 dry stone, the two gates rolled back along the line and a van burnt out on the running line;
 the Champ de Mars has a weapon pit either side of the flag. Every flag reads tier 3 inside
 110, every walk arrives, and the 96 walks of the American half against the German come out
-at 101,057 units for a man against 101,126, and within half a per cent for a hull.
+at 101,057 units for a man against 101,126, and within half a per cent for a hull. Laid again,
+they come out at 97,317 against 97,375.
 
 **A cut into the ground is not a plot to be levelled.** The flag at Notre-Dame could not be
 reached: `levelPad` blends a house's plot flat for forty units round it, and the mill beside

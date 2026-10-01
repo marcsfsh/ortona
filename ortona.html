@@ -3809,7 +3809,7 @@ function buildMap(data) {
   data.entities.forEach(function (e) {
     switch (e.t) {
       case 'road':
-        var r = e.pts.map(function (p) { return { x: p.x, y: p.y }; }); r.width = e.width || 48; r.style = e.style; G.roads.push(r);
+        var r = e.pts.map(function (p) { return { x: p.x, y: p.y }; }); r.width = e.width || 48; r.style = e.style; r.pave = e.pave || 0; G.roads.push(r);
         for (var i = 0; i < r.length - 1; i++) carve(r[i].x, r[i].y, r[i + 1].x, r[i + 1].y, r.width * .5, -2.5, null, 'trench');
         break;
       case 'house':
@@ -4631,35 +4631,143 @@ function omahaZ(x, y) {
    the American, both() lays a road that runs from one end of the map to the other through
    the midline, and the dressing that is not mirrored is written out on each half by hand.
    The size is written out rather than read off WORLD, because this is built before
-   buildMap has called setWorld. */
+   buildMap has called setWorld.
+     It was laid a second time at the scale of the things standing in it. The first town
+   was three hundred and thirty houses a median four metres wide and five deep on streets
+   four to five metres across, which is narrower than the tank driving down them: from the
+   camera a street was a slot between two rows of roofs and nothing in it could be seen.
+   A house is seven to nine metres along its street and eight to ten deep now, a street
+   in the town is ten to twelve metres from front to front and a main street twelve to
+   fourteen, and a lane is the axis of a lane: the Route de Torigni on the left, the road
+   from the centre headquarters through the Bouloir and down to the mill on the rock's
+   ramp, and the Rue de la Gare over the river. Between the lanes the town thins out --
+   the cemetery and the walled orchard and the gardens of the valley head between the left
+   and the centre, the Vire between the centre and the right -- and the cross streets run
+   over the seams: the Bouloir's, the rocade, the brook road and the spine on the midline. */
 function stloMapData() {
-  var E = [], MID = 1400;
+  var E = [], MID = 1400, MISS = [], why = 0;
   function my(y) { return 2 * MID - y; }
   function P(pts) { return pts.map(function (p) { return { x: p[0], y: p[1] }; }); }
-  function road(style, w, pts) { E.push({ t: 'road', style: style, width: w, pts: P(pts) }); }
+  function road(style, w, pts, pv) {
+    var e = { t: 'road', style: style, width: w, pts: P(pts) };
+    if (pv) e.pave = pv;
+    E.push(e);
+  }
   /* a road laid on the German half and its twin on the American */
-  function pair(style, w, pts) {
-    road(style, w, pts);
-    road(style, w, pts.map(function (p) { return [p[0], my(p[1])]; }));
+  function pair(style, w, pts, pv) {
+    road(style, w, pts, pv);
+    road(style, w, pts.map(function (p) { return [p[0], my(p[1])]; }), pv);
   }
   /* a road from the German half through the midline to its twin: the German points are
      given down to the midline, and the American half is the same line coming back */
-  function both(style, w, pts) {
+  function both(style, w, pts, pv) {
     var back = pts.slice(0, pts.length - 1).reverse().map(function (p) { return [p[0], my(p[1])]; });
-    road(style, w, pts.concat(back));
+    road(style, w, pts.concat(back), pv);
+  }
+  function r1(v) { return Math.round(v * 10) / 10; }
+  /* a wall laid on the German half and its twin */
+  function wpair(x1, y1, x2, y2, h) {
+    E.push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2, h: h || 24 });
+    E.push({ t: 'wall', x1: x1, y1: my(y1), x2: x2, y2: my(y2), h: h || 24 });
+  }
+  /* where a street is, as a function: its y at x when it runs along x, its x at y when it
+     runs along y, offset by `off` (half the carriageway and the pavement to the building
+     line) */
+  function kerb(pts, ax, off) {
+    var a = ax ? 1 : 0, b = 1 - a;
+    return function (v) {
+      for (var i = 1; i < pts.length; i++) {
+        var u0 = pts[i - 1][a], u1 = pts[i][a];
+        if ((v - u0) * (v - u1) <= 0 && u0 !== u1) return lerp(pts[i - 1][b], pts[i][b], (v - u0) / (u1 - u0)) + off;
+      }
+      return (Math.abs(v - pts[0][a]) < Math.abs(v - pts[pts.length - 1][a]) ? pts[0][b] : pts[pts.length - 1][b]) + off;
+    };
   }
 
-  function r1(v) { return Math.round(v * 10) / 10; }
+  /* ---- the flags and the headquarters come first, because nothing is built on them ---- */
+  var FL = [[566, 500], [1978, 520], [3421, 480], [620, 790], [1995, 1000], [3080, 790], [760, MID], [1470, MID], [2050, MID], [3000, MID]];
+  var HQS = [[1960, 210], [620, 210], [3430, 210]];
+  E.push({ t: 'hq', side: 'ger', n: 1, x: 1960, y: 210 });
+  E.push({ t: 'hq', side: 'ger', n: 2, x: 620, y: 210 });
+  E.push({ t: 'hq', side: 'ger', n: 3, x: 3430, y: 210 });
+  E.push({ t: 'hq', side: 'us', n: 1, x: 1960, y: my(210) });
+  E.push({ t: 'hq', side: 'us', n: 2, x: 620, y: my(210) });
+  E.push({ t: 'hq', side: 'us', n: 3, x: 3430, y: my(210) });
+  /* the towers of the ramparts, where they will stand, so that no house is built into one */
+  var TW = [];
+  STLO.towers.forEach(function (tw) { TW.push([tw[0], MID - tw[1], tw[2]]); });
+
+  /* ---- what a house may stand on. A plot is taken only where the ground under it is
+     level enough to build on, off every carriageway and its pavement, clear of the ways
+     onto the rock, the river, the railway, the flags, the deploy ground round a
+     headquarters, the rampart walk and the towers, and of everything solid already laid;
+     and where it is near another building it either shares the party wall or leaves a
+     passage a section can walk down. What does not fit is left as a garden, and written
+     down in STLO.miss so that the layout can be read for what it lost. */
+  function dBox(px, py, g) {
+    var dx = Math.max(Math.abs(px - g.x) - g.w / 2, 0), dy = Math.max(Math.abs(py - g.y) - g.h / 2, 0);
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+  function dSeg(a, b, g) {
+    var L = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(L / 6)), best = 1e9;
+    for (var i = 0; i <= n; i++) best = Math.min(best, dBox(a.x + (b.x - a.x) * i / n, a.y + (b.y - a.y) * i / n, g));
+    return best;
+  }
+  function solidE(e) { return e.t === 'house' || e.t === 'nhouse' || e.t === 'debris' || (e.t === 'feature' && e.solid !== 0); }
+  function fits(g) {
+    var x0 = g.x - g.w / 2, x1 = g.x + g.w / 2, y0 = g.y - g.h / 2, y1 = g.y + g.h / 2, i, k;
+    if (x0 < 30 || x1 > 3770 || y0 < 30 || y1 > MID - 8) { why = 1; return false; }
+    var zMin = 1e9, zMax = -1e9, sdMin = 1e9, sdMax = -1e9;
+    for (i = 0; i < 3; i++) for (k = 0; k < 3; k++) {
+      var px = lerp(x0, x1, i / 2), py = lerp(y0, y1, k / 2), z = stloZ(px, py);
+      if (stloRiver(px, py) < 24 || stloOnWay(px, py)) { why = 2; return false; }
+      zMin = Math.min(zMin, z); zMax = Math.max(zMax, z);
+      if (px > 1640 && px < 2600 && MID - py < 360) { var sd = stloEncSD(px, py); sdMin = Math.min(sdMin, sd); sdMax = Math.max(sdMax, sd); }
+    }
+    if (zMax - zMin > 26) { why = 3; return false; }
+    /* on the rock clear of the walk, or off it clear of the cliff, and never astride it */
+    if (sdMax > -1e9 && !(sdMin >= 24 || sdMax <= -44)) { why = 4; return false; }
+    /* the dry ditch across the neck */
+    if (x1 > 1696 && x0 < 1760 && y1 > 1236) { why = 5; return false; }
+    for (i = 0; i < FL.length; i++) if (dBox(FL[i][0], FL[i][1], g) < 56) { why = 6; return false; }
+    for (i = 0; i < TW.length; i++) if (dBox(TW[i][0], TW[i][1], g) < TW[i][2] + 8) { why = 7; return false; }
+    for (i = 0; i < HQS.length; i++) {
+      var hx = Math.max(Math.abs(g.x - HQS[i][0]) - g.w / 2, 0) / 210, hy = Math.max(Math.abs(g.y - HQS[i][1]) - g.h / 2, 0) / 150;
+      if (Math.sqrt(hx * hx + hy * hy) * 210 < 236) { why = 8; return false; }
+    }
+    for (i = 0; i < E.length; i++) {
+      var e = E[i];
+      if (solidE(e)) {
+        var gx = Math.abs(g.x - e.x) - (g.w + e.w) / 2, gy = Math.abs(g.y - e.y) - (g.h + e.h) / 2;
+        if (gx < -1 && gy < -1) { why = 9; return false; }
+        var gap = gx >= -1 && gy < 0 ? gx : gy >= -1 && gx < 0 ? gy : null;
+        if (gap !== null && gap > 5 && gap < 36) { why = 10; return false; }
+      } else if (e.t === 'road') {
+        for (k = 1; k < e.pts.length; k++) if (dSeg(e.pts[k - 1], e.pts[k], g) < e.width / 2 + (e.pave ? e.pave - 1 : 10)) { why = 11; return false; }
+      } else if (e.t === 'track') {
+        for (k = 1; k < e.pts.length; k++) if (dSeg(e.pts[k - 1], e.pts[k], g) < 26) { why = 12; return false; }
+      } else if (e.t === 'platform' || e.t === 'bridge') {
+        if (dSeg({ x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }, g) < (e.w ? e.w / 2 : e.hw) + 8) { why = 13; return false; }
+      } else if (e.t === 'wall' && !e.ramp) {
+        if (dSeg({ x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }, g) < 4) { why = 14; return false; }
+      } else if (e.t === 'hedge') {
+        for (k = 1; k < e.pts.length; k++) if (dSeg(e.pts[k - 1], e.pts[k], g) < 10) { why = 15; return false; }
+      } else if (e.t === 'paved' && e.kind === 'piazza') {
+        if (Math.abs(g.x - e.x - e.w / 2) < (g.w + e.w) / 2 - 2 && Math.abs(g.y - e.y - e.h / 2) < (g.h + e.h) / 2 - 2) { why = 16; return false; }
+      }
+    }
+    return true;
+  }
+
   /* ---- the houses of the town. A frontage is laid a house at a time along the building
-     line of its street, party wall against party wall, and every house is laid twice: on
-     the German half and again on the American on the same footprint, dressed from a list of
-     its own, so the two halves play the same and are not the same town. A house is [width
-     along the street, depth, German dressing, American dressing, gap after it]. A dressing
-     is a letter for the walls (s stone, r render, t timber over a stone ground floor), the
-     storeys, h for a shop on the ground floor, and g where the June raids gutted it. A
-     house razed to its footings is x, and x is on both halves or neither, because a heap
-     of rubble plays differently from a house. A gap is nought, which is a party wall, or
-     34 and over, which is a passage a section can walk down. */
+     line of its street, party wall against party wall or a passage apart, and every house
+     is laid twice: on the German half and again on the American on the same footprint,
+     dressed from a list of its own, so the two halves play the same and are not the same
+     town. A house is [width along the street, depth, German dressing, American dressing,
+     gap after it]. A dressing is a letter for the walls (s stone, r render, t timber over a
+     stone ground floor), the storeys, h for a shop on the ground floor, and g where the
+     June raids gutted it. A house razed to its footings is x, and x is on both halves or
+     neither, because a heap of rubble plays differently from a house. */
   function dress(e, d) {
     e.nk = d.indexOf('r') >= 0 ? 'render' : d.indexOf('t') >= 0 ? 'timber' : 'stone';
     var m = /[1-4]/.exec(d);
@@ -4670,16 +4778,31 @@ function stloMapData() {
   }
   /* a frontage along x from `at` (front 0 has the street below the line, 1 above it) or
      along y (front 2 has the street to the right of the line, 3 to its left); the American
-     twin faces the other way along y */
+     twin faces the other way along y. A plot that does not fit at its depth is tried a
+     little shallower, and then left as a garden. */
   function row(axis, at, line, fr, list) {
     var p = at;
     list.forEach(function (q) {
-      var w = q[0], dp = q[1], g, ln = line;
-      /* a street that is not square to the map: the house stands back from its kerb at
-         whichever end of the house the kerb comes nearest */
-      if (typeof line === 'function') ln = (fr === 0 || fr === 2) ? Math.min(line(p), line(p + w)) : Math.max(line(p), line(p + w));
-      if (axis === 'x') g = { x: p + w / 2, y: fr === 0 ? ln - dp / 2 : ln + dp / 2, w: w, h: dp };
-      else g = { x: fr === 2 ? ln - dp / 2 : ln + dp / 2, y: p + w / 2, w: dp, h: w };
+      var w = q[0], ln = line, g = null, sh, ww, ti;
+      /* a plot that does not fit is moved along a little, made a little narrower, and then
+         a little shallower, so that it either comes up against what stopped it as a party
+         wall or stands a passage clear of it */
+      for (sh = 0; sh <= 36 && !g; sh += 6) for (ww = w; ww >= Math.max(70, w - 30) && !g; ww -= 10) {
+        var p0 = p + sh, tries = [q[1], Math.round(q[1] * .86)];
+        /* a street that is not square to the map: the house stands back from its kerb at
+           whichever end of the house the kerb comes nearest */
+        if (typeof line === 'function') ln = (fr === 0 || fr === 2) ? Math.min(line(p0), line(p0 + ww)) : Math.max(line(p0), line(p0 + ww));
+        for (ti = 0; ti < 2 && !g; ti++) {
+          var dp = tries[ti], c;
+          if (dp < 64) continue;
+          if (axis === 'x') c = { x: p0 + ww / 2, y: fr === 0 ? ln - dp / 2 : ln + dp / 2, w: ww, h: dp };
+          else c = { x: fr === 2 ? ln - dp / 2 : ln + dp / 2, y: p0 + ww / 2, w: dp, h: ww };
+          if (fits(c)) { g = c; g.p0 = p0; g.ww = ww; }
+        }
+      }
+      if (!g) { MISS.push([r1(axis === 'x' ? p + w / 2 : ln), r1(axis === 'x' ? ln : p + w / 2), 'w' + why]); p += w + (q[4] || 0); return; }
+      p = g.p0 + g.ww - w;
+      delete g.p0; delete g.ww;
       var sd = ((g.x * .0137 + g.y * .0071) % 1 + 1) % 1;
       if ((q[2] + (q[3] || '')).indexOf('x') >= 0) {
         /* what is left of a house the bombs took: the heap it came down into, in the
@@ -4700,65 +4823,108 @@ function stloMapData() {
       p += w + (q[4] || 0);
     });
   }
-  /* where a street is, as a function: its y at x when it runs along x, its x at y when it
-     runs along y, offset by `off` (a kerb and the step back to the building line) */
-  function kerb(pts, ax, off) {
-    var a = ax ? 1 : 0, b = 1 - a;
-    return function (v) {
-      for (var i = 1; i < pts.length; i++) {
-        var u0 = pts[i - 1][a], u1 = pts[i][a];
-        if ((v - u0) * (v - u1) <= 0 && u0 !== u1) return lerp(pts[i - 1][b], pts[i][b], (v - u0) / (u1 - u0)) + off;
-      }
-      return (Math.abs(v - pts[0][a]) < Math.abs(v - pts[pts.length - 1][a]) ? pts[0][b] : pts[pts.length - 1][b]) + off;
-    };
+  /* a frontage filled from `a` to `b` with houses of a quarter's own kind: a main street
+     is three storeys with shops, a town street two with a third here and there, the
+     faubourgs one and two; Z holds the range of widths and depths, the storeys to draw
+     from, how often a ground floor is a shop, a house gutted or razed, and how often a
+     passage opens between two houses. Its dice are its own position, so the town is the
+     same every time it is built. */
+  var ZM = { f: [84, 108], d: [94, 112], s: [2, 3, 3], h: .55, g: .2, x: .06, p: .14 };
+  var ZT = { f: [78, 104], d: [88, 106], s: [2, 2, 3], h: .2, g: .22, x: .08, p: .22 };
+  var ZF = { f: [76, 98], d: [84, 100], s: [1, 2, 2], h: .05, g: .12, x: .06, p: .38 };
+  var ZE = { f: [76, 98], d: [80, 96], s: [3, 3, 4], h: .3, g: .4, x: .1, p: .3 };
+  function fill(axis, a, b, line, fr, Z) {
+    var seed = a * .0131 + (typeof line === 'number' ? line : line(a)) * .0077 + fr * .31 + b * .0019, n = 0, p = a, list = [], last = 0;
+    function rr() { n++; var v = Math.sin(seed * 91.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+    function dr() {
+      var k = rr(), s = k < .32 ? 'r' : k < .42 ? 't' : 's';
+      return s + Z.s[Math.floor(rr() * Z.s.length)] + (rr() < Z.h ? 'h' : '') + (rr() < Z.g ? 'g' : '');
+    }
+    while (b - p >= Z.f[0] - 6) {
+      var w = 2 * Math.round((Z.f[0] + rr() * (Z.f[1] - Z.f[0])) / 2);
+      if (p + w > b) w = 2 * Math.floor((b - p) / 2);
+      var dp = 2 * Math.round((Z.d[0] + rr() * (Z.d[1] - Z.d[0])) / 2);
+      var gap = list.length - last >= 2 && rr() < Z.p ? 40 + 2 * Math.round(rr() * 10) : 0, raze = rr() < Z.x;
+      list.push([w, dp, raze ? 'x' : dr(), raze ? 'x' : dr(), gap]);
+      if (gap) last = list.length;
+      p += w + gap;
+    }
+    row(axis, a, line, fr, list);
   }
-  /* a wall laid on the German half and its twin */
-  function wpair(x1, y1, x2, y2, h) {
-    E.push({ t: 'wall', x1: x1, y1: y1, x2: x2, y2: y2, h: h || 24 });
-    E.push({ t: 'wall', x1: x1, y1: my(y1), x2: x2, y2: my(y2), h: h || 24 });
+  /* a building that is not a town house, and its twin, built only where it fits */
+  function bpair(e, us) {
+    if (!fits(e)) { MISS.push([e.x, e.y, (e.style || e.look) + why]); return false; }
+    E.push(e);
+    var t = {}, k;
+    for (k in e) t[k] = e[k];
+    for (k in (us || {})) t[k] = us[k];
+    t.y = my(e.y);
+    if (t.front !== undefined && t.front < 2) t.front = 1 - t.front;
+    E.push(t);
+    return true;
   }
 
-  /* ---- the headquarters: three a side, a lane apart. `n` is the order a game takes them
-     in, so a 1v1 fights for the centre and a 2v2 adds the faubourgs on the left. */
-  E.push({ t: 'hq', side: 'ger', n: 1, x: 1960, y: 210 });
-  E.push({ t: 'hq', side: 'ger', n: 2, x: 620, y: 210 });
-  E.push({ t: 'hq', side: 'ger', n: 3, x: 3430, y: 210 });
-  E.push({ t: 'hq', side: 'us', n: 1, x: 1960, y: my(210) });
-  E.push({ t: 'hq', side: 'us', n: 2, x: 620, y: my(210) });
-  E.push({ t: 'hq', side: 'us', n: 3, x: 3430, y: my(210) });
-
-  /* ---- the roads that make the plan. The town's own streets are laid block by block
-     further down; these are the ones every lane is read off. */
-  /* the road to Torigni and the Bayeux road, which are one road through the Champ de Mars */
-  var TOR = [[470, 0], [540, 380], [600, 650], [620, 800], [660, 1040], [696, 1244]];
-  pair('tar', 60, TOR);
-  /* the spine along the ridge: from the left edge to the square, and from the square
-     through the Neuf-Bourg to the causeway at the east gate */
-  road('setts', 54, [[0, 1400], [560, 1400]]);
-  road('setts', 54, [[960, 1400], [1300, 1400], [1744, 1400]]);
-  /* the rocade on each forward row, from the edge through Sainte-Croix and along the rim
-     of the valley and down to the quay, and on the far bank from the bridge to the edge.
-     A street runs from one junction to the next, so it is laid in the pieces its cross
-     streets cut it into: at the cross streets beyond Sainte-Croix, and where the road
-     from the centre headquarters comes down onto it. */
-  pair('tar', 52, [[0, 790], [620, 800], [1050, 805]]);
+  /* ---- the roads that make the plan ---- */
+  /* the left lane: the road to Torigni and the Bayeux road, which are one road through the
+     Champ de Mars, from each headquarters' own road down to the parade ground */
+  var TOR = [[470, 0], [540, 380], [600, 650], [620, 800], [660, 1040], [696, 1240]];
+  pair('tar', 84, TOR, 18);
+  pair('tar', 56, [[620, 210], [551, 428]]);
+  /* the cross street over the top of the town from the Route de Torigni to the Bouloir */
+  var UPX = [[551, 428], [830, 395], [1100, 350]];
+  pair('setts', 60, UPX, 14);
+  /* the spine along the ridge: from the left edge to the Champ de Mars, and from the
+     Champ through the Neuf-Bourg to the causeway at the east gate */
+  road('setts', 60, [[0, 1400], [380, 1400]]);
+  road('setts', 76, [[900, 1400], [1300, 1400], [1744, 1400]], 18);
+  /* the rocade on each forward row, from the edge through Place Sainte-Croix and along the
+     rim of the valley and down to the quay, and on the far bank from the bridge to the
+     edge, laid from junction to junction */
+  var ROC0 = [[0, 790], [620, 800], [1050, 805]];
   var ROC1 = [[1050, 805], [1350, 742], [1800, 722], [1990, 730]], ROC2 = [[1990, 730], [2250, 740], [2631, 769]];
-  pair('tar', 52, ROC1);
-  pair('tar', 52, ROC2);
-  pair('tar', 52, [[2790, 770], [3100, 770], [3420, 780], [3800, 800]]);
+  var ROC3 = [[2790, 770], [3100, 770], [3420, 780], [3800, 800]];
+  pair('tar', 72, ROC0, 16); pair('tar', 72, ROC1, 16); pair('tar', 72, ROC2, 16); pair('tar', 72, ROC3, 16);
   /* the brook road along each valley floor, down to the quay */
   var BRK = [[1180, 918], [1400, 966], [1700, 988], [2000, 998], [2300, 992], [2480, 980], [2600, 972]];
-  pair('setts', 46, BRK);
+  pair('setts', 56, BRK, 14);
+  /* the centre lane: the road from the headquarters through the Bouloir to the rocade, and
+     on down to the mill at the foot of the ramp */
+  var HQC = [[1960, 210], [1975, 470], [1990, 730]], AXC = [[1990, 730], [2000, 780], [2000, 996]];
+  pair('tar', 84, HQC, 18);
+  pair('setts', 64, AXC, 16);
+  /* the Bouloir's cross street, and the streets that cut the quarter between it and the
+     rocade into blocks */
+  var BOU = [[1100, 350], [1500, 365], [1975, 395], [2500, 420]];
+  pair('setts', 64, BOU, 16);
+  var X14N = [[1480, 736], [1490, 580], [1500, 365]], X14S = [[1480, 736], [1480, 910], [1440, 962]];
+  var X23N = [[2300, 742], [2300, 410]], X23S = [[2300, 742], [2300, 990]];
+  pair('setts', 52, X14N, 12); pair('setts', 52, X14S, 12); pair('setts', 52, X23N, 12); pair('setts', 52, X23S, 12);
+  pair('setts', 56, [[2500, 420], [2600, 768]]);
+  /* the seam between the left lane and the centre: the street down from the top of the
+     town to the rocade, and the street along the valley head from the rocade to the spine */
+  var SEAM = [[1100, 350], [1050, 805]], EST = [[960, 1400], [1000, 1100], [1050, 805]];
+  pair('setts', 52, SEAM, 10);
+  pair('setts', 52, EST, 10);
+  /* the left lane's own streets: the cross street half way down from the bocage lane to
+     the valley head, the old road out to the Haras, and the bocage lane */
+  var VAL = [[308, 1060], [664, 1060], [1007, 1060]];
+  pair('setts', 56, VAL, 14);
+  pair('setts', 48, [[620, 800], [300, 640], [120, 400]]);
+  pair('setts', 44, [[260, 1400], [300, 1100], [360, 802]]);
+  /* the streets down from the Neuf-Bourg into the valley */
+  var NB1 = [[1250, 1400], [1250, 1200], [1215, 1080], [1190, 920]], NB2 = [[1470, 1400], [1470, 1220], [1450, 1100], [1440, 962]];
+  pair('setts', 52, NB1, 12); pair('setts', 52, NB2, 12);
   /* the ramp up to the Porte au Lait and the Porte Dollee: over the brook and up the scarp,
      and the street through the rock from gate to gate */
-  pair('setts', 40, [[1762, 990], [1790, 1046], [1950, 1110], [2050, 1134], [2073, 1160], [2074, 1196]]);
-  both('setts', 40, [[2074, 1196], [2086, 1300], [2088, 1400]]);
-  /* inside the rock: the Rue Notre-Dame from the east gate to the Place, the Place in front
-     of the church's east end, and the street along either side of the church from the Place
-     to the parvis over the point */
-  road('setts', 40, [[1760, 1400], [2000, 1400]]);
-  E.push({ t: 'paved', kind: 'piazza', x: 2000, y: 1300, w: 150, h: 200 });
-  pair('setts', 34, [[2088, 1316], [2440, 1316]]);
+  pair('setts', 44, [[1762, 990], [1790, 1046], [1950, 1110], [2050, 1134], [2073, 1160], [2074, 1196]]);
+  both('setts', 44, [[2074, 1196], [2086, 1300], [2088, 1400]]);
+  /* inside the rock: the Rue Notre-Dame from the east gate to the Place, the Place at the
+     church's east end, the street along either side of the church, and the parvis over
+     the point */
+  road('setts', 56, [[1760, 1400], [1900, 1400]], 16);
+  E.push({ t: 'paved', kind: 'piazza', x: 1895, y: MID - 110, w: 210, h: 220 });
+  pair('setts', 36, [[2100, 1298], [2400, 1298]]);
+  E.push({ t: 'paved', kind: 'piazza', x: 2443, y: MID - 75, w: 40, h: 150 });
   /* the quay along the east bank, the whole height of the map, in three lengths: from the
      top of the map to where the rocade comes down onto it, from there through the midline
      past the stair and the town bridge, and the American length of the first */
@@ -4767,224 +4933,180 @@ function stloMapData() {
     for (qy = y0; qy <= y1; qy += 100) q.push([Math.round(stloRiverX(qy) - stloRiverHW(qy) - 35), qy]);
     return q;
   }
-  pair('setts', 46, quay(0, 800));
-  both('setts', 46, quay(800, 1400));
-  /* the far bank: the west quay from bridge to bridge past the station forecourt */
+  pair('setts', 52, quay(0, 800));
+  both('setts', 52, quay(800, 1400));
+  /* the right lane: the far bank's west quay from bridge to bridge past the station
+     forecourt, the road from the headquarters past the gasworks, the Rue de la Gare down
+     to the midline, and the level crossing that joins them at the north end of the
+     platforms */
   var QW = [[2790, 770], [2760, 1000], [2744, 1200], [2742, 1400]];
-  both('setts', 44, QW);
-  road('setts', 50, [[2742, 1400], [2836, 1400]]);
-  /* the level crossings at either end of the platforms, and the Rue de la Gare */
-  pair('setts', 40, [[2760, 1230], [3180, 1230], [3420, 1240]]);
-  both('tar', 48, [[3420, 780], [3430, 1240], [3440, 1400]]);
-  /* each headquarters to its own front */
-  pair('tar', 48, [[1960, 210], [1975, 470], [1990, 730]]);
-  pair('tar', 48, [[3430, 210], [3420, 500], [3420, 780]]);
-  pair('tar', 48, [[620, 210], [560, 420]]);
-  /* the quarter between each base and its valley: streets down to the brook road, and the
-     cross street along the shelf */
-  pair('setts', 42, [[1480, 736], [1480, 910], [1440, 962]]);
-  pair('setts', 40, [[1990, 730], [2000, 780], [2000, 996]]);
-  pair('setts', 40, [[2300, 742], [2300, 990]]);
-  var BOU = [[1100, 400], [1500, 420], [1975, 470], [2500, 500]];
-  pair('setts', 42, BOU);
-  /* and the two streets that carry the slope's streets on up to it */
-  pair('setts', 40, [[1480, 736], [1490, 580], [1500, 420]]);
-  pair('setts', 40, [[2300, 742], [2300, 486]]);
-  pair('setts', 40, [[1100, 400], [1050, 805]]);
-  pair('setts', 40, [[2500, 500], [2600, 768]]);
-  /* the left lane: Sainte-Croix and La Bascule's cross streets, and the bocage lane */
-  pair('setts', 40, [[620, 800], [300, 640], [120, 400]]);
-  pair('setts', 40, [[260, 1400], [300, 1100], [360, 802]]);
-  var EST = [[960, 1400], [1000, 1100], [1050, 805]];
-  pair('setts', 40, EST);
-  /* the Champ de Mars, a square of beaten gravel on the crest of the ridge */
-  E.push({ t: 'paved', kind: 'piazza', x: 560, y: 1250, w: 400, h: 300 });
-
-  /* ---- the Enclos. The Rue Notre-Dame comes in at the east gate between houses of three
-     storeys and opens into the Place at the church's east end; behind its houses a lane,
-     and the long front of the prison (the Hotel-Dieu on the American side) along the north
-     rampart. The walk inside the rampart is left clear the whole way round, because the
-     parapet is where the rock is held from. */
-  row('x', 1800, 1378, 0, [[52, 72, 's3g', 'r3'], [44, 72, 'x', 'x', 36], [68, 76, 's3h', 't3g']]);
-  row('x', 2000, 1298, 0, [[66, 70, 's4g', 's3']]);
-  row('x', 1830, 1266, 0, [[80, 50, 's3g', 'r3g'], [90, 50, 's3', 's3g']]);
-  /* east of the street from the side gate, fronting the street along the church, each
-     house as deep as the walk behind it allows, with a passage through to the walk */
-  row('x', 2108, 1298, 0, [[56, 84, 's3', 's3g'], [48, 80, 'r3hg', 's2'], [60, 76, 't3', 'r3g', 36], [52, 56, 'x', 'x']]);
-  /* Notre-Dame, its apse on the Place and its west front over the point */
-  E.push({ t: 'nhouse', style: 'notredame', x: 2290, y: MID, w: 280, h: 116, s: .3 });
-  E.push({ t: 'paved', kind: 'piazza', x: 2430, y: 1330, w: 40, h: 140 });
-
-  /* ---- the Neuf-Bourg: the street along the neck from the Champ de Mars to the east gate,
-     in three terraces between the two streets that go down to the valley, the eastern one
-     from the flag at the junction */
-  row('x', 995, 1372, 0, [[48, 80, 's2h', 'r2g'], [44, 76, 'r2hg', 's3h'], [52, 84, 's3', 's3g'], [46, 80, 'x', 'x'], [45, 76, 's3g', 't3']]);
-  row('x', 1270, 1372, 0, [[50, 86, 's3hg', 's3'], [42, 80, 'x', 'x'], [46, 80, 's2', 's2hg'], [42, 76, 'r2g', 's3']]);
-  row('x', 1490, 1372, 0, [[54, 80, 's3h', 'r3hg'], [48, 82, 't3g', 's3'], [40, 76, 'x', 'x'], [58, 84, 's3g', 's3h']]);
-  pair('setts', 40, [[1250, 1400], [1250, 1200], [1215, 1080], [1190, 920]]);
-  pair('setts', 40, [[1470, 1400], [1470, 1220], [1450, 1100], [1440, 962]]);
-
-  /* ---- the Torteron. The brook road is lined on its north side with the houses of the
-     rue Torteron in short terraces, with gardens between them walled along the street; on
-     the far side of the brook are the mill that gives the flag its name, the tanneries,
-     and under the neck the gardens climbing to the Neuf-Bourg */
-  var brkN = kerb(BRK, 0, -26), rocS1 = kerb(ROC1, 0, 29), rocS2 = kerb(ROC2, 0, 29);
-  /* the valley head, west of the first street down: the rue Torteron's first houses, and
-     two on the rocade where the block is deep enough to hold both */
-  row('x', 1210, brkN, 0, [[50, 60, 's2', 'r2'], [40, 56, 'r2h', 's2hg'], [46, 48, 'x', 'x'], [47, 48, 't2g', 'r2']]);
-  row('x', 1300, rocS1, 1, [[50, 50, 's2', 'r2'], [47, 50, 'r2g', 's2']]);
-  row('y', 769, 1457, 2, [[44, 60, 's2', 'r2g'], [40, 58, 'r2h', 's2'], [44, 60, 's2g', 's3'], [42, 58, 's2', 't2']]);
-  /* between the first and second streets down: the street sides full height, the rocade
-     and the rue Torteron between them, and a footpath through the gardens in the middle */
-  row('y', 765, 1503, 3, [[48, 60, 's2', 'r2'], [44, 60, 'r2hg', 's2'], [46, 60, 'x', 'x'], [44, 60, 's2h', 'r2g']]);
-  row('y', 759, 1978, 2, [[54, 60, 's3h', 's2g'], [50, 60, 'r2g', 'r2h'], [52, 60, 's2', 's2'], [54, 60, 't2', 's3hg']]);
-  row('x', 1563, rocS1, 1, [[52, 58, 's2', 'r2'], [46, 56, 'r2h', 's2g'], [48, 58, 's2g', 's2'], [44, 56, 's3', 't2', 36],
-                            [42, 56, 'r2', 's2'], [44, 58, 'x', 'x'], [43, 56, 't2g', 's2']]);
-  row('x', 1563, brkN, 0, [[50, 62, 's2h', 'r2g'], [44, 60, 'r2g', 's2'], [48, 62, 'x', 'x'], [48, 60, 's2', 't2', 36],
-                           [46, 60, 'r2', 's2g'], [40, 58, 's2hg', 'r2h'], [43, 62, 't2', 's2']]);
-  /* between the second and third, the street from the Bouloir down to the mill */
-  row('y', 763, 2022, 3, [[52, 60, 's3g', 's2'], [50, 60, 'r2h', 's2g'], [53, 60, 's2', 'r2'], [52, 60, 's2g', 't2']]);
-  row('y', 772, 2278, 2, [[50, 60, 'r2', 's2'], [48, 60, 'x', 'x'], [46, 60, 's2g', 's2'], [50, 60, 's3', 'r2g']]);
-  row('x', 2082, rocS2, 1, [[46, 56, 's2h', 's2g'], [44, 58, 'r2g', 'r2h'], [46, 56, 's2', 's2']]);
-  row('x', 2082, brkN, 0, [[48, 60, 's3hg', 's3'], [40, 58, 'x', 'x'], [48, 62, 's2', 's2g']]);
-  /* and down to the quay, where the bank falls to the river */
-  row('y', 779, 2322, 3, [[46, 60, 's2', 'r2g'], [44, 60, 'r2g', 's2'], [45, 60, 's2h', 's2'], [46, 60, 's2', 'r2']]);
-  row('x', 2382, rocS2, 1, [[50, 56, 's2g', 'r2'], [52, 58, 's2', 's2g'], [52, 56, 'r3h', 's2']]);
-  row('x', 2382, brkN, 0, [[48, 58, 'r2g', 's2'], [54, 60, 'x', 'x'], [52, 58, 's3', 's3hg']]);
-  /* the mill on the south bank, the tanneries downstream of it */
-  row('x', 1996, 1040, 1, [[80, 56, 's3g', 's3']]);
-  E.push({ t: 'nhouse', style: 'barn', x: 2210, y: 1066, w: 110, h: 44, s: .41 });
-  E.push({ t: 'nhouse', style: 'barn', x: 2210, y: my(1066), w: 110, h: 44, s: .63 });
-  E.push({ t: 'nhouse', style: 'barn', x: 2380, y: 1062, w: 120, h: 44, s: .17 });
-  E.push({ t: 'nhouse', style: 'barn', x: 2380, y: my(1062), w: 120, h: 44, s: .88 });
-
-  /* ---- the faubourg along the Route de Torigni: houses on both sides of it from the
-     Torigni flag down to the Champ de Mars, stepped along the road where it runs off the
-     square, broken at Place Sainte-Croix on the rocade and at the cross street half way
-     down, which runs from the bocage lane to the street over the valley head */
-  var torW = kerb(TOR, 1, -33), torE = kerb(TOR, 1, 33);
-  pair('setts', 40, [[308, 1060], [664, 1060], [1007, 1060]]);
-  row('y', 500, torW, 2, [[56, 60, 's2h', 'r2'], [50, 58, 'r2', 's2g'], [54, 62, 's2', 's2h']]);
-  row('y', 500, torE, 3, [[60, 62, 'r2', 's2h'], [52, 60, 'x', 'x', 40], [48, 58, 's2', 's2']]);
-  row('y', 880, torW, 2, [[52, 60, 's2g', 'r2h'], [50, 58, 'x', 'x'], [52, 62, 's2', 's2g']]);
-  row('y', 880, torE, 3, [[54, 62, 's3h', 'r2'], [46, 58, 'r2', 's2'], [54, 60, 's2', 's2h']]);
-  row('y', 1086, torW, 2, [[44, 58, 's2h', 'r2g'], [42, 58, 'r2', 's2']]);
-  row('y', 1086, torE, 3, [[46, 60, 'r2hg', 's3'], [40, 58, 's2', 'r2']]);
-  /* Place Sainte-Croix, where the rocade crosses the road: the abbey church of Sainte-Croix
-     on its north-east corner on the German side, the school opposite it on the American,
-     and the rocade built up either side of the crossing */
-  E.push({ t: 'paved', kind: 'piazza', x: 600, y: 700, w: 140, h: 160 });
-  E.push({ t: 'nhouse', style: 'church', x: 815, y: 722, w: 150, h: 56, ht: 56, flip: 1, s: .52 });
-  var rocN0 = kerb([[0, 790], [620, 800], [1050, 805]], 0, -29), rocS0 = kerb([[0, 790], [620, 800], [1050, 805]], 0, 29);
-  row('x', 924, rocN0, 0, [[48, 62, 's2h', 'r2'], [48, 60, 'r2g', 's2']]);
-  row('x', 772, rocS0, 1, [[52, 60, 's2h', 'r3g'], [46, 58, 'x', 'x'], [50, 62, 's2', 's2h', 36], [50, 60, 'r2h', 's2']]);
-  row('x', 386, rocS0, 1, [[52, 60, 's2h', 's2'], [46, 58, 's2', 'r2h'], [50, 60, 'r2g', 's2']]);
-  /* the street along the valley head from the rocade to the Champ de Mars, built up on the
-     side toward the Route de Torigni and open on the side over the valley, where the
-     gardens drop away */
-  var estW = kerb(EST, 1, -23);
-  row('y', 895, estW, 2, [[46, 56, 'r2h', 's2'], [52, 60, 's2g', 's2h']]);
-  row('y', 1086, estW, 2, [[48, 58, 'r2', 's2g']]);
-  /* the Champ de Mars: the parade ground on the crest of the ridge, framed on the German
-     side by a terrace on either side of where the Route de Torigni comes into it */
-  row('x', 572, 1248, 0, [[48, 70, 's3', 'r3g'], [40, 72, 'r3h', 's3h']]);
-  row('x', 730, 1248, 0, [[54, 72, 's3h', 's3g'], [48, 68, 's3g', 'r3h'], [52, 70, 'x', 'x'], [46, 66, 's3h', 't3']]);
-
-  /* ---- the Bouloir: the quarter on the crest between the cross street the headquarters'
-     roads come in by and the rocade, built up along both and broken by gardens; north of
-     the cross street, where the headquarters stand, only a few houses and the cemetery */
-  var bouS = kerb(BOU, 0, 24), bouN = kerb(BOU, 0, -24), rocN1 = kerb(ROC1, 0, -29), rocN2 = kerb(ROC2, 0, -29);
-  row('x', 1130, bouS, 1, [[50, 62, 's2', 'r2'], [46, 60, 'r2h', 's2g'], [52, 64, 's2', 's3', 40], [48, 60, 's2h', 'r2'], [46, 62, 'r2g', 's2'], [46, 60, 's2', 't2']]);
-  row('x', 1512, bouS, 1, [[52, 64, 's2h', 's2'], [48, 60, 'r2', 'r2h'], [50, 62, 's3g', 's2', 44], [46, 60, 's2', 'r2'], [52, 64, 'x', 'x'],
-                           [48, 62, 's2', 's2g', 36], [48, 60, 'r2h', 's3']]);
-  row('x', 2004, bouS, 1, [[50, 62, 's3h', 'r2'], [46, 60, 's2', 's2g'], [48, 64, 'r2', 's2h', 36], [48, 60, 's2g', 'r2'], [46, 60, 's2h', 's2']]);
-  row('x', 2322, bouS, 1, [[50, 62, 'r2', 's2'], [48, 60, 's2', 'r2h'], [52, 62, 's2h', 's2']]);
-  row('x', 1082, rocN1, 0, [[48, 60, 's2', 'r2'], [50, 62, 'r2', 's2h'], [46, 60, 's2h', 's2', 40], [52, 62, 'x', 'x'], [48, 60, 't2', 's2g'],
-                            [46, 62, 's2', 's3'], [48, 60, 'r2hg', 's2']]);
-  row('x', 1512, rocN1, 0, [[50, 60, 's2', 's2h'], [48, 62, 'r2hg', 's2'], [46, 60, 's2', 'r2', 40], [52, 64, 's3', 's2g'], [48, 60, 's2', 't2', 36],
-                            [50, 62, 'r2', 's2'], [52, 60, 's2h', 'r2h']]);
-  row('x', 2014, rocN2, 0, [[48, 62, 's2g', 'r2'], [46, 60, 'r2h', 's2'], [50, 62, 's2', 's2', 36], [44, 60, 's2', 'r2g'], [40, 62, 's2h', 's2']]);
-  row('x', 2322, rocN2, 0, [[48, 60, 'r2', 's2'], [50, 62, 's2h', 'r2'], [46, 60, 's2', 's2']]);
-  row('x', 1420, bouN, 0, [[54, 60, 's2', 'r2'], [50, 58, 'r2', 's2', 60], [52, 62, 's2h', 's2']]);
-  row('x', 2330, bouN, 0, [[50, 60, 's2', 'r2'], [48, 60, 'r2', 's2'], [52, 62, 's2', 's2h']]);
-  /* the cemetery north of the cross street on the German side, walled, with the public
-     garden on its footprint on the American */
-  E.push({ t: 'feature', look: 'cemetery', x: 1290, y: 270, w: 220, h: 180, solid: 0 });
-  wpair(1180, 180, 1400, 180, 11); wpair(1400, 180, 1400, 360, 11); wpair(1180, 180, 1180, 360, 11);
-  wpair(1180, 360, 1270, 360, 11); wpair(1310, 360, 1400, 360, 11);
-
-  /* ---- the Haras on the German side, the national stud, and the Bon-Sauveur on its
-     footprint on the American: a walled compound off the old road with its long stables
-     round a yard and the director's house at the end of it */
-  E.push({ t: 'nhouse', style: 'manor', x: 135, y: 704, w: 110, h: 44, ht: 46, s: .31 });
-  E.push({ t: 'nhouse', style: 'manor', x: 135, y: my(704), w: 110, h: 44, ht: 46, s: .77 });
-  [[135, 606, 150, 36], [66, 655, 32, 60]].forEach(function (b, i) {
-    E.push({ t: 'nhouse', style: 'barn', x: b[0], y: b[1], w: b[2], h: b[3], ht: 34, s: .2 + i * .3 });
-    E.push({ t: 'nhouse', style: 'barn', x: b[0], y: my(b[1]), w: b[2], h: b[3], ht: 34, s: .6 + i * .2 });
-  });
-  wpair(40, 578, 230, 578); wpair(40, 578, 40, 760); wpair(40, 760, 230, 760); wpair(230, 578, 230, 640); wpair(230, 690, 230, 760);
+  both('setts', 52, QW, 12);
+  road('setts', 56, [[2742, 1400], [2844, 1400]]);
+  var HQR = [[3430, 210], [3420, 500], [3420, 780]], GARE = [[3420, 780], [3430, 1210], [3440, 1400]];
+  pair('tar', 84, HQR, 16);
+  both('tar', 72, GARE, 16);
+  pair('setts', 48, [[2760, 1200], [3180, 1200], [3420, 1210]]);
+  /* the Champ de Mars, a square of beaten gravel on the crest of the ridge, and Place
+     Sainte-Croix where the rocade crosses the Route de Torigni (a paved area is laid by
+     its corner, the way the editor keeps one) */
+  E.push({ t: 'paved', kind: 'piazza', x: 360, y: MID - 160, w: 560, h: 320 });
+  E.push({ t: 'paved', kind: 'piazza', x: 520, y: 725, w: 200, h: 150 });
+  E.push({ t: 'paved', kind: 'piazza', x: 520, y: my(725) - 150, w: 200, h: 150 });
 
   /* ---- the railway: the two running lines the whole height of the map, the loops that
      serve the island platform either side of the station, and the goods yard's sidings,
-     ended at buffer stops, on the far side of them */
+     ended at buffer stops, on the far side of them ---- */
   var TA = 2990, TB = 3016, TC = 3104, TD = 3130;
   [TA, TB].forEach(function (x) { E.push({ t: 'track', pts: P([[x, 0], [x, 2800]]) }); });
   E.push({ t: 'track', pts: P([[TB, 980], [TC, 1110], [TC, 1690], [TB, 1820]]) });
   E.push({ t: 'track', pts: P([[TC, 1040], [TD, 1120], [TD, 1680], [TC, 1760]]) });
   [3190, 3216].forEach(function (x, i) {
-    E.push({ t: 'track', pts: P([[x, 1010 + i * 30], [x, 1196]]) });
-    E.push({ t: 'track', pts: P([[x, my(1010 + i * 30)], [x, my(1196)]]) });
+    E.push({ t: 'track', pts: P([[x, 1010 + i * 30], [x, 1170]]) });
+    E.push({ t: 'track', pts: P([[x, my(1010 + i * 30)], [x, my(1170)]]) });
     E.push({ t: 'feature', look: 'bufferstop', x: x, y: 1000 + i * 30, w: 26, h: 12, a: Math.PI / 2, solid: 0 });
     E.push({ t: 'feature', look: 'bufferstop', x: x, y: my(1000 + i * 30), w: 26, h: 12, a: -Math.PI / 2, solid: 0 });
   });
   /* the station on the midline, its front on the forecourt and the river, the platform
-     along its back and the island between the loops, both under canopies */
-  E.push({ t: 'nhouse', style: 'station', x: 2890, y: MID, w: 80, h: 280, ht: 72, s: .4 });
-  E.push({ t: 'paved', kind: 'piazza', x: 2766, y: 1290, w: 84, h: 220 });
-  E.push({ t: 'platform', x1: 2955, y1: 1250, x2: 2955, y2: 1550, w: 50, canopy: 1 });
+     along its back and the island between the loops, both under canopies; a building of
+     twenty-seven metres and two storeys, with its water tower and goods shed */
+  E.push({ t: 'nhouse', style: 'station', x: 2886, y: MID, w: 84, h: 320, ht: 80, s: .4 });
+  E.push({ t: 'paved', kind: 'piazza', x: 2744, y: MID - 130, w: 96, h: 260 });
+  E.push({ t: 'platform', x1: 2956, y1: 1250, x2: 2956, y2: 1550, w: 50, canopy: 1 });
   E.push({ t: 'platform', x1: 3060, y1: 1270, x2: 3060, y2: 1530, w: 50, canopy: 1 });
-  E.push({ t: 'nhouse', style: 'signalbox', x: 3060, y: 1180, w: 26, h: 40, ht: 44, s: .2 });
-  E.push({ t: 'nhouse', style: 'signalbox', x: 3060, y: my(1180), w: 26, h: 40, ht: 44, s: .7 });
-  E.push({ t: 'feature', look: 'watertower', x: 2955, y: 1190, w: 28, h: 28 });
-  E.push({ t: 'feature', look: 'watertower', x: 2955, y: my(1190), w: 28, h: 28 });
-  /* the goods shed on the yard and the Rue de la Gare */
-  E.push({ t: 'nhouse', style: 'goods', x: 3300, y: 1105, w: 70, h: 170, ht: 36, s: .3 });
-  E.push({ t: 'nhouse', style: 'goods', x: 3300, y: my(1105), w: 70, h: 170, ht: 36, s: .6 });
-  /* La Vaucelle: the west quay built up between the rocade and the level crossing, and the
-     Rue de la Gare on both sides */
-  var qwE = kerb(QW, 1, 25), gare = kerb([[3420, 780], [3430, 1240], [3440, 1400]], 1, 0);
-  row('y', 800, qwE, 3, [[52, 60, 's2hg', 'r2'], [46, 58, 'r2', 's2g'], [50, 62, 's3', 's2h', 40], [48, 60, 'x', 'x'],
-                         [44, 58, 'r2hg', 's2'], [50, 60, 's2', 't2g', 36], [44, 58, 's2g', 's2']]);
-  row('y', 806, function (y) { return gare(y) - 27; }, 2, [[48, 60, 's2', 'r2'], [50, 62, 'x', 'x'], [46, 60, 's2g', 's2', 40],
-                                                         [52, 60, 's3h', 'r2g'], [48, 58, 's2', 's2h']]);
-  row('y', 806, function (y) { return gare(y) + 27; }, 3, [[54, 62, 'r2g', 's2'], [46, 60, 's2h', 'r2'], [50, 62, 's2', 's3', 44],
-                                                         [48, 60, 'r2', 's2g'], [50, 62, 's2h', 's2']]);
-  /* the road up from the rocade to the right-hand headquarters, built up on its east side
-     below the gasworks */
-  row('y', 520, 3451, 3, [[50, 60, 's2', 'r2'], [46, 58, 'r2h', 's2'], [52, 60, 's2', 's2h', 36], [48, 58, 'r2', 's2']]);
-  /* the gasworks by the flag on the German side, the goods depot on the American */
-  E.push({ t: 'feature', look: 'gasholder', x: 3240, y: 460, w: 120, h: 120 });
-  E.push({ t: 'feature', look: 'gasholder', x: 3240, y: 620, w: 110, h: 110 });
-  E.push({ t: 'nhouse', style: 'goods', x: 3240, y: my(460), w: 120, h: 120, ht: 40, s: .5 });
-  E.push({ t: 'nhouse', style: 'goods', x: 3240, y: my(620), w: 110, h: 110, ht: 40, s: .2 });
-  E.push({ t: 'nhouse', style: 'goods', x: 3370, y: 560, w: 44, h: 150, ht: 40, s: .8 });
-  E.push({ t: 'nhouse', style: 'goods', x: 3370, y: my(560), w: 44, h: 150, ht: 40, s: .1 });
+  bpair({ t: 'feature', look: 'watertower', x: 2930, y: 1140, w: 40, h: 40 });
+  bpair({ t: 'nhouse', style: 'goods', x: 3300, y: 1045, w: 100, h: 230, ht: 44, s: .3 }, { s: .6 });
+  /* the gasworks by the flag on the German side, the goods depot on its footprint on the
+     American */
+  bpair({ t: 'feature', look: 'gasholder', x: 3200, y: 455, w: 160, h: 160 }, { t: 'nhouse', style: 'goods', ht: 46, s: .5, look: undefined });
+  bpair({ t: 'feature', look: 'gasholder', x: 3200, y: 647, w: 140, h: 140 }, { t: 'nhouse', style: 'goods', ht: 46, s: .2, look: undefined });
 
-  /* ---- what grows and stands between the houses. Every tree below is placed by hand and
-     then asked whether it is clear, because a garden is whatever is left between the
-     frontages and a tree in a kitchen is a thing the map check will find: clear of every
-     building by its crown and ten more, and off every street. */
+  /* ---- the landmarks, at their own size ---- */
+  /* Notre-Dame, its apse on the Place and its west front over the point: the builder's own
+     church scaled by k, which is what the plan and the towers are built at */
+  E.push({ t: 'nhouse', style: 'notredame', x: 2273, y: MID, w: 336, h: 139, k: 1.2, s: .3 });
+  /* Place Sainte-Croix: the abbey church of Sainte-Croix on its north-east corner on the
+     German side, the school on the same footprint on the American */
+  bpair({ t: 'nhouse', style: 'church', x: 880, y: 702, w: 240, h: 86, ht: 72, flip: 1, s: .52 },
+        { t: 'house', style: 'norman', front: 0, s: .44, nk: 'render', storeys: 3, ht: undefined, flip: undefined });
+  /* the mill that gives the flag on the brook its name, and the tanneries downstream of it */
+  row('x', 2112, kerb(BRK, 0, 44), 1, [[112, 84, 's3g', 's3']]);
+  bpair({ t: 'nhouse', style: 'barn', x: 2342, y: 1082, w: 150, h: 70, ht: 40, s: .41 }, { s: .63 });
+  bpair({ t: 'nhouse', style: 'barn', x: 2468, y: 1076, w: 100, h: 64, ht: 38, s: .17 }, { s: .88 });
+  /* the Haras on the German side, the national stud, and the Bon-Sauveur on its footprint
+     on the American: a walled compound off the old road with its long stables across the
+     yard from the director's house */
+  wpair(30, 556, 230, 556); wpair(30, 556, 30, 742); wpair(30, 742, 230, 742); wpair(230, 556, 230, 622); wpair(230, 676, 230, 742);
+  bpair({ t: 'nhouse', style: 'manor', x: 128, y: 700, w: 180, h: 60, ht: 50, s: .31 }, { s: .77 });
+  bpair({ t: 'nhouse', style: 'barn', x: 118, y: 598, w: 150, h: 52, ht: 36, s: .2 }, { s: .6 });
+  /* the level crossing on each forward row across the river, which is the flag there: the
+     keeper's cottage on the corner with its garden walled in dry stone */
+  bpair({ t: 'nhouse', style: 'house', x: 3135, y: 880, w: 70, h: 56, ht: 40, s: .52, flip: 1 }, { s: .18, flip: 0 });
+  wpair(3176, 856, 3226, 856, 11); wpair(3226, 856, 3226, 918, 11); wpair(3226, 918, 3176, 918, 11);
+  /* the cemetery north of the cross street on the German side, walled, with the public
+     garden on its footprint on the American */
+  E.push({ t: 'feature', look: 'cemetery', x: 1290, y: 190, w: 220, h: 200, solid: 0 });
+  wpair(1180, 90, 1400, 90, 11); wpair(1400, 90, 1400, 290, 11); wpair(1180, 90, 1180, 290, 11);
+  wpair(1180, 290, 1270, 290, 11); wpair(1310, 290, 1400, 290, 11);
+  /* the walled orchard in the seam between the left lane and the centre, and the gardens
+     of the valley head terraced with low walls between the two streets down from the
+     Neuf-Bourg */
+  wpair(1130, 440, 1440, 440, 11); wpair(1130, 690, 1440, 690, 11); wpair(1440, 440, 1440, 540, 11); wpair(1440, 590, 1440, 690, 11);
+  [1110, 1160].forEach(function (y) { wpair(1300, y, 1410, y, 11); wpair(1510, y, 1690, y, 11); });
+
+  /* ---- the bocage on the left flank, west of the lane that runs down it: small fields
+     behind hedgerows, gated where one field opens into the next, which is the ground a
+     section works round a town by and a tank does not ---- */
+  function hpair(pts) {
+    E.push({ t: 'hedge', pts: P(pts) });
+    E.push({ t: 'hedge', pts: P(pts.map(function (p) { return [p[0], my(p[1])]; })) });
+  }
+  function fpair(x, y, w, h, k) {
+    E.push({ t: 'field', x: x, y: y, w: w, h: h, k: k });
+    E.push({ t: 'field', x: x, y: my(y + h), w: w, h: h, k: 1 - k });
+  }
+  hpair([[0, 834], [120, 838], [236, 836]]);
+  hpair([[0, 1040], [70, 1042]]); hpair([[110, 1043], [276, 1040]]);
+  hpair([[0, 1230], [150, 1228]]); hpair([[190, 1229], [262, 1226]]);
+  hpair([[150, 1060], [150, 1228]]);
+  fpair(0, 1060, 150, 168, .35); fpair(150, 1060, 105, 168, .6); fpair(0, 1248, 240, 120, .45);
+  hpair([[0, 520], [70, 520]]); hpair([[0, 420], [70, 420]]); hpair([[40, 280], [40, 420]]);
+  fpair(0, 430, 190, 90, .55); fpair(60, 280, 100, 130, .3);
+  hpair([[3470, 480], [3800, 486]]); hpair([[3530, 660], [3640, 662]]); hpair([[3690, 663], [3800, 664]]);
+  hpair([[3600, 486], [3600, 662]]); hpair([[3530, 742], [3800, 752]]);
+  fpair(3480, 490, 115, 165, .4); fpair(3605, 490, 195, 165, .7); fpair(3480, 670, 320, 66, .5);
+
+  /* ---- the town, frontage by frontage. The main streets are laid first, then the cross
+     streets, then the back streets, so that where two frontages meet at a corner the
+     house on the more important street is the one that stands ---- */
+  var torW = kerb(TOR, 1, -63), torE = kerb(TOR, 1, 63);
+  var hqcW = kerb(HQC, 1, -60), hqcE = kerb(HQC, 1, 60), axW = kerb(AXC, 1, -50), axE = kerb(AXC, 1, 50);
+  var hqrE = kerb(HQR, 1, 60), gareW = kerb(GARE, 1, -54), gareE = kerb(GARE, 1, 54), qwE = kerb(QW, 1, 44);
+  var SPN = MID - 58, RND = MID - 46;
+  /* the left lane: the Route de Torigni from below the Torigni flag down to Place
+     Sainte-Croix, on from the Place to the cross street, and the terraces that frame the
+     Champ de Mars on either side of where the road comes onto it */
+  fill('y', 480, 716, torW, 2, ZM); fill('y', 548, 716, torE, 3, ZM);
+  fill('y', 884, 1012, torW, 2, ZM); fill('y', 884, 1012, torE, 3, ZM);
+  row('x', 384, MID - 176, 0, [[96, 104, 's3h', 'r3'], [88, 100, 'r3g', 's3h'], [60, 96, 'x', 'x']]);
+  row('x', 752, MID - 176, 0, [[98, 104, 's3h', 's3g'], [96, 100, 'r3', 't3h']]);
+  /* the centre lane: the road from the headquarters between the Bouloir's cross street and
+     the rocade, and on down the slope to the mill */
+  fill('y', 444, 680, hqcW, 2, ZM); fill('y', 444, 680, hqcE, 3, ZM);
+  fill('y', 790, 948, axW, 2, ZM); fill('y', 790, 948, axE, 3, ZM);
+  /* the right lane: the Rue de la Gare, the road past the gasworks, and La Vaucelle along
+     the west quay */
+  fill('y', 830, 1176, gareE, 3, ZM); fill('y', 830, 1176, gareW, 2, ZM);
+  fill('y', 530, 724, hqrE, 3, ZT);
+  fill('y', 820, 1176, qwE, 3, ZT);
+  /* the midline: the Neuf-Bourg along the spine from the Champ de Mars to the dry ditch, in
+     three terraces between the two streets down into the valley, and on the rock the Rue
+     Notre-Dame from the east gate to the Place, and a house on the Place's far side */
+  row('x', 1022, SPN, 0, [[92, 104, 's3h', 'r3h'], [90, 100, 'r3g', 's2h']]);
+  row('x', 1296, SPN, 0, [[128, 100, 's3h', 's3g']]);
+  row('x', 1516, SPN, 0, [[86, 100, 's3', 's3h'], [88, 104, 'x', 'x']]);
+  row('x', 1792, RND, 0, [[100, 96, 's3hg', 'r3h']]);
+  row('x', 1928, MID - 110, 0, [[90, 86, 's4g', 's3h']]);
+  /* the cross streets: the Bouloir's on both sides, the rocade's north side and the rue
+     Torteron along the brook, the top of the town, the rocade through Place Sainte-Croix,
+     and the cross street half way down the left lane */
+  var bouN = kerb(BOU, 0, -50), bouS = kerb(BOU, 0, 50), brkN = kerb(BRK, 0, -44);
+  fill('x', 1546, 1908, bouS, 1, ZT); fill('x', 2044, 2254, bouS, 1, ZT); fill('x', 2346, 2480, bouS, 1, ZT);
+  fill('x', 1546, 1900, bouN, 0, ZT); fill('x', 2044, 2480, bouN, 0, ZT);
+  fill('x', 1530, 1934, kerb(ROC1, 0, -54), 0, ZT); fill('x', 2044, 2254, kerb(ROC2, 0, -54), 0, ZT); fill('x', 2346, 2560, kerb(ROC2, 0, -54), 0, ZT);
+  fill('x', 1526, 1948, brkN, 0, ZT); fill('x', 2044, 2254, brkN, 0, ZT); fill('x', 2346, 2540, brkN, 0, ZT);
+  fill('x', 1530, 1934, kerb(ROC1, 0, 54), 1, ZF); fill('x', 2044, 2254, kerb(ROC2, 0, 54), 1, ZF); fill('x', 2346, 2560, kerb(ROC2, 0, 54), 1, ZF);
+  fill('x', 2830, 2964, kerb(ROC3, 0, -54), 0, ZT); fill('x', 2830, 2964, kerb(ROC3, 0, 54), 1, ZT);
+  fill('x', 3470, 3780, kerb(ROC3, 0, -54), 0, ZF); fill('x', 3470, 3570, kerb(ROC3, 0, 54), 1, ZF);
+  fill('x', 704, 1040, kerb(UPX, 0, 46), 1, ZT); fill('x', 716, 1040, kerb(UPX, 0, -46), 0, ZF);
+  fill('x', 704, 1008, kerb(ROC0, 0, 54), 1, ZT); fill('x', 384, 520, kerb(ROC0, 0, 54), 1, ZT);
+  fill('x', 862, 958, kerb(VAL, 0, -44), 0, ZT); fill('x', 372, 600, kerb(VAL, 0, -44), 0, ZF);
+  fill('x', 160, 470, kerb(ROC0, 0, -54), 0, ZF);
+  /* the back streets: the cross streets of the Bouloir's blocks, the streets down into the
+     valley and the street along the valley head */
+  fill('y', 444, 690, kerb(X14N, 1, 40), 3, ZT); fill('y', 450, 690, kerb(X23N, 1, -40), 2, ZT); fill('y', 450, 690, kerb(X23N, 1, 40), 3, ZT);
+  fill('y', 790, 946, kerb(X23S, 1, -40), 2, ZF); fill('y', 790, 946, kerb(X23S, 1, 40), 3, ZF);
+  fill('y', 790, 900, kerb(X14S, 1, 40), 3, ZF);
+  fill('y', 1090, 1240, kerb(NB1, 1, -40), 2, ZF); fill('y', 1090, 1240, kerb(NB2, 1, 40), 3, ZF);
+  fill('y', 860, 1050, kerb(EST, 1, 38), 3, ZF);
+
+  /* ---- what grows and stands between the houses. A tree is planted only where its own
+     ground is clear: of every building by its crown and ten more, off every street, off
+     the walls, the rock and the river. */
   function clear(x, y, m) {
+    if (stloRiver(x, y) < m + 10) return false;
+    if (x > 1640 && x < 2600 && MID - Math.abs(y - MID) > 1040 && stloEncSD(x, y) > -40) return false;
     for (var i = 0; i < E.length; i++) {
       var e = E[i];
-      if ((e.t === 'house' || e.t === 'nhouse' || (e.t === 'feature' && e.solid !== 0)) &&
+      if ((e.t === 'house' || e.t === 'nhouse' || e.t === 'debris' || (e.t === 'feature' && e.solid !== 0)) &&
           Math.abs(x - e.x) < e.w / 2 + m && Math.abs(y - e.y) < e.h / 2 + m) return false;
-      if (e.t === 'road') for (var k = 1; k < e.pts.length; k++) {
-        var a = e.pts[k - 1], b = e.pts[k], dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy;
-        var t = clamp(((x - a.x) * dx + (y - a.y) * dy) / l2, 0, 1);
-        if (Math.hypot(a.x + dx * t - x, a.y + dy * t - y) < e.width / 2 + m - 6) return false;
+      if (e.t === 'paved' && e.kind === 'piazza' && Math.abs(x - e.x - e.w / 2) < e.w / 2 + m - 10 && Math.abs(y - e.y - e.h / 2) < e.h / 2 + m - 10) return false;
+      if (e.t === 'wall' && distToSeg(x, y, e.x1, e.y1, e.x2, e.y2) < m - 4) return false;
+      if (e.t === 'hedge' || e.t === 'road' || e.t === 'track') for (var k = 1; k < e.pts.length; k++) {
+        var a = e.pts[k - 1], b = e.pts[k];
+        if (distToSeg(x, y, a.x, a.y, b.x, b.y) < (e.t === 'road' ? e.width / 2 + m - 6 : m)) return false;
       }
     }
+    for (i = 0; i < FL.length; i++) if (Math.hypot(x - FL[i][0], y - FL[i][1]) < 50) return false;
     return true;
   }
   /* a tree and its twin, each only if its own ground is clear */
@@ -4996,77 +5118,62 @@ function stloMapData() {
       E.push(e);
     });
   }
-  /* the Champ de Mars: two alleys of planes along its sides, the memorial to the last war at
-     the head of the spine road and the bandstand at the far end, both on the midline */
-  [590, 634, 752, 796, 840, 884, 924].forEach(function (x, i) { tpair(x, 1284, 20, 'plane', i * .13); tpair(x + 20, 1334, 20, 'plane', .5 + i * .11); });
-  E.push({ t: 'feature', look: 'memorial', x: 612, y: MID, w: 24, h: 24 });
-  E.push({ t: 'feature', look: 'bandstand', x: 900, y: MID, w: 60, h: 60, solid: 0 });
-  [[620, 1262], [780, 1262], [900, 1262], [610, 1440]].forEach(function (p) {
+  /* the gardens, a lattice of fruit trees over a quarter thinned by its own dice, so that a
+     garden is wherever the frontages left room for one */
+  function garden(x0, y0, x1, y1, st, p, sd) {
+    for (var gy = y0, j = 0; gy <= y1; gy += st, j++) for (var gx = x0 + (j % 2) * st / 2, i = 0; gx <= x1; gx += st, i++) {
+      var v = Math.sin((gx * 12.9898 + gy * 78.233 + sd) * .37) * 43758.5453;
+      v -= Math.floor(v);
+      if (v > p) continue;
+      tpair(Math.round(gx + (v - .5) * 14), Math.round(gy + (v * 7 % 1 - .5) * 12), v < p * .14 ? 17 : 12, v < p * .14 ? 'oak' : 'apple', v);
+    }
+  }
+  garden(1140, 460, 1430, 670, 40, .82, 1);
+  garden(1080, 840, 1440, 1230, 46, .5, 2);
+  garden(1520, 430, 2560, 1000, 52, .26, 3);
+  garden(380, 440, 1040, 1230, 52, .24, 4);
+  garden(3480, 830, 3760, 1170, 38, .72, 5);
+  garden(60, 840, 220, 1000, 34, .8, 6);
+  /* the Champ de Mars: two alleys of planes along its north side, the memorial to the last
+     war at the head of the spine road and the bandstand at the far end, both on the midline */
+  [400, 446, 492, 538, 584, 772, 818, 864, 908].forEach(function (x, i) { tpair(x, 1268, 18, 'plane', i * .13); tpair(x + 18, 1316, 18, 'plane', .5 + i * .11); });
+  E.push({ t: 'feature', look: 'memorial', x: 410, y: MID, w: 24, h: 24 });
+  E.push({ t: 'feature', look: 'bandstand', x: 880, y: MID, w: 60, h: 60, solid: 0 });
+  [[420, 1250], [640, 1250], [860, 1250], [620, 1440]].forEach(function (p) {
     E.push({ t: 'feature', look: 'lamp', x: p[0], y: p[1], w: 6, h: 6, solid: 0 });
     E.push({ t: 'feature', look: 'lamp', x: p[0], y: my(p[1]), w: 6, h: 6, solid: 0 });
   });
-  E.push({ t: 'feature', look: 'column', x: 744, y: 1266, w: 14, h: 14 });
-  E.push({ t: 'feature', look: 'column', x: 744, y: my(1266), w: 14, h: 14 });
+  E.push({ t: 'feature', look: 'column', x: 720, y: 1258, w: 14, h: 14 });
+  E.push({ t: 'feature', look: 'column', x: 720, y: my(1258), w: 14, h: 14 });
   /* the Place Notre-Dame and the forecourt of the station have their lamps */
-  [[2012, 1312], [2138, 1312], [2780, 1300], [2780, 1360]].forEach(function (p) {
+  [[1912, 1306], [2090, 1306], [2760, 1290], [2760, 1350]].forEach(function (p) {
     E.push({ t: 'feature', look: 'lamp', x: p[0], y: p[1], w: 6, h: 6, solid: 0 });
     E.push({ t: 'feature', look: 'lamp', x: p[0], y: my(p[1]), w: 6, h: 6, solid: 0 });
   });
-  /* the gardens inside the blocks: fruit trees, and an oak or a lime where a garden is big */
-  [[1600, 852], [1655, 846], [1702, 858], [1822, 850], [1875, 856], [2110, 858], [2160, 850], [2420, 846], [2480, 852],
-   [1240, 842], [1180, 870], [1560, 600], [1620, 610], [1700, 596], [1790, 604], [1860, 598], [2090, 602], [2170, 610],
-   [2240, 598], [1180, 590], [1250, 604], [1330, 596], [1400, 610], [2400, 600], [2460, 606]].forEach(function (p, i) {
-    tpair(p[0], p[1], i % 5 === 2 ? 17 : 12, i % 5 === 2 ? 'oak' : 'apple', i * .07);
-  });
-  /* the gardens under the neck, terraced with low walls between the two streets down from
-     the Neuf-Bourg, and an orchard at the foot */
-  [1100, 1150].forEach(function (y) { wpair(1290, y, 1420, y, 11); wpair(1500, y, 1700, y, 11); });
-  [[1320, 1070], [1370, 1076], [1520, 1066], [1580, 1072], [1640, 1064], [1330, 1125], [1390, 1130], [1540, 1124], [1610, 1128],
-   [1680, 1122], [1330, 1180], [1550, 1178], [1650, 1182]].forEach(function (p, i) { tpair(p[0], p[1], 11, 'apple', .3 + i * .05); });
   /* poplars along the Vire's west bank north of the rocade, and the water meadow behind */
   for (var py = 120; py <= 720; py += 44) tpair(2800 + (py % 88 ? 6 : 0), py, 9, 'poplar', py * .001);
   [[2880, 260], [2900, 420], [2870, 560], [2930, 660]].forEach(function (p, i) { tpair(p[0], p[1], 16, 'oak', .2 + i * .2); });
-  /* orchards on the slope behind the Rue de la Gare, and above the Haras */
-  for (var ox = 3520; ox <= 3740; ox += 36) for (var oy = 840; oy <= 1140; oy += 34) tpair(ox + (oy % 68 ? 12 : 0), oy, 11, 'apple', (ox + oy) * .003);
-  for (ox = 60; ox <= 220; ox += 34) for (oy = 840; oy <= 1000; oy += 32) tpair(ox + (oy % 64 ? 10 : 0), oy, 11, 'apple', (ox + oy) * .002);
   /* the public garden on the American side, where the cemetery is on the German */
-  [[1220, 2440], [1290, 2420], [1360, 2445], [1230, 2530], [1350, 2530], [1290, 2600]].forEach(function (p, i) {
+  [[1220, 2520], [1290, 2500], [1360, 2525], [1230, 2610], [1350, 2610], [1290, 2680]].forEach(function (p, i) {
     if (clear(p[0], p[1], 27)) E.push({ t: 'tree', kind: 'plane', x: p[0], y: p[1], r: 17, s: i * .15 });
   });
-  /* the bocage on the left flank, west of the lane that runs down it: small fields behind
-     hedgerows, gated where one field opens into the next, which is the ground a section
-     works round a town by and a tank does not */
-  function hpair(pts) {
-    E.push({ t: 'hedge', pts: P(pts) });
-    E.push({ t: 'hedge', pts: P(pts.map(function (p) { return [p[0], my(p[1])]; })) });
-  }
-  function fpair(x, y, w, h, k) {
-    E.push({ t: 'field', x: x, y: y, w: w, h: h, k: k });
-    E.push({ t: 'field', x: x, y: my(y + h), w: w, h: h, k: 1 - k });
-  }
-  hpair([[0, 824], [120, 826], [236, 822]]);
-  hpair([[0, 1040], [70, 1042]]); hpair([[110, 1043], [276, 1040]]);
-  hpair([[0, 1230], [150, 1228]]); hpair([[190, 1229], [262, 1226]]);
-  hpair([[150, 1060], [150, 1228]]);
-  fpair(0, 1060, 150, 168, .35); fpair(150, 1060, 105, 168, .6); fpair(0, 1248, 240, 120, .45);
-  /* and north of the rocade round the Haras, west of the old road */
-  hpair([[0, 540], [120, 540], [196, 526]]); hpair([[0, 420], [70, 420]]); hpair([[40, 280], [40, 420]]);
-  fpair(0, 430, 190, 100, .55); fpair(60, 280, 100, 130, .3);
-  /* the slope behind the Rue de la Gare above the orchard, fields to the edge of the map */
-  hpair([[3470, 480], [3800, 486]]); hpair([[3530, 660], [3640, 662]]); hpair([[3690, 663], [3800, 664]]);
-  hpair([[3600, 486], [3600, 662]]); hpair([[3530, 742], [3800, 752]]);
-  fpair(3480, 490, 115, 165, .4); fpair(3605, 490, 195, 165, .7); fpair(3480, 670, 320, 66, .5);
-  /* a school on Place Sainte-Croix's American corner where the abbey church stands on the
-     German one: the same footprint, three storeys of rendered stone on the square */
-  E.push(dress({ t: 'house', style: 'norman', x: 815, y: my(722), w: 150, h: 56, front: 1, s: .44 }, 'r3'));
 
   /* ---- what six weeks of it have left. The bombers of the 6th and 7th of June put the
      centre of the town into craters and the station yard with it; since then it has been
      shelled from both sides. Everything here plays, so every piece of it is on both halves:
      a crater is a hole a section lies in and a hull climbs out of slowly, a roadblock is a
      street shut to a tank, a pit or a sandbag wall is somewhere a gun was sited, and the
-     wire is where the ground was meant to be crossed slowly. */
-  function both2(e) {
+     wire is where the ground was meant to be crossed slowly. A thing that would land in a
+     house is left out. */
+  function free(x, y, r) {
+    for (var i = 0; i < E.length; i++) {
+      var e = E[i];
+      if (solidE(e) && dBox(x, y, e) < r + 6) return false;
+    }
+    return true;
+  }
+  function both2(e, clr) {
+    if (e.x !== undefined && !free(e.x, e.y, clr || e.r || 20)) { MISS.push([e.x, e.y, e.t]); return; }
     E.push(e);
     var t = {}, k;
     for (k in e) t[k] = e[k];
@@ -5075,63 +5182,56 @@ function stloMapData() {
     if (t.a !== undefined) t.a = -t.a;
     if (t.y !== MID || t.y1 !== undefined) E.push(t);
   }
-  /* the craters: in the Champ de Mars short of the flag, in the gardens under the neck and
+  /* the craters: on the Champ de Mars short of the flag, in the gardens under the neck and
      behind the Neuf-Bourg, in the Bouloir's gardens, all over the station yard and its
      running lines, on the forecourt, in the water meadow, in the Haras's yard, and one in
      the Place in front of the church */
-  [[820, 1360, 24], [1600, 1110, 30], [1380, 1188, 24], [1100, 1236, 26], [1700, 580, 28], [2160, 610, 20],
-   [3016, 1004, 30], [3150, 960, 32], [3210, 860, 26], [2990, 700, 28], [3160, 1272, 22], [2800, 1336, 20],
-   [2900, 500, 34], [2862, 320, 28], [175, 652, 16], [420, 1000, 28], [3560, 980, 26]].forEach(function (c) {
+  [[820, 1340, 24], [1600, 1130, 30], [1380, 1186, 24], [1110, 1180, 26], [1700, 600, 28], [2160, 600, 20],
+   [3016, 1004, 30], [3150, 960, 32], [3210, 870, 26], [2990, 700, 28], [3172, 1262, 22], [2800, 1330, 20],
+   [2900, 500, 34], [2862, 320, 28], [175, 652, 16], [420, 1000, 28], [3560, 980, 26], [1300, 560, 24], [1180, 1000, 22]].forEach(function (c) {
     both2({ t: 'crater', x: c[0], y: c[1], r: c[2] });
   });
-  E.push({ t: 'crater', x: 2125, y: MID, r: 18 });
+  E.push({ t: 'crater', x: 1960, y: MID, r: 18 });
   /* the barricades: the causeway to the east gate, the street through the side gates, the
      Route de Torigni where it comes onto the Champ de Mars, the rue Torteron at the valley
      head, and the west quay below the rocade */
-  E.push({ t: 'roadblock', x: 1710, y: MID, a: 0 });
-  both2({ t: 'roadblock', x: 2086, y: 1214, a: Math.PI / 2 });
-  both2({ t: 'roadblock', x: 690, y: 1200, a: 1.4 });
-  both2({ t: 'roadblock', x: 1214, y: 926, a: .21 });
-  both2({ t: 'roadblock', x: 2768, y: 860, a: 1.7 });
+  E.push({ t: 'roadblock', x: 1712, y: MID, a: 0 });
+  both2({ t: 'roadblock', x: 2084, y: 1250, a: Math.PI / 2 }, 4);
+  both2({ t: 'roadblock', x: 690, y: 1210, a: 1.4 }, 4);
+  both2({ t: 'roadblock', x: 1214, y: 926, a: .21 }, 4);
+  both2({ t: 'roadblock', x: 2768, y: 880, a: 1.7 }, 4);
   /* sandbagged positions at the corners that command a street, and weapon pits dug where a
      garden looks out over open ground */
-  [[2040, 1320, 0], [2440, 1296, .6], [2960, 1266, 0], [610, 1270, 0], [1512, 1190, Math.PI / 2],
-   [2560, 1022, Math.PI / 2], [3370, 1206, 0]].forEach(function (b) { both2({ t: 'bags', x: b[0], y: b[1], r: b[0] === 2960 ? 20 : 26, a: b[2] }); });
-  [[1640, 1188, 24], [2900, 620, 22], [300, 960, 22], [3560, 560, 22], [1120, 1150, 22]].forEach(function (p) {
+  [[1960, 1320, 0], [2440, 1310, .6], [2930, 1210, 0], [560, 1262, 0], [1512, 1190, Math.PI / 2], [566, 752, 0],
+   [2560, 1030, Math.PI / 2], [3370, 1250, 0]].forEach(function (b) { both2({ t: 'bags', x: b[0], y: b[1], r: b[0] === 2930 ? 20 : 26, a: b[2] }); });
+  [[1640, 1200, 24], [2900, 620, 22], [300, 960, 22], [3560, 560, 22], [1110, 1110, 22]].forEach(function (p) {
     both2({ t: 'emplace', x: p[0], y: p[1], r: p[2], a: 0 });
   });
   /* wire across the neck in front of the dry ditch, and across the water meadow */
   both2({ t: 'wire', x1: 1718, y1: 1250, x2: 1718, y2: 1356 });
   both2({ t: 'wire', x1: 2830, y1: 262, x2: 2960, y2: 262 });
-  both2({ t: 'wire', x1: 1250, y1: 1260, x2: 1250, y2: 1290 });
   /* what was left in the streets: carts, and the telegraph poles along the rocade, half of
      them down; and the smoke of what is still burning */
-  [[1106, 424], [2300, 862], [684, 1150], [3432, 1000], [2088, 1350]].forEach(function (c, i) {
-    both2({ t: 'cart', x: c[0], y: c[1], a: r1((i + 1) * 1.3) });
+  [[1106, 470], [2300, 862], [684, 1150], [3432, 1000], [2088, 1350]].forEach(function (c, i) {
+    both2({ t: 'cart', x: c[0], y: c[1], a: r1((i + 1) * 1.3) }, 14);
   });
   /* and one abandoned on the midline in the Neuf-Bourg, which is its own reflection */
   E.push({ t: 'cart', x: 1640, y: MID, a: 0 });
   for (var pk = 0; pk < 12; pk++) {
-    var px = 1120 + pk * 124, py = (px < 1990 ? kerb(ROC1, 0, -22)(px) : kerb(ROC2, 0, -22)(px));
-    both2({ t: 'pole', x: px, y: r1(py), broken: pk % 3 === 1 ? 1 : 0 });
+    var px = 1120 + pk * 124, ppy = (px < 1990 ? kerb(ROC1, 0, -30)(px) : kerb(ROC2, 0, -30)(px));
+    both2({ t: 'pole', x: px, y: r1(ppy), broken: pk % 3 === 1 ? 1 : 0 }, 2);
   }
-  [[1900, 1330], [1341, 1336], [2830, 1010], [3020, 1120]].forEach(function (p) { both2({ t: 'smoke', x: p[0], y: p[1] }); });
-  /* the level crossing on each forward row across the river, which is the flag there: the
-     keeper's cottage on the corner with its garden walled in dry stone, the two gates
-     rolled back off the road along the line, and a van the fighter-bombers caught on the
-     running line, burnt out where it stopped. The flag stands on the road, and this is
-     what there is to hold it from. */
-  E.push({ t: 'nhouse', style: 'house', x: 3096, y: 846, w: 44, h: 34, ht: 34, s: .52, flip: 1 });
-  E.push({ t: 'nhouse', style: 'house', x: 3096, y: my(846), w: 44, h: 34, ht: 34, s: .18 });
-  wpair(3118, 826, 3164, 826, 11); wpair(3164, 826, 3164, 880, 11); wpair(3164, 880, 3118, 880, 11);
-  both2({ t: 'feature', look: 'crossgate', x: 3040, y: 712, w: 6, h: 64, a: Math.PI / 2, solid: 0 });
-  both2({ t: 'feature', look: 'crossgate', x: 2966, y: 828, w: 6, h: 64, a: Math.PI / 2, solid: 0 });
-  both2({ t: 'feature', look: 'wreckcar', x: 3016, y: 900, w: 32, h: 104, a: Math.PI / 2 + .05 });
+  [[1900, 1330], [1341, 1300], [2830, 1010], [3020, 1120]].forEach(function (p) { both2({ t: 'smoke', x: p[0], y: p[1] }, 2); });
+  /* the level crossing: the two gates rolled back off the road along the line, and a van
+     the fighter-bombers caught on the running line, burnt out where it stopped */
+  both2({ t: 'feature', look: 'crossgate', x: 3040, y: 712, w: 6, h: 64, a: Math.PI / 2, solid: 0 }, 2);
+  both2({ t: 'feature', look: 'crossgate', x: 2966, y: 828, w: 6, h: 64, a: Math.PI / 2, solid: 0 }, 2);
+  both2({ t: 'feature', look: 'wreckcar', x: 3016, y: 900, w: 32, h: 104, a: Math.PI / 2 + .05 }, 2);
   /* what rolling stock was left in the yard: a van against the buffers, a flat on the other
-     siding, and a tank wagon on the loop by the signal box */
-  both2({ t: 'feature', look: 'boxcar', x: 3190, y: 1055, w: 32, h: 104, a: Math.PI / 2 });
-  both2({ t: 'feature', look: 'flatcar', x: 3216, y: 1160, w: 32, h: 104, a: Math.PI / 2 });
-  both2({ t: 'feature', look: 'tankcar', x: 3130, y: 1155, w: 32, h: 104, a: Math.PI / 2 });
+     siding, and a tank wagon on the loop by the island platform */
+  both2({ t: 'feature', look: 'boxcar', x: 3190, y: 1070, w: 32, h: 104, a: Math.PI / 2 }, 2);
+  both2({ t: 'feature', look: 'flatcar', x: 3216, y: 1116, w: 32, h: 104, a: Math.PI / 2 }, 2);
+  both2({ t: 'feature', look: 'tankcar', x: 3130, y: 1336, w: 32, h: 104, a: Math.PI / 2 }, 2);
   /* the Champ de Mars: a pit each side of the flag, dug in the gravel between the planes
      and the memorial, which is the only thing on the square short of its terraces */
   both2({ t: 'emplace', x: 690, y: 1364, r: 22, a: 0 });
@@ -5148,11 +5248,11 @@ function stloMapData() {
   /* ---- the flags. Sixteen: three a side by the headquarters, three a side on the forward
      row, and four on the midline, three of them the victory flags. */
   var F = [
-    ['g1', 620, 470, 'mp', 'ger', 'Route de Torigni', ['g2', 'g4']],
-    ['g2', 1975, 480, 'mp', 'ger', 'Le Bouloir', ['g1', 'g3', 'g5']],
-    ['g3', 3400, 480, 'fuel', 'ger', 'The gasworks', ['g2', 'g6']],
+    ['g1', 566, 500, 'mp', 'ger', 'Route de Torigni', ['g2', 'g4']],
+    ['g2', 1978, 520, 'mp', 'ger', 'Le Bouloir', ['g1', 'g3', 'g5']],
+    ['g3', 3421, 480, 'fuel', 'ger', 'The gasworks', ['g2', 'g6']],
     ['g4', 620, 790, 'mp', null, 'Place Sainte-Croix', ['g1', 'g5', 'm1']],
-    ['g5', 1990, 1010, 'fuel', null, 'The Torteron mill', ['g2', 'g4', 'g6', 'm2', 'm3']],
+    ['g5', 1995, 1000, 'fuel', null, 'The Torteron mill', ['g2', 'g4', 'g6', 'm2', 'm3']],
     ['g6', 3080, 790, 'mp', null, 'The south crossing', ['g3', 'g5', 'm4']]
   ];
   var US = { g1: ['a1', 'The Bayeux road'], g2: ['a2', 'Rue de la Marne'], g3: ['a3', 'The goods depot'],
@@ -5253,9 +5353,10 @@ function stloMapData() {
 
   E.push({ t: 'sector', id: 'm1', x: 760, y: MID, type: 'vp', owner: null, label: 'Champ de Mars', nb: ['g4', 'a4', 'm2'] });
   E.push({ t: 'sector', id: 'm2', x: 1470, y: MID, type: 'fuel', owner: null, label: 'Neuf-Bourg', nb: ['m1', 'm3', 'g5', 'a5'] });
-  E.push({ t: 'sector', id: 'm3', x: 2060, y: MID, type: 'vp', owner: null, label: 'Notre-Dame', nb: ['m2', 'm4', 'g5', 'a5'] });
+  E.push({ t: 'sector', id: 'm3', x: 2050, y: MID, type: 'vp', owner: null, label: 'Notre-Dame', nb: ['m2', 'm4', 'g5', 'a5'] });
   E.push({ t: 'sector', id: 'm4', x: 3000, y: MID, type: 'vp', owner: null, label: 'The station', nb: ['m3', 'g6', 'a6'] });
 
+  STLO.miss = MISS;
   return { name: 'Saint-Lô', when: 'NORMANDY · 18 JUL 1944', version: 1, land: 'stlo', w: 3800, h: 2800,
            entities: E, height: [] };
 }
@@ -5310,8 +5411,8 @@ var STLO = {
      slate cone or stands open inside its battlements: two at the east gate, the corners of
      the neck, two at each side gate, one on each flank, the Beaux-Regards over the river
      and the great tower on the point */
-  towers: [[1760, 58, 16, 1], [1762, 162, 20, 0], [2030, 225, 16, 1], [2116, 223.5, 16, 1], [2250, 214, 18, 0],
-           [2430, 140, 22, 1], [2485, 0, 25, 0]]
+  towers: [[1760, 58, 20, 1], [1762, 162, 26, 0], [2030, 225, 18, 1], [2116, 223.5, 18, 1], [2250, 214, 24, 0],
+           [2430, 140, 30, 1], [2485, 0, 28, 0]]
 };
 /* the Enclos as one closed polygon with both halves, for the signed distance */
 STLO.encP = (function () {
@@ -18867,7 +18968,12 @@ function sceneProps(tile) {
       var nsr = p.w < p.h;
       put(NSTYLE[p.style](nsr ? p.h : p.w, nsr ? p.w : p.h, p), p.x, p.y, (nsr ? Math.PI / 2 : 0) + (p.flip ? Math.PI : 0));
     }
-    else if (p.kind === 'nhouse' && p.style === 'notredame') put(notreDame(p.w, p.h, !p.whole), p.x, p.y, p.flip ? Math.PI : 0);
+    else if (p.kind === 'nhouse' && p.style === 'notredame') {
+      /* built at the builder's own size and scaled by k, so the towers and the spires grow
+         with the plan rather than standing at the height they had on a smaller church */
+      var ndk = p.k || 1;
+      put(scaleFaces(notreDame(p.w / ndk, p.h / ndk, !p.whole), ndk), p.x, p.y, p.flip ? Math.PI : 0);
+    }
     else if (p.kind === 'nhouse') {
       /* the ridge runs along the long side, whichever way round the footprint is */
       var nrot = p.w < p.h;
@@ -20509,8 +20615,29 @@ function paintGround(t, DET) {
       }
       t.globalAlpha = 1;
     }
+    /* A street in a town has a pavement either side of its carriageway, flagged, from the
+       kerb to the fronts of the houses, and that is what makes the gap between two
+       frontages read as one street rather than as a road with a lawn either side of it. */
+    if (r.pave) {
+      var PW = W + r.pave * 2;
+      run(PW + 3, '#4e483b');                                     /* where the flags meet the plots */
+      run(PW, '#8a8170');
+      for (var pi = 0; pi < r.length - 1; pi++) {
+        var pa = r[pi], pb = r[pi + 1], pl = Math.hypot(pb.x - pa.x, pb.y - pa.y), pg = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+        t.save(); t.translate(pa.x, pa.y); t.rotate(pg);
+        for (var pd = 0; pd < pl; pd += 9) {
+          for (var ps = -1; ps <= 1; ps += 2) for (var pq = W / 2 + 1; pq < PW / 2 - 1; pq += 7) {
+            var pn = noise2(Math.floor(pa.x + pd), Math.floor(pa.y + pq * ps), 83);
+            var pt = Math.round(118 + (pn - .5) * 34);
+            t.fillStyle = 'rgb(' + (pt + 6) + ',' + pt + ',' + (pt - 12) + ')';
+            t.fillRect(pd + .6 + (Math.floor(pq / 7) % 2) * 4, ps > 0 ? pq + .6 : -pq - 6.4, 8, 5.8);
+          }
+        }
+        t.restore();
+      }
+    }
     if (town) {
-      run(W + 15, '#645c4a');                                     /* the verge, swept and broken */
+      if (!r.pave) run(W + 15, '#645c4a');                        /* the verge, swept and broken */
       run(W + 6, '#c3ba a1'.replace(' ', ''));                    /* the kerb, the palest thing on a street */
       run(W - 1, '#4a4437');                                      /* the bed under the setts */
       /* the setts, laid course by course across the carriageway */
@@ -20552,7 +20679,7 @@ function paintGround(t, DET) {
          chippings showing pale through the binder, a gravel shoulder, patches where it
          has been made good, and the two bands the traffic has polished. Grass on the
          verge, because it is summer and nobody has been cutting it. */
-      run(W + 18, '#4d5634', .78);                                /* the verge */
+      if (!r.pave) run(W + 18, '#4d5634', .78);                   /* the verge */
       run(W + 6, '#6d6a5c');                                      /* the gravel shoulder */
       run(W, '#403f3b');                                          /* the carriageway */
       for (var i4 = 0; i4 < r.length - 1; i4++) {
@@ -21000,6 +21127,17 @@ function place(faces, yaw, dx, dy, dz) {
     }
     var nn = f.n ? f.n.map(function (n) { return [n[0] * ca - n[1] * sa, n[0] * sa + n[1] * ca, n[2]]; }) : undefined;
     out.push({ v: nv, c: f.c, n: nn, m: f.m, alpha: f.alpha });
+  }
+  return out;
+}
+/* a part made bigger or smaller about its own origin; a uniform scale leaves every normal
+   where it was */
+function scaleFaces(faces, k) {
+  var out = [];
+  for (var i = 0; i < faces.length; i++) {
+    var f = faces[i], nv = [];
+    for (var j = 0; j < f.v.length; j++) nv.push([f.v[j][0] * k, f.v[j][1] * k, f.v[j][2] * k]);
+    out.push({ v: nv, c: f.c, n: f.n, m: f.m, alpha: f.alpha });
   }
   return out;
 }
@@ -39477,7 +39615,7 @@ function ntBay(w, d, h, seed, st, o) {
     var len = LEN[fi], hs = [], street = fi === fr, rear = fi === back;
     if (st && st.brk[fi]) hs = hs.concat(st.brk[fi]);
     if (street || rear) {
-      var cols = clamp(Math.round((len - 6) / 22), 1, 4), door = street ? Math.floor(r(5) * cols) : -1;
+      var cols = clamp(Math.round((len - 6) / 27), 1, 5), door = street ? Math.floor(r(5) * cols) : -1;
       for (s = 0; s < storeys; s++) {
         var fz = 4 + s * hh;
         if (s === 0 && street && o.shop) {
@@ -39488,7 +39626,7 @@ function ntBay(w, d, h, seed, st, o) {
           var u = -len / 2 + len * (k + .5) / cols;
           if (s === 0 && k === door) { hs.push({ u: u, hw: 5.2, z0: 1, z1: 26, door: 1 }); continue; }
           var top = s === full - 1 && full > 2 ? 16 : 20;
-          hs.push({ u: u, hw: 4.6, z0: fz + 8, z1: fz + 8 + top, win: 1, fl: s });
+          hs.push({ u: u, hw: 5.2, z0: fz + 8, z1: fz + 8 + top, win: 1, fl: s });
         }
       }
     } else if (o.ends && o.ends[fi === [3, 2, 1, 0][fr] ? 0 : 1]) {
@@ -39570,7 +39708,7 @@ function ntBay(w, d, h, seed, st, o) {
   /* ---- the frame of a timber house, laid on its upper floors front and back ---- */
   if (kind === 'timber') {
     [fr, back].forEach(function (fi) {
-      var len = LEN[fi], cols = clamp(Math.round((len - 6) / 22), 1, 4);
+      var len = LEN[fi], cols = clamp(Math.round((len - 6) / 27), 1, 5);
       for (s = 1; s < storeys; s++) {
         var fz = 4 + s * hh, fz1 = Math.min(h, fz + hh);
         f.push(ntQuad(w, d, fi, -len / 2, len / 2, fz - 1.4, fz + 1.4, T / 2 + .3, N.timber));
@@ -40122,7 +40260,7 @@ function cemeteryModel(p) {
 /* the gasholder: the bell rising in its guide frame, a lattice column at each of twelve
    stations tied together by ring girders at three heights */
 function gasholderModel(p) {
-  var T = TOWNF, f = [], R = Math.min(p.w, p.h) / 2 - 4, k, ht = 88;
+  var T = TOWNF, f = [], R = Math.min(p.w, p.h) / 2 - 4, k, ht = Math.max(88, R * 1.1);
   f = f.concat(cyl(0, 0, 0, R + 2, R + 2, 8, 24, T.stoneD, T.stone, 0, true));
   f = f.concat(cyl(0, 0, 8, R - 3, R - 3, ht * .78, 24, T.gas, T.gasL, 0, true));
   var dome = [], tip = [];
@@ -46022,7 +46160,7 @@ var ED_CATS = [
     { id: 'lct', name: 'Landing craft (LCT)', glyph: '◨', kind: 'place', t: 'craft', def: { kind: 'lct', a: -1.57, wreck: 0 } },
     /* and a Norman town: its houses in stone, render or timber by the storey, the ramparts,
        the bridges over the river, and what stands in its squares */
-    { id: 'nth', name: 'Town house', glyph: '⌂', kind: 'place', t: 'house', def: { w: 50, h: 64, style: 'norman', nk: 'stone', storeys: 3, front: 0 } },
+    { id: 'nth', name: 'Town house', glyph: '⌂', kind: 'place', t: 'house', def: { w: 90, h: 98, style: 'norman', nk: 'stone', storeys: 3, front: 0 } },
     { id: 'rtower', name: 'Rampart tower', glyph: '◘', kind: 'place', t: 'rtower', def: { r: 26, a: 0, roof: 1 } },
     { id: 'sbridge', name: 'Stone bridge (draw)', glyph: '⌒', kind: 'line', t: 'bridge', def: { kind: 'stone', hw: 28 } },
     { id: 'gbridge', name: 'Girder bridge (draw)', glyph: '⊓', kind: 'line', t: 'bridge', def: { kind: 'steel', hw: 28 } },
@@ -46380,11 +46518,11 @@ function edProps() {
     /* a Norman house is smaller than anything in an Italian town: thirty-four to forty-four
        units deep, where a town house starts at sixty */
     if (e.t === 'nhouse' && NSTYLE[e.style]) html += slider('Width', 'edsw', e.w, 20, 300, 2) + slider('Depth', 'edsh', e.h, 20, 300, 2);
-    else if (e.t === 'nhouse') html += slider('Width', 'edsw', e.w, 36, 140, 2) + slider('Depth', 'edsh', e.h, 30, 100, 2) +
+    else if (e.t === 'nhouse') html += slider('Width', 'edsw', e.w, 36, 300, 2) + slider('Depth', 'edsh', e.h, 30, 160, 2) +
       row('Kind', seg('edsnst', [['house', 'HOUSE'], ['farm', 'FARM'], ['barn', 'BARN'], ['church', 'CHURCH'], ['manor', 'MANOR']], e.style || 'house'));
     /* a Norman town house: what its walls are, how many storeys, a shop on the ground
        floor, whether the raids gutted it, and which side its street is on */
-    else if (e.t === 'house' && e.style === 'norman') html += slider('Width', 'edsw', e.w, 30, 90, 2) + slider('Depth', 'edsh', e.h, 40, 90, 2) +
+    else if (e.t === 'house' && e.style === 'norman') html += slider('Width', 'edsw', e.w, 40, 140, 2) + slider('Depth', 'edsh', e.h, 50, 140, 2) +
       row('Walls', seg('edsnk', [['stone', 'STONE'], ['render', 'RENDER'], ['timber', 'TIMBER']], e.nk || 'stone')) +
       row('Storeys', seg('edssto', [[1, '1'], [2, '2'], [3, '3'], [4, '4']], e.storeys || 2)) +
       row('Ground floor', seg('edsshop', [[0, 'HOUSE'], [1, 'SHOP']], e.shop ? 1 : 0)) +
