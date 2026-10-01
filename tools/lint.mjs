@@ -331,10 +331,17 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    It is 3100 for the four tiers of base building a side, each built to its army (tents and
    canvas for the Americans, concrete for the 352nd), the base areas cleared and levelled on
    three maps, and the Easy Eight, the 75 mm GMC and the Puma made vehicles of their own.
+   It is 3300 for the map editor made over: a way in that offers three starts, the tools down
+   the left of a desktop with a search that knows what each is for, handles to reshape a line
+   or a building on the map, a preview that says what a placement will hit, snapping that
+   knows a frontage from an endpoint, roads that make their own junctions, stamps kept as
+   groups, a plan view and layers, a guide at the size of a squad or a tank, an advisor that
+   walks the map's own routes, restore points, a first pass laid from a sketch, area brushes,
+   and changes to the whole map at once.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 3100) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3100 kB so it stays quick to load on a phone`);
+if (kb > 3300) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3300 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

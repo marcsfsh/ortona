@@ -36,7 +36,9 @@ for (const device of TARGETS) {
   /* on classic whatever the device would pick, because the simple scheme's adjutant spends
      the till and sites a post from the first frame and half the rows below read a pristine
      deploy; the simple rows switch it on where they measure it */
-  const { page, context, log, gl } = await openGame(browser, device, { quiet: true, ctrl: 'classic' });
+  /* --file runs the gate on a copy, so the working file can go on being edited while it runs:
+     every reload below reads the file again from disk */
+  const { page, context, log, gl } = await openGame(browser, device, { quiet: true, ctrl: 'classic', ...(args.file ? { file: path.resolve(args.file) } : {}) });
 
   ok('WebGL context', gl.ok, `${gl.gl2 ? 'webgl2' : 'webgl1'}, shadows ${gl.shadows ? 'on' : 'off'}`);
   /* Count what the world builder asks the material table for, before anything is built.
@@ -7441,20 +7443,51 @@ for (const device of TARGETS) {
   /* --- the map editor --- */
   await reload(page);
   const edErrorsBefore = log.errors.length;
+  /* the editor opens on a choice of how to start, and on nothing else: three columns of
+     cards, every one of them a control a thumb can hit, and no page of instructions */
   await page.click('#openeditor');
+  await page.waitForSelector('#edstart:not(.hidden)', { timeout: 30000 });
+  const chooser = await page.evaluate(() => {
+    let small = 0, checked = 0;
+    document.querySelectorAll('#edstart .edb').forEach(b => { const r = b.getBoundingClientRect(); if (!r.width) return; checked++; if (r.width < 44 || r.height < 44) small++; });
+    return { tpl: document.querySelectorAll('#edstart [data-tpl]').length, dup: document.querySelectorAll('#edstart [data-dup]').length,
+             cols: document.querySelectorAll('#edstart .edscol').length, on: window.ED.on, small, checked,
+             hScroll: document.documentElement.scrollWidth - window.innerWidth };
+  });
+  await page.click('#edsdup-ortona');
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
   const ed = await page.evaluate(() => {
-    /* the first run opens the help; a thumb closes it */
-    const helped = window.ED.panel;
-    window.edPanelClose();
-    const cats = document.querySelectorAll('#eddock .edtab').length;
+    const helped = window.ED.panel, named = window.ED.name;
+    const cats = window.ED_CATS.length;
     let tools = 0;
     window.ED_CATS.forEach(c => { tools += c.tools.length; });
     /* every category opens and every tool takes: the tray is rebuilt for each */
     let opened = 0;
     window.ED_CATS.forEach(c => { window.edOpenCat(c.id); if (document.querySelectorAll('#edtray .edtool').length === c.tools.length) opened++; });
     window.edOpenCat('select');
+    /* a tool is found by what it is called and by what it is for, and the noun comes first */
+    const find = {}; ['road', 'house', 'crater', 'houses', 'trees', 'bridge'].forEach(q => { find[q] = window.edSearch(q).map(t => t.id); });
+    const found = find.road[0] === 'road' && find.house[0] === 'house' && find.crater[0] === 'crater' && find.houses[0] === 'house' &&
+                  find.trees.indexOf('road') < 0 && find.trees.indexOf('olive') >= 0 && find.bridge.length === 3;
+    /* a star keeps a tool at the top and a tool that puts something down is kept as used */
+    localStorage.removeItem('ortona.edfav'); localStorage.removeItem('ortona.edrecent');
+    window.edFavToggle('crater');
+    const tOlive = window.edToolById('olive').t; window.edSetTool(tOlive);
+    const sp = window.w2s(1400, 950); window.edTap(sp.x, sp.y);
+    const placed = window.ED.data.entities.length;
+    window.edOpenCat('mine');
+    const mine = Array.from(document.querySelectorAll('#edtray .edtool')).map(b => b.getAttribute('data-tool'));
+    window.edPalette();
+    const pal = window.MOB ? null : Array.from(document.querySelectorAll('#edlist [data-tool]')).slice(0, 4).map(b => b.getAttribute('data-tool'));
+    window.edUndo(); window.edFavToggle('crater');
+    /* Escape: a half-drawn line goes, then the selection, then the tool */
+    window.edSetTool(window.edToolById('road').t); window.ED.line = [{ x: 600, y: 600 }, { x: 700, y: 640 }];
+    window.edEscape(); const lineGone = !window.ED.line;
+    window.ED.sel = [window.ED.data.entities[0]]; window.edEscape(); const selKept = window.ED.sel.length === 0 && window.ED.tool && window.ED.tool.id === 'road';
+    window.edEscape(); const toolDown = !window.ED.tool;
+    /* every tool says what its next action is */
+    let modes = {}; window.ED_CATS.forEach(c => c.tools.forEach(t => { modes[window.edModeOf(t)] = (modes[window.edModeOf(t)] || 0) + 1; }));
     /* and the controls a thumb has to hit are big enough */
     let small = 0, checked = 0;
     document.querySelectorAll('#edtop .edb, #eddock .edtab, #edtray .edtool, #edpill .edb').forEach(b => {
@@ -7482,14 +7515,235 @@ for (const device of TARGETS) {
     const tiles = Object.keys(window.ED.tiles).length, ground = window.ED.needGround;
     const t0 = performance.now(); window.edRebuildNow(); const rebuildMs = Math.round(performance.now() - t0);
     window.edUndo(); window.edRebuildNow();
-    return { on: window.ED.on, cats, tools, opened, small, checked, helped, gen, dirty, houses, tiles, ground, rebuildMs, nTiles: window.PT_N };
+    /* a desktop's tools down the left and what is picked down the right, the map between */
+    const L = document.getElementById('edleft').getBoundingClientRect(), R = document.getElementById('edright').getBoundingClientRect();
+    const cols = window.MOB ? 'thumb' : (L.width > 200 && R.width > 200 && L.left === 0 && Math.round(R.right) === window.innerWidth ? 'ok' : `left ${Math.round(L.width)} right ${Math.round(R.width)}`);
+    let rowsSmall = 0; if (!window.MOB) document.querySelectorAll('#edlist .edptool').forEach(b => { if (b.getBoundingClientRect().height < 32) rowsSmall++; });
+    return { on: window.ED.on, cats, tools, opened, small, checked, helped, named, gen, dirty, houses, tiles, ground, rebuildMs, nTiles: window.PT_N,
+             find, found, placed, mine, pal, lineGone, selKept, toolDown, modes, cols, rowsSmall,
+             saved: document.getElementById('edsaved').textContent };
   });
-  ok('map editor opens', ed.on, `${ed.cats} categories, ${ed.tools} tools`);
-  ok('editor shows its help on first run', ed.helped === 'HOW THE EDITOR WORKS');
+  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 4 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
+     `${chooser.tpl} templates, ${chooser.dup} maps to copy, ${chooser.checked} controls with ${chooser.small} small, editor ${chooser.on ? 'ALREADY OPEN' : 'not yet open'}`);
+  ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Ortona (copy)',
+     `${ed.cats} categories, ${ed.tools} tools, named "${ed.named}", ${ed.helped ? 'panel ' + ed.helped + ' OPEN' : 'nothing over the map'}, "${ed.saved}"`);
+  ok('a tool is found by what it is called or what it is for', ed.found,
+     `road: ${ed.find.road.slice(0, 3)} | house: ${ed.find.house.slice(0, 3)} | crater: ${ed.find.crater.slice(0, 3)} | trees: ${ed.find.trees.slice(0, 3)}`);
+  ok('a starred tool and a used one are kept at hand', ed.mine[0] === 'crater' && ed.mine.indexOf('olive') > 0 && (ed.pal === null || (ed.pal[1] === 'crater' && ed.pal.indexOf('olive') >= 0)),
+     `MINE ${ed.mine.join(',')}${ed.pal ? `, column ${ed.pal.join(',')}` : ''}`);
+  ok('Escape takes back the half-drawn line, then the selection, then the tool', ed.lineGone && ed.selKept && ed.toolDown);
+  ok('every tool says whether it takes a click, a stroke, a box or a brush', Object.keys(ed.modes).every(m => ['CLICK', 'STROKE', 'BOX', 'BRUSH', 'PAINT'].indexOf(m) >= 0),
+     Object.keys(ed.modes).map(m => `${m} ${ed.modes[m]}`).join(', '));
+  ok('a desktop has the tools on the left and the options on the right', ed.cols === 'ok' || ed.cols === 'thumb', `${ed.cols}${ed.rowsSmall ? `, ${ed.rowsSmall} rows under 32px` : ''}`);
   ok('every editor category opens its tray', ed.opened === ed.cats, `${ed.opened}/${ed.cats}`);
   ok('editor controls are at least 44px', ed.small === 0, `${ed.checked} controls checked, ${ed.small} small`);
   ok('generated maps come back clean from the check', ed.gen > 0 && ed.dirty === 0, `${ed.gen} maps, ${ed.dirty} with problems, ${Math.round(ed.houses / ed.gen)} houses each`);
   ok('a placed house rebuilds a few tiles and no ground', ed.tiles > 0 && ed.tiles <= 8 && !ed.ground, `${ed.tiles} of ${ed.nTiles} tiles, ${ed.rebuildMs} ms under SwiftShader`);
+  /* the overhaul, asked as arithmetic: shapes edited on the map, a placement shown before it is
+     put down, snapping that knows what it is snapping, streets that meet, groups, the planning
+     view and its layers, the guide, the advisor and its fix, restore points, the layout fill,
+     the area brush and the whole map moved. Every edit in it is undone at the end, and the map
+     has to come back to the byte, because an editor whose undo misses one kind of edit loses
+     somebody's afternoon. */
+  const ov = await page.evaluate(() => {
+    const W = window, ED = W.ED, E = () => ED.data.entities, out = {};
+    W.edSetTool(null); ED.sel = []; ED.undo = []; ED.redo = [];
+    const start = JSON.stringify(ED.data);
+    function look(x, y, d) { W.CAM.tx = x; W.CAM.ty = y; W.CAM.dist = d; W.CAM.pitch = 1.1; W.CAM.yaw = Math.PI / 2; W.clampCam(); W.updateCamera(); }
+    function drag(h, dx, dy) { const s = W.w2s(h.x, h.y), d = W.edHandleDown(h, h.x, h.y, s.x, s.y); W.edHandleMove(d, h.x + dx, h.y + dy); d.moved = true; W.edHandleUp(d); ED.drag = null; }
+    /* a house: four corners, four edges and a turn; a corner dragged out makes it bigger and the
+       turn carried a quarter of the way round turns it a quarter, because a house is square to the map */
+    const h = E().find(e => e.t === 'house' && e.w && e.x > 600 && e.x < 2200);
+    ED.sel = [h]; look(h.x, h.y, 520);
+    const hs = W.edHandles(), hk = {}; hs.forEach(q => { hk[q.k] = (hk[q.k] || 0) + 1; });
+    const w0 = h.w, h0 = h.h, c = hs.find(q => q.k === 'corner'); drag(c, 20 * c.sx, 14 * c.sy);
+    const dw = Math.round(h.w - w0), dh = Math.round(h.h - h0), w1 = h.w, h1 = h.h;
+    const rot = W.edHandles().find(q => q.k === 'rot'), hf = W.edFoot(h), R = Math.hypot(rot.x - hf.x, rot.y - hf.y);
+    drag(rot, hf.x + R - rot.x, hf.y - rot.y);
+    out.house = { hk, dw, dh, turned: h.w === h1 && h.h === w1 };
+    /* a line: a handle at every point and between every two; a mid dragged is a new point, a
+       point can be taken out, and a line keeps two */
+    const road = E().find(e => e.t === 'road' && e.pts && e.pts.length >= 2);
+    ED.sel = [road]; look(road.pts[0].x, road.pts[0].y, 600);
+    const rh = W.edHandles(), n0 = road.pts.length, mids = rh.filter(q => q.k === 'mid').length, pts = rh.filter(q => q.k === 'pt').length;
+    drag(rh.find(q => q.k === 'mid'), 10, 10); const ins = road.pts.length;
+    W.edDeletePoint(road, 1); const del = road.pts.length;
+    const two = { t: 'trench', pts: [{ x: 500, y: 500 }, { x: 600, y: 500 }] }; W.edDeletePoint(two, 0);
+    out.line = { n0, pts, mids, ins, del, two: two.pts.length };
+    /* a house carried over another says so before it goes down, and shows the far side's copy */
+    ED.sel = []; const oh = E().find(e => e.t === 'house' && e.w && e.x > 600 && e.x < 1100 && e !== h);
+    W.edSetTool(W.edToolById('house').t); ED.hover = { x: oh.x + 6, y: oh.y + 4 }; ED.pv = null;
+    if (W.MOB) ED.drag = { kind: 'ghost', moved: true, x: oh.x + 6, y: oh.y + 4 };
+    const pv = W.edPreviewList(); ED.drag = null;
+    out.preview = { n: pv ? pv.list.length : -1, mir: pv && pv.mir ? pv.mir.length : -1, over: pv ? pv.conf.filter(q => /^Overlaps/.test(q.msg)).length : -1, worst: pv ? pv.worst : -1 };
+    W.edSetTool(null);
+    /* a road's end finds a road's end, and Alt lets the hand go */
+    const e0 = road.pts[0], sp = W.edSnapPt(e0.x + 5, e0.y + 4, 'road');
+    W.keys.alt = true; const raw = W.edSnapPt(e0.x + 5, e0.y + 4, 'road'); delete W.keys.alt;
+    out.snap = { end: sp.k, endAt: Math.round(Math.hypot(sp.x - e0.x, sp.y - e0.y)), alt: raw.k, altAt: Math.round(Math.hypot(raw.x - e0.x, raw.y - e0.y)) };
+    /* widths by name, and the one lit is the one the street is */
+    out.presets = W.ED_PRESETS.road.map(p => { W.edPresetApply('road', p, road); return W.edPresetOn('road', p, road) ? road.width : -1; });
+    /* two streets drawn across each other meet at a junction: four pieces end there */
+    const rt = W.edToolById('road').t;
+    W.edAddRoads(W.edLineEntity(rt, [{ x: 300, y: 600 }, { x: 300, y: 1300 }]));
+    W.edAddRoads(W.edLineEntity(rt, [{ x: 150, y: 950 }, { x: 520, y: 950 }]));
+    out.atX = E().filter(e => e.t === 'road' && e.pts.some(p => Math.hypot(p.x - 300, p.y - 950) < 1)).length;
+    /* a composition is one group: a tap takes all of it, it turns and spreads as one, a filter
+       keeps a layer of it, and it comes apart */
+    const g = W.edGroup(W.edCompose('farmstead', 420, 1500, () => .5)); W.edAddMany(g);
+    const gid = g[0].gid, members = E().filter(e => e.gid === gid).length;
+    const hit = W.edPick(g[0].x + (W.edBoxy(g[0]) ? g[0].w / 2 : 0), g[0].y + (W.edBoxy(g[0]) ? g[0].h / 2 : 0));
+    ED.sel = W.edGroupOf(hit); const groupSel = ED.sel.length;
+    const spreadOf = m => ED.sel.reduce((s, e) => { const f = W.edFoot(e); return s + (f.k === 'line' ? 0 : Math.hypot(f.x - m.x, f.y - m.y)); }, 0);
+    const mid0 = W.edSelMid(ED.sel); W.edRotateSel(Math.PI / 2); const mid1 = W.edSelMid(ED.sel), sp0 = spreadOf(mid1);
+    W.edSpaceSel(1.25); const sp1 = spreadOf(W.edSelMid(ED.sel));
+    W.edFilterSel(o => W.edLayerOf(o) === 'foliage'); const kept = ED.sel.length, keptAll = ED.sel.every(o => W.edLayerOf(o) === 'foliage');
+    ED.sel = W.edGroupOf(hit); W.edBreakApart(); const broke = E().filter(e => e.gid === gid).length;
+    ED.sel = g.filter(e => E().indexOf(e) >= 0); W.edDeleteSel(); ED.sel = [];
+    out.group = { members, groupSel, held: Math.round(Math.hypot(mid1.x - mid0.x, mid1.y - mid0.y)), spread: +(sp1 / sp0).toFixed(2), kept, keptAll, broke };
+    /* a box held over a block takes everything in it */
+    W.edMarquee(1250, 850); W.edMove(1550, 1050); W.edUp(); out.marquee = ED.sel.length; ED.sel = [];
+    /* the planning view looks straight down; the roofs are a layer of their own; a locked layer is not picked */
+    W.edPlanSet(true); W.updateCamera();
+    const lays = {}; W.SCENE.tiles.forEach(t => (t.parts || []).forEach(p => { lays[p.lay] = (lays[p.lay] || 0) + 1; }));
+    out.plan = { pitch: +W.MAT.pitch.toFixed(3), lays };
+    W.edLaySet('roofs', 'hide', 1); out.plan.roofsHidden = !W.edLayShown('roofs'); W.edLaySet('roofs', 'hide', 0);
+    W.edLaySet('buildings', 'lock', 1); const lp = W.edPick(oh.x, oh.y); W.edLaySet('buildings', 'lock', 0); const fp = W.edPick(oh.x, oh.y);
+    out.plan.locked = lp ? lp.t : null; out.plan.unlocked = fp ? fp.t : null;
+    W.edPlanSet(false); W.updateCamera(); out.plan.back = +W.MAT.pitch.toFixed(3);
+    /* the guide is as wide as the thing it stands for, in metres */
+    out.guide = {}; ['squad', 'jeep', 'tank', 'heavy'].forEach(k => { W.edGuideSet(k); ED.hover = { x: 1400, y: 950 }; const q = W.edGuideAt(); out.guide[k] = q ? +(q.hw * 2 / 11.7).toFixed(2) : null; });
+    W.edGuideSet('');
+    /* the advisor: every finding has a place, a reason and a suggestion, and no street is measured from inside a house */
+    let t1 = performance.now(); const L = W.edAdvise(); const advMs = Math.round(performance.now() - t1);
+    const by = {}; L.forEach(i => { by[i.kind] = (by[i.kind] || 0) + 1; });
+    out.advise = { n: L.length, by, ms: advMs, whole: L.every(i => isFinite(i.x) && isFinite(i.y) && i.title && i.msg && i.tip), zeroRoom: L.filter(i => i.room && i.room.w < 1).length };
+    /* and a fix opens the street it was asked to, with a restore point taken first */
+    const fi = L.find(i => i.fix === 'choke' || i.fix === 'road');
+    if (fi) {
+      const r0 = W.edRoomAt(W.edSolids(), fi.x, fi.y, fi.a || 0, 70).w;
+      W.edFixStart(W.edFixFor(fi)); const nm = ED.fix ? ED.fix.moves.length : -1; W.edFixApply();
+      out.fix = { kind: fi.kind, moves: nm, room: [Math.round(r0), Math.round(W.edRoomAt(W.edSolids(), fi.x, fi.y, fi.a || 0, 70).w)], why: W.edPointList()[0] ? W.edPointList()[0].why : null };
+    } else out.fix = null;
+    /* a restore point puts the map back as it was */
+    W.edPointAdd('gate'); const nBefore = E().length;
+    W.edAdd(W.edNewEntity(W.edToolById('house').t, 1700, 300)); const nMid = E().length;
+    W.edPointRestore(W.edPointList().findIndex(p => p.why === 'gate'));
+    out.points = { nBefore, nMid, nAfter: E().length };
+    /* a house put down beside a street stands back off its kerb with its front to it, either
+       side, asked of that street alone so the rule and not the town round it is measured */
+    W.edAddRoads(W.edLineEntity(rt, [{ x: 180, y: 300 }, { x: 600, y: 300 }]));
+    const nr = E().find(e => e.t === 'road' && e.pts.some(p => Math.hypot(p.x - 600, p.y - 300) < 1)), nhw = (nr.width || 48) / 2;
+    const keepE = ED.data.entities; ED.data.entities = [nr];
+    const sbS = W.edSnapBuilding({ x: 390, y: 300 + nhw + 70, w: 90, h: 80 }), sbN = W.edSnapBuilding({ x: 390, y: 300 - nhw - 70, w: 90, h: 80 });
+    ED.data.entities = keepE;
+    out.frontage = sbS && sbN ? { front: [sbS.front, sbN.front], kerb: [Math.round(sbS.y - 40 - (300 + nhw)), Math.round((300 - nhw) - (sbN.y + 40))] } : null;
+    /* an area sketched round that street fills with houses along it that clash with nothing,
+       and the far side's twin with as many; fields and woods fill too */
+    const mk = (kind, p) => { const e = W.edLineEntity(W.edToolById('z' + kind).t, p)[0]; W.edAddMany([e]); return e; };
+    const v = mk('village', [{ x: 150, y: 180 }, { x: 640, y: 180 }, { x: 640, y: 430 }, { x: 150, y: 430 }]);
+    const fz = mk('fields', [{ x: 150, y: 1380 }, { x: 700, y: 1380 }, { x: 700, y: 1780 }, { x: 150, y: 1780 }]);
+    const wz = mk('woods', [{ x: 760, y: 1450 }, { x: 980, y: 1400 }, { x: 1020, y: 1700 }, { x: 800, y: 1760 }]);
+    t1 = performance.now(); W.edFill([v, fz, wz]); const fillMs = Math.round(performance.now() - t1);
+    const of = z => E().filter(e => e.gid && e.gid === z.fill), vm = of(v), tw = W.edTwinZone(v);
+    out.fill = { ms: fillMs, houses: vm.filter(e => e.t === 'house').length, conf: W.edConflicts(vm, vm).map(q => q.msg), twin: tw ? of(tw).filter(e => e.t === 'house').length : 0,
+                 fields: of(fz).filter(e => e.t === 'field').length, trees: of(wz).filter(e => e.t === 'tree').length };
+    /* an area brush lays its trees no nearer each other than its gap, as one group */
+    const ab = W.edToolById('agrove').t; W.edSetTool(ab); ED.brush.r = 70; const gap = W.edAreaSet(ab).gap, nb = E().length;
+    W.edAreaFill(ab, [{ x: 1100, y: 1650 }, { x: 1160, y: 1680 }, { x: 1220, y: 1700 }]);
+    const br = E().slice(nb).filter(e => e.t === 'tree' && e.x < 1400); let near = 1e9;
+    for (let i = 0; i < br.length; i++) for (let j = i + 1; j < br.length; j++) near = Math.min(near, Math.hypot(br[i].x - br[j].x, br[i].y - br[j].y));
+    W.edSetTool(null);
+    out.brush = { n: br.length, gap, near: Math.round(near), grouped: br.length > 1 && br.every(e => e.gid && e.gid === br[0].gid) };
+    /* the whole map: room added along one edge moves everything over, a quarter turn swaps its
+       sides, and turning back and taking the room away again puts every headquarters where it was */
+    const S0 = W.edWorldSize(), hq = E().find(e => e.t === 'hq'), hx = hq.x, hy = hq.y, ent0 = E().length;
+    W.edWorldGrow(0, 200, 0, 200); const S1 = W.edWorldSize(), dy1 = Math.round(E().find(e => e.t === 'hq').y - hy);
+    W.edWorldTurn(1); const S2 = W.edWorldSize();
+    W.edWorldTurn(3); W.edWorldGrow(0, -200, 0, -200); const S3 = W.edWorldSize(), hq3 = E().find(e => e.t === 'hq');
+    out.world = { S0: [S0.w, S0.h], S1: [S1.w, S1.h], S2: [S2.w, S2.h], S3: [S3.w, S3.h], dy1, back: [Math.round(hq3.x - hx), Math.round(hq3.y - hy)], kept: E().length === ent0 };
+    let steps = 0; while (ED.undo.length && steps < 80) { W.edUndo(); steps++; }
+    out.undo = { steps, same: JSON.stringify(ED.data) === start };
+    W.edRebuildNow();
+    return out;
+  });
+  ok('a house has corner, edge and turn handles, and they size it and turn it a quarter', ov.house.hk.corner === 4 && ov.house.hk.edge === 4 && ov.house.hk.rot === 1 && ov.house.dw > 0 && ov.house.dh > 0 && ov.house.turned,
+     `${JSON.stringify(ov.house.hk)}, a corner grew it ${ov.house.dw} by ${ov.house.dh}, ${ov.house.turned ? 'turned' : 'NOT turned'}`);
+  ok('a line takes a point at a mid handle, gives one up, and keeps two', ov.line.pts === ov.line.n0 && ov.line.mids === ov.line.n0 - 1 && ov.line.ins === ov.line.n0 + 1 && ov.line.del === ov.line.n0 && ov.line.two === 2,
+     `${ov.line.n0} points with ${ov.line.mids} between, ${ov.line.ins} after a mid drag, ${ov.line.del} after a delete, a line of two keeps ${ov.line.two}`);
+  ok('a placement shows its mirrored copy and what it would overlap before it goes down', ov.preview.n === 1 && ov.preview.mir === 1 && ov.preview.over > 0 && ov.preview.worst === 2,
+     `${ov.preview.n} placed, ${ov.preview.mir} mirrored, ${ov.preview.over} overlaps, worst ${ov.preview.worst}`);
+  ok('a house snaps to a street frontage either side, a road end to a road end, and Alt lets go',
+     ov.frontage && ov.frontage.front[0] === 1 && ov.frontage.front[1] === 0 && ov.frontage.kerb.every(k => k >= 0 && k <= 12) && ov.snap.end === 'end' && ov.snap.endAt === 0 && !ov.snap.alt && ov.snap.altAt > 0,
+     `${ov.frontage ? `fronts ${ov.frontage.front}, ${ov.frontage.kerb} off the kerb` : 'NO FRONTAGE'}, end ${ov.snap.end} at ${ov.snap.endAt}, Alt ${ov.snap.alt || 'free'} at ${ov.snap.altAt}`);
+  ok('a street\'s widths are offered by name and the lit one is its width', ov.presets.join() === '34,52,76', ov.presets.join(', '));
+  ok('two streets drawn across each other meet at a junction', ov.atX === 4, `${ov.atX} pieces end at the crossing`);
+  ok('a composition is one group: picked, turned and spaced as one, filtered, broken apart',
+     ov.group.members > 3 && ov.group.groupSel === ov.group.members && ov.group.held <= 1 && Math.abs(ov.group.spread - 1.25) < .03 && ov.group.keptAll && ov.group.kept > 0 && ov.group.kept < ov.group.members && ov.group.broke === 0,
+     `${ov.group.members} in it, a tap took ${ov.group.groupSel}, turned about its middle (moved ${ov.group.held}), spread ${ov.group.spread}x, foliage kept ${ov.group.kept}, ${ov.group.broke} left grouped after breaking`);
+  ok('a box held over a block takes everything in it', ov.marquee >= 5, `${ov.marquee} taken`);
+  ok('the planning view looks straight down, the roofs are a layer, and a locked layer is not picked',
+     ov.plan.pitch > 1.5 && ov.plan.back < 1.4 && ov.plan.lays.roofs > 0 && ov.plan.lays.buildings > 0 && ov.plan.roofsHidden && ov.plan.locked !== 'house' && ov.plan.unlocked === 'house',
+     `pitch ${ov.plan.pitch} and back to ${ov.plan.back}, ${JSON.stringify(ov.plan.lays)}, locked picks ${ov.plan.locked}, unlocked ${ov.plan.unlocked}`);
+  ok('the guide is as wide as the thing it stands for', ov.guide.tank > 2.4 && ov.guide.tank < 2.9 && ov.guide.jeep < ov.guide.tank && ov.guide.heavy > ov.guide.tank && ov.guide.squad > ov.guide.heavy,
+     Object.keys(ov.guide).map(k => `${k} ${ov.guide[k]} m`).join(', '));
+  ok('every finding of the advisor has a place, a reason and a suggestion, and none is measured from inside a house', ov.advise.n > 0 && ov.advise.whole && ov.advise.zeroRoom === 0,
+     `${ov.advise.n} findings ${JSON.stringify(ov.advise.by)} in ${ov.advise.ms} ms`);
+  ok('a fix opens the street it was asked to, with a restore point first', ov.fix && ov.fix.moves > 0 && ov.fix.room[1] > ov.fix.room[0] && ov.fix.room[1] >= 60 && ov.fix.why === 'before a fix',
+     ov.fix ? `${ov.fix.kind}: ${ov.fix.moves} moved, ${ov.fix.room[0]} to ${ov.fix.room[1]} units of room, point "${ov.fix.why}"` : 'NOTHING TO FIX');
+  ok('a restore point puts the map back as it was', ov.points.nMid > ov.points.nBefore && ov.points.nAfter === ov.points.nBefore, `${ov.points.nBefore}, ${ov.points.nMid}, ${ov.points.nAfter} things`);
+  ok('an area round a street fills with houses that clash with nothing, mirrored, and fields and woods fill',
+     ov.fill.houses >= 3 && ov.fill.conf.length === 0 && ov.fill.twin === ov.fill.houses && ov.fill.fields >= 1 && ov.fill.trees >= 8,
+     `${ov.fill.houses} houses (${ov.fill.twin} across), ${ov.fill.conf.length} clashes ${ov.fill.conf.slice(0, 2).join('; ')}, ${ov.fill.fields} fields, ${ov.fill.trees} trees, ${ov.fill.ms} ms`);
+  ok('an area brush keeps its gap and lays one group', ov.brush.n >= 2 && ov.brush.near >= ov.brush.gap && ov.brush.grouped, `${ov.brush.n} trees, nearest two ${ov.brush.near} apart against a gap of ${ov.brush.gap}`);
+  ok('the whole map grows, turns and comes back', ov.world.S1[1] === ov.world.S0[1] + 200 && ov.world.dy1 === 200 && ov.world.S2[0] === ov.world.S1[1] && ov.world.S3.join() === ov.world.S0.join() && ov.world.back.join() === '0,0' && ov.world.kept,
+     `${ov.world.S0.join('x')} to ${ov.world.S1.join('x')}, turned ${ov.world.S2.join('x')}, back ${ov.world.S3.join('x')}, headquarters off by ${ov.world.back}`);
+  ok('every one of those edits undoes back to the map it started from', ov.undo.same, `${ov.undo.steps} undos`);
+
+  /* what a thumb has to hit in the sheet and the panels the overhaul added: 44px on a phone,
+     and on a desktop's columns nothing a mouse cannot find */
+  const ctl = await page.evaluate(() => {
+    const W = window, ED = W.ED, E = ED.data.entities, floor = W.MOB ? 44 : 24, out = { checked: 0, small: [] };
+    function measure(where, sel) {
+      document.querySelectorAll(sel).forEach(b => { const r = b.getBoundingClientRect(); if (!r.width || !r.height) return; out.checked++; if (r.height < floor - .5 || r.width < floor - .5) out.small.push(where + ':' + (b.id || b.textContent.trim().slice(0, 14)) + ' ' + Math.round(r.width) + 'x' + Math.round(r.height)); });
+    }
+    const sheet = '#edsheet .edb, #edsheet input, #edsheet select', panel = '#edpanel .edb, #edpanel input';
+    ED.sel = [E.find(e => e.t === 'house' && e.w)]; W.edProps(); measure('house', sheet);
+    ED.sel = [E.find(e => e.t === 'road' && e.pts)]; W.edProps(); measure('road', sheet);
+    ED.sel = E.filter(e => e.t === 'tree').slice(0, 6); W.edProps(); measure('many', sheet);
+    ED.sel = []; ED.issues = W.edAdvise(); W.edIssueGo(0); measure('issue', sheet); ED.issues = null; ED.issue = -1;
+    W.edPanelView(); measure('view', panel); W.edPanelClose();
+    W.edPanelWorld(); measure('world', panel); W.edPanelClose();
+    W.edPanelPoints(); measure('points', panel); W.edPanelClose();
+    W.edPanel('CHECK', ''); ED.issues = W.edAdvise(); W.edPanelCheckShow(); measure('check', panel); W.edPanelClose(); ED.issues = null;
+    W.edOpenCat('layout'); measure('layout', '#edtray .edtool, #edlist [data-tool]');
+    ED.sel = []; W.edProps(); W.edOpenCat('select');
+    return out;
+  });
+  ok(`the overhaul's sheets and panels are ${device === 'phone' ? '44px' : 'big enough for a mouse'}`, ctl.small.length === 0, `${ctl.checked} controls checked${ctl.small.length ? ', small: ' + ctl.small.slice(0, 4).join(', ') : ''}`);
+
+  /* TEST and back: one click into the battle and one out of it, with the camera, the tool, the
+     selection and the undo history where they were */
+  const edPre = await page.evaluate(() => {
+    const W = window, ED = W.ED; W.edSetTool(null);
+    W.CAM.tx = 900; W.CAM.ty = 700; W.CAM.dist = 640; W.CAM.pitch = 1.05; W.CAM.yaw = Math.PI / 2;
+    const h = ED.data.entities.find(e => e.t === 'house' && e.w); W.edSnapshot(); ED.sel = [h]; W.edSetTool(W.edToolById('crater').t); ED.sel = [h];
+    return { cam: [W.CAM.tx, W.CAM.ty, W.CAM.dist], tool: ED.tool && ED.tool.id, undo: ED.undo.length, sel: ED.sel.length };
+  });
+  await page.click('#edtest');
+  await page.waitForFunction(() => window.G.running && window.SCENE.ready && !window.ED.on, null, { timeout: 180000 });
+  await frames(page, 2);
+  const edTedit = await page.evaluate(() => { const b = document.getElementById('tedit'), r = b.getBoundingClientRect(); return { shown: !b.classList.contains('hidden') && r.width > 0, w: Math.round(r.width), h: Math.round(r.height) }; });
+  await page.click('#tedit');
+  await page.waitForFunction(() => window.ED.on && !window.G.running, null, { timeout: 180000 });
+  await frames(page, 2);
+  const edPost = await page.evaluate(() => { const W = window, ED = W.ED; return { cam: [Math.round(W.CAM.tx), Math.round(W.CAM.ty), Math.round(W.CAM.dist)], tool: ED.tool && ED.tool.id, undo: ED.undo.length, sel: ED.sel.length,
+                                                 back: !document.getElementById('tedit').classList.contains('hidden') }; });
+  ok('TEST goes into the battle and EDIT MAP comes back to the same camera, tool, selection and undo',
+     edTedit.shown && edTedit.w >= 44 && edTedit.h >= 44 && edPost.cam.join() === edPre.cam.map(Math.round).join() && edPost.tool === edPre.tool && edPost.undo === edPre.undo && edPost.sel === edPre.sel && !edPost.back,
+     `EDIT MAP ${edTedit.shown ? `${edTedit.w}x${edTedit.h}` : 'NOT SHOWN'}; camera ${edPost.cam} against ${edPre.cam.map(Math.round)}, tool ${edPost.tool} against ${edPre.tool}, undo ${edPost.undo}/${edPre.undo}, selected ${edPost.sel}/${edPre.sel}`);
+  await page.evaluate(() => { window.edSetTool(null); window.ED.sel = []; });
+
   ok('map editor throws nothing', log.errors.length === edErrorsBefore);
 
   if (KEEP) {

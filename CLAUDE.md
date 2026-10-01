@@ -956,7 +956,7 @@ still self-contained (no external `<script src>`, stylesheet, image, `fetch`,
 `import` or remote URL), that the code is still ES5 (no arrow functions,
 `let`/`const`, template literals, classes, spread, optional chaining), that
 indentation is spaces with no trailing whitespace, and that the file stays
-under 3100 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
+under 3300 kB (it was 1040 before vehicles carried a hand-laid interior, 1345 before a
 battle wrote itself down, 1460 before a second map, 1520 before a building could be
 knocked down, 1595 before bodies and wrecks, 1640 before a bunker could be fitted out,
 1655 before the second control scheme, 1690 before the brain's second layer of inputs,
@@ -966,7 +966,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, and 3100 before the four tiers of base building). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, and 3300 before the map editor was made over). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1361,6 +1361,29 @@ headquarters on three times the income and has to see eight of them taken (`QMAX
 and two more at the even game, where nothing caps a queue but the till. The row after that loses the
 graphics context on purpose (`WEBGL_lose_context`) and asks that the battle stops where it stood and the page says so, with a
 RELOAD a thumb can hit; the editor's reload gives the rows after it a context again.
+
+**And the editor's rows ask its overhaul as arithmetic**, last of all on the copy of Ortona the
+editor opens on. The editor opens on its three ways in with nothing over the map; a tool is found
+by name and by use, and a starred and a used one are kept; Escape takes back one thing at a time;
+every tool says what its next action is. Then the shapes: a house has four corners, four edges
+and a turn, a corner makes it bigger and the turn turns it a quarter; a line takes a point at a mid
+handle and gives one up and keeps two. A house carried over another is shown with its mirrored copy
+and an overlap before it goes down. A house snaps six units off a street's kerb with its front to
+it, on either side, asked of that street alone so that the rule and not the town is measured; a
+road's end finds a road's end and Alt lets go. A street's three widths are offered by name. Two
+streets drawn across each other end four pieces at the crossing. A farmstead is one group that a
+tap takes whole, turns about its middle, spreads by a quarter, filters to its trees and breaks
+apart; a box held over a block takes what is in it. The planning view looks down at 1.56 with the
+roofs a layer of their own, and a locked layer is not picked. The guide is 2.4 to 2.9 m for a
+Sherman, narrower for the jeep and wider for the Tiger and the squad. Every finding of the advisor
+has a place, a reason and a suggestion and none is measured from inside a house; its fix opens the
+street it was asked to past 60 units, with a restore point taken first; a restore point puts the
+map back. A village sketched round a street fills with three or more houses that clash with
+nothing, with as many across the line, and fields and woods fill; an area brush keeps its gap; the
+map grows, turns and comes back to the unit. Every one of those edits is then undone, and the map
+has to come back to the byte. The sheets and panels the overhaul added are measured, 44px on the
+phone; and TEST goes into the battle and EDIT MAP, 44px, comes back to the same camera, tool,
+selection and undo.
 
 ### `tools/shoot.mjs` - looking at it
 
@@ -7782,22 +7805,52 @@ then stopped.
 
 **Map editor.** A second mode living under `ED`, sharing the renderer. Opens from the
 title screen and edits `G.mapData`; the scene rebuilds a third of a second after each
-change (`edTouch`, `edTick`, `edRebuildNow`). It is built for a thumb first and the
-desktop gets the same layout: a dock of categories along the bottom (`ED_CATS`), a tray of
-tools above it, a sheet of options that folds up over that (`edProps`: sliders and
+change (`edTouch`, `edTick`, `edRebuildNow`). It opens on a choice of how to start and on
+nothing else (`edChooser`, `#edstart`): three columns, NEW FROM A TEMPLATE (the five starts,
+with the generator's seed and sliders under ADVANCED), DUPLICATE A BUILT-IN MAP (every
+entry of `MAPS`, through `edStartDup`, so the original is never touched) and CONTINUE A
+SAVED MAP (the draft and the named maps). It used to open straight into the editor with a
+page of instructions over it; the help is on the menu now (`edPanelHelp`). Every shipped map
+loads, from the chooser and from the menu, through one `edLoadShipped` reading `MAPS`: two
+copies of those nine statements go out of step the moment a third map is added.
+
+On a phone it is laid out for a thumb: a dock of categories along the bottom (`ED_CATS`), a
+tray of tools above it, a sheet of options that folds up over that (`edProps`: sliders and
 segmented choices, never a dropdown), a menu behind the top-left button, a little map top
-right that jumps the camera (`edMinimap`), and a panel that takes the screen for lists
-(load, check, test, new, help). Every control is 44px or more and `check.mjs` asserts it,
-sliders included. The first open shows the help (`edPanelHelp`, `ED_HELPED`). Both
-shipped maps load, from the panel and from the menu, through one `edLoadShipped` reading
-`MAPS`: two copies of those nine statements go out of step the moment a third map is
-added.
+right that jumps the camera (`edMinimap`), and a panel that takes the screen for lists. A
+desktop is laid out round the map: the tools down the left (`#edleft`: a search box, the
+starred tools, the recent ones, then every category, `edPalette`), the map in the middle,
+and what is picked down the right (`#edright`: the little map, the sheet, and the view and
+its layers, `#edview`). On a phone every control is 44px or more, in the sheet and the
+panels as well as the bars, and `check.mjs` asserts it, sliders included; the desktop's two
+columns are a mouse's and are held to 24.
+
+**A tool is found by what it is for.** `edSearch` scores a tool's name and the words it is
+known by (`ED_KW`), so "road", "house" and "crater" put the road, the house and the crater
+first, "houses" finds the house, and "trees" finds the olive and not the road. A star keeps
+a tool at the head of MINE and of the desktop's column (`edFavToggle`, `ortona.edfav`), and a
+tool that has put something down is kept as used (`edUsed`, `ortona.edrecent`). `/` or
+Ctrl+F is the search box.
+
+**One way of working, and every tool says which part of it it is.** `edModeOf` names what a
+tool's next action is (CLICK, STROKE, BOX, BRUSH or PAINT) and the hint line leads with it.
+Select and drag moves; handles reshape; Escape takes back a half-drawn line, then a fix being
+previewed, then the selection, then the tool, one at a time (`edEscape`); the right button
+finishes a line or puts the tool down (`edRightClick`). The keys are Ctrl+Z and Ctrl+Y,
+Ctrl+S, Ctrl+D to duplicate, Ctrl+G to group and Ctrl+Shift+G to break apart, Delete (a
+point if one is picked, else the selection), Enter to finish a line, R to turn the
+selection, M for the mirror, G for the grid, P for the planning view and U for the guide.
+The top bar says how the map stands against what is kept of it (`edSaveState`): saved, kept
+as the draft, or being written, with how long ago on a desktop and one word on a phone,
+whose bar has a thumb's width for it.
 
 **A new kind of thing is not in the editor until five places know about it**, which the
 bunker and the two anti-tank belts each had to be walked through: a tool in `ED_CATS`, a
 footprint in `edBBox` so it can be marked and picked, a line in `edMark` if it levels a
-pad the way a house does, a name in `edKindName`, and its own options in `edProps`. And a
-sixth the moment a type starts CUTTING the ground rather than standing on it: `ED_GROUND`,
+pad the way a house does, a name in `edKindName`, and its own options in `edProps`. Two more
+since the overhaul: its words in `ED_KW`, or search will not find it by what it is for, and
+its layer in `ED_LAYER_OF`, or it lands in DETAIL and is hidden and locked with the craters.
+And one the moment a type starts CUTTING the ground rather than standing on it: `ED_GROUND`,
 which is what `edMark` reads to set `ED.needGround`. `edRebuildNow` rebuilds the
 heightfield and the walk grid whatever the edit was and gates `buildTerrain` and
 `buildAlbedo` on that flag, so a carving type left off the list gives the editor a hole
@@ -7856,6 +7909,69 @@ smallest thing under the tap (`edPick`) and offers duplicate, copy across the mi
 delete. Undo and redo are whole-map snapshots (`edSnapshot`, sixty deep). Mirror is on by
 default and every `edPush` mirrors what it adds, flags and headquarters swapping side.
 
+**Shapes are edited where they are drawn.** A selected thing carries handles (`edHandles`):
+a point at every vertex of a line and one between every two, which dragged is a new point
+(`edHandleMove`); four corners and four edges on a box; a radius on a disc; and a turn. A
+thing square to the map (a house, a bunker, a field) turns a quarter at a time (`edQuarter`)
+and anything else by fifteen degrees with snapping on. A point is taken out with Delete or
+the sheet's button (`edDeletePoint`) and a line keeps two. A drag is one edit to undo.
+
+**What is put down is shown before it is.** `edPreviewList` builds what a tap, a stroke or a
+box would lay without laying it, and the mirrored copy the far side would get (`pv.mir`), and
+asks the map check's own rules of both (`edConflicts`, off `edFoot`, which is the one
+footprint every rule reads). The outline is green, amber for a slot or a lane too narrow to
+use and red for an overlap, with an arrow for the way a house faces (`edDrawPreview`). On a
+phone it shows while a thing is carried, since a tap puts it down.
+
+**Snapping knows what it is snapping** (`edSnapOn`: the # on the bar, and Alt held lets go
+for as long as it is held). A road's end finds a road's end and then any point on a road,
+which makes a T; a trench, a hedgerow, a ditch or a wall finds its own kind's ends
+(`edSnapPt`, `ED_SNAPCLS`). A building finds the street nearest it and stands six units off
+the kerb with its front to it, then against the house beside it on the same frontage: flush
+when it is nearly flush, a walkable passage when it would otherwise leave a slot, and its
+street face in line (`edSnapBuilding`). Something put down again and again takes the
+spacing of the last two, or lines up with one of its kind already standing (`edSnapRepeat`).
+
+**Sizes by name** (`ED_PRESETS`): a narrow lane, a standard road and a broad avenue at 34, 52
+and 76 units, a cottage, a row house, a town house and a large one, a mortar's crater up to a
+bomb's, and the like. The numbers are under ADVANCED (`edAdvOn`) and the name lit is the one
+the thing is.
+
+**A street meets the streets it crosses.** `edAddRoads` splits a new street and every street
+it crosses where they cross, and joins an end that stops short onto the street it was making
+for (`edRoadJoin`, `edSplitRoad`), so two strokes across each other are a crossroads of four
+pieces. While a building tool is up, the frontage along every street is drawn, a band a
+house deep either side past the kerb (`edDrawFrontage`), which is where the snapping will put
+it.
+
+**A stamp is a group until it is broken up.** Everything a stamp or a composition lays carries
+one `gid` (`edGroup`), and a tap on any of it takes all of it (`edGroupOf`). GROUPS is the
+compositions (`edCompose`): a village block, a farmstead, a defensive position, a grove and an
+orchard. A selection of any size turns about its middle by 90 or 15 degrees (`edRotateSel`),
+spaces out or pulls in with nothing changing size (`edSpaceSel`), duplicates, copies across,
+deletes, groups (`edMakeGroup`) or breaks apart (`edBreakApart`), and can be cut down to one
+layer or one kind of thing (`edFilterSel`, KEEP ONLY). A press held on empty ground boxes
+whatever is under it (`edMarquee`).
+
+**A planning view, and layers.** P looks straight down (`edPlanSet`, `PLAN_PITCH` 1.56) through
+a field of view of .16, so the map is all but orthographic and a street is the same width at
+the top of the screen as at the bottom, under a high sun (`PLAN_SUN`) so no shadow lies across
+the next street, with a scale bar. In the editor a tile's props are built in layers
+(`sceneProps` hands back `parts`, one per layer, and `tileEach` draws the ones shown):
+buildings, roofs, roads, foliage, defences, detail and flags (`ED_VLAYERS`, `edLayerOf`). A roof
+is split off its building by its faces, any face whose normal points up past .3 and which
+stands above twelve units or half the building's height, so the planning view can look into
+every house. A layer can be hidden or locked (`edLaySet`), and a locked layer is never picked
+(`edPickable`), so a block of houses can be locked while the trees among them are edited. The
+game draws everything in one part, as it always did.
+
+**A guide at the game's own scale.** U puts a rifle squad of six, a jeep, a Sherman or a Tiger
+under the pointer, or in the middle of a phone's screen, lying along the nearest street
+(`edGuideAt`): the men stand where `squadOffset` puts them and a vehicle is its own mesh round
+the body `vehBody` measures, and the room either side of it to the first solid thing is written
+beside it (`edClearAcross`). The squad is 5.3 m across, the jeep 1.6, the Sherman 2.6 and the
+Tiger 3.7.
+
 **An edit rebuilds the least it can**, because the first draft rebuilt the whole scene on
 every tap and on a phone that was a pause of seconds between two houses. The props are
 built in tiles (`PT_W` by `PT_H`, `tileOf`, `sceneProps(tile)`, `buildTile`), a static
@@ -7880,7 +7996,7 @@ whatever the strategy (fresh buffer, reused buffer, `bufferSubData` in pieces), 
 the command buffer waiting on a software GPU process and not the code; a real GPU takes
 the upload in milliseconds, so the rebuild time the gate prints is not a phone's.
 
-NEW MAP is a generator (`edGenerate`, `ED_TEMPLATES`, `edPanelNew`): a seed and three
+The generator is the chooser's first column and NEW MAP on the menu (`edGenerate`, `ED_TEMPLATES`, `edPanelNew`): a seed and three
 sliders, town, damage and works. It lays out the west half and the midline, a grid of
 streets a little off true with a terrace along every frontage no deeper than the block
 allows, a piazza north of the crossroads, farms by the outer flags, groves, field walls
@@ -7891,6 +8007,31 @@ takes out anything the check would name. Every draw comes from the seed, so a nu
 a map. `check.mjs` generates every template at three seeds and asserts the check comes
 back clean. The CHECK panel can also copy one half over the other (`edMirrorAll`).
 
+**A first pass from a rough layout.** LAYOUT is five areas and five area brushes. An area (a
+`zone`: a ring of points and a kind) is drawn round the ground in one stroke and called a
+village, fields, woods, defended ground or ruins, and FILL lays it out (`edFillZone`,
+`edFill`) for the country the map stands in (`edNorman`). A village lines every street
+through it with houses, front to the street, in runs of three to six that stand flush or a
+passage apart and never leave a slot, with a garden tree now and then, and lays blocks round
+yards where no street runs through it; fields are enclosures sharing their boundaries,
+hedgerows in Normandy and dry stone walls in Italy, with a gate in each; woods, ruins and
+defended ground are what they say. Everything is kept clear of what is solid and of every
+street (`edKeepOut`, `edBoxClear`), each area's contents are one group, its twin across the
+line is filled the same, and the area stays on the map for the editor alone so it can be
+filled again; the game never reads a `zone`. The first village fill stepped sixteen units on
+after every plot that would not go and left a 22-unit slot beside the house before it, which
+is the slot the map check names; a house now goes flush against the last or a passage past
+it. The area brushes (`ED_AREAMIX`: a grove, an orchard in rows, scrub, rubble and shell
+holes) take a patch painted in one stroke and fill it when the hand lifts, at a density and
+with a gap no two things come nearer than (`edAreaFill`, `edScatter`).
+
+**The whole map moves without being rebuilt** (WHOLE MAP on the menu, `edPanelWorld`): room
+added along one edge (`edWorldGrow`, which moves everything over when the room goes on at the
+top or the left), the map grown or shrunk about its middle, everything shifted
+(`edWorldShift`), and the layout turned a quarter or a half (`edWorldTurn`). Every point of
+every thing and every height stroke moves (`edEachPoint`); the country's own landform stays
+where it is, which the panel says.
+
 Keeping maps: a draft is written to `localStorage` a couple of seconds after every change
 (`ED_DRAFT`) and is what the editor reopens; named maps live together under `ED_SLOTS`
 with a load list, and the last map saved or tested (`ED_LAST`) is what the title
@@ -7898,18 +8039,59 @@ screen's PLAY CUSTOM MAP starts. A map goes out as a file (`edExport`), through 
 phone's share sheet where there is one (`edShareFile`, the Web Share API with a JSON file,
 falling back to the download) or as text on the clipboard (`edShareText`, with a
 select-all fallback where the clipboard is refused) and comes in as a file or pasted text
-(`edTakeText`). TEST asks for a side, an opposition and
-a victory rule and deploys on the map; the game-over screen then has a way back
-(`#overedit`, `ED.fromEditor`).
+(`edTakeText`).
 
-CHECK runs the rules of `tools/mapcheck.mjs` on the device (`edCheck`: craters on
-trenches, wire through craters and trenches, anything inside a building, buildings that
-overlap or leave a slot too narrow to walk, streets through buildings, streets too narrow
-or too long, plus what a game needs: both headquarters, a victory flag, three flags),
-each with a GO that flies the camera to it, and a balance table (`edBalance`): buildings,
-cover, craters, trees, trenches and wire on each half, and every flag's distance from
-each headquarters, with anything lopsided marked. The shipped map comes back clean from
-both, which is the calibration.
+**TEST is one click and EDIT MAP is one back.** TEST deploys at once with the side, the
+opposition and the victory rule last chosen (TEST SETTINGS on the menu sets them,
+`ED_TESTCFG`), and the battle carries an EDIT MAP button (`#tedit`) that comes back without
+waiting for it to end, as the game-over screen's does (`#overedit`, `ED.fromEditor`). Coming
+back (`edReturn`) puts the camera, the tool, the selection, the view, the findings and the undo
+history where they were (`edBackStash`, and `edOpen` with `back`). **Restore points** keep the
+map as it was when it was opened and when it was saved, before a test, a fix, a whole-map
+change or a restore, and after every four minutes of work (`edPointAdd`, `ED_POINTS`): eight of
+them, never more than a million characters of the device's storage, because the draft lives
+there too and matters more, and kept for the session past that. RESTORE POINTS on the menu
+lists them, and a restore is an edit that undo takes back.
+
+**CHECK is a playability advisor** (`edAdvise`, `edPanelCheck`). It starts from the rules of
+`tools/mapcheck.mjs`, run on the device (`edCheck`: craters on trenches, wire through craters
+and trenches, anything inside a building, buildings that overlap or leave a slot too narrow to
+walk, streets through buildings, streets too narrow or too long, plus what a game needs: both
+headquarters, a victory flag, three flags). Then it walks a man and a tank from each army's
+first headquarters to every flag with the game's own `findPath` on the grid as edited, and
+reports what it finds, one finding to a place: NO WAY THROUGH where infantry cannot reach a flag
+and NO WAY FOR ARMOUR where a tank cannot; ARMOUR FORCED THROUGH where the only way a tank has
+costs it a hedgerow, a belt or a slope (`cellCost` of twelve or more); a CHOKEPOINT where a
+tank's route has under 34 units of room and a margin of twelve (`ED_TANKW`), measured square to
+the route between solid things (`edRoomAt` over `edSolids`: footprints, hedgerows and ditches);
+a CRAMPED STREET where three samples running along a street are under 60 units front to front
+(`ED_ROOM`); and an EXPOSED APPROACH where a man walks 360 units with no cover near him
+(`ED_OPEN`, `edCovered`). Each has a title, a reason and a suggestion, is numbered on the map
+and drawn out with its route when it is the one being looked at, and GO flies to it, on a phone
+into the part of the screen the sheet leaves (`edLookAt`). Below the findings is the balance
+table (`edBalance`): buildings, cover, craters, trees, trenches and wire on each half, and every
+flag's distance from each headquarters, with anything lopsided marked. The shipped maps come
+back clean from the rules, which is the calibration, and Ortona reads two findings in about 70
+ms.
+
+Two things made it say false things at first, and both read as findings. **A wall is not
+solid to it**, because the game prices a wall of any height through `wallg` and never blocks
+one, and counted as solid it put every street in the town at nought metres. And **a sample that
+lands inside a house is a house on the street**, which the overlaps report: measured from in
+there, a street read 0.0 m front to front.
+
+**Some findings carry a fix to preview.** For a cramped street or a chokepoint `edOpenUp`
+moves what stands alongside the stretch back to give it room. A house is set back by taking
+its front off, square to the street, when what is left is still a house (40 units and six
+tenths of what it was), and is moved bodily otherwise. Whatever a moved thing would then stand
+in, or leave less than a passage beside where there was more, goes with it, and a house it
+backs into loses as much off its own back (`edCrowds`, `edTrimFor`), for at most four rounds
+and forty things; the mirror moves the twins. Moved bodily and nothing more, the first version
+pushed a terrace's back walls into the next street, which is a fix that makes two findings. For
+an exposed approach `edCoverAlong` lays shell holes and rubble along it. The preview draws where
+each thing was and where it would go, with whatever the fix would still put in something
+(`edFixConflicts`, `edDrawFix`), and APPLY or CANCEL decides (`edFixApply`, after a restore
+point). On the gate a cramped street on Ortona goes from 54 units to 106.
 
 ---
 
@@ -8364,6 +8546,11 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **Undo in the editor is the whole map again, so a reference held across it is stale.** `edUndo`
+  parses a snapshot into new objects, and an entity a probe or a tool kept hold of before the undo
+  is no longer on the map after it: changing it changes nothing, and reading it reads the past. Find
+  the thing again after an undo, and compare whole maps (`JSON.stringify(ED.data)`) to ask whether
+  an undo put everything back.
 - **A table refilled without freeing what was in it leaks the card.** `buildModels` set
   `MODELS.veh = {}` and built nineteen vehicles' buffers into it again, so every FIGHT AGAIN put
   another 135 MB of vertex buffers on a phone that already held the last battle's. Nothing showed:
