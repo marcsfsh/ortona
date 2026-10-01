@@ -1206,14 +1206,14 @@ built including the turret crew without the commander, it is in olive drab with 
 and the turret crew in the tanker's helmet, the coaxial comes with it, a gun asked to lay 1.2
 radians off the nose comes all the way round, the periscope's eye is the commander's over the rim at
 twenty-odd units up, the brain's own routine fits the .30 and the sand shields and the car is then
-skirted with the side plate worth more, forty wrecks throw the turret some of the time and keep
+skirted with the side plate worth more, eighty wrecks throw the turret some of the time and keep
 shields some of the time while forty of a car that never had them keep none, killed it leaves
 American bodies. And the 234 is asked it in a thirteenth, on the German side: the depot makes it and
 queues it, the count reads it, it is in the grey with none of the sand paint, the 234/1's men and
 the Puma's commander wear the black cap and none of them a helmet, not one point of the 234/1's two
 men stands above the screens, the coaxial comes with it, a turret asked to lay 1.2 radians off the
 nose comes all the way round, the periscope's eye is the commander's over the rim, the brain's own
-routine fits the Puma and the weapon, the muzzle, the men and the eye change with it, forty wrecks
+routine fits the Puma and the weapon, the muzzle, the men and the eye change with it, eighty wrecks
 throw the turret some of the time, killed it leaves bodies of the 352nd. And the Knight's Cross
 Holders are asked it in a fourteenth, as the player gives the orders and not by calling what is
 behind them: the company post makes them and queues them, the count reads it, the four men are the
@@ -1249,7 +1249,7 @@ of the sand paint, nothing of the turret roofs over the middle of it at the rim,
 out past the front plate, the men in it wear the helmet and the black of the panzer troops with some
 of them more than two units over the rim, a turret asked to lay 1.2 radians off the nose comes all
 the way round, the periscope's eye is the commander's over the rim, the same 120-point burst beside
-it takes more than a third again off it than off the Panzer IV, forty wrecks throw the turret some
+it takes more than a third again off it than off the Panzer IV, eighty wrecks throw the turret some
 of the time, killed it leaves bodies of the 352nd. The Panther is asked it in an eighteenth, the
 second unit the 352nd fielded over and above: the depot makes it beside the Panzer IV and queues it
 by its own key, it is in the grey with none of the sand paint, the man in the cupola wears the black
@@ -1283,9 +1283,12 @@ tanker's helmet and no M1, the 37 mm stays inside the nose, a turret asked to la
 comes all the way round, and the front plate is half as much again as the M8's, so at two hundred
 the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm opens the M8 more than twice as
 often, the KS 750's MG 34 never does and a Panzer IV's round always does. The eye is up out of the
-hatch and drops to the band under the roof when the lid shuts, forty wrecks throw the turret some of
-the time, killed it leaves American bodies. The M26 is asked it in a twenty-second, the second unit
-the Americans fielded over and above: the motor pool makes it beside the M4A1 and queues it by its
+hatch and drops to the band under the roof when the lid shuts, eighty wrecks throw the turret some of
+the time, killed it leaves American bodies. The four light hulls (the M8, the 234, the Wirbelwind and
+this) are asked over eighty wrecks where the rest are asked over forty, because a light hull throws
+its turret on eighteen deaths in a hundred and forty of them throw none once in 2,800 runs, which one
+desktop run did. The M26 is asked it in a twenty-second, the second unit the Americans fielded over
+and above: the motor pool makes it beside the M4A1 and queues it by its
 own key, it is in olive drab, the man in its cupola wears the tanker's helmet and no M1, the 90 mm
 stands more than twenty units past the nose, and a turret asked to lay over the tail comes all the
 way round. Most of the row is the plate and the gun at three hundred: a Panzer IV's round goes
@@ -1345,12 +1348,18 @@ tank that can be killed, which closes the periscope and takes `POV.u` with it.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
-Saint-Lô, the heaviest map, and reads the vertex buffer bytes the battle made: under 230 MB on the
-phone and 330 on the desktop, not one vehicle face still carrying the occlusion bake's arrays, the
-tiles packed, and fewer than 400 men's buffers baked at the whistle. Then it deploys again in the
+Saint-Lô, the heaviest map, and reads the vertex buffer bytes the battle made: under 160 MB on the
+phone and 190 on the desktop (111 and 121 when the vehicles began to be built lazily), fewer than half the vehicles built at the whistle, the tiles packed,
+and fewer than 400 men's buffers baked. It reads the bytes before it asks anything of a vehicle,
+because reading `VMODEL[k]` builds it; then it asks for the M4A1, which has to come back built and
+buffered with not one face still carrying the occlusion bake's arrays. Then it deploys again in the
 same page, and the second battle has to come out no bigger than the first, because that is the
 leak that put another 135 MB on a phone at every FIGHT AGAIN. It runs last before the editor, since
-a deploy resets the battle every row above it reads.
+a deploy resets the battle every row above it reads. A row after it queues twelve sections at a
+headquarters on three times the income and has to see eight of them taken (`QMAX`, which was four),
+and two more at the even game, where nothing caps a queue but the till. The row after that loses the
+graphics context on purpose (`WEBGL_lose_context`) and asks that the battle stops where it stood and the page says so, with a
+RELOAD a thumb can hit; the editor's reload gives the rows after it a context again.
 
 ### `tools/shoot.mjs` - looking at it
 
@@ -8173,8 +8182,7 @@ doubled the load. Five things were wrong, and four of them were fixes of their o
   and buildings a time, because `buildModels` refilled the tables without freeing them
   (`modelsFree`), and every field work, site, craft post and bunker fitting kept its own buffer
   through `startGame` (`battleFree`).
-- What is left is garbage from the vehicle builders, which the browser collects on its own
-  schedule.
+- What was left was garbage from the vehicle builders, which the second pass below took out.
 
 Measured on the phone profile on Saint-Lô: 172 MB of vertex buffers at the whistle (221 once the
 opening units' men are warmed) against 523, a 208 MB heap against 366, the page process at 913 MB
@@ -8182,6 +8190,41 @@ and the GPU process at 847 at the top of the load against 1,147 and 1,200, a loa
 against 28.5 under SwiftShader, and a second battle in the same page adding nothing where it
 added 135 MB. The gate's memory row holds the buffers to a budget and the second battle to the
 first.
+
+**And then the other maps, which crashed as well.** The first pass was measured on Saint-Lô and
+every map carried most of the same load, because most of it was the roster and not the ground:
+the page process still went to 920 to 1,020 MB at the top of a deploy on all four, and nearly all
+of that peak was the nineteen vehicles being built at once. Five more things:
+
+- **A vehicle is built the first time anything asks for it** (`vmDef`). Every entry of `VMODEL`
+  is a getter until then, and reading it builds the model, bakes it, buffers it (`vehUpload`) and
+  puts the plain value where the getter was; `MODELS.veh[k]` is a getter as well, so whichever of
+  the two a reader asks for first builds both. `queueUnit` puts a vehicle on `VQ` (`vehWarm`) and
+  the frame builds one a frame (`vehWarmTick`), skipping the men's warm queue that frame, so a tank
+  is built while it is in production rather than on the frame it drives out. About half of a
+  vehicle's build is the bake, and a battle builds the handful it fields. `vmHas` reads a value without running a getter, and `modelsFreeOne` and `vehUpload` go
+  through it, because reading the table to free it would build every vehicle in order to free it.
+- **The albedo canvas is let go once it is uploaded** (`buildAlbedo`). It is one unit a texel,
+  42 MB on Saint-Lô, and in a battle nothing reads it again but the minimap, which scaled ten
+  million pixels down to a hundred and thirty every time it was drawn. `mbase` is a copy at a
+  thousand pixels across (`albedoMini`), `mfull` is the canvas itself and is kept only while the
+  editor is open, because the editor paints patches into it, and `albedoFull()` paints the whole of
+  it again for whatever reads the paint on its own (the gate and the terrain card).
+- **Two textures leaked at every FIGHT AGAIN**: `buildScene` made the fog and the decal textures
+  again without deleting the last battle's, 7 MB a battle on Saint-Lô.
+- **The next frame is asked for first** (`frame`), so a frame that throws costs that frame. Asked
+  for at the foot, one exception anywhere stopped the loop for good, and a game that stops drawing
+  is a crash to the person holding the phone.
+- **A lost WebGL context is said out loud** (`glLost`): the battle stops where it stood and the
+  page says the browser took the graphics away and offers RELOAD, where it used to go on running a
+  battle nobody could see.
+
+Measured on the phone profile, against the first pass: the page process at the top of a deploy
+572 MB on Ortona against 975, 535 on the Gothic Line against 922, 480 on Omaha against 1,024 and
+516 on Saint-Lô against 956; the heap at the whistle 67 to 87 MB against 208 to 256, and 73 after
+four minutes of battle on Ortona that had built three vehicles; on Saint-Lô the vertex buffers
+160 MB against 224 and the canvases 24 MB against 62. A vehicle builds in 100 to 400 ms under
+SwiftShader once the builders have run once, and up to a second for the first one in a page.
 
 ---
 
@@ -8222,6 +8265,15 @@ shots/                         screenshot output, gitignored
   another 135 MB of vertex buffers on a phone that already held the last battle's. Nothing showed:
   the old buffers were simply never drawn again. A builder that refills a table frees the table
   first (`modelsFree`, `battleFree`, `MANBUF`), and the gate's memory row deploys twice to prove it.
+- **`VMODEL` and `MODELS.veh` are getters until a vehicle is built.** Reading `VMODEL[k]` builds,
+  bakes and buffers it, so a walk over the roster (`for (k in VMODEL)`, `Object.keys(...).forEach`
+  with a read inside) builds all nineteen, which is a second of work and the whole memory the lazy
+  build exists to save. Ask `vmHas(VMODEL, k)` to know whether one is built without building it,
+  and a new vehicle goes through `vmDef` in `buildVehicleModels`, or nothing builds it.
+- **The albedo canvas is gone once it is uploaded.** `mbase` is the minimap's thousand-pixel copy
+  and not the paint at one unit a texel; a reader of the paint asks `albedoFull()`, which paints it
+  again. A gate row that read `mbase` at world coordinates would read the wrong pixels and say so
+  in no way at all.
 - **The men tables are getters.** Reading `MODELS.man[v][pose]` bakes it, so `Object.keys` on them
   lists everything and a walk over them bakes the roster. Free them through `MANBUF`, never by
   walking the tables, and a new table of baked men goes through `manLazy` or the first reader to

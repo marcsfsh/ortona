@@ -2915,8 +2915,9 @@ for (const device of TARGETS) {
      stubble. A churn that quietly stopped being painted reads as a perfectly good map
      in every photograph ever taken of it. --- */
   const mud = await page.evaluate(() => {
-    if (typeof window.mbase === 'undefined' || !window.mbase) return null;
-    const ct = window.mbase.getContext('2d'), N = 90;
+    const al = window.albedoFull ? window.albedoFull() : window.mbase;
+    if (!al) return null;
+    const ct = al.getContext('2d'), N = 90;
     const at = (x, y) => {
       const d = ct.getImageData(x - N / 2, y - N / 2, N, N).data;
       let r = 0, g = 0, b = 0;
@@ -3160,7 +3161,7 @@ for (const device of TARGETS) {
     /* the paint: the flat is sand and the farmland at the top is not, read off the
        albedo canvas rather than looked at, because a beach that quietly stopped being
        painted reads as a perfectly good map in every photograph ever taken of it */
-    const g = W.mbase.getContext('2d');
+    const g = (W.albedoFull ? W.albedoFull() : W.mbase).getContext('2d');
     const px = (x, y) => { const d = g.getImageData(x, y, 1, 1).data; return [d[0], d[1], d[2]]; };
     out.sand = px(750, 3300); out.field = px(620, 1300);
     out.skirt = W.SCENE.skirt ? W.SCENE.skirt.n : 0;
@@ -4101,7 +4102,7 @@ for (const device of TARGETS) {
     out.side = +(W.armourAt(v, v.x, v.y + 100) / side0).toFixed(2);
     const nw = G.wrecks.length;
     let blown = 0, sink = 99, sk = 0;
-    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; if (w.skirts) sk++; sink = Math.min(sink, w.sink); }
+    for (let i = 0; i < 80; i++) { const w = W.makeWreck(v); if (w.blown) blown++; if (w.skirts) sk++; sink = Math.min(sink, w.sink); }
     const bare = W.spawnUnit('us', 'am_m8', hq.x + 180, hq.y - 260, 0);
     let skBare = 0;
     for (let i = 0; i < 40; i++) { if (W.makeWreck(bare).skirts) skBare++; }
@@ -4119,7 +4120,7 @@ for (const device of TARGETS) {
      /am_m8/.test(gh.makes) && gh.q === 'am_m8' && gh.made === 1 && gh.count &&
      gh.bufs && gh.od > 50 && gh.m1 > 0 && gh.tanker > 0 && gh.mgTanker > 0 && gh.gunner && gh.coax && gh.lay < .05 &&
      gh.eye > 22 && gh.eye < 30 && gh.fit === 'xx fenders,mg' && /coax/.test(gh.sec) && /mg/.test(gh.sec) && gh.skirted &&
-     gh.side >= 1.1 && gh.blown > 0 && gh.blown < 40 && gh.sink >= 2 && gh.sk > 0 && gh.skBare === 0 &&
+     gh.side >= 1.1 && gh.blown > 0 && gh.blown < 80 && gh.sink >= 2 && gh.sk > 0 && gh.skBare === 0 &&
      gh.bodies >= 1 && gh.bodyNat === 'usa',
      `the motor pool makes ${gh.makes}; asked for the M8 it queues ${gh.q}, counted as ${gh.made} made, ` +
      `${gh.count ? 'one' : 'NONE'} on the field; buffers ${gh.bufs ? 'all built' : 'MISSING'}; ` +
@@ -4127,7 +4128,7 @@ for (const device of TARGETS) {
      `the man at the .30 ${gh.mgTanker}, and with it fitted the turret keeps ${gh.gunner ? 'the gunner alone' : 'BOTH MEN'}; the coaxial ` +
      `${gh.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the gun is ${gh.lay} short; the periscope's eye ${gh.eye} up; ` +
      `the routine fitted ${gh.fit}, the guns then ${gh.sec}, ${gh.skirted ? 'skirted' : 'NOT skirted'} with the side ${gh.side}x; ` +
-     `${gh.blown} of 40 wrecks threw the turret, the least sat down ${gh.sink}, ${gh.sk} of 40 kept shields and ${gh.skBare} of 40 ` +
+     `${gh.blown} of 80 wrecks threw the turret, the least sat down ${gh.sink}, ${gh.sk} of 80 kept shields and ${gh.skBare} of 40 ` +
      `without them; killed, it left ${gh.bodies} bodies of ${gh.bodyNat}`);
 
   /* --- The 234. The 352nd's armoured car: the depot makes it and queues it, the count and
@@ -4182,7 +4183,7 @@ for (const device of TARGETS) {
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
-    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    for (let i = 0; i < 80; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
     G.wrecks.length = nw;
     out.blown = blown; out.sink = +sink.toFixed(2);
     const nc = G.corpses.length;
@@ -4196,7 +4197,7 @@ for (const device of TARGETS) {
      /hr_234/.test(k4.makes) && k4.q === 'hr_234' && k4.made === 1 && k4.count &&
      k4.bufs && k4.grey > 50 && k4.camo === 0 && k4.cap > 0 && k4.pumaCap > 0 && k4.helm === 0 && k4.poke === 0 && k4.coax &&
      k4.lay < .05 && k4.eye > 22 && k4.eye < 27 && k4.fitted && k4.wUp && k4.bar === '22>37.4' && k4.crewUp &&
-     k4.eyeP > 30 && k4.eyeP < 38 && k4.blown > 0 && k4.blown < 40 && k4.sink >= 2 &&
+     k4.eyeP > 30 && k4.eyeP < 38 && k4.blown > 0 && k4.blown < 80 && k4.sink >= 2 &&
      k4.bodies >= 1 && k4.bodyNat === 'heer',
      `the depot makes ${k4.makes}; asked for the 234 it queues ${k4.q}, counted as ${k4.made} made, ` +
      `${k4.count ? 'one' : 'NONE'} on the field; buffers ${k4.bufs ? 'all built' : 'MISSING'}; ` +
@@ -4204,7 +4205,7 @@ for (const device of TARGETS) {
      `cap, the Puma's commander ${k4.pumaCap}, and ${k4.helm} of a helmet between them; ${k4.poke} points of the two men above the ` +
      `screens; the coaxial ${k4.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the turret is ${k4.lay} short; ` +
      `the eye ${k4.eye} up; the Puma ${k4.fitted ? 'fitted' : 'NOT fitted'}, the weapon ${k4.wUp ? 'swapped' : 'NOT swapped'}, the muzzle ` +
-     `${k4.bar}, the crew ${k4.crewUp ? 'the Puma\'s' : 'NOT the Puma\'s'} and the eye ${k4.eyeP} up; ${k4.blown} of 40 wrecks threw ` +
+     `${k4.bar}, the crew ${k4.crewUp ? 'the Puma\'s' : 'NOT the Puma\'s'} and the eye ${k4.eyeP} up; ${k4.blown} of 80 wrecks threw ` +
      `the turret, the least sat down ${k4.sink}; killed, it left ${k4.bodies} bodies of ${k4.bodyNat}`);
 
   /* --- The Knight's Cross Holders. The 352nd's assault squad: the company post makes it and
@@ -4679,7 +4680,7 @@ for (const device of TARGETS) {
     v.hp = v.def.hp;
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
-    for (let i = 0; i < 40; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
+    for (let i = 0; i < 80; i++) { const w = W.makeWreck(v); if (w.blown) blown++; sink = Math.min(sink, w.sink); }
     G.wrecks.length = nw;
     out.blown = blown; out.sink = +sink.toFixed(2);
     const nc = G.corpses.length;
@@ -4693,14 +4694,14 @@ for (const device of TARGETS) {
      /hr_wirb/.test(wb.makes) && /hr_234/.test(wb.makes) && wb.fielded && wb.q === 'hr_wirb' && wb.made === 1 &&
      wb.bufs && wb.grey > 50 && wb.turGrey > 20 && wb.camo === 0 && wb.roof === 0 && wb.muz === 4 &&
      wb.helm > 0 && wb.black > 0 && wb.over > 0 && wb.lay < .05 && wb.eye > 30 && wb.eye < 40 && wb.auto &&
-     wb.lost > wb.lostP4 * 1.3 && wb.lostP4 > 0 && wb.blown > 0 && wb.blown < 40 && wb.sink >= 2 &&
+     wb.lost > wb.lostP4 * 1.3 && wb.lostP4 > 0 && wb.blown > 0 && wb.blown < 80 && wb.sink >= 2 &&
      wb.bodies >= 1 && wb.bodyNat === 'heer',
      `the depot makes ${wb.makes}; asked for the Wirbelwind by its own key it queues ${wb.q}, ` +
      `counted as ${wb.made} made; buffers ${wb.bufs ? 'all built' : 'MISSING'}; ${wb.grey} hull and ${wb.turGrey} turret faces in the ` +
      `grey and ${wb.camo} in the sand camouflage; ${wb.roof} faces roofing it over, ${wb.muz} muzzles; the men have ${wb.helm} ` +
      `faces of a helmet and ${wb.black} of the panzer troops' black, ${wb.over} of them more than 2 over the rim; asked to lay 1.2 off the nose the turret is ${wb.lay} ` +
      `short; the eye ${wb.eye} up; the gun ${wb.auto ? 'automatic' : 'NOT automatic'}, plate ${wb.plate} and hit points ${wb.hp} ` +
-     `against the Panzer IV; a 120-point burst took ${wb.lost} off it and ${wb.lostP4} off the Panzer IV; ${wb.blown} of 40 wrecks ` +
+     `against the Panzer IV; a 120-point burst took ${wb.lost} off it and ${wb.lostP4} off the Panzer IV; ${wb.blown} of 80 wrecks ` +
      `threw the turret, the least sat down ${wb.sink}; killed, it left ${wb.bodies} bodies of ${wb.bodyNat}`);
 
   /* --- The Panther. The 352nd's second tank, on the depot's list beside the Panzer IV. It
@@ -5178,7 +5179,7 @@ for (const device of TARGETS) {
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
     let blown = 0;
-    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    for (let i = 0; i < 80; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
     G.wrecks.length = nw;
     out.blown = blown;
     const nc = G.corpses.length;
@@ -5190,19 +5191,21 @@ for (const device of TARGETS) {
   });
   /* A tank under 500 hit points throws its turret on eighteen deaths in a hundred, so forty
      wrecks throw two or fewer on one run in sixty; asked for three, the row failed a gate on
-     two. It asks what the M8's and the 234's rows ask: some of the time and not all of it. */
+     two. It asks what the M8's and the 234's rows ask: some of the time and not all of it.
+     And it asks it of eighty, as they do: forty of them threw none on one desktop run, which
+     forty do once in 2,800 at that rate and eighty once in seven million. */
   ok('Omaha: the 29th fields the M3 light tank beside the M8, in olive drab, on plate the light guns seldom open',
      /am_stuart/.test(s3.makes) && /am_m8/.test(s3.makes) && s3.fielded && s3.q === 'am_stuart' && s3.made === 1 &&
      s3.bufs && s3.od > 50 && s3.turOd > 20 && s3.tanker > 0 && s3.m1 === 0 && s3.reach < 0 && s3.lay < .05 &&
      s3.front > s3.m8 * 1.4 && s3.p234 < .25 && s3.pWirb < .25 && s3.pKs < .05 && s3.p234m8 > s3.p234 * 2 && s3.pP4 === 1 &&
      s3.eyeUp > 28 && s3.eyeUp < 35 && s3.eyeIn > 21 && s3.eyeIn < s3.eyeUp - 4 &&
-     s3.blown > 0 && s3.blown < 30 && s3.bodies >= 1 && s3.bodyNat === 'usa',
+     s3.blown > 0 && s3.blown < 60 && s3.bodies >= 1 && s3.bodyNat === 'usa',
      `the motor pool makes ${s3.makes}; asked for the M3 it queues ${s3.q}, counted as ${s3.made} made; buffers ` +
      `${s3.bufs ? 'all built' : 'MISSING'}; ${s3.od} hull and ${s3.turOd} turret faces in olive drab; the man in the hatch has ` +
      `${s3.tanker} faces of tanker's helmet and ${s3.m1} of M1; the muzzle ${s3.reach} past the nose; asked to lay over the tail ` +
      `the turret is ${s3.lay} short; plate ${s3.front} in front against the M8's ${s3.m8}; at 200 the 234/1's 2 cm goes through it ` +
      `${s3.p234} (and the M8 ${s3.p234m8}), the Wirbelwind's ${s3.pWirb}, the KS 750's MG 34 ${s3.pKs} and the Panzer IV's ${s3.pP4}; ` +
-     `the eye ${s3.eyeUp} up out of the hatch and ${s3.eyeIn} at the band; ${s3.blown} of 40 wrecks threw the turret; killed, it ` +
+     `the eye ${s3.eyeUp} up out of the hatch and ${s3.eyeIn} at the band; ${s3.blown} of 80 wrecks threw the turret; killed, it ` +
      `left ${s3.bodies} bodies of ${s3.bodyNat}`);
 
   /* --- The M26 Pershing. The 29th's heavy tank: the motor pool lists it beside the M4A1 and
@@ -7279,22 +7282,73 @@ for (const device of TARGETS) {
     P.deleteBuffer = function (b) { if (b && sz.has(b)) { M.bytes -= sz.get(b); M.live--; sz.delete(b); } return db.call(this, b); };
   });
   await deploy(page, { side: args.side || 'us', diff: 1, map: 'stlo' });
+  /* the bytes are read before anything else is asked, and a vehicle is looked at only if it
+     has been built: reading `VMODEL[k]` builds it, and a probe that walked the roster to count
+     faces built nineteen vehicles to measure a battle that had none */
   const memRead = () => page.evaluate(() => {
-    let ao = 0, faces = 0;
-    Object.keys(window.VMODEL).forEach(k => ['hull', 'tur', 'crew', 'turCrew'].forEach(p => (window.VMODEL[k][p] || []).forEach(f => { faces++; if (f.ao) ao++; })));
-    return { mb: window.__mem.bytes / 1048576, live: window.__mem.live, ao, faces, baked: window.MANBUF ? window.MANBUF.length : -1, packed: window.SCENE.tiles[1] && window.SCENE.tiles[1].props.pk ? 1 : 0 };
+    const mb = window.__mem.bytes / 1048576, live = window.__mem.live, keys = Object.keys(window.VMODEL);
+    let built = 0;
+    keys.forEach(k => { const d = Object.getOwnPropertyDescriptor(window.VMODEL, k); if (d && 'value' in d) built++; });
+    return { mb, live, built, of: keys.length, baked: window.MANBUF ? window.MANBUF.length : -1, packed: window.SCENE.tiles[1] && window.SCENE.tiles[1].props.pk ? 1 : 0 };
   });
   const mem1 = await memRead();
+  /* and one asked for afterwards is built, buffered, and lets its bake go behind it */
+  const vb = await page.evaluate(() => {
+    const b0 = window.__mem.bytes, B = window.MODELS.veh.am_sher, V = window.VMODEL.am_sher;
+    let ao = 0, faces = 0;
+    ['hull', 'tur', 'crew', 'turCrew'].forEach(p => (V[p] || []).forEach(f => { faces++; if (f.ao) ao++; }));
+    return { mb: (window.__mem.bytes - b0) / 1048576, hull: !!(B && B.hull && B.hull.n), ao, faces };
+  });
   await page.evaluate(() => window.startGame(window.G.side, window.G.diff));
   await page.waitForFunction(() => window.G.running && window.SCENE.ready, null, { timeout: 180000 });
   await frames(page, 1);
   const mem2 = await memRead();
   await page.evaluate(() => window.__mem.restore());
-  const memCap = DEVICES[device].hasTouch ? 230 : 330;
+  const memCap = DEVICES[device].hasTouch ? 160 : 190;
   ok('a battle on the heaviest map holds its buffers to a budget, and a second battle frees the first',
-     mem1.mb < memCap && mem2.mb <= mem1.mb * 1.06 + 2 && mem1.ao === 0 && mem1.packed && mem1.baked < 400,
+     mem1.mb < memCap && mem2.mb <= mem1.mb * 1.06 + 2 && mem1.packed && mem1.baked < 400 &&
+     mem1.built * 2 < mem1.of && vb.hull && vb.faces > 0 && vb.ao === 0,
      `Saint-Lô ${mem1.mb.toFixed(0)} MB in ${mem1.live} buffers against ${memCap}, then ${mem2.mb.toFixed(0)} MB in ${mem2.live} after a second deploy; ` +
-     `${mem1.ao} of ${mem1.faces} vehicle faces still carry the bake; ${mem1.baked} men's buffers baked at the whistle; tiles ${mem1.packed ? 'packed' : 'NOT packed'}`);
+     `${mem1.built} of ${mem1.of} vehicles built at the whistle, and the M4A1 asked for after it ${vb.hull ? 'built' : 'NOT built'} in ${vb.mb.toFixed(1)} MB ` +
+     `with ${vb.ao} of ${vb.faces} faces still carrying the bake; ${mem1.baked} men's buffers baked at the whistle; tiles ${mem1.packed ? 'packed' : 'NOT packed'}`);
+
+  /* --- a building's queue. A player whose income is past twice the even game could bank the
+     whole of it in a queue, so a building holds QMAX (eight) for him and refuses the ninth;
+     at the even game it holds as many as he can pay for. --- */
+  const qcap = await page.evaluate(() => {
+    const W = window, G = W.G, P = W.pd(), hq = G.blds.filter(b => b.own === G.own && b.def.hq)[0];
+    const key = W.makesOf(hq).filter(k => W.UNITS[k].cat === 'inf')[0];
+    const inc = P.inc, keep = hq.queue.slice(), mp = G.res[G.own].mp, fu = G.res[G.own].fu;
+    P.inc = 3; G.res[G.own].mp = 1e6; G.res[G.own].fu = 1e6; hq.queue.length = 0;
+    let n = 0; for (let i = 0; i < 12; i++) if (W.queueUnit(hq, key)) n++;
+    P.inc = 1; let even = 0; for (let i = 0; i < 2; i++) if (W.queueUnit(hq, key)) even++;
+    hq.queue.length = 0; keep.forEach(k => hq.queue.push(k));
+    P.inc = inc; G.res[G.own].mp = mp; G.res[G.own].fu = fu;
+    return { n, even, key, max: W.QMAX };
+  });
+  ok('a building holds eight in its queue for a player on more than twice the income, and more at the even game',
+     qcap.max === 8 && qcap.n === 8 && qcap.even === 2,
+     `QMAX ${qcap.max}; on 3x income ${qcap.n} of twelve ${qcap.key} queued, and at the even game ${qcap.even} more on top of them`);
+
+  /* --- and when the phone takes the graphics away anyway. A lost context draws nothing
+     and throws nothing, so a battle that lost it went on running behind a canvas that had
+     stopped: the row loses it on purpose and asks that the battle stops where it stood and
+     the page says so, with a button a thumb can hit. The editor's reload below gives the
+     rows after it a context again. --- */
+  const lost = await page.evaluate(async () => {
+    const X = window.gl && window.gl.getExtension('WEBGL_lose_context');
+    if (!X) return null;
+    const t0 = window.G.t;
+    X.loseContext();
+    await new Promise(r => setTimeout(r, 300));
+    const b = document.getElementById('glerr'), btn = b && b.querySelector('button'), r = btn ? btn.getBoundingClientRect() : null;
+    return { shown: !!b && !b.classList.contains('hidden'), text: b ? b.textContent.slice(0, 60) : '', paused: window.G.paused,
+             glok: window.GLOK, btn: r ? Math.round(Math.min(r.width, r.height)) : 0, t0 };
+  });
+  ok('a lost graphics context stops the battle and says so',
+     !!lost && lost.shown && lost.paused && !lost.glok && lost.btn >= 44,
+     lost ? `message ${lost.shown ? 'shown' : 'NOT shown'} ("${lost.text}..."), battle ${lost.paused ? 'stopped' : 'STILL RUNNING'}, ` +
+            `renderer ${lost.glok ? 'STILL ON' : 'off'}, RELOAD ${lost.btn}px` : 'no WEBGL_lose_context to test it with');
 
   /* --- the map editor --- */
   await reload(page);
