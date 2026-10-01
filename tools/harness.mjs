@@ -588,8 +588,13 @@ export async function deploy(page, { side = 'us', diff = 1, map = null } = {}) {
   await frames(page, 1);
 }
 
-export async function openEditor(page) {
+/* The editor opens on a choice of how to start; `start` is a shipped map's key to duplicate
+   (the default, Ortona), or 'continue' for the draft kept on this device. */
+export async function openEditor(page, start = 'ortona') {
   await page.click('#openeditor');
+  await page.waitForSelector('#edstart:not(.hidden)', { timeout: 30000 });
+  if (start === 'continue' && await page.$('#edscont')) await page.click('#edscont');
+  else await page.click(`#edsdup-${start === 'continue' ? 'ortona' : start}`);
   await page.waitForFunction(() => window.ED.on, null, { timeout: 120000 });
   await frames(page, 2);
 }
