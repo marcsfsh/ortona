@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_weasel.png", "key": "am_weasel", "prop": "wzShow", "args": [],
+  "note": "A four-view of the M29C Weasel with no scale on the sheet. The side agrees with the published 4.79 m over the cells at 74.1 px/m, and at that scale every view agrees with the 20 in track. The .30 on its post is the game's and not the drawing's.",
+  "views": {
+    "side":  { "nose": "right", "crop": [0, 0, 417, 165], "ppm": 74.1, "at": [0, 0, 0], "px": [212.5, 163.3], "k": 3 },
+    "plan":  { "nose": "right", "crop": [0, 175, 417, 160], "ppm": 74.1, "at": [0, 0, 0], "px": [212.5, 247.5], "k": 3 },
+    "front": { "crop": [0, 345, 200, 155], "ppm": 74.1, "at": [0, 0, 0], "px": [90.0, 497.7], "k": 3 },
+    "rear":  { "crop": [215, 345, 202, 155], "ppm": 74.1, "at": [0, 0, 0], "px": [335.0, 496.7], "k": 3 } } }

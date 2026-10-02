@@ -206,6 +206,16 @@ const CARD = [
   ['am_m26', 'hr_puma'],
   ['am_m26', 'hr_kch'],
   ['am_ranger', 'am_m26'],
+  /* the M18, the tank destroyer the 29th fields beside the M26: the Panzer IV head on and the
+     Panther caught side-on are the rows it is for (read the second with --turn=1.57), and the
+     StuH, the Puma, the Wirbelwind, the throws and a Pak 38 laid for it are what it meets */
+  ['am_m18', 'hr_p4'],
+  ['am_m18', 'hr_panther'],
+  ['am_m18', 'ger_stug'],
+  ['am_m18', 'hr_puma'],
+  ['am_m18', 'hr_wirb'],
+  ['hr_kch', 'am_m18'],
+  ['hr_pak', 'am_m18'],
   ['am_ranger', 'hr_p4'],
   ['hr_kch', 'am_sher'],
   ['us_t8', 'hr_p4'],

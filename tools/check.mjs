@@ -1802,12 +1802,22 @@ for (const device of TARGETS) {
        `nearestFree` has been caught with before. Staged on a spot it read 11 units of
        ground in three seconds on one run and 33 on the next, on identical code. */
     const hx = hq ? hq.x : 300, hy = hq ? hq.y : 950;
+    /* The run is asked along three lines, the middle and a line either side a little
+       outside the hull's own beam, because the hull is two and a half metres across and a
+       line down its middle is not. Asked along the middle alone, one desktop run ended the
+       drive 1.65 radians off the bearing it was parked on with 47 units made and nothing in
+       front of it. The likeliest reading, not established, is a corner catching the hull's
+       side in the first second: a blocked step swings a hull, and the throttle's waypoint
+       swings with the nose. */
     const clearRun = (x, y, a) => {
+      const sx = -Math.sin(a), sy = Math.cos(a);
       for (let d = 30; d <= 300; d += 20) {
-        const px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
-        if (!window.walkable(px, py) || window.blockAt(px, py)) return false;
-        if (window.buildingAt(px, py) || window.bunkerAt(px, py)) return false;
-        if (window.unitsAt(px, py, 42).length) return false;
+        for (const o of [-20, 0, 20]) {
+          const px = x + Math.cos(a) * d + sx * o, py = y + Math.sin(a) * d + sy * o;
+          if (!window.walkable(px, py) || window.blockAt(px, py)) return false;
+          if (window.buildingAt(px, py) || window.bunkerAt(px, py)) return false;
+        }
+        if (window.unitsAt(x + Math.cos(a) * d, y + Math.sin(a) * d, 42).length) return false;
       }
       return true;
     };
@@ -4925,12 +4935,13 @@ for (const device of TARGETS) {
     out.q = W.queueUnit(mot, 'am_at') ? mot.queue.slice(-1)[0] : 'refused';
     out.made = W.madeOf('us', 'am_at') - m0;
     mot.queue.length = q0;
-    /* its eye and its reach against every vehicle the German depot makes on this beach */
+    /* its eye and its reach against every vehicle the German depot makes on this beach, the
+       self-propelled howitzers aside, whose reach is a fire mission's and not a gun's */
     const D = W.UNITS.am_at;
     const vk = W.BUILDINGS.ger_dep.makes.concat(W.BUILDINGS.ger_pz.makes).filter(k => W.fielded(k) && W.UNITS[k].cat === 'veh');
     const reach = d => Math.max(d.w ? d.w.range : 0, ...Object.keys(d.wUp || {}).map(k => d.wUp[k].range || 0));
     out.eyeBest = Math.max(...vk.map(k => W.UNITS[k].sight));
-    out.reachBest = Math.max(...vk.filter(k => k !== 'ger_maus').map(k => reach(W.UNITS[k])));
+    out.reachBest = Math.max(...vk.filter(k => k !== 'ger_maus' && !W.UNITS[k].indirect).map(k => reach(W.UNITS[k])));
     out.eye = D.sight; out.reach = D.w.range;
     /* open sand long enough for the drill: the gun at one end and a Panzer IV 520 off at the
        other, both walkable, nothing cover near either, and a clear line between them */
@@ -5047,7 +5058,7 @@ for (const device of TARGETS) {
      at57.bunkKey === 'am_at' && (at57.bunkGun === 'am_at' || at57.bunkGun === 'no bunker'),
      `the barracks makes ${at57.makes}; asked for the gun it queues ${at57.q}, counted as ${at57.made} made, ` +
      `${at57.count ? 'one' : 'NONE'} on the field; its eye ${at57.eye} against the ` +
-     `352nd's vehicles' best ${at57.eyeBest} and its reach ${at57.reach} against ${at57.reachBest} (the Maus aside); ` +
+     `352nd's vehicles' best ${at57.eyeBest} and its reach ${at57.reach} against ${at57.reachBest} (the Maus and the howitzers aside); ` +
      (at57.staged ? `sited against a Panzer IV at 520 it fired ${f57 ? 'at ' + f57.t + ' s from ' + f57.d + ' with the tank ' + (f57.found < 1 ? 'yet to find it (' + f57.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
        `and the tank ${b57 ? 'answered at ' + b57.t + ' s from ' + b57.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${at57.men} men, every variant, the served bodies and the three meshes ${at57.baked ? 'baked' : 'NOT baked'}; halted ` +
@@ -5078,12 +5089,13 @@ for (const device of TARGETS) {
     out.q = W.queueUnit(dep, 'hr_pak') ? dep.queue.slice(-1)[0] : 'refused';
     out.made = W.madeOf('ger', 'hr_pak') - m0;
     dep.queue.length = q0;
-    /* its eye and its reach against every vehicle the American motor pool makes on this beach */
+    /* its eye and its reach against every vehicle the American motor pool makes on this beach,
+       the self-propelled howitzers aside, whose reach is a fire mission's and not a gun's */
     const D = W.UNITS.hr_pak;
     const vk = W.BUILDINGS.us_mot.makes.concat(W.BUILDINGS.us_tank.makes).filter(k => W.fielded(k) && W.UNITS[k].cat === 'veh');
     const reach = d => Math.max(d.w ? d.w.range : 0, ...Object.keys(d.wUp || {}).map(k => d.wUp[k].range || 0));
     out.eyeBest = Math.max(...vk.map(k => W.UNITS[k].sight));
-    out.reachBest = Math.max(...vk.map(k => reach(W.UNITS[k])));
+    out.reachBest = Math.max(...vk.filter(k => !W.UNITS[k].indirect).map(k => reach(W.UNITS[k])));
     out.eye = D.sight; out.reach = D.w.range;
     /* open sand for the drill, found the way the 57's is: the bocage behind the German
        headquarters is hedgerow and lane and has nowhere 520 across with nothing on it */
@@ -5200,7 +5212,7 @@ for (const device of TARGETS) {
      pk38.bunkKey === 'hr_pak' && (pk38.bunkGun === 'hr_pak' || pk38.bunkGun === 'no bunker'),
      `the Kaserne makes ${pk38.makes}; asked for the gun it queues ${pk38.q}, counted as ${pk38.made} made, ` +
      `${pk38.count ? 'one' : 'NONE'} on the field; its eye ${pk38.eye} against the ` +
-     `29th's vehicles' best ${pk38.eyeBest} and its reach ${pk38.reach} against ${pk38.reachBest}; ` +
+     `29th's vehicles' best ${pk38.eyeBest} and its reach ${pk38.reach} against ${pk38.reachBest} (the howitzers aside); ` +
      (pk38.staged ? `sited against an M4 at 520 it fired ${fpk ? 'at ' + fpk.t + ' s from ' + fpk.d + ' with the tank ' + (fpk.found < 1 ? 'yet to find it (' + fpk.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
        `and the tank ${bpk ? 'answered at ' + bpk.t + ' s from ' + bpk.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${pk38.men} men, every variant, the served bodies and the three meshes ${pk38.baked ? 'baked' : 'NOT baked'}; halted ` +
@@ -5361,6 +5373,95 @@ for (const device of TARGETS) {
      `and a Panzer IV's ${m26.onP4}; the eye ${m26.eyeUp} up out of the cupola and ${m26.eyeIn} with the lid shut; ${m26.blown} of 40 ` +
      `wrecks threw the turret; killed, it left ${m26.bodies} bodies of ${m26.bodyNat}`);
 
+  /* --- The M18 Hellcat. The 29th's tank destroyer: the tank yard lists it beside the M26 and
+     queues it by its own key. It is in olive drab under an open turret with nothing roofing it
+     over, the three men in it wear the tanker's helmet and no M1, the commander stands with his
+     head over the rim, the .50 on the rim is standard, the 76 mm stands out past the nose and the
+     turret comes all the way round. It is the fastest thing in the yard. Most of the row is the
+     trade it makes: a front any German gun opens at three hundred, a 76 mm that goes through a
+     Panzer IV's front most of the time and a Panther's side every time and its front about two
+     times in three, and an open turret that takes more off a burst beside it than the M4A1 does.
+     The eye is the commander's over the rim, forty wrecks throw the turret some of the time, and
+     killed it leaves American bodies. --- */
+  const hc = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const yard = W.spawnBuilding('us', 'us_tank', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(yard).join(',');
+    out.fielded = W.fielded('am_m18');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = yard.queue.length, m0 = W.madeOf('us', 'am_m18');
+    out.q = W.queueUnit(yard, 'am_m18') ? yard.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_m18') - m0;
+    yard.queue.length = q0;
+    const t = W.spawnUnit('us', 'am_m18', hq.x + 140, hq.y - 220, 0);
+    const V = W.VMODEL.am_m18, B = W.MODELS.veh.am_m18, A = W.KIT.usa, rim = W.HCT.zr;
+    out.bufs = !!(B && B.hull && B.tur && B.turCrew && B.mg && B.inside);
+    out.od = V.hull.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.turOd = V.tur.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.roof = V.tur.filter(f => f.v.every(p => p[2] >= rim - .1 && Math.hypot(p[0], p[1]) < 7)).length;
+    out.tanker = V.turCrew.filter(f => f.c === A.hide).length;
+    out.m1 = V.turCrew.filter(f => f.c === A.helm || f.c === A.helmD).length;
+    out.over = V.turCrew.filter(f => f.v.some(p => p[2] > rim + 2)).length;
+    out.sec = W.secondaryKeys(t).join(',');
+    const nose = Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => p[0]))));
+    out.reach = +(V.turX + V.bar - nose).toFixed(1);
+    t.facing = 0; t.turret = 0; t.want = Math.PI - .05;
+    for (let i = 0; i < 14; i++) W.updateModels(t, 1.0);
+    out.lay = +Math.abs(W.angDiff(t.turret, Math.PI - .05)).toFixed(3);
+    t.turret = 0; t.want = undefined;
+    out.fastest = W.makesOf(yard).filter(k => k !== 'am_m18').every(k => W.UNITS[k].speed < t.def.speed);
+    /* the trade, at three hundred */
+    const d = 300, front = W.armourAt(t, t.x + d, t.y);
+    out.front = +front.toFixed(1);
+    const pc = (w, a) => +W.penChance(W.penAt(w, d), a).toFixed(2);
+    out.pP4 = pc(W.UNITS.hr_p4.w, front); out.pPak = pc(W.UNITS.hr_pak.w, front);
+    const pan = W.spawnUnit('ger', 'hr_panther', hq.x + 400, hq.y - 220, 0);
+    const p4 = W.spawnUnit('ger', 'hr_p4', hq.x + 400, hq.y - 340, 0);
+    out.onP4 = pc(t.def.w, W.armourAt(p4, p4.x + d, p4.y));
+    out.onPan = pc(t.def.w, W.armourAt(pan, pan.x + d, pan.y));
+    out.onPanS = pc(t.def.w, W.armourAt(pan, pan.x, pan.y + d));
+    W.killUnit(pan); W.killUnit(p4);
+    /* the same burst beside it and beside an M4A1 staged where it stood, thirty up so it opens
+       no ground for the rows below */
+    const foe = W.spawnUnit('ger', 'hr_gren', t.x + 900, t.y + 900, 0);
+    const burst = (u) => { const h0 = u.hp; W.explode(u.x + 10, u.y, 30, 120, foe, null, 30, null); return h0 - u.hp; };
+    out.lost = +burst(t).toFixed(1);
+    const m4 = W.spawnUnit('us', 'am_sher', t.x, t.y + 120, 0);
+    out.lostM4 = +burst(m4).toFixed(1);
+    [foe, m4].forEach(u => { u.dead = true; G.units.splice(G.units.indexOf(u), 1); });
+    t.hp = t.def.hp;
+    W.povOn(t);
+    out.eye = +(W.povEye().z - W.groundZ(t.x, t.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.killBuilding(yard);
+    return out;
+  });
+  ok('Omaha: the 29th fields the M18 beside the M26, open, fast and thin, its 76 mm through a Panzer IV\'s front',
+     /am_m18/.test(hc.makes) && /am_m26/.test(hc.makes) && hc.fielded && hc.q === 'am_m18' && hc.made === 1 &&
+     hc.bufs && hc.od > 80 && hc.turOd > 20 && hc.roof === 0 && hc.tanker > 0 && hc.m1 === 0 && hc.over > 0 &&
+     /mg/.test(hc.sec) && hc.reach > 12 && hc.lay < .05 && hc.fastest &&
+     hc.pP4 === 1 && hc.pPak === 1 && hc.onP4 > .8 && hc.onPan > .4 && hc.onPan < .9 && hc.onPanS === 1 &&
+     hc.lost > hc.lostM4 * 1.25 && hc.lostM4 > 0 && hc.eye > 24 && hc.eye < 36 &&
+     hc.blown > 2 && hc.blown < 38 && hc.bodies >= 1 && hc.bodyNat === 'usa',
+     `the tank yard makes ${hc.makes}; asked for the M18 it queues ${hc.q}, counted as ${hc.made} made; buffers ` +
+     `${hc.bufs ? 'all built' : 'MISSING'}; ${hc.od} hull and ${hc.turOd} turret faces in olive drab; ${hc.roof} faces roofing it ` +
+     `over; the men have ${hc.tanker} faces of tanker's helmet and ${hc.m1} of M1, ${hc.over} of them more than 2 over the rim; ` +
+     `secondary ${hc.sec || 'none'}; the muzzle ${hc.reach} past the nose; asked to lay over the tail the turret is ${hc.lay} short; ` +
+     `${hc.fastest ? 'the fastest in the yard' : 'NOT the fastest in the yard'}; plate ${hc.front} in front, which at 300 the Panzer ` +
+     `IV's round opens ${hc.pP4} and the Pak 38's ${hc.pPak}; the 76 mm goes through a Panzer IV's front ${hc.onP4}, a Panther's ` +
+     `front ${hc.onPan} and its side ${hc.onPanS}; a 120-point burst took ${hc.lost} off it and ${hc.lostM4} off the M4A1; the eye ` +
+     `${hc.eye} up; ${hc.blown} of 40 wrecks threw the turret; killed, it left ${hc.bodies} bodies of ${hc.bodyNat}`);
+
   /* --- The 29th's second batch. The motor pool makes the M16 beside the M3, the 3-inch gun and
      the 105, and the barracks the 81. The M16's buffers are built and its quad mount
      goes the whole way round; the 3-inch is seven men who run it along with the trails closed,
@@ -5439,6 +5540,71 @@ for (const device of TARGETS) {
      `the 105 is ${us2.how} men, ${us2.howOrder ? 'on order only' : 'FIRING FREE'}; the 81 is ${us2.mor} faces against the German's ` +
      `${us2.morGer}; the rifle squad with both fittings is ${us2.vars} (${us2.baked ? 'baked' : 'NOT BAKED'}), the BARs ` +
      `${us2.bar2 ? 'in' : 'NOT in'} its line, the launcher ${us2.gl ? 'issued' : 'MISSING'}, ${us2.glFired} grenades in twenty seconds`);
+
+  /* --- The self-propelled guns, the Marder and the Weasel. The Priest and the Wespe come out of
+     their motor pools and fire a mission as the towed guns do, laying the mount inside the arc
+     and turning the hull for the rest; the Priest rebuilt as the M12 is another vehicle and
+     another piece, with the 155's reach and its own name; the Marder's Pak 40 comes round only
+     as far as the casemate lets it; and the Weasel comes out of the barracks and carries one
+     squad. The rounds are counted off the mission as they leave the tube, with the bursts
+     switched off, because a mission that lands near a headquarters on the beach digs holes and
+     cuts craft that every row below would stand on. --- */
+  const sp5 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {}, dt = 1 / 30;
+    const keep = G.units.slice(), shots = G.shots.slice(), boom = W.explode;
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0], gq = G.blds.filter(b => b.own === 'ger' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x - 240, hq.y - 120, true);
+    const dep = W.spawnBuilding('ger', 'ger_dep', gq.x - 240, gq.y + 120, true);
+    G.res.us.mp += 4000; G.res.us.fu += 900; G.res.ger.mp += 4000; G.res.ger.fu += 900;
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = [q(mot, 'am_m7'), q(bar, 'am_weasel'), q(dep, 'hr_wespe'), q(dep, 'hr_marder')].join(',');
+    out.bufs = ['am_m7', 'am_m12', 'hr_wespe', 'hr_marder', 'am_weasel'].filter(k => {
+      const B = W.MODELS.veh[k]; return !(B && B.hull && B.tur && B.turCrew && B.crew); }).join(',') || 'all';
+    W.explode = function () {};
+    function mission(side, key, up) {
+      const h = side === 'us' ? hq : gq, s = side === 'us' ? 1 : -1;
+      const sp = W.nearestFree(h.x + s * 260, h.y);
+      const u = W.spawnUnit(side, key, sp.x, sp.y, side === 'us' ? 0 : Math.PI);
+      if (up) W.fitUp(u, up);
+      u.setup = 0;
+      let a = u.facing + Math.PI / 2, tx = u.x + Math.cos(a) * 600, ty = u.y + Math.sin(a) * 600;
+      if (ty < 80 || ty > W.WORLD.h - 80) { a = u.facing - Math.PI / 2; tx = u.x + Math.cos(a) * 600; ty = u.y + Math.sin(a) * 600; }
+      const f0 = u.facing, ok = W.orderBarrage(u, tx, ty), n = u.barrage ? u.barrage.left : 0;
+      for (let i = 0; i < 30 * 60 && u.barrage; i++) { W.updateUnit(u, dt); W.updateShots(dt); G.t += dt; }
+      return { ok: !!ok, n: n, left: u.barrage ? u.barrage.left : 0, turn: +Math.abs(W.angDiff(u.facing, f0)).toFixed(2),
+               name: W.nameOf(u), vk: W.vkey(u), reach: W.barrageRange(u), arc: +W.arcOf(u).toFixed(2) };
+    }
+    out.m7 = mission('us', 'am_m7');
+    out.m12 = mission('us', 'am_m7', 'm12');
+    out.ws = mission('ger', 'hr_wespe');
+    W.explode = boom;
+    /* the Marder asked to lay further round than its casemate goes */
+    const mr = W.spawnUnit('ger', 'hr_marder', gq.x - 140, gq.y + 220, 0);
+    mr.facing = 0; mr.turret = 0; mr.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(mr, .2);
+    out.mrArc = +W.arcOf(mr).toFixed(2); out.mrTur = +mr.turret.toFixed(3);
+    /* the Weasel takes one squad and refuses a second */
+    const wz = W.spawnUnit('us', 'am_weasel', hq.x + 140, hq.y - 220, 0);
+    const s1 = W.spawnUnit('us', 'am_rifle', wz.x + 30, wz.y, 0), s2 = W.spawnUnit('us', 'am_rifle', wz.x - 30, wz.y, 0);
+    W.boardVehicle(s1, wz); out.wz1 = wz.cargo === s1; out.wz2 = W.canBoard(s2, wz);
+    G.units.length = 0; keep.forEach(u => G.units.push(u));
+    G.shots.length = 0; shots.forEach(s => G.shots.push(s));
+    W.killBuilding(mot); W.killBuilding(bar); W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the Priest and the Wespe fire missions from their motor pools, the Priest rebuilt is the M12, the Marder lays inside its casemate and the Weasel carries a squad',
+     sp5.q === 'am_m7,am_weasel,hr_wespe,hr_marder' && sp5.bufs === 'all' &&
+     sp5.m7.ok && sp5.m7.n === 8 && sp5.m7.left === 0 && sp5.m7.turn > .5 && sp5.m7.vk === 'am_m7' &&
+     sp5.m12.ok && sp5.m12.n === 6 && sp5.m12.left === 0 && sp5.m12.vk === 'am_m12' && sp5.m12.name === 'M12 Gun Motor Carriage' &&
+     sp5.m12.reach > sp5.m7.reach && sp5.m12.arc < sp5.m7.arc &&
+     sp5.ws.ok && sp5.ws.n === 8 && sp5.ws.left === 0 && sp5.ws.turn > .5 &&
+     Math.abs(Math.abs(sp5.mrTur) - sp5.mrArc / 2) < .03 && sp5.wz1 && !sp5.wz2,
+     `queued ${sp5.q}; buffers built: ${sp5.bufs}; the Priest laid ${sp5.m7.ok ? '' : 'NOT '}and fired ${sp5.m7.n - sp5.m7.left} of ` +
+     `${sp5.m7.n}, turning ${sp5.m7.turn}; rebuilt it is ${sp5.m12.name} drawn as ${sp5.m12.vk}, reaching ${sp5.m12.reach} against ` +
+     `${sp5.m7.reach} on an arc of ${sp5.m12.arc} against ${sp5.m7.arc}, and fired ${sp5.m12.n - sp5.m12.left} of ${sp5.m12.n}; the Wespe ` +
+     `fired ${sp5.ws.n - sp5.ws.left} of ${sp5.ws.n}, turning ${sp5.ws.turn}; the Marder asked for 1.2 laid ${sp5.mrTur} on an arc of ` +
+     `${sp5.mrArc}; the Weasel ${sp5.wz1 ? 'took' : 'REFUSED'} a squad and ${sp5.wz2 ? 'TOOK' : 'refused'} a second`);
 
   /* --- The engineers. The Americans' engineer squad: the headquarters makes it and queues
      it, the Allied side opens the battle with one, its three men are the three engineer
@@ -5706,7 +5872,18 @@ for (const device of TARGETS) {
     /* and a house with open ground either side of it, for the lee */
     const h = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && !q.hurt && q.h > 50 && q.h < 110 &&
       window.walkable(q.x, q.y - q.h / 2 - 16) && window.walkable(q.x, q.y + q.h / 2 + 16))[0];
+    /* Every trial is thrown with the same seeded rolls, and the two at one and a half radii
+       with twice the bursts. Whether a splinter finds a man is a roll, and at that range a
+       burst finds about one man in sixteen standing and one in fifty lying down, so sixty
+       bursts are a score of hits against half a dozen: thrown with fresh dice, one phone run
+       read 1.1 standing against 0.82 lying down, where the other runs on record read under
+       half. The dice do not stay in step between the two (a hit takes a second roll for
+       how much), so the seed makes the row the same throw on every run of one file and the
+       count is what makes the throw a fair one. */
     function trial(x, y, bx, by, prone, n, r) {
+      const rand = Math.random;
+      let seed = 4049;
+      Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       const u = window.spawnUnit(window.G.side, 'am_rifle', x, y);
       let lost = 0;
       for (let i = 0; i < n; i++) {
@@ -5718,14 +5895,15 @@ for (const device of TARGETS) {
         window.explode(bx, by, r || 90, 20, null, null, 30);
         u.models.forEach(m => { lost += 1e6 - m.hp; });
       }
+      Math.random = rand;
       const i2 = window.G.units.indexOf(u); if (i2 >= 0) window.G.units.splice(i2, 1);
       return +(lost / n).toFixed(2);
     }
     if (ox < 0 || !h) return { none: ox < 0 ? 'no open ground' : 'no house with open ground either side of it' };
     const out = { at: ox + ',' + oy, cover: best, house: Math.round(h.x) + ',' + Math.round(h.y) };
     out.near = trial(ox + 45, oy, ox, oy, false, 40);
-    out.far = trial(ox + 135, oy, ox, oy, false, 60);
-    out.farDown = trial(ox + 135, oy, ox, oy, true, 60);
+    out.far = trial(ox + 135, oy, ox, oy, false, 120);
+    out.farDown = trial(ox + 135, oy, ox, oy, true, 120);
     out.beyond = trial(ox + 240, oy, ox, oy, false, 40);
     const d = h.h + 30, by = h.y - h.h / 2 - 12;
     out.leeD = d;
