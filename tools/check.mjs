@@ -5361,6 +5361,95 @@ for (const device of TARGETS) {
      `and a Panzer IV's ${m26.onP4}; the eye ${m26.eyeUp} up out of the cupola and ${m26.eyeIn} with the lid shut; ${m26.blown} of 40 ` +
      `wrecks threw the turret; killed, it left ${m26.bodies} bodies of ${m26.bodyNat}`);
 
+  /* --- The M18 Hellcat. The 29th's tank destroyer: the tank yard lists it beside the M26 and
+     queues it by its own key. It is in olive drab under an open turret with nothing roofing it
+     over, the three men in it wear the tanker's helmet and no M1, the commander stands with his
+     head over the rim, the .50 on the rim is standard, the 76 mm stands out past the nose and the
+     turret comes all the way round. It is the fastest thing in the yard. Most of the row is the
+     trade it makes: a front any German gun opens at three hundred, a 76 mm that goes through a
+     Panzer IV's front most of the time and a Panther's side every time and its front about two
+     times in three, and an open turret that takes more off a burst beside it than the M4A1 does.
+     The eye is the commander's over the rim, forty wrecks throw the turret some of the time, and
+     killed it leaves American bodies. --- */
+  const hc = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const yard = W.spawnBuilding('us', 'us_tank', hq.x + 240, hq.y - 120, true);
+    out.makes = W.makesOf(yard).join(',');
+    out.fielded = W.fielded('am_m18');
+    G.res.us.mp += 2000; G.res.us.fu += 600;
+    const q0 = yard.queue.length, m0 = W.madeOf('us', 'am_m18');
+    out.q = W.queueUnit(yard, 'am_m18') ? yard.queue.slice(-1)[0] : 'refused';
+    out.made = W.madeOf('us', 'am_m18') - m0;
+    yard.queue.length = q0;
+    const t = W.spawnUnit('us', 'am_m18', hq.x + 140, hq.y - 220, 0);
+    const V = W.VMODEL.am_m18, B = W.MODELS.veh.am_m18, A = W.KIT.usa, rim = W.HCT.zr;
+    out.bufs = !!(B && B.hull && B.tur && B.turCrew && B.mg && B.inside);
+    out.od = V.hull.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.turOd = V.tur.filter(f => f.c === W.M4C.od || f.c === W.M4C.odL).length;
+    out.roof = V.tur.filter(f => f.v.every(p => p[2] >= rim - .1 && Math.hypot(p[0], p[1]) < 7)).length;
+    out.tanker = V.turCrew.filter(f => f.c === A.hide).length;
+    out.m1 = V.turCrew.filter(f => f.c === A.helm || f.c === A.helmD).length;
+    out.over = V.turCrew.filter(f => f.v.some(p => p[2] > rim + 2)).length;
+    out.sec = W.secondaryKeys(t).join(',');
+    const nose = Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => p[0]))));
+    out.reach = +(V.turX + V.bar - nose).toFixed(1);
+    t.facing = 0; t.turret = 0; t.want = Math.PI - .05;
+    for (let i = 0; i < 14; i++) W.updateModels(t, 1.0);
+    out.lay = +Math.abs(W.angDiff(t.turret, Math.PI - .05)).toFixed(3);
+    t.turret = 0; t.want = undefined;
+    out.fastest = W.makesOf(yard).filter(k => k !== 'am_m18').every(k => W.UNITS[k].speed < t.def.speed);
+    /* the trade, at three hundred */
+    const d = 300, front = W.armourAt(t, t.x + d, t.y);
+    out.front = +front.toFixed(1);
+    const pc = (w, a) => +W.penChance(W.penAt(w, d), a).toFixed(2);
+    out.pP4 = pc(W.UNITS.hr_p4.w, front); out.pPak = pc(W.UNITS.hr_pak.w, front);
+    const pan = W.spawnUnit('ger', 'hr_panther', hq.x + 400, hq.y - 220, 0);
+    const p4 = W.spawnUnit('ger', 'hr_p4', hq.x + 400, hq.y - 340, 0);
+    out.onP4 = pc(t.def.w, W.armourAt(p4, p4.x + d, p4.y));
+    out.onPan = pc(t.def.w, W.armourAt(pan, pan.x + d, pan.y));
+    out.onPanS = pc(t.def.w, W.armourAt(pan, pan.x, pan.y + d));
+    W.killUnit(pan); W.killUnit(p4);
+    /* the same burst beside it and beside an M4A1 staged where it stood, thirty up so it opens
+       no ground for the rows below */
+    const foe = W.spawnUnit('ger', 'hr_gren', t.x + 900, t.y + 900, 0);
+    const burst = (u) => { const h0 = u.hp; W.explode(u.x + 10, u.y, 30, 120, foe, null, 30, null); return h0 - u.hp; };
+    out.lost = +burst(t).toFixed(1);
+    const m4 = W.spawnUnit('us', 'am_sher', t.x, t.y + 120, 0);
+    out.lostM4 = +burst(m4).toFixed(1);
+    [foe, m4].forEach(u => { u.dead = true; G.units.splice(G.units.indexOf(u), 1); });
+    t.hp = t.def.hp;
+    W.povOn(t);
+    out.eye = +(W.povEye().z - W.groundZ(t.x, t.y)).toFixed(1);
+    W.povOff();
+    const nw = G.wrecks.length;
+    let blown = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; }
+    G.wrecks.length = nw;
+    out.blown = blown;
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    W.killBuilding(yard);
+    return out;
+  });
+  ok('Omaha: the 29th fields the M18 beside the M26, open, fast and thin, its 76 mm through a Panzer IV\'s front',
+     /am_m18/.test(hc.makes) && /am_m26/.test(hc.makes) && hc.fielded && hc.q === 'am_m18' && hc.made === 1 &&
+     hc.bufs && hc.od > 80 && hc.turOd > 20 && hc.roof === 0 && hc.tanker > 0 && hc.m1 === 0 && hc.over > 0 &&
+     /mg/.test(hc.sec) && hc.reach > 12 && hc.lay < .05 && hc.fastest &&
+     hc.pP4 === 1 && hc.pPak === 1 && hc.onP4 > .8 && hc.onPan > .4 && hc.onPan < .9 && hc.onPanS === 1 &&
+     hc.lost > hc.lostM4 * 1.25 && hc.lostM4 > 0 && hc.eye > 24 && hc.eye < 36 &&
+     hc.blown > 2 && hc.blown < 38 && hc.bodies >= 1 && hc.bodyNat === 'usa',
+     `the tank yard makes ${hc.makes}; asked for the M18 it queues ${hc.q}, counted as ${hc.made} made; buffers ` +
+     `${hc.bufs ? 'all built' : 'MISSING'}; ${hc.od} hull and ${hc.turOd} turret faces in olive drab; ${hc.roof} faces roofing it ` +
+     `over; the men have ${hc.tanker} faces of tanker's helmet and ${hc.m1} of M1, ${hc.over} of them more than 2 over the rim; ` +
+     `secondary ${hc.sec || 'none'}; the muzzle ${hc.reach} past the nose; asked to lay over the tail the turret is ${hc.lay} short; ` +
+     `${hc.fastest ? 'the fastest in the yard' : 'NOT the fastest in the yard'}; plate ${hc.front} in front, which at 300 the Panzer ` +
+     `IV's round opens ${hc.pP4} and the Pak 38's ${hc.pPak}; the 76 mm goes through a Panzer IV's front ${hc.onP4}, a Panther's ` +
+     `front ${hc.onPan} and its side ${hc.onPanS}; a 120-point burst took ${hc.lost} off it and ${hc.lostM4} off the M4A1; the eye ` +
+     `${hc.eye} up; ${hc.blown} of 40 wrecks threw the turret; killed, it left ${hc.bodies} bodies of ${hc.bodyNat}`);
+
   /* --- The 29th's second batch. The motor pool makes the M16 beside the M3, the 3-inch gun and
      the 105, and the barracks the 81. The M16's buffers are built and its quad mount
      goes the whole way round; the 3-inch is seven men who run it along with the trails closed,

@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m18.png", "key": "am_m18", "up": ["mg"], "crew": false,
+  "note": "A four-view of the M18 76 mm GMC, 857 by 1200 px, with the length over the gun (21 ft 10 in, 6.6 m), the height to the top of the .50 (8 ft 5 in, 2.57 m) and the width (9 ft 5 in, 2.87 m) marked on it. The side is taken off the length over the gun, 464 px, which is 70 px/m and puts the track on the ground between the first and last road wheel centres at the published 116 in and the .50's top at its 2.57 m; the plan along the hull at the same scale, 370 px over the hull against the side's 367.5. Across, the plan is drawn wider than it is long: the 2.87 m is 208 px in it, 72.5 px/m. The front and rear views take the width, 252 and 254 px, and run about three per cent short in height against it, so they take a vertical scale of their own off the height to the turret's rim in the side view.",
+  "views": {
+    "side":  { "nose": "left", "crop": [180, 110, 500, 200], "ppm": 70.0, "at": [0, 0, 0], "px": [475.0, 301.7], "k": 2 },
+    "plan":  { "nose": "left", "crop": [270, 455, 400, 230], "ppm": 70.0, "ppmv": 72.5, "at": [0, 0, 0], "px": [471.5, 574.0], "k": 2 },
+    "front": { "crop": [80, 790, 300, 255], "ppm": 87.8, "ppmv": 85.0, "at": [0, 0, 0], "px": [224.0, 1033.0], "k": 3 },
+    "rear":  { "crop": [520, 790, 300, 255], "ppm": 88.5, "ppmv": 85.0, "at": [0, 0, 0], "px": [673.0, 1033.0], "k": 3 } } }

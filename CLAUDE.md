@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Easy Eight, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther and the Pak 38 are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1296,7 +1296,16 @@ way round. Most of the row is the plate and the gun at three hundred: a Panzer I
 through its front between one time in five and two in three and through its side every time, and its
 90 mm goes through a Panther's front more than three times in five, more often than the M4A1's 75
 does, and a Panzer IV's every time. The eye is up out of the cupola and drops when the lid shuts,
-forty wrecks throw the turret some of the time, killed it leaves American bodies. And the four the
+forty wrecks throw the turret some of the time, killed it leaves American bodies. The M18 is asked it in
+a twenty-third: the tank yard makes it beside the M26 and queues it by its own key, it is in olive drab
+with nothing of its turret roofing it over at the rim, its three men wear the tanker's helmet and no M1
+with the commander's head over the rim, the .50 is standard, the 76 mm stands more than twelve units
+past the nose, the turret comes all the way round, and it is faster than anything else in the yard.
+Most of the row is the trade it makes at three hundred: a front the Panzer IV's round and the Pak 38's
+both open every time, a 76 mm through a Panzer IV's front more than four times in five, a Panther's
+side every time and its front about two times in three, and the same 120-point burst beside it taking
+more than a quarter again off it than off the M4A1. The eye is the commander's over the rim, forty wrecks
+throw the turret some of the time, and killed it leaves American bodies. And the four the
 first roster left on the German depot, the Tiger, the King Tiger, the Maus and the StuH 42, are asked
 what they wear: not one face of the sand, the two Zimmerit tiles with no colour of their own in them,
 the plate under Zimmerit on the ridged or the combed tile and the Maus's on the paint, and the cross on
@@ -5666,6 +5675,76 @@ kill an M26. Over twelve runs a row it takes the Panzer IV, the Puma, the 234/1,
 gone to their bundles, and a Pak 38 sited at 520 takes it 8 per cent of the time where it takes an M4 a
 quarter of the time.
 
+**The M18 Hellcat is the 29th's tank destroyer** (`am_m18`, on the tank yard's list between the Easy
+Eight and the M26): Buick's 76 mm Gun Motor Carriage M18, the 76 mm M1A1 in an open turret on a hull of
+half-inch plate, built light enough to run at fifty-five miles an hour. It has a rung on the brain's
+ladder after the 75 mm GMC, and `aiCutLadder` counts it among the things that kill a heavy, so it comes
+forward when the 352nd has a Panther. Its builders are `hc` and its tables `HCG`, `HCH` and `HCT`,
+because `m18` and `M18` were already the Mörser 18's. On `tools/dims.mjs` it reads 5.41 m long against
+5.28, 6.75 with the gun against 6.65, 2.91 wide against 2.87, 2.18 to the turret's rim against the
+drawing's 2.17, a body of 2.88 over the sponsons and a roof of 2.58 between them, and 0.36 of
+clearance. The published 2.57 m of height is over the .50, which the card does not measure.
+
+**It is laid over a four-view drawing** (`tools/ref/am_m18.json`) with the length over the gun, the
+height to the top of the .50 and the width marked on the sheet. The side and the plan along the hull
+are taken off the length over the gun at 70 px/m, which puts the track on the ground between the first
+and last road wheels at the published 116 in and the .50's top at its 2.57 m. The plan is drawn wider
+than it is long, so it takes the width across at 72.5; the front and the rear take the width and run
+about three per cent short in height against it, so they take a vertical scale of their own off the
+rim in the side view.
+
+What carries it, and each is built its own way. **The running gear is five stations a side on torsion
+arms** (`hcStation`), each a pair of pressed discs with the guides running between them (`hcPair`),
+four return rollers over them, the sprocket in front and the idler behind, and a fourteen-inch track.
+**The hull is welded plate** (`hcShell`): the lower hull a box between the tracks with the nose and the
+tail laid back under it, the upper hull the full width of the mudguards with its sides leaning in from
+the sponsons' lower edges to the roof, the glacis laid back from the roof's front to the nose, and a
+triangle each side from the glacis's corners out to the sponsons. **The mudguards are deep** over the
+sprocket and over the idler (`hcFenders`), the front one rolled down round the sprocket, with the
+panels pressed into them and the lip along the sponson's edge between them where the top run of the
+track shows. The nose carries the bolted cover over the final drive (`hcPlate`), the headlamps in boxes
+of bars and the shackles, and the roof the drivers' round hatches with a periscope's hood at the top of
+the glacis in front of each (`hcFront`, `onHcGlacis`); the engine deck the radial's raised cover with
+its doors and the fillers, the grille across the tail and the stars (`hcDeck`); the rear plate its two
+doors, the lower plate and the tail lamps (`hcRear`).
+
+**The turret is open above** (`hcTurret`): a rim and a foot traced point for point (`hcOutline`), a
+round front, sides in two pieces, the back plate with its corners cut and a bustle that steps up off
+the roof and overhangs the engine deck. Every point of the wall is the rim and the foot mixed by height
+(`hcTurretPts`), and the round front is shaded off the rim either side of each point and the lean of
+the wall there, so it reads as the curve it is and not as thirteen flat plates. Inside it is the white
+lead, left out of the occlusion bake (`m8Lit`), with a ledge at the foot of the walls, the basket down
+through the ring, the breech, the gunner's sight and seat, two tiers of rounds on the bustle's floor and
+the radio across the back (`hcInside`). Outside are a bin strapped flat to each side of the front, which
+leans with the wall because stood upright its foot went into the wall and from the side it read as a
+wedge with a hole under its lid, the hooks under the rim, a basket of slats along each side of the bustle
+with a bedroll in it (`hcBasket`) and the lifting eyes (`hcTurretKit`). The gun shield is swept round
+the trunnions and the 76 mm is plain at the muzzle, as the drawing has it (`hcGun`). **The .50 is
+standard** (`def.sec`), on its post at the left rear of the rim and thin to the bake (`hcFifty`). **Three
+tankers are in the turret** (`hcMen`): the gunner sitting at the sight on the left of the gun, the loader
+standing on the right of it and the commander standing at the back on the left with his head and
+shoulders over the rim, whose is the eye in the periscope (`VIN.am_m18`, open and with no room of its
+own, because the turret is the room).
+
+**Its numbers are a tank destroyer's, and the lever was the open turret.** It carries the Easy Eight's
+76 mm, 125 a round with 250 of penetration out to 420, on 520 hit points and 50 of plate, for 380 marks,
+80 of fuel and 12 of population, at 140, which is faster than anything else on tracks. At the Easy
+Eight's reload of 3.3 seconds and a blast factor of 1.6 (`blastRes`; the Wirbelwind's is 1.8) it lost
+to the Panzer IV five times in six head on, never beat a Panther even caught side-on, and lost to the
+Knight's Cross Holders every time. A round that hits it bursts beside it as well (`explode` gives a
+vehicle a third of the burst), and the factor multiplies that and a bundle charge alike, so the factor
+decides how many of the other side's rounds it takes more than its hit points do. At 2.6 seconds a round
+with an accuracy of .76 and a factor of 1.4, over twenty-four runs it takes the Panzer IV 46 per cent of
+the time head on, where the M4A1 takes it 42 on the same card, and a Panther 8 per cent head on and 4
+per cent caught side-on, because a hull comes round in a second or two and three of the Panther's rounds
+finish it. Over twelve runs a row it takes the StuH 83 per cent of the time and the Puma, the
+Wirbelwind, the 234/1 and the grenadier squad every time. A Pak 38 sited at its reach takes it every time
+in ten seconds, and over twenty-four runs the Knight's Cross Holders take it every time at grenade range,
+with their bundle on an open turret: it is a gun to keep off the infantry. Three variants at twelve runs
+a row read 25, 58 and 67 per cent against the Panzer IV, which is mostly the noise twelve runs carry; the
+twenty-four-run row is the one to go by. A build preference counts it as a tank (`bcls: 'med'`), because
+read off its plate it would count as an armoured car.
+
 **The M16 multiple gun motor carriage is the 29th's flak half-track** (`am_m16`, on the motor pool's
 list after the M3), and the Wirbelwind's opposite number: the M3's hull (`mhHullAll`) with the M45
 quad mount standing in the body in the place of the pedestal and the seats, four .50s that go the
@@ -6595,7 +6674,7 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 0 | Regimental Headquarters (`us_hq`) | Gefechtsstand (`ger_hq`) | the engineers or pioneers, the rifle or grenadier squad, the jeep or KS 750 |
 | 1 | Barracks (`us_bar`, 200) | Kaserne (`ger_qtr`, 200) | Rangers / Knight's Cross Holders, the mortar, the machine gun team, the jeep / KS 750, the 57 / Pak 38, and the Gebirgsflak |
 | 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, leFH 18, Nebelwerfer |
-| 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
+| 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
 A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
