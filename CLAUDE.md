@@ -9659,6 +9659,8 @@ shots/                         screenshot output, gitignored
   of every crater on the list.
 - **A row that compares two halves to the point cannot have a dice roll in it.** Whether a
   splinter finds a man is `Math.random`, so the automatic cannon row's two identical bursts
-  came out 186 and 160 against men; each half is thrown with the same seeded rolls now. And a
-  row that sets houses alight puts them out again: left burning, a fire spreads down the street
+  came out 186 and 160 against men; each half is thrown with the same seeded rolls now. The
+  burst row is seeded as well, and its two trials at one and a half radii are 120 bursts each:
+  at sixty on fresh dice one phone run read the men lying down at three quarters of the men
+  standing, where every other run on record read under half. And a row that sets houses alight puts them out again: left burning, a fire spreads down the street
   through every row under it.

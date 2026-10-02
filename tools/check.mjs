@@ -5872,7 +5872,18 @@ for (const device of TARGETS) {
     /* and a house with open ground either side of it, for the lee */
     const h = window.G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && !q.hurt && q.h > 50 && q.h < 110 &&
       window.walkable(q.x, q.y - q.h / 2 - 16) && window.walkable(q.x, q.y + q.h / 2 + 16))[0];
+    /* Every trial is thrown with the same seeded rolls, and the two at one and a half radii
+       with twice the bursts. Whether a splinter finds a man is a roll, and at that range a
+       burst finds about one man in sixteen standing and one in fifty lying down, so sixty
+       bursts are a score of hits against half a dozen: thrown with fresh dice, one phone run
+       read 1.1 standing against 0.82 lying down, where the other runs on record read under
+       half. The dice do not stay in step between the two (a hit takes a second roll for
+       how much), so the seed makes the row the same throw on every run of one file and the
+       count is what makes the throw a fair one. */
     function trial(x, y, bx, by, prone, n, r) {
+      const rand = Math.random;
+      let seed = 4049;
+      Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
       const u = window.spawnUnit(window.G.side, 'am_rifle', x, y);
       let lost = 0;
       for (let i = 0; i < n; i++) {
@@ -5884,14 +5895,15 @@ for (const device of TARGETS) {
         window.explode(bx, by, r || 90, 20, null, null, 30);
         u.models.forEach(m => { lost += 1e6 - m.hp; });
       }
+      Math.random = rand;
       const i2 = window.G.units.indexOf(u); if (i2 >= 0) window.G.units.splice(i2, 1);
       return +(lost / n).toFixed(2);
     }
     if (ox < 0 || !h) return { none: ox < 0 ? 'no open ground' : 'no house with open ground either side of it' };
     const out = { at: ox + ',' + oy, cover: best, house: Math.round(h.x) + ',' + Math.round(h.y) };
     out.near = trial(ox + 45, oy, ox, oy, false, 40);
-    out.far = trial(ox + 135, oy, ox, oy, false, 60);
-    out.farDown = trial(ox + 135, oy, ox, oy, true, 60);
+    out.far = trial(ox + 135, oy, ox, oy, false, 120);
+    out.farDown = trial(ox + 135, oy, ox, oy, true, 120);
     out.beyond = trial(ox + 240, oy, ox, oy, false, 40);
     const d = h.h + 30, by = h.y - h.h / 2 - 12;
     out.leeD = d;
