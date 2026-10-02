@@ -3663,8 +3663,11 @@ for (const device of TARGETS) {
     out.m1 = H.open.filter(f => f.c === A.helm || f.c === A.helmD).length;
     out.seat = !!(W.MODELS.man.gi_tank && W.MODELS.man.gi_tank[W.POSE_SEAT]);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    /* the eye off the hull's own footing (`u.gz`), which is where it stands now that it lies on the
+       ground: off the ground under its middle, a tank bridging a crater the rows above left there
+       read its eye seven units high */
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -3719,8 +3722,8 @@ for (const device of TARGETS) {
     const mz = W.gunMuzzle(t); out.muz = +Math.hypot(mz.x - t.x, mz.y - t.y).toFixed(1);
     t._matT = -1;
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -3826,8 +3829,8 @@ for (const device of TARGETS) {
     out.hullY = +Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
     out.skirtY = +Math.max.apply(null, V.skirts.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -3895,7 +3898,7 @@ for (const device of TARGETS) {
     out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
     out.arc = v.def.arc / 2;
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
@@ -3967,7 +3970,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
@@ -4036,7 +4039,7 @@ for (const device of TARGETS) {
     out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
     v.turret = 0;
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
@@ -4171,7 +4174,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     /* the two fittings, the .30 first because the routine reaches it first */
     const side0 = W.armourAt(v, v.x, v.y + 100);
@@ -4249,7 +4252,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     /* the Puma, a car of its own off the same building */
     const w0 = W.mainW(v), b0 = W.mountPose(v, V).bar;
@@ -4264,7 +4267,7 @@ for (const device of TARGETS) {
     out.crewUp = W.turCrewOf(pm, B) === B.turCrewUp.puma;
     pm._matT = -1;
     W.povOn(pm);
-    out.eyeP = +(W.povEye().z - W.groundZ(pm.x, pm.y)).toFixed(1);
+    out.eyeP = +(W.povEye().z - (pm.gz === undefined ? W.groundZ(pm.x, pm.y) : pm.gz)).toFixed(1);
     W.povOff();
     W.killUnit(pm);
     const nw = G.wrecks.length;
@@ -4750,7 +4753,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     out.auto = !!v.def.w.auto;
     const P4 = W.UNITS.hr_p4;
@@ -4839,8 +4842,8 @@ for (const device of TARGETS) {
     out.skirted = +W.armourAt(v, v.x, v.y + d).toFixed(1);
     v.up.skirts = false;
     W.povOn(v);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(v.x, v.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(v.x, v.y);
+    W.povHatch(true); const up = W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz);
+    W.povHatch(false); const dn = W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -5263,8 +5266,8 @@ for (const device of TARGETS) {
     out.p234 = pc('hr_234', front); out.pWirb = pc('hr_wirb', front); out.pKs = pc('hr_ks750', front); out.pP4 = pc('hr_p4', front);
     out.p234m8 = pc('hr_234', m8);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -5343,8 +5346,8 @@ for (const device of TARGETS) {
     out.m4OnPan = pc(W.UNITS.am_sher.w, W.armourAt(pan, pan.x + d, pan.y));
     W.killUnit(pan); W.killUnit(p4);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -5432,7 +5435,7 @@ for (const device of TARGETS) {
     [foe, m4].forEach(u => { u.dead = true; G.units.splice(G.units.indexOf(u), 1); });
     t.hp = t.def.hp;
     W.povOn(t);
-    out.eye = +(W.povEye().z - W.groundZ(t.x, t.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0;

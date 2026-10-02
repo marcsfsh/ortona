@@ -2406,6 +2406,30 @@ for a vehicle is the same fault as driving it off its nose: a tank slid sideways
 speed with no change of heading. A hull gets one swing of 0.6 radians and its front plate
 follows it round; the axis slides are infantry's alone.
 
+**And a hull lies on the ground it is crossing.** Every vehicle was drawn level whatever it
+stood on, with a bob of the suspension and a sway on top, so a Sherman climbing the Vierville
+draw climbed it flat with its nose in the slope and its tail in the air. `vehGround(u, dt)`
+fits a plane through six samples of the ground under the hull, at its front, its middle and
+its back and a little inside its two sides, off its own body (`bodyL`, `bodyW`, `bodyX`, so
+the samples move when the plates do), and the hull is drawn on that plane's pitch and roll
+(`u.gp`, `u.gl`). Three things keep it from wobbling on ground nobody laid for it. The plane is
+a least-squares fit and not the four corners, so one shell hole under one track tips the hull a
+little rather than dropping a corner into it. The angles ease toward the plane over about a
+fifth of a second and turn no faster than 1.1 radians a second, so a hull rolls over a lip
+rather than snapping onto it. And they stop at 0.40 radians of pitch and 0.32 of roll (`VG_P`,
+`VG_L`), steeper than any ground a hull is priced onto. The height is not eased, because a hull
+that lags the ground it is on is in the air: it is the plane's height under the middle, lifted
+by six tenths of the most any sample stood above the plane, to at most four, so a hull across
+the crest of a rise stands on the crest and not in it. The bob and the sway are kept, smaller,
+and the sway falls off with weight. Everything drawn off the hull goes with it: the turret and
+its gun in the hull's own frame, the muzzle flash (`gunMuzzle`), the shadow, the men, and the
+wreck, which keeps the attitude it died in and the height it stood at (`w.gdz`). Measured on a Sherman driven up the Vierville draw: in ten seconds the pitch came to 0.32
+radians and the roll to the 0.32 cap across the side of the draw, neither moved by more than 0.015
+radians in a frame at sixty frames a second, and the hull's corners stood within two and a half
+units of the ground on the sand and up the draw's floor. Across the anti-tank ditch at the draw's
+mouth, where the ground under a hull is nothing like a plane, a corner hung up to eleven units over
+the ditch and another went nine into its bank, which is a tank bridging a ditch.
+
 **The shape of a section is the shape of the ground it is on.** Three files abreast is
 right in a field and impossible in a lane a cart would fill: seven per cent of every
 man-frame had its place in the formation inside a house. `u.formW` cuts the frontage to
@@ -3467,12 +3491,44 @@ standing in for a crater. With a real hole under it as well, a salvo painted the
 black between its own craters; it is drawn tight round the hole when there is one.
 
 **What will not open.** A floor somebody levelled and built on, concrete, the sea, and
-anything under the size floor -- `CRATER_MIN`, which is eleven units of hole and sixteen on
+anything under the size floor -- `CRATER_MIN`, which is nine units of hole and thirteen on
 a phone, because a tile re-mesh costs what it costs wherever it runs and the thing to cut
 there is how often one is asked for. A crater is about a third of the burst radius, which
 puts a mortar bomb at eleven and a 210 at forty-five, and those are the two ends of what
 the map itself was hand-placed with. A round that burst against an upper storey scorches
 the street and does not open it.
+
+**A track leaves a rut.** Track marks were painted onto the decal canvas a frame at a time and
+never went anywhere, so ten minutes into a battle a field was a scribble of dark lines lying
+flat on ground nothing had touched. `rutTrack(u)` stamps the two tracks, or the wheels, into a
+layer of its own on the four-unit height grid (`G.rut`, `rutStamp`), and the ground mesh is laid
+on the height less the rut (`RZ` in `buildTerrain`), so a rut is a groove the light falls into.
+A cell holds the deepest rut anything has cut in it and never the sum of them, so a second tank
+in the first one's tracks finds them as deep as it would make them and digs nothing: the depth
+is a vehicle's own (`rutDepth`, off its hit points), about six tenths of a unit for a jeep and
+one for a Sherman up to a unit and a half for the heaviest hull, wheels cutting four fifths of
+what tracks would, and up to a third more where a map says its ground is wet. It
+cuts open ground and nothing else: a road, paving, a levelled pad, a bridge deck, the heap and
+the water's edge are left as they are. The bottom of a rut is a quarter darker and wetter, which
+is turned soil and the water that lies in it, and its normal is bent by the rut's own slope, so
+it reads as a cut and not as the ground pressed out of shape. It is the mesh and only the mesh:
+no cost, cover or going moves, because a rut a hand deep is nothing a man lies in. A tile it
+reaches is rebuilt once it has been quiet for 0.6 seconds or 2.5 seconds after the first track
+touched it, one tile at a time no closer than a third of a second on a desktop and nine tenths
+on a phone (`RUT_GAP`), only while the tile is on screen and only on a frame the crater queue
+has not used (`flushRutQ`). Measured on the Gothic Line: a Sherman across open ground cut 873
+cells, the deepest 1.21 units, and a tile rebuilt for it in 34 to 53 ms under SwiftShader.
+
+**And a scorch fades; the hole stays.** The burns and the blood were painted onto the decal
+canvas and stayed for the battle, so a field shelled for ten minutes was black between its
+craters. Every six seconds the whole canvas is washed a twentieth of the way back to the
+ground, and every fifteenth wash a quarter of the way, because eight bits of colour stop moving
+at a twentieth once they are within ten of white (`decalFade`): a half-life of about a minute.
+The hole is in the mesh and stays. More bursts leave one now: the floor is nine units on a
+desktop and thirteen on a phone where it was eleven and sixteen, and a battle may dig 220
+craters and 90 (`CRATER_CAP`) where it was 170 and 70. The scorch round a hole is soot thrown
+out in streaks to twice the hole's radius over a few soft lobes, darkest in the middle
+(`decalScorch`), where it was one dark disc.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and particle programs. A 2048px shadow map from a
@@ -3604,6 +3660,39 @@ of the army at once, and handling the fight in front of you without dragging in 
 holding a flag four hundred metres behind. The kinds come off what is already selected, so
 a mixed selection widens sensibly, and a building is never swept in because a selection
 with a headquarters in it shows production cards rather than order cards.
+
+**A group is sent to ground the size of what is in it.** An order to several units put them on
+a grid forty-four units to a side whatever they were, which is under half a Sherman's length:
+nine tanks sent to one point arrived on top of each other and went on ramming each other for
+good. `groupSlots` cuts each unit a slot off its own body with room round it, a hull's beam and
+twenty-four across and its length and eighteen along, a formation's width and depth and
+fourteen for men and pieces, and lays the group in ranks square to the way it is going: men in
+front, vehicles behind them and pieces behind those. The units furthest ahead take the front
+rank and each rank is filled by where they stand across it, so the one on the left goes left
+and nobody drives through the rank in front to reach the one behind; filled the other way, the
+tanks nearest the point stopped in the rear rank and the rest rammed through them. A slot that
+is not ground moves to the nearest ground that is clear of the slots already laid, where
+`nearestFree` alone had put two tanks in one place. Vehicles sent as a group come round onto
+the group's bearing when they stop (`u.faceA`), because a slot is cut to a hull lying along it
+and a tank stopped across its slot is lying in the next one. Measured on nine Shermans sent across open ground and given
+forty seconds: on the old grid eight pairs were still touching, the nearest two 31.9 units apart
+centre to centre; on the slots none touch, the nearest two are 63.8 apart, and every tank is within
+13.7 units of its slot.
+
+**A right-button drag says which way to face.** Pressed and dragged more than twelve pixels, the
+right button gives the order where it was pressed and the bearing it was dragged toward
+(`RDRAG`); let go short of that, it is the click it always was. While it is held each unit's
+slot is drawn on the ground: a hull's box or a ring for men, an arrow the way it will face, and
+for a piece that traverses on its carriage the arc it will be laid across, out to its reach, the
+way Company of Heroes shows a weapon team's arc before it is set down (`markArc`). A unit given
+a bearing keeps it until its order is cleared (`u.faceA`): a hull comes round onto it once it has
+stopped and back onto it when a target is gone, a section's formation turns to it and takes its
+cover against fire from that way, and a piece is set down on it and laid by `layOn` like any
+other turn. A selected piece in action shows its arc faintly. The machine guns lay across half a
+radian either way on their tripods, the 57 0.78, the Pak 38 0.57 and the 3-inch 0.39 (`def.carr`),
+and past that the whole piece is turned, so the arc drawn is what it covers without being heaved
+round. Measured: two Shermans, a rifle squad, a .30 and a 57 given a bearing at a right angle to
+their march all end on it to the hundredth of a radian, with both guns set up.
 
 **The sun is where December puts it.** Ortona is 42 degrees north and the date on the HUD
 is the 23rd. The sun reaches 24 degrees at noon that day and is under twenty by
@@ -6940,6 +7029,13 @@ that much. **Where one goes when nobody has pointed** is `baseSite`: rings round
 headquarters from 150 to 560 out on 24 bearings, beside or behind before in front, never nearer
 another player's headquarters than his own, and inside a base area before outside one. The brain
 and SIMPLE both use it; it replaced two to six fixed offsets that on a crowded map found none clear.
+
+**Where a building sends what it makes is shown while it is picked.** A right-click set the rally
+point and said so in a toast, and nothing on the map said where it was afterwards, so the only way
+to find out was to build something and watch where it went. With one of the player's production
+buildings selected, a small flag stands at the rally point in his army's colour (`drawRallyFlag`,
+on the overlay so it is never hidden behind a roof) with a ring at its foot and a dashed line out to
+it from the building's edge (`rallyOf`, in `buildMarks`).
 
 **The models are the two armies' own** (`BLDMODEL`, `buildingModel`, the palette `BASE`). The 29th
 lives under canvas, after the Company of Heroes base the brief asked for: wall tents and squad tents

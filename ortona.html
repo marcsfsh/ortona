@@ -1494,13 +1494,13 @@ var UNITS = {
   am_rifle: {
     side: 'us', nat: 'usa', name: 'Rifle Squad', short: 'RIF', cat: 'inf', hk: 'R',
     models: 6, hpPer: 78, speed: 64, sight: 300, pop: 8, cost: { mp: 260 }, time: 21, upgrades: ['bar2', 'rgren'],
-    w: { range: 262, dmg: 7.2, rof: 0.74, acc: .60, sup: .013, pen: 14 },
+    w: { mm: 7, range: 262, dmg: 7.2, rof: 0.74, acc: .60, sup: .013, pen: 14 },
     /* two of the men with a BAR each: the squad's volley comes faster and each is heavier,
        which is four rifles and two automatics averaged into one line (`bar2`), and two
        with the grenade launcher on the Garand, which is a second weapon on a clock of its
        own fired turn about by the two of them (`glUp`); either, both or neither */
-    wUp: { bar2: { range: 262, dmg: 7.4, rof: 0.59, acc: .60, sup: .016, pen: 15 } },
-    glUp: { rgren: { range: 220, dmg: 44, rof: 4.0, acc: .45, sup: .06, pen: 90, aoe: 20, shell: 1, men: [2, 3] } },
+    wUp: { bar2: { mm: 7, range: 262, dmg: 7.4, rof: 0.59, acc: .60, sup: .016, pen: 15 } },
+    glUp: { rgren: { mm: 55, heat: 1, range: 220, dmg: 44, rof: 4.0, acc: .45, sup: .06, pen: 90, aoe: 20, shell: 1, men: [2, 3] } },
     desc: 'Six riflemen of the 29th Infantry Division with M1 Garands: more men and a faster rate of aimed fire than a bolt-action section, and no light machine gun among them. Two of them can be issued the BAR, and two can be issued the grenade launcher for their rifles, which throws a grenade at men behind cover or at a light vehicle.'
   },
   /* The engineers who went in with the first wave: three men of an engineer combat
@@ -1513,7 +1513,7 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'Engineer Squad', short: 'ENG', cat: 'inf', hk: 'E',
     models: 3, hpPer: 76, speed: 68, sight: 250, pop: 5, cost: { mp: 170, fu: 0 }, time: 14,
     builder: true, body: 'usa_eng',
-    w: { range: 150, dmg: 5.8, rof: 0.42, acc: .54, sup: .016, pen: 10 },
+    w: { mm: 6, range: 150, dmg: 5.8, rof: 0.42, acc: .54, sup: .016, pen: 10 },
     desc: 'Three combat engineers of the 29th Infantry Division with M3 submachine guns, demolition kits and wire cutters. Builds cover, repairs armour and captures ground, and fights best up close.'
   },
   /* The Rangers, who went in at Dog White beside the 116th and up the cliffs at the Pointe:
@@ -1534,9 +1534,9 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'Ranger Squad', short: 'RGR', cat: 'inf', hk: 'N',
     models: 6, hpPer: 78, speed: 68, sight: 320, pop: 12, cost: { mp: 450, fu: 25 }, time: 30,
     req: 'us_bar', body: 'usa_rgr', upgrades: ['a6'],
-    w: { range: 250, dmg: 3.2, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
-    wUp: { a6: { range: 270, dmg: 3.2, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
-    at: { range: 270, dmg: 130, rof: 1.6, acc: .72, sup: .02, pen: 175, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
+    w: { mm: 7, range: 250, dmg: 3.2, rof: 0.15, acc: .60, sup: .0085, pen: 16 },
+    wUp: { a6: { mm: 7, range: 270, dmg: 3.2, rof: 0.15, acc: .60, sup: .0096, pen: 18 } },
+    at: { mm: 100, heat: 1, range: 270, dmg: 130, rof: 1.6, acc: .72, sup: .02, pen: 175, aoe: 16, shell: 1, rocket: 1, men: [1, 3] },
     desc: 'Six men of the Ranger battalions with four Thompsons and two BARs, and the BAR men sling the BAR and take the bazooka off their backs the moment anything with plate on it is in reach, and two bazookas are a match for a Panzer IV. Fights hardest close in. Two of the Thompson men can be issued the M1919A6 and fire it from the hip.'
   },
   /* A crew-served weapon is in action or it is on the move, and getting from one to the
@@ -1559,13 +1559,13 @@ var UNITS = {
   am_mg: {
     side: 'us', nat: 'usa', name: '.30 Cal MG Team', short: '.30 CAL', cat: 'team', hk: 'G',
     models: 4, hpPer: 52, speed: 50, sight: 340, pop: 6, cost: { mp: 260 }, time: 22,
-    req: 'us_bar', setup: 2.5, pack: 2.0, carry: 1, gunner: 'gi_mgg', gunSit: 'sitlow', body: 'usa_mg',
+    req: 'us_bar', setup: 2.5, pack: 2.0, carry: 1, gunner: 'gi_mgg', gunSit: 'sitlow', body: 'usa_mg', carr: .5, carrRate: 2.0,
     gunAt: 9.2, gunMuz: [6.95, 3.9], gunGrip: [-4.35, .45, 3.1],
     gunMate: { at: [-2.4, -6.2], a: Math.PI / 2, grip: [-1.35, -.55, 4.0], gripL: [-.6, -1.8, 3.3], pose: 'served' },
     gunCrew: [[-11, -8], [-10, 8]], carryP: { gun: 'a4', trip: 'm2', can: 'can30', canH: 2.26 },
     upgrades: ['m2hb'],
-    w: { range: 330, dmg: 4.4, rof: 0.12, acc: .42, sup: .046, pen: 10 },
-    wUp: { m2hb: { range: 380, dmg: 7.0, rof: 0.17, acc: .44, sup: .055, pen: 70 } },
+    w: { mm: 7, range: 330, dmg: 4.4, rof: 0.12, acc: .42, sup: .046, pen: 10 },
+    wUp: { m2hb: { mm: 22, range: 380, dmg: 7.0, rof: 0.17, acc: .44, sup: .055, pen: 70 } },
     gunUp: { m2hb: { gunAt: 13.4, gunMuz: [10.45, 5.0], gunGrip: [-8.75, .82, 4.4],
                      gunMate: { at: [-4.0, -7.4], a: Math.PI / 2, grip: [-3.3, -.75, 5.15], gripL: [-1.2, -2.6, 4.0], pose: 'served' },
                      gunCrew: [[-15, -9], [-14, 9]], carryP: { gun: 'm2hb', trip: 'm3', can: 'can50', canH: 2.34 } } },
@@ -1682,12 +1682,12 @@ var UNITS = {
   am_at: {
     side: 'us', nat: 'usa', name: '57 mm Gun M1', short: '57MM', cat: 'team', hk: 'T',
     models: 5, hpPer: 66, speed: 38, sight: 620, pop: 10, cost: { mp: 320, fu: 20 }, time: 26,
-    req: 'us_bar', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 10.8],
+    req: 'us_bar', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 10.8], carr: .78, carrRate: .85,
     gunner: 'gi_atg', body: 'usa_at', carryP: { can: 'box57', canH: 2.45 },
     gunAt: 11.0, gunY: -2.9, gunMuz: [22.6, 10.46], gunGrip: [-8.6, -1.17, 7.77], gunGripL: [-8.4, -5.36, 8.54],
     gunMate: { at: [-10.2, 4.4], a: -Math.PI / 2, grip: [-9.9, 1.55, 11.6], gripL: [-12.3, 1.55, 10.9], pose: 'served' },
     gunCrew: [[-21, -12], [-21, 12], [-30, 0]],
-    w: { range: 540, dmg: 120, rof: 3.2, acc: .80, sup: .02, pen: 245, aoe: 30, shell: 1 },
+    w: { mm: 80, range: 540, dmg: 120, rof: 3.2, acc: .80, sup: .02, pen: 245, aoe: 30, shell: 1 },
     desc: 'The American 57 on its split trail, with a crew of five. It sees and reaches further than any tank it will meet, so laid in cover on the ground armour has to cross it has the first round off. Kills tanks and nothing else, and helpless if infantry get on top of it.'
   },
   /* The 3-inch Gun M5 on the M6 carriage, in the T8's place: the towed gun of a tank
@@ -1702,12 +1702,12 @@ var UNITS = {
   us_t8: {
     side: 'us', nat: 'usa', name: '3-inch Gun M5', short: '3-INCH', cat: 'team', hk: 'K',
     models: 7, hpPer: 66, speed: 22, sight: 680, pop: 14, cost: { mp: 420, fu: 30 }, time: 38,
-    req: 'us_mot', setup: 6.0, pack: 6.5, towable: 1, towAt: 47, blastRes: .55, closeWeak: 2.4, traverse: .5,
+    req: 'us_mot', setup: 6.0, pack: 6.5, towable: 1, towAt: 47, blastRes: .55, closeWeak: 2.4, traverse: .5, carr: .39, carrRate: .5,
     runAt: [1.0, 14.8], gunner: 'gi_atg', body: 'usa_at', carryP: { can: 'box57', canH: 2.45 }, gunSit: 'laying',
     gunAt: 9.6, gunY: -5.6, gunMuz: [37.69, 15.4], gunGrip: [-8.4, -5.0, 11.1], gunGripL: [-8.4, -5.0, 9.3],
     gunMate: { at: [-9.6, 5.6], a: 0, grip: [-8.4, 5.0, 11.1], gripL: [-8.4, 5.0, 9.3], pose: 'laying' },
     gunCrew: [[-18, -17], [-18, 17], [-30, 0], [-26, -28], [-26, 28]],
-    w: { range: 640, dmg: 175, rof: 3.5, acc: .80, sup: .03, pen: 280, aoe: 34, shell: 1 },
+    w: { mm: 100, range: 640, dmg: 175, rof: 3.5, acc: .80, sup: .03, pen: 280, aoe: 34, shell: 1 },
     desc: 'The tank destroyer battalion\'s towed gun: a 3-inch anti-aircraft tube on the 105\'s carriage, behind a shield that sweeps back over the wheels, with a crew of seven. It sees and reaches further than the 57 and hits far harder: a Panzer IV or a Panther goes in a few rounds, and even a King Tiger is in danger from it. It is slow to move and slow to bring round; its crew run it about by hand, or a half-track hitches it. Laid in cover on the ground armour has to cross, it has the first round off. Anything that gets in among the crew kills them.'
   },
   /* The jeep, the Americans' light vehicle: three
@@ -1724,8 +1724,8 @@ var UNITS = {
     wheeled: 1,
     hp: 270, armor: 21, speed: 150, sight: 360, pop: 5, cost: { mp: 150, fu: 15 }, time: 16,
     caps: 1, tows: 1,
-    w: { range: 290, dmg: 8, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
-    wUp: { fifty: { range: 320, dmg: 10, rof: .25, acc: .56, sup: .06, supCap: .92, pen: 70, aoe: 0 } },
+    w: { mm: 7, range: 290, dmg: 8, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
+    wUp: { fifty: { mm: 22, range: 320, dmg: 10, rof: .25, acc: .56, sup: .06, supCap: .92, pen: 70, aoe: 0 } },
     desc: 'The quarter-ton truck with a .30 Browning on the pedestal behind the front seats: the fastest thing on the field, and it sees a long way. Nothing on it is armour, so rifle fire mostly goes through it and a machine gun finds everything. It tows the anti-tank gun, and the .30 can be changed for a .50.'
   },
   /* The M29C Weasel: a tracked cargo carrier with a buoyancy cell at either end, which goes over
@@ -1738,8 +1738,8 @@ var UNITS = {
     carries: 1, tows: 1,
     hp: 300, armor: 21, speed: 118, sight: 340, pop: 6, cost: { mp: 190, fu: 20 }, time: 20,
     req: 'us_bar',
-    w: { range: 290, dmg: 8, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
-    wUp: { fifty: { range: 320, dmg: 10, rof: .25, acc: .56, sup: .06, supCap: .92, pen: 70, aoe: 0 } },
+    w: { mm: 7, range: 290, dmg: 8, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
+    wUp: { fifty: { mm: 22, range: 320, dmg: 10, rof: .25, acc: .56, sup: .06, supCap: .92, pen: 70, aoe: 0 } },
     desc: 'Studebaker\'s tracked carrier with a buoyancy cell at each end: a driver, a .30 on a post in the cargo bay with a man standing to it, and a bench across the back for a squad, which it carries over ground a half-track will not cross. Nothing on it is armour. The .30 can be changed for a .50.'
   },
   /* The half-track: the M3, built from nothing to a drawing of it, with a
@@ -1755,8 +1755,8 @@ var UNITS = {
     wheeled: 1, carries: 1, tows: 1, upgrades: [], arcUp: { how75: .7 },
     hp: 360, armor: 40, speed: 112, sight: 320, pop: 10, cost: { mp: 240, fu: 30 }, time: 22,
     req: 'us_mot',
-    w: { range: 280, dmg: 14, rof: .22, acc: .58, sup: .05, pen: 30, aoe: 0 },
-    wUp: { how75: { range: 440, dmg: 140, rof: 2.4, acc: .74, sup: .04, pen: 205, aoe: 30, shell: 1 } },
+    w: { mm: 22, range: 280, dmg: 14, rof: .22, acc: .58, sup: .05, pen: 30, aoe: 0 },
+    wUp: { how75: { mm: 78, range: 440, dmg: 140, rof: 2.4, acc: .74, sup: .04, pen: 205, aoe: 30, shell: 1 } },
     desc: 'The White half-track: a driver, the .50 on its pedestal behind the front seats with the gunner standing to it, and seats down both sides for a squad, which it carries forward behind a quarter of an inch of plate. It tows the anti-tank gun. The pedestal goes all the way round, and anything heavier than a rifle round goes through the sides.'
   },
   /* The M16 multiple gun motor carriage: the M3 with the M45 quad mount in its body, four
@@ -1771,7 +1771,7 @@ var UNITS = {
     wheeled: 1,
     hp: 360, armor: 40, speed: 108, sight: 350, pop: 10, cost: { mp: 300, fu: 45 }, time: 24,
     req: 'us_mot',
-    w: { range: 340, dmg: 30, rof: .22, acc: .56, sup: .10, supCap: .95, pen: 70, aoe: 0 },
+    w: { mm: 22, range: 340, dmg: 30, rof: .22, acc: .56, sup: .10, supCap: .95, pen: 70, aoe: 0 },
     desc: 'The M3 half-track with the M45 quad mount in its body: four .50s on one mount that goes the whole way round, with the gunner sitting between them behind a curved plate. Nothing in the army clears men out of the open faster, and it opens a motorcycle, a half-track or an armoured car. It is a half-track underneath, so anything heavier than a rifle round goes through the sides, and it carries nobody.'
   },
   /* The Greyhound, the Americans' armoured car: a 37 mm in an open turret on six wheels, with the coaxial .30 beside it
@@ -1782,7 +1782,7 @@ var UNITS = {
     wheeled: 1, sec: ['coax'],
     hp: 380, armor: 40, speed: 150, sight: 370, pop: 8, cost: { mp: 240, fu: 35 }, time: 24,
     req: 'us_mot',
-    w: { range: 300, dmg: 46, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
+    w: { mm: 53, range: 300, dmg: 46, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
     desc: 'The Greyhound: Ford\'s six-wheeled armoured car with a 37 mm and a coaxial .30 in an open turret. Very fast on a road and it sees a long way; it opens a half-track, a scout car or a motorcycle, and anything that opens a tank opens it. The sand shields can be hung over the rear wheels and a .30 can be put on a ring over the turret.'
   },
   /* The Sherman the 741st and 743rd Tank Battalions took onto Omaha, built as an early
@@ -1792,13 +1792,13 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'M4A1 Sherman', short: 'M4A1', cat: 'veh', hk: 'F', upgrades: ['mg'], tows: 1,
     hp: 760, armor: 118, speed: 80, sight: 330, pop: 14, cost: { mp: 340, fu: 90 }, time: 34,
     req: 'us_tank', sec: ['coax'],
-    w: { range: 380, dmg: 140, rof: 3.3, acc: .70, sup: .05, pen: 210, aoe: 46, shell: 1 },
+    w: { mm: 78, range: 380, dmg: 140, rof: 3.3, acc: .70, sup: .05, pen: 210, aoe: 46, shell: 1 },
     /* rebuilt as an Easy Eight: the 76 mm M1A2 puts its round through half as much plate again
        as the 75 at a longer reach, and throws a lighter shell at men; the plate and the hull's
        hit points are the M4A1's, because the glacis at forty-seven degrees and two and a half
        inches is the same plate as the cast one at fifty-six and two */
     modelUp: { e8: 'am_e8' }, nameUp: { e8: 'M4A3E8 Sherman' },
-    wUp: { e8: { range: 420, dmg: 125, rof: 3.3, acc: .72, sup: .045, pen: 250, aoe: 38, shell: 1, brake: 1 } },
+    wUp: { e8: { mm: 100, range: 420, dmg: 125, rof: 3.3, acc: .72, sup: .045, pen: 250, aoe: 38, shell: 1, brake: 1 } },
     desc: 'The cast M4A1 with the 75 mm gun and the radial engine, as the tank battalions landed it on the beach: two inches of cast plate sloped back in front, a gun that fires a good high-explosive round and puts an armour-piercing one through a Panzer IV, and a crew of five.'
   },
   /* The M3 light tank, which the 29th's motor pool fields beside the M8: the same
@@ -1808,7 +1808,7 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'M3 Light Tank', short: 'STUART', cat: 'veh', hk: 'L', tows: 1,
     hp: 480, armor: 62, speed: 124, sight: 350, pop: 9, cost: { mp: 290, fu: 55 }, time: 30,
     req: 'us_tank', sec: ['coax'],
-    w: { range: 300, dmg: 46, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
+    w: { mm: 53, range: 300, dmg: 46, rof: 2.2, acc: .6, sup: .03, pen: 88, aoe: 16, shell: 1 },
     desc: 'The Stuart as the Americans first took it to war: riveted, with the round welded turret and a crew of four. The 37 mm and the coaxial .30 are the Greyhound\'s, on an inch and a half of plate in front that a machine gun, a 2 cm or a motorcycle\'s MG 34 will not open, so it will go where the armoured car cannot. A Panzer IV, a Panther or a Pak goes straight through it.'
   },
   /* The M26 Pershing, which the 29th's motor pool fields beside the M4A1 as its answer to
@@ -1818,7 +1818,7 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'M26 Pershing', short: 'PERSHING', cat: 'veh', hk: 'J', upgrades: ['mg'], tows: 1,
     hp: 920, armor: 230, flank: .5, speed: 76, sight: 360, pop: 18, cost: { mp: 540, fu: 140 }, time: 52,
     req: 'us_tank', sec: ['coax'],
-    w: { range: 460, dmg: 150, rof: 4.0, acc: .76, sup: .05, pen: 270, aoe: 44, shell: 1, brake: 1 },
+    w: { mm: 130, range: 460, dmg: 150, rof: 4.0, acc: .76, sup: .05, pen: 270, aoe: 44, shell: 1, brake: 1 },
     desc: 'The heavy tank the Americans took into Germany in the last winter of the war: a 90 mm that opens a Panther from the front, four inches of plate laid back at forty-six degrees that most of what the 352nd carries will not open, torsion bars and a crew of five. It is slower than a Sherman and it drinks fuel.'
   },
   /* The M18 Gun Motor Carriage, the Hellcat, which the 29th's tank yard fields beside the
@@ -1834,7 +1834,7 @@ var UNITS = {
     side: 'us', nat: 'usa', name: 'M18 Hellcat', short: 'HELLCAT', cat: 'veh', hk: 'H', tows: 1,
     hp: 520, armor: 50, speed: 140, sight: 360, pop: 12, cost: { mp: 380, fu: 80 }, time: 34,
     req: 'us_tank', sec: ['mg'], blastRes: 1.4, bcls: 'med',
-    w: { range: 420, dmg: 125, rof: 2.6, acc: .76, sup: .045, pen: 250, aoe: 38, shell: 1 },
+    w: { mm: 100, range: 420, dmg: 125, rof: 2.6, acc: .76, sup: .045, pen: 250, aoe: 38, shell: 1 },
     desc: 'The tank destroyer Buick built light enough to run at fifty-five miles an hour: the long 76 mm in an open turret on torsion bars, with a .50 at the back of the turret. It opens a Panzer IV from the front and a Panther from the flank from as far off as either can answer, and it is faster than anything else on tracks; half an inch of plate keeps out rifle fire and splinters and little else, and a burst over the open turret finds the crew.'
   },
   /* The M7 Priest: the field artillery's 105 mm M2A1 in an open fighting compartment on the M3
@@ -1899,7 +1899,7 @@ var UNITS = {
     side: 'ger', nat: 'heer', name: 'Pionier-Trupp', short: 'PIO', cat: 'inf', hk: 'E',
     models: 3, hpPer: 76, speed: 68, sight: 250, pop: 5, cost: { mp: 170, fu: 0 }, time: 14,
     builder: true, body: 'heer_pio',
-    w: { range: 150, dmg: 5.8, rof: 0.42, acc: .54, sup: .016, pen: 10 },
+    w: { mm: 6, range: 150, dmg: 5.8, rof: 0.42, acc: .54, sup: .016, pen: 10 },
     desc: 'Three pioneers of the 352nd Infantry Division with MP40s, demolition charges and the pioneer pack. Builds and repairs field positions and captures ground, and fights best up close.'
   },
   /* The grenadier squad of the 352nd Infantry Division as it stood behind the seawall on
@@ -1910,7 +1910,7 @@ var UNITS = {
   hr_gren: {
     side: 'ger', nat: 'heer', name: 'Grenadier Squad', short: 'GREN', cat: 'inf', hk: 'R',
     models: 6, hpPer: 80, speed: 62, sight: 310, pop: 8, cost: { mp: 250 }, time: 20,
-    w: { range: 270, dmg: 8.0, rof: 0.92, acc: .59, sup: .013, pen: 14 },
+    w: { mm: 7, range: 270, dmg: 8.0, rof: 0.92, acc: .59, sup: .013, pen: 14 },
     desc: 'Six grenadiers of the 352nd Infantry Division with Kar98k rifles and an MP40: a big squad with the reach of a bolt rifle and no veterans in it.'
   },
   /* The 352nd's heavy machine gun team: the MG 34 on the Lafette 34, and four men, the
@@ -1921,13 +1921,13 @@ var UNITS = {
   hr_mg: {
     side: 'ger', nat: 'heer', name: 'MG 34 Team', short: 'MG 34', cat: 'team', hk: 'G',
     models: 4, hpPer: 52, speed: 50, sight: 340, pop: 6, cost: { mp: 260 }, time: 22,
-    req: 'ger_qtr', setup: 2.5, pack: 2.0, carry: 1, gunner: 'hr_mgg', gunSit: 'sitmg', body: 'heer_mg',
+    req: 'ger_qtr', setup: 2.5, pack: 2.0, carry: 1, gunner: 'hr_mgg', gunSit: 'sitmg', body: 'heer_mg', carr: .5, carrRate: 2.0,
     gunAt: 10.0, gunY: -1.65, gunMuz: [8.45, 7.1], gunGrip: [-1.95, .3, 6.0], gunGripL: [-4.3, -.1, 7.25],
     gunMate: { at: [-.4, -6.9], a: Math.PI / 2, grip: [-.95, -.6, 7.25], gripL: [-1.1, -2.3, 6.0], pose: 'served' },
     gunCrew: [[-16, -12], [-15, 12]], carryP: { gun: 'mg34', trip: 'laf', can: 'pk34', canH: 2.21 },
     upgrades: ['mg42t'],
-    w: { range: 330, dmg: 4.4, rof: 0.12, acc: .42, sup: .046, pen: 10 },
-    wUp: { mg42t: { range: 340, dmg: 2.9, rof: 0.08, acc: .40, sup: .054, pen: 10 } },
+    w: { mm: 7, range: 330, dmg: 4.4, rof: 0.12, acc: .42, sup: .046, pen: 10 },
+    wUp: { mg42t: { mm: 7, range: 340, dmg: 2.9, rof: 0.08, acc: .40, sup: .054, pen: 10 } },
     gunUp: { mg42t: { gunAt: 9.75, gunY: -1.65, gunMuz: [8.7, 7.1], gunGrip: [-2.2, .3, 5.93], gunGripL: [-4.1, -.1, 7.25],
                       gunMate: { at: [-.4, -6.9], a: Math.PI / 2, grip: [-1.2, -.6, 7.25], gripL: [-1.3, -2.3, 6.0], pose: 'served' },
                       gunCrew: [[-16, -12], [-15, 12]], carryP: { gun: 'mg42', trip: 'laf', can: 'pk34', canH: 2.21 } } },
@@ -1946,7 +1946,7 @@ var UNITS = {
     models: 4, hpPer: 58, speed: 40, sight: 360, pop: 6, cost: { mp: 240, fu: 10 }, time: 22,
     req: 'ger_qtr', setup: 3.5, pack: 3.0, blastRes: .68, closeWeak: 2.0,
     gunAt: 8.75, gunMuz: [24.4, 13.65], gunGrip: [-5.5, 3.45, 10.3], gunSit: 'sitflak', gunSitZ: 4.23,
-    w: { range: 340, dmg: 40, rof: 0.30, acc: .62, sup: .28, pen: 20, aoe: 24, shell: 1, auto: 1 },
+    w: { mm: 28, range: 340, dmg: 40, rof: 0.30, acc: .62, sup: .28, pen: 20, aoe: 24, shell: 1, auto: 1 },
     desc: 'The mountain troops\' anti-aircraft cannon on its tripod, laid flat, which is what most of them were doing by the summer of 1944. Four hundred and fifty rounds a minute of twenty-millimetre high explosive from behind a curved shield: it strips a squad out of the open, it opens a jeep or a half-track, and it does nothing whatever to a Sherman.'
   },
   ger_mor: {
@@ -2025,7 +2025,7 @@ var UNITS = {
     side: 'ger', nat: 'heer', name: "Knight's Cross Holders", short: 'RK', cat: 'inf', hk: 'B',
     models: 4, hpPer: 105, speed: 68, sight: 330, pop: 10, cost: { mp: 420, fu: 30 }, time: 30,
     req: 'ger_qtr', body: 'heer_kch', vet0: 1,
-    w: { range: 230, dmg: 12.8, rof: .47, acc: .62, sup: .022, pen: 16 },
+    w: { mm: 7, range: 230, dmg: 12.8, rof: .47, acc: .62, sup: .022, pen: 16 },
     ab: { gren: { range: 150, cd: 35, dmg: 46, aoe: 24, fuse: .75 },
           bund: { range: 105, cd: 60, dmg: 240, aoe: 34, fuse: .75 } },
     desc: 'Four decorated veterans with StG 44s, who hunt infantry. GRENADES throws one from every man at whatever of the enemy is nearest inside the throw; BUNDLE CHARGE sends them after a vehicle you pick, and one of them throws seven grenade heads wired into one at it.'
@@ -2041,12 +2041,12 @@ var UNITS = {
   hr_pak: {
     side: 'ger', nat: 'heer', name: '5 cm Pak 38', short: 'PAK 38', cat: 'team', hk: 'T',
     models: 5, hpPer: 66, speed: 38, sight: 620, pop: 10, cost: { mp: 310, fu: 20 }, time: 26,
-    req: 'ger_qtr', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 10.0],
+    req: 'ger_qtr', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 10.0], carr: .57, carrRate: .85,
     gunner: 'hr_atg', body: 'heer_at', carryP: { can: 'box50', canH: 2.3 },
     gunAt: 8.6, gunY: -4.9, gunMuz: [27.3, 9.53], gunGrip: [-5.66, -3.9, 7.53], gunGripL: [-6.8, -7.55, 8.13],
     gunMate: { at: [-8.9, 4.3], a: -Math.PI / 2, grip: [-7.6, 1.15, 10.2], gripL: [-10.0, 1.15, 9.6], pose: 'served' },
     gunCrew: [[-14, -15], [-14, 15], [-22, 0]],
-    w: { range: 540, dmg: 130, rof: 2.6, acc: .80, sup: .02, pen: 235, aoe: 26, shell: 1, brake: 1 },
+    w: { mm: 82, range: 540, dmg: 130, rof: 2.6, acc: .80, sup: .02, pen: 235, aoe: 26, shell: 1, brake: 1 },
     desc: 'The 352nd\'s 5 cm on its split trail, with a crew of five. It sees and reaches further than any tank the Americans bring ashore, so laid in cover on the ground armour has to cross it has the first round off. Kills tanks and nothing else, and helpless if infantry get on top of it.'
   },
   /* Asked for, and built where it will fight. The eighty-eight was never a Pioneer's issue
@@ -2062,7 +2062,7 @@ var UNITS = {
     side: 'ger', name: '8.8 cm Flak 36', short: 'FLAK 88', cat: 'team',
     models: 6, hpPer: 66, speed: 0, sight: 470, pop: 10, cost: { mp: 420, fu: 50 }, time: 40,
     setup: 2.6, blastRes: .7, closeWeak: 2.4, limit: 2,
-    w: { range: 640, dmg: 165, rof: 4.2, acc: .84, sup: .04, pen: 340, aoe: 14, shell: 1 },
+    w: { mm: 125, range: 640, dmg: 165, rof: 4.2, acc: .84, sup: .04, pen: 340, aoe: 14, shell: 1 },
     wUp: { he: { range: 600, dmg: 105, rof: 4.2, acc: .74, sup: .32, pen: 40, aoe: 60, shell: 1 } },
     desc: 'The 8.8 cm Flak 36 on its cruciform mount, dug in as an anti-tank gun by the Pioneers and never moved again. Slow to traverse, but it fires AP that opens any Allied tank at ranges nothing can answer, or HE that flattens a section in the open. Pick the round.'
   },
@@ -2077,8 +2077,8 @@ var UNITS = {
     wheeled: 1, arc: .6,
     hp: 215, armor: 14, speed: 140, sight: 360, pop: 4, cost: { mp: 140, fu: 10 }, time: 14,
     caps: 1,
-    w: { range: 280, dmg: 8, rof: .18, acc: .55, sup: .06, supCap: .92, pen: 14, aoe: 0 },
-    wUp: { mg42: { range: 280, dmg: 6, rof: .135, acc: .52, sup: .052, supCap: .92, pen: 14, aoe: 0 } },
+    w: { mm: 7, range: 280, dmg: 8, rof: .18, acc: .55, sup: .06, supCap: .92, pen: 14, aoe: 0 },
+    wUp: { mg42: { mm: 7, range: 280, dmg: 6, rof: .135, acc: .52, sup: .052, supCap: .92, pen: 14, aoe: 0 } },
     desc: 'The heavy sidecar combination with its driven sidecar wheel: a rider and a gunner behind the MG 34 in the sidecar. Fast across anything, and it sees a long way. The gun fires ahead of the machine and nowhere else, so it turns to fight, and nothing on it stops a round. The MG 34 can be changed for an MG 42.'
   },
   /* The 352nd's half-track: the 251 Ausf. C, open above, with a driver and a gunner and the
@@ -2090,7 +2090,7 @@ var UNITS = {
     wheeled: 1, arc: .6, carries: 1,
     hp: 340, armor: 44, speed: 108, sight: 315, pop: 10, cost: { mp: 230, fu: 30 }, time: 22,
     req: 'ger_dep',
-    w: { range: 260, dmg: 11, rof: .15, acc: .56, sup: .06, pen: 28, aoe: 0 },
+    w: { mm: 7, range: 260, dmg: 11, rof: .15, acc: .56, sup: .06, pen: 28, aoe: 0 },
     desc: 'The Hanomag: a driver, a gunner and an MG 34 on the pintle at the front of an open compartment, with benches down both sides for a section, which it carries forward under fourteen millimetres of plate. The gun traverses a little either way and the vehicle turns to bring it further, and anything heavier than a rifle round goes through the sides.'
   },
   /* The Wespe: the leFH 18/2 in an open casemate over the back of a lengthened Panzer II,
@@ -2115,7 +2115,7 @@ var UNITS = {
     side: 'ger', nat: 'heer', name: 'Marder III Ausf. M', short: 'MARDER', cat: 'veh', hk: 'M', upgrades: [],
     hp: 500, armor: 64, flank: .45, speed: 84, sight: 340, pop: 12, cost: { mp: 330, fu: 75 }, time: 30,
     req: 'ger_dep', arc: .73, blastRes: 1.4,
-    w: { range: 460, dmg: 150, rof: 2.8, acc: .76, sup: .05, pen: 225, aoe: 46, shell: 1, brake: 1 },
+    w: { mm: 108, range: 460, dmg: 150, rof: 2.8, acc: .76, sup: .05, pen: 225, aoe: 46, shell: 1, brake: 1 },
     desc: 'The Pak 40 in an open casemate on the back of a Panzer 38(t): the Panzer IV\'s gun on a light, quick chassis. It opens a Sherman from the front, it traverses a little either way and turns the hull for the rest, and its plate keeps out little more than a machine gun. A burst over the open top finds the crew.'
   },
   /* The Panzer IV the 352nd had on the beach: the Ausf. H with the long 7.5 cm, in the
@@ -2124,7 +2124,7 @@ var UNITS = {
     side: 'ger', nat: 'heer', name: 'Panzer IV Ausf. H', short: 'PZ IV', cat: 'veh', hk: 'F', upgrades: ['skirts', 'mg'],
     hp: 700, armor: 132, speed: 76, sight: 340, pop: 14, cost: { mp: 345, fu: 90 }, time: 34,
     req: 'ger_pz',
-    w: { range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
+    w: { mm: 108, range: 400, dmg: 152, rof: 3.5, acc: .71, sup: .05, pen: 228, aoe: 46, shell: 1, brake: 1 },
     desc: 'The Wehrmacht\'s medium tank as it stood in Normandy: the long 7.5 cm gun, eighty millimetres across the front and the Schürzen hung down its sides and round its turret against the rifle round and the bazooka. It outguns an M4 and outlasts one head on, and it is slower and hates being flanked.'
   },
   /* The 234, the 352nd's armoured car: the eight-wheeled armoured car of a Panzer division's reconnaissance battalion, which is
@@ -2138,8 +2138,8 @@ var UNITS = {
     req: 'ger_dep',
     /* the burst is 9 and not 14: when a burst on a man at the edge of his section began to
        reach him, at 14 the Rangers beat it half the time where they had beaten it 92 per cent */
-    w: { range: 300, dmg: 12, rof: .30, acc: .58, sup: .03, pen: 25, aoe: 9, shell: 1, auto: 1 },
-    wUp: { puma: { range: 380, dmg: 85, rof: 2.6, acc: .70, sup: .04, pen: 120, aoe: 22, shell: 1, brake: 1 } },
+    w: { mm: 28, range: 300, dmg: 12, rof: .30, acc: .58, sup: .03, pen: 25, aoe: 9, shell: 1, auto: 1 },
+    wUp: { puma: { mm: 82, range: 380, dmg: 85, rof: 2.6, acc: .70, sup: .04, pen: 120, aoe: 22, shell: 1, brake: 1 } },
     desc: 'Eight wheels, a diesel and a driver at either end: the heavy armoured car, faster than anything on the beach and quick out of a street the way it came in. It arrives with the 2 cm and an MG 42 in an open turret under two wire screens, which keeps men down and opens a half-track or a scout car. The 234/2 is the same car under the closed turret with the 5 cm.'
   },
   /* The 234/2 Puma, which the 234's turret swap was: the same car under the closed eight-sided
@@ -2160,7 +2160,7 @@ var UNITS = {
     side: 'ger', nat: 'heer', name: 'Flakpanzer IV Wirbelwind', short: 'WIRBEL', cat: 'veh', hk: 'Q', upgrades: ['skirts'],
     hp: 460, armor: 104, speed: 76, sight: 340, pop: 12, cost: { mp: 320, fu: 75 }, time: 30,
     req: 'ger_dep', blastRes: 1.8,
-    w: { range: 320, dmg: 36, rof: .26, acc: .60, sup: .025, pen: 24, aoe: 22, shell: 1, auto: 1 },
+    w: { mm: 28, range: 320, dmg: 36, rof: .26, acc: .60, sup: .025, pen: 24, aoe: 22, shell: 1, auto: 1 },
     desc: 'The Panzer IV with its turret lifted off and an open one of nine plates in its place, with four 2 cm cannon in it. Nothing in the army clears men out of the open or opens a half-track or an armoured car faster. It is paid for in plate: the turret is sixteen millimetres with no roof, four of the crew are in it, and anything that can open a tank opens this more easily than the Panzer IV it is built on.'
   },
   /* The Panther, the 352nd's second tank: the Ausf. A with the long 7.5 cm. Eighty
@@ -2171,7 +2171,7 @@ var UNITS = {
     side: 'ger', nat: 'heer', name: 'Panther Ausf. A', short: 'PANTHER', cat: 'veh', hk: 'N', upgrades: ['skirts', 'mg'],
     hp: 900, armor: 220, flank: .38, speed: 84, sight: 355, pop: 18, cost: { mp: 520, fu: 130 }, time: 50,
     req: 'ger_pz',
-    w: { range: 460, dmg: 145, rof: 3.8, acc: .78, sup: .05, pen: 280, aoe: 40, shell: 1, brake: 1 },
+    w: { mm: 140, range: 460, dmg: 145, rof: 3.8, acc: .78, sup: .05, pen: 280, aoe: 40, shell: 1, brake: 1 },
     desc: 'The long 7.5 cm on a hull faster than a Sherman: it opens anything the Americans landed from further off than they can answer, and eighty millimetres of glacis laid back fifty-five degrees turns most of what comes back. The sides are forty millimetres and the tracks are long, so a gun that gets round the flank goes through it as easily as through a Panzer IV.'
   },
   /* Back on the depot. It was withdrawn while the maps were Italian, where no Tiger II ever
@@ -2181,7 +2181,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger II (Königstiger)', short: 'TIGER II', cat: 'veh', hk: 'B', upgrades: ['mg'],
     hp: 1500, armor: 380, speed: 68, sight: 360, pop: 24, cost: { mp: 900, fu: 220 }, time: 95,
     req: 'ger_pz', limit: 1,
-    w: { range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1, brake: 1 },
+    w: { mm: 205, range: 520, dmg: 130, rof: 7.5, acc: .8, sup: .22, pen: 330, aoe: 38, shell: 1, brake: 1 },
     desc: 'The heaviest tank of the war: 70 tonnes, a glacis nothing on this map can pierce, and an 8.8 cm L/71 that kills a Sherman at any range it can see. One per army. Slow, and it drinks fuel.'
   },
   /* Asked for, and built. Two Maus were finished and neither fought, so this is the
@@ -2192,15 +2192,15 @@ var UNITS = {
     side: 'ger', name: 'Panzerkampfwagen VIII Maus', short: 'MAUS', cat: 'veh', hk: 'M', upgrades: ['mg'],
     hp: 2600, armor: 500, speed: 30, sight: 380, pop: 44, cost: { mp: 2200, fu: 700 }, time: 210,
     req: 'ger_pz', limit: 1,
-    w: { range: 600, dmg: 210, rof: 9.5, acc: .78, sup: .28, pen: 460, aoe: 56, shell: 1 },
+    w: { mm: 235, range: 600, dmg: 210, rof: 9.5, acc: .78, sup: .28, pen: 460, aoe: 56, shell: 1 },
     desc: 'A hundred and eighty-eight tonnes, and never a shot fired in anger by either of the two that were built. The 12.8 cm KwK 44 kills anything on the map at any range it can see, the plate is thicker than a Tiger II carries at the front and nearly as thick at the back, and it moves at a walking pace: eleven kilometres an hour on a good surface, and it cannot cross a bridge. One per army, and it costs what a company costs.'
   },
   ger_stug: {
     side: 'ger', name: 'Sturmhaubitze 42', short: 'STUH 42', cat: 'veh', hk: 'S', upgrades: ['scope', 'mgs', 'skirts'],
     hp: 640, armor: 134, speed: 80, sight: 330, pop: 12, cost: { mp: 300, fu: 75 }, time: 30,
     req: 'ger_pz', arc: .35,
-    w: { range: 400, dmg: 170, rof: 5.0, acc: .66, sup: .16, pen: 150, aoe: 62, shell: 1, brake: 1 },
-    wUp: { scope: { range: 450, dmg: 170, rof: 5.0, acc: .69, sup: .16, pen: 150, aoe: 62, shell: 1, brake: 1 } },
+    w: { mm: 95, heat: 1, range: 400, dmg: 170, rof: 5.0, acc: .66, sup: .16, pen: 150, aoe: 62, shell: 1, brake: 1 },
+    wUp: { scope: { mm: 95, heat: 1, range: 450, dmg: 170, rof: 5.0, acc: .69, sup: .16, pen: 150, aoe: 62, shell: 1, brake: 1 } },
     desc: 'The Sturmgeschütz III Ausf. G with the 10.5 cm StuH 42 in place of the long 7.5 cm: a short, heavy howitzer in the same low casemate, for putting high explosive through the window a machine gun is firing out of. Its hollow charge will open a Sherman from the front at a fair range, but it is a gun for houses and men. It fires ten degrees either side of where it points and turns the whole vehicle for anything else. Three fittings in the field: the scissors periscope, the two machine guns, and Schürzen.'
   },
 
@@ -2208,7 +2208,7 @@ var UNITS = {
     side: 'ger', name: 'Tiger I Ausf. E', short: 'TIGER I', cat: 'veh', hk: 'K', upgrades: ['mg'],
     hp: 1150, armor: 245, speed: 72, sight: 355, pop: 20, cost: { mp: 700, fu: 165 }, time: 76,
     req: 'ger_pz', limit: 1,
-    w: { range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1, brake: 1 },
+    w: { mm: 125, range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1, brake: 1 },
     desc: 'Fifty-seven tonnes, a hundred millimetres of flat plate all round the front, and an 8.8 cm KwK 36 that opens a Sherman at any range it can see. One per army. It is slow, it drinks fuel, and the streets here are narrow enough to trap it.'
   }
 };
@@ -4077,7 +4077,7 @@ function buildMap(data) {
   frFree();
   G.hurt.length = 0; G.fall = []; G.rub.length = 0; G.rubDirty = 1; MND = null; G.heapDirty = 1;
   G.frStat = { made: 0, bodies: 0, lost: 0 };
-  G.tileQ = {}; G.groundQ = {};
+  G.tileQ = {}; G.groundQ = {}; G.rut = null; G.rutQ = {};
   G.blocks = []; G.craterFx = []; G.craters = []; G.cratersDug = 0; G.puddles = []; G.ambientSmoke = []; G.roadDebris = [];
   G.bunks = [];
   G.rail = []; G.coastline = []; G.graves = []; G.mapLabels = [];
@@ -7811,7 +7811,7 @@ function updateBuilding(b, dt) {
 /* `coverDone` goes with the order, because a new order is the one thing that is allowed
    to make a section take cover again. Everything else -- the enemy moving round, a man
    falling, the piece being shot away -- leaves it where it chose to be. */
-function clearOrder(u) { u.abT = null; u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; u.coverDone = 0; }
+function clearOrder(u) { u.faceA = undefined; u.abT = null; u.order = null; u.path = null; u.dest = null; u.forced = null; u.building = null; u.repairing = null; u.boardT = null; u.hitchT = null; u.enterT = null; u.lastGap = undefined; u.blockN = 0; u.barrage = null; u.coverDone = 0; }
 
 /* Holding a house. A ruin with two feet of rubble stone round it is the best cover on
    this map and the whole battle for Ortona was fought for one building at a time, so a
@@ -8316,6 +8316,7 @@ function moveUnit(u, dt) {
     if (u.pi >= u.path.length) {
       u.path = null;
       if (u.order === 'move' || u.order === 'attackmove') u.order = u.order === 'attackmove' ? 'attackmove' : null;
+      if (u.faceA !== undefined && u.cat === 'team') u.facing = u.baseA = u.faceA;
       if (u.def.setup && (u.packed || !u.def.pack)) u.setup = u.def.setup;
       if (u.retreat) finishRetreat(u);
       return;
@@ -8521,7 +8522,7 @@ function moveUnit(u, dt) {
     u.trkAnim = ((u.trkAnim || 0) + sp * dt * .7) % 8;
     if (u.trk > 11) {
       u.trk = 0;
-      decalTrack(u.x, u.y, u.facing);
+      rutTrack(u);
       if (G.fx.length < 200 && Math.random() < .55)
         spawnFx('dust', u.x - Math.cos(u.facing) * 20 + rnd(-6, 6), u.y - Math.sin(u.facing) * 20 + rnd(-6, 6));
       if (G.fx.length < 200 && Math.random() < .35)
@@ -8955,6 +8956,8 @@ function updateModels(u, dt) {
     u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
     /* the hull rocks a little as it drives */
     u.roll = u.moving ? (u.roll || 0) + dt * 7 * clamp((u.sp || 0) / Math.max(1, u.def.speed), .3, 1.2) : 0;
+    /* and it lies on the ground it is crossing */
+    if (u.gz === undefined) vehGround(u, 0); else vehGround(u, dt);
     return;
   }
   /* The formation keeps the bearing it halted on. A section turned to face what it was
@@ -8966,6 +8969,7 @@ function updateModels(u, dt) {
      so a team keeps the gun's bearing. */
   if (u.formA === undefined || u.cat !== 'inf' || u.gar) u.formA = u.facing;
   else if (u.moving) u.formA += clamp(angDiff(u.formA, u.facing), -5 * dt, 5 * dt);
+  else if (u.faceA !== undefined) u.formA += clamp(angDiff(u.formA, u.faceA), -2.5 * dt, 2.5 * dt);
   if (u.moving) u.movT = .35; else u.movT = (u.movT || 0) - dt;
   var cs = Math.cos(u.formA), sn = Math.sin(u.formA);
   var near = manNear(u);
@@ -8990,7 +8994,8 @@ function updateModels(u, dt) {
          `coverDone` is the flag rather than the slots, because a halt that finds nothing
        worth taking has to be remembered as well, or the search runs every tick for the
        rest of the battle. */
-    u.threatAng = nearestThreat(u);
+    /* the fire is expected from the way he faced it, if he said */
+    u.threatAng = u.faceA !== undefined ? u.faceA + Math.PI : nearestThreat(u);
     if (!u.coverDone) {
       u.coverDone = 1; u.coverAng = u.threatAng;
       u.coverPiece = null; u.coverSlots = null;
@@ -11800,10 +11805,12 @@ function flushGroundQ() {
     if (G.t - q.hit < CRQ_SETTLE && G.t - q.first < CRQ_MAX) continue;
     if (q.first < bt) { bt = q.first; best = +k; }     /* the one that has waited longest */
   }
-  if (!best) return;
+  if (!best) return false;
   delete G.groundQ[best];
+  if (G.rutQ) delete G.rutQ[best];
   var only = {}; only[best] = 1;
   buildTerrain(only);
+  return true;
 }
 /* ---- the hole a shell leaves ----------------------------------------------------
    A shell that lands on open ground takes a piece of the ground away, and until this
@@ -11827,7 +11834,7 @@ function flushGroundQ() {
    already computes off its neighbours, the wet channel fills it because a hole is where
    the water goes, the scorch decal blackens the middle, and the fresh spoil round the
    rim rides in the vertex colour off the same kind of grid the wet channel uses. */
-var CRATER_CAP = MOB ? 70 : 170;          /* how many a battle may dig, beyond the map's */
+var CRATER_CAP = MOB ? 90 : 220;          /* how many a battle may dig, beyond the map's */
 /* What a burst of a given radius takes out of the ground. A shell hole is a good deal
    smaller than the radius the blast hurts men over -- about a third of it -- which is
    what puts a mortar bomb at eleven units and a 210 at forty-five, and those are the two
@@ -11838,7 +11845,7 @@ function craterR(burst) { return burst * .34; }
    it is higher on a phone: a tile re-mesh is 62 ms wherever it runs, so the thing to cut
    there is how often one is asked for rather than how good the hole is. At eleven a
    mortar bomb digs; at sixteen it takes a howitzer. */
-var CRATER_MIN = MOB ? 16 : 11;
+var CRATER_MIN = MOB ? 13 : 9;
 /* Where the ground can be opened at all. Not through a floor somebody levelled and built
    on, not through concrete, and not in the sea. */
 function canDig(x, y) {
@@ -11951,6 +11958,106 @@ function workDig(x, y, d) {
   carve(x, y, x, y, d.r, -d.depth, d.lip, 'bowl');
   carveRefresh(x, y, d.r + (d.lip ? d.lip.w : 0));
   craterMark(x, y, d.r + (d.lip ? d.lip.w : 0));
+}
+
+/* ---- what a hull leaves in the ground ----
+   A tank crossing a field left two thin lines painted on it every eleven units, which
+   built up into a scribble over the whole battle and never went anywhere, and the ground
+   under the lines was exactly where it was. A track is a rut. `G.rut` is how deep the
+   ground has been pressed at each point of the height grid, and the mesher lays the
+   ground that much lower (`buildTerrain`), darker and wetter, because a rut is compacted
+   earth with the water standing in it.
+     A vehicle presses the ground to the depth its weight does and no deeper: the depth is
+   the deepest anything has pressed it, so a second Sherman down the first one's ruts
+   adds nothing and a Tiger after a jeep takes them down to the Tiger's. Nothing is pressed
+   on a street, a bridge, a rubble heap, a building's plot or under the water.
+     It is the mesh's alone and nobody stands in it, the way the skirt past the edge of the
+   map is scenery. Under the height everything else stands on it would have to follow the
+   going grid, the cover and the invariant `levelPad` once broke, for a dip of a hand's
+   depth that a man's boots hide.
+     A tile is laid again for its ruts when a vehicle has finished with it, on its own clock
+   behind the craters', and only while it is on the screen: a tank drives across a tile in
+   about a second, and at a rebuild a tile a second for every vehicle moving a phone would
+   spend its frames laying ground. One that is off the screen keeps its ruts queued until it
+   is looked at. */
+var RUT_GAP = MOB ? .9 : .3;
+function rutAt(x, y) {
+  var R = G.rut; if (!R) return 0;
+  var fx = clamp(x / HG, 0, HW - 1.001), fy = clamp(y / HG, 0, HH - 1.001);
+  var i = fx | 0, j = fy | 0, tx = fx - i, ty = fy - j;
+  var a0 = R[hidx(i, j)], b0 = R[hidx(i + 1, j)], a1 = R[hidx(i, j + 1)], b1 = R[hidx(i + 1, j + 1)];
+  if (!(a0 || b0 || a1 || b1)) return 0;
+  return (a0 + (b0 - a0) * tx) * (1 - ty) + (a1 + (b1 - a1) * tx) * ty;
+}
+/* How deep a vehicle presses the ground: a jeep about five centimetres, a Sherman nine and
+   the heaviest things on the roster thirteen, wheels a fifth less than tracks, and a third
+   more where the country says the ground is wet. */
+function rutDepth(u, x, y) {
+  var d = clamp(.3 + Math.sqrt(u.def.hp || 300) / 38, .45, 1.55) * (u.def.wheeled ? .8 : 1);
+  return d * (1 + (LAND.wet ? LAND.wet(x, y) * .35 : 0));
+}
+/* one press of a track's width at a point, deepening the grid where it is shallower than
+   this press, and saying whether it did */
+function rutStamp(x, y, hw, D) {
+  if (onRoad(x, y) || inland(x, y) < 14 || (MND && heapZ(x, y) > .5)) return false;
+  var ci = Math.round(x / HG), cj = Math.round(y / HG), reach = Math.ceil((hw + 2) / HG), i, j, hit = false;
+  for (j = cj - reach; j <= cj + reach; j++) for (i = ci - reach; i <= ci + reach; i++) {
+    if (i < 0 || j < 0 || i >= HW || j >= HH) continue;
+    var k = hidx(i, j);
+    if (G.pad[k] || (G.deck && G.deck[k] > -1e8)) continue;
+    var t = clamp((hw + 1.5 - Math.hypot(i * HG - x, j * HG - y)) / 2.5, 0, 1);
+    if (!t) continue;
+    var z = D * t * t * (3 - 2 * t);
+    if (z > G.rut[k] + .03) { G.rut[k] = z; hit = true; }
+  }
+  return hit;
+}
+function rutMark(x, y) {
+  var tw = WORLD.w / PT_W, th = WORLD.h / PT_H, m = 8;
+  var i0 = clamp(Math.floor((x - m) / tw), 0, PT_W - 1), i1 = clamp(Math.floor((x + m) / tw), 0, PT_W - 1);
+  var j0 = clamp(Math.floor((y - m) / th), 0, PT_H - 1), j1 = clamp(Math.floor((y + m) / th), 0, PT_H - 1);
+  for (var j = j0; j <= j1; j++) for (var i = i0; i <= i1; i++) {
+    var ti = 1 + j * PT_W + i, q = G.rutQ[ti];
+    if (q) q.hit = G.t; else G.rutQ[ti] = { first: G.t, hit: G.t };
+  }
+}
+/* Both tracks, or both sets of wheels, pressed along the ground the hull has covered since
+   the last press. The tracks run at the hull's own beam less half a track's width. */
+function rutTrack(u) {
+  if (!G.hmap || !G.pad) return;
+  if (u.rtX === undefined || Math.abs(u.x - u.rtX) + Math.abs(u.y - u.rtY) > 60) { u.rtX = u.x; u.rtY = u.y; return; }
+  var dx = u.x - u.rtX, dy = u.y - u.rtY, d = Math.hypot(dx, dy);
+  if (d < 3) return;
+  if (!G.rut || G.rut.length !== HW * HH) G.rut = new Float32Array(HW * HH);
+  if (!G.rutQ) G.rutQ = {};
+  unitBody(u);
+  var c = Math.cos(u.facing), s = Math.sin(u.facing), bx = u.bodyX || 0;
+  var hw = u.def.wheeled ? 1.6 : clamp(u.bodyW * .15, 1.8, 3.4), lat = Math.max(2, u.bodyW - hw - .6);
+  var n = Math.ceil(d / 2.5), D = rutDepth(u, u.x, u.y), i, sd;
+  for (i = 1; i <= n; i++) {
+    var px = u.rtX + dx * i / n + c * bx, py = u.rtY + dy * i / n + s * bx;
+    for (sd = -1; sd <= 1; sd += 2) {
+      var tx = px - s * lat * sd, ty = py + c * lat * sd;
+      if (rutStamp(tx, ty, hw, D)) rutMark(tx, ty);
+    }
+  }
+  u.rtX = u.x; u.rtY = u.y;
+}
+/* a tile laid again for its ruts, once nothing has pressed it for a little while, one at a
+   time behind the craters, and only one that can be seen */
+function flushRutQ() {
+  if (!SCENE.ready || !G.rutQ || G.t - (G.rutLast || 0) < RUT_GAP) return;
+  var v = view(), best = 0, bt = 1e18, k;
+  for (k in G.rutQ) {
+    var q = G.rutQ[k];
+    if (G.t - q.hit < .6 && G.t - q.first < 2.5) continue;
+    if (!tileInView(v, +k, 60)) continue;
+    if (q.first < bt) { bt = q.first; best = +k; }
+  }
+  if (!best) return;
+  delete G.rutQ[best]; G.rutLast = G.t;
+  var only = {}; only[best] = 1;
+  buildTerrain(only);
 }
 
 /* ---- the heap ----
@@ -12439,8 +12546,10 @@ function makeWreck(u) {
     /* down on the belly, and over. A broken back goes a long way over; a burnt-out hull
        settles a few degrees onto whichever side let go first. */
     sink: M.soft ? .8 + Math.random() * .8 : 2.2 + Math.random() * 2.4,
-    lean: (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.16, .30) : rnd(.02, .10)),
-    nose: (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.08, .17) : rnd(.01, .06)),
+    lean: (u.gl || 0) + (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.16, .30) : rnd(.02, .10)),
+    nose: (u.gp || 0) + (Math.random() < .5 ? -1 : 1) * (broke ? rnd(.08, .17) : rnd(.01, .06)),
+    /* and on the ground it died on, the plane under it against the ground under its middle */
+    gdz: u.gz === undefined ? 0 : u.gz - gz,
     skirts: skirted(u) && !blown && !broke && Math.random() < .45,     /* what is left of them, if they were hung */
     slew: (Math.random() < .5 ? -1 : 1) * rnd(.12, .9),  /* the traverse gear has gone */
     blown: blown
@@ -12785,11 +12894,15 @@ function muzzlePoint(u, m, i) {
 /* Where a vehicle's is. The mount sits off the hull centre and the barrel reaches out
    from the mount on the turret's own bearing. */
 function gunMuzzle(u) {
-  var M = VMODEL[vkey(u)] || {}, mo = mountPose(u, M), gz = groundZ(u.x, u.y);
-  var mx = u.x + Math.cos(u.facing) * mo.x - Math.sin(u.facing) * mo.y;
-  var my = u.y + Math.sin(u.facing) * mo.x + Math.cos(u.facing) * mo.y;
-  return { x: mx + Math.cos(u.turret) * (mo.bar + 6), y: my + Math.sin(u.turret) * (mo.bar + 6),
-           z: gz + (mo.z || 0) + (mo.gunZ || 0) };
+  /* in the mount's own frame on the hull's plane, so the flash leaves the muzzle of a tank
+     pointing up a slope; not through `vehFrames`, whose matrices are kept for the frame and
+     would keep this one's position if asked before the hull had moved */
+  var M = VMODEL[vkey(u)] || {}, mo = mountPose(u, M);
+  vehGroundNow(u);
+  var tr = (u.turret === undefined ? u.facing : u.turret) - u.facing;
+  var hm = m4lean(u.x, u.y, u.gz, u.facing, 1, u.gl, u.gp);
+  var p = m4apply(m4mul(hm, m4model(mo.x, mo.y, mo.z || 0, tr, 1)), mo.bar + 6, 0, mo.gunZ || 0);
+  return { x: p.x, y: p.y, z: p.z };
 }
 function onScreen(x, y) { return inView(view(), x, y, 80); }
 function updateShots(dt) {
@@ -13945,6 +14058,14 @@ function updateUnit(u, dt) {
     if (u.cat === 'veh') u.want = u.manual ? DRV.want : angTo(u, u.target);
   } else if (u.cat === 'veh') {
     u.want = u.manual ? DRV.want : u.facing;
+    /* and a hull given a bearing to face comes round onto it once it has stopped */
+    if (u.faceA !== undefined && !u.moving && !(u.immob > 0) && !u.manual && (u.sp || 0) < 2) {
+      var ft = (u.def.hp > 1000 ? 1.5 : u.def.hp > 500 ? 2.1 : 2.9) * .5 * dt;
+      u.facing += clamp(angDiff(u.facing, u.faceA), -ft, ft);
+    }
+  } else if (!u.moving && !u.retreat && !u.gar && !arcOf(u) && !u.barrage && u.faceA !== undefined) {
+    if (u.cat === 'team') layOn(u, u.faceA, dt);
+    else u.facing += clamp(angDiff(u.facing, u.faceA), -4 * dt, 4 * dt);
   } else if (!u.moving && !u.retreat && !u.gar && !arcOf(u) && !u.barrage && u.threatAng !== undefined && u.threatAng !== null) {
     /* Nothing to shoot at, but something known to be out there: a halted section turns
        to face it rather than standing the way it happened to arrive, and a machine gun
@@ -19250,9 +19371,29 @@ function buildMarks(v) {
       markRing(e.x, e.y, selRadius(e) + 6, markCol('#e07a4a'), .55, 2.4, null, 0);
     });
   }
+  /* The order being dragged out: each unit's place, its footprint and which way it will
+     face, and for a crew-served piece the arc it will be laid across, out to its reach, as
+     the arc of fire is shown before a weapon team is set down in Company of Heroes. */
+  if (RDRAG && RDRAG.moved) {
+    var pm = selectedUnits().filter(owned), ps = groupSlots(pm, RDRAG.wx, RDRAG.wy, RDRAG.a), pc = markCol('#9ecb62');
+    var pfx = Math.cos(RDRAG.a), pfy = Math.sin(RDRAG.a);
+    pm.forEach(function (u, k) {
+      var sl = ps[k]; if (!sl) return;
+      if (u.cat === 'veh') {
+        var hl = u.bodyL, hw = u.bodyW, bx = u.bodyX || 0, cs = [[bx + hl, hw], [bx + hl, -hw], [bx - hl, -hw], [bx - hl, hw], [bx + hl, hw]];
+        markRun(cs.map(function (q) { return [sl.x + pfx * q[0] - pfy * q[1], sl.y + pfy * q[0] + pfx * q[1]]; }), pc, .7, 2);
+      } else markRing(sl.x, sl.y, selRadius(u) * .72, pc, .6, 1.8, [9, 7], 0);
+      var al = 26, ax2 = sl.x + pfx * al, ay2 = sl.y + pfy * al;
+      markRun([[sl.x, sl.y], [ax2, ay2]], pc, .85, 2.4);
+      markRun([[ax2 - pfx * 9 - pfy * 7, ay2 - pfy * 9 + pfx * 7], [ax2, ay2], [ax2 - pfx * 9 + pfy * 7, ay2 - pfy * 9 - pfx * 7]], pc, .85, 2.4);
+      if (u.cat === 'team' && u.def.carr) markArc(sl.x, sl.y, RDRAG.a, u.def.carr, reachOf(u, mainW(u)), markCol('#e2b25a'), .5);
+    });
+  }
   G.sel.forEach(function (u) {
     if (!u.cat) return;
     var mine = owned(u);
+    if (mine && u.cat === 'team' && u.def.carr && gunSet(u))
+      markArc(u.x, u.y, u.baseA === undefined ? u.facing : u.baseA, u.def.carr, reachOf(u, mainW(u)), markCol('#e2b25a'), .3);
     /* The ring is `selRadius` on the unit's own point, and it neither moves nor changes
        size. Three versions got that wrong in turn. Drawn at the marker with a radius of
        thirty-two it held about a sixth of the ground its men were standing on. Moved onto
@@ -19273,6 +19414,53 @@ function buildMarks(v) {
     var e = u.path[u.path.length - 1];
     markRing(e.x, e.y, 12 + Math.sin(G.t * 5) * 2, col, .9, 2.2);
   });
+  /* where a production building sends what it makes, while it is the one picked: the way
+     out to it on the ground and a ring at the foot of its flag (`drawRallyFlag`) */
+  var rb = rallyOf();
+  if (rb) {
+    var rc = markCol(FACTION[rb.side].color), ra = Math.atan2(rb.rally.y - rb.y, rb.rally.x - rb.x);
+    var r0 = Math.min(rb.def.w, rb.def.h) * .5;
+    if (Math.hypot(rb.rally.x - rb.x, rb.rally.y - rb.y) > r0 + 20)
+      markDashed([[rb.x + Math.cos(ra) * r0, rb.y + Math.sin(ra) * r0], [rb.rally.x, rb.rally.y]], rc, .7, 2, [10, 8], -G.t * 1.5);
+    markRing(rb.rally.x, rb.rally.y, 14, rc, .85, 2.2);
+  }
+}
+/* An arc of fire on the ground: the two edges out from the piece and the reach between them */
+function markArc(x, y, a, half, r, col, al) {
+  var pts = [[x + Math.cos(a - half) * 24, y + Math.sin(a - half) * 24]], n = Math.max(6, Math.round(half * 2 * r / 40)), i;
+  for (i = 0; i <= n; i++) { var t = a - half + half * 2 * i / n; pts.push([x + Math.cos(t) * r, y + Math.sin(t) * r]); }
+  pts.push([x + Math.cos(a + half) * 24, y + Math.sin(a + half) * 24]);
+  markDashed(pts, col, al, 2, [14, 9], 0);
+}
+/* the production building picked, if it is the player's and has somewhere to send what
+   it makes */
+function rallyOf() {
+  var b = selectedBuilding();
+  return b && owned(b) && b.rally && makesOf(b) && b.built >= 1 ? b : null;
+}
+/* A small flag on its pole at the rally point. A right-click set it and said so in a toast,
+   and nothing on the map ever said where it was afterwards, so the only way to find out
+   was to build something and watch where it walked. */
+function drawRallyFlag() {
+  var b = rallyOf(); if (!b) return;
+  var gz = groundZ(b.rally.x, b.rally.y), foot = w2s(b.rally.x, b.rally.y, gz), top = w2s(b.rally.x, b.rally.y, gz + 34);
+  if (foot.behind || top.behind) return;
+  var z = clamp(600 / (top.d || 600), .55, 1.4), col = FACTION[b.side].color;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(10,12,7,.8)'; ctx.lineWidth = 3.6 * z;
+  ctx.beginPath(); ctx.moveTo(foot.x, foot.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+  ctx.strokeStyle = '#d8d2b8'; ctx.lineWidth = 1.6 * z;
+  ctx.beginPath(); ctx.moveTo(foot.x, foot.y); ctx.lineTo(top.x, top.y); ctx.stroke();
+  /* the pennant flies a little, off the top of the pole */
+  var fl = Math.sin(G.t * 3.1) * 1.5 * z;
+  ctx.beginPath();
+  ctx.moveTo(top.x, top.y); ctx.lineTo(top.x + 19 * z, top.y + 5 * z + fl); ctx.lineTo(top.x, top.y + 11 * z);
+  ctx.closePath();
+  ctx.fillStyle = col; ctx.fill();
+  ctx.strokeStyle = 'rgba(10,12,7,.8)'; ctx.lineWidth = 1.4 * z; ctx.stroke();
+  ctx.fillStyle = '#e6e0c8'; ctx.font = '600 ' + (9.5 * z) + 'px ' + FONT; ctx.textAlign = 'center';
+  ctx.fillText('RALLY', foot.x, foot.y + 14 * z);
+  ctx.lineCap = 'butt';
 }
 function drawMarks3D() {
   if (!MARK.n || !MARKP) return;
@@ -20585,6 +20773,16 @@ function buildTerrain(only) {
       if (Math.hypot(fgx, fgy) > .9) fine[fj * cols + fi] = 1;
     }
   }
+  /* And wherever a vehicle has pressed a rut, phones included: a rut is a track's width,
+     which the coarse mesh lays as a hollow twice as wide or loses between two vertices. */
+  if (G.rut) for (var rj = sr0; rj <= sr1; rj++) for (var ri = sc0; ri <= sc1; ri++) {
+    if (fine[rj * cols + ri]) continue;
+    var rn = ri * 2, rm = rj * 2, ra, rb;
+    for (rb = 0; rb <= 2 && !fine[rj * cols + ri]; rb++) for (ra = 0; ra <= 2; ra++)
+      if (rn + ra < HW && rm + rb < HH && G.rut[hidx(rn + ra, rm + rb)] > .12) { fine[rj * cols + ri] = 1; break; }
+  }
+  /* the ground as the mesh lays it: the worked height, less the ruts */
+  function RZ(x, y) { return G.rut ? bareZ(x, y) - rutAt(x, y) : bareZ(x, y); }
   /* Where the ground has been opened, which is where the water is. Ortona in December is
      rain and mud: a trench holds water in its floor, a shell hole holds it in its bowl,
      and the open field between them drains and does not. Derived from the crater and
@@ -20648,7 +20846,16 @@ function buildTerrain(only) {
 
   var lastCol = [], lastVal = [];
   function vert(x, y, zOverride) {
-    var z = zOverride === undefined ? bareZ(x, y) : zOverride, n = groundNormal(x, y, 1);
+    var z = zOverride === undefined ? RZ(x, y) : zOverride, n = groundNormal(x, y, 1);
+    /* a rut's walls are lit as walls, and its floor is compacted earth with the water
+       standing in it: darker, wetter, and with the scatter pressed out of it */
+    var rt = G.rut ? rutAt(x, y) : 0, rk = 0;
+    if (rt > .02) {
+      var rgx = (rutAt(x + 2, y) - rutAt(x - 2, y)) / 4, rgy = (rutAt(x, y + 2) - rutAt(x, y - 2)) / 4;
+      var rnx = n.x + rgx * n.z, rny = n.y + rgy * n.z, rnl = Math.sqrt(rnx * rnx + rny * rny + n.z * n.z);
+      n = { x: rnx / rnl, y: rny / rnl, z: n.z / rnl };
+      rk = clamp(rt / 1.1, 0, 1);
+    }
     var v = .94 + .06 * Math.sin(x * .037) * Math.cos(y * .029);
     var ring = (bareZ(x + 24, y) + bareZ(x - 24, y) + bareZ(x, y + 24) + bareZ(x, y - 24)) / 4;
     var ao = clamp((ring - z) / 22, 0, 1);
@@ -20663,7 +20870,8 @@ function buildTerrain(only) {
        texture instead. A natural hollow is capped short of standing water; only a dug one
        gets a puddle. */
     var wet = Math.max(dugAt(x, y), clamp((ring - z) / 6 - .15, 0, 1) * .55,
-                       LAND.wet ? LAND.wet(x, y) : 0);
+                       LAND.wet ? LAND.wet(x, y) : 0, rk * .45);
+    if (rk) v *= 1 - rk * .26;
     wet = clamp(wet, 0, 1) * clamp(1 - (1 - n.z) * 3.0, 0, 1);
     /* Only the LIP is tinted. The bowl darkens itself twice over already -- through the
        ambient term two lines up, which reads a hole off its own neighbours, and through
@@ -20688,12 +20896,12 @@ function buildTerrain(only) {
       if (!fine[j * cols + i]) { quad(x0, y0, x1, y1); continue; }
       var xm = (x0 + x1) / 2, ym = (y0 + y1) / 2;
       /* corner heights, and edge midpoints pinned when the neighbour is coarse */
-      var z00 = bareZ(x0, y0), z10 = bareZ(x1, y0), z01 = bareZ(x0, y1), z11 = bareZ(x1, y1);
+      var z00 = RZ(x0, y0), z10 = RZ(x1, y0), z01 = RZ(x0, y1), z11 = RZ(x1, y1);
       var coarseN = j > 0 && !fine[(j - 1) * cols + i], coarseS = j < rows - 1 && !fine[(j + 1) * cols + i];
       var coarseW = i > 0 && !fine[j * cols + i - 1], coarseE = i < cols - 1 && !fine[j * cols + i + 1];
-      var zN = coarseN ? (z00 + z10) / 2 : bareZ(xm, y0), zS = coarseS ? (z01 + z11) / 2 : bareZ(xm, y1);
-      var zW = coarseW ? (z00 + z01) / 2 : bareZ(x0, ym), zE = coarseE ? (z10 + z11) / 2 : bareZ(x1, ym);
-      var zC = bareZ(xm, ym);
+      var zN = coarseN ? (z00 + z10) / 2 : RZ(xm, y0), zS = coarseS ? (z01 + z11) / 2 : RZ(xm, y1);
+      var zW = coarseW ? (z00 + z01) / 2 : RZ(x0, ym), zE = coarseE ? (z10 + z11) / 2 : RZ(x1, ym);
+      var zC = RZ(xm, ym);
       quad(x0, y0, xm, ym, z00, zN, zW, zC);
       quad(xm, y0, x1, ym, zN, z10, zC, zE);
       quad(x0, ym, xm, y1, zW, zC, z01, zS);
@@ -21751,30 +21959,50 @@ function uploadDecals() {
   gl.activeTexture(gl.TEXTURE0);
   decalDirty = false;
 }
+/* The burn round a burst. It was one soft disc drawn with compasses, which over a fire
+   mission put a field of identical grey coins on the ground. A burst throws its soot and
+   its earth out in streaks, so the scar is a few lobes of burn with streaks running out
+   past them, each one different. */
 function decalScorch(x, y, r) {
   if (!dctx) return;
-  var px = x / DEC, py = y / DEC, pr = r / DEC;
-  var g = dctx.createRadialGradient(px, py, 0, px, py, pr);
-  g.addColorStop(0, 'rgba(30,24,14,.85)'); g.addColorStop(.5, 'rgba(60,50,30,.5)'); g.addColorStop(1, 'rgba(90,80,60,0)');
-  dctx.fillStyle = g; dctx.beginPath(); dctx.arc(px, py, pr, 0, TAU); dctx.fill();
+  var px = x / DEC, py = y / DEC, pr = r / DEC, i, n = 5 + Math.floor(Math.random() * 5);
+  dctx.lineCap = 'round';
+  for (i = 0; i < n; i++) {
+    var a = rnd(0, TAU), l = pr * rnd(1.1, 1.9);
+    dctx.strokeStyle = 'rgba(48,40,26,' + rnd(.12, .26).toFixed(2) + ')';
+    dctx.lineWidth = Math.max(.8, pr * rnd(.12, .3));
+    dctx.beginPath(); dctx.moveTo(px + Math.cos(a) * pr * .3, py + Math.sin(a) * pr * .3);
+    dctx.lineTo(px + Math.cos(a) * l, py + Math.sin(a) * l); dctx.stroke();
+  }
+  for (i = 0; i < 4; i++) {
+    var ox = px + rnd(-.25, .25) * pr, oy = py + rnd(-.25, .25) * pr, rr = pr * rnd(.55, .85);
+    var g = dctx.createRadialGradient(ox, oy, 0, ox, oy, rr);
+    g.addColorStop(0, 'rgba(28,22,14,.38)'); g.addColorStop(.6, 'rgba(55,46,30,.2)'); g.addColorStop(1, 'rgba(90,80,60,0)');
+    dctx.fillStyle = g; dctx.beginPath(); dctx.arc(ox, oy, rr, 0, TAU); dctx.fill();
+  }
+  decalDirty = true;
+}
+/* And it fades. The burns and the blood built up over a battle and never went anywhere, so
+   a field shelled for ten minutes was black. Every six seconds the whole of it is washed a
+   twentieth of the way back to the ground, which is a half-life of about a minute, and
+   every minute and a half a quarter of the way, because eight bits of colour stop moving
+   at a twentieth once they are within ten of white and the last of a burn would otherwise
+   stay for good. The hole a shell dug stays: that is the ground, and it is in the mesh. */
+var _decFadeT = 0, _decFadeN = 0;
+function decalFade(dt) {
+  if (!dctx) return;
+  _decFadeT += dt;
+  if (_decFadeT < 6) return;
+  _decFadeT = 0; _decFadeN++;
+  dctx.globalAlpha = _decFadeN % 15 ? .05 : .25;
+  dctx.fillStyle = '#fff'; dctx.fillRect(0, 0, dcv.width, dcv.height);
+  dctx.globalAlpha = 1;
   decalDirty = true;
 }
 function decalStain(x, y) {
   if (!dctx) return;
   dctx.fillStyle = 'rgba(70,30,22,.4)';
   for (var i = 0; i < 4; i++) { dctx.beginPath(); dctx.arc(x / DEC + rnd(-2.5, 2.5), y / DEC + rnd(-2.5, 2.5), rnd(.6, 1.8), 0, TAU); dctx.fill(); }
-  decalDirty = true;
-}
-function decalTrack(x, y, ang) {
-  if (!dctx) return;
-  var nx = Math.cos(ang + Math.PI / 2) * 9, ny = Math.sin(ang + Math.PI / 2) * 9;
-  dctx.strokeStyle = 'rgba(70,58,36,.42)'; dctx.lineWidth = 2; dctx.lineCap = 'round';
-  for (var sgn = -1; sgn <= 1; sgn += 2) {
-    dctx.beginPath();
-    dctx.moveTo((x + nx * sgn) / DEC, (y + ny * sgn) / DEC);
-    dctx.lineTo((x + nx * sgn - Math.cos(ang) * 12) / DEC, (y + ny * sgn - Math.sin(ang) * 12) / DEC);
-    dctx.stroke();
-  }
   decalDirty = true;
 }
 
@@ -46685,21 +46913,18 @@ function turCrewOf(u, B) {
 function castUnit(u) {
   if (u.cat === 'veh') {
     var M = VMODEL[vkey(u)], B = MODELS.veh[vkey(u)]; if (!B) return;
-    var gz = groundZ(u.x, u.y);
-    drawDepthGeom(B.hull, m4model(u.x, u.y, gz, u.facing, 1));
-    var mp0 = mountPose(u, M), mx = u.x, my = u.y;
-    mx += Math.cos(u.facing) * mp0.x - Math.sin(u.facing) * mp0.y;
-    my += Math.sin(u.facing) * mp0.x + Math.cos(u.facing) * mp0.y;
-    var tm2 = m4model(mx, my, gz + mp0.z, u.turret, 1);
+    /* the shadow is cast by the hull as it is drawn, leaned and pitched on the ground */
+    var cfr = vehFrames(u), hm2 = cfr.hmat, tm2 = cfr.tmat;
+    drawDepthGeom(B.hull, hm2);
     var duk = mountUp(u), dk;
     drawDepthGeom(duk && B.turUp[duk] ? B.turUp[duk] : B.tur, tm2);
-    if (B.crew) drawDepthGeom(B.crew, m4model(u.x, u.y, gz, u.facing, 1));
+    if (B.crew) drawDepthGeom(B.crew, hm2);
     var tcd = turCrewOf(u, B);
     if (tcd) drawDepthGeom(tcd, tm2);
-    if (u.up) for (dk in u.up) if (u.up[dk] && B.addUp[dk]) drawDepthGeom(B.addUp[dk], m4model(u.x, u.y, gz, u.facing, 1));
-    for (dk in B.downUp) if (!(u.up && u.up[dk])) drawDepthGeom(B.downUp[dk], m4model(u.x, u.y, gz, u.facing, 1));
+    if (u.up) for (dk in u.up) if (u.up[dk] && B.addUp[dk]) drawDepthGeom(B.addUp[dk], hm2);
+    for (dk in B.downUp) if (!(u.up && u.up[dk])) drawDepthGeom(B.downUp[dk], hm2);
     secondaryKeys(u).forEach(function (sk) { var sb = secBuffer(B, sk); if (sb) drawDepthGeom(sb, tm2); });
-    if (skirted(u)) { if (B.skirts) drawDepthGeom(B.skirts, m4model(u.x, u.y, gz, u.facing, 1)); if (B.turSkirts) drawDepthGeom(B.turSkirts, tm2); }
+    if (skirted(u)) { if (B.skirts) drawDepthGeom(B.skirts, hm2); if (B.turSkirts) drawDepthGeom(B.turSkirts, tm2); }
   } else {
     for (var k = 0; k < u.models.length; k++) {
       var m = u.models[k]; if (!m.alive) continue;
@@ -46715,23 +46940,72 @@ function castUnit(u) {
     }
   }
 }
+/* The ground under a hull, as a plane. A vehicle was drawn standing level at the height of
+   the ground under its middle whatever the ground did under its tracks: on the face of a
+   bluff a tank stood with its nose in the slope and its tail in the air, and on the flat it
+   bobbed on its springs and did nothing else. Six points under the running gear, two rows
+   of three, are fitted with a plane by least squares, which on a footprint laid square is
+   three sums. The plane is lifted onto whichever point stands proud of it, because a hull
+   rides on its high points and not through them, and the drawn hull eases toward it at a
+   capped rate, so a shell hole under one track rocks the hull and does not flick it. The
+   height is not eased: eased, a tank driving down the bluff floated a hull's height over
+   the slope behind its own plane. And the tilt stops short of what the steepest ground on
+   the maps would ask for, because the maps were laid for vehicles that stood level. */
+var VG_P = .4, VG_L = .32, _vgz = [0, 0, 0, 0, 0, 0];
+function vehGround(u, dt) {
+  unitBody(u);
+  var c = Math.cos(u.facing), s = Math.sin(u.facing);
+  var L = u.bodyL * .8, W = u.bodyW * .8, bx = u.bodyX || 0;
+  var cx = u.x + c * bx, cy = u.y + s * bx;
+  var i, j, k = 0, sum = 0, sx = 0, sy = 0, z;
+  for (i = -1; i <= 1; i++) for (j = -1; j <= 1; j += 2) {
+    z = groundZ(cx + c * i * L - s * j * W, cy + s * i * L + c * j * W);
+    _vgz[k++] = z; sum += z; sx += i * L * z; sy += j * W * z;
+  }
+  var a0 = sum / 6, b = L > 0 ? sx / (4 * L * L) : 0, cw = W > 0 ? sy / (6 * W * W) : 0, lift = 0;
+  for (i = -1, k = 0; i <= 1; i++) for (j = -1; j <= 1; j += 2) {
+    z = _vgz[k++] - (a0 + b * i * L + cw * j * W);
+    if (z > lift) lift = z;
+  }
+  /* +nose raises the front and +lean puts the right side (+y) down */
+  var tp = clamp(Math.atan(b), -VG_P, VG_P), tl = clamp(-Math.atan(cw), -VG_L, VG_L);
+  if (!(dt > 0) || u.gp === undefined) { u.gp = tp; u.gl = tl; }
+  else {
+    var ka = 1 - Math.exp(-dt / .22), ra = 1.1 * dt;
+    u.gp += clamp((tp - u.gp) * ka, -ra, ra);
+    u.gl += clamp((tl - u.gl) * ka, -ra, ra);
+  }
+  u.gz = a0 + Math.min(lift, 4) * .6 - Math.tan(u.gp) * bx;
+  u.gfX = u.x; u.gfY = u.y; u.gfA = u.facing;
+}
+/* A vehicle that has been put somewhere rather than driven there (a probe, a stage, a
+   spawn) has no fit, or one from somewhere else, and is fitted where it stands. */
+function vehGroundNow(u) {
+  if (u.gz === undefined || Math.abs(u.x - u.gfX) + Math.abs(u.y - u.gfY) > 30 || Math.abs(angDiff(u.facing, u.gfA)) > .8) vehGround(u, 0);
+}
 /* the hull and the mount as they stand this frame: the same matrices for the draw and
    for the eye in the periscope, so the commander's head is where his hatch is */
 function vehFrames(u) {
   if (u._matT === G.t && u._mats) return u._mats;
-  var M = VMODEL[vkey(u)], gz = groundZ(u.x, u.y);
-  var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2);
-  var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * 1.35 * sway : 0;
-  var lean = u.immob > 0 ? -.085 * clamp(u.immob / 3, .35, 1) : 0;
-  var nose = clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
+  var M = VMODEL[vkey(u)];
+  vehGroundNow(u);
+  /* the springs, which are a few tenths of a unit and not the metre and a half they were:
+     on top of a hull that now follows the ground, a bounce that size reads as the tank
+     hopping, and a heavy one hops less than a car */
+  var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2) * (u.def.hp > 1200 ? .55 : u.def.hp > 500 ? .75 : 1);
+  var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * .45 * sway : 0;
+  var rock = u.moving ? Math.sin((u.roll || 0) * 1.13) * .006 * sway : 0;
+  var lean = u.gl + (u.immob > 0 ? -.085 * clamp(u.immob / 3, .35, 1) : 0);
+  var nose = u.gp + rock + clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
   u.lastSp = u.sp || 0;
   var sink = u.immob > 0 ? -1.6 : 0;
-  var hmat = m4lean(u.x, u.y, gz + bounce + sink, u.facing, 1, lean, nose);
-  var mp1 = mountPose(u, M), rec = recoilAt(u.recoil) * (M.big ? 9 : 6), mx = u.x, my = u.y;
-  mx += Math.cos(u.facing) * mp1.x - Math.sin(u.facing) * mp1.y;
-  my += Math.sin(u.facing) * mp1.x + Math.cos(u.facing) * mp1.y;
-  var tmat = m4lean(mx - Math.cos(u.turret) * rec, my - Math.sin(u.turret) * rec,
-                    gz + bounce + sink + mp1.z, u.turret, 1, lean, nose);
+  var hmat = m4lean(u.x, u.y, u.gz + bounce + sink, u.facing, 1, lean, nose);
+  /* The mount is laid in the hull's own frame, so it leans with the hull whichever way it
+     is laid. Laid on its own bearing with the hull's lean and nose, as it was, a turret
+     traversed over the side pitched where the hull leaned and leaned where it pitched. */
+  var mp1 = mountPose(u, M), rec = recoilAt(u.recoil) * (M.big ? 9 : 6);
+  var tr = (u.turret === undefined ? u.facing : u.turret) - u.facing;
+  var tmat = m4mul(hmat, m4model(mp1.x - Math.cos(tr) * rec, mp1.y - Math.sin(tr) * rec, mp1.z, tr, 1));
   u._mats = { hmat: hmat, tmat: tmat, mp: mp1 }; u._matT = G.t;
   return u._mats;
 }
@@ -47187,7 +47461,7 @@ function drawWrecks3D(v) {
   G.wrecks.forEach(function (w) {
     var B = MODELS.veh[w.vk || w.key]; if (!B) return;
     var t = [.28, .27, .24];
-    var M = VMODEL[w.vk || w.key], wz = groundZ(w.x, w.y) - (w.sink || 0);
+    var M = VMODEL[w.vk || w.key], wz = groundZ(w.x, w.y) + (w.gdz || 0) - (w.sink || 0);
     var hm = m4lean(w.x, w.y, wz, w.a, 1, w.lean || 0, w.nose || 0);
     drawGeom(B.hull, hm, false, t);
     /* the skirts are the first thing off a burning tank, and what is left of the stowage
@@ -47210,9 +47484,8 @@ function drawWrecks3D(v) {
        mount offset -- the live draw applies one and the wreck draw did not, so a turret
        appeared to move by however far its ring happens to sit off the hull's centre and
        the code comment called that a throw. */
-    var mp = mountAt(M, w.x, w.y, w.a);
-    drawGeom(B.tur, m4lean(mp.x, mp.y, wz + M.mountZ - (M.fixed ? 1 : 2.6), (w.turret || w.a) + (M.fixed ? 0 : (w.slew || 0)),
-                           1, w.lean || 0, w.nose || 0), false, t);
+    drawGeom(B.tur, m4mul(hm, m4model(M.turX || 0, M.turY || 0, M.mountZ - (M.fixed ? 1 : 2.6),
+                                       (w.turret || w.a) + (M.fixed ? 0 : (w.slew || 0)) - w.a, 1)), false, t);
   });
   /* A man going down, and then a man lying where he went down. Two layouts a side so
      a street is not paved with one silhouette repeated, and the loose helmet three units
@@ -47777,6 +48050,7 @@ function render() {
     }
   }
   G.sectors.forEach(drawSectorFlag);
+  drawRallyFlag();
   /* what the ground under the cursor is worth, before the order is given: the grade
      of cover a section would take at the point, shown beside the pointer while
      infantry is selected. Desktop only; there is no pointer to hover on a phone. */
@@ -48105,7 +48379,7 @@ function callBarrage(wx, wy, smoke) {
   else if (why) toast(barrageToast(why));
   syncHud();
 }
-function issueOrder(wx, wy, forceAttack) {
+function issueOrder(wx, wy, forceAttack, faceA) {
   var mine = selectedUnits().filter(owned);
   var b = selectedBuilding();
   if (b && owned(b)) { b.rally = { x: wx, y: wy }; toast('Rally point set'); return; }
@@ -48139,7 +48413,7 @@ function issueOrder(wx, wy, forceAttack) {
   var lift = friendlyVeh && carriesOf(friendlyVeh) && !friendlyVeh.cargo ? friendlyVeh : null;
   var hook = unitsAt(wx, wy, 20).filter(function (u) { return owned(u) && u.def.towable && !u.towedBy; })[0];
   var house = enemies.length ? null : blockAt(wx, wy);
-  var n = mine.length, cols = Math.ceil(Math.sqrt(n));
+  var slots = groupSlots(mine, wx, wy, faceA);
   mine.forEach(function (u, i) {
     if (lift && canBoard(u, lift)) {
       clearOrder(u);
@@ -48189,10 +48463,91 @@ function issueOrder(wx, wy, forceAttack) {
       u.path = findPath(u.x, u.y, repairTarget.x, repairTarget.y, u); u.pi = 0;
       return;
     }
-    var ox = ((i % cols) - (cols - 1) / 2) * 44, oy = (Math.floor(i / cols) - (cols - 1) / 2) * 44;
-    orderMove(u, clamp(wx + ox, 20, WORLD.w - 20), clamp(wy + oy, 20, WORLD.h - 20), forceAttack);
+    var sl = slots[i];
+    orderMove(u, sl.x, sl.y, forceAttack);
+    /* and with a bearing, faces it when it gets there (`updateUnit`), and a piece that is
+       carried is set down on it */
+    if (faceA !== undefined) u.faceA = faceA;
+    /* and vehicles sent as a group come round onto the group's bearing when they stop,
+       because a slot is cut to a hull lying along it and a tank that stopped across its
+       slot is a tank lying in the next one */
+    else if (u.cat === 'veh' && mine.length > 1) u.faceA = sl.a;
   });
   sfx('click');
+}
+/* Where each of a group goes. It was a grid forty-four units on a side whatever was in
+   it, which is less than half the length of a Sherman: nine tanks sent to one point all
+   arrived on top of one another and went on ramming each other for good. A slot is the
+   size of the thing put in it, off its own body, with room round it, and the group is
+   laid out in ranks square to the way it is going, or to the bearing a drag gave it. The
+   ones furthest ahead take the front rank and each rank is filled by where its units
+   already stand across that bearing, so the one on the left goes to the left and nobody
+   drives through the rank in front to reach the one behind it: filled the other way, the
+   tanks nearest the point stopped in the rear rank and the rest rammed through them. The
+   men go in front, the vehicles behind them and the pieces behind those. */
+function groupSlots(list, wx, wy, faceA) {
+  var n = list.length, out = [], i;
+  if (!n) return out;
+  var a = faceA;
+  if (a === undefined) {
+    var mx = 0, my = 0;
+    for (i = 0; i < n; i++) { mx += list[i].x; my += list[i].y; }
+    mx /= n; my /= n;
+    a = Math.hypot(wx - mx, wy - my) > 40 ? Math.atan2(wy - my, wx - mx) : list[0].facing;
+  }
+  var fx = Math.cos(a), fy = Math.sin(a), rx = -fy, ry = fx;
+  var cols = n <= 3 ? n : Math.ceil(Math.sqrt(n * (faceA === undefined ? 1.4 : 2.2)));
+  var items = list.map(function (u, k) {
+    unitBody(u);
+    var veh = u.cat === 'veh';
+    return { k: k, u: u, pr: veh ? 1 : u.cat === 'team' ? 2 : 0,
+             w: veh ? u.bodyW * 2 + 24 : u.bodyW * 2 + 14,
+             d: veh ? (u.bodyL + Math.abs(u.bodyX || 0)) * 2 + 18 : u.bodyL * 2 + 14,
+             lat: (u.x - wx) * rx + (u.y - wy) * ry, lon: (u.x - wx) * fx + (u.y - wy) * fy };
+  });
+  items.sort(function (p, q) { return p.pr - q.pr || q.lon - p.lon; });
+  var rows = [], r0;
+  for (i = 0; i < items.length; i += cols) {
+    r0 = items.slice(i, i + cols);
+    r0.sort(function (p, q) { return p.lat - q.lat; });
+    rows.push(r0);
+  }
+  var depth = 0, rd = rows.map(function (r) { var m = 0; r.forEach(function (it) { m = Math.max(m, it.d); }); depth += m; return m; });
+  var back = depth / 2, put = [];
+  /* a slot that is not ground moves to the nearest ground that is clear of the slots
+     already laid as well: moved by `nearestFree` alone it went to the nearest open cell,
+     which was as often as not the slot beside it, and two tanks were sent to one place */
+  function clash(x, y, it) {
+    for (var c = 0; c < put.length; c++) if (Math.hypot(x - put[c].x, y - put[c].y) < (put[c].r + (it.w + it.d) / 4) * .9) return true;
+    return false;
+  }
+  rows.forEach(function (r, ri) {
+    var width = 0;
+    r.forEach(function (it) { width += it.w; });
+    var along = back - rd[ri] / 2, x0 = -width / 2;
+    back -= rd[ri];
+    r.forEach(function (it) {
+      var lat = x0 + it.w / 2;
+      x0 += it.w;
+      var px = clamp(wx + fx * along + rx * lat, 20, WORLD.w - 20), py = clamp(wy + fy * along + ry * lat, 20, WORLD.h - 20);
+      if (!walkable(px, py) || clash(px, py, it)) {
+        var got = null, rr, k, m;
+        for (rr = 14; rr <= 280 && !got; rr += 14) {
+          m = Math.max(8, Math.round(rr / 7));
+          for (k = 0; k < m; k++) {
+            var t = k / m * Math.PI * 2, qx = px + Math.cos(t) * rr, qy = py + Math.sin(t) * rr;
+            if (qx < 20 || qy < 20 || qx > WORLD.w - 20 || qy > WORLD.h - 20) continue;
+            if (walkable(qx, qy) && !clash(qx, qy, it)) { got = { x: qx, y: qy }; break; }
+          }
+        }
+        if (!got) got = nearestFree(px, py);
+        px = got.x; py = got.y;
+      }
+      put.push({ x: px, y: py, r: (it.w + it.d) / 4 });
+      out[it.k] = { x: px, y: py, a: a };
+    });
+  });
+  return out;
 }
 
 cv.addEventListener('mousemove', function (e) {
@@ -48200,6 +48555,10 @@ cv.addEventListener('mousemove', function (e) {
   mouse.x = e.clientX - r.left; mouse.y = e.clientY - r.top; mouse.inside = true;
   if (POV.on && !ED.on) { if (POV.drag) { povLook(mouse.x - POV.drag.x, mouse.y - POV.drag.y); POV.drag = { x: mouse.x, y: mouse.y }; } return; }
   if (ED.on && !drag.pan) { var ew = s2w(mouse.x, mouse.y); edMove(ew.x, ew.y, mouse.x, mouse.y); }
+  if (RDRAG && !ED.on) {
+    if (!RDRAG.moved && Math.hypot(mouse.x - RDRAG.sx, mouse.y - RDRAG.sy) > 12) RDRAG.moved = true;
+    if (RDRAG.moved) { var rw2 = s2w(mouse.x, mouse.y); RDRAG.a = Math.atan2(rw2.y - RDRAG.wy, rw2.x - RDRAG.wx); }
+  }
   if (drag.on && (Math.abs(mouse.x - drag.x0) > 5 || Math.abs(mouse.y - drag.y0) > 5)) drag.moved = true;
   if (drag.pan) {
     if (drag.pan.rotate) {
@@ -48225,6 +48584,14 @@ cv.addEventListener('mousedown', function (e) {
   }
   if (!G.running) return;
   if (POV.on) { if (e.button === 0) POV.drag = { x: mouse.x, y: mouse.y }; else if (e.button === 2) DRV.mouseMg = true; return; }
+  /* A right press is the order, and a right press dragged is the order with a bearing on it:
+     where the press went is where they go, and the way the drag runs is the way they face
+     when they get there. Decided on the release, because a press is a click until it moves. */
+  if (e.button === 2 && !CTRL.simple && !G.place && !G.mode && selectedUnits().filter(owned).length) {
+    var rw = s2w(mouse.x, mouse.y);
+    RDRAG = { sx: mouse.x, sy: mouse.y, wx: rw.x, wy: rw.y, moved: false, a: 0 };
+    return;
+  }
   if (e.button === 0) {
     if (G.place) {
       /* the press fixes where it goes; the drag that follows aims it */
@@ -48247,6 +48614,11 @@ window.addEventListener('mouseup', function (e) {
     ED.press = null; return;
   }
   if (POV.on) { POV.drag = null; DRV.mouseMg = false; return; }
+  if (e.button === 2 && RDRAG) {
+    var rd = RDRAG; RDRAG = null; RDRAG_END = performance.now();
+    issueOrder(rd.wx, rd.wy, false, rd.moved ? rd.a : undefined);
+    return;
+  }
   if (e.button === 1) { drag.pan = null; return; }
   if (e.button === 0 && G.place && G.place.aim) { doPlace(); return; }
   if (e.button !== 0 || !drag.on) return;
@@ -48287,10 +48659,14 @@ cv.addEventListener('contextmenu', function (e) {
   if (G.place) { G.place = null; syncHud(); return; }
   if (G.mode) { G.mode = null; cv.style.cursor = 'crosshair'; syncHud(); return; }
   if (CTRL.simple) return;                     /* the orders are the brain's */
+  /* a press that the release decides: the menu event comes on the press on some systems and
+     on the release on others, so it stands aside for a press in hand or one just let go */
+  if (RDRAG || performance.now() - RDRAG_END < 400) return;
   var r = cv.getBoundingClientRect();
   var w = s2w(e.clientX - r.left, e.clientY - r.top);
   issueOrder(w.x, w.y, false);
 });
+var RDRAG = null, RDRAG_END = -1e9;
 cv.addEventListener('wheel', function (e) {
   e.preventDefault();
   if (POV.on) { povZoom(e.deltaY > 0 ? .9 : 1.11); return; }
@@ -50317,7 +50693,8 @@ function frame(now) {
     stepDebris(dt);
     frTick(dt);
     flushTileQ();
-    flushGroundQ();
+    if (!flushGroundQ()) flushRutQ();
+    decalFade(dt);
     if (!vehWarmTick()) manWarmTick(MOB ? 3 : 4);
     updateSectors(dt);
     updateSites(dt);
