@@ -1265,7 +1265,7 @@ dearer with the Schürzen hung. The eye is up out of the cupola and drops to the
 shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd. The 57
 mm Gun M1 is asked it in a nineteenth, on the American side: the barracks makes it and queues it,
 the count reads it, its eye stands past every eye on the German vehicles and its reach past every gun
-on it but the Maus's, and sited on open sand with a Panzer IV driving at it from 520 it fires first,
+on it but the Maus's and the Wespe's, which is a howitzer's, and sited on open sand with a Panzer IV driving at it from 520 it fires first,
 a second or more ahead of the tank and before the tank has found it: at 3.0 seconds from 328 against
 the tank's answer at 5.9 from 161, because the tank drives in while the gun is picking it out, so
 the first round leaves inside the tank's reach and the tank is blind. It is five men with every
@@ -1274,8 +1274,8 @@ breech facing it and the bearers are back behind the gun, the flash comes off th
 bearer has his box in his hand; packed, the trails close and the piece rides beside the gunner. A
 man killed goes down as `usa_at`, an American bunker's anti-tank fitting is the 57. The 5 cm Pak 38
 is asked it in a twentieth, on the German side: the Kaserne makes it and queues it, the count reads
-it, its eye stands past every eye on the American vehicles and its reach past every gun among them, and
-sited on open sand with an M4 driving at it from 520 it fires first, a second or more ahead of the
+it, its eye stands past every eye on the American vehicles and its reach past every gun among them but
+the howitzers on the Priest and the M12, and sited on open sand with an M4 driving at it from 520 it fires first, a second or more ahead of the
 tank and before the tank has found it. It is five men with every variant, the served bodies and its
 three meshes baked; set up, the loader kneels at the right of the breech facing it and the bearers
 are back behind the gun, the flash comes off the muzzle and a bearer has his case in his hand;
@@ -5447,7 +5447,7 @@ while it is packed.
 
 **Its eye and its reach are past the armour it meets, and that is what it is for.** `sight` 620
 stands past every eye on the German depot (the Maus's 600 is the nearest) and `w.range` 540 past
-every gun on it but the Maus's (the King Tiger's 520 is the next). A gun that fires is found
+every gun on it but the Maus's and the Wespe's howitzer (the King Tiger's 520 is the next). A gun that fires is found
 further off than one that does not (the loud bonus in `rate`), but a set-up gun firing in the open
 is found by a Panzer IV's eye only inside about 440, and in the traces the tank had not found it
 until it had driven in to between 230 and 120, so the whole of that drive is the gun's.

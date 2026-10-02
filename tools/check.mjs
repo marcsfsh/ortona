@@ -1802,12 +1802,22 @@ for (const device of TARGETS) {
        `nearestFree` has been caught with before. Staged on a spot it read 11 units of
        ground in three seconds on one run and 33 on the next, on identical code. */
     const hx = hq ? hq.x : 300, hy = hq ? hq.y : 950;
+    /* The run is asked along three lines, the middle and a line either side a little
+       outside the hull's own beam, because the hull is two and a half metres across and a
+       line down its middle is not. Asked along the middle alone, one desktop run ended the
+       drive 1.65 radians off the bearing it was parked on with 47 units made and nothing in
+       front of it. The likeliest reading, not established, is a corner catching the hull's
+       side in the first second: a blocked step swings a hull, and the throttle's waypoint
+       swings with the nose. */
     const clearRun = (x, y, a) => {
+      const sx = -Math.sin(a), sy = Math.cos(a);
       for (let d = 30; d <= 300; d += 20) {
-        const px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
-        if (!window.walkable(px, py) || window.blockAt(px, py)) return false;
-        if (window.buildingAt(px, py) || window.bunkerAt(px, py)) return false;
-        if (window.unitsAt(px, py, 42).length) return false;
+        for (const o of [-20, 0, 20]) {
+          const px = x + Math.cos(a) * d + sx * o, py = y + Math.sin(a) * d + sy * o;
+          if (!window.walkable(px, py) || window.blockAt(px, py)) return false;
+          if (window.buildingAt(px, py) || window.bunkerAt(px, py)) return false;
+        }
+        if (window.unitsAt(x + Math.cos(a) * d, y + Math.sin(a) * d, 42).length) return false;
       }
       return true;
     };
@@ -4925,12 +4935,13 @@ for (const device of TARGETS) {
     out.q = W.queueUnit(mot, 'am_at') ? mot.queue.slice(-1)[0] : 'refused';
     out.made = W.madeOf('us', 'am_at') - m0;
     mot.queue.length = q0;
-    /* its eye and its reach against every vehicle the German depot makes on this beach */
+    /* its eye and its reach against every vehicle the German depot makes on this beach, the
+       self-propelled howitzers aside, whose reach is a fire mission's and not a gun's */
     const D = W.UNITS.am_at;
     const vk = W.BUILDINGS.ger_dep.makes.concat(W.BUILDINGS.ger_pz.makes).filter(k => W.fielded(k) && W.UNITS[k].cat === 'veh');
     const reach = d => Math.max(d.w ? d.w.range : 0, ...Object.keys(d.wUp || {}).map(k => d.wUp[k].range || 0));
     out.eyeBest = Math.max(...vk.map(k => W.UNITS[k].sight));
-    out.reachBest = Math.max(...vk.filter(k => k !== 'ger_maus').map(k => reach(W.UNITS[k])));
+    out.reachBest = Math.max(...vk.filter(k => k !== 'ger_maus' && !W.UNITS[k].indirect).map(k => reach(W.UNITS[k])));
     out.eye = D.sight; out.reach = D.w.range;
     /* open sand long enough for the drill: the gun at one end and a Panzer IV 520 off at the
        other, both walkable, nothing cover near either, and a clear line between them */
@@ -5047,7 +5058,7 @@ for (const device of TARGETS) {
      at57.bunkKey === 'am_at' && (at57.bunkGun === 'am_at' || at57.bunkGun === 'no bunker'),
      `the barracks makes ${at57.makes}; asked for the gun it queues ${at57.q}, counted as ${at57.made} made, ` +
      `${at57.count ? 'one' : 'NONE'} on the field; its eye ${at57.eye} against the ` +
-     `352nd's vehicles' best ${at57.eyeBest} and its reach ${at57.reach} against ${at57.reachBest} (the Maus aside); ` +
+     `352nd's vehicles' best ${at57.eyeBest} and its reach ${at57.reach} against ${at57.reachBest} (the Maus and the howitzers aside); ` +
      (at57.staged ? `sited against a Panzer IV at 520 it fired ${f57 ? 'at ' + f57.t + ' s from ' + f57.d + ' with the tank ' + (f57.found < 1 ? 'yet to find it (' + f57.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
        `and the tank ${b57 ? 'answered at ' + b57.t + ' s from ' + b57.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${at57.men} men, every variant, the served bodies and the three meshes ${at57.baked ? 'baked' : 'NOT baked'}; halted ` +
@@ -5078,12 +5089,13 @@ for (const device of TARGETS) {
     out.q = W.queueUnit(dep, 'hr_pak') ? dep.queue.slice(-1)[0] : 'refused';
     out.made = W.madeOf('ger', 'hr_pak') - m0;
     dep.queue.length = q0;
-    /* its eye and its reach against every vehicle the American motor pool makes on this beach */
+    /* its eye and its reach against every vehicle the American motor pool makes on this beach,
+       the self-propelled howitzers aside, whose reach is a fire mission's and not a gun's */
     const D = W.UNITS.hr_pak;
     const vk = W.BUILDINGS.us_mot.makes.concat(W.BUILDINGS.us_tank.makes).filter(k => W.fielded(k) && W.UNITS[k].cat === 'veh');
     const reach = d => Math.max(d.w ? d.w.range : 0, ...Object.keys(d.wUp || {}).map(k => d.wUp[k].range || 0));
     out.eyeBest = Math.max(...vk.map(k => W.UNITS[k].sight));
-    out.reachBest = Math.max(...vk.map(k => reach(W.UNITS[k])));
+    out.reachBest = Math.max(...vk.filter(k => !W.UNITS[k].indirect).map(k => reach(W.UNITS[k])));
     out.eye = D.sight; out.reach = D.w.range;
     /* open sand for the drill, found the way the 57's is: the bocage behind the German
        headquarters is hedgerow and lane and has nowhere 520 across with nothing on it */
@@ -5200,7 +5212,7 @@ for (const device of TARGETS) {
      pk38.bunkKey === 'hr_pak' && (pk38.bunkGun === 'hr_pak' || pk38.bunkGun === 'no bunker'),
      `the Kaserne makes ${pk38.makes}; asked for the gun it queues ${pk38.q}, counted as ${pk38.made} made, ` +
      `${pk38.count ? 'one' : 'NONE'} on the field; its eye ${pk38.eye} against the ` +
-     `29th's vehicles' best ${pk38.eyeBest} and its reach ${pk38.reach} against ${pk38.reachBest}; ` +
+     `29th's vehicles' best ${pk38.eyeBest} and its reach ${pk38.reach} against ${pk38.reachBest} (the howitzers aside); ` +
      (pk38.staged ? `sited against an M4 at 520 it fired ${fpk ? 'at ' + fpk.t + ' s from ' + fpk.d + ' with the tank ' + (fpk.found < 1 ? 'yet to find it (' + fpk.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
        `and the tank ${bpk ? 'answered at ' + bpk.t + ' s from ' + bpk.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${pk38.men} men, every variant, the served bodies and the three meshes ${pk38.baked ? 'baked' : 'NOT baked'}; halted ` +
