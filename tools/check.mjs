@@ -3663,8 +3663,11 @@ for (const device of TARGETS) {
     out.m1 = H.open.filter(f => f.c === A.helm || f.c === A.helmD).length;
     out.seat = !!(W.MODELS.man.gi_tank && W.MODELS.man.gi_tank[W.POSE_SEAT]);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    /* the eye off the hull's own footing (`u.gz`), which is where it stands now that it lies on the
+       ground: off the ground under its middle, a tank bridging a crater the rows above left there
+       read its eye seven units high */
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -3719,8 +3722,8 @@ for (const device of TARGETS) {
     const mz = W.gunMuzzle(t); out.muz = +Math.hypot(mz.x - t.x, mz.y - t.y).toFixed(1);
     t._matT = -1;
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -3826,8 +3829,8 @@ for (const device of TARGETS) {
     out.hullY = +Math.max.apply(null, V.hull.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
     out.skirtY = +Math.max.apply(null, V.skirts.map(f => Math.max.apply(null, f.v.map(p => Math.abs(p[1]))))).toFixed(2);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -3895,7 +3898,7 @@ for (const device of TARGETS) {
     out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
     out.arc = v.def.arc / 2;
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
@@ -3967,7 +3970,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
@@ -4036,7 +4039,7 @@ for (const device of TARGETS) {
     out.lay = +Math.abs(W.angDiff(v.facing, v.turret)).toFixed(3);
     v.turret = 0;
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0, sink = 99;
@@ -4171,16 +4174,18 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     /* the two fittings, the .30 first because the routine reaches it first */
-    const side0 = W.armourAt(v, v.x, v.y + 100);
+    /* a weak hollow charge into the side, which the shields make burst early */
+    const hc = { mm: 14, heat: 1, pen: 30, range: 200 };
+    const side0 = W.penVs(hc, 100, v, v.x, v.y + 100);
     const a = W.buyUpgradeAuto('us', [v], { floor: 0, fuFloor: 0, foeAt: true });
     const b = W.buyUpgradeAuto('us', [v], { floor: 0, fuFloor: 0, foeAt: true });
     out.fit = (a === v ? 'x' : '-') + (b === v ? 'x' : '-') + ' ' + Object.keys(v.up).filter(k => v.up[k]).sort().join(',');
     out.sec = W.secondaryKeys(v).join(',');
     out.skirted = W.skirted(v);
-    out.side = +(W.armourAt(v, v.x, v.y + 100) / side0).toFixed(2);
+    out.side = +(W.penVs(hc, 100, v, v.x, v.y + 100) / Math.max(side0, .01)).toFixed(2);
     const nw = G.wrecks.length;
     let blown = 0, sink = 99, sk = 0;
     for (let i = 0; i < 80; i++) { const w = W.makeWreck(v); if (w.blown) blown++; if (w.skirts) sk++; sink = Math.min(sink, w.sink); }
@@ -4201,14 +4206,14 @@ for (const device of TARGETS) {
      /am_m8/.test(gh.makes) && gh.q === 'am_m8' && gh.made === 1 && gh.count &&
      gh.bufs && gh.od > 50 && gh.m1 > 0 && gh.tanker > 0 && gh.mgTanker > 0 && gh.gunner && gh.coax && gh.lay < .05 &&
      gh.eye > 22 && gh.eye < 30 && gh.fit === 'xx fenders,mg' && /coax/.test(gh.sec) && /mg/.test(gh.sec) && gh.skirted &&
-     gh.side >= 1.1 && gh.blown > 0 && gh.blown < 80 && gh.sink >= 2 && gh.sk > 0 && gh.skBare === 0 &&
+     gh.side < .5 && gh.blown > 0 && gh.blown < 80 && gh.sink >= 2 && gh.sk > 0 && gh.skBare === 0 &&
      gh.bodies >= 1 && gh.bodyNat === 'usa',
      `the motor pool makes ${gh.makes}; asked for the M8 it queues ${gh.q}, counted as ${gh.made} made, ` +
      `${gh.count ? 'one' : 'NONE'} on the field; buffers ${gh.bufs ? 'all built' : 'MISSING'}; ` +
      `${gh.od} hull faces in olive drab; the drivers have ${gh.m1} faces of M1 and the turret ${gh.tanker} of the tanker's helmet, ` +
      `the man at the .30 ${gh.mgTanker}, and with it fitted the turret keeps ${gh.gunner ? 'the gunner alone' : 'BOTH MEN'}; the coaxial ` +
      `${gh.coax ? 'comes with it' : 'is MISSING'}; asked to lay 1.2 off the nose the gun is ${gh.lay} short; the periscope's eye ${gh.eye} up; ` +
-     `the routine fitted ${gh.fit}, the guns then ${gh.sec}, ${gh.skirted ? 'skirted' : 'NOT skirted'} with the side ${gh.side}x; ` +
+     `the routine fitted ${gh.fit}, the guns then ${gh.sec}, ${gh.skirted ? 'skirted' : 'NOT skirted'}, a weak hollow charge then through the side ${gh.side}x as often; ` +
      `${gh.blown} of 80 wrecks threw the turret, the least sat down ${gh.sink}, ${gh.sk} of 80 kept shields and ${gh.skBare} of 40 ` +
      `without them; killed, it left ${gh.bodies} bodies of ${gh.bodyNat}`);
 
@@ -4249,7 +4254,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     /* the Puma, a car of its own off the same building */
     const w0 = W.mainW(v), b0 = W.mountPose(v, V).bar;
@@ -4264,7 +4269,7 @@ for (const device of TARGETS) {
     out.crewUp = W.turCrewOf(pm, B) === B.turCrewUp.puma;
     pm._matT = -1;
     W.povOn(pm);
-    out.eyeP = +(W.povEye().z - W.groundZ(pm.x, pm.y)).toFixed(1);
+    out.eyeP = +(W.povEye().z - (pm.gz === undefined ? W.groundZ(pm.x, pm.y) : pm.gz)).toFixed(1);
     W.povOff();
     W.killUnit(pm);
     const nw = G.wrecks.length;
@@ -4750,7 +4755,7 @@ for (const device of TARGETS) {
     for (let i = 0; i < 3; i++) W.updateModels(v, 1.0);
     out.lay = +Math.abs(W.angDiff(v.turret, 1.2)).toFixed(3);
     W.povOn(v);
-    out.eye = +(W.povEye().z - W.groundZ(v.x, v.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz)).toFixed(1);
     W.povOff();
     out.auto = !!v.def.w.auto;
     const P4 = W.UNITS.hr_p4;
@@ -4796,9 +4801,9 @@ for (const device of TARGETS) {
      cap and no helmet, the long gun reaches further past the nose than any gun on the beach,
      and the turret comes all the way round. What the row is mostly about is the plate: two
      hundred and twenty across the front and a side worth less of its front than any other
-     tank's (`flank`), so an M4's round at three hundred turns off the front more often than
-     not and goes through the side every time, and the Schürzen make the side a little
-     dearer. The eye is up out of the cupola and drops to the blocks when the lid shuts,
+     tank's, so an M4's round at three hundred never goes through the front and always goes
+     through the side, and the Schürzen make a rifle grenade burst on the plates hung over the
+     side. The eye is up out of the cupola and drops to the blocks when the lid shuts,
      forty wrecks throw the turret some of the time, and killed it leaves bodies of the
      352nd. --- */
   const pv = await page.evaluate(() => {
@@ -4830,17 +4835,16 @@ for (const device of TARGETS) {
     /* the plate from the front, the side and the back, and an M4's round at three hundred
        against the first two; then the same side with the Schürzen hung */
     v.turret = 0; v.want = undefined;
-    const d = 300, front = W.armourAt(v, v.x + d, v.y), side = W.armourAt(v, v.x, v.y + d), rear = W.armourAt(v, v.x - d, v.y);
-    out.front = +front.toFixed(1); out.side = +side.toFixed(1); out.rear = +rear.toFixed(1);
-    const p4 = W.UNITS.hr_p4, pen = W.penAt(W.UNITS.am_sher.w, d);
-    out.p4Side = +(p4.armor * .56).toFixed(1);
-    out.pFront = +W.penChance(pen, front).toFixed(2); out.pSide = +W.penChance(pen, side).toFixed(2);
+    const d = 300, A = W.ARM.hr_panther, m4w = W.UNITS.am_sher.w, rg = W.UNITS.am_rifle.glUp.rgren;
+    out.front = A.h[0]; out.side = A.h[1]; out.rear = A.h[2]; out.p4Side = W.ARM.hr_p4.h[1];
+    out.pFront = +W.penVs(m4w, d, v, v.x + d, v.y).toFixed(2); out.pSide = +W.penVs(m4w, d, v, v.x, v.y + d).toFixed(2);
+    out.rgBare = +W.penVs(rg, 150, v, v.x, v.y + 150).toFixed(2);
     v.up.skirts = true;
-    out.skirted = +W.armourAt(v, v.x, v.y + d).toFixed(1);
+    out.rgSkirt = +W.penVs(rg, 150, v, v.x, v.y + 150).toFixed(2);
     v.up.skirts = false;
     W.povOn(v);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(v.x, v.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(v.x, v.y);
+    W.povHatch(true); const up = W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz);
+    W.povHatch(false); const dn = W.povEye().z - (v.gz === undefined ? W.groundZ(v.x, v.y) : v.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -4858,16 +4862,16 @@ for (const device of TARGETS) {
   ok('Omaha: the 352nd fields the Panther beside the Panzer IV, in the grey, hard in front and soft in the side',
      /hr_panther/.test(pv.makes) && /hr_p4/.test(pv.makes) && pv.fielded && pv.q === 'hr_panther' && pv.made === 1 &&
      pv.bufs && pv.grey > 50 && pv.turGrey > 50 && pv.camo === 0 && pv.cap > 0 && pv.helm === 0 && pv.reach > 18 &&
-     pv.lay < .05 && pv.sight && pv.side < pv.front * .4 && pv.side > pv.p4Side && pv.pFront < .6 && pv.pSide === 1 &&
-     pv.skirted > pv.side && pv.eyeUp > 34 && pv.eyeUp < 42 && pv.eyeIn > 28 && pv.eyeIn < pv.eyeUp - 4 &&
+     pv.lay < .05 && pv.sight && pv.side < pv.front * .4 && pv.side > pv.p4Side && pv.pFront < .05 && pv.pSide > .95 &&
+     pv.rgSkirt < pv.rgBare && pv.eyeUp > 34 && pv.eyeUp < 42 && pv.eyeIn > 28 && pv.eyeIn < pv.eyeUp - 4 &&
      pv.blown > 2 && pv.blown < 30 && pv.bodies >= 1 && pv.bodyNat === 'heer',
      `the Panzerpark makes ${pv.makes}; asked for the Panther it queues ${pv.q}, counted as ${pv.made} made; buffers ` +
      `${pv.bufs ? 'all built' : 'MISSING'}; ${pv.grey} hull and ${pv.turGrey} turret faces in the grey and ${pv.camo} in the ` +
      `sand camouflage; the man in the cupola has ${pv.cap} faces of the black cap and ${pv.helm} of a helmet; the muzzle ` +
      `${pv.reach} past the nose; asked to lay over the tail the turret is ${pv.lay} short; the gunner ${pv.sight ? 'sees' : 'does NOT see'} ` +
      `as far as he shoots; plate ${pv.front} in front, ${pv.side} on the side against the Panzer IV's ${pv.p4Side}, ${pv.rear} ` +
-     `behind, and ${pv.skirted} on the side with the Schürzen; an M4's round at 300 goes through the front ${pv.pFront} and the side ` +
-     `${pv.pSide}; the eye ${pv.eyeUp} up out of the cupola and ${pv.eyeIn} at the blocks; ${pv.blown} of 40 wrecks threw the turret; ` +
+     `behind; an M4's round at 300 goes through the front ${pv.pFront} and the side ${pv.pSide}, and a rifle grenade the side ` +
+     `${pv.rgBare} bare and ${pv.rgSkirt} with the Schürzen; the eye ${pv.eyeUp} up out of the cupola and ${pv.eyeIn} at the blocks; ${pv.blown} of 40 wrecks threw the turret; ` +
      `killed, it left ${pv.bodies} bodies of ${pv.bodyNat}`);
 
   /* --- The four the first roster left on the German depot, the Tiger, the King Tiger, the Maus
@@ -5257,14 +5261,15 @@ for (const device of TARGETS) {
     out.lay = +Math.abs(W.angDiff(t.turret, Math.PI - .05)).toFixed(3);
     t.turret = 0; t.want = undefined;
     /* the plate in front against the three light guns and the Panzer IV's, at two hundred */
-    const d = 200, front = W.armourAt(t, t.x + d, t.y), m8 = W.UNITS.am_m8.armor;
-    out.front = +front.toFixed(1); out.m8 = m8;
-    const pc = (k, a) => +W.penChance(W.penAt(W.UNITS[k].w, d), a).toFixed(2);
-    out.p234 = pc('hr_234', front); out.pWirb = pc('hr_wirb', front); out.pKs = pc('hr_ks750', front); out.pP4 = pc('hr_p4', front);
+    const d = 200, m8 = W.spawnUnit('us', 'am_m8', t.x, t.y + 150, 0);
+    out.front = W.ARM.am_stuart.h[0]; out.m8 = W.ARM.am_m8.h[0];
+    const pc = (k, v) => +W.penVs(W.UNITS[k].w, d, v, v.x + d, v.y).toFixed(2);
+    out.p234 = pc('hr_234', t); out.pWirb = pc('hr_wirb', t); out.pKs = pc('hr_ks750', t); out.pP4 = pc('hr_p4', t);
     out.p234m8 = pc('hr_234', m8);
+    G.units.splice(G.units.indexOf(m8), 1);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -5287,7 +5292,7 @@ for (const device of TARGETS) {
   ok('Omaha: the 29th fields the M3 light tank out of the tank yard, in olive drab, on plate the light guns seldom open',
      /am_stuart/.test(s3.makes) && /am_m8/.test(s3.motMakes) && s3.fielded && s3.q === 'am_stuart' && s3.made === 1 &&
      s3.bufs && s3.od > 50 && s3.turOd > 20 && s3.tanker > 0 && s3.m1 === 0 && s3.reach < 0 && s3.lay < .05 &&
-     s3.front > s3.m8 * 1.4 && s3.p234 < .25 && s3.pWirb < .25 && s3.pKs < .05 && s3.p234m8 > s3.p234 * 2 && s3.pP4 === 1 &&
+     s3.front > s3.m8 * 1.4 && s3.p234 < .1 && s3.pWirb < .1 && s3.pKs < .05 && s3.p234m8 > .8 && s3.pP4 > .95 &&
      s3.eyeUp > 28 && s3.eyeUp < 35 && s3.eyeIn > 21 && s3.eyeIn < s3.eyeUp - 4 &&
      s3.blown > 0 && s3.blown < 60 && s3.bodies >= 1 && s3.bodyNat === 'usa',
      `the tank yard makes ${s3.makes} and the motor pool ${s3.motMakes}; asked for the M3 it queues ${s3.q}, counted as ${s3.made} made; buffers ` +
@@ -5332,19 +5337,19 @@ for (const device of TARGETS) {
     out.lay = +Math.abs(W.angDiff(t.turret, Math.PI - .05)).toFixed(3);
     t.turret = 0; t.want = undefined;
     /* the plate and the gun against the two German tanks, at three hundred */
-    const d = 300, front = W.armourAt(t, t.x + d, t.y), side = W.armourAt(t, t.x, t.y + d);
-    out.front = +front.toFixed(1); out.side = +side.toFixed(1);
-    const pc = (w, a) => +W.penChance(W.penAt(w, d), a).toFixed(2);
-    out.pP4 = pc(W.UNITS.hr_p4.w, front); out.pP4S = pc(W.UNITS.hr_p4.w, side);
+    const d = 300, AR = W.ARM.am_m26;
+    out.front = AR.h[0]; out.side = AR.h[1];
+    const pc = (w, v, fx, fy) => +W.penVs(w, d, v, fx, fy).toFixed(2);
+    out.pP4 = pc(W.UNITS.hr_p4.w, t, t.x + d, t.y); out.pP4S = pc(W.UNITS.hr_p4.w, t, t.x, t.y + d);
     const pan = W.spawnUnit('ger', 'hr_panther', hq.x + 400, hq.y - 220, 0);
     const p4 = W.spawnUnit('ger', 'hr_p4', hq.x + 400, hq.y - 340, 0);
-    out.onPan = pc(t.def.w, W.armourAt(pan, pan.x + d, pan.y));
-    out.onP4 = pc(t.def.w, W.armourAt(p4, p4.x + d, p4.y));
-    out.m4OnPan = pc(W.UNITS.am_sher.w, W.armourAt(pan, pan.x + d, pan.y));
+    out.onPan = pc(t.def.w, pan, pan.x + d, pan.y);
+    out.onP4 = pc(t.def.w, p4, p4.x + d, p4.y);
+    out.m4OnPan = pc(W.UNITS.am_sher.w, pan, pan.x + d, pan.y);
     W.killUnit(pan); W.killUnit(p4);
     W.povOn(t);
-    W.povHatch(true); const up = W.povEye().z - W.groundZ(t.x, t.y);
-    W.povHatch(false); const dn = W.povEye().z - W.groundZ(t.x, t.y);
+    W.povHatch(true); const up = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
+    W.povHatch(false); const dn = W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz);
     W.povOff();
     out.eyeUp = +up.toFixed(1); out.eyeIn = +dn.toFixed(1);
     const nw = G.wrecks.length;
@@ -5362,7 +5367,7 @@ for (const device of TARGETS) {
   ok('Omaha: the 29th fields the M26 beside the M4A1, in olive drab, its 90 mm through a Panther\'s front',
      /am_m26/.test(m26.makes) && /am_sher/.test(m26.makes) && m26.fielded && m26.q === 'am_m26' && m26.made === 1 &&
      m26.bufs && m26.od > 80 && m26.turOd > 20 && m26.tanker > 0 && m26.m1 === 0 && m26.reach > 20 && m26.lay < .05 &&
-     m26.pP4 > .2 && m26.pP4 < .7 && m26.pP4S === 1 && m26.onPan > .6 && m26.onP4 === 1 && m26.onPan > m26.m4OnPan &&
+     m26.pP4 < .2 && m26.pP4S > .95 && m26.onPan > .3 && m26.onP4 > .95 && m26.onPan > m26.m4OnPan &&
      m26.eyeUp > 30 && m26.eyeUp < 40 && m26.eyeIn > 22 && m26.eyeIn < m26.eyeUp - 4 &&
      m26.blown > 2 && m26.blown < 30 && m26.bodies >= 1 && m26.bodyNat === 'usa',
      `the tank yard makes ${m26.makes}; asked for the M26 it queues ${m26.q}, counted as ${m26.made} made; buffers ` +
@@ -5412,15 +5417,15 @@ for (const device of TARGETS) {
     t.turret = 0; t.want = undefined;
     out.fastest = W.makesOf(yard).filter(k => k !== 'am_m18').every(k => W.UNITS[k].speed < t.def.speed);
     /* the trade, at three hundred */
-    const d = 300, front = W.armourAt(t, t.x + d, t.y);
-    out.front = +front.toFixed(1);
-    const pc = (w, a) => +W.penChance(W.penAt(w, d), a).toFixed(2);
-    out.pP4 = pc(W.UNITS.hr_p4.w, front); out.pPak = pc(W.UNITS.hr_pak.w, front);
+    const d = 300;
+    out.front = W.ARM.am_m18.h[0];
+    const pc = (w, v, fx, fy) => +W.penVs(w, d, v, fx, fy).toFixed(2);
+    out.pP4 = pc(W.UNITS.hr_p4.w, t, t.x + d, t.y); out.pPak = pc(W.UNITS.hr_pak.w, t, t.x + d, t.y);
     const pan = W.spawnUnit('ger', 'hr_panther', hq.x + 400, hq.y - 220, 0);
     const p4 = W.spawnUnit('ger', 'hr_p4', hq.x + 400, hq.y - 340, 0);
-    out.onP4 = pc(t.def.w, W.armourAt(p4, p4.x + d, p4.y));
-    out.onPan = pc(t.def.w, W.armourAt(pan, pan.x + d, pan.y));
-    out.onPanS = pc(t.def.w, W.armourAt(pan, pan.x, pan.y + d));
+    out.onP4 = pc(t.def.w, p4, p4.x + d, p4.y);
+    out.onPan = pc(t.def.w, pan, pan.x + d, pan.y);
+    out.onPanS = pc(t.def.w, pan, pan.x, pan.y + d);
     W.killUnit(pan); W.killUnit(p4);
     /* the same burst beside it and beside an M4A1 staged where it stood, thirty up so it opens
        no ground for the rows below */
@@ -5432,7 +5437,7 @@ for (const device of TARGETS) {
     [foe, m4].forEach(u => { u.dead = true; G.units.splice(G.units.indexOf(u), 1); });
     t.hp = t.def.hp;
     W.povOn(t);
-    out.eye = +(W.povEye().z - W.groundZ(t.x, t.y)).toFixed(1);
+    out.eye = +(W.povEye().z - (t.gz === undefined ? W.groundZ(t.x, t.y) : t.gz)).toFixed(1);
     W.povOff();
     const nw = G.wrecks.length;
     let blown = 0;
@@ -5450,7 +5455,7 @@ for (const device of TARGETS) {
      /am_m18/.test(hc.makes) && /am_m26/.test(hc.makes) && hc.fielded && hc.q === 'am_m18' && hc.made === 1 &&
      hc.bufs && hc.od > 80 && hc.turOd > 20 && hc.roof === 0 && hc.tanker > 0 && hc.m1 === 0 && hc.over > 0 &&
      /mg/.test(hc.sec) && hc.reach > 12 && hc.lay < .05 && hc.fastest &&
-     hc.pP4 === 1 && hc.pPak === 1 && hc.onP4 > .8 && hc.onPan > .4 && hc.onPan < .9 && hc.onPanS === 1 &&
+     hc.pP4 > .95 && hc.pPak > .95 && hc.onP4 > .8 && hc.onPan < .1 && hc.onPanS > .95 &&
      hc.lost > hc.lostM4 * 1.25 && hc.lostM4 > 0 && hc.eye > 24 && hc.eye < 36 &&
      hc.blown > 2 && hc.blown < 38 && hc.bodies >= 1 && hc.bodyNat === 'usa',
      `the tank yard makes ${hc.makes}; asked for the M18 it queues ${hc.q}, counted as ${hc.made} made; buffers ` +
@@ -5461,6 +5466,79 @@ for (const device of TARGETS) {
      `IV's round opens ${hc.pP4} and the Pak 38's ${hc.pPak}; the 76 mm goes through a Panzer IV's front ${hc.onP4}, a Panther's ` +
      `front ${hc.onPan} and its side ${hc.onPanS}; a 120-point burst took ${hc.lost} off it and ${hc.lostM4} off the M4A1; the eye ` +
      `${hc.eye} up; ${hc.blown} of 40 wrecks threw the turret; killed, it left ${hc.bodies} bodies of ${hc.bodyNat}`);
+
+  /* --- Where a round lands on a vehicle decides whether it goes through. The 57 never goes
+     through a Panther's front and always through its side and rear; a round is landed on a face
+     that turns toward the gun, the sampler that lands it agrees with the chance the brain is
+     told, and a gun met head on is hit on its front. Then a real round: an M4 to the east of a
+     Panther fires until one hits, the shell is flown to the point on the plate, glances off and
+     neither hurts the tank nor opens the ground under it; from the north it goes into the side
+     and does its damage. The Panther is given a million hit points so that it is there to be
+     shot at, and the rounds that missed are taken off the list before they land. --- */
+  const ar = await page.evaluate(() => {
+    const W = window, G = W.G, out = {};
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0];
+    const px = hq.x, py = hq.y - 520, d = 300;
+    const pan = W.spawnUnit('ger', 'hr_panther', px, py, 0);
+    pan.facing = 0; pan.turret = 0; pan.gz = undefined; pan.hp = pan.maxhp = 1e6;
+    const at = W.UNITS.am_at.w, m4w = W.UNITS.am_sher.w;
+    out.atFront = +W.penVs(at, d, pan, px + d, py).toFixed(3);
+    out.atClose = +W.penVs(at, 40, pan, px + 40, py).toFixed(3);
+    out.atSide = +W.penVs(at, d, pan, px, py + d).toFixed(3);
+    out.atRear = +W.penVs(at, d, pan, px - d, py).toFixed(3);
+    const A = W.armOf(pan), B = W.vehBox(W.vkey(pan));
+    let worst = 0, away = 0, fronts = 0, sides = 0;
+    [[0, 'f'], [.5, ''], [Math.PI / 2, 's'], [Math.PI, '']].forEach(([a, tag]) => {
+      const fx = px + Math.cos(a) * d, fy = py + Math.sin(a) * d, N = 500;
+      let sum = 0;
+      for (let i = 0; i < N; i++) {
+        const L = W.hitLoc(pan, A, B, fx, fy, m4w, d);
+        sum += L.p;
+        if (Math.cos((L.tur ? pan.turret : pan.facing) + L.na - a) < -1e-6) away++;
+        if (tag === 'f' && L.f.charAt(1) === 'f') fronts++;
+        if (tag === 's' && L.f.charAt(1) === 's') sides++;
+      }
+      worst = Math.max(worst, Math.abs(sum / N - W.penVs(m4w, d, pan, fx, fy)));
+    });
+    out.worst = +worst.toFixed(3); out.away = away; out.fronts = fronts; out.sides = sides;
+    const fire = (fx, fy) => {
+      const m4 = W.spawnUnit('us', 'am_sher', fx, fy, 0), r = {};
+      m4.facing = m4.turret = Math.atan2(py - fy, px - fx);
+      r.line = W.fireLine(m4, pan);
+      let shell = null;
+      for (let k = 0; k < 60 && !shell; k++) {
+        m4.cd = 0; m4.sup = 0;
+        const n0 = G.shots.length;
+        W.fireAt(m4, pan, 0);
+        const sh = G.shots.slice(n0).filter(q => q.kind === 'shell');
+        sh.forEach(q => { if (q.loc && !shell) shell = q; else G.shots.splice(G.shots.indexOf(q), 1); });
+      }
+      G.units.splice(G.units.indexOf(m4), 1);
+      if (!shell) return r;
+      const lw = W.locWorld(pan, shell.loc);
+      r.pen = shell.loc.pen; r.face = shell.loc.f;
+      r.onPlate = +Math.hypot(shell.tx - lw.x, shell.ty - lw.y).toFixed(2);
+      r.z1 = +shell.z1.toFixed(1);
+      const hp0 = pan.hp, dug0 = G.cratersDug;
+      for (let i = 0; i < 200 && G.shots.indexOf(shell) >= 0; i++) W.updateShots(1 / 30);
+      r.lost = +(hp0 - pan.hp).toFixed(1); r.dug = G.cratersDug - dug0;
+      return r;
+    };
+    out.front = fire(px + d, py);
+    out.side = fire(px, py + d);
+    G.units.splice(G.units.indexOf(pan), 1);
+    return out;
+  });
+  ok('a round lands on the face of a vehicle the gun can see, and the plate there decides it',
+     ar.atFront === 0 && ar.atClose === 0 && ar.atSide > .95 && ar.atRear > .95 && ar.worst < .06 && ar.away === 0 &&
+     ar.fronts > 450 && ar.sides > 450 && ar.front.line && ar.front.pen === 0 && ar.front.onPlate < .5 && ar.front.z1 > 2 &&
+     ar.front.lost === 0 && ar.front.dug === 0 && ar.side.pen === 1 && ar.side.lost >= 140 && ar.side.dug === 0,
+     `the 57 through a Panther's front ${ar.atFront} at 300 and ${ar.atClose} at 40, its side ${ar.atSide} and its rear ${ar.atRear}; ` +
+     `the sampler within ${ar.worst} of the integral, ${ar.away} rounds on a face turned away from the gun, ${ar.fronts} of 500 head-on ` +
+     `rounds on a front face and ${ar.sides} of 500 broadside on a side face; an M4's round at the front ` +
+     `(${ar.front.line ? 'a line' : 'NO LINE'}) landed on ${ar.front.face} ${ar.front.onPlate} off the plate, ${ar.front.z1} up, ` +
+     `${ar.front.pen ? 'WENT IN' : 'glanced off'}, took ${ar.front.lost} off it and dug ${ar.front.dug}; at the side it landed on ` +
+     `${ar.side.face}, ${ar.side.pen ? 'went in' : 'GLANCED OFF'}, took ${ar.side.lost} and dug ${ar.side.dug}`);
 
   /* --- The 29th's second batch. The motor pool makes the M16 beside the M3, the 3-inch gun and
      the 105, and the barracks the 81. The M16's buffers are built and its quad mount

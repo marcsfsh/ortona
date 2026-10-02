@@ -72,6 +72,7 @@ node tools/duel.mjs          # balance: who beats whom, and how often
 node tools/move.mjs          # movement: routes, traffic, and whether cover is taken
 node tools/brain.mjs         # the AI: what it sees, what it decides, what each rule fires
 node tools/sight.mjs         # sight: the trace, what a position commands, how long spotting takes
+node tools/armour.mjs        # armour: every anti-tank weapon against every vehicle, front, side and rear
 node tools/model.mjs         # the models: the occlusion bake against shapes with known answers
 node tools/terrain.mjs       # the ground: what grain is on it, at what distance, and what crawls
 node tools/skirmish.mjs      # tactics: this AI against the one in the last commit
@@ -201,6 +202,31 @@ committed, and a later session needs the drawing supplied again to run it. The m
 tool -- saving the drawing, a scale per view off a published figure measured in that view, the
 reading at a zoom, the list of disagreements in model units before any edit, and what to check
 afterwards -- is the `refdraw` skill (`.claude/skills/refdraw/SKILL.md`).
+
+### `tools/armour.mjs` - armour, mechanically
+
+Whether a round goes through is a question about where it lands, what plate is there and at what
+angle it meets it, and the answer for one gun against one tank says nothing about the next pair.
+So the card asks it of every pair: every weapon on the roster that goes through more than rifle
+ball against every vehicle that carries plate (with the three that hang skirts asked again with
+them hung, and the Priest rebuilt as the M12), from the front, thirty degrees off the nose, the
+side and the rear, at a quarter of the weapon's reach and at nine tenths of it, with what a round
+that goes through does and how many it takes.
+
+```sh
+node tools/armour.mjs                    # the matrix and the sampler check
+node tools/armour.mjs --veh=hr_panther   # one vehicle
+node tools/armour.mjs --w=am_at          # one weapon (a unit key, or key.slot)
+node tools/armour.mjs --json=/tmp/a.json # the whole matrix as JSON
+node tools/armour.mjs --file=/tmp/x.html # an older file
+```
+
+**MATRIX** reads `penVs`, which is what every reader of a gun against armour asks, so it is the
+game's own answer and not a check of it. **SAMPLE** is the check: where one round lands is drawn
+by `hitLoc` from the faces the gun can see, and `penVs` is the same faces integrated, so the card
+fires 600 rounds through the sampler at each of six bearings for four guns and compares, and
+asks that every point lies on a face that turns toward the gun and on that face of the box. If
+the two ever disagree, one of them is wrong.
 
 ### `tools/duel.mjs` - balance, mechanically
 
@@ -1259,9 +1285,9 @@ second unit the 352nd fielded over and above: the Panzerpark makes it beside the
 by its own key, it is in the grey with none of the sand paint, the man in the cupola wears the black
 cap and no helmet, the muzzle stands more than eighteen units past the nose, a turret asked to lay
 over the tail comes all the way round, and the gunner sees as far as he shoots. Most of the row is
-the plate: 220 in front and a side under two fifths of that and still over the Panzer IV's, an M4's
-round at 300 through the front 56 times in a hundred and through the side every time, and the side
-dearer with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the lid
+the plate: 150 mm on the hull's front and a side under two fifths of that and still over the Panzer
+IV's, an M4's round at 300 through the front never and through the side every time, and a rifle
+grenade through the side less often with the Schürzen hung. The eye is up out of the cupola and drops to the blocks when the lid
 shuts, forty wrecks throw the turret some of the time, killed it leaves bodies of the 352nd. The 57
 mm Gun M1 is asked it in a nineteenth, on the American side: the barracks makes it and queues it,
 the count reads it, its eye stands past every eye on the German vehicles and its reach past every gun
@@ -1284,21 +1310,27 @@ a German bunker's anti-tank fitting is the Pak 38. The M3 light tank is asked it
 the first unit the Americans fielded over and above the ones they stood in for: the tank yard makes
 it and queues it by its own key, it is in olive drab, the man in its hatch wears the
 tanker's helmet and no M1, the 37 mm stays inside the nose, a turret asked to lay over the tail
-comes all the way round, and the front plate is half as much again as the M8's, so at two hundred
-the 234/1's 2 cm and the Wirbelwind's seldom open it where the 2 cm opens the M8 more than twice as
-often, the KS 750's MG 34 never does and a Panzer IV's round always does. The eye is up out of the
+comes all the way round, and the front plate is more than half as much again as the M8's, so at two
+hundred the 234/1's 2 cm and the Wirbelwind's never open it where the 2 cm opens the M8 almost every
+time, the KS 750's MG 34 never does and a Panzer IV's round always does. The eye is up out of the
 hatch and drops to the band under the roof when the lid shuts, eighty wrecks throw the turret some of
 the time, killed it leaves American bodies. The four light hulls (the M8, the 234, the Wirbelwind and
 this) are asked over eighty wrecks where the rest are asked over forty, because a light hull throws
 its turret on eighteen deaths in a hundred and forty of them throw none once in 2,800 runs, which one
-desktop run did. The M26 is asked it in a twenty-second, the second unit the Americans fielded over
+desktop run did. The armour model is asked it in a row of its own, on a Panther staged on the
+sand: the 57 goes through its front never, at three hundred or at forty, and through its side and
+its rear every time; the sampler that lands a round is within a few hundredths of the chance the
+brain is told, no round lands on a face turned away from the gun, a gun head on lands on a front
+face and one broadside on a side face; then an M4 to the east fires until one hits, the shell flies
+to the point on the plate, glances off, takes nothing off the tank and opens no ground under it, and
+from the north it goes into the side for its 140. The M26 is asked it in a twenty-second, the second unit the Americans fielded over
 and above: the tank yard makes it beside the M4A1 and queues it by its
 own key, it is in olive drab, the man in its cupola wears the tanker's helmet and no M1, the 90 mm
 stands more than twenty units past the nose, and a turret asked to lay over the tail comes all the
 way round. Most of the row is the plate and the gun at three hundred: a Panzer IV's round goes
-through its front between one time in five and two in three and through its side every time, and its
-90 mm goes through a Panther's front more than three times in five, more often than the M4A1's 75
-does, and a Panzer IV's every time. The eye is up out of the cupola and drops when the lid shuts,
+through its front under one time in five and through its side every time, and its 90 mm goes through
+a Panther's front more than three times in ten, more often than the M4A1's 75 does, and a Panzer IV's
+every time. The eye is up out of the cupola and drops when the lid shuts,
 forty wrecks throw the turret some of the time, killed it leaves American bodies. The M18 is asked it in
 a twenty-third: the tank yard makes it beside the M26 and queues it by its own key, it is in olive drab
 with nothing of its turret roofing it over at the rim, its three men wear the tanker's helmet and no M1
@@ -1306,7 +1338,7 @@ with the commander's head over the rim, the .50 is standard, the 76 mm stands mo
 past the nose, the turret comes all the way round, and it is faster than anything else in the yard.
 Most of the row is the trade it makes at three hundred: a front the Panzer IV's round and the Pak 38's
 both open every time, a 76 mm through a Panzer IV's front more than four times in five, a Panther's
-side every time and its front about two times in three, and the same 120-point burst beside it taking
+side every time and its front under one time in ten, and the same 120-point burst beside it taking
 more than a quarter again off it than off the M4A1. The eye is the commander's over the rim, forty wrecks
 throw the turret some of the time, and killed it leaves American bodies. And the four the
 first roster left on the German depot, the Tiger, the King Tiger, the Maus and the StuH 42, are asked
@@ -2180,6 +2212,34 @@ staged COVER drill, which is the one that is not a battle, reads 0.60 taken over
 on both. A battle here compounds, so a single run of a battle statistic is worth about as
 much as a single pair on the tactics card.
 
+**And bodies of men pass through each other, and a hull is never shifted by them.** All of
+the above made two sections pass with daylight between their men and they still met
+something nobody could see: the box decided they were in contact, the steering swerved each
+round the other and the push shoved them apart, so a section crossing another ran into a
+wall for the length of the crossing and a section passing one at a halt squeezed round it
+at a crawl. And a section pressed against a parked tank shoved the tank aside, because the
+push gave way by mass. The rule now (`afoot`, `onWay`): a body of men on its feet, a
+section or the crew of a piece that can be moved, is not steered round by another one or by
+a vehicle; two of them are pushed apart (`unwedge`) only once both have stopped, which is
+the resting case the box is for; men never shift a vehicle; and a vehicle never steers round
+men or pushes them. What keeps them apart is each man (`manClear`, off `manNear`, the list
+of what is close enough to touch, built once a unit a frame): he steps round the men of
+anybody he is walking through at `MAN_GAP` (13 units, a pace) and is never pushed back down
+his own line, he steps round a set-up piece's gun, and he is put out of a hull by its
+nearest face, or off to the side of its line if the hull is driving. A section a tank drives
+into goes aside at the tank's own pace (`vmax` in the push): before that a Sherman drove a
+section 164 units down the road in front of it, and now it is put 62 aside.
+
+Measured on a staged drill: two sections crossing at 0, 20 and 40 units of offset take 6.4
+seconds, which is what one takes alone, with no frame made backwards; passing a halted
+section the same; passing a parked Sherman 8.1 seconds head-on and 6.4 at fifty units of
+offset, with no man inside the hull on any frame and the tank not moved at all. On the
+movement card against the commit before it, stuck unit-frames went from 8.85 per cent to
+none and paths found from 8,106 to 4,271 over the same battle. Models overlapping read 2.44
+and 4.23 per cent against 1.86 on two runs with the gap at 11, because men passing through
+each other a pace apart are men within twelve units of each other, which is what that
+column counts; the gap is 13 now for that reason.
+
 **Avoidance steers; it does not push back down the line.** The same fault ran in
 `moveUnit`: the avoid vector was blended into the want vector and the sum renormalised, so
 a unit pressed head-on was left with a residual of a tenth whose DIRECTION was whatever
@@ -2378,6 +2438,30 @@ for a vehicle is the same fault as driving it off its nose: a tank slid sideways
 speed with no change of heading. A hull gets one swing of 0.6 radians and its front plate
 follows it round; the axis slides are infantry's alone.
 
+**And a hull lies on the ground it is crossing.** Every vehicle was drawn level whatever it
+stood on, with a bob of the suspension and a sway on top, so a Sherman climbing the Vierville
+draw climbed it flat with its nose in the slope and its tail in the air. `vehGround(u, dt)`
+fits a plane through six samples of the ground under the hull, at its front, its middle and
+its back and a little inside its two sides, off its own body (`bodyL`, `bodyW`, `bodyX`, so
+the samples move when the plates do), and the hull is drawn on that plane's pitch and roll
+(`u.gp`, `u.gl`). Three things keep it from wobbling on ground nobody laid for it. The plane is
+a least-squares fit and not the four corners, so one shell hole under one track tips the hull a
+little rather than dropping a corner into it. The angles ease toward the plane over about a
+fifth of a second and turn no faster than 1.1 radians a second, so a hull rolls over a lip
+rather than snapping onto it. And they stop at 0.40 radians of pitch and 0.32 of roll (`VG_P`,
+`VG_L`), steeper than any ground a hull is priced onto. The height is not eased, because a hull
+that lags the ground it is on is in the air: it is the plane's height under the middle, lifted
+by six tenths of the most any sample stood above the plane, to at most four, so a hull across
+the crest of a rise stands on the crest and not in it. The bob and the sway are kept, smaller,
+and the sway falls off with weight. Everything drawn off the hull goes with it: the turret and
+its gun in the hull's own frame, the muzzle flash (`gunMuzzle`), the shadow, the men, and the
+wreck, which keeps the attitude it died in and the height it stood at (`w.gdz`). Measured on a Sherman driven up the Vierville draw: in ten seconds the pitch came to 0.32
+radians and the roll to the 0.32 cap across the side of the draw, neither moved by more than 0.015
+radians in a frame at sixty frames a second, and the hull's corners stood within two and a half
+units of the ground on the sand and up the draw's floor. Across the anti-tank ditch at the draw's
+mouth, where the ground under a hull is nothing like a plane, a corner hung up to eleven units over
+the ditch and another went nine into its bank, which is a tank bridging a ditch.
+
 **The shape of a section is the shape of the ground it is on.** Three files abreast is
 right in a field and impossible in a lane a cart would fill: seven per cent of every
 man-frame had its place in the formation inside a house. `u.formW` cuts the frontage to
@@ -2408,6 +2492,27 @@ known threat (`u.threatAng`, the bearing its cover was chosen against) rather th
 standing the way it arrived, and a machine gun is laid on that bearing before it is
 needed. A halted tank with a turret brings its hull round to its target as well, slowly,
 because the front plate is nearly twice the side.
+
+**And the men turn, not the formation.** A section's places were laid off `u.facing`, which
+turns to whatever it is shooting at, so a halted section engaging a moving target swung its
+whole formation round its own middle like a lazy susan, every man sliding sideways across
+the ground in the aim with no walk under him. The formation keeps a bearing of its own
+(`u.formA`), which follows the facing while the section walks and stands still while it
+does not, and the men turn where they stand (`m.f`); the box a section is tested by is laid
+on the formation (`bodyAng`). A crew's places are laid off its gun, which traverses, so a
+team keeps the gun's bearing. Three things flicked men between the walk and the aim on the
+move, and each is fixed: a unit stood still for one frame at every waypoint, because the
+step that reached one returned (`moveUnit` goes straight on down the next leg); the walk
+was decided frame by frame off how far a man had moved, and is held a quarter of a second
+(`m.walkT`) with the unit's own walk held a third (`u.movT`); and a forced attack on a target
+moving along the edge of its reach set off and halted on alternate frames, where it stops at
+nine tenths of the reach now and sets off again at ninety-nine hundredths. And a man holds
+the aim past his next round (`m.aimHold`, a third again of the weapon's rate of fire): held
+a flat six tenths, a rifle at three quarters of a second a round came down to the low ready
+between every two shots. On the drill, the men of a halted section with a target walking
+half round it moved 82.5 units at the worst before and none after, its stance changes over
+ten seconds went from 1,828 to 11, and on a route of twenty-five waypoints a section stood
+still on 24 frames before and none after.
 
 **A crew-served weapon is in action or it is on the move, and getting between the two
 takes time both ways.** It took time one way: `def.setup` was the seconds to bring a piece
@@ -2645,6 +2750,78 @@ the StuH in 4.6 against a committed file that read 5.9 and 7.2 on two runs. The 
 to half, and its burst is 9 where it was 14 (see the 234). An automatic cannon's burst does to
 men what a shell of the same damage does, splinters and all, because its `dmg` already says what
 the five rounds of it do to men; the line `w.auto` draws is plate and stone.
+
+**A round lands somewhere on a vehicle, and what is there decides whether it goes through.** The
+plate a round met was the vehicle's one armour figure from the front, 56 per cent of it from the
+side and 36 from behind, picked by the bearing alone, against a penetration in the game's own units
+on a curve that let a round through three times in four when the two numbers were equal: a 57 went
+through a Panther's front about half the time close in, and nothing said whether it had hit the
+turret or the hull. `ARM` is each vehicle's plate in millimetres, front, side and rear for the hull
+and for the turret (or, where `cm` is set, for the upper part of a casemate or an open fighting
+compartment, from that fraction of the hull's height up), each the thickness a round has to get
+through at the angle the plate is laid at, rounded up a little for the well-sloped ones, because a
+sloped plate stops more than its cosine says against a shell no wider than the plate is thick.
+`w.mm` is what a weapon goes through close in against a plate square to it, off the published
+tables: the 57's M86 at 105, the 75's M61 at 104, the 76's M62 at 128 and the 90's M82 at 170; the
+Pak 38 at 100, the KwK 40 at 135, the Panther's KwK 42 at 185, the Tiger's 88 at 160 and the King
+Tiger's at 245. It loses a quarter over the weapon's reach (`penMM`), except a hollow charge
+(`w.heat`: the bazooka at 110, the rifle grenade at 55, the StuH's round at 100), which loses none.
+Rifle ball is 5, a sub-machine gun 3 or 4, a machine gun's belt 9 for the AP rounds in it, a .50 25
+and a 2 cm 30, so a belt opens a half-track's sides and an armoured car's flanks close in and
+nothing heavier. A soft-skinned car (the jeep, the Weasel and the KS 750) keeps the old arithmetic,
+which was tuned to a rifle round going in one side and out of the other without finding anything.
+
+Where a round lands is drawn from what the gun can see (`hitLoc`). The hull is a box off the model's
+own faces and the turret a box off the mount's with the barrel left out (`vehBox`), and each face
+counts by how much of it faces the gun (`armFaces`), so a tank met thirty degrees off its nose is
+hit mostly on the front plate and sometimes on the side, and a turret traversed over the side
+shows the gun its own front. A face met at an angle is that much thicker, one over the cosine, to
+at most 3.3 times. The curve (`penP`) goes from nothing at 85 per cent of the plate to every round
+at 105, half at 95: steep, and leaning toward the round going through, because a weak spot, the
+turret ring and a vision port are all on the round's side.
+
+**And the round flies to the point it hit.** A shell that met a plate is flown to the point on it
+(`s.loc`, with `z1` the height it ends at in `shotPoint`) and follows it if the vehicle moves
+(`locWorld`, off the hull's frame or the mount's). On arrival a round that went in flashes on the
+plate (`penFx`) and one that did not throws its sparks, and its tracer, off the face it met, turned
+about that face (`bounceFx`); a belt that glances off does the same on the instant. A round that
+glanced off does nothing to the vehicle but what its burst does, which for anything with a burst
+under 60 (every tank gun on the roster, and not the StuH's howitzer) is nothing, and it bursts on the plate without digging a hole under the tank
+(`EXPL_NODIG`). What a round that went in does follows where it went in (`vehCrit`'s fourth
+argument): low on the hull it is the running gear, in the back plate the engine, in the turret the
+gun. A shell of 30 mm or more that does not go through the lower hull still breaks a track one time
+in six.
+
+**And everything that weighs a gun against a tank asks the same question** (`penVs`): the chance,
+over every face the gun can see from where it stands, that a round goes through. The brain picking
+what to shoot at, a section deciding whether it can answer a tank, a tank deciding whether a gun
+can hurt it, a wave's concentration of fire and the count of what can kill a heavy all asked
+`penChance(penAt(w, d), armourAt(...))` and all ask this now.
+
+Measured on `tools/armour.mjs`: the 57 goes through a Panther's front never, close in or at the edge
+of its reach, through it at thirty degrees off the nose 36 per cent of the time close in (that is
+the side plate showing), and through its side and rear every time; an M4's 75 goes through a Tiger's
+front 42 per cent of the time at a quarter of its reach and never at nine tenths, and through its side
+every time at either. The sampler agrees with the integral to within 0.05 on every vehicle, with no
+round on a face turned away from the gun out of 14,400 a vehicle.
+
+On the balance card, over 123 rows at six runs each against the commit before it: a mean shift of
+-1.4 points with a standard error of 2.2, against a row-to-row spread of 24.5 that six runs produce
+out of nothing, so the roster as a whole is where it was. The rows that moved are the ones the plate
+is about. The 57 against a Panther head on went from 67 per cent to none. The 37 mm now opens the
+Wirbelwind's open turret and the 2 cm cannot open the M3 light tank's front, so the Wirbelwind went
+from beating the M3 83 per cent of the time to never; the 251's MG 34 cannot open the M8's front, and
+the M8 went from half to all of that fight; the Easy Eight's 76 opens a Tiger's front close in, from
+none to half. Refought at sixteen runs on the final figures: the 2 cm goes through the M18's half inch
+of front every time, so the Wirbelwind takes the M18 four times in five where it lost every time, and
+the M18 takes the Panzer IV a quarter of the time against 44; the Pak 38 sited against an M4 wins 88
+per cent against 100. Two figures were set off the card. The M8's front is 25, between its 13 mm upper
+plate at sixty degrees and its 19 mm lower plate, because at 22 the 234/1's 2 cm won every fight with
+it and at 26 lost seven in eight; at 25 it takes the M8 88 per cent of the time over twenty-four runs,
+where it was tuned at 63. And the 5 cm L/60 on the Pak 38 and the Puma is 112, the PzGr 39 with a share
+of the tungsten PzGr 40 the guns carried, because on the PzGr 39 alone it never beat an M4 head on.
+Every figure elsewhere in this file that gives a chance of a round going through a plate, or a duel
+row between a gun and a vehicle, was measured on the old curve and is history.
 
 **A bunker has a front and a back, and that is the whole of what makes it one.** A house
 is fought out of on every side. A bunker has a fighting slot and a back wall, so
@@ -3418,12 +3595,44 @@ standing in for a crater. With a real hole under it as well, a salvo painted the
 black between its own craters; it is drawn tight round the hole when there is one.
 
 **What will not open.** A floor somebody levelled and built on, concrete, the sea, and
-anything under the size floor -- `CRATER_MIN`, which is eleven units of hole and sixteen on
+anything under the size floor -- `CRATER_MIN`, which is nine units of hole and thirteen on
 a phone, because a tile re-mesh costs what it costs wherever it runs and the thing to cut
 there is how often one is asked for. A crater is about a third of the burst radius, which
 puts a mortar bomb at eleven and a 210 at forty-five, and those are the two ends of what
 the map itself was hand-placed with. A round that burst against an upper storey scorches
 the street and does not open it.
+
+**A track leaves a rut.** Track marks were painted onto the decal canvas a frame at a time and
+never went anywhere, so ten minutes into a battle a field was a scribble of dark lines lying
+flat on ground nothing had touched. `rutTrack(u)` stamps the two tracks, or the wheels, into a
+layer of its own on the four-unit height grid (`G.rut`, `rutStamp`), and the ground mesh is laid
+on the height less the rut (`RZ` in `buildTerrain`), so a rut is a groove the light falls into.
+A cell holds the deepest rut anything has cut in it and never the sum of them, so a second tank
+in the first one's tracks finds them as deep as it would make them and digs nothing: the depth
+is a vehicle's own (`rutDepth`, off its hit points), about six tenths of a unit for a jeep and
+one for a Sherman up to a unit and a half for the heaviest hull, wheels cutting four fifths of
+what tracks would, and up to a third more where a map says its ground is wet. It
+cuts open ground and nothing else: a road, paving, a levelled pad, a bridge deck, the heap and
+the water's edge are left as they are. The bottom of a rut is a quarter darker and wetter, which
+is turned soil and the water that lies in it, and its normal is bent by the rut's own slope, so
+it reads as a cut and not as the ground pressed out of shape. It is the mesh and only the mesh:
+no cost, cover or going moves, because a rut a hand deep is nothing a man lies in. A tile it
+reaches is rebuilt once it has been quiet for 0.6 seconds or 2.5 seconds after the first track
+touched it, one tile at a time no closer than a third of a second on a desktop and nine tenths
+on a phone (`RUT_GAP`), only while the tile is on screen and only on a frame the crater queue
+has not used (`flushRutQ`). Measured on the Gothic Line: a Sherman across open ground cut 873
+cells, the deepest 1.21 units, and a tile rebuilt for it in 34 to 53 ms under SwiftShader.
+
+**And a scorch fades; the hole stays.** The burns and the blood were painted onto the decal
+canvas and stayed for the battle, so a field shelled for ten minutes was black between its
+craters. Every six seconds the whole canvas is washed a twentieth of the way back to the
+ground, and every fifteenth wash a quarter of the way, because eight bits of colour stop moving
+at a twentieth once they are within ten of white (`decalFade`): a half-life of about a minute.
+The hole is in the mesh and stays. More bursts leave one now: the floor is nine units on a
+desktop and thirteen on a phone where it was eleven and sixteen, and a battle may dig 220
+craters and 90 (`CRATER_CAP`) where it was 170 and 70. The scorch round a hole is soot thrown
+out in streaks to twice the hole's radius over a few soft lobes, darkest in the middle
+(`decalScorch`), where it was one dark disc.
 
 **Renderer.** Hand-written WebGL2. One vertex/fragment program for lit
 geometry, plus sky, depth and particle programs. A 2048px shadow map from a
@@ -3555,6 +3764,39 @@ of the army at once, and handling the fight in front of you without dragging in 
 holding a flag four hundred metres behind. The kinds come off what is already selected, so
 a mixed selection widens sensibly, and a building is never swept in because a selection
 with a headquarters in it shows production cards rather than order cards.
+
+**A group is sent to ground the size of what is in it.** An order to several units put them on
+a grid forty-four units to a side whatever they were, which is under half a Sherman's length:
+nine tanks sent to one point arrived on top of each other and went on ramming each other for
+good. `groupSlots` cuts each unit a slot off its own body with room round it, a hull's beam and
+twenty-four across and its length and eighteen along, a formation's width and depth and
+fourteen for men and pieces, and lays the group in ranks square to the way it is going: men in
+front, vehicles behind them and pieces behind those. The units furthest ahead take the front
+rank and each rank is filled by where they stand across it, so the one on the left goes left
+and nobody drives through the rank in front to reach the one behind; filled the other way, the
+tanks nearest the point stopped in the rear rank and the rest rammed through them. A slot that
+is not ground moves to the nearest ground that is clear of the slots already laid, where
+`nearestFree` alone had put two tanks in one place. Vehicles sent as a group come round onto
+the group's bearing when they stop (`u.faceA`), because a slot is cut to a hull lying along it
+and a tank stopped across its slot is lying in the next one. Measured on nine Shermans sent across open ground and given
+forty seconds: on the old grid eight pairs were still touching, the nearest two 31.9 units apart
+centre to centre; on the slots none touch, the nearest two are 63.8 apart, and every tank is within
+13.7 units of its slot.
+
+**A right-button drag says which way to face.** Pressed and dragged more than twelve pixels, the
+right button gives the order where it was pressed and the bearing it was dragged toward
+(`RDRAG`); let go short of that, it is the click it always was. While it is held each unit's
+slot is drawn on the ground: a hull's box or a ring for men, an arrow the way it will face, and
+for a piece that traverses on its carriage the arc it will be laid across, out to its reach, the
+way Company of Heroes shows a weapon team's arc before it is set down (`markArc`). A unit given
+a bearing keeps it until its order is cleared (`u.faceA`): a hull comes round onto it once it has
+stopped and back onto it when a target is gone, a section's formation turns to it and takes its
+cover against fire from that way, and a piece is set down on it and laid by `layOn` like any
+other turn. A selected piece in action shows its arc faintly. The machine guns lay across half a
+radian either way on their tripods, the 57 0.78, the Pak 38 0.57 and the 3-inch 0.39 (`def.carr`),
+and past that the whole piece is turned, so the arc drawn is what it covers without being heaved
+round. Measured: two Shermans, a rifle squad, a .30 and a 57 given a bearing at a right angle to
+their march all end on it to the hundredth of a radian, with both guns set up.
 
 **The sun is where December puts it.** Ortona is 42 degrees north and the date on the HUD
 is the 23rd. The sun reaches 24 degrees at noon that day and is under twenty by
@@ -5388,7 +5630,10 @@ side at .56 of its front, which on the Panther would be a side of 123 behind a f
 more than its forty and fifty millimetres. `def.flank` is a vehicle's own side factor, read in the
 one place the side is worked out, and the Panther's is .38: 84 in the side against the Panzer IV's
 74 and 220 in front against its 132. An M4's round at three hundred goes through the front 56 times
-in a hundred and through the side every time. It is `flank` because `def.side` is the army.
+in a hundred and through the side every time. It is `flank` because `def.side` is the army. Read
+that as history: plate is in millimetres now and a round is landed on a face (see *A round lands
+somewhere on a vehicle* under Combat), the Panther's hull is 150 in front and 50 at the side, and an
+M4's round at three hundred never goes through the front.
 
 **Its numbers came off the duel card, and they are the Panther's against a 75 mm Sherman.** At 900
 hit points and 220 of plate, a gun at 145 a round every 3.8 seconds with 280 of penetration out to
@@ -6891,6 +7136,13 @@ that much. **Where one goes when nobody has pointed** is `baseSite`: rings round
 headquarters from 150 to 560 out on 24 bearings, beside or behind before in front, never nearer
 another player's headquarters than his own, and inside a base area before outside one. The brain
 and SIMPLE both use it; it replaced two to six fixed offsets that on a crowded map found none clear.
+
+**Where a building sends what it makes is shown while it is picked.** A right-click set the rally
+point and said so in a toast, and nothing on the map said where it was afterwards, so the only way
+to find out was to build something and watch where it went. With one of the player's production
+buildings selected, a small flag stands at the rally point in his army's colour (`drawRallyFlag`,
+on the overlay so it is never hidden behind a roof) with a ring at its foot and a dashed line out to
+it from the building's edge (`rallyOf`, in `buildMarks`).
 
 **The models are the two armies' own** (`BLDMODEL`, `buildingModel`, the palette `BASE`). The 29th
 lives under canvas, after the Company of Heroes base the brief asked for: wall tents and squad tents
@@ -8796,6 +9048,7 @@ tools/terrain.mjs              ground card: grain by scale and distance, and wha
 tools/men.mjs                  infantry card: proportion, contact, grip, clipping, tiles, and the read at play distance
 tools/skirmish.mjs             tactics card: AI against AI, old brain against new
 tools/wreck.mjs                destruction card: the breach, the collapse, the heap, the grids
+tools/armour.mjs               armour card: every weapon against every plate, and the sampler against its integral
 tools/fx.mjs                   effects card: the muzzle blast, the tracer, the burst, off the framebuffer
 tools/audio.mjs                sound: renders the game's own synthesis to WAV, with numbers
 tools/shoot.mjs                scene-based screenshot CLI
