@@ -2180,6 +2180,34 @@ staged COVER drill, which is the one that is not a battle, reads 0.60 taken over
 on both. A battle here compounds, so a single run of a battle statistic is worth about as
 much as a single pair on the tactics card.
 
+**And bodies of men pass through each other, and a hull is never shifted by them.** All of
+the above made two sections pass with daylight between their men and they still met
+something nobody could see: the box decided they were in contact, the steering swerved each
+round the other and the push shoved them apart, so a section crossing another ran into a
+wall for the length of the crossing and a section passing one at a halt squeezed round it
+at a crawl. And a section pressed against a parked tank shoved the tank aside, because the
+push gave way by mass. The rule now (`afoot`, `onWay`): a body of men on its feet, a
+section or the crew of a piece that can be moved, is not steered round by another one or by
+a vehicle; two of them are pushed apart (`unwedge`) only once both have stopped, which is
+the resting case the box is for; men never shift a vehicle; and a vehicle never steers round
+men or pushes them. What keeps them apart is each man (`manClear`, off `manNear`, the list
+of what is close enough to touch, built once a unit a frame): he steps round the men of
+anybody he is walking through at `MAN_GAP` (13 units, a pace) and is never pushed back down
+his own line, he steps round a set-up piece's gun, and he is put out of a hull by its
+nearest face, or off to the side of its line if the hull is driving. A section a tank drives
+into goes aside at the tank's own pace (`vmax` in the push): before that a Sherman drove a
+section 164 units down the road in front of it, and now it is put 62 aside.
+
+Measured on a staged drill: two sections crossing at 0, 20 and 40 units of offset take 6.4
+seconds, which is what one takes alone, with no frame made backwards; passing a halted
+section the same; passing a parked Sherman 8.1 seconds head-on and 6.4 at fifty units of
+offset, with no man inside the hull on any frame and the tank not moved at all. On the
+movement card against the commit before it, stuck unit-frames went from 8.85 per cent to
+none and paths found from 8,106 to 4,271 over the same battle. Models overlapping read 2.44
+and 4.23 per cent against 1.86 on two runs with the gap at 11, because men passing through
+each other a pace apart are men within twelve units of each other, which is what that
+column counts; the gap is 13 now for that reason.
+
 **Avoidance steers; it does not push back down the line.** The same fault ran in
 `moveUnit`: the avoid vector was blended into the want vector and the sum renormalised, so
 a unit pressed head-on was left with a residual of a tenth whose DIRECTION was whatever
@@ -2408,6 +2436,27 @@ known threat (`u.threatAng`, the bearing its cover was chosen against) rather th
 standing the way it arrived, and a machine gun is laid on that bearing before it is
 needed. A halted tank with a turret brings its hull round to its target as well, slowly,
 because the front plate is nearly twice the side.
+
+**And the men turn, not the formation.** A section's places were laid off `u.facing`, which
+turns to whatever it is shooting at, so a halted section engaging a moving target swung its
+whole formation round its own middle like a lazy susan, every man sliding sideways across
+the ground in the aim with no walk under him. The formation keeps a bearing of its own
+(`u.formA`), which follows the facing while the section walks and stands still while it
+does not, and the men turn where they stand (`m.f`); the box a section is tested by is laid
+on the formation (`bodyAng`). A crew's places are laid off its gun, which traverses, so a
+team keeps the gun's bearing. Three things flicked men between the walk and the aim on the
+move, and each is fixed: a unit stood still for one frame at every waypoint, because the
+step that reached one returned (`moveUnit` goes straight on down the next leg); the walk
+was decided frame by frame off how far a man had moved, and is held a quarter of a second
+(`m.walkT`) with the unit's own walk held a third (`u.movT`); and a forced attack on a target
+moving along the edge of its reach set off and halted on alternate frames, where it stops at
+nine tenths of the reach now and sets off again at ninety-nine hundredths. And a man holds
+the aim past his next round (`m.aimHold`, a third again of the weapon's rate of fire): held
+a flat six tenths, a rifle at three quarters of a second a round came down to the low ready
+between every two shots. On the drill, the men of a halted section with a target walking
+half round it moved 82.5 units at the worst before and none after, its stance changes over
+ten seconds went from 1,828 to 11, and on a route of twenty-five waypoints a section stood
+still on 24 frames before and none after.
 
 **A crew-served weapon is in action or it is on the move, and getting between the two
 takes time both ways.** It took time one way: `def.setup` was the seconds to bring a piece
