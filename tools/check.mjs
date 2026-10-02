@@ -5529,6 +5529,71 @@ for (const device of TARGETS) {
      `${us2.morGer}; the rifle squad with both fittings is ${us2.vars} (${us2.baked ? 'baked' : 'NOT BAKED'}), the BARs ` +
      `${us2.bar2 ? 'in' : 'NOT in'} its line, the launcher ${us2.gl ? 'issued' : 'MISSING'}, ${us2.glFired} grenades in twenty seconds`);
 
+  /* --- The self-propelled guns, the Marder and the Weasel. The Priest and the Wespe come out of
+     their motor pools and fire a mission as the towed guns do, laying the mount inside the arc
+     and turning the hull for the rest; the Priest rebuilt as the M12 is another vehicle and
+     another piece, with the 155's reach and its own name; the Marder's Pak 40 comes round only
+     as far as the casemate lets it; and the Weasel comes out of the barracks and carries one
+     squad. The rounds are counted off the mission as they leave the tube, with the bursts
+     switched off, because a mission that lands near a headquarters on the beach digs holes and
+     cuts craft that every row below would stand on. --- */
+  const sp5 = await page.evaluate(() => {
+    const W = window, G = W.G, out = {}, dt = 1 / 30;
+    const keep = G.units.slice(), shots = G.shots.slice(), boom = W.explode;
+    const hq = G.blds.filter(b => b.own === 'us' && b.def.hq)[0], gq = G.blds.filter(b => b.own === 'ger' && b.def.hq)[0];
+    const mot = W.spawnBuilding('us', 'us_mot', hq.x + 240, hq.y - 120, true);
+    const bar = W.spawnBuilding('us', 'us_bar', hq.x - 240, hq.y - 120, true);
+    const dep = W.spawnBuilding('ger', 'ger_dep', gq.x - 240, gq.y + 120, true);
+    G.res.us.mp += 4000; G.res.us.fu += 900; G.res.ger.mp += 4000; G.res.ger.fu += 900;
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = [q(mot, 'am_m7'), q(bar, 'am_weasel'), q(dep, 'hr_wespe'), q(dep, 'hr_marder')].join(',');
+    out.bufs = ['am_m7', 'am_m12', 'hr_wespe', 'hr_marder', 'am_weasel'].filter(k => {
+      const B = W.MODELS.veh[k]; return !(B && B.hull && B.tur && B.turCrew && B.crew); }).join(',') || 'all';
+    W.explode = function () {};
+    function mission(side, key, up) {
+      const h = side === 'us' ? hq : gq, s = side === 'us' ? 1 : -1;
+      const sp = W.nearestFree(h.x + s * 260, h.y);
+      const u = W.spawnUnit(side, key, sp.x, sp.y, side === 'us' ? 0 : Math.PI);
+      if (up) W.fitUp(u, up);
+      u.setup = 0;
+      let a = u.facing + Math.PI / 2, tx = u.x + Math.cos(a) * 600, ty = u.y + Math.sin(a) * 600;
+      if (ty < 80 || ty > W.WORLD.h - 80) { a = u.facing - Math.PI / 2; tx = u.x + Math.cos(a) * 600; ty = u.y + Math.sin(a) * 600; }
+      const f0 = u.facing, ok = W.orderBarrage(u, tx, ty), n = u.barrage ? u.barrage.left : 0;
+      for (let i = 0; i < 30 * 60 && u.barrage; i++) { W.updateUnit(u, dt); W.updateShots(dt); G.t += dt; }
+      return { ok: !!ok, n: n, left: u.barrage ? u.barrage.left : 0, turn: +Math.abs(W.angDiff(u.facing, f0)).toFixed(2),
+               name: W.nameOf(u), vk: W.vkey(u), reach: W.barrageRange(u), arc: +W.arcOf(u).toFixed(2) };
+    }
+    out.m7 = mission('us', 'am_m7');
+    out.m12 = mission('us', 'am_m7', 'm12');
+    out.ws = mission('ger', 'hr_wespe');
+    W.explode = boom;
+    /* the Marder asked to lay further round than its casemate goes */
+    const mr = W.spawnUnit('ger', 'hr_marder', gq.x - 140, gq.y + 220, 0);
+    mr.facing = 0; mr.turret = 0; mr.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(mr, .2);
+    out.mrArc = +W.arcOf(mr).toFixed(2); out.mrTur = +mr.turret.toFixed(3);
+    /* the Weasel takes one squad and refuses a second */
+    const wz = W.spawnUnit('us', 'am_weasel', hq.x + 140, hq.y - 220, 0);
+    const s1 = W.spawnUnit('us', 'am_rifle', wz.x + 30, wz.y, 0), s2 = W.spawnUnit('us', 'am_rifle', wz.x - 30, wz.y, 0);
+    W.boardVehicle(s1, wz); out.wz1 = wz.cargo === s1; out.wz2 = W.canBoard(s2, wz);
+    G.units.length = 0; keep.forEach(u => G.units.push(u));
+    G.shots.length = 0; shots.forEach(s => G.shots.push(s));
+    W.killBuilding(mot); W.killBuilding(bar); W.killBuilding(dep);
+    return out;
+  });
+  ok('Omaha: the Priest and the Wespe fire missions from their motor pools, the Priest rebuilt is the M12, the Marder lays inside its casemate and the Weasel carries a squad',
+     sp5.q === 'am_m7,am_weasel,hr_wespe,hr_marder' && sp5.bufs === 'all' &&
+     sp5.m7.ok && sp5.m7.n === 8 && sp5.m7.left === 0 && sp5.m7.turn > .5 && sp5.m7.vk === 'am_m7' &&
+     sp5.m12.ok && sp5.m12.n === 6 && sp5.m12.left === 0 && sp5.m12.vk === 'am_m12' && sp5.m12.name === 'M12 Gun Motor Carriage' &&
+     sp5.m12.reach > sp5.m7.reach && sp5.m12.arc < sp5.m7.arc &&
+     sp5.ws.ok && sp5.ws.n === 8 && sp5.ws.left === 0 && sp5.ws.turn > .5 &&
+     Math.abs(Math.abs(sp5.mrTur) - sp5.mrArc / 2) < .03 && sp5.wz1 && !sp5.wz2,
+     `queued ${sp5.q}; buffers built: ${sp5.bufs}; the Priest laid ${sp5.m7.ok ? '' : 'NOT '}and fired ${sp5.m7.n - sp5.m7.left} of ` +
+     `${sp5.m7.n}, turning ${sp5.m7.turn}; rebuilt it is ${sp5.m12.name} drawn as ${sp5.m12.vk}, reaching ${sp5.m12.reach} against ` +
+     `${sp5.m7.reach} on an arc of ${sp5.m12.arc} against ${sp5.m7.arc}, and fired ${sp5.m12.n - sp5.m12.left} of ${sp5.m12.n}; the Wespe ` +
+     `fired ${sp5.ws.n - sp5.ws.left} of ${sp5.ws.n}, turning ${sp5.ws.turn}; the Marder asked for 1.2 laid ${sp5.mrTur} on an arc of ` +
+     `${sp5.mrArc}; the Weasel ${sp5.wz1 ? 'took' : 'REFUSED'} a squad and ${sp5.wz2 ? 'TOOK' : 'refused'} a second`);
+
   /* --- The engineers. The Americans' engineer squad: the headquarters makes it and queues
      it, the Allied side opens the battle with one, its three men are the three engineer
      variants and carry the M3, the sleeves are rolled and the hands gloved, the goggles are

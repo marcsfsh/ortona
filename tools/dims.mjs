@@ -73,6 +73,28 @@ const REAL = {
                it is laid over (tools/ref/am_m18.json), whose .50 stands at the published 2.57 m. The body is
                over the sponsons at their lower edge, which is the full width in the front view; the roof is
                between the sponsons' top edges, 2.59 m in the plan and 2.55 m in the front view */
+  am_m7:     { name: 'M7 Priest (105 mm)',  len: 6.02,  gun: 6.02,   wid: 2.87,  hgt: 2.54,
+               clear: 0.43 },   /* 19 ft 9 in long, 9 ft 5 in wide and 8 ft 4 in to the pulpit's ring. The
+               drawing it is laid over (tools/ref/am_m7.json) agrees with the M4A1's running gear at 140 px/m
+               and is 5.79 m long at that scale, and its pulpit stands out past the side to 3.1 m across; the
+               drawing was taken, and the length reads short and the width wide for it */
+  am_m12:    { name: 'M12 GMC (155 mm)',    len: 6.73,  gun: 6.73,   wid: 2.67,
+               clear: 0.43 },   /* 22 ft 1 in to the folded spade and 8 ft 9 in wide. The drawing it is laid
+               over (tools/ref/am_m12.json) is 6.5 m to the spade and 2.56 m across the hull at the scale of the
+               M4A1's running gear, and was taken. The published 9 ft 5 in is not measured: the card measures the
+               gun as the game lays it, and there it is the muzzle that is highest */
+  hr_wespe:  { name: 'Wespe (Sd.Kfz. 124)', len: 4.81,  gun: 4.81,   wid: 2.28,  hgt: 2.30,
+               clear: 0.34 },   /* 4.81 m long, the leFH 18/2's muzzle brake short of the nose, 2.28 m across
+               the fenders and 2.30 m to the top of the casemate */
+  hr_marder: { name: 'Marder III Ausf. M',  len: 4.95,  gun: 4.95,   wid: 2.15,  hgt: 2.48,
+               clear: 0.40 },   /* 4.95 m over everything, the Pak 40's muzzle short of the nose, 2.15 m wide and
+               2.48 m high over the frame on the casemate. The four-view it is laid over (tools/ref/hr_marder.json)
+               agrees with the length and the width at one scale and its running gear with the 38(t)'s at another;
+               the envelope was taken */
+  am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
+               clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
+               and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
+               windscreen's frame at 1.93 m against the same length */
   ger_kt:    { name: 'Tiger II (Henschel)', len: 7.38,  gun: 10.286, wid: 3.755, hgt: 3.09,
                body: 3.66, bodyZ: 1.15, roof: 2.87, clear: 0.495 },   /* 3.09 m to the top of the cupola
                is Jentz's, and what the four-view drawing (tools/ref/ger_kt.json) stands the cupola at;
@@ -173,6 +195,13 @@ const PROBE = {
   am_m18:    { bodyZ: 13.65, roofZ: 17.15, xLo: -5.0, xHi: -1.0, topZ: 8.45 },   /* the slices are
                taken under the turret at the sponson's two edges, where nothing is hung on it; topZ holds
                the lifting eyes on the rim out */
+  am_m7:     { hullZ: 30.0 },   /* hullZ holds the .50 on the pulpit's ring out of a height published to the ring */
+  am_m12:    { topZ: 0 },   /* the gun is laid up in the game and is not part of the height, which is not measured */
+  hr_wespe:  { topZ: 4.5, tailX: -28.7 },   /* topZ holds the tube, laid up as the game lays it, out of the
+               casemate's height, and tailX the silencer across the tail out of the length */
+  hr_marder: { hullZ: 29.5 },   /* hullZ holds the aerial out and keeps the frame over the casemate in */
+  am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
+               aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },
   ger_tig:   { bodyZ: 18.5, roofZ: 22.0, xLo: 22.2, xHi: 23.4, straddle: true },   /* the hull side is one
                plate the whole length, so the slice is taken at the one stretch of it with no cables,

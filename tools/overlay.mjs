@@ -128,6 +128,13 @@ const only = args.only ? String(args.only).split(',') : null;
 spec.key = spec.key || spec.man;
 const views = Object.keys(spec.views).filter(v => !only || only.includes(v));
 const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, faces }) => {
+  /* a constant the model is built off, set before it is built (`"set": { "P7.el": 0 }`): a
+     howitzer laid up in the game is laid level on the drawing it is checked against */
+  Object.keys(spec.set || {}).forEach(p => {
+    const ks = p.split('.'); let o = window;
+    for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]];
+    o[ks[ks.length - 1]] = spec.set[p];
+  });
   /* a prop is no unit's model: the spec names the builder and what to hand it, and its faces
      are drawn as the hull */
   const PB = spec.prop ? window[spec.prop] : null, MAN = spec.man || null;

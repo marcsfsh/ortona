@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m12.png", "key": "am_m12", "prop": "p12Show", "args": [0], "set": { "P12.el": 0 },
+  "note": "A four-view of the M12 GMC with no scale on the sheet. The side and the plan are taken off the M4A1's running gear at 48.5 px/m; the front and the rear off the track's 83 in centres at 49.6 across, with a vertical scale of their own off the bore (47.2). The gun is drawn at nought elevation with the travel lock up and the spade folded.",
+  "views": {
+    "side":  { "nose": "left", "crop": [160, 0, 340, 145], "ppm": 48.5, "at": [0, 0, 0], "px": [308.1, 130.0], "k": 3 },
+    "plan":  { "nose": "left", "crop": [160, 140, 340, 141], "ppm": 48.5, "at": [0, 0, 0], "px": [308.1, 209.0], "k": 3 },
+    "front": { "crop": [0, 0, 165, 140], "ppm": 49.6, "ppmv": 47.2, "at": [0, 0, 0], "px": [70.0, 126.25], "k": 5 },
+    "rear":  { "crop": [0, 140, 165, 141], "ppm": 49.6, "ppmv": 47.2, "at": [0, 0, 0], "px": [74.4, 270.6], "k": 5 } } }

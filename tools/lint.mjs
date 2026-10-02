@@ -338,10 +338,13 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    groups, a plan view and layers, a guide at the size of a squad or a tank, an advisor that
    walks the map's own routes, restore points, a first pass laid from a sketch, area brushes,
    and changes to the whole map at once.
+   It is 3550 for five vehicles built to their drawings in one pass: the M7 Priest and the M12
+   it can be rebuilt as, the Wespe, the Marder III and the M29C Weasel, with the artillery's
+   fire mission made a thing a vehicle can carry.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 3300) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3300 kB so it stays quick to load on a phone`);
+if (kb > 3550) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3550 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

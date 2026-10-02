@@ -1,0 +1,7 @@
+{ "image": "shots/ref/am_m7.png", "key": "am_m7", "prop": "p7Show", "args": [0], "set": { "P7.el": 0 },
+  "note": "A four-view of the M7 Priest (thebluprints), 878 by 1305 px, with no scale on the sheet. The side and the plan along the hull agree with the M4A1's running gear, which is the same VVSS, at 140 px/m: the bogies 205 px apart for 57 in, the wheels of each 120 px for 33 in, the sprocket and the idler where the M4A1's stand. The front and the plan across take the 83 in between the track centres, 287 px, at 136; the front's and the rear's heights agree with the side's at 140. The gun is laid level on the sheet, so the spec builds it level (P7.el 0).",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 878, 445], "ppm": 140.0, "at": [0, 0, 0], "px": [422.0, 428.0], "k": 2 },
+    "plan":  { "nose": "left", "crop": [0, 440, 878, 430], "ppm": 140.0, "ppmv": 136.0, "at": [0, 0, 0], "px": [422.0, 661.0], "k": 2 },
+    "front": { "crop": [0, 870, 440, 435], "ppm": 136.0, "ppmv": 140.0, "at": [0, 0, 0], "px": [220.5, 1294.0], "k": 2 },
+    "rear":  { "crop": [440, 870, 438, 435], "ppm": 136.0, "ppmv": 140.0, "at": [0, 0, 0], "px": [663.5, 1294.0], "k": 2 } } }

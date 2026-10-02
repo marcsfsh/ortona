@@ -1,0 +1,7 @@
+{ "image": "shots/ref/hr_marder.png", "key": "hr_marder", "prop": "mrShow", "args": [0], "set": {"MRH.travel": 1},
+  "note": "A four-view of the Marder III Ausf. M with no scale on the sheet. Its length over everything and its width agree with the published 4.95 m and 2.15 m at 82.8 px/m, where its running gear would want 77.3; the envelope was taken. The gun is drawn level in its travel lock.",
+  "views": {
+    "side":   {"nose": "left", "crop": [30, 10, 420, 225], "ppm": 82.8, "at": [0, 0, 0], "px": [233.3, 223.3], "k": 3},
+    "plan":   {"nose": "left", "crop": [30, 280, 420, 200], "ppm": 82.8, "at": [0, 0, 0], "px": [233.3, 380.85], "k": 3},
+    "front":  {"crop": [510, 10, 215, 225], "ppm": 82.8, "at": [0, 0, 0], "px": [612.5, 221.7], "k": 3},
+    "rear":   {"crop": [510, 245, 215, 240], "ppm": 82.8, "at": [0, 0, 0], "px": [613.3, 468.3], "k": 3} } }
