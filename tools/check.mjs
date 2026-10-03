@@ -6703,6 +6703,86 @@ for (const device of TARGETS) {
      `against ${hulk.ctrl} between two live frames; ${hulk.off} of 40 deaths threw the turret off, ` +
      `the hull settles ${hulk.cant} degrees over, and ${hulk.plate} pieces of plate come off it`);
 
+  /* --- And a live one rolling. Every wheel and every link of track on the roster was part of
+     the hull and stood still whatever the tank did, which at play distance is a tank sliding
+     over the ground on a picture of its tracks. So the row asks first that every vehicle's
+     wheels came out of the hull into the running gear and its belt has a period, counted per
+     model against what its drawing shows; then the roll: a Sherman driven straight runs both
+     tracks the distance it drove, and turned on the spot runs them opposite ways; and then the
+     picture, the same Sherman with its tracks half a link on against two frames of it standing. --- */
+  const rolling = await page.evaluate(({ sx, sy }) => {
+    const Wn = window, keep = Wn.G.units.slice(), gl = Wn.gl;
+    const W = () => gl.drawingBufferWidth, H = () => gl.drawingBufferHeight;
+    function grab() {
+      const px = new Uint8Array(W() * H() * 4);
+      Wn.render(); Wn.render(); Wn.render();
+      gl.readPixels(0, 0, W(), H(), gl.RGBA, gl.UNSIGNED_BYTE, px);
+      return px;
+    }
+    function lift(a, b) {
+      let hit = 0;
+      for (let i = 0; i < a.length; i += 4) {
+        const d = (Math.abs(a[i] - b[i]) + Math.abs(a[i + 1] - b[i + 1]) + Math.abs(a[i + 2] - b[i + 2])) / 3;
+        if (d > 6) hit++;
+      }
+      return hit;
+    }
+    /* the wheels each model turns, both sides together: road wheels, return rollers, the
+       sprocket and the idler, and on a wheeled car its wheels and no spare */
+    const want = { am_sher: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 14,
+                   am_weasel: 26, am_stuart: 18, ger_kt: 22, ger_maus: 28, ger_tig: 20, ger_stug: 22, am_jeep: 4,
+                   am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28 };
+    const bad = [];
+    let belts = 0;
+    Object.keys(want).forEach(k => {
+      const B = Wn.MODELS.veh[k];
+      if (!B || (B.rgW || 0) !== want[k] || !B.rgA || B.rgA.n !== B.rg.n) bad.push(k + ' ' + (B ? B.rgW : '-'));
+      if (B && B.rgL > 0) belts++;
+    });
+    Wn.G.units.length = 0; Wn.G.wrecks.length = 0; Wn.G.fx.length = 0; Wn.G.shots.length = 0;
+    Wn.shake.t = 0; Wn.shake.mag = 0;
+    /* straight: driven on its own order, with the frame stepped and nothing drawn */
+    const u = Wn.spawnUnit('us', 'am_sher', sx, sy, 0);
+    u.facing = 0;
+    const x0 = u.x, y0 = u.y;
+    Wn.orderMove(u, sx + 260, sy, false);
+    const rr = Wn.render, ra = Wn.requestAnimationFrame;
+    Wn.render = function () {}; Wn.requestAnimationFrame = function () { return 0; };
+    let t = performance.now(); Wn.last = t;
+    for (let i = 0; i < 150; i++) { t += 20; Wn.frame(t); }
+    Wn.render = rr; Wn.requestAnimationFrame = ra; Wn.last = performance.now();
+    const drove = Math.hypot(u.x - x0, u.y - y0), L1 = u.rollL, R1 = u.rollR;
+    /* on the spot: half a radian and not a unit of ground */
+    u.path = null; u.rlX = u.x; u.rlY = u.y; u.rlA = u.facing;
+    const L0 = u.rollL, R0 = u.rollR;
+    u.facing += .5; Wn.rollTick(u);
+    const pl = u.rollL - L0, pr = u.rollR - R0;
+    /* and the picture: two frames standing, then the tracks half a link on */
+    Wn.G.units.length = 0;
+    const v = Wn.spawnUnit('us', 'am_sher', sx, sy, 0);
+    v.facing = 0; v.turret = 0; v.rollL = 0; v.rollR = 0; v.path = null;
+    Wn.CAM.tx = sx; Wn.CAM.ty = sy; Wn.CAM.dist = 230; Wn.CAM.yaw = Math.PI / 2; Wn.CAM.pitch = .45;
+    for (let i = 0; i < 14; i++) Wn.render();
+    Wn.G.units.forEach(q => { q.vUs = q.vGer = true; });
+    const a1 = grab(), a2 = grab(), ctrl = lift(a1, a2);
+    v.rollL = v.rollR = .9; v._matT = -1;
+    const b = grab(), moved = lift(a1, b);
+    Wn.G.units.length = 0;
+    keep.forEach(e => Wn.G.units.push(e));
+    Wn.rebuildGrid();
+    return { bad, belts, drove: +drove.toFixed(1), L1: +L1.toFixed(1), R1: +R1.toFixed(1), pl: +pl.toFixed(2), pr: +pr.toFixed(2),
+             w: +(u.bodyW * .85 * .5).toFixed(2), ctrl, moved };
+  }, { sx: bodies.sx, sy: bodies.sy });
+  ok('tracks and wheels move with the vehicle',
+     !rolling.bad.length && rolling.belts === 20 && rolling.drove > 60 &&
+     Math.abs(rolling.L1 - rolling.drove) < rolling.drove * .12 && Math.abs(rolling.R1 - rolling.drove) < rolling.drove * .12 &&
+     Math.abs(rolling.pl - rolling.w) < .05 && Math.abs(rolling.pr + rolling.w) < .05 &&
+     rolling.moved > 1500 && rolling.moved > rolling.ctrl * 20,
+     `${rolling.bad.length ? 'wheels miscounted on ' + rolling.bad.join(', ') : 'every model turns the wheels its drawing has'}, ` +
+     `${rolling.belts} belts repeat; a Sherman that drove ${rolling.drove} rolled its tracks ${rolling.L1} and ${rolling.R1}, ` +
+     `turned half a radian on the spot it ran them ${rolling.pl} and ${rolling.pr} (${rolling.w} each way wanted), ` +
+     `and half a link of roll moved ${rolling.moved} pixels against ${rolling.ctrl} between two frames standing`);
+
   /* --- Effects. Every particle the game makes used to be one draw call of one soft
      disc, so a Lee-Enfield and a 210mm shell were the same picture at two sizes, and a
      tracer lived on the 2D overlay -- a separate canvas stacked over the world, where
@@ -7597,13 +7677,41 @@ for (const device of TARGETS) {
       sites: window.G.sites.filter(q => q.side === foe && window.WORKS[q.kind] &&
                                         window.WORKS[q.kind].unit &&
                                         window.UNITS[window.WORKS[q.kind].unit].barrage).length,
-      army: window.G.units.filter(u => u.side === foe).length
+      army: window.G.units.filter(u => u.side === foe).length,
+      /* and at the doors, which nothing else can get past: a finished motor pool of theirs with
+         the till full refuses a self-propelled howitzer, a Priest of theirs is not rebuilt as the
+         M12, and the same two asked of the player's side and of theirs with the switch back on go
+         through, so a refusal is the switch and never the till or the building */
+      door: (() => {
+        const W = window, G = W.G, me = G.own, fo = W.slotsOf ? W.slotsOf(foe)[0] : foe;
+        const fs = G.side === 'us' ? 'ger_dep' : 'us_mot', ms = G.side === 'us' ? 'us_mot' : 'ger_dep';
+        const fk = G.side === 'us' ? 'hr_wespe' : 'am_m7', mk = G.side === 'us' ? 'am_m7' : 'hr_wespe';
+        const hf = W.hqOf(fo), hm = W.hqOf(me);
+        [fo, me].forEach(s => { G.res[s].mp += 5000; G.res[s].fu += 2000; });
+        /* eight minutes in, an army may stand at its cap, which would refuse the controls */
+        const pc0 = W.popCap; W.popCap = () => 9999;
+        const bf = W.spawnBuilding(fo, fs, hf.x, hf.y + 260, true), bm = W.spawnBuilding(me, ms, hm.x, hm.y + 260, true);
+        const off = W.queueUnit(bf, fk), mine = W.queueUnit(bm, mk);
+        const pr = W.spawnUnit(foe, 'am_m7', hf.x + 200, hf.y, 0); pr.own = fo;
+        const m12off = !!W.buyUpgradeAuto(fo, [pr], {});
+        G.aiArty = true;
+        const on = W.queueUnit(bf, fk), m12on = !!W.buyUpgradeAuto(fo, [pr], {});
+        G.aiArty = false;
+        [bf, bm].forEach(b => { b.queue.length = 0; G.blds.splice(G.blds.indexOf(b), 1); });
+        pr.dead = true; G.units.splice(G.units.indexOf(pr), 1);
+        W.popCap = pc0; W.rebuildGrid();
+        return { off, mine, on, m12off, m12on, fk, mk };
+      })()
     };
   });
   ok('the title screen can take the opposition\'s artillery away',
-     noArty.off && noArty.reached > 0 && noArty.bought === 0 && noArty.onField === 0 && noArty.sites === 0,
+     noArty.off && noArty.reached > 0 && noArty.bought === 0 && noArty.onField === 0 && noArty.sites === 0 &&
+     !noArty.door.off && noArty.door.mine && noArty.door.on && !noArty.door.m12off && noArty.door.m12on,
      `G.aiArty ${noArty.off ? 'off' : 'STILL ON'}; over 480s the post block was reached ${noArty.reached} times, ` +
-     `artillery rules fired ${noArty.bought} times, and an army of ${noArty.army} has ${noArty.onField} tubes and ${noArty.sites} positions going up`);
+     `artillery rules fired ${noArty.bought} times, and an army of ${noArty.army} has ${noArty.onField} tubes and ${noArty.sites} positions going up; ` +
+     `at the door their ${noArty.door.fk} is ${noArty.door.off ? 'QUEUED' : 'refused'} (${noArty.door.on ? 'queued' : 'REFUSED'} with the switch on), ` +
+     `the player's ${noArty.door.mk} ${noArty.door.mine ? 'queued' : 'REFUSED'}, and their Priest ${noArty.door.m12off ? 'REBUILT' : 'not rebuilt'} as the M12 ` +
+     `(${noArty.door.m12on ? 'rebuilt' : 'NOT REBUILT'} with the switch on)`);
 
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were

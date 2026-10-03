@@ -1476,6 +1476,13 @@ function slotOf(k) {
    called `mine` because the scene builder already has a local of that name. */
 function owned(x) { return !!x && x.own === G.own; }
 function isPlayer(slot) { return slot === G.own; }
+/* Whether a computer player is barred from indirect fire: the switch on the title screen at
+   NONE takes every mortar, howitzer, projector, battery and self-propelled gun away from the
+   brains, and the brains alone. It was asked of the brain's own lists and nowhere else, so
+   anything that reached the till by another road (a rung a ladder cut put back, a fitting,
+   an older brain on the skirmish card) bought one; asked at the doors as well, nothing can. */
+function aiNoArty(slot) { var sl = slotOf(slot); return G.aiArty === false && !!sl && !!sl.ai; }
+function isArty(d) { return !!d && !!(d.barrage || d.indirect); }
 /* A team's victory points, held on its first slot. Read through here rather than off
    `G.res[side]` wherever the answer has to be right in a 2v2, where a team's second
    player has a purse of his own and no points in it. */
@@ -7697,6 +7704,7 @@ function queueUnit(b, key) {
     b = alt;
   }
   var o = b.own, you = o === G.own;
+  if (isArty(d) && aiNoArty(o)) return false;
   /* a player whose income is handicapped past twice the even game could bank the whole of it
      in a queue, so a building holds QMAX at a time for him; it was four, and said nothing
      when it refused */
@@ -8954,8 +8962,8 @@ function updateModels(u, dt) {
       if (arcOf(u)) u.turret = u.facing + clamp(angDiff(u.facing, u.turret), -arcOf(u) / 2, arcOf(u) / 2);
     }
     u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
-    /* the hull rocks a little as it drives */
-    u.roll = u.moving ? (u.roll || 0) + dt * 7 * clamp((u.sp || 0) / Math.max(1, u.def.speed), .3, 1.2) : 0;
+    /* and its wheels and its tracks go round by as far as each side has rolled */
+    rollTick(u);
     /* and it lies on the ground it is crossing */
     if (u.gz === undefined) vehGround(u, 0); else vehGround(u, dt);
     return;
@@ -9812,6 +9820,8 @@ function buyUpgradeAuto(slot, vehs, opt) {
       if ((u.def.upgrades || []).indexOf(uk) < 0) continue;
       if (u.up[uk]) continue;
       if (hasExclusive(u, U.excl)) continue;
+      /* a rebuild into a piece that fires missions (the Priest's M12) is artillery too */
+      if (u.def.defUp && isArty(u.def.defUp[uk]) && aiNoArty(slot)) continue;
       if (!canAfford(slot, U.cost) || G.res[slot].mp - (U.cost.mp || 0) < (opt.floor || 0)) continue;
       if (opt.fuFloor && G.res[slot].fu - (U.cost.fu || 0) < opt.fuFloor) continue;
       var was = shortOf(u);                /* named as it was, since a rebuild renames it */
@@ -12750,7 +12760,7 @@ function makeWreck(u) {
   var w = {
     x: u.x, y: u.y, a: u.facing, turret: u.turret,
     w: u.bodyL * 2, h: u.bodyW * 2, bx: u.bodyX || 0,
-    t: 0, side: u.side, key: u.key, vk: vkey(u),
+    t: 0, side: u.side, key: u.key, vk: vkey(u), rollL: u.rollL || 0, rollR: u.rollR || 0,
     /* down on the belly, and over. A broken back goes a long way over; a burnt-out hull
        settles a few degrees onto whichever side let go first. */
     sink: M.soft ? .8 + Math.random() * .8 : 2.2 + Math.random() * 2.4,
@@ -13718,6 +13728,7 @@ function placeWork(slot, kind, x, y, ang, engineers) {
   var freeArty = hcapOf(slot).arty;
   if (W.unit) {
     var ud = UNITS[W.unit];
+    if (isArty(ud) && aiNoArty(slot)) return null;
     if (workFull(slot, kind)) {
       if (you) toast('Only ' + unitLimit(slot, ud) + ' ' + ud.name + ' may be fielded'); return null;
     }
@@ -16583,7 +16594,7 @@ function aiTick(dt) {
      as a toy rather than as a vehicle. Only a player may have one. */
   if (side === 'ger' && bpOf(slot, 'heavy') >= 1.5) LADDER.push(['ger_kt', 1, 760]);
   /* a howitzer on tracks is artillery, which the switch on the title screen takes away */
-  if (G.aiArty === false) LADDER = LADDER.filter(function (e) { return !(UNITS[e[0]] && UNITS[e[0]].barrage); });
+  if (G.aiArty === false) LADDER = LADDER.filter(function (e) { return !isArty(UNITS[e[0]]); });
   LADDER = aiPrefLadder(slot, LADDER);
   var gate = 2 - D.tech, li, ent, lk, ld;
   /* Population is the other thing it can run out of, and infantry is cheap enough to
@@ -18867,16 +18878,42 @@ var dpr = Math.min(2, window.devicePixelRatio || 1);
 var VIEW = { w: 800, h: 600 };
 var FOGDIV = 2;
 
+/* The running gear in the vertex shader. A vertex that turns carries its axle, its rate and
+   what it is in `aRg` (see rgW), packed in four shorts: the axle or the run's direction in
+   256ths of a unit, the rate in 16384ths, and w, which is 1 for a wheel, 2 for a link going
+   round a pulley and 3 for a link on a straight run, plus ten for the right side and twenty
+   for the middle of the vehicle; and `uRoll` is how far the left side, the right side and the middle have rolled.
+   A wheel turns through the whole distance and a link moves through what is left of it
+   after the belt's own period (`uPitch`), so the belt comes back to where it started at
+   every period with nothing to show the seam. Every other vertex carries nought and is not
+   moved. */
+var RG_VS = [
+  'attribute vec4 aRg; uniform vec3 uRoll; uniform float uPitch;',
+  'void rgMove(inout vec3 p, inout vec3 n) {',
+  '  if (aRg.w < 0.5) return;',
+  '  vec4 g = aRg * vec4(0.00390625, 0.00390625, 0.00006103515625, 1.0);',
+  '  float sd = floor(g.w * 0.1), kd = g.w - sd * 10.0;',
+  '  float d = sd < 0.5 ? uRoll.x : sd < 1.5 ? uRoll.y : uRoll.z;',
+  '  if (kd > 1.5) d = mod(d, uPitch);',
+  '  if (kd > 2.5) { p.xz += g.xy * d; return; }',
+  '  float a = d * g.z, c = cos(a), s = sin(a);',
+  '  vec2 q = p.xz - g.xy;',
+  '  p.xz = g.xy + vec2(q.x * c + q.y * s, q.y * c - q.x * s);',
+  '  n.xz = vec2(n.x * c + n.z * s, n.z * c - n.x * s);',
+  '}'].join('\n');
 var VSH = [
   '#define SHADOWS 0',
   'attribute vec3 aPos; attribute vec3 aNrm; attribute vec4 aCol; attribute vec2 aUV; attribute float aMat;',
   'uniform mat4 uMVP; uniform mat4 uModel; uniform mat4 uSunVP; uniform vec3 uSun; uniform float uAmb; uniform vec3 uTint;',
   'uniform vec2 uSpecTab[24];',
+  RG_VS,
   'varying vec3 vCol; varying vec3 vNrm; varying vec3 vWpos; varying vec2 vUV; varying float vMat; varying vec2 vSpec;',
   'varying vec4 vSunPos; varying float vDist;',
   'void main(){',
-  '  vec4 wp = uModel * vec4(aPos, 1.0);',
-  '  vNrm = normalize(mat3(uModel) * aNrm);',
+  '  vec3 pos = aPos; vec3 nrm = aNrm;',
+  '  rgMove(pos, nrm);',
+  '  vec4 wp = uModel * vec4(pos, 1.0);',
+  '  vNrm = normalize(mat3(uModel) * nrm);',
   '  vCol = aCol.rgb * uTint;',
   /* a packed buffer carries the material in the colour's fourth byte and leaves aMat at
      its constant -1 (see packVerts) */
@@ -19274,7 +19311,8 @@ var FSK = [
 /* the depth-only pass from the sun */
 var VSD = [
   'attribute vec3 aPos; uniform mat4 uMVP; uniform mat4 uModel;',
-  'void main(){ gl_Position = uMVP * (uModel * vec4(aPos, 1.0)); }'].join('\n');
+  RG_VS,
+  'void main(){ vec3 p = aPos, n = vec3(0.0); rgMove(p, n); gl_Position = uMVP * (uModel * vec4(p, 1.0)); }'].join('\n');
 var FSD = [
   'precision mediump float;',
   'void main(){ gl_FragColor = vec4(1.0); }'].join('\n');
@@ -19391,11 +19429,14 @@ function initGL() {
                  .replace('#define BUMP 1', '#define BUMP ' + (MOB ? 0 : 1));
     PROG = compileProgram(SHADOWS ? VSH.replace('#define SHADOWS 0', '#define SHADOWS 1') : VSH,
                           SHADOWS ? fsh.replace('#define SHADOWS 0', '#define SHADOWS 1') : fsh,
-                          ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat']);
+                          ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat', 'aRg']);
     PARTP = compileProgram(VSP, FSP, ['aPos', 'aUV', 'aCol', 'aShp']);
     PART.a.buf = gl.createBuffer(); PART.b.buf = gl.createBuffer();
     SKY = compileProgram(VSK, FSK, ['aQuad']);
-    DEPTHP = compileProgram(VSD, FSD, ['aPos']);
+    /* the depth program takes the running gear's attribute at the lit program's slot, so one
+       binding serves the shadow pass and the draw */
+    DEPTHP = compileProgram(VSD, FSD, ['aPos', 'aNrm', 'aCol', 'aUV', 'aMat', 'aRg']);
+    gl.disableVertexAttribArray(5); gl.vertexAttrib4f(5, 0, 0, 0, 0);
     MARKP = compileProgram(VSM, FSM, ['aPos', 'aCol']);
     MARKB = gl.createBuffer();
     registerMaterials(); buildAtlas(); buildGrit();
@@ -20593,6 +20634,7 @@ function aoSplit(faces, edge) {
       if (f.m !== undefined) made.m = f.m;
       if (f.lit) made.lit = 1;
       if (f.thin) made.thin = 1;
+      if (f.ax) rgCopy(made, f);
       if (a[1]) made.n = [a[1], b[1], c[1], d[1]];
       out.push(made);
     }
@@ -20910,6 +20952,20 @@ function drawGeom(buf, model, useTex, tint) {
   gl.uniform3f(PROG.u.uTint, t[0], t[1], t[2]);
   bindGeom(buf);
   gl.drawArrays(gl.TRIANGLES, 0, buf.n);
+}
+/* A vehicle's running gear, turned and walked by how far `o` has rolled on each side (a
+   unit, a wreck, or nothing for a vehicle standing still), in the lit pass or the shadow
+   pass. The attribute is switched off again behind it, because every other draw reads its
+   constant nought as a vertex that does not move. */
+function rgDraw(B, model, o, tint, depth) {
+  if (!B || !B.rg || !B.rgA) return;
+  var P = depth ? DEPTHP : PROG, L = (o && o.rollL) || 0, R = (o && o.rollR) || 0;
+  gl.uniform3f(P.u.uRoll, L, R, (L + R) / 2);
+  gl.uniform1f(P.u.uPitch, B.rgP || 1);
+  gl.bindBuffer(gl.ARRAY_BUFFER, B.rgA.vbo);
+  gl.enableVertexAttribArray(5); gl.vertexAttribPointer(5, 4, gl.SHORT, false, 8, 0);
+  if (depth) drawDepthGeom(B.rg, model); else drawGeom(B.rg, model, false, tint);
+  gl.disableVertexAttribArray(5); gl.vertexAttrib4f(5, 0, 0, 0, 0);
 }
 
 /* ---- textures ---- */
@@ -23641,9 +23697,32 @@ function place(faces, yaw, dx, dy, dz) {
       nv.push([p[0] * ca - p[1] * sa + (dx || 0), p[0] * sa + p[1] * ca + (dy || 0), p[2] + (dz || 0)]);
     }
     var nn = f.n ? f.n.map(function (n) { return [n[0] * ca - n[1] * sa, n[0] * sa + n[1] * ca, n[2]]; }) : undefined;
-    out.push({ v: nv, c: f.c, n: nn, m: f.m, alpha: f.alpha });
+    var o = { v: nv, c: f.c, n: nn, m: f.m, alpha: f.alpha };
+    if (f.ax) rgCopy(o, f, function (p) { return [p[0] * ca - p[1] * sa + (dx || 0), p[0] * sa + p[1] * ca + (dy || 0), p[2] + (dz || 0)]; });
+    out.push(o);
   }
   return out;
+}
+/* ---- the running gear that turns. A wheel is faces that turn about an axle and a link is
+   faces that walk round the belt, and the draw moves both in the vertex shader off how far
+   each side has rolled (`rollTick`). A face says which by carrying its axle as two points,
+   the centre and a point a unit along the axle (`f.ax`), and every transform here moves
+   those the way it moves a vertex, so a wheel built at the origin and then placed, pitched,
+   rolled or scaled still knows where it turns, and one turned off the vehicle's own axle (a
+   spare on the tail) is found out and left still. A link says how it goes (`f.rl`: 2 round
+   the pulley whose centre is `ax[0]`, 3 straight along `ax[1] - ax[0]`) and how far along
+   the belt it repeats (`f.rp`); a wheel may say what radius it rolls at (`f.rr`), which for
+   a sprocket is the track's middle line rather than the tips of its teeth. A transform that
+   is not taught to carry them drops them, and what it drops stands still. ---- */
+function rgW(faces, x, y, z, rr) {
+  for (var i = 0; i < faces.length; i++) { faces[i].ax = [[x, y, z], [x, y + 1, z]]; if (rr) faces[i].rr = rr; }
+  return faces;
+}
+function rgCopy(o, f, fn) {
+  o.ax = fn ? [fn(f.ax[0]), fn(f.ax[1])] : f.ax;
+  if (f.rl) { o.rl = f.rl; o.rp = f.rp; }
+  if (f.rr) o.rr = f.rr;
+  return o;
 }
 /* a part made bigger or smaller about its own origin; a uniform scale leaves every normal
    where it was */
@@ -23652,7 +23731,9 @@ function scaleFaces(faces, k) {
   for (var i = 0; i < faces.length; i++) {
     var f = faces[i], nv = [];
     for (var j = 0; j < f.v.length; j++) nv.push([f.v[j][0] * k, f.v[j][1] * k, f.v[j][2] * k]);
-    out.push({ v: nv, c: f.c, n: f.n, m: f.m, alpha: f.alpha });
+    var o = { v: nv, c: f.c, n: f.n, m: f.m, alpha: f.alpha };
+    if (f.ax) { rgCopy(o, f, function (p) { return [p[0] * k, p[1] * k, p[2] * k]; }); if (f.rp) o.rp = f.rp * k; if (f.rr) o.rr = f.rr * k; }
+    out.push(o);
   }
   return out;
 }
@@ -23666,7 +23747,9 @@ function pitch(faces, ang, ox, oz) {
       nv.push([x * ca - z * sa + (ox || 0), p[1], x * sa + z * ca + (oz || 0)]);
     }
     var nn = f.n ? f.n.map(function (n) { return [n[0] * ca - n[2] * sa, n[1], n[0] * sa + n[2] * ca]; }) : undefined;
-    out.push({ v: nv, c: f.c, n: nn, m: f.m, alpha: f.alpha });
+    var o = { v: nv, c: f.c, n: nn, m: f.m, alpha: f.alpha };
+    if (f.ax) rgCopy(o, f, function (p) { var x = p[0] - (ox || 0), z = p[2] - (oz || 0); return [x * ca - z * sa + (ox || 0), p[1], x * sa + z * ca + (oz || 0)]; });
+    out.push(o);
   }
   return out;
 }
@@ -23679,7 +23762,9 @@ function roll(faces, ang, oy, oz) {
       var p = f.v[k], y = p[1] - (oy || 0), z = p[2] - (oz || 0);
       nv.push([p[0], y * ca - z * sa + (oy || 0), y * sa + z * ca + (oz || 0)]);
     }
-    out.push({ v: nv, c: f.c });
+    var o = { v: nv, c: f.c };
+    if (f.ax) rgCopy(o, f, function (p) { var y = p[1] - (oy || 0), z = p[2] - (oz || 0); return [p[0], y * ca - z * sa + (oy || 0), y * sa + z * ca + (oz || 0)]; });
+    out.push(o);
   }
   return out;
 }
@@ -23960,8 +24045,10 @@ function faceOut(faces, cx, cy, cz) {
     var n = faceNormal(f.v[0], f.v[1], f.v[2]), gx = 0, gy = 0, gz = 0, i;
     for (i = 0; i < f.v.length; i++) { gx += f.v[i][0]; gy += f.v[i][1]; gz += f.v[i][2]; }
     gx /= f.v.length; gy /= f.v.length; gz /= f.v.length;
-    if ((gx - cx) * n.x + (gy - cy) * n.y + (gz - cz) * n.z < 0)
-      return { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
+    if ((gx - cx) * n.x + (gy - cy) * n.y + (gz - cz) * n.z < 0) {
+      var o = { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
+      return f.ax ? rgCopy(o, f) : o;
+    }
     return f;
   });
 }
@@ -23970,14 +24057,15 @@ function faceOut(faces, cx, cy, cz) {
    which is why an interior wall built the usual way round is simply not there. */
 function faceIn(faces, cx, cy, cz) {
   return faceOut(faces, cx, cy, cz).map(function (f) {
-    return { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
+    var o = { v: f.v.slice().reverse(), c: f.c, n: f.n ? f.n.slice().reverse() : undefined };
+    return f.ax ? rgCopy(o, f) : o;
   });
 }
 
 /* Strip the interpolated normals off a loft so it shades as welded plate, not as a
    casting. Flat is the default for armour; smooth is the exception. */
 function welded(faces) {
-  return faces.map(function (f) { return { v: f.v, c: f.c }; });
+  return faces.map(function (f) { var o = { v: f.v, c: f.c }; return f.ax ? rgCopy(o, f) : o; });
 }
 
 /* The belt problem. Pulleys are given as {x, z, r} in clockwise order around the
@@ -23985,7 +24073,7 @@ function welded(faces) {
    outside both, then wrap the arc between the tangent points. Returns a closed
    polyline of [x, z] in the vehicle's side plane. */
 function beltPath(circles) {
-  var n = circles.length, tang = [], out = [], i, k;
+  var n = circles.length, tang = [], out = [], ci = [], alen = [], i, k;
   for (i = 0; i < n; i++) {
     var A = circles[i], B = circles[(i + 1) % n];
     var dx = B.x - A.x, dz = B.z - A.z, d = Math.hypot(dx, dz) || 1;
@@ -23996,39 +24084,67 @@ function beltPath(circles) {
     var C = circles[i], a0 = tang[(i - 1 + n) % n], a1 = tang[i];
     while (a1 > a0) a1 -= TAU;                       /* the wrap runs clockwise */
     var steps = Math.max(1, Math.ceil((a0 - a1) / .22));
+    alen.push((a0 - a1) * C.r);
     for (k = 0; k <= steps; k++) {
       var aa = a0 + (a1 - a0) * (k / steps);
       out.push([C.x + Math.cos(aa) * C.r, C.z + Math.sin(aa) * C.r]);
+      ci.push(i);
     }
   }
+  /* which pulley each point is on and how far the belt goes round it, so a link knows
+     whether it is going round one */
+  out.ci = ci; out.circ = circles; out.alen = alen;
   return out;
 }
 
 /* Walk a closed path at a fixed pitch so every link is the same length however the
    path bends. Returns {x, z, a} for each link centre. */
-function beltSamples(path, pitch) {
-  var seg = [], total = 0, i;
+function beltSamples(path, pitch, even) {
+  var seg = [], total = 0, area = 0, i, ci = path.ci, C = path.circ;
   for (i = 0; i < path.length; i++) {
     var p = path[i], q = path[(i + 1) % path.length];
+    area += p[0] * q[1] - q[0] * p[1];
     var l = Math.hypot(q[0] - p[0], q[1] - p[1]);
     if (l < 1e-4) continue;
-    seg.push({ p: p, q: q, l: l, s: total, a: Math.atan2(q[1] - p[1], q[0] - p[0]) });
+    /* a step between two points on one pulley is going round it; between two pulleys it
+       is the straight run from one to the next */
+    /* A road wheel the bottom run barely bends round is no pulley to the link on it: turned
+       about the wheel through a link's length it would swing up into the tyre, where on the
+       run it goes straight on. */
+    var arc = ci && ci[i] === ci[(i + 1) % path.length] && path.alen[ci[i]] > pitch * 1.5 ? C[ci[i]] : null;
+    seg.push({ p: p, q: q, l: l, s: total, a: Math.atan2(q[1] - p[1], q[0] - p[0]), arc: arc });
     total += l;
   }
+  /* the way a track goes round when the vehicle drives forward is clockwise with the nose
+     to the right, so the top run goes forward and the bottom run back */
+  var cw = area < 0 ? 1 : -1;
   var count = Math.max(8, Math.round(total / pitch)), out = [], j = 0;
+  /* a belt that alternates its links repeats every two of them, and only does so all the
+     way round if there are an even number */
+  if (even && count % 2) count += total / pitch > count ? 1 : -1;
   for (i = 0; i < count; i++) {
     var s = (i + .5) * (total / count);
     while (j < seg.length - 1 && s > seg[j].s + seg[j].l) j++;
     var g = seg[j], t = clamp((s - g.s) / g.l, 0, 1);
-    out.push({ x: lerp(g.p[0], g.q[0], t), z: lerp(g.p[1], g.q[1], t), a: g.a, len: total / count });
+    out.push({ x: lerp(g.p[0], g.q[0], t), z: lerp(g.p[1], g.q[1], t), a: g.a, len: total / count, arc: g.arc, cw: cw });
   }
   return out;
+}
+/* one link laid on the belt and told how it goes round: round the pulley it is on, or
+   straight along the run, and how far on the belt repeats (`per`, two links on a belt that
+   alternates them) */
+function beltLink(L, sm, y, per) {
+  var f = place(pitch(L, sm.a, 0, 0), 0, sm.x, y, sm.z), ax, i;
+  if (sm.arc) ax = [[sm.arc.x, y, sm.arc.z], [sm.arc.x, y + 1, sm.arc.z]];
+  else ax = [[sm.x, y, sm.z], [sm.x + Math.cos(sm.a) * sm.cw, y, sm.z + Math.sin(sm.a) * sm.cw]];
+  for (i = 0; i < f.length; i++) { f[i].ax = ax; f[i].rl = sm.arc ? 2 : 3; f[i].rp = per || sm.len; if (sm.arc) f[i].rr = sm.arc.r; }
+  return f;
 }
 
 /* A whole track: pulleys in, links out, laid on the belt path at y.
    o = { w, thick, col, lit, guide, guideCol, cleat } */
 function trackBelt(y, circles, o) {
-  var f = [], s = beltSamples(beltPath(circles), o.pitch || 1.6), i;
+  var f = [], s = beltSamples(beltPath(circles), o.pitch || 1.6, true), i;
   var W = o.w, T = o.thick, half = T / 2;
   for (i = 0; i < s.length; i++) {
     var k = s[i], link = box(0, 0, -half, k.len * 1.02, W, T, (i % 2) ? o.col : o.lit, o.col, o.col, 0);
@@ -24040,7 +24156,7 @@ function trackBelt(y, circles, o) {
     if (o.guide && (i % 2) === 0) link = link.concat(box(0, 0, -half - o.guide, k.len * .62, o.guideW || 1.0, o.guide, o.guideCol || o.steel, o.guideCol || o.steel, o.guideCol || o.steel, 0));
     /* a grouser cleat on the outer face, every other link, for the steel-chevron look */
     if (o.cleat && (i % 2) === 0) link = link.concat(box(0, 0, half, k.len * .34, W * .8, o.cleat, o.col, o.lit, o.col, 0));
-    f = f.concat(place(pitch(link, k.a, 0, 0), 0, k.x, y, k.z));
+    f = f.concat(beltLink(link, k, y, k.len * 2));
   }
   return f;
 }
@@ -24252,7 +24368,11 @@ function loft(rings, col) {
 
 /* ================================================================ shared running gear */
 function at(faces, dx, dy, dz) {
-  return faces.map(function (q) { return { v: q.v.map(function (p) { return [p[0] + dx, p[1] + dy, p[2] + dz]; }), c: q.c, n: q.n }; });
+  return faces.map(function (q) {
+    var o = { v: q.v.map(function (p) { return [p[0] + dx, p[1] + dy, p[2] + dz]; }), c: q.c, n: q.n };
+    if (q.ax) rgCopy(o, q, function (p) { return [p[0] + dx, p[1] + dy, p[2] + dz]; });
+    return o;
+  });
 }
 /* a plain rubber-tyred steel road wheel with a dished disc and a hub */
 function steelRoadWheel(r, wide, C, rim) {
@@ -24396,7 +24516,7 @@ function pz3RoadWheel(x, y, sd) {
   [-.62, .62].forEach(function (o) { f = f.concat(lathe(x, y + o, PZ3G.zWheel, prof, 14, cols, true)); });
   f = f.concat(boltRing(x, y + sd * 1.05, PZ3G.zWheel, 1.05, 8, .2, .3, C.bare));
   f = f.concat(stud(x, y + sd * 1.1, PZ3G.zWheel, .5, .45, C.dark));
-  return f;
+  return rgW(f, x, y, PZ3G.zWheel);
 }
 /* the torsion-bar arm trailing up and back from the hub to where the bar comes out of the
    hull side, and the bump stop over the wheel */
@@ -24429,6 +24549,7 @@ function pz3Sprocket(y, sd) {
     });
   }
   f = f.concat(boltRing(g.xSprk, y + sd * 1.7, g.zSprk, .9, 6, .2, .3, C.bare));
+  rgW(f, g.xSprk, y, g.zSprk, r + g.T / 2);
   /* the final drive housing it turns on, bolted to the nose */
   f = f.concat(place(tubeSmooth(0, 1.8, 0, 0, 2.0, 12, C.dark, C.body), -sd * Math.PI / 2, g.xSprk, y - sd * 1.6, g.zSprk));
   return f;
@@ -24444,6 +24565,7 @@ function pz3Idler(y, sd) {
     f = f.concat(place(pitch(box(0, 0, 0, r - 1.5, 1.3, .6, C.body, C.lit, C.dark, 0), a, 0, 0), 0,
                        g.xIdl + Math.cos(a) * (r - .7) * .55, y, g.zIdl + Math.sin(a) * (r - .7) * .55));
   }
+  rgW(f, g.xIdl, y, g.zIdl);
   f = f.concat(place(pitch(box(0, 0, 0, 5.0, 1.6, 1.8, C.dark, C.body), -.3, 0, 0), 0, g.xIdl - 2.6, y - sd * 1.6, g.zIdl + .4));
   return f;
 }
@@ -24451,8 +24573,8 @@ function pz3Idler(y, sd) {
 function pz3Roller(x, y, sd) {
   var C = SUG, g = PZ3G, f;
   f = box(x, y - sd * 2.0, g.zRoll - .8, 1.6, 2.0, 1.6, C.dark, C.body, C.dark, 0);
-  f = f.concat(lathe(x, y, g.zRoll, [[0, -1.0], [.55, -1.0], [.55, -.45], [g.rRoll, -.8], [g.rRoll, .8], [.55, .45], [.55, 1.0], [0, 1.0]],
-                     12, [C.body, C.dark, C.rubber, C.rubber, C.dark, C.body, C.body], true));
+  f = f.concat(rgW(lathe(x, y, g.zRoll, [[0, -1.0], [.55, -1.0], [.55, -.45], [g.rRoll, -.8], [g.rRoll, .8], [.55, .45], [.55, 1.0], [0, 1.0]],
+                     12, [C.body, C.dark, C.rubber, C.rubber, C.dark, C.body, C.body], true), x, y, g.zRoll));
   return f;
 }
 
@@ -24831,7 +24953,7 @@ function jeepWheel(x, y, sd, z) {
   f = f.concat(boltRing(x, y + sd * .6, zc, .72, 5, .2, .25, C.bare));
   f = f.concat(boltRing(x, y + sd * .38, zc, 1.8, 10, .15, .2, C.odDark, .3));
   f = f.concat(stud(x, y + sd * .62, zc, .42, .3, C.odDark));
-  return f;
+  return rgW(f, x, y, zc);
 }
 /* the axle beam with its differential offset to the right, as both of the jeep's are */
 function jeepAxle(x, front) {
@@ -25332,7 +25454,7 @@ function ksWheel(sd) {
     });
   }
   f = f.concat(stud(0, sd * .72, 0, .34, .16, C.steel));
-  return f;
+  return rgW(f, 0, 0, 0);
 }
 /* A mudguard: a crown of sheet round a wheel with the valances down its sides, `out`
    leaving the inboard valance off where a body stands against it. */
@@ -25931,7 +26053,7 @@ function hp4Link(len) {
 }
 function hp4Track(y) {
   var s = beltSamples(beltPath(hp4Pulleys()), HP4G.LP), f = [], i, L = hp4Link(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* one tyre of a twin road wheel: the rubber on a pressed disc, dished toward the hub */
@@ -25955,7 +26077,7 @@ function hp4RoadWheel(x, sd) {
   f = f.concat(latheSide(x, y + sd * (g.off + g.WD / 2 + .1), g.zW, [[0, 0], [.72, 0], [.72, .25], [.42, .38], [0, .38]], 10,
                          [C.dark, C.body, C.lit, C.body], sd));
   f = f.concat(boltRing(x, y + sd * (g.off + g.WD / 2 + .12), g.zW, 1.08, 8, .17, .22, C.steel));
-  return f;
+  return rgW(f, x, y, g.zW);
 }
 /* One bogie: the bracket bolted to the hull side, the two swing arms out to the wheels
    with their upright ends, and the leaf spring laid across the top of them, clamped in
@@ -26012,6 +26134,7 @@ function hp4Roller(x, sd) {
                        [C.dark, C.tyre, C.rubber, C.tyre, C.dark], true));
   });
   f = f.concat(latheSide(x, y + sd * 1.7, g.zRoll, [[0, 0], [.6, 0], [.6, .25], [.35, .4], [0, .4]], 8, [C.dark, C.body, C.lit, C.body], sd));
+  rgW(f, x, y, g.zRoll);
   f = f.concat(place(roll(cyl(0, 0, 0, .45, .45, g.TY - H.tub - 1.4, 8, C.steel, C.bare, 0, true), -sd * Math.PI / 2, 0, 0),
                      0, x, sd * (H.tub + .4), g.zRoll));
   f = f.concat(m4Box(sd, x - 1.2, x + 1.2, H.tub - .05, H.tub + .9, g.zRoll - 1.4, g.zRoll + 1.1, C.dark, C.body, C.dark, .12));
@@ -26041,6 +26164,7 @@ function hp4Sprocket(sd) {
   f = f.concat(latheSide(g.xSp, yT + sd * 2.35, g.zSp, [[0, 0], [1.05, 0], [1.05, .25], [.6, .45], [0, .45]], 12,
                          [C.body, C.lit, C.body, C.lit], sd));
   f = f.concat(boltRing(g.xSp, yT + sd * 2.45, g.zSp, .82, 6, .17, .25, C.steel));
+  rgW(f, g.xSp, yT, g.zSp);
   /* the final drive housing, a cast drum on a flange, with its ring of bolts */
   f = f.concat(latheSide(g.xSp, sd * (H.tub - .3), g.zSp, [[0, 0], [3.6, 0], [3.6, .7], [3.0, .9], [3.0, 2.2], [1.6, 2.3], [0, 2.3]], 18,
                          [C.dark, C.body, C.body, C.body, C.lit, C.body], sd));
@@ -26063,6 +26187,7 @@ function hp4Idler(sd) {
   }
   f = f.concat(lathe(g.xId, y, g.zId, [[0, -1.9], [1.0, -1.9], [1.0, 1.9], [0, 1.9]], 12, [C.dark, C.body, C.dark], true));
   f = f.concat(latheSide(g.xId, y + sd * 1.9, g.zId, [[0, 0], [.8, 0], [.8, .3], [.45, .55], [0, .55]], 10, [C.body, C.lit, C.body, C.lit], sd));
+  rgW(f, g.xId, y, g.zId);
   /* the crank and its housing on the rear corner of the hull, and the adjuster */
   var yb = H.tub + .4;
   f = f.concat(m4Box(sd, -31.2, -27.3, H.tub - .05, H.tub + .6, 5.2, 10.2, C.dark, C.body, C.dark, .15));
@@ -26914,7 +27039,7 @@ function pvLink(len) {
 }
 function pvTrack(y) {
   var s = beltSamples(beltPath(pvPulleys()), PVG.LP), f = [], i, L = pvLink(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* One disc of a double road wheel: the rubber tyre on a pressed steel wheel dished toward its
@@ -26941,8 +27066,8 @@ function pvDisc(x, y, sd, rich) {
 function pvStation(i, sd) {
   var C = HP4C, g = PVG, H = PVH, f = [], x = g.st[i], odd = i % 2 === 0;
   var pa = odd ? g.pos[0] : g.pos[1], pb = odd ? g.pos[2] : g.pos[3];
-  f = f.concat(pvDisc(x, sd * (g.TY + pa), sd, true));
-  f = f.concat(pvDisc(x, sd * (g.TY + pb), sd, false));
+  f = f.concat(rgW(pvDisc(x, sd * (g.TY + pa), sd, true), x, sd * g.TY, g.zW));
+  f = f.concat(rgW(pvDisc(x, sd * (g.TY + pb), sd, false), x, sd * g.TY, g.zW));
   var px = x + 3.6, pz = 9.3, ax = x;
   f = f.concat(latheSide(px, sd * (H.tub - .05), pz, [[0, 0], [1.25, 0], [1.25, .55], [.8, .8], [0, .8]], 10, [C.dark, C.body, C.lit, C.body], sd));
   var al = Math.hypot(px - ax, pz - g.zW), arm = box(0, 0, -.55, al + 1.2, .9, 1.1, C.dark, C.body, C.dark, .2);
@@ -26968,6 +27093,7 @@ function pvSprocket(sd) {
   f = f.concat(latheSide(g.xSp, yT + sd * 2.5, g.zSp, [[0, 0], [1.2, 0], [1.2, .3], [.7, .5], [0, .5]], 12, [C.body, C.lit, C.body, C.lit], sd));
   f = f.concat(boltRing(g.xSp, yT + sd * 2.6, g.zSp, .95, 8, .17, .25, C.steel));
   f = f.concat(boltRing(g.xSp, yT + sd * 2.35, g.zSp, 2.6, 12, .18, .22, C.steel));
+  rgW(f, g.xSp, yT, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (H.tub - .3), g.zSp, [[0, 0], [4.0, 0], [4.0, .8], [3.3, 1.0], [3.3, 2.6], [1.8, 2.7], [0, 2.7]], 18,
                          [C.dark, C.body, C.body, C.body, C.lit, C.body], sd));
   f = f.concat(boltRing(g.xSp, sd * (H.tub + .55), g.zSp, 3.65, 16, .22, .3, C.steel));
@@ -26988,6 +27114,7 @@ function pvIdler(sd) {
   }
   f = f.concat(lathe(g.xId, y, g.zId, [[0, -2.4], [1.1, -2.4], [1.1, 2.4], [0, 2.4]], 12, [C.dark, C.body, C.dark], true));
   f = f.concat(latheSide(g.xId, y + sd * 2.4, g.zId, [[0, 0], [.9, 0], [.9, .3], [.5, .6], [0, .6]], 10, [C.body, C.lit, C.body, C.lit], sd));
+  rgW(f, g.xId, y, g.zId);
   f = f.concat(place(roll(cyl(0, 0, 0, 1.3, 1.3, g.TY - H.tub - 2.4, 12, C.body, C.lit, 0, true), -sd * Math.PI / 2, 0, 0),
                      0, g.xId, sd * (H.tub + .1), g.zId));
   f = f.concat(m4Box(sd, -32.9, -29.1, H.tub - .05, H.tub + .6, 6.6, 11.2, C.dark, C.body, C.dark, .15));
@@ -27530,7 +27657,7 @@ function hkLink(len) {
 }
 function hkTrack(y) {
   var s = beltSamples(beltPath(hkPulleys()), HKG.LP), f = [], i, L = hkLink(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* A road wheel disc: the rubber tyre on a pressed steel dish with a raised ring, eight
@@ -27567,6 +27694,7 @@ function hkStation(i, sd) {
     f = f.concat(hkDisc(x, y + sd * g.yM, sd, 1));
     f = f.concat(hkDisc(x, y - sd * g.yM, -sd, 0));
   }
+  rgW(f, x, y, g.zW);
   /* the stub axle through the discs, and the arm to the torsion bar */
   f = f.concat(place(roll(cyl(0, 0, 0, .5, .5, 2.4, 8, C.steel, C.bare, 0, true), -sd * Math.PI / 2, 0, 0), 0, x, sd * (g.TY - 1.6), g.zW));
   var px = x + 2.2, pz = HKH.zBelly + 1.1, len = Math.hypot(px - x, pz - g.zW);
@@ -27597,6 +27725,7 @@ function hkSprocket(sd) {
   }
   f = f.concat(latheSide(g.xSp, y + sd * 1.1, g.zSp, [[0, 0], [.85, 0], [.85, .25], [.5, .45], [0, .45]], 10, [C.body, C.lit, C.body, C.lit], sd));
   f = f.concat(boltRing(g.xSp, y + sd * 1.15, g.zSp, .62, 6, .14, .22, C.steel));
+  rgW(f, g.xSp, y, g.zSp);
   /* the final drive housing on the body side */
   f = f.concat(latheSide(g.xSp, sd * 7.3, g.zSp, [[0, 0], [2.2, 0], [2.2, .5], [1.7, .7], [1.7, 1.2], [0, 1.2]], 14,
                          [C.dark, C.body, C.body, C.lit, C.body], sd));
@@ -27618,6 +27747,7 @@ function hkIdler(sd) {
   }
   f = f.concat(lathe(g.xId, y, g.zId, [[0, -.95], [.85, -.95], [.85, .95], [0, .95]], 10, [C.dark, C.body, C.dark], true));
   f = f.concat(latheSide(g.xId, y + sd * .95, g.zId, [[0, 0], [.7, 0], [.7, .25], [.4, .45], [0, .45]], 10, [C.body, C.lit, C.body, C.lit], sd));
+  rgW(f, g.xId, y, g.zId);
   f = f.concat(place(roll(cyl(0, 0, 0, .8, .8, g.TY - 7.3, 10, C.body, C.lit, 0, true), -sd * Math.PI / 2, 0, 0), 0, g.xId, sd * 7.3, g.zId));
   f = f.concat(m4Box(sd, g.xId - 3.9, g.xId + .7, 7.0, 7.6, 3.6, 7.6, C.dark, C.body, C.dark, .12));
   f = f.concat(place(pitch(tubeSmooth(-2.0, 1.2, 0, 0, .3, 6, C.steel, C.bare), .35, 0, 0), 0, g.xId - 2.6, sd * 7.9, 7.3));
@@ -27640,7 +27770,7 @@ function hkFrontWheel(sd) {
   }
   f = f.concat(boltRing(x, y + sd * .52, z, 1.3, 8, .18, .24, C.steel));
   f = f.concat(latheSide(x, y + sd * .52, z, [[0, 0], [.72, 0], [.72, .3], [.4, .55], [0, .55]], 10, [C.body, C.lit, C.body, C.lit], sd));
-  return f;
+  return rgW(f, x, y, z);
 }
 /* the front axle: the beam under the nose, the transverse leaf spring over it, the
    knuckles and the track rod between the two steering arms */
@@ -28309,7 +28439,7 @@ function m4Link(len) {
 }
 function m4Track(y, rx) {
   var s = beltSamples(beltPath(m4Pulleys(rx)), M4G.LP), f = [], i, L = m4Link(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* One spoked wheel of a pair, cast in one piece: the rim with its rubber tyre moulded on
@@ -28342,8 +28472,8 @@ function m4Spoked(x, y, z, r, w, n, sd, rich, tyre) {
 /* a road wheel: the pair of wheels with the gap the track's guides run in between them */
 function m4RoadWheel(x, sd) {
   var g = M4G, y = sd * g.TY;
-  return m4Spoked(x, y + sd * g.off, g.zW, g.R, g.WD, 5, sd, true, true)
-    .concat(m4Spoked(x, y - sd * g.off, g.zW, g.R, g.WD, 5, sd, false, true));
+  return rgW(m4Spoked(x, y + sd * g.off, g.zW, g.R, g.WD, 5, sd, true, true)
+    .concat(m4Spoked(x, y - sd * g.off, g.zW, g.R, g.WD, 5, sd, false, true)), x, y, g.zW);
 }
 /* One of the early vertical-volute bogies, with the return roller on top of it. The
    bracket is bolted to the hull side and its head reaches out over the middle of the
@@ -28382,9 +28512,9 @@ function m4Bogie(bx, sd, rx) {
   if (rx) f = f.concat(m4Box(sd, Math.min(bx, rb) - .75, Math.max(bx, rb) + .75, g.TY - 2.5, g.TY - 1.9, 8.6, 9.4, C.odD, C.od, C.odD, .15));
   f = f.concat(m4Box(sd, rb - .75, rb + .75, g.TY - 2.5, g.TY - 1.9, 9.2, g.zRoll + .8, C.odD, C.od, C.odD, .15));
   f = f.concat(latheSide(rb, sd * (g.TY - 2.2), g.zRoll, [[0, 0], [.6, 0], [.6, .7], [0, .7]], 8, [C.od, C.odD, C.od], sd));
-  f = f.concat(lathe(rb, sd * g.TY, g.zRoll, [[0, -1.9], [.7, -1.9], [.7, -1.5], [g.rRoll, -1.5], [g.rRoll, -.35], [g.rRoll - .3, -.35],
+  f = f.concat(rgW(lathe(rb, sd * g.TY, g.zRoll, [[0, -1.9], [.7, -1.9], [.7, -1.5], [g.rRoll, -1.5], [g.rRoll, -.35], [g.rRoll - .3, -.35],
                                                [g.rRoll - .3, .35], [g.rRoll, .35], [g.rRoll, 1.5], [.7, 1.5], [.7, 1.9], [0, 1.9]],
-                     12, [C.odL, C.od, C.rubber, C.rubber, C.odD, C.odD, C.odD, C.rubber, C.rubber, C.od, C.odL], true));
+                     12, [C.odL, C.od, C.rubber, C.rubber, C.odD, C.odD, C.odD, C.rubber, C.rubber, C.od, C.odL], true), rb, sd * g.TY, g.zRoll));
   return f;
 }
 /* the sprocket: two rings of thirteen teeth, one against each edge of the track, on a
@@ -28406,6 +28536,7 @@ function m4Sprocket(sd) {
   f = f.concat(boltRing(g.xSp, yT + sd * 2.62, g.zSp, 1.0, 8, .2, .3, C.steel));
   /* the ring of lightening holes in the outer disc */
   f = f.concat(boltRing(g.xSp, yT + sd * 2.3, g.zSp, 2.15, 8, .42, .08, C.hole));
+  rgW(f, g.xSp, yT, g.zSp);
   /* the final drive housing the sprocket turns on, behind the differential cover */
   f = f.concat(latheSide(g.xSp, sd * (M4H.low - .6), g.zSp, [[0, 0], [3.3, 0], [3.3, 1.05], [3.75, 1.05], [3.75, 1.5], [0, 1.5]], 18,
                          [C.odD, C.od, C.odL, C.od, C.odL], sd));
@@ -28418,6 +28549,7 @@ function m4Idler(sd) {
   var C = M4C, g = M4G, H = M4H, f = [], y = sd * g.TY;
   f = f.concat(m4Spoked(g.xId, y + sd * g.off, g.zId, g.rId, g.WD, 6, sd, true, false));
   f = f.concat(m4Spoked(g.xId, y - sd * g.off, g.zId, g.rId, g.WD, 6, sd, false, false));
+  rgW(f, g.xId, y, g.zId);
   var yb = g.TY - g.off - g.WD / 2 - .25;
   f = f.concat(m4Box(sd, -33.6, -27.4, H.low - .05, H.low + .5, 5.6, 11.6, C.odD, C.od, C.odD, .15));
   f = f.concat(m4Box(sd, -31.6, -28.6, H.low + .5, yb, 6.9, 9.7, C.odD, C.od, C.odD, .2));
@@ -29003,7 +29135,7 @@ function e8Link(len) {
 }
 function e8Track(y) {
   var s = beltSamples(beltPath(e8Pulleys()), E8G.LP), f = [], i, L = e8Link(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* One pressed road wheel: the rubber tyre, the rim, the disc dished in between them, and the
@@ -29026,9 +29158,9 @@ function e8Wheel(x, y, z, r, w, sd, rich) {
 /* a pair of them on one axle, with the guides running between */
 function e8RoadWheel(x, sd) {
   var g = E8G, y = sd * g.TY;
-  return e8Wheel(x, y + sd * g.off, g.zW, g.R, g.WD, sd, true)
+  return rgW(e8Wheel(x, y + sd * g.off, g.zW, g.R, g.WD, sd, true)
     .concat(e8Wheel(x, y - sd * g.off, g.zW, g.R, g.WD, -sd, false))
-    .concat(latheSide(x, y - sd * .5, g.zW, [[0, 0], [.95, 0], [.95, 1.0], [0, 1.0]], 10, [M4C.odD, M4C.od, M4C.odD], sd));
+    .concat(latheSide(x, y - sd * .5, g.zW, [[0, 0], [.95, 0], [.95, 1.0], [0, 1.0]], 10, [M4C.odD, M4C.od, M4C.odD], sd)), x, y, g.zW);
 }
 /* One horizontal-volute bogie. The bracket is bolted to the hull side and stands out to the
    inner wheels; the two arms turn on pins low in its face, run out between the wheels of each
@@ -29069,9 +29201,9 @@ function e8Bogie(bx, sd) {
   f = f.concat(m4Box(sd, bx - 1.6, bx - .8, g.TY - .2, g.TY + 1.7, 8.9, 9.5, C.odD, C.od, C.odD, 0));
   /* the post on the head and the small roller on it */
   f = f.concat(m4Box(sd, bx - .6, bx + .6, g.TY - 2.1, g.TY - 1.5, 10.1, g.zSR + .55, C.odD, C.od, C.odD, .1));
-  f = f.concat(lathe(bx, sd * g.TY, g.zSR, [[0, -1.5], [.5, -1.5], [.5, -1.3], [g.rSR, -1.3], [g.rSR, -.5], [.5, -.5],
+  f = f.concat(rgW(lathe(bx, sd * g.TY, g.zSR, [[0, -1.5], [.5, -1.5], [.5, -1.3], [g.rSR, -1.3], [g.rSR, -.5], [.5, -.5],
                                            [.5, .5], [g.rSR, .5], [g.rSR, 1.3], [.5, 1.3], [.5, 1.5], [0, 1.5]], 10,
-                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true));
+                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true), bx, sd * g.TY, g.zSR));
   return f;
 }
 /* a return roller: a rubber-tyred pair on a stub axle out from a bracket on the hull side */
@@ -29080,9 +29212,9 @@ function e8Roller(x, sd) {
   f = f.concat(m4Box(sd, x - 1.4, x + 1.4, H.low - .05, H.low + .5, z - 1.6, z + 1.6, C.odD, C.od, C.odD, .12));
   f = f.concat(latheSide(x, sd * (H.low + .5), z, [[0, 0], [.7, 0], [.7, g.TY - 2.3 - H.low], [0, g.TY - 2.3 - H.low]], 8,
                          [C.od, C.odL, C.od], sd));
-  f = f.concat(lathe(x, sd * g.TY, z, [[0, -2.5], [.75, -2.5], [.75, -2.2], [r, -2.2], [r, -.5], [.75, -.5],
+  f = f.concat(rgW(lathe(x, sd * g.TY, z, [[0, -2.5], [.75, -2.5], [.75, -2.2], [r, -2.2], [r, -.5], [.75, -.5],
                                        [.75, .5], [r, .5], [r, 2.2], [.75, 2.2], [.75, 2.5], [0, 2.5]], 14,
-                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true));
+                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true), x, sd * g.TY, z));
   f = f.concat(latheSide(x, sd * (g.TY + 2.5), z, [[0, 0], [.6, 0], [.6, .3], [0, .45]], 8, [C.steel, C.bare, C.bare], sd));
   return f;
 }
@@ -29104,6 +29236,7 @@ function e8Sprocket(sd) {
                          [C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, yT + sd * 3.3, g.zSp, 1.0, 8, .2, .3, C.steel));
   f = f.concat(boltRing(g.xSp, yT + sd * 2.95, g.zSp, 2.2, 8, .42, .08, C.hole));
+  rgW(f, g.xSp, yT, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (H.low - .6), g.zSp, [[0, 0], [3.3, 0], [3.3, 1.1], [3.8, 1.1], [3.8, 1.6], [0, 1.6]], 18,
                          [C.odD, C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, sd * (H.low + 1.05), g.zSp, 3.5, 12, .24, .3, C.steel));
@@ -29116,6 +29249,7 @@ function e8Idler(sd) {
   var yi = g.TY - g.off - g.WD / 2;
   f = f.concat(e8Wheel(g.xId, y + sd * g.off, g.zId, g.rId, g.WD, sd, true));
   f = f.concat(e8Wheel(g.xId, y - sd * g.off, g.zId, g.rId, g.WD, -sd, false));
+  rgW(f, g.xId, y, g.zId);
   f = f.concat(latheSide(g.xId, sd * (yi - .9), g.zId, [[0, 0], [.95, 0], [.95, 2 * g.off + 1.2], [0, 2 * g.off + 1.2]], 10,
                          [C.odD, C.od, C.odD], sd));
   f = f.concat(m4Box(sd, -33.2, -27.0, H.low - .05, H.low + .5, 5.4, 11.4, C.odD, C.od, C.odD, .15));
@@ -29675,15 +29809,15 @@ function m26Link(len) {
 }
 function m26Track(y) {
   var s = beltSamples(beltPath(m26Pulleys()), M26G.LP), f = [], i, L = m26Link(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* a pair of pressed discs on one hub, the guides running between them */
 function m26Pair(x, z, r, sd) {
   var g = M26G, y = sd * g.TY;
-  return e8Wheel(x, y + sd * g.off, z, r, g.WD, sd, true)
+  return rgW(e8Wheel(x, y + sd * g.off, z, r, g.WD, sd, true)
     .concat(e8Wheel(x, y - sd * g.off, z, r, g.WD, -sd, false))
-    .concat(latheSide(x, y - sd * .75, z, [[0, 0], [1.05, 0], [1.05, 1.5], [0, 1.5]], 10, [M4C.odD, M4C.od, M4C.odD], sd));
+    .concat(latheSide(x, y - sd * .75, z, [[0, 0], [1.05, 0], [1.05, 1.5], [0, 1.5]], 10, [M4C.odD, M4C.od, M4C.odD], sd)), x, y, z);
 }
 /* A station: the road wheel pair on the end of its arm, which trails from a housing on the
    hull side where the torsion bar comes out, and the bump stop over it. The arm is a forging
@@ -29714,9 +29848,9 @@ function m26Roller(x, sd) {
   f = f.concat(m4Box(sd, x - 1.1, x + 1.1, H.low - .05, H.low + .5, z - 1.3, z + 1.3, C.odD, C.od, C.odD, .1));
   f = f.concat(latheSide(x, sd * (H.low + .5), z, [[0, 0], [.6, 0], [.6, g.TY - 2.6 - H.low], [0, g.TY - 2.6 - H.low]], 8,
                          [C.od, C.odL, C.od], sd));
-  f = f.concat(lathe(x, sd * g.TY, z, [[0, -2.6], [.7, -2.6], [.7, -2.3], [r, -2.3], [r, -.65], [.7, -.65],
+  f = f.concat(rgW(lathe(x, sd * g.TY, z, [[0, -2.6], [.7, -2.6], [.7, -2.3], [r, -2.3], [r, -.65], [.7, -.65],
                                        [.7, .65], [r, .65], [r, 2.3], [.7, 2.3], [.7, 2.6], [0, 2.6]], 14,
-                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true));
+                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true), x, sd * g.TY, z));
   f = f.concat(latheSide(x, sd * (g.TY + 2.6), z, [[0, 0], [.55, 0], [.55, .3], [0, .45]], 8, [C.steel, C.bare, C.bare], sd));
   return f;
 }
@@ -29750,6 +29884,7 @@ function m26Sprocket(sd) {
                          [C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, yT + sd * 3.5, g.zSp, 1.0, 8, .2, .3, C.steel));
   f = f.concat(boltRing(g.xSp, yT + sd * 3.15, g.zSp, 2.1, 8, .42, .08, C.hole));
+  rgW(f, g.xSp, yT, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (H.low - .6), g.zSp, [[0, 0], [3.4, 0], [3.4, 1.4], [3.9, 1.4], [3.9, 1.9], [0, 1.9]], 18,
                          [C.odD, C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, sd * (H.low + 1.35), g.zSp, 3.6, 12, .24, .3, C.steel));
@@ -30126,15 +30261,15 @@ function hcLink(len) {
 }
 function hcTrack(y) {
   var s = beltSamples(beltPath(hcPulleys()), HCG.LP), f = [], i, L = hcLink(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* a pair of pressed discs on one hub, the guides running between them */
 function hcPair(x, z, r, sd) {
   var g = HCG, y = sd * g.TY;
-  return e8Wheel(x, y + sd * g.off, z, r, g.WD, sd, true)
+  return rgW(e8Wheel(x, y + sd * g.off, z, r, g.WD, sd, true)
     .concat(e8Wheel(x, y - sd * g.off, z, r, g.WD, -sd, false))
-    .concat(latheSide(x, y - sd * .55, z, [[0, 0], [.95, 0], [.95, 1.1], [0, 1.1]], 10, [M4C.odD, M4C.od, M4C.odD], sd));
+    .concat(latheSide(x, y - sd * .55, z, [[0, 0], [.95, 0], [.95, 1.1], [0, 1.1]], 10, [M4C.odD, M4C.od, M4C.odD], sd)), x, y, z);
 }
 /* A station: the road wheel pair on the end of its arm, which trails from a housing on the
    lower hull where the torsion bar comes out, and the bump stop over it; a shock absorber on
@@ -30163,9 +30298,9 @@ function hcRoller(x, sd) {
   f = f.concat(m4Box(sd, x - .9, x + .9, H.low - .05, H.low + .45, z - 1.1, z + 1.1, C.odD, C.od, C.odD, .1));
   f = f.concat(latheSide(x, sd * (H.low + .45), z, [[0, 0], [.5, 0], [.5, g.TY - w - H.low - .45], [0, g.TY - w - H.low - .45]], 8,
                          [C.od, C.odL, C.od], sd));
-  f = f.concat(lathe(x, sd * g.TY, z, [[0, -w], [.6, -w], [.6, -w + .25], [r, -w + .25], [r, -.55], [.6, -.55],
+  f = f.concat(rgW(lathe(x, sd * g.TY, z, [[0, -w], [.6, -w], [.6, -w + .25], [r, -w + .25], [r, -.55], [.6, -.55],
                                        [.6, .55], [r, .55], [r, w - .25], [.6, w - .25], [.6, w], [0, w]], 14,
-                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true));
+                     [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true), x, sd * g.TY, z));
   f = f.concat(latheSide(x, sd * (g.TY + w), z, [[0, 0], [.48, 0], [.48, .26], [0, .4]], 8, [C.steel, C.bare, C.bare], sd));
   return f;
 }
@@ -30187,6 +30322,7 @@ function hcSprocket(sd) {
                          [C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, yT + sd * 2.4, g.zSp, .85, 8, .18, .2, C.steel));
   f = f.concat(boltRing(g.xSp, yT + sd * 2.05, g.zSp, 1.8, 8, .36, .08, C.hole));
+  rgW(f, g.xSp, yT, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (H.low - .6), g.zSp, [[0, 0], [2.9, 0], [2.9, 1.2], [3.3, 1.2], [3.3, 1.6], [0, 1.6]], 18,
                          [C.odD, C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, sd * (H.low + 1.05), g.zSp, 3.05, 12, .2, .26, C.steel));
@@ -31460,7 +31596,7 @@ function wsLink(len) {
 }
 function wsTrack(y) {
   var s = beltSamples(beltPath(wsPulleys()), WSG.LP), f = [], i, L = wsLink(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* a road wheel: two pressed discs with their rubber tyres and the gap the horns run in, the
@@ -31478,7 +31614,7 @@ function wsWheel(x, sd) {
       f = f.concat(boltRing(x, yy + sd * (h * .6 + .1), g.zW, .95, 6, .14, .3, C.steel));
     }
   }
-  return f;
+  return rgW(f, x, y, g.zW);
 }
 /* each wheel's arm up to its pivot on the hull, behind it, and the quarter-elliptic leaf spring
    the arm bears on, lying forward along the hull side */
@@ -31498,8 +31634,8 @@ function wsArm(x, sd) {
 function wsRoller(x, sd) {
   var C = HKC, g = WSG, f = [];
   f = f.concat(latheSide(x, sd * (WSH.low + .05), g.zR, [[0, 0], [.5, 0], [.5, g.TY - WSH.low - 1.6], [0, g.TY - WSH.low - 1.6]], 8, [C.body, C.dark, C.body], sd));
-  f = f.concat(lathe(x, sd * g.TY, g.zR, [[0, -1.6], [.6, -1.6], [g.rR, -1.3], [g.rR, 1.3], [.6, 1.6], [0, 1.6]], 12,
-                     [C.lit, C.rubber, C.rubber, C.rubber, C.lit], true));
+  f = f.concat(rgW(lathe(x, sd * g.TY, g.zR, [[0, -1.6], [.6, -1.6], [g.rR, -1.3], [g.rR, 1.3], [.6, 1.6], [0, 1.6]], 12,
+                     [C.lit, C.rubber, C.rubber, C.rubber, C.lit], true), x, sd * g.TY, g.zR));
   return f;
 }
 /* the sprocket: two rings of teeth on a drum, the hub and the final drive behind it */
@@ -31516,6 +31652,7 @@ function wsSprocket(sd) {
   }
   f = f.concat(boltRing(g.xSp, yT + sd * 2.0, g.zSp, 1.9, 8, .4, .08, C.hole));
   f = f.concat(latheSide(g.xSp, yT + sd * 2.1, g.zSp, [[0, 0], [1.0, 0], [1.0, .3], [.6, .5], [0, .5]], 12, [C.body, C.lit, C.body, C.lit], sd));
+  rgW(f, g.xSp, yT, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (WSH.low - .4), g.zSp, [[0, 0], [2.6, 0], [2.6, 1.1], [0, 1.1]], 16, [C.dark, C.body, C.lit], sd));
   return f;
 }
@@ -31528,6 +31665,7 @@ function wsIdler(sd) {
     f = f.concat(lathe(g.xId, yy, g.zId, [[0, -h * .4], [g.rId - .4, -h * .4], [g.rId - .4, h * .4], [0, h * .4]], 14, [C.dark, C.body, C.dark], false));
     if (k > 0) f = f.concat(boltRing(g.xId, yy + sd * h * .42, g.zId, 1.6, 6, .55, .06, C.hole));
   }
+  rgW(f, g.xId, y, g.zId);
   f = f.concat(ksTube([g.xId, sd * (WSH.low + .2), g.zId], [g.xId - 2.2, sd * (WSH.low + .2), g.zId + 1.6], .5, C.dark, 8));
   f = f.concat(tubeSmooth(-26.0, -23.4, sd * (WSH.low + .6), 9.4, .35, 8, C.steel, C.bare));
   return f;
@@ -31825,7 +31963,11 @@ var MRH = {
 /* the whole built at the drawing's running-gear scale, brought down to its envelope's */
 function mrK(fs) {
   var k = MRH.k;
-  fs.forEach(function (f) { f.v = f.v.map(function (p) { return [p[0] * k, p[1] * k, p[2] * k]; }); });
+  fs.forEach(function (f) {
+    f.v = f.v.map(function (p) { return [p[0] * k, p[1] * k, p[2] * k]; });
+    /* and the axle a wheel turns on and the belt a link walks, which are lengths as well */
+    if (f.ax) { f.ax = f.ax.map(function (p) { return [p[0] * k, p[1] * k, p[2] * k]; }); if (f.rp) f.rp *= k; if (f.rr) f.rr *= k; }
+  });
   return fs;
 }
 /* how far out the casemate's side is at a height: it leans in from the foot to the top */
@@ -31854,7 +31996,7 @@ function mrLink(len) {
 }
 function mrTrack(y) {
   var s = beltSamples(beltPath(mrPulleys()), MRG.LP), f = [], i, L = mrLink(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* a road wheel: two discs with thick rubber tyres and the gap the horn runs in, the outer one
@@ -31873,7 +32015,7 @@ function mrWheel(x, sd) {
       f = f.concat(boltRing(x, yy + sd * h * .52, g.zW, 2.5, 8, .3, .05, C.dark));
     }
   }
-  return f;
+  return rgW(f, x, y, g.zW);
 }
 /* a bogie: the bracket bolted to the hull, the two arms out to the wheels and the leaf spring
    across their tops */
@@ -31896,8 +32038,8 @@ function mrBogie(bx, sd) {
 function mrRoller(x, sd) {
   var C = HKC, g = MRG, f = [];
   f = f.concat(latheSide(x, sd * (MRH.low + .05), g.zR, [[0, 0], [.45, 0], [.45, g.TY - MRH.low - 1.6], [0, g.TY - MRH.low - 1.6]], 8, [C.body, C.dark, C.body], sd));
-  f = f.concat(lathe(x, sd * g.TY, g.zR, [[0, -1.6], [.5, -1.6], [g.rR, -1.3], [g.rR, 1.3], [.5, 1.6], [0, 1.6]], 12,
-                     [C.lit, C.rubber, C.rubber, C.rubber, C.lit], true));
+  f = f.concat(rgW(lathe(x, sd * g.TY, g.zR, [[0, -1.6], [.5, -1.6], [g.rR, -1.3], [g.rR, 1.3], [.5, 1.6], [0, 1.6]], 12,
+                     [C.lit, C.rubber, C.rubber, C.rubber, C.lit], true), x, sd * g.TY, g.zR));
   return f;
 }
 /* the sprocket: a spoked drum with two rings of teeth, and the final drive behind it */
@@ -31916,6 +32058,7 @@ function mrSprocket(sd) {
     var sp = extrudeY([[.9, -.25], [2.1, -.35], [2.1, .35], [.9, .25]], yT + sd * 2.2 - .2, yT + sd * 2.2 + .2, C.body, C.lit, C.dark);
     f = f.concat(place(pitch(sp, t / 8 * TAU, 0, 0), 0, g.xSp, 0, g.zSp));
   }
+  rgW(f, g.xSp, yT, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (MRH.low - .4), g.zSp, [[0, 0], [2.5, 0], [2.5, 1.2], [0, 1.2]], 16, [C.dark, C.body, C.lit], sd));
   return f;
 }
@@ -31931,6 +32074,7 @@ function mrIdler(sd) {
       f = f.concat(latheSide(g.xId, yy + sd * h * .42, g.zId, [[0, 0], [.8, 0], [.8, .3], [0, .4]], 10, [C.body, C.lit, C.body], sd));
     }
   }
+  rgW(f, g.xId, y, g.zId);
   f = f.concat(ksTube([g.xId, sd * (MRH.low + .2), g.zId], [g.xId - 2.6, sd * (MRH.low + .2), g.zId + 1.4], .5, C.dark, 8));
   f = f.concat(tubeSmooth(-26.0, -23.0, sd * (MRH.low + .6), 8.6, .35, 8, C.steel, C.bare));
   return f;
@@ -32226,7 +32370,7 @@ function wzLink(len) {
 }
 function wzTrack(y) {
   var s = beltSamples(beltPath(wzPulleys()), WZG.LP), f = [], i, L = wzLink(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* a road wheel: a pair of small pressed wheels on solid tyres either side of the guides */
@@ -32238,7 +32382,7 @@ function wzWheel(x, sd) {
     f = f.concat(lathe(x, yy, g.zW, [[0, -h * .5], [g.R - .35, -h * .5], [g.R - .35, h * .5], [0, h * .5]], 10, [C.odDark, C.od, C.odDark], false));
     if (k > 0) f = f.concat(latheSide(x, yy + sd * h * .5, g.zW, [[0, 0], [.5, 0], [.5, .25], [0, .3]], 8, [C.od, C.odLit, C.od], sd));
   }
-  return f;
+  return rgW(f, x, y, g.zW);
 }
 /* a bogie: the beam the two wheels hang from, its pivot on the hull, and the spring over it */
 function wzBogie(bx, sd) {
@@ -32258,13 +32402,13 @@ function wzSprocket(sd) {
       f = f.concat(place(pitch(tooth, (t + .5) / 12 * TAU, 0, 0), 0, g.xSp, 0, g.zSp));
     }
   });
-  return f;
+  return rgW(f, g.xSp, yT, g.zSp);
 }
 function wzIdler(sd) {
   var C = JP, g = WZG, f = [], yT = sd * g.TY;
   f = f.concat(lathe(g.xId, yT, g.zId, [[0, -2.8], [g.rId - .2, -2.8], [g.rId, -2.6], [g.rId, 2.6], [g.rId - .2, 2.8], [0, 2.8]], 12,
                      [C.odLit, C.od, C.steel, C.od, C.odLit], true));
-  return f;
+  return rgW(f, g.xId, yT, g.zId);
 }
 
 /* ---- the body ---- */
@@ -32276,7 +32420,7 @@ function wzHull() {
     for (i = 0; i < g.wx.length; i++) f = f.concat(wzWheel(g.wx[i], sd));
     for (i = 0; i < g.bog.length; i++) f = f.concat(wzBogie(g.bog[i], sd));
     for (i = 0; i < g.ux.length; i++) f = f.concat(latheSide(g.ux[i], sd * (H.low + .05), g.zU, [[0, 0], [.3, 0], [.3, g.TY - H.low - 1.2], [0, g.TY - H.low - 1.2]], 6, [C.od, C.odDark, C.od], sd))
-      .concat(lathe(g.ux[i], sd * g.TY, g.zU, [[0, -1.2], [g.rU, -1.0], [g.rU, 1.0], [0, 1.2]], 8, [C.rubber, C.rubber, C.rubber], true));
+      .concat(rgW(lathe(g.ux[i], sd * g.TY, g.zU, [[0, -1.2], [g.rU, -1.0], [g.rU, 1.0], [0, 1.2]], 8, [C.rubber, C.rubber, C.rubber], true), g.ux[i], sd * g.TY, g.zU));
     f = f.concat(wzSprocket(sd), wzIdler(sd));
   }
   /* the tub between the tracks, which carries the floor */
@@ -32528,7 +32672,7 @@ function s3Link(len) {
 }
 function s3Track(y) {
   var s = beltSamples(beltPath(s3Pulleys()), S3G.LP), f = [], i, L = s3Link(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* n spokes on the face of a wheel lying along y, from r0 out to r1, standing `d` proud of y */
@@ -32549,7 +32693,7 @@ function s3RoadWheel(x, sd) {
   f = f.concat(s3Spokes(x, yo + sd * (h - .25), g.zW, 6, .85, 2.16, .5, .42, C.od, .3));
   f = f.concat(latheSide(x, yo + sd * (h + .08), g.zW, [[0, 0], [.72, 0], [.72, .25], [.42, .45], [0, .45]], 10,
                          [C.steel, C.bare, C.steel, C.bare], sd));
-  return f;
+  return rgW(f, x, sd * g.TY, g.zW);
 }
 /* A volute bogie: the cast bracket bolted to the hull side, reaching out over the tyres at
    its top and coming down between the wheels, the volute spring standing in its face, and
@@ -32584,9 +32728,9 @@ function s3Bogie(i, sd) {
 /* a return roller: a flanged steel drum the guides run between */
 function s3Roller(x, z, sd) {
   var C = S3C, g = S3G, rr = g.rRoll;
-  return lathe(x, sd * g.TY, z, [[0, -1.55], [.6, -1.55], [.6, -1.3], [rr, -1.3], [rr, -.45], [rr - .35, -.45], [rr - .35, .45],
+  return rgW(lathe(x, sd * g.TY, z, [[0, -1.55], [.6, -1.55], [.6, -1.3], [rr, -1.3], [rr, -.45], [rr - .35, -.45], [rr - .35, .45],
                                  [rr, .45], [rr, 1.3], [.6, 1.3], [.6, 1.55], [0, 1.55]], 12,
-               [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true)
+               [C.odL, C.od, C.rubber, C.odD, C.odD, C.odD, C.odD, C.rubber, C.od, C.odL, C.odL], true), x, sd * g.TY, z)
     .concat(latheSide(x, sd * (g.TY - 1.55), z, [[0, 0], [.5, 0], [.5, 2.2], [0, 2.2]], 8, [C.steel, C.bare, C.steel], -sd));
 }
 /* the other two rollers, each on its own bracket off the hull side */
@@ -32614,6 +32758,7 @@ function s3Sprocket(sd) {
                          [C.od, C.odL, C.odD, C.hole, C.odD, C.od, C.odL], sd));
   f = f.concat(s3Spokes(g.xSp, yT + sd * 1.82, g.zSp, 8, .95, 2.55, .42, .36, C.od, 0));
   f = f.concat(latheSide(g.xSp, yT + sd * 1.95, g.zSp, [[0, 0], [.9, 0], [.9, .15], [.5, .25], [0, .25]], 10, [C.steel, C.bare, C.steel, C.bare], sd));
+  rgW(f, g.xSp, yT, g.zSp);
   /* the final drive housing, and the ring of bolts round its flange */
   f = f.concat(latheSide(g.xSp, sd * (H.low - .3), g.zSp, [[0, 0], [2.35, 0], [2.35, 1.0], [2.8, 1.0], [2.8, 1.35], [0, 1.35]], 16,
                          [C.odD, C.od, C.odL, C.od, C.odL], sd));
@@ -32633,6 +32778,7 @@ function s3Idler(sd) {
   }
   f = f.concat(lathe(g.xId, y, g.zId, [[0, -1.75], [.95, -1.75], [.95, 1.75], [0, 1.75]], 12, [C.odL, C.od, C.odL], true));
   f = f.concat(latheSide(g.xId, y + sd * 1.75, g.zId, [[0, 0], [.8, 0], [.8, .15], [.45, .28], [0, .28]], 10, [C.steel, C.bare, C.steel, C.bare], sd));
+  rgW(f, g.xId, y, g.zId);
   /* the bracket on the hull side, the arm back to the axle, and the screw that sets it */
   var yb = g.TY - g.off - g.WD / 2 - .35;
   f = f.concat(m4Box(sd, -13.5, -10.1, H.low - .05, yb, 4.4, 9.3, C.od, C.odL, C.odD, .2));
@@ -33135,7 +33281,7 @@ function mhBand(len) {
 }
 function mhTrack(y) {
   var s = beltSamples(beltPath(mhPulleys()), MHG.LP), f = [], i, L = mhBand(s[0].len);
-  for (i = 0; i < s.length; i++) f = f.concat(place(pitch(L, s[i].a, 0, 0), 0, s[i].x, y, s[i].z));
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
   return f;
 }
 /* A road wheel: a rubber tyre on a pressed disc, in two halves either side of the guides.
@@ -33157,8 +33303,7 @@ function mhBogie(sd) {
   var C = MHC, g = MHG, y = sd * g.TY, f = [], k, j, yr = sd * (g.TY - 1.55), yb = g.TY - 1.95;
   [g.xB + g.bog, g.xB - g.bog].forEach(function (b) {
     for (k = -1; k <= 1; k += 2) {
-      f = f.concat(mhWheel(b + k * g.ws, y + sd * .88, sd, 1));
-      f = f.concat(mhWheel(b + k * g.ws, y - sd * .88, -sd, 0));
+      f = f.concat(rgW(mhWheel(b + k * g.ws, y + sd * .88, sd, 1).concat(mhWheel(b + k * g.ws, y - sd * .88, -sd, 0)), b + k * g.ws, y, g.zW));
     }
     f = f.concat(box(b, yr, g.zW - .45, 2 * g.ws + 1.1, .44, .9, C.odD, C.od, C.odD, .1));
     f = f.concat(place(roll(cyl(0, 0, -.45, .55, .55, .9, 8, C.steel, C.bare, 0, true), Math.PI / 2, 0, 0), 0, b, yr, g.zW));
@@ -33184,6 +33329,7 @@ function mhSprocket(sd) {
   f = f.concat(lathe(g.xSp, y, g.zSp, [[0, -.7], [r - .7, -.7], [r - .7, .7], [0, .7]], 14, [C.odD, C.od, C.odD], true));
   f = f.concat(latheSide(g.xSp, y + sd * 1.25, g.zSp, [[0, 0], [1.3, 0], [1.3, .3], [.8, .6], [0, .6]], 12, [C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(g.xSp, y + sd * 1.3, g.zSp, 1.95, 8, .16, .2, C.steel));
+  rgW(f, g.xSp, y, g.zSp);
   f = f.concat(latheSide(g.xSp, sd * (g.TY - 1.6), g.zSp, [[0, 0], [1.9, 0], [1.9, .6], [1.4, .8], [0, .8]], 12, [C.odD, C.od, C.od, C.odL], sd));
   return f;
 }
@@ -33202,6 +33348,7 @@ function mhIdler(sd) {
                        0, g.xId + Math.cos(a) * 1.3, y + sd * 1.28, g.zId + Math.sin(a) * 1.3));
   }
   f = f.concat(latheSide(g.xId, y + sd * 1.25, g.zId, [[0, 0], [.7, 0], [.7, .25], [.42, .45], [0, .45]], 10, [C.od, C.odL, C.od, C.odL], sd));
+  rgW(f, g.xId, y, g.zId);
   var arm = box(0, 0, -.4, 4.6, .6, .8, C.odD, C.od, C.odD, .1);
   f = f.concat(place(pitch(arm, -.4, 0, 0), 0, g.xId + 2.0, sd * (g.TY - 1.8), g.zId + .9));
   f = f.concat(place(pitch(tubeSmooth(0, 3.0, 0, 0, .25, 6, C.steel, C.bare), -.1, 0, 0), 0, g.xId - .4, sd * (g.TY - 1.8), g.zId + 2.2));
@@ -33210,8 +33357,8 @@ function mhIdler(sd) {
 /* the support roller on top of the bogie bracket, which carries the band's upper run */
 function mhRoller(sd) {
   var C = MHC, g = MHG, y = sd * g.TY, f = [];
-  f = f.concat(lathe(g.xB, y, g.zRoll, [[0, -1.3], [.7, -1.3], [g.rRoll, -1.15], [g.rRoll, 1.15], [.7, 1.3], [0, 1.3]], 10,
-                     [C.od, C.tyre, C.rubber, C.tyre, C.od], true));
+  f = f.concat(rgW(lathe(g.xB, y, g.zRoll, [[0, -1.3], [.7, -1.3], [g.rRoll, -1.15], [g.rRoll, 1.15], [.7, 1.3], [0, 1.3]], 10,
+                     [C.od, C.tyre, C.rubber, C.tyre, C.od], true), g.xB, y, g.zRoll));
   f = f.concat(place(roll(cyl(0, 0, 0, .35, .35, 3.4, 8, C.steel, C.bare, 0, true), -sd * Math.PI / 2, 0, 0), 0, g.xB, sd * (g.TY - 1.6), g.zRoll));
   return f;
 }
@@ -33234,7 +33381,7 @@ function mhFrontWheel(sd) {
   f = f.concat(boltRing(x, y + sd * .56, z, 1.35, 8, .18, .24, C.steel));
   f = f.concat(latheSide(x, y + sd * .56, z, [[0, 0], [.95, 0], [.95, .45], [.6, .8], [0, .8]], 10, [C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(x, y + sd * 1.36, z, .45, 6, .1, .12, C.steel));
-  return f;
+  return rgW(f, x, y, z);
 }
 /* the front axle: the banjo housing with the differential in the middle, the steering
    knuckles, the track rod behind, and a semi-elliptic spring over each end of it */
@@ -33932,7 +34079,7 @@ function m8Wheel(x, sd) {
   f = f.concat(boltRing(x, y + sd * .62, z, 1.38, 8, .18, .24, C.steel));
   f = f.concat(latheSide(x, y + sd * .62, z, [[0, 0], [1.0, 0], [1.0, .45], [.62, .82], [0, .82]], 10, [C.od, C.odL, C.od, C.odL], sd));
   f = f.concat(boltRing(x, y + sd * 1.44, z, .46, 6, .1, .12, C.steel));
-  return f;
+  return rgW(f, x, y, z);
 }
 /* An axle: the banjo housing across with the differential lathed on it, the knuckles at
    the ends, and a semi-elliptic spring over each side of it. The front one steers, so it
@@ -34472,7 +34619,7 @@ function k4Wheel(x, sd) {
   f = f.concat(boltRing(x, y + sd * .6, z, 1.5, 8, .18, .24, C.steel));
   f = f.concat(latheSide(x, y + sd * .6, z, [[0, 0], [1.1, 0], [1.1, .5], [.7, .9], [0, .9]], 10, [C.body, C.lit, C.body, C.lit], sd));
   f = f.concat(boltRing(x, y + sd * 1.52, z, .5, 6, .1, .12, C.steel));
-  return f;
+  return rgW(f, x, y, z);
 }
 /* Each wheel on its own knuckle between two wishbones out of the tub, with the half-shaft
    through the middle of them, and each pair on a leaf spring run along the tub between its
@@ -35038,7 +35185,7 @@ function ktRoadWheel(x, y, sd) {
   f = lathe(x, y, KTG.zWheel, prof, 18, cols, true);
   f = f.concat(boltRing(x, y + sd * hw, KTG.zWheel, 3.85, 10, .38, .5, C.bare));
   f = f.concat(stud(x, y + sd * (hw + .25), KTG.zWheel, 1.25, .8, C.dgD));
-  return f;
+  return rgW(f, x, y, KTG.zWheel);
 }
 
 /* the drive sprocket: smaller than the road wheels on a Tiger II, with eighteen teeth
@@ -35055,7 +35202,7 @@ function ktSprocket(y, sd) {
     f = f.concat(place(pitch(box(0, 0, 0, 1.5, 1.9, 1.6, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y - 2.4, tz));
     f = f.concat(place(pitch(box(0, 0, 0, 1.5, 1.9, 1.6, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y + 2.4, tz));
   }
-  return f;
+  return rgW(f, g.xSprk, y, g.zSprk);
 }
 
 /* the rear idler on its crank adjuster */
@@ -35066,7 +35213,7 @@ function ktIdler(y, sd) {
   var cols = [C.dg, C.dgD, C.dg, C.dg, C.dg, C.bare, C.steel, C.bare, C.dg, C.dg, C.dg, C.dgD, C.dg];
   f = lathe(g.xIdl, y, g.zIdl, prof, 18, cols, true);
   f = f.concat(boltRing(g.xIdl, y + sd * hw, g.zIdl, 2.2, 8, .36, .5, C.bare));
-  return f;
+  return rgW(f, g.xIdl, y, g.zIdl);
 }
 
 function ktHull(body, cap, sideC) {
@@ -35413,7 +35560,7 @@ function mausRoadWheel(x, y) {
   var prof = [[0, -hw], [1.1, -hw], [1.1, -.7], [2.4, -1.0], [r, -1.15],
               [r, 1.15], [2.4, 1.0], [1.1, .7], [1.1, hw], [0, hw]];
   var cols = [C.dg, C.dgD, C.dg, C.bare, C.steel, C.bare, C.dg, C.dgD, C.dg];
-  return lathe(x, y, MSG.zWheel, prof, 10, cols, true);
+  return rgW(lathe(x, y, MSG.zWheel, prof, 10, cols, true), x, y, MSG.zWheel);
 }
 /* sprocket and idler on the one pattern: a dished disc with a ring of teeth round it,
    which at this size is everything that reads */
@@ -35429,7 +35576,7 @@ function mausPulley(x, z, r, y, sd, teeth) {
     f = f.concat(place(pitch(box(0, 0, 0, 1.2, 2.4, 1.4, C.bare, C.steel, C.steel, 0), a, 0, 0),
                        0, x + Math.cos(a) * (r - .3), y, z + Math.sin(a) * (r - .3)));
   }
-  return f;
+  return rgW(f, x, y, z);
 }
 
 /* The Maus is in the plain grey and nothing else: neither prototype was ever given Zimmerit */
@@ -35753,7 +35900,7 @@ function tigRoadWheel(x, y, sd) {
   f = latheSide(x, y, TIGG.zWheel, prof, 18, cols, sd);
   f = f.concat(boltRing(x, y + sd * 1.0, TIGG.zWheel, 2.05, 8, .26, .32, C.dgD));
   f = f.concat(stud(x, y + sd * 1.3, TIGG.zWheel, .95, .7, C.dgD));
-  return f;
+  return rgW(f, x, y, TIGG.zWheel);
 }
 
 /* The drive sprocket. A Tiger's is a spoked wheel rather than a toothed disc: sixteen
@@ -35776,7 +35923,7 @@ function tigSprocket(y, sd) {
     f = f.concat(place(pitch(box(0, 0, 0, 1.4, 1.5, 1.5, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y - 2.1, tz));
     f = f.concat(place(pitch(box(0, 0, 0, 1.4, 1.5, 1.5, C.bare, C.steel, C.steel, 0), a, 0, 0), 0, tx, y + 2.1, tz));
   }
-  return f;
+  return rgW(f, g.xSprk, y, g.zSprk);
 }
 
 /* The rear idler: the same dished disc as a road wheel, smaller and with no tyre. */
@@ -35787,7 +35934,7 @@ function tigIdler(y, sd) {
   var cols = [C.dg, C.dgD, C.dg, C.dg, C.dgD, C.bare, C.dgD, C.dgD, C.dgD];
   f = latheSide(g.xIdl, y, g.zIdl, prof, 16, cols, sd);
   f = f.concat(boltRing(g.xIdl, y + sd * .95, g.zIdl, 1.6, 8, .26, .34, C.dgD));
-  return f;
+  return rgW(f, g.xIdl, y, g.zIdl);
 }
 
 /* Every number below is off the published figures or off a walkaround of Tiger 131, and
@@ -43413,13 +43560,78 @@ function bakeDropModel(M) {
     else if (o && typeof o === 'object' && k !== 'inside') Object.keys(o).forEach(function (q) { if (Array.isArray(o[q])) bakeDrop(o[q]); });
   });
 }
+/* The hull's running gear taken out of it into a buffer of its own, with a fourth attribute
+   a vertex (`aRg`, see RG_VS) saying how it moves: what rgW and beltLink wrote on the faces,
+   worked out in the vehicle's own frame once the builders are done with it. A wheel turns at
+   the rate the belt goes round it where the belt goes round it (the sprocket and the idler,
+   whose teeth and rims have to keep pace with the links on them), and at one over its own
+   radius where it rolls on a straight run or on the ground. A wheel whose axle is not the
+   vehicle's own (a spare on the tail) stays in the hull. And the occlusion baked into a
+   wheel is evened out round its axle before it is packed, because a wheel turns and the
+   shadow of the guard over it does not: left as baked, the dark top of every tyre went round
+   with it. */
+function rgSplit(faces) {
+  var stat = [], rg = [], grp = {}, arcs = [], i, j, f, k, per = 0, links = 0;
+  function side(y) { return y > .5 ? 1 : y < -.5 ? 0 : 2; }
+  for (i = 0; i < faces.length; i++) {
+    f = faces[i];
+    if (!f.ax || f.v.length < 3) { stat.push(f); continue; }
+    var a0 = f.ax[0], a1 = f.ax[1], ex = a1[0] - a0[0], ey = a1[1] - a0[1], ez = a1[2] - a0[2], el = Math.hypot(ex, ey, ez) || 1;
+    if (f.rl === 3) {
+      var tl = Math.hypot(ex, ez) || 1;
+      f._rg = [ex / tl, ez / tl, 0, 3 + 10 * side(a0[1])];
+    } else {
+      if (Math.abs(ey) < el * .97) { stat.push(f); continue; }
+      if (f.rl === 2) { f._rg = [a0[0], a0[2], 1 / (f.rr || 1), 2 + 10 * side(a0[1])]; arcs.push(f._rg); }
+      else {
+        k = Math.round(a0[0] * 4) + ',' + Math.round(a0[2] * 4) + ',' + side(a0[1]);
+        if (!grp[k]) grp[k] = { x: a0[0], z: a0[2], sd: side(a0[1]), r: 0, rr: f.rr || 0, faces: [] };
+        grp[k].faces.push(f);
+        for (j = 0; j < f.v.length; j++) grp[k].r = Math.max(grp[k].r, Math.hypot(f.v[j][0] - a0[0], f.v[j][2] - a0[2]));
+      }
+    }
+    if (f.rl) { per = Math.max(per, f.rp || 0); links++; }
+    rg.push(f);
+  }
+  Object.keys(grp).forEach(function (key) {
+    var G2 = grp[key], w = G2.rr ? 1 / G2.rr : 1 / Math.max(.5, G2.r), q, bins = {};
+    for (q = 0; q < arcs.length; q++) {
+      var A = arcs[q];
+      if (Math.floor(A[3] / 10) === G2.sd && Math.abs(A[0] - G2.x) < .4 && Math.abs(A[1] - G2.z) < .4) { w = A[2]; break; }
+    }
+    G2.faces.forEach(function (f2) {
+      f2._rg = [G2.x, G2.z, w, 1 + 10 * G2.sd];
+      if (!f2.ao) return;
+      for (var m = 0; m < f2.v.length; m++) {
+        var p2 = f2.v[m], bk = Math.round(Math.hypot(p2[0] - G2.x, p2[2] - G2.z) / .5) + ',' + Math.round(p2[1] / .5);
+        var b = bins[bk] || (bins[bk] = [0, 0, 0, 0]);
+        b[0] += f2.ao[m]; b[1] += f2.dust[m]; b[2] += f2.wear[m]; b[3]++;
+      }
+    });
+    G2.faces.forEach(function (f2) {
+      if (!f2.ao) return;
+      for (var m = 0; m < f2.v.length; m++) {
+        var p2 = f2.v[m], b = bins[Math.round(Math.hypot(p2[0] - G2.x, p2[2] - G2.z) / .5) + ',' + Math.round(p2[1] / .5)];
+        f2.ao[m] = b[0] / b[3]; f2.dust[m] = b[1] / b[3]; f2.wear[m] = b[2] / b[3];
+      }
+    });
+  });
+  var at4 = [];
+  for (i = 0; i < rg.length; i++) {
+    f = rg[i];
+    for (j = 0; j < (f.v.length - 2) * 3; j++) at4.push(f._rg[0], f._rg[1], f._rg[2], f._rg[3]);
+    f._rg = undefined;
+  }
+  return { stat: stat, rg: rg, at: at4, per: per || 1, wheels: Object.keys(grp).length, links: links };
+}
 /* One vehicle's buffers, made the moment its bake is done and with the bake's arrays let
    go behind them, so that nineteen vehicles' worth of them are never alive at once: made at
    the end, they were 155 MB at the top of the load. */
 function vehUpload(k) {
   var V = VMODEL[k], old = vmHas(MODELS.veh, k);
   if (old) modelsFreeOne(old);
-  var M = { hull: facesToBuffer(V.hull), tur: facesToBuffer(V.tur),
+  var RG = rgSplit(V.hull);
+  var M = { hull: facesToBuffer(RG.stat), tur: facesToBuffer(V.tur),
             mg: V.mg ? facesToBuffer(V.mgMan ? V.mg.concat(V.mgMan) : V.mg) : null, skirts: V.skirts ? facesToBuffer(V.skirts) : null,
             turSkirts: V.turSkirts ? facesToBuffer(V.turSkirts) : null, turUp: {}, addUp: {}, downUp: {}, mgUp: {},
             crew: V.crew ? facesToBuffer(V.crew) : null, turCrew: V.turCrew ? facesToBuffer(V.turCrew) : null,
@@ -43432,6 +43644,17 @@ function vehUpload(k) {
   if (V.mgUp) Object.keys(V.mgUp).forEach(function (uk) { M.mgUp[uk] = facesToBuffer(V.mgUp[uk]); });
   if (V.addUp) Object.keys(V.addUp).forEach(function (uk) { M.addUp[uk] = facesToBuffer(V.addUp[uk]); });
   if (V.downUp) Object.keys(V.downUp).forEach(function (uk) { M.downUp[uk] = facesToBuffer(V.downUp[uk]); });
+  /* the running gear, and the attribute that says how each vertex of it moves */
+  if (RG.rg.length) {
+    M.rg = facesToBuffer(RG.rg); M.rgP = RG.per; M.rgW = RG.wheels; M.rgL = RG.links;
+    var ab = gl.createBuffer(), sh = new Int16Array(RG.at.length), q;
+    for (q = 0; q < RG.at.length; q += 4) {
+      sh[q] = Math.round(RG.at[q] * 256); sh[q + 1] = Math.round(RG.at[q + 1] * 256);
+      sh[q + 2] = Math.min(32767, Math.round(RG.at[q + 2] * 16384)); sh[q + 3] = RG.at[q + 3];
+    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, ab); gl.bufferData(gl.ARRAY_BUFFER, sh, gl.STATIC_DRAW);
+    M.rgA = { vbo: ab, n: RG.at.length / 4 };
+  }
   V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces);
   M.inlid = V.inside.lid ? facesToBuffer(V.inside.lid) : null;
   M.hood = V.inside.hood ? facesToBuffer(V.inside.hood) : null;
@@ -47137,6 +47360,7 @@ function castUnit(u) {
     /* the shadow is cast by the hull as it is drawn, leaned and pitched on the ground */
     var cfr = vehFrames(u), hm2 = cfr.hmat, tm2 = cfr.tmat;
     drawDepthGeom(B.hull, hm2);
+    rgDraw(B, hm2, u, null, true);
     var duk = mountUp(u), dk;
     drawDepthGeom(duk && B.turUp[duk] ? B.turUp[duk] : B.tur, tm2);
     if (B.crew) drawDepthGeom(B.crew, hm2);
@@ -47199,6 +47423,22 @@ function vehGround(u, dt) {
   u.gz = a0 + Math.min(lift, 4) * .6 - Math.tan(u.gp) * bx;
   u.gfX = u.x; u.gfY = u.y; u.gfA = u.facing;
 }
+/* How far each side of a hull has rolled, which is what turns its wheels and walks its
+   tracks (`rgDraw`): the ground made good along its own nose, less on the side outward of a
+   turn and more on the side inward of it, so a tank pivoting on the spot runs its two tracks
+   opposite ways. +y is the vehicle's right, and turning to a larger heading carries a point
+   on that side backward. Measured off the position the hull actually moved to rather than
+   off the speed it was asked for, so a hull held against a wall turns nothing, and one that
+   jumped (a probe, a spawn) starts again where it is. */
+function rollTick(u) {
+  if (u.rollL === undefined) { u.rollL = 0; u.rollR = 0; }
+  if (u.rlX === undefined || Math.abs(u.x - u.rlX) + Math.abs(u.y - u.rlY) > 60) { u.rlX = u.x; u.rlY = u.y; u.rlA = u.facing; return; }
+  var da = angDiff(u.rlA, u.facing), am = u.facing - da / 2;
+  var fw = (u.x - u.rlX) * Math.cos(am) + (u.y - u.rlY) * Math.sin(am), w = (u.bodyW || 12) * .85;
+  u.rollR += fw - w * da; u.rollL += fw + w * da;
+  if (Math.abs(u.rollL) > 1e6 || Math.abs(u.rollR) > 1e6) { u.rollL = 0; u.rollR = 0; }
+  u.rlX = u.x; u.rlY = u.y; u.rlA = u.facing;
+}
 /* A vehicle that has been put somewhere rather than driven there (a probe, a stage, a
    spawn) has no fit, or one from somewhere else, and is fitted where it stands. */
 function vehGroundNow(u) {
@@ -47210,17 +47450,15 @@ function vehFrames(u) {
   if (u._matT === G.t && u._mats) return u._mats;
   var M = VMODEL[vkey(u)];
   vehGroundNow(u);
-  /* the springs, which are a few tenths of a unit and not the metre and a half they were:
-     on top of a hull that now follows the ground, a bounce that size reads as the tank
-     hopping, and a heavy one hops less than a car */
-  var sway = clamp((u.sp || 0) / Math.max(1, u.def.speed), 0, 1.2) * (u.def.hp > 1200 ? .55 : u.def.hp > 500 ? .75 : 1);
-  var bounce = u.moving ? Math.sin((u.roll || 0) * 1.7) * .45 * sway : 0;
-  var rock = u.moving ? Math.sin((u.roll || 0) * 1.13) * .006 * sway : 0;
+  /* No bob and no rock. A sine on the distance driven was laid on top of the ground fit, and
+     on level ground it was the only thing moving the hull, so every vehicle on the map hopped
+     on its springs at the same beat whatever it was driving over. What moves a hull now is
+     the ground under it and nothing else, with a little squat as the speed changes. */
   var lean = u.gl + (u.immob > 0 ? -.085 * clamp(u.immob / 3, .35, 1) : 0);
-  var nose = u.gp + rock + clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
+  var nose = u.gp + clamp(((u.sp || 0) - (u.lastSp === undefined ? 0 : u.lastSp)) * .004, -.05, .05);
   u.lastSp = u.sp || 0;
   var sink = u.immob > 0 ? -1.6 : 0;
-  var hmat = m4lean(u.x, u.y, u.gz + bounce + sink, u.facing, 1, lean, nose);
+  var hmat = m4lean(u.x, u.y, u.gz + sink, u.facing, 1, lean, nose);
   /* The mount is laid in the hull's own frame, so it leans with the hull whichever way it
      is laid. Laid on its own bearing with the hull's lean and nose, as it was, a turret
      traversed over the side pitched where the hull leaned and leaned where it pitched. */
@@ -47282,7 +47520,7 @@ function drawUnits3D(v, list) {
       var vt = [dim * soot, dim * soot * .985, dim * soot * .96];
       var fr = vehFrames(u), hmat = fr.hmat, tmat = fr.tmat;
       var povHost0 = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
-      if (!(u === povHost0 && !POV.hatch && M.inside && M.inside.hide === 'hull')) drawGeom(B.hull, hmat, false, vt);
+      if (!(u === povHost0 && !POV.hatch && M.inside && M.inside.hide === 'hull')) { drawGeom(B.hull, hmat, false, vt); rgDraw(B, hmat, u, vt); }
       var cuk = mountUp(u), ak, povHost = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
       var shut = u === povHost && !POV.hatch && M.inside && M.inside.hide;
       if (shut !== 'tur') drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
@@ -47685,6 +47923,7 @@ function drawWrecks3D(v) {
     var M = VMODEL[w.vk || w.key], wz = groundZ(w.x, w.y) + (w.gdz || 0) - (w.sink || 0);
     var hm = m4lean(w.x, w.y, wz, w.a, 1, w.lean || 0, w.nose || 0);
     drawGeom(B.hull, hm, false, t);
+    rgDraw(B, hm, w, t);
     /* the skirts are the first thing off a burning tank, and what is left of the stowage
        goes with them, so a hull that lost them is drawn without them */
     if (B.skirts && w.skirts) drawGeom(B.skirts, hm, false, t);
@@ -52708,6 +52947,7 @@ function edGuide3D() {
   var B = MODELS.veh[g.key], M = VMODEL[g.key]; if (!B || !M) return;
   var gz = groundZ(g.x, g.y), c = Math.cos(g.f), s = Math.sin(g.f);
   drawGeom(B.hull, m4model(g.x, g.y, gz, g.f, 1), false, _gt);
+  rgDraw(B, m4model(g.x, g.y, gz, g.f, 1), null, _gt);
   if (B.tur) drawGeom(B.tur, m4model(g.x + c * (M.turX || 0) - s * (M.turY || 0), g.y + s * (M.turX || 0) + c * (M.turY || 0), gz + (M.mountZ || 0), g.f, 1), false, _gt);
   if (B.crew) drawGeom(B.crew, m4model(g.x, g.y, gz, g.f, 1), false, _gt);
 }
@@ -55181,7 +55421,9 @@ function edTestPlay(side, diff, mode) {
   el('tedit').classList.remove('hidden');
   fog = true;
   G.mapData = ED.data;
-  startGame(side || 'us', diff === undefined ? 1 : diff, mode || 'vp');
+  /* with the artillery switch the title screen was left on: passed nothing, a test gave the
+     opposition its guns whatever the switch said */
+  startGame(side || 'us', diff === undefined ? 1 : diff, mode || 'vp', chosenArty);
   el('overedit').classList.remove('hidden');
 }
 
