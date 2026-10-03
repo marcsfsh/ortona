@@ -1402,6 +1402,13 @@ enough for the game to end, and a game-over screen sits over everything the rest
 check wants to click; and a tank parked by its own headquarters for a minute of that is a
 tank that can be killed, which closes the periscope and takes `POV.u` with it.
 
+**And one row asks whether the tracks run.** Every model's running gear has to hold the wheels its
+drawing has and every belt a period; a Sherman driven on its own order has to roll both tracks the
+distance it drove, and turned half a radian on the spot to run them that far apart either way; and
+the same Sherman rendered with its tracks half a link on has to move thousands of pixels against
+nought between two frames of it standing, because a track that is built to run and does not looks
+exactly like one that is not built to.
+
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
 Saint-Lô, the heaviest map, and reads the vertex buffer bytes the battle made: under 160 MB on the
@@ -2452,8 +2459,11 @@ rather than snapping onto it. And they stop at 0.40 radians of pitch and 0.32 of
 `VG_L`), steeper than any ground a hull is priced onto. The height is not eased, because a hull
 that lags the ground it is on is in the air: it is the plane's height under the middle, lifted
 by six tenths of the most any sample stood above the plane, to at most four, so a hull across
-the crest of a rise stands on the crest and not in it. The bob and the sway are kept, smaller,
-and the sway falls off with weight. Everything drawn off the hull goes with it: the turret and
+the crest of a rise stands on the crest and not in it. The bob and the rock are gone: they were a
+sine on the distance driven laid on top of the fit, and on level ground they were the only thing
+moving the hull, so every vehicle on the map hopped on its springs at the same beat whatever it
+was driving over. What moves a hull now is the ground under it and a little squat as its speed
+changes. Everything drawn off the hull goes with it: the turret and
 its gun in the hull's own frame, the muzzle flash (`gunMuzzle`), the shadow, the men, and the
 wreck, which keeps the attitude it died in and the height it stood at (`w.gdz`). Measured on a Sherman driven up the Vierville draw: in ten seconds the pitch came to 0.32
 radians and the roll to the 0.32 cap across the side of the draw, neither moved by more than 0.015
@@ -2461,6 +2471,47 @@ radians in a frame at sixty frames a second, and the hull's corners stood within
 units of the ground on the sand and up the draw's floor. Across the anti-tank ditch at the draw's
 mouth, where the ground under a hull is nothing like a plane, a corner hung up to eleven units over
 the ditch and another went nine into its bank, which is a tank bridging a ditch.
+
+**And its wheels turn and its tracks run.** Every wheel and every link of track was part of the
+hull's buffer and stood still whatever the vehicle did, which at play distance is a tank sliding
+over the ground on a picture of its tracks. The running gear is taken out of the hull now
+(`rgSplit`, in `vehUpload`) into a buffer of its own (`B.rg`), drawn after the hull in the lit
+pass and the shadow pass (`rgDraw`), with a fourth attribute a vertex (`aRg`, four shorts) that
+says how it moves, and the vertex shader moves it (`RG_VS`, `rgMove`, in both the lit and the
+depth programs): a wheel turns about its axle through how far its side has rolled over its
+radius, a link going round a pulley turns about the pulley's centre, and a link on a straight run
+slides along the run, the links through what is left of the roll after the belt's own period
+(`uPitch`), so the belt is back where it started at every period with no seam to see. How far each
+side has rolled is `u.rollL`/`u.rollR` (`rollTick`, every frame in the vehicle's update), the
+ground made good along the nose less on the outside of a turn and more on the inside, so a tank
+pivoting on the spot runs its tracks opposite ways, read off where the hull went rather than the
+speed it was asked for, so a hull held against a wall turns nothing. A wreck keeps the roll it died
+with.
+
+What turns is said where it is built. A wheel builder tags its wheel faces with the axle they
+turn on (`rgW(faces, x, y, z)`, which writes the centre and a point a unit along the axle as
+`f.ax`), and only its wheel: the crank an idler swings on, a return roller's bracket and the final
+drive housing a sprocket turns on are added after the tag, because a crank going round with the
+wheel is the one thing here a photograph shows at once. A link is tagged where the belt lays it
+(`beltLink`): `f.rl` 2 round the pulley it is on, or 3 along the run, and `f.rp` the length the
+belt repeats over, which is two links on a belt that alternates them (`trackBelt`, whose link count
+is made even for it). A link on a pulley the belt barely bends round, as a road wheel under the
+bottom run, is a link on the run, because turned about the wheel through a link's length it
+swings up into the tyre. Every transform here carries `f.ax` the way it carries a vertex (`place`,
+`pitch`, `roll`, `scaleFaces`, `at`, `mrK`, and `faceOut`, `faceIn`, `welded` and `aoSplit` copy
+it), so a wheel built at the origin and placed still knows where it turns, and a spare turned off
+the vehicle's axle is found out and left in the hull. A sprocket and an idler turn at the rate the
+belt goes round them, so their teeth and rims keep pace with the links on them, and a road wheel
+or a roller at one over its own radius. And the occlusion baked into a wheel is evened out round
+its axle before it is packed (`rgSplit`), because the shadow of the guard over a tyre does not go
+round with it.
+
+Measured: every model turns the wheels its drawing has, both sides together (22 on the M4A1, 28
+on the Panzer IV with its rollers, 9 a side on the 251 counting its front wheel, 3 on the KS 750,
+none of the spares), and on all twenty belts the bottom run goes back and the top run forward. A
+Sherman driven 209.3 units rolled both tracks 209.2, and turned half a radian on the spot ran them
+6.54 and -6.54 against 6.54 wanted. The running gear is most of a tracked vehicle's vertices (86,040
+of 121,491 on the M4A1), so the attribute is packed in shorts: eight bytes a vertex of it.
 
 **The shape of a section is the shape of the ground it is on.** Three files abreast is
 right in a field and impossible in a lane a cart would fill: seven per cent of every
@@ -7797,6 +7848,16 @@ negative over eight minutes of battle, with the control being that the block tho
 live in was reached at all: without that control a misspelt counter name passes the row by
 never moving.
 
+**And it is asked at the doors as well as on the lists.** The switch took the tubes and the guns
+off the brain's own lists, the Priest and the Wespe with them, and nothing else: anything that
+reached the till by another road bought one, and the editor's TEST deployed without passing the
+switch at all, so a test always gave the opposition its guns. `aiNoArty(slot)` is whether a
+computer player is barred, and `queueUnit`, `placeWork` and the fitting routine ask it of anything
+that fires missions (`isArty`: a barrage or indirect fire), the Priest's rebuild as the M12
+included; TEST passes the title screen's switch. The gate row puts a finished motor pool and a
+full till in their hands and asks: their self-propelled howitzer is refused, their Priest is not
+rebuilt, and both go through with the switch back on, as the player's own does with it off.
+
 On the tactics card the whole pass -- the batteries, the switch and the brain that digs
 one -- is a pair difference of -70 with a standard error of 233 over eight pairs, ahead in
 five of eight, which is inside the noise and is the right place for a change that adds a
@@ -9064,6 +9125,11 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A wheel builder tags the wheel and nothing else.** `rgW` marks every face it is handed as
+  turning about the axle it is told, so a crank, a bracket or a final drive housing added to the
+  same list before the tag goes round with the wheel; add them after it. And a transform that is
+  not taught to carry `f.ax` drops it, which leaves the wheel standing still: safe, and invisible
+  until the gate's count of wheels per model says so.
 - **Undo in the editor is the whole map again, so a reference held across it is stale.** `edUndo`
   parses a snapshot into new objects, and an entity a probe or a tool kept hold of before the undo
   is no longer on the map after it: changing it changes nothing, and reading it reads the past. Find
