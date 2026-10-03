@@ -1,7 +1,7 @@
-{ "image": "shots/ref/hr_marder.png", "key": "hr_marder", "prop": "mrShow", "args": [0], "set": {"MRH.travel": 1},
-  "note": "A four-view of the Marder III Ausf. M with no scale on the sheet. Its length over everything and its width agree with the published 4.95 m and 2.15 m at 82.8 px/m, where its running gear would want 77.3; the envelope was taken. The gun is drawn level in its travel lock.",
+{ "image": "shots/ref/hr_marder_h.png", "key": "hr_marder", "prop": "mrShow", "args": [0],
+  "note": "A four-view of the Marder III Ausf. H with no scale on the sheet. Its road wheels, track centres and hull agree with the 38(t)'s 775 mm, 1.84 m and 4.61 m at 75 to 76.5 px/m along the hull, and its height and width with the published 2.51 m and 2.16 m at 78 up and across; the side and the plan take 76.5 along and 78 up and across. Its gun is drawn a tenth long against the hull and is built to the Pak 40's published length with its breech where the drawing has it. The travel lock is drawn folded in the side view and up in the front, and is built folded.",
   "views": {
-    "side":   {"nose": "left", "crop": [30, 10, 420, 225], "ppm": 82.8, "at": [0, 0, 0], "px": [233.3, 223.3], "k": 3},
-    "plan":   {"nose": "left", "crop": [30, 280, 420, 200], "ppm": 82.8, "at": [0, 0, 0], "px": [233.3, 380.85], "k": 3},
-    "front":  {"crop": [510, 10, 215, 225], "ppm": 82.8, "at": [0, 0, 0], "px": [612.5, 221.7], "k": 3},
-    "rear":   {"crop": [510, 245, 215, 240], "ppm": 82.8, "at": [0, 0, 0], "px": [613.3, 468.3], "k": 3} } }
+    "side":   {"nose": "left", "crop": [0, 10, 500, 222], "ppm": 76.5, "ppmv": 78, "at": [0, 0, 0], "px": [319.5, 226], "k": 3},
+    "plan":   {"nose": "left", "crop": [0, 232, 500, 185], "ppm": 76.5, "ppmv": 78, "at": [0, 0, 0], "px": [319.5, 323], "k": 3},
+    "front":  {"crop": [28, 410, 194, 223], "ppm": 78, "at": [0, 0, 0], "px": [126, 630], "k": 3},
+    "rear":   {"crop": [313, 410, 187, 223], "ppm": 78, "at": [0, 0, 0], "px": [409.5, 630], "k": 3} } }

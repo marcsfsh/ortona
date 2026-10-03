@@ -2498,7 +2498,7 @@ belt repeats over, which is two links on a belt that alternates them (`trackBelt
 is made even for it). A link on a pulley the belt barely bends round, as a road wheel under the
 bottom run, is a link on the run, because turned about the wheel through a link's length it
 swings up into the tyre. Every transform here carries `f.ax` the way it carries a vertex (`place`,
-`pitch`, `roll`, `scaleFaces`, `at`, `mrK`, and `faceOut`, `faceIn`, `welded` and `aoSplit` copy
+`pitch`, `roll`, `scaleFaces`, `at`, and `faceOut`, `faceIn`, `welded` and `aoSplit` copy
 it), so a wheel built at the origin and placed still knows where it turns, and a spare turned off
 the vehicle's axle is found out and left in the hull. A sprocket and an idler turn at the rate the
 belt goes round them, so their teeth and rims keep pace with the links on them, and a road wheel
@@ -6188,32 +6188,52 @@ the recuperator over the tube and the buffer under it, with a small shield behin
 cheeks. The layer turns with the gun, two loaders hold rounds and the commander at the back is the eye
 (`wsMen`), all in the 251's crewman (`hkMan`).
 
-**The Marder III Ausf. M is the 352nd's tank destroyer** (`hr_marder`, on the Kraftfahrpark's list, 330
-marks and 75 of fuel): the 7.5 cm Pak 40/3 in an open casemate over the back of the Panzer 38(t), with
-the engine moved to the middle so that the crew stand low in the hull behind the gun. It was asked for
-as a Marder IV, and there was none: the drawing that came with the request is this vehicle, four big
-road wheels on the 38(t)'s leaf springs with the casemate at the back. It is laid over a four-view of
-it (`tools/ref/hr_marder.json`) with no scale on the sheet, and the sheet is at two scales. Its length
-over everything and its width agree with the published 4.95 m and 2.15 m at 82.8 px/m, and at that
-scale its height over the frame on the casemate is 2.50 m against the published 2.48. Its running gear
-is not at that scale: the track comes out at 342 mm against the 38(t)'s 293 and the wheels at 0.66 m
-against 0.775, which would put the sheet at 77.3 px/m with the vehicle a fifteenth too big all round.
-The envelope was taken. The builders work in the drawing's pixels at the smaller scale and the whole is
-brought down to the larger by `MRH.k` (`mrK`), with the men standing at their own size in it.
+**The Marder III Ausf. H is the 352nd's tank destroyer** (`hr_marder`, on the Kraftfahrpark's list, 330
+marks and 75 of fuel): the 7.5 cm Pak 40/3 on the Panzer 38(t) Ausf. H, the turret taken off and the gun
+set in the middle of the hull behind a box of a shield that turns with it, the engine left at the back
+and the fighting compartment's walls carried back over the engine deck. It was the Ausf. M (the
+casemate at the back and the engine moved to the middle) until a player supplied a four-view of the
+Ausf. H and asked for that one. The sheet has no scale. Its road wheels, its track centres and its hull
+agree with the 38(t)'s 775 mm, 1.84 m and 4.61 m at 75 to 76.5 px/m along the hull, and its height and
+its width with the published 2.51 m and 2.16 m at 78 up and across, so the side and the plan take 76.5
+along and 78 up and across (`tools/ref/hr_marder.json`). Its gun does not agree with either: from the
+breech to the brake it is 4.05 m at that scale against the Pak 40's 3.70, and the length over it 6.4 m
+against the published 5.77. The gun is built to its own published length with its breech where the
+drawing has it, which puts the muzzle 3.3 units short of the drawing's and the length over the gun at
+6.2 m on `tools/dims.mjs`. The travel lock is drawn folded forward in the side view and standing in the
+front view; it is built folded. It is built in game units, where the Ausf. M was built at one scale and
+brought down to another.
 
-What carries it: four road wheels a side in two bogies, each pair on arms under a leaf spring, one return
-roller between them, the sprocket in front and the idler behind (`mrWheel`, `mrBogie`, `MRG`); a long
-low glacis with the driver's visor on the right and spare track laid up its left side, a plate leaning
-back behind it, and the engine deck over the middle with its hatches and the travel lock, which stands
-under the barrel when the overlay asks for it (`MRH.travel`) and lies folded on the deck in the game
-(`mrFront`); and the casemate (`mrCasemate`), the Wespe's in plan, its two front plates angled in plan
-and laid back either side of the gun's shield, the sides leaning in and rolled round the back down to
-the hull, with the frame for a tarpaulin over the top and the aerial on the left. The Pak 40
-(`mrMount`) has the double-baffle brake, the cradle over the tube and the recuperator under it forward of
-the shield, the breech ring, and the shield of two plates in a shallow V with the sight's window in the
-left. The gunner turns with it, and the loader and the commander stand down in the hull behind the
-breech, the commander on a step so that his eye, which is the one in the periscope, is over the rim
-(`mrMen`).
+What carries it: four road wheels a side in two bogies, each pair on arms under a leaf spring, two return
+rollers, the sprocket high in front and the idler behind (`mrWheel`, `mrBogie`, `mrRoller`, `MRG`); the
+tub between the tracks, the nose deck in front of the superstructure and the engine compartment behind
+it, with the 38(t)'s superstructure over the tracks to its roof in front of the engine and to the engine
+deck behind it (`mrHull`); the superstructure front with the driver's visor on the right, the round plate
+a little left of the middle and the flap on the left, the glacis laid back from it to a short roof over
+the driver, and the travel lock folded over the nose (`mrFront`); the fighting compartment's walls on top
+of the hull's sides, two plates a side with the seam over the front of the engine, leaning in a little,
+highest over the middle and down to the engine deck behind, and the rear plate leaning the other way
+(`mrWalls`, `mrWallY`, `mrTopZ`); behind it the basket on the engine deck with the struts to it, the
+intake under its perforated cover on the right, the louvres on the left and the silencer across the tail
+(`mrRear`); inside, the floor down in the hull under the gun, the engine deck behind the bulkhead and the
+two bins of rounds on it with a folding seat over each, whose back stands up over the walls (`mrInside`);
+and outside, the cleaning rods along the walls' feet, the jack, the tools and two rod aerials (`mrKit`).
+The mount (`mrMount`) turns about the middle of the hull with the gun's trunnions 3.4 units ahead of it:
+the Pak 40 with its double-baffle brake and the cradle and recuperator run forward of the shield under
+the barrel, the breech ring and the recoil guard behind it, and the shield, a front plate laid back with
+the slot the barrel elevates in, a cheek either side angled back in plan and the sides running back open
+at the rear. The gunner turns with it on a seat on the mount at the sight on the left, and the loader
+behind the breech and the commander on the left stand on the engine deck with their heads and shoulders
+over the walls (`mrMen`); the commander's eye is the one in the periscope.
+
+**Thin parts and flat ones beside a wall are left out of the bake.** The travel lock, the rods, the tools,
+the basket and the bow are `thin`, because a 2 cm tube marks a cell a third of a metre across and the
+folded lock roofed the whole nose deck over. And the nose deck and the fenders are `lit`: the grid's cells
+fall so that the one the front plate is marked in reaches over most of the deck, and the one the walls
+are marked in out over the fender strip, and both came out black. The fender is also two sweeps, the
+strip and the turned-down lip, because the end of a sweep is its outline fanned from its first corner,
+and with the lip dipping below the strip the outline was not convex and drew a wedge of plate hanging
+under the whole fender, which the bake had been hiding by turning it black.
 
 **Its numbers are the Panzer IV's gun on a light chassis with a casemate's arc.** 150 a round every 2.8
 seconds at an accuracy of .76 with 225 of penetration out to 460, on 500 hit points and 64 of plate with
@@ -6226,6 +6246,12 @@ third of the time and the M18 half the time. Over twelve runs a row it takes the
 untouched and the Rangers eleven times in twelve, as the Wirbelwind does: their bazookas open it from
 the front, and its high explosive has them first. It has a rung on the ladder after the first two Panzer
 IVs, and `aiCutLadder` counts it among the things that kill a heavy.
+
+**The Ausf. H kept them.** Its plate is the 38(t)'s 50 mm over the nose and the superstructure front and
+15 mm over the walls and the shield (`ARM`, `cm` .57, which is where the 38(t)'s hull ends on the box a
+round lands on), where the Ausf. M was 30 and 15. Over thirty-two runs head on it takes the M4A1 47 per
+cent of the time against the Ausf. M's 53 on the committed file, which is inside the noise: a 75 goes
+through 50 mm as surely as through 30.
 
 **The M29C Weasel is the 29th's tracked carrier** (`am_weasel`, out of the barracks beside the jeep, 190
 marks and 20 of fuel): Studebaker's cargo carrier in its amphibious form, a boat of a body on a running
@@ -9253,6 +9279,16 @@ shots/                         screenshot output, gitignored
   down behind a wheel), comes out with its faces culled or lit from the inside: the M12's spade drew
   black from behind. `p12Strip` lays such a plate a run at a time, each run a flat plate with its
   thickness to the left of the way the line runs.
+- **A sweep's two ends are its outline fanned from its first corner.** `m4Sweep` closes a profile with
+  that outline at either end, so a profile that is not convex draws a fan across ground it does not
+  cover: the Marder's fender, its front lip turned down below the strip, hung a wedge of plate under the
+  whole fender, and the occlusion bake had made the wedge black, so it read as a shadow until a photograph
+  in marker colours showed it. Sweep a bent plate in convex pieces.
+- **A flat surface beside a wall can share the wall's cell in the bake.** The grid's cells are four units
+  and fall where the model's own extent puts them, and a vertex is marched from a point lifted a cell off
+  its surface: a deck four units in front of a plate, or a fender strip under a wall, lifts into the cell
+  the plate is marked in and comes back shut in. The Marder's nose deck and fenders read 0.05 and drew
+  black. Read the bake (`aoGridOf`, `aoVert`) before blaming the light, and leave such a surface `lit`.
 - **A belt runs through the middle of its track.** A pulley's radius is to the track's middle line, so
   a road wheel's centre stands its radius and the whole of the track's thickness over the ground (`zW`
   is `R + T`), and the sprocket and the idler are given the radius of the track's middle round them.
