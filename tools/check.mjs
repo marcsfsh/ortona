@@ -6729,7 +6729,7 @@ for (const device of TARGETS) {
     }
     /* the wheels each model turns, both sides together: road wheels, return rollers, the
        sprocket and the idler, and on a wheeled car its wheels and no spare */
-    const want = { am_sher: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 14,
+    const want = { am_sher: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 16,
                    am_weasel: 26, am_stuart: 18, ger_kt: 22, ger_maus: 28, ger_tig: 20, ger_stug: 22, am_jeep: 4,
                    am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28 };
     const bad = [];

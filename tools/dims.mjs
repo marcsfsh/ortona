@@ -86,11 +86,12 @@ const REAL = {
   hr_wespe:  { name: 'Wespe (Sd.Kfz. 124)', len: 4.81,  gun: 4.81,   wid: 2.28,  hgt: 2.30,
                clear: 0.34 },   /* 4.81 m long, the leFH 18/2's muzzle brake short of the nose, 2.28 m across
                the fenders and 2.30 m to the top of the casemate */
-  hr_marder: { name: 'Marder III Ausf. M',  len: 4.95,  gun: 4.95,   wid: 2.15,  hgt: 2.48,
-               clear: 0.40 },   /* 4.95 m over everything, the Pak 40's muzzle short of the nose, 2.15 m wide and
-               2.48 m high over the frame on the casemate. The four-view it is laid over (tools/ref/hr_marder.json)
-               agrees with the length and the width at one scale and its running gear with the 38(t)'s at another;
-               the envelope was taken */
+  hr_marder: { name: 'Marder III Ausf. H',  len: 4.61,  gun: 5.77,   wid: 2.16,  hgt: 2.51,
+               clear: 0.40 },   /* the 38(t)'s 4.61 m of hull, 5.77 m over the gun, 2.16 m wide and 2.51 m to the
+               top of the shield. The four-view it is laid over (tools/ref/hr_marder.json) puts the track 4.66 m from
+               the sprocket to the tail at the scale of its running gear, which with the towing eyes reads 4.73, and
+               draws its gun a tenth long: built to the Pak 40's published length with its breech where the drawing
+               has it, the length over the gun reads 6.2 m */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -199,7 +200,7 @@ const PROBE = {
   am_m12:    { topZ: 0 },   /* the gun is laid up in the game and is not part of the height, which is not measured */
   hr_wespe:  { topZ: 4.5, tailX: -28.7 },   /* topZ holds the tube, laid up as the game lays it, out of the
                casemate's height, and tailX the silencer across the tail out of the length */
-  hr_marder: { hullZ: 29.5 },   /* hullZ holds the aerial out and keeps the frame over the casemate in */
+  hr_marder: { hullZ: 30.0 },   /* hullZ holds the two aerials out of the height, which is to the shield */
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },
