@@ -5,7 +5,7 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -181,7 +181,9 @@ lids (`HATCHES`) shut or standing open, on the mount unless it is a casemate: th
 first thing on a drawing the tool could not draw, and a hatch is most of what a plan shows of a turret.
 A prop builder that draws the vehicle in its game attitude takes `set`, a map of dotted globals to
 values put in before it is built (`"set": { "P7.el": 0 }`), because a howitzer laid up as the game lays
-it is not the tube level on a drawing of it travelling.
+it is not the tube level on a drawing of it travelling. What is laid up and down on a mount (`VMODEL.elv`,
+the Calliope's gun and rack, and the links between them) is drawn at the elevation the spec names in
+`el`, nought by default, through the page's own `clPose`.
 
 **A man can be laid over a photograph the same way** (`"man": "gi_rifle"` in place of `key`,
 `tools/ref/gi_rifle.json`). A photograph of a reenactor is not a drawing: no two figures on
@@ -1355,7 +1357,13 @@ and called the M12 Gun Motor Carriage, reach further than the Priest and travers
 asked to lay 1.2 radians off its nose, has to stop at the edge of its arc, and the Weasel has to take
 one squad and refuse a second. The rounds are counted off the mission as they leave the tube with the
 bursts switched off, because a mission that lands near a headquarters on the beach digs holes and
-cuts craft that every row below would stand on.
+cuts craft that every row below would stand on. Then the Calliope: the tank yard queues it, its gun,
+its rack and the three links between them are built with both rockets' buffers, and laid on a point
+six hundred off it has to be laid up to the elevation the range asks for before the first rocket
+leaves, fire all thirty of the mission with every one of them bent onto its mark, each leaving its
+tube along the tube from more than forty units up, leave thirty in the rack, empty it on a second
+mission and start the reload, refuse smoke and be called the M4A1 Calliope. And the Nebelwerfer has to
+fire its six as rockets.
 
 **And the destruction rows load Ortona to run on**, because a terrace is what they are
 about and the Gothic Line is a valley floor with two farms on it. The first puts a section
@@ -6164,6 +6172,82 @@ carriage on a seat on its frame, a loader stands on the platform beside the bree
 floor with a round, and the chief standing at the front of the compartment is the eye (`p12Men`,
 `VIN.am_m12`).
 
+**The Calliope is the 29th's rocket artillery** (`am_t34`, made at the tank yard, 460 marks and 110 of fuel):
+the T34 rocket launcher on the M4A1, sixty tubes for the 4.5-inch M8 rocket in a rack over the turret,
+laid up and down on the 75 mm, whose barrel the elevating rod is clamped to, so the gun does not fire; the
+coaxial .30 still does. It is laid over a four-view of a Calliope (`tools/ref/am_t34.json`). The sheet has
+no scale: the side agrees with the M4A1's running gear at 77.8 px/m (the bogies 112.6 px apart for 57 in,
+the wheels of each 65 px for 33 in), the front with the 83 in between the track centres at 76.5, and the
+rear, drawn wider than it is tall as the M4A1's own sheet's rear is, at 79.5. At those scales the M4A1 the
+game already has lies over it to a line width in all four views, hull, running gear and turret, so the
+tank is that one. The sheet draws a welded M4 with an appliqué plate over the ammunition on the left
+sponson, which the cast hulls had welded on in the same place, and a stowage bin on the engine deck; both
+are added (`clPlate`, `clBin`), and nothing else of the tank is new.
+
+The launcher is three parts and three links. Two side arms stand a hand outboard of the turret on a
+bracket at its foot and a strut at its roof, up to the pivot the rack swings on, with an equilibrator
+spring forward of each from a bracket on the roof's edge to a hook off the rack (`clArms`, part of the
+turret). The rack (`clRack`) is thirty-six tubes in two rows across the top and twenty-four under them in
+two groups of six by two, each tube with a rocket's tail in its breech, clamped by two bands round both
+banks, with the cross beam it pivots on through the gap between the banks a third of the way from the
+back and a lug under it for the rod. And the gun (the M34's rotor, collar and tube, which `m4Turret`
+hands out when it is passed `gunTo`) carries a lug clamped over its collar (`clClamp`). The rack is 2.8 to
+2.9 m across in the two end views and 2.56 m in the plan, which draws it no wider than the hull; the end
+views were taken. Both end views draw the rack and the bin 1.3 to 1.5 units lower than the side view does
+while the hull and the turret agree in all three, and the side view's heights were taken. On
+`tools/dims.mjs` it reads the M4A1's figures and 4.45 m to the top of the rack, which is the drawing's.
+
+**A mount can have parts that are laid up and down on it** (`VMODEL.elv`), each pitched about its own pin
+(`elvP`, `[x, z, offset]` in the mount's frame) by how far the gunner has laid it (`u.el`), and links
+between them (`lk`, a rod or a spring from a point on one part to a point on another), built a unit long
+along x and stretched between their two pins as they move (`lkMat`). `elvDraw` draws them in the live
+pass, the shadow pass and on the wreck, and `clPose` hands them back as faces at an elevation for the
+overlay and the dimensions card. The rack rides three degrees above the gun (`CLG.el0`, which is how the
+drawing stands it at rest), the rod is drawn from the lug on the gun to the lug under the rack, and the
+springs open out as the rack goes up. The gun and the rack are baked with the vehicle where they stand at
+rest: baked on its own, the rack read its own bottom half as a hull's belly and took the road's dust,
+and came out a pale khaki over an olive hull.
+
+**It fires only on a mission, half the rack at a time** (`rack` 60, `barrage.rounds` 30, `reload` 80).
+`barrageTick` lays the turret on the middle of the circle to within `layTol` .06, because a rocket leaves
+along its tube, and then lays the gun and the rack up to the range (`u.elWant`, from a few degrees close in
+to twenty-five at its reach, eased at .32 radians a second in `updateModels` and back down when the mission
+ends), and a rocket goes only once the rack is there. Each rocket out of the rack is a tube empty
+(`u.rack`); when the sixty are gone the mission ends whatever was asked of it and the crew reload by hand,
+and the rack is full again when the reload is done. Thirty rockets of 95 over a burst of 52 every .16
+seconds go into a circle of 170 out to 900, with a round-to-round scatter of 32, and each digs a hole
+seven tenths the size its burst would (`w.dig`, read by `explode`): a rocket's thin-walled warhead bursts
+on the surface, and at full size thirty of them to a mission would dig a battle's whole allowance of
+holes (`CRATER_CAP`) in four loads. On a phone, whose floor is thirteen, they do not open the ground at
+all. Nothing it throws is
+smoke (`barrage.smoke: 0`, which `smokeOf` reads), so the K card is not offered, a smoke order on the
+board passes it by and the brain's smoke screen asks another tube. `fireAt` lays an indirect vehicle on
+a mission against the middle of the circle rather than against each round's own point, because laid
+against the point a gun laid that tightly refused most of its rounds. The brain buys one, after the
+75 mm GMC (`LADDER`), and the switch that takes the opposition's artillery away takes it off the ladder.
+
+**A rocket looks like a rocket.** A rocket was a shell: a dark speck on a sine arc, which is a bomb.
+`fireAt` asks `rkLaunch` where a rocket leaves from and which way it points: the next tube of the
+Calliope's rack in the order the rack fires them (`clTube`, which strides across the rack so a ripple
+walks over the whole of it), laid up on the gun in the hull's own frame, or the next of the Nebelwerfer's
+six as `nebelwerferModel` lays them (`GUNMODEL.ger_neb.rk`). `rkShot` sizes the arc so the rocket leaves
+climbing at the angle its tube is laid at, and bends its track in plan from the line of the tube onto its
+mark (`s.cx`, `s.cy`, the control point of a quadratic that `shotPoint` and `updateShots` read), so a
+ripple fans out off the rack along its tubes and does not leave at whatever angles the points in the
+beaten zone happen to lie at. Its height is reckoned off a line from the ground it left to the ground it
+lands on (`s.g0`, `s.g1`) rather than off the ground under it: reckoned off the ground under it, a rocket
+fired at a ridge climbed with the ridge as well, steeper than its tube was ever laid.
+
+In the air (`RKT`, `rocketFaces`) the 4.5-inch M8 is drawn as itself, ogive, band, motor, nozzle and six
+fins, and the 15 cm Wurfgranate 41 with its ring of nozzles two thirds of the way back from its nose,
+spinning; each is one model a rocket (`MODELS.rkt`, drawn by `rocketDraw` in the lit pass along its own
+track). Its motor burns out of its tail, or out of the ring, for the first second of the flight, a hot
+core in a flame twice its length with a glow round it, and it lays smoke while it burns that hangs where
+it was laid, lightens and spreads for three seconds (`rocketTrail`, puffs every five units on a desktop
+and ten on a phone, worked out off the track each frame rather than spawned, so they cost nothing of
+the effects cap). And the launch is the flash at the mouth of the tube, the back blast out of its
+breech, and the smoke and dust that throws behind the launcher (`rkLaunchFx`).
+
 **The Wespe is the 352nd's self-propelled howitzer** (`hr_wespe`, on the Kraftfahrpark's list beside the
 leFH 18, 440 marks and 80 of fuel): the 10.5 cm leFH 18/2 in an open casemate over the back of the
 Panzer II's chassis, lengthened, with the engine moved forward to the middle. Its numbers are the
@@ -7182,7 +7266,7 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 0 | Regimental Headquarters (`us_hq`) | Gefechtsstand (`ger_hq`) | the engineers or pioneers, the rifle or grenadier squad, the jeep or KS 750 |
 | 1 | Barracks (`us_bar`, 200) | Kaserne (`ger_qtr`, 200) | Rangers / Knight's Cross Holders, the mortar, the machine gun team, the jeep and the Weasel / KS 750, the 57 / Pak 38, and the Gebirgsflak |
 | 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, M7 Priest, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, Marder III, Wespe, leFH 18, Nebelwerfer |
-| 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
+| 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, Calliope, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
 A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
@@ -9151,6 +9235,14 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A part baked on its own reads its own bottom half as a hull's belly.** The bake's dust is laid by
+  height off the extent of whatever is in the bake, so a part baked alone (the Calliope's rack) took the
+  road's dust over the lower half of itself and came out pale khaki over an olive hull. Bake a part that
+  stands on a vehicle with the vehicle.
+- **A shell's height follows the ground under it.** `shotPoint` adds `groundZ` at every point of the
+  track, which is right for a shell's high arc and wrong for anything meant to leave along a line: a
+  rocket over a rise climbed with the rise. A rocket's height is reckoned off a straight line between the
+  two grounds (`s.g0`, `s.g1`).
 - **A wheel builder tags the wheel and nothing else.** `rgW` marks every face it is handed as
   turning about the axle it is told, so a crank, a bracket or a final drive housing added to the
   same list before the tag goes round with the wheel; add them after it. And a transform that is

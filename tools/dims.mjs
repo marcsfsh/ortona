@@ -51,6 +51,13 @@ const REAL = {
                tracks to the turned-down ends of the rear mudguards. The body is the cast hull over the
                sponsons, 2.65 m in the front view and 2.63 in the plan; the roof is the width across the
                rounded shoulders a hand under the top of the hull, 2.49 m in the front view */
+  am_t34:    { name: 'M4A1 Calliope (T34)', len: 5.84,  gun: 5.84,   wid: 2.62,  hgt: 4.45,
+               body: 2.62, bodyZ: 1.37, roof: 2.49, clear: 0.43 },   /* the M4A1's hull, with the T34 over
+               it. The rack's top stands 4.45 m up in the side view of the four-view it is laid over
+               (tools/ref/am_t34.json), at rest; no published figure was found, so the height is the
+               drawing's. The width is the hull's, which the card measures: the rack is 2.8 to 2.9 m across
+               in the end views and the card does not measure a mount's width. Neither the 75 nor the rack
+               reaches past the front of the tracks */
   am_e8:     { name: 'M4A3E8 (76 mm)',      len: 6.27,  gun: 7.54,   wid: 2.99,  hgt: 2.97,
                body: 2.62, bodyZ: 1.54, roof: 2.62, clear: 0.44 },   /* the Easy Eight an M4A1 is rebuilt as:
                20 ft 7 in long over the fenders, 24 ft 8 in with the 76 mm forward, 9 ft 10 in over the
@@ -191,6 +198,8 @@ const PROBE = {
   am_sher:   { bodyZ: 16.0, roofZ: 22.0, xLo: -5.0, xHi: -1.0, straddle: true, topZ: 9.3 },   /* the slice is
                taken under the turret, where the roof is flat and nothing is strapped to the sides; topZ
                holds the periscope heads out of a height measured to the top of the hatch */
+  am_t34:    { bodyZ: 16.0, roofZ: 22.0, xLo: -5.0, xHi: -1.0, straddle: true, topZ: 30 },   /* the M4A1's
+               slice; topZ lets the rack, which stands 27 units over the hull roof, into the height */
   am_m26:    { bodyZ: 16.8, roofZ: 18.7, xLo: 1.0, xHi: 4.0, straddle: true, topZ: 13.8 },   /* the slice is taken
                through the second bin on each fender; topZ holds the lid's periscope and the aerial out */
   am_m18:    { bodyZ: 13.65, roofZ: 17.15, xLo: -5.0, xHi: -1.0, topZ: 8.45 },   /* the slices are
@@ -264,6 +273,9 @@ const measured = await page.evaluate(probe => {
        puts it (`barUp`), because a published figure over the gun is a figure over the gun fitted */
     let V = window.VMODEL[pr0.of || k];
     if (pr0.of) V = Object.assign({}, V, { tur: V.turUp[pr0.up] }, (V.barUp && V.barUp[pr0.up]) || {});
+    /* what is laid up and down on the mount (the Calliope's gun and rack) is measured with it,
+       at rest */
+    if (V.elv) V = Object.assign({}, V, { tur: V.tur.concat(window.clPose(V, 0)) });
     const tx = V.turX || 0;
     const hullCap = pr0.hullZ === undefined ? 1e9 : pr0.hullZ;
     let hx0 = 1e9, hx1 = -1e9, hy = 0, hz = 0;

@@ -5656,6 +5656,57 @@ for (const device of TARGETS) {
     out.m7 = mission('us', 'am_m7');
     out.m12 = mission('us', 'am_m7', 'm12');
     out.ws = mission('ger', 'hr_wespe');
+    /* the Calliope: out of the tank yard, its gun and rack and the rod and springs between them
+       built, laid up to the mission's range before a rocket leaves, thirty rockets to a mission,
+       each leaving its tube along it and bending onto its mark, the rack half empty after one
+       mission and empty after two with the reload begun, and smoke refused */
+    const ty3 = W.spawnBuilding('us', 'us_tank', hq.x - 240, hq.y + 120, true);
+    out.calQ = q(ty3, 'am_t34');
+    const CB = W.MODELS.veh.am_t34;
+    out.calBufs = !!(CB && CB.elv && CB.elv.gun && CB.elv.rack && CB.lk && CB.lk.length === 3 && W.MODELS.rkt && W.MODELS.rkt.m8 && W.MODELS.rkt.wgr);
+    (function () {
+      const sp = W.nearestFree(hq.x + 260, hq.y), u = W.spawnUnit('us', 'am_t34', sp.x, sp.y, 0);
+      u.setup = 0;
+      let a = Math.PI / 2, tx = u.x + Math.cos(a) * 600, ty = u.y + Math.sin(a) * 600;
+      if (ty < 80 || ty > W.WORLD.h - 80) { a = -Math.PI / 2; tx = u.x; ty = u.y - 600; }
+      out.calOk = !!W.orderBarrage(u, tx, ty); out.calN = u.barrage ? u.barrage.left : 0;
+      let elAt = -1, rk = 0, bent = 0, off = 0, z0 = 1e9;
+      const seen = new Set(), tubes = [], rl = W.rkLaunch;
+      /* the tube each rocket left, as the game laid it, hull's own lie on the sand and all */
+      W.rkLaunch = function (v) { const L = rl(v); if (L && v === u) tubes.push(L); return L; };
+      for (let i = 0; i < 30 * 40 && u.barrage; i++) {
+        W.updateUnit(u, dt);
+        G.shots.forEach(s => {
+          if (s.rk !== 'm8' || s.owner !== u || seen.has(s)) return;
+          seen.add(s); rk++; if (s.cx !== undefined) bent++; z0 = Math.min(z0, s.z0);
+          if (elAt < 0) elAt = +(u.el || 0).toFixed(3);
+          /* the rocket's first step against the tube it left: the climb and the bearing */
+          const A = W.rocketAt(s), L = Math.atan2(A.dz, Math.hypot(A.dx, A.dy)), T = tubes.shift();
+          off = T ? Math.max(off, Math.abs(L - T.el), Math.abs(W.angDiff(Math.atan2(A.dy, A.dx), T.a))) : 9;
+        });
+        W.updateShots(dt); G.t += dt;
+      }
+      W.rkLaunch = rl;
+      out.calRk = rk; out.calBent = bent; out.calEl = elAt; out.calWant = +(u.elWant || 0).toFixed(3); out.calOff = +off.toFixed(3);
+      out.calZ0 = +z0.toFixed(1); out.calRack1 = u.rack;
+      W.orderBarrage(u, tx, ty);
+      for (let i = 0; i < 30 * 40 && u.barrage; i++) { W.updateUnit(u, dt); W.updateShots(dt); G.t += dt; }
+      out.calRack2 = u.rack; out.calReload = +u.reload.toFixed(0);
+      out.calSmoke = W.orderBarrage(u, tx, ty, true) ? 'TAKEN' : 'refused';
+      out.calName = W.nameOf(u);
+    })();
+    /* and the Nebelwerfer's are rockets as well */
+    (function () {
+      const sp = W.nearestFree(gq.x - 260, gq.y), u = W.spawnUnit('ger', 'ger_neb', sp.x, sp.y, Math.PI);
+      u.setup = 0; u.packed = false;
+      W.orderBarrage(u, u.x, u.y + (u.y > W.WORLD.h / 2 ? -500 : 500));
+      let wgr = 0;
+      for (let i = 0; i < 30 * 20 && u.barrage; i++) {
+        W.updateUnit(u, dt); G.shots.forEach(s => { if (s.owner === u && s.rk === 'wgr' && s.t === 0) wgr++; }); W.updateShots(dt); G.t += dt;
+      }
+      out.nebRk = wgr;
+    })();
+    W.killBuilding(ty3);
     W.explode = boom;
     /* the Marder asked to lay further round than its casemate goes */
     const mr = W.spawnUnit('ger', 'hr_marder', gq.x - 140, gq.y + 220, 0);
@@ -5677,12 +5728,21 @@ for (const device of TARGETS) {
      sp5.m12.ok && sp5.m12.n === 6 && sp5.m12.left === 0 && sp5.m12.vk === 'am_m12' && sp5.m12.name === 'M12 Gun Motor Carriage' &&
      sp5.m12.reach > sp5.m7.reach && sp5.m12.arc < sp5.m7.arc &&
      sp5.ws.ok && sp5.ws.n === 8 && sp5.ws.left === 0 && sp5.ws.turn > .5 &&
-     Math.abs(Math.abs(sp5.mrTur) - sp5.mrArc / 2) < .03 && sp5.wz1 && !sp5.wz2,
+     Math.abs(Math.abs(sp5.mrTur) - sp5.mrArc / 2) < .03 && sp5.wz1 && !sp5.wz2 &&
+     sp5.calQ === 'am_t34' && sp5.calBufs && sp5.calOk && sp5.calN === 30 && sp5.calRk === 30 && sp5.calBent === 30 &&
+     sp5.calEl > .15 && Math.abs(sp5.calEl - sp5.calWant) < .025 && sp5.calOff < .08 && sp5.calZ0 > 40 &&
+     sp5.calRack1 === 30 && sp5.calRack2 === 0 && sp5.calReload > 70 && sp5.calSmoke === 'refused' && sp5.calName === 'M4A1 Calliope' &&
+     sp5.nebRk >= 6,
      `queued ${sp5.q}; buffers built: ${sp5.bufs}; the Priest laid ${sp5.m7.ok ? '' : 'NOT '}and fired ${sp5.m7.n - sp5.m7.left} of ` +
      `${sp5.m7.n}, turning ${sp5.m7.turn}; rebuilt it is ${sp5.m12.name} drawn as ${sp5.m12.vk}, reaching ${sp5.m12.reach} against ` +
      `${sp5.m7.reach} on an arc of ${sp5.m12.arc} against ${sp5.m7.arc}, and fired ${sp5.m12.n - sp5.m12.left} of ${sp5.m12.n}; the Wespe ` +
      `fired ${sp5.ws.n - sp5.ws.left} of ${sp5.ws.n}, turning ${sp5.ws.turn}; the Marder asked for 1.2 laid ${sp5.mrTur} on an arc of ` +
-     `${sp5.mrArc}; the Weasel ${sp5.wz1 ? 'took' : 'REFUSED'} a squad and ${sp5.wz2 ? 'TOOK' : 'refused'} a second`);
+     `${sp5.mrArc}; the Weasel ${sp5.wz1 ? 'took' : 'REFUSED'} a squad and ${sp5.wz2 ? 'TOOK' : 'refused'} a second; the tank yard ` +
+     `queued ${sp5.calQ}, its buffers ${sp5.calBufs ? 'built' : 'MISSING'}; the ${sp5.calName} laid ${sp5.calOk ? '' : 'NOT '}a mission of ` +
+     `${sp5.calN}, the first rocket away at ${sp5.calEl} of elevation against ${sp5.calWant} wanted, ${sp5.calRk} rockets of which ` +
+     `${sp5.calBent} bent onto their marks, the worst leaving ${sp5.calOff} off its tube, from ${sp5.calZ0} up; ${sp5.calRack1} left in ` +
+     `the rack after one mission and ${sp5.calRack2} after two, reloading for ${sp5.calReload} s, smoke ${sp5.calSmoke}; the ` +
+     `Nebelwerfer fired ${sp5.nebRk} rockets as rockets`);
 
   /* --- The engineers. The Americans' engineer squad: the headquarters makes it and queues
      it, the Allied side opens the battle with one, its three men are the three engineer
@@ -6729,7 +6789,7 @@ for (const device of TARGETS) {
     }
     /* the wheels each model turns, both sides together: road wheels, return rollers, the
        sprocket and the idler, and on a wheeled car its wheels and no spare */
-    const want = { am_sher: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 16,
+    const want = { am_sher: 22, am_t34: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 16,
                    am_weasel: 26, am_stuart: 18, ger_kt: 22, ger_maus: 28, ger_tig: 20, ger_stug: 22, am_jeep: 4,
                    am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28 };
     const bad = [];
@@ -6774,7 +6834,7 @@ for (const device of TARGETS) {
              w: +(u.bodyW * .85 * .5).toFixed(2), ctrl, moved };
   }, { sx: bodies.sx, sy: bodies.sy });
   ok('tracks and wheels move with the vehicle',
-     !rolling.bad.length && rolling.belts === 20 && rolling.drove > 60 &&
+     !rolling.bad.length && rolling.belts === 21 && rolling.drove > 60 &&
      Math.abs(rolling.L1 - rolling.drove) < rolling.drove * .12 && Math.abs(rolling.R1 - rolling.drove) < rolling.drove * .12 &&
      Math.abs(rolling.pl - rolling.w) < .05 && Math.abs(rolling.pr + rolling.w) < .05 &&
      rolling.moved > 1500 && rolling.moved > rolling.ctrl * 20,

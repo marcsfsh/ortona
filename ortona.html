@@ -1844,6 +1844,23 @@ var UNITS = {
     w: { mm: 128, range: 420, dmg: 125, rof: 2.6, acc: .76, sup: .045, pen: 250, aoe: 38, shell: 1 },
     desc: 'The tank destroyer Buick built light enough to run at fifty-five miles an hour: the long 76 mm in an open turret on torsion bars, with a .50 at the back of the turret. It opens a Panzer IV from the front and a Panther from the flank from as far off as either can answer, and it is faster than anything else on tracks; half an inch of plate keeps out rifle fire and splinters and little else, and a burst over the open turret finds the crew.'
   },
+  /* The Calliope: the M4A1 with the T34 rocket launcher over its turret, sixty tubes of the
+     4.5-inch M8, which the tank yard fields as the 29th's rocket artillery. The rack is laid up
+     on the 75, whose barrel the elevating rod is clamped to, so the gun does not fire; the
+     coaxial .30 still does. It fires only on a mission (`barrageOnly`): thirty rockets to a
+     mission, half the rack, rippled off in five seconds into a circle as wide as a flag's, and
+     when the sixty are gone the crew reload the tubes by hand, a minute and a third of it
+     (`rack`, `reload`). Nothing it throws is smoke. The plate and the hit points are the
+     M4A1's, and laid on a mission the turret is brought round to within a few degrees, because
+     a rocket leaves along its tube (`layTol`). */
+  am_t34: {
+    side: 'us', nat: 'usa', name: 'M4A1 Calliope', short: 'CALLIOPE', cat: 'veh', hk: 'C', upgrades: [],
+    hp: 760, armor: 118, speed: 76, sight: 300, pop: 14, cost: { mp: 460, fu: 110 }, time: 42,
+    req: 'us_tank', sec: ['coax'], indirect: 1, barrageOnly: 1, setup: 2.0, layTol: .06, rack: 60, reload: 80,
+    barrage: { range: 900, r: 170, sp: 32, rof: .16, rounds: 30, smoke: 0 },
+    w: { range: 900, dmg: 95, rof: 3.4, acc: .3, sup: .2, pen: 25, aoe: 52, shell: 1, rocket: 1, rkt: 'm8', dig: .7 },
+    desc: 'The T34 rocket launcher on an M4A1: sixty tubes of the 4.5-inch rocket in a rack over the turret, laid up and down on the 75, which therefore does not fire. Thirty rockets go on a mission in five seconds, into a circle as wide as a flag; when the sixty are gone the crew reload the tubes by hand, which takes the better part of a minute and a half. The tank under it is a Sherman, with its plate, its engine and its coaxial .30.'
+  },
   /* The M7 Priest: the field artillery's 105 mm M2A1 in an open fighting compartment on the M3
      medium tank's chassis, which is what the armored field artillery battalions fired. It fires
      only on a mission, as the towed 105 does (`barrageOnly`), the same shell to the same reach;
@@ -2002,7 +2019,7 @@ var UNITS = {
     reload: 44, traverse: .34, layTol: .18,
     gunAt: 8.2, gunMuz: [12.4, 19.6], gunGrip: [-3.20, 4.60, 5.40],
     barrage: { range: 820, r: 130, sp: 26, rof: 0.95, rounds: 6 },
-    w: { range: 820, dmg: 150, rof: 3.4, acc: .30, sup: .20, pen: 22, aoe: 72, shell: 1, rocket: 1 },
+    w: { range: 820, dmg: 150, rof: 3.4, acc: .30, sup: .20, pen: 22, aoe: 72, shell: 1, rocket: 1, rkt: 'wgr' },
     desc: 'Six tubes of fifteen-centimetre rocket on a towed carriage, fired as a ripple and then reloaded by hand. It reaches as far as the leFH 18 and scatters far wider: six bursts into a circle a hundred and thirty across, and then three quarters of a minute of nothing at all while the crew load the next six.'
   },
   /* The German heavy, and the same four rules as the American battery -- see `am_240`,
@@ -2308,8 +2325,8 @@ var BUILDINGS = {
             cost: { mp: 240, fu: 30 }, time: 32, makes: ['am_m8', 'am_m3', 'am_m16', 'am_gmc', 'am_m7', 'us_how', 'us_t8'],
             desc: 'A canvas maintenance shelter, a hoist and the fuel dump. Needs the Barracks. Raises the M8, the half-track, the M16, the 75 mm GMC, the M7 Priest, the 105 mm howitzer and the 3-inch gun.' },
   us_tank: { side: 'us', name: 'Tank Yard', short: 'TANK YARD', w: 156, h: 124, hp: 2000, hk: '3', need: 'us_mot',
-             cost: { mp: 300, fu: 60 }, time: 40, makes: ['am_stuart', 'am_sher', 'am_e8', 'am_m18', 'am_m26'],
-             desc: 'A canvas tank hangar on hoops with a gantry over the bay, spare track and road wheels. Needs the Motor Pool. Raises the Stuart, the M4A1, the Easy Eight and the Pershing.' },
+             cost: { mp: 300, fu: 60 }, time: 40, makes: ['am_stuart', 'am_sher', 'am_e8', 'am_t34', 'am_m18', 'am_m26'],
+             desc: 'A canvas tank hangar on hoops with a gantry over the bay, spare track and road wheels. Needs the Motor Pool. Raises the Stuart, the M4A1, the Easy Eight, the Calliope, the Hellcat and the Pershing.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren', 'hr_ks750'] },
   ger_qtr: { side: 'ger', name: 'Kaserne', short: 'KASERNE', w: 116, h: 96, hp: 1500, hk: '1',
@@ -7195,6 +7212,7 @@ function spawnUnit(slot, key, x, y, facing) {
   };
   if (d.cat === 'veh') {
     u.hp = d.hp; u.maxhp = d.hp; u.armor = d.armor; u.turret = u.facing; u.up = {}; u.cdSec = {};
+    if (d.rack) { u.rack = d.rack; u.el = 0; }
   } else {
     u.models = [];
     for (var i = 0; i < d.models; i++) {
@@ -8068,7 +8086,7 @@ function barrageWhy(u, wx, wy) {
    what it was, a slowing, because a burning hull is a column and not a curtain. */
 function smokeOf(def) {
   var b = def && def.barrage;
-  if (!b) return null;
+  if (!b || b.smoke === 0) return null;
   return { r: clamp(38 + b.r * .5, 50, 118), dur: clamp(14 + b.r * .27, 22, 62), rounds: Math.max(2, Math.ceil(b.rounds / 2)) };
 }
 function smokeAt(sm) {
@@ -8114,6 +8132,7 @@ function updateSmoke(dt) {
 }
 function orderBarrage(u, wx, wy, smoke) {
   var B = u.def.barrage, S = smoke ? smokeOf(u.def) : null;
+  if (smoke && !S) return false;
   if (barrageWhy(u, wx, wy)) return false;
   clearOrder(u); u.order = 'hold';
   u.barrage = { x: wx, y: wy, r: B.r, left: S ? S.rounds : B.rounds, t: 0, smoke: !!S };
@@ -8164,6 +8183,13 @@ function barrageTick(u, dt) {
       u.facing += clamp(angDiff(u.facing, want), -vp, vp);
     }
     if (Math.abs(angDiff(u.turret, want)) > (u.def.layTol || .35)) return;
+    /* and a rack of rockets is laid up to the range as well: a rocket leaves along its tube
+       and flies from there, so the gun the rack rides on goes up further the further off the
+       mission is, from a few degrees close in to twenty-five at its reach */
+    if (u.def.rack) {
+      u.elWant = clamp(.05 + .33 * Math.hypot(b.x - u.x, b.y - u.y) / barrageRange(u), .04, .38);
+      if (Math.abs((u.el || 0) - u.elWant) > .02) return;
+    }
   } else {
     /* how fast the piece comes round, and how close it has to be before it will fire. A
        mortar's bipod is picked up and put down; a battery gun is traversed by manhandling
@@ -8183,13 +8209,16 @@ function barrageTick(u, dt) {
   if (u.cd <= 0) return;
   /* fireAt sets the cooldown from the weapon's own rate; a mission works faster */
   u.cd *= u.def.barrage.rof / u.def.w.rof;
+  /* a rocket out of the rack is a tube empty until the crew reload it; the last one ends the
+     mission whatever was asked of it */
+  if (u.def.rack && --u.rack <= 0) { u.barrage = null; u.reload = u.def.reload; return; }
   if (--b.left <= 0) {
     u.barrage = null;
     /* a rack of tubes is reloaded by hand, and that clock is the whole of what makes a
        projector a different weapon from a howitzer rather than a bigger one. It is its
        own field rather than the cooldown, because the cooldown is a second between
        rockets of the same ripple and the label would read RELOADING through all six. */
-    if (u.def.reload) u.reload = u.def.reload;
+    if (u.def.reload && !u.def.rack) u.reload = u.def.reload;
   }
 }
 function orderStop(u) {
@@ -8963,6 +8992,12 @@ function updateModels(u, dt) {
       if (arcOf(u)) u.turret = u.facing + clamp(angDiff(u.facing, u.turret), -arcOf(u) / 2, arcOf(u) / 2);
     }
     u.recoil = Math.max(0, (u.recoil || 0) - dt * 2.6);
+    /* the gun a Calliope's rack is laid up on: up to the elevation a mission wants while one
+       stands, and back down to the travelling position when it does not */
+    if (u.def.rack) {
+      var ew = (u.barrage || (u.target && !u.target.dead)) && u.elWant !== undefined ? u.elWant : 0, er = .32 * dt;
+      u.el = (u.el || 0) + clamp(ew - (u.el || 0), -er, er);
+    }
     /* and its wheels and its tracks go round by as far as each side has rolled */
     rollTick(u);
     /* and it lies on the ground it is crossing */
@@ -9306,6 +9341,7 @@ var ARM = {
   am_m8:      { h: [25, 10, 7],     t: [25, 19, 19] },
   am_stuart:  { h: [42, 25, 26],    t: [47, 32, 32] },
   am_sher:    { h: [92, 38, 40],    t: [90, 51, 51] },
+  am_t34:     { h: [92, 38, 40],    t: [90, 51, 51] },
   am_e8:      { h: [94, 38, 40],    t: [100, 66, 64] },
   am_m18:     { h: [17, 14, 13],    t: [27, 14, 13] },
   am_m26:     { h: [155, 64, 52],   t: [125, 76, 76] },
@@ -10458,6 +10494,12 @@ function fireAt(u, t, dt, opt) {
   if (u.retreat) return;
   if (onOrderOnly(u) && !u.barrage) return;      /* only ever on an order, only ever at ground */
   if (u.lay > 0) return;                                 /* still laying on */
+  /* and a rack of rockets laid up to the range: on a mission `barrageTick` has asked for it,
+     and on a target of its own, which only free fire gives it, it is asked for here */
+  if (u.def.rack) {
+    if (!u.barrage) u.elWant = clamp(.05 + .33 * d / barrageRange(u), .04, .38);
+    if (Math.abs((u.el || 0) - (u.elWant || 0)) > .025) return;
+  }
   /* a tripod has to be down, and a man with a launcher on his shoulder has to stop;
      a tank fires on the move and pays for it in accuracy below */
   if (u.moving && (u.cat === 'team' || (w.shell && u.cat !== 'veh'))) return;
@@ -10465,7 +10507,9 @@ function fireAt(u, t, dt, opt) {
      nothing to shoot at, which is why catching a heavy tank side-on is worth doing and
      why its twenty seconds of traverse is a real number rather than decoration. */
   if (u.cat === 'veh') {
-    var off = Math.abs(angDiff(u.turret, angTo(u, t)));
+    /* on a mission it is the middle of the circle the gun is laid on, and the round goes
+       anywhere in it: laid on each round's own point, a gun laid tightly refused most of them */
+    var off = Math.abs(angDiff(u.turret, u.barrage && u.def.indirect ? Math.atan2(u.barrage.y - u.y, u.barrage.x - u.x) : angTo(u, t)));
     /* a howitzer on tracks is laid the way a towed one is, on the middle of the beaten zone,
        and a round goes anywhere in the circle round it */
     if (off > (u.def.indirect ? (u.def.layTol || .35) : u.moving ? .16 : .09)) return;
@@ -10575,8 +10619,12 @@ function fireAt(u, t, dt, opt) {
   var from = u.cat === 'veh' ? { x: u.x + Math.cos(u.turret) * 26, y: u.y + Math.sin(u.turret) * 26 }
            : tube ? { x: tube.x, y: tube.y } : { x: u.x, y: u.y };
   var at = aimAt(u, t);
+  /* a rocket leaves the tube it is in, along it (`rkLaunch`) */
+  var RL = w.shell && w.rkt ? rkLaunch(u) : null;
+  if (RL) from = { x: RL.x, y: RL.y };
   if (w.shell) {
-    if (u.cat === 'veh') {
+    if (RL) { if (onScreen(u.x, u.y) || u === povHost()) rkLaunchFx(u, w, RL); }
+    else if (u.cat === 'veh') {
       u.recoil = 1;
       if (onScreen(u.x, u.y) || u === povHost()) {
         var gm = gunMuzzle(u);
@@ -10615,19 +10663,23 @@ function fireAt(u, t, dt, opt) {
        than a fraction of one, and the height it reaches is what carries it over the roof
        it was fired behind. Everything else is flat-trajectory and keeps the token hop it
        has always had. */
-    var ind = !!u.def.indirect;
-    G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: at.x + rnd(-sp2, sp2), ty: at.y + rnd(-sp2, sp2),
+    var ind = !!u.def.indirect, stx = at.x + rnd(-sp2, sp2), sty = at.y + rnd(-sp2, sp2), RS = RL ? rkShot(RL, stx, sty) : null;
+    G.shots.push({ kind: 'shell', x: from.x, y: from.y, tx: stx, ty: sty,
                    sx: from.x, sy: from.y, t: 0,
-                   dur: ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
-                   arc: ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
+                   dur: RS ? RS.dur : ind ? clamp(1.5 + d / 420, 1.5, 4.2) : Math.max(.14, d / 900),
+                   arc: RS ? RS.arc : ind ? clamp(90 + d * .22, 90, 230) : 16, ind: ind,
+                   /* a rocket flies off the end of its tube and bends onto its mark, and is drawn
+                      as a rocket (`rocketDraw`, `rocketTrail`) */
+                   rk: RL ? w.rkt : undefined, cx: RS ? RS.cx : undefined, cy: RS ? RS.cy : undefined,
+                   g0: RS ? RS.g0 : undefined, g1: RS ? RS.g1 : undefined,
                    /* a flat round carries a tracer element in its base and is drawn as
                       one; a bomb has none and is a dark body against the sky */
-                   z0: u.cat === 'veh' ? 24 : 14, tail: ind ? .05 : .30, col: TRACER[u.side],
+                   z0: RS ? RS.z0 : u.cat === 'veh' ? 24 : 14, tail: ind ? .05 : .30, col: TRACER[u.side],
                    w: w, hit: hits > 0 && !(opt && opt.smoke),
                    /* a smoke round carries the cloud it will make and hurts nobody */
                    smk: opt && opt.smoke ? smokeOf(u.def) : null,
                    side: u.side, owner: u, aoe: w.aoe || 0, dmg: w.dmg, target: t, loc: L0,
-                   z1: lw ? lw.z - groundZ(lw.x, lw.y) : undefined,
+                   z1: lw ? lw.z - groundZ(lw.x, lw.y) : RS ? RS.z1 : undefined,
                    /* how high up it goes off, which is the whole of where a hole in a
                       wall ends up. A flat round arrives at about the height it left the
                       barrel at, so a tank on a rise puts one through an upper storey and
@@ -12489,7 +12541,9 @@ function explode(x, y, radius, dmg, owner, except, bz, w) {
      The burn is drawn tight round the hole when there is one, because the scorch used to
      be standing in for a crater at a radius and a bit of the whole burst -- with a real
      hole under it as well, a salvo painted the ground black between its own craters. */
-  var dug = (bz || 0) < 26 && !EXPL_NODIG ? digCrater(x, y, radius) : null;
+  /* a round that says it digs less than its burst (`w.dig`) digs less: a rocket's thin-walled
+     warhead bursts on the surface, and thirty of them to a mission dug a battle's holes in four */
+  var dug = (bz || 0) < 26 && !EXPL_NODIG ? digCrater(x, y, radius * (w && w.dig || 1)) : null;
   decalScorch(x, y, dug ? dug.r * 1.45 : radius * 1.15);
   /* once, through the index. It was charged here and then again at the foot of this
      function by a linear walk of all two thousand patches, so every medium patch on the
@@ -13062,6 +13116,55 @@ function muzClass(u, w) {
   if (u.cat === 'veh') return 'gun';
   return (w.aoe || 0) >= 44 ? 'how' : 'at';
 }
+/* ---- a rocket leaving its tube.
+   Where it leaves from and which way it points (`rkLaunch`): the next tube of the Calliope's
+   rack in the order the rack fires them, laid up on the gun, or the next of the Nebelwerfer's
+   six on its carriage. What shape its flight has (`rkShot`): the arc is sized so the rocket
+   leaves climbing at the angle its tube is laid at, and in plan it leaves along the tube and
+   bends onto its mark, so a ripple fans out off the rack the way rockets do and does not leave
+   at whatever angles the points in the beaten zone happen to lie at. ---- */
+function rkLaunch(u) {
+  var P, x0, x1;
+  if (u.cat === 'veh') {
+    if (!u.def.rack) return null;
+    var fr = vehFrames(u), el = (u.el || 0) + CLG.el0, T = clTube(u.def.rack - (u.rack || 0)), c = Math.cos(el), s2 = Math.sin(el);
+    P = function (x) { return m4apply(fr.tmat, CLG.px + x * c - T[1] * s2, T[0], CLG.pz + x * s2 + T[1] * c); };
+    x0 = CLG.x0; x1 = CLG.x1;
+  } else {
+    var gm = GUNMODEL[gmKey(u)], K = gm && gm.rk;
+    if (!K) return null;
+    var gp = gunPost(u), mm = m4model(gp.x, gp.y, groundZ(gp.x, gp.y), u.facing, FIG_SCALE);
+    u.rkN = ((u.rkN || 0) + 1) % K.n;
+    var a = u.rkN / K.n * TAU + K.ph, tx = Math.cos(a) * K.R, ty = Math.sin(a) * K.R;
+    P = function (z) { var q = pitchPt([tx, ty, z], K.p); return m4apply(mm, q[0] + K.at[0], q[1] + K.at[1], q[2] + K.at[2]); };
+    x0 = 0; x1 = K.L;
+  }
+  var m = P(x1), r = P(x0), dx = m.x - r.x, dy = m.y - r.y;
+  return { x: m.x, y: m.y, z: m.z, rx: r.x, ry: r.y, rz: r.z, a: Math.atan2(dy, dx), el: Math.atan2(m.z - r.z, Math.hypot(dx, dy)) };
+}
+function rkShot(L, tx, ty) {
+  var d = Math.hypot(tx - L.x, ty - L.y), g0 = groundZ(L.x, L.y), g1 = groundZ(tx, ty), z0 = L.z - g0;
+  var arc = clamp((d * Math.tan(L.el) + z0 - 2 - (g1 - g0)) / Math.PI, 6, 330);
+  return { z0: z0, z1: 2, g0: g0, g1: g1, arc: arc, dur: clamp(.7 + d / 360 + arc / 520, .9, 4.4),
+           cx: L.x + Math.cos(L.a) * d * .5, cy: L.y + Math.sin(L.a) * d * .5 };
+}
+/* the flash at the mouth of the tube, the back blast out of its breech, and the smoke and the
+   dust the blast throws behind the launcher, which is what gives a ripple away */
+function rkLaunchFx(u, w, L) {
+  var col = FLASHC[u.side] || FLASHC.us, f;
+  f = spawnFx('flash', L.x, L.y, 5, L.z);
+  if (f) { f.a = L.a; f.ln = 2.2; f.col = col; f.el = L.el; f.lit = 1; }
+  f = spawnFx('flash', L.rx, L.ry, 9, L.rz);
+  if (f) { f.a = L.a + Math.PI; f.ln = 3.4; f.col = col; f.el = -L.el; }
+  if (MOB && Math.random() < .5) return;
+  f = spawnFx('gunsmoke', L.rx, L.ry, 14 + (w.aoe || 40) * .14, L.rz);
+  if (f) { f.a = L.a + Math.PI; f.c = 1; }
+  var gz = groundZ(L.rx, L.ry);
+  if (L.rz - gz < 60) {
+    var dd = 12 + Math.random() * 20, d2 = spawnFx('dust', L.rx - Math.cos(L.a) * dd, L.ry - Math.sin(L.a) * dd, 7);
+    if (d2) d2.a = L.a + Math.PI + rnd(-.6, .6);
+  }
+}
 function muzFx(u, w, x, y, z, ang) {
   var M = MUZ[muzClass(u, w)] || MUZ.rifle, col = FLASHC[u.side] || FLASHC.us, i;
   /* the charge behind the round: a 37mm and a 128mm are both 'a tank gun' and are not
@@ -13136,7 +13239,10 @@ function updateShots(dt) {
         var lp = locWorld(s.target, s.loc);
         s.tx = lp.x; s.ty = lp.y; s.z1 = s.bz = lp.z - groundZ(lp.x, lp.y);
       }
-      s.x = lerp(s.sx, s.tx, k); s.y = lerp(s.sy, s.ty, k);
+      if (s.cx !== undefined) {
+        var ra = (1 - k) * (1 - k), rb = 2 * k * (1 - k), rc = k * k;
+        s.x = ra * s.sx + rb * s.cx + rc * s.tx; s.y = ra * s.sy + rb * s.cy + rc * s.ty;
+      } else { s.x = lerp(s.sx, s.tx, k); s.y = lerp(s.sy, s.ty, k); }
       /* the incoming, timed to finish where the shell does rather than to start there:
          it is a warning or it is nothing, and it is played at the ground it is coming at
          and not at the tube, so a player hears a mission arriving on his own position */
@@ -14074,7 +14180,8 @@ function updateUnit(u, dt) {
   if (u.cd > 0) u.cd -= dt;                                /* the loader works whether or not there is a target */
   if (u.atcd > 0) u.atcd -= dt;
   if (u.glcd > 0) u.glcd -= dt;
-  if (u.reload > 0) u.reload -= dt;                        /* and so does the crew reloading a rack of tubes */
+  /* and so does the crew reloading a rack of tubes, which is full again when they are done */
+  if (u.reload > 0) { u.reload -= dt; if (u.reload <= 0 && u.def.rack) u.rack = u.def.rack; }
   if (u.setup > 0 && !u.moving) {
     u.setup -= dt;
     if (u.setup <= 0) {
@@ -15307,7 +15414,7 @@ function aiSmokeScreen(W, ox, oy, fx, fy) {
   py = clamp(oy + (fy - oy) / d * Math.min(d * .34, 150), 40, WORLD.h - 40);
   for (i = 0; i < W.teams.length; i++) {
     var u = W.teams[i];
-    if (u.dead || u.retreat || !u.def.barrage || u.packed || u.pack > 0 || u.setup > 0 || u.moving) continue;
+    if (u.dead || u.retreat || !u.def.barrage || !smokeOf(u.def) || u.packed || u.pack > 0 || u.setup > 0 || u.moving) continue;
     if (u.barrage && (u.barrage.smoke || u.barrage.left > 3)) continue;
     if (barrageWhy(u, px, py)) continue;
     var dd = dsq(u.x, u.y, px, py);
@@ -16581,7 +16688,7 @@ function aiTick(dt) {
      could not have fitted a Tiger if it had wanted one. */
   var LADDER = aiCutLadder(slot, side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
-       ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
+       ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
        ['hr_p4', 2, 260], ['hr_marder', 1, 300], ['hr_234', 1, 340], ['hr_wespe', 1, 360], ['hr_wirb', 1, 380], ['hr_puma', 1, 420], ['hr_panther', 1, 480], ['ger_tig', 1, 620],
        ['hr_p4', meds, 690]], IN, own);
@@ -17975,6 +18082,7 @@ function aiTick(dt) {
         for (fi = 0; fi < ordF.length; fi++) {
           var of2 = ordF[fi];
           if (of2.k !== 'shell' && of2.k !== 'smoke') continue;
+          if (of2.k === 'smoke' && !smokeOf(u.def)) continue;
           if (of2.force.length && of2.force.indexOf(u.id) < 0) continue;
           if (barrageWhy(u, of2.x, of2.y)) continue;
           oFire = of2; oFk = of2.k; break;
@@ -28892,8 +29000,11 @@ function m4TurAt(base, ang, z, lift, KK) {
   }
   return { x: best.x + best.nx * (lift || 0), y: best.y + best.ny * (lift || 0), z: z, a: Math.atan2(best.ny, best.nx) };
 }
-function m4Turret(body, cap) {
-  var C = M4C, T = M4T, f = [], zr = T.zr, i;
+/* `gunTo`, when it is handed one, takes the parts of the mount that go up and down with the
+   gun (the rotor, the collar and the tube) instead of the turret, for the Calliope, whose rack
+   is laid up on the gun */
+function m4Turret(body, cap, gunTo) {
+  var C = M4C, T = M4T, f = [], zr = T.zr, i, g0;
   var base = m4TurretPlan();
   var rings = T.K.map(function (k) { return m4TurRing(base, k[0], k[1], k[2], k[3]); });
   f = f.concat(faceOut(loft(rings, [C.odD, body, body, body, C.odL]), -2, 0, zr / 2));
@@ -28916,6 +29027,7 @@ function m4Turret(body, cap) {
                          p[0] + dz / l * .05, k * 4.85, p[1] - dx / l * .05));
     }
   });
+  g0 = f.length;
   var rot = loft([roundRectRing(12.7, 0, gz + .3, 2.05, 2.5, .9, 3), roundRectRing(13.55, 0, gz + .3, 2.0, 2.45, .85, 3),
                   roundRectRing(14.0, 0, gz + .3, 1.75, 2.2, .7, 3)], [C.od, C.odL]);
   f = f.concat(faceOut(rot, 12.0, 0, gz + .3));
@@ -28927,6 +29039,7 @@ function m4Turret(body, cap) {
   /* the 75 mm M3 itself, and the thicker band at its muzzle */
   f = f.concat(m4Taper(15.4, T.muz - .5, 0, gz, .88, .78, 14, C.odD, C.odD));
   f = f.concat(m4Taper(T.muz - .5, T.muz, 0, gz, .84, .82, 14, C.odD, C.hole));
+  if (gunTo) Array.prototype.push.apply(gunTo, f.splice(g0, f.length - g0));
   f = f.concat(box(12.95, -4.95, 2.25, .5, 1.7, 2.3, C.od, C.odL, C.odD, .12));
   f = f.concat(m4Taper(13.1, 13.9, -4.95, 3.4, .42, .36, 8, C.od, C.odL));
   f = f.concat(tubeSmooth(13.9, 14.6, -4.95, 3.4, .2, 6, C.steel, C.hole));
@@ -29026,6 +29139,217 @@ function m4FiftyMan() {
   var gx = T.px - 5.45, dx = gx - mx, dy = T.py - my, yaw = Math.atan2(dy, dx), d = Math.hypot(dx, dy);
   return m4Man({ legs: FIGPOSE.stand.legs, lean: .1, grips: [d, .62, T.pz + .3 - zf], pole: [-.2, .8, -1] },
                [d, .62, T.pz + .3 - zf], mx, my, zf, yaw);
+}
+
+/* ================================================================ M4A1 CALLIOPE (T34)
+   The T34 rocket launcher on the M4A1: sixty tubes for the 4.5-inch M8 rocket in a rack over
+   the turret, which the armored divisions and the separate tank battalions fielded from the
+   summer of 1944. The tank under it is the M4A1 the 29th already has. It was laid over a
+   four-view of a Calliope (tools/ref/am_t34.json) and agrees with it to a line width in all
+   four views, the hull, the running gear and the turret alike. The sheet draws a welded M4 with
+   an appliqué plate over the ammunition on the left sponson; the cast hulls had the same plate
+   welded on in the same place, and it is the one thing on the tank that is added here.
+
+   What says Calliope rather than Sherman, from the turret up:
+
+     1. Two side arms, flat bars standing a hand outboard of the turret on a bracket at its
+        foot and a strut at its roof, up to the pivot the rack swings on, and forward of each
+        an equilibrator spring from the roof's edge to a hook off the rack.
+     2. The rack: thirty-six tubes in two rows across the top and twenty-four under them in
+        two groups of six by two, clamped by two bands, with the cross beam the rack pivots on
+        running through the gap between the two banks, a third of the way from the back.
+     3. The rod from a clamp on the 75 mm barrel up to a lug under the rack. The gun is the
+        rack's elevating gear: the gunner lays the gun up and the rack goes up with it, which
+        is why a Calliope's 75 does not fire. Both are drawn laid up on a mission (`elv`, `lk`).
+
+   The sheet has no scale. The side agrees with the M4A1's running gear at 77.8 px/m (the
+   bogies 112.6 px apart for 57 in and the wheels of each 65 px for 33 in), the front with the
+   83 in between the track centres at 76.5, and the rear, drawn wider than tall like the M4A1's
+   own sheet, at 79.5. The rack is 2.8 to 2.9 m across in the two end views and 2.56 m in the
+   plan, which draws it no wider than the hull; the end views agree with each other within four
+   per cent and were taken, at a tube 0.154 m across clamped at 0.155. The tubes are 2.5 m long
+   and stand three degrees up on the gun at rest. Laid out like the M4A1, at 11.7 units to the
+   metre with the driver at -y, in the mount's frame: x forward from the turret's centre and z
+   up from the hull roof. */
+var CLG = {
+  px: -3.25, pz: 23.8,                        /* the pivot on top of the side arms, and the arms */
+  ay: 13.8, ax: -2.85, az0: 1.3,              /* out from the centreline, along it, and the pin at their foot */
+  el0: .052,                                  /* the rack stands three degrees up on the gun */
+  x0: -9.0, x1: 20.5, r: .9, p: 1.82,         /* a tube from breech to muzzle in the rack's frame, its radius and pitch */
+  zU: 2.6, zL: -2.95, gL: 7.25,               /* the upper bank's axis, the lower one's, and the lower groups' middles */
+  band: [9.95, -3.75],                        /* the two bands */
+  gx: 10.4, gz: 2.85,                         /* the 75's trunnion */
+  cx: 14.63, cz: 4.56,                        /* the rod's pin on the lug clamped over the gun's collar */
+  rx: 8.85, rz: -4.92,                        /* and its pin under the rack */
+  hx: 3.6, hz: -2.56,                         /* the spring's hook on the rack */
+  sx: -.24, sz: 8.61                          /* and its anchor on the turret's roof */
+};
+/* the sixty tubes as [y, z] in the rack's frame: the top two rows of eighteen, then the
+   bottom two in their two groups of six */
+function clTubes() {
+  if (CLG.tubes) return CLG.tubes;
+  var T = [], i, j, g, row, G2 = CLG;
+  for (row = 0; row < 2; row++) for (i = 0; i < 18; i++) T.push([(i - 8.5) * G2.p, G2.zU + (row ? -1 : 1) * G2.r]);
+  for (row = 0; row < 2; row++) for (g = -1; g <= 1; g += 2) for (j = 0; j < 6; j++)
+    T.push([g * G2.gL + (j - 2.5) * G2.p, G2.zL + (row ? -1 : 1) * G2.r]);
+  CLG.tubes = T;
+  return T;
+}
+/* which tube the k-th rocket of a load leaves: the firing order strides across the rack, so
+   a ripple walks over the whole of it rather than emptying one row and then the next */
+function clTube(k) { var T = clTubes(); return T[(k * 23) % T.length]; }
+
+/* The rack, built level about its pivot and laid up on it by the draw: the tubes with the
+   rockets' tails in their breeches, the two bands round both banks, the cross beam the rack
+   swings on, the hooks the springs pull on and the lug the rod pushes. */
+function clRack() {
+  var C = M4C, G2 = CLG, f = [], T = clTubes(), i, s, b;
+  var X0 = G2.px + G2.x0, X1 = G2.px + G2.x1, r = G2.r, Z = G2.pz;
+  for (i = 0; i < T.length; i++) {
+    var y = T[i][0], z = Z + T[i][1];
+    f = f.concat(tubeSmooth(X0, X1, y, z, r, 8, C.od, C.hole));
+    /* the rocket's tail in the breech: the ring round its nozzle, and the nozzle */
+    f = f.concat(tubeSmooth(X0 - .12, X0, y, z, r * .8, 8, C.steel, C.bare));
+    f = f.concat(tubeSmooth(X0 - .32, X0 - .12, y, z, r * .36, 6, C.steel, C.hole));
+  }
+  /* the firing contacts clipped over the breeches of the top row and under the bottom one */
+  for (i = 0; i < T.length; i++) {
+    if (i < 18) f = f.concat(box(X0 + 1.3, T[i][0], Z + T[i][1] + r - .15, 1.5, .8, .5, C.steel, C.bare, C.steel, 0));
+    else if (i >= 48) f = f.concat(box(X0 + 1.3, T[i][0], Z + T[i][1] - r - .35, 1.5, .8, .5, C.steel, C.bare, C.steel, 0));
+  }
+  var wU = 8.5 * G2.p + r, wL0 = G2.gL - 2.5 * G2.p - r, wL1 = G2.gL + 2.5 * G2.p + r;
+  var top = G2.zU + r, bot = G2.zU - r, lt = G2.zL + r, lb = G2.zL - r;
+  for (b = 0; b < G2.band.length; b++) {
+    var X = G2.px + G2.band[b];
+    /* round the top bank, with its sides carried down to the bottom one */
+    f = f.concat(box(X, 0, Z + top, .7, 2 * wU + .5, .24, C.od, C.odL, C.odD, 0));
+    f = f.concat(box(X, 0, Z + bot - .22, .7, 2 * wU + .5, .22, C.od, C.odL, C.odD, 0));
+    for (s = -1; s <= 1; s += 2) {
+      f = f.concat(box(X, s * (wU + .2), Z + lb + .9, .7, .42, top + .24 - lb - .9, C.od, C.odL, C.odD, 0));
+      /* and round each group of the bottom bank, tied to the sides */
+      f = f.concat(box(X, s * G2.gL, Z + lt, .7, wL1 - wL0 + .4, .22, C.od, C.odL, C.odD, 0));
+      f = f.concat(box(X, s * G2.gL, Z + lb - .22, .7, wL1 - wL0 + .4, .22, C.od, C.odL, C.odD, 0));
+      f = f.concat(box(X, s * (wL0 - .18), Z + lb - .22, .7, .36, lt + .22 - lb + .22, C.od, C.odL, C.odD, 0));
+      f = f.concat(box(X, s * (wL1 + .18), Z + lb - .22, .7, .36, bot - lb + .22, C.od, C.odL, C.odD, 0));
+      f = f.concat(box(X, s * (wL1 + wU + .4) / 2, Z + lb + .9, .7, wU - wL1, .3, C.od, C.odL, C.odD, 0));
+    }
+  }
+  /* the cross beam through the gap, a channel the width of the rack, and the bosses the arms
+     carry it on */
+  f = f.concat(box(G2.px, 0, Z - .9, 1.5, 2 * wU + .9, 1.5, C.od, C.odL, C.odD, .1));
+  for (s = -1; s <= 1; s += 2) {
+    f = f.concat(place(tubeSmooth(-1.0, 1.0, 0, 0, .8, 10, C.steel, C.bare), Math.PI / 2, G2.px, s * G2.ay, Z - .15));
+    /* the hook the spring pulls on: forward off the boss and down */
+    f = f.concat(tubeSmooth(G2.px + .7, G2.px + G2.hx, s * (G2.ay + .1), Z + .55, .3, 6, C.od, C.odD));
+    f = f.concat(cyl(G2.px + G2.hx, s * (G2.ay + .1), Z + G2.hz, .3, .3, .85 - G2.hz, 6, C.od, C.odD, 0, true));
+    f = f.concat(place(tubeSmooth(-.4, .4, 0, 0, .4, 6, C.steel, C.bare), Math.PI / 2, G2.px + G2.hx, s * (G2.ay + .1), Z + G2.hz));
+  }
+  /* the lug under the rack the rod pushes on, on a cross tube between the two groups */
+  f = f.concat(place(tubeSmooth(-3.3, 3.3, 0, 0, .3, 6, C.steel, C.bare), Math.PI / 2, G2.px + G2.rx, 0, Z + lb - .25));
+  f = f.concat(box(G2.px + G2.rx, 0, Z + G2.rz - .4, .9, .8, lb - .1 - G2.rz + .4, C.od, C.odL, C.odD, 0));
+  return f;
+}
+/* The side arms and their brackets, which are the turret's and turn with it. */
+function clArms() {
+  var C = M4C, G2 = CLG, f = [], base = m4TurretPlan(), s;
+  for (s = -1; s <= 1; s += 2) {
+    var y = s * G2.ay;
+    f = f.concat(box(G2.ax, y, G2.az0 - .8, 2.0, .8, G2.pz - G2.az0 + .8, C.od, C.odL, C.odD, .1));
+    /* the foot, pinned to a bracket on the turret's side */
+    var w0 = Math.abs(m4TurAt(base, Math.atan2(s * 11.5, G2.ax), G2.az0, 0).y);
+    f = f.concat(box(G2.ax, s * (w0 + G2.ay) / 2, G2.az0 - .75, 1.7, G2.ay - w0 + .5, 1.5, C.odD, C.od, C.odD, .08));
+    f = f.concat(place(tubeSmooth(-.65, .65, 0, 0, .55, 8, C.steel, C.bare), Math.PI / 2, G2.ax, y + s * .55, G2.az0));
+    /* a strut out to it from the turret's wall just under the roof */
+    var w1 = Math.abs(m4TurAt(base, Math.atan2(s * 10.5, G2.ax), 6.8, 0).y);
+    f = f.concat(box(G2.ax, s * (w1 + G2.ay) / 2, 6.4, 1.3, G2.ay - w1 + .4, .8, C.od, C.odL, C.odD, .06));
+    /* and the bracket on the roof's edge the spring is anchored to, with its lug */
+    var w2 = Math.abs(m4TurAt(base, Math.atan2(s * 10, G2.sx), 7.6, 0).y);
+    f = f.concat(box(G2.sx, s * (w2 + G2.ay) / 2, 7.3, 1.5, G2.ay - w2 + .6, .75, C.od, C.odL, C.odD, .06));
+    f = f.concat(box(G2.sx, y, G2.sz - .55, 1.0, .7, 1.2, C.steel, C.bare, C.steel, 0));
+  }
+  return f;
+}
+/* the lug the rod is pinned to, clamped over the collar the gun goes through, which goes up
+   and down with the gun */
+function clClamp() {
+  var C = M4C, G2 = CLG, f = [];
+  f = f.concat(box(G2.cx, 0, G2.gz + 1.05, 1.7, 2.5, .3, C.od, C.odL, C.odD, 0));
+  f = f.concat(box(G2.cx, 0, G2.gz + 1.3, 1.3, .9, G2.cz - G2.gz - .7, C.od, C.odL, C.odD, .06));
+  f = f.concat(place(tubeSmooth(-.6, .6, 0, 0, .32, 6, C.steel, C.bare), Math.PI / 2, G2.cx, 0, G2.cz));
+  return f;
+}
+/* The stowage bin the sheet stands on the engine deck behind the turret: sheet sides and a
+   front, taller at the back as the deck falls away under it, a lid, and an open back of angle
+   iron with a gusset in each top corner, through which the crate stowed in it shows. Off the
+   side view it runs from 18.3 to 26 units behind the hull's middle, and off the plan and the
+   rear 9.2 either side of the centreline; its lid is 26.5 up at the front and 27.25 at the back. */
+function clBin() {
+  var C = M4C, f = [], xf = -18.3, xb = -25.95, w = 9.2, zf = 26.5, zb = 27.25, df = m4TopZ(xf) - .3, db = m4TopZ(xb) - .3, s;
+  for (s = -1; s <= 1; s += 2)
+    f = f.concat(extrudeY([[xf, df], [xf, zf], [xb, zb], [xb, db]], s * w - .15, s * w + .15, C.od, C.odL, C.odD));
+  f = f.concat(extrudeY([[xf, df], [xf + .3, df], [xf + .3, zf], [xf, zf]], -w, w, C.od, C.odL, C.odD));
+  f = f.concat(extrudeY([[xf + .2, zf], [xb - .2, zb], [xb - .2, zb + .35], [xf + .2, zf + .35]], -w - .25, w + .25, C.od, C.odL, C.odD));
+  /* the back: two posts, a rail at the foot and one under the lid, and the gussets */
+  for (s = -1; s <= 1; s += 2) {
+    f = f.concat(box(xb + .25, s * (w - .25), db, .5, .5, zb - db, C.odD, C.od, C.odD, 0));
+    f = f.concat(roll(box(xb + .25, 0, -.25, .4, 2.6, .5, C.odD, C.od, C.odD, 0), s * Math.PI / 4, 0, 0)
+                 .map(function (q) { return { v: q.v.map(function (p) { return [p[0], p[1] + s * (w - 1.3), p[2] + zb - 1.3]; }), c: q.c }; }));
+  }
+  f = f.concat(box(xb + .25, 0, db, .5, 2 * w, .55, C.odD, C.od, C.odD, 0));
+  f = f.concat(box(xb + .25, 0, zb - .55, .5, 2 * w, .5, C.odD, C.od, C.odD, 0));
+  f = f.concat(box((xf + xb) / 2, 0, m4TopZ((xf + xb) / 2) - .2, 6.2, 14.5, 4.6, C.wood, lit(C.wood, 1.12), lit(C.wood, .82), .08));
+  return f;
+}
+/* A link is built a unit long along x and stretched between its two pins as they move
+   (`lkMat`): the rod with its turnbuckle and an eye at each end, and a spring, whose coils
+   open out as the rack goes up. */
+function clRod() {
+  var C = M4C, f = [];
+  f = f.concat(tubeSmooth(.03, .97, 0, 0, .3, 6, C.od, C.odD));
+  f = f.concat(tubeSmooth(.42, .58, 0, 0, .47, 6, C.odD, C.od));
+  f = f.concat(box(.015, 0, -.42, .05, .75, .84, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(.985, 0, -.42, .05, .75, .84, C.steel, C.bare, C.steel, 0));
+  return f;
+}
+function clSpring() {
+  var C = M4C, f = [], n = 20, i;
+  f = f.concat(tubeSmooth(.04, .96, 0, 0, .3, 6, C.steel, C.steel));
+  for (i = 0; i < n; i++) {
+    var a = .07 + i / n * .86;
+    f = f.concat(tubeSmooth(a, a + .86 / n * .62, 0, 0, .6, 8, C.steel, C.bare));
+  }
+  f = f.concat(tubeSmooth(0, .07, 0, 0, .24, 6, C.steel, C.bare));
+  f = f.concat(tubeSmooth(.93, 1, 0, 0, .24, 6, C.steel, C.bare));
+  return f;
+}
+function clLinks() {
+  var G2 = CLG, L = [{ f: clRod(), pa: 'gun', a: [G2.cx, 0, G2.cz], pb: 'rack', b: [G2.px + G2.rx, 0, G2.pz + G2.rz] }], s;
+  for (s = -1; s <= 1; s += 2)
+    L.push({ f: clSpring(), pa: 'tur', a: [G2.sx, s * G2.ay, G2.sz], pb: 'rack', b: [G2.px + G2.hx, s * (G2.ay + .1), G2.pz + G2.hz] });
+  return L;
+}
+/* the appliqué plate over the ammunition on the left sponson, which the sheet draws; the
+   sponson's side leans in by `lean` over its height, and the plate with it */
+function clPlate() {
+  var C = M4C, H = M4H, z0 = 14.1, z1 = 19.9, zc = (z0 + z1) / 2;
+  var yc = -(H.half - H.lean * (zc - H.zSpon) / (H.zRoof - H.zSpon) + .17);
+  return roll(box(7.5, 0, z0 - zc, 10.5, .34, z1 - z0, C.od, C.odL, C.odD, .08), -Math.atan(H.lean / (H.zRoof - H.zSpon)), 0, 0)
+    .map(function (q) { return { v: q.v.map(function (p) { return [p[0], p[1] + yc, p[2] + zc]; }), c: q.c }; });
+}
+/* the whole of the elevating parts posed at an elevation, in the mount's frame, for anything
+   that wants them as faces rather than as buffers: the overlay, the dimensions card */
+function clPose(V, el) {
+  var out = [], k, i;
+  if (!V.elv) return out;
+  for (k in V.elv) {
+    var P = V.elvP[k], a = el + P[2];
+    out = out.concat(pitch(V.elv[k], a, P[0], P[1]));
+  }
+  for (i = 0; i < V.lk.length; i++) {
+    var L = V.lk[i], A = elvPt(V, L.pa, L.a, el), B = elvPt(V, L.pb, L.b, el), m = lkMat(null, A, B);
+    out = out.concat(L.f.map(function (q) { return { v: q.v.map(function (p) { var w = m4apply(m, p[0], p[1], p[2]); return [w.x, w.y, w.z]; }), c: q.c }; }));
+  }
+  return out;
 }
 
 /* ================================================================ M4A3E8 (76 mm)
@@ -39475,6 +39799,8 @@ function m4Room(T, base, o) {
 VIN.am_sher = function (V) {
   return m4Room(M4T, m4TurretPlan(), { hz: .6, split: true, scopes: [[5.2, 6.7], [1.6, -6.9]], vent: [2.7, 0] });
 };
+/* the Calliope's turret is the M4A1's, and so is the room under its hatch */
+VIN.am_t34 = VIN.am_sher;
 /* ---- the Easy Eight: the M4A1's room round the vision cupola, which stands its lid higher off
    the roof, in the T23's plan with the 76 mm's breech higher up in it. The cupola is two units
    further forward than the M4A1's hatch, so the gunner is moved forward with it (`gx`): at the
@@ -39907,6 +40233,15 @@ function buildVehicleModels(up) {
   vmDef('am_sher', function () { return { hull: m4Hull(M4C.od, M4C.odL, M4C.odD), tur: m4Turret(M4C.od, M4C.odL), belly: M4H.zBelly,
                       bar: M4T.muz, big: 1, scale: 1, mountZ: M4H.zRoof, gunZ: M4T.gz, turX: M4H.turX,
                       mg: m4Fifty(), mgMan: m4FiftyMan() }; });
+  /* the Calliope: the M4A1 with the gun and the rack laid up on it as parts of their own, and
+     the rod and the springs between them */
+  vmDef('am_t34', function () {
+    var gun = [], tur = m4Turret(M4C.od, M4C.odL, gun).concat(clArms());
+    HATCHES.am_t34 = HATCHES.am_sher;
+    return { hull: m4Hull(M4C.od, M4C.odL, M4C.odD).concat(clPlate()).concat(clBin()), tur: tur,
+             elv: { gun: gun.concat(clClamp()), rack: clRack() }, elvP: { gun: [CLG.gx, CLG.gz, 0], rack: [CLG.px, CLG.pz, CLG.el0] },
+             lk: clLinks(), belly: M4H.zBelly, bar: M4T.muz, big: 1, scale: 1, mountZ: M4H.zRoof, gunZ: M4T.gz, turX: M4H.turX };
+  });
   /* the Easy Eight an M4A1 is rebuilt as, which no depot makes: a model of its own that the
      M4A1 is drawn from while the fitting is on (`vkey`) */
   vmDef('am_e8', function () { return { hull: e8Hull(M4C.od, M4C.odL, M4C.odD), tur: e8Turret(M4C.od, M4C.odL), belly: E8H.zBelly,
@@ -40048,6 +40383,9 @@ function buildVehicleModels(up) {
       parts.push({ f: f, x: onMount ? ox : 0, y: onMount ? oy : 0, z: onMount ? oz : 0, occ: occ });
     }
     put(vm.hull, 0, 1); put(vm.tur, 1, 1); put(vm.mg, 1, 1);
+    /* the Calliope's gun and its rack are the mount's, baked where they stand at rest: baked on
+       its own, the rack read its own bottom half as a hull's belly and took the road's dust on it */
+    if (vm.elv) { cut(vm.elv, 'gun'); put(vm.elv.gun, 1, 1); put(vm.elv.rack, 1, 1); }
     /* the Schürzen are an upgrade and are baked the way the alternative mounts are: as
        occluders they shaded the hull side and the running gear behind them whether or not
        they were ever hung, and a Panzer IV without its plates came out black from the
@@ -40095,7 +40433,9 @@ function buildVehicleModels(up) {
     M.mesh = aoSplit(M.mesh, AOSPLIT); M.base = aoSplit(M.base, AOSPLIT);
     bakeAO([{ f: M.base, x: 0, y: 0, z: 0, occ: 1 }, { f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }]);
   })(GUNMODEL.ger_flak20);
-  GUNMODEL.ger_neb = { mesh: nebelwerferModel(), bar: 21, z: 20 };
+  /* `rk` is where its six tubes stand, as `nebelwerferModel` lays them, for the rockets to leave
+     from: a ring of radius R about the cluster's axis, L long, pitched p and stood at `at` */
+  GUNMODEL.ger_neb = { mesh: nebelwerferModel(), bar: 21, z: 20, rk: { n: 6, R: 3.4, L: 15.4, p: -.80, ph: TAU / 12, at: [1.5, 0, 9.0] } };
   /* the heavy battery: the platform is laid on u.baseA and the gun turns on it, and the
      flash comes off a muzzle five metres up rather than off the end of a level barrel */
   GUNMODEL.am_240 = { mesh: h240Top(H240.el), base: h240Bottom(), rec: h240Tube(H240.el), recEl: H240.el,
@@ -43647,7 +43987,7 @@ function modelsFreeOne(o, d) {
 }
 function modelsFree() {
   var walk = modelsFreeOne;
-  ['veh', 'gun', 'gunBase', 'gunRec', 'gunPk', 'carry', 'bld', 'bldA', 'flag'].forEach(function (k) { walk(MODELS[k], 0); });
+  ['veh', 'gun', 'gunBase', 'gunRec', 'gunPk', 'carry', 'bld', 'bldA', 'flag', 'rkt'].forEach(function (k) { walk(MODELS[k], 0); });
   ['gren', 'bund', 'disc'].forEach(function (k) { freeBuffer(MODELS[k]); });
   MODELS.gun = {}; MODELS.gunBase = {}; MODELS.gunRec = {}; MODELS.gunPk = {};
 }
@@ -43761,6 +44101,10 @@ function vehUpload(k) {
     gl.bindBuffer(gl.ARRAY_BUFFER, ab); gl.bufferData(gl.ARRAY_BUFFER, sh, gl.STATIC_DRAW);
     M.rgA = { vbo: ab, n: RG.at.length / 4 };
   }
+  if (V.elv) {
+    M.elv = {}; Object.keys(V.elv).forEach(function (ek) { M.elv[ek] = facesToBuffer(V.elv[ek]); });
+    M.lk = V.lk.map(function (L) { return facesToBuffer(L.f); });
+  }
   V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces);
   M.inlid = V.inside.lid ? facesToBuffer(V.inside.lid) : null;
   M.hood = V.inside.hood ? facesToBuffer(V.inside.hood) : null;
@@ -43778,6 +44122,8 @@ function buildModels() {
   /* the two things a squad throws, drawn one per grenade in the air or on the ground */
   MODELS.gren = facesToBuffer(grenadeFaces(KIT.heer, false));
   MODELS.bund = facesToBuffer(grenadeFaces(KIT.heer, true));
+  /* and the two rockets, one per rocket in the air */
+  MODELS.rkt = { m8: facesToBuffer(rocketFaces('m8')), wgr: facesToBuffer(rocketFaces('wgr')) };
   /* a vehicle's buffers are asked for as often as its model, so they build it too; one a
      tool built without buffering is buffered here */
   VQ = [];
@@ -47359,7 +47705,7 @@ function drawParts() {
 }
 /* what the last frame's particle pass came to, for the card and for nothing else */
 var FXN = { quads: 0, draws: 0 };
-function unitTop(u) { return u.cat === 'veh' ? (u.def.hp > 1200 ? 44 : u.def.hp > 500 ? 40 : 28) : 26; }
+function unitTop(u) { return u.cat === 'veh' ? (u.def.rack ? 58 : u.def.hp > 1200 ? 44 : u.def.hp > 500 ? 40 : 28) : 26; }
 /* the bearing of the nearest enemy, from the squad's own position */
 /* Which way the men should be facing when they go to ground. The nearest enemy they
    can see, and failing that the last place fire came from: a section shot at out of a
@@ -47460,6 +47806,41 @@ function turCrewOf(u, B) {
   if (k && B.turCrewUp && B.turCrewUp[k]) return B.turCrewUp[k];
   return u.up && u.up.mg && B.turCrewMg ? B.turCrewMg : B.turCrew;
 }
+/* ---- the parts of a mount that are laid up and down on it: the Calliope's gun and its
+   rack (`VMODEL.elv`), each pitched about its own pin by how far the gunner has laid it
+   (`u.el`) and its own offset from that (`elvP`, [x, z, offset]), and the links between
+   them (`lk`, a rod or a spring from a point on one part to a point on another), drawn from
+   where the one end is to where the other is and stretched to fit ---- */
+function elvPt(V, k, p, el) {
+  if (k === 'tur') return p;
+  var P = V.elvP[k], a = el + P[2], c = Math.cos(a), s = Math.sin(a), x = p[0] - P[0], z = p[2] - P[1];
+  return [P[0] + x * c - z * s, p[1], P[1] + x * s + z * c];
+}
+function elvMat(tmat, V, k, el) {
+  var P = V.elvP[k];
+  return m4mul(tmat, m4mul(m4lean(P[0], 0, P[1], 0, 1, 0, el + P[2]), m4model(-P[0], 0, -P[1], 0, 1)));
+}
+/* a link's frame: x from one pin to the other, y across the vehicle and z square to both,
+   so a part built a unit long along x is laid between them */
+function lkMat(tmat, a, b) {
+  var dx = b[0] - a[0], dz = b[2] - a[2], L = Math.hypot(dx, dz) || 1, m = new Float32Array(16);
+  m[0] = dx; m[2] = dz; m[5] = 1; m[8] = -dz / L; m[10] = dx / L;
+  m[12] = a[0]; m[13] = a[1]; m[14] = a[2]; m[15] = 1;
+  return tmat ? m4mul(tmat, m) : m;
+}
+function elvDraw(u, B, V, tmat, t, depth) {
+  if (!B.elv || !V || !V.elv) return;
+  var el = u.el || 0, k, i, m;
+  for (k in B.elv) {
+    m = elvMat(tmat, V, k, el);
+    if (depth) drawDepthGeom(B.elv[k], m); else drawGeom(B.elv[k], m, false, t);
+  }
+  for (i = 0; i < B.lk.length; i++) {
+    var L = V.lk[i];
+    m = lkMat(tmat, elvPt(V, L.pa, L.a, el), elvPt(V, L.pb, L.b, el));
+    if (depth) drawDepthGeom(B.lk[i], m); else drawGeom(B.lk[i], m, false, t);
+  }
+}
 function castUnit(u) {
   if (u.cat === 'veh') {
     var M = VMODEL[vkey(u)], B = MODELS.veh[vkey(u)]; if (!B) return;
@@ -47469,6 +47850,7 @@ function castUnit(u) {
     rgDraw(B, hm2, u, null, true);
     var duk = mountUp(u), dk;
     drawDepthGeom(duk && B.turUp[duk] ? B.turUp[duk] : B.tur, tm2);
+    elvDraw(u, B, M, tm2, null, true);
     if (B.crew) drawDepthGeom(B.crew, hm2);
     var tcd = turCrewOf(u, B);
     if (tcd) drawDepthGeom(tcd, tm2);
@@ -47629,7 +48011,7 @@ function drawUnits3D(v, list) {
       if (!(u === povHost0 && !POV.hatch && M.inside && M.inside.hide === 'hull')) { drawGeom(B.hull, hmat, false, vt); rgDraw(B, hmat, u, vt); }
       var cuk = mountUp(u), ak, povHost = POV.on && POV.u ? (POV.u.inside || POV.u) : null;
       var shut = u === povHost && !POV.hatch && M.inside && M.inside.hide;
-      if (shut !== 'tur') drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt);
+      if (shut !== 'tur') { drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt); elvDraw(u, B, M, tmat, vt); }
       /* the men riding in an open vehicle; in the periscope the one at the gun is the player */
       if (B.crew) drawGeom(B.crew, hmat, false, vt);
       /* a man who stands up to the roof gun when it is fitted is not also at his station */
@@ -48037,12 +48419,14 @@ function drawWrecks3D(v) {
     if (w.fly) {
       /* still in the air */
       var f = w.fly;
-      drawGeom(B.tur, m4lean(f.x, f.y, f.z, f.a, 1, f.lean, f.nose), false, t);
+      var fm = m4lean(f.x, f.y, f.z, f.a, 1, f.lean, f.nose);
+      drawGeom(B.tur, fm, false, t); elvDraw(w, B, M, fm, t);
       return;
     }
     if (w.tx !== undefined) {
       /* and where it came down, lying at the angle it stopped at */
-      drawGeom(B.tur, m4lean(w.tx, w.ty, w.tz, w.ta, 1, w.tLean, w.tNose), false, t);
+      var lm = m4lean(w.tx, w.ty, w.tz, w.ta, 1, w.tLean, w.tNose);
+      drawGeom(B.tur, lm, false, t); elvDraw(w, B, M, lm, t);
       return;
     }
     /* Still on its ring: dropped onto the race and slewed off the bearing it was laid
@@ -48050,8 +48434,9 @@ function drawWrecks3D(v) {
        mount offset -- the live draw applies one and the wreck draw did not, so a turret
        appeared to move by however far its ring happens to sit off the hull's centre and
        the code comment called that a throw. */
-    drawGeom(B.tur, m4mul(hm, m4model(M.turX || 0, M.turY || 0, M.mountZ - (M.fixed ? 1 : 2.6),
-                                       (w.turret || w.a) + (M.fixed ? 0 : (w.slew || 0)) - w.a, 1)), false, t);
+    var rm = m4mul(hm, m4model(M.turX || 0, M.turY || 0, M.mountZ - (M.fixed ? 1 : 2.6),
+                                (w.turret || w.a) + (M.fixed ? 0 : (w.slew || 0)) - w.a, 1));
+    drawGeom(B.tur, rm, false, t); elvDraw(w, B, M, rm, t);
   });
   /* A man going down, and then a man lying where he went down. Two layouts a side so
      a street is not paved with one silhouette repeated, and the loose helmet three units
@@ -48075,6 +48460,8 @@ function drawWrecks3D(v) {
      speck at the distance a player plays from and the wisp off the fuse is what he sees;
      this is the thing itself, for anyone who looks. */
   G.shots.forEach(function (s) {
+    /* and a rocket is its own model, nose first along its track */
+    if (s.rk) { if (s.t >= 0 && inView(v, s.x, s.y, 30)) rocketDraw(s); return; }
     if (s.kind !== 'gren' || !inView(v, s.x, s.y, 20)) return;
     var B = s.bund ? MODELS.bund : MODELS.gren; if (!B) return;
     var z, nose = 0;
@@ -48259,16 +48646,96 @@ function muzzleDraw(f, k, z) {
    a bomb goes up and comes down, and the height it reaches is what carries it over the
    roof it was fired from behind. */
 function shotPoint(s, k) {
-  var x = lerp(s.sx, s.tx, k), y = lerp(s.sy, s.ty, k), z0 = s.z0 === undefined ? 12 : s.z0;
-  /* a round flown to a point on a vehicle ends at that point's height (`z1`) */
-  return { x: x, y: y, z: groundZ(x, y) + (s.z1 === undefined ? z0 : lerp(z0, s.z1, clamp(k, 0, 1))) +
+  var x, y, z0 = s.z0 === undefined ? 12 : s.z0;
+  /* a rocket's track in plan bends from the line of its tube onto its mark (`cx`, `cy` is the
+     bend's control point): it leaves along the tube and the circle it is laid into is wider
+     than the tube's bearing */
+  if (s.cx !== undefined) {
+    var kq = clamp(k, 0, 1), qa = (1 - kq) * (1 - kq), qb = 2 * kq * (1 - kq), qc = kq * kq;
+    x = qa * s.sx + qb * s.cx + qc * s.tx; y = qa * s.sy + qb * s.cy + qc * s.ty;
+  } else { x = lerp(s.sx, s.tx, k); y = lerp(s.sy, s.ty, k); }
+  /* a round flown to a point on a vehicle ends at that point's height (`z1`). A rocket's
+     height is reckoned off a line from the ground it left to the ground it lands on (`g0`,
+     `g1`) rather than off the ground under it, so that it leaves its tube at the angle the
+     tube is laid at: reckoned off the ground under it, a rocket fired at a ridge climbed
+     with the ridge as well, steeper than its tube was ever laid */
+  var gz = s.g0 !== undefined ? lerp(s.g0, s.g1, clamp(k, 0, 1)) : groundZ(x, y);
+  return { x: x, y: y, z: gz + (s.z1 === undefined ? z0 : lerp(z0, s.z1, clamp(k, 0, 1))) +
               Math.sin(clamp(k, 0, 1) * Math.PI) * (s.arc || 0) };
+}
+/* ---- a rocket in the air.
+   A rocket was drawn as a shell, a dark speck on its arc, which is what a bomb looks like and
+   nothing like a rocket: a rocket is a long thin body flying nose first along its own track,
+   with its motor burning out of its tail for the first second of the flight and a trail of
+   smoke behind it that hangs where it was laid and spreads. `RKT` is the two the roster
+   fires: the 4.5-inch M8 out of the Calliope, finned, its motor burning out of its tail, and
+   the 15 cm Wurfgranate 41 out of the Nebelwerfer, which is spun by a ring of nozzles two
+   thirds of the way back from its nose and burns out of them. ---- */
+var RKT = {
+  /* length, radius, where the flame comes out (along the body from its middle), how long the
+     motor burns, how long its smoke hangs, how wide a puff of it starts and how fast it
+     spreads, the flame's length, and how fast it spins */
+  m8:  { L: 9.8, r: .67, fx: -4.9, burn: .9, life: 3.0, w: 3.2, grow: 9, fl: 12, spin: 0 },
+  wgr: { L: 11.45, r: .92, fx: -1.9, burn: 1.2, life: 3.4, w: 3.8, grow: 10, fl: 10, spin: 18 }
+};
+function rocketFaces(k) {
+  var R = RKT[k], h = R.L / 2, r = R.r, f = [], i, C = M4C;
+  if (k === 'm8') {
+    f = f.concat(m4Taper(h - 2.5, h, 0, 0, r, .1, 10, C.od, C.odL));             /* the warhead's ogive */
+    f = f.concat(tubeSmooth(h - 3.1, h - 2.5, 0, 0, r, 10, C.tarp, C.tarp));      /* the band round it */
+    f = f.concat(tubeSmooth(-h + .5, h - 3.1, 0, 0, r, 10, C.od, C.od));          /* the motor */
+    f = f.concat(tubeSmooth(-h, -h + .5, 0, 0, r * .82, 10, C.steel, C.hole));    /* the nozzle */
+    for (i = 0; i < 6; i++)
+      f = f.concat(roll(box(-h + 1.05, 0, r - .1, 1.6, .1, .6, C.odD, C.od, C.odD, 0), i * Math.PI / 3, 0, 0));
+  } else {
+    var D = HRG;
+    f = f.concat(m4Taper(h - 1.6, h, 0, 0, r, .32, 10, D.dark, D.body));          /* the motor's nose */
+    f = f.concat(tubeSmooth(R.fx + .3, h - 1.6, 0, 0, r, 10, D.body, D.body));
+    f = f.concat(tubeSmooth(R.fx - .3, R.fx + .3, 0, 0, r * 1.08, 12, C.steel, C.steel));  /* the ring of nozzles */
+    for (i = 0; i < 8; i++) f = f.concat(roll(box(R.fx - .2, 0, r * 1.02, .5, .3, .2, C.hole, C.hole, C.hole, 0), i * Math.PI / 4, 0, 0));
+    f = f.concat(tubeSmooth(-h + .9, R.fx - .3, 0, 0, r, 10, D.dark, D.dark));    /* the warhead */
+    f = f.concat(m4Taper(-h, -h + .9, 0, 0, r * .55, r, 10, D.dark, D.dark));
+  }
+  return f;
+}
+/* where it is on its track and which way it points */
+function rocketAt(s) {
+  var k = clamp(s.t / s.dur, 0, 1), h = shotPoint(s, k), q, dx, dy, dz, l;
+  if (k < .985) { q = shotPoint(s, k + .015); dx = q.x - h.x; dy = q.y - h.y; dz = q.z - h.z; }
+  else { q = shotPoint(s, k - .015); dx = h.x - q.x; dy = h.y - q.y; dz = h.z - q.z; }
+  l = Math.hypot(dx, dy, dz) || 1;
+  return { x: h.x, y: h.y, z: h.z, dx: dx / l, dy: dy / l, dz: dz / l };
+}
+function rocketDraw(s) {
+  var B = MODELS.rkt && MODELS.rkt[s.rk], R = RKT[s.rk]; if (!B || !R) return;
+  var A = rocketAt(s);
+  drawGeom(B, m4lean(A.x, A.y, A.z, Math.atan2(A.dy, A.dx), 1, s.t * R.spin, Math.atan2(A.dz, Math.hypot(A.dx, A.dy))), false, [1, 1, 1]);
+}
+function rocketTrail(s) {
+  var R = RKT[s.rk], t = s.t; if (!R) return;
+  var A = rocketAt(s), ox = A.dx * R.fx, oy = A.dy * R.fx, oz = A.dz * R.fx;
+  /* the motor: a hot core in a flame twice its length, and the glow round it */
+  if (t < R.burn) {
+    var fx = A.x + ox, fy = A.y + oy, fz = A.z + oz, fl = R.fl * (.75 + .5 * Math.random()) * (t < .12 ? 1.5 : 1);
+    partStreak(fx, fy, fz, fx - A.dx * fl, fy - A.dy * fl, fz - A.dz * fl, 2.4, 1, .6, .2, .75, 1);
+    partStreak(fx, fy, fz, fx - A.dx * fl * .5, fy - A.dy * fl * .5, fz - A.dz * fl * .5, 1.2, 1, .93, .7, .95, 1);
+    partBill(fx, fy, fz, 5.5, 5.5, 0, 1, .7, .32, .55, 0, 0, 1);
+  }
+  /* and the smoke it lays while it burns, laid where the motor was and spreading as it hangs */
+  var sp = Math.max(60, Math.hypot(s.tx - s.sx, s.ty - s.sy) / s.dur), gap = (MOB ? 10 : 5) / sp;
+  var t1 = Math.min(t, R.burn), t0 = Math.max(0, t - R.life), tau, n = 0;
+  for (tau = t1; tau >= t0 && n < 60; tau -= gap, n++) {
+    var age = t - tau, P = shotPoint(s, tau / s.dur), kk = age / R.life, ww = R.w + age * R.grow, lt = Math.min(1, age * 1.6);
+    partBill(P.x + ox, P.y + oy, P.z + oz + age * 4, ww, ww, tau * 9, lerp(.5, .84, lt), lerp(.48, .82, lt), lerp(.45, .78, lt),
+             Math.min(1, (1 - kk) * 1.6) * (1 - kk) * .62, 1, tau * 31);
+  }
 }
 function drawShot(s) {
   if (s.kind === 'gren') return;              /* a grenade is its own model and burns nothing */
+  if (s.t < 0) return;                        /* a volley is a ripple, not a salvo */
+  if (s.rk) { rocketTrail(s); return; }
   var k1 = clamp(s.t / s.dur, 0, 1), k0 = Math.max(0, k1 - (s.tail || .22));
   var h = shotPoint(s, k1), t = shotPoint(s, k0), c = s.col || TRACER.us;
-  if (s.t < 0) return;                        /* a volley is a ripple, not a salvo */
   if (s.kind === 'tracer') {
     if (!s.tr) return;                        /* one round in a belt burns, not all of them */
     /* the tail carries the side's colour and the head is the element burning, which is
@@ -48934,7 +49401,7 @@ function barrageToast(why) {
   return why === 'safe' ? 'It will not fire into the enemy base' : 'Out of range';
 }
 function callBarrage(wx, wy, smoke) {
-  var tubes = selectedUnits().filter(function (u) { return owned(u) && u.def.barrage; });
+  var tubes = selectedUnits().filter(function (u) { return owned(u) && u.def.barrage && (!smoke || smokeOf(u.def)); });
   if (!tubes.length) return;
   var on = 0, why = null;
   tubes.forEach(function (u) {
@@ -50207,7 +50674,7 @@ window.addEventListener('keydown', function (e) {
   }
   if (k === 'q') { if (selectedUnits().length) { G.mode = 'attack'; cv.style.cursor = 'cell'; syncHud(); } return; }
   if (k === 'f' || k === 'k') {
-    if (selectedUnits().some(function (u) { return u.def.barrage; })) { G.mode = k === 'f' ? 'barrage' : 'smoke'; cv.style.cursor = 'cell'; syncHud(); }
+    if (selectedUnits().some(function (u) { return u.def.barrage && (k === 'f' || smokeOf(u.def)); })) { G.mode = k === 'f' ? 'barrage' : 'smoke'; cv.style.cursor = 'cell'; syncHud(); }
     return;
   }
   if (k === 'x') { selectedUnits().forEach(orderStop); syncHud(); return; }
@@ -50465,7 +50932,7 @@ function buildCmds() {
       }, G.mode === 'barrage' || firing);
       /* and smoke: a screen laid the same way, which blinds whatever is on the far side
          of it -- and whatever is on this side looking through it */
-      if (!firing) addCmd('Smoke mission', 'K + click', 'K', true, function () {
+      if (!firing && tubes.some(function (u) { return smokeOf(u.def); })) addCmd('Smoke mission', 'K + click', 'K', true, function () {
         G.mode = 'smoke'; cv.style.cursor = 'cell'; syncHud();
       }, G.mode === 'smoke');
     }
