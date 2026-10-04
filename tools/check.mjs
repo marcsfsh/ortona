@@ -6834,7 +6834,7 @@ for (const device of TARGETS) {
              w: +(u.bodyW * .85 * .5).toFixed(2), ctrl, moved };
   }, { sx: bodies.sx, sy: bodies.sy });
   ok('tracks and wheels move with the vehicle',
-     !rolling.bad.length && rolling.belts === 20 && rolling.drove > 60 &&
+     !rolling.bad.length && rolling.belts === 21 && rolling.drove > 60 &&
      Math.abs(rolling.L1 - rolling.drove) < rolling.drove * .12 && Math.abs(rolling.R1 - rolling.drove) < rolling.drove * .12 &&
      Math.abs(rolling.pl - rolling.w) < .05 && Math.abs(rolling.pr + rolling.w) < .05 &&
      rolling.moved > 1500 && rolling.moved > rolling.ctrl * 20,
