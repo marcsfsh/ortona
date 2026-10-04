@@ -175,6 +175,9 @@ const res = await page.evaluate(async ({ spec, views, img, mime, SCALE, grid, fa
     const mo = [pick('turX', V.turX || 0), pick('turY', V.turY || 0), pick('mountZ', V.mountZ || 0)];
     add(V.hull, 0);
     add(uk ? V.turUp[uk] : V.tur, 1, mo);
+    /* what is laid up and down on the mount (the Calliope's gun and rack, and the rod and the
+       springs between them), at the elevation the spec asks for (`el`, nought by default) */
+    if (V.elv) add(window.clPose(V, spec.el || 0), 1, mo);
     if (spec.crew) {
       add(V.crew, 2);
       const tc = uk && V.turCrewUp && V.turCrewUp[uk] ? V.turCrewUp[uk] : up.includes('mg') && V.turCrewMg ? V.turCrewMg : V.turCrew;
