@@ -103,6 +103,11 @@ const REAL = {
                clear: 0.30 },   /* 3.45 m over the towing fittings, 1.86 m wide, 1.58 m high and 300 mm of
                clearance. The drawing it is laid over (tools/ref/sv_t20.json) agrees with the length at its own
                scale bar and puts the width over the rails at the seats and the height at the backrests */
+  sv_ba64:   { name: 'BA-64B',              len: 3.67,  gun: 3.67,   wid: 1.69,  hgt: 1.90,
+               clear: 0.21 },   /* 3.67 m over the spare wheel, 1.69 m over the mudguards, 1.90 m to the rim of
+               the turret and 210 mm under the axles. The drawing it is laid over (tools/ref/sv_ba64.json) agrees
+               with the wheelbase, the width and the track at one scale, and at that scale it is 3.64 m from the
+               nose to the spare and 1.87 m to the rim */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the

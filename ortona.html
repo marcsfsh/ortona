@@ -1446,8 +1446,8 @@ var NATIONS = {
   /* It opens with three squads of Sapery, which is the whole of its infantry so far; the line
      squad takes two of the places when it is built. */
   sov: { side: 'us', name: 'Red Army', short: 'SOV', pick: 'RED ARMY',
-         hq: 'sov_hq', open: ['sv_sap', 'sv_sap', 'sv_sap'], tiers: ['sov_bar'], battery: null,
-         blurb: 'Sapery with the PPS-43, the ROKS-3 flamethrower and the minefield, and the Komsomolets tractor out of the Kazarma, raised from a Shtab dug in under logs and earth.' }
+         hq: 'sov_hq', open: ['sv_sap', 'sv_sap', 'sv_sap'], tiers: ['sov_bar', 'sov_mot'], battery: null,
+         blurb: 'Sapery with the PPS-43, the ROKS-3 flamethrower and the minefield, the Komsomolets tractor out of the Kazarma and the BA-64B out of the Avtopark, raised from a Shtab dug in under logs and earth.' }
 };
 var RETIRED = { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_ab: 'am_ranger', us_mg: 'am_mg',
                 us_at: 'am_at', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher',
@@ -2324,6 +2324,17 @@ var UNITS = {
     req: 'sov_bar',
     w: { mm: 9, range: 280, dmg: 7.5, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
     desc: 'The Red Army\'s light armoured tractor: a driver and a commander in a riveted cab with a DT in a ball mount, and six seats back to back on the deck behind them for a squad. It tows a gun. Ten millimetres of plate keeps out rifle fire at a distance and nothing heavier, and the DT traverses twenty degrees either way before the tractor has to turn.'
+  },
+  /* The BA-64B, which the Avtopark fields: the GAZ's light armoured car on the jeep-sized
+     chassis with the wider track, a driver under the visor and a commander standing in an open
+     turret with a DT that goes all the way round. */
+  sv_ba64: {
+    side: 'us', nat: 'sov', name: 'BA-64B', short: 'BA-64', cat: 'veh', hk: 'B', upgrades: [],
+    wheeled: 1, blastRes: 1.25,
+    hp: 300, armor: 40, speed: 145, sight: 380, pop: 6, cost: { mp: 200, fu: 20 }, time: 20,
+    req: 'sov_mot',
+    w: { mm: 9, range: 290, dmg: 8, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 9, aoe: 0 },
+    desc: 'The Red Army\'s light armoured car: four wheels under a boat of welded plates, a driver behind the visor and a commander standing in a small open turret with a DT. Fast, and it sees a long way. Fifteen millimetres in front keeps out rifle fire and a machine gun\'s ball, and anything heavier goes through it.'
   }
 };
 
@@ -2425,6 +2436,9 @@ var BUILDINGS = {
   sov_bar: { side: 'us', nat: 'sov', name: 'Kazarma', short: 'KAZARMA', w: 116, h: 96, hp: 1500, hk: '1',
              cost: { mp: 200 }, time: 26, makes: ['sv_t20'],
              desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Komsomolets T-20.' },
+  sov_mot: { side: 'us', nat: 'sov', name: 'Avtopark', short: 'AVTOPARK', w: 136, h: 106, hp: 1700, hk: '2', need: 'sov_bar',
+             cost: { mp: 240, fu: 30 }, time: 32, makes: ['sv_ba64'],
+             desc: 'A vehicle park: a shed of logs with two bays, the ramp a car is worked on from underneath, a tripod hoist and the fuel behind logs. Needs the Kazarma. Raises the BA-64B.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren', 'hr_ks750'] },
   ger_qtr: { side: 'ger', name: 'Kaserne', short: 'KASERNE', w: 116, h: 96, hp: 1500, hk: '1',
@@ -9453,6 +9467,7 @@ var ARM = {
   am_weasel:  { soft: 1 },
   hr_ks750:   { soft: 1 },
   sv_t20:     { h: [10, 7, 7],      t: [10, 7, 7] },
+  sv_ba64:    { h: [15, 9, 9],      t: [10, 10, 10] },
   am_m3:      { h: [13, 7, 7],      t: [13, 7, 7],      cm: .45 },
   am_gmc:     { h: [13, 7, 7],      t: [16, 7, 7],      cm: .45 },
   am_m16:     { h: [13, 7, 7],      t: [8, 7, 7],       cm: .45 },
@@ -10056,7 +10071,7 @@ function mountPose(u, M) {
   var k = mountUp(u), o = k && M.barUp ? M.barUp[k] : null;
   function pick(n, d) { return o && o[n] !== undefined ? o[n] : d; }
   return { x: pick('turX', M.turX || 0), y: pick('turY', M.turY || 0), z: pick('mountZ', M.mountZ),
-           bar: pick('bar', M.bar), gunZ: pick('gunZ', M.gunZ) };
+           bar: pick('bar', M.bar), barY: pick('barY', M.barY || 0), gunZ: pick('gunZ', M.gunZ) };
 }
 function weaponFor(u, t) {
   if (t && t.cat === 'veh' && u.def.at && launcherLive(u)) return u.def.at;
@@ -13412,7 +13427,7 @@ function gunMuzzle(u) {
   vehGroundNow(u);
   var tr = (u.turret === undefined ? u.facing : u.turret) - u.facing;
   var hm = m4lean(u.x, u.y, u.gz, u.facing, 1, u.gl, u.gp);
-  var p = m4apply(m4mul(hm, m4model(mo.x, mo.y, mo.z || 0, tr, 1)), mo.bar + 6, 0, mo.gunZ || 0);
+  var p = m4apply(m4mul(hm, m4model(mo.x, mo.y, mo.z || 0, tr, 1)), mo.bar + 6, mo.barY, mo.gunZ || 0);
   return { x: p.x, y: p.y, z: p.z };
 }
 function onScreen(x, y) { return inView(view(), x, y, 80); }
@@ -16893,7 +16908,7 @@ function aiTick(dt) {
      building makes its vehicle (`vb1`), where the other two armies' vehicles wait for the second */
   var nat = natOfSlot(slot);
   var K = nat === 'sov'
-    ? { eng: 'sv_sap', inf: 'sv_sap', lt: 'sv_t20', b1: 'sov_bar', vb1: 1 }
+    ? { eng: 'sv_sap', inf: 'sv_sap', lt: 'sv_t20', lt2: 'sv_ba64', b1: 'sov_bar', b2: 'sov_mot', vb1: 1 }
     : side === 'us'
     ? { eng: 'am_eng', inf: 'am_rifle', mg: 'am_mg', mor: 'us_mor', how: 'us_how', elite: 'am_ranger', at: 'am_at', lt: 'am_jeep', lt2: 'am_m3', lt3: 'am_m8', tank: 'am_sher', b1: 'us_bar', b2: 'us_mot', b3: 'us_tank' }
     : { eng: 'hr_pio', inf: 'hr_gren', mg: 'hr_mg', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'hr_kch', at: 'hr_pak', lt: 'hr_ks750', lt2: 'hr_251', tank: 'hr_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep', b3: 'ger_pz' };
@@ -16951,7 +16966,7 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40]] : side === 'us'
+  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_ba64', 1, 210]] : side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
@@ -33688,6 +33703,350 @@ function tzShow() {
   return tzHull().concat(place(tzMount(), 0, H.gx, H.gy, H.gz));
 }
 
+/* ================================================================ BA-64B (Red Army)
+   The GAZ's light armoured car of 1943, on the jeep-sized chassis of the GAZ-64 with the
+   wider track of the B, which the Red Army's armoured car companies fielded as scouts and
+   for liaison: a boat of welded plates over four wheels, a driver in front under the
+   visor and a commander behind him standing in a small open turret with a DT. Built from
+   nothing here, off a four-view drawing laid over it with tools/overlay.mjs
+   (tools/ref/sv_ba64.json). The sheet has no scale; the side view agrees with the 2.10 m
+   wheelbase at 81 px/m and the plan and the ends with the 1.69 m over the mudguards and the
+   1.44 m track at the same scale.
+
+   What says BA-64 rather than any other armoured car, from the front:
+
+     1. The body is all facets: upper side plates leaning in to a narrow roof, lower side
+        plates leaning in to the belly, the crease between them rising from the nose to the
+        middle and falling again to the tail, and the louvred plate sloping up from the nose
+        to a short bonnet in front of the driver's plate.
+     2. The turret is a low open octagon over the back axle, the walls leaning in, with the
+        DT over its front wall on the right.
+     3. Four big wheels on cross-country tyres under flat mudguards, the spare leaning on the
+        sloped tail. */
+
+var BAC = TZC;
+var BAG = {
+  R: 4.33, W: 2.17, Y: 8.49, xW: [12.28, -12.28], rRim: 2.67, zDiff: 2.55   /* 7.00-16s on a 1.44 m track, 2.10 m apart */
+};
+/* the body in rings along it, nose first: at each station the edge of the top (the louvred
+   plate, the bonnet, the driver's plate, the roof or the tail plate), the crease and the edge
+   of the belly, each as how far out and how high */
+var BAH = {
+  ring: [
+    [18.34, [4.19, 9.10], [5.20, 8.96], [4.33, 8.38]],    /* the nose */
+    [16.76, [3.90, 10.33], [5.42, 9.32], [4.33, 6.21]],
+    [13.87, [3.03, 12.71], [5.78, 11.06], [4.48, 5.78]],  /* the front of the bonnet */
+    [2.89, [5.49, 14.44], [7.37, 12.65], [4.62, 5.49]],   /* the foot of the driver's plate */
+    [-0.43, [5.71, 18.6], [7.87, 13.00], [4.62, 5.49]],   /* the front of the roof */
+    [-5.49, [5.71, 18.6], [8.38, 13.72], [4.62, 5.49]],
+    [-14.16, [5.71, 18.6], [8.38, 14.01], [4.62, 5.49]],
+    [-17.19, [2.82, 18.6], [6.79, 12.23], [4.62, 5.49]],  /* the back of the roof */
+    [-19.07, [3.54, 14.72], [5.78, 11.12], [4.33, 5.34]],
+    [-21.52, [4.48, 9.68], [4.48, 9.68], [4.48, 9.68]]    /* the tail */
+  ],
+  roof: 18.6, turX: -10.91
+};
+/* the turret, about the middle of its ring with the roof at nought: the plan of its foot,
+   the walls leaning in to the rim by how far each comes in, the well the commander stands in
+   down to the floor, and the DT with its pan, its muzzle and where it stands */
+var BAT = {
+  base: [[6.28, -3.18], [6.28, 3.18], [1.81, 5.63], [-3.25, 5.63], [-6.28, 2.82], [-6.28, -2.82], [-3.25, -5.63], [1.81, -5.63]],
+  d: [1.87, 2.15, 1.95, 2.2, 2.16, 2.2, 1.95, 2.15], h: 3.25, t: .25, zf: -12.7, well: 4.5,
+  gx: 2.5, gy: 1.44, gz: 2.1, muz: 9.32
+};
+
+/* a point of a ring on one side */
+function baP(i, k, sd) { var r = BAH.ring[i], p = r[k + 1]; return [r[0], sd * p[0], p[1]]; }
+/* a face of the body turned out from a line down its middle, which serves for every facet
+   because the body is convex everywhere but the foot of the driver's plate */
+function baFace(pts, col) {
+  var cx = 0, cy = 0, cz = 0;
+  pts.forEach(function (p) { cx += p[0]; cy += p[1]; cz += p[2]; });
+  cx /= pts.length; cy /= pts.length; cz /= pts.length;
+  var want = [cx - clamp(cx, -12, 10), cy, cz - 9.5];
+  if (pts.length === 4) return m8Quad(pts[0], pts[1], pts[2], pts[3], want, col);
+  return [hkFace(pts, want, col)];
+}
+
+/* ---- the running gear ---- */
+
+/* A 7.00-16 cross-country tyre on a pressed disc wheel: the deep tyre with its tread of bars
+   across it, staggered either side of the middle, the rim, the disc with its ring of holes
+   and the hub. The outer face carries the holes and the hub; the inner faces the body. */
+function baTyre(x, y, z, sd) {
+  var C = BAC, g = BAG, r = g.R, w = g.W / 2, rr = r - .32, f, i;
+  var prof = [[0, -.5], [.9, -.5], [1.1, -.2], [2.3, -.36], [g.rRim, -.62], [g.rRim + .05, -w], [rr - .8, -w], [rr, -w + .42],
+              [rr, w - .42], [rr - .8, w], [g.rRim + .05, w], [g.rRim, .62], [2.3, .36], [1.1, .2], [.9, .5], [0, .5]];
+  f = lathe(x, y, z, prof, 22, [C.lit, C.body, C.body, C.dark, C.body, C.tyre, C.rubber, C.rubber, C.rubber, C.tyre,
+                                C.body, C.dark, C.body, C.body, C.lit], true);
+  for (i = 0; i < 22; i++) {
+    var a = i / 22 * TAU;
+    [-1, 1].forEach(function (s) {
+      var bar = place(box(0, 0, -.28, .62, 1.0, .56, C.tyre, C.rubber, C.tyre, 0), 0, 0, s * (.5 + (i % 2 ? .08 : -.08)), 0);
+      bar = place(bar, s * .32, 0, 0, 0);
+      f = f.concat(place(pitch(place(bar, 0, 0, 0, rr), a + (s > 0 ? TAU / 44 : 0), 0, 0), 0, x, y, z));
+    });
+  }
+  /* the holes in the disc, the hub and its nuts */
+  for (i = 0; i < 10; i++) {
+    var ha = i / 10 * TAU;
+    f = f.concat(latheSide(x + Math.cos(ha) * 1.85, y + sd * .5, z + Math.sin(ha) * 1.85, [[0, 0], [.32, 0], [.32, .02], [0, .02]], 6, [C.hole, C.hole], sd));
+  }
+  f = f.concat(latheSide(x, y + sd * .5, z, [[0, 0], [.95, 0], [.95, .35], [.6, .62], [0, .62]], 10, [C.body, C.lit, C.body, C.lit], sd));
+  f = f.concat(boltRing(x, y + sd * .88, z, .72, 6, .1, .12, C.steel));
+  return f;
+}
+function baWheel(x, sd) { var g = BAG, y = sd * g.Y; return rgW(baTyre(x, y, g.R, sd), x, y, g.R); }
+/* An axle: the banjo housing across with the differential on it, the knuckles at its ends,
+   and a leaf spring each side up to the frame; a shock absorber leans from each end of it up
+   to the body. */
+function baAxle(x) {
+  var C = BAC, g = BAG, f = [], z = g.R, s, i;
+  f = f.concat(place(tubeSmooth(-7.3, 7.3, 0, 0, .5, 8, C.dark, C.dark), Math.PI / 2, x, 0, z));
+  f = f.concat(lathe(x, .4, z, [[0, -1.3], [1.1, -1.3], [z - g.zDiff, -.6], [z - g.zDiff, .3], [1.2, 1.1], [0, 1.1]], 12,
+                     [C.dark, C.body, C.body, C.body, C.dark], true));
+  for (s = -1; s <= 1; s += 2) {
+    f = f.concat(lathe(x, s * 7.1, z, [[0, -.6], [.9, -.6], [1.05, 0], [.9, .6], [0, .6]], 10, [C.dark, C.body, C.body, C.dark], true));
+    for (i = 0; i < 5; i++) {
+      var ll = 7.6 - i * 1.3;
+      f = f.concat(box(x, s * 4.0, z + .55 + i * .22, ll, 1.0, .2, C.steel, C.bare, C.steel, 0));
+    }
+    f = f.concat(taperLimb([x + (x > 0 ? -1.2 : 1.2), s * 6.2, z + .3], [x + (x > 0 ? -2.8 : 2.8), s * 5.2, 7.6], .34, .26, C.dark));
+  }
+  return f;
+}
+/* the shaft from the gearbox back to the rear axle, the transfer box under the middle, and
+   the exhaust along the right with its silencer, out under the tail */
+function baUnder() {
+  var C = BAC, g = BAG, f = [];
+  f = f.concat(tubeSmooth(g.xW[1] + 1.2, g.xW[0] - 1.2, .4, 4.2, .26, 6, C.steel, C.steel));
+  f = f.concat(box(1.0, .4, 3.6, 3.4, 2.4, 1.6, C.dark, C.body, C.dark, .2));
+  f = f.concat(tubeSmooth(-4.6, .6, -3.5, 4.4, .62, 10, C.dark, C.dark));
+  f = f.concat(tubeSmooth(-20.6, -4.6, -3.5, 4.3, .18, 6, C.dark, C.hole));
+  return f;
+}
+
+/* ---- the body ---- */
+
+function baHull() {
+  var C = BAC, g = BAG, f = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) for (i = 0; i < 2; i++) f = f.concat(baWheel(g.xW[i], sd));
+  f = f.concat(baAxle(g.xW[0]), baAxle(g.xW[1]), baUnder());
+  f = f.concat(baBody(), baRoof(), baFenders(), baFront(), baSides(), baRear());
+  return f;
+}
+/* The skin: the top from the nose to the roof and down the tail, the upper and lower side
+   plates either side of the crease, the belly, the plate across the nose, and a bead down the
+   crease where the plates are welded. The roof under the turret is laid on its own
+   (`baRoof`), because the turret's well goes down through it. */
+function baBody() {
+  var C = BAC, H = BAH, f = [], n = H.ring.length, i, sd;
+  var topCol = [C.lit, C.lit, C.lit, C.body, null, null, null, C.body, C.body];
+  for (i = 0; i < n - 1; i++) {
+    if (topCol[i]) f = f.concat(baFace([baP(i, 0, -1), baP(i, 0, 1), baP(i + 1, 0, 1), baP(i + 1, 0, -1)], topCol[i]));
+    for (sd = -1; sd <= 1; sd += 2) {
+      f = f.concat(baFace([baP(i, 0, sd), baP(i, 1, sd), baP(i + 1, 1, sd), baP(i + 1, 0, sd)], C.body));
+      f = f.concat(baFace([baP(i, 1, sd), baP(i, 2, sd), baP(i + 1, 2, sd), baP(i + 1, 1, sd)], C.body));
+      f = f.concat(hkBead(baP(i, 1, sd), baP(i + 1, 1, sd), .1));
+    }
+    f = f.concat(baFace([baP(i, 2, -1), baP(i, 2, 1), baP(i + 1, 2, 1), baP(i + 1, 2, -1)], C.dark));
+  }
+  f = f.concat(baFace([baP(0, 0, 1), baP(0, 1, 1), baP(0, 2, 1), baP(0, 2, -1), baP(0, 1, -1), baP(0, 0, -1)], C.body));
+  return f;
+}
+/* The roof from the driver's plate back, with the ring the turret stands on cut out of it:
+   strips out from the ring to the edge of the roof, with the roof's corners among the
+   angles so no strip spans one. */
+function baRoof() {
+  var C = BAC, H = BAH, f = [], cx = H.turX, z = H.roof, r = BAT.well + .2, i;
+  var out = [[-.43 - cx, -5.71], [-.43 - cx, 5.71], [-14.16 - cx, 5.71], [-17.19 - cx, 2.82], [-17.19 - cx, -2.82], [-14.16 - cx, -5.71]];
+  var as = [], N = 28;
+  for (i = 0; i < N; i++) as.push(i / N * TAU);
+  out.forEach(function (p) { var a = Math.atan2(p[1], p[0]); as.push(a < 0 ? a + TAU : a); });
+  as.sort(function (a, b) { return a - b; });
+  for (i = 0; i < as.length; i++) {
+    var a0 = as[i], a1 = as[(i + 1) % as.length] + (i === as.length - 1 ? TAU : 0);
+    if (a1 - a0 < 1e-4) continue;
+    var p0 = k4Ray(out, a0), p1 = k4Ray(out, a1);
+    f.push(hkFace([[cx + Math.cos(a0) * r, Math.sin(a0) * r, z], [cx + Math.cos(a1) * r, Math.sin(a1) * r, z],
+                   [cx + p1[0], p1[1], z], [cx + p0[0], p0[1], z]], [0, 0, 1], C.lit));
+  }
+  return f;
+}
+/* The mudguards: the front ones flat over the wheel with a lip down at the front and the
+   back sloping down behind it to the foot of the door, the back ones flat over the wheel
+   and sloping down in front of it and behind; a sidelight on the front of each front one. */
+function baFenders() {
+  var C = BAC, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y0 = sd > 0 ? 5.6 : -9.82, y1 = sd > 0 ? 9.82 : -5.6, r0 = sd > 0 ? 6.79 : -9.97, r1 = sd > 0 ? 9.97 : -6.79;
+    f = f.concat(tzBent([[5.2, 5.06], [8.67, 10.9], [15.6, 10.9], [15.75, 9.6]], y0, y1, .22, C.body, C.lit));
+    f = f.concat(tzBent([[-17.91, 5.92], [-15.6, 10.54], [-9.53, 10.54], [-7.37, 5.92]], r0, r1, .22, C.body, C.lit));
+    f = f.concat(cyl(15.2, sd * 8.7, 10.9, .38, .38, .55, 8, C.dark, C.lens, 0, true));
+  }
+  return f;
+}
+/* The front: the slats across the louvred plate, the hatch in the bonnet with its hinges and
+   handle, the visor in its housing at the top of the driver's plate, the blackout headlamp on
+   its bracket over the left mudguard, and the two towing hooks under the nose. */
+function baFront() {
+  var C = BAC, H = BAH, f = [], i, sd;
+  var a = baP(0, 0, 1), b = baP(2, 0, 1), u = hkNorm([b[0] - a[0], 0, b[2] - a[2]]), n = [-u[2], 0, u[0]];
+  if (n[0] < 0) n = [-n[0], 0, -n[2]];
+  for (i = 0; i < 6; i++) {
+    var t = (i + .6) / 6.6, o = [a[0] + (b[0] - a[0]) * t, 0, a[2] + (b[2] - a[2]) * t], hw = 4.0 - t * 1.0;
+    f = f.concat(hkOn(box(0, 0, 0, .34, 2 * hw, .26, C.dark, C.body, C.dark, 0), o, u, n));
+  }
+  /* the hatch over the engine, hinged at its back edge */
+  var p = baP(2, 0, 1), q = baP(3, 0, 1), ub = hkNorm([q[0] - p[0], 0, q[2] - p[2]]), nb = [-ub[2], 0, ub[0]];
+  if (nb[2] < 0) nb = [-nb[0], 0, -nb[2]];
+  var mid = [9.5 - 2.15, 0, p[2] + (q[2] - p[2]) * (p[0] - 7.35) / (p[0] - q[0])];
+  f = f.concat(hkOn(box(0, 0, 0, 4.3, 6.6, .14, C.body, C.lit, C.body, 0), mid, ub, nb));
+  [-2.4, 2.4].forEach(function (y) { f = f.concat(hkOn(cyl(-2.25, y, .05, .22, .22, .5, 6, C.dark, C.body), mid, ub, nb)); });
+  f = f.concat(hkOn(box(1.8, 0, .14, .3, 1.6, .25, C.steel, C.bare, C.steel, 0), mid, ub, nb));
+  /* the visor: its housing on the driver's plate, the shutter and the slit */
+  var d0 = baP(3, 0, 1), d1 = baP(4, 0, 1), ud = hkNorm([d1[0] - d0[0], 0, d1[2] - d0[2]]), nd = [-ud[2], 0, ud[0]];
+  if (nd[0] < 0) nd = [-nd[0], 0, -nd[2]];
+  var vo = [d0[0] + (d1[0] - d0[0]) * .72, 0, d0[2] + (d1[2] - d0[2]) * .72];
+  f = f.concat(hkOn(box(0, 0, 0, 2.4, 4.6, .55, C.body, C.lit, C.dark, .1), vo, ud, nd));
+  f = f.concat(hkOn(box(.2, 0, .55, .3, 3.2, .05, C.hole, C.hole, C.hole, 0), vo, ud, nd));
+  /* the blackout headlamp, on the vehicle's left, and its bracket down to the mudguard */
+  f = f.concat(place(tubeSmooth(-.8, .8, 0, 0, .82, 12, C.body, C.lens), 0, 14.4, -7.3, 13.1));
+  f = f.concat(place(tubeSmooth(.55, .95, 0, 0, .7, 12, C.dark, C.dark), 0, 14.4, -7.3, 13.1));
+  f = f.concat(box(14.1, -7.3, 10.9, .5, .5, 1.5, C.dark, C.body, C.dark, 0));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(17.2, sd * 2.6, 5.6, 1.2, .5, 1.1, C.dark, C.body, C.dark, 0));
+    f = f.concat(place(tubeSmooth(-.35, .35, 0, 0, .32, 6, C.steel, C.steel), Math.PI / 2, 17.7, sd * 2.6, 5.4));
+  }
+  return f;
+}
+/* The sides: the door in each lower side plate with its two hinges at the back edge and its
+   handle, the vision port in each upper side plate by the driver, the shovel along the right
+   and the extinguisher on the left behind the front wheel. */
+function baSides() {
+  var C = BAC, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) {
+    /* the door, on the lower plate between the front of the roof and the station behind it */
+    var foot = baP(4, 2, sd), crs = baP(4, 1, sd), dy = crs[1] - foot[1], dz = crs[2] - foot[2], L = Math.hypot(dy, dz);
+    var dc = [-1.8, foot[1] + dy * .5, foot[2] + dz * .5], dn = [0, sd * dz / L, -Math.abs(dy) / L];
+    f = f.concat(hkOn(box(0, 0, 0, 7.2, L * .62, .16, C.body, C.lit, C.body, .05), dc, [1, 0, 0], dn));
+    [-.2, .2].forEach(function (s) { f = f.concat(hkOn(box(-3.7, s * L, .1, .7, .55, .35, C.dark, C.body, C.dark, 0), dc, [1, 0, 0], dn)); });
+    f = f.concat(hkOn(box(2.4, 0, .16, .3, 1.0, .3, C.steel, C.bare, C.steel, 0), dc, [1, 0, 0], dn));
+    /* the vision port in the upper plate */
+    var t0 = baP(4, 0, sd), uy = t0[1] - crs[1], uz = t0[2] - crs[2], ul = Math.hypot(uy, uz);
+    var vp = [-2.3, crs[1] + uy * .55, crs[2] + uz * .55], vn = [0, sd * Math.abs(uz) / ul, Math.abs(uy) / ul];
+    f = f.concat(hkOn(cyl(0, 0, 0, .85, .55, .22, 10, C.body, C.lit, 0, true), vp, [1, 0, 0], vn));
+    f = f.concat(hkOn(box(0, 0, .22, 1.0, .12, .04, C.hole, C.hole, C.hole, 0), vp, [1, 0, 0], vn));
+  }
+  /* the shovel on the right of the tail, and the extinguisher on the left behind the wheel */
+  var sh = [[-8.2, 7.5, 12.4], [-14.6, 6.6, 11.4]];
+  f = f.concat(ksTube(sh[0], sh[1], .16, '#5a4630', 6));
+  f = f.concat(place(box(0, 0, -.9, 2.0, .2, 1.8, C.dark, C.body, C.dark, 0), -.1, sh[1][0] - .9, sh[1][1], sh[1][2] + .1));
+  f = f.concat(ksTube([5.8, -6.15, 6.2], [7.7, -6.6, 9.6], .38, C.star, 10));
+  f = f.concat(ksTube([7.7, -6.6, 9.6], [7.95, -6.65, 10.0], .14, C.steel, 6));
+  /* on the left, the pick along the crease behind the door and the crowbar up the side of
+     the bonnet, each in two clips */
+  f = f.concat(ksTube([-5.9, -8.55, 13.25], [-14.0, -8.0, 13.25], .15, '#5a4630', 6));
+  f = f.concat(place(box(0, 0, -1.3, .45, .3, 2.6, C.steel, C.bare, C.steel, 0), 0, -13.6, -8.1, 13.3));
+  f = f.concat(ksTube([1.8, -7.75, 13.55], [14.4, -5.9, 11.35], .12, C.steel, 6));
+  [[-7.2, -8.5, 13.0], [-12.0, -8.2, 12.95], [4.4, -7.4, 13.0], [11.6, -6.3, 11.75]].forEach(function (p) {
+    f = f.concat(box(p[0], p[1], p[2], .5, .45, .55, C.dark, C.body, C.dark, 0));
+  });
+  /* the V-shaped deflector on the roof in front of the turret */
+  f = f.concat(ksTube([-4.9, 4.95, 18.85], [-2.45, 0, 18.85], .2, C.dark, 6), ksTube([-2.45, 0, 18.85], [-4.9, -4.95, 18.85], .2, C.dark, 6));
+  return f;
+}
+/* The tail: the spare wheel leaning on the tail plate on its carrier, the port over it, the
+   bumper across under the tail with a lamp at each end, and the towing pintle. */
+function baRear() {
+  var C = BAC, H = BAH, f = [];
+  var a = baP(7, 0, 1), b = baP(9, 0, 1), u = hkNorm([b[0] - a[0], 0, b[2] - a[2]]), n = [u[2], 0, -u[0]];
+  if (n[0] > 0) n = [-n[0], 0, -n[2]];
+  var t = .56, o = [a[0] + (b[0] - a[0]) * t, 0, a[2] + (b[2] - a[2]) * t];
+  var c = [o[0] + n[0] * 1.9, 0, o[2] + n[2] * 1.9];
+  var tilt = Math.atan2(n[2], -n[0]);
+  f = f.concat(place(pitch(place(baTyre(0, 0, 0, 1), Math.PI / 2, 0, 0, 0), tilt, 0, 0), 0, c[0], 0, c[2]));
+  f = f.concat(ksTube([o[0], 0, o[2]], [c[0] - n[0] * .6, 0, c[2] - n[2] * .6], .5, C.dark, 8));
+  f = f.concat(hkOn(box(0, 0, 0, .5, 3.2, .25, C.dark, C.body, C.dark, 0), [o[0], 0, o[2]], u, n));
+  var po = [a[0] + (b[0] - a[0]) * .18, 0, a[2] + (b[2] - a[2]) * .18];
+  f = f.concat(hkOn(cyl(0, 0, 0, 1.4, .6, .2, 12, C.body, C.lit, 0, true), po, u, n));
+  f = f.concat(box(-20.4, 0, 4.5, .9, 13.6, 1.0, C.dark, C.body, C.dark, 0));
+  [-6.2, 6.2].forEach(function (y) { f = f.concat(cyl(-20.4, y, 5.5, .3, .3, .45, 6, C.dark, C.star, 0, true)); });
+  f = f.concat(box(-21.1, 0, 4.7, 1.0, .5, .6, C.steel, C.bare, C.steel, 0));
+  f = f.concat(place(tubeSmooth(-.3, .3, 0, 0, .45, 8, C.steel, C.steel), Math.PI / 2, -21.7, 0, 5.0));
+  return f;
+}
+
+/* ---- the turret ---- */
+
+/* Eight plates leaning in from a foot as wide as the roof to a rim three quarters as wide,
+   open above, with the inside in the light paint and the well the commander stands in down
+   through the roof to the floor; the slot in the front plate the DT fires through and a
+   vision slit in each side; the DT on its post, with its pan, its stock and its grip. */
+function baTurret() {
+  var C = BAC, T = BAT, f = [], i, N = 28;
+  var top = k4Inset(T.base, T.d), inLo = k4Inset(T.base, T.t), inHi = k4Inset(T.base, T.d.map(function (d) { return d + T.t; }));
+  f = f.concat(k4Walls(T.base, 0, top, T.h, [C.lit, C.body, C.body, C.dark, C.dark, C.dark, C.body, C.body]));
+  f = f.concat(m8Lit(k4Walls(inLo, 0, inHi, T.h, INC.white, true)));
+  for (i = 0; i < top.length; i++) {
+    var j = (i + 1) % top.length;
+    f.push(hkFace([[top[i][0], top[i][1], T.h], [top[j][0], top[j][1], T.h], [inHi[j][0], inHi[j][1], T.h], [inHi[i][0], inHi[i][1], T.h]], [0, 0, 1], C.lit));
+    f = f.concat(hkBead([T.base[i][0], T.base[i][1], .05], [T.base[j][0], T.base[j][1], .05], .12));
+  }
+  for (i = 0; i < N; i++) {
+    var a0 = i / N * TAU, a1 = (i + 1) / N * TAU, p0 = k4Ray(inLo, a0), p1 = k4Ray(inLo, a1);
+    f = f.concat(m8Lit([hkFace([[p0[0], p0[1], .02], [p1[0], p1[1], .02], [Math.cos(a1) * T.well, Math.sin(a1) * T.well, .02],
+                                [Math.cos(a0) * T.well, Math.sin(a0) * T.well, .02]], [0, 0, 1], INC.whiteD)]));
+  }
+  f = f.concat(m8Lit(faceIn(welded(loft([m8TurRing(T.well, T.zf, N, true), m8TurRing(T.well, 0, N, true)], [INC.whiteD])), 0, 0, T.zf / 2)));
+  f = f.concat(m8Lit([hkFace(m8TurRing(T.well, T.zf, N, false), [0, 0, 1], INC.whiteD)]));
+  /* the slot in the front plate, and a slit in each side plate */
+  var fn = hkNorm([T.h, 0, T.d[0]]), fu = hkNorm([-T.d[0], 0, T.h]);
+  var so = [T.base[0][0] - T.d[0] * .62 + fn[0] * .03, T.gy, T.h * .62 + fn[2] * .03];
+  f = f.concat(hkOn(box(0, 0, 0, 2.4, .8, .02, C.hole, C.hole, C.hole, 0), so, fu, fn));
+  [-1, 1].forEach(function (sd) {
+    var sn = hkNorm([0, sd * T.h, T.d[2]]);
+    var o = [-.7, sd * (T.base[2][1] - T.d[2] * .55), T.h * .55];
+    f = f.concat(hkOn(box(0, 0, 0, 1.6, .28, .04, C.hole, C.hole, C.hole, 0), o, [1, 0, 0], sn));
+    f = f.concat(hkOn(box(0, 0, 0, 2.4, .9, .02, C.body, C.lit, C.body, 0), [o[0], o[1] + sd * .01, o[2]], [1, 0, 0], sn));
+  });
+  return f.concat(baDT());
+}
+/* the DT: the barrel and its flash hider, the gas tube under it, the receiver, the pan on top,
+   the pistol grip and the stock, laid in the slot on a post from the floor */
+function baDT() {
+  var C = BAC, T = BAT, x = T.gx, y = T.gy, z = T.gz, g = [], fz = T.h * .62;
+  g = g.concat(tubeSmooth(x + 1.2, T.muz - .7, y, z, .2, 8, C.steel, C.steel));
+  g = g.concat(m4Taper(T.muz - .7, T.muz, y, z, .22, .34, 8, C.steel, C.hole));
+  g = g.concat(tubeSmooth(x + 1.2, x + 4.8, y, z - .36, .1, 6, C.steel, C.steel));
+  g = g.concat(box(x - .7, y, z - .42, 3.8, .62, .78, C.steel, C.bare, C.steel, .05));
+  g = g.concat(cyl(x, y, z + .36, 1.05, 1.05, .4, 14, C.dark, C.body, 0, true));
+  g = g.concat(cyl(x, y, z + .76, .26, .26, .12, 8, C.steel, C.bare, 0, true));
+  g = g.concat(place(pitch(box(0, 0, -1.0, .42, .34, 1.0, C.steel, C.bare, C.steel, 0), -.3, 0, 0), 0, x - 2.2, y, z - .42));
+  g = g.concat(ksTube([x - 2.6, y, z - .1], [x - 5.2, y, z - .35], .1, C.steel, 6));
+  g = g.concat(box(x - 5.3, y, z - .95, .3, .32, 1.1, C.steel, C.bare, C.steel, 0));
+  /* the sleeve the barrel goes out through, along the front plate, and the post under the
+     receiver down to the floor */
+  g = g.concat(tubeSmooth(T.base[0][0] - T.d[0] * (z + .8) / T.h, T.base[0][0] - T.d[0] * (z - 1.2) / T.h + .4, y, z, .42, 8, C.dark, C.body));
+  g = g.concat(box(x - .2, y, z - 1.0, .8, .5, .6, C.dark, C.body, C.dark, 0));
+  g = g.concat(cyl(x - .2, y, T.zf, .2, .2, z - 1.0 - T.zf, 8, C.dark, C.body, 0, true));
+  return wbThin(g);
+}
+/* the commander standing in the turret with his hands on the DT; the driver is under the
+   plates in front and is not drawn */
+function baCrew() {
+  var T = BAT, zf = T.zf + .1, mx = -3.3, my = .9;
+  var want = [T.gx - 2.2 - mx, T.gy - my, T.gz - .9 - zf];
+  var m = k4Man({ legs: FIGPOSE.stand.legs, lean: .12, grips: want, pole: [-.3, .7, -1] }, want, mx, my, zf, 0, 'sv_crew');
+  BAT.eye = m.eye;
+  return m.faces;
+}
+/* the whole car, for the overlay against the drawing */
+function baShow() {
+  var H = BAH;
+  return baHull().concat(place(baTurret(), 0, H.turX, 0, H.roof));
+}
+
 /* ================================================================ M3 light tank (US Army)
    The Stuart as the Americans first took it to war: the M3 of 1941 and 1942, riveted,
    with the rounded welded turret that did away with the cupola, and the idler trailing
@@ -40648,6 +41007,11 @@ VIN.am_weasel = function (V) {
   var e = WZ.gEye || [-5.2, 0, 8.4], at = { x: e[0], y: 0, z: e[2] };
   return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
 };
+/* nor has the BA-64B: the eye is the commander's, standing in the open turret behind the DT */
+VIN.sv_ba64 = function (V) {
+  var e = BAT.eye || [-2.4, .9, 6.6], at = { x: e[0], y: e[1], z: e[2] };
+  return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
+};
 /* nor has the T-20 that anyone sees: the eye is the commander's, head out of the right-hand door */
 VIN.sv_t20 = function (V) {
   var e = TZH.eye || [7.1, 3.6, 20.0], at = { x: e[0], y: e[1], z: e[2] };
@@ -40996,6 +41360,10 @@ function buildVehicleModels(up) {
      its arc; the commander rides on the hull, head and shoulders out of the right-hand door */
   vmDef('sv_t20', function () { return { hull: tzHull(), tur: tzMount(), crew: tzCrew(), belly: TZH.zBelly,
                       bar: TZH.muz, big: 0, fixed: 1, scale: 1, mountZ: TZH.gz, gunZ: 0, turX: TZH.gx, turY: TZH.gy }; });
+  /* the BA-64B: the commander turns with his turret, and the DT stands off the middle of it on
+     the right (`barY`) */
+  vmDef('sv_ba64', function () { return { hull: baHull(), tur: baTurret(), turCrew: baCrew(), belly: BAG.zDiff,
+                       bar: BAT.muz, barY: BAT.gy, big: 0, scale: 1, mountZ: BAH.roof, gunZ: BAT.gz, turX: BAH.turX, turY: 0 }; });
   vmDef('am_stuart', function () { return { hull: s3Hull(), tur: s3Turret(), belly: S3H.zBelly, bar: S3T.muz, big: 0, scale: 1,
                        mountZ: S3H.zRoof, gunZ: S3T.gz, turX: S3H.turX, turY: 0 }; });
   vmDef('ger_kt', function () { return { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
@@ -48852,7 +49220,75 @@ function svKazarma(d) {
   f = f.concat(crate(-54, -24, 0, .1, 8, 6, 6), crate(-54, -32, 0, -.15, 8, 6, 6), crate(-54, -28, 6, .05, 7, 5, 5));
   return f;
 }
-var BLDMODEL = { us_hq: usHQ, us_bar: usBarracks, us_mot: usMotorPool, us_tank: usTankYard, sov_hq: svShtab, sov_bar: svKazarma,
+/* The Avtopark: a battalion's vehicle park the way the Red Army laid one out behind the line.
+   At the back a shed of round logs with two bays open to the front under a lean-to roof of
+   boards, a bench and a stack of tyres in one bay; in front of it the log ramp a car is
+   driven up to be worked on from underneath, and beside that a tripod of poles with a chain
+   block hanging from it over a lifted engine; the fuel in drums behind a low wall of logs,
+   tyres and crates, the banner and the board with the star by the way in. */
+function svAvtopark(d) {
+  var f = [], B = BUNK, C = BASE, hw = d.w / 2, hh = d.h / 2, k, sd;
+  var x0 = -62, x1 = -26, y0 = -48, y1 = 48, n = 6, r = 1.4, zt = r + (n - 1) * r * 1.85 + r - 1;
+  /* the back wall, the two ends and the wall between the bays, and the posts across the front
+     with a log over them */
+  f = f.concat(svWallY(x0, y0, y1, -1, n, r), svWallX(y0, x0, x1, -1, n, r), svWallX(y1, x0, x1, -1, n, r), svWallX(0, x0, x1 - 4, -1, n, r));
+  [y0 + 1, -16, 16, y1 - 1].forEach(function (y) { f = f.concat(svPost(x1 + .5, y, -1, zt + 5, 1.2)); });
+  f = f.concat(svLogY(x1 + .5, y0 - 2, y1 + 2, zt + 4.2, 1.4, 1));
+  /* the roof: boards sloping from the back wall down to the front, run out past the walls,
+     with the battens across them; the ends closed in boards under it */
+  var zb = zt + 10, zf = zt + 4.8, rx0 = x0 - 3, rx1 = x1 + 5, ry = y1 + 4;
+  f.push.apply(f, bSheet([[rx1, -ry, zf], [rx1, ry, zf], [rx0, ry, zb], [rx0, -ry, zb]], B.timbL, B.timbD, [(rx0 + rx1) / 2, 0, 0]));
+  for (k = 0; k < 6; k++) {
+    var t = (k + .5) / 6, bx = rx1 + (rx0 - rx1) * t, bz = zf + (zb - zf) * t;
+    f = f.concat(box(bx, 0, bz + .05, .55, 2 * ry, .4, B.timbD, B.timb, B.timbD, 0));
+  }
+  for (sd = -1; sd <= 1; sd += 2) f.push(bOut([[x0 - .5, sd * (y1 + .3), zt - 1.2], [x1 + .5, sd * (y1 + .3), zt - 1.2], [x1 + .5, sd * (y1 + .3), zf - .6], [x0 - .5, sd * (y1 + .3), zb - .6]], B.timb, [(x0 + x1) / 2, 0, zt]));
+  /* in the bays: the floor of trodden earth, the bench with a vice on it and the tools hung
+     over it, a stack of tyres and the crate of parts */
+  f = f.concat(box((x0 + x1) / 2, 0, -9, x1 - x0, y1 - y0, 9.3, '#4a4636', '#4f4a3a'));
+  f = f.concat(box(-56, -28, 0, 7, 22, 7.5, B.timbD, B.timbL, B.timbD, 0), box(-56, -34, 7.5, 2.6, 2.6, 2.2, B.steel, B.steel, B.steel, 0));
+  for (k = 0; k < 5; k++) f = f.concat(box(x0 + 1.6, -36 + k * 4, 10 + (k % 2) * 1.5, .4, .5, 4, B.steel, B.steel, B.steel, 0));
+  for (k = 0; k < 5; k++) f = f.concat(cyl(-50, 30, k * 2.4, 4.6, 4.6, 2.4, 14, '#1f201b', '#2a2b24'));
+  f = f.concat(cyl(-40, 38, 0, 4.6, 4.6, 2.4, 14, '#1f201b', '#2a2b24'), crate(-40, 22, 0, .1, 8, 6, 6));
+  /* the ramp: two tracks of logs laid along it on cribs, climbing to a level top, with the
+     ends of the cross logs under them */
+  var ry0 = -6, rt = 6.5, L0 = -14, L1 = 40, top0 = 0, top1 = 24, h = 9;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var yy = ry0 + sd * 5.5;
+    for (k = 0; k < 3; k++) {
+      var off = (k - 1) * 1.15;
+      f = f.concat(ksTube([L0, yy + off, .9], [top0, yy + off, h + .9], 1.0, C.log, 7), ksTube([top0, yy + off, h + .9], [top1, yy + off, h + .9], 1.0, C.logL, 7),
+                   ksTube([top1, yy + off, h + .9], [L1, yy + off, .9], 1.0, C.log, 7));
+    }
+  }
+  [top0 + 2, (top0 + top1) / 2, top1 - 2].forEach(function (x) {
+    for (k = 0; k < 4; k++) f = f.concat(svLogY(x + (k % 2 ? 1.6 : -1.6), ry0 - rt - 1, ry0 + rt + 1, 1 + k * 2.1, 1.05, k % 2));
+  });
+  /* the tripod and the chain block over an engine lifted out on its crate */
+  var tx = 22, ty = 26, tz = 34;
+  [0, 1, 2].forEach(function (i) {
+    var a = i / 3 * TAU + .4;
+    f = f.concat(ksTube([tx + Math.cos(a) * 14, ty + Math.sin(a) * 14, 0], [tx, ty, tz], .9, C.logD, 7));
+  });
+  f = f.concat(box(tx, ty, tz - 5, 1.6, 1.6, 2.6, B.steel, B.steel, B.steel, 0), cyl(tx, ty, 14, .18, .18, tz - 19, 4, B.steel, B.steel));
+  f = f.concat(crate(tx, ty, 0, .2, 10, 8, 4), box(tx, ty, 4, 7, 5, 6, '#3a3d34', '#4a4d42', '#2e302a', .4));
+  f = f.concat(cyl(tx + 4, ty, 6.5, 1.1, 1.1, 3, 8, '#3a3d34', '#4a4d42'));
+  /* the fuel behind its wall of logs, the cans by it and the tyres */
+  f = f.concat(drumRow(38, -46, 9, '#4f5643'));
+  f = f.concat(svWallY(33, -50, -28, -1, 3, 1.2));
+  f = f.concat(jerryRow(-14, -48, 12, '#4d5340'));
+  for (k = 0; k < 4; k++) f = f.concat(cyl(-14 + (k % 2) * 10, 44, Math.floor(k / 2) * 2.4, 4.6, 4.6, 2.4, 14, '#1f201b', '#2a2b24'));
+  f = f.concat(crate(52, 38, 0, .15, 8, 6, 6), crate(52, 30, 0, -.1, 8, 6, 6), crate(51, 34, 6, .05, 7, 5, 5));
+  /* the banner by the way in, and the board with the star on its two posts */
+  f = f.concat(bPole(hw - 8, -hh + 8, -2, 40, .55, '#4a3f2e'), svBanner(hw - 7.4, -hh + 8, 28));
+  f = f.concat(svPost(hw - 6, 10, -1, 15, .6), svPost(hw - 6, 24, -1, 15, .6), box(hw - 5.6, 17, 7, .5, 16, 8, B.timbL, C.white, B.timbL, 0));
+  for (k = 0; k < 5; k++) {
+    var a5 = k * TAU / 5;
+    f = f.concat(place(roll(box(0, 0, 0, .1, .6, 1.4, C.sred, C.sred, C.sred, 0), a5, 0, 0), 0, hw - 5.25, 17, 10.6));
+  }
+  return f;
+}
+var BLDMODEL = { us_hq: usHQ, us_bar: usBarracks, us_mot: usMotorPool, us_tank: usTankYard, sov_hq: svShtab, sov_bar: svKazarma, sov_mot: svAvtopark,
                  ger_hq: gerHQ, ger_qtr: gerKaserne, ger_dep: gerKfzPark, ger_pz: gerPanzerpark };
 function buildingModel(d, key) { return BLDMODEL[key] ? BLDMODEL[key](d) : []; }
 function flagModel(col) {

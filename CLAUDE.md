@@ -7,8 +7,8 @@ are retired (see *The two armies*). Both armies are being built a unit at a time
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
 being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
-builders, the Sapery, its first production building, the Kazarma, and the Komsomolets T-20 out of it
-(see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+builders, the Sapery, its first production building, the Kazarma, the Komsomolets T-20 out of it, its
+second, the Avtopark, and the BA-64B out of that (see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1420,7 +1420,7 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
-**And four rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+**And five rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
 the player's slot fields it against the 352nd, the Shtab makes the Sapery and refuses the 29th's
 rifle squad, the side opens with three squads of four in the four sapper variants with the PPS-43,
 the plates, the ring and the helmet are on them, the sapper's card offers the four works with the
@@ -1437,7 +1437,16 @@ nose stops at the edge of twenty degrees, it takes one squad and refuses a secon
 commander wears the padded helmet and none of the SSh-40 and is the eye, two to six units over the
 roof, a Kar98k never goes through its front and a Pak 38 always goes through its side, forty wrecks
 throw nothing and sit down, killed it leaves two bodies of the army's crewmen, and a brain on his
-slot with a Kazarma standing queues a T-20 there inside forty seconds.
+slot with a Kazarma standing queues a T-20 there inside forty seconds. The fifth asks the Avtopark and
+the BA-64B: the card offers the Avtopark, which needs the Kazarma, makes the car and queues it, and the
+Kazarma refuses the car; every buffer is built and it is named the BA-64B, its turret asked to lay over
+the tail comes all the way round, the DT's flash leaves the gun's own muzzle off the middle of the
+turret, the commander standing in it wears the padded helmet and is the eye, two to six units over the
+rim, a Kar98k never goes through its front and a Pak 38 always does, eighty wrecks throw the turret
+some of the time, killed it leaves two of the army's crewmen, and a brain on his slot with a Kazarma
+standing pegs out an Avtopark and buys the car out of it. The row puts the clock past six hundred
+seconds first, because the car's rung opens at 210 seconds times the difficulty's gate, which is 315 at
+regular, and a row that leans on how long the rows before it ran is a row about those rows.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
@@ -6402,10 +6411,11 @@ saved for nothing, which is why the head of the list is only ever a live key.
 **The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
 pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
 fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
-has four things so far: its headquarters, the Shtab; its builders, the Sapery, with their
-flamethrowers and their minefield; its first production building, the Kazarma; and the Komsomolets
-T-20, its armoured tractor, out of the Kazarma. The B-4 position the Sapery are to dig and the rest
-of the production buildings come with rows of their own.
+has six things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+flamethrowers and their minefield; its first production building, the Kazarma; the Komsomolets
+T-20, its armoured tractor, out of the Kazarma; its second production building, the Avtopark; and the
+BA-64B, its armoured car, out of that. The B-4 position the Sapery are to dig and the third production
+building come with rows of their own.
 
 `NATIONS.sov` is the army, with `side: 'us'`, and every army names its headquarters (`hq`), the
 company it opens with (`open`), its production buildings in order (`tiers`) and its heavy battery's
@@ -6564,15 +6574,82 @@ leaves on the ground (`natOf` the vehicle, which is `sov`) are crewmen in the pa
 is the 4BO green (`TZC`, tagged as paint), a step greener than the Americans' olive drab beside it,
 with the seats in brown leather.
 
+**The Avtopark** (`sov_mot`, `svAvtopark`, 240 manpower, 30 fuel, 32 seconds, hotkey 2) is the army's
+second production building and needs the Kazarma (`need`): a battalion's vehicle park. At the back a
+shed of the Shtab's round logs with two bays open to the front under a lean-to roof of boards, the
+wall between the bays and the ends boarded in under the roof, a bench with a vice and the tools hung
+over it and a stack of tyres in the bays; in front of it the ramp a car is driven up to be worked on
+from underneath, two tracks of three logs climbing to a level top on cribs of cross logs; beside it a
+tripod of poles with a chain block hanging over an engine lifted out onto its crate; the fuel in drums
+behind a low wall of logs, cans, tyres and crates, the banner, and the board with the red star on its
+two posts by the way in. It is the 29th's motor pool's size, 136 by 106, and makes the BA-64B and
+nothing else yet.
+
+**The BA-64B** (`sv_ba64`, out of the Avtopark, 200 manpower, 20 fuel, 20 seconds, 6 of population, B)
+is the Red Army's light armoured car: 300 hit points, 15 mm of plate in front and 9 at the sides and the
+back with 10 round the open turret (`ARM`), `blastRes` 1.25, wheeled, 145 of speed and 380 of sight, a
+DT at 8 a burst every 0.20 seconds out to 290 with 9 mm of penetration, in a turret that goes all the
+way round, and no upgrades. Those are the row's numbers as it was pasted.
+
+It is laid over a four-view with two side views and the DT's mount drawn apart
+(`tools/ref/sv_ba64.json`). The sheet has no scale; its side views agree with the 2.10 m wheelbase at
+81 px/m, and the plan and the two ends with the 1.69 m over the mudguards and the 1.44 m track at the
+same scale, and a photograph of the car at a museum was read for the tread and the paint. The first
+overlay had the body, the wheels, the mudguards, the door, the vision ports, the headlamp, the shovel
+and the extinguisher within a line in every view, and put the DT's pan half a metre too far back,
+because the circle on the plan is the pan on top of the gun and not a pivot; it found the spare a hair
+high on the tail, two tools on the left side and a V-shaped deflector on the roof in front of the
+turret, which went in. On `tools/dims.mjs` it reads 3.64 m long against 3.67 over the spare, 1.70 wide
+against 1.69, 1.87 high to the rim against 1.90 and 0.22 of clearance against 0.21.
+
+What carries it (`ba` and `BAG`, `BAH`, `BAT`; the paint is the T-20's `TZC`, aliased as `BAC`): the
+body is ten rings along it, nose first (`BAH.ring`), each the edge of the top, the crease and the edge of
+the belly on one side, and every facet is laid between two rings and turned out from a line down the
+middle (`baFace`, through `m8Quad` where a panel twists), which serves because the body is convex
+everywhere but the foot of the driver's plate (`baBody`). The top runs from the louvred plate at the
+nose (with its six slats, `baFront`) to a short bonnet with its hatch, up the driver's plate with the
+visor in its housing, along the roof and down the tail plate; the crease rises from the nose to the
+middle and falls to the tail, with a weld bead along it. The roof under the turret is laid on its own
+with the ring cut out of it (`baRoof`, strips from the ring out to the roof's edge with its corners
+among the angles, the M8's way), because the turret's well goes down through it. The mudguards are bent
+plates (`tzBent`): the front ones flat over the wheel with a lip at the front and sloping down behind
+to the foot of the door, the back ones flat with a slope in front of the wheel and behind it, and a
+sidelight on each front one (`baFenders`). Each side carries the door in the lower plate, hinged at its
+back edge, and the vision port in the upper plate by the driver (`baSides`), the shovel on the right
+of the tail, the pick and the crowbar on the left and the extinguisher behind the left front wheel; the
+blackout headlamp stands on its bracket over the left mudguard; and the tail carries the spare leaning
+on the tail plate on its carrier, the port over it, the bumper with a lamp at each end and the pintle
+(`baRear`). Four 7.00-16 cross-country tyres with a tread of bars staggered either side of the middle
+on pressed disc wheels with ten holes (`baTyre`, `baWheel`), on two axles with the differential on the
+housing, the knuckles, a leaf spring each side and the shock absorbers (`baAxle`), and the shaft, the
+transfer box and the exhaust with its silencer under the right (`baUnder`).
+
+The turret (`baTurret`) is eight plates leaning in from a foot as wide as the roof to a rim three
+quarters as wide, each plate moved in by how far its own wall leans (`BAT.d`, through `k4Inset`, so
+every wall is a plane), open above, with the inside in the light paint and the ledge and the well the
+commander stands in down through the roof to the floor, all left out of the occlusion bake (`m8Lit`);
+the slot the DT fires through in the front plate and a vision slit in each side. The DT (`baDT`, thin to
+the bake) stands right of the middle as the plan has it, with its pan on top, the receiver, the grip and
+the stock behind it and the barrel out through a sleeve along the front plate, on a post from the floor.
+The muzzle point is laid off the middle of the turret (`barY` on the model, which `mountPose` and
+`gunMuzzle` read, nought for every other vehicle), so the flash leaves the gun and not the middle of
+the turret. The commander is `sv_crew` standing in the well with his hands on the grip (`baCrew`, the
+234's `k4Man`), head and shoulders over the rim, turning with the turret (`turCrew`), and he is the eye
+(`VIN.sv_ba64`, off the turret); the driver is under the plates in front and is not drawn. Killed, it
+leaves two crewmen in the padded helmet, and the turret is a turret, so a wreck throws it some of the
+time.
+
 The brain on the Soviet slot builds the Kazarma as its first building (`K.b1`) and buys a T-20 out of
 it (`LADDER`, one): `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
-reads, because the other two armies' armour waits for the second. The post's own shopping (the machine gun, the
+reads, because the other two armies' armour waits for the second. It builds the Avtopark second
+(`K.b2`), saving for it the way the other armies save for their motor pools, and buys one BA-64B out of
+it, the rung opening at 210 seconds as the M3 half-track's does across the beach. The post's own shopping (the machine gun, the
 mortar, the assault squad) runs once the first building stands, so it now runs for an army that has
 none of them: a key the army has not got is a thing it cannot buy (`canPost`), where it threw.
 
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
 brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders and
-as its line, has one T-20 on its shopping ladder, digs no battery and lays a minefield every fourth work.
+as its line, has a T-20 and a BA-64B on its shopping ladder, digs no battery and lays a minefield every fourth work.
 **And an army whose only infantry is its builder fights with it.** Every rule that leaves an
 engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
 engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
@@ -7479,8 +7556,9 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, M7 Priest, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, Marder III, Wespe, leFH 18, Nebelwerfer |
 | 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, Calliope, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
-The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and one tier over it so far, the Kazarma
-(`sov_bar`, 200), which makes the T-20; its tiers come with its rows. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
+The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and two tiers over it so far, the Kazarma
+(`sov_bar`, 200), which makes the T-20, and the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
+BA-64B; its third tier comes with its rows. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
 building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
 order sent to the wrong building of an AI to the right one, because a brain out of an older revision
