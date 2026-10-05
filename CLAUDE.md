@@ -6502,8 +6502,12 @@ strip sets one off a tick in five, which takes 180 times its blast factor off it
 holds it for nine to fifteen seconds with a track or the wheels gone; a man on the strip sets one
 off a tick in twenty, an anti-personnel mine of 95 over 22 with the grenade's rules, which takes the
 man who stepped on it. Spent, the field and its marking go. Measured by the gate: a grenadier squad
-walked across set one off, lost a man and could see the field afterwards; a 251 driven across lost
-180 and was held for seven to eleven seconds.
+walked across set one off, lost a man and could see the field afterwards; a 251 driven along it lost
+180 and was held for seven to eleven seconds. The drill drives it along the strip and not across it:
+across its 44 units at speed a half-track is inside for about four of the mine ticks and comes out
+untouched two times in five, which is about what five mines spread over 120 units should do to it, and
+on one desktop run of the gate it crossed every time without a mine going off. Along the strip it is
+inside for five or six ticks a pass, and the drill gives it ten passes and stops at the first mine.
 
 **The Kazarma** (`sov_bar`, `svKazarma`, 200 manpower, 26 seconds, hotkey 1) is the army's first
 production building and its only tier so far (`NATIONS.sov.tiers`): a company's barrack of round

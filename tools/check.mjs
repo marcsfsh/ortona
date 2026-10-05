@@ -7937,18 +7937,26 @@ for (const device of TARGETS) {
     const r = { n: F.f.n, n0: F.n0, shown: wk ? W.mineShown(wk, 'ger') : true, hp0: F.hp0,
                 hp: Math.round(F.e.dead ? 0 : F.e.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0)) };
     if (F.f.n > 0) {
-      const v = W.spawnUnit('ger', 'hr_251', F.s.x + 140, F.s.y, Math.PI);
-      W.orderMove(v, F.s.x - 200, F.s.y);
-      F.v = v; F.vhp = v.hp; F.vn = F.f.n;
+      /* the half-track goes along the strip and not across it: across its 44 units at speed
+         it is inside for about four of the mine ticks and gets through two times in five,
+         which is a minefield's arithmetic and a drill's coin toss; along it, five or six ticks
+         a pass and three times in ten, so it is given ten passes and stops at the first mine */
+      const ax = Math.cos(F.f.a), ay = Math.sin(F.f.a);
+      const v = W.spawnUnit('ger', 'hr_251', F.f.x + ax * 140, F.f.y + ay * 140, Math.atan2(-ay, -ax));
+      W.orderMove(v, F.f.x - ax * 150, F.f.y - ay * 150);
+      F.v = v; F.vhp = v.hp; F.vn = F.f.n; F.ax = ax; F.ay = ay;
     }
     return r;
   });
-  for (let i = 0; i < 6 && !mf0.none; i++) {
+  for (let i = 0; i < 10 && !mf0.none; i++) {
     await fastForward(page, 4);
     if (await page.evaluate(() => {
       const W = window, F = W.__mf, v = F.v;
       if (!v || F.f.n < F.vn || v.dead) return true;
-      if (!v.moving) W.orderMove(v, v.x < F.s.x ? F.s.x + 200 : F.s.x - 200, F.s.y);
+      if (!v.moving) {
+        const k = (v.x - F.f.x) * F.ax + (v.y - F.f.y) * F.ay < 0 ? 140 : -150;
+        W.orderMove(v, F.f.x + F.ax * k, F.f.y + F.ay * k);
+      }
       return false;
     })) break;
   }
