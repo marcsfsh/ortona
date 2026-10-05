@@ -341,10 +341,14 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    It is 3550 for five vehicles built to their drawings in one pass: the M7 Priest and the M12
    it can be rebuilt as, the Wespe, the Marder III and the M29C Weasel, with the artillery's
    fire mission made a thing a vehicle can carry.
+   It is 3650 for the first step of a third army: the Red Army on the Allied side, its Shtab, its
+   Sapery in a kit of their own with the PPS-43, the ROKS-3 and the jet it throws, and the
+   minefield. The army is built a unit at a time and every unit after this one is a reason of its
+   own.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 3550) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3550 kB so it stays quick to load on a phone`);
+if (kb > 3650) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3650 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

@@ -7773,6 +7773,200 @@ for (const device of TARGETS) {
      `the player's ${noArty.door.mk} ${noArty.door.mine ? 'queued' : 'REFUSED'}, and their Priest ${noArty.door.m12off ? 'REBUILT' : 'not rebuilt'} as the M12 ` +
      `(${noArty.door.m12on ? 'rebuilt' : 'NOT REBUILT'} with the switch on)`);
 
+  /* --- The Red Army, the third army, which fights on the Allied side. The title screen
+     offers it as a card of its own; picked, the player's slot fields it and every brain
+     still fields the 29th or the 352nd. Its headquarters is the Shtab and makes the Sapery,
+     the side opens with three of them, the Shtab refuses the 29th's rifle squad, the
+     sapper's card offers his own army's works (the minefield among them) and no other's,
+     and a bunker's fitting is no fitting of his where his army has no team for it. Then the
+     squad: four men of the four sapper variants with the PPS-43, the SN-42 plates on the
+     second, the greatcoat in its ring on the first and the SSh-40 on all of them. --- */
+  await reload(page);
+  await deploy(page, { side: 'sov', diff: 1 });
+  const sov = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    W.vpSet('us', 9000); W.vpSet('ger', 9000);
+    out.card = (document.querySelector('#picksov h3') || {}).textContent || '-';
+    out.nat = W.natOfSlot(own); out.army = W.armyOf('us').name; out.foeNat = W.natOfSlot('ger');
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    out.hq = hq ? hq.key : '-'; out.hqName = hq ? hq.def.name : '-';
+    out.makes = hq ? W.makesOf(hq).join(',') : '-';
+    out.open = G.units.filter(u => u.own === own && !u.dead).map(u => u.key).sort().join(',');
+    G.res[own].mp += 2000; G.res[own].fu += 200;
+    const q0 = hq.queue.length;
+    out.q = W.queueUnit(hq, 'sv_sap') ? hq.queue.slice(-1)[0] : 'refused';
+    out.qUs = W.queueUnit(hq, 'am_rifle') ? 'QUEUED' : 'refused';
+    hq.queue.length = q0;
+    const u = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    out.men = u.models.length; out.builder = !!u.def.builder; out.hpPer = u.models[0].hp;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.sov, cnt = (fs, cols) => fs.filter(f => cols.indexOf(f.c) >= 0).length;
+    const ra = W.manFaces('sv_sap', W.FIGPOSE.stand), rb = W.manFaces('sv_sap_b', W.FIGPOSE.stand);
+    const plate = [W.lit(K.armour, 1.1), K.armourD, W.lit(K.armour, .95), W.lit(K.armour, 1.06), W.lit(K.armour, .93)];
+    out.sn42 = cnt(rb.faces, plate); out.sn42a = cnt(ra.faces, plate);
+    out.roll = cnt(ra.faces, [K.roll, W.lit(K.roll, .95)]);
+    out.helm = cnt(rb.parts.helmet, [K.helm, W.lit(K.helm, 1.1), W.lit(K.helm, .9)]);
+    W.select([u], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    out.bunk = W.bunkUnit(W.BUNKUP.mg, own); out.bunkGer = W.bunkUnit(W.BUNKUP.mg, 'ger');
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fell = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.sov_sap && W.MODELS.dead.sov_sap && W.MODELS.fall.sov_sap.length === 3 && W.MODELS.dead.sov_sap.length === 2);
+    W.killUnit(u);
+    return out;
+  });
+  const sovWorks = ['SANDBAGS', 'WEAPON PIT', 'WIRE', 'MINES'].filter(t => sov.cards.indexOf(t) >= 0);
+  const sovStray = sov.cards.filter(t => /240 MM|MRS 18|FLAK 88|BARRACKS|MOTOR POOL|TANK YARD|KASERNE/.test(t));
+  ok('the Red Army: a card of its own, the Shtab, and the Sapery in a kit of their own with bodies of their own',
+     sov.card === 'RED ARMY' && sov.nat === 'sov' && sov.army === 'Red Army' && sov.foeNat === 'heer' &&
+     sov.hq === 'sov_hq' && sov.hqName === 'Shtab' && sov.makes === 'sv_sap' && sov.open === 'sv_sap,sv_sap,sv_sap' &&
+     sov.q === 'sv_sap' && sov.qUs === 'refused' && sov.men === 4 && sov.hpPer === 64 && sov.builder &&
+     sov.vars === 'sv_sap,sv_sap_b,sv_sap_c,sv_sap_d' && sov.weap === 'pps' && sov.sn42 > 0 && sov.sn42a === 0 &&
+     sov.roll > 0 && sov.helm > 0 && sovWorks.length === 4 && sov.cards.indexOf('ROKS-3') >= 0 && !sovStray.length &&
+     sov.bunk === null && sov.bunkGer === 'hr_mg' && sov.fell === 'sov_sap' && sov.bodies,
+     `the card reads ${sov.card}; his slot fields ${sov.nat} (${sov.army}) against ${sov.foeNat}; his headquarters is the ` +
+     `${sov.hq} (${sov.hqName}) making ${sov.makes}; he opened with ${sov.open}; the Shtab queues ${sov.q} and ` +
+     `${sov.qUs} the 29th's rifle squad; ${sov.men} men of ${sov.hpPer} hp of ${sov.vars} carrying ${sov.weap}, ` +
+     `${sov.builder ? 'a builder' : 'NOT A BUILDER'}; ${sov.sn42} faces of SN-42 on the second man and ${sov.sn42a} on the first, ` +
+     `${sov.roll} of greatcoat ring, ${sov.helm} of SSh-40; the card offers ${sovWorks.join(', ')} and ` +
+     `${sov.cards.indexOf('ROKS-3') >= 0 ? 'the ROKS-3' : 'NO ROKS-3'}${sovStray.length ? ' and ' + sovStray.join(', ') : ''}; ` +
+     `a machine gun fitting raises ${sov.bunk} for him and ${sov.bunkGer} for the 352nd; a man killed went down as ` +
+     `${sov.fell}, sapper bodies ${sov.bodies ? 'baked' : 'MISSING'}`);
+
+  /* --- A brain on the Red Army's slot, which is what SIMPLE puts there. Its army has no
+     infantry but its builders yet, and a brain that kept every builder back to dig would take
+     no ground at all: it keeps one and deals the rest jobs, and buys nothing that is not of
+     its own army. --- */
+  await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.__sbq = []; W.__sqU = W.queueUnit; W.__sal = W.aiLook; W.__seng = -1;
+    W.queueUnit = function (b) { const r = W.__sqU.apply(this, arguments); if (r && b.own === own) W.__sbq.push(arguments[1]); return r; };
+    W.aiLook = function (sl) { const r = W.__sal.apply(this, arguments); if (sl === own) W.__seng = r.engs.length; return r; };
+  });
+  await fastForward(page, 45);
+  const sovAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.queueUnit = W.__sqU; W.aiLook = W.__sal; W.slotOf(own).ai = 0;
+    const mine = G.units.filter(u => u.own === own && !u.dead);
+    return { q: W.__sbq.join(',') || 'nothing', stray: W.__sbq.filter(k => W.UNITS[k].nat !== 'sov').length,
+             n: mine.length, jobs: mine.filter(u => u.job).length, engs: W.__seng,
+             kinds: [...new Set(mine.map(u => u.job || 'dig'))].join(',') };
+  });
+  ok('a brain on the Red Army\'s slot keeps one sapper back to dig and fights with the rest',
+     sovAi.q !== 'nothing' && sovAi.stray === 0 && sovAi.engs === 1 && sovAi.jobs >= sovAi.n - 1 && sovAi.jobs >= 2,
+     `in 45 s it queued ${sovAi.q} (${sovAi.stray} of another army); of its ${sovAi.n} squads ${sovAi.jobs} had a job ` +
+     `(${sovAi.kinds}) and ${sovAi.engs} was kept as its engineer`);
+
+  /* --- The ROKS-3 and the minefield. The flamethrowers go to the third and fourth men for
+     their price, and against a grenadier squad holding a house the jet is thrown from inside
+     its 80 units of the wall, the jet is drawn, the garrison is burnt and the house catches.
+     Then a minefield laid in front of the headquarters is shown to its own side and not to
+     the enemy's, takes men walking across it and a half-track driven across it, and once it
+     has gone off is shown to the side it went off under. The German brain is switched off for
+     the drill, or it gives its own units their orders and drives the half-track elsewhere. --- */
+  const fl0 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.slotOf('ger').ai = 0;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const p = G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 60 && !q.hurt &&
+      !G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300)).sort((a, b) => b.w * b.h - a.w * a.h)[0];
+    if (!p) return { none: 1 };
+    const e = W.spawnUnit('ger', 'hr_gren', p.x, p.y + p.h / 2 + 40);
+    W.enterBuilding(e, p);
+    const u = W.spawnUnit(own, 'sv_sap', p.x, p.y + p.h / 2 + 70, -Math.PI / 2);
+    G.res[own].mp += 500; G.res[own].fu += 100;
+    const mp0 = G.res[own].mp, fu0 = G.res[own].fu;
+    W.pay(own, W.UPGRADES.roks.cost); W.fitUp(u, 'roks');
+    const F = W.__fl = { u, e, p, jets: 0, fl: 0, far: 0 };
+    F.sf = W.spawnFx; F.fa = W.fireAt;
+    W.spawnFx = function (k) { if (k === 'jet') F.jets++; return F.sf.apply(this, arguments); };
+    W.fireAt = function (a, t, dt, o) {
+      const c0 = a.glcd || 0, jd = a === F.u && o && o.gl ? W.jetDist(a, t) : 0;
+      const r = F.fa.apply(this, arguments);
+      if (a === F.u && o && o.gl && (a.glcd || 0) > c0) { F.fl++; F.far = Math.max(F.far, jd); }
+      return r;
+    };
+    W.centreOn(u.x, u.y); W.CAM.dist = 320;
+    u.target = e; u.forced = e; u.order = 'attack';
+    F.hp0 = e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    return { vars: [0, 1, 2, 3].map(i => W.variantForModel(u, i)).join(','), reach: W.glOf(u) ? W.glOf(u).range : 0,
+             spent: (mp0 - G.res[own].mp) + '/' + (fu0 - G.res[own].fu), gar: !!e.gar };
+  });
+  await frames(page, 2);
+  await fastForward(page, 12);
+  const fl1 = await page.evaluate(() => {
+    const W = window, F = W.__fl, e = F.e, fr = F.p.fr;
+    W.spawnFx = F.sf; W.fireAt = F.fa;
+    return { jets: F.jets, fl: F.fl, far: Math.round(F.far), hp0: F.hp0,
+             hp: Math.round(e.dead ? 0 : e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)),
+             gar: !!e.gar && !e.dead, fire: fr ? fr.fire.length : 0 };
+  });
+  const mf0 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, s = W.__o.flatSpot(150);
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const u = W.spawnUnit(own, 'sv_sap', s.x - 60, s.y, 0);
+    const site = W.placeWork(own, 'mines', s.x, s.y, 0, [u]);
+    if (!site) return { none: 1 };
+    site.prog = 1; W.updateSites(0);
+    W.killUnit(u); G.units.length = 0;
+    const f = G.mines[G.mines.length - 1], wk = G.works.find(w => w.mf === f);
+    const e = W.spawnUnit('ger', 'hr_gren', s.x + 110, s.y, Math.PI);
+    W.orderMove(e, s.x - 160, s.y);
+    W.__mf = { f, e, s, n0: f.n, hp0: e.models.reduce((a, m) => a + m.hp, 0) };
+    return { n: f.n, us: W.mineShown(wk, 'us'), ger: W.mineShown(wk, 'ger') };
+  });
+  for (let i = 0; i < 4 && !mf0.none; i++) {
+    await fastForward(page, 4);
+    if (await page.evaluate(() => {
+      const W = window, F = W.__mf, e = F.e;
+      if (F.f.n < F.n0) return true;
+      if (!e.moving && !e.dead) W.orderMove(e, e.x < F.s.x ? F.s.x + 110 : F.s.x - 160, F.s.y);
+      return false;
+    })) break;
+  }
+  const mf1 = mf0.none ? {} : await page.evaluate(() => {
+    const W = window, F = W.__mf, wk = W.G.works.find(w => w.mf === F.f);
+    const r = { n: F.f.n, n0: F.n0, shown: wk ? W.mineShown(wk, 'ger') : true, hp0: F.hp0,
+                hp: Math.round(F.e.dead ? 0 : F.e.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0)) };
+    if (F.f.n > 0) {
+      const v = W.spawnUnit('ger', 'hr_251', F.s.x + 140, F.s.y, Math.PI);
+      W.orderMove(v, F.s.x - 200, F.s.y);
+      F.v = v; F.vhp = v.hp; F.vn = F.f.n;
+    }
+    return r;
+  });
+  for (let i = 0; i < 6 && !mf0.none; i++) {
+    await fastForward(page, 4);
+    if (await page.evaluate(() => {
+      const W = window, F = W.__mf, v = F.v;
+      if (!v || F.f.n < F.vn || v.dead) return true;
+      if (!v.moving) W.orderMove(v, v.x < F.s.x ? F.s.x + 200 : F.s.x - 200, F.s.y);
+      return false;
+    })) break;
+  }
+  const mf2 = mf0.none ? {} : await page.evaluate(() => {
+    const W = window, F = W.__mf;
+    return F.v ? { lost: Math.round(F.vhp - (F.v.dead ? 0 : F.v.hp)), immob: +(F.v.immob || 0).toFixed(1), dead: !!F.v.dead } : { lost: -1, immob: 0 };
+  });
+  ok('the Sapery\'s ROKS-3 burns a garrison out from inside its reach, and their minefield takes men and a half-track',
+     !fl0.none && fl0.vars === 'sv_sap,sv_sap_b,sv_flame,sv_flame' && fl0.reach === 80 && fl0.spent === '70/15' && fl0.gar &&
+     fl1.fl > 0 && fl1.jets > 0 && fl1.far <= 82 && fl1.hp < fl1.hp0 * .6 && (fl1.fire > 0 || !fl1.gar) &&
+     !mf0.none && mf0.us && !mf0.ger && mf1.n < mf1.n0 && mf1.hp < mf1.hp0 && mf1.shown &&
+     (mf2.lost >= 150 || mf2.dead) && (mf2.immob > 0 || mf2.dead),
+     `fitted for ${fl0.spent}, the men are ${fl0.vars} with a reach of ${fl0.reach}; against a garrison of ${fl1.hp0} hp ` +
+     `${fl1.fl} jets left the tubes, the furthest from ${fl1.far} units of the wall, ${fl1.jets} gouts drawn, the garrison ` +
+     `left at ${fl1.hp} and ${fl1.gar ? 'STILL IN' : 'out'}, ${fl1.fire} cells alight; the minefield ` +
+     `${mf0.none ? 'REFUSED' : `shown to us ${mf0.us} and to them ${mf0.ger}`}; walked across, ${mf1.n0 - mf1.n} mines went off ` +
+     `and the squad went from ${mf1.hp0} to ${mf1.hp} hp, the field then ${mf1.shown ? 'shown' : 'STILL HIDDEN'} to them; ` +
+     `a 251 driven across lost ${mf2.lost}${mf2.dead ? ' and died' : ''} and was held for ${mf2.immob} s`);
+
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were
      550 MB at the whistle, every infantry pose on the roster was baked whether or not anybody

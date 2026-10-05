@@ -173,9 +173,9 @@ body.mob #drivefire,body.mob #drivemg{right:calc(12px + var(--safeR))}
 .sides{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;width:100%;max-width:480px}
 .side{flex:1 1 210px;min-width:198px;border:1px solid var(--line);background:#15190f;
   padding:14px 15px;text-align:left;border-left-width:4px}
-.side.us{border-left-color:var(--us)} .side.ger{border-left-color:var(--ger)}
+.side.us{border-left-color:var(--us)} .side.ger{border-left-color:var(--ger)} .side.sov{border-left-color:#b04a3c}
 .side.on{background:var(--panel2);border-color:var(--line2)}
-.side.us.on{border-left-color:var(--us)} .side.ger.on{border-left-color:var(--ger)}
+.side.us.on{border-left-color:var(--us)} .side.ger.on{border-left-color:var(--ger)} .side.sov.on{border-left-color:#b04a3c}
 .side h3{font-size:18px;font-weight:500;letter-spacing:1px;margin-bottom:5px}
 .side p{font-size:12.5px;color:var(--dim);line-height:1.5}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:center}
@@ -434,7 +434,7 @@ body::after{content:"";position:fixed;inset:0;z-index:40;pointer-events:none;opa
 .side::before{content:attr(data-mark);position:absolute;left:18px;top:17px;width:38px;height:38px;border:1px solid #7c8575;border-radius:50%;
   display:flex;align-items:center;justify-content:center;font:700 12px/1 var(--mono);color:#d9d2bd;background:#0d100d;box-shadow:inset 0 0 0 4px #1e231c}
 .side h3{font-size:16px;letter-spacing:1.4px}.side p{font:11.5px/1.5 system-ui,sans-serif}.side.on{background:linear-gradient(145deg,#30372d,#171b15);box-shadow:0 9px 25px #0006,inset 0 1px #fff1}
-.side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}
+.side.us{border-left-color:#7899b1}.side.ger{border-left-color:#b56b58}.side.sov{border-left-color:#c2493a}
 .pill,.mode,.arty,.team,.gmap,.ctrl,.autoup,.wall{background:#151914;border-color:#4e594a;font:10px var(--mono);letter-spacing:1.5px}.pill.on,.mode.on,.arty.on,.team.on,.gmap.on,.ctrl.on,.autoup.on,.wall.on{background:#d7d0bd;color:#11140f;border-color:#efe8d4}.hcap{background:#12160d;border-color:#4e594a}.hb,.hres{border-color:#4e594a;background:#151914}
 .go{background:#d8d1bd;border-color:#eee8d6;color:#11140f;font-size:15px;letter-spacing:3px;padding:13px 54px;box-shadow:0 8px 26px #0007}
 .go:hover{background:#f2ecdb}.keys{font:10.5px/1.8 system-ui,sans-serif;color:#8f9284}.keys b{font-size:9px;color:#c4bfad}
@@ -970,6 +970,10 @@ body:not(.simple) #tOrders{display:none}
       <h3>352. INFANTERIE-DIVISION</h3>
       <p>Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.</p>
     </button>
+    <button class="side sov" data-side="us" data-army="sov" data-mark="SOV" id="picksov" aria-pressed="false">
+      <h3>RED ARMY</h3>
+      <p>Sapery with the PPS-43, the ROKS-3 flamethrower and the minefield, raised from a Shtab dug in under logs and earth.</p>
+    </button>
   </div>
   <div class="row">
     <span style="font-size:11px;color:var(--dim);letter-spacing:2px">GROUND</span>
@@ -1328,6 +1332,9 @@ function adMake(role) {
 /* fitted in the field, one purchase per vehicle */
 var UPGRADES = {
   skirts: { name: 'Fit Schürzen', short: 'SCHÜRZEN', hk: 'U', cost: { mp: 70 }, desc: 'Skirt plates along the hull sides, and round the turret where there is one: hollow-charge rounds burst on the plate before the armour.' },
+  /* the Sapery's flamethrowers, issued to two of the four */
+  roks: { name: 'Issue ROKS-3 flamethrowers', short: 'ROKS-3', hk: 'O', cost: { mp: 70, fu: 15 },
+          desc: 'Two of the sappers put down their PPS-43s for the ROKS-3: a cylinder of mixture on the back and a gun made to look like a rifle. The jet reaches eighty, goes over a parapet and in through a window, and sets alight what will burn.' },
   /* the Greyhound's sand shields, which do what Schürzen do over less of the side */
   fenders: { name: 'Hang the side skirts', short: 'SKIRTS', hk: 'U', cost: { mp: 50 }, desc: 'The sand shields over the rear wheels, hung from the crease: a hollow-charge round bursts on the sheet before it reaches the plate, and it keeps the worst of the mud off.' },
   mg: { name: 'Mount roof MG', short: 'ROOF MG', hk: 'I', cost: { mp: 60 }, desc: 'A machine gun on the cupola or pintle, worked by the commander against infantry.' },
@@ -1421,11 +1428,26 @@ function foe(s) { return s === 'us' ? 'ger' : 'us'; }
    those keys is fielded as now, because a brain out of an older revision on the skirmish card
    buys in the first roster's keys: `queueUnit`, `countOf` and `madeOf` read a key through
    `natKey`, so it is handed the unit that stands in its place and counts what it was given. */
+/* ---- and the third army.
+   The Red Army fights on the Allied side, in the 29th's place: a player picks one or the other
+   on the title screen and his own slot fields it (`chosenArmy`, `natOfSlot`). Every Allied slot
+   a brain plays is still the 29th, because the brain shops for a line squad, a machine gun and a
+   tank and the Red Army has none of them yet; under SIMPLE the brain on the player's own slot
+   runs his Soviet army with what it has. An army says where it starts: the headquarters it is
+   given (`hq`), the company it opens with (`open`), the buildings it raises in their order
+   (`tiers`) and the battery its engineers may dig (`battery`). */
 var NATIONS = {
   usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
+         hq: 'us_hq', open: ['am_eng', 'am_rifle', 'am_rifle'], tiers: ['us_bar', 'us_mot', 'us_tank'], battery: 'how240',
          blurb: 'Rifle squads with the M1 Garand, engineers with the grease gun, Rangers, and the M4 and the Pershing behind them.' },
   heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
-          blurb: 'Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.' }
+          hq: 'ger_hq', open: ['hr_pio', 'hr_gren', 'hr_gren'], tiers: ['ger_qtr', 'ger_dep', 'ger_pz'], battery: 'how210',
+          blurb: 'Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.' },
+  /* It opens with three squads of Sapery, which is the whole of the army so far; the line
+     squad takes two of the places when it is built. */
+  sov: { side: 'us', name: 'Red Army', short: 'SOV', pick: 'RED ARMY',
+         hq: 'sov_hq', open: ['sv_sap', 'sv_sap', 'sv_sap'], tiers: [], battery: null,
+         blurb: 'Sapery with the PPS-43, the ROKS-3 flamethrower and the minefield, raised from a Shtab dug in under logs and earth.' }
 };
 var RETIRED = { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_ab: 'am_ranger', us_mg: 'am_mg',
                 us_at: 'am_at', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher',
@@ -1441,6 +1463,42 @@ function makesOf(b) { return b.def.makes || null; }
    where he fell and whose kit he is carrying. `def.nat` says so on the units built for an
    army; a piece that is still the first roster's is its side's army all the same. */
 function natOf(u) { return (u.def && u.def.nat) || (u.side === 'ger' ? 'heer' : 'usa'); }
+/* Whether an army fields infantry that is not its builder. Until the Red Army has its rifle
+   companies the Sapery are all the infantry it has, and every rule that leaves an engineer
+   out of the fighting (the brain's dealing, its count of the enemy, an order to ALL) would
+   leave that army out of the battle. Worked out once an army, off the roster. */
+var NATLINE = {};
+function natLine(n) {
+  if (NATLINE[n] === undefined) {
+    NATLINE[n] = false;
+    for (var k in UNITS) {
+      var d = UNITS[k];
+      if (d.cat === 'inf' && !d.builder && (d.nat || (d.side === 'ger' ? 'heer' : 'usa')) === n) { NATLINE[n] = true; break; }
+    }
+  }
+  return NATLINE[n];
+}
+/* a builder that digs rather than fights: every builder of an army with a line, and none of
+   one without (the brain on that army still keeps one back, in aiLook) */
+function aiDig(u) { return !!u.def.builder && natLine(natOf(u)); }
+/* The army a player fields, off his slot: the Allied side is the 29th or the Red Army, and the
+   German side the 352nd. Asked before there is a battle, a side's own default. */
+function natOfSlot(k) {
+  var sl = G.slots ? slotOf(k) : null;
+  return (sl && sl.nat) || (slotSide(k) === 'ger' ? 'heer' : 'usa');
+}
+/* the army a building or a work belongs to, and whether a player may raise it: a building
+   names its army, or is its side's first army's; a work may name an army, a side, or neither */
+function bldNat(d) { return d.nat || (d.side === 'ger' ? 'heer' : 'usa'); }
+function bldFor(slot, d) { return !!d && bldNat(d) === natOfSlot(slot); }
+function workFor(slot, W) {
+  return !!W && (!W.side || W.side === slotSide(slot)) && (!W.nat || W.nat === natOfSlot(slot));
+}
+/* the army a side is fighting as, read off its first player, for the names on the page */
+function armyOf(side) {
+  var k = G.slots ? slotsOf(side)[0] : null;
+  return NATIONS[k ? natOfSlot(k) : side === 'ger' ? 'heer' : 'usa'];
+}
 /* ---- who is playing.
    The game was two sides and nothing else, so a side was a team, an economy, an army and a
    brain all at once. In a 2v2 those come apart. A TEAM shares vision, ground, the memory
@@ -2235,6 +2293,23 @@ var UNITS = {
     req: 'ger_pz', limit: 1,
     w: { mm: 160, range: 480, dmg: 128, rof: 5.6, acc: .78, sup: .17, pen: 252, aoe: 44, shell: 1, brake: 1 },
     desc: 'Fifty-seven tonnes, a hundred millimetres of flat plate all round the front, and an 8.8 cm KwK 36 that opens a Sherman at any range it can see. One per army. It is slow, it drinks fuel, and the streets here are narrow enough to trap it.'
+  },
+
+  /* ------------------------------- the Red Army */
+  /* The Sapery: four men of a sapper battalion with the PPS-43, which is what a man was given
+     whose hands were wanted for the work. They are the Red Army's builders -- they raise its
+     buildings, lay sandbags, pits, wire and minefields, repair its armour and take ground --
+     and like the 29th's engineers they want to be close, because a 7.62 mm pistol round does
+     little past a hundred and fifty. The ROKS-3 is a second weapon on a clock of its own
+     carried by two of the men (`glUp` with `flame`): with it on, those two fire the jet at
+     whatever the squad is shooting at inside eighty and their PPS-43s are gone (`swap`). */
+  sv_sap: {
+    side: 'us', nat: 'sov', name: 'Sapery', short: 'SAP', cat: 'inf', hk: 'E',
+    models: 4, hpPer: 64, speed: 68, sight: 250, pop: 5, cost: { mp: 160 }, time: 14,
+    builder: true, body: 'sov_sap', upgrades: ['roks'],
+    w: { mm: 3, range: 150, dmg: 5.4, rof: 0.40, acc: .54, sup: .016, pen: 10 },
+    glUp: { roks: { flame: 1, swap: 1, mm: 4, range: 80, dmg: 18, rof: .25, acc: .82, sup: .07, pen: 4, men: [2, 3] } },
+    desc: 'Four sappers of the Red Army with PPS-43 submachine guns. They build the army\'s base, lay sandbags, weapon pits, wire and minefields, repair armour and take ground, and fight best up close. Two of them can be issued the ROKS-3 flamethrower, which burns men out of cover and out of houses at eighty.'
   }
 };
 
@@ -2327,6 +2402,11 @@ var BUILDINGS = {
   us_tank: { side: 'us', name: 'Tank Yard', short: 'TANK YARD', w: 156, h: 124, hp: 2000, hk: '3', need: 'us_mot',
              cost: { mp: 300, fu: 60 }, time: 40, makes: ['am_stuart', 'am_sher', 'am_e8', 'am_t34', 'am_m18', 'am_m26'],
              desc: 'A canvas tank hangar on hoops with a gantry over the bay, spare track and road wheels. Needs the Motor Pool. Raises the Stuart, the M4A1, the Easy Eight, the Calliope, the Hellcat and the Pershing.' },
+  /* the Red Army's headquarters, which turns out its Sapery; the rest of the army's buildings
+     come with the rest of its roster */
+  sov_hq: { side: 'us', nat: 'sov', name: 'Shtab', short: 'SHTAB', w: 132, h: 104, hp: 3000, hq: 1,
+            makes: ['sv_sap'],
+            desc: 'A regiment\'s command post dug in under round logs and the earth that came out of the hole. Raises the Sapery.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren', 'hr_ks750'] },
   ger_qtr: { side: 'ger', name: 'Kaserne', short: 'KASERNE', w: 116, h: 96, hp: 1500, hk: '1',
@@ -2363,6 +2443,13 @@ var WORKS = {
   wire: { name: 'Wire entanglement', short: 'WIRE', hk: '6', cost: { mp: 30 }, time: 9,
           w: 124, h: 34, len: 124, line: 1, slow: 1,
           desc: 'Concertina on screw pickets with an apron either side. No cover: it holds infantry in the open where the machine guns can see them, and tracks go over it.' },
+  /* The Red Army's minefield: a strip of mines buried on a bearing, mixed as the sappers laid
+     them, stake mines for men and pressure mines for hulls (`field`). It is marked to its own
+     side, a cord on stakes and a board at each end, and to nobody else's until something goes
+     up on it (`updateMines`). It holds `n` mines and is gone when they are. */
+  mines: { name: 'Minefield', short: 'MINES', hk: '7', nat: 'sov', cost: { mp: 40 }, time: 10,
+           w: 120, h: 44, len: 120, line: 1, field: { n: 5, ap: 95, apR: 22, at: 180 },
+           desc: 'A strip of mines buried across an approach, stake mines for men and pressure mines for hulls. Your side sees it marked; the enemy does not, until the first one goes off under him. Five mines, and then it is spent.' },
   /* a work that becomes a unit: the ring of bags is the work, the gun inside it is
      spawned when the last bag goes on, facing the way the work was aimed */
   flak: { name: '8.8 cm Flak 36 emplacement', short: 'FLAK 88', hk: '7', side: 'ger', cost: { mp: 420, fu: 50 }, time: 40,
@@ -2379,7 +2466,7 @@ var WORKS = {
      and the charges up between the trails. Its position is bigger than the Mörser 18's, because
      its trails reach seven metres back from the pivot and have to be heaved round inside
      the banks. */
-  how240: { name: '240 mm Howitzer M1 position', short: '240 MM', hk: '9', side: 'us',
+  how240: { name: '240 mm Howitzer M1 position', short: '240 MM', hk: '9', side: 'us', nat: 'usa',
            cost: { mp: 500, fu: 190 }, time: 90, minHq: 700,
            w: 230, h: 230, len: 230, unit: 'am_240',
            cover: { r: 80, type: 3, kind: 'pit', hp: 300 },
@@ -2440,6 +2527,14 @@ var BUNKUP = {
 /* the order they are offered in, because an object's key order is not a thing to rely on
    and the two that shoot belong at the top of the card */
 var BUNKUP_ORD = ['mg', 'at', 'mor', 'rep', 'med'];
+/* the team a fitting raises for a player, out of his own army's roster: a fitting written
+   for no team of his army is no fitting of his, and an American crew is never handed to the
+   Red Army */
+function bunkUnit(W, slot) {
+  if (!W || !W.unit) return null;
+  var n = natOfSlot(slot), k = W.unit[n === 'heer' ? 'ger' : n === 'usa' ? 'us' : n];
+  return k ? natKey(k) : null;
+}
 /* Which player a bunker answers to. A map lays one out for a side; whoever puts men in it
    owns it from then on, which is what makes taking one worth the walk -- the fitting goes
    with the concrete. The slot rather than the side, because in a 2v2 two allies have two
@@ -7703,7 +7798,7 @@ function popOf(slot) {
      cap with room in it and put the side over it the moment the last of them came in */
   for (var bi = 0; bi < G.bunks.length; bi++) {
     var bu = G.bunks[bi], bW = bu.up && BUNKUP[bu.up];
-    if (bu.upOwn === slot && bW && bW.unit) p += UNITS[natKey(bW.unit[slotSide(slot)])].pop || 0;
+    if (bu.upOwn === slot && bW && bunkUnit(bW, slot)) p += UNITS[bunkUnit(bW, slot)].pop || 0;
   }
   return p;
 }
@@ -7714,7 +7809,7 @@ function queueUnit(b, key) {
      skirmish card does not know the old one is gone */
   key = natKey(key);
   var d = UNITS[key];
-  if (d.retired) return false;
+  if (!d || d.retired) return false;
   if (makesOf(b).indexOf(key) < 0) {
     /* a brain out of an older revision on the skirmish card asks the building that used to
        make it; the one of his that makes it now takes the order */
@@ -9267,8 +9362,10 @@ function updateModels(u, dt) {
         var layer = i === 0 || (u.def.gunMate && i === 1 && !u.models[0].alive);
         if (onScreen(m.x, m.y) && (layer || !(m.pose === POSE_SERVED || m.pose === POSE_SIT || (u.def.gunMate && i === 1)))) {
           var mz = muzzlePoint(u, m, i);
-          muzFx(u, u.def.w, mz.x, mz.y, mz.z, m.f);
+          if (m.jet) flameJet(u, mz, u.jetAt);
+          else muzFx(u, u.def.w, mz.x, mz.y, mz.z, m.f);
         }
+        m.jet = false;
       }
     } else m.flashed = 0;
     /* the individual rifles of a section do not all go off on the same instant */
@@ -9843,7 +9940,7 @@ function mountUp(u) {
    has to be left after, because a plate bought with the next section's cost is a section
    not raised. Returns the vehicle it fitted, or null. */
 function buyUpgradeAuto(slot, vehs, opt) {
-  var order = ['mg', 'mgs', 'skirts', 'fenders', 'scope', 'fifty', 'coax', 'a6', 'bar2', 'rgren', 'm2hb', 'mg42t', 'm12'], i, j;
+  var order = ['mg', 'mgs', 'skirts', 'fenders', 'scope', 'fifty', 'coax', 'a6', 'bar2', 'rgren', 'roks', 'm2hb', 'mg42t', 'm12'], i, j;
   for (i = 0; i < order.length; i++) {
     var uk = order[i], U = UPGRADES[uk];
     if ((uk === 'skirts' || uk === 'fenders') && !opt.foeAt) continue;   /* nothing to skirt against yet */
@@ -9951,6 +10048,22 @@ function glOf(u) {
   var G2 = u.def.glUp, k;
   if (G2 && u.up) for (k in G2) if (u.up[k]) return G2[k];
   return null;
+}
+/* A fitting that takes the men's own weapons off them (`swap`, the ROKS-3) leaves the squad
+   firing its own weapon with the rest of them; and a jet is fired by each man who carries one,
+   where a launcher is fired by one of them at a time. */
+function glSwap(u) { var g = glOf(u); return g && g.swap ? g : null; }
+/* How far a jet has to reach to get at a target: to men in a house it is the wall and the
+   window in it, and not the middle of the house, which on a big one is further off than the
+   jet reaches from anywhere a man can stand. */
+function jetDist(u, t) {
+  var d = dist(u, t);
+  return t && t.gar ? Math.max(0, d - Math.max(t.gar.w, t.gar.h) * .5) : d;
+}
+function glAlive(u, w) {
+  var n = 0, i;
+  for (i = 0; i < w.men.length; i++) if (u.models[w.men[i]] && u.models[w.men[i]].alive) n++;
+  return n;
 }
 /* A launcher that named men carry is there while one of them is: with both dead the tubes
    lie where they fell and the squad fights with what it has left. */
@@ -10481,7 +10594,7 @@ function fireAt(u, t, dt, opt) {
   var cdKey = gl ? 'glcd' : isAt ? 'atcd' : 'cd';
   if (u[cdKey] > 0) return;                              /* the loader works in updateUnit */
   if (gl && !gl.men.some(function (i) { return u.models[i] && u.models[i].alive; })) return;
-  var d = dist(u, t);
+  var d = w.flame ? jetDist(u, t) : dist(u, t);
   /* A tube on a fire mission reaches further than the same tube picking its own targets.
      Laying on a known patch of ground at a bearing somebody has worked out is a longer
      shot than seeing something and engaging it, and the extra range is most of the
@@ -10526,7 +10639,8 @@ function fireAt(u, t, dt, opt) {
   /* hedges do not block fire, stone walls and structures do -- and nothing blocks a bomb
      that goes over the top of it */
   if (!u.def.indirect && !fireLine(u, t)) return;
-  var shots = u.cat === 'veh' ? 1 : (w.shell ? 1 : aliveModels(u));
+  var swap = !gl && u.cat !== 'veh' ? glSwap(u) : null;
+  var shots = u.cat === 'veh' ? 1 : w.shell ? 1 : w.flame ? glAlive(u, w) : aliveModels(u) - (swap ? glAlive(u, swap) : 0);
   if (!shots) return;
   u[cdKey] = w.rof * (u.sup > .55 ? 1.7 : 1) * (u.gunDmg > 0 ? 1.8 : 1) *
              (u.moving && u.cat === 'veh' ? 1.35 : 1) * (u.stance === 'ground' && !u.moving ? 1.25 : 1) * rnd(.9, 1.12);
@@ -10536,13 +10650,16 @@ function fireAt(u, t, dt, opt) {
      once, and only the flashes are spread out over the fraction of a second the men
      actually take. A rifle group going off as one instant of light read as a firing
      squad. */
-  var tube = isAt && w.men ? launcherMan(u, w) : null;
+  var tube = isAt && w.men && !w.flame ? launcherMan(u, w) : null;
   if (tube) { tube.fire = .085; tube.flashed = 0; }
   else if (u.cat !== 'veh') {
     var k = 0;
     for (var i = 0; i < u.models.length; i++) {
       var mm2 = u.models[i];
       if (!mm2.alive || k >= shots || mm2.thrT > 0 || mm2.thrPend) continue;
+      /* the men with the jets fire the jets, together, and the rest of the squad what it has */
+      if (w.flame ? w.men.indexOf(i) < 0 : swap && swap.men.indexOf(i) >= 0) continue;
+      if (w.flame) { mm2.fire = .085; mm2.flashed = 0; mm2.jet = true; mm2.aimHold = .9; k++; continue; }
       if (k === 0) { mm2.fire = .085; mm2.flashed = 0; } else mm2.fireQ = k * (w.rof < .25 ? .035 : .07) * rnd(.6, 1.4);
       /* and he holds the aim past the next round: held for a flat six tenths, a rifle at
          three quarters of a second a round came down to the low ready and back up again
@@ -10561,6 +10678,9 @@ function fireAt(u, t, dt, opt) {
      still standing, which is the honest answer for a section firing as one. */
   var cov = t.cat === 'veh' ? 0 : (t.gar ? 4 : coverOf(t, Math.atan2(t.y - u.y, t.x - u.x)));
   if (cov < 1 && t.cat !== 'veh' && t.stance === 'ground' && !t.moving) cov = 1;
+  /* a jet of burning mixture goes over a parapet, into a trench and in through a window: what
+     a man is behind is worth no more against it than a scrape */
+  if (w.flame && cov > 1) cov = 1;
   var acc = w.acc * COVER[cov].acc;
   acc *= (t.moving && t.cat !== 'veh') ? .86 : 1;
   acc *= (t.moving && t.stance === 'double') ? 1.18 : 1;
@@ -10606,7 +10726,7 @@ function fireAt(u, t, dt, opt) {
         t.immob = Math.max(t.immob || 0, 5 + Math.random() * 4); t.path = null;
         if (owned(t)) toast(shortOf(t) + ' track hit');
       }
-      if (!w.shell) bounceFx(t, HL, u.x, u.y, u.side, true);
+      if (!w.shell && !w.flame) bounceFx(t, HL, u.x, u.y, u.side, true);
       continue;
     }
     if (t.cat === 'veh' && Math.random() > pc) { bounced++; sparkFx(t.x + rnd(-10, 10), t.y + rnd(-10, 10), groundZ(t.x, t.y) + 18, 5, angTo(t, u)); continue; }  /* a vehicle is its own marker */
@@ -10619,6 +10739,8 @@ function fireAt(u, t, dt, opt) {
   var from = u.cat === 'veh' ? { x: u.x + Math.cos(u.turret) * 26, y: u.y + Math.sin(u.turret) * 26 }
            : tube ? { x: tube.x, y: tube.y } : { x: u.x, y: u.y };
   var at = aimAt(u, t);
+  /* where the jets land, for the men who fire them (`flameJet`) */
+  if (w.flame) u.jetAt = { x: at.x, y: at.y };
   /* a rocket leaves the tube it is in, along it (`rkLaunch`) */
   var RL = w.shell && w.rkt ? rkLaunch(u) : null;
   if (RL) from = { x: RL.x, y: RL.y };
@@ -10694,6 +10816,11 @@ function fireAt(u, t, dt, opt) {
        infantry launcher is not a gun and keeps the shove it always had. */
     var gv = gunVoice(u, w);
     sfx(u.cat === 'veh' || u.cat === 'team' ? gv.cls : 'rocket', u.x, u.y, gv);
+  } else if (w.flame) {
+    /* the jet carries no tracer and leaves no strike: what is drawn is the jet itself, off the
+       men's own nozzles (`flameJet`), and what it does is the burn and what it lights */
+    if (hits > 0) damage(t, w.dmg * hits, u);
+    flameBurn(t, at, hits);
   } else {
     for (var q = 0; q < Math.min(shots, 6); q++) {
       var fx0 = from.x + rnd(-9, 9), fy0 = from.y + rnd(-9, 9);
@@ -12988,7 +13115,7 @@ function killBuilding(b) {
 
 /* ---------------------------------------------------------------- effects */
 var FXDUR = { boom: .62, hit: .34, spark: .5, smoke: 3.4, dust: 1.1, exhaust: 1.3, brass: .9,
-              flash: .075, gunsmoke: 1.6, ring: .6, ejecta: 1.4, flame: .6, ember: 2 };
+              flash: .075, gunsmoke: 1.6, ring: .6, ejecta: 1.4, flame: .6, ember: 2, jet: .35 };
 /* The cap is what one heavy burst can want between its fireball, its clods, its ring and
    its column, times a few of them falling at once. It could be 260 when every particle
    was a draw call of its own; they go out as one buffer and one draw a blend pass now. */
@@ -13008,6 +13135,47 @@ function spawnFx(kind, x, y, r, z) {
             x0: x, y0: y, z0: z, dur: FXDUR[kind] || .25, a: rnd(TAU), sd: rnd(TAU) };
   G.fx.push(f);
   return f;
+}
+/* A jet out of a flamethrower's nozzle: a run of gouts of burning mixture thrown at the mark,
+   each on the arc that lands it there, swelling and reddening as it goes, and where it lands
+   the mixture burning on the ground with oily black smoke off it. The gouts after the first
+   leave a few hundredths of a second apart (`t` begins below nought and nothing is drawn or
+   moved until it is past it), so a jet is a rope of fire and not a line of beads. */
+function flameJet(u, mz, tgt) {
+  if (!tgt) return;
+  var dx = tgt.x - mz.x, dy = tgt.y - mz.y, d = Math.hypot(dx, dy) || 1, gz = groundZ(tgt.x, tgt.y);
+  var sp = 430, T = Math.max(.06, d / sp), n = MOB ? 4 : 9, i;
+  for (i = 0; i < n; i++) {
+    var g = spawnFx('jet', mz.x, mz.y, 2.2, mz.z);
+    if (!g) break;
+    var tt = T * rnd(.92, 1.06);
+    g.vx = dx / tt + rnd(-10, 10); g.vy = dy / tt + rnd(-10, 10);
+    g.vz = (gz + 5 - mz.z) / tt + 49 * tt;
+    g.t = -i * .022; g.dur = tt + .18; g.lit = i === 0;
+  }
+  for (i = 0; i < (MOB ? 2 : 4); i++) {
+    var b = spawnFx('flame', tgt.x + rnd(-11, 11), tgt.y + rnd(-11, 11), rnd(7, 12), gz + 2);
+    if (!b) break;
+    b.rise = rnd(14, 30); b.drift = 8; b.dur = rnd(.7, 1.2); b.t = -T - i * .05;
+  }
+  var sm = spawnFx('smoke', tgt.x, tgt.y, rnd(9, 13), gz + 6);
+  if (sm) { sm.c = 2; sm.rise = rnd(50, 80); sm.op = .42; sm.dur = rnd(2.2, 3.2); sm.drift = 20; sm.t = -T; }
+  sfx('flame', mz.x, mz.y);
+}
+/* What the jet sets alight. Fired in at a garrison it goes in at the window, and each round of
+   it is a chance at the nearest cell of the house with something in it to burn, at the height
+   of the opening it went in at. Stone does not catch, so a casemate takes nothing from it. */
+function flameBurn(t, at, hits) {
+  var b = t && t.gar;
+  if (!b || !hits || !frBreakable(b) || Math.random() > .2 * hits) return;
+  if (!b.fr && !frMake(b)) return;
+  var R = b.fr, z = groundZ(at.x, at.y) + 9, best = -1, bd = 1e9, c;
+  for (c = 0; c < R.alive.length; c++) {
+    if (!R.alive[c] || R.fuel[c] < .15 || R.heat[c] > 0 || R.burn[c] >= 1) continue;
+    var q = frCellC(R, c), dd = (q[0] - at.x) * (q[0] - at.x) + (q[1] - at.y) * (q[1] - at.y) + (q[2] - z) * (q[2] - z) * 2.2;
+    if (dd < bd) { bd = dd; best = c; }
+  }
+  if (best >= 0) frIgnite(b, best, .3);
 }
 /* ---- what a shell landing actually is.
    Five things happen and they happen at five different rates, and what the game drew was
@@ -13278,6 +13446,7 @@ function updateShots(dt) {
   for (var j = G.fx.length - 1; j >= 0; j--) {
     var fj = G.fx[j];
     fj.t += dt;
+    if (fj.t < 0) continue;            /* a gout of a jet that has not left the nozzle yet */
     /* anything thrown -- a clod out of a crater, a spark off a plate -- under gravity,
        with the ground as the only collider, which is the same arithmetic the masonry
        runs and for the same reason: a solver would buy nothing a heap actually needs */
@@ -13354,7 +13523,7 @@ function recInit() {
   /* the armies' names are copied for the units' reason: the Allied side is whichever army
      the map says, and the page it is read on may be on another map */
   REC = { when: Date.now(), side: G.side, own: G.own, duo: !!G.duo, team: G.team || 1, diff: G.diff, win: G.win, t: 0, over: null, why: '',
-          names: { us: FACTION.us.name, ger: FACTION.ger.name },
+          names: { us: armyOf('us').name, ger: armyOf('ger').name },
           us: recArmy(), ger: recArmy(), units: {}, line: [], lineT: 0 };
 }
 /* A unit's own row, opened when it is raised. `name` and `key` are copied rather than
@@ -13566,6 +13735,7 @@ function countBuildings(side) {
 /* ---------------------------------------------------------------- construction sites */
 function placeStructure(slot, key, x, y, engineers) {
   var d = BUILDINGS[key], you = slot === G.own, cr = null;
+  if (!bldFor(slot, d)) return null;
   if (!bldReady(slot, key)) { if (you) toast('The ' + d.name + ' needs the ' + BUILDINGS[d.need].name + ' standing first'); return null; }
   if (craftPosts(slot)) {
     cr = craftNear(x, y, 170);
@@ -13820,7 +13990,7 @@ function workFull(slot, kind) {
 function placeWork(slot, kind, x, y, ang, engineers) {
   kind = workKey(kind);
   var W = WORKS[kind];
-  if (!W) return null;
+  if (!workFor(slot, W)) return null;
   var you = slot === G.own;
   if (!canAfford(slot, W.cost)) { if (you) toast('Not enough ' + (G.res[slot].mp < (W.cost.mp || 0) ? 'manpower' : 'fuel')); return null; }
   if (!workRoom(x, y, W)) { if (you) toast('The ground will not take it there'); return null; }
@@ -13858,6 +14028,57 @@ function placeWork(slot, kind, x, y, ang, engineers) {
   (engineers || []).forEach(function (e) { resumeBuild(e, site); });
   return site;
 }
+/* ---- the minefields.
+   Ten times a second each field is asked whether anything of the other side is moving across
+   it. A man walking over the strip has a chance of a stake mine at every step, and a hull
+   driving over it a better chance of a pressure mine; somebody standing still on it has not
+   stepped on one yet. A stake mine goes off among the men round him, and a pressure mine under
+   a hull takes its track off and a good deal out of it. The first mine that goes up shows the
+   field to the side it went up under, which sees it marked from then on, and the field is gone
+   when its last mine is. */
+function mineIn(f, x, y, pad) {
+  var dx = x - f.x, dy = y - f.y, c = Math.cos(f.a), s = Math.sin(f.a);
+  return Math.abs(dx * c + dy * s) < f.len / 2 + pad && Math.abs(-dx * s + dy * c) < f.dep / 2 + pad;
+}
+function mineShown(w, side) { return !w.mf || w.side === side || !!w.mf.seen[side]; }
+function updateMines(dt) {
+  if (!G.mines.length) return;
+  G.mineT -= dt;
+  if (G.mineT > 0) return;
+  G.mineT = .1;
+  for (var fi = G.mines.length - 1; fi >= 0; fi--) {
+    var f = G.mines[fi], F = WORKS.mines.field;
+    for (var i = 0; i < G.units.length && f.n > 0; i++) {
+      var u = G.units[i];
+      if (u.dead || u.side === f.side || u.inside || u.gar || !u.moving) continue;
+      if (Math.abs(u.x - f.x) > f.len / 2 + 80 || Math.abs(u.y - f.y) > f.len / 2 + 80) continue;
+      var src = { side: f.side, own: f.own, x: f.x, y: f.y };
+      if (u.cat === 'veh') {
+        if (!mineIn(f, u.x, u.y, (u.bodyW || 14) * .5) || Math.random() > .2) continue;
+        f.n--; f.seen[u.side] = true;
+        damage(u, F.at * (u.def.blastRes || 1), src);
+        if (!u.dead) {
+          u.immob = Math.max(u.immob || 0, 9 + Math.random() * 6); u.path = null; u.shaken = Math.max(u.shaken || 0, 3);
+          if (owned(u)) toast(shortOf(u) + (u.def.wheeled ? ' wheels blown by a mine' : ' track blown by a mine'));
+        }
+        explode(u.x, u.y, F.apR, 30, src, u, 0, { gren: 1 });
+      } else {
+        for (var mi = 0; mi < u.models.length && f.n > 0; mi++) {
+          var m = u.models[mi];
+          if (!m.alive || !mineIn(f, m.x, m.y, 0) || Math.random() > .05) continue;
+          f.n--; f.seen[u.side] = true;
+          explode(m.x, m.y, F.apR, F.ap, src, null, 0, { gren: 1 });
+          if (owned(u)) toast(shortOf(u) + ' in a minefield');
+        }
+      }
+    }
+    if (f.n <= 0) {
+      G.mines.splice(fi, 1);
+      var wi = G.works.indexOf(f.work);
+      if (wi >= 0) { if (f.work.buf) freeBuffer(f.work.buf); G.works.splice(wi, 1); }
+    }
+  }
+}
 function updateSites(dt) {
   for (var i = G.sites.length - 1; i >= 0; i--) {
     var s = G.sites[i];
@@ -13891,7 +14112,7 @@ function bunkerUpOK(bk, kind, slot) {
   if (bk.upKind && (kind !== bk.upKind || !W.unit || bunkerManned(bk))) return false;
   if (bunkerOwner(bk) !== slot) return false;
   if (W.unit) {
-    var d = UNITS[natKey(W.unit[slotSide(slot)])];
+    var d = UNITS[bunkUnit(W, slot)];
     if (!d) return false;
     /* a fitting that brings men with it is a fitting that counts against the cap, and one
        that fills the slot is refused while somebody is standing in it -- somebody ALIVE.
@@ -13920,8 +14141,8 @@ function orderBunkerUp(bk, kind, slot) {
 function finishBunkerUp(bk, quiet) {
   var W = BUNKUP[bk.up], slot = bk.upOwn || bunkerOwner(bk), side = slotSide(slot);
   bk.upKind = bk.up; bk.up = null; bk.upT = 0;
-  if (W.unit) {
-    var key = natKey(W.unit[side]), d = UNITS[key];
+  if (W.unit && bunkUnit(W, slot)) {
+    var key = bunkUnit(W, slot), d = UNITS[key];
     var sx = bk.x, sy = bk.y;
     if (W.rear) {
       /* behind it, on the reverse side of its own face, and on ground a man can stand on */
@@ -14033,8 +14254,15 @@ function finishWork(s) {
     workDig(s.x, s.y, W.dig);
     if (GLOK) { freeBuffer(s.buf); s.buf = facesToBuffer(workFaces(s.kind, s.x, s.y, s.a || 0)); }
   }
-  G.works.push({ kind: s.kind, x: s.x, y: s.y, a: s.a || 0, own: s.own, side: s.side, buf: s.buf });
+  var wk0 = { kind: s.kind, x: s.x, y: s.y, a: s.a || 0, own: s.own, side: s.side, buf: s.buf };
+  G.works.push(wk0);
   recWork(s.side);
+  /* a minefield is a record the frame reads (`updateMines`), tied to the work that marks it */
+  if (W.field) {
+    wk0.mf = { x: s.x, y: s.y, a: (s.a || 0) + workTurn(s.kind), len: W.len, dep: W.h, own: s.own, side: s.side,
+               n: W.field.n, seen: {}, work: wk0 };
+    G.mines.push(wk0.mf);
+  }
   if (W.cover) {
     var c = W.cover;
     addCover(s.x, s.y, c.r, c.type, c.kind, c.faced ? s.a + workTurn(s.kind) : null, c.hp);
@@ -14332,7 +14560,10 @@ function updateUnit(u, dt) {
 
   /* forced attack walks into range */
   if (u.order === 'attack' && u.forced && !u.forced.dead) {
-    var w = weaponFor(u, u.forced), dd = dist(u, u.forced);
+    var w = weaponFor(u, u.forced), dd = dist(u, u.forced), wf = glOf(u);
+    /* a squad with flamethrowers sent at men walks in to the jet's reach, which is the reason
+       to send it at them at all; at a vehicle the jet is no use and it keeps its own reach */
+    if (wf && wf.flame && u.forced.cat !== 'veh' && glAlive(u, wf)) { w = wf; dd = jetDist(u, u.forced); }
     /* closing to nine tenths of the reach and not stirring again until the target is all
        but out of it: one threshold both ways set a section after a target walking along
        the edge of its reach off and halted it again on alternate frames, and it never
@@ -14341,9 +14572,13 @@ function updateUnit(u, dt) {
       if (!u.path) { u.path = findPath(u.x, u.y, u.forced.x, u.forced.y, u); u.pi = 0; }
     } else u.path = null;
   }
-  /* attack-move: stop while an enemy is in reach */
-  if (u.order === 'attackmove' && u.target && dist(u, u.target) < reachOf(u, weaponFor(u, u.target)) * .95) u.path = null;
-  else if (u.order === 'attackmove' && u.dest && !u.path && (!u.target || dist(u, u.target) > reachOf(u, weaponFor(u, u.target)))) {
+  /* attack-move: stop while an enemy is in reach, and with the flamethrowers on, while it is
+     in the jet's reach, or two of the four men stand out of it with nothing to fire */
+  var amT = u.order === 'attackmove' ? u.target : null, amD = 0, amR = 0, awf = amT ? glOf(u) : null;
+  if (amT && awf && awf.flame && amT.cat !== 'veh' && glAlive(u, awf)) { amD = jetDist(u, amT); amR = reachOf(u, awf); }
+  else if (amT) { amD = dist(u, amT); amR = reachOf(u, weaponFor(u, amT)); }
+  if (amT && amD < amR * .95) u.path = null;
+  else if (u.order === 'attackmove' && u.dest && !u.path && (!amT || amD > amR)) {
     if (dist(u, u.dest) > 40) { u.path = findPath(u.x, u.y, u.dest.x, u.dest.y, u); u.pi = 0; }
   }
   /* engineers walk to the job itself, not to a spot that may sit outside working range */
@@ -14927,7 +15162,7 @@ function aiRoll(list, side) {
             atInf: 0, value: 0, n: 0 };
   for (var i = 0; i < list.length; i++) {
     var e = list[i];
-    if (e.def.builder) continue;
+    if (aiDig(e)) continue;
     o.value += aiValue(e); o.n++;
     if (e.cat === 'veh') {
       o.veh++;
@@ -14969,10 +15204,12 @@ function aiLook(slot, D, skill) {
     if (u.side === side) {
       /* the ally's men count toward the strength and stand on the friendly grid; they do
          not go in any of the lists that are dealt orders */
-      if (!u.def.builder) { W.team.push(u); W.myStr += aiValue(u); }
+      if (!aiDig(u)) { W.team.push(u); W.myStr += aiValue(u); }
       if (u.own !== slot) continue;
       W.mine.push(u);
-      if (u.def.builder) { W.engs.push(u); continue; }
+      /* an army whose only infantry is its builders keeps one of them back to dig (the one
+         already at work, or the first) and fights with the rest */
+      if (aiDig(u) || (u.def.builder && (!W.engs.length || u.building || u.repairing))) { W.engs.push(u); continue; }
       if (u.cat === 'veh') {
         W.vehs.push(u); own.veh++;
         /* a howitzer on tracks is dealt the support job a gun team is, and counted as armour
@@ -14991,7 +15228,7 @@ function aiLook(slot, D, skill) {
       W.fighters.push(u);
       if (u.target && !u.target.dead) W.eng[u.target.id] = (W.eng[u.target.id] || 0) + 1;
     } else if (!u.inside) {
-      if (!u.def.builder) W.foeStr += aiValue(u);
+      if (!aiDig(u)) W.foeStr += aiValue(u);
       W.foes.push(u);
       if (visibleTo(side, u)) W.known.push(u);
     }
@@ -15090,7 +15327,7 @@ function aiStrength(side) {
   var s = 0;
   for (var i = 0; i < G.units.length; i++) {
     var u = G.units[i];
-    if (!u.dead && u.side === side && !u.def.builder) s += aiValue(u);
+    if (!u.dead && u.side === side && !aiDig(u)) s += aiValue(u);
   }
   return s;
 }
@@ -15367,7 +15604,7 @@ function aiAnchor(W, x, y, slot) {
   var best = null, bd = 1e18, i;
   for (i = 0; i < W.team.length; i++) {
     var f = W.team[i];
-    if (f.cat !== 'inf' || f.dead || f.retreat || f.inside || f.def.builder) continue;
+    if (f.cat !== 'inf' || f.dead || f.retreat || f.inside || aiDig(f)) continue;
     /* men on somebody else's operation are not a line: a scout walking at the enemy's
        base would otherwise drag a machine gun along behind it */
     if (f.op && f.own === slot) { var fo = aiOpById(slot, f.op); if (fo && !fo.main) continue; }
@@ -15614,7 +15851,7 @@ function aiSense(u, W) {
   S.frW = 0; S.frN = 0; S.frD = 9999; S.escort = 0; S.frAt = null; S.frAtD = 9999;
   var arm = S.arm;
   aiMine(u.x, u.y, 380, function (f) {
-    if (f === u || f.dead || f.retreat || f.inside || f.def.builder) return;
+    if (f === u || f.dead || f.retreat || f.inside || aiDig(f)) return;
     var d = Math.hypot(f.x - u.x, f.y - u.y);
     S.frW += aiValue(f); S.frN++;
     if (d < S.frD) S.frD = d;
@@ -15734,7 +15971,7 @@ function aiCallTend(W) {
 /* Can this answer that: for armour, a weapon that will go through it at the range it
    would be fought at; for men, a section that can walk there. */
 function aiCanAnswer(c, th, need) {
-  if (c.dead || c.retreat || c.def.builder || c.inside || c.gar) return false;
+  if (c.dead || c.retreat || aiDig(c) || c.inside || c.gar) return false;
   /* A gun team is never the answer to a call. It belongs where it was sited, covering the
      ground armour has to come up; walked across the town to somebody else's trouble it
      arrives in the open, out of its own arc, unset up, and dies there. So the answer to
@@ -16203,7 +16440,7 @@ function aiOpsPlan(W, objs, skill) {
     var best = null, bs = 0, cands = W.heard.length ? W.known.concat(W.heard) : W.known;
     for (i = 0; i < cands.length; i++) {
       var e = cands[i];
-      if (e.retreat || e.def.builder) continue;
+      if (e.retreat || aiDig(e)) continue;
       /* What is worth a task force is a kind of thing, not a price. A rifle section is
          what the whole army is already shooting at; armour, a weapon team and anything
          elite are what nothing in the plan has a way to go after on purpose. Priced
@@ -16337,7 +16574,7 @@ function aiOpsMan(W) {
       var pick = null, pd = 1e9;
       for (j = 0; j < W.fighters.length; j++) {
         var f = W.fighters[j];
-        if (held[f.id] || f.retreat || f.gar || f.wall || f.def.builder) continue;
+        if (held[f.id] || f.retreat || f.gar || f.wall || aiDig(f)) continue;
         if (aiGun(f)) continue;                        /* a gun team keeps its post */
         if (f.job === 'answer' || f.job === 'mend') continue;
         if (aiMyCall(f)) continue;                     /* it is in trouble of its own */
@@ -16629,7 +16866,13 @@ function aiTick(dt) {
      hundred marks back for him, since the strip is his and a brain that spent the till
      under him would be the housekeeping it exists to take away */
   var spend = aiBuys(slot), keep = spend ? 0 : 300, arty = G.aiArty !== false || !spend;
-  var K = side === 'us'
+  /* the keys of this player's army. The Red Army has its Sapery and nothing else yet, so they
+     stand for its line squad as well as its builders, and every key it has not got is absent:
+     `queueUnit` and `aiMaker` refuse a key no building of his makes */
+  var nat = natOfSlot(slot);
+  var K = nat === 'sov'
+    ? { eng: 'sv_sap', inf: 'sv_sap' }
+    : side === 'us'
     ? { eng: 'am_eng', inf: 'am_rifle', mg: 'am_mg', mor: 'us_mor', how: 'us_how', elite: 'am_ranger', at: 'am_at', lt: 'am_jeep', lt2: 'am_m3', lt3: 'am_m8', tank: 'am_sher', b1: 'us_bar', b2: 'us_mot', b3: 'us_tank' }
     : { eng: 'hr_pio', inf: 'hr_gren', mg: 'hr_mg', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'hr_kch', at: 'hr_pak', lt: 'hr_ks750', lt2: 'hr_251', tank: 'hr_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep', b3: 'ger_pz' };
 
@@ -16686,7 +16929,7 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(slot, side === 'us'
+  var LADDER = aiCutLadder(slot, nat === 'sov' ? [] : side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
@@ -18355,7 +18598,7 @@ function aiTick(dt) {
        slack to save out of and a rule that waits for spare money never fires at all;
        `post` is whether anywhere legal, forward of `minHq` and near enough the fighting to
        reach it, would take the position. */
-    var WK = side === 'us' ? 'how240' : 'how210', WB = WORKS[WK], bdf = WB && UNITS[WB.unit];
+    var WK = NATIONS[natOfSlot(slot)].battery, WB = WK ? WORKS[WK] : null, bdf = WB && UNITS[WB.unit];
     if (wArty <= 0) WB = null;
     if (WB && bdf && arty && skill >= 1 &&
         countOf(slot, WB.unit) + siteCount(slot, WK) < 1) {
@@ -18407,8 +18650,11 @@ function aiTick(dt) {
          at all (`minHq`) and to reach, which the post check below settles by asking the
          work itself rather than by guessing a number here. */
       if (digAt && dist(e, digAt) < 1000) {
-        var wk = AI.bagN % 3 === 0 ? 'pit' : AI.bagN % 3 === 1 ? 'bags' : 'wire';
-        var bp = aiFirePost(side, digAt.x, digAt.y, wk === 'wire' ? -95 : 100);
+        /* and an army that lays mines lays a field every fourth work, out in front where the
+           wire goes */
+        var wk = AI.bagN % 4 === 3 && workFor(slot, WORKS.mines) ? 'mines'
+               : AI.bagN % 3 === 0 ? 'pit' : AI.bagN % 3 === 1 ? 'bags' : 'wire';
+        var bp = aiFirePost(side, digAt.x, digAt.y, wk === 'wire' ? -95 : wk === 'mines' ? -150 : 100);
         if (placeWork(slot, wk, bp.x, bp.y, aiFoeDir(side, bp.x, bp.y), [e])) {
           AI.bagT = G.t; AI.bagN = (AI.bagN || 0) + 1; aiFire('work.dig'); continue;
         }
@@ -18451,7 +18697,7 @@ var AU = { ctx: null, on: true, budget: 0, noise: null, rumb: null, dry: null, s
    second are one rifle as far as the ear is concerned, and stacking them is half of why
    massed fire sounded like a rattle rather than like weight of fire. */
 var AUGAP = { rifle: .045, mg: .036, gun: .06, at: .06, mortar: .07, how: .07, heavy: .08,
-              rocket: .06, auto: .05, werfer: .14, boom: .05, incoming: .09, fire: .3 };
+              rocket: .06, auto: .05, werfer: .14, boom: .05, incoming: .09, fire: .3, flame: .18 };
 /* ---- the voice of a gun ----------------------------------------------------------
    Read off the WEAPON rather than typed against six artillery pieces and thirty-six unit
    keys, which is the decision `muzFx` already made for the eye and for the same reason:
@@ -18874,6 +19120,13 @@ function sfx(kind, x, y, vo) {
     auHiss(t, out, AU.noise, 'bandpass', 900, 600, .8, .12, .8, 0);
     auPatter(t, out, 3 + Math.round(Math.random() * 4), .7, .32, 0);
     if (Math.random() < .2) auTone(t, out, 'sine', 120, 50, .25, .2, rnd(.1, .5));
+  } else if (kind === 'flame') {
+    /* a flamethrower: the crack of the cartridge that lights it, the jet going out under
+       pressure as a rush that rises and falls, and the low roar of the mixture burning */
+    snd.gain.value = .34;
+    auHiss(t, out, AU.noise, 'highpass', 2600 * j, 0, .6, .5, .04, 0);
+    auHiss(t, out, AU.noise, 'bandpass', 700 * j, 1700 * j, .9, .7, .42, .01);
+    auHiss(t, out, AU.rumb, 'lowpass', 380, 200, .7, .55, .6, .03);
   } else if (kind === 'cap') {
     /* ground taken. A pair of notes rather than a hiss, because it is the one sound in
        the game that is telling you something rather than depicting something. */
@@ -19930,6 +20183,10 @@ function gatherLights(v) {
          town; one shell still lights the street it lands in */
       litPut(f.x, f.y, groundZ(f.x, f.y) + 12, 70 + (f.r || 20) * 2.2,
              1.9 * a * a, 1.05 * a * a, .34 * a * a, dsq(cx, cy, f.x, f.y));
+    } else if (f.kind === 'jet' && f.lit && f.t >= 0) {
+      /* and a flamethrower's jet lights the street it is fired down */
+      var ja = clamp(1 - f.t / f.dur, 0, 1);
+      litPut(f.x, f.y, f.z, 80, 1.6 * ja, .78 * ja, .22 * ja, dsq(cx, cy, f.x, f.y));
     } else if (f.kind === 'flash' && f.lit) {
       /* A gun going off is a light. At twenty-one degrees of December sun a great deal
          of this town is in its own shadow, and until now the only things that lit any of
@@ -20221,9 +20478,13 @@ function registerMaterials() {
   if (typeof BASE !== 'undefined') {
     tag([BASE.duck, BASE.duckL, BASE.duckD, BASE.duckIn], 'canvas'); tagEdges([BASE.duck, BASE.duckL, BASE.duckD, BASE.duckIn], 'canvas');
     tag([BASE.crate, BASE.crateL, BASE.crateD], 'wood'); tagEdges([BASE.crate, BASE.crateL, BASE.crateD], 'wood');
-    tag([BASE.white, BASE.red, BASE.blue], 'cloth'); tagEdges([BASE.white, BASE.red, BASE.blue], 'cloth');
+    tag([BASE.white, BASE.red, BASE.blue, BASE.black], 'cloth'); tagEdges([BASE.white, BASE.red, BASE.blue, BASE.black], 'cloth');
     tag([BASE.cam1, BASE.cam2, BASE.board], 'concrete'); tagEdges([BASE.cam1, BASE.cam2, BASE.board], 'concrete');
     tag([BASE.turf, BASE.turfL], 'earth'); tagEdges([BASE.turf, BASE.turfL], 'earth');
+    tag([BASE.log, BASE.logL, BASE.logD], 'bark'); tagEdges([BASE.log, BASE.logL, BASE.logD], 'bark');
+    tag([BASE.logEnd], 'wood'); tagEdges([BASE.logEnd], 'wood');
+    tag([BASE.sred, BASE.sredD], 'cloth'); tagEdges([BASE.sred, BASE.sredD], 'cloth');
+    tag([BASE.gold], 'paint'); tagEdges([BASE.gold], 'paint');
   }
 }
 /* Every colour a figure wears and every lit() derivative of it a builder makes. A
@@ -20314,6 +20575,14 @@ function tagKit() {
   tagAll([H.brass, H.gild, H.mgbelt], 'steel');
   tagAll([H.ammo, H.ammoD, H.trip], 'paint');
   tagAll([H.pad, H.mgtool], 'leather');
+  /* and the Red Army's, the same way: added where nothing is written and never re-tagged */
+  var S = KIT.sov;
+  tagAll([S.coat, S.coatD, S.trous, S.shoulder, S.roll, S.rollD], 'cloth');
+  tagAll([S.boot, S.sole, S.belt, S.strap, S.hose], 'leather');
+  tagAll([S.web, S.webD, S.canvas, S.pack, S.mag, S.flask], 'canvas');
+  tagAll([S.helm, S.helmD, S.liner, S.armour, S.armourD, S.tank, S.tankD, S.tool], 'paint');
+  tagAll([S.buckle, S.valve, S.pipe, S.steel], 'steel');
+  tagAll([S.wood, S.helve], 'wood');
   soft = false;
   tagAll(['#3b3226', '#4a4030'], 'rubber');
   tagAll(['#b6ac92'], 'splinter');
@@ -40559,7 +40828,23 @@ var KIT = {
              the tripod's leather pad, and the pistol and tool pouch the gunners wear in the
              rifle pouches' place */
           brass: '#a88a45', gild: '#9c6444', mgbelt: '#34362f', ammo: '#4a4d47', ammoD: '#393c37',
-          trip: '#3f433c', pad: '#4f3b29', mgtool: '#2a2622' }
+          trip: '#3f433c', pad: '#4f3b29', mgtool: '#2a2622' },
+  /* The Red Army sapper: the 1943 gymnastyorka in khaki cotton, pulled on over the head,
+     worn outside the breeches and belted, so it stands out below the belt as a skirt; the
+     breeches the same khaki a shade darker and full at the thigh, into kirza boots to below
+     the knee; a brown leather belt with the PPS-43's canvas pouches on it; the greatcoat
+     rolled and slung over the left shoulder; and the SSh-40 painted green. Tunic and
+     breeches are one colour, which is what tells him from the American in bands and the
+     grenadier in field grey: he reads as one khaki figure under a dark green dome. The
+     assault engineers wore the SN-42 breastplate over the tunic, in the same green paint as
+     the helmet, and the man with the ROKS-3 has its cylinder on his back. */
+  sov: { coat: '#7c7451', coatD: '#655e42', trous: '#6d6647', boot: '#2b2520', sole: '#1c1814', sleeve: 1.1,
+         belt: '#5b4129', buckle: '#8a7a4a', web: '#7e7656', webD: '#635d44', canvas: '#837a59', pack: '#7a7253',
+         roll: '#6e6654', rollD: '#58513f', strap: '#4b3a27', mag: '#6c6748', tool: '#3c3a2e', helve: '#7a6448',
+         flask: '#5b5a44', shoulder: '#6a6346', pipe: '#2e2e2a',
+         helm: '#45502f', helmD: '#343c24', liner: '#2a2822', armour: '#4b5636', armourD: '#394229',
+         tank: '#585b46', tankD: '#45473a', hose: '#23211d', valve: '#7d6a3c',
+         skin: '#c19a72', skinD: '#a88259', hair: '#3b2e22', wood: '#6b4a2e', steel: '#2e302b' }
 };
 /* ---- the rig ------------------------------------------------------------------
    One figure, one set of joints, one table of poses. What was here was a stack of
@@ -40963,6 +41248,10 @@ var WEAP = {
   zook:     { butt: [-3.3, 0, -1.0], rest: [-3.3, 0, -1.0], grip: [-.55, 0, -1.35], fore: [3.2, 0, -.4], foreMin: [1.8, 0, -.4], muzzle: [9.12, 0, 0], carryPt: [.5, 0, -.6], tube: 1 },
   m1919:    { butt: [-5.3, 0, -.9], grip: [-2.2, 0, -1.25], fore: [4.6, 0, -.52], foreMin: [3.2, 0, -.52], muzzle: [10.54, 0, 0], rest: [2.8, 0, -.75], carryPt: [5.2, 0, 1.2], heavy: 1, hip: 1,
               carry: [2.0, 1.8, 2.3, -.6, .35] },
+  /* the PPS-43, held by its magazine below the housing the way the M3 is held by its own; and
+     the ROKS-3's gun, made to look like a rifle and fired from the hip */
+  pps:      { butt: [-1.62, 0, -.45], buttOut: [-4.12, 0, -.62], grip: [-.92, 0, -1.3], fore: [.85, 0, -1.75], foreMin: [.74, 0, -1.45], muzzle: [5.5, 0, 0], carryPt: [.2, 0, -.6], readyY: 1.3 },
+  roks:     { butt: [-4.4, 0, -.9], grip: [-.5, 0, -1.0], fore: [2.6, 0, -.6], foreMin: [1.8, 0, -.6], muzzle: [6.95, 0, .12], carryPt: [1.0, 0, -.8], hip: 1 },
   /* the ammunition bearers' M1 carbine, held like the Garand it is a short cousin of */
   carbine:  { butt: [-3.8, 0, -.62], grip: [-.5, 0, -.9], fore: [3.0, 0, -.72], foreMin: [2.0, 0, -.76], muzzle: [6.75, 0, 0], carryPt: [1.0, 0, -.9] }
 };
@@ -41405,8 +41694,64 @@ function capOfficer(k, z, V) {
   f = f.concat(figPart(box(1.8, 0, z + .86, .06, .72, .24, k.kcord, k.kcord, k.kcord, 0), 'steel', lit(k.kcord, 1.08), k.kcord, k.kcord));
   return f;
 }
+/* The SSh-40: a deep round dome on a level rim with a narrow lip flared out all round it, so
+   it is the one helmet on the field with no brim to speak of and no skirt either. Swept round
+   a plan a little longer than it is wide, the way the M42 is, with the rim dropped a hand at
+   the back and every vertex given the normal of the surface it lies on. */
+function helmetSSh40(k, z, V) {
+  var N = 12, A = 1.62, B = 1.48, i, j, gn = matIndex('paint');
+  var WALL = [[1.06, -.02], [1, .07], [.975, .24], [.955, .46], [.91, .72], [.82, .99], [.67, 1.24],
+              [.47, 1.42], [.24, 1.53], [0, 1.57]];
+  var shade = [k.helmD, lit(k.helm, .92), k.helm, k.helm, lit(k.helm, 1.03), lit(k.helm, 1.05),
+               lit(k.helm, 1.07), lit(k.helm, 1.08), lit(k.helm, 1.08)];
+  function drop(t) { var c = Math.cos(t), b = Math.max(0, -c); return -.16 * b * b - .05 * (1 - c * c); }
+  function P(t, sc, h) {
+    var f = clamp(1 - h / .8, 0, 1);
+    return [Math.cos(t) * A * sc, Math.sin(t) * B * sc, z + h + drop(t) * f];
+  }
+  function wallN(t, q) {
+    var w = WALL[q];
+    if (!w[0]) return [0, 0, 1];
+    var a = WALL[Math.max(0, q - 1)], b = WALL[Math.min(WALL.length - 1, q + 1)];
+    var kp = P(t, b[0], b[1]), km = P(t, a[0], a[1]), tp = P(t + .01, w[0], w[1]), tm = P(t - .01, w[0], w[1]);
+    var ku = [kp[0] - km[0], kp[1] - km[1], kp[2] - km[2]], tv = [tp[0] - tm[0], tp[1] - tm[1], tp[2] - tm[2]];
+    var n = [ku[1] * tv[2] - ku[2] * tv[1], ku[2] * tv[0] - ku[0] * tv[2], ku[0] * tv[1] - ku[1] * tv[0]];
+    var l = Math.hypot(n[0], n[1], n[2]) || 1, p = P(t, w[0], w[1]);
+    if (n[0] * p[0] + n[1] * p[1] + n[2] * (p[2] - z + .3) < 0) l = -l;
+    return [n[0] / l, n[1] / l, n[2] / l];
+  }
+  function face(v, want, col, m, ns) {
+    var n = faceNormal(v[0], v[1], v[2]);
+    if (n.x * want[0] + n.y * want[1] + n.z * want[2] < 0) { v = v.slice().reverse(); if (ns) ns = ns.slice().reverse(); }
+    return { v: v, c: col, m: m, n: ns };
+  }
+  var f = [], cap = [];
+  for (j = 0; j < WALL.length - 1; j++) for (i = 0; i < N; i++) {
+    var t0 = i / N * TAU, t1 = (i + 1) / N * TAU, a = WALL[j], b = WALL[j + 1];
+    var v = [P(t0, a[0], a[1]), P(t1, a[0], a[1]), P(t1, b[0], b[1])];
+    var ns = [wallN(t0, j), wallN(t1, j), wallN(t1, j + 1)];
+    if (b[0]) { v.push(P(t0, b[0], b[1])); ns.push(wallN(t0, j + 1)); }
+    f.push(face(v, [ns[0][0] + ns[2][0], ns[0][1] + ns[2][1], ns[0][2] + ns[2][2]], shade[j], gn, ns));
+  }
+  /* the underside of the lip and the liner across the bottom */
+  for (i = 0; i < N; i++) {
+    var s0 = i / N * TAU, s1 = (i + 1) / N * TAU, m0 = (s0 + s1) / 2;
+    var e0 = P(s0, 1.06, -.02), e1 = P(s1, 1.06, -.02), g0 = P(s0, .95, .03), g1 = P(s1, .95, .03);
+    f.push(face([e0, e1, g1, g0], [Math.cos(m0) * .3, Math.sin(m0) * .3, -1], k.helmD, gn));
+    cap.push(g0);
+  }
+  f.push(face(cap, [0, 0, -1], k.liner, matIndex('generic')));
+  /* the chinstrap, worn under the jaw */
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(figPart(taperLimb([.1, sd * 1.24, z - .1], [.62, sd * .5, z - 1.77], .11, .1, k.strap), 'leather',
+                         lit(k.strap, 1.2), k.strap, lit(k.strap, 1.1)));
+  });
+  f = f.concat(figPart(box(.66, 0, z - 1.85, .16, 1.0, .1, k.strap, k.strap, k.strap, 0), 'leather', lit(k.strap, 1.2), k.strap, k.strap));
+  return f;
+}
 function helmetOf(V, k, z) {
   if (V.tanker) return helmetTanker(k, z - .12, V);
+  if (V.nat === 'sov') return helmetSSh40(k, z - .28, V);
   if (V.panzer && !V.helm) return capPanzer(k, z - .1, V);
   if (V.kch) return capOfficer(k, z - .1, V);
   return V.nat === 'heer' ? helmetM42(k, z - .30, V) : helmetM1(k, z - .35, V);
@@ -41550,6 +41895,55 @@ function weaponModel(k, type, opt) {
       [-1, 1].forEach(function (s) { f = f.concat(tubeSmooth(-1.7, .45, s * .33, -.98, .07, 5, st, st)); });
       f = f.concat(box(.45, 0, -1.55, .14, .72, .9, st, ml));                                    /* and folded under */
     }
+  } else if (type === 'pps') {                            /* PPS-43: 0.615 m folded, 0.82 out */
+    /* Sudayev's gun is pressed steel and nothing else: a receiver of square section with the
+       barrel shroud running on from it at the same depth, pierced along its sides, the brake
+       a bent plate at the end of it, and under the receiver the curved magazine of thirty-five
+       ahead of the trigger guard, which is the shape that says PPS from any distance. Two
+       wooden panels on the grip, the cocking handle on the right, which is +y on the screen,
+       and a stock of steel strip that folds up over the top of the receiver. */
+    var pl = lit(st, 1.18), pd = lit(st, .6), pg = lit(wd, .9), pgl = wd;
+    f = f.concat(box(-.15, 0, -.48, 2.94, .5, .66, st, pl));                                    /* receiver */
+    f = f.concat(box(2.95, 0, -.36, 3.3, .44, .58, st, pl));                                     /* the shroud */
+    [1.75, 2.45, 3.15, 3.85].forEach(function (x) {
+      [-1, 1].forEach(function (s) { f = f.concat(box(x, s * .225, -.22, .5, .03, .26, pd, pd)); });
+    });
+    f = f.concat(barrel(4.6, 4.8, 0, .13));
+    f = f.concat(box(5.12, 0, -.34, .76, .5, .62, st, pl));                                      /* the brake */
+    f = f.concat(box(5.49, 0, -.3, .05, .52, .56, pd, pd));
+    f = f.concat(box(4.35, 0, .2, .2, .3, .3, st, pl));                                          /* front sight in its ears */
+    f = f.concat(box(-.6, 0, .18, .34, .28, .2, st, pl));                                        /* the flip sight */
+    f = f.concat(box(.55, 0, .16, .7, .3, .04, pd, pd));                                         /* ejection port */
+    f = f.concat(box(-.2, .35, -.22, .3, .22, .2, pl, st));                                      /* cocking handle */
+    f = f.concat(box(.74, 0, -1.08, .62, .44, .62, st, pl));                                     /* magazine housing */
+    /* the magazine, curving forward as it goes down */
+    f = f.concat(place(pitch(box(0, 0, -1.0, .58, .32, 1.0, st, pl), .14, 0, 0), 0, .76, 0, -1.36));
+    f = f.concat(place(pitch(box(0, 0, -1.05, .58, .32, 1.05, st, pl), .46, 0, 0), 0, .9, 0, -2.33));
+    f = f.concat(place(pitch(box(0, 0, -1.2, .5, .46, 1.2, pg, pgl), -.25, 0, 0), 0, -.85, 0, -.78));  /* the grip */
+    f = f.concat(box(-.15, 0, -1.12, .62, .1, .08, st, st));                                     /* trigger guard */
+    f = f.concat(box(.14, 0, -1.12, .08, .1, .45, st, st));
+    if (opt === 'out') {
+      [-1, 1].forEach(function (s) { f = f.concat(tubeSmooth(-4.05, -1.62, s * .2, -.18, .07, 5, st, st)); });
+      f = f.concat(box(-4.12, 0, -1.1, .16, .54, 1.2, st, pl));                                  /* the butt */
+    } else {
+      [-1, 1].forEach(function (s) { f = f.concat(tubeSmooth(-1.62, .98, s * .2, .2, .07, 5, st, st)); });
+      f = f.concat(box(1.05, 0, .06, .5, .54, .16, st, pl));                                     /* folded over the top */
+    }
+  } else if (type === 'roks') {                           /* ROKS-3 gun: about 0.94 m */
+    /* The flamethrower's gun was made to look like a rifle, so that nobody would pick its man
+       out first: a wooden stock and fore-end like a Mosin's round a steel tube where the
+       barrel would be, the valve under it with the hose's union, and at the muzzle the drum of
+       ten incendiary cartridges that lit the jet. */
+    var prof = [[-4.4, -.4], [-4.4, -1.72], [-2.4, -1.32], [-.65, -1.12], [-.25, -.62], [3.1, -.5], [3.1, -.08], [-.35, -.08], [-1.4, -.26]];
+    var rk = roll(prism(prof, -.4, .4, wd, lit(wd, 1.12), lit(wd, .92)), Math.PI / 2, 0, 0);
+    f = f.concat(rk.map(function (q) { return { v: q.v, c: q.c }; }));
+    var rl = lit(st, 1.2);
+    f = f.concat(tubeSmooth(-.4, 6.0, 0, .12, .2, 8, st, rl));                                    /* the tube */
+    f = f.concat(box(.9, 0, -.92, 1.3, .46, .58, st, rl));                                       /* the valve */
+    f = f.concat(box(1.15, 0, -1.25, .42, .36, .36, k.valve || rl, k.valve || rl));             /* the hose's union */
+    f = f.concat(box(.4, 0, -1.0, .1, .1, .55, st, st));                                         /* the lever */
+    f = f.concat(tubeSmooth(5.85, 6.6, 0, .12, .4, 10, st, rl));                                 /* the cartridge drum */
+    f = f.concat(tubeSmooth(6.6, 6.95, 0, .12, .13, 6, rl, lit(st, .55)));                       /* the nozzle */
   } else if (type === 'stg') {                            /* StG 44: 0.94 m, 11.06 units */
     /* The first assault rifle is a pressed-steel receiver with a wooden stock behind it and
        everything else in front: the barrel with the gas tube lying over it the whole way to
@@ -42003,7 +42397,19 @@ var SOLDIER_VARIANTS = {
   kc_lead:      { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, glass: 1, holster: 1, throw: 1, set: 'field' },
   kc_stg:       { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, nades: 1, throw: 1, body: 'heer_kch', set: 'field' },
   kc_stg_b:     { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, glass: 1, nades: 1, throw: 1, set: 'field' },
-  kc_bund:      { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, bund: 1, throw: 1, set: 'field' }
+  kc_bund:      { side: 'ger', nat: 'heer', weapon: 'stg', kch: 1, bund: 1, throw: 1, set: 'field' },
+  /* the Red Army's Sapery, four ways, each in the gymnastyorka and the SSh-40 with the PPS-43:
+     the leader with his greatcoat rolled over his shoulder, which is what the squad leaves where
+     it falls (`body`); a man in the SN-42 breastplate the assault engineer brigades wore; a man
+     with his sack on his back and the long sapper's shovel down its side; and a second in the
+     breastplate with his greatcoat as well. The man with the ROKS-3 is what the third and the
+     fourth become with the upgrade: the cylinder on his back, the hose round his hip and the
+     gun made to look like a rifle. */
+  sv_sap:       { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, roll: 1, body: 'sov_sap', set: 'field' },
+  sv_sap_b:     { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, sn42: 1, set: 'field' },
+  sv_sap_c:     { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, sack: 1, spade: 1, set: 'field' },
+  sv_sap_d:     { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, sn42: 1, roll: 1, set: 'field' },
+  sv_flame:     { side: 'us', nat: 'sov', weapon: 'roks', sap: 1, roks: 1, set: 'field' }
 };
 function variantForModel(u, i) {
   /* the Knight's Cross Holders are who they are whichever side a drill stands them on */
@@ -42033,6 +42439,12 @@ function variantForModel(u, i) {
     return i === 0 ? 'rg_lead' : i === 4 ? 'rg_tommy_b' : 'rg_tommy';
   }
   if (u.key === 'hr_gren') return i === 0 ? 'gr_mp40' : i % 2 ? 'gr_rifle' : 'gr_rifle_b';
+  /* the Sapery: the leader, a man in the breastplate, the man with the sack and a second in the
+     breastplate; with the ROKS-3 issued the third and the fourth carry the flamethrowers */
+  if (u.key === 'sv_sap') {
+    if ((i === 2 || i === 3) && u.up && u.up.roks) return 'sv_flame';
+    return i === 0 ? 'sv_sap' : i === 1 ? 'sv_sap_b' : i === 2 ? 'sv_sap_c' : 'sv_sap_d';
+  }
   if (u.key === 'hr_pio') return i === 0 ? 'gr_pio_c' : i === 1 ? 'gr_pio' : 'gr_pio_b';
   /* the gunner and the loader serve the Pak 38, and the other three bring the rounds up; and
      the layer and the man at the elevating handwheel are at the leFH 18 */
@@ -42066,7 +42478,7 @@ function proneModel(variant, phase) {
 /* What he is wearing over the blouse, hip-relative: the American's web or the
    grenadier's leather. */
 function figKit(V, k, rec) {
-  return V.nat === 'heer' ? figKitHeer(V, k, rec) : figKitGI(V, k, rec);
+  return V.nat === 'heer' ? figKitHeer(V, k, rec) : V.nat === 'sov' ? figKitSov(V, k, rec) : figKitGI(V, k, rec);
 }
 /* What the American carries, hip-relative. The M1923 cartridge belt is the thing: ten
    pockets of two clips each, two either side of the buckle and three round each hip, on
@@ -42598,6 +43010,144 @@ function figKitHeer(V, k, rec) {
   });
   return f;
 }
+/* A rope of cloth through a run of points, round in section and shaded smooth, which is a
+   greatcoat rolled into a ring: a frame is carried along it, each point gets a ring of
+   vertices square to the way the rope runs there, and the normals are the rings' own. A run
+   whose last point is its first is closed. A chain of square frusta drew the same ring as a
+   string of boxes. */
+function figRope(pts, r, col, mi) {
+  var f = [], n = pts.length, S = 8, rings = [], norms = [], closed = scLen(pts[0], pts[n - 1]) < .01, i, j;
+  var ref = [0, 0, 1];
+  for (i = 0; i < n; i++) {
+    var a = pts[closed && i === 0 ? n - 2 : Math.max(0, i - 1)], b = pts[closed && i === n - 1 ? 1 : Math.min(n - 1, i + 1)];
+    var T = scNorm(scSub(b, a)), U = scCross(T, ref);
+    if (Math.hypot(U[0], U[1], U[2]) < .2) U = scCross(T, [1, 0, 0]);
+    U = scNorm(U);
+    var V2 = scNorm(scCross(U, T)), row = [], nr = [];
+    for (j = 0; j < S; j++) {
+      var th = j / S * TAU, d = scAdd(scMul(U, Math.cos(th)), scMul(V2, Math.sin(th)));
+      row.push(scAdd(pts[i], scMul(d, r))); nr.push(d);
+    }
+    rings.push(row); norms.push(nr);
+  }
+  for (i = 0; i < n - 1; i++) for (j = 0; j < S; j++) {
+    var k2 = (j + 1) % S, c = i % 3 === 1 ? lit(col, .95) : col;
+    var qv = [rings[i][j], rings[i][k2], rings[i + 1][k2], rings[i + 1][j]], qn = [norms[i][j], norms[i][k2], norms[i + 1][k2], norms[i + 1][j]];
+    /* turned out, whichever way the frame happened to wind it */
+    var fn = faceNormal(qv[0], qv[1], qv[2]);
+    if (fn.x * (qn[0][0] + qn[2][0]) + fn.y * (qn[0][1] + qn[2][1]) + fn.z * (qn[0][2] + qn[2][2]) < 0) { qv.reverse(); qn.reverse(); }
+    f.push({ v: qv, n: qn, c: c, m: mi });
+  }
+  return f;
+}
+/* What the sapper carries, hip-relative. The brown belt with the two canvas pouches of the
+   PPS-43 either side of the buckle, each holding three magazines; the small shovel in its
+   cover on the left hip, the flask in its cover on the right and a grenade pouch behind it.
+   Then one of four loads: the greatcoat rolled into a ring and slung over the left shoulder
+   to the right hip, which is the shape of a Soviet infantryman from any distance; the SN-42
+   breastplate in two pressed plates over the chest and the belly; the sack on his back with
+   the long sapper's shovel down its side; or the ROKS-3, its fuel cylinder upright on his back
+   with the little cylinder of gas beside it on a frame, and the hose round his right hip to
+   the gun. */
+function figKitSov(V, k, rec) {
+  var f = [], bl = k.belt, cv = k.canvas;
+  function mark(name) { if (rec) rec[name] = rec[name] || []; return f.length; }
+  function upto(name, at) { if (rec) rec[name].push([at, f.length]); }
+  function part(g, mat, fr, bk, sd) { f = f.concat(figPart(g, mat, fr, bk, sd)); }
+  function lea(g, col, lift) { var c = col || bl; part(g, 'leather', lit(c, lift || 1.24), c, lit(c, 1.1)); }
+  /* a strap from one point to another lying on the figure */
+  function seg(a, b, w, col, mat) {
+    part(taperLimb(a, b, w, w, col), mat, lit(col, mat === 'leather' ? 1.22 : 1.06), lit(col, .86), col);
+  }
+  lea(box(0, 0, 1.92, 3.3, 4.74, .58, bl, bl, bl, 0));
+  part(box(1.665, 0, 1.94, .1, .62, .5, k.buckle, k.buckle, k.buckle, 0), 'steel', lit(k.buckle, 1.2), k.buckle, k.buckle);
+  [-1, 1].forEach(function (sd) {
+    var a = mark('pouches'), mc = k.mag;
+    /* three magazines a pouch under one flap */
+    part(box(1.84, sd * 1.36, .52, .5, 1.18, 1.62, mc, mc, mc, 0), 'canvas', lit(mc, 1.08), lit(mc, .88), mc);
+    part(box(1.86, sd * 1.36, 1.86, .56, 1.24, .42, lit(mc, .9), lit(mc, .9), lit(mc, .9), 0), 'canvas', lit(mc, 1.0), lit(mc, .84), lit(mc, .92));
+    upto('pouches', a);
+  });
+  /* the small shovel in its cover on the left hip, the helve down behind; the flask on the
+     right, and the grenade pouch behind it */
+  part(box(-.4, -2.55, .3, 1.8, .3, 1.95, k.tool, k.tool, k.tool, 0), 'canvas', lit(k.tool, 1.15), k.tool, lit(k.tool, 1.05));
+  part(taperLimb([-.95, -2.58, .5], [-1.85, -2.52, -1.6], .3, .28, k.helve), 'wood', k.helve, lit(k.helve, .85), lit(k.helve, .92));
+  part(cyl(-1.35, 2.75, -.35, .55, .4, 1.85, 8, k.flask, lit(k.flask, 1.08), 0, true), 'canvas', lit(k.flask, 1.05), lit(k.flask, .88), k.flask);
+  part(box(-2.0, 1.75, .15, .7, 1.2, 1.4, cv, cv, cv, 0), 'canvas', lit(cv, .96), lit(cv, 1.06), cv);
+  if (V.sn42) {
+    /* The SN-42: two pressed plates of two millimetres, the upper over the chest from the
+       collar to the bottom of the ribs and the lower over the belly, hinged to it so a man
+       could bend, each bent round the body in two halves. Over the tunic and the belt. */
+    var ar = k.armour, ad = k.armourD, pa = mark('armour');
+    [-1, 1].forEach(function (sd) {
+      part(at(roll(box(0, sd * .95, 0, .3, 1.95, 3.5, ar, ar, ar, 0), sd * .26, 0, 0), 1.82, 0, 2.55), 'paint', lit(ar, 1.1), ad, lit(ar, .95));
+      part(at(roll(box(0, sd * .85, 0, .3, 1.75, 1.75, ar, ar, ar, 0), sd * .2, 0, 0), 1.9, 0, .75), 'paint', lit(ar, 1.06), ad, lit(ar, .93));
+    });
+    /* the neck cut out of the top, which is a collar of plate round the throat, and the straps */
+    part(box(1.75, 0, 6.0, .3, 1.2, .22, ad, ad, ad, 0), 'paint', lit(ad, 1.1), ad, ad);
+    upto('armour', pa);
+    [-1, 1].forEach(function (sd) {
+      seg([1.65, sd * 1.5, 6.1], [0, sd * 1.6, 6.62], .3, k.strap, 'leather');
+      seg([0, sd * 1.6, 6.62], [-1.7, sd * 1.4, 4.2], .3, k.strap, 'leather');
+    });
+  }
+  if (V.roll) {
+    /* the greatcoat in its ring, over the left shoulder and down across the chest and the
+       back to the right hip, with the ends tied off where they meet */
+    var rc = k.roll, rp = mark('roll');
+    var ring = [[1.98, -1.55, 6.15], [2.1, -.55, 5.15], [2.12, .55, 3.95], [2.0, 1.6, 2.75], [1.2, 2.45, 2.25],
+                [-.2, 2.7, 2.2], [-1.6, 2.35, 2.5], [-2.15, 1.35, 3.3], [-2.2, .1, 4.5], [-2.05, -1.0, 5.7],
+                [-1.15, -1.75, 6.75], [.4, -1.95, 6.95], [1.98, -1.55, 6.15]];
+    f = f.concat(figRope(ring, .58, rc, matIndex('cloth')));
+    upto('roll', rp);
+    part(at(roll(box(0, 0, 0, .5, .2, 1.3, k.strap, k.strap, k.strap, 0), .6, 0, 0), 2.18, 1.65, 2.75), 'leather', lit(k.strap, 1.2), k.strap, k.strap);
+  }
+  if (V.sack) {
+    /* the sack: a bag drawn shut at its neck with the cord, worn high on the back on the two
+       straps that are its own cord carried round under the arms */
+    var sk = k.pack, ps = mark('pack');
+    part(box(-2.35, 0, 2.55, 1.6, 2.7, 2.7, sk, sk, sk, 0), 'canvas', lit(sk, .95), lit(sk, 1.1), sk);
+    part(box(-2.3, 0, 5.25, 1.1, 1.7, .55, sk, sk, sk, 0), 'canvas', lit(sk, .95), lit(sk, 1.14), sk);
+    upto('pack', ps);
+    [-1, 1].forEach(function (sd) {
+      seg([-1.75, sd * .7, 5.5], [-.2, sd * 1.55, 6.62], .26, k.webD, 'canvas');
+      seg([-.2, sd * 1.55, 6.62], [1.62, sd * 1.5, 5.4], .26, k.webD, 'canvas');
+      seg([1.62, sd * 1.5, 5.4], [1.2, sd * 2.35, 3.6], .26, k.webD, 'canvas');
+    });
+    /* the long sapper's shovel down the left side of the sack, blade up */
+    if (V.spade) {
+      part(taperLimb([-2.4, -1.55, .2], [-2.45, -1.55, 6.2], .3, .28, k.helve), 'wood', k.helve, lit(k.helve, .85), lit(k.helve, .92));
+      part(box(-2.45, -1.55, 6.15, .14, 1.05, 1.5, k.steel, k.steel, k.steel, 0), 'steel', lit(k.steel, 1.3), k.steel, lit(k.steel, 1.12));
+    }
+  }
+  if (V.roks) {
+    /* The ROKS-3: the fuel cylinder upright on his back on a frame of straps, ten litres of
+       mixture, and the little bottle of compressed air beside it, with the hose from the foot
+       of the cylinder round his right hip to the valve under the gun */
+    var tk = k.tank, td = k.tankD, pt = mark('pack');
+    part(cyl(-2.55, .35, .9, 1.02, 1.02, 3.9, 10, tk, lit(tk, 1.12), 0, true), 'paint', lit(tk, 1.04), lit(tk, .84), tk);
+    part(cyl(-2.55, .35, 4.75, .55, .55, .4, 8, td, lit(td, 1.2), 0, true), 'steel', lit(td, 1.1), td, td);
+    part(cyl(-2.35, -1.35, 1.3, .42, .42, 3.1, 8, td, lit(td, 1.12), 0, true), 'paint', lit(td, 1.04), lit(td, .84), td);
+    part(cyl(-2.35, -1.35, 4.4, .16, .16, .4, 6, k.valve, k.valve, 0, true), 'steel', lit(k.valve, 1.2), k.valve, k.valve);
+    upto('pack', pt);
+    [-1, 1].forEach(function (sd) {
+      seg([-1.85, sd * .9, 5.2], [-.1, sd * 1.55, 6.62], .3, k.strap, 'leather');
+      seg([-.1, sd * 1.55, 6.62], [1.62, sd * 1.4, 5.3], .3, k.strap, 'leather');
+      seg([1.62, sd * 1.4, 5.3], [1.1, sd * 2.4, 2.0], .3, k.strap, 'leather');
+    });
+    lea(box(-2.2, 0, 2.6, .4, 3.6, .4, k.strap, k.strap, k.strap, 0), k.strap);
+    lea(box(-2.2, 0, 4.2, .4, 3.6, .4, k.strap, k.strap, k.strap, 0), k.strap);
+    /* the hose, down from the cylinder's foot round his right hip and forward to his hand */
+    var hs = [[-2.2, 1.0, .9], [-1.4, 2.4, .4], [.2, 2.95, .2], [1.4, 2.6, .5]];
+    for (var hi = 0; hi < hs.length - 1; hi++) seg(hs[hi], hs[hi + 1], .34, k.hose, 'leather');
+  }
+  /* the shoulder boards of the 1943 pattern, along the shoulders */
+  [-1, 1].forEach(function (sd) {
+    part(at(roll(box(0, 0, 0, .58, 1.05, .08, k.shoulder, k.shoulder, k.shoulder, 0), -sd * .43, 0, 0), .15, sd * 2.05, 6.24),
+         'cloth', lit(k.shoulder, 1.12), k.shoulder, lit(k.shoulder, 1.04));
+  });
+  return f;
+}
 /* A box laid along +x rather than up +z, which is the frame a man lying down is built
    in: `frustum` runs up its own axis, so a prone torso is built standing and turned. */
 function layFrustum(x0, x1, t, wA, wB, z0, col) {
@@ -42696,7 +43246,7 @@ function engKit(V, k) {
 function manRig(variant, P) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.gi_rifle, side = V.side, k = KIT[V.nat];
   if (P.flat) return flatFaces(V, k, P);
-  var hr = V.nat === 'heer', ame = V.nat === 'usa', tk = ame && V.tanker, kr = hr && V.krad;
+  var hr = V.nat === 'heer', ame = V.nat === 'usa', tk = ame && V.tanker, kr = hr && V.krad, sv = V.nat === 'sov';
   var kc = hr && V.kch, pz = hr && (V.panzer || kc), en = ame && V.eng;
   var coat = tk ? k.tank : kr ? k.krad : pz ? k.pz : en ? k.hbt : k.coat, cmat = 'cloth', patch = ame && !tk;
   var ka = engKit(V, k);
@@ -42803,6 +43353,21 @@ function manRig(variant, P) {
       add(figPart(box(-1.92, 0, 1.0, .5, 3.1, 2.1, rv, rv, rv, 0), 'canvas', lit(rv, .95), lit(rv, 1.08), rv));
       add(figPart(box(-2.0, 0, 3.0, .32, 3.18, .4, rd, rd, rd, 0), 'canvas', lit(rd, .95), lit(rd, 1.1), rd));
     }
+  } else if (sv) {
+    /* The gymnastyorka: khaki cotton pulled on over the head and worn outside the breeches,
+       belted, so below the belt it stands out over the seat as a skirt, with the stand collar
+       of the 1943 pattern and a short placket down from it buttoned three times. The private
+       soldier's has no pockets. */
+    add(figPart(faceOut(frustum(rect(3.1, 4.75), rect(3.0, 4.45), -1.2, .4, k.trous), 0, 0, -.4),
+                'cloth', lit(k.trous, .90), lit(k.trous, .82), lit(k.trous, .88)), 'hips');
+    add(figPart(faceOut(frustum(rect(3.45, 5.1), rect(3.0, 4.45), -.75, 2.0, coat), 0, 0, .6),
+                'cloth', lit(coat, .96), lit(coat, .86), lit(coat, .91)), 'skirt');
+    add(figPart(faceOut(frustum(rect(3.0, 4.45), rect(3.1, 5.0), 2.0, 6.0, coat), 0, 0, 4.0),
+                'cloth', coat, lit(coat, .92), lit(coat, .95)), 'chest');
+    add(figPart(box(1.56, 0, 4.7, .08, .42, 1.75, k.coatD, k.coatD, k.coatD, 0), 'cloth', lit(k.coatD, 1.08), k.coatD, lit(k.coatD, 1.02)));
+    [5.0, 5.55, 6.1].forEach(function (z) {
+      add(figPart(box(1.62, 0, z, .06, .16, .16, k.buckle, k.buckle, k.buckle, 0), 'steel', lit(k.buckle, 1.1), k.buckle, k.buckle));
+    });
   } else if (pz) {
     /* The black wrap jacket the panzer crews wore: cut short to the waist so that nothing
        catches in a hatch, double-breasted with its flap closing across the chest on a
@@ -43033,8 +43598,8 @@ function figPtAbout(p, ang, oz) {
    him is a distance along the ground rather than a height. `ph` is the crawl phase;
    with no phase it is the still prone. */
 function flatFaces(V, k, P) {
-  var hr = V.nat === 'heer', ame = V.nat === 'usa', en = ame && V.eng, kc = hr && V.kch;
-  var coat = en ? k.hbt : kc ? k.pz : k.coat, cmat = 'cloth', patch = !hr;
+  var hr = V.nat === 'heer', ame = V.nat === 'usa', en = ame && V.eng, kc = hr && V.kch, sv = V.nat === 'sov';
+  var coat = en ? k.hbt : kc ? k.pz : k.coat, cmat = 'cloth', patch = ame;
   var trs = en ? k.khaki : k.trous, ka = engKit(V, k);
   var f = [], Q = {}, LG = [], AR = [], AT = [];
   var ph = P.ph || 0, cw = ph ? Math.cos(ph * TAU) : 0, sw = ph ? Math.sin(ph * TAU) : 0;
@@ -43098,6 +43663,16 @@ function flatFaces(V, k, P) {
       f = f.concat(figPart(at(roll(cyl(0, 0, -1.35, .42, .42, 2.7, 8, k.zelt, k.zelt, 0, true), Math.PI / 2, 0, 0), -1.1, 0, 3.25),
                            'splinter', lit(k.zelt, 1.04), lit(k.zelt, .9), k.zelt));
     }
+  } else if (sv) {
+    /* the sapper flat: the belt round him, the greatcoat's ring across his back, and the
+       sack or the ROKS-3's cylinder high on it */
+    f = f.concat(figPart(box(-6.2, 0, .3, .7, 5.0, 2.6, k.belt, 0, 0, 0), 'leather', lit(k.belt, 1.24), k.belt, lit(k.belt, 1.1)));
+    if (V.roll) f = f.concat(figPart(at(roll(cyl(0, 0, -2.5, .56, .56, 5.0, 8, k.roll, lit(k.roll, 1.06), 0, true), Math.PI / 2 - .5, 0, 0), -3.2, 0, 2.95),
+                                     'cloth', lit(k.roll, 1.06), lit(k.roll, .88), k.roll));
+    if (V.sack) add(figPart(box(-3.0, 0, 2.8, 2.7, 2.7, 1.6, k.pack, 0, 0, 0), 'canvas', lit(k.pack, 1.1), lit(k.pack, .92), k.pack), 'pack');
+    if (V.roks) add(figPart(at(roll(cyl(0, 0, -2.0, 1.0, 1.0, 4.0, 10, k.tank, lit(k.tank, 1.1), 0, true), Math.PI / 2, 0, 0), -3.0, 0, 3.4)
+                              .concat(at(pitch(cyl(0, 0, -1.6, .42, .42, 3.2, 8, k.tankD, k.tankD, 0, true), Math.PI / 2, 0, 0), -3.2, -1.5, 3.05)),
+                            'paint', lit(k.tank, 1.08), lit(k.tank, .88), k.tank), 'pack');
   }
   /* the legs: three boxes each, and on a crawl beat one draws up and swings out while
      the other trails straight */
@@ -43120,8 +43695,8 @@ function flatFaces(V, k, P) {
     /* the marching boot to below the knee, or the gaiter over the ankle boot */
     else if (hr && V.gaiters) sh = sh.concat(figPart(box(-8.5 - 3.55, 0, -.12, 1.35, 1.66, 1.56, k.gaiter, k.gaiter, k.gaiter, 0), 'canvas',
                                                      k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
-    else if (hr) sh = sh.concat(figPart(box(-8.5 - 2.35, 0, -.14, 3.75, 1.74, 1.6, k.boot, k.boot, k.boot, 0), 'leather',
-                                        lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
+    else if (hr || sv) sh = sh.concat(figPart(box(-8.5 - 2.35, 0, -.14, 3.75, 1.74, 1.6, k.boot, k.boot, k.boot, 0), 'leather',
+                                              lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
     LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
     /* place(), because at() hands a face back without its tile: the tile then comes
        off the colour, and an American trouser shade is one the MP40's grip already owns */
@@ -43204,7 +43779,7 @@ function flatFaces(V, k, P) {
    into a bladed stance about the hip while his legs stay planted and his weapon stays
    along +x, which is `scTurn`. Marching, running, a machine gun from the hip, an
    anti-tank tube and a gun crew are left as they were. */
-var SC_ARMS = { garand: 1, garandgl: 1, kar: 1, carbine: 1, m3: 1, mp40: 1, thompson: 1, bar: 1, stg: 1 };
+var SC_ARMS = { garand: 1, garandgl: 1, kar: 1, carbine: 1, m3: 1, mp40: 1, thompson: 1, bar: 1, stg: 1, pps: 1 };
 var SC_MAT = { skin: 0, cloth: 14, canvas: 10, leather: 21 };
 var SC_STAMP = 0;
 function scAdd(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
@@ -43378,7 +43953,7 @@ function scLeg(H, K, A, k, V, fa) {
   A = scAdd(A, scMul(scNorm(scSub(A, K)), .3));
   var thigh = scTube(H, K, [[0, 1.27, 1.18], [.20, 1.30, 1.22], [.50, 1.18, 1.15], [.78, 1.08, 1.05], [1, 1.02, 1.01]], pants, SC_MAT.cloth, 8, .025);
   var shin = scTube(K, A, [[0, 1.08, 1.04], [.18, 1.14, 1.07], [.43, 1.16, 1.10], [.70, .94, .93], [1, .78, .79]], pants, SC_MAT.cloth, 8, .023);
-  var heer = V.nat === 'heer';
+  var heer = V.nat === 'heer' || V.nat === 'sov';
   if (V.eng) {
     shin = shin.concat(scTube(m1Mix(K, A, .62), A, [[0, .98, .96], [.18, .98, .96], [.85, .91, .88], [1, .84, .83]], dark, SC_MAT.leather, 8, 0));
   } else if (!heer && !V.tanker) {
@@ -43523,8 +44098,8 @@ function manFaces(variant, P) {
    units, so one of the two has lost his. */
 function deadFaces(variant, kind) {
   var V = SOLDIER_VARIANTS[variant] || SOLDIER_VARIANTS.gi_rifle, side = V.side, k = KIT[V.nat];
-  var hr = V.nat === 'heer', ame = V.nat === 'usa', en = ame && V.eng, kc = hr && V.kch;
-  var coat = en ? k.hbt : kc ? k.pz : k.coat, cmat = 'cloth', patch = !hr;
+  var hr = V.nat === 'heer', ame = V.nat === 'usa', en = ame && V.eng, kc = hr && V.kch, sv = V.nat === 'sov';
+  var coat = en ? k.hbt : kc ? k.pz : k.coat, cmat = 'cloth', patch = ame;
   var trs = en ? k.khaki : k.trous, ka = engKit(V, k);
   var f = [], Q = {}, LG = [], AR = [], AT = [], W = WEAP[V.weapon], w = W ? weaponModel(k, V.weapon) : null;
   /* a rifle that has been dropped lies on its side; the Garand stands two and a half units
@@ -43546,8 +44121,8 @@ function deadFaces(variant, kind) {
     else if (ame) sh = sh.concat(figPart(taperLimb([c[0] + (b[0] - c[0]) * .02, c[1] + (b[1] - c[1]) * .02, c[2] + (b[2] - c[2]) * .02],
                                               [c[0] + (b[0] - c[0]) * .70, c[1] + (b[1] - c[1]) * .70, c[2] + (b[2] - c[2]) * .70],
                                               1.64, 1.74, k.gaiter), 'canvas', k.gaiter, lit(k.gaiter, .86), lit(k.gaiter, .93)));
-    /* and the grenadier's marching boot over the lower three quarters of it */
-    else if (hr) sh = sh.concat(figPart(taperLimb([c[0] + (b[0] - c[0]) * .02, c[1] + (b[1] - c[1]) * .02, c[2] + (b[2] - c[2]) * .02],
+    /* and the grenadier's marching boot over the lower three quarters of it, or the kirza */
+    else if (hr || sv) sh = sh.concat(figPart(taperLimb([c[0] + (b[0] - c[0]) * .02, c[1] + (b[1] - c[1]) * .02, c[2] + (b[2] - c[2]) * .02],
                                                   [c[0] + (b[0] - c[0]) * .76, c[1] + (b[1] - c[1]) * .76, c[2] + (b[2] - c[2]) * .76],
                                                   1.52, 1.86, k.boot), 'leather', lit(k.boot, 1.3), k.boot, lit(k.boot, 1.14)));
     LG.push({ at: f.length, nt: th.length, ns: sh.length, nb: bt.length });
@@ -43584,6 +44159,9 @@ function deadFaces(variant, kind) {
     add(figPart(box(-8.3, -.6, .3, 3.6, 4.4, 2.0, trs, trs, trs, 0), 'cloth',
                 lit(trs, .90), lit(trs, .82), lit(trs, .88)), 'hips');
     arm(figArm([.5, -2.4, 1.6], [6.5, -4.5, .5], [0, -1, 1], ka, coat, cmat, -1, patch, .3, AR));
+    /* face down, a sapper has his greatcoat's ring across his back */
+    if (sv && V.roll) f = f.concat(figPart(at(roll(cyl(0, 0, -2.5, .56, .56, 5.0, 8, k.roll, lit(k.roll, 1.06), 0, true), Math.PI / 2 - .5, 0, 0), -3.3, -.2, 2.9),
+                                           'cloth', lit(k.roll, 1.06), lit(k.roll, .88), k.roll));
     /* face down, an engineer or a pioneer still has his pack on him and the roll across the top */
     if (en || (hr && V.pio)) {
       var ld = hr ? k.torn : V.chest ? k.demo : k.epack, rl = hr ? k.zelt : k.roll;
@@ -46950,6 +47528,32 @@ function workFaces(kind, x, y, a) {
                          x + bx * 30 + Math.cos(a + Math.PI / 2) * i * 16, y + by * 30 + Math.sin(a + Math.PI / 2) * i * 16, 0));
     return conformFaces(f);
   }
+  if (kind === 'mines') {
+    /* What the men who laid it know of it: a cord on stakes round the strip, a board at each
+       end, white with a red band, and the earth turned over where each mine went in. */
+    var mL = W.len / 2, mD = W.h / 2, mp = [];
+    function mAt(u2, v2) { return [x + ca * u2 + bx * v2, y + sa * u2 + by * v2]; }
+    [[-mL, -mD], [mL, -mD], [mL, mD], [-mL, mD]].forEach(function (q, qi, Q) {
+      var r2 = Q[(qi + 1) % 4], seg2 = Math.max(1, Math.round(Math.hypot(r2[0] - q[0], r2[1] - q[1]) / 24));
+      for (var si = 0; si < seg2; si++) mp.push([q[0] + (r2[0] - q[0]) * si / seg2, q[1] + (r2[1] - q[1]) * si / seg2]);
+    });
+    mp.forEach(function (q, qi) {
+      var p = mAt(q[0], q[1]), n2 = mAt(mp[(qi + 1) % mp.length][0], mp[(qi + 1) % mp.length][1]);
+      f = f.concat(cyl(p[0], p[1], -1, .45, .45, 6.5, 5, BUNK.timbD, BUNK.timb));
+      f = f.concat(bRope([p[0], p[1], 4.8], [n2[0], n2[1], 4.8]));
+    });
+    [-1, 1].forEach(function (sd) {
+      var p = mAt(sd * (mL + 5), 0);
+      f = f.concat(cyl(p[0], p[1], -1, .55, .55, 11, 5, BUNK.timbD, BUNK.timb));
+      f = f.concat(place(box(0, 0, 7.4, .5, 6.5, 3.4, BASE.white, BASE.white, BASE.white, 0), wa, p[0] + ca * sd * .5, p[1] + sa * sd * .5, 0));
+      f = f.concat(place(box(0, 0, 8.4, .55, 6.6, 1.0, BASE.sred, BASE.sred, BASE.sred, 0), wa, p[0] + ca * sd * .5, p[1] + sa * sd * .5, 0));
+    });
+    for (i = 0; i < 10; i++) {
+      var mq = mAt((rnd() * 2 - 1) * (mL - 8), (rnd() * 2 - 1) * (mD - 6));
+      f = f.concat(place(box(0, 0, -.4, 3.4, 2.4, .7, BUNK.earthD, BUNK.earth, BUNK.earthD, 0), rnd() * 3, mq[0], mq[1], 0));
+    }
+    return conformFaces(f);
+  }
   /* wire: screw pickets with a concertina coil strung between them and a low apron
      strand either side to catch the feet */
   var L2 = W.len, px0 = x - ca * L2 / 2, py0 = y - sa * L2 / 2;
@@ -47107,11 +47711,15 @@ function craftPostFaces(key, cr) {
    the ground so that a site that is not quite level hides the fall across it. */
 var BASE = { duck: '#5f6346', duckL: '#6f7356', duckD: '#4b4f37', duckIn: '#2c2e22',
              crate: '#5f4b31', crateL: '#705a3c', crateD: '#4a3a26',
-             white: '#d6d2c2', red: '#8e2a26', blue: '#2b3a5e',
+             white: '#d6d2c2', red: '#8e2a26', blue: '#2b3a5e', black: '#19191b',
              cam1: '#6e6a52', cam2: '#5d6550', board: '#6f6f63',
              /* turf over a bunker, on the earth tile: on the grass tile its blades came out as
                 rows of green stripes from above */
-             turf: '#566142', turfL: '#606b49' };
+             turf: '#566142', turfL: '#606b49',
+             /* the Red Army's: round pine logs with the bark on, paler where they are sawn, the
+                red of the banner and the gold of what is on it */
+             log: '#685943', logL: '#776650', logD: '#504535', logEnd: '#a08a68',
+             sred: '#9c2b23', sredD: '#7e211b', gold: '#c49b47' };
 /* a face turned away from a point inside the solid it bounds */
 function bOut(pts, col, c) {
   var n = faceNormal(pts[0], pts[1], pts[2]), fx = 0, fy = 0, fz = 0, i;
@@ -47154,11 +47762,29 @@ function usFlag(x, y, z) {
   f = f.concat(box(L * .2, 0, H - H * 7 / 13, L * .4, .6, H * 7 / 13 + .02, C.blue, C.blue, C.blue, 0));
   return place(f, 0, x, y, z);
 }
-/* the 352nd's: the field grey command pennant with the cross on it */
-function gerPennant(x, y, z) {
-  var C = BUNK, f = [];
-  f.push.apply(f, bTwo([[0, 0, 0], [16, 0, 2.5], [16, 0, 7.5], [0, 0, 10]], '#5d6267', '#4b4f54'));
-  f = f.concat(box(6.5, 0, 3.4, 5, .5, 1.3, '#111111', '#111111', '#111111', 0), box(6.5, 0, 2.2, 1.3, .5, 5.6, '#111111', '#111111', '#111111', 0));
+/* The 352nd's flag over its base: a red field with the Iron Cross in black on a white disc,
+   which is how Hearts of Iron IV flies the German side, in place of the field grey pennant the
+   buildings flew first. The cross is a cross pattee, four arms narrow at the middle and flared
+   to their ends, each a trapezoid laid a hair off both faces of the cloth over the disc. */
+function gerFlag(x, y, z) {
+  var C = BASE, f = [], L = 18, H = 11, cx = L * .5, cz = H * .5, i;
+  f.push.apply(f, bTwo([[0, 0, 0], [L, 0, -.5], [L, 0, H - .5], [0, 0, H]], C.red, C.red));
+  /* a face either side of the cloth, from points in its own plane, turned out of it */
+  function onCloth(pts, col, d) {
+    [-1, 1].forEach(function (s) {
+      var v = pts.map(function (p) { return [p[0], s * d, p[1]]; }), n = faceNormal(v[0], v[1], v[2]);
+      if (n.y * s < 0) v.reverse();
+      f.push({ v: v, c: col });
+    });
+  }
+  var disc = [];
+  for (i = 0; i < 16; i++) disc.push([cx + Math.cos(i / 16 * TAU) * 3.9, cz + Math.sin(i / 16 * TAU) * 3.9]);
+  onCloth(disc, C.white, .12);
+  for (i = 0; i < 4; i++) {
+    var ux = Math.cos(i * Math.PI / 2), uz = Math.sin(i * Math.PI / 2), vx = -uz, vz = ux;
+    onCloth([[cx + vx * .45, cz + vz * .45], [cx + ux * 3.4 + vx * 1.5, cz + uz * 3.4 + vz * 1.5],
+             [cx + ux * 3.4 - vx * 1.5, cz + uz * 3.4 - vz * 1.5], [cx - vx * .45, cz - vz * .45]], C.black, .2);
+  }
   return place(f, 0, x, y, z);
 }
 
@@ -47448,7 +48074,7 @@ function gerHQ(d) {
   f = f.concat(box(x1 - 14, y0 - 10, -9, 4, 20, 33, B.conW, B.conL, B.con), box(x1 - 14, y1 + 10, -9, 4, 20, 33, B.conW, B.conL, B.con));
   f = f.concat(roofKit(-8, 4, zt + 10, true));
   /* the pennant on its staff and the board by the door */
-  f = f.concat(bPole(50, -42, -2, 44, .5, B.steel), gerPennant(50.6, -42, 34));
+  f = f.concat(bPole(50, -42, -2, 44, .5, B.steel), gerFlag(50.6, -42, 30.5));
   f = f.concat(bPole(50, 16, -2, 13, .45), box(50.6, 20, 7, .6, 11, 5, C.white, C.white, C.white));
   f = f.concat(sandbagRun(hw - 6, -hh + 4, Math.PI / 2, 22, 3, r), sandbagRun(hw - 6, hh - 26, Math.PI / 2, 22, 3, r));
   f = f.concat(jerryRow(-64, 42, 6, '#5d6267'), drum(56, 40, 0, '#5d6267'));
@@ -47477,7 +48103,7 @@ function gerKaserne(d) {
   f = f.concat(box(34, -40, 0, 18, 4, 4.2, B.timbD, B.timb), crate(34, 40, 0, .1, 14, 6, 6));
   for (var i = 0; i < 5; i++) f = f.concat(place(pitch(box(0, 0, 0, .9, .6, 13, '#4a3a26', '#5a4a33'), -.22, 0, 0), 0, 28 + i * 2.6, -44.6, 0));
   f = f.concat(sandbagRun(hw - 6, -hh + 4, Math.PI / 2, 22, 3, r), sandbagRun(hw - 6, hh - 26, Math.PI / 2, 22, 3, r));
-  f = f.concat(bPole(50, 44, -2, 36, .5, B.steel), gerPennant(50.6, 44, 26));
+  f = f.concat(bPole(50, 44, -2, 36, .5, B.steel), gerFlag(50.6, 44, 22.5));
   return f;
 }
 
@@ -47500,7 +48126,7 @@ function gerKfzPark(d) {
   f = f.concat(box(54, -38, -9, 22, 3, 15, B.conW, B.conL, B.con), box(44, -45, -9, 3, 14, 15, B.conW, B.conL, B.con));
   f = f.concat(drumRow(48, -50, 6, '#5d6267'), jerryRow(40, 38, 12, '#5d6267'));
   f = f.concat(gantry(50, -16, 16, 36, B.steel));
-  f = f.concat(bPole(62, 48, -2, 36, .5, B.steel), gerPennant(62.6, 48, 26));
+  f = f.concat(bPole(62, 48, -2, 36, .5, B.steel), gerFlag(62.6, 48, 22.5));
   return f;
 }
 
@@ -47523,10 +48149,107 @@ function gerPanzerpark(d) {
   /* the gantry over the apron, the spares and the fuel */
   f = f.concat(gantry(60, -46, 46, 52, B.steel));
   f = f.concat(spares(4, 58, 6, 4, '#5d6267'), drumRow(56, -60, 6, '#5d6267'), jerryRow(44, 56, 6, '#5d6267'));
-  f = f.concat(bPole(74, -58, -2, 44, .5, B.steel), gerPennant(74.6, -58, 34));
+  f = f.concat(bPole(74, -58, -2, 44, .5, B.steel), gerFlag(74.6, -58, 30.5));
   return f;
 }
-var BLDMODEL = { us_hq: usHQ, us_bar: usBarracks, us_mot: usMotorPool, us_tank: usTankYard,
+/* ---- the Red Army ---- */
+/* A round log with its bark on, lying along x or along y, its sawn ends pale. Seven sides is
+   enough to read as round at the distance a base is looked at from. */
+function svLogX(x0, x1, y, z, r, alt) { return tubeSmooth(x0, x1, y, z, r, 7, alt ? BASE.logL : BASE.log, BASE.logEnd); }
+function svLogY(x, y0, y1, z, r, alt) { return place(tubeSmooth(y0, y1, 0, z, r, 7, alt ? BASE.logL : BASE.log, BASE.logEnd), Math.PI / 2, x, 0, 0); }
+/* and one standing, a post */
+function svPost(x, y, z0, h, r) { return cyl(x, y, z0, r, r, h, 7, BASE.logD, BASE.logEnd); }
+/* a wall of logs laid one on another along y, from z0 up through n courses */
+function svWallY(x, y0, y1, z0, n, r) {
+  var f = [], i;
+  for (i = 0; i < n; i++) f = f.concat(svLogY(x, y0 - (i % 2) * .8, y1 + (i % 2) * .8, z0 + r + i * r * 1.85, r, i % 2));
+  return f;
+}
+function svWallX(y, x0, x1, z0, n, r) {
+  var f = [], i;
+  for (i = 0; i < n; i++) f = f.concat(svLogX(x0 - (i % 2) * .8, x1 + (i % 2) * .8, y, z0 + r + i * r * 1.85, r, i % 2));
+  return f;
+}
+/* The Soviet flag on its staff, both faces red, with the star and the hammer and sickle in
+   gold in the upper corner by the staff. */
+function svBanner(x, y, z) {
+  var C = BASE, f = [], L = 18, H = 10, g = C.gold;
+  f.push.apply(f, bTwo([[0, 0, 0], [L, 0, -.6], [L, 0, H - .6], [0, 0, H]], C.sred, C.sredD));
+  /* a bar in the plane of the cloth, turned about (cx, cz) and laid a hair off face s */
+  function onCloth(l, h, cx, cz, ang, s) {
+    var ca = Math.cos(ang), sa = Math.sin(ang);
+    return box(0, 0, 0, l, .12, h, g, g, g, 0).map(function (q) {
+      return { v: q.v.map(function (p) { return [cx + p[0] * ca - p[2] * sa, s + p[1], cz + p[0] * sa + p[2] * ca]; }), c: q.c };
+    });
+  }
+  [-.25, .25].forEach(function (s) {
+    /* the star, five points round its middle, and the hammer and sickle under it: the
+       sickle's blade as two bars bent round and the hammer's shaft across it */
+    for (var k = 0; k < 5; k++) f = f.concat(onCloth(.5, 1.0, 3.0, 8.4, k * TAU / 5, s));
+    f = f.concat(onCloth(.3, 1.6, 2.4, 5.6, -.6, s), onCloth(.3, 1.5, 3.6, 5.7, .9, s), onCloth(.3, 2.0, 3.6, 5.4, -.75, s));
+  });
+  return place(f, 0, x, y, z);
+}
+/* The Shtab: a regiment's command post the way the Red Army dug one, which is a blindazh, a
+   dugout walled and roofed with round logs and buried under the earth that came out of it.
+   What shows is the front wall of logs with the door in it, the ends of the roof logs over
+   it, the mound of earth and turf on the roof with the stovepipe through it, and the banks
+   down the sides and the back. In front of it the passage to the door between two low walls
+   of logs, a gas curtain in the doorway, the regiment's banner, the wireless mast guyed out
+   behind, a map table under a camouflage net and the sentry under his mushroom roof. */
+function svShtab(d) {
+  var r = bRnd(.5813), f = [], B = BUNK, C = BASE, hw = d.w / 2, hh = d.h / 2;
+  var x0 = -50, x1 = 12, y0 = -28, y1 = 28, zt = 13;
+  /* the walls: logs along the front either side of the door, and along the sides and back
+     under the banks */
+  f = f.concat(svWallY(x1, y0, -7, -1, 4, 1.7), svWallY(x1, 7, y1, -1, 4, 1.7));
+  f = f.concat(svWallX(y0, x0, x1, -1, 4, 1.7), svWallX(y1, x0, x1, -1, 4, 1.7), svWallY(x0, y0, y1, -1, 4, 1.7));
+  /* the door: two posts, a lintel log across them, the plank door standing open into the
+     dark and the gas curtain half drawn across it */
+  f = f.concat(svPost(x1 + .4, -7, -2, zt + 1, 1.5), svPost(x1 + .4, 7, -2, zt + 1, 1.5));
+  f = f.concat(svLogY(x1 + .6, -10, 10, zt - .2, 1.6, 1));
+  f = f.concat(box(x1 - .6, 0, 0, .6, 12, zt - 1.5, B.dark, B.dark, B.dark, 0));
+  f = f.concat(place(box(0, -6.2, 0, .9, 6.2, zt - 2, B.timbD, B.timb, B.timbD), .9, x1 + .6, 6, 0));
+  f = f.concat(box(x1 + .2, -3.2, 2, .4, 5.4, zt - 3.5, B.tarpD, B.tarp, B.tarpD));
+  /* the roof: a layer of logs front to back with their sawn ends out over the door, a second
+     layer across them, and the earth and turf over that */
+  for (var ry = y0 - 1.5; ry <= y1 + 1.6; ry += 3.4) f = f.concat(svLogX(x0 - 2, x1 + 2.2, ry, zt + 1.7, 1.75, Math.round(ry) % 2));
+  for (var rx = x0; rx <= x1 - 4; rx += 4.2) f = f.concat(svLogY(rx, y0 - 2, y1 + 2, zt + 5, 1.6, 1));
+  f = f.concat(bLoft([[x0 - 2, y0 - 3], [x1 - 1, y0 - 3], [x1 - 1, y1 + 3], [x0 - 2, y1 + 3]],
+                     [[x0 + 8, y0 + 7], [x1 - 9, y0 + 7], [x1 - 9, y1 - 7], [x0 + 8, y1 - 7]], zt + 6, zt + 13, B.earthL, C.turfL));
+  f = f.concat(bank(x0, x1 - 4, y0, y1, zt + 5, 18, 'b'), bank(x0, x1 - 4, y0, y1, zt + 5, 18, 'l'), bank(x0, x1 - 4, y0, y1, zt + 5, 18, 'r'));
+  /* the stovepipe through the roof and its cap, and a box ventilator */
+  f = f.concat(cyl(-26, 12, zt + 9, 1.3, 1.3, 15, 8, B.steel, B.dark), cyl(-26, 12, zt + 24, 2.6, 2.6, 1, 8, B.dark, B.steel));
+  f = f.concat(box(-10, -14, zt + 10, 3.4, 3.4, 6, B.timbD, B.timbL), box(-10, -14, zt + 16, 5, 5, .7, B.timbD, B.timb));
+  /* the passage to the door: two low walls of logs out from the front with earth banked
+     against their outsides */
+  f = f.concat(svWallX(-9, x1 + 1, x1 + 24, -1, 3, 1.4), svWallX(9, x1 + 1, x1 + 24, -1, 3, 1.4));
+  f = f.concat(bLoft([[x1 + 1, -10], [x1 + 24, -10], [x1 + 24, -20], [x1 + 1, -24]], [[x1 + 1, -10], [x1 + 24, -10], [x1 + 24, -11], [x1 + 1, -11]], -2, 8, B.earth, C.turf));
+  f = f.concat(bLoft([[x1 + 1, 10], [x1 + 1, 24], [x1 + 24, 20], [x1 + 24, 10]], [[x1 + 1, 10], [x1 + 1, 11], [x1 + 24, 11], [x1 + 24, 10]], -2, 8, B.earth, C.turf));
+  /* the banner on its staff, by the passage */
+  f = f.concat(bPole(x1 + 30, -18, -2, 40, .55, '#4a3f2e'), svBanner(x1 + 30.6, -18, 28));
+  /* the wireless mast behind, guyed out, with its wire down to the roof */
+  f = f.concat(bPole(-60, -40, -2, 72, .6, '#3a3d34'), box(-60, -40, 64, .6, 9, .6, B.steel, B.steel, B.steel, 0));
+  f = f.concat(bRope([-60, -40, 68], [-20, -4, zt + 12]), bRope([-60, -40, 60], [-66, -50, 0]), bRope([-60, -40, 60], [-50, -50, 0]), bRope([-60, -40, 60], [-68, -30, 0]));
+  /* the map table under a camouflage net on four poles, a bench and a field telephone */
+  var nx0 = 30, nx1 = 56, ny0 = 14, ny1 = 42;
+  f.push.apply(f, bSheet([[nx0, ny0, 19], [nx1, ny0, 17], [nx1, ny1, 17], [nx0, ny1, 19]], B.canv, B.canvD, [43, 28, -20]));
+  [[nx0, ny0, 19], [nx1, ny0, 17], [nx1, ny1, 17], [nx0, ny1, 19]].forEach(function (p) { f = f.concat(bPole(p[0], p[1], -2, p[2] + 2, .45)); });
+  f = f.concat(box(43, 28, 0, 12, 8, 7.2, B.timbD, B.timbL), box(43, 28, 7.2, 14, 10, .6, '#c9b995', '#d2c39f', '#b9a985'));
+  f = f.concat(svLogX(37, 49, 22, 2.4, 1.2, 0), crate(40, 34, 0, .15, 6, 4.5, 4), box(40, 34, 4, 3.2, 2.4, 2.0, '#3f4434', '#4a503d'));
+  /* the sentry under his mushroom roof by the way in */
+  f = f.concat(svPost(hw - 10, 4, -2, 16, .9));
+  var oct = [], tip = [], k;
+  for (k = 0; k < 8; k++) { var a = k / 8 * TAU; oct.push([Math.cos(a) * 7.5, Math.sin(a) * 7.5]); tip.push([Math.cos(a) * .4, Math.sin(a) * .4]); }
+  f = f.concat(place(faceOut(frustum(oct, tip, 13.5, 19, B.timbL, B.timbL, B.timbL), 0, 0, 15), 0, hw - 10, 4, 0));
+  /* low walls of logs across the front either side of the way in, and the woodpile and the
+     stores behind */
+  f = f.concat(svWallY(hw - 4, -hh + 4, -16, -1, 2, 1.3), svWallY(hw - 4, 16, hh - 4, -1, 2, 1.3));
+  for (k = 0; k < 9; k++) f = f.concat(svLogX(-64, -46, 34 + (k % 4) * 3 + (k >= 4 ? 1.5 : 0) + (k >= 7 ? 1.5 : 0), 1.4 + (k >= 4 ? 2.5 : 0) + (k >= 7 ? 2.5 : 0), 1.4, k % 2));
+  f = f.concat(crate(-62, -10, 0, 0, 8, 6, 6), crate(-62, -10, 6, .1, 7, 5, 5), crate(-62, 2, 0, -.1, 8, 6, 6), drum(-60, 16, 0, '#4f5643'));
+  return f;
+}
+var BLDMODEL = { us_hq: usHQ, us_bar: usBarracks, us_mot: usMotorPool, us_tank: usTankYard, sov_hq: svShtab,
                  ger_hq: gerHQ, ger_qtr: gerKaserne, ger_dep: gerKfzPark, ger_pz: gerPanzerpark };
 function buildingModel(d, key) { return BLDMODEL[key] ? BLDMODEL[key](d) : []; }
 function flagModel(col) {
@@ -48387,11 +49110,11 @@ function drawWorks3D() {
      work, which is the only way the player can see that anything is happening. */
   for (i = 0; i < G.works.length; i++) {
     w = G.works[i];
-    if (w.buf) drawGeom(w.buf, m4model(0, 0, 0, 0, 1), false, null);
+    if (w.buf && mineShown(w, G.side)) drawGeom(w.buf, m4model(0, 0, 0, 0, 1), false, null);
   }
   for (i = 0; i < G.sites.length; i++) {
     w = G.sites[i];
-    if (w.buf) drawGeom(w.buf, m4model(0, 0, -(1 - w.prog) * 13, 0, 1), false, [.88, .88, .84]);
+    if (w.buf && (w.side === G.side || !(WORKS[w.kind] && WORKS[w.kind].field))) drawGeom(w.buf, m4model(0, 0, -(1 - w.prog) * 13, 0, 1), false, [.88, .88, .84]);
   }
   /* A bunker's fitting is its own world-space buffer for the same reason a work is: it
      appears after `buildScene` has run and a prop tile is a hundred and ten milliseconds
@@ -48499,7 +49222,8 @@ function drawParticles3D() {
      passing between two buildings rather than over them. */
   for (i = 0; i < G.shots.length; i++) drawShot(G.shots[i]);
   for (i = 0; i < G.fx.length; i++) {
-    f = G.fx[i]; k = f.t / f.dur;
+    f = G.fx[i]; if (f.t < 0) continue;
+    k = f.t / f.dur;
     z = f.z === undefined ? groundZ(f.x, f.y) : f.z;
     c = FXCOL[f.c || 0];
     if (f.kind === 'smoke') {
@@ -48561,6 +49285,13 @@ function drawParticles3D() {
                fk * .85, 1, f.sd || 0, 1);
     } else if (f.kind === 'ember') {
       partBill(f.x, f.y, z, 1.2, 1.2, 0, 1, .66, .26, (1 - k) * .95, 0, 0, 1);
+    } else if (f.kind === 'jet') {
+      /* a gout of a flamethrower's jet: small and nearly white as it leaves the nozzle,
+         swelling and going to orange and then red as it flies, inside a dull red glow */
+      var jk = clamp(k, 0, 1), jw = (f.r || 2.2) * (1 + jk * 2.6);
+      partBill(f.x, f.y, z, jw * 1.8, jw * 1.8, f.sd || 0, 1, .36, .08, (1 - jk) * .24, 0, 0, 1);
+      partBill(f.x, f.y, z, jw, jw * 1.25, f.sd || 0, 1, lerp(.95, .5, jk), lerp(.7, .14, jk),
+               (1 - jk * jk) * .8, 1, f.sd || 0, 1);
     }
   }
 }
@@ -48918,7 +49649,7 @@ function render() {
       if (b.built < 1) { mm[10] = .15 + .85 * b.built; if (b.buf) mm[14] = groundZ(b.x, b.y) * (1 - mm[10]); }
       drawDepthGeom(B, mm);
     });
-    G.works.forEach(function (w) { if (w.buf) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
+    G.works.forEach(function (w) { if (w.buf && mineShown(w, G.side)) drawDepthGeom(w.buf, m4model(0, 0, 0, 0, 1)); });
     G.bunks.forEach(function (w) { if (w.upBuf) drawDepthGeom(w.upBuf, m4model(0, 0, 0, 0, 1)); });
     /* a house that has left the merged tile still has to throw the shadow it threw
        before it was hit, or a shelled street lights up as the walls come off it */
@@ -50204,7 +50935,7 @@ var ORDWHOS = [
    engineer is the thing that puts posts up and a player who sends his engineers at a
    flag with ALL has said something he did not mean */
 function simpleOwn(u) {
-  return u && !u.dead && owned(u) && !u.inside && !u.def.builder && u.cat !== 'bld';
+  return u && !u.dead && owned(u) && !u.inside && !aiDig(u) && u.cat !== 'bld';
 }
 function simpleOrdForce(who) {
   var out = [], i, u;
@@ -50421,7 +51152,7 @@ function simpleTools() {
    list, so a post going up adds its units the moment it is finished. */
 function simpleItems() {
   var out = [], i, k, slot = G.own, side = G.side, seen = {};
-  var tiers = side === 'us' ? ['us_bar', 'us_mot', 'us_tank'] : ['ger_qtr', 'ger_dep', 'ger_pz'];
+  var tiers = NATIONS[natOfSlot(slot)].tiers;
   for (i = 0; i < tiers.length; i++) if (!siteOf(slot, tiers[i])) { out.push({ kind: 'post', key: tiers[i] }); break; }
   for (i = 0; i < G.blds.length; i++) {
     var b = G.blds[i];
@@ -50439,7 +51170,7 @@ function simpleItems() {
      on the side that has one and the heavy battery position, each dug by the engineers
      where the brain would have dug it */
   var wk;
-  for (wk in WORKS) if (WORKS[wk].unit && (!WORKS[wk].side || WORKS[wk].side === side)) out.push({ kind: 'work', key: wk });
+  for (wk in WORKS) if (WORKS[wk].unit && workFor(slot, WORKS[wk])) out.push({ kind: 'work', key: wk });
   return out;
 }
 function simpleMaker(key) {
@@ -50978,7 +51709,7 @@ function buildCmds() {
     if (engs.length) {
       Object.keys(BUILDINGS).forEach(function (key) {
         var d = BUILDINGS[key];
-        if (d.side !== G.side || d.hq) return;
+        if (!bldFor(G.own, d) || d.hq) return;
         var site = siteOf(G.own, key);
         /* Once the site is pegged out the button has nothing left to place, so it turns
            into the way back onto the job: it is already paid for, and without this the
@@ -51015,7 +51746,7 @@ function buildCmds() {
       cmdList[cmdList.length - 1].can = function () { return !!repairNearest(engs[0]); };
       Object.keys(WORKS).forEach(function (wk) {
         var W = WORKS[wk];
-        if (W.side && W.side !== G.side) return;
+        if (!workFor(G.own, W)) return;
         addCmd(W.short, (W.cost.mp || 0) + (W.cost.fu ? ' <em>' + W.cost.fu + 'f</em>' : ''), W.hk, canAfford(G.own, W.cost),
           function () {
             G.place = { work: wk, engs: engs };
@@ -51497,7 +52228,7 @@ function endGame(winner, why) {
   G.over = winner; G.running = false;
   el('overtitle').textContent = winner === G.side ? 'GROUND HELD' : 'POSITION LOST';
   el('overtitle').style.color = FACTION[winner].color;
-  el('overtext').textContent = FACTION[winner].name + ' wins after ' + fmtTime(G.t) + ' - ' + why + '.';
+  el('overtext').textContent = armyOf(winner).name + ' wins after ' + fmtTime(G.t) + ' - ' + why + '.';
   el('over').classList.remove('hidden');
   /* The record is closed and written here, at the whistle, rather than when the report is
      opened: a player who presses FIGHT AGAIN without reading it has still finished a
@@ -51516,11 +52247,15 @@ function endGame(winner, why) {
    unchanged; the roles are what the title screen's panels are stored against, because a
    role does not move when the player changes sides and a slot key does. */
 var ALLY_ROLES = ['ally', 'ally2'], FOE_ROLES = ['foe1', 'foe2', 'foe3'];
-function buildSlots(side, diff, n) {
+function buildSlots(side, diff, n, army) {
   var him = foe(side), out = [], i;
-  out.push({ k: side, side: side, ai: 0, role: 'you', diff: diff });
-  for (i = 1; i < n; i++) out.push({ k: side + (i + 1), side: side, ai: 1, role: ALLY_ROLES[i - 1], diff: adDiff(ALLY_ROLES[i - 1], diff) });
-  for (i = 0; i < n; i++) out.push({ k: him + (i ? i + 1 : ''), side: him, ai: 1, role: FOE_ROLES[i], diff: adDiff(FOE_ROLES[i], diff) });
+  /* the army each player fields: the player's own is the one he picked, if it fights on his
+     side, and every brain fields its side's first army (see NATIONS) */
+  function nat(sd) { return sd === 'ger' ? 'heer' : 'usa'; }
+  var mine = army && NATIONS[army] && (NATIONS[army].side || 'us') === side ? army : nat(side);
+  out.push({ k: side, side: side, ai: 0, role: 'you', diff: diff, nat: mine });
+  for (i = 1; i < n; i++) out.push({ k: side + (i + 1), side: side, ai: 1, role: ALLY_ROLES[i - 1], diff: adDiff(ALLY_ROLES[i - 1], diff), nat: nat(side) });
+  for (i = 0; i < n; i++) out.push({ k: him + (i ? i + 1 : ''), side: him, ai: 1, role: FOE_ROLES[i], diff: adDiff(FOE_ROLES[i], diff), nat: nat(him) });
   return out;
 }
 /* a boolean was the 2v2 switch before there was a 3v3, and the gate still passes one */
@@ -51588,11 +52323,11 @@ function missionTitle() {
   m.children[0].textContent = (d.name || 'Custom map').toUpperCase();
   m.children[1].textContent = d.when || 'CUSTOM MAP';
 }
-function startGame(side, diff, mode, arty, team) {
+function startGame(side, diff, mode, arty, team, army) {
   G.side = side; G.own = side; G.diff = diff; G.win = mode || 'vp'; G.over = null; G.t = 0;
   G.team = teamSize(team);
   G.duo = G.team > 1;
-  G.slots = buildSlots(side, diff, G.team);
+  G.slots = buildSlots(side, diff, G.team, army);
   /* whether the brain is allowed indirect fire at all. Default on, because that is the
      game; off is for a player who would rather not be shelled. */
   G.aiArty = arty === undefined ? true : !!arty;
@@ -51610,7 +52345,7 @@ function startGame(side, diff, mode, arty, team) {
   POV.on = false; POV.u = null; DRV.took = 0; DRV.padFire = false; DRV.padMg = false; DRV.mouseMg = false;
   if (el('drive')) el('drive').classList.remove('on');
   document.body.classList.remove('pov');
-  G.sites = []; G.works = []; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
+  G.sites = []; G.works = []; G.mines = []; G.mineT = 0; G.groups = {}; G.place = null; G.mode = null; G.uid = 1;
   var si, sk;
   G.made = {}; G.res = {}; G.inc = {}; G.pop = {}; G.hc = {}; G.bp = {};
   for (si = 0; si < SLOTS.length; si++) {
@@ -51645,19 +52380,20 @@ function startGame(side, diff, mode, arty, team) {
      armies a side rather than one army with twice the money. */
   for (si = 0; si < G.slots.length; si++) {
     sk = G.slots[si].k;
-    var us = slotSide(sk) === 'us', sp = hqSpot(sk), fr = frontOf(slotSide(sk));
+    var sp = hqSpot(sk), fr = frontOf(slotSide(sk)), NA = NATIONS[natOfSlot(sk)];
     /* the opening company stands between its headquarters and the enemy, whichever axis
        the map faces the armies on. f is toward the enemy and l is across. */
     var fx = fr.x, fy = fr.y, lx = Math.abs(fr.y), ly = Math.abs(fr.x);
     var fa = Math.atan2(fy, fx);
-    var bh = spawnBuilding(sk, us ? 'us_hq' : 'ger_hq', sp.x, sp.y, true);
+    var bh = spawnBuilding(sk, NA.hq, sp.x, sp.y, true);
     /* a headquarters stands as the map drew it only on the spot the map drew it on, and on
        the footprint the map drew it with */
     if (sp.look) { bh.look = sp.look; bh.def = BUILDINGS[bh.key]; bh.yaw = 0; rebuildGrid(); }
     bh.rally = { x: sp.x + fx * 180, y: sp.y + fy * 180 };
-    spawnUnit(sk, us ? 'am_eng' : 'hr_pio', sp.x + fx * 130 - lx * 70, sp.y + fy * 130 - ly * 70, fa);
-    spawnUnit(sk, us ? 'am_rifle' : 'hr_gren', sp.x + fx * 140 + lx * 40, sp.y + fy * 140 + ly * 40, fa);
-    spawnUnit(sk, us ? 'am_rifle' : 'hr_gren', sp.x + fx * 90 + lx * 110, sp.y + fy * 90 + ly * 110, fa);
+    /* the company the army opens with, its builders first, on three places out in front */
+    [[130, -70], [140, 40], [90, 110]].forEach(function (o, oi) {
+      if (NA.open[oi]) spawnUnit(sk, NA.open[oi], sp.x + fx * o[0] + lx * o[1], sp.y + fy * o[0] + ly * o[1], fa);
+    });
   }
   rebuildGrid();
   /* Green used to hand the player three extra sections and a second engineer here, on top
@@ -51680,7 +52416,7 @@ function startGame(side, diff, mode, arty, team) {
   el('start').classList.add('hidden'); el('over').classList.add('hidden');
   document.querySelectorAll('.vp span').forEach(function (sp, i) {
     var sid = i === 0 ? 'us' : 'ger';
-    sp.textContent = sid === side ? 'YOU' : FACTION[sid].short;
+    sp.textContent = sid === side ? 'YOU' : armyOf(sid).short;
   });
   auInit();
   computeVisibility();
@@ -51732,6 +52468,7 @@ function frame(now) {
     if (!vehWarmTick()) manWarmTick(MOB ? 3 : 4);
     updateSectors(dt);
     updateSites(dt);
+    updateMines(dt);
     updateBunkers(dt);
     bunkerRepair(dt);
     tickEconomy(dt);
@@ -51756,6 +52493,8 @@ function frame(now) {
 
 /* ---------------------------------------------------------------- boot */
 var chosenSide = 'us', chosenDiff = 1, chosenMode = 'vp', chosenArty = true, chosenTeam = 1, chosenWall = false;
+/* and which army the player fields: the side's own, or the Red Army on the Allied side */
+var chosenArmy = 'usa';
 /* The maps that ship. A map nobody can pick is a map nobody has, and the editor's PLAY
    CUSTOM MAP was the only door onto anything that was not Ortona. One table drives the
    picker, what the deploy button builds and what the briefing says, because the briefing
@@ -51806,6 +52545,7 @@ document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
     document.querySelectorAll('.side').forEach(function (b) { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); });
     btn.classList.add('on'); chosenSide = btn.dataset.side;
+    chosenArmy = btn.dataset.army || (chosenSide === 'ger' ? 'heer' : 'usa');
     btn.setAttribute('aria-pressed', 'true');
   };
 });
@@ -51835,7 +52575,7 @@ document.querySelectorAll('.gmap').forEach(function (btn) {
 });
 /* each side's button names its army, which is the same army on every ground */
 function sideSync() {
-  [['pickus', 'usa'], ['pickger', 'heer']].forEach(function (q) {
+  [['pickus', 'usa'], ['pickger', 'heer'], ['picksov', 'sov']].forEach(function (q) {
     var N = NATIONS[q[1]], b = el(q[0]);
     if (!b) return;
     b.querySelector('h3').textContent = N.pick; b.querySelector('p').textContent = N.blurb; b.dataset.mark = N.short;
@@ -52166,7 +52906,7 @@ document.querySelectorAll('.team').forEach(function (btn) {
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
 if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
-el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam); };
+el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam, chosenArmy); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.own); if (!hq) return;
   select([hq], false); focusSelection();
@@ -55996,7 +56736,7 @@ function edTestPlay(side, diff, mode) {
   G.mapData = ED.data;
   /* with the artillery switch the title screen was left on: passed nothing, a test gave the
      opposition its guns whatever the switch said */
-  startGame(side || 'us', diff === undefined ? 1 : diff, mode || 'vp', chosenArty);
+  startGame(side || 'us', diff === undefined ? 1 : diff, mode || 'vp', chosenArty, 1, chosenArmy);
   el('overedit').classList.remove('hidden');
 }
 
@@ -56221,7 +56961,7 @@ function edPanelCheckShow() {
   el('edq').addEventListener('keydown', function (ev) {
     if (ev.key === 'Enter') { var r = edSearch(el('edq').value); if (r.length) { edSetTool(r[0]); el('edq').blur(); } ev.preventDefault(); }
   });
-  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam); } });
+  el('playcustom').addEventListener('click', function () { var d = edLoadLocal() || edLoadDraft(); if (d) { G.mapData = d; startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam, chosenArmy); } });
   edRefreshStart();
 })();
 

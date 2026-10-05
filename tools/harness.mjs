@@ -581,7 +581,9 @@ export async function deploy(page, { side = 'us', diff = 1, map = null } = {}) {
      startGame does not touch G.mapData, so whichever map the deploy button built is the
      map every re-deploy in the same page runs on. */
   if (map) await page.click(`.gmap[data-map="${map}"]`);
-  await page.click(side === 'ger' ? '#pickger' : '#pickus');
+  /* 'sov' is the Allied side fought as the Red Army, which the title screen offers as a card of
+     its own */
+  await page.click(side === 'ger' ? '#pickger' : side === 'sov' ? '#picksov' : '#pickus');
   await page.click(`.pill[data-diff="${diff}"]`);
   await page.click('#deploy');
   await page.waitForFunction(() => window.G.running && window.SCENE.ready, null, { timeout: 180000 });

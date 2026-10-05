@@ -5,7 +5,9 @@ every map is the US 29th Infantry Division against the 352nd Infantry Division. 
 Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first built with
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
-MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
+being built the same way on the Allied side, and so far it has its headquarters, the Shtab, and its
+builders, the Sapery (see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -22,9 +24,9 @@ into that evening, laid for three a side: 3800 by 2800, the old town walled on i
 the middle, the river and the station on the right and the faubourgs on the left, laid in
 five stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
 all four open in the editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
-line over the name, the name, what the battle was and two cards about the ground), and the two
-side buttons name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
-ground. Written once in the markup, the header went on naming the Adriatic town over the beach.
+line over the name, the name, what the battle was and two cards about the ground), and the three
+side cards name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
+ground, and the Red Army, which only the player fields. Written once in the markup, the header went on naming the Adriatic town over the beach.
 
 **The whole game is `ortona.html`.** Some 42,000 lines and 2.6 megabytes: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
@@ -997,7 +999,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, 3300 before the map editor was made over, and 3550 before the Priest, the M12, the Wespe, the Marder III and the Weasel). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, 3300 before the map editor was made over, 3550 before the Priest, the M12, the Wespe, the Marder III and the Weasel, and 3650 before the Red Army). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1416,6 +1418,18 @@ distance it drove, and turned half a radian on the spot to run them that far apa
 the same Sherman rendered with its tracks half a link on has to move thousands of pixels against
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
+
+**And three rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+the player's slot fields it against the 352nd, the Shtab makes the Sapery and refuses the 29th's
+rifle squad, the side opens with three squads of four in the four sapper variants with the PPS-43,
+the plates, the ring and the helmet are on them, the sapper's card offers the four works with the
+minefield and the ROKS-3 and nothing of another army, a bunker fitting raises no team of his, and a
+man killed goes down as `sov_sap`. Then a brain is put on his slot for 45 seconds and has to buy
+only Sapery, keep one back to dig and deal the rest jobs. Then the ROKS-3 goes on for its price and
+burns a garrison out of a house from inside its reach, with the jet drawn and the house alight, and
+a minefield laid in front of the headquarters is hidden from the enemy, takes a man of a squad
+walked across it and holds a 251 driven across it, with the German brain switched off for the drill
+so that the half-track goes where it is sent.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
@@ -4106,7 +4120,8 @@ for every fitted upgrade key, not only the one that swaps the gun.
 
 **The two armies.** The Allied side is 'us' everywhere in the file and the German side 'ger',
 and both stay that way. On every map the Allied side is the 29th Infantry Division and the
-German side the 352. Infanterie-Division: `NATIONS` is those two entries (`usa` and `heer`),
+German side the 352. Infanterie-Division: `NATIONS` is those two entries (`usa` and `heer`, with the
+Red Army's beside them as `sov`, which only a player fields; see *The Red Army*),
 each a name, a short name and a line for the title screen, the HUD and the after-action page,
 and `FACTION` carries the same names. The side buttons (`sideSync`) and the victory-point
 labels say so on every ground.
@@ -6363,7 +6378,9 @@ is not on the brain's ladder.
 
 **And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
 team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
-the same key. Before the retirement they went through `natKey`, and before that an American
+the same key, through `bunkUnit(W, slot)`, which hands back the team out of the player's own army or
+none: the Red Army has no team for any of the three yet, so its bunkers take only the two fittings
+that bring nobody. Before the retirement they went through `natKey`, and before that an American
 bunker's anti-tank casemate was a Canadian 6-pounder.
 
 **And the brain's shopping list is written in the live keys.** `LADDER`, the role table and
@@ -6373,6 +6390,116 @@ skirmish card asks after the carrier: with the counts keyed on what was actually
 given a jeep for every carrier it orders and counts them, where a count keyed on the carrier
 never moved and it bought them for ever. A rung for a unit the roster does not have is money
 saved for nothing, which is why the head of the list is only ever a live key.
+
+**The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
+pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
+fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
+has two things so far: its headquarters, the Shtab, and its builders, the Sapery, with their
+flamethrowers and their minefield. The B-4 position the Sapery are to dig and the production
+buildings come with rows of their own.
+
+`NATIONS.sov` is the army, with `side: 'us'`, and every army names its headquarters (`hq`), the
+company it opens with (`open`), its production buildings in order (`tiers`) and its heavy battery's
+work (`battery`, none for the Red Army). A slot carries the army it fields (`nat`, laid by
+`buildSlots` and read by `natOfSlot(k)`): the player's own slot fields the army he picked on the
+title screen (`chosenArmy`, `startGame`'s last argument) if it fights on the side he picked, and
+every brain fields its side's first army, so the Red Army is only ever the player's and an AI on the
+Allied side is the 29th. What a player may build is filtered by his army: a building by
+`bldFor(slot, def)` (its army is `def.nat`, or its side's first), a work by `workFor(slot, W)` (its
+`side` and `nat`), a bunker fitting by `bunkUnit(W, slot)`, and a unit by the building that makes
+it, so the Shtab refuses the 29th's rifle squad and the sapper's card offers no 240 position and no
+building of another army. `armyOf(side)` names a side's army off its first slot, for the
+victory-point labels, the game-over screen and the record. The title screen carries it as a third
+card (`#picksov`, `data-army="sov"`) with a red edge, under the two divisions; on a phone the page
+scrolls to it.
+
+**The Shtab** (`sov_hq`, `svShtab`) is a regiment's command post dug in the way the Red Army dug
+them: a front wall of round logs laid between posts with the door in it and the gas curtain over
+the door, a roof of logs laid side by side with their ends out over the front, a second layer across
+them and the earth out of the hole heaped over the lot and banked down the sides; a passage down to
+the door between log walls revetted with earth, a stovepipe and a vent through the mound, the
+wireless mast on its guys, a map table under a net in front, a sentry under a mushroom roof, a
+woodpile, crates and a drum, and the red banner with the gold star and the hammer and sickle on a
+pole beside it (`svBanner`). The logs are their own colours in `BASE` (`log`, `logL`, `logD`, and
+`logEnd` for the cut ends), tagged as bark and wood. It is 132 by 104 like the other two
+headquarters and makes the Sapery and nothing else yet.
+
+**The Sapery** (`sv_sap`) are four men of 64 hit points with the PPS-43, for 160 manpower and 14
+seconds, 5 of population, 68 of speed and 250 of sight, and they are the army's builders: they put
+its buildings up, lay sandbags, weapon pits, wire and minefields, repair its vehicles and, while the
+army has no line infantry, take its ground (see below). The side opens with three. The PPS-43 is
+5.4 a burst every 0.40 seconds out to 150 at an accuracy of .54. The kit is a fifth on the rig
+(`KIT.sov`, `V.nat === 'sov'`): the gymnastyorka in khaki, pulled on over the head with a placket of
+three buttons and worn outside the trousers with the belt round it (`manRig`'s `sv` branch, with
+the skirt), the shoulder boards of the 1943 pattern, the trousers into kirza boots (the German
+marching boot's anklet mode, and the fuller German leg in `scLeg`), the SSh-40 in green
+(`helmetSSh40`), and the belt with a pouch of three magazines either side of the buckle, the small
+shovel on the left hip and the flask and the grenade pouch on the right (`figKitSov`). Four
+variants: `sv_sap` with the greatcoat rolled in its ring over the left shoulder (`figRope`, a smooth
+tube along a closed loop, because built of four-sided limbs the ring read as a chain of boxes),
+`sv_sap_b` in the SN-42 breastplate, `sv_sap_c` with the sack on his back and the long sapper's
+shovel down its side, and `sv_sap_d` in the breastplate with the ring. He falls as a sapper
+(`body: 'sov_sap'`). The PPS-43 is cut as a side profile (`weaponModel(k, 'pps')`): the square
+pressed receiver and the shroud with its brake, the curved magazine, the grip and the stock folded
+over the top, swung back for the aim (`WEAP.pps`), and it is one of the weapons a sculpted man
+shoulders standing and kneeling (`SC_ARMS`). The numbers are the row's as it was pasted, and on the
+duel card over sixteen runs a row they take the 29th's engineers and the 352nd's pioneers every
+time in twelve seconds, which is four men against three, and lose every fight with the grenadier
+squad inside ten, as the engineers do.
+
+**The ROKS-3** (`UPGRADES.roks`, 70 manpower and 15 fuel, O) is the first second weapon that takes
+the place of the first. It goes through the rifle grenade's door (`glUp`, `glOf`, `launcherMan`)
+with two new flags: `flame`, which makes the round a jet, and `swap`, which takes the men who carry
+it out of the main weapon's volley (`glSwap`), because a man with the gun of a flamethrower in his
+hands has no PPS in them. The third and fourth men become `sv_flame`, with the cylinder upright on a
+frame of straps, the air bottle beside it, the hose round the right hip, and the gun, which was made
+to look like a rifle (`weaponModel(k, 'roks')`: a Mosin's stock and fore-end round a steel tube,
+the valve under it and the drum of incendiary cartridges at the muzzle), fired from the hip. Each
+puts out 18 every 0.25 seconds out to 80 at an accuracy of .82 with a suppression of .07, and a
+forced attack on anything that is not a vehicle closes to the jet's reach, and so does an
+attack-move, which otherwise stopped at the PPS's 150 with two of the four men holding nothing that
+reached: so fitted, the squad won none of its fights with a grenadier squad and left it whole, and
+it takes 19 per cent of them now at 120 and 13 with both sides in heavy cover, leaving the squad at
+two thirds. A line squad in the open is not what it is for. Against a garrison the
+reach is measured to the wall and not to the middle of the house (`jetDist`), because a jet goes in
+at a window. The cover it meets counts for no more than light, it throws no sparks off plate, and
+against men holding a building that burns it sets the room nearest the jet alight one time in five
+for every man it reaches (`flameBurn`, through the fire's own `frIgnite`), so a garrison is burnt
+out of its house and the house goes on burning. It is drawn as a jet (`flameJet`): gouts of burning
+fuel flown on ballistic arcs from the nozzle to the target, a hot core in a glow that grows as it
+flies (`fx` kind `jet`), staggered a fiftieth of a second apart so they read as a stream, with
+burning puddles where they land, oily smoke over them, a light and a roar (`sfx('flame')`); a man
+firing it shows the jet and not a muzzle flash (`m.jet`). Measured by the gate against a grenadier
+squad of 480 holding a house: 28 jets in twelve seconds, the furthest from 40 units of the wall,
+burnt the squad out to nothing with nine to seventeen cells of the house alight.
+
+**The minefield** (`WORKS.mines`, 40 manpower, 10 seconds, 7) is the army's own work: a strip 120
+long and 44 deep laid on a bearing with five mines in it, marked with stakes, a rope and two boards,
+with the spoil of the holes in mounds (`workFaces`). It is drawn to its own side and to nobody else
+until it has gone off under them (`mineShown`, `f.seen`), in the draw and the shadow pass, and its
+site is hidden from the enemy as well. `updateMines` asks every field ten times a second about
+everything of the enemy's that is moving: a vehicle whose centre is within half its beam of the
+strip sets one off a tick in five, which takes 180 times its blast factor off it, bursts on it and
+holds it for nine to fifteen seconds with a track or the wheels gone; a man on the strip sets one
+off a tick in twenty, an anti-personnel mine of 95 over 22 with the grenade's rules, which takes the
+man who stepped on it. Spent, the field and its marking go. Measured by the gate: a grenadier squad
+walked across set one off, lost a man and could see the field afterwards; a 251 driven across lost
+180 and was held for seven to eleven seconds.
+
+**A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
+brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders and
+as its line, has an empty shopping ladder, digs no battery and lays a minefield every fourth work.
+**And an army whose only infantry is its builder fights with it.** Every rule that leaves an
+engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
+engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
+to ALL under SIMPLE took nobody. `natLine(nat)` is whether an army has infantry that is not its
+builder, worked out once off the roster, and `aiDig(u)` is a builder that digs rather than fights:
+every builder of an army with a line, and none of one without, read wherever `def.builder` was read
+for that question. The brain on such an army still keeps one back to dig (the one already at work,
+or the first), in `aiLook`. Measured by the gate: in 45 seconds the brain on the Soviet slot queued
+four Sapery and nothing of another army, kept one as its engineer and dealt the other five jobs
+taking ground. When the Red Army has a rifle squad, `natLine` turns true and the Sapery go back to
+digging with nothing else changed.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -7315,8 +7442,11 @@ round the lot. The 352nd lives in poured concrete: a command bunker, a personnel
 open bays and a tank shelter, each with the earth banked up its back and sides, turf on the roof
 (on the earth tile, because on the grass tile its blades came out as rows of green stripes from
 above), the board marks of the shuttering printed in the walls and the field company's paint over
-them. `tools/shoot.mjs buildings` stood them on Ortona's cliff, so they are photographed on Omaha's
-sand by a script of the session's own.
+them. Each of the four flies the Iron Cross flag from a pole at its front, where they flew a grey
+pennant (`gerFlag`: a red field, a white disc and a black cross pattée, after the flag Hearts of
+Iron IV gives the German army). `tools/shoot.mjs buildings` stood them on Ortona's cliff, so they are
+photographed on Omaha's sand by a script of the session's own. The Red Army's Shtab is logs and
+earth (see *The Red Army*).
 
 **The brain builds in order and saves for the next one.** `aiTick` raises the barracks, the motor
 pool and the tank yard in that order (`K.b1`, `K.b2`, `K.b3`), each where `baseSite` says or out of
@@ -9235,6 +9365,14 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **`def.builder` is not the question of whether a unit fights.** Every rule that leaves an
+  engineer out of the fighting asked it, and an army whose only infantry is its builders (the Red
+  Army, until it has a rifle squad) was then no army at all: its brain dealt none of them a job,
+  the enemy's brain counted it as nothing, and an order to ALL took nobody. Ask `aiDig(u)`.
+- **A drill that stages the enemy's units has to switch the enemy's brain off.** A unit spawned on
+  the opposition's slot is that brain's to command on its next tick, so a half-track ordered across
+  a minefield drove off somewhere else and never touched it, and the row read the mines as broken.
+  `slotOf('ger').ai = 0` for the drill, and put it back or reload after.
 - **A part baked on its own reads its own bottom half as a hull's belly.** The bake's dust is laid by
   height off the extent of whatever is in the bake, so a part baked alone (the Calliope's rack) took the
   road's dust over the lower half of itself and came out pale khaki over an olive hull. Bake a part that
