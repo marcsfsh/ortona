@@ -99,6 +99,10 @@ const REAL = {
                the sprocket to the tail at the scale of its running gear, which with the towing eyes reads 4.73, and
                draws its gun a tenth long: built to the Pak 40's published length with its breech where the drawing
                has it, the length over the gun reads 6.2 m */
+  sv_t20:    { name: 'Komsomolets T-20',    len: 3.45,  gun: 3.45,   wid: 1.86,  hgt: 1.58,
+               clear: 0.30 },   /* 3.45 m over the towing fittings, 1.86 m wide, 1.58 m high and 300 mm of
+               clearance. The drawing it is laid over (tools/ref/sv_t20.json) agrees with the length at its own
+               scale bar and puts the width over the rails at the seats and the height at the backrests */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -210,6 +214,7 @@ const PROBE = {
   hr_wespe:  { topZ: 4.5, tailX: -28.7 },   /* topZ holds the tube, laid up as the game lays it, out of the
                casemate's height, and tailX the silencer across the tail out of the length */
   hr_marder: { hullZ: 30.0 },   /* hullZ holds the two aerials out of the height, which is to the shield */
+  sv_t20:    { noMount: true, hullZ: 18.9 },   /* the mount is a ball in the front plate, and hullZ holds the open door out */
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },

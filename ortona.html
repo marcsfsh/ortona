@@ -1443,11 +1443,11 @@ var NATIONS = {
   heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
           hq: 'ger_hq', open: ['hr_pio', 'hr_gren', 'hr_gren'], tiers: ['ger_qtr', 'ger_dep', 'ger_pz'], battery: 'how210',
           blurb: 'Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.' },
-  /* It opens with three squads of Sapery, which is the whole of the army so far; the line
+  /* It opens with three squads of Sapery, which is the whole of its infantry so far; the line
      squad takes two of the places when it is built. */
   sov: { side: 'us', name: 'Red Army', short: 'SOV', pick: 'RED ARMY',
-         hq: 'sov_hq', open: ['sv_sap', 'sv_sap', 'sv_sap'], tiers: [], battery: null,
-         blurb: 'Sapery with the PPS-43, the ROKS-3 flamethrower and the minefield, raised from a Shtab dug in under logs and earth.' }
+         hq: 'sov_hq', open: ['sv_sap', 'sv_sap', 'sv_sap'], tiers: ['sov_bar'], battery: null,
+         blurb: 'Sapery with the PPS-43, the ROKS-3 flamethrower and the minefield, and the Komsomolets tractor out of the Kazarma, raised from a Shtab dug in under logs and earth.' }
 };
 var RETIRED = { us_rifle: 'am_rifle', us_eng: 'am_eng', us_fg: 'am_ranger', us_ab: 'am_ranger', us_mg: 'am_mg',
                 us_at: 'am_at', us_m8: 'am_jeep', us_m3: 'am_m3', us_stuart: 'am_m8', us_sher: 'am_sher',
@@ -2310,6 +2310,20 @@ var UNITS = {
     w: { mm: 3, range: 150, dmg: 5.4, rof: 0.40, acc: .54, sup: .016, pen: 10 },
     glUp: { roks: { flame: 1, swap: 1, mm: 4, range: 80, dmg: 18, rof: .25, acc: .82, sup: .07, pen: 4, men: [2, 3] } },
     desc: 'Four sappers of the Red Army with PPS-43 submachine guns. They build the army\'s base, lay sandbags, weapon pits, wire and minefields, repair armour and take ground, and fight best up close. Two of them can be issued the ROKS-3 flamethrower, which burns men out of cover and out of houses at eighty.'
+  },
+  /* The Komsomolets T-20: the Red Army's light armoured artillery tractor, out of the Kazarma. A
+     driver and a commander in an armoured cab, the commander firing the DT in its ball on the
+     right of the front plate, which traverses twenty degrees either way (`arc`) and turns the
+     hull for anything wider, and six seats behind the cab for the men of a squad (`carries`).
+     It tows a gun. Ten millimetres of plate in front and seven at the sides and the back keep
+     out rifle fire at a distance, and the men on the seats are in the open (`blastRes`). */
+  sv_t20: {
+    side: 'us', nat: 'sov', name: 'Komsomolets T-20', short: 'T-20', cat: 'veh', hk: 'K',
+    carries: 1, tows: 1, arc: .7, blastRes: 1.25,
+    hp: 260, armor: 30, speed: 100, sight: 320, pop: 6, cost: { mp: 180, fu: 15 }, time: 18,
+    req: 'sov_bar',
+    w: { mm: 9, range: 280, dmg: 7.5, rof: .20, acc: .55, sup: .05, supCap: .92, pen: 8, aoe: 0 },
+    desc: 'The Red Army\'s light armoured tractor: a driver and a commander in a riveted cab with a DT in a ball mount, and six seats back to back on the deck behind them for a squad. It tows a gun. Ten millimetres of plate keeps out rifle fire at a distance and nothing heavier, and the DT traverses twenty degrees either way before the tractor has to turn.'
   }
 };
 
@@ -2403,10 +2417,14 @@ var BUILDINGS = {
              cost: { mp: 300, fu: 60 }, time: 40, makes: ['am_stuart', 'am_sher', 'am_e8', 'am_t34', 'am_m18', 'am_m26'],
              desc: 'A canvas tank hangar on hoops with a gantry over the bay, spare track and road wheels. Needs the Motor Pool. Raises the Stuart, the M4A1, the Easy Eight, the Calliope, the Hellcat and the Pershing.' },
   /* the Red Army's headquarters, which turns out its Sapery; the rest of the army's buildings
-     come with the rest of its roster */
+     come with the rest of its roster, a building with the units it makes */
   sov_hq: { side: 'us', nat: 'sov', name: 'Shtab', short: 'SHTAB', w: 132, h: 104, hp: 3000, hq: 1,
             makes: ['sv_sap'],
             desc: 'A regiment\'s command post dug in under round logs and the earth that came out of the hole. Raises the Sapery.' },
+  /* and its first production building, the company's barrack, which turns out its tractor */
+  sov_bar: { side: 'us', nat: 'sov', name: 'Kazarma', short: 'KAZARMA', w: 116, h: 96, hp: 1500, hk: '1',
+             cost: { mp: 200 }, time: 26, makes: ['sv_t20'],
+             desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Komsomolets T-20.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren', 'hr_ks750'] },
   ger_qtr: { side: 'ger', name: 'Kaserne', short: 'KASERNE', w: 116, h: 96, hp: 1500, hk: '1',
@@ -9432,6 +9450,7 @@ var ARM = {
   am_jeep:    { soft: 1 },
   am_weasel:  { soft: 1 },
   hr_ks750:   { soft: 1 },
+  sv_t20:     { h: [10, 7, 7],      t: [10, 7, 7] },
   am_m3:      { h: [13, 7, 7],      t: [13, 7, 7],      cm: .45 },
   am_gmc:     { h: [13, 7, 7],      t: [16, 7, 7],      cm: .45 },
   am_m16:     { h: [13, 7, 7],      t: [8, 7, 7],       cm: .45 },
@@ -16866,12 +16885,13 @@ function aiTick(dt) {
      hundred marks back for him, since the strip is his and a brain that spent the till
      under him would be the housekeeping it exists to take away */
   var spend = aiBuys(slot), keep = spend ? 0 : 300, arty = G.aiArty !== false || !spend;
-  /* the keys of this player's army. The Red Army has its Sapery and nothing else yet, so they
-     stand for its line squad as well as its builders, and every key it has not got is absent:
-     `queueUnit` and `aiMaker` refuse a key no building of his makes */
+  /* the keys of this player's army. The Red Army has its Sapery and the T-20 and nothing else
+     yet, so the Sapery stand for its line squad as well as its builders, and every key it has not
+     got is absent: `queueUnit` and `aiMaker` refuse a key no building of his makes. Its first
+     building makes its vehicle (`vb1`), where the other two armies' vehicles wait for the second */
   var nat = natOfSlot(slot);
   var K = nat === 'sov'
-    ? { eng: 'sv_sap', inf: 'sv_sap' }
+    ? { eng: 'sv_sap', inf: 'sv_sap', lt: 'sv_t20', b1: 'sov_bar', vb1: 1 }
     : side === 'us'
     ? { eng: 'am_eng', inf: 'am_rifle', mg: 'am_mg', mor: 'us_mor', how: 'us_how', elite: 'am_ranger', at: 'am_at', lt: 'am_jeep', lt2: 'am_m3', lt3: 'am_m8', tank: 'am_sher', b1: 'us_bar', b2: 'us_mot', b3: 'us_tank' }
     : { eng: 'hr_pio', inf: 'hr_gren', mg: 'hr_mg', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'hr_kch', at: 'hr_pak', lt: 'hr_ks750', lt2: 'hr_251', tank: 'hr_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep', b3: 'ger_pz' };
@@ -16904,7 +16924,7 @@ function aiTick(dt) {
     if (bb.key === K.b2) b2 = bb;
     if (bb.key === K.b3) b3 = bb;
   }
-  var vehOn = (b2 && b2.built >= 1) || (b3 && b3.built >= 1);
+  var vehOn = (b2 && b2.built >= 1) || (b3 && b3.built >= 1) || (K.vb1 && b1 && b1.built >= 1);
   /* A side sitting on a surplus it has no permission to spend is a side that has stopped
      playing: an easy opponent banked ten thousand marks over twenty minutes because its
      own caps would not let it buy anything with them. The caps hold while it is poor,
@@ -16929,7 +16949,7 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(slot, nat === 'sov' ? [] : side === 'us'
+  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40]] : side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
@@ -20403,6 +20423,10 @@ function registerMaterials() {
     tag([KSC.grip, KSC.mat], 'rubber'); tagEdges([KSC.grip, KSC.mat], 'rubber');
     tag([KSC.plate, KSC.ink], 'paint'); tagEdges([KSC.plate, KSC.ink], 'paint');
   }
+  if (typeof TZC !== 'undefined') {
+    tag([TZC.body, TZC.lit, TZC.dark, TZC.star], 'paint'); tagEdges([TZC.body, TZC.lit, TZC.dark, TZC.star], 'paint');
+    tag([TZC.cush, TZC.cushL, TZC.cushD], 'leather'); tagEdges([TZC.cush, TZC.cushL, TZC.cushD], 'leather');
+  }
   if (typeof HKC !== 'undefined') {
     tag([HKC.inner, HKC.innerD, HKC.floor, '#8a2a22'], 'paint'); tagEdges([HKC.inner, HKC.innerD, HKC.floor], 'paint');
     tag([HKC.pad, HKC.padL], 'leather'); tagEdges([HKC.pad, HKC.padL], 'leather');
@@ -20578,7 +20602,7 @@ function tagKit() {
   /* and the Red Army's, the same way: added where nothing is written and never re-tagged */
   var S = KIT.sov;
   tagAll([S.coat, S.coatD, S.trous, S.shoulder, S.roll, S.rollD], 'cloth');
-  tagAll([S.boot, S.sole, S.belt, S.strap, S.hose], 'leather');
+  tagAll([S.boot, S.sole, S.belt, S.strap, S.hose, S.shlem, S.shlemD], 'leather');
   tagAll([S.web, S.webD, S.canvas, S.pack, S.mag, S.flask], 'canvas');
   tagAll([S.helm, S.helmD, S.liner, S.armour, S.armourD, S.tank, S.tankD, S.tool], 'paint');
   tagAll([S.buckle, S.valve, S.pipe, S.steel], 'steel');
@@ -33249,6 +33273,419 @@ function wzShow() {
   return wzHull().concat(place(jeepThirty(), 0, WZ.xMount, 0, WZ.zMount));
 }
 
+/* ================================================================ Komsomolets T-20
+   The Red Army's light armoured artillery tractor of 1937 to 1941: a riveted cab at the front
+   with the driver on the left and a DT in a ball mount on the right, the engine under the deck
+   behind it, and on that deck two benches of three seats back to back, the men facing outward
+   with their legs over the sides. It tows a gun and carries the men who serve it, and the
+   Kazarma raises it. It is laid over a 1:35 four-view of the second series, late build
+   (tools/ref/sv_t20.json). The sheet's own scale bar and the published 3.45 m over the towing
+   fittings agree at 61.5 px/m in every view, and at that scale the width comes out at 1.87 m
+   over the rails against a published 1.86 and the height at 1.56 m to the top of the backrests
+   against 1.58. The seats are laid as a coloured four-view of the vehicle has them: each
+   cushion on a slatted frame, each backrest leaning back toward the middle, and the two rows
+   back to back along the centre line.
+
+   What says T-20 rather than any other small tractor, from the front:
+
+     1. The cab, as wide as the vehicle at the mudguards and narrowing to its roof on every
+        side but the back, with the DT's round housing on the right of its front plate and the
+        driver's visor on the left.
+     2. The seats on the deck behind it, two rows of three back to back, their backrests
+        meeting in a ridge along the middle.
+     3. Four small road wheels a side in two bogies, two return rollers, the sprocket in front
+        under a curved mudguard and the idler behind and higher, so the top run of the track
+        falls from the front to the back. */
+
+var TZC = {
+  body: '#46502f', lit: '#525d38', dark: '#383f26',
+  steel: M4C.steel, bare: M4C.bare, rubber: M4C.rubber, tyre: M4C.tyre, shoe: M4C.shoe, shoeL: M4C.shoeL,
+  glass: M4C.glass, hole: M4C.hole, lens: M4C.lens,
+  cush: '#5d3c24', cushL: '#6e4b2f', cushD: '#47301d', star: '#a32c25', well: '#15170f'
+};
+var TZG = {
+  R: 2.0, T: .55, TW: 2.85, TY: 8.7, LP: .9, WD: .9, WG: .8,     /* 375 mm wheels on a track 240 mm wide, 1.48 m between its centres */
+  wx: [9.9, 2.65, -3.3, -10.6], bog: [6.28, -6.95],
+  ux: [4.6, -6.8], uz: [6.85, 6.1], rU: .85,                       /* the two rollers under the top run */
+  xSp: 15.2, zSp: 5.4, rSp: 2.66, xId: -16.0, zId: 4.1, rId: 2.0   /* the sprocket in front, the idler behind */
+};
+TZG.zW = TZG.R + TZG.T;
+TZG.off = (TZG.WD + TZG.WG) / 2;
+var TZH = {
+  low: 6.85, half: 10.45, zBelly: 3.4, zNose: 10.2,
+  xCab0: 2.6, xCab1: 12.1, xCabT: 9.75, zRoof: 16.55, roofY: 7.3, xHinge: 4.45,
+  zSpon: 8.6, zDeck: 13.2, xTail: -18.0, xSeat0: -16.0, xSeat1: 2.4,
+  zFrame: 14.7, zCush: 15.5, zBack: 18.3, yCush: [3.5, 7.6], yBack: [3.3, 1.7],
+  gx: 12.9, gy: 4.85, gz: 12.9, muz: 4.5                            /* the ball the DT turns in, and its muzzle */
+};
+/* how far forward the cab's front plate stands at a height, and how far out its side plate */
+function tzFrontX(z) { var H = TZH; return H.xCab1 - (z - H.zNose) * (H.xCab1 - H.xCabT) / (H.zRoof - H.zNose); }
+function tzSideY(z) { var H = TZH; return H.half - (z - H.zNose) * (H.half - H.roofY) / (H.zRoof - H.zNose); }
+
+/* ---- the running gear ---- */
+
+function tzPulleys() {
+  var g = TZG, w = [], i;
+  w.push({ x: g.xSp, z: g.zSp, r: g.rSp + .27 });
+  for (i = 0; i < g.wx.length; i++) w.push({ x: g.wx[i], z: g.zW, r: g.R + g.T / 2 });
+  w.push({ x: g.xId, z: g.zId, r: g.rId + g.T / 2 });
+  for (i = g.ux.length - 1; i >= 0; i--) w.push({ x: g.ux[i], z: g.uz[i], r: g.rU + g.T / 2 });
+  return w;
+}
+/* one link of the track: a pressed steel shoe with a rib across the face that meets the
+   ground, and the guide horn in the middle of the inside, which runs between the two discs
+   of every road wheel */
+function tzLink(len) {
+  var C = TZC, g = TZG, W = g.TW, h = g.T / 2, f = [];
+  f = f.concat(box(0, 0, -h, len * .92, W, g.T * .7, C.shoe, C.shoeL, C.shoe, 0));
+  f = f.concat(box(0, 0, h - g.T * .3, len * .3, W - .2, g.T * .3, C.shoe, C.shoeL, C.shoe, 0));
+  f = f.concat(box(0, 0, -h - .55, len * .42, .5, .55, C.steel, C.bare, C.steel, 0));
+  return f;
+}
+function tzTrack(y) {
+  var s = beltSamples(beltPath(tzPulleys()), TZG.LP), f = [], i, L = tzLink(s[0].len);
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y));
+  return f;
+}
+/* the spokes on the outer face of a wheel, n of them from the hub to the rim */
+function tzSpokes(x, y, z, r0, r1, n, sd, col) {
+  var f = [], k;
+  for (k = 0; k < n; k++) {
+    var sp = box((r0 + r1) / 2, y, -.24, r1 - r0, .22, .48, col, lit(col, 1.1), lit(col, .88), 0);
+    f = f.concat(place(pitch(sp, (k + .25) / n * TAU, 0, 0), 0, x, 0, z));
+  }
+  return f;
+}
+/* a road wheel: two pressed discs on rubber tyres, either side of the guide horns, with five
+   spokes on the outer face of the outer one */
+function tzWheel(x, sd) {
+  var C = TZC, g = TZG, f = [], k, y = sd * g.TY, h = g.WD / 2;
+  for (k = -1; k <= 1; k += 2) {
+    var yy = y + k * g.off;
+    f = f.concat(lathe(x, yy, g.zW, [[g.R - .4, -h], [g.R, -h + .12], [g.R, h - .12], [g.R - .4, h]], 14, [C.tyre, C.rubber, C.tyre], true));
+    f = f.concat(lathe(x, yy, g.zW, [[0, -h * .55], [g.R - .4, -h * .55], [g.R - .4, h * .55], [0, h * .55]], 14, [C.hole, C.dark, C.hole], false));
+    if (k * sd > 0) {
+      f = f.concat(tzSpokes(x, yy + sd * (h * .55 + .1), g.zW, .45, g.R - .45, 5, sd, C.body));
+      f = f.concat(latheSide(x, yy + sd * h * .55, g.zW, [[0, 0], [.55, 0], [.5, .35], [0, .42]], 8, [C.body, C.lit, C.body], sd));
+    }
+  }
+  return rgW(f, x, y, g.zW);
+}
+/* A bogie: the bracket off the hull side, which comes out between the two wheels inside the
+   loop of the track, the beam along the outside to the two axles, and the leaf spring laid on
+   it, clamped in the middle, which is the stepped stack every side view of the vehicle shows. */
+function tzBogie(bx, sd) {
+  var C = TZC, g = TZG, H = TZH, f = [], yo = g.TY + g.off + g.WD / 2 + .35, span = Math.abs(g.wx[0] - g.wx[1]), k;
+  f = f.concat(m4Box(sd, bx - 1.1, bx + 1.1, H.low - .2, yo + .25, g.zW - .9, g.zW + 1.5, C.dark, C.body, C.dark, .1));
+  f = f.concat(box(bx, sd * yo, g.zW - .45, span + 1.0, .45, .9, C.dark, C.body, C.dark, .1));
+  for (k = 0; k < 4; k++) f = f.concat(box(bx, sd * yo, g.zW + .45 + k * .22, span * (.86 - k * .15), .4, .22, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(bx, sd * yo, g.zW + .3, 1.3, .62, 1.45, C.dark, C.body, C.dark, .1));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(latheSide(bx + s * span / 2, sd * (yo + .2), g.zW, [[0, 0], [.6, 0], [.55, .3], [0, .36]], 8, [C.dark, C.body, C.dark], sd));
+  });
+  return f;
+}
+/* a return roller on its bracket off the hull side, under the top run */
+function tzRoller(i, sd) {
+  var C = TZC, g = TZG, H = TZH, x = g.ux[i], z = g.uz[i], f = [];
+  f = f.concat(latheSide(x, sd * (H.low - .1), z, [[0, 0], [.32, 0], [.32, g.TY - H.low - .9], [0, g.TY - H.low - .9]], 6, [C.dark, C.body, C.dark], sd));
+  return f.concat(rgW(lathe(x, sd * g.TY, z, [[0, -1.15], [g.rU - .15, -1.15], [g.rU, -.95], [g.rU, .95], [g.rU - .15, 1.15], [0, 1.15]], 10,
+                           [C.dark, C.rubber, C.tyre, C.rubber, C.dark], true), x, sd * g.TY, z));
+}
+/* the sprocket: a disc with four holes in it round the hub and a ring of teeth either side of
+   the guide horns, on the final drive coming out of the nose */
+function tzSprocket(sd) {
+  var C = TZC, g = TZG, H = TZH, f = [], t, yT = sd * g.TY, r = g.rSp;
+  f = f.concat(lathe(g.xSp, yT, g.zSp, [[0, -1.3], [r - .3, -1.3], [r - .3, 1.3], [0, 1.3]], 14, [C.dark, C.body, C.dark], true));
+  f = f.concat(latheSide(g.xSp, yT + sd * 1.3, g.zSp, [[0, 0], [1.1, 0], [1.0, .45], [.5, .62], [0, .66]], 10, [C.body, C.lit, C.lit, C.body], sd));
+  for (t = 0; t < 4; t++) {
+    var a = t / 4 * TAU + Math.PI / 4;
+    f = f.concat(place(pitch(box(1.75, yT + sd * 1.32, -.35, .9, .08, .7, C.hole, C.hole, C.hole, 0), a, 0, 0), 0, g.xSp, 0, g.zSp));
+  }
+  [-1, 1].forEach(function (k) {
+    for (t = 0; t < 14; t++) {
+      var tooth = extrudeY([[r - .35, -.3], [r + .35, -.13], [r + .35, .13], [r - .35, .3]], yT + k * .85 - .25, yT + k * .85 + .25, C.steel, C.bare, C.bare);
+      f = f.concat(place(pitch(tooth, (t + .5) / 14 * TAU, 0, 0), 0, g.xSp, 0, g.zSp));
+    }
+  });
+  rgW(f, g.xSp, yT, g.zSp, r + .27);
+  return f.concat(latheSide(g.xSp, sd * (H.low - .1), g.zSp, [[0, 0], [1.4, 0], [1.4, g.TY - H.low - 1.3], [0, g.TY - H.low - 1.3]], 10, [C.dark, C.body, C.dark], sd));
+}
+/* the idler: a spoked wheel with a rim, on a stub out of the tail, higher than the road
+   wheels so the track comes up to it off the ground */
+function tzIdler(sd) {
+  var C = TZC, g = TZG, H = TZH, f = [], yT = sd * g.TY, r = g.rId;
+  f = f.concat(lathe(g.xId, yT, g.zId, [[r - .35, -1.25], [r, -1.05], [r, 1.05], [r - .35, 1.25]], 14, [C.dark, C.steel, C.dark], true));
+  f = f.concat(lathe(g.xId, yT, g.zId, [[0, -.55], [r - .35, -.55], [r - .35, .55], [0, .55]], 14, [C.hole, C.dark, C.hole], false));
+  f = f.concat(tzSpokes(g.xId, yT + sd * .65, g.zId, .5, r - .35, 6, sd, C.body));
+  f = f.concat(latheSide(g.xId, yT + sd * .55, g.zId, [[0, 0], [.6, 0], [.55, .35], [0, .42]], 8, [C.body, C.lit, C.body], sd));
+  rgW(f, g.xId, yT, g.zId);
+  return f.concat(latheSide(g.xId, sd * (H.low - .1), g.zId, [[0, 0], [.7, 0], [.7, g.TY - H.low - .6], [0, g.TY - H.low - .6]], 8, [C.dark, C.body, C.dark], sd));
+}
+
+/* ---- the body ---- */
+
+/* a plate bent along a profile of [x, z] running forward, as wide as y0 to y1 and t thick: the
+   mudguards over the sprockets */
+function tzBent(prof, y0, y1, t, col, cap) {
+  var f = [], i;
+  for (i = 0; i < prof.length - 1; i++) {
+    var p = prof[i], q = prof[i + 1], dx = q[0] - p[0], dz = q[1] - p[1], l = Math.hypot(dx, dz) || 1;
+    var nx = -dz / l, nz = dx / l, ox = -nx * t, oz = -nz * t;
+    var a = [p[0], y0, p[1]], b = [q[0], y0, q[1]], c = [q[0], y1, q[1]], d = [p[0], y1, p[1]];
+    var a2 = [p[0] + ox, y0, p[1] + oz], b2 = [q[0] + ox, y0, q[1] + oz], c2 = [q[0] + ox, y1, q[1] + oz], d2 = [p[0] + ox, y1, p[1] + oz];
+    f = f.concat(m8Quad(a, b, c, d, [nx, 0, nz], cap || col), m8Quad(a2, b2, c2, d2, [-nx, 0, -nz], col),
+                 m8Quad(a, b, b2, a2, [0, -1, 0], col), m8Quad(d, c, c2, d2, [0, 1, 0], col));
+  }
+  return f;
+}
+/* a rivet head standing out of a plate whose outward normal is n */
+function tzRivet(p, n, col) {
+  var u = Math.abs(n[2]) > .9 ? [1, 0, 0] : [0, 0, 1], d = u[0] * n[0] + u[1] * n[1] + u[2] * n[2];
+  return hkOn(cyl(0, 0, 0, .14, .14, .1, 5, col, lit(col, 1.15), 0, true), p, [u[0] - d * n[0], u[1] - d * n[1], u[2] - d * n[2]], n);
+}
+function tzRivets(a, b, k, n, col) {
+  var f = [], i;
+  for (i = 0; i < k; i++) {
+    var t = (i + .5) / k;
+    f = f.concat(tzRivet([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t], n, col));
+  }
+  return f;
+}
+/* a red star painted on a plate, laid a hair off it */
+function tzStar(o, u, n, r) {
+  var C = TZC, f = [], k, ri = r * .4, inner = [];
+  for (k = 0; k < 5; k++) {
+    var a0 = Math.PI / 2 + k / 5 * TAU, a1 = a0 + TAU / 10, a2 = a0 - TAU / 10;
+    var tip = [Math.cos(a0) * r, Math.sin(a0) * r, .03], i1 = [Math.cos(a1) * ri, Math.sin(a1) * ri, .03], i2 = [Math.cos(a2) * ri, Math.sin(a2) * ri, .03];
+    f.push(hkFace([i2, tip, i1], [0, 0, 1], C.star));
+    inner.push(i1);
+  }
+  f.push(hkFace(inner, [0, 0, 1], C.star));
+  return hkOn(f, o, u, n);
+}
+function tzHull() {
+  var C = TZC, g = TZG, f = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(tzTrack(sd * g.TY));
+    for (i = 0; i < g.wx.length; i++) f = f.concat(tzWheel(g.wx[i], sd));
+    for (i = 0; i < g.bog.length; i++) f = f.concat(tzBogie(g.bog[i], sd));
+    for (i = 0; i < g.ux.length; i++) f = f.concat(tzRoller(i, sd));
+    f = f.concat(tzSprocket(sd), tzIdler(sd));
+  }
+  f = f.concat(tzBody(), tzFront(), tzCab(), tzRear(), tzSeats());
+  return f;
+}
+/* The tub between the tracks from the belly up to the nose deck, the deck behind the cab that
+   the seats stand on, and the sponsons out over the tracks behind the cab, their top edges
+   chamfered, with the rivets along their joints. */
+function tzBody() {
+  var C = TZC, H = TZH, f = [], sd;
+  f = f.concat(extrudeY([[H.xTail, H.zNose], [H.xTail, 5.9], [-16.3, H.zBelly], [16.0, H.zBelly], [19.2, 6.0], [19.6, 7.6],
+                         [19.3, 9.5], [18.5, H.zNose]], -H.low, H.low, C.dark, C.dark, C.body));
+  f = f.concat(box((H.xTail + H.xCab0 + .4) / 2, 0, H.zNose, H.xCab0 + .4 - H.xTail, 2 * H.low, H.zDeck - H.zNose, C.body, C.lit, C.body, .1));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var pr = [[H.low, H.zSpon], [H.half, H.zSpon], [H.half, H.zDeck - .8], [H.half - .9, H.zDeck], [H.low, H.zDeck]];
+    f = f.concat(m8ExtrudeX(pr.map(function (p) { return [sd * p[0], p[1]]; }), H.xTail, H.xCab0 + .4, C.body, C.dark));
+    f = f.concat(tzRivets([H.xTail, sd * (H.half + .02), H.zSpon + .55], [H.xCab0, sd * (H.half + .02), H.zSpon + .55], 12, [0, sd, 0], C.dark));
+    f = f.concat(tzRivets([H.xTail, sd * (H.half + .02), H.zDeck - 1.3], [H.xCab0, sd * (H.half + .02), H.zDeck - 1.3], 12, [0, sd, 0], C.dark));
+    /* the rail along each side at the men's feet, turned in to the body at both ends, on four brackets */
+    f = f.concat(ksPipe([[H.xSeat1 - .2, sd * H.half, 12.0], [H.xSeat1 - .7, sd * (H.half + .5), 12.0], [H.xSeat0 + .7, sd * (H.half + .5), 12.0],
+                         [H.xSeat0 + .2, sd * H.half, 12.0]], .16, C.dark, 6));
+    [-12.4, -6.6, -.8].forEach(function (x) { f = f.concat(m4Box(sd, x - .25, x + .25, H.half, H.half + .55, 11.75, 12.2, C.dark, C.body, C.dark, 0)); });
+  }
+  return f;
+}
+/* The nose's mudguards over the sprockets, curved down to their tips, with a lip along the
+   outer edge; the headlamps on their brackets at the inner edge of each, and the towing hooks
+   on the nose. */
+function tzFront() {
+  var C = TZC, H = TZH, f = [], sd;
+  var prof = [[H.xCab1 - .4, H.zNose], [14.5, 10.15], [16.4, 9.85], [17.9, 9.2], [19.0, 8.3], [19.7, 7.2]];
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y0 = sd < 0 ? -H.half : 7.0, y1 = sd < 0 ? -7.0 : H.half;
+    f = f.concat(tzBent(prof, y0, y1, .25, C.body, C.lit));
+    f = f.concat(tzBent(prof.map(function (p) { return [p[0], p[1] - .2]; }), sd < 0 ? -H.half - .12 : H.half - .1, sd < 0 ? -H.half + .1 : H.half + .12, .55, C.dark, C.body));
+    /* the headlamp in its shell on a bracket, its glass forward */
+    f = f.concat(box(13.6, sd * 7.25, 10.15, .5, .5, .6, C.dark, C.body, C.dark, 0));
+    f = f.concat(tubeSmooth(13.1, 14.2, sd * 7.25, 11.3, .58, 10, C.dark, C.lens));
+    f = f.concat(tubeSmooth(14.2, 14.32, sd * 7.25, 11.3, .48, 10, C.lens, C.lens));
+    /* the towing hook low on the nose plate */
+    f = f.concat(box(19.4, sd * 5.0, 5.8, .9, .9, 1.1, C.dark, C.body, C.dark, .1));
+    f = f.concat(stud(20.0, sd * 5.0, 6.4, .48, .32, C.steel));
+  }
+  f = f.concat(tzRivets([18.6, -H.low + .4, H.zNose + .02], [18.6, H.low - .4, H.zNose + .02], 9, [0, 0, 1], C.dark));
+  f = f.concat(tzRivets([19.45, -H.low + .4, 7.6], [19.45, H.low - .4, 7.6], 9, [1, 0, 0], C.dark));
+  return f;
+}
+/* The cab: a front plate laid back at twenty degrees, side plates leaning in from the mudguards
+   to the roof, a back plate standing upright, and the roof, with its two doors hinged at their
+   rear edges. The DT's housing is on the right of the front plate and the driver's visor on the
+   left, a vision port in each side, and the rivets round every plate. The right-hand door
+   stands open with the commander head and shoulders out of it, and under it the inside of the
+   cab, which is dark. */
+function tzCab() {
+  var C = TZC, H = TZH, f = [], sd, k;
+  var x0 = H.xCab0, x1 = H.xCab1, xt = H.xCabT, z0 = H.zNose, z1 = H.zRoof, hy = H.half, ry = H.roofY, xh = H.xHinge;
+  var nF = hkNorm([z1 - z0, 0, x1 - xt]);
+  f.push(hkFace([[x1, -hy, z0], [x1, hy, z0], [xt, ry, z1], [xt, -ry, z1]], nF, C.body));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var nS = hkNorm([0, sd * (z1 - z0), hy - ry]);
+    f.push(hkFace([[x0, sd * hy, z0], [x1, sd * hy, z0], [xt, sd * ry, z1], [x0, sd * ry, z1]], nS, C.body));
+    /* below the side plate's foot a plate standing plumb, its lower edge falling from the mudguard
+       at the front to the sponson's foot at the back, and the underside over the track */
+    f = f.concat(extrudeY([[x0, H.zSpon], [x1, z0], [x0, z0]], sd < 0 ? -hy : hy - .25, sd < 0 ? -hy + .25 : hy, C.body, C.body, C.dark));
+    f.push(hkFace([[x1, sd * hy, z0], [x0, sd * hy, H.zSpon], [x0, sd * (H.low + .1), H.zSpon], [x1, sd * (H.low + .1), z0]], [0, 0, -1], C.dark));
+    f = f.concat(tzRivets([x0 + .4, sd * (hy + .02), H.zSpon + .5], [x1 - .8, sd * (hy + .02), z0 + .1], 8, [0, sd, 0], C.dark));
+    /* the vision port in the side plate, with its slit */
+    var zc = 13.8, op = [6.45, sd * tzSideY(zc), zc];
+    f = f.concat(hkOn(box(0, 0, 0, 4.6, 2.8, .28, C.body, C.lit, C.dark, .1), op, [1, 0, 0], nS));
+    f = f.concat(hkOn(box(0, 0, .26, 2.2, .32, .06, C.hole, C.hole, C.hole, 0), op, [1, 0, 0], nS));
+    f = f.concat(tzStar([9.6, sd * tzSideY(11.6), 11.6], [-sd, 0, 0], nS, .9));
+    /* rivets along the side plate's foot and along its top and front edges */
+    f = f.concat(tzRivets([x0 + .3, sd * (hy - .1), z0 + .45], [x1 - .4, sd * (hy - .1), z0 + .45], 9, nS, C.dark));
+    f = f.concat(tzRivets([x0 + .3, sd * (ry + .25), z1 - .5], [xt - .2, sd * (ry + .25), z1 - .5], 7, nS, C.dark));
+    f = f.concat(tzRivets([x0 + .35, sd * tzSideY(z0 + .6), z0 + .6], [x0 + .35, sd * tzSideY(z1 - .5), z1 - .5], 6, nS, C.dark));
+  }
+  f.push(hkFace([[x0, -hy, H.zSpon], [x0, hy, H.zSpon], [x0, hy, z0], [x0, ry, z1], [x0, -ry, z1], [x0, -hy, z0]], [-1, 0, 0], C.body));
+  /* the roof behind the doors, the strip in front of them and the bar between them */
+  f = f.concat(box((x0 + xh) / 2, 0, z1 - .3, xh - x0, 2 * ry, .3, C.body, C.lit, C.dark, 0));
+  f = f.concat(box(xt - .25, 0, z1 - .3, .5, 2 * ry, .3, C.body, C.lit, C.dark, 0));
+  f = f.concat(box((xh + xt) / 2, 0, z1 - .3, xt - xh, .5, .3, C.body, C.lit, C.dark, 0));
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(box((xh + xt) / 2, sd * (ry - .2), z1 - .3, xt - xh, .4, .3, C.body, C.lit, C.dark, 0));
+  /* the doors: the left shut, the right swung up on its hinges to stand leaning back */
+  var dw = ry - .45, dl = xt - .5 - xh;
+  function door() {
+    var d = box(dl / 2, 0, 0, dl, dw, .3, C.body, C.lit, C.dark, .08);
+    d = d.concat(grabIron(dl * .6, 0, .3, 1.6, .3, C.steel, 'y'));
+    [-1, 1].forEach(function (s) { d = d.concat(box(.3, s * dw * .3, .3, .6, .8, .2, C.dark, C.body, C.dark, 0)); });
+    return d;
+  }
+  f = f.concat(place(door(), 0, xh, -(.25 + dw / 2), z1 - .3));
+  f = f.concat(place(pitch(door(), 1.72, 0, 0), 0, xh, .25 + dw / 2, z1));
+  f = f.concat(tzRivets([x0 + .3, -ry + .3, z1 + .02], [x0 + .3, ry - .3, z1 + .02], 7, [0, 0, 1], C.dark));
+  /* the inside under the open door, so the eye does not see the ground through it */
+  f = f.concat(m8Lit(faceIn(box(6.4, 3.5, 4.0, 6.0, 6.4, z1 - 4.3, C.dark, C.dark, C.dark, 0), 6.4, 3.5, 9.0)));
+  f = f.concat(m8Lit(box(6.4, 3.5, 4.0, 6.0, 6.4, .1, C.well, C.well, C.well, 0)));
+  /* the DT's housing: an oval drum standing out of the plate on the right, which the ball sits
+     in the face of, and the driver's visor on the left with its slit */
+  f = f.concat(tzDrum(10.3, H.gx, 3.6, 12.8, 3.6, 2.45, 18, C.body, C.lit));
+  f = f.concat(hkOn(box(0, 0, 0, 5.1, 2.5, .3, C.body, C.lit, C.dark, .1), [tzFrontX(13.6), -3.68, 13.6], [0, 1, 0], nF));
+  f = f.concat(hkOn(box(0, .25, .28, 3.2, .34, .06, C.hole, C.hole, C.hole, 0), [tzFrontX(13.6), -3.68, 13.6], [0, 1, 0], nF));
+  f = f.concat(tzStar([tzFrontX(11.0), -4.4, 11.0], [0, 1, 0], nF, .8));
+  for (k = 0; k < 2; k++) {
+    var zr = k ? z1 - .45 : z0 + .45;
+    f = f.concat(tzRivets([tzFrontX(zr) + .02, -tzSideY(zr) + .5, zr], [tzFrontX(zr) + .02, tzSideY(zr) - .5, zr], 12, nF, C.dark));
+  }
+  return f;
+}
+/* an oval drum lying along x, from x0 to x1, its face at x1 */
+function tzDrum(x0, x1, cy, cz, ry, rz, n, col, cap) {
+  var f = [], i, A = [], B = [];
+  for (i = 0; i < n; i++) {
+    var a0 = i / n * TAU, a1 = (i + 1) / n * TAU;
+    var p0 = [cy + Math.cos(a0) * ry, cz + Math.sin(a0) * rz], p1 = [cy + Math.cos(a1) * ry, cz + Math.sin(a1) * rz];
+    var n0 = hkNorm([0, Math.cos(a0) / ry, Math.sin(a0) / rz]), n1 = hkNorm([0, Math.cos(a1) / ry, Math.sin(a1) / rz]);
+    f.push({ v: [[x0, p0[0], p0[1]], [x0, p1[0], p1[1]], [x1, p1[0], p1[1]], [x1, p0[0], p0[1]]], c: col, n: [n0, n1, n1, n0] });
+    A.push([x1, p0[0], p0[1]]); B.unshift([x0, p0[0], p0[1]]);
+  }
+  f.push({ v: A, c: cap || col }); f.push({ v: B, c: col });
+  return faceOut(f, (x0 + x1) / 2, cy, cz);
+}
+/* The tail: the louvres along the top of the back plate, the spare road wheel on it, the box
+   for the jack beside it, the towing pintle, the tail lamp, and the slatted rack across the
+   back of the deck behind the seats. */
+function tzRear() {
+  var C = TZC, H = TZH, f = [], sd, k, x = H.xTail;
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(m4Box(sd, x - .15, x + .05, 1.3, 7.0, 12.2, 13.0, C.hole, C.hole, C.hole, 0));
+    for (k = 0; k < 7; k++) f = f.concat(m4Box(sd, x - .3, x - .1, 1.5 + k * .8, 1.75 + k * .8, 12.15, 13.05, C.dark, C.body, C.dark, 0));
+  }
+  f = f.concat(place(tubeSmooth(0, .7, 0, 0, .55, 8, C.steel, C.hole), Math.PI, x, 0, 12.6));
+  /* the spare road wheel, upright on the plate, on its bracket */
+  var sp = lathe(0, 0, 0, [[TZG.R - .4, -.45], [TZG.R, -.33], [TZG.R, .33], [TZG.R - .4, .45]], 14, [C.tyre, C.rubber, C.tyre], true)
+    .concat(lathe(0, 0, 0, [[0, -.25], [TZG.R - .4, -.25], [TZG.R - .4, .25], [0, .25]], 14, [C.dark, C.body, C.dark], false))
+    .concat(tzSpokes(0, -.35, 0, .45, TZG.R - .45, 5, -1, C.body));
+  f = f.concat(place(sp, -Math.PI / 2, x - .6, 4.0, 9.4));
+  f = f.concat(box(x - .3, 4.0, 9.0, .6, .8, .8, C.dark, C.body, C.dark, 0));
+  f = f.concat(box(x - .4, 6.15, 6.3, .8, 1.4, 5.0, C.dark, C.body, C.dark, .1));
+  /* the pintle, and the tail lamp on the left */
+  f = f.concat(box(x - .6, 0, 6.4, 1.2, 1.6, 1.4, C.dark, C.body, C.dark, .1), box(x - 1.3, 0, 6.8, 1.4, .6, .6, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(x - 1.85, 0, 5.2, .6, .6, 2.2, C.steel, C.bare, C.steel, 0), box(x - 1.65, 0, 4.9, .9, .5, .4, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(x - .25, -5.4, 11.0, .5, .9, .7, C.dark, C.body, C.dark, 0), box(x - .5, -5.4, 11.15, .05, .6, .4, C.star, C.star, C.star, 0));
+  /* the rack across the back of the deck: posts at the corners and boards across front and back */
+  var xr0 = H.xSeat0 - .1, xr1 = x + .25, zb = H.zDeck, zt = 16.6;
+  function wy(z) { return 9.15 - (z - zb) / (zt - zb) * 1.05; }
+  for (sd = -1; sd <= 1; sd += 2) {
+    [xr0, xr1].forEach(function (xx) { f = f.concat(ksTube([xx, sd * wy(zb), zb], [xx, sd * wy(zt), zt], .2, C.dark, 6)); });
+    f = f.concat(ksTube([xr0, sd * wy(zt), zt], [xr1, sd * wy(zt), zt], .2, C.dark, 6));
+  }
+  [zb + .5, zb + 1.5, zb + 2.5, zt - .3].forEach(function (z) {
+    [xr0, xr1].forEach(function (xx) { f = f.concat(box(xx, 0, z - .3, .3, 2 * wy(z), .6, C.body, C.lit, C.dark, 0)); });
+  });
+  return f;
+}
+/* The seats: on each side a slatted frame along the deck, three cushions on it, and behind
+   each cushion its backrest leaning back toward the middle, with a rail along the top of the
+   three; the uprights between the two rows carry the backrests, so from the front or the back
+   the pair stand together as a ridge. A man sits facing outward with his legs over the side. */
+function tzBack(x0, x1, sd) {
+  var C = TZC, H = TZH, b = [H.yBack[0], H.zCush - .25], t = [H.yBack[1], H.zBack], th = .75;
+  var dy = t[0] - b[0], dz = t[1] - b[1], l = Math.hypot(dy, dz), oy = -th * dz / l, oz = th * dy / l;
+  function P(x, y, z) { return [x, sd * y, z]; }
+  var a = P(x0, b[0], b[1]), bb = P(x1, b[0], b[1]), c = P(x1, t[0], t[1]), d = P(x0, t[0], t[1]);
+  var a2 = P(x0, b[0] + oy, b[1] + oz), b2 = P(x1, b[0] + oy, b[1] + oz), c2 = P(x1, t[0] + oy, t[1] + oz), d2 = P(x0, t[0] + oy, t[1] + oz);
+  var q = [{ v: [a, bb, c, d], c: C.cush }, { v: [a2, b2, c2, d2], c: C.cushD }, { v: [a, bb, b2, a2], c: C.cushD },
+           { v: [d, c, c2, d2], c: C.cushL }, { v: [a, d, d2, a2], c: C.cushD }, { v: [bb, c, c2, b2], c: C.cushD }];
+  return faceOut(q, (x0 + x1) / 2, sd * (b[0] + t[0] + oy) / 2, (b[1] + t[1] + oz) / 2);
+}
+function tzSeats() {
+  var C = TZC, H = TZH, f = [], sd, k, L = (H.xSeat1 - H.xSeat0) / 3, yi = H.yCush[0], yo = H.yCush[1];
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(m4Box(sd, H.xSeat0, H.xSeat1, yi - .3, yo, H.zFrame - .35, H.zFrame, C.dark, C.body, C.dark, .05));
+    f = f.concat(m4Box(sd, H.xSeat0, H.xSeat1, yo - .4, yo, H.zDeck, H.zDeck + .35, C.dark, C.body, C.dark, 0));
+    for (k = 0; k <= 15; k++) {
+      var xs = H.xSeat0 + .3 + k * (H.xSeat1 - H.xSeat0 - .6) / 15;
+      f = f.concat(m4Box(sd, xs - .17, xs + .17, yo - .35, yo, H.zDeck + .35, H.zFrame - .35, C.dark, C.body, C.dark, 0));
+    }
+    for (k = 0; k < 3; k++) {
+      var x0 = H.xSeat0 + k * L + .12, x1 = x0 + L - .24;
+      f = f.concat(m4Box(sd, x0, x1, yi, yo - .05, H.zFrame, H.zCush, C.cush, C.cushL, C.cushD, .3));
+      f = f.concat(tzBack(x0, x1, sd));
+    }
+    f = f.concat(ksTube([H.xSeat0, sd * (H.yBack[1] - .3), H.zBack + .15], [H.xSeat1, sd * (H.yBack[1] - .3), H.zBack + .15], .22, C.dark, 6));
+  }
+  [H.xSeat0 + .4, H.xSeat0 + L, H.xSeat0 + 2 * L, H.xSeat1 - .4].forEach(function (x) {
+    f = f.concat(box(x, 0, H.zDeck, .45, .45, H.zBack - H.zDeck - .2, C.dark, C.body, C.dark, 0));
+    for (sd = -1; sd <= 1; sd += 2) {
+      f = f.concat(ksTube([x, 0, H.zBack - .4], [x, sd * (H.yBack[1] - .3), H.zBack + .15], .14, C.dark, 4));
+      f = f.concat(ksTube([x, 0, H.zFrame - .6], [x, sd * (yi - .1), H.zFrame - .4], .14, C.dark, 4));
+    }
+  });
+  return f;
+}
+/* The DT in its ball, built about the ball's centre, which is what turns: the ball, the slotted
+   jacket over the barrel, the barrel and the flash hider. */
+function tzMount() {
+  var C = TZC, f = [], k;
+  f = f.concat(place(lathe(0, 0, 0, [[0, -1.0], [.5, -.87], [.87, -.5], [1.0, 0], [.87, .5], [.5, .87], [0, 1.0]], 12,
+                           [C.dark, C.body, C.body, C.body, C.body, C.dark], true), Math.PI / 2, 0, 0, 0));
+  var g = tubeSmooth(.7, 3.2, 0, 0, .3, 8, C.steel, C.steel).concat(tubeSmooth(3.2, 4.1, 0, 0, .16, 6, C.steel, C.steel), tubeSmooth(4.1, TZH.muz, 0, 0, .22, 6, C.steel, C.hole));
+  for (k = 0; k < 4; k++) g = g.concat(box(1.1 + k * .55, 0, .24, .3, .36, .08, C.hole, C.hole, C.hole, 0));
+  return f.concat(wbThin(g));
+}
+/* the commander in the right-hand door, sitting with his head and shoulders out of it */
+function tzCrew() {
+  var m = k4Man({ legs: JPSEAT.legs, lean: .05, grips: [3.6, 1.2, 4.4], pole: [-.3, .45, -1] }, null, 6.2, 3.6, 7.4, 0, 'sv_crew');
+  TZH.eye = m.eye;
+  return m.faces;
+}
+/* the whole vehicle, for the overlay against the drawing */
+function tzShow() {
+  var H = TZH;
+  return tzHull().concat(place(tzMount(), 0, H.gx, H.gy, H.gz));
+}
+
 /* ================================================================ M3 light tank (US Army)
    The Stuart as the Americans first took it to war: the M3 of 1941 and 1942, riveted,
    with the rounded welded turret that did away with the cupola, and the idler trailing
@@ -40209,6 +40646,11 @@ VIN.am_weasel = function (V) {
   var e = WZ.gEye || [-5.2, 0, 8.4], at = { x: e[0], y: 0, z: e[2] };
   return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
 };
+/* nor has the T-20 that anyone sees: the eye is the commander's, head out of the right-hand door */
+VIN.sv_t20 = function (V) {
+  var e = TZH.eye || [7.1, 3.6, 20.0], at = { x: e[0], y: e[1], z: e[2] };
+  return { frame: 'hull', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
+};
 VIN.am_jeep = function (V) {
   var e = JPG.gEye || [-5.2, 0, 8.4], at = { x: e[0], y: 0, z: e[2] };
   return { frame: 'tur', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
@@ -40548,6 +40990,10 @@ function buildVehicleModels(up) {
   vmDef('am_weasel', function () { return { hull: wzHull(), tur: jeepThirty(), turUp: { fifty: jeepFifty() },
                       barUp: { fifty: { bar: 16.0, gunZ: 1.5 } }, crew: wzCrew(), turCrew: wzGunner(),
                       bar: 8.3, big: 0, soft: 1, scale: 1, mountZ: WZ.zMount, gunZ: 1.5, turX: WZ.xMount, turY: 0, belly: WZ.zBelly }; });
+  /* the T-20: the DT in its ball on the right of the cab's front plate is the mount, turning within
+     its arc; the commander rides on the hull, head and shoulders out of the right-hand door */
+  vmDef('sv_t20', function () { return { hull: tzHull(), tur: tzMount(), crew: tzCrew(), belly: TZH.zBelly,
+                      bar: TZH.muz, big: 0, fixed: 1, scale: 1, mountZ: TZH.gz, gunZ: 0, turX: TZH.gx, turY: TZH.gy }; });
   vmDef('am_stuart', function () { return { hull: s3Hull(), tur: s3Turret(), belly: S3H.zBelly, bar: S3T.muz, big: 0, scale: 1,
                        mountZ: S3H.zRoof, gunZ: S3T.gz, turX: S3H.turX, turY: 0 }; });
   vmDef('ger_kt', function () { return { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
@@ -40841,7 +41287,7 @@ var KIT = {
   sov: { coat: '#7c7451', coatD: '#655e42', trous: '#6d6647', boot: '#2b2520', sole: '#1c1814', sleeve: 1.1,
          belt: '#5b4129', buckle: '#8a7a4a', web: '#7e7656', webD: '#635d44', canvas: '#837a59', pack: '#7a7253',
          roll: '#6e6654', rollD: '#58513f', strap: '#4b3a27', mag: '#6c6748', tool: '#3c3a2e', helve: '#7a6448',
-         flask: '#5b5a44', shoulder: '#6a6346', pipe: '#2e2e2a',
+         flask: '#5b5a44', shoulder: '#6a6346', pipe: '#2e2e2a', shlem: '#2e2924', shlemD: '#211d19',
          helm: '#45502f', helmD: '#343c24', liner: '#2a2822', armour: '#4b5636', armourD: '#394229',
          tank: '#585b46', tankD: '#45473a', hose: '#23211d', valve: '#7d6a3c',
          skin: '#c19a72', skinD: '#a88259', hair: '#3b2e22', wood: '#6b4a2e', steel: '#2e302b' }
@@ -41749,8 +42195,67 @@ function helmetSSh40(k, z, V) {
   f = f.concat(figPart(box(.66, 0, z - 1.85, .16, 1.0, .1, k.strap, k.strap, k.strap, 0), 'leather', lit(k.strap, 1.2), k.strap, k.strap));
   return f;
 }
+/* The Red Army tank crewman's padded helmet, the shlemofon: a leather cap close over the head
+   with three padded rolls running front to back over the crown and one round the brow, the
+   ear flaps down with the earphones in them, and the strap under the chin. The three rolls
+   are what tells it from the American's fibre helmet, which has one rib. */
+function helmetShlem(k, z, V) {
+  var N = 12, A = 1.3, B = 1.14, i, j, lm = matIndex('leather');
+  var WALL = [[1, 0], [.985, .3], [.93, .6], [.8, .88], [.6, 1.05], [.33, 1.15], [0, 1.18]];
+  var shade = [k.shlemD, k.shlem, k.shlem, lit(k.shlem, 1.05), lit(k.shlem, 1.09), lit(k.shlem, 1.12)];
+  function P(t, sc, h) { return [Math.cos(t) * A * sc, Math.sin(t) * B * sc, z + h]; }
+  function face(v, want, col) {
+    var n = faceNormal(v[0], v[1], v[2]);
+    if (n.x * want[0] + n.y * want[1] + n.z * want[2] < 0) v = v.slice().reverse();
+    return { v: v, c: col, m: lm };
+  }
+  /* the height of the crown over a point of its plan, off the wall's own profile */
+  function hAt(x, y) {
+    var rr = Math.min(1, Math.hypot(x / A, y / B)), q;
+    for (q = 0; q < WALL.length - 1; q++) {
+      var a = WALL[q], b = WALL[q + 1];
+      if (rr <= a[0] && rr >= b[0]) return a[1] + (b[1] - a[1]) * (a[0] - rr) / ((a[0] - b[0]) || 1);
+    }
+    return 0;
+  }
+  var f = [], cap = [];
+  for (j = 0; j < WALL.length - 1; j++) for (i = 0; i < N; i++) {
+    var t0 = i / N * TAU, t1 = (i + 1) / N * TAU, a = WALL[j], b = WALL[j + 1], tm = (t0 + t1) / 2;
+    var v = [P(t0, a[0], a[1]), P(t1, a[0], a[1]), P(t1, b[0], b[1])];
+    if (b[0]) v.push(P(t0, b[0], b[1]));
+    var up = (a[1] + b[1]) / 2 / 1.18;
+    f.push(face(v, [Math.cos(tm) * (1 - up), Math.sin(tm) * (1 - up), up + .1], shade[j]));
+  }
+  for (i = 0; i < N; i++) cap.push(P(i / N * TAU, .96, -.02));
+  f.push(face(cap, [0, 0, -1], k.shlemD));
+  /* the three rolls over the crown, each a chain of short limbs following it, and the roll
+     round the brow */
+  [-.62, 0, .62].forEach(function (oy) {
+    var pts = [], s;
+    for (s = 0; s <= 8; s++) {
+      var x = A * (.9 - s * .225), y = oy * Math.sqrt(Math.max(0, 1 - (x / A) * (x / A)));
+      pts.push([x, y, z + hAt(x, y) + .1]);
+    }
+    for (s = 0; s < pts.length - 1; s++) f = f.concat(figPart(taperLimb(pts[s], pts[s + 1], .34, .34, k.shlem), 'leather', lit(k.shlem, 1.12), k.shlemD, k.shlem));
+  });
+  for (i = -3; i < 3; i++) {
+    var b0 = i / 3 * 1.15, b1 = (i + 1) / 3 * 1.15;
+    f = f.concat(figPart(taperLimb([Math.cos(b0) * (A + .06), Math.sin(b0) * (B + .06), z + .32], [Math.cos(b1) * (A + .06), Math.sin(b1) * (B + .06), z + .32], .36, .36, k.shlem),
+                         'leather', lit(k.shlem, 1.1), k.shlemD, k.shlem));
+  }
+  /* the ear flaps with the earphones in them, the strap under the chin, and the flap down the
+     back of the neck */
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(figPart(box(.05, sd * (B + .06), z - 1.3, 1.3, .22, 1.4, k.shlem, k.shlem, k.shlem, 0), 'leather', k.shlem, k.shlemD, lit(k.shlem, .92)));
+    f = f.concat(figPart(stud(.1, sd * (B + .26), z - .65, .46, .28, k.shlemD), 'leather', k.shlemD, k.shlemD, k.shlemD));
+  });
+  f = f.concat(figPart(box(.55, 0, z - 1.62, .2, B * 2 + .3, .14, k.shlemD, k.shlemD, k.shlemD, 0), 'leather', k.shlemD, k.shlemD, k.shlemD));
+  f = f.concat(figPart(box(-A - .02, 0, z - 1.05, .2, 1.7, .95, k.shlem, k.shlem, k.shlem, 0), 'leather', k.shlem, k.shlemD, lit(k.shlem, .92)));
+  return f;
+}
 function helmetOf(V, k, z) {
   if (V.tanker) return helmetTanker(k, z - .12, V);
+  if (V.shlem) return helmetShlem(k, z - .12, V);
   if (V.nat === 'sov') return helmetSSh40(k, z - .28, V);
   if (V.panzer && !V.helm) return capPanzer(k, z - .1, V);
   if (V.kch) return capOfficer(k, z - .1, V);
@@ -42409,7 +42914,9 @@ var SOLDIER_VARIANTS = {
   sv_sap_b:     { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, sn42: 1, set: 'field' },
   sv_sap_c:     { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, sack: 1, spade: 1, set: 'field' },
   sv_sap_d:     { side: 'us', nat: 'sov', weapon: 'pps', sap: 1, sn42: 1, roll: 1, set: 'field' },
-  sv_flame:     { side: 'us', nat: 'sov', weapon: 'roks', sap: 1, roks: 1, set: 'field' }
+  sv_flame:     { side: 'us', nat: 'sov', weapon: 'roks', sap: 1, roks: 1, set: 'field' },
+  /* the T-20's crew, in the padded tanker's helmet, who fall as the army's dead from a vehicle */
+  sv_crew:      { side: 'us', nat: 'sov', weapon: 'none', shlem: 1, body: 'sov', set: 'hull' }
 };
 function variantForModel(u, i) {
   /* the Knight's Cross Holders are who they are whichever side a drill stands them on */
@@ -43061,6 +43568,8 @@ function figKitSov(V, k, rec) {
   }
   lea(box(0, 0, 1.92, 3.3, 4.74, .58, bl, bl, bl, 0));
   part(box(1.665, 0, 1.94, .1, .62, .5, k.buckle, k.buckle, k.buckle, 0), 'steel', lit(k.buckle, 1.2), k.buckle, k.buckle);
+  /* a crewman has his pistol in its holster on the right hip and nothing a hatch would catch */
+  if (V.shlem) { lea(box(-.2, 2.5, .3, 1.5, .5, 1.35, k.strap, k.strap, k.strap, 0), k.strap); return f; }
   [-1, 1].forEach(function (sd) {
     var a = mark('pouches'), mc = k.mag;
     /* three magazines a pouch under one flap */
@@ -47618,7 +48127,7 @@ function strut(a, b, r, col) {
   return f;
 }
 function craftPostFaces(key, cr) {
-  var bar = key === 'us_bar' || key === 'ger_qtr', yard = key === 'us_tank' || key === 'ger_pz';
+  var bar = key === 'us_bar' || key === 'ger_qtr' || key === 'sov_bar', yard = key === 'us_tank' || key === 'ger_pz';
   var lct = cr.kind === 'lct', L = lct ? 366 : 129, B = lct ? 104 : 39, fx = L / 2;
   var cz = groundZ(cr.x, cr.y), dz = Math.min(cz, seaZ()) - 2.5 - cz;
   var flag = (FACTION[G.craftPost] || FACTION.us).color;
@@ -48249,7 +48758,99 @@ function svShtab(d) {
   f = f.concat(crate(-62, -10, 0, 0, 8, 6, 6), crate(-62, -10, 6, .1, 7, 5, 5), crate(-62, 2, 0, -.1, 8, 6, 6), drum(-60, 16, 0, '#4f5643'));
   return f;
 }
-var BLDMODEL = { us_hq: usHQ, us_bar: usBarracks, us_mot: usMotorPool, us_tank: usTankYard, sov_hq: svShtab,
+/* The Kazarma: a company's barrack of round logs, the way the Red Army built them behind the
+   line, long across the front with a roof of boards on it, a porch over the door, small
+   windows and two stovepipes through the roof. In front of it what a company's yard has: the
+   banner, the field kitchen on its two wheels with its chimney up, a stand of rifles leaning
+   together round a post, a table and its benches, the wall newspaper on its board, a barrel of
+   water, and the woodpile behind. */
+function svWindow(x, y, z) {
+  var B = BUNK, C = BASE, f = [];
+  f = f.concat(box(x + .5, y, z, .6, 5.2, 4.6, B.dark, B.dark, B.dark, 0));
+  [[0, -2.75, 0, 5.9, .5], [0, 2.75, 0, 5.9, .5]].forEach(function (p) { f = f.concat(box(x + .95, y + p[1], z - .5, .45, p[4], p[3], C.white, C.white, C.white, 0)); });
+  f = f.concat(box(x + .95, y, z - .55, .45, 6.0, .55, C.white, C.white, C.white, 0), box(x + .95, y, z + 4.55, .45, 6.0, .55, C.white, C.white, C.white, 0));
+  f = f.concat(box(x + .95, y, z + 2.1, .4, 5.2, .3, C.white, C.white, C.white, 0), box(x + .95, y, z, .4, .3, 4.6, C.white, C.white, C.white, 0));
+  return f;
+}
+function svKazarma(d) {
+  var f = [], B = BUNK, C = BASE, hw = d.w / 2, hh = d.h / 2, k, sd;
+  var x0 = -46, x1 = -18, y0 = -36, y1 = 36, n = 6, r = 1.5, zt = r + (n - 1) * r * 1.85 + r - 1, xr = (x0 + x1) / 2, zr = 31;
+  /* the walls: the front either side of the door, the back, and the two gable ends */
+  f = f.concat(svWallY(x1, y0, -5.5, -1, n, r), svWallY(x1, 5.5, y1, -1, n, r), svWallY(x0, y0, y1, -1, n, r));
+  f = f.concat(svWallX(y0, x0, x1, -1, n, r), svWallX(y1, x0, x1, -1, n, r));
+  /* the windows along the front and in the gables */
+  [-27, -15, 15, 27].forEach(function (y) { f = f.concat(svWindow(x1 + .6, y, 5.5)); });
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(place(svWindow(0, 0, 5.5), sd * Math.PI / 2, xr, sd * (y1 + .6), 0));
+  /* the door: its posts, a log across the top, the plank door shut, and the porch over it on
+     two posts with its own small gable, and the step up */
+  f = f.concat(svPost(x1 + .4, -5.5, -1, zt - 2, 1.4), svPost(x1 + .4, 5.5, -1, zt - 2, 1.4), svLogY(x1 + .6, -8, 8, zt - 3, 1.5, 1));
+  f = f.concat(box(x1 + .5, 0, 0, .7, 9.6, zt - 4.4, B.timbD, B.timb, B.timbD, 0));
+  for (k = -1; k <= 1; k++) f = f.concat(box(x1 + .9, k * 3.2, 0, .2, .3, zt - 4.6, B.timbD, B.timbD, B.timbD, 0));
+  f = f.concat(box(x1 + 1.0, 3.0, 6.5, .5, .8, .5, B.steel, B.steel, B.steel, 0));
+  var px = x1 + 9;
+  f = f.concat(svPost(px, -7, -1, 18, .9), svPost(px, 7, -1, 18, .9));
+  f = f.concat(svLogY(px, -8.5, 8.5, 17.6, .8, 0), svLogX(x1, px + 1, -7, 17.6, .7, 1), svLogX(x1, px + 1, 7, 17.6, .7, 1));
+  f.push.apply(f, bSheet([[x1 - 1, -9.5, 18.4], [px + 2.5, -9.5, 18.4], [px + 2.5, 0, 23.2], [x1 - 1, 0, 23.2]], B.timbL, B.timbD, [x1 + 4, 0, 0]));
+  f.push.apply(f, bSheet([[px + 2.5, 9.5, 18.4], [x1 - 1, 9.5, 18.4], [x1 - 1, 0, 23.2], [px + 2.5, 0, 23.2]], B.timbL, B.timbD, [x1 + 4, 0, 0]));
+  f.push.apply(f, bTwo([[px + 2.3, -8.5, 18.6], [px + 2.3, 8.5, 18.6], [px + 2.3, 0, 22.8]], B.timb, B.timbD));
+  f = f.concat(box(x1 + 4, 0, -1, 6, 14, 1.6, B.timbD, B.timbL, B.timbD, 0));
+  /* the red star on the porch's gable */
+  f = f.concat(tzStar([px + 2.35, 0, 20.3], [0, 1, 0], [1, 0, 0], 1.5));
+  /* the roof: two slopes of boards from the eaves to the ridge, run out past the walls, the
+     battens across them, the ridge board and the gables closed in boards */
+  var ov = 2.5, ex0 = x0 - ov, ex1 = x1 + ov, ez = zt - .6, ey = y1 + 3;
+  f.push.apply(f, bSheet([[ex1, -ey, ez], [ex1, ey, ez], [xr, ey, zr], [xr, -ey, zr]], B.timb, B.timbD, [xr, 0, 0]));
+  f.push.apply(f, bSheet([[ex0, ey, ez], [ex0, -ey, ez], [xr, -ey, zr], [xr, ey, zr]], B.timbD, B.timbD, [xr, 0, 0]));
+  for (k = 0; k < 9; k++) {
+    var t = (k + .5) / 9, bx1 = ex1 + (xr - ex1) * t, bx0 = ex0 + (xr - ex0) * t, bz = ez + (zr - ez) * t;
+    f = f.concat(box(bx1, 0, bz + .05, .5, 2 * ey, .35, B.timbD, B.timb, B.timbD, 0), box(bx0, 0, bz + .05, .5, 2 * ey, .35, B.timbD, B.timb, B.timbD, 0));
+  }
+  f = f.concat(box(xr, 0, zr, 1.4, 2 * ey + .4, .8, B.timbD, B.timbL, B.timbD, 0));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var gy = sd * (y1 + .3);
+    f.push(bOut([[x0 - .5, gy, zt - 1.2], [x1 + .5, gy, zt - 1.2], [xr, gy, zr - .6]], B.timb, [xr, 0, zt]));
+    for (k = -3; k <= 3; k++) f = f.concat(box(xr + k * 3.6, gy + sd * .2, zt - 1.2, .35, .3, Math.max(.5, (zr - zt) * (1 - Math.abs(k) * 3.6 / ((x1 - x0) / 2 + .5)) - .5), B.timbD, B.timbD, B.timbD, 0));
+  }
+  /* the stovepipes through the roof, with their caps */
+  [-18, 18].forEach(function (y) {
+    f = f.concat(cyl(xr - 7, y, zt + 2, 1.0, 1.0, zr - zt + 6, 8, B.steel, B.dark), cyl(xr - 7, y, zr + 8, 2.0, 2.0, .7, 8, B.dark, B.steel));
+  });
+  /* the field kitchen on its two wheels: the boiler, the firebox under it with its door, the
+     chimney up off the back and the shaft forward */
+  var kx = 22, ky = 30;
+  f = f.concat(box(kx, ky, 3.6, 12, 7, 1.0, TZC.dark, TZC.body, TZC.dark, .1));
+  f = f.concat(cyl(kx + 1, ky, 4.6, 3.3, 3.3, 6.2, 14, TZC.body, TZC.lit, 0, true), cyl(kx + 1, ky, 10.8, 3.5, 3.5, .6, 14, TZC.dark, TZC.lit, 0, true));
+  f = f.concat(cyl(kx + 1, ky, 11.4, .5, .5, .8, 6, B.steel, B.steel), box(kx + 4.6, ky, 4.8, 1.0, 2.6, 2.2, B.dark, B.dark, B.dark, 0));
+  f = f.concat(cyl(kx - 3.8, ky, 4.6, .65, .65, 12, 8, B.steel, B.dark), cyl(kx - 3.8, ky, 16.6, 1.2, 1.2, .5, 8, B.dark, B.steel));
+  f = f.concat(strut([kx + 6, ky, 4.2], [kx + 15, ky, 1.0], .35, TZC.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var wy = ky + sd * 4.4;
+    f = f.concat(lathe(kx - 1, wy, 3.6, [[3.3, -.4], [3.6, -.25], [3.6, .25], [3.3, .4]], 14, [B.dark, '#2a2b24', B.dark], true));
+    f = f.concat(lathe(kx - 1, wy, 3.6, [[0, -.25], [.7, -.25], [.7, .25], [0, .25]], 8, [TZC.dark, TZC.body, TZC.dark], false));
+    f = f.concat(tzSpokes(kx - 1, wy, 3.6, .6, 3.3, 10, sd, TZC.dark));
+  }
+  /* the rifles stood together round a post */
+  var rx = 18, ry = -24;
+  f = f.concat(svPost(rx, ry, -1, 10, .35));
+  for (k = 0; k < 8; k++) {
+    var ra = k / 8 * TAU, fx = rx + Math.cos(ra) * 3.2, fy = ry + Math.sin(ra) * 3.2;
+    f = f.concat(strut([fx, fy, 0], [rx + Math.cos(ra) * .5, ry + Math.sin(ra) * .5, 8.5], .26, '#4a3a26'));
+    f = f.concat(strut([rx + Math.cos(ra) * 1.4, ry + Math.sin(ra) * 1.4, 5.6], [rx + Math.cos(ra) * .3, ry + Math.sin(ra) * .3, 10.6], .13, '#3a3d34'));
+  }
+  /* the table and its benches, the barrel of water by the corner, and the wall newspaper */
+  f = f.concat(svLogX(-2, 10, 18, 2.2, 1.0, 0), svLogX(-2, 10, 26, 2.2, 1.0, 1));
+  f = f.concat(svPost(-1, 22, -1, 6, .6), svPost(9, 22, -1, 6, .6), box(4, 22, 5.2, 13, 5.5, .6, B.timbL, B.timbL, B.timbD, 0));
+  f = f.concat(drum(-10, 40, 0, '#4f5643'), box(-10, 34, 0, 8, 3, 3.6, B.timbD, B.timb, B.timbD, 0));
+  f = f.concat(svPost(4, -40, -1, 14, .6), svPost(16, -40, -1, 14, .6), box(10, -40, 6, 13, .5, 7, B.timbL, '#d8d2bd', B.timbL, 0));
+  f = f.concat(box(10, -39.6, 12, 13, .4, 1.6, C.sred, C.sred, C.sred, 0));
+  /* the banner on its staff out at the front */
+  f = f.concat(bPole(hw - 8, -hh + 8, -2, 40, .55, '#4a3f2e'), svBanner(hw - 7.4, -hh + 8, 28));
+  /* the woodpile behind, the crates and a cart wheel against the wall */
+  for (k = 0; k < 10; k++) f = f.concat(svLogY(-54 + (k % 4) * 2.8 + (k >= 4 ? 1.4 : 0) + (k >= 7 ? 1.4 : 0), 10, 30, 1.3 + (k >= 4 ? 2.4 : 0) + (k >= 7 ? 2.4 : 0), 1.3, k % 2));
+  f = f.concat(crate(-54, -24, 0, .1, 8, 6, 6), crate(-54, -32, 0, -.15, 8, 6, 6), crate(-54, -28, 6, .05, 7, 5, 5));
+  return f;
+}
+var BLDMODEL = { us_hq: usHQ, us_bar: usBarracks, us_mot: usMotorPool, us_tank: usTankYard, sov_hq: svShtab, sov_bar: svKazarma,
                  ger_hq: gerHQ, ger_qtr: gerKaserne, ger_dep: gerKfzPark, ger_pz: gerPanzerpark };
 function buildingModel(d, key) { return BLDMODEL[key] ? BLDMODEL[key](d) : []; }
 function flagModel(col) {

@@ -6,8 +6,9 @@ Canadian Infantry Division and 1. Fallschirmjäger-Division the game was first b
 are retired (see *The two armies*). Both armies are being built a unit at a time: the
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
-being built the same way on the Allied side, and so far it has its headquarters, the Shtab, and its
-builders, the Sapery (see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
+builders, the Sapery, its first production building, the Kazarma, and the Komsomolets T-20 out of it
+(see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1419,7 +1420,7 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
-**And three rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+**And four rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
 the player's slot fields it against the 352nd, the Shtab makes the Sapery and refuses the 29th's
 rifle squad, the side opens with three squads of four in the four sapper variants with the PPS-43,
 the plates, the ring and the helmet are on them, the sapper's card offers the four works with the
@@ -1429,7 +1430,14 @@ only Sapery, keep one back to dig and deal the rest jobs. Then the ROKS-3 goes o
 burns a garrison out of a house from inside its reach, with the jet drawn and the house alight, and
 a minefield laid in front of the headquarters is hidden from the enemy, takes a man of a squad
 walked across it and holds a 251 driven across it, with the German brain switched off for the drill
-so that the half-track goes where it is sent.
+so that the half-track goes where it is sent. And the fourth row asks the Kazarma and the T-20: the
+sapper's card offers the Kazarma, which makes the T-20 and queues it, the Shtab refuses the tractor,
+every buffer is built and it is named the Komsomolets T-20, its DT asked to lay 1.2 radians off the
+nose stops at the edge of twenty degrees, it takes one squad and refuses a second and tows, the
+commander wears the padded helmet and none of the SSh-40 and is the eye, two to six units over the
+roof, a Kar98k never goes through its front and a Pak 38 always goes through its side, forty wrecks
+throw nothing and sit down, killed it leaves two bodies of the army's crewmen, and a brain on his
+slot with a Kazarma standing queues a T-20 there inside forty seconds.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
@@ -6394,9 +6402,10 @@ saved for nothing, which is why the head of the list is only ever a live key.
 **The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
 pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
 fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
-has two things so far: its headquarters, the Shtab, and its builders, the Sapery, with their
-flamethrowers and their minefield. The B-4 position the Sapery are to dig and the production
-buildings come with rows of their own.
+has four things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+flamethrowers and their minefield; its first production building, the Kazarma; and the Komsomolets
+T-20, its armoured tractor, out of the Kazarma. The B-4 position the Sapery are to dig and the rest
+of the production buildings come with rows of their own.
 
 `NATIONS.sov` is the army, with `side: 'us'`, and every army names its headquarters (`hq`), the
 company it opens with (`open`), its production buildings in order (`tiers`) and its heavy battery's
@@ -6486,9 +6495,82 @@ man who stepped on it. Spent, the field and its marking go. Measured by the gate
 walked across set one off, lost a man and could see the field afterwards; a 251 driven across lost
 180 and was held for seven to eleven seconds.
 
+**The Kazarma** (`sov_bar`, `svKazarma`, 200 manpower, 26 seconds, hotkey 1) is the army's first
+production building and its only tier so far (`NATIONS.sov.tiers`): a company's barrack of round
+logs, long across the front, six courses of the Shtab's logs high with the corners crossed, under a
+roof of boards with battens and a ridge board, the gables boarded in, a porch on two posts over the
+door with the red star on its gable (`tzStar`, the T-20's), four windows along the front and one in
+each gable with white frames (`svWindow`), and two stovepipes through the roof; in front, the banner
+on its staff, the field kitchen on two wheels with its boiler, firebox and chimney, the rifles stood
+together round a post, a table and its log benches, the wall newspaper on its board and a barrel of
+water, and behind it the woodpile and the crates. It is the 29th's barracks' size, 116 by 96, and
+makes the T-20 and nothing else yet. On a beach whose landing side builds out of the craft, a Soviet
+player's Kazarma is a barracks post out of a craft (`craftPostFaces` reads it as one).
+
+**The Komsomolets T-20** (`sv_t20`, out of the Kazarma, 180 manpower, 15 fuel, 18 seconds, 6 of
+population, K) is the Red Army's light armoured artillery tractor: 260 hit points, 10 mm of plate in
+front and 7 at the sides and the back (`ARM`), open above where the men sit (`blastRes` 1.25), 100 of
+speed and 320 of sight, a DT in a ball in the cab's front plate at 7.5 a burst every 0.20 seconds
+out to 280 with 9 mm of penetration, traversing twenty degrees either way (`arc` .7) and turning the
+hull for anything wider; it carries one squad (`carries`) and tows a gun (`tows`). Those are the row's
+numbers as it was pasted.
+
+It is laid over a 1:35 four-view of the second series, late build, with two side views
+(`tools/ref/sv_t20.json`), whose scale bar and the published 3.45 m over the towing fittings agree at
+61.5 px/m in every view; at that scale the width over the rails at the seats is 1.87 m against 1.86
+and the height to the backrests 1.56 against 1.58. A coloured four-view the player supplied was read
+for one thing, the seats: two rows of three back to back along the centre line, each cushion on a
+slatted frame with its backrest leaning back toward the middle, so the men sit facing outward with
+their legs over the sides. What the first overlay had right was nearly all of it, running gear, cab,
+housing, seats and rack within a line; it found the cab's foot, which falls from the mudguard at the
+front to the sponson at the back along a plumb plate with a row of rivets on it (the first build kept
+it level), the towing hook, which hangs lower and further out than built, and the rack, half a unit
+lower. On `tools/dims.mjs` it reads 3.46 m long against 3.45, 1.90 wide over the rails against 1.86,
+1.59 high against 1.58 (`hullZ` holds the open door out) and 0.29 of clearance against 0.30.
+
+What carries it (`tz` and `TZG`, `TZH`, `TZC`): four road wheels a side, each two pressed discs on
+rubber tyres either side of the guide horns with five spokes on the outer face (`tzWheel`), in two
+bogies whose bracket comes out of the hull between the wheels inside the loop of the track, with the
+beam along the outside to both axles and a leaf spring on it (`tzBogie`); two return rollers, the
+sprocket in front with its four holes and a ring of teeth either side of the guides, and the spoked
+idler behind and higher, so the top run falls from front to back; and a track of pressed shoes with a
+rib across the face and the guide horn inside (`tzLink`). The tub between the tracks runs from the
+belly up to the nose deck, with the sponsons out over the tracks behind the cab and the deck the seats
+stand on over both (`tzBody`). The mudguards over the sprockets are plates bent along a profile
+(`tzBent`), with the headlamps on brackets at their inner edges and the towing hooks on the nose
+(`tzFront`). The cab (`tzCab`) is as wide as the vehicle at its foot and narrows to the roof on every
+side but the back: the front plate laid back at twenty degrees, the side plates leaning in, the back
+plumb, and on the roof two doors hinged at their rear edges, the left shut and the right standing open
+with the commander head and shoulders out of it and the dark inside of the cab under it (`m8Lit`, so
+the eye does not see the ground through the hole). The DT's housing is an oval drum out of the front
+plate on the right (`tzDrum`), with the ball in its face; the driver's visor with its slit is on the
+left, a vision port in each side, a red star on each side plate and on the front, and rivets round
+every plate (`tzRivets`, each laid flat on its plate). The tail (`tzRear`) carries the louvres along
+the top of the back plate, the spare road wheel upright on it, the box for the jack, the pintle with
+its hook, the tail lamp, and the slatted rack across the back of the deck behind the seats; and the
+seats (`tzSeats`, `tzBack`) are the two rows, a slatted frame along the deck under each, the cushions
+on it, the backrests leaning back with a rail along the top of each row, and the uprights between the
+rows carrying them, so from the front or the back the two stand together as a ridge. A rail at the
+men's feet runs along each side on four brackets, turned in to the body at both ends.
+
+The mount is the ball and the DT (`tzMount`), built about the ball's centre, which is what turns; the
+model is `fixed`, so a wreck throws nothing. The squad aboard goes out of sight the way it goes into
+the Weasel and is not drawn on the seats. The commander is `sv_crew`, the gymnastyorka with a belt
+and a pistol and nothing a hatch would catch, under the padded tanker's helmet, the shlemofon
+(`helmetShlem`: a leather cap close over the head with three padded rolls front to back over the crown
+and one round the brow, the ear flaps with the earphones in them and the strap under the chin), and
+he is the eye (`VIN.sv_t20`, off the hull). He carries `body: 'sov'`, so the two men a dead vehicle
+leaves on the ground (`natOf` the vehicle, which is `sov`) are crewmen in the padded helmet. The paint
+is the 4BO green (`TZC`, tagged as paint), a step greener than the Americans' olive drab beside it,
+with the seats in brown leather.
+
+The brain on the Soviet slot builds the Kazarma as its first building (`K.b1`) and buys a T-20 out of
+it (`LADDER`, one): `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
+reads, because the other two armies' armour waits for the second.
+
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
 brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders and
-as its line, has an empty shopping ladder, digs no battery and lays a minefield every fourth work.
+as its line, has one T-20 on its shopping ladder, digs no battery and lays a minefield every fourth work.
 **And an army whose only infantry is its builder fights with it.** Every rule that leaves an
 engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
 engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
@@ -7395,7 +7477,8 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, M7 Priest, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, Marder III, Wespe, leFH 18, Nebelwerfer |
 | 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, Calliope, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
-A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
+The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and one tier over it so far, the Kazarma
+(`sov_bar`, 200), which makes the T-20; its tiers come with its rows. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
 building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
 order sent to the wrong building of an AI to the right one, because a brain out of an older revision

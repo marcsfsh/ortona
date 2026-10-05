@@ -6791,7 +6791,8 @@ for (const device of TARGETS) {
        sprocket and the idler, and on a wheeled car its wheels and no spare */
     const want = { am_sher: 22, am_t34: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 16,
                    am_weasel: 26, am_stuart: 18, ger_kt: 22, ger_maus: 28, ger_tig: 20, ger_stug: 22, am_jeep: 4,
-                   am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28 };
+                   am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28,
+                   sv_t20: 16 };
     const bad = [];
     let belts = 0;
     Object.keys(want).forEach(k => {
@@ -6834,7 +6835,7 @@ for (const device of TARGETS) {
              w: +(u.bodyW * .85 * .5).toFixed(2), ctrl, moved };
   }, { sx: bodies.sx, sy: bodies.sy });
   ok('tracks and wheels move with the vehicle',
-     !rolling.bad.length && rolling.belts === 21 && rolling.drove > 60 &&
+     !rolling.bad.length && rolling.belts === 22 && rolling.drove > 60 &&
      Math.abs(rolling.L1 - rolling.drove) < rolling.drove * .12 && Math.abs(rolling.R1 - rolling.drove) < rolling.drove * .12 &&
      Math.abs(rolling.pl - rolling.w) < .05 && Math.abs(rolling.pr + rolling.w) < .05 &&
      rolling.moved > 1500 && rolling.moved > rolling.ctrl * 20,
@@ -7966,6 +7967,89 @@ for (const device of TARGETS) {
      `${mf0.none ? 'REFUSED' : `shown to us ${mf0.us} and to them ${mf0.ger}`}; walked across, ${mf1.n0 - mf1.n} mines went off ` +
      `and the squad went from ${mf1.hp0} to ${mf1.hp} hp, the field then ${mf1.shown ? 'shown' : 'STILL HIDDEN'} to them; ` +
      `a 251 driven across lost ${mf2.lost}${mf2.dead ? ' and died' : ''} and was held for ${mf2.immob} s`);
+
+  /* --- The Kazarma and the T-20. The sapper's card offers the Kazarma, which makes the T-20,
+     and the Shtab refuses the tractor. The T-20 has every buffer it needs and its own name, its
+     DT asked to lay 1.2 radians off the nose stops at the edge of twenty degrees, it takes one
+     squad, refuses a second and tows, the commander head out of its door wears the padded
+     helmet and is the eye, a rifle round never goes through its front and a Pak 38's always
+     goes through its side, forty wrecks throw nothing, and killed it leaves two of the army's
+     crewmen. Then a brain on the Soviet slot with a Kazarma standing buys a T-20 there. --- */
+  const kz = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const u0 = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    W.select([u0], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false); W.killUnit(u0); G.units.length = 0;
+    const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260);
+    const kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true);
+    out.makes = W.makesOf(kb).join(','); out.bname = kb.def.name;
+    out.bld = W.buildingModel(kb.def, 'sov_bar').length;
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_t20'); out.qHq = q(hq, 'sv_t20');
+    const B = W.MODELS.veh.sv_t20;
+    out.bufs = !!(B && B.hull && B.tur && B.crew);
+    const sp = W.nearestFree(hq.x + 200, hq.y + 120), t = W.spawnUnit(own, 'sv_t20', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = +W.arcOf(t).toFixed(2);
+    t.facing = 0; t.turret = 0; t.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +t.turret.toFixed(3);
+    const s1 = W.spawnUnit(own, 'sv_sap', t.x + 30, t.y + 40, 0), s2 = W.spawnUnit(own, 'sv_sap', t.x - 30, t.y + 40, 0);
+    W.boardVehicle(s1, t); out.t1 = t.cargo === s1; out.t2 = W.canBoard(s2, t); out.tows = !!t.def.tows;
+    const K = W.KIT.sov, V = W.VMODEL.sv_t20;
+    out.shlem = V.crew.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.ssh = V.crew.filter(f => f.c === K.helm || f.c === K.helmD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_t20(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.roof = W.TZH.zRoof;
+    t.facing = 0;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, t.x, t.y + 300).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    out.baked = !!(W.MODELS.fall.sov && W.MODELS.dead.sov && W.MODELS.fall.sov.length === 3);
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* and the brain on his slot, with the Kazarma standing and money in the till */
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_sap', hq.x + 160, hq.y, 0);
+    W.__kzq = []; W.__kzU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__kzU.apply(this, arguments); if (r && b.own === own) W.__kzq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const kzAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__kzU; W.slotOf(own).ai = 0;
+    return { q: W.__kzq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Kazarma raises the Komsomolets T-20: a tractor with a DT in its ball, six seats and a hook',
+     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_t20' && kz.bname === 'Kazarma' && kz.bld > 100 &&
+     kz.q === 'sv_t20' && kz.qHq === 'refused' && kz.bufs && kz.name === 'Komsomolets T-20' &&
+     kz.arc === .7 && Math.abs(Math.abs(kz.tur) - kz.arc / 2) < .03 && kz.t1 && !kz.t2 && kz.tows &&
+     kz.shlem > 0 && kz.ssh === 0 && kz.paint > 0 && kz.eye > kz.roof + 2 && kz.eye < kz.roof + 6 &&
+     kz.rifle === 0 && kz.pak === 1 && kz.blown === 0 && kz.sink > 0 && kz.bodies === 2 && kz.bodyNat === 'sov' && kz.baked &&
+     /sov_bar:sv_t20/.test(kzAi.q),
+     `the card ${kz.cards.indexOf('KAZARMA') >= 0 ? 'offers' : 'does NOT offer'} the Kazarma; the ${kz.bname} makes ${kz.makes} ` +
+     `(${kz.bld} faces) and queues ${kz.q}, the Shtab ${kz.qHq} it; buffers ${kz.bufs ? 'built' : 'MISSING'}; named ${kz.name}; ` +
+     `asked for 1.2 the DT laid ${kz.tur} on an arc of ${kz.arc}; it ${kz.t1 ? 'took' : 'REFUSED'} a squad and ` +
+     `${kz.t2 ? 'TOOK' : 'refused'} a second, ${kz.tows ? 'tows' : 'DOES NOT TOW'}; the commander has ${kz.shlem} faces of the padded ` +
+     `helmet and ${kz.ssh} of the SSh-40, the hull ${kz.paint} of its green; the eye at ${kz.eye} over a roof at ${kz.roof}; ` +
+     `a Kar98k through the front ${kz.rifle} and a Pak 38 through the side ${kz.pak}; forty wrecks threw ${kz.blown} and sat ` +
+     `down ${kz.sink}; killed it left ${kz.bodies} bodies of ${kz.bodyNat}, ${kz.baked ? 'baked' : 'NOT BAKED'}; a brain with ` +
+     `the Kazarma standing queued ${kzAi.q}`);
 
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were
