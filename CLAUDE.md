@@ -6566,7 +6566,9 @@ with the seats in brown leather.
 
 The brain on the Soviet slot builds the Kazarma as its first building (`K.b1`) and buys a T-20 out of
 it (`LADDER`, one): `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
-reads, because the other two armies' armour waits for the second.
+reads, because the other two armies' armour waits for the second. The post's own shopping (the machine gun, the
+mortar, the assault squad) runs once the first building stands, so it now runs for an army that has
+none of them: a key the army has not got is a thing it cannot buy (`canPost`), where it threw.
 
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
 brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders and
@@ -9448,6 +9450,11 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A block of the brain written for one army's buildings runs for every army that has them.** The
+  barracks' shopping list read its mortar's price straight off `UNITS[K.mor]`, which was safe while
+  only the 29th and the 352nd had a first building; the Red Army's Kazarma made the block run for an
+  army with no mortar key and the brain threw on its first tick with the Kazarma standing. Read an
+  army key through something that answers no for a key that is not there.
 - **`def.builder` is not the question of whether a unit fights.** Every rule that leaves an
   engineer out of the fighting asked it, and an army whose only infantry is its builders (the Red
   Army, until it has a rifle squad) was then no army at all: its brain dealt none of them a job,

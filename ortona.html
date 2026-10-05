@@ -7913,9 +7913,11 @@ function aiWants(slot, ladder, gate) {
    spend the whole till above a cushion instead, because `spare` never once in five hundred
    thinking ticks cleared the price of either and a rule that waits for money nothing else
    wants is a rule that never fires. Read by the purchase and by the gate counter that says
-   whether it could have been, so the two cannot answer differently. */
+   whether it could have been, so the two cannot answer differently. A key the army has not got
+   (the Red Army's post has no mortar yet) is a thing it cannot buy. */
 function canPost(key, heavy, spare, spareFu, slot) {
   var d = UNITS[key];
+  if (!d) return false;
   var mp = heavy ? G.res[slot].mp : spare, fu = heavy ? G.res[slot].fu : spareFu;
   return mp >= (d.cost.mp || 0) && fu >= (d.cost.fu || 0);
 }
