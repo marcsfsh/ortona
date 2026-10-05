@@ -6591,6 +6591,15 @@ back with 10 round the open turret (`ARM`), `blastRes` 1.25, wheeled, 145 of spe
 DT at 8 a burst every 0.20 seconds out to 290 with 9 mm of penetration, in a turret that goes all the
 way round, and no upgrades. Those are the row's numbers as it was pasted.
 
+On the duel card over twelve runs a row it takes the grenadier squad every time in 29 seconds without
+losing a hit point, the KS 750 every time in 29 and the MG 34 team every time in 16, all untouched,
+because nothing any of them carries opens its front. The 251 and the car are the same fight the other
+way round: the MG 34's belt and the DT both go through 9 mm and neither goes through the other's front,
+so all twelve ran to the card's limit of 150 seconds with both whole. What opens it takes it: the 234/1
+every time in 15 seconds untouched, the Panzer IV in 5, and the Knight's Cross Holders in 3, with the
+bundle. The controls beside it on the same afternoon read the M8 against the 234/1 at 17 per cent and
+the jeep against the grenadier squad at 33, against 63 and 44 in the paragraphs on those two.
+
 It is laid over a four-view with two side views and the DT's mount drawn apart
 (`tools/ref/sv_ba64.json`). The sheet has no scale; its side views agree with the 2.10 m wheelbase at
 81 px/m, and the plan and the two ends with the 1.69 m over the mudguards and the 1.44 m track at the
