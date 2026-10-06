@@ -1190,6 +1190,12 @@ for (const device of TARGETS) {
     const key = window.G.side === 'us' ? 'us_how' : 'ger_how';
     if (!window.UNITS[key] || !window.UNITS[key].barrageOnly) return { has: false };
     const keep = window.G.units.slice(), shots = window.G.shots.slice();
+    /* where each of the eight shells lands is two rolls, a point in the circle and the gun's
+       own scatter on top, and three of eight just past the circle comes up about one run in a
+       hundred: the row is thrown with seeded rolls, as the burst rows are */
+    const rand = Math.random;
+    let seed = 2024;
+    Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
     const foe = window.G.side === 'us' ? 'ger' : 'us';
     function clear() { window.G.units.length = 0; window.G.shots.length = 0; }
     function run(u, secs) {
@@ -1248,6 +1254,7 @@ for (const device of TARGETS) {
     }
     window.G.units.length = 0; keep.forEach(q => window.G.units.push(q));
     window.G.shots.length = 0; shots.forEach(q => window.G.shots.push(q));
+    Math.random = rand;
     const bound = B.r + 14;
     return { has: true, key, seen: !!seen, picked: !!picked, idle, laid, dist: D,
              rounds: out.length, want: B.rounds, r: B.r, bound,
