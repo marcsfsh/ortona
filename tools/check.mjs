@@ -8159,6 +8159,165 @@ for (const device of TARGETS) {
      `wrecks threw ${ba.blown} and sat down ${ba.sink}; killed it left ${ba.bodies} bodies of ${ba.bodyNat}; a brain with the ` +
      `Kazarma standing pegged out ${baAi.site} Avtopark and with one standing queued ${baAi.q}`);
 
+  /* --- The Tankovyy park, the T-34/76 and its riders. The park needs the Avtopark and makes the
+     T-34, which the Avtopark refuses. The tank has every buffer it needs and its name, a coaxial
+     DT, a turret asked to lay over the tail comes all the way round, the commander up in the hatch
+     wears the padded helmet and his eye is over the roof and drops when the lid shuts, a rifle
+     round never goes through its front and a Panzer IV's always does, forty wrecks throw the
+     turret some of the time and sit down, and killed it leaves the army's crewmen. Then a squad of
+     Sapery climbs onto its deck: the men kneel on the deck in the hull's frame and go where the
+     tank goes, a second squad is refused, the squad has no cover, shoots a grenadier squad put in
+     front of it, is hurt by a burst beside the tank, stays on for a move order the tank is in and
+     gets down for one it is not, and is thrown off when the tank is killed. Then a brain on the
+     Soviet slot with the Avtopark standing pegs out a Tankovyy park and buys a T-34 out of it. --- */
+  const tp = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    if (!G.blds.some(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)) {
+      const am = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); W.spawnBuilding(own, 'sov_mot', am.x, am.y, true);
+    }
+    const u0 = W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y - 160, 0);
+    W.select([u0], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false); W.killUnit(u0); G.units.length = 0;
+    out.need = W.BUILDINGS.sov_tank.need; out.ready = W.bldReady(own, 'sov_tank');
+    const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260);
+    const tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true);
+    out.makes = W.makesOf(tb).join(','); out.bname = tb.def.name;
+    out.bld = W.buildingModel(tb.def, 'sov_tank').length;
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_t34'); out.qMot = ab ? q(ab, 'sv_t34') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_t34;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf);
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_t34', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0; out.coax = W.secondaryKeys(t).join(',');
+    out.tows = !!t.def.tows;
+    t.facing = 0; t.turret = 0; t.want = 3.1;
+    for (let i = 0; i < 80; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(t.turret).toFixed(2);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov, V = W.VMODEL.sv_t34;
+    out.shlem = W.HATCHES.sv_t34.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_t34(V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.TTT.zr; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4 = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    /* the riders: a squad stood beside the tank boards it, and a second is refused */
+    const r = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y + 30, 0), r2 = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y - 50, 0);
+    W.boardVehicle(r, t);
+    out.ride = r.ride === t && t.cargo === r && !r.inside;
+    out.second = W.canBoard(r2, t);
+    W.killUnit(r2);
+    for (let i = 0; i < 4; i++) { W.updateUnit(r, .05); W.updateModels(r, .05); }
+    t._matT = -1;
+    const deck = r.models.filter(m => m.alive && m.rz !== undefined && m.rz > W.groundZ(t.x, t.y) + 15 &&
+      Math.abs((m.x - t.x) * Math.cos(t.facing) + (m.y - t.y) * Math.sin(t.facing)) < 30);
+    out.onDeck = deck.length + '/' + r.models.filter(m => m.alive).length;
+    out.cover = W.coverOf(r);
+    W.__tp = { t, r, x0: t.x, y0: t.y };
+    t.manual = true;
+    W.orderMove(t, t.x + 160, t.y);
+    return out;
+  });
+  await fastForward(page, 5);
+  Object.assign(tp, await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, T = W.__tp, t = T.t, r = T.r, out = {};
+    out.drove = +Math.hypot(t.x - T.x0, t.y - T.y0).toFixed(1);
+    out.with = +Math.hypot(r.x - t.x, r.y - t.y).toFixed(1) + '/' + (r.ride === t ? 'riding' : 'OFF');
+    /* a grenadier squad in front of them, which the tank, under command, leaves to the riders */
+    W.clearOrder(t);
+    const e = W.spawnUnit('ger', 'hr_gren', t.x + 120, t.y, Math.PI);
+    T.e = e; T.rounds0 = (W.recOf(r) || {}).rounds || 0;
+    T.ehp0 = e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    return out;
+  }));
+  await fastForward(page, 8);
+  Object.assign(tp, await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, T = W.__tp, t = T.t, r = T.r, e = T.e, out = {};
+    out.fired = ((W.recOf(r) || {}).rounds || 0) - T.rounds0;
+    out.hitE = +(T.ehp0 - e.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)).toFixed(0);
+    W.killUnit(e);
+    const hp0 = r.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0);
+    W.explode(t.x + 6, t.y, 30, 140, null, null);
+    out.burst = +(hp0 - r.models.reduce((s, m) => s + (m.alive ? m.hp : 0), 0)).toFixed(0);
+    out.stillOn = r.dead ? 'dead' : r.ride === t ? 'riding' : 'OFF';
+    if (r.dead || r.ride !== t) { const r3 = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y + 30, 0); W.boardVehicle(r3, t); T.r = r3; }
+    const rr = T.r;
+    W.select([t, rr], false); W.orderMove(rr, t.x + 300, t.y);
+    out.stay = rr.ride === t;
+    W.select([], false); W.orderMove(rr, t.x - 200, t.y + 100);
+    out.down = !rr.ride && !t.cargo && rr.models.every(m => m.rz === undefined);
+    const r4 = W.spawnUnit(own, 'sv_sap', t.x - 40, t.y + 30, 0); W.boardVehicle(r4, t);
+    W.killUnit(t); W.updateUnit(r4, .05);
+    out.thrown = !r4.ride && r4.models.every(m => m.rz === undefined) ? 'off' : 'STILL ON';
+    const nc = G.corpses.length;
+    const t2 = W.spawnUnit(own, 'sv_t34', t.x, t.y + 150, 0); W.killUnit(t2);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing and the park taken away again */
+    const tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank')[0];
+    T.at = { x: tb.x, y: tb.y };
+    G.blds.splice(G.blds.indexOf(tb), 1); W.rebuildGrid();
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 2000; G.res[own].fu += 400;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_sap', hq.x + 160, hq.y, 0);
+    W.__tpq = []; W.__tpU = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__tpU.apply(this, arguments); if (q && b.own === own) W.__tpq.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  }));
+  await fastForward(page, 30);
+  const tpAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    out.site = G.blds.filter(b => b.own === own && b.key === 'sov_tank').length;
+    if (!G.blds.some(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)) {
+      W.spawnBuilding(own, 'sov_tank', W.__tp.at.x, W.__tp.at.y, true); W.rebuildGrid();
+    }
+    G.res[own].mp += 2000; G.res[own].fu += 400;
+    return out;
+  });
+  await fastForward(page, 30);
+  Object.assign(tpAi, await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__tpU; W.slotOf(own).ai = 0;
+    return { q: W.__tpq.join(',') || 'nothing' };
+  }));
+  ok('the Red Army\'s Tankovyy park raises the T-34/76, and a squad rides on its deck, shooting and in the open',
+     tp.cards.indexOf('TANK PARK') >= 0 && tp.need === 'sov_mot' && tp.ready && tp.makes === 'sv_t34' && tp.bname === 'Tankovyy park' &&
+     tp.bld > 100 && tp.q === 'sv_t34' && tp.qMot === 'refused' && tp.bufs && tp.name === 'T-34/76' && !tp.arc && tp.tur > 3.0 &&
+     tp.coax === 'coax' && tp.tows && tp.shlem > 0 && tp.paint > 0 && tp.frame === 'tur' && tp.eyeUp > tp.roof + 2 &&
+     tp.eyeUp < tp.roof + 9 && tp.eyeIn < tp.eyeUp && tp.rifle === 0 && tp.p4 === 1 && tp.blown > 0 && tp.blown < 40 && tp.sink > 0 &&
+     tp.ride && !tp.second && /^(\d)\/\1$/.test(tp.onDeck) && tp.cover === 0 && tp.drove > 60 && /^0(\.\d)?\/riding$/.test(tp.with) &&
+     tp.fired > 0 && tp.hitE > 0 && tp.burst > 0 && tp.stay && tp.down && tp.thrown === 'off' && tp.bodies >= 2 &&
+     tp.bodyNat === 'sov' && tpAi.site > 0 && /sov_tank:sv_t34/.test(tpAi.q),
+     `the card ${tp.cards.indexOf('TANK PARK') >= 0 ? 'offers' : 'does NOT offer'} the Tankovyy park, which needs ${tp.need} ` +
+     `(${tp.ready ? 'standing' : 'NOT STANDING'}); the ${tp.bname} makes ${tp.makes} (${tp.bld} faces) and queues ${tp.q}, the ` +
+     `Avtopark ${tp.qMot} it; buffers ${tp.bufs ? 'built' : 'MISSING'}; named ${tp.name}, secondary ${tp.coax}, ` +
+     `${tp.tows ? 'tows' : 'does NOT tow'}; asked to lay over the tail the turret came to ${tp.tur}${tp.arc ? ' on an ARC of ' + tp.arc : ''}; ` +
+     `the commander has ${tp.shlem} faces of the padded helmet, the hull ${tp.paint} of its green; the eye in the ${tp.frame} at ` +
+     `${tp.eyeUp} head out and ${tp.eyeIn} head in, over a roof at ${tp.roof}; a Kar98k through the front ${tp.rifle} and a ` +
+     `Panzer IV ${tp.p4}; forty wrecks threw ${tp.blown} and sat down ${tp.sink}; a squad ${tp.ride ? 'rides' : 'does NOT ride'} ` +
+     `it with a second ${tp.second ? 'ALLOWED' : 'refused'}, ${tp.onDeck} men on the deck, cover ${tp.cover}; the tank drove ` +
+     `${tp.drove} with the squad ${tp.with} off it; the riders fired ${tp.fired} rounds and took ${tp.hitE} off the grenadiers; ` +
+     `a burst beside the tank took ${tp.burst} off them (${tp.stillOn}); in the tank's order they ${tp.stay ? 'stayed on' : 'GOT OFF'}, ` +
+     `in their own they ${tp.down ? 'got down' : 'DID NOT'}; the tank killed under riders threw them ${tp.thrown}; killed it ` +
+     `left ${tp.bodies} bodies of ${tp.bodyNat}; a brain with the Avtopark standing pegged out ${tpAi.site} Tankovyy park and ` +
+     `with one standing queued ${tpAi.q}`);
+
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were
      550 MB at the whistle, every infantry pose on the roster was baked whether or not anybody

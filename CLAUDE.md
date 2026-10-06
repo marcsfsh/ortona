@@ -8,7 +8,7 @@ rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm g
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
 being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
 builders, the Sapery, its first production building, the Kazarma, the Komsomolets T-20 out of it, its
-second, the Avtopark, and the BA-64B out of that (see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+second, the Avtopark, the BA-64B out of that, its third and last, the Tankovyy park, and the T-34/76 out of that, with a squad riding on its deck (see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -1000,7 +1000,7 @@ became a board of orders, 1800 before three more German pieces, 1815 before a th
 1945 before a post could be made of a landing craft and the wall could be manned, 1970
 before the American army, 2000 before the German army on the same beach, 2030 before
 the jeep, 2090 before the M4, 2130 before the KS 750, 2190 before the Panzer IV, 2230
-before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, 3300 before the map editor was made over, 3550 before the Priest, the M12, the Wespe, the Marder III and the Weasel, and 3650 before the Red Army). Takes
+before the engineer squad, 2290 before the 251, 2350 before the Rangers, 2400 before the M8, 2460 before the Knight's Cross Holders, 2500 before the .30 cal team, 2530 before the MG 34 team and the Wirbelwind, 2570 before the Panther, 2600 before the 57 mm gun, 2630 before the Pak 38, 2680 before the M3 light tank, 2750 before the Easy Eight, 2800 before the M26 Pershing, 2830 before the LCVP was laid to its drawing, 2900 before Saint-Lô, 2950 before the Mörser 18, the Gebirgsflak 38 and the GrW 34 were built to their drawings, 2980 before the leFH 18, 3020 before every building on the map could be brought down, 3060 before a building could burn and a burst had splinters, 3100 before the four tiers of base building, 3300 before the map editor was made over, 3550 before the Priest, the M12, the Wespe, the Marder III and the Weasel, 3650 before the Red Army, and 3750 before the T-34 and the Tankovyy park). Takes
 under a second. Exits
 non-zero on any violation. The ceiling is a budget rather than a limit and the reason for
 each step is written beside it in the file: raise it deliberately, with a reason, or not
@@ -1420,7 +1420,7 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
-**And five rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+**And six rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
 the player's slot fields it against the 352nd, the Shtab makes the Sapery and refuses the 29th's
 rifle squad, the side opens with three squads of four in the four sapper variants with the PPS-43,
 the plates, the ring and the helmet are on them, the sapper's card offers the four works with the
@@ -1446,7 +1446,20 @@ rim, a Kar98k never goes through its front and a Pak 38 always does, eighty wrec
 some of the time, killed it leaves two of the army's crewmen, and a brain on his slot with a Kazarma
 standing pegs out an Avtopark and buys the car out of it. The row puts the clock past six hundred
 seconds first, because the car's rung opens at 210 seconds times the difficulty's gate, which is 315 at
-regular, and a row that leans on how long the rows before it ran is a row about those rows.
+regular, and a row that leans on how long the rows before it ran is a row about those rows. The sixth
+asks the Tankovyy park, the T-34/76 and its riders: the card offers the park, which needs the Avtopark,
+makes the tank and queues it, and the Avtopark refuses the tank; every buffer is built, the hatch's
+three among them, and it is named the T-34/76 with a coaxial DT and tows, its turret asked to lay over
+the tail comes all the way round, the commander up in the hatch wears the padded helmet, the eye is two
+to nine units over the roof head out and drops when the lid shuts, a Kar98k never goes through its front
+and a Panzer IV always does, forty wrecks throw the turret some of the time and sit down, and killed it
+leaves the army's crewmen. Then a squad of Sapery boards it and a second is refused, every living man
+kneels on the deck over the hull, the squad has no cover, and the tank, under command so that it leaves
+the shooting to them, drives a hundred and sixty units with the squad on it; a grenadier squad put in
+front of them is shot at and hurt, a burst beside the tank hurts the riders, a move order with the tank
+in it leaves them aboard and one without it gets them down, and the tank killed under a squad throws it
+off. Then a brain on his slot with the Avtopark standing pegs out a Tankovyy park and buys a T-34 out of
+it, with the clock past seven hundred seconds for the reason the fifth row puts it past six.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
@@ -6411,11 +6424,12 @@ saved for nothing, which is why the head of the list is only ever a live key.
 **The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
 pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
 fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
-has six things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+has eight things so far: its headquarters, the Shtab; its builders, the Sapery, with their
 flamethrowers and their minefield; its first production building, the Kazarma; the Komsomolets
-T-20, its armoured tractor, out of the Kazarma; its second production building, the Avtopark; and the
-BA-64B, its armoured car, out of that. The B-4 position the Sapery are to dig and the third production
-building come with rows of their own.
+T-20, its armoured tractor, out of the Kazarma; its second production building, the Avtopark; the
+BA-64B, its armoured car, out of that; its third and last, the Tankovyy park; and the T-34/76, its
+medium tank, out of that, which a squad can ride on. The B-4 position the Sapery are to dig comes with
+a row of its own.
 
 `NATIONS.sov` is the army, with `side: 'us'`, and every army names its headquarters (`hq`), the
 company it opens with (`open`), its production buildings in order (`tiers`) and its heavy battery's
@@ -6652,17 +6666,128 @@ the turret. The commander is `sv_crew` standing in the well with his hands on th
 leaves two crewmen in the padded helmet, and the turret is a turret, so a wreck throws it some of the
 time.
 
+**The Tankovyy park** (`sov_tank`, `svTankpark`, 300 manpower, 60 fuel, 40 seconds, hotkey 3) is the army's
+third and last production building and needs the Avtopark (`need`): a long shed of the Shtab's round logs
+across the back with three bays open to the front under a lean-to roof of boards, a bench, crates and
+spare road wheels in the bays, stacked and stood against the back wall; in front of it the place a tank is
+worked on, under a gantry of logs with a chain block hung from its beam over an engine lifted out onto its
+crate; a length of track laid out on the ground, its links alternating with and without the horn; the fuel
+in drums behind a wall of logs, the banner, and the board with the red star by the way in. It is the
+29th's tank yard's size, 156 by 124, and makes the T-34/76. On a beach whose landing side builds out of
+the craft it is a tank yard post (`craftPostFaces`).
+
+**The T-34/76** (`sv_t34`, out of the Tankovyy park, 310 manpower, 80 fuel, 30 seconds, 13 of
+population, F) is the Red Army's medium tank: 700 hit points, 88 mm of plate across the hull's front, 45
+at the sides and 40 at the back and 65 round the turret (`ARM`), 96 of speed and 360 of sight, the 76 mm
+F-34 at 135 a round every 3.4 seconds out to 380 with 95 mm of penetration, a coaxial DT (`sec`) and no
+upgrades; it tows a gun, and a squad rides on its engine deck (`riders`, below). Those are the row's
+numbers as it was pasted.
+
+It is laid over a four-view of the 1941 tank (`tools/ref/sv_t34.json`) whose scale bar reads 154 px/m.
+At that scale it is the published 3.00 m wide and 2.36 m to the top of the periscope on the turret
+against a published 2.40; its road wheels come out at 0.77 m where the published wheel is 0.83 and the
+hull at 6.2 m over the fenders where the published length is 5.92, and the drawing was taken in both. The
+views disagree about where the turret's foot stands by about a unit (the side view has the bustle's lower
+edge a unit and a half over the hull roof, the front view the walls' foot on it), and the turret stands
+on the roof. The first overlay agreed with the drawing to about a line width in all four views, running
+gear, hull, turret, mantlet and fittings. On `tools/dims.mjs` it reads 6.19 m long against 5.92, 6.66
+with the gun against 6.62, 3.00 wide, 2.35 high against 2.40, 2.52 across the feet of the side plates
+and 1.85 across the roof against the drawing's 2.53 and 1.85, and 0.40 of clearance; the width at the
+sponson is measured with a straddling slice above the fenders and the roof with one just over it, because
+`aoSplit` cuts the side plate into pieces and a straddling piece gives its widest point.
+
+What carries it (`tt` and `TTG`, `TTH`, `TTT`; the paint is the T-20's `TZC`, aliased as `TTC`): five big
+road wheels a side, each two pressed discs on rubber tyres vented through a ring of holes either side of
+the guide horns, with the ridge and the hub's bolts on the outer face (`ttWheel`), on the arms of the
+Christie suspension, whose springs are inside the hull; no return rollers, so the top run lies on the
+tops of the wheels (`ttPulleys` walks the wheels twice, under the bottom run and under the top); the idler
+in front, two discs with six holes in each (`ttIdler`); the sprocket behind, two discs with six big holes
+and the rollers between their rims that drive the horns, on the final drive in its drum out of the lower
+rear plate (`ttSprocket`); and a track that alternates its links, a cast shoe with the waffle of its
+grousers and every other one carrying the horn (`ttLink`, laid by `beltLink` with a period of two). The
+hull (`ttBody`) is the lower hull between the tracks extruded along its own profile, the nose plate and
+the lower rear plate with it, and over it the upper hull: the side plates leaning in forty degrees from the
+fenders to the roof, the glacis laid back sixty degrees from the nose to the roof across the whole width,
+and the upper rear plate leaning in at the back, so each meets the side plates along a diagonal, which is
+the joint every plan of the tank shows. Anything on a plate goes on in its frame (`ttOnGl`, `ttOnSide`,
+`ttOnRear`): the driver's hatch on the left of the glacis with its two vision blocks, the DT's ball in its
+armoured housing on the right, the headlamps on their stalks at its top corners and the towing hooks by
+the nose (`ttFront`); two long stowage boxes on each side plate and the aerial at the front of the right
+(`ttSides`); the grille across the back of the engine deck, the raised engine cover with its louvred
+sides and its hatch, the intakes along the roof's edges and the filler caps (`ttDeck`); and on the rear
+plate the two exhausts under their horseshoes of armour, left out of the bake (`m8Lit`), which turned
+them black, the round-cornered access hatch between them and the towing eyes (`ttRear`). The fenders are
+a shelf along each side over the track, rounded down over the idler on a strut in front and drooping
+over the sprocket behind (`ttFenders`).
+
+The turret (`ttTurret`) is lofted between its plan at its foot and its plan at its roof, both read off the
+drawing's plan (`TTT.base`, `TTT.roof`, sampled as rays out of the ring's centre by `ttRing`), so it is
+long, rounded behind and leaning in hard all round. The mantlet's housing is a plate bent round a U from
+the roof over the gun and down under it, standing out of the front (`m4Sweep`, written from the top down,
+because written from the bottom up it rendered black, which is the gotcha the M4A1's shield already
+records); in front of it the cast mantlet, the F-34's sleeve, tube and muzzle lip, and the coaxial DT
+through the housing on the right. The vision blocks stand in their armoured boxes on the cheeks over the
+pistol ports (`ttWallAt` hands back the wall at a bearing and a height with its normal), the bolted plate
+is on the back, and on the roof the periscope in its cover on the left, the ventilator's dome and the
+lifting eyes. The one big hatch over the back of the roof is a trapezoid widening forward, hinged at its
+front edge (`ttHatch`), and opened it swings up and over until it stands a little past upright in front
+of the commander, who stands in the opening on the left in the padded helmet (`sv_crew`). **In the
+periscope that hatch is left out** (`pov: false` on `HATCHES`, read as `povLeaf`): upright a foot in front
+of the commander's eye it filled the whole of the view, which is the complaint every crew made of it and
+no use to a player. The room under it (`VIN.sv_t34`) is laid out round the commander, who lays the gun as
+well: the basket down to the hull floor, the wall stopping at his chest and the roof hanging low over his
+head, the F-34's breech with the coaxial DT on its right, his telescope, his two handwheels and his seat
+on the left, the loader's seat across the breech, a dozen rounds in clips round the back of the wall and
+the boxes on the floor under their mat. The seated crew in a room are the army's own crewmen now
+(`drawInterior` picks `sv_crew` for the Red Army). His eye is 6.1 over the roof head out and drops to 5.2
+over the turret ring when the lid shuts.
+
+**A tank can carry its squad on the outside** (`def.riders`). The T-34 does: a squad of infantry ordered
+onto it, by the same right-click onto a friendly vehicle that boards a carrier, climbs onto the engine deck
+rather than into the hull. `u.ride` is the flag, beside `u.inside`, and the vehicle's `cargo` is the
+squad either way, so the Unload card, one squad to a vehicle and the refusal of a second are the
+carrier's (`liftOf` is whether a vehicle takes a squad at all). Where `inside` takes a squad out of the
+world, `ride` leaves it in it: the men are seen, shot at and shooting the whole time. `rideModels` kneels
+each living man at a place on the deck (`RIDE`, in the hull's frame, round the engine cover and clear of
+where the turret's overhang sweeps), put there through the hull's own matrix (`vehFrames`) so he goes
+where the tank goes and lies over with it, at the deck's height (`m.rz`, which `manZ` reads for the
+drawing, the shadow and the muzzle); he turns to what the squad is shooting at and fires kneeling
+(`POSE_CFIRE`). The squad does not walk (`moveUnit`), is pushed by nothing and pushes nothing (`unwedge`,
+`manNear`, the steering), and **takes full damage**: `coverOf` gives it none, and a burst asks no cover and
+no lee of its men. A move order with the tank in it leaves the squad aboard (`orderMove`, `issueOrder`),
+and an attack order with the tank in it leaves it to fire at what is in reach; any other order gets it down
+behind the tank, and so do an order to attack something out of its reach and a retreat. Killed, the tank
+throws its riders off, a fifth hurt and pinned, and a squad killed on the deck frees it (`killUnit`). A
+click on the tank picks the tank, because a riding squad is its men and not its ring (`hitsUnit`,
+`nearOwnDist`). One thing it does not do: the gun traversed over the tail sweeps through the men on the
+deck, as it did on the real tank, and nothing stops it.
+
+On the duel card the row's numbers make it a tank for men and light armour and not for other tanks.
+Over twenty-four runs head on it takes the Panzer IV none of the time, the tank left with 54 per cent of
+itself, where the M4A1 on the same afternoon takes it 38 per cent of the time: at the 312 the pair are
+staged at, the F-34's 95 mm has lost a fifth of itself and is 76 against the Panzer IV's 82 of hull
+front, and the KwK 40 goes through the T-34's 88 every time. Over twelve runs a row it takes a Panther
+none of the time (the Panther left at nine tenths) and the StuH 42 none of the time, and a Pak 38 sited
+at 312 takes it every time in 16 seconds; it takes the grenadier squad every time in 7.6 seconds without
+losing a hit point, the Knight's Cross Holders every time in about 7 seconds with seven tenths of itself
+left at 189 and three quarters at 130, the Wirbelwind every time in 25 seconds and the Puma every time in
+14 with half of itself left. The penetration is the lever: at the M4A1's 104 it would open a Panzer IV's
+front about as often as the M4A1 does.
+
 The brain on the Soviet slot builds the Kazarma as its first building (`K.b1`) and buys a T-20 out of
 it (`LADDER`, one): `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
 reads, because the other two armies' armour waits for the second. It builds the Avtopark second
 (`K.b2`), saving for it the way the other armies save for their motor pools, and buys one BA-64B out of
-it, the rung opening at 210 seconds as the M3 half-track's does across the beach. The post's own shopping (the machine gun, the
+it, the rung opening at 210 seconds as the M3 half-track's does across the beach. It builds the Tankovyy
+park third (`K.b3`) and buys two T-34s out of it, the rung opening at 310 seconds as the M4A1's does, and
+more as the count of mediums allows; `aiCutLadder` reads the T-34 as a medium and the T-20 and the BA-64B
+as light armour. It puts nobody on the deck. The post's own shopping (the machine gun, the
 mortar, the assault squad) runs once the first building stands, so it now runs for an army that has
 none of them: a key the army has not got is a thing it cannot buy (`canPost`), where it threw.
 
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
 brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders and
-as its line, has a T-20 and a BA-64B on its shopping ladder, digs no battery and lays a minefield every fourth work.
+as its line, has a T-20, a BA-64B and the T-34s on its shopping ladder, digs no battery and lays a minefield every fourth work.
 **And an army whose only infantry is its builder fights with it.** Every rule that leaves an
 engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
 engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
@@ -7569,9 +7694,9 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 2 | Motor Pool (`us_mot`, 240 and 30 fuel) | Kraftfahrpark (`ger_dep`) | M8, M3, M16, 75 mm GMC, M7 Priest, 105, 3-inch / 234/1, Puma, 251, Wirbelwind, Marder III, Wespe, leFH 18, Nebelwerfer |
 | 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, Calliope, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
-The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and two tiers over it so far, the Kazarma
-(`sov_bar`, 200), which makes the T-20, and the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
-BA-64B; its third tier comes with its rows. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
+The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and three tiers over it, the Kazarma
+(`sov_bar`, 200), which makes the T-20, the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
+BA-64B, and the Tankovyy park (`sov_tank`, 300 and 60), which makes the T-34/76. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
 building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
 order sent to the wrong building of an AI to the right one, because a brain out of an older revision
@@ -9541,6 +9666,12 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A squad on a tank's deck is in the world.** `u.inside` was the one flag that took a squad off
+  the field, and every system that skips a squad aboard a carrier asks it; a riding squad (`u.ride`)
+  is not inside, so it is seen, shot at and shooting, and anything that has to leave it alone has to
+  ask `u.ride` as well: `moveUnit`, `unwedge`, `manNear` and the steering, which would otherwise push
+  the squad off the tank it stands on, and `coverOf` and `explode`, which would otherwise give its men
+  the cover on the ground under the tank.
 - **A block of the brain written for one army's buildings runs for every army that has them.** The
   barracks' shopping list read its mortar's price straight off `UNITS[K.mor]`, which was safe while
   only the 29th and the 352nd had a first building; the Red Army's Kazarma made the block run for an

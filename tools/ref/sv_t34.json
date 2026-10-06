@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_t34.png", "key": "sv_t34", "prop": "ttShow", "args": [],
+  "note": "A four-view of the T-34/76 of 1941 with the welded turret, the L-11's successor the F-34 and the cast mantlet. Its scale bar reads 154 px/m, and at that scale the width comes out at the published 3.00 m and the top of the periscope on the turret at 2.36 m against a published 2.40. The front view's ground is off the foot of the sheet, so the two end views are pinned on the middle of the hull's roof edge.",
+  "views": {
+    "side":  { "nose": "right", "crop": [15, 110, 1045, 400], "ppm": 154, "at": [0, 0, 0], "px": [507, 496], "k": 1.5 },
+    "plan":  { "nose": "right", "crop": [15, 535, 1045, 470], "ppm": 154, "at": [0, 0, 0], "px": [507, 770], "k": 1.5 },
+    "front": { "crop": [10, 1020, 480, 381], "ppm": 154, "at": [0, 0, 17.78], "px": [245, 1157], "k": 2 },
+    "rear":  { "crop": [515, 1020, 490, 381], "ppm": 154, "at": [0, 0, 17.78], "px": [760, 1157], "k": 2 } } }

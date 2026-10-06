@@ -108,6 +108,12 @@ const REAL = {
                the turret and 210 mm under the axles. The drawing it is laid over (tools/ref/sv_ba64.json) agrees
                with the wheelbase, the width and the track at one scale, and at that scale it is 3.64 m from the
                nose to the spare and 1.87 m to the rim */
+  sv_t34:    { name: 'T-34/76',             len: 5.92,  gun: 6.62,   wid: 3.00,  hgt: 2.40,
+               body: 2.53, bodyZ: 1.20, roof: 1.85, clear: 0.40 },   /* the published 5.92 m of hull, 6.62 m over
+               the gun, 3.00 m wide, 2.40 m high and 400 mm of clearance. The drawing it is laid over
+               (tools/ref/sv_t34.json) agrees with the width at its own scale bar, and at that scale it is 6.2 m over
+               the fenders and 2.36 m to the top of the periscope on the turret; the body across the feet of the side
+               plates and the roof between their tops are the drawing's */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -220,6 +226,10 @@ const PROBE = {
                casemate's height, and tailX the silencer across the tail out of the length */
   hr_marder: { hullZ: 30.0 },   /* hullZ holds the two aerials out of the height, which is to the shield */
   sv_t20:    { noMount: true, hullZ: 18.9 },   /* the mount is a ball in the front plate, and hullZ holds the open door out */
+  sv_t34:    { bodyZ: 14.0, roofZ: 17.9, xLo: -20.0, xHi: -16.0, straddle: true, hullZ: 30.0 },   /* the slice is
+               taken over the engine, behind the boxes on the side plates, above the fenders; a side plate
+               straddling it gives its foot, and the roof's slice is just over the roof, where only its edge
+               reaches; hullZ holds the aerial out */
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },
