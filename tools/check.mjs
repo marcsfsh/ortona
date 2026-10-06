@@ -5003,8 +5003,19 @@ for (const device of TARGETS) {
       G.units.length = 0; saved.forEach(u => G.units.push(u));
       G.shots.length = 0;
     }
-    /* the five of them, set up and walking */
-    const at = W.nearestFree(hq.x + 120, hq.y - 320);
+    /* the five of them, set up and walking, on open sand: the row is about where each man
+       stands round the gun, and with cover in reach the loader keeps the slot beside his
+       gunner instead, which on one phone run was a shell hole the battle had left. The spot
+       is asked again after the drill, whose rounds dig holes of their own. */
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x + 120, y0 = st ? st.ay : hq.y - 320;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.openSand = !!at;
+    if (!at) at = W.nearestFree(hq.x + 120, hq.y - 320);
     const u = W.spawnUnit('us', 'am_at', at.x, at.y, 0);
     out.count = W.countOf('us', 'am_at') >= 1;
     out.men = u.models.length;
@@ -5024,6 +5035,7 @@ for (const device of TARGETS) {
     out.loaderRight = r1[1] > 2 && r1[0] < -6;
     out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -14);
+    out.why = (out.openSand ? 'on open sand' : 'NO open sand found') + (u.coverSlots ? ', in cover' : '') + (u.target ? ', a target' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.am_at;
     const mz = W.muzzlePoint(u, u.models[0], 0);
     out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
@@ -5074,7 +5086,8 @@ for (const device of TARGETS) {
        `and the tank ${b57 ? 'answered at ' + b57.t + ' s from ' + b57.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${at57.men} men, every variant, the served bodies and the three meshes ${at57.baked ? 'baked' : 'NOT baked'}; halted ` +
      `${at57.set ? 'set up' : 'NOT set up'} as ${at57.setVars} in poses ${at57.poses}, the loader at ${at57.loader} ` +
-     `${at57.loaderRight ? 'on the right' : 'NOT on the right'} and ${at57.loaderFaces ? 'facing the breech' : 'NOT facing it'}, the bearers ` +
+     `${at57.loaderRight ? 'on the right' : 'NOT on the right'} and ${at57.loaderFaces ? 'facing the breech' : 'NOT facing it'}` +
+     `${at57.loaderRight && at57.loaderFaces ? '' : ' (' + at57.why + ')'}, the bearers ` +
      `${at57.bearers === 'cover' ? 'in cover' : at57.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${at57.mesh ? 'open' : 'WRONG'}, ` +
      `the flash ${at57.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's box ${at57.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${at57.packMesh ? 'closed' : 'NOT closed'} and the piece ${at57.runs} from the gunner; killed went down as ${at57.bodyNat}, bodies ` +
@@ -5157,8 +5170,17 @@ for (const device of TARGETS) {
       G.units.length = 0; saved.forEach(u => G.units.push(u));
       G.shots.length = 0;
     }
-    /* the five of them, set up and walking, on the same open sand */
-    const at = st ? { x: st.ax, y: st.ay } : W.nearestFree(uhq.x + 120, uhq.y - 320);
+    /* the five of them, set up and walking, on open sand asked again after the drill, as the
+       57's are, because with cover in reach the loader keeps the slot beside his gunner */
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : uhq.x + 120, y0 = st ? st.ay : uhq.y - 320;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.openSand = !!at;
+    if (!at) at = W.nearestFree(uhq.x + 120, uhq.y - 320);
     const u = W.spawnUnit('ger', 'hr_pak', at.x, at.y, 0);
     out.count = W.countOf('ger', 'hr_pak') >= 1;
     out.men = u.models.length;
@@ -5178,6 +5200,7 @@ for (const device of TARGETS) {
     out.loaderRight = r1[1] > 2 && r1[0] < -6;
     out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -12);
+    out.why = (out.openSand ? 'on open sand' : 'NO open sand found') + (u.coverSlots ? ', in cover' : '') + (u.target ? ', a target' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.hr_pak;
     const mz = W.muzzlePoint(u, u.models[0], 0);
     out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
@@ -5228,7 +5251,8 @@ for (const device of TARGETS) {
        `and the tank ${bpk ? 'answered at ' + bpk.t + ' s from ' + bpk.d : 'never fired'}; ` : 'NO open sand to stage the drill on; ') +
      `${pk38.men} men, every variant, the served bodies and the three meshes ${pk38.baked ? 'baked' : 'NOT baked'}; halted ` +
      `${pk38.set ? 'set up' : 'NOT set up'} as ${pk38.setVars} in poses ${pk38.poses}, the loader at ${pk38.loader} ` +
-     `${pk38.loaderRight ? 'on the right' : 'NOT on the right'} and ${pk38.loaderFaces ? 'facing the breech' : 'NOT facing it'}, the bearers ` +
+     `${pk38.loaderRight ? 'on the right' : 'NOT on the right'} and ${pk38.loaderFaces ? 'facing the breech' : 'NOT facing it'}` +
+     `${pk38.loaderRight && pk38.loaderFaces ? '' : ' (' + pk38.why + ')'}, the bearers ` +
      `${pk38.bearers === 'cover' ? 'in cover' : pk38.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${pk38.mesh ? 'open' : 'WRONG'}, ` +
      `the flash ${pk38.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${pk38.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${pk38.packMesh ? 'closed' : 'NOT closed'} and the piece ${pk38.runs} from the gunner; killed went down as ${pk38.bodyNat}, bodies ` +
