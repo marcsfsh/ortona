@@ -9168,6 +9168,42 @@ function rideModels(u, dt) {
     if (m.fireQ > 0) { m.fireQ -= dt; if (m.fireQ <= 0) { m.fire = .085; m.fireQ = 0; } }
   }
 }
+/* Where a squad aboard a vehicle sits when it can be seen there (`SEATS`): the hip of each man
+   in the hull's own frame, x, y and z, and the way he faces off the hull's bearing. The T-20's
+   six are its two rows of three cushions back to back, each man facing outward with his feet
+   on the rail; the first four go two a row so that a squad of four fills both sides. */
+var SEATS = {
+  sv_t20: [[-6.8, 5.1, 16.7, Math.PI / 2], [-6.8, -5.1, 16.7, -Math.PI / 2], [-12.93, 5.1, 16.7, Math.PI / 2],
+           [-12.93, -5.1, 16.7, -Math.PI / 2], [-.67, 5.1, 16.7, Math.PI / 2], [-.67, -5.1, 16.7, -Math.PI / 2]]
+};
+/* The men of the squad aboard on those seats, each with the buffer he is drawn from and the
+   matrix he is drawn at, off the hull's own frame, so they go where it goes and lie over with
+   it. It is a picture and no more: the squad is aboard the way any squad aboard is, out of the
+   fight, and nothing of it is put back into the world. The men are drawn at the vehicle's own
+   scale and not a phone's fifth over, as its commander is: a fifth bigger, his feet went down
+   past the rail and his knees over the next man's. The draw and the shadow pass both ask here,
+   and so does the gate. */
+function seatMen(v, hmat) {
+  var S = SEATS[vkey(v)], u = v.cargo, out = [], j = 0, k, sc = 1;
+  if (!S || !u || u.inside !== v || !MODELS.man) return out;
+  for (k = 0; k < u.models.length; k++) {
+    var m = u.models[k]; if (!m.alive) continue;
+    var st = S[j++ % S.length], vr = variantForModel(u, k), T = MODELS.man[vr], buf = T && T[POSE_RIDE];
+    if (!buf || buf.frames) continue;
+    var J = MODELS.rideJ[vr], hz = J && J.hip ? J.hip[2] : 6.05;
+    out.push({ m: m, v: vr, buf: buf, mat: m4mul(hmat, m4model(st[0], st[1], st[2] - hz * sc, st[3], sc)) });
+  }
+  return out;
+}
+function seatDraw(v, hmat, tint, depth) {
+  var L = seatMen(v, hmat), i;
+  for (i = 0; i < L.length; i++) {
+    if (depth) { drawDepthGeom(L[i].buf, L[i].mat); continue; }
+    var t = L[i].m.tint || 1;
+    _mt[0] = tint[0] * t; _mt[1] = tint[1] * t; _mt[2] = tint[2] * t;
+    drawGeom(L[i].buf, L[i].mat, false, _mt);
+  }
+}
 /* how high a man stands: on the ground, or on the deck of the tank he is riding */
 function manZ(m) { return m.rz !== undefined ? m.rz : groundZ(m.x, m.y); }
 function updateModels(u, dt) {
@@ -42704,6 +42740,7 @@ var WEAP = {
    offset for the head. One table drives the builder, the bake, the muzzle table, the
    eye table and the card, so none of them can hold a different idea of what a kneel is.
    `legs` is [left, right] and the left leg is at -hipY, which is screen left. */
+var RIDE_LEG = [1.77, -1.40, -.30, -.08];
 var FIGPOSE = {
   stand:  { legs: [[.10, -.10, 0], [-.06, .06, 0]], lean: .04, carry: 'ready' },
   ready:  { legs: [[.45, -.45, 0], [-.25, -.10, .35]], lean: .16, carry: 'lowready', blade: .25 },
@@ -42711,6 +42748,9 @@ var FIGPOSE = {
   kneel:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .10, carry: 'ready' },
   kfire:  { legs: [[1.55, -1.55, 0], [-.12, -1.45, -1.2]], lean: .10, carry: 'aim', blade: .35, head: [.4, 1.3, -.3] },
   seat:   { legs: [[1.50, -1.50, 0], [1.50, -1.50, 0]], lean: .05, carry: 'tiller' },
+  /* a man riding on a vehicle's seats with his feet on a rail lower than the cushion and
+     out past it, so his knees come up a little, and his weapon across his chest */
+  ride:   { legs: [[RIDE_LEG[0], RIDE_LEG[1], RIDE_LEG[2]], [RIDE_LEG[0], RIDE_LEG[1], RIDE_LEG[2]]], lean: RIDE_LEG[3], carry: 'port' },
   sit:    { legs: [[1.90, -.72, 0], [1.90, -.72, 0]], lean: .10, carry: 'grips', grips: [5.8, .9, 3.8] },
   /* the Browning and the fifty go on tripods a foot and a half off the ground, so the man
      laying one sits behind it with his legs out and leans well into it */
@@ -45742,7 +45782,7 @@ function crewman(side, yaw, x, y, z) {
    the builder has to change for the crouch being retired. */
 var POSE_STAND = 0, POSE_WALK = 1, POSE_CROUCH = 2, POSE_FIRE = 3, POSE_CFIRE = 4,
     POSE_PRONE = 5, POSE_CRAWL = 6, POSE_RUN = 7, POSE_READY = 8, POSE_SEAT = 9,
-    POSE_SIT = 10, POSE_SERVED = 11, POSE_THROW = 12, POSE_THROWB = 13;
+    POSE_SIT = 10, POSE_SERVED = 11, POSE_THROW = 12, POSE_THROWB = 13, POSE_RIDE = 14;
 /* how long the second frame of a throw is held: the wind-up shows until then, and the
    grenade leaves the hand on the frame it changes */
 var THROW_REL = .22;
@@ -45890,7 +45930,7 @@ function bakeMen() {
   MODELS.freed = 0;
   MANBUF.forEach(function (bf) { freeBuffer(bf); MODELS.freed++; });
   MANBUF = []; MANQ = [];
-  MODELS.man = {}; MODELS.muz = {}; MODELS.eye = {}; MODELS.fall = {}; MODELS.dead = {}; MODELS.hold = {}; MODELS.nan = 0;
+  MODELS.man = {}; MODELS.muz = {}; MODELS.eye = {}; MODELS.fall = {}; MODELS.dead = {}; MODELS.hold = {}; MODELS.rideJ = {}; MODELS.nan = 0;
   var buf = manBuf, body = {};
   Object.keys(SOLDIER_VARIANTS).forEach(function (v) {
     var V = SOLDIER_VARIANTS[v], T = MODELS.man[v] = {}, MZ = MODELS.muz[v] = {}, EY = MODELS.eye[v] = {};
@@ -45898,7 +45938,10 @@ function bakeMen() {
     var HD = V.carrier || V.can || V.lafback ? (MODELS.hold[v] = {}) : null;
     var tabs = HD ? [T, MZ, EY, HD] : [T, MZ, EY];
     function one(pose, P) {
-      manLazy(tabs, pose, function () { var r = manFaces(v, P); T[pose] = buf(r); MZ[pose] = r.muzzle; EY[pose] = r.eye[2]; if (HD) HD[pose] = r.hold; });
+      manLazy(tabs, pose, function () {
+        var r = manFaces(v, P); T[pose] = buf(r); MZ[pose] = r.muzzle; EY[pose] = r.eye[2]; if (HD) HD[pose] = r.hold;
+        if (pose === POSE_RIDE) MODELS.rideJ[v] = r.joints;
+      });
     }
     function cycle(pose, G, n, len) {
       manLazy(tabs, pose, function () {
@@ -45917,6 +45960,8 @@ function bakeMen() {
     /* a gunner serves the piece with both hands and has no aimed pose of his own, and a
        man carrying it has his hands full */
     if (V.set === 'gunner' || V.set === 'carry') return;
+    /* and only a squad sits on a vehicle's seats, baked the first time one boards */
+    one(POSE_RIDE, FIGPOSE.ride);
     one(POSE_READY, stanceOf(v, 'ready')); one(POSE_FIRE, stanceOf(v, 'fire')); one(POSE_CFIRE, stanceOf(v, 'kfire'));
     /* a man who throws is baked winding up and letting go, once with a stick grenade in
        his hand and once with the bundle charge */
@@ -45985,7 +46030,7 @@ function manWarm(key) {
   var d = UNITS[key];
   variantsOf(key).forEach(function (v) {
     var T = MODELS.man[v];
-    if (T) Object.keys(T).forEach(function (p) { MANQ.push([T, p]); });
+    if (T) Object.keys(T).forEach(function (p) { if (+p !== POSE_RIDE) MANQ.push([T, p]); });
   });
   [key].concat(Object.keys(d.gunUp || {}).map(function (uk) { return key + ':' + uk; })).forEach(function (k) {
     if (MODELS.served && Object.prototype.hasOwnProperty.call(MODELS.served, k)) MANQ.push([MODELS.served, k]);
@@ -50306,6 +50351,7 @@ function castUnit(u) {
     drawDepthGeom(duk && B.turUp[duk] ? B.turUp[duk] : B.tur, tm2);
     elvDraw(u, B, M, tm2, null, true);
     if (B.crew) drawDepthGeom(B.crew, hm2);
+    if (u.cargo) seatDraw(u, hm2, null, true);
     var tcd = turCrewOf(u, B);
     if (tcd) drawDepthGeom(tcd, tm2);
     if (u.up) for (dk in u.up) if (u.up[dk] && B.addUp[dk]) drawDepthGeom(B.addUp[dk], hm2);
@@ -50468,6 +50514,8 @@ function drawUnits3D(v, list) {
       if (shut !== 'tur') { drawGeom(cuk && B.turUp[cuk] ? B.turUp[cuk] : B.tur, tmat, false, vt); elvDraw(u, B, M, tmat, vt); }
       /* the men riding in an open vehicle; in the periscope the one at the gun is the player */
       if (B.crew) drawGeom(B.crew, hmat, false, vt);
+      /* and a squad aboard a vehicle whose seats can be seen, on them */
+      if (u.cargo) seatDraw(u, hmat, vt, false);
       /* a man who stands up to the roof gun when it is fitted is not also at his station */
       var tcb = turCrewOf(u, B);
       if (tcb && u !== povHost) drawGeom(tcb, tmat, false, vt);

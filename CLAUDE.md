@@ -1433,8 +1433,9 @@ walked across it and holds a 251 driven across it, with the German brain switche
 so that the half-track goes where it is sent. And the fourth row asks the Kazarma and the T-20: the
 sapper's card offers the Kazarma, which makes the T-20 and queues it, the Shtab refuses the tractor,
 every buffer is built and it is named the Komsomolets T-20, its DT asked to lay 1.2 radians off the
-nose stops at the edge of twenty degrees, it takes one squad and refuses a second and tows, the
-commander wears the padded helmet and none of the SSh-40 and is the eye, two to six units over the
+nose stops at the edge of twenty degrees, it takes one squad and refuses a second and tows, every man
+of the squad aboard is drawn on a cushion facing outward with his feet out at the rail and none once
+it has got down, the commander wears the padded helmet and none of the SSh-40 and is the eye, two to six units over the
 roof, a Kar98k never goes through its front and a Pak 38 always goes through its side, forty wrecks
 throw nothing and sit down, killed it leaves two bodies of the army's crewmen, and a brain on his
 slot with a Kazarma standing queues a T-20 there inside forty seconds. The fifth asks the Avtopark and
@@ -6582,8 +6583,20 @@ rows carrying them, so from the front or the back the two stand together as a ri
 men's feet runs along each side on four brackets, turned in to the body at both ends.
 
 The mount is the ball and the DT (`tzMount`), built about the ball's centre, which is what turns; the
-model is `fixed`, so a wreck throws nothing. The squad aboard goes out of sight the way it goes into
-the Weasel and is not drawn on the seats. The commander is `sv_crew`, the gymnastyorka with a belt
+model is `fixed`, so a wreck throws nothing. **The squad aboard sits on the seats** (`SEATS`, `seatMen`,
+`seatDraw`): each living man on a cushion, the first four two a row, facing outward with his feet on
+the rail at the men's feet and his weapon across his chest (`POSE_RIDE`, `FIGPOSE.ride`, baked the first
+time a squad boards and kept out of the warm queue, so a battle nobody boards in bakes none of it),
+drawn and shadowed in the hull's own frame so the men go where it goes and lie over with it, and at the
+vehicle's own scale, as its commander is, where a man on the ground is drawn a fifth over on a phone:
+at a fifth over, the feet went down past the rail. The pose was set by counting the figure's vertices
+inside the deck, the cushion, the backrest and the rail over a grid of leg angles: the thigh 1.77 from
+plumb, the knee bent 1.40 and the foot turned back .30, which puts the sole a tenth of a unit over the
+rail with the heel inside it and nothing of him in the plates (`RIDE_LEG`). It is a
+picture and no more: the squad is aboard the way a squad in the Weasel is, out of the fight, with
+nothing of it in the world, and the T-34's riders are the ones that shoot and are shot. It was not
+drawn at all at first, and a player noticed a tractor whose six seats stayed empty with a squad on it.
+The commander is `sv_crew`, the gymnastyorka with a belt
 and a pistol and nothing a hatch would catch, under the padded tanker's helmet, the shlemofon
 (`helmetShlem`: a leather cap close over the head with three padded rolls front to back over the crown
 and one round the brow, the ear flaps with the earphones in them and the strap under the chin), and

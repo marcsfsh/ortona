@@ -8008,6 +8008,18 @@ for (const device of TARGETS) {
     out.tur = +t.turret.toFixed(3);
     const s1 = W.spawnUnit(own, 'sv_sap', t.x + 30, t.y + 40, 0), s2 = W.spawnUnit(own, 'sv_sap', t.x - 30, t.y + 40, 0);
     W.boardVehicle(s1, t); out.t1 = t.cargo === s1; out.t2 = W.canBoard(s2, t); out.tows = !!t.def.tows;
+    /* and the squad aboard is drawn on the seats: every living man on a cushion, his hip at
+       its height, facing outward with his feet out at the rail, read in the hull's own frame */
+    const I4 = W.m4model(0, 0, 0, 0, 1), H = W.TZH, sm = W.seatMen(t, I4);
+    out.aboard = s1.models.filter(m => m.alive).length; out.seated = sm.length;
+    out.seats = sm.map(e => {
+      const J = W.MODELS.rideJ[e.v], h = W.m4apply(e.mat, J.hip[0], J.hip[1], J.hip[2]),
+            a = W.m4apply(e.mat, J.ankleR[0], J.ankleR[1], J.ankleR[2]);
+      return [+h.z.toFixed(1), +Math.abs(h.y).toFixed(1), +Math.abs(a.y).toFixed(1), +a.z.toFixed(1)];
+    });
+    out.seatOk = sm.length > 0 && out.seats.every(r => Math.abs(r[0] - H.zCush - 1.2) < .3 && r[1] > H.yCush[0] && r[1] < H.yCush[1] &&
+                                                       r[2] > H.half && r[2] < H.half + 2 && r[3] > 12.2 && r[3] < 14.6);
+    W.unloadVehicle(t); out.unseated = W.seatMen(t, I4).length; W.boardVehicle(s1, t);
     const K = W.KIT.sov, V = W.VMODEL.sv_t20;
     out.shlem = V.crew.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
     out.ssh = V.crew.filter(f => f.c === K.helm || f.c === K.helmD).length;
@@ -8047,13 +8059,16 @@ for (const device of TARGETS) {
      kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_t20' && kz.bname === 'Kazarma' && kz.bld > 100 &&
      kz.q === 'sv_t20' && kz.qHq === 'refused' && kz.bufs && kz.name === 'Komsomolets T-20' &&
      kz.arc === .7 && Math.abs(Math.abs(kz.tur) - kz.arc / 2) < .03 && kz.t1 && !kz.t2 && kz.tows &&
+     kz.aboard === 4 && kz.seated === kz.aboard && kz.seatOk && kz.unseated === 0 &&
      kz.shlem > 0 && kz.ssh === 0 && kz.paint > 0 && kz.eye > kz.roof + 2 && kz.eye < kz.roof + 6 &&
      kz.rifle === 0 && kz.pak === 1 && kz.blown === 0 && kz.sink > 0 && kz.bodies === 2 && kz.bodyNat === 'sov' && kz.baked &&
      /sov_bar:sv_t20/.test(kzAi.q),
      `the card ${kz.cards.indexOf('KAZARMA') >= 0 ? 'offers' : 'does NOT offer'} the Kazarma; the ${kz.bname} makes ${kz.makes} ` +
      `(${kz.bld} faces) and queues ${kz.q}, the Shtab ${kz.qHq} it; buffers ${kz.bufs ? 'built' : 'MISSING'}; named ${kz.name}; ` +
      `asked for 1.2 the DT laid ${kz.tur} on an arc of ${kz.arc}; it ${kz.t1 ? 'took' : 'REFUSED'} a squad and ` +
-     `${kz.t2 ? 'TOOK' : 'refused'} a second, ${kz.tows ? 'tows' : 'DOES NOT TOW'}; the commander has ${kz.shlem} faces of the padded ` +
+     `${kz.t2 ? 'TOOK' : 'refused'} a second, ${kz.tows ? 'tows' : 'DOES NOT TOW'}; ${kz.seated} of the ${kz.aboard} aboard on the ` +
+     `seats (hip z, hip y, ankle y, ankle z: ${JSON.stringify(kz.seats)})${kz.seatOk ? '' : ' OFF THEIR SEATS'}, ${kz.unseated} after ` +
+     `they got down; the commander has ${kz.shlem} faces of the padded ` +
      `helmet and ${kz.ssh} of the SSh-40, the hull ${kz.paint} of its green; the eye at ${kz.eye} over a roof at ${kz.roof}; ` +
      `a Kar98k through the front ${kz.rifle} and a Pak 38 through the side ${kz.pak}; forty wrecks threw ${kz.blown} and sat ` +
      `down ${kz.sink}; killed it left ${kz.bodies} bodies of ${kz.bodyNat}, ${kz.baked ? 'baked' : 'NOT BAKED'}; a brain with ` +
@@ -8220,8 +8235,11 @@ for (const device of TARGETS) {
     W.killUnit(r2);
     for (let i = 0; i < 4; i++) { W.updateUnit(r, .05); W.updateModels(r, .05); }
     t._matT = -1;
-    const deck = r.models.filter(m => m.alive && m.rz !== undefined && m.rz > W.groundZ(t.x, t.y) + 15 &&
+    /* each man against the ground under himself: on ground that slopes across the hull the men
+       on the low side are on the deck and lower than the ground under the tank's middle */
+    const deck = r.models.filter(m => m.alive && m.rz !== undefined && m.rz > W.groundZ(m.x, m.y) + 12 &&
       Math.abs((m.x - t.x) * Math.cos(t.facing) + (m.y - t.y) * Math.sin(t.facing)) < 30);
+    out.deckZ = r.models.filter(m => m.alive).map(m => +((m.rz === undefined ? NaN : m.rz) - W.groundZ(m.x, m.y)).toFixed(1)).join(',');
     out.onDeck = deck.length + '/' + r.models.filter(m => m.alive).length;
     out.cover = W.coverOf(r);
     W.__tp = { t, r, x0: t.x, y0: t.y };
@@ -8311,7 +8329,7 @@ for (const device of TARGETS) {
      `the commander has ${tp.shlem} faces of the padded helmet, the hull ${tp.paint} of its green; the eye in the ${tp.frame} at ` +
      `${tp.eyeUp} head out and ${tp.eyeIn} head in, over a roof at ${tp.roof}; a Kar98k through the front ${tp.rifle} and a ` +
      `Panzer IV ${tp.p4}; forty wrecks threw ${tp.blown} and sat down ${tp.sink}; a squad ${tp.ride ? 'rides' : 'does NOT ride'} ` +
-     `it with a second ${tp.second ? 'ALLOWED' : 'refused'}, ${tp.onDeck} men on the deck, cover ${tp.cover}; the tank drove ` +
+     `it with a second ${tp.second ? 'ALLOWED' : 'refused'}, ${tp.onDeck} men on the deck (${tp.deckZ} over the ground under them), cover ${tp.cover}; the tank drove ` +
      `${tp.drove} with the squad ${tp.with} off it; the riders fired ${tp.fired} rounds and took ${tp.hitE} off the grenadiers; ` +
      `a burst beside the tank took ${tp.burst} off them (${tp.stillOn}); in the tank's order they ${tp.stay ? 'stayed on' : 'GOT OFF'}, ` +
      `in their own they ${tp.down ? 'got down' : 'DID NOT'}; the tank killed under riders threw them ${tp.thrown}; killed it ` +
