@@ -7943,6 +7943,18 @@ for (const device of TARGETS) {
     const W = window, F = W.__mf, wk = W.G.works.find(w => w.mf === F.f);
     const r = { n: F.f.n, n0: F.n0, shown: wk ? W.mineShown(wk, 'ger') : true, hp0: F.hp0,
                 hp: Math.round(F.e.dead ? 0 : F.e.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0)) };
+    /* six men crossing a strip forty-four deep are on it for about fifteen of the mine ticks, so
+       they set off four of the five on average, and on one phone run all five: the half-track
+       then had nothing to drive into. It gets a field of its own where the first one was, with
+       the squad off the ground it drives over */
+    if (!F.e.dead) W.killUnit(F.e);
+    if (F.f.n <= 0) {
+      W.G.res[W.G.own].mp = Math.max(W.G.res[W.G.own].mp, 400);
+      const u2 = W.spawnUnit(W.G.own, 'sv_sap', F.s.x - 60, F.s.y, 0);
+      const site2 = W.placeWork(W.G.own, 'mines', F.s.x, F.s.y, 0, [u2]);
+      if (site2) { site2.prog = 1; W.updateSites(0); F.f = W.G.mines[W.G.mines.length - 1]; r.fresh = 1; }
+      W.killUnit(u2);
+    }
     if (F.f.n > 0) {
       /* the half-track goes along the strip and not across it: across its 44 units at speed
          it is inside for about four of the mine ticks and gets through two times in five,
@@ -7980,7 +7992,7 @@ for (const device of TARGETS) {
      `${fl1.fl} jets left the tubes, the furthest from ${fl1.far} units of the wall, ${fl1.jets} gouts drawn, the garrison ` +
      `left at ${fl1.hp} and ${fl1.gar ? 'STILL IN' : 'out'}, ${fl1.fire} cells alight; the minefield ` +
      `${mf0.none ? 'REFUSED' : `shown to us ${mf0.us} and to them ${mf0.ger}`}; walked across, ${mf1.n0 - mf1.n} mines went off ` +
-     `and the squad went from ${mf1.hp0} to ${mf1.hp} hp, the field then ${mf1.shown ? 'shown' : 'STILL HIDDEN'} to them; ` +
+     `and the squad went from ${mf1.hp0} to ${mf1.hp} hp, the field then ${mf1.shown ? 'shown' : 'STILL HIDDEN'} to them${mf1.fresh ? ', and a fresh one laid' : ''}; ` +
      `a 251 driven across lost ${mf2.lost}${mf2.dead ? ' and died' : ''} and was held for ${mf2.immob} s`);
 
   /* --- The Kazarma and the T-20. The sapper's card offers the Kazarma, which makes the T-20,
