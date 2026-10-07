@@ -2372,6 +2372,29 @@ var UNITS = {
     wUp: { he: { range: 600, dmg: 90, rof: 3.0, acc: .74, sup: .30, pen: 40, aoe: 45, shell: 1, brake: 1 } },
     desc: 'The Red Army\'s 76 mm divisional gun on its split trail, with a crew of six. The AP round goes after armour and nothing else; the HE round reaches further and goes after anything, men in the open, a crew or a house. Pick the round. Helpless if infantry get on top of it.'
   },
+  /* The 82-PM-41: the Red Army's battalion mortar, out of the Kazarma, with a crew of three. It
+     is a mortar as the 81 and the GrW 34 are (`indirect`, a fire mission and smoke), off its own
+     row: a little further on its own account and on a mission, a slightly bigger circle, and in
+     and out of action a half second quicker either way. The gunner kneels at the left of the
+     bipod with his hand on the elevating lever (`gunY`), which puts the plate behind him and to
+     his right (`gunAt` is negative), rather than kneeling on the plate, and the loader kneels at
+     the right of the tube facing it with his hands on it (`gunMate`). The man with the bombs
+     stands beside the gunner (`gunCrew`): behind the plate, his place was outside the circle the
+     crew is held to on a phone, where a man is a fifth bigger, and he stood where he was. It rides on the wheels on its bipod's
+     feet with the gunner pulling it by the muzzle (`runAt`, which puts the strap's end at his
+     right hand), and the bombs come up three to a tray. */
+  sv_mor: {
+    side: 'us', nat: 'sov', name: '82 mm Mortar 82-PM-41', short: '82-PM', cat: 'team', hk: 'M',
+    models: 3, hpPer: 54, speed: 46, sight: 260, pop: 6, cost: { mp: 250, fu: 10 }, time: 26,
+    req: 'sov_bar', setup: 3.0, pack: 2.5, indirect: 1, blastRes: .5, runAt: [-22.4, 2.3],
+    gunner: 'sv_atg', body: 'sov_at', carryP: { can: 'box82', canH: 2.15 },
+    gunAt: -.9, gunY: -3.8, gunMuz: [4.63, 14.98], gunGrip: [3.9, -1.0, 6.0],
+    gunMate: { at: [2.4, 3.6], a: -Math.PI / 2, grip: [3.13, .62, 10.6], gripL: [2.65, .65, 9.2], pose: 'served' },
+    gunCrew: [[-2, -10]],
+    barrage: { range: 570, r: 56, rof: 2.4, rounds: 10 },
+    w: { range: 480, dmg: 58, rof: 4.2, acc: .40, sup: .052, pen: 12, aoe: 34, shell: 1 },
+    desc: 'The Red Army\'s battalion mortar, with a wheel on each foot of its bipod so that its crew of three can pull it along by the muzzle. Left alone it shells whatever the company can see inside its reach; laid on a patch of ground it reaches further and puts ten bombs into it, or smoke. It must set up after moving and it is helpless if anything reaches it.'
+  },
   /* The Komsomolets T-20: the Red Army's light armoured artillery tractor, out of the Kazarma. A
      driver and a commander in an armoured cab, the commander firing the DT in its ball on the
      right of the front plate, which traverses twenty degrees either way (`arc`) and turns the
@@ -2518,8 +2541,8 @@ var BUILDINGS = {
   /* and its first production building, the company's barrack, which turns out its assault
      engineers and its tractor */
   sov_bar: { side: 'us', nat: 'sov', name: 'Kazarma', short: 'KAZARMA', w: 116, h: 96, hp: 1500, hk: '1',
-             cost: { mp: 200 }, time: 26, makes: ['sv_shturm', 'sv_t20', 'sv_zis3'],
-             desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Shturmoviki, the Komsomolets T-20 and the ZiS-3.' },
+             cost: { mp: 200 }, time: 26, makes: ['sv_shturm', 'sv_mor', 'sv_t20', 'sv_zis3'],
+             desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Shturmoviki, the 82-PM-41, the Komsomolets T-20 and the ZiS-3.' },
   sov_mot: { side: 'us', nat: 'sov', name: 'Avtopark', short: 'AVTOPARK', w: 136, h: 106, hp: 1700, hk: '2', need: 'sov_bar',
              cost: { mp: 240, fu: 30 }, time: 32, makes: ['sv_ba64'],
              desc: 'A vehicle park: a shed of logs with two bays, the ramp a car is worked on from underneath, a tripod hoist and the fuel behind logs. Needs the Kazarma. Raises the BA-64B.' },
@@ -2635,7 +2658,7 @@ var BUNKUP = {
          unit: { us: 'am_at', ger: 'hr_pak', sov: 'sv_zis3' },
          desc: 'The embrasure opened out and a field gun run into it. It kills armour coming up the crossing in front of it and can do nothing at all about anything that gets round the side.' },
   mor: { name: 'Mortar pit', short: 'MORTAR PIT', hk: '3', cost: { mp: 250, fu: 10 }, time: 22,
-         unit: { us: 'us_mor', ger: 'ger_mor' }, rear: 92,
+         unit: { us: 'us_mor', ger: 'ger_mor', sov: 'sv_mor' }, rear: 92,
          desc: 'A tube dug in behind the bunker where nothing can see it, firing over the top of it. It leaves the slot free for the men who are holding it.' },
   rep: { name: 'Repair shelter', short: 'REPAIR', hk: '4', cost: { mp: 190, fu: 40 }, time: 22,
          aid: { r: 220, rate: .022 },
@@ -8017,7 +8040,7 @@ function aiWants(slot, ladder, gate) {
    thinking ticks cleared the price of either and a rule that waits for money nothing else
    wants is a rule that never fires. Read by the purchase and by the gate counter that says
    whether it could have been, so the two cannot answer differently. A key the army has not got
-   (the Red Army's post has no mortar yet) is a thing it cannot buy. */
+   (the Red Army's post has no machine gun team) is a thing it cannot buy. */
 function canPost(key, heavy, spare, spareFu, slot) {
   var d = UNITS[key];
   if (!d) return false;
@@ -17410,7 +17433,7 @@ function aiTick(dt) {
      (`vb1`), where the other two armies' vehicles wait for the second */
   var nat = natOfSlot(slot);
   var K = nat === 'sov'
-    ? { eng: 'sv_sap', inf: 'sv_strel', elite: 'sv_shturm', at: 'sv_zis3', lt: 'sv_t20', lt2: 'sv_ba64', tank: 'sv_t34', b1: 'sov_bar', b2: 'sov_mot', b3: 'sov_tank', vb1: 1 }
+    ? { eng: 'sv_sap', inf: 'sv_strel', mor: 'sv_mor', elite: 'sv_shturm', at: 'sv_zis3', lt: 'sv_t20', lt2: 'sv_ba64', tank: 'sv_t34', b1: 'sov_bar', b2: 'sov_mot', b3: 'sov_tank', vb1: 1 }
     : side === 'us'
     ? { eng: 'am_eng', inf: 'am_rifle', mg: 'am_mg', mor: 'us_mor', how: 'us_how', elite: 'am_ranger', at: 'am_at', lt: 'am_jeep', lt2: 'am_m3', lt3: 'am_m8', tank: 'am_sher', b1: 'us_bar', b2: 'us_mot', b3: 'us_tank' }
     : { eng: 'hr_pio', inf: 'hr_gren', mg: 'hr_mg', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'hr_kch', at: 'hr_pak', lt: 'hr_ks750', lt2: 'hr_251', tank: 'hr_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep', b3: 'ger_pz' };
@@ -40579,6 +40602,253 @@ function mo81Model() {
   return f;
 }
 
+/* ================================================================ 82 mm Mortar 82-PM-41
+   The Red Army's battalion mortar of 1941: the tube and the bipod of the 82-BM-37 on a round
+   baseplate, with a wheel on the foot of each leg so that the crew could roll the whole of it
+   along by the muzzle. Built off the American 81 (`mo81Model`), whose bipod it is very like,
+   to the published 1,220 mm of tube and 82 mm of bore, and to two photographs of one at a
+   dealer's, which are a guide to what stands where and no measure of it. The round plate is
+   pressed with a star round its socket and ribbed out to the edge, with wire handles round it
+   and a bracket at the back; the collar is on the tube a little over half way up, with the
+   traversing mechanism across in front of it and the sight on its left; two buffers run along
+   the front of the tube down past a band; the column comes down from the head with the
+   elevating screw black at its foot and the cross-levelling lever on the clamp there, and the
+   two legs are pressed channel splayed from the clamp to the wheels. The wheels are pressed
+   discs with five holes in them on a steel rim, and they stand with their tops leaning in
+   (`cam`), as both photographs have them. `tow` is how far the whole of it is tipped forward
+   over its wheels to be pulled along by the strap on the muzzle. Origin on the ground under the
+   ball; -y is the left. */
+var PMG = { L: 14.3, r: .57, lean: .33, bz: 1.45, clamp: 8.6, band: 5.4,
+            pR: 3.55,                                   /* a plate 0.6 m across */
+            wR: 2.12, wx: 7.0, wy: 4.1, cam: .38,       /* 0.36 m wheels, 0.7 m apart */
+            hx: 5.3, hz: 4.1, tow: -1.17 };
+/* the rim's section, from the inside of the wheel round to the outside, which also says how
+   high the hub stands once the wheel leans: the inner edge of the rim is what meets the ground */
+PMG.rim = [[1.62, -.34], [1.95, -.36], [2.08, -.24], [2.12, 0], [2.08, .24], [1.95, .36], [1.62, .34], [1.62, -.34]];
+PMG.zH = PMG.rim.reduce(function (m, q) { return Math.max(m, Math.abs(q[1]) * Math.sin(PMG.cam) + q[0] * Math.cos(PMG.cam)); }, 0);
+function pmAxis(s) { return [s * Math.sin(PMG.lean), 0, PMG.bz + s * Math.cos(PMG.lean)]; }
+function pmFwd(s, k) {
+  var p = pmAxis(s);
+  return [p[0] + k * Math.cos(PMG.lean), 0, p[2] - k * Math.sin(PMG.lean)];
+}
+/* a part turned by a matrix and moved, keeping its normals and its tile, which `roll` drops */
+function pmXf(faces, M, t) {
+  t = t || [0, 0, 0];
+  function mv(p, d) { return [M[0][0] * p[0] + M[0][1] * p[1] + M[0][2] * p[2] + d * t[0], M[1][0] * p[0] + M[1][1] * p[1] + M[1][2] * p[2] + d * t[1], M[2][0] * p[0] + M[2][1] * p[1] + M[2][2] * p[2] + d * t[2]]; }
+  return faces.map(function (f) {
+    var o = {}, k;
+    for (k in f) o[k] = f[k];
+    o.v = f.v.map(function (p) { return mv(p, 1); });
+    if (f.n) o.n = f.n.map(function (n) { return mv(n, 0); });
+    return o;
+  });
+}
+function pmRotX(a) { var c = Math.cos(a), s = Math.sin(a); return [[1, 0, 0], [0, c, -s], [0, s, c]]; }
+function pmRotY(a) { var c = Math.cos(a), s = Math.sin(a); return [[c, 0, -s], [0, 1, 0], [s, 0, c]]; }
+/* a point turned the way `pmRotY` turns one about the axle, with the hub as its centre */
+function pmTow(p) {
+  var g = PMG, c = Math.cos(g.tow), s = Math.sin(g.tow), x = p[0] - g.wx, z = p[2] - g.zH;
+  return [g.wx + x * c - z * s, p[1], g.zH + x * s + z * c];
+}
+/* a face turned to look along `n` whatever order its corners were written in, with that normal
+   on every corner, because a face of the holed disc may start on a corner that was moved onto
+   the edge of a hole and read no normal off its first three */
+function pmFace(v, n, c) {
+  var w = [], i;
+  for (i = 0; i < v.length; i++) {
+    var p = v[i], q = w[w.length - 1];
+    if (!q || Math.hypot(p[0] - q[0], p[1] - q[1], p[2] - q[2]) > 1e-4) w.push(p);
+  }
+  if (w.length > 2 && Math.hypot(w[0][0] - w[w.length - 1][0], w[0][1] - w[w.length - 1][1], w[0][2] - w[w.length - 1][2]) < 1e-4) w.pop();
+  if (w.length < 3) return null;
+  var sx = 0, sy = 0, sz = 0;
+  for (i = 0; i < w.length; i++) {
+    var a = w[i], b = w[(i + 1) % w.length];
+    sx += (a[1] - b[1]) * (a[2] + b[2]); sy += (a[2] - b[2]) * (a[0] + b[0]); sz += (a[0] - b[0]) * (a[1] + b[1]);
+  }
+  if (sx * n[0] + sy * n[1] + sz * n[2] < 0) w.reverse();
+  return { v: w, c: c, n: w.map(function () { return n.slice(); }) };
+}
+/* The wheel's disc: an annulus in the x-z plane at `y`, with five holes through it. It is laid
+   on a grid round the axle, the cells whose middle falls in a hole left out and the corners
+   that fall in one moved out onto its edge, so the holes come out round. Both faces. */
+function pmDisc(r0, r1, y, t, hc, rh, col, colB) {
+  var f = [], nA = 45, nR = 6, i, j, k, holes = [];
+  for (k = 0; k < 5; k++) holes.push([hc * Math.cos(k / 5 * TAU + .3), hc * Math.sin(k / 5 * TAU + .3)]);
+  function pt(i, j) {
+    var a = i / nA * TAU, r = r0 + (r1 - r0) * j / nR, x = r * Math.cos(a), z = r * Math.sin(a);
+    for (var h = 0; h < holes.length; h++) {
+      var dx = x - holes[h][0], dz = z - holes[h][1], d = Math.hypot(dx, dz);
+      if (d < rh) { x = holes[h][0] + dx / (d || 1) * rh; z = holes[h][1] + dz / (d || 1) * rh; }
+    }
+    return [x, z];
+  }
+  function inHole(i, j) {
+    var a = (i + .5) / nA * TAU, r = r0 + (r1 - r0) * (j + .5) / nR, x = r * Math.cos(a), z = r * Math.sin(a);
+    return holes.some(function (h) { return Math.hypot(x - h[0], z - h[1]) < rh; });
+  }
+  for (i = 0; i < nA; i++) for (j = 0; j < nR; j++) {
+    if (inHole(i, j)) continue;
+    var q = [pt(i, j), pt(i, j + 1), pt(i + 1, j + 1), pt(i + 1, j)];
+    [1, -1].forEach(function (s) {
+      var fc = pmFace(q.map(function (p) { return [p[0], y + s * t / 2, p[1]]; }), [0, s, 0], col);
+      if (fc) f.push(fc);
+    });
+  }
+  /* the walls of the holes, so the disc has a thickness where it is cut */
+  holes.forEach(function (h) {
+    for (k = 0; k < 14; k++) {
+      var a0 = k / 14 * TAU, a1 = (k + 1) / 14 * TAU, c0 = Math.cos(a0), s0 = Math.sin(a0), c1 = Math.cos(a1), s1 = Math.sin(a1);
+      var nn = [-Math.cos((a0 + a1) / 2), 0, -Math.sin((a0 + a1) / 2)];
+      var fc = pmFace([[h[0] + c0 * rh, y - t / 2, h[1] + s0 * rh], [h[0] + c1 * rh, y - t / 2, h[1] + s1 * rh],
+                       [h[0] + c1 * rh, y + t / 2, h[1] + s1 * rh], [h[0] + c0 * rh, y + t / 2, h[1] + s0 * rh]], nn, colB);
+      if (fc) f.push(fc);
+    }
+  });
+  return f;
+}
+/* A wheel, built about its own axle along y with its outer face toward `sd`: the steel rim
+   with its edges rolled over, the disc set a little inboard of the middle of it with its five
+   holes, the hub standing out of it with its bolts and the cap with its split pin. Then leant
+   in at the top and stood on its hub. */
+function pmWheel(sd) {
+  var C = TZC, g = PMG, f = [];
+  f = f.concat(lathe(0, 0, 0, g.rim, 26, [C.dark, C.body, C.lit, C.lit, C.body, C.dark, C.dark], true));
+  f = f.concat(pmDisc(.5, 1.64, -sd * .1, .1, 1.07, .37, C.body, C.dark));
+  f = f.concat(latheSide(0, -sd * .05, 0, [[0, 0], [.5, 0], [.5, .34], [.38, .44], [0, .46]], 12, [C.dark, C.body, C.lit, C.body], sd));
+  f = f.concat(boltRing(0, sd * .43, 0, .3, 5, .09, .12, C.steel));
+  f = f.concat(latheSide(0, sd * .4, 0, [[0, 0], [.2, 0], [.2, .22], [0, .26]], 8, [C.steel, C.bare, C.bare], sd));
+  f = f.concat(ksPipe([[0, sd * .58, .1], [.12, sd * .66, .2], [.05, sd * .64, -.15]], .03, C.steel, 4));
+  return pmXf(pmXf(f, pmRotX(sd * g.cam)), [[1, 0, 0], [0, 1, 0], [0, 0, 1]], [g.wx, sd * g.wy, g.zH]);
+}
+/* the hub of a wheel, and the inner end of its stub axle, which is where the leg comes to */
+function pmHub(sd, k) {
+  var g = PMG, c = Math.cos(g.cam), s = Math.sin(g.cam);
+  return [g.wx, sd * (g.wy - k * c), g.zH - k * s];
+}
+/* the O-832 bomb, lying along x with its tail at the origin: the boom with its six fins, the
+   body and the fuse */
+function pmBomb(C) {
+  var f = lathe(0, 0, 0, [[0, 0], [.16, 0], [.16, 1.25], [.3, 1.4], [.47, 1.9], [.47, 2.6], [.32, 3.25], [.16, 3.42], [.1, 3.85], [0, 3.9]], 10,
+                [C.dark, C.dark, C.dark, C.body, C.lit, C.body, C.dark, C.steel, C.steel], true), k;
+  for (k = 0; k < 6; k++) f = f.concat(pmXf(box(.3, .45, -.025, .3, .9, .05, C.steel, C.bare, C.steel, 0), pmRotY(k / 6 * TAU)));
+  return place(f, -Math.PI / 2, 0, 0, 0);
+}
+/* the tray three of them are carried in: a pressed-steel trough with a strap over it */
+function pmTray() {
+  var C = TZC, f = [], k;
+  f = f.concat(box(0, 0, 0, 4.6, 3.2, .18, C.dark, C.body, C.dark));
+  [-1, 1].forEach(function (s) {
+    f = f.concat(box(0, s * 1.55, .18, 4.6, .1, .55, C.body, C.lit, C.body, 0));
+    f = f.concat(box(s * 2.25, 0, .18, .1, 3.2, .55, C.body, C.lit, C.body, 0));
+  });
+  for (k = -1; k <= 1; k++) f = f.concat(place(pmBomb(C), 0, -1.95, k * .98, .62));
+  return f.concat(withMat(ksPipe([[-.9, -1.6, .7], [-.6, 0, 2.15], [.6, 0, 2.15], [.9, 1.6, .7]], .1, M4C.tarp, 5), 'canvas'));
+}
+/* The mortar set up, or tipped onto its wheels to be pulled (`travel`). What turns with the tube
+   when it is tipped is built in one list and turned about the axle; the legs are built after,
+   from where the clamp they hang from has gone to, to the wheels, which do not turn. */
+function pmModel(travel) {
+  var C = TZC, g = PMG, f = [], t = [], sd, i, k;
+  /* the plate: turned down at its edge and rising to the socket, the star pressed round the
+     socket, the ribs out to the edge between its points, the wire handles round it and the
+     bracket at the back */
+  f = f.concat(pmXf(lathe(0, 0, 0, [[0, 0], [g.pR, 0], [g.pR, .42], [2.3, .62], [1.35, .78], [0, .8]], 32,
+                          [C.dark, C.dark, C.body, C.body, C.lit], true), pmRotX(Math.PI / 2)));
+  var pz = function (r) { return r > 2.3 ? .62 - (r - 2.3) * .16 : .62 + (2.3 - r) * .17; };
+  var st = [];
+  for (k = 0; k < 16; k++) { var ra = k % 2 ? .95 : 2.05, aa = k / 16 * TAU + TAU / 16; st.push([ra * Math.cos(aa), ra * Math.sin(aa)]); }
+  for (k = 0; k < 16; k++) {
+    var p0 = st[k], p1 = st[(k + 1) % 16], fc;
+    fc = pmFace([[0, 0, 1.0], [p0[0], p0[1], 1.0], [p1[0], p1[1], 1.0]], [0, 0, 1], C.lit);
+    if (fc) f.push(fc);
+    var ex = p1[0] - p0[0], ey = p1[1] - p0[1], el = Math.hypot(ex, ey);
+    fc = pmFace([[p0[0], p0[1], .55], [p1[0], p1[1], .55], [p1[0], p1[1], 1.0], [p0[0], p0[1], 1.0]], [ey / el, -ex / el, 0], C.body);
+    if (fc) f.push(fc);
+  }
+  for (k = 0; k < 8; k++) {
+    var a = k / 8 * TAU, ca = Math.cos(a), sa = Math.sin(a);
+    f = f.concat(m1Beam([1.9 * ca, 1.9 * sa, pz(1.9) + .06], [3.15 * ca, 3.15 * sa, pz(3.15) + .06], .34, .2, .3, .16, C.body));
+  }
+  f = f.concat(cyl(0, 0, .8, 1.0, 1.0, .5, 14, C.dark, C.body, 0, true));
+  f = f.concat(cyl(0, 0, 1.28, .78, .78, .12, 14, C.steel, C.bare, 0, true));
+  for (k = 0; k < 4; k++) {
+    var b = k / 4 * TAU + TAU / 8, cb = Math.cos(b), sb = Math.sin(b), tx = -sb, ty = cb, rr = 2.85, z0 = pz(rr);
+    f = f.concat(ksPipe([[rr * cb - tx * .35, rr * sb - ty * .35, z0], [rr * cb - tx * .35, rr * sb - ty * .35, z0 + .3],
+                         [rr * cb + tx * .35, rr * sb + ty * .35, z0 + .3], [rr * cb + tx * .35, rr * sb + ty * .35, z0]], .06, C.steel, 4));
+  }
+  f = f.concat(box(-2.95, 0, .3, .6, 1.7, .42, C.dark, C.body, C.dark));
+  f = f.concat(ksPipe([[-3.1, -.55, .72], [-3.1, -.55, 1.0], [-3.1, .55, 1.0], [-3.1, .55, .72]], .06, C.steel, 4));
+  /* the tube, built standing up and laid over: the ball, the base cap with its ring, the plain
+     tube, the muzzle and the bore; the collar at the head and the band below it, and the two
+     buffers along the front of the tube between them with the clamp screw on the band */
+  t = t.concat(cyl(0, 0, -.55, .44, .44, .5, 12, C.steel, C.bare, 0, true));
+  t = t.concat(cyl(0, 0, -.2, .74, .74, 1.15, 14, C.dark, C.body, 0, true));
+  t = t.concat(cyl(0, 0, .85, .8, .8, .2, 14, C.body, C.lit, 0, true));
+  t = t.concat(cyl(0, 0, .95, g.r, g.r, g.L - .95, 14, C.body, C.lit, 0, true));
+  t = t.concat(cyl(0, 0, g.L - .35, g.r + .07, g.r + .07, .35, 14, C.lit, C.body, 0, true));
+  t = t.concat(cyl(0, 0, g.L - .02, g.r - .12, g.r - .12, .04, 12, C.hole, C.hole, 0, true));
+  t = t.concat(cyl(0, 0, g.clamp - .5, g.r + .26, g.r + .26, 1.0, 14, C.dark, C.body, 0, true));
+  t = t.concat(box(g.r + .5, 0, g.clamp - .5, .9, 1.4, 1.0, C.dark, C.body, C.dark));
+  t = t.concat(cyl(0, 0, g.band - .25, g.r + .16, g.r + .16, .5, 14, C.body, C.lit, 0, true));
+  t = t.concat(box(g.r + .3, 0, g.band - .25, .6, 1.3, .5, C.body, C.lit, C.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    t = t.concat(cyl(g.r + .45, sd * .42, 2.9, .2, .2, g.clamp - .3 - 2.9, 10, C.body, C.lit, 0, true));
+    t = t.concat(cyl(g.r + .45, sd * .42, 2.5, .09, .09, .4, 6, C.bare, C.bare, 0, true));
+  }
+  t = t.concat(ksTube([0, g.r + .14, g.band], [0, g.r + .62, g.band + .15], .08, C.steel, 6));
+  t = t.concat(ksTube([-.32, g.r + .66, g.band + .15], [.32, g.r + .66, g.band + .15], .09, C.steel, 6));
+  f = f.concat(at(pitch(t, -g.lean, 0, 0), 0, 0, g.bz));
+  /* the head: the traversing housing across in front of the collar, the rod with its knob out
+     of its right end and the sight on its left; the column down from it, the housing and then
+     the black of the elevating screw, the lever near its top and the clamp at its foot with the
+     cross-levelling lever and its ball, and the hinge the legs turn on */
+  var T = pmFwd(g.clamp - .25, g.r + 1.0), H = [g.hx, 0, g.hz];
+  f = f.concat(place(tubeSmooth(-1.5, 1.5, 0, T[2], .3, 10, C.dark, C.body), Math.PI / 2, T[0], 0, 0));
+  f = f.concat(box(T[0], 0, T[2] - .55, 1.1, 1.1, 1.0, C.body, C.lit, C.dark));
+  f = f.concat(ksTube([T[0], 1.5, T[2]], [T[0], 2.15, T[2]], .1, C.steel, 6));
+  f = f.concat(ksTube([T[0] - .45, 2.2, T[2] - .15], [T[0] + .45, 2.2, T[2] + .15], .09, C.steel, 6));
+  f = f.concat(cyl(T[0] + .45, 2.2, T[2] + .1, .16, .16, .14, 8, C.steel, C.bare, 0, true));
+  var X = T[0] - .1, Z = T[2];
+  f = f.concat(box(X, -1.85, Z - .2, .6, .5, 1.0, C.dark, C.body, C.dark));
+  f = f.concat(box(X - .05, -2.0, Z + .7, 1.2, .8, .9, C.body, C.lit, C.dark));
+  f = f.concat(ksTube([X - .3, -2.0, Z + .9], [X - 1.1, -2.0, Z - .7], .26, C.dark, 8));
+  f = f.concat(ksTube([X - 1.1, -2.0, Z - .7], [X - 1.3, -2.0, Z - 1.1], .3, C.rubber, 8));
+  var K0 = [T[0] + .15, 0, T[2] - .6], K1 = m1Mix(K0, H, .6), K2 = m1Mix(K0, H, .86);
+  f = f.concat(ksTube(K0, K1, .34, C.body, 10));
+  f = f.concat(ksTube(m1Mix(K0, H, .57), m1Mix(K0, H, .62), .4, C.dark, 10));
+  f = f.concat(ksTube(K1, K2, .2, C.hole, 8));
+  f = f.concat(ksTube(K2, H, .42, C.body, 10));
+  var L0 = m1Mix(K0, H, .18);
+  f = f.concat(ksPipe([[L0[0], -.3, L0[2]], [L0[0] - .2, -.85, L0[2] - .2], [L0[0] - .6, -1.0, L0[2] - 1.4]], .08, C.steel, 6));
+  f = f.concat(cyl(L0[0] - .6, -1.0, L0[2] - 1.65, .2, .2, .3, 8, C.steel, C.bare, 0, true));
+  var L1 = m1Mix(K0, H, .9);
+  f = f.concat(ksPipe([[L1[0], .35, L1[2]], [L1[0] - .3, 1.1, L1[2] + .05], [L1[0] - 1.6, 1.4, L1[2] + .1]], .08, C.steel, 6));
+  f = f.concat(cyl(L1[0] - 1.6, 1.4, L1[2] - .07, .22, .22, .34, 8, C.steel, C.bare, 0, true));
+  f = f.concat(box(H[0], 0, H[2] - .5, 1.0, 1.4, .9, C.dark, C.body, C.dark));
+  f = f.concat(ksTube([H[0], -.9, H[2] - .15], [H[0], .9, H[2] - .15], .14, C.steel, 6));
+  /* tipped onto its wheels for the move, with the strap on the muzzle to pull it by */
+  if (travel) {
+    f = pmXf(f, pmRotY(g.tow), pmTow([0, 0, 0]));
+    var M0 = pmTow(pmAxis(g.L - .3)), M1 = pmTow(pmAxis(g.L + .8));
+    f = f.concat(withMat(ksPipe([M0, [M1[0] + 1.6, -.5, M1[2] - .3], [M1[0] + 3.0, 0, M1[2] - .5], [M1[0] + 1.6, .5, M1[2] - .3], M0], .1, M4C.tarp, 5), 'canvas'));
+    H = pmTow(H);
+  }
+  /* the legs, pressed channel from the hinge to the stub axles, and the wheels on them */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var S0 = pmHub(sd, .95), S1 = pmHub(sd, .1);
+    f = f.concat(m1Beam([H[0], sd * .5, H[2] - .25], S0, .62, .55, .5, .45, C.body));
+    f = f.concat(ksTube(S0, S1, .17, C.dark, 8));
+    f = f.concat(pmWheel(sd));
+  }
+  if (travel) return f;
+  /* bombs, three in the tray they came up in beside the plate, and a fourth stood on its tail
+     ready to go in */
+  f = f.concat(place(pmTray(), .3, -5.2, 5.0, 0));
+  f = f.concat(place(pitch(pmBomb(C), Math.PI / 2, 0, 0), 0, -3.6, 3.4, 0));
+  return f;
+}
+
 /* ---- the American machine gun team ----
    Everything here is in the rig's own units, 8.5 cm to the unit, which is what the world
    is drawn at: the first roster's team guns were set out generously and scaled down, and
@@ -40750,7 +41020,7 @@ function mgCarryModels() {
     m2hb: place(weaponModel(k, 'm2hb'), 0, 2.2, 0, 1.1),
     m2: place(m2Tripod(k, true), 0, 0, 0, .3),
     m3: place(m3Tripod(k, true), 0, 0, 0, .4),
-    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box(), box50: pkBox(), box76: zsBox()
+    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box(), box50: pkBox(), box76: zsBox(), box82: pmTray()
   };
 }
 
@@ -43147,6 +43417,13 @@ function buildVehicleModels(up) {
     M.mesh = aoSplit(M.mesh, AOSPLIT);
     bakeAO([{ f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }]);
   })(GUNMODEL.ger_mor);
+  /* the Red Army's 82-PM-41, set up and tipped onto its wheels, baked the way the ZiS-3 is */
+  GUNMODEL.sv_mor = { mesh: pmModel(false), pack: pmModel(true), bar: -.9 + PMG.L * Math.sin(PMG.lean), z: PMG.bz + PMG.L * Math.cos(PMG.lean) };
+  (function (M) {
+    M.mesh = aoSplit(M.mesh, AOSPLIT); M.pack = aoSplit(M.pack, AOSPLIT);
+    bakeAO([{ f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }]);
+    bakeAO([{ f: M.pack, x: 0, y: 0, z: 0, occ: 1 }]);
+  })(GUNMODEL.sv_mor);
   /* the 3-inch gun on the same carriage, closed for the move with the tube level */
   GUNMODEL.us_t8 = { mesh: h105Bottom(false, true).concat(m5Top(M5G.el)), pack: m5Show(0, true), rec: m5Tube(M5G.el),
                      recEl: M5G.el, pkAll: 1, bar: 9.6 + 37.69, z: 15.4 };
@@ -45209,6 +45486,8 @@ function variantForModel(u, i) {
   if (u.key === 'sv_shturm') return i === 0 ? 'sv_sht_lead' : i === 5 ? 'sv_sht_s' : i === 2 || i === 4 ? 'sv_sht_b' : 'sv_sht';
   /* the gunner and the loader serve the ZiS-3, and the other four bring the rounds up */
   if (u.key === 'sv_zis3') return i < 2 ? 'sv_atg' : i === 3 || i === 5 ? 'sv_atb_b' : 'sv_atb';
+  /* and the 82-PM-41's gunner and loader, and the man who brings the bombs up */
+  if (u.key === 'sv_mor') return i < 2 ? 'sv_atg' : 'sv_atb';
   /* the gunner and the loader serve the Pak 38, and the other three bring the rounds up; and
      the layer and the man at the elevating handwheel are at the leFH 18 */
   if (u.key === 'hr_pak' || u.key === 'ger_how') return i < 2 ? 'hr_atg' : i === 4 ? 'hr_atb_b' : 'hr_atb';

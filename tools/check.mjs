@@ -5031,6 +5031,9 @@ for (const device of TARGETS) {
     const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
     u.setup = 0; u.packed = false; u.pack = 0;
     step(4);
+    /* and up to four seconds more while a bearer is still walking to his place: on one run of the Pak
+       38's row a bearer was a unit short of it, mid-stride, when the row looked */
+    for (let k = 0; k < 4 && u.models.some((m, i) => i > 1 && m.alive && m.pose === W.POSE_WALK); k++) step(1);
     out.set = W.gunSet(u);
     out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
     out.poses = u.models.map(m => m.pose).join(',');
@@ -5203,6 +5206,9 @@ for (const device of TARGETS) {
     const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
     u.setup = 0; u.packed = false; u.pack = 0;
     step(4);
+    /* and up to four seconds more while a bearer is still walking to his place: on one run of the Pak
+       38's row a bearer was a unit short of it, mid-stride, when the row looked */
+    for (let k = 0; k < 4 && u.models.some((m, i) => i > 1 && m.alive && m.pose === W.POSE_WALK); k++) step(1);
     out.set = W.gunSet(u);
     out.setVars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
     out.poses = u.models.map(m => m.pose).join(',');
@@ -8114,7 +8120,7 @@ for (const device of TARGETS) {
     return { q: W.__kzq.join(',') || 'nothing' };
   });
   ok('the Red Army\'s Kazarma raises the Komsomolets T-20: a tractor with a DT in its ball, six seats and a hook',
-     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_shturm,sv_t20,sv_zis3' && kz.bname === 'Kazarma' && kz.bld > 100 &&
+     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_shturm,sv_mor,sv_t20,sv_zis3' && kz.bname === 'Kazarma' && kz.bld > 100 &&
      kz.q === 'sv_t20' && kz.qHq === 'refused' && kz.bufs && kz.name === 'Komsomolets T-20' &&
      kz.arc === .7 && Math.abs(Math.abs(kz.tur) - kz.arc / 2) < .03 && kz.t1 && !kz.t2 && kz.tows &&
      kz.aboard === 4 && kz.seated === kz.aboard && kz.seatOk && kz.unseated === 0 &&
@@ -8239,7 +8245,13 @@ for (const device of TARGETS) {
     out.bodies = !!(W.MODELS.fall.sov_str && W.MODELS.dead.sov_str && W.MODELS.fall.sov_str.length === 3);
     G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
     G.units.length = 0;
-    /* and the brain on his slot buys them as its line */
+    /* and the brain on his slot buys them as its line, with its queues empty and money in the till. It
+       ran on what the rows above had left: once the Kazarma made a mortar, the row above queued one there,
+       it came out during this row with the Shturmoviki behind it, and the brain counted two sections of
+       its own and bought no Strelki. A row that leans on what the rows above it bought is a row about
+       those rows */
+    G.blds.forEach(b => { if (b.own === own) { b.queue.length = 0; b.qt = 0; } });
+    G.res[own].mp += 2000; G.res[own].fu += 200;
     W.slotOf(own).ai = 1; W.aiInit(own);
     W.__stq = []; W.__stU = W.queueUnit;
     W.queueUnit = function (b) { const r = W.__stU.apply(this, arguments); if (r && b.own === own) W.__stq.push(b.key + ':' + arguments[1]); return r; };
@@ -8940,6 +8952,141 @@ for (const device of TARGETS) {
      `and ${zs.apBoth} with the tank beside it, with HE up (${zs.he}) ${zs.heBoth}, and AP reaches ${zs.apRange}; the brain put HE up ` +
      `${zsAi.menOnly ? 'with men in front' : 'NOT with men in front'} and AP ${zsAi2.withTank ? 'with the tank in reach' : 'NOT with the tank in reach'}; ` +
      `killed went down as ${zs.bodyNat}, bodies ${zs.fall ? 'baked' : 'MISSING'}`);
+
+  /* --- The 82-PM-41, the Red Army's battalion mortar, out of the Kazarma: the Kazarma makes it
+     and queues it and the Shtab refuses it, it is named and the bunker's mortar pit is it, and it is
+     three men, the gunner and the loader at the tube and one bringing the bombs up. Halted, the
+     gunner kneels at the left of the bipod and the loader at the right of the tube facing it, with
+     the bearer beside the gunner, the flash comes off the muzzle and the bearer has his tray in his
+     hand; on the move the piece rides on its wheels behind the gunner with the strap at his right
+     hand. Laid on a point five hundred off it fires its ten rounds, it reaches 570 and it takes a
+     smoke mission, with the bursts switched off for the reason the self-propelled guns' row gives.
+     A man of it killed goes down as one of the crew, and a brain on his slot with a Kazarma standing
+     buys one. --- */
+  const pm = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {}, dt = 1 / 30;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    out.makes = W.makesOf(kb).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_mor'); out.qHq = q(hq, 'sv_mor');
+    const D = W.UNITS.sv_mor;
+    out.name = D.name; out.bunk = W.bunkUnit(W.BUNKUP.mor, own);
+    /* open ground with room round it for the crew's places, found the way the ZiS-3's is */
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let at = null;
+    for (let r = 200; r < 1400 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x = hq.x + r * Math.cos(k * Math.PI / 8), y = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.open = !!at;
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_mor', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = ['sv_atg', 'sv_atb'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!(W.MODELS.served.sv_mor && W.MODELS.served.sv_mor.mate) && !!(W.MODELS.gun.sv_mor && W.MODELS.gunPk.sv_mor);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]), r2 = rel(u.models[2]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && Math.abs(r1[0] - D.gunMate.at[0]) < 2;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearer = u.coverSlots && u.coverSlots[2] ? 'cover' : r2[0] < 0 && r2[1] < -6;
+    out.bpos = r2.map(v => Math.round(v)).join(',');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_mor;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - cs * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - sn * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.tray = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box82;
+    /* packed, the piece is behind the gunner in his own frame, with the strap's end at his side */
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_mor;
+    const gq = W.gunPost(u), g0 = u.models[0], ex = gq.x - g0.x, ey = gq.y - g0.y;
+    out.back = +((ex * cs + ey * sn) / W.FIG_SCALE).toFixed(1); out.side = +((-ex * sn + ey * cs) / W.FIG_SCALE).toFixed(1);
+    u.packed = false;
+    /* a mission on a point five hundred off, on whichever bearing of eight keeps it on the map */
+    const boom = W.explode;
+    W.explode = function () {};
+    let tx = 0, ty = 0;
+    for (let k = 0; k < 8; k++) {
+      const a = u.facing + k * Math.PI / 4;
+      tx = gp.x + Math.cos(a) * 500; ty = gp.y + Math.sin(a) * 500;
+      if (tx > 80 && ty > 80 && tx < W.WORLD.w - 80 && ty < W.WORLD.h - 80) break;
+    }
+    out.reach = W.barrageRange(u);
+    out.laid = !!W.orderBarrage(u, tx, ty); out.n = u.barrage ? u.barrage.left : 0;
+    let fired = 0;
+    for (let i = 0; i < 30 * 60 && u.barrage; i++) {
+      const n0 = u.barrage.left;
+      W.updateUnit(u, dt); W.updateModels(u, dt); W.updateShots(dt); G.t += dt;
+      if (!u.barrage || u.barrage.left < n0) fired++;
+    }
+    out.fired = fired; out.left = u.barrage ? u.barrage.left : 0;
+    out.smoke = W.orderBarrage(u, tx, ty, true) && u.barrage && u.barrage.smoke ? u.barrage.left : 0;
+    u.barrage = null;
+    W.explode = boom; G.shots.length = 0;
+    /* a man of it goes down as one of the crew */
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    G.units.slice().forEach(v => { if (!v.dead) W.killUnit(v); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Kazarma standing and nothing of the mortar on its tally, and a
+       machine gun team of theirs by their own headquarters to want a tube against: with the German
+       brain switched off for the earlier rows the Red Army held more ground than the enemy, and a
+       brain holding more ground with nothing for a tube to do buys none */
+    out.madePm = G.made[own].sv_mor || 0; G.made[own].sv_mor = 0;
+    const ghq = G.blds.filter(b => b.side === 'ger' && b.def.hq)[0], mp0 = W.nearestFree(ghq.x, ghq.y + 160);
+    W.__pmMg = W.spawnUnit('ger', 'hr_mg', mp0.x, mp0.y, 0);
+    W.__pmAi = W.slotOf('ger').ai; W.slotOf('ger').ai = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__pmq = []; W.__pmU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__pmU.apply(this, arguments); if (r && b.own === own) W.__pmq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const pmAi = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.queueUnit = W.__pmU; W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__pmAi;
+    G.units.slice().forEach(u => { if (!u.dead && (u.own === own || u === W.__pmMg)) W.killUnit(u); });
+    return { q: W.__pmq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Kazarma raises the 82-PM-41, a mortar of three men that rides on its wheels',
+     /sv_mor/.test(pm.makes) && pm.q === 'sv_mor' && pm.qHq === 'refused' && pm.name === '82 mm Mortar 82-PM-41' && pm.bunk === 'sv_mor' &&
+     pm.men === 3 && pm.baked && pm.set && pm.vars === 'sv_atg,sv_atg,sv_atb' && /^11,11,/.test(pm.poses) &&
+     pm.loaderRight && pm.loaderFaces && pm.bearer && pm.mesh && pm.muz && pm.tray && pm.packMesh &&
+     pm.back < -18 && pm.back > -27 && pm.side > 1 && pm.side < 4 &&
+     pm.reach === 570 && pm.laid && pm.n === 10 && pm.fired === 10 && pm.left === 0 && pm.smoke > 0 &&
+     pm.bodyNat === 'sov_at' && /sov_bar:sv_mor/.test(pmAi.q),
+     `the Kazarma makes ${pm.makes} and queues ${pm.q}, the Shtab ${pm.qHq} it; named ${pm.name}, the bunker's mortar pit ${pm.bunk}; ` +
+     `${pm.men} men, the variants, the served bodies and the two meshes ${pm.baked ? 'baked' : 'NOT baked'}; halted ` +
+     `${pm.set ? 'set up' : 'NOT set up'} as ${pm.vars} in poses ${pm.poses}, the loader at ${pm.loader} ` +
+     `${pm.loaderRight ? 'at the right of the tube' : 'NOT at the right of the tube'} and ${pm.loaderFaces ? 'facing it' : 'NOT facing it'}` +
+     `${pm.open ? '' : ' (no open ground)'}, the bearer ${pm.bearer === 'cover' ? 'in cover' : pm.bearer ? 'beside the gunner' : 'NOT in place (' + pm.bpos + ')'}, ` +
+     `the piece ${pm.mesh ? 'set up' : 'WRONG'}, the flash ${pm.muz ? 'at the muzzle' : 'OFF the muzzle'}, the tray ${pm.tray ? 'in his hand' : 'MISSING'}; ` +
+     `packed ${pm.packMesh ? 'on its wheels' : 'NOT on its wheels'} at ${pm.back},${pm.side} from the gunner; it reaches ${pm.reach}, laid ` +
+     `${pm.laid ? 'a mission of ' + pm.n : 'NO mission'} and fired ${pm.fired} with ${pm.left} left, and a smoke mission of ${pm.smoke}; ` +
+     `killed went down as ${pm.bodyNat}; a brain with the Kazarma standing (and ${pm.madePm} on the tally already, which the row ` +
+     `takes off it) queued ${pmAi.q}`);
 
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were

@@ -8,7 +8,7 @@ rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm g
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
 being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
 builders, the Sapery, and its rifle squad, the Strelki, out of it, its first production building, the
-Kazarma, the Shturmoviki, the Komsomolets T-20 and the ZiS-3 out of that, its
+Kazarma, the Shturmoviki, the 82-PM-41, the Komsomolets T-20 and the ZiS-3 out of that, its
 second, the Avtopark, the BA-64B out of that, its third and last, the Tankovyy park, and the T-34/76 out of that, with a squad riding on its deck, and the SU-85 (see *The Red Army*). The Soviet units under consideration and
 their stats are listed in `docs/soviet-roster.csv`, and none of them is built until it is asked for
 by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
@@ -1428,7 +1428,7 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
-**And ten rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+**And eleven rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
 the player's slot fields it against the 352nd, the Shtab makes the Sapery and the Strelki and refuses
 the 29th's rifle squad, the side opens with a squad of Sapery and two of Strelki, the Sapery are four
 men in the four sapper variants with the PPS-43,
@@ -1454,7 +1454,9 @@ Shtab makes them and the Kazarma refuses them, seven men of 64 in five rifle var
 DP-28s are fitted, not the PPSh-41s, the fifth and sixth men firing the DP-28 on its own clock, a bottle
 on a grenadier squad in the open leaving one fire on the ground and hurting the squad, the squad walking
 more than a quarter faster after the shout, a bottle into a held house setting cells of it alight, a
-man killed going down as `sov_str`, and a brain on his slot buying them out of the Shtab. The sixth asks
+man killed going down as `sov_str`, and a brain on his slot buying them out of the Shtab, with its queues emptied and money put in the till
+first: it ran on what the rows above had left, and once the Kazarma made a mortar the row above queued one there, it
+came out during this row with the Shturmoviki behind it, and the brain counted two sections and bought no Strelki. The sixth asks
 the Shturmoviki: the Kazarma makes them and the Shtab refuses them, six men of 96 in four variants with
 the PPSh-41 and the SN-42 on all four, the card offering the grenades, the satchel and the smoke, forty
 volleys from in front against forty from behind with the same seeded rolls coming to .80 and a shell to
@@ -1508,7 +1510,20 @@ drill's own line, which was traced clear both ways, because asked three hundred 
 gun happened to face, something stood in the way on the full gate's run and the gun picked nothing at all
 on either device, where a page with no rows before it had been clear. The 57's and the Pak 38's rows ask
 for the same room round their spot, because on one desktop run both put their gun down where the bearers'
-places were refused, and they print where the bearers stood when they are not in place.
+places were refused, and they print where the bearers stood when they are not in place. The eleventh asks
+the 82-PM-41: the Kazarma makes it and queues it and the Shtab refuses it, it is named and the bunker's
+mortar pit is it; it is three men with the variants, the served bodies and its two meshes baked; set up,
+the gunner kneels at the left of the bipod and the loader at the right of the tube facing it, with the man
+who brings the bombs beside the gunner, the flash comes off the muzzle and he has his tray in his hand;
+packed, it is on its wheels 22 units behind the gunner and two to his right, which is the strap at his
+hand; it reaches 570, fires the ten rounds of a mission laid five hundred off with the bursts switched off,
+and takes a smoke mission; a man killed goes down as `sov_at`; and a brain on his slot with a Kazarma
+standing buys one. The row puts an MG 34 team of theirs by their own headquarters first, because the brain
+wants a tube when the enemy has a machine gun or men in a house, or holds as much ground as it does, and
+with the German brain switched off for the rows above the Red Army held more ground and had nothing for a
+tube to do. The bearer's place is beside the gunner and not behind the plate, because behind the plate it
+was outside the circle a crew is held to on a phone, where a man is a fifth bigger, and he stood where he
+was.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
@@ -6458,8 +6473,8 @@ is not on the brain's ladder.
 **And a bunker's fittings are the two armies' own** (`BUNKUP`): the .30 cal team or the MG 34
 team, the 57 or the Pak 38, and the side's mortar, and the cap check and the population count read
 the same key, through `bunkUnit(W, slot)`, which hands back the team out of the player's own army or
-none: the Red Army's anti-tank fitting is the ZiS-3, and it has no machine gun team and no mortar
-yet, so its bunkers take neither of those two. Before the retirement they went through `natKey`, and before that an American
+none: the Red Army's anti-tank fitting is the ZiS-3 and its mortar pit the 82-PM-41, and it has no
+machine gun team yet, so its bunkers take no machine gun post. Before the retirement they went through `natKey`, and before that an American
 bunker's anti-tank casemate was a Canadian 6-pounder.
 
 **And the brain's shopping list is written in the live keys.** `LADDER`, the role table and
@@ -6473,10 +6488,11 @@ saved for nothing, which is why the head of the list is only ever a live key.
 **The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
 pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
 fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
-has twelve things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+has thirteen things so far: its headquarters, the Shtab; its builders, the Sapery, with their
 flamethrowers and their minefield; its rifle squad, the Strelki, out of the Shtab; its first
-production building, the Kazarma; its assault engineers, the Shturmoviki, the Komsomolets T-20, its
-armoured tractor, and the ZiS-3, its divisional gun, out of the Kazarma; its second production building, the Avtopark; the
+production building, the Kazarma; its assault engineers, the Shturmoviki, its battalion mortar, the
+82-PM-41, the Komsomolets T-20, its armoured tractor, and the ZiS-3, its divisional gun, out of the
+Kazarma; its second production building, the Avtopark; the
 BA-64B, its armoured car, out of that; its third and last, the Tankovyy park; and out of that the
 T-34/76, its medium tank, which a squad can ride on, and the SU-85, its tank destroyer. The B-4 position the Sapery are to dig comes with
 a row of its own.
@@ -6489,8 +6505,8 @@ name. When the file was added the player said explicitly that nothing else in it
 yet. When a unit is asked for ("add the IS-2", with a drawing), its stats come off its
 row: the price, the time and the population, the hit points and the plate (front, side and rear in
 millimetres, with the turret's in brackets), the speed and the sight, the weapon, and what it carries
-beside it. The units already built (the Sapery, the Strelki, the Shturmoviki, the Komsomolets T-20,
-the ZiS-3, the BA-64B, the T-34/76 and the SU-85) took their rows' numbers as they stand in the file, and a new one does the same unless told
+beside it. The units already built (the Sapery, the Strelki, the Shturmoviki, the 82-PM-41, the
+Komsomolets T-20, the ZiS-3, the BA-64B, the T-34/76 and the SU-85) took their rows' numbers as they stand in the file, and a new one does the same unless told
 otherwise. The file is the player's: a row changes when the player changes it, and a duel that
 disagrees with a row is reported to the player, who decides.
 
@@ -6667,7 +6683,7 @@ each gable with white frames (`svWindow`), and two stovepipes through the roof; 
 on its staff, the field kitchen on two wheels with its boiler, firebox and chimney, the rifles stood
 together round a post, a table and its log benches, the wall newspaper on its board and a barrel of
 water, and behind it the woodpile and the crates. It is the 29th's barracks' size, 116 by 96, and
-makes the Shturmoviki and the T-20. On a beach whose landing side builds out of the craft, a Soviet
+makes the Shturmoviki, the 82-PM-41, the T-20 and the ZiS-3. On a beach whose landing side builds out of the craft, a Soviet
 player's Kazarma is a barracks post out of a craft (`craftPostFaces` reads it as one).
 
 **The Shturmoviki** (`sv_shturm`, out of the Kazarma, 400 manpower, 30 fuel, 30 seconds, 10 of
@@ -7080,6 +7096,48 @@ through a Panther's side and never its front, and it takes seven hits to kill on
 the MG 34 team every time in 9 seconds; on the AP round a grenadier squad walking into it takes it every
 time in 9 seconds without losing a man, because the gun is waiting for armour.
 
+**The 82-PM-41** (`sv_mor`, out of the Kazarma beside the Shturmoviki, 250 manpower, 10 fuel, 26 seconds,
+6 of population, M) is the Red Army's battalion mortar: three men of 54 hit points, 46 of speed and 260 of
+sight, in action 3 seconds after it halts and packed 2.5 seconds after it is ordered off. On its own account
+it is 58 over a burst of 34 every 4.2 seconds out to 480, and on a mission ten rounds into a circle of 56 out
+to 570, or smoke. Those are the row's numbers as it was pasted; the accuracy, the suppression and the
+mission's rate of fire are the 81's and the GrW 34's.
+
+There is no drawing of it. It is built off the American 81 (`mo81Model`), whose Brandt bipod it shares, to
+the published 1,220 mm of tube and 82 mm of bore, and to two photographs of one at a dealer's, read for what
+stands where and not for any measure (`pmModel`, `PMG`, in the 4BO green and baked the way the ZiS-3 is). The
+plate is round, 0.6 m across, turned down at its edge and rising to the socket, with an eight-pointed star
+pressed round the socket, ribs out to the edge between its points, four wire handles and a bracket at the
+back. The collar is a little over half way up the tube, the traversing mechanism across in front of it with
+a rod and knob out of its right end and the sight on its left, and two buffers run along the front of the
+tube down past a band with its clamp screw. The column comes down from the head with the elevating screw
+black at its foot, a lever with a ball near its top and the cross-levelling lever on the clamp at its foot,
+and the two legs are pressed channel from a hinge there to a stub axle each. The wheels are what tells it
+from the 81: pressed discs with five holes through them on a steel rim with its edges rolled over, a hub
+with five bolts and a split pin through the cap, standing with their tops leaning in at 0.38 radians, as
+both photographs have them (`pmWheel`). The holes are real (`pmDisc`): the disc is laid on a grid round the
+axle with the cells whose middle falls in a hole left out and the corners that fall in one moved out onto
+its edge, so they come out round and the ground shows through them. And a part turned by `roll` loses its
+normals and its tile, so the wheels are turned by a matrix of their own (`pmXf`) that keeps both.
+
+It is pulled along on its wheels by the muzzle. Its travel shape (`pmModel(true)`) is the whole mortar tipped
+forward 1.17 radians about the axle, so the tube lies level with the plate standing up behind the breech and
+a canvas strap on the muzzle, and the legs are built again from where the hinge has gone to the wheels, which
+do not turn: turned with the rest, a wheel leaning in would have come out toed 18 degrees. `runAt` puts the
+piece 22.4 units behind the gunner and 2.3 to his right, which is the strap at his hand. Set up, the gunner
+kneels at the left of the bipod with his right hand on the lever (`gunY` -3.8, `gunAt` -0.9, the plate
+behind him and to his right), where kneeling behind the plate as the 81's gunner does put him on it; the
+loader kneels at the right of the tube facing it with his hands on it (`gunMate`), and the man who brings
+the bombs up stands beside the gunner with three of them in a tray (`box82`, `pmTray`, the PPS-43 man the
+ZiS-3's bearers are). A man killed goes down as `sov_at`, the Red Army's bunker takes it as its mortar pit,
+and the brain buys it on the rule the other two armies' tubes are bought (`K.mor`).
+
+On the duel card, over twelve runs a row, a grenadier squad takes it every time in 7.4 seconds and an MG 34
+team every time in 6.5, where the American 81 on the same afternoon loses the same two fights in 7.7 and 6.6
+seconds; the Knight's Cross Holders take it every time in 4.1 seconds and the KS 750 every time in 11.3. The
+card stages a pair at the shorter reach, so a mortar meets everything inside the reach of what it is meant to
+be shelling, which is the fight it is helpless in, and the two tubes are level at it.
+
 The brain on the Soviet slot builds the Kazarma as its first building (`K.b1`) and buys a T-20 out of
 it (`LADDER`, one) and two ZiS-3s after it, the rung opening at 130 seconds as the anti-tank guns' do
 across the beach: `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
@@ -7090,13 +7148,14 @@ park third (`K.b3`) and buys two T-34s out of it, the rung opening at 310 second
 SU-85 after them, its rung opening at 380, and more T-34s as the count of mediums allows; `aiCutLadder`
 reads the T-34 as a medium, the SU-85 among the things that kill a heavy and the T-20 and the BA-64B as
 light armour. It puts nobody on the deck. The post's own shopping (the machine gun, the
-mortar, the assault squad) runs once the first building stands, and the Red Army has only the third of
-them: the Shturmoviki are its assault squad (`K.elite`), and a key the army has not got is a thing it
-cannot buy (`canPost`), where it threw.
+mortar, the assault squad) runs once the first building stands, and the Red Army has the second and the
+third of them: the 82-PM-41 is its mortar (`K.mor`), bought on the rule the other two armies' tubes are,
+and the Shturmoviki are its assault squad (`K.elite`); it has no machine gun team, and a key the army has
+not got is a thing it cannot buy (`canPost`), where it threw.
 
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
 brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders, the
-Strelki as its line (`K.inf`) and the Shturmoviki as its assault squad, has a T-20, two ZiS-3s, a BA-64B, the T-34s and an SU-85 on its shopping ladder, digs no battery and lays a minefield every fourth work.
+Strelki as its line (`K.inf`), the 82-PM-41 as its mortar and the Shturmoviki as its assault squad, has a T-20, two ZiS-3s, a BA-64B, the T-34s and an SU-85 on its shopping ladder, digs no battery and lays a minefield every fourth work.
 **And an army whose only infantry is its builder fights with it.** Every rule that leaves an
 engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
 engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
@@ -8005,7 +8064,7 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 | 3 | Tank Yard (`us_tank`, 300 and 60) | Panzerpark (`ger_pz`) | Stuart, M4A1, Easy Eight, Calliope, M18, M26 / Panzer IV, StuH 42, Panther, Tiger, King Tiger, Maus |
 
 The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and three tiers over it, the Kazarma
-(`sov_bar`, 200), which makes the Shturmoviki, the T-20 and the ZiS-3, the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
+(`sov_bar`, 200), which makes the Shturmoviki, the 82-PM-41, the T-20 and the ZiS-3, the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
 BA-64B, and the Tankovyy park (`sov_tank`, 300 and 60), which makes the T-34/76 and the SU-85. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
 building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
@@ -9977,6 +10036,12 @@ shots/                         screenshot output, gitignored
 
 ## Gotchas
 
+- **A crew's place round its gun has to fall inside the unit's circle on a phone as well.** A place
+  laid off the gun (`gunMate`, `gunCrew`) is refused when it lands outside `selRadius` less three, and
+  on a phone the place is a fifth further out (`FIG_SCALE`) while the circle is not. The 82-PM-41's
+  bearer was given a place behind the plate that was 36 units from the unit's middle on a desktop and
+  41 on a phone against a limit of 39, so he took it on the one and stood in his formation slot fifty
+  units in front of the gun on the other. Measure a place from `u.x`, which is not the gun, at 1.2.
 - **A squad on a tank's deck is in the world.** `u.inside` was the one flag that took a squad off
   the field, and every system that skips a squad aboard a carrier asks it; a riding squad (`u.ride`)
   is not inside, so it is seen, shot at and shooting, and anything that has to leave it alone has to
