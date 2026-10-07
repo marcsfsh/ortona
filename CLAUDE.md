@@ -1428,13 +1428,14 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
-**And six rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
-the player's slot fields it against the 352nd, the Shtab makes the Sapery and refuses the 29th's
-rifle squad, the side opens with three squads of four in the four sapper variants with the PPS-43,
+**And eight rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+the player's slot fields it against the 352nd, the Shtab makes the Sapery and the Strelki and refuses
+the 29th's rifle squad, the side opens with a squad of Sapery and two of Strelki, the Sapery are four
+men in the four sapper variants with the PPS-43,
 the plates, the ring and the helmet are on them, the sapper's card offers the four works with the
 minefield and the ROKS-3 and nothing of another army, a bunker fitting raises no team of his, and a
 man killed goes down as `sov_sap`. Then a brain is put on his slot for 45 seconds and has to buy
-only Sapery, keep one back to dig and deal the rest jobs. Then the ROKS-3 goes on for its price and
+nothing of another army, keep its Sapery to dig and deal the Strelki jobs. Then the ROKS-3 goes on for its price and
 burns a garrison out of a house from inside its reach, with the jet drawn and the house alight, and
 a minefield laid in front of the headquarters is hidden from the enemy, takes a man of a squad
 walked across it and holds a 251 driven across it, with the German brain switched off for the drill
@@ -1446,7 +1447,20 @@ of the squad aboard is drawn on a cushion facing outward with his feet out at th
 it has got down, the commander wears the padded helmet and none of the SSh-40 and is the eye, two to six units over the
 roof, a Kar98k never goes through its front and a Pak 38 always goes through its side, forty wrecks
 throw nothing and sit down, killed it leaves two bodies of the army's crewmen, and a brain on his
-slot with a Kazarma standing queues a T-20 there inside forty seconds. The fifth asks the Avtopark and
+slot with a Kazarma standing queues a T-20 there inside forty seconds. The fifth asks the Strelki: the
+Shtab makes them and the Kazarma refuses them, seven men of 64 in five rifle variants with the Mosin at
+19.5 units over its bayonet, the pilotka on the leader and the SSh-40 on a rifleman, a man refilled at
+17 where the full price is 29, the card offering both fittings, the Molotov and Ura! and, once the
+DP-28s are fitted, not the PPSh-41s, the fifth and sixth men firing the DP-28 on its own clock, a bottle
+on a grenadier squad in the open leaving one fire on the ground and hurting the squad, the squad walking
+more than a quarter faster after the shout, a bottle into a held house setting cells of it alight, a
+man killed going down as `sov_str`, and a brain on his slot buying them out of the Shtab. The sixth asks
+the Shturmoviki: the Kazarma makes them and the Shtab refuses them, six men of 96 in four variants with
+the PPSh-41 and the SN-42 on all four, the card offering the grenades, the satchel and the smoke, forty
+volleys from in front against forty from behind with the same seeded rolls coming to .80 and a shell to
+1, a volley of RGD-33s hurting a grenadier squad, the satchel sent at a 251 and at a Kaserne taking 150
+and 200 or more off each, the smoke grenade making a cloud of more than 40, a man killed going down as
+`sov_sht`, and a brain on his slot buying them out of the Kazarma. The seventh asks the Avtopark and
 the BA-64B: the card offers the Avtopark, which needs the Kazarma, makes the car and queues it, and the
 Kazarma refuses the car; every buffer is built and it is named the BA-64B, its turret asked to lay over
 the tail comes all the way round, the DT's flash leaves the gun's own muzzle off the middle of the
@@ -1455,7 +1469,7 @@ rim, a Kar98k never goes through its front and a Pak 38 always does, eighty wrec
 some of the time, killed it leaves two of the army's crewmen, and a brain on his slot with a Kazarma
 standing pegs out an Avtopark and buys the car out of it. The row puts the clock past six hundred
 seconds first, because the car's rung opens at 210 seconds times the difficulty's gate, which is 315 at
-regular, and a row that leans on how long the rows before it ran is a row about those rows. The sixth
+regular, and a row that leans on how long the rows before it ran is a row about those rows. The eighth
 asks the Tankovyy park, the T-34/76 and its riders: the card offers the park, which needs the Avtopark,
 makes the tank and queues it, and the Avtopark refuses the tank; every buffer is built, the hatch's
 three among them, and it is named the T-34/76 with a coaxial DT and tows, its turret asked to lay over
@@ -1468,7 +1482,7 @@ the shooting to them, drives a hundred and sixty units with the squad on it; a g
 front of them is shot at and hurt, a burst beside the tank hurts the riders, a move order with the tank
 in it leaves them aboard and one without it gets them down, and the tank killed under a squad throws it
 off. Then a brain on his slot with the Avtopark standing pegs out a Tankovyy park and buys a T-34 out of
-it, with the clock past seven hundred seconds for the reason the fifth row puts it past six.
+it, with the clock past seven hundred seconds for the reason the seventh row puts it past six.
 
 **And one row counts what a battle holds on the card.** An iPhone tab is killed for memory without
 a word on the console, so the row hooks `bufferData` and `deleteBuffer` before a deploy on
@@ -6608,7 +6622,15 @@ of `MODELS.nade` for the RGD-33, the bottle, the satchel and the smoke grenade, 
 pick mode for a throw is in `ABMODE` and `callPick` answers it on the click and the tap paths. The brain
 uses the bottle at three men or more, a crew or a house, and the shout when the squad has more than
 150 to go and is under fire or has the enemy inside 320 (`abUraWant`); under SIMPLE the cards are on
-the unit's card.
+the unit's card. Measured by the gate: a bottle on a grenadier squad in the open took 72 off it and left
+one fire, and the squad walked 128 units in two seconds before the shout and 180 after it.
+
+**Their numbers are the row's, and the duel card has them a step behind the grenadier squad at their own
+reach.** Over twelve runs a row the bare squad takes the grenadier squad a third of the time at 217 and
+92 per cent at 130; with the DP-28s half the time at 217; and with the PPSh-41s 8 per cent at 217,
+because the two men with them fire nothing past 160, and every time at 130. The MG 34 team takes them
+eleven times in twelve and the Knight's Cross Holders every time, and they take the KS 750 a quarter of
+the time.
 
 **The Kazarma** (`sov_bar`, `svKazarma`, 200 manpower, 26 seconds, hotkey 1) is the army's first
 production building and its only tier so far (`NATIONS.sov.tiers`): a company's barrack of round
