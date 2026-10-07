@@ -4958,6 +4958,12 @@ for (const device of TARGETS) {
        other, both walkable, nothing cover near either, and a clear line between them */
     const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
                             !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    /* and room round it for the crew's places, which a spot found beside something did not have:
+       the bearers' places were refused and they stood where they were */
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
     let st = null;
     for (let r = 0; r < 1600 && !st; r += 60)
       for (let k = 0; k < 16 && !st; k++) {
@@ -5012,7 +5018,7 @@ for (const device of TARGETS) {
       for (let k = 0; k < 16 && !at; k++) {
         const x0 = st ? st.ax : hq.x + 120, y0 = st ? st.ay : hq.y - 320;
         const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
-        if (clear(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
       }
     out.openSand = !!at;
     if (!at) at = W.nearestFree(hq.x + 120, hq.y - 320);
@@ -5035,6 +5041,7 @@ for (const device of TARGETS) {
     out.loaderRight = r1[1] > 2 && r1[0] < -6;
     out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -14);
+    out.bpos = [2, 3, 4].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
     out.why = (out.openSand ? 'on open sand' : 'NO open sand found') + (u.coverSlots ? ', in cover' : '') + (u.target ? ', a target' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.am_at;
     const mz = W.muzzlePoint(u, u.models[0], 0);
@@ -5088,7 +5095,7 @@ for (const device of TARGETS) {
      `${at57.set ? 'set up' : 'NOT set up'} as ${at57.setVars} in poses ${at57.poses}, the loader at ${at57.loader} ` +
      `${at57.loaderRight ? 'on the right' : 'NOT on the right'} and ${at57.loaderFaces ? 'facing the breech' : 'NOT facing it'}` +
      `${at57.loaderRight && at57.loaderFaces ? '' : ' (' + at57.why + ')'}, the bearers ` +
-     `${at57.bearers === 'cover' ? 'in cover' : at57.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${at57.mesh ? 'open' : 'WRONG'}, ` +
+     `${at57.bearers === 'cover' ? 'in cover' : at57.bearers ? 'back behind the gun' : 'NOT in place (' + at57.bpos + ')'}, the piece ${at57.mesh ? 'open' : 'WRONG'}, ` +
      `the flash ${at57.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's box ${at57.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${at57.packMesh ? 'closed' : 'NOT closed'} and the piece ${at57.runs} from the gunner; killed went down as ${at57.bodyNat}, bodies ` +
      `${at57.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${at57.bunkKey} and put in ${at57.bunkGun}`);
@@ -5125,6 +5132,12 @@ for (const device of TARGETS) {
        headquarters is hedgerow and lane and has nowhere 520 across with nothing on it */
     const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
                             !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    /* and room round it for the crew's places, which a spot found beside something did not have:
+       the bearers' places were refused and they stood where they were */
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
     let st = null;
     for (let r = 0; r < 1600 && !st; r += 60)
       for (let k = 0; k < 16 && !st; k++) {
@@ -5177,7 +5190,7 @@ for (const device of TARGETS) {
       for (let k = 0; k < 16 && !at; k++) {
         const x0 = st ? st.ax : uhq.x + 120, y0 = st ? st.ay : uhq.y - 320;
         const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
-        if (clear(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
       }
     out.openSand = !!at;
     if (!at) at = W.nearestFree(uhq.x + 120, uhq.y - 320);
@@ -5200,6 +5213,7 @@ for (const device of TARGETS) {
     out.loaderRight = r1[1] > 2 && r1[0] < -6;
     out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
     out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4].every(i => rel(u.models[i])[0] < -12);
+    out.bpos = [2, 3, 4].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
     out.why = (out.openSand ? 'on open sand' : 'NO open sand found') + (u.coverSlots ? ', in cover' : '') + (u.target ? ', a target' : '');
     out.mesh = W.teamMesh(u) === W.MODELS.gun.hr_pak;
     const mz = W.muzzlePoint(u, u.models[0], 0);
@@ -5253,7 +5267,7 @@ for (const device of TARGETS) {
      `${pk38.set ? 'set up' : 'NOT set up'} as ${pk38.setVars} in poses ${pk38.poses}, the loader at ${pk38.loader} ` +
      `${pk38.loaderRight ? 'on the right' : 'NOT on the right'} and ${pk38.loaderFaces ? 'facing the breech' : 'NOT facing it'}` +
      `${pk38.loaderRight && pk38.loaderFaces ? '' : ' (' + pk38.why + ')'}, the bearers ` +
-     `${pk38.bearers === 'cover' ? 'in cover' : pk38.bearers ? 'back behind the gun' : 'NOT in place'}, the piece ${pk38.mesh ? 'open' : 'WRONG'}, ` +
+     `${pk38.bearers === 'cover' ? 'in cover' : pk38.bearers ? 'back behind the gun' : 'NOT in place (' + pk38.bpos + ')'}, the piece ${pk38.mesh ? 'open' : 'WRONG'}, ` +
      `the flash ${pk38.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${pk38.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
      `${pk38.packMesh ? 'closed' : 'NOT closed'} and the piece ${pk38.runs} from the gunner; killed went down as ${pk38.bodyNat}, bodies ` +
      `${pk38.fall ? 'baked' : 'MISSING'}; the bunker's anti-tank fitting is ${pk38.bunkKey} and put in ${pk38.bunkGun}`);
@@ -8100,7 +8114,7 @@ for (const device of TARGETS) {
     return { q: W.__kzq.join(',') || 'nothing' };
   });
   ok('the Red Army\'s Kazarma raises the Komsomolets T-20: a tractor with a DT in its ball, six seats and a hook',
-     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_shturm,sv_t20' && kz.bname === 'Kazarma' && kz.bld > 100 &&
+     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_shturm,sv_t20,sv_zis3' && kz.bname === 'Kazarma' && kz.bld > 100 &&
      kz.q === 'sv_t20' && kz.qHq === 'refused' && kz.bufs && kz.name === 'Komsomolets T-20' &&
      kz.arc === .7 && Math.abs(Math.abs(kz.tur) - kz.arc / 2) < .03 && kz.t1 && !kz.t2 && kz.tows &&
      kz.aboard === 4 && kz.seated === kz.aboard && kz.seatOk && kz.unseated === 0 &&
@@ -8741,6 +8755,191 @@ for (const device of TARGETS) {
      `and a Panzer IV ${su.p4}; its 85 mm through a Panzer IV's front ${su.onP4}, a Panther's front ${su.paF} and its side ${su.paS}; ` +
      `forty wrecks threw ${su.blown} and sat down ${su.sink}; killed it left ${su.bodies} bodies of ${su.bodyNat}; a brain with the ` +
      `park standing (and ${su.madeSu} SU-85 on the tally already, which the row takes off it) queued ${suAi.q}`);
+
+  /* --- The ZiS-3, the Red Army's divisional gun, out of the Kazarma: the Kazarma makes it and
+     queues it and the Shtab refuses it, and it is six men, the gunner and the loader at the gun
+     and four bringing the rounds up a case each. Sited on open ground with a Panzer IV coming at
+     it from 520 it has the first round off. Halted, the trails open and the gunner kneels at the
+     sight on the left with the loader at the breech on the right, facing it; on the move the
+     trails close and the piece rides beside the gunner. With the AP round up it picks the tank
+     out of a grenadier squad beside it and nothing at all with the squad alone; with the HE round
+     up it reaches further and fires at the squad; and a brain on his slot puts HE up with only
+     men in front of it and AP up when a tank comes into reach. A man of it killed goes down as
+     one of the crew, and the Red Army's bunker takes it as its anti-tank fitting. --- */
+  const zs = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    out.makes = W.makesOf(kb).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_zis3'); out.qHq = q(hq, 'sv_zis3');
+    const D = W.UNITS.sv_zis3;
+    out.name = D.name; out.bunk = W.bunkUnit(W.BUNKUP.at, own);
+    /* open ground for the drill, found the way the Pak 38's is */
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    /* and room round it for the crew's places: beside the headquarters the loader's place at the
+       breech was inside the building and he stood where he was */
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay) || !roomy(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 520 * Math.cos(th), by = ay + 520 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let okL = true;
+          for (let s = 1; s < 13 && okL; s++) okL = W.walkable(ax + (bx - ax) * s / 13, ay + (by - ay) * s / 13);
+          if (okL && W.traceClear(ax, ay, W.groundZ(ax, ay) + 12, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 12, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    if (st) {
+      const a = W.spawnUnit(own, 'sv_zis3', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('ger', 'hr_p4', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detGer || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+      G.units.length = 0; G.shots.length = 0;
+    }
+    /* the six of them, set up and walking, on open ground away from cover */
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x, y0 = st ? st.ay : hq.y;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    out.open = !!at;
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_zis3', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = ['sv_atg', 'sv_atb', 'sv_atb_b'].every(v => W.MODELS.man[v] && W.MODELS.man[v][W.POSE_STAND] && W.MODELS.man[v][W.POSE_WALK]) &&
+                !!(W.MODELS.served.sv_zis3 && W.MODELS.served.sv_zis3.mate) && !!(W.MODELS.gunRec.sv_zis3 && W.MODELS.gunPk.sv_zis3);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    out.poses = u.models.map(m => m.pose).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -6;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4, 5].every(i => rel(u.models[i])[0] < -10);
+    out.bpos = [2, 3, 4, 5].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_zis3;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.box = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box76;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_zis3;
+    const gq = W.gunPost(u), g0 = u.models[0];
+    out.runs = +(Math.hypot(gq.x - g0.x, gq.y - g0.y) / W.FIG_SCALE).toFixed(1);
+    u.packed = false;
+    /* a man of it goes down as one of the crew */
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    out.fall = !!(W.MODELS.fall.sov_at && W.MODELS.dead.sov_at);
+    W.killUnit(u);
+    G.units.length = 0;
+    /* the two rounds, on the drill's own line, which was traced clear both ways: a grenadier squad
+       280 out alone and then with a Panzer IV behind it, under the AP round and then the HE. Put
+       down three hundred out on whatever bearing the gun faced, a house or a rise was in the way
+       on one run and the gun picked nothing at all */
+    const ln = st || { ax: at.x, ay: at.y, th: 0 };
+    const v = W.spawnUnit(own, 'sv_zis3', ln.ax, ln.ay, ln.th);
+    v.setup = 0; v.packed = false; v.pack = 0; v.facing = ln.th; v.order = null; v.path = null;
+    const along = d => ({ x: ln.ax + Math.cos(ln.th) * d, y: ln.ay + Math.sin(ln.th) * d });
+    const gp0 = along(280), tp0 = along(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp0.x, gp0.y, ln.th + Math.PI);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    see(g);
+    v.up = {}; v.forced = null; v.target = null;
+    out.apMen = (W.acquire(v) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp0.x, tp0.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    W.setRound([v], true);
+    const hw = W.mainW(v);
+    out.he = hw.dmg + '/' + hw.aoe + '/' + hw.range;
+    out.heBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    W.setRound([v], false);
+    out.apRange = W.mainW(v).range;
+    G.units.splice(G.units.indexOf(tk), 1);
+    /* the brain on his slot picks the round off what is in front of the gun */
+    v.up = {}; v.setup = 0; v.packed = false;
+    W.__zsU = v; W.__zsT0 = tp0; W.__zsAi = W.slotOf('ger').ai; W.slotOf('ger').ai = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    return out;
+  });
+  await fastForward(page, 4);
+  const zsAi = await page.evaluate(() => {
+    const W = window, G = W.G, u = W.__zsU, out = {};
+    out.menOnly = !!(u.up && u.up.he);
+    const tk = W.spawnUnit('ger', 'hr_p4', W.__zsT0.x, W.__zsT0.y, u.facing + Math.PI);
+    tk.vUs = true; tk.detUs = 1; tk.hp = tk.maxHp = 1e6; W.__zsT = tk;
+    return out;
+  });
+  await fastForward(page, 4);
+  const zsAi2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, u = W.__zsU, out = {};
+    out.withTank = !(u.up && u.up.he);
+    W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__zsAi;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    return out;
+  });
+  const fzs = zs.first, bzs = zs.bFirst;
+  ok('the Red Army\'s Kazarma raises the ZiS-3, with six men, an AP round for armour and an HE round for anything',
+     /sv_zis3/.test(zs.makes) && zs.q === 'sv_zis3' && zs.qHq === 'refused' && zs.name === '76 mm ZiS-3' && zs.bunk === 'sv_zis3' &&
+     zs.staged && !!fzs && (!bzs || bzs.t >= fzs.t + 1) && fzs.found < 1 &&
+     zs.men === 6 && zs.baked && zs.set && zs.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb_b' && /^11,11,/.test(zs.poses) &&
+     zs.loaderRight && zs.loaderFaces && zs.bearers && zs.mesh && zs.muz && zs.box && zs.packMesh && zs.runs > 8 && zs.runs < 12 &&
+     zs.apMen === 'nothing' && zs.apBoth === 'hr_p4' && zs.he === '90/45/600' && zs.heBoth === 'hr_gren' && zs.apRange === 540 &&
+     zsAi.menOnly && zsAi2.withTank && zs.bodyNat === 'sov_at' && zs.fall,
+     `the Kazarma makes ${zs.makes} and queues ${zs.q}, the Shtab ${zs.qHq} it; named ${zs.name}, the bunker's anti-tank fitting ` +
+     `${zs.bunk}; ` + (zs.staged ? `sited against a Panzer IV at 520 it fired ${fzs ? 'at ' + fzs.t + ' s from ' + fzs.d + ' with the tank ' + (fzs.found < 1 ? 'yet to find it (' + fzs.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${bzs ? 'answered at ' + bzs.t + ' s from ' + bzs.d : 'never fired'}; ` : 'NO open ground to stage the drill on; ') +
+     `${zs.men} men, the variants, the served bodies and the three meshes ${zs.baked ? 'baked' : 'NOT baked'}; halted ` +
+     `${zs.set ? 'set up' : 'NOT set up'} as ${zs.vars} in poses ${zs.poses}, the loader at ${zs.loader} ${zs.loaderRight ? 'on the right' : 'NOT on the right'} ` +
+     `and ${zs.loaderFaces ? 'facing the breech' : 'NOT facing it'}${zs.open ? '' : ' (no open ground)'}, the bearers ` +
+     `${zs.bearers === 'cover' ? 'in cover' : zs.bearers ? 'back behind the gun' : 'NOT in place (' + zs.bpos + ')'}, the piece ${zs.mesh ? 'open' : 'WRONG'}, ` +
+     `the flash ${zs.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${zs.box ? 'in his hand' : 'MISSING'}; packed the trails ` +
+     `${zs.packMesh ? 'closed' : 'NOT closed'} and the piece ${zs.runs} from the gunner; with AP up it picked ${zs.apMen} with the squad alone ` +
+     `and ${zs.apBoth} with the tank beside it, with HE up (${zs.he}) ${zs.heBoth}, and AP reaches ${zs.apRange}; the brain put HE up ` +
+     `${zsAi.menOnly ? 'with men in front' : 'NOT with men in front'} and AP ${zsAi2.withTank ? 'with the tank in reach' : 'NOT with the tank in reach'}; ` +
+     `killed went down as ${zs.bodyNat}, bodies ${zs.fall ? 'baked' : 'MISSING'}`);
 
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were

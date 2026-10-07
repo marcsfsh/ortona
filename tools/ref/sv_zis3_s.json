@@ -1,0 +1,5 @@
+{ "image": "shots/ref/sv_zis3.png", "key": "sv_zis3", "pack": true, "up": [], "crew": false,
+  "note": "The side view and the rear view, both with the trails closed, at the 75.5 px/m of sv_zis3.json.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 255, 485, 125], "ppm": 75.5, "at": [0, 0, 0], "px": [212.7, 366.5], "k": 3 },
+    "rear":  { "crop": [372, 98, 128, 115], "ppm": 75.5, "at": [0, 0, 0], "px": [437.5, 205.5], "k": 5 } } }

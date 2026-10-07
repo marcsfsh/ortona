@@ -2355,6 +2355,23 @@ var UNITS = {
           smk: { range: 130, cd: 45, r: 52, dur: 24, fuse: .6, nade: 'smoke' } },
     desc: 'Six assault engineers of the Red Army in the SN-42 breastplate, which takes a fifth off rifle and machine gun fire from in front, every one with the PPSh-41 and its drum. GRENADES throws an RGD-33 from every man at whatever is nearest inside the throw; SATCHEL CHARGE sends them after a vehicle or a building you pick, and one of them throws it; SMOKE puts a screen down on a piece of ground you pick.'
   },
+  /* The ZiS-3: the Red Army's 76 mm divisional gun, out of the Kazarma, with a crew of six. It
+     fires the AP round at armour as an anti-tank gun does (`atOnly`), and with the HE round up
+     (`wUp.he`) it fires at anything, men, crews and houses, further than the AP reaches: the
+     crew pick the round as the eighty-eight's do, and changing it costs most of a reload. It
+     walks, sets up and packs as the Pak 38 does, and on the same carriage drill. */
+  sv_zis3: {
+    side: 'us', nat: 'sov', name: '76 mm ZiS-3', short: 'ZIS-3', cat: 'team', hk: 'T',
+    models: 6, hpPer: 64, speed: 36, sight: 600, pop: 10, cost: { mp: 330, fu: 25 }, time: 28,
+    req: 'sov_bar', setup: 4.5, pack: 5.0, atOnly: true, blastRes: .45, closeWeak: 2.2, runAt: [1.5, 9.2], carr: .47, carrRate: .85,
+    gunner: 'sv_atg', body: 'sov_at', carryP: { can: 'box76', canH: 2.4 },
+    gunAt: 9.4, gunY: -4.6, gunMuz: [31.1, 9.6], gunGrip: [-6.46, -3.6, 7.53], gunGripL: [-7.6, -7.25, 8.13],
+    gunMate: { at: [-9.0, 4.2], a: -Math.PI / 2, grip: [-7.9, 1.25, 10.2], gripL: [-10.2, 1.25, 9.6], pose: 'served' },
+    gunCrew: [[-14, -15], [-14, 15], [-24, -4], [-24, 4]],
+    w: { mm: 98, range: 540, dmg: 125, rof: 3.0, acc: .80, sup: .02, pen: 200, aoe: 26, shell: 1, brake: 1 },
+    wUp: { he: { range: 600, dmg: 90, rof: 3.0, acc: .74, sup: .30, pen: 40, aoe: 45, shell: 1, brake: 1 } },
+    desc: 'The Red Army\'s 76 mm divisional gun on its split trail, with a crew of six. The AP round goes after armour and nothing else; the HE round reaches further and goes after anything, men in the open, a crew or a house. Pick the round. Helpless if infantry get on top of it.'
+  },
   /* The Komsomolets T-20: the Red Army's light armoured artillery tractor, out of the Kazarma. A
      driver and a commander in an armoured cab, the commander firing the DT in its ball on the
      right of the front plate, which traverses twenty degrees either way (`arc`) and turns the
@@ -2501,8 +2518,8 @@ var BUILDINGS = {
   /* and its first production building, the company's barrack, which turns out its assault
      engineers and its tractor */
   sov_bar: { side: 'us', nat: 'sov', name: 'Kazarma', short: 'KAZARMA', w: 116, h: 96, hp: 1500, hk: '1',
-             cost: { mp: 200 }, time: 26, makes: ['sv_shturm', 'sv_t20'],
-             desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Shturmoviki and the Komsomolets T-20.' },
+             cost: { mp: 200 }, time: 26, makes: ['sv_shturm', 'sv_t20', 'sv_zis3'],
+             desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Shturmoviki, the Komsomolets T-20 and the ZiS-3.' },
   sov_mot: { side: 'us', nat: 'sov', name: 'Avtopark', short: 'AVTOPARK', w: 136, h: 106, hp: 1700, hk: '2', need: 'sov_bar',
              cost: { mp: 240, fu: 30 }, time: 32, makes: ['sv_ba64'],
              desc: 'A vehicle park: a shed of logs with two bays, the ramp a car is worked on from underneath, a tripod hoist and the fuel behind logs. Needs the Kazarma. Raises the BA-64B.' },
@@ -2615,7 +2632,7 @@ var BUNKUP = {
          unit: { us: 'am_mg', ger: 'hr_mg' },
          desc: 'A belt-fed gun laid through the slot on a fixed mount, with the boxes stacked beside it. It fires where the bunker looks and nowhere else.' },
   at:  { name: 'Anti-tank casemate', short: 'AT GUN', hk: '2', cost: { mp: 300, fu: 20 }, time: 26,
-         unit: { us: 'am_at', ger: 'hr_pak' },
+         unit: { us: 'am_at', ger: 'hr_pak', sov: 'sv_zis3' },
          desc: 'The embrasure opened out and a field gun run into it. It kills armour coming up the crossing in front of it and can do nothing at all about anything that gets round the side.' },
   mor: { name: 'Mortar pit', short: 'MORTAR PIT', hk: '3', cost: { mp: 250, fu: 10 }, time: 22,
          unit: { us: 'us_mor', ger: 'ger_mor' }, rear: 92,
@@ -8450,6 +8467,9 @@ function orderStop(u) {
    target choice and the shot itself all follow the switch with nothing else to tell.
    Changing rounds costs most of a reload and the gun is laid again: a crew that has an
    AP round chambered does not fire HE on the next tick. */
+/* an anti-tank gun with its AP round up, which waits for armour; one that carries HE and has
+   it up fires at whatever its side can see */
+function atNow(u) { return !!u.def.atOnly && !(u.up && u.up.he); }
 function setRound(list, he) {
   for (var i = 0; i < list.length; i++) {
     var u = list[i];
@@ -10027,13 +10047,13 @@ function acquire(u) {
   }
   var best = null, bestScore = -1e9;
   var maxR = Math.max(reachOf(u, mainW(u)), u.def.at ? u.def.at.range : 0);
-  var antiTank = !!(u.def.at || u.def.atOnly) || mainW(u).pen > 60;
+  var antiTank = !!(u.def.at || atNow(u)) || mainW(u).pen > 60;
   for (var i = 0; i < G.units.length; i++) {
     var e = G.units[i];
     if (e.dead || e.side === u.side || e.inside) continue;
     var d = dist(u, e);
     if (d > maxR) continue;
-    if (u.def.atOnly && e.cat !== 'veh') continue;
+    if (atNow(u) && e.cat !== 'veh') continue;
     /* A gun on a trail cannot pick what is outside its arc. An assault gun can, because
        it has tracks to turn on: it would rather shoot what is in front of it now, but
        it will bring the hull round for something worth the wait. */
@@ -10065,7 +10085,7 @@ function acquire(u) {
     if (e.sup > 1) sc -= 90;                             /* pinned men are no longer the danger */
     if (sc > bestScore) { bestScore = sc; best = e; }
   }
-  if (!best && !u.def.atOnly) {
+  if (!best && !atNow(u)) {
     for (var j = 0; j < G.blds.length; j++) {
       var b = G.blds[j];
       if (b.side === u.side || b.dead) continue;
@@ -16022,9 +16042,9 @@ function aiCutLadder(slot, base, IN, own) {
   for (lk in LT) lostAll += LT[lk];
   var byArm = lostAll > 400 ? ((LT.veh || 0) + (LT.gun || 0)) / lostAll : 0;
   var lt = side === 'us' ? { am_jeep: 1, am_m8: 1, am_stuart: 1, am_m3: 1, sv_t20: 1, sv_ba64: 1 } : { hr_ks750: 1, hr_251: 1, hr_234: 1 };
-  var killers = side === 'us' ? { am_at: 1, am_gmc: 1, am_e8: 1, am_m18: 1, am_m26: 1, sv_su85: 1 } : { ger_tig: 1, ger_kt: 1, hr_pak: 1, hr_puma: 1, hr_panther: 1, hr_marder: 1 };
+  var killers = side === 'us' ? { am_at: 1, am_gmc: 1, am_e8: 1, am_m18: 1, am_m26: 1, sv_zis3: 1, sv_su85: 1 } : { ger_tig: 1, ger_kt: 1, hr_pak: 1, hr_puma: 1, hr_panther: 1, hr_marder: 1 };
   var meds = side === 'us' ? { am_sher: 1, sv_t34: 1 } : { hr_p4: 1 };
-  var atKey = side === 'us' ? 'am_at' : 'hr_pak';
+  var atKey = natOfSlot(slot) === 'sov' ? 'sv_zis3' : side === 'us' ? 'am_at' : 'hr_pak';
   /* and what is for stripping men out of the open: forward when men are all he has, back
      when he has something heavy that it cannot scratch */
   var flak = side === 'us' ? { am_m16: 1 } : { hr_wirb: 1 };
@@ -16224,7 +16244,7 @@ function aiPickTarget(u, reach) {
       sc = 300;
       if (e.gar) sc -= 110;                            /* men in a house cost a lot to shift */
       if (w.aoe) sc += 90;                             /* a shell is worth spending on men */
-      if (u.def.atOnly) continue;                      /* an anti-tank gun waits for armour */
+      if (atNow(u)) continue;                          /* an anti-tank gun waits for armour */
     }
     sc -= d * .45;
     /* a weapon team is the most valuable thing on the field for what it costs to kill:
@@ -17390,7 +17410,7 @@ function aiTick(dt) {
      (`vb1`), where the other two armies' vehicles wait for the second */
   var nat = natOfSlot(slot);
   var K = nat === 'sov'
-    ? { eng: 'sv_sap', inf: 'sv_strel', elite: 'sv_shturm', lt: 'sv_t20', lt2: 'sv_ba64', tank: 'sv_t34', b1: 'sov_bar', b2: 'sov_mot', b3: 'sov_tank', vb1: 1 }
+    ? { eng: 'sv_sap', inf: 'sv_strel', elite: 'sv_shturm', at: 'sv_zis3', lt: 'sv_t20', lt2: 'sv_ba64', tank: 'sv_t34', b1: 'sov_bar', b2: 'sov_mot', b3: 'sov_tank', vb1: 1 }
     : side === 'us'
     ? { eng: 'am_eng', inf: 'am_rifle', mg: 'am_mg', mor: 'us_mor', how: 'us_how', elite: 'am_ranger', at: 'am_at', lt: 'am_jeep', lt2: 'am_m3', lt3: 'am_m8', tank: 'am_sher', b1: 'us_bar', b2: 'us_mot', b3: 'us_tank' }
     : { eng: 'hr_pio', inf: 'hr_gren', mg: 'hr_mg', auto: 'ger_flak20', mor: 'ger_mor', neb: 'ger_neb', how: 'ger_how', elite: 'hr_kch', at: 'hr_pak', lt: 'hr_ks750', lt2: 'hr_251', tank: 'hr_p4', heavy: 'ger_tig', b1: 'ger_qtr', b2: 'ger_dep', b3: 'ger_pz' };
@@ -17448,7 +17468,7 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_ba64', 1, 210], ['sv_t34', 2, 310], ['sv_su85', 1, 380], ['sv_t34', meds, 650]] : side === 'us'
+  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_zis3', 2, 130], ['sv_ba64', 1, 210], ['sv_t34', 2, 310], ['sv_su85', 1, 380], ['sv_t34', meds, 650]] : side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
@@ -18342,15 +18362,15 @@ function aiTick(dt) {
        already read. */
     var AG = aiAggr(u);
     u.fear = ((pressing && aiInWave(u, asId, razeT)) ? .3 : u.cat === 'veh' ? .85 : 1.05) * AG.fear;
-    /* The eighty-eight's crew choose the round from what is in front of them: AP while
-       there is armour it can reach, HE otherwise. It is decided before anything else
+    /* The eighty-eight's crew and the ZiS-3's choose the round from what is in front of them:
+       AP while there is armour it can reach, HE otherwise. It is decided before anything else
        can end the tick, because the retreat rule and the target reflex both do, and a
        gun that is in contact is exactly the one that needs asking: sat below the reflex
        it changed rounds only in the lulls, and shelled the infantry beside a Sherman
        with HE while the Sherman closed. It pays the reload the player pays. */
-    if (u.cat === 'team' && !u.def.speed && u.def.wUp && u.def.wUp.he && skill >= 1) {
+    if (u.cat === 'team' && u.def.wUp && u.def.wUp.he && skill >= 1) {
       var arm = false;
-      aiNear(u.x, u.y, 660, function (ae) {
+      aiNear(u.x, u.y, Math.max(660, u.def.w.range + 120), function (ae) {
         if (ae.cat === 'veh' && visibleTo(side, ae)) arm = true;
       });
       u.up = u.up || {};
@@ -40730,7 +40750,7 @@ function mgCarryModels() {
     m2hb: place(weaponModel(k, 'm2hb'), 0, 2.2, 0, 1.1),
     m2: place(m2Tripod(k, true), 0, 0, 0, .3),
     m3: place(m3Tripod(k, true), 0, 0, 0, .4),
-    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box(), box50: pkBox()
+    can30: ammoBox(k, false), can50: ammoBox(k, true), box57: m1Box(), box50: pkBox(), box76: zsBox()
   };
 }
 
@@ -41423,6 +41443,282 @@ function pkBox(open) {
   });
   f = f.concat(ksPipe([[-1.0, 0, h + .2], [-.6, 0, h + .6], [.6, 0, h + .6], [1.0, 0, h + .2]], .1, C.steel, 5));
   return f;
+}
+
+/* ================================================================ 76 mm ZiS-3
+   The Red Army's divisional gun: the 76 mm F-22USV tube on the ZiS-2's split trail, on the
+   wheels of the GAZ-AA, behind a single shield, which was built in greater numbers than any
+   other gun of the war and fought tanks with its AP round and everything else with its HE.
+   Laid off a sheet of two side views, a plan and the two ends with no scale on it: along the
+   gun and up it, and across it in the plan, the drawing is read at 75.5 pixels to the metre,
+   which puts the wheels 0.79 m over the tyre on a 1.37 m track, the bore 0.82 m up, the
+   muzzle 2.64 m ahead of the axle and the top of the shield 1.35 m up; the front view draws
+   the top of the shield a few pixels higher than the side view does, and the side was taken.
+   The side view has the trails closed and the plan has them open, a little over a quarter
+   of a right angle either side. Closed, the gun is 6.10 m long against the published 6.095.
+   Laid over the drawing, the first build agreed to about a line width in every view but
+   three places: the carrying handle on each trail lies along its top edge where it was a
+   hand lower, the lifting handle's grip bends back down at its end where it ran level, and
+   the opening the cradle comes through stands half a unit higher.
+     The shield is one plate leaning back twenty-three degrees, wide above the wheels and cut
+   in over them in a quarter round to a lower plate that hangs straight down between them
+   behind the axle, with an opening for the cradle, the sight's window on the left and a
+   stay out to it from each side of the cradle. The recuperator lies over the tube in front
+   of the shield, the buffer under it, and the cradle runs back under the breech in a tray.
+     Two pieces, as the Pak 38 is: the carriage, the shield and the cradle are the mesh, and
+   the tube with its breech ring is `rec`. Origin at the axle on the ground, x toward the
+   muzzle, and -y is the left, the gunner's side. */
+var ZSC = { body: TZC.body, lit: TZC.lit, dark: TZC.dark, steel: TZC.steel, bare: TZC.bare, rubber: TZC.rubber,
+            tyre: TZC.tyre, hole: TZC.hole };
+var ZSG = {
+  R: 4.6, W: 2.0, Y: 8.0, rim: 3.0,             /* 0.79 m wheels on a 1.37 m track */
+  bz: 9.6, tx: -1.3, tz: 8.6,                   /* the bore, and the trunnions */
+  muz: 30.9, brk: 25.9, brR: .93,               /* the muzzle and the back of the brake */
+  brF: -7.4, br: -10.8, brW: 2.3, brZ: 7.75, brH: 3.7,  /* the breech ring */
+  cB: 9.7, cF: 11.2, rz: 11.45, rr: .85, rx: -2.3,      /* the cradle's collar, and the recuperator over the tube */
+  s0: -1.7, sZ: 8.5, lean: .43,                 /* the shield: where its face is at sZ, and how far back it leans */
+  sW: 8.9, sT: 15.85, sB: 8.95, sK: 10.55, sL: 6.66,    /* its half width, top, foot, the corner over the wheel and the lower plate's half width */
+  oW: 1.45, oT: 13.5,                           /* the opening the cradle comes through */
+  lx: -1.9, lB: 1.3, lN: 7.6,                   /* the lower plate: where it hangs, its foot, and the notch in it */
+  hx: -2.4, hy: 3.82, hz: 5.6, ez: 2.4,         /* the trail hinges, and the height of the trail ends */
+  tl: 33.6, open: .45, shut: -.014              /* the trails, and each one's angle off the line, open and closed */
+};
+function zsShX(z) { var g = ZSG; return g.s0 - (z - g.sZ) * g.lean; }
+/* A 6.50-20 on the GAZ-AA's pressed disc: the tyre with its lugs in two staggered rows, the
+   rim, the dished disc with its five holes and the hub standing out past the tyre with its
+   studs. The axis is y. */
+function zsWheel(sd) {
+  var C = ZSC, g = ZSG, y = sd * g.Y, z = g.R, rr = g.R - .26, f = [], i, s;
+  f = f.concat(lathe(0, y, z, [[g.rim, -.9], [3.55, -1.0], [4.2, -.92], [rr, -.6], [rr, .6], [4.2, .92], [3.55, 1.0], [g.rim, .9],
+                               [g.rim, -.9]], 26, [C.tyre, C.rubber, C.rubber, C.rubber, C.rubber, C.rubber, C.tyre, C.rubber], true));
+  for (i = 0; i < 26; i++) {
+    for (s = -1; s <= 1; s += 2) {
+      var a = (i + (s > 0 ? .5 : 0)) / 26 * TAU;
+      var lug = place(box(0, 0, -.2, .62, .82, .46, C.tyre, C.rubber, C.tyre, 0), s * .28, 0, s * .5, 0);
+      f = f.concat(place(pitch(place(lug, 0, 0, 0, rr), a, 0, 0), 0, 0, y, z));
+    }
+  }
+  /* the rim and the dished disc, the five holes in it and the hub */
+  f = f.concat(lathe(0, y, z, [[2.7, -.62], [g.rim + .05, -.7], [g.rim + .05, .7], [2.7, .62], [2.7, -.62]], 26, [C.body, C.lit, C.body, C.dark], true));
+  /* the disc, dished out toward the hub: written for the right wheel and turned round for
+     the left, the profile reversed with it so that the faces still look out */
+  var dp = [[.85, .45], [1.15, .4], [1.9, .15], [2.75, -.1], [2.75, .1], [1.9, .35], [1.15, .6], [.85, .65], [.85, .45]];
+  var dc = [C.dark, C.body, C.body, C.dark, C.lit, C.lit, C.body, C.dark];
+  if (sd < 0) { dp = dp.map(function (q) { return [q[0], -q[1]]; }).reverse(); dc = dc.slice().reverse(); }
+  f = f.concat(lathe(0, y, z, dp, 20, dc, true));
+  for (i = 0; i < 5; i++) {
+    var hb = box(0, 0, -.42, .78, .06, .84, C.hole, C.hole, C.hole, 0);
+    f = f.concat(place(pitch(place(hb, 0, 0, 0, 2.0), i / 5 * TAU + .3, 0, 0), 0, 0, y + sd * .37, z));
+  }
+  f = f.concat(latheSide(0, y, z, [[0, .3], [.95, .3], [.95, .8], [.8, 1.05], [.55, 1.25], [0, 1.3]], 12,
+                         [C.dark, C.body, C.lit, C.body, C.lit], sd));
+  f = f.concat(boltRing(0, y + sd * 1.05, z, .62, 6, .13, .18, C.steel));
+  return f;
+}
+/* A trail: a riveted box girder from its hinge to the spade, deeper at the hinge than at the
+   end; the spade hanging under the end of it, leaning back into the ground; the lifting
+   handle up and back off the end, and a carrying handle on its outer face. On the right one
+   the lunette on its drawbar, swung in between the two ends when they are closed for the
+   move. */
+function zsTrail(sd, closed) {
+  var C = ZSC, g = ZSG, f = [], a = closed ? g.shut : g.open;
+  var p0 = [g.hx, sd * g.hy, g.hz], p1 = [g.hx - g.tl * Math.cos(a), sd * (g.hy + g.tl * Math.sin(a)), g.ez];
+  var dx = p1[0] - p0[0], dy = p1[1] - p0[1], l = Math.hypot(dx, dy), ax = dx / l, ay = dy / l;
+  var px = -ay, py = ax;
+  if (py * sd < 0) { px = -px; py = -py; }
+  f = f.concat(m1Beam(p0, p1, 1.25, 1.6, 1.0, 1.15, C.body));
+  f = f.concat(m1Beam([p0[0], p0[1], p0[2] + .82], [p1[0], p1[1], p1[2] + .6], 1.4, .14, 1.15, .14, C.lit));
+  f = f.concat(m1Beam([p0[0], p0[1], p0[2] - .82], [p1[0], p1[1], p1[2] - .6], 1.4, .14, 1.15, .14, C.dark));
+  /* the rivets along the top flange, a row either edge */
+  var t, q;
+  for (t = .06; t < .9; t += .045) {
+    q = m1Mix(p0, p1, t);
+    var hw = .55 - t * .1, top = q[2] + .9 - t * .22;
+    f = f.concat(box(q[0] + px * hw, q[1] + py * hw, top, .14, .14, .07, C.dark, C.body, C.dark, 0));
+    f = f.concat(box(q[0] - px * hw, q[1] - py * hw, top, .14, .14, .07, C.dark, C.body, C.dark, 0));
+  }
+  /* the carrying handle on its outer face, near the end */
+  var h0 = m1Mix(p0, p1, .79), h1 = m1Mix(p0, p1, .85), ho = .62, hz = .7;
+  f = f.concat(ksPipe([[h0[0] + px * .5, h0[1] + py * .5, h0[2] + hz], [h0[0] + px * (.5 + ho), h0[1] + py * (.5 + ho), h0[2] + hz],
+                       [h1[0] + px * (.5 + ho), h1[1] + py * (.5 + ho), h1[2] + hz], [h1[0] + px * .5, h1[1] + py * .5, h1[2] + hz]], .11, C.steel, 6));
+  /* and the stud on the top near the end that the handspike drops over */
+  var st = m1Mix(p0, p1, .909);
+  f = f.concat(box(st[0], st[1], st[2] + .6, .5, .5, .9, C.dark, C.body, C.dark, 0));
+  /* the box over the end the spade hangs from */
+  var E = m1Mix(p0, p1, .95), sp = [];
+  f = f.concat(m1Beam([E[0] - ax * .8, E[1] - ay * .8, 2.35], [E[0] + ax * 1.7, E[1] + ay * 1.7, 2.35], 1.5, 1.8, 1.4, 1.6, C.dark));
+  E = m1Mix(p0, p1, .925);
+  /* the spade: a pointed blade across the end, leaning back into the ground, braced */
+  [[1.65, 1.55], [-1.65, 1.55], [-1.5, .35], [0, -.75], [1.5, .35]].forEach(function (c) {
+    var k = (1.55 - c[1]) * 1.05;
+    sp.push([E[0] + px * c[0] + ax * k, E[1] + py * c[0] + ay * k, c[1]]);
+  });
+  f = f.concat(m1Plate(sp, [-ax * .69, -ay * .69, -.72], .22, C.dark, C.body));
+  f = f.concat(m1Beam([E[0] - ax * .9, E[1] - ay * .9, 1.6], [E[0] + ax * 1.3, E[1] + ay * 1.3, .35], .35, .35, .3, .3, C.dark));
+  /* the lifting handle, up and back off the end */
+  var e = [p1[0] - ax * 1.4, p1[1] - ay * 1.4, 3.05];
+  f = f.concat(ksPipe([[e[0], e[1], e[2]], [e[0] + ax * 4.5, e[1] + ay * 4.5, 7.0], [e[0] + ax * 6.0, e[1] + ay * 6.0, 6.3]], .2, C.steel, 6));
+  f = f.concat(ksTube([e[0] + ax * 4.65, e[1] + ay * 4.65, 6.93], [e[0] + ax * 5.9, e[1] + ay * 5.9, 6.35], .27, C.rubber, 6));
+  if (sd > 0) {
+    /* the lunette on its drawbar: in between the two ends when they are closed, and out
+       behind the right one's when they are open */
+    var L = closed ? [p1[0] - 1.9, 0, 2.6] : [p1[0] + ax * 2.0 - px * .6, p1[1] + ay * 2.0 - py * .6, 2.6];
+    f = f.concat(m1Beam([p1[0] - ax * .4, p1[1] - ay * .4, 2.6], [L[0] + (closed ? .95 : -ax * .95), L[1] + (closed ? 0 : -ay * .95), L[2]],
+                        .5, .5, .45, .45, C.dark));
+    var ring = lathe(0, 0, 0, [[.55, -.22], [1.0, -.22], [1.0, .22], [.55, .22], [.55, -.22]], 14, C.steel, true);
+    f = f.concat(place(ksRollN(ring, Math.PI / 2), 0, L[0], L[1], L[2]));
+  }
+  return f;
+}
+/* one piece of the shield, as [y, z] corners on its face: the plate leaning back, a finger
+   thick */
+function zsShield(yz, C) {
+  var v = yz.map(function (q) { return [zsShX(q[1]), q[0], q[1]]; });
+  var n = ZSG.lean, l = Math.hypot(1, n);
+  return m1Plate(v, [-1 / l, 0, -n / l], .18, C.body, C.dark);
+}
+/* the carriage, the cradle, the shield and the sight: everything that stays where it is,
+   with the trails open, or with them closed for the move and the spades still down */
+function zsCarriage(closed) {
+  var C = ZSC, g = ZSG, f = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(zsWheel(sd)).concat(zsTrail(sd, closed));
+  /* the axle on its springs, and the bottom carriage the trails hinge on */
+  f = f.concat(place(tubeSmooth(-g.Y + .9, g.Y - .9, 0, g.R, .42, 10, C.dark, C.body), Math.PI / 2, 0, 0, 0));
+  f = f.concat(box(0, 0, 3.9, 1.3, 13.2, 1.2, C.body, C.lit, C.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(-.7, sd * 5.8, 4.9, 3.6, .9, .55, C.dark, C.body, C.dark));
+    f = f.concat(cyl(.2, sd * 5.8, 3.6, .55, .55, 1.6, 10, C.dark, C.body, 0, true));
+    f = f.concat(box(g.hx, sd * g.hy, g.hz - 1.1, 2.4, 1.6, 2.0, C.dark, C.body, C.dark));
+    f = f.concat(place(tubeSmooth(-.95, .95, 0, 0, .34, 6, C.steel, C.bare), Math.PI / 2, g.hx, sd * g.hy, g.hz + .25));
+  }
+  f = f.concat(box(-1.2, 0, 4.9, 3.4, 6.2, 1.1, C.body, C.lit, C.dark));
+  /* the top carriage on it: the pivot and two cheeks carrying the trunnions */
+  f = f.concat(cyl(-1.2, 0, 6.0, 2.2, 2.2, .45, 14, C.dark, C.body, 0, true));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(-1.5, sd * 1.75, 6.4, 4.2, .45, 2.6, C.body, C.lit, C.dark));
+    f = f.concat(place(tubeSmooth(-.35, .35, 0, g.tz, .65, 10, C.dark, C.body), Math.PI / 2, g.tx, sd * 2.1, 0));
+  }
+  /* the elevating arc under the cradle on the left */
+  f = f.concat(box(-3.2, -1.25, 6.7, 2.6, .3, 1.6, C.dark, C.body, C.dark));
+  /* the cradle: the collar at the front, the trough under the tube back through the shield
+     to the tray the breech runs back on, the recuperator over the tube and the buffer under
+     the trough */
+  f = f.concat(box((g.cB + g.cF) / 2, 0, 8.15, g.cF - g.cB, 2.1, 3.85, C.body, C.lit, C.dark));
+  f = f.concat(place(lathe(0, 0, 0, [[.7, 0], [1.08, 0], [1.08, .3], [.7, .3]], 12, C.dark, true), -Math.PI / 2, g.cF, 0, g.bz));
+  f = f.concat(box((g.rx + g.cB) / 2, 0, 7.95, g.cB - g.rx, 1.95, 1.05, C.body, C.lit, C.dark));
+  f = f.concat(box(-4.9, 0, 7.85, 5.2, 2.0, 1.25, C.body, C.lit, C.dark));
+  f = f.concat(box(-10.6, 0, 6.85, 6.6, 1.7, .62, C.body, C.lit, C.dark));
+  f = f.concat(box(-13.75, 0, 6.6, .45, 1.9, 1.0, C.dark, C.body, C.dark));
+  f = f.concat(tubeSmooth(g.rx, g.cB, 0, g.rz, g.rr, 12, C.body, C.lit));
+  [2.0, 6.2].forEach(function (x) { f = f.concat(tubeSmooth(x, x + .45, 0, g.rz, g.rr + .1, 12, C.dark, C.body)); });
+  f = f.concat(tubeSmooth(1.0, 12.3, 0, 7.35, .4, 10, C.dark, C.body));
+  f = f.concat(place(lathe(0, 0, 0, [[.4, 0], [.3, .25], [0, .35]], 10, C.dark, true), -Math.PI / 2, 12.3, 0, 7.35));
+  f = f.concat(box(9.1, 0, 7.55, 5.0, 1.2, .38, C.dark, C.body, C.dark));
+  for (i = 0; i < 4; i++) f = f.concat(box(7.0 + i * 1.45, .62, 7.6, .26, .1, .26, C.steel, C.bare, C.steel, 0));
+  /* the shield: a wing either side of the opening, each cut in over its wheel in a quarter
+     round, and the piece over the opening */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var m = function (pts) { return sd < 0 ? pts.map(function (q) { return [-q[0], q[1]]; }).reverse() : pts; };
+    f = f.concat(zsShield(m([[g.oW, g.sK], [g.sW, g.sK], [g.sW, g.sT], [g.oW, g.sT]]), C));
+    f = f.concat(zsShield(m([[g.oW, g.sB], [g.sL, g.sB], [g.sL, g.sK], [g.oW, g.sK]]), C));
+    /* the quarter round, as a fan from the inner corner over it */
+    var rw = g.sW - g.sL, rh = g.sK - g.sB;
+    for (i = 0; i < 4; i++) {
+      var a0 = Math.PI - i / 4 * Math.PI / 2, a1 = Math.PI - (i + 1) / 4 * Math.PI / 2;
+      f = f.concat(zsShield(m([[g.sL, g.sK], [g.sW + Math.cos(a0) * rw, g.sB + Math.sin(a0) * rh],
+                               [g.sW + Math.cos(a1) * rw, g.sB + Math.sin(a1) * rh]]), C));
+    }
+    /* a rolled edge down the side and a row of bolts along the top */
+    var e0 = zsShX(g.sK), e1 = zsShX(g.sT);
+    f = f.concat(m1Beam([e0 + .12, sd * (g.sW - .1), g.sK], [e1 + .12, sd * (g.sW - .1), g.sT - .05], .22, .24, .22, .24, C.lit));
+    for (i = 0; i < 5; i++) {
+      var by = sd * (2.1 + i * 1.6), bz = g.sT - .45, bp = zsShX(bz);
+      f = f.concat(box(bp + .1, by, bz - .12, .16, .24, .24, C.dark, C.body, C.dark, 0));
+    }
+    /* the stay out to the shield from each side of the cradle */
+    var s0 = [-.5, sd * 1.9, 10.4], s1 = [zsShX(12.2) + .2, sd * 4.9, 12.2];
+    f = f.concat(ksTube(s0, s1, .17, C.dark, 6));
+    f = f.concat(box(s1[0] + .15, s1[1], s1[2] - .35, .3, .6, .7, C.dark, C.body, C.dark, 0));
+  }
+  f = f.concat(zsShield([[-g.oW, g.oT], [g.oW, g.oT], [g.oW, g.sT], [-g.oW, g.sT]], C));
+  for (i = 0; i < 3; i++) {
+    var rz = 14.2 + i * .5, rp = zsShX(rz);
+    [-.7, 0, .7].forEach(function (yy) { f = f.concat(box(rp + .1, yy, rz - .1, .14, .2, .2, C.dark, C.body, C.dark, 0)); });
+  }
+  /* the lower plate, hung straight down behind the axle, with the notch the cradle sits in */
+  var low = function (yz) { return m1Plate(yz.map(function (q) { return [g.lx, q[0], q[1]]; }), [-1, 0, 0], .18, C.body, C.dark); };
+  f = f.concat(low([[-g.sL, g.lB], [-g.oW, g.lB], [-g.oW, g.sB], [-g.sL, g.sB]]));
+  f = f.concat(low([[g.oW, g.lB], [g.sL, g.lB], [g.sL, g.sB], [g.oW, g.sB]]));
+  f = f.concat(low([[-g.oW, g.lB], [g.oW, g.lB], [g.oW, g.lN], [-g.oW, g.lN]]));
+  /* the sight's window in the left wing with its shutter lifted, and the two cases hung on
+     the back of the shield */
+  var win = [[-2.45, 13.55], [-4.05, 13.55], [-4.05, 15.25], [-2.45, 15.25]].map(function (q) { return [zsShX(q[1]) + .03, q[0], q[1]]; });
+  f = f.concat(m1Plate(win, [-1, 0, 0], .05, C.hole, C.hole));
+  var wx = zsShX(15.3);
+  f = f.concat(m1Plate([[wx + .1, -2.35, 15.3], [wx + .1, -4.15, 15.3], [wx + 1.05, -4.15, 15.75], [wx + 1.05, -2.35, 15.75]], [0, 0, -1], .12, C.body, C.dark));
+  [[-6.1, 1.6, 2.2], [3.9, 2.3, 2.5]].forEach(function (c) {
+    var cz = 11.8, cx = zsShX(cz + c[2] / 2) - .8;
+    f = f.concat(box(cx, c[0], cz, 1.2, c[1], c[2], C.body, C.lit, C.dark));
+  });
+  /* the sight: the panoramic head behind the window, cranked down and back to the eyepiece
+     where the kneeling gunner's eye is */
+  f = f.concat(cyl(-5.05, -3.25, 13.4, .42, .42, 1.6, 10, C.steel, C.bare, 0, true));
+  f = f.concat(cyl(-5.05, -3.25, 15.0, .55, .55, .5, 10, C.dark, C.body, 0, true));
+  f = f.concat(ksTube([-5.05, -3.25, 13.5], [-6.5, -4.3, 10.85], .28, C.steel, 8));
+  f = f.concat(tubeSmooth(-7.4, -6.4, -4.4, 10.85, .3, 8, C.steel, C.bare));
+  f = f.concat(tubeSmooth(-7.9, -7.4, -4.4, 10.85, .38, 8, C.rubber, C.rubber));
+  f = f.concat(box(-3.4, -2.3, 9.7, 1.4, 1.3, .5, C.dark, C.body, C.dark, 0));
+  f = f.concat(ksTube([-3.4, -2.3, 10.0], [-5.05, -3.25, 13.4], .14, C.dark, 6));
+  /* the two handwheels: elevation on the left of the cradle, turned by the gunner's right
+     hand, and traverse out to his left, facing him on its shaft from the gear case */
+  f = f.concat(box(-4.0, -2.05, 7.3, 2.2, .9, 1.7, C.body, C.lit, C.dark));
+  f = f.concat(pkWheelY(-5.8, -3.05, 7.7, .85, -1));
+  f = f.concat(ksTube([-5.8, -3.05, 7.7], [-4.4, -2.4, 7.6], .13, C.steel, 6));
+  f = f.concat(m1Handwheel(-7.0, -6.6, 7.5, .9, -1));
+  f = f.concat(ksTube([-6.9, -6.6, 7.5], [-3.6, -2.1, 6.9], .13, C.steel, 6));
+  f = f.concat(box(-3.4, -4.1, 6.5, 1.0, 4.0, .8, C.dark, C.body, C.dark, 0));
+  if (closed) return f;
+  /* a case of rounds open by the loader, three in it */
+  f = f.concat(place(zsBox(true), .2, -13.5, 7.4, 0));
+  [-.65, 0, .65].forEach(function (yy) {
+    f = f.concat(place(tubeSmooth(-2.6, 1.6, yy, 1.6, .3, 8, GUN.brass, lit(GUN.brass, .9)), .2, -13.5, 7.4, 0));
+    f = f.concat(place(place(lathe(0, 0, 0, [[.28, 0], [.28, .8], [.18, 1.45], [0, 1.75]], 8, C.steel, true), -Math.PI / 2, 1.6, yy, 1.6), .2, -13.5, 7.4, 0));
+  });
+  return f;
+}
+/* the gun itself, which runs back: the tube from the breech ring to the brake, the
+   brake with its two windows either side and the bore dark in it, and the ring with its
+   sliding block and the lever on the right */
+function zsTube() {
+  var C = ZSC, g = ZSG, f = [];
+  var prof = [[0, g.brF - .3], [.8, g.brF - .3], [.8, -4.2], [.7, -3.8], [.66, 9.7], [.6, 18.0], [.57, g.brk - .3],
+              [.68, g.brk - .3], [.68, g.brk], [g.brR, g.brk + .05], [g.brR, g.muz - .3], [g.brR - .1, g.muz], [.42, g.muz],
+              [.42, g.muz - .5], [0, g.muz - .5]];
+  f = f.concat(place(lathe(0, 0, 0, prof, 14, [C.steel, C.steel, C.steel, C.steel, C.steel, C.steel, C.bare, C.steel, C.steel,
+                                              C.steel, C.steel, C.hole, C.hole, C.hole], true), -Math.PI / 2, 0, 0, g.bz));
+  [-1, 1].forEach(function (sd) {
+    f = f.concat(box(29.85, sd * (g.brR - .02), g.bz - .45, 1.35, .08, .9, C.hole, C.hole, C.hole, 0));
+    f = f.concat(box(28.3, sd * (g.brR - .02), g.bz - .45, 1.15, .08, .9, C.hole, C.hole, C.hole, 0));
+  });
+  f = f.concat(box((g.br + g.brF) / 2, 0, g.brZ, g.brF - g.br, g.brW, g.brH, C.steel, C.bare, C.steel));
+  f = f.concat(box(g.br - .1, 0, g.brZ + .5, .3, g.brW - .5, g.brH - 1.0, C.bare, C.bare, C.bare, 0));
+  f = f.concat(box(-9.1, g.brW / 2 + .02, g.bz - .55, 2.3, .1, 1.1, C.hole, C.hole, C.hole, 0));
+  f = f.concat(ksPipe([[-7.8, 1.25, g.bz + 1.2], [-9.6, 1.85, g.bz + .5], [-10.9, 1.95, g.bz - .6]], .15, C.steel, 6));
+  f = f.concat(box(-10.9, 1.95, g.bz - 1.05, .5, .5, .5, C.rubber, C.rubber, C.rubber, 0));
+  return f;
+}
+/* the wooden case the rounds come up in, one to a man, with a rope handle at either end and
+   one over the lid to carry it by, or open by the gun with the lid off. Long axis x, on z 0. */
+function zsBox(open) {
+  var w = GUN.wood, l = 7.4, b = 2.6, h = 1.9, f = [];
+  f = f.concat(box(0, 0, 0, l, b, h, w, lit(w, 1.1), lit(w, .9)));
+  if (open) return withMat(f, 'wood');
+  [-1, 1].forEach(function (e) {
+    f = f.concat(box(e * (l / 2 - .45), 0, -.03, .45, b + .12, h + .08, lit(w, .82), lit(w, .95), lit(w, .82), 0));
+  });
+  f = f.concat(box(0, 0, h - .02, l - 1.2, b + .02, .14, lit(w, .88), lit(w, 1.05), lit(w, .88), 0));
+  f = withMat(f, 'wood');
+  return f.concat(withMat(ksPipe([[-1.1, 0, h], [-.5, 0, h + .5], [.5, 0, h + .5], [1.1, 0, h]], .1, M4C.tarp, 5), 'canvas'));
 }
 
 /* ================================================================ 8.8 cm Flak 36
@@ -42902,6 +43198,14 @@ function buildVehicleModels(up) {
     bakeAO([{ f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }, { f: M.rec, x: 0, y: 0, z: 0, occ: 1 }]);
     bakeAO([{ f: M.pack, x: 0, y: 0, z: 0, occ: 1 }]);
   })(GUNMODEL.hr_pak);
+  /* and the Red Army's ZiS-3, laid the same way and baked the same way, since the 4BO green
+     leaning back under a high sun reads as pale as the grey does */
+  GUNMODEL.sv_zis3 = { mesh: zsCarriage(false), pack: zsCarriage(true), rec: zsTube(), bar: 9.4 + ZSG.muz, z: ZSG.bz };
+  (function (M) {
+    M.mesh = aoSplit(M.mesh, AOSPLIT); M.pack = aoSplit(M.pack, AOSPLIT); M.rec = aoSplit(M.rec, AOSPLIT);
+    bakeAO([{ f: M.mesh, x: 0, y: 0, z: 0, occ: 1 }, { f: M.rec, x: 0, y: 0, z: 0, occ: 1 }]);
+    bakeAO([{ f: M.pack, x: 0, y: 0, z: 0, occ: 1 }]);
+  })(GUNMODEL.sv_zis3);
   GUNMODEL['hr_mg:mg42t'] = { mesh: lafTeamModel(true), bar: 8.7, z: 7.1 };
 }
 
@@ -44849,6 +45153,13 @@ var SOLDIER_VARIANTS = {
   sv_sht:       { side: 'us', nat: 'sov', weapon: 'ppsh', sn42: 1, drum: 1, nades: 1, throw: 1, nade: 'rgd', nadeB: 'satch', set: 'field' },
   sv_sht_b:     { side: 'us', nat: 'sov', weapon: 'ppsh', sn42: 1, sack: 1, nades: 1, throw: 1, nade: 'rgd', nadeB: 'satch', set: 'field' },
   sv_sht_s:     { side: 'us', nat: 'sov', weapon: 'ppsh', sn42: 1, drum: 1, satch: 1, throw: 1, nade: 'rgd', nadeB: 'satch', set: 'field' },
+  /* the ZiS-3's crew: the gunner and the loader with nothing in their hands but the gun, and
+     the four who bring the rounds up a case at a time with the PPS-43 the army issued its
+     crews, one with his greatcoat rolled over his shoulder, which is what the crew leaves
+     where it falls (`body`), and one in the pilotka with his sack */
+  sv_atg:       { side: 'us', nat: 'sov', weapon: 'none', norun: 1, set: 'gunner' },
+  sv_atb:       { side: 'us', nat: 'sov', weapon: 'pps', can: 1, roll: 1, norun: 1, body: 'sov_at', set: 'field' },
+  sv_atb_b:     { side: 'us', nat: 'sov', weapon: 'pps', can: 1, pilotka: 1, sack: 1, norun: 1, set: 'field' },
   /* the T-20's crew, in the padded tanker's helmet, who fall as the army's dead from a vehicle */
   sv_crew:      { side: 'us', nat: 'sov', weapon: 'none', shlem: 1, body: 'sov', set: 'hull' }
 };
@@ -44896,6 +45207,8 @@ function variantForModel(u, i) {
   }
   /* and the Shturmoviki: the leader, the grenadiers, two with their sacks and the satchel man */
   if (u.key === 'sv_shturm') return i === 0 ? 'sv_sht_lead' : i === 5 ? 'sv_sht_s' : i === 2 || i === 4 ? 'sv_sht_b' : 'sv_sht';
+  /* the gunner and the loader serve the ZiS-3, and the other four bring the rounds up */
+  if (u.key === 'sv_zis3') return i < 2 ? 'sv_atg' : i === 3 || i === 5 ? 'sv_atb_b' : 'sv_atb';
   /* the gunner and the loader serve the Pak 38, and the other three bring the rounds up; and
      the layer and the man at the elevating handwheel are at the leFH 18 */
   if (u.key === 'hr_pak' || u.key === 'ger_how') return i < 2 ? 'hr_atg' : i === 4 ? 'hr_atb_b' : 'hr_atb';
