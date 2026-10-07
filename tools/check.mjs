@@ -7807,8 +7807,9 @@ for (const device of TARGETS) {
 
   /* --- The Red Army, the third army, which fights on the Allied side. The title screen
      offers it as a card of its own; picked, the player's slot fields it and every brain
-     still fields the 29th or the 352nd. Its headquarters is the Shtab and makes the Sapery,
-     the side opens with three of them, the Shtab refuses the 29th's rifle squad, the
+     still fields the 29th or the 352nd. Its headquarters is the Shtab and makes the Sapery and
+     the Strelki, the side opens with a squad of Sapery and two of Strelki, the Shtab refuses the
+     29th's rifle squad, the
      sapper's card offers his own army's works (the minefield among them) and no other's,
      and a bunker's fitting is no fitting of his where his army has no team for it. Then the
      squad: four men of the four sapper variants with the PPS-43, the SN-42 plates on the
@@ -7855,7 +7856,7 @@ for (const device of TARGETS) {
   const sovStray = sov.cards.filter(t => /240 MM|MRS 18|FLAK 88|BARRACKS|MOTOR POOL|TANK YARD|KASERNE/.test(t));
   ok('the Red Army: a card of its own, the Shtab, and the Sapery in a kit of their own with bodies of their own',
      sov.card === 'RED ARMY' && sov.nat === 'sov' && sov.army === 'Red Army' && sov.foeNat === 'heer' &&
-     sov.hq === 'sov_hq' && sov.hqName === 'Shtab' && sov.makes === 'sv_sap' && sov.open === 'sv_sap,sv_sap,sv_sap' &&
+     sov.hq === 'sov_hq' && sov.hqName === 'Shtab' && sov.makes === 'sv_sap,sv_strel' && sov.open === 'sv_sap,sv_strel,sv_strel' &&
      sov.q === 'sv_sap' && sov.qUs === 'refused' && sov.men === 4 && sov.hpPer === 64 && sov.builder &&
      sov.vars === 'sv_sap,sv_sap_b,sv_sap_c,sv_sap_d' && sov.weap === 'pps' && sov.sn42 > 0 && sov.sn42a === 0 &&
      sov.roll > 0 && sov.helm > 0 && sovWorks.length === 4 && sov.cards.indexOf('ROKS-3') >= 0 && !sovStray.length &&
@@ -7869,10 +7870,10 @@ for (const device of TARGETS) {
      `a machine gun fitting raises ${sov.bunk} for him and ${sov.bunkGer} for the 352nd; a man killed went down as ` +
      `${sov.fell}, sapper bodies ${sov.bodies ? 'baked' : 'MISSING'}`);
 
-  /* --- A brain on the Red Army's slot, which is what SIMPLE puts there. Its army has no
-     infantry but its builders yet, and a brain that kept every builder back to dig would take
-     no ground at all: it keeps one and deals the rest jobs, and buys nothing that is not of
-     its own army. --- */
+  /* --- A brain on the Red Army's slot, which is what SIMPLE puts there. Its line is the
+     Strelki now, so its Sapery dig the way every army's builders do: it keeps its one squad of
+     them as its engineer, deals the rifle squads jobs, and buys nothing that is not of its own
+     army. --- */
   await page.evaluate(() => {
     const W = window, G = W.G, own = G.own;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -7889,7 +7890,7 @@ for (const device of TARGETS) {
              n: mine.length, jobs: mine.filter(u => u.job).length, engs: W.__seng,
              kinds: [...new Set(mine.map(u => u.job || 'dig'))].join(',') };
   });
-  ok('a brain on the Red Army\'s slot keeps one sapper back to dig and fights with the rest',
+  ok('a brain on the Red Army\'s slot keeps its sappers to dig and fights with the Strelki',
      sovAi.q !== 'nothing' && sovAi.stray === 0 && sovAi.engs === 1 && sovAi.jobs >= sovAi.n - 1 && sovAi.jobs >= 2,
      `in 45 s it queued ${sovAi.q} (${sovAi.stray} of another army); of its ${sovAi.n} squads ${sovAi.jobs} had a job ` +
      `(${sovAi.kinds}) and ${sovAi.engs} was kept as its engineer`);
@@ -8099,7 +8100,7 @@ for (const device of TARGETS) {
     return { q: W.__kzq.join(',') || 'nothing' };
   });
   ok('the Red Army\'s Kazarma raises the Komsomolets T-20: a tractor with a DT in its ball, six seats and a hook',
-     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_t20' && kz.bname === 'Kazarma' && kz.bld > 100 &&
+     kz.cards.indexOf('KAZARMA') >= 0 && kz.makes === 'sv_shturm,sv_t20' && kz.bname === 'Kazarma' && kz.bld > 100 &&
      kz.q === 'sv_t20' && kz.qHq === 'refused' && kz.bufs && kz.name === 'Komsomolets T-20' &&
      kz.arc === .7 && Math.abs(Math.abs(kz.tur) - kz.arc / 2) < .03 && kz.t1 && !kz.t2 && kz.tows &&
      kz.aboard === 4 && kz.seated === kz.aboard && kz.seatOk && kz.unseated === 0 &&
@@ -8116,6 +8117,279 @@ for (const device of TARGETS) {
      `a Kar98k through the front ${kz.rifle} and a Pak 38 through the side ${kz.pak}; forty wrecks threw ${kz.blown} and sat ` +
      `down ${kz.sink}; killed it left ${kz.bodies} bodies of ${kz.bodyNat}, ${kz.baked ? 'baked' : 'NOT BAKED'}; a brain with ` +
      `the Kazarma standing queued ${kzAi.q}`);
+
+  /* --- The Strelki. The Shtab makes them and queues them and the Kazarma refuses them: seven men
+     of 64 hp in five variants carrying the Mosin with its bayonet fixed, the leader in the pilotka
+     and a rifleman under the SSh-40, filled at three fifths of another army's price a man. The two
+     fittings are one or the other, and the DP-28s are fired by the two men they were issued to and
+     nobody else. A Molotov at a squad in the open burns the ground it breaks on and hurts the men
+     on it, and one in through the window of a held house sets the house alight. The shout sends
+     the squad forward at four tenths again its pace. A man killed goes down as `sov_str`, and a
+     brain on his slot buys them as its line. --- */
+  const st = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    W.slotOf('ger').ai = 0;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0; G.fires.length = 0;
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0], kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar')[0];
+    function q(b, k) { if (!b) return 'no building'; const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(hq, 'sv_strel'); out.qKz = q(kb, 'sv_strel');
+    const P = W.__o.flatSpot(360);
+    const u = W.spawnUnit(own, 'sv_strel', P.x - 100, P.y, 0);
+    out.men = u.models.length; out.hpPer = u.models[0].hp;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.sov, ext = fs => { let a = 1e9, b = -1e9; fs.forEach(f => f.v.forEach(p => { a = Math.min(a, p[0]); b = Math.max(b, p[0]); })); return b - a; };
+    out.mosin = +ext(W.weaponModel(K, 'mosin')).toFixed(2);
+    const pil = [K.pil, K.pilD, W.lit(K.pil, .94), W.lit(K.pil, .96)], helm = [K.helm, W.lit(K.helm, 1.1), W.lit(K.helm, .9)];
+    out.pil = W.manFaces('sv_str_lead', W.FIGPOSE.stand).parts.helmet.filter(f => pil.indexOf(f.c) >= 0).length;
+    out.ssh = W.manFaces('sv_str', W.FIGPOSE.stand).parts.helmet.filter(f => helm.indexOf(f.c) >= 0).length;
+    out.price = W.reinfCost(u); out.full = Math.round(230 * .22 / 7 * 4);
+    W.select([u], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.pay(own, W.UPGRADES.dp28.cost); W.fitUp(u, 'dp28');
+    W.select([u], false); W.buildCmds();
+    out.cards2 = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    out.dpMen = u.models.map((m, i) => W.variantForModel(u, i)).filter(v => v === 'sv_str_dp').length;
+    out.excl = W.hasExclusive(u, W.UPGRADES.ppsh.excl);
+    /* the pair: fired by the two men it was issued to and by nobody else */
+    const e = W.spawnUnit('ger', 'hr_gren', P.x + 100, P.y, Math.PI);
+    u.vGer = u.vUs = e.vUs = e.vGer = true; u.moving = false; u.glcd = 0; u.facing = 0;
+    u.models.forEach(m => { m.fire = 0; m.fireQ = 0; });
+    W.fireAt(u, e, .05, { gl: 1 });
+    out.pairCd = u.glcd > 0;
+    out.pairMen = u.models.map((m, i) => m.fire > 0 || m.fireQ > 0 ? i : -1).filter(i => i >= 0).join(',');
+    W.killUnit(e);
+    /* the Molotov at a squad in the open, 110 off */
+    const g = W.spawnUnit('ger', 'hr_gren', P.x + 10, P.y, Math.PI);
+    g.vUs = g.vGer = true;
+    W.__st = { u, g, P, hp0: g.models.reduce((a, m) => a + m.hp, 0) };
+    out.molo = W.abGren(u, g, 'molo') || 'thrown';
+    return out;
+  });
+  await fastForward(page, 2.5);
+  const st2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__st, out = {};
+    out.fires = G.fires.length;
+    out.fireAt = G.fires.length ? Math.round(Math.hypot(G.fires[0].x - S.g.x, G.fires[0].y - S.g.y)) : -1;
+    out.hurt = Math.round(S.hp0 - S.g.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0));
+    W.killUnit(S.g); G.fires.length = 0;
+    /* the shout: how far the squad walks in two seconds, without it and then with it */
+    const u = S.u;
+    u.x = S.P.x - 100; u.y = S.P.y; u.models.forEach(m => { m.x = u.x + (m.ox || 0); m.y = u.y + (m.oy || 0); });
+    W.orderMove(u, S.P.x + 300, S.P.y);
+    S.x0 = u.x;
+    return out;
+  });
+  await fastForward(page, 2);
+  const st3 = await page.evaluate(() => {
+    const W = window, S = W.__st, u = S.u, out = {};
+    out.walk = Math.round(u.x - S.x0);
+    u.x = S.P.x - 100; u.y = S.P.y; u.models.forEach(m => { m.x = u.x + (m.ox || 0); m.y = u.y + (m.oy || 0); });
+    W.orderMove(u, S.P.x + 300, S.P.y);
+    out.ura = W.abUra(u) || 'shouted';
+    S.x0 = u.x;
+    return out;
+  });
+  await fastForward(page, 2);
+  const st4 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__st, u = S.u, out = {};
+    out.run = Math.round(u.x - S.x0);
+    /* the Molotov in through the window of a held house */
+    const p = G.props.filter(q => q.kind === 'ruin' && q.style !== 'church' && q.w > 60 && !q.hurt && !q.fr &&
+      !G.blds.some(b => Math.hypot(b.x - q.x, b.y - q.y) < 300)).sort((a, b) => b.w * b.h - a.w * a.h)[0];
+    if (!p) { out.none = 1; return out; }
+    const e = W.spawnUnit('ger', 'hr_gren', p.x, p.y + p.h / 2 + 40);
+    W.enterBuilding(e, p);
+    u.x = p.x; u.y = p.y + p.h / 2 + 100; u.models.forEach(m => { m.x = u.x + (m.ox || 0); m.y = u.y + (m.oy || 0); });
+    u.path = null; u.dest = null; u.order = null; u.abCd = {};
+    e.vUs = e.vGer = true;
+    out.garWhy = W.abGren(u, e, 'molo') || 'thrown';
+    S.p = p; S.e = e;
+    return out;
+  });
+  await fastForward(page, 5);
+  const st5 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__st, u = S.u, out = {};
+    const R = S.p && S.p.fr;
+    out.alight = R ? R.heat.filter(h => h > 0).length + R.burn.filter(b => b > 0).length : 0;
+    if (S.e && !S.e.dead) W.killUnit(S.e);
+    /* every fire put out, as the fire rows do, before anything else is staged in the town */
+    if (R) { for (let c = 0; c < R.heat.length; c++) R.heat[c] = 0; if (R.burning) R.burning.length = 0; }
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fell = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.sov_str && W.MODELS.dead.sov_str && W.MODELS.fall.sov_str.length === 3);
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* and the brain on his slot buys them as its line */
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.__stq = []; W.__stU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__stU.apply(this, arguments); if (r && b.own === own) W.__stq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 25);
+  const stAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__stU; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    return { q: W.__stq.join(',') || 'nothing' };
+  });
+  Object.assign(st, st2, st3, st4, st5);
+  ok('the Red Army\'s Strelki: seven riflemen with the Mosin, the DP-28 or the PPSh-41, the Molotov and the shout',
+     st.q === 'sv_strel' && st.qKz === 'refused' && st.men === 7 && st.hpPer === 64 &&
+     st.vars === 'sv_str,sv_str_b,sv_str_c,sv_str_lead,sv_str_m' && st.weap === 'mosin' && Math.abs(st.mosin - 19.53) < .2 &&
+     st.pil > 10 && st.ssh > 10 && st.price === 17 && st.full === 29 &&
+     ['TWO DP-28', 'TWO PPSH', 'Molotov', 'Ura!'].every(t => st.cards.indexOf(t) >= 0) &&
+     st.cards2.indexOf('TWO PPSH') < 0 && st.dpMen === 2 && st.excl && st.pairCd && st.pairMen === '4,5' &&
+     st.molo === 'thrown' && st.fires === 1 && st.fireAt < 60 && st.hurt > 10 &&
+     st.ura === 'shouted' && st.walk > 60 && st.run > st.walk * 1.25 && !st.none && st.garWhy === 'thrown' && st.alight > 0 &&
+     st.fell === 'sov_str' && st.bodies && /sov_hq:sv_strel/.test(stAi.q),
+     `the Shtab queues ${st.q} and the Kazarma ${st.qKz} it; ${st.men} men of ${st.hpPer} hp of ${st.vars} carrying ${st.weap}, ` +
+     `the Mosin ${st.mosin} units with its bayonet; ${st.pil} faces of pilotka on the leader and ${st.ssh} of SSh-40 on a rifleman; ` +
+     `a man refilled at ${st.price} where the full price is ${st.full}; the card offers ${st.cards.filter(t => /DP|PPSH|Molotov|Ura/.test(t)).join(', ')}` +
+     ` and with the DP-28s ${st.cards2.indexOf('TWO PPSH') < 0 ? 'no PPSh' : 'STILL THE PPSH'}; ${st.dpMen} men carry the DP-28 and ` +
+     `men ${st.pairMen} fired it${st.pairCd ? '' : ' (NO CLOCK SET)'}; the bottle ${st.molo}, ${st.fires} fire on the ground ${st.fireAt} ` +
+     `off the squad, which lost ${st.hurt}; walked ${st.walk} in two seconds and ${st.run} after the shout (${st.ura}); a bottle into a ` +
+     `held house ${st.garWhy}${st.none ? ' (NO HOUSE)' : ''} and ${st.alight} cells of it caught; a man killed went down as ${st.fell}, ` +
+     `bodies ${st.bodies ? 'baked' : 'MISSING'}; a brain on his slot queued ${stAi.q}`);
+
+  /* --- The Shturmoviki. The Kazarma makes them and queues them and the Shtab refuses them: six men
+     of 96 hp with the PPSh-41, every one in the SN-42. From in front the plate takes a fifth off
+     what a rifle squad does to them, thrown with the same rolls as from behind, and nothing off a
+     shell. A volley of RGD-33s goes from every man and hurts the squad it was thrown at; the
+     satchel charge is carried up to a half-track and to a building of theirs and does its weight to
+     each; and the smoke grenade puts a cloud on the ground it was thrown at. A man killed goes down
+     as `sov_sht`, and a brain on his slot buys them out of the Kazarma. --- */
+  const sh = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    W.slotOf('ger').ai = 0;
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    G.res[own].mp += 3000; G.res[own].fu += 300;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0], kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar')[0];
+    function q(b, k) { if (!b) return 'no building'; const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(kb, 'sv_shturm'); out.qHq = q(hq, 'sv_shturm');
+    const P = W.__o.flatSpot(360);
+    const u = W.spawnUnit(own, 'sv_shturm', P.x - 100, P.y, 0);
+    out.men = u.models.length; out.hpPer = u.models[0].hp;
+    out.vars = [...new Set(u.models.map((m, i) => W.variantForModel(u, i)))].sort().join(',');
+    out.weap = [...new Set(u.models.map((m, i) => W.SOLDIER_VARIANTS[W.variantForModel(u, i)].weapon))].join(',');
+    const K = W.KIT.sov, plate = [W.lit(K.armour, 1.1), K.armourD, W.lit(K.armour, .95), W.lit(K.armour, 1.06), W.lit(K.armour, .93)];
+    out.sn42 = out.vars.split(',').map(v => W.manFaces(v, W.FIGPOSE.stand).faces.filter(f => plate.indexOf(f.c) >= 0).length);
+    W.select([u], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    /* the plate: a rifle squad's volleys from in front and from behind, with the same rolls */
+    const e = W.spawnUnit('ger', 'hr_gren', P.x + 100, P.y, Math.PI);
+    u.vUs = u.vGer = e.vUs = e.vGer = true; u.target = e; e.target = u; e.moving = false; u.moving = false;
+    function volleys(face) {
+      const rand = Math.random; let seed = 7;
+      Math.random = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      u.facing = face; u.sup = 0;
+      u.models.forEach(m => { m.alive = true; m.hp = 1e5; });
+      let took = 0;
+      for (let i = 0; i < 40; i++) {
+        const h0 = u.models.reduce((a, m) => a + m.hp, 0);
+        e.cd = 0; e.sup = 0; W.fireAt(e, u, .05);
+        took += h0 - u.models.reduce((a, m) => a + m.hp, 0);
+      }
+      Math.random = rand;
+      return took;
+    }
+    out.front = Math.round(volleys(0)); out.back = Math.round(volleys(Math.PI));
+    out.shell = W.plateOf(u, e, W.UNITS.hr_p4.w);
+    u.models.forEach(m => { m.hp = 96; }); u.sup = 0;
+    W.killUnit(e);
+    /* the volley of RGD-33s at a squad 120 off */
+    const g = W.spawnUnit('ger', 'hr_gren', P.x + 20, P.y, Math.PI);
+    g.vUs = g.vGer = true;
+    out.gren = W.abGren(u, g, 'gren') || 'thrown';
+    W.__sh = { u, g, P, hp0: g.models.reduce((a, m) => a + m.hp, 0), n0: G.shots.length };
+    return out;
+  });
+  await fastForward(page, 3);
+  const sh2 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    out.hurt = Math.round(S.hp0 - S.g.models.reduce((a, m) => a + (m.alive ? m.hp : 0), 0));
+    W.killUnit(S.g);
+    /* the satchel at a half-track and at a building of theirs */
+    u.abCd = {}; u.sup = 0;
+    const v = W.spawnUnit('ger', 'hr_251', S.P.x + 60, S.P.y, Math.PI);
+    v.vUs = v.vGer = true; v.order = null; v.path = null;
+    S.v = v; S.vh0 = v.hp;
+    out.satch = W.abBundle(u, v, 'satch') || 'sent';
+    out.order = u.order;
+    return out;
+  });
+  await fastForward(page, 8);
+  const sh3 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    out.veh = Math.round(S.vh0 - (S.v.dead ? 0 : S.v.hp));
+    if (!S.v.dead) W.killUnit(S.v);
+    u.abCd = {}; u.sup = 0; u.order = null; u.path = null;
+    const at = W.nearestFree(S.P.x + 180, S.P.y);
+    const b = W.spawnBuilding('ger', 'ger_qtr', at.x, at.y, true);
+    b.vUs = b.vGer = true;
+    S.b = b; S.bh0 = b.hp;
+    out.bld = W.abBundle(u, b, 'satch') || 'sent';
+    return out;
+  });
+  await fastForward(page, 10);
+  const sh4 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    out.bldHurt = Math.round(S.bh0 - (S.b.dead ? 0 : S.b.hp));
+    if (G.blds.indexOf(S.b) >= 0) { G.blds.splice(G.blds.indexOf(S.b), 1); W.rebuildGrid(); }
+    /* the smoke grenade on a piece of ground 90 off */
+    u.abCd = {}; u.sup = 0; u.order = null; u.path = null;
+    S.sx = u.x + 90; S.sy = u.y + 20; S.s0 = G.smoke.length;
+    out.smk = W.abBundle(u, { x: S.sx, y: S.sy }, 'smk') || 'thrown';
+    return out;
+  });
+  await fastForward(page, 2.5);
+  const sh5 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, S = W.__sh, u = S.u, out = {};
+    const cl = G.smoke.slice(S.s0).filter(c => Math.hypot(c.x - S.sx, c.y - S.sy) < 40);
+    out.cloud = cl.length ? cl[0].r : 0;
+    G.smoke.length = S.s0;
+    const m = u.models.filter(q => q.alive)[0], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, m, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.fell = rec ? rec.nat : '-';
+    out.bodies = !!(W.MODELS.fall.sov_sht && W.MODELS.dead.sov_sht && W.MODELS.fall.sov_sht.length === 3);
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.__shq = []; W.__shU = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__shU.apply(this, arguments); if (r && b.own === own) W.__shq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 25);
+  const shAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__shU; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__shq.join(',') || 'nothing' };
+  });
+  Object.assign(sh, sh2, sh3, sh4, sh5);
+  ok('the Red Army\'s Shturmoviki: six men in the SN-42 with the PPSh-41, grenades, a satchel charge and smoke',
+     sh.q === 'sv_shturm' && sh.qHq === 'refused' && sh.men === 6 && sh.hpPer === 96 &&
+     sh.vars === 'sv_sht,sv_sht_b,sv_sht_lead,sv_sht_s' && sh.weap === 'ppsh' && sh.sn42.every(n => n > 0) &&
+     ['Grenades', 'Satchel charge', 'Smoke grenade'].every(t => sh.cards.indexOf(t) >= 0) &&
+     sh.back > 0 && Math.abs(sh.front / sh.back - .8) < .02 && sh.shell === 1 &&
+     sh.gren === 'thrown' && sh.hurt > 40 && sh.satch === 'sent' && sh.order === 'bundle' && sh.veh >= 150 &&
+     sh.bld === 'sent' && sh.bldHurt >= 200 && sh.smk === 'thrown' && sh.cloud > 40 &&
+     sh.fell === 'sov_sht' && sh.bodies && /sov_bar:sv_shturm/.test(shAi.q),
+     `the Kazarma queues ${sh.q} and the Shtab ${sh.qHq} it; ${sh.men} men of ${sh.hpPer} hp of ${sh.vars} carrying ${sh.weap}, ` +
+     `SN-42 faces ${sh.sn42.join('/')}; the card offers ${sh.cards.filter(t => /Grenades|Satchel|Smoke/.test(t)).join(', ')}; forty ` +
+     `volleys from in front took ${sh.front} and from behind ${sh.back} (${sh.back ? (sh.front / sh.back).toFixed(3) : '-'}), a shell ` +
+     `${sh.shell}; the RGD-33s ${sh.gren} and the squad lost ${sh.hurt}; the satchel ${sh.satch} (${sh.order}) took ${sh.veh} off a ` +
+     `251 and ${sh.bld} took ${sh.bldHurt} off a Kaserne; the smoke grenade ${sh.smk} and made a cloud of ${sh.cloud}; a man killed ` +
+     `went down as ${sh.fell}, bodies ${sh.bodies ? 'baked' : 'MISSING'}; a brain on his slot queued ${shAi.q}`);
 
   /* --- The Avtopark and the BA-64B. The Avtopark needs the Kazarma and makes the BA-64B, which the
      Kazarma refuses. The car has every buffer it needs and its own name, its turret asked to lay

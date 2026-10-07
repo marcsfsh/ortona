@@ -7,7 +7,8 @@ are retired (see *The two armies*). Both armies are being built a unit at a time
 rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm gun, the grenadier squad, the pioneer team, the
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
 being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
-builders, the Sapery, its first production building, the Kazarma, the Komsomolets T-20 out of it, its
+builders, the Sapery, and its rifle squad, the Strelki, out of it, its first production building, the
+Kazarma, the Shturmoviki and the Komsomolets T-20 out of that, its
 second, the Avtopark, the BA-64B out of that, its third and last, the Tankovyy park, and the T-34/76 out of that, with a squad riding on its deck (see *The Red Army*). The Soviet units under consideration and
 their stats are listed in `docs/soviet-roster.csv`, and none of them is built until it is asked for
 by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
@@ -637,6 +638,11 @@ against a floor of 0.05, and it was the webbing that gave the margin back. Putti
 back over the geometry the tan had been laid on came in at 0.047 against the grenadier, and
 the webbing alone, eight per cent lighter, bought 0.002 of it: what moves the mean is the
 jacket and the trousers, because they are most of him.
+
+Two things the Red Army's rifles taught it. **A side cap is not a helmet**, so PROPORTION holds a man in
+the pilotka to 2.2 across the head where a helmet is held to its published shell. And **a weapon with a
+bayonet fixed ends past its muzzle**: MUZZLE measures the flash against the furthest point of the weapon,
+and `WEAP[k].bayonet` is how far past the muzzle the point reaches, which the row takes off.
 
 ### `tools/terrain.mjs` - the ground, mechanically
 
@@ -6427,8 +6433,9 @@ saved for nothing, which is why the head of the list is only ever a live key.
 **The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
 pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
 fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
-has eight things so far: its headquarters, the Shtab; its builders, the Sapery, with their
-flamethrowers and their minefield; its first production building, the Kazarma; the Komsomolets
+has ten things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+flamethrowers and their minefield; its rifle squad, the Strelki, out of the Shtab; its first
+production building, the Kazarma; its assault engineers, the Shturmoviki, and the Komsomolets
 T-20, its armoured tractor, out of the Kazarma; its second production building, the Avtopark; the
 BA-64B, its armoured car, out of that; its third and last, the Tankovyy park; and the T-34/76, its
 medium tank, out of that, which a squad can ride on. The B-4 position the Sapery are to dig comes with
@@ -6442,8 +6449,8 @@ name. When the file was added the player said explicitly that nothing else in it
 yet. When a unit is asked for ("add the IS-2", with a drawing), its stats come off its
 row: the price, the time and the population, the hit points and the plate (front, side and rear in
 millimetres, with the turret's in brackets), the speed and the sight, the weapon, and what it carries
-beside it. The units already built (the Sapery, the Komsomolets T-20, the BA-64B and the T-34/76)
-took their rows' numbers as they stand in the file, and a new one does the same unless told
+beside it. The units already built (the Sapery, the Strelki, the Shturmoviki, the Komsomolets T-20,
+the BA-64B and the T-34/76) took their rows' numbers as they stand in the file, and a new one does the same unless told
 otherwise. The file is the player's: a row changes when the player changes it, and a duel that
 disagrees with a row is reported to the player, who decides.
 
@@ -6471,12 +6478,13 @@ wireless mast on its guys, a map table under a net in front, a sentry under a mu
 woodpile, crates and a drum, and the red banner with the gold star and the hammer and sickle on a
 pole beside it (`svBanner`). The logs are their own colours in `BASE` (`log`, `logL`, `logD`, and
 `logEnd` for the cut ends), tagged as bark and wood. It is 132 by 104 like the other two
-headquarters and makes the Sapery and nothing else yet.
+headquarters and makes the Sapery and the Strelki.
 
 **The Sapery** (`sv_sap`) are four men of 64 hit points with the PPS-43, for 160 manpower and 14
 seconds, 5 of population, 68 of speed and 250 of sight, and they are the army's builders: they put
-its buildings up, lay sandbags, weapon pits, wire and minefields, repair its vehicles and, while the
-army has no line infantry, take its ground (see below). The side opens with three. The PPS-43 is
+its buildings up, lay sandbags, weapon pits, wire and minefields and repair its vehicles. While the
+army had no line infantry they took its ground as well (see below); with the Strelki they dig. The
+side opens with one, beside two squads of Strelki. The PPS-43 is
 5.4 a burst every 0.40 seconds out to 150 at an accuracy of .54. The kit is a fifth on the rig
 (`KIT.sov`, `V.nat === 'sov'`): the gymnastyorka in khaki, pulled on over the head with a placket of
 three buttons and worn outside the trousers with the belt round it (`manRig`'s `sv` branch, with
@@ -6539,6 +6547,69 @@ untouched two times in five, which is about what five mines spread over 120 unit
 on one desktop run of the gate it crossed every time without a mine going off. Along the strip it is
 inside for five or six ticks a pass, and the drill gives it ten passes and stops at the first mine.
 
+**The Strelki** (`sv_strel`, out of the Shtab, 230 manpower, 19 seconds, 8 of population, R) are the
+army's line infantry: seven men of 64 hit points with the Mosin-Nagant, 64 of speed and 300 of sight,
+the rifle at 7.8 a round every 0.95 seconds out to 265. A squad that has lost men is filled up at
+three fifths of what another army pays a man (`reinf` on the def, which `reinfCost(u)` reads for the
+reinforcement block): a man of the Strelki is 17 manpower where a man of the 29th's rifle squad is 29.
+The side opens with two squads of them beside its one of Sapery, and those are the row's numbers.
+
+The kit is `KIT.sov`'s with three things on it. **The pilotka** (`capPilotka`, `V.pilotka`, through
+`helmetOf`) is the side cap: a loft of six stations from front to back, wider at the crown than at the
+band, with the flap turned up round it and the red star on the front, tilted to the right on its points
+because `roll()` drops a face's material and a cap rolled after it is built comes out on the flat tile.
+Half the squad wear it and the rest the SSh-40. **The loads** (`figKitSov`): the man with the Molotovs
+has a canvas bag on his right hip with the necks of three bottles out of it, rags in them; the squad
+leader his map case on the left hip and his field glasses on his chest; a PPSh-41 man a spare drum in
+its round pouch and a DP-28 man a pan in its case on his back. Seven variants: `sv_str_lead`, `sv_str`
+with the greatcoat in its ring, `sv_str_b` in the pilotka with the sack, `sv_str_c` with the ring and
+the sack, `sv_str_m` with the bottles, `sv_str_dp` and `sv_str_pp`. He falls as a rifleman of the
+Strelki (`body: 'sov_str'`).
+
+**The three weapons are cut as side profiles** (`weaponModel`): the Mosin 91/30 with its bayonet fixed,
+which is how the Red Army carried it, the stock in one piece, the receiver and the straight bolt, the
+magazine, the two bands, the hooded front sight and the socket bayonet with its spike, 19.53 units
+against a published 1,660 mm over the bayonet; the PPSh-41, the wooden stock, the receiver, the slotted
+jacket with the brake over its muzzle and the drum, 9.92 against 843 mm; and the DP-28, the stock with
+its grip, the pan flat on top with its ribs, the holed jacket, the gas tube, the flash hider and the
+bipod folded back, 14.96 against 1,272 mm. All three are among the weapons a sculpted man shoulders
+standing and kneeling (`SC_ARMS`). The bayonet is the furthest thing forward of the muzzle, so
+`WEAP.mosin.bayonet` says how far past the muzzle it reaches and the men card's MUZZLE row takes it
+off, where it read the flash 5.04 units short of the end of the rifle.
+
+**Two fittings, one or the other.** TWO DP-28 (`UPGRADES.dp28`, 80 manpower and 10 fuel, O) hands the
+fifth and sixth men the DP-28 and TWO PPSH (`UPGRADES.ppsh`, 60 and 5, I) the second and third the
+PPSh-41, and each carries `excl: 'strel'`, so with one fitted the other is off every card and the
+brain's list (`hasExclusive`). Each is a weapon of its own on a clock of its own, through the rifle
+grenade's door (`glUp`), with a new flag: `pair` hands every one of its men a round of his own in its
+volley, where `flame` and a launcher fire one man turn about, and with `swap` those men are out of the
+rifles' volley. The DP-28 is 7.0 every .62 seconds out to 280, the PPSh-41 3.6 every .14 seconds out to
+160; a man with the PPSh fires nothing at a target past 160. A volley of the DP-28 plays the machine
+gun's report (`w.lmg`).
+
+**The Molotov** (`ab.molo`, G, 35 seconds) is the Knight's Cross Holders' grenade with three things
+changed: one man throws it (`one`), it has no fuse, and what it leaves is a fire. It goes at men in the
+open or in a house inside 140 (`abGrenTarget`), flies with a trail of flame off the rag and bursts where
+it lands (`moloBurst`): 30 to a man at the middle falling off over its 16 units, anybody in the room of
+a held house it lands in, and a pin. Into a held house it sets the room alight through the ROKS-3's own
+`flameBurn`. On open ground it leaves a patch of burning fuel for six seconds (`G.fires`, `updateFires`,
+24 at most) that burns 9 a second into any man standing in it and pins him, and a squad halted in it
+walks out to the near side of its edge. Flames on the patch, oily smoke over it and a scorch; the sound
+is a smash (`sfx('bottle')`). **Ura!** (`ab.ura`, U, 45 seconds) sends the squad forward at 1.4 times
+its pace for eight seconds (`u.uraT`, `u.uraK`, read in `moveUnit` and by each man's own pace), in the
+run, with five voices shouting it (`sfx('ura')`: `auVoice`, a sawtooth through two formant filters that
+move).
+
+**The throws were the Knight's Cross Holders' and are anybody's now.** `abGren` and `abBundle` were
+written for one squad's grenades and one squad's bundle charge, and every throw takes a key (`k`) and
+reads its numbers off `u.def.ab[k]`: the reach, the cooldown, the damage, the burst, the fuse, whether
+one man throws it or every man (`one`), and what is drawn in his hand and in the air (`nade`, a buffer
+of `MODELS.nade` for the RGD-33, the bottle, the satchel and the smoke grenade, built by `sovNade`). A
+pick mode for a throw is in `ABMODE` and `callPick` answers it on the click and the tap paths. The brain
+uses the bottle at three men or more, a crew or a house, and the shout when the squad has more than
+150 to go and is under fire or has the enemy inside 320 (`abUraWant`); under SIMPLE the cards are on
+the unit's card.
+
 **The Kazarma** (`sov_bar`, `svKazarma`, 200 manpower, 26 seconds, hotkey 1) is the army's first
 production building and its only tier so far (`NATIONS.sov.tiers`): a company's barrack of round
 logs, long across the front, six courses of the Shtab's logs high with the corners crossed, under a
@@ -6548,8 +6619,46 @@ each gable with white frames (`svWindow`), and two stovepipes through the roof; 
 on its staff, the field kitchen on two wheels with its boiler, firebox and chimney, the rifles stood
 together round a post, a table and its log benches, the wall newspaper on its board and a barrel of
 water, and behind it the woodpile and the crates. It is the 29th's barracks' size, 116 by 96, and
-makes the T-20 and nothing else yet. On a beach whose landing side builds out of the craft, a Soviet
+makes the Shturmoviki and the T-20. On a beach whose landing side builds out of the craft, a Soviet
 player's Kazarma is a barracks post out of a craft (`craftPostFaces` reads it as one).
+
+**The Shturmoviki** (`sv_shturm`, out of the Kazarma, 400 manpower, 30 fuel, 30 seconds, 10 of
+population, N) are six assault engineers of 96 hit points in the SN-42 breastplate, every one with the
+PPSh-41 and its drum, at 68 of speed and 320 of sight, the PPSh at 4.0 every .14 seconds out to 170.
+**The breastplate is a rule on the def** (`plate` .8, read by `plateOf`): a round of small arms that
+arrives from within sixty degrees of the squad's own facing (`PLATE_ARC`) does four fifths of what it
+would, and anything with a shell, a flame or a burst in it does all of it, because the plate was two
+millimetres of steel against a pistol round and a splinter at a distance. Measured by the gate over forty
+volleys a side with the same seeded rolls, fire from in front does .80 of fire from behind. Every
+variant wears the plate (`V.sn42`): `sv_sht_lead` with the field glasses and two smoke grenades on his
+belt, `sv_sht` with a drum pouch and the RGD-33s in a bag at the front of his belt with their handles
+out, `sv_sht_b` with the sack, and `sv_sht_s` with the satchel charge on his back on its own strap. He
+falls as one (`body: 'sov_sht'`).
+
+Three things they throw, each an order. **Grenades** (`ab.gren`, G, 35 seconds) is an RGD-33 from every
+man at the nearest thing inside 140, 44 over a burst of 22 on a fuse of a second. **The satchel charge**
+(`ab.satch`, E, 60 seconds) is the bundle charge's door with a building on it as well: the card arms a
+pick (`G.mode = 'satch'`) and a tap on a vehicle or a building of theirs, or a house they hold, sends the
+squad after it until it is within 90 of the hull or the wall (`abWall`), when the man who carries it
+throws. It is 220 whole to a vehicle it lands on or under, falling to nothing 26 units off the hull, with
+the track blown on half its bursts close in, and 220 whole to a building it lands beside (`s.bld`, which
+`damage` would otherwise take four tenths off). Its burst of 30 is read against masonry at twice its
+weight (`w.breach` 2) where a stick grenade's is read at three tenths, so a satchel thrown at a wall
+cuts about the hole a 240's shell does. **Smoke** (`ab.smk`, K, 45 seconds) is a grenade on a piece of
+ground the player picks inside 130 (`G.mode = 'smkg'`, `callSmokeGren`), which goes up as a cloud of 52
+for 24 seconds through the mortar's own smoke (`smokeBurst`, `G.smoke`), so it blinds the eye and the gun
+the way a screen does, with a hiss for the sound. The brain throws grenades at two men or more, a crew or
+anyone in a house, the satchel at a vehicle inside 330 (a halted one first) and with none in reach at a
+held house or a building of theirs inside 200 and 180, and smoke a little short of halfway to whatever is
+shooting at a squad on the move (`abSmokeWant`).
+
+**Their numbers are the row's, and the duel card says they are past every infantry squad the 352nd has
+and no use against armour.** Over twelve runs a row they take the grenadier squad every time in seven
+seconds untouched, at 139 and at 130, the Knight's Cross Holders every time in eight seconds with 97 per
+cent of themselves left, and the MG 34 team every time in three. The 251 takes them every time: the
+satchel takes 220 of its 340 and the PPSh cannot open it, and its MG 34 has them pinned before the
+satchel is back. The Panzer IV takes them every time in fifteen to sixteen seconds with seven tenths of
+itself left.
 
 **The Komsomolets T-20** (`sv_t20`, out of the Kazarma, 180 manpower, 15 fuel, 18 seconds, 6 of
 population, K) is the Red Army's light armoured artillery tractor: 260 hit points, 10 mm of plate in
@@ -6810,12 +6919,13 @@ it, the rung opening at 210 seconds as the M3 half-track's does across the beach
 park third (`K.b3`) and buys two T-34s out of it, the rung opening at 310 seconds as the M4A1's does, and
 more as the count of mediums allows; `aiCutLadder` reads the T-34 as a medium and the T-20 and the BA-64B
 as light armour. It puts nobody on the deck. The post's own shopping (the machine gun, the
-mortar, the assault squad) runs once the first building stands, so it now runs for an army that has
-none of them: a key the army has not got is a thing it cannot buy (`canPost`), where it threw.
+mortar, the assault squad) runs once the first building stands, and the Red Army has only the third of
+them: the Shturmoviki are its assault squad (`K.elite`), and a key the army has not got is a thing it
+cannot buy (`canPost`), where it threw.
 
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
-brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders and
-as its line, has a T-20, a BA-64B and the T-34s on its shopping ladder, digs no battery and lays a minefield every fourth work.
+brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders, the
+Strelki as its line (`K.inf`) and the Shturmoviki as its assault squad, has a T-20, a BA-64B and the T-34s on its shopping ladder, digs no battery and lays a minefield every fourth work.
 **And an army whose only infantry is its builder fights with it.** Every rule that leaves an
 engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
 engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
@@ -6825,8 +6935,9 @@ every builder of an army with a line, and none of one without, read wherever `de
 for that question. The brain on such an army still keeps one back to dig (the one already at work,
 or the first), in `aiLook`. Measured by the gate: in 45 seconds the brain on the Soviet slot queued
 four Sapery and nothing of another army, kept one as its engineer and dealt the other five jobs
-taking ground. When the Red Army has a rifle squad, `natLine` turns true and the Sapery go back to
-digging with nothing else changed.
+taking ground. With the Strelki on the roster `natLine` is true for the Red Army, its Sapery dig like
+anybody's engineers and the Strelki take the ground, with nothing else changed; the rule stays for an
+army that is ever built builder first again.
 
 **AI.** `aiTick` runs on a difficulty-dependent cadence (`DIFF[].tick`) and holds its
 plan in `AI`, whose fields are all numbers or sector ids so nothing in it can outlive
@@ -9708,7 +9819,7 @@ shots/                         screenshot output, gitignored
   army key through something that answers no for a key that is not there.
 - **`def.builder` is not the question of whether a unit fights.** Every rule that leaves an
   engineer out of the fighting asked it, and an army whose only infantry is its builders (the Red
-  Army, until it has a rifle squad) was then no army at all: its brain dealt none of them a job,
+  Army, until it had the Strelki) was then no army at all: its brain dealt none of them a job,
   the enemy's brain counted it as nothing, and an order to ALL took nobody. Ask `aiDig(u)`.
 - **A drill that stages the enemy's units has to switch the enemy's brain off.** A unit spawned on
   the opposition's slot is that brain's to command on its next tick, so a half-track ordered across
@@ -9758,6 +9869,10 @@ shots/                         screenshot output, gitignored
   virtual clock, which only moves between frames, so a loop that works until a few milliseconds
   have passed runs to the end of its queue: the men's warm queue bakes everything it holds in the
   first step of a fast forward. That is harmless there, and a loop that has to stop needs a count.
+- **`roll()` hands a face back without its tile, as `at()` does.** The pilotka was built and then
+  rolled to sit over the right ear, and all forty of its faces came out on the flat tile on every
+  variant that wore it; `place` and `pitch` keep `m`. It is tilted on its own points before the faces
+  are made now.
 - **`at()` hands a face back without its tile.** It copies the vertices, the colour and the
   normals and drops `m`, so a part moved with it falls back to looking its colour up. For a
   palette tagged hard that is usually the same tile by luck; for the American's, one trouser

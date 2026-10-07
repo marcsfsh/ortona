@@ -393,7 +393,7 @@ function GEO(opt) {
       const bootLen = P.boots && P.boots.length ? Math.max.apply(null, P.boots.map(b => { const e = ext(b); return e.x1 - e.x0; })) : null;
       const helmE = P.helmet && P.helmet.length ? ext(P.helmet) : null;
       rows.push({
-        v, side, nat: SOLDIER_VARIANTS[v].nat || side,
+        v, side, nat: SOLDIER_VARIANTS[v].nat || side, cap: SOLDIER_VARIANTS[v].pilotka ? 1 : 0,
         stature: J.crown[2] - sole, above: J.crown[2],
         headH: sk.z1 - sk.z0, headW: sk.y1 - sk.y0,
         plate: P.plate && P.plate.length ? ext(P.plate).y1 - ext(P.plate).y0 : null,
@@ -411,8 +411,8 @@ function GEO(opt) {
                     upperL: len3(sub(Q.elbowL, Q.shoulderL)), foreL: len3(sub(Q.handL, Q.elbowL)) });
       });
     });
-    ['kar', 'mp40', 'mg34', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb'].forEach(type => {
-      const f = weaponModel(KIT[['kar', 'mp40', 'mg34', 'mg42'].includes(type) ? 'heer' : 'usa'], type);
+    ['kar', 'mp40', 'mg34', 'mg42', 'm1919', 'zook', 'garand', 'm3', 'thompson', 'bar', 'carbine', 'a4', 'm2hb', 'mosin', 'ppsh', 'dp'].forEach(type => {
+      const f = weaponModel(KIT[['kar', 'mp40', 'mg34', 'mg42'].includes(type) ? 'heer' : ['mosin', 'ppsh', 'dp'].includes(type) ? 'sov' : 'usa'], type);
       if (!f || !f.length) return;
       const e = ext(f);
       weapons.push({ type, len: e.x1 - e.x0 });
@@ -576,9 +576,13 @@ function GEO(opt) {
     const d = sub(B.front, B.back), l = len3(d) || 1;
     return { at: B.back, dir: d.map(x => x / l) };
   }
-  function boreEnd(r, bo) {
+  /* a rifle carried with its bayonet fixed (`bayonet`, how far the blade reaches past the
+     muzzle) ends at the bayonet's point and fires from the muzzle */
+  function boreEnd(r, bo, v) {
     let best = -1e9;
     (r.parts.weapon || []).forEach(f => f.v.forEach(p => { const t = dot(sub(p, bo.at), bo.dir); if (t > best) best = t; }));
+    const W = v && SOLDIER_VARIANTS[v] ? WEAP[SOLDIER_VARIANTS[v].weapon] : null;
+    if (W && W.bayonet) best -= W.bayonet;
     return [bo.at[0] + bo.dir[0] * best, bo.at[1] + bo.dir[1] * best, bo.at[2] + bo.dir[2] * best];
   }
 
@@ -613,7 +617,7 @@ function GEO(opt) {
         if (!r.ok || !r.hasWeapon) return;
         const bo = bore(r);
         if (!bo || !r.runtimeMuzzle) { rows.push({ v, pose: label(P), noparts: !bo, noRuntime: !r.runtimeMuzzle }); return; }
-        const end = boreEnd(r, bo);
+        const end = boreEnd(r, bo, v);
         rows.push({ v, pose: label(P), d: len3(sub(r.runtimeMuzzle, end)), got: r.runtimeMuzzle.map(r2), end: end.map(r2) });
       });
     });
@@ -948,7 +952,7 @@ function show(c, base) {
       const bc = k => (BP ? (b[k] === undefined ? null : b[k]) : undefined);
       const cells = [cell(r.stature, 20.35, .04, bc('stature')), cell(r.headH, 2.65, .08, bc('headH')), cell(r.headW, 1.82, .08, bc('headW')),
                      cell(r.plate, 5.27, .08, bc('plate')), cell(r.hips, 4.4, .08, bc('hips')), cell(r.inseam, 9.56, .06, bc('inseam')),
-                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.nat === 'usa' ? 2.88 : 3.06, .10, bc('helmet'))];
+                     cell(r.knee, 5.80, .08, bc('knee')), rangeCell(r.foot, 3.1, 3.5), cell(r.helmet, r.cap ? 2.2 : r.nat === 'usa' ? 2.88 : 3.06, .10, bc('helmet'))];
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(r.v, 13) + cells.map(q => q.s).join('') + f2(r.apart));
     }
@@ -959,7 +963,9 @@ function show(c, base) {
       cells.forEach(q => { of++; if (q.bad) bad++; });
       console.log('  ' + pad(a.v, 13) + pad(a.pose, 8) + cells.map(q => q.s).join(''));
     }
-    const PUB = { kar: 13.06, mp40: 7.41, mg34: 14.34, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46 };
+    /* the Mosin with its bayonet fixed, which is how it is built and carried: 1,660 mm */
+    const PUB = { kar: 13.06, mp40: 7.41, mg34: 14.34, mg42: 14.35, m1919: 15.84, zook: 18.22, garand: 13.02, m3: 6.81, thompson: 9.54, bar: 14.28, carbine: 10.64, a4: 11.34, m2hb: 19.46,
+                  mosin: 19.53, ppsh: 9.92, dp: 14.96 };
     console.log('\n  weapons, raw in their own frame, against the published length at 5% (the MP40 folded)\n');
     console.log('  ' + P.weapons.map(w => { const q = cell(w.len, PUB[w.type], .05); of++; if (q.bad) bad++; return pad(w.type, 9) + q.s; }).join('\n  '));
     foot('proportion', bad, of);
