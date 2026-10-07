@@ -1,0 +1,68 @@
+Side,Built at,Unit,Status,Manpower,Fuel,Time (s),Pop,Toughness,Armour F/S/R (turret),Speed,Sight,Main weapon,Abilities and upgrades,Notes
+Soviet,Shtab,Sapery,Core,160,0,14,5,4 men × 64 hp,-,68,250,"PPS-43: 5.4 per 0.40 s, range 150","Builds base buildings, field works (sandbags 25 MP/7 s, weapon pit 45 MP/12 s, wire 30 MP/9 s, minefield 40 MP/10 s) and the B-4 position; repairs vehicles. ROKS-3 flamethrowers (70 MP, 15 fuel): two men get 18 per 0.25 s, range 80",ROKS-3 upgrade optional
+Soviet,Shtab,Strelki,Core,230,0,19,8,7 men × 64 hp,-,64,300,"Mosin-Nagant: 7.8 per 0.95 s, range 265","Two DP-28s (80 MP, 10 fuel): 7.0 per 0.62 s, range 280. Two PPSh-41s (60 MP, 5 fuel): 3.6 per 0.14 s, range 160. One or the other. Molotov: 30 dmg plus a 6 s fire, range 140, 35 s cooldown. Ura!: 40% faster for 8 s, 45 s cooldown. Reinforces at 60% of the usual per-man cost",-
+Soviet,Shtab,Opolchentsy,Optional,190,0,17,7,7 men × 58 hp,-,64,290,"Mosin-Nagant: 7.8 per 0.95 s, range 265",No upgrades. Merges into another squad to refill its losses,"Alt to Strelki, or extra"
+Soviet,"Shtab, Kazarma",GAZ-67B,Core,140,10,15,4,260 hp,Soft-skinned,145,360,"DT: 7.5 per 0.2 s, range 280, 9 mm",Tows a gun,-
+Soviet,"Shtab, Kazarma",M-72 Motorcycle,Optional,130,10,14,4,200 hp,Soft-skinned,145,360,"DT: 7.5 per 0.2 s, range 280, 9 mm",Gun traverses 17° either way,Alt to GAZ-67B
+Soviet,Kazarma,Shturmoviki,Core,400,30,30,10,6 men × 96 hp,-,68,320,"PPSh-41: 4.0 per 0.14 s, range 170","SN-42 breastplates cut frontal small-arms damage to 80%. Grenades: each man throws an RGD-33 (44 dmg, 22 burst) within 140, 35 s cooldown. Satchel charge: 220 dmg to a vehicle or building within 90, 60 s cooldown. Smoke grenade, 45 s cooldown",-
+Soviet,Kazarma,Gvardeytsy,Optional,380,25,30,10,6 men × 84 hp,-,66,330,"SVT-40s and DP-28s: 6.4 per 0.36 s, range 275","Two PTRS-41s switch in against vehicles: 55 dmg, 45 mm, range 320, one every 2 s. RPG-43: 170 dmg to a vehicle within 60, 50 s cooldown","Alt to Shturmoviki, or second elite"
+Soviet,Kazarma,Shtrafniki,Optional,290,10,22,8,7 men × 70 hp,-,64,300,"SVT-40: 9 per 0.85 s, range 270","Satchel charge: 220 dmg to a vehicle or building within 90, 60 s cooldown. Never gains veterancy",Extra
+Soviet,Kazarma,Sniper Pair,Optional,320,15,24,6,2 men × 60 hp,-,66,420,"Scoped Mosin: 80 per 4.5 s, range 460",One kill per shot on all infantry except Knight's Cross Holders. Camouflaged when still,Extra; needs US and German snipers
+Soviet,Kazarma,Maxim M1910 Team,Core,250,0,22,6,5 men × 52 hp,-,42,360,"4.2 per 0.11 s, range 330, 9 mm","Setup 3 s, pack 2.5 s. Shield cuts frontal small-arms damage to the crew to 60%. SG-43 (70 MP, 10 fuel): speed 50, setup 2 s",-
+Soviet,Kazarma,DShK Team,Optional,290,20,24,6,4 men × 54 hp,-,46,380,"7.0 per 0.17 s, range 380, 25 mm","Setup 3 s, pack 2.5 s",Alt to Maxim
+Soviet,Kazarma,82-PM-41 Mortar,Core,250,10,26,6,3 men × 54 hp,-,46,260,"58 dmg (34 burst) per 4.2 s, range 480","Fire mission: 10 rounds to range 570, circle radius 56. Smoke missions. Setup 3 s, pack 2.5 s",-
+Soviet,Kazarma,ZiS-3 76 mm Gun,Core,330,25,28,10,6 men × 64 hp,-,36,600,"AP: 125 per 3.0 s, range 540, 98 mm","Switches to HE: 90 dmg (45 burst), range 600. Setup 4.5 s, pack 5 s",-
+Soviet,Kazarma,45 mm M-42 Gun,Optional,260,15,22,8,4 men × 62 hp,-,44,580,"105 per 2.4 s, range 500, 88 mm","Setup 3.5 s, pack 4 s",Alt to ZiS-3
+Soviet,Kazarma,Komsomolets T-20,Core,180,15,18,6,260 hp,"10/7/7, open top",100,320,"Hull DT: 7.5 per 0.2 s, range 280, 9 mm","Carries one squad, tows a gun. Gun traverses 20° either way",-
+Soviet,Kazarma,Universal Carrier,Optional,190,15,18,6,280 hp,"10/7/7, open top",112,320,"Bren: 6.6 per 0.5 s, range 280, 9 mm","Carries one squad, tows a gun. Lend-lease",Alt to Komsomolets
+Soviet,Kazarma,37 mm 61-K AA Gun,Optional,270,15,24,7,5 men × 58 hp,-,38,360,"42 per 0.4 s, range 360, 45 mm, automatic","Very high suppression. Setup 3.5 s, pack 3 s",Extra; Gebirgsflak counterpart
+Soviet,Avtopark,BA-10M,Core,260,35,24,8,420 hp,15/10/10 (15),115,360,"45 mm: 52 per 2.4 s, range 320, 75 mm",Coaxial DT,-
+Soviet,Avtopark,BA-64B,Optional,200,20,20,6,300 hp,"15/9/9, open turret (10)",145,380,"DT: 8 per 0.2 s, range 290, 9 mm",No upgrades,Alt to BA-10M
+Soviet,Avtopark,M3A1 Scout Car,Core,220,25,20,9,340 hp,"13/6/6, open top",130,330,".50 and .30: 13 per 0.22 s, range 280, 25 mm","Carries one squad, tows a gun. Lend-lease",-
+Soviet,Avtopark,Studebaker US6,Optional,160,15,18,5,300 hp,Soft-skinned,125,300,Unarmed,"Carries two squads, tows any gun including the BS-3 and ML-20. Lend-lease",Extra
+Soviet,Avtopark,M17 MGMC,Core,300,45,24,10,360 hp,"13/7/7, open top",108,350,"Quad .50: 30 per 0.22 s, range 340, 25 mm",Very high suppression. Lend-lease,-
+Soviet,Avtopark,GAZ-AA 4M,Optional,220,20,20,7,260 hp,Soft-skinned,110,340,"Quad Maxim: 16 per 0.11 s, range 320, 9 mm",Very high suppression,Alt to M17
+Soviet,Avtopark,ZSU-37,Optional,340,70,28,12,460 hp,"15/10/10, open top",90,350,"37 mm: 42 per 0.4 s, range 360, 45 mm, automatic",Very high suppression,Alt to M17
+Soviet,Avtopark,SU-76M,Core,320,65,28,12,440 hp,"35/15/15, open top (takes 1.4× blast)",96,440,"76 mm: 125 per 2.6 s, range 440, 98 mm","Switches to HE: 90 dmg (45 burst), range 480. Gun traverses 15° either way",-
+Soviet,Avtopark,SU-57,Optional,290,55,26,10,400 hp,"13/7/7, open top",108,420,"57 mm: 120 per 2.6 s, range 420, 112 mm",Gun traverses 20° either way. Lend-lease (T48),Alt to SU-76M
+Soviet,Avtopark,ZiS-30,Optional,270,40,26,9,240 hp,"10/7/7, open top (takes 1.4× blast)",90,440,"57 mm: 140 per 3.0 s, range 540, 140 mm",Gun traverses 15° either way,Alt to SU-76M
+Soviet,Avtopark,BM-13N Katyusha,Core,400,70,34,10,320 hp,Soft-skinned,120,300,Rocket missions only,"16 rockets of 110 (60 burst) to range 950, circle radius 190, then 60 s reload. In action 4 s after halting",-
+Soviet,Avtopark,BM-31-12 Andryusha,Optional,460,90,36,11,320 hp,Soft-skinned,115,300,Rocket missions only,"12 rockets of 240 (110 burst) to range 700, circle radius 150, then 75 s reload. In action 4 s after halting",Extra; Nebelwerfer counterpart
+Soviet,Avtopark,122 mm M-30 Howitzer,Core,430,60,40,10,6 men × 60 hp,-,22,250,Fire missions only,"8 rounds of 165 (75 burst) to range 900, circle radius 90. Smoke missions. Setup 6.5 s, pack 7 s",-
+Soviet,Avtopark,120-PM-38 Heavy Mortar,Optional,360,30,32,8,5 men × 58 hp,-,32,260,"110 dmg (52 burst) per 6.5 s, range 560","Fire mission: 8 rounds to range 650, circle radius 70. Smoke missions. Setup 5 s, pack 5 s",Alt to M-30
+Soviet,Avtopark,152 mm ML-20 Gun-Howitzer,Optional,500,80,44,14,7 men × 62 hp,-,16,250,Fire missions only,"6 rounds of 230 (95 burst) to range 1050, circle radius 110. Setup 8 s, pack 9 s",Extra
+Soviet,Avtopark,ZiS-2 57 mm Gun,Core,380,30,34,12,6 men × 64 hp,-,30,660,"140 per 3.0 s, range 620, 140 mm","Setup 5 s, pack 5.5 s. Can be towed",-
+Soviet,Avtopark,BS-3 100 mm Gun,Optional,480,50,44,16,7 men × 66 hp,-,18,700,"210 per 4.2 s, range 680, 175 mm","Setup 6.5 s, pack 7 s. Can be towed",Alt to ZiS-2
+Soviet,Tankovyy park,T-60,Optional,200,35,24,7,360 hp,35/15/15 (25),112,340,"20 mm: 12 per 0.3 s, range 300, 30 mm, automatic",Coaxial DT,Alt to T-70
+Soviet,Tankovyy park,T-70,Core,270,50,28,9,440 hp,45/15/15 (35),120,340,"45 mm: 52 per 2.4 s, range 310, 75 mm","Coaxial DT, tows",-
+Soviet,Tankovyy park,BT-7,Optional,230,45,26,9,400 hp,22/13/13 (15),160,340,"45 mm: 52 per 2.4 s, range 310, 75 mm",Coaxial DT. Fastest tracked unit (set speed to 138 to leave that to the Hellcat),Alt to T-70
+Soviet,Tankovyy park,Valentine Mk IX,Optional,300,70,30,11,640 hp,65/60/60 (65),64,350,"6-pdr: 110 per 2.8 s, range 360, 115 mm",No coaxial. Lend-lease,Extra
+Soviet,Tankovyy park,Matilda II,Optional,290,70,30,11,720 hp,78/70/55 (75),46,340,"2-pdr: 45 per 2.0 s, range 300, 70 mm",AP only. Coaxial Besa. Lend-lease,Extra
+Soviet,Tankovyy park,M3 Lee,Optional,300,70,32,12,680 hp,51/38/38 (51),70,380,"Hull 75 mm: 140 per 3.3 s, range 380, 90 mm","Hull gun traverses 15° either way. Turret 37 mm: 46 per 2.2 s, range 300, 70 mm, fires at a second target. Lend-lease",Extra
+Soviet,Tankovyy park,T-34/76,Core,310,80,30,13,700 hp,88/45/40 (65),96,360,"76 mm: 135 per 3.4 s, range 380, 95 mm","Coaxial DT, tows. Tank riders: one squad rides on the deck, can shoot, takes full damage",-
+Soviet,Tankovyy park,T-34-57,Optional,330,85,32,13,700 hp,88/45/40 (65),96,360,"57 mm: 120 per 2.8 s, range 440, 140 mm","Coaxial DT, tows, tank riders",Alt to T-34/76
+Soviet,Tankovyy park,T-34-85,Core,390,105,38,15,780 hp,88/45/40 (90),90,390,"85 mm: 150 per 3.6 s, range 420, 140 mm","Coaxial DT, tows, tank riders",-
+Soviet,Tankovyy park,"M4A2(76)W ""Emcha""",Optional,440,115,40,15,760 hp,94/38/40 (100),76,420,"76 mm: 125 per 3.3 s, range 420, 128 mm","Coaxial .30, tows. Roof MG (60 MP). Lend-lease",Alt to T-34-85
+Soviet,Tankovyy park,OT-34-85,Optional,410,110,40,15,780 hp,88/45/40 (90),90,390,"85 mm: 150 per 3.6 s, range 420, 140 mm","Hull flamethrower in place of the DT: 22 per 0.25 s, range 90. Flame ignores cover and sets buildings burning. Tows, tank riders",Extra
+Soviet,Tankovyy park,PT-34,Optional,330,80,32,13,700 hp,88/45/40 (65),60,360,"76 mm: 135 per 3.4 s, range 380, 95 mm",Mine roller sets off mines it drives over. Coaxial DT,Extra; needs mines on every side
+Soviet,Tankovyy park,T-34-T,Optional,250,45,26,9,700 hp,"88/45/40, no turret",96,320,"DT: 7.5 per 0.2 s, range 280, 9 mm",Repairs vehicles at twice sapper speed. Tows disabled tanks. Recovers enemy wrecks if recrewing exists,Extra
+Soviet,Tankovyy park,SU-76i,Optional,300,70,30,11,620 hp,50/30/30,80,420,"76 mm: 135 per 3.2 s, range 420, 95 mm",Gun traverses 10° either way. Built on captured Panzer III and StuG chassis,Extra
+Soviet,Tankovyy park,SU-122,Core,340,85,32,12,680 hp,88/45/40,88,420,"122 mm howitzer: 175 (68 burst) per 5.5 s, range 400, 100 mm HEAT",Gun traverses 10° either way,-
+Soviet,Tankovyy park,SU-85,Core,380,90,34,13,640 hp,88/45/40,90,440,"85 mm: 150 per 3.2 s, range 460, 140 mm",Gun traverses 10° either way,-
+Soviet,Tankovyy park,SU-100,Optional,470,120,42,15,760 hp,120/45/40,80,470,"100 mm: 190 per 4.2 s, range 500, 190 mm",Gun traverses 8° either way,"Alt to SU-85, or extra"
+Soviet,Tankovyy park,BM-8-24,Optional,400,80,36,12,420 hp,25/15/15,100,300,Rocket missions only,"24 rockets of 70 (40 burst) to range 750, circle radius 140, then 50 s reload. On a T-60 chassis",Extra; Calliope counterpart
+Soviet,Tankovyy park,KV-1,Optional,480,110,44,16,1050 hp,100/90/80 (100),56,380,"76 mm: 135 per 3.6 s, range 380, 95 mm","Coaxial DT, tows, tank riders",Extra
+Soviet,Tankovyy park,KV-1S,Optional,450,100,42,15,960 hp,82/60/60 (82),70,380,"76 mm: 135 per 3.6 s, range 380, 95 mm","Coaxial DT, tows, tank riders",Alt to KV-1
+Soviet,Tankovyy park,Churchill IV,Optional,470,105,44,16,1000 hp,102/76/50 (88),46,370,"6-pdr: 110 per 2.8 s, range 360, 115 mm",Coaxial Besa. Lend-lease,Alt to KV-1
+Soviet,Tankovyy park,KV-2,Optional,560,140,50,18,1100 hp,75/75/70 (75),48,380,"152 mm howitzer: 300 (120 burst) per 10 s, range 380, 120 mm",Turret turns at half speed. Coaxial DT,Extra
+Soviet,Tankovyy park,IS-1,Optional,540,130,48,18,1050 hp,120/90/60 (100),72,440,"85 mm: 150 per 3.6 s, range 440, 140 mm","Coaxial DT, tows. No build limit",Extra; cheaper heavy
+Soviet,Tankovyy park,IS-2,Core,640,160,62,20,1150 hp,135/90/60 (155),70,460,"122 mm: 250 (60 burst) per 9 s, range 460, 175 mm","One at a time. Coaxial DT, tows. Roof DShK (70 MP)",-
+Soviet,Tankovyy park,SU-152,Optional,540,135,52,18,980 hp,75/60/60,64,420,"152 mm: 320 (110 burst) per 9.5 s, range 440, 140 mm",Gun traverses 8° either way,Alt to ISU-152
+Soviet,Tankovyy park,ISU-152,Optional,600,150,58,20,1100 hp,120/90/60,68,450,"152 mm: 320 (110 burst) per 9 s, range 460, 140 mm",Gun traverses 8° either way. Roof DShK (70 MP),Extra
+Soviet,Tankovyy park,ISU-122,Optional,600,150,58,20,1100 hp,120/90/60,68,470,"122 mm: 250 (60 burst) per 8 s, range 520, 175 mm",Gun traverses 8° either way. Roof DShK (70 MP),Extra
+Soviet,Tankovyy park,IS-3,Optional,880,215,85,24,1450 hp,220/110/70 (220),72,480,"122 mm: 260 (60 burst) per 8.5 s, range 480, 180 mm",One at a time. Coaxial DT. Roof DShK (70 MP),What-if; Tiger II counterpart
+Soviet,Tankovyy park,SU-100Y,Optional,1300,340,150,30,1800 hp,60/60/60,36,520,"130 mm: 300 (90 burst) per 8 s, range 620, 200 mm",One at a time. AI never buys it. Gun traverses 8° either way,What-if; Maus slot
+Soviet,Tankovyy park,T-35,Optional,650,140,60,20,1200 hp,30/25/20 (20),40,380,"76 mm: 90 (40 burst) per 3.5 s, range 360, 40 mm","Player only. Two 45 mm turrets: 52 per 2.4 s, range 310, 75 mm. Two MG turrets. All five turrets fire independently",What-if; Maus slot
+Soviet,Sapery (field work),B-4 203 mm Howitzer,Core,520,180,90,14,7 men × 62 hp,-,Fixed,300,Fire missions only,"One per side, at least 700 from own HQ. 5 rounds of 400 (160 burst) to range 1250, circle radius 160. No fire within 600 of enemy buildings. Rebuild as Br-5 280 mm mortar (440 MP, 210 fuel, player only): 3 rounds of 950 (200 burst) to range 900, circle radius 180, 40 s change-over",-
+Soviet,Sapery (field work),85 mm 52-K AA Gun,Optional,400,45,38,10,6 men × 66 hp,-,Fixed,620,"AP: 160 per 4.0 s, range 620, 145 mm","Two at a time. Switches to HE: 100 dmg (55 burst), range 580. Cannot move",Extra; Flak 36 counterpart
+Soviet,Sapery (field work),M-31 Rocket Frames,Optional,260,50,30,6,400 hp,-,Fixed,250,Rocket missions only,"One volley of 12 rockets of 220 (100 burst) to range 650, circle radius 140. Sappers rearm it for 60 MP",Extra

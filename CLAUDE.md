@@ -8,7 +8,9 @@ rifle squad, the engineer squad, the Ranger squad, the .30 cal team, the 57 mm g
 MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Easy Eight, the M18, the M26, the M3, the 75 mm GMC, the M8, the M3 light tank, the M16, the 81 mm mortar, the 105 mm howitzer, the 3-inch gun, the 240 mm howitzer and the Little David it can be rebuilt as, the M7 Priest and the M12 it can be rebuilt as, the M29C Weasel, the KS 750, the 251, the 234, the Puma, the Panzer IV, the Wirbelwind, the Panther, the Pak 38, the Wespe and the Marder III are their own, and the rest of what either side fields is still the first roster's pieces (the German mortar and howitzer, now the GrW 34 and the leFH 18, the Mörser 18 in the 210/22's place, the eighty-eight, the Nebelwerfer, the Gebirgsflak 38, the StuH 42, the Tiger, the King Tiger and the Maus), crewed now by American and 352nd men. The Achilles is retired. A third army, the Red Army, is
 being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
 builders, the Sapery, its first production building, the Kazarma, the Komsomolets T-20 out of it, its
-second, the Avtopark, the BA-64B out of that, its third and last, the Tankovyy park, and the T-34/76 out of that, with a squad riding on its deck (see *The Red Army*). Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
+second, the Avtopark, the BA-64B out of that, its third and last, the Tankovyy park, and the T-34/76 out of that, with a squad riding on its deck (see *The Red Army*). The Soviet units under consideration and
+their stats are listed in `docs/soviet-roster.csv`, and none of them is built until it is asked for
+by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
 
 Four maps ship. **Ortona**, December 1943, is the town fought one building at a time.
@@ -6432,6 +6434,19 @@ BA-64B, its armoured car, out of that; its third and last, the Tankovyy park; an
 medium tank, out of that, which a squad can ride on. The B-4 position the Sapery are to dig comes with
 a row of its own.
 
+**The rows are kept in `docs/soviet-roster.csv`**, one line a unit in those columns with a note at
+the end: `Core` or `Optional` in the status, and in the note whether a row is an alternative to
+another (`Alt to BA-10M`), an extra or a what-if. It is the list of units under consideration and the
+stats each would be built to, and nothing in it goes into the game until that unit is asked for by
+name. When the file was added the player said explicitly that nothing else in it was to be built
+yet. When a unit is asked for ("add the IS-2", with a drawing), its stats come off its
+row: the price, the time and the population, the hit points and the plate (front, side and rear in
+millimetres, with the turret's in brackets), the speed and the sight, the weapon, and what it carries
+beside it. The units already built (the Sapery, the Komsomolets T-20, the BA-64B and the T-34/76)
+took their rows' numbers as they stand in the file, and a new one does the same unless told
+otherwise. The file is the player's: a row changes when the player changes it, and a duel that
+disagrees with a row is reported to the player, who decides.
+
 `NATIONS.sov` is the army, with `side: 'us'`, and every army names its headquarters (`hq`), the
 company it opens with (`open`), its production buildings in order (`tiers`) and its heavy battery's
 work (`battery`, none for the Red Army). A slot carries the army it fields (`nat`, laid by
@@ -9670,6 +9685,7 @@ tools/shoot.mjs                scene-based screenshot CLI
 tools/lint.mjs                 one-file / ES5 / hygiene rules
 tools/overlay.mjs              a model's faces laid over its reference drawing, view by view
 tools/ref/                     the overlay specs: scale and pin per view (the drawings are in shots/ref/)
+docs/soviet-roster.csv         the Soviet units under consideration and their stats; built only when asked for
 .claude/hooks/session-start.sh installs dev dependencies on session start
 .claude/skills/refdraw/        the method for checking and correcting a model against a drawing
 shots/                         screenshot output, gitignored
