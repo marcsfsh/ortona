@@ -114,6 +114,12 @@ const REAL = {
                (tools/ref/sv_t34.json) agrees with the width at its own scale bar, and at that scale it is 6.2 m over
                the fenders and 2.36 m to the top of the periscope on the turret; the body across the feet of the side
                plates and the roof between their tops are the drawing's */
+  sv_su85:   { name: 'SU-85',               len: 6.10,  gun: 8.15,   wid: 3.00,  hgt: 2.45,
+               body: 2.52, bodyZ: 1.20, roof: 1.94, clear: 0.40 },   /* the published 6.10 m of hull, 8.15 m
+               over the gun, 3.00 m wide, 2.45 m high and 400 mm of clearance. The drawing it is laid over
+               (tools/ref/sv_su85.json) agrees with the width and the T-34's road wheels at one scale, and at that
+               scale it is 6.02 m over the hull and 2.34 m to the top of the commander's periscope; the body across
+               the feet of the casemate's sides and the roof between their tops are the drawing's */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -230,6 +236,9 @@ const PROBE = {
                taken over the engine, behind the boxes on the side plates, above the fenders; a side plate
                straddling it gives its foot, and the roof's slice is just over the roof, where only its edge
                reaches; hullZ holds the aerial out */
+  sv_su85:   { bodyZ: 14.0, roofZ: 23.1, xLo: .5, xHi: 4.5, straddle: true },   /* the slice is taken across the
+               casemate between its rear plate and the boxes on the fenders, ahead of the fuel tanks; the roof's
+               just over the roof, where only its edge reaches */
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },

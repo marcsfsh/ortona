@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_su85.png", "key": "sv_su85", "prop": "s85Show", "args": [],
+  "note": "A four-view of the SU-85 with the commander's raised plate and periscope on the roof. The sheet has no scale; every view is at about 52.5 px/m, where the five road wheels agree with the T-34's stations, the track centres in both end views with the T-34's 2.43 m, and the width with the published 3.00 m. At that scale the length over the gun is the published 8.15 m. The front view is drawn three per cent taller than the side, so it takes a vertical scale of its own, and the rear view's ground is off the foot of the sheet, so it is pinned on the fuel tanks.",
+  "views": {
+    "side":  { "nose": "left", "crop": [60, 0, 440, 130], "ppm": 52.5, "at": [20.61, 0, 0], "px": [242.75, 124.5], "k": 4 },
+    "plan":  { "nose": "left", "crop": [60, 150, 440, 165], "ppm": 52.5, "at": [20.61, 0, 0], "px": [241, 233.75], "k": 4 },
+    "front": { "crop": [0, 65, 170, 135], "ppm": 52.5, "at": [0, 0, 0], "px": [85.2, 197.5], "k": 6, "ppmv": 54.2 },
+    "rear":  { "crop": [0, 235, 170, 126], "ppm": 52.5, "at": [0, 0, 0], "px": [87.35, 357.2], "k": 6 } } }

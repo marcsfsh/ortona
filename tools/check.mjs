@@ -8632,7 +8632,7 @@ for (const device of TARGETS) {
     return { q: W.__tpq.join(',') || 'nothing' };
   }));
   ok('the Red Army\'s Tankovyy park raises the T-34/76, and a squad rides on its deck, shooting and in the open',
-     tp.cards.indexOf('TANK PARK') >= 0 && tp.need === 'sov_mot' && tp.ready && tp.makes === 'sv_t34' && tp.bname === 'Tankovyy park' &&
+     tp.cards.indexOf('TANK PARK') >= 0 && tp.need === 'sov_mot' && tp.ready && tp.makes === 'sv_t34,sv_su85' && tp.bname === 'Tankovyy park' &&
      tp.bld > 100 && tp.q === 'sv_t34' && tp.qMot === 'refused' && tp.bufs && tp.name === 'T-34/76' && !tp.arc && tp.tur > 3.0 &&
      tp.coax === 'coax' && tp.tows && tp.shlem > 0 && tp.paint > 0 && tp.frame === 'tur' && tp.eyeUp > tp.roof + 2 &&
      tp.eyeUp < tp.roof + 9 && tp.eyeIn < tp.eyeUp && tp.rifle === 0 && tp.p4 === 1 && tp.blown > 0 && tp.blown < 40 && tp.sink > 0 &&
@@ -8652,6 +8652,95 @@ for (const device of TARGETS) {
      `in their own they ${tp.down ? 'got down' : 'DID NOT'}; the tank killed under riders threw them ${tp.thrown}; killed it ` +
      `left ${tp.bodies} bodies of ${tp.bodyNat}; a brain with the Avtopark standing pegged out ${tpAi.site} Tankovyy park and ` +
      `with one standing queued ${tpAi.q}`);
+
+  /* --- The SU-85. The Tankovyy park makes it beside the T-34 and queues it, and the Avtopark
+     refuses it. Every buffer it needs is built, the hatch's three among them, it is a casemate
+     named the SU-85 with no machine gun, and its gun asked to lay 1.2 radians off the nose stops
+     at the edge of its ten degrees. The commander up in the hatch wears the padded helmet, and the
+     eye is over the roof head out and drops when the lid shuts. A Kar98k never goes through its
+     front and a Panzer IV always does; its own 85 mm goes through a Panzer IV's front every time
+     at three hundred and a Panther's front less often than its side. Forty wrecks throw nothing
+     and sit down, killed it leaves the army's crewmen, and a brain on his slot with the Tankovyy
+     park standing and two T-34s bought buys one. --- */
+  const su = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let tb = G.blds.filter(b => b.own === own && b.key === 'sov_tank' && b.built >= 1)[0];
+    if (!tb) { const at = W.baseSite(own, 'sov_tank') || W.nearestFree(hq.x - 200, hq.y + 260); tb = W.spawnBuilding(own, 'sov_tank', at.x, at.y, true); }
+    out.makes = W.makesOf(tb).join(',');
+    const ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot')[0];
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(tb, 'sv_su85'); out.qMot = ab ? q(ab, 'sv_su85') : 'no Avtopark';
+    const B = W.MODELS.veh.sv_su85, V = W.VMODEL.sv_su85;
+    out.bufs = !!(B && B.hull && B.tur && B.hatch && B.cmdr && B.leaf);
+    out.fixed = !!V.fixed;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_su85', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = +(W.arcOf(t) || 0).toFixed(2); out.sec = W.secondaryKeys(t).join(',') || 'none';
+    t.facing = 0; t.turret = 0; t.want = 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +t.turret.toFixed(3);
+    t.turret = 0; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = W.HATCHES.sv_su85.open.filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.insideOf('sv_su85', V);
+    out.eyeUp = +E.eyeUp.z.toFixed(1); out.eyeIn = +E.eyeIn.z.toFixed(1); out.roof = W.S85.zRoof; out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.p4 = +W.penVs(W.UNITS.hr_p4.w, 300, t, t.x + 300, t.y).toFixed(2);
+    /* its own gun against the two German tanks, a Panzer IV and a Panther met head on and the
+       Panther met broadside, three hundred out */
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 300, t.y, Math.PI), pa = W.spawnUnit('ger', 'hr_panther', t.x + 300, t.y + 200, Math.PI);
+    out.onP4 = +W.penVs(t.def.w, 300, p4, t.x, t.y).toFixed(2);
+    pa.x = t.x + 300; pa.y = t.y; out.paF = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    pa.facing = Math.PI / 2; pa._matT = -1; out.paS = +W.penVs(t.def.w, 300, pa, t.x, t.y).toFixed(2);
+    [p4, pa].forEach(e => G.units.splice(G.units.indexOf(e), 1));
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    /* the brain on his slot, with the park standing, the rungs under the SU-85 on the ladder
+       already bought and none of it bought yet, so that what it does next is the SU-85's rung
+       and not the rows above: the T-34 row's brain buys one when it has the money */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_t20', 'sv_ba64'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    G.made[own].sv_t34 = Math.max(2, G.made[own].sv_t34 || 0); out.madeSu = G.made[own].sv_su85 || 0; G.made[own].sv_su85 = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__suq = []; W.__suU = W.queueUnit;
+    W.queueUnit = function (b) { const q = W.__suU.apply(this, arguments); if (q && b.own === own) W.__suq.push(b.key + ':' + arguments[1]); return q; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const suAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__suU; W.slotOf(own).ai = 0;
+    return { q: W.__suq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Tankovyy park raises the SU-85, a casemate with the 85 mm in its front plate',
+     /sv_su85/.test(su.makes) && su.q === 'sv_su85' && su.qMot === 'refused' && su.bufs && su.fixed && su.name === 'SU-85' &&
+     su.sec === 'none' && su.arc === .35 && Math.abs(Math.abs(su.tur) - su.arc / 2) < .03 && su.shlem > 0 && su.paint > 0 &&
+     su.frame === 'hull' && su.eyeUp > su.roof + 2 && su.eyeUp < su.roof + 9 && su.eyeIn < su.eyeUp && su.rifle === 0 && su.p4 === 1 &&
+     su.onP4 === 1 && su.paF < .5 && su.paS > .8 && su.blown === 0 && su.sink > 0 && su.bodies >= 2 && su.bodyNat === 'sov' &&
+     /sov_tank:sv_su85/.test(suAi.q),
+     `the Tankovyy park makes ${su.makes} and queues ${su.q}, the Avtopark ${su.qMot} it; buffers ${su.bufs ? 'built' : 'MISSING'}, ` +
+     `${su.fixed ? 'a casemate' : 'NOT A CASEMATE'}; named ${su.name}, secondary ${su.sec}; asked for 1.2 the gun laid ${su.tur} on an ` +
+     `arc of ${su.arc}; the commander has ${su.shlem} faces of the padded helmet, the hull ${su.paint} of its green; the eye in the ` +
+     `${su.frame} at ${su.eyeUp} head out and ${su.eyeIn} head in, over a roof at ${su.roof}; a Kar98k through the front ${su.rifle} ` +
+     `and a Panzer IV ${su.p4}; its 85 mm through a Panzer IV's front ${su.onP4}, a Panther's front ${su.paF} and its side ${su.paS}; ` +
+     `forty wrecks threw ${su.blown} and sat down ${su.sink}; killed it left ${su.bodies} bodies of ${su.bodyNat}; a brain with the ` +
+     `park standing (and ${su.madeSu} SU-85 on the tally already, which the row takes off it) queued ${suAi.q}`);
 
   /* --- what a battle holds on the card. An iPhone tab is killed for memory without a word
      on the console, and a phone ran Saint-Lô for four seconds before it was: the buffers were

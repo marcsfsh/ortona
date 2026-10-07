@@ -2391,6 +2391,16 @@ var UNITS = {
     req: 'sov_tank',
     w: { mm: 95, range: 380, dmg: 135, rof: 3.4, acc: .70, sup: .05, pen: 200, aoe: 44, shell: 1 },
     desc: 'The Red Army\'s medium tank: forty-five millimetres of plate laid back sixty degrees across the front, wide tracks that carry it over ground that bogs other tanks down, and the 76 mm F-34 beside a coaxial DT. A squad can ride on the engine deck and fire from it, out in the open. The turret is cramped and its one big hatch opens straight up in front of the commander, who lays the gun as well.'
+  },
+  /* The SU-85, which the Tankovyy park fields beside the T-34: the T-34's hull with its glacis
+     carried up into a fixed casemate and the 85 mm D-5S in a ball mount in the front plate,
+     traversing ten degrees either way (`arc`). */
+  sv_su85: {
+    side: 'us', nat: 'sov', name: 'SU-85', short: 'SU-85', cat: 'veh', hk: 'S', upgrades: [],
+    hp: 640, armor: 124, speed: 90, sight: 440, pop: 13, cost: { mp: 380, fu: 90 }, time: 34,
+    req: 'sov_tank', arc: .35,
+    w: { mm: 140, range: 460, dmg: 150, rof: 3.2, acc: .76, sup: .05, pen: 260, aoe: 46, shell: 1 },
+    desc: 'The T-34\'s hull with its glacis carried up into a fixed casemate, and the 85 mm D-5S in a ball mount in the front plate. It opens a Panzer IV from the front as far as it can reach and a Panther from the side, and a Panther\'s front only close in. Forty-five millimetres laid back fifty degrees across the front and forty-five on the sides. The gun goes ten degrees either way and the whole vehicle turns for anything wider, and it carries no machine gun.'
   }
 };
 
@@ -2498,8 +2508,8 @@ var BUILDINGS = {
              desc: 'A vehicle park: a shed of logs with two bays, the ramp a car is worked on from underneath, a tripod hoist and the fuel behind logs. Needs the Kazarma. Raises the BA-64B.' },
   /* and its third and last, the tank park, which turns out its medium tank */
   sov_tank: { side: 'us', nat: 'sov', name: 'Tankovyy park', short: 'TANK PARK', w: 156, h: 124, hp: 2000, hk: '3', need: 'sov_mot',
-              cost: { mp: 300, fu: 60 }, time: 40, makes: ['sv_t34'],
-              desc: 'A tank park: a long shed of logs with three bays under a roof of boards, a gantry of logs over the bay a tank is worked on in, spare road wheels and track. Needs the Avtopark. Raises the T-34/76.' },
+              cost: { mp: 300, fu: 60 }, time: 40, makes: ['sv_t34', 'sv_su85'],
+              desc: 'A tank park: a long shed of logs with three bays under a roof of boards, a gantry of logs over the bay a tank is worked on in, spare road wheels and track. Needs the Avtopark. Raises the T-34/76 and the SU-85.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren', 'hr_ks750'] },
   ger_qtr: { side: 'ger', name: 'Kaserne', short: 'KASERNE', w: 116, h: 96, hp: 1500, hk: '1',
@@ -9616,6 +9626,7 @@ var ARM = {
   sv_t20:     { h: [10, 7, 7],      t: [10, 7, 7] },
   sv_ba64:    { h: [15, 9, 9],      t: [10, 10, 10] },
   sv_t34:     { h: [88, 45, 40],    t: [65, 65, 65] },
+  sv_su85:    { h: [88, 45, 40],    t: [88, 45, 40],    cm: .5 },
   am_m3:      { h: [13, 7, 7],      t: [13, 7, 7],      cm: .45 },
   am_gmc:     { h: [13, 7, 7],      t: [16, 7, 7],      cm: .45 },
   am_m16:     { h: [13, 7, 7],      t: [8, 7, 7],       cm: .45 },
@@ -16011,7 +16022,7 @@ function aiCutLadder(slot, base, IN, own) {
   for (lk in LT) lostAll += LT[lk];
   var byArm = lostAll > 400 ? ((LT.veh || 0) + (LT.gun || 0)) / lostAll : 0;
   var lt = side === 'us' ? { am_jeep: 1, am_m8: 1, am_stuart: 1, am_m3: 1, sv_t20: 1, sv_ba64: 1 } : { hr_ks750: 1, hr_251: 1, hr_234: 1 };
-  var killers = side === 'us' ? { am_at: 1, am_gmc: 1, am_e8: 1, am_m18: 1, am_m26: 1 } : { ger_tig: 1, ger_kt: 1, hr_pak: 1, hr_puma: 1, hr_panther: 1, hr_marder: 1 };
+  var killers = side === 'us' ? { am_at: 1, am_gmc: 1, am_e8: 1, am_m18: 1, am_m26: 1, sv_su85: 1 } : { ger_tig: 1, ger_kt: 1, hr_pak: 1, hr_puma: 1, hr_panther: 1, hr_marder: 1 };
   var meds = side === 'us' ? { am_sher: 1, sv_t34: 1 } : { hr_p4: 1 };
   var atKey = side === 'us' ? 'am_at' : 'hr_pak';
   /* and what is for stripping men out of the open: forward when men are all he has, back
@@ -17437,7 +17448,7 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_ba64', 1, 210], ['sv_t34', 2, 310], ['sv_t34', meds, 650]] : side === 'us'
+  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_ba64', 1, 210], ['sv_t34', 2, 310], ['sv_su85', 1, 380], ['sv_t34', meds, 650]] : side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
@@ -34777,10 +34788,11 @@ function ttBody() {
 }
 /* The fenders: the shelf along each side from the side plate out over the track, with its lip;
    in front the guard rounded down over the idler on a strut, and behind the guard drooping
-   over the sprocket. */
-function ttFenders() {
+   over the sprocket. `xg` is where the front plate meets the sponson on a hull whose front is
+   not the T-34's glacis. */
+function ttFenders(xg) {
   var C = TTC, H = TTH, f = [], sd, y0 = H.low - .2, y1 = H.fend;
-  var xgS = ttGlX(H.zSpon), xrS = ttRrX(H.zSpon);
+  var xgS = xg || ttGlX(H.zSpon), xrS = ttRrX(H.zSpon);
   for (sd = -1; sd <= 1; sd += 2) {
     f = f.concat(box((xrS + xgS) / 2, sd * (H.side + y1) / 2, H.zSpon - .25, xgS - xrS, y1 - H.side, .25, C.body, C.lit, C.dark, 0));
     f = f.concat(m4Box(sd, xrS - .3, xgS + .2, y1 - .2, y1, H.zSpon - .9, H.zSpon, C.body, C.lit, C.dark, 0));
@@ -35023,6 +35035,264 @@ function ttHatch() {
 function ttShow() {
   ttHatch();
   return ttHull().concat(place(ttTurret().concat(HATCHES.sv_t34.shut), 0, TTH.turX, 0, TTH.zRoof));
+}
+
+/* ================================================================ SU-85 (Red Army)
+   The Red Army's tank destroyer of 1943 and 1944: the T-34's hull and running gear with the
+   glacis carried up into a fixed casemate, and the 85 mm D-5S in a ball mount in its front
+   plate, a little right of the middle, traversing ten degrees either way. The Tankovyy park
+   fields it. Laid over a four-view (tools/ref/sv_su85.json) whose views are all at one scale,
+   52.5 px/m: the five road wheels agree with the T-34's stations to a pixel at it, and so do the
+   track centres in both end views and the published 3.00 m of width. At that scale the hull is
+   6.02 m long against a published 6.10, the length over the gun is the published 8.15 m and the
+   top of the commander's periscope 2.34 m against a published 2.45; the drawing was taken. Its
+   road wheels are 0.82 m, where the T-34 here was laid over a drawing with 0.77 m wheels, and the
+   T-34's are kept, because the chassis is the T-34's.
+
+   What says SU-85 rather than any other T-34, from the front:
+
+     1. One plate from the nose to the roof, laid back fifty degrees where the T-34's glacis is
+        laid back sixty, and the casemate's sides standing up off the sponsons at twenty degrees
+        where the T-34's lean in forty.
+     2. The gun's housing standing out of the front plate as a box, flush with the roof, with the
+        ball and its collar in its face, and the gun right of the middle; no bow machine gun.
+     3. The commander's raised plate on the right front of the roof with a periscope standing
+        out of it, a hatch on the left behind, and a fuel tank in straps on each side of the
+        engine. */
+
+var S85 = {
+  zRoof: 23.07, roofY: 11.35, xRoof: 14.04, xBack: -1.5,  /* the roof: its front and back edges, its half-width */
+  xFp: 26.24, xNose: 30.1, zNose: 9.29,                    /* the front plate at the sponsons, and the nose */
+  xRb: -2.35,                                              /* the rear plate's foot on the engine deck */
+  gx: 25.9, gy: 2.35, gz: 17.95, muz: 59.4,                /* the ball's centre, and the muzzle */
+  hy0: -2.9, hy1: 7.6, hxF: 27.07, hz0: 15.6, hzP: 13.86, hz1: 21.6, hxC: 25.68,   /* the housing: its sides, its face from its foot to
+                                                                                         its top, where its underside meets the plate, the chamfer */
+  cx0: 6.2, cx1: 14.0, cy0: 4.2, cy1: 11.0, ch: .9,        /* the commander's raised plate */
+  lx0: 6.4, lx1: 10.4, ly0: 4.7, ly1: 10.7,                /* his hatch, hinged at its back edge */
+  tx: [[-4.8, -16.5], [-16.9, -28.5]], ty: 14.4, tz: 17.2, tr: 2.35   /* the fuel tanks, two a side */
+};
+S85.fs = (S85.zRoof - TTH.zSpon) / (S85.xFp - S85.xRoof);
+S85.rs = (S85.xBack - S85.xRb) / (S85.zRoof - TTH.zRoof);
+/* where the front plate is, the rear plate, and the casemate's side plate, and their normals */
+function s85FpZ(x) { return TTH.zSpon + (S85.xFp - x) * S85.fs; }
+function s85FpX(z) { return S85.xFp - (z - TTH.zSpon) / S85.fs; }
+function s85RpX(z) { return S85.xRb + (z - TTH.zRoof) * S85.rs; }
+function s85SideY(z) { var H = TTH; return H.side - (z - H.zSpon) * (H.side - S85.roofY) / (S85.zRoof - H.zSpon); }
+function s85FpN() { return hkNorm([S85.fs, 0, 1]); }
+function s85RpN() { return hkNorm([-1, 0, S85.rs]); }
+function s85SideN(sd) { return hkNorm([0, sd * (S85.zRoof - TTH.zSpon), TTH.side - S85.roofY]); }
+/* a part laid on the front plate (local x down the slope), on a side plate (local x along the
+   hull) and on the rear plate (local x across), local z out of the plate in each */
+function s85OnFp(faces, x, y, out) {
+  var n = s85FpN(), o = out || 0;
+  return hkOn(faces, [x + n[0] * o, y, s85FpZ(x) + n[2] * o], [n[2], 0, -n[0]], n);
+}
+function s85OnSide(faces, x, z, sd, out) {
+  var n = s85SideN(sd), o = out || 0;
+  return hkOn(faces, [x, sd * s85SideY(z) + n[1] * o, z + n[2] * o], [1, 0, 0], n);
+}
+function s85OnRp(faces, y, z, out) {
+  var n = s85RpN(), o = out || 0;
+  return hkOn(faces, [s85RpX(z) + n[0] * o, y, z + n[2] * o], [0, -1, 0], n);
+}
+
+function s85Hull() {
+  var g = TTG, f = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(ttTrack(sd * g.TY));
+    for (i = 0; i < g.wx.length; i++) f = f.concat(ttWheel(g.wx[i], sd));
+    f = f.concat(ttIdler(sd), ttSprocket(sd));
+  }
+  return f.concat(s85Body(), ttFenders(S85.xFp), s85Front(), s85Sides(), s85Tanks(), ttDeck(), ttRear(), s85Roof());
+}
+/* The lower hull between the tracks with the nose; the front plate from the nose to the roof;
+   the casemate's side plates; behind them the T-34's own side plates over the engine; the roof,
+   the rear plate leaning down to the engine deck, the deck and the T-34's upper rear plate. The
+   rear plate fills the two corners between a casemate side and an engine side, which meet at the
+   sponson and stand apart at the deck. */
+function s85Body() {
+  var C = TTC, H = TTH, S = S85, f = [], sd, i, ys = H.side, yr = H.roofY, zs = H.zSpon, zr = H.zRoof, Y = S.roofY, Z = S.zRoof;
+  var xrS = ttRrX(zs), xbS = s85RpX(zs), xbD = s85RpX(zr), nR = s85RpN();
+  f = f.concat(extrudeY([[H.xBr, H.zBelly], [H.xBf, H.zBelly], [S.xNose, S.zNose], [S.xFp, zs], [xrS, zs], [H.xRb, H.zRb]],
+                        -H.low, H.low, C.body, C.body, C.dark));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f.push(hkFace([[xbS, sd * ys, zs], [S.xFp, sd * ys, zs], [S.xRoof, sd * Y, Z], [S.xBack, sd * Y, Z]], s85SideN(sd), C.body));
+    f.push(hkFace([[xrS, sd * ys, zs], [xbS, sd * ys, zs], [xbD, sd * yr, zr], [H.xRr, sd * yr, zr]], ttSideN(sd), C.body));
+    f.push(hkFace([[S.xBack, sd * Y, Z], [xbS, sd * ys, zs], [xbD, sd * yr, zr]], nR, C.body));
+    f.push(hkFace([[xrS, sd * H.low, zs], [S.xFp, sd * H.low, zs], [S.xFp, sd * ys, zs], [xrS, sd * ys, zs]], [0, 0, -1], C.dark));
+    f = f.concat(ksTube([S.xRoof, sd * Y, Z], [S.xFp, sd * ys, zs], .13, C.lit, 5));
+    f = f.concat(ksTube([S.xBack, sd * Y, Z], [xbS, sd * ys, zs], .13, C.lit, 5));
+    f = f.concat(ksTube([H.xRr, sd * yr, zr], [xrS, sd * ys, zs], .13, C.lit, 5));
+    for (i = 0; i < 26; i++) f = f.concat(stud(-24.5 + i * 1.82, sd * (H.low + .05), 11.45, .32, .3, C.dark));
+  }
+  f.push(hkFace([[S.xFp, -ys, zs], [S.xFp, ys, zs], [S.xRoof, Y, Z], [S.xRoof, -Y, Z]], s85FpN(), C.body));
+  f.push(hkFace([[S.xBack, -Y, Z], [S.xBack, Y, Z], [S.xRoof, Y, Z], [S.xRoof, -Y, Z]], [0, 0, 1], C.lit));
+  f.push(hkFace([[S.xBack, -Y, Z], [S.xBack, Y, Z], [xbD, yr, zr], [xbD, -yr, zr]], nR, C.body));
+  f.push(hkFace([[H.xRr, -yr, zr], [H.xRr, yr, zr], [xbD, yr, zr], [xbD, -yr, zr]], [0, 0, 1], C.lit));
+  var nT = hkNorm([-(zr - H.zRb), 0, H.xRr - H.xRb]);
+  f.push(hkFace([[H.xRr, -yr, zr], [H.xRr, yr, zr], [xrS, ys, zs], [xrS, -ys, zs]], nT, C.body));
+  f = f.concat(ksTube([S.xRoof, -Y, Z], [S.xRoof, Y, Z], .13, C.lit, 5), ksTube([S.xBack, -Y, Z], [S.xBack, Y, Z], .13, C.lit, 5));
+  f = f.concat(ksTube([xbD, -yr, zr], [xbD, yr, zr], .13, C.lit, 5), ksTube([S.xNose, -H.low, S.zNose], [S.xNose, H.low, S.zNose], .16, C.lit, 5));
+  return f;
+}
+/* The front plate: the gun's housing standing out of it, flush with the roof, with the bolts
+   round the opening the ball turns in; the driver's hatch on the left with its two periscopes at
+   the top; two spare track links on the plate under the housing; the towing hooks by the nose;
+   and the headlamp at the top on the right. */
+function s85Front() {
+  var C = TTC, S = S85, f = [], sd, i;
+  f = f.concat(extrudeY([[s85FpX(S.hzP), S.hzP], [S.hxF, S.hz0], [S.hxF, S.hz1], [S.hxC, S.zRoof], [S.xRoof, S.zRoof]],
+                        S.hy0, S.hy1, C.body, C.body, C.dark));
+  f = f.concat(ksTube([S.hxF + .02, S.hy0, S.hz1], [S.hxF + .02, S.hy1, S.hz1], .12, C.lit, 5));
+  for (i = 0; i < 14; i++) {
+    var a = i / 14 * TAU, r = 3.3;
+    f = f.concat(place(pitch(cyl(0, 0, 0, .24, .24, .18, 6, C.dark, C.body, 0, true), -Math.PI / 2, 0, 0), 0, S.hxF, S.gy + Math.cos(a) * r, S.gz + Math.sin(a) * r * .85));
+  }
+  /* the driver's hatch */
+  var hl = 5.9, hw = 6.2, hatch = box(0, 0, 0, hl, hw, .45, C.body, C.lit, C.dark, .2);
+  [-1.4, 1.4].forEach(function (dy) {
+    hatch = hatch.concat(box(-hl * .3, dy, .45, 1.3, 1.8, .6, C.body, C.lit, C.dark, .1));
+    hatch = hatch.concat(box(-hl * .3 - .66, dy, .65, .05, 1.2, .3, C.glass, C.glass, C.glass, 0));
+  });
+  hatch = hatch.concat(grabIron(hl * .25, 0, .45, 1.8, .35, C.steel, 'y'));
+  [-1, 1].forEach(function (s) { hatch = hatch.concat(box(-hl / 2 + .3, s * hw * .32, .45, .6, .9, .3, C.dark, C.body, C.dark, 0)); });
+  f = f.concat(s85OnFp(hatch, 21.2, -6.75, 0));
+  /* and his periscope over it, in its box at the top of the plate */
+  f = f.concat(s85OnFp(box(0, 0, 0, 1.6, 2.6, 1.4, C.body, C.lit, C.dark, .15).concat(box(.82, 0, .4, .05, 1.8, .45, C.glass, C.glass, C.glass, 0)), 17.3, -7.0, 0));
+  /* the spare links, their cleats out */
+  [28.65, 26.4].forEach(function (x) {
+    [-2.95, 3.65].forEach(function (y) { f = f.concat(s85OnFp(ttLink(TTG.LP, 1), x, y, TTG.T / 2 + .05)); });
+    f = f.concat(s85OnFp(box(0, 0, 0, .5, 13.8, .5, C.dark, C.body, C.dark, 0), x - 1.2, .35, 0));
+  });
+  for (sd = -1; sd <= 1; sd += 2) {
+    var ty = sd * 8.9;
+    f = f.concat(s85OnFp(box(0, 0, 0, 2.6, 2.4, .6, C.dark, C.body, C.dark, .1), 29.0, ty, 0));
+    f = f.concat(s85OnFp(place(tubeSmooth(-.8, .8, 0, 0, .42, 8, C.steel, C.bare), Math.PI / 2, 0, 0, .9), 29.3, ty, 0));
+  }
+  var lx = 19.4, ly = 10.0, lz = 20.6;
+  f = f.concat(tubeSmooth(lx - .9, lx + .55, ly, lz, 1.05, 12, C.dark, C.body));
+  f = f.concat(tubeSmooth(lx + .55, lx + .7, ly, lz, .86, 12, C.lens, C.lens));
+  f = f.concat(cyl(lx - .2, ly, s85FpZ(lx - .2) - .1, .26, .26, lz - s85FpZ(lx - .2) - .8, 6, C.dark, C.body, 0, true));
+  /* the blackout lamp on its bracket off the casemate's right front corner */
+  var bx = 16.4, by = 12.9, bz = 21.8, sy = s85SideY(bz);
+  f = f.concat(tubeSmooth(bx - .7, bx + .4, by, bz, .72, 10, C.dark, C.body), tubeSmooth(bx + .4, bx + .5, by, bz, .55, 10, C.hole, C.hole));
+  f = f.concat(box(bx - .3, (sy + by) / 2, bz - .2, .5, by - sy, .35, C.dark, C.body, C.dark, 0));
+  return f;
+}
+/* The casemate's sides: a pistol port in each, the tow cable on its pegs along the plate, and a
+   stowage box on each fender beside it. */
+function s85Sides() {
+  var C = TTC, H = TTH, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(s85OnSide(cyl(0, 0, 0, .95, .95, .3, 12, C.body, C.lit, 0, true).concat(cyl(0, 0, .3, .45, .45, .2, 8, C.dark, C.body, 0, true)), 12.1, 20.8, sd, 0));
+    var n = s85SideN(sd), cy = sd * s85SideY(17.6) + n[1] * .42, cz = 17.6 + n[2] * .42;
+    f = f.concat(ksTube([18.0, cy, cz], [-1.0, cy, cz], .2, C.steel, 6));
+    [16.5, 8.5, .5].forEach(function (x) { f = f.concat(s85OnSide(box(0, 0, 0, .5, .5, .45, C.dark, C.body, C.dark, 0), x, 17.6, sd, 0)); });
+    f = f.concat(s85OnSide(box(0, 0, 0, 1.4, 1.4, .5, C.steel, C.bare, C.steel, .1), 18.6, 17.6, sd, .2));
+    var bx = box(13.5, sd * 16.15, H.zSpon, 15.2, 2.2, 2.2, C.body, C.lit, C.dark, .15);
+    [-.38, 0, .38].forEach(function (t) { bx = bx.concat(box(13.5 + t * 15.2, sd * 16.15, H.zSpon + 2.18, .45, 2.3, .1, C.dark, C.body, C.dark, 0)); });
+    [-.2, .2].forEach(function (t) { bx = bx.concat(grabIron(13.5 + t * 15.2, sd * 16.15, H.zSpon + 2.28, 1.3, .3, C.steel, 'x')); });
+    f = f.concat(bx);
+  }
+  return f;
+}
+/* The fuel tanks along the engine's sides, two a side, each a drum with its ends turned in,
+   held to the side plate by two straps on brackets down to the fender, with its filler on top. */
+function s85Tanks() {
+  var C = TTC, S = S85, H = TTH, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y = sd * S.ty, z = S.tz, r = S.tr;
+    S.tx.forEach(function (q) {
+      var x0 = q[1], x1 = q[0];
+      f = f.concat(m4Taper(x0, x0 + .6, y, z, r - .5, r, 14, C.body, C.dark));
+      f = f.concat(tubeSmooth(x0 + .6, x1 - .6, y, z, r, 14, C.body, C.body));
+      f = f.concat(m4Taper(x1 - .6, x1, y, z, r, r - .5, 14, C.body, C.dark));
+      [x0 + 2.6, x1 - 1.6].forEach(function (xs) {
+        f = f.concat(tubeSmooth(xs - .25, xs + .25, y, z, r + .08, 14, C.dark, C.dark));
+        f = f.concat(box(xs, sd * (S.ty + .5), H.zSpon, .5, 1.6, z - r - H.zSpon + .3, C.dark, C.body, C.dark, 0));
+      });
+      var xm = (x0 + x1) / 2;
+      f = f.concat(cyl(xm, y, z + r - .1, .55, .55, .4, 10, C.dark, C.body, 0, true));
+    });
+  }
+  return f;
+}
+/* The roof: the commander's raised plate on the right front with the vision slits round it, the
+   periscope standing out of it in its hood and the box of the fixed periscope in front of it;
+   on the left behind, the loader's hatch and the two periscopes beside it; and on the rear plate
+   the two vision ports. The commander's hatch itself is `HATCHES`. */
+function s85Roof() {
+  var C = TTC, S = S85, f = [], Z = S.zRoof, zc = Z + S.ch, i;
+  var pts = [[S.cx0 + .8, S.cy0], [S.cx1 - .8, S.cy0], [S.cx1, S.cy0 + .8], [S.cx1, S.cy1 - .8], [S.cx1 - .8, S.cy1], [S.cx0 + .8, S.cy1], [S.cx0, S.cy1 - .8], [S.cx0, S.cy0 + .8]];
+  f = f.concat(faceOut(prism(pts, Z - .05, zc, C.body, C.lit, C.dark), (S.cx0 + S.cx1) / 2, (S.cy0 + S.cy1) / 2, (Z + zc) / 2));
+  for (i = 0; i < 3; i++) f = f.concat(box(S.cx1 + .02, S.cy0 + 1.4 + i * 2.2, Z + .3, .08, 1.5, .32, C.glass, C.glass, C.glass, 0));
+  for (i = 0; i < 3; i++) f = f.concat(box(S.cx0 + 1.6 + i * 2.3, S.cy1 + .02, Z + .3, 1.5, .08, .32, C.glass, C.glass, C.glass, 0));
+  /* the periscope in its hood, and the fixed periscope's box ahead of the hatch */
+  var px = 11.6, py = 8.6;
+  f = f.concat(cyl(px, py, zc, 1.1, 1.1, 2.4, 14, C.body, C.lit, 0, true));
+  f = f.concat(cyl(px, py, zc + 2.4, 1.1, .85, .45, 14, C.body, C.lit, 0, true), cyl(px, py, zc + 2.85, .85, .35, .35, 14, C.body, C.lit, 0, true));
+  f = f.concat(box(px + 1.0, py, zc + 1.5, .3, 1.1, .45, C.glass, C.glass, C.glass, 0));
+  f = f.concat(box(12.9, 6.15, zc, 2.2, 3.0, .85, C.body, C.lit, C.dark, .2));
+  f = f.concat(box(14.0, 6.15, zc + .25, .1, 2.2, .35, C.glass, C.glass, C.glass, 0));
+  /* the loader's hatch, with its port and its handle, and the two periscopes beside it */
+  var lp = [[-.9 + .7, -7.4], [4.6 - .7, -7.4], [4.6, -6.7], [4.6, -.4], [3.9, .3], [-.2, .3], [-.9, -.4], [-.9, -6.7]];
+  f = f.concat(faceOut(prism(lp, Z - .05, Z + .45, C.body, C.lit, C.dark), 1.85, -3.55, Z + .2));
+  f = f.concat(cyl(.6, -3.3, Z + .45, .75, .75, .25, 12, C.body, C.lit, 0, true));
+  f = f.concat(grabIron(3.4, -3.55, Z + .45, 1.8, .3, C.steel, 'y'));
+  [-.4, -6.7].forEach(function (y) { f = f.concat(box(-.55, y, Z, 1.0, .9, .6, C.dark, C.body, C.dark, 0)); });
+  [-1.4, -5.7].forEach(function (y) {
+    f = f.concat(box(4.8, y, Z, 1.6, 2.2, .8, C.body, C.lit, C.dark, .15));
+    f = f.concat(box(5.62, y, Z + .3, .06, 1.6, .3, C.glass, C.glass, C.glass, 0));
+  });
+  /* the lifting eyes at the roof's corners, and the rear plate's two vision ports */
+  [[13.0, 10.4], [13.0, -10.4], [-.6, 10.4]].forEach(function (q) { f = f.concat(box(q[0], q[1], Z, .7, .5, .55, C.dark, C.body, C.dark, 0)); });
+  [-5.9, -1.9].forEach(function (y) {
+    f = f.concat(s85OnRp(box(0, 0, 0, 2.2, 1.6, .4, C.body, C.lit, C.dark, .1).concat(box(0, .1, .4, 1.4, .25, .05, C.glass, C.glass, C.glass, 0)), y, 20.6, 0));
+  });
+  return f;
+}
+/* The gun, about the ball's centre, which is the mount's origin: the face of the ball where it
+   shows in the housing, the collar bolted to it, the thick part of the tube to the step, the tube
+   tapering to the muzzle and the lip there. There is no muzzle brake. */
+function s85Gun() {
+  var C = TTC, S = S85, f = [], i, xf = S.hxF - S.gx, xm = S.muz - S.gx;
+  f = f.concat(tubeSmooth(-1.0, xf + .02, 0, 0, 2.8, 16, C.body, C.body));
+  f = f.concat(m4Taper(xf, xf + .55, 0, 0, 2.8, 2.45, 16, C.body, C.lit));
+  f = f.concat(m4Taper(xf + .55, xf + 1.0, 0, 0, 2.45, 1.85, 16, C.body, C.body));
+  f = f.concat(tubeSmooth(xf + 1.0, xf + 1.95, 0, 0, 1.45, 14, C.body, C.lit));
+  for (i = 0; i < 8; i++) {
+    var a = i / 8 * TAU;
+    f = f.concat(box(xf + 1.45, Math.cos(a) * 1.5, Math.sin(a) * 1.5 - .25, .7, .45, .5, C.dark, C.body, C.dark, 0));
+  }
+  f = f.concat(tubeSmooth(xf + 1.95, 12.0, 0, 0, 1.12, 14, C.body, C.body));
+  f = f.concat(m4Taper(12.0, 12.3, 0, 0, 1.12, .88, 14, C.body, C.body));
+  f = f.concat(m4Taper(12.3, xm - .8, 0, 0, .86, .72, 14, C.body, C.body));
+  f = f.concat(tubeSmooth(xm - .8, xm, 0, 0, .84, 14, C.body, C.hole));
+  return f;
+}
+/* The commander's hatch over the back of his raised plate, hinged at its back edge, with a
+   periscope turned across it and a handle; opened, it stands up behind him leaning back, and he
+   stands in the opening in the padded helmet. */
+function s85HatchFaces() {
+  var C = TTC, S = S85, L = S.lx1 - S.lx0, W = S.ly1 - S.ly0, yc = (S.ly0 + S.ly1) / 2, f = [];
+  var pts = [[.6, -W / 2], [L - .7, -W / 2], [L, -W / 2 + .7], [L, W / 2 - .7], [L - .7, W / 2], [.6, W / 2], [0, W / 2 - .6], [0, -W / 2 + .6]];
+  f = f.concat(faceOut(prism(pts, 0, .4, C.body, C.lit, C.dark), L / 2, 0, .2));
+  f = f.concat(place(box(0, 0, 0, 2.3, 2.3, 1.35, C.body, C.lit, C.dark, .2).concat(box(1.17, 0, .45, .06, 1.6, .4, C.glass, C.glass, C.glass, 0)), Math.PI / 4, 1.8, 5.85 - yc, .4));
+  f = f.concat(grabIron(L - 1.0, 1.6, .4, 1.6, .3, C.steel, 'y'));
+  [-1, 1].forEach(function (s) { f = f.concat(box(-.15, s * 2.0, -.05, .9, 1.3, .55, C.dark, C.body, C.dark, .1)); });
+  return f;
+}
+function s85Hatch() {
+  var S = S85, zl = S.zRoof + S.ch + .02, yc = (S.ly0 + S.ly1) / 2, h = s85HatchFaces();
+  var shut = place(h, 0, S.lx0, yc, zl);
+  var leaf = place(pitch(place(h, 0, 0, 0, -.25), 1.78, 0, 0), 0, S.lx0, yc, zl + .25);
+  var man = soldierModel('sv_crew', -1), cx = (S.lx0 + S.lx1) / 2 + .4, zm = zl - 14.4 + CREW_RISE;
+  HATCHES.sv_su85 = { shut: shut, leaf: leaf, open: leaf.concat(place(man, 0, cx, yc, zm)) };
+}
+/* the whole vehicle, for the overlay against the drawing */
+function s85Show() {
+  s85Hatch();
+  return s85Hull().concat(place(s85Gun(), 0, S85.gx, S85.gy, S85.gz), HATCHES.sv_su85.shut);
 }
 
 /* ================================================================ M3 light tank (US Army)
@@ -42436,6 +42706,10 @@ function buildVehicleModels(up) {
   /* the T-34: the hatch is built with the turret, so the eye in it is known when the room is */
   vmDef('sv_t34', function () { ttHatch(); return { hull: ttHull(), tur: ttTurret(), belly: TTH.zBelly, bar: TTT.muz, big: 0, scale: 1,
                        mountZ: TTH.zRoof, gunZ: TTT.gz, turX: TTH.turX, turY: 0 }; });
+  /* the SU-85: the ball in the front plate is the mount, turning within its arc, and the
+     hatches are drawn with the hull */
+  vmDef('sv_su85', function () { s85Hatch(); return { hull: s85Hull(), tur: s85Gun(), belly: TTH.zBelly, bar: S85.muz - S85.gx, big: 0, fixed: 1,
+                       scale: 1, mountZ: S85.gz, gunZ: 0, turX: S85.gx, turY: S85.gy }; });
   vmDef('am_stuart', function () { return { hull: s3Hull(), tur: s3Turret(), belly: S3H.zBelly, bar: S3T.muz, big: 0, scale: 1,
                        mountZ: S3H.zRoof, gunZ: S3T.gz, turX: S3H.turX, turY: 0 }; });
   vmDef('ger_kt', function () { return { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
