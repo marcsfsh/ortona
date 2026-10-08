@@ -8480,6 +8480,10 @@ for (const device of TARGETS) {
        building a rung later and is one of the things that kill a heavy, which the brain brings
        forward whenever the enemy has one on the field */
     G.made[own].sv_zis2 = Math.max(2, G.made[own].sv_zis2 || 0);
+    /* and the car itself taken off it: the row queued one above to ask the Avtopark, which the
+       list counts as ordered, and a rung ordered once is only bought again as a replacement,
+       dearest first, behind the ZiS-2 and whatever the park makes */
+    G.made[own].sv_ba64 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
     W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y - 60, 0);
     W.spawnUnit(own, 'sv_sap', hq.x + 160, hq.y, 0);
