@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_su122.png", "key": "sv_su122", "prop": "s122Show", "args": [],
+  "note": "first pass: the SU-85 laid over the SU-122's drawing",
+  "views": {
+    "side":  { "nose": "left", "crop": [20, 0, 1340, 460], "ppm": 189.3, "at": [20.61, 0, 5.21], "px": [419.4, 350], "k": 1 },
+    "plan":  { "nose": "left", "crop": [20, 495, 1340, 595], "ppm": 189.3, "at": [20.61, 0, 0], "px": [419.4, 792.5], "k": 1 },
+    "front": { "crop": [40, 1170, 620, 445], "ppm": 189.3, "at": [0, 0, 0], "px": [347.25, 1601.7], "k": 1.5 },
+    "rear":  { "crop": [715, 1170, 620, 445], "ppm": 190.0, "at": [0, 0, 0], "px": [1023.85, 1605], "k": 1.5 } } }

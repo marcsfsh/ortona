@@ -9,7 +9,7 @@ MG 34 team, the Knight's Cross Holders, the jeep, the M4A1, the Calliope, the Ea
 being built the same way on the Allied side, and so far it has its headquarters, the Shtab, its
 builders, the Sapery, and its rifle squad, the Strelki, out of it, its first production building, the
 Kazarma, the Shturmoviki, the 82-PM-41, the Komsomolets T-20 and the ZiS-3 out of that, its
-second, the Avtopark, the BA-64B out of that, its third and last, the Tankovyy park, and the T-34/76 out of that, with a squad riding on its deck, and the SU-85 (see *The Red Army*). The Soviet units under consideration and
+second, the Avtopark, the BA-64B and the ZiS-2 out of that, its third and last, the Tankovyy park, and the T-34/76 and the T-34-85 out of that, each with a squad riding on its deck, the SU-85 and the SU-122 (see *The Red Army*). The Soviet units under consideration and
 their stats are listed in `docs/soviet-roster.csv`, and none of them is built until it is asked for
 by name. Each army builds a base of four buildings, a headquarters and three production buildings in tiers (see *The bases*). Custom WebGL2 renderer, no engine, no
 dependencies, no build step.
@@ -1428,7 +1428,7 @@ the same Sherman rendered with its tracks half a link on has to move thousands o
 nought between two frames of it standing, because a track that is built to run and does not looks
 exactly like one that is not built to.
 
-**And eleven rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
+**And fourteen rows ask the Red Army what it is**, on a deploy of its own: the title card names it,
 the player's slot fields it against the 352nd, the Shtab makes the Sapery and the Strelki and refuses
 the 29th's rifle squad, the side opens with a squad of Sapery and two of Strelki, the Sapery are four
 men in the four sapper variants with the PPS-43,
@@ -1471,7 +1471,10 @@ rim, a Kar98k never goes through its front and a Pak 38 always does, eighty wrec
 some of the time, killed it leaves two of the army's crewmen, and a brain on his slot with a Kazarma
 standing pegs out an Avtopark and buys the car out of it. The row puts the clock past six hundred
 seconds first, because the car's rung opens at 210 seconds times the difficulty's gate, which is 315 at
-regular, and a row that leans on how long the rows before it ran is a row about those rows. The eighth
+regular, and a row that leans on how long the rows before it ran is a row about those rows. It writes the
+ZiS-2 into what the side has ordered as well, because the gun comes out of the same building a rung later
+and is one of the things that kill a heavy, which the brain brings forward whenever the enemy has one on
+the field: on one desktop run it bought two ZiS-2s and no car. The eighth
 asks the Tankovyy park, the T-34/76 and its riders: the card offers the park, which needs the Avtopark,
 makes the tank and queues it, and the Avtopark refuses the tank; every buffer is built, the hatch's
 three among them, and it is named the T-34/76 with a coaxial DT and tows, its turret asked to lay over
@@ -1484,7 +1487,11 @@ the shooting to them, drives a hundred and sixty units with the squad on it; a g
 front of them is shot at and hurt, a burst beside the tank hurts the riders, a move order with the tank
 in it leaves them aboard and one without it gets them down, and the tank killed under a squad throws it
 off. Then a brain on his slot with the Avtopark standing pegs out a Tankovyy park and buys a T-34 out of
-it, with the clock past seven hundred seconds for the reason the seventh row puts it past six. The ninth
+it, with the clock past seven hundred seconds for the reason the seventh row puts it past six, and with
+everything else the park and the Avtopark make written into what the side has ordered: with a heavy of
+the enemy's on the field the brain brings the guns that kill one forward and sends the T-34, which cannot,
+to the back, and on one desktop run it bought an SU-85 and an SU-122 and no T-34. The later rows for the
+park write the same. The ninth
 asks the SU-85: the park makes it and queues it and the Avtopark refuses it, every buffer is built, the
 hatch's three among them, it is a casemate named the SU-85 with no machine gun, its gun asked to lay 1.2
 radians off the nose stops at the edge of its ten degrees, the commander up in the hatch wears the padded
@@ -1495,7 +1502,16 @@ killed it leaves the army's crewmen, and a brain on his slot with the park stand
 writes two T-34s into what the side has ordered before the brain runs and takes any SU-85 off it, because
 the SU-85's rung comes after theirs on the ladder and the eighth row's brain, with the money in the
 till, buys an SU-85 as well as its T-34; a row that leans on what the rows above it bought is a row about
-those rows. The tenth asks the ZiS-3: the Kazarma makes it and queues it and the Shtab refuses it, it is
+those rows. The tenth asks the T-34-85: the park makes it and queues it and the Avtopark refuses it, every
+buffer is built, the cupola's three among them, it is named the T-34-85 with a coaxial DT and tows, its
+gun is right of the middle and the turret comes all the way round, the commander in the cupola wears the
+padded helmet and the eye is over the roof head out and drops when the lid shuts, a Kar98k never goes
+through its front and a Panzer IV always does, its 85 mm goes through a Panzer IV's front every time at
+three hundred and a Panther's front less often than its side, a squad of Strelki boards it with every man
+on the deck and the nearest more than a unit behind the turret, forty wrecks throw the turret some of the
+time, killed it leaves the army's crewmen, and a brain on his slot buys one with every rung under its own
+written into what the side has ordered. The eleventh asks the SU-122 the SU-85's questions, with its
+hollow charge through a Panzer IV's front more often than not at three hundred. The twelfth asks the ZiS-3: the Kazarma makes it and queues it and the Shtab refuses it, it is
 named the 76 mm ZiS-3 and the bunker's anti-tank fitting is it; sited on open ground with a Panzer IV
 coming at it from 520 it fires first, before the tank has found it; it is six men with every variant, the
 served bodies and its three meshes baked; set up, the loader kneels at the right of the breech facing it
@@ -1510,8 +1526,11 @@ drill's own line, which was traced clear both ways, because asked three hundred 
 gun happened to face, something stood in the way on the full gate's run and the gun picked nothing at all
 on either device, where a page with no rows before it had been clear. The 57's and the Pak 38's rows ask
 for the same room round their spot, because on one desktop run both put their gun down where the bearers'
-places were refused, and they print where the bearers stood when they are not in place. The eleventh asks
-the 82-PM-41: the Kazarma makes it and queues it and the Shtab refuses it, it is named and the bunker's
+places were refused, and they print where the bearers stood when they are not in place. The thirteenth asks the
+ZiS-2 the ZiS-3's questions out of the Avtopark, which makes it where the Kazarma refuses it: it fires
+first sited against a Panzer IV from 520, it is six men in the ZiS-3's drill with its own long tube, it
+has the AP round alone and reaches 620, a T-20 hitches it, and a brain on his slot with the Avtopark
+standing buys one. The fourteenth asks the 82-PM-41: the Kazarma makes it and queues it and the Shtab refuses it, it is named and the bunker's
 mortar pit is it; it is three men with the variants, the served bodies and its two meshes baked; set up,
 the gunner kneels at the left of the bipod and the loader at the right of the tube facing it, with the man
 who brings the bombs beside the gunner, the flash comes off the muzzle and he has his tray in his hand;
@@ -6488,13 +6507,14 @@ saved for nothing, which is why the head of the list is only ever a live key.
 **The Red Army.** A third army, on the Allied side, built a unit at a time off rows the player
 pastes in, in the column order side, the building it comes out of, the unit, its status, manpower,
 fuel, time, population, toughness, armour, speed, sight, main weapon, and abilities and upgrades. It
-has thirteen things so far: its headquarters, the Shtab; its builders, the Sapery, with their
+has sixteen things so far: its headquarters, the Shtab; its builders, the Sapery, with their
 flamethrowers and their minefield; its rifle squad, the Strelki, out of the Shtab; its first
 production building, the Kazarma; its assault engineers, the Shturmoviki, its battalion mortar, the
 82-PM-41, the Komsomolets T-20, its armoured tractor, and the ZiS-3, its divisional gun, out of the
 Kazarma; its second production building, the Avtopark; the
-BA-64B, its armoured car, out of that; its third and last, the Tankovyy park; and out of that the
-T-34/76, its medium tank, which a squad can ride on, and the SU-85, its tank destroyer. The B-4 position the Sapery are to dig comes with
+BA-64B, its armoured car, and the ZiS-2, its anti-tank gun, out of that; its third and last, the
+Tankovyy park; and out of that the T-34/76 and the T-34-85, its medium tanks, which a squad can ride
+on, the SU-85, its tank destroyer, and the SU-122, its assault howitzer. The B-4 position the Sapery are to dig comes with
 a row of its own.
 
 **The rows are kept in `docs/soviet-roster.csv`**, one line a unit in those columns with a note at
@@ -6506,7 +6526,7 @@ yet. When a unit is asked for ("add the IS-2", with a drawing), its stats come o
 row: the price, the time and the population, the hit points and the plate (front, side and rear in
 millimetres, with the turret's in brackets), the speed and the sight, the weapon, and what it carries
 beside it. The units already built (the Sapery, the Strelki, the Shturmoviki, the 82-PM-41, the
-Komsomolets T-20, the ZiS-3, the BA-64B, the T-34/76 and the SU-85) took their rows' numbers as they stand in the file, and a new one does the same unless told
+Komsomolets T-20, the ZiS-3, the ZiS-2, the BA-64B, the T-34/76, the T-34-85, the SU-85 and the SU-122) took their rows' numbers as they stand in the file, and a new one does the same unless told
 otherwise. The file is the player's: a row changes when the player changes it, and a duel that
 disagrees with a row is reported to the player, who decides.
 
@@ -7035,6 +7055,93 @@ caught side-on with three quarters, because the 85 mm opens the Panther's front 
 hundred and its side only once the Panther has stopped turning; and a Pak 38 sited at 377 takes it eleven
 times in twelve in 15 seconds.
 
+**The T-34-85** (`sv_t3485`, out of the Tankovyy park beside the T-34/76, 390 manpower, 105 fuel, 38
+seconds, 15 of population, G) is the T-34 as it was built from the spring of 1944: 780 hit points, the
+T-34's 88 mm across the hull's front, 45 at the sides and 40 at the back, 90 round the turret (`ARM`), 90 of
+speed and 390 of sight, the 85 mm ZiS-S-53 at 150 a round every 3.6 seconds out to 420 with 140 mm of
+penetration, a coaxial DT (`sec`) and no upgrades; it tows a gun and a squad rides on its deck (`riders`).
+Those are the row's numbers as it was pasted.
+
+It is laid over a four-view of the late tank (`tools/ref/sv_t3485.json`) whose side and plan are at 43.1
+px/m, where the five road wheels agree with the T-34/76's stations to a pixel, and whose two ends are at
+43.7, where the track centres agree with its 2.45 m. The T-34/76's hull lies on that drawing to about a
+pixel in all four views, and it is that hull (`ttHull(1)`): what is new on it is the late hull's sides,
+two fuel tanks on the right over the engine and one on the left with a box ahead of it in place of the
+stowage boxes, a rail down each side for the men riding the deck, no aerial on the hull, and the two MDSh
+smoke canisters across the top corners of the rear plate (`t85Sides`, `t85Rear`, the tank itself
+`ttFuel`, which the SU-85's tanks go through now). The drawing's views disagree about the turret in two
+places: the plan puts the face of the mantlet a unit further forward than the side does, and the mantlet
+is stood between them; and the plan's turret is 22 units across at its widest where both ends have it at
+23.3, which is the width it is built to. The round the end view showed at each rear corner was the rear
+fuel tank seen end on, and the round the side view showed at the rear corner is the smoke canister, so
+the canisters lie across the hull. On `tools/dims.mjs` it reads 6.19 m long against 6.10, 8.13 with the
+gun against 8.15, 3.00 wide, 2.62 high against 2.72 (the cupola's lid is not in the measured mount), and
+the T-34/76's body, roof and clearance.
+
+The turret (`t85Turret`, `T85`) is a casting lofted from one plan (`t85TurretPlan`, smoothed through
+`m4Smooth`) scaled at each height for the front, the sides and the back (`T85.K`, through `m4TurRing`),
+with the edge two fifths of the way up where the wall below leans out from the ring and the wall above
+leans in, and a bead along it; the front falls back hard over the mantlet to the roof. The mantlet is a
+block standing out of the front, rounded over the top and under the gun, with its face bolted either side
+of the collar, the gunner's sight through it on the left and the coaxial DT on the right. The ZiS-S-53 is
+a little right of the middle (`barY`, which the muzzle point reads), out of a collar bevelled at its
+front, tapering to a plain muzzle. On the roof: the cupola on the left over the commander, a drum with
+five vision slots under their brows and a split lid (`t85Hatch`, `HATCHES.sv_t3485`), its front half with
+the MK-4 periscope hinged at its front edge and its back half at its back edge, so opened they stand up
+in front of him and behind; the loader's hatch on the right with its periscope; the gunner's and the
+loader's periscopes forward; two mushroom vents over the back; the aerial by the gunner's periscope; the
+lifting hooks; and on each side a handrail and a pistol port's plug, with brackets and a rail across the
+back. Anything fixed to the wall is put there by `t85At`, which is `m4TurAt` asked of this plan. The room
+under the cupola (`VIN.sv_t3485`) is the M4A1's `m4Room` the other way about, with the commander at the
+left rear, the gunner low in front of him and the loader on the right beside the coaxial: `m4Room` takes
+`o.S` for the side the gunner is on now. The squad on its deck kneels three units further back than the
+T-34/76's (`RIDE.sv_t3485`), because its turret reaches that much further back.
+
+On the duel card the row's numbers make it a T-34 that can fight a Panzer IV and not a Panther. Over
+twenty-four runs head on at 328 it takes the Panzer IV 42 per cent of the time in 22 seconds, where the
+M4A1 on the same afternoon takes it 38; a Panther takes it every time head on with nine tenths of itself
+left, and caught side-on as well, because the hull comes round in a second or two. Over twelve runs a row
+it takes a Tiger a quarter of the time, and the grenadier squad (in 6.5 seconds untouched), the Knight's
+Cross Holders (with seven tenths of itself left after their bundles) and the Puma every time; a Pak 38
+sited at 344 takes it every time in 17 seconds.
+
+**The SU-122** (`sv_su122`, out of the Tankovyy park, 340 manpower, 85 fuel, 32 seconds, 12 of
+population, U) is the Red Army's assault howitzer: 680 hit points, the SU-85's 88, 45 and 40 (`ARM`, `cm`
+.5), 88 of speed and 420 of sight, and the 122 mm M-30S at 175 a round over a burst of 68 every 5.5
+seconds out to 400 with a hollow charge of 100 mm, which loses nothing over its reach (`heat`), in a mount
+that traverses ten degrees either way (`arc` .35), with no machine gun and no upgrades. Those are the
+row's numbers as it was pasted; the accuracy and the suppression are the StuH 42's, which is the same
+sort of gun.
+
+It is laid over a four-view at 189.3 px/m (`tools/ref/sv_su122.json`), where its five road wheels agree
+with the T-34's stations to a third of a unit and its track centres in both end views with the T-34's 2.45
+m, and at that scale the SU-85's hull, casemate, fenders, fuel tanks and stowage lie on the drawing to
+about a line width; they are the SU-85's (`s85Body`, `s85Sides`, `s85Tanks`, and `s85Front(1)`, which
+leaves the SU-85's gun housing and spare links off). What is its own is the mount, the plate bolted over
+the front plate below it and the roof. On `tools/dims.mjs` it reads 6.19 m long against 6.10, 6.89 over
+the gun against 6.95, 3.00 wide and 2.17 high against 2.235, and the SU-85's body, roof and clearance.
+
+What carries it (`s122` and `S122`): the mantlet is lofted from rounded plans (`s122Ring`) at nine
+heights, square behind inside the casemate and with its front corners rounded, standing out of the front
+plate a little right of the middle and as wide as half the casemate, near upright down its front and
+rounded back over its top to the roof; out of it the recuperator's armoured box, deep and narrow, its top
+sloped down to its face, with two bosses and two studs on each side and a lifting eye on top; and the
+short fat tube out of a collar in its face, with no brake (`s122Gun`, the mount, turning about a point
+behind the mantlet). Below it a plate is bolted over the front plate from the nose up, wider at the top
+than the bottom (`s122Front`). On the roof (`s122Roof`): the periscope in its drum on the right front; the
+square hatch on the left front with its four pairs of hinges and the hood standing over it on four struts
+with slits round it; the mushroom vent behind it; the big hatch on the right behind the periscope, hinged
+at its front edge, which is the commander's (`s122Hatch`, left out of the periscope for the T-34's
+reason); a box on the right-hand edge; and on the rear plate a rail across it on pegs, a pistol port and a
+vision slit. The room is read off the shell (`insideOf`), as the SU-85's is.
+
+On the duel card it is the StuH 42 of the Red Army. Over twenty-four runs head on at 328 it takes the
+Panzer IV 38 per cent of the time in 22 seconds, where the StuH 42 takes an M4A1 42 per cent of the time
+on the same afternoon. Over twelve runs a row it takes the grenadier squad every time in 6.8 seconds
+untouched, the MG 34 team every time in 1.8, the Knight's Cross Holders every time with two thirds of
+itself left, the Wirbelwind every time and the Marder 42 per cent of the time; a Panther takes it every
+time with five sixths of itself left, and a Pak 38 sited at 328 every time in 16 seconds.
+
 **The ZiS-3** (`sv_zis3`, out of the Kazarma beside the Shturmoviki and the T-20, 330 manpower, 25 fuel,
 28 seconds, 10 of population, T) is the Red Army's 76 mm divisional gun: six men of 64 hit points, 36 of
 speed and 600 of sight, in action 4.5 seconds after it halts and packed 5 seconds after it is ordered off,
@@ -7096,6 +7203,31 @@ through a Panther's side and never its front, and it takes seven hits to kill on
 the MG 34 team every time in 9 seconds; on the AP round a grenadier squad walking into it takes it every
 time in 9 seconds without losing a man, because the gun is waiting for armour.
 
+**The ZiS-2** (`sv_zis2`, out of the Avtopark beside the BA-64B, 380 manpower, 30 fuel, 34 seconds, 12 of
+population, Z) is the Red Army's anti-tank gun: six men of 64 hit points, 30 of speed and 660 of sight, in
+action 5 seconds after it halts and packed 5.5 seconds after it is ordered off, with the AP round alone,
+140 every 3.0 seconds out to 620 with 140 mm of penetration (`atOnly`, so it waits for armour). It can be
+hitched to a tow (`towable`, the lunette `towAt` 38 behind the axle). Those are the row's numbers as it
+was pasted; the accuracy, the suppression, the shield's blast factor and how it stands at its gun are the
+ZiS-3's.
+
+It is the 57 mm tube of seventy-three calibres on the split trail the ZiS-3 was later built on, so the
+carriage, the shield, the cradle and the wheels are the ZiS-3's (`zsCarriage`), and only the tube is its
+own (`z2Tube`, `Z2`): from the breech ring through the cradle to a plain muzzle, tapering from 0.11 m
+across at the cradle to 0.08 at the muzzle, 3.15 m ahead of the axle against the ZiS-3's 2.64. It is laid
+over a sheet of three side views, a plan and the two ends with no scale on it (`tools/ref/sv_zis2.json`):
+the front view puts the wheels on the ZiS-3's 1.37 m track and the shield at its 1.52 m at 39.05 px/m, the
+side views put the wheel at its 0.79 m at 40.3, and the side and the plan are read at 39.7, where the ZiS-3's
+carriage and trails lie on the drawing to about a line width. The crew are the ZiS-3's men and drill
+(`variantForModel`, `gunMate`, `gunCrew`).
+
+On the duel card, set up (`--sited`) and staged at 328 against a Panzer IV coming at it, it wins all
+twenty-four fights in 13 seconds with two thirds of itself left, where the ZiS-3 on the same afternoon
+wins eleven in twelve. Over twelve runs a row, set up, it takes a Tiger eleven times in twelve, because the
+57 mm goes through the Tiger's front at 394, and the Puma and the StuH 42 every time; a Panther takes it
+every time, head on with three quarters of itself left and caught side-on with half, and a grenadier squad
+walking into it takes it every time in 10 seconds without losing a man.
+
 **The 82-PM-41** (`sv_mor`, out of the Kazarma beside the Shturmoviki, 250 manpower, 10 fuel, 26 seconds,
 6 of population, M) is the Red Army's battalion mortar: three men of 54 hit points, 46 of speed and 260 of
 sight, in action 3 seconds after it halts and packed 2.5 seconds after it is ordered off. On its own account
@@ -7143,11 +7275,12 @@ it (`LADDER`, one) and two ZiS-3s after it, the rung opening at 130 seconds as t
 across the beach: `K.vb1` says that army's vehicles come out of its first building, which `vehOn`
 reads, because the other two armies' armour waits for the second. It builds the Avtopark second
 (`K.b2`), saving for it the way the other armies save for their motor pools, and buys one BA-64B out of
-it, the rung opening at 210 seconds as the M3 half-track's does across the beach. It builds the Tankovyy
-park third (`K.b3`) and buys two T-34s out of it, the rung opening at 310 seconds as the M4A1's does, an
-SU-85 after them, its rung opening at 380, and more T-34s as the count of mediums allows; `aiCutLadder`
-reads the T-34 as a medium, the SU-85 among the things that kill a heavy and the T-20 and the BA-64B as
-light armour. It puts nobody on the deck. The post's own shopping (the machine gun, the
+it, the rung opening at 210 seconds as the M3 half-track's does across the beach, and two ZiS-2s, the rung
+opening at 250. It builds the Tankovyy park third (`K.b3`) and buys two T-34s out of it, the rung opening
+at 310 seconds as the M4A1's does, an SU-85 after them, its rung opening at 380, an SU-122 at 420, two
+T-34-85s at 470, and more T-34-85s as the count of mediums allows; `aiCutLadder` reads the T-34 as a
+medium, the ZiS-2, the SU-85 and the T-34-85 among the things that kill a heavy and the T-20 and the
+BA-64B as light armour. It puts nobody on the deck. The post's own shopping (the machine gun, the
 mortar, the assault squad) runs once the first building stands, and the Red Army has the second and the
 third of them: the 82-PM-41 is its mortar (`K.mor`), bought on the rule the other two armies' tubes are,
 and the Shturmoviki are its assault squad (`K.elite`); it has no machine gun team, and a key the army has
@@ -7155,7 +7288,7 @@ not got is a thing it cannot buy (`canPost`), where it threw.
 
 **A brain fields the army it is given.** `aiTick` reads its keys off the slot's army (`K`), so a
 brain on the Red Army's slot, which is what SIMPLE puts there, buys the Sapery as its builders, the
-Strelki as its line (`K.inf`), the 82-PM-41 as its mortar and the Shturmoviki as its assault squad, has a T-20, two ZiS-3s, a BA-64B, the T-34s and an SU-85 on its shopping ladder, digs no battery and lays a minefield every fourth work.
+Strelki as its line (`K.inf`), the 82-PM-41 as its mortar and the Shturmoviki as its assault squad, has a T-20, two ZiS-3s, a BA-64B, two ZiS-2s, the T-34s, an SU-85, an SU-122 and the T-34-85s on its shopping ladder, digs no battery and lays a minefield every fourth work.
 **And an army whose only infantry is its builder fights with it.** Every rule that leaves an
 engineer out of the fighting read `def.builder`, so a Red Army of nothing but Sapery was an army of
 engineers: the brain dealt none of them a job, the enemy's brain counted it as no army, and an order
@@ -8065,7 +8198,7 @@ the one before it standing (`BUILDINGS[k].need`, read by `bldReady`):
 
 The Red Army has the Shtab (`sov_hq`), which makes the Sapery, and three tiers over it, the Kazarma
 (`sov_bar`, 200), which makes the Shturmoviki, the 82-PM-41, the T-20 and the ZiS-3, the Avtopark (`sov_mot`, 240 and 30 fuel), which makes the
-BA-64B, and the Tankovyy park (`sov_tank`, 300 and 60), which makes the T-34/76 and the SU-85. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
+BA-64B and the ZiS-2, and the Tankovyy park (`sov_tank`, 300 and 60), which makes the T-34/76, the T-34-85, the SU-85 and the SU-122. A unit's `req` names the building it comes out of and `queueUnit` checks it. The jeep and the
 motorcycle come out of two buildings, so `aiMaker(slot, key)` is the brain's door: the finished
 building of that player's that makes the unit, the one with the shortest queue. `queueUnit` hands an
 order sent to the wrong building of an AI to the right one, because a brain out of an older revision
