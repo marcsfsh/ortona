@@ -1531,7 +1531,10 @@ drill's own line, which was traced clear both ways, because asked three hundred 
 gun happened to face, something stood in the way on the full gate's run and the gun picked nothing at all
 on either device, where a page with no rows before it had been clear. The 57's and the Pak 38's rows ask
 for the same room round their spot, because on one desktop run both put their gun down where the bearers'
-places were refused, and they print where the bearers stood when they are not in place. The thirteenth asks the
+places were refused, and they print where the bearers stood when they are not in place. Both lay the gun on its own
+bearing before they read the crew (`u.faceA`, as a right-drag gives one), because a halted piece with nothing to
+shoot at turns toward the nearest enemy its side can see, and once the brains could pay for their works a pioneer
+out digging off to a flank kept both guns traversing and every man of both crews walking. The thirteenth asks the
 ZiS-2 the ZiS-3's questions out of the Avtopark, which makes it where the Kazarma refuses it: it fires
 first sited against a Panzer IV from 520, it is six men in the ZiS-3's drill with its own long tube, it
 has the AP round alone and reaches 620, a T-20 hitches it, and a brain on his slot with the Avtopark

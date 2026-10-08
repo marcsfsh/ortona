@@ -5043,7 +5043,11 @@ for (const device of TARGETS) {
                 !!W.MODELS.man.gi_atb[W.POSE_FIRE] && !!(W.MODELS.served.am_at && W.MODELS.served.am_at.mate) &&
                 !!(W.MODELS.gunRec.am_at && W.MODELS.gunPk.am_at);
     const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
-    u.setup = 0; u.packed = false; u.pack = 0;
+    /* set down on its own bearing, as a right-drag gives one: halted with nothing to shoot at, a piece
+       turns toward the nearest enemy its side can see, and since the brains could pay for their works a
+       pioneer out digging off to a flank kept the gun traversing and all five men walking to places
+       that would not stand still, on one run of the gate and not the one before it */
+    u.setup = 0; u.packed = false; u.pack = 0; u.faceA = u.facing;
     step(4);
     /* and up to four seconds more while a bearer is still walking to his place: on one run of the Pak
        38's row a bearer was a unit short of it, mid-stride, when the row looked */
@@ -5218,7 +5222,11 @@ for (const device of TARGETS) {
                 !!W.MODELS.man.hr_atb[W.POSE_FIRE] && !!(W.MODELS.served.hr_pak && W.MODELS.served.hr_pak.mate) &&
                 !!(W.MODELS.gunRec.hr_pak && W.MODELS.gunPk.hr_pak);
     const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
-    u.setup = 0; u.packed = false; u.pack = 0;
+    /* set down on its own bearing, as a right-drag gives one: halted with nothing to shoot at, a piece
+       turns toward the nearest enemy its side can see, and since the brains could pay for their works a
+       pioneer out digging off to a flank kept the gun traversing and all five men walking to places
+       that would not stand still, on one run of the gate and not the one before it */
+    u.setup = 0; u.packed = false; u.pack = 0; u.faceA = u.facing;
     step(4);
     /* and up to four seconds more while a bearer is still walking to his place: on one run of the Pak
        38's row a bearer was a unit short of it, mid-stride, when the row looked */
