@@ -1,0 +1,33 @@
+{
+ "image": "shots/ref/sv_bs3.png",
+ "note": "100 mm field gun M1944 (BS-3) travelling, a four-view with the trails closed and lifted level onto the limber, the tube raised about ten degrees in the side view and level in the plan. No scale on the sheet: the front view puts the published 2.15 m over the wheels at 51.6 px/m, and at that scale the wheels are 0.86 m (the 34 by 7 lorry tyre) and the tube from the back of the breech ring to the brake 5.7 m against the published 5.96. The pin is the axle on the ground. This one lays the plan, with the tube level.",
+ "key": "sv_bs3",
+ "prop": "bsShow",
+ "args": [
+  0
+ ],
+ "up": [],
+ "crew": false,
+ "views": {
+  "plan": {
+   "nose": "right",
+   "crop": [
+    0,
+    120,
+    500,
+    125
+   ],
+   "ppm": 51.6,
+   "at": [
+    0,
+    0,
+    0
+   ],
+   "px": [
+    240,
+    177.8
+   ],
+   "k": 3
+  }
+ }
+}

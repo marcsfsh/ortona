@@ -566,6 +566,20 @@ for (const device of TARGETS) {
           got = tryAt(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr);
         }
       }
+      /* and since the brains dig works, his engineers and the men they dig for stand round
+         the flags he holds as well, so a desktop run had every one of those sixteen taps on
+         a man. The rest of the flag's circle is walked in the world for a point where no
+         man of his is under the finger, and that point is tapped. */
+      const pickR = Math.min(90, Math.max(26, window.CAM.dist * .05));
+      for (const wr of [30, 55, 80, 105, 122]) {
+        for (let k = 0; k < 16 && !got; k++) {
+          const a = k * Math.PI / 8 + wr * .01, wx = s.x + Math.cos(a) * wr, wy = s.y + Math.sin(a) * wr;
+          if (window.nearestOwn(wx, wy, pickR) || window.simpleFoeAt(wx, wy) || window.simpleSectorAt(wx, wy) !== s) continue;
+          const q = window.w2s(wx, wy);
+          if (q.x < 30 || q.y < 90 || q.x > innerWidth - 80 || q.y > innerHeight - 150) continue;
+          got = tryAt(q.x, q.y);
+        }
+      }
       const box = document.getElementById('tord');
       return { shown: !box.classList.contains('hidden'), name: document.getElementById('tordname').textContent,
                on: !!(window.SIMPLEORD && window.SIMPLEORD.sec === s),
@@ -8483,7 +8497,7 @@ for (const device of TARGETS) {
     /* and the rest of the Avtopark and the park beside it, so that the car is the one rung left:
        on one desktop run the brain had a Tankovyy park by now and bought a T-34 first */
     ['sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
-    ['sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     /* and the car itself taken off it: the row queued one above to ask the Avtopark, which the
        list counts as ordered, and a rung ordered once is only bought again as a replacement,
        dearest first, behind the ZiS-2 and whatever the park makes */
@@ -8515,7 +8529,7 @@ for (const device of TARGETS) {
     return { q: W.__baq.join(',') || 'nothing' };
   }));
   ok('the Red Army\'s Avtopark raises the BA-64B: an armoured car with a DT in an open turret that goes all the way round',
-     ba.cards.indexOf('AVTOPARK') >= 0 && ba.need === 'sov_bar' && ba.ready && ba.makes === 'sv_ba64,sv_zis2,sv_bm13' && ba.bname === 'Avtopark' &&
+     ba.cards.indexOf('AVTOPARK') >= 0 && ba.need === 'sov_bar' && ba.ready && ba.makes === 'sv_ba64,sv_zis2,sv_bs3,sv_bm13' && ba.bname === 'Avtopark' &&
      ba.bld > 100 && ba.q === 'sv_ba64' && ba.qBar === 'refused' && ba.bufs && ba.name === 'BA-64B' && !ba.arc && ba.tur > 3.0 &&
      Math.abs(ba.muzY - ba.barY) < .2 && ba.shlem > 0 && ba.paint > 0 && ba.frame === 'tur' &&
      ba.eye > ba.rim + 2 && ba.eye < ba.rim + 6 && ba.rifle === 0 && ba.pak === 1 && ba.blown > 0 && ba.blown < 80 && ba.sink > 0 &&
@@ -8648,7 +8662,7 @@ for (const device of TARGETS) {
     /* and everything else the park and the Avtopark make written into what the side has ordered:
        with a heavy of the enemy's on the field the brain brings the guns that kill one forward and
        sends the T-34, which cannot, to the back */
-    ['sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t3485', 'sv_zis2'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     W.slotOf(own).ai = 1; W.aiInit(own);
     const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
@@ -8756,7 +8770,7 @@ for (const device of TARGETS) {
        and not the rows above: the T-34 row's brain buys one when it has the money */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su122', 'sv_bm13'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t20', 'sv_ba64', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_t34 = Math.max(2, G.made[own].sv_t34 || 0); out.madeSu = G.made[own].sv_su85 || 0; G.made[own].sv_su85 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -8856,7 +8870,7 @@ for (const device of TARGETS) {
        ordered and none of it, so that what it buys next is the T-34-85 */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t34', 'sv_zis3', 'sv_zis2'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_t3485 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -8944,7 +8958,7 @@ for (const device of TARGETS) {
     G.units.length = 0;
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_bm13'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t34', 'sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_su122 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -9035,7 +9049,7 @@ for (const device of TARGETS) {
        ordered and none of it, so that what it buys next is the IS-2 */
     G.t = Math.max(G.t, 800);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t34', 'sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_is2 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -9385,7 +9399,7 @@ for (const device of TARGETS) {
     /* the brain on his slot, with the Avtopark standing and the rungs under the ZiS-2's bought */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t20', 'sv_ba64', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     G.made[own].sv_zis3 = Math.max(2, G.made[own].sv_zis3 || 0); G.made[own].sv_zis2 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
     W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
@@ -9491,7 +9505,7 @@ for (const device of TARGETS) {
        whatever the brain brings forward against a heavy */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_bm13 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -9521,6 +9535,326 @@ for (const device of TARGETS) {
      `${bm.want} wanted, ${bm.rk} rockets of which ${bm.bent} bent onto their marks, the worst leaving ${bm.off} off its rail, from ` +
      `${bm.z0} up; ${bm.rack} left on the rails, reloading for ${bm.reload} s, smoke ${bm.smoke}; forty wrecks threw ${bm.blown}; ` +
      `killed it left ${bm.bodies} bodies of ${bm.bodyNat}; a brain with the Avtopark standing queued ${bmAi.q}`);
+
+  /* --- The BS-3, the Red Army's heavy anti-tank gun, out of the Avtopark: the Avtopark makes it
+     and queues it and the Kazarma refuses it, and it is seven men on its own carriage with the tube
+     at two thirds of a metre over the ZiS-3's. Sited on open ground with a Panther coming at it from
+     560 it has the first round off, before the tank has found it. Halted, the gunner stands bent at
+     the sight and the loader stands at the right of the breech facing it, the bearers are back
+     behind the gun, the flash comes off the muzzle and a bearer has his case in his hand; packed,
+     the trails close. It has the AP round alone and picks nothing out of a grenadier squad and the
+     Panzer IV out of the two, out to 680. A T-20 hitches it. A man killed goes down as one of the
+     crew, and a brain on his slot with the Avtopark standing and the rungs under it bought buys
+     one. --- */
+  const b3 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_bs3'); out.qKaz = q(kb, 'sv_bs3');
+    const D = W.UNITS.sv_bs3;
+    out.name = D.name;
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 60);
+    const roomy = (x, y) => [30, 60].every(rr => [...Array(12).keys()].every(k => {
+      const px = x + rr * Math.cos(k * Math.PI / 6), py = y + rr * Math.sin(k * Math.PI / 6);
+      return W.walkable(px, py) && !W.inMasonry(px, py);
+    }));
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay) || !roomy(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 560 * Math.cos(th), by = ay + 560 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          let okL = true;
+          for (let s = 1; s < 14 && okL; s++) okL = W.walkable(ax + (bx - ax) * s / 14, ay + (by - ay) * s / 14);
+          if (okL && W.traceClear(ax, ay, W.groundZ(ax, ay) + 16, bx, by, W.groundZ(bx, by) + 20, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 20, ax, ay, W.groundZ(ax, ay) + 16, W.sblk)) st = { ax, ay, bx, by, th };
+        }
+      }
+    out.staged = !!st;
+    if (st) {
+      const a = W.spawnUnit(own, 'sv_bs3', st.ax, st.ay, st.th);
+      a.setup = 0; a.packed = false; a.pack = 0; a.order = null; a.dest = null; a.path = null;
+      const b = W.spawnUnit('ger', 'hr_panther', st.bx, st.by, st.th + Math.PI);
+      b.order = 'attackmove'; b.dest = { x: a.x, y: a.y };
+      const seen = new Set(G.shots);
+      let t = 0, first = null, bFirst = null;
+      const dt = 1 / 20;
+      while (t < 40 && !(first && bFirst)) {
+        G.t += dt; t += dt;
+        W.computeVisibility(dt);
+        W.updateUnit(a, dt); W.updateUnit(b, dt); W.updateModels(a, dt);
+        W.updateShots(dt);
+        for (const s of G.shots) {
+          if (seen.has(s)) continue;
+          seen.add(s);
+          const d = Math.round(Math.hypot(a.x - b.x, a.y - b.y));
+          if (s.owner === a && !first) first = { t: +t.toFixed(1), d, found: +(a.detGer || 0).toFixed(2) };
+          if (s.owner === b && !bFirst) bFirst = { t: +t.toFixed(1), d };
+        }
+        if (a.dead || b.dead) break;
+      }
+      out.first = first; out.bFirst = bFirst;
+      G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+      G.units.length = 0; G.shots.length = 0;
+    }
+    let at = null;
+    for (let r = 0; r < 900 && !at; r += 40)
+      for (let k = 0; k < 16 && !at; k++) {
+        const x0 = st ? st.ax : hq.x, y0 = st ? st.ay : hq.y;
+        const x = x0 + r * Math.cos(k * Math.PI / 8), y = y0 + r * Math.sin(k * Math.PI / 8);
+        if (clear(x, y) && roomy(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 140)) at = { x, y };
+      }
+    if (!at) at = W.nearestFree(hq.x + 200, hq.y);
+    const u = W.spawnUnit(own, 'sv_bs3', at.x, at.y, 0);
+    out.men = u.models.length;
+    out.baked = !!(W.MODELS.served.sv_bs3 && W.MODELS.served.sv_bs3.mate) && !!(W.MODELS.gunRec.sv_bs3 && W.MODELS.gunPk.sv_bs3);
+    const step = function (s) { for (let i = 0; i < s * 30; i++) { G.t += 1 / 30; W.updateUnit(u, 1 / 30); W.updateModels(u, 1 / 30); } };
+    u.setup = 0; u.packed = false; u.pack = 0;
+    step(4);
+    out.set = W.gunSet(u);
+    out.vars = u.models.map((m, i) => W.variantForModel(u, i)).join(',');
+    const gp = W.gunPost(u), cs = Math.cos(u.facing), sn = Math.sin(u.facing);
+    const rel = m => { const dx = m.x - gp.x, dy = m.y - gp.y; return [(dx * cs + dy * sn) / W.FIG_SCALE, (-dx * sn + dy * cs) / W.FIG_SCALE]; };
+    const r1 = rel(u.models[1]);
+    out.loader = r1.map(v => +v.toFixed(1)).join(',');
+    out.loaderRight = r1[1] > 2 && r1[0] < -2;
+    out.loaderFaces = Math.abs(W.angDiff(u.models[1].f, u.facing - Math.PI / 2)) < .25;
+    out.bearers = u.coverSlots && u.coverSlots[2] ? 'cover' : [2, 3, 4, 5, 6].every(i => rel(u.models[i])[0] < -10);
+    out.bpos = [2, 3, 4, 5, 6].map(i => rel(u.models[i]).map(q => Math.round(q)).join(',')).join(' ');
+    out.mesh = W.teamMesh(u) === W.MODELS.gun.sv_bs3;
+    const mz = W.muzzlePoint(u, u.models[0], 0);
+    out.muz = Math.hypot(mz.x - gp.x - Math.cos(u.facing) * D.gunMuz[0] * W.FIG_SCALE, mz.y - gp.y - Math.sin(u.facing) * D.gunMuz[0] * W.FIG_SCALE) < 1;
+    out.box = (W.mgCarryAt(u, u.models[2], 2, 'sv_atb') ? W._mgc.buf : null) === W.MODELS.carry.box76;
+    u.packed = true;
+    out.packMesh = W.teamMesh(u) === W.MODELS.gunPk.sv_bs3;
+    u.packed = false;
+    const tw = W.spawnUnit(own, 'sv_t20', u.x + 90, u.y, 0);
+    out.canHitch = W.canHitch(tw, u);
+    W.hitchGun(tw, u);
+    out.towed = u.towedBy === tw;
+    W.unhitchGun(tw); W.killUnit(tw);
+    const mk = u.models[2], nf = G.falls.length, nc = G.corpses.length;
+    W.damageModel(u, mk, 1e4, null);
+    const rec = G.falls.length > nf ? G.falls[G.falls.length - 1] : G.corpses.length > nc ? G.corpses[G.corpses.length - 1] : null;
+    out.bodyNat = rec ? rec.nat : '-';
+    W.killUnit(u);
+    G.units.length = 0;
+    const ln = st || { ax: at.x, ay: at.y, th: 0 };
+    const v = W.spawnUnit(own, 'sv_bs3', ln.ax, ln.ay, ln.th);
+    v.setup = 0; v.packed = false; v.pack = 0; v.facing = ln.th; v.order = null; v.path = null;
+    const along = d => ({ x: ln.ax + Math.cos(ln.th) * d, y: ln.ay + Math.sin(ln.th) * d });
+    const gp0 = along(280), tp0 = along(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp0.x, gp0.y, ln.th + Math.PI);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    see(g);
+    v.up = {}; v.forced = null; v.target = null;
+    out.apMen = (W.acquire(v) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp0.x, tp0.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(v) || { key: 'nothing' }).key;
+    out.range = W.mainW(v).range;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing and every rung under the BS-3's bought */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_t20', 'sv_ba64', 'sv_bm13', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_bs3 = 0;
+    /* and the queues emptied, because the brain runs of the rows above leave what they queued
+       standing in them, and a population that is nearly full has room for a fifteen-point tank
+       and none for a sixteen-point gun */
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__b3q = []; W.__b3U = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__b3U.apply(this, arguments); if (r && b.own === own) W.__b3q.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const b3Ai = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__b3U; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__b3q.join(',') || 'nothing' };
+  });
+  const fb3 = b3.first, bb3 = b3.bFirst;
+  ok('the Red Army\'s Avtopark raises the BS-3, seven men on a carriage of its own with a 100 mm tube',
+     /sv_bs3/.test(b3.makes) && b3.q === 'sv_bs3' && b3.qKaz === 'refused' && b3.name === '100 mm BS-3' &&
+     b3.staged && !!fb3 && (!bb3 || bb3.t >= fb3.t + 1) && fb3.found < 1 &&
+     b3.men === 7 && b3.baked && b3.set && b3.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb_b,sv_atb' &&
+     b3.loaderRight && b3.loaderFaces && b3.bearers && b3.mesh && b3.muz && b3.box && b3.packMesh && b3.canHitch && b3.towed &&
+     b3.apMen === 'nothing' && b3.apBoth === 'hr_p4' && b3.range === 680 && b3.bodyNat === 'sov_at' && /sov_mot:sv_bs3/.test(b3Ai.q),
+     `the Avtopark makes ${b3.makes} and queues ${b3.q}, the Kazarma ${b3.qKaz} it; named ${b3.name}; ` +
+     (b3.staged ? `sited against a Panther at 560 it fired ${fb3 ? 'at ' + fb3.t + ' s from ' + fb3.d + ' with the tank ' + (fb3.found < 1 ? 'yet to find it (' + fb3.found + ')' : 'ALREADY on it') : 'NEVER'} ` +
+       `and the tank ${bb3 ? 'answered at ' + bb3.t + ' s from ' + bb3.d : 'never fired'}; ` : 'NO open ground to stage the drill on; ') +
+     `${b3.men} men, the served bodies and the three meshes ${b3.baked ? 'baked' : 'NOT baked'}; halted ${b3.set ? 'set up' : 'NOT set up'} ` +
+     `as ${b3.vars}, the loader at ${b3.loader} ${b3.loaderRight ? 'on the right' : 'NOT on the right'} and ${b3.loaderFaces ? 'facing the breech' : 'NOT facing it'}, ` +
+     `the bearers ${b3.bearers === 'cover' ? 'in cover' : b3.bearers ? 'back behind the gun' : 'NOT in place (' + b3.bpos + ')'}, the piece ` +
+     `${b3.mesh ? 'open' : 'WRONG'}, the flash ${b3.muz ? 'at the muzzle' : 'OFF the muzzle'}, a bearer's case ${b3.box ? 'in his hand' : 'MISSING'}; ` +
+     `packed the trails ${b3.packMesh ? 'closed' : 'NOT closed'}; a T-20 ${b3.canHitch ? 'may' : 'may NOT'} hitch it and ${b3.towed ? 'did' : 'DID NOT'}; ` +
+     `it picked ${b3.apMen} with the squad alone and ${b3.apBoth} with the tank beside it, out to ${b3.range}; killed went down as ` +
+     `${b3.bodyNat}; a brain with the Avtopark standing queued ${b3Ai.q}`);
+
+  /* --- The B-4, the Red Army's heavy battery, dug by the Sapery. The army names it as its battery
+     and the sapper's card offers it; it is refused inside seven hundred of home and a second is
+     refused with the first standing. Dug forward, the howitzer stands on its tracks with its seven
+     men where the work lays them and every buffer built; laid on clear ground six hundred off it
+     fires its five rounds into its circle, and stood within reach of the enemy's base a mission 300
+     short of his headquarters is refused. Then the Br-5: AUTO is not offered on it and the brain's
+     routine will not fit it; fitted by hand for its price it is drawn as the Br-5, reaches 900 with a
+     round of 950, and after its change-over three rounds go into the circle. A brain on his slot
+     with two Sapery, four squads and the money digs one. The rounds come off the list as they leave the
+     tube. --- */
+  const b4 = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0; G.shots.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    const foeHq = G.blds.filter(b => b.side !== G.side && b.def.hq)[0];
+    const mp = G.res[own].mp, fu = G.res[own].fu;
+    W.__b4mp = mp; W.__b4fu = fu;
+    /* the brain rows above it ran with the money in the till and the clock past seven hundred,
+       and a brain on his slot digs a battery, so a site of one may be standing: it holds the
+       limit and the population, and every placement below would be refused for it */
+    W.slotOf(own).ai = 0;
+    G.sites.slice().forEach(s => { if (s.own === own) G.sites.splice(G.sites.indexOf(s), 1); });
+    G.works.slice().forEach(w => { if (w.own === own && w.kind === 'howb4') G.works.splice(G.works.indexOf(w), 1); });
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    G.res[own].mp = 9000; G.res[own].fu = 9000;
+    const sap = W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0);
+    W.select([sap], false); W.buildCmds();
+    out.cards = W.cmdList.map(c => c.btn.title.replace(/ \[.*\]$/, ''));
+    W.select([], false);
+    out.battery = W.NATIONS.sov.battery;
+    const WK = W.WORKS.howb4;
+    const fx = foeHq.x - hq.x, fy = foeHq.y - hq.y, fl = Math.hypot(fx, fy), ux = fx / fl, uy = fy / fl;
+    out.near = !!W.placeWork(own, 'howb4', hq.x + ux * 220, hq.y + uy * 220, Math.atan2(uy, ux), [sap]);
+    let site = null, at = null;
+    for (let d = WK.minHq + 60; d < WK.minHq + 800 && !site; d += 60)
+      for (let k = -4; k <= 4 && !site; k++) {
+        const x = hq.x + ux * d - uy * k * 110, y = hq.y + uy * d + ux * k * 110;
+        site = W.placeWork(own, 'howb4', x, y, Math.atan2(uy, ux), [sap]);
+        if (site) at = { x, y };
+      }
+    out.dug = !!site;
+    if (!site) {
+      const x = hq.x + ux * (WK.minHq + 120), y = hq.y + uy * (WK.minHq + 120);
+      out.why = 'room ' + W.workRoom(x, y, WK) + ', full ' + W.workFull(own, 'howb4') + ', pop ' + W.popOf(own) + '/' + W.popCap(own) +
+                ', noArty ' + W.aiNoArty(own) + ', sites ' + G.sites.filter(s => s.own === own).map(s => s.kind).join('+');
+      G.res[own].mp = mp; G.res[own].fu = fu; return out;
+    }
+    site.prog = 1; W.updateSites(0);
+    const g = G.units.filter(u => u.key === 'sv_b4' && u.own === own)[0];
+    out.spawned = !!g;
+    if (!g) { G.res[own].mp = mp; G.res[own].fu = fu; return out; }
+    out.twice = !!W.placeWork(own, 'howb4', at.x + ux * 240, at.y + uy * 240 + 200, 0, [sap]);
+    out.men = g.models.length;
+    out.lay = g.models.every((m, i) => !WK.lay[i] || (m.ox === WK.lay[i][0] && m.oy === WK.lay[i][1]));
+    out.vars = g.models.map((m, i) => W.variantForModel(g, i)).join(',');
+    out.built = !!(W.MODELS.gun.sv_b4 && W.MODELS.gunBase.sv_b4 && W.MODELS.gunRec.sv_b4);
+    out.name = W.nameOf(g);
+    out.reach = Math.round(W.barrageRange(g));
+    function mission(D) {
+      let bear = null, tx = 0, ty = 0;
+      for (let a = 0; a < Math.PI * 2 && bear === null; a += .2) {
+        const x = g.x + Math.cos(a) * 600, y = g.y + Math.sin(a) * 600;
+        if (x < 60 || y < 60 || x > W.WORLD.w - 60 || y > W.WORLD.h - 60) continue;
+        if (W.barrageWhy(g, x, y) === null) { bear = a; tx = x; ty = y; }
+      }
+      const r = { bear: bear !== null, laid: false, first: -1, out: [] };
+      if (bear === null) return r;
+      g.facing = g.baseA = bear;
+      r.laid = !!W.orderBarrage(g, tx, ty);
+      let t = 0;
+      for (let f = 0; f < 60 * 200 && r.out.length < D.barrage.rounds; f++) {
+        const n0 = G.shots.length;
+        W.updateUnit(g, 1 / 60); G.t += 1 / 60; t += 1 / 60;
+        for (let i = G.shots.length - 1; i >= n0; i--) {
+          const sh = G.shots[i];
+          if (sh.kind === 'shell') { r.out.push(Math.hypot(sh.tx - tx, sh.ty - ty)); if (r.first < 0) r.first = +t.toFixed(1); }
+          G.shots.splice(i, 1);
+        }
+      }
+      const bound = D.barrage.r + D.barrage.sp * 1.6;
+      r.rounds = r.out.length; r.inBound = r.out.filter(d => d <= bound).length; r.bound = Math.round(bound);
+      return r;
+    }
+    const U = W.UNITS.sv_b4;
+    out.m1 = mission(U);
+    /* the enemy's base: stood 900 off his headquarters, a mission 300 short of it */
+    const gx0 = g.x, gy0 = g.y, hA = Math.atan2(hq.y - foeHq.y, hq.x - foeHq.x);
+    g.x = foeHq.x + Math.cos(hA) * 900; g.y = foeHq.y + Math.sin(hA) * 900;
+    out.whyBase = W.barrageWhy(g, foeHq.x + Math.cos(hA) * 300, foeHq.y + Math.sin(hA) * 300);
+    g.barrage = null; g.x = gx0; g.y = gy0;
+    /* the Br-5 */
+    const BD = U.defUp.br5;
+    out.auto = W.autoFits(g); out.up = W.upgradable(g);
+    out.autoGot = !!W.buyUpgradeAuto(own, [g], { floor: 0 }) || !!g.up.br5;
+    const mp0 = G.res[own].mp, fu0 = G.res[own].fu;
+    W.pay(own, W.UPGRADES.br5.cost); W.fitUp(g, 'br5');
+    const k = W.gmKey(g);
+    out.br = { piece: k, built: !!(W.MODELS.gun[k] && W.MODELS.gunBase[k] && W.MODELS.gunRec[k]),
+               cost: [mp0 - G.res[own].mp, fu0 - G.res[own].fu], want: [W.UPGRADES.br5.cost.mp, W.UPGRADES.br5.cost.fu],
+               name: W.nameOf(g), reach: Math.round(W.barrageRange(g)), dmg: W.mainW(g).dmg, setup: g.setup, D: BD.setup,
+               baseKey: W.gmKey({ def: U, key: 'sv_b4' }) };
+    out.m2 = mission(BD);
+    W.killUnit(g); W.killUnit(sap);
+    G.units.length = 0; G.shots.length = 0;
+    G.works.slice().forEach(w => { if (w.own === own && w.kind === 'howb4') G.works.splice(G.works.indexOf(w), 1); });
+    /* the brain on his slot digs one, with a Sapery, men about him and the money */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp = 9000; G.res[own].fu = 9000;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.AIR.fired['battery.dig'] = 0;
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_sap', hq.x + 140, hq.y + 90, 0);
+    for (let i = 0; i < 4; i++) W.spawnUnit(own, 'sv_strel', hq.x + 120 + i * 40, hq.y - 60, 0);
+    W.__b4mp = mp; W.__b4fu = fu;
+    return out;
+  });
+  await fastForward(page, 40);
+  const b4Ai = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own;
+    W.slotOf(own).ai = 0;
+    const dug = G.sites.some(s => s.own === own && s.kind === 'howb4') || G.units.some(u => u.own === own && u.key === 'sv_b4');
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    G.sites.slice().forEach(s => { if (s.own === own && s.kind === 'howb4') G.sites.splice(G.sites.indexOf(s), 1); });
+    G.works.slice().forEach(w => { if (w.own === own && w.kind === 'howb4') G.works.splice(G.works.indexOf(w), 1); });
+    G.res[own].mp = W.__b4mp; G.res[own].fu = W.__b4fu;
+    return { dug, fired: W.AIR.fired['battery.dig'] || 0 };
+  });
+  const m1 = b4.m1 || {}, m2 = b4.m2 || {}, br = b4.br || {};
+  ok('the Red Army\'s Sapery dig the B-4, its heavy battery, and it can be rebuilt by hand as the Br-5',
+     b4.battery === 'howb4' && (b4.cards || []).indexOf('B-4') >= 0 && !(b4.cards || []).some(t => /240 MM|MRS 18/.test(t)) &&
+     !b4.near && b4.dug && b4.spawned && !b4.twice && b4.men === 7 && b4.lay && b4.built &&
+     b4.vars === 'sv_atg,sv_atg,sv_atb,sv_atb_b,sv_atb,sv_atb,sv_atb_b' && /B-4/.test(b4.name) && b4.reach === 1250 &&
+     m1.bear && m1.laid && m1.rounds === 5 && m1.inBound === 5 && b4.whyBase === 'safe' &&
+     b4.up && !b4.auto && !b4.autoGot && br.piece === 'sv_b4:br5' && br.built && br.cost[0] === br.want[0] && br.cost[1] === br.want[1] &&
+     /Br-5/.test(br.name) && br.reach === 900 && br.dmg === 950 && br.setup === br.D && br.baseKey === 'sv_b4' &&
+     m2.bear && m2.laid && m2.first >= br.D * .95 && m2.rounds === 3 && m2.inBound === 3 && b4Ai.dug,
+     `the army's battery is ${b4.battery}; the sapper's card ${(b4.cards || []).indexOf('B-4') >= 0 ? 'offers' : 'does NOT offer'} it ` +
+     `${(b4.cards || []).some(t => /240 MM|MRS 18/.test(t)) ? 'and ANOTHER army\'s' : 'and no other army\'s'}; inside 700 of home ` +
+     `${b4.near ? 'TAKEN' : 'refused'}, dug forward ${b4.dug ? 'yes' : 'NO (' + b4.why + ')'}, the gun ${b4.spawned ? 'stood' : 'NEVER stood'}, a second ` +
+     `${b4.twice ? 'TAKEN' : 'refused'}; ${b4.men} men laid ${b4.lay} as ${b4.vars}, buffers ${b4.built}; "${b4.name}" reaching ${b4.reach}; ` +
+     `a mission six hundred off laid ${m1.laid}, ${m1.rounds} rounds, ${m1.inBound} inside ${m1.bound}; at the enemy's base ${b4.whyBase}; ` +
+     `the Br-5: AUTO ${b4.auto ? 'OFFERED' : 'not offered'}, the routine ${b4.autoGot ? 'FITTED it' : 'did not fit it'}; by hand for ` +
+     `${(br.cost || []).join('/')} of ${(br.want || []).join('/')}, drawn as ${br.piece} (buffers ${br.built}), "${br.name}", reach ${br.reach}, ` +
+     `a round of ${br.dmg}, change-over ${br.setup}s, the B-4 itself still ${br.baseKey}; first round at ${m2.first}s, ${m2.rounds} rounds, ` +
+     `${m2.inBound} inside ${m2.bound}; a brain on his slot ${b4Ai.dug ? 'dug one' : 'dug NONE'} (battery.dig ${b4Ai.fired})`);
 
   /* --- The 82-PM-41, the Red Army's battalion mortar, out of the Kazarma: the Kazarma makes it
      and queues it and the Shtab refuses it, it is named and the bunker's mortar pit is it, and it is

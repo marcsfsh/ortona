@@ -1,0 +1,8 @@
+{ "image": "shots/ref/sv_b4.png",
+  "note": "203 mm howitzer M1931 (B-4) in firing position, a four-view with the tube level and a scale bar in metres. The bar reads 58.7 px/m, at which the barrel is 4.86 m against the published 5.087 and the height 2.39 m against 2.5; at 56.0 both agree and the width over the tracks is 2.6 m against 2.7, so every view is read at 56.0. The pin is the pivot the top carriage turns on, on the ground under the middle of the track units.",
+  "key": "sv_b4", "prop": "b4Show", "args": [0], "up": [], "crew": false,
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 25, 560, 170], "ppm": 56.0, "at": [0, 0, 0], "px": [222, 184], "k": 3 },
+    "plan":  { "nose": "left", "crop": [0, 238, 560, 162], "ppm": 56.0, "at": [0, 0, 0], "px": [222, 319.5], "k": 3 },
+    "front": { "crop": [550, 25, 184, 170], "ppm": 56.0, "at": [0, 0, 0], "px": [641.4, 183.7], "k": 4 },
+    "rear":  { "crop": [550, 215, 184, 185], "ppm": 56.0, "at": [0, 0, 0], "px": [637.4, 387.4], "k": 4 } } }
