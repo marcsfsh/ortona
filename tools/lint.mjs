@@ -348,11 +348,15 @@ if (src.includes('\r\n')) fail(1, 'CRLF line endings');
    It is 3750 for the Red Army's T-34/76, built to its drawing with a turret it can be seen out
    of, its third production building, the Tankovyy park, and a squad riding on the engine deck.
    It is 3850 for the Red Army's ZiS-3, built to its drawing with a crew of six of the army's own
-   and an HE round that an anti-tank gun can fire at men. The SU-85 before it fitted under 3750.
+   and an HE round that an anti-tank gun can fire at men. The SU-85 before it fitted under 3750,
+   and the T-34-85, the SU-122 and the ZiS-2 after it under 3850.
+   It is 3950 for two built from nothing in one pass: the IS-2, a heavy tank on a hull and running
+   gear of its own under its own cast turret, and the BM-13N, a Studebaker lorry with a rack of
+   rails laid up on it and the rockets lying on them until they are fired.
    Raise it deliberately, with a reason, or not at all. */
 const kb = Buffer.byteLength(src) / 1024;
 console.log(`size: ${kb.toFixed(0)} kB, ${lines.length} lines`);
-if (kb > 3850) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3850 kB so it stays quick to load on a phone`);
+if (kb > 3950) fail(1, `file is ${kb.toFixed(0)} kB; keep it under 3950 kB so it stays quick to load on a phone`);
 
 console.log(problems ? `\n${problems} problem(s)` : '\nclean');
 process.exit(problems ? 1 : 0);

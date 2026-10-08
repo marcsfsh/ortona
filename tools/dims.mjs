@@ -130,6 +130,17 @@ const REAL = {
                howitzer, 3.00 m wide and 2.235 m high. The drawing it is laid over (tools/ref/sv_su122.json) agrees
                with the T-34's road wheels and track at one scale, and at that scale it is 6.89 m over the gun and
                2.15 m to the top of the hood on the roof */
+  sv_is2:    { name: 'IS-2',                len: 6.77,  gun: 9.83,   wid: 3.07,  hgt: 2.73,
+               clear: 0.42 },   /* the published 6.77 m of hull, 9.83 m over the gun, 3.07 m wide over the tracks,
+               2.73 m high and 420 mm of clearance. The drawing it is laid over (tools/ref/sv_is2.json) is taken off
+               the hull, and stands the fuel tanks on the rear fenders out past the tracks, so the card reads the
+               width over the tanks at 3.36 */
+  sv_bm13:   { name: 'BM-13N Katyusha',     len: 6.12,  gun: 6.12,   wid: 2.21,  hgt: 2.86,
+               clear: 0.32 },   /* off the drawing it is laid over (tools/ref/sv_bm13.json), at its own scale bar,
+               which agrees with the US6's published 148 in from the front axle to the middle of the bogie and 44 in
+               between the bogie's axles: 6.12 m from the bumper to the tail of the frame, 7.06 m over the fins of the
+               rockets lying on the rails, which the card does not count, 2.21 m wide, 2.86 m to the top of the rack
+               lying down and 320 mm under the differentials */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -253,6 +264,8 @@ const PROBE = {
                casemate between its rear plate and the boxes on the fenders, ahead of the fuel tanks; the roof's
                just over the roof, where only its edge reaches */
   sv_su122:  { bodyZ: 14.0, roofZ: 23.1, xLo: .5, xHi: 4.5, straddle: true },   /* the SU-85's slices */
+  sv_is2:    { topZ: 14.0 },   /* topZ holds the aerial on the turret out */
+  sv_bm13:   {},
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },

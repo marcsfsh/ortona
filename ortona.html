@@ -1344,6 +1344,9 @@ var UPGRADES = {
   /* the Greyhound's sand shields, which do what Schürzen do over less of the side */
   fenders: { name: 'Hang the side skirts', short: 'SKIRTS', hk: 'U', cost: { mp: 50 }, desc: 'The sand shields over the rear wheels, hung from the crease: a hollow-charge round bursts on the sheet before it reaches the plate, and it keeps the worst of the mud off.' },
   mg: { name: 'Mount roof MG', short: 'ROOF MG', hk: 'I', cost: { mp: 60 }, desc: 'A machine gun on the cupola or pintle, worked by the commander against infantry.' },
+  /* the IS-2's: the 12.7 mm DShK on the loader's hatch ring */
+  dshk: { name: 'Mount the DShK', short: 'DSHK', hk: 'I', cost: { mp: 70 },
+          desc: 'The Degtyaryov-Shpagin heavy machine gun on the ring round the loader\'s hatch, worked by the loader against men and anything soft. It reaches further than the DTs and keeps a section down harder.' },
   /* the 234's other turret: the Puma's, lifted off in the field and dropped on the same ring */
   puma: { name: 'Fit the 5 cm turret', short: '5 CM PUMA', hk: 'O', cost: { mp: 120, fu: 45 },
           desc: 'The 2 cm turret lifted off and the closed one from the 234/2 put on the ring in its place: the 5 cm KwK 39/1 behind the Saukopf and a coaxial MG 42. It opens a Sherman from the flank and a half-track from anywhere, and it gives up the 2 cm\'s rate against men in the open.' },
@@ -1402,7 +1405,9 @@ var SECW = {
           ger: { range: 265, dmg: 4.0, rof: .12, acc: .48, sup: .05, supCap: .92, pen: 6, aoe: 0 } },
   /* the Sturmgeschütz pair: a roof gun and a coaxial on one purchase, so one entry
      firing at nearly twice the rate of one MG34 */
-  mgs:  { ger: { range: 235, dmg: 4.5, rof: .065, acc: .5, sup: .075, pen: 6, aoe: 0 } }
+  mgs:  { ger: { range: 235, dmg: 4.5, rof: .065, acc: .5, sup: .075, pen: 6, aoe: 0 } },
+  /* the IS-2's DShK: a heavier round than a DT at a slower rate, further */
+  dshk: { us:  { range: 300, dmg: 9.0, rof: .2, acc: .5, sup: .07, pen: 50, aoe: 0 } }
 };
 function secondaryKeys(u) {
   var keys = Object.keys(SECW), out = [], i, k;
@@ -2477,6 +2482,32 @@ var UNITS = {
     req: 'sov_tank', arc: .35,
     w: { mm: 100, heat: 1, range: 400, dmg: 175, rof: 5.5, acc: .66, sup: .16, pen: 150, aoe: 68, shell: 1 },
     desc: 'The SU-85\'s casemate on the T-34\'s hull with the 122 mm M-30S howitzer behind a great rounded mantlet: a heavy shell for the house a machine gun is firing out of and the men behind a wall, and a hollow charge that opens a Panzer IV from the front. Forty-five millimetres laid back fifty degrees across the front. The gun goes ten degrees either way and the whole vehicle turns for anything wider, and it carries no machine gun.'
+  },
+  /* The IS-2, which the Tankovyy park fields one at a time (`limit`): the heavy tank of 1944 on
+     six road wheels a side, a big cast turret with the 122 mm D-25T and its double-baffle brake,
+     a coaxial DT and a DT in a ball in the turret's back. It tows a gun, and the DShK on the
+     loader's ring is its one fitting (`dshk`). */
+  sv_is2: {
+    side: 'us', nat: 'sov', name: 'IS-2', short: 'IS-2', cat: 'veh', hk: 'I', upgrades: ['dshk'],
+    tows: 1, sec: ['coax'],
+    hp: 1150, armor: 250, speed: 70, sight: 460, pop: 20, cost: { mp: 640, fu: 160 }, time: 62,
+    req: 'sov_tank', limit: 1,
+    w: { mm: 175, range: 460, dmg: 250, rof: 9.0, acc: .74, sup: .12, pen: 330, aoe: 60, shell: 1, brake: 1 },
+    desc: 'The heavy tank of 1944: a long low hull under a big cast turret with the 122 mm D-25T and its double-baffle brake, a shell that opens a Panther\'s front and takes the house a machine gun is in, and a breech that takes most of ten seconds to load. A hundred millimetres laid back sixty degrees across the front and ninety on the sides, a coaxial DT and one in the back of the turret. One at a time.'
+  },
+  /* The BM-13N Katyusha, which the Avtopark fields: eight rails of the 132 mm M-13 rocket on a
+     Studebaker, laid up on a pivot at the back and turned ten degrees either way on the frame
+     under them (`arc`). It fires only on a mission (`barrageOnly`): the whole rack, sixteen
+     rockets, rippled off in seven seconds into a circle as wide as a flag's, and then a minute
+     of reloading by hand (`rack`, `reload`). In action four seconds after it halts, and a lorry
+     to anything that shoots at it. */
+  sv_bm13: {
+    side: 'us', nat: 'sov', name: 'BM-13N Katyusha', short: 'KATYUSHA', cat: 'veh', hk: 'K', upgrades: [], wheeled: 1,
+    hp: 320, armor: 16, speed: 120, sight: 300, pop: 10, cost: { mp: 400, fu: 70 }, time: 34,
+    req: 'sov_mot', arc: .35, indirect: 1, barrageOnly: 1, setup: 4.0, layTol: .06, rack: 16, reload: 60,
+    barrage: { range: 950, r: 190, sp: 36, rof: .45, rounds: 16, smoke: 0 },
+    w: { range: 950, dmg: 110, rof: 3.4, acc: .3, sup: .22, pen: 30, aoe: 60, shell: 1, rocket: 1, rkt: 'm13', dig: .7 },
+    desc: 'Eight rails over the back of a Studebaker with a 132 mm rocket on top of each and one under it. It fires only on a mission, and a mission is the whole rack: sixteen rockets in seven seconds into a circle as wide as a flag, and then a minute while the crew load the rails by hand. It reaches further than any gun the army has. A lorry with no armour at all, so it fires from behind the line and drives off.'
   }
 };
 
@@ -2580,11 +2611,11 @@ var BUILDINGS = {
              cost: { mp: 200 }, time: 26, makes: ['sv_shturm', 'sv_mor', 'sv_t20', 'sv_zis3'],
              desc: 'A company\'s barrack of round logs under a roof of boards, with the field kitchen and a stand of rifles in front of it. Raises the Shturmoviki, the 82-PM-41, the Komsomolets T-20 and the ZiS-3.' },
   sov_mot: { side: 'us', nat: 'sov', name: 'Avtopark', short: 'AVTOPARK', w: 136, h: 106, hp: 1700, hk: '2', need: 'sov_bar',
-             cost: { mp: 240, fu: 30 }, time: 32, makes: ['sv_ba64', 'sv_zis2'],
+             cost: { mp: 240, fu: 30 }, time: 32, makes: ['sv_ba64', 'sv_zis2', 'sv_bm13'],
              desc: 'A vehicle park: a shed of logs with two bays, the ramp a car is worked on from underneath, a tripod hoist and the fuel behind logs. Needs the Kazarma. Raises the BA-64B and the ZiS-2.' },
   /* and its third and last, the tank park, which turns out its medium tank */
   sov_tank: { side: 'us', nat: 'sov', name: 'Tankovyy park', short: 'TANK PARK', w: 156, h: 124, hp: 2000, hk: '3', need: 'sov_mot',
-              cost: { mp: 300, fu: 60 }, time: 40, makes: ['sv_t34', 'sv_t3485', 'sv_su85', 'sv_su122'],
+              cost: { mp: 300, fu: 60 }, time: 40, makes: ['sv_t34', 'sv_t3485', 'sv_su85', 'sv_su122', 'sv_is2'],
               desc: 'A tank park: a long shed of logs with three bays under a roof of boards, a gantry of logs over the bay a tank is worked on in, spare road wheels and track. Needs the Avtopark. Raises the T-34/76 and the SU-85.' },
   ger_hq:  { side: 'ger', name: 'Regiments-Gefechtsstand', short: 'GEFECHTSSTAND', w: 132, h: 104, hp: 3000, hq: 1,
              makes: ['hr_pio', 'hr_gren', 'hr_ks750'] },
@@ -9711,6 +9742,8 @@ var ARM = {
   sv_t3485:   { h: [88, 45, 40],    t: [90, 90, 90] },
   sv_su85:    { h: [88, 45, 40],    t: [88, 45, 40],    cm: .5 },
   sv_su122:   { h: [88, 45, 40],    t: [88, 45, 40],    cm: .5 },
+  sv_is2:     { h: [135, 90, 60],   t: [155, 155, 155] },
+  sv_bm13:    { soft: 1 },
   am_m3:      { h: [13, 7, 7],      t: [13, 7, 7],      cm: .45 },
   am_gmc:     { h: [13, 7, 7],      t: [16, 7, 7],      cm: .45 },
   am_m16:     { h: [13, 7, 7],      t: [8, 7, 7],       cm: .45 },
@@ -13882,9 +13915,10 @@ function rkLaunch(u) {
   var P, x0, x1;
   if (u.cat === 'veh') {
     if (!u.def.rack) return null;
-    var fr = vehFrames(u), el = (u.el || 0) + CLG.el0, T = clTube(u.def.rack - (u.rack || 0)), c = Math.cos(el), s2 = Math.sin(el);
-    P = function (x) { return m4apply(fr.tmat, CLG.px + x * c - T[1] * s2, T[0], CLG.pz + x * s2 + T[1] * c); };
-    x0 = CLG.x0; x1 = CLG.x1;
+    var RV = VMODEL[vkey(u)], K2 = RV && RV.rk || CLG, k2 = u.def.rack - (u.rack || 0);
+    var fr = vehFrames(u), el = (u.el || 0) + K2.el0, T = K2.tube ? K2.tube(k2) : clTube(k2), c = Math.cos(el), s2 = Math.sin(el);
+    P = function (x) { return m4apply(fr.tmat, K2.px + x * c - T[1] * s2, T[0], K2.pz + x * s2 + T[1] * c); };
+    x0 = K2.x0; x1 = K2.x1;
   } else {
     var gm = GUNMODEL[gmKey(u)], K = gm && gm.rk;
     if (!K) return null;
@@ -16106,7 +16140,7 @@ function aiCutLadder(slot, base, IN, own) {
   for (lk in LT) lostAll += LT[lk];
   var byArm = lostAll > 400 ? ((LT.veh || 0) + (LT.gun || 0)) / lostAll : 0;
   var lt = side === 'us' ? { am_jeep: 1, am_m8: 1, am_stuart: 1, am_m3: 1, sv_t20: 1, sv_ba64: 1 } : { hr_ks750: 1, hr_251: 1, hr_234: 1 };
-  var killers = side === 'us' ? { am_at: 1, am_gmc: 1, am_e8: 1, am_m18: 1, am_m26: 1, sv_zis3: 1, sv_zis2: 1, sv_su85: 1, sv_t3485: 1 } : { ger_tig: 1, ger_kt: 1, hr_pak: 1, hr_puma: 1, hr_panther: 1, hr_marder: 1 };
+  var killers = side === 'us' ? { am_at: 1, am_gmc: 1, am_e8: 1, am_m18: 1, am_m26: 1, sv_zis3: 1, sv_zis2: 1, sv_su85: 1, sv_t3485: 1, sv_is2: 1 } : { ger_tig: 1, ger_kt: 1, hr_pak: 1, hr_puma: 1, hr_panther: 1, hr_marder: 1 };
   var meds = side === 'us' ? { am_sher: 1, sv_t34: 1 } : { hr_p4: 1 };
   var atKey = natOfSlot(slot) === 'sov' ? 'sv_zis3' : side === 'us' ? 'am_at' : 'hr_pak';
   /* and what is for stripping men out of the open: forward when men are all he has, back
@@ -17532,7 +17566,7 @@ function aiTick(dt) {
      needs before it is ever reached, which is the same trap as spending the fuel: at
      regular it ran five Panzer IVs at a hundred and ninety-six of two hundred pop and
      could not have fitted a Tiger if it had wanted one. */
-  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_zis3', 2, 130], ['sv_ba64', 1, 210], ['sv_zis2', 2, 250], ['sv_t34', 2, 310], ['sv_su85', 1, 380], ['sv_su122', 1, 420], ['sv_t3485', 2, 470], ['sv_t3485', meds, 650]] : side === 'us'
+  var LADDER = aiCutLadder(slot, nat === 'sov' ? [['sv_t20', 1, 40], ['sv_zis3', 2, 130], ['sv_ba64', 1, 210], ['sv_zis2', 2, 250], ['sv_t34', 2, 310], ['sv_bm13', 1, 340], ['sv_su85', 1, 380], ['sv_su122', 1, 420], ['sv_t3485', 2, 470], ['sv_is2', 1, 560], ['sv_t3485', meds, 650]] : side === 'us'
     ? [['am_jeep', 1, 40], ['am_at', 2, 130], ['am_m3', 1, 210], ['am_m8', 1, 270], ['am_stuart', 1, 290], ['am_m16', 1, 300],
        ['am_sher', 2, 310], ['am_m7', 1, 340], ['am_gmc', 1, 380], ['am_t34', 1, 400], ['am_m18', 1, 420], ['am_e8', 1, 450], ['am_m26', 1, 520], ['am_sher', meds, 650]]
     : [['hr_ks750', 1, 40], ['hr_pak', 2, 130], ['hr_251', 1, 210], ['ger_stug', 1, 235],
@@ -35718,6 +35752,786 @@ function s122Show() {
   return s122Hull().concat(place(s122Gun(), 0, S122.px, S122.py, S122.pz), HATCHES.sv_su122.shut);
 }
 
+
+/* ================================================================ IS-2 (Red Army)
+   The Red Army's heavy tank of 1944: a long low hull on six road wheels a side and torsion bars,
+   a big cast turret with the 122 mm D-25T and its double-baffle brake, the commander's cupola on
+   the left and a ball for a DT in the turret's back. The Tankovyy park fields one at a time.
+   Built from nothing here, off a four-view of the early tank with the stepped nose (tools/ref/
+   sv_is2.json), with no scale on the sheet: its hull is the published 6.77 m at 50.2 px/m, and at
+   that scale the road wheels are 0.55 m, the track centres 2.44 m apart, the width over the
+   tracks 3.03 m and the top of the cupola 2.75 m, against published figures of 0.55, 2.44, 3.07
+   and 2.73; the length over the gun comes out 9.7 m against 9.83 and the drawing was taken.
+
+   What says IS-2 rather than any other heavy tank, from the front:
+
+     1. The turret is a casting rounded all round and widest at its foot, longer behind its ring
+        than in front of it, with a mantlet like a box laid on its face, wider to the left than the
+        right, and out of it the long 122 mm with the big double-baffle brake.
+     2. The hull's upper glacis is laid back two thirds of the way to flat from a narrow nose,
+        with the driver's visor in a box in the middle of it, and the hull is the full width of
+        the tracks above them.
+     3. Six small road wheels a side, three return rollers, the sprocket behind and the idler in
+        front, and two long fuel tanks on each rear fender. */
+
+var ISC = TZC;
+var ISG = {
+  R: 3.19, T: .8, TW: 7.6, TY: 14.3, LP: 1.87, WD: 2.25, WG: 1.2,         /* 550 mm wheels, a 650 mm track, 2.44 m between its centres */
+  wx: [26.1, 15.85, 5.36, -5.13, -15.85, -25.3],                         /* the six stations, front to back */
+  xId: 34.97, zId: 9.39, rId: 3.3,                                       /* the idler in front */
+  xSp: -32.85, zSp: 8.81, rSp: 3.0,                                      /* the sprocket behind */
+  rx: [20.4, -.6, -21.6], zR: 10.4, rR: 2.14                             /* the three return rollers */
+};
+ISG.zW = ISG.R + ISG.T;
+ISG.off = (ISG.WD + ISG.WG) / 2;
+var ISH = {
+  zBelly: 4.6, low: 10.0, zF: 14.9, side: 14.3, fend: 17.7, zRoof: 19.3,
+  xN: 37.2, zN: 13.4, xNb: 33.5, xGl: 24.5,             /* the nose: its top edge, the foot of the plate under it, and the top of the glacis */
+  xRr: -31.3, xRb: -40.0, zRb: 11.1, xBr: -36.0,       /* the deck's back edge, the break between the rear plates, the belly's back edge */
+  turX: 6.5
+};
+ISH.gs = (ISH.zRoof - ISH.zN) / (ISH.xN - ISH.xGl);
+function isGlZ(x) { return ISH.zN + (ISH.xN - x) * ISH.gs; }
+function isGlX(z) { return ISH.xN - (z - ISH.zN) / ISH.gs; }
+function isRrX(z) { return ISH.xRr + (z - ISH.zRoof) * (ISH.xRr - ISH.xRb) / (ISH.zRoof - ISH.zRb); }
+/* a part laid on the glacis, local x down the slope, and on the upper rear plate, local x across */
+function isOnGl(faces, x, y, out) {
+  var a = Math.atan(ISH.gs), s = Math.sin(a), c = Math.cos(a), o = out || 0;
+  return hkOn(faces, [x + s * o, y, isGlZ(x) + c * o], [c, 0, -s], [s, 0, c]);
+}
+function isRpN() { return hkNorm([-(ISH.zRoof - ISH.zRb), 0, ISH.xRr - ISH.xRb]); }
+function isOnRear(faces, y, z, out) {
+  var n = isRpN(), o = out || 0;
+  return hkOn(faces, [isRrX(z) + n[0] * o, y, z + n[2] * o], [0, -1, 0], n);
+}
+
+/* ---- the running gear ---- */
+
+/* the idler, the wheels under the bottom run, the sprocket, and the rollers under the top run */
+function isPulleys() {
+  var g = ISG, w = [], i;
+  w.push({ x: g.xId, z: g.zId, r: g.rId + g.T / 2 });
+  for (i = 0; i < g.wx.length; i++) w.push({ x: g.wx[i], z: g.zW, r: g.R + g.T / 2 });
+  w.push({ x: g.xSp, z: g.zSp, r: g.rSp + g.T / 2 });
+  for (i = g.rx.length - 1; i >= 0; i--) w.push({ x: g.rx[i], z: g.zR, r: g.rR + g.T / 2 });
+  return w;
+}
+/* One link of the track: a cast shoe with two grousers across the face that meets the ground,
+   the hinge lugs along both edges, and the guide horn on every link. Local +z is the ground face. */
+function isLink(len) {
+  var C = ISC, g = ISG, W = g.TW, h = g.T / 2, f = [], s;
+  f = f.concat(box(0, 0, -h, len * .9, W, g.T * .6, C.shoe, C.shoeL, C.shoe, 0));
+  [-.25, .25].forEach(function (t) { f = f.concat(box(t * len, 0, h - g.T * .4, len * .18, W * .92, g.T * .4, C.shoe, C.shoeL, C.shoe, 0)); });
+  for (s = -1; s <= 1; s += 2) f = f.concat(box(len * .42, s * (W * .5 - .5), -h - .05, len * .22, .9, g.T * .7, C.steel, C.bare, C.steel, 0));
+  f = f.concat(box(0, 0, -h - 1.3, len * .45, .8, 1.3, C.steel, C.bare, C.steel, 0));
+  return f;
+}
+function isTrack(y) {
+  var s = beltSamples(beltPath(isPulleys()), ISG.LP, true), f = [], i, L = isLink(s[0].len);
+  for (i = 0; i < s.length; i++) f = f.concat(beltLink(L, s[i], y, s[0].len));
+  return f;
+}
+/* A road wheel: two cast discs with six holes each, on rubber tyres either side of the guide
+   horns, the hub and its bolts on the outer face, carried on a trailing arm from a pivot ahead of
+   it, with a bump stop on the hull side over it. */
+function isWheel(x, sd) {
+  var C = ISC, g = ISG, f = [], k, t, y = sd * g.TY, h = g.WD / 2, R = g.R, z = g.zW;
+  for (k = -1; k <= 1; k += 2) {
+    var yy = y + k * g.off;
+    f = f.concat(lathe(x, yy, z, [[R - .8, -h], [R - .1, -h + .05], [R, -h + .25], [R, h - .25], [R - .1, h - .05], [R - .8, h]], 16,
+                       [C.tyre, C.rubber, C.tyre, C.rubber, C.tyre], true));
+    f = f.concat(lathe(x, yy, z, [[0, -h * .45], [R - .8, -h * .45], [R - .8, h * .45], [0, h * .45]], 14, [C.body, C.dark, C.body], false));
+    if (k * sd < 0) continue;
+    var yo = yy + sd * h * .45;
+    for (t = 0; t < 6; t++) {
+      var a = (t + .5) / 6 * TAU;
+      f = f.concat(place(roll(cyl(0, 0, -.06, .55, .55, .12, 8, C.hole, C.hole, 0, true), Math.PI / 2, 0, 0), 0, x + Math.cos(a) * 1.55, yo + sd * .02, z + Math.sin(a) * 1.55));
+    }
+    f = f.concat(latheSide(x, yo, z, [[0, 0], [.95, 0], [.9, .35], [.45, .5], [0, .52]], 12, [C.body, C.lit, C.body, C.dark], sd));
+    f = f.concat(boltRing(x, yo + sd * .3, z, .68, 8, .12, .16, C.steel));
+  }
+  rgW(f, x, y, z);
+  /* the arm, trailing from its pivot on the hull side, and the stop over the wheel */
+  var px = x + 5.3, pz = 6.2;
+  f = f.concat(latheSide(px, sd * ISH.low, pz, [[0, 0], [1.1, 0], [1.1, .7], [.6, .9], [0, .9]], 10, [C.dark, C.body, C.body, C.dark], sd));
+  f = f.concat(hkOn(box(0, 0, 0, 5.8, 1.0, 1.0, C.dark, C.body, C.dark, .15), [(px + x) / 2, sd * (ISH.low + .8), (pz + z) / 2], hkNorm([x - px, 0, z - pz]), [0, sd, 0]));
+  f = f.concat(box(x + .3, sd * (ISH.low + .45), 7.7, 2.4, .9, 1.3, C.dark, C.body, C.dark, .15));
+  return f;
+}
+/* the return rollers, a small pair on a stub out of the hull side */
+function isRoller(x, sd) {
+  var C = ISC, g = ISG, f = [], y = sd * g.TY, r = g.rR, z = g.zR, k;
+  for (k = -1; k <= 1; k += 2) f = f.concat(lathe(x, y + k * 1.1, z, [[r - .5, -.55], [r, -.4], [r, .4], [r - .5, .55]], 12, [C.tyre, C.rubber, C.tyre], true));
+  f = f.concat(latheSide(x, y + sd * .1, z, [[0, -.6], [r - .5, -.6], [r - .5, .6], [0, .6]], 12, [C.body, C.dark, C.body], sd));
+  rgW(f, x, y, z);
+  return f.concat(latheSide(x, sd * ISH.low, z, [[0, 0], [.6, 0], [.6, g.TY - 1.6 - ISH.low], [0, g.TY - 1.6 - ISH.low]], 8, [C.dark, C.body, C.dark], sd));
+}
+/* the idler, spoked, on a crank by the nose; and the sprocket behind, two toothed rings on a hub
+   with the final drive's housing behind it */
+function isIdler(sd) {
+  var C = ISC, g = ISG, f = [], k, t, y = sd * g.TY, r = g.rId - .1, x = g.xId, z = g.zId;
+  for (k = -1; k <= 1; k += 2) {
+    var yy = y + k * 1.15;
+    f = f.concat(lathe(x, yy, z, [[r - .5, -.6], [r, -.45], [r, .45], [r - .5, .6]], 18, [C.dark, C.steel, C.dark], true));
+    if (k * sd < 0) continue;
+    for (t = 0; t < 10; t++) {
+      var a = t / 10 * TAU;
+      f = f.concat(hkOn(box(0, 0, 0, r - 1.2, .45, .35, C.body, C.lit, C.dark, 0), [x + Math.cos(a) * (r * .5 + .3), yy, z + Math.sin(a) * (r * .5 + .3)], [Math.cos(a), 0, Math.sin(a)], [0, sd, 0]));
+    }
+    f = f.concat(latheSide(x, yy, z, [[0, 0], [.9, 0], [.85, .45], [0, .55]], 10, [C.body, C.lit, C.body], sd));
+  }
+  rgW(f, x, y, z);
+  return f.concat(latheSide(x, sd * ISH.low, z, [[0, 0], [.9, 0], [.9, g.TY - 1.75 - ISH.low], [0, g.TY - 1.75 - ISH.low]], 8, [C.dark, C.body, C.dark], sd));
+}
+function isSprocket(sd) {
+  var C = ISC, g = ISG, f = [], k, t, y = sd * g.TY, r = g.rSp, x = g.xSp, z = g.zSp;
+  for (k = -1; k <= 1; k += 2) {
+    var yy = y + k * 1.0;
+    f = f.concat(lathe(x, yy, z, [[0, -.3], [r - .2, -.3], [r - .2, .3], [0, .3]], 16, [C.dark, C.body, C.dark], false));
+    for (t = 0; t < 14; t++) {
+      var a = t / 14 * TAU;
+      f = f.concat(hkOn(box(0, 0, 0, .7, .55, .55, C.steel, C.bare, C.steel, 0), [x + Math.cos(a) * (r + .1), yy, z + Math.sin(a) * (r + .1)], [-Math.sin(a), 0, Math.cos(a)], [0, sd, 0]));
+    }
+  }
+  f = f.concat(latheSide(x, y + sd * 1.3, z, [[0, 0], [1.3, 0], [1.2, .5], [.5, .65], [0, .7]], 12, [C.body, C.lit, C.body, C.dark], sd));
+  rgW(f, x, y, z, r + .5);
+  return f.concat(latheSide(x, sd * 8.0, z, [[0, 0], [2.8, 0], [2.8, 2.0], [1.3, 2.1], [1.2, g.TY - 1.2 - 8.0], [0, g.TY - 1.2 - 8.0]], 14,
+                            [C.dark, C.body, C.dark, C.body, C.dark], sd));
+}
+
+/* ---- the hull ---- */
+
+/* The lower hull between the tracks, from the belly to the deck, with the nose plate, the glacis
+   and the two rear plates; the sponsons over the tracks from the fender to the deck, their fronts
+   in the glacis's plane and their backs in the rear plate's; the deck, and the fenders with the
+   front guards curving down over the idlers. */
+function isBody() {
+  var C = ISC, H = ISH, f = [], sd, i;
+  f = f.concat(extrudeY([[H.xBr, H.zBelly], [H.xNb, H.zBelly], [H.xN, H.zN], [H.xGl, H.zRoof], [H.xRr, H.zRoof], [H.xRb, H.zRb]],
+                        -H.low, H.low, C.body, C.lit, C.dark));
+  var xgF = isGlX(H.zF), xrF = isRrX(H.zF);
+  for (sd = -1; sd <= 1; sd += 2) {
+    var y0 = sd < 0 ? -H.side : H.low, y1 = sd < 0 ? -H.low : H.side;
+    f = f.concat(extrudeY([[xrF, H.zF], [xgF, H.zF], [H.xGl, H.zRoof], [H.xRr, H.zRoof]], y0, y1, C.body, C.lit, C.dark));
+    /* the weld beads down the sponson's front and back edges, and along the deck's edge */
+    f = f.concat(ksTube([xgF, sd * H.side, H.zF], [H.xGl, sd * H.side, H.zRoof], .13, C.lit, 5));
+    f = f.concat(ksTube([xrF, sd * H.side, H.zF], [H.xRr, sd * H.side, H.zRoof], .13, C.lit, 5));
+    f = f.concat(ksTube([H.xGl, sd * H.side, H.zRoof + .02], [H.xRr, sd * H.side, H.zRoof + .02], .12, C.lit, 5));
+    /* the fender along the sponson, its lip, and the guards in front and behind */
+    f = f.concat(box((xrF + xgF) / 2, sd * (H.side + H.fend) / 2, H.zF - .25, xgF - xrF, H.fend - H.side, .25, C.body, C.lit, C.dark, 0));
+    f = f.concat(m4Box(sd, xrF - .3, xgF + .2, H.fend - .2, H.fend, H.zF - .9, H.zF, C.body, C.lit, C.dark, 0));
+    var fp = [[xgF - .3, H.zF], [37.5, H.zF - .3], [39.4, 13.5], [40.4, 11.75]];
+    f = f.concat(tzBent(fp, sd < 0 ? -H.fend : H.low + .2, sd < 0 ? -H.low - .2 : H.fend, .22, C.body, C.lit));
+    var rp = [[-39.6, 13.9], [-38.4, 14.6], [xrF + .3, H.zF]];
+    f = f.concat(tzBent(rp, sd < 0 ? -H.fend : H.low + .2, sd < 0 ? -H.low - .2 : H.fend, .22, C.body, C.lit));
+    /* the bolts along the lower hull side over the wheels */
+    for (i = 0; i < 30; i++) f = f.concat(stud(-31.0 + i * 2.0, sd * (H.low + .05), 12.6, .3, .28, C.dark));
+  }
+  f = f.concat(ksTube([H.xGl, -H.side, H.zRoof + .02], [H.xGl, H.side, H.zRoof + .02], .13, C.lit, 5));
+  f = f.concat(ksTube([H.xN, -H.low, H.zN], [H.xN, H.low, H.zN], .16, C.lit, 5));
+  return f;
+}
+/* The front: the driver's visor in its armoured box in the middle of the glacis, a headlamp on its
+   right and the horn, the boxes on the front fenders, and the towing hooks on the plate under the
+   nose. */
+function isFront() {
+  var C = ISC, H = ISH, f = [], sd;
+  var vb = box(0, 0, 0, 2.4, 5.0, 1.5, C.body, C.lit, C.dark, .25);
+  vb = vb.concat(box(-1.21, 0, .55, .05, 3.2, .4, C.hole, C.hole, C.hole, 0));
+  f = f.concat(isOnGl(vb, 28.9, .45, 0));
+  var lx = 34.2, ly = 6.7, lz = isGlZ(lx) + 1.0;
+  f = f.concat(tubeSmooth(lx - .5, lx + .6, ly, lz, .85, 12, C.dark, C.body), tubeSmooth(lx + .6, lx + .72, ly, lz, .7, 12, C.lens, C.lens));
+  f = f.concat(cyl(lx - .1, ly, isGlZ(lx) - .1, .25, .25, 1.0, 6, C.dark, C.body, 0, true));
+  f = f.concat(tubeSmooth(lx + .1, lx + .9, 2.6, isGlZ(lx) + .9, .45, 10, C.dark, C.body));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var bx = box(29.7, sd * 16.0, H.zF, 7.4, 3.0, 1.35, C.body, C.lit, C.dark, .15);
+    [-.3, .3].forEach(function (t) { bx = bx.concat(box(29.7 + t * 7.4, sd * 16.0, H.zF + 1.33, .4, 3.1, .1, C.dark, C.body, C.dark, 0)); });
+    f = f.concat(bx);
+    /* the towing hook on the lower plate */
+    var ny = sd * 4.8, s = (H.xN - H.xNb) / (H.zN - H.zBelly), zz = 7.2, xx = H.xNb + (zz - H.zBelly) * s;
+    f = f.concat(box(xx + .4, ny, zz - 1.0, .9, 1.4, 2.0, C.dark, C.body, C.dark, .1));
+    f = f.concat(place(tubeSmooth(-.7, .7, 0, 0, .42, 8, C.steel, C.bare), Math.PI / 2, xx + 1.0, ny, zz - .3));
+  }
+  return f;
+}
+/* The deck and the back: the engine's round access plate on its square behind the turret, the
+   grille over the radiators with its two louvred panels, the rear plate with the transmission's
+   cover, the two exhausts and the towing eyes, and the two long fuel tanks on each rear fender. */
+function isDeck() {
+  var C = ISC, H = ISH, f = [], sd, i, zr = H.zRoof;
+  f = f.concat(box(-14.3, 0, zr, 9.6, 9.6, .45, C.body, C.lit, C.dark, .2));
+  f = f.concat(cyl(-14.3, 0, zr + .45, 3.9, 3.9, .3, 20, C.body, C.lit, 0, true));
+  for (i = 0; i < 10; i++) { var a = i / 10 * TAU; f = f.concat(cyl(-14.3 + Math.cos(a) * 3.4, Math.sin(a) * 3.4, zr + .75, .17, .17, .15, 6, C.steel, C.bare, 0, true)); }
+  f = f.concat(grabIron(-14.3, 0, zr + .75, 2.0, .35, C.steel, 'y'));
+  f = f.concat(box(-25.2, 0, zr, 11.4, 22.4, .4, C.body, C.lit, C.dark, .15));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f.push(hkFace([[-28.6, sd * 4.2, zr + .42], [-24.5, sd * 4.2, zr + .42], [-24.5, sd * 10.0, zr + .42], [-28.6, sd * 10.0, zr + .42]], [0, 0, 1], C.hole));
+    for (i = 0; i < 7; i++) f = f.concat(box(-26.55, sd * (4.6 + i * .85), zr + .4, 4.1, .28, .22, C.dark, C.body, C.dark, 0));
+  }
+  f.push(hkFace([[-30.4, -3.4, zr + .42], [-20.0, -3.4, zr + .42], [-20.0, 3.4, zr + .42], [-30.4, 3.4, zr + .42]], [0, 0, 1], C.hole));
+  for (i = 0; i < 9; i++) f = f.concat(box(-20.4 - i * 1.25, 0, zr + .4, .3, 6.8, .2, C.dark, C.body, C.dark, 0));
+  /* the rear plate: the transmission's arched cover with its two struts down to the round
+     inspection plate */
+  f = f.concat(isOnRear(cyl(0, 0, 0, 1.6, 1.6, .3, 14, C.body, C.lit, 0, true).concat(grabIron(0, 0, .3, 1.5, .3, C.steel, 'x')), 0, 14.2, 0));
+  var rn = isRpN();
+  function onRp(y, z) { return [isRrX(z) + rn[0] * .2, y, z + rn[2] * .2]; }
+  f = f.concat(ksPipe([[-9.5, 12.0], [-9.5, 13.2], [-8.3, 15.0], [-5.6, 16.8], [-3.9, 17.3], [3.9, 17.3], [5.6, 16.8], [8.3, 15.0], [9.5, 13.2], [9.5, 12.0]]
+                      .map(function (q) { return onRp(q[0], q[1]); }), .2, C.lit, 6));
+  f = f.concat(ksTube(onRp(-3.6, 17.2), onRp(-1.3, 15.4), .16, C.steel, 5), ksTube(onRp(3.6, 17.2), onRp(1.3, 15.4), .16, C.steel, 5));
+  for (sd = -1; sd <= 1; sd += 2) {
+    var ez = 12.3, ex = isRrX(ez);
+    f = f.concat(tubeSmooth(ex - 1.6, ex + .4, sd * 6.5, ez, .75, 10, C.dark, C.hole));
+    f = f.concat(isOnRear(box(0, 0, 0, 2.6, 2.4, .9, C.body, C.lit, C.dark, .3), sd * 6.5, ez + 1.6, 0));
+    f = f.concat(box(-39.0, sd * 7.5, 8.3, 1.4, .9, 1.6, C.dark, C.body, C.dark, .1));
+    /* the fuel tanks on the fender, each a drum on two straps and brackets */
+    [[-6.1, -18.4], [-18.65, -31.2]].forEach(function (q) {
+      var x0 = q[1], x1 = q[0], y = sd * 17.0, z = 17.9, r = 2.6;
+      f = f.concat(m4Taper(x0, x0 + .6, y, z, r - .5, r, 14, C.body, C.dark));
+      f = f.concat(tubeSmooth(x0 + .6, x1 - .6, y, z, r, 14, C.body, C.body));
+      f = f.concat(m4Taper(x1 - .6, x1, y, z, r, r - .5, 14, C.body, C.dark));
+      [x0 + 2.4, x1 - 2.4].forEach(function (xs) {
+        f = f.concat(tubeSmooth(xs - .25, xs + .25, y, z, r + .08, 14, C.dark, C.dark));
+        f = f.concat(box(xs, y, H.zF, .5, 2.4, z - r - H.zF + .3, C.dark, C.body, C.dark, 0));
+      });
+      f = f.concat(cyl((x0 + x1) / 2, y, z + r - .1, .55, .55, .4, 10, C.dark, C.body, 0, true));
+    });
+  }
+  return f;
+}
+function isHull() {
+  var g = ISG, f = [], sd, i;
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(isTrack(sd * g.TY));
+    for (i = 0; i < g.wx.length; i++) f = f.concat(isWheel(g.wx[i], sd));
+    for (i = 0; i < g.rx.length; i++) f = f.concat(isRoller(g.rx[i], sd));
+    f = f.concat(isIdler(sd), isSprocket(sd));
+  }
+  return f.concat(isBody(), isFront(), isDeck());
+}
+
+/* ---- the turret ---- */
+
+/* The casting in plan at its foot, about its ring, where it is widest: a straight front behind the
+   mantlet with the cheeks either side of it standing forward, round sides and a long back. The
+   wall at each height is the plan scaled for the front, the sides and the back (`IST.K`). */
+var IST = { zr: 9.5, gz: 4.1, gy: -.3, muz: 66.8,
+            cx: -5.0, cy: -4.9, cr: 4.4, ch: 2.0, hr: 3.3,     /* the commander's cupola on the left */
+            lx: -3.4, ly: 4.5, lr: 2.6,                        /* the loader's hatch on the right */
+            K: [[.4, 1.0, 1.0, .985], [2.2, .99, .995, 1.0], [4.7, .95, .96, .98], [7.0, .88, .88, .9], [8.5, .82, .81, .78], [9.5, .76, .76, .62]] };
+function isTurretPlan() {
+  var R = [[19.3, 0], [19.3, 4.4], [19.25, 6.3], [18.0, 8.35], [16.0, 9.7], [13.2, 11.15], [10.4, 12.2], [6.9, 13.1], [3.4, 13.6],
+           [-.1, 13.73], [-3.6, 13.7], [-6.6, 13.2], [-9.6, 12.5], [-11.8, 11.25], [-13.4, 10.1], [-14.9, 8.35], [-15.9, 6.2],
+           [-16.5, 3.8], [-16.9, 0]];
+  var pts = R.slice(), i;
+  for (i = R.length - 2; i > 0; i--) pts.push([R[i][0], -R[i][1]]);
+  return m4Smooth(pts, 2);
+}
+function isAt(x, y, z, lift) { return m4TurAt(isTurretPlan(), Math.atan2(y, x), z, lift, IST.K); }
+function isTurret() {
+  var C = ISC, T = IST, f = [], zr = T.zr, gz = T.gz, gy = T.gy, i, sd;
+  var base = isTurretPlan();
+  var rings = T.K.map(function (k) { return m4TurRing(base, k[0], k[1], k[2], k[3]); });
+  f = f.concat(faceOut(loft(rings, C.body), -1, 0, zr / 2));
+  f = f.concat(faceOut([{ v: rings[rings.length - 1].slice(), c: C.lit }], -1, 0, zr / 2 - 4));
+  f = f.concat(faceOut([{ v: rings[0].slice(), c: C.dark }], -1, 0, zr / 2 + 4));
+  f = f.concat(cyl(0, 0, -.1, 9.0, 9.0, .5, 24, C.dark, C.body, 0, true));
+  /* the mantlet: a box laid on its face, rounded over its top and under it, wider to the left */
+  f = f.concat(extrudeY([[14.0, .4], [18.0, .4], [19.6, 1.1], [20.5, 2.2], [20.7, 3.4], [20.7, 5.6], [20.4, 6.9], [19.6, 8.0], [18.3, 8.7], [14.0, 8.95]],
+                        -6.3, 4.0, C.body, C.lit, C.body));
+  [[2.6, 3.2], [-3.9, 5.2]].forEach(function (q) { f = f.concat(tubeSmooth(20.6, 20.8, q[0], q[1], .45, 8, C.hole, C.hole)); });
+  f = f.concat(wbThin(tubeSmooth(20.5, 21.3, 2.6, 3.2, .22, 8, C.steel, C.hole)));
+  /* the D-25T: the collar, the thick part of the tube tapering to the long chase, and the brake */
+  f = f.concat(tubeSmooth(20.6, 22.25, gy, gz, 1.82, 16, C.body, C.lit));
+  f = f.concat(m4Taper(22.25, 26.7, gy, gz, 1.6, 1.17, 16, C.body, C.body));
+  f = f.concat(m4Taper(26.7, 59.5, gy, gz, 1.17, 1.1, 14, C.body, C.body));
+  f = f.concat(tubeSmooth(59.5, 60.4, gy, gz, 1.3, 14, C.body, C.lit));
+  var bk = box((60.4 + T.muz) / 2, gy, gz - 1.75, T.muz - 60.4, 3.0, 3.5, C.body, C.lit, C.dark, .3);
+  for (sd = -1; sd <= 1; sd += 2) {
+    bk = bk.concat(box(62.3, gy + sd * 1.52, gz - 1.1, 1.6, .06, 2.2, C.hole, C.hole, C.hole, 0));
+    bk = bk.concat(box(64.9, gy + sd * 1.52, gz - 1.1, 1.6, .06, 2.2, C.hole, C.hole, C.hole, 0));
+  }
+  f = f.concat(bk, tubeSmooth(T.muz - .1, T.muz + .02, gy, gz, .65, 12, C.hole, C.hole));
+  /* the cupola: a drum with six vision slots, the ring the lid sits on; the lid is `HATCHES` */
+  var cx = T.cx, cy = T.cy;
+  f = f.concat(cyl(cx, cy, zr - .4, 5.2, 5.0, .5, 8, C.body, C.lit, 0, true));
+  f = f.concat(cyl(cx, cy, zr + .1, T.cr, T.cr - .15, T.ch, 24, C.body, C.lit, 0, true));
+  for (i = 0; i < 6; i++) {
+    var a = i / 6 * TAU;
+    f = f.concat(place(box(T.cr - .05, 0, 0, .3, 1.6, .45, C.hole, C.hole, C.hole, 0), a, cx, cy, zr + 1.0));
+    f = f.concat(place(box(T.cr + .05, 0, 0, .55, 2.2, .28, C.body, C.lit, C.dark, 0), a, cx, cy, zr + 1.5));
+  }
+  f = f.concat(cyl(cx, cy, zr + T.ch + .05, T.hr + .35, T.hr + .35, .25, 20, C.dark, C.body, 0, true));
+  /* the loader's hatch on the right with its periscope, the gunner's periscope, the two vents and
+     the aerial, and the handrail across the roof */
+  f = f.concat(cyl(T.lx, T.ly, zr - .1, T.lr + .35, T.lr + .35, .45, 18, C.dark, C.body, 0, true));
+  f = f.concat(cyl(T.lx, T.ly, zr + .35, T.lr, T.lr, .4, 18, C.body, C.lit, 0, true));
+  f = f.concat(grabIron(T.lx - 1.0, T.ly, zr + .75, 1.4, .3, C.steel, 'y'));
+  f = f.concat(cyl(8.1, -5.5, zr - .1, 1.1, 1.0, .9, 12, C.body, C.lit, 0, true));
+  f = f.concat(box(9.0, -5.5, zr + .3, .2, 1.0, .4, C.glass, C.glass, C.glass, 0));
+  f = f.concat(cyl(6.2, 1.4, zr - .1, 2.6, 2.6, .35, 8, C.body, C.lit, 0, true), cyl(6.2, 1.4, zr + .25, 2.2, 1.0, .65, 14, C.body, C.lit, 0, true));
+  f = f.concat(cyl(7.2, 5.6, zr - .1, 1.05, 1.05, .9, 12, C.body, C.lit, 0, true), cyl(7.2, 5.6, zr + .8, 1.05, .4, .6, 12, C.body, C.lit, 0, true));
+  f = f.concat(cyl(1.4, -8.4, zr - .1, .7, .55, .8, 10, C.dark, C.body, 0, true));
+  f = f.concat(wbThin(ksTube([1.4, -8.4, zr + .7], [.8, -8.6, zr + 11.0], .08, C.dark, 4)));
+  f = f.concat(ksPipe([[.6, 6.1, zr], [.6, 6.1, zr + .6], [.6, -3.0, zr + .6], [.6, -3.0, zr]], .14, C.steel, 6));
+  /* on each side a handrail and the pistol port's plug, and the DT's ball in the back */
+  for (sd = -1; sd <= 1; sd += 2) {
+    var h0 = isAt(-1.6, sd * 13, 8.0, .6), h1 = isAt(-7.8, sd * 13, 8.0, .6);
+    f = f.concat(ksTube([h0.x, h0.y, 8.0], [h1.x, h1.y, 8.0], .16, C.steel, 6));
+    [h0, h1].forEach(function (h) { var b = isAt(h.x, h.y, 8.0, 0); f = f.concat(ksTube([b.x, b.y, 8.0], [h.x, h.y, 8.0], .16, C.steel, 6)); });
+    var pp = isAt(5.5, sd * 13, 5.5, 0);
+    f = f.concat(place(tubeSmooth(-.1, .4, 0, 0, .65, 10, C.dark, C.body), pp.a, pp.x, pp.y, 5.5));
+  }
+  var bb = isAt(-16, -6.3, 4.7, 0);
+  f = f.concat(place(lathe(0, 0, 0, [[0, -1.3], [.9, -1.1], [1.3, -.4], [1.3, .3], [.9, .9], [0, 1.1]], 12, [C.dark, C.body, C.body, C.body, C.dark], true), Math.PI / 2 + bb.a, bb.x, bb.y, 4.7));
+  f = f.concat(wbThin(place(tubeSmooth(.8, 1.9, 0, 0, .2, 8, C.steel, C.hole), bb.a, bb.x, bb.y, 4.7)));
+  return f;
+}
+/* The cupola's lid, hinged at its back edge, with the MK-4 periscope on it; opened, it stands up
+   behind the commander and he stands in the ring in the padded helmet. */
+function isHatch() {
+  var C = ISC, T = IST, zl = T.zr + T.ch + .3, cx = T.cx, cy = T.cy, r = T.hr;
+  var lid = cyl(0, 0, 0, r, r, .45, 20, C.body, C.lit, 0, true);
+  lid = lid.concat(periscope(1.0, 0, .45, 0, C.body, C.glass), grabIron(-1.6, 0, .45, 1.6, .3, C.steel, 'y'));
+  var shut = place(lid, 0, cx, cy, zl);
+  var leaf = place(pitch(place(lid, 0, r + .1, 0, 0), 1.85, 0, 0), 0, cx - r - .1, cy, zl);
+  leaf = leaf.concat(tubeSmooth(cx - r - .4, cx - r + .2, cy, zl + .2, .3, 6, C.steel, C.bare));
+  var man = soldierModel('sv_crew', -1), zm = zl - 14.4 + CREW_RISE;
+  T.eyeUp = [cx + man.eye[0], cy + man.eye[1], zm + man.eye[2]];
+  HATCHES.sv_is2 = { shut: shut, leaf: leaf, open: leaf.concat(place(man, 0, cx, cy, zm)) };
+}
+/* The DShK on the loader's hatch ring, laid forward over the roof: the fitting. It is thin to
+   the occlusion bake for the Easy Eight's reason. */
+function isDShK() {
+  var C = ISC, T = IST, f = [], x = T.lx, y = T.ly, z = T.zr + .8;
+  f = f.concat(cyl(x - 1.6, y, z, .32, .32, 2.6, 8, C.steel, C.bare, 0, true));
+  f = f.concat(box(x - 2.4, y, z + 2.4, 3.6, 1.1, 1.2, C.steel, C.bare, C.steel, .1));
+  f = f.concat(tubeSmooth(x - .6, x + 9.0, y, z + 3.0, .32, 8, C.steel, C.hole));
+  f = f.concat(tubeSmooth(x + 6.5, x + 7.4, y, z + 3.0, .5, 8, C.dark, C.body));
+  f = f.concat(box(x - 2.8, y + 1.0, z + 1.4, 1.8, 1.1, 1.3, C.dark, C.body, C.dark, .1));
+  f = f.concat(ksPipe([[x - 4.5, y - .7, z + 2.6], [x - 5.2, y - .7, z + 2.6]], .14, C.steel, 6), ksPipe([[x - 4.5, y + .7, z + 2.6], [x - 5.2, y + .7, z + 2.6]], .14, C.steel, 6));
+  f = f.concat(box(x + 4.5, y, z + 3.3, .8, .25, .7, C.steel, C.bare, C.steel, 0));
+  return wbThin(f);
+}
+/* the whole tank, for the overlay against the drawing */
+function isShow() {
+  isHatch();
+  return isHull().concat(place(isTurret().concat(HATCHES.sv_is2.shut), 0, ISH.turX, 0, ISH.zRoof));
+}
+
+/* ================================================================ BM-13N Katyusha (Red Army)
+   The rocket launcher of the Guards mortar regiments on the American Studebaker US6 that came
+   in by Lend-Lease: eight rails over the back of the truck, each an I-beam with a rocket of the
+   132 mm M-13 riding on top of it and one hanging under it, laid up on a pivot at the back and
+   turned a little either way on the frame under them, and fired forward over the cab. The
+   Avtopark fields it. Built from nothing here, off a four-view of the BM-13N (tools/ref/
+   sv_bm13.json) whose scale bar reads 59.7 px/m; at that scale the wheelbase to the middle of the
+   bogie is the US6's published 148 in and the bogie's two axles are its 44 in apart, which is
+   the check, and the drawing is taken at 60.
+
+   What says Katyusha rather than any other lorry, from the front:
+
+     1. A long rack of eight rails laid fore and aft over the back of a three-axled truck and
+        reaching forward over the roof of the cab, with the rockets' fins out past the tail.
+     2. The truck is a Studebaker: a narrow bonnet that widens to the cowl, flat-topped wings
+        with the headlamps on them beside a grille of upright bars, a closed cab with a split
+        windscreen, and twin wheels on the bogie behind.
+     3. The jacks let down at the tail, and the frame of struts under the rack. */
+
+var BMC = { body: TZC.body, lit: TZC.lit, dark: TZC.dark, steel: TZC.steel, bare: TZC.bare, rubber: TZC.rubber, tyre: TZC.tyre,
+            glass: TZC.glass, hole: TZC.hole, lens: TZC.lens, star: TZC.star };
+var SBG = {
+  R: 5.69, rim: 3.0, Wf: 2.3, Wr: 2.1, gap: .35,          /* 7.50-20 tyres, single in front and twinned behind */
+  xF: 25.7, xR: [-11.85, -25.0],                          /* the front axle and the two of the bogie */
+  yF: 9.6, yR: 9.75,                                      /* half the front track and half the rear one */
+  fz0: 8.4, fz1: 10.2, fy: 4.4,                           /* the frame's rails */
+  xBmp: 35.3, xGr: 32.2, xCowl: 18.4, xCab: 4.9, xBox: -1.95,
+  zBonF: 16.7, zBonC: 19.1, wBonF: 4.1, wBonC: 7.6, zWing: 13.65, yWing: 11.4,
+  cabW: 9.0, zRoof: 25.0, zSill: 8.2,
+  fenX0: -3.9, fenX1: -31.2, fenY0: 7.0, fenY1: 12.9,
+  turX: -18.0, mountZ: 15.6
+};
+/* the rack, built lying level in the mount's frame: the pivot it is laid up on, the rails from
+   their tail to their front, the web's foot and top, the rails' spacing, the rockets' axes over
+   and under them, and where the rockets lie along them */
+var BMR = {
+  px: -9.3, pz: 1.6, el0: .066,
+  x0: -17.7, x1: 40.9, zb: 9.6, zt: 12.1, p: 3.02,
+  zU: 13.1, zL: 8.6, rT: -17.7, rH: -1.2,
+  cross: [32.0, 21.4, 12.3, .5],
+  ex: 26.9, ez: 7.9, bx: 7.3, bz: 1.6
+};
+/* the sixteen rockets as [y, z off the pivot] in the order the rack fires them, striding across
+   it, top and bottom turn about */
+function bmTubes() {
+  if (BMR.tubes) return BMR.tubes;
+  var T = [], ord = [0, 7, 3, 4, 1, 6, 2, 5], i, k;
+  for (i = 0; i < 8; i++) for (k = 0; k < 2; k++) {
+    var r = ord[i];
+    T.push([(r - 3.5) * BMR.p, k ? BMR.zL : BMR.zU]);
+  }
+  BMR.tubes = T;
+  return T;
+}
+function bmTube(k) { var T = bmTubes(); return T[k % T.length]; }
+
+/* a plan outline of [x, y] points made solid from z0 to z1 */
+function sbPrism(pts, z0, z1, col, cap, side) {
+  var f = [], i, n = pts.length, A = [], B = [], cx = 0, cy = 0;
+  for (i = 0; i < n; i++) {
+    var p = pts[i], q = pts[(i + 1) % n];
+    f.push({ v: [[p[0], p[1], z0], [q[0], q[1], z0], [q[0], q[1], z1], [p[0], p[1], z1]], c: side || col });
+    A.push([p[0], p[1], z0]); B.push([p[0], p[1], z1]);
+    cx += p[0]; cy += p[1];
+  }
+  f.push({ v: A, c: col }); f.push({ v: B, c: cap || col });
+  return faceOut(f, cx / n, cy / n, (z0 + z1) / 2);
+}
+
+/* ---- the running gear ---- */
+
+/* A 7.50-20 on its disc: a deep tyre with blocks across the tread in two staggered rows, the
+   rim, the dished disc with its holes, and the hub with its nuts on the outer face. */
+function sbTyre(x, y, z, sd, W, face) {
+  var C = BMC, g = SBG, r = g.R, w = W / 2, rr = r - .35, f, i;
+  var prof = [[0, -.5], [.9, -.5], [1.1, -.2], [g.rim - .5, -.4], [g.rim, -.7], [g.rim + .05, -w], [rr - .9, -w], [rr, -w + .45],
+              [rr, w - .45], [rr - .9, w], [g.rim + .05, w], [g.rim, .7], [g.rim - .5, .4], [1.1, .2], [.9, .5], [0, .5]];
+  f = lathe(x, y, z, prof, 24, [C.lit, C.body, C.body, C.dark, C.body, C.tyre, C.rubber, C.rubber, C.rubber, C.tyre,
+                                C.body, C.dark, C.body, C.body, C.lit], true);
+  for (i = 0; i < 24; i++) {
+    var a = i / 24 * TAU;
+    [-1, 1].forEach(function (s) {
+      var bar = place(box(0, 0, -.3, .7, w * .9, .6, C.tyre, C.rubber, C.tyre, 0), 0, 0, s * w * .48, 0);
+      f = f.concat(place(pitch(place(bar, 0, 0, 0, rr), a + (s > 0 ? TAU / 48 : 0), 0, 0), 0, x, y, z));
+    });
+  }
+  if (!face) return f;
+  for (i = 0; i < 8; i++) {
+    var ha = i / 8 * TAU;
+    f = f.concat(latheSide(x + Math.cos(ha) * 2.05, y + sd * .5, z + Math.sin(ha) * 2.05, [[0, 0], [.38, 0], [.38, .02], [0, .02]], 6, [C.hole, C.hole], sd));
+  }
+  f = f.concat(latheSide(x, y + sd * .5, z, [[0, 0], [1.1, 0], [1.1, .4], [.7, .7], [0, .72]], 10, [C.body, C.lit, C.body, C.lit], sd));
+  f = f.concat(boltRing(x, y + sd * .95, z, .8, 8, .11, .13, C.steel));
+  return f;
+}
+function sbWheels() {
+  var g = SBG, f = [], sd;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var yf = sd * g.yF;
+    f = f.concat(rgW(sbTyre(g.xF, yf, g.R, sd, g.Wf, 1), g.xF, yf, g.R));
+    g.xR.forEach(function (x) {
+      var yo = sd * (g.yR + (g.Wr + g.gap) / 2), yi = sd * (g.yR - (g.Wr + g.gap) / 2);
+      f = f.concat(rgW(sbTyre(x, yo, g.R, sd, g.Wr, 1), x, yo, g.R), rgW(sbTyre(x, yi, g.R, sd, g.Wr, 0), x, yi, g.R));
+    });
+  }
+  return f;
+}
+/* An axle: the banjo housing across with the differential on it, a leaf spring each side up to
+   the frame, and the steering knuckles on the front one. The bogie's two axles walk on one
+   spring a side laid on a trunnion between them. */
+function sbAxle(x, front) {
+  var C = BMC, g = SBG, f = [], z = g.R, s, i, half = front ? g.yF - 1.4 : g.yR - 1.6;
+  f = f.concat(place(tubeSmooth(-half, half, 0, 0, .55, 8, C.dark, C.dark), Math.PI / 2, x, 0, z));
+  f = f.concat(lathe(x, front ? 2.8 : 0, z, [[0, -1.4], [1.2, -1.4], [1.9, -.6], [1.9, .4], [1.3, 1.2], [0, 1.2]], 12,
+                     [C.dark, C.body, C.body, C.body, C.dark], true));
+  for (s = -1; s <= 1; s += 2) {
+    if (front) f = f.concat(lathe(x, s * (half + .2), z, [[0, -.7], [1.0, -.7], [1.15, 0], [1.0, .7], [0, .7]], 10, [C.dark, C.body, C.body, C.dark], true));
+    if (front) for (i = 0; i < 6; i++) f = f.concat(box(x, s * g.fy, z + .6 + i * .24, 8.6 - i * 1.3, 1.2, .22, C.steel, C.bare, C.steel, 0));
+  }
+  return f;
+}
+function sbBogie() {
+  var C = BMC, g = SBG, f = [], s, i, xm = (g.xR[0] + g.xR[1]) / 2, L = g.xR[0] - g.xR[1];
+  g.xR.forEach(function (x) { f = f.concat(sbAxle(x, 0)); });
+  for (s = -1; s <= 1; s += 2) {
+    for (i = 0; i < 7; i++) f = f.concat(box(xm, s * g.fy, g.R + .7 - i * .24, L + 1.6 - i * 1.9, 1.3, .24, C.steel, C.bare, C.steel, 0));
+    f = f.concat(latheSide(xm, s * g.fy, g.R + 1.6, [[0, -.8], [1.4, -.8], [1.4, .8], [0, .8]], 10, [C.dark, C.body, C.dark], s));
+    f = f.concat(box(xm, s * g.fy, g.R + 1.8, 2.4, 1.6, g.fz0 - g.R - 1.8, C.dark, C.body, C.dark, .1));
+  }
+  return f;
+}
+
+/* ---- the truck ---- */
+
+/* The frame: two channel rails the length of the truck, the cross members, the bumper across
+   the horns in front with the tow hooks, the fuel tank under the cab and the spare behind it. */
+function sbFrame() {
+  var C = BMC, g = SBG, f = [], s;
+  for (s = -1; s <= 1; s += 2) {
+    f = f.concat(box(-.25, s * g.fy, g.fz0, 66.5, .9, g.fz1 - g.fz0, C.dark, C.body, C.dark, .05));
+    f = f.concat(box(33.3, s * g.fy, 8.6, 1.4, 1.0, 1.6, C.dark, C.body, C.dark, .1));
+    /* the tow hook */
+    f = f.concat(box(35.8, s * 5.6, 9.2, 1.2, .7, .7, C.steel, C.bare, C.steel, 0));
+    f = f.concat(place(tubeSmooth(-.45, .45, 0, 0, .45, 8, C.steel, C.bare), Math.PI / 2, 36.3, s * 5.6, 10.2));
+  }
+  [30.0, 18.0, 4.0, -8.0, -18.4, -30.0, -33.0].forEach(function (x) {
+    f = f.concat(box(x, 0, g.fz0 + .3, 1.0, g.fy * 2, 1.2, C.dark, C.body, C.dark, 0));
+  });
+  /* the bumper, a channel across the horns */
+  f = f.concat(box(g.xBmp - .7, 0, 7.8, 1.4, 22.6, 2.5, C.body, C.lit, C.dark, .12));
+  /* the fuel tank under the right of the cab, and the battery box under the left */
+  f = f.concat(tubeSmooth(5.5, 14.5, 6.8, 6.6, 1.7, 12, C.body, C.dark));
+  f = f.concat(box(11.0, -6.6, 5.6, 4.0, 2.2, 2.2, C.dark, C.body, C.dark, .1));
+  /* the exhaust down the left and out behind the cab */
+  f = f.concat(tubeSmooth(-4.0, 20.0, -3.0, 6.4, .3, 6, C.dark, C.hole));
+  /* the shafts from the gearbox to the axles */
+  f = f.concat(ksTube([16.0, .4, 7.0], [g.xF - 1.6, 2.8, g.R + .4], .3, C.steel, 6));
+  f = f.concat(ksTube([12.0, .3, 6.8], [g.xR[0] + 1.8, 0, g.R + .5], .3, C.steel, 6));
+  f = f.concat(ksTube([g.xR[0] - 1.8, 0, g.R + .5], [g.xR[1] + 1.8, 0, g.R + .5], .3, C.steel, 6));
+  f = f.concat(box(12.5, .3, 6.2, 3.4, 2.6, 1.6, C.dark, C.body, C.dark, .2));
+  return f;
+}
+/* The bonnet: narrow at the grille and widening back to the cowl, its top rising toward the
+   windscreen, with the louvres along its sides; the grille of upright bars across the front, and
+   the radiator's filler on top. */
+function sbBonnet() {
+  var C = BMC, g = SBG, f = [], i, sd;
+  var zS = g.zWing, xF = g.xGr, xC = g.xCowl;
+  function hw(x) { return g.wBonF + (g.wBonC - g.wBonF) * (xF - x) / (xF - xC); }
+  function tz(x) { return g.zBonF + (g.zBonC - g.zBonF) * (xF - x) / (xF - xC); }
+  var top = [], n = 6;
+  for (i = 0; i <= n; i++) {
+    var x = xF - (xF - xC) * i / n, w = hw(x), t = tz(x);
+    top.push([x, w, t]);
+  }
+  for (i = 0; i < n; i++) {
+    var a = top[i], b = top[i + 1];
+    /* the top, crowned a little over the middle */
+    f.push(hkFace([[a[0], -a[1], a[2] - .35], [b[0], -b[1], b[2] - .35], [b[0], 0, b[2]], [a[0], 0, a[2]]], [0, 0, 1], C.body));
+    f.push(hkFace([[a[0], 0, a[2]], [b[0], 0, b[2]], [b[0], b[1], b[2] - .35], [a[0], a[1], a[2] - .35]], [0, 0, 1], C.body));
+    for (sd = -1; sd <= 1; sd += 2)
+      f.push(hkFace([[a[0], sd * a[1], a[2] - .35], [b[0], sd * b[1], b[2] - .35], [b[0], sd * b[1], zS], [a[0], sd * a[1], zS]], [0, sd, 0], C.body));
+  }
+  /* the louvres in each side */
+  for (sd = -1; sd <= 1; sd += 2) for (i = 0; i < 9; i++) {
+    var lx = 28.6 - i * 1.15;
+    f = f.concat(box(lx, sd * (hw(lx) + .03), 14.4, .35, .12, 1.7, C.dark, C.dark, C.dark, 0));
+  }
+  /* the grille: a frame round upright bars, standing on the front of the frame */
+  var gw = g.wBonF + .1;
+  f = f.concat(box(xF - .25, 0, 10.3, .5, gw * 2 + .6, g.zBonF - 10.3, C.body, C.lit, C.dark, .1));
+  for (i = 0; i < 14; i++) {
+    var gy = -gw + .45 + i * (gw * 2 - .9) / 13;
+    f = f.concat(box(xF + .12, gy, 10.9, .35, .32, g.zBonF - 11.6, C.dark, C.body, C.dark, 0));
+  }
+  f = f.concat(box(xF + .1, 0, 10.9, .3, gw * 2 - .4, .28, C.body, C.lit, C.dark, 0), box(xF + .1, 0, g.zBonF - .9, .3, gw * 2 - .4, .3, C.body, C.lit, C.dark, 0));
+  f.push(hkFace([[xF - .05, -gw + .3, 11.0], [xF - .05, gw - .3, 11.0], [xF - .05, gw - .3, g.zBonF - .7], [xF - .05, -gw + .3, g.zBonF - .7]], [1, 0, 0], C.hole));
+  /* the filler and the starting handle's hole */
+  f = f.concat(cyl(30.6, 0, g.zBonF + .05, .55, .55, .4, 10, C.steel, C.bare, 0, true));
+  f = f.concat(tubeSmooth(xF - .1, xF + .5, 0, 9.0, .3, 8, C.steel, C.hole));
+  return f;
+}
+/* The front wings: flat on top, out from the bonnet's sides to the edge of the truck, with the
+   skirt down over the wheel arched round it, the headlamps standing on them beside the grille
+   with the sidelights, and the step plates down to the running boards. */
+function sbWings() {
+  var C = BMC, g = SBG, f = [], sd, i;
+  var x0 = 32.6, x1 = g.xCowl + .4, zt = g.zWing, xa = g.xF, ra = g.R + .75;
+  for (sd = -1; sd <= 1; sd += 2) {
+    var yi = sd * (g.wBonF + .05), yo = sd * g.yWing;
+    /* the top, following the bonnet's side in and out to the edge */
+    f.push(hkFace([[x0, yi, zt], [x1, sd * (g.wBonC + .05), zt], [x1, yo, zt], [x0, yo, zt]], [0, 0, 1], C.body));
+    f.push(hkFace([[x0, yi, zt - .3], [x1, sd * (g.wBonC + .05), zt - .3], [x1, yo, zt - .3], [x0, yo, zt - .3]], [0, 0, -1], C.dark));
+    /* the skirt, its lower edge arched over the wheel: a strip from each step of the edge up to
+       the top, inside and out */
+    var b0 = Math.asin((10.7 - g.R) / ra), prof = [[x0, 10.7]], k, kk;
+    for (k = 0; k <= 12; k++) { var b = b0 + (Math.PI - 2 * b0) * k / 12; prof.push([xa + Math.cos(b) * ra, g.R + Math.sin(b) * ra]); }
+    prof.push([x1, 10.7]);
+    for (kk = 0; kk < prof.length - 1; kk++) {
+      var p = prof[kk], q = prof[kk + 1];
+      f.push(hkFace([[p[0], yo, p[1]], [q[0], yo, q[1]], [q[0], yo, zt], [p[0], yo, zt]], [0, sd, 0], C.body));
+      f.push(hkFace([[p[0], yo - sd * .25, p[1]], [q[0], yo - sd * .25, q[1]], [q[0], yo - sd * .25, zt], [p[0], yo - sd * .25, zt]], [0, -sd, 0], C.dark));
+    }
+    f = f.concat(box(x0 - .12, (yi + yo) / 2, 10.7, .25, Math.abs(yo - yi), zt - 10.7, C.body, C.lit, C.dark, 0));
+    /* the inner skirt behind the wheel, and the lip along the top edge */
+    f = f.concat(box((x0 + x1) / 2, sd * (g.yWing - .2), zt - .05, x0 - x1, .45, .35, C.lit, C.lit, C.body, 0));
+    /* the headlamp on its stalk, its rim and lens, and the blackout lamp outboard of it */
+    var hy = sd * 6.0;
+    f = f.concat(cyl(29.9, hy, zt, .3, .3, .6, 6, C.dark, C.body, 0, true));
+    f = f.concat(tubeSmooth(29.0, 30.9, hy, 15.15, 1.0, 14, C.body, C.dark), tubeSmooth(30.9, 31.15, hy, 15.15, .85, 14, C.lens, C.lens));
+    f = f.concat(tubeSmooth(30.0, 31.0, sd * 9.4, 14.25, .38, 8, C.body, C.lens));
+    /* the running board from the wing back past the cab, and the step's bracket */
+    f = f.concat(box((x1 + 3.9) / 2, sd * (g.cabW + .85), 7.4, x1 - 3.9, 1.9, .35, C.body, C.lit, C.dark, .05));
+    for (i = 0; i < 2; i++) f = f.concat(box(15.0 - i * 8, sd * (g.cabW + .5), 7.75, .6, 1.4, g.fz1 - 7.75, C.dark, C.body, C.dark, 0));
+  }
+  return f;
+}
+/* The cab: steel, closed, the cowl in front, the split windscreen leaning back, the roof rounded
+   at its edges, the door in each side with its window and handle, the back wall with its window,
+   and inside the seat back and the wheel. */
+function sbCab() {
+  var C = BMC, g = SBG, f = [], sd, i;
+  var w = g.cabW, xc = g.xCowl, xw0 = 16.6, xw1 = 13.3, zw0 = 19.0, zw1 = 23.2, zr = g.zRoof, xr = 5.5, xb = g.xCab, zs = g.zSill;
+  /* the cowl from the bonnet's back to the windscreen's foot */
+  f.push(hkFace([[xc - .4, -w, g.zBonC], [xc - .4, w, g.zBonC], [xw0, w, zw0], [xw0, -w, zw0]], [.1, 0, 1], C.body));
+  f = f.concat(box(xc - .2, 0, g.zWing - .2, .4, w * 2, g.zBonC - g.zWing, C.body, C.lit, C.dark, 0));
+  f = f.concat(box(xc - .2, 0, zs, .4, w * 2, g.zWing - .2 - zs, C.dark, C.body, C.dark, 0));
+  /* the sides: a profile of the cab extruded across, with the window cut as a dark pane */
+  var side = [[xw0, zw0], [xw1, zw1], [12.3, zr - .6], [11.0, zr], [xr + .6, zr], [xb + .2, zr - 1.4], [xb + .1, zw0]];
+  for (sd = -1; sd <= 1; sd += 2) {
+    var ys = sd * w;
+    f.push(hkFace([[xc - .4, ys, zs], [xc - .4, ys, g.zBonC], [xb + .1, ys, g.zBonC], [xb, ys, zs]], [0, sd, 0], C.body));
+    f.push(hkFace(side.map(function (p) { return [p[0], ys, p[1]]; }), [0, sd, 0], C.body));
+    /* the door: its seams, its window and the handle */
+    f = f.concat(box(16.95, ys + sd * .05, zs + .3, .12, .1, 9.6, C.dark, C.dark, C.dark, 0), box(7.6, ys + sd * .05, zs + .3, .12, .1, 9.6, C.dark, C.dark, C.dark, 0));
+    f = f.concat(box(12.3, ys + sd * .05, 7.0 + 1.2, 9.3, .1, .12, C.dark, C.dark, C.dark, 0));
+    f.push(hkFace([[16.2, ys + sd * .06, 18.5], [8.0, ys + sd * .06, 18.5], [8.0, ys + sd * .06, 22.6], [11.0, ys + sd * .06, 23.2], [14.4, ys + sd * .06, 22.6]], [0, sd, 0], C.glass));
+    f = f.concat(box(9.0, ys + sd * .2, 16.4, 1.2, .3, .3, C.steel, C.bare, C.steel, 0));
+    /* the mirror on its arm off the windscreen's pillar */
+    f = f.concat(ksTube([15.2, sd * (w + .1), 21.0], [15.6, sd * (w + 2.0), 22.2], .1, C.dark, 4));
+    f = f.concat(box(15.6, sd * (w + 2.0), 21.6, .25, 1.0, 1.4, C.dark, C.glass, C.dark, 0));
+  }
+  /* the windscreen, two panes in a frame, leaning back */
+  var wn = hkNorm([zw1 - zw0, 0, xw0 - xw1]);
+  f.push(hkFace([[xw0, -w + .3, zw0], [xw0, w - .3, zw0], [xw1, w - .3, zw1], [xw1, -w + .3, zw1]], wn, C.body));
+  for (sd = -1; sd <= 1; sd += 2)
+    f.push(hkFace([[xw0 + wn[0] * .05, sd * .4, zw0 + .45], [xw0 + wn[0] * .05, sd * (w - .9), zw0 + .45],
+                   [xw1 + wn[0] * .05, sd * (w - .9), zw1 - .5], [xw1 + wn[0] * .05, sd * .4, zw1 - .5]], wn, C.glass));
+  /* the roof, rounded down at its front and back edges */
+  f.push(hkFace([[xw1, -w, zw1], [xw1, w, zw1], [12.3, w, zr - .6], [12.3, -w, zr - .6]], hkNorm([.7, 0, 1]), C.body));
+  f.push(hkFace([[12.3, -w, zr - .6], [12.3, w, zr - .6], [11.0, w, zr], [11.0, -w, zr]], hkNorm([.3, 0, 1]), C.lit));
+  f.push(hkFace([[11.0, -w, zr], [11.0, w, zr], [xr + .6, w, zr], [xr + .6, -w, zr]], [0, 0, 1], C.lit));
+  f.push(hkFace([[xr + .6, -w, zr], [xr + .6, w, zr], [xb + .2, w, zr - 1.4], [xb + .2, -w, zr - 1.4]], hkNorm([-.6, 0, 1]), C.body));
+  /* the back wall and its window */
+  f.push(hkFace([[xb, -w, zs], [xb, w, zs], [xb + .2, w, zr - 1.4], [xb + .2, -w, zr - 1.4]], [-1, 0, 0], C.body));
+  f.push(hkFace([[xb - .03, -3.6, 19.6], [xb - .03, 3.6, 19.6], [xb + .1, 3.6, 22.6], [xb + .1, -3.6, 22.6]], [-1, 0, 0], C.glass));
+  /* the floor, the seat back and the wheel, which the windscreen shows */
+  f = f.concat(box(11.5, 0, zs + 4.0, 12.5, w * 2 - .4, .2, C.dark, C.dark, C.dark, 0));
+  f = f.concat(box(7.4, 0, zs + 4.2, 1.2, w * 2 - 1.0, 6.0, C.dark, C.body, C.dark, .2));
+  f = f.concat(place(pitch(lathe(0, 0, 0, [[0, -.12], [1.9, -.12], [2.1, 0], [1.9, .12], [0, .12]], 14, [C.dark, C.dark, C.dark, C.dark], true), Math.PI / 2 - .55, 0, 0), 0, 13.6, -4.4, 17.6));
+  /* the red star on each door */
+  for (sd = -1; sd <= 1; sd += 2) f = f.concat(tzStar([12.3, sd * (w + .08), 12.6], [-sd, 0, 0], [0, sd, 0], 1.1));
+  return f;
+}
+/* Behind the cab: the box of tools and spares, the rear wings over the bogie flat on top and
+   turned down at both ends, the frame of the launcher's footing standing on them, and the two
+   jacks let down at the tail. */
+function sbBack() {
+  var C = BMC, g = SBG, f = [], sd, i;
+  f = f.concat(box((g.xCab + g.xBox) / 2 - .1, 0, g.zSill - .15, g.xCab - g.xBox - .2, g.cabW * 2, 11.25, C.body, C.lit, C.dark, .15));
+  for (sd = -1; sd <= 1; sd += 2) {
+    f = f.concat(box(1.4, sd * (g.cabW + .02), 13.6, 4.8, .1, .12, C.dark, C.dark, C.dark, 0));
+    f = f.concat(box(1.4, sd * (g.cabW + .15), 15.6, 2.0, .2, .2, C.steel, C.bare, C.steel, 0));
+    /* the rear wing: a flat top over both wheels, its ends bent down */
+    var prof = [[g.fenX1, 7.4], [-30.4, 11.0], [-29.0, g.zWing], [g.fenX0, g.zWing], [-2.6, 11.6], [-1.6, g.zSill]];
+    f = f.concat(tzBent(prof, sd < 0 ? -g.fenY1 : g.fenY0, sd < 0 ? -g.fenY0 : g.fenY1, .25, C.body, C.lit));
+    f = f.concat(box((g.fenX0 - 29) / 2, sd * (g.fenY1 - .12), g.zWing - 1.6, -29 - g.fenX0, .25, 1.6, C.body, C.lit, C.dark, 0));
+    /* the tail lamp and the reflector */
+    f = f.concat(box(-31.4, sd * 11.6, 9.0, .5, 1.0, .8, C.dark, C.star, C.dark, 0));
+    /* the jack: the screw in its tube, the crank and the foot */
+    var jx = -33.2, jy = sd * 6.1;
+    f = f.concat(cyl(jx, jy, 2.0, .55, .55, g.fz1 - 2.0, 10, C.dark, C.body, 0, true));
+    f = f.concat(cyl(jx, jy, .3, .3, .3, 2.0, 8, C.steel, C.bare, 0, true));
+    f = f.concat(cyl(jx, jy, 0, 1.4, 1.4, .3, 12, C.dark, C.body, 0, true));
+    f = f.concat(box(jx + .9, jy, 9.2, 1.8, .9, 1.2, C.dark, C.body, C.dark, .1));
+    f = f.concat(ksTube([jx, jy, 9.8], [jx - 1.6, jy + sd * 1.4, 10.6], .12, C.steel, 4));
+    /* the posts the launcher's footing stands on, off the frame */
+    [-7.8, -17.8, -28.0].forEach(function (x) { f = f.concat(box(x, sd * 5.8, g.fz1, .9, .9, g.mountZ - 1.0 - g.fz1, C.dark, C.body, C.dark, .05)); });
+  }
+  /* the footing the launcher turns on: a deck across the frame under the turntable */
+  f = f.concat(box(-17.9, 0, g.mountZ - 1.0, 21.4, 13.6, .5, C.dark, C.body, C.dark, .1));
+  return f;
+}
+function sbHull() {
+  return sbWheels().concat(sbAxle(SBG.xF, 1), sbBogie(), sbFrame(), sbBonnet(), sbWings(), sbCab(), sbBack());
+}
+
+/* ---- the launcher ---- */
+
+/* What turns on the truck: the turntable, the two beams of the footing out to the pivot's
+   brackets at the back and the elevating screws' brackets in front, and the crank the crew lay
+   it with. In the mount's frame, about the turntable. */
+function bmBase() {
+  var C = BMC, R = BMR, f = [], s;
+  f = f.concat(cyl(0, 0, -.5, 4.6, 4.6, .5, 20, C.dark, C.body, 0, true));
+  for (s = -1; s <= 1; s += 2) {
+    f = f.concat(box(.4, s * 5.8, -.4, 21.0, 1.0, 1.2, C.body, C.lit, C.dark, .08));
+    f = f.concat(box(R.px, s * 5.8, .4, 2.0, 1.0, R.pz + .4, C.dark, C.body, C.dark, .1));
+    f = f.concat(place(tubeSmooth(-.6, .6, 0, 0, .6, 10, C.steel, C.bare), Math.PI / 2, R.px, s * 5.8, R.pz));
+    f = f.concat(box(R.bx, s * 5.8, .4, 1.4, 1.0, R.bz - .2, C.dark, C.body, C.dark, .1));
+  }
+  [8.8, -.4, -8.6].forEach(function (x) { f = f.concat(box(x, 0, -.3, 1.0, 11.6, 1.0, C.dark, C.body, C.dark, 0)); });
+  f = f.concat(place(lathe(0, 0, 0, [[0, -.15], [.9, -.15], [1.0, 0], [.9, .15], [0, .15]], 10, [C.steel, C.steel, C.steel, C.steel], true), 0, 6.0, -7.1, 1.6));
+  f = f.concat(box(6.0, -6.6, 1.0, .5, 1.0, 1.0, C.dark, C.body, C.dark, 0));
+  return f;
+}
+/* the M-13: the warhead's ogive, the body, the motor and the fins, lying along x, its nose at
+   +x; laid on the rails at rest and flown by `rocketFaces` */
+function bmRocket(col, fin) {
+  var R = RKT.m13, h = R.L / 2, r = R.r, f = [], i, C = BMC;
+  f = f.concat(m4Taper(h - 3.2, h, 0, 0, r, .18, 10, col, col));
+  f = f.concat(tubeSmooth(h - 3.6, h - 3.2, 0, 0, r * 1.02, 10, C.steel, C.steel));
+  f = f.concat(tubeSmooth(-h + 2.4, h - 3.6, 0, 0, r, 10, col, col));
+  f = f.concat(tubeSmooth(-h + .3, -h + 2.4, 0, 0, r * .9, 10, fin, fin));
+  f = f.concat(tubeSmooth(-h, -h + .3, 0, 0, r * .7, 10, C.steel, C.hole));
+  for (i = 0; i < 4; i++)
+    f = f.concat(roll(box(-h + 1.25, 0, r * .9, 2.3, .12, 1.0, fin, fin, fin, 0), i * Math.PI / 2 + Math.PI / 4, 0, 0));
+  return f;
+}
+/* The rack, lying level in the mount's frame about the pivot: eight rails, each an I-beam with a
+   row of holes through its web, its front end rounded, the stops at the tail that hold the
+   rockets, the cross members and the X of braces under them, the king post and its two struts
+   over the middle, and the struts from the rack's underside down to the pivot. */
+function bmRack() {
+  var C = BMC, R = BMR, f = [], i, k, s;
+  var X0 = R.px + R.x0, X1 = R.px + R.x1, zb = R.pz + R.zb, zt = R.pz + R.zt, L = X1 - X0;
+  for (i = 0; i < 8; i++) {
+    var y = (i - 3.5) * R.p;
+    f = f.concat(box((X0 + X1) / 2, y, zb + .3, L, .3, zt - zb - .6, C.body, C.lit, C.body, 0));
+    f = f.concat(box((X0 + X1) / 2, y, zt - .3, L, 1.3, .3, C.lit, C.lit, C.body, 0));
+    f = f.concat(box((X0 + X1) / 2, y, zb, L, 1.3, .3, C.body, C.body, C.dark, 0));
+    /* the holes in the web, on the two outer rails where they show */
+    if (i === 0 || i === 7) {
+      s = i ? 1 : -1;
+      for (k = 0; k < 34; k++) {
+        var hx = X0 + 3.0 + k * 1.62;
+        f = f.concat(latheSide(hx, y + s * .16, (zb + zt) / 2, [[0, 0], [.52, 0], [.52, .02], [0, .02]], 8, [C.hole, C.hole], s));
+      }
+    }
+    /* the stop at the tail of each rail and the clamp over its rocket */
+    f = f.concat(box(X0 + .4, y, zt, .5, 1.3, .9, C.dark, C.body, C.dark, 0), box(X0 + .4, y, zb - .9, .5, 1.3, .9, C.dark, C.body, C.dark, 0));
+  }
+  /* the cross members under the rails, and the braces between the middle two */
+  R.cross.forEach(function (x) { f = f.concat(box(R.px + x, 0, zb - .9, 1.0, 8 * R.p, .9, C.dark, C.body, C.dark, 0)); });
+  for (s = -1; s <= 1; s += 2) f = f.concat(ksTube([R.px + R.cross[1], -s * 3.4 * R.p, zb - .5], [R.px + R.cross[2], s * 3.4 * R.p, zb - .5], .18, C.dark, 4));
+  /* the king post and its struts along the middle */
+  var ax = R.px + 22.3, az = R.pz + 14.6;
+  f = f.concat(ksTube([R.px + 11.0, 0, zt], [ax, 0, az], .22, C.body, 6), ksTube([ax, 0, az], [R.px + 33.0, 0, zt], .22, C.body, 6));
+  f = f.concat(ksTube([ax, 0, zt], [ax, 0, az], .2, C.body, 6));
+  /* the struts down to the pivot, each side */
+  for (s = -1; s <= 1; s += 2) {
+    var py = s * 5.8;
+    f = f.concat(ksTube([R.px, py, R.pz], [R.px + 13.7, py, R.pz + 7.6], .32, C.body, 6), ksTube([R.px, py, R.pz], [R.px - 6.4, py, R.pz + 6.2], .32, C.body, 6));
+    f = f.concat(ksTube([R.px + 13.7, py, R.pz + 7.6], [R.px + 13.7, py, zb - .9], .26, C.body, 6), ksTube([R.px - 6.4, py, R.pz + 6.2], [R.px - 6.4, py, zb - .9], .26, C.body, 6));
+    f = f.concat(box(R.px + R.ex, py, R.pz + R.ez, 1.2, 1.0, zb - .9 - R.pz - R.ez, C.dark, C.body, C.dark, .05));
+  }
+  return f;
+}
+/* the rockets on the rails, as positions in the rack's frame in the order they are fired, and
+   one rocket to draw at each of them */
+function bmLoad() {
+  var R = BMR, T = bmTubes(), xm = R.px + (R.rT + R.rH) / 2;
+  return { part: 'rack', f: bmRocket(BMC.dark, BMC.body), p: T.map(function (t) { return [xm, t[0], R.pz + t[1]]; }) };
+}
+/* the elevating screw from the footing up to the rack, a unit long along x */
+function bmScrew() {
+  var C = BMC, f = [];
+  f = f.concat(tubeSmooth(.03, .55, 0, 0, .42, 8, C.dark, C.body), tubeSmooth(.5, .97, 0, 0, .24, 8, C.steel, C.bare));
+  return f;
+}
+function bmLinks() {
+  var R = BMR, L = [], s;
+  for (s = -1; s <= 1; s += 2) L.push({ f: bmScrew(), pa: 'tur', a: [R.bx, s * 5.8, R.bz], pb: 'rack', b: [R.px + R.ex, s * 5.8, R.pz + R.ez] });
+  return L;
+}
+/* the whole launcher on its truck at an elevation, for the overlay against the drawing */
+function bmShow(el) {
+  var V = { elv: { rack: bmRack() }, elvP: { rack: [BMR.px, BMR.pz, BMR.el0] }, lk: bmLinks() }, Ld = bmLoad();
+  var tur = bmBase().concat(clPose(V, el || 0), Ld.p.reduce(function (o, p) {
+    return o.concat(pitch(place(Ld.f, 0, p[0], p[1], p[2]), (el || 0) + BMR.el0, BMR.px, BMR.pz));
+  }, []));
+  return sbHull().concat(place(tur, 0, SBG.turX, 0, SBG.mountZ));
+}
+
 /* ================================================================ M3 light tank (US Army)
    The Stuart as the Americans first took it to war: the M3 of 1941 and 1942, riveted,
    with the rounded welded turret that did away with the cupola, and the idler trailing
@@ -43334,6 +44148,20 @@ VIN.sv_t3485 = function (V) {
   return m4Room({ zr: T.zr, hx: T.cx, hy: T.cy, hr: 3.3, gz: T.gz }, base,
                 { hz: T.ch, split: true, scopes: [[3.2, -6.8], [5.8, 5.9]], vent: [-10.8, 1.0], gx: 0, S: -1 });
 };
+/* ---- the IS-2 from under its cupola: the T-34-85's arrangement in the bigger casting, with the
+   commander at the left rear, the gunner low in front of him and the loader across the breech on
+   the right ---- */
+VIN.sv_is2 = function (V) {
+  var T = IST, K = T.K[T.K.length - 1];
+  var base = isTurretPlan().map(function (p) { return [p[0] * (p[0] > 0 ? K[1] : K[3]), p[1] * K[2]]; });
+  return m4Room({ zr: T.zr, hx: T.cx, hy: T.cy, hr: T.hr, gz: T.gz }, base,
+                { hz: T.ch, scopes: [[8.1, -5.5], [T.lx + 1.6, T.ly]], vent: [6.2, 1.4], gx: 0, S: -1 });
+};
+/* the BM-13N's: the driver's eye behind the windscreen, on the left of the cab */
+VIN.sv_bm13 = function (V) {
+  var at = { x: 13.6, y: -4.4, z: 21.6 };
+  return { frame: 'hull', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
+};
 VIN.sv_t20 = function (V) {
   var e = TZH.eye || [7.1, 3.6, 20.0], at = { x: e[0], y: e[1], z: e[2] };
   return { frame: 'hull', closed: false, crew: [], faces: [], eyeUp: at, eyeIn: at };
@@ -43700,6 +44528,16 @@ function buildVehicleModels(up) {
      point behind the mantlet, and the hatches are drawn with the hull */
   vmDef('sv_su122', function () { s122Hatch(); return { hull: s122Hull(), tur: s122Gun(), belly: TTH.zBelly, bar: S122.muz - S122.px, big: 0, fixed: 1,
                        scale: 1, mountZ: S122.pz, gunZ: S122.gz - S122.pz, turX: S122.px, turY: S122.py }; });
+  /* the IS-2: the turret's ring a little forward of the middle, the gun a little left of the
+     turret's (`barY`), and the DShK a fitting drawn on the mount */
+  vmDef('sv_is2', function () { isHatch(); return { hull: isHull(), tur: isTurret(), mgUp: { dshk: isDShK() }, belly: ISH.zBelly, bar: IST.muz,
+                       barY: IST.gy, big: 1, heavy: 1, scale: 1, mountZ: ISH.zRoof, gunZ: IST.gz, turX: ISH.turX, turY: 0 }; });
+  /* the BM-13N: a soft lorry, so nothing is thrown when it burns; what turns on it is the
+     footing, and the rack is laid up on that about its pivot with the rockets lying on it, the
+     screws between the two, and the rack's own tubes for `rkLaunch` */
+  vmDef('sv_bm13', function () { return { hull: sbHull(), tur: bmBase(), elv: { rack: bmRack() }, elvP: { rack: [BMR.px, BMR.pz, BMR.el0] },
+                       lk: bmLinks(), rkLoad: bmLoad(), rk: { px: BMR.px, pz: BMR.pz, el0: BMR.el0, x0: BMR.rT, x1: BMR.x1, tube: bmTube },
+                       soft: 1, belly: 3.8, bar: 30, big: 0, scale: 1, mountZ: SBG.mountZ, gunZ: BMR.pz + 11, turX: SBG.turX, turY: 0 }; });
   vmDef('am_stuart', function () { return { hull: s3Hull(), tur: s3Turret(), belly: S3H.zBelly, bar: S3T.muz, big: 0, scale: 1,
                        mountZ: S3H.zRoof, gunZ: S3T.gz, turX: S3H.turX, turY: 0 }; });
   vmDef('ger_kt', function () { return { hull: ktHull(KT.body, KT.lit, KT.dark), tur: ktTurret(KT.body, KT.lit, KT.dark), belly: KTG.zBelly,
@@ -48230,6 +49068,7 @@ function vehUpload(k) {
   if (V.elv) {
     M.elv = {}; Object.keys(V.elv).forEach(function (ek) { M.elv[ek] = facesToBuffer(V.elv[ek]); });
     M.lk = V.lk.map(function (L) { return facesToBuffer(L.f); });
+    if (V.rkLoad) M.rkLoad = facesToBuffer(V.rkLoad.f);
   }
   V.inside = insideOf(k, V); M.inside = facesToBuffer(V.inside.faces);
   M.inlid = V.inside.lid ? facesToBuffer(V.inside.lid) : null;
@@ -48251,7 +49090,7 @@ function buildModels() {
   MODELS.nade = {};
   ['rgd', 'molo', 'satch', 'smoke'].forEach(function (nk) { MODELS.nade[nk] = facesToBuffer(grenadeFaces(KIT.sov, nk)); });
   /* and the two rockets, one per rocket in the air */
-  MODELS.rkt = { m8: facesToBuffer(rocketFaces('m8')), wgr: facesToBuffer(rocketFaces('wgr')) };
+  MODELS.rkt = { m8: facesToBuffer(rocketFaces('m8')), wgr: facesToBuffer(rocketFaces('wgr')), m13: facesToBuffer(rocketFaces('m13')) };
   /* a vehicle's buffers are asked for as often as its model, so they build it too; one a
      tool built without buffering is buffered here */
   VQ = [];
@@ -52336,6 +53175,15 @@ function elvDraw(u, B, V, tmat, t, depth) {
     m = lkMat(tmat, elvPt(V, L.pa, L.a, el), elvPt(V, L.pb, L.b, el));
     if (depth) drawDepthGeom(B.lk[i], m); else drawGeom(B.lk[i], m, false, t);
   }
+  /* and what lies on a rack of rails (`rkLoad`): one rocket at each place it has not yet left,
+     in the order the rack fires them, so a ripple empties the rails and a reload fills them */
+  if (V.rkLoad && B.rkLoad) {
+    var Ld = V.rkLoad, mr = elvMat(tmat, V, Ld.part, el), gone = u.rack === undefined || !u.def ? 0 : (u.def.rack || 0) - u.rack;
+    for (i = Math.max(0, gone); i < Ld.p.length; i++) {
+      m = m4mul(mr, m4model(Ld.p[i][0], Ld.p[i][1], Ld.p[i][2], 0, 1));
+      if (depth) drawDepthGeom(B.rkLoad, m); else drawGeom(B.rkLoad, m, false, t);
+    }
+  }
 }
 function castUnit(u) {
   if (u.cat === 'veh') {
@@ -53184,10 +54032,12 @@ var RKT = {
      motor burns, how long its smoke hangs, how wide a puff of it starts and how fast it
      spreads, the flame's length, and how fast it spins */
   m8:  { L: 9.8, r: .67, fx: -4.9, burn: .9, life: 3.0, w: 3.2, grow: 9, fl: 12, spin: 0 },
-  wgr: { L: 11.45, r: .92, fx: -1.9, burn: 1.2, life: 3.4, w: 3.8, grow: 10, fl: 10, spin: 18 }
+  wgr: { L: 11.45, r: .92, fx: -1.9, burn: 1.2, life: 3.4, w: 3.8, grow: 10, fl: 10, spin: 18 },
+  m13: { L: 16.5, r: .77, fx: -8.25, burn: 1.0, life: 3.4, w: 3.8, grow: 10, fl: 14, spin: 0 }
 };
 function rocketFaces(k) {
   var R = RKT[k], h = R.L / 2, r = R.r, f = [], i, C = M4C;
+  if (k === 'm13') return bmRocket(BMC.dark, BMC.body);
   if (k === 'm8') {
     f = f.concat(m4Taper(h - 2.5, h, 0, 0, r, .1, 10, C.od, C.odL));             /* the warhead's ogive */
     f = f.concat(tubeSmooth(h - 3.1, h - 2.5, 0, 0, r, 10, C.tarp, C.tarp));      /* the band round it */
