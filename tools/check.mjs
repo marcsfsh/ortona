@@ -9962,6 +9962,15 @@ for (const device of TARGETS) {
     W.slotOf(own).ai = 1; W.aiInit(own);
     W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
     W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    /* the Kazarma's own vehicles standing, its queues empty and money in the till: the ladder buys
+       back whatever has died, the row above killed everything, and a T-20 bought back at the Kazarma
+       holds its queue for the whole of the row, so the post's list with the tube on it never ran */
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    const kz = W.nearestFree(hq.x - 160, hq.y);
+    W.spawnUnit(own, 'sv_t20', kz.x, kz.y, 0);
+    W.spawnUnit(own, 'sv_zis3', kz.x - 60, kz.y + 70, 0); W.spawnUnit(own, 'sv_zis3', kz.x - 60, kz.y - 70, 0);
+    W.__pmTill = [G.res[own].mp, G.res[own].fu];
+    G.res[own].mp = Math.max(G.res[own].mp, 3000); G.res[own].fu = Math.max(G.res[own].fu, 600);
     W.__pmq = []; W.__pmU = W.queueUnit;
     W.queueUnit = function (b) { const r = W.__pmU.apply(this, arguments); if (r && b.own === own) W.__pmq.push(b.key + ':' + arguments[1]); return r; };
     return out;
@@ -9971,6 +9980,7 @@ for (const device of TARGETS) {
     const W = window, G = W.G, own = G.own;
     W.queueUnit = W.__pmU; W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__pmAi;
     G.units.slice().forEach(u => { if (!u.dead && (u.own === own || u === W.__pmMg)) W.killUnit(u); });
+    G.res[own].mp = W.__pmTill[0]; G.res[own].fu = W.__pmTill[1];
     return { q: W.__pmq.join(',') || 'nothing' };
   });
   ok('the Red Army\'s Kazarma raises the 82-PM-41, a mortar of three men that rides on its wheels',

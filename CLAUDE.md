@@ -1545,7 +1545,10 @@ and takes a smoke mission; a man killed goes down as `sov_at`; and a brain on hi
 standing buys one. The row puts an MG 34 team of theirs by their own headquarters first, because the brain
 wants a tube when the enemy has a machine gun or men in a house, or holds as much ground as it does, and
 with the German brain switched off for the rows above the Red Army held more ground and had nothing for a
-tube to do. The bearer's place is beside the gunner and not behind the plate, because behind the plate it
+tube to do. It stands the Kazarma's T-20 and two ZiS-3s on the field as well, with the queues emptied and
+money in the till: the ladder buys back whatever has died and the row above it kills everything, so once the
+brains could pay for their works a T-20 bought back at the Kazarma held its queue for the whole row and the
+post's list, where the tube is, never ran. The bearer's place is beside the gunner and not behind the plate, because behind the plate it
 was outside the circle a crew is held to on a phone, where a man is a fifth bigger, and he stood where he
 was. The fifteenth asks the IS-2: the park makes it and queues it, the Avtopark refuses it and a second is
 refused while one is on the field, every buffer is built, the cupola's three and the DShK's among them, it
