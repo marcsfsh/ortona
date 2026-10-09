@@ -59078,9 +59078,10 @@ function edMirrorOf(e) {
     /* a town house's front: a street below the line is a street above it on the other half */
     if (m.t === 'house' && m.front !== undefined && m.front < 2) m.front = 1 - m.front;
   } else {
-    if (m.x !== undefined) m.x = WORLD.w - m.x;
-    if (m.x1 !== undefined) { m.x1 = WORLD.w - m.x1; m.x2 = WORLD.w - m.x2; }
-    if (m.pts) m.pts = m.pts.map(function (p) { var q = p.x === undefined ? { x: p[0], y: p[1] } : p; return { x: WORLD.w - q.x, y: q.y }; });
+    var mw = edMW();
+    if (m.x !== undefined) m.x = mw - m.x;
+    if (m.x1 !== undefined) { m.x1 = mw - m.x1; m.x2 = mw - m.x2; }
+    if (m.pts) m.pts = m.pts.map(function (p) { var q = p.x === undefined ? { x: p[0], y: p[1] } : p; return { x: mw - q.x, y: q.y }; });
     if (m.a !== undefined) m.a = Math.PI - m.a;
   }
   if (m.lean !== undefined) m.lean = -m.lean;
@@ -59088,7 +59089,7 @@ function edMirrorOf(e) {
   if (m.side) m.side = m.side === 'us' ? 'ger' : 'us';
   if (m.t === 'trench' && m.face) m.face = m.face === 'L' ? 'R' : 'L';
   if (m.t === 'sector') { m.id = edNextSectorId(); m.owner = m.owner === 'us' ? 'ger' : m.owner === 'ger' ? 'us' : null; m.label = (m.label || '') + ' (E)'; }
-  if (edBoxy(m)) { if (my) m.y = 2 * my - e.y - e.h; else m.x = WORLD.w - e.x - e.w; }
+  if (edBoxy(m)) { if (my) m.y = 2 * my - e.y - e.h; else m.x = edMW() - e.x - e.w; }
   return m;
 }
 function edNextSectorId() {
@@ -59112,10 +59113,14 @@ function edAnchorY(e) { return e.y !== undefined ? (edBoxy(e) ? e.y + e.h / 2 : 
    so a house put down there is copied onto the other army's half and not across the town
    onto the same one. edMY is the y of that line, or nought for the old kind. */
 function edMY() { var L = ED.data && LANDS[ED.data.land]; return L && L.mirrorY ? L.mirrorY : 0; }
-function edOffMid(e) { var my = edMY(); return my ? Math.abs(edAnchorY(e) - my) : Math.abs(edAnchorX(e) - WORLD.w / 2); }
-function edMirPt(x, y) { var my = edMY(); return my ? { x: x, y: 2 * my - y } : { x: WORLD.w - x, y: y }; }
+/* and the width of the map being mirrored, off the map rather than off WORLD: WORLD is the
+   map last built, and the generator lays a map out before anything builds it, so with a copy
+   of Saint-Lô open a template came out mirrored about x 1900 on a map 2800 across */
+function edMW() { return (ED.data && ED.data.w) || 2800; }
+function edOffMid(e) { var my = edMY(); return my ? Math.abs(edAnchorY(e) - my) : Math.abs(edAnchorX(e) - edMW() / 2); }
+function edMirPt(x, y) { var my = edMY(); return my ? { x: x, y: 2 * my - y } : { x: edMW() - x, y: y }; }
 /* which half a thing is on: the first is the American half on either kind of map */
-function edFirstHalf(e) { var my = edMY(); return my ? edAnchorY(e) > my : edAnchorX(e) < WORLD.w / 2; }
+function edFirstHalf(e) { var my = edMY(); return my ? edAnchorY(e) > my : edAnchorX(e) < edMW() / 2; }
 /* one thing, or its mirror too; the snapshot is the caller's */
 function edPush(e) {
   if (e.t === 'sector' && !e.id) { e.id = edNextSectorId(); e.label = e.label || (e.type.toUpperCase() + ' ' + e.id); }
@@ -62177,7 +62182,7 @@ function edBlankMap(name) {
     { t: 'sector', id: 'A', x: 540, y: 950, type: 'mp', owner: 'us', label: 'West' },
     { t: 'sector', id: 'B', x: 1400, y: 950, type: 'vp', owner: null, label: 'Centre' },
     { t: 'sector', id: 'C', x: 2260, y: 950, type: 'mp', owner: 'ger', label: 'East' },
-    { t: 'hq', side: 'us', x: 250, y: 950 }, { t: 'hq', side: 'ger', x: WORLD.w - 250, y: 950 }], height: [] };
+    { t: 'hq', side: 'us', x: 250, y: 950 }, { t: 'hq', side: 'ger', x: 2550, y: 950 }], height: [], w: 2800, h: 1900 };
 }
 
 /* ---- the generator: a whole map from a seed and three sliders ----
@@ -62194,7 +62199,9 @@ function edGenerate(o) {
   function R() { st = (st * 1664525 + 1013904223) >>> 0; return st / 4294967296; }
   function rr(a, b) { return a + R() * (b - a); }
   function chance(p) { return R() < p; }
-  var E = [], MX = WORLD.w / 2, MY = 950;
+  /* the old field's size, written out: a map's data may not read WORLD, which is whatever
+     was built last (see `edMW`) */
+  var E = [], MX = 1400, MY = 950;
   var TW = 640 + town * 1500, TH = 520 + town * 900, x0 = MX - TW / 2, y0 = MY - TH / 2, y1 = MY + TH / 2;
   function road(pts, w) { E.push({ t: 'road', width: w || 52, pts: pts }); }
   function P(x, y) { return { x: x, y: y }; }
@@ -62297,8 +62304,8 @@ function edGenerate(o) {
   E.push({ t: 'sector', id: 'D', x: MX, y: MY - dy, type: 'vp', owner: null, label: 'North square' });
   E.push({ t: 'sector', id: 'E', x: MX, y: MY, type: 'vp', owner: null, label: 'Piazza' });
   E.push({ t: 'sector', id: 'F', x: MX, y: MY + dy, type: 'vp', owner: null, label: 'South square' });
-  E.push({ t: 'hq', side: 'us', x: 250, y: MY }); E.push({ t: 'hq', side: 'ger', x: WORLD.w - 250, y: MY });
-  var data = { name: o.name || 'New map', version: 1, entities: E, height: [], seed: seed };
+  E.push({ t: 'hq', side: 'us', x: 250, y: MY }); E.push({ t: 'hq', side: 'ger', x: 2 * MX - 250, y: MY });
+  var data = { name: o.name || 'New map', version: 1, entities: E, height: [], seed: seed, w: 2 * MX, h: 2 * MY };
   /* the mirror */
   var keep = ED.data; ED.data = data;
   E.slice().forEach(function (e) {
@@ -62403,7 +62410,7 @@ function edMirrorAll(fromWest) {
   edPointAdd('before copying one half over the other');
   edSnapshot();
   var my = edMY(), names = my ? ['Top', 'Bottom'] : ['West', 'East'];
-  function first(e) { return my ? edAnchorY(e) < my : edAnchorX(e) < WORLD.w / 2; }
+  function first(e) { return my ? edAnchorY(e) < my : edAnchorX(e) < edMW() / 2; }
   var keep = ED.data.entities.filter(function (e) { return e.t === 'hq' || edOffMid(e) <= 6 || (fromWest ? first(e) : !first(e)); });
   var src = keep.filter(function (e) { return e.t !== 'hq' && edOffMid(e) > 6; });
   ED.data.entities = keep;

@@ -1066,9 +1066,11 @@ sides survive, the HUD stays inside the viewport, touch targets are at least
 tray, keeps its controls at 44px and throws nothing. Exits non-zero on any
 failure.
 
-**It fights on the second map as well as building it**, because every other row deploys
-on Ortona and a map that boots and is never played is a map nobody has run the game on.
-That row is also where the Gothic Line's fairness is measured rather than asserted: 454
+**It fights on the hidden map as well as building it**, because every other row deploys
+on Saint-Lô or Omaha and the Gothic Line is kept for its rebuild: a map that boots and is
+never played is a map nobody has run the game on, and one nobody can pick is a map nobody
+would notice had stopped booting. The gate sets it through `window.chosenMap`, since it has
+no button. That row is also where the Gothic Line's fairness is measured rather than asserted: 454
 entities on each half with none unpaired, the ground disagreeing with its own reflection
 by at most 0.23 of a unit over 1,750 samples, no flag further from one headquarters than
 its twin is from the other, and 1,304 units between the bunker lines.
@@ -1088,7 +1090,7 @@ without storing it, measure the chrome (a strip of what he can build that agrees
 `simpleItems` to the key, the line saying what the army is doing, LOOK and PAUSE and
 nothing else, the little map, the bar gone, nothing under 44px, off screen or lying over
 anything else), and then run the brain on his slot for a minute and read it off the field:
-a plan at veteran, every fighting unit with a job and something under orders, and not one
+a plan at veteran, every fighting unit with a job and something under orders at some point in the minute (read every ten seconds, because in the dig mood a section that has reached its post has no order left and a single reading at the end came back nought on Saint-Lô with the brain working), and not one
 kind raised nor one building put up out of his till while the opposition went on buying.
 Then the strip is tapped -- the post has to go down beside the headquarters with an
 engineer on it for its price, a section into the queue for its, and the same button dimmed
@@ -1123,7 +1125,22 @@ moved: every gun on the roster fires once and none of them may put nothing on th
 the biggest blast has to light many times the pixels of the smallest, a round laid across a
 house has to be hidden by it from one side and not the other, and a heavy shell has to
 still be on the screen a second and a half after it lands. The column's floor is what a
-PHONE has to clear, because a phone spawns four puffs of it rather than eleven.
+PHONE has to clear, because a phone spawns four puffs of it rather than eleven. The house the
+round is laid across is one still whole with nothing else standing in the strip the camera looks
+down: on Ortona the biggest would do, and on Saint-Lô the biggest is the one the destruction rows
+have just shelled flat and a terrace has its neighbours in both lanes, so the round in front read
+nought behind the house next door.
+
+**And a few rows have to be told where open ground is.** The hole a shell leaves is dug where
+nothing is in the cut layer as well as nowhere on the crater list, because a row that empties the
+list leaves its holes in `G.cut`, which keeps the deeper of two cuts, and on Saint-Lô the row read
+its carve 2.5 units short over a hole a row above it had dug. The corridor the hulk and the tracks
+rows stage on keeps 420 from every building, because the first one on Saint-Lô was in front of a
+German headquarters and the camera saw the bunker and not the tank; and the tracks row looks from
+150 at a pitch of .3, past the limits a player has, because under Saint-Lô's grey sky half a link
+moved 921 pixels from the player's 230. The editor's overhaul rows clear a block of the first half
+and its twin before they lay their street, their areas and their brush, because Saint-Lô has no
+open ground that size on either half, and the undo at the end takes the clearing back too.
 
 **And one row RENDERS the roster and reads it as numbers**, because a sound is the one
 thing here a screenshot cannot review at all and an ear is not available to a gate. Every
@@ -1220,14 +1237,14 @@ every brain raising something. It runs before the Omaha rows, which reload.
 to name the 29th Infantry Division, the sections the Allied side opens with have to be American
 squads of six in both variants, the headquarters has to make the American squad and queue it, a man
 of the squad who is killed has to go down and lie as an American, and a brain playing the Allied
-side from the whistle has to order American squads in its first 45 seconds. Then the Ortona button
+side from the whistle has to order American squads in its first 45 seconds. Then the Saint-Lô button
 has to name the 29th as well, because the army is the same on every ground. An army that one door
 forgets is a Canadian section walking up an American beach, which in a photograph of a battle looks
 like nothing at all. The German side on the same beach is asked the same in a row of its own: the
 button names the 352nd, the sections it has on the field and the three the wall row put in the fire
 trench are grenadier squads of six in all three variants, its headquarters makes the grenadier squad
 and queues it, its brain bought grenadiers in the wall row's minute of battle, a man of it goes down
-as the 352nd, and Ortona's German button names the 352nd as well. And the jeep is asked the same in
+as the 352nd, and Saint-Lô's German button names the 352nd as well. And the jeep is asked the same in
 a third: the motor pool makes it and queues it, the count reads it, its crew are baked, the
 periscope's eye is the gunner's at twenty-odd units up, forty wrecks throw the gun off the pedestal
 none of the time and sit down under 1.7 units, killed it leaves two American bodies. The M4A1 is
@@ -1417,8 +1434,9 @@ tube along the tube from more than forty units up, leave thirty in the rack, emp
 mission and start the reload, refuse smoke and be called the M4A1 Calliope. And the Nebelwerfer has to
 fire its six as rockets.
 
-**And the destruction rows load Ortona to run on**, because a terrace is what they are
-about and the Gothic Line is a valley floor with two farms on it. The first puts a section
+**And the destruction rows load Saint-Lô to run on**, because a terrace is what they are
+about and Omaha is a beach with a bocage behind it. They loaded Ortona until Ortona was taken
+out of the game, and every figure below that names it was measured there. The first puts a section
 in an isolated house and fires one 105 round twelve units off its face: the house has to be
 cut, a hole has to open, and three seconds later the house has to be standing, holdable and
 still held, because a building that comes down on the first hole in it is as wrong as one
@@ -1450,7 +1468,11 @@ is about. And the room is the one with the most round it to burn, the middle of 
 breaking a tie: the four cells nearest the middle sit among empty cells and stone, and from them
 the fire took or died out about as often as a coin comes down, on the committed file as on the
 working one, which read as two devices failing the row with the same numbers. Lit where there is
-timber round it, it caught five times in five. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
+timber round it, it caught five times in five. On Saint-Lô the room is on the layer of the house
+with the most in it to burn, which is a floor: taken as the first layer above the ground with
+anything to burn, a Norman stone house gave three cells of a door frame among the masonry of its
+ground storey, and lit there the fire went out in both stone houses it was tried in, where lit on
+a floor it took in all four. And a third house has ten cells of wall cracked to seven tenths and nothing fired at
 it: in a minute and a half they have to have shed stone. That last row puts the army back, every
 fire out and the cracked wall at rest, because a house left burning goes on spreading down the
 street through every row below it.
@@ -1659,8 +1681,8 @@ and two more at the even game, where nothing caps a queue but the till. The row 
 graphics context on purpose (`WEBGL_lose_context`) and asks that the battle stops where it stood and the page says so, with a
 RELOAD a thumb can hit; the editor's reload gives the rows after it a context again.
 
-**And the editor's rows ask its overhaul as arithmetic**, last of all on the copy of Ortona the
-editor opens on. The editor opens on its three ways in with nothing over the map; a tool is found
+**And the editor's rows ask its overhaul as arithmetic**, last of all on the copy of Saint-Lô the
+gate opens it on (`#edsdup-stlo`), which was a copy of Ortona until Ortona went. The editor opens on its three ways in with nothing over the map; a tool is found
 by name and by use, and a starred and a used one are kept; Escape takes back one thing at a time;
 every tool says what its next action is. Then the shapes: a house has four corners, four edges
 and a turn, a corner makes it bigger and the turn turns it a quarter; a line takes a point at a mid
@@ -1782,8 +1804,8 @@ is no state container and no immutability; systems mutate `G` directly.
 **World.** 2800 x 1900 units unless the map says otherwise (`data.w`, `data.h`; Omaha is
 1500 x 4000, and `setWorld` is the one place that follows it). `makeSectors` / `buildMap` /
 `makeTerrain` build it from `G.mapData`, which is plain JSON the map editor also reads and
-writes (`defaultMapData()` is Ortona, `gothicMapData()` the Gothic Line and `omahaMapData()`
-Omaha; `MAPS` is the table
+writes (`omahaMapData()` is Omaha, `stloMapData()` Saint-Lô and `gothicMapData()` the hidden
+Gothic Line; Ortona's `defaultMapData()` went with it; `MAPS` is the table
 the title screen, the deploy button, the briefing and the editor's load panel all read).
 A separate 4-unit heightfield (`makeHeight`, `groundZ`, `groundNormal`) carries
 elevation, with trenches and craters cut in by `carve`.
@@ -9671,9 +9693,11 @@ player an ally.
 after a game on Omaha put the German headquarters at 1250 and the Gothic Line was mirrored
 about the middle of a map 1500 across. Both write their width out now.
 
-Measured by the gate row for it on Ortona: the three buttons and five roles on the panel;
-six headquarters on six owners, the nearest two allies 290 apart, all six with walkable
-ground to march out of and none standing on more than 9.4 units off its plane; five
+Measured by the gate row for it, on Ortona when it was written and on Saint-Lô now: the three
+buttons and five roles on the panel; six headquarters on six owners (on Saint-Lô the map's own
+six spots, the nearest two allies 1,340 apart; on Ortona the split, 290 apart), all six with
+walkable ground to march out of and none standing on more than 1.9 units off its plane (9.4
+on Ortona); five
 brains, the points on the first slots only, every AI raising something in two minutes;
 the labels; and the battle going on after an ally's headquarters and the second one fall
 and ending on the last.
@@ -10051,6 +10075,14 @@ takes out anything the check would name. Every draw comes from the seed, so a nu
 a map. `check.mjs` generates every template at three seeds and asserts the check comes
 back clean. The CHECK panel can also copy one half over the other (`edMirrorAll`).
 
+**A template is laid on the old field's 2800 by 1900 and says so** (`w` and `h` on the map, as
+the blank map does), and the mirror reads the width of the map it is mirroring (`edMW`) rather
+than `WORLD`, which is the map built last. Both read `WORLD` once, and the chooser hid it by
+setting the world first; NEW MAP inside the editor did not, so with a copy of Saint-Lô open a
+template came out laid round x 1900 on a map 2800 across, with every street running into the
+far half. The gate found it the day the editor rows moved to Saint-Lô: twelve maps, twelve with
+a street 1600 long.
+
 **A first pass from a rough layout.** LAYOUT is five areas and five area brushes. An area (a
 `zone`: a ring of points and a kind) is drawn round the ground in one stroke and called a
 village, fields, woods, defended ground or ruins, and FILL lays it out (`edFillZone`,
@@ -10115,8 +10147,9 @@ and drawn out with its route when it is the one being looked at, and GO flies to
 into the part of the screen the sheet leaves (`edLookAt`). Below the findings is the balance
 table (`edBalance`): buildings, cover, craters, trees, trenches and wire on each half, and every
 flag's distance from each headquarters, with anything lopsided marked. The shipped maps come
-back clean from the rules, which is the calibration, and Ortona reads two findings in about 70
-ms.
+back clean from the rules, which is the calibration. Ortona read two findings in about 70 ms;
+the gate's copy of Saint-Lô, after the edits the rows before it make, reads eight in about 240
+(five of them conflicts those edits made, two chokepoints and a route a tank is forced through).
 
 Two things made it say false things at first, and both read as findings. **A wall is not
 solid to it**, because the game prices a wall of any height through `wallg` and never blocks
@@ -10135,7 +10168,8 @@ pushed a terrace's back walls into the next street, which is a fix that makes tw
 an exposed approach `edCoverAlong` lays shell holes and rubble along it. The preview draws where
 each thing was and where it would go, with whatever the fix would still put in something
 (`edFixConflicts`, `edDrawFix`), and APPLY or CANCEL decides (`edFixApply`, after a restore
-point). On the gate a cramped street on Ortona goes from 54 units to 106.
+point). On the gate a cramped street on Ortona went from 54 units to 106, and a chokepoint on
+Saint-Lô goes from 36 to 75.
 
 ---
 

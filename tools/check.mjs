@@ -362,19 +362,26 @@ for (const device of TARGETS) {
      of battle above are fought with nobody running his army and what is left of it by
      now is sometimes nothing at all. --- */
   await page.evaluate(() => {
-    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own);
+    const own = window.G.own, us = window.G.side === 'us', hq = window.hqOf(own), F = window.frontOf(window.G.side);
     for (let i = 0; i < 4; i++) {
-      const sp = window.nearestFree(hq.x + (us ? 200 : -200) + i * 50, hq.y - 100 + i * 70);
+      const al = (i - 1.5) * 70, sp = window.nearestFree(hq.x + F.x * 200 - F.y * al, hq.y + F.y * 200 + F.x * al);
       window.spawnUnit(own, us ? 'am_rifle' : 'hr_gren', sp.x, sp.y, 0);
     }
+    window.__ordSeen = {};
   });
-  await fastForward(page, 60);
+  /* in tens of seconds, noting every unit of his that is under an order at any of them: in the
+     dig mood a section that has reached its post has no order left, so a reading taken once at
+     the end of the minute came back nought on one run in two on Saint-Lô with the brain working */
+  for (let k = 0; k < 6; k++) {
+    await fastForward(page, 10);
+    await page.evaluate(() => window.G.units.forEach(u => { if (window.owned(u) && !u.dead && u.cat && u.order) window.__ordSeen[u.id] = 1; }));
+  }
   const brain = await page.evaluate(() => {
     const own = window.G.own, him = window.foe(window.G.side), P = window.AIP[own];
     const mine = window.G.units.filter(u => window.owned(u) && !u.dead && u.cat && !u.inside);
     const fighters = mine.filter(u => !u.def.builder);
     return { plan: !!P && P.own === own, skill: window.aiDiffOf(own).skill, runs: window.aiRuns(window.slotOf(own)), buys: window.aiBuys(own),
-             n: fighters.length, jobs: fighters.filter(u => u.job || u.op).length, ordered: mine.filter(u => u.order).length,
+             n: fighters.length, jobs: fighters.filter(u => u.job || u.op).length, ordered: Object.keys(window.__ordSeen).length,
              made: Object.keys(window.G.made[own]).length, blds: window.G.blds.filter(b => window.owned(b)).length,
              foeMade: Object.keys(window.G.made[him]).length, foeBuys: window.aiBuys(him),
              status: document.getElementById('tselname').textContent, mood: P && P.mood,
@@ -383,7 +390,7 @@ for (const device of TARGETS) {
   ok('simple: the brain runs his slot at veteran, deals every section a job and orders it, and buys nothing out of his till',
      brain.plan && brain.skill === 2 && brain.runs && !brain.buys && brain.n > 0 && brain.jobs === brain.n && brain.ordered > 0 &&
      brain.made === pre.made && brain.blds === pre.blds && brain.foeBuys && brain.foeMade >= 1 && brain.status.length > 0,
-     `plan ${brain.plan} at skill ${brain.skill}; ${brain.jobs} of ${brain.n} fighters with a job, ${brain.ordered} under orders; ` +
+     `plan ${brain.plan} at skill ${brain.skill}; ${brain.jobs} of ${brain.n} fighters with a job, ${brain.ordered} under orders in the minute; ` +
      `raised ${brain.made} kinds against ${pre.made} before and ${brain.blds} buildings against ${pre.blds}, the opposition ${brain.foeMade}; ` +
      `line "${brain.status}", mood ${brain.mood}, fired ${brain.fired}`);
 
@@ -6022,6 +6029,14 @@ for (const device of TARGETS) {
       }, s));
       await fastForward(page, 2.5);
     }
+    /* and the fire put out before it settles: a 240 through the roof sets a house alight, and a
+       burning house goes on letting charred cells go for minutes, so on Saint-Lô's three-storey
+       houses a piece was still in the air at the end of the twelve seconds. The fire has its own
+       row below; this one counts the stone. */
+    await page.evaluate(() => {
+      const Q = window.__wreckH.fr;
+      if (Q) { for (const c of Q.fire) Q.heat[c] = 0; Q.fire.length = 0; Q.sumH = 0; }
+    });
     await fastForward(page, 12);
     /* and one drawn frame, because the house's own buffer is uploaded in the draw: fast
        forward stubs render() out */
@@ -6077,7 +6092,8 @@ for (const device of TARGETS) {
      wreck.down.settled > 40 && wreck.down.vol + wreck.down.lost >= wreck.down.made * .97 &&
      wreck.down.mound > 3 && wreck.down.stand > 1 && wreck.down.heap > 0,
      wreck ? `${wreck.air} stones in the air at once and ${wreck.down.bodies} pieces fell whole; ` +
-             `${wreck.down.settled} stones settled, ${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
+             `${wreck.down.settled} stones settled (${wreck.down.air} still in the air, ${wreck.down.fall} pieces still falling), ` +
+             `${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
              `let go by the ring against ${wreck.down.made} thrown; heap ${wreck.down.mound} deep, ` +
              `a man in the middle of it stands ${wreck.down.stand} over the floor, the heap drawn in ${wreck.down.heap} vertices`
            : '');
@@ -6219,9 +6235,17 @@ for (const device of TARGETS) {
          room it bursts in. Lit at the corner of the roof instead, the fire on Ortona's
          biggest house took most of a minute to find its feet, which is a fire on a roof edge
          and not the one the row is about. */
-      const room = [];
-      for (let k = 1; k < R.nz && !room.length; k++)
-        for (let c = k * NC; c < (k + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) room.push(c);
+      /* the layer is the one with the most in it to burn, which is a floor. It was the first
+         layer above the ground with anything to burn, which in a Norman stone house is three
+         cells of a door frame among the masonry of the ground storey: on Saint-Lô the fire went
+         out in both stone houses it was lit in that way and took in all four lit on a floor */
+      let room = [], bk = 1, bn = 0;
+      for (let k = 1; k < R.nz; k++) {
+        let n = 0;
+        for (let c = k * NC; c < (k + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) n++;
+        if (n > bn) { bn = n; bk = k; }
+      }
+      for (let c = bk * NC; c < (bk + 1) * NC; c++) if (R.alive[c] && R.fuel[c] >= .3) room.push(c);
       /* and the room is the one with something round it to burn, the middle of the house only
          breaking a tie: the four cells nearest the middle of Ortona's biggest house sit among
          empty cells and stone, and from them the fire took or died out about as often as a
@@ -6357,6 +6381,11 @@ for (const device of TARGETS) {
           for (let b = -60; b <= 60 && ok; b += 20)
             if (window.onRubble(tx + a, ty + b) || window.inWire(tx + a, ty + b) ||
                 window.inHogs(tx + a, ty + b)) ok = false;
+        /* and clear of every building by a good way, because the rows that photograph a hull
+           here look along the ground at it: on Saint-Lô the first corridor was 215 units in
+           front of a German headquarters, and the tracks row's camera saw the bunker and not
+           one pixel of the tank */
+        if (ok && window.G.blds.some(q => Math.hypot(q.x - tx, q.y - ty) < 420)) ok = false;
         if (ok) { sx = tx; sy = ty; found = true; }
       }
     if (!found) { sx = window.WORLD.w / 2; sy = window.WORLD.h / 2; }
@@ -6925,12 +6954,19 @@ for (const device of TARGETS) {
     Wn.G.units.length = 0;
     const v = Wn.spawnUnit('us', 'am_sher', sx, sy, 0);
     v.facing = 0; v.turret = 0; v.rollL = 0; v.rollR = 0; v.path = null;
-    Wn.CAM.tx = sx; Wn.CAM.ty = sy; Wn.CAM.dist = 230; Wn.CAM.yaw = Math.PI / 2; Wn.CAM.pitch = .45;
+    /* close and low along the side, past the limits a player has: under Saint-Lô's grey sky the
+       belt carries less contrast than it did in Ortona's low sun, and from the player's 230 at
+       .45 half a link moved 921 pixels with the control at nought; from here it moves about three
+       times that. The limits go back before anything else reads them. */
+    const lim0 = { d: Wn.CAMLIM.distMin, p: Wn.CAMLIM.pitchMin };
+    Wn.CAMLIM.distMin = 100; Wn.CAMLIM.pitchMin = .2;
+    Wn.CAM.tx = sx; Wn.CAM.ty = sy; Wn.CAM.dist = 150; Wn.CAM.yaw = Math.PI / 2; Wn.CAM.pitch = .3;
     for (let i = 0; i < 14; i++) Wn.render();
     Wn.G.units.forEach(q => { q.vUs = q.vGer = true; });
     const a1 = grab(), a2 = grab(), ctrl = lift(a1, a2);
     v.rollL = v.rollR = .9; v._matT = -1;
     const b = grab(), moved = lift(a1, b);
+    Wn.CAMLIM.distMin = lim0.d; Wn.CAMLIM.pitchMin = lim0.p;
     Wn.G.units.length = 0;
     keep.forEach(e => Wn.G.units.push(e));
     Wn.rebuildGrid();
@@ -7043,8 +7079,25 @@ for (const device of TARGETS) {
       /* TRACER: the same round laid across the same patch of screen, once on the far
          side of a house and once on the near side. On the overlay both read the same. */
       G.units.length = 0; G.fx.length = 0; G.shots.length = 0; G.paused = true;
-      const house = G.props.filter(q => q.kind === 'ruin' && q.w > 110 && q.h > 60)
-                           .sort((a, b) => b.w * b.h - a.w * a.h)[0];
+      /* a house that is still whole, with nothing else standing in the strip the camera looks
+         down and the two lanes lie in. On Ortona the biggest house would do; on Saint-Lô the
+         biggest is the one the destruction rows above have just shelled flat, and a terrace has
+         its neighbours in both lanes, so the round in front went behind the house next door */
+      const lanes = q => {
+        const x0 = q.x - q.w / 2 - 330, x1 = q.x + q.w / 2 + 90, y0 = q.y - 170, y1 = q.y + 170;
+        let n = 0;
+        for (const o of G.props) {
+          if (o === q || !o.solid || o.kind === 'sea') continue;
+          const ow = (o.w || 2 * (o.r || 10)) / 2, oh = (o.h || 2 * (o.r || 10)) / 2;
+          if (o.x + ow > x0 && o.x - ow < x1 && o.y + oh > y0 && o.y - oh < y1) n++;
+        }
+        for (const b of G.blds) if (Math.abs(b.x - (x0 + x1) / 2) < (x1 - x0) / 2 + 80 && Math.abs(b.y - q.y) < 250) n++;
+        return n;
+      };
+      const pick = G.props.filter(q => q.kind === 'ruin' && q.w > 90 && q.h > 60 && !q.hurt && !q.gut && !q.fr)
+        .map(q => ({ q, n: lanes(q) }))
+        .sort((a, b) => a.n - b.n || (b.q.storeys || 2) - (a.q.storeys || 2) || b.q.w * b.q.h - a.q.w * a.q.h)[0];
+      const house = pick ? pick.q : null;
       let front = 0, behind = 0;
       if (house) {
         window.__o.camera({ x: house.x, y: house.y, dist: 300, yaw: Math.PI, pitch: .45 });
@@ -7152,6 +7205,16 @@ for (const device of TARGETS) {
          widens the old one about its own centre, and the row then measures a hole dug
          somewhere else */
       if (G.craters.some(e => Math.hypot(e.x - x, e.y - y) < Math.max(e.r, 50) * .75 + 50)) continue;
+      /* and nothing in the cut layer either. A row above that dug a hole and then emptied the
+         crater list leaves the hole in `G.cut`, which keeps the deeper of two cuts, so on
+         Saint-Lô the row found 2.5 units already gone under its spot and read the carve short */
+      let dug = 0;
+      for (let a = 0; a < 9; a++) {
+        const qx = x + (a ? Math.cos(a) * 60 : 0), qy = y + (a ? Math.sin(a) * 60 : 0);
+        const k = window.hidx(Math.round(qx / window.HG), Math.round(qy / window.HG));
+        dug = Math.max(dug, Math.abs(G.cut[k]) + Math.abs(G.fill[k]));
+      }
+      if (dug > .1) continue;
       const sc = Math.min(near, 600) - worst * 20;
       if (sc > bs) { bs = sc; P = { x, y }; }
     }
@@ -10463,7 +10526,7 @@ for (const device of TARGETS) {
              find, found, placed, mine, pal, lineGone, selKept, toolDown, modes, cols, rowsSmall,
              saved: document.getElementById('edsaved').textContent };
   });
-  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 4 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
+  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 2 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
      `${chooser.tpl} templates, ${chooser.dup} maps to copy, ${chooser.checked} controls with ${chooser.small} small, editor ${chooser.on ? 'ALREADY OPEN' : 'not yet open'}`);
   ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Saint-Lô (copy)',
      `${ed.cats} categories, ${ed.tools} tools, named "${ed.named}", ${ed.helped ? 'panel ' + ed.helped + ' OPEN' : 'nothing over the map'}, "${ed.saved}"`);
@@ -10570,28 +10633,57 @@ for (const device of TARGETS) {
     W.edAdd(W.edNewEntity(W.edToolById('house').t, 1700, 300)); const nMid = E().length;
     W.edPointRestore(W.edPointList().findIndex(p => p.why === 'gate'));
     out.points = { nBefore, nMid, nAfter: E().length };
+    /* The drills below want open ground: a street with nothing round it, an area for a village,
+       one for fields, one for a wood and one for a brush. They were laid at fixed places on
+       Ortona, and Saint-Lô has no open ground that size on either half once its trees and walls
+       are counted, so a block of the first half and its twin are cleared first, as one more edit
+       the undo at the end takes back. */
+    const my = W.edMY(), O = my ? { x: 200, y: my + 160 } : { x: 120, y: 150 };
+    const RB = { x0: O.x - 20, y0: O.y - 20, x1: O.x + 1140, y1: O.y + 900 };
+    const rm0 = W.edMirPt(RB.x0, RB.y0), rm1 = W.edMirPt(RB.x1, RB.y1);
+    const RS = [RB, { x0: Math.min(rm0.x, rm1.x), y0: Math.min(rm0.y, rm1.y), x1: Math.max(rm0.x, rm1.x), y1: Math.max(rm0.y, rm1.y) }];
+    const inR = (x, y, pad) => RS.some(r => x > r.x0 - pad && x < r.x1 + pad && y > r.y0 - pad && y < r.y1 + pad);
+    const touches = e => {
+      if (e.t === 'hq' || e.t === 'sector') return false;
+      const lp = e.pts ? e.pts.map(q => q.x === undefined ? { x: q[0], y: q[1] } : q) : e.x1 !== undefined ? [{ x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }] : null;
+      if (lp) {
+        const pw = (e.width || 24) / 2 + 20;
+        for (let i = 0; i + 1 < lp.length; i++) {
+          const p = lp[i], q = lp[i + 1], n = Math.max(1, Math.ceil(Math.hypot(q.x - p.x, q.y - p.y) / 20));
+          for (let k = 0; k <= n; k++) if (inR(p.x + (q.x - p.x) * k / n, p.y + (q.y - p.y) * k / n, pw)) return true;
+        }
+        return lp.length === 1 && inR(lp[0].x, lp[0].y, pw);
+      }
+      const b = W.edBBox(e);
+      return RS.some(r => b.x1 > r.x0 && b.x0 < r.x1 && b.y1 > r.y0 && b.y0 < r.y1);
+    };
+    ED.sel = E().filter(touches); W.edDeleteSel(); ED.sel = [];
     /* a house put down beside a street stands back off its kerb with its front to it, either
        side, asked of that street alone so the rule and not the town round it is measured */
-    W.edAddRoads(W.edLineEntity(rt, [{ x: 180, y: 300 }, { x: 600, y: 300 }]));
-    const nr = E().find(e => e.t === 'road' && e.pts.some(p => Math.hypot(p.x - 600, p.y - 300) < 1)), nhw = (nr.width || 48) / 2;
+    const ry = O.y + 120;
+    W.edAddRoads(W.edLineEntity(rt, [{ x: O.x + 30, y: ry }, { x: O.x + 450, y: ry }]));
+    const nr = E().find(e => e.t === 'road' && e.pts.some(p => Math.hypot(p.x - (O.x + 450), p.y - ry) < 1)), nhw = (nr.width || 48) / 2;
     const keepE = ED.data.entities; ED.data.entities = [nr];
-    const sbS = W.edSnapBuilding({ x: 390, y: 300 + nhw + 70, w: 90, h: 80 }), sbN = W.edSnapBuilding({ x: 390, y: 300 - nhw - 70, w: 90, h: 80 });
+    const sbS = W.edSnapBuilding({ x: O.x + 240, y: ry + nhw + 70, w: 90, h: 80 }), sbN = W.edSnapBuilding({ x: O.x + 240, y: ry - nhw - 70, w: 90, h: 80 });
     ED.data.entities = keepE;
-    out.frontage = sbS && sbN ? { front: [sbS.front, sbN.front], kerb: [Math.round(sbS.y - 40 - (300 + nhw)), Math.round((300 - nhw) - (sbN.y + 40))] } : null;
+    out.frontage = sbS && sbN ? { front: [sbS.front, sbN.front], kerb: [Math.round(sbS.y - 40 - (ry + nhw)), Math.round((ry - nhw) - (sbN.y + 40))] } : null;
     /* an area sketched round that street fills with houses along it that clash with nothing,
        and the far side's twin with as many; fields and woods fill too */
     const mk = (kind, p) => { const e = W.edLineEntity(W.edToolById('z' + kind).t, p)[0]; W.edAddMany([e]); return e; };
-    const v = mk('village', [{ x: 150, y: 180 }, { x: 640, y: 180 }, { x: 640, y: 430 }, { x: 150, y: 430 }]);
-    const fz = mk('fields', [{ x: 150, y: 1380 }, { x: 700, y: 1380 }, { x: 700, y: 1780 }, { x: 150, y: 1780 }]);
-    const wz = mk('woods', [{ x: 760, y: 1450 }, { x: 980, y: 1400 }, { x: 1020, y: 1700 }, { x: 800, y: 1760 }]);
+    const v = mk('village', [{ x: O.x, y: O.y }, { x: O.x + 490, y: O.y }, { x: O.x + 490, y: O.y + 250 }, { x: O.x, y: O.y + 250 }]);
+    const fx0 = O.x + 560, fy0 = O.y, wx0 = O.x, wy0 = O.y + 470;
+    const fz = mk('fields', [{ x: fx0, y: fy0 }, { x: fx0 + 550, y: fy0 }, { x: fx0 + 550, y: fy0 + 400 }, { x: fx0, y: fy0 + 400 }]);
+    const wz = mk('woods', [{ x: wx0, y: wy0 + 50 }, { x: wx0 + 220, y: wy0 }, { x: wx0 + 260, y: wy0 + 300 }, { x: wx0 + 40, y: wy0 + 360 }]);
     t1 = performance.now(); W.edFill([v, fz, wz]); const fillMs = Math.round(performance.now() - t1);
     const of = z => E().filter(e => e.gid && e.gid === z.fill), vm = of(v), tw = W.edTwinZone(v);
     out.fill = { ms: fillMs, houses: vm.filter(e => e.t === 'house').length, conf: W.edConflicts(vm, vm).map(q => q.msg), twin: tw ? of(tw).filter(e => e.t === 'house').length : 0,
                  fields: of(fz).filter(e => e.t === 'field').length, trees: of(wz).filter(e => e.t === 'tree').length };
     /* an area brush lays its trees no nearer each other than its gap, as one group */
     const ab = W.edToolById('agrove').t; W.edSetTool(ab); ED.brush.r = 70; const gap = W.edAreaSet(ab).gap, nb = E().length;
-    W.edAreaFill(ab, [{ x: 1100, y: 1650 }, { x: 1160, y: 1680 }, { x: 1220, y: 1700 }]);
-    const br = E().slice(nb).filter(e => e.t === 'tree' && e.x < 1400); let near = 1e9;
+    /* and only the stroke's own trees: the twin across the line is a group of its own */
+    const abx = O.x + 720, aby = O.y + 640;
+    W.edAreaFill(ab, [{ x: abx - 60, y: aby - 30 }, { x: abx, y: aby }, { x: abx + 60, y: aby + 20 }]);
+    const br = E().slice(nb).filter(e => e.t === 'tree' && Math.hypot(e.x - abx, e.y - aby) < 200); let near = 1e9;
     for (let i = 0; i < br.length; i++) for (let j = i + 1; j < br.length; j++) near = Math.min(near, Math.hypot(br[i].x - br[j].x, br[i].y - br[j].y));
     W.edSetTool(null);
     out.brush = { n: br.length, gap, near: Math.round(near), grouped: br.length > 1 && br.every(e => e.gid && e.gid === br[0].gid) };
