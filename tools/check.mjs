@@ -5961,11 +5961,12 @@ for (const device of TARGETS) {
      stand in. Before any of that one field-gun round goes against the face, because a
      building that comes down on the first hole in it is as wrong as one that never does. --- */
   const wreck = await (async () => {
-    /* on Ortona, because a terrace is what this is about and the Gothic Line is a valley
-       floor with two farms on it */
+    /* on Saint-Lô, because a terrace is what this is about and Omaha is a beach with a
+       bocage behind it. It was Ortona until Ortona was taken out of the game; the town houses
+       here are Norman, and thirteen of them stand far enough from anything else to shell */
     await reload(page);
     await page.evaluate(() => {
-      window.G.mapData = window.defaultMapData();
+      window.G.mapData = window.stloMapData();
       window.startGame('us', 1, 'vp', true, true);
     });
     await page.waitForFunction(() => window.SCENE && window.SCENE.ready, null, { timeout: 180000 });
