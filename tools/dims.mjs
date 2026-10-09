@@ -144,7 +144,9 @@ const REAL = {
   sv_su76:   { name: 'SU-76M',              len: 4.966, gun: 5.00,   wid: 2.715, hgt: 2.10,
                clear: 0.30 },   /* the published 4.966 m of hull, 5.00 m with the gun forward, 2.715 m over the
                fenders, 2.10 m to the top of the walls and 300 mm of clearance. The drawing it is laid over
-               (tools/ref/sv_su76.json) agrees with the height and the length over the tracks at one scale */
+               (tools/ref/sv_su76.json) agrees with the height and the length over the tracks at one scale, and
+               carries the fender guards out past the sprocket and the idler, so the card reads 5.28 m over the
+               guards, which is what the ZSU-37 on the same chassis is published at */
   sv_zsu37:  { name: 'ZSU-37',              len: 5.29,  gun: 5.29,   wid: 2.745, hgt: 2.18,
                clear: 0.30 },   /* the published 5.29 m of hull, 2.745 m over the fenders, 2.18 m to the top of
                the box and 300 mm of clearance; the gun laid level does not reach the nose. The drawing it is laid

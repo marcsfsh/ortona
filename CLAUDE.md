@@ -7424,6 +7424,130 @@ because the round never goes through its front and the tank's high explosive nee
 work through a crew of seven behind a shield. A grenadier squad walking into it takes it every time in 12
 seconds without losing a man, because the gun is waiting for armour.
 
+**The SU-76M** (`sv_su76`, out of the Avtopark beside the BA-64B, 320 manpower, 65 fuel, 28 seconds, 12 of
+population, S) is the Red Army's light self-propelled gun: the 76 mm ZiS-3Sh in an open fighting compartment
+over the back of a lengthened T-70, 440 hit points, 35 mm of plate in front and 15 at the sides and the back
+(`ARM`, `cm` .66, which is where the walls begin on the box a round lands on), open above and taking 1.4 times
+a burst (`blastRes`), 96 of speed and 440 of sight. It carries the ZiS-3's two rounds: the AP round, 125 every
+2.6 seconds out to 440 with 98 mm of penetration, which waits for armour (`atOnly`), and the HE round, 90 over a
+burst of 45 out to 480. The gun traverses fifteen degrees either way (`arc` .52) and the hull turns for
+anything wider, and it has no upgrades. Those are the row's numbers as it was pasted; the accuracies and the
+suppression of the two rounds are the ZiS-3's. `bcls: 'med'` reads it as a tank to a build preference, because
+read off its plate it would count as an armoured car.
+
+It is laid over a four-view of it (`tools/ref/sv_su76.json`) with no scale on the sheet: the side view agrees
+with the published 2.10 m of height and 4.97 m over the tracks at 85.2 px/m, and the plan across, the front and
+the rear with the published 2.715 m over the fenders at 87.3. The fighting compartment stands a little to the
+left of the middle and the gun further left again, as every view of the sheet has them. Laid over it, the running gear, the hull,
+the compartment and the gun with its shield agree with the drawing to about a line width in all four views. The
+drawing carries the fender guards out past the sprocket and the idler, so `tools/dims.mjs` reads it at 5.28 m
+over them against the published 4.966 m of hull, which is the length the ZSU-37 on the same chassis is published
+at.
+
+What it is built of (`sm` and `SMG`, `SMH`, in the T-20's 4BO green): six road wheels a side, each two pressed
+discs on rubber tyres either side of the guide horn on an arm trailing from a pivot ahead of it (`smWheel`),
+three return rollers, the sprocket low in front with its two toothed rings (`smSprocket`) and the idler behind
+at the height of the wheels on its crank (`smIdler`), and a track of pressed shoes with a grouser across the face
+(`smLink`). **The chassis is a builder of its own** (`smChassis`), because the ZSU-37 below is built on it: the
+running gear, the tub up to the floor, the nose and the glacis in one long plate up to the engine deck, the deck
+as far back as a station it is handed, the back plate where it is told, the hull's sides lined inside round the
+fighting compartment, and the fenders with the guards turned down over the sprocket and the idler. On the SU-76M
+(`smHull`) the deck carries a hatch over each engine and the radiator's louvred housing on the right, the two
+silencers lie side by side on the right fender behind, two boxes and the headlamp are on the left with the tow
+cable along it, and the back plate carries the grille over the engines' outlet, the T-bar, the pintle and the
+towing eyes. The fighting compartment (`smCasemate`) is two walls leaning in from the deck, level along the top
+over the front and falling to a low rear wall with the door in it, the front plate laid back with the opening the
+shield stands in, a ledge under the left wall where the compartment stands out past the hull, a rail over the
+open back, and inside the rounds racked along the right wall and across the back and the wireless on the left,
+all of it lined in the white of the interiors and left out of the bake (`smPlate`). The ZiS-3Sh is the mount
+(`smMount`), built about the pivot it turns on: the tube with the ZiS-3's slotted brake, the tall housing over the
+recoil gear run forward of the shield, the curved shield (an `m4Sweep` profile run from the top down) that stands
+forward of the front plate and closes its opening, and behind it the cradle, the breech ring and its block, the
+guard behind it, the sight and the two handwheels on the gunner's side, the cheeks and the pedestal down to the
+floor. The gunner stands at the left of the breech and turns with it; the loader with a round in his hands and
+the commander at the back on the right ride on the hull with their heads and shoulders over the walls, all three
+in the padded helmet (`smMen`), and the commander's is the eye in the periscope (`VIN.sv_su76`, off the hull).
+
+**And the brain picks its round as it does a gun's.** `flak.round` read a crew-served piece and nothing else, so
+a vehicle that carries HE as well as AP went on waiting for armour with men in front of it; it reads anything
+with `wUp.he` now, so the brain on the Soviet slot puts HE up on the SU-76M with only men in front of it and AP
+up when a tank comes into reach. The AP and HE cards were already offered off the weapon, so the player has them
+on the vehicle. It has a rung on the brain's ladder at 280 seconds, after the ZiS-2s, and `aiCutLadder` reads it
+as a medium.
+
+On the duel card the row's numbers make it a gun for the light half of the 352nd. Over twenty-four runs head on
+at 328 it takes the Panzer IV 21 per cent of the time, leaving it at 0.45, where the ZiS-3 with the same gun sited
+at the same range takes it every time over twelve: the towed gun is a crew behind a shield that the tank has to
+find, and a hit on it takes one man, where the SU-76M is found at once and three or four of the Panzer IV's
+rounds finish it against the five or six it needs. Its AP round goes through the Panzer IV's front about two
+times in three at that range. Over twelve runs a row it takes the Puma every time in under ten seconds and the 251
+every time in six untouched; the StuH 42 takes it eleven times in twelve, a Panther every time head on and caught
+side-on, and a Pak 38 sited at 361 every time in under ten seconds. On the HE round it takes the grenadier squad
+every time in 15.5 seconds untouched and the Knight's Cross Holders every time in 13 seconds, left at a quarter;
+on the AP round a grenadier squad and the gun ran to the card's limit of 150 seconds with neither hurt, because
+the gun waits for armour and nothing in the squad opens 35 mm.
+
+**The ZSU-37** (`sv_zsu37`, out of the Avtopark beside the SU-76M, 340 manpower, 70 fuel, 28 seconds, 12 of
+population, Q) is the Red Army's self-propelled anti-aircraft gun: the 37 mm 61-K on its own carriage in an open
+box over the back of the SU-76M's chassis, 460 hit points, 15 mm of plate in front and 10 at the sides and the
+back (`ARM`), open above (`blastRes` 1.25, as the T-20 and the BA-64B are), 90 of speed and 350 of sight. Its
+weapon is a burst of 42 every 0.4 seconds out to 360 with 45 mm of penetration (`w.mm`), an automatic cannon
+(`w.auto`, so the eye and the ear read it as the Wirbelwind's and the burst is five rounds), with a suppression of
+.10 capped at .95, which is the row's "very high suppression" written as the M16's. The gun goes all the way round
+and the vehicle has no upgrades. Those are the row's numbers as it was pasted; the row gives no blast factor and
+1.25 is the one the army's other open vehicles carry.
+
+It is laid over a four-view of it (`tools/ref/sv_zsu37.json`) with no scale on the sheet. Its six road wheels
+agree with the SU-76M drawing's at 73.6 px/m along the side and the plan, the front with the same track centres
+at 78.8 across and the rear at 75.2, both read at 74.5 up, and at those scales the sheet stands the box 2.19 m
+off the ground against a published 2.18 m and the hull is 5.28 m long against 5.29. **The chassis is the SU-76M's, and
+the two drawings disagree about it**: on the same road wheels this sheet draws the hull, the fenders and the
+return rollers about 0.9 units higher and the idler 1.5 higher and smaller. The SU-76M's drawing was taken for the
+chassis, the ZSU-37's views are pinned at the deck rather than the ground, and what this sheet draws on top of
+the chassis is laid off this sheet along the vehicle and across it, so on the SU-76M's chassis the box stands
+2.13 m. Laid over it on those terms, the box, the slot, the frames, the turntable and the gun agree with the
+drawing to about a line width.
+
+What it is built of (`zk` and `ZKH`): `smChassis` carried further back, with the deck ending at the front of the
+box and the back plate three units behind the SU-76M's; over the fenders behind the engine the hull is widened out
+into sponsons (`zkSponsons`), louvred along the engine and in three panels behind it, with their floors where the
+guard turns down over the idler; and the deck over the back is laid round the hole the box's well opens into
+(`zkDeck`). On top of it (`zkHull`) the oval cover over the glacis with the driver's hatch, the radiator's
+housing on the right of the engine deck, the silencers on the right fender ahead of the sponson, the box and the
+headlamp on the left, and the stowage box on its legs on the back plate. The box (`zkBox`) is thin plate standing
+straight up off the deck round an outline pointed at the front, widest at the shoulders and cut off at the back
+corners (`ZKH.box`, the right side; the left is its mirror), with a low plate across the point under the slot the
+barrel fires through, a post either side of the slot, a braced frame leaning against each front wall with a stay
+down to it, the rail round the back on its posts, and inside the racks of clips braced against the walls at the
+back corners and the bins under them, all of it lined and left out of the bake. The turntable is the mount
+(`zkMount`): the platform the crew stand on, the pedestal and the carriage, the cheeks the trunnions turn in, the
+two layers' seats on their arms either side with their backs and footrests, a handwheel in front of each and the
+ring sight in front of the right-hand one. The two layers sit and the loader stands behind the gun, and all three
+turn with it; the commander stands at the back of the box on the right and his is the eye (`zkMen`,
+`VIN.sv_zsu37`).
+
+**The gun is laid up over the walls whenever it is turned off the slot.** Built level, as the drawing has it, the
+61-K's bore is six units under the top of the box, so a gun laid level anywhere but through the slot in the point
+fires into its own walls. The gun is an elevating part on the mount (`VMODEL.elv`, `zkGun`, thin to the bake),
+pitched about its trunnions by `u.el`, and two doors were opened for it. **`def.wallEl`** is the slot's
+half-width in radians and the elevation that clears the walls, `[.09, .92]`: the vehicle's update lays the gun up
+to the second whenever the mount is turned more than the first off the nose, and back down to level when it comes
+back into the slot, at .9 radians a second. **`VMODEL.elMuz`** names the elevating part the muzzle is read off, so
+`gunMuzzle` puts the flash and the tracer at the end of the laid barrel through `elvPt`, the point the draw puts
+it, rather than at the end of a level one six units down inside the box. The Calliope's rack and the BM-13N's
+rails are laid up on a mission and have no muzzle; this is the first elevating part that fires direct. Nothing
+about the combat reads the elevation: a round laid up over the wall goes where a level one would, which is a
+gun firing at men on the ground at fifty degrees, and is drawn so that the barrel at least comes out of the box.
+
+It has a rung on the brain's ladder at 300 seconds, after the SU-76M, and `aiCutLadder` reads it as flak. On
+the duel card it strips men out of the open and opens anything with thin plate, and it has no business near a
+tank. Over twelve runs a row it takes the grenadier squad every time in 13 seconds untouched, where the M16 on the
+same afternoon takes it in 8.8, the MG 34 team every time in six, the KS 750 every time in under five and the 251
+every time in 5.3, all without losing a hit point, and the Knight's Cross Holders every time with a third of
+itself left after their bundles. The 234/1 is an even fight, 58 per cent, because its 2 cm opens 15 mm as readily
+as the 37 mm opens the car; the Wirbelwind takes it every time with three quarters of itself left, and the Panzer
+IV every time untouched.
+
 **The B-4** (`sv_b4`, dug by the Sapery as `WORKS.howb4`, 520 manpower, 180 fuel, 90 seconds, 14 of
 population, 9) is the Red Army's heavy battery: the 203 mm howitzer M1931 on its tracked carriage with the
 box trail, seven men of 62 hit points and 300 of sight, dug where it will stay. It fires only on a mission,
