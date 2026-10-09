@@ -178,6 +178,24 @@ for (const device of TARGETS) {
      hundred and eighteen units away. Measured on a real battle, near half of the
      player's own men stand further from their marker than a click could reach, so a
      player who clicked what he could see selected nothing. --- */
+  /* and men to click: nobody gives the player's side an order in these three minutes, and on
+     Saint-Lô on a phone the German brain had killed every man of it outside a building by now,
+     which left the row nobody to click. Two sections walked a short way are men on the move,
+     which is what the row is about. */
+  const staged = await page.evaluate(() => {
+    const live = window.G.units.filter(u => !u.dead && !u.inside && u.models && u.side === window.G.side)
+      .reduce((n, u) => n + u.models.filter(m => m.alive).length, 0);
+    if (live >= 6) return 0;
+    const own = window.G.own, hq = window.hqOf(own), F = window.frontOf(window.G.side);
+    for (let i = 0; i < 2; i++) {
+      const al = (i - .5) * 120, sp = window.nearestFree(hq.x + F.x * 160 - F.y * al, hq.y + F.y * 160 + F.x * al);
+      const u = window.spawnUnit(own, window.G.side === 'us' ? 'am_rifle' : 'hr_gren', sp.x, sp.y, 0);
+      const to = window.nearestFree(sp.x + F.x * 220, sp.y + F.y * 220);
+      window.orderMove(u, to.x, to.y, false);
+    }
+    return 2;
+  });
+  if (staged) await fastForward(page, 6);
   const pick = await page.evaluate(() => {
     let men = 0, far = 0, hit = 0, worst = 0;
     window.G.units.forEach(u => {
@@ -194,7 +212,8 @@ for (const device of TARGETS) {
   });
   ok('a click on a man selects his section, wherever he has walked to',
      pick.men > 0 && pick.hit === pick.far,
-     `${pick.men} men, ${pick.far} of them past a click's reach of their marker, ${pick.hit} still selectable; furthest ${pick.worst}`);
+     `${pick.men} men${staged ? ' (of ' + staged + ' sections put down, the battle having left none)' : ''}, ` +
+     `${pick.far} of them past a click's reach of their marker, ${pick.hit} still selectable; furthest ${pick.worst}`);
 
   /* --- the dead, and what it costs to draw them. The list runs to two hundred and
      twenty and every one of them used to be drawn every frame wherever it lay, off
@@ -1091,7 +1110,13 @@ for (const device of TARGETS) {
 
   /* --- the periscope: a look from a unit, turned by a drag, and back --- */
   const pov = await page.evaluate(() => {
-    const u = window.G.units.find(u => u.side === window.G.side && !u.dead && u.cat !== 'veh') || window.G.units.find(u => u.side === window.G.side && !u.dead);
+    let u = window.G.units.find(u => u.side === window.G.side && !u.dead && u.cat !== 'veh') || window.G.units.find(u => u.side === window.G.side && !u.dead);
+    /* a section of his own when the battle has left him nothing to look from, which on
+       Saint-Lô on a phone it can: nobody gives his side an order in the first battle */
+    if (!u) {
+      const hq = window.hqOf(window.G.own), F = window.frontOf(window.G.side), sp = window.nearestFree(hq.x + F.x * 160, hq.y + F.y * 160);
+      u = window.spawnUnit(window.G.own, window.G.side === 'us' ? 'am_rifle' : 'hr_gren', sp.x, sp.y, 0);
+    }
     if (!u) return { ok: false };
     window.select([u], false);
     document.getElementById('tPov').click();
