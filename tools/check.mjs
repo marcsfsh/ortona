@@ -10644,7 +10644,7 @@ for (const device of TARGETS) {
              find, found, placed, mine, pal, lineGone, selKept, toolDown, modes, cols, rowsSmall,
              saved: document.getElementById('edsaved').textContent };
   });
-  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 2 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
+  ok('the editor opens on three ways to start', chooser.cols === 3 && chooser.tpl === 5 && chooser.dup === 3 && !chooser.on && chooser.small === 0 && chooser.hScroll <= 0,
      `${chooser.tpl} templates, ${chooser.dup} maps to copy, ${chooser.checked} controls with ${chooser.small} small, editor ${chooser.on ? 'ALREADY OPEN' : 'not yet open'}`);
   ok('map editor opens on the copy, with no page of instructions over it', ed.on && !ed.helped && ed.named === 'Saint-Lô (copy)',
      `${ed.cats} categories, ${ed.tools} tools, named "${ed.named}", ${ed.helped ? 'panel ' + ed.helped + ' OPEN' : 'nothing over the map'}, "${ed.saved}"`);
