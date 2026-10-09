@@ -2308,6 +2308,26 @@ along x or a profile about z, which is what the stacks, the load and the church'
 slope with a vertex twice over (a hexagon with its hip corners at the ridge) draws inside out and
 black, so a plain gable is laid as a quad.
 
+**The third stage lays them** (in `elbeMapData`). A farm is four buildings round a cobbled yard
+(`farm`, `paved` of kind `yard`): the house on the street side, the barn across the yard and a stable
+down each side. The stables stand outside the ends of the house and the barn, corner to corner with
+them, so no two buildings face each other across a slot the map check would name, and the house is
+set over toward one stable so the other end of it is a gateway onto the street. `farms` lays a farm
+and its twin on the other half on the same footprint with its dressing drawn off other dice (`DRESS`:
+the dung heap, a wagon, a cart, a lime by the house, apple trees, a haystack; the woodpile against the
+barn is solid and so is in the same place on both). `bld`, `feat` and `tree` do the same for a single
+building, a feature and a tree. Each village is four farms either side of the street on either side of
+the headquarters road, with a cottage and a smithy on the north side and the church and the inn on
+the south, the green between them where the avenue leaves the street. The outlying farms by the flank
+headquarters carry those two flags in their yards now (the Vorwerk at 430, 552 and the Schäferei at
+3370, 552), each with a long shed below the road. On the forward row the west flank has a field barn,
+a straw stack, the stone cross and a lime at the junction, the east flank two straw stacks, two
+haystacks and a hay wagon, and the avenue two lodges and the limes down to the park gate. On the
+midline: the two post mills either side of the midline track in the west, Gut Rosswitz in its park in
+the middle (the manor across the midline facing the west gate, its two barns north and south of the
+cobbled courtyard east of it, where the flag is), and the two field barns in the east. 71 buildings,
+30 solid features and 52 trees.
+
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with
 A* in `findPath`. Squads are several models moving in formation around one unit
 position; `updateModels` animates the individual soldiers. `tools/move.mjs` is the card

@@ -6195,9 +6195,9 @@ function elbeMapData() {
      straw stacks), and the three victory flags on the midline. The manor's is in the
      courtyard of its farm, east of the house, which will stand across the midline. ---- */
   var F = [
-    ['g1', 520, 560, 'mp', 'ger', 'The Vorwerk', ['g2', 'g4']],
+    ['g1', 430, 552, 'mp', 'ger', 'The Vorwerk', ['g2', 'g4']],
     ['g2', 1900, 760, 'mp', 'ger', 'Wendelsdorf', ['g1', 'g3', 'g5']],
-    ['g3', 3280, 560, 'fuel', 'ger', 'The Schäferei', ['g2', 'g6']],
+    ['g3', 3370, 552, 'fuel', 'ger', 'The Schäferei', ['g2', 'g6']],
     ['g4', 560, 1000, 'mp', null, 'The wayside cross', ['g1', 'g5', 'm1']],
     ['g5', 1900, 1090, 'fuel', null, 'The lime avenue', ['g2', 'g4', 'g6', 'm2']],
     ['g6', 3240, 1000, 'mp', null, 'The straw stacks', ['g3', 'g5', 'm3']]
@@ -6213,6 +6213,116 @@ function elbeMapData() {
   E.push({ t: 'sector', id: 'm1', x: 760, y: MID, type: 'vp', owner: null, label: 'The windmill', nb: ['g4', 'a4', 'm2'] });
   E.push({ t: 'sector', id: 'm2', x: 2080, y: MID, type: 'vp', owner: null, label: 'Gut Rosswitz', nb: ['m1', 'm3', 'g5', 'a5'] });
   E.push({ t: 'sector', id: 'm3', x: 3040, y: MID, type: 'vp', owner: null, label: 'The field barn', nb: ['m2', 'g6', 'a6'] });
+
+  /* ---- the farms. A Saxon farm is four buildings round a yard: the house on the street
+     side, the barn across the yard from it and a stable down each side, the yard cobbled
+     with the dung heap in the middle of it. Laid here so that no two buildings face each
+     other across a slot: the stables stand outside the ends of the house and the barn,
+     corner to corner with them, and the house is set over toward one stable so that the
+     other end of it leaves a gateway onto the street a section can walk through. `fr` is
+     which way the street is (+1 toward +y), `fx` which end the gateway is at. Every farm is
+     laid twice, its twin on the other half on the same footprint, and `d` is the dice its
+     dressing is drawn with, so the two halves are the same ground and not the same farms. */
+  var DRESS = ['dung', 'woodpile', 'wagon', 'lime', 'apple', 'hay', 'cart'];
+  function dice(d, n) { var v = Math.sin(d * 37.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
+  function farm(cx, cy, fr, fx, d, o) {
+    o = o || {};
+    var hw = o.hw || 120, bw = o.bw || 150, bd = o.bd || 70, sx = 107, k;
+    var hx = cx - fx * 20 + fx * (120 - hw) / 2;
+    E.push({ t: 'nhouse', style: 'sxhouse', x: hx, y: cy + fr * 81, w: hw, h: 66, s: dice(d, 1), flip: fr > 0 ? 1 : 0 });
+    E.push({ t: 'nhouse', style: o.barn || 'sxbarn', x: cx + (o.bx || 0), y: cy - fr * (48 + bd / 2), w: bw, h: bd, s: dice(d, 2), flip: dice(d, 3) < .5 ? 1 : 0 });
+    [-1, 1].forEach(function (sg) {
+      if (o.one === sg) return;
+      E.push({ t: 'nhouse', style: 'sxstable', x: cx + sg * sx, y: cy, w: 56, h: 96, s: dice(d, 4 + sg), flip: sg < 0 ? 1 : 0 });
+    });
+    E.push({ t: 'paved', kind: 'yard', x: cx - 79, y: cy - 48, w: 158, h: 96 });
+    E.push({ t: 'feature', look: 'yardgate', x: cx + fx * 60, y: cy + fr * 100, w: 30, h: 6, a: Math.PI / 2, solid: 0, s: dice(d, 6) });
+    /* the dressing: the heap in the yard, the logs stacked against the barn, a lime by the
+       house, a cart or a wagon left standing; solid things on the same footprint on both
+       halves, the rest drawn off the farm's own dice */
+    E.push({ t: 'feature', look: 'woodpile', x: cx - fx * 30, y: cy - fr * 38, w: 36, h: 8, s: dice(d, 7) });
+    for (k = 0; k < 3; k++) {
+      var what = DRESS[Math.floor(dice(d, 10 + k) * DRESS.length)];
+      if (what === 'dung') E.push({ t: 'feature', look: 'dung', x: cx + fx * 6, y: cy + fr * 10, w: 34, h: 24, solid: 0, s: dice(d, 20) });
+      else if (what === 'lime') E.push({ t: 'tree', kind: 'lime', x: hx - fx * (hw / 2 + 24), y: cy + fr * 90, r: 16 + dice(d, 21) * 4, s: dice(d, 22) });
+      else if (what === 'apple') { E.push({ t: 'tree', kind: 'apple', x: cx + 160 * fx, y: cy + fr * 30, r: 13, s: dice(d, 23) }); E.push({ t: 'tree', kind: 'apple', x: cx + 160 * fx, y: cy - fr * 30, r: 12, s: dice(d, 24) }); }
+      else if (what === 'hay') E.push({ t: 'feature', look: 'hay', x: cx - fx * 160, y: cy - fr * 20, w: 24, h: 24, solid: 0, s: dice(d, 25) });
+      else if (what === 'wagon') E.push({ t: 'feature', look: 'haywagon', x: cx + fx * 12, y: cy - fr * 12, w: 56, h: 30, solid: 0, a: .3, s: dice(d, 26) });
+      else if (what === 'cart') E.push({ t: 'cart', x: cx - fx * 40, y: cy + fr * 14, a: dice(d, 27) * TAU });
+    }
+  }
+  function farms(cx, cy, fr, fx, d, o) { farm(cx, cy, fr, fx, d, o); farm(cx, my(cy), -fr, fx, d + 50, o); }
+  /* a building laid twice, its twin dressed off other dice */
+  function bld(style, x, y, w, h, d, flip) {
+    E.push({ t: 'nhouse', style: style, x: x, y: y, w: w, h: h, s: dice(d, 1), flip: flip ? 1 : 0 });
+    E.push({ t: 'nhouse', style: style, x: x, y: my(y), w: w, h: h, s: dice(d + 50, 1), flip: flip ? 0 : 1 });
+  }
+  function feat(look, x, y, w, h, d, solid, a) {
+    [[y, d], [my(y), d + 50]].forEach(function (q) {
+      var e = { t: 'feature', look: look, x: x, y: q[0], w: w, h: h, s: dice(q[1], 9) };
+      if (solid === 0) e.solid = 0;
+      if (a) e.a = q[0] > MID ? -a : a;
+      E.push(e);
+    });
+  }
+  function tree(kind, x, y, r, d) {
+    E.push({ t: 'tree', kind: kind, x: x, y: y, r: r, s: dice(d, 3) });
+    var k2 = kind === 'lime' && dice(d, 4) < .3 ? 'oak' : kind;
+    E.push({ t: 'tree', kind: k2, x: x + Math.round((dice(d, 5) - .5) * 10), y: my(y) + Math.round((dice(d, 6) - .5) * 10), r: r, s: dice(d, 7) });
+  }
+
+  /* Wendelsdorf and Schönfeld: two farms either side of the street on each side of the
+     road down from the headquarters, a cottage and a smithy on the north side, the church
+     and the inn on the south, the green between them where the avenue leaves the street */
+  farms(1600, 552, 1, 1, 1, { bd: 66 });
+  farms(2200, 552, 1, -1, 2, { bd: 66, hw: 110 });
+  farms(1560, 848, -1, -1, 3, {});
+  farms(2200, 848, -1, 1, 4, { hw: 130, barn: 'sxbarn' });
+  bld('sxhouse', 1812, 640, 80, 56, 5, 1);
+  bld('sxstable', 1990, 640, 80, 56, 6, 1);
+  bld('sxchurch', 1790, 840, 120, 44, 7, 0);
+  bld('sxhouse', 1980, 790, 100, 70, 8, 0);
+  tree('lime', 1860, 905, 20, 9); tree('lime', 1938, 850, 18, 10);
+  feat('stonecross', 1855, 760, 10, 8, 11, 0);
+
+  /* the outlying farms by the headquarters, the Vorwerk and the Schäferei (the Neuhof and the
+     Lindenhof on the other half), each with a long shed out in the field below the road */
+  farms(430, 552, 1, 1, 12, { bd: 66, hw: 110 });
+  farms(3370, 552, 1, -1, 13, { bd: 66 });
+  bld('sxfbarn', 430, 800, 140, 50, 14, 0);
+  bld('sxfbarn', 3370, 800, 150, 50, 15, 1);
+
+  /* the forward row: the field barn and the stone cross where the flank track meets the
+     mill track, the stacks by the other flank, and the lodges at the avenue's two sides with
+     the limes down it to the park gate */
+  bld('sxfbarn', 480, 920, 100, 56, 16, 0);
+  feat('stonecross', 600, 985, 10, 8, 17, 0);
+  feat('straw', 470, 1062, 80, 34, 18);
+  tree('lime', 588, 1035, 18, 19);
+  feat('straw', 3262, 935, 84, 34, 20);
+  feat('straw', 3320, 1062, 84, 34, 21);
+  feat('hay', 3205, 1062, 26, 26, 22);
+  feat('hay', 3365, 990, 24, 24, 23);
+  feat('haywagon', 3270, 1000, 56, 30, 24, 0, .3);
+  bld('sxhouse', 1810, 975, 60, 54, 25, 0);
+  bld('sxhouse', 1990, 975, 60, 54, 26, 1);
+  for (var ay = 1040; ay <= 1130; ay += 45) { tree('lime', 1864, ay, 16, 30 + ay); tree('lime', 1936, ay, 16, 31 + ay); }
+
+  /* the midline. The two mills on the west flank, Gut Rosswitz in its park, the manor
+     across the midline facing the west gate and its farm's two barns round the courtyard
+     east of it, and the field barns on the east flank */
+  feat('postmill', 790, 1310, 60, 60, 40);
+  feat('straw', 900, 1330, 80, 34, 41);
+  E.push({ t: 'nhouse', style: 'sxmanor', x: 1820, y: MID, w: 70, h: 160, s: .4 });
+  bld('sxbarn', 2080, 1288, 160, 64, 42, 0);
+  E.push({ t: 'paved', kind: 'yard', x: 1870, y: 1330, w: 300, h: 140 });
+  feat('haywagon', 2150, 1360, 56, 30, 43, 0, -.4);
+  [[1640, 1220], [1700, 1300], [1610, 1330], [2190, 1220], [1730, 1200], [1660, 1110 + 90]].forEach(function (t, i) {
+    tree(i % 2 ? 'oak' : 'lime', t[0], t[1], 18 + (i % 3) * 2, 44 + i);
+  });
+  bld('sxfbarn', 3040, 1315, 130, 60, 50, 0);
+  feat('straw', 2920, 1335, 80, 34, 51);
+  feat('hay', 3060, 1370, 26, 26, 52);
 
   E = baseOpen(E, null, 'elbe', 3800, 2800);
   return { name: 'Rosswitz', when: 'SAXONY · 25 APR 1945', version: 1, land: 'elbe', w: 3800, h: 2800,
@@ -24188,21 +24298,21 @@ function paintGround(t, DET) {
   /* ---- the squares: flagstone, laid in courses, with the flags that have been lifted
      out of it showing the bedding sand underneath ---- */
   G.paved.forEach(function (pv) {
-    var piazza = pv.kind === 'piazza';
-    t.fillStyle = piazza ? '#8d8571' : '#847c69';
+    var piazza = pv.kind === 'piazza', yard = pv.kind === 'yard';
+    t.fillStyle = piazza ? '#8d8571' : yard ? '#7d7362' : '#847c69';
     t.fillRect(pv.x, pv.y, pv.w, pv.h);
-    var cell = piazza ? 26 : 17, cellH = cell * .68;
+    var cell = piazza ? 26 : yard ? 9 : 17, cellH = cell * .68;
     for (var fy = pv.y, row = 0; fy < pv.y + pv.h; fy += cellH, row++) {
       var stag = (row % 2) * cell * .5;
       for (var fx = pv.x - stag; fx < pv.x + pv.w; fx += cell) {
         var tn = .5 + (noise2(Math.floor(fx), Math.floor(fy), 62) - .5) * .5;
-        var gv = Math.round((piazza ? 128 : 116) * tn + 52);
+        var gv = Math.round((piazza ? 128 : yard ? 96 : 116) * tn + (yard ? 44 : 52));
         t.fillStyle = 'rgb(' + (gv + 9) + ',' + (gv + 2) + ',' + (gv - 14) + ')';
         t.fillRect(Math.max(fx, pv.x) + .6, fy + .6, Math.min(cell, pv.x + pv.w - fx) - 1.4, Math.min(cellH, pv.y + pv.h - fy) - 1.4);
       }
     }
     /* flags lifted out by the shelling: the bedding sand, and the edge of the hole */
-    var gone = Math.round(pv.w * pv.h / 3400);
+    var gone = Math.round(pv.w * pv.h / (yard ? 12000 : 3400));
     for (var q = 0; q < gone; q++) {
       var bx = pv.x + srange(0, pv.w), by = pv.y + srange(0, pv.h), bw = srange(10, 34);
       t.fillStyle = 'rgba(118,104,80,' + (.4 + srand() * .34).toFixed(2) + ')';
