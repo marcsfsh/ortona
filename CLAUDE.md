@@ -2703,7 +2703,7 @@ round with it.
 
 Measured: every model turns the wheels its drawing has, both sides together (22 on the M4A1, 28
 on the Panzer IV with its rollers, 9 a side on the 251 counting its front wheel, 3 on the KS 750,
-none of the spares), and on all twenty belts the bottom run goes back and the top run forward. A
+none of the spares), and on all twenty-four belts the bottom run goes back and the top run forward. A
 Sherman driven 209.3 units rolled both tracks 209.2, and turned half a radian on the spot ran them
 6.54 and -6.54 against 6.54 wanted. The running gear is most of a tracked vehicle's vertices (86,040
 of 121,491 on the M4A1), so the attribute is packed in shorts: eight bytes a vertex of it.
