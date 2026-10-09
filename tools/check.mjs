@@ -6086,6 +6086,14 @@ for (const device of TARGETS) {
       if (Q) { for (const c of Q.fire) Q.heat[c] = 0; Q.fire.length = 0; Q.sumH = 0; }
     });
     await fastForward(page, 12);
+    /* and then a moment when nothing is in the air: a shelled house goes on shedding stone from
+       its cracked cells once a second (`frCrumble`), so on Saint-Lô's big houses a pair of stones
+       was still falling at the twelfth second with the fire out. Up to ten seconds more, and the
+       row says how long it waited. */
+    let waited = 0;
+    while (waited < 10 && await page.evaluate(() => window.G.debris.length + window.G.fall.length > 0)) {
+      await fastForward(page, .5); waited += .5;
+    }
     /* and one drawn frame, because the house's own buffer is uploaded in the draw: fast
        forward stubs render() out */
     await frames(page, 2);
@@ -6113,7 +6121,7 @@ for (const device of TARGETS) {
       window.rebuildGrid();
       return st;
     });
-    return { ...put, hole, air, down };
+    return { ...put, hole, air, down, waited };
   })();
   ok('a field-gun round against a house opens a hole in it and leaves it a house',
      !!wreck && wreck.up.can && wreck.hole.cut && wreck.hole.gone >= 1 && wreck.hole.left > 90 &&
@@ -6140,7 +6148,8 @@ for (const device of TARGETS) {
      wreck.down.settled > 40 && wreck.down.vol + wreck.down.lost >= wreck.down.made * .97 &&
      wreck.down.mound > 3 && wreck.down.stand > 1 && wreck.down.heap > 0,
      wreck ? `${wreck.air} stones in the air at once and ${wreck.down.bodies} pieces fell whole; ` +
-             `${wreck.down.settled} stones settled (${wreck.down.air} still in the air, ${wreck.down.fall} pieces still falling), ` +
+             `${wreck.down.settled} stones settled (${wreck.down.air} still in the air, ${wreck.down.fall} pieces still falling, ` +
+             `${wreck.waited ? 'after ' + wreck.waited + ' s more' : 'at the twelfth second'}), ` +
              `${wreck.down.vol} units of stone lying and ${wreck.down.lost} ` +
              `let go by the ring against ${wreck.down.made} thrown; heap ${wreck.down.mound} deep, ` +
              `a man in the middle of it stands ${wreck.down.stand} over the floor, the heap drawn in ${wreck.down.heap} vertices`

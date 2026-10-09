@@ -1449,7 +1449,10 @@ knocked flat that still stops a boot and still stops an eye is the one fault her
 screenshot would call a success. The third counts the stone: everything the cells threw has
 to be lying in blocks and fill or let go by the ring, nothing may still be moving, at least
 one piece has to have fallen whole, the heap has to be deep, a man in the middle of it has to
-stand on it, and it has to be drawn. Then four more. A burst is fired at men on open ground at
+stand on it, and it has to be drawn. It puts the house's fire out before the stone settles and
+waits, up to ten seconds more, for a moment with nothing in the air, because a 240 through the
+roof sets a house alight and a shelled house goes on shedding stone from its cracked cells once
+a second: on Saint-Lô's three-storey houses a piece was still falling at the twelfth second. Then four more. A burst is fired at men on open ground at
 half its radius and one and a half, standing and lying down, past the splinters' reach, and
 across a house against the same distance in the open: the near men take more than the far, the
 far men something, the men lying down under seven tenths of it, nobody past the reach anything,
