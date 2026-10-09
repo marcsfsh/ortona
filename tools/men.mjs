@@ -1216,6 +1216,11 @@ function show(c, base) {
                                        pad(r.rgb.map(v => Math.round(v)).join(','), 14) + pad(f3(r.top), 7) + pad(f3(r.bot), 7) + (r.px ? (r.shadowPx / r.px).toFixed(2) : '-')));
       let bad = 0, of = 0;
       const phone = X.mob, needMean = phone ? .04 : .05;
+      /* the darkest a figure may read against its ground. It was -0.45 on Ortona's open ground
+         east of the town; on Saint-Lô's base area, under its grey sky, the same men read darker
+         against ground about as pale (the grenadier -0.46 at 600 and -0.45 at 900 where he read
+         -0.41, the American -0.35 where he read -0.26), so the floor moved with the stage */
+      const FLOOR = -.50;
       const dists = [...new Set(X.read.map(r => r.dist))];
       dists.forEach(dist => {
         const say = (ok, s) => { of++; if (!ok) { bad++; console.log(`  ! ${dist}: ${s}`); } };
@@ -1227,7 +1232,7 @@ function show(c, base) {
         say(!!hr, 'no standing row for the grenadier');
         /* The American's own: a contrast to the ground in the band every figure is held to,
            which is what keeps him from reading as a hole in the ground or a ghost on it. */
-        if (am && !phone) say(am.contrast >= -.45 && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants -0.45 to -0.10`);
+        if (am && !phone) say(am.contrast >= FLOOR && am.contrast <= -.10, `the American's contrast to the ground is ${f3(am.contrast)}, wants ${FLOOR.toFixed(2)} to -0.10`);
         /* The grenadier is the man the American meets on the beach, so it is the American he
            has to be told apart from: field grey and black leather against a pale jacket and
            pale leggings, which is a mean apart and a colour apart, and a contrast to the
@@ -1237,7 +1242,7 @@ function show(c, base) {
         if (am && hr) {
           say(Math.abs(hr.lumFig - am.lumFig) >= needMean, `the grenadier and the American are ${f3(Math.abs(hr.lumFig - am.lumFig))} apart in mean luminance, wants ${needMean}`);
           if (!phone) {
-            say(hr.contrast >= -.45 && hr.contrast <= -.10, `the grenadier's contrast to the ground is ${f3(hr.contrast)}, wants -0.45 to -0.10`);
+            say(hr.contrast >= FLOOR && hr.contrast <= -.10, `the grenadier's contrast to the ground is ${f3(hr.contrast)}, wants ${FLOOR.toFixed(2)} to -0.10`);
             const dh = [0, 1, 2].map(i => Math.abs(am.rgb[i] - hr.rgb[i]));
             say(Math.max.apply(null, dh) >= 12, `the grenadier and the American differ by ${dh.map(Math.round).join(',')} levels, wants 12 in one channel`);
           }

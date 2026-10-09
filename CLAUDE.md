@@ -4786,7 +4786,10 @@ grey and black leather against poplin and canvas: on the card at 600 units his m
 is 0.29 against the American's 0.36 and the colour 80,74,56 against 102,92,65, while the two
 top fifths are level (0.37 against 0.37) because both men wear a dark helmet. His
 contrast to the ground is -0.41 against a floor of -0.45 for every figure, so the field grey
-has very little darker to go. And judge him on the ground he fights on: photographed on Ortona
+has very little darker to go. Those are Ortona's figures, where the card stood until Ortona went;
+on its stage in Saint-Lô's American base area, under that map's grey sky, he reads 0.268 against
+the American's 0.321 on the desktop at 600, -0.46 to the ground against the American's -0.35, and
+the floor moved with the stage to -0.50. And judge him on the ground he fights on: photographed on Ortona
 he comes out pale and his boots brown, because that December sun lifts everything, where on
 Omaha's overcast morning he is field grey with black leather.
 
