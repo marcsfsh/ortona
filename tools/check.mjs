@@ -70,8 +70,11 @@ for (const device of TARGETS) {
   /* and with BOTH panels open, because that is where most of the buttons are and where
      every one added since has landed: the sides picker, the role strip, eleven stepper
      rows a panel and the eight the shopping weights carry. A control a thumb cannot hit
-     is a control that is not there. */
+     is a control that is not there. The panels live under the standing orders, which
+     fold up, so the fold is opened first and put back after. */
   const startTap = await page.evaluate(() => {
+    const fold = document.getElementById('morders'), shut = fold && !fold.classList.contains('open');
+    if (shut) document.getElementById('moret').click();
     document.getElementById('hopen').click(); document.getElementById('aopen').click();
     const small = [...document.querySelectorAll('#start button')]
       .filter(e => { const r = e.getBoundingClientRect(); return r.width > 0 && (r.width < 44 || r.height < 44); })
@@ -80,6 +83,7 @@ for (const device of TARGETS) {
     const n = document.querySelectorAll('#start button').length;
     const hScroll = document.documentElement.scrollWidth - window.innerWidth;
     document.getElementById('hopen').click(); document.getElementById('aopen').click();
+    if (shut) document.getElementById('moret').click();
     return { small, n, hScroll };
   });
   ok('every title-screen control is a touch target, panels open',
@@ -7798,7 +7802,8 @@ for (const device of TARGETS) {
      being that the block those rules live in was reached at all. Without the control a
      misspelt counter name passes the whole row by never moving. --- */
   await reload(page);
-  await page.click('.arty[data-arty="0"]');
+  /* under the standing orders, which fold up, so it is pressed rather than clicked at */
+  await page.evaluate(() => document.querySelector('.arty[data-arty="0"]').click());
   await deploy(page, { side: args.side || 'us', diff: args.diff === undefined ? 1 : Number(args.diff) });
   await fastForward(page, 480);
   const noArty = await page.evaluate(() => {

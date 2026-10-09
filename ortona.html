@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="description" content="A historically grounded isometric tactical battle set at Ortona, December 1943.">
-<title>Ortona — Tactical Command</title>
+<title>Omaha · Tactical Command</title>
 <style>
 :root{
   --field:#0a0c0a;
@@ -459,6 +459,134 @@ body.mob .briefgrid{grid-template-columns:1fr;max-width:390px}.brief{min-height:
   body.mob #cmds{width:238px}body.mob #mini{margin:0}body.mob .briefgrid{display:none}
 }
 
+/* ---------- the title screen: a Signal Corps field message ----------
+   The whole menu is one printed form with blue ruled boxes: OMAHA in the message box, a
+   header whose sending headquarters and date-time group follow the army and the ground,
+   the briefing typed in capitals on ruled lines, and each choice a printed box ticked with
+   a typed X. It redefines --ink, --dim and --line inside itself, because the handicap
+   panels colour their values with those and were written for light type on a dark page. */
+#start{--mblot:#4c5845;--mform:#f1ecdb;--mblue:#2e5d7d;--mblueL:rgba(46,93,125,.26);--mink:#25221c;--minkS:#5f5a4e;--mred:#b33a2c;
+  --mft:"American Typewriter","Courier Prime","Courier New",Courier,monospace;--mfp:"DIN Condensed","Arial Narrow","Roboto Condensed",sans-serif;
+  --ink:#25221c;--dim:#7a7464;--line:rgba(46,93,125,.55);--line2:#2e5d7d;
+  display:block;gap:0;padding:calc(14px + var(--safeT)) calc(10px + var(--safeR)) 0 calc(10px + var(--safeL));
+  color:var(--mink);font:14px/1.5 var(--mft);letter-spacing:0;
+  background:
+    radial-gradient(ellipse 80% 70% at 50% 30%,rgba(255,255,230,.10),transparent 70%),
+    radial-gradient(ellipse 120% 90% at 50% 120%,rgba(0,0,0,.42),transparent 60%),
+    repeating-linear-gradient(115deg,rgba(0,0,0,.035) 0 2px,transparent 2px 5px),
+    var(--mblot)}
+#start::before{content:none}
+#start .mform{position:relative;z-index:1;max-width:1340px;margin:0 auto;display:grid;grid-template-columns:minmax(0,1fr);gap:2px;
+  background:var(--mblue);border:2px solid var(--mblue);box-shadow:0 22px 46px rgba(0,0,0,.45)}
+#start .mast{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;background:var(--mblue)}
+#start .cell{background:var(--mform);padding:9px 12px;min-width:0}
+#start .cell.big{grid-column:1/-1}
+#start .cell em,#start .lbl{display:block;font:700 11px/1 var(--mfp);letter-spacing:.16em;color:var(--mblue);font-style:normal;margin-bottom:6px;padding-top:2px}
+#start .cell b{font:700 14px/1.3 var(--mft);letter-spacing:.04em}
+#start .pri{color:var(--mred)}
+#start .mt{font:700 44px/1 var(--mft);letter-spacing:.14em;color:var(--mink);margin:0}
+#start .ms{font-size:11.5px;letter-spacing:.08em;color:var(--minkS);margin-top:4px}
+#start .mtext{background-color:var(--mform);padding:12px 16px 16px;text-align:left;
+  background-image:repeating-linear-gradient(180deg,transparent 0 23px,var(--mblueL) 23px 24px);background-position:0 29px}
+#start .mtext .lbl{margin-bottom:5px}
+#start .mtext .eyebrow{font:12.5px/24px var(--mft);letter-spacing:.08em;color:var(--mink);margin:0}
+#start .gname{font:700 18px/24px var(--mft);letter-spacing:.1em;color:var(--mink);margin:0}
+#start .mtext .sub{font:13px/24px var(--mft);letter-spacing:.03em;text-transform:uppercase;max-width:none;text-align:left;color:var(--mink);margin:0}
+#start .brief{font:13px/24px var(--mft);letter-spacing:.03em;text-transform:uppercase;color:var(--mink);
+  min-height:0;padding:0;border:0;background:none;box-shadow:none}
+#start .brief b{display:inline;font:700 13px/24px var(--mft);letter-spacing:.03em;color:var(--mink);margin:0}
+#start .brief span{font:inherit;color:inherit}
+#start .keys{font:11px/24px var(--mft);color:var(--minkS);text-align:left;max-width:none;margin:4px 0 0}
+#start .keys b{font:700 10.5px var(--mft);color:var(--mink)}
+#start .mfields{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;background:var(--mblue);min-width:0}
+#start .msec{background:var(--mform);padding:12px 14px;min-width:0}
+#start .mh{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+#start .mh i{font-style:normal;display:grid;place-items:center;width:20px;height:20px;border:1.5px solid var(--mblue);color:var(--mblue);font:700 12px/1 var(--mfp);padding-top:2px}
+#start .mh b{font:700 13px/1 var(--mfp);letter-spacing:.18em;color:var(--mblue);padding-top:2px}
+#start .grp{margin-top:6px;min-width:0}
+#start .gl{font:700 11px/1 var(--mfp);letter-spacing:.16em;color:var(--mblue);padding-top:2px;margin-bottom:1px}
+#start .seg{display:flex;flex-wrap:wrap;gap:0 14px}
+/* every choice is a printed box and a typed word, and the chosen one carries an X */
+#start .gmap,#start .side,#start .pill,#start .team,#start .mode,#start .arty,#start .wall,#start .ctrl,#start .autoup{
+  display:inline-flex;align-items:center;justify-content:flex-start;gap:0;min-height:34px;min-width:0;padding:0 6px 0 0;margin:0;
+  border:0;border-radius:0;background:none;box-shadow:none;color:var(--minkS);font:14px/1.25 var(--mft);letter-spacing:.04em;text-align:left;flex:0 0 auto}
+#start .gmap::before,#start .side::before,#start .pill::before,#start .team::before,#start .mode::before,#start .arty::before,
+#start .wall::before,#start .ctrl::before,#start .autoup::before{content:"";position:static;flex:0 0 auto;display:grid;place-items:center;
+  width:17px;height:17px;margin:0 9px 0 0;border:1.5px solid var(--mblue);border-radius:0;background:none;box-shadow:none;
+  font:700 14px/1 var(--mft);color:var(--mink);inset:auto}
+#start .gmap.on::before,#start .side.on::before,#start .pill.on::before,#start .team.on::before,#start .mode.on::before,
+#start .arty.on::before,#start .wall.on::before,#start .ctrl.on::before,#start .autoup.on::before{content:"X"}
+#start .gmap.on,#start .side.on,#start .pill.on,#start .team.on,#start .mode.on,#start .arty.on,#start .wall.on,#start .ctrl.on,#start .autoup.on{
+  background:none;color:var(--mink);font-weight:700;border-color:transparent;box-shadow:none}
+#start .gmap:hover,#start .side:hover,#start .pill:hover,#start .team:hover,#start .mode:hover,#start .arty:hover,#start .wall:hover,#start .ctrl:hover,#start .autoup:hover{color:var(--mink)}
+#start .mmaps{display:grid;grid-template-columns:minmax(0,1fr);gap:0 16px}
+#start .gmap{width:100%}
+#start .gmap b{font-weight:inherit;letter-spacing:.06em}
+#start .gmap small{margin-left:auto;padding-left:8px;font:400 11.5px/1 var(--mft);color:var(--minkS)}
+#start .msides{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+#start .side{display:flex;align-items:flex-start;width:100%;padding:8px 0}
+#start .side::before{margin-top:1px}
+#start .side .sd{display:block;min-width:0}
+#start .side h3{font:inherit;letter-spacing:.04em;margin:0}
+#start .side p{font:400 12px/1.45 var(--mft);color:var(--minkS);margin-top:2px}
+/* the settings nobody changes from one battle to the next fold up under the line that
+   says what they are set to */
+#start .moret{display:flex;align-items:center;gap:10px;width:100%;min-height:34px;padding:2px 0;text-align:left;color:var(--mink)}
+#start .moret .mh{margin:0;flex:0 0 auto}
+#start .msum{flex:1 1 auto;font-size:11.5px;line-height:1.35;color:var(--minkS);text-align:right}
+#start .chev{flex:0 0 20px;font:700 22px/1 var(--mfp);color:var(--mblue);text-align:center}
+#start .moreb{display:none;margin-top:6px}
+#start .more.open .moreb{display:block}
+#start .grps{display:grid;grid-template-columns:minmax(0,1fr);gap:0 26px}
+#start .pnl{min-height:34px;margin:4px 8px 0 0;padding:4px 12px 2px;border:1.5px solid var(--mblue);background:none;color:var(--mblue);
+  font:700 12px/1 var(--mfp);letter-spacing:.16em}
+#start .pnl.on{background:var(--mblue);color:var(--mform)}
+#start .hcap{width:100%;margin-top:10px;background:rgba(46,93,125,.05);border:1.5px solid var(--mblue);padding:10px 12px}
+#start .hcaph{font:700 12px/1 var(--mfp);letter-spacing:.16em;color:var(--mblue);align-items:center}
+#start .hcaph span{font:12px/1.4 var(--mft);letter-spacing:0;color:var(--minkS)}
+#start .hres,#start .arole{border:1.5px solid var(--mblue);background:none;color:var(--mblue);font:700 11px/1 var(--mfp);letter-spacing:.16em;padding:8px 12px 6px}
+#start .arole.on{background:var(--mblue);color:var(--mform);border-color:var(--mblue)}
+#start .hrow b{font:700 11px/1.2 var(--mfp);letter-spacing:.12em;color:var(--mblue)}
+#start .hrow i{font:13px var(--mft)}
+#start .hb{border:1.5px solid var(--mblue);background:none;color:var(--mblue);font:700 16px/1 var(--mft)}
+#start .hb[disabled]{color:rgba(46,93,125,.3);border-color:rgba(46,93,125,.3)}
+#start .bpref{border-top:1.5px dashed var(--mblue)}
+#start .bprefh{font:700 11px/1.3 var(--mfp);letter-spacing:.12em;color:var(--mblue)}
+#start .maux{display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:var(--mform);padding:12px 14px}
+#start .maux .edb{margin:0;border:1.5px solid var(--mblue);border-radius:0;background:none;color:var(--mblue);font:700 12px/1 var(--mfp);letter-spacing:.16em;padding:2px 12px 0}
+#start .maux .edb:hover{background:rgba(46,93,125,.08)}
+/* DEPLOY is pinned under the thumb on a phone, where the form runs to three screens */
+#start .mgo{position:sticky;bottom:0;z-index:2;display:flex;align-items:center;gap:14px;background:var(--mform);
+  padding:12px 14px calc(14px + var(--safeB));box-shadow:0 -2px 0 var(--mblue)}
+#start .mgo .lbl{display:none;margin:0}
+#start .go{flex:1 1 auto;width:auto;max-width:none;min-height:60px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  padding:0;border:0;background:var(--mred);color:#fbf3e8;box-shadow:none;letter-spacing:0}
+#start .go small{font:700 10.5px/1 var(--mfp);letter-spacing:.3em;opacity:.85}
+#start .go span{font:700 30px/1 var(--mft);letter-spacing:.3em;padding-left:.3em}
+#start .go:hover{background:#c24032}
+#start :focus-visible{outline:2.5px solid var(--mred);outline-offset:2px}
+body.mob #start .gmap,body.mob #start .pill,body.mob #start .team,body.mob #start .mode,body.mob #start .arty,body.mob #start .wall,
+body.mob #start .ctrl,body.mob #start .autoup,body.mob #start .moret,body.mob #start .pnl{min-height:44px;padding-top:0;padding-bottom:0}
+body.mob #start .side{min-height:44px}
+body.mob #start .keys{font-size:11px}
+@media (max-width:559.98px){ #start .moret{flex-wrap:wrap;row-gap:2px} #start .chev{margin-left:auto} #start .msum{order:2;flex:1 1 100%;text-align:left} }
+@media (min-width:560px){ #start .mmaps,#start .grps{grid-template-columns:repeat(2,minmax(0,1fr))} #start .grps .mwide{grid-column:1/-1} }
+/* a desktop lays it out as the form is printed: the header across the top, the text down
+   the left, the choices on the right and the authentication under them */
+@media (min-width:900px) and (min-height:560px){
+  #start{padding:calc(30px + var(--safeT)) 40px 30px}
+  #start .mform{grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"mast mast" "text fields" "go aux";align-items:stretch}
+  #start .mast{grid-area:mast;grid-template-columns:2.6fr 1fr 1.5fr 1fr 1.4fr}
+  #start .cell.big{grid-column:auto}
+  #start .mt{font-size:58px}
+  #start .mtext{grid-area:text}
+  #start .mfields{grid-area:fields;grid-template-columns:repeat(2,minmax(0,1fr))}
+  #start .msec[data-k="ground"],#start .msec[data-k="more"]{grid-column:1/-1}
+  #start .maux{grid-area:aux;justify-content:flex-end;padding:12px 16px}
+  #start .mgo{grid-area:go;position:static;padding:12px 16px;box-shadow:none}
+  #start .mgo .lbl{display:block;flex:0 0 auto}
+}
+
 /* ---------- map editor ---------- */
 #editor{position:absolute;inset:0;z-index:16;pointer-events:none;font-family:var(--cond)}
 #editor.hidden{display:none}
@@ -579,7 +707,6 @@ body:not(.mob) #edmenus.hidden{display:none}
 body.mob #edmini{top:calc(60px + var(--safeT));width:118px;height:80px}
 #edmini canvas{width:100%;height:100%;display:block}
 #editor.panel #edmini{display:none}
-#start .row .edb{margin-left:8px}
 .edbadge{display:inline-block;font:600 8.5px/1 var(--cond);letter-spacing:1px;color:#b9c7a0;border:1px solid #56634b;border-radius:2px;padding:2px 4px;vertical-align:1px;background:rgba(10,12,8,.6)}
 #edhint .edbadge{font-size:9.5px;margin-right:4px;color:#e6e0c8;border-color:#7a9a5a;background:#2c3a22}
 body:not(.mob) #edhint{text-shadow:none}
@@ -948,85 +1075,114 @@ body:not(.simple) #tOrders{display:none}
 <div id="pausenote" class="hidden">PAUSED</div>
 
 <div id="start" class="screen">
-  <div class="brand">
-    <div class="eyebrow" id="beyebrow">ITALIAN CAMPAIGN · DECEMBER 1943</div>
-    <div class="title" id="btitle">ORTONA</div>
-    <div class="rule"></div>
-    <div class="sub" id="bsub">Eight days of close fighting in a rain-soaked Adriatic town. Take
-      Ortona with the 29th Infantry Division or hold its shattered streets with the
-      352. Infanterie-Division.</div>
-    <div class="briefgrid">
-      <div class="brief"><b id="bcard0h">URBAN GROUND</b><span id="bcard0">Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.</span></div>
-      <div class="brief"><b id="bcard1h">ENFILADE</b><span id="bcard1">Linear cover protects across its face. Fire down its length strips two grades of protection.</span></div>
-      <div class="brief"><b>OBJECTIVE</b><span id="objtext">Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.</span></div>
+  <div class="mform">
+    <header class="mast">
+      <div class="cell big"><em>MESSAGE BOOK M-210</em><h1 class="mt">OMAHA</h1><div class="ms">REAL-TIME TACTICS · ITALY AND NORMANDY 1943–44</div></div>
+      <div class="cell"><em>PRIORITY</em><b class="pri">URGENT</b></div>
+      <div class="cell"><em>FROM</em><b id="mfrom">HQ 29TH INF DIV</b></div>
+      <div class="cell"><em>TO</em><b>ALL UNITS</b></div>
+      <div class="cell"><em>DATE-TIME GROUP</em><b id="mdtg">231200 DEC 43</b></div>
+    </header>
+    <section class="mtext">
+      <em class="lbl">TEXT</em>
+      <div class="eyebrow" id="beyebrow">ITALIAN CAMPAIGN · DECEMBER 1943</div>
+      <h2 class="gname">GROUND: <span id="btitle">ORTONA</span></h2>
+      <p class="sub" id="bsub">Eight days of close fighting in a rain-soaked Adriatic town. Take
+        Ortona with the 29th Infantry Division or hold its shattered streets with the
+        352. Infanterie-Division.</p>
+      <div class="brief"><b>PARA A. <span id="bcard0h">URBAN GROUND</span></b> <span id="bcard0">Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.</span></div>
+      <div class="brief"><b>PARA B. <span id="bcard1h">ENFILADE</span></b> <span id="bcard1">Linear cover protects across its face. Fire down its length strips two grades of protection.</span></div>
+      <div class="brief"><b>PARA C. OBJECTIVE</b> <span id="objtext">Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.</span></div>
+      <div class="keys" id="keyhelp">
+        <b>LMB</b> select &nbsp; <b>RMB</b> move or attack &nbsp; <b>Q</b>+click attack-move &nbsp; <b>X</b> stop &nbsp; <b>R</b> retreat to HQ<br>
+        <b>WASD</b> or edge scroll &nbsp; <b>wheel</b> zoom &nbsp; <b>middle-drag</b> or <b>Z/C</b> rotate &nbsp; <b>ctrl+wheel</b> tilt &nbsp; <b>space</b> jump to HQ &nbsp; <b>tab</b> next idle &nbsp; <b>P</b> pause &nbsp; <b>M</b> mute
+      </div>
+    </section>
+    <div class="mfields">
+      <section class="msec" data-k="ground">
+        <div class="mh"><i>1</i><b>GROUND</b></div>
+        <div class="mmaps">
+          <button class="gmap" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="false"><b>OMAHA</b><small>6 JUN 1944</small></button>
+          <button class="gmap" data-map="stlo" title="Saint-Lô, 18 July 1944: three a side through the capital of ruins, the old town on its rock over the Vire, the station across the river and the Bayeux road up the left" aria-pressed="false"><b>SAINT-LÔ</b><small>18 JUL 1944</small></button>
+          <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false"><b>GOTHIC LINE</b><small>30 AUG 1944</small></button>
+          <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true"><b>ORTONA</b><small>23 DEC 1943</small></button>
+        </div>
+      </section>
+      <section class="msec" data-k="army">
+        <div class="mh"><i>2</i><b>ARMY</b></div>
+        <div class="msides">
+          <button class="side us on" data-side="us" data-mark="US" id="pickus" aria-pressed="true"><span class="sd">
+            <h3>29TH INFANTRY DIVISION</h3>
+            <p>Rifle squads with the M1 Garand, engineers with the grease gun, Rangers, and the M4 and the Pershing behind them.</p></span>
+          </button>
+          <button class="side ger" data-side="ger" data-mark="352" id="pickger" aria-pressed="false"><span class="sd">
+            <h3>352. INFANTERIE-DIVISION</h3>
+            <p>Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.</p></span>
+          </button>
+          <button class="side sov" data-side="us" data-army="sov" data-mark="SOV" id="picksov" aria-pressed="false"><span class="sd">
+            <h3>RED ARMY</h3>
+            <p>Sapery with the PPS-43, the ROKS-3 and the minefield, the T-20, the BA-64B, and the T-34/76 with a squad riding on its deck.</p></span>
+          </button>
+        </div>
+      </section>
+      <section class="msec" data-k="battle">
+        <div class="mh"><i>3</i><b>BATTLE</b></div>
+        <div class="grp"><div class="gl">OPPOSITION</div><div class="seg">
+          <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
+          <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
+          <button class="pill" data-diff="2" title="Hard" aria-pressed="false">VETERAN</button></div></div>
+        <div class="grp"><div class="gl">SIDES</div><div class="seg">
+          <button class="team on" data-team="1" title="You against one opponent" aria-pressed="true">1 v 1</button>
+          <button class="team" data-team="2" title="You and an ally against two opponents, each of the three set on its own" aria-pressed="false">2 v 2</button>
+          <button class="team" data-team="3" title="You and two allies against three opponents, three headquarters a side" aria-pressed="false">3 v 3</button></div></div>
+        <div class="grp"><div class="gl">VICTORY</div><div class="seg">
+          <button class="mode on" data-mode="vp" title="Hold the victory sectors until the enemy runs out" aria-pressed="true">SECTORS</button>
+          <button class="mode" data-mode="anni" title="Level every building in the enemy base" aria-pressed="false">ANNIHILATION</button></div></div>
+      </section>
+      <section class="msec more" data-k="more" id="morders">
+        <button class="moret" id="moret" aria-expanded="false" aria-controls="moreb"><span class="mh"><i>4</i><b>STANDING ORDERS</b></span><span class="msum" id="msum"></span><span class="chev" id="mchev" aria-hidden="true">+</span></button>
+        <div class="moreb" id="moreb">
+          <div class="grps">
+            <div class="grp"><div class="gl">ENEMY GUNS</div><div class="seg">
+              <button class="arty on" data-arty="1" title="The opposition buys mortars and howitzers and digs a battery" aria-pressed="true">ARTILLERY</button>
+              <button class="arty" data-arty="0" title="The opposition fields no indirect fire at all; yours is unaffected" aria-pressed="false">NONE</button></div></div>
+            <div class="grp wallrow hidden" id="wallgrp"><div class="gl">ATLANTIC WALL</div><div class="seg">
+              <button class="wall on" data-wall="0" title="The Germans start with their army at the top of the map and the wall empty: whoever gets men into it first holds it" aria-pressed="true">EMPTY</button>
+              <button class="wall" data-wall="1" title="The wall is manned at the whistle: guns in the casemates, machine guns in the bunkers and Tobruks, a mortar on the bluff and a section in each leg of the fire trench, over and above the German army" aria-pressed="false">MANNED</button></div></div>
+            <div class="grp"><div class="gl">CONTROLS</div><div class="seg">
+              <button class="ctrl" data-ctrl="classic" title="The whole game in your hands: tap to select, tap to order, the command bar along the bottom" aria-pressed="false">CLASSIC</button>
+              <button class="ctrl" data-ctrl="simple" title="Built for a phone and a spare thumb: tap to pick, drag to send, tap a flag to take it. Production, building and repairs run themselves" aria-pressed="false">SIMPLE</button></div></div>
+            <div class="grp"><div class="gl">UPGRADES</div><div class="seg">
+              <button class="autoup" data-autoup="on" title="Your vehicles fit their own field upgrades as the money allows; any one of them can be told not to" aria-pressed="false">AUTO</button>
+              <button class="autoup" data-autoup="off" title="Nothing is fitted unless you buy it, from the command bar or by tapping the vehicle" aria-pressed="false">BY HAND</button></div></div>
+            <div class="grp mwide"><div class="gl">HANDICAP AND OPPOSITION</div><div class="seg">
+              <button class="pnl" id="hopen" title="Your own economy, production, construction and manpower cap" aria-expanded="false">HANDICAP</button>
+              <button class="pnl" id="aopen" title="The same settings turned on the opposition, up or down" aria-expanded="false">OPPOSITION</button></div></div>
+          </div>
+          <div class="hcap hidden" id="hcap">
+            <div class="hcaph">HANDICAP<span>your own side of it. The opposition above is set on its own, so a veteran
+              opponent can be fought on any economy you like.</span><button class="hres" id="heven">EVEN</button></div>
+            <div class="hgrid" id="hgrid"></div>
+          </div>
+          <div class="hcap hidden" id="acap">
+            <div class="hcaph">OPPOSITION<span>the same settings turned on each computer player, up or down, on top of whatever
+              GREEN, REGULAR or VETERAN already says. A veteran brain on half an economy, or a green one with a real army.
+              In a 2v2 there are three of them and in a 3v3 five, and each is set on its own.</span><button class="hres" id="aeven">EVEN</button></div>
+            <div class="arow" id="arole"></div>
+            <div class="hgrid" id="agrid"></div>
+            <div class="bpref" id="bpref"></div>
+          </div>
+        </div>
+      </section>
     </div>
-  </div>
-  <div class="sides">
-    <button class="side us on" data-side="us" data-mark="US" id="pickus" aria-pressed="true">
-      <h3>29TH INFANTRY DIVISION</h3>
-      <p>Rifle squads with the M1 Garand, engineers with the grease gun, Rangers, and the M4 and the Pershing behind them.</p>
-    </button>
-    <button class="side ger" data-side="ger" data-mark="352" id="pickger" aria-pressed="false">
-      <h3>352. INFANTERIE-DIVISION</h3>
-      <p>Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.</p>
-    </button>
-    <button class="side sov" data-side="us" data-army="sov" data-mark="SOV" id="picksov" aria-pressed="false">
-      <h3>RED ARMY</h3>
-      <p>Sapery with the PPS-43, the ROKS-3 and the minefield, the T-20, the BA-64B, and the T-34/76 with a squad riding on its deck.</p>
-    </button>
-  </div>
-  <div class="row">
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px">GROUND</span>
-    <button class="gmap on" data-map="ortona" title="The old town, 23 December 1943: a street fought one building at a time" aria-pressed="true">ORTONA</button>
-    <button class="gmap" data-map="gothic" title="The Foglia valley, 30 August 1944: two ridges and the no man's land between them" aria-pressed="false">GOTHIC LINE</button>
-    <button class="gmap" data-map="stlo" title="Saint-Lô, 18 July 1944: three a side through the capital of ruins, the old town on its rock over the Vire, the station across the river and the Bayeux road up the left" aria-pressed="false">SAINT-LÔ</button>
-    <button class="gmap" data-map="omaha" title="Omaha Beach, 6 June 1944: ashore at the water, up twelve hundred units of open sand, over the seawall and up one of two draws into the bocage" aria-pressed="false">OMAHA</button>
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">OPPOSITION</span>
-    <button class="pill" data-diff="0" title="Forgiving" aria-pressed="false">GREEN</button>
-    <button class="pill on" data-diff="1" title="Even fight" aria-pressed="true">REGULAR</button>
-    <button class="pill" data-diff="2" title="Hard" aria-pressed="false">VETERAN</button>
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">SIDES</span>
-    <button class="team on" data-team="1" title="You against one opponent" aria-pressed="true">1 v 1</button>
-    <button class="team" data-team="2" title="You and an ally against two opponents, each of the three set on its own" aria-pressed="false">2 v 2</button>
-    <button class="team" data-team="3" title="You and two allies against three opponents, three headquarters a side" aria-pressed="false">3 v 3</button>
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">VICTORY</span>
-    <button class="mode on" data-mode="vp" title="Hold the victory sectors until the enemy runs out" aria-pressed="true">SECTORS</button>
-    <button class="mode" data-mode="anni" title="Level every building in the enemy base" aria-pressed="false">ANNIHILATION</button>
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">ENEMY GUNS</span>
-    <button class="arty on" data-arty="1" title="The opposition buys mortars and howitzers and digs a battery" aria-pressed="true">ARTILLERY</button>
-    <button class="arty" data-arty="0" title="The opposition fields no indirect fire at all; yours is unaffected" aria-pressed="false">NONE</button>
-    <span class="wallrow hidden" style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">ATLANTIC WALL</span>
-    <button class="wall wallrow hidden on" data-wall="0" title="The Germans start with their army at the top of the map and the wall empty: whoever gets men into it first holds it" aria-pressed="true">EMPTY</button>
-    <button class="wall wallrow hidden" data-wall="1" title="The wall is manned at the whistle: guns in the casemates, machine guns in the bunkers and Tobruks, a mortar on the bluff and a section in each leg of the fire trench, over and above the German army" aria-pressed="false">MANNED</button>
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">CONTROLS</span>
-    <button class="ctrl" data-ctrl="classic" title="The whole game in your hands: tap to select, tap to order, the command bar along the bottom" aria-pressed="false">CLASSIC</button>
-    <button class="ctrl" data-ctrl="simple" title="Built for a phone and a spare thumb: tap to pick, drag to send, tap a flag to take it. Production, building and repairs run themselves" aria-pressed="false">SIMPLE</button>
-    <span style="font-size:11px;color:var(--dim);letter-spacing:2px;margin-left:14px">UPGRADES</span>
-    <button class="autoup" data-autoup="on" title="Your vehicles fit their own field upgrades as the money allows; any one of them can be told not to" aria-pressed="false">AUTO</button>
-    <button class="autoup" data-autoup="off" title="Nothing is fitted unless you buy it, from the command bar or by tapping the vehicle" aria-pressed="false">BY HAND</button>
-    <button class="arty" id="hopen" title="Your own economy, production, construction and manpower cap" aria-expanded="false" style="margin-left:14px">HANDICAP</button>
-    <button class="arty" id="aopen" title="The same settings turned on the opposition, up or down" aria-expanded="false">OPPOSITION</button>
-
-    <button class="edb" id="pasthist" title="Read the report on any battle this device has finished">PAST BATTLES</button>
-    <button class="edb" id="openeditor" title="Design your own map">MAP EDITOR</button><button class="edb hidden" id="playcustom" title="Play the map saved on this device">PLAY CUSTOM MAP</button>
-  </div>
-  <div class="hcap hidden" id="hcap">
-    <div class="hcaph">HANDICAP<span>your own side of it. The opposition above is set on its own, so a veteran
-      opponent can be fought on any economy you like.</span><button class="hres" id="heven">EVEN</button></div>
-    <div class="hgrid" id="hgrid"></div>
-  </div>
-  <div class="hcap hidden" id="acap">
-    <div class="hcaph">OPPOSITION<span>the same settings turned on each computer player, up or down, on top of whatever
-      GREEN, REGULAR or VETERAN already says. A veteran brain on half an economy, or a green one with a real army.
-      In a 2v2 there are three of them and in a 3v3 five, and each is set on its own.</span><button class="hres" id="aeven">EVEN</button></div>
-    <div class="arow" id="arole"></div>
-    <div class="hgrid" id="agrid"></div>
-    <div class="bpref" id="bpref"></div>
-  </div>
-  <button class="go" id="deploy">DEPLOY</button>
-  <div class="keys" id="keyhelp">
-    <b>LMB</b> select &nbsp; <b>RMB</b> move or attack &nbsp; <b>Q</b>+click attack-move &nbsp; <b>X</b> stop &nbsp; <b>R</b> retreat to HQ<br>
-    <b>WASD</b> or edge scroll &nbsp; <b>wheel</b> zoom &nbsp; <b>middle-drag</b> or <b>Z/C</b> rotate &nbsp; <b>ctrl+wheel</b> tilt &nbsp; <b>space</b> jump to HQ &nbsp; <b>tab</b> next idle &nbsp; <b>P</b> pause &nbsp; <b>M</b> mute
+    <div class="maux">
+      <button class="edb" id="pasthist" title="Read the report on any battle this device has finished">PAST BATTLES</button>
+      <button class="edb" id="openeditor" title="Design your own map">MAP EDITOR</button><button class="edb hidden" id="playcustom" title="Play the map saved on this device">PLAY CUSTOM MAP</button>
+    </div>
+    <div class="mgo">
+      <em class="lbl">AUTHENTICATION</em>
+      <button class="go" id="deploy"><small>TRANSMIT</small><span>DEPLOY</span></button>
+    </div>
   </div>
 </div>
 
@@ -1452,14 +1608,14 @@ function foe(s) { return s === 'us' ? 'ger' : 'us'; }
    given (`hq`), the company it opens with (`open`), the buildings it raises in their order
    (`tiers`) and the battery its engineers may dig (`battery`). */
 var NATIONS = {
-  usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION',
+  usa: { name: '29th Infantry Division', short: 'US', pick: '29TH INFANTRY DIVISION', from: 'HQ 29TH INF DIV',
          hq: 'us_hq', open: ['am_eng', 'am_rifle', 'am_rifle'], tiers: ['us_bar', 'us_mot', 'us_tank'], battery: 'how240',
          blurb: 'Rifle squads with the M1 Garand, engineers with the grease gun, Rangers, and the M4 and the Pershing behind them.' },
-  heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION',
+  heer: { side: 'ger', name: '352. Infanterie-Division', short: '352', pick: '352. INFANTERIE-DIVISION', from: 'STAB 352. I.D.',
           hq: 'ger_hq', open: ['hr_pio', 'hr_gren', 'hr_gren'], tiers: ['ger_qtr', 'ger_dep', 'ger_pz'], battery: 'how210',
           blurb: 'Grenadier squads with the Kar98k, MG 34 teams on the Lafette, and the Panzer IV and the Panther behind them.' },
   /* It opens as the other two do: its builders and two of its line squads. */
-  sov: { side: 'us', name: 'Red Army', short: 'SOV', pick: 'RED ARMY',
+  sov: { side: 'us', name: 'Red Army', short: 'SOV', pick: 'RED ARMY', from: 'SHTAB, RED ARMY',
          hq: 'sov_hq', open: ['sv_sap', 'sv_strel', 'sv_strel'], tiers: ['sov_bar', 'sov_mot', 'sov_tank'], battery: 'howb4',
          blurb: 'Strelki with the Mosin-Nagant, Shturmoviki in the SN-42 breastplate with the PPSh-41, Sapery with the ROKS-3 and the minefield, and the T-34 behind them, raised from a Shtab dug in under logs and earth.' }
 };
@@ -58611,25 +58767,25 @@ var chosenArmy = 'usa';
    naming the Adriatic town over the beach. */
 var MAPS = {
   ortona: { make: defaultMapData,
-            eyebrow: 'ITALIAN CAMPAIGN · DECEMBER 1943', title: 'ORTONA',
+            eyebrow: 'ITALIAN CAMPAIGN · DECEMBER 1943', title: 'ORTONA', dtg: '231200 DEC 43',
             sub: 'Eight days of close fighting in a rain-soaked Adriatic town. Take Ortona with the 29th Infantry Division or hold its shattered streets with the 352. Infanterie-Division.',
             cards: [['URBAN GROUND', 'Stone walls, rubble and shell holes decide firefights. Cross streets are killing grounds.'],
                     ['ENFILADE', 'Linear cover protects across its face. Fire down its length strips two grades of protection.']],
             brief: 'Take the piazza and the three victory sectors. Cut-off sectors stop producing resources.' },
   gothic: { make: gothicMapData,
-            eyebrow: 'OPERATION OLIVE · AUGUST 1944', title: 'GOTHIC LINE',
+            eyebrow: 'OPERATION OLIVE · AUGUST 1944', title: 'GOTHIC LINE', dtg: '300600 AUG 44',
             sub: 'The Foglia valley at the end of August: two ridges with the river between them and a valley floor already fought over. Force a crossing with the 29th Infantry Division or hold the ridge with the 352. Infanterie-Division.',
             cards: [['DEAD GROUND', 'The folds and hollows on the valley floor are the only shelter between the belts. Move from one to the next.'],
                     ['THREE CROSSINGS', 'The obstacle belts leave three ways over the river, and every one of them runs into a bunker\'s arc.']],
             brief: 'Force one of the three crossings of the Foglia and hold it. Cut-off sectors stop producing resources.' },
   omaha:  { make: omahaMapData,
-            eyebrow: 'US FIRST ARMY · OPERATION OVERLORD · 6 JUNE 1944', title: 'OMAHA',
+            eyebrow: 'US FIRST ARMY · OPERATION OVERLORD · 6 JUNE 1944', title: 'OMAHA', dtg: '060630 JUN 44',
             sub: 'Dog and Easy sectors on the morning of D-Day. Bring the 29th Infantry Division up the open sand, over the seawall and through the draws, or hold the Atlantic Wall and the bocage behind it with the 352. Infanterie-Division.',
             cards: [['THE SEAWALL', 'A man can shelter behind it and fire over it. A tank cannot climb it.'],
                     ['THE DRAWS', 'Armour gets off the beach only up the Vierville and Les Moulins draws. Infantry can climb the bluff anywhere.']],
             brief: 'The Americans come ashore at the bottom of the map and the Germans hold the wall and the bluff above it. Take the village at the top, or put them back into the sea. Cut-off sectors stop producing resources.' },
   stlo:   { make: stloMapData,
-            eyebrow: 'US FIRST ARMY · NORMANDY · 18 JULY 1944', title: 'SAINT-LÔ',
+            eyebrow: 'US FIRST ARMY · NORMANDY · 18 JULY 1944', title: 'SAINT-LÔ', dtg: '181900 JUL 44',
             sub: 'The capital of ruins on the evening the 29th Infantry Division came into it. Three a side: fight up the Bayeux road, over the rock the old town stands on, and across the Vire to the station, or hold it with the 352. Infanterie-Division.',
             cards: [['THE ENCLOS', 'The old town stands walled on its rock. A vehicle gets onto it by three gates; a man by the stairs from the quay as well.'],
                     ['THE VIRE', 'The river is crossed at three bridges and two footbridges. The station and the yards are on the far bank.']],
@@ -58646,6 +58802,8 @@ function brandSync() {
   var M = MAPS[chosenMap] || MAPS.ortona;
   el('beyebrow').textContent = M.eyebrow; el('btitle').textContent = M.title; el('bsub').textContent = M.sub;
   M.cards.forEach(function (c, i) { el('bcard' + i + 'h').textContent = c[0]; el('bcard' + i).textContent = c[1]; });
+  /* the message's header: who sends it, which follows the army, and when, which follows the ground */
+  el('mdtg').textContent = M.dtg; el('mfrom').textContent = (NATIONS[chosenArmy] || NATIONS.usa).from;
 }
 document.querySelectorAll('.side').forEach(function (btn) {
   btn.onclick = function () {
@@ -58653,6 +58811,7 @@ document.querySelectorAll('.side').forEach(function (btn) {
     btn.classList.add('on'); chosenSide = btn.dataset.side;
     chosenArmy = btn.dataset.army || (chosenSide === 'ger' ? 'heer' : 'usa');
     btn.setAttribute('aria-pressed', 'true');
+    brandSync();
   };
 });
 document.querySelectorAll('.pill').forEach(function (btn) {
@@ -59012,6 +59171,30 @@ document.querySelectorAll('.team').forEach(function (btn) {
    turned the knobs and came back to the title screen wants to see where he left them */
 if (!hcapEven()) el('hcap').classList.remove('hidden');
 if (!hcapEven(ACAP)) el('acap').classList.remove('hidden');
+/* ---- the standing orders: the guns, the wall, the controls, the upgrades and the two
+   panels fold up under one line that says what they are set to, because they are the
+   settings nobody changes from one battle to the next and they were half the title
+   screen. Opened by a tap, and open from the start when a handicap is set, for the
+   reason the panels are. */
+function soOpen(on) {
+  el('morders').classList.toggle('open', on);
+  el('moret').setAttribute('aria-expanded', on ? 'true' : 'false');
+  el('mchev').textContent = on ? '\u2212' : '+';
+}
+function soSync() {
+  var p = [chosenArty ? 'Enemy artillery' : 'No enemy guns'];
+  if (!el('wallgrp').classList.contains('hidden')) p.push(chosenWall ? 'Wall manned' : 'Wall empty');
+  p.push(CTRL.simple ? 'Simple controls' : 'Classic controls');
+  p.push(AUTOUP.on ? 'Auto upgrades' : 'Upgrades by hand');
+  p.push(hcapEven() ? 'Handicap even' : 'Handicap set');
+  if (!hcapEven(ACAP)) p.push('Opposition set');
+  el('msum').textContent = p.join(' \u00b7 ');
+}
+el('moret').onclick = function () { soOpen(!el('morders').classList.contains('open')); sfx('click'); };
+/* every control on the page has run its own handler by the time a click reaches the screen */
+el('start').addEventListener('click', soSync);
+soOpen(!hcapEven() || !hcapEven(ACAP));
+sideSync(); brandSync(); soSync();
 el('deploy').onclick = function () { G.mapData = chosenMapData(); startGame(chosenSide, chosenDiff, chosenMode, chosenArty, chosenTeam, chosenArmy); };
 el('tHQ').onclick = function () {
   var hq = hqOf(G.own); if (!hq) return;

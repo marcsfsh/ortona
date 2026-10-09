@@ -27,10 +27,29 @@ off the beach. **Saint-Lô**, the 18th of July 1944, is the town on the Vire the
 into that evening, laid for three a side: 3800 by 2800, the old town walled on its rock in
 the middle, the river and the station on the right and the faubourgs on the left, laid in
 five stages (see *Saint-Lô*). They are picked on the title screen under GROUND and
-all four open in the editor. The page above the buttons is the chosen ground's own (`brandSync`, off `MAPS`: the
-line over the name, the name, what the battle was and two cards about the ground), and the three
-side cards name the 29th Infantry Division and the 352. Infanterie-Division, which fight every
-ground, and the Red Army, which only the player fields. Written once in the markup, the header went on naming the Adriatic town over the beach.
+all four open in the editor; Ortona is the one ticked at the start, because every card and every
+gate row that does not name a ground deploys on it.
+
+**The title screen is a Signal Corps field message** (`#start`), and the game is called OMAHA on
+it and in the browser's tab. The whole menu is one printed form in blue ruled boxes on a desk
+blotter. The header across the top carries OMAHA in the message box beside PRIORITY, FROM, TO and the DATE-TIME
+GROUP; FROM follows the army (`NATIONS[k].from`) and the date-time group the ground (`MAPS[k].dtg`),
+both written by `brandSync`. Down the left, under TEXT, the chosen ground's briefing is typed in
+capitals on ruled lines: the line over the name, GROUND and its name (`#btitle`), what the battle
+was, its two cards as PARA A and PARA B and the objective as PARA C, and the keys under them. On the
+right are four numbered boxes, each choice a printed box ticked with a typed X: 1 GROUND, 2 ARMY (the
+three armies, `#pickus`, `#pickger`, `#picksov`, named by `sideSync` off `NATIONS`), 3 BATTLE (the
+opposition, the sides and the victory rule) and 4 STANDING ORDERS. The standing orders are the
+settings nobody changes from one battle to the next (the enemy's guns, the Atlantic Wall where the
+map has one, the controls, the upgrades, and the HANDICAP and OPPOSITION panels), and they fold up
+under a line that says what they are set to (`soOpen`, `soSync`, refreshed by any click on the
+screen), open from the start when either panel is set. DEPLOY is a red bar under TRANSMIT beside
+AUTHENTICATION, pinned under the thumb on a phone, where the form runs to three screens. A desktop
+lays it out as the form is printed, the text down the left and the choices on the right, and a phone
+stacks it in that order. Every control kept its class and id, so the handlers, the harness's
+`deploy` and the gate rows read it as they always did; the gate opens the fold before it measures
+the panels' touch targets. The HANDICAP and OPPOSITION buttons are `.pnl` and no longer `.arty`, because
+the enemy guns' handler loops over every `.arty` on the page.
 
 **The whole game is `ortona.html`.** Some 42,000 lines and 2.6 megabytes: CSS in one
 `<style>`, markup, then all the JavaScript in one `<script>`. Open the file in a browser
@@ -6605,9 +6624,8 @@ Allied side is the 29th. What a player may build is filtered by his army: a buil
 `side` and `nat`), a bunker fitting by `bunkUnit(W, slot)`, and a unit by the building that makes
 it, so the Shtab refuses the 29th's rifle squad and the sapper's card offers no 240 position and no
 building of another army. `armyOf(side)` names a side's army off its first slot, for the
-victory-point labels, the game-over screen and the record. The title screen carries it as a third
-card (`#picksov`, `data-army="sov"`) with a red edge, under the two divisions; on a phone the page
-scrolls to it.
+victory-point labels, the game-over screen and the record. The title screen carries it as the third
+box under ARMY (`#picksov`, `data-army="sov"`), under the two divisions.
 
 **The Shtab** (`sov_hq`, `svShtab`) is a regiment's command post dug in the way the Red Army dug
 them: a front wall of round logs laid between posts with the door in it and the gas curtain over
@@ -9347,7 +9365,7 @@ because being bled faster is pressure the opponent applies rather than a modifie
 player's units.
 
 `PD` is the player's own side, thirteen settings on the title screen behind a HANDICAP
-button that lights when any of them is off even: manpower income and fuel income, what is
+button under STANDING ORDERS that lights when any of them is off even: manpower income and fuel income, what is
 in the till at the first shot in each of the two, production speed (a unit out of a
 queue), construction speed (a building or a field work going up), the manpower cap from a
 hundred to a thousand, the damage his units take, the damage they deal, how far they
@@ -9358,7 +9376,7 @@ of step the moment somebody adds another. `pdMake()` resolves the indices once i
 `startGame` so the income tick and the population check read a number, and `pd()` hands
 the even game to anything that reaches it before a battle. The setting is kept in
 `localStorage` under `ORT_HCAP`, and a handicap carried over from the last battle opens
-the panel rather than hiding in it.
+the standing orders and the panel rather than hiding in them.
 
 **Manpower and fuel are two settings each, not one.** A single income multiplier and a
 single starting purse could only ever scale the two together, and the two are not the same
