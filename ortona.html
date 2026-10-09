@@ -18683,7 +18683,13 @@ function aiTick(dt) {
         if (u.def.atOnly) aiFire(tKind === 'arm' ? 'at.armour' : 'at.defend');
         u.aimX = tAimX; u.aimY = tAimY; u.jobX = post.x; u.jobY = post.y; u.jobT = G.t; u.jobAnc = ancD;
       }
-      if (Math.hypot(u.x - u.jobX, u.y - u.jobY) > 90 &&
+      /* A tube with a mission running finishes it before it walks to a new post, because the
+         walk cancels the mission. The screen laid at the go went to the nearest tube standing
+         still, and on Saint-Lô that tube was off its post and was sent to it further down the
+         same tick, so the smoke was ordered and never fired. Forty-five seconds on the mission
+         and the post wins, because a mission whose rounds keep being refused never ends. */
+      var onMis = u.def.barrage && u.barrage && u.barrage.t < 45;
+      if (!onMis && Math.hypot(u.x - u.jobX, u.y - u.jobY) > 90 &&
           (!u.dest || Math.hypot(u.dest.x - u.jobX, u.dest.y - u.jobY) > 120)) {
         /* a team in a house covering the objective is better than a team beside it */
         var th2 = skill >= 1 ? aiHouse(u, u.jobX, u.jobY, 140) : null;

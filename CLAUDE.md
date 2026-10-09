@@ -1109,7 +1109,9 @@ and the classic scheme is put back and asked the same of a tap and a drag, becau
 scheme kept as an option is a scheme nobody runs. The drills want open ground, and
 `__clearPt` finds it clear of every ring of his by more than the pick and clear of any flag
 -- the first version asked `nearestOwn` at a hundred units, which is not the pick, and
-found no ground at all on the spawn. And the flag row hides the enemy from his side and
+found no ground at all on the spawn. On Saint-Lô the section the LOOK and classic rows tap is
+also one with bare ground round it on the screen, because a section in the town has houses and
+walls all round it and the classic row found none within reach of the first it took. And the flag row hides the enemy from his side and
 empties his call board for its two ticks, because a section raised beside the headquarters
 with a tank in front of it calls for help and is dealt to nobody's operation, which is the
 brain being right about the wrong thing: on one desktop run the enemy was at the
@@ -10265,7 +10267,12 @@ rate while the ground the wave was about to cross went unshelled, and the smoke 
 the go was gone by the end of the same tick, cancelled by the reflex three hundred lines
 below it. A tube on a mission keeps it now, and one on its post is left to the support
 job, which lays the next; its own `acquire` still shoots at what is in front of it
-between missions, so nothing is silenced.
+between missions, so nothing is silenced. And the support job itself does not send a tube
+with a mission running to a new post until it has worked the mission for forty-five
+seconds, because the walk cancels it: the screen goes to the nearest tube standing still,
+and on Saint-Lô that was a tube off its post, sent to it further down the same tick, so the
+smoke was ordered and never fired. The limit is there because a mission whose rounds are
+refused never ends.
 
 And the same row found a second one, older than anything on this page: **a tube on a
 mission was turned back off its bearing every frame.** A halted section with nothing to

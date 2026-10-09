@@ -886,6 +886,10 @@ for (const device of TARGETS) {
     window.select([], false); window.ORDWHO = 'any';
     secs3.forEach(u => { u.op = 0; });
     P.asKey = null; P.asT = -99; P.t = 0;
+    /* every smoke mission laid in the two ticks, and by which tube, so that a screen ordered
+       and then taken off again in the same tick says so rather than reading as no screen */
+    const realOB = window.orderBarrage, smokeLaid = [];
+    window.orderBarrage = function (u, x, y, smoke) { const r = realOB.apply(this, arguments); if (r && smoke) smokeLaid.push(u); return r; };
     const tick = () => { window.AIP[own].t = 0; window.aiThink(1); };
     tick();
     /* what the tube was laid on after a tick: the preparation on the flag's defenders, or
@@ -937,14 +941,16 @@ for (const device of TARGETS) {
     const fD = sm && mo.fupX ? Math.round(Math.hypot(sm.x - mo.fupX, sm.y - mo.fupY)) : -1;
     const screenFired = (window.AIR.fired['smoke.screen'] || 0) - (f0['smoke.screen'] || 0);
     const kind = (q) => q ? (q.smoke ? 'smoke' : 'HE') + ' ' + q.d + ' from the flag' : 'nothing';
+    const laid = smokeLaid.map(u => `${u.key} ${u === m ? '(the staged one) ' : ''}${u.barrage && u.barrage.smoke ? 'holds it' : 'DROPPED IT, ' + (u.order || 'no order')}`).join('; ');
     /* down again */
+    window.orderBarrage = realOB;
     window.aiAnswer = realAns; window.aiOpsPlan = realPlan; window.aiOpsMan = realMan;
     window.aiDirSet(own, S.id, null);
     P.asKey = null; P.asT = -99; P.asSec = null;
     raised.forEach(u => { u.barrage = null; const i = window.G.units.indexOf(u); if (i >= 0) window.G.units.splice(i, 1); });
     window.G.smoke.length = 0; window.G.shots.length = 0;
     window.select([], false);
-    return { name: S.label || S.id, known, obj, dirFired, spent, state, went1, went, fD, screenFired, dealt, deal, n: secs.length,
+    return { name: S.label || S.id, known, obj, dirFired, spent, state, went1, went, fD, screenFired, dealt, deal, n: secs.length, laid,
              m1: kind(m1), m2: kind(m2), heD: he ? he.d : -1, smD: sm ? sm.d : -1 };
   });
   ok('simple: ATTACK with a tube in reach lays it on the men holding the flag, and the go lays smoke short of the flag',
@@ -952,7 +958,8 @@ for (const device of TARGETS) {
      dirArty.went && dirArty.screenFired >= 1 && dirArty.smD > 0 && dirArty.smD <= 170,
      dirArty.none ? dirArty.none : `${dirArty.name}: defenders seen ${dirArty.known}; tick 1 laid ${dirArty.m1} (objective ${dirArty.obj}, went ${dirArty.went1}); ` +
                             `spent ${dirArty.spent} (${dirArty.state}); tick 2 dealt ${dirArty.dealt} of ${dirArty.n} to it (${dirArty.deal}), went ${dirArty.went}, laid ${dirArty.m2}; ` +
-                            `mortar.dir ${dirArty.dirFired}, smoke.screen ${dirArty.screenFired}, the screen ${dirArty.fD} from the fup`);
+                            `mortar.dir ${dirArty.dirFired}, smoke.screen ${dirArty.screenFired}, the screen ${dirArty.fD} from the fup` +
+                            `${dirArty.laid ? ' (smoke laid by ' + dirArty.laid + ')' : ''}`);
 
   /* --- LOOK with nothing picked, a tap on a unit that picks it and gives no order, and
      a tap on the ground that lets go --- */
@@ -960,12 +967,22 @@ for (const device of TARGETS) {
      unit of his: under SIMPLE a tap within 130 of a flag is a tap on the flag, and a tap on a
      section standing in another picks whichever is nearer, so the first section in the list
      read as a picked-nothing on one run in ten */
+  /* and one with bare ground round it on the screen, because the rows tap that as well: on
+     Saint-Lô a section in the town has houses and walls all round it, and the classic row found
+     no open ground within reach of the first section it took */
   await page.evaluate(() => {
     window.__aloneSec = function () {
-      return window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar &&
+      const ok = q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar && !q.ride;
+      const alone = window.G.units.filter(q => ok(q) &&
         !window.G.sectors.some(s => Math.hypot(s.x - q.x, s.y - q.y) < 170) &&
-        !window.G.units.some(o => o !== q && !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - q.x, o.y - q.y) < 80)) ||
-        window.G.units.find(q => window.owned(q) && !q.dead && q.cat === 'inf' && !q.retreat && !q.inside && !q.gar);
+        !window.G.units.some(o => o !== q && !o.dead && !o.inside && window.owned(o) && Math.hypot(o.x - q.x, o.y - q.y) < 80));
+      const all = alone.concat(window.G.units.filter(q => ok(q) && alone.indexOf(q) < 0));
+      for (const q of all) {
+        window.__o.camera({ x: q.x, y: q.y, dist: 520, pitch: 0.9 }); window.render();
+        const p = window.w2s(q.x, q.y);
+        if (window.__clearPt(p.x, p.y, 150)) return q;
+      }
+      return all[0] || null;
     };
   });
   const look = await page.evaluate(() => {
@@ -980,13 +997,19 @@ for (const device of TARGETS) {
     window.__tev('touchstart', p.x, p.y); window.__tev('touchend', p.x, p.y);
     const picked = window.G.sel.length === 1 && window.G.sel[0] === u;
     const tap = window.__clearPt(p.x, p.y, 150);
+    /* and what was under the second finger, by the game's own test, for when it does not let go */
+    const tw = tap && window.s2w(tap.x, tap.y), mineAt = tw && window.nearestOwn(tw.x, tw.y, Math.max(26, Math.min(90, window.CAM.dist * .05)));
     if (tap) { window.__tev('touchstart', tap.x, tap.y); window.__tev('touchend', tap.x, tap.y); }
     const same = u.order === o0 && JSON.stringify(u.dest && [u.dest.x, u.dest.y]) === d0;
-    return { on, from, picked, tap: !!tap, let_: window.G.sel.length, same };
+    const kept = window.G.sel[0];
+    return { on, from, picked, tap: !!tap, let_: window.G.sel.length, same,
+             why: `${kept ? 'kept ' + kept.key + (kept === u ? ' (the same one)' : '') : ''}${mineAt ? ', his ' + mineAt.key + ' under the finger' : ''}` +
+                  `, running ${window.G.running}, pov ${window.POV.on}, place ${!!window.G.place}, mode ${window.G.mode}, cam ${Math.round(window.CAM.dist)}` };
   });
   ok('simple: LOOK looks from the nearest unit with nothing picked, a tap on a unit picks it and orders nothing, and a tap on the ground lets go',
      look.on && look.from && !look.none && look.picked && look.tap && look.let_ === 0 && look.same,
-     look.none ? 'no section to tap' : `look ${look.on} from his ${look.from}; picked ${look.picked}; ground tap left ${look.let_} selected with the order unchanged ${look.same}`);
+     look.none ? 'no section to tap' : `look ${look.on} from his ${look.from}; picked ${look.picked}; ground tap left ${look.let_} selected with the order unchanged ${look.same}` +
+                 `${look.let_ ? ' (' + look.why + ')' : ''}`);
 
   /* and the classic scheme is what it was: the bar back, the strip gone, a tap an order */
   const classic = await page.evaluate(() => {
