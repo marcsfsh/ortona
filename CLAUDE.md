@@ -2308,16 +2308,17 @@ along x or a profile about z, which is what the stacks, the load and the church'
 slope with a vertex twice over (a hexagon with its hip corners at the ridge) draws inside out and
 black, so a plain gable is laid as a quad.
 
-**The third stage lays them** (in `elbeMapData`). A farm is four buildings round a cobbled yard
-(`farm`, `paved` of kind `yard`): the house on the street side, the barn across the yard and a stable
-down each side. The stables stand outside the ends of the house and the barn, corner to corner with
-them, so no two buildings face each other across a slot the map check would name, and the house is
-set over toward one stable so the other end of it is a gateway onto the street. `farms` lays a farm
-and its twin on the other half on the same footprint with its dressing drawn off other dice (`DRESS`:
-the dung heap, a wagon, a cart, a lime by the house, apple trees, a haystack; the woodpile against the
-barn is solid and so is in the same place on both). `bld`, `feat` and `tree` do the same for a single
-building, a feature and a tree. Each village is four farms either side of the street on either side of
-the headquarters road, with a cottage and a smithy on the north side and the church and the inn on
+**The third stage lays them** (in `elbeMapData`). A farm is one building or two, never more
+(`farm`, `paved` of kind `yard`): one is the house and the byre under one long roof along the street
+with the yard behind it (`o.one`), and two is an L, the house along the street and the barn at right
+angles to it with its street end built against the back of one end of the house, so the two stand on
+one wall and leave no slot, and the cobbled yard is the inside of the L. It was four buildings round a
+yard at first, and the player had it cut down to this. `farms` lays a farm and its twin on the other
+half on the same footprint with its dressing drawn off other dice (`DRESS`: the dung heap, a wagon, a
+cart, a lime by the house, apple trees, a haystack; the woodpile against the back of the house is
+solid and so is in the same place on both). `bld`, `feat` and `tree` do the same for a single
+building, a feature and a tree. Each village is four farms, two of them an L and two single, either side of the
+street on either side of the headquarters road, with a cottage and a smithy on the north side and the church and the inn on
 the south, the green between them where the avenue leaves the street. The outlying farms by the flank
 headquarters carry those two flags in their yards now (the Vorwerk at 430, 552 and the Schäferei at
 3370, 552), each with a long shed below the road. On the forward row the west flank has a field barn,
@@ -2325,7 +2326,7 @@ a straw stack, the stone cross and a lime at the junction, the east flank two st
 haystacks and a hay wagon, and the avenue two lodges and the limes down to the park gate. On the
 midline: the two post mills either side of the midline track in the west, Gut Rosswitz in its park in
 the middle (the manor across the midline facing the west gate, its two barns north and south of the
-cobbled courtyard east of it, where the flag is), and the two field barns in the east. 71 buildings,
+cobbled courtyard east of it, where the flag is), and the two field barns in the east. 43 buildings,
 30 solid features and 52 trees.
 
 **Movement.** A 20-unit occupancy grid (`grid`, `rebuildGrid`, `walkable`) with

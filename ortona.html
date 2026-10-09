@@ -6214,41 +6214,42 @@ function elbeMapData() {
   E.push({ t: 'sector', id: 'm2', x: 2080, y: MID, type: 'vp', owner: null, label: 'Gut Rosswitz', nb: ['m1', 'm3', 'g5', 'a5'] });
   E.push({ t: 'sector', id: 'm3', x: 3040, y: MID, type: 'vp', owner: null, label: 'The field barn', nb: ['m2', 'g6', 'a6'] });
 
-  /* ---- the farms. A Saxon farm is four buildings round a yard: the house on the street
-     side, the barn across the yard from it and a stable down each side, the yard cobbled
-     with the dung heap in the middle of it. Laid here so that no two buildings face each
-     other across a slot: the stables stand outside the ends of the house and the barn,
-     corner to corner with them, and the house is set over toward one stable so that the
-     other end of it leaves a gateway onto the street a section can walk through. `fr` is
-     which way the street is (+1 toward +y), `fx` which end the gateway is at. Every farm is
-     laid twice, its twin on the other half on the same footprint, and `d` is the dice its
-     dressing is drawn with, so the two halves are the same ground and not the same farms. */
+  /* ---- the farms. A farm here is one building or two. One is the house and the byre under
+     one long roof along the street, with the yard behind it; two is an L, the house along the
+     street and the barn at right angles to it, its street end built against the back of the
+     house at one end, so the two stand on one wall and leave no slot between them, and the
+     yard is the inside of the L, cobbled, open at its far side and behind. `fr` is which way
+     the street is (+1 toward +y) and `fx` which end of the house the barn is at; `o.one` makes
+     it the single building. Every farm is laid twice, its twin on the other half on the same
+     footprint, and `d` is the dice its dressing is drawn with, so the two halves are the same
+     ground and not the same farms. */
   var DRESS = ['dung', 'woodpile', 'wagon', 'lime', 'apple', 'hay', 'cart'];
   function dice(d, n) { var v = Math.sin(d * 37.7 + n * 12.9898) * 43758.5453; return v - Math.floor(v); }
   function farm(cx, cy, fr, fx, d, o) {
     o = o || {};
-    var hw = o.hw || 120, bw = o.bw || 150, bd = o.bd || 70, sx = 107, k;
-    var hx = cx - fx * 20 + fx * (120 - hw) / 2;
-    E.push({ t: 'nhouse', style: 'sxhouse', x: hx, y: cy + fr * 81, w: hw, h: 66, s: dice(d, 1), flip: fr > 0 ? 1 : 0 });
-    E.push({ t: 'nhouse', style: o.barn || 'sxbarn', x: cx + (o.bx || 0), y: cy - fr * (48 + bd / 2), w: bw, h: bd, s: dice(d, 2), flip: dice(d, 3) < .5 ? 1 : 0 });
-    [-1, 1].forEach(function (sg) {
-      if (o.one === sg) return;
-      E.push({ t: 'nhouse', style: 'sxstable', x: cx + sg * sx, y: cy, w: 56, h: 96, s: dice(d, 4 + sg), flip: sg < 0 ? 1 : 0 });
-    });
-    E.push({ t: 'paved', kind: 'yard', x: cx - 79, y: cy - 48, w: 158, h: 96 });
-    E.push({ t: 'feature', look: 'yardgate', x: cx + fx * 60, y: cy + fr * 100, w: 30, h: 6, a: Math.PI / 2, solid: 0, s: dice(d, 6) });
-    /* the dressing: the heap in the yard, the logs stacked against the barn, a lime by the
-       house, a cart or a wagon left standing; solid things on the same footprint on both
-       halves, the rest drawn off the farm's own dice */
-    E.push({ t: 'feature', look: 'woodpile', x: cx - fx * 30, y: cy - fr * 38, w: 36, h: 8, s: dice(d, 7) });
+    var hw = o.hw || (o.one ? 170 : 150), bw = 60, bd = o.bd || 120, k;
+    var hy = cy + fr * 81, x0 = cx - fx * hw / 2, x1;
+    E.push({ t: 'nhouse', style: 'sxhouse', x: cx, y: hy, w: hw, h: 66, s: dice(d, 1), flip: fr > 0 ? 1 : 0 });
+    if (o.one) x1 = cx + fx * hw / 2;
+    else {
+      E.push({ t: 'nhouse', style: o.barn || 'sxbarn', x: cx + fx * (hw / 2 - bw / 2), y: hy - fr * (33 + bd / 2), w: bw, h: bd,
+               s: dice(d, 2), flip: fx < 0 ? 1 : 0 });
+      x1 = cx + fx * (hw / 2 - bw);
+    }
+    E.push({ t: 'paved', kind: 'yard', x: Math.min(x0, x1), y: fr > 0 ? cy - 52 : cy - 48, w: Math.abs(x1 - x0), h: 100 });
+    /* the dressing: the logs stacked against the back of the house, the heap in the yard, a
+       lime at the house's open end, a cart or a wagon left standing; solid things on the same
+       footprint on both halves, the rest drawn off the farm's own dice */
+    var yx = (x0 + x1) / 2;
+    E.push({ t: 'feature', look: 'woodpile', x: yx, y: cy + fr * 40, w: 36, h: 8, s: dice(d, 7) });
     for (k = 0; k < 3; k++) {
       var what = DRESS[Math.floor(dice(d, 10 + k) * DRESS.length)];
-      if (what === 'dung') E.push({ t: 'feature', look: 'dung', x: cx + fx * 6, y: cy + fr * 10, w: 34, h: 24, solid: 0, s: dice(d, 20) });
-      else if (what === 'lime') E.push({ t: 'tree', kind: 'lime', x: hx - fx * (hw / 2 + 24), y: cy + fr * 90, r: 16 + dice(d, 21) * 4, s: dice(d, 22) });
-      else if (what === 'apple') { E.push({ t: 'tree', kind: 'apple', x: cx + 160 * fx, y: cy + fr * 30, r: 13, s: dice(d, 23) }); E.push({ t: 'tree', kind: 'apple', x: cx + 160 * fx, y: cy - fr * 30, r: 12, s: dice(d, 24) }); }
-      else if (what === 'hay') E.push({ t: 'feature', look: 'hay', x: cx - fx * 160, y: cy - fr * 20, w: 24, h: 24, solid: 0, s: dice(d, 25) });
-      else if (what === 'wagon') E.push({ t: 'feature', look: 'haywagon', x: cx + fx * 12, y: cy - fr * 12, w: 56, h: 30, solid: 0, a: .3, s: dice(d, 26) });
-      else if (what === 'cart') E.push({ t: 'cart', x: cx - fx * 40, y: cy + fr * 14, a: dice(d, 27) * TAU });
+      if (what === 'dung') E.push({ t: 'feature', look: 'dung', x: yx + fx * 6, y: cy - fr * 6, w: 34, h: 24, solid: 0, s: dice(d, 20) });
+      else if (what === 'lime') E.push({ t: 'tree', kind: 'lime', x: x0 - fx * 24, y: hy, r: 16 + dice(d, 21) * 4, s: dice(d, 22) });
+      else if (what === 'apple') { E.push({ t: 'tree', kind: 'apple', x: x0 - fx * 40, y: cy - fr * 10, r: 13, s: dice(d, 23) }); E.push({ t: 'tree', kind: 'apple', x: x0 - fx * 40, y: cy - fr * 60, r: 12, s: dice(d, 24) }); }
+      else if (what === 'hay') E.push({ t: 'feature', look: 'hay', x: yx - fx * 20, y: cy - fr * 82, w: 24, h: 24, solid: 0, s: dice(d, 25) });
+      else if (what === 'wagon') E.push({ t: 'feature', look: 'haywagon', x: yx - fx * 6, y: cy - fr * 20, w: 56, h: 30, solid: 0, a: .3, s: dice(d, 26) });
+      else if (what === 'cart') E.push({ t: 'cart', x: yx - fx * 22, y: cy + fr * 14, a: dice(d, 27) * TAU });
     }
   }
   function farms(cx, cy, fr, fx, d, o) { farm(cx, cy, fr, fx, d, o); farm(cx, my(cy), -fr, fx, d + 50, o); }
@@ -6274,10 +6275,10 @@ function elbeMapData() {
   /* Wendelsdorf and Schönfeld: two farms either side of the street on each side of the
      road down from the headquarters, a cottage and a smithy on the north side, the church
      and the inn on the south, the green between them where the avenue leaves the street */
-  farms(1600, 552, 1, 1, 1, { bd: 66 });
-  farms(2200, 552, 1, -1, 2, { bd: 66, hw: 110 });
-  farms(1560, 848, -1, -1, 3, {});
-  farms(2200, 848, -1, 1, 4, { hw: 130, barn: 'sxbarn' });
+  farms(1600, 552, 1, 1, 1, {});
+  farms(2200, 552, 1, -1, 2, { one: 1 });
+  farms(1560, 848, -1, -1, 3, { one: 1 });
+  farms(2200, 848, -1, 1, 4, { hw: 160 });
   bld('sxhouse', 1812, 640, 80, 56, 5, 1);
   bld('sxstable', 1990, 640, 80, 56, 6, 1);
   bld('sxchurch', 1790, 840, 120, 44, 7, 0);
@@ -6287,8 +6288,8 @@ function elbeMapData() {
 
   /* the outlying farms by the headquarters, the Vorwerk and the Schäferei (the Neuhof and the
      Lindenhof on the other half), each with a long shed out in the field below the road */
-  farms(430, 552, 1, 1, 12, { bd: 66, hw: 110 });
-  farms(3370, 552, 1, -1, 13, { bd: 66 });
+  farms(430, 552, 1, 1, 12, {});
+  farms(3370, 552, 1, -1, 13, {});
   bld('sxfbarn', 430, 800, 140, 50, 14, 0);
   bld('sxfbarn', 3370, 800, 150, 50, 15, 1);
 
