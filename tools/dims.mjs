@@ -141,6 +141,15 @@ const REAL = {
                between the bogie's axles: 6.12 m from the bumper to the tail of the frame, 7.06 m over the fins of the
                rockets lying on the rails, which the card does not count, 2.21 m wide, 2.86 m to the top of the rack
                lying down and 320 mm under the differentials */
+  sv_su76:   { name: 'SU-76M',              len: 4.966, gun: 5.00,   wid: 2.715, hgt: 2.10,
+               clear: 0.30 },   /* the published 4.966 m of hull, 5.00 m with the gun forward, 2.715 m over the
+               fenders, 2.10 m to the top of the walls and 300 mm of clearance. The drawing it is laid over
+               (tools/ref/sv_su76.json) agrees with the height and the length over the tracks at one scale */
+  sv_zsu37:  { name: 'ZSU-37',              len: 5.29,  gun: 5.29,   wid: 2.745, hgt: 2.18,
+               clear: 0.30 },   /* the published 5.29 m of hull, 2.745 m over the fenders, 2.18 m to the top of
+               the box and 300 mm of clearance; the gun laid level does not reach the nose. The drawing it is laid
+               over (tools/ref/sv_zsu37.json) is taken off the SU-76M's road wheels, and at that scale the box is
+               2.13 m high */
   am_weasel: { name: 'M29C Weasel',         len: 4.79,  gun: 4.79,   wid: 1.70,  hgt: 1.80,
                clear: 0.28 },   /* 15 ft 8.5 in over the cells, 5 ft 7 in wide over the tracks, 5 ft 11 in high
                and 11 in of clearance. The drawing it is laid over (tools/ref/am_weasel.json) stands the
@@ -266,6 +275,8 @@ const PROBE = {
   sv_su122:  { bodyZ: 14.0, roofZ: 23.1, xLo: .5, xHi: 4.5, straddle: true },   /* the SU-85's slices */
   sv_is2:    { topZ: 14.0 },   /* topZ holds the aerial on the turret out */
   sv_bm13:   {},
+  sv_su76:   {},
+  sv_zsu37:  {},
   am_weasel: { noMount: true, hullZ: 23.0, tailX: -28.2 },   /* the mount is a gun on a post, hullZ holds the
                aerial out and tailX the rudders folded up behind the stern cell */
   ger_kt:    { bodyZ: 13.5, roofZ: 22.4 },

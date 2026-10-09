@@ -6865,7 +6865,7 @@ for (const device of TARGETS) {
     const want = { am_sher: 22, am_t34: 22, am_e8: 26, am_m26: 26, am_m18: 22, am_m7: 22, am_m12: 22, hr_wespe: 20, hr_marder: 16,
                    am_weasel: 26, am_stuart: 18, ger_kt: 22, ger_maus: 28, ger_tig: 20, ger_stug: 22, am_jeep: 4,
                    am_m3: 16, am_m16: 16, am_m8: 6, hr_ks750: 3, hr_251: 18, hr_p4: 28, hr_234: 8, hr_panther: 20, hr_wirb: 28,
-                   sv_t20: 16, sv_ba64: 4 };
+                   sv_t20: 16, sv_ba64: 4, sv_su76: 22, sv_zsu37: 22 };
     const bad = [];
     let belts = 0;
     Object.keys(want).forEach(k => {
@@ -8505,7 +8505,7 @@ for (const device of TARGETS) {
     /* and the rest of the Avtopark and the park beside it, so that the car is the one rung left:
        on one desktop run the brain had a Tankovyy park by now and bought a T-34 first */
     ['sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
-    ['sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     /* and the car itself taken off it: the row queued one above to ask the Avtopark, which the
        list counts as ordered, and a rung ordered once is only bought again as a replacement,
        dearest first, behind the ZiS-2 and whatever the park makes */
@@ -8537,7 +8537,7 @@ for (const device of TARGETS) {
     return { q: W.__baq.join(',') || 'nothing' };
   }));
   ok('the Red Army\'s Avtopark raises the BA-64B: an armoured car with a DT in an open turret that goes all the way round',
-     ba.cards.indexOf('AVTOPARK') >= 0 && ba.need === 'sov_bar' && ba.ready && ba.makes === 'sv_ba64,sv_zis2,sv_bs3,sv_bm13' && ba.bname === 'Avtopark' &&
+     ba.cards.indexOf('AVTOPARK') >= 0 && ba.need === 'sov_bar' && ba.ready && ba.makes === 'sv_ba64,sv_zis2,sv_bs3,sv_bm13,sv_su76,sv_zsu37' && ba.bname === 'Avtopark' &&
      ba.bld > 100 && ba.q === 'sv_ba64' && ba.qBar === 'refused' && ba.bufs && ba.name === 'BA-64B' && !ba.arc && ba.tur > 3.0 &&
      Math.abs(ba.muzY - ba.barY) < .2 && ba.shlem > 0 && ba.paint > 0 && ba.frame === 'tur' &&
      ba.eye > ba.rim + 2 && ba.eye < ba.rim + 6 && ba.rifle === 0 && ba.pak === 1 && ba.blown > 0 && ba.blown < 80 && ba.sink > 0 &&
@@ -8670,7 +8670,7 @@ for (const device of TARGETS) {
     /* and everything else the park and the Avtopark make written into what the side has ordered:
        with a heavy of the enemy's on the field the brain brings the guns that kill one forward and
        sends the T-34, which cannot, to the back */
-    ['sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t3485', 'sv_zis2'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     W.slotOf(own).ai = 1; W.aiInit(own);
     const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
@@ -8778,7 +8778,7 @@ for (const device of TARGETS) {
        and not the rows above: the T-34 row's brain buys one when it has the money */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_t34 = Math.max(2, G.made[own].sv_t34 || 0); out.madeSu = G.made[own].sv_su85 || 0; G.made[own].sv_su85 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -8878,7 +8878,7 @@ for (const device of TARGETS) {
        ordered and none of it, so that what it buys next is the T-34-85 */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t34', 'sv_zis3', 'sv_zis2'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_t3485 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -8966,7 +8966,7 @@ for (const device of TARGETS) {
     G.units.length = 0;
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t34', 'sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_su122 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -9057,7 +9057,7 @@ for (const device of TARGETS) {
        ordered and none of it, so that what it buys next is the IS-2 */
     G.t = Math.max(G.t, 800);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_bm13', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_t34', 'sv_zis3', 'sv_zis2', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_is2 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -9407,7 +9407,7 @@ for (const device of TARGETS) {
     /* the brain on his slot, with the Avtopark standing and the rungs under the ZiS-2's bought */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     G.made[own].sv_zis3 = Math.max(2, G.made[own].sv_zis3 || 0); G.made[own].sv_zis2 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
     W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
@@ -9513,7 +9513,7 @@ for (const device of TARGETS) {
        whatever the brain brings forward against a heavy */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_su85', 'sv_su122', 'sv_is2', 'sv_bs3'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_bm13 = 0;
     W.slotOf(own).ai = 1; W.aiInit(own);
@@ -9676,7 +9676,7 @@ for (const device of TARGETS) {
     /* the brain on his slot, with the Avtopark standing and every rung under the BS-3's bought */
     G.t = Math.max(G.t, 700);
     G.res[own].mp += 3000; G.res[own].fu += 600;
-    ['sv_t20', 'sv_ba64', 'sv_bm13', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_su76', 'sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_bm13', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
     ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
     G.made[own].sv_bs3 = 0;
     /* and the queues emptied, because the brain runs of the rows above leave what they queued
@@ -9715,6 +9715,253 @@ for (const device of TARGETS) {
      `packed the trails ${b3.packMesh ? 'closed' : 'NOT closed'}; a T-20 ${b3.canHitch ? 'may' : 'may NOT'} hitch it and ${b3.towed ? 'did' : 'DID NOT'}; ` +
      `it picked ${b3.apMen} with the squad alone and ${b3.apBoth} with the tank beside it, out to ${b3.range}; killed went down as ` +
      `${b3.bodyNat}; a brain with the Avtopark standing queued ${b3Ai.q}`);
+
+  /* --- The SU-76M, out of the Avtopark: the Avtopark makes it and queues it and the Kazarma refuses
+     it. Every buffer it needs is built, the gunner who turns with the gun and the loader and the
+     commander on the hull among them; it is a casemate named the SU-76M, and its gun asked to lay
+     1.2 radians off the nose stops at the edge of its fifteen degrees. The commander standing in the
+     open compartment wears the padded helmet and is the eye, with his head over the walls. A Kar98k
+     never goes through its front and a Pak 38 always does, and its own AP round goes through a
+     Panzer IV's side every time and its front less often. With the AP round up it picks nothing out
+     of a grenadier squad and the Panzer IV out of the two; with the HE round up it picks the squad,
+     out to 480; and a brain on his slot puts HE up with only men in front of it and AP when a tank
+     comes into reach. Forty wrecks throw nothing, killed it leaves the army's crewmen, and a brain
+     on his slot with the Avtopark standing and the rungs under it bought buys one. The rounds are
+     asked along a line of open ground traced clear both ways, for the ZiS-3's reason. --- */
+  const sm = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_su76'); out.qKaz = q(kb, 'sv_su76');
+    const B = W.MODELS.veh.sv_su76, V = W.VMODEL.sv_su76;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew);
+    out.fixed = !!V.fixed;
+    const clear = (x, y) => x > 60 && y > 60 && x < W.WORLD.w - 60 && y < W.WORLD.h - 60 && W.walkable(x, y) &&
+                            !W.inMasonry(x, y) && !G.covers.some(c => Math.hypot(c.x - x, c.y - y) < c.r + 40);
+    let st = null;
+    for (let r = 200; r < 1600 && !st; r += 60)
+      for (let k = 0; k < 16 && !st; k++) {
+        const ax = hq.x + r * Math.cos(k * Math.PI / 8), ay = hq.y + r * Math.sin(k * Math.PI / 8);
+        if (!clear(ax, ay)) continue;
+        for (let j = 0; j < 8 && !st; j++) {
+          const th = j * Math.PI / 4, bx = ax + 380 * Math.cos(th), by = ay + 380 * Math.sin(th);
+          if (!clear(bx, by)) continue;
+          if (W.traceClear(ax, ay, W.groundZ(ax, ay) + 18, bx, by, W.groundZ(bx, by) + 14, W.sblk) &&
+              W.traceClear(bx, by, W.groundZ(bx, by) + 14, ax, ay, W.groundZ(ax, ay) + 18, W.sblk) &&
+              W.fireLine({ x: ax, y: ay, side: 'us' }, { x: bx, y: by })) st = { ax, ay, th };
+        }
+      }
+    out.staged = !!st;
+    const ln = st || { ax: hq.x + 220, ay: hq.y + 140, th: 0 };
+    const t = W.spawnUnit(own, 'sv_su76', ln.ax, ln.ay, ln.th);
+    out.name = W.nameOf(t); out.arc = +(W.arcOf(t) || 0).toFixed(2);
+    t.facing = ln.th; t.turret = ln.th; t.want = ln.th + 1.2;
+    for (let i = 0; i < 30; i++) W.updateModels(t, .2);
+    out.tur = +W.angDiff(t.facing, t.turret).toFixed(3);
+    t.turret = t.facing; t.want = t.facing; t._matT = -1;
+    const K = W.KIT.sov;
+    out.shlem = V.crew.concat(V.turCrew).filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    out.paint = V.hull.filter(f => f.c === W.TZC.body).length;
+    const E = W.VIN.sv_su76(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.top = +W.smTopZ(E.eyeUp.x).toFixed(1); out.frame = E.frame;
+    const ahead = d => ({ x: t.x + d * Math.cos(ln.th), y: t.y + d * Math.sin(ln.th) });
+    let p = ahead(150); out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, p.x, p.y).toFixed(2);
+    p = ahead(300); out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, p.x, p.y).toFixed(2);
+    const see = e => { e.vUs = true; e.detUs = 1; };
+    const gp = ahead(280), tp = ahead(340);
+    const g = W.spawnUnit('ger', 'hr_gren', gp.x, gp.y, ln.th + Math.PI); see(g);
+    t.up = {}; t.forced = null; t.target = null;
+    out.apMen = (W.acquire(t) || { key: 'nothing' }).key;
+    const tk = W.spawnUnit('ger', 'hr_p4', tp.x, tp.y, ln.th + Math.PI); see(tk);
+    out.apBoth = (W.acquire(t) || { key: 'nothing' }).key;
+    out.onP4F = +W.penVs(t.def.w, 340, tk, t.x, t.y).toFixed(2);
+    tk.facing = ln.th + Math.PI / 2; tk._matT = -1;
+    out.onP4S = +W.penVs(t.def.w, 340, tk, t.x, t.y).toFixed(2);
+    G.units.splice(G.units.indexOf(tk), 1);
+    W.setRound([t], true);
+    const hw = W.mainW(t);
+    out.he = hw.dmg + '/' + hw.aoe + '/' + hw.range;
+    t.target = null; t.forced = null;
+    out.heMen = (W.acquire(t) || { key: 'nothing' }).key;
+    W.setRound([t], false);
+    /* the brain on his slot picks the round off what is in front of the gun */
+    t.up = {};
+    W.__smU = t; W.__smT0 = tp; W.__smAi = W.slotOf('ger').ai; W.slotOf('ger').ai = 0;
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    return out;
+  });
+  await fastForward(page, 4);
+  const smR = await page.evaluate(() => {
+    const W = window, u = W.__smU, out = {};
+    out.menOnly = !!(u.up && u.up.he);
+    const tk = W.spawnUnit('ger', 'hr_p4', W.__smT0.x, W.__smT0.y, u.facing + Math.PI);
+    tk.vUs = true; tk.detUs = 1; tk.hp = tk.maxHp = 1e6;
+    return out;
+  });
+  await fastForward(page, 4);
+  Object.assign(smR, await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, u = W.__smU, out = {};
+    out.withTank = !(u.up && u.up.he);
+    W.slotOf(own).ai = 0; W.slotOf('ger').ai = W.__smAi;
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_su76', sp.x, sp.y, 0);
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    G.units.length = 0;
+    /* the brain on his slot, with the Avtopark standing, every rung under the SU-76M's and beside
+       it bought and the queues emptied, for the BS-3's reason */
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_zsu37', 'sv_t20', 'sv_ba64', 'sv_bm13', 'sv_bs3', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_su76 = 0;
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__smq = []; W.__smQ = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__smQ.apply(this, arguments); if (r && b.own === own) W.__smq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  }));
+  await fastForward(page, 40);
+  Object.assign(smR, await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__smQ; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__smq.join(',') || 'nothing' };
+  }));
+  ok('the Red Army\'s Avtopark raises the SU-76M, the 76 mm in an open compartment on a light chassis, with both rounds',
+     /sv_su76/.test(sm.makes) && sm.q === 'sv_su76' && sm.qKaz === 'refused' && sm.bufs && sm.fixed && sm.name === 'SU-76M' &&
+     sm.arc === .52 && Math.abs(Math.abs(sm.tur) - sm.arc / 2) < .03 && sm.shlem > 0 && sm.paint > 0 && sm.frame === 'hull' &&
+     sm.eye > sm.top && sm.eye < sm.top + 6 && sm.rifle === 0 && sm.pak === 1 && sm.onP4S === 1 && sm.onP4F < sm.onP4S &&
+     sm.staged && sm.apMen === 'nothing' && sm.apBoth === 'hr_p4' && sm.he === '90/45/480' && sm.heMen === 'hr_gren' &&
+     smR.menOnly && smR.withTank && smR.blown === 0 && smR.bodies >= 1 && smR.bodyNat === 'sov' && /sov_mot:sv_su76/.test(smR.q),
+     `the Avtopark makes ${sm.makes} and queues ${sm.q}, the Kazarma ${sm.qKaz} it; buffers ${sm.bufs ? 'built' : 'MISSING'}, ` +
+     `${sm.fixed ? 'a casemate' : 'NOT FIXED'}; named ${sm.name}; asked to lay 1.2 off the nose the gun came to ${sm.tur} on an arc ` +
+     `of ${sm.arc}; the crew have ${sm.shlem} faces of the padded helmet, the hull ${sm.paint} of its green; the eye in the ` +
+     `${sm.frame} at ${sm.eye} over walls at ${sm.top}; a Kar98k through the front ${sm.rifle} and a Pak 38 ${sm.pak}; its AP ` +
+     `round through a Panzer IV's front ${sm.onP4F} and side ${sm.onP4S}; ${sm.staged ? '' : 'NO clear line to ask the rounds along; '}` +
+     `with AP up it picked ${sm.apMen} with the squad alone and ${sm.apBoth} with the tank beside it, with HE up (${sm.he}) ` +
+     `${sm.heMen}; the brain put HE up with men only ${smR.menOnly ? 'yes' : 'NO'} and AP with a tank ${smR.withTank ? 'yes' : 'NO'}; ` +
+     `forty wrecks threw ${smR.blown} and sat down ${smR.sink}; killed it left ${smR.bodies} bodies of ${smR.bodyNat}; a brain ` +
+     `with the Avtopark standing queued ${smR.q}`);
+
+  /* --- The ZSU-37, out of the Avtopark: the Avtopark makes it and queues it and the Kazarma refuses
+     it. Every buffer it needs is built, the gun laid up and down on its trunnions among them, and it
+     is named the ZSU-37. Its gun asked to lay over the tail comes all the way round, and turned away
+     from the slot it is laid up over the walls, its muzzle well over the box's top; brought back
+     into the slot it comes down level again. The eye is the commander's at the back of the box. A
+     Kar98k never goes through its front and a Pak 38 always does, and its own 37 mm goes through a
+     Panzer IV's side every time at two hundred and never through its front. Forty wrecks throw
+     nothing, killed it leaves the army's crewmen, and a brain on his slot with the Avtopark standing
+     and the rungs under it bought buys one. --- */
+  const zk = await page.evaluate(() => {
+    const W = window, G = W.G, own = G.own, out = {};
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    const hq = G.blds.filter(b => b.own === own && b.def.hq)[0];
+    G.res[own].mp += 3000; G.res[own].fu += 400;
+    let kb = G.blds.filter(b => b.own === own && b.key === 'sov_bar' && b.built >= 1)[0];
+    if (!kb) { const at = W.baseSite(own, 'sov_bar') || W.nearestFree(hq.x, hq.y - 260); kb = W.spawnBuilding(own, 'sov_bar', at.x, at.y, true); }
+    let ab = G.blds.filter(b => b.own === own && b.key === 'sov_mot' && b.built >= 1)[0];
+    if (!ab) { const at = W.baseSite(own, 'sov_mot') || W.nearestFree(hq.x, hq.y + 260); ab = W.spawnBuilding(own, 'sov_mot', at.x, at.y, true); }
+    out.makes = W.makesOf(ab).join(',');
+    function q(b, k) { const n = b.queue.length, r = W.queueUnit(b, k) ? b.queue.slice(-1)[0] : 'refused'; b.queue.length = n; return r; }
+    out.q = q(ab, 'sv_zsu37'); out.qKaz = q(kb, 'sv_zsu37');
+    const B = W.MODELS.veh.sv_zsu37, V = W.VMODEL.sv_zsu37;
+    out.bufs = !!(B && B.hull && B.tur && B.crew && B.turCrew && B.elv && B.elv.gun);
+    out.fixed = !!V.fixed;
+    const sp = W.nearestFree(hq.x + 220, hq.y + 140), t = W.spawnUnit(own, 'sv_zsu37', sp.x, sp.y, 0);
+    out.name = W.nameOf(t); out.arc = W.arcOf(t) || 0;
+    t.facing = 0; t.turret = 0; t.el = 0; t.want = 3.1;
+    for (let i = 0; i < 40; i++) W.updateModels(t, .2);
+    out.tur = +Math.abs(W.angDiff(t.facing, t.turret)).toFixed(2); out.elUp = +(t.el || 0).toFixed(2);
+    t._matT = -1;
+    const gz = W.groundZ(t.x, t.y);
+    out.muzUp = +(W.gunMuzzle(t).z - gz).toFixed(1); out.boxTop = W.ZKH.zT;
+    t.want = 0;
+    for (let i = 0; i < 40; i++) W.updateModels(t, .2);
+    out.back = +Math.abs(W.angDiff(t.facing, t.turret)).toFixed(2); out.elDown = +(t.el || 0).toFixed(2);
+    t._matT = -1;
+    out.muzDown = +(W.gunMuzzle(t).z - gz).toFixed(1);
+    const K = W.KIT.sov;
+    out.shlem = V.crew.concat(V.turCrew).filter(f => f.c === K.shlem || f.c === K.shlemD).length;
+    const E = W.VIN.sv_zsu37(V);
+    out.eye = +E.eyeUp.z.toFixed(1); out.frame = E.frame;
+    out.rifle = +W.penVs(W.UNITS.hr_gren.w, 150, t, t.x + 150, t.y).toFixed(2);
+    out.pak = +W.penVs(W.UNITS.hr_pak.w, 300, t, t.x + 300, t.y).toFixed(2);
+    const p4 = W.spawnUnit('ger', 'hr_p4', t.x + 200, t.y, Math.PI);
+    out.onP4F = +W.penVs(t.def.w, 200, p4, t.x, t.y).toFixed(2);
+    p4.facing = Math.PI / 2; p4._matT = -1;
+    out.onP4S = +W.penVs(t.def.w, 200, p4, t.x, t.y).toFixed(2);
+    G.units.splice(G.units.indexOf(p4), 1);
+    out.auto = !!t.def.w.auto;
+    const nw = G.wrecks.length;
+    let blown = 0, sink = 0;
+    for (let i = 0; i < 40; i++) { const w = W.makeWreck(t); if (w.blown) blown++; sink = Math.max(sink, w.sink); }
+    G.wrecks.length = nw;
+    out.blown = blown; out.sink = +sink.toFixed(2);
+    const nc = G.corpses.length;
+    W.killUnit(t);
+    const bodies = G.corpses.slice(nc);
+    out.bodies = bodies.length; out.bodyNat = [...new Set(bodies.map(c => c.nat))].join(',');
+    G.units.slice().forEach(u => { if (!u.dead) W.killUnit(u); });
+    G.units.length = 0;
+    G.t = Math.max(G.t, 700);
+    G.res[own].mp += 3000; G.res[own].fu += 600;
+    ['sv_su76', 'sv_t20', 'sv_ba64', 'sv_bm13', 'sv_bs3', 'sv_su85', 'sv_su122', 'sv_is2'].forEach(k => { G.made[own][k] = Math.max(1, G.made[own][k] || 0); });
+    ['sv_zis3', 'sv_zis2', 'sv_t34', 'sv_t3485'].forEach(k => { G.made[own][k] = Math.max(2, G.made[own][k] || 0); });
+    G.made[own].sv_zsu37 = 0;
+    G.blds.forEach(b => { if (b.own === own) b.queue.length = 0; });
+    W.slotOf(own).ai = 1; W.aiInit(own);
+    W.spawnUnit(own, 'sv_sap', hq.x + 120, hq.y + 60, 0); W.spawnUnit(own, 'sv_strel', hq.x + 120, hq.y - 60, 0);
+    W.spawnUnit(own, 'sv_strel', hq.x + 160, hq.y, 0);
+    W.__zkq = []; W.__zkQ = W.queueUnit;
+    W.queueUnit = function (b) { const r = W.__zkQ.apply(this, arguments); if (r && b.own === own) W.__zkq.push(b.key + ':' + arguments[1]); return r; };
+    return out;
+  });
+  await fastForward(page, 40);
+  const zkAi = await page.evaluate(() => {
+    const W = window, own = W.G.own;
+    W.queueUnit = W.__zkQ; W.slotOf(own).ai = 0;
+    W.G.units.slice().forEach(q => { if (!q.dead) W.killUnit(q); });
+    W.G.units.length = 0;
+    return { q: W.__zkq.join(',') || 'nothing' };
+  });
+  ok('the Red Army\'s Avtopark raises the ZSU-37, the 37 mm on its turntable in an open box, laid up over the walls',
+     /sv_zsu37/.test(zk.makes) && zk.q === 'sv_zsu37' && zk.qKaz === 'refused' && zk.bufs && zk.fixed && zk.name === 'ZSU-37' &&
+     !zk.arc && zk.tur > 3.0 && zk.elUp > .85 && zk.muzUp > zk.boxTop + 6 && zk.back < .05 && zk.elDown < .05 &&
+     zk.muzDown < zk.boxTop - 3 && zk.shlem > 0 && zk.frame === 'hull' && zk.eye > zk.boxTop && zk.eye < zk.boxTop + 6 &&
+     zk.rifle === 0 && zk.pak === 1 && zk.onP4S >= .98 && zk.onP4F === 0 && zk.auto && zk.blown === 0 && zk.bodies >= 1 &&
+     zk.bodyNat === 'sov' && /sov_mot:sv_zsu37/.test(zkAi.q),
+     `the Avtopark makes ${zk.makes} and queues ${zk.q}, the Kazarma ${zk.qKaz} it; buffers ${zk.bufs ? 'built' : 'MISSING'}, ` +
+     `${zk.fixed ? 'nothing to throw' : 'NOT FIXED'}; named ${zk.name}${zk.arc ? ' on an ARC of ' + zk.arc : ''}; asked to lay over the tail ` +
+     `the gun came round ${zk.tur} and was laid up ${zk.elUp}, its muzzle ${zk.muzUp} up over a box ${zk.boxTop} tall; brought back ` +
+     `to the nose it came to ${zk.back} and ${zk.elDown}, the muzzle at ${zk.muzDown}; the crew have ${zk.shlem} faces of the padded ` +
+     `helmet; the eye in the ${zk.frame} at ${zk.eye}; a Kar98k through the front ${zk.rifle} and a Pak 38 ${zk.pak}; its 37 mm ` +
+     `through a Panzer IV's side ${zk.onP4S} and front ${zk.onP4F}, ${zk.auto ? 'automatic' : 'NOT AUTOMATIC'}; forty wrecks threw ` +
+     `${zk.blown} and sat down ${zk.sink}; killed it left ${zk.bodies} bodies of ${zk.bodyNat}; a brain with the Avtopark standing ` +
+     `queued ${zkAi.q}`);
+
 
   /* --- The B-4, the Red Army's heavy battery, dug by the Sapery. The army names it as its battery
      and the sapper's card offers it; it is refused inside seven hundred of home and a second is

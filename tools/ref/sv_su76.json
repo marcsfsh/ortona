@@ -1,0 +1,7 @@
+{ "image": "shots/ref/sv_su76.png", "key": "sv_su76", "prop": "smShow", "args": [],
+  "note": "A four-view of the SU-76M with no scale on the sheet. The side view agrees with the published 2.10 m of height and 4.97 m over the tracks at 85.2 px/m; the plan across, the front and the rear agree with the published 2.715 m over the fenders at 87.3, and the plan along with the side.",
+  "views": {
+    "side":  { "nose": "left", "crop": [0, 0, 500, 200], "ppm": 85.2, "at": [17.85, 0, 3.68], "px": [120, 165.8], "k": 3 },
+    "plan":  { "nose": "left", "crop": [15, 225, 470, 250], "ppm": 85.2, "ppmv": 87.3, "at": [26.6, 0, 16], "px": [56, 349], "k": 3 },
+    "front": { "crop": [0, 500, 250, 195], "ppm": 86.9, "ppmv": 87.3, "at": [0, 0, 0], "px": [123.75, 693.3], "k": 4 },
+    "rear":  { "crop": [255, 500, 245, 195], "ppm": 86.9, "ppmv": 87.3, "at": [0, 0, 0], "px": [381, 694], "k": 4 } } }
